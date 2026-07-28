@@ -6,6 +6,8 @@ import ipaddress
 import socket
 from urllib.parse import urlparse
 
+import requests
+
 from composio.exceptions import BlockedInternalUrlError
 
 
@@ -30,10 +32,22 @@ def is_blocked_ip(value: str) -> bool:
 
 
 def assert_safe_fetch_target(url: str) -> None:
-    """Refuse non-HTTP(S) URLs and hosts that resolve to internal addresses."""
-    parsed = urlparse(url)
-    if parsed.scheme not in {"http", "https"} or not parsed.hostname:
-        raise BlockedInternalUrlError("Refusing to fetch a non-http(s) URL")
+    """Refuse non-HTTP(S) URLs and hosts that resolve to internal addresses.
+
+    Parse the URL after Requests prepares it so validation uses the same
+    canonical hostname that the eventual connection will use.
+    """
+    try:
+        prepared_url = requests.Request(method="GET", url=url).prepare().url
+        if prepared_url is None:
+            raise ValueError("Prepared URL is missing")
+        parsed = urlparse(prepared_url)
+        if parsed.scheme not in {"http", "https"} or not parsed.hostname:
+            raise ValueError("URL must use HTTP(S) and include a hostname")
+    except (requests.exceptions.RequestException, ValueError):
+        raise BlockedInternalUrlError(
+            "Refusing to fetch a malformed or non-http(s) URL"
+        ) from None
 
     try:
         addresses: set[str] = set()

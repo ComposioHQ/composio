@@ -9,18 +9,19 @@ import { notFound } from 'next/navigation';
 import { getMDXComponents } from '@/mdx-components';
 import type { Metadata } from 'next';
 import { createRelativeLink } from 'fumadocs-ui/mdx';
-import type { ApiPageProps } from 'fumadocs-openapi/ui';
+import type { OpenAPIPageProps } from 'fumadocs-openapi/ui';
 import { PageActions } from '@/components/page-actions';
 import { EditOnGitHub } from '@/components/edit-on-github';
 import { extractVersionFromPath } from '@/components/version-badge';
 import { ApiPageTitle } from '@/components/api-page-title';
 import { isApiPageDeprecated } from '@/lib/api-deprecation';
+import { sliceApiPageProps } from '@/lib/openapi-slice';
 import type { OpenApiSchemaPageData } from '@/lib/api-deprecation';
 
 interface OpenAPIPageData extends OpenApiSchemaPageData {
   title: string;
   description?: string;
-  getAPIPageProps: () => ApiPageProps;
+  getOpenAPIPageProps: () => OpenAPIPageProps;
 }
 
 /**
@@ -41,9 +42,9 @@ export default async function Page({
   const page = referenceSource.getPage(toSourceSlug(slug));
   if (!page) notFound();
 
-  if ('getAPIPageProps' in page.data) {
+  if ('getOpenAPIPageProps' in page.data) {
     const pageData = page.data as OpenAPIPageData;
-    const apiProps = pageData.getAPIPageProps();
+    const apiProps = pageData.getOpenAPIPageProps();
     const detectedVersion = apiProps.operations?.[0]?.path
       ? extractVersionFromPath(apiProps.operations[0].path)
       : null;
@@ -59,14 +60,13 @@ export default async function Page({
           <PageActions path={page.url} variant="inline" />
         </div>
         <DocsBody>
-          <APIPage {...apiProps} />
+          <APIPage {...sliceApiPageProps(apiProps)} />
           <EditOnGitHub path={`docs/content/reference/${page.path}`} />
         </DocsBody>
       </DocsPage>
     );
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const mdxData = page.data as any;
   const MDX = mdxData.body;
 
@@ -77,7 +77,6 @@ export default async function Page({
       <DocsBody>
         <MDX
           components={getMDXComponents({
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             a: createRelativeLink(referenceSource as any, page),
           })}
         />

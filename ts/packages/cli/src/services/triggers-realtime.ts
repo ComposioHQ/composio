@@ -1,4 +1,4 @@
-import { Data, Effect, Either, Option, Runtime, Schema } from 'effect';
+import { Array as Arr, Data, Effect, Either, Option, Predicate, Runtime, Schema } from 'effect';
 import { JsonRecordSchema } from 'src/effects/json';
 import {
   ComposioClientSingleton,
@@ -28,6 +28,47 @@ export class TriggerRealtimeSubscriptionError extends Data.TaggedError(
 
 const subscriptionError = (message: string) => (cause: unknown) =>
   new TriggerRealtimeSubscriptionError({ message, cause });
+
+type PusherConstructor = (typeof import('pusher-js'))['default'];
+
+const isPusherConstructor = (value: unknown): value is PusherConstructor =>
+  Predicate.isFunction(value);
+
+const propertyOf = (value: unknown, property: string): unknown =>
+  Predicate.hasProperty(value, property) ? value[property] : undefined;
+
+/**
+ * Resolves the Pusher constructor across ESM/CJS interop shapes. pusher-js
+ * ships CJS and has changed its export shape across versions: 8.4.x and 8.6.0
+ * export the constructor itself (`module.exports = Pusher`), while 8.5.0's
+ * Node bundle exports a namespace object (`module.exports = { Pusher }`) — an
+ * undocumented upstream packaging regression (pusher/pusher-js#935, fixed by
+ * pusher/pusher-js#936, first released in 8.6.0). With 8.5.0,
+ * `module.default` stops being callable under both Node and Bun — from source
+ * and in compiled binaries alike (issue #3918). The probes cover, in order: a
+ * defensively double-wrapped default (`module.default.default`), the direct
+ * class export (`module.default`, 8.4.0/8.6.0), a raw CJS module that is
+ * itself the constructor, and the named `Pusher` export on either level
+ * (`module.default.Pusher` is the 8.5.0 shape that crashed compiled release
+ * binaries; runtimes also hoist it to `module.Pusher`).
+ *
+ * Exported for tests.
+ */
+export const resolvePusherConstructor = (
+  pusherModule: unknown
+): Option.Option<PusherConstructor> => {
+  const moduleDefault = propertyOf(pusherModule, 'default');
+  return Arr.findFirst(
+    [
+      propertyOf(moduleDefault, 'default'),
+      moduleDefault,
+      pusherModule,
+      propertyOf(moduleDefault, 'Pusher'),
+      propertyOf(pusherModule, 'Pusher'),
+    ],
+    isPusherConstructor
+  );
+};
 
 /**
  * Service for listening to trigger events over Composio CLI realtime channels.
@@ -64,38 +105,46 @@ export class TriggersRealtime extends Effect.Service<TriggersRealtime>()(
               catch: subscriptionError('Failed to load the realtime client'),
             });
 
-            const Pusher = pusherModule.default;
+            const Pusher = yield* resolvePusherConstructor(pusherModule).pipe(
+              Effect.mapError(
+                subscriptionError('Realtime client module does not expose a constructor')
+              )
+            );
 
-            const pusher = new Pusher(creds.pusher_key, {
-              cluster: creds.pusher_cluster,
-              channelAuthorization: {
-                customHandler: (authOptions, callback) => {
-                  const channel_name = authOptions.channelName;
-                  const socket_id = authOptions.socketId;
+            const pusher = yield* Effect.try({
+              try: () =>
+                new Pusher(creds.pusher_key, {
+                  cluster: creds.pusher_cluster,
+                  channelAuthorization: {
+                    customHandler: (authOptions, callback) => {
+                      const channel_name = authOptions.channelName;
+                      const socket_id = authOptions.socketId;
 
-                  const doAuth = async () => {
-                    const response = await Runtime.runPromise(runtime)(
-                      params.authRealtimeChannel({
-                        channel_name,
-                        socket_id,
-                      })
-                    );
-                    // Pusher private channels verify signatures without channel_data.
-                    // Some auth endpoints may still return channel_data, which can cause
-                    // "Invalid signature" if included in the verification input.
-                    const normalizedResponse = channel_name.startsWith('private-')
-                      ? { auth: response.auth }
-                      : response;
-                    return normalizedResponse;
-                  };
+                      const doAuth = async () => {
+                        const response = await Runtime.runPromise(runtime)(
+                          params.authRealtimeChannel({
+                            channel_name,
+                            socket_id,
+                          })
+                        );
+                        // Pusher private channels verify signatures without channel_data.
+                        // Some auth endpoints may still return channel_data, which can cause
+                        // "Invalid signature" if included in the verification input.
+                        const normalizedResponse = channel_name.startsWith('private-')
+                          ? { auth: response.auth }
+                          : response;
+                        return normalizedResponse;
+                      };
 
-                  void doAuth()
-                    .then(data => callback(null, data))
-                    .catch(cause =>
-                      callback(cause instanceof Error ? cause : new Error(String(cause)), null)
-                    );
-                },
-              },
+                      void doAuth()
+                        .then(data => callback(null, data))
+                        .catch(cause =>
+                          callback(cause instanceof Error ? cause : new Error(String(cause)), null)
+                        );
+                    },
+                  },
+                }),
+              catch: subscriptionError('Failed to construct the realtime client'),
             });
 
             const channel = pusher.subscribe(channelName);

@@ -1,13 +1,13 @@
 // Guards the CLI's Effect platform boundaries: every eslint-disable comment in
 // src/ must be a single-line `eslint-disable-next-line` with a `-- reason`
-// justification, and must be registered in eslint-boundaries.json. The manifest
+// justification, and must be registered in lint-boundaries.json. The manifest
 // pins each rule, justification, and governed next-line target, so adding or
 // relocating a disable fails until the manifest is regenerated on purpose (see
 // AGENTS.md, "Effect Boundary Policy").
 //
 // Usage:
-//   tsx ./scripts/validate-eslint-boundaries.ts            # verify (CI)
-//   tsx ./scripts/validate-eslint-boundaries.ts --update   # regenerate manifest
+//   tsx ./scripts/validate-lint-boundaries.ts            # verify (CI)
+//   tsx ./scripts/validate-lint-boundaries.ts --update   # regenerate manifest
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 
@@ -16,12 +16,12 @@ import {
   compareBoundaryManifests,
   countBoundarySites,
   type BoundaryManifest,
-} from './eslint-boundaries';
+} from './lint-boundaries';
 
 const scriptDir = import.meta.dirname ?? path.dirname(new URL(import.meta.url).pathname);
 const packageRoot = path.resolve(scriptDir, '..');
 const srcRoot = path.join(packageRoot, 'src');
-const manifestPath = path.join(packageRoot, 'eslint-boundaries.json');
+const manifestPath = path.join(packageRoot, 'lint-boundaries.json');
 
 const collected = collectBoundaryManifest(packageRoot, srcRoot);
 const errors = [...collected.errors];
@@ -49,5 +49,5 @@ if (errors.length > 0) {
 }
 
 console.log(
-  `eslint boundaries OK: ${countBoundarySites(found)} registered disables across ${Object.keys(found).length} files.`
+  `lint boundaries OK: ${countBoundarySites(found)} registered disables across ${Object.keys(found).length} files.`
 );

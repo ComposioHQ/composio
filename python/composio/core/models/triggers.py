@@ -5,6 +5,7 @@ import functools
 import hashlib
 import hmac
 import json
+import threading
 import time
 import traceback
 import typing as t
@@ -779,9 +780,26 @@ class TriggerSubscription(Resource):
             time.sleep(1)
 
     def stop(self) -> None:
-        """Stop the trigger listener."""
-        self._connection.disconnect()
+        """Stop the trigger listener.
+
+        ``_alive`` is cleared first so a main thread parked in
+        ``wait_forever`` unblocks immediately. The connection disconnect is
+        then run off the calling thread: ``pysher.Connection.disconnect`` does
+        ``socket.close(); join(timeout)`` on the websocket thread, but the
+        documented usage runs ``stop()`` from inside a trigger callback, which
+        pysher dispatches on that very websocket thread (``_handle_event``
+        blocks on the callback's ``future.result()``). Joining the thread from
+        a callback that runs on it deadlocks the whole process. Tearing the
+        connection down on a background thread breaks that reentrancy while
+        still ensuring the socket is closed.
+        """
         self._alive = False
+        thread = threading.Thread(
+            target=self._connection.disconnect,
+            name="composio-trigger-disconnect",
+            daemon=True,
+        )
+        thread.start()
 
     def restart(self) -> None:
         """Restart the subscription connection"""
@@ -864,18 +882,26 @@ class _SubcriptionBuilder(WithLogger):
         )
         pusher.connect()
 
-        # Wait for connection to get established
+        # Wait for connection to get established. On timeout, tear down the
+        # connection before raising: pysher's run loop reconnects every
+        # ``reconnect_interval`` until ``disconnect`` is called, so a plain
+        # raise would leak a websocket thread (and, if it eventually connects,
+        # silently subscribe a forgotten channel) for the life of the process.
         deadline = time.time() + timeout
-        while time.time() < deadline:
-            if not self.subscription.is_alive():
-                time.sleep(0.5)
-                continue
+        try:
+            while time.time() < deadline:
+                if not self.subscription.is_alive():
+                    time.sleep(0.5)
+                    continue
 
-            self.subscription._pusher = pusher  # pylint: disable=protected-access
-            return self.subscription
-        raise ComposioSDKTimeoutError(
-            "Timed out while waiting for trigger listener to be established"
-        )
+                self.subscription._pusher = pusher  # pylint: disable=protected-access
+                return self.subscription
+            raise ComposioSDKTimeoutError(
+                "Timed out while waiting for trigger listener to be established"
+            )
+        except Exception:
+            pusher.disconnect()
+            raise
 
 
 class Triggers(Resource):

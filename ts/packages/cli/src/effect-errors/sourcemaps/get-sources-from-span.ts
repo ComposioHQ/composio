@@ -3,12 +3,13 @@ import type { AnySpan, Span } from 'effect/Tracer';
 
 import { splitSpansAttributesByTypes } from 'effect-errors/logic/spans';
 
-import type { ErrorRelatedSources, RawErrorLocation } from './get-sources-from-map-file';
 import {
+  type ErrorRelatedSources,
   isErrorRelatedSources,
   isRawErrorLocation,
-  maybeMapSourcemaps,
-} from './maybe-map-sourcemaps';
+  type RawErrorLocation,
+} from './mapped-sources';
+import { maybeMapSourcemaps } from './maybe-map-sourcemaps';
 
 export const getSourcesFromSpan = ({
   span,

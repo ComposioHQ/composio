@@ -1,10 +1,8 @@
-import type { PlatformError } from '@effect/platform/Error';
 import type { FileSystem } from '@effect/platform/FileSystem';
 import type { Path } from '@effect/platform/Path';
 import { Effect } from 'effect';
 import { type Cause, isInterruptedOnly } from 'effect/Cause';
 
-import type { JsonParsingError } from 'effect-errors/dependencies/fs';
 import { captureErrorsFrom } from 'effect-errors/logic/errors';
 import {
   type ErrorLocation,
@@ -37,7 +35,7 @@ export const captureErrors = <E>(
   options: CaptureErrorsOptions = {
     stripCwd: true,
   }
-): Effect.Effect<CapturedErrors, PlatformError | JsonParsingError, FileSystem | Path> =>
+): Effect.Effect<CapturedErrors, never, FileSystem | Path> =>
   Effect.gen(function* () {
     if (isInterruptedOnly(cause)) {
       return {
