@@ -13,7 +13,7 @@ Custom MCP is experimental. Its setup flow, authentication options, and API cont
 
 This is different from [Custom Tools and Toolkits](/docs/extending-sessions/custom-tools-and-toolkits). Custom tools run inside your application. A custom MCP server runs outside Composio and exposes its tools over a public MCP endpoint.
 
-Today, register and sync the remote server in the dashboard. Then use one of these SDK flows:
+Register and sync the remote server in the dashboard, or use the experimental lifecycle API below. Then use one of these SDK flows:
 
 - **No auth:** Pass the custom toolkit slug when you create the session.
 - **API key or DCR OAuth:** Pass the toolkit slug and explicitly select its connected account.
@@ -122,6 +122,148 @@ Composio rejects the sync if the server returns more than 100 tools. It does not
 </Step>
 </Steps>
 
+## Manage Custom MCP through the API
+
+Use these endpoints when you need to automate registration, synchronization, or deletion. Authenticate each request with your Composio project API key.
+
+<Callout type="warn">
+These experimental endpoints aren't included in the public API reference or the TypeScript and Python SDKs yet. Their request and response formats may change.
+</Callout>
+
+### Add a server
+
+Call `POST /api/v3/custom/toolkits/upsert` with the server URL and its authentication scheme:
+
+<Tabs items={['No auth', 'API key', 'DCR OAuth']}>
+<Tab value="No auth">
+```bash
+curl --request POST \
+  --url https://backend.composio.dev/api/v3/custom/toolkits/upsert \
+  --header "x-api-key: $COMPOSIO_API_KEY" \
+  --header "Content-Type: application/json" \
+  --data '{
+    "slug": "ACME",
+    "toolkit_config": {
+      "name": "Acme",
+      "app_url": "https://mcp.example.com/mcp",
+      "auth_schemes": [
+        {
+          "mode": "NO_AUTH"
+        }
+      ]
+    }
+  }'
+```
+</Tab>
+<Tab value="API key">
+```bash
+curl --request POST \
+  --url https://backend.composio.dev/api/v3/custom/toolkits/upsert \
+  --header "x-api-key: $COMPOSIO_API_KEY" \
+  --header "Content-Type: application/json" \
+  --data '{
+    "slug": "ACME",
+    "toolkit_config": {
+      "name": "Acme",
+      "app_url": "https://mcp.example.com/mcp",
+      "auth_schemes": [
+        {
+          "mode": "API_KEY",
+          "headers": {
+            "Authorization": "Bearer {{generic_api_key}}"
+          }
+        }
+      ]
+    }
+  }'
+```
+
+`generic_api_key` is replaced with the credential stored on the connected account. You can use a different header name or value format, but at least one header value must contain `{{generic_api_key}}`.
+</Tab>
+<Tab value="DCR OAuth">
+```bash
+curl --request POST \
+  --url https://backend.composio.dev/api/v3/custom/toolkits/upsert \
+  --header "x-api-key: $COMPOSIO_API_KEY" \
+  --header "Content-Type: application/json" \
+  --data '{
+    "slug": "ACME",
+    "toolkit_config": {
+      "name": "Acme",
+      "app_url": "https://mcp.example.com/mcp",
+      "auth_schemes": [
+        {
+          "mode": "DCR_OAUTH",
+          "discovery_url": "https://mcp.example.com/.well-known/oauth-authorization-server"
+        }
+      ]
+    }
+  }'
+```
+</Tab>
+</Tabs>
+
+Composio adds the `CUSTOM_` prefix and returns the normalized toolkit slug:
+
+```json
+{
+  "slug": "CUSTOM_ACME"
+}
+```
+
+Registration is create-only for this endpoint. If the slug already exists, the request returns `409 Conflict`.
+
+No-auth servers sync automatically when you add them. For API-key and DCR OAuth servers, create and activate a connected account from the toolkit's dashboard page before syncing.
+
+### Sync tools
+
+Call `POST /api/v3/custom/toolkits/sync` to fetch the server's current tools. An authenticated server requires an active connected account from the same toolkit and project:
+
+```bash
+curl --request POST \
+  --url https://backend.composio.dev/api/v3/custom/toolkits/sync \
+  --header "x-api-key: $COMPOSIO_API_KEY" \
+  --header "Content-Type: application/json" \
+  --data '{
+    "slug": "CUSTOM_ACME",
+    "connected_account_id": "ca_custom_acme"
+  }'
+```
+
+For a no-auth server, omit `connected_account_id`. A successful sync returns the new toolkit version and the number of tools discovered:
+
+```json
+{
+  "slug": "CUSTOM_ACME",
+  "version": "20260728_00",
+  "synced_count": 12
+}
+```
+
+Run sync again whenever the remote server's tool definitions change. Each successful sync creates a toolkit version. If the server exposes more than 100 tools, the sync fails and the last successful version stays available.
+
+### Delete a server
+
+Call `DELETE /api/v3.1/custom/toolkits/{slug}`:
+
+```bash
+curl --request DELETE \
+  --url https://backend.composio.dev/api/v3.1/custom/toolkits/CUSTOM_ACME \
+  --header "x-api-key: $COMPOSIO_API_KEY"
+```
+
+```json
+{
+  "slug": "CUSTOM_ACME",
+  "deleted": true,
+  "revoke_job_ids": ["job_123"],
+  "auth_configs_soft_deleted": 1,
+  "connected_accounts_soft_deleted": 1
+}
+```
+
+Deletion removes the custom toolkit and its tools. It also revokes and removes the toolkit's auth configurations and connected accounts, so only delete a toolkit when you no longer need its existing connections.
+
 ## Supported authentication
 
 Choose the authentication mode that matches your server:
@@ -159,7 +301,7 @@ Custom MCP currently has these limitations:
 
 | Gap | What to do |
 | --- | --- |
-| The SDKs don't expose registration, sync, update, or deletion methods yet. | Manage the remote server from the dashboard, then use its toolkit slug through the SDK. |
+| The SDKs don't expose registration, sync, update, or deletion methods yet. | Use the dashboard or the experimental lifecycle endpoints above, then use the toolkit slug through the SDK. |
 | Composio doesn't host your server. Local and STDIO-only servers aren't supported. | Deploy the server at a public HTTPS endpoint before registering it. |
 | Authenticated servers don't automatically sync when a connection becomes active. | Create the connected account, then run **Sync** from the toolkit. |
 | Authenticated sessions don't reliably select a custom toolkit's connected account automatically. | Pass its ID through `connected_accounts` in Python or `connectedAccounts` in TypeScript. |
