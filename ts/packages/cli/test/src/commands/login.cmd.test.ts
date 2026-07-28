@@ -1,12 +1,14 @@
 import { describe, expect, layer } from '@effect/vitest';
 import { vi, afterEach } from 'vitest';
-import { Effect, Option } from 'effect';
+import { Console, Effect, Exit, Option } from 'effect';
 import { HelpDoc, ValidationError } from '@effect/cli';
 import path from 'node:path';
 import { FileSystem } from '@effect/platform';
 import { cli, MockConsole, TestLive } from 'test/__utils__';
+import { terminalUITestImpl } from 'test/__utils__/services/terminal-ui-test';
 import * as constants from 'src/constants';
 import { setupCacheDir } from 'src/effects/setup-cache-dir';
+import { getTerminalCapabilities, TerminalUI } from 'src/services/terminal-ui';
 import { ComposioUserContext } from 'src/services/user-context';
 
 const mockFetchResponse = (body: unknown, status = 200) =>
@@ -122,6 +124,49 @@ describe('CLI: composio login', () => {
         expect(output).not.toContain('Installed composio-cli skill');
       })
     );
+  });
+
+  // Regression: piping stdout must not reroute login. Prompting depends on
+  // stdin and stderr only, so `composio login | tee` has to behave exactly
+  // like an attended terminal login, not a headless one.
+  describe('login with stdout piped', () => {
+    const pipedStdoutUI = TerminalUI.of({
+      ...terminalUITestImpl,
+      capabilities: Effect.succeed(
+        getTerminalCapabilities({
+          stdin: { isTTY: true },
+          stdout: { isTTY: false },
+          stderr: { isTTY: true },
+        })
+      ),
+      // Entering the poll spinner proves login chose the interactive wait
+      // path; abort there so the test doesn't poll a fake session.
+      useMakeSpinner: (message, _use) =>
+        Console.log(`[spinner] ${message}`).pipe(
+          Effect.andThen(Effect.die(new Error('test: interactive poll loop entered')))
+        ),
+    });
+
+    layer(TestLive({ terminalUI: pipedStdoutUI }))(it => {
+      it.scoped(
+        '[When] stdout is piped but stdin and stderr are TTYs [Then] login stays interactive instead of going headless',
+        () =>
+          Effect.gen(function* () {
+            const exit = yield* Effect.exit(cli(['login', '--no-browser']));
+
+            const output = (yield* MockConsole.getLines({ stripAnsi: true })).join('\n');
+            // The interactive wait path was entered (poll spinner started)...
+            expect(output).toContain('[spinner] Waiting for login...');
+            expect(output).toContain('Please login using the following URL');
+            // ...and the headless/agent instructions path was NOT taken.
+            expect(output).not.toContain('Open this URL in your browser to log in:');
+            expect(output).not.toContain('hint: For agents:');
+            expect(output).not.toContain('Then run this command to complete login:');
+            // The exit fails only because the test stub aborts the poll loop.
+            expect(Exit.isFailure(exit)).toBe(true);
+          })
+      );
+    });
   });
 
   layer(TestLive())(it => {

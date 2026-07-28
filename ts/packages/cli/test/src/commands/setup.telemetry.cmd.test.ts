@@ -166,7 +166,7 @@ const decliningUI = TerminalUI.of({
     stdinIsTTY: false,
     stdoutIsTTY: false,
     stderrIsTTY: false,
-    isInteractive: true,
+    canPrompt: true,
     canDecorate: false,
   }),
   confirm: () => Effect.succeed(false),

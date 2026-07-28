@@ -17,7 +17,7 @@ const terminalUIWithConfirm = (confirmed: boolean) =>
       stdinIsTTY: true,
       stdoutIsTTY: true,
       stderrIsTTY: true,
-      isInteractive: true,
+      canPrompt: true,
       canDecorate: true,
     }),
     output: data => Console.log(data),

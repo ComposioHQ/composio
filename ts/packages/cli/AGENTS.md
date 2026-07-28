@@ -109,14 +109,21 @@ Follow the Unix convention of separating human-readable decoration from machine-
 - **stdout** — data only (`ui.output()`). Captured by pipes / `$(...)` / `> file`.
 - **stderr** — all decoration (Clack spinners, logs, notes, intro/outro). Visible in terminal, invisible in pipes.
 
+The three streams are **independent contracts**. Each capability depends only on the streams that actually serve it — there is deliberately no aggregate "interactive" flag (`TerminalCapabilities` in `src/services/terminal-ui.ts`):
+
+- **Prompting** (`canPrompt`) = `stdin.isTTY && stderr.isTTY`. stdin must accept input and stderr must display the Clack prompt. stdout is irrelevant: piping data must never change prompting or authentication behavior — `composio login | tee` behaves exactly like an attended login.
+- **Machine output** = `!stdout.isTTY`. `ui.output(data)` writes only when stdout is redirected (pipe, subshell, file), or when the caller passes `{ force: true }`. Redirecting stdin or stderr must never make data leak onto a visible stdout terminal.
+- **Decoration** (`canDecorate`) = `stderr.isTTY`. Spinners, logs, and notes only need stderr, so they still render when stdin or stdout is redirected.
+
 Rules:
 
-1. All `TerminalUI` methods **except `output()`** write to stderr via Clack's `{ output: process.stderr }`, and only in interactive mode.
-2. `ui.output(data)` writes to stdout **only when piped** (checked via `process.stdout.isTTY`).
-3. When stdout is piped, **all decoration is suppressed** — `composio whoami | pbcopy` is completely silent and clipboard gets the clean key.
-4. **Data commands** (whoami, version, login, generate, etc.) call both decoration (stderr) and `ui.output()` (stdout).
-5. **Action commands** (logout, upgrade) produce no stdout data — output is purely decorative.
-6. **Never** write data to stderr or decoration to stdout.
+1. All `TerminalUI` methods **except `output()`** write to stderr via Clack's `{ output: process.stderr }`, and only when stderr is a TTY (`canDecorate`).
+2. `ui.output(data)` writes to stdout **only when stdout is piped** (or with explicit `force`). No other stream participates in that decision.
+3. Prompts (`ui.confirm`, `ui.select`) run only when `canPrompt`; otherwise they fall back to their defaults without blocking.
+4. Piped stdout stays clean: `composio whoami | pbcopy` puts only the key in the clipboard — decoration still renders on the terminal via stderr, and is suppressed only when stderr itself is captured.
+5. **Data commands** (whoami, version, login, generate, etc.) call both decoration (stderr) and `ui.output()` (stdout).
+6. **Action commands** (logout, upgrade) produce no stdout data — output is purely decorative.
+7. **Never** write data to stderr or decoration to stdout, and never branch program behavior (auth paths, command flow) on stdout's TTY state.
 
 When adding a new command: ask "Does this produce a value scripts should capture?" — yes → `ui.output(value)` + `ui.log.*`/`ui.note()`. No → decoration only.
 

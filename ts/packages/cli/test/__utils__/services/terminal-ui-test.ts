@@ -12,7 +12,7 @@ export const terminalUITestImpl = TerminalUI.of({
     stdinIsTTY: false,
     stdoutIsTTY: false,
     stderrIsTTY: false,
-    isInteractive: false,
+    canPrompt: false,
     canDecorate: false,
   }),
   output: data => Console.log(data),

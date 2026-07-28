@@ -61,7 +61,7 @@ const RecordingTerminalUI = TerminalUI.of({
     stdinIsTTY: true,
     stdoutIsTTY: true,
     stderrIsTTY: true,
-    isInteractive: true,
+    canPrompt: true,
     canDecorate: true,
   }),
   output: (data, options) =>
