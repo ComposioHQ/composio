@@ -157,8 +157,10 @@ const getAnalyticsPaths = Effect.gen(function* () {
   return {
     analyticsDir,
     analyticsStatePath: path.join(analyticsDir, ANALYTICS_STATE_FILE_NAME),
-    userConfigPath: path.join(analyticsDir, constants.USER_CONFIG_FILE_NAME),
-    cliConfigPath: path.join(analyticsDir, constants.CLI_CONFIG_FILE_NAME),
+    // user_data.json and config.json live in the cache dir (setup-cache-dir.ts,
+    // cli-user-config.ts), which COMPOSIO_CACHE_DIR relocates away from ~/.composio.
+    userConfigPath: path.join(cacheDir, constants.USER_CONFIG_FILE_NAME),
+    cliConfigPath: path.join(cacheDir, constants.CLI_CONFIG_FILE_NAME),
     consumerShortTermCachePath: path.join(cacheDir, CONSUMER_SHORT_TERM_CACHE_FILE_NAME),
   };
 });

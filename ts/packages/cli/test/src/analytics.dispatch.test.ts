@@ -110,10 +110,8 @@ describe('CLI analytics dispatch', () => {
       return Effect.gen(function* () {
         const fs = yield* FileSystem.FileSystem;
         const path = yield* Path.Path;
-        const composioDir = path.join(home, '.composio');
-        yield* fs.makeDirectory(composioDir, { recursive: true });
         yield* fs.writeFileString(
-          path.join(composioDir, USER_CONFIG_FILE_NAME),
+          path.join(cacheDir, USER_CONFIG_FILE_NAME),
           JSON.stringify({ base_url: 'https://backend.example.test///' })
         );
         yield* fs.writeFileString(
@@ -739,6 +737,7 @@ describe('CLI analytics dispatch', () => {
       const home = tempy.temporaryDirectory();
       const scriptPath = `${home}/composio.ts`;
       enableTelemetry();
+      vi.stubEnv('COMPOSIO_CACHE_DIR', `${home}/.composio`);
       process.argv[1] = scriptPath;
 
       return Effect.gen(function* () {
@@ -757,6 +756,33 @@ describe('CLI analytics dispatch', () => {
         const args = childProcessMocks.spawn.mock.calls[0]![1] as string[];
         const payload = decodeWorkerPayload<{ properties?: { org_id?: string } }>(args[2]!);
         expect(payload.properties?.org_id).toBe('org_acme');
+      }).pipe(Effect.provide(makePlatformLayer(home)));
+    });
+
+    it.effect('reads the user config from COMPOSIO_CACHE_DIR rather than the homedir', () => {
+      const home = tempy.temporaryDirectory();
+      const cacheDir = tempy.temporaryDirectory();
+      const scriptPath = `${home}/composio.ts`;
+      enableTelemetry();
+      vi.stubEnv('COMPOSIO_CACHE_DIR', cacheDir);
+      process.argv[1] = scriptPath;
+
+      return Effect.gen(function* () {
+        const fs = yield* FileSystem.FileSystem;
+        const path = yield* Path.Path;
+        yield* fs.writeFileString(scriptPath, '');
+        // The user config exists only in the relocated cache dir; ~/.composio
+        // never receives a copy.
+        yield* fs.writeFileString(
+          path.join(cacheDir, USER_CONFIG_FILE_NAME),
+          JSON.stringify({ api_key: 'uak_test', org_id: 'org_cache_dir' })
+        );
+
+        yield* trackCliEventEffect({ name: 'producer_event' });
+
+        const args = childProcessMocks.spawn.mock.calls[0]![1] as string[];
+        const payload = decodeWorkerPayload<{ properties?: { org_id?: string } }>(args[2]!);
+        expect(payload.properties?.org_id).toBe('org_cache_dir');
       }).pipe(Effect.provide(makePlatformLayer(home)));
     });
 
@@ -823,6 +849,7 @@ describe('CLI analytics dispatch', () => {
       const scriptPath = `${home}/composio.ts`;
       // No env key and no plaintext api_key on disk -> no fingerprint.
       enableTelemetry('');
+      vi.stubEnv('COMPOSIO_CACHE_DIR', `${home}/.composio`);
       process.argv[1] = scriptPath;
 
       return Effect.gen(function* () {
@@ -861,6 +888,7 @@ describe('CLI analytics dispatch', () => {
       const home = tempy.temporaryDirectory();
       const scriptPath = `${home}/composio.ts`;
       enableTelemetry('');
+      vi.stubEnv('COMPOSIO_CACHE_DIR', `${home}/.composio`);
       process.argv[1] = scriptPath;
 
       return Effect.gen(function* () {
