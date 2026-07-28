@@ -28,6 +28,9 @@ class ComposioError(Exception):
         self.message = message
         self.delegate = delegate
 
+    def __str__(self) -> str:
+        return self.message
+
 
 class NotFoundError(ComposioError):
     pass
