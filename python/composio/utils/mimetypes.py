@@ -507,7 +507,7 @@ _types = {
 
 
 def guess(file: t.Union[str, Path]) -> str:
-    return _types.get(Path(file).suffix, _default)
+    return _types.get(Path(file).suffix.lower(), _default)
 
 
 # MIME type -> extension (no leading dot). Used when deriving filenames from

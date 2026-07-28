@@ -19,8 +19,15 @@ jobs:
     permissions:
       contents: write
       pull-requests: write
+      issues: write
     env:
-      COMPOSIO_API_KEY: ${{ secrets.COMPOSIO_API_KEY }}
+      # Deliberately NOT secrets.COMPOSIO_API_KEY. That secret is shared with
+      # ts.test-e2e, py.test, py.check and ts.examples-nightly, all of which run
+      # against staging — it is a staging-scoped credential. This job is the only
+      # consumer that must reach production (scripts/production-api.mjs rejects any
+      # non-production base URL), so it needs its own production key. Pointing the
+      # shared secret at production instead would break the staging suites.
+      COMPOSIO_API_KEY: ${{ secrets.COMPOSIO_DOCS_API_KEY }}
 
     steps:
       - name: Generate GitHub App token
@@ -31,7 +38,7 @@ jobs:
           private-key: ${{ secrets.RELEASE_BOT_APP_PRIVATE_KEY }}
 
       - name: Checkout repository
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           token: ${{ steps.app-token.outputs.token }}
 
@@ -55,7 +62,7 @@ jobs:
       # generators default to the production API (docs/scripts/production-api.mjs).
       # Previously this step pointed the fetch at STAGING, which published staging
       # hosts (and unreleased content) into the committed docs.
-      # NOTE: requires COMPOSIO_API_KEY to have PRODUCTION read access.
+      # NOTE: requires COMPOSIO_DOCS_API_KEY to have PRODUCTION read access.
 
       - name: Cache bun dependencies
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
@@ -84,14 +91,14 @@ jobs:
         id: changes
         run: |
           cd ..
-          git add -N docs/public/data/ docs/public/openapi.json docs/public/openapi-v3.json docs/content/reference/api-reference/ docs/content/reference/v3/api-reference/ docs/content/toolkits/meta-tools/ 2>/dev/null || true
-          if git diff --quiet docs/public/data/ docs/public/openapi.json docs/public/openapi-v3.json docs/content/reference/api-reference/ docs/content/reference/v3/api-reference/ docs/content/toolkits/meta-tools/ 2>/dev/null; then
+          git add -N docs/public/data/ docs/public/openapi.json docs/public/openapi-v3.json docs/public/openapi-webhooks.json docs/content/reference/api-reference/ docs/content/reference/v3/api-reference/ docs/content/toolkits/meta-tools/ 2>/dev/null || true
+          if git diff --quiet docs/public/data/ docs/public/openapi.json docs/public/openapi-v3.json docs/public/openapi-webhooks.json docs/content/reference/api-reference/ docs/content/reference/v3/api-reference/ docs/content/toolkits/meta-tools/ 2>/dev/null; then
             echo "has_changes=false" >> "$GITHUB_OUTPUT"
             echo "No changes detected"
           else
             echo "has_changes=true" >> "$GITHUB_OUTPUT"
             echo "Changes detected:"
-            git diff --stat docs/public/data/ docs/public/openapi.json docs/public/openapi-v3.json docs/content/reference/api-reference/ docs/content/reference/v3/api-reference/ docs/content/toolkits/meta-tools/ 2>/dev/null || true
+            git diff --stat docs/public/data/ docs/public/openapi.json docs/public/openapi-v3.json docs/public/openapi-webhooks.json docs/content/reference/api-reference/ docs/content/reference/v3/api-reference/ docs/content/toolkits/meta-tools/ 2>/dev/null || true
           fi
 
       - name: Create Pull Request
@@ -108,7 +115,7 @@ jobs:
 
             ## What changed
             - **Toolkit catalog** (`docs/public/data/toolkits.json`, `toolkits-list.json`) — refreshed list of available toolkits, auth schemes, and tools from the backend API
-            - **OpenAPI specs** (`docs/public/openapi.json`, `docs/public/openapi-v3.json`) — latest v3.1 and v3.0 API specifications fetched from production
+            - **OpenAPI specs** (`docs/public/openapi.json`, `docs/public/openapi-v3.json`, `docs/public/openapi-webhooks.json`) — latest v3.1 and v3.0 API specifications plus the webhook-events spec, fetched from production
             - **API reference pages** (`docs/content/reference/api-reference/`, `docs/content/reference/v3/api-reference/`) — regenerated index pages for both API versions
             - **Meta tools reference** (`docs/public/data/meta-tools.json`, `docs/content/toolkits/meta-tools/*.mdx`) — updated meta tool schemas and reference docs
           branch: docs/auto-update-data
@@ -117,6 +124,7 @@ jobs:
             docs/public/data/
             docs/public/openapi.json
             docs/public/openapi-v3.json
+            docs/public/openapi-webhooks.json
             docs/content/reference/api-reference/
             docs/content/reference/v3/api-reference/
             docs/content/toolkits/meta-tools/
@@ -131,3 +139,53 @@ jobs:
         run: |
           gh pr edit "$PR_NUMBER" --add-reviewer "$AUTHOR" || \
           gh pr edit "$PR_NUMBER" --add-reviewer "Sushmithamallesh"
+
+      # A silent failure here is invisible: the workflow stops refreshing
+      # public/data/toolkits.json, the docs site keeps building from the last
+      # good commit, and nothing 500s — new toolkits simply 404. That is how a
+      # credential failure went unnoticed for 60 consecutive runs. File one
+      # tracking issue and leave it open until someone fixes the cause.
+      - name: Open tracking issue on failure
+        if: failure()
+        continue-on-error: true
+        # Override the job-level `./docs` default. That path only exists after
+        # checkout, so a failure before it (e.g. the app-token step) would leave
+        # the runner unable to start this shell — and continue-on-error would
+        # swallow that, losing the alert for precisely the earliest failures.
+        working-directory: ${{ github.workspace }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          LABEL: docs-data-sync-failure
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          EVENT_NAME: ${{ github.event_name }}
+        run: |
+          gh label create "$LABEL" \
+            --color B60205 \
+            --description "Scheduled docs data sync is failing" 2>/dev/null || true
+
+          existing=$(gh issue list --label "$LABEL" --state open --limit 1 --json number --jq '.[0].number // empty')
+          if [ -n "$existing" ]; then
+            echo "Issue #$existing is already open for this failure; not filing a duplicate."
+            exit 0
+          fi
+
+          gh issue create \
+            --title "Docs data sync is failing" \
+            --label "$LABEL" \
+            --body "The scheduled \`Docs - Update Data\` workflow failed.
+
+          - Run: $RUN_URL
+          - Trigger: \`$EVENT_NAME\`
+
+          **Impact:** while this is red, \`docs/public/data/toolkits.json\` stops being
+          refreshed. docs.composio.dev/toolkits is statically generated from that file, so
+          toolkits added to production after the last successful run have no page and
+          return 404. The site stays up, which is why this fails silently.
+
+          **First thing to check:** the \`COMPOSIO_DOCS_API_KEY\` secret must have
+          **production** read access against \`backend.composio.dev\`. Note this job does
+          not use the shared \`COMPOSIO_API_KEY\`, which is staging-scoped.
+
+          This issue is filed once and left open until the cause is fixed; it will not be
+          re-filed on every run."

@@ -4,6 +4,7 @@ import base64
 import hashlib
 import hmac
 import json
+import threading
 import time
 from datetime import datetime, timezone
 from unittest.mock import Mock, patch
@@ -15,9 +16,11 @@ from composio_client import NotFoundError, omit
 from composio import exceptions
 from composio.core.models.triggers import (
     _MAX_LOGGED_FRAME_CHARS,
+    ComposioSDKTimeoutError,
     Triggers,
     TriggerSubscription,
     WebhookVersion,
+    _SubcriptionBuilder,
     _truncate_frame,
 )
 
@@ -1584,3 +1587,130 @@ class TestTriggerSubscriptionParsing:
         assert len(truncated) < len(long)
         assert truncated.startswith("y" * _MAX_LOGGED_FRAME_CHARS)
         assert str(len(long)) in truncated
+
+
+class TestTriggerSubscriptionStop:
+    """Tests for TriggerSubscription.stop lifecycle handling."""
+
+    @pytest.fixture
+    def subscription(self):
+        """Create a TriggerSubscription with a mock client."""
+        sub = TriggerSubscription(client=Mock())
+        sub._alive = True
+        return sub
+
+    def test_stop_clears_alive_synchronously(self, subscription):
+        """``_alive`` is cleared before ``stop`` returns, not after disconnect.
+
+        A main thread parked in ``wait_forever`` checks ``_alive`` every
+        second; clearing it synchronously (rather than after a potentially
+        blocking ``disconnect``) lets that loop exit promptly.
+        """
+        disconnect_started = threading.Event()
+
+        def blocking_disconnect():
+            disconnect_started.set()
+            # Block so we can prove _alive was cleared without waiting on
+            # the disconnect.
+            threading.Event().wait(timeout=5)
+
+        subscription._connection = Mock()
+        subscription._connection.disconnect = blocking_disconnect
+
+        subscription.stop()
+
+        # _alive is False the moment stop() returns, even though disconnect
+        # is still running in the background.
+        assert subscription.is_alive() is False
+        assert disconnect_started.wait(timeout=2)
+
+    def test_stop_does_not_block_on_slow_disconnect(self, subscription):
+        """``stop()`` returns even if ``disconnect`` would block forever.
+
+        pysher's ``Connection.disconnect`` joins the websocket thread. When
+        ``stop()`` is called from a callback that pysher dispatches on that
+        same thread, the join deadlocks. Running the disconnect on a daemon
+        thread breaks the reentrancy: ``stop`` returns immediately even when
+        ``disconnect`` never completes.
+        """
+        started = threading.Event()
+        never_set = threading.Event()
+
+        def blocking_disconnect():
+            started.set()
+            # Simulate pysher joining a thread that never finishes (the
+            # deadlock state from the bug report).
+            never_set.wait(timeout=5)
+
+        subscription._connection = Mock()
+        subscription._connection.disconnect = blocking_disconnect
+
+        # If stop() were to call disconnect() inline it would block here.
+        subscription.stop()
+
+        # stop() returned control and the disconnect is running in the
+        # background.
+        assert subscription.is_alive() is False
+        assert started.wait(timeout=2)
+
+
+class TestSubscriptionBuilderConnectTimeout:
+    """Tests for _SubcriptionBuilder.connect timeout teardown."""
+
+    def _make_builder(self, pusher: Mock) -> _SubcriptionBuilder:
+        """Build a _SubcriptionBuilder with a patched pusher factory."""
+        client = Mock()
+        client.base_url = "https://api.example.com"
+        with patch.object(
+            _SubcriptionBuilder, "_get_pusher_instance", return_value=pusher
+        ):
+            b = _SubcriptionBuilder(client=client)
+        b.subscription = Mock()
+        b.subscription.is_alive.return_value = False
+        b.internal = Mock()
+        b.internal.get_sdk_realtime_credentials.return_value = Mock(
+            project_id="p", pusher_key="k", pusher_cluster="c"
+        )
+        b._get_connection_handler = Mock(  # type: ignore[method-assign]
+            return_value=lambda *a, **k: None
+        )
+        return b
+
+    def test_connect_disconnects_pusher_on_timeout(self):
+        """On timeout, the partially-connected pusher is torn down.
+
+        pysher's connection loop redials every ``reconnect_interval`` until
+        ``disconnect`` is called. If ``connect`` raises without disconnecting,
+        each timed-out attempt leaks a websocket thread for the life of the
+        process. The fix wraps the wait loop in try/except so the timeout
+        path disconnects before re-raising.
+        """
+        pusher = Mock()
+        builder = self._make_builder(pusher)
+        # subscription.is_alive() returns False, so the wait loop never
+        # returns early -> the deadline elapses -> timeout path runs.
+        builder.subscription.is_alive.return_value = False
+
+        with (
+            patch.object(
+                _SubcriptionBuilder, "_get_pusher_instance", return_value=pusher
+            ),
+            pytest.raises(ComposioSDKTimeoutError),
+        ):
+            builder.connect(timeout=0.1)
+
+        pusher.disconnect.assert_called_once()
+
+    def test_connect_returns_subscription_without_disconnecting(self):
+        """On success, the pusher stays connected and is attached to the sub."""
+        pusher = Mock()
+        builder = self._make_builder(pusher)
+        builder.subscription.is_alive.return_value = True
+
+        with patch.object(
+            _SubcriptionBuilder, "_get_pusher_instance", return_value=pusher
+        ):
+            result = builder.connect(timeout=2.0)
+
+        assert result is builder.subscription
+        pusher.disconnect.assert_not_called()
