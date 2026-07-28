@@ -18,15 +18,14 @@ export const APIPage = createOpenAPIPage({
       // Skip rendering the shared Error schema on error responses -
       // the status code and description are shown by the accordion already
       // options.root can be boolean for simple schemas, only check refs for objects
-      const ref =
-        typeof options.root === 'object'
-          ? getRawRef(options.root)
-          : null;
+      const ref = typeof options.root === 'object' ? getRawRef(options.root) : null;
       if (ref === '#/components/schemas/Error') return null;
 
       const generated = generateSchemaData(
         {
-          root: options.root,
+          // Fumadocs' public type permits non-string `type` values even though
+          // JSON Schema does not; the renderer's local type keeps that contract strict.
+          root: options.root as Parameters<typeof generateSchemaData>[0]['root'],
           readOnly: options.readOnly,
           writeOnly: options.writeOnly,
         },
@@ -90,5 +89,5 @@ function resolveRenderMarkdown(ctx: MarkdownRenderSource): (text: string) => Rea
     // eslint-disable-next-line react/display-name -- render callback, never mounted as a component
     return (text: string) => createElement(Markdown, { md: text });
   }
-  return ctx.renderMarkdown ?? ctx._default_processMarkdown ?? ((text) => text);
+  return ctx.renderMarkdown ?? ctx._default_processMarkdown ?? (text => text);
 }

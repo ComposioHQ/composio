@@ -4,10 +4,13 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { CustomSchemaUI } from '../../components/custom-schema-ui';
 import { generateSchemaData } from '../../components/schema-generator';
 
+type TestSchema = Parameters<typeof generateSchemaData>[0]['root'];
+type TestSchemaObject = Exclude<TestSchema, boolean>;
+
 // Reference Objects must be read through the document resolver while retaining
 // their raw pointer as the stable schema identity.
 
-const components: Record<string, unknown> = {
+const components: Record<string, TestSchemaObject> = {
   '#/components/schemas/User': {
     type: 'object',
     required: ['id'],
@@ -27,14 +30,16 @@ const components: Record<string, unknown> = {
 
 // Mirrors ctx.schema.resolve from fumadocs: shallowly resolves a Reference
 // Object and merges sibling keywords; non-references pass through unchanged.
-const resolve = (node: any): any => {
-  if (!node || typeof node !== 'object' || typeof node.$ref !== 'string') return node;
+const resolve = (node: TestSchema): TestSchema => {
+  if (typeof node !== 'object' || !node.$ref) return node;
   const { $ref, ...siblings } = node;
-  return { ...(components[$ref] as object), ...siblings };
+  if (typeof $ref !== 'string') return node;
+  const target = components[$ref];
+  return { ...target, ...siblings };
 };
 
-const getRawRef = (value: any): string | undefined =>
-  value && typeof value === 'object' && typeof value.$ref === 'string' ? value.$ref : undefined;
+const getRawRef = (value: object): string | undefined =>
+  '$ref' in value && typeof value.$ref === 'string' ? value.$ref : undefined;
 
 const ctx = { renderMarkdown: (text: string) => text, schema: { getRawRef, resolve } };
 

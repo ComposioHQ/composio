@@ -6,7 +6,7 @@
  * self-contained, the original document is returned instead.
  */
 
-// The document shape is spec-driven, so `any` is deliberate throughout.
+import type { OpenAPIPageProps } from 'fumadocs-openapi/ui';
 
 export interface PageOperation {
   path: string;
@@ -18,35 +18,32 @@ export interface PageWebhook {
   method: string;
 }
 
-const HTTP_METHODS = new Set([
-  'get',
-  'put',
-  'post',
-  'delete',
-  'options',
-  'head',
-  'patch',
-  'trace',
-]);
+const HTTP_METHODS = new Set(['get', 'put', 'post', 'delete', 'options', 'head', 'patch', 'trace']);
 
 // Path-item keys that must travel with a kept operation.
 const SHARED_PATH_ITEM_KEYS = ['parameters', 'servers', 'summary', 'description'];
+
+interface SliceableDocument {
+  paths?: Record<string, object | undefined>;
+  webhooks?: Record<string, object | undefined>;
+  components?: {
+    securitySchemes?: Record<string, unknown>;
+  };
+}
 
 function decodePointerSegment(segment: string): string {
   return segment.replace(/~1/g, '/').replace(/~0/g, '~');
 }
 
-function resolvePointer(document: any, ref: string): unknown {
-  return ref
-    .slice(2)
-    .split('/')
-    .reduce<any>(
-      (node, segment) =>
-        node === null || typeof node !== 'object'
-          ? undefined
-          : node[decodePointerSegment(segment)],
-      document
-    );
+function resolvePointer(document: unknown, ref: string): unknown {
+  let node = document;
+
+  for (const segment of ref.slice(2).split('/')) {
+    if (node === null || typeof node !== 'object' || Array.isArray(node)) return undefined;
+    node = (node as Record<string, unknown>)[decodePointerSegment(segment)];
+  }
+
+  return node;
 }
 
 /**
@@ -55,7 +52,7 @@ function resolvePointer(document: any, ref: string): unknown {
  * is found, signalling the caller to keep the whole document.
  */
 function collectComponentRefs(
-  document: any,
+  document: unknown,
   node: unknown,
   found: Set<string>
 ): Set<string> | null {
@@ -68,7 +65,7 @@ function collectComponentRefs(
 
   if (node === null || typeof node !== 'object') return found;
 
-  for (const [key, value] of Object.entries(node as Record<string, unknown>)) {
+  for (const [key, value] of Object.entries(node)) {
     if (key === '$ref' && typeof value === 'string') {
       // External references are resolved before bundling; leave them alone.
       if (!value.startsWith('#/')) continue;
@@ -89,13 +86,13 @@ function collectComponentRefs(
 }
 
 function pickOperations(
-  pathItem: any,
+  pathItem: object,
   methods: Set<string>
 ): Record<string, unknown> | undefined {
   const kept: Record<string, unknown> = {};
   let matched = false;
 
-  for (const [key, value] of Object.entries<any>(pathItem)) {
+  for (const [key, value] of Object.entries(pathItem)) {
     if (HTTP_METHODS.has(key.toLowerCase())) {
       if (!methods.has(key.toLowerCase())) continue;
       kept[key] = value;
@@ -122,17 +119,17 @@ function groupByKey<T extends { method: string }>(
   return grouped;
 }
 
-export function sliceDocumentForPage(
-  bundled: any,
+export function sliceDocumentForPage<T extends object>(
+  bundled: T,
   operations: PageOperation[] = [],
   webhooks: PageWebhook[] = []
-): any {
-  if (!bundled || typeof bundled !== 'object') return bundled;
+): T {
   if (operations.length === 0 && webhooks.length === 0) return bundled;
 
+  const document = bundled as T & SliceableDocument;
   const paths: Record<string, unknown> = {};
   for (const [path, methods] of groupByKey(operations, op => op.path)) {
-    const pathItem = bundled.paths?.[path];
+    const pathItem = document.paths?.[path];
     if (!pathItem) return bundled; // Unexpected shape -- do not risk a partial document.
     const kept = pickOperations(pathItem, methods);
     if (!kept) return bundled;
@@ -141,7 +138,7 @@ export function sliceDocumentForPage(
 
   const keptWebhooks: Record<string, unknown> = {};
   for (const [name, methods] of groupByKey(webhooks, hook => hook.name)) {
-    const webhookItem = bundled.webhooks?.[name];
+    const webhookItem = document.webhooks?.[name];
     if (!webhookItem) return bundled;
     const kept = pickOperations(webhookItem, methods);
     if (!kept) return bundled;
@@ -163,31 +160,30 @@ export function sliceDocumentForPage(
 
   // Security requirements name schemes directly rather than via `$ref`, so the
   // reachability walk above never sees them.
-  if (bundled.components?.securitySchemes) {
-    components.securitySchemes = bundled.components.securitySchemes;
+  if (document.components?.securitySchemes) {
+    components.securitySchemes = document.components.securitySchemes;
   }
 
   const sliced: Record<string, unknown> = { ...bundled, paths };
   if (Object.keys(components).length > 0) sliced.components = components;
   else delete sliced.components;
-  if (bundled.webhooks) sliced.webhooks = keptWebhooks;
+  if (document.webhooks) sliced.webhooks = keptWebhooks;
 
-  return sliced;
+  return sliced as T;
 }
 
 /**
  * Applies {@link sliceDocumentForPage} to fumadocs' page props, leaving any
  * other props shape (for example the preloaded variant) untouched.
  */
-export function sliceApiPageProps<T extends Record<string, any>>(props: T): T {
-  const bundled = props?.payload?.bundled;
-  if (!bundled) return props;
+export function sliceApiPageProps<T extends OpenAPIPageProps>(props: T): T {
+  if (!('payload' in props)) return props;
 
   return {
     ...props,
     payload: {
       ...props.payload,
-      bundled: sliceDocumentForPage(bundled, props.operations, props.webhooks),
+      bundled: sliceDocumentForPage(props.payload.bundled, props.operations, props.webhooks),
     },
-  };
+  } as T;
 }
