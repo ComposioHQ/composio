@@ -15,7 +15,7 @@
 
 ### Patch Changes
 
-- Fix `composio listen` crashing with `TypeError: Object is not a constructor` in compiled release binaries (issue #3918). Bun's bundler exposes the CJS `pusher-js` constructor in different places depending on build target (`module.default.default`, or a named `Pusher` export on the default namespace on bun-linux-x64) instead of `module.default`; the realtime service now probes all observed interop shapes and fails with a typed error if none is callable.
+- Fix `composio listen` crashing with `TypeError: Object is not a constructor` in compiled release binaries (issue #3918). pusher-js 8.5.0 exports a namespace object (`module.exports = { Pusher }`) instead of the constructor, so the dynamic import's `.default` is not callable under Node or Bun; the realtime service now probes every observed interop shape (including the named `Pusher` export), constructs the client inside `Effect.try`, and fails with a typed error instead of crashing.
 - Make multi-account selection a stable CLI feature: `execute`, `listen`, and `link --alias` no longer honor the old experimental toggle; `proxy` now accepts `--account <alias|word_id|connected-account-id>`; and duplicate-alias link errors explain how to select the existing account.
 - 8467efd: Fix `composio whoami` reporting the API key's home organization after `composio orgs switch`. Session info requests now forward the selected global organization.
 - 5f004ff: Drop `COMPOSIO_UPSERT_RECIPE` and `COMPOSIO_GET_RECIPE` from the CLI meta-tool list. These slugs were removed from `@composio/client` (alpha.74), so listing them broke the type-checked CLI build.

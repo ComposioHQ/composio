@@ -5,8 +5,9 @@ import { resolvePusherConstructor } from 'src/services/triggers-realtime';
 /**
  * Regression tests for issue #3918: `composio listen` crashed with
  * `TypeError: Object is not a constructor` in compiled release binaries
- * because the Bun bundler's CJS interop exposes the pusher-js constructor at
- * `module.default.default` instead of `module.default`.
+ * because pusher-js 8.5.0 exports a namespace object
+ * (`module.exports = { Pusher }`), so the dynamic import's `.default` is not
+ * the constructor.
  */
 describe('resolvePusherConstructor', () => {
   class FakePusher {}
@@ -15,7 +16,7 @@ describe('resolvePusherConstructor', () => {
     expect(resolvePusherConstructor({ default: FakePusher })).toEqual(Option.some(FakePusher));
   });
 
-  it('resolves the constructor from `module.default.default` (Bun-bundled binary interop, issue #3918)', () => {
+  it('resolves the constructor from `module.default.default` (defensive double-wrapped interop)', () => {
     expect(resolvePusherConstructor({ default: { default: FakePusher } })).toEqual(
       Option.some(FakePusher)
     );
@@ -30,7 +31,7 @@ describe('resolvePusherConstructor', () => {
     expect(resolvePusherConstructor(FakePusher)).toEqual(Option.some(FakePusher));
   });
 
-  it('resolves a named `Pusher` export on the default namespace (bun-linux-x64 compiled interop, issue #3918)', () => {
+  it('resolves a named `Pusher` export on the default namespace (pusher-js 8.5.0 shape, issue #3918)', () => {
     expect(
       resolvePusherConstructor({ default: { Pusher: FakePusher }, Pusher: FakePusher })
     ).toEqual(Option.some(FakePusher));
