@@ -343,7 +343,16 @@ function postProcessSpec(spec) {
   }
   // fumadocs-openapi only generates pages for operations whose tags are
   // declared top-level; the backend generator omits some (e.g. Projects).
+  const declaredUpstream = new Set((spec.tags ?? []).map(tag => tag.name));
   declareOperationTags(spec);
+  const addedTags = (spec.tags ?? []).filter(tag => !declaredUpstream.has(tag.name));
+  if (addedTags.length > 0) {
+    console.warn(
+      `WARN: upstream spec uses tags missing from its top-level tags array: ${addedTags
+        .map(tag => tag.name)
+        .join(', ')}. Declared them automatically; the backend generator should emit them.`
+    );
+  }
 
   removeCookieAuthentication(spec);
   normalizeLargeObjectUnions(spec);
