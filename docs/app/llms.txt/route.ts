@@ -92,7 +92,6 @@ function walkPageTree(nodes: TreeNode[], depth = 2): string {
   return lines.join('\n').replace(/\n{3,}/g, '\n\n').trim();
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function formatPage(page: any) {
   return `- https://docs.composio.dev${page.url}.md`;
 }

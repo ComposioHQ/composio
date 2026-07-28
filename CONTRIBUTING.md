@@ -158,7 +158,7 @@ truly unreferenced before deleting, and suppress confirmed false positives via
 3. Use named exports for public APIs unless the local package pattern says otherwise.
 4. Keep public API changes typed and documented with TSDoc.
 5. Add focused tests for new behavior and bug fixes.
-6. Use ESLint and Prettier through the repo scripts.
+6. Use Oxlint and Prettier through the repo scripts.
 7. Keep generated or vendored code out of manual edits unless the package explicitly owns that output.
 
 ### Python

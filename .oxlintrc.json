@@ -19,6 +19,7 @@
     "**/__fixtures__/**",
     "**/fixtures/**",
     "**/__mocks__/**",
+    // The docs site has its own Bun dependency tree and nested oxlint config.
     "docs/**",
     "ts/vendor/**",
     "ts/packages/cli-local-tools/vendor/**",

@@ -113,12 +113,10 @@ function orderDocPages(pages: PageLike[], treeNodes: TreeNode[]): PageLike[] {
   });
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function getTextForPages(pages: PageLike[]) {
   return Promise.all(
     pages.map(async (page) => {
       try {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         return await getLLMText(page as any, { includeFooter: false, includeGuardrails: false });
       } catch {
         // Graceful fallback if getText fails
