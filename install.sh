@@ -420,7 +420,7 @@ fi
 if [[ $install_agent = true ]]; then
     echo
     info "Setting up Composio agent login..."
-    if ! "$exe" login --agent --no-skill-install; then
+    if ! COMPOSIO_CLI_INVOCATION_ORIGIN=installer "$exe" login --agent --no-skill-install; then
         error 'Failed to sign up/log in as a Composio agent. If this CLI is already signed in as a regular user, run `composio logout` and then `composio signup` or `composio agent login <composio_agent_key>`.'
     fi
 fi

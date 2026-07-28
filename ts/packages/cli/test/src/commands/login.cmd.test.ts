@@ -9,7 +9,12 @@ import { terminalUITestImpl } from 'test/__utils__/services/terminal-ui-test';
 import * as constants from 'src/constants';
 import { setupCacheDir } from 'src/effects/setup-cache-dir';
 import { getTerminalCapabilities, TerminalUI } from 'src/services/terminal-ui';
+import { writeStoredAgentIdentity } from 'src/services/agents';
 import { ComposioUserContext } from 'src/services/user-context';
+
+vi.mock('open', () => ({
+  default: vi.fn(async () => undefined),
+}));
 
 const analyticsMocks = vi.hoisted(() => ({
   linkCalls: [] as Array<{ apolloUserId: string; loggedInAtLinkTime: boolean }>,
@@ -36,24 +41,47 @@ const mockFetchResponse = (body: unknown, status = 200) =>
     headers: { 'Content-Type': 'application/json' },
   });
 
-const setTtyState = (state: { stdin: boolean; stdout: boolean; stderr: boolean }) => {
-  const descriptors = {
-    stdin: Object.getOwnPropertyDescriptor(process.stdin, 'isTTY'),
-    stdout: Object.getOwnPropertyDescriptor(process.stdout, 'isTTY'),
-    stderr: Object.getOwnPropertyDescriptor(process.stderr, 'isTTY'),
-  };
-  Object.defineProperty(process.stdin, 'isTTY', { configurable: true, value: state.stdin });
-  Object.defineProperty(process.stdout, 'isTTY', { configurable: true, value: state.stdout });
-  Object.defineProperty(process.stderr, 'isTTY', { configurable: true, value: state.stderr });
-  return () => {
-    if (descriptors.stdin) Object.defineProperty(process.stdin, 'isTTY', descriptors.stdin);
-    else delete (process.stdin as { isTTY?: boolean }).isTTY;
-    if (descriptors.stdout) Object.defineProperty(process.stdout, 'isTTY', descriptors.stdout);
-    else delete (process.stdout as { isTTY?: boolean }).isTTY;
-    if (descriptors.stderr) Object.defineProperty(process.stderr, 'isTTY', descriptors.stderr);
-    else delete (process.stderr as { isTTY?: boolean }).isTTY;
-  };
+const requestUrl = (requestInput: RequestInfo | URL): string =>
+  typeof requestInput === 'string'
+    ? requestInput
+    : requestInput instanceof URL
+      ? requestInput.toString()
+      : requestInput.url;
+
+const storedAgentIdentity = {
+  status: 'READY',
+  slug: 'test-agent',
+  email: 'test-agent@agent.composio.ai',
+  composio_agent_key: 'cak_test_agent',
+  composio: {
+    member_id: 'mem_agent',
+    org_id: 'org_agent',
+    project_id: 'proj_agent',
+    user_api_key: 'uak_agent',
+  },
 };
+
+const terminalUIWithTtyState = (state: {
+  readonly stdin: boolean;
+  readonly stdout: boolean;
+  readonly stderr: boolean;
+}) =>
+  TerminalUI.of({
+    ...terminalUITestImpl,
+    capabilities: Effect.succeed(
+      getTerminalCapabilities({
+        stdin: { isTTY: state.stdin },
+        stdout: { isTTY: state.stdout },
+        stderr: { isTTY: state.stderr },
+      })
+    ),
+  });
+
+const headlessStdinUI = terminalUIWithTtyState({
+  stdin: false,
+  stdout: false,
+  stderr: false,
+});
 
 // ── Tests ────────────────────────────────────────────────────────────────────
 
@@ -105,15 +133,10 @@ describe('CLI: composio login', () => {
     );
   });
 
-  layer(TestLive())(it => {
+  layer(TestLive({ terminalUI: headlessStdinUI }))(it => {
     it.scoped('[When] stdin is non-interactive [Then] login prints agent instructions', () =>
       Effect.gen(function* () {
-        const restoreTty = setTtyState({ stdin: false, stdout: true, stderr: true });
-        try {
-          yield* cli(['login']);
-        } finally {
-          restoreTty();
-        }
+        yield* cli(['login']);
 
         const output = (yield* MockConsole.getLines({ stripAnsi: true })).join('\n');
         expect(output).toContain('Open this URL in your browser to log in:');
@@ -127,6 +150,8 @@ describe('CLI: composio login', () => {
         expect(output).toContain('polls for up to 10 minutes');
         expect(output).not.toContain('Expires at:');
         expect(output).toContain('Do not ask the user whether to poll');
+        expect(output).toContain('hint: For unattended agents:');
+        expect(output).toContain('composio login --agent');
 
         const fs = yield* FileSystem.FileSystem;
         const cacheDir = yield* setupCacheDir;
@@ -146,16 +171,134 @@ describe('CLI: composio login', () => {
     );
   });
 
+  layer(TestLive({ terminalUI: headlessStdinUI }))(it => {
+    it.scoped(
+      '[Given] a stored READY agent identity [When] login runs headlessly [Then] completes agent login unattended',
+      () =>
+        Effect.gen(function* () {
+          yield* writeStoredAgentIdentity(storedAgentIdentity);
+          vi.spyOn(globalThis, 'fetch').mockImplementation(async requestInput =>
+            requestUrl(requestInput).includes('/api/whoami')
+              ? mockFetchResponse(storedAgentIdentity)
+              : mockFetchResponse({})
+          );
+
+          yield* cli(['login']);
+
+          const ctx = yield* ComposioUserContext;
+          expect(Option.getOrUndefined(ctx.data.apiKey)).toBe('uak_agent');
+          expect(Option.getOrUndefined(ctx.data.orgId)).toBe('org_agent');
+
+          const output = (yield* MockConsole.getLines({ stripAnsi: true })).join('\n');
+          expect(output).toContain('"account_type":"agent"');
+          expect(output).toContain('"logged_in":true');
+          expect(output).not.toContain('Open this URL in your browser to log in:');
+
+          const fs = yield* FileSystem.FileSystem;
+          const cacheDir = yield* setupCacheDir;
+          const pendingExists = yield* fs.exists(path.join(cacheDir, 'pending-login-session.json'));
+          expect(pendingExists).toBe(false);
+        })
+    );
+  });
+
+  layer(TestLive({ terminalUI: headlessStdinUI }))(it => {
+    it.scoped(
+      '[Given] a stored READY agent identity the API rejects [When] login runs headlessly [Then] does not reuse the revoked identity',
+      () =>
+        Effect.gen(function* () {
+          yield* writeStoredAgentIdentity(storedAgentIdentity);
+          vi.spyOn(globalThis, 'fetch').mockImplementation(async requestInput =>
+            requestUrl(requestInput).includes('/api/whoami')
+              ? mockFetchResponse({ message: 'Invalid agent key' }, 401)
+              : mockFetchResponse({})
+          );
+
+          yield* cli(['login']);
+
+          const ctx = yield* ComposioUserContext;
+          expect(Option.getOrUndefined(ctx.data.apiKey)).toBeUndefined();
+
+          const output = (yield* MockConsole.getLines({ stripAnsi: true })).join('\n');
+          expect(output).not.toContain('"logged_in":true');
+          expect(output).toContain('Open this URL in your browser to log in:');
+        })
+    );
+  });
+
+  layer(TestLive({ terminalUI: headlessStdinUI }))(it => {
+    it.scoped(
+      '[Given] a stored READY agent identity and an unreachable agents API [When] login runs headlessly [Then] still reuses the on-disk identity',
+      () =>
+        Effect.gen(function* () {
+          yield* writeStoredAgentIdentity(storedAgentIdentity);
+          vi.spyOn(globalThis, 'fetch').mockImplementation(async requestInput => {
+            if (requestUrl(requestInput).includes('/api/whoami')) {
+              throw new Error('network unreachable');
+            }
+            return mockFetchResponse({});
+          });
+
+          yield* cli(['login']);
+
+          const ctx = yield* ComposioUserContext;
+          expect(Option.getOrUndefined(ctx.data.apiKey)).toBe('uak_agent');
+          expect(Option.getOrUndefined(ctx.data.orgId)).toBe('org_agent');
+        })
+    );
+  });
+
+  layer(TestLive({ terminalUI: headlessStdinUI }))(it => {
+    it.scoped(
+      '[Given] a stored PENDING agent identity [When] login runs headlessly [Then] prints instructions without logging in',
+      () =>
+        Effect.gen(function* () {
+          yield* writeStoredAgentIdentity({ ...storedAgentIdentity, status: 'PENDING' });
+          vi.spyOn(globalThis, 'fetch').mockImplementation(async requestInput =>
+            requestUrl(requestInput).includes('/api/whoami')
+              ? mockFetchResponse({ ...storedAgentIdentity, status: 'PENDING' })
+              : mockFetchResponse({})
+          );
+
+          yield* cli(['login']);
+
+          const ctx = yield* ComposioUserContext;
+          expect(Option.getOrUndefined(ctx.data.apiKey)).toBeUndefined();
+
+          const output = (yield* MockConsole.getLines({ stripAnsi: true })).join('\n');
+          expect(output).toContain('Open this URL in your browser to log in:');
+          expect(output).toContain('composio login --agent');
+        })
+    );
+  });
+
+  layer(TestLive({ terminalUI: headlessStdinUI }))(it => {
+    it.scoped(
+      '[Given] no stored agent identity [When] login runs headlessly [Then] never auto-signs-up an agent',
+      () =>
+        Effect.gen(function* () {
+          const requestedUrls: string[] = [];
+          vi.spyOn(globalThis, 'fetch').mockImplementation(async requestInput => {
+            requestedUrls.push(requestUrl(requestInput));
+            return mockFetchResponse({});
+          });
+
+          yield* cli(['login']);
+
+          expect(requestedUrls.filter(url => url.includes('/api/signup'))).toEqual([]);
+
+          const ctx = yield* ComposioUserContext;
+          expect(Option.getOrUndefined(ctx.data.apiKey)).toBeUndefined();
+
+          const output = (yield* MockConsole.getLines({ stripAnsi: true })).join('\n');
+          expect(output).toContain('Open this URL in your browser to log in:');
+        })
+    );
+  });
+
   describe('login with stdout piped', () => {
     const pipedStdoutUI = TerminalUI.of({
-      ...terminalUITestImpl,
-      capabilities: Effect.succeed(
-        getTerminalCapabilities({
-          stdin: { isTTY: true },
-          stdout: { isTTY: false },
-          stderr: { isTTY: true },
-        })
-      ),
+      ...terminalUIWithTtyState({ stdin: true, stdout: false, stderr: true }),
       useMakeSpinner: (message, _use) =>
         Console.log(`[spinner] ${message}`).pipe(
           Effect.andThen(Effect.die(new Error('test: interactive poll loop entered')))
@@ -164,17 +307,25 @@ describe('CLI: composio login', () => {
 
     layer(TestLive({ terminalUI: pipedStdoutUI }))(it => {
       it.scoped(
-        '[When] stdout is piped but stdin and stderr are TTYs [Then] login stays interactive instead of going headless',
+        '[Given] a stored agent [When] stdout is piped but stdin and stderr are TTYs [Then] login stays interactive',
         () =>
           Effect.gen(function* () {
-            const exit = yield* Effect.exit(cli(['login', '--no-browser']));
+            yield* writeStoredAgentIdentity(storedAgentIdentity);
+            const requestedUrls: string[] = [];
+            vi.spyOn(globalThis, 'fetch').mockImplementation(async requestInput => {
+              requestedUrls.push(requestUrl(requestInput));
+              return mockFetchResponse(storedAgentIdentity);
+            });
+
+            const exit = yield* Effect.exit(cli(['login']));
 
             const output = (yield* MockConsole.getLines({ stripAnsi: true })).join('\n');
             expect(output).toContain('[spinner] Waiting for login...');
-            expect(output).toContain('Please login using the following URL');
+            expect(output).toContain('Redirecting you to the login page');
             expect(output).not.toContain('Open this URL in your browser to log in:');
             expect(output).not.toContain('hint: For agents:');
             expect(output).not.toContain('Then run this command to complete login:');
+            expect(requestedUrls).not.toContainEqual(expect.stringContaining('/api/whoami'));
             expect(Exit.isFailure(exit)).toBe(true);
           })
       );
@@ -186,12 +337,7 @@ describe('CLI: composio login', () => {
       Effect.gen(function* () {
         vi.spyOn(globalThis, 'fetch').mockImplementation(
           async (requestInput: RequestInfo | URL, init?: RequestInit) => {
-            const url =
-              typeof requestInput === 'string'
-                ? requestInput
-                : requestInput instanceof URL
-                  ? requestInput.toString()
-                  : requestInput.url;
+            const url = requestUrl(requestInput);
 
             if (url.includes('/api/v3/auth/session/info')) {
               return mockFetchResponse({

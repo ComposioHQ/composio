@@ -1,0 +1,10 @@
+# Scoped to Dockerfile.cli only (BuildKit <Dockerfile>.dockerignore). This image
+# pnpm-installs inside the build; host node_modules are pnpm symlinks into a
+# store that is not copied, so they must never enter its build context.
+#
+# Deliberately NOT a root .dockerignore: Dockerfile.node copies ts/e2e-tests/
+# after its pnpm install, and the runtime fixtures without a setup phase (e.g.
+# runtimes/node/claude-agent-sdk) resolve their deps through those copied-in
+# node_modules.
+**/node_modules
+.git
