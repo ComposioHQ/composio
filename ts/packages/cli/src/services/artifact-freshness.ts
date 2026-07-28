@@ -1,9 +1,4 @@
-import {
-  Command as PlatformCommand,
-  Error as PlatformError,
-  FileSystem,
-  Path,
-} from '@effect/platform';
+import { Command as PlatformCommand, FileSystem, Path } from '@effect/platform';
 import { BunContext } from '@effect/platform-bun';
 import { Effect, Layer, Option, Predicate, Schema } from 'effect';
 import semver from 'semver';
@@ -227,12 +222,13 @@ export function createFreshnessReporter(config: FreshnessConfig) {
       if (result.exitCode !== 0) return undefined;
       return parsePluginList(result.stdout, probe.recordsKey);
     }).pipe(
-      Effect.catchAll(error => {
-        if (Schema.is(PlatformError.SystemError)(error) && error.reason === 'NotFound') {
+      Effect.catchTag('SystemError', error => {
+        if (error.reason === 'NotFound') {
           return Effect.succeed<InstalledPluginProbe | undefined>({ installed: false });
         }
         return Effect.succeed<InstalledPluginProbe | undefined>(undefined);
-      })
+      }),
+      Effect.catchAll(() => Effect.succeed<InstalledPluginProbe | undefined>(undefined))
     );
 
   const pluginStatus = (probe: PluginProbe) =>

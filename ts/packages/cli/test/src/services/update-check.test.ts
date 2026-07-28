@@ -3,7 +3,7 @@ import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, existsSync, rmSync
 import { dirname, join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { BunFileSystem, BunPath } from '@effect/platform-bun';
-import { Effect, Fiber, Layer } from 'effect';
+import { Effect, Fiber, Layer, Option } from 'effect';
 import { withHttpServerEffect } from 'test/__utils__/http-server';
 import { getTerminalCapabilities, type TerminalUI } from 'src/services/terminal-ui';
 import {
@@ -681,8 +681,10 @@ describe('checkForUpdate', () => {
       yield* createUpdateChecker(successfulConfig).checkForUpdate;
       yield* Effect.sync(() => vi.setSystemTime(new Date(successfulAt.getTime() + 60_000)));
       yield* Effect.sync(() => failedResponse.reject(new Error('transient failure')));
-      yield* Fiber.join(failingFiber);
+      const failedResult = yield* Fiber.join(failingFiber);
 
+      expect(failedResult.refreshFailed).toBe(true);
+      expect(Option.getOrUndefined(failedResult.state)?.latestVersion).toBe('0.3.0');
       const state: UpdateCheckState = JSON.parse(readFileSync(failingConfig.stateFile, 'utf-8'));
       expect(state).toEqual({
         lastChecked: successfulAt.toISOString(),

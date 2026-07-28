@@ -270,8 +270,11 @@ export function createUpdateChecker(config: UpdateCheckConfig) {
       // Re-read and compare so a check that succeeded concurrently is not
       // stamped as failed; only an unchanged snapshot gets the marker.
       const stateAtFailure = yield* Effect.option(readState);
-      if (Option.isNone(stateAtFailure) || Option.isNone(cachedState)) return cachedState;
-      if (stateAtFailure.value.lastChecked !== cachedState.value.lastChecked) return cachedState;
+      if (Option.isNone(stateAtFailure)) return cachedState;
+      const unchanged =
+        Option.isSome(cachedState) &&
+        stateAtFailure.value.lastChecked === cachedState.value.lastChecked;
+      if (!unchanged) return stateAtFailure;
       const failedState: UpdateCheckState = { ...stateAtFailure.value, checkStatus: 'failed' };
       yield* Effect.ignore(writeJsonFile(config.stateFile, failedState));
       return Option.some(failedState);

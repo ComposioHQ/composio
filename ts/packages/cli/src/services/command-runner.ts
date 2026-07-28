@@ -7,7 +7,7 @@ export interface CommandResult {
   readonly stderr: string;
 }
 
-const collectText = (stream: Stream.Stream<Uint8Array, unknown>) =>
+const collectText = <E>(stream: Stream.Stream<Uint8Array, E>) =>
   stream.pipe(Stream.decodeText(), Stream.runFold(String.empty, String.concat));
 
 export class CommandRunner extends Effect.Service<CommandRunner>()('services/CommandRunner', {
