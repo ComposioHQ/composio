@@ -236,7 +236,14 @@ function generateSampleValue(schema: OpenAPISchema, depth = 0): unknown {
   }
 }
 
-// Render schema as markdown with proper nesting
+/**
+ * Renders object properties, dictionaries, and composed schemas as nested
+ * Markdown list items.
+ *
+ * `indent` controls the emitted list indentation, while `depth` independently
+ * tracks recursion because `allOf` expands without increasing indentation. An
+ * ellipsis is emitted when either value exceeds `maxDepth`.
+ */
 function renderSchema(
   schema: OpenAPISchema,
   indent = 0,

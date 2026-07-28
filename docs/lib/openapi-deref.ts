@@ -1,10 +1,12 @@
+// Fumadocs keeps local `$ref`s in bundled OpenAPI documents and resolves them
+// lazily in its UI. This module creates the concrete schema tree needed by
+// server-side renderers that read fields directly.
+
 /**
- * Inlines local Reference Objects for consumers that read schema fields
- * directly.
+ * Returns a non-mutating copy of `spec` with local JSON Pointers inlined.
  *
- * Caching each pointer's output object before populating it preserves object
- * identity for recursive schemas and prevents reference resolution itself from
- * recursing forever.
+ * External references remain unchanged. Cached output objects preserve
+ * identity for recursive schemas and let alias chains terminate safely.
  */
 export function dereferenceDocument<T>(spec: T): T {
   const cache = new Map<string, unknown>();

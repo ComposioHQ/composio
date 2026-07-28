@@ -1,10 +1,5 @@
-/**
- * Narrows an OpenAPI document to just what one API reference page renders.
- *
- * Page props cross a client boundary, so this keeps only the page's operations
- * and transitively reachable components. If the slice cannot be proven
- * self-contained, the original document is returned instead.
- */
+// Fumadocs passes its bundled OpenAPI document to a client component. This
+// module trims that payload to the operations or webhooks on one reference page.
 
 import type { OpenAPIPageProps } from 'fumadocs-openapi/ui';
 
@@ -119,6 +114,13 @@ function groupByKey<T extends { method: string }>(
   return grouped;
 }
 
+/**
+ * Returns a self-contained document containing the selected operations or
+ * webhooks and every component they reference transitively.
+ *
+ * When the requested operation is missing or a reference cannot be represented
+ * safely, the original document is returned instead of a partial slice.
+ */
 export function sliceDocumentForPage<T extends object>(
   bundled: T,
   operations: PageOperation[] = [],
