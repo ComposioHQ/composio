@@ -29,8 +29,12 @@ const CHECK_INTERVAL_MS = 24 * 60 * 60 * 1000; // 24 hours
 const CLI_RELEASE_TAG_RE = /^@composio\/cli@(\d+\.\d+\.\d+)$/;
 
 export interface UpdateCheckState {
-  lastChecked: string; // ISO-8601
-  latestVersion: string; // e.g. "0.3.0"
+  /** ISO-8601 timestamp of the last successful release fetch (never advanced on failure). */
+  lastChecked: string;
+  /** Latest known stable release, e.g. "0.3.0". Absent when no matching release is known. */
+  latestVersion?: string;
+  /** Outcome of the most recent refresh attempt. Absent in legacy cache files (treated as "ok"). */
+  checkStatus?: 'ok' | 'failed';
 }
 
 /** Machine-readable update status for `composio version --check`. */
@@ -50,7 +54,8 @@ export interface UpdateStatus {
 const UpdateCheckStateSchema = Schema.parseJson(
   Schema.Struct({
     lastChecked: Schema.String,
-    latestVersion: Schema.String,
+    latestVersion: Schema.optional(Schema.String),
+    checkStatus: Schema.optional(Schema.Literal('ok', 'failed')),
   })
 );
 
@@ -179,6 +184,7 @@ export function createUpdateChecker(config: UpdateCheckConfig) {
       if (!canDecorate) return;
 
       const state = yield* readState;
+      if (!state.latestVersion) return;
       const latestVersion = semver.valid(state.latestVersion);
       const currentVersion = semver.valid(config.currentVersion);
       if (!latestVersion || !currentVersion || latestVersion === currentVersion) return;
@@ -232,7 +238,7 @@ export function createUpdateChecker(config: UpdateCheckConfig) {
       return { state: cachedState, refreshFailed: true } as const;
     }
     const previousLatestVersion = Option.getOrUndefined(
-      Option.map(cachedState, state => state.latestVersion)
+      Option.flatMapNullable(cachedState, state => state.latestVersion)
     );
 
     const headers: Record<string, string> = {
@@ -260,6 +266,17 @@ export function createUpdateChecker(config: UpdateCheckConfig) {
       return parseLatestVersionFromReleases(releases, config.binaryAssetName);
     });
 
+    const markCachedStateFailed = Effect.gen(function* () {
+      // Re-read and compare so a check that succeeded concurrently is not
+      // stamped as failed; only an unchanged snapshot gets the marker.
+      const stateAtFailure = yield* Effect.option(readState);
+      if (Option.isNone(stateAtFailure) || Option.isNone(cachedState)) return cachedState;
+      if (stateAtFailure.value.lastChecked !== cachedState.value.lastChecked) return cachedState;
+      const failedState: UpdateCheckState = { ...stateAtFailure.value, checkStatus: 'failed' };
+      yield* Effect.ignore(writeJsonFile(config.stateFile, failedState));
+      return Option.some(failedState);
+    });
+
     const latestVersion = yield* Effect.option(fetchLatestVersion);
     if (Option.isNone(latestVersion)) {
       yield* Effect.ignore(
@@ -267,12 +284,15 @@ export function createUpdateChecker(config: UpdateCheckConfig) {
           lastAttempted: checkStartedAt.toISOString(),
         })
       );
-      return { state: cachedState, refreshFailed: true } as const;
+      const failedCachedState = yield* markCachedStateFailed;
+      return { state: failedCachedState, refreshFailed: true } as const;
     }
 
+    const knownLatestVersion = latestVersion.value ?? previousLatestVersion;
     const state: UpdateCheckState = {
       lastChecked: new Date().toISOString(),
-      latestVersion: latestVersion.value ?? previousLatestVersion ?? config.currentVersion,
+      checkStatus: 'ok',
+      ...(knownLatestVersion === undefined ? {} : { latestVersion: knownLatestVersion }),
     };
     yield* writeJsonFile(config.stateFile, state).pipe(
       Effect.andThen(fs.remove(attemptFile, { force: true })),

@@ -282,6 +282,18 @@ describe('showUpdateNotice', () => {
       expect(output).toEqual([]);
     }).pipe(Effect.provide(PlatformLayers))
   );
+
+  it.effect('does nothing when the cached state has no latestVersion', () =>
+    Effect.gen(function* () {
+      const config = makeConfig({ currentVersion: '0.2.0' });
+      writeState(config, { lastChecked: new Date().toISOString(), checkStatus: 'ok' });
+      const { showUpdateNotice } = createUpdateChecker(config);
+
+      yield* showUpdateNotice(makeTerminal(output));
+
+      expect(output).toEqual([]);
+    }).pipe(Effect.provide(PlatformLayers))
+  );
 });
 
 // ── getUpdateStatus ─────────────────────────────────────────────────────
@@ -406,6 +418,31 @@ describe('getUpdateStatus', () => {
       });
     }).pipe(Effect.provide(PlatformLayers))
   );
+
+  it.effect('reports unknown instead of up to date when no release matched', () =>
+    Effect.gen(function* () {
+      const config = makeConfig({
+        currentVersion: '0.2.0',
+        fetchFn: vi.fn().mockResolvedValue({
+          ok: true,
+          json: () => Promise.resolve([]),
+        }) as unknown as typeof fetch,
+      });
+      const { getUpdateStatus } = createUpdateChecker(config);
+
+      const status = yield* getUpdateStatus;
+
+      expect(status).toEqual({
+        current: '0.2.0',
+        latestStable: null,
+        updateAvailable: false,
+        checkStatus: 'unknown',
+        lastChecked: expect.any(String),
+      });
+      const state: UpdateCheckState = JSON.parse(readFileSync(config.stateFile, 'utf-8'));
+      expect(state.latestVersion).toBeUndefined();
+    }).pipe(Effect.provide(PlatformLayers))
+  );
 });
 
 // ── checkForUpdate ──────────────────────────────────────────────────────
@@ -522,8 +559,9 @@ describe('checkForUpdate', () => {
         expect(existsSync(config.stateFile)).toBe(true);
         const state: UpdateCheckState = JSON.parse(readFileSync(config.stateFile, 'utf-8'));
         expect(state.lastChecked).toBeDefined();
-        // Falls back to currentVersion since no previous state and no matching releases found
-        expect(state.latestVersion).toBe(config.currentVersion);
+        expect(state.checkStatus).toBe('ok');
+        // Never poisons the cache with currentVersion when no release matched.
+        expect(state.latestVersion).toBeUndefined();
       }).pipe(Effect.provide(PlatformLayers))
   );
 
@@ -615,7 +653,7 @@ describe('checkForUpdate', () => {
       yield* checkForUpdate;
 
       const state: UpdateCheckState = JSON.parse(readFileSync(config.stateFile, 'utf-8'));
-      expect(state).toEqual(previousState);
+      expect(state).toEqual({ ...previousState, checkStatus: 'failed' });
     }).pipe(Effect.provide(PlatformLayers))
   );
 
@@ -649,6 +687,7 @@ describe('checkForUpdate', () => {
       expect(state).toEqual({
         lastChecked: successfulAt.toISOString(),
         latestVersion: '0.3.0',
+        checkStatus: 'ok',
       });
       expect(JSON.parse(readFileSync(`${failingConfig.stateFile}.attempt`, 'utf-8'))).toEqual({
         lastAttempted: pinnedNow.toISOString(),
