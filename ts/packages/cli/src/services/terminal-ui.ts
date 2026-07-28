@@ -228,8 +228,12 @@ export const makeTerminalUI = (streams: TerminalUIStreams): TerminalUI => {
   const { canPrompt, canDecorate, stdoutIsTTY } = capabilities;
   const stderr = streams.stderr;
 
-  const decorate = (render: () => void): Effect.Effect<void> =>
-    canDecorate ? Effect.sync(render) : Effect.void;
+  const decorate = (render: () => void): Effect.Effect<void> => {
+    if (!canDecorate) {
+      return Effect.void;
+    }
+    return Effect.sync(render);
+  };
 
   return {
     capabilities: Effect.succeed(capabilities),
@@ -261,75 +265,91 @@ export const makeTerminalUI = (streams: TerminalUIStreams): TerminalUI => {
     select: ((
       message: string,
       options: ReadonlyArray<{ value: unknown; label: string; hint?: string }>
-    ) =>
-      canPrompt
-        ? Effect.promise(async () => {
-            const result = await p.select({
-              message,
-              options: [...options],
-              output: stderr,
-            });
-            // p.select returns Value | symbol (symbol on cancel)
-            if (typeof result === 'symbol') return options[0].value;
-            return result;
+    ) => {
+      if (!canPrompt) {
+        return Effect.succeed(options[0].value);
+      }
+
+      return Effect.promise(async () => {
+        const result = await p.select({
+          message,
+          options: [...options],
+          output: stderr,
+        });
+        // p.select returns Value | symbol (symbol on cancel)
+        if (typeof result === 'symbol') return options[0].value;
+        return result;
+      });
+    }) as TerminalUI['select'],
+
+    confirm: (message, options) => {
+      if (!canPrompt) {
+        return Effect.succeed(options?.defaultValue ?? true);
+      }
+
+      return Effect.promise(async () => {
+        const result = await p.confirm({
+          message,
+          initialValue: options?.defaultValue ?? true,
+          output: stderr,
+        });
+        if (p.isCancel(result)) return false;
+        return result;
+      });
+    },
+
+    withSpinner: (message, effect, options) => {
+      if (!canDecorate) {
+        return effect;
+      }
+
+      return Effect.acquireUseRelease(
+        Effect.sync(() => {
+          const s = p.spinner({ output: stderr });
+          s.start(message);
+          return s;
+        }),
+        () => effect,
+        (s, exit) =>
+          Effect.sync(() => {
+            if (Exit.isSuccess(exit)) {
+              let successMessage = message;
+              const configuredSuccessMessage = options?.successMessage;
+              if (typeof configuredSuccessMessage === 'function') {
+                successMessage = configuredSuccessMessage(exit.value);
+              } else if (configuredSuccessMessage !== undefined) {
+                successMessage = configuredSuccessMessage;
+              }
+              s.stop(successMessage);
+            } else {
+              s.error(options?.errorMessage ?? message);
+            }
           })
-        : Effect.succeed(options[0].value)) as TerminalUI['select'],
+      );
+    },
 
-    confirm: (message, options) =>
-      canPrompt
-        ? Effect.promise(async () => {
-            const result = await p.confirm({
-              message,
-              initialValue: options?.defaultValue ?? true,
-              output: stderr,
-            });
-            return p.isCancel(result) ? false : result;
+    useMakeSpinner: (message, use) => {
+      if (!canDecorate) {
+        return use(silentSpinnerHandle);
+      }
+
+      return Effect.acquireUseRelease(
+        Effect.sync(() => {
+          const s = p.spinner({ output: stderr });
+          s.start(message);
+          const { handle, isStopped } = createClackSpinnerHandle(s, message);
+          return { raw: s, handle, isStopped };
+        }),
+        ({ handle }) => use(handle),
+        ({ raw, isStopped }, exit) =>
+          Effect.sync(() => {
+            // Only clean up if the spinner hasn't been stopped/errored by the callback
+            if (Exit.isFailure(exit) && !isStopped()) {
+              raw.error(message);
+            }
           })
-        : Effect.succeed(options?.defaultValue ?? true),
-
-    withSpinner: (message, effect, options) =>
-      canDecorate
-        ? Effect.acquireUseRelease(
-            Effect.sync(() => {
-              const s = p.spinner({ output: stderr });
-              s.start(message);
-              return s;
-            }),
-            () => effect,
-            (s, exit) =>
-              Effect.sync(() => {
-                if (Exit.isSuccess(exit)) {
-                  const successMsg =
-                    typeof options?.successMessage === 'function'
-                      ? options.successMessage(exit.value)
-                      : (options?.successMessage ?? message);
-                  s.stop(successMsg);
-                } else {
-                  s.error(options?.errorMessage ?? message);
-                }
-              })
-          )
-        : effect,
-
-    useMakeSpinner: (message, use) =>
-      canDecorate
-        ? Effect.acquireUseRelease(
-            Effect.sync(() => {
-              const s = p.spinner({ output: stderr });
-              s.start(message);
-              const { handle, isStopped } = createClackSpinnerHandle(s, message);
-              return { raw: s, handle, isStopped };
-            }),
-            ({ handle }) => use(handle),
-            ({ raw, isStopped }, exit) =>
-              Effect.sync(() => {
-                // Only clean up if the spinner hasn't been stopped/errored by the callback
-                if (Exit.isFailure(exit) && !isStopped()) {
-                  raw.error(message);
-                }
-              })
-          )
-        : use(silentSpinnerHandle),
+      );
+    },
   };
 };
 
