@@ -297,17 +297,20 @@ export function mdxToCleanMarkdown(content: string): string {
     }
   );
 
-  // RepoBrowser is an interactive file tree. The iMessage page intentionally
-  // shows a source slice while its public runnable fixture is still pending.
+  // RepoBrowser sources are committed documentation snapshots. Emit source-aware
+  // availability notes rather than linking to removed or private repositories.
   result = result.replace(
-    /<RepoBrowser\b(?=[^>]*\bsource="imessage")[^>]*\/>/g,
-    '\n> The iMessage code browser is an implementation slice, not a standalone fixture. The complete runnable project will be published in the Composio examples repo.\n'
-  );
-
-  // Point the existing Slack browser at its real repository.
-  result = result.replace(
-    /<RepoBrowser\b[^>]*\/>/g,
-    '\n> The complete project is on GitHub: [composio-slack-bot](https://github.com/ComposioHQ/composio-slack-bot).\n'
+    /<RepoBrowser\b([^>]*)\/>/g,
+    (_, props: string) => {
+      const source = props.match(/\bsource="([^"]+)"/)?.[1] ?? 'slack-bot';
+      const notices: Record<string, string> = {
+        'slack-bot': 'The Slack bot browser is a documentation snapshot; a public repository is not available.',
+        'local-workbench': 'The local PR reviewer browser is a documentation snapshot; a public repository is not available.',
+        standup: 'The standup bot browser is a documentation snapshot; a public repository is not available.',
+        imessage: 'The iMessage implementation is maintained in [platform-imessage](https://github.com/ComposioHQ/platform-imessage).',
+      };
+      return `\n> ${notices[source] ?? 'This code browser is a documentation snapshot; a public repository is not available.'}\n`;
+    }
   );
 
   result = result.replace(/<\/?(ProviderGrid|Tabs|Frame|div|QuickstartFlow|IntegrationTabs|Accordions|ToolTypeFlow|ToolkitsLanding|TemplateGrid|Glossary|ConnectFlow|ConnectClientOption)[^>]*>/g, '');
