@@ -35,8 +35,8 @@ import {
 import { JsonRecordSchema } from 'src/effects/json';
 import { Session, RetrievedSession } from 'src/models/session';
 import { TriggerType, TriggerTypes, TriggerTypesAsEnums } from 'src/models/trigger-types';
-import * as constants from 'src/constants';
 import { getCurrentCwdSessionId } from 'src/analytics/dispatch';
+import { getInstalledCliVersion } from 'src/effects/version';
 import { ComposioUserContext, ComposioUserContextLive } from './user-context';
 import { ProjectContext } from './project-context';
 import type { NoSuchElementException } from 'effect/Cause';
@@ -1352,12 +1352,13 @@ const buildDefaultHeaders = (params: {
   orgId?: string;
   projectId?: string;
   cliSessionId?: string;
+  sdkVersion: string;
 }): Record<string, string> | undefined => {
   const defaultHeaders = {
     'x-framework': 'cli',
     'x-source': 'CLI',
     'x-runtime': detectCliRuntime(),
-    'x-sdk-version': constants.APP_VERSION,
+    'x-sdk-version': params.sdkVersion,
     ...(params.userApiKey
       ? ({ 'x-user-api-key': params.userApiKey } satisfies Record<string, string>)
       : {}),
@@ -1534,6 +1535,7 @@ export class ComposioClientSingleton extends Effect.Service<ComposioClientSingle
       const fs = yield* FileSystem.FileSystem;
       const path = yield* Path.Path;
       const os = yield* NodeOs;
+      const sdkVersion = yield* getInstalledCliVersion;
       const cache = new Map<string, _RawComposioClient>();
 
       const getFor = (params?: { userApiKey?: string; orgId?: string; projectId?: string }) =>
@@ -1565,6 +1567,7 @@ export class ComposioClientSingleton extends Effect.Service<ComposioClientSingle
               orgId: params?.orgId,
               projectId: params?.projectId,
               cliSessionId,
+              sdkVersion,
             }),
           });
 
