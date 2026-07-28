@@ -324,8 +324,6 @@ const directLogin = (params: { userApiKey: string; org?: string }) =>
       userApiKey: params.userApiKey,
     });
 
-    yield* linkApolloIdentityForAnalytics(sessionInfo.org_member.id, params.userApiKey);
-
     const selectedOrg = yield* resolveDirectLoginOrganization({
       apiKey: params.userApiKey,
       baseURL: ctx.data.baseURL,
@@ -340,6 +338,7 @@ const directLogin = (params: { userApiKey: string; org?: string }) =>
       : Option.getOrUndefined(ctx.data.testUserId);
 
     yield* ctx.login(params.userApiKey, selectedOrg.id, testUserId);
+    yield* linkApolloIdentityForAnalytics(sessionInfo.org_member.id, params.userApiKey);
     yield* primeConsumerConnectedToolkitsCacheInBackground({
       orgId: selectedOrg.id,
     });
@@ -363,6 +362,8 @@ const storeCredentials = (params: {
   initialOrgId: string;
   initialProjectId: string;
   fallbackEmail: string;
+  /** Fallback Apollo org_member id for analytics linking when session/info fails here. */
+  orgMemberId?: string;
   /** When true, skip the init/switch hints and outro (shown later after org picker). */
   skipHints?: boolean;
   /** When true, skip JSON output (emitted later after org picker with final selection). */
@@ -377,6 +378,7 @@ const storeCredentials = (params: {
       initialOrgId,
       initialProjectId,
       fallbackEmail,
+      orgMemberId,
       skipHints = false,
       skipOutput = false,
     } = params;
@@ -419,6 +421,11 @@ const storeCredentials = (params: {
     }
 
     yield* ctx.login(uakApiKey, orgId, testUserId);
+    // Linked only after the credential persists, so stitching cannot outlive a failed login.
+    const linkedOrgMemberId = sessionInfo?.org_member.id ?? orgMemberId;
+    if (linkedOrgMemberId) {
+      yield* linkApolloIdentityForAnalytics(linkedOrgMemberId, uakApiKey);
+    }
     yield* primeConsumerConnectedToolkitsCacheInBackground({
       orgId,
     });
@@ -509,8 +516,6 @@ const loginWithKey = (params: {
       userApiKey: uakApiKey,
     });
 
-    yield* linkApolloIdentityForAnalytics(uakSessionInfo.org_member.id, uakApiKey);
-
     const organizations = params.defaultToFirstOrg
       ? yield* listOrganizations({
           baseURL: ctx.data.baseURL,
@@ -537,6 +542,7 @@ const loginWithKey = (params: {
       initialOrgId: xOrgId,
       initialProjectId: xProjectId,
       fallbackEmail: linkedSession.account.email,
+      orgMemberId: uakSessionInfo.org_member.id,
       skipHints: willRunPicker,
       skipOutput: true,
     });
@@ -636,7 +642,7 @@ export const browserLogin = (params: {
       expiresAt,
     });
 
-    const canPrompt = (yield* ui.capabilities).isInteractive;
+    const { canPrompt, canDecorate } = yield* ui.capabilities;
     const effectiveNoWait = params.noWait || !canPrompt;
     const effectiveNoBrowser = params.noBrowser || effectiveNoWait;
 
@@ -646,7 +652,7 @@ export const browserLogin = (params: {
         pollCommand,
       });
 
-      if (canPrompt) {
+      if (canDecorate) {
         yield* ui.log.info('Please login using the following URL:');
         yield* ui.note(url, 'Login URL');
         yield* ui.note(loginInstructions, 'Login instructions');
@@ -717,8 +723,6 @@ export const browserLogin = (params: {
       userApiKey: uakApiKey,
     });
 
-    yield* linkApolloIdentityForAnalytics(uakSessionInfo.org_member.id, uakApiKey);
-
     // e.g., "pr_xlSR6oN5jIlk"
     const xProjectId = uakSessionInfo.project.nano_id;
     // e.g., "k2OiqRLMdHyM"
@@ -733,6 +737,7 @@ export const browserLogin = (params: {
       initialOrgId: xOrgId,
       initialProjectId: xProjectId,
       fallbackEmail: linkedSession.account.email,
+      orgMemberId: uakSessionInfo.org_member.id,
       skipHints: willRunPicker,
       skipOutput: willRunPicker,
     });
@@ -814,9 +819,9 @@ export const loginCmd = Command.make(
     Effect.gen(function* () {
       const ui = yield* TerminalUI;
       const ctx = yield* ComposioUserContext;
-      const canPrompt = (yield* ui.capabilities).isInteractive;
+      const { canPrompt, canDecorate } = yield* ui.capabilities;
 
-      if (canPrompt) {
+      if (canDecorate) {
         yield* ui.intro('composio login');
       }
 
@@ -875,7 +880,7 @@ export const loginCmd = Command.make(
           organizations: loginResult.organizations,
         };
         const pollSummary = formatPollLoginComplete(pollSummaryParams);
-        if (canPrompt) {
+        if (canDecorate) {
           yield* ui.note(pollSummary, 'Login complete');
         }
         yield* ui.output(serializePollLoginResult(pollSummaryParams), { force: true });
@@ -891,20 +896,6 @@ export const loginCmd = Command.make(
             yield* ensureAgentSignupAllowed;
             const identity = yield* getOrSignupReadyAgent();
             yield* loginWithAgentIdentity(identity);
-            const agentUserApiKey = identity.composio?.user_api_key;
-            if (agentUserApiKey) {
-              const agentSessionInfo = yield* getSessionInfoByUserApiKey({
-                baseURL: ctx.data.baseURL,
-                userApiKey: agentUserApiKey,
-                orgId: identity.composio?.org_id ?? undefined,
-              }).pipe(Effect.catchAll(() => Effect.succeed(null)));
-              if (agentSessionInfo) {
-                yield* linkApolloIdentityForAnalytics(
-                  agentSessionInfo.org_member.id,
-                  agentUserApiKey
-                );
-              }
-            }
             const summary = safeAgentSummary(identity);
             yield* ui.log.success(
               `Logged in as Composio agent ${summary.email ?? summary.slug ?? ''}`

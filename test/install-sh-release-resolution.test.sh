@@ -11,6 +11,75 @@ home_dir="$tmpdir/home"
 install_dir="$tmpdir/install"
 mkdir -p "$bin_dir" "$home_dir" "$install_dir"
 
+windows_bin_dir="$tmpdir/windows-bin"
+mkdir -p "$windows_bin_dir"
+cat > "$windows_bin_dir/uname" <<'EOF'
+#!/bin/sh
+printf '%s\n' 'MINGW64_NT-10.0 x86_64'
+EOF
+chmod +x "$windows_bin_dir/uname"
+
+bash_bin=$(command -v bash)
+run_windows_installer() {
+    env PATH="$windows_bin_dir" HOME="$home_dir" "$bash_bin" "$repo_root/install.sh" "$@"
+}
+
+if ! windows_help_output=$(run_windows_installer --help 2>&1); then
+    echo 'Expected install.sh --help to succeed before platform and prerequisite checks.' >&2
+    printf '%s\n' "$windows_help_output" >&2
+    exit 1
+fi
+if ! grep -q '^Usage: install.sh' <<<"$windows_help_output"; then
+    echo 'Expected install.sh --help to print usage on Windows-like platforms.' >&2
+    printf '%s\n' "$windows_help_output" >&2
+    exit 1
+fi
+
+if invalid_option_output=$(run_windows_installer --invalid-option 2>&1); then
+    echo 'Expected install.sh to reject an unknown option before platform checks.' >&2
+    exit 1
+fi
+if ! grep -q 'Unknown option: --invalid-option' <<<"$invalid_option_output"; then
+    echo 'Expected the unknown-option error on Windows-like platforms.' >&2
+    printf '%s\n' "$invalid_option_output" >&2
+    exit 1
+fi
+if grep -Eq 'Windows is not supported|(curl|unzip) is required to install Composio CLI' <<<"$invalid_option_output"; then
+    echo 'Expected argument validation to take precedence over platform and prerequisite errors.' >&2
+    printf '%s\n' "$invalid_option_output" >&2
+    exit 1
+fi
+
+if excess_arguments_output=$(run_windows_installer first-version second-version 2>&1); then
+    echo 'Expected install.sh to reject excess positional arguments before platform checks.' >&2
+    exit 1
+fi
+if ! grep -q 'Too many arguments' <<<"$excess_arguments_output"; then
+    echo 'Expected the excess-arguments error on Windows-like platforms.' >&2
+    printf '%s\n' "$excess_arguments_output" >&2
+    exit 1
+fi
+if grep -Eq 'Windows is not supported|(curl|unzip) is required to install Composio CLI' <<<"$excess_arguments_output"; then
+    echo 'Expected argument validation to take precedence over platform and prerequisite errors.' >&2
+    printf '%s\n' "$excess_arguments_output" >&2
+    exit 1
+fi
+
+if windows_output=$(run_windows_installer 2>&1); then
+    echo 'Expected install.sh to reject Windows-like platforms.' >&2
+    exit 1
+fi
+if ! grep -q 'Windows is not supported. Please use WSL' <<<"$windows_output"; then
+    echo 'Expected Windows-to-WSL guidance when installer prerequisites are missing.' >&2
+    printf '%s\n' "$windows_output" >&2
+    exit 1
+fi
+if grep -Eq '(curl|unzip) is required to install Composio CLI' <<<"$windows_output"; then
+    echo 'Expected Windows-to-WSL guidance to take precedence over prerequisite errors.' >&2
+    printf '%s\n' "$windows_output" >&2
+    exit 1
+fi
+
 platform=$(uname -ms)
 case $platform in
 'Darwin x86_64')  target=darwin-x64     ;;
@@ -151,6 +220,9 @@ printf '%s\n' "$*" >> "$TEST_COMPOSIO_LOG"
 
 case "${1:-}" in
 install)
+    if [[ -n "${TEST_INSTALL_STDERR:-}" ]]; then
+        printf '%s\n' "$TEST_INSTALL_STDERR" >&2
+    fi
     exit 0
     ;;
 setup)
@@ -161,8 +233,11 @@ setup)
     exit "${TEST_SETUP_EXIT:-0}"
     ;;
 --version|version)
+    if [[ -n "${TEST_VERSION_STDERR:-}" ]]; then
+        printf '%s\n' "$TEST_VERSION_STDERR" >&2
+    fi
     echo 'composio fake 98.0.0'
-    exit 0
+    exit "${TEST_VERSION_EXIT:-0}"
     ;;
 *)
     exit 0
@@ -207,11 +282,15 @@ run_installer() {
         COMPOSIO_GITHUB_API_BASE_URL="$api_base" \
         COMPOSIO_GITHUB_OWNER='FakeOwner' \
         COMPOSIO_GITHUB_REPO='fake-repo' \
+        TEST_INSTALL_STDERR="${TEST_INSTALL_STDERR:-}" \
         TEST_SETUP_EXIT="${TEST_SETUP_EXIT:-0}" \
+        TEST_VERSION_EXIT="${TEST_VERSION_EXIT:-0}" \
+        TEST_VERSION_STDERR="${TEST_VERSION_STDERR:-}" \
         bash "$repo_root/install.sh" "$@"
 }
 
-output=$(run_installer "$home_dir" "$install_dir" 2>&1)
+install_guidance='shell integration guidance from composio install'
+output=$(TEST_INSTALL_STDERR="$install_guidance" run_installer "$home_dir" "$install_dir" 2>&1)
 
 printf '%s\n' "$output"
 
@@ -247,10 +326,60 @@ if grep -q "$tag_without_release" "$curl_log"; then
     exit 1
 fi
 
+if ! grep -qxF -- '--version' "$composio_log"; then
+    echo 'Expected installer to probe the downloaded CLI with --version.' >&2
+    cat "$composio_log" >&2
+    exit 1
+fi
+
+if ! grep -qxF 'install' "$composio_log"; then
+    echo 'Expected installer to delegate shell integration to composio install.' >&2
+    cat "$composio_log" >&2
+    exit 1
+fi
+
+if ! grep -qF "$install_guidance" <<<"$output"; then
+    echo 'Expected composio install stderr guidance to remain visible.' >&2
+    printf '%s\n' "$output" >&2
+    exit 1
+fi
+
 expected_setup='setup --target auto --yes --if-present'
 if ! grep -qxF "$expected_setup" "$composio_log"; then
     echo "Expected installer to invoke: composio $expected_setup" >&2
     cat "$composio_log" >&2
+    exit 1
+fi
+
+failed_probe_home="$tmpdir/home-failed-probe"
+failed_probe_install="$tmpdir/install-failed-probe"
+mkdir -p "$failed_probe_home" "$failed_probe_install"
+: > "$failed_probe_home/.bashrc"
+: > "$composio_log"
+loader_error='loader error from an unusable composio binary'
+failed_probe_output=$(
+    TEST_VERSION_EXIT=126 \
+        TEST_VERSION_STDERR="$loader_error" \
+        run_installer "$failed_probe_home" "$failed_probe_install" --no-plugins 2>&1
+)
+if grep -qF "$loader_error" <<<"$failed_probe_output"; then
+    echo 'Expected the failed binary probe to suppress loader errors.' >&2
+    printf '%s\n' "$failed_probe_output" >&2
+    exit 1
+fi
+if grep -qxF 'install' "$composio_log"; then
+    echo 'Expected a failed binary probe to skip composio install.' >&2
+    cat "$composio_log" >&2
+    exit 1
+fi
+if ! grep -qF 'Setting up shell integration...' <<<"$failed_probe_output"; then
+    echo 'Expected a failed binary probe to select inline shell integration.' >&2
+    printf '%s\n' "$failed_probe_output" >&2
+    exit 1
+fi
+if ! grep -qxF '# Composio CLI' "$failed_probe_home/.bashrc"; then
+    echo 'Expected inline shell integration to update .bashrc.' >&2
+    cat "$failed_probe_home/.bashrc" >&2
     exit 1
 fi
 
@@ -290,4 +419,4 @@ if ! grep -q 'Composio CLI was installed, but agent plugin setup failed' <<<"$fa
     exit 1
 fi
 
-printf 'install.sh release fallback and plugin setup tests passed\n'
+printf 'install.sh release fallback, shell integration, and plugin setup tests passed\n'

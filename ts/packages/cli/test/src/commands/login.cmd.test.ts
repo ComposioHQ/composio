@@ -1,13 +1,34 @@
 import { describe, expect, layer } from '@effect/vitest';
 import { vi, afterEach } from 'vitest';
-import { Effect, Option } from 'effect';
+import { Console, Effect, Exit, Option } from 'effect';
 import { HelpDoc, ValidationError } from '@effect/cli';
 import path from 'node:path';
 import { FileSystem } from '@effect/platform';
 import { cli, MockConsole, TestLive } from 'test/__utils__';
+import { terminalUITestImpl } from 'test/__utils__/services/terminal-ui-test';
 import * as constants from 'src/constants';
 import { setupCacheDir } from 'src/effects/setup-cache-dir';
+import { getTerminalCapabilities, TerminalUI } from 'src/services/terminal-ui';
 import { ComposioUserContext } from 'src/services/user-context';
+
+const analyticsMocks = vi.hoisted(() => ({
+  linkCalls: [] as Array<{ apolloUserId: string; loggedInAtLinkTime: boolean }>,
+}));
+
+// Records each identity link and whether the credential had already been
+// stored via ctx.login at call time — the link-after-persistence ordering.
+vi.mock('src/analytics/dispatch', async importOriginal => {
+  const actual = await importOriginal<typeof import('src/analytics/dispatch')>();
+  const { Effect } = await import('effect');
+  const { ComposioUserContext } = await import('src/services/user-context');
+  return {
+    ...actual,
+    linkApolloIdentityForAnalytics: ((apolloUserId: string) =>
+      Effect.map(ComposioUserContext, ctx => {
+        analyticsMocks.linkCalls.push({ apolloUserId, loggedInAtLinkTime: ctx.isLoggedIn() });
+      })) as unknown as typeof actual.linkApolloIdentityForAnalytics,
+  };
+});
 
 const mockFetchResponse = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), {
@@ -39,6 +60,7 @@ const setTtyState = (state: { stdin: boolean; stdout: boolean; stderr: boolean }
 describe('CLI: composio login', () => {
   afterEach(() => {
     vi.restoreAllMocks();
+    analyticsMocks.linkCalls.length = 0;
   });
 
   describe('login --help', () => {
@@ -124,6 +146,41 @@ describe('CLI: composio login', () => {
     );
   });
 
+  describe('login with stdout piped', () => {
+    const pipedStdoutUI = TerminalUI.of({
+      ...terminalUITestImpl,
+      capabilities: Effect.succeed(
+        getTerminalCapabilities({
+          stdin: { isTTY: true },
+          stdout: { isTTY: false },
+          stderr: { isTTY: true },
+        })
+      ),
+      useMakeSpinner: (message, _use) =>
+        Console.log(`[spinner] ${message}`).pipe(
+          Effect.andThen(Effect.die(new Error('test: interactive poll loop entered')))
+        ),
+    });
+
+    layer(TestLive({ terminalUI: pipedStdoutUI }))(it => {
+      it.scoped(
+        '[When] stdout is piped but stdin and stderr are TTYs [Then] login stays interactive instead of going headless',
+        () =>
+          Effect.gen(function* () {
+            const exit = yield* Effect.exit(cli(['login', '--no-browser']));
+
+            const output = (yield* MockConsole.getLines({ stripAnsi: true })).join('\n');
+            expect(output).toContain('[spinner] Waiting for login...');
+            expect(output).toContain('Please login using the following URL');
+            expect(output).not.toContain('Open this URL in your browser to log in:');
+            expect(output).not.toContain('hint: For agents:');
+            expect(output).not.toContain('Then run this command to complete login:');
+            expect(Exit.isFailure(exit)).toBe(true);
+          })
+      );
+    });
+  });
+
   layer(TestLive())(it => {
     it.scoped('[When] logging in with --user-api-key --org [Then] stores the chosen org', () =>
       Effect.gen(function* () {
@@ -203,6 +260,12 @@ describe('CLI: composio login', () => {
 
         const output = (yield* MockConsole.getLines({ stripAnsi: true })).join('\n');
         expect(output).toContain('Logged in as cli@example.com in "Selected Org"');
+
+        // The analytics identity is linked exactly once, and only after the
+        // credential was stored via ctx.login.
+        expect(analyticsMocks.linkCalls).toEqual([
+          { apolloUserId: 'member_123', loggedInAtLinkTime: true },
+        ]);
       })
     );
   });

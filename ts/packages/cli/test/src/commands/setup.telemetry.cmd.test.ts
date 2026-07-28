@@ -4,7 +4,7 @@ import { Effect, Exit } from 'effect';
 import { afterEach, beforeEach, vi } from 'vitest';
 import { CommandRunner } from 'src/services/command-runner';
 import { SetupSkillInstaller } from 'src/services/setup-skill-installer';
-import { TerminalUI } from 'src/services/terminal-ui';
+import { getTerminalCapabilities, TerminalUI } from 'src/services/terminal-ui';
 import { cli, TestLive } from 'test/__utils__';
 import { terminalUITestImpl } from 'test/__utils__/services/terminal-ui-test';
 
@@ -162,13 +162,13 @@ const makeSkillInstaller = (initiallyReady = false) => {
 // The cancellation path requires an interactive terminal to reach the confirm prompt.
 const decliningUI = TerminalUI.of({
   ...terminalUITestImpl,
-  capabilities: Effect.succeed({
-    stdinIsTTY: false,
-    stdoutIsTTY: false,
-    stderrIsTTY: false,
-    isInteractive: true,
-    canDecorate: false,
-  }),
+  capabilities: Effect.succeed(
+    getTerminalCapabilities({
+      stdin: { isTTY: true },
+      stdout: { isTTY: false },
+      stderr: { isTTY: true },
+    })
+  ),
   confirm: () => Effect.succeed(false),
 });
 
@@ -355,17 +355,18 @@ describe('CLI: composio setup telemetry', () => {
         const exit = yield* Effect.exit(cli(['setup', '--target', 'claude', '--yes']));
         expect(Exit.isFailure(exit)).toBe(true);
 
-        expect(eventsNamed('CLI_PLUGIN_SETUP_FAILED')).toEqual([
+        const failureEvents = eventsNamed('CLI_PLUGIN_SETUP_FAILED');
+        expect(failureEvents).toEqual([
           expect.objectContaining({
             properties: expect.objectContaining({
               agent_host: 'claude',
               operation: 'setup',
               phase: 'install',
               error_name: 'services/SetupProcessError',
-              error_message: expect.stringContaining('native operation failed'),
             }),
           }),
         ]);
+        expect(failureEvents[0]?.properties).not.toHaveProperty('error_message');
         expect(eventsNamed('CLI_PLUGIN_SETUP_SUCCEEDED')).toHaveLength(0);
       })
     );

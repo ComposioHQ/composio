@@ -14,5 +14,5 @@ export const {
   white,
   blue,
   cyanBright,
-  // eslint-disable-next-line no-restricted-syntax -- palette is created eagerly at import time, before any Effect runtime; honors the NO_COLOR convention
+  // eslint-disable-next-line eslint-js/no-restricted-syntax -- palette is created eagerly at import time, before any Effect runtime; honors the NO_COLOR convention
 } = color.createColors(!Boolean(process.env.NO_COLOR));

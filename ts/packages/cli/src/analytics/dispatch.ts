@@ -104,13 +104,13 @@ const getPostHogConfig = environmentProvider
   .load(
     Config.all({
       ingestUrl: optionalString('COMPOSIO_POSTHOG_INGEST_URL'),
-      projectKey: optionalString('COMPOSIO_POSTHOG_KEY'),
+      projectKey: optionalString('COMPOSIO_POSTHOG_PROJECT_API_KEY'),
     })
   )
   .pipe(
     Effect.map(({ ingestUrl, projectKey }) => ({
       ingestUrl: configuredString(ingestUrl) ?? constants.COMPOSIO_POSTHOG_INGEST_URL,
-      projectKey: configuredString(projectKey) ?? constants.COMPOSIO_POSTHOG_PROJECT_KEY,
+      projectKey: configuredString(projectKey) ?? constants.COMPOSIO_POSTHOG_PROJECT_API_KEY,
     }))
   );
 
@@ -157,7 +157,10 @@ const getAnalyticsPaths = Effect.gen(function* () {
   return {
     analyticsDir,
     analyticsStatePath: path.join(analyticsDir, ANALYTICS_STATE_FILE_NAME),
-    userConfigPath: path.join(analyticsDir, constants.USER_CONFIG_FILE_NAME),
+    // user_data.json and config.json live in the cache dir (setup-cache-dir.ts,
+    // cli-user-config.ts), which COMPOSIO_CACHE_DIR relocates away from ~/.composio.
+    userConfigPath: path.join(cacheDir, constants.USER_CONFIG_FILE_NAME),
+    cliConfigPath: path.join(cacheDir, constants.CLI_CONFIG_FILE_NAME),
     consumerShortTermCachePath: path.join(cacheDir, CONSUMER_SHORT_TERM_CACHE_FILE_NAME),
   };
 });
@@ -174,6 +177,7 @@ type AnalyticsState = {
   readonly apollo_user_id?: string;
   readonly aliased_apollo_user_id?: string;
   readonly api_key_fingerprint?: string;
+  readonly stitch_attempted_at?: string;
   readonly created_at?: string;
 };
 
@@ -183,6 +187,19 @@ const readAnalyticsState = Effect.gen(function* () {
   const paths = yield* getAnalyticsPaths;
   return yield* readOptionalJson<AnalyticsState>(paths.analyticsStatePath);
 });
+
+// Concurrent CLI processes write this file; temp-file + rename keeps each
+// write atomic so readers never observe partial JSON.
+const writeAnalyticsStateFile = (contents: string) =>
+  Effect.gen(function* () {
+    const fs = yield* FileSystem.FileSystem;
+    const paths = yield* getAnalyticsPaths;
+    const temporaryPath = `${paths.analyticsStatePath}.${crypto.randomUUID().slice(0, 8)}.tmp`;
+    yield* fs.writeFileString(temporaryPath, contents);
+    yield* fs
+      .rename(temporaryPath, paths.analyticsStatePath)
+      .pipe(Effect.tapError(() => fs.remove(temporaryPath).pipe(Effect.ignore)));
+  });
 
 const getOrCreateInstallId = Effect.gen(function* () {
   const fs = yield* FileSystem.FileSystem;
@@ -204,7 +221,7 @@ const getOrCreateInstallId = Effect.gen(function* () {
     install_id: installId,
     created_at: createdAt,
   });
-  yield* fs.writeFileString(paths.analyticsStatePath, contents);
+  yield* writeAnalyticsStateFile(contents);
   return installId;
 }).pipe(Effect.catchAll(() => makeInstallId));
 
@@ -224,7 +241,7 @@ const mergeAnalyticsState = (installId: string, patch: Partial<AnalyticsState>) 
       created_at: state?.created_at ?? DateTime.formatIso(yield* DateTime.now),
       ...patch,
     });
-    yield* fs.writeFileString(paths.analyticsStatePath, contents);
+    yield* writeAnalyticsStateFile(contents);
   }).pipe(Effect.catchAll(() => Effect.void));
 
 const readUserConfig = Effect.gen(function* () {
@@ -259,19 +276,31 @@ const getApiKeyFingerprint = Effect.map(getUserApiKey, apiKey =>
   apiKey ? fingerprintApiKey(apiKey) : null
 );
 
+// The keychain* security modes strip the api key from user_data.json, so no
+// fingerprint is computable here; a parseable user config in one of those
+// modes is the signal that the persisted identity still belongs to a login.
+const keyringBackedLoginPresent = Effect.gen(function* () {
+  const paths = yield* getAnalyticsPaths;
+  const cliConfig = yield* readOptionalJson<{ security?: unknown }>(paths.cliConfigPath);
+  if (cliConfig?.security !== 'keychain' && cliConfig?.security !== 'keychain-subprocess') {
+    return false;
+  }
+  return (yield* readUserConfig) !== undefined;
+});
+
 const getDistinctId = (installId: string) =>
   Effect.gen(function* () {
     const state = yield* readAnalyticsState;
     const apolloUserId = state?.apollo_user_id;
     const fingerprint = yield* getApiKeyFingerprint;
 
-    if (
-      typeof apolloUserId === 'string' &&
-      apolloUserId.length > 0 &&
-      fingerprint !== null &&
-      fingerprint === state?.api_key_fingerprint
-    ) {
-      return apolloUserId;
+    if (typeof apolloUserId === 'string' && apolloUserId.length > 0) {
+      if (fingerprint !== null && fingerprint === state?.api_key_fingerprint) {
+        return apolloUserId;
+      }
+      if (fingerprint === null && (yield* keyringBackedLoginPresent)) {
+        return apolloUserId;
+      }
     }
 
     if (typeof state?.aliased_apollo_user_id !== 'string') {
@@ -279,6 +308,54 @@ const getDistinctId = (installId: string) =>
     }
     return fingerprint !== null ? `user_${fingerprint}` : `anon_${installId}`;
   });
+
+// The direct-to-PostHog path bypasses Apollo's server-side sanitizer, so
+// secret-shaped tokens are redacted client-side before any envelope leaves.
+const REDACTED_VALUE = '[redacted]';
+const KNOWN_SECRET_PATTERNS: ReadonlyArray<RegExp> = [
+  /\buak_[A-Za-z0-9_-]+/gu,
+  /\bak_[A-Za-z0-9_-]+/gu,
+  /\bphc_[A-Za-z0-9]+/gu,
+  /\bsk-[A-Za-z0-9_-]+/gu,
+  /\bghp_[A-Za-z0-9]+/gu,
+  /\bBearer\s+[A-Za-z0-9._~+/=-]+/gu,
+];
+
+// Mixed-case-plus-digit tokens of api-key length; single-case tokens
+// (uuids, hex ids, tool slugs) stay untouched.
+const isHighEntropyToken = (token: string): boolean =>
+  token.length >= 24 &&
+  /^[A-Za-z0-9+/=_-]+$/u.test(token) &&
+  /[a-z]/u.test(token) &&
+  /[A-Z]/u.test(token) &&
+  /[0-9]/u.test(token);
+
+const scrubSecretsFromString = (value: string): string =>
+  KNOWN_SECRET_PATTERNS.reduce(
+    (scrubbed, pattern) => scrubbed.replace(pattern, REDACTED_VALUE),
+    value
+  )
+    .split(/(\s+)/u)
+    .map(part => (isHighEntropyToken(part) ? REDACTED_VALUE : part))
+    .join('');
+
+const scrubSecrets = (value: unknown): unknown => {
+  if (typeof value === 'string') {
+    return scrubSecretsFromString(value);
+  }
+  if (Array.isArray(value)) {
+    return value.map(scrubSecrets);
+  }
+  if (value !== null && typeof value === 'object') {
+    return Object.fromEntries(
+      Object.entries(value as Record<string, unknown>).map(([key, entry]) => [
+        key,
+        scrubSecrets(entry),
+      ])
+    );
+  }
+  return value;
+};
 
 const cwdHash = (cwd: string): string => djb2Hash(cwd).toString(36);
 
@@ -553,10 +630,10 @@ export const trackCliEventEffect = (event: TrackEvent) =>
     const distinctId = yield* getDistinctId(installId);
     const orgId = yield* getOrgId;
     const sentAt = DateTime.formatIso(yield* DateTime.now);
-    const properties = {
+    const properties = scrubSecrets({
       ...(enrichedEvent.properties ?? {}),
       ...(orgId ? { org_id: orgId } : {}),
-    };
+    }) as Record<string, unknown>;
     const envelope: AnalyticsEnvelope = {
       event: enrichedEvent.name,
       ...(Object.keys(properties).length > 0 ? { properties } : {}),
@@ -605,8 +682,27 @@ export const linkApolloIdentityForAnalytics = (apolloUserId: string, apiKey?: st
       return;
     }
 
-    const state = yield* readAnalyticsState;
-    const installId = yield* getOrCreateInstallId;
+    let state = yield* readAnalyticsState;
+    let installId = yield* getOrCreateInstallId;
+
+    // A second user on this machine must not merge into the previous user's
+    // PostHog person: rotate to a fresh install_id before linking.
+    const previousIdentity = state?.apollo_user_id ?? state?.aliased_apollo_user_id;
+    const identityChanged =
+      typeof previousIdentity === 'string' &&
+      previousIdentity.length > 0 &&
+      previousIdentity !== resolved;
+    if (identityChanged) {
+      installId = yield* makeInstallId;
+      yield* mergeAnalyticsState(installId, {
+        install_id: installId,
+        apollo_user_id: undefined,
+        aliased_apollo_user_id: undefined,
+        api_key_fingerprint: undefined,
+      });
+      state = yield* readAnalyticsState;
+    }
+
     const fingerprint =
       typeof apiKey === 'string' && apiKey.length > 0
         ? fingerprintApiKey(apiKey)
@@ -624,6 +720,55 @@ export const linkApolloIdentityForAnalytics = (apolloUserId: string, apiKey?: st
     if (yield* emitPostHogAlias(installId, resolved)) {
       yield* mergeAnalyticsState(installId, { aliased_apollo_user_id: resolved });
     }
+  }).pipe(Effect.catchAllCause(() => Effect.void));
+
+const STITCH_ATTEMPT_INTERVAL_MS = 24 * 60 * 60 * 1000;
+const STITCH_SESSION_INFO_TIMEOUT = '1500 millis';
+
+type AnalyticsSessionInfoFetcher = (params: {
+  baseURL: string;
+  userApiKey: string;
+}) => Effect.Effect<{ readonly org_member: { readonly id: string } }, unknown>;
+
+// Repairs a missing/stale persisted identity for already-logged-in installs
+// (e.g. keyring-stored keys that predate identity stitching). The session-info
+// fetcher is injected because composio-clients already imports this module.
+export const ensureAnalyticsIdentity = (params: {
+  apiKey: string;
+  baseURL: string;
+  fetchSessionInfo: AnalyticsSessionInfoFetcher;
+}) =>
+  Effect.gen(function* () {
+    if ((yield* analyticsDisabled) || params.apiKey.trim().length === 0) {
+      return;
+    }
+
+    const state = yield* readAnalyticsState;
+    const fingerprint = fingerprintApiKey(params.apiKey);
+    const identityLinked =
+      typeof state?.apollo_user_id === 'string' &&
+      state.apollo_user_id.length > 0 &&
+      state.api_key_fingerprint === fingerprint;
+    if (identityLinked) {
+      return;
+    }
+
+    const lastAttemptMs = Date.parse(state?.stitch_attempted_at ?? '');
+    const nowMs = yield* Clock.currentTimeMillis;
+    if (Number.isFinite(lastAttemptMs) && nowMs - lastAttemptMs < STITCH_ATTEMPT_INTERVAL_MS) {
+      return;
+    }
+
+    // Persisted before the network attempt so failures cannot retry-storm.
+    const installId = yield* getOrCreateInstallId;
+    yield* mergeAnalyticsState(installId, {
+      stitch_attempted_at: DateTime.formatIso(yield* DateTime.now),
+    });
+
+    const info = yield* params
+      .fetchSessionInfo({ baseURL: params.baseURL, userApiKey: params.apiKey })
+      .pipe(Effect.timeout(STITCH_SESSION_INFO_TIMEOUT));
+    yield* linkApolloIdentityForAnalytics(info.org_member.id, params.apiKey);
   }).pipe(Effect.catchAllCause(() => Effect.void));
 
 export const clearApolloIdentityForAnalytics = Effect.gen(function* () {

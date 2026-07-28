@@ -7,6 +7,7 @@ import * as tempy from 'tempy';
 import {
   clearApolloIdentityForAnalytics,
   emitPostHogAlias,
+  ensureAnalyticsIdentity,
   getCurrentCwdSessionId,
   linkApolloIdentityForAnalytics,
   readApiBaseUrl,
@@ -59,7 +60,7 @@ const enableTelemetry = (apiKey = 'uak_test') => {
   vi.stubEnv('COMPOSIO_DISABLE_TELEMETRY', 'false');
   // A configured project key is what gates delivery/worker spawning; enabled
   // telemetry implies a target. The no-key path is covered explicitly below.
-  vi.stubEnv('COMPOSIO_POSTHOG_KEY', 'phc_test_key');
+  vi.stubEnv('COMPOSIO_POSTHOG_PROJECT_API_KEY', 'phc_test_key');
 };
 
 const decodeWorkerPayload = <A>(encodedPayload: string): A => {
@@ -109,10 +110,8 @@ describe('CLI analytics dispatch', () => {
       return Effect.gen(function* () {
         const fs = yield* FileSystem.FileSystem;
         const path = yield* Path.Path;
-        const composioDir = path.join(home, '.composio');
-        yield* fs.makeDirectory(composioDir, { recursive: true });
         yield* fs.writeFileString(
-          path.join(composioDir, USER_CONFIG_FILE_NAME),
+          path.join(cacheDir, USER_CONFIG_FILE_NAME),
           JSON.stringify({ base_url: 'https://backend.example.test///' })
         );
         yield* fs.writeFileString(
@@ -175,7 +174,7 @@ describe('CLI analytics dispatch', () => {
     // the ingest URL + a fake public key keeps the test off the real project.
     vi.stubEnv('COMPOSIO_BASE_URL', '');
     vi.stubEnv('COMPOSIO_POSTHOG_INGEST_URL', 'https://posthog.example.test/i/v0/e/');
-    vi.stubEnv('COMPOSIO_POSTHOG_KEY', 'phc_test_key');
+    vi.stubEnv('COMPOSIO_POSTHOG_PROJECT_API_KEY', 'phc_test_key');
     const fetchSpy = vi
       .spyOn(globalThis, 'fetch')
       .mockResolvedValue(new Response(null, { status: 200 }));
@@ -231,7 +230,7 @@ describe('CLI analytics dispatch', () => {
     enableTelemetry();
     // No project key -> the empty embedded placeholder, so the worker's delivery
     // is a safe no-op until the real key is baked in.
-    vi.stubEnv('COMPOSIO_POSTHOG_KEY', '');
+    vi.stubEnv('COMPOSIO_POSTHOG_PROJECT_API_KEY', '');
     const fetchSpy = vi
       .spyOn(globalThis, 'fetch')
       .mockResolvedValue(new Response(null, { status: 200 }));
@@ -254,7 +253,7 @@ describe('CLI analytics dispatch', () => {
     enableTelemetry();
     // Empty key: forks / local builds without a baked key must not spawn a
     // detached worker on every command just to have it no-op.
-    vi.stubEnv('COMPOSIO_POSTHOG_KEY', '');
+    vi.stubEnv('COMPOSIO_POSTHOG_PROJECT_API_KEY', '');
     process.argv[1] = scriptPath;
 
     return Effect.gen(function* () {
@@ -504,7 +503,7 @@ describe('CLI analytics dispatch', () => {
     const home = tempy.temporaryDirectory();
     const scriptPath = `${home}/composio.ts`;
     enableTelemetry();
-    vi.stubEnv('COMPOSIO_POSTHOG_KEY', '');
+    vi.stubEnv('COMPOSIO_POSTHOG_PROJECT_API_KEY', '');
     process.argv[1] = scriptPath;
 
     return Effect.gen(function* () {
@@ -522,7 +521,7 @@ describe('CLI analytics dispatch', () => {
       expect(afterSkip.aliased_apollo_user_id).toBeUndefined();
 
       // Once a key is configured the alias is attempted again.
-      vi.stubEnv('COMPOSIO_POSTHOG_KEY', 'phc_test_key');
+      vi.stubEnv('COMPOSIO_POSTHOG_PROJECT_API_KEY', 'phc_test_key');
       yield* linkApolloIdentityForAnalytics('om_apollo_retry');
       expect(childProcessMocks.spawn).toHaveBeenCalledTimes(1);
       const afterRetry = JSON.parse(
@@ -738,6 +737,7 @@ describe('CLI analytics dispatch', () => {
       const home = tempy.temporaryDirectory();
       const scriptPath = `${home}/composio.ts`;
       enableTelemetry();
+      vi.stubEnv('COMPOSIO_CACHE_DIR', `${home}/.composio`);
       process.argv[1] = scriptPath;
 
       return Effect.gen(function* () {
@@ -759,6 +759,33 @@ describe('CLI analytics dispatch', () => {
       }).pipe(Effect.provide(makePlatformLayer(home)));
     });
 
+    it.effect('reads the user config from COMPOSIO_CACHE_DIR rather than the homedir', () => {
+      const home = tempy.temporaryDirectory();
+      const cacheDir = tempy.temporaryDirectory();
+      const scriptPath = `${home}/composio.ts`;
+      enableTelemetry();
+      vi.stubEnv('COMPOSIO_CACHE_DIR', cacheDir);
+      process.argv[1] = scriptPath;
+
+      return Effect.gen(function* () {
+        const fs = yield* FileSystem.FileSystem;
+        const path = yield* Path.Path;
+        yield* fs.writeFileString(scriptPath, '');
+        // The user config exists only in the relocated cache dir; ~/.composio
+        // never receives a copy.
+        yield* fs.writeFileString(
+          path.join(cacheDir, USER_CONFIG_FILE_NAME),
+          JSON.stringify({ api_key: 'uak_test', org_id: 'org_cache_dir' })
+        );
+
+        yield* trackCliEventEffect({ name: 'producer_event' });
+
+        const args = childProcessMocks.spawn.mock.calls[0]![1] as string[];
+        const payload = decodeWorkerPayload<{ properties?: { org_id?: string } }>(args[2]!);
+        expect(payload.properties?.org_id).toBe('org_cache_dir');
+      }).pipe(Effect.provide(makePlatformLayer(home)));
+    });
+
     it.effect('does not create the identity file when logging out with telemetry disabled', () => {
       const home = tempy.temporaryDirectory();
       enableTelemetry();
@@ -774,7 +801,129 @@ describe('CLI analytics dispatch', () => {
       }).pipe(Effect.provide(makePlatformLayer(home)));
     });
 
-    it.effect('never re-aliases one install onto a second Apollo user', () => {
+    it.effect('rotates to a fresh install_id when a second Apollo user links', () => {
+      const home = tempy.temporaryDirectory();
+      const scriptPath = `${home}/composio.ts`;
+      enableTelemetry();
+      process.argv[1] = scriptPath;
+
+      return Effect.gen(function* () {
+        const fs = yield* FileSystem.FileSystem;
+        const path = yield* Path.Path;
+        yield* fs.writeFileString(scriptPath, '');
+
+        yield* linkApolloIdentityForAnalytics('om_first_user');
+        expect(childProcessMocks.spawn).toHaveBeenCalledTimes(1);
+        const firstArgs = childProcessMocks.spawn.mock.calls[0]![1] as string[];
+        const firstPayload = decodeWorkerPayload<{ installId: string }>(firstArgs[2]!);
+
+        // Logout, then log in as a different user on the same device: the
+        // second user is aliased to a fresh install_id, never the one already
+        // merged into the first user's PostHog person.
+        yield* clearApolloIdentityForAnalytics;
+        yield* linkApolloIdentityForAnalytics('om_second_user');
+        expect(childProcessMocks.spawn).toHaveBeenCalledTimes(2);
+        const secondArgs = childProcessMocks.spawn.mock.calls[1]![1] as string[];
+        const secondPayload = decodeWorkerPayload<{
+          event: string;
+          distinctId: string;
+          installId: string;
+          properties: { alias: string };
+        }>(secondArgs[2]!);
+        expect(secondPayload.event).toBe('$create_alias');
+        expect(secondPayload.distinctId).toBe('om_second_user');
+        expect(secondPayload.installId).not.toBe(firstPayload.installId);
+        expect(secondPayload.properties.alias).toBe(secondPayload.installId);
+
+        const persisted = JSON.parse(
+          yield* fs.readFileString(path.join(home, '.composio', 'analytics.json'), 'utf8')
+        ) as { install_id: string; apollo_user_id: string; aliased_apollo_user_id: string };
+        expect(persisted.install_id).toBe(secondPayload.installId);
+        expect(persisted.apollo_user_id).toBe('om_second_user');
+        expect(persisted.aliased_apollo_user_id).toBe('om_second_user');
+      }).pipe(Effect.provide(makePlatformLayer(home)));
+    });
+
+    it.effect('trusts the persisted identity when the api key lives in the OS keyring', () => {
+      const home = tempy.temporaryDirectory();
+      const scriptPath = `${home}/composio.ts`;
+      // No env key and no plaintext api_key on disk -> no fingerprint.
+      enableTelemetry('');
+      vi.stubEnv('COMPOSIO_CACHE_DIR', `${home}/.composio`);
+      process.argv[1] = scriptPath;
+
+      return Effect.gen(function* () {
+        const fs = yield* FileSystem.FileSystem;
+        const path = yield* Path.Path;
+        yield* fs.writeFileString(scriptPath, '');
+        const composioDir = path.join(home, '.composio');
+        yield* fs.makeDirectory(composioDir, { recursive: true });
+        yield* fs.writeFileString(
+          path.join(composioDir, 'config.json'),
+          JSON.stringify({ security: 'keychain-subprocess' })
+        );
+        yield* fs.writeFileString(
+          path.join(composioDir, USER_CONFIG_FILE_NAME),
+          JSON.stringify({ base_url: 'https://backend.example.test', org_id: 'org_keychain' })
+        );
+        yield* fs.writeFileString(
+          path.join(composioDir, 'analytics.json'),
+          JSON.stringify({
+            install_id: 'install_keychain',
+            apollo_user_id: 'om_keychain_user',
+            aliased_apollo_user_id: 'om_keychain_user',
+            api_key_fingerprint: 'abc.5',
+          })
+        );
+
+        yield* trackCliEventEffect({ name: 'producer_event' });
+
+        const args = childProcessMocks.spawn.mock.calls[0]![1] as string[];
+        const payload = decodeWorkerPayload<{ distinctId: string }>(args[2]!);
+        expect(payload.distinctId).toBe('om_keychain_user');
+      }).pipe(Effect.provide(makePlatformLayer(home)));
+    });
+
+    it.effect('does not trust a fingerprint-less identity outside keychain modes', () => {
+      const home = tempy.temporaryDirectory();
+      const scriptPath = `${home}/composio.ts`;
+      enableTelemetry('');
+      vi.stubEnv('COMPOSIO_CACHE_DIR', `${home}/.composio`);
+      process.argv[1] = scriptPath;
+
+      return Effect.gen(function* () {
+        const fs = yield* FileSystem.FileSystem;
+        const path = yield* Path.Path;
+        yield* fs.writeFileString(scriptPath, '');
+        const composioDir = path.join(home, '.composio');
+        yield* fs.makeDirectory(composioDir, { recursive: true });
+        yield* fs.writeFileString(
+          path.join(composioDir, 'config.json'),
+          JSON.stringify({ security: 'json' })
+        );
+        yield* fs.writeFileString(
+          path.join(composioDir, USER_CONFIG_FILE_NAME),
+          JSON.stringify({ org_id: 'org_json' })
+        );
+        yield* fs.writeFileString(
+          path.join(composioDir, 'analytics.json'),
+          JSON.stringify({
+            install_id: 'install_json',
+            apollo_user_id: 'om_json_user',
+            aliased_apollo_user_id: 'om_json_user',
+            api_key_fingerprint: 'abc.5',
+          })
+        );
+
+        yield* trackCliEventEffect({ name: 'producer_event' });
+
+        const args = childProcessMocks.spawn.mock.calls[0]![1] as string[];
+        const payload = decodeWorkerPayload<{ distinctId: string }>(args[2]!);
+        expect(payload.distinctId).toBe('anon_install_json');
+      }).pipe(Effect.provide(makePlatformLayer(home)));
+    });
+
+    it.effect('redacts secret-shaped tokens from event properties', () => {
       const home = tempy.temporaryDirectory();
       const scriptPath = `${home}/composio.ts`;
       enableTelemetry();
@@ -784,13 +933,94 @@ describe('CLI analytics dispatch', () => {
         const fs = yield* FileSystem.FileSystem;
         yield* fs.writeFileString(scriptPath, '');
 
-        yield* linkApolloIdentityForAnalytics('om_first_user');
-        expect(childProcessMocks.spawn).toHaveBeenCalledTimes(1);
+        yield* trackCliEventEffect({
+          name: CLI_ANALYTICS_EVENTS.CLI_COMMAND_FAILED,
+          properties: {
+            error_message: 'Auth failed for uak_AbC123xyz_secret via Bearer eyJhbGciOi.Jt0ken',
+            nested: { tokens: ['ghp_ABCdef1234567890'] },
+            duration_ms: 42,
+          },
+        });
 
-        // Logout, then log in as a different user on the same device.
-        yield* clearApolloIdentityForAnalytics;
-        yield* linkApolloIdentityForAnalytics('om_second_user');
+        const args = childProcessMocks.spawn.mock.calls[0]![1] as string[];
+        const payload = decodeWorkerPayload<{
+          properties: {
+            error_message: string;
+            nested: { tokens: string[] };
+            duration_ms: number;
+          };
+        }>(args[2]!);
+        expect(payload.properties.error_message).toBe('Auth failed for [redacted] via [redacted]');
+        expect(payload.properties.nested.tokens).toEqual(['[redacted]']);
+        expect(payload.properties.duration_ms).toBe(42);
+      }).pipe(Effect.provide(makePlatformLayer(home)));
+    });
+
+    it.effect('bootstrap stitch links a missing identity through session info', () => {
+      const home = tempy.temporaryDirectory();
+      const scriptPath = `${home}/composio.ts`;
+      enableTelemetry('uak_stitch');
+      process.argv[1] = scriptPath;
+      const fetchSessionInfo = vi.fn(() => Effect.succeed({ org_member: { id: 'om_stitched' } }));
+
+      return Effect.gen(function* () {
+        const fs = yield* FileSystem.FileSystem;
+        yield* fs.writeFileString(scriptPath, '');
+
+        yield* ensureAnalyticsIdentity({
+          apiKey: 'uak_stitch',
+          baseURL: 'https://backend.example.test',
+          fetchSessionInfo,
+        });
+
+        expect(fetchSessionInfo).toHaveBeenCalledTimes(1);
         expect(childProcessMocks.spawn).toHaveBeenCalledTimes(1);
+        const args = childProcessMocks.spawn.mock.calls[0]![1] as string[];
+        const payload = decodeWorkerPayload<{ event: string; distinctId: string }>(args[2]!);
+        expect(payload.event).toBe('$create_alias');
+        expect(payload.distinctId).toBe('om_stitched');
+
+        // Once linked under this credential, later runs make no network attempt.
+        yield* ensureAnalyticsIdentity({
+          apiKey: 'uak_stitch',
+          baseURL: 'https://backend.example.test',
+          fetchSessionInfo,
+        });
+        expect(fetchSessionInfo).toHaveBeenCalledTimes(1);
+      }).pipe(Effect.provide(makePlatformLayer(home)));
+    });
+
+    it.effect('bootstrap stitch attempts at most once per day after a failure', () => {
+      const home = tempy.temporaryDirectory();
+      const scriptPath = `${home}/composio.ts`;
+      enableTelemetry('uak_stitch');
+      process.argv[1] = scriptPath;
+      const fetchSessionInfo = vi.fn(() => Effect.fail(new Error('offline')));
+
+      return Effect.gen(function* () {
+        const fs = yield* FileSystem.FileSystem;
+        const path = yield* Path.Path;
+        yield* fs.writeFileString(scriptPath, '');
+
+        yield* ensureAnalyticsIdentity({
+          apiKey: 'uak_stitch',
+          baseURL: 'https://backend.example.test',
+          fetchSessionInfo,
+        });
+        expect(fetchSessionInfo).toHaveBeenCalledTimes(1);
+
+        const persisted = JSON.parse(
+          yield* fs.readFileString(path.join(home, '.composio', 'analytics.json'), 'utf8')
+        ) as { stitch_attempted_at?: string };
+        expect(typeof persisted.stitch_attempted_at).toBe('string');
+
+        // Identity is still unlinked, but the attempt is throttled for 24h.
+        yield* ensureAnalyticsIdentity({
+          apiKey: 'uak_stitch',
+          baseURL: 'https://backend.example.test',
+          fetchSessionInfo,
+        });
+        expect(fetchSessionInfo).toHaveBeenCalledTimes(1);
       }).pipe(Effect.provide(makePlatformLayer(home)));
     });
   });

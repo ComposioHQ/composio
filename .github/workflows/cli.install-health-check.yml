@@ -16,13 +16,10 @@ jobs:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
       # Resolve the newest PUBLISHED stable @composio/cli release — exactly what install.sh and
-      # the /releases/latest redirect (Homebrew, humans) resolve and download from.
+      # the /releases/latest redirect (humans) resolve and download from.
       #
-      # Deliberately NOT `npm view @composio/cli version`: npm's latest dist-tag is bumped by
-      # changesets minutes before the binary workflow finishes the draft build and publishes the
-      # GitHub release. Pinning to the npm version would 404 during that healthy publish gap and
-      # false-page hourly. Drafts are excluded here, so this only ever resolves a fully-published
-      # release — the in-flight one stays invisible until its assets are verified and attached.
+      # Drafts are excluded here, so this only ever resolves a fully-published release — an
+      # in-flight one stays invisible until its assets are verified and attached.
       - name: Resolve newest published release
         id: resolve
         run: |
@@ -65,7 +62,7 @@ jobs:
 
       - name: Send Slack Notification (Failure)
         if: failure()
-        uses: slackapi/slack-github-action@45a88b9581bfab2566dc881e2cd66d334e621e2c # v3.0.3
+        uses: slackapi/slack-github-action@dcb1066f776dd043e64d0e8ba94ca15cc7e1875d # v4.0.0
         with:
           webhook: ${{ secrets.SLACK_RELEASE_WEBHOOK_URL }}
           webhook-type: incoming-webhook

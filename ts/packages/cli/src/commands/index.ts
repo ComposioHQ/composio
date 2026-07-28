@@ -57,6 +57,7 @@ import {
 import { CLI_EXPERIMENTAL_FEATURES } from 'src/constants';
 import { installSkill, type SkillInstallTarget } from 'src/effects/install-skill';
 import { experimental, type CommandVisibility, tagged, visibleValues } from './feature-tags';
+import { withBackgroundUpdateCheck } from './background-update-check';
 
 const ROOT_COMMANDS = [
   tagged(versionCmd),
@@ -316,10 +317,10 @@ const normalizeHiddenDebugFlags = (argv: ReadonlyArray<string>): ReadonlyArray<s
   // The hidden --acp-only flag is stripped from argv before @effect/cli parses it, so its value
   // travels to run.cmd.ts through the environment; effect/Config cannot write or delete env vars.
   if (acpOnly === undefined) {
-    // eslint-disable-next-line no-restricted-syntax -- env delete clears a stale hidden-flag value
+    // eslint-disable-next-line eslint-js/no-restricted-syntax -- env delete clears a stale hidden-flag value
     delete process.env.COMPOSIO_RUN_ACP_ONLY;
   } else {
-    // eslint-disable-next-line no-restricted-syntax -- env write hands the stripped flag to run.cmd
+    // eslint-disable-next-line eslint-js/no-restricted-syntax -- env write hands the stripped flag to run.cmd
     process.env.COMPOSIO_RUN_ACP_ONLY = acpOnly ? '1' : '0';
   }
 
@@ -452,7 +453,7 @@ export const runWithConfig = Effect.gen(function* () {
     isExperimentalFeatureEnabled: feature => cliUserConfig.isExperimentalFeatureEnabled(feature),
   };
   const version = yield* getVersion;
-  const rootCommand = buildRootCommand(visibility);
+  const rootCommand = withBackgroundUpdateCheck(buildRootCommand(visibility));
   const run = Command.run(rootCommand, {
     name: 'composio',
     executable: 'composio',

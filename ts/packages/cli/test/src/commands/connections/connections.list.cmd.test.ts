@@ -2,7 +2,7 @@ import { describe, expect, layer } from '@effect/vitest';
 import { ConfigProvider, Console, Effect } from 'effect';
 import type { ConnectedAccountItem } from 'src/models/connected-accounts';
 import { extendConfigProvider } from 'src/services/config';
-import { TerminalUI } from 'src/services/terminal-ui';
+import { getTerminalCapabilities, TerminalUI } from 'src/services/terminal-ui';
 import { ComposioUserContext } from 'src/services/user-context';
 import { cli, TestLive, MockConsole } from 'test/__utils__';
 import type { TestLiveInput } from 'test/__utils__/services/test-layer';
@@ -90,13 +90,13 @@ const testConfigProvider = ConfigProvider.fromMap(
 
 const terminalUIWithConfirm = (confirmed: boolean) =>
   TerminalUI.of({
-    capabilities: Effect.succeed({
-      stdinIsTTY: true,
-      stdoutIsTTY: true,
-      stderrIsTTY: true,
-      isInteractive: true,
-      canDecorate: true,
-    }),
+    capabilities: Effect.succeed(
+      getTerminalCapabilities({
+        stdin: { isTTY: true },
+        stdout: { isTTY: true },
+        stderr: { isTTY: true },
+      })
+    ),
     output: data => Console.log(data),
     error: data => Console.error(data),
     intro: title => Console.log(`-- ${title} --`),

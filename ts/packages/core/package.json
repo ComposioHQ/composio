@@ -88,8 +88,7 @@
     "clean": "git clean -xdf node_modules",
     "build": "pnpm exec tsdown",
     "test": "vitest run",
-    "typecheck": "pnpm exec tsgo --noEmit --skipLibCheck && pnpm exec tsgo --noEmit --skipLibCheck -p tsconfig.type-tests.json",
-    "typecheck:tsc": "tsc --noEmit --skipLibCheck && tsc --noEmit --skipLibCheck -p tsconfig.type-tests.json",
+    "typecheck": "tsc --noEmit --skipLibCheck && tsc --noEmit --skipLibCheck -p tsconfig.type-tests.json",
     "generate:docs": "tsx scripts/generate-docs.ts"
   },
   "keywords": [],
@@ -104,7 +103,7 @@
     "tsdown": "catalog:",
     "tsx": "catalog:",
     "typedoc": "^0.28.20",
-    "typescript": "catalog:",
+    "typescript": "catalog:ts6",
     "vitest": "catalog:",
     "zod": "catalog:"
   },
@@ -117,7 +116,7 @@
     "@types/json-schema": "^7.0.15",
     "openai": "catalog:",
     "picocolors": "catalog:",
-    "pusher-js": "^8.5.0",
+    "pusher-js": "^8.6.0",
     "semver": "^7.8.5",
     "zod-to-json-schema": "catalog:"
   },

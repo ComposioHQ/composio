@@ -23,25 +23,12 @@ permissions:
   contents: read
 
 jobs:
-  toolchain-versions:
-    name: Read toolchain test matrix
-    runs-on: ubuntu-latest
-    outputs:
-      node_install_compat: ${{ steps.versions.outputs.node_install_compat }}
-    steps:
-      - name: Checkout
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
-
-      - name: Read versions
-        id: versions
-        run: echo "node_install_compat=$(jq -c '.node_install_compat' toolchain-versions.json)" >> "$GITHUB_OUTPUT"
-
   install-script-unit-tests:
     name: Install Script Unit Tests
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Test release resolution fallback
         run: bash test/install-sh-release-resolution.test.sh
@@ -95,7 +82,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Resolve and validate target release
         id: release_target
@@ -438,39 +425,6 @@ jobs:
             # Don't exit 1 here as this is expected to fail
           fi
 
-  test-npm-fallback:
-    name: Test npm Installation Fallback
-    needs: toolchain-versions
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-latest, macos-15]
-        node-version: ${{ fromJSON(needs.toolchain-versions.outputs.node_install_compat) }}
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
-
-      - name: Setup Node.js
-        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
-        with:
-          node-version: ${{ matrix.node-version }}
-
-      - name: Test npm installation
-        run: |
-          echo "Testing npm installation as fallback..."
-
-          # This would normally install from npm registry
-          # For testing, we just verify the command works
-          if command -v npm &> /dev/null; then
-            echo "✅ npm is available"
-            npm --version
-          else
-            echo "❌ npm not available"
-            exit 1
-          fi
-
   test-architecture-detection:
     name: Test Architecture Detection
     runs-on: ${{ matrix.os }}
@@ -493,7 +447,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Test architecture detection
         run: |
@@ -538,7 +492,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Test required tools
         run: |
@@ -584,7 +538,6 @@ jobs:
       [
         install-script-unit-tests,
         test-install-script,
-        test-npm-fallback,
         test-architecture-detection,
         test-prerequisites,
       ]
@@ -609,12 +562,6 @@ jobs:
             echo "❌ **Install Script Tests**: FAILED" >> $GITHUB_STEP_SUMMARY
           fi
 
-          if [[ "${{ needs.test-npm-fallback.result }}" == "success" ]]; then
-            echo "✅ **npm Fallback Tests**: PASSED" >> $GITHUB_STEP_SUMMARY
-          else
-            echo "❌ **npm Fallback Tests**: FAILED" >> $GITHUB_STEP_SUMMARY
-          fi
-
           if [[ "${{ needs.test-architecture-detection.result }}" == "success" ]]; then
             echo "✅ **Architecture Detection**: PASSED" >> $GITHUB_STEP_SUMMARY
           else
@@ -634,5 +581,4 @@ jobs:
           echo "- **macOS x64**: macOS 15 (Intel)" >> $GITHUB_STEP_SUMMARY
           echo "- **macOS ARM64**: macOS 14, macOS 15 (Apple Silicon)" >> $GITHUB_STEP_SUMMARY
           echo "- **Shells**: Bash and Zsh" >> $GITHUB_STEP_SUMMARY
-          echo "- **Node.js**: 18, 20, 22 (npm fallback)" >> $GITHUB_STEP_SUMMARY
           echo "- **Total platforms**: 4 architectures across 15+ environments" >> $GITHUB_STEP_SUMMARY

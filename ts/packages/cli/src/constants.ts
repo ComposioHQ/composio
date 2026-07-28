@@ -82,13 +82,16 @@ export const PROJECT_COMPOSIO_DIR = '.composio';
  */
 export const COMPOSIO_POSTHOG_INGEST_URL = 'https://us.i.posthog.com/i/v0/e/';
 
-declare const COMPOSIO_POSTHOG_KEY_BAKED: string | undefined;
+declare const COMPOSIO_POSTHOG_PROJECT_API_KEY_BAKED: string | undefined;
 
 /**
- * Public write-only PostHog project key, baked at build from `COMPOSIO_POSTHOG_KEY`.
+ * Public write-only PostHog *project API key* (`phc_...`), baked at build from
+ * `COMPOSIO_POSTHOG_PROJECT_API_KEY`. Never a private/personal PostHog key.
  */
-export const COMPOSIO_POSTHOG_PROJECT_KEY =
-  typeof COMPOSIO_POSTHOG_KEY_BAKED === 'string' ? COMPOSIO_POSTHOG_KEY_BAKED : '';
+export const COMPOSIO_POSTHOG_PROJECT_API_KEY =
+  typeof COMPOSIO_POSTHOG_PROJECT_API_KEY_BAKED === 'string'
+    ? COMPOSIO_POSTHOG_PROJECT_API_KEY_BAKED
+    : '';
 
 /**
  * GitHub repository information for release fetching

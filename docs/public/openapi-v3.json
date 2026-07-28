@@ -467,7 +467,52 @@
                         "any_of": {
                           "type": "array",
                           "items": {
-                            "type": "string"
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "all_of": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "string"
+                                    },
+                                    "minItems": 1
+                                  },
+                                  "source": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "string",
+                                      "minLength": 1
+                                    },
+                                    "minItems": 1
+                                  }
+                                },
+                                "required": [
+                                  "all_of"
+                                ]
+                              }
+                            ]
+                          },
+                          "minItems": 1
+                        },
+                        "when": {
+                          "type": "object",
+                          "additionalProperties": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            },
+                            "minItems": 1
+                          }
+                        },
+                        "source": {
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "minLength": 1
                           },
                           "minItems": 1
                         }
@@ -478,6 +523,14 @@
                     }
                   ]
                 }
+              },
+              "source": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "minItems": 1
               }
             },
             "required": [
@@ -1600,7 +1653,7 @@
               "nullable": true
             },
             "required": false,
-            "description": "Number of items per page, max allowed is 1000",
+            "description": "Number of items per page, max allowed is 50",
             "name": "limit",
             "in": "query"
           },
@@ -1794,37 +1847,6 @@
                           "is_enabled_for_tool_router": {
                             "type": "boolean",
                             "description": "Whether this auth config is enabled for tool router"
-                          },
-                          "deprecated_params": {
-                            "type": "object",
-                            "properties": {
-                              "default_connector_id": {
-                                "type": "string",
-                                "nullable": true,
-                                "description": "Deprecated: Default connector ID"
-                              },
-                              "member_uuid": {
-                                "type": "string",
-                                "description": "Deprecated: Member UUID"
-                              },
-                              "toolkit_id": {
-                                "type": "string",
-                                "description": "Deprecated: Toolkit ID"
-                              },
-                              "expected_input_fields": {
-                                "type": "array",
-                                "items": {
-                                  "type": "object",
-                                  "additionalProperties": {}
-                                },
-                                "description": "Deprecated: Fields expected during connection initialization"
-                              }
-                            },
-                            "required": [
-                              "default_connector_id"
-                            ],
-                            "description": "DEPRECATED: This parameter will be removed in a future version.",
-                            "deprecated": true
                           }
                         },
                         "required": [
@@ -2111,37 +2133,6 @@
                     "is_enabled_for_tool_router": {
                       "type": "boolean",
                       "description": "Whether this auth config is enabled for tool router"
-                    },
-                    "deprecated_params": {
-                      "type": "object",
-                      "properties": {
-                        "default_connector_id": {
-                          "type": "string",
-                          "nullable": true,
-                          "description": "Deprecated: Default connector ID"
-                        },
-                        "member_uuid": {
-                          "type": "string",
-                          "description": "Deprecated: Member UUID"
-                        },
-                        "toolkit_id": {
-                          "type": "string",
-                          "description": "Deprecated: Toolkit ID"
-                        },
-                        "expected_input_fields": {
-                          "type": "array",
-                          "items": {
-                            "type": "object",
-                            "additionalProperties": {}
-                          },
-                          "description": "Deprecated: Fields expected during connection initialization"
-                        }
-                      },
-                      "required": [
-                        "default_connector_id"
-                      ],
-                      "description": "DEPRECATED: This parameter will be removed in a future version.",
-                      "deprecated": true
                     }
                   },
                   "required": [
@@ -2583,8 +2574,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {}
+                  "$ref": "#/components/schemas/Error"
                 }
               }
             }
@@ -2927,20 +2917,6 @@
                               "is_disabled": {
                                 "type": "boolean",
                                 "description": "Whether the auth config is disabled"
-                              },
-                              "deprecated": {
-                                "type": "object",
-                                "properties": {
-                                  "uuid": {
-                                    "type": "string",
-                                    "format": "uuid",
-                                    "description": "The uuid of the auth config"
-                                  }
-                                },
-                                "required": [
-                                  "uuid"
-                                ],
-                                "deprecated": true
                               }
                             },
                             "required": [
@@ -3204,28 +3180,6 @@
                           "test_request_endpoint": {
                             "type": "string",
                             "description": "The endpoint to make test request for verification"
-                          },
-                          "deprecated": {
-                            "type": "object",
-                            "properties": {
-                              "labels": {
-                                "type": "array",
-                                "items": {
-                                  "type": "string"
-                                },
-                                "description": "The labels of the connection"
-                              },
-                              "uuid": {
-                                "type": "string",
-                                "format": "uuid",
-                                "description": "The uuid of the connection"
-                              }
-                            },
-                            "required": [
-                              "labels",
-                              "uuid"
-                            ],
-                            "deprecated": true
                           }
                         },
                         "required": [
@@ -3789,27 +3743,6 @@
                       "description": "DEPRECATED: This field will be removed in a future version",
                       "deprecated": true
                     },
-                    "deprecated": {
-                      "type": "object",
-                      "properties": {
-                        "uuid": {
-                          "type": "string",
-                          "format": "uuid",
-                          "description": "The uuid of the connected account"
-                        },
-                        "authConfigUuid": {
-                          "type": "string",
-                          "format": "uuid",
-                          "description": "The uuid of the auth config"
-                        }
-                      },
-                      "required": [
-                        "uuid",
-                        "authConfigUuid"
-                      ],
-                      "description": "DEPRECATED: This field will be removed in a future version. Please use id and auth_config.id instead.",
-                      "deprecated": true
-                    },
                     "experimental": {
                       "type": "object",
                       "properties": {
@@ -4007,20 +3940,6 @@
                         "is_disabled": {
                           "type": "boolean",
                           "description": "Whether the auth config is disabled"
-                        },
-                        "deprecated": {
-                          "type": "object",
-                          "properties": {
-                            "uuid": {
-                              "type": "string",
-                              "format": "uuid",
-                              "description": "The uuid of the auth config"
-                            }
-                          },
-                          "required": [
-                            "uuid"
-                          ],
-                          "deprecated": true
                         }
                       },
                       "required": [
@@ -4284,28 +4203,6 @@
                     "test_request_endpoint": {
                       "type": "string",
                       "description": "The endpoint to make test request for verification"
-                    },
-                    "deprecated": {
-                      "type": "object",
-                      "properties": {
-                        "labels": {
-                          "type": "array",
-                          "items": {
-                            "type": "string"
-                          },
-                          "description": "The labels of the connection"
-                        },
-                        "uuid": {
-                          "type": "string",
-                          "format": "uuid",
-                          "description": "The uuid of the connection"
-                        }
-                      },
-                      "required": [
-                        "labels",
-                        "uuid"
-                      ],
-                      "deprecated": true
                     },
                     "params": {
                       "type": "object",
@@ -4807,8 +4704,8 @@
     },
     "/api/v3/connected_accounts/{nanoid}/refresh": {
       "post": {
-        "summary": "Refresh authentication for a connected account (DEPRECATED)",
-        "description": "DEPRECATED: Manual refresh of a connected account is deprecated. Composio automatically refreshes credentials in the background as they approach expiry, so this endpoint is no longer required and may be removed in a future release. Initiates a new authentication flow for a connected account when credentials have expired or become invalid. This may generate a new authentication URL for OAuth flows or refresh tokens for other auth schemes.",
+        "summary": "Re-initiate authentication for a connected account (DEPRECATED)",
+        "description": "DEPRECATED: This endpoint re-initiates the authorization flow for a connected account — a developer-triggered reconnection (e.g. to recover a connection whose credentials expired or became invalid), returning a new OAuth redirect URL where applicable. It does NOT perform background credential auto-refresh; the \"refresh\" name was misleading, which is why the endpoint is deprecated and may be removed in a future release.",
         "deprecated": true,
         "tags": [
           "Connected Accounts"
@@ -5903,6 +5800,12 @@
                         "type": "number",
                         "minimum": 1,
                         "maximum": 86400
+                      },
+                      "oauth_callback_verifier_url": {
+                        "type": "string",
+                        "nullable": true,
+                        "format": "uri",
+                        "description": "Developer-hosted OAuth callback verifier URL. Setting it enables per-user callback identity verification; null disables it. Must be https and pass SSRF checks."
                       }
                     },
                     "required": [
@@ -6015,7 +5918,7 @@
               "nullable": true
             },
             "required": false,
-            "description": "Number of items per page, max allowed is 1000",
+            "description": "Number of items per page, max allowed is 50",
             "name": "limit",
             "in": "query"
           },
@@ -6855,7 +6758,7 @@
               "nullable": true
             },
             "required": false,
-            "description": "Number of items per page, max allowed is 1000",
+            "description": "Number of items per page, max allowed is 50",
             "name": "limit",
             "in": "query"
           },
@@ -8230,6 +8133,22 @@
             "schema": {
               "type": "string",
               "enum": [
+                "native",
+                "custom",
+                "all"
+              ],
+              "description": "Filter by toolkit provenance: \"native\" (Composio-managed), \"custom\" (project-registered custom toolkits), or \"all\". Takes precedence over managed_by when both are supplied.",
+              "example": "custom"
+            },
+            "required": false,
+            "description": "Filter toolkits by provenance (alias over managed_by)",
+            "name": "type",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
                 "usage",
                 "alphabetically"
               ],
@@ -8306,6 +8225,15 @@
                             "type": "string",
                             "description": "Human-readable name of the toolkit",
                             "example": "GitHub"
+                          },
+                          "type": {
+                            "type": "string",
+                            "enum": [
+                              "native",
+                              "custom"
+                            ],
+                            "description": "Toolkit provenance: \"native\" for Composio-managed toolkits, \"custom\" for a project-registered custom (MCP) toolkit",
+                            "example": "native"
                           },
                           "auth_schemes": {
                             "type": "array",
@@ -8442,6 +8370,7 @@
                         "required": [
                           "slug",
                           "name",
+                          "type",
                           "is_local_toolkit",
                           "deprecated",
                           "meta"
@@ -8688,6 +8617,15 @@
                       "description": "Human-readable name of the toolkit",
                       "example": "GitHub"
                     },
+                    "type": {
+                      "type": "string",
+                      "enum": [
+                        "native",
+                        "custom"
+                      ],
+                      "description": "Toolkit provenance: \"native\" for Composio-managed toolkits, \"custom\" for a project-registered custom (MCP) toolkit",
+                      "example": "native"
+                    },
                     "enabled": {
                       "type": "boolean",
                       "description": "Indicates if this toolkit is currently enabled and available for use",
@@ -8780,6 +8718,17 @@
                             "type": "string",
                             "description": "The type of authentication mode (e.g., oauth2, basic_auth, api_key)",
                             "example": "oauth2"
+                          },
+                          "required_scopes": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            },
+                            "description": "OAuth scopes that are always requested for this authentication method regardless of the tool-specific scopes selected, such as token-refresh (e.g. offline_access) and identity/whoami scopes. Consumers handling authentication themselves should union these with per-tool scopes.",
+                            "example": [
+                              "offline_access",
+                              "User.Read"
+                            ]
                           },
                           "fields": {
                             "type": "object",
@@ -9012,6 +8961,7 @@
                         },
                         "required": [
                           "mode",
+                          "required_scopes",
                           "fields",
                           "name"
                         ],
@@ -9167,6 +9117,7 @@
                   "required": [
                     "slug",
                     "name",
+                    "type",
                     "enabled",
                     "composio_managed_auth",
                     "is_local_toolkit",
@@ -9778,6 +9729,15 @@
                             "description": "Human-readable name of the toolkit",
                             "example": "GitHub"
                           },
+                          "type": {
+                            "type": "string",
+                            "enum": [
+                              "native",
+                              "custom"
+                            ],
+                            "description": "Toolkit provenance: \"native\" for Composio-managed toolkits, \"custom\" for a project-registered custom (MCP) toolkit",
+                            "example": "native"
+                          },
                           "auth_schemes": {
                             "type": "array",
                             "items": {
@@ -9913,6 +9873,7 @@
                         "required": [
                           "slug",
                           "name",
+                          "type",
                           "is_local_toolkit",
                           "deprecated",
                           "meta"
@@ -11276,26 +11237,6 @@
                 }
               }
             }
-          },
-          "502": {
-            "description": "Bad gateway - Error communicating with the upstream API",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "504": {
-            "description": "Gateway timeout - Upstream API timed out",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
           }
         },
         "x-api-version": "3.0"
@@ -11402,18 +11343,6 @@
                     "trigger_id": {
                       "type": "string",
                       "description": "ID of the updated trigger"
-                    },
-                    "deprecated": {
-                      "type": "object",
-                      "properties": {
-                        "uuid": {
-                          "type": "string",
-                          "description": "ID of the updated trigger"
-                        }
-                      },
-                      "required": [
-                        "uuid"
-                      ]
                     }
                   },
                   "required": [
@@ -11433,18 +11362,6 @@
                     "trigger_id": {
                       "type": "string",
                       "description": "ID of the updated trigger"
-                    },
-                    "deprecated": {
-                      "type": "object",
-                      "properties": {
-                        "uuid": {
-                          "type": "string",
-                          "description": "ID of the updated trigger"
-                        }
-                      },
-                      "required": [
-                        "uuid"
-                      ]
                     }
                   },
                   "required": [
@@ -11779,7 +11696,7 @@
               "nullable": true
             },
             "required": false,
-            "description": "Number of items per page, max allowed is 1000",
+            "description": "Number of items per page, max allowed is 50",
             "name": "limit",
             "in": "query"
           },
@@ -12627,7 +12544,7 @@
               "nullable": true
             },
             "required": false,
-            "description": "Number of items per page, max allowed is 1000",
+            "description": "Number of items per page, max allowed is 50",
             "name": "limit",
             "in": "query"
           },
@@ -13172,6 +13089,16 @@
               }
             }
           },
+          "404": {
+            "description": "Not Found. One or more of the specified auth_config_ids do not exist or are not accessible to the authenticated user.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
           "500": {
             "description": "Internal server error. An unexpected error occurred while processing the request.",
             "content": {
@@ -13704,6 +13631,16 @@
           },
           "403": {
             "description": "Forbidden. The authenticated user does not have permission to create MCP servers for this project.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found. One or more of the specified auth_config_ids do not exist or are not accessible to the authenticated user.",
             "content": {
               "application/json": {
                 "schema": {
@@ -15285,7 +15222,7 @@
             }
           },
           "400": {
-            "description": "Bad request. The request parameters may be invalid or the instance ID already exists.",
+            "description": "Bad request. The request parameters may be invalid.",
             "content": {
               "application/json": {
                 "schema": {
@@ -15493,7 +15430,7 @@
               "nullable": true
             },
             "required": false,
-            "description": "Number of items per page, max allowed is 1000",
+            "description": "Number of items per page, max allowed is 50",
             "name": "limit",
             "in": "query"
           },

@@ -16,7 +16,7 @@ Read `references/release-workflow.md` before selecting a candidate or dispatchin
 - Treat a direct CLI `package.json` version bump as a release-owner-only recovery path, not the contributor default.
 - Resolve beta tags and workflow state from GitHub immediately before acting. Never invent or reuse a stale candidate from memory.
 - A stable promotion is a production write. If the user did not name the exact beta tag, present the resolved candidate and obtain explicit confirmation before dispatching it.
-- Follow the release through asset verification, installation tests, and the Homebrew tap update. Do not stop after the dispatch succeeds.
+- Follow the release through asset verification and installation tests. Do not stop after the dispatch succeeds.
 
 ## Execution
 

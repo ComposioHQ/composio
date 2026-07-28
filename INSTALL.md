@@ -32,34 +32,23 @@ curl -fsSL https://raw.githubusercontent.com/ComposioHQ/composio/next/install.sh
    - `composio-darwin-x64.zip` - macOS Intel
    - `composio-darwin-aarch64.zip` - macOS Apple Silicon
 
-3. Extract and install:
+3. Extract and install the complete bundle. The CLI loads support files shipped next to the
+   executable, so do not move only the nested `composio` file.
+
 ```bash
-# Extract the binary
-unzip composio-*.zip
+# Replace this with the downloaded archive name, without ".zip"
+bundle=composio-linux-x64
+export COMPOSIO_INSTALL_DIR="${COMPOSIO_INSTALL_DIR:-$HOME/.composio}"
 
-# Move to a directory in your PATH
-sudo mv composio /usr/local/bin/
-
-# Make it executable
-chmod +x /usr/local/bin/composio
+unzip "$bundle.zip"
+mkdir -p "$COMPOSIO_INSTALL_DIR"
+cp -Rp "$bundle"/. "$COMPOSIO_INSTALL_DIR/"
+chmod +x "$COMPOSIO_INSTALL_DIR/composio"
+export PATH="$COMPOSIO_INSTALL_DIR:$PATH"
 ```
 
-## Package Manager Installation
-
-### npm
-```bash
-npm install -g @composio/cli
-```
-
-### pnpm
-```bash
-pnpm add -g @composio/cli
-```
-
-### yarn
-```bash
-yarn global add @composio/cli
-```
+Add both `export` commands to your shell profile to keep `composio` on `PATH` in new
+terminal sessions.
 
 ## Verification
 
@@ -103,7 +92,7 @@ composio --help
 - macOS ARM64 (Apple Silicon)
 
 ❌ **Not Supported:**
-- Windows (use WSL or npm installation)
+- Windows — use [WSL](https://learn.microsoft.com/windows/wsl/install) and run the install script inside your WSL distribution
 
 ## Troubleshooting
 
