@@ -149,4 +149,21 @@ describe('REST OpenAPI processing', () => {
 
     expect(spec.tags).toEqual([{ name: 'Public' }, { name: 'Projects' }]);
   });
+
+  test('keeps the first non-ignored tag from mixed-tag operations', () => {
+    const payload = createApiSpec();
+    payload.tags.push({ name: 'Admin' });
+    (payload.paths as Record<string, unknown>)['/projects'] = {
+      get: {
+        tags: ['Admin', 'Projects'],
+        operationId: 'getProjects',
+      },
+    };
+
+    const { spec } = prepareApiSpec(payload, '3.1');
+
+    expect(spec.paths['/projects'].get.tags).toEqual(['Projects']);
+    expect(spec.tags).toContainEqual({ name: 'Projects' });
+    expect(spec.tags).not.toContainEqual({ name: 'Admin' });
+  });
 });

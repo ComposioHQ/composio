@@ -181,7 +181,7 @@ function forEachOperation(paths, callback) {
 }
 
 /**
- * Filter paths: remove ignored/internal tags, keep first tag only.
+ * Filter paths: remove ignored/internal tags, keep the first public tag only.
  */
 function filterPaths(paths) {
   const filteredPaths = {};
@@ -196,13 +196,14 @@ function filterPaths(paths) {
 
       const tags = operation.tags ?? [];
       const isInternal = operation['x-internal'] === true || tags.includes('x-internal');
-      const hasOnlyIgnoredTags = tags.length > 0 && tags.every(tag => IGNORED_TAGS.has(tag));
+      const publicTags = tags.filter(tag => !IGNORED_TAGS.has(tag));
+      const hasOnlyIgnoredTags = tags.length > 0 && publicTags.length === 0;
 
       if (isInternal || hasOnlyIgnoredTags) {
         delete filteredPathItem[method];
         removedCount++;
-      } else if (tags.length > 1) {
-        filteredPathItem[method] = { ...operation, tags: [tags[0]] };
+      } else if (publicTags.length > 0) {
+        filteredPathItem[method] = { ...operation, tags: [publicTags[0]] };
       }
     }
 

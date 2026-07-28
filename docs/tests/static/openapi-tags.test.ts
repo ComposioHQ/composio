@@ -67,8 +67,8 @@ describe('declareOperationTags', () => {
       'public/openapi-v3.json',
       'public/openapi-webhooks.json',
     ]) {
-      const document = declareOperationTags(
-        JSON.parse(await Bun.file(new URL(`../../${specPath}`, import.meta.url)).text()),
+      const document = JSON.parse(
+        await Bun.file(new URL(`../../${specPath}`, import.meta.url)).text(),
       );
       const declared = new Set(
         (document.tags ?? []).map((tag: { name: string }) => tag.name),
