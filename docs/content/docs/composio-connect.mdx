@@ -18,6 +18,9 @@ To get started, pick your client below.
 
 <ConnectClientOption id="claude-code" name="Claude Code" description="Terminal-based AI with MCP tools" icon="/images/clients/claude.svg" category="popular">
 
+<Callout type="info">
+Recommended: install the [Composio plugin for Claude Code](/docs/claude-code-plugin) instead. It manages OAuth and tool discovery for you — no API key needed. The steps below wire up the raw MCP server directly.
+</Callout>
 
 <Steps>
 <Step>
@@ -51,31 +54,29 @@ Type `/mcp` in Claude Code to open the MCP server manager and confirm Composio a
 
 <Steps>
 <Step>
-<StepTitle>Get your API key</StepTitle>
+<StepTitle>Install the Composio CLI</StepTitle>
 
-Open the [Composio dashboard](https://dashboard.composio.dev?utm_source=docs&utm_medium=content&utm_campaign=docs-composio-connect) and click **AI Clients** in the sidebar. Select your client and copy your API key.
-
-</Step>
-<Step>
-<StepTitle>Open your Codex config</StepTitle>
-
-Open `~/.codex/config.toml` in your editor. Create the file if it doesn't exist.
-
-</Step>
-<Step>
-<StepTitle>Add the Composio server</StepTitle>
-
-```toml title="~/.codex/config.toml"
-[mcp_servers.composio]
-url = "https://connect.composio.dev/mcp"
-http_headers = { "x-consumer-api-key" = "YOUR_API_KEY" }
+```bash
+curl -fsSL https://composio.dev/install | bash
 ```
 
 </Step>
 <Step>
-<StepTitle>Verify the connection</StepTitle>
+<StepTitle>Sign in</StepTitle>
 
-Run `codex mcp list` to confirm Composio appears as a registered MCP server.
+```bash
+composio login
+```
+
+</Step>
+<Step>
+<StepTitle>Set up Codex</StepTitle>
+
+```bash
+composio setup
+```
+
+This detects Codex and installs the Composio plugin for it. Restart Codex, then try: *"Star `composiohq/composio` on GitHub."* The first task that needs an app hands you an OAuth link to approve in your browser.
 
 </Step>
 </Steps>
