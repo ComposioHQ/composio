@@ -2,8 +2,8 @@
 
 import { useEffect, useSyncExternalStore } from 'react';
 import { Search, MessageSquare } from 'lucide-react';
-import { useSearchContext } from '@fumadocs/ui/contexts/search';
-import { useI18n } from '@fumadocs/ui/contexts/i18n';
+import { useTranslations } from '@fuma-translate/react';
+import { useSearchContext } from 'fumadocs-ui/contexts/search';
 
 import { toggleEveChat } from './eve-chat-store';
 
@@ -46,7 +46,7 @@ function useAskAIShortcut() {
 /** Desktop: search bar + Ask AI button side by side */
 export function SearchAndAskAI() {
   const { enabled, hotKey, setOpenSearch } = useSearchContext();
-  const { text } = useI18n();
+  const t = useTranslations({ note: 'search trigger' });
   useAskAIShortcut();
   const isMac = useIsMac();
 
@@ -60,7 +60,7 @@ export function SearchAndAskAI() {
           onClick={() => setOpenSearch(true)}
         >
           <Search className="size-4" />
-          {text.search}
+          {t('Search')}
           <div className="ms-auto inline-flex gap-0.5">
             {hotKey.map((k, i) => (
               <kbd key={i} className="rounded-md border bg-fd-background px-1.5">

@@ -33,6 +33,10 @@ export default defineConfig({
     'src/utils/config-defaults/ConfigDefaults.node.ts',
     'src/utils/config-defaults/ConfigDefaults.workerd.ts',
 
+    // #ssrf_guard
+    'src/utils/ssrfGuard.node.ts',
+    'src/utils/ssrfGuard.workerd.ts',
+
     // public utility subpaths
     'src/utils/json-schema.ts',
   ],
@@ -48,6 +52,7 @@ export default defineConfig({
       '#files',
       '#file_tool_modifier',
       '#config_defaults',
+      '#ssrf_guard',
     ],
   },
 });

@@ -5,12 +5,12 @@ import { ComposioBlockedInternalUrlError } from '../errors/SsrfErrors';
 /**
  * SSRF guard for user-supplied URL file inputs.
  *
- * `composio.files.upload(url)` and automatic file upload during tool execution
- * fetch arbitrary user-provided URLs. Without a guard, a caller (or a tool
- * argument produced by an LLM) can point the SDK at internal infrastructure —
- * loopback, RFC1918 ranges, link-local cloud-metadata endpoints
- * (`169.254.169.254`), or a public URL that 3xx-redirects into internal space —
- * turning the SDK into a server-side request forgery probe.
+ * `composio.files.upload(url)`, Tool Router session file uploads, and automatic
+ * file upload during tool execution fetch arbitrary user-provided URLs. Without
+ * a guard, a caller (or a tool argument produced by an LLM) can point the SDK at
+ * internal infrastructure — loopback, RFC1918 ranges, link-local cloud-metadata
+ * endpoints (`169.254.169.254`), or a public URL that 3xx-redirects into internal
+ * space — turning the SDK into a server-side request forgery probe.
  *
  * This module validates the *resolved* address (not just the hostname string,
  * which defeats decimal/octal/hex IP obfuscation) before every fetch, and

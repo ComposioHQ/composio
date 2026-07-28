@@ -1,7 +1,11 @@
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { Readable } from 'node:stream';
+import { BunContext } from '@effect/platform-bun';
+import { Effect } from 'effect';
+import { afterEach, describe, expect, it, vi } from '@effect/vitest';
 import {
   BufferedChunkLogger,
   createStructuredOutputMcpContext,
+  readableStreamFromNode,
   resolveAcpAdapterCommand,
   selectPermissionOutcome,
 } from 'src/services/run-subagent-acp';
@@ -12,19 +16,46 @@ describe('run-subagent-acp', () => {
     vi.unstubAllGlobals();
   });
 
-  it('[Given] bundled adapter packages [Then] it resolves to the bundled path without npx', () => {
-    const result = resolveAcpAdapterCommand('claude');
-    expect(result.source).toBe('bundled');
-    expect(result.cmd[0]).toBe(process.execPath);
-    expect(result.cmd[1]).toMatch(/claude-code-acp/);
+  it('pauses a Node producer while the Web Stream queue is full', async () => {
+    const input = new Readable({ read: () => undefined });
+    const stream = readableStreamFromNode(input);
+
+    input.push(new TextEncoder().encode('first'));
+    input.push(new TextEncoder().encode('second'));
+    await new Promise<void>(resolve => setImmediate(resolve));
+
+    expect(input.isPaused()).toBe(true);
+
+    const reader = stream.getReader();
+    const first = await reader.read();
+    const second = await reader.read();
+
+    expect(new TextDecoder().decode(first.value)).toBe('first');
+    expect(new TextDecoder().decode(second.value)).toBe('second');
+
+    await reader.cancel();
+    expect(input.destroyed).toBe(true);
   });
 
-  it('[Given] bundled codex adapter [Then] it resolves to the bundled path', () => {
-    const result = resolveAcpAdapterCommand('codex');
-    expect(result.source).toBe('bundled');
-    expect(result.cmd[0]).toBe(process.execPath);
-    expect(result.cmd[1]).toMatch(/codex-acp/);
-  });
+  it.effect(
+    '[Given] bundled adapter packages [Then] it resolves to the bundled path without npx',
+    () =>
+      Effect.gen(function* () {
+        const result = yield* resolveAcpAdapterCommand('claude');
+        expect(result.source).toBe('bundled');
+        expect(result.cmd[0]).toBe(process.execPath);
+        expect(result.cmd[1]).toMatch(/claude-code-acp/);
+      }).pipe(Effect.provide(BunContext.layer))
+  );
+
+  it.effect('[Given] bundled codex adapter [Then] it resolves to the bundled path', () =>
+    Effect.gen(function* () {
+      const result = yield* resolveAcpAdapterCommand('codex');
+      expect(result.source).toBe('bundled');
+      expect(result.cmd[0]).toBe(process.execPath);
+      expect(result.cmd[1]).toMatch(/codex-acp/);
+    }).pipe(Effect.provide(BunContext.layer))
+  );
 
   it('[Given] an ACP invoke error [Then] it is classified for fallback', () => {
     const error = new AcpInvokeError('initialize_failed', 'boom');
@@ -40,6 +71,16 @@ describe('run-subagent-acp', () => {
     };
 
     expect(isAcpInvokeError(error)).toBe(true);
+  });
+
+  it('[Given] an unknown ACP error code [Then] it is not admitted into the fallback union', () => {
+    const error = {
+      name: 'AcpInvokeError',
+      code: 'unexpected_failure',
+      message: 'boom',
+    };
+
+    expect(isAcpInvokeError(error)).toBe(false);
   });
 
   it('[Given] a cancelled ACP prompt [Then] it remains fallback-eligible', () => {
@@ -203,43 +244,47 @@ describe('run-subagent-acp', () => {
     });
   });
 
-  it('[Given] a structured schema [Then] it creates a stdio MCP server context for output capture', () => {
-    const helperDebugLog = vi.fn();
-    const context = createStructuredOutputMcpContext({
-      options: {
-        structuredSchema: {
-          type: 'object',
-          properties: {
-            summary: { type: 'string' },
+  it.effect(
+    '[Given] a structured schema [Then] it creates a stdio MCP server context for output capture',
+    () =>
+      Effect.gen(function* () {
+        const helperDebugLog = vi.fn();
+        const context = yield* createStructuredOutputMcpContext({
+          options: {
+            structuredSchema: {
+              type: 'object',
+              properties: {
+                summary: { type: 'string' },
+              },
+              required: ['summary'],
+            },
           },
-          required: ['summary'],
-        },
-      },
-      helperDebugLog,
-    });
+          helperDebugLog,
+        });
 
-    expect(context).not.toBeNull();
-    expect(context?.mcpServer.command).toBe(process.execPath);
-    expect(context?.mcpServer.args).toEqual(
-      expect.arrayContaining([
-        expect.stringContaining('run-subagent-output-mcp'),
-        '--schema-file',
-        expect.stringContaining('schema.json'),
-        '--result-file',
-        expect.stringContaining('result.json'),
-      ])
-    );
-    expect(context?.mcpServer.env).toEqual(
-      expect.arrayContaining([{ name: 'BUN_BE_BUN', value: '1' }])
-    );
-    expect(context?.resultFilePath).toContain('result.json');
-    expect(helperDebugLog).toHaveBeenCalledWith(
-      'subAgent.acp.structured_output_tool',
-      expect.objectContaining({
-        modulePath: expect.stringContaining('run-subagent-output-mcp'),
-      })
-    );
+        expect(context).not.toBeNull();
+        expect(context?.mcpServer.command).toBe(process.execPath);
+        expect(context?.mcpServer.args).toEqual(
+          expect.arrayContaining([
+            expect.stringContaining('run-subagent-output-mcp'),
+            '--schema-file',
+            expect.stringContaining('schema.json'),
+            '--result-file',
+            expect.stringContaining('result.json'),
+          ])
+        );
+        expect(context?.mcpServer.env).toEqual(
+          expect.arrayContaining([{ name: 'BUN_BE_BUN', value: '1' }])
+        );
+        expect(context?.resultFilePath).toContain('result.json');
+        expect(helperDebugLog).toHaveBeenCalledWith(
+          'subAgent.acp.structured_output_tool',
+          expect.objectContaining({
+            modulePath: expect.stringContaining('run-subagent-output-mcp'),
+          })
+        );
 
-    context?.cleanup();
-  });
+        yield* context!.cleanup;
+      }).pipe(Effect.provide(BunContext.layer))
+  );
 });

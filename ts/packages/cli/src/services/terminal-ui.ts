@@ -1,7 +1,39 @@
 import process from 'node:process';
 import * as p from '@clack/prompts';
 import { Context, Effect, Exit, Layer } from 'effect';
-import { canRenderTerminalDecoration, isInteractiveTerminal } from 'src/utils/stdio';
+
+export type TtyLikeStream = {
+  readonly isTTY?: boolean;
+};
+
+export type TerminalStdio = {
+  readonly stdin: TtyLikeStream;
+  readonly stdout: TtyLikeStream;
+  readonly stderr: TtyLikeStream;
+};
+
+export type TerminalCapabilities = {
+  readonly stdinIsTTY: boolean;
+  readonly stdoutIsTTY: boolean;
+  readonly stderrIsTTY: boolean;
+  readonly isInteractive: boolean;
+  readonly canDecorate: boolean;
+};
+
+/** Classify terminal streams without coupling callers or tests to Node globals. */
+export const getTerminalCapabilities = (stdio: TerminalStdio): TerminalCapabilities => {
+  const stdinIsTTY = Boolean(stdio.stdin.isTTY);
+  const stdoutIsTTY = Boolean(stdio.stdout.isTTY);
+  const stderrIsTTY = Boolean(stdio.stderr.isTTY);
+
+  return {
+    stdinIsTTY,
+    stdoutIsTTY,
+    stderrIsTTY,
+    isInteractive: stdinIsTTY && stdoutIsTTY && stderrIsTTY,
+    canDecorate: stderrIsTTY,
+  };
+};
 
 // ---------------------------------------------------------------------------
 // SpinnerHandle — returned by `useMakeSpinner` for manual control
@@ -21,6 +53,9 @@ export interface SpinnerHandle {
 // ---------------------------------------------------------------------------
 
 export interface TerminalUI {
+  /** Capabilities of the streams backing this terminal service. */
+  readonly capabilities: Effect.Effect<TerminalCapabilities>;
+
   /**
    * Write raw data to stdout for piping and scripting.
    *
@@ -32,6 +67,14 @@ export interface TerminalUI {
    * Use this for values that scripts should capture (API keys, version strings, etc.).
    */
   readonly output: (data: string, options?: { readonly force?: boolean }) => Effect.Effect<void>;
+
+  /**
+   * Write an unformatted line to stderr even when stderr is redirected.
+   *
+   * Use this for diagnostics and protocol metadata that must survive piping.
+   * Human-facing decoration belongs in `log`, `note`, `intro`, or `outro`.
+   */
+  readonly error: (data: string) => Effect.Effect<void>;
 
   /** Display a session start marker (e.g., `┌  title`). Writes to stderr. */
   readonly intro: (title: string) => Effect.Effect<void>;
@@ -116,14 +159,20 @@ export const TerminalUI = Context.GenericTag<TerminalUI>('services/TerminalUI');
  * when stdin/stdout/stderr are all TTYs; agent and shell pipelines get
  * non-interactive behavior.
  */
-const canPrompt = isInteractiveTerminal();
+const liveCapabilities = getTerminalCapabilities({
+  stdin: process.stdin,
+  stdout: process.stdout,
+  stderr: process.stderr,
+});
+
+const canPrompt = liveCapabilities.isInteractive;
 
 /**
  * Whether the CLI can render auxiliary UI. Logs, notes, and spinners only need
  * stderr, so they can still be shown when stdin is redirected from /dev/null or
  * stdout is reserved for machine-readable JSON/data.
  */
-const canDecorate = canRenderTerminalDecoration();
+const canDecorate = liveCapabilities.canDecorate;
 
 /** Run a decoration side-effect only when stderr is a terminal. */
 function decorate(fn: () => void): void {
@@ -161,12 +210,16 @@ const silentSpinnerHandle: SpinnerHandle = {
 };
 
 const makeLive: TerminalUI = {
+  capabilities: Effect.succeed(liveCapabilities),
+
   output: (data, options) =>
     Effect.sync(() => {
       if (options?.force || !canPrompt) {
         process.stdout.write(`${data}\n`);
       }
     }),
+
+  error: data => Effect.sync(() => process.stderr.write(`${data}\n`)),
 
   intro: title => Effect.sync(() => decorate(() => p.intro(title, { output: process.stderr }))),
   outro: message => Effect.sync(() => decorate(() => p.outro(message, { output: process.stderr }))),
@@ -199,8 +252,7 @@ const makeLive: TerminalUI = {
       ? Effect.promise(async () => {
           const result = await p.select({
             message,
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            options: [...options] as any,
+            options: [...options],
             output: process.stderr,
           });
           // p.select returns Value | symbol (symbol on cancel)

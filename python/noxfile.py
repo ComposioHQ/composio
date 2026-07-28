@@ -29,18 +29,19 @@ modules_for_ruff = [
 # langchain-openai) is sourced from the `dev` group in pyproject.toml via
 # `--group dev`, so every package is declared in exactly one place.
 type_stubs = [
-    "types-requests==2.33.0.20260518",
+    "types-requests==2.33.0.20260712",
     "types-protobuf==7.34.1.20260518",
-    "anthropic==0.111.0",
-    "crewai==0.134.0",
-    "langchain==1.3.10",
-    "langgraph==1.2.6",
-    "llama-index==0.14.22",
-    "openai-agents==0.17.6",
-    "google-cloud-aiplatform==1.158.0",
+    "anthropic==0.120.0",
+    # Keep this aligned with the CrewAI provider dependency metadata.
+    "crewai==1.15.7",
+    "langchain==1.3.14",
+    "langgraph==1.2.9",
+    "llama-index==0.14.23",
+    "openai-agents==0.18.3",
+    "google-cloud-aiplatform==1.162.0",
 ]
 
-mypy = "mypy==2.1.0"
+mypy = "mypy==2.3.0"
 
 ruff = [
     "ruff",

@@ -15,6 +15,11 @@
 
 ### Patch Changes
 
+- Preserve the original CLI diagnostic when an adjacent source map is malformed or unusable instead of letting optional source-map enrichment abort error capture. Source-map enrichment is now best-effort end to end: a malformed, invalid, or unreadable `.map`, and a valid map pointing at an original source that was never shipped, all degrade to the raw stack location. `captureErrors` can no longer fail.
+- Fix source-map resolution on Windows: original source paths are now resolved with the platform path separator instead of a hardcoded `/`, and the `node_modules` filter no longer mistakes directories such as `node_modules_local` for real dependency paths.
+- Make `composio version --check` report `checkStatus: "unknown"` when GitHub cannot confirm the latest stable release, preserve the last successful cache on failed refreshes, and avoid racing the command with the startup update check.
+- Make multi-account selection a stable CLI feature: `execute`, `listen`, and `link --alias` no longer honor the old experimental toggle; `proxy` now accepts `--account <alias|word_id|connected-account-id>`; and duplicate-alias link errors explain how to select the existing account.
+- 8467efd: Fix `composio whoami` reporting the API key's home organization after `composio orgs switch`. Session info requests now forward the selected global organization.
 - 5f004ff: Drop `COMPOSIO_UPSERT_RECIPE` and `COMPOSIO_GET_RECIPE` from the CLI meta-tool list. These slugs were removed from `@composio/client` (alpha.74), so listing them broke the type-checked CLI build.
 - 23f9053: Remove the unused `ansis` dependency from the CLI. Colored output is already handled by `picocolors`, so `ansis` was a dead production dependency that shipped with the package.
 - 446c6f6: Fix virtual TypeScript file resolution used by CLI type generation so in-memory imports resolve consistently during transpilation and validation.

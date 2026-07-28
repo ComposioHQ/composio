@@ -407,7 +407,7 @@ rm -f "$install_err"
 if [[ $install_plugins = true ]]; then
     echo
     info "Checking for supported agent hosts..."
-    if ! "$exe" setup --target auto --yes --if-present; then
+    if ! COMPOSIO_CLI_INVOCATION_ORIGIN=installer "$exe" setup --target auto --yes --if-present; then
         error 'Composio CLI was installed, but agent plugin setup failed. Retry with `composio setup --target auto --yes`.'
     fi
 fi
@@ -421,7 +421,8 @@ if [[ $install_agent = true ]]; then
 fi
 
 echo
-info "To get started, run:"
+info "Composio was added to your PATH — restart your shell (or open a new terminal) for it to take effect."
+info "Then, to get started, run:"
 echo
 
 if [[ ${refresh_command:-} ]]; then

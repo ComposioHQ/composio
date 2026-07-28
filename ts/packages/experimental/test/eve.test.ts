@@ -128,8 +128,8 @@ describe('EveProvider', () => {
       toolName: 'LOCAL_IMESSAGE_SEND',
     };
 
-    expect(wrapped.LOCAL_IMESSAGE_SEND.needsApproval?.(context)).toBe(true);
-    expect(wrapped.GITHUB_GET_REPOSITORY.needsApproval?.(context)).toBe(false);
+    expect(wrapped.LOCAL_IMESSAGE_SEND.approval?.(context as never)).toBe(true);
+    expect(wrapped.GITHUB_GET_REPOSITORY.approval?.(context as never)).toBe(false);
     expect(needsApproval).toHaveBeenCalledWith(
       expect.objectContaining({ slug: 'LOCAL_IMESSAGE_SEND' }),
       context
@@ -146,8 +146,10 @@ describe('EveProvider', () => {
     );
 
     expect(
-      wrapped.COMPOSIO_MULTI_EXECUTE_TOOL.needsApproval?.({
+      wrapped.COMPOSIO_MULTI_EXECUTE_TOOL.approval?.({
         approvedTools: new Set<string>(),
+        callId: 'call-1',
+        session: {} as never,
         toolInput: {
           tools: [
             { tool_slug: 'GMAIL_FETCH_EMAILS', arguments: {} },
@@ -155,7 +157,7 @@ describe('EveProvider', () => {
           ],
         },
         toolName: 'COMPOSIO_MULTI_EXECUTE_TOOL',
-      })
+      } as never)
     ).toBe(true);
   });
 

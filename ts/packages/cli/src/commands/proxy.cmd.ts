@@ -1,5 +1,5 @@
 import { Args, Command, Options } from '@effect/cli';
-import { Effect, Option } from 'effect';
+import { Data, Effect, Either, Option } from 'effect';
 import type {
   SessionProxyExecuteParams,
   SessionProxyExecuteResponse,
@@ -21,7 +21,8 @@ import {
   ComposioNoActiveConnectionError,
   mapComposioError,
 } from 'src/services/composio-error-overrides';
-import { parseJsonIsh } from 'src/utils/parse-json-ish';
+import { parseJsonRecord } from 'src/utils/parse-json';
+import { resolveConnectedAccountForToolkit } from 'src/services/connected-account-selection';
 
 const endpoint = Args.text({ name: 'url' }).pipe(
   Args.withDescription('Absolute or relative API endpoint to call through proxy execute.')
@@ -30,6 +31,13 @@ const endpoint = Args.text({ name: 'url' }).pipe(
 const toolkit = Options.text('toolkit').pipe(
   Options.withAlias('t'),
   Options.withDescription('Toolkit slug whose connected account should be used')
+);
+
+const account = Options.text('account').pipe(
+  Options.withDescription(
+    'Connected account selector. Matches alias, word_id, or connected account id for the toolkit.'
+  ),
+  Options.optional
 );
 
 const method = Options.text('method').pipe(
@@ -62,20 +70,33 @@ type ProxyMethod = Extract<
   'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH'
 >;
 
-const SUPPORTED_PROXY_METHODS = [
+const SUPPORTED_PROXY_METHODS: ReadonlyArray<ProxyMethod> = [
   'GET',
   'POST',
   'PUT',
   'DELETE',
   'PATCH',
-] as const satisfies ReadonlyArray<ProxyMethod>;
+];
+
+export class ProxyCommandError extends Data.TaggedError('commands/ProxyCommandError')<{
+  readonly reason: 'missing_consumer_user' | 'toolkit_not_connected';
+  readonly message: string;
+  readonly toolkit?: string;
+  readonly endpoint?: string;
+}> {}
+
+class ProxyRequestError extends Data.TaggedError('commands/ProxyRequestError')<{
+  readonly message: string;
+  readonly cause: unknown;
+}> {}
 
 export const normalizeProxyMethod = (value: string): ProxyMethod => {
   const normalized = value.trim().toUpperCase();
-  if (!SUPPORTED_PROXY_METHODS.includes(normalized as ProxyMethod)) {
+  const supported = SUPPORTED_PROXY_METHODS.find(method => method === normalized);
+  if (!supported) {
     throw new Error('Unsupported method. Use one of GET, POST, PUT, DELETE, PATCH.');
   }
-  return normalized as ProxyMethod;
+  return supported;
 };
 
 export const parseProxyHeader = (value: string): { name: string; value: string } => {
@@ -94,13 +115,8 @@ export const parseProxyHeader = (value: string): { name: string; value: string }
 
 const resolveBodyInput = (input: Option.Option<string>) => resolveOptionalTextInput(input);
 
-export const parseProxyBody = (raw: string): unknown => {
-  try {
-    return parseJsonIsh(raw);
-  } catch {
-    return raw;
-  }
-};
+export const parseProxyBody = (raw: string): unknown =>
+  Either.getOrElse(parseJsonRecord(raw), (): unknown => raw);
 
 const formatProxyOutput = (
   result: Pick<SessionProxyExecuteResponse, 'status' | 'data' | 'headers' | 'binary_data'>
@@ -167,17 +183,9 @@ const handleProxyExecutionError = (params: {
         ].join('\n'),
         'Tips'
       );
-      const output = formatProxyErrorOutput({
-        error: mapped.message,
-        toolkit: params.toolkit,
-        endpoint: params.endpoint,
-        slug: mapped.slugValue,
-      });
-      yield* params.ui.output(output);
-      return yield* Effect.fail(mapped.normalized);
+    } else {
+      yield* params.ui.log.error(mapped.message);
     }
-
-    yield* params.ui.log.error(mapped.message);
     const output = formatProxyErrorOutput({
       error: mapped.message,
       toolkit: params.toolkit,
@@ -239,13 +247,19 @@ const runProxyConnectedToolkitFailFast = (params: {
           2
         )
       );
-      return yield* Effect.fail(new Error(message));
+      return yield* new ProxyCommandError({
+        reason: 'toolkit_not_connected',
+        message,
+        toolkit: params.toolkit,
+        endpoint: params.endpoint,
+      });
     }
   });
 
 export const proxyCmd = Command.make('proxy', {
   endpoint,
   toolkit,
+  account,
   method,
   headers,
   data,
@@ -258,6 +272,7 @@ export const proxyCmd = Command.make('proxy', {
       '',
       'Examples:',
       '  composio proxy https://gmail.googleapis.com/gmail/v1/users/me/profile --toolkit gmail',
+      '  composio proxy https://gmail.googleapis.com/gmail/v1/users/me/profile --toolkit gmail --account work',
       `  composio proxy https://gmail.googleapis.com/gmail/v1/users/me/drafts --toolkit gmail \\`,
       `    -X POST -H 'content-type: application/json' -d '{"message":{"raw":"..."}}'`,
       '',
@@ -266,8 +281,9 @@ export const proxyCmd = Command.make('proxy', {
       '  composio run \'const f = await proxy("gmail"); ...\'   Use proxy in a script',
     ].join('\n')
   ),
-  Command.withHandler(({ endpoint, toolkit, method, headers, data, skipConnectionCheck }) =>
+  Command.withHandler(options =>
     Effect.gen(function* () {
+      const { endpoint, toolkit, account, method, headers, data, skipConnectionCheck } = options;
       if (!(yield* requireAuth)) return;
 
       const ui = yield* TerminalUI;
@@ -277,9 +293,10 @@ export const proxyCmd = Command.make('proxy', {
       );
 
       if (resolvedProject.projectType !== 'CONSUMER' || !resolvedProject.consumerUserId) {
-        return yield* Effect.fail(
-          new Error('No consumer project user is available for proxy execution in this context.')
-        );
+        return yield* new ProxyCommandError({
+          reason: 'missing_consumer_user',
+          message: 'No consumer project user is available for proxy execution in this context.',
+        });
       }
       const consumerUserId = resolvedProject.consumerUserId;
       const normalizedToolkit = toolkit.toLowerCase();
@@ -294,14 +311,16 @@ export const proxyCmd = Command.make('proxy', {
       });
 
       const normalizedMethod = normalizeProxyMethod(method);
-      const headerParameters = headers.map(header => {
-        const parsed = parseProxyHeader(header);
-        return {
-          name: parsed.name,
-          type: 'header' as const,
-          value: parsed.value,
-        };
-      });
+      const headerParameters: NonNullable<SessionProxyExecuteParams['parameters']> = headers.map(
+        header => {
+          const parsed = parseProxyHeader(header);
+          return {
+            name: parsed.name,
+            type: 'header',
+            value: parsed.value,
+          };
+        }
+      );
       const rawBody = yield* resolveBodyInput(data);
       const parsedBody = rawBody === undefined ? undefined : parseProxyBody(rawBody);
 
@@ -312,8 +331,19 @@ export const proxyCmd = Command.make('proxy', {
             orgId: resolvedProject.orgId,
             projectId: resolvedProject.projectId,
           });
+          const selectedConnectedAccountId = Option.isSome(account)
+            ? yield* resolveConnectedAccountForToolkit({
+                client,
+                toolkitSlug: normalizedToolkit,
+                userId: consumerUserId,
+                selector: account,
+              })
+            : undefined;
           const { sessionId } = yield* resolveToolRouterSession(client, consumerUserId, {
             toolkits: [normalizedToolkit],
+            connectedAccounts: selectedConnectedAccountId
+              ? { [normalizedToolkit]: selectedConnectedAccountId }
+              : undefined,
             cacheScope: {
               orgId: resolvedProject.orgId,
               projectId: resolvedProject.projectId,
@@ -321,26 +351,32 @@ export const proxyCmd = Command.make('proxy', {
             },
           });
 
-          const resultEither = yield* Effect.tryPromise(() =>
-            client.toolRouter.session.proxyExecute(sessionId, {
-              toolkit_slug: normalizedToolkit,
-              endpoint,
-              method: normalizedMethod,
-              ...(parsedBody !== undefined ? { body: parsedBody } : {}),
-              ...(headerParameters.length > 0 ? { parameters: headerParameters } : {}),
+          return yield* Effect.tryPromise({
+            try: () =>
+              client.toolRouter.session.proxyExecute(sessionId, {
+                toolkit_slug: normalizedToolkit,
+                endpoint,
+                method: normalizedMethod,
+                ...(parsedBody !== undefined ? { body: parsedBody } : {}),
+                ...(headerParameters.length > 0 ? { parameters: headerParameters } : {}),
+              }),
+            catch: cause =>
+              new ProxyRequestError({
+                message: `Failed to proxy ${normalizedMethod} ${endpoint} via "${normalizedToolkit}".`,
+                cause,
+              }),
+          }).pipe(
+            Effect.matchEffect({
+              onFailure: error =>
+                handleProxyExecutionError({
+                  ui,
+                  error,
+                  toolkit: normalizedToolkit,
+                  endpoint,
+                }),
+              onSuccess: Effect.succeed,
             })
-          ).pipe(Effect.either);
-
-          if (resultEither._tag === 'Left') {
-            return yield* handleProxyExecutionError({
-              ui,
-              error: resultEither.left,
-              toolkit: normalizedToolkit,
-              endpoint,
-            });
-          }
-
-          return resultEither.right;
+          );
         })
       );
 
