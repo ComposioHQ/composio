@@ -184,6 +184,52 @@ describe('CLI: composio login', () => {
 
   layer(TestLive({ terminalUI: headlessStdinUI }))(it => {
     it.scoped(
+      '[Given] a stored READY agent identity the API rejects [When] login runs headlessly [Then] does not reuse the revoked identity',
+      () =>
+        Effect.gen(function* () {
+          yield* writeStoredAgentIdentity(storedAgentIdentity);
+          vi.spyOn(globalThis, 'fetch').mockImplementation(async requestInput =>
+            requestUrl(requestInput).includes('/api/whoami')
+              ? mockFetchResponse({ message: 'Invalid agent key' }, 401)
+              : mockFetchResponse({})
+          );
+
+          yield* cli(['login']);
+
+          const ctx = yield* ComposioUserContext;
+          expect(Option.getOrUndefined(ctx.data.apiKey)).toBeUndefined();
+
+          const output = (yield* MockConsole.getLines({ stripAnsi: true })).join('\n');
+          expect(output).not.toContain('"logged_in":true');
+          expect(output).toContain('Open this URL in your browser to log in:');
+        })
+    );
+  });
+
+  layer(TestLive({ terminalUI: headlessStdinUI }))(it => {
+    it.scoped(
+      '[Given] a stored READY agent identity and an unreachable agents API [When] login runs headlessly [Then] still reuses the on-disk identity',
+      () =>
+        Effect.gen(function* () {
+          yield* writeStoredAgentIdentity(storedAgentIdentity);
+          vi.spyOn(globalThis, 'fetch').mockImplementation(async requestInput => {
+            if (requestUrl(requestInput).includes('/api/whoami')) {
+              throw new Error('network unreachable');
+            }
+            return mockFetchResponse({});
+          });
+
+          yield* cli(['login']);
+
+          const ctx = yield* ComposioUserContext;
+          expect(Option.getOrUndefined(ctx.data.apiKey)).toBe('uak_agent');
+          expect(Option.getOrUndefined(ctx.data.orgId)).toBe('org_agent');
+        })
+    );
+  });
+
+  layer(TestLive({ terminalUI: headlessStdinUI }))(it => {
+    it.scoped(
       '[Given] a stored PENDING agent identity [When] login runs headlessly [Then] prints instructions without logging in',
       () =>
         Effect.gen(function* () {
