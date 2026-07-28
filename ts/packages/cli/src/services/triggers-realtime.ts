@@ -104,36 +104,40 @@ export class TriggersRealtime extends Effect.Service<TriggersRealtime>()(
               )
             );
 
-            const pusher = new Pusher(creds.pusher_key, {
-              cluster: creds.pusher_cluster,
-              channelAuthorization: {
-                customHandler: (authOptions, callback) => {
-                  const channel_name = authOptions.channelName;
-                  const socket_id = authOptions.socketId;
+            const pusher = yield* Effect.try({
+              try: () =>
+                new Pusher(creds.pusher_key, {
+                  cluster: creds.pusher_cluster,
+                  channelAuthorization: {
+                    customHandler: (authOptions, callback) => {
+                      const channel_name = authOptions.channelName;
+                      const socket_id = authOptions.socketId;
 
-                  const doAuth = async () => {
-                    const response = await Runtime.runPromise(runtime)(
-                      params.authRealtimeChannel({
-                        channel_name,
-                        socket_id,
-                      })
-                    );
-                    // Pusher private channels verify signatures without channel_data.
-                    // Some auth endpoints may still return channel_data, which can cause
-                    // "Invalid signature" if included in the verification input.
-                    const normalizedResponse = channel_name.startsWith('private-')
-                      ? { auth: response.auth }
-                      : response;
-                    return normalizedResponse;
-                  };
+                      const doAuth = async () => {
+                        const response = await Runtime.runPromise(runtime)(
+                          params.authRealtimeChannel({
+                            channel_name,
+                            socket_id,
+                          })
+                        );
+                        // Pusher private channels verify signatures without channel_data.
+                        // Some auth endpoints may still return channel_data, which can cause
+                        // "Invalid signature" if included in the verification input.
+                        const normalizedResponse = channel_name.startsWith('private-')
+                          ? { auth: response.auth }
+                          : response;
+                        return normalizedResponse;
+                      };
 
-                  void doAuth()
-                    .then(data => callback(null, data))
-                    .catch(cause =>
-                      callback(cause instanceof Error ? cause : new Error(String(cause)), null)
-                    );
-                },
-              },
+                      void doAuth()
+                        .then(data => callback(null, data))
+                        .catch(cause =>
+                          callback(cause instanceof Error ? cause : new Error(String(cause)), null)
+                        );
+                    },
+                  },
+                }),
+              catch: subscriptionError('Failed to construct the realtime client'),
             });
 
             const channel = pusher.subscribe(channelName);
