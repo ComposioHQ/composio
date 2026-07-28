@@ -103,7 +103,7 @@
     "tsdown": "catalog:",
     "tsx": "catalog:",
     "typedoc": "^0.28.20",
-    "typescript": "catalog:",
+    "typescript": "catalog:ts6",
     "vitest": "catalog:",
     "zod": "catalog:"
   },
