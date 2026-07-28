@@ -2,6 +2,12 @@
 
 ## 0.3.0
 
+### Security
+
+- fc17c37: Security: the CLI's tool file-upload path now enforces the sensitive-file denylist (issue #3746 / GHSA-hp3h-89pf-5q58). Previously `composio execute`/`composio run` read and uploaded any local path a tool argument pointed at — including `~/.ssh/id_rsa`, `~/.aws/credentials`, and `.env` files — enabling credential exfiltration in agentic workflows via prompt injection. The CLI now calls the shared `assertSafeFileUploadPath` guard from `@composio/core` at the lowest-level file read. URLs and `File` objects are unaffected.
+
+  Unlike the core and Python SDKs (which expose a `sensitiveFileUploadProtection` / `sensitive_file_upload_protection` opt-out), the CLI enforces the denylist **unconditionally by design** — the primary attack vector is an agent prompt-injected into supplying its own tool arguments, so a CLI override flag would hand that attacker a trivial bypass. The block error carries CLI-appropriate remediation guidance instead of pointing at the SDK-only flag.
+
 ### Minor Changes
 
 - a0bef5d: Bump `@composio/client` to `0.1.0-alpha.74`.
@@ -9,6 +15,9 @@
 
 ### Patch Changes
 
+- Make `composio version --check` report `checkStatus: "unknown"` when GitHub cannot confirm the latest stable release, preserve the last successful cache on failed refreshes, and avoid racing the command with the startup update check.
+- Make multi-account selection a stable CLI feature: `execute`, `listen`, and `link --alias` no longer honor the old experimental toggle; `proxy` now accepts `--account <alias|word_id|connected-account-id>`; and duplicate-alias link errors explain how to select the existing account.
+- 8467efd: Fix `composio whoami` reporting the API key's home organization after `composio orgs switch`. Session info requests now forward the selected global organization.
 - 5f004ff: Drop `COMPOSIO_UPSERT_RECIPE` and `COMPOSIO_GET_RECIPE` from the CLI meta-tool list. These slugs were removed from `@composio/client` (alpha.74), so listing them broke the type-checked CLI build.
 - 23f9053: Remove the unused `ansis` dependency from the CLI. Colored output is already handled by `picocolors`, so `ansis` was a dead production dependency that shipped with the package.
 - 446c6f6: Fix virtual TypeScript file resolution used by CLI type generation so in-memory imports resolve consistently during transpilation and validation.

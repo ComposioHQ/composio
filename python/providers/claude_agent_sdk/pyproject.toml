@@ -1,6 +1,6 @@
 [project]
 name = "composio-claude-agent-sdk"
-version = "0.17.1"
+version = "0.18.0"
 description = "Use Composio to get an array of tools with Claude Code Agents SDK."
 readme = "README.md"
 requires-python = ">=3.10,<4"
@@ -13,7 +13,7 @@ classifiers = [
     "Operating System :: OS Independent",
 ]
 dependencies = [
-    "claude-agent-sdk>=0.2.103",
+    "claude-agent-sdk>=0.2.128",
     "composio",
 ]
 

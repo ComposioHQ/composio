@@ -14,9 +14,10 @@ export interface ComposioBlockedInternalUrlErrorOptions extends Omit<ComposioErr
 /**
  * Thrown when a URL file input resolves to a private, loopback, link-local, or
  * otherwise internal address, or points at a non-http(s) scheme. Guards against
- * turning `composio.files.upload(url)` (and automatic upload during tool
- * execution) into a server-side request forgery (SSRF) probe of internal
- * infrastructure such as cloud metadata endpoints (`169.254.169.254`).
+ * turning URL-based file uploads (including Tool Router session files and
+ * automatic upload during tool execution) into a server-side request forgery
+ * (SSRF) probe of internal infrastructure such as cloud metadata endpoints
+ * (`169.254.169.254`).
  */
 export class ComposioBlockedInternalUrlError extends ComposioError {
   constructor(

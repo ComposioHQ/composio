@@ -1,19 +1,46 @@
 import { describe, expect, it } from 'vitest';
 import { createCliCodactFailureBody } from 'src/analytics/dispatch';
 import {
+  CLI_ANALYTICS_EVENTS,
+  createCliCommandTelemetryContext,
+  getPluginLifecycleFailedEvent,
+  getPluginLifecycleSucceededEvent,
+  getPrimaryLifecycleFailedEvent,
+  getPrimaryLifecycleInvokedEvent,
+  getPrimaryLifecycleSucceededEvent,
+  getSetupCancelledEvent,
+  getSetupHostDetectedEvent,
+  getSetupSkippedEvent,
   getToolExecuteFailedEvent,
   getToolExecuteToolNotFoundEvent,
   getToolExecuteValidationFailedEvent,
   isMaybeToolNotFoundError,
   isMaybeToolValidationError,
 } from 'src/analytics/events';
+import { APP_VERSION } from 'src/constants';
 import { ToolInputValidationError } from 'src/services/tool-input-validation';
 
 describe('CLI analytics execute failure events', () => {
+  it('records terminal capabilities supplied by the terminal service', () => {
+    const context = createCliCommandTelemetryContext(['bun', 'composio'], '0.3.0', {
+      stdoutIsTTY: true,
+      stderrIsTTY: false,
+    });
+
+    const event = getPrimaryLifecycleInvokedEvent(context);
+
+    expect(event?.properties).toMatchObject({
+      stdout_is_tty: true,
+      stderr_is_tty: false,
+    });
+  });
+
   it('marks cached-schema validation failures as fast_fail', () => {
-    const error = new ToolInputValidationError('GMAIL_SEND_EMAIL', '/tmp/schema.json', [
-      'Unknown key "recipient"',
-    ]);
+    const error = new ToolInputValidationError({
+      toolSlug: 'GMAIL_SEND_EMAIL',
+      schemaPath: '/tmp/schema.json',
+      issues: ['Unknown key "recipient"'],
+    });
 
     const event = getToolExecuteValidationFailedEvent({
       toolSlug: 'GMAIL_SEND_EMAIL',
@@ -124,6 +151,178 @@ describe('CLI analytics execute failure events', () => {
         cli_version: expect.any(String),
       },
       request_id: 'req_123',
+    });
+  });
+});
+
+describe('CLI analytics setup and install lifecycle events', () => {
+  it('tracks setup as a dedicated lifecycle with safe option properties', () => {
+    const context = createCliCommandTelemetryContext(
+      ['bun', 'composio', 'setup', '--target', 'codex', '--uninstall', '--yes'],
+      APP_VERSION,
+      { stdoutIsTTY: false, stderrIsTTY: false }
+    );
+
+    const invoked = getPrimaryLifecycleInvokedEvent(context);
+    const succeeded = getPrimaryLifecycleSucceededEvent(context);
+    const failed = getPrimaryLifecycleFailedEvent(context, new Error('native failure'));
+
+    expect(invoked?.name).toBe(CLI_ANALYTICS_EVENTS.CLI_SETUP_INVOKED);
+    expect(succeeded?.name).toBe(CLI_ANALYTICS_EVENTS.CLI_SETUP_SUCCEEDED);
+    expect(failed?.name).toBe(CLI_ANALYTICS_EVENTS.CLI_SETUP_FAILED);
+    expect(invoked?.properties).toMatchObject({
+      command_path: 'setup',
+      operation: 'uninstall',
+      target: 'codex',
+      yes: true,
+      if_present: false,
+      stdout_is_tty: expect.any(Boolean),
+    });
+  });
+
+  it('tracks shell installation separately from plugin setup', () => {
+    const context = createCliCommandTelemetryContext(
+      ['bun', 'composio', 'install', '--completions'],
+      APP_VERSION,
+      { stdoutIsTTY: false, stderrIsTTY: false }
+    );
+
+    expect(getPrimaryLifecycleInvokedEvent(context)).toMatchObject({
+      name: CLI_ANALYTICS_EVENTS.CLI_INSTALL_INVOKED,
+      properties: {
+        command_path: 'install',
+        completions: true,
+        no_completions: false,
+      },
+    });
+  });
+
+  it('tracks a verified per-host plugin change', () => {
+    expect(
+      getPluginLifecycleSucceededEvent({
+        operation: 'setup',
+        target: 'claude',
+        action: 'installed',
+        cliVersion: APP_VERSION,
+      })
+    ).toMatchObject({
+      name: CLI_ANALYTICS_EVENTS.CLI_PLUGIN_SETUP_SUCCEEDED,
+      properties: {
+        command_path: 'setup',
+        operation: 'setup',
+        agent_host: 'claude',
+        action: 'installed',
+      },
+    });
+  });
+});
+
+describe('CLI analytics setup runtime-context events', () => {
+  it('tracks a detected and supported host with its version', () => {
+    expect(
+      getSetupHostDetectedEvent({
+        operation: 'setup',
+        requestedTarget: 'auto',
+        target: 'claude',
+        available: true,
+        supported: true,
+        hostVersion: '2.1.0',
+        cliVersion: APP_VERSION,
+      })
+    ).toMatchObject({
+      name: CLI_ANALYTICS_EVENTS.CLI_SETUP_HOST_DETECTED,
+      properties: {
+        source: 'cli',
+        command_path: 'setup',
+        operation: 'setup',
+        requested_target: 'auto',
+        agent_host: 'claude',
+        available: true,
+        supported: true,
+        host_version: '2.1.0',
+        unsupported_reason_code: undefined,
+      },
+    });
+  });
+
+  it('tracks an unsupported host with a normalized reason code', () => {
+    expect(
+      getSetupHostDetectedEvent({
+        operation: 'setup',
+        requestedTarget: 'auto',
+        target: 'codex',
+        available: true,
+        supported: false,
+        hostVersion: 'codex-cli 0.137.0',
+        unsupportedReasonCode: 'codex_too_old',
+        cliVersion: APP_VERSION,
+      })
+    ).toMatchObject({
+      name: CLI_ANALYTICS_EVENTS.CLI_SETUP_HOST_DETECTED,
+      properties: {
+        agent_host: 'codex',
+        available: true,
+        supported: false,
+        unsupported_reason_code: 'codex_too_old',
+      },
+    });
+  });
+
+  it('tracks a per-host failure with truncated error details', () => {
+    const error = new Error(`Adding the claude marketplace failed${'x'.repeat(600)}`);
+
+    const event = getPluginLifecycleFailedEvent({
+      operation: 'setup',
+      target: 'claude',
+      phase: 'install',
+      error,
+      cliVersion: APP_VERSION,
+    });
+
+    expect(event).toMatchObject({
+      name: CLI_ANALYTICS_EVENTS.CLI_PLUGIN_SETUP_FAILED,
+      properties: {
+        command_path: 'setup',
+        operation: 'setup',
+        agent_host: 'claude',
+        phase: 'install',
+        error_name: 'Error',
+      },
+    });
+    expect(String(event?.properties?.error_message).length).toBeLessThanOrEqual(500);
+  });
+
+  it('tracks user cancellation and installer skips with normalized reasons', () => {
+    expect(
+      getSetupCancelledEvent({
+        operation: 'setup',
+        requestedTarget: 'claude',
+        cliVersion: APP_VERSION,
+      })
+    ).toMatchObject({
+      name: CLI_ANALYTICS_EVENTS.CLI_SETUP_CANCELLED,
+      properties: {
+        command_path: 'setup',
+        operation: 'setup',
+        requested_target: 'claude',
+        reason: 'user_declined',
+      },
+    });
+
+    expect(
+      getSetupSkippedEvent({
+        operation: 'uninstall',
+        requestedTarget: 'auto',
+        cliVersion: APP_VERSION,
+      })
+    ).toMatchObject({
+      name: CLI_ANALYTICS_EVENTS.CLI_SETUP_SKIPPED,
+      properties: {
+        command_path: 'setup',
+        operation: 'uninstall',
+        requested_target: 'auto',
+        reason: 'no_host_detected',
+      },
     });
   });
 });

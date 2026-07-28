@@ -64,10 +64,6 @@ const connectedAccountsData = {
   items: testConnectedAccounts,
 } satisfies TestLiveInput['connectedAccountsData'];
 
-const testConfigProvider = ConfigProvider.fromMap(
-  new Map([['COMPOSIO_USER_API_KEY', 'test_api_key']])
-).pipe(extendConfigProvider);
-
 const testDevConfigProvider = ConfigProvider.fromMap(
   new Map([
     ['COMPOSIO_USER_API_KEY', 'test_api_key'],

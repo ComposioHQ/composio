@@ -1,5 +1,7 @@
+import { ValidationError } from '@effect/cli';
 import { describe, expect, layer } from '@effect/vitest';
-import { ConfigProvider, Effect } from 'effect';
+import { Cause, ConfigProvider, Effect, Exit } from 'effect';
+import { ListenCommandError } from 'src/commands/listen.cmd';
 import { extendConfigProvider } from 'src/services/config';
 import { ComposioCliUserConfig } from 'src/services/cli-user-config';
 import { cli, MockConsole, TestLive } from 'test/__utils__';
@@ -7,6 +9,16 @@ import { cli, MockConsole, TestLive } from 'test/__utils__';
 const testConfigProvider = ConfigProvider.fromMap(
   new Map([['COMPOSIO_USER_API_KEY', 'test_api_key']])
 ).pipe(extendConfigProvider);
+
+const enableListen = Effect.gen(function* () {
+  const config = yield* ComposioCliUserConfig;
+  yield* config.update({
+    experimentalFeatures: {
+      ...config.raw.experimentalFeatures,
+      listen: true,
+    },
+  });
+});
 
 describe('CLI: composio listen', () => {
   layer(
@@ -35,13 +47,7 @@ describe('CLI: composio listen', () => {
       '[Then] listens to top-level composio.* events without creating a temporary trigger',
       () =>
         Effect.gen(function* () {
-          const config = yield* ComposioCliUserConfig;
-          yield* config.update({
-            experimentalFeatures: {
-              ...config.raw.experimentalFeatures,
-              listen: true,
-            },
-          });
+          yield* enableListen;
           yield* cli(['listen', 'composio.connected_account.expired', '--max-events', '1']);
 
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
@@ -106,13 +112,7 @@ describe('CLI: composio listen', () => {
   )(it => {
     it.scoped('[Then] keeps the temporary-trigger flow for trigger slugs', () =>
       Effect.gen(function* () {
-        const config = yield* ComposioCliUserConfig;
-        yield* config.update({
-          experimentalFeatures: {
-            ...config.raw.experimentalFeatures,
-            listen: true,
-          },
-        });
+        yield* enableListen;
         yield* cli(['listen', 'GMAIL_NEW_GMAIL_MESSAGE', '--max-events', '1']);
 
         const lines = yield* MockConsole.getLines({ stripAnsi: true });
@@ -121,6 +121,66 @@ describe('CLI: composio listen', () => {
         expect(output).toContain('listening for events GMAIL_NEW_GMAIL_MESSAGE');
         expect(output).toContain('/triggers/GMAIL_NEW_GMAIL_MESSAGE/');
         expect(output).toContain('Stopped after receiving 1 event. Temporary trigger disabled.');
+      })
+    );
+  });
+
+  layer(
+    TestLive({
+      baseConfigProvider: testConfigProvider,
+      fixture: 'global-test-user-id',
+    })
+  )('listen validation and domain failures', it => {
+    it.scoped('reports malformed trigger params as CLI input validation', () =>
+      Effect.gen(function* () {
+        yield* enableListen;
+        const exit = yield* Effect.exit(
+          cli(['listen', 'composio.connected_account.expired', '--params', '[]'])
+        );
+
+        expect(Exit.isFailure(exit)).toBe(true);
+        if (Exit.isFailure(exit)) {
+          const failure = Cause.squash(exit.cause);
+          expect(
+            ValidationError.isValidationError(failure) && ValidationError.isInvalidValue(failure)
+          ).toBe(true);
+        }
+      })
+    );
+
+    it.scoped('reports malformed timeout values as CLI input validation', () =>
+      Effect.gen(function* () {
+        yield* enableListen;
+        const exit = yield* Effect.exit(
+          cli(['listen', 'composio.connected_account.expired', '--timeout', 'eventually'])
+        );
+
+        expect(Exit.isFailure(exit)).toBe(true);
+        if (Exit.isFailure(exit)) {
+          const failure = Cause.squash(exit.cause);
+          expect(
+            ValidationError.isValidationError(failure) && ValidationError.isInvalidValue(failure)
+          ).toBe(true);
+        }
+      })
+    );
+
+    it.scoped('reports a missing active connection as a structured domain failure', () =>
+      Effect.gen(function* () {
+        yield* enableListen;
+        const exit = yield* Effect.exit(cli(['listen', 'GMAIL_NEW_GMAIL_MESSAGE']));
+
+        expect(Exit.isFailure(exit)).toBe(true);
+        if (Exit.isFailure(exit)) {
+          const failure = Cause.squash(exit.cause);
+          expect(failure).toBeInstanceOf(ListenCommandError);
+          if (failure instanceof ListenCommandError) {
+            expect(failure).toMatchObject({
+              reason: 'connected_account_not_found',
+              toolkitSlug: 'gmail',
+            });
+          }
+        }
       })
     );
   });

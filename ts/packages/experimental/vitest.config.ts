@@ -14,6 +14,7 @@ export default defineConfig({
       '#platform': path.join(coreDir, 'src/platform/node.ts'),
       '#files': path.join(coreDir, 'src/models/Files.node.ts'),
       '#file_tool_modifier': path.join(coreDir, 'src/utils/modifiers/FileToolModifier.node.ts'),
+      '#ssrf_guard': path.join(coreDir, 'src/utils/ssrfGuard.node.ts'),
     },
   },
   test: {

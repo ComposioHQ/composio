@@ -8,7 +8,6 @@
 export const CLI_EXPERIMENTAL_FEATURES = {
   LISTEN: 'listen',
   LOCAL_TOOLS: 'local_tools',
-  MULTI_ACCOUNT: 'multi_account',
 } as const;
 
 export const CLI_RELEASE_CHANNELS = ['stable', 'beta'] as const;
@@ -23,8 +22,6 @@ export const isExperimentalFeatureEnabledByDefault = (
   channel: CliReleaseChannel
 ) => {
   switch (feature) {
-    case CLI_EXPERIMENTAL_FEATURES.MULTI_ACCOUNT:
-      return true;
     case CLI_EXPERIMENTAL_FEATURES.LISTEN:
     case CLI_EXPERIMENTAL_FEATURES.LOCAL_TOOLS:
       return channel === 'beta';

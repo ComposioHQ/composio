@@ -12,6 +12,7 @@ TypeScript workspace guidance for AI agents.
 - Use `typescript-providers` for packages under `ts/packages/providers/`.
 - Use `typescript-testing` for Vitest, typecheck, package builds, examples, or runtime E2E test selection.
 - Use `cli-command` or `cli-e2e` for `ts/packages/cli/` and `ts/e2e-tests/cli/`.
+- Use `cli-release` for first-party CLI beta builds, stable promotion, release verification, or recovery.
 
 ## Commands
 
@@ -33,4 +34,5 @@ pnpm test:e2e:cli
 - Do not edit `ts/vendor/`; those submodules are read-only references.
 - Keep generated outputs owned by their generator.
 - Add changesets only for changes to published TypeScript packages.
+- Never add changesets for `@composio/cli` or `@composio/cli-local-tools` while `.changeset/config.json` ignores them; record CLI notes in `ts/packages/cli/CHANGELOG.md` instead.
 - Prefer focused package tests before broad workspace tests.

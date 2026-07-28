@@ -1,8 +1,7 @@
-import { Args, Command, Options } from '@effect/cli';
-import { FileSystem } from '@effect/platform';
+import { Args, Command, HelpDoc, Options, ValidationError } from '@effect/cli';
+import { FileSystem, Path } from '@effect/platform';
 import type { Composio as RawComposioClient } from '@composio/client';
-import { Deferred, Effect, Option, Runtime } from 'effect';
-import path from 'node:path';
+import { Data, Deferred, Effect, Either, Option, Predicate, Runtime } from 'effect';
 import { requireAuth } from 'src/effects/require-auth';
 import { resolveOptionalTextInput } from 'src/effects/resolve-optional-text-input';
 import { ComposioClientSingleton } from 'src/services/composio-clients';
@@ -20,12 +19,33 @@ import {
   formatConnectedAccountChoices,
   resolveConnectedAccountSelection,
 } from 'src/services/connected-account-selection';
-import { parseJsonIsh } from 'src/utils/parse-json-ish';
+import { parseJsonRecord } from 'src/utils/parse-json';
 import { toolkitFromToolSlug } from 'src/utils/toolkit-from-tool-slug';
-import { ComposioCliUserConfig } from 'src/services/cli-user-config';
-import { CLI_EXPERIMENTAL_FEATURES } from 'src/constants';
 import { matchesTriggerListenFilters } from './triggers/filter';
 import { parseTriggerListenEvent } from './triggers/parse';
+import { decodeConnectedAccountItemsWithFallback } from 'src/effects/decode-connected-account-list';
+
+type TriggerCreateParams = NonNullable<
+  Parameters<RawComposioClient['triggerInstances']['upsert']>[1]
+>;
+
+export class ListenCommandError extends Data.TaggedError('commands/ListenCommandError')<{
+  readonly reason:
+    | 'project_context'
+    | 'connected_accounts'
+    | 'connected_account_not_found'
+    | 'create_trigger'
+    | 'disable_trigger';
+  readonly message: string;
+  readonly slug?: string;
+  readonly toolkitSlug?: string;
+  readonly cause?: unknown;
+}> {}
+
+const invalidOptionValue = (message: string) => ValidationError.invalidValue(HelpDoc.p(message));
+
+const errorMessage = (error: unknown): string =>
+  Predicate.isError(error) ? error.message : String(error);
 
 const slug = Args.text({ name: 'slug' }).pipe(
   Args.withDescription(
@@ -74,29 +94,42 @@ const debug = Options.boolean('debug').pipe(
 const sanitizePathPart = (value: string): string =>
   value.replace(/[^A-Z0-9._-]+/gi, '-').replace(/^-+|-+$/g, '') || 'unknown';
 
+const disableTemporaryTrigger = (params: {
+  client: RawComposioClient;
+  ui: TerminalUI;
+  slug: string;
+  triggerId: string;
+}) =>
+  Effect.tryPromise({
+    try: () =>
+      params.client.triggerInstances.manage.update(params.triggerId, { status: 'disable' }),
+    catch: cause =>
+      new ListenCommandError({
+        reason: 'disable_trigger',
+        message: `Failed to disable temporary trigger "${params.triggerId}": ${String(cause)}`,
+        slug: params.slug,
+        cause,
+      }),
+  }).pipe(
+    Effect.tapError(error => params.ui.log.warn(error.message)),
+    Effect.ignore
+  );
+
 const isProjectEventType = (value: string): boolean => value.startsWith('composio.');
 
 const resolveParamsInput = (input: Option.Option<string>) =>
   resolveOptionalTextInput(input, { missingValue: '{}' });
 
 const parseCreateParams = (raw: string) =>
-  Effect.gen(function* () {
-    const parsed = yield* Effect.try({
-      try: () => parseJsonIsh(raw),
-      catch: () =>
-        new Error(
-          "Invalid --params input. Provide JSON or a JS-style object literal, e.g. -p '{ trigger_config: { ... } }'."
-        ),
-    });
-
-    if (parsed === null || typeof parsed !== 'object' || Array.isArray(parsed)) {
-      return yield* Effect.fail(
-        new Error("Expected --params to be an object, e.g. -p '{ trigger_config: { ... } }'.")
-      );
-    }
-
-    return parsed as Record<string, unknown>;
-  });
+  parseJsonRecord(raw).pipe(
+    Either.mapLeft(error =>
+      invalidOptionValue(
+        error.reason === 'not-a-record'
+          ? "Expected --params to be an object, e.g. -p '{ trigger_config: { ... } }'."
+          : "Invalid --params input. Provide JSON or a JS-style object literal, e.g. -p '{ trigger_config: { ... } }'."
+      )
+    )
+  );
 
 const assertSupportedListenParams = (params: {
   listeningToProjectEvent: boolean;
@@ -105,7 +138,7 @@ const assertSupportedListenParams = (params: {
 }) =>
   params.listeningToProjectEvent && Object.keys(params.createParamsInput).length > 0
     ? Effect.fail(
-        new Error(
+        invalidOptionValue(
           `--params is only supported for trigger slugs. "${params.slug}" is a project-level composio.* event type and does not create a temporary trigger.`
         )
       )
@@ -121,7 +154,7 @@ const resolveConnectedAccountIdForTrigger = (params: {
     const toolkitSlug = toolkitFromToolSlug(params.slug);
     if (!toolkitSlug) {
       return yield* Effect.fail(
-        new Error(
+        invalidOptionValue(
           `Could not infer a toolkit from trigger slug "${params.slug}". Use a standard trigger slug such as "GMAIL_NEW_GMAIL_MESSAGE", or a project event type such as "composio.connected_account.expired".`
         )
       );
@@ -135,31 +168,50 @@ const resolveConnectedAccountIdForTrigger = (params: {
           statuses: ['ACTIVE'],
           limit: 100,
         }),
-      catch: error =>
-        new Error(`Failed to list connected accounts for "${toolkitSlug}": ${String(error)}`),
+      catch: cause =>
+        new ListenCommandError({
+          reason: 'connected_accounts',
+          message: `Failed to list connected accounts for "${toolkitSlug}": ${String(cause)}`,
+          slug: params.slug,
+          toolkitSlug,
+          cause,
+        }),
     });
+    const selectableAccounts = yield* decodeConnectedAccountItemsWithFallback(
+      connectedAccounts.items
+    ).pipe(
+      Effect.mapError(
+        cause =>
+          new ListenCommandError({
+            reason: 'connected_accounts',
+            message: `Connected accounts for toolkit "${toolkitSlug}" did not match the expected response shape.`,
+            slug: params.slug,
+            toolkitSlug,
+            cause,
+          })
+      )
+    );
     const selectedAccount = resolveConnectedAccountSelection(
-      connectedAccounts.items as Parameters<typeof resolveConnectedAccountSelection>[0],
+      selectableAccounts,
       Option.getOrUndefined(params.account)
     );
     if (selectedAccount?.id) {
       return selectedAccount.id;
     }
 
-    const choices = formatConnectedAccountChoices(
-      connectedAccounts.items as Parameters<typeof formatConnectedAccountChoices>[0]
-    );
+    const choices = formatConnectedAccountChoices(selectableAccounts);
     const suffix =
       Option.isSome(params.account) && choices.length > 0
         ? ` Available accounts: ${choices.join(', ')}.`
         : '';
-    return yield* Effect.fail(
-      new Error(
-        Option.isSome(params.account)
-          ? `No connected account matched "${params.account.value}" for toolkit "${toolkitSlug}" and consumer user "${params.consumerUserId}".${suffix}`
-          : `No active connected account found for toolkit "${toolkitSlug}" and consumer user "${params.consumerUserId}". Run \`composio link ${toolkitSlug}\` first.`
-      )
-    );
+    return yield* new ListenCommandError({
+      reason: 'connected_account_not_found',
+      message: Option.isSome(params.account)
+        ? `No connected account matched "${params.account.value}" for toolkit "${toolkitSlug}" and consumer user "${params.consumerUserId}".${suffix}`
+        : `No active connected account found for toolkit "${toolkitSlug}" and consumer user "${params.consumerUserId}". Run \`composio link ${toolkitSlug}\` first.`,
+      slug: params.slug,
+      toolkitSlug,
+    });
   });
 const emitStreamLine = (line: string, ui: TerminalUI) =>
   Effect.gen(function* () {
@@ -171,13 +223,8 @@ const eventTypeOf = (eventData: Record<string, unknown>): string | undefined =>
   typeof eventData.type === 'string' && eventData.type.length > 0 ? eventData.type : undefined;
 
 const extractEventFileId = (eventData: Record<string, unknown>): string => {
-  const candidates = [
-    eventData.id,
-    eventData.log_id,
-    typeof eventData.metadata === 'object' && eventData.metadata !== null
-      ? (eventData.metadata as Record<string, unknown>).id
-      : undefined,
-  ];
+  const metadata = Predicate.isRecord(eventData.metadata) ? eventData.metadata : undefined;
+  const candidates = [eventData.id, eventData.log_id, metadata?.id];
 
   for (const candidate of candidates) {
     if (typeof candidate === 'string' && candidate.length > 0) {
@@ -188,38 +235,43 @@ const extractEventFileId = (eventData: Record<string, unknown>): string => {
   return `${Date.now()}-${crypto.randomUUID().slice(0, 8)}`;
 };
 
-const resolveFallbackArtifactsDir = () => resolveArtifactsRoot();
-
-const parseStreamPath = (expression: string): ReadonlyArray<string | number> => {
-  const trimmed = expression.trim();
-  if (!trimmed.startsWith('.')) {
-    throw new Error('Expected --stream to contain a jq-like path starting with "."');
-  }
-
-  const pathTokens: Array<string | number> = [];
-  const tokenPattern = /(?:\.([A-Za-z0-9_-]+))|(?:\[(\d+)\])/g;
-  let lastIndex = 0;
-
-  for (const match of trimmed.matchAll(tokenPattern)) {
-    if ((match.index ?? -1) !== lastIndex) {
-      throw new Error(
-        'Unsupported --stream expression. Use a jq-like path such as ".foo.bar" or ".items[0].id".'
+const parseStreamPath = (expression: string) =>
+  Effect.gen(function* () {
+    const trimmed = expression.trim();
+    if (!trimmed.startsWith('.')) {
+      return yield* Effect.fail(
+        invalidOptionValue('Expected --stream to contain a jq-like path starting with "."')
       );
     }
 
-    if (match[1]) pathTokens.push(match[1]);
-    if (match[2]) pathTokens.push(Number(match[2]));
-    lastIndex += match[0].length;
-  }
+    const pathTokens: Array<string | number> = [];
+    const tokenPattern = /(?:\.([A-Za-z0-9_-]+))|(?:\[(\d+)\])/g;
+    let lastIndex = 0;
 
-  if (lastIndex !== trimmed.length) {
-    throw new Error(
-      'Unsupported --stream expression. Use a jq-like path such as ".foo.bar" or ".items[0].id".'
-    );
-  }
+    for (const match of trimmed.matchAll(tokenPattern)) {
+      if ((match.index ?? -1) !== lastIndex) {
+        return yield* Effect.fail(
+          invalidOptionValue(
+            'Unsupported --stream expression. Use a jq-like path such as ".foo.bar" or ".items[0].id".'
+          )
+        );
+      }
 
-  return pathTokens;
-};
+      if (match[1]) pathTokens.push(match[1]);
+      if (match[2]) pathTokens.push(Number(match[2]));
+      lastIndex += match[0].length;
+    }
+
+    if (lastIndex !== trimmed.length) {
+      return yield* Effect.fail(
+        invalidOptionValue(
+          'Unsupported --stream expression. Use a jq-like path such as ".foo.bar" or ".items[0].id".'
+        )
+      );
+    }
+
+    return pathTokens;
+  });
 
 const applyStreamPath = (value: unknown, pathTokens: ReadonlyArray<string | number>): unknown => {
   let current = value;
@@ -232,11 +284,11 @@ const applyStreamPath = (value: unknown, pathTokens: ReadonlyArray<string | numb
       continue;
     }
 
-    if (typeof current !== 'object' || current === null || Array.isArray(current)) {
+    if (!Predicate.isRecord(current)) {
       return undefined;
     }
 
-    current = (current as Record<string, unknown>)[token];
+    current = current[token];
   }
 
   return current;
@@ -289,25 +341,23 @@ const TIMEOUT_UNITS_MS: Record<string, number> = {
   days: 86_400_000,
 };
 
-const parseTimeoutMs = (value: string): number => {
-  const trimmed = value.trim().toLowerCase();
-  const match = /^(\d+(?:\.\d+)?)\s*([a-z]+)$/.exec(trimmed);
-  if (!match) {
-    throw new Error(
-      'Invalid --timeout value. Use a duration such as "30s", "5m", "1hr", or "1day".'
-    );
-  }
+const parseTimeoutMs = (value: string) =>
+  Effect.gen(function* () {
+    const trimmed = value.trim().toLowerCase();
+    const match = /^(\d+(?:\.\d+)?)\s*([a-z]+)$/.exec(trimmed);
+    const amount = Number(match?.[1]);
+    const unit = match?.[2];
+    const unitMs = unit === undefined ? undefined : TIMEOUT_UNITS_MS[unit];
+    if (!match || !Number.isFinite(amount) || amount <= 0 || unitMs === undefined) {
+      return yield* Effect.fail(
+        invalidOptionValue(
+          'Invalid --timeout value. Use a duration such as "30s", "5m", "1hr", or "1day".'
+        )
+      );
+    }
 
-  const amount = Number(match[1]);
-  const unitMs = TIMEOUT_UNITS_MS[match[2]];
-  if (!Number.isFinite(amount) || amount <= 0 || unitMs === undefined) {
-    throw new Error(
-      'Invalid --timeout value. Use a duration such as "30s", "5m", "1hr", or "1day".'
-    );
-  }
-
-  return Math.round(amount * unitMs);
-};
+    return Math.round(amount * unitMs);
+  });
 
 const resolveListenSetup = (params: {
   readonly slug: string;
@@ -324,10 +374,13 @@ const resolveListenSetup = (params: {
   };
 }) =>
   Effect.gen(function* () {
-    if (!params.resolvedProject.consumerUserId) {
-      return yield* Effect.fail(
-        new Error('No consumer user is available in the current project context.')
-      );
+    const consumerUserId = params.resolvedProject.consumerUserId;
+    if (!consumerUserId) {
+      return yield* new ListenCommandError({
+        reason: 'project_context',
+        message: 'No consumer user is available in the current project context.',
+        slug: params.slug,
+      });
     }
 
     const listeningToProjectEvent = isProjectEventType(params.slug);
@@ -346,34 +399,34 @@ const resolveListenSetup = (params: {
       : yield* resolveConnectedAccountIdForTrigger({
           client: params.client,
           slug: params.slug,
-          consumerUserId: params.resolvedProject.consumerUserId,
+          consumerUserId,
           account: params.account,
         });
 
-    const createParams = listeningToProjectEvent
+    const createParams: TriggerCreateParams | undefined = listeningToProjectEvent
       ? undefined
-      : ({
+      : {
           ...createParamsInput,
           connected_account_id: resolvedConnectedAccountId,
-        } as Parameters<typeof params.client.triggerInstances.upsert>[1]);
+        };
+
+    const timeoutMs = Option.isSome(params.timeout)
+      ? yield* parseTimeoutMs(params.timeout.value)
+      : undefined;
+    const streamPath = Option.isSome(params.stream)
+      ? params.stream.value.trim().length === 0
+        ? []
+        : yield* parseStreamPath(params.stream.value)
+      : undefined;
 
     return {
       listeningToProjectEvent,
       createParams,
-      timeoutMs: Option.match(params.timeout, {
-        onNone: () => undefined,
-        onSome: value => parseTimeoutMs(value),
-      }),
-      streamPath: Option.match(params.stream, {
-        onNone: () => undefined,
-        onSome: value => {
-          const trimmed = value.trim();
-          return trimmed.length === 0 ? [] : parseStreamPath(trimmed);
-        },
-      }),
+      timeoutMs,
+      streamPath,
       shouldStream: Option.isSome(params.stream),
       maxEventsLimit: Option.getOrUndefined(params.maxEvents),
-      consumerUserId: params.resolvedProject.consumerUserId,
+      consumerUserId,
     };
   });
 
@@ -386,24 +439,27 @@ export const listenCmd = Command.make(
 
       const ui = yield* TerminalUI;
       const fs = yield* FileSystem.FileSystem;
+      const path = yield* Path.Path;
       const runtime = yield* Effect.runtime<never>();
       const clientSingleton = yield* ComposioClientSingleton;
       const realtime = yield* TriggersRealtime;
 
       const resolvedProject = yield* resolveCommandProject({ mode: 'consumer' }).pipe(
-        Effect.mapError(formatResolveCommandProjectError)
+        Effect.mapError(cause => {
+          const formatted = formatResolveCommandProjectError(cause);
+          return new ListenCommandError({
+            reason: 'project_context',
+            message: formatted.message,
+            slug,
+            cause,
+          });
+        })
       );
 
       const client = yield* clientSingleton.getFor({
         orgId: resolvedProject.orgId,
         projectId: resolvedProject.projectId,
       });
-      const cliConfig = yield* ComposioCliUserConfig;
-      const accountSelector = cliConfig.isExperimentalFeatureEnabled(
-        CLI_EXPERIMENTAL_FEATURES.MULTI_ACCOUNT
-      )
-        ? account
-        : Option.none<string>();
       const {
         listeningToProjectEvent,
         createParams,
@@ -418,7 +474,7 @@ export const listenCmd = Command.make(
         timeout,
         stream,
         maxEvents,
-        account: accountSelector,
+        account,
         client,
         resolvedProject,
       });
@@ -427,10 +483,9 @@ export const listenCmd = Command.make(
         orgId: resolvedProject.orgId,
         consumerUserId,
       });
-      const artifactsRoot = Option.match(artifactsOption, {
-        onNone: () => resolveFallbackArtifactsDir(),
-        onSome: value => value.directoryPath,
-      });
+      const artifactsRoot = Option.isSome(artifactsOption)
+        ? artifactsOption.value.directoryPath
+        : yield* resolveArtifactsRoot;
       const triggerDir = path.join(
         artifactsRoot,
         listeningToProjectEvent ? 'events' : 'triggers',
@@ -450,8 +505,13 @@ export const listenCmd = Command.make(
           ? Effect.succeed<null | { trigger_id: string }>(null)
           : Effect.tryPromise({
               try: () => client.triggerInstances.upsert(slug, createParams),
-              catch: error =>
-                new Error(`Failed to create temporary trigger "${slug}": ${String(error)}`),
+              catch: cause =>
+                new ListenCommandError({
+                  reason: 'create_trigger',
+                  message: `Failed to create temporary trigger "${slug}": ${String(cause)}`,
+                  slug,
+                  cause,
+                }),
             }),
         createdTrigger =>
           Effect.gen(function* () {
@@ -488,15 +548,16 @@ export const listenCmd = Command.make(
                   const filterResult =
                     createdTrigger === null
                       ? eventTypeOf(eventData) === slug
-                      : matchesTriggerListenFilters(
+                      : parsedTriggerEvent !== undefined &&
+                        matchesTriggerListenFilters(
                           { triggerId: createdTrigger.trigger_id },
-                          parsedTriggerEvent!
+                          parsedTriggerEvent
                         );
                   if (debug) {
                     yield* emitStreamLine(
                       createdTrigger === null
                         ? `[debug] event.type=${eventTypeOf(eventData) ?? '<missing>'} match=${filterResult}`
-                        : `[debug] parsed.id=${parsedTriggerEvent!.id} triggerSlug=${parsedTriggerEvent!.triggerSlug} trigger_id=${createdTrigger.trigger_id} match=${filterResult}`,
+                        : `[debug] parsed.id=${parsedTriggerEvent?.id ?? '<missing>'} triggerSlug=${parsedTriggerEvent?.triggerSlug ?? '<missing>'} trigger_id=${createdTrigger.trigger_id} match=${filterResult}`,
                       ui
                     );
                   }
@@ -543,9 +604,8 @@ export const listenCmd = Command.make(
                     yield* Deferred.succeed(stopWhenDone, 'max-events').pipe(Effect.ignore);
                   }
                 }).pipe(
-                  Effect.catchAll(error =>
-                    ui.log.warn(error instanceof Error ? error.message : String(error))
-                  )
+                  Effect.tapError(error => ui.log.warn(errorMessage(error))),
+                  Effect.ignore
                 )
               );
             };
@@ -599,18 +659,16 @@ export const listenCmd = Command.make(
         created =>
           created === null
             ? Effect.void
-            : Effect.tryPromise({
-                try: () =>
-                  client.triggerInstances.manage.update(created.trigger_id, { status: 'disable' }),
-                catch: error =>
-                  new Error(
-                    `Failed to disable temporary trigger "${created.trigger_id}": ${String(error)}`
-                  ),
-              }).pipe(
-                Effect.catchAll(error =>
-                  ui.log.warn(error instanceof Error ? error.message : String(error))
-                )
-              )
+            : disableTemporaryTrigger({ client, ui, slug, triggerId: created.trigger_id })
+      ).pipe(
+        Effect.catchTag('services/TriggerRealtimeSubscriptionError', error =>
+          Effect.gen(function* () {
+            yield* ui.log.error(
+              `Could not subscribe to realtime trigger events: ${error.message}. Check your network connection or run \`composio login\`.`
+            );
+            process.exitCode = 1;
+          })
+        )
       );
     })
 ).pipe(

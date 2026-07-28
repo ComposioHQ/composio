@@ -75,7 +75,14 @@ command -v curl  >/dev/null || error 'curl is required to install Composio CLI'
 command -v unzip >/dev/null || error 'unzip is required to install Composio CLI'
 
 install_agent=false
+install_plugins=true
 version_arg=""
+
+case "${COMPOSIO_INSTALL_PLUGINS:-1}" in
+1) ;;
+0) install_plugins=false ;;
+*) error 'COMPOSIO_INSTALL_PLUGINS must be 1 or 0' ;;
+esac
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -83,9 +90,15 @@ while [[ $# -gt 0 ]]; do
         install_agent=true
         shift
         ;;
+    --no-plugins)
+        install_plugins=false
+        shift
+        ;;
     -h|--help)
-        echo 'Usage: install.sh [--agent] [version-tag]  (e.g. "@composio/cli@0.1.32")'
-        echo '  --agent    After installing, sign up/log in as a Composio agent.'
+        echo 'Usage: install.sh [--agent] [--no-plugins] [version-tag]  (e.g. "@composio/cli@0.1.32")'
+        echo '  --agent       After installing, sign up/log in as a Composio agent.'
+        echo '  --no-plugins  Skip installing plugins for detected agent hosts.'
+        echo '  Set COMPOSIO_INSTALL_PLUGINS=0 to skip plugin installation in automation.'
         exit 0
         ;;
     --*)
@@ -93,7 +106,7 @@ while [[ $# -gt 0 ]]; do
         ;;
     *)
         if [[ -n "$version_arg" ]]; then
-            error 'Too many arguments. Usage: install.sh [--agent] [version-tag]  (e.g. "@composio/cli@0.1.32")'
+            error 'Too many arguments. Usage: install.sh [--agent] [--no-plugins] [version-tag]  (e.g. "@composio/cli@0.1.32")'
         fi
         version_arg=$1
         shift
@@ -391,6 +404,14 @@ else
 fi
 rm -f "$install_err"
 
+if [[ $install_plugins = true ]]; then
+    echo
+    info "Checking for supported agent hosts..."
+    if ! COMPOSIO_CLI_INVOCATION_ORIGIN=installer "$exe" setup --target auto --yes --if-present; then
+        error 'Composio CLI was installed, but agent plugin setup failed. Retry with `composio setup --target auto --yes`.'
+    fi
+fi
+
 if [[ $install_agent = true ]]; then
     echo
     info "Setting up Composio agent login..."
@@ -400,7 +421,8 @@ if [[ $install_agent = true ]]; then
 fi
 
 echo
-info "To get started, run:"
+info "Composio was added to your PATH — restart your shell (or open a new terminal) for it to take effect."
+info "Then, to get started, run:"
 echo
 
 if [[ ${refresh_command:-} ]]; then

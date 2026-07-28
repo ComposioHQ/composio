@@ -1,5 +1,5 @@
-import { FileSystem } from '@effect/platform';
-import { Context, Effect, Layer } from 'effect';
+import { FileSystem, Path } from '@effect/platform';
+import { Context, Data, Effect, Layer } from 'effect';
 import type { Composio } from '@composio/client';
 import { executeLocalToolBySlug, resolveLocalTool } from '@composio/cli-local-tools';
 import type {
@@ -15,11 +15,13 @@ import {
   mapComposioError,
 } from 'src/services/composio-error-overrides';
 import { getOrFetchToolInputDefinition } from 'src/services/tool-input-validation';
-import { uploadToolInputFiles } from 'src/services/tool-file-uploads';
+import { ToolFileUploadError, uploadToolInputFiles } from 'src/services/tool-file-uploads';
+import { toolkitFromToolSlug } from 'src/utils/toolkit-from-tool-slug';
 import type { NodeOs } from 'src/services/node-os';
 import type { NodeProcess } from 'src/services/node-process';
 import type { ComposioUserContext } from 'src/services/user-context';
 import type { ComposioToolkitsRepository } from 'src/services/composio-clients';
+import type { TerminalUI } from 'src/services/terminal-ui';
 import { ComposioCliUserConfig } from 'src/services/cli-user-config';
 import { CLI_EXPERIMENTAL_FEATURES } from 'src/constants';
 
@@ -57,15 +59,23 @@ export interface ToolsExecutor {
     ToolExecuteResponse,
     unknown,
     | FileSystem.FileSystem
+    | Path.Path
     | NodeOs
     | NodeProcess
     | ComposioUserContext
     | ComposioToolkitsRepository
     | ComposioCliUserConfig
+    | TerminalUI
   >;
 }
 
 export const ToolsExecutor = Context.GenericTag<ToolsExecutor>('services/ToolsExecutor');
+
+export class LocalToolsDisabledError extends Data.TaggedError('services/LocalToolsDisabledError')<{
+  readonly toolSlug: string;
+  readonly feature: string;
+  readonly message: string;
+}> {}
 
 /**
  * Meta tool slugs handled by `session.executeMeta` instead of `session.execute`.
@@ -74,7 +84,7 @@ export const ToolsExecutor = Context.GenericTag<ToolsExecutor>('services/ToolsEx
  * `SessionExecuteMetaParams['slug']` union — a compile error will surface if
  * a slug is misspelled or if the API adds/removes a meta tool.
  */
-const META_TOOL_SLUG_LIST = [
+const META_TOOL_SLUG_LIST: ReadonlyArray<SessionExecuteMetaParams['slug']> = [
   'COMPOSIO_SEARCH_TOOLS',
   'COMPOSIO_MULTI_EXECUTE_TOOL',
   'COMPOSIO_MANAGE_CONNECTIONS',
@@ -82,7 +92,7 @@ const META_TOOL_SLUG_LIST = [
   'COMPOSIO_REMOTE_WORKBENCH',
   'COMPOSIO_REMOTE_BASH_TOOL',
   'COMPOSIO_GET_TOOL_SCHEMAS',
-] as const satisfies ReadonlyArray<SessionExecuteMetaParams['slug']>;
+];
 
 const META_TOOL_SLUGS: ReadonlySet<string> = new Set(META_TOOL_SLUG_LIST);
 
@@ -152,21 +162,22 @@ export const ToolsExecutorLive = Layer.effect(
             CLI_EXPERIMENTAL_FEATURES.LOCAL_TOOLS
           );
           if (localToolResolution && !localToolsEnabled) {
-            return yield* Effect.fail(
-              new Error(
-                `Local tools are experimental. Enable them with \`composio config experimental ${CLI_EXPERIMENTAL_FEATURES.LOCAL_TOOLS} on\` before executing ${slug}.`
-              )
-            );
+            return yield* new LocalToolsDisabledError({
+              toolSlug: slug,
+              feature: CLI_EXPERIMENTAL_FEATURES.LOCAL_TOOLS,
+              message: `Local tools are experimental. Enable them with \`composio config experimental ${CLI_EXPERIMENTAL_FEATURES.LOCAL_TOOLS} on\` before executing ${slug}.`,
+            });
           }
 
           if (localToolResolution) {
-            const localResult = yield* Effect.tryPromise(() =>
-              executeLocalToolBySlug(slug, params.arguments)
-            );
+            const localResult = yield* Effect.tryPromise({
+              try: () => executeLocalToolBySlug(slug, params.arguments),
+              catch: cause => cause,
+            });
             if (localResult) {
               return {
                 successful: true,
-                data: localResult as Record<string, unknown>,
+                data: localResult,
                 error: null,
                 logId: '',
               } satisfies ToolExecuteResponse;
@@ -187,7 +198,7 @@ export const ToolsExecutorLive = Layer.effect(
             connectedAccounts: params.connectedAccounts,
             cacheScope: params.cacheScope,
           });
-          const toolkitSlug = slug.split('_')[0]?.toLowerCase();
+          const toolkitSlug = toolkitFromToolSlug(slug);
           const permissionGateResult = yield* gateToolExecution({
             toolSlug: slug,
             connectedAccountId: toolkitSlug ? connectedAccounts?.[toolkitSlug] : undefined,
@@ -196,6 +207,8 @@ export const ToolsExecutorLive = Layer.effect(
               : undefined,
             snapshot: permissionSnapshot,
           });
+          const fs = yield* FileSystem.FileSystem;
+          const path = yield* Path.Path;
           const normalizedArguments = isMetaToolSlug(slug)
             ? params.arguments
             : yield* getOrFetchToolInputDefinition(slug).pipe(
@@ -205,42 +218,55 @@ export const ToolsExecutorLive = Layer.effect(
                     return Effect.succeed(params.arguments);
                   }
 
-                  return Effect.tryPromise(() =>
-                    uploadToolInputFiles({
-                      toolSlug: slug,
-                      arguments_: params.arguments,
-                      inputSchema: definition.schema,
-                      client: resolvedClient,
-                    })
-                  );
+                  return Effect.tryPromise({
+                    try: () =>
+                      uploadToolInputFiles({
+                        fs,
+                        path,
+                        toolSlug: slug,
+                        arguments_: params.arguments,
+                        inputSchema: definition.schema,
+                        client: resolvedClient,
+                      }),
+                    catch: cause =>
+                      cause instanceof ToolFileUploadError
+                        ? cause
+                        : new ToolFileUploadError({
+                            cause,
+                            message: cause instanceof Error ? cause.message : String(cause),
+                            reason: 'source-read',
+                          }),
+                  });
                 })
               );
 
           const raw: SessionExecuteResponse | SessionExecuteMetaResponse = yield* Effect.tryPromise(
-            () => {
-              if (isMetaToolSlug(slug)) {
-                return resolvedClient.toolRouter.session.executeMeta(sessionId, {
-                  slug,
+            {
+              try: () => {
+                if (isMetaToolSlug(slug)) {
+                  return resolvedClient.toolRouter.session.executeMeta(sessionId, {
+                    slug,
+                    arguments: normalizedArguments,
+                  });
+                }
+                const executePayload = {
+                  tool_slug: slug,
                   arguments: normalizedArguments,
-                });
-              }
-              const executePayload = {
-                tool_slug: slug,
-                arguments: normalizedArguments,
-                ...(localExperimentalPayload ? { experimental: localExperimentalPayload } : {}),
-              };
-              return resolvedClient.toolRouter.session.execute(sessionId, executePayload);
+                  ...(localExperimentalPayload ? { experimental: localExperimentalPayload } : {}),
+                };
+                return resolvedClient.toolRouter.session.execute(sessionId, executePayload);
+              },
+              catch: cause => cause,
             }
           );
 
           return normalizeResponse(raw, permissionGateResult);
         }).pipe(
-          Effect.catchAll((error): Effect.Effect<never, unknown> => {
+          Effect.mapError(error => {
             const mapped = mapComposioError({ error, toolSlug: slug });
-            if (mapped.normalized instanceof ComposioNoActiveConnectionError) {
-              return Effect.fail(mapped.normalized);
-            }
-            return Effect.fail(error);
+            return mapped.normalized instanceof ComposioNoActiveConnectionError
+              ? mapped.normalized
+              : error;
           })
         ),
     });

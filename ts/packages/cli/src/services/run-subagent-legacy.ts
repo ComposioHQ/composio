@@ -1,7 +1,6 @@
-import * as fs from 'node:fs';
-import * as os from 'node:os';
-import * as path from 'node:path';
-import { spawn } from 'node:child_process';
+import { Command, FileSystem, Path } from '@effect/platform';
+import { BunContext } from '@effect/platform-bun';
+import { Cause, Data, Effect, Exit, Predicate, Stream } from 'effect';
 import type { MasterKind } from 'src/services/master-detector';
 import {
   parseJson,
@@ -12,117 +11,131 @@ import {
   type InvokeAgentTarget,
 } from 'src/services/run-subagent-shared';
 
-const runExternalCommandText = async (
-  cmd: ReadonlyArray<string>,
+class SubAgentCommandFailedError extends Data.TaggedError('SubAgentCommandFailedError')<{
+  readonly command: string;
+  readonly exitCode: number;
+  readonly details: string;
+}> {
+  override get message(): string {
+    const suffix = this.details ? `: ${this.details}` : '';
+    return `${this.command} failed with exit code ${this.exitCode}${suffix}`;
+  }
+}
+
+class SubAgentNonJsonOutputError extends Data.TaggedError('SubAgentNonJsonOutputError')<{
+  readonly target: InvokeAgentTarget;
+}> {
+  override get message(): string {
+    return `${this.target} returned non-JSON output in experimental_subAgent().`;
+  }
+}
+
+const collectUtf8Text = <E>(stream: Stream.Stream<Uint8Array, E>): Effect.Effect<string, E> =>
+  Stream.mkString(Stream.decodeText(stream));
+
+const runExternalCommandText = (
+  cmd: readonly [string, ...Array<string>],
   helperDebugLog: HelperDebugLog
-) => {
-  helperDebugLog('agent.spawn', { command: cmd[0], args: cmd.slice(1) });
+) =>
+  Effect.gen(function* () {
+    const [executable, ...commandArgs] = cmd;
+    helperDebugLog('agent.spawn', { command: cmd[0], args: cmd.slice(1) });
 
-  const child = spawn(cmd[0]!, cmd.slice(1), {
-    cwd: process.cwd(),
-    env: process.env,
-    stdio: ['ignore', 'pipe', 'pipe'],
-  });
+    // The child never reads interactive input: hand it an immediately-closed
+    // stdin pipe (EOF), matching the previous `stdio: ['ignore', ...]` spawn.
+    const command = Command.make(executable, ...commandArgs).pipe(Command.stdin(Stream.empty));
 
-  const stdoutChunks: string[] = [];
-  const stderrChunks: string[] = [];
+    const [exitCode, stdout, stderr] = yield* Effect.scoped(
+      Effect.flatMap(Command.start(command), child =>
+        Effect.all([child.exitCode, collectUtf8Text(child.stdout), collectUtf8Text(child.stderr)], {
+          concurrency: 3,
+        })
+      )
+    );
 
-  child.stdout?.setEncoding('utf8');
-  child.stdout?.on('data', chunk => stdoutChunks.push(chunk));
-  child.stderr?.setEncoding('utf8');
-  child.stderr?.on('data', chunk => stderrChunks.push(chunk));
+    if (exitCode !== 0) {
+      const details = stderr.trim() || stdout.trim();
+      helperDebugLog('agent.error', {
+        command: cmd[0],
+        exitCode,
+        stderr: stderr.trim() || undefined,
+      });
+      return yield* new SubAgentCommandFailedError({ command: executable, exitCode, details });
+    }
 
-  const exitCode = await new Promise<number>((resolve, reject) => {
-    child.once('error', reject);
-    child.once('close', code => resolve(code ?? 0));
-  });
-
-  const stdout = stdoutChunks.join('');
-  const stderr = stderrChunks.join('');
-
-  if (exitCode !== 0) {
-    const details = stderr.trim() || stdout.trim();
-    const suffix = details ? `: ${details}` : '';
-    helperDebugLog('agent.error', {
+    helperDebugLog('agent.done', {
       command: cmd[0],
       exitCode,
-      stderr: stderr.trim() || undefined,
+      stdoutBytes: stdout.length,
+      stderrBytes: stderr.length,
     });
-    throw new Error(`${cmd[0]} failed with exit code ${exitCode}${suffix}`);
-  }
-
-  helperDebugLog('agent.done', {
-    command: cmd[0],
-    exitCode,
-    stdoutBytes: stdout.length,
-    stderrBytes: stderr.length,
+    return { stdout, stderr, exitCode };
   });
-  return { stdout, stderr, exitCode };
-};
 
-const invokeClaudeLegacy = async (
+const invokeClaudeLegacy = (
   prompt: string,
   options: InvokeAgentNormalizedOptions,
   master: MasterKind,
   helperDebugLog: HelperDebugLog
-): Promise<InvokeAgentResponse> => {
-  helperDebugLog('subAgent.prepare', {
-    target: 'claude',
-    transport: 'legacy',
-    hasSchema: options.structuredSchema !== undefined,
+) =>
+  Effect.gen(function* () {
+    helperDebugLog('subAgent.prepare', {
+      target: 'claude',
+      transport: 'legacy',
+      hasSchema: options.structuredSchema !== undefined,
+    });
+
+    const args: [string, ...Array<string>] = ['claude', '--bare', '-p', '--output-format', 'json'];
+    if (typeof options.model === 'string' && options.model.trim().length > 0) {
+      args.push('--model', options.model.trim());
+    }
+    if (options.structuredSchema !== undefined) {
+      args.push('--json-schema', JSON.stringify(options.structuredSchema));
+    }
+    args.push(prompt);
+
+    const result = yield* runExternalCommandText(args, helperDebugLog);
+    const parsed = parseJson(result.stdout.trim());
+    if (!Predicate.isRecord(parsed)) {
+      return yield* new SubAgentNonJsonOutputError({ target: 'claude' });
+    }
+
+    const payload =
+      options.structuredSchema !== undefined
+        ? {
+            result: null,
+            structuredOutput: parsed.structured_output ?? null,
+          }
+        : {
+            result: typeof parsed.result === 'string' ? parsed.result : null,
+            structuredOutput: null,
+          };
+
+    return toInvokeAgentResponse(master, 'claude', payload);
   });
 
-  const args = ['claude', '--bare', '-p', '--output-format', 'json'];
-  if (typeof options.model === 'string' && options.model.trim().length > 0) {
-    args.push('--model', options.model.trim());
-  }
-  if (options.structuredSchema !== undefined) {
-    args.push('--json-schema', JSON.stringify(options.structuredSchema));
-  }
-  args.push(prompt);
-
-  const result = await runExternalCommandText(args, helperDebugLog);
-  const parsed = parseJson(result.stdout.trim());
-  if (!parsed || typeof parsed !== 'object') {
-    throw new Error('claude returned non-JSON output in experimental_subAgent().');
-  }
-
-  const payload =
-    options.structuredSchema !== undefined
-      ? {
-          result: null,
-          structuredOutput: (parsed as { structured_output?: unknown }).structured_output ?? null,
-        }
-      : {
-          result:
-            typeof (parsed as { result?: unknown }).result === 'string'
-              ? (parsed as { result: string }).result
-              : null,
-          structuredOutput: null,
-        };
-
-  return toInvokeAgentResponse(master, 'claude', payload);
-};
-
-const invokeCodexLegacy = async (
+const invokeCodexLegacy = (
   prompt: string,
   options: InvokeAgentNormalizedOptions,
   master: MasterKind,
   helperDebugLog: HelperDebugLog
-): Promise<InvokeAgentResponse> => {
-  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'composio-invoke-agent-'));
-  const outputPath = path.join(tempDir, 'last-message.txt');
-  const args = [
-    'codex',
-    'exec',
-    '--skip-git-repo-check',
-    '--sandbox',
-    'read-only',
-    '-o',
-    outputPath,
-  ];
+) =>
+  Effect.gen(function* () {
+    const fs = yield* FileSystem.FileSystem;
+    const path = yield* Path.Path;
 
-  try {
+    const tempDir = yield* fs.makeTempDirectoryScoped({ prefix: 'composio-invoke-agent-' });
+    const outputPath = path.join(tempDir, 'last-message.txt');
+    const args: [string, ...Array<string>] = [
+      'codex',
+      'exec',
+      '--skip-git-repo-check',
+      '--sandbox',
+      'read-only',
+      '-o',
+      outputPath,
+    ];
+
     helperDebugLog('subAgent.prepare', {
       target: 'codex',
       transport: 'legacy',
@@ -135,14 +148,14 @@ const invokeCodexLegacy = async (
 
     if (options.structuredSchema !== undefined) {
       const schemaPath = path.join(tempDir, 'schema.json');
-      fs.writeFileSync(schemaPath, JSON.stringify(options.structuredSchema), 'utf8');
+      yield* fs.writeFileString(schemaPath, JSON.stringify(options.structuredSchema));
       args.push('--output-schema', schemaPath);
     }
 
     args.push(prompt);
-    await runExternalCommandText(args, helperDebugLog);
+    yield* runExternalCommandText(args, helperDebugLog);
 
-    const text = fs.readFileSync(outputPath, 'utf8').trim();
+    const text = (yield* fs.readFileString(outputPath)).trim();
     if (options.structuredSchema !== undefined) {
       return toInvokeAgentResponse(master, 'codex', {
         result: null,
@@ -154,10 +167,7 @@ const invokeCodexLegacy = async (
       result: text,
       structuredOutput: null,
     });
-  } finally {
-    fs.rmSync(tempDir, { recursive: true, force: true });
-  }
-};
+  }).pipe(Effect.scoped);
 
 export const invokeLegacySubAgent = async ({
   prompt,
@@ -172,9 +182,17 @@ export const invokeLegacySubAgent = async ({
   target: InvokeAgentTarget;
   helperDebugLog: HelperDebugLog;
 }): Promise<InvokeAgentResponse> => {
-  if (target === 'claude') {
-    return invokeClaudeLegacy(prompt, options, master, helperDebugLog);
+  const program =
+    target === 'claude'
+      ? invokeClaudeLegacy(prompt, options, master, helperDebugLog)
+      : invokeCodexLegacy(prompt, options, master, helperDebugLog);
+
+  const exit = await Effect.runPromiseExit(Effect.provide(program, BunContext.layer));
+  if (Exit.isSuccess(exit)) {
+    return exit.value;
   }
 
-  return invokeCodexLegacy(prompt, options, master, helperDebugLog);
+  // Surface the original error instance (same message callers matched on
+  // before), not a FiberFailure wrapper.
+  throw Cause.squash(exit.cause);
 };
