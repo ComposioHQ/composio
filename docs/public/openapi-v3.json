@@ -104,6 +104,12 @@
     {
       "name": "Tool Router",
       "description": "(Labs) Tool router endpoints"
+    },
+    {
+      "name": "Organization Management"
+    },
+    {
+      "name": "Projects"
     }
   ],
   "components": {

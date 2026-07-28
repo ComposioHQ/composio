@@ -1,6 +1,9 @@
 import { readFile } from 'node:fs/promises';
 import { join } from 'path';
 import { createOpenAPI } from 'fumadocs-openapi/server';
+import { declareOperationTags, type OpenAPIDocument } from './openapi-tags';
+
+export { declareOperationTags } from './openapi-tags';
 
 const openapiPath = join(process.cwd(), 'public/openapi.json');
 const openapiWebhooksPath = join(
@@ -8,13 +11,6 @@ const openapiWebhooksPath = join(
   'public/openapi-webhooks.json',
 );
 const openapiV3Path = join(process.cwd(), 'public/openapi-v3.json');
-
-type OpenAPIDocument = {
-  paths?: Record<
-    string,
-    Record<string, { security?: Record<string, string[]>[] } | undefined>
-  >;
-};
 
 // v3.1 (latest) — clean operationIds, default API reference.
 // The webhook-events spec (openapi-webhooks.json) is a separate OpenAPI 3.1
@@ -38,7 +34,7 @@ export const openapiV3 = createOpenAPI({
 
 async function loadOpenAPISchema(path: string) {
   const document = JSON.parse(await readFile(path, 'utf8')) as OpenAPIDocument;
-  return normalizeNoAuthSecurity(document);
+  return declareOperationTags(normalizeNoAuthSecurity(document));
 }
 
 export function normalizeNoAuthSecurity<T extends OpenAPIDocument>(document: T): T {

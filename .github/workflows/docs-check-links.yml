@@ -8,6 +8,11 @@ on:
       - '.github/workflows/docs-check-links.yml'
       - 'mise.toml'
       - 'mise.lock'
+  schedule:
+    # Nightly external-link sweep. HEAD/GET-checking every external URL is
+    # slow and depends on third-party uptime, so it never runs on the PR path.
+    - cron: '30 2 * * *'
+  workflow_dispatch:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.ref || github.run_id }}
@@ -22,6 +27,9 @@ jobs:
     defaults:
       run:
         working-directory: ./docs
+    permissions:
+      contents: read
+      issues: write
 
     steps:
       - name: Checkout repository
@@ -41,5 +49,50 @@ jobs:
       - name: Install dependencies
         run: bun install
 
-      - name: Validate links
+      - name: Validate internal links
+        if: github.event_name == 'pull_request'
         run: bun run lint:links
+
+      - name: Validate internal and external links
+        if: github.event_name != 'pull_request'
+        run: bun run lint:links:external
+
+      # A red scheduled run is invisible unless someone watches the Actions
+      # tab. File one tracking issue and leave it open until the cause is
+      # fixed; PR runs skip this because their failures are already visible.
+      - name: Open tracking issue on failure
+        if: failure() && github.event_name != 'pull_request'
+        continue-on-error: true
+        # Override the job-level `./docs` default: that path only exists after
+        # checkout, and a pre-checkout failure would otherwise leave the runner
+        # unable to start this shell, silently losing the alert.
+        working-directory: ${{ github.workspace }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          LABEL: docs-external-links-failure
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          EVENT_NAME: ${{ github.event_name }}
+        run: |
+          gh label create "$LABEL" \
+            --color B60205 \
+            --description "Nightly docs external-link check is failing" 2>/dev/null || true
+
+          existing=$(gh issue list --label "$LABEL" --state open --limit 1 --json number --jq '.[0].number // empty')
+          if [ -n "$existing" ]; then
+            echo "Issue #$existing is already open for this failure; not filing a duplicate."
+            exit 0
+          fi
+
+          gh issue create \
+            --title "Nightly docs external-link check is failing" \
+            --label "$LABEL" \
+            --body "The scheduled \`Docs - Check Links\` external sweep failed.
+
+          - Run: $RUN_URL
+          - Trigger: \`$EVENT_NAME\`
+
+          The failing URLs are listed in the run log. External links only fail on
+          evidence they are dead (404/410, or repeated network errors), so this
+          usually means a linked page moved or was taken down — fix or remove the
+          link in \`docs/content\`."
