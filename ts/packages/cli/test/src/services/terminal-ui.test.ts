@@ -73,7 +73,6 @@ describe('TerminalUI', () => {
             stderr: true,
           });
 
-          // Prompting is unavailable: confirm resolves to its default without invoking Clack.
           const confirmed = yield* ui.confirm('proceed?', { defaultValue: false });
           expect(confirmed).toBe(false);
           expect(p.confirm).not.toHaveBeenCalled();
@@ -85,15 +84,12 @@ describe('TerminalUI', () => {
           expect(selected).toBe('first');
           expect(p.select).not.toHaveBeenCalled();
 
-          // Machine output must NOT leak onto the human-visible stdout terminal.
           yield* ui.output('{"machine":"data"}');
           expect(stdout.chunks).toEqual([]);
 
-          // Explicit force still writes.
           yield* ui.output('forced-data', { force: true });
           expect(stdout.chunks.join('')).toContain('forced-data');
 
-          // Decoration only needs stderr.
           yield* ui.log.info('stdin-redirect decoration');
           expect(stderr.chunks.join('')).toContain('stdin-redirect decoration');
         })
@@ -110,16 +106,13 @@ describe('TerminalUI', () => {
             stderr: true,
           });
 
-          // Prompting still works: the answer comes from the prompt, not the default.
           const confirmed = yield* ui.confirm('proceed?', { defaultValue: true });
           expect(p.confirm).toHaveBeenCalledTimes(1);
           expect(confirmed).toBe(false);
 
-          // Machine output goes to the pipe.
           yield* ui.output('{"machine":"data"}');
           expect(stdout.chunks.join('')).toContain('{"machine":"data"}');
 
-          // Decoration still renders on the visible stderr.
           yield* ui.log.info('stdout-piped decoration');
           expect(stderr.chunks.join('')).toContain('stdout-piped decoration');
         })
@@ -135,20 +128,16 @@ describe('TerminalUI', () => {
             stderr: false,
           });
 
-          // Prompting is unavailable without stderr to display the prompt.
           const confirmed = yield* ui.confirm('proceed?', { defaultValue: true });
           expect(confirmed).toBe(true);
           expect(p.confirm).not.toHaveBeenCalled();
 
-          // Decoration is suppressed.
           yield* ui.log.info('captured decoration');
           expect(stderr.chunks).toEqual([]);
 
-          // stdout is a TTY, so data stays suppressed...
           yield* ui.output('{"machine":"data"}');
           expect(stdout.chunks).toEqual([]);
 
-          // ...unless the caller forces it.
           yield* ui.output('forced-data', { force: true });
           expect(stdout.chunks.join('')).toContain('forced-data');
         })
@@ -167,7 +156,6 @@ describe('TerminalUI', () => {
 
         yield* ui.log.info('invisible decoration');
         expect(stderr.chunks).toEqual([]);
-        expect(p.confirm).not.toHaveBeenCalled();
       })
     );
   });

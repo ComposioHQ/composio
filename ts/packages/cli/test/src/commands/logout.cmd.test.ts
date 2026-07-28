@@ -7,19 +7,19 @@ import { setupCacheDir } from 'src/effects/setup-cache-dir';
 import { UserDataWithDefaults } from 'src/models/user-data';
 import { writeStoredAgentIdentity } from 'src/services/agents';
 import { extendConfigProvider } from 'src/services/config';
-import { TerminalUI } from 'src/services/terminal-ui';
+import { getTerminalCapabilities, TerminalUI } from 'src/services/terminal-ui';
 import { ComposioUserContext } from 'src/services/user-context';
 import { cli, TestLive, MockConsole } from 'test/__utils__';
 
 const terminalUIWithConfirm = (confirmed: boolean) =>
   TerminalUI.of({
-    capabilities: Effect.succeed({
-      stdinIsTTY: true,
-      stdoutIsTTY: true,
-      stderrIsTTY: true,
-      canPrompt: true,
-      canDecorate: true,
-    }),
+    capabilities: Effect.succeed(
+      getTerminalCapabilities({
+        stdin: { isTTY: true },
+        stdout: { isTTY: true },
+        stderr: { isTTY: true },
+      })
+    ),
     output: data => Console.log(data),
     error: data => Console.error(data),
     intro: title => Console.log(`-- ${title} --`),

@@ -126,9 +126,6 @@ describe('CLI: composio login', () => {
     );
   });
 
-  // Regression: piping stdout must not reroute login. Prompting depends on
-  // stdin and stderr only, so `composio login | tee` has to behave exactly
-  // like an attended terminal login, not a headless one.
   describe('login with stdout piped', () => {
     const pipedStdoutUI = TerminalUI.of({
       ...terminalUITestImpl,
@@ -139,8 +136,6 @@ describe('CLI: composio login', () => {
           stderr: { isTTY: true },
         })
       ),
-      // Entering the poll spinner proves login chose the interactive wait
-      // path; abort there so the test doesn't poll a fake session.
       useMakeSpinner: (message, _use) =>
         Console.log(`[spinner] ${message}`).pipe(
           Effect.andThen(Effect.die(new Error('test: interactive poll loop entered')))
@@ -155,14 +150,11 @@ describe('CLI: composio login', () => {
             const exit = yield* Effect.exit(cli(['login', '--no-browser']));
 
             const output = (yield* MockConsole.getLines({ stripAnsi: true })).join('\n');
-            // The interactive wait path was entered (poll spinner started)...
             expect(output).toContain('[spinner] Waiting for login...');
             expect(output).toContain('Please login using the following URL');
-            // ...and the headless/agent instructions path was NOT taken.
             expect(output).not.toContain('Open this URL in your browser to log in:');
             expect(output).not.toContain('hint: For agents:');
             expect(output).not.toContain('Then run this command to complete login:');
-            // The exit fails only because the test stub aborts the poll loop.
             expect(Exit.isFailure(exit)).toBe(true);
           })
       );

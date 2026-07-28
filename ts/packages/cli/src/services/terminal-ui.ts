@@ -176,9 +176,9 @@ export const TerminalUI = Context.GenericTag<TerminalUI>('services/TerminalUI');
 // ---------------------------------------------------------------------------
 
 /** A stream a TerminalUI can write to, with an optional TTY marker. */
-export type TerminalWritable = TtyLikeStream & Writable;
+type TerminalWritable = TtyLikeStream & Writable;
 
-export type TerminalUIStreams = {
+type TerminalUIStreams = {
   readonly stdin: TtyLikeStream;
   readonly stdout: TerminalWritable;
   readonly stderr: TerminalWritable;
@@ -228,10 +228,8 @@ export const makeTerminalUI = (streams: TerminalUIStreams): TerminalUI => {
   const { canPrompt, canDecorate, stdoutIsTTY } = capabilities;
   const stderr = streams.stderr;
 
-  /** Run a decoration side-effect only when stderr is a terminal. */
-  const decorate = (fn: () => void): void => {
-    if (canDecorate) fn();
-  };
+  const decorate = (render: () => void): Effect.Effect<void> =>
+    canDecorate ? Effect.sync(render) : Effect.void;
 
   return {
     capabilities: Effect.succeed(capabilities),
@@ -245,24 +243,20 @@ export const makeTerminalUI = (streams: TerminalUIStreams): TerminalUI => {
 
     error: data => Effect.sync(() => stderr.write(`${data}\n`)),
 
-    intro: title => Effect.sync(() => decorate(() => p.intro(title, { output: stderr }))),
-    outro: message => Effect.sync(() => decorate(() => p.outro(message, { output: stderr }))),
+    intro: title => decorate(() => p.intro(title, { output: stderr })),
+    outro: message => decorate(() => p.outro(message, { output: stderr })),
 
     log: {
-      info: message => Effect.sync(() => decorate(() => p.log.info(message, { output: stderr }))),
-      success: message =>
-        Effect.sync(() => decorate(() => p.log.success(message, { output: stderr }))),
-      warn: message => Effect.sync(() => decorate(() => p.log.warn(message, { output: stderr }))),
-      error: message => Effect.sync(() => decorate(() => p.log.error(message, { output: stderr }))),
-      step: message => Effect.sync(() => decorate(() => p.log.step(message, { output: stderr }))),
-      message: message =>
-        Effect.sync(() => decorate(() => p.log.message(message, { output: stderr }))),
+      info: message => decorate(() => p.log.info(message, { output: stderr })),
+      success: message => decorate(() => p.log.success(message, { output: stderr })),
+      warn: message => decorate(() => p.log.warn(message, { output: stderr })),
+      error: message => decorate(() => p.log.error(message, { output: stderr })),
+      step: message => decorate(() => p.log.step(message, { output: stderr })),
+      message: message => decorate(() => p.log.message(message, { output: stderr })),
     },
 
     note: (message, title) =>
-      Effect.sync(() =>
-        decorate(() => p.note(message, title ?? '', { format: line => line, output: stderr }))
-      ),
+      decorate(() => p.note(message, title ?? '', { format: line => line, output: stderr })),
 
     select: ((
       message: string,
@@ -289,8 +283,7 @@ export const makeTerminalUI = (streams: TerminalUIStreams): TerminalUI => {
               initialValue: options?.defaultValue ?? true,
               output: stderr,
             });
-            // p.confirm returns boolean | symbol (symbol on cancel)
-            return typeof result === 'boolean' ? result : false;
+            return p.isCancel(result) ? false : result;
           })
         : Effect.succeed(options?.defaultValue ?? true),
 

@@ -6,7 +6,7 @@ import { existsSync, mkdirSync, readFileSync, mkdtempSync, writeFileSync } from 
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { withHttpServer } from 'test/__utils__/http-server';
-import { TerminalUI } from 'src/services/terminal-ui';
+import { getTerminalCapabilities, TerminalUI } from 'src/services/terminal-ui';
 import { UpgradeBinary, UpgradeBinaryError } from 'src/services/upgrade-binary';
 import { NodeOs } from 'src/services/node-os';
 import { collectExpectedRunCompanionAssetRelativePaths } from 'src/services/run-companion-modules';
@@ -14,13 +14,13 @@ import { collectExpectedRunCompanionAssetRelativePaths } from 'src/services/run-
 const TerminalUINoop = Layer.succeed(
   TerminalUI,
   TerminalUI.of({
-    capabilities: Effect.succeed({
-      stdinIsTTY: false,
-      stdoutIsTTY: false,
-      stderrIsTTY: false,
-      canPrompt: false,
-      canDecorate: false,
-    }),
+    capabilities: Effect.succeed(
+      getTerminalCapabilities({
+        stdin: { isTTY: false },
+        stdout: { isTTY: false },
+        stderr: { isTTY: false },
+      })
+    ),
     output: () => Effect.void,
     error: () => Effect.void,
     intro: () => Effect.void,

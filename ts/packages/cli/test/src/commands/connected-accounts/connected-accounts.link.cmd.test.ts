@@ -5,7 +5,7 @@ import { extendConfigProvider } from 'src/services/config';
 import { cli, TestLive, MockConsole } from 'test/__utils__';
 import type { TestLiveInput } from 'test/__utils__/services/test-layer';
 import type { ConnectedAccountItem } from 'src/models/connected-accounts';
-import { TerminalUI } from 'src/services/terminal-ui';
+import { getTerminalCapabilities, TerminalUI } from 'src/services/terminal-ui';
 import open from 'open';
 import { afterEach, vi } from 'vitest';
 
@@ -57,13 +57,13 @@ const testConfigProvider = ConfigProvider.fromMap(
 ).pipe(extendConfigProvider);
 
 const RecordingTerminalUI = TerminalUI.of({
-  capabilities: Effect.succeed({
-    stdinIsTTY: true,
-    stdoutIsTTY: true,
-    stderrIsTTY: true,
-    canPrompt: true,
-    canDecorate: true,
-  }),
+  capabilities: Effect.succeed(
+    getTerminalCapabilities({
+      stdin: { isTTY: true },
+      stdout: { isTTY: true },
+      stderr: { isTTY: true },
+    })
+  ),
   output: (data, options) =>
     Console.log(
       JSON.stringify({

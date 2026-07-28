@@ -631,8 +631,6 @@ export const browserLogin = (params: {
       expiresAt,
     });
 
-    // Waiting on the user is a prompting decision: it needs stdin (input) and
-    // stderr (prompt display), never stdout. Piping stdout must not reroute login.
     const { canPrompt, canDecorate } = yield* ui.capabilities;
     const effectiveNoWait = params.noWait || !canPrompt;
     const effectiveNoBrowser = params.noBrowser || effectiveNoWait;
@@ -809,9 +807,6 @@ export const loginCmd = Command.make(
     Effect.gen(function* () {
       const ui = yield* TerminalUI;
       const ctx = yield* ComposioUserContext;
-      // canPrompt gates side effects that assume a human is present (skill
-      // install); canDecorate gates human-facing stderr decoration (intro,
-      // notes). Neither reacts to stdout, which carries data only.
       const { canPrompt, canDecorate } = yield* ui.capabilities;
 
       if (canDecorate) {
