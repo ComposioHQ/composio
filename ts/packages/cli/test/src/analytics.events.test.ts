@@ -460,22 +460,16 @@ describe('CLI analytics journey taxonomy', () => {
         { stdoutIsTTY: false, stderrIsTTY: false }
       );
       const properties = getPrimaryLifecycleInvokedEvent(context)?.properties;
+      const pluginProperties = getPluginLifecycleSucceededEvent({
+        operation: 'setup',
+        target: 'codex',
+        action: 'installed',
+        cliVersion: APP_VERSION,
+      })?.properties;
       expect(inferSkillReleaseChannel(APP_VERSION)).toBe('stable');
       expect(properties?.cli_channel).toBe('beta');
+      expect(pluginProperties?.cli_channel).toBe('beta');
     }).pipe(Effect.provide(Layer.merge(BunFileSystem.layer, BunPath.layer)));
-  });
-
-  it('derives invoked-event channel from its resolved runtime version', () => {
-    configureCliAnalyticsReleaseVersion(APP_VERSION);
-    const context = createCliCommandTelemetryContext(['bun', 'composio', 'login'], '0.3.1-beta.7', {
-      stdoutIsTTY: true,
-      stderrIsTTY: true,
-    });
-
-    expect(getPrimaryLifecycleInvokedEvent(context)?.properties).toMatchObject({
-      cli_version: '0.3.1-beta.7',
-      cli_channel: 'beta',
-    });
   });
 
   it('propagates the installer invocation origin from the environment', () => {
