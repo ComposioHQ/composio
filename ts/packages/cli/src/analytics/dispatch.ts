@@ -1,5 +1,6 @@
 import process from 'node:process';
 import { FileSystem, HttpClient, HttpClientRequest, Path } from '@effect/platform';
+import type { PlatformError } from '@effect/platform/Error';
 import {
   Cause,
   Clock,
@@ -22,6 +23,9 @@ const INTERNAL_ANALYTICS_WORKER_FLAG = '__analytics-worker';
 const INTERNAL_CODACT_FAILURE_WORKER_FLAG = '__codact-failure-worker';
 const COMPOSIO_DIR = '.composio';
 const ANALYTICS_STATE_FILE_NAME = 'analytics.json';
+const ANALYTICS_STATE_LOCK_FILE_NAME = `${ANALYTICS_STATE_FILE_NAME}.lock`;
+const ANALYTICS_STATE_LOCK_STALE_MS = 30_000;
+const ANALYTICS_STATE_LOCK_MAX_ATTEMPTS = 10_000;
 const CONSUMER_SHORT_TERM_CACHE_FILE_NAME = 'consumer-short-term-cache.json';
 const CLI_CODACT_FAILURES_PATH = '/api/v3/cli/codact_failures';
 
@@ -157,6 +161,7 @@ const getAnalyticsPaths = Effect.gen(function* () {
   return {
     analyticsDir,
     analyticsStatePath: path.join(analyticsDir, ANALYTICS_STATE_FILE_NAME),
+    analyticsStateLockPath: path.join(analyticsDir, ANALYTICS_STATE_LOCK_FILE_NAME),
     // user_data.json and config.json live in the cache dir (setup-cache-dir.ts,
     // cli-user-config.ts), which COMPOSIO_CACHE_DIR relocates away from ~/.composio.
     userConfigPath: path.join(cacheDir, constants.USER_CONFIG_FILE_NAME),
@@ -188,6 +193,63 @@ const readAnalyticsState = Effect.gen(function* () {
   return yield* readOptionalJson<AnalyticsState>(paths.analyticsStatePath);
 });
 
+const recoverStaleAnalyticsStateLock = (
+  fs: FileSystem.FileSystem,
+  lockPath: string
+): Effect.Effect<void, never, never> =>
+  Effect.gen(function* () {
+    const info = yield* fs.stat(lockPath);
+    const modifiedAt = Option.getOrUndefined(info.mtime);
+    if (!modifiedAt) {
+      return;
+    }
+    const now = yield* Clock.currentTimeMillis;
+    if (now - modifiedAt.getTime() <= ANALYTICS_STATE_LOCK_STALE_MS) {
+      return;
+    }
+
+    // Rename claims this exact stale lock atomically. A competing process can
+    // then acquire the canonical path without being deleted by our cleanup.
+    const stalePath = `${lockPath}.stale-${crypto.randomUUID().slice(0, 8)}`;
+    yield* fs.rename(lockPath, stalePath);
+    yield* fs.remove(stalePath, { force: true });
+  }).pipe(Effect.catchAll(() => Effect.void));
+
+const acquireAnalyticsStateLock = Effect.gen(function* () {
+  const fs = yield* FileSystem.FileSystem;
+  const paths = yield* getAnalyticsPaths;
+  const token = crypto.randomUUID();
+
+  yield* fs.makeDirectory(paths.analyticsDir, { recursive: true });
+
+  const tryAcquire = (attemptsRemaining: number): Effect.Effect<void, PlatformError, never> =>
+    fs.writeFileString(paths.analyticsStateLockPath, token, { flag: 'wx' }).pipe(
+      Effect.catchTag('SystemError', error => {
+        if (error.reason !== 'AlreadyExists' || attemptsRemaining <= 0) {
+          return Effect.fail(error);
+        }
+        return recoverStaleAnalyticsStateLock(fs, paths.analyticsStateLockPath).pipe(
+          Effect.andThen(Effect.yieldNow()),
+          Effect.andThen(tryAcquire(attemptsRemaining - 1))
+        );
+      })
+    );
+
+  yield* tryAcquire(ANALYTICS_STATE_LOCK_MAX_ATTEMPTS);
+  return { fs, lockPath: paths.analyticsStateLockPath, token };
+});
+
+const releaseAnalyticsStateLock = (lock: Effect.Effect.Success<typeof acquireAnalyticsStateLock>) =>
+  Effect.gen(function* () {
+    const currentToken = yield* lock.fs.readFileString(lock.lockPath, 'utf8');
+    if (currentToken === lock.token) {
+      yield* lock.fs.remove(lock.lockPath, { force: true });
+    }
+  }).pipe(Effect.catchAll(() => Effect.void));
+
+const withAnalyticsStateLock = <A, E, R>(effect: Effect.Effect<A, E, R>) =>
+  Effect.acquireUseRelease(acquireAnalyticsStateLock, () => effect, releaseAnalyticsStateLock);
+
 // Concurrent CLI processes write this file; temp-file + rename keeps each
 // write atomic so readers never observe partial JSON.
 const writeAnalyticsStateFile = (contents: string) =>
@@ -201,7 +263,7 @@ const writeAnalyticsStateFile = (contents: string) =>
       .pipe(Effect.tapError(() => fs.remove(temporaryPath).pipe(Effect.ignore)));
   });
 
-const getOrCreateInstallId = Effect.gen(function* () {
+const getOrCreateInstallIdUnlocked = Effect.gen(function* () {
   const fs = yield* FileSystem.FileSystem;
   const paths = yield* getAnalyticsPaths;
 
@@ -223,9 +285,13 @@ const getOrCreateInstallId = Effect.gen(function* () {
   });
   yield* writeAnalyticsStateFile(contents);
   return installId;
-}).pipe(Effect.catchAll(() => makeInstallId));
+});
 
-const mergeAnalyticsState = (installId: string, patch: Partial<AnalyticsState>) =>
+const getOrCreateInstallId = withAnalyticsStateLock(getOrCreateInstallIdUnlocked).pipe(
+  Effect.catchAll(() => makeInstallId)
+);
+
+const mergeAnalyticsStateUnlocked = (installId: string, patch: Partial<AnalyticsState>) =>
   Effect.gen(function* () {
     const fs = yield* FileSystem.FileSystem;
     const paths = yield* getAnalyticsPaths;
@@ -242,7 +308,7 @@ const mergeAnalyticsState = (installId: string, patch: Partial<AnalyticsState>) 
       ...patch,
     });
     yield* writeAnalyticsStateFile(contents);
-  }).pipe(Effect.catchAll(() => Effect.void));
+  });
 
 const readUserConfig = Effect.gen(function* () {
   const paths = yield* getAnalyticsPaths;
@@ -682,44 +748,48 @@ export const linkApolloIdentityForAnalytics = (apolloUserId: string, apiKey?: st
       return;
     }
 
-    let state = yield* readAnalyticsState;
-    let installId = yield* getOrCreateInstallId;
+    yield* withAnalyticsStateLock(
+      Effect.gen(function* () {
+        let state = yield* readAnalyticsState;
+        let installId = yield* getOrCreateInstallIdUnlocked;
 
-    // A second user on this machine must not merge into the previous user's
-    // PostHog person: rotate to a fresh install_id before linking.
-    const previousIdentity = state?.apollo_user_id ?? state?.aliased_apollo_user_id;
-    const identityChanged =
-      typeof previousIdentity === 'string' &&
-      previousIdentity.length > 0 &&
-      previousIdentity !== resolved;
-    if (identityChanged) {
-      installId = yield* makeInstallId;
-      yield* mergeAnalyticsState(installId, {
-        install_id: installId,
-        apollo_user_id: undefined,
-        aliased_apollo_user_id: undefined,
-        api_key_fingerprint: undefined,
-      });
-      state = yield* readAnalyticsState;
-    }
+        // A second user on this machine must not merge into the previous user's
+        // PostHog person: rotate to a fresh install_id before linking.
+        const previousIdentity = state?.apollo_user_id ?? state?.aliased_apollo_user_id;
+        const identityChanged =
+          typeof previousIdentity === 'string' &&
+          previousIdentity.length > 0 &&
+          previousIdentity !== resolved;
+        if (identityChanged) {
+          installId = yield* makeInstallId;
+          yield* mergeAnalyticsStateUnlocked(installId, {
+            install_id: installId,
+            apollo_user_id: undefined,
+            aliased_apollo_user_id: undefined,
+            api_key_fingerprint: undefined,
+          });
+          state = yield* readAnalyticsState;
+        }
 
-    const fingerprint =
-      typeof apiKey === 'string' && apiKey.length > 0
-        ? fingerprintApiKey(apiKey)
-        : yield* getApiKeyFingerprint;
-    if (state?.apollo_user_id !== resolved || state?.api_key_fingerprint !== fingerprint) {
-      yield* mergeAnalyticsState(installId, {
-        apollo_user_id: resolved,
-        ...(fingerprint === null ? {} : { api_key_fingerprint: fingerprint }),
-      });
-    }
+        const fingerprint =
+          typeof apiKey === 'string' && apiKey.length > 0
+            ? fingerprintApiKey(apiKey)
+            : yield* getApiKeyFingerprint;
+        if (state?.apollo_user_id !== resolved || state?.api_key_fingerprint !== fingerprint) {
+          yield* mergeAnalyticsStateUnlocked(installId, {
+            apollo_user_id: resolved,
+            ...(fingerprint === null ? {} : { api_key_fingerprint: fingerprint }),
+          });
+        }
 
-    if (typeof state?.aliased_apollo_user_id === 'string') {
-      return;
-    }
-    if (yield* emitPostHogAlias(installId, resolved)) {
-      yield* mergeAnalyticsState(installId, { aliased_apollo_user_id: resolved });
-    }
+        if (typeof state?.aliased_apollo_user_id === 'string') {
+          return;
+        }
+        if (yield* emitPostHogAlias(installId, resolved)) {
+          yield* mergeAnalyticsStateUnlocked(installId, { aliased_apollo_user_id: resolved });
+        }
+      })
+    );
   }).pipe(Effect.catchAllCause(() => Effect.void));
 
 const STITCH_ATTEMPT_INTERVAL_MS = 24 * 60 * 60 * 1000;
@@ -743,27 +813,35 @@ export const ensureAnalyticsIdentity = (params: {
       return;
     }
 
-    const state = yield* readAnalyticsState;
     const fingerprint = fingerprintApiKey(params.apiKey);
-    const identityLinked =
-      typeof state?.apollo_user_id === 'string' &&
-      state.apollo_user_id.length > 0 &&
-      state.api_key_fingerprint === fingerprint;
-    if (identityLinked) {
+    const shouldAttempt = yield* withAnalyticsStateLock(
+      Effect.gen(function* () {
+        const state = yield* readAnalyticsState;
+        const identityLinked =
+          typeof state?.apollo_user_id === 'string' &&
+          state.apollo_user_id.length > 0 &&
+          state.api_key_fingerprint === fingerprint;
+        if (identityLinked) {
+          return false;
+        }
+
+        const lastAttemptMs = Date.parse(state?.stitch_attempted_at ?? '');
+        const nowMs = yield* Clock.currentTimeMillis;
+        if (Number.isFinite(lastAttemptMs) && nowMs - lastAttemptMs < STITCH_ATTEMPT_INTERVAL_MS) {
+          return false;
+        }
+
+        // Persisted before the network attempt so failures cannot retry-storm.
+        const installId = yield* getOrCreateInstallIdUnlocked;
+        yield* mergeAnalyticsStateUnlocked(installId, {
+          stitch_attempted_at: DateTime.formatIso(yield* DateTime.now),
+        });
+        return true;
+      })
+    );
+    if (!shouldAttempt) {
       return;
     }
-
-    const lastAttemptMs = Date.parse(state?.stitch_attempted_at ?? '');
-    const nowMs = yield* Clock.currentTimeMillis;
-    if (Number.isFinite(lastAttemptMs) && nowMs - lastAttemptMs < STITCH_ATTEMPT_INTERVAL_MS) {
-      return;
-    }
-
-    // Persisted before the network attempt so failures cannot retry-storm.
-    const installId = yield* getOrCreateInstallId;
-    yield* mergeAnalyticsState(installId, {
-      stitch_attempted_at: DateTime.formatIso(yield* DateTime.now),
-    });
 
     const info = yield* params
       .fetchSessionInfo({ baseURL: params.baseURL, userApiKey: params.apiKey })
@@ -771,16 +849,18 @@ export const ensureAnalyticsIdentity = (params: {
     yield* linkApolloIdentityForAnalytics(info.org_member.id, params.apiKey);
   }).pipe(Effect.catchAllCause(() => Effect.void));
 
-export const clearApolloIdentityForAnalytics = Effect.gen(function* () {
-  const state = yield* readAnalyticsState;
-  if (!state?.install_id || !state.apollo_user_id) {
-    return;
-  }
-  yield* mergeAnalyticsState(state.install_id, {
-    apollo_user_id: undefined,
-    api_key_fingerprint: undefined,
-  });
-}).pipe(Effect.catchAllCause(() => Effect.void));
+export const clearApolloIdentityForAnalytics = withAnalyticsStateLock(
+  Effect.gen(function* () {
+    const state = yield* readAnalyticsState;
+    if (!state?.install_id || !state.apollo_user_id) {
+      return;
+    }
+    yield* mergeAnalyticsStateUnlocked(state.install_id, {
+      apollo_user_id: undefined,
+      api_key_fingerprint: undefined,
+    });
+  })
+).pipe(Effect.catchAllCause(() => Effect.void));
 
 export const trackCliCodactFailureEffect = (failure: CliCodactFailure) =>
   Effect.gen(function* () {

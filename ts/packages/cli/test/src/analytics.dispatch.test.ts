@@ -423,6 +423,41 @@ describe('CLI analytics dispatch', () => {
     }).pipe(Effect.provide(makePlatformLayer(home)));
   });
 
+  it.effect('uses one install_id across concurrent first-run events', () => {
+    const home = tempy.temporaryDirectory();
+    const scriptPath = `${home}/composio.ts`;
+    enableTelemetry('');
+    process.argv[1] = scriptPath;
+
+    return Effect.gen(function* () {
+      const fs = yield* FileSystem.FileSystem;
+      const path = yield* Path.Path;
+      yield* fs.writeFileString(scriptPath, '');
+
+      yield* Effect.all(
+        Array.from({ length: 16 }, (_, index) =>
+          trackCliEventEffect({
+            name: 'producer_event',
+            properties: { index },
+          })
+        ),
+        { concurrency: 'unbounded' }
+      );
+
+      expect(childProcessMocks.spawn).toHaveBeenCalledTimes(16);
+      const installIds = childProcessMocks.spawn.mock.calls.map(call => {
+        const args = call[1] as string[];
+        return decodeWorkerPayload<{ installId: string }>(args[2]!).installId;
+      });
+      expect(new Set(installIds).size).toBe(1);
+
+      const persisted = JSON.parse(
+        yield* fs.readFileString(path.join(home, '.composio', 'analytics.json'), 'utf8')
+      ) as { install_id: string };
+      expect(persisted.install_id).toBe(installIds[0]);
+    }).pipe(Effect.provide(makePlatformLayer(home)));
+  });
+
   it.effect('keys post-login events on the persisted apollo_user_id', () => {
     const home = tempy.temporaryDirectory();
     const scriptPath = `${home}/composio.ts`;
@@ -496,6 +531,38 @@ describe('CLI analytics dispatch', () => {
       // A repeat login with the same Apollo id does not re-emit the alias.
       yield* linkApolloIdentityForAnalytics('om_apollo_login');
       expect(childProcessMocks.spawn).toHaveBeenCalledTimes(1);
+    }).pipe(Effect.provide(makePlatformLayer(home)));
+  });
+
+  it.effect('emits one alias across concurrent identity links', () => {
+    const home = tempy.temporaryDirectory();
+    const scriptPath = `${home}/composio.ts`;
+    enableTelemetry('uak_concurrent');
+    process.argv[1] = scriptPath;
+
+    return Effect.gen(function* () {
+      const fs = yield* FileSystem.FileSystem;
+      const path = yield* Path.Path;
+      yield* fs.writeFileString(scriptPath, '');
+
+      yield* Effect.all(
+        Array.from({ length: 8 }, () =>
+          linkApolloIdentityForAnalytics('om_concurrent', 'uak_concurrent')
+        ),
+        { concurrency: 'unbounded' }
+      );
+
+      expect(childProcessMocks.spawn).toHaveBeenCalledTimes(1);
+      const persisted = JSON.parse(
+        yield* fs.readFileString(path.join(home, '.composio', 'analytics.json'), 'utf8')
+      ) as {
+        apollo_user_id: string;
+        aliased_apollo_user_id: string;
+        api_key_fingerprint: string;
+      };
+      expect(persisted.apollo_user_id).toBe('om_concurrent');
+      expect(persisted.aliased_apollo_user_id).toBe('om_concurrent');
+      expect(persisted.api_key_fingerprint.length).toBeGreaterThan(0);
     }).pipe(Effect.provide(makePlatformLayer(home)));
   });
 
