@@ -55,7 +55,9 @@ Add the `CUSTOM_*` toolkit slug to a session. For an authenticated server, expli
 </Step>
 </Steps>
 
-The lifecycle endpoints below are API-first. If you prefer a UI, you can perform the same setup from your project's [**Toolkits** page](https://dashboard.composio.dev/~/project/toolkits?utm_source=docs&utm_medium=content&utm_campaign=docs-extending-sessions-custom-mcp).
+<Callout type="info" title="Dashboard management is coming soon">
+For now, use the lifecycle API endpoints below to register, sync, and delete Custom MCP toolkits. Dashboard management is still in development for customers who prefer a UI.
+</Callout>
 
 <Callout type="warn">
 These experimental endpoints aren't included in the public API reference or the TypeScript and Python SDKs yet. Their request and response formats may change.
@@ -158,7 +160,7 @@ Registration has different next steps depending on how the MCP server authentica
 | API key | Yes | Create and activate the connected account, then sync manually with its ID. |
 | DCR OAuth | Yes | Complete user authorization for the connected account, then sync manually with its ID. |
 
-For API-key and DCR OAuth servers, create the connected account from the registered toolkit's page in the dashboard. Wait until the connection is active before syncing.
+For API-key and DCR OAuth servers, create and activate a connected account for the registered toolkit before syncing. Wait until the connection is active before calling the sync endpoint.
 
 ## Sync and resync tools
 
@@ -355,7 +357,8 @@ Custom MCP currently has these limitations:
 
 | Gap | What to do |
 | --- | --- |
-| The SDKs don't expose registration, sync, update, or deletion methods yet. | Use the experimental lifecycle endpoints above or the dashboard, then use the toolkit slug through the SDK. |
+| The SDKs don't expose registration, sync, update, or deletion methods yet. | Use the experimental lifecycle endpoints above, then use the toolkit slug through the SDK. |
+| Dashboard management for Custom MCP isn't available yet. | Use the lifecycle API endpoints for now. Dashboard support is coming soon for customers who prefer a UI. |
 | Composio doesn't host your server. Local and STDIO-only servers aren't supported. | Deploy the server at a public HTTPS endpoint before registering it. |
 | Composio doesn't continuously sync tool changes, and authenticated connections don't trigger an initial sync. | Sync after an authenticated account becomes active and whenever the server's tool definitions change. |
 | Authenticated sessions don't reliably select a Custom MCP connected account automatically. | Pass its ID through `connected_accounts` in Python or `connectedAccounts` in TypeScript. |
