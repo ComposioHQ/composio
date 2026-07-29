@@ -1104,8 +1104,12 @@ describe('CLI analytics dispatch', () => {
 
         const persisted = JSON.parse(
           yield* fs.readFileString(path.join(home, '.composio', 'analytics.json'), 'utf8')
-        ) as { stitch_attempted_at?: string };
+        ) as {
+          stitch_attempted_at?: string;
+          stitch_attempted_api_key_fingerprint?: string;
+        };
         expect(typeof persisted.stitch_attempted_at).toBe('string');
+        expect(typeof persisted.stitch_attempted_api_key_fingerprint).toBe('string');
 
         // Identity is still unlinked, but the attempt is throttled for 24h.
         yield* ensureAnalyticsIdentity({
@@ -1114,6 +1118,41 @@ describe('CLI analytics dispatch', () => {
           fetchSessionInfo,
         });
         expect(fetchSessionInfo).toHaveBeenCalledTimes(1);
+      }).pipe(Effect.provide(makePlatformLayer(home)));
+    });
+
+    it.effect('bootstrap stitch retries immediately when the credential changes', () => {
+      const home = tempy.temporaryDirectory();
+      const scriptPath = `${home}/composio.ts`;
+      enableTelemetry('uak_first');
+      process.argv[1] = scriptPath;
+      const failedFetch = vi.fn(() => Effect.fail(new Error('offline')));
+      const changedCredentialFetch = vi.fn(() =>
+        Effect.succeed({ org_member: { id: 'om_changed' } })
+      );
+
+      return Effect.gen(function* () {
+        const fs = yield* FileSystem.FileSystem;
+        yield* fs.writeFileString(scriptPath, '');
+
+        yield* ensureAnalyticsIdentity({
+          apiKey: 'uak_first',
+          baseURL: 'https://backend.example.test',
+          fetchSessionInfo: failedFetch,
+        });
+        yield* ensureAnalyticsIdentity({
+          apiKey: 'uak_second',
+          baseURL: 'https://backend.example.test',
+          fetchSessionInfo: changedCredentialFetch,
+        });
+
+        expect(failedFetch).toHaveBeenCalledTimes(1);
+        expect(changedCredentialFetch).toHaveBeenCalledTimes(1);
+        expect(childProcessMocks.spawn).toHaveBeenCalledTimes(1);
+        const args = childProcessMocks.spawn.mock.calls[0]![1] as string[];
+        const payload = decodeWorkerPayload<{ event: string; distinctId: string }>(args[2]!);
+        expect(payload.event).toBe('$create_alias');
+        expect(payload.distinctId).toBe('om_changed');
       }).pipe(Effect.provide(makePlatformLayer(home)));
     });
   });

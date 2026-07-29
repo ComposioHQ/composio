@@ -184,6 +184,7 @@ type AnalyticsState = {
   readonly aliased_apollo_user_id?: string;
   readonly api_key_fingerprint?: string;
   readonly stitch_attempted_at?: string;
+  readonly stitch_attempted_api_key_fingerprint?: string;
   readonly created_at?: string;
 };
 
@@ -845,7 +846,12 @@ export const ensureAnalyticsIdentity = (params: {
 
         const lastAttemptMs = Date.parse(state?.stitch_attempted_at ?? '');
         const nowMs = yield* Clock.currentTimeMillis;
-        if (Number.isFinite(lastAttemptMs) && nowMs - lastAttemptMs < STITCH_ATTEMPT_INTERVAL_MS) {
+        const sameCredentialAttempt = state?.stitch_attempted_api_key_fingerprint === fingerprint;
+        if (
+          sameCredentialAttempt &&
+          Number.isFinite(lastAttemptMs) &&
+          nowMs - lastAttemptMs < STITCH_ATTEMPT_INTERVAL_MS
+        ) {
           return false;
         }
 
@@ -853,6 +859,7 @@ export const ensureAnalyticsIdentity = (params: {
         const installId = yield* getOrCreateInstallIdUnlocked;
         yield* mergeAnalyticsStateUnlocked(installId, {
           stitch_attempted_at: DateTime.formatIso(yield* DateTime.now),
+          stitch_attempted_api_key_fingerprint: fingerprint,
         });
         return true;
       })
