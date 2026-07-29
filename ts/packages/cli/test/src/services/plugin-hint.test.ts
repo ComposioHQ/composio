@@ -210,7 +210,7 @@ describe('showPluginHint', () => {
   it.effect('stays silent when the hint was shown within the interval', () =>
     Effect.gen(function* () {
       const config = makeConfig();
-      writeHintState(config, { lastHintShown: new Date().toISOString() });
+      writeHintState(config, { lastHintShown: { claude: new Date().toISOString() } });
 
       yield* createPluginHint(config).showPluginHint(makeTerminal(output));
 
@@ -221,11 +221,36 @@ describe('showPluginHint', () => {
   it.effect('shows the hint again after the interval elapses', () =>
     Effect.gen(function* () {
       const config = makeConfig();
-      writeHintState(config, { lastHintShown: '2000-01-01T00:00:00.000Z' });
+      writeHintState(config, { lastHintShown: { claude: '2000-01-01T00:00:00.000Z' } });
 
       yield* createPluginHint(config).showPluginHint(makeTerminal(output));
 
       expect(output).toHaveLength(1);
+    }).pipe(Effect.provide(PlatformLayers))
+  );
+
+  it.effect('throttles Claude and Codex independently', () =>
+    Effect.gen(function* () {
+      const claudeConfig = makeConfig({ host: 'claude' });
+      const codexConfig = makeConfig({ host: 'codex' });
+
+      yield* createPluginHint(claudeConfig).showPluginHint(makeTerminal(output));
+      yield* createPluginHint(codexConfig).showPluginHint(makeTerminal(output));
+
+      expect(output).toHaveLength(2);
+      expect(output[0]).toContain('Claude Code');
+      expect(output[1]).toContain('Codex');
+    }).pipe(Effect.provide(PlatformLayers))
+  );
+
+  it.effect('honors the legacy global timestamp during state migration', () =>
+    Effect.gen(function* () {
+      const config = makeConfig({ host: 'codex' });
+      writeFileAt(config.stateFile, JSON.stringify({ lastHintShown: new Date().toISOString() }));
+
+      yield* createPluginHint(config).showPluginHint(makeTerminal(output));
+
+      expect(output).toEqual([]);
     }).pipe(Effect.provide(PlatformLayers))
   );
 

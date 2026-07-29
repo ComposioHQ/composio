@@ -37,12 +37,53 @@ export function detectPluginHost(markers: HostEnvMarkers): PluginHost | undefine
 }
 
 export interface PluginHintState {
-  lastHintShown: string; // ISO-8601
+  readonly lastHintShown: {
+    readonly claude?: string; // ISO-8601
+    readonly codex?: string; // ISO-8601
+  };
 }
 
+const CurrentPluginHintStateSchema = Schema.Struct({
+  lastHintShown: Schema.Struct({
+    claude: Schema.optional(Schema.String),
+    codex: Schema.optional(Schema.String),
+  }),
+});
+
+const LegacyPluginHintStateSchema = Schema.Struct({
+  lastHintShown: Schema.String,
+});
+
 const PluginHintStateSchema = Schema.parseJson(
+  Schema.Union(CurrentPluginHintStateSchema, LegacyPluginHintStateSchema)
+);
+
+const normalizePluginHintState = (
+  state:
+    | Schema.Schema.Type<typeof CurrentPluginHintStateSchema>
+    | {
+        readonly lastHintShown: string;
+      }
+): PluginHintState => {
+  const lastHintShown = state.lastHintShown;
+  if (typeof lastHintShown === 'string') {
+    return {
+      // Preserve the legacy global throttle during migration.
+      lastHintShown: {
+        claude: lastHintShown,
+        codex: lastHintShown,
+      },
+    };
+  }
+  return { lastHintShown };
+};
+
+const PluginHintStateOutputSchema = Schema.parseJson(
   Schema.Struct({
-    lastHintShown: Schema.String,
+    lastHintShown: Schema.Struct({
+      claude: Schema.optional(Schema.String),
+      codex: Schema.optional(Schema.String),
+    }),
   })
 );
 
@@ -65,20 +106,32 @@ export function createPluginHint(config: PluginHintConfig) {
   const readState = Effect.gen(function* () {
     const fs = yield* FileSystem.FileSystem;
     const rawState = yield* fs.readFileString(config.stateFile);
-    return yield* Schema.decodeUnknown(PluginHintStateSchema)(rawState);
+    return normalizePluginHintState(yield* Schema.decodeUnknown(PluginHintStateSchema)(rawState));
   });
 
-  const writeState = Effect.gen(function* () {
-    const fs = yield* FileSystem.FileSystem;
-    const path = yield* Path.Path;
-    const state: PluginHintState = { lastHintShown: new Date().toISOString() };
-    yield* fs.makeDirectory(path.dirname(config.stateFile), { recursive: true });
-    yield* fs.writeFileString(config.stateFile, JSON.stringify(state, null, 2));
-  });
+  const writeState = (host: PluginHost, previous: Option.Option<PluginHintState>) =>
+    Effect.gen(function* () {
+      const fs = yield* FileSystem.FileSystem;
+      const path = yield* Path.Path;
+      const state: PluginHintState = {
+        lastHintShown: {
+          ...(Option.isSome(previous) ? previous.value.lastHintShown : {}),
+          [host]: new Date().toISOString(),
+        },
+      };
+      const encoded = yield* Schema.encode(PluginHintStateOutputSchema)(state);
+      yield* fs.makeDirectory(path.dirname(config.stateFile), { recursive: true });
+      yield* fs.writeFileString(config.stateFile, encoded);
+    });
 
-  const shownWithinInterval = (state: Option.Option<PluginHintState>): boolean => {
+  const shownWithinInterval = (
+    state: Option.Option<PluginHintState>,
+    host: PluginHost
+  ): boolean => {
     if (Option.isNone(state)) return false;
-    const shownAt = new Date(state.value.lastHintShown).getTime();
+    const lastHintShown = state.value.lastHintShown[host];
+    if (lastHintShown === undefined) return false;
+    const shownAt = new Date(lastHintShown).getTime();
     if (!Number.isFinite(shownAt)) return false;
     return Date.now() - shownAt < config.hintIntervalMs;
   };
@@ -118,10 +171,10 @@ export function createPluginHint(config: PluginHintConfig) {
       if (config.host === undefined) return;
       if (config.invocationOrigin === 'run') return;
       const state = yield* Effect.option(readState);
-      if (shownWithinInterval(state)) return;
+      if (shownWithinInterval(state, config.host)) return;
       const absent = yield* pluginAbsentByHost[config.host];
       if (!absent) return;
-      yield* writeState;
+      yield* writeState(config.host, state);
       const label = HOST_LABELS[config.host];
       yield* terminal.error(
         `Tip: running under ${label} without the Composio plugin — 'composio setup' installs it.`
