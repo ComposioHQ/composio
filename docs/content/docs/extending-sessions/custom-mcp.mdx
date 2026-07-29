@@ -117,7 +117,7 @@ Enter a recognizable name, the public MCP URL, and the authentication mode. Comp
 
 No-auth servers sync during registration. For API-key and DCR OAuth servers, create a connected account first, then run **Sync** from the toolkit.
 
-Composio rejects the sync if the server returns more than 100 tools. It does not silently import a partial tool list.
+Composio rejects the sync if the server returns more than 500 tools. It does not silently import a partial tool list.
 
 </Step>
 </Steps>
@@ -244,7 +244,7 @@ For a no-auth server, omit `connected_account_id`. A successful sync returns the
 }
 ```
 
-Run sync again whenever the remote server's tool definitions change. Each successful sync creates a toolkit version. If the server exposes more than 100 tools, the sync fails and the last successful version stays available.
+Run sync again whenever the remote server's tool definitions change. Each successful sync creates a toolkit version. If the server exposes more than 500 tools, the sync fails and the last successful version stays available.
 
 ### Delete a server
 
@@ -311,7 +311,7 @@ Custom MCP currently has these limitations:
 | Authenticated sessions don't reliably select a custom toolkit's connected account automatically. | Pass its ID through `connected_accounts` in Python or `connectedAccounts` in TypeScript. |
 | The v3 tools API uses a pinned default version that doesn't contain custom tools. | Use v3.1. On v3, explicitly select the version for listing, retrieval, or execution as described above. |
 | The `upsert` endpoint only registers new toolkits. It returns `409 Conflict` for an existing slug and can't update its settings. | Delete the custom toolkit, then register it again. Deletion also revokes and removes its connected accounts and auth configurations. |
-| A custom MCP toolkit can contain at most 100 tools. | Split larger servers into smaller MCP servers. If a later sync exceeds the limit, the last successful tool version stays available. |
+| A custom MCP toolkit can contain at most 500 tools. | Split larger servers into smaller MCP servers. If a later sync exceeds the limit, the last successful tool version stays available. |
 | API-key setup checks that a key was provided, not that the remote server accepts it. | Run a safe tool after connecting to verify the credential end to end. |
 
 ## Related guides
