@@ -29,13 +29,13 @@ Use the lifecycle endpoints below to register, sync, and delete Custom MCP toolk
 
 ## Register a Custom MCP
 
-Call `POST /api/v3/custom/toolkits/upsert` with your public server URL and authentication scheme. Authenticate the request with your Composio project API key.
+Call `POST /api/v3.1/custom/toolkits/upsert` with your public server URL and authentication scheme. Authenticate the request with your Composio project API key.
 
 <Tabs items={['No auth', 'API key', 'DCR OAuth']}>
 <Tab value="No auth">
 ```bash
 curl --request POST \
-  --url https://backend.composio.dev/api/v3/custom/toolkits/upsert \
+  --url https://backend.composio.dev/api/v3.1/custom/toolkits/upsert \
   --header "x-api-key: $COMPOSIO_API_KEY" \
   --header "Content-Type: application/json" \
   --data '{
@@ -55,7 +55,7 @@ curl --request POST \
 <Tab value="API key">
 ```bash
 curl --request POST \
-  --url https://backend.composio.dev/api/v3/custom/toolkits/upsert \
+  --url https://backend.composio.dev/api/v3.1/custom/toolkits/upsert \
   --header "x-api-key: $COMPOSIO_API_KEY" \
   --header "Content-Type: application/json" \
   --data '{
@@ -80,7 +80,7 @@ curl --request POST \
 <Tab value="DCR OAuth">
 ```bash
 curl --request POST \
-  --url https://backend.composio.dev/api/v3/custom/toolkits/upsert \
+  --url https://backend.composio.dev/api/v3.1/custom/toolkits/upsert \
   --header "x-api-key: $COMPOSIO_API_KEY" \
   --header "Content-Type: application/json" \
   --data '{
@@ -128,11 +128,11 @@ For DCR OAuth, the server must support the standard authorization-code flow. Oth
 
 ## Sync and resync tools
 
-Call `POST /api/v3/custom/toolkits/sync` to fetch the server's current tools:
+Call `POST /api/v3.1/custom/toolkits/sync` to fetch the server's current tools:
 
 ```bash
 curl --request POST \
-  --url https://backend.composio.dev/api/v3/custom/toolkits/sync \
+  --url https://backend.composio.dev/api/v3.1/custom/toolkits/sync \
   --header "x-api-key: $COMPOSIO_API_KEY" \
   --header "Content-Type: application/json" \
   --data '{
@@ -145,7 +145,7 @@ For an API-key or DCR OAuth server, `connected_account_id` must identify an acti
 
 ```bash
 curl --request POST \
-  --url https://backend.composio.dev/api/v3/custom/toolkits/sync \
+  --url https://backend.composio.dev/api/v3.1/custom/toolkits/sync \
   --header "x-api-key: $COMPOSIO_API_KEY" \
   --header "Content-Type: application/json" \
   --data '{
