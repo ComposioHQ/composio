@@ -25,7 +25,8 @@ const COMPOSIO_DIR = '.composio';
 const ANALYTICS_STATE_FILE_NAME = 'analytics.json';
 const ANALYTICS_STATE_LOCK_FILE_NAME = `${ANALYTICS_STATE_FILE_NAME}.lock`;
 const ANALYTICS_STATE_LOCK_STALE_MS = 30_000;
-const ANALYTICS_STATE_LOCK_MAX_ATTEMPTS = 10_000;
+const ANALYTICS_STATE_LOCK_RETRY_MS = 10;
+const ANALYTICS_STATE_LOCK_TIMEOUT_MS = ANALYTICS_STATE_LOCK_STALE_MS + 5_000;
 const CONSUMER_SHORT_TERM_CACHE_FILE_NAME = 'consumer-short-term-cache.json';
 const CLI_CODACT_FAILURES_PATH = '/api/v3/cli/codact_failures';
 
@@ -203,8 +204,7 @@ const recoverStaleAnalyticsStateLock = (
     if (!modifiedAt) {
       return;
     }
-    const now = yield* Clock.currentTimeMillis;
-    if (now - modifiedAt.getTime() <= ANALYTICS_STATE_LOCK_STALE_MS) {
+    if (Date.now() - modifiedAt.getTime() <= ANALYTICS_STATE_LOCK_STALE_MS) {
       return;
     }
 
@@ -219,23 +219,41 @@ const acquireAnalyticsStateLock = Effect.gen(function* () {
   const fs = yield* FileSystem.FileSystem;
   const paths = yield* getAnalyticsPaths;
   const token = crypto.randomUUID();
+  const deadline = Date.now() + ANALYTICS_STATE_LOCK_TIMEOUT_MS;
 
   yield* fs.makeDirectory(paths.analyticsDir, { recursive: true });
 
-  const tryAcquire = (attemptsRemaining: number): Effect.Effect<void, PlatformError, never> =>
+  const waitBeforeRetry = Effect.promise(
+    () =>
+      new Promise<void>(resolve => {
+        setTimeout(resolve, ANALYTICS_STATE_LOCK_RETRY_MS);
+      })
+  );
+  const tryAcquire = (): Effect.Effect<void, PlatformError, never> =>
     fs.writeFileString(paths.analyticsStateLockPath, token, { flag: 'wx' }).pipe(
       Effect.catchTag('SystemError', error => {
-        if (error.reason !== 'AlreadyExists' || attemptsRemaining <= 0) {
+        if (error.reason !== 'AlreadyExists') {
           return Effect.fail(error);
         }
         return recoverStaleAnalyticsStateLock(fs, paths.analyticsStateLockPath).pipe(
-          Effect.andThen(Effect.yieldNow()),
-          Effect.andThen(tryAcquire(attemptsRemaining - 1))
+          Effect.andThen(
+            fs
+              .exists(paths.analyticsStateLockPath)
+              .pipe(Effect.catchAll(() => Effect.succeed(true)))
+          ),
+          Effect.flatMap(lockStillExists => {
+            if (lockStillExists && Date.now() >= deadline) {
+              return Effect.fail(error);
+            }
+            return (lockStillExists ? waitBeforeRetry : Effect.void).pipe(
+              Effect.andThen(tryAcquire())
+            );
+          })
         );
       })
     );
 
-  yield* tryAcquire(ANALYTICS_STATE_LOCK_MAX_ATTEMPTS);
+  yield* tryAcquire();
   return { fs, lockPath: paths.analyticsStateLockPath, token };
 });
 

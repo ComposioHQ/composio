@@ -3,6 +3,8 @@ import { afterEach, beforeEach, vi } from 'vitest';
 import { FetchHttpClient, FileSystem, Path } from '@effect/platform';
 import { BunFileSystem, BunPath } from '@effect/platform-bun';
 import { Effect, Layer } from 'effect';
+import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
+import path from 'node:path';
 import * as tempy from 'tempy';
 import {
   clearApolloIdentityForAnalytics,
@@ -456,6 +458,30 @@ describe('CLI analytics dispatch', () => {
       ) as { install_id: string };
       expect(persisted.install_id).toBe(installIds[0]);
     }).pipe(Effect.provide(makePlatformLayer(home)));
+  });
+
+  it.effect('waits for a live analytics-state lock instead of exhausting retries', () => {
+    const home = tempy.temporaryDirectory();
+    const scriptPath = path.join(home, 'composio.ts');
+    const composioDir = path.join(home, '.composio');
+    const lockPath = path.join(composioDir, 'analytics.json.lock');
+    enableTelemetry('');
+    process.argv[1] = scriptPath;
+    mkdirSync(composioDir, { recursive: true });
+    writeFileSync(scriptPath, '');
+    writeFileSync(lockPath, 'other-process');
+    const releaseTimer = setTimeout(() => rmSync(lockPath, { force: true }), 25);
+
+    return Effect.gen(function* () {
+      yield* trackCliEventEffect({ name: CLI_ANALYTICS_EVENTS.CLI_SETUP_SUCCEEDED });
+
+      const fs = yield* FileSystem.FileSystem;
+      expect(childProcessMocks.spawn).toHaveBeenCalledTimes(1);
+      expect(yield* fs.exists(lockPath)).toBe(false);
+    }).pipe(
+      Effect.ensuring(Effect.sync(() => clearTimeout(releaseTimer))),
+      Effect.provide(makePlatformLayer(home))
+    );
   });
 
   it.effect('keys post-login events on the persisted apollo_user_id', () => {
