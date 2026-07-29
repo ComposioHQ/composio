@@ -116,15 +116,15 @@ To change the server URL, name, or authentication scheme, [delete the existing t
 
 ## Complete setup for your authentication mode
 
-Registration has different next steps depending on how the MCP server authenticates requests:
+Choose the mode that matches your server, then complete any required connection:
 
-| Authentication | Connected account required | Initial sync |
+| Authentication | Use it when | After registration |
 | --- | --- | --- |
-| No auth | No | Runs automatically during registration. |
-| API key | Yes | Starts in the background when the first connection becomes active. |
-| DCR OAuth | Yes | Starts in the background when the first authorized connection becomes active. |
+| No auth | The server accepts requests without credentials. | No connection is required. Initial sync runs automatically. |
+| API key | Each connected account supplies an API key. | Create an active connection. Initial sync then starts in the background. |
+| DCR OAuth | The server supports OAuth Dynamic Client Registration. | Authorize a connection. Initial sync starts when it becomes active. |
 
-For API-key and DCR OAuth servers, create a connected account for the registered toolkit and wait for it to become active. Composio then starts the initial sync without a separate sync request.
+For DCR OAuth, the server must support the standard authorization-code flow. Other OAuth grant types aren't supported.
 
 ## Sync and resync tools
 
@@ -199,18 +199,6 @@ curl --request DELETE \
 <Callout type="warn" title="Deletion also removes connections">
 Deletion removes the custom toolkit and its tools. It also revokes and removes the toolkit's auth configurations and connected accounts. Any replacement starts with new connections.
 </Callout>
-
-## Authentication types
-
-Choose the authentication mode that matches your server:
-
-| Authentication | Use it when | What Composio does |
-| --- | --- | --- |
-| No auth | The server accepts requests without credentials. | Discovers and syncs tools during registration. |
-| API key | Each connection needs an API key. | Stores the key with the connected account and sends the configured header when discovering or calling tools. |
-| DCR OAuth | The server supports OAuth Dynamic Client Registration. | Uses each user's authorized connected account when discovering or calling tools. |
-
-For DCR OAuth, use a server that supports the standard authorization-code flow. Other OAuth grant types aren't supported.
 
 ## Use Custom MCP in a session
 
