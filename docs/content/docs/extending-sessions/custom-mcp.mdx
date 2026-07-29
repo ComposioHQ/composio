@@ -163,10 +163,13 @@ A successful sync returns the toolkit version and the number of tools discovered
 }
 ```
 
-<Callout type="info" title="Initial sync is automatic; later syncs are manual">
-No-auth registration starts the initial sync immediately. For API-key and DCR OAuth servers, the initial sync starts in the background when the first connected account becomes active.
+<Callout type="info" title="When to sync manually">
+Composio starts the initial sync automatically:
 
-This is not continuous sync. Later connections don't resync a toolkit that already has tools. Run this endpoint if the initial background sync doesn't populate the toolkit or whenever the server's tool definitions change. Each successful sync creates a toolkit version.
+- **No auth:** during registration
+- **API key or DCR OAuth:** when the first connected account becomes active
+
+Call the sync endpoint only if the initial sync fails or the server's tool definitions change. Later connections don't resync a toolkit that already has tools.
 </Callout>
 
 A Custom MCP toolkit can contain at most 500 tools. If the server returns more than 500, the sync fails without importing a partial tool list. The last successful version stays available.
