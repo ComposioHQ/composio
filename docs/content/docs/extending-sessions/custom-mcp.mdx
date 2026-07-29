@@ -211,7 +211,11 @@ Composio adds the `CUSTOM_` prefix and returns the normalized toolkit slug:
 }
 ```
 
-Registration is create-only for this endpoint. If the slug already exists, the request returns `409 Conflict`.
+<Callout type="warn" title="This endpoint only registers new toolkits">
+Despite `upsert` in the route name, this endpoint does not update or replace an existing toolkit. If the slug already exists, the request returns `409 Conflict`.
+
+To change the server URL, name, or authentication scheme, [delete the existing toolkit](#delete-a-server), then register it again. Deletion also revokes and removes the toolkit's auth configurations and connected accounts.
+</Callout>
 
 No-auth servers sync automatically when you add them. For API-key and DCR OAuth servers, create and activate a connected account from the toolkit's dashboard page before syncing.
 
@@ -306,7 +310,7 @@ Custom MCP currently has these limitations:
 | Authenticated servers don't automatically sync when a connection becomes active. | Create the connected account, then run **Sync** from the toolkit. |
 | Authenticated sessions don't reliably select a custom toolkit's connected account automatically. | Pass its ID through `connected_accounts` in Python or `connectedAccounts` in TypeScript. |
 | The v3 tools API uses a pinned default version that doesn't contain custom tools. | Use v3.1. On v3, explicitly select the version for listing, retrieval, or execution as described above. |
-| Registered server settings can't be edited in place. | Delete the custom toolkit and register it again. Deleting it also revokes and removes its connected accounts and auth configurations. |
+| The `upsert` endpoint only registers new toolkits. It returns `409 Conflict` for an existing slug and can't update its settings. | Delete the custom toolkit, then register it again. Deletion also revokes and removes its connected accounts and auth configurations. |
 | A custom MCP toolkit can contain at most 100 tools. | Split larger servers into smaller MCP servers. If a later sync exceeds the limit, the last successful tool version stays available. |
 | API-key setup checks that a key was provided, not that the remote server accepts it. | Run a safe tool after connecting to verify the credential end to end. |
 
