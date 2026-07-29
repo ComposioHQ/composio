@@ -101,7 +101,15 @@ export const CLI_EVENT_JOURNEY_STAGES = {
   CLI_TOOL_INVOCATION_FAILED: 'execute',
 } as const satisfies Record<CliAnalyticsEventName, CliJourneyStage>;
 
-const CLI_CHANNEL = inferSkillReleaseChannel(APP_VERSION);
+let cliChannel = inferSkillReleaseChannel(APP_VERSION);
+
+/**
+ * Event builders are synchronous, so the CLI bootstrap injects the version
+ * resolved from release-tag.txt before any command can emit telemetry.
+ */
+export const configureCliAnalyticsReleaseVersion = (version: string): void => {
+  cliChannel = inferSkillReleaseChannel(version);
+};
 
 const buildEvent = (
   name: CliAnalyticsEventName,
@@ -111,7 +119,7 @@ const buildEvent = (
   properties: {
     ...properties,
     journey_stage: CLI_EVENT_JOURNEY_STAGES[name],
-    cli_channel: CLI_CHANNEL,
+    cli_channel: cliChannel,
   },
 });
 

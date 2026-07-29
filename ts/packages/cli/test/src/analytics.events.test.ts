@@ -1,10 +1,16 @@
-import { readFileSync } from 'node:fs';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { readFileSync, writeFileSync } from 'node:fs';
+import path from 'node:path';
+import * as tempy from 'tempy';
+import { it } from '@effect/vitest';
+import { afterEach, describe, expect, vi } from 'vitest';
+import { BunFileSystem, BunPath } from '@effect/platform-bun';
+import { Effect, Layer } from 'effect';
 import { createCliCodactFailureBody } from 'src/analytics/dispatch';
 import {
   CLI_ANALYTICS_EVENTS,
   CLI_EVENT_JOURNEY_STAGES,
   CLI_JOURNEY_STAGES,
+  configureCliAnalyticsReleaseVersion,
   createCliCommandTelemetryContext,
   getPluginLifecycleFailedEvent,
   getPluginLifecycleSucceededEvent,
@@ -24,6 +30,7 @@ import { APP_VERSION } from 'src/constants';
 import { inferSkillReleaseChannel } from 'src/effects/install-skill';
 import { CLI_RELEASE_CHANNELS } from 'src/experimental-features';
 import { ToolInputValidationError } from 'src/services/tool-input-validation';
+import { resolveInstalledCliVersion } from 'src/services/run-companion-modules';
 
 describe('CLI analytics execute failure events', () => {
   it('records terminal capabilities supplied by the terminal service', () => {
@@ -361,6 +368,7 @@ describe('CLI analytics setup runtime-context events', () => {
 
 describe('CLI analytics journey taxonomy', () => {
   afterEach(() => {
+    configureCliAnalyticsReleaseVersion(APP_VERSION);
     vi.unstubAllEnvs();
   });
 
@@ -434,6 +442,22 @@ describe('CLI analytics journey taxonomy', () => {
 
     expect(properties?.cli_channel).toBe(inferSkillReleaseChannel(APP_VERSION));
     expect(CLI_RELEASE_CHANNELS).toContain(properties?.cli_channel);
+  });
+
+  it.effect('uses beta release metadata even when the package version is stable', () => {
+    const installDir = tempy.temporaryDirectory();
+    const execPath = path.join(installDir, 'composio');
+    writeFileSync(execPath, 'fake binary');
+    writeFileSync(path.join(installDir, 'release-tag.txt'), '@composio/cli@0.3.1-beta.7\n');
+
+    return Effect.gen(function* () {
+      const resolvedVersion = yield* resolveInstalledCliVersion(execPath, APP_VERSION);
+      configureCliAnalyticsReleaseVersion(resolvedVersion);
+
+      const properties = getPrimaryLifecycleInvokedEvent(contextFor(['login']))?.properties;
+      expect(inferSkillReleaseChannel(APP_VERSION)).toBe('stable');
+      expect(properties?.cli_channel).toBe('beta');
+    }).pipe(Effect.provide(Layer.merge(BunFileSystem.layer, BunPath.layer)));
   });
 
   it('propagates the installer invocation origin from the environment', () => {
