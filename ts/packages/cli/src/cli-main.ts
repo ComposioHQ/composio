@@ -30,6 +30,7 @@ import { ProjectContext } from 'src/services/project-context';
 import { ProjectEnvironmentDetector } from 'src/services/project-environment-detector';
 import { CommandRunner } from 'src/services/command-runner';
 import { StdinLive } from 'src/services/stdin';
+import { showPluginAcquisitionHint } from 'src/services/plugin-hint';
 import { showUpdateNotice } from 'src/services/update-check';
 import {
   createCliCommandTelemetryContext,
@@ -174,6 +175,7 @@ const runWithTelemetry = Effect.gen(function* () {
 });
 
 showUpdateNotice.pipe(
+  Effect.andThen(showPluginAcquisitionHint),
   Effect.andThen(runWithTelemetry),
   Effect.catchIf(ValidationError.isValidationError, error => {
     return Effect.gen(function* () {
