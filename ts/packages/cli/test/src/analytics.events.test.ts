@@ -454,10 +454,28 @@ describe('CLI analytics journey taxonomy', () => {
       const resolvedVersion = yield* resolveInstalledCliVersion(execPath, APP_VERSION);
       configureCliAnalyticsReleaseVersion(resolvedVersion);
 
-      const properties = getPrimaryLifecycleInvokedEvent(contextFor(['login']))?.properties;
+      const context = createCliCommandTelemetryContext(
+        ['bun', 'composio', 'login'],
+        resolvedVersion,
+        { stdoutIsTTY: false, stderrIsTTY: false }
+      );
+      const properties = getPrimaryLifecycleInvokedEvent(context)?.properties;
       expect(inferSkillReleaseChannel(APP_VERSION)).toBe('stable');
       expect(properties?.cli_channel).toBe('beta');
     }).pipe(Effect.provide(Layer.merge(BunFileSystem.layer, BunPath.layer)));
+  });
+
+  it('derives invoked-event channel from its resolved runtime version', () => {
+    configureCliAnalyticsReleaseVersion(APP_VERSION);
+    const context = createCliCommandTelemetryContext(['bun', 'composio', 'login'], '0.3.1-beta.7', {
+      stdoutIsTTY: true,
+      stderrIsTTY: true,
+    });
+
+    expect(getPrimaryLifecycleInvokedEvent(context)?.properties).toMatchObject({
+      cli_version: '0.3.1-beta.7',
+      cli_channel: 'beta',
+    });
   });
 
   it('propagates the installer invocation origin from the environment', () => {

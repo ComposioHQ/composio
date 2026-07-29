@@ -114,14 +114,18 @@ export const configureCliAnalyticsReleaseVersion = (version: string): void => {
 const buildEvent = (
   name: CliAnalyticsEventName,
   properties: Record<string, unknown>
-): TrackEvent => ({
-  name,
-  properties: {
-    ...properties,
-    journey_stage: CLI_EVENT_JOURNEY_STAGES[name],
-    cli_channel: cliChannel,
-  },
-});
+): TrackEvent => {
+  const eventVersion =
+    typeof properties.cli_version === 'string' ? properties.cli_version : undefined;
+  return {
+    name,
+    properties: {
+      ...properties,
+      journey_stage: CLI_EVENT_JOURNEY_STAGES[name],
+      cli_channel: eventVersion ? inferSkillReleaseChannel(eventVersion) : cliChannel,
+    },
+  };
+};
 
 const KNOWN_COMMAND_TOKENS = new Set([
   'version',
