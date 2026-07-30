@@ -4,7 +4,7 @@ import { ComposioClientSingleton } from 'src/services/composio-clients';
 import { resolveCommandProject } from 'src/services/command-project';
 import { decodeConnectedAccountListWithFallback } from 'src/effects/decode-connected-account-list';
 import { detectSetupTargets, inspectSetupTargets } from 'src/services/setup';
-import { readPersistedOnboarding } from 'src/services/onboarding-store';
+import { executionRecorded, readPersistedOnboarding } from 'src/services/onboarding-store';
 import type { ConnectedAccountItem } from 'src/models/connected-accounts';
 import type {
   HostWiringFact,
@@ -14,18 +14,18 @@ import type {
 } from 'src/services/onboarding-state';
 
 /**
- * The I/O half of chokepoint 1. Every fact source is individually failure-tolerant: onboard is the
- * front door, so a wedged agent-host binary or an unreachable API must degrade a field rather than
- * fail the command.
+ * The I/O that produces the facts `resolveOnboardingState` reads. Every fact source is individually
+ * failure-tolerant: a wedged agent-host binary or an unreachable API must degrade a field rather
+ * than fail the whole command.
  */
 
 /**
  * The host probe shells out to the agent host's own CLI. Bounded so a hung `claude`/`codex`
- * binary degrades the advisory instead of hanging the front door.
+ * binary degrades the advisory instead of hanging the command.
  */
 const HOST_PROBE_TIMEOUT = '3 seconds';
 
-const gatherHostWiring = Effect.gen(function* () {
+export const gatherHostWiring = Effect.gen(function* () {
   const detections = yield* detectSetupTargets('auto');
   // Read-only: `allowMarketplaceConflict` keeps a conflicting marketplace from failing the
   // inspection, because onboard reports host wiring and never repairs it.
@@ -44,7 +44,7 @@ const gatherHostWiring = Effect.gen(function* () {
 }).pipe(
   Effect.timeout(HOST_PROBE_TIMEOUT),
   // Defects too, not just typed failures: the probe drives a third-party binary through its own
-  // JSON output, and losing the front door to a host that throws is worse than losing the
+  // JSON output, and failing the whole command because that binary throws is worse than losing the
   // advisory. The cause is logged rather than discarded so it stays diagnosable under --debug.
   Effect.catchAllCause(cause =>
     Effect.logDebug('onboard.host_wiring.degraded', cause).pipe(
@@ -143,6 +143,15 @@ export type GatherOnboardingFactsParams = {
   readonly requestedToolkit: Option.Option<string>;
   readonly invocationSkips: ReadonlyArray<OnboardingSkip>;
   /**
+   * A host-wiring probe the caller already performed.
+   *
+   * The probe shells out to `claude` and `codex`, and nothing onboard does between gates can change
+   * what it reports — only `composio setup` rewrites plugin wiring. An onboard run that re-resolves
+   * after each gate therefore passes the first probe's result back in rather than paying for up to
+   * four rounds of subprocess spawns for an answer that cannot have moved.
+   */
+  readonly hostWiring?: HostWiringFact;
+  /**
    * Set when this invocation logged the user in itself. The email is not persisted anywhere and
    * reading it back costs a session-info round trip, so a resumed invocation reports it as null
    * rather than paying for a field the state document only decorates with.
@@ -207,7 +216,9 @@ export const gatherOnboardingFacts = (params: GatherOnboardingFactsParams) =>
 
     const [hostWiring, connections, persisted] = yield* Effect.all(
       [
-        gatherHostWiring,
+        params.hostWiring === undefined
+          ? gatherHostWiring
+          : Effect.succeed<HostWiringFact>(params.hostWiring),
         loggedIn ? gatherLiveConnections : Effect.succeed(UNKNOWN_CONNECTIONS),
         readPersistedOnboarding,
       ],
@@ -224,12 +235,7 @@ export const gatherOnboardingFacts = (params: GatherOnboardingFactsParams) =>
         params.mintedRedirectUrl ?? Option.none(),
         loggedIn ? connections.connectedToolkits : 'unknown'
       ),
-      // The store writes both halves together, so they only disagree in a hand-edited config. A
-      // missing `last_execution` then reads as "not executed", which replays one demo rather than
-      // reporting a completion the config cannot evidence.
-      hasExecuted: persisted.hasExecuted
-        ? Option.fromNullable(persisted.lastExecution)
-        : Option.none(),
+      hasExecuted: executionRecorded(persisted),
       requestedToolkit: params.requestedToolkit,
       invocationSkips: params.invocationSkips,
       hostWiring,
