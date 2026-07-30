@@ -18,15 +18,3 @@ unchanged.
   your server can identify the returning user. Set a verifier URL, and Composio routes each OAuth
   return to your server to confirm its signed-in user before the connection activates. Enable it in
   Settings → General. [Learn more](/docs/oauth-connection-security#callback-identity-verification)
-
-### Breaking changes
-
-Only if you enable callback identity verification. Both take effect project-wide the moment you
-save the URL.
-
-<Callout type="warn">
-- Connections started from the Composio dashboard no longer complete — start flows from your own app.
-- Every connection must pass a real `user_id`; a blank or `default` placeholder is rejected.
-</Callout>
-
-Handle these before you switch it on — see [Before you enable it](/docs/oauth-connection-security#before-you-enable-it).
