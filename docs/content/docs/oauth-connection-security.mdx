@@ -141,7 +141,7 @@ staged rollout and no per-connection opt-out. Review the constraints below and d
 before setting the URL.
 </Callout>
 
-### Before you enable it
+### What to expect once it's on
 
 **Dashboard-initiated connections cannot complete.** The dashboard still creates a pending connection
 and opens the provider consent screen, but on the callback Composio redirects the browser to your
@@ -162,8 +162,9 @@ endpoint as a production dependency.
 ### Session lifetime
 
 `session_uri` is valid for ten minutes from the redirect and can be redeemed once. Redeem it on the
-incoming request rather than queuing it.
+incoming request rather than queuing it for later.
 
-Treat `session_uri` as a bearer secret. Redemption consumes it before ownership is checked, so a
-leaked value can be redeemed by another caller, after which the owner's redemption returns `404`. Do
-not log or forward it.
+Treat it like any short-lived secret: don't log it or forward it to other systems. Redemption is
+single-use, so if the same value is redeemed twice, the second call returns `404` and the user
+restarts the flow. The connection is never activated for the wrong user either way — activation
+always requires a matching `user_id`.
