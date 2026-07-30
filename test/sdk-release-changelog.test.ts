@@ -340,6 +340,44 @@ describe('pinned mock Responses generation', () => {
     }
   });
 
+  test('bounds never-settling Responses requests inside the retry budget', async () => {
+    const requests: AbortSignal[] = [];
+    const sleeps: number[] = [];
+    const caller = new AbortController();
+    const neverSettling: FetchLike = async (_input, init) => {
+      const signal = init?.signal;
+      if (!signal) throw new Error('expected a request abort signal');
+      requests.push(signal);
+      return await new Promise<Response>((_, reject) => {
+        const rejectOnAbort = () => reject(signal.reason);
+        if (signal.aborted) rejectOnAbort();
+        else signal.addEventListener('abort', rejectOnAbort, { once: true });
+      });
+    };
+
+    await expect(
+      generateChangelog({
+        input: release(),
+        apiKey: 'test-secret',
+        endpoint: 'https://mock.openai.test/v1/responses',
+        fetch: neverSettling,
+        maxAttempts: 2,
+        requestTimeoutMs: 5,
+        signal: caller.signal,
+        sleep: async delay => {
+          sleeps.push(delay);
+        },
+        random: () => 0,
+      })
+    ).rejects.toThrow('OpenAI Responses connection failed');
+
+    expect(requests).toHaveLength(2);
+    expect(requests.every(signal => signal.aborted)).toBe(true);
+    expect(requests.every(signal => signal !== caller.signal)).toBe(true);
+    expect(caller.signal.aborted).toBe(false);
+    expect(sleeps).toEqual([250]);
+  });
+
   test('requires a key only when a generation call is necessary', async () => {
     await expect(
       generateChangelog({

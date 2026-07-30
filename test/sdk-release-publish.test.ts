@@ -5,12 +5,14 @@ import { describe, expect, test } from 'bun:test';
 import type { RegistryObservation, SealedManifest } from '../.github/scripts/sdk-release/contracts';
 import { PYTHON_RELEASE_FAMILY } from '../.github/scripts/sdk-release/contracts';
 import {
+  buildReceiptIndex,
+  buildAttemptReceipt,
   planAttemptOutcome,
   renderAttemptReceipt,
   renderReceiptIndex,
   resolveMergedRelease,
 } from '../.github/scripts/sdk-release/finalize-receipt';
-import { planReleaseTags } from '../.github/scripts/sdk-release/finalize-tags';
+import { applyReleaseTags, planReleaseTags } from '../.github/scripts/sdk-release/finalize-tags';
 import { computeManifestId } from '../.github/scripts/sdk-release/manifest';
 import { verifySealedArtifactDirectory } from '../.github/scripts/sdk-release/reconcile';
 import {
@@ -175,6 +177,13 @@ describe('merged sealed release resolution', () => {
     body: '<!-- sdk-release-preparation:sdk-2026-07-30 -->',
     merge_commit_sha: SHA_B,
   };
+  const fetchedPrepareRun = {
+    run_id: 123,
+    run_attempt: 2,
+    repository: 'ComposioHQ/composio',
+    workflow: 'sdk.release.yml',
+    conclusion: 'success' as const,
+  };
 
   test('binds one exact merged preparation PR, sealed manifest, and prepare run', () => {
     expect(
@@ -183,13 +192,7 @@ describe('merged sealed release resolution', () => {
         repository: 'ComposioHQ/composio',
         pull_requests: [mergedPullRequest],
         manifest,
-        prepare_run: {
-          run_id: 123,
-          run_attempt: 2,
-          repository: 'ComposioHQ/composio',
-          workflow: 'sdk.release.yml',
-          conclusion: 'success',
-        },
+        prepare_run: fetchedPrepareRun,
       })
     ).toMatchObject({
       source_commit: SHA_B,
@@ -205,13 +208,7 @@ describe('merged sealed release resolution', () => {
         repository: 'ComposioHQ/composio',
         pull_requests: [{ ...mergedPullRequest, state: 'OPEN' }],
         manifest,
-        prepare_run: {
-          run_id: 123,
-          run_attempt: 2,
-          repository: 'ComposioHQ/composio',
-          workflow: 'sdk.release.yml',
-          conclusion: 'success',
-        },
+        prepare_run: fetchedPrepareRun,
       })
     ).toThrow('merged');
     expect(() =>
@@ -220,13 +217,7 @@ describe('merged sealed release resolution', () => {
         repository: 'ComposioHQ/composio',
         pull_requests: [mergedPullRequest],
         manifest: { ...manifest, phase: 'draft' },
-        prepare_run: {
-          run_id: 123,
-          run_attempt: 2,
-          repository: 'ComposioHQ/composio',
-          workflow: 'sdk.release.yml',
-          conclusion: 'success',
-        },
+        prepare_run: fetchedPrepareRun,
       })
     ).toThrow('sealed');
     expect(() =>
@@ -235,15 +226,87 @@ describe('merged sealed release resolution', () => {
         repository: 'ComposioHQ/composio',
         pull_requests: [mergedPullRequest],
         manifest,
-        prepare_run: {
-          run_id: 999,
-          run_attempt: 2,
-          repository: 'ComposioHQ/composio',
-          workflow: 'sdk.release.yml',
-          conclusion: 'success',
-        },
+        prepare_run: { ...fetchedPrepareRun, run_id: 999 },
       })
     ).toThrow('prepare run');
+  });
+
+  test('rejects a release ID that differs from the sealed manifest', () => {
+    expect(() =>
+      resolveMergedRelease({
+        release_id: 'sdk-2026-07-31',
+        repository: 'ComposioHQ/composio',
+        pull_requests: [mergedPullRequest],
+        manifest,
+        prepare_run: fetchedPrepareRun,
+      })
+    ).toThrow('release mismatch');
+  });
+
+  test('rejects a manifest prepared for a different repository', () => {
+    expect(() =>
+      resolveMergedRelease({
+        release_id: manifest.release_id,
+        repository: 'ComposioHQ/composio',
+        pull_requests: [mergedPullRequest],
+        manifest: {
+          ...manifest,
+          prepare_run: { ...manifest.prepare_run, repository: 'OtherOrg/composio' },
+        },
+        prepare_run: fetchedPrepareRun,
+      })
+    ).toThrow('repository is stale');
+  });
+
+  test('rejects a manifest prepare-run commit that differs from its base commit', () => {
+    expect(() =>
+      resolveMergedRelease({
+        release_id: manifest.release_id,
+        repository: 'ComposioHQ/composio',
+        pull_requests: [mergedPullRequest],
+        manifest: {
+          ...manifest,
+          prepare_run: { ...manifest.prepare_run, commit_sha: SHA_B },
+        },
+        prepare_run: fetchedPrepareRun,
+      })
+    ).toThrow('source or prepare-run');
+  });
+
+  test('rejects a fetched run from a different repository', () => {
+    expect(() =>
+      resolveMergedRelease({
+        release_id: manifest.release_id,
+        repository: 'ComposioHQ/composio',
+        pull_requests: [mergedPullRequest],
+        manifest,
+        prepare_run: { ...fetchedPrepareRun, repository: 'OtherOrg/composio' },
+      })
+    ).toThrow('sealed prepare run');
+  });
+
+  test('rejects a fetched run from a different workflow', () => {
+    expect(() =>
+      resolveMergedRelease({
+        release_id: manifest.release_id,
+        repository: 'ComposioHQ/composio',
+        pull_requests: [mergedPullRequest],
+        manifest,
+        prepare_run: { ...fetchedPrepareRun, workflow: 'other.release.yml' },
+      })
+    ).toThrow('sealed prepare run');
+  });
+
+  test('rejects a fetched run with a different attempt', () => {
+    expect(() =>
+      resolveMergedRelease({
+        release_id: manifest.release_id,
+        repository: 'ComposioHQ/composio',
+        pull_requests: [mergedPullRequest],
+        manifest,
+        prepare_run: { ...fetchedPrepareRun, run_attempt: 3 },
+      })
+    ).toThrow('sealed prepare run');
   });
 
   test('rejects downloaded primary bytes that drift from the sealed manifest', () => {
@@ -328,9 +391,89 @@ describe('npm absent-only dependency-ordered publication', () => {
       })
     ).toThrow('sealed manifest');
   });
+
+  test('resumes after a mid-plan failure using current registry truth', async () => {
+    const initialPlan = planNpmPublication({
+      manifest,
+      observations: [
+        observation('npm', '@composio/core', 'absent'),
+        { ...observation('npm', '@composio/core', 'absent'), package_name: '@composio/openai' },
+      ],
+      workspace_packages: workspace,
+      artifact_directory: 'filtered/npm',
+    });
+    const initialCalls: string[][] = [];
+
+    await expect(
+      executeNpmPublication(initialPlan, async args => {
+        initialCalls.push(args);
+        if (args[1]?.includes('composio-openai')) {
+          throw new Error('simulated second-package publish failure');
+        }
+      })
+    ).rejects.toThrow('second-package publish failure');
+    expect(initialCalls.map(args => args[1])).toEqual([
+      'filtered/npm/composio-core-0.15.0.tgz',
+      'filtered/npm/composio-openai-0.15.0.tgz',
+    ]);
+
+    const resumePlan = planNpmPublication({
+      manifest,
+      observations: [
+        observation('npm', '@composio/core', 'exact'),
+        { ...observation('npm', '@composio/core', 'absent'), package_name: '@composio/openai' },
+      ],
+      workspace_packages: workspace,
+      artifact_directory: 'filtered/npm',
+    });
+    const resumeCalls: string[][] = [];
+
+    await executeNpmPublication(resumePlan, async args => {
+      resumeCalls.push(args);
+    });
+    expect(resumeCalls).toEqual([
+      [
+        'publish',
+        'filtered/npm/composio-openai-0.15.0.tgz',
+        '--tag',
+        'latest',
+        '--access',
+        'public',
+      ],
+    ]);
+  });
 });
 
 describe('partial recovery, durable receipts, and verified tags', () => {
+  test('builds production attempt transitions through the typed state policy', () => {
+    const input = {
+      release_id: manifest.release_id,
+      manifest_id: computeManifestId(manifest),
+      attempt: 1,
+      operation: 'publish' as const,
+      workflow_run_id: 123,
+      workflow_run_attempt: 1,
+      started_at: '2026-07-30T10:00:00Z',
+      completed_at: '2026-07-30T10:01:00Z',
+      from: 'publishing' as const,
+      state: 'partial' as const,
+      observations: [observation('npm', '@composio/core', 'absent')],
+    };
+    const receipt = buildAttemptReceipt(input);
+    expect(receipt.transition).toMatchObject({
+      from: 'publishing',
+      to: 'partial',
+      occurred_at: '2026-07-30T10:01:00Z',
+    });
+    expect(() =>
+      buildAttemptReceipt({
+        ...input,
+        from: 'preflight_reconciling',
+        state: 'verified',
+      })
+    ).toThrow('Illegal SDK release transition');
+  });
+
   test('never reports generic success after partial/cancelled/conflicting attempts', () => {
     expect(
       planAttemptOutcome({
@@ -405,6 +548,34 @@ describe('partial recovery, durable receipts, and verified tags', () => {
     expect(index).toContain('<!-- sdk-release-index:');
     expect(index).toContain('Attempt 1');
     expect(index).toContain('Attempt 2');
+    const builtIndex = buildReceiptIndex({
+      comments: [{ body: receipt.replace(':2 -->', ':1 -->').replace('verified', 'partial') }],
+      current: {
+        schema_version: 'sdk-release-attempt-receipt/v1',
+        release_id: manifest.release_id,
+        manifest_id: MANIFEST_ID,
+        attempt: 2,
+        operation: 'resume',
+        workflow_run_id: 456,
+        workflow_run_attempt: 1,
+        started_at: '2026-07-30T00:00:00.000Z',
+        completed_at: '2026-07-30T00:20:00.000Z',
+        transition: {
+          schema_version: 'sdk-release-state-transition/v1',
+          release_id: manifest.release_id,
+          from: 'partial',
+          to: 'verified',
+        },
+        observations: [
+          observation('npm', '@composio/core', 'exact'),
+          observation('pypi', 'composio', 'exact'),
+        ],
+        outcome: 'verified',
+      },
+      source_commit: SHA_B,
+    });
+    expect(builtIndex).toContain('Attempt 1: **partial**');
+    expect(builtIndex).toContain('Attempt 2: **verified**');
   });
 
   test('creates exact annotated tags only after verification and reuses exact retries', () => {
@@ -421,6 +592,26 @@ describe('partial recovery, durable receipts, and verified tags', () => {
       'py@0.19.0',
     ]);
     expect(tags.every(tag => tag.message.includes(MANIFEST_ID))).toBe(true);
+    const commands: string[][] = [];
+    const applied = applyReleaseTags({
+      manifest,
+      manifest_id: MANIFEST_ID,
+      source_commit: SHA_B,
+      run: (_command, args) => {
+        commands.push(args);
+        if (args[0] === 'rev-list') throw new Error('missing tag');
+        return '';
+      },
+    });
+    expect(applied).toEqual(tags);
+    expect(commands.at(-1)).toEqual([
+      'push',
+      '--atomic',
+      'origin',
+      'refs/tags/@composio/core@0.15.0',
+      'refs/tags/@composio/openai@0.15.0',
+      'refs/tags/py@0.19.0',
+    ]);
     expect(
       planReleaseTags({
         manifest,

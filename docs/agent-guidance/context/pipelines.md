@@ -57,6 +57,10 @@ their SHA-512 Subresource Integrity value. The preparation manifest records
 selected and skipped ecosystems, versions, primary artifact hashes, changelog
 metadata, and the workflow run and attempt. Its `base_commit` is read from the
 exact primary `next` checkout rather than inferred from the workflow event.
+Changelog PR evidence is collected from the exact commit range between the
+latest merged release tag for each selected ecosystem and that captured base
+commit. Combined releases use the common ancestor of those reviewed anchors;
+associated PRs are deduplicated and bounded before generation.
 
 After the preparation PR is updated, a credential-free shadow job queries the
 exact npm and PyPI versions. npm reconciliation checks the sealed dist-tag,
@@ -90,7 +94,9 @@ the exact machine-marked preparation PR to be merged into `next`, then binds the
 manifest ID to those canonical bytes and that merge commit. It retrieves the
 primary artifact from the manifest's original prepare run and attempt, verifies
 that run's repository/workflow identity, and re-hashes every file before any
-protected job.
+protected job. If the Actions artifact has expired, the coordinator rebuilds
+from the sealed source with the pinned toolchains and proceeds only when every
+rebuilt byte reproduces the sealed digest.
 
 Once cutover is explicitly enabled, absent npm and PyPI artifacts flow into two
 direct, top-level `sdk-production` jobs with job-scoped OIDC. npm uses a
@@ -101,6 +107,10 @@ attempts append immutable PR comments, update one machine-owned receipt index,
 and create or reuse manifest-bound annotated tags only after verification.
 Partial and conflicting attempts remain resumable from registry truth; no
 workflow path unpublishes or overwrites a version.
+Before another release starts, the coordinator reconstructs trusted receipt
+indexes and rejects a different `release_id` while any prior attempt remains
+partial. Configure `RELEASE_BOT_LOGIN` to the exact Bot login that authors
+those comments; user-authored marker lookalikes are ignored.
 
 After exact verification, the coordinator validates the complete verified
 receipt and opens or updates
@@ -112,11 +122,12 @@ the merge. Auto-merge is requested only when the repository already enables it;
 otherwise the single finalization PR is the explicit remaining step.
 
 Downstream docs automation and Slack resolve the merge's associated PR and
-require its exact manifest marker. Each channel claims a separate marker on the
-finalization PR before emitting. This makes preparation merges, finalization
-retries, and already-public content downstream no-ops. Package verification is
-durable if changelog finalization itself fails; rerun `resume` or `verify` to
-retry from the verified receipt rather than republishing.
+require its exact manifest marker. Each channel records a trusted Bot-authored
+completion marker only after its side effect succeeds. This makes preparation
+merges, finalization retries, and already-public content downstream no-ops
+without consuming a failed delivery's retry. Package verification is durable
+if changelog finalization itself fails; rerun `resume` or `verify` to retry from
+the verified receipt rather than republishing.
 
 Run the shadow contract locally with:
 

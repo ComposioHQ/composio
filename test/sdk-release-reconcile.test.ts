@@ -9,7 +9,10 @@ import {
   reconcileRelease,
   verifyRegistryConsistency,
 } from '../.github/scripts/sdk-release/reconcile';
-import { RegistryTransientError } from '../.github/scripts/sdk-release/registry/npm';
+import {
+  RegistryTransientError,
+  registryFetch as fetchRegistry,
+} from '../.github/scripts/sdk-release/registry/npm';
 
 const MANIFEST_ID = 'a'.repeat(64);
 const NOW = '2026-07-30T00:00:00.000Z';
@@ -350,6 +353,45 @@ describe('immutable reconciliation plan and filtered artifact handoff', () => {
 });
 
 describe('bounded registry verification polling', () => {
+  test('bounds never-settling registry requests inside the retry budget', async () => {
+    let attempts = 0;
+    const caller = new AbortController();
+    const observedSignals: AbortSignal[] = [];
+    const neverSettling = (async (_input, init) => {
+      attempts += 1;
+      const signal = init?.signal;
+      if (!signal) throw new Error('expected a request abort signal');
+      observedSignals.push(signal);
+      return await new Promise<Response>((_, reject) => {
+        const rejectOnAbort = () => reject(signal.reason);
+        if (signal.aborted) rejectOnAbort();
+        else signal.addEventListener('abort', rejectOnAbort, { once: true });
+      });
+    }) as typeof fetch;
+
+    await expect(
+      verifyRegistryConsistency({
+        reconcile: async () => {
+          await fetchRegistry('npm', neverSettling, 'https://registry.npmjs.org/test', {
+            signal: caller.signal,
+            timeoutMs: 5,
+          });
+          throw new Error('timed-out registry request unexpectedly completed');
+        },
+        max_attempts: 2,
+        initial_delay_ms: 0,
+        maximum_delay_ms: 0,
+        sleep: async () => undefined,
+      })
+    ).rejects.toBeInstanceOf(RegistryConsistencyTimeoutError);
+
+    expect(attempts).toBe(2);
+    expect(observedSignals).toHaveLength(2);
+    expect(observedSignals.every(signal => signal.aborted)).toBe(true);
+    expect(observedSignals.every(signal => signal !== caller.signal)).toBe(true);
+    expect(caller.signal.aborted).toBe(false);
+  });
+
   test('recovers from transient/absent observations and then returns exact', async () => {
     let attempt = 0;
     const delays: number[] = [];

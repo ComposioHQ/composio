@@ -1,0 +1,148 @@
+name: SDK Release Changelog Draft
+
+on:
+  workflow_call:
+    inputs:
+      release_id:
+        required: true
+        type: string
+      reset_changelog:
+        required: true
+        type: boolean
+      real_api_canary:
+        required: true
+        type: boolean
+    secrets:
+      OPENAI_API_KEY:
+        required: true
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  generate:
+    name: Generate validated changelog handoff
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      PREPARATION_BRANCH: release/sdk-${{ inputs.release_id }}
+    steps:
+      - name: Checkout coordinator
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js, pnpm, Bun
+        uses: ./.github/actions/setup-node-pnpm-bun
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Download validated primary handoff
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: sdk-release-primary-${{ inputs.release_id }}-${{ github.run_attempt }}
+          path: handoff
+
+      - name: Inspect exact stable preparation retry state
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_ID: ${{ inputs.release_id }}
+        run: |
+          set -euo pipefail
+          git fetch origin next "$PREPARATION_BRANCH" || true
+          remote_head=$(git ls-remote --heads origin "$PREPARATION_BRANCH" | awk '{print $1}')
+          base_head=$(git rev-parse origin/next)
+          gh pr list --state open --limit 100 --json number,headRefName,baseRefName,body \
+            | jq '[.[] | {number,head_ref:.headRefName,base_ref:.baseRefName,body:(.body // "")}]' \
+            > open-prs.json
+          jq -n \
+            --arg release_id "$RELEASE_ID" \
+            --arg remote_head "$remote_head" \
+            --arg base_head "$base_head" \
+            --slurpfile pulls open-prs.json \
+            '{
+              release_id:$release_id,
+              base_ref:"next",
+              expected_remote_head:(if $remote_head == "" then $base_head else $remote_head end),
+              remote_branch_head:(if $remote_head == "" then null else $remote_head end),
+              open_pull_requests:$pulls[0]
+            }' > retry-plan-input.json
+          bun .github/scripts/sdk-release/update-preparation-pr.ts plan-pr \
+            --input retry-plan-input.json \
+            --output retry-plan.json
+          printf '%s\n' "$remote_head" > handoff/existing-head.txt
+          if [[ -n "$remote_head" ]]; then
+            [[ "$(jq -r .action retry-plan.json)" == "update" ]] || {
+              echo "::error::existing preparation branch has no exact compatible PR"
+              exit 1
+            }
+            mkdir -p existing
+            git show "origin/$PREPARATION_BRANCH:.github/sdk-release/manifests/$RELEASE_ID.json" \
+              > existing/existing-manifest.json
+            git show "origin/$PREPARATION_BRANCH:.github/sdk-release/drafts/$RELEASE_ID.mdx" \
+              > existing/existing-draft.mdx
+          fi
+
+      - name: Generate strict structured changelog
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          REAL_API_CANARY: ${{ inputs.real_api_canary }}
+          RESET_CHANGELOG: ${{ inputs.reset_changelog }}
+        run: |
+          set -euo pipefail
+          bun --eval '
+            import { existsSync, readFileSync } from "node:fs";
+            import { generateChangelog } from "./.github/scripts/sdk-release/generate-changelog.ts";
+            import { ManifestSchema } from "./.github/scripts/sdk-release/contracts.ts";
+            import {
+              assertPreparedBaseCommit,
+              generationRecordFromManifest,
+            } from "./.github/scripts/sdk-release/update-preparation-pr.ts";
+            const input = JSON.parse(readFileSync("handoff/changelog-input.json", "utf8"));
+            const primaryBaseCommit = readFileSync("handoff/primary-base-commit.txt", "utf8").trim();
+            const existingManifest = existsSync("existing/existing-manifest.json")
+              ? ManifestSchema.parse(JSON.parse(readFileSync("existing/existing-manifest.json", "utf8")))
+              : undefined;
+            if (existingManifest) {
+              assertPreparedBaseCommit(primaryBaseCommit, existingManifest.base_commit);
+            }
+            const existing = existingManifest
+              ? {
+                  draft: readFileSync("existing/existing-draft.mdx", "utf8"),
+                  record: generationRecordFromManifest(existingManifest.openai_generation),
+                }
+              : undefined;
+            const result = await generateChangelog({
+              input,
+              apiKey: process.env.OPENAI_API_KEY,
+              existing,
+              reset: process.env.RESET_CHANGELOG === "true",
+            });
+            if (result.action === "manual_merge_required") {
+              throw new Error("Changelog input changed after a human edit; explicit reset or manual merge is required");
+            }
+            if (!["generated", "no_op", "preserved_human_edit"].includes(result.action)) {
+              throw new Error(`Unsupported generation retry action: ${result.action}`);
+            }
+            const draft = result.action === "generated" ? result.rendered.mdx : result.draft;
+            if (process.env.RESET_CHANGELOG === "true" && existing && !result.review_invalidated) {
+              throw new Error("Explicit changelog reset must invalidate prior review");
+            }
+            await Bun.write("handoff/changelog.mdx", draft);
+            await Bun.write("handoff/changelog.json", JSON.stringify({
+              action: result.action,
+              record: result.record,
+              review_invalidated: result.review_invalidated,
+              canary: process.env.REAL_API_CANARY === "true",
+            }, null, 2) + "\n");
+          '
+
+      - name: Upload secret-free writer handoff
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: sdk-release-writer-${{ inputs.release_id }}-${{ github.run_attempt }}
+          if-no-files-found: error
+          retention-days: 30
+          path: handoff/

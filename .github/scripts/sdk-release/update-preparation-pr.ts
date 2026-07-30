@@ -277,6 +277,13 @@ function writeJson(path: string | undefined, value: unknown): void {
   }
 }
 
+function booleanArgument(args: string[], name: string): boolean {
+  const value = argumentValue(args, name);
+  if (value === 'true') return true;
+  if (value === 'false') return false;
+  throw new Error(`${name} must be true or false`);
+}
+
 async function main(args: string[]): Promise<void> {
   const command = args[0];
   if (command === 'normalize-dispatch') {
@@ -310,7 +317,16 @@ async function main(args: string[]): Promise<void> {
     );
     return;
   }
-  throw new Error('Expected normalize-dispatch, plan-pr, or compare-artifacts command');
+  if (command === 'plan-patch') {
+    writeJson(args.includes('--output') ? argumentValue(args, '--output') : undefined, {
+      action: planPreparationPatch({
+        applies_cleanly: booleanArgument(args, '--applies-cleanly'),
+        reverse_applies_cleanly: booleanArgument(args, '--reverse-applies-cleanly'),
+      }),
+    });
+    return;
+  }
+  throw new Error('Expected normalize-dispatch, plan-pr, plan-patch, or compare-artifacts command');
 }
 
 if (resolve(process.argv[1] ?? '') === fileURLToPath(import.meta.url)) {

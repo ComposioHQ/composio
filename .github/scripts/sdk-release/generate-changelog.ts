@@ -18,6 +18,7 @@ const PROMPT_URL = new URL(
   import.meta.url
 );
 const DEFAULT_ENDPOINT = 'https://api.openai.com/v1/responses';
+const DEFAULT_REQUEST_TIMEOUT_MS = 30_000;
 
 const ModelPolicySchema = z
   .object({
@@ -74,6 +75,59 @@ const OutputTextSchema = z
   .passthrough();
 
 export type FetchLike = (input: string | URL, init?: RequestInit) => Promise<Response>;
+
+class ResponsesRequestTimeoutError extends Error {
+  constructor(options?: ErrorOptions) {
+    super('OpenAI Responses request timed out', options);
+    this.name = 'ResponsesRequestTimeoutError';
+  }
+}
+
+async function fetchWithTimeout(
+  fetcher: FetchLike,
+  input: string | URL,
+  init: RequestInit,
+  timeoutMs: number
+): Promise<Response> {
+  const timeoutController = new AbortController();
+  const signal = init.signal
+    ? AbortSignal.any([init.signal, timeoutController.signal])
+    : timeoutController.signal;
+  let timedOut = false;
+  const timeout = setTimeout(() => {
+    timedOut = true;
+    timeoutController.abort(new ResponsesRequestTimeoutError());
+  }, timeoutMs);
+  let rejectForAbort: (() => void) | undefined;
+  const aborted = new Promise<never>((_, reject) => {
+    rejectForAbort = () => reject(signal.reason);
+    if (signal.aborted) {
+      rejectForAbort();
+    } else {
+      signal.addEventListener('abort', rejectForAbort, { once: true });
+    }
+  });
+
+  try {
+    return await Promise.race([
+      fetcher(input, {
+        ...init,
+        signal,
+      }),
+      aborted,
+    ]);
+  } catch (error) {
+    if (timedOut) {
+      throw new ResponsesRequestTimeoutError({ cause: error });
+    }
+    throw error;
+  } finally {
+    clearTimeout(timeout);
+    if (rejectForAbort) {
+      signal.removeEventListener('abort', rejectForAbort);
+    }
+  }
+}
 
 const DigestSchema = z.string().regex(/^[a-f0-9]{64}$/);
 export const GenerationRecordSchema = z
@@ -248,22 +302,31 @@ async function requestResponse(options: {
   body: JsonValue;
   fetch: FetchLike;
   maxAttempts: number;
+  requestTimeoutMs: number;
+  signal?: AbortSignal;
   sleep: (delayMs: number) => Promise<void>;
   random: () => number;
 }): Promise<unknown> {
   for (let attempt = 1; attempt <= options.maxAttempts; attempt += 1) {
     let response: Response;
     try {
-      response = await options.fetch(options.endpoint, {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${options.apiKey}`,
-          'Content-Type': 'application/json',
+      response = await fetchWithTimeout(
+        options.fetch,
+        options.endpoint,
+        {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${options.apiKey}`,
+            'Content-Type': 'application/json',
+          },
+          body: canonicalJson(options.body),
+          signal: options.signal,
         },
-        body: canonicalJson(options.body),
-      });
+        options.requestTimeoutMs
+      );
     } catch (error) {
-      if (!(error instanceof TypeError) || attempt === options.maxAttempts) {
+      const retryable = error instanceof TypeError || error instanceof ResponsesRequestTimeoutError;
+      if (!retryable || attempt === options.maxAttempts) {
         throw new Error('OpenAI Responses connection failed', { cause: error });
       }
       await options.sleep(250 * 2 ** (attempt - 1) + Math.floor(options.random() * 100));
@@ -308,6 +371,8 @@ export interface GenerateChangelogOptions {
   endpoint?: string;
   fetch?: FetchLike;
   maxAttempts?: number;
+  requestTimeoutMs?: number;
+  signal?: AbortSignal;
   sleep?: (delayMs: number) => Promise<void>;
   random?: () => number;
   now?: () => Date;
@@ -361,6 +426,10 @@ export async function generateChangelog(
   if (!Number.isInteger(maxAttempts) || maxAttempts < 1 || maxAttempts > 5) {
     throw new Error('maxAttempts must be an integer from 1 through 5');
   }
+  const requestTimeoutMs = options.requestTimeoutMs ?? DEFAULT_REQUEST_TIMEOUT_MS;
+  if (!Number.isInteger(requestTimeoutMs) || requestTimeoutMs < 1) {
+    throw new Error('requestTimeoutMs must be a positive integer');
+  }
   const sleep =
     options.sleep ?? ((delayMs: number) => new Promise(resolve => setTimeout(resolve, delayMs)));
   const responseValue = await requestResponse({
@@ -369,6 +438,8 @@ export async function generateChangelog(
     body: requestBody(input, assets),
     fetch: options.fetch ?? fetch,
     maxAttempts,
+    requestTimeoutMs,
+    signal: options.signal,
     sleep,
     random: options.random ?? Math.random,
   });

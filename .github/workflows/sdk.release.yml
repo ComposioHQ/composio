@@ -104,387 +104,32 @@ jobs:
           echo "SDK_RELEASE_PUBLISH_ENABLED=${SDK_RELEASE_PUBLISH_ENABLED:-false}"
           exit 1
 
-  registry-publishers-disabled:
-    name: Registry publishers disabled until cutover
-    if: ${{ inputs.operation != 'prepare' && vars.SDK_RELEASE_PUBLISH_ENABLED == 'true' && false }}
-    runs-on: ubuntu-latest
-    steps:
-      - run: echo "No registry publisher is implemented in the U4 observe-only coordinator."
-
   prepare:
     name: Build primary and verification artifact sets
     needs: normalize-request
     if: ${{ inputs.operation == 'prepare' }}
-    runs-on: ubuntu-latest
-    timeout-minutes: 60
+    uses: ./.github/workflows/sdk.release.prepare.yml
     permissions:
       contents: read
       pull-requests: read
-    steps:
-      - name: Checkout primary preparation
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          ref: next
-          fetch-depth: 0
-          path: primary
-
-      - name: Checkout verification-only preparation
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          ref: next
-          fetch-depth: 0
-          path: verification
-
-      - name: Setup Node.js, pnpm, Bun
-        uses: ./primary/.github/actions/setup-node-pnpm-bun
-        with:
-          node-version: '24.17.0'
-
-      - name: Setup Python and uv
-        uses: ./primary/.github/actions/setup-python-uv
-
-      - name: Prepare both clean worktrees
-        env:
-          GH_TOKEN: ${{ github.token }}
-          GITHUB_REPOSITORY: ${{ github.repository }}
-          RELEASE_SCOPE: ${{ inputs.scope }}
-          PYTHON_VERSION: ${{ inputs.python_version }}
-        run: |
-          set -euo pipefail
-          git -C primary rev-parse HEAD > primary-base-commit.txt
-          if [[ "$RELEASE_SCOPE" != "python" ]]; then
-            bun --eval '
-              import { readdirSync, readFileSync } from "node:fs";
-              const changesets = readdirSync("primary/.changeset")
-                .filter(name => name.endsWith(".md") && name !== "README.md")
-                .map(name => {
-                  const bytes = readFileSync(`primary/.changeset/${name}`, "utf8");
-                  return { id: name.slice(0, -3), summary: bytes.replace(/^---[\\s\\S]*?---\\s*/, "").trim() };
-                });
-              await Bun.write("changelog-changesets.json", JSON.stringify(changesets, null, 2) + "\\n");
-            '
-            printf '[]\n' > changelog-pull-requests.json
-          else
-            printf '[]\n' > changelog-changesets.json
-            gh pr list --repo "$GITHUB_REPOSITORY" --state merged --base next --limit 20 \
-              --json number,title,body,url,mergedAt,mergeCommit \
-              | jq '[.[] | {
-                  number,
-                  title,
-                  body:(.body // ""),
-                  url,
-                  merged_at:.mergedAt,
-                  merge_commit_sha:.mergeCommit.oid
-                }]' > changelog-pull-requests.json
-          fi
-          for worktree in primary verification; do
-            (
-              cd "$worktree"
-              pnpm install --frozen-lockfile
-              args=(--scope "$RELEASE_SCOPE")
-              if [[ -n "$PYTHON_VERSION" ]]; then
-                args+=(--python-version "$PYTHON_VERSION")
-              fi
-              bun .github/scripts/sdk-release/prepare.ts "${args[@]}" > "../$worktree-versions.json"
-            )
-          done
-          diff -u <(jq -S . primary-versions.json) <(jq -S . verification-versions.json)
-
-      - name: Build primary and verification-only artifacts
-        env:
-          RELEASE_SCOPE: ${{ inputs.scope }}
-        run: |
-          set -euo pipefail
-          SOURCE_DATE_EPOCH=$(git -C primary show -s --format=%ct HEAD)
-          export SOURCE_DATE_EPOCH TZ=UTC LC_ALL=C
-          build_artifacts() {
-            local worktree="$1"
-            local label="$2"
-            local output="$PWD/$label-artifacts"
-            local descriptors="$PWD/$label-descriptors.ndjson"
-            mkdir -p "$output"
-            : > "$descriptors"
-
-            if [[ "$RELEASE_SCOPE" != "python" ]]; then
-              (cd "$worktree" && pnpm build:packages)
-              while IFS= read -r package_name; do
-                package_dir=$(cd "$worktree" && pnpm --filter "$package_name" exec pwd)
-                packed=$(cd "$package_dir" && npm pack --json --pack-destination "$output" | jq -r '.[0].filename')
-                filename=$(basename "$packed")
-                sha256=$(shasum -a 256 "$output/$filename" | awk '{print $1}')
-                integrity="sha512-$(openssl dgst -sha512 -binary "$output/$filename" | openssl base64 -A)"
-                jq -nc \
-                  --arg package_name "$package_name" \
-                  --arg filename "$filename" \
-                  --arg sha256 "$sha256" \
-                  --arg integrity "$integrity" \
-                  '{ecosystem:"typescript",package_name:$package_name,registry:"npm",filename:$filename,sha256:$sha256,integrity:$integrity}' \
-                  >> "$descriptors"
-              done < <(jq -r '.typescript_packages[].name' "$label-versions.json")
-            fi
-
-            if [[ "$RELEASE_SCOPE" != "typescript" ]]; then
-              (cd "$worktree/python" && make env && make build)
-              while IFS=$'\t' read -r package_name dist_dir; do
-                while IFS= read -r artifact; do
-                  filename=$(basename "$artifact")
-                  cp "$artifact" "$output/$filename"
-                  sha256=$(shasum -a 256 "$output/$filename" | awk '{print $1}')
-                  jq -nc \
-                    --arg package_name "$package_name" \
-                    --arg filename "$filename" \
-                    --arg sha256 "$sha256" \
-                    '{ecosystem:"python",package_name:$package_name,registry:"pypi",filename:$filename,sha256:$sha256}' \
-                    >> "$descriptors"
-                done < <(find "$dist_dir" -maxdepth 1 -type f \( -name '*.whl' -o -name '*.tar.gz' \) | sort)
-              done < <(
-                printf 'composio\t%s\n' "$worktree/python/dist"
-                for provider in "$worktree"/python/providers/*; do
-                  [[ -f "$provider/pyproject.toml" && -d "$provider/dist" ]] || continue
-                  package_name=$(python -c 'import pathlib,tomllib,sys; print(tomllib.loads(pathlib.Path(sys.argv[1]).read_text())["project"]["name"])' "$provider/pyproject.toml")
-                  printf '%s\t%s\n' "$package_name" "$provider/dist"
-                done
-              )
-            fi
-
-            jq -s 'sort_by(.filename, .package_name)' "$descriptors" > "$label-artifacts.json"
-          }
-
-          build_artifacts primary primary
-          build_artifacts verification verification
-          bun primary/.github/scripts/sdk-release/update-preparation-pr.ts compare-artifacts \
-            --primary primary-artifacts.json \
-            --verification verification-artifacts.json \
-            --output reproducible-artifacts.json
-          rm -rf verification-artifacts verification-descriptors.ndjson verification-artifacts.json
-
-      - name: Capture independent legacy writer outcome
-        run: |
-          set -euo pipefail
-          bun --eval '
-            import { readFileSync } from "node:fs";
-            import { readTypeScriptPackageMetadata } from "./primary/.github/scripts/sdk-release/collect-typescript-release.ts";
-            const versions = JSON.parse(readFileSync("primary-versions.json", "utf8"));
-            const metadata = readTypeScriptPackageMetadata("primary");
-            const typescript = versions.typescript_packages.map(expected => {
-              const observed = metadata.get(expected.name);
-              if (!observed || observed.version !== expected.version) {
-                throw new Error(`Legacy Changesets outcome drift for ${expected.name}`);
-              }
-              return {
-                ecosystem: "typescript",
-                name: expected.name,
-                version: observed.version,
-                registry: "npm",
-                dist_tag: expected.dist_tag,
-              };
-            });
-            const rootPyproject = readFileSync("primary/python/pyproject.toml", "utf8");
-            const pythonVersion = /^version\\s*=\\s*"([^"]+)"/m.exec(rootPyproject)?.[1];
-            const python = versions.python_packages.map(expected => {
-              if (pythonVersion !== expected.version) {
-                throw new Error(`Legacy Python build outcome drift for ${expected.name}`);
-              }
-              return {
-                ecosystem: "python",
-                name: expected.name,
-                version: pythonVersion,
-                registry: "pypi",
-              };
-            });
-            await Bun.write(
-              "legacy-packages.json",
-              JSON.stringify([...typescript, ...python], null, 2) + "\\n",
-            );
-          '
-
-      - name: Capture version patch and validated changelog input
-        env:
-          RELEASE_ID: ${{ inputs.release_id }}
-        run: |
-          set -euo pipefail
-          (cd primary && git diff --binary) > preparation.patch
-          cp primary-versions.json versions.json
-          cp reproducible-artifacts.json artifacts.json
-          bun --eval '
-            import { collectChangelogInput } from "./primary/.github/scripts/sdk-release/collect-changelog-input.ts";
-            import { readFileSync } from "node:fs";
-            const versions = JSON.parse(readFileSync("versions.json", "utf8"));
-            const changesets = JSON.parse(readFileSync("changelog-changesets.json", "utf8"));
-            const pullRequests = JSON.parse(readFileSync("changelog-pull-requests.json", "utf8"));
-            const packages = [...versions.typescript_packages, ...versions.python_packages];
-            const input = collectChangelogInput({
-              release_id: process.env.RELEASE_ID,
-              date: new Date().toISOString().slice(0, 10),
-              packages,
-              changesets,
-              pull_requests: pullRequests,
-            });
-            await Bun.write("changelog-input.json", JSON.stringify(input, null, 2) + "\\n");
-          '
-
-      - name: Upload primary preparation handoff
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        with:
-          name: sdk-release-primary-${{ inputs.release_id }}-${{ github.run_attempt }}
-          if-no-files-found: error
-          retention-days: 7
-          path: |
-            artifacts.json
-            changelog-input.json
-            legacy-packages.json
-            preparation.patch
-            primary-base-commit.txt
-            primary-artifacts/
-            versions.json
-
-      - name: Reproducibility summary
-        run: |
-          {
-            echo "## Reproducible primary SDK artifacts"
-            echo
-            echo "| Ecosystem | Package | Artifact | SHA-256 | npm SRI |"
-            echo "| --- | --- | --- | --- | --- |"
-            jq -r '.[] | "| \(.ecosystem) | `\(.package_name)` | `\(.filename)` | `\(.sha256)` | \(.integrity // "—") |"' artifacts.json
-            echo
-            echo "The verification-only build matched byte-for-byte and was discarded."
-          } >> "$GITHUB_STEP_SUMMARY"
+    with:
+      release_id: ${{ inputs.release_id }}
+      scope: ${{ inputs.scope }}
+      python_version: ${{ inputs.python_version }}
 
   generate-changelog:
     name: Generate validated changelog handoff
     needs: [normalize-request, prepare]
-    runs-on: ubuntu-latest
+    uses: ./.github/workflows/sdk.release.changelog.yml
     permissions:
       contents: read
       pull-requests: read
-    steps:
-      - name: Checkout coordinator
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-
-      - name: Setup Node.js, pnpm, Bun
-        uses: ./.github/actions/setup-node-pnpm-bun
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Download validated primary handoff
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
-        with:
-          name: sdk-release-primary-${{ inputs.release_id }}-${{ github.run_attempt }}
-          path: handoff
-
-      - name: Inspect exact stable preparation retry state
-        env:
-          GH_TOKEN: ${{ github.token }}
-          RELEASE_ID: ${{ inputs.release_id }}
-        run: |
-          set -euo pipefail
-          git fetch origin next "$PREPARATION_BRANCH" || true
-          remote_head=$(git ls-remote --heads origin "$PREPARATION_BRANCH" | awk '{print $1}')
-          base_head=$(git rev-parse origin/next)
-          gh pr list --state open --limit 100 --json number,headRefName,baseRefName,body \
-            | jq '[.[] | {number,head_ref:.headRefName,base_ref:.baseRefName,body:(.body // "")}]' \
-            > open-prs.json
-          jq -n \
-            --arg release_id "$RELEASE_ID" \
-            --arg remote_head "$remote_head" \
-            --arg base_head "$base_head" \
-            --slurpfile pulls open-prs.json \
-            '{
-              release_id:$release_id,
-              base_ref:"next",
-              expected_remote_head:(if $remote_head == "" then $base_head else $remote_head end),
-              remote_branch_head:(if $remote_head == "" then null else $remote_head end),
-              open_pull_requests:$pulls[0]
-            }' > retry-plan-input.json
-          bun .github/scripts/sdk-release/update-preparation-pr.ts plan-pr \
-            --input retry-plan-input.json \
-            --output retry-plan.json
-          printf '%s\n' "$remote_head" > handoff/existing-head.txt
-          if [[ -n "$remote_head" ]]; then
-            [[ "$(jq -r .action retry-plan.json)" == "update" ]] || {
-              echo "::error::existing preparation branch has no exact compatible PR"
-              exit 1
-            }
-            mkdir -p existing
-            git show "origin/$PREPARATION_BRANCH:.github/sdk-release/manifests/$RELEASE_ID.json" \
-              > existing/existing-manifest.json
-            git show "origin/$PREPARATION_BRANCH:.github/sdk-release/drafts/$RELEASE_ID.mdx" \
-              > existing/existing-draft.mdx
-          fi
-
-      - name: Generate strict structured changelog
-        env:
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-          REAL_API_CANARY: ${{ inputs.real_api_canary }}
-          RESET_CHANGELOG: ${{ inputs.reset_changelog }}
-        run: |
-          set -euo pipefail
-          bun --eval '
-            import { existsSync, readFileSync } from "node:fs";
-            import { generateChangelog } from "./.github/scripts/sdk-release/generate-changelog.ts";
-            import { ManifestSchema } from "./.github/scripts/sdk-release/contracts.ts";
-            import {
-              assertPreparedBaseCommit,
-              generationRecordFromManifest,
-            } from "./.github/scripts/sdk-release/update-preparation-pr.ts";
-            const input = JSON.parse(readFileSync("handoff/changelog-input.json", "utf8"));
-            const primaryBaseCommit = readFileSync(
-              "handoff/primary-base-commit.txt",
-              "utf8",
-            ).trim();
-            const existingManifest = existsSync("existing/existing-manifest.json")
-              ? ManifestSchema.parse(
-                  JSON.parse(readFileSync("existing/existing-manifest.json", "utf8")),
-                )
-              : undefined;
-            if (existingManifest) {
-              assertPreparedBaseCommit(primaryBaseCommit, existingManifest.base_commit);
-            }
-            const existing = existingManifest
-              ? {
-                  draft: readFileSync("existing/existing-draft.mdx", "utf8"),
-                  record: generationRecordFromManifest(existingManifest.openai_generation),
-                }
-              : undefined;
-            const result = await generateChangelog({
-              input,
-              apiKey: process.env.OPENAI_API_KEY,
-              existing,
-              reset: process.env.RESET_CHANGELOG === "true",
-            });
-            if (result.action === "manual_merge_required") {
-              throw new Error("Changelog input changed after a human edit; explicit reset or manual merge is required");
-            }
-            const draft = result.action === "generated" ? result.rendered.mdx : result.draft;
-            const record = result.record;
-            const reviewInvalidated = result.review_invalidated;
-            if (process.env.RESET_CHANGELOG === "true" && existing && !reviewInvalidated) {
-              throw new Error("Explicit changelog reset must invalidate prior review");
-            }
-            if (
-              result.action !== "generated" &&
-              result.action !== "no_op" &&
-              result.action !== "preserved_human_edit"
-            ) {
-              throw new Error(`Unsupported generation retry action: ${result.action}`);
-            }
-            await Bun.write("handoff/changelog.mdx", draft);
-            await Bun.write("handoff/changelog.json", JSON.stringify({
-              action: result.action,
-              record,
-              review_invalidated: reviewInvalidated,
-              canary: process.env.REAL_API_CANARY === "true",
-            }, null, 2) + "\n");
-          '
-
-      - name: Upload secret-free writer handoff
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        with:
-          name: sdk-release-writer-${{ inputs.release_id }}-${{ github.run_attempt }}
-          if-no-files-found: error
-          retention-days: 7
-          path: handoff/
+    with:
+      release_id: ${{ inputs.release_id }}
+      reset_changelog: ${{ inputs.reset_changelog }}
+      real_api_canary: ${{ inputs.real_api_canary }}
+    secrets:
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
 
   write-preparation:
     name: Update stable preparation PR
@@ -494,19 +139,12 @@ jobs:
       contents: read
       pull-requests: read
     steps:
-      - name: Generate GitHub App token
-        id: app-token
-        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
-        with:
-          client-id: ${{ vars.RELEASE_BOT_CLIENT_ID }}
-          private-key: ${{ secrets.RELEASE_BOT_APP_PRIVATE_KEY }}
-
-      - name: Checkout stable preparation lineage
+      - name: Checkout stable preparation lineage without persisted credentials
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: next
           fetch-depth: 0
-          token: ${{ steps.app-token.outputs.token }}
+          persist-credentials: false
 
       - name: Setup Node.js, pnpm, Bun
         uses: ./.github/actions/setup-node-pnpm-bun
@@ -522,6 +160,18 @@ jobs:
         with:
           name: sdk-release-writer-${{ inputs.release_id }}-${{ github.run_attempt }}
           path: handoff
+
+      - name: Generate short-lived GitHub App token
+        id: app-token
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        with:
+          client-id: ${{ vars.RELEASE_BOT_CLIENT_ID }}
+          private-key: ${{ secrets.RELEASE_BOT_APP_PRIVATE_KEY }}
+
+      - name: Configure short-lived git authentication
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: gh auth setup-git
 
       - name: Validate exact PR lineage
         id: lineage
@@ -570,14 +220,22 @@ jobs:
           else
             git checkout -B "$PREPARATION_BRANCH" origin/next
           fi
-          if git apply --check handoff/preparation.patch; then
-            git apply --index handoff/preparation.patch
-          elif git apply --reverse --check handoff/preparation.patch; then
-            echo "Exact preparation patch is already applied; preserving stable branch bytes."
-          else
-            echo "::error::preparation patch is partially applied or branch state is divergent"
-            exit 1
+          applies_cleanly=false
+          reverse_applies_cleanly=false
+          if git apply --check handoff/preparation.patch; then applies_cleanly=true; fi
+          if git apply --reverse --check handoff/preparation.patch; then
+            reverse_applies_cleanly=true
           fi
+          bun .github/scripts/sdk-release/update-preparation-pr.ts plan-patch \
+            --applies-cleanly "$applies_cleanly" \
+            --reverse-applies-cleanly "$reverse_applies_cleanly" \
+            --output patch-plan.json
+          case "$(jq -r .action patch-plan.json)" in
+            apply) git apply --index handoff/preparation.patch ;;
+            already_applied)
+              echo "Exact preparation patch is already applied; preserving stable branch bytes."
+              ;;
+          esac
           mkdir -p ".github/sdk-release/drafts" ".github/sdk-release/manifests"
           cp handoff/changelog.mdx ".github/sdk-release/drafts/$RELEASE_ID.mdx"
           bun --eval '
@@ -713,6 +371,7 @@ jobs:
     needs: [prepare, write-preparation]
     if: ${{ inputs.operation == 'prepare' }}
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     permissions:
       contents: read
     steps:
@@ -760,6 +419,7 @@ jobs:
     needs: normalize-request
     if: ${{ inputs.operation != 'prepare' && vars.SDK_RELEASE_PUBLISH_ENABLED == 'true' && false }}
     runs-on: ubuntu-latest
+    timeout-minutes: 90
     permissions:
       actions: read
       contents: read
@@ -782,8 +442,28 @@ jobs:
         with:
           node-version: '24.17.0'
 
+      - name: Setup Python and uv
+        uses: ./.github/actions/setup-python-uv
+
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+
+      - name: Enforce the durable repository-wide release gate
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_BOT_LOGIN: ${{ vars.RELEASE_BOT_LOGIN }}
+          RELEASE_ID: ${{ inputs.release_id }}
+        run: |
+          set -euo pipefail
+          if [[ -z "$RELEASE_BOT_LOGIN" ]]; then
+            echo "::error::RELEASE_BOT_LOGIN must identify the trusted receipt author"
+            exit 1
+          fi
+          bun .github/scripts/sdk-release/collect-release-state.ts \
+            --repository "$GITHUB_REPOSITORY" \
+            --release-id "$RELEASE_ID" \
+            --trusted-login "$RELEASE_BOT_LOGIN" \
+            --output durable-release-state.json
 
       - name: Resolve exact merged preparation lineage
         id: resolve
@@ -870,6 +550,8 @@ jobs:
           } >> "$GITHUB_OUTPUT"
 
       - name: Download exact prior prepare-run artifact
+        id: download-primary
+        continue-on-error: true
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           name: sdk-release-primary-${{ inputs.release_id }}-${{ steps.resolve.outputs.prepare_run_attempt }}
@@ -878,7 +560,22 @@ jobs:
           run-id: ${{ steps.resolve.outputs.prepare_run_id }}
           github-token: ${{ github.token }}
 
+      - name: Rebuild expired transport artifacts from sealed source
+        if: ${{ steps.download-primary.outcome != 'success' }}
+        run: |
+          set -euo pipefail
+          jq '{
+            typescript_packages:[.packages[] | select(.ecosystem == "typescript")],
+            python_packages:[.packages[] | select(.ecosystem == "python")]
+          }' sealed-manifest.json > rebuild-versions.json
+          SOURCE_DATE_EPOCH=$(git show -s --format=%ct HEAD)
+          export SOURCE_DATE_EPOCH TZ=UTC LC_ALL=C
+          bash .github/scripts/sdk-release/build-artifacts.sh \
+            . rebuild-versions.json rebuilt-artifacts rebuilt-artifacts.json
+
       - name: Re-hash sealed artifacts before protected jobs
+        env:
+          ARTIFACT_DIRECTORY: ${{ steps.download-primary.outcome == 'success' && 'prepare-handoff/primary-artifacts' || 'rebuilt-artifacts' }}
         run: |
           set -euo pipefail
           bun --eval '
@@ -886,20 +583,20 @@ jobs:
             import { SealedManifestSchema } from "./.github/scripts/sdk-release/contracts.ts";
             import { verifySealedArtifactDirectory } from "./.github/scripts/sdk-release/reconcile.ts";
             const manifest = SealedManifestSchema.parse(JSON.parse(readFileSync("sealed-manifest.json", "utf8")));
-            verifySealedArtifactDirectory(manifest.artifacts, "prepare-handoff/primary-artifacts");
+            verifySealedArtifactDirectory(manifest.artifacts, process.env.ARTIFACT_DIRECTORY);
           '
           mkdir release-handoff
           cp sealed-manifest.json release-handoff/manifest.json
           cp resolved-release.json release-handoff/resolved.json
           cp workspace-packages.json release-handoff/workspace.json
-          cp -R prepare-handoff/primary-artifacts release-handoff/artifacts
+          cp -R "$ARTIFACT_DIRECTORY" release-handoff/artifacts
 
       - name: Upload revalidated sealed handoff
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: sdk-release-sealed-${{ inputs.release_id }}-${{ github.run_id }}-${{ github.run_attempt }}
           if-no-files-found: error
-          retention-days: 7
+          retention-days: 30
           path: release-handoff/
 
   preflight-reconcile:
@@ -907,6 +604,7 @@ jobs:
     needs: resolve-sealed-release
     if: ${{ inputs.operation != 'prepare' && vars.SDK_RELEASE_PUBLISH_ENABLED == 'true' && false }}
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     permissions:
       contents: read
     outputs:
@@ -1057,6 +755,7 @@ jobs:
     needs: [resolve-sealed-release, preflight-reconcile, publish-npm, publish-pypi]
     if: ${{ always() && inputs.operation != 'prepare' && vars.SDK_RELEASE_PUBLISH_ENABLED == 'true' && false && needs.resolve-sealed-release.result == 'success' && needs.preflight-reconcile.result == 'success' }}
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     permissions:
       contents: read
     outputs:
@@ -1098,19 +797,27 @@ jobs:
               packages: manifest.packages,
               artifacts: manifest.artifacts,
             });
-            let plan;
-            let state;
+            let plan = JSON.parse(readFileSync("handoff/reconciliation.json", "utf8"));
+            let state = "partial";
+            let errorMetadata = null;
             try {
               plan = await verifyRegistryConsistency({ reconcile });
               state = plan.observations.some(item => item.state === "conflict")
                 ? "conflict"
                 : "verified";
             } catch (error) {
-              if (!(error instanceof RegistryConsistencyTimeoutError) || !error.last_plan) throw error;
-              plan = error.last_plan;
-              state = "partial";
+              if (!(error instanceof RegistryConsistencyTimeoutError)) throw error;
+              plan = error.last_plan ?? plan;
+              errorMetadata = {
+                kind: "registry_consistency_timeout",
+                message: error.message,
+                used_preflight_observation: !error.last_plan,
+              };
             }
-            await Bun.write("verification.json", JSON.stringify({ state, plan }, null, 2) + "\n");
+            await Bun.write(
+              "verification.json",
+              JSON.stringify({ state, plan, error: errorMetadata }, null, 2) + "\n",
+            );
           '
           echo "state=$(jq -r .state verification.json)" >> "$GITHUB_OUTPUT"
 
@@ -1134,19 +841,12 @@ jobs:
       contents: read
       pull-requests: read
     steps:
-      - name: Generate GitHub App token
-        id: app-token
-        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
-        with:
-          client-id: ${{ vars.RELEASE_BOT_CLIENT_ID }}
-          private-key: ${{ secrets.RELEASE_BOT_APP_PRIVATE_KEY }}
-
-      - name: Checkout sealed release commit
+      - name: Checkout sealed release commit without persisted credentials
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ needs.resolve-sealed-release.outputs.source_commit }}
           fetch-depth: 0
-          token: ${{ steps.app-token.outputs.token }}
+          persist-credentials: false
 
       - name: Setup Node.js, pnpm, Bun
         uses: ./.github/actions/setup-node-pnpm-bun
@@ -1166,6 +866,18 @@ jobs:
           name: sdk-release-verification-${{ inputs.release_id }}-${{ github.run_id }}-${{ github.run_attempt }}
           path: evidence
 
+      - name: Generate short-lived GitHub App token
+        id: app-token
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        with:
+          client-id: ${{ vars.RELEASE_BOT_CLIENT_ID }}
+          private-key: ${{ secrets.RELEASE_BOT_APP_PRIVATE_KEY }}
+
+      - name: Configure short-lived git authentication
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: gh auth setup-git
+
       - name: Post immutable attempt and update receipt index
         id: receipt
         env:
@@ -1175,10 +887,18 @@ jobs:
           RELEASE_ID: ${{ inputs.release_id }}
           MANIFEST_ID: ${{ needs.resolve-sealed-release.outputs.manifest_id }}
           SOURCE_COMMIT: ${{ needs.resolve-sealed-release.outputs.source_commit }}
+          RELEASE_BOT_LOGIN: ${{ vars.RELEASE_BOT_LOGIN }}
         run: |
           set -euo pipefail
+          if [[ -z "$RELEASE_BOT_LOGIN" ]]; then
+            echo "::error::RELEASE_BOT_LOGIN must identify the trusted receipt author"
+            exit 1
+          fi
           gh api "repos/$GITHUB_REPOSITORY/issues/$PREPARATION_PR/comments" \
-            --paginate --slurp | jq 'add' > existing-comments.json
+            --paginate --slurp \
+            | jq --arg login "$RELEASE_BOT_LOGIN" \
+                '[add[] | select(.user.login == $login and .user.type == "Bot")]' \
+                > existing-comments.json
           attempt=$(jq --arg prefix "<!-- sdk-release-attempt:$RELEASE_ID:" \
             '[.[] | select(.body | startswith($prefix))] | length + 1' existing-comments.json)
           started_at=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" --jq .created_at)
@@ -1202,7 +922,6 @@ jobs:
             --argjson run_attempt "$GITHUB_RUN_ATTEMPT" \
             --slurpfile verification evidence/verification.json \
             '{
-              schema_version:"sdk-release-attempt-receipt/v1",
               release_id:$release_id,
               manifest_id:$manifest_id,
               attempt:$attempt,
@@ -1211,45 +930,23 @@ jobs:
               workflow_run_attempt:$run_attempt,
               started_at:$started_at,
               completed_at:$completed_at,
-              transition:{
-                schema_version:"sdk-release-state-transition/v1",
-                release_id:$release_id,
-                from:$from,
-                to:$state
-              },
+              from:$from,
+              state:$state,
               observations:$verification[0].plan.observations,
-              outcome:$state
-            }' > attempt.json
+            }' > attempt-input.json
+          bun .github/scripts/sdk-release/finalize-receipt.ts build-attempt \
+            --input attempt-input.json \
+            --output attempt.json
           bun .github/scripts/sdk-release/finalize-receipt.ts attempt \
             --input attempt.json \
             --output attempt.md
           gh pr comment "$PREPARATION_PR" --body-file attempt.md
 
-          bun --eval '
-            import { readFileSync } from "node:fs";
-            import { renderReceiptIndex } from "./.github/scripts/sdk-release/finalize-receipt.ts";
-            const comments = JSON.parse(readFileSync("existing-comments.json", "utf8"));
-            const current = JSON.parse(readFileSync("attempt.json", "utf8"));
-            const attempts = [...comments.flatMap(comment => {
-              const marker = /<!-- sdk-release-attempt:[^:]+:(\d+) -->/.exec(comment.body);
-              const outcome = /Outcome: \\*\\*(partial|conflict|verified|receipted|notified)\\*\\*/.exec(comment.body);
-              const run = /Workflow run: `(\d+)`/.exec(comment.body);
-              return marker && outcome && run
-                ? [{ attempt:Number(marker[1]), outcome:outcome[1], workflow_run_id:Number(run[1]) }]
-                : [];
-            }), {
-              attempt:current.attempt,
-              outcome:current.outcome,
-              workflow_run_id:current.workflow_run_id,
-            }].sort((left, right) => left.attempt - right.attempt);
-            const body = renderReceiptIndex({
-              release_id:process.env.RELEASE_ID,
-              manifest_id:process.env.MANIFEST_ID,
-              source_commit:process.env.SOURCE_COMMIT,
-              attempts,
-            });
-            await Bun.write("index.md", body);
-          '
+          bun .github/scripts/sdk-release/finalize-receipt.ts build-index \
+            --input attempt.json \
+            --comments existing-comments.json \
+            --source-commit "$SOURCE_COMMIT" \
+            --output index.md
           index_id=$(jq -r --arg marker "<!-- sdk-release-index:${{ needs.resolve-sealed-release.outputs.manifest_id }} -->" \
             '[.[] | select(.body | startswith($marker))] | if length == 0 then "" elif length == 1 then .[0].id else error("duplicate receipt indexes") end' \
             existing-comments.json)
@@ -1275,217 +972,24 @@ jobs:
           SOURCE_COMMIT: ${{ needs.resolve-sealed-release.outputs.source_commit }}
         run: |
           set -euo pipefail
-          git fetch --tags --force
-          bun --eval '
-            import { readFileSync } from "node:fs";
-            import { planReleaseTags } from "./.github/scripts/sdk-release/finalize-tags.ts";
-            const manifest = JSON.parse(readFileSync("evidence/manifest.json", "utf8"));
-            const names = [
-              ...manifest.packages
-                .filter(item => item.ecosystem === "typescript")
-                .map(item => `${item.name}@${item.version}`),
-              ...new Set(
-                manifest.packages
-                  .filter(item => item.ecosystem === "python")
-                  .map(item => `py@${item.version}`)
-              ),
-            ];
-            const existing_tags = names.flatMap(name => {
-              const target = Bun.spawnSync(["git", "rev-list", "-n", "1", name]);
-              if (target.exitCode !== 0) return [];
-              const message = Bun.spawnSync(["git", "for-each-ref", "--format=%(contents)", `refs/tags/${name}`]);
-              return [{
-                name,
-                target:new TextDecoder().decode(target.stdout).trim(),
-                message:new TextDecoder().decode(message.stdout).trim(),
-              }];
-            });
-            const plan = planReleaseTags({
-              manifest,
-              manifest_id:process.env.MANIFEST_ID,
-              source_commit:process.env.SOURCE_COMMIT,
-              verified:true,
-              existing_tags,
-            });
-            for (const tag of plan) {
-              const created = Bun.spawnSync(["git", "tag", "-a", tag.name, tag.target, "-m", tag.message]);
-              if (created.exitCode !== 0) throw new Error(`Unable to create ${tag.name}`);
-              const pushed = Bun.spawnSync(["git", "push", "origin", `refs/tags/${tag.name}`]);
-              if (pushed.exitCode !== 0) throw new Error(`Unable to push ${tag.name}`);
-            }
-          '
+          bun .github/scripts/sdk-release/finalize-tags.ts apply \
+            --manifest evidence/manifest.json \
+            --manifest-id "$MANIFEST_ID" \
+            --source-commit "$SOURCE_COMMIT" \
+            --output tag-plan.json
 
   finalize-public-changelog:
     name: Finalize verified public changelog
     needs: [resolve-sealed-release, finalize-release-attempt]
     if: ${{ inputs.operation != 'prepare' && vars.SDK_RELEASE_PUBLISH_ENABLED == 'true' && false && needs.finalize-release-attempt.outputs.outcome == 'verified' }}
-    runs-on: ubuntu-latest
+    uses: ./.github/workflows/sdk.release.finalize-changelog.yml
     permissions:
       actions: read
       contents: read
       pull-requests: read
-    steps:
-      - name: Generate GitHub App token
-        id: app-token
-        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
-        with:
-          client-id: ${{ vars.RELEASE_BOT_CLIENT_ID }}
-          private-key: ${{ secrets.RELEASE_BOT_APP_PRIVATE_KEY }}
-
-      - name: Checkout sealed release commit
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          ref: ${{ needs.resolve-sealed-release.outputs.source_commit }}
-          fetch-depth: 0
-          token: ${{ steps.app-token.outputs.token }}
-
-      - name: Setup Node.js, pnpm, Bun
-        uses: ./.github/actions/setup-node-pnpm-bun
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Download sealed release evidence
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
-        with:
-          name: sdk-release-sealed-${{ inputs.release_id }}-${{ github.run_id }}-${{ github.run_attempt }}
-          path: evidence
-
-      - name: Download verified attempt receipt
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
-        with:
-          name: sdk-release-attempt-${{ inputs.release_id }}-${{ github.run_id }}-${{ github.run_attempt }}
-          path: evidence
-
-      - name: Plan exact changelog finalization
-        id: plan
-        env:
-          GH_TOKEN: ${{ steps.app-token.outputs.token }}
-          RELEASE_ID: ${{ inputs.release_id }}
-        run: |
-          set -euo pipefail
-          branch="release/sdk-$RELEASE_ID-changelog"
-          git fetch origin next "$branch" --no-tags || git fetch origin next --no-tags
-          gh pr list \
-            --state all \
-            --base next \
-            --head "$branch" \
-            --json number,state,headRefName,baseRefName,body,mergeCommit \
-            --limit 100 \
-            | jq '[.[] | {
-                number,
-                state,
-                head_ref:.headRefName,
-                base_ref:.baseRefName,
-                body:(.body // ""),
-                merge_commit_sha:(.mergeCommit.oid // null)
-              }]' > finalization-prs.json
-          bun --eval '
-            import { createHash } from "node:crypto";
-            import { writeFileSync } from "node:fs";
-            const listing = Bun.spawnSync([
-              "git", "ls-tree", "-r", "--name-only", "origin/next", "docs/content/changelog",
-            ]);
-            if (listing.exitCode !== 0) throw new Error("Unable to list public changelogs");
-            const paths = new TextDecoder().decode(listing.stdout)
-              .trim().split("\n").filter(path => path.endsWith(".mdx"));
-            const inventory = paths.map(path => {
-              const shown = Bun.spawnSync(["git", "show", `origin/next:${path}`]);
-              if (shown.exitCode !== 0) throw new Error(`Unable to read ${path}`);
-              return {
-                path,
-                sha256:createHash("sha256").update(shown.stdout).digest("hex"),
-              };
-            });
-            writeFileSync("public-inventory.json", JSON.stringify(inventory, null, 2) + "\n");
-          '
-          draft=$(jq -r .changelog.draft_path evidence/manifest.json)
-          bun .github/scripts/sdk-release/finalize-changelog.ts plan \
-            --manifest evidence/manifest.json \
-            --receipt evidence/attempt.json \
-            --draft "$draft" \
-            --inventory public-inventory.json \
-            --pull-requests finalization-prs.json \
-            --output finalization-plan.json
-          echo "state=$(jq -r .state finalization-plan.json)" >> "$GITHUB_OUTPUT"
-          echo "path=$(jq -r .final_path finalization-plan.json)" >> "$GITHUB_OUTPUT"
-          echo "branch=$(jq -r .branch finalization-plan.json)" >> "$GITHUB_OUTPUT"
-          echo "pull_request=$(jq -r '.pull_request // \"\"' finalization-plan.json)" >> "$GITHUB_OUTPUT"
-
-      - name: Create or update stable finalization PR
-        if: ${{ steps.plan.outputs.state != 'already_finalized' }}
-        env:
-          GH_TOKEN: ${{ steps.app-token.outputs.token }}
-          FINAL_PATH: ${{ steps.plan.outputs.path }}
-          FINAL_BRANCH: ${{ steps.plan.outputs.branch }}
-          FINALIZATION_PR: ${{ steps.plan.outputs.pull_request }}
-          MANIFEST_ID: ${{ needs.resolve-sealed-release.outputs.manifest_id }}
-          RELEASE_ID: ${{ inputs.release_id }}
-        run: |
-          set -euo pipefail
-          draft=$(jq -r .changelog.draft_path evidence/manifest.json)
-          cp "$draft" /tmp/sdk-release-reviewed-changelog.mdx
-          expected_remote=$(git ls-remote --heads origin "refs/heads/$FINAL_BRANCH" | cut -f1)
-          git checkout -B "$FINAL_BRANCH" origin/next
-          mkdir -p "$(dirname "$FINAL_PATH")"
-          cp /tmp/sdk-release-reviewed-changelog.mdx "$FINAL_PATH"
-          actual=$(shasum -a 256 "$FINAL_PATH" | cut -d' ' -f1)
-          sealed=$(jq -r .changelog.sha256 evidence/manifest.json)
-          test "$actual" = "$sealed"
-          git config user.name "composio-release[bot]"
-          git config user.email "composio-release[bot]@users.noreply.github.com"
-          git add "$FINAL_PATH"
-          git commit -m "docs(changelog): finalize SDK release $RELEASE_ID"
-          git push origin \
-            --force-with-lease="refs/heads/$FINAL_BRANCH:$expected_remote" \
-            "HEAD:refs/heads/$FINAL_BRANCH"
-
-          marker="<!-- sdk-release-finalization:$MANIFEST_ID -->"
-          {
-            echo "$marker"
-            echo
-            echo "## Verified SDK changelog finalization"
-            echo
-            echo "- Release: \`$RELEASE_ID\`"
-            echo "- Manifest: \`$MANIFEST_ID\`"
-            echo "- Public path: \`$FINAL_PATH\`"
-            echo "- Reviewed SHA-256: \`$sealed\`"
-            echo
-            echo "This PR copies the exact reviewed draft after registry verification. Docs checks must pass before merge."
-          } > finalization-body.md
-          if [[ -z "$FINALIZATION_PR" ]]; then
-            FINALIZATION_PR=$(gh pr create \
-              --base next \
-              --head "$FINAL_BRANCH" \
-              --title "docs(changelog): finalize SDK release $RELEASE_ID" \
-              --body-file finalization-body.md)
-          else
-            gh pr edit "$FINALIZATION_PR" \
-              --title "docs(changelog): finalize SDK release $RELEASE_ID" \
-              --body-file finalization-body.md
-          fi
-          pr_number=${FINALIZATION_PR##*/}
-          owner=${GITHUB_REPOSITORY%%/*}
-          repo=${GITHUB_REPOSITORY#*/}
-          auto_merge=$(gh api graphql \
-            -f query='query($owner:String!,$repo:String!){repository(owner:$owner,name:$repo){autoMergeAllowed}}' \
-            -F owner="$owner" \
-            -F repo="$repo" \
-            --jq .data.repository.autoMergeAllowed)
-          if [[ "$auto_merge" == "true" ]]; then
-            gh pr merge "$pr_number" --auto --squash
-          else
-            echo "Repository auto-merge is disabled; PR #$pr_number remains the explicit finalization step."
-          fi
-
-      - name: Finalization summary
-        run: |
-          {
-            echo "## SDK changelog finalization"
-            echo
-            echo "- State: \`${{ steps.plan.outputs.state }}\`"
-            echo "- Public path: \`${{ steps.plan.outputs.path }}\`"
-            echo "- Manifest: \`${{ needs.resolve-sealed-release.outputs.manifest_id }}\`"
-            echo
-            echo "Package verification remains durable even if this recoverable finalization step fails."
-          } >> "$GITHUB_STEP_SUMMARY"
+    with:
+      release_id: ${{ inputs.release_id }}
+      source_commit: ${{ needs.resolve-sealed-release.outputs.source_commit }}
+      manifest_id: ${{ needs.resolve-sealed-release.outputs.manifest_id }}
+    secrets:
+      RELEASE_BOT_APP_PRIVATE_KEY: ${{ secrets.RELEASE_BOT_APP_PRIVATE_KEY }}

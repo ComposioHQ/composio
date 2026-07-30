@@ -11,7 +11,12 @@ import {
   assertSealedManifestUnchanged,
   sealManifest,
 } from '../.github/scripts/sdk-release/manifest';
-import { assertCanStartRelease, transitionRelease } from '../.github/scripts/sdk-release/state';
+import {
+  assertCanStartFromDurableStates,
+  assertCanStartRelease,
+  parseDurableReleaseStates,
+  transitionRelease,
+} from '../.github/scripts/sdk-release/state';
 
 const fixture = (name: string): unknown =>
   JSON.parse(
@@ -117,8 +122,59 @@ describe('SDK release state contract', () => {
       assertCanStartRelease({ release_id: 'release-1', state: 'notified' }, 'release-2')
     ).not.toThrow();
     expect(() =>
+      assertCanStartRelease({ release_id: 'release-1', state: 'verified' }, 'release-2')
+    ).not.toThrow();
+    expect(() =>
       assertCanStartRelease({ release_id: 'release-1', state: 'partial' }, 'release-1')
     ).not.toThrow();
+  });
+
+  test('reconstructs only trusted durable indexes and blocks another release after partial', () => {
+    const body = [
+      `<!-- sdk-release-index:${'a'.repeat(64)} -->`,
+      '## SDK release receipt index',
+      '',
+      'Release: `release-1`',
+      '',
+      '- Attempt 1: **partial** ([workflow run 123](https://github.com/example/repo/actions/runs/123))',
+      '',
+    ].join('\n');
+    const states = parseDurableReleaseStates(
+      [
+        { id: 1, body, user: { login: 'attacker', type: 'User' } },
+        { id: 2, body, user: { login: 'composio-release[bot]', type: 'Bot' } },
+      ],
+      'composio-release[bot]'
+    );
+    expect(states).toEqual([
+      {
+        release_id: 'release-1',
+        manifest_id: 'a'.repeat(64),
+        state: 'partial',
+        comment_id: 2,
+      },
+    ]);
+    expect(() => assertCanStartFromDurableStates(states, 'release-2')).toThrow(
+      'Release release-1 is still open in state partial'
+    );
+    expect(() => assertCanStartFromDurableStates(states, 'release-1')).not.toThrow();
+  });
+
+  test('rejects duplicate trusted receipt indexes for one release', () => {
+    const body = [
+      `<!-- sdk-release-index:${'a'.repeat(64)} -->`,
+      'Release: `release-1`',
+      '- Attempt 1: **verified**',
+    ].join('\n');
+    expect(() =>
+      parseDurableReleaseStates(
+        [
+          { id: 1, body, user: { login: 'composio-release[bot]', type: 'Bot' } },
+          { id: 2, body, user: { login: 'composio-release[bot]', type: 'Bot' } },
+        ],
+        'composio-release[bot]'
+      )
+    ).toThrow('multiple trusted receipt indexes');
   });
 
   test('keeps registry, attempt, and transition records strict and versioned', () => {

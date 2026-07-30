@@ -5,11 +5,13 @@ import { z } from 'zod';
 import {
   AttemptReceiptSchema,
   RegistryObservationSchema,
+  SDK_RELEASE_ATTEMPT_RECEIPT_VERSION,
   SealedManifestSchema,
   type AttemptReceipt,
   type RegistryObservation,
 } from './contracts';
 import { computeManifestId } from './manifest';
+import { transitionRelease } from './state';
 
 const GitShaSchema = z.string().regex(/^[a-f0-9]{40}$/);
 const ManifestIdSchema = z.string().regex(/^[a-f0-9]{64}$/);
@@ -30,6 +32,21 @@ const PrepareRunSchema = z
     repository: z.string().regex(/^[^/\s]+\/[^/\s]+$/),
     workflow: z.string().min(1),
     conclusion: z.literal('success'),
+  })
+  .strict();
+const AttemptBuildInputSchema = z
+  .object({
+    release_id: z.string().min(1),
+    manifest_id: ManifestIdSchema,
+    attempt: z.number().int().positive(),
+    operation: z.enum(['publish', 'resume', 'verify']),
+    workflow_run_id: z.number().int().positive(),
+    workflow_run_attempt: z.number().int().positive(),
+    started_at: z.string().datetime({ offset: true }),
+    completed_at: z.string().datetime({ offset: true }),
+    from: z.enum(['preflight_reconciling', 'publishing']),
+    state: z.enum(['partial', 'conflict', 'verified']),
+    observations: z.array(RegistryObservationSchema).min(1),
   })
   .strict();
 
@@ -113,6 +130,24 @@ export function planAttemptOutcome(options: {
   return observations.every(observation => observation.state === 'exact') ? 'verified' : 'partial';
 }
 
+export function buildAttemptReceipt(rawInput: unknown): AttemptReceipt {
+  const input = AttemptBuildInputSchema.parse(rawInput);
+  return AttemptReceiptSchema.parse({
+    schema_version: SDK_RELEASE_ATTEMPT_RECEIPT_VERSION,
+    release_id: input.release_id,
+    manifest_id: input.manifest_id,
+    attempt: input.attempt,
+    operation: input.operation,
+    workflow_run_id: input.workflow_run_id,
+    workflow_run_attempt: input.workflow_run_attempt,
+    started_at: input.started_at,
+    completed_at: input.completed_at,
+    transition: transitionRelease(input.from, input.state, input.release_id, input.completed_at),
+    observations: input.observations,
+    outcome: input.state,
+  });
+}
+
 function inlineCode(value: string | number): string {
   return `\`${String(value)
     .replace(/[\r\n]+/g, ' ')
@@ -178,6 +213,43 @@ export function renderReceiptIndex(rawIndex: z.input<typeof ReceiptIndexSchema>)
   ].join('\n');
 }
 
+export function buildReceiptIndex(options: {
+  comments: Array<{ body: string }>;
+  current: AttemptReceipt;
+  source_commit: string;
+}): string {
+  const current = AttemptReceiptSchema.parse(options.current);
+  const attempts = [
+    ...options.comments.flatMap(comment => {
+      const marker = /<!-- sdk-release-attempt:[^:]+:(\d+) -->/.exec(comment.body);
+      const outcome = /Outcome: \*\*(partial|conflict|verified|receipted|notified)\*\*/.exec(
+        comment.body
+      );
+      const run = /Workflow run: `(\d+)`/.exec(comment.body);
+      return marker && outcome && run
+        ? [
+            {
+              attempt: Number(marker[1]),
+              outcome: outcome[1] as 'partial' | 'conflict' | 'verified' | 'receipted' | 'notified',
+              workflow_run_id: Number(run[1]),
+            },
+          ]
+        : [];
+    }),
+    {
+      attempt: current.attempt,
+      outcome: current.outcome,
+      workflow_run_id: current.workflow_run_id,
+    },
+  ].sort((left, right) => left.attempt - right.attempt);
+  return renderReceiptIndex({
+    release_id: current.release_id,
+    manifest_id: current.manifest_id,
+    source_commit: options.source_commit,
+    attempts,
+  });
+}
+
 function argumentValue(args: string[], name: string): string {
   const index = args.indexOf(name);
   const value = index === -1 ? undefined : args[index + 1];
@@ -188,13 +260,36 @@ function argumentValue(args: string[], name: string): string {
 async function main(args: string[]): Promise<void> {
   const command = args[0];
   const input = JSON.parse(readFileSync(argumentValue(args, '--input'), 'utf8'));
+  if (command === 'build-attempt') {
+    writeFileSync(
+      argumentValue(args, '--output'),
+      `${JSON.stringify(buildAttemptReceipt(input), null, 2)}\n`
+    );
+    return;
+  }
+  if (command === 'build-index') {
+    const comments = JSON.parse(readFileSync(argumentValue(args, '--comments'), 'utf8')) as Array<{
+      body: string;
+    }>;
+    writeFileSync(
+      argumentValue(args, '--output'),
+      buildReceiptIndex({
+        comments,
+        current: input,
+        source_commit: argumentValue(args, '--source-commit'),
+      })
+    );
+    return;
+  }
   const rendered =
     command === 'attempt'
       ? renderAttemptReceipt(input)
       : command === 'index'
         ? renderReceiptIndex(input)
         : undefined;
-  if (!rendered) throw new Error('Expected attempt or index command');
+  if (!rendered) {
+    throw new Error('Expected build-attempt, build-index, attempt, or index command');
+  }
   const outputIndex = args.indexOf('--output');
   if (outputIndex === -1) process.stdout.write(rendered);
   else writeFileSync(argumentValue(args, '--output'), rendered);

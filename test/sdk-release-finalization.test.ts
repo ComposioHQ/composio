@@ -1,4 +1,5 @@
 import { createHash } from 'node:crypto';
+import { readFileSync } from 'node:fs';
 import { describe, expect, test } from 'bun:test';
 import type {
   AttemptReceipt,
@@ -16,6 +17,13 @@ const SHA = 'a'.repeat(40);
 const ARTIFACT_DIGEST = 'b'.repeat(64);
 const INTEGRITY =
   'sha512-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==';
+const TRUSTED_BOT = 'github-actions[bot]';
+const trustedComment = (body: string) => ({
+  body,
+  author_login: TRUSTED_BOT,
+  author_type: 'Bot' as const,
+  author_association: 'NONE' as const,
+});
 const draft = `---
 title: "SDK Release sdk-2026-07-30"
 date: "2026-07-30"
@@ -307,7 +315,8 @@ describe('verified public merge downstream gates', () => {
           },
         ],
         changed_files: [manifest.changelog.draft_path],
-        existing_markers: [],
+        comments: [],
+        trusted_login: TRUSTED_BOT,
         channel: 'notification',
       })
     ).toEqual({ emit: false, manifest_id: null, marker: null, pull_request: null });
@@ -317,7 +326,8 @@ describe('verified public merge downstream gates', () => {
     const first = planDownstreamEmission({
       pull_requests: [merged],
       changed_files: ['docs/content/changelog/07-30-26.mdx'],
-      existing_markers: [],
+      comments: [],
+      trusted_login: TRUSTED_BOT,
       channel: 'notification',
     });
     expect(first).toMatchObject({ emit: true, manifest_id: manifestId, pull_request: 4010 });
@@ -325,7 +335,8 @@ describe('verified public merge downstream gates', () => {
       planDownstreamEmission({
         pull_requests: [merged],
         changed_files: ['docs/content/changelog/07-30-26.mdx'],
-        existing_markers: [first.marker!],
+        comments: [trustedComment(first.marker!)],
+        trusted_login: TRUSTED_BOT,
         channel: 'notification',
       }).emit
     ).toBe(false);
@@ -333,9 +344,76 @@ describe('verified public merge downstream gates', () => {
       planDownstreamEmission({
         pull_requests: [merged],
         changed_files: ['docs/content/changelog/07-30-26.mdx'],
-        existing_markers: [first.marker!],
+        comments: [trustedComment(first.marker!)],
+        trusted_login: TRUSTED_BOT,
         channel: 'docs',
       }).emit
     ).toBe(true);
+  });
+
+  test('trusts only one exact bot-authored completion marker', () => {
+    const input = {
+      pull_requests: [merged],
+      changed_files: ['docs/content/changelog/07-30-26.mdx'],
+      trusted_login: TRUSTED_BOT,
+      channel: 'notification' as const,
+    };
+    const first = planDownstreamEmission({ ...input, comments: [] });
+    const marker = first.marker!;
+
+    expect(
+      planDownstreamEmission({
+        ...input,
+        comments: [
+          {
+            body: marker,
+            author_login: 'mallory',
+            author_type: 'User',
+            author_association: 'MEMBER',
+          },
+        ],
+      }).emit
+    ).toBe(true);
+    expect(planDownstreamEmission({ ...input, comments: [trustedComment(marker)] }).emit).toBe(
+      false
+    );
+    expect(() =>
+      planDownstreamEmission({
+        ...input,
+        comments: [trustedComment(marker), trustedComment(`${marker}\ncompleted again`)],
+      })
+    ).toThrow('Duplicate trusted downstream completion marker');
+  });
+
+  test('records completion only after downstream side effects succeed', () => {
+    const notificationWorkflow = readFileSync(
+      new URL('../.github/workflows/docs.changelog-notification.yml', import.meta.url),
+      'utf8'
+    );
+    const docsWorkflow = readFileSync(
+      new URL('../.github/workflows/docs.changelog-to-docs.yml', import.meta.url),
+      'utf8'
+    );
+    const notificationSideEffect = notificationWorkflow.indexOf(
+      '      - name: Send Slack Notification'
+    );
+    const notificationCompletion = notificationWorkflow.indexOf(
+      '      - name: Record notification completion'
+    );
+    const docsSideEffect = docsWorkflow.indexOf('      - name: Create PR if docs changed');
+    const docsCompletion = docsWorkflow.indexOf('      - name: Record docs completion');
+
+    expect(notificationSideEffect).toBeGreaterThan(-1);
+    expect(notificationCompletion).toBeGreaterThan(notificationSideEffect);
+    expect(docsSideEffect).toBeGreaterThan(-1);
+    expect(docsCompletion).toBeGreaterThan(docsSideEffect);
+    expect(notificationWorkflow.slice(0, notificationCompletion)).not.toContain('gh pr comment');
+    expect(docsWorkflow.slice(0, docsCompletion)).not.toContain('gh pr comment');
+    expect(notificationWorkflow.slice(notificationCompletion)).toContain(
+      "success() && steps.changed-files.outputs.has_changelog == 'true'"
+    );
+    expect(docsWorkflow.slice(docsCompletion)).toContain(
+      "success() && steps.detect.outputs.found == 'true'"
+    );
   });
 });

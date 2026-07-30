@@ -31,6 +31,15 @@ const NpmPackumentSchema = z
   })
   .passthrough();
 
+const DEFAULT_REGISTRY_REQUEST_TIMEOUT_MS = 30_000;
+
+class RegistryRequestTimeoutError extends Error {
+  constructor(options?: ErrorOptions) {
+    super('Registry request timed out', options);
+    this.name = 'RegistryRequestTimeoutError';
+  }
+}
+
 export class RegistryTransientError extends Error {
   constructor(
     readonly registry: 'npm' | 'pypi',
@@ -53,13 +62,68 @@ export class RegistryResponseError extends Error {
   }
 }
 
+export type RegistryFetchInit = RequestInit & {
+  timeoutMs?: number;
+};
+
+async function fetchWithTimeout(
+  fetcher: typeof globalThis.fetch,
+  input: string | URL,
+  init: RequestInit,
+  timeoutMs: number
+): Promise<Response> {
+  const timeoutController = new AbortController();
+  const signal = init.signal
+    ? AbortSignal.any([init.signal, timeoutController.signal])
+    : timeoutController.signal;
+  let timedOut = false;
+  const timeout = setTimeout(() => {
+    timedOut = true;
+    timeoutController.abort(new RegistryRequestTimeoutError());
+  }, timeoutMs);
+  let rejectForAbort: (() => void) | undefined;
+  const aborted = new Promise<never>((_, reject) => {
+    rejectForAbort = () => reject(signal.reason);
+    if (signal.aborted) {
+      rejectForAbort();
+    } else {
+      signal.addEventListener('abort', rejectForAbort, { once: true });
+    }
+  });
+
+  try {
+    return await Promise.race([
+      fetcher(input, {
+        ...init,
+        signal,
+      }),
+      aborted,
+    ]);
+  } catch (error) {
+    if (timedOut) {
+      throw new RegistryRequestTimeoutError({ cause: error });
+    }
+    throw error;
+  } finally {
+    clearTimeout(timeout);
+    if (rejectForAbort) {
+      signal.removeEventListener('abort', rejectForAbort);
+    }
+  }
+}
+
 export async function registryFetch(
   registry: 'npm' | 'pypi',
   fetcher: typeof globalThis.fetch,
-  input: string | URL
+  input: string | URL,
+  init: RegistryFetchInit = {}
 ): Promise<Response> {
+  const { timeoutMs = DEFAULT_REGISTRY_REQUEST_TIMEOUT_MS, ...requestInit } = init;
+  if (!Number.isInteger(timeoutMs) || timeoutMs < 1) {
+    throw new Error('Registry request timeout must be a positive integer');
+  }
   try {
-    return await fetcher(input);
+    return await fetchWithTimeout(fetcher, input, requestInit, timeoutMs);
   } catch {
     throw new RegistryTransientError(registry);
   }

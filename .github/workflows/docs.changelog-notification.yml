@@ -9,6 +9,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: changelog-notification-${{ github.event.after }}
+  cancel-in-progress: false
+
 jobs:
   notify-changelog:
     name: Send Changelog Notification
@@ -62,14 +66,20 @@ jobs:
              if length == 1 then .[0].number else "" end' associated-prs.json)
           if [[ -n "$pr_number" ]]; then
             gh api "repos/$GITHUB_REPOSITORY/issues/$pr_number/comments" \
-              --paginate --slurp | jq '[add[].body | split("\n")[0]]' > existing-markers.json
+              --paginate --slurp | jq '[add[] | {
+                body:(.body // ""),
+                author_login:(.user.login // ""),
+                author_type:(.user.type // "Unknown"),
+                author_association:(.author_association // "NONE")
+              }]' > existing-comments.json
           else
-            echo '[]' > existing-markers.json
+            echo '[]' > existing-comments.json
           fi
           bun .github/scripts/sdk-release/finalize-changelog.ts downstream \
             --pull-requests finalization-prs.json \
             --changed-files changed-files.json \
-            --existing-markers existing-markers.json \
+            --comments existing-comments.json \
+            --trusted-login 'github-actions[bot]' \
             --channel notification \
             --output downstream-plan.json
           if [[ "$(jq -r .emit downstream-plan.json)" != "true" ]]; then
@@ -80,11 +90,10 @@ jobs:
           pr_number=$(jq -r .pull_request downstream-plan.json)
           manifest_id=$(jq -r .manifest_id downstream-plan.json)
           marker=$(jq -r .marker downstream-plan.json)
-          gh pr comment "$pr_number" --body "$marker
-
-          Customer changelog notification claimed by workflow run $GITHUB_RUN_ID. This manifest will not emit a second Slack message."
           echo "changelog_file=$CHANGELOG_FILE" >> "$GITHUB_OUTPUT"
           echo "manifest_id=$manifest_id" >> "$GITHUB_OUTPUT"
+          echo "marker=$marker" >> "$GITHUB_OUTPUT"
+          echo "pull_request=$pr_number" >> "$GITHUB_OUTPUT"
           echo "has_changelog=true" >> "$GITHUB_OUTPUT"
 
       - name: Extract Changelog Metadata
@@ -140,3 +149,14 @@ jobs:
           webhook: ${{ secrets.SLACK_CUSTOMER_COMMS_WEBHOOK_URL }}
           webhook-type: incoming-webhook
           payload: ${{ steps.extract-metadata.outputs.slack_payload }}
+
+      - name: Record notification completion
+        if: ${{ success() && steps.changed-files.outputs.has_changelog == 'true' }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          MARKER: ${{ steps.changed-files.outputs.marker }}
+          PR_NUMBER: ${{ steps.changed-files.outputs.pull_request }}
+        run: |
+          gh pr comment "$PR_NUMBER" --body "$MARKER
+
+          Customer changelog notification completed by workflow run $GITHUB_RUN_ID."

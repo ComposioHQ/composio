@@ -1,0 +1,151 @@
+name: SDK Release Preparation
+
+on:
+  workflow_call:
+    inputs:
+      release_id:
+        required: true
+        type: string
+      scope:
+        required: true
+        type: string
+      python_version:
+        required: false
+        type: string
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  prepare:
+    name: Build primary and verification artifact sets
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Checkout primary preparation
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: next
+          fetch-depth: 0
+          path: primary
+
+      - name: Checkout verification-only preparation
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: next
+          fetch-depth: 0
+          path: verification
+
+      - name: Setup Node.js, pnpm, Bun
+        uses: ./primary/.github/actions/setup-node-pnpm-bun
+        with:
+          node-version: '24.17.0'
+
+      - name: Setup Python and uv
+        uses: ./primary/.github/actions/setup-python-uv
+
+      - name: Prepare both clean worktrees and exact release range
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_SCOPE: ${{ inputs.scope }}
+          PYTHON_VERSION: ${{ inputs.python_version }}
+        run: |
+          set -euo pipefail
+          git -C primary rev-parse HEAD > primary-base-commit.txt
+          if [[ "$RELEASE_SCOPE" != "python" ]]; then
+            bun --eval '
+              import { readdirSync, readFileSync } from "node:fs";
+              const changesets = readdirSync("primary/.changeset")
+                .filter(name => name.endsWith(".md") && name !== "README.md")
+                .map(name => {
+                  const bytes = readFileSync(`primary/.changeset/${name}`, "utf8");
+                  return { id: name.slice(0, -3), summary: bytes.replace(/^---[\s\S]*?---\s*/, "").trim() };
+                });
+              await Bun.write("changelog-changesets.json", JSON.stringify(changesets, null, 2) + "\n");
+            '
+          else
+            printf '[]\n' > changelog-changesets.json
+          fi
+          bun primary/.github/scripts/sdk-release/collect-release-range.ts \
+            --repository-root primary \
+            --repository "$GITHUB_REPOSITORY" \
+            --base-commit "$(tr -d '\n' < primary-base-commit.txt)" \
+            --scope "$RELEASE_SCOPE" \
+            --output changelog-pull-requests.json \
+            --range-output changelog-range.json
+          for worktree in primary verification; do
+            (
+              cd "$worktree"
+              pnpm install --frozen-lockfile
+              args=(--scope "$RELEASE_SCOPE")
+              if [[ -n "$PYTHON_VERSION" ]]; then
+                args+=(--python-version "$PYTHON_VERSION")
+              fi
+              bun .github/scripts/sdk-release/prepare.ts "${args[@]}" > "../$worktree-versions.json"
+            )
+          done
+          diff -u <(jq -S . primary-versions.json) <(jq -S . verification-versions.json)
+
+      - name: Build primary and verification-only artifacts
+        run: |
+          set -euo pipefail
+          SOURCE_DATE_EPOCH=$(git -C primary show -s --format=%ct HEAD)
+          export SOURCE_DATE_EPOCH TZ=UTC LC_ALL=C
+          bash primary/.github/scripts/sdk-release/build-artifacts.sh \
+            primary primary-versions.json primary-artifacts primary-artifacts.json
+          bash primary/.github/scripts/sdk-release/build-artifacts.sh \
+            verification verification-versions.json verification-artifacts verification-artifacts.json
+          bun primary/.github/scripts/sdk-release/update-preparation-pr.ts compare-artifacts \
+            --primary primary-artifacts.json \
+            --verification verification-artifacts.json \
+            --output reproducible-artifacts.json
+          rm -rf verification-artifacts verification-artifacts.json
+
+      - name: Capture deterministic writer handoff
+        run: |
+          set -euo pipefail
+          (
+            cd primary
+            git diff --binary
+          ) > preparation.patch
+          cp primary-versions.json versions.json
+          cp reproducible-artifacts.json artifacts.json
+          bun primary/.github/scripts/sdk-release/prepare-handoff.ts \
+            --worktree primary \
+            --release-id "${{ inputs.release_id }}" \
+            --date "$(date -u +%Y-%m-%d)" \
+            --versions versions.json \
+            --changesets changelog-changesets.json \
+            --pull-requests changelog-pull-requests.json \
+            --legacy-output legacy-packages.json \
+            --changelog-output changelog-input.json
+
+      - name: Upload primary preparation handoff
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: sdk-release-primary-${{ inputs.release_id }}-${{ github.run_attempt }}
+          if-no-files-found: error
+          retention-days: 30
+          path: |
+            artifacts.json
+            changelog-input.json
+            changelog-range.json
+            legacy-packages.json
+            preparation.patch
+            primary-base-commit.txt
+            primary-artifacts/
+            versions.json
+
+      - name: Reproducibility summary
+        run: |
+          {
+            echo "## Reproducible primary SDK artifacts"
+            echo
+            echo "| Ecosystem | Package | File | SHA-256 |"
+            echo "| --- | --- | --- | --- |"
+            jq -r '.[] | "| \(.ecosystem) | `\(.package_name)` | `\(.filename)` | `\(.sha256)` |"' artifacts.json
+            echo
+            echo "Release range: \`$(jq -r .boundary_commit changelog-range.json)..$(jq -r .base_commit changelog-range.json)\`"
+            echo "Verification artifacts were discarded after exact digest comparison."
+          } >> "$GITHUB_STEP_SUMMARY"

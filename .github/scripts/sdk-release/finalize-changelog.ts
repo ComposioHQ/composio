@@ -31,6 +31,23 @@ const PullRequestSchema = z
       .nullable(),
   })
   .strict();
+const DownstreamCommentSchema = z
+  .object({
+    body: z.string(),
+    author_login: z.string(),
+    author_type: z.enum(['Bot', 'User', 'Organization', 'Mannequin', 'Unknown']),
+    author_association: z.enum([
+      'COLLABORATOR',
+      'CONTRIBUTOR',
+      'FIRST_TIMER',
+      'FIRST_TIME_CONTRIBUTOR',
+      'MANNEQUIN',
+      'MEMBER',
+      'NONE',
+      'OWNER',
+    ]),
+  })
+  .strict();
 
 export interface ChangelogFinalizationPlan {
   state: 'create_pr' | 'update_pr' | 'already_finalized';
@@ -286,7 +303,8 @@ export function planChangelogFinalization(options: {
 export function planDownstreamEmission(options: {
   pull_requests: Array<z.infer<typeof PullRequestSchema>>;
   changed_files: string[];
-  existing_markers: string[];
+  comments: Array<z.infer<typeof DownstreamCommentSchema>>;
+  trusted_login: string;
   channel: 'docs' | 'notification';
 }):
   | { emit: false; manifest_id: null; marker: null; pull_request: null }
@@ -319,8 +337,20 @@ export function planDownstreamEmission(options: {
     matching[0]!.body
   )![1]!;
   const marker = `<!-- sdk-release-${options.channel}:${manifestId} -->`;
+  const trustedLogin = z.string().min(1).parse(options.trusted_login);
+  const trustedCompletions = options.comments
+    .map(comment => DownstreamCommentSchema.parse(comment))
+    .filter(
+      comment =>
+        comment.author_login === trustedLogin &&
+        comment.author_type === 'Bot' &&
+        comment.body.split(/\r?\n/, 1)[0] === marker
+    );
+  if (trustedCompletions.length > 1) {
+    throw new Error(`Duplicate trusted downstream completion marker: ${marker}`);
+  }
   return {
-    emit: !options.existing_markers.includes(marker),
+    emit: trustedCompletions.length === 0,
     manifest_id: manifestId,
     marker,
     pull_request: matching[0]!.number,
@@ -353,9 +383,8 @@ async function main(args: string[]): Promise<void> {
         ? planDownstreamEmission({
             pull_requests: JSON.parse(readFileSync(argumentValue(args, '--pull-requests'), 'utf8')),
             changed_files: JSON.parse(readFileSync(argumentValue(args, '--changed-files'), 'utf8')),
-            existing_markers: JSON.parse(
-              readFileSync(argumentValue(args, '--existing-markers'), 'utf8')
-            ),
+            comments: JSON.parse(readFileSync(argumentValue(args, '--comments'), 'utf8')),
+            trusted_login: argumentValue(args, '--trusted-login'),
             channel: z.enum(['docs', 'notification']).parse(argumentValue(args, '--channel')),
           })
         : undefined;

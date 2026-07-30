@@ -50,6 +50,34 @@ const sdkReleaseWorkflow = readFileSync(
   new URL('../.github/workflows/sdk.release.yml', import.meta.url),
   'utf8'
 );
+const sdkReleasePrepareWorkflow = readFileSync(
+  new URL('../.github/workflows/sdk.release.prepare.yml', import.meta.url),
+  'utf8'
+);
+const sdkReleaseChangelogWorkflow = readFileSync(
+  new URL('../.github/workflows/sdk.release.changelog.yml', import.meta.url),
+  'utf8'
+);
+const sdkReleaseFinalizationWorkflow = readFileSync(
+  new URL('../.github/workflows/sdk.release.finalize-changelog.yml', import.meta.url),
+  'utf8'
+);
+const sdkReleaseBuildArtifacts = readFileSync(
+  new URL('../.github/scripts/sdk-release/build-artifacts.sh', import.meta.url),
+  'utf8'
+);
+const sdkReleaseFinalizeTags = readFileSync(
+  new URL('../.github/scripts/sdk-release/finalize-tags.ts', import.meta.url),
+  'utf8'
+);
+const sdkReleaseSurface = [
+  sdkReleaseWorkflow,
+  sdkReleasePrepareWorkflow,
+  sdkReleaseChangelogWorkflow,
+  sdkReleaseFinalizationWorkflow,
+  sdkReleaseBuildArtifacts,
+  sdkReleaseFinalizeTags,
+].join('\n');
 const changelogDocsWorkflow = readFileSync(
   new URL('../.github/workflows/docs.changelog-to-docs.yml', import.meta.url),
   'utf8'
@@ -68,7 +96,16 @@ const sdkReleaseJob = (name: string): string => {
   if (start === -1) throw new Error(`sdk.release.yml is missing job ${name}`);
   const remainder = sdkReleaseWorkflow.slice(start + marker.length);
   const next = /\n  (?! )[A-Za-z0-9_-]+:\n/.exec(remainder);
-  return sdkReleaseWorkflow.slice(start, next ? start + marker.length + next.index : undefined);
+  const block = sdkReleaseWorkflow.slice(
+    start,
+    next ? start + marker.length + next.index : undefined
+  );
+  if (name === 'prepare') return `${block}\n${sdkReleasePrepareWorkflow}`;
+  if (name === 'generate-changelog') return `${block}\n${sdkReleaseChangelogWorkflow}`;
+  if (name === 'finalize-public-changelog') {
+    return `${block}\n${sdkReleaseFinalizationWorkflow}`;
+  }
+  return block;
 };
 const pythonExactVersionSetter = readFileSync(
   new URL('../python/scripts/set-release-version.py', import.meta.url),
@@ -335,6 +372,24 @@ if (
 ) {
   throw new Error('SDK release registry writers must remain hard-disabled by repository variable');
 }
+if (sdkReleaseWorkflow.split('\n').length > 1000) {
+  throw new Error('Top-level SDK coordinator must keep phase implementation below 1,000 lines');
+}
+for (const reviewedInvariant of [
+  'collect-release-range.ts',
+  '--range-output changelog-range.json',
+  'collect-release-state.ts',
+  'RELEASE_BOT_LOGIN',
+  'build-attempt',
+  'plan-patch',
+  'continue-on-error: true',
+  'Rebuild expired transport artifacts from sealed source',
+  'build-artifacts.sh',
+]) {
+  if (!sdkReleaseSurface.includes(reviewedInvariant)) {
+    throw new Error(`Reviewed SDK release safety must preserve ${reviewedInvariant}`);
+  }
+}
 for (const forbiddenPublisher of ['changeset publish', 'PYPI_PASSWORD', 'NPM_TOKEN']) {
   if (sdkReleaseWorkflow.includes(forbiddenPublisher)) {
     throw new Error(`SDK coordinator must not contain legacy publisher ${forbiddenPublisher}`);
@@ -351,6 +406,24 @@ if (
   !sdkReleaseWorkflow.includes('RELEASE_BOT_APP_PRIVATE_KEY')
 ) {
   throw new Error('SDK release preparation writer must use the short-lived release GitHub App');
+}
+for (const writerJob of [
+  sdkReleaseJob('write-preparation'),
+  sdkReleaseJob('finalize-release-attempt'),
+  sdkReleaseJob('finalize-public-changelog'),
+]) {
+  const install = writerJob.indexOf('pnpm install --frozen-lockfile');
+  const token = writerJob.indexOf('actions/create-github-app-token@');
+  if (
+    install === -1 ||
+    token === -1 ||
+    install > token ||
+    !writerJob.includes('persist-credentials: false')
+  ) {
+    throw new Error(
+      'Writer jobs must install before minting App credentials and disable checkout persistence'
+    );
+  }
 }
 if (
   sdkReleaseWorkflow.includes('git push --force') ||
@@ -374,14 +447,14 @@ if (
   );
 }
 if (
-  !sdkReleaseWorkflow.includes('compare-artifacts') ||
-  !sdkReleaseWorkflow.includes('rm -rf verification-artifacts')
+  !sdkReleaseSurface.includes('compare-artifacts') ||
+  !sdkReleaseSurface.includes('rm -rf verification-artifacts')
 ) {
   throw new Error('SDK preparation must compare and discard its verification-only artifact set');
 }
 if (
-  !sdkReleaseWorkflow.includes('primary-base-commit.txt') ||
-  !sdkReleaseWorkflow.includes(
+  !sdkReleaseSurface.includes('primary-base-commit.txt') ||
+  !sdkReleaseSurface.includes(
     'const primaryBaseCommit = readFileSync("handoff/primary-base-commit.txt", "utf8").trim()'
   ) ||
   !sdkReleaseWorkflow.includes('base_commit: primaryBaseCommit')
@@ -400,13 +473,13 @@ for (const retryInvariant of [
   'existing-head.txt',
   'git apply --reverse --check',
 ]) {
-  if (!sdkReleaseWorkflow.includes(retryInvariant)) {
+  if (!sdkReleaseSurface.includes(retryInvariant)) {
     throw new Error(`SDK preparation retry must preserve ${retryInvariant}`);
   }
 }
 if (
-  !sdkReleaseWorkflow.includes('legacy-packages.json') ||
-  sdkReleaseWorkflow.includes('const legacy = manifest.packages')
+  !sdkReleaseSurface.includes('legacy-packages.json') ||
+  sdkReleaseSurface.includes('const legacy = manifest.packages')
 ) {
   throw new Error('SDK shadow receipt must use an independent legacy outcome handoff');
 }
@@ -423,8 +496,8 @@ for (const reconciliationInvariant of [
   }
 }
 if (
-  !sdkReleaseWorkflow.includes('integrity="sha512-$(openssl dgst -sha512 -binary') ||
-  !sdkReleaseWorkflow.includes('integrity:$integrity')
+  !sdkReleaseSurface.includes('integrity="sha512-$(openssl dgst -sha512 -binary') ||
+  !sdkReleaseSurface.includes('integrity:$integrity')
 ) {
   throw new Error('SDK primary npm artifacts must seal SHA-512 Subresource Integrity');
 }
@@ -478,7 +551,7 @@ for (const protectedInvariant of [
   '--force-with-lease=',
   'autoMergeAllowed',
 ]) {
-  if (!sdkReleaseWorkflow.includes(protectedInvariant)) {
+  if (!sdkReleaseSurface.includes(protectedInvariant)) {
     throw new Error(`Protected SDK publishing must preserve ${protectedInvariant}`);
   }
 }
@@ -533,7 +606,7 @@ const tsTestWorkflow = readFileSync(
 );
 for (const coordinatorPath of [
   "'.github/scripts/sdk-release/**'",
-  "'.github/workflows/sdk.release.yml'",
+  "'.github/workflows/sdk.release*.yml'",
   "'test/sdk-release-*.test.ts'",
 ]) {
   if ((tsTestWorkflow.match(new RegExp(escapeRegExp(coordinatorPath), 'g')) ?? []).length !== 2) {

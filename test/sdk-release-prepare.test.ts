@@ -11,6 +11,10 @@ import {
 import { tmpdir } from 'node:os';
 import { dirname, join, relative } from 'node:path';
 import { spawnSync } from 'node:child_process';
+import {
+  collectReleaseRangePullRequests,
+  resolveReleaseRange,
+} from '../.github/scripts/sdk-release/collect-release-range';
 import { prepareSdkVersions, type CommandInvocation } from '../.github/scripts/sdk-release/prepare';
 
 const repositoryRoot = new URL('..', import.meta.url).pathname;
@@ -22,6 +26,81 @@ afterEach(() => {
   for (const fixture of fixtures.splice(0)) {
     rmSync(fixture, { recursive: true, force: true });
   }
+});
+
+describe('exact changelog release range', () => {
+  test.each([
+    ['typescript', ['typescript'], 'b'.repeat(40)],
+    ['python', ['python'], 'c'.repeat(40)],
+    ['combined', ['typescript', 'python'], 'd'.repeat(40)],
+  ] as const)(
+    'resolves %s from the selected merged release anchors',
+    (scope, ecosystems, boundary) => {
+      const root = fixtureRoot('sdk-release-range-');
+      const base = 'a'.repeat(40);
+      const run = (_command: string, args: string[]): string => {
+        const joined = args.join(' ');
+        if (joined.includes('refs/tags/@composio/core@*')) return '@composio/core@0.14.0';
+        if (joined.includes('refs/tags/py@*')) return 'py@0.18.0';
+        if (joined === 'rev-parse @composio/core@0.14.0^{commit}') return 'b'.repeat(40);
+        if (joined === 'rev-parse py@0.18.0^{commit}') return 'c'.repeat(40);
+        if (args[0] === 'merge-base' && args[1] === '--octopus') return 'd'.repeat(40);
+        if (args[0] === 'merge-base' && args[1] === '--is-ancestor') return '';
+        if (args[0] === 'rev-list') return `${'e'.repeat(40)}\n${'f'.repeat(40)}`;
+        throw new Error(`Unexpected command: ${joined}`);
+      };
+      const range = resolveReleaseRange({
+        repository_root: root,
+        base_commit: base,
+        scope,
+        run,
+      });
+      expect(range.boundary_commit).toBe(boundary);
+      expect(range.anchors.map(anchor => anchor.ecosystem)).toEqual([...ecosystems]);
+      expect(range.commits).toEqual(['e'.repeat(40), 'f'.repeat(40)]);
+    }
+  );
+
+  test('deduplicates only next-targeted merged PRs associated with range commits', () => {
+    const root = fixtureRoot('sdk-release-pr-range-');
+    const calls: string[] = [];
+    const pull = {
+      number: 4001,
+      title: 'Release fix',
+      body: 'Verified source',
+      html_url: 'https://github.com/ComposioHQ/composio/pull/4001',
+      merged_at: '2026-07-29T10:00:00Z',
+      merge_commit_sha: 'f'.repeat(40),
+      base: { ref: 'next' },
+    };
+    const pullRequests = collectReleaseRangePullRequests({
+      repository_root: root,
+      repository: 'ComposioHQ/composio',
+      range: {
+        base_commit: 'a'.repeat(40),
+        boundary_commit: 'b'.repeat(40),
+        anchors: [
+          { ecosystem: 'typescript', tag: '@composio/core@0.14.0', commit: 'b'.repeat(40) },
+        ],
+        commits: ['e'.repeat(40), 'f'.repeat(40)],
+      },
+      run: (_command, args) => {
+        calls.push(args.at(-1)!);
+        return JSON.stringify([pull, { ...pull, number: 4002, base: { ref: 'main' } }]);
+      },
+    });
+    expect(pullRequests).toEqual([
+      {
+        number: 4001,
+        title: 'Release fix',
+        body: 'Verified source',
+        url: 'https://github.com/ComposioHQ/composio/pull/4001',
+        merged_at: '2026-07-29T10:00:00Z',
+        merge_commit_sha: 'f'.repeat(40),
+      },
+    ]);
+    expect(calls).toHaveLength(2);
+  });
 });
 
 function fixtureRoot(prefix: string): string {
