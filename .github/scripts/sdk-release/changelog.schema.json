@@ -1,0 +1,126 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "summary", "sections"],
+  "properties": {
+    "schema_version": {
+      "const": "sdk-release-changelog/v1"
+    },
+    "summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["text", "source_ids"],
+      "properties": {
+        "text": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 600
+        },
+        "source_ids": {
+          "$ref": "#/$defs/sourceIds"
+        }
+      }
+    },
+    "sections": {
+      "type": "array",
+      "maxItems": 4,
+      "items": {
+        "anyOf": [
+          {
+            "$ref": "#/$defs/ordinarySection"
+          },
+          {
+            "$ref": "#/$defs/breakingSection"
+          }
+        ]
+      }
+    }
+  },
+  "$defs": {
+    "sourceIds": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 8,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 80
+      }
+    },
+    "claim": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["text", "source_ids"],
+      "properties": {
+        "text": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 400
+        },
+        "source_ids": {
+          "$ref": "#/$defs/sourceIds"
+        }
+      }
+    },
+    "breakingClaim": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["text", "source_ids", "migration", "migration_source_ids"],
+      "properties": {
+        "text": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 400
+        },
+        "source_ids": {
+          "$ref": "#/$defs/sourceIds"
+        },
+        "migration": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 600
+        },
+        "migration_source_ids": {
+          "$ref": "#/$defs/sourceIds"
+        }
+      }
+    },
+    "ordinarySection": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "claims"],
+      "properties": {
+        "kind": {
+          "enum": ["whats_new", "improvements", "bug_fixes"]
+        },
+        "claims": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 12,
+          "items": {
+            "$ref": "#/$defs/claim"
+          }
+        }
+      }
+    },
+    "breakingSection": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "claims"],
+      "properties": {
+        "kind": {
+          "const": "breaking_changes"
+        },
+        "claims": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 12,
+          "items": {
+            "$ref": "#/$defs/breakingClaim"
+          }
+        }
+      }
+    }
+  }
+}

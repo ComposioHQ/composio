@@ -267,11 +267,15 @@ if (packageJson.scripts?.['validate:changesets'] !== 'node ts/scripts/validate-c
   throw new Error('validate:changesets must use the ignored-package guard');
 }
 
-if (
-  packageJson.scripts?.['sdk-release:test'] !==
-  'bun test test/sdk-release-contract.test.ts test/sdk-release-prepare.test.ts'
-) {
-  throw new Error('sdk-release:test must include deterministic version preparation coverage');
+const sdkReleaseTestScript = packageJson.scripts?.['sdk-release:test'] ?? '';
+for (const requiredSuite of [
+  'test/sdk-release-contract.test.ts',
+  'test/sdk-release-prepare.test.ts',
+  'test/sdk-release-changelog.test.ts',
+]) {
+  if (!sdkReleaseTestScript.includes(requiredSuite)) {
+    throw new Error(`sdk-release:test must include ${requiredSuite}`);
+  }
 }
 
 if (

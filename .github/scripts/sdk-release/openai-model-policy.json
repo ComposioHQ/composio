@@ -1,0 +1,9 @@
+{
+  "schema_version": "sdk-release-openai-model-policy/v1",
+  "family": "gpt-5.5",
+  "allowed_snapshots": ["gpt-5.5-2026-04-23"],
+  "selected_snapshot": "gpt-5.5-2026-04-23",
+  "endpoint": "/v1/responses",
+  "reasoning_effort": "low",
+  "max_output_tokens": 2000
+}

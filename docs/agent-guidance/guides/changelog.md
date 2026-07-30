@@ -57,6 +57,22 @@ Use the released version in the final table column. The Python release guard rea
 3. **Use `###` for sections** — Content headings start at h3
 4. **No emojis** — No checkmarks, warning symbols, etc.
 
+## SDK Release Drafts
+
+The SDK release coordinator generates review drafts under
+`.github/sdk-release/drafts/<release_id>.mdx`. These files are outside the
+Fumadocs changelog collection and are not public.
+
+The model returns only source-cited facts. Deterministic release code owns
+frontmatter, the released-version table, section order, MDX escaping, and both
+draft and final filenames. Reviewers may edit a draft in the preparation pull
+request; ordinary retries must preserve those edits. A reset is explicit and
+invalidates the earlier review.
+
+Only after every selected package is verified in its registry may finalization
+copy the exact reviewed draft bytes into `docs/content/changelog/`. Do not move,
+rename, or hand-publish a coordinator draft before that receipt exists.
+
 ## Change Types
 
 | Type | How to Format |
