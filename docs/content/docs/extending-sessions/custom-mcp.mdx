@@ -108,23 +108,66 @@ Composio adds the `CUSTOM_` prefix and returns the normalized toolkit slug:
 }
 ```
 
+`toolkit_config` accepts only `name`, `app_url`, and `auth_schemes`. Any other key fails validation.
+
+| Field | Rules |
+| --- | --- |
+| `slug` | Uppercased. `A-Z`, `0-9`, and `_` only; dashes and spaces are rejected. The `CUSTOM_` prefix is always added, so don't include it yourself — sending `CUSTOM_ACME` produces `CUSTOM_CUSTOM_ACME`. |
+| `name` | Free-form display name shown in the dashboard and toolkit listings. Independent of the slug. |
+
 <Callout type="warn" title="This endpoint only registers new toolkits">
 Despite `upsert` in the route name, this endpoint does not update or replace an existing toolkit. If the slug already exists, the request returns `409 Conflict`.
 
 To change the server URL, name, or authentication scheme, [delete the existing toolkit](#delete-or-replace-a-custom-mcp), then register it again. Deletion also revokes and removes the toolkit's auth configurations and connected accounts.
 </Callout>
 
-## Complete setup for your authentication mode
-
-Choose the mode that matches your server, then complete any required connection:
-
-| Authentication | Use it when | After registration |
-| --- | --- | --- |
-| No auth | The server accepts requests without credentials. | No connection is required. Initial sync runs automatically. |
-| API key | Each connected account supplies an API key. | Create an active connection. Initial sync then starts in the background. |
-| DCR OAuth | The server supports OAuth Dynamic Client Registration. | Authorize a connection. Initial sync starts when it becomes active. |
-
 For DCR OAuth, the server must support the standard authorization-code flow. Other OAuth grant types aren't supported.
+
+## Connect an account
+
+API-key and DCR OAuth toolkits need an active connected account before their tools can sync. Registration doesn't create one, so authorize the `CUSTOM_*` slug the same way you would any other toolkit:
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tab value="Python">
+```python
+session = composio.create(user_id="user_123")
+
+connection_request = session.authorize("CUSTOM_ACME")
+
+print(connection_request.redirect_url)
+# https://connect.composio.dev/link/lk_abc123
+
+connected_account = connection_request.wait_for_connection(60000)
+print(f"Connected: {connected_account.id}")
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+// ---cut---
+const session = await composio.create("user_123");
+
+const connectionRequest = await session.authorize("CUSTOM_ACME");
+
+console.log(connectionRequest.redirectUrl);
+// https://connect.composio.dev/link/lk_abc123
+
+const connectedAccount = await connectionRequest.waitForConnection(60000);
+console.log(`Connected: ${connectedAccount.id}`);
+```
+</Tab>
+</Tabs>
+
+Redirect the user to the [Connect Link](/docs/tools-direct/authenticating-tools#hosted-authentication-connect-link). DCR OAuth servers show the provider's consent screen; API-key servers prompt for the key that replaces `{{generic_api_key}}`. The account becomes `ACTIVE` when they finish, and the initial sync starts.
+
+Save the returned connected account ID — [sync](#sync-and-resync-tools) and [session config](#use-an-authenticated-server) both need it.
+
+See [Manual auth management](/docs/manually-authenticating) for pre-authentication, custom callback URLs, and building your own connections UI.
+
+<Callout type="info" title="Headless setup">
+`authorize()` returns a link a person has to open. For an API-key server with no browser available — CI, scripted setup — create the account directly through the [connected accounts API](/reference/api-reference/connected-accounts) instead, passing the key in the connection state. It activates immediately with no redirect. The same API also looks up an existing account ID when the original `ConnectionRequest` is gone.
+</Callout>
 
 ## Sync and resync tools
 
@@ -175,8 +218,6 @@ Call the sync endpoint only if the initial sync fails or the server's tool defin
 A Custom MCP toolkit can contain at most 500 tools. If the server returns more than 500, the sync fails without importing a partial tool list. The last successful version stays available.
 
 ## Delete or replace a Custom MCP
-
-The registration endpoint cannot update an existing toolkit. To replace its URL, name, or authentication scheme, delete the toolkit and register it again.
 
 Call `DELETE /api/v3.1/custom/toolkits/{slug}`:
 
@@ -276,16 +317,7 @@ const session = await composio.sessions.create("user_123", {
 </Tab>
 </Tabs>
 
-The pinned account must belong to the custom toolkit and be active. Explicit selection ensures tool calls use its credentials.
-
-## What you manage and what Composio handles
-
-| Area | You manage | Composio handles |
-| --- | --- | --- |
-| Server | Deploying and operating the remote MCP server at a public HTTPS URL. | Connecting to the URL for tool discovery and execution. Composio does not host the server. |
-| Tools | Implementing tools and deciding when later definition changes are ready to sync. | Starting the initial sync, importing tool schemas, versioning them, and exposing them to sessions. |
-| Authentication | Implementing the server's API-key or DCR OAuth behavior and completing each required connection. | Storing connected-account credentials and sending them when discovering or calling tools. |
-| Lifecycle | Choosing when to resync, delete, or replace the toolkit. | Providing the project-scoped registration, sync, and deletion operations. |
+The pinned account must belong to the custom toolkit and be active. See [Managing Multiple Connected Accounts](/docs/managing-multiple-connected-accounts) for selection rules.
 
 ## Technical behavior
 
@@ -296,41 +328,26 @@ Each registered server becomes a custom toolkit scoped to your project:
 - Its tools are available through Tool Router search and toolkit-filtered tool listing.
 - Tool execution is proxied to your MCP server with the selected connected account's credentials.
 
-Custom toolkits use dated registry versions. The v3.1 tools API selects the latest version by default. If you use v3 directly, select the latest version for each operation:
+Use the v3.1 tools API, which resolves a custom toolkit's current tools by default.
 
-| v3 operation | Select the latest version |
+On v3 the default resolves to a base version that holds no custom tools, so a listing returns `total_items: 0` unless you ask for the latest explicitly:
+
+| v3 operation | Parameter |
 | --- | --- |
-| List tools | Add the `toolkit_versions=latest` query parameter. |
-| Retrieve one tool | Add the `version=latest` query parameter. |
-| Execute one tool | Set `"version": "latest"` in the request body. |
+| List tools | `toolkit_versions=latest` query parameter |
+| Retrieve one tool | `version=latest` query parameter |
+| Execute one tool | `"version": "latest"` in the request body |
 
-See [Toolkit Versioning](/docs/tools-direct/toolkit-versioning) for more examples.
+These are REST parameters. The SDK's `tools.execute()` rejects `latest` for manual execution and needs the dated version from `meta.version` on `GET /api/v3.1/toolkits/{slug}`.
 
 ## Known gaps
 
-<Accordions>
-<Accordion title="Setup and lifecycle">
+Beyond the constraints described above:
 
-- **API-only setup:** The SDKs don't expose registration, sync, update, or deletion methods yet. Use the lifecycle endpoints on this page, then use the toolkit slug through the SDK.
-- **Dashboard coming soon:** Custom MCP management isn't available in the dashboard yet.
-- **Remote servers only:** Composio doesn't host your server. Deploy it at a public HTTPS endpoint; local and STDIO-only servers aren't supported.
-- **Insert-only registration:** The `upsert` endpoint returns `409 Conflict` for an existing slug. Delete the toolkit, then register it again. Deletion also removes its auth configurations and connected accounts.
-- **500-tool limit:** Split larger servers into smaller MCP servers. If a later sync exceeds the limit, the last successful version stays available.
-
-</Accordion>
-<Accordion title="Sync and authentication">
-
-- **No continuous sync:** Auto-sync only populates an empty toolkit during registration or the first active connection. If it fails, call the sync endpoint with an active connected account. Sync again whenever tool definitions change.
+- **Remote servers only:** Composio doesn't host your server. Local and STDIO-only servers aren't supported.
 - **API-key validation is limited:** Setup checks that a key was provided, not that the remote server accepts it. Run a safe tool after connecting to verify the credential end to end.
-
-</Accordion>
-<Accordion title="Sessions and tool APIs">
-
-- **Select authenticated accounts explicitly:** Custom MCP sessions don't reliably match a connected account automatically. Pass its ID through `connected_accounts` in Python or `connectedAccounts` in TypeScript.
-- **Prefer the v3.1 tools API:** The v3 tools API pins a default version that doesn't contain custom tools. If you must use v3, explicitly select `latest` as described above.
-
-</Accordion>
-</Accordions>
+- **No sync-status field:** For a no-auth server, the initial sync runs in the background during registration and nothing reports when it finishes. Poll `GET /api/v3.1/toolkits/{slug}` until `meta.tools_count` is non-zero.
+- **DCR registration can fail against multi-scope servers:** When the auth config doesn't set `scopes`, Composio requests every scope the server's discovery document advertises. Servers that validate the OAuth-standard space-delimited `scope` value strictly may reject the request and surface `500 Failed to register dynamic client`. As a workaround, register a client with the server yourself and pass its `client_id` and `client_secret` as [auth config](/reference/api-reference/auth-configs) credentials, which skips Composio's dynamic registration.
 
 ## Related guides
 
