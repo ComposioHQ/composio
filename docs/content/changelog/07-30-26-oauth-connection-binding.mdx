@@ -5,8 +5,9 @@ date: "2026-07-30"
 
 Composio now offers two controls that tie an OAuth authorization to the person who started it.
 **Same-browser binding** requires a Connect Link for a Composio managed app to be finished in the
-browser that started it. **Callback identity verification** lets you hand each OAuth return to your
-own server, so you confirm which of your users is present before the connection activates.
+browser that started it. **Callback identity verification** routes each OAuth return through your
+own server, which names the user it has signed in; Composio then activates the connection only if
+that matches the user the flow was started for.
 
 Neither control changes anything for existing connections, and neither is on by default. If you do
 nothing, your connect flows behave exactly as they do today.

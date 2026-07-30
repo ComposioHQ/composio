@@ -1,19 +1,33 @@
 ---
 title: Callback identity verification
-description: Have your own server confirm which of your users an OAuth return belongs to before Composio activates the connection
+description: Have Composio hold an OAuth connection until your app names the user who returned, then activate it only if that user matches
 keywords: [callback identity verification, user verification, oauth session fixation, verifier url, complete_auth, custom auth config]
 ---
 
 When you bring your own OAuth app, only you can tell which of your users is sitting in a browser.
-Callback identity verification hands the OAuth return to your server first: Composio pauses before
-activating the connection, your server confirms who is present, and only then does the connection
-go live.
+Callback identity verification puts that knowledge into the loop: Composio holds the connection,
+asks your app who came back, and activates it only if the answer matches the user the flow was
+started for.
 
 This is the strongest control Composio offers against
 [OAuth session fixation](/docs/connect-link-browser-binding#the-problem-it-solves) — an attacker
 starting a connect flow and getting someone else to finish it. Unlike
 [same-browser binding](/docs/connect-link-browser-binding), which proves only that the flow
 finished where it started, this proves *who* finished it, against your own login session.
+
+## Who does what
+
+Worth being precise about, because it decides what you build:
+
+- **Your app answers one question:** which of your users is signed in on this request. You read
+  that from your own session and send it back. You are not checking anything against Composio, and
+  you do not need to know which connection is involved.
+- **Composio does the verifying:** it compares the user you named against the user the connection
+  was created for, and activates or rejects. That comparison is deliberately on our side — a check
+  the caller could perform on itself would not be a control.
+
+So the endpoint you host is small: read your session, call one API, redirect. Everything security-critical
+stays with Composio.
 
 <Callout type="warn">
 **Read [Before you enable it](#before-you-enable-it) first.** Setting a verifier URL takes effect
