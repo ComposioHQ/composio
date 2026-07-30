@@ -1,0 +1,233 @@
+---
+title: OAuth connection security
+description: Bind an OAuth connection to the user who started it, with same-browser binding for managed apps and callback identity verification for your own OAuth apps.
+keywords: [oauth session fixation, same-browser binding, callback identity verification, user verification, connect link, verifier url, complete_auth]
+---
+
+On its own, a Connect Link or provider authorization URL is enough to complete an OAuth connection:
+whoever opens it and consents becomes the account attached to the flow. An attacker can start a
+connection under their own Composio user, extract the authorization URL before consenting, and have
+a different user complete it — attaching that user's provider account under the attacker's identity.
+
+This class of attack is **OAuth session fixation**. Composio provides two controls against it, both
+off by default:
+
+- [Same-browser binding](#same-browser-binding) — for Composio managed apps. Requires a Connect
+  Link to be completed in the browser that started it.
+- [Callback identity verification](#callback-identity-verification) — for your own OAuth apps.
+  Requires your server to confirm the returning user before the connection activates.
+
+<Callout type="info">
+The `state` parameter and PKCE do not prevent this on their own. As commonly implemented, `state` is
+a server-side nonce that proves only that the callback belongs to an authorization request that was
+started; a forwarded authorization URL carries that `state`, so a different browser completing the
+flow still passes. Prevention requires binding the request to the browser that started it — the use
+RFC 6749 §10.12 recommends for `state`. PKCE protects the authorization code from interception, not
+against a different party completing the flow.
+</Callout>
+
+## Choosing a control
+
+The applicable control follows the [managed versus custom](/docs/custom-app-vs-managed-app) auth
+config split:
+
+- **Composio managed apps** use same-browser binding. Composio owns the OAuth client and enforces
+  the binding.
+- **Your own OAuth app (custom auth config)** uses callback identity verification. The OAuth client
+  is yours, so verification runs against your own users.
+
+## Same-browser binding
+
+When enabled on a project, submitting a Connect Link for a Composio managed app ties the
+authorization attempt to the user's browser. A callback arriving in a different browser is rejected,
+and the connection does not activate.
+
+### How it works
+
+On submission of the Connect Link, Composio issues a random per-attempt secret to the browser in an
+`HttpOnly`, `Secure`, `SameSite=Lax` cookie, and stores only its SHA-256 hash alongside the
+authorization request. On the callback, Composio hashes the presented cookie and compares it to the
+stored hash. A missing or non-matching cookie is rejected. The raw secret is never persisted, and
+the binding applies only to that attempt.
+
+### Availability
+
+Same-browser binding is off by default and enabled per project by Composio. Contact Composio to
+enable or disable it for a project; changes take effect immediately, with no deployment on your
+side.
+
+### Rejection behaviour
+
+A rejected callback is not an HTTP error. The browser is redirected with a failure status and the
+message `This connection was started from a different browser or device`. For a hosted Connect Link,
+the same failure is forwarded to your callback URL as `status=failed`, with the message in the
+`error` parameter (see the
+[callback parameters](/docs/manually-authenticating#redirecting-users-after-authentication)).
+
+A rejected attempt is not marked `FAILED`. The connection remains `INITIATED` and becomes `EXPIRED`
+(reason `INITIATION_TIMEOUT`) after ten minutes — indistinguishable through the API from an abandoned
+attempt. The failure message on the callback is the definitive signal.
+
+### Legitimate rejections
+
+A callback that arrives in a different cookie jar than the one that submitted the Connect Link is
+rejected. This affects several legitimate cases:
+
+- **In-app browsers** (Instagram, LinkedIn, Telegram, and others) that hand the provider step to the
+  system browser.
+- **A link forwarded between devices** — the case the control exists to prevent, and indistinguishable
+  from the above.
+- **A link completed more than one hour after submission**, exceeding the cookie lifetime.
+- **A callback proxied server-side** rather than followed by the browser. Return a `302` (see
+  [routing the callback through your domain](/docs/white-labeling-authentication#routing-the-callback-through-your-domain)).
+
+Binding is not enforced in local development: the cookie is issued for `.composio.dev` and is dropped
+on `localhost`.
+
+## Callback identity verification
+
+For custom auth configs, Composio defers activation until your server confirms the returning user.
+After the provider callback, Composio redirects the browser to an endpoint you host; your server
+returns the signed-in `user_id`, and Composio activates the connection only if that `user_id`
+matches the user the connection was created for.
+
+### Roles
+
+- **Your server asserts.** It reads its own session and returns the signed-in `user_id`. It compares
+  nothing and does not require the connection id.
+- **Composio verifies.** It compares that `user_id` against the connection's owner, and activates or
+  rejects.
+
+The comparison runs on Composio's side by design; a check the caller performs on itself is not a
+control. The endpoint you host reads a session, calls one API, and redirects.
+
+### How it works
+
+<Steps>
+<Step>
+<StepTitle>The user consents at the provider</StepTitle>
+
+Create the connection as usual, passing the `user_id` you are connecting for.
+</Step>
+
+<Step>
+<StepTitle>Composio redirects to your verifier URL</StepTitle>
+
+Instead of activating the connection, Composio redirects the browser to the URL you configured —
+whatever path you set — and appends one query parameter, `session_uri`. For a configured URL of
+`https://your-app.com/oauth/return`:
+
+```
+https://your-app.com/oauth/return?session_uri=session_8Ff2...
+```
+
+`session_uri` is the only parameter Composio sends. It carries no connection id, user id, or toolkit
+name.
+</Step>
+
+<Step>
+<StepTitle>Your server identifies the user</StepTitle>
+
+Read your session from the incoming request and determine the signed-in `user_id`.
+
+<Callout type="warn">
+Use the live browser session on this request, not a cached value or a lookup keyed by anything
+Composio sent. The control verifies which user is present in this browser.
+</Callout>
+</Step>
+
+<Step>
+<StepTitle>Redeem the session</StepTitle>
+
+`POST` the `session_uri` and `user_id` to `complete_auth`:
+
+```bash
+curl -X POST https://backend.composio.dev/api/v3.1/connected_accounts/complete_auth \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "session_uri": "session_8Ff2...",
+    "user_id": "your-signed-in-user"
+  }'
+```
+
+On a match, the connection activates and the response returns it:
+
+```json
+{
+  "connected_account_id": "ca_A1b2C3",
+  "toolkit_slug": "github"
+}
+```
+
+A `200` is returned only once the connection is `ACTIVE`, so no polling is required. This response is
+the only place `connected_account_id` is returned, since `session_uri` carries no identifiers.
+</Step>
+
+<Step>
+<StepTitle>Redirect the user</StepTitle>
+
+The browser ends at your endpoint. Your server owns the redirect on success and the failure page on
+rejection.
+</Step>
+</Steps>
+
+### Enabling it
+
+Set the verifier URL in **Settings → General → Configuration**. The URL must be public HTTPS;
+Composio validates it on save and rejects private or unreachable hosts, so local development requires
+a tunnel rather than `localhost`. Presence of the URL is the switch; removing it disables
+verification.
+
+<Callout type="warn">
+A verifier URL takes effect immediately for every OAuth connection in the project — there is no
+staged rollout and no per-connection opt-out. Review the constraints below and deploy your endpoint
+before setting the URL.
+</Callout>
+
+### Before you enable it
+
+**Dashboard-initiated connections cannot complete.** The dashboard still creates a pending connection
+and opens the provider consent screen, but on the callback Composio redirects the browser to your
+verifier URL rather than back to the dashboard. The connection is owned by an internal dashboard
+user, which Composio does not send to your endpoint and which is not one of your application's users,
+so your server cannot return a matching `user_id`. The connection expires after ten minutes. To test
+a connection, run the flow from your own application or remove the verifier URL while working in the
+dashboard.
+
+**A real `user_id` is required.** On the create endpoint, `user_id` defaults to `default` when
+omitted; link sessions require it explicitly. With verification enabled, `default` and blank values
+are rejected with `This project requires callback identity verification, so a real user_id is
+required`. Pass a real `user_id` on both the create and link paths.
+
+**All redirectable flows are covered.** Verification applies to every redirectable OAuth connection
+in the project: direct API creation, hosted Connect Link, and provider marketplace installs. There
+is no per-flow exemption.
+
+**The endpoint is a dependency of the connect flow.** Composio fails closed: if it cannot read the
+project config, or the verifier endpoint is unreachable, the connection does not activate. Treat the
+endpoint as a production dependency.
+
+### Session lifetime
+
+`session_uri` is valid for ten minutes from the redirect and can be redeemed once. Redeem it on the
+incoming request rather than queuing it.
+
+Treat `session_uri` as a bearer secret. Redemption consumes it before ownership is checked, so a
+leaked value can be redeemed by another caller, after which the owner's redemption returns `404`. Do
+not log or forward it.
+
+### Responses
+
+The request and response contract, including every status code, is in the
+[`complete_auth` API reference](/reference/api-reference/connected-accounts/postConnectedAccountsCompleteAuth).
+Two behaviours are not expressed in the schema:
+
+<Callout type="warn">
+A `400 identity mismatch` is terminal. It marks the connection `FAILED` with reason
+`IDENTITY_VERIFICATION_FAILED`. Do not retry it; start a new connect flow.
+</Callout>
+
+`FAILED` does not uniquely indicate a refused verification. Only an identity mismatch and a failed
+token exchange write `FAILED`; an abandoned flow or an unredeemed session becomes `INITIATED`, then
+`EXPIRED`. Check the reason, not the status.

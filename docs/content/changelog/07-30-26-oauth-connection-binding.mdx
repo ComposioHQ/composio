@@ -1,6 +1,7 @@
 ---
 title: "OAuth connection security: same-browser binding and callback identity verification"
 date: "2026-07-30"
+description: "Two opt-in controls that tie an OAuth connection to the user who started it: same-browser binding for managed apps, callback identity verification for your own OAuth apps."
 ---
 
 Two new controls tie an OAuth connection to the user who started it, closing an account-takeover
@@ -11,11 +12,11 @@ if you do nothing, your connect flows are unchanged.
 
 - **Same-browser binding** — for **Composio managed** apps, a Connect Link must be finished in the
   browser that started it; a callback from a different browser is rejected. Composio-enforced, off
-  by default — contact us to turn it on. [Learn more](/docs/connect-link-browser-binding)
+  by default — contact us to turn it on. [Learn more](/docs/oauth-connection-security#same-browser-binding)
 - **Callback identity verification** — for **your own OAuth apps**, set a verifier URL and Composio
   hands each OAuth return to your server, which names its signed-in user; the connection activates
   only if that matches the user the flow started for. Enable it yourself in Settings → General.
-  [Learn more](/docs/callback-identity-verification)
+  [Learn more](/docs/oauth-connection-security#callback-identity-verification)
 
 ### Breaking changes
 
@@ -24,7 +25,7 @@ save the URL.
 
 <Callout type="warn">
 - Connections started from the Composio dashboard no longer complete — start flows from your own app.
-- Every connection must pass a real `user_id`; the omitted-defaults-to-`default` placeholder is rejected.
+- Every connection must pass a real `user_id`; a blank or `default` placeholder is rejected.
 </Callout>
 
-Handle these before you switch it on — see [Before you enable it](/docs/callback-identity-verification#before-you-enable-it).
+Handle these before you switch it on — see [Before you enable it](/docs/oauth-connection-security#before-you-enable-it).
