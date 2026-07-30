@@ -10,6 +10,7 @@ import { defaultNodeOs, NodeOs } from 'src/services/node-os';
 import {
   createPluginHint,
   detectPluginHost,
+  findRootCommandName,
   resolvePluginHintConfig,
   type PluginHintConfig,
 } from 'src/services/plugin-hint';
@@ -102,6 +103,18 @@ describe('resolvePluginHintConfig', () => {
       Effect.provide(
         Layer.merge(PlatformLayers, Layer.succeed(NodeOs, defaultNodeOs({ homedir: tempDir })))
       )
+    );
+  });
+});
+
+describe('findRootCommandName', () => {
+  it('skips root log-level flags before the subcommand', () => {
+    expect(findRootCommandName(['/bin/bun', '/cli/bin.ts', 'setup'])).toBe('setup');
+    expect(findRootCommandName(['/bin/bun', '/cli/bin.ts', '--log-level', 'debug', 'setup'])).toBe(
+      'setup'
+    );
+    expect(findRootCommandName(['/bin/bun', '/cli/bin.ts', '--log-level=debug', 'setup'])).toBe(
+      'setup'
     );
   });
 });

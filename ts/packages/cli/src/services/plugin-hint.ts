@@ -132,6 +132,22 @@ const DefaultConfigLayers = Layer.mergeAll(Path.layer, NodeOs.Default, BunFileSy
 const readOptionalEnv = (name: string) =>
   Effect.orDie(Config.option(Config.string(name)).pipe(Config.map(Option.getOrUndefined)));
 
+export function findRootCommandName(argv: ReadonlyArray<string>): string | undefined {
+  const args = argv.slice(2);
+  for (let index = 0; index < args.length; index += 1) {
+    const token = args[index];
+    if (token === '--log-level') {
+      index += 1;
+      continue;
+    }
+    if (token?.startsWith('--log-level=') || token?.startsWith('-')) {
+      continue;
+    }
+    return token;
+  }
+  return undefined;
+}
+
 // Host-owned variables must bypass the CLI ConfigProvider, which prefixes
 // application keys with COMPOSIO_.
 const rawEnvironment = Effect.gen(function* () {
@@ -161,7 +177,7 @@ export const resolvePluginHintConfig = (argv: ReadonlyArray<string>) =>
       stateDirectory: path.join(cacheDir, 'plugin-hints'),
       host: detectPluginHost(env),
       invocationOrigin: env.invocationOrigin,
-      commandName: argv[2],
+      commandName: findRootCommandName(argv),
       claudeInstalledPluginsFile: path.join(
         env.claudeConfigDir ?? path.join(os.homedir, '.claude'),
         'plugins',
