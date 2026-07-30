@@ -9,22 +9,18 @@ whoever opens it and consents becomes the account attached to the flow. An attac
 connection under their own Composio user, extract the authorization URL before consenting, and have
 a different user complete it — attaching that user's provider account under the attacker's identity.
 
-This class of attack is **OAuth session fixation**. Composio provides two controls against it:
+This class of attack is **OAuth session fixation**. Composio addresses it in two ways.
 
-- [Same-browser binding](#same-browser-binding) — enforced automatically on Composio managed apps.
-  Requires a Connect Link to be completed in the browser that started it.
-- [Callback identity verification](#callback-identity-verification) — opt-in, for your own OAuth
-  apps. Requires your server to confirm the returning user before the connection activates.
+**[Same-browser binding](#same-browser-binding)** is enforced on Composio managed apps, with no
+setup on your part. These apps are shared across every Composio user, so anyone can start a
+connection with one — binding ties each authorization attempt to the browser that began it, so a
+flow one party starts cannot be completed by another.
 
-## Choosing a control
-
-The applicable control follows the [managed versus custom](/docs/custom-app-vs-managed-app) auth
-config split:
-
-- **Composio managed apps** use same-browser binding. Composio owns the OAuth client and enforces
-  the binding.
-- **Your own OAuth app (custom auth config)** uses callback identity verification. The OAuth client
-  is yours, so verification runs against your own users.
+**[Callback identity verification](#callback-identity-verification)** is opt-in and set per project.
+Once you register a verifier URL, Composio defers every OAuth activation in the project — managed and
+custom auth configs alike — until your server confirms which of your users completed the flow. It
+binds connections to your own users, and is the only option for your own OAuth apps, where
+same-browser binding does not run.
 
 ## Same-browser binding
 
@@ -76,10 +72,10 @@ on `localhost`.
 
 ## Callback identity verification
 
-For custom auth configs, Composio defers activation until your server confirms the returning user.
-After the provider callback, Composio redirects the browser to an endpoint you host; your server
-returns the signed-in `user_id`, and Composio activates the connection only if that `user_id`
-matches the user the connection was created for.
+Once a verifier URL is set on a project, Composio defers activation for every OAuth connection in
+that project until your server confirms the returning user. After the provider callback, Composio
+redirects the browser to an endpoint you host; your server returns the signed-in `user_id`, and
+Composio activates the connection only if it matches the user the connection was created for.
 
 ### Roles
 
