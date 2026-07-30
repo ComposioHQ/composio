@@ -480,11 +480,13 @@ export const runWithConfig = Effect.gen(function* () {
           : undefined;
 
       if (nudge !== undefined) {
-        // Decoration, so it goes through the same stderr writer root help uses. Emitting it via
-        // `ui.output` would put prose on the data stream of the most-piped command in the CLI.
+        // Prose, so it goes to stderr — `ui.output` would put it on the data stream of the
+        // most-piped command in the CLI. `ui.error` rather than `ui.log.info` because the latter
+        // renders only when stderr is a TTY, and the nudge replaces root help: suppressing it under
+        // `composio > out.txt 2> err.txt` would make bare `composio` produce nothing on any stream.
         return Effect.gen(function* () {
           const ui = yield* TerminalUI;
-          yield* ui.log.info(nudge);
+          yield* ui.error(nudge);
         });
       }
 

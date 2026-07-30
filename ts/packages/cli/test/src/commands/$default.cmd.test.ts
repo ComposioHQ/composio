@@ -4,6 +4,8 @@ import { describe, expect, layer } from '@effect/vitest';
 import { Effect } from 'effect';
 import { ValidationError, HelpDoc } from '@effect/cli';
 import { cli, pkg, TestLive, MockConsole } from 'test/__utils__';
+import { terminalUITestImpl } from 'test/__utils__/services/terminal-ui-test';
+import { getTerminalCapabilities, TerminalUI } from 'src/services/terminal-ui';
 import { afterEach, vi } from 'vitest';
 
 const getCommandMismatch = (value: unknown): ValidationError.CommandMismatch => {
@@ -76,6 +78,40 @@ describe('CLI: composio', () => {
         expect(output).not.toContain('Usage:');
       })
     );
+  });
+
+  describe('the nudge goes to stderr and survives redirection', () => {
+    const stdoutWrites: Array<string> = [];
+    const stderrWrites: Array<string> = [];
+
+    const streamRecordingUI = TerminalUI.of({
+      ...terminalUITestImpl,
+      capabilities: Effect.succeed(
+        getTerminalCapabilities({
+          // stderr captured, so anything gated on `canDecorate` would be suppressed.
+          stdin: { isTTY: false },
+          stdout: { isTTY: false },
+          stderr: { isTTY: false },
+        })
+      ),
+      output: data => Effect.sync(() => void stdoutWrites.push(data)),
+      error: data => Effect.sync(() => void stderrWrites.push(data)),
+    });
+
+    layer(TestLive({ terminalUI: streamRecordingUI }))(it => {
+      it.scoped('[Given] captured stderr [Then] bare composio still says something', () =>
+        Effect.gen(function* () {
+          stdoutWrites.length = 0;
+          stderrWrites.length = 0;
+
+          yield* cli([]);
+
+          // Prose never lands on the data stream, and the command is never silent on every stream.
+          expect(stdoutWrites).toEqual([]);
+          expect(stderrWrites.join('\n')).toContain('composio onboard');
+        })
+      );
+    });
   });
 
   layer(TestLive())(it => {
