@@ -347,9 +347,12 @@ const mergeAnalyticsStateUnlocked = (installId: string, patch: Partial<Analytics
 
 const readUserConfig = Effect.gen(function* () {
   const paths = yield* getAnalyticsPaths;
-  return yield* readOptionalJson<{ api_key?: unknown; base_url?: unknown; org_id?: unknown }>(
-    paths.userConfigPath
-  );
+  return yield* readOptionalJson<{
+    api_key?: unknown;
+    base_url?: unknown;
+    org_id?: unknown;
+    pending_keyring_logout?: unknown;
+  }>(paths.userConfigPath);
 });
 
 const getOrgId = Effect.map(readUserConfig, config =>
@@ -377,17 +380,24 @@ const getApiKeyFingerprint = Effect.flatMap(getUserApiKey, apiKey =>
   apiKey ? fingerprintApiKey(apiKey) : Effect.succeed(null)
 );
 
-// The keychain* security modes strip the api key from user_data.json, so no
-// fingerprint is computable here. A persisted org is the durable login signal:
-// logout keeps the file but clears org_id, so a stale analytics identity can
-// never survive a failed best-effort state cleanup.
+// Every security mode except the explicit plaintext one strips the api key
+// from user_data.json, so no fingerprint is computable here. A persisted org
+// is the durable login signal: logout keeps the file but clears org_id, so a
+// stale analytics identity can never survive a failed best-effort state
+// cleanup. `security` is absent for users who never wrote a config.json, and
+// its default — `"auto"` — is keyring-backed.
 const keyringBackedLoginPresent = Effect.gen(function* () {
   const paths = yield* getAnalyticsPaths;
   const cliConfig = yield* readOptionalJson<{ security?: unknown }>(paths.cliConfigPath);
-  if (cliConfig?.security !== 'keychain' && cliConfig?.security !== 'keychain-subprocess') {
+  if (cliConfig?.security === 'json') {
     return false;
   }
   const userConfig = yield* readUserConfig;
+  // A pending logout outranks anything still in the credential store, exactly
+  // as it does in ComposioUserContext.
+  if (userConfig?.pending_keyring_logout === true) {
+    return false;
+  }
   return typeof userConfig?.org_id === 'string' && userConfig.org_id.trim().length > 0;
 });
 

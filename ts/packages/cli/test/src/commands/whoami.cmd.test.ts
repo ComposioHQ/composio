@@ -2,6 +2,8 @@ import { describe, expect, layer } from '@effect/vitest';
 import { ConfigProvider, Effect } from 'effect';
 import { extendConfigProvider } from 'src/services/config';
 import { cli, TestLive, MockConsole } from 'test/__utils__';
+import { makeFakeKeyring } from 'test/__utils__/services/keyring';
+import { KEYRING_SERVICE, KEYRING_USER } from 'src/services/user-context';
 import { afterEach, vi } from 'vitest';
 
 describe('CLI: composio whoami', () => {
@@ -46,6 +48,27 @@ describe('CLI: composio whoami', () => {
       })
     );
   });
+
+  // A logout that could not confirm the secure delete leaves the credential
+  // in the store. `whoami` must agree with logout, not with the store.
+  const tombstonedKeyring = makeFakeKeyring({
+    seed: [[KEYRING_SERVICE, KEYRING_USER, 'uak_orphaned_by_logout']],
+  });
+
+  layer(TestLive({ keyring: tombstonedKeyring, fixture: 'user-config-pending-logout' }))(
+    'with a pending keyring logout',
+    it => {
+      it.scoped('[Given] a pending secure cleanup [Then] reports logged out', () =>
+        Effect.gen(function* () {
+          yield* cli(['whoami']);
+
+          const output = (yield* MockConsole.getLines({ stripAnsi: true })).join('\n');
+          expect(output).toContain('You are not logged in yet.');
+          expect(output).not.toContain('uak_orphaned_by_logout');
+        })
+      );
+    }
+  );
 
   layer(TestLive({ baseConfigProvider: testConfigProvider }))('with session info', it => {
     it.scoped('[Given] session info is available [Then] prints email and org name', () =>

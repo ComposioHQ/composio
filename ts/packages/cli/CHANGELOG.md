@@ -2,6 +2,26 @@
 
 ## Unreleased
 
+### Security
+
+- The CLI now stores your API key in the operating system's credential store by
+  default (macOS Keychain via `/usr/bin/security`, Linux Secret Service via
+  `secret-tool`) instead of in plaintext `~/.composio/user_data.json`. No trust
+  dialog appears, and `user_data.json` keeps only non-secret context.
+
+  A key left in `user_data.json` by an older CLI is migrated on the next run,
+  and the plaintext copy is removed only after the secure write succeeds.
+
+  When no credential store is reachable — headless Linux, containers, CI
+  runners, a locked keychain — the CLI falls back to writing the key to
+  `user_data.json`, now restricted to `0600` and replaced atomically.
+  Authentication never fails because secure storage is unavailable.
+
+  Set `"security": "json"` in `~/.composio/config.json` to keep the previous
+  plaintext-only behavior. Note that `@composio/core` cannot read the CLI's
+  credential store: standalone SDK code needs an explicit `apiKey` or
+  `COMPOSIO_API_KEY` once the key is no longer in `user_data.json`.
+
 ### Patch Changes
 
 - Make GitHub release metadata the sole version authority for standalone CLI

@@ -2,12 +2,15 @@ import { afterEach, describe, expect, it, vi } from '@effect/vitest';
 import { FileSystem, Path } from '@effect/platform';
 import { BunFileSystem, BunPath } from '@effect/platform-bun';
 import { ConfigProvider, Effect, Layer } from 'effect';
+import { mkdirSync, writeFileSync } from 'node:fs';
 import * as tempy from 'tempy';
 import { ComposioClientSingleton } from 'src/services/composio-clients';
 import { APP_VERSION } from 'src/constants';
 import { defaultNodeOs, NodeOs } from 'src/services/node-os';
 import { extendConfigProvider } from 'src/services/config';
 import { makeUserContextLayer } from 'test/__utils__/services/user-context';
+import { makeFakeKeyring, type FakeKeyring } from 'test/__utils__/services/keyring';
+import { KEYRING_SERVICE, KEYRING_USER } from 'src/services/user-context';
 
 const withConfigLayer = (map: Map<string, string>, homedir: string) =>
   Layer.mergeAll(
@@ -57,12 +60,16 @@ describe('ComposioClientSingleton headers', () => {
   // which resolves the real platform keyring. Build the singleton over
   // an empty fake store instead so `apiKey` comes from the test's
   // config map and never from the developer's credential store.
-  const clientSingletonLayer = (map: Map<string, string>, homedir: string) => {
+  const clientSingletonLayer = (
+    map: Map<string, string>,
+    homedir: string,
+    options?: { readonly keyring?: FakeKeyring }
+  ) => {
     const base = withConfigLayer(map, homedir);
     return Layer.provideMerge(
       Layer.provide(
         ComposioClientSingleton.DefaultWithoutDependencies,
-        Layer.provideMerge(makeUserContextLayer(), base)
+        Layer.provideMerge(makeUserContextLayer({ keyring: options?.keyring }), base)
       ),
       base
     );
@@ -194,5 +201,69 @@ describe('ComposioClientSingleton headers', () => {
       expect(headers.has('x-api-key')).toBe(false);
       expect(headers.get('x-source')).toBe('CLI');
     }).pipe(Effect.provide(clientSingletonLayer(configMap, homedir)));
+  });
+
+  it.effect('sends the keyring-backed key resolved by the user context', () => {
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(okResponse());
+    const homedir = tempy.temporaryDirectory();
+    // The shared vitest setup stubs COMPOSIO_CACHE_DIR at a directory other
+    // tests also write into; pin it so this test owns its user_data.json.
+    const configMap = new Map([
+      ['COMPOSIO_BASE_URL', 'https://backend.composio.dev'],
+      ['COMPOSIO_CACHE_DIR', `${homedir}/.composio`],
+    ]);
+    const keyring = makeFakeKeyring({
+      seed: [[KEYRING_SERVICE, KEYRING_USER, 'uak_from_keyring']],
+    });
+
+    return Effect.gen(function* () {
+      const client = yield* ComposioClientSingleton.get();
+      yield* Effect.promise(() =>
+        client.tools
+          .list({ limit: 1, toolkit_versions: 'latest' })
+          .then(() => undefined)
+          .catch(() => undefined)
+      );
+
+      const [, init] = fetchSpy.mock.calls[0]!;
+      const headers = new Headers((init as RequestInit).headers);
+      expect(headers.get('x-user-api-key')).toBe('uak_from_keyring');
+    }).pipe(Effect.provide(clientSingletonLayer(configMap, homedir, { keyring })));
+  });
+
+  it.effect('does not resurrect a credential the user context reports as logged out', () => {
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(okResponse());
+    const homedir = tempy.temporaryDirectory();
+    const configMap = new Map([
+      ['COMPOSIO_BASE_URL', 'https://backend.composio.dev'],
+      ['COMPOSIO_CACHE_DIR', `${homedir}/.composio`],
+    ]);
+    // The store still holds the credential a failed logout could not delete.
+    const keyring = makeFakeKeyring({
+      seed: [[KEYRING_SERVICE, KEYRING_USER, 'uak_orphaned_by_logout']],
+      alwaysFail: { delete: { kind: 'NoStorageAccess', cause: new Error('locked') } },
+    });
+
+    // Written before the effect runs, because the user context reads
+    // user_data.json while its layer is being built.
+    mkdirSync(`${homedir}/.composio`, { recursive: true });
+    writeFileSync(
+      `${homedir}/.composio/user_data.json`,
+      JSON.stringify({ api_key: null, pending_keyring_logout: true })
+    );
+
+    return Effect.gen(function* () {
+      const client = yield* ComposioClientSingleton.get();
+      yield* Effect.promise(() =>
+        client.tools
+          .list({ limit: 1, toolkit_versions: 'latest' })
+          .then(() => undefined)
+          .catch(() => undefined)
+      );
+
+      const [, init] = fetchSpy.mock.calls[0]!;
+      const headers = new Headers((init as RequestInit).headers);
+      expect(headers.get('x-user-api-key')).toBeNull();
+    }).pipe(Effect.provide(clientSingletonLayer(configMap, homedir, { keyring })));
   });
 });

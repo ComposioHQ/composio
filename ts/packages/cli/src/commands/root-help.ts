@@ -935,7 +935,10 @@ const SUBCOMMAND_HELP: Record<string, SubcommandHelp | TaggedValue<SubcommandHel
     examples: [
       '~/.composio/',
       '  CLI configuration and cache directory.',
-      '  user_data.json        Your auth state (API key, org, base URL)',
+      '  user_data.json        Your auth state (org, base URL). The API key',
+      '                        lives in your OS credential store, and is kept',
+      '                        here only when no credential store is available',
+      '                        or config.json sets security: "json".',
       '  toolkits.json         Cached toolkit list from the API',
       '  tools.json            Cached tool definitions',
       '  trigger-types.json    Cached trigger type definitions',

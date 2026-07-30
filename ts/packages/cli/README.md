@@ -55,6 +55,35 @@ Additionally, for storing and retrieving user session context, a `user_data.json
 
 By default, this file is stored in `~/.composio`, but you can specify a custom location using the `COMPOSIO_CACHE_DIR` environment variable.
 
+### Credential storage
+
+`composio login` stores your API key in the operating system's credential store — the macOS Keychain via `/usr/bin/security`, or the Linux Secret Service via `secret-tool`. `user_data.json` then holds only non-secret context (org, base URL). No trust dialog appears: `/usr/bin/security` is Apple-signed.
+
+If no credential store is reachable — a headless Linux box, a container, a CI runner, a locked keychain — the CLI writes the key to `user_data.json` instead, restricts that file to your user (`0600`), and keeps working. Authentication never fails just because secure storage is unavailable.
+
+An API key left in `user_data.json` by an older CLI is moved into the credential store on the next run. The plaintext copy is removed only after the secure write succeeds, so an interrupted migration can never leave you without a usable key.
+
+Set `security` in `~/.composio/config.json` to change this:
+
+| `security`              | Behavior                                                                                      |
+| ----------------------- | --------------------------------------------------------------------------------------------- |
+| `"auto"` (default)      | OS credential store, falling back to plaintext `user_data.json` when none is available.       |
+| `"json"`                | Plaintext `user_data.json` only. No credential-store access on load, login, or update.        |
+| `"keychain-subprocess"` | Same as `"auto"`. Kept for configs that pinned it before `"auto"` became keyring-backed.      |
+| `"keychain"`            | Experimental macOS Security.framework FFI. Prompts on binaries without a stable Developer ID. |
+
+`COMPOSIO_USER_API_KEY` still takes precedence over everything above, and reading it never touches the credential store.
+
+### Using the SDK alongside the CLI
+
+`@composio/core` discovers a key from `COMPOSIO_API_KEY` or from a plaintext `user_data.json`. It does not read the CLI's credential store, so once your key lives there, standalone SDK code needs an explicit key:
+
+```ts
+const composio = new Composio({ apiKey: process.env.COMPOSIO_API_KEY });
+```
+
+Set `COMPOSIO_API_KEY` from your own secret source, or set `security` to `"json"` if you want the SDK to keep picking the key up from `user_data.json`.
+
 | Environment Variable   | User JSON config | Description                                                        | Default                         |
 | ---------------------- | ---------------- | ------------------------------------------------------------------ | ------------------------------- |
 | COMPOSIO_API_KEY       | `api_key`        | Composio backend API key                                           | None                            |

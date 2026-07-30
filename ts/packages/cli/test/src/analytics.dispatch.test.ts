@@ -537,6 +537,77 @@ describe('CLI analytics dispatch', () => {
     }).pipe(Effect.provide(makePlatformLayer(home)));
   });
 
+  // Default `security: "auto"` is keyring-backed, so `user_data.json` has no
+  // api_key to fingerprint. The persisted org is the durable login signal.
+  it.effect('keeps a stable identity for a keyring-backed default login', () => {
+    const home = tempy.temporaryDirectory();
+    const scriptPath = `${home}/composio.ts`;
+    enableTelemetry('');
+    process.argv[1] = scriptPath;
+
+    return Effect.gen(function* () {
+      const fs = yield* FileSystem.FileSystem;
+      const path = yield* Path.Path;
+      yield* fs.writeFileString(scriptPath, '');
+      const composioDir = path.join(home, '.composio');
+      yield* fs.makeDirectory(composioDir, { recursive: true });
+      // The shared vitest setup points COMPOSIO_CACHE_DIR elsewhere; user_data.json
+      // and config.json are read from there, not from the homedir.
+      vi.stubEnv('COMPOSIO_CACHE_DIR', composioDir);
+      yield* fs.writeFileString(
+        path.join(composioDir, 'analytics.json'),
+        JSON.stringify({ install_id: 'install_keyring', apollo_user_id: 'om_apollo_keyring' })
+      );
+      // No `security` key at all: this is the `"auto"` default.
+      yield* fs.writeFileString(path.join(composioDir, 'config.json'), JSON.stringify({}));
+      yield* fs.writeFileString(
+        path.join(composioDir, 'user_data.json'),
+        JSON.stringify({ api_key: null, org_id: 'org_keyring' })
+      );
+
+      yield* trackCliEventEffect({ name: CLI_ANALYTICS_EVENTS.CLI_EXECUTE_SUCCEEDED });
+
+      const args = childProcessMocks.spawn.mock.calls[0]![1] as string[];
+      const payload = decodeWorkerPayload<{ distinctId: string }>(args[2]!);
+      expect(payload.distinctId).toBe('om_apollo_keyring');
+    }).pipe(Effect.provide(makePlatformLayer(home)));
+  });
+
+  it.effect('reports logged out while a pending keyring logout is recorded', () => {
+    const home = tempy.temporaryDirectory();
+    const scriptPath = `${home}/composio.ts`;
+    enableTelemetry('');
+    process.argv[1] = scriptPath;
+
+    return Effect.gen(function* () {
+      const fs = yield* FileSystem.FileSystem;
+      const path = yield* Path.Path;
+      yield* fs.writeFileString(scriptPath, '');
+      const composioDir = path.join(home, '.composio');
+      yield* fs.makeDirectory(composioDir, { recursive: true });
+      // The shared vitest setup points COMPOSIO_CACHE_DIR elsewhere; user_data.json
+      // and config.json are read from there, not from the homedir.
+      vi.stubEnv('COMPOSIO_CACHE_DIR', composioDir);
+      yield* fs.writeFileString(
+        path.join(composioDir, 'analytics.json'),
+        JSON.stringify({ install_id: 'install_tombstoned', apollo_user_id: 'om_apollo_gone' })
+      );
+      yield* fs.writeFileString(path.join(composioDir, 'config.json'), JSON.stringify({}));
+      // org_id is still present, but the pending logout outranks it.
+      yield* fs.writeFileString(
+        path.join(composioDir, 'user_data.json'),
+        JSON.stringify({ api_key: null, org_id: 'org_stale', pending_keyring_logout: true })
+      );
+
+      yield* trackCliEventEffect({ name: CLI_ANALYTICS_EVENTS.CLI_EXECUTE_SUCCEEDED });
+
+      const args = childProcessMocks.spawn.mock.calls[0]![1] as string[];
+      const payload = decodeWorkerPayload<{ distinctId: string }>(args[2]!);
+      expect(payload.distinctId).not.toBe('om_apollo_gone');
+      expect(payload.distinctId).toBe('install_tombstoned');
+    }).pipe(Effect.provide(makePlatformLayer(home)));
+  });
+
   it.effect('persists apollo_user_id and emits exactly one $create_alias at login', () => {
     const home = tempy.temporaryDirectory();
     const scriptPath = `${home}/composio.ts`;

@@ -8,19 +8,22 @@ export type ExperimentalSubagentTarget = Schema.Schema.Type<typeof ExperimentalS
 /**
  * Where the CLI stores the Composio API key.
  *
- *  - `"auto"` (default): plaintext `user_data.json`. Backwards-
- *    compatible with every prior CLI release — upgrading does not
- *    change where the key is stored, and no migration or keychain
- *    access is attempted. Lets users harden security explicitly by
- *    picking one of the keyring options below.
- *  - `"json"`: explicit opt-in to plaintext `user_data.json`. Pins
- *    the behavior so a future default change won't affect configs
- *    that set this value.
- *  - `"keychain-subprocess"`: store the API key in the OS credential
- *    store via `/usr/bin/security` (macOS) or `secret-tool` (Linux).
- *    Adds ~25ms to startup (memoized for the process). No macOS
- *    dialogs — `/usr/bin/security` is Apple-signed and trusted.
- *    Opt-in hardening for users who want the key out of plaintext.
+ *  - `"auto"` (default): the OS credential store, via
+ *    `/usr/bin/security` (macOS) or `secret-tool` (Linux). Adds ~25ms
+ *    to startup (memoized for the process) and prompts for nothing —
+ *    `/usr/bin/security` is Apple-signed and trusted. When the store
+ *    is unavailable (headless Linux, containers, a locked keychain),
+ *    the CLI falls back to a plaintext `user_data.json` key so
+ *    authentication keeps working. An existing plaintext key is
+ *    migrated on the next run, and is only removed once the secure
+ *    write has succeeded.
+ *  - `"json"`: pin the API key to plaintext `user_data.json`, with no
+ *    credential-store access on load, login, or update. Logout still
+ *    cleans up a credential left behind by an earlier keyring-backed
+ *    mode.
+ *  - `"keychain-subprocess"`: identical to `"auto"` today. Kept so
+ *    configs that pinned it before `"auto"` became keyring-backed
+ *    continue to work.
  *  - `"keychain"` (experimental): direct Security.framework FFI
  *    (~1ms reads). Currently triggers a macOS keychain trust dialog
  *    on unsigned / ad-hoc signed binaries — avoid unless the
@@ -72,8 +75,8 @@ export const CliUserConfig = Schema.Struct({
   /**
    * Where the CLI stores the Composio API key. See the
    * `SecurityBackend` type above for semantics. Default: `"auto"`
-   * (plaintext `user_data.json`, same as every prior CLI release —
-   * no behavior change on upgrade).
+   * (the OS credential store, falling back to plaintext
+   * `user_data.json` when no store is available).
    */
   security: Schema.optionalWith(SecurityBackend, {
     default: (): SecurityBackend => 'auto',

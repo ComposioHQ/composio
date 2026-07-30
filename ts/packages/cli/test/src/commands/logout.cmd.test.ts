@@ -8,8 +8,9 @@ import { UserDataWithDefaults } from 'src/models/user-data';
 import { writeStoredAgentIdentity } from 'src/services/agents';
 import { extendConfigProvider } from 'src/services/config';
 import { getTerminalCapabilities, TerminalUI } from 'src/services/terminal-ui';
-import { ComposioUserContext } from 'src/services/user-context';
+import { ComposioUserContext, KEYRING_SERVICE, KEYRING_USER } from 'src/services/user-context';
 import { cli, TestLive, MockConsole } from 'test/__utils__';
+import { makeFakeKeyring } from 'test/__utils__/services/keyring';
 
 const terminalUIWithConfirm = (confirmed: boolean) =>
   TerminalUI.of({
@@ -132,6 +133,41 @@ describe('CLI: composio logout', () => {
           const output = lines.join('\n');
           expect(output).toMatchInlineSnapshot(`"Logged out successfully."`);
           expect(ctx.isLoggedIn()).toBeFalsy();
+        })
+      );
+    });
+  });
+
+  describe('[When] the keyring delete cannot be confirmed', () => {
+    const rejectingKeyring = makeFakeKeyring({
+      seed: [[KEYRING_SERVICE, KEYRING_USER, 'stored_key']],
+      alwaysFail: { delete: { kind: 'NoStorageAccess', cause: new Error('keychain locked') } },
+    });
+
+    layer(TestLive({ keyring: rejectingKeyring }))(it => {
+      it.scoped('[Then] logout still succeeds and records a pending secure cleanup', () =>
+        Effect.gen(function* () {
+          const ctx = yield* ComposioUserContext;
+          expect(ctx.isLoggedIn()).toBeTruthy();
+
+          yield* cli(['logout']);
+
+          const output = (yield* MockConsole.getLines({ stripAnsi: true })).join('\n');
+          expect(output).toContain('Logged out successfully.');
+          expect(output).not.toContain('stored_key');
+          expect(ctx.isLoggedIn()).toBeFalsy();
+
+          const fs = yield* FileSystem.FileSystem;
+          const cacheDir = yield* setupCacheDir;
+          const userConfig = JSON.parse(
+            yield* fs.readFileString(path.join(cacheDir, constants.USER_CONFIG_FILE_NAME), 'utf8')
+          ) as Record<string, unknown>;
+
+          expect(userConfig.api_key).toBeNull();
+          expect(userConfig.pending_keyring_logout).toBe(true);
+          // The credential the store refused to delete is still there; the
+          // marker is what keeps the CLI logged out until cleanup succeeds.
+          expect(rejectingKeyring.peek(KEYRING_SERVICE, KEYRING_USER)).toBe('stored_key');
         })
       );
     });
