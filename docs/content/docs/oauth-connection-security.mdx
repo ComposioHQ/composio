@@ -163,10 +163,7 @@ verifier URL set is covered by both checks.
 
 ### Session lifetime
 
-`session_uri` is valid for ten minutes from the redirect and can be redeemed once. Redeem it on the
-incoming request rather than queuing it for later.
-
-Treat it like any short-lived secret: don't log it or forward it to other systems. Redemption is
-single-use, so if the same value is redeemed twice, the second call returns `404` and the user
-restarts the flow. The connection is never activated for the wrong user either way — activation
-always requires a matching `user_id`.
+`session_uri` is valid for ten minutes and can be redeemed once, so redeem it on the incoming
+request, not later. Treat it as a bearer secret — keep it out of logs and URLs. A repeat redemption
+returns `404` and the user restarts; either way the connection never activates for the wrong user,
+since activation requires a matching `user_id`.
