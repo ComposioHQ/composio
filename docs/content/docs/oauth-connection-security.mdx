@@ -16,15 +16,6 @@ This class of attack is **OAuth session fixation**. Composio provides two contro
 - [Callback identity verification](#callback-identity-verification) — opt-in, for your own OAuth
   apps. Requires your server to confirm the returning user before the connection activates.
 
-<Callout type="info">
-The `state` parameter and PKCE do not prevent this on their own. As commonly implemented, `state` is
-a server-side nonce that proves only that the callback belongs to an authorization request that was
-started; a forwarded authorization URL carries that `state`, so a different browser completing the
-flow still passes. Prevention requires binding the request to the browser that started it — the use
-RFC 6749 §10.12 recommends for `state`. PKCE protects the authorization code from interception, not
-against a different party completing the flow.
-</Callout>
-
 ## Choosing a control
 
 The applicable control follows the [managed versus custom](/docs/custom-app-vs-managed-app) auth
