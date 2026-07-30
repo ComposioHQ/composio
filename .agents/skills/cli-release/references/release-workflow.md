@@ -19,7 +19,7 @@
 - `.github/workflows/cli.test-installation.yml` validates installers after publication.
 - `.changeset/config.json` ignores `@composio/cli` and `@composio/cli-local-tools`.
 
-`ts.release.yml` is the TypeScript SDK/npm release train. It is not the normal CLI binary release path.
+`sdk.release.yml` is the SDK release train (npm + PyPI). It is not the normal CLI binary release path.
 
 ## Choose The Path
 

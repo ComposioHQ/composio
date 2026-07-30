@@ -5,7 +5,7 @@ set -euo pipefail
 # lines printed by `changeset publish`. The CLI binary workflow owns
 # @composio/cli GitHub Releases because those releases must include platform
 # binary assets. Let changesets publish/tag every other package, but hide the
-# private CLI tag from changesets/action so ts.release.yml cannot create an
+# private CLI tag from changesets/action so sdk.release.yml cannot create an
 # empty @composio/cli GitHub Release.
 
 stdout_file=$(mktemp)

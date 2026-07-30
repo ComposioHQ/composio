@@ -11,7 +11,7 @@ Read `references/release-workflow.md` before selecting a candidate or dispatchin
 
 ## Release Contract
 
-- Never add a Changeset for `@composio/cli` or `@composio/cli-local-tools`; both packages are ignored by Changesets and such files wedge `ts.release.yml`.
+- Never add a Changeset for `@composio/cli` or `@composio/cli-local-tools`; both packages are ignored by Changesets and such files wedge `sdk.release.yml`.
 - Treat a merge to `next` that touches CLI paths as a beta build. Promote a tested beta with the `promote-stable` workflow action for the normal stable-release path.
 - Never bump the private CLI `package.json` to select a binary version. For an
   intentional minor or major, build an explicitly versioned beta and promote

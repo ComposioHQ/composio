@@ -24,17 +24,13 @@ const tsCorePackageJson = JSON.parse(
 const changesetConfig = JSON.parse(
   readFileSync(new URL('../.changeset/config.json', import.meta.url), 'utf8')
 );
-const tsReleaseWorkflow = readFileSync(
-  new URL('../.github/workflows/ts.release.yml', import.meta.url),
+const sdkReleaseWorkflow = readFileSync(
+  new URL('../.github/workflows/sdk.release.yml', import.meta.url),
   'utf8'
 );
 const pythonPyproject = readFileSync(new URL('../python/pyproject.toml', import.meta.url), 'utf8');
 const pythonRuntimeVersionModule = readFileSync(
   new URL('../python/composio/__version__.py', import.meta.url),
-  'utf8'
-);
-const pythonReleaseWorkflow = readFileSync(
-  new URL('../.github/workflows/py.release.yml', import.meta.url),
   'utf8'
 );
 const pythonMakefilePath = new URL('../python/Makefile', import.meta.url).pathname;
@@ -254,8 +250,8 @@ touch "$target/dist/provider.whl"
   }
 }
 
-if (!tsReleaseWorkflow.includes('publish: pnpm changeset:release')) {
-  throw new Error('ts.release.yml must use the repository-controlled changeset:release script');
+if (!sdkReleaseWorkflow.includes('run: pnpm changeset:release')) {
+  throw new Error('sdk.release.yml must use the repository-controlled changeset:release script');
 }
 
 if (packageJson.scripts?.['changeset:release'] !== 'bash ts/scripts/changeset-release.sh') {
@@ -322,14 +318,14 @@ if (packageJson.scripts?.['validate:changesets'] !== 'node ts/scripts/validate-c
   }
 }
 
-const validateChangesetsIdx = tsReleaseWorkflow.indexOf('run: pnpm validate:changesets');
-const changesetsActionIdx = tsReleaseWorkflow.indexOf('uses: changesets/action@');
+const validateChangesetsIdx = sdkReleaseWorkflow.indexOf('run: pnpm validate:changesets');
+const changesetsActionIdx = sdkReleaseWorkflow.indexOf('uses: changesets/action@');
 if (
   validateChangesetsIdx === -1 ||
   changesetsActionIdx === -1 ||
   validateChangesetsIdx > changesetsActionIdx
 ) {
-  throw new Error('ts.release.yml must validate pending changesets before changesets/action');
+  throw new Error('sdk.release.yml must validate pending changesets before changesets/action');
 }
 
 if (changesetConfig.baseBranch !== 'next') {
@@ -347,8 +343,8 @@ if (
 
 // --- Python release metadata: package version, runtime version, and docs changelog must agree ---
 
-if (!pythonReleaseWorkflow.includes('run: pnpm test:release-workflow')) {
-  throw new Error('py.release.yml must validate release metadata before publishing');
+if (!sdkReleaseWorkflow.includes('run: pnpm test:release-workflow')) {
+  throw new Error('sdk.release.yml must validate release metadata before publishing');
 }
 
 {

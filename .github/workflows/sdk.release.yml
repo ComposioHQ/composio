@@ -1,0 +1,165 @@
+name: SDK Release
+
+# Lean SDK release coordinator (TypeScript + Python).
+#
+#   push to next ──► `version` maintains the release PR: changeset bumps, the
+#                    Python version-file sync, and a GPT-5.5 changelog draft at
+#                    .github/sdk-release/draft.mdx — all human-reviewed in the PR.
+#   release PR merges ──► `plan` asks the registries which current versions are
+#                    missing ──► `publish` (gated by the `sdk-release`
+#                    environment) ships npm + PyPI via OIDC trusted publishing,
+#                    verifies both registries serve the exact versions, then
+#                    opens an auto-merge PR promoting the reviewed changelog
+#                    entry into docs/content/changelog/.
+#
+# Recovery: publishing is convergent — npm/PyPI publishes skip artifacts that
+# are already live and `plan` recomputes from the registries, so re-running the
+# workflow (workflow_dispatch) finishes a partial release safely.
+# Python-only releases: bump python/pyproject.toml in a normal PR; `plan`
+# notices the version is not on PyPI. Write its changelog entry manually.
+#
+# One-time repo setup this workflow assumes:
+#   - a `sdk-release` GitHub environment with required reviewers (publish gate),
+#   - npm packages configured for OIDC trusted publishing from this workflow,
+#   - the PyPI `composio` project trusting this workflow as publisher.
+
+on:
+  push:
+    branches: [next]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  TURBO_TELEMETRY_DEBUG: 1
+
+concurrency:
+  group: sdk-release
+  cancel-in-progress: false
+
+jobs:
+  version:
+    name: Maintain release PR
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      # App token (not GITHUB_TOKEN) so the release PR's eventual merge still
+      # triggers downstream push workflows (e.g. build-cli-binaries.yml).
+      - name: Generate GitHub App token
+        id: app-token
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        with:
+          client-id: ${{ vars.RELEASE_BOT_CLIENT_ID }}
+          private-key: ${{ secrets.RELEASE_BOT_APP_PRIVATE_KEY }}
+
+      - name: Checkout Code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          token: ${{ steps.app-token.outputs.token }}
+
+      - name: Setup Node.js, pnpm, Bun
+        uses: ./.github/actions/setup-node-pnpm-bun
+
+      - name: Install Dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Validate Changesets
+        run: pnpm validate:changesets
+
+      - name: Create or update release PR
+        uses: changesets/action@a45c4d594aa4e2c509dc14a9f2b3b67ba3780d0d # v1.9.0
+        with:
+          version: pnpm sdk-release prepare
+          commit: 'Release: prepare SDK release'
+          title: 'Release: prepare SDK release'
+        env:
+          GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+
+  plan:
+    name: Check registries
+    runs-on: ubuntu-latest
+    outputs:
+      publish_needed: ${{ steps.status.outputs.publish_needed }}
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Setup Node.js, pnpm, Bun
+        uses: ./.github/actions/setup-node-pnpm-bun
+
+      - name: Install Dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Compare workspace versions against npm and PyPI
+        id: status
+        run: pnpm sdk-release status
+
+  publish:
+    name: Publish and verify
+    needs: plan
+    if: needs.plan.outputs.publish_needed == 'true'
+    runs-on: ubuntu-latest
+    environment: sdk-release
+    permissions:
+      contents: write # changeset publish pushes release tags
+      id-token: write # npm + PyPI OIDC trusted publishing
+      pull-requests: write # changelog finalization PR
+    steps:
+      - name: Generate GitHub App token
+        id: app-token
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        with:
+          client-id: ${{ vars.RELEASE_BOT_CLIENT_ID }}
+          private-key: ${{ secrets.RELEASE_BOT_APP_PRIVATE_KEY }}
+
+      - name: Checkout Code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          token: ${{ steps.app-token.outputs.token }}
+
+      - name: Setup Node.js, pnpm, Bun
+        uses: ./.github/actions/setup-node-pnpm-bun
+        with:
+          # Node 24's npm supports OIDC trusted publishing; the toolchain default
+          # does not. Intentionally a release-only override.
+          node-version: '24.17.0'
+
+      - name: Install Dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Validate release metadata
+        run: pnpm test:release-workflow
+
+      - name: Publish npm packages
+        run: pnpm changeset:release
+
+      - name: Push release tags
+        run: git push origin --tags
+
+      - name: Setup Python with UV
+        uses: ./.github/actions/setup-python-uv
+
+      - name: Build Python artifacts
+        working-directory: python
+        run: make env && make build
+
+      - name: Publish Python package
+        uses: pypa/gh-action-pypi-publish@ba38be9e461d3875417946c167d0b5f3d385a247 # v1.14.1
+        with:
+          packages-dir: python/dist
+          skip-existing: true
+
+      - name: Verify registries serve the released versions
+        run: pnpm sdk-release verify
+
+      - name: Finalize changelog draft
+        run: pnpm sdk-release finalize
+
+      - name: Open changelog PR
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: bash .github/scripts/sdk-release/open-changelog-pr.sh

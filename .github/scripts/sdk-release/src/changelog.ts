@@ -1,7 +1,7 @@
 import { FileSystem, HttpClient, HttpClientRequest, HttpClientResponse } from '@effect/platform'
 import { Config, Data, Effect, Redacted, Schema } from 'effect'
 import { dirname, resolve } from 'node:path'
-import { draftPath, sha256 } from './shared.ts'
+import { draftPath, exec, sha256 } from './shared.ts'
 
 /**
  * Pinned model snapshot. Moving to a newer snapshot must happen through a
@@ -123,10 +123,14 @@ export const renderDraft = (facts: ReleaseFacts, content: typeof DraftContent.Ty
     `{/* sdk-release input-hash ${inputHash} */}`,
     '',
     ...content.sections.flatMap((section) => [`## ${escapeMdx(section.heading)}`, '', escapeMdx(section.body), '']),
+    // The row format below is a repo invariant: test/release-workflow.test.ts
+    // requires every current SDK version to be documented as such a table row.
     '## Released versions',
     '',
-    ...facts.typescript.map((pkg) => `- \`${pkg.name}@${pkg.version}\` (npm)`),
-    ...(facts.python === null ? [] : [`- \`${facts.python.name}==${facts.python.version}\` (PyPI)`]),
+    '| SDK | Version |',
+    '| --- | --- |',
+    ...facts.typescript.map((pkg) => `| TypeScript \`${pkg.name}\` | \`${pkg.version}\` |`),
+    ...(facts.python === null ? [] : [`| Python \`${facts.python.name}\` | \`${facts.python.version}\` |`]),
     '',
   ].join('\n')
 
@@ -135,9 +139,19 @@ export const generateDraft = (facts: ReleaseFacts) =>
     const fs = yield* FileSystem.FileSystem
     const factsJson = JSON.stringify(facts, null, 2)
     const inputHash = sha256(factsJson)
-    const existing = yield* fs.readFileString(draftPath).pipe(Effect.option)
+    // Prefer an existing draft for identical facts — the working tree first, then
+    // the open release-PR branch (changesets/action rebuilds it from next each
+    // push, and regenerating would discard human edits made in the PR).
+    const existing = yield* fs
+      .readFileString(draftPath)
+      .pipe(
+        Effect.orElse(() => exec('git', 'show', 'origin/changeset-release/next:.github/sdk-release/draft.mdx')),
+        Effect.option
+      )
     if (existing._tag === 'Some' && existing.value.includes(inputHash)) {
-      return yield* Effect.log('Draft already matches these release facts; keeping it (it may carry human edits).')
+      yield* fs.makeDirectory(dirname(draftPath), { recursive: true })
+      yield* fs.writeFileString(draftPath, existing.value)
+      return yield* Effect.log('Reusing existing draft for identical release facts (it may carry human edits).')
     }
     const prompt = yield* fs.readFileString(resolve(import.meta.dir, '../prompt.md'))
     const content = yield* callModel(factsJson, prompt)
