@@ -16,11 +16,12 @@ setup on your part. These apps are shared across every Composio user, so anyone 
 connection with one — binding ties each authorization attempt to the browser that began it, so a
 flow one party starts cannot be completed by another.
 
-**[Callback identity verification](#callback-identity-verification)** is opt-in and set per project.
-Once you register a verifier URL, Composio defers every OAuth activation in the project — managed and
-custom auth configs alike — until your server confirms which of your users completed the flow. It
-binds connections to your own users, and is the only option for your own OAuth apps, where
-same-browser binding does not run.
+**[Callback identity verification](#callback-identity-verification)** is the most reliable way to
+secure connections on your own OAuth apps. Composio holds each connection until your server confirms
+the user who came back, and activates it only when that user matches the one the flow was started
+for. Because it verifies the user rather than the browser, it holds however the user returns from
+the provider — none of the same-browser edge cases apply. It is opt-in per project, and once enabled
+covers every OAuth connection you create, managed and custom alike.
 
 ## Same-browser binding
 
@@ -37,10 +38,12 @@ browser or device."* It most often happens with in-app browsers (Instagram, Link
 that hand the provider step to the system browser, or when cookies are blocked. Reopening the link
 and finishing it in a single browser lets them through.
 
-The check stays on because Composio owns the OAuth app for these connections and it is shared across
-every Composio user — without it, a connection one person starts could be finished by someone else.
-If it is hurting your users, tell us and we will turn it off for your project straight away, with
-nothing for you to deploy.
+This check is not optional on managed apps, and for good reason: Composio's OAuth app is shared
+across every Composio user, so without a browser check a connection one person starts could be
+completed by someone else. If these cases are affecting your users, the durable fix is to bring your
+own OAuth app and enable [callback identity verification](#callback-identity-verification) — it binds
+each connection to your signed-in user instead of the browser, so it holds no matter how the user
+returns from the provider.
 </Callout>
 
 ## Callback identity verification
@@ -52,13 +55,11 @@ Composio activates the connection only if it matches the user the connection was
 
 ### Roles
 
-- **Your server asserts.** It reads its own session and returns the signed-in `user_id`. It compares
-  nothing and does not require the connection id.
-- **Composio verifies.** It compares that `user_id` against the connection's owner, and activates or
-  rejects.
+- **Your server asserts identity.** It reads its own session and returns the signed-in `user_id`.
+- **Composio verifies it.** It compares that `user_id` against the user the connection was created
+  for, and activates or rejects.
 
-The comparison runs on Composio's side by design; a check the caller performs on itself is not a
-control. The endpoint you host reads a session, calls one API, and redirects.
+The endpoint you host stays small: read a session, call one Composio API, redirect the user onward.
 
 ### How it works
 
@@ -98,7 +99,8 @@ Composio sent. The control verifies which user is present in this browser.
 <Step>
 <StepTitle>Redeem the session</StepTitle>
 
-`POST` the `session_uri` and `user_id` to `complete_auth`:
+From your server — this call authenticates with your project API key and must not run in the browser
+— `POST` the `session_uri` and `user_id` to `complete_auth`:
 
 ```bash
 curl -X POST https://backend.composio.dev/api/v3.1/connected_accounts/complete_auth \
@@ -110,17 +112,11 @@ curl -X POST https://backend.composio.dev/api/v3.1/connected_accounts/complete_a
   }'
 ```
 
-On a match, the connection activates and the response returns it:
-
-```json
-{
-  "connected_account_id": "ca_A1b2C3",
-  "toolkit_slug": "github"
-}
-```
-
-A `200` is returned only once the connection is `ACTIVE`, so no polling is required. This response is
-the only place `connected_account_id` is returned, since `session_uri` carries no identifiers.
+On a match, the connection activates and the response returns `connected_account_id` and
+`toolkit_slug`. A `200` is returned only once the connection is `ACTIVE`, so there is nothing to
+poll. If the `user_id` does not match, the request returns `400` and the flow must be restarted. The
+full response contract is in the
+[`complete_auth` API reference](/reference/api-reference/connected-accounts/postConnectedAccountsCompleteAuth).
 </Step>
 
 <Step>
@@ -154,11 +150,6 @@ so your server cannot return a matching `user_id`. The connection expires after 
 a connection, run the flow from your own application or remove the verifier URL while working in the
 dashboard.
 
-**A real `user_id` is required.** On the create endpoint, `user_id` defaults to `default` when
-omitted; link sessions require it explicitly. With verification enabled, `default` and blank values
-are rejected with `This project requires callback identity verification, so a real user_id is
-required`. Pass a real `user_id` on both the create and link paths.
-
 **All redirectable flows are covered.** Verification applies to every redirectable OAuth connection
 in the project: direct API creation, hosted Connect Link, and provider marketplace installs. There
 is no per-flow exemption.
@@ -175,18 +166,3 @@ incoming request rather than queuing it.
 Treat `session_uri` as a bearer secret. Redemption consumes it before ownership is checked, so a
 leaked value can be redeemed by another caller, after which the owner's redemption returns `404`. Do
 not log or forward it.
-
-### Responses
-
-The request and response contract, including every status code, is in the
-[`complete_auth` API reference](/reference/api-reference/connected-accounts/postConnectedAccountsCompleteAuth).
-Two behaviours are not expressed in the schema:
-
-<Callout type="warn">
-A `400 identity mismatch` is terminal. It marks the connection `FAILED` with reason
-`IDENTITY_VERIFICATION_FAILED`. Do not retry it; start a new connect flow.
-</Callout>
-
-`FAILED` does not uniquely indicate a refused verification. Only an identity mismatch and a failed
-token exchange write `FAILED`; an abandoned flow or an unredeemed session becomes `INITIATED`, then
-`EXPIRED`. Check the reason, not the status.
