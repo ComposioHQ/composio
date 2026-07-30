@@ -20,16 +20,7 @@ import type { StarterTask } from 'src/services/onboarding-tasks';
  * status, and no other gate is allowed to be non-blocking.
  */
 export type GateStatus =
-  | 'satisfied'
-  | 'unsatisfied'
-  | 'blocked'
-  | 'skipped'
-  | 'deferred'
-  | 'unknown'
-  | 'not_applicable'
-  | 'advisory';
-
-export type OnboardingSkip = 'connect' | 'execute';
+  'satisfied' | 'unsatisfied' | 'blocked' | 'deferred' | 'unknown' | 'not_applicable' | 'advisory';
 
 export type HostWiringStatus = {
   readonly target: string;
@@ -77,8 +68,6 @@ export type OnboardingFacts = {
   readonly pendingLinks: ReadonlyArray<PendingLink>;
   readonly hasExecuted: Option.Option<{ readonly slug: string; readonly at: string }>;
   readonly requestedToolkit: Option.Option<string>;
-  /** Skips apply to the invocation that carries them and are never persisted. */
-  readonly invocationSkips: ReadonlyArray<OnboardingSkip>;
   readonly hostWiring: HostWiringFact;
 };
 
@@ -208,16 +197,6 @@ const connectGate = (
     };
   }
 
-  if (facts.invocationSkips.includes('connect')) {
-    return {
-      status: 'skipped',
-      toolkit,
-      connectedToolkits,
-      connectedAccountId: null,
-      redirectUrl: null,
-    };
-  }
-
   if (facts.connectedToolkits === 'unknown') {
     return {
       status: 'unknown',
@@ -287,10 +266,6 @@ const executeGate = (
     return { status: 'satisfied', toolSlug, lastExecutedAt, task: resolvedTask };
   }
 
-  if (facts.invocationSkips.includes('execute')) {
-    return { status: 'skipped', toolSlug, lastExecutedAt, task: resolvedTask };
-  }
-
   // A named toolkit with no curated demo has nothing to run, and inventing one would mean
   // executing a tool the caller never asked for. The gate defers and points at `composio search`.
   if (Option.isSome(resolvedToolkit) && Option.isNone(task)) {
@@ -331,9 +306,9 @@ export const resolveOnboardingState = (facts: OnboardingFacts): OnboardingState 
         entry.status === 'unsatisfied' || entry.status === 'blocked' || entry.status === 'unknown'
     )?.gate ?? null;
 
-  // `onboarded` is login + connect + has-executed, and nothing else. A skip is invocation-only
-  // and non-blocking for routing, but it never counts as a satisfied gate — otherwise
-  // `--skip connect --skip execute` would report a finished onboarding that never happened.
+  // `onboarded` is login + connect + has-executed, and nothing else. In particular it never reads
+  // the execute gate's status: `deferred` means there is nothing curated to run, not that a first
+  // tool call happened.
   const onboarded =
     login.status === 'satisfied' &&
     connect.status === 'satisfied' &&

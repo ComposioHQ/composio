@@ -201,8 +201,6 @@ export const nextAgentCommand = (
     }
 
     case 'execute': {
-      const toolSlug = state.gates.execute.toolSlug;
-
       if (context.failedDemo !== undefined) {
         // Handing back a command here would hand back the call that just failed, so this stays a
         // block. The prose still names the command that fixes the cause when the cause is known.
@@ -213,8 +211,11 @@ export const nextAgentCommand = (
         };
       }
 
-      if (toolSlug === null) {
-        // Reachable when the connect gate was skipped without a toolkit ever being named.
+      // The slug and its curated arguments come from one registry lookup, so what the agent runs is
+      // the same call the wizard would have made rather than a bare `-d '{}'` that happens to work
+      // for some slugs. No curated task means no slug to name, and a template is never emitted.
+      const task = Option.flatMap(Option.fromNullable(state.toolkit), findTaskByToolkit);
+      if (Option.isNone(task)) {
         return {
           kind: 'blocked',
           reason: 'toolkit_required',
@@ -223,44 +224,26 @@ export const nextAgentCommand = (
         };
       }
 
-      // The curated arguments travel with the command, so what the agent runs is the same call the
-      // wizard would have made rather than a bare `-d '{}'` that happens to work for some slugs.
-      const args = Option.match(
-        Option.flatMap(Option.fromNullable(state.toolkit), findTaskByToolkit),
-        {
-          onNone: () => '{}',
-          onSome: task => JSON.stringify(task.read.args),
-        }
-      );
-
       return {
         kind: 'command',
-        command: commandHintExample('root.execute', { slug: toolSlug, data: `-d '${args}'` }),
+        command: commandHintExample('root.execute', {
+          slug: task.value.read.slug,
+          data: `-d '${JSON.stringify(task.value.read.args)}'`,
+        }),
       };
     }
 
     case null:
-      // No gate is outstanding, and onboarding is unfinished — the `onboarded` check above already
-      // returned otherwise. Both remaining states have to say something: `done` with
-      // `onboarded: false` is a document with nothing to act on, and a caller polling until
-      // `onboarded` would spin on it forever.
-
-      // A connected toolkit with no curated demo. `composio search` changes no fact in
-      // `OnboardingFacts`, so returning it as a command would loop by construction — it stays prose.
-      if (state.gates.execute.status === 'deferred') {
-        return {
-          kind: 'deferred',
-          humanAction: `No starter demo for ${state.gates.connect.toolkit ?? 'that toolkit'}. Use \`composio search\` to find a tool to run, then \`composio execute\` it.`,
-        };
-      }
-
-      // A gate `--skip` left out of this invocation. Skips are never persisted, so re-running
-      // without the flag is the whole recovery — but the same argv in a shell alias reproduces the
-      // state, which is why the reason is stated rather than left to the caller to infer.
+      // No gate is outstanding and onboarding is unfinished — the `onboarded` check above already
+      // returned otherwise. The only way to get here is a connected toolkit with no curated demo,
+      // and it still has to say something: `done` with `onboarded: false` is a document with
+      // nothing to act on, and a caller polling until `onboarded` would spin on it forever.
+      //
+      // `composio search` changes no fact in `OnboardingFacts`, so returning it as a command would
+      // loop by construction — it stays prose.
       return {
         kind: 'deferred',
-        humanAction:
-          'Onboarding is unfinished because `--skip` left a step out of this invocation. Re-run `composio onboard` without `--skip` to finish it.',
+        humanAction: `No starter demo for ${state.gates.connect.toolkit ?? 'that toolkit'}. Use \`composio search\` to find a tool to run, then \`composio execute\` it.`,
       };
   }
 };

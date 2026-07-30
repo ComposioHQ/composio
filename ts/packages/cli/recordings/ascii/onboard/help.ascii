@@ -526,7 +526,7 @@ composio 0.3.0
 
 USAGE
 
-$ onboard [--toolkit text] [--task text] [--json] [(-y, --yes)] [--status] --skip connect | execute... [--reset]
+$ onboard [--toolkit text] [--json] [(-y, --yes)] [--status] [--reset]
 
 DESCRIPTION
 
@@ -550,14 +550,6 @@ OPTIONS
   A user-defined piece of text.
 
   Toolkit to connect and demo (e.g. "github", "gmail")
-
-  This setting is optional.
-
---task text
-
-  A user-defined piece of text.
-
-  Starter task to run, by id or free text (e.g. "read my inbox")
 
   This setting is optional.
 
@@ -591,14 +583,6 @@ OPTIONS
 
   This setting is optional.
 
---skip connect | execute...
-
-  One of the following: connect, execute
-
-  Skip a step for this invocation only: connect or execute
-
-  This option may be repeated zero or more times.
-
 --reset
 
   A true or false value.
@@ -610,6 +594,22 @@ OPTIONS
   This setting is optional.
 
 >
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

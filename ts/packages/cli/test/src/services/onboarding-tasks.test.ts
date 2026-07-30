@@ -2,7 +2,6 @@ import { describe, expect, it } from 'vitest';
 import { Option } from 'effect';
 import {
   ONBOARD_TASKS,
-  findTaskByFreeText,
   findTaskByToolkit,
   onboardToolkitSlugs,
 } from 'src/services/onboarding-tasks';
@@ -26,27 +25,6 @@ describe('onboarding-tasks', () => {
     it('returns none for the empty string', () => {
       expect(findTaskByToolkit('')).toStrictEqual(Option.none());
       expect(findTaskByToolkit('   ')).toStrictEqual(Option.none());
-    });
-  });
-
-  describe('findTaskByFreeText', () => {
-    it('matches a label substring', () => {
-      expect(Option.getOrThrow(findTaskByFreeText('read my latest')).id).toBe('read-my-inbox');
-    });
-
-    it('matches every registry id exactly', () => {
-      for (const task of ONBOARD_TASKS) {
-        expect(Option.getOrThrow(findTaskByFreeText(task.id))).toStrictEqual(task);
-      }
-    });
-
-    it('returns none for text matching no entry', () => {
-      expect(findTaskByFreeText('do a thing')).toStrictEqual(Option.none());
-    });
-
-    it('returns none for the empty string rather than matching every label', () => {
-      expect(findTaskByFreeText('')).toStrictEqual(Option.none());
-      expect(findTaskByFreeText('  ')).toStrictEqual(Option.none());
     });
   });
 

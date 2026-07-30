@@ -159,25 +159,3 @@ export const findTaskByToolkit = (slug: string): Option.Option<StarterTask> => {
   }
   return Arr.findFirst(ONBOARD_TASKS, task => task.toolkit === normalized);
 };
-
-/**
- * Free-text lookup: exact task id or toolkit slug first, then a case-insensitive label
- * substring. Deliberately no fuzzy matching — a near-miss must fall through to
- * `composio search` rather than silently choosing a provider to authenticate against.
- */
-export const findTaskByFreeText = (text: string): Option.Option<StarterTask> => {
-  const normalized = text.trim().toLowerCase();
-  if (normalized.length === 0) {
-    return Option.none();
-  }
-
-  const exact = Arr.findFirst(
-    ONBOARD_TASKS,
-    task => task.id === normalized || task.toolkit === normalized
-  );
-  if (Option.isSome(exact)) {
-    return exact;
-  }
-
-  return Arr.findFirst(ONBOARD_TASKS, task => task.label.toLowerCase().includes(normalized));
-};

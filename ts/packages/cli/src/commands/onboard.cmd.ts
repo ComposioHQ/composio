@@ -13,16 +13,11 @@ import { gatherHostWiring, gatherOnboardingFacts } from 'src/services/onboarding
 import { nextAgentCommand } from 'src/services/onboarding-next-command';
 import { resolveOnboardingState } from 'src/services/onboarding-state';
 import { clearOnboardingExecution } from 'src/services/onboarding-store';
-import {
-  asRecord,
-  findTaskByFreeText,
-  findTaskByToolkit,
-  ONBOARD_TASKS,
-} from 'src/services/onboarding-tasks';
+import { asRecord, findTaskByToolkit, ONBOARD_TASKS } from 'src/services/onboarding-tasks';
 import type { ComposioFailureReason } from 'src/services/composio-error-overrides';
 import type { MintedLink } from 'src/services/onboarding-facts';
 import type { NextCommandContext } from 'src/services/onboarding-next-command';
-import type { OnboardingSkip, OnboardingState } from 'src/services/onboarding-state';
+import type { OnboardingState } from 'src/services/onboarding-state';
 import type { StarterTask } from 'src/services/onboarding-tasks';
 
 /**
@@ -39,17 +34,10 @@ import type { StarterTask } from 'src/services/onboarding-tasks';
  * each requires explicit consent — see `mayRunReadDemo` and `offerReversibleCreate`.
  */
 
-const SKIP_STEPS = ['connect', 'execute'] as const;
-
 const invalidValue = (message: string) => ValidationError.invalidValue(HelpDoc.p(message));
 
 const toolkitOption = Options.text('toolkit').pipe(
   Options.withDescription('Toolkit to connect and demo (e.g. "github", "gmail")'),
-  Options.optional
-);
-
-const taskOption = Options.text('task').pipe(
-  Options.withDescription('Starter task to run, by id or free text (e.g. "read my inbox")'),
   Options.optional
 );
 
@@ -71,77 +59,45 @@ const statusOption = Options.boolean('status').pipe(
   Options.withDescription('Report where you are without advancing any gate')
 );
 
-const skipOption = Options.choice('skip', SKIP_STEPS).pipe(
-  Options.repeated,
-  Options.withDescription('Skip a step for this invocation only: connect or execute')
-);
-
 const resetOption = Options.boolean('reset').pipe(
   Options.withDefault(false),
   Options.withDescription('Forget the recorded first execution and start the demo over')
 );
-
-/**
- * `Options.text` accepts the empty string, so the ValidationError does not arrive for free. Both
- * text options are checked before any fact is gathered, so an empty value cannot produce a partial
- * document.
- */
-const requireNonEmpty = (flag: string, value: Option.Option<string>) =>
-  Effect.gen(function* () {
-    if (Option.isNone(value)) {
-      return Option.none<string>();
-    }
-    const trimmed = value.value.trim();
-    if (trimmed.length === 0) {
-      return yield* Effect.fail(invalidValue(`\`--${flag}\` cannot be empty.`));
-    }
-    return Option.some(trimmed);
-  });
 
 const decodeToolkitSlug = Schema.decodeUnknownEither(ToolkitSlug);
 
 /**
  * `--toolkit` names a real toolkit slug or it names nothing.
  *
- * Two things go wrong without this. Slugs are lowercase everywhere the API and the curated registry
- * compare them, so `--toolkit GitHub` would never match a connected account and the connect gate
- * could never converge — it would keep minting links. And the value is interpolated into
- * `next_command` and into `human_action`, both of which callers execute, so a value carrying shell
- * metacharacters has to be refused at the boundary rather than quoted at the sink.
+ * Three things go wrong without this. `Options.text` accepts the empty string, so the
+ * ValidationError does not arrive for free, and the check runs before any fact is gathered so an
+ * empty value cannot produce a partial document. Slugs are lowercase everywhere the API and the
+ * curated registry compare them, so `--toolkit GitHub` would never match a connected account and the
+ * connect gate could never converge — it would keep minting links. And the value is interpolated
+ * into `next_command` and into `human_action`, both of which callers execute, so a value carrying
+ * shell metacharacters has to be refused at the boundary rather than quoted at the sink.
  */
-const requireToolkitSlug = (flag: string, value: Option.Option<string>) =>
+const requireToolkitSlug = (value: Option.Option<string>) =>
   Effect.gen(function* () {
-    const trimmed = yield* requireNonEmpty(flag, value);
-    if (Option.isNone(trimmed)) {
+    if (Option.isNone(value)) {
       return Option.none<string>();
     }
 
-    const decoded = decodeToolkitSlug(trimmed.value.toLowerCase());
+    const trimmed = value.value.trim();
+    if (trimmed.length === 0) {
+      return yield* Effect.fail(invalidValue('`--toolkit` cannot be empty.'));
+    }
+
+    const decoded = decodeToolkitSlug(trimmed.toLowerCase());
     if (Either.isLeft(decoded)) {
       return yield* Effect.fail(
         invalidValue(
-          `\`--${flag}\` is not a toolkit slug. ${ParseResult.TreeFormatter.formatErrorSync(decoded.left)}`
+          `\`--toolkit\` is not a toolkit slug. ${ParseResult.TreeFormatter.formatErrorSync(decoded.left)}`
         )
       );
     }
     return Option.some(decoded.right);
   });
-
-/**
- * Resolve the caller's stated target. `--toolkit` names it directly; `--task` goes through the
- * curated registry, and free text that matches no entry is *not* coerced into a toolkit — a
- * near-miss falls through to the connect gate's `toolkit_required` block rather than silently
- * choosing a provider to authenticate against.
- */
-const resolveRequestedToolkit = (params: {
-  readonly toolkit: Option.Option<string>;
-  readonly task: Option.Option<string>;
-}): Option.Option<string> =>
-  Option.orElse(params.toolkit, () =>
-    Option.flatMap(params.task, text =>
-      Option.map(findTaskByFreeText(text), matched => matched.toolkit)
-    )
-  );
 
 const taskFor = (state: OnboardingState): Option.Option<StarterTask> =>
   Option.flatMap(Option.fromNullable(state.toolkit), findTaskByToolkit);
@@ -406,17 +362,14 @@ const advanceExecuteGate = (params: {
 
 const runOnboard = (params: {
   readonly toolkit: Option.Option<string>;
-  readonly task: Option.Option<string>;
   readonly json: boolean;
   readonly yes: boolean;
   readonly status: boolean;
-  readonly skip: ReadonlyArray<OnboardingSkip>;
   readonly reset: boolean;
 }) =>
   Effect.gen(function* () {
     const ui = yield* TerminalUI;
-    const toolkitOpt = yield* requireToolkitSlug('toolkit', params.toolkit);
-    const taskOpt = yield* requireNonEmpty('task', params.task);
+    const toolkitOpt = yield* requireToolkitSlug(params.toolkit);
 
     if (params.reset) {
       yield* clearOnboardingExecution;
@@ -427,9 +380,7 @@ const runOnboard = (params: {
     // a pty" would be indistinguishable from interactive and an agent would sit on a prompt forever.
     const interactive = canPrompt && !params.json;
 
-    // `--task` resolves through the curated registry, whose slugs are literals in this repository,
-    // so the value that reaches the gates is a slug on both paths.
-    let requestedToolkit = resolveRequestedToolkit({ toolkit: toolkitOpt, task: taskOpt });
+    let requestedToolkit = toolkitOpt;
     let loginContext: NextCommandContext = {};
     let mintedRedirectUrl = Option.none<MintedLink>();
     // Held beside `mintedRedirectUrl` for the same reason: it belongs to this invocation, not to
@@ -445,7 +396,6 @@ const runOnboard = (params: {
       Effect.map(
         gatherOnboardingFacts({
           requestedToolkit: toolkit,
-          invocationSkips: params.skip,
           mintedRedirectUrl,
           email: loginEmail,
           hostWiring,
@@ -588,15 +538,12 @@ export const onboardCmd = Command.make(
   'onboard',
   {
     toolkit: toolkitOption,
-    task: taskOption,
     json: jsonOption,
     yes: yesOption,
     status: statusOption,
-    skip: skipOption,
     reset: resetOption,
   },
-  ({ toolkit, task, json, yes, status, skip, reset }) =>
-    runOnboard({ toolkit, task, json, yes, status, skip, reset })
+  ({ toolkit, json, yes, status, reset }) => runOnboard({ toolkit, json, yes, status, reset })
 ).pipe(
   Command.withDescription(
     [

@@ -33,18 +33,15 @@ const CORE_COMMANDS: ReadonlyArray<TaggedValue<DetailedCommand>> = [
   simple({
     name: 'onboard',
     description: 'Get from a fresh install to a working tool call. Resumes wherever you left off.',
-    usage:
-      'onboard [--toolkit slug] [--task text] [--json] [--status] [--yes] [--skip step] [--reset]',
+    usage: 'onboard [--toolkit slug] [--json] [--status] [--yes] [--reset]',
     options: [
       { name: '--toolkit', description: 'Toolkit to connect and demo (e.g. "github")' },
-      { name: '--task', description: 'Starter task by id or free text (e.g. "read my inbox")' },
       {
         name: '--json',
         description: 'Emit the state document on stdout, suppress prompts, never write data',
       },
       { name: '--status', description: 'Report where you are without advancing any step' },
       { name: '-y, --yes', description: 'Pre-answer the demo confirm and the org picker' },
-      { name: '--skip', description: 'Skip a step for this invocation: connect or execute' },
       { name: '--reset', description: 'Forget the recorded first execution and start over' },
     ],
   }),

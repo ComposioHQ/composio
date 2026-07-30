@@ -1,11 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { Array as Arr, Option, pipe } from 'effect';
 import { resolveOnboardingState } from 'src/services/onboarding-state';
-import type {
-  HostWiringFact,
-  OnboardingFacts,
-  OnboardingSkip,
-} from 'src/services/onboarding-state';
+import type { HostWiringFact, OnboardingFacts } from 'src/services/onboarding-state';
 
 const NO_HOSTS: HostWiringFact = { kind: 'inspected', hosts: [] };
 
@@ -43,7 +39,6 @@ const facts = (overrides: Partial<OnboardingFacts> = {}): OnboardingFacts => ({
   pendingLinks: [],
   hasExecuted: Option.none(),
   requestedToolkit: Option.none(),
-  invocationSkips: [],
   hostWiring: NO_HOSTS,
   ...overrides,
 });
@@ -194,14 +189,20 @@ describe('resolveOnboardingState', () => {
       expect(state.gates.connect.connectedToolkits).toStrictEqual(['gmail']);
     });
 
-    it('S12: --skip connect makes the gate non-blocking and moves on to execute', () => {
+    it('S12: an uncurated pending link is not adopted as the target', () => {
       const state = resolveOnboardingState(
-        facts({ requestedToolkit: Option.some('github'), invocationSkips: ['connect'] })
+        facts({
+          pendingLinks: [
+            { toolkit: 'stripe', connectedAccountId: 'ca_stripe', redirectUrl: Option.none() },
+          ],
+        })
       );
 
-      expect(state.nextGate).toBe('execute');
-      expect(state.onboarded).toBe(false);
-      expect(state.gates.connect.status).toBe('skipped');
+      // Blocking here would strand bare `composio onboard` on an authorization the user started
+      // elsewhere, and hide the starter picker until that account is removed.
+      expect(state.toolkit).toBeNull();
+      expect(state.nextGate).toBe('connect');
+      expect(state.gates.connect.status).toBe('unsatisfied');
     });
 
     it('S13: a failed connection check blocks with an unknown connect gate', () => {
@@ -331,12 +332,6 @@ describe('resolveOnboardingState', () => {
       Option.some('hubspot'),
       Option.none<string>(),
     ] as const;
-    const skipChoices: ReadonlyArray<ReadonlyArray<OnboardingSkip>> = [
-      [],
-      ['connect'],
-      ['execute'],
-      ['connect', 'execute'],
-    ];
     const hostChoices: ReadonlyArray<HostWiringFact> = [
       NO_HOSTS,
       UNWIRED_CLAUDE,
@@ -350,7 +345,6 @@ describe('resolveOnboardingState', () => {
       Arr.bind('connectedToolkits', () => connectionChoices),
       Arr.bind('hasExecuted', () => executedChoices),
       Arr.bind('requestedToolkit', () => toolkitChoices),
-      Arr.bind('invocationSkips', () => skipChoices),
       Arr.bind('hostWiring', () => hostChoices)
     );
 
@@ -360,7 +354,6 @@ describe('resolveOnboardingState', () => {
           connectionChoices.length *
           executedChoices.length *
           toolkitChoices.length *
-          skipChoices.length *
           hostChoices.length
       );
     });
@@ -479,7 +472,7 @@ describe('resolveOnboardingState', () => {
       expect(state.gates.connect.redirectUrl).toBe('https://auth.example.com/github');
     });
 
-    it('adopts the newest pending link toolkit when nothing was requested', () => {
+    it('adopts the newest curated pending link toolkit when nothing was requested', () => {
       const state = resolveOnboardingState(
         facts({
           pendingLinks: [
@@ -495,6 +488,46 @@ describe('resolveOnboardingState', () => {
       expect(state.toolkit).toBe('gmail');
       expect(state.gates.connect.status).toBe('blocked');
       expect(state.gates.connect.redirectUrl).toBe('https://auth.example.com/gmail');
+    });
+
+    it('skips past a newer uncurated pending link to a curated one', () => {
+      const state = resolveOnboardingState(
+        facts({
+          pendingLinks: [
+            {
+              toolkit: 'stripe',
+              connectedAccountId: 'ca_stripe_pending',
+              redirectUrl: Option.none(),
+            },
+            {
+              toolkit: 'gmail',
+              connectedAccountId: 'ca_gmail_pending',
+              redirectUrl: Option.some('https://auth.example.com/gmail'),
+            },
+          ],
+        })
+      );
+
+      expect(state.toolkit).toBe('gmail');
+      expect(state.gates.connect.connectedAccountId).toBe('ca_gmail_pending');
+    });
+
+    it('prefers a connected curated toolkit over an outstanding curated link', () => {
+      const state = resolveOnboardingState(
+        facts({
+          connectedToolkits: ['github'],
+          pendingLinks: [
+            {
+              toolkit: 'gmail',
+              connectedAccountId: 'ca_gmail_pending',
+              redirectUrl: Option.none(),
+            },
+          ],
+        })
+      );
+
+      expect(state.toolkit).toBe('github');
+      expect(state.gates.connect.status).toBe('satisfied');
     });
 
     it('skips past a newer uncurated pending link to a curated one', () => {

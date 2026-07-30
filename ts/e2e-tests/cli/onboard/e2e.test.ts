@@ -68,7 +68,7 @@ e2e(import.meta.url, {
     let stdinClosedJson: E2ETestResultWithFiles<'out.json'>;
     let emptyToolkit: E2ETestResultWithFiles<'out.txt'>;
     let injectedToolkit: E2ETestResultWithFiles<'out.txt'>;
-    let emptyTask: E2ETestResultWithFiles<'out.txt'>;
+    let unknownFlag: E2ETestResultWithFiles<'out.txt'>;
     let bareComposio: E2ETestResultWithFiles<'out.txt'>;
 
     beforeAll(async () => {
@@ -107,8 +107,8 @@ e2e(import.meta.url, {
         files: ['out.txt'],
       });
 
-      emptyTask = await runCmd({
-        command: isolated(apiServer, 'composio onboard --task "" --json > out.txt'),
+      unknownFlag = await runCmd({
+        command: isolated(apiServer, 'composio onboard --skip execute --json > out.txt'),
         files: ['out.txt'],
       });
 
@@ -197,9 +197,9 @@ e2e(import.meta.url, {
         expect(captured).toContain('--toolkit');
       });
 
-      it('--task "" exits non-zero and writes nothing to stdout', () => {
-        expect(emptyTask.exitCode).not.toBe(0);
-        expect(emptyTask.files['out.txt'].trim()).toBe('');
+      it('an unknown flag exits non-zero and writes nothing to stdout', () => {
+        expect(unknownFlag.exitCode).not.toBe(0);
+        expect(unknownFlag.files['out.txt'].trim()).toBe('');
       });
     });
 

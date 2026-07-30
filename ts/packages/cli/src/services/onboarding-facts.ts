@@ -6,12 +6,7 @@ import { decodeConnectedAccountListWithFallback } from 'src/effects/decode-conne
 import { detectSetupTargets, inspectSetupTargets } from 'src/services/setup';
 import { executionRecorded, readPersistedOnboarding } from 'src/services/onboarding-store';
 import type { ConnectedAccountItem } from 'src/models/connected-accounts';
-import type {
-  HostWiringFact,
-  OnboardingFacts,
-  OnboardingSkip,
-  PendingLink,
-} from 'src/services/onboarding-state';
+import type { HostWiringFact, OnboardingFacts, PendingLink } from 'src/services/onboarding-state';
 
 /**
  * The I/O that produces the facts `resolveOnboardingState` reads. Every fact source is individually
@@ -141,7 +136,6 @@ export type MintedLink = {
 
 export type GatherOnboardingFactsParams = {
   readonly requestedToolkit: Option.Option<string>;
-  readonly invocationSkips: ReadonlyArray<OnboardingSkip>;
   /**
    * A host-wiring probe the caller already performed.
    *
@@ -237,7 +231,6 @@ export const gatherOnboardingFacts = (params: GatherOnboardingFactsParams) =>
       ),
       hasExecuted: executionRecorded(persisted),
       requestedToolkit: params.requestedToolkit,
-      invocationSkips: params.invocationSkips,
       hostWiring,
     } satisfies OnboardingFacts;
   });

@@ -53,7 +53,7 @@ export type DeveloperConfig = Schema.Schema.Type<typeof DeveloperConfig>;
  * Everything else `composio onboard` needs — login state, live connections, the outstanding
  * browser authorization — is derived from the API or the user context on every invocation, so
  * there is no persisted copy that can disagree with reality. Deliberately absent: a pending
- * link, a set of skipped steps, and any org scoping on `last_execution`.
+ * link, a step pointer, and any org scoping on `last_execution`.
  */
 export const OnboardingLastExecution = Schema.Struct({
   slug: Schema.String,

@@ -40,7 +40,6 @@ const testConfigProvider = ConfigProvider.fromMap(
 
 const BARE = {
   requestedToolkit: Option.none<string>(),
-  invocationSkips: [],
 } as const;
 
 /** Exit 127 is "command not found", so the probe reports no available agent host. */
@@ -110,15 +109,13 @@ describe('gatherOnboardingFacts', () => {
       })
     );
 
-    it.scoped('echoes the requested toolkit and invocation skips unchanged', () =>
+    it.scoped('echoes the requested toolkit unchanged', () =>
       Effect.gen(function* () {
         const facts = yield* gatherOnboardingFacts({
           requestedToolkit: Option.some('hubspot'),
-          invocationSkips: ['connect'],
         });
 
         expect(facts.requestedToolkit).toStrictEqual(Option.some('hubspot'));
-        expect(facts.invocationSkips).toStrictEqual(['connect']);
       })
     );
   });

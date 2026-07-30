@@ -167,13 +167,13 @@ describe('CLI: composio onboard', () => {
       })
     );
 
-    it.scoped('[Given] --task "" [Then] fails with a validation error', () =>
+    it.scoped('[Given] --toolkit "   " [Then] fails with a validation error and no document', () =>
       Effect.gen(function* () {
-        const error = yield* cli(['onboard', '--task', '  ']).pipe(Effect.flip);
+        const error = yield* cli(['onboard', '--toolkit', '  ']).pipe(Effect.flip);
 
         expect(ValidationError.isValidationError(error)).toBe(true);
         if (!ValidationError.isValidationError(error)) return;
-        expect(HelpDoc.toAnsiText(error.error)).toContain('`--task` cannot be empty.');
+        expect(HelpDoc.toAnsiText(error.error)).toContain('`--toolkit` cannot be empty.');
       })
     );
 
@@ -198,18 +198,9 @@ describe('CLI: composio onboard', () => {
       })
     );
 
-    it.scoped('[Given] --skip bogus [Then] fails as a usage error', () =>
+    it.scoped('[Given] an unknown flag [Then] fails as a usage error', () =>
       Effect.gen(function* () {
-        const error = yield* cli(['onboard', '--skip', 'bogus']).pipe(Effect.flip);
-
-        expect(ValidationError.isValidationError(error)).toBe(true);
-      })
-    );
-
-    it.scoped('[Given] --skip login [Then] fails as a usage error', () =>
-      Effect.gen(function* () {
-        // Skipping login would leave every later gate underivable, so it is not a state.
-        const error = yield* cli(['onboard', '--skip', 'login']).pipe(Effect.flip);
+        const error = yield* cli(['onboard', '--skip', 'connect']).pipe(Effect.flip);
 
         expect(ValidationError.isValidationError(error)).toBe(true);
       })
@@ -1475,27 +1466,6 @@ describe('CLI: composio onboard', () => {
         );
       });
     });
-
-    describe('--skip connect', () => {
-      const recorded = recordingUI({ tty: { stdin: false, stdout: false, stderr: true } });
-
-      layer(TestLive(liveInput({ terminalUI: recorded.ui, connectedAccountsData: { items: [] } })))(
-        it => {
-          it.scoped('marks the gate skipped and moves on to execute', () =>
-            Effect.gen(function* () {
-              recorded.reset();
-
-              yield* cli(['onboard', '--skip', 'connect', '--toolkit', 'github', '--status']);
-
-              const document = soleDocument(recorded.stdout);
-              expect(document.gates.connect.status).toBe('skipped');
-              expect(document.next_gate).toBe('execute');
-              expect(document.onboarded).toBe(false);
-            })
-          );
-        }
-      );
-    });
   });
 
   // ── The authorization URL the connect gate just minted ──────────────────────
@@ -1766,37 +1736,6 @@ describe('CLI: composio onboard', () => {
     );
   });
 
-  // ── A skipped gate leaves something to act on ───────────────────────────────
-
-  describe('--skip execute', () => {
-    const recorded = recordingUI({ tty: { stdin: false, stdout: false, stderr: true } });
-
-    layer(
-      TestLive(
-        liveInput({
-          terminalUI: recorded.ui,
-          connectedAccountsData: { items: [account({ id: 'con_github', status: 'ACTIVE' })] },
-        })
-      )
-    )(it => {
-      it.scoped('says why onboarding is unfinished instead of emitting an inert document', () =>
-        Effect.gen(function* () {
-          recorded.reset();
-
-          yield* cli(['onboard', '--json', '--toolkit', 'github', '--skip', 'execute']);
-
-          const document = soleDocument(recorded.stdout);
-          expect(document.onboarded).toBe(false);
-          expect(document.next_gate).toBeNull();
-          // Without this the document has no non-null field to switch on at all, and a caller
-          // polling until `onboarded` spins on it forever.
-          expect(document.human_action).toContain('--skip');
-          expect(document.next_command).toBeNull();
-        })
-      );
-    });
-  });
-
   // ── The login block hands back a command that changes a fact ────────────────
 
   describe('--status --json while logged out', () => {
@@ -2015,35 +1954,47 @@ describe('CLI: composio onboard', () => {
       });
     });
 
-    describe('S12: --skip connect', () => {
-      const recorded = recordingUI({ tty: { stdin: true, stdout: false, stderr: true } });
+    describe('S12: an uncurated pending link is outstanding', () => {
+      const recorded = recordingUI({
+        tty: { stdin: true, stdout: false, stderr: true },
+        selectAnswers: ['gmail'],
+      });
 
-      layer(TestLive(liveInput({ terminalUI: recorded.ui, connectedAccountsData: { items: [] } })))(
-        it => {
-          it.scoped('links nothing and moves straight to the execute gate', () =>
-            Effect.gen(function* () {
-              recorded.reset();
-              yield* Console.clear;
-              const linkSpy = vi.spyOn(linkCmd, 'runConnectedAccountsLink');
-              const executeSpy = vi.spyOn(executeCmd, 'runToolsExecute').mockReturnValue(
-                mockedExecute({
-                  kind: 'tool_execution',
-                  successful: true,
-                  slug: 'GITHUB_GET_THE_AUTHENTICATED_USER',
-                  data: { login: 'jkomyno' },
-                })
+      layer(
+        TestLive(
+          liveInput({
+            terminalUI: recorded.ui,
+            connectedAccountsData: {
+              items: [
+                account({
+                  id: 'con_stripe_pending',
+                  status: 'INITIATED',
+                  toolkit: { slug: 'stripe' },
+                }),
+              ],
+            },
+          })
+        )
+      )(it => {
+        it.scoped('offers the starter picker instead of blocking on it', () =>
+          Effect.gen(function* () {
+            recorded.reset();
+            yield* Console.clear;
+            const linkSpy = vi
+              .spyOn(linkCmd, 'runConnectedAccountsLink')
+              .mockReturnValue(
+                Effect.succeed({ kind: 'not_started', reason: 'request_failed' as const })
               );
 
-              yield* cli(['onboard', '--toolkit', 'github', '--skip', 'connect']);
+            yield* cli(['onboard']);
 
-              // The resolved `skipped` status is asserted in `onboarding-state.test.ts`; what only
-              // this layer can show is that no link was attempted.
-              expect(linkSpy).not.toHaveBeenCalled();
-              expect(executeSpy).toHaveBeenCalledTimes(1);
-            })
-          );
-        }
-      );
+            // Adopting the abandoned stripe authorization would leave the connect gate `blocked`,
+            // and the picker would never run — the flow strands until that account is removed.
+            expect(linkSpy).toHaveBeenCalledTimes(1);
+            expect(Option.getOrNull(linkSpy.mock.calls[0]![0].toolkit)).toBe('gmail');
+          })
+        );
+      });
     });
 
     describe('S13: the connection check failed', () => {

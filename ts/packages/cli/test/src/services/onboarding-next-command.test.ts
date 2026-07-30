@@ -16,7 +16,6 @@ const facts = (overrides: Partial<OnboardingFacts> = {}): OnboardingFacts => ({
   pendingLinks: [],
   hasExecuted: Option.none(),
   requestedToolkit: Option.none(),
-  invocationSkips: [],
   hostWiring: NO_HOSTS,
   ...overrides,
 });
@@ -170,15 +169,6 @@ describe('nextAgentCommand', () => {
       expect(step.command).toContain('"max_results":3');
     });
 
-    it('blocks when the connect gate was skipped without a toolkit ever being named', () => {
-      const step = stepFor({ invocationSkips: ['connect'] });
-
-      expect(step.kind).toBe('blocked');
-      if (step.kind !== 'blocked') return;
-      expect(step.reason).toBe('toolkit_required');
-      expect(step.command).toBeUndefined();
-    });
-
     it('blocks when the demo ran on this invocation and did not succeed', () => {
       const step = stepFor(
         { requestedToolkit: Option.some('gmail'), connectedToolkits: ['gmail'] },
@@ -319,10 +309,6 @@ describe('nextAgentCommand', () => {
               },
             ],
           ] as OnboardingFacts['pendingLinks'][]
-      ),
-      Arr.bind(
-        'invocationSkips',
-        () => [[], ['connect'], ['execute']] as ReadonlyArray<ReadonlyArray<'connect' | 'execute'>>
       )
     );
 
@@ -395,8 +381,8 @@ describe('nextAgentCommand', () => {
 
     it('never reports done while onboarding is unfinished', () => {
       // `done` produces a document with `blocked: false`, `human_action: null` and
-      // `next_command: null`. Paired with `onboarded: false` — which `--skip` produces — that is a
-      // document a polling caller can neither act on nor exit on.
+      // `next_command: null`. Paired with `onboarded: false` that is a document a polling caller
+      // can neither act on nor exit on.
       for (const axes of cases) {
         const input = facts(axes);
         const state = resolveOnboardingState(input);
@@ -404,19 +390,6 @@ describe('nextAgentCommand', () => {
 
         expect(state.onboarded).toBe(true);
       }
-    });
-
-    it('states the reason when a skip left onboarding unfinished', () => {
-      const step = stepFor({
-        requestedToolkit: Option.some('github'),
-        connectedToolkits: ['github'],
-        invocationSkips: ['execute'],
-      });
-
-      expect(step.kind).toBe('deferred');
-      if (step.kind !== 'deferred') return;
-      expect(step.humanAction).toContain('--skip');
-      expect(step.humanAction).toContain('composio onboard');
     });
 
     /**
