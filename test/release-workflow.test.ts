@@ -42,6 +42,14 @@ const changesetBinPath = new URL('../node_modules/.bin/changeset', import.meta.u
 const releaseScriptUrl = new URL('../ts/scripts/changeset-release.sh', import.meta.url);
 const releaseScriptPath = releaseScriptUrl.pathname;
 const releaseScript = readFileSync(releaseScriptUrl, 'utf8');
+const sdkReleasePrepare = readFileSync(
+  new URL('../.github/scripts/sdk-release/prepare.ts', import.meta.url),
+  'utf8'
+);
+const pythonExactVersionSetter = readFileSync(
+  new URL('../python/scripts/set-release-version.py', import.meta.url),
+  'utf8'
+);
 const rootInstallGuide = readFileSync(new URL('../INSTALL.md', import.meta.url), 'utf8');
 const buildCliWorkflow = readFileSync(
   new URL('../.github/workflows/build-cli-binaries.yml', import.meta.url),
@@ -85,7 +93,10 @@ function readSdkVersions(rows) {
     /\bv?(\d+(?:\.\d+)+(?:[._-]?(?:a|b|c|rc|alpha|beta|pre|preview)\d*)?(?:[._-]?(?:post|rev|r)\d*)?(?:[._-]?dev\d*)?(?:\+[a-z0-9]+(?:[._-][a-z0-9]+)*)?)\b/gi;
 
   for (const row of rows) {
-    const cells = row.split('|').map(cell => cell.trim()).filter(Boolean);
+    const cells = row
+      .split('|')
+      .map(cell => cell.trim())
+      .filter(Boolean);
     const releaseVersionCell = cells[cells.length - 1];
     if (!releaseVersionCell) continue;
 
@@ -219,12 +230,8 @@ touch "$target/dist/provider.whl"
 
 {
   const directVersion = readSdkVersions(['| Python `composio` | `9.9.9` |']);
-  const versionWithPrevious = readSdkVersions([
-    '| Python `composio` | v9.9.8 | **v9.9.9** |',
-  ]);
-  const previousVersionOnly = readSdkVersions([
-    '| Python `composio` | v9.9.9 | **v9.9.10** |',
-  ]);
+  const versionWithPrevious = readSdkVersions(['| Python `composio` | v9.9.8 | **v9.9.9** |']);
+  const previousVersionOnly = readSdkVersions(['| Python `composio` | v9.9.9 | **v9.9.10** |']);
   const pep440Versions = readSdkVersions([
     '| Python `composio` | `9.9.9rc1` |',
     '| Python `composio` | `9.9.9.post1` |',
@@ -235,11 +242,15 @@ touch "$target/dist/provider.whl"
     throw new Error('Python SDK changelog version rows must recognize the released version');
   }
   if (previousVersionOnly.has('9.9.9')) {
-    throw new Error('Python SDK changelog version rows must not treat the previous version as released');
+    throw new Error(
+      'Python SDK changelog version rows must not treat the previous version as released'
+    );
   }
   for (const version of ['9.9.9rc1', '9.9.9.post1', '9.9.9.dev1']) {
     if (!pep440Versions.has(version)) {
-      throw new Error(`Python SDK changelog version rows must recognize PEP 440 version ${version}`);
+      throw new Error(
+        `Python SDK changelog version rows must recognize PEP 440 version ${version}`
+      );
     }
   }
 }
@@ -254,6 +265,27 @@ if (packageJson.scripts?.['changeset:release'] !== 'bash ts/scripts/changeset-re
 
 if (packageJson.scripts?.['validate:changesets'] !== 'node ts/scripts/validate-changesets.mjs') {
   throw new Error('validate:changesets must use the ignored-package guard');
+}
+
+if (
+  packageJson.scripts?.['sdk-release:test'] !==
+  'bun test test/sdk-release-contract.test.ts test/sdk-release-prepare.test.ts'
+) {
+  throw new Error('sdk-release:test must include deterministic version preparation coverage');
+}
+
+if (
+  !sdkReleasePrepare.includes("command: 'pnpm', args: ['validate:changesets']") ||
+  !sdkReleasePrepare.includes("command: 'pnpm', args: ['changeset', 'version']")
+) {
+  throw new Error('SDK release preparation must validate then delegate versioning to Changesets');
+}
+
+if (
+  !pythonExactVersionSetter.includes('enumerate_release_family') ||
+  !pythonExactVersionSetter.includes('--version')
+) {
+  throw new Error('SDK release preparation must use the exact Python family version setter');
 }
 
 {
@@ -489,9 +521,11 @@ if (publishIdx === -1) {
     'build-cli-binaries.yml must publish by flipping the draft (gh release edit --draft=false)'
   );
 }
-if (
-  !(helperCheckoutIdx < draftStepIdx && draftStepIdx < verifyStepIdx && verifyStepIdx < publishIdx)
-) {
+if (!(
+  helperCheckoutIdx < draftStepIdx &&
+  draftStepIdx < verifyStepIdx &&
+  verifyStepIdx < publishIdx
+)) {
   throw new Error(
     'build-cli-binaries.yml must order steps helper checkout → draft → verify → publish'
   );
