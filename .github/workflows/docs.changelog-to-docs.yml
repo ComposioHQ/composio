@@ -24,26 +24,55 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Detect new changelog files
+      - name: Resolve verified changelog finalization
         id: detect
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          set -euo pipefail
           BEFORE="${{ github.event.before }}"
           AFTER="${{ github.event.after }}"
 
           if [[ "$BEFORE" =~ ^0+$ ]]; then
-            FILES=$(git diff --name-only --diff-filter=AM HEAD^..HEAD | grep '^docs/content/changelog/.*\.mdx$' || echo "")
+            FILES=$(git diff --name-only --diff-filter=AM HEAD^..HEAD | grep '^docs/content/changelog/.*\.mdx$' || true)
           else
-            FILES=$(git diff --name-only --diff-filter=AM "$BEFORE".."$AFTER" | grep '^docs/content/changelog/.*\.mdx$' || echo "")
+            FILES=$(git diff --name-only --diff-filter=AM "$BEFORE".."$AFTER" | grep '^docs/content/changelog/.*\.mdx$' || true)
           fi
 
-          if [ -z "$FILES" ]; then
+          if [[ $(printf '%s\n' "$FILES" | sed '/^$/d' | wc -l | tr -d ' ') != 1 ]]; then
             echo "found=false" >> $GITHUB_OUTPUT
-          else
-            echo "found=true" >> $GITHUB_OUTPUT
-            echo "files<<EOF" >> $GITHUB_OUTPUT
-            echo "$FILES" >> $GITHUB_OUTPUT
-            echo "EOF" >> $GITHUB_OUTPUT
+            exit 0
           fi
+          gh api \
+            -H "Accept: application/vnd.github+json" \
+            "repos/$GITHUB_REPOSITORY/commits/$AFTER/pulls" \
+            --paginate --slurp | jq 'add' > associated-prs.json
+          jq '[.[] | select(
+              .merged_at != null and
+              .base.ref == "next" and
+              (.head.ref | test("^release/sdk-[A-Za-z0-9._-]+-changelog$")) and
+              (.body // "" | test("<!-- sdk-release-finalization:[a-f0-9]{64} -->"))
+            )]' associated-prs.json > verified-prs.json
+          test "$(jq length verified-prs.json)" = 1
+          pr_number=$(jq -r '.[0].number' verified-prs.json)
+          manifest_id=$(jq -r '.[0].body' verified-prs.json \
+            | sed -n 's/.*<!-- sdk-release-finalization:\([a-f0-9]\{64\}\) -->.*/\1/p')
+          test -n "$manifest_id"
+          marker="<!-- sdk-release-docs:$manifest_id -->"
+          gh api "repos/$GITHUB_REPOSITORY/issues/$pr_number/comments" \
+            --paginate --slurp | jq 'add' > comments.json
+          if jq -e --arg marker "$marker" '.[] | select(.body | startswith($marker))' comments.json >/dev/null; then
+            echo "found=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          gh pr comment "$pr_number" --body "$marker
+
+          Documentation follow-up claimed by workflow run $GITHUB_RUN_ID. This manifest will not emit a second docs update."
+          echo "found=true" >> "$GITHUB_OUTPUT"
+          echo "manifest_id=$manifest_id" >> "$GITHUB_OUTPUT"
+          echo "files<<EOF" >> "$GITHUB_OUTPUT"
+          echo "$FILES" >> "$GITHUB_OUTPUT"
+          echo "EOF" >> "$GITHUB_OUTPUT"
 
       - name: Codex updates docs
         if: steps.detect.outputs.found == 'true'
@@ -52,7 +81,7 @@ jobs:
           openai-api-key: ${{ secrets.OPENAI_API_KEY }}
           sandbox: workspace-write
           prompt: |
-            New changelog entries were merged to next. Read the agent instructions and update documentation accordingly.
+            A verified SDK changelog was merged to next for manifest ${{ steps.detect.outputs.manifest_id }}. Read the agent instructions and update documentation accordingly.
 
             1. Read docs/agent-guidance/agents/changelog-docs-updater.md for full instructions
             2. Read each of these changelog files:

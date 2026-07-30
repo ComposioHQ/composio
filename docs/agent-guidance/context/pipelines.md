@@ -8,12 +8,12 @@ Reference for all GitHub Actions workflows related to docs.
 | -------------------------- | --------------------------------- | -------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | **Update Data**            | `docs-update-data.yml`            | Cron (every 5h), `repository_dispatch` (Apollo deploy), manual | Fetches toolkits data, both OpenAPI specs (v3.1 + v3.0), generates API index pages for both versions, and meta tools reference. Creates PR via `peter-evans/create-pull-request` targeting `next`. Tracks: `openapi.json`, `openapi-v3.json`, `api-reference/`, `v3/api-reference/`. |
 | **Sync Connect Clients**   | `docs.sync-connect-clients.yml`   | Cron (daily 8 AM UTC), manual                                  | Claude Code action syncs client definitions from `ComposioHQ/composio_dashboard` to `composio-connect.mdx`. Creates PR targeting `next`. Agent instructions: `docs/agent-guidance/agents/connect-clients-sync.md`.                                                                   |
-| **Changelog → Docs**       | `docs.changelog-to-docs.yml`      | Push to `next` (changelog files)                               | Codex action reads new changelog entries and updates docs pages. Creates PR targeting `next`. Agent instructions: `docs/agent-guidance/agents/changelog-docs-updater.md`.                                                                                                            |
+| **Changelog → Docs**       | `docs.changelog-to-docs.yml`      | Verified finalization merge to `next`                          | Claims the manifest ID once, then Codex reads the verified SDK changelog and updates docs pages. Creates a PR targeting `next`. Agent instructions: `docs/agent-guidance/agents/changelog-docs-updater.md`.                                                                          |
 | **Check Links**            | `docs-check-links.yml`            | PR changes to `docs/`                                          | Runs `bun run scripts/validate-links.ts` to catch broken internal links.                                                                                                                                                                                                             |
 | **Lint + TypeScript**      | `docs-typescript-check.yml`       | PR changes to `docs/`                                          | Runs `bun run lint` (oxlint), `bun run types:check`, and `bun run build` (validates Twoslash code blocks).                                                                                                                                                                           |
 | **Docs Tests**             | `docs-tests.yml`                  | PR changes to `docs/`                                          | Runs the docs test suite.                                                                                                                                                                                                                                                            |
 | **Health Check**           | `docs.health-check.yml`           | Cron                                                           | Checks the live docs site is responding.                                                                                                                                                                                                                                             |
-| **Changelog Notification** | `docs.changelog-notification.yml` | Push to `next` (changelog files)                               | Sends notification when new changelog entries are merged.                                                                                                                                                                                                                            |
+| **Changelog Notification** | `docs.changelog-notification.yml` | Verified finalization merge to `next`                          | Claims the manifest ID once, then sends the customer notification. Draft, receipt, and duplicate workflow retries are ignored.                                                                                                                                                       |
 | **Doc Review**             | `claude-code-doc-review.yml`      | PR review comments with `@claude`                              | Claude Code reviews docs PRs on demand. Agent instructions: `docs/agent-guidance/agents/docs-reviewer.md`.                                                                                                                                                                           |
 
 ## SDK/Build Workflows
@@ -101,6 +101,22 @@ attempts append immutable PR comments, update one machine-owned receipt index,
 and create or reuse manifest-bound annotated tags only after verification.
 Partial and conflicting attempts remain resumable from registry truth; no
 workflow path unpublishes or overwrites a version.
+
+After exact verification, the coordinator validates the complete verified
+receipt and opens or updates
+`release/sdk-<release_id>-changelog`. That PR copies the reviewed draft bytes
+without mutation into the deterministic public path. Existing exact content is
+an idempotent success; same-day entries receive a release-ID suffix and a
+conflicting suffixed path fails closed. Repository-protected docs checks govern
+the merge. Auto-merge is requested only when the repository already enables it;
+otherwise the single finalization PR is the explicit remaining step.
+
+Downstream docs automation and Slack resolve the merge's associated PR and
+require its exact manifest marker. Each channel claims a separate marker on the
+finalization PR before emitting. This makes preparation merges, finalization
+retries, and already-public content downstream no-ops. Package verification is
+durable if changelog finalization itself fails; rerun `resume` or `verify` to
+retry from the verified receipt rather than republishing.
 
 Run the shadow contract locally with:
 

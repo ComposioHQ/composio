@@ -13,70 +13,86 @@ jobs:
   notify-changelog:
     name: Send Changelog Notification
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
     steps:
       - name: Checkout Code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0 # Fetch full history to detect changes across all commits in push
 
-      - name: Get Changed Changelog Files
+      - name: Resolve verified changelog finalization
         id: changed-files
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          # Get the commit range for this push
+          set -euo pipefail
           BEFORE="${{ github.event.before }}"
           AFTER="${{ github.event.after }}"
-          
-          echo "Push event details:"
-          echo "  Before: $BEFORE"
-          echo "  After: $AFTER"
-          echo "  Commits in push: $(git rev-list --count "$BEFORE".."$AFTER" 2>/dev/null || echo "N/A")"
-          
-          # Handle first push to branch (before SHA is all zeros)
+
           if [[ "$BEFORE" =~ ^0+$ ]]; then
-            echo "First push to branch detected, checking only the latest commit"
-            CHANGED_FILES=$(git diff --name-only --diff-filter=AM HEAD^..HEAD | grep '^docs/content/changelog/.*\.mdx$' || echo "")
+            CHANGED_FILES=$(git diff --name-only --diff-filter=AM HEAD^..HEAD | grep '^docs/content/changelog/.*\.mdx$' || true)
           else
-            echo "Checking all commits in push range: $BEFORE..$AFTER"
-            # Get the list of added/modified changelog files across all commits in this push
-            CHANGED_FILES=$(git diff --name-only --diff-filter=AM "$BEFORE".."$AFTER" | grep '^docs/content/changelog/.*\.mdx$' || echo "")
+            CHANGED_FILES=$(git diff --name-only --diff-filter=AM "$BEFORE".."$AFTER" | grep '^docs/content/changelog/.*\.mdx$' || true)
           fi
-          
-          if [ -z "$CHANGED_FILES" ]; then
-            echo "No changelog files changed in this push"
-            echo "has_changelog=false" >> $GITHUB_OUTPUT
-          else
-            echo "Changelog files found:"
-            echo "$CHANGED_FILES"
-            # Get the first changelog file (in case multiple were added)
-            CHANGELOG_FILE=$(echo "$CHANGED_FILES" | head -n 1)
-            echo ""
-            echo "Processing changelog: $CHANGELOG_FILE"
-            echo "changelog_file=$CHANGELOG_FILE" >> $GITHUB_OUTPUT
-            echo "has_changelog=true" >> $GITHUB_OUTPUT
+
+          if [[ $(printf '%s\n' "$CHANGED_FILES" | sed '/^$/d' | wc -l | tr -d ' ') != 1 ]]; then
+            echo "has_changelog=false" >> "$GITHUB_OUTPUT"
+            exit 0
           fi
+          CHANGELOG_FILE=$(printf '%s\n' "$CHANGED_FILES" | sed '/^$/d')
+          gh api \
+            -H "Accept: application/vnd.github+json" \
+            "repos/$GITHUB_REPOSITORY/commits/$AFTER/pulls" \
+            --paginate --slurp | jq 'add' > associated-prs.json
+          jq '[.[] | select(
+              .merged_at != null and
+              .base.ref == "next" and
+              (.head.ref | test("^release/sdk-[A-Za-z0-9._-]+-changelog$")) and
+              (.body // "" | test("<!-- sdk-release-finalization:[a-f0-9]{64} -->"))
+            )]' associated-prs.json > verified-prs.json
+          test "$(jq length verified-prs.json)" = 1
+          pr_number=$(jq -r '.[0].number' verified-prs.json)
+          manifest_id=$(jq -r '.[0].body' verified-prs.json \
+            | sed -n 's/.*<!-- sdk-release-finalization:\([a-f0-9]\{64\}\) -->.*/\1/p')
+          test -n "$manifest_id"
+          marker="<!-- sdk-release-notification:$manifest_id -->"
+          gh api "repos/$GITHUB_REPOSITORY/issues/$pr_number/comments" \
+            --paginate --slurp | jq 'add' > comments.json
+          if jq -e --arg marker "$marker" '.[] | select(.body | startswith($marker))' comments.json >/dev/null; then
+            echo "has_changelog=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          gh pr comment "$pr_number" --body "$marker
+
+          Customer changelog notification claimed by workflow run $GITHUB_RUN_ID. This manifest will not emit a second Slack message."
+          echo "changelog_file=$CHANGELOG_FILE" >> "$GITHUB_OUTPUT"
+          echo "manifest_id=$manifest_id" >> "$GITHUB_OUTPUT"
+          echo "has_changelog=true" >> "$GITHUB_OUTPUT"
 
       - name: Extract Changelog Metadata
         if: steps.changed-files.outputs.has_changelog == 'true'
         id: extract-metadata
         run: |
           CHANGELOG_FILE="${{ steps.changed-files.outputs.changelog_file }}"
-          
+
           # Extract title from frontmatter
           TITLE=$(grep "^title:" "$CHANGELOG_FILE" | sed "s/^title: *['\"]*//" | sed "s/['\"]* *$//")
-          
+
           # Extract date from frontmatter
           DATE=$(grep "^date:" "$CHANGELOG_FILE" | sed "s/^date: *['\"]*//" | sed "s/['\"]* *$//")
-          
+
           # Format date for URL (YYYY-MM-DD to YYYY/MM/DD)
           URL_DATE=$(echo "$DATE" | sed 's/-/\//g')
-          
+
           # Build the changelog URL
           CHANGELOG_URL="https://docs.composio.dev/docs/changelog/${URL_DATE}"
-          
+
           # Get the commit author who added/modified this changelog
           AUTHOR=$(git log -1 --format='%an' -- "$CHANGELOG_FILE")
           AUTHOR_EMAIL=$(git log -1 --format='%ae' -- "$CHANGELOG_FILE")
-          
+
           # Build properly escaped JSON payload using jq
           SLACK_PAYLOAD=$(jq -n \
             --arg title "$TITLE" \
@@ -84,18 +100,18 @@ jobs:
             --arg url "$CHANGELOG_URL" \
             --arg author "$AUTHOR" \
             '{text: "*New Changelog Published*\n\n*\($title)*\n\nDate: \($date)\n<\($url)|View Changelog>\nAuthor: \($author)"}')
-          
+
           echo "title=$TITLE" >> $GITHUB_OUTPUT
           echo "date=$DATE" >> $GITHUB_OUTPUT
           echo "url=$CHANGELOG_URL" >> $GITHUB_OUTPUT
           echo "author=$AUTHOR" >> $GITHUB_OUTPUT
           echo "author_email=$AUTHOR_EMAIL" >> $GITHUB_OUTPUT
-          
+
           # Save the JSON payload for the next step
           echo "slack_payload<<EOF" >> $GITHUB_OUTPUT
           echo "$SLACK_PAYLOAD" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
-          
+
           echo "📝 Changelog Title: $TITLE"
           echo "📅 Date: $DATE"
           echo "🔗 URL: $CHANGELOG_URL"

@@ -50,6 +50,14 @@ const sdkReleaseWorkflow = readFileSync(
   new URL('../.github/workflows/sdk.release.yml', import.meta.url),
   'utf8'
 );
+const changelogDocsWorkflow = readFileSync(
+  new URL('../.github/workflows/docs.changelog-to-docs.yml', import.meta.url),
+  'utf8'
+);
+const changelogNotificationWorkflow = readFileSync(
+  new URL('../.github/workflows/docs.changelog-notification.yml', import.meta.url),
+  'utf8'
+);
 const sdkReleaseJob = (name: string): string => {
   const marker = `\n  ${name}:\n`;
   const start = sdkReleaseWorkflow.indexOf(marker);
@@ -287,6 +295,7 @@ for (const requiredSuite of [
   'test/sdk-release-coordinator.test.ts',
   'test/sdk-release-reconcile.test.ts',
   'test/sdk-release-publish.test.ts',
+  'test/sdk-release-finalization.test.ts',
 ]) {
   if (!sdkReleaseTestScript.includes(requiredSuite)) {
     throw new Error(`sdk-release:test must include ${requiredSuite}`);
@@ -353,8 +362,8 @@ if (
   throw new Error('SDK release preparation must target one stable release/sdk-* branch at next');
 }
 if (
-  sdkReleaseWorkflow.includes('docs/content/changelog/') ||
-  !sdkReleaseWorkflow.includes('.github/sdk-release/drafts/')
+  sdkReleaseJob('generate-changelog').includes('docs/content/changelog/') ||
+  !sdkReleaseJob('generate-changelog').includes('.github/sdk-release/drafts/')
 ) {
   throw new Error(
     'Observe-only changelog drafts must stay outside the public changelog collection'
@@ -458,9 +467,45 @@ for (const protectedInvariant of [
   'Poll exact registries even when publish directories were empty',
   'finalize-receipt.ts attempt',
   'planReleaseTags',
+  'finalize-public-changelog:',
+  'needs.finalize-release-attempt.outputs.outcome ==',
+  'bun .github/scripts/sdk-release/finalize-changelog.ts plan',
+  'docs/content/changelog',
+  '--force-with-lease=',
+  'autoMergeAllowed',
 ]) {
   if (!sdkReleaseWorkflow.includes(protectedInvariant)) {
     throw new Error(`Protected SDK publishing must preserve ${protectedInvariant}`);
+  }
+}
+const finalizationJob = sdkReleaseJob('finalize-public-changelog');
+for (const finalizationInvariant of [
+  'release/sdk-$RELEASE_ID-changelog',
+  'sdk-release-finalization:',
+  'test "$actual" = "$sealed"',
+  'Docs checks must pass before merge.',
+  'already_finalized',
+]) {
+  if (!finalizationJob.includes(finalizationInvariant)) {
+    throw new Error(`SDK changelog finalization must preserve ${finalizationInvariant}`);
+  }
+}
+for (const [workflow, channel] of [
+  [changelogDocsWorkflow, 'docs'],
+  [changelogNotificationWorkflow, 'notification'],
+]) {
+  for (const downstreamInvariant of [
+    'commits/$AFTER/pulls',
+    'release/sdk-[A-Za-z0-9._-]+-changelog',
+    'sdk-release-finalization:',
+    `sdk-release-${channel}:`,
+    'pull-requests: write',
+  ]) {
+    if (!workflow.includes(downstreamInvariant)) {
+      throw new Error(
+        `Changelog ${channel} workflow must bind one verified manifest using ${downstreamInvariant}`
+      );
+    }
   }
 }
 if (

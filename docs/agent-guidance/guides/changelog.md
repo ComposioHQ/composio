@@ -11,18 +11,18 @@ MM-DD-YY-suffix.mdx       # Multiple same day: 12-10-25-masking.mdx
 
 ```mdx
 ---
-title: "Your Title Here"
-date: "YYYY-MM-DD"
+title: 'Your Title Here'
+date: 'YYYY-MM-DD'
 ---
 
 Brief intro paragraph.
 
 ### SDK Versions (if applicable)
 
-| SDK | Version |
-|-----|---------|
-| Python `composio` | `0.10.2` |
-| TypeScript `@composio/core` | `0.3.1` |
+| SDK                         | Version  |
+| --------------------------- | -------- |
+| Python `composio`           | `0.10.2` |
+| TypeScript `@composio/core` | `0.3.1`  |
 
 ### Breaking Changes (if applicable)
 
@@ -30,6 +30,7 @@ Brief intro paragraph.
 **Breaking Change**
 
 What breaks and why.
+
 </Callout>
 
 **Before:**
@@ -73,19 +74,32 @@ Only after every selected package is verified in its registry may finalization
 copy the exact reviewed draft bytes into `docs/content/changelog/`. Do not move,
 rename, or hand-publish a coordinator draft before that receipt exists.
 
+Finalization uses one stable `release/sdk-<release_id>-changelog` pull request.
+The finalizer verifies the receipt, manifest ID, complete package observations,
+reviewed SHA-256, frontmatter, and released-version table before copying bytes.
+If the date's unsuffixed filename already belongs to another entry, it allocates
+the release-ID suffix deterministically. Exact merged content is a no-op;
+conflicting content fails for operator review.
+
+The changelog-to-docs and customer notification workflows accept only a merged
+finalization PR carrying the exact manifest marker. Each workflow claims its own
+manifest-keyed marker on that PR before emitting, so workflow retries, draft
+merges, and receipt-only retries do not create duplicate downstream work.
+
 ## Change Types
 
-| Type | How to Format |
-|------|---------------|
+| Type            | How to Format                                                 |
+| --------------- | ------------------------------------------------------------- |
 | Breaking Change | `<Callout type="warn">` + before/after code + migration guide |
-| New Feature | `### What's New` |
-| Improvement | `### Improvements` |
-| Bug Fix | `### Bug Fixes` |
-| Deprecation | `<Callout>` with timeline |
+| New Feature     | `### What's New`                                              |
+| Improvement     | `### Improvements`                                            |
+| Bug Fix         | `### Bug Fixes`                                               |
+| Deprecation     | `<Callout>` with timeline                                     |
 
 ## Breaking Changes Checklist
 
 For any breaking change, include:
+
 - [ ] Before/after code examples
 - [ ] Migration guide with step-by-step instructions
 - [ ] Codemod (if applicable) — automated script to transform old code to new

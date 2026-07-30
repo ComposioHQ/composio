@@ -1128,6 +1128,8 @@ jobs:
       [resolve-sealed-release, preflight-reconcile, publish-npm, publish-pypi, verify-publication]
     if: ${{ always() && inputs.operation != 'prepare' && vars.SDK_RELEASE_PUBLISH_ENABLED == 'true' && false && needs.resolve-sealed-release.result == 'success' && needs.verify-publication.result == 'success' }}
     runs-on: ubuntu-latest
+    outputs:
+      outcome: ${{ steps.receipt.outputs.outcome }}
     permissions:
       contents: read
       pull-requests: read
@@ -1165,6 +1167,7 @@ jobs:
           path: evidence
 
       - name: Post immutable attempt and update receipt index
+        id: receipt
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
           OPERATION: ${{ inputs.operation }}
@@ -1185,6 +1188,7 @@ jobs:
           if [[ "${{ needs.publish-npm.result }}" == "cancelled" || "${{ needs.publish-pypi.result }}" == "cancelled" ]]; then
             state=partial
           fi
+          echo "outcome=$state" >> "$GITHUB_OUTPUT"
           jq -n \
             --arg release_id "$RELEASE_ID" \
             --arg manifest_id "${{ needs.resolve-sealed-release.outputs.manifest_id }}" \
@@ -1253,6 +1257,14 @@ jobs:
             gh pr comment "$PREPARATION_PR" --body-file index.md
           fi
 
+      - name: Upload immutable attempt receipt
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: sdk-release-attempt-${{ inputs.release_id }}-${{ github.run_id }}-${{ github.run_attempt }}
+          if-no-files-found: error
+          retention-days: 30
+          path: attempt.json
+
       - name: Create or reuse verified annotated tags
         if: ${{ needs.verify-publication.outputs.state == 'verified' }}
         env:
@@ -1299,3 +1311,178 @@ jobs:
               if (pushed.exitCode !== 0) throw new Error(`Unable to push ${tag.name}`);
             }
           '
+
+  finalize-public-changelog:
+    name: Finalize verified public changelog
+    needs: [resolve-sealed-release, finalize-release-attempt]
+    if: ${{ inputs.operation != 'prepare' && vars.SDK_RELEASE_PUBLISH_ENABLED == 'true' && false && needs.finalize-release-attempt.outputs.outcome == 'verified' }}
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+      pull-requests: read
+    steps:
+      - name: Generate GitHub App token
+        id: app-token
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        with:
+          client-id: ${{ vars.RELEASE_BOT_CLIENT_ID }}
+          private-key: ${{ secrets.RELEASE_BOT_APP_PRIVATE_KEY }}
+
+      - name: Checkout sealed release commit
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.resolve-sealed-release.outputs.source_commit }}
+          fetch-depth: 0
+          token: ${{ steps.app-token.outputs.token }}
+
+      - name: Setup Node.js, pnpm, Bun
+        uses: ./.github/actions/setup-node-pnpm-bun
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Download sealed release evidence
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: sdk-release-sealed-${{ inputs.release_id }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: evidence
+
+      - name: Download verified attempt receipt
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: sdk-release-attempt-${{ inputs.release_id }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: evidence
+
+      - name: Plan exact changelog finalization
+        id: plan
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          RELEASE_ID: ${{ inputs.release_id }}
+        run: |
+          set -euo pipefail
+          branch="release/sdk-$RELEASE_ID-changelog"
+          git fetch origin next "$branch" --no-tags || git fetch origin next --no-tags
+          gh pr list \
+            --state all \
+            --base next \
+            --head "$branch" \
+            --json number,state,headRefName,baseRefName,body,mergeCommit \
+            --limit 100 \
+            | jq '[.[] | {
+                number,
+                state,
+                head_ref:.headRefName,
+                base_ref:.baseRefName,
+                body:(.body // ""),
+                merge_commit_sha:(.mergeCommit.oid // null)
+              }]' > finalization-prs.json
+          bun --eval '
+            import { createHash } from "node:crypto";
+            import { writeFileSync } from "node:fs";
+            const listing = Bun.spawnSync([
+              "git", "ls-tree", "-r", "--name-only", "origin/next", "docs/content/changelog",
+            ]);
+            if (listing.exitCode !== 0) throw new Error("Unable to list public changelogs");
+            const paths = new TextDecoder().decode(listing.stdout)
+              .trim().split("\n").filter(path => path.endsWith(".mdx"));
+            const inventory = paths.map(path => {
+              const shown = Bun.spawnSync(["git", "show", `origin/next:${path}`]);
+              if (shown.exitCode !== 0) throw new Error(`Unable to read ${path}`);
+              return {
+                path,
+                sha256:createHash("sha256").update(shown.stdout).digest("hex"),
+              };
+            });
+            writeFileSync("public-inventory.json", JSON.stringify(inventory, null, 2) + "\n");
+          '
+          draft=$(jq -r .changelog.draft_path evidence/manifest.json)
+          bun .github/scripts/sdk-release/finalize-changelog.ts plan \
+            --manifest evidence/manifest.json \
+            --receipt evidence/attempt.json \
+            --draft "$draft" \
+            --inventory public-inventory.json \
+            --pull-requests finalization-prs.json \
+            --output finalization-plan.json
+          echo "state=$(jq -r .state finalization-plan.json)" >> "$GITHUB_OUTPUT"
+          echo "path=$(jq -r .final_path finalization-plan.json)" >> "$GITHUB_OUTPUT"
+          echo "branch=$(jq -r .branch finalization-plan.json)" >> "$GITHUB_OUTPUT"
+          echo "pull_request=$(jq -r '.pull_request // \"\"' finalization-plan.json)" >> "$GITHUB_OUTPUT"
+
+      - name: Create or update stable finalization PR
+        if: ${{ steps.plan.outputs.state != 'already_finalized' }}
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          FINAL_PATH: ${{ steps.plan.outputs.path }}
+          FINAL_BRANCH: ${{ steps.plan.outputs.branch }}
+          FINALIZATION_PR: ${{ steps.plan.outputs.pull_request }}
+          MANIFEST_ID: ${{ needs.resolve-sealed-release.outputs.manifest_id }}
+          RELEASE_ID: ${{ inputs.release_id }}
+        run: |
+          set -euo pipefail
+          draft=$(jq -r .changelog.draft_path evidence/manifest.json)
+          cp "$draft" /tmp/sdk-release-reviewed-changelog.mdx
+          expected_remote=$(git ls-remote --heads origin "refs/heads/$FINAL_BRANCH" | cut -f1)
+          git checkout -B "$FINAL_BRANCH" origin/next
+          mkdir -p "$(dirname "$FINAL_PATH")"
+          cp /tmp/sdk-release-reviewed-changelog.mdx "$FINAL_PATH"
+          actual=$(shasum -a 256 "$FINAL_PATH" | cut -d' ' -f1)
+          sealed=$(jq -r .changelog.sha256 evidence/manifest.json)
+          test "$actual" = "$sealed"
+          git config user.name "composio-release[bot]"
+          git config user.email "composio-release[bot]@users.noreply.github.com"
+          git add "$FINAL_PATH"
+          git commit -m "docs(changelog): finalize SDK release $RELEASE_ID"
+          git push origin \
+            --force-with-lease="refs/heads/$FINAL_BRANCH:$expected_remote" \
+            "HEAD:refs/heads/$FINAL_BRANCH"
+
+          marker="<!-- sdk-release-finalization:$MANIFEST_ID -->"
+          {
+            echo "$marker"
+            echo
+            echo "## Verified SDK changelog finalization"
+            echo
+            echo "- Release: \`$RELEASE_ID\`"
+            echo "- Manifest: \`$MANIFEST_ID\`"
+            echo "- Public path: \`$FINAL_PATH\`"
+            echo "- Reviewed SHA-256: \`$sealed\`"
+            echo
+            echo "This PR copies the exact reviewed draft after registry verification. Docs checks must pass before merge."
+          } > finalization-body.md
+          if [[ -z "$FINALIZATION_PR" ]]; then
+            FINALIZATION_PR=$(gh pr create \
+              --base next \
+              --head "$FINAL_BRANCH" \
+              --title "docs(changelog): finalize SDK release $RELEASE_ID" \
+              --body-file finalization-body.md)
+          else
+            gh pr edit "$FINALIZATION_PR" \
+              --title "docs(changelog): finalize SDK release $RELEASE_ID" \
+              --body-file finalization-body.md
+          fi
+          pr_number=${FINALIZATION_PR##*/}
+          owner=${GITHUB_REPOSITORY%%/*}
+          repo=${GITHUB_REPOSITORY#*/}
+          auto_merge=$(gh api graphql \
+            -f query='query($owner:String!,$repo:String!){repository(owner:$owner,name:$repo){autoMergeAllowed}}' \
+            -F owner="$owner" \
+            -F repo="$repo" \
+            --jq .data.repository.autoMergeAllowed)
+          if [[ "$auto_merge" == "true" ]]; then
+            gh pr merge "$pr_number" --auto --squash
+          else
+            echo "Repository auto-merge is disabled; PR #$pr_number remains the explicit finalization step."
+          fi
+
+      - name: Finalization summary
+        run: |
+          {
+            echo "## SDK changelog finalization"
+            echo
+            echo "- State: \`${{ steps.plan.outputs.state }}\`"
+            echo "- Public path: \`${{ steps.plan.outputs.path }}\`"
+            echo "- Manifest: \`${{ needs.resolve-sealed-release.outputs.manifest_id }}\`"
+            echo
+            echo "Package verification remains durable even if this recoverable finalization step fails."
+          } >> "$GITHUB_STEP_SUMMARY"
