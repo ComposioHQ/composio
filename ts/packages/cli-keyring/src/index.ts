@@ -49,11 +49,12 @@ import { UnsupportedPlatformStore } from './stores/unsupported';
 
 /**
  * Instantiate the native store for the current platform (async). On
- * macOS under Bun this resolves to the fast FFI backend; under Node
- * (typically tests or tools that import this package without Bun) it
- * falls back to the `/usr/bin/security` subprocess backend. On Linux
- * it always returns the `secret-tool` subprocess backend. Unsupported
- * platforms return a store whose operations throw `NoStorageAccess`.
+ * macOS this resolves to the `/usr/bin/security` subprocess backend
+ * unless the caller explicitly passes `macOSBackend: 'ffi'` *and* the
+ * runtime is Bun — the FFI path prompts on binaries without a stable
+ * Developer ID, so it is never selected implicitly. On Linux it always
+ * returns the `secret-tool` subprocess backend. Unsupported platforms
+ * return a store whose operations throw `NoStorageAccess`.
  *
  * Call this once at process startup, pass the result to
  * `setDefaultStore`, and use `new Entry(service, user)` everywhere.

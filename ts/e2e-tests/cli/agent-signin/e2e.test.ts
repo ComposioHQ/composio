@@ -19,6 +19,10 @@ const CACHE_DIR = '/tmp/composio-agent-signin';
 const lastJsonLine = (stdout: string): Record<string, unknown> =>
   JSON.parse(stdout.trim().split('\n').at(-1) ?? '{}') as Record<string, unknown>;
 
+/** Extracts the text a `runCmd` script printed between two markers. */
+const section = (stdout: string, marker: string): string =>
+  stdout.split(`---${marker}---`).at(1)?.split('---').at(0)?.trim() ?? '';
+
 const envPrefix = (server: MockAgentsServer): string =>
   [
     `COMPOSIO_BASE_URL=${server.dockerBaseUrl}`,
@@ -34,14 +38,17 @@ e2e(import.meta.url, {
     let signupServer: MockAgentsServer;
     let guardrailServer: MockAgentsServer;
     let reuseServer: MockAgentsServer;
+    let fallbackServer: MockAgentsServer;
     let unattendedSignup: E2ETestResult;
     let headlessHumanLogin: E2ETestResult;
     let storedIdentityLogin: E2ETestResult;
+    let plaintextFallback: E2ETestResult;
 
     beforeAll(async () => {
       signupServer = await startMockAgentsServer();
       guardrailServer = await startMockAgentsServer();
       reuseServer = await startMockAgentsServer();
+      fallbackServer = await startMockAgentsServer();
 
       unattendedSignup = await runCmd(
         `${envPrefix(signupServer)} composio login --agent --no-skill-install && ${envPrefix(signupServer)} composio whoami`
@@ -57,12 +64,30 @@ e2e(import.meta.url, {
           `${envPrefix(reuseServer)} composio login && ${envPrefix(reuseServer)} composio whoami`,
         ].join('\n')
       );
+
+      // This container is Debian with no Secret Service daemon, so the
+      // credential store is unreachable and the CLI must fall back to a
+      // plaintext key. Login and whoami are separate CLI processes, so a
+      // fallback that only lived in memory would not survive to the second.
+      plaintextFallback = await runCmd(
+        [
+          `${envPrefix(fallbackServer)} composio login --agent --no-skill-install`,
+          `echo '---USER-DATA---'`,
+          `cat ${CACHE_DIR}/user_data.json`,
+          `echo`,
+          `echo '---MODE---'`,
+          `stat -c '%a' ${CACHE_DIR}/user_data.json`,
+          `echo '---WHOAMI---'`,
+          `${envPrefix(fallbackServer)} composio whoami`,
+        ].join('\n')
+      );
     }, TIMEOUTS.FIXTURE);
 
     afterAll(async () => {
       await signupServer.close();
       await guardrailServer.close();
       await reuseServer.close();
+      await fallbackServer.close();
     });
 
     describe('composio login --agent (unattended onboarding)', () => {
@@ -119,6 +144,35 @@ e2e(import.meta.url, {
 
       it('leaves the CLI authenticated as the agent (whoami)', () => {
         const whoami = lastJsonLine(storedIdentityLogin.stdout);
+        expect(whoami.account_type).toBe('agent');
+      });
+    });
+
+    describe('credential storage without a Secret Service daemon', () => {
+      it('exits successfully', () => {
+        expect(plaintextFallback.exitCode).toBe(0);
+      });
+
+      it('keeps the API key in user_data.json and marks it as the fallback', () => {
+        const userData = JSON.parse(section(plaintextFallback.stdout, 'USER-DATA')) as {
+          api_key?: unknown;
+          api_key_fallback?: unknown;
+        };
+
+        expect(typeof userData.api_key).toBe('string');
+        expect(userData.api_key).toBe(fallbackServer.agentIdentity.composio.user_api_key);
+        expect(userData.api_key_fallback).toBe(true);
+      });
+
+      it('restricts the fallback file to the current user', () => {
+        expect(section(plaintextFallback.stdout, 'MODE')).toBe('600');
+      });
+
+      it('authenticates a second CLI process from the fallback', () => {
+        const whoami = JSON.parse(
+          section(plaintextFallback.stdout, 'WHOAMI').split('\n').at(-1) ?? '{}'
+        ) as Record<string, unknown>;
+
         expect(whoami.account_type).toBe('agent');
       });
     });
