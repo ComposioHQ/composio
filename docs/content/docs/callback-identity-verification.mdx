@@ -30,9 +30,11 @@ So the endpoint you host is small: read your session, call one API, redirect. Ev
 stays with Composio.
 
 <Callout type="warn">
-**Read [Before you enable it](#before-you-enable-it) first.** Setting a verifier URL takes effect
-immediately for every OAuth connection in the project, and connections started from the Composio
-dashboard will no longer be able to finish. Deploy and test your endpoint before you set the URL.
+**Worth reading [Before you enable it](#before-you-enable-it) first.** Saving a verifier URL takes
+effect immediately, for every OAuth connection in the project — there is no staged rollout and no
+per-connection opt-out. Have your endpoint deployed and working before you save it, and expect
+connections started from the Composio dashboard to stop completing. Removing the URL puts everything
+back.
 </Callout>
 
 ## How it works
@@ -121,24 +123,25 @@ Presence of the URL is the switch. Removing it turns verification off; there is 
 
 ## Before you enable it
 
-Verification changes behaviour for the whole project the moment it is saved. Work through these
-first.
+This is a real security control, and it asks something of your integration in return. Nothing here
+is difficult, but all of it is easier to handle now than to debug later.
 
 ### Connections started from the dashboard can no longer finish
 
-This is the consequence that surprises people, so it is worth being precise about.
+This is the one that catches people out, so it is worth being exact about what you will see.
 
 The dashboard still creates a pending connection and still opens the provider consent screen. But
 when the provider returns, Composio redirects that browser to your verifier URL instead of back to
-the dashboard. The dashboard never receives its completion signal, the connection stays pending,
-and it expires about ten minutes later.
+the dashboard. The dashboard never receives its completion signal, so the connection stays pending
+and expires about ten minutes later. That is the feature working as intended, not a broken setup.
 
-It is not a matter of finding the right user id to send: Composio gives your endpoint nothing but
-the session reference, so your server has no way to know the dashboard's internal user. Guessing is
-worse than doing nothing — a wrong `user_id` marks the connection `FAILED` permanently.
+It is not a matter of finding the right user id to send. Your endpoint receives nothing but the
+session reference, and the dashboard's user is not a user of your app, so there is no correct answer
+for your server to give — and a wrong `user_id` marks the connection `FAILED` for good.
 
-To try a connection out while verification is on, either drive the flow from your own app so your
-verifier recognises the returning user, or temporarily remove the verifier URL.
+When you want to try a connection out, you have two good options: run the flow from your own app, so
+your endpoint recognises the user coming back, or clear the verifier URL while you work in the
+dashboard and set it again afterwards.
 
 ### Every connection needs a real `user_id`
 
