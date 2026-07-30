@@ -13,7 +13,8 @@ to the user — the durable way to secure your own OAuth apps.
 
 - **Same-browser binding** — for **Composio-managed apps** (default auth configs). Because Composio
   owns the OAuth app here, it enforces this automatically: a Connect Link must be completed in the
-  browser that started it, and a callback from a different browser is rejected. No setup required.
+  browser that started it, and a callback from a different browser is rejected. It stays on for every
+  managed connection, including where identity verification is also enabled. No setup required.
   [Learn more](/docs/oauth-connection-security#same-browser-binding)
 - **Callback identity verification** — an opt-in, per-project identity check, and the most reliable
   way to secure your **own OAuth apps**. Set a verifier URL, and Composio holds every OAuth connection
