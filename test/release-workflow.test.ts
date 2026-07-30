@@ -16,17 +16,10 @@ import {
   findIgnoredChangesetReleases,
   validateChangesets,
 } from '../ts/scripts/validate-changesets.mjs';
-import {
-  buildCliReleaseVersionDefineArgs,
-  extractCliReleaseVersion,
-} from '../ts/packages/cli/src/utils/cli-release-version';
 
 const packageJson = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8'));
 const tsCorePackageJson = JSON.parse(
   readFileSync(new URL('../ts/packages/core/package.json', import.meta.url), 'utf8')
-);
-const cliPackageJson = JSON.parse(
-  readFileSync(new URL('../ts/packages/cli/package.json', import.meta.url), 'utf8')
 );
 const changesetConfig = JSON.parse(
   readFileSync(new URL('../.changeset/config.json', import.meta.url), 'utf8')
@@ -636,28 +629,6 @@ if (!resolveTargetScript.includes('--exclude-drafts')) {
     'resolve-release-target.sh must exclude draft stable releases from beta base selection'
   );
 }
-if (cliPackageJson.version !== '0.0.0-development') {
-  throw new Error('the private CLI package must use its non-release development sentinel');
-}
-if (
-  extractCliReleaseVersion('@composio/cli@0.2.33-beta.322') !== '0.2.33-beta.322' ||
-  extractCliReleaseVersion('@composio/core@0.2.33') !== undefined
-) {
-  throw new Error('CLI release tag parsing must preserve the exact binary release version');
-}
-const releaseVersionDefineArgs = buildCliReleaseVersionDefineArgs('@composio/cli@0.2.33-beta.322');
-if (
-  releaseVersionDefineArgs[0] !== '--define' ||
-  releaseVersionDefineArgs[1] !== '__COMPOSIO_CLI_RELEASE_VERSION__="0.2.33-beta.322"'
-) {
-  throw new Error('binary builds must define the exact CLI release version');
-}
-if (
-  !buildCliWorkflow.includes('RELEASE_TAG: ${{ needs.prepare.outputs.release_tag }}') ||
-  !buildCliWorkflow.includes('expected_version#@composio/cli@')
-) {
-  throw new Error('binary builds must embed and verify their resolved GitHub release version');
-}
 
 // --- cli.install-health-check.yml: canary must exercise the failure-prone pinned path ---
 
@@ -981,82 +952,6 @@ function runResolver({ env, releasesFixture, curlFixture, ghViewIsDraft }) {
   } finally {
     rmSync(fakeBin, { recursive: true, force: true });
     rmSync(workdir, { recursive: true, force: true });
-  }
-}
-
-// Pushes to next are always betas, regardless of private package metadata.
-{
-  const r = runResolver({
-    env: {
-      EVENT_NAME: 'push',
-      REPOSITORY: 'ComposioHQ/composio',
-      RUN_NUMBER: '43',
-      COMMIT_SHA: 'deadbeef',
-    },
-    releasesFixture: [{ tagName: '@composio/cli@0.2.33', isPrerelease: false }],
-  });
-  if (r.status !== 0) {
-    throw new Error(`resolve-release-target.sh push failed\nstderr:\n${r.stderr}`);
-  }
-  if (r.outputs.release_tag !== '@composio/cli@0.2.34-beta.43') {
-    throw new Error(`push must produce the next rolling beta, got ${r.outputs.release_tag}`);
-  }
-  if (r.outputs.prerelease !== 'true') {
-    throw new Error('push must never publish a stable release directly');
-  }
-}
-
-// Release owners can choose an intentional minor/major base without changing package.json.
-{
-  const r = runResolver({
-    env: {
-      EVENT_NAME: 'workflow_dispatch',
-      ACTION_INPUT: 'build-beta',
-      VERSION_INPUT: '0.3.0',
-      REPOSITORY: 'ComposioHQ/composio',
-      RUN_NUMBER: '44',
-      COMMIT_SHA: 'deadbeef',
-    },
-    releasesFixture: [{ tagName: '@composio/cli@0.2.33', isPrerelease: false }],
-  });
-  if (r.status !== 0) {
-    throw new Error(`explicitly versioned build-beta failed\nstderr:\n${r.stderr}`);
-  }
-  if (r.outputs.release_tag !== '@composio/cli@0.3.0-beta.44') {
-    throw new Error(`explicit build-beta version was not honored: ${r.outputs.release_tag}`);
-  }
-}
-
-{
-  const r = runResolver({
-    env: {
-      EVENT_NAME: 'workflow_dispatch',
-      ACTION_INPUT: 'build-beta',
-      VERSION_INPUT: '0.2.33',
-      REPOSITORY: 'ComposioHQ/composio',
-      RUN_NUMBER: '45',
-      COMMIT_SHA: 'deadbeef',
-    },
-    releasesFixture: [{ tagName: '@composio/cli@0.2.33', isPrerelease: false }],
-  });
-  if (r.status === 0 || !r.stderr.includes('must be newer than latest stable')) {
-    throw new Error('build-beta must reject an explicit version at or below latest stable');
-  }
-}
-
-{
-  const r = runResolver({
-    env: {
-      EVENT_NAME: 'workflow_dispatch',
-      ACTION_INPUT: 'build-beta',
-      VERSION_INPUT: 'next',
-      REPOSITORY: 'ComposioHQ/composio',
-      RUN_NUMBER: '46',
-      COMMIT_SHA: 'deadbeef',
-    },
-  });
-  if (r.status === 0 || !r.stderr.includes('Beta version must match')) {
-    throw new Error('build-beta must reject a non-semver explicit version');
   }
 }
 

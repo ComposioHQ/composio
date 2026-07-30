@@ -145,6 +145,11 @@ jobs:
         run: |
           ls -la dist/binaries/${{ matrix.artifact }}
           file dist/binaries/${{ matrix.artifact }}
+
+      - name: Verify binary version
+        if: matrix.target == 'bun-linux-x64'
+        working-directory: ts/packages/cli
+        run: |
           expected_version='${{ needs.prepare.outputs.release_tag }}'
           test "$(./dist/binaries/${{ matrix.artifact }} --version)" = "${expected_version#@composio/cli@}"
 
