@@ -29,7 +29,11 @@ export type TerminalUITestOptions = {
   readonly textAnswers?: ReadonlyArray<string>;
   /** Scripted answers for `ui.confirm`, consumed in order. Absent entries fall back to the default. */
   readonly confirmAnswers?: ReadonlyArray<boolean>;
-  /** Scripted answers for `ui.select`, by option value. Absent entries pick the first option. */
+  /**
+   * Scripted answers for `ui.select` and `ui.selectOption`, by option value, consumed in order.
+   * An absent entry picks the first option for `select` and answers `None` for `selectOption` —
+   * each method's own production fallback, so "the user cancelled" is expressible.
+   */
   readonly selectAnswers?: ReadonlyArray<unknown>;
 };
 
@@ -74,6 +78,13 @@ export const makeTerminalUITestImpl = (options: TerminalUITestOptions = {}): Ter
       const scripted = selectAnswers.shift();
       return Effect.succeed(scripted === undefined ? selectOptions[0]?.value : scripted);
     }) as TerminalUI['select'],
+
+    selectOption: (() => {
+      if (!capabilities.canPrompt) {
+        return Effect.succeed(Option.none());
+      }
+      return Effect.succeed(Option.fromNullable(selectAnswers.shift()));
+    }) as TerminalUI['selectOption'],
 
     // No default, ever — matching the production contract.
     text: () =>

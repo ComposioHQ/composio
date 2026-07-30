@@ -146,6 +146,9 @@ export interface TerminalUI {
   /**
    * Present a single-select list to the user.
    * When prompting is unavailable, returns the first option's value.
+   *
+   * The defaulting makes this unsuitable for a choice that authorizes a side effect: cancelling is
+   * indistinguishable from picking the first option. Use `selectOption` there.
    */
   readonly select: <Value>(
     message: string,
@@ -155,6 +158,22 @@ export interface TerminalUI {
       readonly hint?: string;
     }>
   ) => Effect.Effect<Value>;
+
+  /**
+   * Present a single-select list whose absence of an answer stays visible.
+   *
+   * Returns `None` when the user cancels and when prompting is unavailable, so a caller whose next
+   * step is a real API call cannot mistake "cancelled" for "chose the first entry". Same shape as
+   * `text`, and for the same reason.
+   */
+  readonly selectOption: <Value>(
+    message: string,
+    options: ReadonlyArray<{
+      readonly value: Value;
+      readonly label: string;
+      readonly hint?: string;
+    }>
+  ) => Effect.Effect<Option.Option<Value>>;
 
   /**
    * Ask the user for free text.
@@ -299,6 +318,25 @@ export const makeTerminalUI = (streams: TerminalUIStreams): TerminalUI => {
         return result;
       });
     }) as TerminalUI['select'],
+
+    selectOption: ((
+      message: string,
+      options: ReadonlyArray<{ value: unknown; label: string; hint?: string }>
+    ) => {
+      if (!canPrompt) {
+        return Effect.succeed(Option.none());
+      }
+
+      return Effect.promise(async () => {
+        const result = await p.select({
+          message,
+          options: [...options],
+          output: stderr,
+        });
+        if (p.isCancel(result)) return Option.none();
+        return Option.some(result);
+      });
+    }) as TerminalUI['selectOption'],
 
     text: (message, options) => {
       if (!canPrompt) {

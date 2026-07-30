@@ -49,6 +49,7 @@ e2e(import.meta.url, {
     let stdinClosed: E2ETestResultWithFiles<'out.txt'>;
     let stdinClosedJson: E2ETestResultWithFiles<'out.json'>;
     let emptyToolkit: E2ETestResultWithFiles<'out.txt'>;
+    let injectedToolkit: E2ETestResultWithFiles<'out.txt'>;
     let emptyTask: E2ETestResultWithFiles<'out.txt'>;
     let bareComposio: E2ETestResultWithFiles<'out.txt'>;
     let helpResult: E2ETestResult;
@@ -73,6 +74,15 @@ e2e(import.meta.url, {
 
       emptyToolkit = await runCmd({
         command: isolated('composio onboard --toolkit "" --json > out.txt'),
+        files: ['out.txt'],
+      });
+
+      // The emitted `next_command` and `human_action` are strings callers exec, so a value carrying
+      // shell metacharacters has to be refused at the flag rather than quoted at the sink.
+      injectedToolkit = await runCmd({
+        command: isolated(
+          `composio onboard --toolkit 'github; echo pwned' --json > out.txt 2>&1 || true`
+        ),
         files: ['out.txt'],
       });
 
@@ -151,6 +161,14 @@ e2e(import.meta.url, {
 
       it('--toolkit "" explains what was wrong', () => {
         expect(emptyToolkit.stderr).toContain('--toolkit');
+      });
+
+      it('--toolkit with shell metacharacters is rejected and never emitted', () => {
+        const captured = injectedToolkit.files['out.txt'];
+
+        expect(captured).not.toContain('pwned');
+        expect(captured).not.toContain('onboard_state');
+        expect(captured).toContain('--toolkit');
       });
 
       it('--task "" exits non-zero and writes nothing to stdout', () => {

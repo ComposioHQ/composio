@@ -185,6 +185,14 @@ const readPendingLoginSession = Effect.gen(function* () {
   return session;
 });
 
+/**
+ * The pending login session as an optional fact rather than a failure.
+ *
+ * Every reason the read can fail — no file, expired, unparseable — means the same thing to a caller
+ * that only wants to know whether an outstanding login is still resumable.
+ */
+export const readPendingLoginSessionOption = Effect.option(readPendingLoginSession);
+
 const formatNonInteractiveLoginInstructions = (params: {
   readonly loginUrl: string;
   readonly pollCommand: string;
@@ -693,12 +701,35 @@ export const browserLogin = (params: {
 
     yield* Effect.logDebug(`Authenticating (scope: ${params.scope})...`);
 
+    const pollCommand = 'composio login --poll';
+    const embedded = params.embedded ?? false;
+
+    // An embedding command re-runs this on every invocation while its login gate is unsatisfied, and
+    // its own guidance tells the human to re-run it. Minting a second session there would replace
+    // the key on disk while the human is still authorizing the first one, and `composio login
+    // --poll` reads that file — so the authorization the human completed would never land. An
+    // unexpired pending session is therefore resumed rather than replaced. Standalone
+    // `composio login` still mints a fresh session every time: that is an explicit request to start
+    // over.
+    if (embedded) {
+      const pending = yield* readPendingLoginSessionOption;
+      if (Option.isSome(pending)) {
+        yield* Effect.logDebug('Reusing the pending login session');
+        yield* ui.log.info('Please login using the following URL:');
+        yield* ui.note(pending.value.loginUrl, 'Login URL');
+        return {
+          status: 'pending',
+          loginUrl: pending.value.loginUrl,
+          pollCommand,
+        } satisfies BrowserLoginOutcome;
+      }
+    }
+
     const session = yield* client.createSession({ scope: params.scope });
 
     yield* Effect.logDebug(`Created session: ${session.id}`);
 
     const url = `${ctx.data.webURL}?cliKey=${session.id}`;
-    const pollCommand = 'composio login --poll';
     const expiresAt = DateTime.formatIso(session.expiresAt);
     yield* writePendingLoginSession({
       key: session.id,
@@ -707,7 +738,6 @@ export const browserLogin = (params: {
     });
 
     const { canPrompt, canDecorate } = yield* ui.capabilities;
-    const embedded = params.embedded ?? false;
     const effectiveNoWait = params.noWait || !canPrompt;
     const effectiveNoBrowser = params.noBrowser || effectiveNoWait;
 

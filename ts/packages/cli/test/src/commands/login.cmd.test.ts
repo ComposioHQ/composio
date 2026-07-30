@@ -711,6 +711,82 @@ describe('CLI: composio login', () => {
       });
     });
 
+    // A human authorizing the URL the first call printed must still be able to finish. The pending
+    // session file is the handoff `composio login --poll` reads, so overwriting it while an
+    // embedding command re-runs would strand the authorization the human already completed.
+    describe('a second embedded call while a login is outstanding', () => {
+      const countingSessions = (ids: Array<string>) =>
+        Layer.succeed(
+          ComposioSessionRepository,
+          new ComposioSessionRepository({
+            createSession: () =>
+              Effect.gen(function* () {
+                const now = yield* DateTime.now;
+                const id = `session-${ids.length + 1}`;
+                ids.push(id);
+                return {
+                  id,
+                  code: '001122',
+                  expiresAt: DateTime.add(now, { minutes: 10 }),
+                  status: 'pending' as const,
+                };
+              }),
+            getSession: () => Effect.die('the poll must not be reached'),
+            getRealtimeCredentials: () =>
+              Effect.succeed({
+                project_id: 'proj_test',
+                pusher_key: 'pusher_test_key',
+                pusher_cluster: 'mt1',
+              }),
+            authRealtimeChannel: () =>
+              Effect.succeed({ auth: 'mock:auth', channel_data: undefined }),
+          })
+        );
+
+      layer(TestLive({ terminalUI: headlessStdinUI }))(it => {
+        it.scoped('[Given] embedded [Then] resumes the outstanding session', () =>
+          Effect.gen(function* () {
+            const minted: Array<string> = [];
+            const sessions = countingSessions(minted);
+
+            const first = yield* browserLogin({
+              scope: 'user',
+              noBrowser: true,
+              noWait: true,
+              embedded: true,
+            }).pipe(Effect.provide(sessions));
+            const second = yield* browserLogin({
+              scope: 'user',
+              noBrowser: true,
+              noWait: true,
+              embedded: true,
+            }).pipe(Effect.provide(sessions));
+
+            expect(minted).toStrictEqual(['session-1']);
+            expect(second).toStrictEqual(first);
+          })
+        );
+      });
+
+      layer(TestLive({ terminalUI: headlessStdinUI }))(it => {
+        it.scoped('[Given] embedded is absent [Then] a fresh session is minted every time', () =>
+          Effect.gen(function* () {
+            const minted: Array<string> = [];
+            const sessions = countingSessions(minted);
+
+            yield* browserLogin({ scope: 'user', noBrowser: true, noWait: true }).pipe(
+              Effect.provide(sessions)
+            );
+            yield* browserLogin({ scope: 'user', noBrowser: true, noWait: true }).pipe(
+              Effect.provide(sessions)
+            );
+
+            expect(minted).toStrictEqual(['session-1', 'session-2']);
+          })
+        );
+      });
+    });
+
     describe('a non-prompting invocation still short-circuits', () => {
       const headless = spyOnOutput(headlessStdinUI);
 

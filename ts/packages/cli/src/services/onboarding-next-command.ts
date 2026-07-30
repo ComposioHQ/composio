@@ -21,7 +21,13 @@ export type BlockedReason =
   | 'browser_login_required'
   | 'browser_authorization_required'
   | 'toolkit_required'
-  | 'connection_check_failed';
+  | 'connection_check_failed'
+  /**
+   * The read demo ran on this invocation and did not succeed. Without it the document would be
+   * byte-identical to "the demo has not been attempted", and a caller polling until `onboarded`
+   * would re-fire a real API read forever.
+   */
+  | 'demo_execution_failed';
 
 export type NextStep =
   | { readonly kind: 'command'; readonly command: string }
@@ -48,6 +54,11 @@ export type NextStep =
  */
 export type NextCommandContext = {
   readonly loginUrl?: string;
+  /**
+   * The demo tool this invocation ran and failed. Like the login URL it belongs to the invocation
+   * rather than to any fact — the next invocation has no way to observe that an earlier read failed.
+   */
+  readonly failedDemoToolSlug?: string;
 };
 
 const TOOLKIT_REQUIRED_ACTION = 'Choose a starter task and pass its toolkit as `--toolkit`.';
@@ -122,6 +133,17 @@ export const nextAgentCommand = (
 
     case 'execute': {
       const toolSlug = state.gates.execute.toolSlug;
+
+      if (context.failedDemoToolSlug !== undefined) {
+        // Handing back a command here would hand back the call that just failed. The recovery is a
+        // human checking why, so this is a block with prose and no command.
+        return {
+          kind: 'blocked',
+          reason: 'demo_execution_failed',
+          humanAction: `${context.failedDemoToolSlug} did not run. Check that the ${state.gates.connect.toolkit ?? 'toolkit'} connection still works with \`composio connections list\`, then re-run \`composio onboard\`.`,
+        };
+      }
+
       if (toolSlug === null) {
         // Reachable when the connect gate was skipped without a toolkit ever being named.
         return {

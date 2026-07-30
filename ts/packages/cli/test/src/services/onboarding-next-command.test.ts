@@ -27,7 +27,7 @@ const EXECUTED = Option.some({
 
 const stepFor = (
   overrides: Partial<OnboardingFacts> = {},
-  context: { readonly loginUrl?: string } = {}
+  context: { readonly loginUrl?: string; readonly failedDemoToolSlug?: string } = {}
 ) => {
   const input = facts(overrides);
   return nextAgentCommand(resolveOnboardingState(input), input.requestedToolkit, context);
@@ -163,6 +163,21 @@ describe('nextAgentCommand', () => {
       if (step.kind !== 'blocked') return;
       expect(step.reason).toBe('toolkit_required');
       expect(step.command).toBeUndefined();
+    });
+
+    it('blocks when the demo ran on this invocation and did not succeed', () => {
+      const step = stepFor(
+        { requestedToolkit: Option.some('gmail'), connectedToolkits: ['gmail'] },
+        { failedDemoToolSlug: 'GMAIL_FETCH_EMAILS' }
+      );
+
+      expect(step.kind).toBe('blocked');
+      if (step.kind !== 'blocked') return;
+      expect(step.reason).toBe('demo_execution_failed');
+      expect(step.humanAction).toContain('GMAIL_FETCH_EMAILS');
+      // Re-issuing the call that just failed is what turns a polling caller into a loop.
+      expect(step.command).toBeUndefined();
+      expect(step.humanAction).not.toContain('<');
     });
 
     it('defers with prose rather than a command for a non-curated toolkit', () => {

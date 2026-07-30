@@ -123,6 +123,18 @@ const gatherLiveConnections = Effect.gen(function* () {
   )
 );
 
+/**
+ * An authorization link this invocation created itself.
+ *
+ * The account id travels with the URL because the list call that follows the create is not
+ * guaranteed to show the account yet — see `withMintedRedirectUrl`.
+ */
+export type MintedLink = {
+  readonly toolkit: string;
+  readonly url: string;
+  readonly connectedAccountId: string;
+};
+
 export type GatherOnboardingFactsParams = {
   readonly requestedToolkit: Option.Option<string>;
   readonly invocationSkips: ReadonlyArray<OnboardingSkip>;
@@ -140,24 +152,45 @@ export type GatherOnboardingFactsParams = {
    * alongside the OAuth tokens the item schema strips). Without it, an invocation that just printed
    * an authorization URL would emit a document telling the caller to go get a fresh one.
    */
-  readonly mintedRedirectUrl?: Option.Option<{
-    readonly toolkit: string;
-    readonly url: string;
-  }>;
+  readonly mintedRedirectUrl?: Option.Option<MintedLink>;
 };
 
-/** Attach a just-minted authorization URL to the live pending link it belongs to. */
+/**
+ * Reconcile a just-minted authorization link with what the list call reports.
+ *
+ * The list is the source of truth for whether a link exists, with one exception: it is read
+ * immediately after the create, so it can lag behind it. Trusting it unconditionally there would
+ * drop the URL that was just printed, leave the connect gate `unsatisfied`, and invite the next
+ * invocation to mint another link against the same account. So a minted link that the list does not
+ * yet contradict — no ACTIVE account for that toolkit, no matching pending item — stands in for the
+ * fact until the list catches up.
+ */
 const withMintedRedirectUrl = (
   pendingLink: Option.Option<PendingLink>,
-  minted: Option.Option<{ readonly toolkit: string; readonly url: string }>
-): Option.Option<PendingLink> =>
-  Option.map(pendingLink, link =>
-    Option.match(minted, {
-      onNone: () => link,
-      onSome: value =>
-        value.toolkit === link.toolkit ? { ...link, redirectUrl: Option.some(value.url) } : link,
-    })
-  );
+  minted: Option.Option<MintedLink>,
+  connectedToolkits: ReadonlyArray<string> | 'unknown'
+): Option.Option<PendingLink> => {
+  if (Option.isNone(minted)) {
+    return pendingLink;
+  }
+  const value = minted.value;
+
+  // The authorization already completed between the create and the list: the ACTIVE account is the
+  // better fact, and the connect gate reads it as satisfied.
+  if (connectedToolkits !== 'unknown' && connectedToolkits.includes(value.toolkit)) {
+    return pendingLink;
+  }
+
+  if (Option.isSome(pendingLink) && pendingLink.value.toolkit === value.toolkit) {
+    return Option.some({ ...pendingLink.value, redirectUrl: Option.some(value.url) });
+  }
+
+  return Option.some({
+    toolkit: value.toolkit,
+    connectedAccountId: value.connectedAccountId,
+    redirectUrl: Option.some(value.url),
+  });
+};
 
 export const gatherOnboardingFacts = (params: GatherOnboardingFactsParams) =>
   Effect.gen(function* () {
@@ -180,7 +213,8 @@ export const gatherOnboardingFacts = (params: GatherOnboardingFactsParams) =>
       connectedToolkits: loggedIn ? connections.connectedToolkits : 'unknown',
       pendingLink: withMintedRedirectUrl(
         connections.pendingLink,
-        params.mintedRedirectUrl ?? Option.none()
+        params.mintedRedirectUrl ?? Option.none(),
+        loggedIn ? connections.connectedToolkits : 'unknown'
       ),
       // The store writes both halves together, so they only disagree in a hand-edited config. A
       // missing `last_execution` then reads as "not executed", which replays one demo rather than

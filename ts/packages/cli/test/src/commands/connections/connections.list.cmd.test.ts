@@ -111,6 +111,7 @@ const terminalUIWithConfirm = (confirmed: boolean) =>
     },
     note: (message, title) => Console.log(title ? `[${title}] ${message}` : message),
     select: (_message, options) => Effect.succeed(options[0]!.value),
+    selectOption: (_message, options) => Effect.succeed(Option.some(options[0]!.value)),
     confirm: () => Effect.succeed(confirmed),
     text: () => Effect.succeed(Option.none<string>()),
     withSpinner: (message, effect, options) =>

