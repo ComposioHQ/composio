@@ -1,0 +1,63 @@
+{
+  "schema_version": "sdk-release-manifest/v1",
+  "phase": "sealed",
+  "release_id": "2026-07-30-sdk",
+  "base_commit": "1111111111111111111111111111111111111111",
+  "selection": { "typescript": "selected", "python": "skipped" },
+  "packages": [
+    {
+      "ecosystem": "typescript",
+      "name": "@composio/core",
+      "version": "1.2.3",
+      "registry": "npm",
+      "dist_tag": "latest"
+    },
+    {
+      "ecosystem": "typescript",
+      "name": "@composio/slim",
+      "version": "1.2.3",
+      "registry": "npm",
+      "dist_tag": "latest"
+    }
+  ],
+  "artifacts": [
+    {
+      "ecosystem": "typescript",
+      "package_name": "@composio/core",
+      "registry": "npm",
+      "filename": "composio-core-1.2.3.tgz",
+      "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    },
+    {
+      "ecosystem": "typescript",
+      "package_name": "@composio/slim",
+      "registry": "npm",
+      "filename": "composio-slim-1.2.3.tgz",
+      "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+    }
+  ],
+  "changeset_ids": ["calm-cats-wave"],
+  "python_release_family": [],
+  "changelog": {
+    "draft_path": "docs/release-drafts/2026-07-30-sdk.mdx",
+    "sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+  },
+  "openai_generation": {
+    "provider": "openai",
+    "model": "gpt-5.5-2026-04-23",
+    "response_id": "resp_123",
+    "prompt_version": "sdk-changelog/v1",
+    "prompt_sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+    "schema_version": "sdk-changelog/v1",
+    "schema_sha256": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+    "generated_at": "2026-07-30T00:00:00.000Z"
+  },
+  "toolchains": { "node": "24.17.0", "pnpm": "11.8.0", "python": null, "uv": null },
+  "prepare_run": {
+    "repository": "ComposioHQ/composio",
+    "workflow": "sdk.release.yml",
+    "run_id": 123456789,
+    "run_attempt": 1,
+    "commit_sha": "1111111111111111111111111111111111111111"
+  }
+}

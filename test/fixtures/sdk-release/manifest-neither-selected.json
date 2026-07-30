@@ -1,0 +1,33 @@
+{
+  "schema_version": "sdk-release-manifest/v1",
+  "phase": "sealed",
+  "release_id": "2026-07-30-neither",
+  "base_commit": "4444444444444444444444444444444444444444",
+  "selection": { "typescript": "skipped", "python": "skipped" },
+  "packages": [],
+  "artifacts": [],
+  "changeset_ids": [],
+  "python_release_family": [],
+  "changelog": {
+    "draft_path": "docs/release-drafts/2026-07-30-neither.mdx",
+    "sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+  },
+  "openai_generation": {
+    "provider": "openai",
+    "model": "gpt-5.5-2026-04-23",
+    "response_id": "resp_none",
+    "prompt_version": "sdk-changelog/v1",
+    "prompt_sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+    "schema_version": "sdk-changelog/v1",
+    "schema_sha256": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+    "generated_at": "2026-07-30T00:00:00.000Z"
+  },
+  "toolchains": { "node": "24.17.0", "pnpm": "11.8.0", "python": null, "uv": null },
+  "prepare_run": {
+    "repository": "ComposioHQ/composio",
+    "workflow": "sdk.release.yml",
+    "run_id": 123456792,
+    "run_attempt": 1,
+    "commit_sha": "4444444444444444444444444444444444444444"
+  }
+}
