@@ -663,6 +663,10 @@ const loginWithKey = (params: {
  * Resolves TerminalUI, ComposioUserContext, and ComposioSessionRepository
  * from the Effect context.
  */
+export type BrowserLoginOutcome =
+  | { readonly status: 'linked'; readonly email?: string; readonly orgId: string }
+  | { readonly status: 'pending'; readonly loginUrl: string; readonly pollCommand: string };
+
 export const browserLogin = (params: {
   /** Session scope: 'user' for login, 'project' for init. */
   scope: 'user' | 'project';
@@ -672,6 +676,15 @@ export const browserLogin = (params: {
   noWait?: boolean;
   /** When true (login only), skip org/project picker and use session defaults. When false, prompt for org/project. */
   skipOrgProjectPicker?: boolean;
+  /**
+   * Drive login as a step inside another command's flow.
+   *
+   * Suppresses the standalone command's next-step hints, its outro, and — importantly — every
+   * `ui.output` write. The embedding command owns stdout for the whole invocation, and two writers
+   * on stdout would interleave two JSON values with no framing between them. Decoration on stderr
+   * is unchanged: the human still sees the login URL and the spinner.
+   */
+  embedded?: boolean;
 }) =>
   Effect.gen(function* () {
     const ui = yield* TerminalUI;
@@ -694,6 +707,7 @@ export const browserLogin = (params: {
     });
 
     const { canPrompt, canDecorate } = yield* ui.capabilities;
+    const embedded = params.embedded ?? false;
     const effectiveNoWait = params.noWait || !canPrompt;
     const effectiveNoBrowser = params.noBrowser || effectiveNoWait;
 
@@ -709,8 +723,10 @@ export const browserLogin = (params: {
         yield* ui.note(loginInstructions, 'Login instructions');
       }
 
-      yield* ui.output(loginInstructions);
-      return;
+      if (!embedded) {
+        yield* ui.output(loginInstructions);
+      }
+      return { status: 'pending', loginUrl: url, pollCommand } satisfies BrowserLoginOutcome;
     }
 
     if (effectiveNoBrowser) {
@@ -721,7 +737,9 @@ export const browserLogin = (params: {
 
     yield* ui.note(url, 'Login URL');
 
-    yield* ui.output(url);
+    if (!embedded) {
+      yield* ui.output(url);
+    }
 
     if (!effectiveNoBrowser) {
       yield* Effect.tryPromise({
@@ -788,10 +806,12 @@ export const browserLogin = (params: {
       initialOrgId: xOrgId,
       initialProjectId: xProjectId,
       fallbackEmail: linkedSession.account.email,
-      skipHints: willRunPicker,
-      skipOutput: willRunPicker,
+      skipHints: willRunPicker || embedded,
+      skipOutput: willRunPicker || embedded,
       deferAnalyticsIdentity: willRunPicker,
     });
+
+    let resolvedOrgId = xOrgId;
 
     if (willRunPicker) {
       const result = yield* runOrgSelection({
@@ -818,23 +838,31 @@ export const browserLogin = (params: {
           orgId: result.id,
         });
       }
-      const finalOrgId = result?.id ?? xOrgId;
+      resolvedOrgId = result?.id ?? xOrgId;
       const finalOrgName = result?.name ?? uakSessionInfo.project.org.name ?? '';
       yield* linkAnalyticsIdentityForOrg({
         apiKey: uakApiKey,
         baseURL: ctx.data.baseURL,
-        orgId: finalOrgId,
+        orgId: resolvedOrgId,
         knownIdentity: {
           orgId: uakSessionInfo.project.org.id,
           orgMemberId: uakSessionInfo.org_member.id,
         },
       });
-      yield* emitLoginComplete({
-        email: linkedSession.account.email ?? undefined,
-        orgId: finalOrgId,
-        orgName: finalOrgName,
-      });
+      if (!embedded) {
+        yield* emitLoginComplete({
+          email: linkedSession.account.email ?? undefined,
+          orgId: resolvedOrgId,
+          orgName: finalOrgName,
+        });
+      }
     }
+
+    return {
+      status: 'linked',
+      email: linkedSession.account.email ?? undefined,
+      orgId: resolvedOrgId,
+    } satisfies BrowserLoginOutcome;
   });
 
 /**
