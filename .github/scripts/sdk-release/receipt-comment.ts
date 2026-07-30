@@ -71,7 +71,7 @@ export function renderPreparationReceipt(rawReceipt: PreparationReceipt): string
   );
   const artifactRows = receipt.artifacts.map(
     artifact =>
-      `| ${inlineCode(artifact.filename)} | ${inlineCode(artifact.package_name)} | ${inlineCode(artifact.sha256)} |`
+      `| ${inlineCode(artifact.filename)} | ${inlineCode(artifact.package_name)} | ${inlineCode(artifact.sha256)} | ${artifact.ecosystem === 'typescript' ? inlineCode(artifact.integrity) : '—'} |`
   );
   return [
     `<!-- sdk-release-receipt:${receipt.release_id} -->`,
@@ -96,8 +96,8 @@ export function renderPreparationReceipt(rawReceipt: PreparationReceipt): string
     '',
     '### Primary artifacts',
     '',
-    '| Artifact | Package | SHA-256 |',
-    '| --- | --- | --- |',
+    '| Artifact | Package | SHA-256 | npm SRI |',
+    '| --- | --- | --- | --- |',
     ...artifactRows,
     '',
     '### Changelog generation',

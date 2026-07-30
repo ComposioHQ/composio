@@ -16,6 +16,8 @@ const SHA_A = 'a'.repeat(40);
 const SHA_B = 'b'.repeat(40);
 const DIGEST_A = 'a'.repeat(64);
 const DIGEST_B = 'b'.repeat(64);
+const INTEGRITY_A =
+  'sha512-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==';
 
 const generationRecord = {
   provider: 'openai' as const,
@@ -193,6 +195,7 @@ describe('observe-only preparation evidence', () => {
       registry: 'npm' as const,
       filename: 'composio-core-0.15.0.tgz',
       sha256: DIGEST_A,
+      integrity: INTEGRITY_A,
     },
     {
       ecosystem: 'python' as const,
@@ -210,6 +213,16 @@ describe('observe-only preparation evidence', () => {
   test('fails when the verification-only artifact set differs', () => {
     expect(() =>
       compareArtifactBuilds(primary, [primary[0], { ...primary[1], sha256: 'c'.repeat(64) }])
+    ).toThrow('digest mismatch');
+    expect(() =>
+      compareArtifactBuilds(
+        primary,
+        primary.map((artifact, index) =>
+          index === 0 && artifact.ecosystem === 'typescript'
+            ? { ...artifact, integrity: `sha512-${'B'.repeat(86)}==` }
+            : artifact
+        )
+      )
     ).toThrow('digest mismatch');
     expect(() => compareArtifactBuilds(primary, [primary[0]])).toThrow('artifact set mismatch');
     expect(() => compareArtifactBuilds([primary[0], primary[0]], [primary[0], primary[0]])).toThrow(

@@ -225,6 +225,8 @@ export function compareArtifactBuilds(
     if (
       !reproduced ||
       artifact.sha256 !== reproduced.sha256 ||
+      (artifact.ecosystem === 'typescript' &&
+        (reproduced.ecosystem !== 'typescript' || artifact.integrity !== reproduced.integrity)) ||
       artifact.ecosystem !== reproduced.ecosystem ||
       artifact.registry !== reproduced.registry ||
       artifact.package_name !== reproduced.package_name

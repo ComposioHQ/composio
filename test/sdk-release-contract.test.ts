@@ -61,6 +61,9 @@ describe('SDK release manifest contract', () => {
         value.packages[0].registry = 'pypi';
       },
       value => {
+        delete value.artifacts[0].integrity;
+      },
+      value => {
         value.packages[0].name = '@composio/cli';
       },
       value => {

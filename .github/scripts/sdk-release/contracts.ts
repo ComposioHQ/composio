@@ -29,6 +29,9 @@ export const PYTHON_RELEASE_FAMILY = [
 ] as const;
 
 const Sha256Schema = z.string().regex(/^[a-f0-9]{64}$/, 'expected a lowercase SHA-256 digest');
+export const NpmIntegritySchema = z
+  .string()
+  .regex(/^sha512-[A-Za-z0-9+/]{86}==$/, 'expected an npm SHA-512 Subresource Integrity digest');
 const GitShaSchema = z.string().regex(/^[a-f0-9]{40}$/, 'expected a full Git commit SHA');
 const ReleaseIdSchema = z
   .string()
@@ -115,30 +118,38 @@ export const PackageSchema = z.discriminatedUnion('ecosystem', [
   PythonPackageSchema,
 ]);
 
-export const ArtifactSchema = z
+const ArtifactShape = {
+  package_name: z.string().min(1),
+  filename: z
+    .string()
+    .min(1)
+    .refine(value => !value.includes('/') && !value.includes('\\'), {
+      message: 'artifact filename must be a basename',
+    }),
+  sha256: Sha256Schema,
+};
+
+const TypeScriptArtifactSchema = z
   .object({
-    ecosystem: z.enum(['typescript', 'python']),
-    package_name: z.string().min(1),
-    registry: z.enum(['npm', 'pypi']),
-    filename: z
-      .string()
-      .min(1)
-      .refine(value => !value.includes('/') && !value.includes('\\'), {
-        message: 'artifact filename must be a basename',
-      }),
-    sha256: Sha256Schema,
+    ...ArtifactShape,
+    ecosystem: z.literal('typescript'),
+    registry: z.literal('npm'),
+    integrity: NpmIntegritySchema,
   })
-  .strict()
-  .superRefine((artifact, context) => {
-    const expectedRegistry = artifact.ecosystem === 'typescript' ? 'npm' : 'pypi';
-    if (artifact.registry !== expectedRegistry) {
-      context.addIssue({
-        code: 'custom',
-        path: ['registry'],
-        message: `${artifact.ecosystem} artifacts must use ${expectedRegistry}`,
-      });
-    }
-  });
+  .strict();
+
+const PythonArtifactSchema = z
+  .object({
+    ...ArtifactShape,
+    ecosystem: z.literal('python'),
+    registry: z.literal('pypi'),
+  })
+  .strict();
+
+export const ArtifactSchema = z.discriminatedUnion('ecosystem', [
+  TypeScriptArtifactSchema,
+  PythonArtifactSchema,
+]);
 
 export const OpenAIGenerationSchema = z
   .object({
@@ -378,6 +389,7 @@ export const RegistryArtifactSchema = z
   .object({
     filename: z.string().min(1),
     sha256: Sha256Schema,
+    integrity: NpmIntegritySchema.optional(),
   })
   .strict();
 
@@ -405,11 +417,77 @@ export const RegistryObservationSchema = z
     version: z.string().min(1),
     registry: z.enum(['npm', 'pypi']),
     state: z.enum(['absent', 'exact', 'conflict']),
+    expected_dist_tag: z.string().min(1).nullable(),
+    observed_dist_tag: z.string().min(1).nullable(),
     expected_artifacts: RegistryArtifactSetSchema,
     observed_artifacts: RegistryArtifactSetSchema,
     observed_at: z.string().datetime({ offset: true }),
   })
-  .strict();
+  .strict()
+  .superRefine((observation, context) => {
+    if (observation.expected_artifacts.length === 0) {
+      context.addIssue({
+        code: 'custom',
+        path: ['expected_artifacts'],
+        message: 'registry observations require at least one expected artifact',
+      });
+    }
+    const expectedIntegrity = observation.expected_artifacts.every(
+      artifact => artifact.integrity !== undefined
+    );
+    const observedIntegrity = observation.observed_artifacts.every(
+      artifact => artifact.integrity !== undefined
+    );
+    if (observation.registry === 'npm') {
+      if (!observation.expected_dist_tag || !expectedIntegrity) {
+        context.addIssue({
+          code: 'custom',
+          message: 'npm observations require a sealed dist-tag and expected SHA-512 integrity',
+        });
+      }
+      if (observation.state === 'exact' && (!observation.observed_dist_tag || !observedIntegrity)) {
+        context.addIssue({
+          code: 'custom',
+          message: 'exact npm observations require observed dist-tag and SHA-512 integrity',
+        });
+      }
+    } else if (
+      observation.expected_dist_tag !== null ||
+      observation.observed_dist_tag !== null ||
+      observation.expected_artifacts.some(artifact => artifact.integrity !== undefined) ||
+      observation.observed_artifacts.some(artifact => artifact.integrity !== undefined)
+    ) {
+      context.addIssue({
+        code: 'custom',
+        message: 'PyPI observations cannot contain npm dist-tag or integrity fields',
+      });
+    }
+    if (
+      observation.state === 'absent' &&
+      (observation.observed_dist_tag !== null || observation.observed_artifacts.length > 0)
+    ) {
+      context.addIssue({
+        code: 'custom',
+        message: 'absent registry observations cannot contain published evidence',
+      });
+    }
+    if (observation.state === 'exact') {
+      const normalized = (artifacts: z.infer<typeof RegistryArtifactSetSchema>) =>
+        [...artifacts].sort((left, right) =>
+          left.filename < right.filename ? -1 : left.filename > right.filename ? 1 : 0
+        );
+      if (
+        JSON.stringify(normalized(observation.expected_artifacts)) !==
+          JSON.stringify(normalized(observation.observed_artifacts)) ||
+        observation.expected_dist_tag !== observation.observed_dist_tag
+      ) {
+        context.addIssue({
+          code: 'custom',
+          message: 'exact registry observations must match every sealed artifact and dist-tag',
+        });
+      }
+    }
+  });
 
 export const ReleaseStateSchema = z.enum([
   'requested',

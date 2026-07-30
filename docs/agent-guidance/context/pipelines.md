@@ -50,10 +50,20 @@ fast-forward push; stale or divergent branches stop before the write.
 Preparation builds the selected TypeScript and/or Python artifacts twice in
 clean worktrees. The primary files are retained only after the
 verification-only build reproduces the complete filename and SHA-256 set; the
-second build is then discarded. The preparation manifest records selected and
-skipped ecosystems, versions, primary artifact hashes, changelog metadata, and
-the workflow run and attempt. Its `base_commit` is read from the exact primary
-`next` checkout rather than inferred from the workflow event.
+second build is then discarded. npm tarballs additionally record and reproduce
+their SHA-512 Subresource Integrity value. The preparation manifest records
+selected and skipped ecosystems, versions, primary artifact hashes, changelog
+metadata, and the workflow run and attempt. Its `base_commit` is read from the
+exact primary `next` checkout rather than inferred from the workflow event.
+
+After the preparation PR is updated, a credential-free shadow job queries the
+exact npm and PyPI versions. npm reconciliation checks the sealed dist-tag,
+registry integrity, and downloaded tarball bytes. PyPI reconciliation compares
+the complete wheel/sdist filename-to-SHA-256 set. Each package is classified as
+`absent`, `exact`, or `conflict`; any conflict clears every candidate publish
+handoff. Absent files are copied into registry-specific local directories only
+after their sealed digests are rechecked. Shadow mode reports this matrix but
+still has no registry write authority.
 
 The changelog generator is isolated from the GitHub writer. Only its generation
 step receives `OPENAI_API_KEY`, and it hands validated JSON, deterministic MDX,

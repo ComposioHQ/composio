@@ -277,6 +277,7 @@ for (const requiredSuite of [
   'test/sdk-release-prepare.test.ts',
   'test/sdk-release-changelog.test.ts',
   'test/sdk-release-coordinator.test.ts',
+  'test/sdk-release-reconcile.test.ts',
 ]) {
   if (!sdkReleaseTestScript.includes(requiredSuite)) {
     throw new Error(`sdk-release:test must include ${requiredSuite}`);
@@ -395,6 +396,24 @@ if (
   sdkReleaseWorkflow.includes('const legacy = manifest.packages')
 ) {
   throw new Error('SDK shadow receipt must use an independent legacy outcome handoff');
+}
+for (const reconciliationInvariant of [
+  'shadow-reconcile:',
+  'Read-only registry reconciliation shadow',
+  'bun .github/scripts/sdk-release/reconcile.ts',
+  '--artifact-directory handoff/primary-artifacts',
+  '--filtered-directory filtered',
+  'No registry credentials or write operations were available to this job.',
+]) {
+  if (!sdkReleaseWorkflow.includes(reconciliationInvariant)) {
+    throw new Error(`SDK registry shadow must preserve ${reconciliationInvariant}`);
+  }
+}
+if (
+  !sdkReleaseWorkflow.includes('integrity="sha512-$(openssl dgst -sha512 -binary') ||
+  !sdkReleaseWorkflow.includes('integrity:$integrity')
+) {
+  throw new Error('SDK primary npm artifacts must seal SHA-512 Subresource Integrity');
 }
 
 const tsTestWorkflow = readFileSync(
