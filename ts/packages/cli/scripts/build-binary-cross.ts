@@ -25,6 +25,7 @@ import {
   teardown,
 } from './_shared';
 import { BinaryBuildError } from './build-error';
+import { buildCliReleaseVersionDefineArgs } from '../src/utils/cli-release-version';
 
 /**
  * Maps Bun cross-compilation targets to Composio artifact names.
@@ -73,6 +74,7 @@ export function buildBinaryCross() {
       '--env',
       'DEBUG_OVERRIDE_*',
       ...posthogBakeArgs(),
+      ...buildCliReleaseVersionDefineArgs(process.env.RELEASE_TAG),
       '--compile',
       '--production',
       '--target',

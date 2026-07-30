@@ -1,10 +1,7 @@
 import { describe, expect, it, vi } from '@effect/vitest';
 import { ConfigProvider, Effect, Layer } from 'effect';
-import { FetchHttpClient, Path } from '@effect/platform';
-import { BunFileSystem } from '@effect/platform-bun';
-import { existsSync, mkdirSync, readFileSync, mkdtempSync, writeFileSync } from 'node:fs';
-import { tmpdir } from 'node:os';
-import path from 'node:path';
+import { FetchHttpClient, FileSystem, Path } from '@effect/platform';
+import { BunFileSystem, BunPath } from '@effect/platform-bun';
 import { withHttpServer } from 'test/__utils__/http-server';
 import { getTerminalCapabilities, TerminalUI } from 'src/services/terminal-ui';
 import { UpgradeBinary, UpgradeBinaryError } from 'src/services/upgrade-binary';
@@ -55,6 +52,8 @@ const NodeOsTest = Layer.succeed(
     arch: 'arm64',
   })
 );
+
+const TestPlatform = Layer.mergeAll(BunFileSystem.layer, BunPath.layer);
 
 const makeUpgradeEffect = (
   configEntries: ReadonlyArray<[string, string]>,
@@ -230,6 +229,15 @@ describe('UpgradeBinary', () => {
     vi.stubGlobal('Bun', { which: vi.fn(() => null) });
 
     return Effect.gen(function* () {
+      const fs = yield* FileSystem.FileSystem;
+      const path = yield* Path.Path;
+      const installDir = yield* fs.makeTempDirectoryScoped({
+        prefix: 'composio-upgrade-current-',
+      });
+      const fakeExecPath = path.join(installDir, 'composio');
+      yield* fs.writeFileString(path.join(installDir, 'release-tag.txt'), '@composio/cli@0.2.14\n');
+      vi.spyOn(process, 'execPath', 'get').mockReturnValue(fakeExecPath);
+
       const apiBaseUrl = yield* scopedHttpServer((_req, res) => {
         res.writeHead(200, { 'content-type': 'application/json' });
         res.end(
@@ -267,13 +275,22 @@ describe('UpgradeBinary', () => {
       ]);
 
       expect(result).toBeUndefined();
-    }).pipe(Effect.ensuring(restoreStubsAndMocks));
+    }).pipe(Effect.provide(TestPlatform), Effect.ensuring(restoreStubsAndMocks));
   });
 
   it.scoped('ignores prereleases when checking the stable channel', () => {
     vi.stubGlobal('Bun', { which: vi.fn(() => null) });
 
     return Effect.gen(function* () {
+      const fs = yield* FileSystem.FileSystem;
+      const path = yield* Path.Path;
+      const installDir = yield* fs.makeTempDirectoryScoped({
+        prefix: 'composio-upgrade-current-',
+      });
+      const fakeExecPath = path.join(installDir, 'composio');
+      yield* fs.writeFileString(path.join(installDir, 'release-tag.txt'), '@composio/cli@0.2.17\n');
+      vi.spyOn(process, 'execPath', 'get').mockReturnValue(fakeExecPath);
+
       const apiBaseUrl = yield* scopedHttpServer((_req, res) => {
         res.writeHead(200, { 'content-type': 'application/json' });
         res.end(
@@ -311,17 +328,25 @@ describe('UpgradeBinary', () => {
       ]);
 
       expect(result).toBeUndefined();
-    }).pipe(Effect.ensuring(restoreStubsAndMocks));
+    }).pipe(Effect.provide(TestPlatform), Effect.ensuring(restoreStubsAndMocks));
   });
 
   it.scoped('selects the latest prerelease when beta upgrades are requested', () => {
-    const installDir = mkdtempSync(path.join(tmpdir(), 'composio-beta-select-'));
-    const fakeExecPath = path.join(installDir, 'composio');
-    writeFileSync(path.join(installDir, 'release-tag.txt'), '@composio/cli@0.1.0-beta.0\n');
     vi.stubGlobal('Bun', { which: vi.fn(() => null) });
-    const execPathSpy = vi.spyOn(process, 'execPath', 'get').mockReturnValue(fakeExecPath);
 
     return Effect.gen(function* () {
+      const fs = yield* FileSystem.FileSystem;
+      const path = yield* Path.Path;
+      const installDir = yield* fs.makeTempDirectoryScoped({
+        prefix: 'composio-beta-select-',
+      });
+      const fakeExecPath = path.join(installDir, 'composio');
+      yield* fs.writeFileString(
+        path.join(installDir, 'release-tag.txt'),
+        '@composio/cli@0.1.0-beta.0\n'
+      );
+      vi.spyOn(process, 'execPath', 'get').mockReturnValue(fakeExecPath);
+
       const apiBaseUrl = yield* scopedHttpServer((_req, res) => {
         res.writeHead(200, { 'content-type': 'application/json' });
         res.end(
@@ -378,48 +403,51 @@ describe('UpgradeBinary', () => {
       }
       expect(error.message).toBe('Failed to download binary: composio-darwin-aarch64.zip');
       expect(String(error.cause)).toContain('beta-3.zip');
-    }).pipe(
-      Effect.ensuring(Effect.sync(() => execPathSpy.mockRestore())),
-      Effect.ensuring(restoreStubsAndMocks)
-    );
+    }).pipe(Effect.provide(TestPlatform), Effect.ensuring(restoreStubsAndMocks));
   });
 
-  it.effect('copies local-tool bundled binary assets during local-target upgrades', () => {
-    const installDir = mkdtempSync(path.join(tmpdir(), 'composio-local-tool-upgrade-target-'));
-    const sourceDir = mkdtempSync(path.join(tmpdir(), 'composio-local-tool-upgrade-source-'));
-    const fakeExecPath = path.join(installDir, 'composio');
-    const sourceBinaryPath = path.join(sourceDir, 'composio');
-    const sourceLocalToolPath = path.join(
-      sourceDir,
-      'local-tools-binaries',
-      'beeper-imessage',
-      'darwin-arm64',
-      'imessage-cli'
-    );
-    const installedLocalToolPath = path.join(
-      installDir,
-      'local-tools-binaries',
-      'beeper-imessage',
-      'darwin-arm64',
-      'imessage-cli'
-    );
-
-    writeFileSync(fakeExecPath, 'old-binary');
-    writeFileSync(sourceBinaryPath, 'new-binary');
-    mkdirSync(path.dirname(sourceLocalToolPath), { recursive: true });
-    writeFileSync(sourceLocalToolPath, 'imessage-sidecar');
-
+  it.scoped('copies local-tool bundled binary assets during local-target upgrades', () => {
     vi.stubGlobal('Bun', { which: vi.fn(() => null) });
-    const execPathSpy = vi.spyOn(process, 'execPath', 'get').mockReturnValue(fakeExecPath);
 
     return Effect.gen(function* () {
-      const companionRelativePaths = yield* collectExpectedRunCompanionAssetRelativePaths(
-        sourceDir
-      ).pipe(Effect.provide(Layer.mergeAll(BunFileSystem.layer, Path.layer)));
+      const fs = yield* FileSystem.FileSystem;
+      const path = yield* Path.Path;
+      const installDir = yield* fs.makeTempDirectoryScoped({
+        prefix: 'composio-local-tool-upgrade-target-',
+      });
+      const sourceDir = yield* fs.makeTempDirectoryScoped({
+        prefix: 'composio-local-tool-upgrade-source-',
+      });
+      const fakeExecPath = path.join(installDir, 'composio');
+      const sourceBinaryPath = path.join(sourceDir, 'composio');
+      const sourceLocalToolPath = path.join(
+        sourceDir,
+        'local-tools-binaries',
+        'beeper-imessage',
+        'darwin-arm64',
+        'imessage-cli'
+      );
+      const installedLocalToolPath = path.join(
+        installDir,
+        'local-tools-binaries',
+        'beeper-imessage',
+        'darwin-arm64',
+        'imessage-cli'
+      );
+
+      yield* fs.writeFileString(fakeExecPath, 'old-binary');
+      yield* fs.writeFileString(sourceBinaryPath, 'new-binary');
+      yield* fs.makeDirectory(path.dirname(sourceLocalToolPath), { recursive: true });
+      yield* fs.writeFileString(sourceLocalToolPath, 'imessage-sidecar');
+
+      vi.spyOn(process, 'execPath', 'get').mockReturnValue(fakeExecPath);
+
+      const companionRelativePaths =
+        yield* collectExpectedRunCompanionAssetRelativePaths(sourceDir);
       for (const relativePath of companionRelativePaths) {
         const companionPath = path.join(sourceDir, relativePath);
-        mkdirSync(path.dirname(companionPath), { recursive: true });
-        writeFileSync(companionPath, 'support-file');
+        yield* fs.makeDirectory(path.dirname(companionPath), { recursive: true });
+        yield* fs.writeFileString(companionPath, 'support-file');
       }
 
       const result = yield* runUpgradeSuccess([
@@ -427,23 +455,28 @@ describe('UpgradeBinary', () => {
       ]);
 
       expect(result).toBeUndefined();
-      expect(readFileSync(fakeExecPath, 'utf8')).toBe('new-binary');
-      expect(existsSync(installedLocalToolPath)).toBe(true);
-      expect(readFileSync(installedLocalToolPath, 'utf8')).toBe('imessage-sidecar');
-    }).pipe(
-      Effect.ensuring(Effect.sync(() => execPathSpy.mockRestore())),
-      Effect.ensuring(restoreStubsAndMocks)
-    );
+      expect(yield* fs.readFileString(fakeExecPath)).toBe('new-binary');
+      expect(yield* fs.exists(installedLocalToolPath)).toBe(true);
+      expect(yield* fs.readFileString(installedLocalToolPath)).toBe('imessage-sidecar');
+    }).pipe(Effect.provide(TestPlatform), Effect.ensuring(restoreStubsAndMocks));
   });
 
   it.scoped('uses the installed beta release tag when comparing beta updates', () => {
-    const installDir = mkdtempSync(path.join(tmpdir(), 'composio-beta-upgrade-'));
-    const fakeExecPath = path.join(installDir, 'composio');
-    writeFileSync(path.join(installDir, 'release-tag.txt'), '@composio/cli@0.2.17-beta.1\n');
     vi.stubGlobal('Bun', { which: vi.fn(() => null) });
-    const execPathSpy = vi.spyOn(process, 'execPath', 'get').mockReturnValue(fakeExecPath);
 
     return Effect.gen(function* () {
+      const fs = yield* FileSystem.FileSystem;
+      const path = yield* Path.Path;
+      const installDir = yield* fs.makeTempDirectoryScoped({
+        prefix: 'composio-beta-upgrade-',
+      });
+      const fakeExecPath = path.join(installDir, 'composio');
+      yield* fs.writeFileString(
+        path.join(installDir, 'release-tag.txt'),
+        '@composio/cli@0.2.17-beta.1\n'
+      );
+      vi.spyOn(process, 'execPath', 'get').mockReturnValue(fakeExecPath);
+
       const apiBaseUrl = yield* scopedHttpServer((_req, res) => {
         res.writeHead(200, { 'content-type': 'application/json' });
         res.end(
@@ -478,9 +511,6 @@ describe('UpgradeBinary', () => {
       }
       expect(error.message).toBe('Failed to download binary: composio-darwin-aarch64.zip');
       expect(String(error.cause)).toContain('beta-3.zip');
-    }).pipe(
-      Effect.ensuring(Effect.sync(() => execPathSpy.mockRestore())),
-      Effect.ensuring(restoreStubsAndMocks)
-    );
+    }).pipe(Effect.provide(TestPlatform), Effect.ensuring(restoreStubsAndMocks));
   });
 });

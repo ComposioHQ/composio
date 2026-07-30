@@ -1,5 +1,13 @@
 # @composio/core
 
+## 0.14.1
+
+### Patch Changes
+
+- 577a3d4: Replace the backtracking leading/trailing-slash-trim regexes in the Cloudflare Workers/Edge platform path helpers with index-walk loops, closing a polynomial-time regular expression denial-of-service (CodeQL js/polynomial-redos) on long runs of slash characters. Output is unchanged for every input.
+- 503b50a: Refresh runtime dependencies across the TypeScript SDK packages.
+- 2f63fe5: Guard Tool Router session URL uploads against SSRF, revalidate redirect targets, and enforce a streamed 100 MiB response limit across TypeScript URL upload paths.
+
 ## 0.14.0
 
 ### Minor Changes

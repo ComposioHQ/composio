@@ -23,6 +23,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { z } from 'zod';
 import { fetchWithRetry } from './fetch-with-retry';
+import { declareOperationTags } from '../lib/openapi-tags';
 import {
   PRODUCTION_BASE_URL,
   PRODUCTION_API_V3_URL,
@@ -180,7 +181,7 @@ function forEachOperation(paths, callback) {
 }
 
 /**
- * Filter paths: remove ignored/internal tags, keep first tag only.
+ * Filter paths: remove ignored/internal tags, keep the first public tag only.
  */
 function filterPaths(paths) {
   const filteredPaths = {};
@@ -195,13 +196,14 @@ function filterPaths(paths) {
 
       const tags = operation.tags ?? [];
       const isInternal = operation['x-internal'] === true || tags.includes('x-internal');
-      const hasOnlyIgnoredTags = tags.length > 0 && tags.every(tag => IGNORED_TAGS.has(tag));
+      const publicTags = tags.filter(tag => !IGNORED_TAGS.has(tag));
+      const hasOnlyIgnoredTags = tags.length > 0 && publicTags.length === 0;
 
       if (isInternal || hasOnlyIgnoredTags) {
         delete filteredPathItem[method];
         removedCount++;
-      } else if (tags.length > 1) {
-        filteredPathItem[method] = { ...operation, tags: [tags[0]] };
+      } else if (publicTags.length > 0) {
+        filteredPathItem[method] = { ...operation, tags: [publicTags[0]] };
       }
     }
 
@@ -339,6 +341,18 @@ function postProcessSpec(spec) {
   ];
   if (spec.tags) {
     spec.tags = spec.tags.filter(tag => !IGNORED_TAGS.has(tag.name));
+  }
+  // fumadocs-openapi only generates pages for operations whose tags are
+  // declared top-level; the backend generator omits some (e.g. Projects).
+  const declaredUpstream = new Set((spec.tags ?? []).map(tag => tag.name));
+  declareOperationTags(spec);
+  const addedTags = (spec.tags ?? []).filter(tag => !declaredUpstream.has(tag.name));
+  if (addedTags.length > 0) {
+    console.warn(
+      `WARN: upstream spec uses tags missing from its top-level tags array: ${addedTags
+        .map(tag => tag.name)
+        .join(', ')}. Declared them automatically; the backend generator should emit them.`
+    );
   }
 
   removeCookieAuthentication(spec);

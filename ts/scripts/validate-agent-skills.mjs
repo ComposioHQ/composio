@@ -18,6 +18,8 @@ const expectedSkills = [
   'cross-sdk-parity',
   'docs-decisions',
   'eve',
+  'good-docs-audit',
+  'good-docs-writing',
   'python-providers',
   'python-release',
   'python-sdk',

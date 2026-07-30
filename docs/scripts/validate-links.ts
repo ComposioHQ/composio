@@ -15,6 +15,13 @@ import {
   toolkitsSource,
 } from '../lib/source';
 
+/**
+ * `--external` additionally HEAD/GET-checks every external URL. Slow and
+ * dependent on third-party uptime, so it runs on a schedule (nightly CI),
+ * never on the PR path.
+ */
+const checkExternalLinks = process.argv.includes('--external');
+
 type AnySource =
   | typeof source
   | Awaited<ReturnType<typeof getReferenceSource>>
@@ -90,6 +97,67 @@ async function getDynamicToolkitEntries() {
   return toolkits.map((t) => ({ value: { slug: [t.slug] }, hashes: [] as string[] }));
 }
 
+const EXTERNAL_FETCH_HEADERS = {
+  // Some hosts reject requests without a browser-like UA (bot filters).
+  'user-agent':
+    'Mozilla/5.0 (compatible; composio-docs-link-check; +https://docs.composio.dev)',
+  accept: 'text/html,application/xhtml+xml;q=0.9,*/*;q=0.8',
+};
+
+async function fetchStatus(url: URL, method: 'HEAD' | 'GET'): Promise<number> {
+  const response = await fetch(url, {
+    method,
+    headers: EXTERNAL_FETCH_HEADERS,
+    redirect: 'follow',
+    signal: AbortSignal.timeout(15_000),
+  });
+  await response.body?.cancel();
+  return response.status;
+}
+
+const externalResultCache = new Map<
+  string,
+  Promise<{ success: true } | { success: false; message?: string }>
+>();
+
+/**
+ * Replaces next-validate-link's default external validator (bare HEAD, no
+ * timeout, no UA, no retry). This one only fails on evidence the link is dead
+ * — 404/410, or a network error after a retry. Auth walls, rate limits, and
+ * transient 5xx count as reachable: the nightly job hunts dead links, not
+ * third-party uptime.
+ */
+function validateExternalUrl(url: URL) {
+  if (url.hostname === 'localhost' || url.hostname === '127.0.0.1') {
+    return Promise.resolve({ success: true as const });
+  }
+  const cached = externalResultCache.get(url.href);
+  if (cached) return cached;
+
+  const result = (async () => {
+    for (let attempt = 0; attempt < 2; attempt++) {
+      try {
+        let status = await fetchStatus(url, 'HEAD');
+        // Many servers reject HEAD (405, bot filters); confirm with GET.
+        if (status >= 400) status = await fetchStatus(url, 'GET');
+        if (status === 404 || status === 410) {
+          return { success: false as const, message: `responded status ${status}` };
+        }
+        return { success: true as const };
+      } catch (error) {
+        if (attempt === 0) continue;
+        return {
+          success: false as const,
+          message: error instanceof Error ? error.message : 'fetch failed',
+        };
+      }
+    }
+    return { success: false as const };
+  })();
+  externalResultCache.set(url.href, result);
+  return result;
+}
+
 async function checkLinks() {
   const referenceSource = await getReferenceSource();
   const [docsEntries, refEntries, exampleEntries, toolkitEntries, dynamicToolkitEntries] = await Promise.all([
@@ -119,6 +187,7 @@ async function checkLinks() {
       },
     },
     checkRelativePaths: 'as-url',
+    checkExternal: checkExternalLinks ? { validate: validateExternalUrl } : false,
   });
 
   // Filter out API route URLs (these are valid but not detected as pages)

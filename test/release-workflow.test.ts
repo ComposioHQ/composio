@@ -47,6 +47,10 @@ const buildCliWorkflow = readFileSync(
   new URL('../.github/workflows/build-cli-binaries.yml', import.meta.url),
   'utf8'
 );
+const buildAllCliBinariesScript = readFileSync(
+  new URL('../ts/packages/cli/scripts/build-all-binaries.ts', import.meta.url),
+  'utf8'
+);
 const installGuide = readFileSync(new URL('../INSTALL.md', import.meta.url), 'utf8');
 const installHealthCheck = readFileSync(
   new URL('../.github/workflows/cli.install-health-check.yml', import.meta.url),
@@ -66,6 +70,12 @@ const verifyAssetsScript = readFileSync(
   new URL('../.github/scripts/cli-release/verify-assets.sh', import.meta.url),
   'utf8'
 );
+const generateChecksumsScriptUrl = new URL(
+  '../ts/packages/cli/scripts/generate-checksums.ts',
+  import.meta.url
+);
+const generateChecksumsScriptPath = generateChecksumsScriptUrl.pathname;
+const generateChecksumsScript = readFileSync(generateChecksumsScriptUrl, 'utf8');
 
 function requireMatch(text, pattern, label) {
   const match = text.match(pattern);
@@ -527,6 +537,46 @@ if (!(packageSkillsIdx < generateChecksumsIdx)) {
   );
 }
 
+if (
+  !generateChecksumsScript.includes("from './_teardown'") ||
+  generateChecksumsScript.includes("from './_shared'")
+) {
+  throw new Error(
+    'CLI checksum generation must use the dependency-light teardown without loading CLI runtime helpers'
+  );
+}
+
+// The release job runs checksum generation in a fresh checkout where workspace packages have not
+// been built. Exercise the script from an unrelated working directory to prevent imports from
+// pulling in the CLI runtime and its unbuilt @composio/core dependency.
+{
+  const fixtureDir = mkdtempSync(join(tmpdir(), 'composio-cli-checksums-'));
+  try {
+    const binariesDir = join(fixtureDir, 'dist/binaries');
+    mkdirSync(binariesDir, { recursive: true });
+    writeFileSync(join(binariesDir, 'composio-linux-x64.zip'), 'release archive fixture\n');
+
+    const result = spawnSync(process.execPath, [generateChecksumsScriptPath], {
+      cwd: fixtureDir,
+      encoding: 'utf8',
+      env: process.env,
+    });
+
+    if (result.status !== 0) {
+      throw new Error(
+        `CLI checksum generation must run without built workspace packages\nstdout:\n${result.stdout}\nstderr:\n${result.stderr}`
+      );
+    }
+
+    const checksums = readFileSync(join(binariesDir, 'checksums.txt'), 'utf8');
+    if (!/^[a-f0-9]{64}  composio-linux-x64\.zip\n$/.test(checksums)) {
+      throw new Error(`CLI checksum generation wrote an invalid manifest:\n${checksums}`);
+    }
+  } finally {
+    rmSync(fixtureDir, { recursive: true, force: true });
+  }
+}
+
 // Per-tag concurrency prevents two runs clobbering the same release without serializing betas.
 if (!buildCliWorkflow.includes('group: cli-release-${{ needs.prepare.outputs.release_tag }}')) {
   throw new Error(
@@ -582,6 +632,26 @@ if (!resolveTargetScript.includes('--exclude-drafts')) {
   throw new Error(
     'resolve-release-target.sh must exclude draft stable releases from beta base selection'
   );
+}
+if (!buildCliWorkflow.includes('RELEASE_TAG: ${{ needs.prepare.outputs.release_tag }}')) {
+  throw new Error('CLI binary builds must receive the resolved GitHub release tag');
+}
+if (
+  !buildAllCliBinariesScript.includes(
+    '...buildCliReleaseVersionDefineArgs(process.env.RELEASE_TAG)'
+  )
+) {
+  throw new Error('the all-target CLI build must embed the resolved GitHub release version');
+}
+if (
+  !buildCliWorkflow.includes(
+    "- name: Verify binary version\n        if: matrix.target == 'bun-linux-x64'"
+  )
+) {
+  throw new Error('CLI binary version verification must run only on a native target');
+}
+if (!buildCliWorkflow.includes('expected_version#@composio/cli@')) {
+  throw new Error('CLI binary version verification must strip the release tag prefix');
 }
 
 // --- cli.install-health-check.yml: canary must exercise the failure-prone pinned path ---
@@ -906,6 +976,82 @@ function runResolver({ env, releasesFixture, curlFixture, ghViewIsDraft }) {
   } finally {
     rmSync(fakeBin, { recursive: true, force: true });
     rmSync(workdir, { recursive: true, force: true });
+  }
+}
+
+// Pushes to next are always betas, regardless of private package metadata.
+{
+  const r = runResolver({
+    env: {
+      EVENT_NAME: 'push',
+      REPOSITORY: 'ComposioHQ/composio',
+      RUN_NUMBER: '43',
+      COMMIT_SHA: 'deadbeef',
+    },
+    releasesFixture: [{ tagName: '@composio/cli@0.2.33', isPrerelease: false }],
+  });
+  if (r.status !== 0) {
+    throw new Error(`resolve-release-target.sh push failed\nstderr:\n${r.stderr}`);
+  }
+  if (r.outputs.release_tag !== '@composio/cli@0.2.34-beta.43') {
+    throw new Error(`push must produce the next rolling beta, got ${r.outputs.release_tag}`);
+  }
+  if (r.outputs.prerelease !== 'true') {
+    throw new Error('push must never publish a stable release directly');
+  }
+}
+
+// Release owners can choose an intentional minor/major base without changing package.json.
+{
+  const r = runResolver({
+    env: {
+      EVENT_NAME: 'workflow_dispatch',
+      ACTION_INPUT: 'build-beta',
+      VERSION_INPUT: '0.3.0',
+      REPOSITORY: 'ComposioHQ/composio',
+      RUN_NUMBER: '44',
+      COMMIT_SHA: 'deadbeef',
+    },
+    releasesFixture: [{ tagName: '@composio/cli@0.2.33', isPrerelease: false }],
+  });
+  if (r.status !== 0) {
+    throw new Error(`explicitly versioned build-beta failed\nstderr:\n${r.stderr}`);
+  }
+  if (r.outputs.release_tag !== '@composio/cli@0.3.0-beta.44') {
+    throw new Error(`explicit build-beta version was not honored: ${r.outputs.release_tag}`);
+  }
+}
+
+{
+  const r = runResolver({
+    env: {
+      EVENT_NAME: 'workflow_dispatch',
+      ACTION_INPUT: 'build-beta',
+      VERSION_INPUT: '0.2.33',
+      REPOSITORY: 'ComposioHQ/composio',
+      RUN_NUMBER: '45',
+      COMMIT_SHA: 'deadbeef',
+    },
+    releasesFixture: [{ tagName: '@composio/cli@0.2.33', isPrerelease: false }],
+  });
+  if (r.status === 0 || !r.stderr.includes('must be newer than latest stable')) {
+    throw new Error('build-beta must reject an explicit version at or below latest stable');
+  }
+}
+
+{
+  const r = runResolver({
+    env: {
+      EVENT_NAME: 'workflow_dispatch',
+      ACTION_INPUT: 'build-beta',
+      VERSION_INPUT: 'next',
+      REPOSITORY: 'ComposioHQ/composio',
+      RUN_NUMBER: '46',
+      COMMIT_SHA: 'deadbeef',
+    },
+  });
+  if (r.status === 0 || !r.stderr.includes('Beta version must match')) {
+    throw new Error('build-beta must reject a non-semver explicit version');
   }
 }
 

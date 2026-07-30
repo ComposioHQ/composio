@@ -23,14 +23,16 @@
 
 ## Choose The Path
 
-| Goal | Path | Result |
-| --- | --- | --- |
-| Ship an ordinary CLI change | Merge the reviewed PR to `next` | The push builds a rolling beta automatically. |
-| Build a beta from a branch | Dispatch `build-beta` at that branch | A prerelease is built from the branch commit. |
-| Publish a stable CLI | Promote an existing tested beta | The beta's source commit is rebuilt and published under the stable tag. |
-| Resume a failed promotion | Re-run or re-dispatch the same beta after inspecting the draft | An unpublished draft can be resumed and its assets replaced. |
+| Goal                        | Path                                                           | Result                                                                  |
+| --------------------------- | -------------------------------------------------------------- | ----------------------------------------------------------------------- |
+| Ship an ordinary CLI change | Merge the reviewed PR to `next`                                | The push builds a rolling beta automatically.                           |
+| Build a beta from a branch  | Dispatch `build-beta` at that branch                           | A prerelease is built from the branch commit.                           |
+| Publish a stable CLI        | Promote an existing tested beta                                | The beta's source commit is rebuilt and published under the stable tag. |
+| Resume a failed promotion   | Re-run or re-dispatch the same beta after inspecting the draft | An unpublished draft can be resumed and its assets replaced.            |
 
-The resolver also treats a CLI `package.json` version change pushed to `next` as a stable release. Do not use that as the normal contributor procedure. It bypasses beta selection and is reserved for explicit release-owner recovery or migration work.
+The private CLI `package.json` uses a development sentinel and never selects a
+binary version. If a release owner needs an intentional minor or major version,
+dispatch an explicitly versioned beta, verify it, and promote that exact beta.
 
 ## Changeset Rule
 
@@ -94,7 +96,10 @@ If the user asked for a stable release without naming a beta, show the candidate
 
 ## Build A Manual Beta
 
-Use this only when an explicit beta build is requested. The selected ref supplies both the workflow definition and source commit.
+Use this only when an explicit beta build is requested. The selected ref
+supplies both the workflow definition and source commit. Omit `version` for the
+normal next-patch beta, or provide an exact `major.minor.patch` base for an
+intentional minor or major release.
 
 ```bash
 SOURCE_BRANCH='replace-with-branch'
@@ -103,6 +108,16 @@ gh workflow run build-cli-binaries.yml \
   --repo "$REPOSITORY" \
   --ref "$SOURCE_BRANCH" \
   --raw-field action=build-beta
+```
+
+For an intentional minor or major, add a version newer than the latest stable:
+
+```bash
+gh workflow run build-cli-binaries.yml \
+  --repo "$REPOSITORY" \
+  --ref "$SOURCE_BRANCH" \
+  --raw-field action=build-beta \
+  --raw-field version=0.3.0
 ```
 
 Watch the returned run through publication and installation tests. A beta is not a stable release.

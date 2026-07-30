@@ -22,6 +22,7 @@ import {
   teardown,
 } from './_shared';
 import { BinaryBuildError } from './build-error';
+import { buildCliReleaseVersionDefineArgs } from '../src/utils/cli-release-version';
 
 /**
  * All cross-compilation targets and their artifact names.
@@ -42,6 +43,7 @@ function runBunBuild(target: string, outfile: string) {
       '--env',
       'DEBUG_OVERRIDE_*',
       ...posthogBakeArgs(),
+      ...buildCliReleaseVersionDefineArgs(process.env.RELEASE_TAG),
       '--compile',
       '--production',
       '--target',
