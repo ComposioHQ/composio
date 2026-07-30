@@ -1,5 +1,5 @@
 import { describe, expect, layer } from '@effect/vitest';
-import { afterEach, vi } from 'vitest';
+import { afterEach, beforeEach, vi } from 'vitest';
 import { HelpDoc, ValidationError } from '@effect/cli';
 import { Cause, ConfigProvider, Console, Effect, Option } from 'effect';
 import type { ConnectedAccountItem } from 'src/models/connected-accounts';
@@ -128,6 +128,12 @@ const liveInput = (
 });
 
 describe('CLI: composio onboard', () => {
+  // The document's identifier fields are redacted when CI is set, so the suite would assert
+  // different values locally and on GitHub Actions. Unset it here and let the one explicit
+  // redaction test below opt back in. `unstubEnvs` in vitest.config.ts restores it per test.
+  beforeEach(() => {
+    vi.stubEnv('CI', undefined);
+  });
   afterEach(() => {
     vi.restoreAllMocks();
   });
@@ -2007,6 +2013,56 @@ describe('CLI: composio onboard', () => {
           );
 
           expect(Object.keys(JSON.parse(serialized) as Record<string, unknown>)[0]).toBe('kind');
+        })
+      );
+
+      it.effect('redacts the identifier fields under CI, the way a recording sees them', () =>
+        Effect.sync(() => {
+          // The recorded `--json` output is committed to a public repository, so the identifiers
+          // that name a real account must not survive into it. Outside CI the same document keeps
+          // them, which is what the rest of this suite asserts.
+          vi.stubEnv('CI', 'true');
+
+          const document = JSON.parse(
+            serializeOnboardState(
+              {
+                onboarded: false,
+                nextGate: 'execute',
+                task: 'list-slack-channels',
+                toolkit: 'slack',
+                gates: {
+                  hostWiring: { status: 'not_applicable', blocking: false, hosts: [] },
+                  login: { status: 'satisfied', email: null, orgId: '7JZPvKd7uTZM' },
+                  connect: {
+                    status: 'satisfied',
+                    toolkit: 'slack',
+                    connectedToolkits: ['slack'],
+                    connectedAccountId: 'ca_live_account',
+                    redirectUrl: null,
+                  },
+                  execute: {
+                    status: 'unsatisfied',
+                    toolSlug: 'SLACK_LIST_ALL_CHANNELS',
+                    lastExecutedAt: null,
+                  },
+                },
+                advisories: [],
+              },
+              { kind: 'command', command: 'composio execute "SLACK_LIST_ALL_CHANNELS"' }
+            )
+          ) as {
+            gates: {
+              login: { org_id: string };
+              connect: { connected_account_id: string; toolkit: string };
+            };
+            toolkit: string;
+          };
+
+          expect(document.gates.login.org_id).toBe('<REDACTED>');
+          expect(document.gates.connect.connected_account_id).toBe('<REDACTED>');
+          // Non-identifier fields are untouched, so the recording still demonstrates the flow.
+          expect(document.gates.connect.toolkit).toBe('slack');
+          expect(document.toolkit).toBe('slack');
         })
       );
     });

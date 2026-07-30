@@ -3,7 +3,7 @@ import { isLocalToolSlug } from '@composio/cli-local-tools';
 import util from 'node:util';
 import { Cause, Data, Effect, Either, Exit, Fiber, HashSet, Option, Predicate } from 'effect';
 import { encodingForModel } from 'js-tiktoken';
-import { redact } from 'src/ui/redact';
+import { ciRedactReplacer, redact } from 'src/ui/redact';
 import { parseJsonRecord } from 'src/utils/parse-json';
 import { toolkitFromToolSlug } from 'src/utils/toolkit-from-tool-slug';
 import { requireAuth } from 'src/effects/require-auth';
@@ -268,15 +268,6 @@ const connectionTips = (toolSlug: string, surface: 'root' | 'dev') => {
     ),
     executeStep.replace('Retry:', 'Then retry:'),
   ].join('\n');
-};
-
-const ciRedactReplacer = (_key: string, value: unknown): unknown => {
-  if (typeof value !== 'string') return value;
-  if (_key === 'logId') return redact({ value, prefix: 'log_' });
-  if (_key === 'id' || _key.endsWith('Id') || _key.endsWith('_id')) {
-    return redact({ value });
-  }
-  return value;
 };
 
 // JSON.stringify throws synchronously on circular or BigInt-bearing API

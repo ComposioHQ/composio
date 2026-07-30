@@ -12,7 +12,6 @@ import { setupCacheDir } from 'src/effects/setup-cache-dir';
 import { getOrFetchToolInputDefinition } from 'src/services/tool-input-validation';
 import * as consumerShortTermCache from 'src/services/consumer-short-term-cache';
 import * as composioClients from 'src/services/composio-clients';
-import * as redactModule from 'src/ui/redact';
 import * as onboardingStore from 'src/services/onboarding-store';
 import { cli, TestLive, MockConsole } from 'test/__utils__';
 import type { TestLiveInput } from 'test/__utils__/services/test-layer';
@@ -70,12 +69,10 @@ describe('CLI: composio execute', () => {
     })
   );
 
-  // Disable CI redaction so tests see raw values.
-  // The explicit CI-redaction test overrides via vi.spyOn and is unaffected.
-  let savedCI: string | undefined;
+  // Disable CI redaction so tests see raw values. The explicit CI-redaction test stubs it back on,
+  // and `unstubEnvs` in vitest.config.ts restores the real value after each test.
   beforeEach(() => {
-    savedCI = process.env.CI;
-    delete process.env.CI;
+    vi.stubEnv('CI', undefined);
     vi.spyOn(composioClients, 'getLatestToolVersion').mockImplementation(() =>
       Effect.fail(new composioClients.HttpServerError({}))
     );
@@ -88,7 +85,6 @@ describe('CLI: composio execute', () => {
   });
   afterEach(() => {
     vi.restoreAllMocks();
-    if (savedCI !== undefined) process.env.CI = savedCI;
   });
 
   let recordedSessionCreateParams: Array<Record<string, unknown>> = [];
@@ -2391,30 +2387,24 @@ describe('CLI: composio execute', () => {
   )('[Given] CI redaction enabled [Then] redacts id-like fields and logId', it => {
     it.scoped('redacts id, threadId, logId but preserves labelIds', () =>
       Effect.gen(function* () {
-        const spy = vi
-          .spyOn(redactModule, 'redact')
-          .mockImplementation(
-            (({ prefix }: { value: string; prefix?: string }) =>
-              `${prefix ?? ''}<REDACTED>`) as typeof redactModule.redact
-          );
+        // The real `CI` flag rather than a stub of `redact`: the replacer and `redact` live in one
+        // module now, so a spy on the export no longer intercepts the internal call. `unstubEnvs`
+        // restores this after the test.
+        vi.stubEnv('CI', 'true');
 
-        try {
-          yield* cli(['execute', 'GMAIL_SEND_EMAIL', '-d', '{"recipient_email":"to@example.com"}']);
-          const lines = yield* MockConsole.getLines({ stripAnsi: true });
-          const output = parseLastJson(lines) as unknown as {
-            data: { id: string; labelIds: string[]; threadId: string };
-            logId: string;
-            successful: boolean;
-          };
+        yield* cli(['execute', 'GMAIL_SEND_EMAIL', '-d', '{"recipient_email":"to@example.com"}']);
+        const lines = yield* MockConsole.getLines({ stripAnsi: true });
+        const output = parseLastJson(lines) as unknown as {
+          data: { id: string; labelIds: string[]; threadId: string };
+          logId: string;
+          successful: boolean;
+        };
 
-          expect(output.data.id).toBe('<REDACTED>');
-          expect(output.data.threadId).toBe('<REDACTED>');
-          expect(output.data.labelIds).toEqual(['SENT']);
-          expect(output.logId).toBe('log_<REDACTED>');
-          expect(output.successful).toBe(true);
-        } finally {
-          spy.mockRestore();
-        }
+        expect(output.data.id).toBe('<REDACTED>');
+        expect(output.data.threadId).toBe('<REDACTED>');
+        expect(output.data.labelIds).toEqual(['SENT']);
+        expect(output.logId).toBe('log_<REDACTED>');
+        expect(output.successful).toBe(true);
       })
     );
   });

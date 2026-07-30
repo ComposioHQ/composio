@@ -1,4 +1,5 @@
 import { Effect } from 'effect';
+import { ciRedactReplacer } from 'src/ui/redact';
 import { TerminalUI } from 'src/services/terminal-ui';
 import type { NextStep } from 'src/services/onboarding-next-command';
 import type { GateStatus, OnboardingState } from 'src/services/onboarding-state';
@@ -131,8 +132,14 @@ export const onboardStateDocument = (
   };
 };
 
+/**
+ * `ciRedactReplacer` for the same reason `composio execute` uses it on every payload it writes:
+ * `gates.login.org_id` and `gates.connect.connected_account_id` identify a real account, and the
+ * recorded `--json` output is committed to a public repository. Outside CI the document is
+ * unchanged, so the contract an agent reads is untouched.
+ */
 export const serializeOnboardState = (state: OnboardingState, step: NextStep): string =>
-  JSON.stringify(onboardStateDocument(state, step), null, 2);
+  JSON.stringify(onboardStateDocument(state, step), ciRedactReplacer, 2);
 
 const GATE_ORDER = ['login', 'connect', 'execute'] as const;
 
