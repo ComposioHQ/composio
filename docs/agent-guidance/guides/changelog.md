@@ -58,6 +58,11 @@ Use the released version in the final table column. The Python release guard rea
 3. **Use `###` for sections** — Content headings start at h3
 4. **No emojis** — No checkmarks, warning symbols, etc.
 
+Manually authored entries merged to `next` publish to the docs site, but they no
+longer trigger the Slack notification or the changelog-to-docs pull request.
+Those follow-ups require a coordinator finalization PR carrying the manifest
+marker described below.
+
 ## SDK Release Drafts
 
 The SDK release coordinator generates review drafts under

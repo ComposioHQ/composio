@@ -381,6 +381,7 @@ for (const reviewedInvariant of [
   'collect-release-state.ts',
   'RELEASE_BOT_LOGIN',
   'build-attempt',
+  '[[ "$state" != "conflict" ]]',
   'plan-patch',
   'continue-on-error: true',
   'Rebuild expired transport artifacts from sealed source',

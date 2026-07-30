@@ -496,7 +496,7 @@ describe('partial recovery, durable receipts, and verified tags', () => {
     expect(
       planAttemptOutcome({
         observations: [observation('npm', '@composio/core', 'conflict')],
-        cancelled_after_possible_write: false,
+        cancelled_after_possible_write: true,
       })
     ).toBe('conflict');
     expect(

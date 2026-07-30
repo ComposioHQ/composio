@@ -97,7 +97,7 @@ function json(body: unknown, status = 200): Response {
 }
 
 function registryFetch(options: {
-  npm?: 'absent' | 'exact' | 'wrong-tag' | 'conflict';
+  npm?: 'absent' | 'exact' | 'exact-with-alias' | 'wrong-tag' | 'conflict';
   pypi?: 'absent' | 'exact' | 'extra' | 'missing' | 'conflict';
 }): typeof fetch {
   return (async input => {
@@ -134,6 +134,7 @@ function registryFetch(options: {
       return json({
         name: npmPackage.name,
         'dist-tags': {
+          ...(options.npm === 'exact-with-alias' ? { beta: npmPackage.version } : {}),
           latest: options.npm === 'wrong-tag' ? '0.14.9' : npmPackage.version,
         },
       });
@@ -195,6 +196,23 @@ describe('exact npm and PyPI registry observations', () => {
       expect(plan.observations[0]?.state).toBe('conflict');
       expect(plan.can_publish).toBe(false);
     }
+  });
+
+  test('observes the sealed npm dist-tag when another tag points at the same version', async () => {
+    const plan = await reconcileRelease({
+      manifest_id: MANIFEST_ID,
+      packages: [npmPackage],
+      artifacts: [npmArtifact],
+      fetch: registryFetch({ npm: 'exact-with-alias' }),
+      now: () => NOW,
+    });
+
+    expect(plan.observations[0]).toMatchObject({
+      state: 'exact',
+      expected_dist_tag: 'latest',
+      observed_dist_tag: 'latest',
+    });
+    expect(plan.can_publish).toBe(true);
   });
 
   test('rejects malformed responses and distinguishes transient registry errors', async () => {

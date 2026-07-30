@@ -905,7 +905,8 @@ jobs:
           completed_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)
           state=$(jq -r .state evidence/verification.json)
           from=$([[ "$state" == "conflict" ]] && echo preflight_reconciling || echo publishing)
-          if [[ "${{ needs.publish-npm.result }}" == "cancelled" || "${{ needs.publish-pypi.result }}" == "cancelled" ]]; then
+          if [[ "$state" != "conflict" ]] && \
+            [[ "${{ needs.publish-npm.result }}" == "cancelled" || "${{ needs.publish-pypi.result }}" == "cancelled" ]]; then
             state=partial
           fi
           echo "outcome=$state" >> "$GITHUB_OUTPUT"

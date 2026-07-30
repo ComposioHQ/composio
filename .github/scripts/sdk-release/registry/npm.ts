@@ -276,9 +276,9 @@ export async function inspectNpmPackage(options: InspectNpmOptions): Promise<Reg
   const tarballBytes = new Uint8Array(await checkedTarball.arrayBuffer());
   const observedDigest = digestBytes(tarballBytes);
   const observedTag =
-    Object.entries(packument['dist-tags']).find(
-      ([, version]) => version === releasePackage.version
-    )?.[0] ?? null;
+    packument['dist-tags'][releasePackage.dist_tag] === releasePackage.version
+      ? releasePackage.dist_tag
+      : null;
   const state =
     versionDocument.name === releasePackage.name &&
     versionDocument.version === releasePackage.version &&
