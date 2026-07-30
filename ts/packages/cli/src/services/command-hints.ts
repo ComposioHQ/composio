@@ -16,6 +16,7 @@ export type CommandHintId =
   | 'root.execute'
   | 'root.execute.getSchema'
   | 'root.link'
+  | 'root.connections.remove'
   | 'root.orgs.switch'
   | 'dev.init'
   | 'dev.playgroundExecute'
@@ -66,6 +67,11 @@ export const COMMAND_HINTS: Record<CommandHintId, CommandHintNode> = {
   'root.link': {
     example: params => `composio link ${getParam(params, 'toolkit', '<toolkit>')}`,
     links: ['root.execute'],
+  },
+  'root.connections.remove': {
+    example: params =>
+      `composio connections remove ${getParam(params, 'account', '<toolkit-or-account>')}`,
+    links: ['root.link'],
   },
   'root.orgs.switch': {
     example: () => 'composio orgs switch',

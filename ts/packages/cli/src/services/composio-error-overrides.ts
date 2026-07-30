@@ -180,9 +180,12 @@ export const buildRevokedConnectionMessage = (params: {
   readonly providerMessage: string;
 }) => {
   const toolkit = remediationToolkit(params);
+  // No command in the message. Reconnecting takes two steps in a specific order, and a one-line
+  // error that names only `composio link` sends the reader at a command that refuses while the dead
+  // account is still there. The steps belong in the note, which has room to say why.
   return toolkit
-    ? `The ${toolkit} connection is no longer authorized (${params.providerMessage}). Run \`composio link ${toolkit}\` to reconnect, then retry.`
-    : `The connection for this tool call is no longer authorized (${params.providerMessage}). Reconnect the toolkit with \`composio link\`, then retry.`;
+    ? `The ${toolkit} connection is no longer authorized (${params.providerMessage}). Reconnect it, then retry.`
+    : `The connection for this tool call is no longer authorized (${params.providerMessage}). Reconnect the toolkit, then retry.`;
 };
 
 /**

@@ -202,10 +202,14 @@ describe('nextAgentCommand', () => {
 
       expect(step.kind).toBe('blocked');
       if (step.kind !== 'blocked') return;
-      expect(step.humanAction).toContain('composio link slack');
-      // The account the provider revoked still reads ACTIVE, so the guidance has to say so —
-      // otherwise the first check a user runs contradicts the diagnosis.
+      // Both traps, or the guidance is still unusable: the account reads ACTIVE so the diagnosis
+      // looks wrong, and `composio link` on its own refuses while the dead account exists.
       expect(step.humanAction).toContain('ACTIVE');
+      expect(step.humanAction).toContain('composio connections remove slack');
+      expect(step.humanAction).toContain('composio link slack');
+      expect(step.humanAction.indexOf('composio connections remove slack')).toBeLessThan(
+        step.humanAction.lastIndexOf('composio link slack')
+      );
     });
 
     it('sends a missing connection to `composio link` without the revoked wording', () => {
@@ -218,6 +222,8 @@ describe('nextAgentCommand', () => {
       if (step.kind !== 'blocked') return;
       expect(step.humanAction).toContain('composio link slack');
       expect(step.humanAction).not.toContain('ACTIVE');
+      // A missing connection has nothing to remove; only the revoked branch names that step.
+      expect(step.humanAction).not.toContain('connections remove');
     });
 
     it('names no command for a failure it could not classify', () => {

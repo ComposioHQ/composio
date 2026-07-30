@@ -56,7 +56,7 @@ describe('composio-error-overrides', () => {
       expect(result.normalized).toBeInstanceOf(ComposioRevokedConnectionError);
       expect(result.override?.kind).toBe('revoked_connection');
       expect(result.message).toBe(
-        'The slack connection is no longer authorized (Slack API error: token_revoked). Run `composio link slack` to reconnect, then retry.'
+        'The slack connection is no longer authorized (Slack API error: token_revoked). Reconnect it, then retry.'
       );
     });
 
@@ -102,7 +102,7 @@ describe('composio-error-overrides', () => {
       const result = mapComposioError({ toolSlug: 'COMPOSIO_SEARCH_TOOLS', error: 'not_authed' });
 
       expect(result.message).toBe(
-        'The connection for this tool call is no longer authorized (not_authed). Reconnect the toolkit with `composio link`, then retry.'
+        'The connection for this tool call is no longer authorized (not_authed). Reconnect the toolkit, then retry.'
       );
     });
   });

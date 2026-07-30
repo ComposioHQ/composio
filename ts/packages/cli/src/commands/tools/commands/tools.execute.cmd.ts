@@ -44,7 +44,7 @@ import {
   resolveCommandProject,
   formatResolveCommandProjectError,
 } from 'src/services/command-project';
-import { commandHintStep } from 'src/services/command-hints';
+import { commandHintExample, commandHintStep } from 'src/services/command-hints';
 import {
   getFreshConsumerConnectedToolkitsFromCache,
   refreshConsumerConnectedToolkitsCache,
@@ -296,16 +296,36 @@ const connectionTips = (
 /**
  * The reconnect note.
  *
- * It leads with the contradiction the user is about to hit: they were told the authorization is
- * gone, and the first thing they reach for reports `ACTIVE`. Leaving that unexplained is what makes
- * the diagnosis look wrong and sends people to `connections list` instead of to `link`.
+ * Two things have to be said here, and leaving either one out sends the reader at a command that
+ * contradicts what they were just told. The account still reads `ACTIVE`, so the diagnosis looks
+ * wrong until the note explains where the authorization was actually withdrawn. And `composio link`
+ * on its own refuses while the dead account exists, so naming only the link step hands over a
+ * command that errors.
  */
-const revokedConnectionTips = (toolSlug: string, surface: 'root' | 'dev') =>
-  [
-    `The connected account still reads ACTIVE — the authorization was withdrawn at the provider, so Composio's record does not change until you reconnect.`,
+const revokedConnectionTips = (toolSlug: string, surface: 'root' | 'dev') => {
+  const stale = `The connected account still reads ACTIVE — the authorization was withdrawn at the provider, so Composio's record does not change until you reconnect.`;
+  const toolkit = toolkitFromToolSlug(toolSlug);
+
+  // The two-step recovery is spelled out for the root surface only. The dev surface links accounts
+  // through a different command with its own user-id scoping, and inventing a removal step for it
+  // would be guessing at a flow this change did not verify.
+  if (!toolkit || surface === 'dev') {
+    return [stale, '', connectionTips(toolSlug, surface, 'Reconnect the toolkit')].join('\n');
+  }
+
+  return [
+    stale,
     '',
-    connectionTips(toolSlug, surface, 'Reconnect the toolkit'),
+    `\`${commandHintExample('root.link', { toolkit })}\` alone refuses while the old account exists. Remove it first.`,
+    '',
+    commandHintStep('Remove the dead connection', 'root.connections.remove', { account: toolkit }),
+    commandHintStep('Reconnect', 'root.link', { toolkit }),
+    commandHintStep('Retry', 'root.execute', { slug: toolSlug, data: '...' }).replace(
+      'Retry:',
+      'Then retry:'
+    ),
   ].join('\n');
+};
 
 // JSON.stringify throws synchronously on circular or BigInt-bearing API
 // payloads; fall back to util.inspect so the formatter stays a plain string

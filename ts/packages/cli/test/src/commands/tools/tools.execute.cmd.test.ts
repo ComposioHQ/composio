@@ -2263,9 +2263,15 @@ describe('CLI: composio execute', () => {
         const output = (yield* MockConsole.getLines({ stripAnsi: true })).join('\n');
 
         expect(output).toContain('no longer authorized');
-        expect(output).toContain('composio link gmail');
         // Without this, the next thing the user runs reports ACTIVE and contradicts the diagnosis.
         expect(output).toContain('still reads ACTIVE');
+        // `composio link` on its own refuses while the dead account exists, so the removal step
+        // has to come first or the guidance sends the user at a command that errors.
+        expect(output).toContain('composio connections remove gmail');
+        expect(output).toContain('composio link gmail');
+        expect(output.indexOf('composio connections remove gmail')).toBeLessThan(
+          output.lastIndexOf('composio link gmail')
+        );
         // The provider's own wording stays visible as the evidence for the diagnosis.
         expect(output).toContain('token_revoked');
       })

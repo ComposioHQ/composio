@@ -79,28 +79,35 @@ const TOOLKIT_REQUIRED_ACTION = 'Choose a starter task and pass its toolkit as `
 /**
  * What to do after the demo tool failed.
  *
- * Each branch names a command that can actually change the outcome. The classified branches point
- * at `composio link`, which is the only thing that replaces a credential; the unclassified branch
- * deliberately names no command rather than reaching for a plausible one. `composio connections
- * list` is not the fallback: for a revoked grant it prints `ACTIVE`, because that status is
- * Composio's record of the connection and the provider is where the authorization was withdrawn.
+ * Each branch names only commands that can actually change the outcome, and the revoked branch
+ * needs two of them: `composio link` refuses while the dead connected account is still there, so
+ * the removal has to be named first. The unclassified branch deliberately names none rather than
+ * reaching for a plausible one. `composio connections list` is never the fallback — for a revoked
+ * grant it prints `ACTIVE`, because that status is Composio's record of the connection and the
+ * provider is where the authorization was withdrawn.
  */
 const demoFailureAction = (
   state: OnboardingState,
   failedDemo: NonNullable<NextCommandContext['failedDemo']>
 ): string => {
   const toolkit = state.gates.connect.toolkit;
-  const relink =
-    toolkit === null
-      ? 'Reconnect it with `composio link <toolkit>`'
-      : `Run \`${commandHintExample('root.link', { toolkit })}\` to reconnect`;
+  const link =
+    toolkit === null ? 'composio link <toolkit>' : commandHintExample('root.link', { toolkit });
 
   switch (failedDemo.reason) {
-    case 'revoked_connection':
-      return `${failedDemo.toolSlug} did not run: the ${toolkit ?? 'toolkit'} authorization was revoked or has expired. ${relink}, then re-run \`composio onboard\`. \`composio connections list\` will still show it as ACTIVE — the authorization was withdrawn at the provider, so Composio's record does not change until you reconnect.`;
+    case 'revoked_connection': {
+      // Both traps in one sentence each. The account reads ACTIVE, so the diagnosis looks wrong;
+      // and `composio link` refuses on its own, so the obvious next command fails. Naming the
+      // removal step is what makes this recoverable rather than merely diagnosed.
+      const remove =
+        toolkit === null
+          ? 'composio connections remove <toolkit>'
+          : commandHintExample('root.connections.remove', { account: toolkit });
+      return `${failedDemo.toolSlug} did not run: the ${toolkit ?? 'toolkit'} authorization was withdrawn at the provider. Composio still lists the account as ACTIVE, and \`${link}\` refuses while it exists. Run \`${remove}\`, then \`${link}\`, then re-run \`composio onboard\`.`;
+    }
 
     case 'no_active_connection':
-      return `${failedDemo.toolSlug} did not run: there is no active ${toolkit ?? 'toolkit'} connection. ${relink}, then re-run \`composio onboard\`.`;
+      return `${failedDemo.toolSlug} did not run: there is no active ${toolkit ?? 'toolkit'} connection. Run \`${link}\`, then re-run \`composio onboard\`.`;
 
     case null:
       // No stream is named. `--json` on a non-terminal stderr suppresses decoration, so "see the

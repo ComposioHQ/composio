@@ -869,6 +869,7 @@ describe('CLI: composio onboard', () => {
 
             const document = soleDocument(recorded.stdout);
             expect(document.blocked_reason).toBe('demo_execution_failed');
+            expect(document.human_action).toContain('composio connections remove github');
             expect(document.human_action).toContain('composio link github');
             // The account list is the first place anyone looks, and it reports ACTIVE for a grant
             // the provider already dropped. Sending them there without saying so is the bug.
