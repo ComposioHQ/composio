@@ -1,6 +1,6 @@
 import { describe, expect, layer } from '@effect/vitest';
 import { vi, afterEach } from 'vitest';
-import { Console, Effect, Exit, Option } from 'effect';
+import { Console, DateTime, Effect, Exit, Option } from 'effect';
 import { HelpDoc, ValidationError } from '@effect/cli';
 import path from 'node:path';
 import { FileSystem } from '@effect/platform';
@@ -11,6 +11,7 @@ import { setupCacheDir } from 'src/effects/setup-cache-dir';
 import { getTerminalCapabilities, TerminalUI } from 'src/services/terminal-ui';
 import { writeStoredAgentIdentity } from 'src/services/agents';
 import { ComposioUserContext } from 'src/services/user-context';
+import { ComposioSessionRepository } from 'src/services/composio-clients';
 
 vi.mock('open', () => ({
   default: vi.fn(async () => undefined),
@@ -420,6 +421,126 @@ describe('CLI: composio login', () => {
           { apolloUserId: 'member_selected', loggedInAtLinkTime: true },
         ]);
       })
+    );
+  });
+
+  layer(TestLive())(it => {
+    it.scoped(
+      '[Given] selected-org enrichment fails [When] completing --poll [Then] links the selected org membership',
+      () =>
+        Effect.gen(function* () {
+          const fs = yield* FileSystem.FileSystem;
+          const cacheDir = yield* setupCacheDir;
+          const now = yield* DateTime.now;
+          const expiresAt = DateTime.add(now, { minutes: 10 });
+          const sessionId = 'poll-session-id';
+          const sessionRepository = new ComposioSessionRepository({
+            createSession: () =>
+              Effect.succeed({
+                id: sessionId,
+                code: '001122',
+                expiresAt,
+                status: 'pending',
+              }),
+            getSession: () =>
+              Effect.succeed({
+                id: sessionId,
+                code: '001122',
+                expiresAt,
+                status: 'linked',
+                api_key: 'uak_poll_key',
+                account: {
+                  id: 'account_id',
+                  name: 'Poll User',
+                  email: 'poll@example.com',
+                },
+              }),
+            getRealtimeCredentials: () =>
+              Effect.succeed({
+                project_id: 'proj_test',
+                pusher_key: 'pusher_test_key',
+                pusher_cluster: 'mt1',
+              }),
+            authRealtimeChannel: () =>
+              Effect.succeed({
+                auth: 'mock:auth',
+                channel_data: undefined,
+              }),
+          });
+
+          yield* fs.writeFileString(
+            path.join(cacheDir, 'pending-login-session.json'),
+            `${JSON.stringify(
+              {
+                key: sessionId,
+                loginUrl: `https://dashboard.composio.dev/?cliKey=${sessionId}`,
+                expiresAt: DateTime.formatIso(expiresAt),
+                cachedAt: new Date().toISOString(),
+              },
+              null,
+              2
+            )}\n`
+          );
+
+          vi.spyOn(globalThis, 'fetch').mockImplementation(
+            async (requestInput: RequestInfo | URL, init?: RequestInit) => {
+              const url = requestUrl(requestInput);
+              const headers = new Headers(init?.headers);
+
+              if (url.includes('/api/v3/auth/session/info')) {
+                const selectedOrgId = headers.get('x-org-id');
+                if (headers.has('x-project-id')) {
+                  return mockFetchResponse({ message: 'Selected-org enrichment failed' }, 500);
+                }
+                return mockFetchResponse({
+                  project: {
+                    name: 'Default Project',
+                    id: 'project_id_default',
+                    org_id: selectedOrgId ?? 'org_home',
+                    nano_id: 'project_default',
+                    email: 'project@example.com',
+                    created_at: '2026-01-01T00:00:00.000Z',
+                    updated_at: '2026-01-01T00:00:00.000Z',
+                    org: {
+                      id: selectedOrgId ?? 'org_home',
+                      name: selectedOrgId ? 'Selected Org' : 'Home Org',
+                      plan: 'enterprise',
+                    },
+                  },
+                  org_member: {
+                    id: selectedOrgId ? 'member_selected' : 'member_home',
+                    user_id: 'user_123',
+                    email: 'poll@example.com',
+                    name: 'Poll User',
+                    role: 'admin',
+                  },
+                  api_key: null,
+                });
+              }
+
+              if (url.includes('/api/v3/org/list?limit=50')) {
+                return mockFetchResponse({
+                  organizations: [
+                    { id: 'org_selected', name: 'Selected Org' },
+                    { id: 'org_home', name: 'Home Org' },
+                  ],
+                });
+              }
+
+              return mockFetchResponse({});
+            }
+          );
+
+          yield* cli(['login', '--poll', '--no-skill-install']).pipe(
+            Effect.provideService(ComposioSessionRepository, sessionRepository)
+          );
+
+          const ctx = yield* ComposioUserContext;
+          expect(Option.getOrUndefined(ctx.data.orgId)).toBe('org_selected');
+          expect(analyticsMocks.linkCalls).toEqual([
+            { apolloUserId: 'member_selected', loggedInAtLinkTime: true },
+          ]);
+        })
     );
   });
 });

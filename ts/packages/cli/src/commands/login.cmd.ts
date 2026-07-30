@@ -384,8 +384,6 @@ const storeCredentials = (params: {
   initialOrgId: string;
   initialProjectId: string;
   fallbackEmail: string;
-  /** Fallback Apollo org_member id for analytics linking when session/info fails here. */
-  orgMemberId?: string;
   /** When true, skip the init/switch hints and outro (shown later after org picker). */
   skipHints?: boolean;
   /** When true, skip JSON output (emitted later after org picker with final selection). */
@@ -402,7 +400,6 @@ const storeCredentials = (params: {
       initialOrgId,
       initialProjectId,
       fallbackEmail,
-      orgMemberId,
       skipHints = false,
       skipOutput = false,
       deferAnalyticsIdentity = false,
@@ -447,13 +444,17 @@ const storeCredentials = (params: {
 
     yield* ctx.login(uakApiKey, orgId, testUserId);
     // Linked only after the credential persists, so stitching cannot outlive a failed login.
-    const linkedOrgMemberId = sessionInfo?.org_member.id ?? orgMemberId;
-    if (linkedOrgMemberId && !deferAnalyticsIdentity) {
+    if (!deferAnalyticsIdentity) {
       yield* linkAnalyticsIdentityForOrg({
         apiKey: uakApiKey,
         baseURL,
         orgId,
-        knownIdentity: { orgId, orgMemberId: linkedOrgMemberId },
+        knownIdentity: sessionInfo
+          ? {
+              orgId: sessionInfo.project.org.id,
+              orgMemberId: sessionInfo.org_member.id,
+            }
+          : undefined,
       });
     }
     yield* primeConsumerConnectedToolkitsCacheInBackground({
@@ -572,7 +573,6 @@ const loginWithKey = (params: {
       initialOrgId: xOrgId,
       initialProjectId: xProjectId,
       fallbackEmail: linkedSession.account.email,
-      orgMemberId: uakSessionInfo.org_member.id,
       skipHints: willRunPicker,
       skipOutput: true,
       deferAnalyticsIdentity: willRunPicker,
@@ -777,7 +777,6 @@ export const browserLogin = (params: {
       initialOrgId: xOrgId,
       initialProjectId: xProjectId,
       fallbackEmail: linkedSession.account.email,
-      orgMemberId: uakSessionInfo.org_member.id,
       skipHints: willRunPicker,
       skipOutput: willRunPicker,
       deferAnalyticsIdentity: willRunPicker,
