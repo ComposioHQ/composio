@@ -36,6 +36,7 @@ Each command uses `@effect/cli`'s `Command.make()` pattern. Top-level command fi
 | `login` | Login with browser redirect or direct user/API key (`--no-browser`, `--no-wait`, `--key`, `--user-api-key`, `--org`) |
 | `logout` | Clear stored API key |
 | `signup` | Create a Composio account |
+| `onboard` | Guided setup: log in, connect an app via OAuth, run your first tool (state-driven, resumable; `--status`, `--toolkit`, `--task`, `--skip`) |
 | `upgrade` | Self-update binary from GitHub releases |
 | `init` | Bootstrap a Composio project in the current directory |
 | `install` | Install local-tool integrations |

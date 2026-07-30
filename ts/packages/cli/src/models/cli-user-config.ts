@@ -1,4 +1,4 @@
-import { Schema } from 'effect';
+import { Option, Schema } from 'effect';
 import { OptionFromNullishOr } from 'effect/Schema';
 import { JSONTransformSchema } from './utils/json-transform-schema';
 
@@ -47,6 +47,23 @@ export const DeveloperConfig = Schema.Struct({
 });
 export type DeveloperConfig = Schema.Schema.Type<typeof DeveloperConfig>;
 
+export const OnboardRecord = Schema.Struct({
+  hasExecuted: Schema.optionalWith(Schema.Boolean, {
+    default: () => false,
+  }).pipe(Schema.fromKey('has_executed')),
+  onboardedAt: Schema.propertySignature(OptionFromNullishOr(Schema.String, null)).pipe(
+    Schema.fromKey('onboarded_at')
+  ),
+  /** Org that earned `hasExecuted`; onboarding completion is scoped to this org. */
+  orgId: Schema.propertySignature(OptionFromNullishOr(Schema.String, null)).pipe(
+    Schema.fromKey('org_id')
+  ),
+  skippedSteps: Schema.optionalWith(Schema.Array(Schema.String), {
+    default: (): ReadonlyArray<string> => [],
+  }).pipe(Schema.fromKey('skipped_steps')),
+});
+export type OnboardRecord = Schema.Schema.Type<typeof OnboardRecord>;
+
 export const CliUserConfig = Schema.Struct({
   developer: Schema.optionalWith(DeveloperConfig, {
     default: () =>
@@ -77,6 +94,15 @@ export const CliUserConfig = Schema.Struct({
    */
   security: Schema.optionalWith(SecurityBackend, {
     default: (): SecurityBackend => 'auto',
+  }),
+  onboard: Schema.optionalWith(OnboardRecord, {
+    default: () =>
+      OnboardRecord.make({
+        hasExecuted: false,
+        onboardedAt: Option.none(),
+        orgId: Option.none(),
+        skippedSteps: [],
+      }),
   }),
 }).annotations({
   identifier: 'CliUserConfig',

@@ -44,6 +44,12 @@ export const CLI_ANALYTICS_EVENTS = {
   CLI_TOOL_INVOCATION_VALIDATION_FAILED: 'CLI_TOOL_INVOCATION_VALIDATION_FAILED',
   CLI_TOOL_INVOCATION_TOOL_NOT_FOUND: 'CLI_TOOL_INVOCATION_TOOL_NOT_FOUND',
   CLI_TOOL_INVOCATION_FAILED: 'CLI_TOOL_INVOCATION_FAILED',
+  CLI_ONBOARD_STARTED: 'CLI_ONBOARD_STARTED',
+  CLI_ONBOARD_STEP_STARTED: 'CLI_ONBOARD_STEP_STARTED',
+  CLI_ONBOARD_STEP_COMPLETED: 'CLI_ONBOARD_STEP_COMPLETED',
+  CLI_ONBOARD_STEP_SKIPPED: 'CLI_ONBOARD_STEP_SKIPPED',
+  CLI_ONBOARD_COMPLETED: 'CLI_ONBOARD_COMPLETED',
+  CLI_ONBOARD_STATUS_VIEWED: 'CLI_ONBOARD_STATUS_VIEWED',
 } as const;
 
 type CliAnalyticsEventName = (typeof CLI_ANALYTICS_EVENTS)[keyof typeof CLI_ANALYTICS_EVENTS];
@@ -54,6 +60,7 @@ export const CLI_JOURNEY_STAGES = [
   'login',
   'connect',
   'execute',
+  'onboard',
   'other',
 ] as const;
 
@@ -99,6 +106,12 @@ export const CLI_EVENT_JOURNEY_STAGES = {
   CLI_TOOL_INVOCATION_VALIDATION_FAILED: 'execute',
   CLI_TOOL_INVOCATION_TOOL_NOT_FOUND: 'execute',
   CLI_TOOL_INVOCATION_FAILED: 'execute',
+  CLI_ONBOARD_STARTED: 'onboard',
+  CLI_ONBOARD_STEP_STARTED: 'onboard',
+  CLI_ONBOARD_STEP_COMPLETED: 'onboard',
+  CLI_ONBOARD_STEP_SKIPPED: 'onboard',
+  CLI_ONBOARD_COMPLETED: 'onboard',
+  CLI_ONBOARD_STATUS_VIEWED: 'onboard',
 } as const satisfies Record<CliAnalyticsEventName, CliJourneyStage>;
 
 let cliChannel = inferSkillReleaseChannel(APP_VERSION);
@@ -123,12 +136,33 @@ const buildEvent = (
   },
 });
 
+export type CliOnboardEventName =
+  | typeof CLI_ANALYTICS_EVENTS.CLI_ONBOARD_STARTED
+  | typeof CLI_ANALYTICS_EVENTS.CLI_ONBOARD_STEP_STARTED
+  | typeof CLI_ANALYTICS_EVENTS.CLI_ONBOARD_STEP_COMPLETED
+  | typeof CLI_ANALYTICS_EVENTS.CLI_ONBOARD_STEP_SKIPPED
+  | typeof CLI_ANALYTICS_EVENTS.CLI_ONBOARD_COMPLETED
+  | typeof CLI_ANALYTICS_EVENTS.CLI_ONBOARD_STATUS_VIEWED;
+
+export const getOnboardFunnelEvent = (params: {
+  readonly name: CliOnboardEventName;
+  readonly step?: string;
+  readonly properties?: Record<string, unknown>;
+}): TrackEvent =>
+  buildEvent(params.name, {
+    source: 'cli',
+    invocation_origin: getInvocationOrigin(),
+    ...(params.step === undefined ? {} : { step: params.step }),
+    ...(params.properties ?? {}),
+  });
+
 const KNOWN_COMMAND_TOKENS = new Set([
   'version',
   'upgrade',
   'whoami',
   'login',
   'logout',
+  'onboard',
   'run',
   'install',
   'setup',

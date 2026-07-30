@@ -9,10 +9,11 @@ const DEFAULT_LIMIT = 50;
 const selectOrganization = (params: {
   organizations: ReadonlyArray<OrganizationSummary>;
   currentOrgId?: string;
+  quiet?: boolean;
 }) =>
   Effect.gen(function* () {
     const ui = yield* TerminalUI;
-    const { organizations, currentOrgId } = params;
+    const { organizations, currentOrgId, quiet = false } = params;
     if (organizations.length === 0) return undefined;
     if (organizations.length === 1) return organizations[0];
 
@@ -23,7 +24,7 @@ const selectOrganization = (params: {
       ? [currentOrganization, ...organizations.filter(org => org.id !== currentOrganization.id)]
       : organizations;
 
-    if (currentOrganization) {
+    if (currentOrganization && !quiet) {
       yield* ui.log.info(`Current org: "${currentOrganization.name}" (${currentOrganization.id})`);
     }
 
@@ -42,10 +43,12 @@ export const runOrgSelection = (params: {
   explicitOrgId?: string;
   currentOrgId?: string;
   limit?: number;
+  quiet?: boolean;
 }) =>
   Effect.gen(function* () {
     const ui = yield* TerminalUI;
     const { apiKey, baseURL, explicitOrgId, currentOrgId, limit = DEFAULT_LIMIT } = params;
+    const quiet = params.quiet ?? false;
     const clampedLimit = clampLimit(limit);
 
     const selectedOrganization =
@@ -57,11 +60,14 @@ export const runOrgSelection = (params: {
               apiKey,
               limit: clampedLimit,
             });
-            yield* ui.log.info(`Loaded ${organizations.data.length} orgs`);
+            if (!quiet) {
+              yield* ui.log.info(`Loaded ${organizations.data.length} orgs`);
+            }
             if (organizations.data.length === 0) return undefined;
             return yield* selectOrganization({
               organizations: organizations.data,
               currentOrgId,
+              quiet,
             });
           });
 
@@ -70,9 +76,11 @@ export const runOrgSelection = (params: {
       return undefined;
     }
 
-    yield* ui.log.info(
-      `Selected organization: "${selectedOrganization.name}" (${selectedOrganization.id})`
-    );
+    if (!quiet) {
+      yield* ui.log.info(
+        `Selected organization: "${selectedOrganization.name}" (${selectedOrganization.id})`
+      );
+    }
 
     return selectedOrganization;
   });

@@ -15,6 +15,7 @@ import { whoamiCmd } from './whoami.cmd';
 import { loginCmd } from './login.cmd';
 import { signupCmd } from './signup.cmd';
 import { setupCmd } from './setup.cmd';
+import { onboardCmd } from './onboard.cmd';
 import { listenCmd } from './listen.cmd';
 import { logoutCmd } from './logout.cmd';
 import { runCmd } from './run.cmd';
@@ -48,6 +49,7 @@ import { renderCommandHintGraph } from 'src/services/command-hints';
 import { resetRuntimeDebugFlags, setRuntimeDebugFlags } from 'src/services/runtime-debug-flags';
 import { ComposioCliUserConfig } from 'src/services/cli-user-config';
 import { ComposioUserContext } from 'src/services/user-context';
+import { getLocalOnboardNudge } from 'src/services/onboard-state';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { detectMaster } from 'src/services/master-detector';
 import {
@@ -67,6 +69,7 @@ const ROOT_COMMANDS = [
   tagged(loginCmd),
   tagged(signupCmd),
   tagged(setupCmd),
+  tagged(onboardCmd),
   tagged(agentCmd),
   experimental(CLI_EXPERIMENTAL_FEATURES.LISTEN, listenCmd),
   tagged(logoutCmd),
@@ -465,7 +468,22 @@ export const runWithConfig = Effect.gen(function* () {
   const routeRootCommand = (normalizedArgv: ReadonlyArray<string>, dangerouslyAllow: boolean) => {
     const args = normalizedArgv.slice(2);
     if (isRootHelp(normalizedArgv)) {
-      return printRootHelp(visibility, parseHelpLevel(normalizedArgv[3]) ?? 'default');
+      const helpEffect = printRootHelp(visibility, parseHelpLevel(normalizedArgv[3]) ?? 'default');
+      if (args.length > 0) {
+        return helpEffect;
+      }
+      return Effect.gen(function* () {
+        const ctx = yield* ComposioUserContext;
+        const nudge = getLocalOnboardNudge({
+          loggedIn: ctx.isLoggedIn(),
+          hasExecuted: cliUserConfig.data.onboard.hasExecuted,
+        });
+        if (nudge === undefined) {
+          return yield* helpEffect;
+        }
+        const ui = yield* TerminalUI;
+        yield* ui.output(nudge, { force: true });
+      });
     }
     const subHelp = matchSubcommandHelp(normalizedArgv, visibility);
     if (subHelp) {

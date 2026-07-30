@@ -1,5 +1,5 @@
 import { describe, expect, layer } from '@effect/vitest';
-import { ConfigProvider, Console, Effect } from 'effect';
+import { ConfigProvider, Console, Effect, Option } from 'effect';
 import { HelpDoc, ValidationError } from '@effect/cli';
 import { extendConfigProvider } from 'src/services/config';
 import { cli, TestLive, MockConsole } from 'test/__utils__';
@@ -84,6 +84,7 @@ const RecordingTerminalUI = TerminalUI.of({
   },
   note: (message, title) => Console.log(title ? `[${title}] ${message}` : message),
   confirm: () => Effect.succeed(true),
+  text: (_message, options) => Effect.succeed(Option.fromNullable(options?.defaultValue)),
   select: (_message, options) => Effect.succeed(options[0].value),
   withSpinner: (_message, effect) => effect,
   useMakeSpinner: (_message, use) =>

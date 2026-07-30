@@ -175,6 +175,10 @@ const GENERATE_COMMAND: TaggedValue<CompactCommand> = tagged({
 // ── Account commands ───────────────────────────────────────────────────
 
 const ACCOUNT_COMMANDS: ReadonlyArray<TaggedValue<CompactCommand>> = [
+  tagged({
+    name: 'onboard',
+    description: 'Guided setup: log in, connect an app, run your first tool (resumable)',
+  }),
   tagged({ name: 'setup', description: 'Install or uninstall agent plugins' }),
   tagged({ name: 'login', description: 'Log in to Composio' }),
   tagged({ name: 'logout', description: 'Log out from Composio' }),
@@ -858,6 +862,34 @@ const SUBCOMMAND_HELP: Record<string, SubcommandHelp | TaggedValue<SubcommandHel
 
   // ── Account commands ──────────────────────────────────────────────────
 
+  onboard: {
+    usage:
+      'composio onboard [--status] [--toolkit text] [--task text] [-y, --yes] [--skip step]... [--human]',
+    description:
+      'Guided setup from a fresh install to your first tool execution: log in, connect an app via OAuth, run a starter tool. State-driven and resumable — safe to run anytime; shows a status view when everything is already set up. Non-interactive runs emit JSON describing the next step and never prompt.',
+    options: [
+      { name: '--toolkit <text>', description: 'Pick a starter toolkit without the menu' },
+      { name: '--task <text>', description: 'Pick a starter task without the menu' },
+      { name: '--skip <step>', description: 'Skip a step (login, connect, execute)' },
+    ],
+    flags: [
+      { name: '--status', description: 'Show onboarding status and exit without changes' },
+      { name: '-y, --yes', description: 'Accept prompts without asking' },
+      { name: '--human', description: 'Formatted output instead of default JSON when piped' },
+    ],
+    examples: [
+      'composio onboard',
+      'composio onboard --status',
+      'composio onboard --toolkit github',
+      'composio onboard --task "read my gmail"',
+      'composio onboard --yes --skip execute',
+    ],
+    seeAlso: [
+      'composio login                            Log in without the guided flow',
+      'composio link <toolkit>                   Connect an account directly',
+      "composio execute <slug> -d '{ ... }'      Run any tool directly",
+    ],
+  },
   login: {
     usage:
       'composio login [--no-browser] [--poll] [--no-wait] [--key text] [--user-api-key text] [--org text] [-y, --yes] [--no-skill-install]',

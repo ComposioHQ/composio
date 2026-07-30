@@ -1087,6 +1087,61 @@ describe('CLI: composio execute', () => {
       baseConfigProvider: testConfigProvider,
       fixture: 'global-test-user-id',
       stdin: { isTTY: true, data: '' },
+    })
+  )('[Given] a parallel batch succeeds [Then] it marks the user onboarded', it => {
+    it.scoped('flips onboard.has_executed once a parallel batch succeeds', () =>
+      Effect.gen(function* () {
+        const cliConfigBefore = yield* ComposioCliUserConfig;
+        expect(cliConfigBefore.data.onboard.hasExecuted).toBe(false);
+
+        yield* cli([
+          'execute',
+          '--parallel',
+          '--skip-checks',
+          'GMAIL_SEND_EMAIL',
+          '-d',
+          '{"recipient":"a"}',
+          'GITHUB_CREATE_ISSUE',
+          '-d',
+          '{"title":"Bug"}',
+        ]);
+
+        const cliConfigAfter = yield* ComposioCliUserConfig;
+        expect(cliConfigAfter.data.onboard.hasExecuted).toBe(true);
+      })
+    );
+  });
+
+  layer(
+    TestLive({
+      baseConfigProvider: testConfigProvider,
+      fixture: 'global-test-user-id',
+      stdin: { isTTY: true, data: '' },
+    })
+  )('[Given] a parallel dry-run [Then] it does not mark the user onboarded', it => {
+    it.scoped('does not flip onboard.has_executed on a parallel dry-run', () =>
+      Effect.gen(function* () {
+        yield* cli([
+          'execute',
+          '--parallel',
+          '--dry-run',
+          '--skip-checks',
+          'GMAIL_SEND_EMAIL',
+          '-d',
+          '{"recipient":"a"}',
+        ]);
+
+        const cliConfig = yield* ComposioCliUserConfig;
+        expect(cliConfig.data.onboard.hasExecuted).toBe(false);
+      })
+    );
+  });
+
+  layer(
+    TestLive({
+      baseConfigProvider: testConfigProvider,
+      fixture: 'global-test-user-id',
+      stdin: { isTTY: true, data: '' },
       toolRouter: {
         execute: async (_sessionId, params) => {
           if (params.tool_slug === 'GMAIL_SEND_EMAIL') {

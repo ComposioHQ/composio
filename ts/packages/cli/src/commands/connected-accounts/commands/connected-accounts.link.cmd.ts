@@ -56,6 +56,8 @@ class BrowserOpenError extends Data.TaggedError('commands/BrowserOpenError')<{
   readonly cause: unknown;
 }> {}
 
+export type ConnectedAccountsLinkOutcome = 'linked' | 'pending' | 'not_started';
+
 const invalidOptionValue = (message: string) => ValidationError.invalidValue(HelpDoc.p(message));
 
 const toolkit = Args.text({ name: 'toolkit' }).pipe(
@@ -186,6 +188,7 @@ const waitForActiveConnection = (
             ui.output(
               JSON.stringify(
                 {
+                  kind: 'connected_account_link',
                   status: 'success',
                   message,
                   connected_account_id: account.id,
@@ -634,7 +637,7 @@ const handleLegacyAuthConfigLink = (params: {
       yield* params.ui.log.error(
         '`--auth-config` is developer-project scoped. Pass `--project-name <name>` or run from a directory initialized with `composio dev init`.'
       );
-      return;
+      return 'not_started' as const;
     }
     if (Option.isNone(params.requestedUserId) && Option.isSome(localTestUserId)) {
       yield* params.ui.log.warn(`Using test user id "${localTestUserId.value}"`);
@@ -667,7 +670,7 @@ const handleLegacyAuthConfigLink = (params: {
       executeCommand: 'composio dev playground-execute',
       listCommand: 'composio dev connected-accounts list',
     });
-    if (!aliasAvailable) return;
+    if (!aliasAvailable) return 'not_started' as const;
 
     const linkOpt = yield* params.ui
       .withSpinner(
@@ -702,10 +705,10 @@ const handleLegacyAuthConfigLink = (params: {
         )
       );
 
-    if (Option.isNone(linkOpt)) return;
+    if (Option.isNone(linkOpt)) return 'not_started' as const;
 
     const validatedLink = yield* validateLinkResponse(params.ui, linkOpt.value);
-    if (Option.isNone(validatedLink)) return;
+    if (Option.isNone(validatedLink)) return 'not_started' as const;
 
     const { connectedAccountId, redirectUrl } = validatedLink.value;
     const canContinue = yield* ensureAliasForAdditionalAccount({
@@ -715,13 +718,14 @@ const handleLegacyAuthConfigLink = (params: {
       existingAccounts,
       scopeDescription: `user "${resolvedUserId.value}" in auth config "${params.authConfigId}"`,
     });
-    if (!canContinue) return;
+    if (!canContinue) return 'not_started' as const;
 
     if (params.noWait) {
       yield* showRedirectUrl(params.ui, redirectUrl, { manual: true });
       yield* params.ui.output(
         JSON.stringify(
           {
+            kind: 'connected_account_link',
             status: 'pending',
             message: 'Complete authorization by opening the URL',
             connected_account_id: connectedAccountId,
@@ -733,7 +737,7 @@ const handleLegacyAuthConfigLink = (params: {
         ),
         { force: true }
       );
-      return;
+      return 'pending' as const;
     }
 
     yield* waitForActiveConnection(
@@ -743,9 +747,10 @@ const handleLegacyAuthConfigLink = (params: {
       redirectUrl,
       params.noBrowser
     );
+    return 'linked' as const;
   });
 
-const runConnectedAccountsLink = (params: {
+export const runConnectedAccountsLink = (params: {
   toolkit: Option.Option<string>;
   authConfig: Option.Option<string>;
   userId: Option.Option<string>;
@@ -757,7 +762,7 @@ const runConnectedAccountsLink = (params: {
   rootOnly: boolean;
 }) =>
   Effect.gen(function* () {
-    if (!(yield* requireAuth)) return;
+    if (!(yield* requireAuth)) return 'not_started' as const;
 
     const normalizedAliasOption = yield* resolveNormalizedAliasOption(params.alias);
 
@@ -782,7 +787,7 @@ const runConnectedAccountsLink = (params: {
           '  Tool Router: composio dev connected-accounts link <toolkit>\n' +
           '  Legacy:      composio dev connected-accounts link --auth-config <id>'
       );
-      return;
+      return 'not_started' as const;
     }
 
     if (Option.isNone(params.toolkit) && Option.isNone(params.authConfig)) {
@@ -793,7 +798,7 @@ const runConnectedAccountsLink = (params: {
               '  composio dev connected-accounts link github\n' +
               '  composio dev connected-accounts link --auth-config "ac_..."'
       );
-      return;
+      return 'not_started' as const;
     }
 
     if (params.list) {
@@ -808,11 +813,11 @@ const runConnectedAccountsLink = (params: {
         projectContext,
         userContext,
       });
-      return;
+      return 'not_started' as const;
     }
 
     if (Option.isSome(params.authConfig)) {
-      yield* handleLegacyAuthConfigLink({
+      return yield* handleLegacyAuthConfigLink({
         authConfigId: params.authConfig.value,
         requestedUserId: params.userId,
         projectName: params.projectName,
@@ -824,10 +829,9 @@ const runConnectedAccountsLink = (params: {
         projectContext,
         userContext,
       });
-      return;
     }
 
-    if (Option.isNone(params.toolkit)) return;
+    if (Option.isNone(params.toolkit)) return 'not_started' as const;
     const toolkitSlug = params.toolkit.value;
     const resolvedProject = yield* resolveCommandProject({
       mode: 'consumer',
@@ -867,7 +871,7 @@ const runConnectedAccountsLink = (params: {
       executeCommand: 'composio execute',
       listCommand: `composio connections list --toolkit ${toolkitSlug}`,
     });
-    if (!aliasAvailable) return;
+    if (!aliasAvailable) return 'not_started' as const;
 
     const linkOpt = yield* ui
       .withSpinner(
@@ -921,10 +925,10 @@ const runConnectedAccountsLink = (params: {
         Effect.tap(() => invalidateConsumerConnectedToolkitsCache().pipe(Effect.ignore))
       );
 
-    if (Option.isNone(linkOpt)) return;
+    if (Option.isNone(linkOpt)) return 'not_started' as const;
 
     const validatedLink = yield* validateLinkResponse(ui, linkOpt.value);
-    if (Option.isNone(validatedLink)) return;
+    if (Option.isNone(validatedLink)) return 'not_started' as const;
 
     const { connectedAccountId: connAccountId, redirectUrl } = validatedLink.value;
     const canContinue = yield* ensureAliasForAdditionalAccount({
@@ -934,13 +938,14 @@ const runConnectedAccountsLink = (params: {
       existingAccounts,
       scopeDescription: `user "${resolvedUserId.value}" in toolkit "${toolkitSlug}"`,
     });
-    if (!canContinue) return;
+    if (!canContinue) return 'not_started' as const;
 
     if (params.noWait) {
       yield* showRedirectUrl(ui, redirectUrl, { manual: true });
       yield* ui.output(
         JSON.stringify(
           {
+            kind: 'connected_account_link',
             status: 'pending',
             message: 'Complete authorization by opening the URL',
             connected_account_id: connAccountId,
@@ -965,21 +970,22 @@ const runConnectedAccountsLink = (params: {
           redirectUrl,
         },
       }).pipe(Effect.ignore);
-    } else {
-      yield* waitForActiveConnection(ui, client, connAccountId, redirectUrl, params.noBrowser);
-      yield* appendCliSessionHistory({
-        orgId: resolvedProject.projectType === 'CONSUMER' ? resolvedProject.orgId : undefined,
-        consumerUserId:
-          resolvedProject.projectType === 'CONSUMER' ? resolvedProject.consumerUserId : undefined,
-        entry: {
-          command: 'link',
-          status: 'active',
-          toolkit: toolkitSlug,
-          connectedAccountId: connAccountId,
-          redirectUrl,
-        },
-      }).pipe(Effect.ignore);
+      return 'pending' as const;
     }
+    yield* waitForActiveConnection(ui, client, connAccountId, redirectUrl, params.noBrowser);
+    yield* appendCliSessionHistory({
+      orgId: resolvedProject.projectType === 'CONSUMER' ? resolvedProject.orgId : undefined,
+      consumerUserId:
+        resolvedProject.projectType === 'CONSUMER' ? resolvedProject.consumerUserId : undefined,
+      entry: {
+        command: 'link',
+        status: 'active',
+        toolkit: toolkitSlug,
+        connectedAccountId: connAccountId,
+        redirectUrl,
+      },
+    }).pipe(Effect.ignore);
+    return 'linked' as const;
   });
 
 export const connectedAccountsCmd$Link = Command.make(

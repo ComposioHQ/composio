@@ -1,8 +1,9 @@
 import os from 'node:os';
 import path from 'node:path';
 import { describe, expect, layer } from '@effect/vitest';
-import { Effect } from 'effect';
+import { ConfigProvider, Effect } from 'effect';
 import { ValidationError, HelpDoc } from '@effect/cli';
+import { extendConfigProvider } from 'src/services/config';
 import { cli, pkg, TestLive, MockConsole } from 'test/__utils__';
 import { afterEach, vi } from 'vitest';
 
@@ -52,7 +53,27 @@ describe('CLI: composio', () => {
   });
 
   layer(TestLive())(it => {
-    it.scoped('[Given] no args [Then] prints help message', () =>
+    it.scoped('[Given] no args and incomplete onboarding [Then] prints the onboard nudge', () =>
+      Effect.gen(function* () {
+        yield* cli([]);
+        const lines = yield* MockConsole.getLines({ stripAnsi: true });
+        const output = lines.join('\n');
+        expect(output).toContain('composio onboard');
+        expect(output).toContain('composio --help');
+        expect(output).not.toContain('CORE COMMANDS');
+      })
+    );
+  });
+
+  layer(
+    TestLive({
+      baseConfigProvider: ConfigProvider.fromMap(
+        new Map([['COMPOSIO_USER_API_KEY', 'test_api_key']])
+      ).pipe(extendConfigProvider),
+      cliUserConfig: { onboardHasExecuted: true },
+    })
+  )(it => {
+    it.scoped('[Given] no args and completed onboarding [Then] prints help message', () =>
       Effect.gen(function* () {
         yield* cli([]);
         const lines = yield* MockConsole.getLines({ stripAnsi: true });

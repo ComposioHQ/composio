@@ -260,12 +260,18 @@ const emitLoginComplete = (params: {
   orgId: string;
   orgName?: string;
   skipHints?: boolean;
+  embedded?: boolean;
 }) =>
   Effect.gen(function* () {
     const ui = yield* TerminalUI;
-    const { email, orgId, orgName, skipHints = false } = params;
+    const { email, orgId, orgName, skipHints = false, embedded = false } = params;
 
     yield* ui.log.success(formatLoginSuccessMessage({ email, orgName }));
+
+    if (embedded) {
+      return;
+    }
+
     if (!skipHints) {
       yield* ui.log.info(commandHintStep('Execute a tool directly', 'root.execute'));
       yield* ui.log.info(commandHintStep('Switch your current org', 'root.orgs.switch'));
@@ -635,6 +641,8 @@ export const browserLogin = (params: {
   noWait?: boolean;
   /** When true (login only), skip org/project picker and use session defaults. When false, prompt for org/project. */
   skipOrgProjectPicker?: boolean;
+  /** Embedded in another flow (onboard): silent org defaults, no hints/outro/JSON. */
+  embedded?: boolean;
 }) =>
   Effect.gen(function* () {
     const ui = yield* TerminalUI;
@@ -752,14 +760,15 @@ export const browserLogin = (params: {
       initialProjectId: xProjectId,
       fallbackEmail: linkedSession.account.email,
       orgMemberId: uakSessionInfo.org_member.id,
-      skipHints: willRunPicker,
-      skipOutput: willRunPicker,
+      skipHints: willRunPicker || params.embedded,
+      skipOutput: willRunPicker || params.embedded,
     });
 
     if (willRunPicker) {
       const result = yield* runOrgSelection({
         apiKey: uakApiKey,
         baseURL: ctx.data.baseURL,
+        quiet: params.embedded,
       }).pipe(
         Effect.catchAll(error =>
           Effect.gen(function* () {
@@ -787,6 +796,14 @@ export const browserLogin = (params: {
         email: linkedSession.account.email ?? undefined,
         orgId: finalOrgId,
         orgName: finalOrgName,
+        embedded: params.embedded,
+      });
+    } else if (params.embedded) {
+      yield* emitLoginComplete({
+        email: linkedSession.account.email ?? undefined,
+        orgId: xOrgId,
+        orgName: uakSessionInfo.project.org.name ?? '',
+        embedded: true,
       });
     }
   });

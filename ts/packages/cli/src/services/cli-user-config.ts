@@ -30,6 +30,12 @@ export type CliUserConfigResolved = {
    * with every prior CLI release).
    */
   readonly security: 'auto' | 'json' | 'keychain-subprocess' | 'keychain';
+  readonly onboard: {
+    readonly hasExecuted: boolean;
+    readonly onboardedAt: string | undefined;
+    readonly orgId: string | undefined;
+    readonly skippedSteps: ReadonlyArray<string>;
+  };
 };
 
 const detectReleaseChannel = (version: string): CliReleaseChannel =>
@@ -98,6 +104,12 @@ const resolveConfig = (raw: CliUserConfig, channel: CliReleaseChannel): CliUserC
     onSome: value => value.target,
   }),
   security: raw.security,
+  onboard: {
+    hasExecuted: raw.onboard.hasExecuted,
+    onboardedAt: Option.getOrUndefined(raw.onboard.onboardedAt),
+    orgId: Option.getOrUndefined(raw.onboard.orgId),
+    skippedSteps: raw.onboard.skippedSteps,
+  },
 });
 
 export const ComposioCliUserConfigLive = Layer.effect(
@@ -109,6 +121,7 @@ export const ComposioCliUserConfigLive = Layer.effect(
     const jsonConfigPath = yield* resolveCliConfigPath;
 
     let rawConfig = DEFAULT_CLI_USER_CONFIG;
+    let configLoadError: ParseError | PlatformError | undefined;
 
     const normalizeRawConfigJson = (value: unknown): unknown => {
       if (!Predicate.isRecord(value)) {
@@ -135,22 +148,29 @@ export const ComposioCliUserConfigLive = Layer.effect(
       return record;
     };
 
+    // Write-then-rename: a torn write must not trip the loader's reset-to-defaults fallback.
     const persist = (next: CliUserConfig) =>
       Effect.gen(function* () {
         const encoded = yield* cliUserConfigToJSON(next);
-        yield* fs.writeFileString(jsonConfigPath, encoded);
+        const tempPath = `${jsonConfigPath}.${crypto.randomUUID().slice(0, 8)}.tmp`;
+        yield* fs.writeFileString(tempPath, encoded).pipe(
+          Effect.andThen(fs.rename(tempPath, jsonConfigPath)),
+          Effect.tapError(() => fs.remove(tempPath).pipe(Effect.ignore))
+        );
         rawConfig = next;
       });
 
     const update = (
       next: Partial<CliUserConfig>
     ): Effect.Effect<void, ParseError | PlatformError, never> =>
-      persist(
-        CliUserConfig.make({
-          ...rawConfig,
-          ...next,
-        })
-      );
+      configLoadError
+        ? Effect.fail(configLoadError)
+        : persist(
+            CliUserConfig.make({
+              ...rawConfig,
+              ...next,
+            })
+          );
 
     const load = Effect.gen(function* () {
       const configJson = yield* fs.readFileString(jsonConfigPath, 'utf8');
@@ -160,7 +180,16 @@ export const ComposioCliUserConfigLive = Layer.effect(
     });
 
     if (yield* fs.exists(jsonConfigPath)) {
-      yield* load.pipe(Effect.catchAll(() => persist(DEFAULT_CLI_USER_CONFIG)));
+      yield* load.pipe(
+        Effect.catchAll(cause =>
+          Effect.sync(() => {
+            // Keep malformed configuration available for manual recovery. Automatic
+            // state writes fail closed instead of replacing settings we could not read.
+            configLoadError = cause;
+            rawConfig = DEFAULT_CLI_USER_CONFIG;
+          })
+        )
+      );
     } else {
       yield* persist(rawConfig);
     }

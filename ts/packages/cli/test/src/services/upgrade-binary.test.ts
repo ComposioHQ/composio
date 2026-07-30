@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from '@effect/vitest';
-import { ConfigProvider, Effect, Layer } from 'effect';
+import { ConfigProvider, Effect, Layer, Option } from 'effect';
 import { FetchHttpClient, Path } from '@effect/platform';
 import { BunFileSystem } from '@effect/platform-bun';
 import { existsSync, mkdirSync, readFileSync, mkdtempSync, writeFileSync } from 'node:fs';
@@ -34,6 +34,7 @@ const TerminalUINoop = Layer.succeed(
       message: () => Effect.void,
     },
     note: () => Effect.void,
+    text: (_message, options) => Effect.succeed(Option.fromNullable(options?.defaultValue)),
     select: (_message, options) => Effect.succeed(options[0].value),
     confirm: () => Effect.succeed(true),
     withSpinner: (_message, effect) => effect,

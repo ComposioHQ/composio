@@ -1,6 +1,12 @@
 import * as tempy from 'tempy';
 import { CliApp, CliConfig } from '@effect/cli';
-import { Command, FetchHttpClient, FileSystem, Path } from '@effect/platform';
+import {
+  Command,
+  Error as PlatformError,
+  FetchHttpClient,
+  FileSystem,
+  Path,
+} from '@effect/platform';
 import { BunFileSystem, BunContext, BunPath } from '@effect/platform-bun';
 import {
   ConfigProvider,
@@ -110,6 +116,8 @@ export interface TestLiveInput {
     linkResponse?: LinkCreateResponse;
     onPatch?: (params: { path: string; body: Record<string, unknown> | undefined }) => void;
     onDelete?: (nanoid: string) => void;
+    /** When true, `connectedAccounts.list` rejects (simulates a transient API failure). */
+    listShouldFail?: boolean;
   };
 
   /**
@@ -130,6 +138,11 @@ export interface TestLiveInput {
     developerModeEnabled?: boolean;
     developerDangerousCommandsEnabled?: boolean;
     experimentalFeatures?: Record<string, boolean>;
+    onboardHasExecuted?: boolean;
+    onboardOrgId?: string;
+    onboardSkippedSteps?: ReadonlyArray<string>;
+    /** When true, `update` fails (simulates an unwritable config dir). */
+    updateShouldFail?: boolean;
   };
 
   /**
@@ -138,6 +151,15 @@ export interface TestLiveInput {
   stdin?: {
     isTTY: boolean;
     data: string;
+  };
+
+  /**
+   * Mock CLI login-session behavior. `status: 'linked'` (with `apiKey`)
+   * makes browser/poll login flows complete on the first poll.
+   */
+  sessionsData?: {
+    status?: 'pending' | 'linked';
+    apiKey?: string;
   };
 
   /**
@@ -770,7 +792,9 @@ export const TestLayer = (input?: TestLiveInput) =>
         deleteTrigger: triggerId => Effect.succeed({ trigger_id: triggerId }),
       })
     );
-    const ComposioSessionRepositoryTest = yield* setupComposioSessionRepository();
+    const ComposioSessionRepositoryTest = yield* setupComposioSessionRepository(
+      input?.sessionsData
+    );
     const TriggersRealtimeTest = Layer.succeed(
       TriggersRealtime,
       new TriggersRealtime({
@@ -822,6 +846,12 @@ export const TestLayer = (input?: TestLiveInput) =>
       artifactDirectory: Option.none(),
       experimentalSubagent: Option.none(),
       security: 'auto',
+      onboard: {
+        hasExecuted: input?.cliUserConfig?.onboardHasExecuted ?? false,
+        onboardedAt: Option.none(),
+        orgId: Option.fromNullable(input?.cliUserConfig?.onboardOrgId),
+        skippedSteps: input?.cliUserConfig?.onboardSkippedSteps ?? [],
+      },
     });
 
     const ComposioCliUserConfigTest = Layer.succeed(
@@ -836,6 +866,12 @@ export const TestLayer = (input?: TestLiveInput) =>
             artifactDirectory: Option.getOrUndefined(rawCliUserConfig.artifactDirectory),
             experimentalSubagentTarget: 'auto' as const,
             security: 'auto' as const,
+            onboard: {
+              hasExecuted: rawCliUserConfig.onboard.hasExecuted,
+              onboardedAt: Option.getOrUndefined(rawCliUserConfig.onboard.onboardedAt),
+              orgId: Option.getOrUndefined(rawCliUserConfig.onboard.orgId),
+              skippedSteps: rawCliUserConfig.onboard.skippedSteps,
+            },
           };
         },
         get raw() {
@@ -846,13 +882,24 @@ export const TestLayer = (input?: TestLiveInput) =>
         areDeveloperDangerousCommandsEnabled: () => rawCliUserConfig.developer.destructiveActions,
         isExperimentalFeatureEnabled: feature =>
           rawCliUserConfig.experimentalFeatures[feature] ?? true,
-        update: next =>
-          Effect.sync(() => {
+        update: next => {
+          if (input?.cliUserConfig?.updateShouldFail) {
+            return Effect.fail(
+              new PlatformError.SystemError({
+                reason: 'PermissionDenied',
+                module: 'FileSystem',
+                method: 'writeFileString',
+                description: 'Simulated config write failure',
+              })
+            );
+          }
+          return Effect.sync(() => {
             rawCliUserConfig = CliUserConfig.make({
               ...rawCliUserConfig,
               ...next,
             });
-          }),
+          });
+        },
       })
     );
 
@@ -1030,6 +1077,9 @@ export const TestLayer = (input?: TestLiveInput) =>
           statuses?: string[];
           limit?: number;
         }) => {
+          if (connectedAccountsData.listShouldFail) {
+            throw new Error('Simulated connected-accounts list failure');
+          }
           let results = [...connectedAccountsData.items];
 
           if (params?.toolkit_slugs && params.toolkit_slugs.length > 0) {
@@ -1482,7 +1532,7 @@ function breakSymlinksInNodeModules(
   }).pipe(Effect.catchAll(() => Effect.void));
 }
 
-function setupComposioSessionRepository() {
+function setupComposioSessionRepository(sessionsData?: TestLiveInput['sessionsData']) {
   return Effect.gen(function* () {
     const now = yield* DateTime.now;
     const sessionId = 'te00st11-d0c4-4efa-8117-c638886063e0';
@@ -1507,14 +1557,25 @@ function setupComposioSessionRepository() {
           expiresAt,
           status: 'pending',
         }),
-      getSession: () =>
-        Effect.succeed({
+      getSession: () => {
+        if (sessionsData?.status === 'linked') {
+          return Effect.succeed({
+            id: sessionId,
+            code: sessionCode,
+            expiresAt,
+            status: 'linked' as const,
+            api_key: sessionsData.apiKey ?? 'uak_test_key',
+            account,
+          });
+        }
+        return Effect.succeed({
           id: sessionId,
           code: sessionCode,
           expiresAt,
-          status: 'pending',
+          status: 'pending' as const,
           api_key: null,
-        }),
+        });
+      },
       getRealtimeCredentials: () =>
         Effect.succeed({
           project_id: 'proj_test',

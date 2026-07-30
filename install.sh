@@ -441,5 +441,5 @@ info_bold "  composio --help"
 if [[ $install_agent = true ]]; then
     info_bold "  composio agent whoami"
 else
-    info_bold "  composio login"
+    info_bold "  composio onboard"
 fi

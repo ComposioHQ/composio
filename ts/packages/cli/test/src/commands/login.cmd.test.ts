@@ -11,6 +11,7 @@ import { setupCacheDir } from 'src/effects/setup-cache-dir';
 import { getTerminalCapabilities, TerminalUI } from 'src/services/terminal-ui';
 import { writeStoredAgentIdentity } from 'src/services/agents';
 import { ComposioUserContext } from 'src/services/user-context';
+import { browserLogin } from 'src/commands/login.cmd';
 
 vi.mock('open', () => ({
   default: vi.fn(async () => undefined),
@@ -327,6 +328,90 @@ describe('CLI: composio login', () => {
             expect(output).not.toContain('Then run this command to complete login:');
             expect(requestedUrls).not.toContainEqual(expect.stringContaining('/api/whoami'));
             expect(Exit.isFailure(exit)).toBe(true);
+          })
+      );
+    });
+  });
+
+  describe('browserLogin embedded (onboard)', () => {
+    const interactiveUI = TerminalUI.of({
+      ...terminalUITestImpl,
+      capabilities: Effect.succeed(
+        getTerminalCapabilities({
+          stdin: { isTTY: true },
+          stdout: { isTTY: true },
+          stderr: { isTTY: true },
+        })
+      ),
+    });
+
+    layer(
+      TestLive({
+        terminalUI: interactiveUI,
+        sessionsData: { status: 'linked', apiKey: 'uak_embedded_login' },
+      })
+    )(it => {
+      it.scoped(
+        '[Given] embedded: true [Then] logs in with the success line only — no hints, JSON, or outro',
+        () =>
+          Effect.gen(function* () {
+            vi.spyOn(globalThis, 'fetch').mockImplementation(
+              async (requestInput: RequestInfo | URL) => {
+                const url =
+                  typeof requestInput === 'string'
+                    ? requestInput
+                    : requestInput instanceof URL
+                      ? requestInput.toString()
+                      : requestInput.url;
+                if (url.includes('/api/v3/auth/session/info')) {
+                  return mockFetchResponse({
+                    project: {
+                      name: 'Default Project',
+                      id: 'project_id_default',
+                      org_id: 'org_default',
+                      nano_id: 'project_default',
+                      email: 'project@example.com',
+                      created_at: '2026-01-01T00:00:00.000Z',
+                      updated_at: '2026-01-01T00:00:00.000Z',
+                      org: { id: 'org_default', name: 'Example Org', plan: 'enterprise' },
+                    },
+                    org_member: {
+                      id: 'member_123',
+                      user_id: 'user_123',
+                      email: 'cli@example.com',
+                      name: 'CLI User',
+                      role: 'admin',
+                    },
+                    api_key: null,
+                  });
+                }
+                if (url.includes('/api/v3/org/list')) {
+                  return mockFetchResponse({
+                    organizations: [{ id: 'org_default', name: 'Example Org' }],
+                  });
+                }
+                return mockFetchResponse({});
+              }
+            );
+
+            yield* browserLogin({
+              scope: 'user',
+              noBrowser: true,
+              skipOrgProjectPicker: false,
+              embedded: true,
+            });
+
+            const ctx = yield* ComposioUserContext;
+            expect(ctx.isLoggedIn()).toBe(true);
+
+            const output = (yield* MockConsole.getLines({ stripAnsi: true })).join('\n');
+            expect(output).toContain('Logged in as test.name@gmail.com');
+            expect(output).not.toContain('Execute a tool directly');
+            expect(output).not.toContain('Switch your current org');
+            expect(output).not.toContain('"org_name"');
+            expect(output).not.toContain("You're all set!");
+            expect(output).not.toContain('Loaded');
+            expect(output).not.toContain('Selected organization');
           })
       );
     });

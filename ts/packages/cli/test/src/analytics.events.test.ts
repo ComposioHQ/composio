@@ -12,6 +12,7 @@ import {
   CLI_JOURNEY_STAGES,
   configureCliAnalyticsReleaseVersion,
   createCliCommandTelemetryContext,
+  getOnboardFunnelEvent,
   getPluginLifecycleFailedEvent,
   getPluginLifecycleSucceededEvent,
   getPrimaryLifecycleFailedEvent,
@@ -489,5 +490,33 @@ describe('CLI analytics journey taxonomy', () => {
     const installLine = installScript.split('\n').find(line => line.includes('"$exe" install'));
 
     expect(installLine).toContain('COMPOSIO_CLI_INVOCATION_ORIGIN=installer');
+  });
+});
+
+describe('CLI analytics onboard journey stage', () => {
+  it('stamps every onboard event with the onboard stage', () => {
+    const onboardEvents = Object.keys(CLI_EVENT_JOURNEY_STAGES).filter(name =>
+      name.startsWith('CLI_ONBOARD_')
+    );
+    expect(onboardEvents).toHaveLength(6);
+    for (const name of onboardEvents) {
+      expect(CLI_EVENT_JOURNEY_STAGES[name as keyof typeof CLI_EVENT_JOURNEY_STAGES]).toBe(
+        'onboard'
+      );
+    }
+  });
+
+  it('routes getOnboardFunnelEvent through the shared builder', () => {
+    const event = getOnboardFunnelEvent({
+      name: CLI_ANALYTICS_EVENTS.CLI_ONBOARD_STEP_COMPLETED,
+      step: 'login',
+    });
+    expect(event?.properties).toMatchObject({
+      journey_stage: 'onboard',
+      step: 'login',
+      source: 'cli',
+    });
+    expect(CLI_JOURNEY_STAGES).toContain('onboard');
+    expect(event?.properties?.cli_channel).toBeDefined();
   });
 });

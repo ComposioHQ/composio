@@ -202,7 +202,7 @@ describe('ComposioCliUserConfig', () => {
     }).pipe(Effect.provide(CliUserConfigTest));
   });
 
-  it.scoped('replaces malformed persisted config with safe defaults', () => {
+  it.scoped('preserves malformed persisted config and blocks automatic writes', () => {
     const cwd = tempy.temporaryDirectory();
     const map = new Map([['DEBUG_OVERRIDE_VERSION', '1.2.3']]) satisfies Map<string, string>;
     fs.mkdirSync(path.join(cwd, '.composio'), { recursive: true });
@@ -220,8 +220,17 @@ describe('ComposioCliUserConfig', () => {
       assertEquals(config.data.developerDangerousCommandsEnabled, false);
       assertEquals(config.data.security, 'auto');
 
+      yield* config
+        .update({
+          onboard: {
+            ...config.raw.onboard,
+            hasExecuted: true,
+          },
+        })
+        .pipe(Effect.flip);
+
       const persisted = fs.readFileSync(path.join(cwd, '.composio', 'config.json'), 'utf8');
-      assertEquals(Array.isArray(JSON.parse(persisted)), false);
+      assertEquals(Array.isArray(JSON.parse(persisted)), true);
     }).pipe(Effect.provide(CliUserConfigTest));
   });
 
