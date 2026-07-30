@@ -496,6 +496,46 @@ describe('resolveOnboardingState', () => {
       expect(state.gates.connect.status).toBe('blocked');
       expect(state.gates.connect.redirectUrl).toBe('https://auth.example.com/gmail');
     });
+
+    it('skips past a newer uncurated pending link to a curated one', () => {
+      const state = resolveOnboardingState(
+        facts({
+          pendingLinks: [
+            {
+              toolkit: 'stripe',
+              connectedAccountId: 'ca_stripe_pending',
+              redirectUrl: Option.none(),
+            },
+            {
+              toolkit: 'gmail',
+              connectedAccountId: 'ca_gmail_pending',
+              redirectUrl: Option.some('https://auth.example.com/gmail'),
+            },
+          ],
+        })
+      );
+
+      expect(state.toolkit).toBe('gmail');
+      expect(state.gates.connect.connectedAccountId).toBe('ca_gmail_pending');
+    });
+
+    it('prefers a connected curated toolkit over an outstanding curated link', () => {
+      const state = resolveOnboardingState(
+        facts({
+          connectedToolkits: ['github'],
+          pendingLinks: [
+            {
+              toolkit: 'gmail',
+              connectedAccountId: 'ca_gmail_pending',
+              redirectUrl: Option.none(),
+            },
+          ],
+        })
+      );
+
+      expect(state.toolkit).toBe('github');
+      expect(state.gates.connect.status).toBe('satisfied');
+    });
   });
 
   describe('login gate', () => {

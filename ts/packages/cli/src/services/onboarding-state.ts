@@ -138,13 +138,12 @@ const resolveToolkit = (facts: OnboardingFacts): Option.Option<string> => {
     return facts.requestedToolkit;
   }
 
-  const active = activeToolkits(facts);
-  const connectedCurated = Arr.findFirst(active, slug => Option.isSome(findTaskByToolkit(slug)));
-  if (Option.isSome(connectedCurated)) {
-    return connectedCurated;
-  }
-
-  return Option.map(Arr.head(facts.pendingLinks), link => link.toolkit);
+  // Connected toolkits before outstanding authorizations, and curated on both sides. An
+  // uncurated pending link — a `composio link stripe` someone abandoned — must not become the
+  // adopted target: it would block bare `composio onboard` on an authorization the user never
+  // started here, and hide the starter picker until that account is removed.
+  const candidates = [...activeToolkits(facts), ...facts.pendingLinks.map(link => link.toolkit)];
+  return Arr.findFirst(candidates, slug => Option.isSome(findTaskByToolkit(slug)));
 };
 
 const hostWiringGate = (facts: OnboardingFacts) => {
