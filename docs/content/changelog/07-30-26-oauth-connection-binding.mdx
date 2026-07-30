@@ -1,11 +1,13 @@
 ---
 title: "OAuth connection security: same-browser binding and callback identity verification"
 date: "2026-07-30"
-description: "Tie an OAuth connection to the user who started it: same-browser binding enforced on managed apps, and opt-in callback identity verification per project."
+description: "Stop an OAuth connection from being completed by another party: same-browser binding on Composio-managed apps, and opt-in, per-project callback identity verification."
 ---
 
-Composio now ensures an OAuth connection can only be completed by the user who started it — enforced
-automatically on Composio-managed apps, and available as an opt-in check for your own OAuth apps.
+Composio now stops an OAuth connection from being completed by someone other than the person who
+started it. On Composio-managed apps this is enforced automatically, bound to the browser that
+started the flow. Any project can also opt into callback identity verification, which ties activation
+to the user — the durable way to secure your own OAuth apps.
 
 ### What shipped
 
@@ -13,8 +15,8 @@ automatically on Composio-managed apps, and available as an opt-in check for you
   owns the OAuth app here, it enforces this automatically: a Connect Link must be completed in the
   browser that started it, and a callback from a different browser is rejected. No setup required.
   [Learn more](/docs/oauth-connection-security#same-browser-binding)
-- **Callback identity verification** — an opt-in check for **your own OAuth apps** (custom auth
-  configs), where only your server can identify the returning user. Set a verifier URL, and Composio
-  routes each OAuth return to your server to confirm its signed-in user before the connection
-  activates. Enable it in Settings → General.
+- **Callback identity verification** — an opt-in, per-project identity check, and the most reliable
+  way to secure your **own OAuth apps**. Set a verifier URL, and Composio holds every OAuth connection
+  in the project — managed and custom alike — until your server confirms the returning user matches
+  the one it was created for. Enable it in Settings → General.
   [Learn more](/docs/oauth-connection-security#callback-identity-verification)
