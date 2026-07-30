@@ -785,6 +785,36 @@ describe('CLI: composio login', () => {
           })
         );
       });
+
+      layer(TestLive({ terminalUI: headlessStdinUI }))(it => {
+        it.scoped(
+          '[Given] the outstanding session has another scope [Then] mints a fresh one',
+          () =>
+            Effect.gen(function* () {
+              const minted: Array<string> = [];
+              const sessions = countingSessions(minted);
+
+              // `composio init` mints `project` sessions into the same cache file. Resuming one of
+              // those for a `user` login would have the human authorize and poll against a session
+              // type the caller never asked for.
+              const project = yield* browserLogin({
+                scope: 'project',
+                noBrowser: true,
+                noWait: true,
+                embedded: true,
+              }).pipe(Effect.provide(sessions));
+              const user = yield* browserLogin({
+                scope: 'user',
+                noBrowser: true,
+                noWait: true,
+                embedded: true,
+              }).pipe(Effect.provide(sessions));
+
+              expect(minted).toStrictEqual(['session-1', 'session-2']);
+              expect(user).not.toStrictEqual(project);
+            })
+        );
+      });
     });
 
     describe('a non-prompting invocation still short-circuits', () => {

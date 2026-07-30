@@ -89,6 +89,11 @@ const PendingLoginSession = Schema.Struct({
   loginUrl: Schema.String,
   expiresAt: Schema.String,
   cachedAt: Schema.String,
+  /**
+   * The scope the session was minted with. Optional so a cache file written by an older binary still
+   * polls, and absent there means "unknown scope" — which no embedded caller will resume.
+   */
+  scope: Schema.optional(Schema.Literal('user', 'project')),
 });
 type PendingLoginSession = Schema.Schema.Type<typeof PendingLoginSession>;
 
@@ -713,7 +718,10 @@ export const browserLogin = (params: {
     // over.
     if (embedded) {
       const pending = yield* readPendingLoginSessionOption;
-      if (Option.isSome(pending)) {
+      // Only a session minted for the same scope: `composio init` mints `project` sessions into the
+      // same cache file, and resuming one of those would have the human authorize and poll against a
+      // session type the embedding command did not ask for.
+      if (Option.isSome(pending) && pending.value.scope === params.scope) {
         yield* Effect.logDebug('Reusing the pending login session');
         yield* ui.log.info('Please login using the following URL:');
         yield* ui.note(pending.value.loginUrl, 'Login URL');
@@ -735,6 +743,7 @@ export const browserLogin = (params: {
       key: session.id,
       loginUrl: url,
       expiresAt,
+      scope: params.scope,
     });
 
     const { canPrompt, canDecorate } = yield* ui.capabilities;
