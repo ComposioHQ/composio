@@ -239,6 +239,7 @@ const handleNoManagedAuth = (ui: TerminalUI, toolkitSlug: string, noBrowser: boo
       const sessionInfo = yield* getSessionInfoByUserApiKey({
         baseURL: userContext.data.baseURL,
         userApiKey: apiKey,
+        orgId: Option.getOrUndefined(userContext.data.orgId),
       }).pipe(Effect.catchAll(() => Effect.succeed(null)));
 
       if (sessionInfo) {
