@@ -11,7 +11,9 @@ import {
   CliUserConfig,
   cliUserConfigFromJSON,
   cliUserConfigToJSON,
+  OnboardingConfig,
 } from 'src/models/cli-user-config';
+import type { OnboardingLastExecution } from 'src/models/cli-user-config';
 import { isExperimentalFeatureEnabledByDefault } from 'src/experimental-features';
 import * as constants from 'src/constants';
 import type { CliReleaseChannel } from 'src/constants';
@@ -30,6 +32,14 @@ export type CliUserConfigResolved = {
    * with every prior CLI release).
    */
   readonly security: 'auto' | 'json' | 'keychain-subprocess' | 'keychain';
+  /**
+   * Durable onboarding facts. `hasExecuted` is the execute gate of `composio onboard`; it is
+   * written by the shared execute path, so `composio execute` on its own satisfies the gate.
+   */
+  readonly onboarding: {
+    readonly hasExecuted: boolean;
+    readonly lastExecution: OnboardingLastExecution | undefined;
+  };
 };
 
 const detectReleaseChannel = (version: string): CliReleaseChannel =>
@@ -44,6 +54,10 @@ const DEFAULT_CLI_USER_CONFIG = CliUserConfig.make({
   artifactDirectory: Option.none(),
   experimentalSubagent: Option.none(),
   security: 'auto',
+  onboarding: OnboardingConfig.make({
+    hasExecuted: false,
+    lastExecution: Option.none(),
+  }),
 });
 
 const decodeConfigJson = Schema.decodeUnknown(Schema.parseJson(JsonRecordSchema));
@@ -98,6 +112,10 @@ const resolveConfig = (raw: CliUserConfig, channel: CliReleaseChannel): CliUserC
     onSome: value => value.target,
   }),
   security: raw.security,
+  onboarding: {
+    hasExecuted: raw.onboarding.hasExecuted,
+    lastExecution: Option.getOrUndefined(raw.onboarding.lastExecution),
+  },
 });
 
 export const ComposioCliUserConfigLive = Layer.effect(
