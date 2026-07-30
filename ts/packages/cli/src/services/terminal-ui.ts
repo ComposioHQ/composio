@@ -272,6 +272,11 @@ export const makeTerminalUI = (streams: TerminalUIStreams): TerminalUI => {
     return Effect.sync(render);
   };
 
+  const promptSelect = (
+    message: string,
+    options: ReadonlyArray<{ value: unknown; label: string; hint?: string }>
+  ) => p.select({ message, options: [...options], output: stderr });
+
   return {
     capabilities: Effect.succeed(capabilities),
 
@@ -299,6 +304,8 @@ export const makeTerminalUI = (streams: TerminalUIStreams): TerminalUI => {
     note: (message, title) =>
       decorate(() => p.note(message, title ?? '', { format: line => line, output: stderr })),
 
+    // `select` and `selectOption` differ only in what an unavailable prompt and a cancel mean: the
+    // former defaults to the first option, the latter reports the absence.
     select: ((
       message: string,
       options: ReadonlyArray<{ value: unknown; label: string; hint?: string }>
@@ -308,11 +315,7 @@ export const makeTerminalUI = (streams: TerminalUIStreams): TerminalUI => {
       }
 
       return Effect.promise(async () => {
-        const result = await p.select({
-          message,
-          options: [...options],
-          output: stderr,
-        });
+        const result = await promptSelect(message, options);
         // p.select returns Value | symbol (symbol on cancel)
         if (typeof result === 'symbol') return options[0].value;
         return result;
@@ -328,11 +331,7 @@ export const makeTerminalUI = (streams: TerminalUIStreams): TerminalUI => {
       }
 
       return Effect.promise(async () => {
-        const result = await p.select({
-          message,
-          options: [...options],
-          output: stderr,
-        });
+        const result = await promptSelect(message, options);
         if (p.isCancel(result)) return Option.none();
         return Option.some(result);
       });

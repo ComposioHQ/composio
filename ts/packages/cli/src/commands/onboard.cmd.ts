@@ -6,7 +6,7 @@ import { runConnectedAccountsLink } from 'src/commands/connected-accounts/comman
 import { runToolsExecute } from 'src/commands/tools/commands/tools.execute.cmd';
 import { renderOnboardHuman, serializeOnboardState } from 'src/commands/onboard-render';
 import { TerminalUI } from 'src/services/terminal-ui';
-import { gatherOnboardingFacts } from 'src/services/onboarding-facts';
+import { gatherHostWiring, gatherOnboardingFacts } from 'src/services/onboarding-facts';
 import { nextAgentCommand } from 'src/services/onboarding-next-command';
 import { resolveOnboardingState } from 'src/services/onboarding-state';
 import { clearOnboardingExecution } from 'src/services/onboarding-store';
@@ -22,27 +22,17 @@ import type { OnboardingSkip, OnboardingState } from 'src/services/onboarding-st
 import type { StarterTask } from 'src/services/onboarding-tasks';
 
 /**
- * `composio onboard` — the front door.
+ * `composio onboard` sequences four gates — host wiring, login, connect, execute — by calling the
+ * existing `login`, `link`, and `execute` commands rather than reimplementing them. A human gets
+ * prompts on stderr; `--json` suppresses every prompt and writes a state document to stdout.
  *
- * It sequences four gates (host wiring, login, connect, execute) by **calling the existing
- * commands**, never reimplementing them. One command, two audiences: a human gets prompts on
- * stderr, an agent gets a JSON state document on stdout and no prompts.
+ * `resolveOnboardingState` computes gate status from facts alone — it never sees `canPrompt`,
+ * stdout's TTY state, or `--json` — so the gates and `onboarded` are identical across invocation
+ * modes for the same facts. The document is rendered once at the end of the flow rather than from
+ * each branch, so no branch has to remember to emit it.
  *
- * Two structural rules make the two audiences impossible to disagree:
- *
- * 1. Gate resolution is mode-independent. `resolveOnboardingState` takes facts only — it never sees
- *    `canPrompt`, stdout's TTY state, or `--json` — so every gate status and `onboarded` is
- *    identical across invocation modes for the same facts.
- * 2. The document is rendered from one place at the end of the flow, not from each branch, so
- *    "did this branch remember to emit?" stops being a question.
- *
- * And two actions are not undoable by re-running the command, so both are gated explicitly:
- *
- * - The **first execute** is a real API read against a real account. It may fire with no human
- *   watching only when the caller named the target, because passing `--toolkit github` *is* the
- *   consent; choosing on the caller's behalf is not.
- * - The **optional create** writes real data and may never fire with no human watching. Five
- *   independent conditions, all required — see `offerReversibleCreate`.
+ * Neither the first tool execution nor the optional create is undone by re-running the command, so
+ * each requires explicit consent — see `mayRunReadDemo` and `offerReversibleCreate`.
  */
 
 const SKIP_STEPS = ['connect', 'execute'] as const;
@@ -142,14 +132,12 @@ const requireToolkitSlug = (flag: string, value: Option.Option<string>) =>
 const resolveRequestedToolkit = (params: {
   readonly toolkit: Option.Option<string>;
   readonly task: Option.Option<string>;
-}): Option.Option<string> => {
-  if (Option.isSome(params.toolkit)) {
-    return params.toolkit;
-  }
-  return Option.flatMap(params.task, text =>
-    Option.map(findTaskByFreeText(text), matched => matched.toolkit)
+}): Option.Option<string> =>
+  Option.orElse(params.toolkit, () =>
+    Option.flatMap(params.task, text =>
+      Option.map(findTaskByFreeText(text), matched => matched.toolkit)
+    )
   );
-};
 
 const taskFor = (state: OnboardingState): Option.Option<StarterTask> =>
   Option.flatMap(Option.fromNullable(state.toolkit), findTaskByToolkit);
@@ -177,18 +165,46 @@ const pickStarterTask = Effect.gen(function* () {
 });
 
 /**
- * Door B — the optional reversible create. Five independent conditions, all required:
+ * Both tool calls onboard makes go through here.
  *
- * 1. `canPrompt` is true, checked directly rather than inferred.
- * 2. `--json` is absent.
- * 3. The read demo already succeeded on this invocation.
- * 4. An explicit confirm defaulting to `false` returned `true`. `--yes` does **not** satisfy this;
+ * `quiet` keeps the raw provider response off the state document's stream — and out of whatever the
+ * agent is logging — from a step whose whole purpose is to prove the connection works. `inlineOnly`
+ * keeps the delegate's behavior independent of response size.
+ */
+const runOnboardTool = (params: {
+  readonly slug: string;
+  readonly args: Readonly<Record<string, unknown>>;
+}) =>
+  runToolsExecute({
+    slug: params.slug,
+    data: Option.some(JSON.stringify(params.args)),
+    file: Option.none(),
+    account: Option.none(),
+    userId: Option.none(),
+    projectName: Option.none(),
+    surface: 'root',
+    projectMode: 'consumer',
+    getSchema: false,
+    dryRun: false,
+    skipConnectionCheck: false,
+    skipToolParamsCheck: false,
+    skipChecks: false,
+    quiet: true,
+    inlineOnly: true,
+  }).pipe(Effect.either);
+
+/**
+ * The optional create that writes real data. Four independent conditions, all required:
+ *
+ * 1. A human is at the keyboard and `--json` is absent.
+ * 2. The read demo already succeeded on this invocation.
+ * 3. An explicit confirm defaulting to `false` returned `true`. `--yes` does **not** satisfy this;
  *    the flag most likely to end up in a shell alias is the worst place to put a write.
- * 5. Every required argument was supplied by the human at a prompt.
+ * 4. Every required argument was supplied by the human at a prompt.
  *
- * Condition 4's default is `false` specifically so a mis-wired non-prompting path degrades to *not
+ * Condition 3's default is `false` specifically so a mis-wired non-prompting path degrades to *not
  * writing*: `ui.confirm` returns its default when prompting is unavailable, so the fallback is a
- * refusal. Condition 5 makes the same guarantee structurally — with nobody at the keyboard there is
+ * refusal. Condition 4 makes the same guarantee structurally — with nobody at the keyboard there is
  * no source for `owner`/`repo`, so the write cannot be assembled at all.
  *
  * The outcome never reaches `gates`: declining, or the create failing, still leaves
@@ -196,21 +212,15 @@ const pickStarterTask = Effect.gen(function* () {
  */
 const offerReversibleCreate = (params: {
   readonly task: StarterTask;
-  readonly json: boolean;
-  readonly surface: 'root';
+  readonly interactive: boolean;
 }) =>
   Effect.gen(function* () {
     const create = params.task.create;
-    if (create === undefined || params.json) {
+    if (create === undefined || !params.interactive) {
       return;
     }
 
     const ui = yield* TerminalUI;
-    const { canPrompt } = yield* ui.capabilities;
-    if (!canPrompt) {
-      return;
-    }
-
     const confirmed = yield* ui.confirm(create.confirmLabel, { defaultValue: false });
     if (!confirmed) {
       return;
@@ -228,23 +238,7 @@ const offerReversibleCreate = (params: {
       args[required.key] = answer.value;
     }
 
-    const result = yield* runToolsExecute({
-      slug: create.slug,
-      data: Option.some(JSON.stringify(args)),
-      file: Option.none(),
-      account: Option.none(),
-      userId: Option.none(),
-      projectName: Option.none(),
-      surface: params.surface,
-      projectMode: 'consumer',
-      getSchema: false,
-      dryRun: false,
-      skipConnectionCheck: false,
-      skipToolParamsCheck: false,
-      skipChecks: false,
-      quiet: true,
-      inlineOnly: true,
-    }).pipe(Effect.either);
+    const result = yield* runOnboardTool({ slug: create.slug, args });
 
     if (Either.isLeft(result)) {
       yield* ui.log.warn('The create did not go through. Onboarding is still complete.');
@@ -260,10 +254,9 @@ const offerReversibleCreate = (params: {
     yield* ui.log.success(summary ?? 'Created it.');
   });
 
-/** Whether the read demo may fire on this invocation — Door A. */
+/** Whether the read demo may fire on this invocation. */
 const mayRunReadDemo = (params: {
-  readonly canPrompt: boolean;
-  readonly json: boolean;
+  readonly interactive: boolean;
   readonly requestedToolkit: Option.Option<string>;
   /** A spoken yes for a target the caller did not name: the confirm below, or `--yes`. */
   readonly confirmed: boolean;
@@ -271,14 +264,14 @@ const mayRunReadDemo = (params: {
   // Naming the target on this invocation is the consent: `--toolkit github` says which account gets
   // read. Without a named target the only other consent is an explicit answer, and there is nobody
   // to ask unless a human is at the keyboard.
-  Option.isSome(params.requestedToolkit) || (params.canPrompt && !params.json && params.confirmed);
+  Option.isSome(params.requestedToolkit) || (params.interactive && params.confirmed);
 
 /**
  * What an advance attempt did, beyond the value it produced.
  *
  * `failed` exists so the caller can tell a delegate that could not do its job from a delegate that
- * had nothing to do. Collapsing the two hides the failure from the human *and* leaves the loop
- * looking at unchanged facts, which is how one login timeout became three browser tabs.
+ * had nothing to do. Collapsing the two would hide the failure from the human *and* leave the loop
+ * looking at unchanged facts, so it would re-run the delegate and repeat its side effect.
  */
 type LoginAdvance =
   | { readonly kind: 'pending'; readonly loginUrl: string }
@@ -301,18 +294,14 @@ type ConnectAdvance =
 
 type ExecuteAdvance = { readonly kind: 'ran' } | { readonly kind: 'failed' };
 
-const advanceLoginGate = (params: { readonly yes: boolean; readonly json: boolean }) =>
+const advanceLoginGate = (params: { readonly yes: boolean; readonly interactive: boolean }) =>
   Effect.gen(function* () {
-    const ui = yield* TerminalUI;
-    const { canPrompt } = yield* ui.capabilities;
-    const interactive = canPrompt && !params.json;
-
     const outcome = yield* browserLogin({
       scope: 'user',
       embedded: true,
-      noBrowser: !interactive,
-      noWait: !interactive,
-      skipOrgProjectPicker: params.yes || !interactive,
+      noBrowser: !params.interactive,
+      noWait: !params.interactive,
+      skipOrgProjectPicker: params.yes || !params.interactive,
     }).pipe(Effect.either);
 
     if (Either.isLeft(outcome)) {
@@ -326,26 +315,20 @@ const advanceLoginGate = (params: { readonly yes: boolean; readonly json: boolea
     ) satisfies LoginAdvance;
   });
 
-const advanceConnectGate = (params: { readonly toolkit: string; readonly json: boolean }) =>
+const advanceConnectGate = (params: { readonly toolkit: string; readonly interactive: boolean }) =>
   Effect.gen(function* () {
-    const ui = yield* TerminalUI;
-    const { canPrompt } = yield* ui.capabilities;
-    const interactive = canPrompt && !params.json;
-
     const outcome = yield* runConnectedAccountsLink({
       toolkit: Option.some(params.toolkit),
       authConfig: Option.none(),
       userId: Option.none(),
       projectName: Option.none(),
-      // A human at the keyboard gets the same connect the standalone command gives them: the
-      // browser opens and the delegate polls to ACTIVE, so one session can reach the execute gate.
-      // `noWait` is where the delegate stops reading `noBrowser` at all, so pinning it to `true`
-      // made the interactive front door strictly worse than `composio link` — a URL to copy by
-      // hand, then a document telling the human to re-run. Non-prompting callers keep the bounded
-      // one-gate-per-invocation behavior: onboard re-resolves from the API instead of holding a
-      // poll open, so an agent's loop stays externally visible.
-      noWait: !interactive,
-      noBrowser: !interactive,
+      // A human at the keyboard gets the same connect `composio link` gives them: the browser opens
+      // and the delegate polls to ACTIVE, so one session can reach the execute gate. `noWait` also
+      // controls whether the delegate reads `noBrowser` at all, so both are pinned together.
+      // Non-prompting callers keep one gate per invocation: onboard re-resolves from the API instead
+      // of holding a poll open, so an agent's loop stays externally visible.
+      noWait: !params.interactive,
+      noBrowser: !params.interactive,
       alias: Option.none(),
       list: false,
       rootOnly: true,
@@ -375,40 +358,26 @@ const advanceConnectGate = (params: { readonly toolkit: string; readonly json: b
     ) satisfies ConnectAdvance;
   });
 
-const advanceExecuteGate = (params: { readonly task: StarterTask; readonly json: boolean }) =>
+const advanceExecuteGate = (params: {
+  readonly task: StarterTask;
+  readonly interactive: boolean;
+}) =>
   Effect.gen(function* () {
     const ui = yield* TerminalUI;
 
-    const result = yield* runToolsExecute({
+    const result = yield* runOnboardTool({
       slug: params.task.read.slug,
-      data: Option.some(JSON.stringify(params.task.read.args)),
-      file: Option.none(),
-      account: Option.none(),
-      userId: Option.none(),
-      projectName: Option.none(),
-      surface: 'root',
-      projectMode: 'consumer',
-      getSchema: false,
-      dryRun: false,
-      skipConnectionCheck: false,
-      skipToolParamsCheck: false,
-      skipChecks: false,
-      // `quiet` keeps the raw provider response off the state document's stream — and out of
-      // whatever the agent is logging, from a step whose whole purpose is to prove the connection
-      // works. `inlineOnly` keeps the delegate's behavior independent of response size.
-      quiet: true,
-      inlineOnly: true,
-    }).pipe(Effect.either);
+      args: params.task.read.args,
+    });
 
     if (Either.isLeft(result)) {
       yield* ui.log.error(`The demo tool did not run. ${params.task.read.slug} failed.`);
       return { kind: 'failed' } satisfies ExecuteAdvance;
     }
 
-    // Door B's condition 3: the create is offered only after the read actually succeeded, which is
-    // a distinction this delegate could not make before it returned a typed outcome. Anything other
-    // than an execution is a failure to report, not a silent return: `ui.log.error` alone is
-    // decoration, so a caller with stderr redirected would see nothing at all.
+    // The create is offered only after the read actually succeeded, which is a distinction this
+    // delegate could not make before it returned a typed outcome. Anything other than an execution
+    // is a failure to report, not a silent return.
     if (result.right.kind !== 'tool_execution') {
       yield* ui.log.error(`The demo tool did not run. ${params.task.read.slug} did not execute.`);
       return { kind: 'failed' } satisfies ExecuteAdvance;
@@ -417,7 +386,7 @@ const advanceExecuteGate = (params: { readonly task: StarterTask; readonly json:
     const summary = params.task.read.summarize?.(asRecord(result.right.data) ?? {});
     yield* ui.log.success(summary ?? `${params.task.read.slug} ran successfully.`);
 
-    yield* offerReversibleCreate({ task: params.task, json: params.json, surface: 'root' });
+    yield* offerReversibleCreate({ task: params.task, interactive: params.interactive });
     return { kind: 'ran' } satisfies ExecuteAdvance;
   });
 
@@ -454,6 +423,10 @@ const runOnboard = (params: {
     let loginEmail = Option.none<string>();
     let demoFailure = Option.none<string>();
 
+    // Probed once for the whole invocation: only `composio setup` rewrites plugin wiring, so no gate
+    // this command advances can change what the probe reports.
+    const hostWiring = yield* gatherHostWiring;
+
     const resolve = (toolkit: Option.Option<string>) =>
       Effect.map(
         gatherOnboardingFacts({
@@ -461,6 +434,7 @@ const runOnboard = (params: {
           invocationSkips: params.skip,
           mintedRedirectUrl,
           email: loginEmail,
+          hostWiring,
         }),
         resolveOnboardingState
       );
@@ -473,6 +447,90 @@ const runOnboard = (params: {
     // the emitter below stays the only place a document is written.
     const maxAdvances = params.status ? 0 : interactive ? 3 : 1;
 
+    // `stop` means the attempt never started, so the facts cannot have moved and re-resolving would
+    // only ask the same question again.
+    const attemptGate = (gate: Exclude<OnboardingState['nextGate'], null>) =>
+      Effect.gen(function* () {
+        switch (gate) {
+          case 'login': {
+            const outcome = yield* advanceLoginGate({ yes: params.yes, interactive });
+            loginContext = outcome.kind === 'pending' ? { loginUrl: outcome.loginUrl } : {};
+            if (outcome.kind === 'linked') {
+              loginEmail = outcome.email;
+            }
+            if (outcome.kind === 'failed') {
+              yield* ui.log.error('Login did not complete. Run `composio onboard` again to retry.');
+            }
+            return 'attempted' as const;
+          }
+
+          case 'connect': {
+            const status = state.gates.connect.status;
+            if (status === 'blocked' || status === 'unknown') {
+              return 'stop' as const;
+            }
+
+            let target = requestedToolkit;
+            if (Option.isNone(target)) {
+              // The picker is the only way to resolve a toolkit here, and it needs a human. Checked
+              // directly rather than relying on `ui.select` defaulting — that defaulting is exactly
+              // how a piped invocation would pick a task and then fire a real API call.
+              if (!interactive) return 'stop' as const;
+              const picked = yield* pickStarterTask;
+              // Cancelling the picker is not a choice. Adopting the first entry here would authorize
+              // a provider the user just declined to choose.
+              if (Option.isNone(picked)) return 'stop' as const;
+              target = picked;
+              requestedToolkit = picked;
+            }
+
+            const outcome = yield* advanceConnectGate({ toolkit: target.value, interactive });
+            if (outcome.kind === 'failed') {
+              yield* ui.log.error(
+                `Could not start authorization for ${target.value}. Run \`composio onboard\` again to retry.`
+              );
+            }
+            mintedRedirectUrl =
+              outcome.kind === 'pending'
+                ? Option.some({
+                    toolkit: outcome.toolkit,
+                    url: outcome.url,
+                    connectedAccountId: outcome.connectedAccountId,
+                  })
+                : Option.none<MintedLink>();
+            return 'attempted' as const;
+          }
+
+          case 'execute': {
+            const task = taskFor(state);
+            if (Option.isNone(task)) return 'stop' as const;
+
+            // Consent for a target the caller never named. `--yes` pre-answers it, which is what the
+            // flag already promises; the default is `false` so a mis-wired path degrades to not
+            // reading anything.
+            let confirmed = params.yes;
+            if (!confirmed && Option.isNone(requestedToolkit) && interactive) {
+              confirmed = yield* ui.confirm(
+                `Run ${task.value.read.slug} against your connected ${state.toolkit ?? task.value.toolkit} account?`,
+                { defaultValue: false }
+              );
+            }
+            if (!mayRunReadDemo({ interactive, requestedToolkit, confirmed })) {
+              return 'stop' as const;
+            }
+
+            const outcome = yield* advanceExecuteGate({ task: task.value, interactive });
+            if (outcome.kind === 'failed') {
+              // The document is the only signal a non-decorating caller gets, and "attempted and
+              // failed" has to be distinguishable from "not attempted" — otherwise a polling agent
+              // re-fires a real API read on every iteration forever.
+              demoFailure = Option.some(task.value.read.slug);
+            }
+            return 'attempted' as const;
+          }
+        }
+      });
+
     for (let advanced = 0; advanced < maxAdvances; advanced += 1) {
       // The gate this iteration is about to attempt. Re-resolving to the same gate afterwards means
       // no fact moved, and re-running the delegate would only repeat its side effect — a second
@@ -480,85 +538,8 @@ const runOnboard = (params: {
       const attempted = state.nextGate;
       if (attempted === null) break;
 
-      if (attempted === 'login') {
-        const outcome = yield* advanceLoginGate({ yes: params.yes, json: params.json });
-        loginContext = outcome.kind === 'pending' ? { loginUrl: outcome.loginUrl } : {};
-        if (outcome.kind === 'linked') {
-          loginEmail = outcome.email;
-        }
-        if (outcome.kind === 'failed') {
-          yield* ui.log.error('Login did not complete. Run `composio onboard` again to retry.');
-        }
-        state = yield* resolve(requestedToolkit);
-        if (state.nextGate === attempted) break;
-        continue;
-      }
+      if ((yield* attemptGate(attempted)) === 'stop') break;
 
-      if (attempted === 'connect') {
-        if (state.gates.connect.status === 'blocked' || state.gates.connect.status === 'unknown') {
-          break;
-        }
-
-        if (Option.isNone(requestedToolkit)) {
-          // The picker is the only way to resolve a toolkit here, and it needs a human. Checked
-          // directly rather than relying on `ui.select` defaulting — that defaulting is exactly how
-          // a piped invocation would pick a task and then fire a real API call.
-          if (!interactive) break;
-          const picked = yield* pickStarterTask;
-          // Cancelling the picker is not a choice. Adopting the first entry here would authorize a
-          // provider the user just declined to choose.
-          if (Option.isNone(picked)) break;
-          requestedToolkit = picked;
-        }
-
-        const connectToolkit = Option.getOrUndefined(requestedToolkit);
-        if (connectToolkit === undefined) break;
-
-        const outcome = yield* advanceConnectGate({
-          toolkit: connectToolkit,
-          json: params.json,
-        });
-        if (outcome.kind === 'failed') {
-          yield* ui.log.error(
-            `Could not start authorization for ${connectToolkit}. Run \`composio onboard\` again to retry.`
-          );
-        }
-        mintedRedirectUrl =
-          outcome.kind === 'pending'
-            ? Option.some({
-                toolkit: outcome.toolkit,
-                url: outcome.url,
-                connectedAccountId: outcome.connectedAccountId,
-              })
-            : Option.none<MintedLink>();
-        state = yield* resolve(requestedToolkit);
-        if (state.nextGate === attempted) break;
-        continue;
-      }
-
-      // The execute gate.
-      const task = taskFor(state);
-      if (Option.isNone(task)) break;
-
-      // Door A's consent for a target the caller never named. `--yes` pre-answers it, which is what
-      // the flag already promises; the default is `false` so a mis-wired path degrades to not
-      // reading anything.
-      let confirmed = params.yes;
-      if (!confirmed && Option.isNone(requestedToolkit) && interactive) {
-        confirmed = yield* ui.confirm(
-          `Run ${task.value.read.slug} against your connected ${state.toolkit ?? task.value.toolkit} account?`,
-          { defaultValue: false }
-        );
-      }
-      if (!mayRunReadDemo({ canPrompt, json: params.json, requestedToolkit, confirmed })) break;
-
-      const outcome = yield* advanceExecuteGate({ task: task.value, json: params.json });
-      if (outcome.kind === 'failed') {
-        // The document is the only signal a non-decorating caller gets, and "attempted and failed"
-        // has to be distinguishable from "not attempted" — otherwise a polling agent re-fires a
-        // real API read on every iteration forever.
-        demoFailure = Option.some(task.value.read.slug);
-      }
       state = yield* resolve(requestedToolkit);
       if (state.nextGate === attempted) break;
     }
