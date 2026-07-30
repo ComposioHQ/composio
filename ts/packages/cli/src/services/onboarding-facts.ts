@@ -132,7 +132,32 @@ export type GatherOnboardingFactsParams = {
    * rather than paying for a field the state document only decorates with.
    */
   readonly email?: Option.Option<string>;
+  /**
+   * The authorization URL this invocation just minted, if it created a link itself.
+   *
+   * The pending link still comes from the API, so it cannot describe a different moment than the
+   * ACTIVE set — this only fills in the one field the list endpoint deliberately withholds (it lives
+   * alongside the OAuth tokens the item schema strips). Without it, an invocation that just printed
+   * an authorization URL would emit a document telling the caller to go get a fresh one.
+   */
+  readonly mintedRedirectUrl?: Option.Option<{
+    readonly toolkit: string;
+    readonly url: string;
+  }>;
 };
+
+/** Attach a just-minted authorization URL to the live pending link it belongs to. */
+const withMintedRedirectUrl = (
+  pendingLink: Option.Option<PendingLink>,
+  minted: Option.Option<{ readonly toolkit: string; readonly url: string }>
+): Option.Option<PendingLink> =>
+  Option.map(pendingLink, link =>
+    Option.match(minted, {
+      onNone: () => link,
+      onSome: value =>
+        value.toolkit === link.toolkit ? { ...link, redirectUrl: Option.some(value.url) } : link,
+    })
+  );
 
 export const gatherOnboardingFacts = (params: GatherOnboardingFactsParams) =>
   Effect.gen(function* () {
@@ -153,7 +178,10 @@ export const gatherOnboardingFacts = (params: GatherOnboardingFactsParams) =>
       email: params.email ?? Option.none(),
       orgId: userContext.data.orgId,
       connectedToolkits: loggedIn ? connections.connectedToolkits : 'unknown',
-      pendingLink: connections.pendingLink,
+      pendingLink: withMintedRedirectUrl(
+        connections.pendingLink,
+        params.mintedRedirectUrl ?? Option.none()
+      ),
       // The store writes both halves together, so they only disagree in a hand-edited config. A
       // missing `last_execution` then reads as "not executed", which replays one demo rather than
       // reporting a completion the config cannot evidence.

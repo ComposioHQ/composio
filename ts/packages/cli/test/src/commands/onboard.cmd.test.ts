@@ -892,6 +892,124 @@ describe('CLI: composio onboard', () => {
     });
   });
 
+  // ── The authorization URL the connect gate just minted ──────────────────────
+
+  describe('a link created on this invocation', () => {
+    const recorded = recordingUI({ tty: { stdin: false, stdout: false, stderr: true } });
+    // Starts empty so the connect gate advances, then grows the way the real API would once the
+    // link exists. The test layer reads this array on every list call.
+    const liveAccounts: Array<ConnectedAccountItem> = [];
+
+    layer(
+      TestLive(
+        liveInput({ terminalUI: recorded.ui, connectedAccountsData: { items: liveAccounts } })
+      )
+    )(it => {
+      it.scoped(
+        'reports the URL it just printed instead of telling the caller to re-mint one',
+        () =>
+          Effect.gen(function* () {
+            recorded.reset();
+            liveAccounts.length = 0;
+            vi.spyOn(linkCmd, 'runConnectedAccountsLink').mockImplementation(() =>
+              Effect.sync(() => {
+                liveAccounts.push(account({ id: 'con_github_pending', status: 'INITIATED' }));
+                return {
+                  kind: 'pending',
+                  connectedAccountId: 'con_github_pending',
+                  redirectUrl: 'https://app.composio.dev/link?token=lt_fresh',
+                  toolkit: 'github',
+                };
+              })
+            );
+
+            yield* cli(['onboard', '--toolkit', 'github']);
+
+            const document = soleDocument(recorded.stdout);
+            expect(document.gates.connect.status).toBe('blocked');
+            // The list endpoint withholds the redirect URL, so without threading it through this
+            // would be null and the guidance would point at `composio link`.
+            expect(document.gates.connect.redirect_url).toBe(
+              'https://app.composio.dev/link?token=lt_fresh'
+            );
+            expect(document.human_action).toContain('https://app.composio.dev/link?token=lt_fresh');
+            expect(document.human_action).not.toContain('composio link github');
+          })
+      );
+    });
+  });
+
+  // ── --reset ─────────────────────────────────────────────────────────────────
+
+  describe('--reset', () => {
+    const recorded = recordingUI({ tty: { stdin: false, stdout: false, stderr: true } });
+
+    layer(
+      TestLive(
+        liveInput({
+          terminalUI: recorded.ui,
+          connectedAccountsData: { items: [account({ id: 'con_github', status: 'ACTIVE' })] },
+          cliUserConfig: {
+            onboarding: {
+              hasExecuted: true,
+              lastExecution: { slug: 'GITHUB_GET_THE_AUTHENTICATED_USER', at: '2026-07-01Z' },
+            },
+          },
+        })
+      )
+    )(it => {
+      it.scoped('clears the recorded execution and re-resolves from the cleared facts', () =>
+        Effect.gen(function* () {
+          recorded.reset();
+
+          yield* cli(['onboard', '--reset', '--status', '--toolkit', 'github']);
+
+          const document = soleDocument(recorded.stdout);
+          expect(document.onboarded).toBe(false);
+          expect(document.next_gate).toBe('execute');
+          expect(document.gates.execute.status).toBe('unsatisfied');
+          expect(document.gates.execute.last_executed_at).toBeNull();
+        })
+      );
+    });
+  });
+
+  // ── --status matches what a bare run would have reported before advancing ────
+
+  describe('--status reports the pre-advance state', () => {
+    const statusRun = recordingUI({ tty: { stdin: false, stdout: false, stderr: true } });
+    const bareRun = recordingUI({ tty: { stdin: false, stdout: false, stderr: true } });
+
+    const input = (terminalUI: TestLiveInput['terminalUI']) =>
+      liveInput({
+        terminalUI,
+        connectedAccountsData: {
+          items: [account({ id: 'con_github_pending', status: 'INITIATED' })],
+        },
+      });
+
+    layer(TestLive(input(statusRun.ui)))(it => {
+      it.scoped('resolves with --status', () =>
+        Effect.gen(function* () {
+          statusRun.reset();
+          yield* cli(['onboard', '--status', '--toolkit', 'github']);
+          expect(statusRun.stdout).toHaveLength(1);
+        })
+      );
+    });
+
+    layer(TestLive(input(bareRun.ui)))(it => {
+      it.scoped('matches a bare run that could not advance past the blocked gate', () =>
+        Effect.gen(function* () {
+          bareRun.reset();
+          yield* cli(['onboard', '--toolkit', 'github']);
+
+          expect(soleDocument(bareRun.stdout)).toStrictEqual(soleDocument(statusRun.stdout));
+        })
+      );
+    });
+  });
+
   // ── R12/R13: one document, always discriminated ─────────────────────────────
 
   describe('the document contract', () => {

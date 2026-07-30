@@ -264,7 +264,7 @@ const advanceConnectGate = (params: { readonly toolkit: string; readonly json: b
     const { canPrompt } = yield* ui.capabilities;
     const interactive = canPrompt && !params.json;
 
-    return yield* runConnectedAccountsLink({
+    const outcome = yield* runConnectedAccountsLink({
       toolkit: Option.some(params.toolkit),
       authConfig: Option.none(),
       userId: Option.none(),
@@ -280,6 +280,12 @@ const advanceConnectGate = (params: { readonly toolkit: string; readonly json: b
       // carries the state document, and "stdout carries only the document" becomes false.
       quiet: true,
     }).pipe(Effect.either);
+
+    // The authorization URL is the one thing the connect gate cannot re-derive from the API on the
+    // next resolve, so it travels back with the outcome.
+    return outcome._tag === 'Right' && outcome.right.kind === 'pending'
+      ? Option.some({ toolkit: outcome.right.toolkit, url: outcome.right.redirectUrl })
+      : Option.none<{ readonly toolkit: string; readonly url: string }>();
   });
 
 const advanceExecuteGate = (params: { readonly task: StarterTask; readonly json: boolean }) =>
@@ -309,11 +315,13 @@ const advanceExecuteGate = (params: { readonly task: StarterTask; readonly json:
 
     if (result._tag === 'Left') {
       yield* ui.log.error(`The demo tool did not run. ${params.task.read.slug} failed.`);
-      return Option.none<never>();
+      return;
     }
 
+    // Door B's condition 3: the create is offered only after the read actually succeeded, which is
+    // a distinction this delegate could not make before it returned a typed outcome.
     if (result.right.kind !== 'tool_execution') {
-      return Option.none<never>();
+      return;
     }
 
     const summary = params.task.read.summarize?.(
@@ -322,8 +330,6 @@ const advanceExecuteGate = (params: { readonly task: StarterTask; readonly json:
     yield* ui.log.success(summary ?? `${params.task.read.slug} ran successfully.`);
 
     yield* offerReversibleCreate({ task: params.task, json: params.json, surface: 'root' });
-
-    return Option.some(true as const);
   });
 
 const runOnboard = (params: {
@@ -351,26 +357,25 @@ const runOnboard = (params: {
 
     let requestedToolkit = resolveRequestedToolkit({ toolkit: toolkitOpt, task: taskOpt });
     let loginContext: NextCommandContext = {};
+    let mintedRedirectUrl = Option.none<{ readonly toolkit: string; readonly url: string }>();
 
     const resolve = (toolkit: Option.Option<string>) =>
       Effect.map(
-        gatherOnboardingFacts({ requestedToolkit: toolkit, invocationSkips: params.skip }),
+        gatherOnboardingFacts({
+          requestedToolkit: toolkit,
+          invocationSkips: params.skip,
+          mintedRedirectUrl,
+        }),
         resolveOnboardingState
       );
 
     let state = yield* resolve(requestedToolkit);
 
-    if (params.status) {
-      // Report and return without advancing anything.
-      const step = nextAgentCommand(state, requestedToolkit, loginContext);
-      yield* renderOnboardHuman(state, step);
-      yield* ui.output(serializeOnboardState(state, step), { force: params.json });
-      return;
-    }
-
     // Interactively, walk as far as the gates allow so a human is not asked to re-run three times.
     // Non-prompting, advance at most one gate so an agent's loop stays externally visible.
-    const maxAdvances = interactive ? 3 : 1;
+    // `--status` advances nothing at all, so it simply skips the loop rather than returning early —
+    // the emitter below stays the only place a document is written.
+    const maxAdvances = params.status ? 0 : interactive ? 3 : 1;
 
     for (let advanced = 0; advanced < maxAdvances; advanced += 1) {
       if (state.nextGate === null) break;
@@ -402,7 +407,10 @@ const runOnboard = (params: {
         const connectToolkit = Option.getOrUndefined(requestedToolkit);
         if (connectToolkit === undefined) break;
 
-        yield* advanceConnectGate({ toolkit: connectToolkit, json: params.json });
+        mintedRedirectUrl = yield* advanceConnectGate({
+          toolkit: connectToolkit,
+          json: params.json,
+        });
         state = yield* resolve(requestedToolkit);
         continue;
       }
