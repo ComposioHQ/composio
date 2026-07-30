@@ -161,10 +161,6 @@ managed OAuth app is Composio's own and shared across every Composio user, so Co
 binding itself rather than delegating the guarantee to any one project. A managed connection with a
 verifier URL set is covered by both checks.
 
-**The endpoint is a dependency of the connect flow.** Composio fails closed: if it cannot read the
-project config, or the verifier endpoint is unreachable, the connection does not activate. Treat the
-endpoint as a production dependency.
-
 ### Session lifetime
 
 `session_uri` is valid for ten minutes from the redirect and can be redeemed once. Redeem it on the
