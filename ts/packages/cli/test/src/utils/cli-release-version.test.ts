@@ -157,12 +157,18 @@ describe('CLI release version authority', () => {
         const workflow = yield* fs.readFileString(
           path.join(repositoryRoot, '.github', 'workflows', 'build-cli-binaries.yml')
         );
+        const buildAllBinariesScript = yield* fs.readFileString(
+          path.join(repositoryRoot, 'ts', 'packages', 'cli', 'scripts', 'build-all-binaries.ts')
+        );
         const verifyVersionStep = workflow.match(
           /- name: Verify binary version([\s\S]*?)- name: Test binary/
         )?.[1];
 
         expect(cliPackageJson.version).toBe('0.0.0-development');
         expect(workflow).toContain('RELEASE_TAG: ${{ needs.prepare.outputs.release_tag }}');
+        expect(buildAllBinariesScript).toContain(
+          '...buildCliReleaseVersionDefineArgs(process.env.RELEASE_TAG)'
+        );
         expect(verifyVersionStep).toContain("if: matrix.target == 'bun-linux-x64'");
         expect(verifyVersionStep).toContain('expected_version#@composio/cli@');
       })
