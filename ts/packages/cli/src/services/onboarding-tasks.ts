@@ -14,8 +14,6 @@ export type StarterTask = {
   readonly id: string;
   readonly label: string;
   readonly toolkit: string;
-  readonly authType: 'oauth';
-  readonly searchQuery: string;
   readonly read: {
     readonly slug: string;
     readonly args: Readonly<Record<string, unknown>>;
@@ -59,8 +57,6 @@ export const ONBOARD_TASKS: ReadonlyArray<StarterTask> = [
     id: 'check-my-github',
     label: 'Check my GitHub account',
     toolkit: 'github',
-    authType: 'oauth',
-    searchQuery: 'github profile',
     read: {
       slug: 'GITHUB_GET_THE_AUTHENTICATED_USER',
       args: {},
@@ -87,8 +83,6 @@ export const ONBOARD_TASKS: ReadonlyArray<StarterTask> = [
     id: 'read-my-inbox',
     label: 'Read my latest emails',
     toolkit: 'gmail',
-    authType: 'oauth',
-    searchQuery: 'gmail fetch emails',
     read: {
       slug: 'GMAIL_FETCH_EMAILS',
       args: { max_results: 3, verbose: false },
@@ -104,8 +98,6 @@ export const ONBOARD_TASKS: ReadonlyArray<StarterTask> = [
     id: 'list-slack-channels',
     label: 'List my Slack channels',
     toolkit: 'slack',
-    authType: 'oauth',
-    searchQuery: 'slack list channels',
     read: {
       slug: 'SLACK_LIST_ALL_CHANNELS',
       args: { limit: 10 },
@@ -119,8 +111,6 @@ export const ONBOARD_TASKS: ReadonlyArray<StarterTask> = [
     id: 'see-my-linear-issues',
     label: 'See my Linear issues',
     toolkit: 'linear',
-    authType: 'oauth',
-    searchQuery: 'linear list issues',
     read: {
       slug: 'LINEAR_LIST_LINEAR_ISSUES',
       args: { first: 5 },
@@ -146,8 +136,6 @@ export const ONBOARD_TASKS: ReadonlyArray<StarterTask> = [
     id: 'search-my-notion',
     label: 'Search my Notion pages',
     toolkit: 'notion',
-    authType: 'oauth',
-    searchQuery: 'notion search pages',
     read: {
       slug: 'NOTION_SEARCH_NOTION_PAGE',
       args: { query: '', page_size: 5 },
@@ -192,13 +180,4 @@ export const findTaskByFreeText = (text: string): Option.Option<StarterTask> => 
   }
 
   return Arr.findFirst(ONBOARD_TASKS, task => task.label.toLowerCase().includes(normalized));
-};
-
-/** Find a task by its registry id. */
-export const findTaskById = (id: string): Option.Option<StarterTask> => {
-  const normalized = id.trim().toLowerCase();
-  if (normalized.length === 0) {
-    return Option.none();
-  }
-  return Arr.findFirst(ONBOARD_TASKS, task => task.id === normalized);
 };

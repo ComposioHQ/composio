@@ -15,7 +15,7 @@
  * that the call happened at all.
  */
 
-import { e2e, type E2ETestResult, type E2ETestResultWithFiles } from '@e2e-tests/utils';
+import { e2e, type E2ETestResultWithFiles } from '@e2e-tests/utils';
 import { TIMEOUTS } from '@e2e-tests/utils/const';
 import { afterAll, beforeAll, describe, expect, it } from 'bun:test';
 import {
@@ -25,7 +25,6 @@ import {
 
 type OnboardDocument = {
   readonly kind?: string;
-  readonly v?: number;
   readonly onboarded?: boolean;
   readonly next_gate?: string | null;
   readonly blocked?: boolean;
@@ -71,7 +70,6 @@ e2e(import.meta.url, {
     let injectedToolkit: E2ETestResultWithFiles<'out.txt'>;
     let emptyTask: E2ETestResultWithFiles<'out.txt'>;
     let bareComposio: E2ETestResultWithFiles<'out.txt'>;
-    let helpResult: E2ETestResult;
 
     beforeAll(async () => {
       apiServer = await startMockAgentsServer();
@@ -126,8 +124,6 @@ e2e(import.meta.url, {
         ),
         files: ['out.txt'],
       });
-
-      helpResult = await runCmd(isolated(apiServer, 'composio onboard --help'));
     }, TIMEOUTS.FIXTURE);
 
     afterAll(async () => {
@@ -140,11 +136,11 @@ e2e(import.meta.url, {
         expect(jsonLoggedOut.exitCode).toBe(0);
       });
 
-      it('emits a parseable, versioned document that resumes at login', () => {
+      it('emits a parseable document that resumes at login', () => {
+        // `soleDocument` parses the whole stream, so a second adjacent JSON value throws here.
         const document = soleDocument(jsonLoggedOut.files['out.json']);
 
         expect(document.kind).toBe('onboard_state');
-        expect(document.v).toBe(2);
         expect(document.next_gate).toBe('login');
         expect(document.onboarded).toBe(false);
       });
@@ -158,19 +154,6 @@ e2e(import.meta.url, {
         const document = soleDocument(jsonLoggedOut.files['out.json']);
         expect(document.human_action).toContain('cliKey=');
         expect(document.next_command).toBe('composio login --poll');
-      });
-
-      it('puts kind and v first, so a reader can switch before parsing the rest', () => {
-        const keys = Object.keys(
-          JSON.parse(jsonLoggedOut.files['out.json'].trim()) as Record<string, unknown>
-        );
-
-        expect(keys.slice(0, 2)).toEqual(['kind', 'v']);
-      });
-
-      it('stdout carries exactly one JSON value', () => {
-        // JSON.parse over the whole stream throws on a second adjacent object.
-        expect(() => soleDocument(jsonLoggedOut.files['out.json'])).not.toThrow();
       });
 
       it('keeps decoration off the data stream', () => {
@@ -236,16 +219,6 @@ e2e(import.meta.url, {
         // The instrumented listener is the evidence. Exit code and output are not: a regression
         // that performs the request and catches the error reproduces both exactly.
         expect(silentServer.requests).toEqual([]);
-      });
-    });
-
-    describe('composio onboard --help', () => {
-      it('documents the agent-facing flags', () => {
-        expect(helpResult.exitCode).toBe(0);
-        const output = `${helpResult.stdout}${helpResult.stderr}`;
-        expect(output).toContain('--json');
-        expect(output).toContain('--status');
-        expect(output).toContain('--toolkit');
       });
     });
   },

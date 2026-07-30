@@ -3,7 +3,6 @@ import { Option } from 'effect';
 import {
   ONBOARD_TASKS,
   findTaskByFreeText,
-  findTaskById,
   findTaskByToolkit,
   onboardToolkitSlugs,
 } from 'src/services/onboarding-tasks';
@@ -35,8 +34,10 @@ describe('onboarding-tasks', () => {
       expect(Option.getOrThrow(findTaskByFreeText('read my latest')).id).toBe('read-my-inbox');
     });
 
-    it('matches a task id exactly', () => {
-      expect(Option.getOrThrow(findTaskByFreeText('read-my-inbox')).id).toBe('read-my-inbox');
+    it('matches every registry id exactly', () => {
+      for (const task of ONBOARD_TASKS) {
+        expect(Option.getOrThrow(findTaskByFreeText(task.id))).toStrictEqual(task);
+      }
     });
 
     it('returns none for text matching no entry', () => {
@@ -46,18 +47,6 @@ describe('onboarding-tasks', () => {
     it('returns none for the empty string rather than matching every label', () => {
       expect(findTaskByFreeText('')).toStrictEqual(Option.none());
       expect(findTaskByFreeText('  ')).toStrictEqual(Option.none());
-    });
-  });
-
-  describe('findTaskById', () => {
-    it('round-trips every registry id', () => {
-      for (const task of ONBOARD_TASKS) {
-        expect(Option.getOrThrow(findTaskById(task.id))).toStrictEqual(task);
-      }
-    });
-
-    it('returns none for an unknown id', () => {
-      expect(findTaskById('not-a-task')).toStrictEqual(Option.none());
     });
   });
 
@@ -120,12 +109,6 @@ describe('onboarding-tasks', () => {
       for (const task of ONBOARD_TASKS) {
         expect(task.read.summarize?.({})).toBeUndefined();
         expect(task.create?.summarize?.({})).toBeUndefined();
-      }
-    });
-
-    it('declares oauth as the only auth type', () => {
-      for (const task of ONBOARD_TASKS) {
-        expect(task.authType).toBe('oauth');
       }
     });
 

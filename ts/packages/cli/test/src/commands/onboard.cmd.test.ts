@@ -227,7 +227,6 @@ describe('CLI: composio onboard', () => {
 
             const document = soleDocument(recorded.stdout);
             expect(document.kind).toBe('onboard_state');
-            expect(document.v).toBe(2);
             expect(document.next_gate).toBe('login');
             expect(selectSpy).not.toHaveBeenCalled();
           })
@@ -315,9 +314,9 @@ describe('CLI: composio onboard', () => {
     });
   });
 
-  // ── R8: the disagreement test ───────────────────────────────────────────────
+  // ── Mode independence ───────────────────────────────────────────────────────
 
-  describe('R8 — gates and onboarded are identical across modes', () => {
+  describe('gates and onboarded are identical across invocation modes', () => {
     const FACT_SETS = [
       { name: 'logged out', items: [] as ReadonlyArray<ConnectedAccountItem>, executed: false },
       {
@@ -384,9 +383,9 @@ describe('CLI: composio onboard', () => {
     }
   });
 
-  // ── Door A: the first execute ───────────────────────────────────────────────
+  // ── The first execute ───────────────────────────────────────────────────────
 
-  describe('Door A — the read demo fires only when the caller named the target', () => {
+  describe('the read demo fires only when the caller named the target', () => {
     const connected = [account({ id: 'con_github', status: 'ACTIVE' })];
 
     describe('--json with no toolkit argument', () => {
@@ -994,9 +993,9 @@ describe('CLI: composio onboard', () => {
     });
   });
 
-  // ── Door B: the optional reversible create ──────────────────────────────────
+  // ── The optional reversible create ──────────────────────────────────────────
 
-  describe('Door B — the create can never fire with no human watching', () => {
+  describe('the create can never fire with no human watching', () => {
     const connected = [account({ id: 'con_github', status: 'ACTIVE' })];
     const readSucceeded = {
       kind: 'tool_execution' as const,
@@ -1181,7 +1180,7 @@ describe('CLI: composio onboard', () => {
             yield* cli(['onboard', '--toolkit', 'github']);
 
             // The read succeeded and the create was attempted; the create's failure is the branch
-            // under test, and the only failure-shaped Door B case covered before was a cancelled
+            // under test, and the only failure-shaped create case covered before was a cancelled
             // prompt that never reaches the execute call at all.
             const slugs = executeSpy.mock.calls.map(call => call[0].slug);
             expect(slugs).toContain('GITHUB_GET_THE_AUTHENTICATED_USER');
@@ -1544,7 +1543,6 @@ describe('CLI: composio onboard', () => {
 
             const document = soleDocument(recorded.stdout);
             expect(document.kind).toBe('onboard_state');
-            expect(document.v).toBe(2);
             // No emitted command is ever a template.
             expect(document.next_command ?? '').not.toContain('<');
             expect(document.human_action ?? '').not.toContain('<');
@@ -1617,7 +1615,7 @@ describe('CLI: composio onboard', () => {
             noBrowser: false,
             quiet: true,
           });
-          // Two gates in one attended session, which is the whole point of the front door.
+          // Two gates in one attended session, so a human is not asked to re-run.
           expect(executeSpy).toHaveBeenCalledTimes(1);
         })
       );
@@ -1924,9 +1922,10 @@ describe('CLI: composio onboard', () => {
 
               yield* cli(['onboard', '--toolkit', 'github', '--skip', 'connect']);
 
+              // The resolved `skipped` status is asserted in `onboarding-state.test.ts`; what only
+              // this layer can show is that no link was attempted.
               expect(linkSpy).not.toHaveBeenCalled();
               expect(executeSpy).toHaveBeenCalledTimes(1);
-              expect(soleDocument(recorded.stdout).gates.connect.status).toBe('skipped');
             })
           );
         }
@@ -1982,7 +1981,7 @@ describe('CLI: composio onboard', () => {
 
   describe('serializeOnboardState', () => {
     layer(TestLive({ commandRunner: noHostsRunner }))(it => {
-      it.effect('puts kind and v first so a reader can switch before parsing the rest', () =>
+      it.effect('puts kind first so a reader can switch before parsing the rest', () =>
         Effect.sync(() => {
           const serialized = serializeOnboardState(
             {
@@ -2007,9 +2006,7 @@ describe('CLI: composio onboard', () => {
             { kind: 'done' }
           );
 
-          expect(
-            Object.keys(JSON.parse(serialized) as Record<string, unknown>).slice(0, 2)
-          ).toEqual(['kind', 'v']);
+          expect(Object.keys(JSON.parse(serialized) as Record<string, unknown>)[0]).toBe('kind');
         })
       );
     });

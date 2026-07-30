@@ -5,33 +5,21 @@ import type { GateStatus, OnboardingState } from 'src/services/onboarding-state'
 
 /**
  * The two renderers for `composio onboard`: the state document for stdout and the human text for
- * stderr. Both read the same resolved state, so they cannot disagree about *state* — only about
- * what to say next, and that comes from the same `NextStep`.
- *
- * Kept out of `onboard.cmd.ts` so that file stays a control-flow file.
+ * stderr. Both read the same resolved state and the same `NextStep`, so they cannot disagree.
  */
 
-/**
- * The document's contract version.
- *
- * An earlier build shipped `v: 1` with the shape `{ state, completed, remaining, next }`. This is a
- * different document under the same name, so it takes the next version rather than silently
- * redefining the old one.
- */
-export const ONBOARD_STATE_VERSION = 2;
 export const ONBOARD_STATE_KIND = 'onboard_state';
 
 /**
  * The wire shape. Snake_case here and camelCase everywhere inside the CLI, so the serializer is the
  * single place the two conventions meet.
  *
- * `kind` and `v` are the first two fields of every document, including the all-gates-pass one:
- * onboard's stdout is a stream an agent multiplexes with the stdout of the commands onboard
- * delegates to, and those carry their own `kind` for the same reason.
+ * `kind` is the first field of every document, including the all-gates-pass one: onboard's stdout is
+ * a stream an agent multiplexes with the stdout of the commands onboard delegates to, and those
+ * carry their own `kind` for the same reason.
  */
 export type OnboardStateDocument = {
   readonly kind: typeof ONBOARD_STATE_KIND;
-  readonly v: typeof ONBOARD_STATE_VERSION;
   readonly onboarded: boolean;
   readonly next_gate: string | null;
   readonly blocked: boolean;
@@ -75,6 +63,21 @@ export type OnboardStateDocument = {
   readonly available_toolkits?: ReadonlyArray<string>;
 };
 
+const humanAction = (step: NextStep): string | null =>
+  step.kind === 'blocked' || step.kind === 'deferred' ? step.humanAction : null;
+
+/** A blocked step carries a command only when one genuinely advances past the block. */
+const nextCommand = (step: NextStep): string | null => {
+  switch (step.kind) {
+    case 'command':
+      return step.command;
+    case 'blocked':
+      return step.command ?? null;
+    default:
+      return null;
+  }
+};
+
 export const onboardStateDocument = (
   state: OnboardingState,
   step: NextStep
@@ -83,13 +86,12 @@ export const onboardStateDocument = (
 
   return {
     kind: ONBOARD_STATE_KIND,
-    v: ONBOARD_STATE_VERSION,
     onboarded: state.onboarded,
     next_gate: state.nextGate,
     blocked,
     blocked_reason: blocked ? step.reason : null,
-    human_action: step.kind === 'blocked' || step.kind === 'deferred' ? step.humanAction : null,
-    next_command: step.kind === 'command' ? step.command : blocked ? (step.command ?? null) : null,
+    human_action: humanAction(step),
+    next_command: nextCommand(step),
     task: state.task,
     toolkit: state.toolkit,
     gates: {
