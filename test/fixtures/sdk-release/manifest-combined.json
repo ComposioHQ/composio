@@ -84,13 +84,26 @@
   },
   "openai_generation": {
     "provider": "openai",
+    "generation_key": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "input_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
     "model": "gpt-5.5-2026-04-23",
+    "model_family": "gpt-5.5",
+    "model_sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+    "model_policy_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
     "response_id": "resp_789",
-    "prompt_version": "sdk-changelog/v1",
+    "prompt_version": "sdk-release-changelog-prompt/v1",
     "prompt_sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
-    "schema_version": "sdk-changelog/v1",
+    "schema_version": "sdk-release-changelog/v1",
     "schema_sha256": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
-    "generated_at": "2026-07-30T00:00:00.000Z"
+    "output_sha256": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+    "rendered_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "usage": {
+      "input_tokens": 10,
+      "output_tokens": 20,
+      "total_tokens": 30
+    },
+    "generated_at": "2026-07-30T00:00:00.000Z",
+    "reset_count": 0
   },
   "toolchains": { "node": "24.17.0", "pnpm": "11.8.0", "python": "3.13.5", "uv": "0.8.3" },
   "prepare_run": {

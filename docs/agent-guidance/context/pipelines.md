@@ -18,20 +18,67 @@ Reference for all GitHub Actions workflows related to docs.
 
 ## SDK/Build Workflows
 
-| Workflow                  | File                        | Trigger                 | What it does                                                      |
-| ------------------------- | --------------------------- | ----------------------- | ----------------------------------------------------------------- |
-| **Generate SDK Docs**     | `generate-sdk-docs.yml`     | Manual, schedule        | Generates SDK reference documentation.                            |
-| **TS Build**              | `ts.build.yml`              | PR changes to `ts/`     | Builds TypeScript packages.                                       |
-| **TS Test**               | `ts.test.yml`               | PR changes to `ts/`     | Runs TypeScript tests.                                            |
-| **TS E2E**                | `ts.test-e2e.yml`           | PR changes to `ts/`     | Runs E2E tests (Node, Deno, Cloudflare).                          |
-| **TS Typecheck**          | `ts.typecheck.yml`          | PR changes to `ts/`     | TypeScript type checking for SDK.                                 |
-| **TS Release**            | `ts.release.yml`            | Push to `next`, manual  | Creates Changesets release PRs and publishes TypeScript packages. |
-| **TS Audit**              | `ts.audit.yml`              | Cron                    | Security audit of npm dependencies.                               |
-| **Build CLI Binaries**    | `build-cli-binaries.yml`    | Release                 | Builds CLI binaries for distribution.                             |
-| **CLI Test Installation** | `cli.test-installation.yml` | PR changes to CLI       | Tests CLI installation flow.                                      |
-| **Python Check**          | `py.check.yaml`             | PR changes to `python/` | Linting and type checking for Python SDK.                         |
-| **Python Test**           | `py.test.yml`               | PR changes to `python/` | Runs Python tests.                                                |
-| **Python Release**        | `py.release.yml`            | `py@*` tags, manual     | Builds and publishes Python packages.                             |
+| Workflow                    | File                        | Trigger                 | What it does                                                                                     |
+| --------------------------- | --------------------------- | ----------------------- | ------------------------------------------------------------------------------------------------ |
+| **Generate SDK Docs**       | `generate-sdk-docs.yml`     | Manual, schedule        | Generates SDK reference documentation.                                                           |
+| **TS Build**                | `ts.build.yml`              | PR changes to `ts/`     | Builds TypeScript packages.                                                                      |
+| **TS Test**                 | `ts.test.yml`               | PR changes to `ts/`     | Runs TypeScript tests.                                                                           |
+| **TS E2E**                  | `ts.test-e2e.yml`           | PR changes to `ts/`     | Runs E2E tests (Node, Deno, Cloudflare).                                                         |
+| **TS Typecheck**            | `ts.typecheck.yml`          | PR changes to `ts/`     | TypeScript type checking for SDK.                                                                |
+| **TS Release**              | `ts.release.yml`            | Push to `next`, manual  | Creates Changesets release PRs and publishes TypeScript packages.                                |
+| **TS Audit**                | `ts.audit.yml`              | Cron                    | Security audit of npm dependencies.                                                              |
+| **Build CLI Binaries**      | `build-cli-binaries.yml`    | Release                 | Builds CLI binaries for distribution.                                                            |
+| **CLI Test Installation**   | `cli.test-installation.yml` | PR changes to CLI       | Tests CLI installation flow.                                                                     |
+| **Python Check**            | `py.check.yaml`             | PR changes to `python/` | Linting and type checking for Python SDK.                                                        |
+| **Python Test**             | `py.test.yml`               | PR changes to `python/` | Runs Python tests.                                                                               |
+| **Python Release**          | `py.release.yml`            | `py@*` tags, manual     | Builds and publishes Python packages.                                                            |
+| **SDK Release Coordinator** | `sdk.release.yml`           | Manual                  | Prepares a shadow SDK release PR and reproducibility evidence; registry writers remain disabled. |
+
+## SDK Release Coordinator Shadow Mode
+
+`.github/workflows/sdk.release.yml` is the single typed entry point for the
+future SDK coordinator. During shadow mode, only `prepare` is operational.
+`publish`, `resume`, and `verify` fail closed, and the
+`SDK_RELEASE_PUBLISH_ENABLED` repository variable remains false. The workflow
+has no npm or PyPI publisher and receives no registry OIDC permission.
+
+A preparation is keyed by a stable `release_id` and targets
+`release/sdk-<release_id>` at `next`. Only one machine-marked preparation PR
+lineage may be open. A retry updates that compatible PR with a normal
+fast-forward push; stale or divergent branches stop before the write.
+
+Preparation builds the selected TypeScript and/or Python artifacts twice in
+clean worktrees. The primary files are retained only after the
+verification-only build reproduces the complete filename and SHA-256 set; the
+second build is then discarded. The preparation manifest records selected and
+skipped ecosystems, versions, primary artifact hashes, changelog metadata, and
+the workflow run and attempt. Its `base_commit` is read from the exact primary
+`next` checkout rather than inferred from the workflow event.
+
+The changelog generator is isolated from the GitHub writer. Only its generation
+step receives `OPENAI_API_KEY`, and it hands validated JSON, deterministic MDX,
+and generation metadata to a separate GitHub App writer. Drafts remain under
+`.github/sdk-release/drafts/<release_id>.mdx`; shadow mode never writes the
+public changelog collection or a package registry. A real Responses API canary
+is an explicit preparation-only manual input. Ordinary tests use fixture and
+mock responses.
+
+A retry reads the existing stable branch and reconstructs the complete
+generation record from its strict draft manifest. Unchanged generated drafts
+are reused without an API call, committed human edits are preserved byte for
+byte, and changed input after a human edit fails for manual resolution. An
+explicit reset regenerates the draft, increments its reset record, and
+invalidates prior review. The writer accepts either a clean new version patch
+or the exact already-applied patch; partial patches, stale base commits, and a
+branch that advances between inspection and writing fail closed.
+
+Run the shadow contract locally with:
+
+```bash
+pnpm sdk-release:test
+pnpm sdk-release:validate
+pnpm test:release-workflow
+```
 
 ## Other Workflows
 

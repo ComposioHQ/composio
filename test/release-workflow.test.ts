@@ -46,6 +46,10 @@ const sdkReleasePrepare = readFileSync(
   new URL('../.github/scripts/sdk-release/prepare.ts', import.meta.url),
   'utf8'
 );
+const sdkReleaseWorkflow = readFileSync(
+  new URL('../.github/workflows/sdk.release.yml', import.meta.url),
+  'utf8'
+);
 const pythonExactVersionSetter = readFileSync(
   new URL('../python/scripts/set-release-version.py', import.meta.url),
   'utf8'
@@ -272,9 +276,138 @@ for (const requiredSuite of [
   'test/sdk-release-contract.test.ts',
   'test/sdk-release-prepare.test.ts',
   'test/sdk-release-changelog.test.ts',
+  'test/sdk-release-coordinator.test.ts',
 ]) {
   if (!sdkReleaseTestScript.includes(requiredSuite)) {
     throw new Error(`sdk-release:test must include ${requiredSuite}`);
+  }
+}
+
+for (const requiredInput of [
+  'operation:',
+  'release_id:',
+  'scope:',
+  'python_version:',
+  'real_api_canary:',
+]) {
+  if (!sdkReleaseWorkflow.includes(requiredInput)) {
+    throw new Error(`sdk.release.yml must declare typed workflow_dispatch input ${requiredInput}`);
+  }
+}
+if (!sdkReleaseWorkflow.includes('type: choice') || !sdkReleaseWorkflow.includes('type: boolean')) {
+  throw new Error('sdk.release.yml must use typed workflow_dispatch choices and booleans');
+}
+if (!/^on:\n  workflow_dispatch:/m.test(sdkReleaseWorkflow)) {
+  throw new Error('sdk.release.yml must expose workflow_dispatch as its only trigger');
+}
+if (
+  !sdkReleaseWorkflow.includes("|| 'sdk-production'") ||
+  !sdkReleaseWorkflow.includes('cancel-in-progress: false')
+) {
+  throw new Error('SDK release operations must use non-cancelling preparation/production queues');
+}
+if (
+  !sdkReleaseWorkflow.includes('SDK_RELEASE_PUBLISH_ENABLED') ||
+  !sdkReleaseWorkflow.includes("vars.SDK_RELEASE_PUBLISH_ENABLED == 'true'")
+) {
+  throw new Error('SDK release registry writers must remain hard-disabled by repository variable');
+}
+if (sdkReleaseWorkflow.includes('id-token: write')) {
+  throw new Error('Observe-only SDK release preparation must not receive registry OIDC authority');
+}
+for (const forbiddenPublisher of [
+  'npm publish',
+  'changeset publish',
+  'gh-action-pypi-publish',
+  'PYPI_PASSWORD',
+  'NPM_TOKEN',
+]) {
+  if (sdkReleaseWorkflow.includes(forbiddenPublisher)) {
+    throw new Error(`Observe-only SDK coordinator must not contain ${forbiddenPublisher}`);
+  }
+}
+if (
+  !sdkReleaseWorkflow.includes('OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}') ||
+  sdkReleaseWorkflow.match(/OPENAI_API_KEY:/g)?.length !== 1
+) {
+  throw new Error('Only one SDK release generation step may receive OPENAI_API_KEY');
+}
+if (
+  !sdkReleaseWorkflow.includes('actions/create-github-app-token@') ||
+  !sdkReleaseWorkflow.includes('RELEASE_BOT_APP_PRIVATE_KEY')
+) {
+  throw new Error('SDK release preparation writer must use the short-lived release GitHub App');
+}
+if (
+  sdkReleaseWorkflow.includes('git push --force') ||
+  sdkReleaseWorkflow.includes('git push -f') ||
+  !sdkReleaseWorkflow.includes('git push origin "HEAD:$PREPARATION_BRANCH"')
+) {
+  throw new Error('SDK release preparation must use a normal non-force push');
+}
+if (
+  !sdkReleaseWorkflow.includes('release/sdk-') ||
+  !/base_ref\s*:\s*["']?next/.test(sdkReleaseWorkflow)
+) {
+  throw new Error('SDK release preparation must target one stable release/sdk-* branch at next');
+}
+if (
+  sdkReleaseWorkflow.includes('docs/content/changelog/') ||
+  !sdkReleaseWorkflow.includes('.github/sdk-release/drafts/')
+) {
+  throw new Error(
+    'Observe-only changelog drafts must stay outside the public changelog collection'
+  );
+}
+if (
+  !sdkReleaseWorkflow.includes('compare-artifacts') ||
+  !sdkReleaseWorkflow.includes('rm -rf verification-artifacts')
+) {
+  throw new Error('SDK preparation must compare and discard its verification-only artifact set');
+}
+if (
+  !sdkReleaseWorkflow.includes('primary-base-commit.txt') ||
+  !sdkReleaseWorkflow.includes(
+    'const primaryBaseCommit = readFileSync("handoff/primary-base-commit.txt", "utf8").trim()'
+  ) ||
+  !sdkReleaseWorkflow.includes('base_commit: primaryBaseCommit')
+) {
+  throw new Error('SDK draft manifest must bind the exact primary checkout commit');
+}
+for (const retryInvariant of [
+  'existing-manifest.json',
+  'existing-draft.mdx',
+  'assertPreparedBaseCommit(primaryBaseCommit, existingManifest.base_commit)',
+  'generationRecordFromManifest',
+  'existing,',
+  'preserved_human_edit',
+  'manual_merge_required',
+  'review_invalidated',
+  'existing-head.txt',
+  'git apply --reverse --check',
+]) {
+  if (!sdkReleaseWorkflow.includes(retryInvariant)) {
+    throw new Error(`SDK preparation retry must preserve ${retryInvariant}`);
+  }
+}
+if (
+  !sdkReleaseWorkflow.includes('legacy-packages.json') ||
+  sdkReleaseWorkflow.includes('const legacy = manifest.packages')
+) {
+  throw new Error('SDK shadow receipt must use an independent legacy outcome handoff');
+}
+
+const tsTestWorkflow = readFileSync(
+  new URL('../.github/workflows/ts.test.yml', import.meta.url),
+  'utf8'
+);
+for (const coordinatorPath of [
+  "'.github/scripts/sdk-release/**'",
+  "'.github/workflows/sdk.release.yml'",
+  "'test/sdk-release-*.test.ts'",
+]) {
+  if ((tsTestWorkflow.match(new RegExp(escapeRegExp(coordinatorPath), 'g')) ?? []).length !== 2) {
+    throw new Error(`ts.test.yml push and pull-request filters must include ${coordinatorPath}`);
   }
 }
 

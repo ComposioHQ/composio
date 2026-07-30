@@ -39,11 +39,14 @@ describe('SDK release manifest contract', () => {
     expect(SealedManifestSchema.safeParse(fixture('neither-selected')).success).toBe(false);
   });
 
-  test('rejects unknown fields, duplicates, bad versions, wrong registries, ignored CLI, and incomplete Python family', () => {
+  test('rejects unknown fields, incomplete generation records, duplicates, bad versions, wrong registries, ignored CLI, and incomplete Python family', () => {
     const valid = fixture('combined') as Record<string, any>;
     const mutations: Array<(value: Record<string, any>) => void> = [
       value => {
         value.unknown = true;
+      },
+      value => {
+        delete value.openai_generation.generation_key;
       },
       value => {
         value.packages.push(clone(value.packages[0]));

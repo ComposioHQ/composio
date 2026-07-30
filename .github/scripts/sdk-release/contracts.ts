@@ -143,13 +143,28 @@ export const ArtifactSchema = z
 export const OpenAIGenerationSchema = z
   .object({
     provider: z.literal('openai'),
+    generation_key: Sha256Schema,
+    input_sha256: Sha256Schema,
     model: z.literal('gpt-5.5-2026-04-23'),
+    model_family: z.literal('gpt-5.5'),
+    model_sha256: Sha256Schema,
+    model_policy_sha256: Sha256Schema,
     response_id: z.string().min(1),
-    prompt_version: z.string().min(1),
+    prompt_version: z.literal('sdk-release-changelog-prompt/v1'),
     prompt_sha256: Sha256Schema,
-    schema_version: z.string().min(1),
+    schema_version: z.literal('sdk-release-changelog/v1'),
     schema_sha256: Sha256Schema,
+    output_sha256: Sha256Schema,
+    rendered_sha256: Sha256Schema,
+    usage: z
+      .object({
+        input_tokens: z.number().int().nonnegative(),
+        output_tokens: z.number().int().nonnegative(),
+        total_tokens: z.number().int().nonnegative(),
+      })
+      .strict(),
     generated_at: z.string().datetime({ offset: true }),
+    reset_count: z.number().int().nonnegative(),
   })
   .strict();
 
