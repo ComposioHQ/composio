@@ -104,6 +104,8 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
 
 <Callout type="warn">
 Your endpoint must return a **302 redirect**. Do not follow the redirect server-side or make a fetch call to Composio. The user's browser needs to be redirected so the OAuth flow completes correctly.
+
+This also matters for [same-browser binding](/docs/connect-link-browser-binding): the browser has to make the callback request itself, or the binding cookie never travels and a legitimate connection is rejected.
 </Callout>
 </Step>
 

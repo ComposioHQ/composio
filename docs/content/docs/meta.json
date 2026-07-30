@@ -13,6 +13,8 @@
     "---Authenticate users---",
     "authentication",
     "manually-authenticating",
+    "connect-link-browser-binding",
+    "callback-identity-verification",
     "managing-multiple-connected-accounts",
     "shared-connections",
     "importing-existing-connections",

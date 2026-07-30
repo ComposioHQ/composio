@@ -1,0 +1,125 @@
+---
+title: "OAuth connection security: same-browser binding and callback identity verification"
+date: "2026-07-30"
+---
+
+Composio now offers two controls that tie an OAuth authorization to the person who started it.
+**Same-browser binding** requires a Connect Link for a Composio managed app to be finished in the
+browser that started it. **Callback identity verification** lets you hand each OAuth return to your
+own server, so you confirm which of your users is present before the connection activates.
+
+Neither control changes anything for existing connections, and neither is on by default. If you do
+nothing, your connect flows behave exactly as they do today.
+
+### Why
+
+A Connect Link page hands the browser a provider authorization URL, and on its own that URL is
+enough to finish a connection — whoever opens it and consents becomes the account that gets
+attached. An attacker could start a connection under their own user, take the provider URL before
+consenting, and send it to a victim who is already signed in to the provider. The victim's account
+would then be connected under the attacker's user.
+
+This is OAuth session fixation. It is distinct from the CSRF and authorization-code-injection cases
+in RFC 9700 §4.5 and §4.7, which run in the opposite direction and are already covered by the
+`state` parameter and PKCE.
+
+An enterprise customer reported this against our hosted connect flow. Both controls below are the
+result.
+
+### Same-browser binding
+
+For **Composio managed** auth configs, submitting a Connect Link now issues a per-attempt secret to
+the browser and requires it back at the provider callback. A callback arriving in a different
+browser is rejected with `This connection was started from a different browser or device`.
+
+This does not apply when you use your own OAuth app — there the OAuth client is yours, and
+verification against your own users is a better fit. Enforcement is per project and off by default;
+contact us to turn it on or off, and it takes effect immediately with no deploy on your side.
+
+Known limitation, worth reading before you ask for it: a Connect Link opened inside an app's
+built-in browser (Instagram, LinkedIn, Telegram, and others) can hand the provider step to the
+system browser, which is a separate cookie jar, so a legitimate user is rejected and has to start
+again in their normal browser. A rejected attempt is not marked `FAILED` — it stays `INITIATED` and
+then becomes `EXPIRED`, which through the API looks the same as a user closing the tab.
+
+[Same-browser binding](/docs/connect-link-browser-binding)
+
+### Callback identity verification
+
+Set a verifier URL on your project and Composio pauses before activating a connection. After the
+user consents, their browser is redirected to your URL with a single opaque parameter:
+
+```
+https://your-app.com/composio/verify?session_uri=session_8Ff2...
+```
+
+Your server reads its own login session, then redeems the reference:
+
+```bash
+curl -X POST https://backend.composio.dev/api/v3.1/connected_accounts/complete_auth \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"session_uri": "session_8Ff2...", "user_id": "your-signed-in-user"}'
+```
+
+If the identity matches the user the flow was started for, the connection activates and the
+response returns `connected_account_id` and `toolkit_slug`. If it does not, the request is rejected
+and the connection is marked `FAILED`. Sessions last ten minutes and can be redeemed once.
+
+Set it in **Settings → General → Configuration**, or via the project config API. Presence of the URL
+is the switch; removing it turns verification off.
+
+[Callback identity verification](/docs/callback-identity-verification)
+
+### Breaking changes when you enable verification
+
+<Callout type="warn">
+**These apply only once you set a verifier URL**, and they apply immediately to the whole project.
+Deploy and test your endpoint before you set the URL.
+
+**Connections started from the Composio dashboard can no longer finish.** The dashboard still
+creates a pending connection and opens the provider consent screen, but when the provider returns,
+the browser goes to your verifier URL instead of back to the dashboard. The dashboard never gets
+its completion signal and the connection expires. Composio sends your endpoint nothing but the
+session reference, so your server cannot identify the dashboard's internal user — and a wrong
+`user_id` marks the connection `FAILED` permanently. To test a connection, run the flow from your
+own app, or temporarily remove the verifier URL.
+
+**Every connection needs a real `user_id`.** Omitting it has always fallen back to the placeholder
+`default`, which a per-user verifier cannot confirm.
+</Callout>
+
+**Before:** omitting `user_id` silently created a connection owned by `default`.
+
+```bash
+curl -X POST https://backend.composio.dev/api/v3/connected_accounts \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"auth_config": {"id": "ac_your_config"}}'
+```
+
+**After:** with verification enabled, the same call is rejected with `400`.
+
+```bash
+curl -X POST https://backend.composio.dev/api/v3/connected_accounts \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "auth_config": {"id": "ac_your_config"},
+    "connection": {"user_id": "your-signed-in-user"}
+  }'
+```
+
+### What to do
+
+**If you use Composio managed apps and want binding on:** contact us and we will enable it for your
+project. Read the in-app-browser limitation above first, and make sure your callback handler returns
+a `302` rather than following the redirect server-side.
+
+**If you use your own OAuth apps:** callback identity verification is the control built for you.
+Before you set the URL, audit your create and link calls for a real `user_id`, migrate or retire any
+existing connections owned by `default`, and confirm your endpoint is publicly reachable over HTTPS
+— local development needs a tunnel.
+
+**If you do nothing:** nothing changes. Both controls are off by default, and existing connections
+are unaffected.

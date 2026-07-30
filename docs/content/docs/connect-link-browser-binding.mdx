@@ -1,0 +1,128 @@
+---
+title: Same-browser binding
+description: Why a Connect Link must be finished in the browser that started it, and what to do when a legitimate user is rejected
+keywords: [connect link, same-browser binding, session binding, oauth session fixation, managed auth, webview, cookie]
+---
+
+When a user submits a Connect Link for a **Composio managed** app, Composio ties that
+authorization attempt to their browser. If the provider sends the user back in a different
+browser, the callback is rejected and the connection does not activate.
+
+This page explains what the check defends against, when it applies, and what to do when it
+rejects someone who should have been let through.
+
+## The problem it solves
+
+A Connect Link page hands the browser a provider authorization URL. On its own, that URL is
+enough to finish the connection — whoever opens it and consents becomes the account that gets
+attached.
+
+So an attacker could start a connection under their own Composio user, extract the provider URL
+before consenting, and send it to you. You are already signed in to the provider, so consent may
+be skipped entirely. Your account is now connected under **their** user, and their agent can act
+on your data.
+
+This is **OAuth session fixation** — a phishing-style attack on the consent step. The OAuth
+project's own advisory states the requirement plainly: verify that the user who starts the process
+is the same one who finishes it.
+
+<Callout type="info">
+This is a different attack from the CSRF and authorization-code-injection cases in RFC 9700
+§4.5 and §4.7, which run in the opposite direction — an attacker's code injected into a
+victim's session — and are already covered by the `state` parameter and PKCE. Session fixation
+runs the other way: the victim's consent is captured into the attacker's session.
+</Callout>
+
+## How the check works
+
+When the user submits the Connect Link form, Composio generates a random secret for that single
+attempt. The secret goes to the browser in an `HttpOnly`, `Secure`, `SameSite=Lax` cookie. Only a
+SHA-256 hash of it is stored alongside the authorization request.
+
+When the provider returns, Composio hashes the cookie it receives and compares it to the stored
+hash. A match continues the flow. A missing or non-matching cookie is rejected.
+
+The raw secret is never written to Composio's database — only the hash is stored, and only for
+the lifetime of that one authorization attempt. Binding is per attempt, so a connection is never
+permanently tied to a browser.
+
+## When it applies
+
+Binding applies to **Composio managed auth configs only**, and only to the hosted Connect Link
+flow for OAuth apps.
+
+It does **not** apply when you bring your own OAuth app. On a custom auth config the OAuth client
+is yours, so a takeover rides your OAuth app and your liability rather than Composio's shared one
+— and enforcing binding there would only add a way for your legitimate users to get stuck. If you
+want the returning user proven against your own login session, that is
+[callback identity verification](/docs/callback-identity-verification), which is built for exactly
+that case.
+
+Enforcement is controlled per project by Composio, and is off by default. If you want it switched
+on — or switched off because it is affecting your users — contact us; it takes effect immediately,
+with no deploy on your side.
+
+## What a rejection looks like
+
+A rejected callback is **not** an HTTP error. The browser is redirected as usual, carrying a
+failure status and this message:
+
+```
+This connection was started from a different browser or device
+```
+
+For a hosted Connect Link the user lands back on the Connect Link page, and the same failure is
+forwarded to your own callback URL as `status=failed` with the message in `error`. See
+[the callback parameter reference](/docs/manually-authenticating#redirecting-users-after-authentication)
+for the full parameter list.
+
+<Callout type="warn">
+**A rejected attempt is not marked `FAILED`.** The connection stays `INITIATED` and then becomes
+`EXPIRED` with reason `INITIATION_TIMEOUT` about ten minutes later — which, through the API, is
+indistinguishable from a user who simply closed the tab. If you are diagnosing a support report,
+the failure message in the callback is the signal, not the connection status.
+</Callout>
+
+The attempt cannot be resumed, even from the correct browser. The user has to start a new Connect
+Link and finish it in the browser they started it in.
+
+## When a legitimate user is rejected
+
+These are known limitations, not bugs. All of them come down to the callback arriving in a
+different cookie jar than the one that submitted the form.
+
+- **In-app browsers.** A link opened inside Instagram, LinkedIn, Telegram, or another app's
+  built-in browser may hand the provider step to the system browser. The two have separate cookie
+  jars, so the callback arrives without the cookie and is rejected. Where you control the message,
+  ask users to open the link in their normal browser.
+- **A link forwarded between devices.** This is the case the check exists to stop, and it looks
+  identical to the one above.
+- **A link left open for over an hour.** The cookie lives for one hour, matching the lifetime of
+  the authorization request. After that the attempt fails even in the same browser.
+- **A callback proxied through your server.** The user's browser has to make the callback request
+  itself. If your endpoint fetches or follows the Composio redirect server-side, the cookie never
+  travels and binding fails. Return a `302` and let the browser follow it — see
+  [routing the callback through your domain](/docs/white-labeling-authentication#routing-the-callback-through-your-domain).
+
+<Callout type="info">
+Binding is not enforced on local development. The cookie is issued for `.composio.dev`, so a
+browser on `localhost` drops it and the check is skipped.
+</Callout>
+
+## What binding does and does not prove
+
+Same-browser binding defends against one specific thing: an authorization URL that leaks, or is
+forwarded, and is completed somewhere else.
+
+It does not prove **who** is at the keyboard. A browser that runs the whole flow itself passes the
+check. If you need the returning user proven against your own authenticated session, use
+[callback identity verification](/docs/callback-identity-verification).
+
+## Next
+
+<Card
+  icon={<ShieldCheck />}
+  title="Callback identity verification"
+  href="/docs/callback-identity-verification"
+  description="Have your own server confirm which of your users an OAuth return belongs to"
+/>
