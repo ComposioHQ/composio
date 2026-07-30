@@ -144,6 +144,7 @@ const runWithArgs = Effect.flatMap(runWithConfig, run => run(process.argv)) sati
 const runWithTelemetry = Effect.gen(function* () {
   const ui = yield* TerminalUI;
   const terminal = yield* ui.capabilities;
+
   const commandTelemetryContext = createCliCommandTelemetryContext(
     process.argv,
     constants.APP_VERSION,

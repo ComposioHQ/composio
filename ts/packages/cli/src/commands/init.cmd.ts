@@ -11,6 +11,7 @@ import {
   listOrgProjects,
   type OrgProject,
 } from 'src/services/composio-clients';
+import { linkApolloIdentityForAnalytics } from 'src/analytics/dispatch';
 import * as constants from 'src/constants';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { browserLogin, noBrowser as noBrowserOpt } from 'src/commands/login.cmd';
@@ -125,6 +126,7 @@ const ensureProjectApiKeyInEnv = (params: { cwd: string; selected: ProjectKeys }
       orgId: selected.orgId,
       projectId: selected.projectId,
     });
+    yield* linkApolloIdentityForAnalytics(sessionInfo.org_member.id, uakApiKey);
 
     let projectApiKey = sessionInfo.api_key?.api_key ?? sessionInfo.api_key?.key ?? null;
     if (!projectApiKey && !hasProjectApiKey) {

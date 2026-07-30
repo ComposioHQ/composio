@@ -160,12 +160,6 @@ const extractUnknownKeys = (issues: ReadonlyArray<string>): ReadonlyArray<string
 const errorNameOf = (error: unknown): string =>
   error instanceof Error && error.name ? error.name : 'UnknownError';
 
-const errorMessageOf = (error: unknown): string => {
-  if (error instanceof Error && error.message) return error.message.slice(0, 500);
-  if (typeof error === 'string') return error.slice(0, 500);
-  return 'Unknown error';
-};
-
 const isFlagPresent = (argv: ReadonlyArray<string>, ...flags: string[]): boolean =>
   argv.slice(2).some(token => {
     if (flags.includes(token)) return true;
@@ -252,19 +246,23 @@ const getExecuteCommandProperties = (context: CliCommandTelemetryContext) => {
   };
 };
 
-const getSearchCommandProperties = (context: CliCommandTelemetryContext) => ({
-  source: 'cli',
-  invocation_origin: getInvocationOrigin(),
-  parent_run_id: getParentRunId(),
-  parent_command: getParentRunId() ? 'run' : undefined,
-  cli_version: context.cliVersion,
-  command_path: context.commandPath,
-  duration_ms: Date.now() - context.startedAt,
-  query: getTrailingPositionals(context)[0],
-  search_query: getTrailingPositionals(context)[0],
-  toolkits: getFlagValue(context.argv, '--toolkits'),
-  limit: getFlagValue(context.argv, '--limit'),
-});
+// Search queries are user-authored free text, so only their shape is recorded.
+const getSearchCommandProperties = (context: CliCommandTelemetryContext) => {
+  const query = getTrailingPositionals(context)[0] ?? '';
+  return {
+    source: 'cli',
+    invocation_origin: getInvocationOrigin(),
+    parent_run_id: getParentRunId(),
+    parent_command: getParentRunId() ? 'run' : undefined,
+    cli_version: context.cliVersion,
+    command_path: context.commandPath,
+    duration_ms: Date.now() - context.startedAt,
+    query_length: query.length,
+    query_term_count: query.split(/\s+/u).filter(Boolean).length,
+    toolkits: getFlagValue(context.argv, '--toolkits'),
+    limit: getFlagValue(context.argv, '--limit'),
+  };
+};
 
 const getLinkCommandProperties = (context: CliCommandTelemetryContext) => {
   const firstPositional = getTrailingPositionals(context)[0];
@@ -348,7 +346,7 @@ const getProxyCommandProperties = (context: CliCommandTelemetryContext) => ({
   cli_version: context.cliVersion,
   command_path: context.commandPath,
   duration_ms: Date.now() - context.startedAt,
-  endpoint: getTrailingPositionals(context)[0],
+  has_endpoint: typeof getTrailingPositionals(context)[0] === 'string',
   toolkit: getFlagValue(context.argv, '--toolkit', '-t'),
   method: getFlagValue(context.argv, '--method', '-X') ?? 'GET',
   has_data: isFlagPresent(context.argv, '--data', '-d'),
@@ -439,7 +437,6 @@ const getCliCommandFailedEvent = (
     duration_ms: Date.now() - context.startedAt,
     flag_names: context.flagNames,
     error_name: errorNameOf(error),
-    error_message: errorMessageOf(error),
   },
 });
 
@@ -559,7 +556,6 @@ export const getPrimaryLifecycleFailedEvent = (
     properties: {
       ...family.getProperties(context),
       error_name: errorNameOf(error),
-      error_message: errorMessageOf(error),
     },
   };
 };
@@ -602,7 +598,6 @@ export const getPluginLifecycleFailedEvent = (params: {
     agent_host: params.target,
     phase: params.phase,
     error_name: errorNameOf(params.error),
-    error_message: errorMessageOf(params.error),
   },
 });
 
@@ -746,7 +741,6 @@ export const getToolExecuteToolNotFoundEvent = (params: {
     error_slug: params.errorSlug,
     http_status: params.status,
     api_error_code: params.apiCode,
-    error_message: params.message?.slice(0, 500),
     ...argumentShape(params.args),
   },
 });
@@ -781,7 +775,6 @@ export const getToolExecuteFailedEvent = (params: {
     http_status: params.status,
     api_error_code: params.apiCode,
     error_name: params.errorName,
-    error_message: params.message?.slice(0, 500),
     is_no_connection_error: Boolean(params.isNoConnectionError),
     ...argumentShape(params.args),
   },
