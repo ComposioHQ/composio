@@ -288,12 +288,17 @@ export function planDownstreamEmission(options: {
   changed_files: string[];
   existing_markers: string[];
   channel: 'docs' | 'notification';
-}): { emit: boolean; manifest_id: string; marker: string; pull_request: number } {
+}):
+  | { emit: false; manifest_id: null; marker: null; pull_request: null }
+  | { emit: boolean; manifest_id: string; marker: string; pull_request: number } {
   const changedFiles = options.changed_files.filter(path =>
     /^docs\/content\/changelog\/[^/]+\.mdx$/.test(path)
   );
-  if (changedFiles.length !== 1) {
+  if (changedFiles.length > 1) {
     throw new Error('Verified changelog merge must change exactly one public MDX file');
+  }
+  if (changedFiles.length === 0) {
+    return { emit: false, manifest_id: null, marker: null, pull_request: null };
   }
   const matching = options.pull_requests
     .map(pullRequest => PullRequestSchema.parse(pullRequest))
@@ -304,8 +309,11 @@ export function planDownstreamEmission(options: {
         /^release\/sdk-[A-Za-z0-9._-]+-changelog$/.test(pullRequest.head_ref) &&
         /<!-- sdk-release-finalization:[a-f0-9]{64} -->/.test(pullRequest.body)
     );
-  if (matching.length !== 1) {
-    throw new Error('Public changelog is not bound to one verified finalization PR');
+  if (matching.length > 1) {
+    throw new Error('Public changelog is bound to multiple verified finalization PRs');
+  }
+  if (matching.length === 0) {
+    return { emit: false, manifest_id: null, marker: null, pull_request: null };
   }
   const manifestId = /<!-- sdk-release-finalization:([a-f0-9]{64}) -->/.exec(
     matching[0]!.body
@@ -327,18 +335,31 @@ function argumentValue(args: string[], name: string): string {
 }
 
 async function main(args: string[]): Promise<void> {
-  if (args[0] !== 'plan') throw new Error('Expected plan command');
-  const manifest = JSON.parse(readFileSync(argumentValue(args, '--manifest'), 'utf8'));
-  const receipt = JSON.parse(readFileSync(argumentValue(args, '--receipt'), 'utf8'));
-  const draftPath = argumentValue(args, '--draft');
-  const plan = planChangelogFinalization({
-    manifest,
-    receipt,
-    draft_path: draftPath,
-    draft_bytes: readFileSync(draftPath, 'utf8'),
-    existing_files: JSON.parse(readFileSync(argumentValue(args, '--inventory'), 'utf8')),
-    pull_requests: JSON.parse(readFileSync(argumentValue(args, '--pull-requests'), 'utf8')),
-  });
+  const command = args[0];
+  const plan =
+    command === 'plan'
+      ? (() => {
+          const draftPath = argumentValue(args, '--draft');
+          return planChangelogFinalization({
+            manifest: JSON.parse(readFileSync(argumentValue(args, '--manifest'), 'utf8')),
+            receipt: JSON.parse(readFileSync(argumentValue(args, '--receipt'), 'utf8')),
+            draft_path: draftPath,
+            draft_bytes: readFileSync(draftPath, 'utf8'),
+            existing_files: JSON.parse(readFileSync(argumentValue(args, '--inventory'), 'utf8')),
+            pull_requests: JSON.parse(readFileSync(argumentValue(args, '--pull-requests'), 'utf8')),
+          });
+        })()
+      : command === 'downstream'
+        ? planDownstreamEmission({
+            pull_requests: JSON.parse(readFileSync(argumentValue(args, '--pull-requests'), 'utf8')),
+            changed_files: JSON.parse(readFileSync(argumentValue(args, '--changed-files'), 'utf8')),
+            existing_markers: JSON.parse(
+              readFileSync(argumentValue(args, '--existing-markers'), 'utf8')
+            ),
+            channel: z.enum(['docs', 'notification']).parse(argumentValue(args, '--channel')),
+          })
+        : undefined;
+  if (!plan) throw new Error('Expected plan or downstream command');
   writeFileSync(argumentValue(args, '--output'), `${JSON.stringify(plan, null, 2)}\n`);
 }
 

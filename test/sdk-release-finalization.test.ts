@@ -297,7 +297,7 @@ describe('verified public merge downstream gates', () => {
   const merged = { ...finalizationPullRequest, state: 'MERGED' as const, merge_commit_sha: SHA };
 
   test('draft merges and unrelated public changes are neither public nor notified', () => {
-    expect(() =>
+    expect(
       planDownstreamEmission({
         pull_requests: [
           {
@@ -310,7 +310,7 @@ describe('verified public merge downstream gates', () => {
         existing_markers: [],
         channel: 'notification',
       })
-    ).toThrow();
+    ).toEqual({ emit: false, manifest_id: null, marker: null, pull_request: null });
   });
 
   test('emits each docs/notification channel once per manifest ID', () => {
@@ -325,7 +325,7 @@ describe('verified public merge downstream gates', () => {
       planDownstreamEmission({
         pull_requests: [merged],
         changed_files: ['docs/content/changelog/07-30-26.mdx'],
-        existing_markers: [first.marker],
+        existing_markers: [first.marker!],
         channel: 'notification',
       }).emit
     ).toBe(false);
@@ -333,7 +333,7 @@ describe('verified public merge downstream gates', () => {
       planDownstreamEmission({
         pull_requests: [merged],
         changed_files: ['docs/content/changelog/07-30-26.mdx'],
-        existing_markers: [first.marker],
+        existing_markers: [first.marker!],
         channel: 'docs',
       }).emit
     ).toBe(true);

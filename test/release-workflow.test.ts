@@ -58,6 +58,10 @@ const changelogNotificationWorkflow = readFileSync(
   new URL('../.github/workflows/docs.changelog-notification.yml', import.meta.url),
   'utf8'
 );
+const sdkReleaseChangelogFinalizer = readFileSync(
+  new URL('../.github/scripts/sdk-release/finalize-changelog.ts', import.meta.url),
+  'utf8'
+);
 const sdkReleaseJob = (name: string): string => {
   const marker = `\n  ${name}:\n`;
   const start = sdkReleaseWorkflow.indexOf(marker);
@@ -496,9 +500,8 @@ for (const [workflow, channel] of [
 ]) {
   for (const downstreamInvariant of [
     'commits/$AFTER/pulls',
-    'release/sdk-[A-Za-z0-9._-]+-changelog',
-    'sdk-release-finalization:',
-    `sdk-release-${channel}:`,
+    'finalize-changelog.ts downstream',
+    `--channel ${channel}`,
     'pull-requests: write',
   ]) {
     if (!workflow.includes(downstreamInvariant)) {
@@ -506,6 +509,15 @@ for (const [workflow, channel] of [
         `Changelog ${channel} workflow must bind one verified manifest using ${downstreamInvariant}`
       );
     }
+  }
+}
+for (const downstreamInvariant of [
+  'release\\/sdk-[A-Za-z0-9._-]+-changelog',
+  'sdk-release-finalization:',
+  'sdk-release-${options.channel}:',
+]) {
+  if (!sdkReleaseChangelogFinalizer.includes(downstreamInvariant)) {
+    throw new Error(`Typed changelog downstream planner must preserve ${downstreamInvariant}`);
   }
 }
 if (

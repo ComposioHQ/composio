@@ -6,6 +6,7 @@ import {
   ArtifactSchema,
   OpenAIGenerationSchema,
   ReleaseRequestSchema,
+  SDK_RELEASE_REQUEST_VERSION,
   type ReleaseArtifact,
   type ReleasePackage,
   type ReleaseRequest,
@@ -79,7 +80,7 @@ function normalizedInput(value: unknown): string | undefined {
 
 export function normalizeDispatchRequest(inputs: DispatchInputs): ReleaseRequest {
   return ReleaseRequestSchema.parse({
-    schema_version: 'sdk-release-request/v1',
+    schema_version: SDK_RELEASE_REQUEST_VERSION,
     operation: normalizedInput(inputs.operation),
     release_id: normalizedInput(inputs.release_id),
     scope: normalizedInput(inputs.scope),
@@ -191,15 +192,14 @@ export function planPreparationPullRequest(input: PullRequestPlan): PreparationP
 }
 
 function normalizedArtifacts(artifacts: readonly ReleaseArtifact[]): ReleaseArtifact[] {
-  const parsed = artifacts.map(artifact => ArtifactSchema.parse(artifact));
-  const duplicate = parsed.find(
+  const duplicate = artifacts.find(
     (artifact, index) =>
-      parsed.findIndex(candidate => candidate.filename === artifact.filename) !== index
+      artifacts.findIndex(candidate => candidate.filename === artifact.filename) !== index
   );
   if (duplicate) {
     throw new Error(`artifact set contains duplicate filename ${duplicate.filename}`);
   }
-  return parsed.sort(
+  return [...artifacts].sort(
     (left, right) =>
       compareText(left.filename, right.filename) ||
       compareText(left.package_name, right.package_name)
@@ -211,8 +211,11 @@ export function compareArtifactBuilds(
   verificationArtifacts: readonly ReleaseArtifact[]
 ): ReleaseArtifact[] {
   const validatedPrimary = primaryArtifacts.map(artifact => ArtifactSchema.parse(artifact));
-  const primary = normalizedArtifacts(primaryArtifacts);
-  const verification = normalizedArtifacts(verificationArtifacts);
+  const validatedVerification = verificationArtifacts.map(artifact =>
+    ArtifactSchema.parse(artifact)
+  );
+  const primary = normalizedArtifacts(validatedPrimary);
+  const verification = normalizedArtifacts(validatedVerification);
   const primaryNames = primary.map(artifact => artifact.filename);
   const verificationNames = verification.map(artifact => artifact.filename);
   if (JSON.stringify(primaryNames) !== JSON.stringify(verificationNames)) {

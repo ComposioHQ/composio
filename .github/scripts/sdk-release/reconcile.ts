@@ -1,4 +1,3 @@
-import { createHash } from 'node:crypto';
 import {
   copyFileSync,
   existsSync,
@@ -19,7 +18,7 @@ import {
   type ReleasePackage,
 } from './contracts';
 import { sealManifest } from './manifest';
-import { inspectNpmPackage } from './registry/npm';
+import { digestBytes, inspectNpmPackage } from './registry/npm';
 import { inspectPyPiPackage } from './registry/pypi';
 export { RegistryConsistencyTimeoutError, verifyRegistryConsistency } from './verify';
 
@@ -40,13 +39,6 @@ const ReconciliationPlanSchema = z
   .strict();
 
 export type ReconciliationPlan = z.infer<typeof ReconciliationPlanSchema>;
-
-function artifactDigest(bytes: Uint8Array): { sha256: string; integrity: string } {
-  return {
-    sha256: createHash('sha256').update(bytes).digest('hex'),
-    integrity: `sha512-${createHash('sha512').update(bytes).digest('base64')}`,
-  };
-}
 
 function validateReleaseSet(
   packages: readonly ReleasePackage[],
@@ -95,14 +87,13 @@ export async function reconcileRelease(
   const releaseSet = validateReleaseSet(options.packages, options.artifacts);
   const fetcher = options.fetch ?? globalThis.fetch;
   const now = options.now ?? (() => new Date().toISOString());
-  const observations: RegistryObservation[] = [];
-  for (const releasePackage of releaseSet.packages) {
-    const artifacts = releaseSet.artifacts.filter(
-      artifact => artifact.package_name === releasePackage.name
-    );
-    observations.push(
-      releasePackage.ecosystem === 'typescript'
-        ? await inspectNpmPackage({
+  const observations: RegistryObservation[] = await Promise.all(
+    releaseSet.packages.map(releasePackage => {
+      const artifacts = releaseSet.artifacts.filter(
+        artifact => artifact.package_name === releasePackage.name
+      );
+      return releasePackage.ecosystem === 'typescript'
+        ? inspectNpmPackage({
             manifest_id: manifestId,
             release_package: releasePackage,
             artifacts,
@@ -110,16 +101,16 @@ export async function reconcileRelease(
             now,
             registry_url: options.npm_registry_url,
           })
-        : await inspectPyPiPackage({
+        : inspectPyPiPackage({
             manifest_id: manifestId,
             release_package: releasePackage,
             artifacts,
             fetch: fetcher,
             now,
             registry_url: options.pypi_registry_url,
-          })
-    );
-  }
+          });
+    })
+  );
   const hasConflict = observations.some(observation => observation.state === 'conflict');
   const absent = hasConflict
     ? { npm: [], pypi: [] }
@@ -152,7 +143,7 @@ function verifyArtifactFile(path: string, artifact: ReleaseArtifact): void {
   if (!existsSync(path) || !statSync(path).isFile()) {
     throw new Error(`sealed artifact is missing: ${artifact.filename}`);
   }
-  const digest = artifactDigest(readFileSync(path));
+  const digest = digestBytes(readFileSync(path));
   if (
     digest.sha256 !== artifact.sha256 ||
     (artifact.ecosystem === 'typescript' && digest.integrity !== artifact.integrity)

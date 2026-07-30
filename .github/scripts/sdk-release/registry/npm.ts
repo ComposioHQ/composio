@@ -5,6 +5,7 @@ import {
   NpmIntegritySchema,
   PackageSchema,
   RegistryObservationSchema,
+  SDK_RELEASE_REGISTRY_OBSERVATION_VERSION,
   type RegistryObservation,
   type ReleaseArtifact,
   type ReleasePackage,
@@ -117,7 +118,7 @@ function checkedRegistryUrl(registry: 'npm' | 'pypi', rawUrl: string): string {
   return url.href.replace(/\/$/, '');
 }
 
-function digestBytes(bytes: Uint8Array): { sha256: string; integrity: string } {
+export function digestBytes(bytes: Uint8Array): { sha256: string; integrity: string } {
   return {
     sha256: createHash('sha256').update(bytes).digest('hex'),
     integrity: `sha512-${createHash('sha512').update(bytes).digest('base64')}`,
@@ -170,7 +171,7 @@ export async function inspectNpmPackage(options: InspectNpmOptions): Promise<Reg
   ];
   if (versionResponse === 'absent') {
     return RegistryObservationSchema.parse({
-      schema_version: 'sdk-release-registry-observation/v1',
+      schema_version: SDK_RELEASE_REGISTRY_OBSERVATION_VERSION,
       manifest_id: options.manifest_id,
       package_name: releasePackage.name,
       version: releasePackage.version,
@@ -226,7 +227,7 @@ export async function inspectNpmPackage(options: InspectNpmOptions): Promise<Reg
       : 'conflict';
 
   return RegistryObservationSchema.parse({
-    schema_version: 'sdk-release-registry-observation/v1',
+    schema_version: SDK_RELEASE_REGISTRY_OBSERVATION_VERSION,
     manifest_id: options.manifest_id,
     package_name: releasePackage.name,
     version: releasePackage.version,

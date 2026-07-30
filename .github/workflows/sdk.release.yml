@@ -1225,20 +1225,23 @@ jobs:
             --output attempt.md
           gh pr comment "$PREPARATION_PR" --body-file attempt.md
 
-          gh api "repos/$GITHUB_REPOSITORY/issues/$PREPARATION_PR/comments" \
-            --paginate --slurp | jq 'add' > receipt-comments.json
           bun --eval '
             import { readFileSync } from "node:fs";
             import { renderReceiptIndex } from "./.github/scripts/sdk-release/finalize-receipt.ts";
-            const comments = JSON.parse(readFileSync("receipt-comments.json", "utf8"));
-            const attempts = comments.flatMap(comment => {
+            const comments = JSON.parse(readFileSync("existing-comments.json", "utf8"));
+            const current = JSON.parse(readFileSync("attempt.json", "utf8"));
+            const attempts = [...comments.flatMap(comment => {
               const marker = /<!-- sdk-release-attempt:[^:]+:(\d+) -->/.exec(comment.body);
               const outcome = /Outcome: \\*\\*(partial|conflict|verified|receipted|notified)\\*\\*/.exec(comment.body);
               const run = /Workflow run: `(\d+)`/.exec(comment.body);
               return marker && outcome && run
                 ? [{ attempt:Number(marker[1]), outcome:outcome[1], workflow_run_id:Number(run[1]) }]
                 : [];
-            }).sort((left, right) => left.attempt - right.attempt);
+            }), {
+              attempt:current.attempt,
+              outcome:current.outcome,
+              workflow_run_id:current.workflow_run_id,
+            }].sort((left, right) => left.attempt - right.attempt);
             const body = renderReceiptIndex({
               release_id:process.env.RELEASE_ID,
               manifest_id:process.env.MANIFEST_ID,
@@ -1249,7 +1252,7 @@ jobs:
           '
           index_id=$(jq -r --arg marker "<!-- sdk-release-index:${{ needs.resolve-sealed-release.outputs.manifest_id }} -->" \
             '[.[] | select(.body | startswith($marker))] | if length == 0 then "" elif length == 1 then .[0].id else error("duplicate receipt indexes") end' \
-            receipt-comments.json)
+            existing-comments.json)
           if [[ -n "$index_id" ]]; then
             jq -n --rawfile body index.md '{body:$body}' \
               | gh api --method PATCH "repos/$GITHUB_REPOSITORY/issues/comments/$index_id" --input -

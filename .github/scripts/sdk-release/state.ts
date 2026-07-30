@@ -23,12 +23,6 @@ const LEGAL_TRANSITIONS: Readonly<Record<ReleaseState, readonly ReleaseState[]>>
   notified: [],
 };
 
-export const TERMINAL_RELEASE_STATES = [
-  'preparation_failed',
-  'conflict',
-  'notified',
-] as const satisfies readonly ReleaseState[];
-
 export function transitionRelease(
   from: ReleaseState,
   to: ReleaseState,
@@ -54,14 +48,10 @@ export function assertCanStartRelease(
   if (
     current &&
     current.release_id !== requestedReleaseId &&
-    !TERMINAL_RELEASE_STATES.includes(current.state as (typeof TERMINAL_RELEASE_STATES)[number])
+    LEGAL_TRANSITIONS[current.state].length > 0
   ) {
     throw new Error(
       `Release ${current.release_id} is still open in state ${current.state}; cannot start ${requestedReleaseId}`
     );
   }
-}
-
-export function isTerminalReleaseState(state: ReleaseState): boolean {
-  return TERMINAL_RELEASE_STATES.includes(state as (typeof TERMINAL_RELEASE_STATES)[number]);
 }

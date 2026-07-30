@@ -3,6 +3,7 @@ import {
   ArtifactSchema,
   PackageSchema,
   RegistryObservationSchema,
+  SDK_RELEASE_REGISTRY_OBSERVATION_VERSION,
   type RegistryObservation,
   type ReleaseArtifact,
   type ReleasePackage,
@@ -104,7 +105,7 @@ export async function inspectPyPiPackage(
   );
   if (response === 'absent') {
     return RegistryObservationSchema.parse({
-      schema_version: 'sdk-release-registry-observation/v1',
+      schema_version: SDK_RELEASE_REGISTRY_OBSERVATION_VERSION,
       manifest_id: options.manifest_id,
       package_name: releasePackage.name,
       version: releasePackage.version,
@@ -129,7 +130,7 @@ export async function inspectPyPiPackage(
       ? 'exact'
       : 'conflict';
   return RegistryObservationSchema.parse({
-    schema_version: 'sdk-release-registry-observation/v1',
+    schema_version: SDK_RELEASE_REGISTRY_OBSERVATION_VERSION,
     manifest_id: options.manifest_id,
     package_name: releasePackage.name,
     version: releasePackage.version,
