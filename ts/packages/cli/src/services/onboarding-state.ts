@@ -3,13 +3,12 @@ import { findTaskByToolkit } from 'src/services/onboarding-tasks';
 import type { StarterTask } from 'src/services/onboarding-tasks';
 
 /**
- * Chokepoint 1: the single answer to "which gate is next".
+ * The single place that decides which gate is next.
  *
  * `resolveOnboardingState` is a pure function over facts. It never sees `canPrompt`, stdout's TTY
- * state, or `--json`, so every gate status and `onboarded` is identical across every invocation
- * mode for the same facts. That is the whole defect-prevention mechanism: a human and an agent
- * cannot disagree about *state*, because they read the same value from the same function. They can
- * only differ on what to do next, which is chokepoint 2 (`onboarding-next-command.ts`).
+ * state, or `--json`, so every gate status and `onboarded` is identical across invocation modes for
+ * the same facts — a human and an agent read the same value from the same function, and can only
+ * differ on what to do next (`onboarding-next-command.ts`).
  *
  * The I/O that produces the facts lives in `gatherOnboardingFacts` (`onboarding-facts.ts`). Keeping
  * it in a sibling module is what makes the purity structural rather than a convention: this file
@@ -42,7 +41,7 @@ export type HostWiringStatus = {
 
 /**
  * `not_applicable` covers both "no supported agent host is installed" (a legitimate CLI-only
- * user) and "the host probe failed or timed out". Neither is worth blocking the front door for.
+ * user) and "the host probe failed or timed out". Neither is worth blocking onboarding for.
  */
 export type HostWiringFact =
   | { readonly kind: 'not_applicable' }
@@ -306,9 +305,9 @@ const executeGate = (
  * The only place that answers "which gate is next".
  *
  * Blocking gates are an ordered list, so adding a fifth gate is a list edit rather than a new
- * branch. Host wiring is absent from that list by construction (D1): a user with neither Claude
- * Code nor Codex installed is a legitimate CLI-only user, and an unwired host must never stop
- * them reaching login.
+ * branch. Host wiring is absent from that list by construction: a user with neither Claude Code nor
+ * Codex installed is a legitimate CLI-only user, and an unwired host must never stop them reaching
+ * login.
  */
 export const resolveOnboardingState = (facts: OnboardingFacts): OnboardingState => {
   const hostWiring = hostWiringGate(facts);

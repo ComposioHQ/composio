@@ -4,11 +4,11 @@ import { findTaskByToolkit, onboardToolkitSlugs } from 'src/services/onboarding-
 import type { OnboardingState } from 'src/services/onboarding-state';
 
 /**
- * Chokepoint 2: the single answer to "what command do I give the agent next".
+ * The single place that decides what command to hand an agent next.
  *
- * The invariant it exists to enforce is that it can say *blocked* instead of returning a command
- * that reproduces the state it was asked about. Returning `composio onboard --json` while the
- * connect gate is blocked would put an agent in a loop, re-reading the same pending link forever.
+ * It can answer *blocked* instead of returning a command that reproduces the state it was asked
+ * about. Returning `composio onboard --json` while the connect gate is blocked would put an agent in
+ * a loop, re-reading the same pending link forever.
  *
  * It takes the toolkit the caller asked for, never one the resolver adopted, so it cannot invent a
  * target. And no command it returns ever contains a placeholder: a string like
@@ -85,9 +85,9 @@ const authorizationAction = (state: OnboardingState): string => {
  * The command has to be the one that changes the login fact *from here*. `composio login --poll`
  * only does that when a session already exists, and one exists only when this invocation minted it
  * — `--status` advances nothing, and a failed login delegate leaves nothing behind either. Emitting
- * `--poll` there hands back a command that fails with "No pending login found", changes no fact,
- * and breaks the no-loop property this chokepoint exists to enforce. Without a URL the entry point
- * is `composio login --no-wait`, which mints the session and writes it to disk.
+ * `--poll` there hands back a command that fails with "No pending login found" and changes no fact,
+ * which is how a polling caller ends up in an infinite loop. Without a URL the entry point is
+ * `composio login --no-wait`, which mints the session and writes it to disk.
  */
 const loginStep = (context: NextCommandContext): NextStep =>
   context.loginUrl === undefined
@@ -191,13 +191,13 @@ export const nextAgentCommand = (
     }
 
     case null:
-      // No gate is outstanding. Two unfinished states still reach here, and both have to say
-      // something: `done` with `onboarded: false` is a document with nothing to act on at all, and
-      // a caller polling until `onboarded` would spin on it forever.
+      // No gate is outstanding, and onboarding is unfinished — the `onboarded` check above already
+      // returned otherwise. Both remaining states have to say something: `done` with
+      // `onboarded: false` is a document with nothing to act on, and a caller polling until
+      // `onboarded` would spin on it forever.
 
       // A connected toolkit with no curated demo. `composio search` changes no fact in
-      // `OnboardingFacts`, so returning it as a command would break the no-loop property by
-      // construction — it stays prose.
+      // `OnboardingFacts`, so returning it as a command would loop by construction — it stays prose.
       if (state.gates.execute.status === 'deferred') {
         return {
           kind: 'deferred',
@@ -208,14 +208,10 @@ export const nextAgentCommand = (
       // A gate `--skip` left out of this invocation. Skips are never persisted, so re-running
       // without the flag is the whole recovery — but the same argv in a shell alias reproduces the
       // state, which is why the reason is stated rather than left to the caller to infer.
-      if (!state.onboarded) {
-        return {
-          kind: 'deferred',
-          humanAction:
-            'Onboarding is unfinished because `--skip` left a step out of this invocation. Re-run `composio onboard` without `--skip` to finish it.',
-        };
-      }
-
-      return { kind: 'done' };
+      return {
+        kind: 'deferred',
+        humanAction:
+          'Onboarding is unfinished because `--skip` left a step out of this invocation. Re-run `composio onboard` without `--skip` to finish it.',
+      };
   }
 };
