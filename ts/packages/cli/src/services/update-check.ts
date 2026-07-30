@@ -6,7 +6,11 @@ import { bold, cyanBright, dim } from 'src/ui/colors';
 import { APP_VERSION, GITHUB_REPO } from '../constants';
 import { NodeOs } from './node-os';
 import { resolveInstalledCliVersion } from './run-companion-modules';
-import { maybeStageUpdateInBackground } from './self-update';
+import {
+  maybeStageUpdateInBackground,
+  pickAutoUpdateTarget,
+  releaseChannelForVersion,
+} from './self-update';
 import { TerminalUI } from './terminal-ui';
 
 /**
@@ -208,15 +212,17 @@ export function createUpdateChecker(config: UpdateCheckConfig) {
       if (!canDecorate) return;
 
       const state = yield* readState;
-      const latestVersion = semver.valid(state.latestVersion);
       const currentVersion = semver.valid(config.currentVersion);
-      if (!latestVersion || !currentVersion || latestVersion === currentVersion) return;
-
-      // Only show when the cached version is strictly newer.
-      if (!semver.gt(latestVersion, currentVersion)) return;
+      if (!currentVersion) return;
+      const target = pickAutoUpdateTarget(
+        state,
+        currentVersion,
+        releaseChannelForVersion(currentVersion)
+      );
+      if (!target) return;
 
       const msg =
-        `  ${dim('Update available:')} ${dim(config.currentVersion)} ${dim('→')} ${bold(cyanBright(latestVersion))}\n` +
+        `  ${dim('Update available:')} ${dim(config.currentVersion)} ${dim('→')} ${bold(cyanBright(target.version))}\n` +
         `  ${dim('Run')} ${cyanBright('composio upgrade')} ${dim('to update')}\n`;
 
       yield* terminal.error(`\n${msg}`);

@@ -281,6 +281,23 @@ describe('showUpdateNotice', () => {
     }).pipe(Effect.provide(PlatformLayers))
   );
 
+  it.effect('prints a newer beta for beta installs when stable is not newer', () =>
+    Effect.gen(function* () {
+      const config = makeConfig({ currentVersion: '0.3.0-beta.1' });
+      writeState(config, {
+        lastChecked: new Date().toISOString(),
+        latestVersion: '0.2.0',
+        latestBeta: '0.3.0-beta.2',
+      });
+      const { showUpdateNotice } = createUpdateChecker(config);
+
+      yield* showUpdateNotice(makeTerminal(output));
+
+      expect(output).toHaveLength(1);
+      expect(output[0]).toContain('0.3.0-beta.2');
+    }).pipe(Effect.provide(PlatformLayers))
+  );
+
   it.effect('does not print upgrade hint when stderr is captured', () =>
     Effect.gen(function* () {
       const config = makeConfig({ currentVersion: '0.2.0' });
