@@ -160,29 +160,49 @@ export const ComposioCliUserConfigLive = Layer.effect(
         rawConfig = next;
       });
 
-    const update = (
-      next: Partial<CliUserConfig>
-    ): Effect.Effect<void, ParseError | PlatformError, never> =>
-      persist(
-        CliUserConfig.make(
-          {
-            ...rawConfig,
-            ...next,
-          },
-          // A key this binary's schema does not declare belongs to a newer one that wrote the file,
-          // and `.make`'s validation would strip it on the way back out. `rawConfig` was validated
-          // once at load and `next` is schema-shaped at the type level, so nothing else is lost.
-          // The encoder preserves the same keys — see `cliUserConfigToJSON`.
-          { disableValidation: true }
-        )
-      );
-
     const load = Effect.gen(function* () {
       const configJson = yield* fs.readFileString(jsonConfigPath, 'utf8');
       const parsed = yield* decodeConfigJson(configJson);
       rawConfig = yield* cliUserConfigFromJSON(JSON.stringify(normalizeRawConfigJson(parsed)));
       return rawConfig;
     });
+
+    /**
+     * Merge over what is on disk *now*, not over the snapshot this process loaded at startup.
+     *
+     * `~/.composio/config.json` is shared by every `composio` process on the machine, and the whole
+     * file is rewritten on each write. Merging over the startup snapshot means a process that has
+     * been running for a while reverts every unrelated field another process changed in the
+     * meantime — `developer`, `experimentalFeatures`, `security`. Re-reading first narrows that
+     * window to the read-merge-write itself. A file that has since become unreadable or undecodable
+     * falls back to the in-memory config, which is the same value the old behavior would have used.
+     *
+     * TODO: the remaining window is still a real race — two processes can both read, both merge,
+     * and the second write wins; a reader that lands on the truncated file resets the config to
+     * defaults. Closing it needs an advisory cross-process lock around read-modify-write plus an
+     * atomic rename, which is a change to every writer of this file and to the failure semantics of
+     * a locked config, so it is deliberately not part of this change.
+     */
+    const update = (
+      next: Partial<CliUserConfig>
+    ): Effect.Effect<void, ParseError | PlatformError, never> =>
+      Effect.gen(function* () {
+        const current = yield* load.pipe(Effect.catchAll(() => Effect.succeed(rawConfig)));
+
+        yield* persist(
+          CliUserConfig.make(
+            {
+              ...current,
+              ...next,
+            },
+            // A key this binary's schema does not declare belongs to a newer one that wrote the
+            // file, and `.make`'s validation would strip it on the way back out. `current` was
+            // validated when it was decoded and `next` is schema-shaped at the type level, so
+            // nothing else is lost. The encoder preserves the same keys — see `cliUserConfigToJSON`.
+            { disableValidation: true }
+          )
+        );
+      });
 
     if (yield* fs.exists(jsonConfigPath)) {
       yield* load.pipe(Effect.catchAll(() => persist(DEFAULT_CLI_USER_CONFIG)));

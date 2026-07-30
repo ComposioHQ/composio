@@ -246,6 +246,44 @@ describe('ComposioCliUserConfig', () => {
     }).pipe(Effect.provide(CliUserConfigTest));
   });
 
+  it.scoped('re-reads the file before merging, so a concurrent change is not reverted', () => {
+    // Another `composio` process rewrote the file after this one loaded it. Merging over the
+    // startup snapshot would put the old value back — and every write rewrites the whole file.
+    const cwd = tempy.temporaryDirectory();
+    const map = new Map([['DEBUG_OVERRIDE_VERSION', '1.2.3']]) satisfies Map<string, string>;
+    const configPath = path.join(cwd, '.composio', 'config.json');
+    fs.mkdirSync(path.join(cwd, '.composio'), { recursive: true });
+    fs.writeFileSync(configPath, JSON.stringify({ security: 'auto' }));
+
+    const NodeOsTest = Layer.succeed(NodeOs, defaultNodeOs({ homedir: cwd }));
+    const CliUserConfigTest = Layer.provideMerge(
+      ComposioCliUserConfigLive,
+      Layer.mergeAll(BunFileSystem.layer, BunPath.layer, NodeOsTest, withMapConfigProvider(map))
+    );
+
+    return Effect.gen(function* () {
+      const config = yield* ComposioCliUserConfig;
+      assertEquals(config.data.security, 'auto');
+
+      fs.writeFileSync(
+        configPath,
+        JSON.stringify({ security: 'json', a_future_block: { recorded: true } })
+      );
+
+      yield* config.update({ developer: { enabled: false, destructiveActions: false } });
+
+      const parsed = JSON.parse(fs.readFileSync(configPath, 'utf8')) as {
+        developer: { enabled: boolean };
+        security: string;
+        a_future_block?: { recorded: boolean };
+      };
+
+      assertEquals(parsed.developer.enabled, false);
+      assertEquals(parsed.security, 'json');
+      assertEquals(parsed.a_future_block?.recorded, true);
+    }).pipe(Effect.provide(CliUserConfigTest));
+  });
+
   it.scoped('replaces malformed persisted config with safe defaults', () => {
     const cwd = tempy.temporaryDirectory();
     const map = new Map([['DEBUG_OVERRIDE_VERSION', '1.2.3']]) satisfies Map<string, string>;

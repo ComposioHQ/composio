@@ -29,12 +29,22 @@ export const readPersistedOnboarding: Effect.Effect<
  * Errors are swallowed on purpose: every caller sits on the success path of a tool execution
  * that already happened, so a config write that fails must not turn a successful execution into
  * a failed command. `hasExecuted` is monotonic — it never flips back to `false` here.
+ *
+ * Once the flag is set the write is skipped entirely. `composio execute` is the most frequently and
+ * most concurrently run command in the CLI, and every write rewrites the whole shared config file;
+ * doing that on every successful execution turns a rare race into a routine one. Nothing observable
+ * is lost: the flag is monotonic and `last_execution.at` is only ever displayed, as
+ * `gates.execute.last_executed_at`.
  */
 export const recordSuccessfulExecution = (params: {
   readonly slug: string;
 }): Effect.Effect<void, never, ComposioCliUserConfig> =>
   Effect.gen(function* () {
     const config = yield* ComposioCliUserConfig;
+    if (config.data.onboarding.hasExecuted) {
+      return;
+    }
+
     const now = yield* DateTime.now;
 
     yield* config.update({

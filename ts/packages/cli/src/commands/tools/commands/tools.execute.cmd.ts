@@ -960,6 +960,11 @@ export type RunToolsExecuteResult =
    */
   | { readonly kind: 'skipped'; readonly reason: 'unauthenticated' };
 
+/**
+ * The parallel path inherits `quiet`/`inlineOnly` structurally, so both have to mean the same thing
+ * here as on the single-execute path. `quiet` is honoured at both batch write sites; `inlineOnly`
+ * is not read, so a batch response large enough to spill still spills to a file.
+ */
 type SharedRunToolsExecuteParams = Omit<RunToolsExecuteParams, 'slug' | 'data' | 'file'>;
 
 type ParallelExecuteSpec = {
@@ -2053,8 +2058,9 @@ const runParallelSchemaFetchFromParsed = (params: ParsedParallelExecuteArgs) =>
       yield* ui.log.message(
         `Parallel execute completed: ${results.filter(result => result.successful).length}/${results.length} successful`
       );
-      yield* writeExecuteStdout(
+      yield* writeExecuteStdoutUnlessQuiet(
         ui,
+        params.quiet ?? false,
         JSON.stringify(
           {
             kind: EXECUTE_PAYLOAD_KINDS.schemaBatch,
@@ -2243,8 +2249,9 @@ const runParallelToolsExecuteFromParsed = (params: ParsedParallelExecuteArgs) =>
       yield* ui.log.message(
         `Parallel execute completed: ${results.filter(result => result.successful).length}/${results.length} successful`
       );
-      yield* writeExecuteStdout(
+      yield* writeExecuteStdoutUnlessQuiet(
         ui,
+        params.quiet ?? false,
         JSON.stringify(
           {
             kind: EXECUTE_PAYLOAD_KINDS.executionBatch,

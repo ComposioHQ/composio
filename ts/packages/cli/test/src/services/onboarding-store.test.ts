@@ -21,6 +21,11 @@ type PersistedConfigJson = {
     readonly has_executed?: boolean;
     readonly last_execution?: { readonly slug: string; readonly at: string } | null;
   };
+  readonly developer?: {
+    readonly enabled?: boolean;
+    readonly destructive_actions?: boolean;
+  };
+  readonly security?: string;
 };
 
 const layerFor = (homedir: string) =>
@@ -73,19 +78,50 @@ describe('onboarding-store', () => {
     }).pipe(Effect.provide(layerFor(homedir)));
   });
 
-  it.scoped('keeps the most recent execution and never flips has_executed back to false', () => {
+  it.scoped('writes once and never flips has_executed back to false', () => {
+    // The second execute writes nothing at all. Every write rewrites the whole shared config file
+    // from this process's snapshot, and `composio execute` is the command most likely to be running
+    // twice at once — so a per-execution write reverts whatever another process changed meanwhile.
+    // Nothing observable is lost: the flag is monotonic and `last_execution.at` is only displayed.
     const homedir = tempy.temporaryDirectory();
 
     return Effect.gen(function* () {
       yield* recordSuccessfulExecution({ slug: 'FIRST_SLUG' });
       const first = yield* readPersistedOnboarding;
+      const firstWrite = fs.statSync(path.join(homedir, '.composio', 'config.json')).mtimeMs;
 
       yield* recordSuccessfulExecution({ slug: 'SECOND_SLUG' });
       const second = yield* readPersistedOnboarding;
 
       assertEquals(second.hasExecuted, true);
-      assertEquals(second.lastExecution?.slug, 'SECOND_SLUG');
-      assertTrue((second.lastExecution?.at ?? '') >= (first.lastExecution?.at ?? ''));
+      assertEquals(second.lastExecution?.slug, 'FIRST_SLUG');
+      assertEquals(second.lastExecution?.at, first.lastExecution?.at);
+      assertEquals(fs.statSync(path.join(homedir, '.composio', 'config.json')).mtimeMs, firstWrite);
+    }).pipe(Effect.provide(layerFor(homedir)));
+  });
+
+  it.scoped('merges over what is on disk now, not over the snapshot loaded at startup', () => {
+    // Another `composio` process changed an unrelated field while this one was running. Merging
+    // over the startup snapshot would silently roll that change back on the next write.
+    const homedir = tempy.temporaryDirectory();
+    writeConfig(homedir, { developer: { enabled: true, destructive_actions: false } });
+
+    return Effect.gen(function* () {
+      const config = yield* ComposioCliUserConfig;
+      assertEquals(config.data.developerModeEnabled, true);
+
+      writeConfig(homedir, {
+        developer: { enabled: false, destructive_actions: true },
+        security: 'json',
+      });
+
+      yield* recordSuccessfulExecution({ slug: 'GITHUB_GET_THE_AUTHENTICATED_USER' });
+
+      const onDisk = readConfig(homedir);
+      assertEquals(onDisk.onboarding?.has_executed, true);
+      assertEquals(onDisk.developer?.enabled, false);
+      assertEquals(onDisk.developer?.destructive_actions, true);
+      assertEquals(onDisk.security, 'json');
     }).pipe(Effect.provide(layerFor(homedir)));
   });
 
