@@ -73,6 +73,16 @@ const probes = [
     terms: ['durable backend AI agents', 'eve framework', 'channels', 'schedules'],
   },
   {
+    task: 'draft a new guide in the house documentation voice',
+    expect: 'good-docs-writing',
+    terms: ['writing style guide', "modal's documentation voice", 'second-person', 'example-first'],
+  },
+  {
+    task: 'review a README for voice and tone violations and report suggested rewrites',
+    expect: 'good-docs-audit',
+    terms: ['report violations', 'critique', 'suggested rewrite', 'rule violated'],
+  },
+  {
     task: 'create a Python provider adapter under python/providers with metadata',
     expect: 'python-providers',
     terms: ['python/providers', 'Python provider adapters', 'provider metadata', 'framework-specific dependencies'],
