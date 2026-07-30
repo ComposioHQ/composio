@@ -129,6 +129,8 @@ const postHogEnabled = Effect.gen(function* () {
   return projectKey.length > 0;
 });
 
+export const analyticsIdentityLinkingEnabled = postHogEnabled;
+
 const jsonFromString = Schema.parseJson();
 const prettyJsonFromString = Schema.parseJson({ space: 2 });
 const decodeJson = Schema.decodeUnknown(jsonFromString);
@@ -376,15 +378,17 @@ const getApiKeyFingerprint = Effect.flatMap(getUserApiKey, apiKey =>
 );
 
 // The keychain* security modes strip the api key from user_data.json, so no
-// fingerprint is computable here; a parseable user config in one of those
-// modes is the signal that the persisted identity still belongs to a login.
+// fingerprint is computable here. A persisted org is the durable login signal:
+// logout keeps the file but clears org_id, so a stale analytics identity can
+// never survive a failed best-effort state cleanup.
 const keyringBackedLoginPresent = Effect.gen(function* () {
   const paths = yield* getAnalyticsPaths;
   const cliConfig = yield* readOptionalJson<{ security?: unknown }>(paths.cliConfigPath);
   if (cliConfig?.security !== 'keychain' && cliConfig?.security !== 'keychain-subprocess') {
     return false;
   }
-  return (yield* readUserConfig) !== undefined;
+  const userConfig = yield* readUserConfig;
+  return typeof userConfig?.org_id === 'string' && userConfig.org_id.trim().length > 0;
 });
 
 const getDistinctId = (installId: string) =>

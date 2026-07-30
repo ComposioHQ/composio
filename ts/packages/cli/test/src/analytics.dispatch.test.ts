@@ -1068,6 +1068,55 @@ describe('CLI analytics dispatch', () => {
       }).pipe(Effect.provide(makePlatformLayer(home)));
     });
 
+    it.effect('does not reuse a stale keychain identity when logout loses the state lock', () => {
+      const home = tempy.temporaryDirectory();
+      const scriptPath = `${home}/composio.ts`;
+      enableTelemetry('');
+      vi.stubEnv('COMPOSIO_CACHE_DIR', `${home}/.composio`);
+      process.argv[1] = scriptPath;
+
+      return Effect.gen(function* () {
+        const fs = yield* FileSystem.FileSystem;
+        const path = yield* Path.Path;
+        yield* fs.writeFileString(scriptPath, '');
+        const composioDir = path.join(home, '.composio');
+        yield* fs.makeDirectory(composioDir, { recursive: true });
+        yield* fs.writeFileString(
+          path.join(composioDir, 'config.json'),
+          JSON.stringify({ security: 'keychain-subprocess' })
+        );
+        // Logout persists an empty credential record but intentionally keeps
+        // user_data.json in place.
+        yield* fs.writeFileString(
+          path.join(composioDir, USER_CONFIG_FILE_NAME),
+          JSON.stringify({ base_url: 'https://backend.example.test' })
+        );
+        yield* fs.writeFileString(
+          path.join(composioDir, 'analytics.json'),
+          JSON.stringify({
+            install_id: 'install_keychain_logout',
+            apollo_user_id: 'om_logged_out_keychain_user',
+            aliased_apollo_user_id: 'om_logged_out_keychain_user',
+          })
+        );
+        const lockPath = path.join(composioDir, 'analytics.json.lock');
+        yield* fs.writeFileString(lockPath, 'other-process');
+
+        // The clear is best-effort and times out while another process owns
+        // the lock, leaving the old identity on disk.
+        yield* clearApolloIdentityForAnalytics;
+        yield* fs.remove(lockPath);
+        childProcessMocks.spawn.mockClear();
+
+        yield* trackCliEventEffect({ name: 'producer_event' });
+
+        const args = childProcessMocks.spawn.mock.calls[0]![1] as string[];
+        const payload = decodeWorkerPayload<{ distinctId: string; installId: string }>(args[2]!);
+        expect(payload.distinctId).not.toBe('om_logged_out_keychain_user');
+        expect(payload.distinctId).toBe(`anon_${payload.installId}`);
+      }).pipe(Effect.provide(makePlatformLayer(home)));
+    });
+
     it.effect('does not trust a fingerprint-less identity outside keychain modes', () => {
       const home = tempy.temporaryDirectory();
       const scriptPath = `${home}/composio.ts`;

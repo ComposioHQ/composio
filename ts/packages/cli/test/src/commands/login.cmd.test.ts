@@ -28,6 +28,7 @@ vi.mock('src/analytics/dispatch', async importOriginal => {
   const { ComposioUserContext } = await import('src/services/user-context');
   return {
     ...actual,
+    analyticsIdentityLinkingEnabled: Effect.succeed(true),
     linkApolloIdentityForAnalytics: ((apolloUserId: string) =>
       Effect.map(ComposioUserContext, ctx => {
         analyticsMocks.linkCalls.push({ apolloUserId, loggedInAtLinkTime: ctx.isLoggedIn() });
@@ -340,19 +341,24 @@ describe('CLI: composio login', () => {
             const url = requestUrl(requestInput);
 
             if (url.includes('/api/v3/auth/session/info')) {
+              const selectedOrgId = new Headers(init?.headers).get('x-org-id');
               return mockFetchResponse({
                 project: {
                   name: 'Default Project',
                   id: 'project_id_default',
-                  org_id: 'org_default',
+                  org_id: selectedOrgId ?? 'org_default',
                   nano_id: 'project_default',
                   email: 'project@example.com',
                   created_at: '2026-01-01T00:00:00.000Z',
                   updated_at: '2026-01-01T00:00:00.000Z',
-                  org: { id: 'org_default', name: 'Example Org', plan: 'enterprise' },
+                  org: {
+                    id: selectedOrgId ?? 'org_default',
+                    name: selectedOrgId ? 'Selected Org' : 'Example Org',
+                    plan: 'enterprise',
+                  },
                 },
                 org_member: {
-                  id: 'member_123',
+                  id: selectedOrgId ? 'member_selected' : 'member_default',
                   user_id: 'user_123',
                   email: 'cli@example.com',
                   name: 'CLI User',
@@ -408,9 +414,10 @@ describe('CLI: composio login', () => {
         expect(output).toContain('Logged in as cli@example.com in "Selected Org"');
 
         // The analytics identity is linked exactly once, and only after the
-        // credential was stored via ctx.login.
+        // credential was stored via ctx.login, using the selected org's
+        // membership rather than the API key's home-org membership.
         expect(analyticsMocks.linkCalls).toEqual([
-          { apolloUserId: 'member_123', loggedInAtLinkTime: true },
+          { apolloUserId: 'member_selected', loggedInAtLinkTime: true },
         ]);
       })
     );
