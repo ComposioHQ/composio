@@ -55,6 +55,17 @@ Additionally, for storing and retrieving user session context, a `user_data.json
 
 By default, this file is stored in `~/.composio`, but you can specify a custom location using the `COMPOSIO_CACHE_DIR` environment variable.
 
+| Environment Variable   | User JSON config | Description                                                        | Default                         |
+| ---------------------- | ---------------- | ------------------------------------------------------------------ | ------------------------------- |
+| COMPOSIO_API_KEY       | `api_key`        | Composio backend API key                                           | None                            |
+| COMPOSIO_BASE_URL      | `base_url`       | The base URL of the Composio backend API                           | https://backend.composio.dev    |
+| COMPOSIO_WEB_URL       | `web_url`        | The base URL of the Composio web app                               | https://dashboard.composio.dev/ |
+| COMPOSIO_CACHE_DIR     | -                | The directory where the Composio CLI stores cache files            | ~/.composio                     |
+| COMPOSIO_LOG_LEVEL     | -                | The log level for the Composio CLI                                 | None                            |
+| DEBUG_OVERRIDE_VERSION | -                | The version to use when upgrading the Composio CLI (for debugging) | None                            |
+| FORCE_USE_CACHE        | -                | Whether to force the use of previously cached HTTP responses       | None                            |
+| NO_COLOR               | -                | If set, disables color output in the CLI (https://no-color.org/)   | None                            |
+
 ### Credential storage
 
 `composio login` stores your API key in the operating system's credential store — the macOS Keychain via `/usr/bin/security`, or the Linux Secret Service via `secret-tool`. `user_data.json` then holds only non-secret context (org, base URL). No trust dialog appears: `/usr/bin/security` is Apple-signed.
@@ -83,17 +94,6 @@ const composio = new Composio({ apiKey: process.env.COMPOSIO_API_KEY });
 ```
 
 Set `COMPOSIO_API_KEY` from your own secret source, or set `security` to `"json"` if you want the SDK to keep picking the key up from `user_data.json`.
-
-| Environment Variable   | User JSON config | Description                                                        | Default                         |
-| ---------------------- | ---------------- | ------------------------------------------------------------------ | ------------------------------- |
-| COMPOSIO_API_KEY       | `api_key`        | Composio backend API key                                           | None                            |
-| COMPOSIO_BASE_URL      | `base_url`       | The base URL of the Composio backend API                           | https://backend.composio.dev    |
-| COMPOSIO_WEB_URL       | `web_url`        | The base URL of the Composio web app                               | https://dashboard.composio.dev/ |
-| COMPOSIO_CACHE_DIR     | -                | The directory where the Composio CLI stores cache files            | ~/.composio                     |
-| COMPOSIO_LOG_LEVEL     | -                | The log level for the Composio CLI                                 | None                            |
-| DEBUG_OVERRIDE_VERSION | -                | The version to use when upgrading the Composio CLI (for debugging) | None                            |
-| FORCE_USE_CACHE        | -                | Whether to force the use of previously cached HTTP responses       | None                            |
-| NO_COLOR               | -                | If set, disables color output in the CLI (https://no-color.org/)   | None                            |
 
 Additionally, `composio upgrade` supports the following environment variables:
 
