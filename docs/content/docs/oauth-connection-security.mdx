@@ -114,9 +114,10 @@ curl -X POST https://backend.composio.dev/api/v3.1/connected_accounts/complete_a
 
 On a match, the connection activates and the response returns `connected_account_id` and
 `toolkit_slug`. A `200` is returned only once the connection is `ACTIVE`, so there is nothing to
-poll. If the `user_id` does not match, the request returns `400` and the flow must be restarted. The
-full response contract is in the
-[`complete_auth` API reference](/reference/api-reference/connected-accounts/postConnectedAccountsCompleteAuth).
+poll. If the `user_id` does not match, the request returns `400` and the connection moves to
+`FAILED`; restart the flow if required. See the
+[API reference](/reference/api-reference/connected-accounts/postConnectedAccountsCompleteAuth) for
+the full response contract.
 </Step>
 
 <Step>
