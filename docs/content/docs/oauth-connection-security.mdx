@@ -31,19 +31,17 @@ provider returns, so a link cannot be carried to another browser and completed t
 enforced automatically, with no setup on your part.
 
 <Callout type="warn">
-**This can stop some of your real users from connecting — we know that is frustrating, so here is
-exactly when it happens.** If a user opens the Connect Link in one browser but the provider returns
-them to another, the connection is rejected with *"This connection was started from a different
-browser or device."* It most often happens with in-app browsers (Instagram, LinkedIn, and similar)
-that hand the provider step to the system browser, or when cookies are blocked. Reopening the link
-and finishing it in a single browser lets them through.
+**This check can block some of your real users.** If a user opens the Connect Link in one browser but
+the provider returns them to another, the connection is rejected with *"This connection was started
+from a different browser or device."* It usually happens with in-app browsers (Instagram, LinkedIn,
+and similar) that hand the provider step off to the system browser, or when cookies are blocked.
+Reopening the link and finishing it in one browser gets them through.
 
-This check is not optional on managed apps, and for good reason: Composio's OAuth app is shared
-across every Composio user, so without a browser check a connection one person starts could be
-completed by someone else. If these cases are affecting your users, the durable fix is to bring your
-own OAuth app and enable [callback identity verification](#callback-identity-verification) — it binds
-each connection to your signed-in user instead of the browser, so it holds no matter how the user
-returns from the provider.
+On managed apps this check can't be turned off: Composio's OAuth app is shared across every Composio
+user, so without it a connection one person starts could be completed by another. If it is blocking
+your users, bring your own OAuth app and turn on
+[callback identity verification](#callback-identity-verification) — it binds each connection to your
+signed-in user rather than the browser, so it holds however the user returns from the provider.
 </Callout>
 
 ## Callback identity verification
