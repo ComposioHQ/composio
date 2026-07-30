@@ -1,5 +1,5 @@
 import { FileSystem } from '@effect/platform';
-import { Data, Effect } from 'effect';
+import { Data, Effect, Option, Stream } from 'effect';
 import { resolve } from 'node:path';
 import { changelogDir, draftPath } from './shared.ts';
 
@@ -17,7 +17,7 @@ export class FinalizeError extends Data.TaggedError('FinalizeError')<{ readonly 
 export const finalize = Effect.gen(function* () {
   const fs = yield* FileSystem.FileSystem;
   const draft = yield* fs.readFileString(draftPath).pipe(Effect.option);
-  if (draft._tag === 'None') {
+  if (Option.isNone(draft)) {
     return yield* Effect.log('No changelog draft to finalize.');
   }
   const content = draft.value
@@ -31,23 +31,28 @@ export const finalize = Effect.gen(function* () {
   }
   const [, year = '', month = '', day = ''] = date;
   const base = `${month}-${day}-${year.slice(2)}`;
-  for (let attempt = 0; ; attempt++) {
-    if (attempt === 10) {
-      return yield* new FinalizeError({
-        reason: `No free changelog filename left for ${base}.mdx.`,
-      });
-    }
-    const target = resolve(changelogDir, `${base}${attempt === 0 ? '' : `-${attempt + 1}`}.mdx`);
-    const existing = yield* fs.readFileString(target).pipe(Effect.option);
-    if (existing._tag === 'Some' && existing.value === content) {
-      yield* Effect.log(`Draft already promoted to ${target}.`);
-      break;
-    }
-    if (existing._tag === 'None') {
-      yield* fs.writeFileString(target, content);
-      yield* Effect.log(`Promoted changelog draft to ${target}.`);
-      break;
-    }
-  }
+  const slot = yield* Stream.range(0, 9).pipe(
+    Stream.map(n => resolve(changelogDir, `${base}${n === 0 ? '' : `-${n + 1}`}.mdx`)),
+    Stream.mapEffect(target =>
+      fs
+        .readFileString(target)
+        .pipe(Effect.option, Effect.map(existing => ({ target, existing })))
+    ),
+    Stream.filter(
+      ({ existing }) => Option.isNone(existing) || Option.contains(existing, content)
+    ),
+    Stream.runHead
+  );
+  yield* Option.match(slot, {
+    onNone: () => new FinalizeError({ reason: `No free changelog filename left for ${base}.mdx.` }),
+    onSome: ({ target, existing }) =>
+      Option.match(existing, {
+        onNone: () =>
+          fs
+            .writeFileString(target, content)
+            .pipe(Effect.zipRight(Effect.log(`Promoted changelog draft to ${target}.`))),
+        onSome: () => Effect.log(`Draft already promoted to ${target}.`),
+      }),
+  });
   yield* fs.remove(draftPath);
 });

@@ -1,5 +1,5 @@
 import { FileSystem } from '@effect/platform';
-import { Data, Effect } from 'effect';
+import { Config, Data, Effect, Option } from 'effect';
 import {
   npmVersionUrl,
   publishablePackages,
@@ -60,9 +60,9 @@ export const status = Effect.gen(function* () {
       ? 'All SDK artifacts are live on npm and PyPI.'
       : `Pending artifacts:\n${describe(missing)}`
   );
-  const githubOutput = process.env['GITHUB_OUTPUT'];
-  if (githubOutput !== undefined) {
-    yield* fs.writeFileString(githubOutput, `publish_needed=${missing.length > 0}\n`, {
+  const githubOutput = yield* Config.option(Config.string('GITHUB_OUTPUT'));
+  if (Option.isSome(githubOutput)) {
+    yield* fs.writeFileString(githubOutput.value, `publish_needed=${missing.length > 0}\n`, {
       flag: 'a',
     });
   }

@@ -1,7 +1,7 @@
 import { LanguageModel } from '@effect/ai';
 import { OpenAiClient, OpenAiLanguageModel } from '@effect/ai-openai';
 import { FetchHttpClient, FileSystem } from '@effect/platform';
-import { Config, Data, Effect, Layer, Schema } from 'effect';
+import { Config, Data, Effect, Layer, Option, Schema } from 'effect';
 import { dirname, resolve } from 'node:path';
 import { draftPath, exec, sha256 } from './shared.ts';
 
@@ -121,7 +121,7 @@ export const generateDraft = (facts: ReleaseFacts) =>
       ),
       Effect.option
     );
-    if (existing._tag === 'Some' && existing.value.includes(inputHash)) {
+    if (Option.isSome(existing) && existing.value.includes(inputHash)) {
       yield* fs.makeDirectory(dirname(draftPath), { recursive: true });
       yield* fs.writeFileString(draftPath, existing.value);
       return yield* Effect.log(

@@ -5,7 +5,7 @@ import {
   HttpClient,
   HttpClientRequest,
 } from '@effect/platform';
-import { Data, Effect, Schema, Stream } from 'effect';
+import { Data, Effect, Option, Schema, Stream } from 'effect';
 import { createHash } from 'node:crypto';
 import { resolve } from 'node:path';
 
@@ -96,7 +96,7 @@ export const publishablePackages = Effect.gen(function* () {
     const decoded = yield* fs
       .readFileString(resolve(project.path, 'package.json'))
       .pipe(Effect.flatMap(Schema.decodeUnknown(PackageJson)), Effect.option);
-    if (decoded._tag === 'Some' && !decoded.value.private && !ignored.has(decoded.value.name)) {
+    if (Option.isSome(decoded) && !decoded.value.private && !ignored.has(decoded.value.name)) {
       packages.push({
         name: decoded.value.name,
         version: decoded.value.version,
