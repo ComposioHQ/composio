@@ -1,27 +1,29 @@
-import { FileSystem, HttpClient, HttpClientRequest, HttpClientResponse } from '@effect/platform'
-import { Config, Data, Effect, Redacted, Schema } from 'effect'
-import { dirname, resolve } from 'node:path'
-import { draftPath, exec, sha256 } from './shared.ts'
+import { FileSystem, HttpClient, HttpClientRequest, HttpClientResponse } from '@effect/platform';
+import { Config, Data, Effect, Redacted, Schema } from 'effect';
+import { dirname, resolve } from 'node:path';
+import { draftPath, exec, sha256 } from './shared.ts';
 
 /**
  * Pinned model snapshot. Moving to a newer snapshot must happen through a
  * reviewed change to this constant, never through registry alias drift.
  */
-export const OPENAI_MODEL = 'gpt-5.5-2026-04-23'
+export const OPENAI_MODEL = 'gpt-5.5-2026-04-23';
 
 export interface ReleaseFacts {
-  readonly date: string
+  readonly date: string;
   readonly typescript: ReadonlyArray<{
-    readonly name: string
-    readonly version: string
-    readonly summaries: ReadonlyArray<string>
-  }>
-  readonly python: { readonly name: string; readonly version: string } | null
+    readonly name: string;
+    readonly version: string;
+    readonly summaries: ReadonlyArray<string>;
+  }>;
+  readonly python: { readonly name: string; readonly version: string } | null;
 }
 
-export class ChangelogError extends Data.TaggedError('ChangelogError')<{ readonly reason: string }> {
+export class ChangelogError extends Data.TaggedError('ChangelogError')<{
+  readonly reason: string;
+}> {
   override get message() {
-    return this.reason
+    return this.reason;
   }
 }
 
@@ -29,7 +31,7 @@ const DraftContent = Schema.Struct({
   title: Schema.String,
   description: Schema.String,
   sections: Schema.Array(Schema.Struct({ heading: Schema.String, body: Schema.String })),
-})
+});
 
 const draftJsonSchema = {
   type: 'object',
@@ -48,7 +50,7 @@ const draftJsonSchema = {
       },
     },
   },
-}
+};
 
 const OpenAiResponse = Schema.Struct({
   status: Schema.String,
@@ -64,55 +66,70 @@ const OpenAiResponse = Schema.Struct({
     ),
     { default: () => [] }
   ),
-})
+});
 
 const callModel = (factsJson: string, instructions: string) =>
   Effect.gen(function* () {
-    const apiKey = yield* Config.redacted('OPENAI_API_KEY')
-    const baseUrl = yield* Config.string('OPENAI_BASE_URL').pipe(Config.withDefault('https://api.openai.com/v1'))
-    const client = yield* HttpClient.HttpClient
+    const apiKey = yield* Config.redacted('OPENAI_API_KEY');
+    const baseUrl = yield* Config.string('OPENAI_BASE_URL').pipe(
+      Config.withDefault('https://api.openai.com/v1')
+    );
+    const client = yield* HttpClient.HttpClient;
     const request = yield* HttpClientRequest.post(`${baseUrl}/responses`).pipe(
       HttpClientRequest.setHeader('authorization', `Bearer ${Redacted.value(apiKey)}`),
       HttpClientRequest.bodyJson({
         model: OPENAI_MODEL,
         instructions,
         input: factsJson,
-        text: { format: { type: 'json_schema', name: 'changelog_draft', strict: true, schema: draftJsonSchema } },
+        text: {
+          format: {
+            type: 'json_schema',
+            name: 'changelog_draft',
+            strict: true,
+            schema: draftJsonSchema,
+          },
+        },
         reasoning: { effort: 'low' },
         max_output_tokens: 4000,
       })
-    )
-    const response = yield* client.execute(request)
+    );
+    const response = yield* client.execute(request);
     if (response.status !== 200) {
-      const body = yield* response.text
-      return yield* new ChangelogError({ reason: `OpenAI responded ${response.status}: ${body.slice(0, 500)}` })
+      const body = yield* response.text;
+      return yield* new ChangelogError({
+        reason: `OpenAI responded ${response.status}: ${body.slice(0, 500)}`,
+      });
     }
-    const parsed = yield* HttpClientResponse.schemaBodyJson(OpenAiResponse)(response)
+    const parsed = yield* HttpClientResponse.schemaBodyJson(OpenAiResponse)(response);
     if (parsed.status !== 'completed') {
       return yield* new ChangelogError({
         reason: `OpenAI response status "${parsed.status}"${parsed.error ? `: ${parsed.error.message}` : ''}`,
-      })
+      });
     }
-    const content = parsed.output.find((item) => item.type === 'message')?.content ?? []
-    if (content.some((part) => part.type === 'refusal')) {
-      return yield* new ChangelogError({ reason: 'The model refused to draft the changelog.' })
+    const content = parsed.output.find(item => item.type === 'message')?.content ?? [];
+    if (content.some(part => part.type === 'refusal')) {
+      return yield* new ChangelogError({ reason: 'The model refused to draft the changelog.' });
     }
-    const text = content.find((part) => part.type === 'output_text')?.text
+    const text = content.find(part => part.type === 'output_text')?.text;
     if (text === undefined) {
-      return yield* new ChangelogError({ reason: 'OpenAI response contained no output text.' })
+      return yield* new ChangelogError({ reason: 'OpenAI response contained no output text.' });
     }
-    return yield* Schema.decodeUnknown(Schema.parseJson(DraftContent))(text)
-  }).pipe(Effect.scoped, Effect.timeout('120 seconds'))
+    return yield* Schema.decodeUnknown(Schema.parseJson(DraftContent))(text);
+  }).pipe(Effect.scoped, Effect.timeout('120 seconds'));
 
 /** Escape MDX-active characters in model output, leaving inline code spans untouched. */
 const escapeMdx = (text: string) =>
   text
     .split('`')
-    .map((part, index) => (index % 2 === 0 ? part.replace(/[{}<]/g, (char) => `\\${char}`) : part))
-    .join('`')
+    .map((part, index) => (index % 2 === 0 ? part.replace(/[{}<]/g, char => `\\${char}`) : part))
+    .join('`');
 
 /** Deterministic rendering: the model provides prose; code owns frontmatter, structure, and versions. */
-export const renderDraft = (facts: ReleaseFacts, content: typeof DraftContent.Type, inputHash: string) =>
+export const renderDraft = (
+  facts: ReleaseFacts,
+  content: typeof DraftContent.Type,
+  inputHash: string
+) =>
   [
     '---',
     `title: ${JSON.stringify(content.title)}`,
@@ -122,40 +139,49 @@ export const renderDraft = (facts: ReleaseFacts, content: typeof DraftContent.Ty
     '',
     `{/* sdk-release input-hash ${inputHash} */}`,
     '',
-    ...content.sections.flatMap((section) => [`## ${escapeMdx(section.heading)}`, '', escapeMdx(section.body), '']),
+    ...content.sections.flatMap(section => [
+      `## ${escapeMdx(section.heading)}`,
+      '',
+      escapeMdx(section.body),
+      '',
+    ]),
     // The row format below is a repo invariant: test/release-workflow.test.ts
     // requires every current SDK version to be documented as such a table row.
     '## Released versions',
     '',
     '| SDK | Version |',
     '| --- | --- |',
-    ...facts.typescript.map((pkg) => `| TypeScript \`${pkg.name}\` | \`${pkg.version}\` |`),
-    ...(facts.python === null ? [] : [`| Python \`${facts.python.name}\` | \`${facts.python.version}\` |`]),
+    ...facts.typescript.map(pkg => `| TypeScript \`${pkg.name}\` | \`${pkg.version}\` |`),
+    ...(facts.python === null
+      ? []
+      : [`| Python \`${facts.python.name}\` | \`${facts.python.version}\` |`]),
     '',
-  ].join('\n')
+  ].join('\n');
 
 export const generateDraft = (facts: ReleaseFacts) =>
   Effect.gen(function* () {
-    const fs = yield* FileSystem.FileSystem
-    const factsJson = JSON.stringify(facts, null, 2)
-    const inputHash = sha256(factsJson)
+    const fs = yield* FileSystem.FileSystem;
+    const factsJson = JSON.stringify(facts, null, 2);
+    const inputHash = sha256(factsJson);
     // Prefer an existing draft for identical facts — the working tree first, then
     // the open release-PR branch (changesets/action rebuilds it from next each
     // push, and regenerating would discard human edits made in the PR).
-    const existing = yield* fs
-      .readFileString(draftPath)
-      .pipe(
-        Effect.orElse(() => exec('git', 'show', 'origin/changeset-release/next:.github/sdk-release/draft.mdx')),
-        Effect.option
-      )
+    const existing = yield* fs.readFileString(draftPath).pipe(
+      Effect.orElse(() =>
+        exec('git', 'show', 'origin/changeset-release/next:.github/sdk-release/draft.mdx')
+      ),
+      Effect.option
+    );
     if (existing._tag === 'Some' && existing.value.includes(inputHash)) {
-      yield* fs.makeDirectory(dirname(draftPath), { recursive: true })
-      yield* fs.writeFileString(draftPath, existing.value)
-      return yield* Effect.log('Reusing existing draft for identical release facts (it may carry human edits).')
+      yield* fs.makeDirectory(dirname(draftPath), { recursive: true });
+      yield* fs.writeFileString(draftPath, existing.value);
+      return yield* Effect.log(
+        'Reusing existing draft for identical release facts (it may carry human edits).'
+      );
     }
-    const prompt = yield* fs.readFileString(resolve(import.meta.dir, '../prompt.md'))
-    const content = yield* callModel(factsJson, prompt)
-    yield* fs.makeDirectory(dirname(draftPath), { recursive: true })
-    yield* fs.writeFileString(draftPath, renderDraft(facts, content, inputHash))
-    yield* Effect.log(`Wrote changelog draft to ${draftPath}`)
-  })
+    const prompt = yield* fs.readFileString(resolve(import.meta.dir, '../prompt.md'));
+    const content = yield* callModel(factsJson, prompt);
+    yield* fs.makeDirectory(dirname(draftPath), { recursive: true });
+    yield* fs.writeFileString(draftPath, renderDraft(facts, content, inputHash));
+    yield* Effect.log(`Wrote changelog draft to ${draftPath}`);
+  });
