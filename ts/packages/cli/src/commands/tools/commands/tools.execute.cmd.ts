@@ -18,6 +18,7 @@ import {
   validateToolInputArgumentsWithDefinition,
 } from 'src/services/tool-input-validation';
 import { TerminalUI } from 'src/services/terminal-ui';
+import type { SpinnerHandle } from 'src/services/terminal-ui';
 import { logToolDebug, makePerfDebugLogger } from 'src/services/runtime-debug-logger';
 import {
   LocalToolsDisabledError,
@@ -382,12 +383,17 @@ const perfDebugLog = makePerfDebugLogger();
 const prepareExecuteOutput = (
   toolSlug: string,
   result: ToolExecuteResponse,
-  sharedDirectory?: string
+  sharedDirectory?: string,
+  options?: { readonly inlineOnly?: boolean }
 ) =>
   Effect.gen(function* () {
     const json = serializeExecuteOutput(result);
     const tokenCount = getExecuteOutputEncoder().encode(json).length;
-    if (tokenCount <= EXECUTE_INLINE_OUTPUT_TOKEN_THRESHOLD || !shouldStoreLargeExecuteOutput()) {
+    if (
+      options?.inlineOnly ||
+      tokenCount <= EXECUTE_INLINE_OUTPUT_TOKEN_THRESHOLD ||
+      !shouldStoreLargeExecuteOutput()
+    ) {
       return {
         kind: 'inline',
         json,
@@ -605,7 +611,29 @@ const emitExecuteFailureTelemetry = (params: {
     }
   });
 
+/**
+ * The discriminators on this command's stdout payloads.
+ *
+ * `composio execute`'s stdout is a stream an agent multiplexes with the stdout of whatever else it
+ * is driving, so every payload names its own shape. `kind` is the payload's first field, and the
+ * execution kinds match {@link RunToolsExecuteResult}'s so the wire format and the return type
+ * cannot drift apart. Failure payloads carry one too — that is the branch an agent switches on when
+ * something went wrong, and it is the easiest one to leave out.
+ */
+const EXECUTE_PAYLOAD_KINDS = {
+  execution: 'tool_execution',
+  dryRun: 'tool_dry_run',
+  schema: 'tool_schema',
+  inputHelp: 'tool_input_help',
+  executionBatch: 'tool_execution_batch',
+  schemaBatch: 'tool_schema_batch',
+} as const;
+
 const writeExecuteStdout = (ui: TerminalUI, data: string) => ui.output(data, { force: true });
+
+/** `writeExecuteStdout` unless the caller owns stdout for the whole invocation. */
+const writeExecuteStdoutUnlessQuiet = (ui: TerminalUI, quiet: boolean, data: string) =>
+  quiet ? Effect.void : writeExecuteStdout(ui, data);
 
 export const showToolsExecuteInputHelp = (toolSlug: string) =>
   Effect.gen(function* () {
@@ -647,7 +675,15 @@ export const showToolsExecuteInputHelp = (toolSlug: string) =>
     yield* ui.log.step(`Run:\n> composio execute "${tool.slug}" -d '{"key":"value"}'`);
     yield* writeExecuteStdout(
       ui,
-      JSON.stringify({ slug: tool.slug, input_parameters: tool.input_parameters }, null, 2)
+      JSON.stringify(
+        {
+          kind: EXECUTE_PAYLOAD_KINDS.inputHelp,
+          slug: tool.slug,
+          input_parameters: tool.input_parameters,
+        },
+        null,
+        2
+      )
     );
   });
 
@@ -881,7 +917,48 @@ type RunToolsExecuteParams = {
   skipConnectionCheck: boolean;
   skipToolParamsCheck: boolean;
   skipChecks: boolean;
+  /**
+   * Suppress every stdout write so an embedding command can own the stream. Without it, a caller
+   * that also emits a document puts two unframed JSON values on stdout — and the raw provider
+   * response would leak an inbox or issue list into whatever the caller is logging.
+   */
+  quiet?: boolean;
+  /**
+   * Never spill a large response to a file and return a path instead. Keeps the delegate's return
+   * shape independent of how big the provider's response happened to be.
+   */
+  inlineOnly?: boolean;
 };
+
+/** What `runToolsExecute` actually did. `kind` matches the stdout payload's own discriminator. */
+export type RunToolsExecuteResult =
+  | {
+      readonly kind: 'tool_execution';
+      readonly successful: true;
+      readonly slug: string;
+      readonly logId?: string;
+      readonly data?: unknown;
+      readonly outputFilePath?: string;
+      readonly tokenCount?: number;
+    }
+  | {
+      readonly kind: 'tool_dry_run';
+      readonly successful: true;
+      readonly dryRun: true;
+      readonly slug: string;
+    }
+  | {
+      readonly kind: 'tool_schema';
+      readonly slug: string;
+      readonly version: string | null;
+      readonly schemaPath: string;
+    }
+  /**
+   * Nothing ran. Today a `requireAuth` failure returned success-void, which a caller cannot tell
+   * from "the tool executed" — and the reversible-create gate in `composio onboard` depends on
+   * exactly that distinction.
+   */
+  | { readonly kind: 'skipped'; readonly reason: 'unauthenticated' };
 
 type SharedRunToolsExecuteParams = Omit<RunToolsExecuteParams, 'slug' | 'data' | 'file'>;
 
@@ -942,17 +1019,20 @@ const emitCachedSchema = (
     readonly version: string | null;
     readonly schemaPath: string;
     readonly schema: Record<string, unknown>;
-  }
+  },
+  quiet = false
 ) =>
   Effect.gen(function* () {
     const displaySchema = normalizeFileUploadSchema(definition.schema);
     yield* ui.log.message(
       `Schema saved, inspect keys like: jq '{required: (.inputSchema.required // []), keys: (.inputSchema.properties | keys)}' ${definition.schemaPath}`
     );
-    yield* writeExecuteStdout(
+    yield* writeExecuteStdoutUnlessQuiet(
       ui,
+      quiet,
       JSON.stringify(
         {
+          kind: EXECUTE_PAYLOAD_KINDS.schema,
           slug,
           version: definition.version,
           schemaPath: definition.schemaPath,
@@ -1133,6 +1213,7 @@ const runConnectedToolkitFailFast = (params: {
   readonly resolvedUserId: string;
   readonly skipConnectionCheck: boolean;
   readonly skipChecks: boolean;
+  readonly quiet?: boolean;
 }) =>
   Effect.gen(function* () {
     if (params.skipConnectionCheck || params.skipChecks) {
@@ -1204,10 +1285,12 @@ const runConnectedToolkitFailFast = (params: {
       const message = `Toolkit "${toolkit}" is not connected for this user (cached within the last 5 minutes). If you just connected the account, use --skip-connection-check.`;
       yield* params.ui.log.error(message);
       yield* params.ui.note(connectionTips(params.slug, params.surface), 'Tips');
-      yield* writeExecuteStdout(
+      yield* writeExecuteStdoutUnlessQuiet(
         params.ui,
+        params.quiet ?? false,
         JSON.stringify(
           {
+            kind: EXECUTE_PAYLOAD_KINDS.execution,
             successful: false,
             error: message,
             slug: params.slug,
@@ -1243,8 +1326,100 @@ const executeSessionHistoryScope = (resolvedProject: ResolvedExecuteContext['res
       }
     : {};
 
+/**
+ * The `--dry-run` branch: validate the arguments locally, report the summary, and never call the
+ * tool. Split out of `runExecuteWithSpinner` to keep that function readable — the two branches share
+ * only the spinner and the resolved context.
+ */
+const runExecuteDryRun = (params: {
+  readonly slug: string;
+  readonly surface: 'root' | 'dev';
+  readonly projectMode: 'consumer' | 'developer';
+  readonly ui: TerminalUI;
+  readonly resolvedProject: ResolvedExecuteContext['resolvedProject'];
+  readonly args: Record<string, unknown>;
+  readonly resolvedUserId: string;
+  readonly quiet: boolean;
+  readonly verificationDisabled: boolean;
+  readonly cachedDefinition: CachedDefinition | null;
+  readonly spinner: SpinnerHandle;
+}) =>
+  Effect.gen(function* () {
+    const { quiet, verificationDisabled, cachedDefinition, spinner } = params;
+
+    const definition = verificationDisabled
+      ? null
+      : (cachedDefinition ??
+        (yield* getOrFetchToolInputDefinition(params.slug, {
+          orgId: params.resolvedProject.orgId,
+          projectId: params.resolvedProject.projectId,
+        }).pipe(
+          Effect.tapError(error =>
+            emitExecuteFailureTelemetry({
+              toolSlug: params.slug,
+              args: params.args,
+              error,
+              surface: params.surface,
+              projectMode: params.projectMode,
+              stage: 'dry_run',
+            })
+          )
+        )));
+    if (definition) {
+      yield* validateToolInputArgumentsWithDefinition(params.slug, params.args, definition).pipe(
+        Effect.tapError(error =>
+          emitExecuteFailureTelemetry({
+            toolSlug: params.slug,
+            args: params.args,
+            error,
+            surface: params.surface,
+            projectMode: params.projectMode,
+            stage: 'dry_run',
+          })
+        )
+      );
+    }
+    const summary: DryRunSummary = {
+      successful: true,
+      dryRun: true,
+      slug: params.slug,
+      arguments: params.args,
+      userId: params.resolvedUserId,
+      schemaPath: definition?.schemaPath,
+      schemaVersion: definition?.version,
+    };
+    yield* spinner.stop('Dry run successful');
+    yield* params.ui.log.message(
+      verificationDisabled
+        ? 'No tool was executed. Local validation was skipped.'
+        : 'No tool was executed. Arguments were validated locally only.'
+    );
+    yield* writeExecuteStdoutUnlessQuiet(
+      params.ui,
+      quiet,
+      JSON.stringify({ kind: EXECUTE_PAYLOAD_KINDS.dryRun, ...summary }, ciRedactReplacer, 2)
+    );
+    yield* appendCliSessionHistory({
+      ...executeSessionHistoryScope(params.resolvedProject),
+      entry: {
+        command: 'execute',
+        status: 'dry-run',
+        slug: params.slug,
+        arguments: params.args,
+      },
+    }).pipe(Effect.catchAll(() => Effect.void));
+    return {
+      kind: 'tool_dry_run',
+      successful: true,
+      dryRun: true,
+      slug: params.slug,
+    } satisfies RunToolsExecuteResult;
+  });
+
 const runExecuteWithSpinner = (params: {
   readonly slug: string;
+  readonly quiet?: boolean;
+  readonly inlineOnly?: boolean;
   readonly surface: 'root' | 'dev';
   readonly projectMode: 'consumer' | 'developer';
   readonly dryRun: boolean;
@@ -1259,6 +1434,8 @@ const runExecuteWithSpinner = (params: {
   readonly skipChecks: boolean;
 }) =>
   Effect.gen(function* () {
+    const quiet = params.quiet ?? false;
+    const inlineOnly = params.inlineOnly ?? false;
     const verificationDisabled =
       params.skipChecks || params.skipToolParamsCheck || isLocalToolSlug(params.slug);
     const cachedDefinition = verificationDisabled
@@ -1277,7 +1454,7 @@ const runExecuteWithSpinner = (params: {
           resolvedProject: params.resolvedProject,
         });
 
-    yield* params.ui.useMakeSpinner(`Executing tool "${params.slug}"...`, spinner =>
+    return yield* params.ui.useMakeSpinner(`Executing tool "${params.slug}"...`, spinner =>
       Effect.gen(function* () {
         let validationGuard = validationState.validationGuard;
         if (!verificationDisabled && !validationState.cacheHit) {
@@ -1289,68 +1466,19 @@ const runExecuteWithSpinner = (params: {
         }
 
         if (params.dryRun) {
-          const definition = verificationDisabled
-            ? null
-            : (cachedDefinition ??
-              (yield* getOrFetchToolInputDefinition(params.slug, {
-                orgId: params.resolvedProject.orgId,
-                projectId: params.resolvedProject.projectId,
-              }).pipe(
-                Effect.tapError(error =>
-                  emitExecuteFailureTelemetry({
-                    toolSlug: params.slug,
-                    args: params.args,
-                    error,
-                    surface: params.surface,
-                    projectMode: params.projectMode,
-                    stage: 'dry_run',
-                  })
-                )
-              )));
-          if (definition) {
-            yield* validateToolInputArgumentsWithDefinition(
-              params.slug,
-              params.args,
-              definition
-            ).pipe(
-              Effect.tapError(error =>
-                emitExecuteFailureTelemetry({
-                  toolSlug: params.slug,
-                  args: params.args,
-                  error,
-                  surface: params.surface,
-                  projectMode: params.projectMode,
-                  stage: 'dry_run',
-                })
-              )
-            );
-          }
-          const summary: DryRunSummary = {
-            successful: true,
-            dryRun: true,
+          return yield* runExecuteDryRun({
             slug: params.slug,
-            arguments: params.args,
-            userId: params.resolvedUserId,
-            schemaPath: definition?.schemaPath,
-            schemaVersion: definition?.version,
-          };
-          yield* spinner.stop('Dry run successful');
-          yield* params.ui.log.message(
-            verificationDisabled
-              ? 'No tool was executed. Local validation was skipped.'
-              : 'No tool was executed. Arguments were validated locally only.'
-          );
-          yield* writeExecuteStdout(params.ui, JSON.stringify(summary, ciRedactReplacer, 2));
-          yield* appendCliSessionHistory({
-            ...executeSessionHistoryScope(params.resolvedProject),
-            entry: {
-              command: 'execute',
-              status: 'dry-run',
-              slug: params.slug,
-              arguments: params.args,
-            },
-          }).pipe(Effect.catchAll(() => Effect.void));
-          return;
+            surface: params.surface,
+            projectMode: params.projectMode,
+            ui: params.ui,
+            resolvedProject: params.resolvedProject,
+            args: params.args,
+            resolvedUserId: params.resolvedUserId,
+            quiet,
+            verificationDisabled,
+            cachedDefinition,
+            spinner,
+          });
         }
 
         yield* perfDebugLog('execute.tool_call.start', { slug: params.slug });
@@ -1375,9 +1503,14 @@ const runExecuteWithSpinner = (params: {
                   projectMode: params.projectMode,
                   stage: 'execution',
                 });
-                yield* writeExecuteStdout(
+                yield* writeExecuteStdoutUnlessQuiet(
                   params.ui,
-                  JSON.stringify({ successful: false, ...summary }, ciRedactReplacer, 2)
+                  quiet,
+                  JSON.stringify(
+                    { kind: EXECUTE_PAYLOAD_KINDS.execution, successful: false, ...summary },
+                    ciRedactReplacer,
+                    2
+                  )
                 );
                 yield* appendCliSessionHistory({
                   ...executeSessionHistoryScope(params.resolvedProject),
@@ -1432,7 +1565,15 @@ const runExecuteWithSpinner = (params: {
             stage: 'execution',
             logId: result.logId,
           });
-          yield* writeExecuteStdout(params.ui, JSON.stringify(result, ciRedactReplacer, 2));
+          yield* writeExecuteStdoutUnlessQuiet(
+            params.ui,
+            quiet,
+            JSON.stringify(
+              { kind: EXECUTE_PAYLOAD_KINDS.execution, ...result },
+              ciRedactReplacer,
+              2
+            )
+          );
           return yield* new ReportedToolExecutionError({
             reason: 'execution_failed',
             toolSlug: params.slug,
@@ -1450,12 +1591,22 @@ const runExecuteWithSpinner = (params: {
             `The tool executed successfully but the response may contain an error: ${inBandWarning}`
           );
         }
-        const output = yield* prepareExecuteOutput(params.slug, result, params.executeOutputDir);
+        const output = yield* prepareExecuteOutput(params.slug, result, params.executeOutputDir, {
+          inlineOnly,
+        });
         if (output.kind === 'file') {
           yield* params.ui.log.message(
             `Response stored in ${output.summary.outputFilePath} (${output.summary.tokenCount} tokens)`
           );
-          yield* writeExecuteStdout(params.ui, JSON.stringify(output.summary, ciRedactReplacer, 2));
+          yield* writeExecuteStdoutUnlessQuiet(
+            params.ui,
+            quiet,
+            JSON.stringify(
+              { kind: EXECUTE_PAYLOAD_KINDS.execution, ...output.summary },
+              ciRedactReplacer,
+              2
+            )
+          );
           yield* appendCliSessionHistory({
             ...executeSessionHistoryScope(params.resolvedProject),
             entry: {
@@ -1469,10 +1620,21 @@ const runExecuteWithSpinner = (params: {
               logId: result.logId,
             },
           }).pipe(Effect.catchAll(() => Effect.void));
-          return;
+          return {
+            kind: 'tool_execution',
+            successful: true,
+            slug: params.slug,
+            logId: result.logId,
+            outputFilePath: output.summary.outputFilePath,
+            tokenCount: output.summary.tokenCount,
+          } satisfies RunToolsExecuteResult;
         }
 
-        yield* writeExecuteStdout(params.ui, output.json);
+        yield* writeExecuteStdoutUnlessQuiet(
+          params.ui,
+          quiet,
+          JSON.stringify({ kind: EXECUTE_PAYLOAD_KINDS.execution, ...result }, ciRedactReplacer, 2)
+        );
         yield* appendCliSessionHistory({
           ...executeSessionHistoryScope(params.resolvedProject),
           entry: {
@@ -1484,13 +1646,23 @@ const runExecuteWithSpinner = (params: {
             logId: result.logId,
           },
         }).pipe(Effect.catchAll(() => Effect.void));
+
+        return {
+          kind: 'tool_execution',
+          successful: true,
+          slug: params.slug,
+          logId: result.logId,
+          data: result.data,
+        } satisfies RunToolsExecuteResult;
       })
     );
   });
 
-const runToolsExecute = (params: RunToolsExecuteParams) =>
+export const runToolsExecute = (params: RunToolsExecuteParams) =>
   Effect.gen(function* () {
-    if (!isLocalToolSlug(params.slug) && !(yield* requireAuth)) return;
+    if (!isLocalToolSlug(params.slug) && !(yield* requireAuth)) {
+      return { kind: 'skipped', reason: 'unauthenticated' } satisfies RunToolsExecuteResult;
+    }
 
     const cliConfig = yield* ComposioCliUserConfig;
     if (
@@ -1521,8 +1693,13 @@ const runToolsExecute = (params: RunToolsExecuteParams) =>
           })
         )
       );
-      yield* emitCachedSchema(context.ui, params.slug, definition);
-      return;
+      yield* emitCachedSchema(context.ui, params.slug, definition, params.quiet ?? false);
+      return {
+        kind: 'tool_schema',
+        slug: params.slug,
+        version: definition.version,
+        schemaPath: definition.schemaPath,
+      } satisfies RunToolsExecuteResult;
     }
 
     const context = yield* resolveExecuteContext(params);
@@ -1535,6 +1712,7 @@ const runToolsExecute = (params: RunToolsExecuteParams) =>
       resolvedUserId: context.resolvedUserId,
       skipConnectionCheck: params.skipConnectionCheck,
       skipChecks: params.skipChecks,
+      quiet: params.quiet,
     });
     yield* logToolDebug('execute_params', {
       slug: params.slug,
@@ -1549,7 +1727,7 @@ const runToolsExecute = (params: RunToolsExecuteParams) =>
       surface: params.surface,
       projectMode: params.projectMode,
     });
-    yield* runExecuteWithSpinner({
+    return yield* runExecuteWithSpinner({
       slug: params.slug,
       surface: params.surface,
       projectMode: params.projectMode,
@@ -1562,6 +1740,8 @@ const runToolsExecute = (params: RunToolsExecuteParams) =>
       executeParams: context.executeParams,
       skipToolParamsCheck: params.skipToolParamsCheck,
       skipChecks: params.skipChecks,
+      quiet: params.quiet,
+      inlineOnly: params.inlineOnly,
     });
   });
 
@@ -1877,6 +2057,7 @@ const runParallelSchemaFetchFromParsed = (params: ParsedParallelExecuteArgs) =>
         ui,
         JSON.stringify(
           {
+            kind: EXECUTE_PAYLOAD_KINDS.schemaBatch,
             successful,
             parallel: true,
             results,
@@ -2066,6 +2247,7 @@ const runParallelToolsExecuteFromParsed = (params: ParsedParallelExecuteArgs) =>
         ui,
         JSON.stringify(
           {
+            kind: EXECUTE_PAYLOAD_KINDS.executionBatch,
             successful,
             parallel: true,
             results,

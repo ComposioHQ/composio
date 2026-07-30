@@ -5,7 +5,7 @@ import { HelpDoc, ValidationError } from '@effect/cli';
 import { SystemError } from '@effect/platform/Error';
 import { describe, expect, it, layer } from '@effect/vitest';
 import { vi, beforeEach, afterEach } from 'vitest';
-import { Config, ConfigProvider, DateTime, Effect, Option, Predicate } from 'effect';
+import { Config, ConfigProvider, DateTime, Console, Effect, Option, Predicate } from 'effect';
 import { extendConfigProvider } from 'src/services/config';
 import { ComposioNoActiveConnectionError } from 'src/services/composio-error-overrides';
 import { setupCacheDir } from 'src/effects/setup-cache-dir';
@@ -18,6 +18,7 @@ import { cli, TestLive, MockConsole } from 'test/__utils__';
 import type { TestLiveInput } from 'test/__utils__/services/test-layer';
 import {
   parseParallelExecuteArgs,
+  runToolsExecute,
   showToolsExecuteInputHelp,
 } from 'src/commands/tools/commands/tools.execute.cmd';
 import { ComposioCliUserConfig } from 'src/services/cli-user-config';
@@ -2736,6 +2737,334 @@ describe('CLI: composio execute', () => {
           }
         })
       );
+    });
+  });
+
+  // --- The typed outcome, the payload discriminators, and quiet/inlineOnly ---
+  //
+  // `composio onboard` delegates the execute gate here. It needs to tell "the read succeeded" from
+  // "nothing ran" (the reversible-create gate depends on it), it needs every payload to name its own
+  // shape, and it needs the delegate to write nothing to a stdout stream the wizard owns.
+
+  describe('runToolsExecute outcome', () => {
+    const executeParams = (overrides: Partial<Parameters<typeof runToolsExecute>[0]> = {}) => ({
+      slug: 'GMAIL_SEND_EMAIL',
+      data: Option.some('{"recipient":"a"}'),
+      file: Option.none<string>(),
+      account: Option.none<string>(),
+      userId: Option.none<string>(),
+      projectName: Option.none<string>(),
+      surface: 'root' as const,
+      projectMode: 'consumer' as const,
+      getSchema: false,
+      dryRun: false,
+      skipConnectionCheck: true,
+      skipToolParamsCheck: true,
+      skipChecks: true,
+      ...overrides,
+    });
+
+    /** Every JSON value on stdout, so a leaked second write fails instead of being ignored. */
+    const stdoutPayloads = (lines: ReadonlyArray<string>): Array<Record<string, unknown>> => {
+      const payloads: Array<Record<string, unknown>> = [];
+      for (const line of lines) {
+        if (!line.trimStart().startsWith('{')) continue;
+        try {
+          payloads.push(JSON.parse(line) as Record<string, unknown>);
+        } catch {
+          // Not a complete JSON value on its own line — decoration, not data.
+        }
+      }
+      return payloads;
+    };
+
+    layer(
+      TestLive({
+        baseConfigProvider: testConfigProvider,
+        fixture: 'global-test-user-id',
+        stdin: { isTTY: true, data: '' },
+      })
+    )('[Given] a successful execute [Then] it returns tool_execution', it => {
+      it.scoped('matches the stdout payload kind', () =>
+        Effect.gen(function* () {
+          yield* Console.clear;
+          const result = yield* runToolsExecute(executeParams());
+
+          expect(result.kind).toBe('tool_execution');
+          const payloads = stdoutPayloads(yield* MockConsole.getLines({ stripAnsi: true }));
+          expect(payloads).toHaveLength(1);
+          expect(payloads[0]?.kind).toBe('tool_execution');
+        })
+      );
+
+      it.scoped('writes nothing to stdout with quiet and still returns the outcome', () =>
+        Effect.gen(function* () {
+          yield* Console.clear;
+          const result = yield* runToolsExecute(executeParams({ quiet: true }));
+
+          expect(result.kind).toBe('tool_execution');
+          expect(stdoutPayloads(yield* MockConsole.getLines({ stripAnsi: true }))).toEqual([]);
+        })
+      );
+
+      it.scoped('returns tool_dry_run for a dry run', () =>
+        Effect.gen(function* () {
+          yield* Console.clear;
+          const result = yield* runToolsExecute(executeParams({ dryRun: true }));
+
+          expect(result).toMatchObject({
+            kind: 'tool_dry_run',
+            successful: true,
+            dryRun: true,
+            slug: 'GMAIL_SEND_EMAIL',
+          });
+          const payloads = stdoutPayloads(yield* MockConsole.getLines({ stripAnsi: true }));
+          expect(payloads[0]?.kind).toBe('tool_dry_run');
+        })
+      );
+    });
+
+    layer(
+      TestLive({
+        baseConfigProvider: testConfigProvider,
+        fixture: 'global-test-user-id',
+        stdin: { isTTY: true, data: '' },
+        toolkitsData: {
+          tools: [
+            {
+              name: 'Send Email',
+              slug: 'GMAIL_SEND_EMAIL',
+              description: 'Send an email',
+              tags: ['email'],
+              available_versions: ['20260316_00'],
+              input_parameters: {
+                type: 'object',
+                properties: { recipient: { type: 'string' } },
+              },
+              output_parameters: { type: 'object', properties: {} },
+            },
+          ],
+        } satisfies TestLiveInput['toolkitsData'],
+      })
+    )('[Given] --get-schema [Then] it returns tool_schema', it => {
+      it.scoped('names the payload shape and does not flip the execute gate', () =>
+        Effect.gen(function* () {
+          yield* Console.clear;
+          const spy = vi.spyOn(onboardingStore, 'recordSuccessfulExecution');
+          const result = yield* runToolsExecute(executeParams({ getSchema: true }));
+
+          expect(result).toMatchObject({ kind: 'tool_schema', slug: 'GMAIL_SEND_EMAIL' });
+          expect(spy).not.toHaveBeenCalled();
+          const payloads = stdoutPayloads(yield* MockConsole.getLines({ stripAnsi: true }));
+          expect(payloads).toHaveLength(1);
+          expect(payloads[0]?.kind).toBe('tool_schema');
+        })
+      );
+
+      it.scoped('suppresses the schema payload with quiet', () =>
+        Effect.gen(function* () {
+          yield* Console.clear;
+          const result = yield* runToolsExecute(executeParams({ getSchema: true, quiet: true }));
+
+          expect(result.kind).toBe('tool_schema');
+          expect(stdoutPayloads(yield* MockConsole.getLines({ stripAnsi: true }))).toEqual([]);
+        })
+      );
+    });
+
+    layer(
+      TestLive({
+        stdin: { isTTY: true, data: '' },
+      })
+    )('[Given] no API key [Then] it reports that nothing ran', it => {
+      it.scoped('returns skipped rather than a success-shaped void', () =>
+        Effect.gen(function* () {
+          const result = yield* runToolsExecute(executeParams());
+
+          expect(result).toStrictEqual({ kind: 'skipped', reason: 'unauthenticated' });
+        })
+      );
+    });
+
+    layer(
+      TestLive({
+        baseConfigProvider: testConfigProvider,
+        fixture: 'global-test-user-id',
+        stdin: { isTTY: true, data: '' },
+        toolsExecutor: {
+          respondWith: {
+            data: { content: 'token '.repeat(20_000) },
+            error: null,
+            successful: true,
+            logId: 'log_large_output',
+          },
+        },
+      })
+    )('[Given] an over-threshold response [Then] inlineOnly keeps it inline', it => {
+      it.scoped('spills to a file without inlineOnly', () =>
+        Effect.gen(function* () {
+          yield* Console.clear;
+          const result = yield* runToolsExecute(executeParams());
+
+          expect(result).toMatchObject({ kind: 'tool_execution', successful: true });
+          if (result.kind !== 'tool_execution') return;
+          expect(result.outputFilePath).toBeDefined();
+        })
+      );
+
+      it.scoped('returns the response inline and writes no file with inlineOnly', () =>
+        Effect.gen(function* () {
+          yield* Console.clear;
+          const result = yield* runToolsExecute(executeParams({ inlineOnly: true }));
+
+          expect(result).toMatchObject({ kind: 'tool_execution', successful: true });
+          if (result.kind !== 'tool_execution') return;
+          expect(result.outputFilePath).toBeUndefined();
+          expect(result.data).toBeDefined();
+
+          const output = (yield* MockConsole.getLines({ stripAnsi: true })).join('\n');
+          expect(output).not.toContain('Response stored in');
+        })
+      );
+
+      it.scoped('honors quiet and inlineOnly together', () =>
+        Effect.gen(function* () {
+          yield* Console.clear;
+          const result = yield* runToolsExecute(executeParams({ inlineOnly: true, quiet: true }));
+
+          expect(result.kind).toBe('tool_execution');
+          expect(stdoutPayloads(yield* MockConsole.getLines({ stripAnsi: true }))).toEqual([]);
+        })
+      );
+    });
+
+    layer(
+      TestLive({
+        baseConfigProvider: testConfigProvider,
+        fixture: 'global-test-user-id',
+        stdin: { isTTY: true, data: '' },
+        toolsExecutor: {
+          respondWith: {
+            successful: false,
+            data: {},
+            error: 'Execution failed.',
+            logId: 'log_failed',
+          },
+        },
+      })
+    )('[Given] a reported failure [Then] the failure payload is discriminated too', it => {
+      it.scoped('keeps kind on the branch an agent switches on when things go wrong', () =>
+        Effect.gen(function* () {
+          yield* Console.clear;
+          yield* runToolsExecute(executeParams()).pipe(Effect.catchAll(() => Effect.void));
+
+          const payloads = stdoutPayloads(yield* MockConsole.getLines({ stripAnsi: true }));
+          expect(payloads).toHaveLength(1);
+          expect(payloads[0]).toMatchObject({ kind: 'tool_execution', successful: false });
+        })
+      );
+
+      it.scoped('suppresses the failure payload with quiet', () =>
+        Effect.gen(function* () {
+          yield* Console.clear;
+          yield* runToolsExecute(executeParams({ quiet: true })).pipe(
+            Effect.catchAll(() => Effect.void)
+          );
+
+          expect(stdoutPayloads(yield* MockConsole.getLines({ stripAnsi: true }))).toEqual([]);
+        })
+      );
+    });
+
+    layer(
+      TestLive({
+        baseConfigProvider: testConfigProvider,
+        fixture: 'global-test-user-id',
+        stdin: { isTTY: true, data: '' },
+      })
+    )('[Given] a connection-check failure [Then] its payload is discriminated', it => {
+      it.scoped('fails with connection_check and still names the payload shape', () =>
+        Effect.gen(function* () {
+          yield* Console.clear;
+          vi.mocked(
+            consumerShortTermCache.getFreshConsumerConnectedToolkitsFromCache
+          ).mockReturnValue(Effect.succeed(Option.some(['slack'])));
+
+          const error = yield* runToolsExecute(
+            executeParams({ skipConnectionCheck: false, skipChecks: false })
+          ).pipe(Effect.flip);
+
+          expect(Predicate.isTagged(error, 'ToolExecutionError')).toBe(true);
+          const payloads = stdoutPayloads(yield* MockConsole.getLines({ stripAnsi: true }));
+          expect(payloads).toHaveLength(1);
+          expect(payloads[0]).toMatchObject({
+            kind: 'tool_execution',
+            successful: false,
+            slug: 'GMAIL_SEND_EMAIL',
+          });
+        })
+      );
+    });
+
+    describe('every stdout-writing branch names its own shape', () => {
+      // Table-driven over the CLI surface, so a new payload without a `kind` fails here rather than
+      // slipping through unnoticed.
+      const BRANCHES = [
+        { name: 'execute', argv: ['execute', 'GMAIL_SEND_EMAIL', '--skip-checks', '-d', '{}'] },
+        {
+          name: 'dry run',
+          argv: ['execute', 'GMAIL_SEND_EMAIL', '--dry-run', '--skip-checks', '-d', '{}'],
+        },
+        { name: 'schema', argv: ['execute', 'GMAIL_SEND_EMAIL', '--get-schema'] },
+        { name: 'input help', argv: ['execute', 'GMAIL_SEND_EMAIL', '--help-input'] },
+        {
+          name: 'parallel execute',
+          argv: [
+            'execute',
+            '--parallel',
+            '--skip-checks',
+            'GMAIL_SEND_EMAIL',
+            '-d',
+            '{}',
+            'GITHUB_CREATE_ISSUE',
+            '-d',
+            '{}',
+          ],
+        },
+        {
+          name: 'parallel schema',
+          argv: [
+            'execute',
+            '--parallel',
+            '--get-schema',
+            'GMAIL_SEND_EMAIL',
+            'GITHUB_CREATE_ISSUE',
+          ],
+        },
+      ] as const;
+
+      for (const branch of BRANCHES) {
+        layer(
+          TestLive({
+            baseConfigProvider: testConfigProvider,
+            fixture: 'global-test-user-id',
+            stdin: { isTTY: true, data: '' },
+          })
+        )(`[Given] ${branch.name} [Then] each stdout payload carries a kind`, it => {
+          it.scoped('never emits an undiscriminated document', () =>
+            Effect.gen(function* () {
+              yield* Console.clear;
+              yield* cli([...branch.argv]).pipe(Effect.catchAll(() => Effect.void));
+
+              const payloads = stdoutPayloads(yield* MockConsole.getLines({ stripAnsi: true }));
+              for (const payload of payloads) {
+                expect(typeof payload.kind).toBe('string');
+                expect(String(payload.kind).startsWith('tool_')).toBe(true);
+              }
+            })
+          );
+        });
+      }
     });
   });
 });
