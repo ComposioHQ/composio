@@ -20,6 +20,7 @@ import { Command } from '@effect/platform';
 import { BunContext, BunRuntime } from '@effect/platform-bun';
 import { buildCompanionModules, copyLocalToolBinaryAssets, teardown } from './_shared';
 import { BinaryBuildError } from './build-error';
+import { buildCliReleaseVersionDefineArgs } from '../src/utils/cli-release-version';
 
 /**
  * Maps Bun cross-compilation targets to Composio artifact names.
@@ -67,6 +68,7 @@ export function buildBinaryCross() {
       './src/bin.ts',
       '--env',
       'DEBUG_OVERRIDE_*',
+      ...buildCliReleaseVersionDefineArgs(process.env.RELEASE_TAG),
       '--compile',
       '--production',
       '--target',
