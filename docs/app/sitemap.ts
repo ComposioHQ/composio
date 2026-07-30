@@ -1,12 +1,5 @@
 import type { MetadataRoute } from 'next';
-import {
-  source,
-  getReferenceSource,
-  examplesSource,
-  toolkitsSource,
-  changelogEntries,
-  dateToChangelogUrl,
-} from '@/lib/source';
+import { source, getReferenceSource, examplesSource, toolkitsSource } from '@/lib/source';
 import { getAllToolkitsSync } from '@/lib/toolkit-data';
 
 const baseUrl = 'https://docs.composio.dev';
@@ -36,20 +29,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     url: `${baseUrl}/toolkits/${toolkit.slug}`,
   }));
 
-  // Changelog pages (deduplicate by date since multiple entries can share the same date)
-  const uniqueChangelogDates = [...new Set([...changelogEntries].map((entry) => entry.date))];
-  const changelogPages = uniqueChangelogDates.map((date) => ({
-    url: `${baseUrl}${dateToChangelogUrl(date)}`,
-  }));
-
   return [
     { url: baseUrl },
-    { url: `${baseUrl}/docs/changelog` },
+    // The changelog is a single page; per-date URLs only redirect to it.
+    { url: `${baseUrl}/reference/changelog` },
     ...docsPages,
     ...referencePages,
     ...examplesPages,
     ...toolkitsMdxPages,
     ...toolkitsJsonPages,
-    ...changelogPages,
   ];
 }

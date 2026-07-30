@@ -65,6 +65,11 @@ export function baseOptions(): BaseLayoutProps {
         active: 'nested-url',
       },
       {
+        text: 'Changelog',
+        url: '/reference/changelog',
+        active: 'url',
+      },
+      {
         type: 'icon',
         label: 'GitHub',
         icon: (

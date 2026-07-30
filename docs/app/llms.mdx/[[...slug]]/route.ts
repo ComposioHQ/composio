@@ -1002,8 +1002,9 @@ export async function GET(
       });
     }
 
-    // Special handling for changelog index - /docs/changelog
-    if (prefix === 'docs' && rest[0] === 'changelog' && rest.length === 1) {
+    // Special handling for changelog index - /reference/changelog (canonical)
+    // and /docs/changelog (legacy, kept for redirect parity)
+    if ((prefix === 'docs' || prefix === 'reference') && rest[0] === 'changelog' && rest.length === 1) {
       const changelogIndex = generateChangelogIndex();
       return new Response(changelogIndex, {
         headers: {
@@ -1012,8 +1013,8 @@ export async function GET(
       });
     }
 
-    // Special handling for changelog pages - /docs/changelog/YYYY/MM/DD
-    if (prefix === 'docs' && rest[0] === 'changelog' && rest.length === 4) {
+    // Special handling for changelog pages - /{docs,reference}/changelog/YYYY/MM/DD
+    if ((prefix === 'docs' || prefix === 'reference') && rest[0] === 'changelog' && rest.length === 4) {
       // rest = ['changelog', '2026', '01', '07']
       const [, year, month, day] = rest;
       const dateStr = slugToDate([year, month, day]);

@@ -67,11 +67,8 @@ jobs:
           # Extract date from frontmatter
           DATE=$(grep "^date:" "$CHANGELOG_FILE" | sed "s/^date: *['\"]*//" | sed "s/['\"]* *$//")
           
-          # Format date for URL (YYYY-MM-DD to YYYY/MM/DD)
-          URL_DATE=$(echo "$DATE" | sed 's/-/\//g')
-          
-          # Build the changelog URL
-          CHANGELOG_URL="https://docs.composio.dev/docs/changelog/${URL_DATE}"
+          # Build the changelog URL (single canonical page, anchored by date)
+          CHANGELOG_URL="https://docs.composio.dev/reference/changelog#${DATE}"
           
           # Get the commit author who added/modified this changelog
           AUTHOR=$(git log -1 --format='%an' -- "$CHANGELOG_FILE")
