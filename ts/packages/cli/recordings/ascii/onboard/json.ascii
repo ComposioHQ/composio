@@ -1,0 +1,492 @@
+>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+────────────────────────────────────────────────────────────────────────────────
+> # Emit the agent-facing onboarding state document
+>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+────────────────────────────────────────────────────────────────────────────────
+> # Emit the agent-facing onboarding state document
+> composio onboard --json
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+────────────────────────────────────────────────────────────────────────────────
+> # Emit the agent-facing onboarding state document
+> composio onboard --json
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+────────────────────────────────────────────────────────────────────────────────
+> # Emit the agent-facing onboarding state document
+> composio onboard --json
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+────────────────────────────────────────────────────────────────────────────────
+> # Emit the agent-facing onboarding state document
+> composio onboard --json
+│
+▲  Claude Code detected but the Composio plugin is not installed. Run `composio setup`.
+│
+▲  Codex detected but the Composio plugin is not installed. Run `composio setup`.
+│
+◇  Step 3/3 — Run your first tool
+│
+│  Next:
+│  > composio execute "SLACK_LIST_ALL_CHANNELS" -d '{"limit":10}'
+{
+  "kind": "onboard_state",
+  "onboarded": false,
+  "next_gate": "execute",
+  "blocked": false,
+  "blocked_reason": null,
+  "human_action": null,
+  "next_command": "composio execute \"SLACK_LIST_ALL_CHANNELS\" -d '{\"limit\":10}'",
+  "task": "list-slack-channels",
+  "toolkit": "slack",
+  "gates": {
+    "host_wiring": {
+      "status": "advisory",
+      "blocking": false,
+      "hosts": [
+        {
+          "target": "claude",
+          "available": true,
+          "supported": true,
+          "plugin_installed": false,
+          "plugin_enabled": false
+        },
+        {
+          "target": "codex",
+          "available": true,
+          "supported": true,
+          "plugin_installed": false,
+          "plugin_enabled": false
+        }
+      ]
+    },
+    "login": {
+      "status": "satisfied",
+      "email": null,
+      "org_id": "<REDACTED>"
+    },
+    "connect": {
+      "status": "satisfied",
+      "toolkit": "slack",
+      "connected_toolkits": [
+        "slack",
+        "slackbot"
+      ],
+      "connected_account_id": null,
+      "redirect_url": null
+    },
+    "execute": {
+      "status": "unsatisfied",
+      "tool_slug": "SLACK_LIST_ALL_CHANNELS",
+      "last_executed_at": null
+    }
+  },
+  "advisories": [
+    "Claude Code detected but the Composio plugin is not installed. Run `composio setup`.",
+    "Codex detected but the Composio plugin is not installed. Run `composio setup`."
+  ]
+}
+>
+
+
+
+
+
+
+
+
+
+
+
+
+────────────────────────────────────────────────────────────────────────────────
