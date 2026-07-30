@@ -13,7 +13,8 @@ import {
   Schema,
 } from 'effect';
 import * as constants from 'src/constants';
-import { spawnDetached } from 'src/services/detached-process';
+import { getDetachedWorkerSpawnArgs, spawnDetached } from 'src/services/detached-process';
+import { sha256Hex } from 'src/utils/checksums';
 import { djb2Hash } from 'src/utils/djb2';
 import { NodeOs } from 'src/services/node-os';
 import { TerminalUI } from 'src/services/terminal-ui';
@@ -26,7 +27,8 @@ const ANALYTICS_STATE_FILE_NAME = 'analytics.json';
 const ANALYTICS_STATE_LOCK_FILE_NAME = `${ANALYTICS_STATE_FILE_NAME}.lock`;
 const ANALYTICS_STATE_LOCK_STALE_MS = 30_000;
 const ANALYTICS_STATE_LOCK_RETRY_MS = 10;
-const ANALYTICS_STATE_LOCK_TIMEOUT_MS = ANALYTICS_STATE_LOCK_STALE_MS + 5_000;
+const ANALYTICS_STATE_LOCK_TIMEOUT_MS = 500;
+const PENDING_ALIAS_RETRY_MS = 5 * 60 * 1000;
 const CONSUMER_SHORT_TERM_CACHE_FILE_NAME = 'consumer-short-term-cache.json';
 const CLI_CODACT_FAILURES_PATH = '/api/v3/cli/codact_failures';
 
@@ -119,6 +121,14 @@ const getPostHogConfig = environmentProvider
     }))
   );
 
+const postHogEnabled = Effect.gen(function* () {
+  if (yield* analyticsDisabled) {
+    return false;
+  }
+  const { projectKey } = yield* getPostHogConfig;
+  return projectKey.length > 0;
+});
+
 const jsonFromString = Schema.parseJson();
 const prettyJsonFromString = Schema.parseJson({ space: 2 });
 const decodeJson = Schema.decodeUnknown(jsonFromString);
@@ -182,9 +192,10 @@ type AnalyticsState = {
   readonly install_id?: string;
   readonly apollo_user_id?: string;
   readonly aliased_apollo_user_id?: string;
+  readonly pending_alias_apollo_user_id?: string;
+  readonly pending_alias_install_id?: string;
+  readonly pending_alias_attempted_at?: string;
   readonly api_key_fingerprint?: string;
-  readonly stitch_attempted_at?: string;
-  readonly stitch_attempted_api_key_fingerprint?: string;
   readonly created_at?: string;
 };
 
@@ -224,6 +235,9 @@ const acquireAnalyticsStateLock = Effect.gen(function* () {
 
   yield* fs.makeDirectory(paths.analyticsDir, { recursive: true });
 
+  // Lock contention is wall-clock coordination between OS processes. Keeping
+  // the retry on the platform timer also prevents Effect's TestClock from
+  // freezing concurrent lock tests.
   const waitBeforeRetry = Effect.promise(
     () =>
       new Promise<void>(resolve => {
@@ -354,11 +368,11 @@ const getUserApiKey = Effect.gen(function* () {
     : null;
 });
 
-const fingerprintApiKey = (apiKey: string): string =>
-  `${djb2Hash(apiKey).toString(36)}.${apiKey.length.toString(36)}`;
+const fingerprintApiKey = (apiKey: string) =>
+  Effect.promise(() => sha256Hex(new TextEncoder().encode(apiKey)));
 
-const getApiKeyFingerprint = Effect.map(getUserApiKey, apiKey =>
-  apiKey ? fingerprintApiKey(apiKey) : null
+const getApiKeyFingerprint = Effect.flatMap(getUserApiKey, apiKey =>
+  apiKey ? fingerprintApiKey(apiKey) : Effect.succeed(null)
 );
 
 // The keychain* security modes strip the api key from user_data.json, so no
@@ -388,7 +402,11 @@ const getDistinctId = (installId: string) =>
       }
     }
 
-    if (typeof state?.aliased_apollo_user_id !== 'string') {
+    const installIdMayBeAliased =
+      typeof state?.aliased_apollo_user_id === 'string' ||
+      (state?.pending_alias_install_id === installId &&
+        typeof state.pending_alias_apollo_user_id === 'string');
+    if (!installIdMayBeAliased) {
       return installId;
     }
     return fingerprint !== null ? `user_${fingerprint}` : `anon_${installId}`;
@@ -498,28 +516,6 @@ const getCliCodactFailuresEndpoint = Effect.map(readApiBaseUrl, baseUrl =>
   baseUrl ? `${baseUrl}${CLI_CODACT_FAILURES_PATH}` : null
 );
 
-const getWorkerSpawnArgs = (workerFlag: string, encodedPayload: string) =>
-  Effect.gen(function* () {
-    const fs = yield* FileSystem.FileSystem;
-    const maybeScriptPath = process.argv[1];
-    const scriptPathExists =
-      typeof maybeScriptPath === 'string' && maybeScriptPath.length > 0
-        ? yield* fs.exists(maybeScriptPath).pipe(Effect.catchAll(() => Effect.succeed(false)))
-        : false;
-    const scriptPathLooksReal =
-      scriptPathExists && /\.(?:[cm]?[jt]s|mjs|mts|cts)$/u.test(maybeScriptPath ?? '');
-
-    return scriptPathLooksReal
-      ? {
-          command: process.execPath,
-          args: [maybeScriptPath as string, workerFlag, encodedPayload],
-        }
-      : {
-          command: process.execPath,
-          args: [workerFlag, encodedPayload],
-        };
-  });
-
 // Effect's Command processes are scoped and die with their scope; telemetry
 // workers intentionally outlive the CLI process, so they go through the
 // sanctioned detached-spawn boundary in src/services/detached-process.
@@ -556,7 +552,7 @@ const captureToPostHog = (envelope: AnalyticsEnvelope) =>
         endpoint: ingestUrl,
         eventName: envelope.event,
       });
-      return;
+      return false;
     }
 
     const httpClient = yield* HttpClient.HttpClient;
@@ -579,6 +575,7 @@ const captureToPostHog = (envelope: AnalyticsEnvelope) =>
         responseBody: responseBody?.slice(0, 1000),
       }
     );
+    return responseOk;
   });
 
 type CliCodactFailureBody = {
@@ -686,7 +683,7 @@ const enqueuePostHogEnvelope = (envelope: AnalyticsEnvelope) =>
     yield* telemetryDebugLog('enqueue', { envelope });
     const serializedEnvelope = yield* encodeJson(envelope);
     const encodedPayload = Encoding.encodeBase64Url(serializedEnvelope);
-    const { command, args } = yield* getWorkerSpawnArgs(
+    const { command, args } = yield* getDetachedWorkerSpawnArgs(
       INTERNAL_ANALYTICS_WORKER_FLAG,
       encodedPayload
     );
@@ -699,9 +696,11 @@ export const trackCliEventEffect = (event: TrackEvent) =>
       return;
     }
 
-    const disabled = yield* analyticsDisabled;
-    if (disabled) {
-      yield* telemetryDebugLog('skip', { reason: 'disabled', eventName: event.name });
+    if (!(yield* postHogEnabled)) {
+      yield* telemetryDebugLog('skip', {
+        reason: (yield* analyticsDisabled) ? 'disabled' : 'missing_project_key',
+        eventName: event.name,
+      });
       return;
     }
 
@@ -732,9 +731,8 @@ export const trackCliEventEffect = (event: TrackEvent) =>
 
 export const emitPostHogAlias = (installId: string, apolloUserId: string) =>
   Effect.gen(function* () {
-    const disabled = yield* analyticsDisabled;
-    if (disabled) {
-      yield* telemetryDebugLog('alias_skip', { reason: 'disabled', installId });
+    if (!(yield* postHogEnabled)) {
+      yield* telemetryDebugLog('alias_skip', { reason: 'disabled_or_missing_key', installId });
       return false;
     }
 
@@ -761,20 +759,22 @@ export const linkApolloIdentityForAnalytics = (apolloUserId: string, apiKey?: st
       return;
     }
 
-    const disabled = yield* analyticsDisabled;
-    if (disabled) {
-      yield* telemetryDebugLog('alias_skip', { reason: 'disabled' });
+    if (!(yield* postHogEnabled)) {
+      yield* telemetryDebugLog('alias_skip', { reason: 'disabled_or_missing_key' });
       return;
     }
 
-    yield* withAnalyticsStateLock(
+    const aliasToEmit = yield* withAnalyticsStateLock(
       Effect.gen(function* () {
         let state = yield* readAnalyticsState;
         let installId = yield* getOrCreateInstallIdUnlocked;
 
         // A second user on this machine must not merge into the previous user's
         // PostHog person: rotate to a fresh install_id before linking.
-        const previousIdentity = state?.apollo_user_id ?? state?.aliased_apollo_user_id;
+        const previousIdentity =
+          state?.apollo_user_id ??
+          state?.pending_alias_apollo_user_id ??
+          state?.aliased_apollo_user_id;
         const identityChanged =
           typeof previousIdentity === 'string' &&
           previousIdentity.length > 0 &&
@@ -785,6 +785,9 @@ export const linkApolloIdentityForAnalytics = (apolloUserId: string, apiKey?: st
             install_id: installId,
             apollo_user_id: undefined,
             aliased_apollo_user_id: undefined,
+            pending_alias_apollo_user_id: undefined,
+            pending_alias_install_id: undefined,
+            pending_alias_attempted_at: undefined,
             api_key_fingerprint: undefined,
           });
           state = yield* readAnalyticsState;
@@ -792,7 +795,7 @@ export const linkApolloIdentityForAnalytics = (apolloUserId: string, apiKey?: st
 
         const fingerprint =
           typeof apiKey === 'string' && apiKey.length > 0
-            ? fingerprintApiKey(apiKey)
+            ? yield* fingerprintApiKey(apiKey)
             : yield* getApiKeyFingerprint;
         if (state?.apollo_user_id !== resolved || state?.api_key_fingerprint !== fingerprint) {
           yield* mergeAnalyticsStateUnlocked(installId, {
@@ -801,77 +804,51 @@ export const linkApolloIdentityForAnalytics = (apolloUserId: string, apiKey?: st
           });
         }
 
-        if (typeof state?.aliased_apollo_user_id === 'string') {
-          return;
+        state = yield* readAnalyticsState;
+        if (state?.aliased_apollo_user_id === resolved) {
+          return undefined;
         }
-        if (yield* emitPostHogAlias(installId, resolved)) {
-          yield* mergeAnalyticsStateUnlocked(installId, { aliased_apollo_user_id: resolved });
-        }
-      })
-    );
-  }).pipe(Effect.catchAllCause(() => Effect.void));
-
-const STITCH_ATTEMPT_INTERVAL_MS = 24 * 60 * 60 * 1000;
-const STITCH_SESSION_INFO_TIMEOUT = '1500 millis';
-
-type AnalyticsSessionInfoFetcher = (params: {
-  baseURL: string;
-  userApiKey: string;
-}) => Effect.Effect<{ readonly org_member: { readonly id: string } }, unknown>;
-
-// Repairs a missing/stale persisted identity for already-logged-in installs
-// (e.g. keyring-stored keys that predate identity stitching). The session-info
-// fetcher is injected because composio-clients already imports this module.
-export const ensureAnalyticsIdentity = (params: {
-  apiKey: string;
-  baseURL: string;
-  fetchSessionInfo: AnalyticsSessionInfoFetcher;
-}) =>
-  Effect.gen(function* () {
-    if ((yield* analyticsDisabled) || params.apiKey.trim().length === 0) {
-      return;
-    }
-
-    const fingerprint = fingerprintApiKey(params.apiKey);
-    const shouldAttempt = yield* withAnalyticsStateLock(
-      Effect.gen(function* () {
-        const state = yield* readAnalyticsState;
-        const identityLinked =
-          typeof state?.apollo_user_id === 'string' &&
-          state.apollo_user_id.length > 0 &&
-          state.api_key_fingerprint === fingerprint;
-        if (identityLinked) {
-          return false;
-        }
-
-        const lastAttemptMs = Date.parse(state?.stitch_attempted_at ?? '');
-        const nowMs = yield* Clock.currentTimeMillis;
-        const sameCredentialAttempt = state?.stitch_attempted_api_key_fingerprint === fingerprint;
         if (
-          sameCredentialAttempt &&
-          Number.isFinite(lastAttemptMs) &&
-          nowMs - lastAttemptMs < STITCH_ATTEMPT_INTERVAL_MS
+          state?.pending_alias_apollo_user_id === resolved &&
+          state.pending_alias_install_id === installId
         ) {
-          return false;
+          const attemptedAt = Date.parse(state.pending_alias_attempted_at ?? '');
+          const now = yield* Clock.currentTimeMillis;
+          if (Number.isFinite(attemptedAt) && now - attemptedAt < PENDING_ALIAS_RETRY_MS) {
+            return undefined;
+          }
         }
 
-        // Persisted before the network attempt so failures cannot retry-storm.
-        const installId = yield* getOrCreateInstallIdUnlocked;
         yield* mergeAnalyticsStateUnlocked(installId, {
-          stitch_attempted_at: DateTime.formatIso(yield* DateTime.now),
-          stitch_attempted_api_key_fingerprint: fingerprint,
+          pending_alias_apollo_user_id: resolved,
+          pending_alias_install_id: installId,
+          pending_alias_attempted_at: DateTime.formatIso(yield* DateTime.now),
         });
-        return true;
+        return { installId, apolloUserId: resolved };
       })
     );
-    if (!shouldAttempt) {
+    if (!aliasToEmit) {
       return;
     }
 
-    const info = yield* params
-      .fetchSessionInfo({ baseURL: params.baseURL, userApiKey: params.apiKey })
-      .pipe(Effect.timeout(STITCH_SESSION_INFO_TIMEOUT));
-    yield* linkApolloIdentityForAnalytics(info.org_member.id, params.apiKey);
+    if (!(yield* emitPostHogAlias(aliasToEmit.installId, aliasToEmit.apolloUserId))) {
+      yield* withAnalyticsStateLock(
+        Effect.gen(function* () {
+          const state = yield* readAnalyticsState;
+          if (
+            state?.pending_alias_install_id !== aliasToEmit.installId ||
+            state.pending_alias_apollo_user_id !== aliasToEmit.apolloUserId
+          ) {
+            return;
+          }
+          yield* mergeAnalyticsStateUnlocked(aliasToEmit.installId, {
+            pending_alias_apollo_user_id: undefined,
+            pending_alias_install_id: undefined,
+            pending_alias_attempted_at: undefined,
+          });
+        })
+      );
+    }
   }).pipe(Effect.catchAllCause(() => Effect.void));
 
 export const clearApolloIdentityForAnalytics = withAnalyticsStateLock(
@@ -905,7 +882,7 @@ export const trackCliCodactFailureEffect = (failure: CliCodactFailure) =>
     const invocation = yield* getCliInvocationContext;
     const body = yield* encodeJson(createCliCodactFailureBody(failure, cliSessionId, invocation));
     const encodedPayload = Encoding.encodeBase64Url(body);
-    const { command, args } = yield* getWorkerSpawnArgs(
+    const { command, args } = yield* getDetachedWorkerSpawnArgs(
       INTERNAL_CODACT_FAILURE_WORKER_FLAG,
       encodedPayload
     );
@@ -925,6 +902,32 @@ const decodeWorkerPayload = <A>(encodedPayload: string) =>
     return (yield* decodeJson(serialized)) as A;
   });
 
+const settlePostHogAlias = (envelope: AnalyticsEnvelope, delivered: boolean) => {
+  if (envelope.event !== POSTHOG_ALIAS_EVENT) {
+    return Effect.void;
+  }
+
+  return withAnalyticsStateLock(
+    Effect.gen(function* () {
+      const state = yield* readAnalyticsState;
+      if (
+        state?.install_id !== envelope.installId ||
+        state.pending_alias_install_id !== envelope.installId ||
+        state.pending_alias_apollo_user_id !== envelope.distinctId
+      ) {
+        return;
+      }
+
+      yield* mergeAnalyticsStateUnlocked(envelope.installId, {
+        ...(delivered ? { aliased_apollo_user_id: envelope.distinctId } : {}),
+        pending_alias_apollo_user_id: undefined,
+        pending_alias_install_id: undefined,
+        pending_alias_attempted_at: undefined,
+      });
+    })
+  ).pipe(Effect.catchAllCause(() => Effect.void));
+};
+
 const runAnalyticsWorker = (argv: ReadonlyArray<string>) => {
   const flagIndex = getWorkerFlagIndex(argv, INTERNAL_ANALYTICS_WORKER_FLAG);
   if (flagIndex < 0) {
@@ -941,15 +944,16 @@ const runAnalyticsWorker = (argv: ReadonlyArray<string>) => {
     if (typeof envelope?.event !== 'string' || envelope.event.length === 0) {
       return true;
     }
-    yield* captureToPostHog(envelope);
-    return true;
-  }).pipe(
-    Effect.catchAllCause(cause =>
-      telemetryDebugLog('delivery_error', { error: telemetryErrorDetails(cause) }).pipe(
-        Effect.as(true)
+    const delivered = yield* captureToPostHog(envelope).pipe(
+      Effect.catchAllCause(cause =>
+        telemetryDebugLog('delivery_error', { error: telemetryErrorDetails(cause) }).pipe(
+          Effect.as(false)
+        )
       )
-    )
-  );
+    );
+    yield* settlePostHogAlias(envelope, delivered);
+    return true;
+  }).pipe(Effect.catchAllCause(() => Effect.succeed(true)));
 };
 
 const runCodactFailureWorker = (argv: ReadonlyArray<string>) => {

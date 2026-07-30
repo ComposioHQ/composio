@@ -1,5 +1,5 @@
 import process from 'node:process';
-import { Cause, Effect, Exit, Layer, Logger, Option } from 'effect';
+import { Cause, Effect, Exit, Layer, Logger } from 'effect';
 import { captureErrors, prettyPrintFromCapturedErrors } from 'effect-errors/index';
 import { CliConfig, HelpDoc, ValidationError } from '@effect/cli';
 import { FetchHttpClient } from '@effect/platform';
@@ -15,17 +15,13 @@ import {
   ComposioClientSingleton,
   ComposioSessionRepository,
   ComposioToolkitsRepository,
-  getSessionInfoByUserApiKey,
 } from 'src/services/composio-clients';
 import { ComposioToolkitsRepositoryCached } from 'src/services/composio-clients-cached';
 import { NodeOs } from 'src/services/node-os';
 import { NodeProcess } from 'src/services/node-process';
 import { JsPackageManagerDetector } from 'src/services/js-package-manager-detector';
 import { ComposioCliUserConfigLive, ComposioCliUserConfig } from 'src/services/cli-user-config';
-import {
-  ComposioUserContext,
-  ComposioUserContextLive as _ComposioUserContextLive,
-} from 'src/services/user-context';
+import { ComposioUserContextLive as _ComposioUserContextLive } from 'src/services/user-context';
 import { UpgradeBinary } from 'src/services/upgrade-binary';
 import { TerminalUI, TerminalUILive } from 'src/services/terminal-ui';
 import { TriggersRealtime } from 'src/services/triggers-realtime';
@@ -41,7 +37,7 @@ import {
   getPrimaryLifecycleInvokedEvent,
   getPrimaryLifecycleSucceededEvent,
 } from 'src/analytics/events';
-import { ensureAnalyticsIdentity, trackCliEventEffect } from 'src/analytics/dispatch';
+import { trackCliEventEffect } from 'src/analytics/dispatch';
 import { mapOnlyComposioOverrideError } from 'src/services/composio-error-overrides';
 import { SetupSkillInstaller } from 'src/services/setup-skill-installer';
 import { SetupCommandError } from 'src/services/setup';
@@ -148,18 +144,6 @@ const runWithArgs = Effect.flatMap(runWithConfig, run => run(process.argv)) sati
 const runWithTelemetry = Effect.gen(function* () {
   const ui = yield* TerminalUI;
   const terminal = yield* ui.capabilities;
-
-  // Stitch the analytics identity for installs whose credential (env or
-  // keyring) resolved without ever passing through a login-time link.
-  const userContext = yield* ComposioUserContext;
-  const resolvedApiKey = Option.getOrUndefined(userContext.data.apiKey);
-  if (resolvedApiKey) {
-    yield* ensureAnalyticsIdentity({
-      apiKey: resolvedApiKey,
-      baseURL: userContext.data.baseURL,
-      fetchSessionInfo: getSessionInfoByUserApiKey,
-    });
-  }
 
   const commandTelemetryContext = createCliCommandTelemetryContext(
     process.argv,

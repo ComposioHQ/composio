@@ -9,7 +9,6 @@ import * as tempy from 'tempy';
 import {
   clearApolloIdentityForAnalytics,
   emitPostHogAlias,
-  ensureAnalyticsIdentity,
   getCurrentCwdSessionId,
   linkApolloIdentityForAnalytics,
   readApiBaseUrl,
@@ -264,6 +263,7 @@ describe('CLI analytics dispatch', () => {
       yield* trackCliEventEffect({ name: 'producer_event', properties: { sample: 'value' } });
 
       expect(childProcessMocks.spawn).not.toHaveBeenCalled();
+      expect(yield* fs.exists(path.join(home, '.composio', 'analytics.json'))).toBe(false);
     }).pipe(Effect.provide(makePlatformLayer(home)));
   });
 
@@ -484,6 +484,35 @@ describe('CLI analytics dispatch', () => {
     );
   });
 
+  it.effect('bounds the delay when another process leaves a live state lock behind', () => {
+    const home = tempy.temporaryDirectory();
+    const scriptPath = path.join(home, 'composio.ts');
+    const composioDir = path.join(home, '.composio');
+    const lockPath = path.join(composioDir, 'analytics.json.lock');
+    enableTelemetry('');
+    process.argv[1] = scriptPath;
+    mkdirSync(composioDir, { recursive: true });
+    writeFileSync(scriptPath, '');
+    writeFileSync(lockPath, 'other-process');
+
+    return Effect.gen(function* () {
+      const completedBeforeDeadline = yield* Effect.race(
+        trackCliEventEffect({ name: CLI_ANALYTICS_EVENTS.CLI_SETUP_SUCCEEDED }).pipe(
+          Effect.as(true)
+        ),
+        Effect.promise(
+          () =>
+            new Promise<boolean>(resolve => {
+              setTimeout(() => resolve(false), 1_500);
+            })
+        )
+      );
+
+      expect(completedBeforeDeadline).toBe(true);
+      expect(childProcessMocks.spawn).toHaveBeenCalledTimes(1);
+    }).pipe(Effect.provide(makePlatformLayer(home)));
+  });
+
   it.effect('keys post-login events on the persisted apollo_user_id', () => {
     const home = tempy.temporaryDirectory();
     const scriptPath = `${home}/composio.ts`;
@@ -544,19 +573,81 @@ describe('CLI analytics dispatch', () => {
         alias: 'install_login',
       });
 
-      // The Apollo id is persisted while keeping the original install_id/created_at.
+      // The Apollo id and pending alias are persisted while keeping the
+      // original install_id/created_at.
       const persisted = JSON.parse(
         yield* fs.readFileString(path.join(composioDir, 'analytics.json'), 'utf8')
-      ) as { install_id: string; apollo_user_id: string; created_at: string };
+      ) as {
+        install_id: string;
+        apollo_user_id: string;
+        pending_alias_apollo_user_id: string;
+        created_at: string;
+      };
       expect(persisted).toMatchObject({
         install_id: 'install_login',
         apollo_user_id: 'om_apollo_login',
+        pending_alias_apollo_user_id: 'om_apollo_login',
         created_at: '2026-01-01T00:00:00.000Z',
       });
 
-      // A repeat login with the same Apollo id does not re-emit the alias.
+      // A repeat login while delivery is pending does not re-emit the alias.
       yield* linkApolloIdentityForAnalytics('om_apollo_login');
       expect(childProcessMocks.spawn).toHaveBeenCalledTimes(1);
+
+      vi.stubEnv('COMPOSIO_POSTHOG_INGEST_URL', 'https://posthog.example.test/i/v0/e/');
+      vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(null, { status: 200 }));
+      yield* runBackgroundWorkerFromArgv([
+        process.execPath,
+        'composio',
+        '__analytics-worker',
+        args[2]!,
+      ]).pipe(Effect.provide(makePlatformLayer(home)));
+
+      const acknowledged = JSON.parse(
+        yield* fs.readFileString(path.join(composioDir, 'analytics.json'), 'utf8')
+      ) as {
+        aliased_apollo_user_id?: string;
+        pending_alias_apollo_user_id?: string;
+      };
+      expect(acknowledged.aliased_apollo_user_id).toBe('om_apollo_login');
+      expect(acknowledged.pending_alias_apollo_user_id).toBeUndefined();
+    }).pipe(Effect.provide(makePlatformLayer(home)));
+  });
+
+  it.effect('retries an alias after the worker reports a failed delivery', () => {
+    const home = tempy.temporaryDirectory();
+    const scriptPath = `${home}/composio.ts`;
+    enableTelemetry('');
+    process.argv[1] = scriptPath;
+
+    return Effect.gen(function* () {
+      const fs = yield* FileSystem.FileSystem;
+      yield* fs.writeFileString(scriptPath, '');
+
+      yield* linkApolloIdentityForAnalytics('om_alias_retry');
+      expect(childProcessMocks.spawn).toHaveBeenCalledTimes(1);
+      const args = childProcessMocks.spawn.mock.calls[0]![1] as string[];
+
+      vi.stubEnv('COMPOSIO_POSTHOG_INGEST_URL', 'https://posthog.example.test/i/v0/e/');
+      vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(null, { status: 500 }));
+      yield* runBackgroundWorkerFromArgv([
+        process.execPath,
+        'composio',
+        '__analytics-worker',
+        args[2]!,
+      ]).pipe(Effect.provide(makePlatformLayer(home)));
+
+      const afterFailure = JSON.parse(
+        yield* fs.readFileString(path.join(home, '.composio', 'analytics.json'), 'utf8')
+      ) as {
+        aliased_apollo_user_id?: string;
+        pending_alias_apollo_user_id?: string;
+      };
+      expect(afterFailure.aliased_apollo_user_id).toBeUndefined();
+      expect(afterFailure.pending_alias_apollo_user_id).toBeUndefined();
+
+      yield* linkApolloIdentityForAnalytics('om_alias_retry');
+      expect(childProcessMocks.spawn).toHaveBeenCalledTimes(2);
     }).pipe(Effect.provide(makePlatformLayer(home)));
   });
 
@@ -583,11 +674,11 @@ describe('CLI analytics dispatch', () => {
         yield* fs.readFileString(path.join(home, '.composio', 'analytics.json'), 'utf8')
       ) as {
         apollo_user_id: string;
-        aliased_apollo_user_id: string;
+        pending_alias_apollo_user_id: string;
         api_key_fingerprint: string;
       };
       expect(persisted.apollo_user_id).toBe('om_concurrent');
-      expect(persisted.aliased_apollo_user_id).toBe('om_concurrent');
+      expect(persisted.pending_alias_apollo_user_id).toBe('om_concurrent');
       expect(persisted.api_key_fingerprint.length).toBeGreaterThan(0);
     }).pipe(Effect.provide(makePlatformLayer(home)));
   });
@@ -604,14 +695,10 @@ describe('CLI analytics dispatch', () => {
       const path = yield* Path.Path;
       yield* fs.writeFileString(scriptPath, '');
 
-      // No key -> nothing enqueued, so the alias must not be marked as sent.
+      // No key -> no analytics state or worker is created.
       yield* linkApolloIdentityForAnalytics('om_apollo_retry');
       expect(childProcessMocks.spawn).not.toHaveBeenCalled();
-      const afterSkip = JSON.parse(
-        yield* fs.readFileString(path.join(home, '.composio', 'analytics.json'), 'utf8')
-      ) as { apollo_user_id?: string; aliased_apollo_user_id?: string };
-      expect(afterSkip.apollo_user_id).toBe('om_apollo_retry');
-      expect(afterSkip.aliased_apollo_user_id).toBeUndefined();
+      expect(yield* fs.exists(path.join(home, '.composio', 'analytics.json'))).toBe(false);
 
       // Once a key is configured the alias is attempted again.
       vi.stubEnv('COMPOSIO_POSTHOG_PROJECT_API_KEY', 'phc_test_key');
@@ -619,8 +706,8 @@ describe('CLI analytics dispatch', () => {
       expect(childProcessMocks.spawn).toHaveBeenCalledTimes(1);
       const afterRetry = JSON.parse(
         yield* fs.readFileString(path.join(home, '.composio', 'analytics.json'), 'utf8')
-      ) as { aliased_apollo_user_id?: string };
-      expect(afterRetry.aliased_apollo_user_id).toBe('om_apollo_retry');
+      ) as { pending_alias_apollo_user_id?: string };
+      expect(afterRetry.pending_alias_apollo_user_id).toBe('om_apollo_retry');
     }).pipe(Effect.provide(makePlatformLayer(home)));
   });
 
@@ -930,10 +1017,14 @@ describe('CLI analytics dispatch', () => {
 
         const persisted = JSON.parse(
           yield* fs.readFileString(path.join(home, '.composio', 'analytics.json'), 'utf8')
-        ) as { install_id: string; apollo_user_id: string; aliased_apollo_user_id: string };
+        ) as {
+          install_id: string;
+          apollo_user_id: string;
+          pending_alias_apollo_user_id: string;
+        };
         expect(persisted.install_id).toBe(secondPayload.installId);
         expect(persisted.apollo_user_id).toBe('om_second_user');
-        expect(persisted.aliased_apollo_user_id).toBe('om_second_user');
+        expect(persisted.pending_alias_apollo_user_id).toBe('om_second_user');
       }).pipe(Effect.provide(makePlatformLayer(home)));
     });
 
@@ -1046,113 +1137,6 @@ describe('CLI analytics dispatch', () => {
         expect(payload.properties.error_message).toBe('Auth failed for [redacted] via [redacted]');
         expect(payload.properties.nested.tokens).toEqual(['[redacted]']);
         expect(payload.properties.duration_ms).toBe(42);
-      }).pipe(Effect.provide(makePlatformLayer(home)));
-    });
-
-    it.effect('bootstrap stitch links a missing identity through session info', () => {
-      const home = tempy.temporaryDirectory();
-      const scriptPath = `${home}/composio.ts`;
-      enableTelemetry('uak_stitch');
-      process.argv[1] = scriptPath;
-      const fetchSessionInfo = vi.fn(() => Effect.succeed({ org_member: { id: 'om_stitched' } }));
-
-      return Effect.gen(function* () {
-        const fs = yield* FileSystem.FileSystem;
-        yield* fs.writeFileString(scriptPath, '');
-
-        yield* ensureAnalyticsIdentity({
-          apiKey: 'uak_stitch',
-          baseURL: 'https://backend.example.test',
-          fetchSessionInfo,
-        });
-
-        expect(fetchSessionInfo).toHaveBeenCalledTimes(1);
-        expect(childProcessMocks.spawn).toHaveBeenCalledTimes(1);
-        const args = childProcessMocks.spawn.mock.calls[0]![1] as string[];
-        const payload = decodeWorkerPayload<{ event: string; distinctId: string }>(args[2]!);
-        expect(payload.event).toBe('$create_alias');
-        expect(payload.distinctId).toBe('om_stitched');
-
-        // Once linked under this credential, later runs make no network attempt.
-        yield* ensureAnalyticsIdentity({
-          apiKey: 'uak_stitch',
-          baseURL: 'https://backend.example.test',
-          fetchSessionInfo,
-        });
-        expect(fetchSessionInfo).toHaveBeenCalledTimes(1);
-      }).pipe(Effect.provide(makePlatformLayer(home)));
-    });
-
-    it.effect('bootstrap stitch attempts at most once per day after a failure', () => {
-      const home = tempy.temporaryDirectory();
-      const scriptPath = `${home}/composio.ts`;
-      enableTelemetry('uak_stitch');
-      process.argv[1] = scriptPath;
-      const fetchSessionInfo = vi.fn(() => Effect.fail(new Error('offline')));
-
-      return Effect.gen(function* () {
-        const fs = yield* FileSystem.FileSystem;
-        const path = yield* Path.Path;
-        yield* fs.writeFileString(scriptPath, '');
-
-        yield* ensureAnalyticsIdentity({
-          apiKey: 'uak_stitch',
-          baseURL: 'https://backend.example.test',
-          fetchSessionInfo,
-        });
-        expect(fetchSessionInfo).toHaveBeenCalledTimes(1);
-
-        const persisted = JSON.parse(
-          yield* fs.readFileString(path.join(home, '.composio', 'analytics.json'), 'utf8')
-        ) as {
-          stitch_attempted_at?: string;
-          stitch_attempted_api_key_fingerprint?: string;
-        };
-        expect(typeof persisted.stitch_attempted_at).toBe('string');
-        expect(typeof persisted.stitch_attempted_api_key_fingerprint).toBe('string');
-
-        // Identity is still unlinked, but the attempt is throttled for 24h.
-        yield* ensureAnalyticsIdentity({
-          apiKey: 'uak_stitch',
-          baseURL: 'https://backend.example.test',
-          fetchSessionInfo,
-        });
-        expect(fetchSessionInfo).toHaveBeenCalledTimes(1);
-      }).pipe(Effect.provide(makePlatformLayer(home)));
-    });
-
-    it.effect('bootstrap stitch retries immediately when the credential changes', () => {
-      const home = tempy.temporaryDirectory();
-      const scriptPath = `${home}/composio.ts`;
-      enableTelemetry('uak_first');
-      process.argv[1] = scriptPath;
-      const failedFetch = vi.fn(() => Effect.fail(new Error('offline')));
-      const changedCredentialFetch = vi.fn(() =>
-        Effect.succeed({ org_member: { id: 'om_changed' } })
-      );
-
-      return Effect.gen(function* () {
-        const fs = yield* FileSystem.FileSystem;
-        yield* fs.writeFileString(scriptPath, '');
-
-        yield* ensureAnalyticsIdentity({
-          apiKey: 'uak_first',
-          baseURL: 'https://backend.example.test',
-          fetchSessionInfo: failedFetch,
-        });
-        yield* ensureAnalyticsIdentity({
-          apiKey: 'uak_second',
-          baseURL: 'https://backend.example.test',
-          fetchSessionInfo: changedCredentialFetch,
-        });
-
-        expect(failedFetch).toHaveBeenCalledTimes(1);
-        expect(changedCredentialFetch).toHaveBeenCalledTimes(1);
-        expect(childProcessMocks.spawn).toHaveBeenCalledTimes(1);
-        const args = childProcessMocks.spawn.mock.calls[0]![1] as string[];
-        const payload = decodeWorkerPayload<{ event: string; distinctId: string }>(args[2]!);
-        expect(payload.event).toBe('$create_alias');
-        expect(payload.distinctId).toBe('om_changed');
       }).pipe(Effect.provide(makePlatformLayer(home)));
     });
   });
