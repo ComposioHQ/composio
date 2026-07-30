@@ -1,0 +1,34 @@
+---
+title: 'Python SDK 0.18.1 and TypeScript SDK 0.14.1 harden uploads and event handling'
+description: 'Python SDK 0.18.1 and TypeScript SDK 0.14.1 strengthen URL uploads, improve trigger subscription reliability, and fix schema and MIME type handling.'
+date: '2026-07-30'
+---
+
+Python SDK `composio` `0.18.1` and TypeScript SDK `@composio/core` `0.14.1` strengthen URL upload validation and address reliability issues in file handling, trigger subscriptions, and schema conversion.
+
+### SDK versions
+
+| SDK                                 | Version  |
+| ----------------------------------- | -------- |
+| Python `composio`                   | `0.18.1` |
+| TypeScript `@composio/core`         | `0.14.1` |
+| TypeScript `@composio/slim`         | `0.14.1` |
+| TypeScript `@composio/experimental` | `0.2.1`  |
+| TypeScript `@composio/mastra`       | `0.10.3` |
+
+### URL upload security
+
+- Python URL uploads now validate the canonical URL that Requests will connect to. Backslash parser differentials, malformed ports, and destinations that resolve to non-public addresses are rejected before a connection is made.
+- TypeScript Tool Router session URL uploads now use the SDK's SSRF-safe fetch path, revalidate every redirect target, and stream responses with a 100 MiB limit. Edge runtimes that cannot validate DNS fail closed for URL inputs.
+- TypeScript path handling on Cloudflare Workers and other edge runtimes now avoids backtracking regular expressions that could hang on long runs of slash characters.
+
+### Python reliability and correctness
+
+- Calling `TriggerSubscription.stop()` from a trigger callback no longer deadlocks. Timed-out subscription attempts also disconnect their websocket instead of leaving a reconnecting background thread behind.
+- Malformed chunked trigger frames are contained at the callback boundary, so one bad frame no longer tears down an otherwise healthy subscription.
+- File extensions are matched case-insensitively when inferring MIME types, so names such as `photo.PNG` and `scan.PDF` receive the correct content type.
+- JSON Schema `allOf` combinations containing an impossible schema remain rejecting through nested objects, arrays, and local definitions instead of being widened to an accepting type.
+
+### Dependency updates
+
+Runtime dependencies across the TypeScript SDK packages and Python core and provider packages have been refreshed.
