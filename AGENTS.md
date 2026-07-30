@@ -23,6 +23,8 @@ Use the smallest relevant skill:
 - `bug-fixing`: fixing a defect and choosing regression tests.
 - `cross-sdk-parity`: aligning TypeScript and Python behavior, generated client bumps, or API contract drift.
 - `docs-decisions`: docs site work, changelogs, docs decisions, or docs automation.
+- `good-docs-writing`: drafting or revising docs prose in the house writing voice.
+- `good-docs-audit`: reviewing existing docs or prose against that voice and reporting violations.
 - `eve`: durable backend AI agents built with the eve framework.
 - `typescript-sdk`, `typescript-testing`, `typescript-providers`: TypeScript SDK/core/provider work.
 - `cli-command`, `cli-e2e`: CLI design/implementation or CLI end-to-end tests.

@@ -228,7 +228,10 @@ Use the repo-local `cli-release` skill before building or publishing first-party
 - A push to `next` touching CLI paths publishes a rolling beta automatically.
 - The normal stable path promotes an existing tested beta through the `promote-stable` workflow action.
 - `@composio/cli` and `@composio/cli-local-tools` are ignored by Changesets. Never add a changeset targeting either package; it wedges the TypeScript SDK release action. Put human-facing CLI notes in `CHANGELOG.md` directly.
-- A direct `package.json` version bump is supported by the resolver only as an explicit release-owner recovery path, not the contributor default.
+- `package.json` uses a private development sentinel and is never a
+  binary-release authority. For an intentional minor or major release,
+  dispatch `build-beta` with its optional version input, verify that beta, then
+  promote it normally.
 
 ### Key Workflow Files
 

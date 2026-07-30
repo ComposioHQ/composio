@@ -1,6 +1,8 @@
 import { constants } from '@composio/core';
 import pkg from '../package.json' with { type: 'json' };
 
+declare const __COMPOSIO_CLI_RELEASE_VERSION__: string | undefined;
+
 const { DEFAULT_BASE_URL, DEFAULT_WEB_URL } = constants;
 
 export { DEFAULT_BASE_URL, DEFAULT_WEB_URL };
@@ -53,9 +55,16 @@ export const CACHE_FILENAMES = {
 };
 
 /**
- * Version of the Composio CLI, read from `package.json` at build time.
+ * Version of the running Composio CLI.
+ *
+ * Release builds replace `__COMPOSIO_CLI_RELEASE_VERSION__` with the exact
+ * GitHub release version. The private package version is only a source/dev
+ * fallback and must never drive binary release selection.
  */
-export const APP_VERSION = pkg.version;
+export const APP_VERSION =
+  typeof __COMPOSIO_CLI_RELEASE_VERSION__ === 'undefined'
+    ? pkg.version
+    : __COMPOSIO_CLI_RELEASE_VERSION__;
 
 /**
  * Name of the Composio CLI application, read from `package.json` at build time.
