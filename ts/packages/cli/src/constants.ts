@@ -87,6 +87,22 @@ export const PROJECT_ENV_FILE_NAME = '.env';
 export const PROJECT_COMPOSIO_DIR = '.composio';
 
 /**
+ * PostHog capture endpoint for CLI telemetry.
+ */
+export const COMPOSIO_POSTHOG_INGEST_URL = 'https://us.i.posthog.com/i/v0/e/';
+
+declare const COMPOSIO_POSTHOG_PROJECT_API_KEY_BAKED: string | undefined;
+
+/**
+ * Public write-only PostHog *project API key* (`phc_...`), baked at build from
+ * `COMPOSIO_POSTHOG_PROJECT_API_KEY`. Never a private/personal PostHog key.
+ */
+export const COMPOSIO_POSTHOG_PROJECT_API_KEY =
+  typeof COMPOSIO_POSTHOG_PROJECT_API_KEY_BAKED === 'string'
+    ? COMPOSIO_POSTHOG_PROJECT_API_KEY_BAKED
+    : '';
+
+/**
  * GitHub repository information for release fetching
  */
 export const GITHUB_REPO = {

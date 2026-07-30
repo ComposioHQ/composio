@@ -137,6 +137,7 @@ jobs:
       - name: Cross-compile CLI binary
         working-directory: ts/packages/cli
         env:
+          COMPOSIO_POSTHOG_PROJECT_API_KEY: ${{ vars.COMPOSIO_POSTHOG_PROJECT_API_KEY }}
           RELEASE_TAG: ${{ needs.prepare.outputs.release_tag }}
         run: pnpm build:binary:cross --target ${{ matrix.target }}
 

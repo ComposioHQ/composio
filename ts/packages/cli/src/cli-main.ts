@@ -33,12 +33,14 @@ import { StdinLive } from 'src/services/stdin';
 import { showPluginAcquisitionHint } from 'src/services/plugin-hint';
 import { showUpdateNotice } from 'src/services/update-check';
 import {
+  configureCliAnalyticsReleaseVersion,
   createCliCommandTelemetryContext,
   getPrimaryLifecycleFailedEvent,
   getPrimaryLifecycleInvokedEvent,
   getPrimaryLifecycleSucceededEvent,
 } from 'src/analytics/events';
 import { trackCliEventEffect } from 'src/analytics/dispatch';
+import { getVersion } from 'src/effects/version';
 import { mapOnlyComposioOverrideError } from 'src/services/composio-error-overrides';
 import { SetupSkillInstaller } from 'src/services/setup-skill-installer';
 import { SetupCommandError } from 'src/services/setup';
@@ -145,11 +147,10 @@ const runWithArgs = Effect.flatMap(runWithConfig, run => run(process.argv)) sati
 const runWithTelemetry = Effect.gen(function* () {
   const ui = yield* TerminalUI;
   const terminal = yield* ui.capabilities;
-  const commandTelemetryContext = createCliCommandTelemetryContext(
-    process.argv,
-    constants.APP_VERSION,
-    terminal
-  );
+
+  const version = yield* getVersion;
+  configureCliAnalyticsReleaseVersion(version);
+  const commandTelemetryContext = createCliCommandTelemetryContext(process.argv, version, terminal);
   if (commandTelemetryContext.commandPath === 'run' && commandTelemetryContext.runId) {
     // effect/Config is read-only; the run id must be written into the environment so the run
     // command and the child processes it spawns observe the same telemetry run id.

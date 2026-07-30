@@ -316,7 +316,7 @@ success "Composio CLI was installed successfully to $Bold_Green$(tildify "$exe")
 echo
 
 if "$exe" --version >/dev/null 2>&1 &&
-    COMPOSIO_INSTALL_DIR="$COMPOSIO_INSTALL_DIR" "$exe" install; then
+    COMPOSIO_INSTALL_DIR="$COMPOSIO_INSTALL_DIR" COMPOSIO_CLI_INVOCATION_ORIGIN=installer "$exe" install; then
     : # the CLI printed its own shell-integration guidance
 else
     info "Setting up shell integration..."
