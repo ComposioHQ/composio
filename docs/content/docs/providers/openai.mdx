@@ -406,6 +406,153 @@ The OpenAI integration ships three providers, one per API surface:
 
 Use the Responses or Agents provider for new agentic flows; reach for Chat Completions when you are extending an existing Chat Completions codebase.
 
+## Using a third-party OpenAI-compatible endpoint
+
+If your model provider exposes an OpenAI-compatible Chat Completions endpoint, you do not need a new provider package. Pass the `OpenAIProvider` to `Composio` exactly as you would for OpenAI, and point the OpenAI SDK client at the gateway with a custom `baseURL`. The tool format, agentic loop, and session behavior are unchanged; only the model endpoint changes.
+
+<Callout type="info">
+This page shows AI/ML API (`https://api.aimlapi.com/v1`) as a worked example. The same pattern works for any other OpenAI-compatible gateway — change `baseURL` and the model name to match your provider.
+</Callout>
+
+<Steps>
+<Step>
+**Install**
+
+The same packages as the Chat Completions tab above. No additional dependency is needed.
+
+<Tabs groupId="language" items={["Python", "TypeScript"]} persist>
+<Tab value="Python">
+<PackageInstall ecosystem="python" packages="composio composio_openai openai" />
+</Tab>
+<Tab value="TypeScript">
+<PackageInstall packages="@composio/core @composio/openai openai" />
+</Tab>
+</Tabs>
+</Step>
+
+<Step>
+**Configure API Keys**
+
+<Callout type="info">
+Set `COMPOSIO_API_KEY` with your API key from [Settings](https://dashboard.composio.dev/~/project/settings/api-keys?utm_source=docs&utm_medium=content&utm_campaign=docs-providers-openai) and `AIMLAPI_API_KEY` with your [AI/ML API key](https://aimlapi.com/app/keys).
+</Callout>
+
+```txt title=".env"
+COMPOSIO_API_KEY=***
+AIMLAPI_API_KEY=***
+```
+</Step>
+
+<Step>
+**Create session and run**
+
+<Tabs groupId="language" items={["Python", "TypeScript"]} persist>
+<Tab value="Python">
+```python
+import json
+import os
+
+from openai import OpenAI
+from composio import Composio
+from composio_openai import OpenAIProvider
+
+composio = Composio(provider=OpenAIProvider())
+client = OpenAI(
+    api_key=os.environ["AIMLAPI_API_KEY"],
+    base_url="https://api.aimlapi.com/v1",
+)
+
+# Create a session for your user
+session = composio.create(user_id="user_123")
+tools = session.tools()
+
+messages = [
+    {"role": "user", "content": "Send an email to john@example.com with the subject 'Hello' and body 'Hello from Composio!'"}
+]
+
+response = client.chat.completions.create(
+    model="gpt-4o-mini",
+    tools=tools,
+    messages=messages,
+)
+
+# Agentic loop: keep executing tool calls until the model responds with text
+while response.choices[0].message.tool_calls:
+    results = composio.provider.handle_tool_calls(response=response, user_id="user_123")
+    messages.append(response.choices[0].message)
+    for i, tc in enumerate(response.choices[0].message.tool_calls):
+        messages.append({
+            "role": "tool",
+            "tool_call_id": tc.id,
+            "content": json.dumps(results[i]),
+        })
+    response = client.chat.completions.create(
+        model="gpt-4o-mini",
+        tools=tools,
+        messages=messages,
+    )
+
+print(response.choices[0].message.content)
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import OpenAI from 'openai';
+import { Composio } from '@composio/core';
+import { OpenAIProvider } from '@composio/openai';
+
+declare const process: { env: Record<string, string | undefined> };
+
+const composio = new Composio({
+    provider: new OpenAIProvider(),
+});
+const client = new OpenAI({
+    apiKey: process.env.AIMLAPI_API_KEY,
+    baseURL: 'https://api.aimlapi.com/v1',
+});
+
+// Create a session for your user
+const session = await composio.create('user_123');
+const tools = await session.tools();
+
+const messages: OpenAI.Chat.ChatCompletionMessageParam[] = [
+    {
+        role: 'user',
+        content: "Send an email to john@example.com with the subject 'Hello' and body 'Hello from Composio!'",
+    },
+];
+
+let response = await client.chat.completions.create({
+    model: 'gpt-4o-mini',
+    tools: tools,
+    messages: messages,
+});
+
+// Agentic loop: keep executing tool calls until the model responds with text
+while (response.choices[0].message.tool_calls) {
+    const results = await composio.provider.handleToolCalls('user_123', response);
+    messages.push(response.choices[0].message);
+    for (const [i, tc] of response.choices[0].message.tool_calls.entries()) {
+        messages.push({
+            role: 'tool',
+            tool_call_id: tc.id,
+            content: JSON.stringify(results[i]),
+        });
+    }
+    response = await client.chat.completions.create({
+        model: 'gpt-4o-mini',
+        tools: tools,
+        messages: messages,
+    });
+}
+
+console.log(response.choices[0].message.content);
+```
+</Tab>
+</Tabs>
+</Step>
+</Steps>
+
 ## Next
 
 <Card icon={<BookOpen />} title="What is a session?" href="/docs/how-composio-works" description="How sessions scope users, tools, and auth, and how to reuse them across requests." />
