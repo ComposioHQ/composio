@@ -13,6 +13,19 @@ export const DEFAULT_PERSISTED_ONBOARDING: PersistedOnboarding = {
   lastExecution: undefined,
 };
 
+/**
+ * The recorded first execution, or `None` if there is no evidence of one.
+ *
+ * The store writes both halves together, so they only disagree in a hand-edited config. A missing
+ * `last_execution` then reads as "not executed", which replays one demo rather than reporting a
+ * completion the config cannot evidence. Every reader goes through here so the execute gate and the
+ * bare-`composio` nudge cannot draw different conclusions from the same config.
+ */
+export const executionRecorded = (
+  onboarding: PersistedOnboarding
+): Option.Option<OnboardingLastExecution> =>
+  onboarding.hasExecuted ? Option.fromNullable(onboarding.lastExecution) : Option.none();
+
 /** Read the durable onboarding facts. Never fails — an unreadable config reads as the default. */
 export const readPersistedOnboarding: Effect.Effect<
   PersistedOnboarding,

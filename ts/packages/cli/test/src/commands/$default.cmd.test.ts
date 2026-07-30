@@ -53,7 +53,18 @@ describe('CLI: composio', () => {
     );
   });
 
-  layer(TestLive({ cliUserConfig: { onboarding: { hasExecuted: true } } }))(it => {
+  layer(
+    TestLive({
+      cliUserConfig: {
+        // Both halves: the flag alone is not evidence of an execution, and `executionRecorded`
+        // reads a config carrying only the flag as unfinished.
+        onboarding: {
+          hasExecuted: true,
+          lastExecution: { slug: 'GITHUB_GET_THE_AUTHENTICATED_USER', at: '2026-01-01T00:00:00Z' },
+        },
+      },
+    })
+  )(it => {
     it.scoped('[Given] no args and a finished onboarding [Then] prints help message', () =>
       Effect.gen(function* () {
         yield* cli([]);
@@ -77,6 +88,22 @@ describe('CLI: composio', () => {
         // The nudge replaces root help; it does not print both.
         expect(output).not.toContain('Usage:');
       })
+    );
+  });
+
+  layer(TestLive({ cliUserConfig: { onboarding: { hasExecuted: true } } }))(it => {
+    it.scoped(
+      '[Given] the flag set with no recorded execution [Then] still nudges, matching the execute gate',
+      () =>
+        Effect.gen(function* () {
+          // A hand-edited config with `has_executed` and no `last_execution` is not evidence of an
+          // execution. Hiding the nudge here while `composio onboard` still reports the execute gate
+          // open would leave the two disagreeing about the same config.
+          yield* cli([]);
+          const output = (yield* MockConsole.getLines({ stripAnsi: true })).join('\n');
+          expect(output).toContain('composio onboard');
+          expect(output).not.toContain('Usage:');
+        })
     );
   });
 

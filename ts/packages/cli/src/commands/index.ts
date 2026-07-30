@@ -47,6 +47,7 @@ import { rootConnectionsCmd } from './connections/connections.cmd';
 import { agentCmd } from './agent/agent.cmd';
 import { renderCommandHintGraph } from 'src/services/command-hints';
 import { getLocalOnboardNudge } from 'src/services/onboarding-nudge';
+import { executionRecorded } from 'src/services/onboarding-store';
 import { resetRuntimeDebugFlags, setRuntimeDebugFlags } from 'src/services/runtime-debug-flags';
 import { ComposioCliUserConfig } from 'src/services/cli-user-config';
 import { ComposioUserContext } from 'src/services/user-context';
@@ -475,7 +476,9 @@ export const runWithConfig = Effect.gen(function* () {
         args.length === 0
           ? getLocalOnboardNudge({
               loggedIn: Option.isSome(userContext.data.apiKey),
-              hasExecuted: cliUserConfig.data.onboarding.hasExecuted,
+              // The same derivation the execute gate uses, so the nudge and `composio onboard`
+              // cannot disagree about whether a first execution happened.
+              hasExecuted: Option.isSome(executionRecorded(cliUserConfig.data.onboarding)),
             })
           : undefined;
 
