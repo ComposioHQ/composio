@@ -4,17 +4,17 @@ date: "2026-07-30"
 description: "Two opt-in controls that tie an OAuth connection to the user who started it: same-browser binding for managed apps, callback identity verification for your own OAuth apps."
 ---
 
-Two new controls tie an OAuth connection to the user who started it, so a connection cannot be
-completed by anyone else. Both are off by default — if you do nothing, your connect flows are
-unchanged.
+Composio now ensures an OAuth connection can only be completed by the user who started it — enforced
+automatically on Composio-managed apps, and available as an opt-in check for your own OAuth apps.
 
 ### What shipped
 
 - **Same-browser binding** — for **Composio-managed apps** (default auth configs). Because Composio
-  owns the OAuth app here, it enforces the check for you: a Connect Link must be completed in the
-  browser that started it, and a callback from a different browser is rejected. Off by default —
-  contact us to enable. [Learn more](/docs/oauth-connection-security#same-browser-binding)
-- **Callback identity verification** — for **your own OAuth apps** (custom auth configs), where only
-  your server can identify the returning user. Set a verifier URL, and Composio routes each OAuth
-  return to your server to confirm its signed-in user before the connection activates. Enable it in
-  Settings → General. [Learn more](/docs/oauth-connection-security#callback-identity-verification)
+  owns the OAuth app here, it enforces this automatically: a Connect Link must be completed in the
+  browser that started it, and a callback from a different browser is rejected. No setup required.
+  [Learn more](/docs/oauth-connection-security#same-browser-binding)
+- **Callback identity verification** — an opt-in check for **your own OAuth apps** (custom auth
+  configs), where only your server can identify the returning user. Set a verifier URL, and Composio
+  routes each OAuth return to your server to confirm its signed-in user before the connection
+  activates. Enable it in Settings → General.
+  [Learn more](/docs/oauth-connection-security#callback-identity-verification)

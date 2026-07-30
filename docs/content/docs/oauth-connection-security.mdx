@@ -9,13 +9,12 @@ whoever opens it and consents becomes the account attached to the flow. An attac
 connection under their own Composio user, extract the authorization URL before consenting, and have
 a different user complete it — attaching that user's provider account under the attacker's identity.
 
-This class of attack is **OAuth session fixation**. Composio provides two controls against it, both
-off by default:
+This class of attack is **OAuth session fixation**. Composio provides two controls against it:
 
-- [Same-browser binding](#same-browser-binding) — for Composio managed apps. Requires a Connect
-  Link to be completed in the browser that started it.
-- [Callback identity verification](#callback-identity-verification) — for your own OAuth apps.
-  Requires your server to confirm the returning user before the connection activates.
+- [Same-browser binding](#same-browser-binding) — enforced automatically on Composio managed apps.
+  Requires a Connect Link to be completed in the browser that started it.
+- [Callback identity verification](#callback-identity-verification) — opt-in, for your own OAuth
+  apps. Requires your server to confirm the returning user before the connection activates.
 
 <Callout type="info">
 The `state` parameter and PKCE do not prevent this on their own. As commonly implemented, `state` is
@@ -38,9 +37,9 @@ config split:
 
 ## Same-browser binding
 
-When enabled on a project, submitting a Connect Link for a Composio managed app ties the
-authorization attempt to the user's browser. A callback arriving in a different browser is rejected,
-and the connection does not activate.
+For a Composio managed app, submitting a Connect Link ties the authorization attempt to the user's
+browser. A callback arriving in a different browser is rejected, and the connection does not
+activate.
 
 ### How it works
 
@@ -52,9 +51,9 @@ the binding applies only to that attempt.
 
 ### Availability
 
-Same-browser binding is off by default and enabled per project by Composio. Contact Composio to
-enable or disable it for a project; changes take effect immediately, with no deployment on your
-side.
+Same-browser binding is enforced by Composio on managed apps, with no setup on your side. If it
+rejects legitimate users of yours, contact Composio to disable it for your project; changes take
+effect immediately.
 
 ### Rejection behaviour
 
