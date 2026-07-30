@@ -1,5 +1,5 @@
 import { Command, HelpDoc, Options, ValidationError } from '@effect/cli';
-import { Effect, Option } from 'effect';
+import { Effect, Either, Option } from 'effect';
 import { browserLogin } from 'src/commands/login.cmd';
 import { runConnectedAccountsLink } from 'src/commands/connected-accounts/commands/connected-accounts.link.cmd';
 import { runToolsExecute } from 'src/commands/tools/commands/tools.execute.cmd';
@@ -213,7 +213,7 @@ const offerReversibleCreate = (params: {
       inlineOnly: true,
     }).pipe(Effect.either);
 
-    if (result._tag === 'Left') {
+    if (Either.isLeft(result)) {
       yield* ui.log.warn('The create did not go through. Onboarding is still complete.');
       return;
     }
@@ -249,7 +249,7 @@ const advanceLoginGate = (params: { readonly yes: boolean; readonly json: boolea
       skipOrgProjectPicker: params.yes || !interactive,
     }).pipe(Effect.either);
 
-    if (outcome._tag === 'Left') {
+    if (Either.isLeft(outcome)) {
       return Option.none<string>();
     }
 
@@ -283,7 +283,7 @@ const advanceConnectGate = (params: { readonly toolkit: string; readonly json: b
 
     // The authorization URL is the one thing the connect gate cannot re-derive from the API on the
     // next resolve, so it travels back with the outcome.
-    return outcome._tag === 'Right' && outcome.right.kind === 'pending'
+    return Either.isRight(outcome) && outcome.right.kind === 'pending'
       ? Option.some({ toolkit: outcome.right.toolkit, url: outcome.right.redirectUrl })
       : Option.none<{ readonly toolkit: string; readonly url: string }>();
   });
@@ -313,7 +313,7 @@ const advanceExecuteGate = (params: { readonly task: StarterTask; readonly json:
       inlineOnly: true,
     }).pipe(Effect.either);
 
-    if (result._tag === 'Left') {
+    if (Either.isLeft(result)) {
       yield* ui.log.error(`The demo tool did not run. ${params.task.read.slug} failed.`);
       return;
     }

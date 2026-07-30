@@ -667,9 +667,15 @@ describe('CLI: composio onboard', () => {
               .spyOn(executeCmd, 'runToolsExecute')
               .mockReturnValue(mockedExecute(readSucceeded));
 
-            yield* cli(['onboard', '--toolkit', 'github', '--json']);
+            // No `--json`: with it, `offerReversibleCreate` returns before the confirm is ever
+            // consulted, so the scripted `false` would go unread and this would only re-prove the
+            // `--json` guard that its own test already covers.
+            yield* cli(['onboard', '--toolkit', 'github']);
 
             const slugs = executeSpy.mock.calls.map(call => call[0].slug);
+            // The read must have run, or the create was never offered and the assertion below
+            // would hold for the wrong reason.
+            expect(slugs).toContain('GITHUB_GET_THE_AUTHENTICATED_USER');
             expect(slugs).not.toContain('GITHUB_CREATE_AN_ISSUE');
           })
         );
