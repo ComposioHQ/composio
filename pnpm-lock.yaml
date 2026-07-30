@@ -201,6 +201,12 @@ importers:
 
   .github/scripts/sdk-release:
     dependencies:
+      '@effect/ai':
+        specifier: ^0.37.0
+        version: 0.37.0(@effect/experimental@0.61.0(@effect/platform@0.97.0(effect@3.22.0))(effect@3.22.0))(@effect/platform@0.97.0(effect@3.22.0))(@effect/rpc@0.76.0(@effect/platform@0.97.0(effect@3.22.0))(effect@3.22.0))(effect@3.22.0)
+      '@effect/ai-openai':
+        specifier: ^0.41.0
+        version: 0.41.0(@effect/ai@0.37.0(@effect/experimental@0.61.0(@effect/platform@0.97.0(effect@3.22.0))(effect@3.22.0))(@effect/platform@0.97.0(effect@3.22.0))(@effect/rpc@0.76.0(@effect/platform@0.97.0(effect@3.22.0))(effect@3.22.0))(effect@3.22.0))(@effect/experimental@0.61.0(@effect/platform@0.97.0(effect@3.22.0))(effect@3.22.0))(@effect/platform@0.97.0(effect@3.22.0))(effect@3.22.0)
       '@effect/cli':
         specifier: 'catalog:'
         version: 0.76.0(@effect/platform@0.97.0(effect@3.22.0))(@effect/printer-ansi@0.50.0(@effect/typeclass@0.41.0(effect@3.22.0))(effect@3.22.0))(@effect/printer@0.50.0(@effect/typeclass@0.41.0(effect@3.22.0))(effect@3.22.0))(effect@3.22.0)
@@ -781,16 +787,16 @@ importers:
         version: link:../../packages/providers/llamaindex
       '@llamaindex/openai':
         specifier: ^0.4.23
-        version: 0.4.23(@llamaindex/core@0.6.23)(@llamaindex/env@0.1.31)(ws@8.21.1)(zod@4.4.3)
+        version: 0.4.23(@llamaindex/core@0.6.23(gpt-tokenizer@2.9.0))(@llamaindex/env@0.1.31(gpt-tokenizer@2.9.0))(ws@8.21.1)(zod@4.4.3)
       '@llamaindex/workflow':
         specifier: ^1.1.25
-        version: 1.1.25(@llamaindex/core@0.6.23)(@llamaindex/env@0.1.31)(@modelcontextprotocol/sdk@1.29.0(@cfworker/json-schema@4.1.1)(zod@4.4.3))(hono@4.12.31)(zod@4.4.3)
+        version: 1.1.25(@llamaindex/core@0.6.23(gpt-tokenizer@2.9.0))(@llamaindex/env@0.1.31(gpt-tokenizer@2.9.0))(@modelcontextprotocol/sdk@1.29.0(@cfworker/json-schema@4.1.1)(zod@4.4.3))(hono@4.12.31)(zod@4.4.3)
       dotenv:
         specifier: 'catalog:'
         version: 17.4.2
       llamaindex:
         specifier: ^0.12.1
-        version: 0.12.1(@modelcontextprotocol/sdk@1.29.0(@cfworker/json-schema@4.1.1)(zod@4.4.3))(hono@4.12.31)(tree-sitter@0.22.4)(web-tree-sitter@0.24.7)(zod@4.4.3)
+        version: 0.12.1(@modelcontextprotocol/sdk@1.29.0(@cfworker/json-schema@4.1.1)(zod@4.4.3))(gpt-tokenizer@2.9.0)(hono@4.12.31)(tree-sitter@0.22.4)(web-tree-sitter@0.24.7)(zod@4.4.3)
     devDependencies:
       '@types/bun':
         specifier: 'catalog:'
@@ -1590,7 +1596,7 @@ importers:
     dependencies:
       llamaindex:
         specifier: ^0.12.0
-        version: 0.12.1(@modelcontextprotocol/sdk@1.29.0(@cfworker/json-schema@4.1.1)(zod@4.4.3))(hono@4.12.31)(tree-sitter@0.22.4)(web-tree-sitter@0.24.7)(zod@4.4.3)
+        version: 0.12.1(@modelcontextprotocol/sdk@1.29.0(@cfworker/json-schema@4.1.1)(zod@4.4.3))(gpt-tokenizer@2.9.0)(hono@4.12.31)(tree-sitter@0.22.4)(web-tree-sitter@0.24.7)(zod@4.4.3)
     devDependencies:
       '@composio/core':
         specifier: workspace:*
@@ -2207,6 +2213,22 @@ packages:
   '@earendil-works/pi-tui@0.82.0':
     resolution: {integrity: sha512-9IDjQOXne7t9l2s2YcjnIBxsVNVPE7qScVSB3YmFlXsBW4pfo2gOElTxggV84KrRiGqABnlFPBWbf0k54hszHQ==}
     engines: {node: '>=22.19.0'}
+
+  '@effect/ai-openai@0.41.0':
+    resolution: {integrity: sha512-+WE8ec+BP3ttg9YepHgV5x0YL/qelGT4ziWdBvGerIif0doY0LcaM7LHX0MObdlys4bh2VtERMkPcX5TyLVZGQ==}
+    peerDependencies:
+      '@effect/ai': ^0.37.0
+      '@effect/experimental': ^0.61.0
+      '@effect/platform': ^0.97.0
+      effect: ^3.22.0
+
+  '@effect/ai@0.37.0':
+    resolution: {integrity: sha512-tHkDg/p2tNxKhXZATOokl5vGGqrV7K5FA/qdIExRTjFUOEVvKCWoVxqtUuj+NAp9BeSVuysJMPrHB9XjFPsUiQ==}
+    peerDependencies:
+      '@effect/experimental': ^0.61.0
+      '@effect/platform': ^0.97.0
+      '@effect/rpc': ^0.76.0
+      effect: ^3.22.0
 
   '@effect/cli@0.76.0':
     resolution: {integrity: sha512-6N6u827Brlvf1UF3WMUazUgzZxq3kN/jemj66El7CUNulmlU7ciYKV0UMpETculvkKTfVonHZ5s49Fdz6Ad0cQ==}
@@ -5033,6 +5055,9 @@ packages:
     resolution: {integrity: sha512-ZUKRh6/kUFoAiTAtTYPZJ3hw9wNxx+BIBOijnlG9PnrJsCcSjs1wyyD6vJpaYtgnzDrKYRSqf3OO6Rfa93xsRg==}
     engines: {node: '>= 0.4'}
 
+  gpt-tokenizer@2.9.0:
+    resolution: {integrity: sha512-YSpexBL/k4bfliAzMrRqn3M6+it02LutVyhVpDeMKrC/O9+pCe/5s8U2hYKa2vFLD5/vHhsKc8sOn/qGqII8Kg==}
+
   graceful-fs@4.2.11:
     resolution: {integrity: sha512-RbJ5/jmFcNNCcDV5o9eTnBLJ/HszWV0P73bc+Ff4nS/rJj+YaS6IGyiOL0VoBYX+l1Wrl3k63h/KrH+nhJ0XvQ==}
 
@@ -7611,6 +7636,22 @@ snapshots:
       get-east-asian-width: 1.6.0
       marked: 18.0.5
 
+  '@effect/ai-openai@0.41.0(@effect/ai@0.37.0(@effect/experimental@0.61.0(@effect/platform@0.97.0(effect@3.22.0))(effect@3.22.0))(@effect/platform@0.97.0(effect@3.22.0))(@effect/rpc@0.76.0(@effect/platform@0.97.0(effect@3.22.0))(effect@3.22.0))(effect@3.22.0))(@effect/experimental@0.61.0(@effect/platform@0.97.0(effect@3.22.0))(effect@3.22.0))(@effect/platform@0.97.0(effect@3.22.0))(effect@3.22.0)':
+    dependencies:
+      '@effect/ai': 0.37.0(@effect/experimental@0.61.0(@effect/platform@0.97.0(effect@3.22.0))(effect@3.22.0))(@effect/platform@0.97.0(effect@3.22.0))(@effect/rpc@0.76.0(@effect/platform@0.97.0(effect@3.22.0))(effect@3.22.0))(effect@3.22.0)
+      '@effect/experimental': 0.61.0(@effect/platform@0.97.0(effect@3.22.0))(effect@3.22.0)
+      '@effect/platform': 0.97.0(effect@3.22.0)
+      effect: 3.22.0
+      gpt-tokenizer: 2.9.0
+
+  '@effect/ai@0.37.0(@effect/experimental@0.61.0(@effect/platform@0.97.0(effect@3.22.0))(effect@3.22.0))(@effect/platform@0.97.0(effect@3.22.0))(@effect/rpc@0.76.0(@effect/platform@0.97.0(effect@3.22.0))(effect@3.22.0))(effect@3.22.0)':
+    dependencies:
+      '@effect/experimental': 0.61.0(@effect/platform@0.97.0(effect@3.22.0))(effect@3.22.0)
+      '@effect/platform': 0.97.0(effect@3.22.0)
+      '@effect/rpc': 0.76.0(@effect/platform@0.97.0(effect@3.22.0))(effect@3.22.0)
+      effect: 3.22.0
+      find-my-way-ts: 0.1.6
+
   '@effect/cli@0.76.0(@effect/platform@0.97.0(effect@3.22.0))(@effect/printer-ansi@0.50.0(@effect/typeclass@0.41.0(effect@3.22.0))(effect@3.22.0))(@effect/printer@0.50.0(@effect/typeclass@0.41.0(effect@3.22.0))(effect@3.22.0))(effect@3.22.0)':
     dependencies:
       '@effect/platform': 0.97.0(effect@3.22.0)
@@ -8110,10 +8151,10 @@ snapshots:
 
   '@langchain/protocol@0.0.18': {}
 
-  '@llamaindex/core@0.6.22':
+  '@llamaindex/core@0.6.22(gpt-tokenizer@2.9.0)':
     dependencies:
       '@finom/zod-to-json-schema': 3.24.11(zod@4.4.3)
-      '@llamaindex/env': 0.1.30
+      '@llamaindex/env': 0.1.30(gpt-tokenizer@2.9.0)
       '@types/node': 24.13.3
       magic-bytes.js: 1.13.0
       zod: 4.4.3
@@ -8121,10 +8162,10 @@ snapshots:
       - '@huggingface/transformers'
       - gpt-tokenizer
 
-  '@llamaindex/core@0.6.23':
+  '@llamaindex/core@0.6.23(gpt-tokenizer@2.9.0)':
     dependencies:
       '@finom/zod-to-json-schema': 3.24.11(zod@4.4.3)
-      '@llamaindex/env': 0.1.31
+      '@llamaindex/env': 0.1.31(gpt-tokenizer@2.9.0)
       '@types/node': 24.13.3
       magic-bytes.js: 1.13.0
       zod: 4.4.3
@@ -8132,30 +8173,34 @@ snapshots:
       - '@huggingface/transformers'
       - gpt-tokenizer
 
-  '@llamaindex/env@0.1.30':
+  '@llamaindex/env@0.1.30(gpt-tokenizer@2.9.0)':
     dependencies:
       '@aws-crypto/sha256-js': 5.2.0
       js-tiktoken: 1.0.21
       pathe: 1.1.2
+    optionalDependencies:
+      gpt-tokenizer: 2.9.0
 
-  '@llamaindex/env@0.1.31':
+  '@llamaindex/env@0.1.31(gpt-tokenizer@2.9.0)':
     dependencies:
       '@aws-crypto/sha256-js': 5.2.0
       js-tiktoken: 1.0.21
       pathe: 1.1.2
+    optionalDependencies:
+      gpt-tokenizer: 2.9.0
 
-  '@llamaindex/node-parser@2.0.22(@llamaindex/core@0.6.22)(@llamaindex/env@0.1.30)(tree-sitter@0.22.4)(web-tree-sitter@0.24.7)':
+  '@llamaindex/node-parser@2.0.22(@llamaindex/core@0.6.22(gpt-tokenizer@2.9.0))(@llamaindex/env@0.1.30(gpt-tokenizer@2.9.0))(tree-sitter@0.22.4)(web-tree-sitter@0.24.7)':
     dependencies:
-      '@llamaindex/core': 0.6.22
-      '@llamaindex/env': 0.1.30
+      '@llamaindex/core': 0.6.22(gpt-tokenizer@2.9.0)
+      '@llamaindex/env': 0.1.30(gpt-tokenizer@2.9.0)
       html-to-text: 9.0.5
       tree-sitter: 0.22.4
       web-tree-sitter: 0.24.7
 
-  '@llamaindex/openai@0.4.23(@llamaindex/core@0.6.23)(@llamaindex/env@0.1.31)(ws@8.21.1)(zod@4.4.3)':
+  '@llamaindex/openai@0.4.23(@llamaindex/core@0.6.23(gpt-tokenizer@2.9.0))(@llamaindex/env@0.1.31(gpt-tokenizer@2.9.0))(ws@8.21.1)(zod@4.4.3)':
     dependencies:
-      '@llamaindex/core': 0.6.23
-      '@llamaindex/env': 0.1.31
+      '@llamaindex/core': 0.6.23(gpt-tokenizer@2.9.0)
+      '@llamaindex/env': 0.1.31(gpt-tokenizer@2.9.0)
       openai: 5.23.2(ws@8.21.1)(zod@4.4.3)
     transitivePeerDependencies:
       - ws
@@ -8167,10 +8212,10 @@ snapshots:
       hono: 4.12.31
       zod: 4.4.3
 
-  '@llamaindex/workflow@1.1.24(@llamaindex/core@0.6.22)(@llamaindex/env@0.1.30)(@modelcontextprotocol/sdk@1.29.0(@cfworker/json-schema@4.1.1)(zod@4.4.3))(hono@4.12.31)(zod@4.4.3)':
+  '@llamaindex/workflow@1.1.24(@llamaindex/core@0.6.22(gpt-tokenizer@2.9.0))(@llamaindex/env@0.1.30(gpt-tokenizer@2.9.0))(@modelcontextprotocol/sdk@1.29.0(@cfworker/json-schema@4.1.1)(zod@4.4.3))(hono@4.12.31)(zod@4.4.3)':
     dependencies:
-      '@llamaindex/core': 0.6.22
-      '@llamaindex/env': 0.1.30
+      '@llamaindex/core': 0.6.22(gpt-tokenizer@2.9.0)
+      '@llamaindex/env': 0.1.30(gpt-tokenizer@2.9.0)
       '@llamaindex/workflow-core': 1.3.4(@modelcontextprotocol/sdk@1.29.0(@cfworker/json-schema@4.1.1)(zod@4.4.3))(hono@4.12.31)(zod@4.4.3)
     transitivePeerDependencies:
       - '@modelcontextprotocol/sdk'
@@ -8180,10 +8225,10 @@ snapshots:
       - rxjs
       - zod
 
-  '@llamaindex/workflow@1.1.25(@llamaindex/core@0.6.23)(@llamaindex/env@0.1.31)(@modelcontextprotocol/sdk@1.29.0(@cfworker/json-schema@4.1.1)(zod@4.4.3))(hono@4.12.31)(zod@4.4.3)':
+  '@llamaindex/workflow@1.1.25(@llamaindex/core@0.6.23(gpt-tokenizer@2.9.0))(@llamaindex/env@0.1.31(gpt-tokenizer@2.9.0))(@modelcontextprotocol/sdk@1.29.0(@cfworker/json-schema@4.1.1)(zod@4.4.3))(hono@4.12.31)(zod@4.4.3)':
     dependencies:
-      '@llamaindex/core': 0.6.23
-      '@llamaindex/env': 0.1.31
+      '@llamaindex/core': 0.6.23(gpt-tokenizer@2.9.0)
+      '@llamaindex/env': 0.1.31(gpt-tokenizer@2.9.0)
       '@llamaindex/workflow-core': 1.3.4(@modelcontextprotocol/sdk@1.29.0(@cfworker/json-schema@4.1.1)(zod@4.4.3))(hono@4.12.31)(zod@4.4.3)
     transitivePeerDependencies:
       - '@modelcontextprotocol/sdk'
@@ -10150,6 +10195,8 @@ snapshots:
 
   gopd@1.2.0: {}
 
+  gpt-tokenizer@2.9.0: {}
+
   graceful-fs@4.2.11: {}
 
   gray-matter@4.0.3:
@@ -10404,12 +10451,12 @@ snapshots:
     optionalDependencies:
       yaml: 2.9.0
 
-  llamaindex@0.12.1(@modelcontextprotocol/sdk@1.29.0(@cfworker/json-schema@4.1.1)(zod@4.4.3))(hono@4.12.31)(tree-sitter@0.22.4)(web-tree-sitter@0.24.7)(zod@4.4.3):
+  llamaindex@0.12.1(@modelcontextprotocol/sdk@1.29.0(@cfworker/json-schema@4.1.1)(zod@4.4.3))(gpt-tokenizer@2.9.0)(hono@4.12.31)(tree-sitter@0.22.4)(web-tree-sitter@0.24.7)(zod@4.4.3):
     dependencies:
-      '@llamaindex/core': 0.6.22
-      '@llamaindex/env': 0.1.30
-      '@llamaindex/node-parser': 2.0.22(@llamaindex/core@0.6.22)(@llamaindex/env@0.1.30)(tree-sitter@0.22.4)(web-tree-sitter@0.24.7)
-      '@llamaindex/workflow': 1.1.24(@llamaindex/core@0.6.22)(@llamaindex/env@0.1.30)(@modelcontextprotocol/sdk@1.29.0(@cfworker/json-schema@4.1.1)(zod@4.4.3))(hono@4.12.31)(zod@4.4.3)
+      '@llamaindex/core': 0.6.22(gpt-tokenizer@2.9.0)
+      '@llamaindex/env': 0.1.30(gpt-tokenizer@2.9.0)
+      '@llamaindex/node-parser': 2.0.22(@llamaindex/core@0.6.22(gpt-tokenizer@2.9.0))(@llamaindex/env@0.1.30(gpt-tokenizer@2.9.0))(tree-sitter@0.22.4)(web-tree-sitter@0.24.7)
+      '@llamaindex/workflow': 1.1.24(@llamaindex/core@0.6.22(gpt-tokenizer@2.9.0))(@llamaindex/env@0.1.30(gpt-tokenizer@2.9.0))(@modelcontextprotocol/sdk@1.29.0(@cfworker/json-schema@4.1.1)(zod@4.4.3))(hono@4.12.31)(zod@4.4.3)
       '@types/lodash': 4.17.24
       '@types/node': 24.13.3
       lodash: 4.18.1
