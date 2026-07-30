@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from '@effect/vitest';
 import { ConfigProvider, Effect, Layer } from 'effect';
 import { FetchHttpClient, Path } from '@effect/platform';
 import { BunFileSystem } from '@effect/platform-bun';
-import { existsSync, mkdirSync, readFileSync, mkdtempSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { withHttpServer } from 'test/__utils__/http-server';
@@ -227,7 +227,11 @@ describe('UpgradeBinary', () => {
   });
 
   it.scoped('skips newer releases that do not contain a binary for the current platform', () => {
+    const installDir = mkdtempSync(path.join(tmpdir(), 'composio-upgrade-current-'));
+    const fakeExecPath = path.join(installDir, 'composio');
+    writeFileSync(path.join(installDir, 'release-tag.txt'), '@composio/cli@0.2.14\n');
     vi.stubGlobal('Bun', { which: vi.fn(() => null) });
+    vi.spyOn(process, 'execPath', 'get').mockReturnValue(fakeExecPath);
 
     return Effect.gen(function* () {
       const apiBaseUrl = yield* scopedHttpServer((_req, res) => {
@@ -267,11 +271,18 @@ describe('UpgradeBinary', () => {
       ]);
 
       expect(result).toBeUndefined();
-    }).pipe(Effect.ensuring(restoreStubsAndMocks));
+    }).pipe(
+      Effect.ensuring(Effect.sync(() => rmSync(installDir, { recursive: true, force: true }))),
+      Effect.ensuring(restoreStubsAndMocks)
+    );
   });
 
   it.scoped('ignores prereleases when checking the stable channel', () => {
+    const installDir = mkdtempSync(path.join(tmpdir(), 'composio-upgrade-current-'));
+    const fakeExecPath = path.join(installDir, 'composio');
+    writeFileSync(path.join(installDir, 'release-tag.txt'), '@composio/cli@0.2.17\n');
     vi.stubGlobal('Bun', { which: vi.fn(() => null) });
+    vi.spyOn(process, 'execPath', 'get').mockReturnValue(fakeExecPath);
 
     return Effect.gen(function* () {
       const apiBaseUrl = yield* scopedHttpServer((_req, res) => {
@@ -311,7 +322,10 @@ describe('UpgradeBinary', () => {
       ]);
 
       expect(result).toBeUndefined();
-    }).pipe(Effect.ensuring(restoreStubsAndMocks));
+    }).pipe(
+      Effect.ensuring(Effect.sync(() => rmSync(installDir, { recursive: true, force: true }))),
+      Effect.ensuring(restoreStubsAndMocks)
+    );
   });
 
   it.scoped('selects the latest prerelease when beta upgrades are requested', () => {

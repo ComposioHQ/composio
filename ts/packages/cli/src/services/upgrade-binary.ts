@@ -14,7 +14,7 @@ import { renderPrettyError } from './utils/pretty-error';
 import { TerminalUI } from './terminal-ui';
 import {
   collectExpectedRunCompanionAssetRelativePaths,
-  readInstalledReleaseTag,
+  resolveInstalledCliReleaseTag,
   writeInstalledReleaseTag,
 } from './run-companion-modules';
 
@@ -173,9 +173,7 @@ const provideFsAndPath = <A, E>(
  * Check if update is available
  */
 const resolveCurrentReleaseIdentifier = (ctx: UpgradeBinaryContext, currentPath: string) =>
-  provideFsAndPath(ctx, readInstalledReleaseTag(currentPath)).pipe(
-    Effect.map(releaseTag => releaseTag || `@composio/cli@${APP_VERSION}`)
-  );
+  provideFsAndPath(ctx, resolveInstalledCliReleaseTag(currentPath, APP_VERSION));
 
 const isUpdateAvailable = (
   release: GitHubRelease,

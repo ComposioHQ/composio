@@ -7,17 +7,14 @@ import {
   SKILL_RELEASE_TAG_FILENAME,
 } from 'src/effects/install-skill';
 import { APP_VERSION } from 'src/constants';
-import { readInstalledReleaseTag } from 'src/services/run-companion-modules';
+import { resolveInstalledCliReleaseTag } from 'src/services/run-companion-modules';
 import { NodeOs } from './node-os';
 
 export const resolveSetupSkillReleaseTag = (
   execPath = process.execPath,
   fallbackVersion = APP_VERSION
 ): Effect.Effect<string, never, FileSystem.FileSystem | Path.Path> =>
-  Effect.map(
-    readInstalledReleaseTag(execPath),
-    releaseTag => releaseTag ?? `@composio/cli@${fallbackVersion}`
-  );
+  resolveInstalledCliReleaseTag(execPath, fallbackVersion);
 
 const checkClaudeSkillCurrent = (
   fs: FileSystem.FileSystem,

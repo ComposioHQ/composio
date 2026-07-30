@@ -10,6 +10,7 @@ import extractZip from 'extract-zip';
 import { GitHubRelease } from 'src/effects/resolve-cli-release';
 import { BaseConfigProviderLive, extendConfigProvider } from 'src/services/config';
 import { parseChecksumsText, sha256Hex } from 'src/utils/checksums';
+import { CLI_RELEASE_TAG_PREFIX } from 'src/utils/cli-release-version';
 
 export const RUN_COMPANION_MODULE_BASENAMES: ReadonlyArray<string> = [
   'run-helpers-runtime',
@@ -295,8 +296,8 @@ export const readInstalledReleaseTag = (
 
 export const normalizeCliReleaseVersion = (releaseIdentifier: string): string => {
   const trimmed = releaseIdentifier.trim();
-  if (trimmed.startsWith('@composio/cli@')) {
-    return trimmed.slice('@composio/cli@'.length);
+  if (trimmed.startsWith(CLI_RELEASE_TAG_PREFIX)) {
+    return trimmed.slice(CLI_RELEASE_TAG_PREFIX.length);
   }
   if (/^v\d+\.\d+\.\d+(?:[-+].*)?$/.test(trimmed)) {
     return trimmed.slice(1);
@@ -304,12 +305,23 @@ export const normalizeCliReleaseVersion = (releaseIdentifier: string): string =>
   return trimmed;
 };
 
+export const normalizeCliReleaseTag = (releaseIdentifier: string): string =>
+  `${CLI_RELEASE_TAG_PREFIX}${normalizeCliReleaseVersion(releaseIdentifier)}`;
+
 export const resolveInstalledCliVersion = (
   execPath: string,
   fallbackVersion: string
 ): Effect.Effect<string, never, FileSystem.FileSystem | Path.Path> =>
   Effect.map(readInstalledReleaseTag(execPath), releaseTag =>
     normalizeCliReleaseVersion(releaseTag ?? fallbackVersion)
+  );
+
+export const resolveInstalledCliReleaseTag = (
+  execPath: string,
+  fallbackVersion: string
+): Effect.Effect<string, never, FileSystem.FileSystem | Path.Path> =>
+  Effect.map(readInstalledReleaseTag(execPath), releaseTag =>
+    normalizeCliReleaseTag(releaseTag ?? fallbackVersion)
   );
 
 export const writeInstalledReleaseTag = (
@@ -439,8 +451,7 @@ const resolveRepairReleaseTag = ({
       return pinnedTag;
     }
 
-    const installedTag = yield* readInstalledReleaseTag(execPath);
-    return installedTag || `@composio/cli@${appVersion}`;
+    return yield* resolveInstalledCliReleaseTag(execPath, appVersion);
   });
 
 const nonEmptyConfigWithFallback = (name: string, fallback: string) =>

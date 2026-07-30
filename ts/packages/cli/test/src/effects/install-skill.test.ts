@@ -30,8 +30,12 @@ const TEST_SKILL_ZIP = Uint8Array.from(
 
 const TestPlatform = Layer.mergeAll(BunFileSystem.layer, BunPath.layer);
 
-const makeInstallEffect = (home: string, apiBaseUrl: string) =>
-  installSkill({ target: 'claude', releaseTag: TEST_RELEASE_TAG }).pipe(
+const makeInstallEffect = (
+  home: string,
+  apiBaseUrl: string,
+  options: { readonly releaseTag?: string } = { releaseTag: TEST_RELEASE_TAG }
+) =>
+  installSkill({ target: 'claude', ...options }).pipe(
     Effect.provide(
       Layer.mergeAll(
         TestPlatform,
@@ -159,6 +163,7 @@ const makeResolveEffect = (
   configEntries: ReadonlyArray<[string, string]>,
   options: {
     channel?: SkillReleaseChannel;
+    installedReleaseTag?: string;
     releaseTag?: string;
   } = {}
 ) =>
@@ -170,6 +175,7 @@ const makeResolveEffect = (
       channel: options.channel,
       githubConfig,
       httpClient,
+      installedReleaseTag: options.installedReleaseTag,
       releaseTag: options.releaseTag,
     });
   }).pipe(
@@ -235,10 +241,124 @@ describe('install-skill', () => {
       const releaseTag = '@composio/cli@0.3.0-beta.123';
       const tag = yield* makeResolveEffect([], {
         channel: 'stable',
+        installedReleaseTag: '@composio/cli@0.2.33-beta.322',
         releaseTag,
       });
 
       expect(tag).toBe(releaseTag);
+    })
+  );
+
+  it.effect('prefers the configured release tag over packaged metadata', () =>
+    Effect.gen(function* () {
+      const tag = yield* makeResolveEffect([['GITHUB_TAG', '@composio/cli@0.2.34-beta.1']], {
+        installedReleaseTag: '@composio/cli@0.2.33',
+      });
+
+      expect(tag).toBe('@composio/cli@0.2.34-beta.1');
+    })
+  );
+
+  it.effect('uses the packaged release tag when no explicit selector is provided', () =>
+    Effect.gen(function* () {
+      const tag = yield* makeResolveEffect([], {
+        installedReleaseTag: '@composio/cli@0.2.33-beta.322',
+      });
+
+      expect(tag).toBe('@composio/cli@0.2.33-beta.322');
+    })
+  );
+
+  it.scoped('installs from the packaged release tag when package metadata differs', () => {
+    const installDir = tempy.temporaryDirectory();
+    const execPathSpy = vi
+      .spyOn(process, 'execPath', 'get')
+      .mockReturnValue(`${installDir}/composio`);
+    let requestedReleasePath = '';
+
+    return Effect.gen(function* () {
+      const fs = yield* FileSystem.FileSystem;
+      const path = yield* Path.Path;
+      const packagedReleaseTag = '@composio/cli@0.2.33';
+      yield* fs.writeFileString(path.join(installDir, 'release-tag.txt'), packagedReleaseTag);
+
+      const apiBaseUrl = yield* startTestHttpServer((req, res) => {
+        if (req.url === '/skill.zip') {
+          res.writeHead(200, { 'content-type': 'application/zip' });
+          res.end(TEST_SKILL_ZIP);
+          return;
+        }
+
+        requestedReleasePath = req.url ?? '';
+        res.writeHead(200, { 'content-type': 'application/json' });
+        res.end(
+          JSON.stringify({
+            tag_name: packagedReleaseTag,
+            assets: [
+              {
+                name: 'composio-skill.zip',
+                browser_download_url: `http://${req.headers.host}/skill.zip`,
+              },
+            ],
+          })
+        );
+      });
+
+      const home = tempy.temporaryDirectory();
+      yield* makeInstallEffect(home, apiBaseUrl, {});
+
+      expect(requestedReleasePath).toContain(encodeURIComponent(packagedReleaseTag));
+      expect(
+        yield* fs.readFileString(
+          path.join(home, '.agents', 'skills', 'composio-cli', SKILL_RELEASE_TAG_FILENAME)
+        )
+      ).toBe(`${packagedReleaseTag}\n`);
+    }).pipe(
+      Effect.provide(TestPlatform),
+      Effect.ensuring(Effect.sync(() => execPathSpy.mockRestore()))
+    );
+  });
+
+  it.scoped('falls back to the latest inferred channel for source and development runs', () =>
+    Effect.gen(function* () {
+      yield* stubBunWhichMiss;
+      const apiBaseUrl = yield* startTestHttpServer((_req, res) => {
+        res.writeHead(200, { 'content-type': 'application/json' });
+        res.end(
+          JSON.stringify([
+            {
+              tag_name: '@composio/cli@0.2.33-beta.322',
+              draft: false,
+              prerelease: true,
+              assets: [
+                {
+                  name: 'composio-skill.zip',
+                  browser_download_url: 'http://127.0.0.1/beta-skill.zip',
+                },
+              ],
+            },
+            {
+              tag_name: '@composio/cli@0.2.33',
+              draft: false,
+              prerelease: false,
+              assets: [
+                {
+                  name: 'composio-skill.zip',
+                  browser_download_url: 'http://127.0.0.1/stable-skill.zip',
+                },
+              ],
+            },
+          ])
+        );
+      });
+
+      const tag = yield* makeResolveEffect([
+        ['GITHUB_API_BASE_URL', apiBaseUrl],
+        ['GITHUB_OWNER', 'test-owner'],
+        ['GITHUB_REPO', 'test-repo'],
+      ]);
+
+      expect(tag).toBe('@composio/cli@0.2.33');
     })
   );
 
