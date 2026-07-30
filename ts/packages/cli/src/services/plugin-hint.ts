@@ -24,6 +24,9 @@ export interface HostEnvMarkers {
 const isPresent = (value: string | undefined): boolean =>
   value !== undefined && value.trim().length > 0;
 
+const nonBlankOrUndefined = (value: string | undefined): string | undefined =>
+  value === undefined || value.trim().length === 0 ? undefined : value;
+
 export function detectPluginHost(markers: HostEnvMarkers): AgentHost | undefined {
   if (isPresent(markers.claudeCode)) return 'claude';
   if (isPresent(markers.codexThreadId) || isPresent(markers.codexSandbox)) return 'codex';
@@ -155,8 +158,8 @@ const rawEnvironment = Effect.gen(function* () {
   const codexThreadId = yield* readOptionalEnv('CODEX_THREAD_ID');
   const codexSandbox = yield* readOptionalEnv('CODEX_SANDBOX');
   const invocationOrigin = yield* readOptionalEnv('COMPOSIO_CLI_INVOCATION_ORIGIN');
-  const claudeConfigDir = yield* readOptionalEnv('CLAUDE_CONFIG_DIR');
-  const codexHome = yield* readOptionalEnv('CODEX_HOME');
+  const claudeConfigDir = nonBlankOrUndefined(yield* readOptionalEnv('CLAUDE_CONFIG_DIR'));
+  const codexHome = nonBlankOrUndefined(yield* readOptionalEnv('CODEX_HOME'));
   return {
     claudeCode,
     codexThreadId,

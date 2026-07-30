@@ -105,6 +105,46 @@ describe('resolvePluginHintConfig', () => {
       )
     );
   });
+
+  it.effect('falls back to host defaults for blank path overrides', () => {
+    vi.stubEnv('CLAUDE_CONFIG_DIR', '');
+    vi.stubEnv('CODEX_HOME', '   ');
+
+    return Effect.gen(function* () {
+      const config = yield* resolvePluginHintConfig(['/bin/bun', '/cli/bin.ts', 'version']);
+
+      expect(config.claudeInstalledPluginsFile).toBe(
+        join(tempDir, '.claude', 'plugins', 'installed_plugins.json')
+      );
+      expect(config.codexConfigFile).toBe(join(tempDir, '.codex', 'config.toml'));
+    }).pipe(
+      Effect.withConfigProvider(extendConfigProvider(ConfigProvider.fromEnv())),
+      Effect.provide(
+        Layer.merge(PlatformLayers, Layer.succeed(NodeOs, defaultNodeOs({ homedir: tempDir })))
+      )
+    );
+  });
+
+  it.effect('preserves nonblank path overrides', () => {
+    const claudeConfigDir = ` ${join(tempDir, 'claude profile')} `;
+    const codexHome = ` ${join(tempDir, 'codex profile')} `;
+    vi.stubEnv('CLAUDE_CONFIG_DIR', claudeConfigDir);
+    vi.stubEnv('CODEX_HOME', codexHome);
+
+    return Effect.gen(function* () {
+      const config = yield* resolvePluginHintConfig(['/bin/bun', '/cli/bin.ts', 'version']);
+
+      expect(config.claudeInstalledPluginsFile).toBe(
+        join(claudeConfigDir, 'plugins', 'installed_plugins.json')
+      );
+      expect(config.codexConfigFile).toBe(join(codexHome, 'config.toml'));
+    }).pipe(
+      Effect.withConfigProvider(extendConfigProvider(ConfigProvider.fromEnv())),
+      Effect.provide(
+        Layer.merge(PlatformLayers, Layer.succeed(NodeOs, defaultNodeOs({ homedir: tempDir })))
+      )
+    );
+  });
 });
 
 describe('findRootCommandName', () => {
