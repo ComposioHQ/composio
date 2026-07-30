@@ -53,6 +53,7 @@ import {
   appendCliSessionHistory,
   resolveCliSessionArtifacts,
 } from 'src/services/cli-session-artifacts';
+import { recordSuccessfulExecution } from 'src/services/onboarding-store';
 import { storeCliSessionArtifact } from 'src/services/cli-session-artifacts';
 import { findFileUploadablePaths, normalizeFileUploadSchema } from 'src/services/tool-file-uploads';
 import {
@@ -1223,6 +1224,17 @@ const runConnectedToolkitFailFast = (params: {
     }
   });
 
+/**
+ * Flip the execute gate of `composio onboard`.
+ *
+ * Called from the success sites of both execute paths, so `composio execute` satisfies the gate
+ * without the wizard ever running. Local tools are excluded: they prove nothing about a Composio
+ * connection. The store swallows write failures, so a config that cannot be saved never turns a
+ * successful tool execution into a failed command.
+ */
+const recordExecuteGateSatisfied = (slug: string) =>
+  isLocalToolSlug(slug) ? Effect.void : recordSuccessfulExecution({ slug });
+
 const executeSessionHistoryScope = (resolvedProject: ResolvedExecuteContext['resolvedProject']) =>
   resolvedProject.projectType === 'CONSUMER'
     ? {
@@ -1429,6 +1441,9 @@ const runExecuteWithSpinner = (params: {
         }
 
         yield* spinner.stop(`Execution successful${executionSuccessSuffix(result)}`);
+        // Before the file/inline output fork, so both output shapes are covered by one site.
+        // The dry-run branch returned above, so it never reaches here.
+        yield* recordExecuteGateSatisfied(params.slug);
         const inBandWarning = detectInBandWarning(result.data);
         if (inBandWarning) {
           yield* params.ui.log.warn(
@@ -2030,6 +2045,19 @@ const runParallelToolsExecuteFromParsed = (params: ParsedParallelExecuteArgs) =>
     }
 
     const successful = results.every(result => result.successful);
+
+    // The parallel path does not go through `runExecuteWithSpinner`, so it needs its own write.
+    // Without it the flag would silently fail to stick for anyone who happens to pass more than
+    // one slug. One write per invocation, keyed on the first result that actually succeeded.
+    if (!params.dryRun) {
+      const firstSuccessful = results.find(
+        result => result.successful && !isLocalToolSlug(result.slug)
+      );
+      if (firstSuccessful) {
+        yield* recordExecuteGateSatisfied(firstSuccessful.slug);
+      }
+    }
+
     if (ui) {
       yield* ui.log.message(
         `Parallel execute completed: ${results.filter(result => result.successful).length}/${results.length} successful`

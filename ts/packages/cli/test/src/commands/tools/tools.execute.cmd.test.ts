@@ -2,6 +2,7 @@ import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import { HelpDoc, ValidationError } from '@effect/cli';
+import { SystemError } from '@effect/platform/Error';
 import { describe, expect, it, layer } from '@effect/vitest';
 import { vi, beforeEach, afterEach } from 'vitest';
 import { Config, ConfigProvider, DateTime, Effect, Option, Predicate } from 'effect';
@@ -12,6 +13,7 @@ import { getOrFetchToolInputDefinition } from 'src/services/tool-input-validatio
 import * as consumerShortTermCache from 'src/services/consumer-short-term-cache';
 import * as composioClients from 'src/services/composio-clients';
 import * as redactModule from 'src/ui/redact';
+import * as onboardingStore from 'src/services/onboarding-store';
 import { cli, TestLive, MockConsole } from 'test/__utils__';
 import type { TestLiveInput } from 'test/__utils__/services/test-layer';
 import {
@@ -2414,5 +2416,326 @@ describe('CLI: composio execute', () => {
         }
       })
     );
+  });
+
+  // --- The onboarding has-executed flag ---
+  //
+  // `composio execute` on its own has to satisfy the execute gate of `composio onboard`, so the
+  // flag is written here rather than by the wizard. Both success sites are covered: the single
+  // execute in `runExecuteWithSpinner` and the parallel path, which does not go through it.
+
+  describe('onboarding has-executed flag', () => {
+    const recordSpy = () => vi.spyOn(onboardingStore, 'recordSuccessfulExecution');
+
+    layer(
+      TestLive({
+        baseConfigProvider: testConfigProvider,
+        fixture: 'global-test-user-id',
+        stdin: { isTTY: true, data: '' },
+      })
+    )('[Given] a successful execute [Then] the flag is written once', it => {
+      it.scoped('records the executed slug', () =>
+        Effect.gen(function* () {
+          const spy = recordSpy();
+
+          yield* cli([
+            'execute',
+            'GMAIL_SEND_EMAIL',
+            '--skip-connection-check',
+            '-d',
+            '{"recipient":"a"}',
+          ]);
+
+          expect(spy).toHaveBeenCalledTimes(1);
+          expect(spy).toHaveBeenCalledWith({ slug: 'GMAIL_SEND_EMAIL' });
+
+          const cliConfig = yield* ComposioCliUserConfig;
+          expect(cliConfig.data.onboarding.hasExecuted).toBe(true);
+          expect(cliConfig.data.onboarding.lastExecution?.slug).toBe('GMAIL_SEND_EMAIL');
+        })
+      );
+
+      it.scoped('does not write it for a dry run', () =>
+        Effect.gen(function* () {
+          const spy = recordSpy();
+
+          yield* cli([
+            'execute',
+            'GMAIL_SEND_EMAIL',
+            '--dry-run',
+            '--skip-checks',
+            '-d',
+            '{"recipient":"a"}',
+          ]);
+
+          expect(spy).not.toHaveBeenCalled();
+        })
+      );
+
+      it.scoped('does not write it when only the schema was requested', () =>
+        Effect.gen(function* () {
+          const spy = recordSpy();
+
+          yield* cli(['execute', 'GMAIL_SEND_EMAIL', '--get-schema']).pipe(
+            Effect.catchAll(() => Effect.void)
+          );
+
+          expect(spy).not.toHaveBeenCalled();
+        })
+      );
+    });
+
+    layer(
+      TestLive({
+        stdin: { isTTY: true, data: '' },
+        toolsExecutor: {
+          respondWith: {
+            successful: true,
+            data: { ok: true },
+            error: null,
+            logId: '',
+          },
+        },
+      })
+    )('[Given] a local tool slug [Then] the flag stays unwritten', it => {
+      it.scoped('excludes local tools from the execute gate', () =>
+        Effect.gen(function* () {
+          const spy = recordSpy();
+
+          yield* cli(['execute', 'LOCAL_BEEPER_IMESSAGE_VERSION', '-d', '{ value: 1 }']);
+
+          expect(spy).not.toHaveBeenCalled();
+        })
+      );
+    });
+
+    layer(
+      TestLive({
+        baseConfigProvider: testConfigProvider,
+        fixture: 'global-test-user-id',
+        stdin: { isTTY: true, data: '' },
+        toolsExecutor: {
+          respondWith: {
+            data: { content: 'token '.repeat(20_000) },
+            error: null,
+            successful: true,
+            logId: 'log_large_output',
+          },
+        },
+      })
+    )('[Given] a response spilled to a file [Then] the flag is still written once', it => {
+      it.scoped('covers both output shapes from one call site', () =>
+        Effect.gen(function* () {
+          const spy = recordSpy();
+
+          yield* cli([
+            'execute',
+            'GMAIL_SEND_EMAIL',
+            '--skip-connection-check',
+            '-d',
+            '{"recipient":"a"}',
+          ]);
+
+          const lines = yield* MockConsole.getLines({ stripAnsi: true });
+          expect(lines.join('\n')).toContain('Response stored in');
+          expect(spy).toHaveBeenCalledTimes(1);
+        })
+      );
+    });
+
+    layer(
+      TestLive({
+        baseConfigProvider: testConfigProvider,
+        fixture: 'global-test-user-id',
+        stdin: { isTTY: true, data: '' },
+        toolsExecutor: {
+          respondWith: {
+            successful: false,
+            data: {},
+            error: 'Execution failed.',
+            logId: 'log_failed',
+          },
+        },
+      })
+    )('[Given] a failed execution [Then] the flag stays unwritten', it => {
+      it.scoped('does not treat a reported failure as a satisfied gate', () =>
+        Effect.gen(function* () {
+          const spy = recordSpy();
+
+          yield* cli([
+            'execute',
+            'GMAIL_SEND_EMAIL',
+            '--skip-connection-check',
+            '-d',
+            '{"recipient":"a"}',
+          ]).pipe(Effect.catchAll(() => Effect.void));
+
+          expect(spy).not.toHaveBeenCalled();
+        })
+      );
+    });
+
+    layer(
+      TestLive({
+        baseConfigProvider: testConfigProvider,
+        fixture: 'global-test-user-id',
+        stdin: { isTTY: true, data: '' },
+      })
+    )('[Given] a successful parallel execute [Then] the flag is written once', it => {
+      it.scoped('writes once even with several successful results', () =>
+        Effect.gen(function* () {
+          const spy = recordSpy();
+
+          yield* cli([
+            'execute',
+            '--parallel',
+            '--skip-checks',
+            'GMAIL_SEND_EMAIL',
+            '-d',
+            '{"recipient":"a"}',
+            'GITHUB_CREATE_ISSUE',
+            '-d',
+            '{"title":"Bug"}',
+          ]);
+
+          expect(spy).toHaveBeenCalledTimes(1);
+          expect(spy).toHaveBeenCalledWith({ slug: 'GMAIL_SEND_EMAIL' });
+        })
+      );
+
+      it.scoped('does not write it for a parallel dry run', () =>
+        Effect.gen(function* () {
+          const spy = recordSpy();
+
+          yield* cli([
+            'execute',
+            '--parallel',
+            '--dry-run',
+            '--skip-checks',
+            'GMAIL_SEND_EMAIL',
+            '-d',
+            '{"recipient":"a"}',
+            'GITHUB_CREATE_ISSUE',
+            '-d',
+            '{"title":"Bug"}',
+          ]);
+
+          expect(spy).not.toHaveBeenCalled();
+        })
+      );
+    });
+
+    layer(
+      TestLive({
+        baseConfigProvider: testConfigProvider,
+        fixture: 'global-test-user-id',
+        stdin: { isTTY: true, data: '' },
+        toolRouter: {
+          execute: async () => {
+            throw new Error('every parallel execution failed');
+          },
+        },
+      })
+    )('[Given] every parallel result failed [Then] the flag stays unwritten', it => {
+      it.scoped('requires at least one successful result', () =>
+        Effect.gen(function* () {
+          const spy = recordSpy();
+
+          yield* cli([
+            'execute',
+            '--parallel',
+            '--skip-checks',
+            'GMAIL_SEND_EMAIL',
+            '-d',
+            '{"recipient":"a"}',
+            'GITHUB_CREATE_ISSUE',
+            '-d',
+            '{"title":"Bug"}',
+          ]).pipe(Effect.catchAll(() => Effect.void));
+
+          expect(spy).not.toHaveBeenCalled();
+        })
+      );
+    });
+
+    layer(
+      TestLive({
+        baseConfigProvider: testConfigProvider,
+        fixture: 'global-test-user-id',
+        stdin: { isTTY: true, data: '' },
+        toolRouter: {
+          execute: async (_sessionId, params) => {
+            if (params.tool_slug === 'GMAIL_SEND_EMAIL') {
+              throw new Error('gmail execution failed');
+            }
+            return {
+              data: { tool_slug: params.tool_slug, arguments: params.arguments },
+              error: null,
+              log_id: 'log_parallel_partial',
+            };
+          },
+        },
+      })
+    )('[Given] one parallel result succeeded [Then] the flag is written once', it => {
+      it.scoped('records the first successful slug', () =>
+        Effect.gen(function* () {
+          const spy = recordSpy();
+
+          yield* cli([
+            'execute',
+            '--parallel',
+            '--skip-checks',
+            'GMAIL_SEND_EMAIL',
+            '-d',
+            '{"recipient":"a"}',
+            'GITHUB_CREATE_ISSUE',
+            '-d',
+            '{"title":"Bug"}',
+          ]).pipe(Effect.catchAll(() => Effect.void));
+
+          expect(spy).toHaveBeenCalledTimes(1);
+          expect(spy).toHaveBeenCalledWith({ slug: 'GITHUB_CREATE_ISSUE' });
+        })
+      );
+    });
+
+    layer(
+      TestLive({
+        baseConfigProvider: testConfigProvider,
+        fixture: 'global-test-user-id',
+        stdin: { isTTY: true, data: '' },
+      })
+    )('[Given] the config write fails [Then] the execute still succeeds', it => {
+      it.scoped('never turns a successful execution into a failed command', () =>
+        Effect.gen(function* () {
+          const cliConfig = yield* ComposioCliUserConfig;
+          const updateSpy = vi.spyOn(cliConfig, 'update').mockReturnValue(
+            Effect.fail(
+              new SystemError({
+                reason: 'PermissionDenied',
+                module: 'FileSystem',
+                method: 'writeFileString',
+                pathOrDescriptor: '~/.composio/config.json',
+              })
+            )
+          );
+
+          try {
+            yield* cli([
+              'execute',
+              'GMAIL_SEND_EMAIL',
+              '--skip-connection-check',
+              '-d',
+              '{"recipient":"a"}',
+            ]);
+
+            const lines = yield* MockConsole.getLines({ stripAnsi: true });
+            expect(parseLastJson(lines).successful).toBe(true);
+          } finally {
+            updateSpy.mockRestore();
+          }
+        })
+      );
+    });
   });
 });
