@@ -164,10 +164,17 @@ export const ComposioCliUserConfigLive = Layer.effect(
       next: Partial<CliUserConfig>
     ): Effect.Effect<void, ParseError | PlatformError, never> =>
       persist(
-        CliUserConfig.make({
-          ...rawConfig,
-          ...next,
-        })
+        CliUserConfig.make(
+          {
+            ...rawConfig,
+            ...next,
+          },
+          // A key this binary's schema does not declare belongs to a newer one that wrote the file,
+          // and `.make`'s validation would strip it on the way back out. `rawConfig` was validated
+          // once at load and `next` is schema-shaped at the type level, so nothing else is lost.
+          // The encoder preserves the same keys — see `cliUserConfigToJSON`.
+          { disableValidation: true }
+        )
       );
 
     const load = Effect.gen(function* () {

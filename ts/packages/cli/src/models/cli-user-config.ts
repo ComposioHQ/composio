@@ -122,4 +122,13 @@ export const cliUserConfigFromJSON = Schema.decode(CliUserConfigJSON, {
   onExcessProperty: 'preserve',
   exact: false,
 });
-export const cliUserConfigToJSON = Schema.encode(CliUserConfigJSON);
+/**
+ * `preserve` on both sides, so a key written by a newer CLI survives a read/write cycle through an
+ * older one. Encoding with the default `ignore` would drop it on the way out even though decoding
+ * kept it, and the round trip is what keeps `~/.composio/config.json` version-independent.
+ */
+export const cliUserConfigToJSON = Schema.encode(CliUserConfigJSON, {
+  propertyOrder: 'original',
+  onExcessProperty: 'preserve',
+  exact: false,
+});
