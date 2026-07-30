@@ -59,9 +59,11 @@ import { storeCliSessionArtifact } from 'src/services/cli-session-artifacts';
 import { findFileUploadablePaths, normalizeFileUploadSchema } from 'src/services/tool-file-uploads';
 import {
   ComposioNoActiveConnectionError,
+  ComposioRevokedConnectionError,
   mapComposioError,
   normalizeCliError,
 } from 'src/services/composio-error-overrides';
+import type { ComposioFailureReason } from 'src/services/composio-error-overrides';
 import * as constants from 'src/constants';
 import { ComposioCliUserConfig } from 'src/services/cli-user-config';
 import { CLI_EXPERIMENTAL_FEATURES } from 'src/constants';
@@ -147,6 +149,12 @@ type ToolExecutionErrorFields = {
   readonly message: string;
   readonly toolSlug?: string;
   readonly cause?: unknown;
+  /**
+   * Which remediable condition the failure was classified as, when it was one. Callers that render
+   * their own next step read this rather than pattern-matching `message`, which is prose and
+   * changes.
+   */
+  readonly failureReason?: ComposioFailureReason | null;
 };
 
 export class ToolExecutionError extends Data.TaggedError(
@@ -156,6 +164,17 @@ export class ToolExecutionError extends Data.TaggedError(
 class ReportedToolExecutionError extends Data.TaggedError(
   'ReportedToolExecutionError'
 )<ToolExecutionErrorFields> {}
+
+/**
+ * The classification a failed execution carries, for callers holding only the error channel.
+ *
+ * Exported instead of the error class so the failure taxonomy stays owned by this module: a caller
+ * gets the one field it needs to choose guidance and cannot start matching on the rest.
+ */
+export const toolExecutionFailureReason = (error: unknown): ComposioFailureReason | null =>
+  error instanceof ReportedToolExecutionError || error instanceof ToolExecutionError
+    ? (error.failureReason ?? null)
+    : null;
 
 const parseArguments = (raw: string) =>
   parseJsonRecord(raw).pipe(
@@ -247,7 +266,11 @@ const injectSingleFileArgument = (params: {
     return setNestedKey(params.args, targetPath, params.filePath);
   });
 
-const connectionTips = (toolSlug: string, surface: 'root' | 'dev') => {
+const connectionTips = (
+  toolSlug: string,
+  surface: 'root' | 'dev',
+  linkLabel = 'Link the toolkit first'
+) => {
   const toolkit = toolkitFromToolSlug(toolSlug);
   const executeStep =
     surface === 'dev'
@@ -262,13 +285,27 @@ const connectionTips = (toolSlug: string, surface: 'root' | 'dev') => {
   }
   return [
     commandHintStep(
-      'Link the toolkit first',
+      linkLabel,
       surface === 'dev' ? 'dev.connectedAccounts.link' : 'root.link',
       surface === 'dev' ? { toolkit, userId: '<user-id>' } : { toolkit }
     ),
     executeStep.replace('Retry:', 'Then retry:'),
   ].join('\n');
 };
+
+/**
+ * The reconnect note.
+ *
+ * It leads with the contradiction the user is about to hit: they were told the authorization is
+ * gone, and the first thing they reach for reports `ACTIVE`. Leaving that unexplained is what makes
+ * the diagnosis look wrong and sends people to `connections list` instead of to `link`.
+ */
+const revokedConnectionTips = (toolSlug: string, surface: 'root' | 'dev') =>
+  [
+    `The connected account still reads ACTIVE — the authorization was withdrawn at the provider, so Composio's record does not change until you reconnect.`,
+    '',
+    connectionTips(toolSlug, surface, 'Reconnect the toolkit'),
+  ].join('\n');
 
 // JSON.stringify throws synchronously on circular or BigInt-bearing API
 // payloads; fall back to util.inspect so the formatter stays a plain string
@@ -710,11 +747,15 @@ const handleExecutionError = (
         ),
         'Tool schema validation'
       );
-      return { error: normalized.message, slug: context.toolSlug };
+      return { error: normalized.message, slug: context.toolSlug, failureReason: null };
     }
 
     const apiDetails = mapped.apiDetails;
     const slugValue = mapped.slugValue;
+    // Carried out with the summary so callers that render their own next step — `composio onboard`
+    // — read the classification this function already made instead of re-deriving one from the
+    // rendered message.
+    const failureReason = mapped.override?.kind ?? null;
 
     yield* emitExecuteFailureTelemetry({
       toolSlug: context.toolSlug,
@@ -732,7 +773,15 @@ const handleExecutionError = (
       if (toolkitFromToolSlug(context.toolSlug)) {
         yield* ui.note(connectionTips(context.toolSlug, context.surface), 'Tips');
       }
-      return { error: mapped.message, slug: slugValue ?? context.toolSlug };
+      return { error: mapped.message, slug: slugValue ?? context.toolSlug, failureReason };
+    }
+
+    if (normalized instanceof ComposioRevokedConnectionError) {
+      yield* ui.log.error(mapped.message);
+      if (toolkitFromToolSlug(context.toolSlug)) {
+        yield* ui.note(revokedConnectionTips(context.toolSlug, context.surface), 'Reconnect');
+      }
+      return { error: mapped.message, slug: slugValue ?? context.toolSlug, failureReason };
     }
 
     yield* ui.log.error(mapped.message);
@@ -742,8 +791,20 @@ const handleExecutionError = (
       yield* ui.note(formatUnknownObject(redactRequestId(detailsObject)), 'Error details');
     }
 
-    return { error: mapped.message, slug: slugValue };
+    return { error: mapped.message, slug: slugValue, failureReason };
   });
+
+/**
+ * The failure summary's wire half.
+ *
+ * The summary also carries the classification, which exists for in-process callers rendering their
+ * own guidance. Spreading the whole thing would put it on stdout, and the failure payload's shape is
+ * a contract agents switch on.
+ */
+const executeFailurePayload = (summary: { readonly error: string; readonly slug?: string }) => ({
+  error: summary.error,
+  slug: summary.slug,
+});
 
 type CachedValidationDecision =
   { readonly status: 'valid' | 'stale' } | { readonly status: 'fail'; readonly error: unknown };
@@ -1503,7 +1564,11 @@ const runExecuteWithSpinner = (params: {
                   params.ui,
                   quiet,
                   JSON.stringify(
-                    { kind: EXECUTE_PAYLOAD_KINDS.execution, successful: false, ...summary },
+                    {
+                      kind: EXECUTE_PAYLOAD_KINDS.execution,
+                      successful: false,
+                      ...executeFailurePayload(summary),
+                    },
                     ciRedactReplacer,
                     2
                   )
@@ -1522,6 +1587,7 @@ const runExecuteWithSpinner = (params: {
                   reason: 'execution_failed',
                   toolSlug: params.slug,
                   message: summary.error,
+                  failureReason: summary.failureReason,
                 });
               }),
             onSuccess: result =>
@@ -1574,6 +1640,7 @@ const runExecuteWithSpinner = (params: {
             reason: 'execution_failed',
             toolSlug: params.slug,
             message: summary.error,
+            failureReason: summary.failureReason,
           });
         }
 

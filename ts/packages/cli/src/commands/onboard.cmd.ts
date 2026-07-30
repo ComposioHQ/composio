@@ -3,7 +3,10 @@ import { Effect, Either, Option, ParseResult, Schema } from 'effect';
 import { ToolkitSlug } from 'src/models/toolkits';
 import { browserLogin } from 'src/commands/login.cmd';
 import { runConnectedAccountsLink } from 'src/commands/connected-accounts/commands/connected-accounts.link.cmd';
-import { runToolsExecute } from 'src/commands/tools/commands/tools.execute.cmd';
+import {
+  runToolsExecute,
+  toolExecutionFailureReason,
+} from 'src/commands/tools/commands/tools.execute.cmd';
 import { renderOnboardHuman, serializeOnboardState } from 'src/commands/onboard-render';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { gatherHostWiring, gatherOnboardingFacts } from 'src/services/onboarding-facts';
@@ -16,6 +19,7 @@ import {
   findTaskByToolkit,
   ONBOARD_TASKS,
 } from 'src/services/onboarding-tasks';
+import type { ComposioFailureReason } from 'src/services/composio-error-overrides';
 import type { MintedLink } from 'src/services/onboarding-facts';
 import type { NextCommandContext } from 'src/services/onboarding-next-command';
 import type { OnboardingSkip, OnboardingState } from 'src/services/onboarding-state';
@@ -292,7 +296,13 @@ type ConnectAdvance =
   | { readonly kind: 'settled' }
   | { readonly kind: 'failed' };
 
-type ExecuteAdvance = { readonly kind: 'ran' } | { readonly kind: 'failed' };
+/**
+ * `failed` carries the execute path's own classification of *why*. Recomputing it here would mean
+ * matching on a rendered error string, and the string is prose written for a human.
+ */
+type ExecuteAdvance =
+  | { readonly kind: 'ran' }
+  | { readonly kind: 'failed'; readonly reason: ComposioFailureReason | null };
 
 const advanceLoginGate = (params: { readonly yes: boolean; readonly interactive: boolean }) =>
   Effect.gen(function* () {
@@ -370,17 +380,21 @@ const advanceExecuteGate = (params: {
       args: params.task.read.args,
     });
 
+    // No narration on either failure branch: the delegate already printed the error, and the
+    // end-of-flow block names the tool and what to do about it. Saying it here too produced two
+    // sentences about the same failure, only one of which carried a next step.
     if (Either.isLeft(result)) {
-      yield* ui.log.error(`The demo tool did not run. ${params.task.read.slug} failed.`);
-      return { kind: 'failed' } satisfies ExecuteAdvance;
+      return {
+        kind: 'failed',
+        reason: toolExecutionFailureReason(result.left),
+      } satisfies ExecuteAdvance;
     }
 
     // The create is offered only after the read actually succeeded, which is a distinction this
     // delegate could not make before it returned a typed outcome. Anything other than an execution
     // is a failure to report, not a silent return.
     if (result.right.kind !== 'tool_execution') {
-      yield* ui.log.error(`The demo tool did not run. ${params.task.read.slug} did not execute.`);
-      return { kind: 'failed' } satisfies ExecuteAdvance;
+      return { kind: 'failed', reason: null } satisfies ExecuteAdvance;
     }
 
     const summary = params.task.read.summarize?.(asRecord(result.right.data) ?? {});
@@ -421,7 +435,7 @@ const runOnboard = (params: {
     // Held beside `mintedRedirectUrl` for the same reason: it belongs to this invocation, not to
     // any fact the next invocation could read back.
     let loginEmail = Option.none<string>();
-    let demoFailure = Option.none<string>();
+    let demoFailure = Option.none<NonNullable<NextCommandContext['failedDemo']>>();
 
     // Probed once for the whole invocation: only `composio setup` rewrites plugin wiring, so no gate
     // this command advances can change what the probe reports.
@@ -440,6 +454,16 @@ const runOnboard = (params: {
       );
 
     let state = yield* resolve(requestedToolkit);
+
+    // Emitted before the first gate runs, not with the closing block.
+    //
+    // The probe is complete by now and nothing below can change it, so holding these until the end
+    // only moved them somewhere they read as commentary on whatever just happened — two `composio
+    // setup` notices landing between a failed tool call and its explanation. Up here they are what
+    // they are: a standing note about this machine, ahead of the work.
+    for (const advisory of state.advisories) {
+      yield* ui.log.warn(advisory);
+    }
 
     // Interactively, walk as far as the gates allow so a human is not asked to re-run three times.
     // Non-prompting, advance at most one gate so an agent's loop stays externally visible.
@@ -524,7 +548,10 @@ const runOnboard = (params: {
               // The document is the only signal a non-decorating caller gets, and "attempted and
               // failed" has to be distinguishable from "not attempted" — otherwise a polling agent
               // re-fires a real API read on every iteration forever.
-              demoFailure = Option.some(task.value.read.slug);
+              demoFailure = Option.some({
+                toolSlug: task.value.read.slug,
+                reason: outcome.reason,
+              });
             }
             return 'attempted' as const;
           }
@@ -550,7 +577,7 @@ const runOnboard = (params: {
       ...loginContext,
       ...Option.match(demoFailure, {
         onNone: () => ({}),
-        onSome: toolSlug => ({ failedDemoToolSlug: toolSlug }),
+        onSome: failedDemo => ({ failedDemo }),
       }),
     });
     yield* renderOnboardHuman(state, step);

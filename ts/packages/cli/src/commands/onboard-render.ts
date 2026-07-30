@@ -166,10 +166,8 @@ export const renderOnboardHuman = (state: OnboardingState, step: NextStep) =>
   Effect.gen(function* () {
     const ui = yield* TerminalUI;
 
-    for (const advisory of state.advisories) {
-      yield* ui.log.warn(advisory);
-    }
-
+    // Advisories are not rendered here. They describe the machine rather than the flow, and the
+    // caller emits them before the first gate runs — see `runOnboard`.
     if (state.onboarded) {
       yield* ui.log.success("You're all set.");
       yield* ui.note(

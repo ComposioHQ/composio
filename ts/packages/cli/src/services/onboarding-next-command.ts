@@ -1,6 +1,7 @@
 import { Option } from 'effect';
 import { commandHintExample } from 'src/services/command-hints';
 import { findTaskByToolkit, onboardToolkitSlugs } from 'src/services/onboarding-tasks';
+import type { ComposioFailureReason } from 'src/services/composio-error-overrides';
 import type { OnboardingState } from 'src/services/onboarding-state';
 
 /**
@@ -62,10 +63,51 @@ export type NextCommandContext = {
    * The demo tool this invocation ran and failed. Like the login URL it belongs to the invocation
    * rather than to any fact — the next invocation has no way to observe that an earlier read failed.
    */
-  readonly failedDemoToolSlug?: string;
+  readonly failedDemo?: {
+    readonly toolSlug: string;
+    /**
+     * How the execute path classified the failure, or `null` when it fit no remediable shape.
+     * Passed through rather than re-derived: this module cannot see the provider's response, and
+     * guessing a cause here is how the block came to recommend a command that reports healthy.
+     */
+    readonly reason: ComposioFailureReason | null;
+  };
 };
 
 const TOOLKIT_REQUIRED_ACTION = 'Choose a starter task and pass its toolkit as `--toolkit`.';
+
+/**
+ * What to do after the demo tool failed.
+ *
+ * Each branch names a command that can actually change the outcome. The classified branches point
+ * at `composio link`, which is the only thing that replaces a credential; the unclassified branch
+ * deliberately names no command rather than reaching for a plausible one. `composio connections
+ * list` is not the fallback: for a revoked grant it prints `ACTIVE`, because that status is
+ * Composio's record of the connection and the provider is where the authorization was withdrawn.
+ */
+const demoFailureAction = (
+  state: OnboardingState,
+  failedDemo: NonNullable<NextCommandContext['failedDemo']>
+): string => {
+  const toolkit = state.gates.connect.toolkit;
+  const relink =
+    toolkit === null
+      ? 'Reconnect it with `composio link <toolkit>`'
+      : `Run \`${commandHintExample('root.link', { toolkit })}\` to reconnect`;
+
+  switch (failedDemo.reason) {
+    case 'revoked_connection':
+      return `${failedDemo.toolSlug} did not run: the ${toolkit ?? 'toolkit'} authorization was revoked or has expired. ${relink}, then re-run \`composio onboard\`. \`composio connections list\` will still show it as ACTIVE — the authorization was withdrawn at the provider, so Composio's record does not change until you reconnect.`;
+
+    case 'no_active_connection':
+      return `${failedDemo.toolSlug} did not run: there is no active ${toolkit ?? 'toolkit'} connection. ${relink}, then re-run \`composio onboard\`.`;
+
+    case null:
+      // No stream is named. `--json` on a non-terminal stderr suppresses decoration, so "see the
+      // error above" would point at nothing for the caller most likely to be reading this.
+      return `${failedDemo.toolSlug} did not run, and the failure was not one with a known fix. Check the error the tool returned, then re-run \`composio onboard\`.`;
+  }
+};
 
 const authorizationAction = (state: OnboardingState): string => {
   const toolkit = state.gates.connect.toolkit ?? 'the toolkit';
@@ -154,13 +196,13 @@ export const nextAgentCommand = (
     case 'execute': {
       const toolSlug = state.gates.execute.toolSlug;
 
-      if (context.failedDemoToolSlug !== undefined) {
-        // Handing back a command here would hand back the call that just failed. The recovery is a
-        // human checking why, so this is a block with prose and no command.
+      if (context.failedDemo !== undefined) {
+        // Handing back a command here would hand back the call that just failed, so this stays a
+        // block. The prose still names the command that fixes the cause when the cause is known.
         return {
           kind: 'blocked',
           reason: 'demo_execution_failed',
-          humanAction: `${context.failedDemoToolSlug} did not run. Check that the ${state.gates.connect.toolkit ?? 'toolkit'} connection still works with \`composio connections list\`, then re-run \`composio onboard\`.`,
+          humanAction: demoFailureAction(state, context.failedDemo),
         };
       }
 

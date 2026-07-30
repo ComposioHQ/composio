@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { Array as Arr, Option, pipe } from 'effect';
 import { nextAgentCommand } from 'src/services/onboarding-next-command';
+import type { NextCommandContext } from 'src/services/onboarding-next-command';
 import { resolveOnboardingState } from 'src/services/onboarding-state';
 import type { HostWiringFact, OnboardingFacts } from 'src/services/onboarding-state';
 import { ONBOARD_TASKS, onboardToolkitSlugs } from 'src/services/onboarding-tasks';
@@ -25,10 +26,7 @@ const EXECUTED = Option.some({
   at: '2026-07-30T10:00:00.000Z',
 });
 
-const stepFor = (
-  overrides: Partial<OnboardingFacts> = {},
-  context: { readonly loginUrl?: string; readonly failedDemoToolSlug?: string } = {}
-) => {
+const stepFor = (overrides: Partial<OnboardingFacts> = {}, context: NextCommandContext = {}) => {
   const input = facts(overrides);
   return nextAgentCommand(resolveOnboardingState(input), input.requestedToolkit, context);
 };
@@ -184,7 +182,7 @@ describe('nextAgentCommand', () => {
     it('blocks when the demo ran on this invocation and did not succeed', () => {
       const step = stepFor(
         { requestedToolkit: Option.some('gmail'), connectedToolkits: ['gmail'] },
-        { failedDemoToolSlug: 'GMAIL_FETCH_EMAILS' }
+        { failedDemo: { toolSlug: 'GMAIL_FETCH_EMAILS', reason: null } }
       );
 
       expect(step.kind).toBe('blocked');
@@ -194,6 +192,46 @@ describe('nextAgentCommand', () => {
       // Re-issuing the call that just failed is what turns a polling caller into a loop.
       expect(step.command).toBeUndefined();
       expect(step.humanAction).not.toContain('<');
+    });
+
+    it('sends a revoked connection to `composio link`, not to `connections list`', () => {
+      const step = stepFor(
+        { requestedToolkit: Option.some('slack'), connectedToolkits: ['slack'] },
+        { failedDemo: { toolSlug: 'SLACK_LIST_ALL_CHANNELS', reason: 'revoked_connection' } }
+      );
+
+      expect(step.kind).toBe('blocked');
+      if (step.kind !== 'blocked') return;
+      expect(step.humanAction).toContain('composio link slack');
+      // The account the provider revoked still reads ACTIVE, so the guidance has to say so —
+      // otherwise the first check a user runs contradicts the diagnosis.
+      expect(step.humanAction).toContain('ACTIVE');
+    });
+
+    it('sends a missing connection to `composio link` without the revoked wording', () => {
+      const step = stepFor(
+        { requestedToolkit: Option.some('slack'), connectedToolkits: ['slack'] },
+        { failedDemo: { toolSlug: 'SLACK_LIST_ALL_CHANNELS', reason: 'no_active_connection' } }
+      );
+
+      expect(step.kind).toBe('blocked');
+      if (step.kind !== 'blocked') return;
+      expect(step.humanAction).toContain('composio link slack');
+      expect(step.humanAction).not.toContain('ACTIVE');
+    });
+
+    it('names no command for a failure it could not classify', () => {
+      const step = stepFor(
+        { requestedToolkit: Option.some('slack'), connectedToolkits: ['slack'] },
+        { failedDemo: { toolSlug: 'SLACK_LIST_ALL_CHANNELS', reason: null } }
+      );
+
+      expect(step.kind).toBe('blocked');
+      if (step.kind !== 'blocked') return;
+      // `composio connections list` reports ACTIVE for the one failure this branch is most likely
+      // to be covering, so an unclassified failure gets no command rather than a plausible one.
+      expect(step.humanAction).not.toContain('composio connections list');
+      expect(step.humanAction).not.toContain('composio link');
     });
 
     it('defers with prose rather than a command for a non-curated toolkit', () => {

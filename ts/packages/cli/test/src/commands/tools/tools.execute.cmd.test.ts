@@ -2235,6 +2235,43 @@ describe('CLI: composio execute', () => {
     );
   });
 
+  layer(
+    TestLive({
+      baseConfigProvider: testConfigProvider,
+      fixture: 'global-test-user-id',
+      stdin: { isTTY: true, data: '' },
+      toolsExecutor: {
+        respondWith: {
+          data: {},
+          // A revoked grant reaches the CLI exactly like any other soft failure: HTTP 200, no
+          // Composio error code, and the provider's own wording as the only evidence.
+          error: 'Slack API error: token_revoked',
+          successful: false,
+          logId: 'log_revoked',
+        },
+      },
+    })
+  )('[Given] the provider revoked the grant [Then] says how to reconnect', it => {
+    it.scoped('names `composio link` instead of printing the provider code alone', () =>
+      Effect.gen(function* () {
+        yield* cli([
+          'execute',
+          'GMAIL_CREATE_EMAIL_DRAFT',
+          '-d',
+          '{"recipient":"to@example.com"}',
+        ]).pipe(Effect.catchAll(() => Effect.void));
+        const output = (yield* MockConsole.getLines({ stripAnsi: true })).join('\n');
+
+        expect(output).toContain('no longer authorized');
+        expect(output).toContain('composio link gmail');
+        // Without this, the next thing the user runs reports ACTIVE and contradicts the diagnosis.
+        expect(output).toContain('still reads ACTIVE');
+        // The provider's own wording stays visible as the evidence for the diagnosis.
+        expect(output).toContain('token_revoked');
+      })
+    );
+  });
+
   // --- Meta tool error tests ---
 
   layer(

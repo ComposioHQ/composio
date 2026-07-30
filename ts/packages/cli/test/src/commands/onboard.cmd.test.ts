@@ -1,7 +1,7 @@
 import { describe, expect, layer } from '@effect/vitest';
 import { afterEach, beforeEach, vi } from 'vitest';
 import { HelpDoc, ValidationError } from '@effect/cli';
-import { Cause, ConfigProvider, Console, Effect, Option } from 'effect';
+import { Cause, ConfigError, ConfigProvider, Console, Effect, Option } from 'effect';
 import type { ConnectedAccountItem } from 'src/models/connected-accounts';
 import { CommandExecutor } from '@effect/platform';
 import { extendConfigProvider } from 'src/services/config';
@@ -12,7 +12,9 @@ import * as loginCmd from 'src/commands/login.cmd';
 import * as linkCmd from 'src/commands/connected-accounts/commands/connected-accounts.link.cmd';
 import * as executeCmd from 'src/commands/tools/commands/tools.execute.cmd';
 import type { RunToolsExecuteResult } from 'src/commands/tools/commands/tools.execute.cmd';
+import type { ComposioFailureReason } from 'src/services/composio-error-overrides';
 import * as commandProject from 'src/services/command-project';
+import * as onboardingFacts from 'src/services/onboarding-facts';
 import { recordSuccessfulExecution } from 'src/services/onboarding-store';
 import { cli, MockConsole, TestLive } from 'test/__utils__';
 import { makeTerminalUITestImpl } from 'test/__utils__/services/terminal-ui-test';
@@ -106,6 +108,20 @@ const failedExecute = () =>
   Effect.fail(new Error('the provider rejected the call')) as ReturnType<
     typeof executeCmd.runToolsExecute
   >;
+
+/**
+ * A failure the execute path classified, which is the only way onboard learns *why* a demo failed.
+ * A bare `Error` — what `failedExecute` produces — is the unclassified case.
+ */
+const classifiedFailedExecute = (failureReason: ComposioFailureReason) =>
+  Effect.fail(
+    new executeCmd.ToolExecutionError({
+      reason: 'execution_failed',
+      toolSlug: 'GITHUB_GET_THE_AUTHENTICATED_USER',
+      message: 'Slack API error: token_revoked',
+      failureReason,
+    })
+  ) as ReturnType<typeof executeCmd.runToolsExecute>;
 
 /**
  * A successful execute that also flips the durable gate, the way the real delegate does.
@@ -737,6 +753,68 @@ describe('CLI: composio onboard', () => {
     });
   });
 
+  // ── Host-wiring advisories lead, they do not trail ──────────────────────────
+
+  describe('host-wiring advisories', () => {
+    const recorded = recordingUI({ tty: { stdin: true, stdout: true, stderr: true } });
+
+    /**
+     * The probe is driven through a third-party binary's JSON output, so the fact is supplied
+     * directly. What is under test is where the advisory is *printed*, not how it is discovered.
+     */
+    const unwiredHost = () =>
+      vi.spyOn(onboardingFacts, 'gatherOnboardingFacts').mockReturnValue(
+        Effect.succeed({
+          loggedIn: false,
+          email: Option.none(),
+          orgId: Option.none(),
+          connectedToolkits: 'unknown',
+          pendingLinks: [],
+          hasExecuted: Option.none(),
+          requestedToolkit: Option.none(),
+          invocationSkips: [],
+          hostWiring: {
+            kind: 'inspected',
+            hosts: [
+              {
+                target: 'claude',
+                available: true,
+                supported: true,
+                pluginInstalled: false,
+                pluginEnabled: false,
+              },
+            ],
+          },
+        }) as ReturnType<typeof onboardingFacts.gatherOnboardingFacts>
+      );
+
+    layer(TestLive({ commandRunner: noHostsRunner, terminalUI: recorded.ui }))(it => {
+      it.scoped('print before the gates run, not in the middle of the flow', () =>
+        Effect.gen(function* () {
+          recorded.reset();
+          yield* Console.clear;
+          unwiredHost();
+          // A gate that reports its own failure from inside the loop is what makes the ordering
+          // observable: rendered with the closing block, the advisory lands after it and reads as
+          // part of the diagnosis.
+          vi.spyOn(loginCmd, 'browserLogin').mockReturnValue(
+            Effect.fail(ConfigError.MissingData([], 'login delegate failed'))
+          );
+
+          yield* cli(['onboard']);
+
+          const lines = yield* MockConsole.getLines({ stripAnsi: true });
+          const advisory = lines.findIndex(line => line.includes('Claude Code detected'));
+          const gateOutput = lines.findIndex(line => line.includes('Login did not complete'));
+
+          expect(advisory).toBeGreaterThanOrEqual(0);
+          expect(gateOutput).toBeGreaterThanOrEqual(0);
+          expect(advisory).toBeLessThan(gateOutput);
+        })
+      );
+    });
+  });
+
   // ── A failed read demo is reported, not replayed ────────────────────────────
 
   describe('a read demo that does not succeed', () => {
@@ -767,6 +845,35 @@ describe('CLI: composio onboard', () => {
             expect(document.human_action).toContain('GITHUB_GET_THE_AUTHENTICATED_USER');
             // A command here would hand back the call that just failed.
             expect(document.next_command).toBeNull();
+          })
+        );
+      });
+    });
+
+    describe('when the provider revoked the authorization', () => {
+      const recorded = recordingUI({ tty: { stdin: true, stdout: true, stderr: true } });
+
+      layer(
+        TestLive(
+          liveInput({ terminalUI: recorded.ui, connectedAccountsData: { items: connected } })
+        )
+      )(it => {
+        it.scoped('names `composio link` and says why the account still reads ACTIVE', () =>
+          Effect.gen(function* () {
+            recorded.reset();
+            vi.spyOn(executeCmd, 'runToolsExecute').mockReturnValue(
+              classifiedFailedExecute('revoked_connection')
+            );
+
+            yield* cli(['onboard', '--json', '--toolkit', 'github']);
+
+            const document = soleDocument(recorded.stdout);
+            expect(document.blocked_reason).toBe('demo_execution_failed');
+            expect(document.human_action).toContain('composio link github');
+            // The account list is the first place anyone looks, and it reports ACTIVE for a grant
+            // the provider already dropped. Sending them there without saying so is the bug.
+            expect(document.human_action).toContain('ACTIVE');
+            expect(document.human_action).not.toContain('composio connections list`,');
           })
         );
       });
