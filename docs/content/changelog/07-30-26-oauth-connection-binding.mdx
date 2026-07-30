@@ -10,13 +10,14 @@ unchanged.
 
 ### What shipped
 
-- **Same-browser binding** — for **Composio managed** apps, a Connect Link must be finished in the
-  browser that started it; a callback from a different browser is rejected. Composio-enforced, off
-  by default — contact us to turn it on. [Learn more](/docs/oauth-connection-security#same-browser-binding)
-- **Callback identity verification** — for **your own OAuth apps**, set a verifier URL and Composio
-  hands each OAuth return to your server, which names its signed-in user; the connection activates
-  only if that matches the user the flow started for. Enable it yourself in Settings → General.
-  [Learn more](/docs/oauth-connection-security#callback-identity-verification)
+- **Same-browser binding** — for **Composio-managed apps** (default auth configs). Because Composio
+  owns the OAuth app here, it enforces the check for you: a Connect Link must be completed in the
+  browser that started it, and a callback from a different browser is rejected. Off by default —
+  contact us to enable. [Learn more](/docs/oauth-connection-security#same-browser-binding)
+- **Callback identity verification** — for **your own OAuth apps** (custom auth configs), where only
+  your server can identify the returning user. Set a verifier URL, and Composio routes each OAuth
+  return to your server to confirm its signed-in user before the connection activates. Enable it in
+  Settings → General. [Learn more](/docs/oauth-connection-security#callback-identity-verification)
 
 ### Breaking changes
 
