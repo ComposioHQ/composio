@@ -19,6 +19,7 @@
 
 ### Minor Changes
 
+- Cross-promote the Composio agent plugin (PRDE-1153): when the bare CLI runs inside Claude Code or Codex and the Composio plugin is not installed in that host, the CLI prints one stderr tip per 24 hours pointing at `composio setup`. The tip is deliberately visible to non-TTY (agent-driven) shells, never touches stdout, and is suppressed inside `composio run` children.
 - Telemetry now delivers directly to PostHog, so pre-login `install`/`setup` events are captured. Opt-outs are unchanged.
 - Telemetry events now carry `journey_stage` (install/setup/login/connect/execute/other) and `cli_channel` (stable/beta) properties, and `install.sh` marks its `composio install` run with `invocation_origin: installer` so script installs are distinguishable from manual ones. npm and Homebrew installs do not run `install.sh`, so their installs carry no installer origin.
 - Make headless `composio login` agent-friendly (PRDE-1138): the non-interactive instructions now offer the unattended `composio login --agent` path, and a machine with a stored READY agent identity (`~/.composio/agent.json`) completes plain headless `composio login` unattended by reusing it. Reuse only — a human piping `composio login` still gets the URL + poll instructions and never has an account auto-created.
