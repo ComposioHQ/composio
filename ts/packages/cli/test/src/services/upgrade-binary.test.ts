@@ -9,6 +9,7 @@ import {
   readdirSync,
   rmSync,
   statSync,
+  utimesSync,
   mkdtempSync,
   writeFileSync,
 } from 'node:fs';
@@ -17,7 +18,10 @@ import path from 'node:path';
 import { withHttpServer } from 'test/__utils__/http-server';
 import { getTerminalCapabilities, TerminalUI } from 'src/services/terminal-ui';
 import {
-  atomicReplaceDirectory,
+  INSTALL_TRANSACTION_JOURNAL_FILENAME,
+  INSTALL_TRANSACTION_LOCK_FILENAME,
+  INSTALL_TRANSACTION_RECOVERY_LOCK_FILENAME,
+  recoverInterruptedBinaryReplacement,
   replaceBinary,
   UpgradeBinary,
   UpgradeBinaryError,
@@ -502,6 +506,16 @@ describe('UpgradeBinary', () => {
 
 const ReplaceLayers = Layer.mergeAll(BunFileSystem.layer, Path.layer, FetchHttpClient.layer);
 
+const listTransactionLeftovers = (dir: string): string[] =>
+  readdirSync(dir).filter(
+    entry =>
+      entry.includes('.staged-') ||
+      entry.includes('.backup-') ||
+      entry === INSTALL_TRANSACTION_JOURNAL_FILENAME ||
+      entry === INSTALL_TRANSACTION_LOCK_FILENAME ||
+      entry.startsWith(INSTALL_TRANSACTION_RECOVERY_LOCK_FILENAME)
+  );
+
 const makeReplaceCtx = Effect.gen(function* () {
   return {
     httpClient: yield* HttpClient.HttpClient,
@@ -537,8 +551,18 @@ describe('replaceBinary', () => {
     writeFileSync(path.join(sourceDir, 'composio'), 'new-binary');
     writeFileSync(path.join(targetDir, 'composio'), 'old-binary', { mode: 0o755 });
     writeFileSync(path.join(targetDir, 'release-tag.txt'), '@composio/cli@0.1.0\n');
+    const localToolsRelativePath = path.join(
+      'local-tools-binaries',
+      'test-tool',
+      'test-platform',
+      'tool'
+    );
+    mkdirSync(path.dirname(path.join(sourceDir, localToolsRelativePath)), { recursive: true });
+    mkdirSync(path.dirname(path.join(targetDir, localToolsRelativePath)), { recursive: true });
+    writeFileSync(path.join(sourceDir, localToolsRelativePath), 'new-local-tool');
+    writeFileSync(path.join(targetDir, localToolsRelativePath), 'old-local-tool');
 
-    return { sourceDir, targetDir, companionRelativePaths };
+    return { sourceDir, targetDir, companionRelativePaths, localToolsRelativePath };
   });
 
   const cleanupInstall = (dirs: { sourceDir: string; targetDir: string }) =>
@@ -550,110 +574,10 @@ describe('replaceBinary', () => {
   const listTempLeftovers = (dir: string): string[] =>
     readdirSync(dir).filter(entry => entry.includes('.tmp-'));
 
-  it.effect('restores the installed directory when the staged rename fails', () =>
-    Effect.gen(function* () {
-      const sourceDir = mkdtempSync(path.join(tmpdir(), 'composio-directory-source-'));
-      const targetParent = mkdtempSync(path.join(tmpdir(), 'composio-directory-target-'));
-      const targetDir = path.join(targetParent, 'local-tools-binaries');
-      mkdirSync(targetDir, { recursive: true });
-      writeFileSync(path.join(sourceDir, 'asset'), 'new');
-      writeFileSync(path.join(targetDir, 'asset'), 'old');
-
-      yield* Effect.gen(function* () {
-        const ctx = yield* makeReplaceCtx;
-        let rejectedSwap = false;
-        const fs = new Proxy(ctx.fs, {
-          get(target, property, receiver) {
-            if (property !== 'rename') {
-              return Reflect.get(target, property, receiver);
-            }
-            return (oldPath: string, newPath: string) => {
-              if (!rejectedSwap && newPath === targetDir && oldPath.includes('.tmp-')) {
-                rejectedSwap = true;
-                return target.rename(path.join(sourceDir, 'missing'), newPath);
-              }
-              return target.rename(oldPath, newPath);
-            };
-          },
-        });
-
-        const error = yield* atomicReplaceDirectory(
-          { ...ctx, fs },
-          sourceDir,
-          targetDir,
-          'Failed to replace local-tool binary assets'
-        ).pipe(Effect.flip);
-
-        expect(error).toBeInstanceOf(UpgradeBinaryError);
-        expect(readFileSync(path.join(targetDir, 'asset'), 'utf8')).toBe('old');
-        expect(listTempLeftovers(targetParent)).toEqual([]);
-      }).pipe(
-        Effect.ensuring(
-          Effect.sync(() => {
-            rmSync(sourceDir, { recursive: true, force: true });
-            rmSync(targetParent, { recursive: true, force: true });
-          })
-        )
-      );
-    }).pipe(Effect.provide(ReplaceLayers))
-  );
-
-  it.effect('preserves the backup when both the staged rename and rollback fail', () =>
-    Effect.gen(function* () {
-      const sourceDir = mkdtempSync(path.join(tmpdir(), 'composio-directory-source-'));
-      const targetParent = mkdtempSync(path.join(tmpdir(), 'composio-directory-target-'));
-      const targetDir = path.join(targetParent, 'local-tools-binaries');
-      mkdirSync(targetDir, { recursive: true });
-      writeFileSync(path.join(sourceDir, 'asset'), 'new');
-      writeFileSync(path.join(targetDir, 'asset'), 'old');
-
-      yield* Effect.gen(function* () {
-        const ctx = yield* makeReplaceCtx;
-        let renameIntoTargetAttempts = 0;
-        const fs = new Proxy(ctx.fs, {
-          get(target, property, receiver) {
-            if (property !== 'rename') {
-              return Reflect.get(target, property, receiver);
-            }
-            return (oldPath: string, newPath: string) => {
-              if (newPath === targetDir && oldPath.includes('.tmp-')) {
-                renameIntoTargetAttempts += 1;
-                if (renameIntoTargetAttempts <= 2) {
-                  return target.rename(path.join(sourceDir, 'missing'), newPath);
-                }
-              }
-              return target.rename(oldPath, newPath);
-            };
-          },
-        });
-
-        const error = yield* atomicReplaceDirectory(
-          { ...ctx, fs },
-          sourceDir,
-          targetDir,
-          'Failed to replace local-tool binary assets'
-        ).pipe(Effect.flip);
-
-        expect(error).toBeInstanceOf(UpgradeBinaryError);
-        expect(existsSync(targetDir)).toBe(false);
-        const leftovers = listTempLeftovers(targetParent);
-        expect(leftovers).toHaveLength(1);
-        expect(readFileSync(path.join(targetParent, leftovers[0], 'asset'), 'utf8')).toBe('old');
-      }).pipe(
-        Effect.ensuring(
-          Effect.sync(() => {
-            rmSync(sourceDir, { recursive: true, force: true });
-            rmSync(targetParent, { recursive: true, force: true });
-          })
-        )
-      );
-    }).pipe(Effect.provide(ReplaceLayers))
-  );
-
   it.effect('swaps binary, companions, and release tag with no temp leftovers', () =>
     Effect.gen(function* () {
       const install = yield* setupInstall;
-      const { sourceDir, targetDir, companionRelativePaths } = install;
+      const { sourceDir, targetDir, companionRelativePaths, localToolsRelativePath } = install;
 
       yield* Effect.gen(function* () {
         const ctx = yield* makeReplaceCtx;
@@ -674,7 +598,11 @@ describe('replaceBinary', () => {
             `new-${relativePath}`
           );
         }
+        expect(readFileSync(path.join(targetDir, localToolsRelativePath), 'utf8')).toBe(
+          'new-local-tool'
+        );
         expect(listTempLeftovers(targetDir)).toEqual([]);
+        expect(listTransactionLeftovers(targetDir)).toEqual([]);
       }).pipe(Effect.ensuring(cleanupInstall(install)));
     }).pipe(Effect.provide(ReplaceLayers))
   );
@@ -682,7 +610,7 @@ describe('replaceBinary', () => {
   it.effect('aborts before touching the install when a source companion is missing', () =>
     Effect.gen(function* () {
       const install = yield* setupInstall;
-      const { sourceDir, targetDir, companionRelativePaths } = install;
+      const { sourceDir, targetDir, companionRelativePaths, localToolsRelativePath } = install;
       const removedCompanion = companionRelativePaths[0];
       rmSync(path.join(sourceDir, removedCompanion), { force: true });
 
@@ -706,6 +634,9 @@ describe('replaceBinary', () => {
             `old-${relativePath}`
           );
         }
+        expect(readFileSync(path.join(targetDir, localToolsRelativePath), 'utf8')).toBe(
+          'old-local-tool'
+        );
       }).pipe(Effect.ensuring(cleanupInstall(install)));
     }).pipe(Effect.provide(ReplaceLayers))
   );
@@ -737,5 +668,281 @@ describe('replaceBinary', () => {
           expect(listTempLeftovers(targetDir)).toEqual([]);
         }).pipe(Effect.ensuring(cleanupInstall(install)));
       }).pipe(Effect.provide(ReplaceLayers))
+  );
+
+  it.effect('rolls back every installed artifact when the release-tag commit fails', () =>
+    Effect.gen(function* () {
+      const install = yield* setupInstall;
+      const { sourceDir, targetDir, companionRelativePaths, localToolsRelativePath } = install;
+
+      yield* Effect.gen(function* () {
+        const ctx = yield* makeReplaceCtx;
+        const releaseTagPath = path.join(targetDir, 'release-tag.txt');
+        let rejectedReleaseTag = false;
+        const fs = new Proxy(ctx.fs, {
+          get(target, property, receiver) {
+            if (property !== 'rename') {
+              return Reflect.get(target, property, receiver);
+            }
+            return (oldPath: string, newPath: string) => {
+              if (
+                !rejectedReleaseTag &&
+                newPath === releaseTagPath &&
+                oldPath.includes('.staged-')
+              ) {
+                rejectedReleaseTag = true;
+                return target.rename(path.join(sourceDir, 'missing'), newPath);
+              }
+              return target.rename(oldPath, newPath);
+            };
+          },
+        });
+
+        const error = yield* replaceBinary(
+          { ...ctx, fs },
+          path.join(sourceDir, 'composio'),
+          path.join(targetDir, 'composio'),
+          { releaseTag: '@composio/cli@0.2.0' }
+        ).pipe(Effect.flip);
+
+        expect(error).toBeInstanceOf(UpgradeBinaryError);
+        expect(readFileSync(path.join(targetDir, 'composio'), 'utf8')).toBe('old-binary');
+        expect(readFileSync(path.join(targetDir, 'release-tag.txt'), 'utf8')).toBe(
+          '@composio/cli@0.1.0\n'
+        );
+        for (const relativePath of companionRelativePaths) {
+          expect(readFileSync(path.join(targetDir, relativePath), 'utf8')).toBe(
+            `old-${relativePath}`
+          );
+        }
+        expect(readFileSync(path.join(targetDir, localToolsRelativePath), 'utf8')).toBe(
+          'old-local-tool'
+        );
+        expect(listTransactionLeftovers(targetDir)).toEqual([]);
+      }).pipe(Effect.ensuring(cleanupInstall(install)));
+    }).pipe(Effect.provide(ReplaceLayers))
+  );
+
+  it.effect('does not fail a committed release when backup cleanup fails', () =>
+    Effect.gen(function* () {
+      const install = yield* setupInstall;
+      const { sourceDir, targetDir } = install;
+
+      yield* Effect.gen(function* () {
+        const ctx = yield* makeReplaceCtx;
+        const fs = new Proxy(ctx.fs, {
+          get(target, property, receiver) {
+            if (property !== 'remove') {
+              return Reflect.get(target, property, receiver);
+            }
+            return (targetPath: string, options?: { recursive?: boolean; force?: boolean }) =>
+              targetPath.includes('.backup-')
+                ? target.remove(path.join(sourceDir, 'missing-cleanup-target'))
+                : target.remove(targetPath, options);
+          },
+        });
+
+        yield* replaceBinary(
+          { ...ctx, fs },
+          path.join(sourceDir, 'composio'),
+          path.join(targetDir, 'composio'),
+          { releaseTag: '@composio/cli@0.2.0' }
+        );
+
+        expect(readFileSync(path.join(targetDir, 'composio'), 'utf8')).toBe('new-binary');
+        expect(readFileSync(path.join(targetDir, 'release-tag.txt'), 'utf8')).toBe(
+          '@composio/cli@0.2.0\n'
+        );
+      }).pipe(Effect.ensuring(cleanupInstall(install)));
+    }).pipe(Effect.provide(ReplaceLayers))
+  );
+});
+
+describe('recoverInterruptedBinaryReplacement', () => {
+  const transactionId = '1234567890abcdef';
+
+  const setupInterruptedTransaction = (
+    targetDir: string,
+    state: 'target-missing' | 'target-new'
+  ) => {
+    const targetPath = path.join(targetDir, 'composio');
+    const stagedPath = path.join(targetDir, `.composio.staged-${transactionId}`);
+    const backupPath = path.join(targetDir, `.composio.backup-${transactionId}`);
+    writeFileSync(backupPath, 'old-binary', { mode: 0o755 });
+    if (state === 'target-missing') {
+      writeFileSync(stagedPath, 'new-binary', { mode: 0o755 });
+    } else {
+      writeFileSync(targetPath, 'new-binary', { mode: 0o755 });
+    }
+    writeFileSync(
+      path.join(targetDir, INSTALL_TRANSACTION_JOURNAL_FILENAME),
+      JSON.stringify({
+        transactionId,
+        entries: [{ relativePath: 'composio', kind: 'file', hadTarget: true }],
+      })
+    );
+    return { targetPath, stagedPath, backupPath };
+  };
+
+  it.effect('keeps the healthy no-state startup path read-only', () =>
+    Effect.gen(function* () {
+      const targetDir = mkdtempSync(path.join(tmpdir(), 'composio-recovery-'));
+      const targetPath = path.join(targetDir, 'composio');
+      writeFileSync(targetPath, 'old-binary', { mode: 0o755 });
+      try {
+        expect(yield* recoverInterruptedBinaryReplacement(targetPath)).toBe('none');
+        expect(listTransactionLeftovers(targetDir)).toEqual([]);
+      } finally {
+        rmSync(targetDir, { recursive: true, force: true });
+      }
+    }).pipe(Effect.provide(ReplaceLayers))
+  );
+
+  it.effect('restores an old target when a crash happens before staged rename', () =>
+    Effect.gen(function* () {
+      const targetDir = mkdtempSync(path.join(tmpdir(), 'composio-recovery-'));
+      const { targetPath } = setupInterruptedTransaction(targetDir, 'target-missing');
+      try {
+        expect(yield* recoverInterruptedBinaryReplacement(targetPath)).toBe('recovered');
+        expect(readFileSync(targetPath, 'utf8')).toBe('old-binary');
+        expect(listTransactionLeftovers(targetDir)).toEqual([]);
+      } finally {
+        rmSync(targetDir, { recursive: true, force: true });
+      }
+    }).pipe(Effect.provide(ReplaceLayers))
+  );
+
+  it.effect('replaces a new target with its old backup after a crash', () =>
+    Effect.gen(function* () {
+      const targetDir = mkdtempSync(path.join(tmpdir(), 'composio-recovery-'));
+      const { targetPath } = setupInterruptedTransaction(targetDir, 'target-new');
+      try {
+        expect(yield* recoverInterruptedBinaryReplacement(targetPath)).toBe('recovered');
+        expect(readFileSync(targetPath, 'utf8')).toBe('old-binary');
+        expect(listTransactionLeftovers(targetDir)).toEqual([]);
+      } finally {
+        rmSync(targetDir, { recursive: true, force: true });
+      }
+    }).pipe(Effect.provide(ReplaceLayers))
+  );
+
+  it.effect('does not recover while a live install transaction owns the lock', () =>
+    Effect.gen(function* () {
+      const targetDir = mkdtempSync(path.join(tmpdir(), 'composio-recovery-'));
+      const { targetPath } = setupInterruptedTransaction(targetDir, 'target-new');
+      writeFileSync(path.join(targetDir, INSTALL_TRANSACTION_LOCK_FILENAME), '');
+      try {
+        expect(yield* recoverInterruptedBinaryReplacement(targetPath)).toBe('busy');
+        expect(readFileSync(targetPath, 'utf8')).toBe('new-binary');
+        expect(existsSync(path.join(targetDir, INSTALL_TRANSACTION_JOURNAL_FILENAME))).toBe(true);
+        expect(existsSync(path.join(targetDir, INSTALL_TRANSACTION_RECOVERY_LOCK_FILENAME))).toBe(
+          false
+        );
+      } finally {
+        rmSync(targetDir, { recursive: true, force: true });
+      }
+    }).pipe(Effect.provide(ReplaceLayers))
+  );
+
+  it.effect('retires an orphaned stale install lock that has no journal', () =>
+    Effect.gen(function* () {
+      const targetDir = mkdtempSync(path.join(tmpdir(), 'composio-recovery-'));
+      const targetPath = path.join(targetDir, 'composio');
+      writeFileSync(targetPath, 'old-binary', { mode: 0o755 });
+      const lockPath = path.join(targetDir, INSTALL_TRANSACTION_LOCK_FILENAME);
+      writeFileSync(lockPath, '');
+      const staleAt = new Date(0);
+      utimesSync(lockPath, staleAt, staleAt);
+      try {
+        expect(yield* recoverInterruptedBinaryReplacement(targetPath)).toBe('none');
+        expect(existsSync(lockPath)).toBe(false);
+        expect(readFileSync(targetPath, 'utf8')).toBe('old-binary');
+      } finally {
+        rmSync(targetDir, { recursive: true, force: true });
+      }
+    }).pipe(Effect.provide(ReplaceLayers))
+  );
+
+  it.effect('does not disturb a live recovery owner', () =>
+    Effect.gen(function* () {
+      const targetDir = mkdtempSync(path.join(tmpdir(), 'composio-recovery-'));
+      const { targetPath } = setupInterruptedTransaction(targetDir, 'target-new');
+      const recoveryLockPath = path.join(targetDir, INSTALL_TRANSACTION_RECOVERY_LOCK_FILENAME);
+      writeFileSync(recoveryLockPath, 'live-owner');
+      try {
+        expect(yield* recoverInterruptedBinaryReplacement(targetPath)).toBe('busy');
+        expect(readFileSync(recoveryLockPath, 'utf8')).toBe('live-owner');
+        expect(readFileSync(targetPath, 'utf8')).toBe('new-binary');
+      } finally {
+        rmSync(targetDir, { recursive: true, force: true });
+      }
+    }).pipe(Effect.provide(ReplaceLayers))
+  );
+
+  it.effect('reclaims a stale recovery owner and completes rollback', () =>
+    Effect.gen(function* () {
+      const targetDir = mkdtempSync(path.join(tmpdir(), 'composio-recovery-'));
+      const { targetPath } = setupInterruptedTransaction(targetDir, 'target-new');
+      const recoveryLockPath = path.join(targetDir, INSTALL_TRANSACTION_RECOVERY_LOCK_FILENAME);
+      writeFileSync(recoveryLockPath, 'crashed-owner');
+      const staleAt = new Date(0);
+      utimesSync(recoveryLockPath, staleAt, staleAt);
+      try {
+        expect(yield* recoverInterruptedBinaryReplacement(targetPath)).toBe('recovered');
+        expect(readFileSync(targetPath, 'utf8')).toBe('old-binary');
+        expect(listTransactionLeftovers(targetDir)).toEqual([]);
+      } finally {
+        rmSync(targetDir, { recursive: true, force: true });
+      }
+    }).pipe(Effect.provide(ReplaceLayers))
+  );
+
+  it.effect('retires an orphaned stale recovery owner with no transaction state', () =>
+    Effect.gen(function* () {
+      const targetDir = mkdtempSync(path.join(tmpdir(), 'composio-recovery-'));
+      const targetPath = path.join(targetDir, 'composio');
+      writeFileSync(targetPath, 'old-binary', { mode: 0o755 });
+      const recoveryLockPath = path.join(targetDir, INSTALL_TRANSACTION_RECOVERY_LOCK_FILENAME);
+      writeFileSync(recoveryLockPath, 'crashed-owner');
+      const staleAt = new Date(0);
+      utimesSync(recoveryLockPath, staleAt, staleAt);
+      try {
+        expect(yield* recoverInterruptedBinaryReplacement(targetPath)).toBe('none');
+        expect(existsSync(recoveryLockPath)).toBe(false);
+        expect(readFileSync(targetPath, 'utf8')).toBe('old-binary');
+      } finally {
+        rmSync(targetDir, { recursive: true, force: true });
+      }
+    }).pipe(Effect.provide(ReplaceLayers))
+  );
+
+  it.effect('allows only one concurrent startup to own recovery', () =>
+    Effect.gen(function* () {
+      const targetDir = mkdtempSync(path.join(tmpdir(), 'composio-recovery-'));
+      const { targetPath } = setupInterruptedTransaction(targetDir, 'target-new');
+      const realFs = yield* FileSystem.FileSystem;
+      const delayedFs = new Proxy(realFs, {
+        get(target, property, receiver) {
+          if (property !== 'remove') {
+            return Reflect.get(target, property, receiver);
+          }
+          return (removedPath: string, options?: { recursive?: boolean; force?: boolean }) =>
+            removedPath === targetPath
+              ? Effect.yieldNow().pipe(Effect.andThen(target.remove(removedPath, options)))
+              : target.remove(removedPath, options);
+        },
+      });
+      try {
+        const recover = recoverInterruptedBinaryReplacement(targetPath).pipe(
+          Effect.provideService(FileSystem.FileSystem, delayedFs)
+        );
+        const results = yield* Effect.all([recover, recover], { concurrency: 'unbounded' });
+        expect(results.filter(result => result === 'recovered')).toHaveLength(1);
+        expect(results.filter(result => result === 'busy')).toHaveLength(1);
+        expect(readFileSync(targetPath, 'utf8')).toBe('old-binary');
+      } finally {
+        rmSync(targetDir, { recursive: true, force: true });
+      }
+    }).pipe(Effect.provide(ReplaceLayers))
   );
 });

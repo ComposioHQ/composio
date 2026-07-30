@@ -1,5 +1,6 @@
 // eslint-disable-next-line no-restricted-imports -- This Effect helper is the sole detached-spawn boundary for CLI source: @effect/platform Command processes are scope-bound and are killed when their scope closes, while these children must outlive the CLI process.
 import { spawn } from 'node:child_process';
+import { FileSystem } from '@effect/platform';
 import { Data, Effect } from 'effect';
 
 export class DetachedProcessSpawnError extends Data.TaggedError(
@@ -8,6 +9,33 @@ export class DetachedProcessSpawnError extends Data.TaggedError(
   readonly command: string;
   readonly cause: unknown;
 }> {}
+
+/**
+ * Resolves the argv shape for a detached worker in both source checkouts and
+ * compiled binaries. Keeping this beside `spawnDetached` avoids making generic
+ * process lifecycle code depend on analytics.
+ */
+export const getWorkerSpawnArgs = (workerFlag: string, encodedPayload: string) =>
+  Effect.gen(function* () {
+    const fs = yield* FileSystem.FileSystem;
+    const maybeScriptPath = process.argv[1];
+    const scriptPathExists =
+      typeof maybeScriptPath === 'string' && maybeScriptPath.length > 0
+        ? yield* fs.exists(maybeScriptPath).pipe(Effect.orElseSucceed(() => false))
+        : false;
+    const scriptPathLooksReal =
+      scriptPathExists && /\.(?:[cm]?[jt]s|mjs|mts|cts)$/u.test(maybeScriptPath ?? '');
+
+    return scriptPathLooksReal
+      ? {
+          command: process.execPath,
+          args: [maybeScriptPath as string, workerFlag, encodedPayload],
+        }
+      : {
+          command: process.execPath,
+          args: [workerFlag, encodedPayload],
+        };
+  });
 
 /**
  * Spawns a process that outlives the CLI: detached from the CLI's process

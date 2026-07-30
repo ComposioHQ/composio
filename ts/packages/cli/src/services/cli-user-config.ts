@@ -125,6 +125,7 @@ export const ComposioCliUserConfigLive = Layer.effect(
     const jsonConfigPath = yield* resolveCliConfigPath;
 
     let rawConfig = DEFAULT_CLI_USER_CONFIG;
+    let configLoadError: ParseError | PlatformError | undefined;
 
     const normalizeRawConfigJson = (value: unknown): unknown => {
       if (!Predicate.isRecord(value)) {
@@ -154,19 +155,25 @@ export const ComposioCliUserConfigLive = Layer.effect(
     const persist = (next: CliUserConfig) =>
       Effect.gen(function* () {
         const encoded = yield* cliUserConfigToJSON(next);
-        yield* fs.writeFileString(jsonConfigPath, encoded);
+        const tempPath = `${jsonConfigPath}.${crypto.randomUUID().slice(0, 8)}.tmp`;
+        yield* fs.writeFileString(tempPath, encoded).pipe(
+          Effect.andThen(fs.rename(tempPath, jsonConfigPath)),
+          Effect.tapError(() => fs.remove(tempPath, { force: true }).pipe(Effect.ignore))
+        );
         rawConfig = next;
       });
 
     const update = (
       next: Partial<CliUserConfig>
     ): Effect.Effect<void, ParseError | PlatformError, never> =>
-      persist(
-        CliUserConfig.make({
-          ...rawConfig,
-          ...next,
-        })
-      );
+      configLoadError
+        ? Effect.fail(configLoadError)
+        : persist(
+            CliUserConfig.make({
+              ...rawConfig,
+              ...next,
+            })
+          );
 
     const load = Effect.gen(function* () {
       const configJson = yield* fs.readFileString(jsonConfigPath, 'utf8');
@@ -177,10 +184,12 @@ export const ComposioCliUserConfigLive = Layer.effect(
 
     if (yield* fs.exists(jsonConfigPath)) {
       yield* load.pipe(
-        Effect.catchAll(() =>
+        Effect.catchAll(cause =>
           Effect.sync(() => {
-            // Preserve the unreadable file for recovery and fail closed for
-            // background binary replacement until the user rewrites config.
+            // Preserve malformed configuration for manual recovery. Any
+            // automatic state write must fail rather than replace settings we
+            // could not read with defaults.
+            configLoadError = cause;
             rawConfig = CORRUPT_CLI_USER_CONFIG;
           })
         )

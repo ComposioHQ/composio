@@ -5,7 +5,7 @@ import { describe, it, vi } from '@effect/vitest';
 import { assertEquals } from '@effect/vitest/utils';
 import { FileSystem } from '@effect/platform';
 import { BunFileSystem, BunPath } from '@effect/platform-bun';
-import { ConfigProvider, Effect, Layer } from 'effect';
+import { ConfigProvider, Effect, Exit, Layer } from 'effect';
 import { extendConfigProvider } from 'src/services/config';
 import { defaultNodeOs, NodeOs } from 'src/services/node-os';
 import {
@@ -220,6 +220,16 @@ describe('ComposioCliUserConfig', () => {
       assertEquals(config.data.developerDangerousCommandsEnabled, false);
       assertEquals(config.data.security, 'auto');
       assertEquals(config.data.autoUpdateEnabled, false);
+
+      const updateExit = yield* Effect.exit(
+        config.update({
+          developer: {
+            ...config.raw.developer,
+            enabled: false,
+          },
+        })
+      );
+      assertEquals(Exit.isFailure(updateExit), true);
 
       const persisted = fs.readFileSync(path.join(cwd, '.composio', 'config.json'), 'utf8');
       assertEquals(Array.isArray(JSON.parse(persisted)), true);

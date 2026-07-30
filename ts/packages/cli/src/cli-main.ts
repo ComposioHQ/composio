@@ -31,8 +31,7 @@ import { ProjectEnvironmentDetector } from 'src/services/project-environment-det
 import { CommandRunner } from 'src/services/command-runner';
 import { StdinLive } from 'src/services/stdin';
 import {
-  applyStagedUpdateAtStartup,
-  isAutoUpdateEnabledAtStartup,
+  applyStagedUpdateAfterCommand,
   shouldShowUpdateNoticeAtStartup,
   showAutoUpdateAppliedNoticeAtStartup,
 } from 'src/services/self-update';
@@ -181,9 +180,6 @@ const runWithTelemetry = Effect.gen(function* () {
 
 const startupUpdatePhase = Effect.gen(function* () {
   yield* showAutoUpdateAppliedNoticeAtStartup;
-  if (yield* isAutoUpdateEnabledAtStartup) {
-    yield* applyStagedUpdateAtStartup;
-  }
   if (yield* shouldShowUpdateNoticeAtStartup) {
     yield* showUpdateNotice;
   }
@@ -281,6 +277,10 @@ startupUpdatePhase.pipe(
       }
     })
   ),
+  // Install only after command execution and all error rendering have
+  // finished. The already-loaded process cannot observe new companion files;
+  // the replacement becomes visible on the next invocation.
+  Effect.ensuring(applyStagedUpdateAfterCommand),
   Effect.provide(layers),
   Effect.withConfigProvider(extendConfigProvider(BaseConfigProviderLive)),
   BunRuntime.runMain({ teardown })

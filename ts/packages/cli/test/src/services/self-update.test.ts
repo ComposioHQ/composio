@@ -22,8 +22,10 @@ import {
   STAGE_ATTEMPT_FILENAME,
   STAGE_ATTEMPT_LOCK_FILENAME,
   STAGED_MANIFEST_FILENAME,
+  isStageWorkerPayloadAllowed,
   type AutoUpdateSettings,
   type FirstPartyInstall,
+  type StageWorkerPayload,
   type StagedUpdateManifest,
 } from 'src/services/self-update';
 import { getTerminalCapabilities, type TerminalUI } from 'src/services/terminal-ui';
@@ -138,6 +140,57 @@ describe('releaseChannelForVersion', () => {
   it('records the release channel, not the staging user preference', () => {
     expect(releaseChannelForVersion('0.3.0')).toBe('stable');
     expect(releaseChannelForVersion('0.3.0-beta.1')).toBe('beta');
+  });
+});
+
+describe('isStageWorkerPayloadAllowed', () => {
+  const install: FirstPartyInstall = {
+    execPath: '/tmp/composio',
+    installDir: '/tmp',
+    releaseTag: '@composio/cli@0.2.0',
+    currentVersion: '0.2.0',
+  };
+  const stableSettings: AutoUpdateSettings = { enabled: true, channel: 'stable' };
+  const payload: StageWorkerPayload = {
+    version: '0.3.0',
+    releaseTag: '@composio/cli@0.3.0',
+    channel: 'stable',
+    fromVersion: '0.2.0',
+  };
+
+  it('accepts a consistent newer stable target', () => {
+    expect(isStageWorkerPayloadAllowed(payload, stableSettings, install)).toBe(true);
+  });
+
+  it('rejects a beta after the user switches back to stable', () => {
+    expect(
+      isStageWorkerPayloadAllowed(
+        {
+          version: '0.3.0-beta.1',
+          releaseTag: '@composio/cli@0.3.0-beta.1',
+          channel: 'beta',
+          fromVersion: '0.2.0',
+        },
+        stableSettings,
+        install
+      )
+    ).toBe(false);
+  });
+
+  it('rejects release-tag and version mismatches', () => {
+    expect(
+      isStageWorkerPayloadAllowed(
+        { ...payload, releaseTag: '@composio/cli@9.9.9' },
+        stableSettings,
+        install
+      )
+    ).toBe(false);
+  });
+
+  it('rejects a worker spawned for a no-longer-current install', () => {
+    expect(
+      isStageWorkerPayloadAllowed(payload, stableSettings, { ...install, currentVersion: '0.2.1' })
+    ).toBe(false);
   });
 });
 
@@ -384,6 +437,20 @@ describe('readValidStagedUpdate', () => {
     }).pipe(Effect.provide(PlatformLayers))
   );
 
+  it.effect('discards a manifest whose release tag does not match its version', () =>
+    Effect.gen(function* () {
+      writeManifest(stagingRootDir, makeManifest({ releaseTag: '@composio/cli@9.9.9' }));
+      stageBinary(stagingRootDir, '0.3.0');
+      const staged = yield* readValidStagedUpdate({
+        stagingRootDir,
+        currentVersion: '0.2.0',
+        channel: 'stable',
+      });
+      expect(Option.isNone(staged)).toBe(true);
+      expect(existsSync(stagingRootDir)).toBe(false);
+    }).pipe(Effect.provide(PlatformLayers))
+  );
+
   it.effect('discards a corrupt manifest without failing', () =>
     Effect.gen(function* () {
       mkdirSync(stagingRootDir, { recursive: true });
@@ -425,7 +492,7 @@ describe('applyStagedUpdateCore', () => {
       tracked.push(event);
     });
 
-  const repinSkill = (releaseTag: string) =>
+  const scheduleSkillRepin = (releaseTag: string) =>
     Effect.sync(() => {
       repinned.push(releaseTag);
     });
@@ -446,7 +513,7 @@ describe('applyStagedUpdateCore', () => {
         install,
         channel: 'stable',
         replace: succeedingReplace,
-        repinSkill,
+        scheduleSkillRepin,
         track,
       });
 
@@ -479,7 +546,7 @@ describe('applyStagedUpdateCore', () => {
         install,
         channel: 'stable',
         replace: () => Effect.fail(new Error('EACCES')),
-        repinSkill,
+        scheduleSkillRepin,
         track,
       });
 
@@ -503,7 +570,7 @@ describe('applyStagedUpdateCore', () => {
         install,
         channel: 'stable',
         replace: succeedingReplace,
-        repinSkill,
+        scheduleSkillRepin,
         track,
       });
 

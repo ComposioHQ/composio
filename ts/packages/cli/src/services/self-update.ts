@@ -13,9 +13,9 @@ import {
   getAutoUpdateStagedEvent,
 } from 'src/analytics/events';
 import type { TrackEvent } from 'src/analytics/types';
-import { getWorkerSpawnArgs, trackCliEventEffect } from 'src/analytics/dispatch';
+import { trackCliEventEffect } from 'src/analytics/dispatch';
 import { BaseConfigProviderLive, extendConfigProvider } from './config';
-import { spawnDetached } from './detached-process';
+import { getWorkerSpawnArgs, spawnDetached } from './detached-process';
 import { NodeOs } from './node-os';
 import { bold, cyanBright, dim } from 'src/ui/colors';
 import { TerminalUI, TerminalUILive } from './terminal-ui';
@@ -49,12 +49,12 @@ import type { UpdateCheckState } from './update-check';
  *      atomically renames it into `staging/<version>/`, committing with a
  *      `staged.json` manifest at the staging root.
  *
- *   2. APPLY — the next CLI invocation runs `applyStagedUpdateAtStartup`
- *      before the command executes. If a valid staged version exists it swaps
- *      the install via the existing `replaceBinary` path (binary +
- *      run-companion modules + local-tools + release-tag.txt), then the
- *      current run continues on the already-loaded image — the new binary
- *      serves the NEXT run. The swap never happens mid-run.
+ *   2. APPLY — a later CLI invocation runs `applyStagedUpdateAfterCommand`
+ *      after command dispatch and error rendering have finished. If a valid
+ *      staged version exists it transactionally swaps the install via
+ *      `replaceBinary` (binary + run-companion modules + local-tools +
+ *      release-tag.txt). The current process cannot load newly-installed
+ *      companions after the swap; the new release serves the NEXT run.
  *
  * Guards (both halves): only first-party installs (release-tag.txt adjacent
  * to the executable), never when running via the bun/node runtime
@@ -71,6 +71,7 @@ import type { UpdateCheckState } from './update-check';
  */
 
 export const INTERNAL_SELF_UPDATE_WORKER_FLAG = '__self-update-worker';
+export const INTERNAL_SKILL_REPIN_WORKER_FLAG = '__self-update-repin-worker';
 
 const STAGING_DIRNAME = 'staging';
 export const STAGED_MANIFEST_FILENAME = 'staged.json';
@@ -130,6 +131,12 @@ const StageWorkerPayload = Schema.Struct({
 });
 export type StageWorkerPayload = typeof StageWorkerPayload.Type;
 const StageWorkerPayloadJson = Schema.parseJson(StageWorkerPayload);
+
+const SkillRepinWorkerPayloadJson = Schema.parseJson(
+  Schema.Struct({
+    releaseTag: Schema.String,
+  })
+);
 
 const isTruthyFlag = (value: string): boolean => {
   const normalized = value.trim().toLowerCase();
@@ -252,8 +259,12 @@ const writeJsonFile = <A>(schema: Schema.Schema<A, string>, filePath: string, va
     const fs = yield* FileSystem.FileSystem;
     const path = yield* Path.Path;
     const encoded = yield* Schema.encode(schema)(value);
+    const tempPath = `${filePath}.${crypto.randomUUID().slice(0, 8)}.tmp`;
     yield* fs.makeDirectory(path.dirname(filePath), { recursive: true });
-    yield* fs.writeFileString(filePath, encoded);
+    yield* fs.writeFileString(tempPath, encoded).pipe(
+      Effect.andThen(fs.rename(tempPath, filePath)),
+      Effect.tapError(() => fs.remove(tempPath, { force: true }).pipe(Effect.ignore))
+    );
   });
 
 export const readStagedManifest = (
@@ -353,6 +364,15 @@ export const claimStageAttempt = (
     return true;
   }).pipe(Effect.orElseSucceed(() => false));
 
+const releaseStageAttemptClaim = (stagingRootDir: string) =>
+  Effect.gen(function* () {
+    const fs = yield* FileSystem.FileSystem;
+    const path = yield* Path.Path;
+    yield* fs
+      .remove(path.join(stagingRootDir, STAGE_ATTEMPT_LOCK_FILENAME), { force: true })
+      .pipe(Effect.ignore);
+  });
+
 // Semver ranks a stable release above its own prereleases, so a plain max
 // also moves beta installs to the stable release once it ships.
 export function pickAutoUpdateTarget(
@@ -426,14 +446,20 @@ export const maybeStageUpdateInBackground = (
     const payload = yield* Schema.encode(StageWorkerPayloadJson)({
       version: target.version,
       releaseTag: target.releaseTag,
-      channel: settings.channel,
+      channel: releaseChannelForVersion(target.version),
       fromVersion: install.value.currentVersion,
     });
     const { command, args } = yield* getWorkerSpawnArgs(
       INTERNAL_SELF_UPDATE_WORKER_FLAG,
       Encoding.encodeBase64Url(payload)
     );
-    yield* spawnDetached(command, args);
+    yield* spawnDetached(command, args).pipe(
+      Effect.tapError(() =>
+        recordStageFailure(stagingRootDir, target.version).pipe(
+          Effect.andThen(releaseStageAttemptClaim(stagingRootDir))
+        )
+      )
+    );
   }).pipe(
     Effect.withConfigProvider(extendConfigProvider(BaseConfigProviderLive)),
     Effect.catchAllCause(() => Effect.void)
@@ -443,7 +469,12 @@ const pruneStagingRoot = (stagingRootDir: string, keepVersion: string) =>
   Effect.gen(function* () {
     const fs = yield* FileSystem.FileSystem;
     const path = yield* Path.Path;
-    const keep = new Set([keepVersion, STAGED_MANIFEST_FILENAME, STAGE_ATTEMPT_FILENAME]);
+    const keep = new Set([
+      keepVersion,
+      STAGED_MANIFEST_FILENAME,
+      STAGE_ATTEMPT_FILENAME,
+      STAGE_ATTEMPT_LOCK_FILENAME,
+    ]);
     const entries = yield* fs.readDirectory(stagingRootDir);
     for (const entry of entries) {
       if (keep.has(entry)) continue;
@@ -535,6 +566,23 @@ const stageRelease = (
 export const isSelfUpdateWorkerInvocation = (argv: ReadonlyArray<string>): boolean =>
   argv.includes(INTERNAL_SELF_UPDATE_WORKER_FLAG);
 
+export const isSkillRepinWorkerInvocation = (argv: ReadonlyArray<string>): boolean =>
+  argv.includes(INTERNAL_SKILL_REPIN_WORKER_FLAG);
+
+export const isStageWorkerPayloadAllowed = (
+  payload: StageWorkerPayload,
+  settings: AutoUpdateSettings,
+  install: FirstPartyInstall
+): boolean => {
+  if (!settings.enabled || !semver.valid(payload.version)) return false;
+  if (payload.releaseTag !== `@composio/cli@${payload.version}`) return false;
+  const releaseChannel = releaseChannelForVersion(payload.version);
+  if (payload.channel !== releaseChannel) return false;
+  if (releaseChannel === 'beta' && settings.channel !== 'beta') return false;
+  if (payload.fromVersion !== install.currentVersion) return false;
+  return semver.gt(payload.version, install.currentVersion);
+};
+
 /** Detached-worker entry point. Re-validates every guard rather than trusting the spawn-time payload. */
 export const runSelfUpdateWorkerFromArgv = (
   argv: ReadonlyArray<string>
@@ -548,61 +596,60 @@ export const runSelfUpdateWorkerFromArgv = (
     const encodedPayload = argv[flagIndex + 1];
     if (!encodedPayload) return;
 
-    const payloadJson = yield* Encoding.decodeBase64UrlString(encodedPayload);
-    const payload = yield* Schema.decode(StageWorkerPayloadJson)(payloadJson);
-
-    const settings = yield* resolveAutoUpdateSettings;
-    if (!settings.enabled) return;
-
-    const install = yield* resolveFirstPartyInstall();
-    if (Option.isNone(install)) return;
-    if (
-      !semver.valid(payload.version) ||
-      !semver.gt(payload.version, install.value.currentVersion)
-    ) {
-      return;
-    }
-
     const stagingRootDir = yield* resolveStagingRootDir;
-    yield* refreshStageAttempt(stagingRootDir, payload.version);
+    yield* Effect.gen(function* () {
+      const payloadJson = yield* Encoding.decodeBase64UrlString(encodedPayload);
+      const payload = yield* Schema.decode(StageWorkerPayloadJson)(payloadJson);
 
-    const ctx: UpgradeBinaryContext = {
-      httpClient: yield* HttpClient.HttpClient,
-      fs: yield* FileSystem.FileSystem,
-      path: yield* Path.Path,
-      githubConfig: yield* Effect.orDie(Config.all(GITHUB_CONFIG)),
-    };
+      const settings = yield* resolveAutoUpdateSettings;
+      const install = yield* resolveFirstPartyInstall();
+      if (
+        Option.isNone(install) ||
+        !isStageWorkerPayloadAllowed(payload, settings, install.value)
+      ) {
+        return;
+      }
 
-    yield* stageRelease(ctx, stagingRootDir, payload).pipe(
-      Effect.tap(() =>
-        writeStageAttempt(stagingRootDir, payload.version, 0).pipe(
-          Effect.andThen(
-            trackCliEventEffect(
-              getAutoUpdateStagedEvent({
-                fromVersion: install.value.currentVersion,
-                toVersion: payload.version,
-                channel: payload.channel,
-              })
+      yield* refreshStageAttempt(stagingRootDir, payload.version);
+
+      const ctx: UpgradeBinaryContext = {
+        httpClient: yield* HttpClient.HttpClient,
+        fs: yield* FileSystem.FileSystem,
+        path: yield* Path.Path,
+        githubConfig: yield* Effect.orDie(Config.all(GITHUB_CONFIG)),
+      };
+
+      yield* stageRelease(ctx, stagingRootDir, payload).pipe(
+        Effect.tap(() =>
+          writeStageAttempt(stagingRootDir, payload.version, 0).pipe(
+            Effect.andThen(
+              trackCliEventEffect(
+                getAutoUpdateStagedEvent({
+                  fromVersion: install.value.currentVersion,
+                  toVersion: payload.version,
+                  channel: payload.channel,
+                })
+              )
+            )
+          )
+        ),
+        Effect.tapErrorCause(cause =>
+          recordStageFailure(stagingRootDir, payload.version).pipe(
+            Effect.andThen(
+              trackCliEventEffect(
+                getAutoUpdateFailedEvent({
+                  fromVersion: install.value.currentVersion,
+                  toVersion: payload.version,
+                  channel: payload.channel,
+                  phase: 'stage',
+                  error: Cause.squash(cause),
+                })
+              )
             )
           )
         )
-      ),
-      Effect.tapErrorCause(cause =>
-        recordStageFailure(stagingRootDir, payload.version).pipe(
-          Effect.andThen(
-            trackCliEventEffect(
-              getAutoUpdateFailedEvent({
-                fromVersion: install.value.currentVersion,
-                toVersion: payload.version,
-                channel: payload.channel,
-                phase: 'stage',
-                error: Cause.squash(cause),
-              })
-            )
-          )
-        )
-      )
-    );
+      );
+    });
   }).pipe(
     Effect.withConfigProvider(extendConfigProvider(BaseConfigProviderLive)),
     Effect.catchAllCause(() => Effect.void)
@@ -633,6 +680,8 @@ export const readValidStagedUpdate = (options: {
       semver.valid(staged.version) !== null &&
       semver.valid(currentVersion) !== null &&
       semver.gt(staged.version, currentVersion) &&
+      staged.releaseTag === `@composio/cli@${staged.version}` &&
+      staged.channel === releaseChannelForVersion(staged.version) &&
       (staged.channel !== 'beta' || channel === 'beta') &&
       (yield* fileExists(binaryPath));
 
@@ -659,12 +708,12 @@ export const applyStagedUpdateCore = (options: {
     targetPath: string,
     releaseTag: string
   ) => Effect.Effect<void, unknown, never>;
-  readonly repinSkill: (releaseTag: string) => Effect.Effect<void, never, never>;
+  readonly scheduleSkillRepin: (releaseTag: string) => Effect.Effect<void, never, never>;
   readonly track: (event: TrackEvent) => Effect.Effect<void, never, never>;
 }): Effect.Effect<void, never, FileSystem.FileSystem | Path.Path> =>
   Effect.gen(function* () {
     const fs = yield* FileSystem.FileSystem;
-    const { stagingRootDir, install, channel, markerFilePath, replace, repinSkill, track } =
+    const { stagingRootDir, install, channel, markerFilePath, replace, scheduleSkillRepin, track } =
       options;
 
     const staged = yield* readValidStagedUpdate({
@@ -703,7 +752,7 @@ export const applyStagedUpdateCore = (options: {
         onSuccess: () =>
           writeAppliedMarker.pipe(
             Effect.andThen(track(getAutoUpdateAppliedEvent(eventParams))),
-            Effect.andThen(repinSkill(manifest.releaseTag))
+            Effect.andThen(scheduleSkillRepin(manifest.releaseTag))
           ),
         onFailure: cause =>
           track(
@@ -772,13 +821,6 @@ const SelfUpdateLayers = Layer.mergeAll(
   TerminalUILive
 );
 
-export const isAutoUpdateEnabledAtStartup: Effect.Effect<boolean> = resolveAutoUpdateSettings.pipe(
-  Effect.map(settings => settings.enabled),
-  Effect.withConfigProvider(extendConfigProvider(BaseConfigProviderLive)),
-  Effect.provide(SelfUpdateLayers),
-  Effect.orElseSucceed(() => false)
-);
-
 export const shouldShowUpdateNoticeAtStartup: Effect.Effect<boolean> = Effect.gen(function* () {
   const settings = yield* resolveAutoUpdateSettings;
   const install = yield* resolveFirstPartyInstall();
@@ -808,7 +850,38 @@ const repinInstalledSkill = (releaseTag: string) =>
     yield* installSkill({ releaseTag, silent: true });
   }).pipe(Effect.catchAllCause(() => Effect.void));
 
-export const applyStagedUpdateAtStartup: Effect.Effect<void> = Effect.gen(function* () {
+const scheduleInstalledSkillRepin = (releaseTag: string) =>
+  Effect.gen(function* () {
+    const payload = yield* Schema.encode(SkillRepinWorkerPayloadJson)({ releaseTag });
+    const { command, args } = yield* getWorkerSpawnArgs(
+      INTERNAL_SKILL_REPIN_WORKER_FLAG,
+      Encoding.encodeBase64Url(payload)
+    );
+    yield* spawnDetached(command, args);
+  }).pipe(Effect.catchAllCause(() => Effect.void));
+
+export const runSkillRepinWorkerFromArgv = (
+  argv: ReadonlyArray<string>
+): Effect.Effect<
+  void,
+  never,
+  FileSystem.FileSystem | Path.Path | NodeOs | HttpClient.HttpClient | TerminalUI
+> =>
+  Effect.gen(function* () {
+    const flagIndex = argv.indexOf(INTERNAL_SKILL_REPIN_WORKER_FLAG);
+    const encodedPayload = argv[flagIndex + 1];
+    if (!encodedPayload) return;
+    const payloadJson = yield* Encoding.decodeBase64UrlString(encodedPayload);
+    const payload = yield* Schema.decode(SkillRepinWorkerPayloadJson)(payloadJson);
+    const install = yield* resolveFirstPartyInstall();
+    if (Option.isNone(install) || install.value.releaseTag !== payload.releaseTag) return;
+    yield* repinInstalledSkill(payload.releaseTag);
+  }).pipe(
+    Effect.withConfigProvider(extendConfigProvider(BaseConfigProviderLive)),
+    Effect.catchAllCause(() => Effect.void)
+  );
+
+export const applyStagedUpdateAfterCommand: Effect.Effect<void> = Effect.gen(function* () {
   const settings = yield* resolveAutoUpdateSettings;
   if (!settings.enabled) return;
 
@@ -832,11 +905,8 @@ export const applyStagedUpdateAtStartup: Effect.Effect<void> = Effect.gen(functi
     markerFilePath: yield* resolveAppliedMarkerPath,
     replace: (sourceBinaryPath, targetPath, releaseTag) =>
       replaceBinary(ctx, sourceBinaryPath, targetPath, { releaseTag }),
-    repinSkill: releaseTag =>
-      repinInstalledSkill(releaseTag).pipe(
-        Effect.withConfigProvider(extendConfigProvider(BaseConfigProviderLive)),
-        Effect.provide(SelfUpdateLayers)
-      ),
+    scheduleSkillRepin: releaseTag =>
+      scheduleInstalledSkillRepin(releaseTag).pipe(Effect.provide(SelfUpdateLayers)),
     track: event => trackCliEventEffect(event).pipe(Effect.provide(SelfUpdateLayers)),
   });
 }).pipe(

@@ -13,7 +13,7 @@ import {
 } from 'effect';
 import * as constants from 'src/constants';
 import { getInstalledCliVersion } from 'src/effects/version';
-import { spawnDetached } from 'src/services/detached-process';
+import { getWorkerSpawnArgs, spawnDetached } from 'src/services/detached-process';
 import { djb2Hash } from 'src/utils/djb2';
 import { NodeOs } from 'src/services/node-os';
 import { TerminalUI } from 'src/services/terminal-ui';
@@ -268,28 +268,6 @@ const getAnalyticsEndpoint = Effect.map(readApiBaseUrl, baseUrl =>
 const getCliCodactFailuresEndpoint = Effect.map(readApiBaseUrl, baseUrl =>
   baseUrl ? `${baseUrl}${CLI_CODACT_FAILURES_PATH}` : null
 );
-
-export const getWorkerSpawnArgs = (workerFlag: string, encodedPayload: string) =>
-  Effect.gen(function* () {
-    const fs = yield* FileSystem.FileSystem;
-    const maybeScriptPath = process.argv[1];
-    const scriptPathExists =
-      typeof maybeScriptPath === 'string' && maybeScriptPath.length > 0
-        ? yield* fs.exists(maybeScriptPath).pipe(Effect.catchAll(() => Effect.succeed(false)))
-        : false;
-    const scriptPathLooksReal =
-      scriptPathExists && /\.(?:[cm]?[jt]s|mjs|mts|cts)$/u.test(maybeScriptPath ?? '');
-
-    return scriptPathLooksReal
-      ? {
-          command: process.execPath,
-          args: [maybeScriptPath as string, workerFlag, encodedPayload],
-        }
-      : {
-          command: process.execPath,
-          args: [workerFlag, encodedPayload],
-        };
-  });
 
 // Effect's Command processes are scoped and die with their scope; telemetry
 // workers intentionally outlive the CLI process, so they go through the
