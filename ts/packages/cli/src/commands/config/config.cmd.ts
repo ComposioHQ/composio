@@ -1,7 +1,8 @@
 import { Command } from '@effect/cli';
+import { configAutoUpdateCmd } from './config.auto-update.cmd';
 import { configExperimentalCmd } from './config.experimental.cmd';
 
 export const configCmd = Command.make('config').pipe(
   Command.withDescription('View and manage CLI configuration.'),
-  Command.withSubcommands([configExperimentalCmd])
+  Command.withSubcommands([configAutoUpdateCmd, configExperimentalCmd])
 );

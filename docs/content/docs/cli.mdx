@@ -29,6 +29,23 @@ composio --version
 composio upgrade
 ```
 
+### Auto-update
+
+Auto-update is on by default. The CLI checks for new releases in the background, downloads and checksum-verifies the next stable version, and applies it at the start of a later invocation.
+
+```bash
+# Persistent opt-out
+composio config auto-update off
+
+# Environment kill-switch
+export COMPOSIO_NO_AUTOUPDATE=1
+
+# Follow beta prereleases
+composio config auto-update --channel beta
+```
+
+With auto-update off, update manually with `composio upgrade`.
+
 ## Knowledge work in Claude Code
 
 This is the recommended way to use Composio from inside Claude Code. The CLI executes tools, connects accounts, scripts workflows, calls authenticated APIs, and inspects trigger events, all without you wiring up a custom integration first.

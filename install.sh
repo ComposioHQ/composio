@@ -426,6 +426,9 @@ if [[ $install_agent = true ]]; then
 fi
 
 echo
+info "Auto-update is on by default: the CLI silently keeps itself up to date. Disable with \`composio config auto-update off\` or COMPOSIO_NO_AUTOUPDATE=1."
+
+echo
 # No PATH claim here: whichever branch ran above already reported what it did to
 # which file, and whether a reload is needed. Restating it unconditionally would
 # promise a configured PATH even on the branches that only printed manual

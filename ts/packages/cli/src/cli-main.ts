@@ -30,6 +30,12 @@ import { ProjectContext } from 'src/services/project-context';
 import { ProjectEnvironmentDetector } from 'src/services/project-environment-detector';
 import { CommandRunner } from 'src/services/command-runner';
 import { StdinLive } from 'src/services/stdin';
+import {
+  applyStagedUpdateAtStartup,
+  isAutoUpdateEnabledAtStartup,
+  shouldShowUpdateNoticeAtStartup,
+  showAutoUpdateAppliedNoticeAtStartup,
+} from 'src/services/self-update';
 import { showUpdateNotice } from 'src/services/update-check';
 import {
   createCliCommandTelemetryContext,
@@ -173,7 +179,17 @@ const runWithTelemetry = Effect.gen(function* () {
   );
 });
 
-showUpdateNotice.pipe(
+const startupUpdatePhase = Effect.gen(function* () {
+  yield* showAutoUpdateAppliedNoticeAtStartup;
+  if (yield* isAutoUpdateEnabledAtStartup) {
+    yield* applyStagedUpdateAtStartup;
+  }
+  if (yield* shouldShowUpdateNoticeAtStartup) {
+    yield* showUpdateNotice;
+  }
+}).pipe(Effect.ignore);
+
+startupUpdatePhase.pipe(
   Effect.andThen(runWithTelemetry),
   Effect.catchIf(ValidationError.isValidationError, error => {
     return Effect.gen(function* () {

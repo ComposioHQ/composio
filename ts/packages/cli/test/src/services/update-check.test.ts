@@ -9,6 +9,7 @@ import { getTerminalCapabilities, type TerminalUI } from 'src/services/terminal-
 import {
   createUpdateChecker,
   parseLatestVersionFromReleases,
+  parseLatestVersionsFromReleases,
   type UpdateCheckConfig,
   type UpdateCheckState,
 } from 'src/services/update-check';
@@ -159,6 +160,66 @@ describe('parseLatestVersionFromReleases', () => {
       { tag_name: '@composio/cli@0.7.0', assets: [{ name: binaryAssetName }] },
     ];
     expect(parseLatestVersionFromReleases(releases, binaryAssetName)).toBe('0.7.0');
+  });
+});
+
+// ── parseLatestVersionsFromReleases (pure) ──────────────────────────────
+
+describe('parseLatestVersionsFromReleases', () => {
+  const binaryAssetName = 'composio-darwin-aarch64.zip';
+
+  it('extracts the highest stable and highest beta independently', () => {
+    const releases = makeReleasesPayload(['0.2.0', '0.3.0-beta.1', '0.2.1', '0.3.0-beta.4']);
+    expect(parseLatestVersionsFromReleases(releases, binaryAssetName)).toEqual({
+      stable: '0.2.1',
+      beta: '0.3.0-beta.4',
+    });
+  });
+
+  it('requires the prerelease flag and tag suffix to agree', () => {
+    const releases = [
+      {
+        tag_name: '@composio/cli@0.9.9',
+        prerelease: true,
+        draft: false,
+        assets: [{ name: binaryAssetName }],
+      },
+      {
+        tag_name: '@composio/cli@0.9.8-beta.1',
+        prerelease: false,
+        draft: false,
+        assets: [{ name: binaryAssetName }],
+      },
+      ...makeReleasesPayload(['0.2.0']),
+    ];
+    expect(parseLatestVersionsFromReleases(releases, binaryAssetName)).toEqual({
+      stable: '0.2.0',
+      beta: undefined,
+    });
+  });
+
+  it('excludes draft betas and betas without the platform binary', () => {
+    const releases = [
+      {
+        tag_name: '@composio/cli@0.4.0-beta.1',
+        prerelease: true,
+        draft: true,
+        assets: [{ name: binaryAssetName }],
+      },
+      ...makeReleasesPayload(['0.3.0-beta.9'], 'composio-linux-x64.zip'),
+      ...makeReleasesPayload(['0.2.0-beta.3']),
+    ];
+    expect(parseLatestVersionsFromReleases(releases, binaryAssetName)).toEqual({
+      stable: undefined,
+      beta: '0.2.0-beta.3',
+    });
+  });
+
+  it('returns no versions when the binary asset name is unknown', () => {
+    expect(parseLatestVersionsFromReleases(makeReleasesPayload(['0.2.1']), undefined)).toEqual({
+      stable: undefined,
+      beta: undefined,
+    });
   });
 });
 
@@ -477,6 +538,47 @@ describe('checkForUpdate', () => {
       expect(existsSync(config.stateFile)).toBe(true);
       const state: UpdateCheckState = JSON.parse(readFileSync(config.stateFile, 'utf-8'));
       expect(state.latestVersion).toBe('0.4.0');
+    }).pipe(Effect.provide(PlatformLayers))
+  );
+
+  it.effect('records the latest beta alongside the stable version', () =>
+    Effect.gen(function* () {
+      const config = makeConfig({
+        fetchFn: vi.fn().mockResolvedValue({
+          ok: true,
+          json: () => Promise.resolve(makeReleasesPayload(['0.3.0', '0.4.0-beta.2'])),
+        }) as unknown as typeof fetch,
+      });
+      const { checkForUpdate } = createUpdateChecker(config);
+
+      yield* checkForUpdate;
+
+      const state: UpdateCheckState = JSON.parse(readFileSync(config.stateFile, 'utf-8'));
+      expect(state.latestVersion).toBe('0.3.0');
+      expect(state.latestBeta).toBe('0.4.0-beta.2');
+    }).pipe(Effect.provide(PlatformLayers))
+  );
+
+  it.effect('preserves the previous latestBeta when a refresh finds no betas', () =>
+    Effect.gen(function* () {
+      const config = makeConfig({
+        fetchFn: vi.fn().mockResolvedValue({
+          ok: true,
+          json: () => Promise.resolve(makeReleasesPayload(['0.3.0'])),
+        }) as unknown as typeof fetch,
+      });
+      writeState(config, {
+        lastChecked: staleLastChecked,
+        latestVersion: '0.2.5',
+        latestBeta: '0.3.0-beta.7',
+      });
+      const { checkForUpdate } = createUpdateChecker(config);
+
+      yield* checkForUpdate;
+
+      const state: UpdateCheckState = JSON.parse(readFileSync(config.stateFile, 'utf-8'));
+      expect(state.latestVersion).toBe('0.3.0');
+      expect(state.latestBeta).toBe('0.3.0-beta.7');
     }).pipe(Effect.provide(PlatformLayers))
   );
 

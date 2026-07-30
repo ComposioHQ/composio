@@ -6,6 +6,7 @@ import { bold, cyanBright, dim } from 'src/ui/colors';
 import { APP_VERSION, GITHUB_REPO } from '../constants';
 import { NodeOs } from './node-os';
 import { resolveInstalledCliVersion } from './run-companion-modules';
+import { maybeStageUpdateInBackground } from './self-update';
 import { TerminalUI } from './terminal-ui';
 
 /**
@@ -28,9 +29,12 @@ const CHECK_INTERVAL_MS = 24 * 60 * 60 * 1000; // 24 hours
 /** Matches `@composio/cli@<semver>` — excludes prereleases. */
 const CLI_RELEASE_TAG_RE = /^@composio\/cli@(\d+\.\d+\.\d+)$/;
 
+const CLI_BETA_RELEASE_TAG_RE = /^@composio\/cli@(\d+\.\d+\.\d+-[0-9A-Za-z.-]+)$/;
+
 export interface UpdateCheckState {
   lastChecked: string; // ISO-8601
   latestVersion: string; // e.g. "0.3.0"
+  latestBeta?: string; // e.g. "0.3.1-beta.4"
 }
 
 /** Machine-readable update status for `composio version --check`. */
@@ -51,6 +55,7 @@ const UpdateCheckStateSchema = Schema.parseJson(
   Schema.Struct({
     lastChecked: Schema.String,
     latestVersion: Schema.String,
+    latestBeta: Schema.optional(Schema.String),
   })
 );
 
@@ -117,20 +122,26 @@ const defaultConfig = (stateFile: string) =>
 
 // ── Pure helpers ────────────────────────────────────────────────────────
 
-/** Extract the highest stable semver from GitHub releases that include the required binary. */
-export function parseLatestVersionFromReleases(
+export interface LatestReleaseVersions {
+  stable: string | undefined;
+  beta: string | undefined;
+}
+
+/** A release counts only when its prerelease flag and tag suffix agree. */
+export function parseLatestVersionsFromReleases(
   releases: unknown,
   binaryAssetName: string | undefined
-): string | undefined {
-  if (!binaryAssetName || !Array.isArray(releases)) return undefined;
+): LatestReleaseVersions {
+  if (!binaryAssetName || !Array.isArray(releases)) return { stable: undefined, beta: undefined };
 
-  let latest: string | undefined;
+  let stable: string | undefined;
+  let beta: string | undefined;
   for (const release of releases) {
     if (!Predicate.isRecord(release)) continue;
 
     const candidate = release;
     if (typeof candidate.tag_name !== 'string') continue;
-    if (candidate.prerelease === true || candidate.draft === true) continue;
+    if (candidate.draft === true) continue;
     if (!Array.isArray(candidate.assets)) continue;
 
     const hasRequiredBinary = candidate.assets.some(
@@ -138,16 +149,34 @@ export function parseLatestVersionFromReleases(
     );
     if (!hasRequiredBinary) continue;
 
+    if (candidate.prerelease === true) {
+      const match = CLI_BETA_RELEASE_TAG_RE.exec(candidate.tag_name);
+      if (!match) continue;
+      const version = match[1];
+      if (!beta || semver.gt(version, beta)) {
+        beta = version;
+      }
+      continue;
+    }
+
     const match = CLI_RELEASE_TAG_RE.exec(candidate.tag_name);
     if (!match) continue;
 
     const version = match[1];
-    if (!latest || semver.gt(version, latest)) {
-      latest = version;
+    if (!stable || semver.gt(version, stable)) {
+      stable = version;
     }
   }
 
-  return latest;
+  return { stable, beta };
+}
+
+/** Extract the highest stable semver from GitHub releases that include the required binary. */
+export function parseLatestVersionFromReleases(
+  releases: unknown,
+  binaryAssetName: string | undefined
+): string | undefined {
+  return parseLatestVersionsFromReleases(releases, binaryAssetName).stable;
 }
 
 // ── Factory ─────────────────────────────────────────────────────────────
@@ -234,6 +263,9 @@ export function createUpdateChecker(config: UpdateCheckConfig) {
     const previousLatestVersion = Option.getOrUndefined(
       Option.map(cachedState, state => state.latestVersion)
     );
+    const previousLatestBeta = Option.getOrUndefined(
+      Option.flatMapNullable(cachedState, state => state.latestBeta)
+    );
 
     const headers: Record<string, string> = {
       Accept: 'application/vnd.github.v3+json',
@@ -249,7 +281,7 @@ export function createUpdateChecker(config: UpdateCheckConfig) {
         .makeDirectory(path.dirname(file), { recursive: true })
         .pipe(Effect.andThen(fs.writeFileString(file, JSON.stringify(value, null, 2))));
 
-    const fetchLatestVersion = Effect.gen(function* () {
+    const fetchLatestVersions = Effect.gen(function* () {
       const response = yield* Effect.tryPromise(() =>
         config.fetchFn(config.releasesUrl, { headers, signal: AbortSignal.timeout(10_000) })
       );
@@ -257,11 +289,11 @@ export function createUpdateChecker(config: UpdateCheckConfig) {
         return yield* new UpdateCheckHttpError({ status: response.status });
       }
       const releases: unknown = yield* Effect.tryPromise(() => response.json());
-      return parseLatestVersionFromReleases(releases, config.binaryAssetName);
+      return parseLatestVersionsFromReleases(releases, config.binaryAssetName);
     });
 
-    const latestVersion = yield* Effect.option(fetchLatestVersion);
-    if (Option.isNone(latestVersion)) {
+    const latestVersions = yield* Effect.option(fetchLatestVersions);
+    if (Option.isNone(latestVersions)) {
       yield* Effect.ignore(
         writeJsonFile(attemptFile, {
           lastAttempted: checkStartedAt.toISOString(),
@@ -270,9 +302,11 @@ export function createUpdateChecker(config: UpdateCheckConfig) {
       return { state: cachedState, refreshFailed: true } as const;
     }
 
+    const latestBeta = latestVersions.value.beta ?? previousLatestBeta;
     const state: UpdateCheckState = {
       lastChecked: new Date().toISOString(),
-      latestVersion: latestVersion.value ?? previousLatestVersion ?? config.currentVersion,
+      latestVersion: latestVersions.value.stable ?? previousLatestVersion ?? config.currentVersion,
+      ...(latestBeta ? { latestBeta } : {}),
     };
     yield* writeJsonFile(config.stateFile, state).pipe(
       Effect.andThen(fs.remove(attemptFile, { force: true })),
@@ -348,7 +382,8 @@ export function checkForUpdateInBackground(): void {
     Effect.gen(function* () {
       const stateFile = yield* defaultStateFile;
       const config = yield* defaultConfig(stateFile);
-      yield* createUpdateChecker(config).checkForUpdate;
+      const { state } = yield* createUpdateChecker(config).checkForUpdate;
+      yield* maybeStageUpdateInBackground(state);
     }).pipe(Effect.provide(DefaultConfigLayers))
   );
 }

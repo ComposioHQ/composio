@@ -31,6 +31,23 @@ export type ExperimentalSubagentTarget = Schema.Schema.Type<typeof ExperimentalS
 export const SecurityBackend = Schema.Literal('auto', 'json', 'keychain-subprocess', 'keychain');
 export type SecurityBackend = Schema.Schema.Type<typeof SecurityBackend>;
 
+/**
+ * `beta` also stages prereleases — the stable-only update notice never fires
+ * for beta installs, so this channel is their only freshness path.
+ */
+export const AutoUpdateChannel = Schema.Literal('stable', 'beta');
+export type AutoUpdateChannel = Schema.Schema.Type<typeof AutoUpdateChannel>;
+
+export const AutoUpdateConfig = Schema.Struct({
+  enabled: Schema.optionalWith(Schema.Boolean, {
+    default: () => true,
+  }),
+  channel: Schema.optionalWith(AutoUpdateChannel, {
+    default: (): AutoUpdateChannel => 'stable',
+  }),
+});
+export type AutoUpdateConfig = Schema.Schema.Type<typeof AutoUpdateConfig>;
+
 export const ExperimentalFeatures = Schema.Record({
   key: Schema.String,
   value: Schema.Boolean,
@@ -78,6 +95,13 @@ export const CliUserConfig = Schema.Struct({
   security: Schema.optionalWith(SecurityBackend, {
     default: (): SecurityBackend => 'auto',
   }),
+  autoUpdate: Schema.optionalWith(AutoUpdateConfig, {
+    default: () =>
+      AutoUpdateConfig.make({
+        enabled: true,
+        channel: 'stable',
+      }),
+  }).pipe(Schema.fromKey('auto_update')),
 }).annotations({
   identifier: 'CliUserConfig',
   description: 'Named user configuration storage for the Composio CLI',

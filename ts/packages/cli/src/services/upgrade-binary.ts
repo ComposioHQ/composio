@@ -23,6 +23,12 @@ export class UpgradeBinaryError extends Data.TaggedError('services/UpgradeBinary
   readonly message?: string;
 }> {}
 
+class DirectoryRollbackError extends Data.TaggedError('services/DirectoryRollbackError')<{
+  readonly backupDir: string;
+  readonly rollbackCause: unknown;
+  readonly swapCause: unknown;
+}> {}
+
 /**
  * CLI binary name constant
  */
@@ -39,7 +45,7 @@ const GITHUB_CONFIG_ALL = Config.all(GITHUB_CONFIG);
 
 // Dependencies resolved once at service construction time and threaded
 // through the module-level helpers below.
-interface UpgradeBinaryContext {
+export interface UpgradeBinaryContext {
   readonly httpClient: HttpClient.HttpClient;
   readonly fs: FileSystem.FileSystem;
   readonly path: Path.Path;
@@ -191,7 +197,7 @@ const isUpdateAvailable = (
 /**
  * Download binary for current platform
  */
-const downloadBinary = (
+export const downloadBinary = (
   { httpClient }: UpgradeBinaryContext,
   release: GitHubRelease,
   platformArch: PlatformArch
@@ -256,7 +262,7 @@ const downloadBinary = (
  * Fetch checksums.txt from a release, if available.
  * Returns the parsed map of filename -> expected SHA-256 hash, or None if not found.
  */
-const fetchChecksums = (
+export const fetchChecksums = (
   { httpClient }: UpgradeBinaryContext,
   release: GitHubRelease
 ): Effect.Effect<Option.Option<Map<string, string>>, never, never> =>
@@ -287,7 +293,7 @@ const fetchChecksums = (
 /**
  * Verify SHA-256 checksum of downloaded data against expected hash.
  */
-const verifyChecksum = (
+export const verifyChecksum = (
   data: Uint8Array,
   expectedHash: string,
   fileName: string
@@ -316,7 +322,7 @@ const verifyChecksum = (
 /**
  * Extract binary from zip archive using FileSystem
  */
-const extractBinary = (
+export const extractBinary = (
   { fs, path }: UpgradeBinaryContext,
   { name, data }: { name: string; data: Uint8Array },
   tempDir: string
@@ -394,7 +400,7 @@ const extractBinary = (
 /**
  * Get current executable path
  */
-const getCurrentExecutablePath = Effect.fn(function* () {
+export const getCurrentExecutablePath = Effect.fn(function* () {
   // E.g., ~/.composio/composio
   const currentPath = process.execPath;
 
@@ -413,10 +419,111 @@ const getCurrentExecutablePath = Effect.fn(function* () {
   return currentPath;
 });
 
+const tempSiblingPath = (path: Path.Path, targetPath: string) =>
+  path.join(
+    path.dirname(targetPath),
+    `.${path.basename(targetPath)}.tmp-${Math.random().toString(36).slice(2)}`
+  );
+
+const syncFile = (fs: FileSystem.FileSystem, filePath: string) =>
+  Effect.scoped(Effect.flatMap(fs.open(filePath, { flag: 'r+' }), file => file.sync));
+
 /**
- * Replace current executable binary with the new target one.
+ * The temp copy lands in the target's own directory so the final rename stays
+ * on one filesystem (atomic): the destination is either fully old or fully new.
  */
-const replaceBinary = (
+const atomicReplaceFile = (
+  ctx: UpgradeBinaryContext,
+  sourcePath: string,
+  targetPath: string,
+  errorMessage: string,
+  options: {
+    readonly executable?: boolean;
+  } = {}
+): Effect.Effect<void, UpgradeBinaryError> =>
+  Effect.gen(function* () {
+    const { fs, path } = ctx;
+    const stagedPath = tempSiblingPath(path, targetPath);
+    yield* Effect.gen(function* () {
+      yield* fs.copyFile(sourcePath, stagedPath);
+      if (options.executable) {
+        yield* fs.chmod(stagedPath, 0o755);
+      }
+      const sourceInfo = yield* fs.stat(sourcePath);
+      const stagedInfo = yield* fs.stat(stagedPath);
+      if (sourceInfo.size !== stagedInfo.size) {
+        return yield* Effect.fail(
+          new UpgradeBinaryError({
+            cause: `Size mismatch after copy: expected ${sourceInfo.size}, got ${stagedInfo.size}`,
+            message: errorMessage,
+          })
+        );
+      }
+      yield* syncFile(fs, stagedPath);
+      yield* fs.rename(stagedPath, targetPath);
+    }).pipe(
+      Effect.mapError(cause => {
+        if (cause instanceof UpgradeBinaryError) {
+          return cause;
+        }
+        return new UpgradeBinaryError({ cause, message: errorMessage });
+      }),
+      Effect.onError(() => fs.remove(stagedPath, { force: true }).pipe(Effect.ignore))
+    );
+  });
+
+/** Replace a directory through a sibling backup so a failed swap can restore the installed tree. */
+export const atomicReplaceDirectory = (
+  ctx: UpgradeBinaryContext,
+  sourceDir: string,
+  targetDir: string,
+  errorMessage: string
+): Effect.Effect<void, UpgradeBinaryError> =>
+  Effect.gen(function* () {
+    const { fs, path } = ctx;
+    const stagedDir = tempSiblingPath(path, targetDir);
+    const backupDir = tempSiblingPath(path, targetDir);
+    yield* Effect.gen(function* () {
+      yield* fs.copy(sourceDir, stagedDir);
+      const targetExists = yield* fs.exists(targetDir);
+      if (targetExists) {
+        yield* fs.rename(targetDir, backupDir);
+      }
+      yield* fs.rename(stagedDir, targetDir).pipe(
+        Effect.catchAll(swapCause => {
+          if (!targetExists) {
+            return Effect.fail(swapCause);
+          }
+          return fs.rename(backupDir, targetDir).pipe(
+            Effect.matchEffect({
+              onFailure: rollbackCause =>
+                Effect.fail(
+                  new DirectoryRollbackError({
+                    backupDir,
+                    rollbackCause,
+                    swapCause,
+                  })
+                ),
+              onSuccess: () => Effect.fail(swapCause),
+            })
+          );
+        })
+      );
+      yield* fs.remove(backupDir, { recursive: true, force: true });
+    }).pipe(
+      Effect.mapError(cause => new UpgradeBinaryError({ cause, message: errorMessage })),
+      Effect.onError(() =>
+        fs.remove(stagedDir, { recursive: true, force: true }).pipe(Effect.ignore)
+      )
+    );
+  });
+
+/**
+ * Ordered to minimize torn state: companions and local-tool assets first, the
+ * executable next, release-tag.txt last. Rename-over (never in-place
+ * overwrite) also sidesteps macOS's signature-cache kill for signed binaries.
+ */
+export const replaceBinary = (
   ctx: UpgradeBinaryContext,
   sourcePath: string,
   targetPath: string,
@@ -427,20 +534,6 @@ const replaceBinary = (
   Effect.gen(function* () {
     const { fs, path } = ctx;
     yield* Effect.logDebug(`Replacing binary: ${sourcePath} -> ${targetPath}`);
-    yield* fs
-      .copy(sourcePath, targetPath, {
-        // Note: without `overwrite: true`, the copy operation will silently bail out
-        overwrite: true,
-      })
-      .pipe(
-        Effect.mapError(
-          cause =>
-            new UpgradeBinaryError({
-              cause,
-              message: 'Failed to replace binary',
-            })
-        )
-      );
 
     const sourceDirectory = path.dirname(sourcePath);
     const targetDirectory = path.dirname(targetPath);
@@ -462,7 +555,9 @@ const replaceBinary = (
           })
         );
       }
+    }
 
+    for (const relativePath of companionRelativePaths) {
       const targetCompanion = path.join(targetDirectory, relativePath);
       yield* fs.makeDirectory(path.dirname(targetCompanion), { recursive: true }).pipe(
         Effect.mapError(
@@ -474,19 +569,12 @@ const replaceBinary = (
         )
       );
 
-      yield* fs
-        .copy(sourceCompanion, targetCompanion, {
-          overwrite: true,
-        })
-        .pipe(
-          Effect.mapError(
-            cause =>
-              new UpgradeBinaryError({
-                cause,
-                message: `Failed to replace companion module: ${relativePath}`,
-              })
-          )
-        );
+      yield* atomicReplaceFile(
+        ctx,
+        path.join(sourceDirectory, relativePath),
+        targetCompanion,
+        `Failed to replace companion module: ${relativePath}`
+      );
     }
 
     const localToolsAssetSource = path.join(sourceDirectory, LOCAL_TOOLS_BINARY_ASSET_DIRNAME);
@@ -494,20 +582,17 @@ const replaceBinary = (
       .exists(localToolsAssetSource)
       .pipe(Effect.catchAll(() => Effect.succeed(false)));
     if (localToolsAssetExists) {
-      const localToolsAssetTarget = path.join(targetDirectory, LOCAL_TOOLS_BINARY_ASSET_DIRNAME);
-      // Replace the whole asset directory: drop the previous tree, then copy
-      // the new one (fs.copy is recursive for directories).
-      yield* fs.remove(localToolsAssetTarget, { recursive: true, force: true }).pipe(
-        Effect.andThen(fs.copy(localToolsAssetSource, localToolsAssetTarget, { overwrite: true })),
-        Effect.mapError(
-          error =>
-            new UpgradeBinaryError({
-              cause: error,
-              message: 'Failed to replace local-tool binary assets',
-            })
-        )
+      yield* atomicReplaceDirectory(
+        ctx,
+        localToolsAssetSource,
+        path.join(targetDirectory, LOCAL_TOOLS_BINARY_ASSET_DIRNAME),
+        'Failed to replace local-tool binary assets'
       );
     }
+
+    yield* atomicReplaceFile(ctx, sourcePath, targetPath, 'Failed to replace binary', {
+      executable: true,
+    });
 
     const releaseTag = options.releaseTag;
     if (releaseTag) {

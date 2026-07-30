@@ -30,6 +30,8 @@ export type CliUserConfigResolved = {
    * with every prior CLI release).
    */
   readonly security: 'auto' | 'json' | 'keychain-subprocess' | 'keychain';
+  readonly autoUpdateEnabled: boolean;
+  readonly autoUpdateChannel: CliReleaseChannel;
 };
 
 const detectReleaseChannel = (version: string): CliReleaseChannel =>
@@ -44,6 +46,18 @@ const DEFAULT_CLI_USER_CONFIG = CliUserConfig.make({
   artifactDirectory: Option.none(),
   experimentalSubagent: Option.none(),
   security: 'auto',
+  autoUpdate: {
+    enabled: true,
+    channel: 'stable',
+  },
+});
+
+const CORRUPT_CLI_USER_CONFIG = CliUserConfig.make({
+  ...DEFAULT_CLI_USER_CONFIG,
+  autoUpdate: {
+    ...DEFAULT_CLI_USER_CONFIG.autoUpdate,
+    enabled: false,
+  },
 });
 
 const decodeConfigJson = Schema.decodeUnknown(Schema.parseJson(JsonRecordSchema));
@@ -98,6 +112,8 @@ const resolveConfig = (raw: CliUserConfig, channel: CliReleaseChannel): CliUserC
     onSome: value => value.target,
   }),
   security: raw.security,
+  autoUpdateEnabled: raw.autoUpdate.enabled,
+  autoUpdateChannel: raw.autoUpdate.channel,
 });
 
 export const ComposioCliUserConfigLive = Layer.effect(
@@ -160,7 +176,15 @@ export const ComposioCliUserConfigLive = Layer.effect(
     });
 
     if (yield* fs.exists(jsonConfigPath)) {
-      yield* load.pipe(Effect.catchAll(() => persist(DEFAULT_CLI_USER_CONFIG)));
+      yield* load.pipe(
+        Effect.catchAll(() =>
+          Effect.sync(() => {
+            // Preserve the unreadable file for recovery and fail closed for
+            // background binary replacement until the user rewrites config.
+            rawConfig = CORRUPT_CLI_USER_CONFIG;
+          })
+        )
+      );
     } else {
       yield* persist(rawConfig);
     }

@@ -836,6 +836,8 @@ export const TestLayer = (input?: TestLiveInput) =>
             artifactDirectory: Option.getOrUndefined(rawCliUserConfig.artifactDirectory),
             experimentalSubagentTarget: 'auto' as const,
             security: 'auto' as const,
+            autoUpdateEnabled: rawCliUserConfig.autoUpdate.enabled,
+            autoUpdateChannel: rawCliUserConfig.autoUpdate.channel,
           };
         },
         get raw() {

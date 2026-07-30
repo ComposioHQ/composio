@@ -3,6 +3,10 @@ import { Effect, Layer } from 'effect';
 import { FetchHttpClient } from '@effect/platform';
 import { BunFileSystem, BunPath, BunRuntime } from '@effect/platform-bun';
 import { isBackgroundWorkerInvocation, runBackgroundWorkerFromArgv } from 'src/analytics/dispatch';
+import {
+  isSelfUpdateWorkerInvocation,
+  runSelfUpdateWorkerFromArgv,
+} from 'src/services/self-update';
 import { NodeOs } from 'src/services/node-os';
 import { TerminalUILive } from 'src/services/terminal-ui';
 
@@ -24,7 +28,24 @@ const stripTelemetryDebugFlag = (argv: ReadonlyArray<string>): string[] => {
   return normalizedArgv;
 };
 
-if (isBackgroundWorkerInvocation(process.argv)) {
+if (isSelfUpdateWorkerInvocation(process.argv)) {
+  runSelfUpdateWorkerFromArgv(process.argv).pipe(
+    Effect.provide(
+      Layer.mergeAll(
+        BunFileSystem.layer,
+        BunPath.layer,
+        FetchHttpClient.layer,
+        NodeOs.Default,
+        TerminalUILive
+      )
+    ),
+    effect =>
+      BunRuntime.runMain(effect, {
+        disableErrorReporting: true,
+        teardown: (_exit, onExit) => onExit(0),
+      })
+  );
+} else if (isBackgroundWorkerInvocation(process.argv)) {
   runBackgroundWorkerFromArgv(process.argv).pipe(
     Effect.provide(
       Layer.mergeAll(

@@ -39,6 +39,9 @@ export const CLI_ANALYTICS_EVENTS = {
   CLI_PLUGIN_SETUP_SUCCEEDED: 'CLI_PLUGIN_SETUP_SUCCEEDED',
   CLI_PLUGIN_SETUP_FAILED: 'CLI_PLUGIN_SETUP_FAILED',
   CLI_PLUGIN_UNINSTALL_SUCCEEDED: 'CLI_PLUGIN_UNINSTALL_SUCCEEDED',
+  CLI_AUTO_UPDATE_STAGED: 'CLI_AUTO_UPDATE_STAGED',
+  CLI_AUTO_UPDATE_APPLIED: 'CLI_AUTO_UPDATE_APPLIED',
+  CLI_AUTO_UPDATE_FAILED: 'CLI_AUTO_UPDATE_FAILED',
   CLI_TOOL_INVOCATION_VALIDATION_FAILED: 'CLI_TOOL_INVOCATION_VALIDATION_FAILED',
   CLI_TOOL_INVOCATION_TOOL_NOT_FOUND: 'CLI_TOOL_INVOCATION_TOOL_NOT_FOUND',
   CLI_TOOL_INVOCATION_FAILED: 'CLI_TOOL_INVOCATION_FAILED',
@@ -563,6 +566,47 @@ export const getPrimaryLifecycleFailedEvent = (
     },
   };
 };
+
+type AutoUpdateEventParams = {
+  readonly fromVersion: string;
+  readonly toVersion: string;
+  readonly channel: 'stable' | 'beta';
+};
+
+const getAutoUpdateBaseProperties = (params: AutoUpdateEventParams) => ({
+  source: 'cli',
+  invocation_origin: getInvocationOrigin(),
+  cli_version: params.fromVersion,
+  command_path: 'auto-update',
+  from_version: params.fromVersion,
+  to_version: params.toVersion,
+  channel: params.channel,
+});
+
+export const getAutoUpdateStagedEvent = (params: AutoUpdateEventParams): TrackEvent => ({
+  name: CLI_ANALYTICS_EVENTS.CLI_AUTO_UPDATE_STAGED,
+  properties: getAutoUpdateBaseProperties(params),
+});
+
+export const getAutoUpdateAppliedEvent = (params: AutoUpdateEventParams): TrackEvent => ({
+  name: CLI_ANALYTICS_EVENTS.CLI_AUTO_UPDATE_APPLIED,
+  properties: getAutoUpdateBaseProperties(params),
+});
+
+export const getAutoUpdateFailedEvent = (
+  params: AutoUpdateEventParams & {
+    readonly phase: 'stage' | 'apply';
+    readonly error: unknown;
+  }
+): TrackEvent => ({
+  name: CLI_ANALYTICS_EVENTS.CLI_AUTO_UPDATE_FAILED,
+  properties: {
+    ...getAutoUpdateBaseProperties(params),
+    phase: params.phase,
+    error_name: errorNameOf(params.error),
+    error_message: errorMessageOf(params.error),
+  },
+});
 
 export const getPluginLifecycleSucceededEvent = (params: {
   readonly operation: 'setup' | 'uninstall';

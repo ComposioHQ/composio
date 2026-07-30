@@ -12,6 +12,7 @@ import {
   Schema,
 } from 'effect';
 import * as constants from 'src/constants';
+import { getInstalledCliVersion } from 'src/effects/version';
 import { spawnDetached } from 'src/services/detached-process';
 import { djb2Hash } from 'src/utils/djb2';
 import { NodeOs } from 'src/services/node-os';
@@ -233,11 +234,15 @@ export const getCurrentCwdSessionId = (cwd = process.cwd()) =>
     return best?.id;
   }).pipe(Effect.catchAllCause(() => Effect.succeed(undefined)));
 
-const withCliSessionId = (event: NonNullable<TrackEvent>, cliSessionId?: string): TrackEvent => ({
+const withCliSessionId = (
+  event: NonNullable<TrackEvent>,
+  cliVersion: string,
+  cliSessionId?: string
+): TrackEvent => ({
   ...event,
   properties: {
     ...(event.properties ?? {}),
-    cli_version: event.properties?.cli_version ?? constants.APP_VERSION,
+    cli_version: cliVersion,
     ...(cliSessionId ? { cli_session_id: cliSessionId } : {}),
   },
 });
@@ -264,7 +269,7 @@ const getCliCodactFailuresEndpoint = Effect.map(readApiBaseUrl, baseUrl =>
   baseUrl ? `${baseUrl}${CLI_CODACT_FAILURES_PATH}` : null
 );
 
-const getWorkerSpawnArgs = (workerFlag: string, encodedPayload: string) =>
+export const getWorkerSpawnArgs = (workerFlag: string, encodedPayload: string) =>
   Effect.gen(function* () {
     const fs = yield* FileSystem.FileSystem;
     const maybeScriptPath = process.argv[1];
@@ -364,7 +369,8 @@ const getCliInvocationContext = environmentProvider
 export const createCliCodactFailureBody = (
   failure: CliCodactFailure,
   cliSessionId?: string,
-  invocation: CliInvocationContext = {}
+  invocation: CliInvocationContext = {},
+  cliVersion: string = constants.APP_VERSION
 ): CliCodactFailureBody => ({
   failure_type: failure.failureType,
   ...(failure.toolInfo ? { tool_info: failure.toolInfo } : {}),
@@ -372,7 +378,7 @@ export const createCliCodactFailureBody = (
   session: {
     source: 'cli',
     id: cliSessionId,
-    cli_version: constants.APP_VERSION,
+    cli_version: cliVersion,
     invocation_origin: invocation.origin ?? 'cli',
     parent_run_id: invocation.parentRunId,
     ...(failure.session ?? {}),
@@ -406,7 +412,8 @@ const captureToComposioCodactFailures = (failure: CliCodactFailure) =>
     const httpClient = yield* HttpClient.HttpClient;
     const cliSessionId = yield* getCurrentCwdSessionId();
     const invocation = yield* getCliInvocationContext;
-    const body = createCliCodactFailureBody(failure, cliSessionId, invocation);
+    const cliVersion = yield* getInstalledCliVersion;
+    const body = createCliCodactFailureBody(failure, cliSessionId, invocation, cliVersion);
     const request = yield* HttpClientRequest.post(endpoint).pipe(
       HttpClientRequest.setHeader('x-user-api-key', userApiKey),
       HttpClientRequest.bodyJson(body)
@@ -443,7 +450,8 @@ export const trackCliEventEffect = (event: TrackEvent) =>
     }
 
     const cliSessionId = yield* getCurrentCwdSessionId();
-    const enrichedEvent = withCliSessionId(event, cliSessionId);
+    const cliVersion = yield* getInstalledCliVersion;
+    const enrichedEvent = withCliSessionId(event, cliVersion, cliSessionId);
     if (!enrichedEvent) {
       return;
     }
@@ -485,7 +493,10 @@ export const trackCliCodactFailureEffect = (failure: CliCodactFailure) =>
 
     const cliSessionId = yield* getCurrentCwdSessionId();
     const invocation = yield* getCliInvocationContext;
-    const body = yield* encodeJson(createCliCodactFailureBody(failure, cliSessionId, invocation));
+    const cliVersion = yield* getInstalledCliVersion;
+    const body = yield* encodeJson(
+      createCliCodactFailureBody(failure, cliSessionId, invocation, cliVersion)
+    );
     const encodedPayload = Encoding.encodeBase64Url(body);
     const { command, args } = yield* getWorkerSpawnArgs(
       INTERNAL_CODACT_FAILURE_WORKER_FLAG,
