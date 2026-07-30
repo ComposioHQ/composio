@@ -1,15 +1,31 @@
 import { Writable } from 'node:stream';
 import { describe, expect, it, layer } from '@effect/vitest';
-import { beforeEach, vi } from 'vitest';
+import { beforeEach, expectTypeOf, vi } from 'vitest';
 import * as p from '@clack/prompts';
-import { Array as Arr, Data, Effect, Exit, pipe } from 'effect';
+import { Array as Arr, Data, Effect, Exit, Option, pipe } from 'effect';
 import { getTerminalCapabilities, makeTerminalUI, TerminalUI } from 'src/services/terminal-ui';
 import { TestLive, MockConsole } from 'test/__utils__';
 
+/**
+ * Clack's real cancel sentinel is a module-private `Symbol('clack:cancel')`, so a test cannot
+ * produce a value `isCancel` recognizes. The mock teaches `isCancel` about one extra sentinel
+ * instead, leaving its behavior on every other value unchanged.
+ */
+const { CANCEL_SENTINEL } = vi.hoisted(() => ({ CANCEL_SENTINEL: Symbol('test:clack-cancel') }));
+
 vi.mock('@clack/prompts', async importOriginal => {
   const actual = await importOriginal<typeof import('@clack/prompts')>();
-  return { ...actual, confirm: vi.fn(), select: vi.fn() };
+  return {
+    ...actual,
+    confirm: vi.fn(),
+    select: vi.fn(),
+    text: vi.fn(),
+    isCancel: (value: unknown): value is symbol =>
+      value === CANCEL_SENTINEL || actual.isCancel(value),
+  };
 });
+
+const CANCELLED = CANCEL_SENTINEL as unknown as string;
 
 class TestFailure extends Data.TaggedError('test/TestFailure')<{
   readonly message: string;
@@ -395,5 +411,77 @@ describe('TerminalUI', () => {
           expect(lines.filter(l => l === 'fetching')).toHaveLength(0);
         })
     );
+  });
+
+  describe('text — the prompt that cannot default', () => {
+    beforeEach(() => {
+      vi.mocked(p.text).mockReset();
+    });
+
+    it.effect('returns none without touching clack when prompting is unavailable', () =>
+      Effect.gen(function* () {
+        const { ui } = makeStreamedUi({ stdin: false, stdout: true, stderr: true });
+
+        expect(yield* ui.text('Repository owner')).toStrictEqual(Option.none());
+        expect(p.text).not.toHaveBeenCalled();
+      })
+    );
+
+    it.effect('returns none when the prompt is cancelled', () =>
+      Effect.gen(function* () {
+        vi.mocked(p.text).mockResolvedValue(CANCELLED);
+        const { ui } = makeStreamedUi({ stdin: true, stdout: false, stderr: true });
+
+        expect(yield* ui.text('Repository owner')).toStrictEqual(Option.none());
+      })
+    );
+
+    it.effect('treats a whitespace-only answer as no answer', () =>
+      Effect.gen(function* () {
+        vi.mocked(p.text).mockResolvedValue('   ');
+        const { ui } = makeStreamedUi({ stdin: true, stdout: false, stderr: true });
+
+        expect(yield* ui.text('Repository owner')).toStrictEqual(Option.none());
+      })
+    );
+
+    it.effect('trims a real answer', () =>
+      Effect.gen(function* () {
+        vi.mocked(p.text).mockResolvedValue('  composio  ');
+        const { ui } = makeStreamedUi({ stdin: true, stdout: false, stderr: true });
+
+        expect(yield* ui.text('Repository owner')).toStrictEqual(Option.some('composio'));
+      })
+    );
+
+    it.effect('prompts on stderr and never on stdout', () =>
+      Effect.gen(function* () {
+        vi.mocked(p.text).mockResolvedValue('composio');
+        const { ui, stdout, stderr } = makeStreamedUi({
+          stdin: true,
+          stdout: false,
+          stderr: true,
+        });
+
+        yield* ui.text('Repository owner', { placeholder: 'your-github-username' });
+
+        expect(vi.mocked(p.text).mock.calls[0]?.[0]).toMatchObject({
+          message: 'Repository owner',
+          placeholder: 'your-github-username',
+          output: stderr,
+        });
+        expect(stdout.chunks).toEqual([]);
+      })
+    );
+
+    it('has no way to express a default', () => {
+      // A compile-level assertion: an options bag carrying a default must not typecheck, because a
+      // defaulted `owner`/`repo` would write into someone else's repository.
+      type TextOptions = NonNullable<Parameters<TerminalUI['text']>[1]>;
+
+      expectTypeOf<TextOptions>().toEqualTypeOf<{ readonly placeholder?: string }>();
+      expectTypeOf<TextOptions>().not.toHaveProperty('defaultValue');
+      expectTypeOf<Awaited<ReturnType<TerminalUI['text']>>>().not.toBeString();
+    });
   });
 });

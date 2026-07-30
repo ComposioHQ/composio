@@ -1,7 +1,7 @@
 import process from 'node:process';
 import type { Writable } from 'node:stream';
 import * as p from '@clack/prompts';
-import { Context, Effect, Exit, Layer } from 'effect';
+import { Context, Effect, Exit, Layer, Option } from 'effect';
 
 export type TtyLikeStream = {
   readonly isTTY?: boolean;
@@ -157,6 +157,21 @@ export interface TerminalUI {
   ) => Effect.Effect<Value>;
 
   /**
+   * Ask the user for free text.
+   *
+   * Deliberately has no `defaultValue`. Every other prompt here defaults when prompting is
+   * unavailable — `select` returns the first option, `confirm` returns its default — and that
+   * defaulting is what would let a non-prompting path assemble a real write (a GitHub issue in
+   * someone else's repository) out of nothing. The result is an `Option` so the caller has to
+   * handle absence: `None` when prompting is unavailable, when the prompt is cancelled, and when
+   * the answer is blank.
+   */
+  readonly text: (
+    message: string,
+    options?: { readonly placeholder?: string }
+  ) => Effect.Effect<Option.Option<string>>;
+
+  /**
    * Create a controllable spinner that is automatically stopped on error or interruption.
    * The `use` function receives a SpinnerHandle and must return an Effect.
    * On success: the caller should call `spinner.stop(...)` inside `use`.
@@ -284,6 +299,23 @@ export const makeTerminalUI = (streams: TerminalUIStreams): TerminalUI => {
         return result;
       });
     }) as TerminalUI['select'],
+
+    text: (message, options) => {
+      if (!canPrompt) {
+        return Effect.succeed(Option.none<string>());
+      }
+
+      return Effect.promise(async () => {
+        const result = await p.text({
+          message,
+          placeholder: options?.placeholder,
+          output: stderr,
+        });
+        if (p.isCancel(result)) return Option.none<string>();
+        const trimmed = result.trim();
+        return trimmed.length === 0 ? Option.none<string>() : Option.some(trimmed);
+      });
+    },
 
     confirm: (message, options) => {
       if (!canPrompt) {

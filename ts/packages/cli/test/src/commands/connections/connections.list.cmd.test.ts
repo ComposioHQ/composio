@@ -1,5 +1,5 @@
 import { describe, expect, layer } from '@effect/vitest';
-import { ConfigProvider, Console, Effect } from 'effect';
+import { ConfigProvider, Console, Effect, Option } from 'effect';
 import type { ConnectedAccountItem } from 'src/models/connected-accounts';
 import { extendConfigProvider } from 'src/services/config';
 import { getTerminalCapabilities, TerminalUI } from 'src/services/terminal-ui';
@@ -112,6 +112,7 @@ const terminalUIWithConfirm = (confirmed: boolean) =>
     note: (message, title) => Console.log(title ? `[${title}] ${message}` : message),
     select: (_message, options) => Effect.succeed(options[0]!.value),
     confirm: () => Effect.succeed(confirmed),
+    text: () => Effect.succeed(Option.none<string>()),
     withSpinner: (message, effect, options) =>
       Effect.gen(function* () {
         const result = yield* effect;

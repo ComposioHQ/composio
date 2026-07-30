@@ -1,4 +1,4 @@
-import { Console, Effect, Exit, Layer } from 'effect';
+import { Console, Effect, Exit, Layer, Option } from 'effect';
 import { getTerminalCapabilities, TerminalUI } from 'src/services/terminal-ui';
 
 /**
@@ -33,6 +33,10 @@ export const terminalUITestImpl = TerminalUI.of({
   note: (message, title) => Console.log(title ? `[${title}] ${message}` : message),
 
   select: (_message, options) => Effect.succeed(options[0].value),
+
+  // Matches the production `!canPrompt` branch: no answer is available, and there is no default to
+  // fall back to.
+  text: () => Effect.succeed(Option.none<string>()),
 
   confirm: (_message, options) => Effect.succeed(options?.defaultValue ?? true),
 
