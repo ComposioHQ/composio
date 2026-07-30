@@ -66,6 +66,12 @@ const verifyAssetsScript = readFileSync(
   new URL('../.github/scripts/cli-release/verify-assets.sh', import.meta.url),
   'utf8'
 );
+const generateChecksumsScriptUrl = new URL(
+  '../ts/packages/cli/scripts/generate-checksums.ts',
+  import.meta.url
+);
+const generateChecksumsScriptPath = generateChecksumsScriptUrl.pathname;
+const generateChecksumsScript = readFileSync(generateChecksumsScriptUrl, 'utf8');
 
 function requireMatch(text, pattern, label) {
   const match = text.match(pattern);
@@ -525,6 +531,46 @@ if (!(packageSkillsIdx < generateChecksumsIdx)) {
   throw new Error(
     'build-cli-binaries.yml must package skills before generating checksums so the skill zip is checksummed'
   );
+}
+
+if (
+  !generateChecksumsScript.includes("from './_teardown'") ||
+  generateChecksumsScript.includes("from './_shared'")
+) {
+  throw new Error(
+    'CLI checksum generation must use the dependency-light teardown without loading CLI runtime helpers'
+  );
+}
+
+// The release job runs checksum generation in a fresh checkout where workspace packages have not
+// been built. Exercise the script from an unrelated working directory to prevent imports from
+// pulling in the CLI runtime and its unbuilt @composio/core dependency.
+{
+  const fixtureDir = mkdtempSync(join(tmpdir(), 'composio-cli-checksums-'));
+  try {
+    const binariesDir = join(fixtureDir, 'dist/binaries');
+    mkdirSync(binariesDir, { recursive: true });
+    writeFileSync(join(binariesDir, 'composio-linux-x64.zip'), 'release archive fixture\n');
+
+    const result = spawnSync(process.execPath, [generateChecksumsScriptPath], {
+      cwd: fixtureDir,
+      encoding: 'utf8',
+      env: process.env,
+    });
+
+    if (result.status !== 0) {
+      throw new Error(
+        `CLI checksum generation must run without built workspace packages\nstdout:\n${result.stdout}\nstderr:\n${result.stderr}`
+      );
+    }
+
+    const checksums = readFileSync(join(binariesDir, 'checksums.txt'), 'utf8');
+    if (!/^[a-f0-9]{64}  composio-linux-x64\.zip\n$/.test(checksums)) {
+      throw new Error(`CLI checksum generation wrote an invalid manifest:\n${checksums}`);
+    }
+  } finally {
+    rmSync(fixtureDir, { recursive: true, force: true });
+  }
 }
 
 // Per-tag concurrency prevents two runs clobbering the same release without serializing betas.

@@ -2,10 +2,11 @@ import { builtinModules } from 'node:module';
 import { chmod, copyFile, mkdir, readdir, rm, stat, writeFile } from 'node:fs/promises';
 import * as path from 'node:path';
 import process from 'node:process';
-import { Cause, Effect, Exit } from 'effect';
-import type { Teardown } from '@effect/platform/Runtime';
+import { Effect } from 'effect';
 import { RUN_COMPANION_MODULE_BASENAMES } from '../src/services/run-companion-modules';
 import { materializeAcpAdaptersCache } from './_acp-adapters';
+
+export { teardown } from './_teardown';
 
 const RUN_COMPANION_SERVICE_ENTRY_MAP = Object.fromEntries(
   RUN_COMPANION_MODULE_BASENAMES.map(name => [`services/${name}`, `src/services/${name}.ts`])
@@ -293,18 +294,6 @@ const buildCompanionServiceBundles = async (outputDir: string): Promise<void> =>
       );
     }
   }
-};
-
-/**
- * Shared teardown for all CLI scripts.
- *
- * Exits with a non-zero code when the Effect program fails
- * (unless the failure is an interrupt-only cause).
- */
-export const teardown: Teardown = <E, A>(exit: Exit.Exit<E, A>, onExit: (code: number) => void) => {
-  const shouldFail = Exit.isFailure(exit) && !Cause.isInterruptedOnly(exit.cause);
-  const errorCode = Number(process.exitCode ?? 1);
-  onExit(shouldFail ? errorCode : 0);
 };
 
 export const buildCompanionModules = (outputDir: string) =>
