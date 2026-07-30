@@ -13,7 +13,6 @@
     "---Authenticate users---",
     "authentication",
     "manually-authenticating",
-    "oauth-connection-security",
     "managing-multiple-connected-accounts",
     "shared-connections",
     "importing-existing-connections",
