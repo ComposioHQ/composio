@@ -54,13 +54,6 @@ export const OnboardRecord = Schema.Struct({
   onboardedAt: Schema.propertySignature(OptionFromNullishOr(Schema.String, null)).pipe(
     Schema.fromKey('onboarded_at')
   ),
-  /** Org that earned `hasExecuted`; onboarding completion is scoped to this org. */
-  orgId: Schema.propertySignature(OptionFromNullishOr(Schema.String, null)).pipe(
-    Schema.fromKey('org_id')
-  ),
-  skippedSteps: Schema.optionalWith(Schema.Array(Schema.String), {
-    default: (): ReadonlyArray<string> => [],
-  }).pipe(Schema.fromKey('skipped_steps')),
 });
 export type OnboardRecord = Schema.Schema.Type<typeof OnboardRecord>;
 
@@ -100,8 +93,6 @@ export const CliUserConfig = Schema.Struct({
       OnboardRecord.make({
         hasExecuted: false,
         onboardedAt: Option.none(),
-        orgId: Option.none(),
-        skippedSteps: [],
       }),
   }),
 }).annotations({

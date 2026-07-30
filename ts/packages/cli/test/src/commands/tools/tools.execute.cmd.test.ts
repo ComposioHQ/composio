@@ -41,6 +41,8 @@ const parseLastJson = (lines: ReadonlyArray<string>) => {
     if (!line) continue;
     try {
       return JSON.parse(line) as {
+        kind?: string;
+        mode?: string;
         successful: boolean;
         data: Record<string, unknown>;
         error: string | null;
@@ -112,6 +114,7 @@ describe('CLI: composio execute', () => {
 
         const lines = yield* MockConsole.getLines({ stripAnsi: true });
         const output = parseLastJson(lines);
+        expect(output.kind).toBe('tool_execution');
         expect(output).toMatchObject({
           successful: true,
           data: { ok: true, echoed: 'local' },
@@ -979,6 +982,7 @@ describe('CLI: composio execute', () => {
         yield* cli(['execute', 'GMAIL_SEND_EMAIL', '-d', '{"recipient":"a"}']);
         const lines = yield* MockConsole.getLines({ stripAnsi: true });
         const output = parseLastJson(lines) as unknown as {
+          kind: string;
           successful: boolean;
           error: string | null;
           logId: string;
@@ -987,6 +991,7 @@ describe('CLI: composio execute', () => {
           outputFilePath: string;
         };
 
+        expect(output.kind).toBe('tool_execution');
         expect(output.successful).toBe(true);
         expect(output.storedInFile).toBe(true);
         expect(output.logId).toBe('log_large_output');
@@ -1021,9 +1026,36 @@ describe('CLI: composio execute', () => {
         const lines = yield* MockConsole.getLines({ stripAnsi: true });
         const output = parseLastJson(lines);
 
+        expect(output.kind).toBe('tool_execution');
         expect(output.successful).toBe(true);
         expect(output.data.tool_slug).toBe('GMAIL_SEND_EMAIL');
         expect(output.data.arguments).toEqual({ recipient: 'a' });
+      })
+    );
+  });
+
+  layer(
+    TestLive({
+      baseConfigProvider: testConfigProvider,
+      fixture: 'global-test-user-id',
+      stdin: { isTTY: true, data: '' },
+    })
+  )('[Given] connection preflight fails [Then] it emits discriminated output', it => {
+    it.scoped('tags the connection-check failure as a tool execution result', () =>
+      Effect.gen(function* () {
+        vi.mocked(
+          consumerShortTermCache.getFreshConsumerConnectedToolkitsFromCache
+        ).mockReturnValue(Effect.succeed(Option.some([])));
+
+        yield* cli(['execute', 'GMAIL_SEND_EMAIL', '-d', '{"recipient":"a"}']).pipe(
+          Effect.catchAll(() => Effect.void)
+        );
+        const lines = yield* MockConsole.getLines({ stripAnsi: true });
+        const output = parseLastJson(lines);
+
+        expect(output.kind).toBe('tool_execution');
+        expect(output.successful).toBe(false);
+        expect(output.error).toContain('not connected');
       })
     );
   });
@@ -1050,6 +1082,8 @@ describe('CLI: composio execute', () => {
         ]);
         const lines = yield* MockConsole.getLines({ stripAnsi: true });
         const output = parseLastJson(lines) as unknown as {
+          kind: string;
+          mode: string;
           successful: boolean;
           parallel: boolean;
           results: Array<{
@@ -1059,6 +1093,8 @@ describe('CLI: composio execute', () => {
           }>;
         };
 
+        expect(output.kind).toBe('tool_execution_batch');
+        expect(output.mode).toBe('execute');
         expect(output.successful).toBe(true);
         expect(output.parallel).toBe(true);
         expect(output.results).toHaveLength(2);
@@ -1131,7 +1167,10 @@ describe('CLI: composio execute', () => {
           '{"recipient":"a"}',
         ]);
 
+        const output = parseLastJson(yield* MockConsole.getLines({ stripAnsi: true }));
         const cliConfig = yield* ComposioCliUserConfig;
+        expect(output.kind).toBe('tool_execution_batch');
+        expect(output.mode).toBe('dry_run');
         expect(cliConfig.data.onboard.hasExecuted).toBe(false);
       })
     );
@@ -1177,6 +1216,8 @@ describe('CLI: composio execute', () => {
             ? output.results
             : [];
 
+        expect(output.kind).toBe('tool_execution_batch');
+        expect(output.mode).toBe('execute');
         expect(output.successful).toBe(false);
         expect(results).toHaveLength(2);
         expect(results).toEqual(
@@ -1231,6 +1272,7 @@ describe('CLI: composio execute', () => {
         ]);
         const lines = yield* MockConsole.getLines({ stripAnsi: true });
         const output = parseLastJson(lines) as unknown as {
+          kind: string;
           successful: boolean;
           dryRun: boolean;
           slug: string;
@@ -1239,6 +1281,7 @@ describe('CLI: composio execute', () => {
           arguments: Record<string, unknown>;
         };
 
+        expect(output.kind).toBe('tool_dry_run');
         expect(output.successful).toBe(true);
         expect(output.dryRun).toBe(true);
         expect(output.slug).toBe('GMAIL_SEND_EMAIL');
@@ -1781,12 +1824,14 @@ describe('CLI: composio execute', () => {
         yield* cli(['execute', 'GMAIL_SEND_EMAIL', '--get-schema']);
         const lines = yield* MockConsole.getLines({ stripAnsi: true });
         const output = parseLastJson(lines) as unknown as {
+          kind: string;
           slug: string;
           version: string | null;
           schemaPath: string;
           inputSchema: Record<string, unknown>;
         };
 
+        expect(output.kind).toBe('tool_schema');
         expect(output.slug).toBe('GMAIL_SEND_EMAIL');
         expect(output.version).toBe('20260316_00');
         expect(output.schemaPath).toBe(schemaPath);
@@ -1798,6 +1843,17 @@ describe('CLI: composio execute', () => {
           },
         });
         expect(fs.existsSync(schemaPath)).toBe(true);
+      })
+    );
+
+    it.scoped('tags parallel schema output with its aggregate mode', () =>
+      Effect.gen(function* () {
+        yield* cli(['execute', '--parallel', '--get-schema', 'GMAIL_SEND_EMAIL']);
+        const output = parseLastJson(yield* MockConsole.getLines({ stripAnsi: true }));
+
+        expect(output.kind).toBe('tool_execution_batch');
+        expect(output.mode).toBe('schema');
+        expect(output.successful).toBe(true);
       })
     );
   });

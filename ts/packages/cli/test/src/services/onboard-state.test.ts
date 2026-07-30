@@ -6,7 +6,6 @@ import {
   isOnboardComplete,
   isOnboardSkippableStep,
   recordOnboardExecuted,
-  recordOnboardSkippedSteps,
   resolveNextOnboardStep,
   type OnboardFacts,
 } from 'src/services/onboard-state';
@@ -167,8 +166,6 @@ const makeConfigStub = (options?: { updateShouldFail?: boolean }) => {
           onboard: {
             hasExecuted: raw.onboard.hasExecuted,
             onboardedAt: Option.getOrUndefined(raw.onboard.onboardedAt),
-            orgId: Option.getOrUndefined(raw.onboard.orgId),
-            skippedSteps: raw.onboard.skippedSteps,
           },
         };
       },
@@ -200,7 +197,7 @@ const makeConfigStub = (options?: { updateShouldFail?: boolean }) => {
 };
 
 describe('recordOnboardExecuted', () => {
-  it.effect('flips has_executed exactly once and stamps the earning org', () => {
+  it.effect('flips user-level has_executed exactly once', () => {
     const stub = makeConfigStub();
     return Effect.gen(function* () {
       const first = yield* recordOnboardExecuted;
@@ -209,7 +206,6 @@ describe('recordOnboardExecuted', () => {
       expect(second).toBe('already_recorded');
       expect(stub.getRaw().onboard.hasExecuted).toBe(true);
       expect(Option.isSome(stub.getRaw().onboard.onboardedAt)).toBe(true);
-      expect(Option.getOrUndefined(stub.getRaw().onboard.orgId)).toBe('org_unit_test');
     }).pipe(Effect.provide(stub.layer));
   });
 
@@ -222,41 +218,13 @@ describe('recordOnboardExecuted', () => {
     }).pipe(Effect.provide(stub.layer));
   });
 
-  it.effect('records execution again after switching organizations', () => {
+  it.effect('does not replay onboarding after it has been completed', () => {
     const stub = makeConfigStub();
     return Effect.gen(function* () {
       yield* recordOnboardExecuted;
-      const config = yield* ComposioCliUserConfig;
-      yield* config.update({
-        onboard: {
-          ...config.raw.onboard,
-          orgId: Option.some('org_other'),
-        },
-      });
-
       const outcome = yield* recordOnboardExecuted;
 
-      expect(outcome).toBe('recorded');
-      expect(Option.getOrUndefined(stub.getRaw().onboard.orgId)).toBe('org_unit_test');
-    }).pipe(Effect.provide(stub.layer));
-  });
-});
-
-describe('recordOnboardSkippedSteps', () => {
-  it.effect('merges and deduplicates skipped steps', () => {
-    const stub = makeConfigStub();
-    return Effect.gen(function* () {
-      yield* recordOnboardSkippedSteps(['execute']);
-      yield* recordOnboardSkippedSteps(['execute', 'connect']);
-      expect([...stub.getRaw().onboard.skippedSteps].sort()).toEqual(['connect', 'execute']);
-    }).pipe(Effect.provide(stub.layer));
-  });
-
-  it.effect('does not fail the command when the config write fails', () => {
-    const stub = makeConfigStub({ updateShouldFail: true });
-    return Effect.gen(function* () {
-      yield* recordOnboardSkippedSteps(['execute']);
-      expect(stub.getRaw().onboard.skippedSteps).toEqual([]);
+      expect(outcome).toBe('already_recorded');
     }).pipe(Effect.provide(stub.layer));
   });
 });

@@ -1,7 +1,6 @@
 import { describe, expect, it } from '@effect/vitest';
 import {
   isOnboardComplete,
-  isOnboardSkippableStep,
   ONBOARD_GATE_STEPS,
   resolveNextOnboardStep,
   resolveOnboard,
@@ -25,7 +24,6 @@ interface Dim {
   readonly connectionCount: number;
   readonly hasExecuted: boolean;
   readonly invocationSkips: ReadonlyArray<OnboardSkippableStep>;
-  readonly persistedSkips: ReadonlyArray<OnboardSkippableStep>;
   readonly connectedToolkits: ReadonlyArray<string>;
 }
 
@@ -41,22 +39,15 @@ const cartesian = (): ReadonlyArray<Dim> => {
             ['execute'],
             ['login'],
           ] as ReadonlyArray<ReadonlyArray<OnboardSkippableStep>>) {
-            for (const persistedSkips of [
-              [] as OnboardSkippableStep[],
-              ['connect'],
-              ['execute'],
-            ] as ReadonlyArray<ReadonlyArray<OnboardSkippableStep>>) {
-              for (const connectedToolkits of [[], ['github'], ['salesforce']]) {
-                dims.push({
-                  loggedIn,
-                  connectionCheckFailed,
-                  connectionCount,
-                  hasExecuted,
-                  invocationSkips,
-                  persistedSkips,
-                  connectedToolkits,
-                });
-              }
+            for (const connectedToolkits of [[], ['github'], ['salesforce']]) {
+              dims.push({
+                loggedIn,
+                connectionCheckFailed,
+                connectionCount,
+                hasExecuted,
+                invocationSkips,
+                connectedToolkits,
+              });
             }
           }
         }
@@ -85,7 +76,7 @@ const normalize = (dim: Dim): Normalized => {
     loggedIn,
     hasConnection,
     hasExecuted,
-    skippedSteps: dim.persistedSkips,
+    skippedSteps: [],
     connectionCheckFailed: failed,
   };
 
@@ -109,7 +100,7 @@ describe('onboard state contract (invariant matrix)', () => {
   const matrix = cartesian();
 
   it(`covers ${matrix.length} input combinations`, () => {
-    expect(matrix.length).toBeGreaterThan(500);
+    expect(matrix.length).toBeGreaterThan(150);
   });
 
   it('holds invariants 1-7 for every combination', () => {
@@ -146,15 +137,9 @@ describe('onboard state contract (invariant matrix)', () => {
         expect(r.complete, label).toBe(true);
       }
 
-      // Invariant 7: skipped lists only this-invocation skips; persisted history is separate.
+      // Invariant 7: skips are invocation-only.
       for (const gate of skippedGates) {
         expect(dim.invocationSkips, label).toContain(gate);
-      }
-      expect(r.persistedSkips, label).toEqual(dim.persistedSkips.filter(isOnboardSkippableStep));
-      for (const persisted of dim.persistedSkips) {
-        if (isGate(persisted) && !dim.invocationSkips.includes(persisted)) {
-          expect(r.skipped, label).not.toContain(persisted);
-        }
       }
 
       // Invariant 6: a non-null next.cmd must progress — execute never targets a non-curated toolkit.
@@ -175,13 +160,11 @@ describe('onboard state contract (invariant matrix)', () => {
         completed: string[];
         remaining: string[];
         skipped: string[];
-        persisted_skips?: string[];
         next: { step: string } | null;
       };
       expect(json.completed, label).toEqual(r.completed);
       expect(json.remaining, label).toEqual(r.remaining);
       expect(json.skipped, label).toEqual(r.skipped);
-      expect(json.persisted_skips ?? [], label).toEqual(r.persistedSkips);
       expect(json.next?.step ?? undefined, label).toBe(r.nextStep);
       // JSON-level disjointness (invariant 1 on the wire).
       const jsonSkippedGates = json.skipped.filter(isGate);

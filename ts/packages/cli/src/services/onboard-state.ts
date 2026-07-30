@@ -37,14 +37,6 @@ export interface OnboardState extends OnboardFacts {
   readonly complete: boolean;
 }
 
-export const hasExecutedOnboardForOrg = (
-  onboard: {
-    readonly hasExecuted: boolean;
-    readonly orgId: string | undefined;
-  },
-  orgId: string | undefined
-): boolean => onboard.hasExecuted && (onboard.orgId === undefined || onboard.orgId === orgId);
-
 export const isOnboardComplete = (facts: OnboardFacts): boolean =>
   facts.loggedIn && facts.hasConnection && facts.hasExecuted;
 
@@ -69,7 +61,6 @@ export interface OnboardResolution {
   readonly completed: ReadonlyArray<OnboardGateStep>;
   readonly remaining: ReadonlyArray<OnboardGateStep>;
   readonly skipped: ReadonlyArray<OnboardSkippableStep>;
-  readonly persistedSkips: ReadonlyArray<OnboardSkippableStep>;
   readonly nextStep: OnboardGateStep | undefined;
   readonly complete: boolean;
   readonly connectionUnknown: boolean;
@@ -83,7 +74,6 @@ export const resolveOnboard = (params: {
   readonly invocationSkips: ReadonlyArray<OnboardSkippableStep>;
 }): OnboardResolution => {
   const { facts } = params;
-  const persistedSkips = facts.skippedSteps.filter(isOnboardSkippableStep);
   const effectiveSkips = new Set<OnboardSkippableStep>(params.invocationSkips);
   const connectionUnknown = Boolean(facts.connectionCheckFailed) && !facts.hasConnection;
   const isUnresolvableGate = (gate: OnboardGateStep): boolean =>
@@ -107,7 +97,6 @@ export const resolveOnboard = (params: {
     completed,
     remaining,
     skipped,
-    persistedSkips,
     nextStep,
     complete: isOnboardComplete(facts),
     connectionUnknown,
@@ -202,12 +191,16 @@ export const computeOnboardState = Effect.gen(function* () {
       )
     : NO_CONNECTIONS;
 
-  const executedHere = hasExecutedOnboardForOrg(onboard, orgId);
+  // Onboarding is a one-time introduction for the CLI user. Connections remain
+  // org-scoped, but switching orgs must not replay the introductory execution.
+  const hasExecuted = onboard.hasExecuted;
   const facts: OnboardFacts = {
     loggedIn,
-    hasConnection: connections.count > 0 || (connections.failed && executedHere),
-    hasExecuted: executedHere,
-    skippedSteps: onboard.skippedSteps,
+    hasConnection: connections.count > 0 || (connections.failed && hasExecuted),
+    hasExecuted,
+    // `--skip` is invocation-only; persisted skips made a bare future run
+    // disagree with the state reported by the invocation that recorded them.
+    skippedSteps: [],
     connectionCheckFailed: connections.failed,
   };
 
@@ -230,14 +223,11 @@ export type OnboardPersistOutcome = 'recorded' | 'already_recorded' | 'persist_f
 export const recordOnboardExecuted: Effect.Effect<
   OnboardPersistOutcome,
   never,
-  ComposioCliUserConfig | ComposioUserContext
+  ComposioCliUserConfig
 > = Effect.gen(function* () {
   const cliConfig = yield* ComposioCliUserConfig;
-  const ctx = yield* ComposioUserContext;
-  const orgId = Option.getOrUndefined(ctx.data.orgId);
   const onboard = cliConfig.data.onboard;
-  const executedHere = hasExecutedOnboardForOrg(onboard, orgId);
-  if (executedHere) {
+  if (onboard.hasExecuted) {
     return 'already_recorded' as const;
   }
   yield* cliConfig.update({
@@ -245,7 +235,6 @@ export const recordOnboardExecuted: Effect.Effect<
       ...cliConfig.raw.onboard,
       hasExecuted: true,
       onboardedAt: Option.some(new Date().toISOString()),
-      orgId: Option.fromNullable(orgId),
     },
   });
   return 'recorded' as const;
@@ -256,24 +245,6 @@ export const recordOnboardExecuted: Effect.Effect<
     )
   )
 );
-
-export const recordOnboardSkippedSteps = (steps: ReadonlyArray<OnboardSkippableStep>) =>
-  Effect.gen(function* () {
-    if (steps.length === 0) return;
-    const cliConfig = yield* ComposioCliUserConfig;
-    const merged = [...new Set([...cliConfig.raw.onboard.skippedSteps, ...steps])];
-    if (merged.length === cliConfig.raw.onboard.skippedSteps.length) return;
-    yield* cliConfig.update({
-      onboard: {
-        ...cliConfig.raw.onboard,
-        skippedSteps: merged,
-      },
-    });
-  }).pipe(
-    Effect.catchAll(cause =>
-      Effect.logDebug('Onboard skipped-steps persist failed:', cause).pipe(Effect.asVoid)
-    )
-  );
 
 export const getLocalOnboardNudge = (facts: {
   readonly loggedIn: boolean;

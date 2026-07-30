@@ -615,17 +615,6 @@ const emitExecuteFailureTelemetry = (params: {
 const writeExecuteStdout = (ui: TerminalUI, data: string, quiet = false) =>
   quiet ? Effect.void : ui.output(data, { force: true });
 
-const emitExecuteSuccess = (
-  params: {
-    readonly ui: TerminalUI;
-    readonly quiet?: boolean;
-    readonly onSuccess?: (result: ToolExecuteResponse) => Effect.Effect<void>;
-  },
-  result: ToolExecuteResponse,
-  json: string
-) =>
-  params.quiet ? (params.onSuccess?.(result) ?? Effect.void) : writeExecuteStdout(params.ui, json);
-
 export const showToolsExecuteInputHelp = (toolSlug: string) =>
   Effect.gen(function* () {
     if (!(yield* requireAuth)) return;
@@ -877,6 +866,7 @@ const initializeValidationState = (params: {
   });
 
 type DryRunSummary = {
+  readonly kind: 'tool_dry_run';
   readonly successful: true;
   readonly dryRun: true;
   readonly slug: string;
@@ -886,16 +876,18 @@ type DryRunSummary = {
   readonly schemaVersion?: string | null;
 };
 
-/** `quiet: true` suppresses the stdout JSON, so it must supply the replacing `onSuccess`. */
-type RunToolsExecuteOutputMode =
-  | {
-      quiet: true;
-      onSuccess: (result: ToolExecuteResponse) => Effect.Effect<void>;
-    }
-  | {
-      quiet?: false;
-      onSuccess?: never;
-    };
+type ToolSchemaSummary = {
+  readonly kind: 'tool_schema';
+  readonly slug: string;
+  readonly version: string | null;
+  readonly schemaPath: string;
+  readonly inputSchema: Record<string, unknown>;
+};
+
+type ToolExecutionSummary =
+  (ToolExecuteResponse & { readonly kind: 'tool_execution' }) | StoredExecuteOutputSummary;
+
+export type RunToolsExecuteResult = ToolSchemaSummary | DryRunSummary | ToolExecutionSummary;
 
 type RunToolsExecuteBaseParams = {
   slug: string;
@@ -911,10 +903,11 @@ type RunToolsExecuteBaseParams = {
   skipConnectionCheck: boolean;
   skipToolParamsCheck: boolean;
   skipChecks: boolean;
+  quiet?: boolean;
   inlineOnly?: boolean;
 };
 
-type RunToolsExecuteParams = RunToolsExecuteBaseParams & RunToolsExecuteOutputMode;
+type RunToolsExecuteParams = RunToolsExecuteBaseParams;
 
 type SharedRunToolsExecuteParams = Omit<RunToolsExecuteBaseParams, 'slug' | 'data' | 'file'>;
 
@@ -975,26 +968,23 @@ const emitCachedSchema = (
     readonly version: string | null;
     readonly schemaPath: string;
     readonly schema: Record<string, unknown>;
-  }
+  },
+  quiet = false
 ) =>
   Effect.gen(function* () {
     const displaySchema = normalizeFileUploadSchema(definition.schema);
     yield* ui.log.message(
       `Schema saved, inspect keys like: jq '{required: (.inputSchema.required // []), keys: (.inputSchema.properties | keys)}' ${definition.schemaPath}`
     );
-    yield* writeExecuteStdout(
-      ui,
-      JSON.stringify(
-        {
-          slug,
-          version: definition.version,
-          schemaPath: definition.schemaPath,
-          inputSchema: displaySchema,
-        },
-        null,
-        2
-      )
-    );
+    const summary = {
+      kind: 'tool_schema',
+      slug,
+      version: definition.version,
+      schemaPath: definition.schemaPath,
+      inputSchema: displaySchema,
+    } satisfies ToolSchemaSummary;
+    yield* writeExecuteStdout(ui, JSON.stringify(summary, null, 2), quiet);
+    return summary;
   });
 
 const resolveExecuteContext = (params: RunToolsExecuteParams) =>
@@ -1242,6 +1232,7 @@ const runConnectedToolkitFailFast = (params: {
         params.ui,
         JSON.stringify(
           {
+            kind: 'tool_execution',
             successful: false,
             error: message,
             slug: params.slug,
@@ -1276,7 +1267,6 @@ const emitExecuteSuccessOutput = (
     readonly executeOutputDir?: string;
     readonly quiet?: boolean;
     readonly inlineOnly?: boolean;
-    readonly onSuccess?: (result: ToolExecuteResponse) => Effect.Effect<void>;
   },
   result: ToolExecuteResponse
 ) =>
@@ -1291,10 +1281,10 @@ const emitExecuteSuccessOutput = (
       yield* params.ui.log.message(
         `Response stored in ${output.summary.outputFilePath} (${output.summary.tokenCount} tokens)`
       );
-      yield* emitExecuteSuccess(
-        params,
-        result,
-        JSON.stringify(output.summary, ciRedactReplacer, 2)
+      yield* writeExecuteStdout(
+        params.ui,
+        JSON.stringify(output.summary, ciRedactReplacer, 2),
+        params.quiet
       );
       yield* appendCliSessionHistory({
         ...executeSessionHistoryScope(params.resolvedProject),
@@ -1309,9 +1299,13 @@ const emitExecuteSuccessOutput = (
           logId: result.logId,
         },
       }).pipe(Effect.catchAll(() => Effect.void));
-      return;
+      return output.summary;
     }
-    yield* emitExecuteSuccess(params, result, output.json);
+    const summary = {
+      kind: 'tool_execution',
+      ...result,
+    } satisfies ToolExecutionSummary;
+    yield* writeExecuteStdout(params.ui, output.json, params.quiet);
     yield* appendCliSessionHistory({
       ...executeSessionHistoryScope(params.resolvedProject),
       entry: {
@@ -1323,6 +1317,7 @@ const emitExecuteSuccessOutput = (
         logId: result.logId,
       },
     }).pipe(Effect.catchAll(() => Effect.void));
+    return summary;
   });
 
 const runExecuteWithSpinner = (params: {
@@ -1341,7 +1336,6 @@ const runExecuteWithSpinner = (params: {
   readonly skipChecks: boolean;
   readonly quiet?: boolean;
   readonly inlineOnly?: boolean;
-  readonly onSuccess?: (result: ToolExecuteResponse) => Effect.Effect<void>;
 }) =>
   Effect.gen(function* () {
     const verificationDisabled =
@@ -1362,7 +1356,7 @@ const runExecuteWithSpinner = (params: {
           resolvedProject: params.resolvedProject,
         });
 
-    yield* params.ui.useMakeSpinner(`Executing tool "${params.slug}"...`, spinner =>
+    return yield* params.ui.useMakeSpinner(`Executing tool "${params.slug}"...`, spinner =>
       Effect.gen(function* () {
         let validationGuard = validationState.validationGuard;
         if (!verificationDisabled && !validationState.cacheHit) {
@@ -1411,6 +1405,7 @@ const runExecuteWithSpinner = (params: {
             );
           }
           const summary: DryRunSummary = {
+            kind: 'tool_dry_run',
             successful: true,
             dryRun: true,
             slug: params.slug,
@@ -1439,7 +1434,7 @@ const runExecuteWithSpinner = (params: {
               arguments: params.args,
             },
           }).pipe(Effect.catchAll(() => Effect.void));
-          return;
+          return summary;
         }
 
         yield* perfDebugLog('execute.tool_call.start', { slug: params.slug });
@@ -1546,7 +1541,7 @@ const runExecuteWithSpinner = (params: {
             `The tool executed successfully but the response may contain an error: ${inBandWarning}`
           );
         }
-        yield* emitExecuteSuccessOutput(params, result);
+        return yield* emitExecuteSuccessOutput(params, result);
       })
     );
   });
@@ -1584,8 +1579,7 @@ export const runToolsExecute = (params: RunToolsExecuteParams) =>
           })
         )
       );
-      yield* emitCachedSchema(context.ui, params.slug, definition);
-      return;
+      return yield* emitCachedSchema(context.ui, params.slug, definition, params.quiet);
     }
 
     const context = yield* resolveExecuteContext(params);
@@ -1613,7 +1607,7 @@ export const runToolsExecute = (params: RunToolsExecuteParams) =>
       surface: params.surface,
       projectMode: params.projectMode,
     });
-    yield* runExecuteWithSpinner({
+    return yield* runExecuteWithSpinner({
       slug: params.slug,
       surface: params.surface,
       projectMode: params.projectMode,
@@ -1628,7 +1622,6 @@ export const runToolsExecute = (params: RunToolsExecuteParams) =>
       skipChecks: params.skipChecks,
       quiet: params.quiet,
       inlineOnly: params.inlineOnly,
-      onSuccess: params.onSuccess,
     });
   });
 
@@ -1944,6 +1937,8 @@ const runParallelSchemaFetchFromParsed = (params: ParsedParallelExecuteArgs) =>
         ui,
         JSON.stringify(
           {
+            kind: 'tool_execution_batch',
+            mode: 'schema',
             successful,
             parallel: true,
             results,
@@ -2021,6 +2016,7 @@ const runParallelToolsExecuteFromParsed = (params: ParsedParallelExecuteArgs) =>
               yield* validateToolInputArgumentsWithDefinition(toolSlug, context.args, definition);
             }
             return {
+              kind: 'tool_dry_run',
               successful: true,
               dryRun: true,
               slug: toolSlug,
@@ -2125,6 +2121,8 @@ const runParallelToolsExecuteFromParsed = (params: ParsedParallelExecuteArgs) =>
         ui,
         JSON.stringify(
           {
+            kind: 'tool_execution_batch',
+            mode: params.dryRun ? 'dry_run' : 'execute',
             successful,
             parallel: true,
             results,

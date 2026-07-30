@@ -49,10 +49,15 @@ const gmailAccount: ConnectedAccountItem = {
   test_request_endpoint: '',
 };
 
+const extractStateJsonDocuments = (output: string): ReadonlyArray<Record<string, unknown>> =>
+  (output.match(/\{\n {2}"kind": "onboard_state"[\s\S]*?\n\}/g) ?? []).map(
+    candidate => JSON.parse(candidate) as Record<string, unknown>
+  );
+
 const extractStateJson = (output: string): Record<string, unknown> => {
-  const candidates = output.match(/\{\n {2}"kind": "onboard_state"[\s\S]*?\n\}/g) ?? [];
+  const candidates = extractStateJsonDocuments(output);
   expect(candidates.length, `no state JSON found in output:\n${output}`).toBeGreaterThan(0);
-  return JSON.parse(candidates[candidates.length - 1]) as Record<string, unknown>;
+  return candidates[candidates.length - 1]!;
 };
 
 const loginTestOrg = Effect.gen(function* () {
@@ -303,8 +308,46 @@ describe('CLI: composio onboard (non-interactive contract)', () => {
           yield* loginTestOrg;
           yield* cli(['onboard', '--toolkit', 'github']);
           const output = (yield* MockConsole.getLines({ stripAnsi: true })).join('\n');
-          expect(output).toContain('GITHUB_GET_THE_AUTHENTICATED_USER');
+          const states = extractStateJsonDocuments(output);
+          expect(states).toHaveLength(1);
+          expect(states[0]).toMatchObject({
+            kind: 'onboard_state',
+            state: 'complete',
+            completed: ['login', 'connect', 'execute'],
+          });
+          expect(output).not.toContain('"kind": "tool_execution"');
           expect(output).not.toContain('Want to try creating');
+        })
+    );
+  });
+
+  layer(
+    TestLive({
+      baseConfigProvider: loggedInConfigProvider,
+      connectedAccountsData: {
+        items: [{ ...gmailAccount, id: 'con_gh', toolkit: { slug: 'github' } }],
+      },
+      toolsExecutor: {
+        failWith: new Error('simulated starter execution failure'),
+      },
+    })
+  )('failed non-interactive execution keeps one state document', it => {
+    it.scoped(
+      '[Given] the starter tool fails [Then] stdout contains exactly one retryable onboard_state',
+      () =>
+        Effect.gen(function* () {
+          yield* loginTestOrg;
+          yield* cli(['onboard', '--toolkit', 'github']).pipe(Effect.catchAll(() => Effect.void));
+          const output = (yield* MockConsole.getLines({ stripAnsi: true })).join('\n');
+          const states = extractStateJsonDocuments(output);
+          expect(states).toHaveLength(1);
+          expect(states[0]).toMatchObject({
+            kind: 'onboard_state',
+            state: 'connected',
+            completed: ['login', 'connect'],
+          });
+          expect(states[0]?.hint).toContain('starter tool did not succeed');
+          expect(output).not.toContain('"kind": "tool_execution"');
         })
     );
   });
@@ -403,7 +446,7 @@ describe('CLI: composio onboard (non-interactive contract)', () => {
   });
 
   layer(TestLive({ baseConfigProvider: loggedInConfigProvider }))('skips', it => {
-    it.scoped('[Given] --skip connect [Then] nothing is actionable and skip is recorded', () =>
+    it.scoped('[Given] --skip connect [Then] it applies only to that invocation', () =>
       Effect.gen(function* () {
         yield* loginTestOrg;
         yield* cli(['onboard', '--skip', 'connect']);
@@ -412,32 +455,13 @@ describe('CLI: composio onboard (non-interactive contract)', () => {
         expect(state.state).toBe('logged_in');
         expect(state.skipped).toEqual(['connect']);
         expect(state.next).toBeNull();
-      })
-    );
-  });
 
-  layer(
-    TestLive({
-      baseConfigProvider: loggedInConfigProvider,
-      cliUserConfig: { onboardSkippedSteps: ['connect'] },
-    })
-  )('persisted connect skip is a record, not a block', it => {
-    it.scoped(
-      '[Given] persisted connect skip + bare run [Then] connect is not both skipped and next',
-      () =>
-        Effect.gen(function* () {
-          yield* loginTestOrg;
-          yield* cli(['onboard']);
-          const output = (yield* MockConsole.getLines()).join('\n');
-          const state = extractStateJson(output);
-          // persisted skips are a record, not a block: connect is still the next step
-          expect(state.skipped).toEqual([]);
-          expect(state.persisted_skips).toEqual(['connect']);
-          const next = state.next as { step: string } | null;
-          expect(next?.step).toBe('connect');
-          // the contradiction is gone: connect never appears in both skipped and next/remaining
-          expect(state.skipped).not.toContain('connect');
-        })
+        yield* Effect.consoleWith(console => console.clear);
+        yield* cli(['onboard']);
+        const resumed = extractStateJson((yield* MockConsole.getLines()).join('\n'));
+        expect(resumed.skipped).toEqual([]);
+        expect(resumed.next).toMatchObject({ step: 'connect' });
+      })
     );
   });
 
@@ -568,50 +592,6 @@ describe('CLI: composio onboard (non-interactive contract)', () => {
   layer(
     TestLive({
       baseConfigProvider: loggedInConfigProvider,
-      cliUserConfig: { onboardHasExecuted: true, onboardOrgId: 'org_other' },
-      connectedAccountsData: { listShouldFail: true },
-    })
-  )('failed connection check with completion earned in another org', it => {
-    it.scoped(
-      '[Given] a transient API failure + has_executed earned in a different org [Then] never reports complete',
-      () =>
-        Effect.gen(function* () {
-          yield* loginTestOrg;
-          yield* cli(['onboard']);
-          const output = (yield* MockConsole.getLines()).join('\n');
-          const state = extractStateJson(output);
-          expect(state.state).not.toBe('complete');
-          expect(state.connections).toMatchObject({ check_failed: true });
-          expect(state.next).toBeNull();
-        })
-    );
-  });
-
-  layer(
-    TestLive({
-      baseConfigProvider: loggedInConfigProvider,
-      cliUserConfig: { onboardHasExecuted: true, onboardOrgId: 'org_other' },
-      connectedAccountsData: { items: [gmailAccount] },
-    })
-  )('healthy connection check with completion earned in another org', it => {
-    it.scoped(
-      '[Given] an active connection + has_executed earned in a different org [Then] requires execution',
-      () =>
-        Effect.gen(function* () {
-          yield* loginTestOrg;
-          yield* cli(['onboard']);
-          const output = (yield* MockConsole.getLines()).join('\n');
-          const state = extractStateJson(output);
-          expect(state.state).toBe('connected');
-          expect(state.completed).toEqual(['login', 'connect']);
-          expect(state.next).toMatchObject({ step: 'execute' });
-        })
-    );
-  });
-
-  layer(
-    TestLive({
-      baseConfigProvider: loggedInConfigProvider,
       connectedAccountsData: {
         items: [
           {
@@ -657,19 +637,18 @@ describe('CLI: composio onboard (non-interactive contract)', () => {
         },
       },
       cliUserConfig: {
-        onboardHasExecuted: true,
-        onboardOrgId: 'org_other',
         updateShouldFail: true,
       },
     })
   )('persist failure surfaces in the emitted JSON', it => {
     it.scoped(
-      '[Given] another org completed + this org cannot persist [Then] JSON reports a stop hint',
+      '[Given] execution succeeds but config cannot persist [Then] exactly one JSON document reports a stop hint',
       () =>
         Effect.gen(function* () {
           yield* loginTestOrg;
           yield* cli(['onboard', '--toolkit', 'github']);
           const output = (yield* MockConsole.getLines()).join('\n');
+          expect(extractStateJsonDocuments(output)).toHaveLength(1);
           const state = extractStateJson(output);
           expect(state.state).toBe('complete');
           expect(state.next).toBeNull();
@@ -725,7 +704,7 @@ describe('CLI: composio onboard (non-interactive contract)', () => {
   layer(
     TestLive({
       baseConfigProvider: loggedInConfigProvider,
-      cliUserConfig: { onboardHasExecuted: true, onboardOrgId: 'org_test' },
+      cliUserConfig: { onboardHasExecuted: true },
       connectedAccountsData: veteranReconnectAccounts,
       toolRouter: {
         link: async () => {

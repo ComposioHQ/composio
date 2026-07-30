@@ -139,8 +139,6 @@ export interface TestLiveInput {
     developerDangerousCommandsEnabled?: boolean;
     experimentalFeatures?: Record<string, boolean>;
     onboardHasExecuted?: boolean;
-    onboardOrgId?: string;
-    onboardSkippedSteps?: ReadonlyArray<string>;
     /** When true, `update` fails (simulates an unwritable config dir). */
     updateShouldFail?: boolean;
   };
@@ -849,8 +847,6 @@ export const TestLayer = (input?: TestLiveInput) =>
       onboard: {
         hasExecuted: input?.cliUserConfig?.onboardHasExecuted ?? false,
         onboardedAt: Option.none(),
-        orgId: Option.fromNullable(input?.cliUserConfig?.onboardOrgId),
-        skippedSteps: input?.cliUserConfig?.onboardSkippedSteps ?? [],
       },
     });
 
@@ -869,8 +865,6 @@ export const TestLayer = (input?: TestLiveInput) =>
             onboard: {
               hasExecuted: rawCliUserConfig.onboard.hasExecuted,
               onboardedAt: Option.getOrUndefined(rawCliUserConfig.onboard.onboardedAt),
-              orgId: Option.getOrUndefined(rawCliUserConfig.onboard.orgId),
-              skippedSteps: rawCliUserConfig.onboard.skippedSteps,
             },
           };
         },

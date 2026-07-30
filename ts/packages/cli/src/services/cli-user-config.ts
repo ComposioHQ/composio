@@ -33,8 +33,6 @@ export type CliUserConfigResolved = {
   readonly onboard: {
     readonly hasExecuted: boolean;
     readonly onboardedAt: string | undefined;
-    readonly orgId: string | undefined;
-    readonly skippedSteps: ReadonlyArray<string>;
   };
 };
 
@@ -107,8 +105,6 @@ const resolveConfig = (raw: CliUserConfig, channel: CliReleaseChannel): CliUserC
   onboard: {
     hasExecuted: raw.onboard.hasExecuted,
     onboardedAt: Option.getOrUndefined(raw.onboard.onboardedAt),
-    orgId: Option.getOrUndefined(raw.onboard.orgId),
-    skippedSteps: raw.onboard.skippedSteps,
   },
 });
 

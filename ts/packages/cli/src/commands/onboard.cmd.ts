@@ -1,17 +1,13 @@
 import { Command, HelpDoc, Options, ValidationError } from '@effect/cli';
-import { Effect, Option, Predicate } from 'effect';
+import { Data, Effect, Either, Option, Predicate } from 'effect';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { ComposioUserContext } from 'src/services/user-context';
 import { ComposioCliUserConfig } from 'src/services/cli-user-config';
 import {
   computeOnboardState,
-  hasExecutedOnboardForOrg,
   isOnboardSkippableStep,
   ONBOARD_SKIPPABLE_STEPS,
-  recordOnboardSkippedSteps,
   resolveOnboard,
-  type OnboardGateStep,
-  type OnboardResolution,
   type OnboardSkippableStep,
   type OnboardState,
 } from 'src/services/onboard-state';
@@ -38,6 +34,9 @@ import {
 } from 'src/analytics/events';
 import { trackCliEventEffect } from 'src/analytics/dispatch';
 import { commandHintStep } from 'src/services/command-hints';
+import { buildStateJson, emitOnboardStatus } from 'src/commands/onboard-output';
+
+export { buildStateJson, nextCommandFor } from 'src/commands/onboard-output';
 
 const human = Options.boolean('human').pipe(
   Options.withDefault(false),
@@ -104,143 +103,6 @@ const emitCompletionCopy = (ui: TerminalUI) =>
       )
     );
     yield* ui.outro("You're all set.");
-  });
-
-const stateLabel = (state: OnboardState): string => {
-  if (state.complete) return 'complete';
-  if (!state.loggedIn) return 'logged_out';
-  if (!state.hasConnection) return 'logged_in';
-  return 'connected';
-};
-
-export const nextCommandFor = (
-  state: OnboardState,
-  nextStep: OnboardGateStep | undefined
-): { readonly step: OnboardGateStep; readonly cmd: string } | null => {
-  switch (nextStep) {
-    case 'login':
-      return { step: 'login', cmd: 'composio login' };
-    case 'connect': {
-      const toolkit = state.pendingToolkit ?? ONBOARD_TASKS[0].toolkit;
-      return { step: 'connect', cmd: `composio onboard --toolkit ${toolkit}` };
-    }
-    case 'execute': {
-      const connectedTask = findOnboardTaskForConnectedToolkits(state.connectedToolkits);
-      return connectedTask
-        ? { step: 'execute', cmd: `composio onboard --toolkit ${connectedTask.toolkit}` }
-        : { step: 'execute', cmd: 'composio search "<what you want to do>"' };
-    }
-    default:
-      return null;
-  }
-};
-
-const resolutionFor = (
-  state: OnboardState,
-  invocationSkips: ReadonlyArray<OnboardSkippableStep>
-): OnboardResolution => resolveOnboard({ facts: state, invocationSkips });
-
-export const buildStateJson = (params: {
-  readonly state: OnboardState;
-  readonly invocationSkips: ReadonlyArray<OnboardSkippableStep>;
-  readonly hint?: string;
-}): string => {
-  const { state } = params;
-  const resolution = resolutionFor(state, params.invocationSkips);
-  return JSON.stringify(
-    {
-      // Discriminator + version: agents parse this off stdout, and the connect
-      // step emits the link command's payload instead, so the shape must be
-      // identifiable and safe to evolve.
-      kind: 'onboard_state',
-      v: 1,
-      state: stateLabel(state),
-      completed: resolution.completed,
-      remaining: resolution.remaining,
-      skipped: resolution.skipped,
-      ...(resolution.persistedSkips.length > 0
-        ? { persisted_skips: resolution.persistedSkips }
-        : {}),
-      connections: {
-        count: state.connectionCount,
-        toolkits: state.connectedToolkits,
-        ...(state.connectionCheckFailed ? { check_failed: true } : {}),
-      },
-      ...(state.orgId ? { org_id: state.orgId } : {}),
-      next: nextCommandFor(state, resolution.nextStep),
-      ...(params.hint ? { hint: params.hint } : {}),
-    },
-    null,
-    2
-  );
-};
-
-const emitStatus = (params: {
-  readonly ui: TerminalUI;
-  readonly state: OnboardState;
-  readonly invocationSkips: ReadonlyArray<OnboardSkippableStep>;
-  readonly emitHuman: boolean;
-  readonly emitJson: boolean;
-  readonly forceJson: boolean;
-  readonly withIntro: boolean;
-}) =>
-  Effect.gen(function* () {
-    const { ui, state } = params;
-    const resolution = resolutionFor(state, params.invocationSkips);
-    if (params.withIntro) {
-      yield* ui.intro('composio onboard');
-    }
-
-    if (state.loggedIn) {
-      yield* ui.log.success(`Logged in${state.orgId ? ` (org ${state.orgId})` : ''}`);
-    } else {
-      yield* ui.log.warn('Not logged in');
-    }
-    if (state.connectionCheckFailed) {
-      yield* ui.log.warn('Connections: unknown (could not reach the Composio API)');
-    } else if (state.connectionCount > 0) {
-      yield* ui.log.success(
-        `${state.connectionCount} connection${state.connectionCount === 1 ? '' : 's'}: ${state.connectedToolkits.join(', ')}`
-      );
-    } else {
-      yield* ui.log.warn('No connected apps yet');
-    }
-    yield* state.hasExecuted
-      ? ui.log.success('First tool execution: done')
-      : ui.log.warn('First tool execution: not yet');
-
-    const next = nextCommandFor(state, resolution.nextStep);
-    if (resolution.complete) {
-      // Status view is for returning users; the first-run celebration belongs
-      // only to the run that actually performed the first execution.
-      yield* ui.outro(
-        [
-          'Onboarding complete.',
-          '  composio search "<what you want to do>"   find and run a tool',
-          '  composio setup                            use Composio from your coding agent',
-        ].join('\n')
-      );
-    } else if (next) {
-      yield* ui.outro(`Next: ${next.cmd}`);
-    } else if (resolution.connectionUnknown) {
-      yield* ui.outro(
-        "Couldn't reach the Composio API to check your connections. Check your network and re-run `composio onboard`."
-      );
-    } else {
-      yield* ui.outro(
-        'Nothing to do (remaining steps were skipped). Re-run without --skip to continue.'
-      );
-    }
-
-    if (params.emitJson || !params.emitHuman) {
-      yield* ui.output(
-        buildStateJson({
-          state,
-          invocationSkips: params.invocationSkips,
-        }),
-        params.forceJson ? { force: true } : undefined
-      );
-    }
   });
 
 interface TaskSelection {
@@ -359,11 +221,22 @@ const showExecuteSummary = (
     yield* ui.log.success(`${stripControlChars(line)}${suffix}`);
   });
 
-const executeDemo = (params: {
-  readonly ui: TerminalUI;
-  readonly demo: OnboardDemo;
-  readonly quiet: boolean;
-}) => {
+class OnboardDemoExecutionError extends Data.TaggedError('commands/OnboardDemoExecutionError')<{
+  readonly message: string;
+}> {}
+
+const requireInlineExecutionResult = (
+  result: Effect.Effect.Success<ReturnType<typeof runToolsExecute>>
+) =>
+  result?.kind === 'tool_execution' && 'data' in result
+    ? Effect.succeed(result)
+    : Effect.fail(
+        new OnboardDemoExecutionError({
+          message: 'The onboarding demo did not return an inline tool execution result.',
+        })
+      );
+
+const executeDemo = (params: { readonly ui: TerminalUI; readonly demo: OnboardDemo }) => {
   const base = {
     slug: params.demo.slug,
     data: Option.some(JSON.stringify(params.demo.args)),
@@ -380,14 +253,9 @@ const executeDemo = (params: {
     skipChecks: false,
     inlineOnly: true,
   } as const;
-  const run = params.quiet
-    ? runToolsExecute({
-        ...base,
-        quiet: true,
-        onSuccess: result => showExecuteSummary(params.ui, params.demo.summarize, result),
-      })
-    : runToolsExecute(base);
-  return run.pipe(
+  return runToolsExecute({ ...base, quiet: true }).pipe(
+    Effect.flatMap(requireInlineExecutionResult),
+    Effect.tap(result => showExecuteSummary(params.ui, params.demo.summarize, result)),
     Effect.tapError(() =>
       params.ui.log.warn(
         'First run did not succeed — fix the inputs above and re-run `composio onboard` (it resumes at this step).'
@@ -454,8 +322,9 @@ const offerFollowUpCreate = (params: {
       skipChecks: false,
       quiet: true,
       inlineOnly: true,
-      onSuccess: result => showExecuteSummary(ui, followUp.summarize, result),
     }).pipe(
+      Effect.flatMap(requireInlineExecutionResult),
+      Effect.tap(result => showExecuteSummary(ui, followUp.summarize, result)),
       Effect.tap(() =>
         Effect.gen(function* () {
           yield* ui.log.info('Remember to close/archive it when you are done.');
@@ -539,22 +408,41 @@ const runNonInteractiveOnboard = (params: {
             slug: demo.slug,
             mode: 'non_interactive',
           });
-          yield* executeDemo({ ui, demo, quiet: false });
+          const execution = yield* executeDemo({ ui, demo }).pipe(Effect.either);
+          if (Either.isLeft(execution)) {
+            yield* ui.output(
+              buildStateJson({
+                state,
+                invocationSkips: params.invocationSkips,
+                hint: `The starter tool did not succeed. Fix the error shown on stderr and re-run \`composio onboard --toolkit ${target}\`.`,
+              }),
+              params.forceJson ? { force: true } : undefined
+            );
+            return yield* Effect.fail(execution.left);
+          }
           yield* track(CLI_ANALYTICS_EVENTS.CLI_ONBOARD_STEP_COMPLETED, 'execute', {
             slug: demo.slug,
           });
           yield* track(CLI_ANALYTICS_EVENTS.CLI_ONBOARD_COMPLETED);
           const cliConfig = yield* ComposioCliUserConfig;
-          if (!hasExecutedOnboardForOrg(cliConfig.data.onboard, state.orgId)) {
-            yield* ui.output(
-              buildStateJson({
-                state: { ...state, hasConnection: true, hasExecuted: true, complete: true },
-                invocationSkips: params.invocationSkips,
-                hint: 'Your first execution succeeded, but saving onboarding progress failed (config directory not writable). Treat onboarding as complete — do not re-run `composio onboard`.',
-              }),
-              params.forceJson ? { force: true } : undefined
-            );
-          }
+          yield* ui.output(
+            buildStateJson({
+              state: {
+                ...state,
+                hasConnection: true,
+                hasExecuted: true,
+                complete: true,
+                nextStep: undefined,
+              },
+              invocationSkips: params.invocationSkips,
+              ...(!cliConfig.data.onboard.hasExecuted
+                ? {
+                    hint: 'Your first execution succeeded, but saving onboarding progress failed (config directory not writable). Treat onboarding as complete — do not re-run `composio onboard`.',
+                  }
+                : {}),
+            }),
+            params.forceJson ? { force: true } : undefined
+          );
           return;
         }
       }
@@ -573,7 +461,7 @@ const runNonInteractiveOnboard = (params: {
       if (hint) {
         yield* ui.log.warn(hint);
       }
-      yield* emitStatus({
+      yield* emitOnboardStatus({
         ui,
         state,
         invocationSkips: params.invocationSkips,
@@ -766,12 +654,12 @@ const runInteractiveOnboard = (params: {
       return;
     }
 
-    yield* executeDemo({ ui, demo, quiet: true });
+    yield* executeDemo({ ui, demo });
     yield* track(CLI_ANALYTICS_EVENTS.CLI_ONBOARD_STEP_COMPLETED, 'execute', { slug: demo.slug });
     yield* track(CLI_ANALYTICS_EVENTS.CLI_ONBOARD_COMPLETED);
 
     const cliConfig = yield* ComposioCliUserConfig;
-    if (!hasExecutedOnboardForOrg(cliConfig.data.onboard, state.orgId)) {
+    if (!cliConfig.data.onboard.hasExecuted) {
       yield* ui.log.warn(
         'Progress could not be saved (check that the config directory is writable) — you may see this onboarding again.'
       );
@@ -816,7 +704,7 @@ export const onboardCmd = Command.make(
           next_step: state.nextStep ?? null,
           forced: true,
         });
-        yield* emitStatus({
+        yield* emitOnboardStatus({
           ui,
           state,
           invocationSkips,
@@ -829,11 +717,7 @@ export const onboardCmd = Command.make(
       }
 
       if (invocationSkips.length > 0) {
-        const config = yield* ComposioCliUserConfig;
-        const alreadySkipped = new Set(config.data.onboard.skippedSteps);
-        const freshSkips = invocationSkips.filter(step => !alreadySkipped.has(step));
-        yield* recordOnboardSkippedSteps(invocationSkips);
-        yield* Effect.forEach(freshSkips, step =>
+        yield* Effect.forEach(invocationSkips, step =>
           track(CLI_ANALYTICS_EVENTS.CLI_ONBOARD_STEP_SKIPPED, step, { origin: 'flag' })
         );
       }
@@ -844,7 +728,7 @@ export const onboardCmd = Command.make(
         yield* track(CLI_ANALYTICS_EVENTS.CLI_ONBOARD_STATUS_VIEWED, undefined, {
           complete: true,
         });
-        yield* emitStatus({
+        yield* emitOnboardStatus({
           ui,
           state,
           invocationSkips,
