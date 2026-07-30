@@ -1,6 +1,6 @@
 ---
 title: OAuth connection security
-description: Bind an OAuth connection to the user who started it, with same-browser binding for managed apps and callback identity verification for your own OAuth apps.
+description: Bind an OAuth connection to the user who started it, with same-browser binding enforced on managed apps and opt-in callback identity verification per project.
 keywords: [oauth session fixation, same-browser binding, callback identity verification, user verification, connect link, verifier url, complete_auth]
 ---
 
@@ -24,51 +24,24 @@ same-browser binding does not run.
 
 ## Same-browser binding
 
-For a Composio managed app, submitting a Connect Link ties the authorization attempt to the user's
-browser. A callback arriving in a different browser is rejected, and the connection does not
-activate.
+For Composio managed apps, a connection must be completed in the same browser that started it. When
+the Connect Link is submitted, Composio sets a secure cookie in the browser and checks it when the
+provider returns, so a link cannot be carried to another browser and completed there. This is
+enforced automatically, with no setup on your part.
 
-### How it works
+<Callout type="warn">
+**This can stop some of your real users from connecting — we know that is frustrating, so here is
+exactly when it happens.** If a user opens the Connect Link in one browser but the provider returns
+them to another, the connection is rejected with *"This connection was started from a different
+browser or device."* It most often happens with in-app browsers (Instagram, LinkedIn, and similar)
+that hand the provider step to the system browser, or when cookies are blocked. Reopening the link
+and finishing it in a single browser lets them through.
 
-On submission of the Connect Link, Composio issues a random per-attempt secret to the browser in an
-`HttpOnly`, `Secure`, `SameSite=Lax` cookie, and stores only its SHA-256 hash alongside the
-authorization request. On the callback, Composio hashes the presented cookie and compares it to the
-stored hash. A missing or non-matching cookie is rejected. The raw secret is never persisted, and
-the binding applies only to that attempt.
-
-### Availability
-
-Same-browser binding is enforced by Composio on managed apps, with no setup on your side. If it
-rejects legitimate users of yours, contact Composio to disable it for your project; changes take
-effect immediately.
-
-### Rejection behaviour
-
-A rejected callback is not an HTTP error. The browser is redirected with a failure status and the
-message `This connection was started from a different browser or device`. For a hosted Connect Link,
-the same failure is forwarded to your callback URL as `status=failed`, with the message in the
-`error` parameter (see the
-[callback parameters](/docs/manually-authenticating#redirecting-users-after-authentication)).
-
-A rejected attempt is not marked `FAILED`. The connection remains `INITIATED` and becomes `EXPIRED`
-(reason `INITIATION_TIMEOUT`) after ten minutes — indistinguishable through the API from an abandoned
-attempt. The failure message on the callback is the definitive signal.
-
-### Legitimate rejections
-
-A callback that arrives in a different cookie jar than the one that submitted the Connect Link is
-rejected. This affects several legitimate cases:
-
-- **In-app browsers** (Instagram, LinkedIn, Telegram, and others) that hand the provider step to the
-  system browser.
-- **A link forwarded between devices** — the case the control exists to prevent, and indistinguishable
-  from the above.
-- **A link completed more than one hour after submission**, exceeding the cookie lifetime.
-- **A callback proxied server-side** rather than followed by the browser. Return a `302` (see
-  [routing the callback through your domain](/docs/white-labeling-authentication#routing-the-callback-through-your-domain)).
-
-Binding is not enforced in local development: the cookie is issued for `.composio.dev` and is dropped
-on `localhost`.
+The check stays on because Composio owns the OAuth app for these connections and it is shared across
+every Composio user — without it, a connection one person starts could be finished by someone else.
+If it is hurting your users, tell us and we will turn it off for your project straight away, with
+nothing for you to deploy.
+</Callout>
 
 ## Callback identity verification
 
