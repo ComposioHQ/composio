@@ -707,7 +707,7 @@ print_post_install_help() {
     # Case A: the invoking terminal already resolves the installed executable.
     if [ "$inherited_resolution" = installed ]; then
         if [ "$shell_setup_outcome" = success ] || [ "$shell_setup_mode" = none ]; then
-            printf 'composio is ready.\n\n  composio login\n'
+            printf 'composio is ready.\n\n  composio onboard\n'
             return 0
         fi
     fi
@@ -718,7 +718,7 @@ print_post_install_help() {
             printf 'To use the newly installed CLI, run:\n\n  %s login\n' "$(shell_quote "$exe")"
         else
             # Case B: configured for future terminals, vocabulary-free.
-            printf 'Open a new terminal, then run:\n\n  composio login\n'
+            printf 'Open a new terminal, then run:\n\n  composio onboard\n'
         fi
         return 0
     fi
@@ -738,7 +738,7 @@ print_post_install_help() {
             fi
             ;;
     esac
-    printf 'To get started now, run:\n\n  %s login\n' "$(shell_quote "$exe")"
+    printf 'To get started now, run:\n\n  %s onboard\n' "$(shell_quote "$exe")"
 }
 
 # Setup failure never fails the install. Recovery travels the stderr warn
@@ -758,7 +758,7 @@ print_setup_failure_ending() {
     if [ "$install_agent" = 1 ]; then
         printf '\nRun composio from its installed location:\n\n  %s --help\n' "$(shell_quote "$exe")" >&2
     else
-        printf '\nTo get started, run:\n\n  %s login\n' "$(shell_quote "$exe")" >&2
+        printf '\nTo get started, run:\n\n  %s onboard\n' "$(shell_quote "$exe")" >&2
     fi
 }
 

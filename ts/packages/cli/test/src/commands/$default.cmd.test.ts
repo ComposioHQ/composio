@@ -51,8 +51,8 @@ describe('CLI: composio', () => {
     );
   });
 
-  layer(TestLive())(it => {
-    it.scoped('[Given] no args [Then] prints help message', () =>
+  layer(TestLive({ cliUserConfig: { onboarding: { hasExecuted: true } } }))(it => {
+    it.scoped('[Given] no args and a finished onboarding [Then] prints help message', () =>
       Effect.gen(function* () {
         yield* cli([]);
         const lines = yield* MockConsole.getLines({ stripAnsi: true });
@@ -60,6 +60,20 @@ describe('CLI: composio', () => {
         expect(output).toContain('Usage:');
         expect(output).toContain('composio');
         expect(output).not.toContain('composio connections list');
+        expect(output).not.toContain('composio onboard` to');
+      })
+    );
+  });
+
+  layer(TestLive())(it => {
+    it.scoped('[Given] no args and an unfinished onboarding [Then] nudges toward onboard', () =>
+      Effect.gen(function* () {
+        yield* cli([]);
+        const lines = yield* MockConsole.getLines({ stripAnsi: true });
+        const output = lines.join('\n');
+        expect(output).toContain('composio onboard');
+        // The nudge replaces root help; it does not print both.
+        expect(output).not.toContain('Usage:');
       })
     );
   });
