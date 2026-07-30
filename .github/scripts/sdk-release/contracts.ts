@@ -532,7 +532,37 @@ export const AttemptReceiptSchema = z
     observations: z.array(RegistryObservationSchema),
     outcome: z.enum(['partial', 'conflict', 'verified', 'receipted', 'notified']),
   })
-  .strict();
+  .strict()
+  .superRefine((receipt, context) => {
+    if (receipt.transition.release_id !== receipt.release_id) {
+      context.addIssue({
+        code: 'custom',
+        path: ['transition', 'release_id'],
+        message: 'attempt transition must belong to the same release',
+      });
+    }
+    if (receipt.observations.some(observation => observation.manifest_id !== receipt.manifest_id)) {
+      context.addIssue({
+        code: 'custom',
+        path: ['observations'],
+        message: 'every registry observation must belong to the attempt manifest',
+      });
+    }
+    if (
+      (receipt.outcome === 'verified' &&
+        !receipt.observations.every(observation => observation.state === 'exact')) ||
+      (receipt.outcome === 'conflict' &&
+        !receipt.observations.some(observation => observation.state === 'conflict')) ||
+      (receipt.outcome === 'partial' &&
+        receipt.observations.some(observation => observation.state === 'conflict'))
+    ) {
+      context.addIssue({
+        code: 'custom',
+        path: ['outcome'],
+        message: 'attempt outcome must match exact registry evidence',
+      });
+    }
+  });
 
 export type ReleaseRequest = z.infer<typeof ReleaseRequestSchema>;
 export type DraftManifest = z.infer<typeof DraftManifestSchema>;

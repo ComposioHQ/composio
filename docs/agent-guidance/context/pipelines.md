@@ -40,7 +40,9 @@ Reference for all GitHub Actions workflows related to docs.
 future SDK coordinator. During shadow mode, only `prepare` is operational.
 `publish`, `resume`, and `verify` fail closed, and the
 `SDK_RELEASE_PUBLISH_ENABLED` repository variable remains false. The workflow
-has no npm or PyPI publisher and receives no registry OIDC permission.
+contains the final direct npm and PyPI publisher jobs, but every production path
+also has an explicit always-false cutover guard. No publisher job or registry
+OIDC token can be created until the sole-writer cutover removes that guard.
 
 A preparation is keyed by a stable `release_id` and targets
 `release/sdk-<release_id>` at `next`. Only one machine-marked preparation PR
@@ -81,6 +83,24 @@ explicit reset regenerates the draft, increments its reset record, and
 invalidates prior review. The writer accepts either a clean new version patch
 or the exact already-applied patch; partial patches, stale base commits, and a
 branch that advances between inspection and writing fail closed.
+
+The preparation branch records a structurally sealed candidate manifest, but
+open-branch bytes are not publication authority. Publication resolution requires
+the exact machine-marked preparation PR to be merged into `next`, then binds the
+manifest ID to those canonical bytes and that merge commit. It retrieves the
+primary artifact from the manifest's original prepare run and attempt, verifies
+that run's repository/workflow identity, and re-hashes every file before any
+protected job.
+
+Once cutover is explicitly enabled, absent npm and PyPI artifacts flow into two
+direct, top-level `sdk-production` jobs with job-scoped OIDC. npm uses a
+supported pinned toolchain and publishes dependency-first with each sealed
+dist-tag. PyPI uses one pinned publisher action with `skip-existing` disabled.
+Both empty and non-empty attempts return to exact live reconciliation. Terminal
+attempts append immutable PR comments, update one machine-owned receipt index,
+and create or reuse manifest-bound annotated tags only after verification.
+Partial and conflicting attempts remain resumable from registry truth; no
+workflow path unpublishes or overwrites a version.
 
 Run the shadow contract locally with:
 

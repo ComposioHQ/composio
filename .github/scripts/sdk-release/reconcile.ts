@@ -161,6 +161,15 @@ function verifyArtifactFile(path: string, artifact: ReleaseArtifact): void {
   }
 }
 
+export function verifySealedArtifactDirectory(
+  artifacts: readonly ReleaseArtifact[],
+  sourceDirectory: string
+): void {
+  for (const artifact of artifacts.map(candidate => ArtifactSchema.parse(candidate))) {
+    verifyArtifactFile(join(sourceDirectory, artifact.filename), artifact);
+  }
+}
+
 export interface FilterAbsentArtifactsOptions {
   plan: ReconciliationPlan;
   artifacts: readonly ReleaseArtifact[];
@@ -233,7 +242,10 @@ async function main(args: string[]): Promise<void> {
   });
   const outputPath = argumentValue(args, '--output');
   writeFileSync(outputPath, `${JSON.stringify(plan, null, 2)}\n`);
-  if (args.includes('--artifact-directory') || args.includes('--filtered-directory')) {
+  if (
+    plan.can_publish &&
+    (args.includes('--artifact-directory') || args.includes('--filtered-directory'))
+  ) {
     filterAbsentArtifacts({
       plan,
       artifacts: sealed.manifest.artifacts,

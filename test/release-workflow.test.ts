@@ -50,6 +50,14 @@ const sdkReleaseWorkflow = readFileSync(
   new URL('../.github/workflows/sdk.release.yml', import.meta.url),
   'utf8'
 );
+const sdkReleaseJob = (name: string): string => {
+  const marker = `\n  ${name}:\n`;
+  const start = sdkReleaseWorkflow.indexOf(marker);
+  if (start === -1) throw new Error(`sdk.release.yml is missing job ${name}`);
+  const remainder = sdkReleaseWorkflow.slice(start + marker.length);
+  const next = /\n  (?! )[A-Za-z0-9_-]+:\n/.exec(remainder);
+  return sdkReleaseWorkflow.slice(start, next ? start + marker.length + next.index : undefined);
+};
 const pythonExactVersionSetter = readFileSync(
   new URL('../python/scripts/set-release-version.py', import.meta.url),
   'utf8'
@@ -278,6 +286,7 @@ for (const requiredSuite of [
   'test/sdk-release-changelog.test.ts',
   'test/sdk-release-coordinator.test.ts',
   'test/sdk-release-reconcile.test.ts',
+  'test/sdk-release-publish.test.ts',
 ]) {
   if (!sdkReleaseTestScript.includes(requiredSuite)) {
     throw new Error(`sdk-release:test must include ${requiredSuite}`);
@@ -313,18 +322,9 @@ if (
 ) {
   throw new Error('SDK release registry writers must remain hard-disabled by repository variable');
 }
-if (sdkReleaseWorkflow.includes('id-token: write')) {
-  throw new Error('Observe-only SDK release preparation must not receive registry OIDC authority');
-}
-for (const forbiddenPublisher of [
-  'npm publish',
-  'changeset publish',
-  'gh-action-pypi-publish',
-  'PYPI_PASSWORD',
-  'NPM_TOKEN',
-]) {
+for (const forbiddenPublisher of ['changeset publish', 'PYPI_PASSWORD', 'NPM_TOKEN']) {
   if (sdkReleaseWorkflow.includes(forbiddenPublisher)) {
-    throw new Error(`Observe-only SDK coordinator must not contain ${forbiddenPublisher}`);
+    throw new Error(`SDK coordinator must not contain legacy publisher ${forbiddenPublisher}`);
   }
 }
 if (
@@ -414,6 +414,60 @@ if (
   !sdkReleaseWorkflow.includes('integrity:$integrity')
 ) {
   throw new Error('SDK primary npm artifacts must seal SHA-512 Subresource Integrity');
+}
+for (const protectedJob of ['publish-npm:', 'publish-pypi:']) {
+  if (!sdkReleaseWorkflow.includes(protectedJob)) {
+    throw new Error(`SDK coordinator must define direct protected job ${protectedJob}`);
+  }
+}
+for (const protectedJob of ['publish-npm', 'publish-pypi']) {
+  const block = sdkReleaseJob(protectedJob);
+  if (
+    !block.includes('environment: sdk-production') ||
+    (block.match(/id-token: write/g) ?? []).length !== 1
+  ) {
+    throw new Error(`${protectedJob} must own exactly one protected job-scoped OIDC grant`);
+  }
+}
+if ((sdkReleaseWorkflow.match(/id-token: write/g) ?? []).length !== 2) {
+  throw new Error('Only the two direct registry publisher jobs may receive OIDC authority');
+}
+if ((sdkReleaseWorkflow.match(/environment: sdk-production/g) ?? []).length !== 2) {
+  throw new Error(
+    'Both direct registry publishers must use the protected sdk-production environment'
+  );
+}
+if (
+  (sdkReleaseWorkflow.match(/pypa\/gh-action-pypi-publish@/g) ?? []).length !== 1 ||
+  !sdkReleaseWorkflow.includes('skip-existing: false')
+) {
+  throw new Error('PyPI must use one direct pinned absent-only publisher without skip-existing');
+}
+for (const protectedInvariant of [
+  "vars.SDK_RELEASE_PUBLISH_ENABLED == 'true' && false",
+  'actions: read',
+  'run-id: ${{ steps.resolve.outputs.prepare_run_id }}',
+  'github-token: ${{ github.token }}',
+  'verifySealedArtifactDirectory',
+  'phase: "sealed"',
+  'sealManifest(manifest)',
+  'computeManifestId(manifest)',
+  'environment: sdk-production',
+  'bun .github/scripts/sdk-release/publish-npm.ts',
+  "inputs.operation != 'verify'",
+  'Poll exact registries even when publish directories were empty',
+  'finalize-receipt.ts attempt',
+  'planReleaseTags',
+]) {
+  if (!sdkReleaseWorkflow.includes(protectedInvariant)) {
+    throw new Error(`Protected SDK publishing must preserve ${protectedInvariant}`);
+  }
+}
+if (
+  !sdkReleaseWorkflow.includes('node-version:') ||
+  !sdkReleaseWorkflow.includes('npm 11.5.1 or newer is required for trusted publishing')
+) {
+  throw new Error('npm trusted publishing must pin and validate a supported release toolchain');
 }
 
 const tsTestWorkflow = readFileSync(

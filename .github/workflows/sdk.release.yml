@@ -89,7 +89,7 @@ jobs:
             jq . request.json
             echo '```'
             echo
-            echo "Registry publisher switch: \`${SDK_RELEASE_PUBLISH_ENABLED:-false}\` (writers are not present in observe-only mode)"
+            echo "Registry publisher switch: \`${SDK_RELEASE_PUBLISH_ENABLED:-false}\` (writers remain hard-disabled pending cutover)"
           } >> "$GITHUB_STEP_SUMMARY"
 
   unsupported-operation:
@@ -423,7 +423,7 @@ jobs:
           bun --eval '
             import { existsSync, readFileSync } from "node:fs";
             import { generateChangelog } from "./.github/scripts/sdk-release/generate-changelog.ts";
-            import { DraftManifestSchema } from "./.github/scripts/sdk-release/contracts.ts";
+            import { ManifestSchema } from "./.github/scripts/sdk-release/contracts.ts";
             import {
               assertPreparedBaseCommit,
               generationRecordFromManifest,
@@ -434,7 +434,7 @@ jobs:
               "utf8",
             ).trim();
             const existingManifest = existsSync("existing/existing-manifest.json")
-              ? DraftManifestSchema.parse(
+              ? ManifestSchema.parse(
                   JSON.parse(readFileSync("existing/existing-manifest.json", "utf8")),
                 )
               : undefined;
@@ -491,8 +491,8 @@ jobs:
     needs: [normalize-request, prepare, generate-changelog]
     runs-on: ubuntu-latest
     permissions:
-      contents: write
-      pull-requests: write
+      contents: read
+      pull-requests: read
     steps:
       - name: Generate GitHub App token
         id: app-token
@@ -583,8 +583,8 @@ jobs:
           bun --eval '
             import { createHash } from "node:crypto";
             import { readFileSync } from "node:fs";
-            import { canonicalJson } from "./.github/scripts/sdk-release/canonical-json.ts";
-            import { DraftManifestSchema } from "./.github/scripts/sdk-release/contracts.ts";
+            import { SealedManifestSchema } from "./.github/scripts/sdk-release/contracts.ts";
+            import { sealManifest } from "./.github/scripts/sdk-release/manifest.ts";
             import { assertPreparedBaseCommit } from "./.github/scripts/sdk-release/update-preparation-pr.ts";
             const versions = JSON.parse(readFileSync("handoff/versions.json", "utf8"));
             const artifacts = JSON.parse(readFileSync("handoff/artifacts.json", "utf8"));
@@ -597,9 +597,9 @@ jobs:
                 ? new TextDecoder().decode(result.stdout).trim()
                 : null;
             };
-            const manifest = DraftManifestSchema.parse({
+            const manifest = SealedManifestSchema.parse({
               schema_version: "sdk-release-manifest/v1",
-              phase: "draft",
+              phase: "sealed",
               release_id: process.env.RELEASE_ID,
               base_commit: primaryBaseCommit,
               selection: {
@@ -630,7 +630,8 @@ jobs:
               },
             });
             assertPreparedBaseCommit(primaryBaseCommit, manifest.base_commit);
-            await Bun.write(`.github/sdk-release/manifests/${process.env.RELEASE_ID}.json`, canonicalJson(manifest) + "\n");
+            const sealed = sealManifest(manifest);
+            await Bun.write(`.github/sdk-release/manifests/${process.env.RELEASE_ID}.json`, sealed.canonical_bytes + "\n");
           '
           git add ".github/sdk-release/drafts/$RELEASE_ID.mdx" ".github/sdk-release/manifests/$RELEASE_ID.json"
           git -c user.name="composio-release-bot[bot]" \
@@ -672,16 +673,15 @@ jobs:
         run: |
           set -euo pipefail
           bun --eval '
-            import { createHash } from "node:crypto";
             import { readFileSync } from "node:fs";
             import { compareShadowPackages } from "./.github/scripts/sdk-release/update-preparation-pr.ts";
+            import { computeManifestId } from "./.github/scripts/sdk-release/manifest.ts";
             const manifest = JSON.parse(readFileSync(`.github/sdk-release/manifests/${process.env.RELEASE_ID}.json`, "utf8"));
             const changelog = JSON.parse(readFileSync("handoff/changelog.json", "utf8"));
-            const manifestBytes = readFileSync(`.github/sdk-release/manifests/${process.env.RELEASE_ID}.json`);
             const legacy = JSON.parse(readFileSync("handoff/legacy-packages.json", "utf8"));
             await Bun.write("receipt-input.json", JSON.stringify({
               release_id: manifest.release_id,
-              manifest_id: createHash("sha256").update(manifestBytes).digest("hex"),
+              manifest_id: computeManifestId(manifest),
               selection: manifest.selection,
               packages: manifest.packages,
               artifacts: manifest.artifacts,
@@ -754,3 +754,548 @@ jobs:
             echo "No registry credentials or write operations were available to this job."
           } >> "$GITHUB_STEP_SUMMARY"
           exit "$status"
+
+  resolve-sealed-release:
+    name: Resolve merged sealed release and primary artifacts
+    needs: normalize-request
+    if: ${{ inputs.operation != 'prepare' && vars.SDK_RELEASE_PUBLISH_ENABLED == 'true' && false }}
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+      pull-requests: read
+    outputs:
+      manifest_id: ${{ steps.resolve.outputs.manifest_id }}
+      source_commit: ${{ steps.resolve.outputs.source_commit }}
+      prepare_run_id: ${{ steps.resolve.outputs.prepare_run_id }}
+      prepare_run_attempt: ${{ steps.resolve.outputs.prepare_run_attempt }}
+      preparation_pull_request: ${{ steps.resolve.outputs.preparation_pull_request }}
+    steps:
+      - name: Checkout release history
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: next
+          fetch-depth: 0
+
+      - name: Setup Node.js, pnpm, Bun
+        uses: ./.github/actions/setup-node-pnpm-bun
+        with:
+          node-version: '24.17.0'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Resolve exact merged preparation lineage
+        id: resolve
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_ID: ${{ inputs.release_id }}
+        run: |
+          set -euo pipefail
+          marker="<!-- sdk-release-preparation:$RELEASE_ID -->"
+          gh pr list \
+            --state merged \
+            --head "$PREPARATION_BRANCH" \
+            --base next \
+            --limit 10 \
+            --json number,state,headRefName,baseRefName,body,mergeCommit \
+            | jq '[.[] | {
+                number,
+                state,
+                head_ref:.headRefName,
+                base_ref:.baseRefName,
+                body:(.body // ""),
+                merge_commit_sha:.mergeCommit.oid
+              }]' > merged-prs.json
+          source_commit=$(jq -r --arg marker "$marker" \
+            '[.[] | select(.state == "MERGED" and .head_ref == env.PREPARATION_BRANCH and .base_ref == "next" and (.body | contains($marker)))] | if length == 1 then .[0].merge_commit_sha else error("expected exactly one merged preparation PR") end' \
+            merged-prs.json)
+          git show "$source_commit:.github/sdk-release/manifests/$RELEASE_ID.json" \
+            > sealed-manifest.json
+          prepare_run_id=$(jq -r .prepare_run.run_id sealed-manifest.json)
+          gh api "repos/$GITHUB_REPOSITORY/actions/runs/$prepare_run_id" \
+            | jq --arg repository "$GITHUB_REPOSITORY" '{
+                run_id:.id,
+                run_attempt:.run_attempt,
+                repository:$repository,
+                workflow:(.path | split("/") | last),
+                conclusion
+              }' > prepare-run.json
+          RELEASE_SOURCE_COMMIT="$source_commit" bun --eval '
+            import { readFileSync } from "node:fs";
+            import { resolveMergedRelease } from "./.github/scripts/sdk-release/finalize-receipt.ts";
+            import { sealManifest } from "./.github/scripts/sdk-release/manifest.ts";
+            const manifestBytes = readFileSync("sealed-manifest.json", "utf8");
+            const manifest = JSON.parse(manifestBytes);
+            if (sealManifest(manifest).canonical_bytes + "\n" !== manifestBytes) {
+              throw new Error("Merged sealed manifest is not in canonical byte form");
+            }
+            const resolved = resolveMergedRelease({
+              release_id: process.env.RELEASE_ID,
+              repository: process.env.GITHUB_REPOSITORY,
+              pull_requests: JSON.parse(readFileSync("merged-prs.json", "utf8")),
+              manifest,
+              prepare_run: JSON.parse(readFileSync("prepare-run.json", "utf8")),
+            });
+            if (resolved.source_commit !== process.env.RELEASE_SOURCE_COMMIT) {
+              throw new Error("Merged release source changed during resolution");
+            }
+            await Bun.write("resolved-release.json", JSON.stringify(resolved, null, 2) + "\n");
+          '
+          git checkout --detach "$source_commit"
+          bun --eval '
+            import { readFileSync } from "node:fs";
+            const listed = Bun.spawnSync(["pnpm", "list", "-r", "--depth", "-1", "--json"]);
+            if (listed.exitCode !== 0) throw new Error("Unable to enumerate workspace packages");
+            const packages = JSON.parse(new TextDecoder().decode(listed.stdout))
+              .filter(item => item.name && item.path)
+              .map(item => {
+                const metadata = JSON.parse(readFileSync(`${item.path}/package.json`, "utf8"));
+                const dependencies = new Set([
+                  ...Object.keys(metadata.dependencies ?? {}),
+                  ...Object.keys(metadata.optionalDependencies ?? {}),
+                  ...Object.keys(metadata.peerDependencies ?? {}),
+                ]);
+                return { name:item.name, dependencies:[...dependencies].sort() };
+              })
+              .sort((left, right) => left.name.localeCompare(right.name));
+            await Bun.write("workspace-packages.json", JSON.stringify(packages, null, 2) + "\n");
+          '
+          {
+            echo "manifest_id=$(jq -r .manifest_id resolved-release.json)"
+            echo "source_commit=$(jq -r .source_commit resolved-release.json)"
+            echo "prepare_run_id=$(jq -r .prepare_run_id resolved-release.json)"
+            echo "prepare_run_attempt=$(jq -r .prepare_run_attempt resolved-release.json)"
+            echo "preparation_pull_request=$(jq -r .preparation_pull_request resolved-release.json)"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Download exact prior prepare-run artifact
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: sdk-release-primary-${{ inputs.release_id }}-${{ steps.resolve.outputs.prepare_run_attempt }}
+          path: prepare-handoff
+          repository: ${{ github.repository }}
+          run-id: ${{ steps.resolve.outputs.prepare_run_id }}
+          github-token: ${{ github.token }}
+
+      - name: Re-hash sealed artifacts before protected jobs
+        run: |
+          set -euo pipefail
+          bun --eval '
+            import { readFileSync } from "node:fs";
+            import { SealedManifestSchema } from "./.github/scripts/sdk-release/contracts.ts";
+            import { verifySealedArtifactDirectory } from "./.github/scripts/sdk-release/reconcile.ts";
+            const manifest = SealedManifestSchema.parse(JSON.parse(readFileSync("sealed-manifest.json", "utf8")));
+            verifySealedArtifactDirectory(manifest.artifacts, "prepare-handoff/primary-artifacts");
+          '
+          mkdir release-handoff
+          cp sealed-manifest.json release-handoff/manifest.json
+          cp resolved-release.json release-handoff/resolved.json
+          cp workspace-packages.json release-handoff/workspace.json
+          cp -R prepare-handoff/primary-artifacts release-handoff/artifacts
+
+      - name: Upload revalidated sealed handoff
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: sdk-release-sealed-${{ inputs.release_id }}-${{ github.run_id }}-${{ github.run_attempt }}
+          if-no-files-found: error
+          retention-days: 7
+          path: release-handoff/
+
+  preflight-reconcile:
+    name: Reconcile sealed release before approval
+    needs: resolve-sealed-release
+    if: ${{ inputs.operation != 'prepare' && vars.SDK_RELEASE_PUBLISH_ENABLED == 'true' && false }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      can_publish: ${{ steps.reconcile.outputs.can_publish }}
+      npm_count: ${{ steps.reconcile.outputs.npm_count }}
+      pypi_count: ${{ steps.reconcile.outputs.pypi_count }}
+      state: ${{ steps.reconcile.outputs.state }}
+    steps:
+      - name: Checkout sealed source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.resolve-sealed-release.outputs.source_commit }}
+
+      - name: Setup Node.js, pnpm, Bun
+        uses: ./.github/actions/setup-node-pnpm-bun
+        with:
+          node-version: '24.17.0'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Download sealed handoff
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: sdk-release-sealed-${{ inputs.release_id }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: handoff
+
+      - name: Build immutable registry matrix and filtered directories
+        id: reconcile
+        run: |
+          set -euo pipefail
+          status=0
+          bun .github/scripts/sdk-release/reconcile.ts \
+            --manifest handoff/manifest.json \
+            --artifact-directory handoff/artifacts \
+            --filtered-directory handoff/filtered \
+            --output handoff/reconciliation.json || status=$?
+          if [[ "$status" -ne 0 && "$status" -ne 2 ]]; then
+            exit "$status"
+          fi
+          can_publish=$(jq -r .can_publish handoff/reconciliation.json)
+          npm_count=$(jq '.absent.npm | length' handoff/reconciliation.json)
+          pypi_count=$(jq '.absent.pypi | length' handoff/reconciliation.json)
+          state=$([[ "$can_publish" == "true" ]] && echo ready || echo conflict)
+          {
+            echo "can_publish=$can_publish"
+            echo "npm_count=$npm_count"
+            echo "pypi_count=$pypi_count"
+            echo "state=$state"
+          } >> "$GITHUB_OUTPUT"
+          {
+            echo "## Pending protected SDK deployment"
+            echo
+            echo "Sealed source: \`${{ needs.resolve-sealed-release.outputs.source_commit }}\`"
+            echo "Manifest ID: \`${{ needs.resolve-sealed-release.outputs.manifest_id }}\`"
+            echo "Changelog SHA-256: \`$(jq -r .changelog.sha256 handoff/manifest.json)\`"
+            echo
+            echo "| Registry | Package | Artifact | SHA-256 | npm SRI |"
+            echo "| --- | --- | --- | --- | --- |"
+            jq -r '.artifacts[] | "| \(.registry) | `\(.package_name)` | `\(.filename)` | `\(.sha256)` | \(.integrity // "—") |"' handoff/manifest.json
+            echo
+            echo "Preflight state: **$state**"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload immutable publish handoff
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: sdk-release-publish-${{ inputs.release_id }}-${{ github.run_id }}-${{ github.run_attempt }}
+          if-no-files-found: error
+          retention-days: 7
+          path: handoff/
+
+  publish-npm:
+    name: Publish absent npm tarballs with OIDC
+    needs: [resolve-sealed-release, preflight-reconcile]
+    if: ${{ inputs.operation != 'prepare' && inputs.operation != 'verify' && vars.SDK_RELEASE_PUBLISH_ENABLED == 'true' && false && needs.preflight-reconcile.outputs.can_publish == 'true' && needs.preflight-reconcile.outputs.npm_count != '0' }}
+    runs-on: ubuntu-latest
+    environment: sdk-production
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Checkout sealed source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.resolve-sealed-release.outputs.source_commit }}
+
+      - name: Setup trusted npm publisher
+        uses: ./.github/actions/setup-node-pnpm-bun
+        with:
+          node-version: '24.17.0'
+
+      - name: Require npm trusted-publisher support
+        run: |
+          set -euo pipefail
+          npm_version=$(npm --version)
+          node -e '
+            const current = process.argv[1].split(".").map(Number);
+            const [major = 0, minor = 0, patch = 0] = current;
+            const valid =
+              major > 11 ||
+              (major === 11 && (minor > 5 || (minor === 5 && patch >= 1)));
+            process.exit(valid ? 0 : 1);
+          ' "$npm_version" || {
+            echo "::error::npm 11.5.1 or newer is required for trusted publishing"
+            exit 1
+          }
+          pnpm install --frozen-lockfile
+
+      - name: Download absent-only publish handoff
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: sdk-release-publish-${{ inputs.release_id }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: handoff
+
+      - name: Publish absent npm tarballs in dependency order
+        run: |
+          bun .github/scripts/sdk-release/publish-npm.ts \
+            --manifest handoff/manifest.json \
+            --reconciliation handoff/reconciliation.json \
+            --workspace handoff/workspace.json \
+            --artifact-directory handoff/filtered/npm
+
+  publish-pypi:
+    name: Publish absent Python distributions with OIDC
+    needs: [resolve-sealed-release, preflight-reconcile]
+    if: ${{ inputs.operation != 'prepare' && inputs.operation != 'verify' && vars.SDK_RELEASE_PUBLISH_ENABLED == 'true' && false && needs.preflight-reconcile.outputs.can_publish == 'true' && needs.preflight-reconcile.outputs.pypi_count != '0' }}
+    runs-on: ubuntu-latest
+    environment: sdk-production
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Download absent-only publish handoff
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: sdk-release-publish-${{ inputs.release_id }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: handoff
+
+      - name: Publish absent Python distributions
+        uses: pypa/gh-action-pypi-publish@ba38be9e461d3875417946c167d0b5f3d385a247 # v1.14.1
+        with:
+          packages-dir: handoff/filtered/pypi
+          skip-existing: false
+
+  verify-publication:
+    name: Verify exact public registry state
+    needs: [resolve-sealed-release, preflight-reconcile, publish-npm, publish-pypi]
+    if: ${{ always() && inputs.operation != 'prepare' && vars.SDK_RELEASE_PUBLISH_ENABLED == 'true' && false && needs.resolve-sealed-release.result == 'success' && needs.preflight-reconcile.result == 'success' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      state: ${{ steps.verify.outputs.state }}
+    steps:
+      - name: Checkout sealed source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.resolve-sealed-release.outputs.source_commit }}
+
+      - name: Setup Node.js, pnpm, Bun
+        uses: ./.github/actions/setup-node-pnpm-bun
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Download publish handoff
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: sdk-release-publish-${{ inputs.release_id }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: handoff
+
+      - name: Poll exact registries even when publish directories were empty
+        id: verify
+        run: |
+          set -euo pipefail
+          bun --eval '
+            import { readFileSync } from "node:fs";
+            import { SealedManifestSchema } from "./.github/scripts/sdk-release/contracts.ts";
+            import { reconcileRelease } from "./.github/scripts/sdk-release/reconcile.ts";
+            import {
+              RegistryConsistencyTimeoutError,
+              verifyRegistryConsistency,
+            } from "./.github/scripts/sdk-release/verify.ts";
+            const manifest = SealedManifestSchema.parse(JSON.parse(readFileSync("handoff/manifest.json", "utf8")));
+            const resolved = JSON.parse(readFileSync("handoff/resolved.json", "utf8"));
+            const reconcile = () => reconcileRelease({
+              manifest_id: resolved.manifest_id,
+              packages: manifest.packages,
+              artifacts: manifest.artifacts,
+            });
+            let plan;
+            let state;
+            try {
+              plan = await verifyRegistryConsistency({ reconcile });
+              state = plan.observations.some(item => item.state === "conflict")
+                ? "conflict"
+                : "verified";
+            } catch (error) {
+              if (!(error instanceof RegistryConsistencyTimeoutError) || !error.last_plan) throw error;
+              plan = error.last_plan;
+              state = "partial";
+            }
+            await Bun.write("verification.json", JSON.stringify({ state, plan }, null, 2) + "\n");
+          '
+          echo "state=$(jq -r .state verification.json)" >> "$GITHUB_OUTPUT"
+
+      - name: Upload terminal verification evidence
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: sdk-release-verification-${{ inputs.release_id }}-${{ github.run_id }}-${{ github.run_attempt }}
+          if-no-files-found: error
+          retention-days: 30
+          path: verification.json
+
+  finalize-release-attempt:
+    name: Record attempt receipt and verified tags
+    needs:
+      [resolve-sealed-release, preflight-reconcile, publish-npm, publish-pypi, verify-publication]
+    if: ${{ always() && inputs.operation != 'prepare' && vars.SDK_RELEASE_PUBLISH_ENABLED == 'true' && false && needs.resolve-sealed-release.result == 'success' && needs.verify-publication.result == 'success' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    steps:
+      - name: Generate GitHub App token
+        id: app-token
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        with:
+          client-id: ${{ vars.RELEASE_BOT_CLIENT_ID }}
+          private-key: ${{ secrets.RELEASE_BOT_APP_PRIVATE_KEY }}
+
+      - name: Checkout sealed release commit
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.resolve-sealed-release.outputs.source_commit }}
+          fetch-depth: 0
+          token: ${{ steps.app-token.outputs.token }}
+
+      - name: Setup Node.js, pnpm, Bun
+        uses: ./.github/actions/setup-node-pnpm-bun
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Download sealed evidence
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: sdk-release-sealed-${{ inputs.release_id }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: evidence
+
+      - name: Download verification evidence
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: sdk-release-verification-${{ inputs.release_id }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: evidence
+
+      - name: Post immutable attempt and update receipt index
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          OPERATION: ${{ inputs.operation }}
+          PREPARATION_PR: ${{ needs.resolve-sealed-release.outputs.preparation_pull_request }}
+          RELEASE_ID: ${{ inputs.release_id }}
+          MANIFEST_ID: ${{ needs.resolve-sealed-release.outputs.manifest_id }}
+          SOURCE_COMMIT: ${{ needs.resolve-sealed-release.outputs.source_commit }}
+        run: |
+          set -euo pipefail
+          gh api "repos/$GITHUB_REPOSITORY/issues/$PREPARATION_PR/comments" \
+            --paginate --slurp | jq 'add' > existing-comments.json
+          attempt=$(jq --arg prefix "<!-- sdk-release-attempt:$RELEASE_ID:" \
+            '[.[] | select(.body | startswith($prefix))] | length + 1' existing-comments.json)
+          started_at=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" --jq .created_at)
+          completed_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+          state=$(jq -r .state evidence/verification.json)
+          from=$([[ "$state" == "conflict" ]] && echo preflight_reconciling || echo publishing)
+          if [[ "${{ needs.publish-npm.result }}" == "cancelled" || "${{ needs.publish-pypi.result }}" == "cancelled" ]]; then
+            state=partial
+          fi
+          jq -n \
+            --arg release_id "$RELEASE_ID" \
+            --arg manifest_id "${{ needs.resolve-sealed-release.outputs.manifest_id }}" \
+            --arg operation "$OPERATION" \
+            --arg started_at "$started_at" \
+            --arg completed_at "$completed_at" \
+            --arg from "$from" \
+            --arg state "$state" \
+            --argjson attempt "$attempt" \
+            --argjson run_id "$GITHUB_RUN_ID" \
+            --argjson run_attempt "$GITHUB_RUN_ATTEMPT" \
+            --slurpfile verification evidence/verification.json \
+            '{
+              schema_version:"sdk-release-attempt-receipt/v1",
+              release_id:$release_id,
+              manifest_id:$manifest_id,
+              attempt:$attempt,
+              operation:$operation,
+              workflow_run_id:$run_id,
+              workflow_run_attempt:$run_attempt,
+              started_at:$started_at,
+              completed_at:$completed_at,
+              transition:{
+                schema_version:"sdk-release-state-transition/v1",
+                release_id:$release_id,
+                from:$from,
+                to:$state
+              },
+              observations:$verification[0].plan.observations,
+              outcome:$state
+            }' > attempt.json
+          bun .github/scripts/sdk-release/finalize-receipt.ts attempt \
+            --input attempt.json \
+            --output attempt.md
+          gh pr comment "$PREPARATION_PR" --body-file attempt.md
+
+          gh api "repos/$GITHUB_REPOSITORY/issues/$PREPARATION_PR/comments" \
+            --paginate --slurp | jq 'add' > receipt-comments.json
+          bun --eval '
+            import { readFileSync } from "node:fs";
+            import { renderReceiptIndex } from "./.github/scripts/sdk-release/finalize-receipt.ts";
+            const comments = JSON.parse(readFileSync("receipt-comments.json", "utf8"));
+            const attempts = comments.flatMap(comment => {
+              const marker = /<!-- sdk-release-attempt:[^:]+:(\d+) -->/.exec(comment.body);
+              const outcome = /Outcome: \\*\\*(partial|conflict|verified|receipted|notified)\\*\\*/.exec(comment.body);
+              const run = /Workflow run: `(\d+)`/.exec(comment.body);
+              return marker && outcome && run
+                ? [{ attempt:Number(marker[1]), outcome:outcome[1], workflow_run_id:Number(run[1]) }]
+                : [];
+            }).sort((left, right) => left.attempt - right.attempt);
+            const body = renderReceiptIndex({
+              release_id:process.env.RELEASE_ID,
+              manifest_id:process.env.MANIFEST_ID,
+              source_commit:process.env.SOURCE_COMMIT,
+              attempts,
+            });
+            await Bun.write("index.md", body);
+          '
+          index_id=$(jq -r --arg marker "<!-- sdk-release-index:${{ needs.resolve-sealed-release.outputs.manifest_id }} -->" \
+            '[.[] | select(.body | startswith($marker))] | if length == 0 then "" elif length == 1 then .[0].id else error("duplicate receipt indexes") end' \
+            receipt-comments.json)
+          if [[ -n "$index_id" ]]; then
+            jq -n --rawfile body index.md '{body:$body}' \
+              | gh api --method PATCH "repos/$GITHUB_REPOSITORY/issues/comments/$index_id" --input -
+          else
+            gh pr comment "$PREPARATION_PR" --body-file index.md
+          fi
+
+      - name: Create or reuse verified annotated tags
+        if: ${{ needs.verify-publication.outputs.state == 'verified' }}
+        env:
+          MANIFEST_ID: ${{ needs.resolve-sealed-release.outputs.manifest_id }}
+          SOURCE_COMMIT: ${{ needs.resolve-sealed-release.outputs.source_commit }}
+        run: |
+          set -euo pipefail
+          git fetch --tags --force
+          bun --eval '
+            import { readFileSync } from "node:fs";
+            import { planReleaseTags } from "./.github/scripts/sdk-release/finalize-tags.ts";
+            const manifest = JSON.parse(readFileSync("evidence/manifest.json", "utf8"));
+            const names = [
+              ...manifest.packages
+                .filter(item => item.ecosystem === "typescript")
+                .map(item => `${item.name}@${item.version}`),
+              ...new Set(
+                manifest.packages
+                  .filter(item => item.ecosystem === "python")
+                  .map(item => `py@${item.version}`)
+              ),
+            ];
+            const existing_tags = names.flatMap(name => {
+              const target = Bun.spawnSync(["git", "rev-list", "-n", "1", name]);
+              if (target.exitCode !== 0) return [];
+              const message = Bun.spawnSync(["git", "for-each-ref", "--format=%(contents)", `refs/tags/${name}`]);
+              return [{
+                name,
+                target:new TextDecoder().decode(target.stdout).trim(),
+                message:new TextDecoder().decode(message.stdout).trim(),
+              }];
+            });
+            const plan = planReleaseTags({
+              manifest,
+              manifest_id:process.env.MANIFEST_ID,
+              source_commit:process.env.SOURCE_COMMIT,
+              verified:true,
+              existing_tags,
+            });
+            for (const tag of plan) {
+              const created = Bun.spawnSync(["git", "tag", "-a", tag.name, tag.target, "-m", tag.message]);
+              if (created.exitCode !== 0) throw new Error(`Unable to create ${tag.name}`);
+              const pushed = Bun.spawnSync(["git", "push", "origin", `refs/tags/${tag.name}`]);
+              if (pushed.exitCode !== 0) throw new Error(`Unable to push ${tag.name}`);
+            }
+          '
