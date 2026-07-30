@@ -1,14 +1,14 @@
 ---
 title: "OAuth connection security: same-browser binding and callback identity verification"
 date: "2026-07-30"
-description: "Stop an OAuth connection from being completed by another party: same-browser binding on Composio managed apps, and opt-in, per-project callback identity verification."
+description: "Two controls against OAuth session fixation: same-browser binding, automatic on Composio managed apps, and opt-in callback identity verification per project."
 ---
 
-Composio now stops an OAuth connection from being completed by anyone other than the person who
-started it. On Composio managed apps this is automatic: the connection is bound to the browser that
-began it. And any project can turn on callback identity verification, which ties activation to your
-signed-in user. That's the one to reach for on your own OAuth apps, since it checks the user rather
-than the browser.
+OAuth session fixation lets someone start a connection, hand the authorization URL to another person,
+and capture whatever that person connects. Composio now ships two controls against it. Same-browser
+binding is automatic on Composio managed apps: a connection has to be finished in the browser that
+started it. Callback identity verification is opt-in per project, and it's the one to reach for on
+your own OAuth apps, since it ties activation to your signed-in user rather than the browser.
 
 ### What shipped
 
