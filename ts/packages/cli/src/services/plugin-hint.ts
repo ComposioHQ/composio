@@ -1,28 +1,19 @@
 import { FileSystem, Path } from '@effect/platform';
 import { BunFileSystem } from '@effect/platform-bun';
 import { Config, ConfigProvider, Effect, Layer, Option, Schema } from 'effect';
+import { setupCacheDir } from 'src/effects/setup-cache-dir';
+import { AGENT_HOST_LABELS, COMPOSIO_AGENT_PLUGIN_ID, type AgentHost } from './agent-host';
 import { NodeOs } from './node-os';
 import { TerminalUI } from './terminal-ui';
 
 /**
  * One-line acquisition hint for the Composio agent plugin.
  *
- * When the bare CLI runs inside a plugin-capable agent host (Claude Code,
- * Codex) and the Composio plugin is not installed there, print one throttled
- * tip to stderr. The primary audience is the agent driving the CLI through a
- * non-TTY shell, so unlike the rest of the CLI's decoration this line is NOT
- * gated on stderr being a TTY.
+ * The primary audience is the agent driving the CLI through a non-TTY shell,
+ * so this line is intentionally not gated on stderr being a TTY.
  */
 
 const HINT_INTERVAL_MS = 24 * 60 * 60 * 1000;
-const PLUGIN_ID = 'composio@composio';
-
-export type PluginHost = 'claude' | 'codex';
-
-const HOST_LABELS: Record<PluginHost, string> = {
-  claude: 'Claude Code',
-  codex: 'Codex',
-};
 
 export interface HostEnvMarkers {
   readonly claudeCode: string | undefined;
@@ -30,62 +21,14 @@ export interface HostEnvMarkers {
   readonly codexSandbox: string | undefined;
 }
 
-export function detectPluginHost(markers: HostEnvMarkers): PluginHost | undefined {
-  if (markers.claudeCode !== undefined) return 'claude';
-  if (markers.codexThreadId !== undefined || markers.codexSandbox !== undefined) return 'codex';
+const isPresent = (value: string | undefined): boolean =>
+  value !== undefined && value.trim().length > 0;
+
+export function detectPluginHost(markers: HostEnvMarkers): AgentHost | undefined {
+  if (isPresent(markers.claudeCode)) return 'claude';
+  if (isPresent(markers.codexThreadId) || isPresent(markers.codexSandbox)) return 'codex';
   return undefined;
 }
-
-export interface PluginHintState {
-  readonly lastHintShown: {
-    readonly claude?: string; // ISO-8601
-    readonly codex?: string; // ISO-8601
-  };
-}
-
-const CurrentPluginHintStateSchema = Schema.Struct({
-  lastHintShown: Schema.Struct({
-    claude: Schema.optional(Schema.String),
-    codex: Schema.optional(Schema.String),
-  }),
-});
-
-const LegacyPluginHintStateSchema = Schema.Struct({
-  lastHintShown: Schema.String,
-});
-
-const PluginHintStateSchema = Schema.parseJson(
-  Schema.Union(CurrentPluginHintStateSchema, LegacyPluginHintStateSchema)
-);
-
-const normalizePluginHintState = (
-  state:
-    | Schema.Schema.Type<typeof CurrentPluginHintStateSchema>
-    | {
-        readonly lastHintShown: string;
-      }
-): PluginHintState => {
-  const lastHintShown = state.lastHintShown;
-  if (typeof lastHintShown === 'string') {
-    return {
-      // Preserve the legacy global throttle during migration.
-      lastHintShown: {
-        claude: lastHintShown,
-        codex: lastHintShown,
-      },
-    };
-  }
-  return { lastHintShown };
-};
-
-const PluginHintStateOutputSchema = Schema.parseJson(
-  Schema.Struct({
-    lastHintShown: Schema.Struct({
-      claude: Schema.optional(Schema.String),
-      codex: Schema.optional(Schema.String),
-    }),
-  })
-);
 
 const InstalledPluginsSchema = Schema.parseJson(
   Schema.Struct({
@@ -94,73 +37,70 @@ const InstalledPluginsSchema = Schema.parseJson(
 );
 
 export interface PluginHintConfig {
-  readonly stateFile: string;
-  readonly host: PluginHost | undefined;
+  readonly stateDirectory: string;
+  readonly host: AgentHost | undefined;
   readonly invocationOrigin: string | undefined;
+  readonly commandName: string | undefined;
   readonly claudeInstalledPluginsFile: string;
   readonly codexConfigFile: string;
   readonly hintIntervalMs: number;
 }
 
 export function createPluginHint(config: PluginHintConfig) {
-  const readState = Effect.gen(function* () {
-    const fs = yield* FileSystem.FileSystem;
-    const rawState = yield* fs.readFileString(config.stateFile);
-    return normalizePluginHintState(yield* Schema.decodeUnknown(PluginHintStateSchema)(rawState));
-  });
-
-  const writeState = (host: PluginHost, previous: Option.Option<PluginHintState>) =>
+  const claimHint = (host: AgentHost) =>
     Effect.gen(function* () {
       const fs = yield* FileSystem.FileSystem;
       const path = yield* Path.Path;
-      const state: PluginHintState = {
-        lastHintShown: {
-          ...(Option.isSome(previous) ? previous.value.lastHintShown : {}),
-          [host]: new Date().toISOString(),
-        },
-      };
-      const encoded = yield* Schema.encode(PluginHintStateOutputSchema)(state);
-      yield* fs.makeDirectory(path.dirname(config.stateFile), { recursive: true });
-      yield* fs.writeFileString(config.stateFile, encoded);
-    });
+      const stampPath = path.join(config.stateDirectory, `${host}.stamp`);
+      yield* fs.makeDirectory(config.stateDirectory, { recursive: true });
 
-  const shownWithinInterval = (
-    state: Option.Option<PluginHintState>,
-    host: PluginHost
-  ): boolean => {
-    if (Option.isNone(state)) return false;
-    const lastHintShown = state.value.lastHintShown[host];
-    if (lastHintShown === undefined) return false;
-    const shownAt = new Date(lastHintShown).getTime();
-    if (!Number.isFinite(shownAt)) return false;
-    return Date.now() - shownAt < config.hintIntervalMs;
-  };
+      const stampInfo = yield* Effect.option(fs.stat(stampPath));
+      if (Option.isSome(stampInfo)) {
+        const shownAt = Option.getOrUndefined(stampInfo.value.mtime)?.getTime();
+        if (
+          shownAt !== undefined &&
+          Number.isFinite(shownAt) &&
+          Date.now() - shownAt < config.hintIntervalMs
+        ) {
+          return false;
+        }
+
+        // Retiring via rename means only one concurrent process can replace a
+        // stale stamp. Everyone else either sees the new stamp or loses the
+        // exclusive create below.
+        const retiredPath = `${stampPath}.${crypto.randomUUID()}`;
+        const retired = yield* Effect.option(fs.rename(stampPath, retiredPath));
+        yield* fs.remove(retiredPath, { force: true }).pipe(Effect.ignore);
+        if (Option.isNone(retired)) return false;
+      }
+
+      return yield* Effect.scoped(fs.open(stampPath, { flag: 'wx' })).pipe(
+        Effect.as(true),
+        Effect.orElseSucceed(() => false)
+      );
+    }).pipe(Effect.orElseSucceed(() => false));
 
   // "Confidently absent" only: a missing state file means the plugin was never
   // installed, while an unreadable or unrecognized one suppresses the hint.
   const claudePluginAbsent = Effect.gen(function* () {
     const fs = yield* FileSystem.FileSystem;
-    const fileExists = yield* fs.exists(config.claudeInstalledPluginsFile);
-    if (!fileExists) return true;
+    if (!(yield* fs.exists(config.claudeInstalledPluginsFile))) return true;
     const raw = yield* fs.readFileString(config.claudeInstalledPluginsFile);
     const decoded = yield* Effect.option(Schema.decodeUnknown(InstalledPluginsSchema)(raw));
     if (Option.isNone(decoded)) return false;
-    const installs = decoded.value.plugins[PLUGIN_ID];
-    if (installs === undefined) return true;
-    return installs.length === 0;
+    const installs = decoded.value.plugins[COMPOSIO_AGENT_PLUGIN_ID];
+    return installs === undefined || installs.length === 0;
   });
 
   const codexPluginAbsent = Effect.gen(function* () {
     const fs = yield* FileSystem.FileSystem;
-    const fileExists = yield* fs.exists(config.codexConfigFile);
-    if (!fileExists) return true;
+    if (!(yield* fs.exists(config.codexConfigFile))) return true;
     const raw = yield* fs.readFileString(config.codexConfigFile);
-    return !raw.includes(`[plugins."${PLUGIN_ID}"]`);
+    return !raw.includes(`[plugins."${COMPOSIO_AGENT_PLUGIN_ID}"]`);
   });
 
-  const pluginAbsentByHost: Record<
-    PluginHost,
-    Effect.Effect<boolean, unknown, FileSystem.FileSystem>
+  const pluginAbsentByHost: Readonly<
+    Record<AgentHost, Effect.Effect<boolean, unknown, FileSystem.FileSystem>>
   > = {
     claude: claudePluginAbsent,
     codex: codexPluginAbsent,
@@ -168,16 +108,18 @@ export function createPluginHint(config: PluginHintConfig) {
 
   function showPluginHint(terminal: Pick<TerminalUI, 'error'>) {
     return Effect.gen(function* () {
-      if (config.host === undefined) return;
-      if (config.invocationOrigin === 'run') return;
-      const state = yield* Effect.option(readState);
-      if (shownWithinInterval(state, config.host)) return;
-      const absent = yield* pluginAbsentByHost[config.host];
-      if (!absent) return;
-      yield* writeState(config.host, state);
-      const label = HOST_LABELS[config.host];
+      const host = config.host;
+      if (
+        host === undefined ||
+        config.invocationOrigin === 'run' ||
+        config.commandName === 'setup'
+      ) {
+        return;
+      }
+      if (!(yield* pluginAbsentByHost[host])) return;
+      if (!(yield* claimHint(host))) return;
       yield* terminal.error(
-        `Tip: running under ${label} without the Composio plugin — 'composio setup' installs it.`
+        `Tip: running under ${AGENT_HOST_LABELS[host]} without the Composio plugin — 'composio setup' installs it.`
       );
     }).pipe(Effect.ignore);
   }
@@ -190,11 +132,9 @@ const DefaultConfigLayers = Layer.mergeAll(Path.layer, NodeOs.Default, BunFileSy
 const readOptionalEnv = (name: string) =>
   Effect.orDie(Config.option(Config.string(name)).pipe(Config.map(Option.getOrUndefined)));
 
-// Env reads bypass the CLI's runtime ConfigProvider (which prefixes every key
-// with COMPOSIO_) because these are host-owned variables under their raw names.
-const defaultConfig = Effect.gen(function* () {
-  const path = yield* Path.Path;
-  const os = yield* NodeOs;
+// Host-owned variables must bypass the CLI ConfigProvider, which prefixes
+// application keys with COMPOSIO_.
+const rawEnvironment = Effect.gen(function* () {
   const claudeCode = yield* readOptionalEnv('CLAUDECODE');
   const codexThreadId = yield* readOptionalEnv('CODEX_THREAD_ID');
   const codexSandbox = yield* readOptionalEnv('CODEX_SANDBOX');
@@ -202,22 +142,40 @@ const defaultConfig = Effect.gen(function* () {
   const claudeConfigDir = yield* readOptionalEnv('CLAUDE_CONFIG_DIR');
   const codexHome = yield* readOptionalEnv('CODEX_HOME');
   return {
-    stateFile: path.join(os.homedir, '.composio', 'plugin-hint.json'),
-    host: detectPluginHost({ claudeCode, codexThreadId, codexSandbox }),
+    claudeCode,
+    codexThreadId,
+    codexSandbox,
     invocationOrigin,
-    claudeInstalledPluginsFile: path.join(
-      claudeConfigDir ?? path.join(os.homedir, '.claude'),
-      'plugins',
-      'installed_plugins.json'
-    ),
-    codexConfigFile: path.join(codexHome ?? path.join(os.homedir, '.codex'), 'config.toml'),
-    hintIntervalMs: HINT_INTERVAL_MS,
-  } satisfies PluginHintConfig;
+    claudeConfigDir,
+    codexHome,
+  };
 }).pipe(Effect.withConfigProvider(ConfigProvider.fromEnv()));
 
+export const resolvePluginHintConfig = (argv: ReadonlyArray<string>) =>
+  Effect.gen(function* () {
+    const path = yield* Path.Path;
+    const os = yield* NodeOs;
+    const cacheDir = yield* setupCacheDir;
+    const env = yield* rawEnvironment;
+    return {
+      stateDirectory: path.join(cacheDir, 'plugin-hints'),
+      host: detectPluginHost(env),
+      invocationOrigin: env.invocationOrigin,
+      commandName: argv[2],
+      claudeInstalledPluginsFile: path.join(
+        env.claudeConfigDir ?? path.join(os.homedir, '.claude'),
+        'plugins',
+        'installed_plugins.json'
+      ),
+      codexConfigFile: path.join(env.codexHome ?? path.join(os.homedir, '.codex'), 'config.toml'),
+      hintIntervalMs: HINT_INTERVAL_MS,
+    } satisfies PluginHintConfig;
+  });
+
 /** Print the plugin acquisition hint when eligible. Never fails, never blocks on network. */
-export const showPluginAcquisitionHint = Effect.gen(function* () {
-  const terminal = yield* TerminalUI;
-  const config = yield* defaultConfig;
-  yield* createPluginHint(config).showPluginHint(terminal);
-}).pipe(Effect.provide(DefaultConfigLayers));
+export const showPluginAcquisitionHint = (argv: ReadonlyArray<string>) =>
+  Effect.gen(function* () {
+    const terminal = yield* TerminalUI;
+    const config = yield* resolvePluginHintConfig(argv);
+    yield* createPluginHint(config).showPluginHint(terminal);
+  }).pipe(Effect.provide(DefaultConfigLayers));

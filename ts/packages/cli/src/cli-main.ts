@@ -175,7 +175,7 @@ const runWithTelemetry = Effect.gen(function* () {
 });
 
 showUpdateNotice.pipe(
-  Effect.andThen(showPluginAcquisitionHint),
+  Effect.andThen(showPluginAcquisitionHint(process.argv)),
   Effect.andThen(runWithTelemetry),
   Effect.catchIf(ValidationError.isValidationError, error => {
     return Effect.gen(function* () {

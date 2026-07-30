@@ -1,19 +1,19 @@
-import { describe, it, expect, beforeEach, afterEach } from '@effect/vitest';
-import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { afterEach, beforeEach, describe, expect, it, vi } from '@effect/vitest';
+import { BunFileSystem, BunPath } from '@effect/platform-bun';
+import { ConfigProvider, Effect, Layer } from 'effect';
+import { existsSync, mkdirSync, mkdtempSync, rmSync, utimesSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { Writable } from 'node:stream';
-import { BunFileSystem, BunPath } from '@effect/platform-bun';
-import { Effect, Layer } from 'effect';
-import { makeTerminalUI, type TerminalUI } from 'src/services/terminal-ui';
+import { extendConfigProvider } from 'src/services/config';
+import { defaultNodeOs, NodeOs } from 'src/services/node-os';
 import {
   createPluginHint,
   detectPluginHost,
+  resolvePluginHintConfig,
   type PluginHintConfig,
-  type PluginHintState,
 } from 'src/services/plugin-hint';
-
-const PlatformLayers = Layer.mergeAll(BunFileSystem.layer, BunPath.layer);
+import { makeTerminalUI, type TerminalUI } from 'src/services/terminal-ui';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -22,14 +22,19 @@ beforeEach(() => {
   tempDir = mkdtempSync(join(tmpdir(), 'plugin-hint-test-'));
 });
 afterEach(() => {
+  vi.useRealTimers();
+  vi.unstubAllEnvs();
   rmSync(tempDir, { recursive: true, force: true });
 });
 
+const PlatformLayers = Layer.mergeAll(BunFileSystem.layer, BunPath.layer);
+
 function makeConfig(overrides?: Partial<PluginHintConfig>): PluginHintConfig {
   return {
-    stateFile: join(tempDir, '.composio', 'plugin-hint.json'),
+    stateDirectory: join(tempDir, '.composio', 'plugin-hints'),
     host: 'claude',
     invocationOrigin: undefined,
+    commandName: 'version',
     claudeInstalledPluginsFile: join(tempDir, '.claude', 'plugins', 'installed_plugins.json'),
     codexConfigFile: join(tempDir, '.codex', 'config.toml'),
     hintIntervalMs: DAY_MS,
@@ -46,28 +51,18 @@ function writeFileAt(file: string, contents: string): void {
   writeFileSync(file, contents);
 }
 
-function writeHintState(config: PluginHintConfig, state: PluginHintState): void {
-  writeFileAt(config.stateFile, JSON.stringify(state));
-}
-
 function writeClaudePlugins(config: PluginHintConfig, plugins: Record<string, unknown[]>): void {
   writeFileAt(config.claudeInstalledPluginsFile, JSON.stringify({ version: 2, plugins }));
 }
 
 describe('detectPluginHost', () => {
-  it('detects Claude Code from CLAUDECODE', () => {
+  it('detects supported hosts from non-empty markers', () => {
     expect(
       detectPluginHost({ claudeCode: '1', codexThreadId: undefined, codexSandbox: undefined })
     ).toBe('claude');
-  });
-
-  it('detects Codex from CODEX_THREAD_ID', () => {
     expect(
       detectPluginHost({ claudeCode: undefined, codexThreadId: 'abc', codexSandbox: undefined })
     ).toBe('codex');
-  });
-
-  it('detects Codex from CODEX_SANDBOX', () => {
     expect(
       detectPluginHost({
         claudeCode: undefined,
@@ -77,16 +72,37 @@ describe('detectPluginHost', () => {
     ).toBe('codex');
   });
 
-  it('prefers Claude Code when both markers are present', () => {
+  it('prefers Claude Code when both hosts have non-empty markers', () => {
     expect(
       detectPluginHost({ claudeCode: '1', codexThreadId: 'abc', codexSandbox: undefined })
     ).toBe('claude');
   });
 
-  it('detects no host without markers', () => {
+  it('ignores empty and whitespace-only markers', () => {
     expect(
-      detectPluginHost({ claudeCode: undefined, codexThreadId: undefined, codexSandbox: undefined })
+      detectPluginHost({ claudeCode: '', codexThreadId: '  ', codexSandbox: '\t' })
     ).toBeUndefined();
+  });
+});
+
+describe('resolvePluginHintConfig', () => {
+  it.effect('stores throttle stamps under COMPOSIO_CACHE_DIR', () => {
+    const cacheDir = join(tempDir, 'writable-cache');
+    vi.stubEnv('COMPOSIO_CACHE_DIR', cacheDir);
+    vi.stubEnv('CLAUDECODE', '1');
+
+    return Effect.gen(function* () {
+      const config = yield* resolvePluginHintConfig(['/bin/bun', '/cli/bin.ts', 'version']);
+
+      expect(config.stateDirectory).toBe(join(cacheDir, 'plugin-hints'));
+      expect(config.host).toBe('claude');
+      expect(config.commandName).toBe('version');
+    }).pipe(
+      Effect.withConfigProvider(extendConfigProvider(ConfigProvider.fromEnv())),
+      Effect.provide(
+        Layer.merge(PlatformLayers, Layer.succeed(NodeOs, defaultNodeOs({ homedir: tempDir })))
+      )
+    );
   });
 });
 
@@ -97,53 +113,38 @@ describe('showPluginHint', () => {
     output = [];
   });
 
-  it.effect('shows the hint when the Claude plugin state file is missing', () =>
+  it.effect('shows the hint when a host plugin is confidently absent', () =>
     Effect.gen(function* () {
-      const config = makeConfig();
+      const claudeConfig = makeConfig();
+      writeClaudePlugins(claudeConfig, { 'other@marketplace': [{ scope: 'user' }] });
+      yield* createPluginHint(claudeConfig).showPluginHint(makeTerminal(output));
 
-      yield* createPluginHint(config).showPluginHint(makeTerminal(output));
+      const codexConfig = makeConfig({ host: 'codex' });
+      writeFileAt(codexConfig.codexConfigFile, '[plugins."glen@glen"]\nenabled = true\n');
+      yield* createPluginHint(codexConfig).showPluginHint(makeTerminal(output));
 
-      expect(output).toHaveLength(1);
+      expect(output).toHaveLength(2);
       expect(output[0]).toContain('Claude Code');
-      expect(output[0]).toContain('composio setup');
+      expect(output[1]).toContain('Codex');
     }).pipe(Effect.provide(PlatformLayers))
   );
 
-  it.effect('shows the hint when the Claude plugin is not installed', () =>
+  it.effect('stays silent when the plugin is installed', () =>
     Effect.gen(function* () {
-      const config = makeConfig();
-      writeClaudePlugins(config, { 'other@marketplace': [{ scope: 'user' }] });
+      const claudeConfig = makeConfig();
+      writeClaudePlugins(claudeConfig, { 'composio@composio': [{ scope: 'user' }] });
+      yield* createPluginHint(claudeConfig).showPluginHint(makeTerminal(output));
 
-      yield* createPluginHint(config).showPluginHint(makeTerminal(output));
-
-      expect(output).toHaveLength(1);
-    }).pipe(Effect.provide(PlatformLayers))
-  );
-
-  it.effect('shows the hint when the Claude plugin entry has no installations', () =>
-    Effect.gen(function* () {
-      const config = makeConfig();
-      writeClaudePlugins(config, { 'composio@composio': [] });
-
-      yield* createPluginHint(config).showPluginHint(makeTerminal(output));
-
-      expect(output).toHaveLength(1);
-    }).pipe(Effect.provide(PlatformLayers))
-  );
-
-  it.effect('stays silent when the Claude plugin is installed', () =>
-    Effect.gen(function* () {
-      const config = makeConfig();
-      writeClaudePlugins(config, { 'composio@composio': [{ scope: 'user' }] });
-
-      yield* createPluginHint(config).showPluginHint(makeTerminal(output));
+      const codexConfig = makeConfig({ host: 'codex' });
+      writeFileAt(codexConfig.codexConfigFile, '[plugins."composio@composio"]\nenabled = true\n');
+      yield* createPluginHint(codexConfig).showPluginHint(makeTerminal(output));
 
       expect(output).toEqual([]);
-      expect(existsSync(config.stateFile)).toBe(false);
+      expect(existsSync(claudeConfig.stateDirectory)).toBe(false);
     }).pipe(Effect.provide(PlatformLayers))
   );
 
-  it.effect('stays silent when the Claude plugin state file is unreadable', () =>
+  it.effect('stays silent when plugin state is unreadable', () =>
     Effect.gen(function* () {
       const config = makeConfig();
       writeFileAt(config.claudeInstalledPluginsFile, 'not json{');
@@ -154,128 +155,66 @@ describe('showPluginHint', () => {
     }).pipe(Effect.provide(PlatformLayers))
   );
 
-  it.effect('shows the hint when the Codex config has no plugin section', () =>
+  it.effect('stays silent outside a host, in run children, and for setup', () =>
     Effect.gen(function* () {
-      const config = makeConfig({ host: 'codex' });
-      writeFileAt(config.codexConfigFile, '[plugins."glen@glen"]\nenabled = true\n');
+      const configs = [
+        makeConfig({ host: undefined }),
+        makeConfig({ invocationOrigin: 'run' }),
+        makeConfig({ commandName: 'setup' }),
+      ];
 
-      yield* createPluginHint(config).showPluginHint(makeTerminal(output));
-
-      expect(output).toHaveLength(1);
-      expect(output[0]).toContain('Codex');
-    }).pipe(Effect.provide(PlatformLayers))
-  );
-
-  it.effect('shows the hint when the Codex config file is missing', () =>
-    Effect.gen(function* () {
-      const config = makeConfig({ host: 'codex' });
-
-      yield* createPluginHint(config).showPluginHint(makeTerminal(output));
-
-      expect(output).toHaveLength(1);
-    }).pipe(Effect.provide(PlatformLayers))
-  );
-
-  it.effect('stays silent when the Codex config has the plugin section', () =>
-    Effect.gen(function* () {
-      const config = makeConfig({ host: 'codex' });
-      writeFileAt(config.codexConfigFile, '[plugins."composio@composio"]\nenabled = true\n');
-
-      yield* createPluginHint(config).showPluginHint(makeTerminal(output));
+      yield* Effect.forEach(configs, config =>
+        createPluginHint(config).showPluginHint(makeTerminal(output))
+      );
 
       expect(output).toEqual([]);
+      expect(existsSync(configs[2]!.stateDirectory)).toBe(false);
     }).pipe(Effect.provide(PlatformLayers))
   );
 
-  it.effect('stays silent outside a plugin-capable host', () =>
-    Effect.gen(function* () {
-      const config = makeConfig({ host: undefined });
-
-      yield* createPluginHint(config).showPluginHint(makeTerminal(output));
-
-      expect(output).toEqual([]);
-    }).pipe(Effect.provide(PlatformLayers))
-  );
-
-  it.effect('stays silent when invoked from a composio run child', () =>
-    Effect.gen(function* () {
-      const config = makeConfig({ invocationOrigin: 'run' });
-
-      yield* createPluginHint(config).showPluginHint(makeTerminal(output));
-
-      expect(output).toEqual([]);
-    }).pipe(Effect.provide(PlatformLayers))
-  );
-
-  it.effect('stays silent when the hint was shown within the interval', () =>
+  it.effect('allows only one concurrent process to claim a host hint', () =>
     Effect.gen(function* () {
       const config = makeConfig();
-      writeHintState(config, { lastHintShown: { claude: new Date().toISOString() } });
 
-      yield* createPluginHint(config).showPluginHint(makeTerminal(output));
-
-      expect(output).toEqual([]);
-    }).pipe(Effect.provide(PlatformLayers))
-  );
-
-  it.effect('shows the hint again after the interval elapses', () =>
-    Effect.gen(function* () {
-      const config = makeConfig();
-      writeHintState(config, { lastHintShown: { claude: '2000-01-01T00:00:00.000Z' } });
-
-      yield* createPluginHint(config).showPluginHint(makeTerminal(output));
+      yield* Effect.all(
+        Array.from({ length: 20 }, () =>
+          createPluginHint(config).showPluginHint(makeTerminal(output))
+        ),
+        { concurrency: 'unbounded' }
+      );
 
       expect(output).toHaveLength(1);
+      expect(existsSync(join(config.stateDirectory, 'claude.stamp'))).toBe(true);
     }).pipe(Effect.provide(PlatformLayers))
   );
 
-  it.effect('throttles Claude and Codex independently', () =>
+  it.effect('throttles each host independently', () =>
     Effect.gen(function* () {
       const claudeConfig = makeConfig({ host: 'claude' });
       const codexConfig = makeConfig({ host: 'codex' });
 
       yield* createPluginHint(claudeConfig).showPluginHint(makeTerminal(output));
       yield* createPluginHint(codexConfig).showPluginHint(makeTerminal(output));
+      yield* createPluginHint(claudeConfig).showPluginHint(makeTerminal(output));
+      yield* createPluginHint(codexConfig).showPluginHint(makeTerminal(output));
 
       expect(output).toHaveLength(2);
-      expect(output[0]).toContain('Claude Code');
-      expect(output[1]).toContain('Codex');
     }).pipe(Effect.provide(PlatformLayers))
   );
 
-  it.effect('honors the legacy global timestamp during state migration', () =>
+  it.effect('retires a stale stamp and shows the hint again', () =>
     Effect.gen(function* () {
-      const config = makeConfig({ host: 'codex' });
-      writeFileAt(config.stateFile, JSON.stringify({ lastHintShown: new Date().toISOString() }));
-
-      yield* createPluginHint(config).showPluginHint(makeTerminal(output));
-
-      expect(output).toEqual([]);
-    }).pipe(Effect.provide(PlatformLayers))
-  );
-
-  it.effect('shows the hint when the throttle state file is unreadable', () =>
-    Effect.gen(function* () {
+      vi.useFakeTimers();
+      vi.setSystemTime(new Date('2026-07-29T00:00:00.000Z'));
       const config = makeConfig();
-      writeFileAt(config.stateFile, 'not json{');
+      const stamp = join(config.stateDirectory, 'claude.stamp');
+      writeFileAt(stamp, '');
+      const stale = new Date('2026-07-27T00:00:00.000Z');
+      utimesSync(stamp, stale, stale);
 
       yield* createPluginHint(config).showPluginHint(makeTerminal(output));
 
       expect(output).toHaveLength(1);
-    }).pipe(Effect.provide(PlatformLayers))
-  );
-
-  it.effect('stamps the throttle state when the hint is shown', () =>
-    Effect.gen(function* () {
-      const config = makeConfig();
-
-      yield* createPluginHint(config).showPluginHint(makeTerminal(output));
-
-      expect(output).toHaveLength(1);
-      expect(existsSync(config.stateFile)).toBe(true);
-      output = [];
-      yield* createPluginHint(config).showPluginHint(makeTerminal(output));
-      expect(output).toEqual([]);
     }).pipe(Effect.provide(PlatformLayers))
   );
 
