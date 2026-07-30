@@ -24,6 +24,7 @@ This is your always-on map of Composio's concepts and the canonical page for eac
 - **Manual auth** — generate Connect Links yourself with `session.authorize()`. → [Manually authenticating users](/docs/authenticating-users/manually-authenticating)
 - **Managed vs custom auth** — use Composio's managed OAuth apps, or bring your own for branding/scopes. → [Managed vs custom auth](/docs/custom-app-vs-managed-app)
 - **White-labeling** — remove Composio branding from the auth flow. → [White-labeling authentication](/docs/white-labeling-authentication)
+- **OAuth connection security** — two controls against OAuth session fixation: same-browser binding (managed apps; the `This connection was started from a different browser or device` rejection and the in-app-browser limitation) and callback identity verification (custom auth configs; verifier URL + `complete_auth`). This is the page for "connections from the dashboard stopped completing" and "a real `user_id` is now required". → [OAuth connection security](/docs/oauth-connection-security)
 - **Importing existing connections** — pass in API keys or bearer tokens you already hold. → [Importing existing connections](/docs/importing-existing-connections)
 - **Multiple accounts per user** — e.g. work and personal Gmail. → [Managing multiple connected accounts](/docs/managing-multiple-connected-accounts)
 - **Shared connections** — share one connected account across users via an ACL. → [Shared connections](/docs/authenticating-users/shared-connections)
