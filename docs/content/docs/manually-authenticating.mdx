@@ -91,8 +91,6 @@ After authentication, Composio redirects the user to your callback URL with the 
 https://your-app.com/callback?user_id=user_123&source=onboarding&status=success&connected_account_id=ca_abc123
 ```
 
-A `status=failed` return can mean the attempt was rejected by [same-browser binding](/docs/oauth-connection-security#same-browser-binding) — the flow was opened in one browser but completed in another. With [callback identity verification](/docs/oauth-connection-security#callback-identity-verification) enabled, the browser is redirected to your verifier URL instead of this callback, and your server completes the connection from there.
-
 ## Check connection status
 
 Use `session.toolkits()` to see all toolkits in the session and their connection status:

@@ -105,8 +105,6 @@ When a user authenticates, Composio creates a [connected account](/reference/api
 
 For OAuth, Composio refreshes access tokens automatically before they expire, so connections stay `ACTIVE` with no work from you. If a refresh token is revoked or expires, the connection moves to `EXPIRED` and the user has to reconnect.
 
-A connection can also reach `EXPIRED` without ever activating, when an authorization is started but never completed. This can be deliberate: the [OAuth connection security](/docs/oauth-connection-security) controls reject or defer a callback that cannot be tied to the user who started the flow.
-
 <ConnectionRefreshVisual />
 
 Catch this before a tool call fails by subscribing to the `composio.connected_account.expired` event on a [webhook subscription](/reference/api-reference/webhook-subscriptions). When it fires, send the user a fresh Connect Link to re-authenticate:
