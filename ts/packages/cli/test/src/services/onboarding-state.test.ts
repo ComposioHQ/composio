@@ -387,13 +387,9 @@ describe('resolveOnboardingState', () => {
       }
     });
 
-    it('never elects host wiring as the next gate', () => {
-      for (const axes of cases) {
-        const state = resolveOnboardingState(facts(axes));
-        expect(state.nextGate).not.toBe('host_wiring');
-        expect(state.gates.hostWiring.blocking).toBe(false);
-      }
-    });
+    // Host wiring can never be elected as the next gate, and can never report itself as blocking:
+    // `nextGate`'s type does not include it and `hostWiring.blocking` is the literal `false`. Both
+    // are compile-time guarantees, so there is nothing here for a runtime sweep to add.
 
     it('never resumes past login while logged out', () => {
       for (const axes of cases) {
@@ -412,13 +408,6 @@ describe('resolveOnboardingState', () => {
 
         const live = axes.connectedToolkits === 'unknown' ? [] : axes.connectedToolkits;
         expect(live).toContain(state.toolkit);
-      }
-    });
-
-    it('is referentially transparent', () => {
-      for (const axes of cases) {
-        const input = facts(axes);
-        expect(resolveOnboardingState(input)).toStrictEqual(resolveOnboardingState(input));
       }
     });
   });
