@@ -4,11 +4,22 @@ import { FileSystem } from '@effect/platform';
 import { BunFileSystem, BunPath } from '@effect/platform-bun';
 import { ConfigProvider, Effect, Layer, Option, Data } from 'effect';
 import * as tempy from 'tempy';
-import { ComposioUserContext, KEYRING_SERVICE, KEYRING_USER } from 'src/services/user-context';
+import {
+  ComposioUserContext,
+  KEYRING_SERVICE,
+  KEYRING_USER,
+  resolveMacOSBackend,
+  CredentialPersistenceError,
+} from 'src/services/user-context';
+import type { SecurityBackend } from 'src/models/cli-user-config';
 import { defaultNodeOs, NodeOs } from 'src/services/node-os';
 import { UserData, UserDataWithDefaults, userDataToJSON } from 'src/models/user-data';
 import { extendConfigProvider } from 'src/services/config';
-import { makeFakeKeyring } from 'test/__utils__/services/keyring';
+import {
+  makeFakeKeyring,
+  makeUnavailableKeyring,
+  type FakeKeyring,
+} from 'test/__utils__/services/keyring';
 import { makeUserContextLayer as makeUserContextLive } from 'test/__utils__/services/user-context';
 import path from 'node:path';
 
@@ -403,6 +414,440 @@ describe('ComposioUserContext', () => {
           .pipe(Effect.flip);
         assertEquals(missing.kind, 'NoEntry');
       });
+    });
+  });
+
+  // ---------------------------------------------------------------------
+  // Keyring-backed storage: default persistence, fallback, migration,
+  // logout tombstones, and atomic user-data replacement.
+  // ---------------------------------------------------------------------
+  describe('[When] the API key is stored through the OS credential store', () => {
+    const userDataPath = (homedir: string) => path.join(homedir, '.composio', 'user_data.json');
+
+    const contextLayer = (options: {
+      readonly homedir: string;
+      readonly keyring?: FakeKeyring;
+      readonly security?: SecurityBackend;
+      readonly env?: Map<string, string>;
+    }) =>
+      Layer.provideMerge(
+        makeUserContextLive({ keyring: options.keyring, security: options.security }),
+        Layer.mergeAll(
+          BunFileSystem.layer,
+          BunPath.layer,
+          Layer.succeed(NodeOs, defaultNodeOs({ homedir: options.homedir })),
+          withMapConfigProvider(options.env ?? new Map())
+        )
+      );
+
+    /**
+     * Run an effect expected to fail with `CredentialPersistenceError`
+     * and hand back the narrowed error.
+     */
+    const expectPersistenceError = <A, E>(effect: Effect.Effect<A, E, never>) =>
+      effect.pipe(
+        Effect.flip,
+        Effect.filterOrDieMessage(
+          (error): error is E & CredentialPersistenceError =>
+            error instanceof CredentialPersistenceError,
+          'expected the login to fail with a CredentialPersistenceError'
+        )
+      );
+
+    /** Filesystem-only layer, for arranging and inspecting `user_data.json`. */
+    const fsLayer = Layer.mergeAll(BunFileSystem.layer, BunPath.layer);
+
+    const seedUserDataFile = (homedir: string, contents: Record<string, unknown>) =>
+      Effect.gen(function* () {
+        const fs = yield* FileSystem.FileSystem;
+        yield* fs.makeDirectory(path.join(homedir, '.composio'), { recursive: true });
+        yield* fs.writeFileString(userDataPath(homedir), JSON.stringify(contents));
+      });
+
+    const readUserDataFile = (homedir: string) =>
+      Effect.gen(function* () {
+        const fs = yield* FileSystem.FileSystem;
+        const raw = yield* fs.readFileString(userDataPath(homedir), 'utf8');
+        return JSON.parse(raw) as Record<string, unknown>;
+      });
+
+    it('[AE1] [Then] an environment key wins and no keyring call is made', () => {
+      const homedir = tempy.temporaryDirectory();
+      const keyring = makeFakeKeyring({
+        seed: [[KEYRING_SERVICE, KEYRING_USER, 'keyring_key']],
+      });
+      const env = new Map([['COMPOSIO_USER_API_KEY', 'env_key']]);
+
+      return Effect.gen(function* () {
+        yield* seedUserDataFile(homedir, { api_key: 'plaintext_key' });
+
+        const ctx = yield* ComposioUserContext;
+        assertEquals(Option.getOrUndefined(ctx.data.apiKey), 'env_key');
+        assertEquals(ctx.credentialSource(), 'environment');
+        assertEquals(keyring.calls.length, 0);
+
+        // The plaintext key on disk is left exactly as it was found:
+        // an environment override must not migrate or scrub it.
+        const onDisk = yield* readUserDataFile(homedir);
+        assertEquals(onDisk['api_key'], 'plaintext_key');
+      }).pipe(Effect.provide(contextLayer({ homedir, keyring, env })), Effect.provide(fsLayer));
+    });
+
+    it('[AE2] [Then] `security: "json"` performs no keyring operation on load, login, or update', () => {
+      const homedir = tempy.temporaryDirectory();
+      const keyring = makeFakeKeyring({
+        seed: [[KEYRING_SERVICE, KEYRING_USER, 'keyring_key']],
+      });
+
+      return Effect.gen(function* () {
+        yield* seedUserDataFile(homedir, { api_key: 'plaintext_key' });
+
+        const ctx = yield* ComposioUserContext;
+        assertEquals(Option.getOrUndefined(ctx.data.apiKey), 'plaintext_key');
+        assertEquals(ctx.credentialSource(), 'plaintext');
+
+        yield* ctx.login('new_plaintext_key');
+        yield* ctx.update({ orgId: Option.some('org_1') });
+
+        assertEquals(keyring.calls.length, 0);
+
+        const onDisk = yield* readUserDataFile(homedir);
+        assertEquals(onDisk['api_key'], 'new_plaintext_key');
+        assertEquals(onDisk['org_id'], 'org_1');
+      }).pipe(
+        Effect.provide(contextLayer({ homedir, keyring, security: 'json' })),
+        Effect.provide(fsLayer)
+      );
+    });
+
+    it('[AE3] [Then] a default login stores the key in the keyring and not in user_data.json', () => {
+      const homedir = tempy.temporaryDirectory();
+      const keyring = makeFakeKeyring();
+
+      return Effect.gen(function* () {
+        const ctx = yield* ComposioUserContext;
+        yield* ctx.login('fresh_key', 'org_1');
+
+        assertEquals(keyring.peek(KEYRING_SERVICE, KEYRING_USER), 'fresh_key');
+        assertEquals(ctx.credentialSource(), 'keyring');
+
+        const onDisk = yield* readUserDataFile(homedir);
+        assertEquals(onDisk['api_key'], null);
+        assertEquals(onDisk['org_id'], 'org_1');
+        assertEquals(onDisk['api_key_fallback'], undefined);
+      }).pipe(Effect.provide(contextLayer({ homedir, keyring })), Effect.provide(fsLayer));
+    });
+
+    it('[AE4] [Then] a rejected keyring write falls back to plaintext and survives a second process', () => {
+      const homedir = tempy.temporaryDirectory();
+      const first = makeUnavailableKeyring();
+      const second = makeUnavailableKeyring();
+
+      return Effect.gen(function* () {
+        yield* Effect.gen(function* () {
+          const ctx = yield* ComposioUserContext;
+          yield* ctx.login('fallback_key');
+          assertEquals(ctx.credentialSource(), 'plaintext');
+          assertEquals(ctx.data.apiKeyFallback, true);
+        }).pipe(Effect.provide(contextLayer({ homedir, keyring: first })));
+
+        const onDisk = yield* readUserDataFile(homedir);
+        assertEquals(onDisk['api_key'], 'fallback_key');
+        assertEquals(onDisk['api_key_fallback'], true);
+
+        // R13: a file holding a plaintext credential is owner-only.
+        const fs = yield* FileSystem.FileSystem;
+        const info = yield* fs.stat(userDataPath(homedir));
+        assertEquals(info.mode & 0o777, 0o600);
+
+        // A separate process reads the fallback and stays authenticated.
+        yield* Effect.gen(function* () {
+          const ctx = yield* ComposioUserContext;
+          assertEquals(ctx.isLoggedIn(), true);
+          assertEquals(Option.getOrUndefined(ctx.data.apiKey), 'fallback_key');
+          assertEquals(ctx.credentialSource(), 'plaintext');
+        }).pipe(Effect.provide(contextLayer({ homedir, keyring: second })));
+      }).pipe(Effect.provide(fsLayer));
+    });
+
+    it('[AE5] [Then] a newer plaintext key overwrites a stale keyring value before being scrubbed', () => {
+      const homedir = tempy.temporaryDirectory();
+      const keyring = makeFakeKeyring({
+        seed: [[KEYRING_SERVICE, KEYRING_USER, 'stale_keyring_key']],
+      });
+
+      return Effect.gen(function* () {
+        yield* seedUserDataFile(homedir, {
+          api_key: 'newer_plaintext_key',
+          api_key_fallback: true,
+        });
+
+        const ctx = yield* ComposioUserContext;
+
+        assertEquals(Option.getOrUndefined(ctx.data.apiKey), 'newer_plaintext_key');
+        assertEquals(ctx.credentialSource(), 'keyring');
+        assertEquals(keyring.peek(KEYRING_SERVICE, KEYRING_USER), 'newer_plaintext_key');
+
+        // The stale value is never read: plaintext is authoritative, so
+        // the only keyring operation is the overwriting write.
+        assertEquals(keyring.operations(), ['set']);
+
+        const onDisk = yield* readUserDataFile(homedir);
+        assertEquals(onDisk['api_key'], null);
+        assertEquals(onDisk['api_key_fallback'], undefined);
+      }).pipe(Effect.provide(contextLayer({ homedir, keyring })), Effect.provide(fsLayer));
+    });
+
+    it('[AE6] [Then] plaintext stays authoritative when the keyring write succeeds but the scrub fails', () => {
+      const homedir = tempy.temporaryDirectory();
+      const keyring = makeFakeKeyring();
+
+      return Effect.gen(function* () {
+        const fs = yield* FileSystem.FileSystem;
+        yield* seedUserDataFile(homedir, { api_key: 'plaintext_key' });
+        // Read-only directory: the temp file backing the atomic
+        // replacement cannot be created, so the scrub fails.
+        yield* fs.chmod(path.join(homedir, '.composio'), 0o500);
+
+        yield* Effect.gen(function* () {
+          const ctx = yield* ComposioUserContext;
+          assertEquals(Option.getOrUndefined(ctx.data.apiKey), 'plaintext_key');
+          assertEquals(ctx.credentialSource(), 'plaintext');
+        }).pipe(Effect.provide(contextLayer({ homedir, keyring })));
+
+        // The key reached the keyring, but the plaintext copy is intact.
+        assertEquals(keyring.peek(KEYRING_SERVICE, KEYRING_USER), 'plaintext_key');
+        yield* fs.chmod(path.join(homedir, '.composio'), 0o700);
+        const onDisk = yield* readUserDataFile(homedir);
+        assertEquals(onDisk['api_key'], 'plaintext_key');
+      }).pipe(Effect.provide(fsLayer));
+    });
+
+    it('[AE7] [Then] `auto` reads a credential written in `keychain-subprocess` mode without rewriting it', () => {
+      const homedir = tempy.temporaryDirectory();
+      const keyring = makeFakeKeyring({
+        seed: [[KEYRING_SERVICE, KEYRING_USER, 'existing_opt_in_key']],
+      });
+
+      return Effect.gen(function* () {
+        const ctx = yield* ComposioUserContext;
+
+        assertEquals(ctx.isLoggedIn(), true);
+        assertEquals(Option.getOrUndefined(ctx.data.apiKey), 'existing_opt_in_key');
+        assertEquals(ctx.credentialSource(), 'keyring');
+        assertEquals(keyring.operations(), ['get']);
+      }).pipe(Effect.provide(contextLayer({ homedir, keyring })));
+    });
+
+    it('[AE8] [Then] only `keychain` selects the macOS FFI backend', () => {
+      assertEquals(resolveMacOSBackend('keychain'), 'ffi');
+      assertEquals(resolveMacOSBackend('auto'), 'auto');
+      assertEquals(resolveMacOSBackend('keychain-subprocess'), 'auto');
+      assertEquals(resolveMacOSBackend('json'), 'auto');
+    });
+
+    it('[AE9] [Then] a failed logout delete leaves a tombstone that outranks the stored credential', () => {
+      const homedir = tempy.temporaryDirectory();
+      const rejecting = makeFakeKeyring({
+        seed: [[KEYRING_SERVICE, KEYRING_USER, 'stored_key']],
+        alwaysFail: { delete: { kind: 'NoStorageAccess', cause: new Error('locked') } },
+      });
+      // The credential is still in the store when the next process starts.
+      const recovered = makeFakeKeyring({
+        seed: [[KEYRING_SERVICE, KEYRING_USER, 'stored_key']],
+      });
+
+      return Effect.gen(function* () {
+        yield* Effect.gen(function* () {
+          const ctx = yield* ComposioUserContext;
+          assertEquals(ctx.isLoggedIn(), true);
+          yield* ctx.logout;
+          assertEquals(ctx.isLoggedIn(), false);
+        }).pipe(Effect.provide(contextLayer({ homedir, keyring: rejecting })));
+
+        const afterLogout = yield* readUserDataFile(homedir);
+        assertEquals(afterLogout['api_key'], null);
+        assertEquals(afterLogout['pending_keyring_logout'], true);
+
+        yield* Effect.gen(function* () {
+          const ctx = yield* ComposioUserContext;
+          // The tombstone wins over the credential still in the store.
+          assertEquals(ctx.isLoggedIn(), false);
+          assertEquals(ctx.credentialSource(), 'none');
+          // Cleanup is retried, and this time it succeeds.
+          assertEquals(recovered.operations(), ['delete']);
+          assertEquals(recovered.peek(KEYRING_SERVICE, KEYRING_USER), undefined);
+        }).pipe(Effect.provide(contextLayer({ homedir, keyring: recovered })));
+
+        const afterCleanup = yield* readUserDataFile(homedir);
+        assertEquals(afterCleanup['pending_keyring_logout'], undefined);
+      }).pipe(Effect.provide(fsLayer));
+    });
+
+    it('[AE10] [Then] login after a tombstone succeeds only when both writes are durable', () => {
+      const homedir = tempy.temporaryDirectory();
+      const keyring = makeFakeKeyring();
+
+      return Effect.gen(function* () {
+        yield* seedUserDataFile(homedir, { api_key: null, pending_keyring_logout: true });
+
+        yield* Effect.gen(function* () {
+          const ctx = yield* ComposioUserContext;
+          yield* ctx.login('key_after_tombstone');
+          assertEquals(ctx.isLoggedIn(), true);
+        }).pipe(Effect.provide(contextLayer({ homedir, keyring })));
+
+        const onDisk = yield* readUserDataFile(homedir);
+        assertEquals(onDisk['pending_keyring_logout'], undefined);
+        assertEquals(keyring.peek(KEYRING_SERVICE, KEYRING_USER), 'key_after_tombstone');
+      }).pipe(Effect.provide(fsLayer));
+    });
+
+    it('[AE10] [Then] login fails and keeps the tombstone when user_data.json cannot be written', () => {
+      const homedir = tempy.temporaryDirectory();
+      // The delete keeps failing, so the tombstone survives the load.
+      const keyring = makeFakeKeyring({
+        alwaysFail: { delete: { kind: 'NoStorageAccess', cause: new Error('locked') } },
+      });
+
+      return Effect.gen(function* () {
+        const fs = yield* FileSystem.FileSystem;
+        yield* seedUserDataFile(homedir, { api_key: null, pending_keyring_logout: true });
+        yield* fs.chmod(path.join(homedir, '.composio'), 0o500);
+
+        yield* Effect.gen(function* () {
+          const ctx = yield* ComposioUserContext;
+          const error = yield* expectPersistenceError(ctx.login('doomed_key'));
+          assertEquals(error.keyringStored, true);
+          assertEquals(ctx.isLoggedIn(), false);
+        }).pipe(Effect.provide(contextLayer({ homedir, keyring })));
+
+        yield* fs.chmod(path.join(homedir, '.composio'), 0o700);
+        const onDisk = yield* readUserDataFile(homedir);
+        assertEquals(onDisk['pending_keyring_logout'], true);
+      }).pipe(Effect.provide(fsLayer));
+    });
+
+    it('[Then] login fails only when neither the keyring nor user_data.json can store the key', () => {
+      const homedir = tempy.temporaryDirectory();
+      const keyring = makeUnavailableKeyring();
+
+      return Effect.gen(function* () {
+        const fs = yield* FileSystem.FileSystem;
+        yield* fs.makeDirectory(path.join(homedir, '.composio'), { recursive: true });
+        yield* fs.writeFileString(userDataPath(homedir), JSON.stringify({ api_key: null }));
+        yield* fs.chmod(path.join(homedir, '.composio'), 0o500);
+
+        yield* Effect.gen(function* () {
+          const ctx = yield* ComposioUserContext;
+          const error = yield* expectPersistenceError(ctx.login('nowhere_to_go'));
+          assertEquals(error.keyringStored, false);
+          assertEquals(ctx.isLoggedIn(), false);
+        }).pipe(Effect.provide(contextLayer({ homedir, keyring })));
+
+        yield* fs.chmod(path.join(homedir, '.composio'), 0o700);
+      }).pipe(Effect.provide(fsLayer));
+    });
+
+    it('[R12] [Then] a metadata-only update preserves the active plaintext fallback', () => {
+      const homedir = tempy.temporaryDirectory();
+      const first = makeUnavailableKeyring();
+      const second = makeUnavailableKeyring();
+
+      return Effect.gen(function* () {
+        yield* Effect.gen(function* () {
+          const ctx = yield* ComposioUserContext;
+          yield* ctx.login('fallback_key');
+          yield* ctx.update({ orgId: Option.some('org_2') });
+        }).pipe(Effect.provide(contextLayer({ homedir, keyring: first })));
+
+        const onDisk = yield* readUserDataFile(homedir);
+        assertEquals(onDisk['api_key'], 'fallback_key');
+        assertEquals(onDisk['api_key_fallback'], true);
+        assertEquals(onDisk['org_id'], 'org_2');
+
+        yield* Effect.gen(function* () {
+          const ctx = yield* ComposioUserContext;
+          assertEquals(Option.getOrUndefined(ctx.data.apiKey), 'fallback_key');
+          assertEquals(Option.getOrUndefined(ctx.data.orgId), 'org_2');
+        }).pipe(Effect.provide(contextLayer({ homedir, keyring: second })));
+      }).pipe(Effect.provide(fsLayer));
+    });
+
+    it('[R12] [Then] a metadata-only update preserves a pending logout tombstone', () => {
+      const homedir = tempy.temporaryDirectory();
+      const keyring = makeFakeKeyring({
+        alwaysFail: { delete: { kind: 'NoStorageAccess', cause: new Error('locked') } },
+      });
+
+      return Effect.gen(function* () {
+        yield* seedUserDataFile(homedir, { api_key: null, pending_keyring_logout: true });
+
+        yield* Effect.gen(function* () {
+          const ctx = yield* ComposioUserContext;
+          yield* ctx.update({ orgId: Option.some('org_3') });
+        }).pipe(Effect.provide(contextLayer({ homedir, keyring })));
+
+        const onDisk = yield* readUserDataFile(homedir);
+        assertEquals(onDisk['pending_keyring_logout'], true);
+        assertEquals(onDisk['org_id'], 'org_3');
+      }).pipe(Effect.provide(fsLayer));
+    });
+
+    it('[Then] logout clears state whether the keyring entry is present, absent, or unreachable', () => {
+      const runLogout = (keyring: FakeKeyring) =>
+        Effect.gen(function* () {
+          const ctx = yield* ComposioUserContext;
+          yield* ctx.logout;
+          assertEquals(ctx.isLoggedIn(), false);
+          assertEquals(ctx.credentialSource(), 'none');
+        }).pipe(Effect.provide(contextLayer({ homedir: tempy.temporaryDirectory(), keyring })));
+
+      return Effect.gen(function* () {
+        const present = makeFakeKeyring({
+          seed: [[KEYRING_SERVICE, KEYRING_USER, 'stored_key']],
+        });
+        yield* runLogout(present);
+        assertEquals(present.peek(KEYRING_SERVICE, KEYRING_USER), undefined);
+
+        const absent = makeFakeKeyring();
+        yield* runLogout(absent);
+        assertEquals(absent.operations().includes('delete'), true);
+
+        const unreachable = makeUnavailableKeyring();
+        yield* runLogout(unreachable);
+        assertEquals(unreachable.operations().includes('delete'), true);
+      }).pipe(Effect.provide(fsLayer));
+    });
+
+    it('[AE14] [Then] a failed replacement leaves the previous complete file intact', () => {
+      const homedir = tempy.temporaryDirectory();
+      const keyring = makeFakeKeyring();
+
+      return Effect.gen(function* () {
+        const fs = yield* FileSystem.FileSystem;
+        // A permissive pre-existing file with complete state.
+        yield* seedUserDataFile(homedir, { api_key: 'original_key', org_id: 'org_original' });
+        yield* fs.chmod(userDataPath(homedir), 0o644);
+        yield* fs.chmod(path.join(homedir, '.composio'), 0o500);
+
+        yield* Effect.gen(function* () {
+          const ctx = yield* ComposioUserContext;
+          yield* ctx.update({ orgId: Option.some('org_new') }).pipe(Effect.ignore);
+        }).pipe(Effect.provide(contextLayer({ homedir, keyring })));
+
+        yield* fs.chmod(path.join(homedir, '.composio'), 0o700);
+        const onDisk = yield* readUserDataFile(homedir);
+        assertEquals(onDisk['api_key'], 'original_key');
+        assertEquals(onDisk['org_id'], 'org_original');
+
+        // No temp file is left behind by the failed replacement.
+        const leftovers = yield* fs.readDirectory(path.join(homedir, '.composio'));
+        assertEquals(
+          leftovers.filter(entry => entry.endsWith('.tmp')),
+          []
+        );
+      }).pipe(Effect.provide(fsLayer));
     });
   });
 });

@@ -6,8 +6,9 @@ import { afterEach, vi } from 'vitest';
 import * as constants from 'src/constants';
 import { setupCacheDir } from 'src/effects/setup-cache-dir';
 import { writeStoredAgentIdentity } from 'src/services/agents';
-import { ComposioUserContext } from 'src/services/user-context';
+import { ComposioUserContext, KEYRING_SERVICE, KEYRING_USER } from 'src/services/user-context';
 import { cli, MockConsole, TestLive } from 'test/__utils__';
+import { makeFakeKeyring } from 'test/__utils__/services/keyring';
 
 const agentSignupResponse = {
   status: 'READY',
@@ -42,7 +43,9 @@ describe('CLI: composio agent', () => {
     );
   });
 
-  layer(TestLive())(it => {
+  const agentSignupKeyring = makeFakeKeyring();
+
+  layer(TestLive({ keyring: agentSignupKeyring }))(it => {
     it.scoped('agent signup works when the CLI is not signed in', () =>
       Effect.gen(function* () {
         vi.spyOn(globalThis, 'fetch').mockImplementation(async requestInput => {
@@ -84,10 +87,13 @@ describe('CLI: composio agent', () => {
         );
         const agentConfigRaw = yield* fs.readFileString(path.join(cacheDir, 'agent.json'), 'utf8');
 
+        // Default `security: "auto"` keeps the key out of
+        // `user_data.json`; the agent identity file keeps its own copy.
         expect(JSON.parse(userConfigRaw)).toMatchObject({
-          api_key: 'uak_agent',
+          api_key: null,
           org_id: 'org_agent',
         });
+        expect(agentSignupKeyring.peek(KEYRING_SERVICE, KEYRING_USER)).toBe('uak_agent');
         expect(JSON.parse(agentConfigRaw)).toMatchObject({
           composio_agent_key: 'cak_test_agent',
           agent_key: 'cak_test_agent',

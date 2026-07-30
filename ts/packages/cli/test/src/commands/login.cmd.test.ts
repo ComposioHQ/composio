@@ -10,8 +10,9 @@ import * as constants from 'src/constants';
 import { setupCacheDir } from 'src/effects/setup-cache-dir';
 import { getTerminalCapabilities, TerminalUI } from 'src/services/terminal-ui';
 import { writeStoredAgentIdentity } from 'src/services/agents';
-import { ComposioUserContext } from 'src/services/user-context';
+import { ComposioUserContext, KEYRING_SERVICE, KEYRING_USER } from 'src/services/user-context';
 import { ComposioSessionRepository } from 'src/services/composio-clients';
+import { makeFakeKeyring } from 'test/__utils__/services/keyring';
 
 vi.mock('open', () => ({
   default: vi.fn(async () => undefined),
@@ -334,7 +335,9 @@ describe('CLI: composio login', () => {
     });
   });
 
-  layer(TestLive())(it => {
+  const directLoginKeyring = makeFakeKeyring();
+
+  layer(TestLive({ keyring: directLoginKeyring }))(it => {
     it.scoped('[When] logging in with --user-api-key --org [Then] stores the chosen org', () =>
       Effect.gen(function* () {
         vi.spyOn(globalThis, 'fetch').mockImplementation(
@@ -397,14 +400,15 @@ describe('CLI: composio login', () => {
         const userConfigPath = path.join(cacheDir, constants.USER_CONFIG_FILE_NAME);
         const rawUserConfig = yield* fs.readFileString(userConfigPath, 'utf8');
         const userConfig = JSON.parse(rawUserConfig) as Record<string, unknown>;
-        // Default `security: "auto"` keeps the API key in plaintext
-        // `user_data.json` for backwards compatibility — same as
-        // every prior CLI release. Users opt into keyring storage
-        // by setting `security: "keychain-subprocess"` (or
-        // `"keychain"` for the experimental FFI path) in
-        // `~/.composio/config.json`.
-        expect(userConfig.api_key).toBe('uak_direct_key');
+        // Default `security: "auto"` stores the API key in the OS
+        // credential store, so `user_data.json` keeps the non-secret
+        // context only. Users pin plaintext with `security: "json"`,
+        // and the CLI falls back to plaintext on its own whenever the
+        // credential store is unavailable.
+        expect(userConfig.api_key).toBeNull();
+        expect(userConfig.api_key_fallback).toBeUndefined();
         expect(userConfig.org_id).toBe('org_selected');
+        expect(directLoginKeyring.peek(KEYRING_SERVICE, KEYRING_USER)).toBe('uak_direct_key');
 
         // ComposioUserContext also exposes the resolved key in-memory
         // for subsequent API calls in this process.
