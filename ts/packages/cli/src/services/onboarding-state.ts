@@ -57,6 +57,10 @@ export type HostWiringFact =
  * invocation created the link itself (the link delegate returns it), and absent when the pending
  * link was discovered from a previous invocation's INITIATED account. When it is absent the
  * recovery is to re-run `composio link <toolkit>`, which mints a fresh URL.
+ *
+ * Pending links are carried per toolkit rather than reduced to the most recent one: the connect
+ * gate asks about the toolkit it resolved, and a newer link for a different toolkit must not hide
+ * an outstanding authorization for that one.
  */
 export type PendingLink = {
   readonly toolkit: string;
@@ -70,7 +74,8 @@ export type OnboardingFacts = {
   readonly orgId: Option.Option<string>;
   /** ACTIVE toolkit slugs, or `'unknown'` when the connection check itself failed. */
   readonly connectedToolkits: ReadonlyArray<string> | 'unknown';
-  readonly pendingLink: Option.Option<PendingLink>;
+  /** Live INITIATED accounts with no ACTIVE sibling, newest first, at most one per toolkit slug. */
+  readonly pendingLinks: ReadonlyArray<PendingLink>;
   readonly hasExecuted: Option.Option<{ readonly slug: string; readonly at: string }>;
   readonly requestedToolkit: Option.Option<string>;
   /** Skips apply to the invocation that carries them and are never persisted. */
@@ -140,7 +145,7 @@ const resolveToolkit = (facts: OnboardingFacts): Option.Option<string> => {
     return connectedCurated;
   }
 
-  return Option.map(facts.pendingLink, link => link.toolkit);
+  return Option.map(Arr.head(facts.pendingLinks), link => link.toolkit);
 };
 
 const hostWiringGate = (facts: OnboardingFacts) => {
@@ -238,7 +243,7 @@ const connectGate = (
   // An ACTIVE account suppresses a stale INITIATED sibling for the same toolkit, which is why
   // there is no "the pending link is now active" reconciliation step: both facts come out of one
   // list call, so they cannot describe different moments.
-  const pending = Option.filter(facts.pendingLink, link => link.toolkit === toolkit);
+  const pending = Arr.findFirst(facts.pendingLinks, link => link.toolkit === toolkit);
   if (Option.isSome(pending)) {
     return {
       status: 'blocked',

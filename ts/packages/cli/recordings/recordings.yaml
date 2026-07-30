@@ -28,6 +28,26 @@ recordings:
       description: Show whoami subcommand help
       command: "composio whoami"
 
+  onboard:
+    - name: help
+      description: Show onboard subcommand help
+      command: "composio onboard --help"
+      height: dynamic
+
+    # Only the non-interactive surfaces are recorded. The headline flow needs a browser OAuth round
+    # trip that vhs cannot drive headlessly, so these run against an already-onboarded account.
+    - name: status
+      description: Report where onboarding stands without advancing a gate
+      command: "composio onboard --status"
+      sleepAfterEnter: 8s
+      height: dynamic
+
+    - name: json
+      description: Emit the agent-facing onboarding state document
+      command: "composio onboard --json"
+      sleepAfterEnter: 8s
+      height: dynamic
+
   install:
     - name: help
       description: Show install subcommand help

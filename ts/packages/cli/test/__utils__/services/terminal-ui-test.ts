@@ -13,6 +13,9 @@ import type { TerminalCapabilities } from 'src/services/terminal-ui';
  *
  * - `output` writes only when stdout is piped or the caller passes `force`, so a test can tell
  *   "the document reached stdout" from "the document was withheld because stdout is a terminal".
+ * - `log.*`, `note`, `intro` and `outro` write only when `canDecorate`, so a test that sets
+ *   `stderr: false` observes the silence production would produce rather than text that only the
+ *   double emits. `error` stays ungated, matching production.
  * - the TTY flags are configurable per stream, so "cannot prompt but stdout is a terminal" — the
  *   `composio onboard < /dev/null` case — is reachable at all.
  *
@@ -20,6 +23,7 @@ import type { TerminalCapabilities } from 'src/services/terminal-ui';
  * and a suite written against it stays green while the command prints nothing at all.
  */
 export type TerminalUITestOptions = {
+  /** Defaults: stdin and stdout non-TTY, stderr a TTY — decoration on, prompting off. */
   readonly tty?: {
     readonly stdin?: boolean;
     readonly stdout?: boolean;
@@ -41,12 +45,18 @@ export const makeTerminalUITestImpl = (options: TerminalUITestOptions = {}): Ter
   const capabilities: TerminalCapabilities = getTerminalCapabilities({
     stdin: { isTTY: options.tty?.stdin ?? false },
     stdout: { isTTY: options.tty?.stdout ?? false },
-    stderr: { isTTY: options.tty?.stderr ?? false },
+    // stderr defaults to a TTY so decoration is visible: `canPrompt` still needs stdin, so this
+    // does not turn any existing default-configured test into a prompting one.
+    stderr: { isTTY: options.tty?.stderr ?? true },
   });
 
   const textAnswers = [...(options.textAnswers ?? [])];
   const confirmAnswers = [...(options.confirmAnswers ?? [])];
   const selectAnswers = [...(options.selectAnswers ?? [])];
+
+  /** Production's gate, mirrored: `makeTerminalUI` wraps the same four members in `decorate`. */
+  const decorate = (write: Effect.Effect<void>): Effect.Effect<void> =>
+    capabilities.canDecorate ? write : Effect.void;
 
   return TerminalUI.of({
     capabilities: Effect.succeed(capabilities),
@@ -55,21 +65,22 @@ export const makeTerminalUITestImpl = (options: TerminalUITestOptions = {}): Ter
     output: (data, outputOptions) =>
       outputOptions?.force || !capabilities.stdoutIsTTY ? Console.log(data) : Effect.void,
 
+    // Ungated, matching production: `error` writes to stderr whether or not it is a TTY.
     error: data => Console.error(data),
 
-    intro: title => Console.log(`-- ${title} --`),
-    outro: message => Console.log(`-- ${message} --`),
+    intro: title => decorate(Console.log(`-- ${title} --`)),
+    outro: message => decorate(Console.log(`-- ${message} --`)),
 
     log: {
-      info: message => Console.log(message),
-      success: message => Console.log(message),
-      warn: message => Console.warn(message),
-      error: message => Console.error(message),
-      step: message => Console.log(message),
-      message: message => Console.log(message),
+      info: message => decorate(Console.log(message)),
+      success: message => decorate(Console.log(message)),
+      warn: message => decorate(Console.warn(message)),
+      error: message => decorate(Console.error(message)),
+      step: message => decorate(Console.log(message)),
+      message: message => decorate(Console.log(message)),
     },
 
-    note: (message, title) => Console.log(title ? `[${title}] ${message}` : message),
+    note: (message, title) => decorate(Console.log(title ? `[${title}] ${message}` : message)),
 
     select: ((_message: string, selectOptions: ReadonlyArray<{ value: unknown }>) => {
       if (!capabilities.canPrompt) {

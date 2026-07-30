@@ -9,12 +9,19 @@
  * makes stdout a file, which is the piped column by definition. A container without a pty cannot
  * express that mode at all, so it is covered against the fixed TerminalUI double instead.
  *
- * Every command runs with an isolated HOME so the container's own config cannot leak in.
+ * Every command runs with an isolated HOME so the container's own config cannot leak in, and with
+ * `COMPOSIO_BASE_URL` pinned at a mock server — the logged-out path advances the login gate, so it
+ * makes a real API call, and the mock is what keeps CI off production and lets the suite observe
+ * that the call happened at all.
  */
 
 import { e2e, type E2ETestResult, type E2ETestResultWithFiles } from '@e2e-tests/utils';
 import { TIMEOUTS } from '@e2e-tests/utils/const';
-import { beforeAll, describe, expect, it } from 'bun:test';
+import { afterAll, beforeAll, describe, expect, it } from 'bun:test';
+import {
+  startMockAgentsServer,
+  type MockAgentsServer,
+} from '../../../packages/cli/scripts/mock-agents-server';
 
 type OnboardDocument = {
   readonly kind?: string;
@@ -37,14 +44,26 @@ type OnboardDocument = {
 const soleDocument = (stdout: string): OnboardDocument =>
   JSON.parse(stdout.trim()) as OnboardDocument;
 
-/** A fresh HOME per invocation, so no state carries over between assertions. */
-const isolated = (command: string) => `mkdir -p home && HOME="$PWD/home" ${command}`;
+/**
+ * A fresh HOME per invocation, so no state carries over between assertions, and a base URL pinned
+ * at the harness mock server.
+ *
+ * Pinning is not tidiness. `composio onboard --json` while logged out advances the login gate, so
+ * it reaches `client.createSession` — against the production API if nothing says otherwise, minting
+ * a real CLI login session from CI on every run. And because the login delegate's failure is
+ * swallowed, every assertion below holds whether the call succeeded, 404'd, or never connected.
+ */
+const isolated = (server: MockAgentsServer, command: string) =>
+  `mkdir -p home && HOME="$PWD/home" COMPOSIO_BASE_URL=${server.dockerBaseUrl} ${command}`;
 
 e2e(import.meta.url, {
   versions: {
     cli: ['current'],
   },
   defineTests: ({ runCmd }) => {
+    let apiServer: MockAgentsServer;
+    /** A listener nothing is supposed to reach: the bare-`composio` nudge must be purely local. */
+    let silentServer: MockAgentsServer;
     let jsonLoggedOut: E2ETestResultWithFiles<'out.json'>;
     let stdinClosed: E2ETestResultWithFiles<'out.txt'>;
     let stdinClosedJson: E2ETestResultWithFiles<'out.json'>;
@@ -55,25 +74,28 @@ e2e(import.meta.url, {
     let helpResult: E2ETestResult;
 
     beforeAll(async () => {
+      apiServer = await startMockAgentsServer();
+      silentServer = await startMockAgentsServer();
+
       jsonLoggedOut = await runCmd({
-        command: isolated('composio onboard --json > out.json'),
+        command: isolated(apiServer, 'composio onboard --json > out.json'),
         files: ['out.json'],
       });
 
       // stdin closed and stdout captured (so this is the piped column): the document must land on
       // stdout, and the human renderer must still have something to say on stderr.
       stdinClosed = await runCmd({
-        command: isolated('composio onboard < /dev/null > out.txt'),
+        command: isolated(apiServer, 'composio onboard < /dev/null > out.txt'),
         files: ['out.txt'],
       });
 
       stdinClosedJson = await runCmd({
-        command: isolated('composio onboard --json < /dev/null > out.json'),
+        command: isolated(apiServer, 'composio onboard --json < /dev/null > out.json'),
         files: ['out.json'],
       });
 
       emptyToolkit = await runCmd({
-        command: isolated('composio onboard --toolkit "" --json > out.txt'),
+        command: isolated(apiServer, 'composio onboard --toolkit "" --json > out.txt'),
         files: ['out.txt'],
       });
 
@@ -81,27 +103,37 @@ e2e(import.meta.url, {
       // shell metacharacters has to be refused at the flag rather than quoted at the sink.
       injectedToolkit = await runCmd({
         command: isolated(
+          apiServer,
           `composio onboard --toolkit 'github; echo pwned' --json > out.txt 2>&1 || true`
         ),
         files: ['out.txt'],
       });
 
       emptyTask = await runCmd({
-        command: isolated('composio onboard --task "" --json > out.txt'),
+        command: isolated(apiServer, 'composio onboard --task "" --json > out.txt'),
         files: ['out.txt'],
       });
 
-      // An unroutable base URL with a short timeout: a network attempt would stall or error, so a
-      // clean fast exit is the evidence that the nudge is purely local.
+      // A reachable, instrumented listener rather than a closed port. A closed port refuses
+      // instantly, so a regression that performs the request and swallows the connection error
+      // still exits 0 and prints the same nudge — the assertion that catches it is the request
+      // count, which is why the base URL points somewhere that can actually record one. Telemetry
+      // is disabled explicitly so the counter observes the nudge path and nothing else.
       bareComposio = await runCmd({
         command: isolated(
-          'COMPOSIO_BASE_URL=http://127.0.0.1:9 timeout 20 composio > out.txt 2> err.txt; echo "exit=$?" >> out.txt; cat err.txt >> out.txt'
+          silentServer,
+          'COMPOSIO_CLI_TELEMETRY_DISABLED=1 timeout 20 composio > out.txt 2> err.txt; echo "exit=$?" >> out.txt; cat err.txt >> out.txt'
         ),
         files: ['out.txt'],
       });
 
-      helpResult = await runCmd(isolated('composio onboard --help'));
+      helpResult = await runCmd(isolated(apiServer, 'composio onboard --help'));
     }, TIMEOUTS.FIXTURE);
+
+    afterAll(async () => {
+      await apiServer.close();
+      await silentServer.close();
+    });
 
     describe('composio onboard --json while logged out', () => {
       it('exits zero', () => {
@@ -115,6 +147,17 @@ e2e(import.meta.url, {
         expect(document.v).toBe(2);
         expect(document.next_gate).toBe('login');
         expect(document.onboarded).toBe(false);
+      });
+
+      it('actually minted a session rather than degrading to the same document', () => {
+        // Every assertion above holds for a login delegate that failed, because the failure is
+        // swallowed by design. These two do not: the URL and the `--poll` command are reachable
+        // only from a `pending` outcome, which requires the create-session call to have succeeded.
+        expect(apiServer.requests).toContain('POST /api/v3.1/cli/create-session');
+
+        const document = soleDocument(jsonLoggedOut.files['out.json']);
+        expect(document.human_action).toContain('cliKey=');
+        expect(document.next_command).toBe('composio login --poll');
       });
 
       it('puts kind and v first, so a reader can switch before parsing the rest', () => {
@@ -178,7 +221,7 @@ e2e(import.meta.url, {
     });
 
     describe('bare composio with an unfinished onboarding', () => {
-      it('prints the nudge on stderr with an empty stdout and no network call', () => {
+      it('prints the nudge on stderr with an empty stdout', () => {
         const captured = bareComposio.files['out.txt'];
         const [stdoutPortion = '', ...rest] = captured.split('exit=');
 
@@ -186,8 +229,13 @@ e2e(import.meta.url, {
         expect(stdoutPortion.trim()).toBe('');
         // ...and the appended stderr carries the nudge, even though stderr is captured.
         expect(rest.join('exit=')).toContain('composio onboard');
-        // `timeout 20` would have produced exit 124 had the command tried to reach the API.
         expect(captured).toContain('exit=0');
+      });
+
+      it('makes no API request at all', () => {
+        // The instrumented listener is the evidence. Exit code and output are not: a regression
+        // that performs the request and catches the error reproduces both exactly.
+        expect(silentServer.requests).toEqual([]);
       });
     });
 

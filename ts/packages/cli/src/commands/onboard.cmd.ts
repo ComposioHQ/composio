@@ -11,6 +11,7 @@ import { nextAgentCommand } from 'src/services/onboarding-next-command';
 import { resolveOnboardingState } from 'src/services/onboarding-state';
 import { clearOnboardingExecution } from 'src/services/onboarding-store';
 import {
+  asRecord,
   findTaskByFreeText,
   findTaskByToolkit,
   ONBOARD_TASKS,
@@ -250,9 +251,11 @@ const offerReversibleCreate = (params: {
       return;
     }
 
+    // `data` is an arbitrary provider payload typed `unknown`, so it is narrowed rather than
+    // asserted — a response that is an array or a primitive summarizes to nothing.
     const summary =
       result.right.kind === 'tool_execution'
-        ? create.summarize?.((result.right.data ?? {}) as Record<string, unknown>)
+        ? create.summarize?.(asRecord(result.right.data) ?? {})
         : undefined;
     yield* ui.log.success(summary ?? 'Created it.');
   });
@@ -279,7 +282,11 @@ const mayRunReadDemo = (params: {
  */
 type LoginAdvance =
   | { readonly kind: 'pending'; readonly loginUrl: string }
-  | { readonly kind: 'linked' }
+  /**
+   * The account this invocation authenticated. It is the one case `gates.login.email` is populated
+   * for — the address is not persisted anywhere, so a resumed invocation has nothing to report.
+   */
+  | { readonly kind: 'linked'; readonly email: Option.Option<string> }
   | { readonly kind: 'failed' };
 
 type ConnectAdvance =
@@ -315,7 +322,7 @@ const advanceLoginGate = (params: { readonly yes: boolean; readonly json: boolea
     return (
       outcome.right.status === 'pending'
         ? { kind: 'pending', loginUrl: outcome.right.loginUrl }
-        : { kind: 'linked' }
+        : { kind: 'linked', email: Option.fromNullable(outcome.right.email) }
     ) satisfies LoginAdvance;
   });
 
@@ -330,9 +337,14 @@ const advanceConnectGate = (params: { readonly toolkit: string; readonly json: b
       authConfig: Option.none(),
       userId: Option.none(),
       projectName: Option.none(),
-      // Always `noWait`: onboard re-resolves state from the API rather than holding a poll open, so
-      // an agent's loop stays externally visible and bounded.
-      noWait: true,
+      // A human at the keyboard gets the same connect the standalone command gives them: the
+      // browser opens and the delegate polls to ACTIVE, so one session can reach the execute gate.
+      // `noWait` is where the delegate stops reading `noBrowser` at all, so pinning it to `true`
+      // made the interactive front door strictly worse than `composio link` — a URL to copy by
+      // hand, then a document telling the human to re-run. Non-prompting callers keep the bounded
+      // one-gate-per-invocation behavior: onboard re-resolves from the API instead of holding a
+      // poll open, so an agent's loop stays externally visible.
+      noWait: !interactive,
       noBrowser: !interactive,
       alias: Option.none(),
       list: false,
@@ -402,9 +414,7 @@ const advanceExecuteGate = (params: { readonly task: StarterTask; readonly json:
       return { kind: 'failed' } satisfies ExecuteAdvance;
     }
 
-    const summary = params.task.read.summarize?.(
-      (result.right.data ?? {}) as Record<string, unknown>
-    );
+    const summary = params.task.read.summarize?.(asRecord(result.right.data) ?? {});
     yield* ui.log.success(summary ?? `${params.task.read.slug} ran successfully.`);
 
     yield* offerReversibleCreate({ task: params.task, json: params.json, surface: 'root' });
@@ -439,6 +449,9 @@ const runOnboard = (params: {
     let requestedToolkit = resolveRequestedToolkit({ toolkit: toolkitOpt, task: taskOpt });
     let loginContext: NextCommandContext = {};
     let mintedRedirectUrl = Option.none<MintedLink>();
+    // Held beside `mintedRedirectUrl` for the same reason: it belongs to this invocation, not to
+    // any fact the next invocation could read back.
+    let loginEmail = Option.none<string>();
     let demoFailure = Option.none<string>();
 
     const resolve = (toolkit: Option.Option<string>) =>
@@ -447,6 +460,7 @@ const runOnboard = (params: {
           requestedToolkit: toolkit,
           invocationSkips: params.skip,
           mintedRedirectUrl,
+          email: loginEmail,
         }),
         resolveOnboardingState
       );
@@ -469,6 +483,9 @@ const runOnboard = (params: {
       if (attempted === 'login') {
         const outcome = yield* advanceLoginGate({ yes: params.yes, json: params.json });
         loginContext = outcome.kind === 'pending' ? { loginUrl: outcome.loginUrl } : {};
+        if (outcome.kind === 'linked') {
+          loginEmail = outcome.email;
+        }
         if (outcome.kind === 'failed') {
           yield* ui.log.error('Login did not complete. Run `composio onboard` again to retry.');
         }

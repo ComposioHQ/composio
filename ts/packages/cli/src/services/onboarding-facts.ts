@@ -55,12 +55,12 @@ const gatherHostWiring = Effect.gen(function* () {
 
 type LiveConnections = {
   readonly connectedToolkits: ReadonlyArray<string> | 'unknown';
-  readonly pendingLink: Option.Option<PendingLink>;
+  readonly pendingLinks: ReadonlyArray<PendingLink>;
 };
 
 const UNKNOWN_CONNECTIONS: LiveConnections = {
   connectedToolkits: 'unknown',
-  pendingLink: Option.none(),
+  pendingLinks: [],
 };
 
 /**
@@ -83,7 +83,11 @@ const partitionConnections = (items: ReadonlyArray<ConnectedAccountItem>): LiveC
 
   return {
     connectedToolkits,
-    pendingLink: Option.map(Arr.head(initiated), item => ({
+    // Every candidate, newest first, not just the newest overall. The connect gate asks whether
+    // *the resolved toolkit* has an outstanding authorization, and reducing to one item across all
+    // toolkits answers a different question: a github link started yesterday disappears the moment
+    // a gmail link is started, and the gate then mints a second github link on every run.
+    pendingLinks: initiated.map(item => ({
       toolkit: item.toolkit.slug,
       connectedAccountId: item.id,
       // The list endpoint does not expose the redirect URL — see `PendingLink`.
@@ -162,30 +166,34 @@ export type GatherOnboardingFactsParams = {
  * immediately after the create, so it can lag behind it. Trusting it unconditionally there would
  * drop the URL that was just printed, leave the connect gate `unsatisfied`, and invite the next
  * invocation to mint another link against the same account. So a minted link that the list does not
- * yet contradict — no ACTIVE account for that toolkit, no matching pending item — stands in for the
- * fact until the list catches up.
+ * yet contradict — no ACTIVE account for that toolkit, no matching pending item — is prepended as
+ * the newest candidate until the list catches up.
  */
 const withMintedRedirectUrl = (
-  pendingLink: Option.Option<PendingLink>,
+  pendingLinks: ReadonlyArray<PendingLink>,
   minted: Option.Option<MintedLink>,
   connectedToolkits: ReadonlyArray<string> | 'unknown'
-): Option.Option<PendingLink> => {
+): ReadonlyArray<PendingLink> => {
   if (Option.isNone(minted)) {
-    return pendingLink;
+    return pendingLinks;
   }
   const value = minted.value;
 
   // The authorization already completed between the create and the list: the ACTIVE account is the
   // better fact, and the connect gate reads it as satisfied.
   if (connectedToolkits !== 'unknown' && connectedToolkits.includes(value.toolkit)) {
-    return pendingLink;
+    return pendingLinks;
   }
 
-  if (Option.isSome(pendingLink) && pendingLink.value.toolkit === value.toolkit) {
-    return Option.some({ ...pendingLink.value, redirectUrl: Option.some(value.url) });
+  const matching = Arr.findFirstIndex(pendingLinks, link => link.toolkit === value.toolkit);
+  if (Option.isSome(matching)) {
+    return Arr.modify(pendingLinks, matching.value, link => ({
+      ...link,
+      redirectUrl: Option.some(value.url),
+    }));
   }
 
-  return Option.some({
+  return Arr.prepend(pendingLinks, {
     toolkit: value.toolkit,
     connectedAccountId: value.connectedAccountId,
     redirectUrl: Option.some(value.url),
@@ -211,8 +219,8 @@ export const gatherOnboardingFacts = (params: GatherOnboardingFactsParams) =>
       email: params.email ?? Option.none(),
       orgId: userContext.data.orgId,
       connectedToolkits: loggedIn ? connections.connectedToolkits : 'unknown',
-      pendingLink: withMintedRedirectUrl(
-        connections.pendingLink,
+      pendingLinks: withMintedRedirectUrl(
+        connections.pendingLinks,
         params.mintedRedirectUrl ?? Option.none(),
         loggedIn ? connections.connectedToolkits : 'unknown'
       ),

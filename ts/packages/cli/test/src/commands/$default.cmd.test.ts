@@ -4,8 +4,8 @@ import { describe, expect, layer } from '@effect/vitest';
 import { Effect } from 'effect';
 import { ValidationError, HelpDoc } from '@effect/cli';
 import { cli, pkg, TestLive, MockConsole } from 'test/__utils__';
-import { terminalUITestImpl } from 'test/__utils__/services/terminal-ui-test';
-import { getTerminalCapabilities, TerminalUI } from 'src/services/terminal-ui';
+import { makeTerminalUITestImpl } from 'test/__utils__/services/terminal-ui-test';
+import { TerminalUI } from 'src/services/terminal-ui';
 import { afterEach, vi } from 'vitest';
 
 const getCommandMismatch = (value: unknown): ValidationError.CommandMismatch => {
@@ -84,16 +84,11 @@ describe('CLI: composio', () => {
     const stdoutWrites: Array<string> = [];
     const stderrWrites: Array<string> = [];
 
+    // Built with all three streams captured, so the double's own `canDecorate` gate is off: every
+    // `log.*`/`note` write is suppressed exactly as it would be in production. What is left is
+    // `ui.error`, which production writes unconditionally — so this pins that the nudge uses it.
     const streamRecordingUI = TerminalUI.of({
-      ...terminalUITestImpl,
-      capabilities: Effect.succeed(
-        getTerminalCapabilities({
-          // stderr captured, so anything gated on `canDecorate` would be suppressed.
-          stdin: { isTTY: false },
-          stdout: { isTTY: false },
-          stderr: { isTTY: false },
-        })
-      ),
+      ...makeTerminalUITestImpl({ tty: { stdin: false, stdout: false, stderr: false } }),
       output: data => Effect.sync(() => void stdoutWrites.push(data)),
       error: data => Effect.sync(() => void stderrWrites.push(data)),
     });

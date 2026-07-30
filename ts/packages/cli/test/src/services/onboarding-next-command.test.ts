@@ -12,7 +12,7 @@ const facts = (overrides: Partial<OnboardingFacts> = {}): OnboardingFacts => ({
   email: Option.none(),
   orgId: Option.some('k2OiqRLMdHyM'),
   connectedToolkits: [],
-  pendingLink: Option.none(),
+  pendingLinks: [],
   hasExecuted: Option.none(),
   requestedToolkit: Option.none(),
   invocationSkips: [],
@@ -45,14 +45,26 @@ describe('nextAgentCommand', () => {
   });
 
   describe('login gate', () => {
-    it('blocks on the browser round trip and resumes with --poll, not a bare login', () => {
-      const step = stepFor({ loggedIn: false });
+    it('resumes with --poll once this invocation minted a session', () => {
+      const step = stepFor({ loggedIn: false }, { loginUrl: 'https://app.composio.dev/l/abc' });
 
       expect(step.kind).toBe('blocked');
       if (step.kind !== 'blocked') return;
       expect(step.reason).toBe('browser_login_required');
       expect(step.command).toBe('composio login --poll');
       expect(step.command).not.toBe('composio login');
+    });
+
+    it('asks for a session first when no login URL was minted', () => {
+      // `--status` advances nothing and a failed login delegate leaves nothing behind, so `--poll`
+      // here would hand back a command that fails with "No pending login found" and moves no fact.
+      const step = stepFor({ loggedIn: false });
+
+      expect(step.kind).toBe('blocked');
+      if (step.kind !== 'blocked') return;
+      expect(step.reason).toBe('browser_login_required');
+      expect(step.command).toBe('composio login --no-wait');
+      expect(step.humanAction).toContain('composio login --no-wait');
     });
 
     it('interpolates the login URL when this invocation minted one', () => {
@@ -87,11 +99,13 @@ describe('nextAgentCommand', () => {
     it('blocks with no command while a browser authorization is outstanding', () => {
       const step = stepFor({
         requestedToolkit: Option.some('github'),
-        pendingLink: Option.some({
-          toolkit: 'github',
-          connectedAccountId: 'ca_pending',
-          redirectUrl: Option.some('https://auth.example.com/github'),
-        }),
+        pendingLinks: [
+          {
+            toolkit: 'github',
+            connectedAccountId: 'ca_pending',
+            redirectUrl: Option.some('https://auth.example.com/github'),
+          },
+        ],
       });
 
       expect(step.kind).toBe('blocked');
@@ -106,11 +120,13 @@ describe('nextAgentCommand', () => {
     it('points at composio link when the pending authorization has no URL to reopen', () => {
       const step = stepFor({
         requestedToolkit: Option.some('github'),
-        pendingLink: Option.some({
-          toolkit: 'github',
-          connectedAccountId: 'ca_pending',
-          redirectUrl: Option.none(),
-        }),
+        pendingLinks: [
+          {
+            toolkit: 'github',
+            connectedAccountId: 'ca_pending',
+            redirectUrl: Option.none(),
+          },
+        ],
       });
 
       expect(step.kind).toBe('blocked');
@@ -234,16 +250,31 @@ describe('nextAgentCommand', () => {
           >
       ),
       Arr.bind(
-        'pendingLink',
+        'pendingLinks',
         () =>
           [
-            Option.none(),
-            Option.some({
-              toolkit: 'github',
-              connectedAccountId: 'ca_pending',
-              redirectUrl: Option.some('https://auth.example.com/github'),
-            }),
-          ] as OnboardingFacts['pendingLink'][]
+            [],
+            [
+              {
+                toolkit: 'github',
+                connectedAccountId: 'ca_pending',
+                redirectUrl: Option.some('https://auth.example.com/github'),
+              },
+            ],
+            // A newer link for a different toolkit must not hide the github one behind it.
+            [
+              {
+                toolkit: 'gmail',
+                connectedAccountId: 'ca_gmail_pending',
+                redirectUrl: Option.none<string>(),
+              },
+              {
+                toolkit: 'github',
+                connectedAccountId: 'ca_pending',
+                redirectUrl: Option.some('https://auth.example.com/github'),
+              },
+            ],
+          ] as OnboardingFacts['pendingLinks'][]
       ),
       Arr.bind(
         'invocationSkips',
@@ -318,6 +349,32 @@ describe('nextAgentCommand', () => {
       }
     });
 
+    it('never reports done while onboarding is unfinished', () => {
+      // `done` produces a document with `blocked: false`, `human_action: null` and
+      // `next_command: null`. Paired with `onboarded: false` — which `--skip` produces — that is a
+      // document a polling caller can neither act on nor exit on.
+      for (const axes of cases) {
+        const input = facts(axes);
+        const state = resolveOnboardingState(input);
+        if (nextAgentCommand(state, input.requestedToolkit).kind !== 'done') continue;
+
+        expect(state.onboarded).toBe(true);
+      }
+    });
+
+    it('states the reason when a skip left onboarding unfinished', () => {
+      const step = stepFor({
+        requestedToolkit: Option.some('github'),
+        connectedToolkits: ['github'],
+        invocationSkips: ['execute'],
+      });
+
+      expect(step.kind).toBe('deferred');
+      if (step.kind !== 'deferred') return;
+      expect(step.humanAction).toContain('--skip');
+      expect(step.humanAction).toContain('composio onboard');
+    });
+
     /**
      * The no-loop property: every command must change at least one fact in `OnboardingFacts`, so
      * an agent that runs it makes progress rather than re-reading the same state.
@@ -327,7 +384,7 @@ describe('nextAgentCommand', () => {
       readonly fact: keyof OnboardingFacts;
     }> = [
       { matches: command => command.startsWith('composio login'), fact: 'loggedIn' },
-      { matches: command => command.startsWith('composio link'), fact: 'pendingLink' },
+      { matches: command => command.startsWith('composio link'), fact: 'pendingLinks' },
       { matches: command => command.startsWith('composio execute'), fact: 'hasExecuted' },
     ];
 

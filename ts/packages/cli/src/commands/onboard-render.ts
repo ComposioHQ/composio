@@ -203,7 +203,8 @@ export const renderOnboardHuman = (state: OnboardingState, step: NextStep) =>
         return;
 
       case 'done':
-        // Nothing left to do, but onboarding is not finished — a skipped gate left it open.
+        // Only reachable if `onboarded` and `done` ever disagreed; the early return above covers
+        // every finished onboarding.
         yield* ui.log.message('Nothing left to do on this invocation.');
         return;
     }

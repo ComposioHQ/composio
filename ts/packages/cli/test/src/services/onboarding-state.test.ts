@@ -40,7 +40,7 @@ const facts = (overrides: Partial<OnboardingFacts> = {}): OnboardingFacts => ({
   email: Option.none(),
   orgId: Option.some('k2OiqRLMdHyM'),
   connectedToolkits: [],
-  pendingLink: Option.none(),
+  pendingLinks: [],
   hasExecuted: Option.none(),
   requestedToolkit: Option.none(),
   invocationSkips: [],
@@ -100,11 +100,13 @@ describe('resolveOnboardingState', () => {
       const state = resolveOnboardingState(
         facts({
           requestedToolkit: Option.some('github'),
-          pendingLink: Option.some({
-            toolkit: 'github',
-            connectedAccountId: 'ca_pending',
-            redirectUrl: Option.some('https://auth.example.com/github'),
-          }),
+          pendingLinks: [
+            {
+              toolkit: 'github',
+              connectedAccountId: 'ca_pending',
+              redirectUrl: Option.some('https://auth.example.com/github'),
+            },
+          ],
         })
       );
 
@@ -118,11 +120,13 @@ describe('resolveOnboardingState', () => {
       const state = resolveOnboardingState(
         facts({
           requestedToolkit: Option.some('github'),
-          pendingLink: Option.some({
-            toolkit: 'github',
-            connectedAccountId: 'ca_pending',
-            redirectUrl: Option.none(),
-          }),
+          pendingLinks: [
+            {
+              toolkit: 'github',
+              connectedAccountId: 'ca_pending',
+              redirectUrl: Option.none(),
+            },
+          ],
         })
       );
 
@@ -402,7 +406,7 @@ describe('resolveOnboardingState', () => {
     it('never resolves a toolkit the caller did not ask for and has no live account for', () => {
       for (const axes of cases) {
         const state = resolveOnboardingState(
-          facts({ ...axes, requestedToolkit: Option.none(), pendingLink: Option.none() })
+          facts({ ...axes, requestedToolkit: Option.none(), pendingLinks: [] })
         );
         if (state.toolkit === null) continue;
 
@@ -427,11 +431,13 @@ describe('resolveOnboardingState', () => {
         facts({
           requestedToolkit: Option.some('github'),
           connectedToolkits: ['github'],
-          pendingLink: Option.some({
-            toolkit: 'github',
-            connectedAccountId: 'ca_pending',
-            redirectUrl: Option.none(),
-          }),
+          pendingLinks: [
+            {
+              toolkit: 'github',
+              connectedAccountId: 'ca_pending',
+              redirectUrl: Option.none(),
+            },
+          ],
         })
       );
 
@@ -443,11 +449,13 @@ describe('resolveOnboardingState', () => {
       const state = resolveOnboardingState(
         facts({
           requestedToolkit: Option.some('github'),
-          pendingLink: Option.some({
-            toolkit: 'gmail',
-            connectedAccountId: 'ca_gmail_pending',
-            redirectUrl: Option.none(),
-          }),
+          pendingLinks: [
+            {
+              toolkit: 'gmail',
+              connectedAccountId: 'ca_gmail_pending',
+              redirectUrl: Option.none(),
+            },
+          ],
         })
       );
 
@@ -455,14 +463,43 @@ describe('resolveOnboardingState', () => {
       expect(state.gates.connect.toolkit).toBe('github');
     });
 
-    it('adopts the pending link toolkit when nothing was requested', () => {
+    it('finds the requested toolkit behind a newer link for another toolkit', () => {
+      // Reduced to "the most recent INITIATED overall", the gmail link hides the github one: the
+      // gate reads `unsatisfied` instead of `blocked` and mints another github link on every run —
+      // which the link command's duplicate guard cannot stop, since it only lists ACTIVE accounts.
       const state = resolveOnboardingState(
         facts({
-          pendingLink: Option.some({
-            toolkit: 'gmail',
-            connectedAccountId: 'ca_gmail_pending',
-            redirectUrl: Option.some('https://auth.example.com/gmail'),
-          }),
+          requestedToolkit: Option.some('github'),
+          pendingLinks: [
+            {
+              toolkit: 'gmail',
+              connectedAccountId: 'ca_gmail_pending',
+              redirectUrl: Option.none(),
+            },
+            {
+              toolkit: 'github',
+              connectedAccountId: 'ca_github_pending',
+              redirectUrl: Option.some('https://auth.example.com/github'),
+            },
+          ],
+        })
+      );
+
+      expect(state.gates.connect.status).toBe('blocked');
+      expect(state.gates.connect.connectedAccountId).toBe('ca_github_pending');
+      expect(state.gates.connect.redirectUrl).toBe('https://auth.example.com/github');
+    });
+
+    it('adopts the newest pending link toolkit when nothing was requested', () => {
+      const state = resolveOnboardingState(
+        facts({
+          pendingLinks: [
+            {
+              toolkit: 'gmail',
+              connectedAccountId: 'ca_gmail_pending',
+              redirectUrl: Option.some('https://auth.example.com/gmail'),
+            },
+          ],
         })
       );
 

@@ -43,8 +43,12 @@ export type NextStep =
       readonly command?: string;
       readonly availableToolkits?: ReadonlyArray<string>;
     }
-  /** Nothing left to do, but onboarding did not finish — a connected toolkit with no demo. */
+  /**
+   * Nothing left to do, but onboarding did not finish — a connected toolkit with no curated demo,
+   * or a gate `--skip` left out of this invocation.
+   */
   | { readonly kind: 'deferred'; readonly humanAction: string }
+  /** Onboarding finished. `done` and `onboarded` mean the same thing and never disagree. */
   | { readonly kind: 'done' };
 
 /**
@@ -75,10 +79,31 @@ const authorizationAction = (state: OnboardingState): string => {
     : `Open ${redirectUrl} and authorize ${toolkit}, then re-run \`composio onboard\`.`;
 };
 
-const loginAction = (context: NextCommandContext): string =>
+/**
+ * The login block, which is the one block allowed to carry a command.
+ *
+ * The command has to be the one that changes the login fact *from here*. `composio login --poll`
+ * only does that when a session already exists, and one exists only when this invocation minted it
+ * — `--status` advances nothing, and a failed login delegate leaves nothing behind either. Emitting
+ * `--poll` there hands back a command that fails with "No pending login found", changes no fact,
+ * and breaks the no-loop property this chokepoint exists to enforce. Without a URL the entry point
+ * is `composio login --no-wait`, which mints the session and writes it to disk.
+ */
+const loginStep = (context: NextCommandContext): NextStep =>
   context.loginUrl === undefined
-    ? 'Open the login URL shown above, then run `composio login --poll`.'
-    : `Open ${context.loginUrl}, then run \`composio login --poll\`.`;
+    ? {
+        kind: 'blocked',
+        reason: 'browser_login_required',
+        humanAction:
+          'Run `composio login --no-wait` to get a login URL, open it, then run `composio login --poll`.',
+        command: 'composio login --no-wait',
+      }
+    : {
+        kind: 'blocked',
+        reason: 'browser_login_required',
+        humanAction: `Open ${context.loginUrl}, then run \`composio login --poll\`.`,
+        command: 'composio login --poll',
+      };
 
 export const nextAgentCommand = (
   state: OnboardingState,
@@ -91,12 +116,7 @@ export const nextAgentCommand = (
 
   switch (state.nextGate) {
     case 'login':
-      return {
-        kind: 'blocked',
-        reason: 'browser_login_required',
-        humanAction: loginAction(context),
-        command: 'composio login --poll',
-      };
+      return loginStep(context);
 
     case 'connect': {
       if (state.gates.connect.status === 'unknown') {
@@ -171,14 +191,31 @@ export const nextAgentCommand = (
     }
 
     case null:
-      // The remaining unfinished terminal state is a deferred execute gate: a connected toolkit
-      // with no curated demo. `composio search` changes no fact in `OnboardingFacts`, so returning
-      // it as a command would break the no-loop property by construction — it stays prose.
-      return state.gates.execute.status === 'deferred'
-        ? {
-            kind: 'deferred',
-            humanAction: `No starter demo for ${state.gates.connect.toolkit ?? 'that toolkit'}. Use \`composio search\` to find a tool to run, then \`composio execute\` it.`,
-          }
-        : { kind: 'done' };
+      // No gate is outstanding. Two unfinished states still reach here, and both have to say
+      // something: `done` with `onboarded: false` is a document with nothing to act on at all, and
+      // a caller polling until `onboarded` would spin on it forever.
+
+      // A connected toolkit with no curated demo. `composio search` changes no fact in
+      // `OnboardingFacts`, so returning it as a command would break the no-loop property by
+      // construction — it stays prose.
+      if (state.gates.execute.status === 'deferred') {
+        return {
+          kind: 'deferred',
+          humanAction: `No starter demo for ${state.gates.connect.toolkit ?? 'that toolkit'}. Use \`composio search\` to find a tool to run, then \`composio execute\` it.`,
+        };
+      }
+
+      // A gate `--skip` left out of this invocation. Skips are never persisted, so re-running
+      // without the flag is the whole recovery — but the same argv in a shell alias reproduces the
+      // state, which is why the reason is stated rather than left to the caller to infer.
+      if (!state.onboarded) {
+        return {
+          kind: 'deferred',
+          humanAction:
+            'Onboarding is unfinished because `--skip` left a step out of this invocation. Re-run `composio onboard` without `--skip` to finish it.',
+        };
+      }
+
+      return { kind: 'done' };
   }
 };

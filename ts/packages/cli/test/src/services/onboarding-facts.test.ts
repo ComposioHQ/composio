@@ -59,7 +59,7 @@ describe('gatherOnboardingFacts', () => {
 
           expect(facts.loggedIn).toBe(false);
           expect(facts.connectedToolkits).toBe('unknown');
-          expect(facts.pendingLink).toStrictEqual(Option.none());
+          expect(facts.pendingLinks).toStrictEqual([]);
           expect(facts.hasExecuted).toStrictEqual(Option.none());
         })
       );
@@ -92,18 +92,21 @@ describe('gatherOnboardingFacts', () => {
       } satisfies TestLiveInput['connectedAccountsData'],
     })
   )('[Given] live connections [Then] both facts come from one list call', it => {
-    it.scoped('reports ACTIVE toolkits and the most recent pending link', () =>
+    it.scoped('reports ACTIVE toolkits and every pending link, newest first', () =>
       Effect.gen(function* () {
         const facts = yield* gatherOnboardingFacts(BARE);
 
         expect(facts.loggedIn).toBe(true);
         expect(facts.connectedToolkits).toStrictEqual(['gmail', 'github']);
-        expect(Option.getOrThrow(facts.pendingLink)).toMatchObject({
+        // Reducing to the newest one across all toolkits is what hid an outstanding notion
+        // authorization behind a newer linear one, so the gate re-linked notion forever.
+        expect(facts.pendingLinks.map(link => link.toolkit)).toStrictEqual(['linear', 'notion']);
+        expect(facts.pendingLinks[0]).toMatchObject({
           toolkit: 'linear',
           connectedAccountId: 'con_linear_pending',
         });
         // The list endpoint does not expose the redirect URL.
-        expect(Option.getOrThrow(facts.pendingLink).redirectUrl).toStrictEqual(Option.none());
+        expect(facts.pendingLinks[0]?.redirectUrl).toStrictEqual(Option.none());
       })
     );
 
@@ -144,7 +147,7 @@ describe('gatherOnboardingFacts', () => {
           const facts = yield* gatherOnboardingFacts(BARE);
 
           expect(facts.connectedToolkits).toStrictEqual(['github']);
-          expect(facts.pendingLink).toStrictEqual(Option.none());
+          expect(facts.pendingLinks).toStrictEqual([]);
         })
       );
     }
@@ -233,7 +236,7 @@ describe('gatherOnboardingFacts', () => {
           const facts = yield* gatherOnboardingFacts(BARE);
 
           expect(facts.connectedToolkits).toBe('unknown');
-          expect(facts.pendingLink).toStrictEqual(Option.none());
+          expect(facts.pendingLinks).toStrictEqual([]);
           // The other fact sources are unaffected — neither aborts the other.
           expect(facts.loggedIn).toBe(true);
           expect(facts.hostWiring).toStrictEqual({ kind: 'inspected', hosts: [] });
@@ -308,11 +311,13 @@ describe('gatherOnboardingFacts', () => {
         });
 
         // Dropping this would leave the connect gate unsatisfied and invite another link.
-        expect(Option.getOrThrow(facts.pendingLink)).toStrictEqual({
-          toolkit: 'github',
-          connectedAccountId: 'con_github_pending',
-          redirectUrl: Option.some('https://app.composio.dev/link?token=lt_fresh'),
-        });
+        expect(facts.pendingLinks).toStrictEqual([
+          {
+            toolkit: 'github',
+            connectedAccountId: 'con_github_pending',
+            redirectUrl: Option.some('https://app.composio.dev/link?token=lt_fresh'),
+          },
+        ]);
       })
     );
   });
@@ -340,7 +345,7 @@ describe('gatherOnboardingFacts', () => {
         });
 
         expect(facts.connectedToolkits).toStrictEqual(['github']);
-        expect(facts.pendingLink).toStrictEqual(Option.none());
+        expect(facts.pendingLinks).toStrictEqual([]);
       })
     );
   });
@@ -367,11 +372,13 @@ describe('gatherOnboardingFacts', () => {
           }),
         });
 
-        expect(Option.getOrThrow(facts.pendingLink)).toStrictEqual({
-          toolkit: 'github',
-          connectedAccountId: 'con_github_pending',
-          redirectUrl: Option.some('https://app.composio.dev/link?token=lt_fresh'),
-        });
+        expect(facts.pendingLinks).toStrictEqual([
+          {
+            toolkit: 'github',
+            connectedAccountId: 'con_github_pending',
+            redirectUrl: Option.some('https://app.composio.dev/link?token=lt_fresh'),
+          },
+        ]);
       })
     );
   });

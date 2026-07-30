@@ -37,7 +37,13 @@ export type StarterTask = {
 const asString = (value: unknown): string | undefined =>
   Predicate.isString(value) && value.trim().length > 0 ? value : undefined;
 
-const asRecord = (value: unknown): Record<string, unknown> | undefined =>
+/**
+ * Narrow a provider response to something a summarizer can index into.
+ *
+ * The response is an arbitrary third-party payload typed `unknown`, so this is the trust boundary
+ * for it. Shared with `onboard.cmd.ts`, which hands the same value to the same summarizers.
+ */
+export const asRecord = (value: unknown): Record<string, unknown> | undefined =>
   Predicate.isRecord(value) ? (value as Record<string, unknown>) : undefined;
 
 const asArray = (value: unknown): ReadonlyArray<unknown> | undefined =>
