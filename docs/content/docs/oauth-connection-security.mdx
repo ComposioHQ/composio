@@ -164,5 +164,5 @@ verifier URL set is covered by both checks.
 ### Session lifetime
 
 `session_uri` is valid for ten minutes and can be redeemed once, so redeem it on the incoming
-request, not later. A repeat redemption returns `404` and the user restarts; either way the
-connection never activates for the wrong user, since activation requires a matching `user_id`.
+request, not later — a second redemption of the same value returns `404`. Activation always requires
+a matching `user_id`, so a connection can never complete for the wrong user.
