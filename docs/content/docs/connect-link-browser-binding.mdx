@@ -27,10 +27,13 @@ project's own advisory states the requirement plainly: verify that the user who 
 is the same one who finishes it.
 
 <Callout type="info">
-This is a different attack from the CSRF and authorization-code-injection cases in RFC 9700
-§4.5 and §4.7, which run in the opposite direction — an attacker's code injected into a
-victim's session — and are already covered by the `state` parameter and PKCE. Session fixation
-runs the other way: the victim's consent is captured into the attacker's session.
+**"Doesn't `state` already stop this?"** Not on its own. As it's usually implemented — a nonce
+checked server-side — `state` only proves the callback belongs to an authorization request that was
+started. The forwarded URL carries that `state`, so a different browser completing the flow still
+passes. What stops the attack is binding the request to the browser that started it, which RFC 6749
+§10.12 recommends `state` carry (a value tied to the user agent's session). Same-browser binding is
+that binding, done for you. PKCE is a separate concern — it protects the authorization code from
+interception, not against someone else completing the flow.
 </Callout>
 
 ## How the check works
@@ -58,9 +61,7 @@ want the returning user proven against your own login session, that is
 [callback identity verification](/docs/callback-identity-verification), which is built for exactly
 that case.
 
-Enforcement is controlled per project by Composio, and is off by default. If you want it switched
-on — or switched off because it is affecting your users — contact us; it takes effect immediately,
-with no deploy on your side.
+Enforcement is controlled per project by Composio, and is off by default. Contact us to switch it on.
 
 ## What a rejection looks like
 
@@ -91,10 +92,9 @@ straight away — it takes effect immediately, and you do not need to ship anyth
 
 ## When a legitimate user is rejected
 
-Some genuine users will be caught by this. We would rather say so plainly than let you discover it
-from a support ticket. Every case below comes down to the same thing: the callback arrives in a
-different cookie jar than the one that submitted the form, and Composio cannot tell that apart from
-a forwarded link.
+Some genuine users get caught by this, so it's worth knowing the cases up front. Every one is the
+same underlying thing: the callback arrives in a different cookie jar than the one that submitted
+the form, which Composio can't tell apart from a forwarded link.
 
 - **In-app browsers.** A link opened inside Instagram, LinkedIn, Telegram, or another app's
   built-in browser may hand the provider step to the system browser. The two have separate cookie

@@ -50,15 +50,17 @@ the user you are connecting for.
 <Step>
 <StepTitle>Composio sends the browser to your verifier URL</StepTitle>
 
-Instead of activating the connection, Composio redirects the user's browser to your verifier URL
-with a single query parameter:
+Instead of activating the connection, Composio redirects the user's browser to the verifier URL you
+configured — whatever path you set — and appends one query parameter, `session_uri`. If you set
+`https://your-app.com/oauth/return`, the browser lands on:
 
 ```
-https://your-app.com/composio/verify?session_uri=session_8Ff2...
+https://your-app.com/oauth/return?session_uri=session_8Ff2...
 ```
 
-That is deliberately all you get. No connection id, no user id, no toolkit name — putting any of
-those on the wire would leak the connection to whoever holds the link.
+Read `session_uri` off the query string; you hand it straight back in the next step. That reference
+is everything Composio sends — no connection id, user id, or toolkit name, any of which would leak
+the connection to whoever holds the link.
 </Step>
 
 <Step>
@@ -123,12 +125,10 @@ Presence of the URL is the switch. Removing it turns verification off; there is 
 
 ## Before you enable it
 
-This is a real security control, and it asks something of your integration in return. Nothing here
-is difficult, but all of it is easier to handle now than to debug later.
+Saving the URL changes four things across the whole project at once. Each is quick to handle up
+front; each is annoying to debug after the fact.
 
 ### Connections started from the dashboard can no longer finish
-
-This is the one that catches people out, so it is worth being exact about what you will see.
 
 The dashboard still creates a pending connection and still opens the provider consent screen. But
 when the provider returns, Composio redirects that browser to your verifier URL instead of back to
@@ -186,29 +186,22 @@ payload. A leaked value can't be used to steal a connection — the project and 
 that — but redemption consumes the session before ownership is checked, so someone else can burn
 it, and your own retry will then fail.
 
-## Response reference
+## Responses
 
-| Result | HTTP | Meaning | Connection |
-|---|---|---|---|
-| Verified | `200` | Identity matched; returns `connected_account_id` and `toolkit_slug` | `ACTIVE` |
-| `identity mismatch` | `400` | The `user_id` is not the connection's owner | `FAILED` — terminal, see below |
-| `auth session not found or expired` | `404` | Unknown, expired, or already-redeemed session | Left pending, expires |
-| `Connected account "…" not found` | `404` | The connection does not belong to this API key's project | Unchanged |
-| `authorization expired, restart the flow` | `404` | The provider rejected the exchange, or the held code expired | `FAILED` |
-| `failed to complete the connection` | `500` | A fault on Composio's side | Left pending |
-
-The API key must belong to the same project the connection was created in; a key from another
-project returns `404`.
+Every status code and error body is in the
+[`complete_auth` API reference](/reference/api-reference/connected-accounts/postConnectedAccountsCompleteAuth).
+Two behaviours there aren't obvious from the schema, and both will bite you if you miss them:
 
 <Callout type="warn">
-**`identity mismatch` is terminal.** It marks the connection `FAILED` with reason
-`IDENTITY_VERIFICATION_FAILED`, because a rejected identity is a security event rather than a
-transient error. Do not retry it — start a new connect flow instead.
+**A `400 identity mismatch` is terminal.** It marks the connection `FAILED` (reason
+`IDENTITY_VERIFICATION_FAILED`), because a rejected identity is a security event, not a transient
+error. Don't retry it — start a new connect flow.
 </Callout>
 
-Note that a `FAILED` status is not a reliable signal that verification was refused. Only an
-identity mismatch and a failed token exchange write `FAILED`; a user who abandons the flow, or a
-session left unredeemed, shows as `INITIATED` and then `EXPIRED`.
+A `FAILED` status is not a reliable signal that verification was refused. Only an identity mismatch
+and a failed token exchange write `FAILED`; a user who abandons the flow, or a session left
+unredeemed, shows as `INITIATED` and then `EXPIRED`. So don't treat `FAILED` as "the user failed
+verification" — check the reason.
 
 ## Next
 
