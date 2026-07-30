@@ -1,6 +1,15 @@
 # @composio/cli
 
-## 0.3.0
+## Unreleased
+
+### Patch Changes
+
+- Make GitHub release metadata the sole version authority for standalone CLI
+  binaries. Release builds now embed their exact tag version, manual skill
+  installation follows the packaged release tag, and stable releases can only
+  promote a tested beta.
+
+## 0.2.33
 
 ### Security
 

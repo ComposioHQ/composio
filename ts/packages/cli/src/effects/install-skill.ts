@@ -4,6 +4,7 @@ import { NodeOs } from 'src/services/node-os';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { GITHUB_CONFIG } from 'src/effects/github-config';
 import { APP_VERSION, type CliReleaseChannel } from 'src/constants';
+import { readInstalledReleaseTag } from 'src/services/run-companion-modules';
 import {
   fetchLatestCliRelease,
   fetchCliReleaseByTag,
@@ -81,11 +82,13 @@ export const resolveSkillReleaseTag = ({
   channel,
   githubConfig,
   httpClient,
+  installedReleaseTag,
   releaseTag,
 }: {
   channel?: SkillReleaseChannel;
   githubConfig: GitHubConfig;
   httpClient: HttpClient.HttpClient;
+  installedReleaseTag?: string;
   releaseTag?: string;
 }) =>
   Effect.gen(function* () {
@@ -98,13 +101,13 @@ export const resolveSkillReleaseTag = ({
       return configTag;
     }
 
-    if (!channel) {
-      return `@composio/cli@${APP_VERSION}`;
+    if (installedReleaseTag) {
+      return installedReleaseTag;
     }
 
     const latest = yield* fetchLatestCliRelease({
       assetDescription: SKILL_ASSET_NAME,
-      channel,
+      channel: channel ?? inferSkillReleaseChannel(APP_VERSION),
       githubConfig,
       hasRequiredAsset: hasSkillAsset,
       httpClient,
@@ -147,6 +150,7 @@ export const installSkill = (options?: {
       channel: options?.channel,
       githubConfig,
       httpClient,
+      installedReleaseTag: yield* readInstalledReleaseTag(process.execPath),
       releaseTag: options?.releaseTag,
     });
 
