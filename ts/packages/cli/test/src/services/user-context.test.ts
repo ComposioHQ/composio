@@ -4,74 +4,13 @@ import { FileSystem } from '@effect/platform';
 import { BunFileSystem, BunPath } from '@effect/platform-bun';
 import { ConfigProvider, Effect, Layer, Option, Data } from 'effect';
 import * as tempy from 'tempy';
-import { ComposioUserContext, rawComposioUserContextLive } from 'src/services/user-context';
+import { ComposioUserContext, KEYRING_SERVICE, KEYRING_USER } from 'src/services/user-context';
 import { defaultNodeOs, NodeOs } from 'src/services/node-os';
 import { UserData, UserDataWithDefaults, userDataToJSON } from 'src/models/user-data';
 import { extendConfigProvider } from 'src/services/config';
-import { CliUserConfig } from 'src/models/cli-user-config';
-import { ComposioCliUserConfig } from 'src/services/cli-user-config';
-import { makeKeyringService, KeyringService } from '@composio/cli-keyring/effect';
-import {
-  type CredentialStore,
-  type EntryModifiers,
-  KeyringError,
-  CredentialPersistence,
-} from '@composio/cli-keyring';
+import { makeFakeKeyring } from 'test/__utils__/services/keyring';
+import { makeUserContextLayer as makeUserContextLive } from 'test/__utils__/services/user-context';
 import path from 'node:path';
-
-const InMemoryKeyringLayer = (() => {
-  const items = new Map<string, Uint8Array>();
-  const key = (s: string, u: string) => `${s}\0${u}`;
-  const store: CredentialStore = {
-    id: 'memory',
-    vendor: 'test',
-    persistence: () => CredentialPersistence.ProcessOnly,
-    async setSecret(s: string, u: string, secret: Uint8Array, _m: EntryModifiers) {
-      items.set(key(s, u), new Uint8Array(secret));
-    },
-    async getSecret(s: string, u: string, _m: EntryModifiers) {
-      const v = items.get(key(s, u));
-      if (!v) throw new KeyringError({ kind: 'NoEntry' });
-      return v;
-    },
-    async deleteCredential(s: string, u: string, _m: EntryModifiers) {
-      if (!items.delete(key(s, u))) throw new KeyringError({ kind: 'NoEntry' });
-    },
-  };
-  return Layer.succeed(KeyringService, makeKeyringService(store));
-})();
-
-const MockCliUserConfigLayer = Layer.succeed(
-  ComposioCliUserConfig,
-  ComposioCliUserConfig.of({
-    data: {
-      channel: 'beta',
-      developerModeEnabled: true,
-      developerDangerousCommandsEnabled: false,
-      experimentalFeatures: {},
-      artifactDirectory: undefined,
-      experimentalSubagentTarget: 'auto',
-      security: 'auto',
-    },
-    raw: CliUserConfig.make({
-      developer: { enabled: true, destructiveActions: false },
-      experimentalFeatures: {},
-      artifactDirectory: Option.none(),
-      experimentalSubagent: Option.none(),
-      security: 'auto',
-    }),
-    channel: 'beta',
-    isDevModeEnabled: () => true,
-    areDeveloperDangerousCommandsEnabled: () => false,
-    isExperimentalFeatureEnabled: () => true,
-    update: () => Effect.void,
-  })
-);
-
-const ComposioUserContextLive = Layer.provide(
-  rawComposioUserContextLive,
-  Layer.mergeAll(InMemoryKeyringLayer, MockCliUserConfigLayer)
-);
 
 describe('ComposioUserContext', () => {
   const withMapConfigProvider = (map: Map<string, string>) =>
@@ -85,7 +24,7 @@ describe('ComposioUserContext', () => {
 
         const NodeOsTest = Layer.succeed(NodeOs, defaultNodeOs({ homedir: cwd }));
         const ComposioUserContextTest = Layer.provideMerge(
-          ComposioUserContextLive,
+          makeUserContextLive(),
           Layer.mergeAll(BunFileSystem.layer, BunPath.layer, NodeOsTest, withMapConfigProvider(map))
         );
 
@@ -116,7 +55,7 @@ describe('ComposioUserContext', () => {
 
         const NodeOsTest = Layer.succeed(NodeOs, defaultNodeOs({ homedir: cwd }));
         const ComposioUserContextTest = Layer.provideMerge(
-          ComposioUserContextLive,
+          makeUserContextLive(),
           Layer.mergeAll(BunFileSystem.layer, BunPath.layer, NodeOsTest, withMapConfigProvider(map))
         );
 
@@ -142,7 +81,7 @@ describe('ComposioUserContext', () => {
 
         const NodeOsTest = Layer.succeed(NodeOs, defaultNodeOs({ homedir: cwd }));
         const ComposioUserContextTest = Layer.provideMerge(
-          ComposioUserContextLive,
+          makeUserContextLive(),
           Layer.mergeAll(BunFileSystem.layer, BunPath.layer, NodeOsTest, withMapConfigProvider(map))
         );
 
@@ -164,7 +103,7 @@ describe('ComposioUserContext', () => {
 
         const NodeOsTest = Layer.succeed(NodeOs, defaultNodeOs({ homedir: cwd }));
         const ComposioUserContextTest = Layer.provideMerge(
-          ComposioUserContextLive,
+          makeUserContextLive(),
           Layer.mergeAll(BunFileSystem.layer, BunPath.layer, NodeOsTest, withMapConfigProvider(map))
         );
 
@@ -204,7 +143,7 @@ describe('ComposioUserContext', () => {
 
         const NodeOsTest = Layer.succeed(NodeOs, defaultNodeOs({ homedir: cwd }));
         const ComposioUserContextTest = Layer.provideMerge(
-          ComposioUserContextLive,
+          makeUserContextLive(),
           Layer.mergeAll(BunFileSystem.layer, BunPath.layer, NodeOsTest, withMapConfigProvider(map))
         );
 
@@ -245,7 +184,7 @@ describe('ComposioUserContext', () => {
 
         const NodeOsTest = Layer.succeed(NodeOs, defaultNodeOs({ homedir: cwd }));
         const ComposioUserContextTest = Layer.provideMerge(
-          ComposioUserContextLive,
+          makeUserContextLive(),
           Layer.mergeAll(BunFileSystem.layer, BunPath.layer, NodeOsTest, withMapConfigProvider(map))
         );
 
@@ -287,7 +226,7 @@ describe('ComposioUserContext', () => {
 
         const NodeOsTest = Layer.succeed(NodeOs, defaultNodeOs({ homedir: cwd }));
         const ComposioUserContextTest = Layer.provideMerge(
-          ComposioUserContextLive,
+          makeUserContextLive(),
           Layer.mergeAll(BunFileSystem.layer, BunPath.layer, NodeOsTest, withMapConfigProvider(map))
         );
 
@@ -324,7 +263,7 @@ describe('ComposioUserContext', () => {
 
         const NodeOsTest = Layer.succeed(NodeOs, defaultNodeOs({ homedir: cwd }));
         const ComposioUserContextTest = Layer.provideMerge(
-          ComposioUserContextLive,
+          makeUserContextLive(),
           Layer.mergeAll(BunFileSystem.layer, BunPath.layer, NodeOsTest, withMapConfigProvider(map))
         );
 
@@ -364,7 +303,7 @@ describe('ComposioUserContext', () => {
 
         const NodeOsTest = Layer.succeed(NodeOs, defaultNodeOs({ homedir: cwd }));
         const ComposioUserContextTest = Layer.provideMerge(
-          ComposioUserContextLive,
+          makeUserContextLive(),
           Layer.mergeAll(BunFileSystem.layer, BunPath.layer, NodeOsTest, withMapConfigProvider(map))
         );
 
@@ -379,6 +318,90 @@ describe('ComposioUserContext', () => {
           assertEquals(ctx.isLoggedIn(), true);
           assertEquals(Option.getOrUndefined(ctx.data.apiKey), 'env_api_key');
         }).pipe(Effect.provide(ComposioUserContextTest));
+      });
+    });
+  });
+
+  describe('[When] tests inject a fake credential store', () => {
+    const withKeyring = (keyring: ReturnType<typeof makeFakeKeyring>, homedir: string) =>
+      Layer.provideMerge(
+        makeUserContextLive({ keyring, security: 'keychain-subprocess' }),
+        Layer.mergeAll(
+          BunFileSystem.layer,
+          BunPath.layer,
+          Layer.succeed(NodeOs, defaultNodeOs({ homedir })),
+          Layer.setConfigProvider(extendConfigProvider(ConfigProvider.fromMap(new Map([]))))
+        )
+      );
+
+    it('[Then] every keyring operation reaches the fake, in order', () => {
+      const keyring = makeFakeKeyring();
+
+      return Effect.gen(function* () {
+        const ctx = yield* ComposioUserContext;
+        yield* ctx.login('kr_api_key');
+        yield* ctx.logout;
+
+        assertEquals(keyring.operations(), ['get', 'set', 'delete']);
+        assertEquals(
+          keyring.calls.every(
+            call => call.service === KEYRING_SERVICE && call.user === KEYRING_USER
+          ),
+          true
+        );
+        assertEquals(keyring.peek(KEYRING_SERVICE, KEYRING_USER), undefined);
+      }).pipe(Effect.provide(withKeyring(keyring, tempy.temporaryDirectory())));
+    });
+
+    it('[Then] a seeded credential is read back through the fake', () => {
+      const keyring = makeFakeKeyring({
+        seed: [[KEYRING_SERVICE, KEYRING_USER, 'seeded_api_key']],
+      });
+
+      return Effect.gen(function* () {
+        const ctx = yield* ComposioUserContext;
+
+        assertEquals(Option.getOrUndefined(ctx.data.apiKey), 'seeded_api_key');
+        assertEquals(keyring.operations(), ['get']);
+      }).pipe(Effect.provide(withKeyring(keyring, tempy.temporaryDirectory())));
+    });
+
+    it('[Then] each fake owns an independent credential map and call log', () => {
+      const first = makeFakeKeyring({ seed: [[KEYRING_SERVICE, KEYRING_USER, 'first_key']] });
+      const second = makeFakeKeyring();
+
+      assertEquals(first.peek(KEYRING_SERVICE, KEYRING_USER), 'first_key');
+      assertEquals(second.peek(KEYRING_SERVICE, KEYRING_USER), undefined);
+
+      return Effect.gen(function* () {
+        const ctx = yield* ComposioUserContext;
+        yield* ctx.login('second_key');
+
+        assertEquals(second.peek(KEYRING_SERVICE, KEYRING_USER), 'second_key');
+        // The first fake never saw a call and keeps its own value.
+        assertEquals(first.peek(KEYRING_SERVICE, KEYRING_USER), 'first_key');
+        assertEquals(first.calls.length, 0);
+      }).pipe(Effect.provide(withKeyring(second, tempy.temporaryDirectory())));
+    });
+
+    it('[Then] scripted failures surface as typed KeyringError values', () => {
+      const keyring = makeFakeKeyring({
+        alwaysFail: { set: { kind: 'NoStorageAccess', cause: new Error('locked') } },
+      });
+
+      return Effect.gen(function* () {
+        const failure = yield* keyring.service
+          .setPassword(KEYRING_SERVICE, KEYRING_USER, 'never_stored')
+          .pipe(Effect.flip);
+
+        assertEquals(failure.kind, 'NoStorageAccess');
+        assertEquals(failure.is('NoStorageAccess'), true);
+        assertEquals(keyring.operations(), ['set']);
+
+        const missing = yield* keyring.service
+          .getPassword(KEYRING_SERVICE, KEYRING_USER)
+          .pipe(Effect.flip);
+        assertEquals(missing.kind, 'NoEntry');
       });
     });
   });

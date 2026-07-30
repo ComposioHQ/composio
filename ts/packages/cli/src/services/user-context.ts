@@ -24,8 +24,8 @@ import { ComposioCliUserConfig, ComposioCliUserConfigLive } from 'src/services/c
  * logged-in account, independent of which org/project the user is
  * currently working in).
  */
-const KEYRING_SERVICE = 'com.composio.cli';
-const KEYRING_USER = 'default';
+export const KEYRING_SERVICE = 'com.composio.cli';
+export const KEYRING_USER = 'default';
 const decodeUserDataJsonObject = Schema.decodeUnknown(Schema.parseJson(JsonRecordSchema));
 
 const normalizeEncodedUserData = (encoded: string, omitApiKey: boolean) =>

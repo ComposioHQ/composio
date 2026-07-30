@@ -1,13 +1,13 @@
-import { afterEach, beforeAll, describe, expect, it, vi } from '@effect/vitest';
+import { afterEach, describe, expect, it, vi } from '@effect/vitest';
 import { FileSystem, Path } from '@effect/platform';
 import { BunFileSystem, BunPath } from '@effect/platform-bun';
 import { ConfigProvider, Effect, Layer } from 'effect';
-import { execSync } from 'node:child_process';
 import * as tempy from 'tempy';
 import { ComposioClientSingleton } from 'src/services/composio-clients';
 import { APP_VERSION } from 'src/constants';
 import { defaultNodeOs, NodeOs } from 'src/services/node-os';
 import { extendConfigProvider } from 'src/services/config';
+import { makeUserContextLayer } from 'test/__utils__/services/user-context';
 
 const withConfigLayer = (map: Map<string, string>, homedir: string) =>
   Layer.mergeAll(
@@ -53,21 +53,20 @@ const writeCliSessionCache = (
   });
 
 describe('ComposioClientSingleton headers', () => {
-  // Delete any real keychain entry so the subprocess keyring read
-  // inside ComposioUserContextLive (baked into
-  // ComposioClientSingleton.Default's dependencies) finds nothing
-  // and apiKey resolves to Option.none(). Without this, the test
-  // picks up real credentials and assertions on x-user-api-key fail.
-  beforeAll(() => {
-    try {
-      execSync(
-        '/usr/bin/security delete-generic-password -s com.composio.cli -a default 2>/dev/null',
-        { stdio: 'ignore' }
-      );
-    } catch {
-      // Entry may not exist — fine.
-    }
-  });
+  // `ComposioClientSingleton.Default` bakes in `ComposioUserContextLive`,
+  // which resolves the real platform keyring. Build the singleton over
+  // an empty fake store instead so `apiKey` comes from the test's
+  // config map and never from the developer's credential store.
+  const clientSingletonLayer = (map: Map<string, string>, homedir: string) => {
+    const base = withConfigLayer(map, homedir);
+    return Layer.provideMerge(
+      Layer.provide(
+        ComposioClientSingleton.DefaultWithoutDependencies,
+        Layer.provideMerge(makeUserContextLayer(), base)
+      ),
+      base
+    );
+  };
 
   afterEach(() => {
     vi.restoreAllMocks();
@@ -103,11 +102,7 @@ describe('ComposioClientSingleton headers', () => {
       expect(headers.get('x-runtime')).toBe('NODEJS');
       expect(headers.get('x-sdk-version')).toBe(APP_VERSION);
       expect(headers.get('x-cli-session-id')).toBeNull();
-    }).pipe(
-      Effect.provide(
-        Layer.provide(ComposioClientSingleton.Default, withConfigLayer(configMap, homedir))
-      )
-    );
+    }).pipe(Effect.provide(clientSingletonLayer(configMap, homedir)));
   });
 
   // The session-id reader compares expiresAt against Clock.currentTimeMillis;
@@ -142,11 +137,7 @@ describe('ComposioClientSingleton headers', () => {
       const [, init] = fetchSpy.mock.calls[0]!;
       const headers = new Headers((init as RequestInit).headers);
       expect(headers.get('x-cli-session-id')).toBe('cli_s_current');
-    }).pipe(
-      Effect.provide(
-        Layer.provideMerge(ComposioClientSingleton.Default, withConfigLayer(configMap, homedir))
-      )
-    );
+    }).pipe(Effect.provide(clientSingletonLayer(configMap, homedir)));
   });
 
   it.effect('omits an expired cwd CLI session ID', () => {
@@ -175,11 +166,7 @@ describe('ComposioClientSingleton headers', () => {
       const [, init] = fetchSpy.mock.calls[0]!;
       const headers = new Headers((init as RequestInit).headers);
       expect(headers.get('x-cli-session-id')).toBeNull();
-    }).pipe(
-      Effect.provide(
-        Layer.provideMerge(ComposioClientSingleton.Default, withConfigLayer(configMap, homedir))
-      )
-    );
+    }).pipe(Effect.provide(clientSingletonLayer(configMap, homedir)));
   });
 
   it.effect('does not read COMPOSIO_API_KEY for user auth', () => {
@@ -206,10 +193,6 @@ describe('ComposioClientSingleton headers', () => {
       expect(headers.get('x-user-api-key')).toBeNull();
       expect(headers.has('x-api-key')).toBe(false);
       expect(headers.get('x-source')).toBe('CLI');
-    }).pipe(
-      Effect.provide(
-        Layer.provide(ComposioClientSingleton.Default, withConfigLayer(configMap, homedir))
-      )
-    );
+    }).pipe(Effect.provide(clientSingletonLayer(configMap, homedir)));
   });
 });

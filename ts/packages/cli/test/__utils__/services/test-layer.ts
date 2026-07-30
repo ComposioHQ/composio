@@ -38,9 +38,10 @@ import type { ConnectedAccountItem } from 'src/models/connected-accounts';
 import type { TriggerInstanceItem } from 'src/models/triggers';
 import type { AuthConfigCreateResponse, LinkCreateResponse } from 'src/services/composio-clients';
 import type { ToolkitVersionSpec } from 'src/effects/toolkit-version-overrides';
-import { ComposioUserContextLive } from 'src/services/user-context';
+import { rawComposioUserContextLive } from 'src/services/user-context';
 import { ComposioCliUserConfig } from 'src/services/cli-user-config';
-import { CliUserConfig } from 'src/models/cli-user-config';
+import { CliUserConfig, type SecurityBackend } from 'src/models/cli-user-config';
+import { makeFakeKeyring, type FakeKeyring } from './keyring';
 import { UpgradeBinary } from 'src/services/upgrade-binary';
 import { NodeOs } from 'src/services/node-os';
 import { TriggersRealtime } from 'src/services/triggers-realtime';
@@ -130,7 +131,18 @@ export interface TestLiveInput {
     developerModeEnabled?: boolean;
     developerDangerousCommandsEnabled?: boolean;
     experimentalFeatures?: Record<string, boolean>;
+    /** Where the CLI stores the API key. Defaults to `"auto"`. */
+    security?: SecurityBackend;
   };
+
+  /**
+   * Fake OS credential store backing `ComposioUserContext`.
+   *
+   * Defaults to a fresh empty `makeFakeKeyring()` so no test can ever
+   * touch the host keychain. Pass your own when the test needs to seed
+   * a credential, script a failure, or assert on the call log.
+   */
+  keyring?: FakeKeyring;
 
   /**
    * Mock stdin for commands that read input.
@@ -808,10 +820,7 @@ export const TestLayer = (input?: TestLiveInput) =>
       })
     );
 
-    const ComposioUserContextTest = Layer.provideMerge(
-      ComposioUserContextLive,
-      Layer.mergeAll(BunFileSystem.layer, BunPath.layer, NodeOsTest)
-    );
+    const security = input?.cliUserConfig?.security ?? 'auto';
 
     let rawCliUserConfig = CliUserConfig.make({
       developer: {
@@ -821,7 +830,7 @@ export const TestLayer = (input?: TestLiveInput) =>
       experimentalFeatures: input?.cliUserConfig?.experimentalFeatures ?? {},
       artifactDirectory: Option.none(),
       experimentalSubagent: Option.none(),
-      security: 'auto',
+      security,
     });
 
     const ComposioCliUserConfigTest = Layer.succeed(
@@ -835,7 +844,7 @@ export const TestLayer = (input?: TestLiveInput) =>
             experimentalFeatures: rawCliUserConfig.experimentalFeatures,
             artifactDirectory: Option.getOrUndefined(rawCliUserConfig.artifactDirectory),
             experimentalSubagentTarget: 'auto' as const,
-            security: 'auto' as const,
+            security: rawCliUserConfig.security,
           };
         },
         get raw() {
@@ -854,6 +863,22 @@ export const TestLayer = (input?: TestLiveInput) =>
             });
           }),
       })
+    );
+
+    // A fresh fake credential store per test layer. `rawComposioUserContextLive`
+    // is used instead of `ComposioUserContextLive` because the latter
+    // hardcodes the real platform keyring backend.
+    const KeyringTest = (input?.keyring ?? makeFakeKeyring()).layer;
+
+    const ComposioUserContextTest = Layer.provideMerge(
+      rawComposioUserContextLive,
+      Layer.mergeAll(
+        BunFileSystem.layer,
+        BunPath.layer,
+        NodeOsTest,
+        KeyringTest,
+        ComposioCliUserConfigTest
+      )
     );
 
     const UpgradeBinaryTest = Layer.provide(
