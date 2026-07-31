@@ -79,6 +79,20 @@ const session = await composio.create("user_123", {
 </Tab>
 </Tabs>
 
+### Verify the returning OAuth user
+
+Callback identity verification prevents someone from starting an OAuth connection for one `userID` and having a different person finish it. When you enable it, Composio waits for your server to confirm the signed-in user's identity before activating any OAuth connection in the project.
+
+Set a public HTTPS verifier URL under [**Settings → General → Configuration**](https://dashboard.composio.dev/~/project/settings/general?utm_source=docs&utm_medium=content&utm_campaign=docs-authentication). After the provider callback, Composio sends the browser to that URL with a single-use `session_uri`. Your server submits the `session_uri` and its authenticated `user_id` to the [complete auth endpoint](/reference/api-reference/connected-accounts/postConnectedAccountsCompleteAuth). The connection becomes `ACTIVE` only when the IDs match.
+
+Once configured, the verifier applies to every OAuth connection in the project, including connections created through Connect Links or the API. Your verifier URL replaces the per-connection `callback_url`, so redirect the user to their final destination after you complete verification.
+
+<Callout type="warning">
+Connections started from the Composio dashboard can't complete while a verifier URL is configured. Start test connections from your app, or temporarily remove the verifier URL.
+</Callout>
+
+See [callback identity verification](/reference/api-reference/connected-accounts#callback-identity-verification) for the request flow, expiration rules, and error behavior.
+
 ## Manually triggering authentication
 
 Don't want to wait for the agent? Call `session.authorize()` to generate a Connect Link on demand, for onboarding, a settings page, or a pre-flight check before a task.
