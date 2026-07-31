@@ -7,6 +7,7 @@ import {
   getSetupSkippedEvent,
 } from 'src/analytics/events';
 import { APP_VERSION } from 'src/constants';
+import { AGENT_HOST_LABELS } from 'src/services/agent-host';
 import {
   detectSetupTargets,
   inspectSetupTargets,
@@ -42,13 +43,8 @@ const uninstall = Options.boolean('uninstall').pipe(
   Options.withDescription('Uninstall Composio plugins instead of installing them')
 );
 
-const TARGET_LABELS: Readonly<Record<AgentHost, string>> = {
-  claude: 'Claude Code',
-  codex: 'Codex',
-};
-
 const formatTargets = (targets: ReadonlyArray<AgentHost>): string =>
-  targets.map(target => TARGET_LABELS[target]).join(' and ');
+  targets.map(target => AGENT_HOST_LABELS[target]).join(' and ');
 
 const errorMessage = (error: unknown): string =>
   Predicate.isError(error) ? error.message : String(error);
@@ -170,12 +166,12 @@ const setupBaseCmd = Command.make(
 
         for (const status of installed) {
           yield* ui.log.success(
-            `The Composio plugin for ${TARGET_LABELS[status.target]} is installed.`
+            `The Composio plugin for ${AGENT_HOST_LABELS[status.target]} is installed.`
           );
         }
         for (const status of notInstalled) {
           yield* ui.log.info(
-            `The Composio plugin for ${TARGET_LABELS[status.target]} is not installed.`
+            `The Composio plugin for ${AGENT_HOST_LABELS[status.target]} is not installed.`
           );
         }
 
@@ -207,7 +203,7 @@ const setupBaseCmd = Command.make(
         for (const result of results) {
           if (!result.plugin_changed) continue;
           yield* ui.log.success(
-            `Successfully uninstalled the Composio plugin for ${TARGET_LABELS[result.target]}.`
+            `Successfully uninstalled the Composio plugin for ${AGENT_HOST_LABELS[result.target]}.`
           );
         }
         yield* ui.outro('Composio plugin uninstall complete.');
@@ -216,7 +212,7 @@ const setupBaseCmd = Command.make(
 
       for (const status of inspected.filter(isSetupPluginReady)) {
         yield* ui.log.success(
-          `The Composio plugin for ${TARGET_LABELS[status.target]} is already installed and enabled.`
+          `The Composio plugin for ${AGENT_HOST_LABELS[status.target]} is already installed and enabled.`
         );
       }
 
@@ -267,7 +263,7 @@ const setupBaseCmd = Command.make(
         if (!initial.plugin_installed) action = 'installed and enabled';
         else if (!initial.plugin_enabled) action = 'enabled';
         yield* ui.log.success(
-          `Successfully ${action} the Composio plugin for ${TARGET_LABELS[result.target]}.`
+          `Successfully ${action} the Composio plugin for ${AGENT_HOST_LABELS[result.target]}.`
         );
       }
 

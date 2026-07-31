@@ -43,7 +43,10 @@ console.log(connection.redirectUrl); // send user here to authenticate
 
 ### Executing Tools
 
+A toolkit version is **required** for direct execution — \`tools.execute()\` without one raises \`ToolVersionRequiredError\`. Set \`toolkit_versions\` / \`toolkitVersions\` at SDK initialization (or pass \`version\` per call). Use \`"latest"\` unless outputs are parsed programmatically, in which case pin a version from \`composio.toolkits.get(slug).meta.available_versions\`.
+
 \`\`\`python
+composio = Composio(toolkit_versions={"github": "latest"})
 tools = composio.tools.get("user_123", tools=["GITHUB_CREATE_ISSUE"])
 
 result = composio.tools.execute(
@@ -54,6 +57,7 @@ result = composio.tools.execute(
 \`\`\`
 
 \`\`\`typescript
+const composio = new Composio({ toolkitVersions: { github: "latest" } });
 const tools = await composio.tools.get("user_123", { tools: ["GITHUB_CREATE_ISSUE"] });
 
 const result = await composio.tools.execute("GITHUB_CREATE_ISSUE", {
@@ -67,8 +71,9 @@ const result = await composio.tools.execute("GITHUB_CREATE_ISSUE", {
 ## Rules
 
 1. **\`user_id\` is required** — pass it to \`tools.get()\`, \`tools.execute()\`, and \`provider.handle_tool_calls()\`.
-2. **\`tools.execute()\` signature** — Python: \`execute(slug, arguments_dict, *, user_id=...)\` (arguments is the second positional param). TypeScript: \`execute(slug, { userId, arguments })\`.
-3. **Provider at init** — \`Composio(provider=OpenAIProvider())\` in Python, \`new Composio({ provider: new OpenAIProvider() })\` in TypeScript. Defaults to OpenAI if omitted.
-4. **Correct provider imports** — \`composio_<provider>\` for Python, \`@composio/<provider>\` for TypeScript. For OpenAI Agents SDK use \`composio_openai_agents\` / \`@composio/openai-agents\`.
+2. **\`tools.execute()\` signature** — Python: \`execute(slug, arguments_dict, *, user_id=..., version=...)\` (arguments is the second positional param). TypeScript: \`execute(slug, { userId, arguments, version })\`.
+3. **A toolkit version is required** — configure \`toolkit_versions\` (Python) / \`toolkitVersions\` (TypeScript) at SDK init, or pass \`version\` per execute call; omitting both raises \`ToolVersionRequiredError\`.
+4. **Provider at init** — \`Composio(provider=OpenAIProvider())\` in Python, \`new Composio({ provider: new OpenAIProvider() })\` in TypeScript. Defaults to OpenAI if omitted.
+5. **Correct provider imports** — \`composio_<provider>\` for Python, \`@composio/<provider>\` for TypeScript. For OpenAI Agents SDK use \`composio_openai_agents\` / \`@composio/openai-agents\`.
 ${TERMINOLOGY_MIGRATION}
 `;
