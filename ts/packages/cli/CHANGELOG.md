@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Minor Changes
+
+- `composio install` gains a `--shell <zsh|bash|fish>` flag that overrides `$SHELL` detection, in preparation for the mise-style installer rewrite. The bin-dir PATH target now resolves through `COMPOSIO_BIN_DIR`, an existing `~/.local/bin/composio`, or the real binary's own directory, in that order, instead of hardcoding `~/.composio`; rc blocks write only a PATH line (the `export COMPOSIO_INSTALL_DIR=...` line is gone, since that variable identifies the install bundle, not the PATH entry point). Bash now also writes the PATH line to `~/.bash_profile` or `~/.bash_login` when either already exists, so `bash -ilc` picks it up. The restart hint bug is fixed: bash now prints `source ~/.bashrc` instead of the literal string `exec $SHELL`.
+
 ### Patch Changes
 
 - Make GitHub release metadata the sole version authority for standalone CLI

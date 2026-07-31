@@ -1,3 +1,4 @@
+import path from 'node:path';
 import * as tempy from 'tempy';
 import { CliApp, CliConfig } from '@effect/cli';
 import { Command, FetchHttpClient, FileSystem, Path } from '@effect/platform';
@@ -803,6 +804,7 @@ export const TestLayer = (input?: TestLiveInput) =>
       NodeProcess,
       new NodeProcess({
         cwd,
+        execPath: path.join(cwd, 'composio'),
         platform: 'darwin',
         arch: 'arm64',
       })

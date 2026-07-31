@@ -1,10 +1,10 @@
-import process from 'node:process';
 import { Command, Options } from '@effect/cli';
 import { FileSystem, Path } from '@effect/platform';
 import type { PlatformError } from '@effect/platform/Error';
-import { Array as Arr, Effect } from 'effect';
+import { Array as Arr, Config, ConfigProvider, Effect, Option } from 'effect';
 import { ComposioCliUserConfig } from 'src/services/cli-user-config';
 import { NodeOs } from 'src/services/node-os';
+import { NodeProcess } from 'src/services/node-process';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { getCompletionScript } from 'src/effects/shell-completions';
 
@@ -22,15 +22,22 @@ const noCompletionsOpt = Options.boolean('no-completions').pipe(
   Options.withDefault(false)
 );
 
+const SHELLS = ['zsh', 'bash', 'fish'] as const;
+
+const shellOpt = Options.choice('shell', SHELLS).pipe(
+  Options.withDescription('Override automatic shell detection.'),
+  Options.optional
+);
+
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
 
-type Shell = 'bash' | 'zsh' | 'fish';
+type Shell = (typeof SHELLS)[number];
 
 interface ShellConfig {
   readonly shell: Shell;
-  readonly pathFile: string;
+  readonly pathFiles: readonly string[];
   readonly completionFile: string;
   readonly pathBlock: string;
   readonly completionBlock: string | undefined;
@@ -43,13 +50,30 @@ interface ShellConfig {
 const MARKER = '# Composio CLI';
 const COMPLETIONS_MARKER = '# Composio CLI completions';
 
-/** Reject install directory paths containing shell metacharacters to prevent injection into rc files. */
-const UNSAFE_PATH_CHARS = /[;`$|&"'()\n\r\\]/;
+/** Reject bin-dir paths containing shell metacharacters to prevent injection into rc files. */
+const UNSAFE_PATH_CHARS = /[:;`$|&"'()\n\r\\]/;
 const isUnsafePath = (p: string): boolean => UNSAFE_PATH_CHARS.test(p);
 
-const detectShell = (path: Path.Path): Shell | undefined => {
-  // eslint-disable-next-line eslint-js/no-restricted-syntax -- $SHELL is read inside a plain synchronous helper that mirrors install.sh's shell detection, outside any Effect context
-  const shellEnv = process.env.SHELL ?? '';
+// SHELL, PATH, and COMPOSIO_BIN_DIR are read from the literal environment: SHELL
+// and PATH are POSIX-standard (no app prefix applies to them), and COMPOSIO_BIN_DIR
+// is already the full env var name, not a suffix the app's `COMPOSIO_`-prefixing
+// ambient config provider should prefix again. Read them from a raw provider
+// instead (precedent: `src/analytics/dispatch.ts`'s `environmentProvider`).
+const environmentProvider = ConfigProvider.fromEnv();
+
+/** Read an optional env var from the raw environment; provider errors die rather than fail the command. */
+const readOptionalEnv = (name: string): Effect.Effect<string | undefined> =>
+  Effect.orDie(
+    environmentProvider.load(
+      Config.option(Config.string(name)).pipe(Config.map(Option.getOrUndefined))
+    )
+  );
+
+/** Read an env var from the raw environment, falling back when unset. */
+const readEnvWithDefault = (name: string, fallback: string): Effect.Effect<string> =>
+  Effect.orDie(environmentProvider.load(Config.string(name).pipe(Config.withDefault(fallback))));
+
+const detectShellFromEnv = (path: Path.Path, shellEnv: string): Shell | undefined => {
   const base = path.basename(shellEnv);
   if (base === 'zsh') return 'zsh';
   if (base === 'bash') return 'bash';
@@ -57,69 +81,107 @@ const detectShell = (path: Path.Path): Shell | undefined => {
   return undefined;
 };
 
+const isDirOnPath = (pathEnv: string, dir: string): boolean =>
+  pathEnv.split(':').some(entry => entry === dir);
+
 /**
- * Return candidate rc file paths for a shell, ordered by preference.
- * For bash this mirrors the install.sh fallback: .bashrc then .bash_profile.
+ * Bin-dir resolution order: explicit env, then `~/.local/bin` when it already
+ * holds a `composio` entry point, then the real binary's own directory.
  */
-const rcFileCandidates = (path: Path.Path, shell: Shell, homedir: string): string[] => {
-  switch (shell) {
-    case 'zsh':
-      return [path.join(homedir, '.zshrc')];
-    case 'bash':
-      return [path.join(homedir, '.bashrc'), path.join(homedir, '.bash_profile')];
-    case 'fish':
-      return [path.join(homedir, '.config', 'fish', 'config.fish')];
+const resolveBinDir = (params: {
+  readonly envBinDir: string | undefined;
+  readonly localBinDir: string;
+  readonly localBinComposioExists: boolean;
+  readonly execPath: string;
+  readonly path: Path.Path;
+}): string => {
+  const trimmedEnvBinDir = params.envBinDir?.trim();
+  if (trimmedEnvBinDir && trimmedEnvBinDir.length > 0) {
+    return trimmedEnvBinDir;
   }
+  if (params.localBinComposioExists) {
+    return params.localBinDir;
+  }
+  return params.path.dirname(params.execPath);
 };
 
 /**
- * Pick the first existing candidate, or fall back to the first candidate
- * (which will be created).
+ * Render a path for embedding in a shell rc file. `~` never expands inside
+ * double quotes, so home-relative paths use a literal `$HOME` prefix instead.
  */
-const resolveRcFile = (
-  candidates: string[],
+const renderWithHome = (dir: string, homedir: string): string =>
+  dir === homedir
+    ? '$HOME'
+    : dir.startsWith(`${homedir}/`)
+      ? `$HOME/${dir.slice(homedir.length + 1)}`
+      : dir;
+
+const pathBlockForShell = (shell: Shell, binDir: string, homedir: string): string => {
+  const rendered = renderWithHome(binDir, homedir);
+  return shell === 'fish'
+    ? [MARKER, `set --export PATH "${rendered}" $PATH`].join('\n')
+    : [MARKER, `export PATH="${rendered}:$PATH"`].join('\n');
+};
+
+/** Bash startup-file candidates that only bash's login mode reads, in read order. */
+const bashLoginOverrideCandidates = (path: Path.Path, homedir: string): string[] => [
+  path.join(homedir, '.bash_profile'),
+  path.join(homedir, '.bash_login'),
+];
+
+/**
+ * First existing bash login-override file, if any. `bash -ilc` reads only the
+ * first of `.bash_profile`, `.bash_login`, `.profile` that exists — so an
+ * existing override shadows `.profile` and common `.profile` files source
+ * `.bashrc`, unless the PATH line also lands in the override. `.profile` is
+ * deliberately not a candidate below: when neither override exists, bash reads
+ * `.profile` itself, and common `.profile` files already source `.bashrc`, so
+ * nothing needs to be written to it.
+ */
+const resolveBashLoginOverride = (
+  candidates: readonly string[],
   fs: FileSystem.FileSystem
-): Effect.Effect<string, PlatformError> =>
+): Effect.Effect<string | undefined, PlatformError> =>
   Effect.gen(function* () {
     for (const candidate of candidates) {
-      const exists = yield* fs.exists(candidate);
-      if (exists) return candidate;
+      if (yield* fs.exists(candidate)) return candidate;
     }
-    return candidates[0]!;
+    return undefined;
   });
 
-const pathBlockForShell = (shell: Shell, installDir: string): string => {
+const pathFilesForShell = (
+  path: Path.Path,
+  shell: Shell,
+  homedir: string,
+  bashLoginOverride: string | undefined
+): string[] => {
   switch (shell) {
+    case 'zsh':
+      return [path.join(homedir, '.zshrc')];
     case 'fish':
-      return [
-        MARKER,
-        `set --export COMPOSIO_INSTALL_DIR "${installDir}"`,
-        `set --export PATH $COMPOSIO_INSTALL_DIR $PATH`,
-      ].join('\n');
-    default:
-      return [
-        MARKER,
-        `export COMPOSIO_INSTALL_DIR="${installDir}"`,
-        `export PATH="$COMPOSIO_INSTALL_DIR:$PATH"`,
-      ].join('\n');
+      return [path.join(homedir, '.config', 'fish', 'config.fish')];
+    case 'bash': {
+      const bashrc = path.join(homedir, '.bashrc');
+      return bashLoginOverride ? [bashrc, bashLoginOverride] : [bashrc];
+    }
   }
 };
 
 const buildShellConfig = (
   path: Path.Path,
   shell: Shell,
-  rcFile: string,
-  installDir: string,
+  pathFiles: readonly string[],
+  binDir: string,
   completionScript: string | undefined,
   homedir: string
 ): ShellConfig => ({
   shell,
-  pathFile: rcFile,
+  pathFiles,
   completionFile:
     shell === 'fish'
       ? path.join(homedir, '.config', 'fish', 'completions', 'composio.fish')
-      : rcFile,
-  pathBlock: pathBlockForShell(shell, installDir),
+      : pathFiles[0]!,
+  pathBlock: pathBlockForShell(shell, binDir, homedir),
   completionBlock: completionScript ? `${COMPLETIONS_MARKER}\n${completionScript}` : undefined,
 });
 
@@ -158,14 +220,17 @@ const resolveWriteTarget = (
 
 export const installShellIntegration = (params: {
   readonly completions: boolean;
+  readonly execPath?: string;
+  readonly shell?: Shell;
 }): Effect.Effect<
   void,
   PlatformError,
-  TerminalUI | NodeOs | FileSystem.FileSystem | Path.Path | ComposioCliUserConfig
+  TerminalUI | NodeOs | NodeProcess | FileSystem.FileSystem | Path.Path | ComposioCliUserConfig
 > =>
   Effect.gen(function* () {
     const ui = yield* TerminalUI;
     const os = yield* NodeOs;
+    const nodeProcess = yield* NodeProcess;
     const fs = yield* FileSystem.FileSystem;
     const path = yield* Path.Path;
 
@@ -185,26 +250,50 @@ export const installShellIntegration = (params: {
 
     yield* ui.intro('composio install');
 
-    // Detect install directory — either from env or default ~/.composio
-    // eslint-disable-next-line eslint-js/no-restricted-syntax -- COMPOSIO_INSTALL_DIR is the handoff variable set by the install.sh bootstrapper for this one-shot post-install step; read directly to stay byte-compatible with the script
-    const installDir = process.env.COMPOSIO_INSTALL_DIR ?? path.join(os.homedir, '.composio');
+    // Resolve the entry-point bin dir: explicit env, then an existing
+    // ~/.local/bin/composio, then the runtime executable's own directory.
+    const envBinDir = yield* readOptionalEnv('COMPOSIO_BIN_DIR');
+    const localBinDir = path.join(os.homedir, '.local', 'bin');
+    const localBinComposioExists = yield* fs.exists(path.join(localBinDir, 'composio'));
+    const binDir = path.normalize(
+      resolveBinDir({
+        envBinDir,
+        localBinDir,
+        localBinComposioExists,
+        execPath: params.execPath ?? nodeProcess.execPath,
+        path,
+      })
+    );
 
-    if (isUnsafePath(installDir)) {
+    if (!path.isAbsolute(binDir)) {
+      yield* failure('Resolved bin directory must be an absolute path.');
+      yield* ui.outro('Aborted.');
+      return;
+    }
+
+    if (isUnsafePath(binDir)) {
       yield* failure(
-        'COMPOSIO_INSTALL_DIR contains unsafe characters and cannot be written to shell config.'
+        'Resolved bin directory contains unsafe characters and cannot be written to shell config.'
       );
       yield* ui.outro('Aborted.');
       return;
     }
 
-    // Detect user shell
-    const shell = detectShell(path);
+    const isExplicitShell = params.shell !== undefined;
+    const shellEnv = yield* readEnvWithDefault('SHELL', '');
+    const shell = params.shell ?? detectShellFromEnv(path, shellEnv);
+
+    const pathEnv = yield* readEnvWithDefault('PATH', '');
+    const binDirOnPath = isDirOnPath(pathEnv, binDir);
+
     if (!shell) {
+      if (binDirOnPath) {
+        yield* success(`PATH: ${tildify(binDir, os.homedir)} is already on $PATH — nothing to do.`);
+        yield* ui.outro('Done');
+        return;
+      }
       yield* warn('Could not detect your shell. Manually add the following to your shell config:');
-      yield* note(
-        `export COMPOSIO_INSTALL_DIR="${installDir}"\nexport PATH="$COMPOSIO_INSTALL_DIR:$PATH"`,
-        'PATH setup'
-      );
+      yield* note(`export PATH="${renderWithHome(binDir, os.homedir)}:$PATH"`, 'PATH setup');
       yield* ui.outro('Manual setup required.');
       return;
     }
@@ -229,13 +318,26 @@ export const installShellIntegration = (params: {
       completionScript = lines.length > 0 ? Arr.join(lines, '\n') : undefined;
     }
 
-    const rcFile = yield* resolveRcFile(rcFileCandidates(path, shell, os.homedir), fs);
-    const config = buildShellConfig(path, shell, rcFile, installDir, completionScript, os.homedir);
+    const bashLoginOverride =
+      shell === 'bash'
+        ? yield* resolveBashLoginOverride(bashLoginOverrideCandidates(path, os.homedir), fs)
+        : undefined;
+    const pathFiles = pathFilesForShell(path, shell, os.homedir, bashLoginOverride);
+    const config = buildShellConfig(path, shell, pathFiles, binDir, completionScript, os.homedir);
 
-    const uniqueTargetFiles = [...new Set([config.pathFile, config.completionFile])];
+    const uniqueTargetFiles = [...new Set([...config.pathFiles, config.completionFile])];
     const existingByFile = new Map<string, string>();
     for (const filePath of uniqueTargetFiles) {
       existingByFile.set(filePath, yield* readMaybeMissingFile(filePath, fs));
+    }
+
+    // Resolve each configured PATH file's real write target up front so two
+    // logical paths that alias the same physical file (a dotfiles setup
+    // symlinking .bash_profile -> .bashrc) get the PATH block appended once,
+    // not once per alias.
+    const pathFileTargets = new Map<string, string>();
+    for (const filePath of config.pathFiles) {
+      pathFileTargets.set(filePath, yield* resolveWriteTarget(filePath, fs));
     }
 
     const blocksByFile = new Map<string, Array<string>>();
@@ -248,10 +350,40 @@ export const installShellIntegration = (params: {
       }
     };
 
-    const existingPathFile = existingByFile.get(config.pathFile) ?? '';
-    if (!fileContains(existingPathFile, MARKER)) {
-      pushBlock(config.pathFile, config.pathBlock);
-      yield* step(`PATH: will add ${tildify(installDir, os.homedir)} to $PATH`);
+    // Auto-detected mode may skip the PATH write entirely when the bin dir is
+    // already reachable; an explicit --shell always configures its files.
+    // Only applies to a genuinely fresh install: if any target file already
+    // carries our marker from a prior run, a file that appeared since then
+    // (e.g. a freshly created .bash_profile) still needs its own write, even
+    // though the invoking process's current $PATH already resolves.
+    const anyPathFileAlreadyMarked = config.pathFiles.some(filePath =>
+      fileContains(existingByFile.get(filePath) ?? '', MARKER)
+    );
+    const skipPathWriteForReachability =
+      !isExplicitShell && binDirOnPath && !anyPathFileAlreadyMarked;
+    let pathWritten = false;
+    let loginOverrideWritten = false;
+    const queuedPathTargets = new Set<string>();
+    for (const filePath of config.pathFiles) {
+      const existing = existingByFile.get(filePath) ?? '';
+      const target = pathFileTargets.get(filePath)!;
+      if (
+        fileContains(existing, MARKER) ||
+        skipPathWriteForReachability ||
+        queuedPathTargets.has(target)
+      ) {
+        continue;
+      }
+      pushBlock(filePath, config.pathBlock);
+      queuedPathTargets.add(target);
+      pathWritten = true;
+      if (filePath === bashLoginOverride) loginOverrideWritten = true;
+    }
+
+    if (pathWritten) {
+      yield* step(`PATH: will add ${tildify(binDir, os.homedir)} to $PATH`);
+    } else if (skipPathWriteForReachability) {
+      yield* step('PATH: already on $PATH — nothing to do.');
     } else {
       yield* step('PATH: already configured');
     }
@@ -283,6 +415,7 @@ export const installShellIntegration = (params: {
         // not discard a previous iteration's append.
         const existingContents = yield* readMaybeMissingFile(filePath, fs);
         const writeTarget = yield* resolveWriteTarget(filePath, fs);
+        const existingTargetInfo = yield* fs.stat(writeTarget).pipe(Effect.option);
 
         yield* fs
           .makeDirectory(path.dirname(writeTarget), { recursive: true })
@@ -296,6 +429,9 @@ export const installShellIntegration = (params: {
         const tmpPath = `${writeTarget}.composio-tmp`;
 
         yield* fs.writeFileString(tmpPath, existingContents + appendContent);
+        if (Option.isSome(existingTargetInfo)) {
+          yield* fs.chmod(tmpPath, existingTargetInfo.value.mode & 0o7777);
+        }
         yield* fs.rename(tmpPath, writeTarget);
 
         yield* success(`Updated ${tildify(filePath, os.homedir)}`);
@@ -305,14 +441,23 @@ export const installShellIntegration = (params: {
     }
 
     if (blocksByFile.size > 0) {
-      yield* note(
-        shell === 'fish'
-          ? 'exec fish'
-          : shell === 'zsh'
-            ? `source ${tildify(rcFile, os.homedir)}`
-            : 'exec $SHELL',
-        'Restart your shell to apply changes'
-      );
+      if (shell === 'fish') {
+        yield* note('exec fish', 'Restart your shell to apply changes');
+      } else if (shell === 'zsh') {
+        yield* note(
+          `source ${tildify(config.pathFiles[0]!, os.homedir)}`,
+          'Restart your shell to apply changes'
+        );
+      } else {
+        const bashrc = path.join(os.homedir, '.bashrc');
+        const hintLines = [`source ${tildify(bashrc, os.homedir)}`];
+        if (loginOverrideWritten && bashLoginOverride) {
+          hintLines.push(
+            `${tildify(bashLoginOverride, os.homedir)} was also updated — that entry applies to new login shells too.`
+          );
+        }
+        yield* note(hintLines.join('\n'), 'Restart your shell to apply changes');
+      }
     }
 
     yield* ui.outro('Done');
@@ -330,11 +475,15 @@ export const installShellIntegration = (params: {
  * composio install
  * composio install --completions
  * composio install --no-completions
+ * composio install --shell zsh
  * ```
  */
 export const installCmd = Command.make(
   'install',
-  { completions: completionsOpt, noCompletions: noCompletionsOpt },
-  ({ completions, noCompletions }) =>
-    installShellIntegration({ completions: completions && !noCompletions })
+  { completions: completionsOpt, noCompletions: noCompletionsOpt, shell: shellOpt },
+  ({ completions, noCompletions, shell }) =>
+    installShellIntegration({
+      completions: completions && !noCompletions,
+      shell: Option.getOrUndefined(shell),
+    })
 ).pipe(Command.withDescription('Set up shell integration (PATH and completions).'));
