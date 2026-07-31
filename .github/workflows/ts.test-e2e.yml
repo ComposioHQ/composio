@@ -320,7 +320,7 @@ jobs:
         uses: ./.github/actions/setup-node-pnpm-bun
         with:
           enable-turbo-cache: 'true'
-          node-version: '22.22.3'
+          node-version: '24'
 
       - name: Install Dependencies
         run: pnpm install --frozen-lockfile
