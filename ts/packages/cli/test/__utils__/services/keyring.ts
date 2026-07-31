@@ -67,7 +67,6 @@ export interface FakeKeyring {
   /** Layer to merge into the service stack under test. */
   readonly layer: Layer.Layer<KeyringService>;
   readonly service: KeyringServiceShape;
-  readonly store: CredentialStore;
 
   /** Live, ordered log of every operation this fake received. */
   readonly calls: ReadonlyArray<KeyringCall>;
@@ -111,9 +110,10 @@ export const makeFakeKeyring = (options: FakeKeyringOptions = {}): FakeKeyring =
   const record = (operation: KeyringOperation, service: string, user: string): void => {
     calls.push({ operation, service, user });
 
-    const queue = scripts.get(operation);
-    const scripted = queue !== undefined && queue.length > 0 ? queue.shift() : undefined;
-    const outcome = scripted === undefined ? (options.alwaysFail?.[operation] ?? null) : scripted;
+    let outcome = scripts.get(operation)?.shift();
+    if (outcome === undefined) {
+      outcome = options.alwaysFail?.[operation] ?? null;
+    }
 
     if (outcome !== null) {
       throw new KeyringError(outcome);
@@ -152,12 +152,14 @@ export const makeFakeKeyring = (options: FakeKeyringOptions = {}): FakeKeyring =
   return {
     layer: Layer.succeed(KeyringService, service),
     service,
-    store,
     calls,
     operations: () => calls.map(call => call.operation),
     peek: (service_: string, user: string) => {
       const stored = secrets.get(specifier(service_, user));
-      return stored === undefined ? undefined : decoder.decode(stored);
+      if (stored === undefined) {
+        return undefined;
+      }
+      return decoder.decode(stored);
     },
   };
 };
@@ -178,7 +180,3 @@ export const makeUnavailableKeyring = (): FakeKeyring =>
       },
     },
   });
-
-/** Convenience layer for tests that never assert on keyring calls. */
-export const FakeKeyringLayer = (options?: FakeKeyringOptions): Layer.Layer<KeyringService> =>
-  makeFakeKeyring(options).layer;

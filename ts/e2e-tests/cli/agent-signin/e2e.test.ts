@@ -45,10 +45,12 @@ e2e(import.meta.url, {
     let plaintextFallback: E2ETestResult;
 
     beforeAll(async () => {
-      signupServer = await startMockAgentsServer();
-      guardrailServer = await startMockAgentsServer();
-      reuseServer = await startMockAgentsServer();
-      fallbackServer = await startMockAgentsServer();
+      [signupServer, guardrailServer, reuseServer, fallbackServer] = await Promise.all([
+        startMockAgentsServer(),
+        startMockAgentsServer(),
+        startMockAgentsServer(),
+        startMockAgentsServer(),
+      ]);
 
       unattendedSignup = await runCmd(
         `${envPrefix(signupServer)} composio login --agent --no-skill-install && ${envPrefix(signupServer)} composio whoami`
@@ -169,9 +171,7 @@ e2e(import.meta.url, {
       });
 
       it('authenticates a second CLI process from the fallback', () => {
-        const whoami = JSON.parse(
-          section(plaintextFallback.stdout, 'WHOAMI').split('\n').at(-1) ?? '{}'
-        ) as Record<string, unknown>;
+        const whoami = lastJsonLine(section(plaintextFallback.stdout, 'WHOAMI'));
 
         expect(whoami.account_type).toBe('agent');
       });

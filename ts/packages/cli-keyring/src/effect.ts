@@ -33,8 +33,7 @@ import { type CredentialStore, type EntryModifiers, setDefaultStore } from './co
 /**
  * Service shape exposed to Effect consumers. Every method returns
  * `Effect.Effect<T, KeyringError>` — callers branch on
- * `Effect.catchTag`-style error handling by matching on
- * `error.details.kind`.
+ * the `KeyringError.is()` predicate.
  */
 export interface KeyringServiceShape {
   /** Store a UTF-8 password under (service, user). */
@@ -122,21 +121,28 @@ export function makeKeyringService(store: CredentialStore): KeyringServiceShape 
       unsafe(() => entryFor(service, user, modifiers).getSecret()),
     deleteCredential: (service, user, modifiers) =>
       unsafe(() => entryFor(service, user, modifiers).deleteCredential()),
-    isAvailable: Effect.gen(function* () {
-      // Probe with a non-existent specifier — we expect NoEntry if
-      // the store is healthy, NoStorageAccess if it isn't.
-      const probeService = '__composio_cli_keyring_probe__';
-      const probeUser = '__probe__';
-      const probe = unsafe(() => new Entry(probeService, probeUser, {}, store).getSecret());
-      return yield* probe.pipe(
-        Effect.match({
-          onSuccess: () => true,
-          onFailure: err => err.details.kind === 'NoEntry',
-        })
-      );
-    }),
+    // Probe with a non-existent specifier — we expect NoEntry if
+    // the store is healthy, NoStorageAccess if it isn't.
+    isAvailable: unsafe(() =>
+      new Entry('__composio_cli_keyring_probe__', '__probe__', {}, store).getSecret()
+    ).pipe(
+      Effect.match({
+        onSuccess: () => true,
+        onFailure: err => err.is('NoEntry'),
+      })
+    ),
   };
 }
+
+const liveLayer = (createStore: () => Promise<CredentialStore>): Layer.Layer<KeyringService> =>
+  Layer.effect(
+    KeyringService,
+    Effect.promise(async () => {
+      const store = await createStore();
+      setDefaultStore(store);
+      return makeKeyringService(store);
+    })
+  );
 
 /**
  * Live layer that instantiates the platform store on effect-build and
@@ -152,14 +158,7 @@ export function makeKeyringService(store: CredentialStore): KeyringServiceShape 
  * Node bundle so `bun:ffi` doesn't crash at module load. The extra
  * layer-build cost is a one-shot `import()` per process.
  */
-export const KeyringLive: Layer.Layer<KeyringService> = Layer.effect(
-  KeyringService,
-  Effect.promise(async () => {
-    const store = await createDefaultStore();
-    setDefaultStore(store);
-    return makeKeyringService(store);
-  })
-);
+export const KeyringLive: Layer.Layer<KeyringService> = liveLayer(createDefaultStore);
 
 /**
  * Build a `KeyringLive` layer with an explicit macOS backend choice.
@@ -169,14 +168,7 @@ export const KeyringLive: Layer.Layer<KeyringService> = Layer.effect(
  * ignored on Linux and other platforms.
  */
 export const KeyringLiveWithBackend = (macOSBackend: MacOSBackend): Layer.Layer<KeyringService> =>
-  Layer.effect(
-    KeyringService,
-    Effect.promise(async () => {
-      const store = await createDefaultStore({ macOSBackend });
-      setDefaultStore(store);
-      return makeKeyringService(store);
-    })
-  );
+  liveLayer(() => createDefaultStore({ macOSBackend }));
 
 /** Layer built from an explicit store — used by tests. */
 export const KeyringLayer = (store: CredentialStore): Layer.Layer<KeyringService> =>
