@@ -291,8 +291,15 @@ const resumePendingLogout = (
     state.plaintextIsFallback = false;
     state.source = 'none';
 
-    state.pendingKeyringLogout = !(yield* deleteKeyring(keyring));
-    yield* tryPersistUserData(file, state);
+    const deleted = yield* deleteKeyring(keyring);
+    state.pendingKeyringLogout = !deleted;
+
+    // The marker only clears once its removal reaches disk. Otherwise the
+    // file still says "logged out, cleanup pending" and this process would
+    // disagree with the next one.
+    if (!(yield* tryPersistUserData(file, state))) {
+      state.pendingKeyringLogout = true;
+    }
   });
 
 const resolveCredential = (
@@ -441,7 +448,9 @@ export const rawComposioUserContextLive = Layer.effect(
           testUserId: Option.fromNullable(testUserId),
         };
         state.plaintextApiKey = storedInKeyring ? Option.none() : Option.some(apiKey);
-        state.plaintextIsFallback = !storedInKeyring;
+        // Only a keyring-backed mode that failed produces a *fallback*.
+        // In `security: "json"` plaintext is the deliberate destination.
+        state.plaintextIsFallback = storageMode === 'keyring' && !storedInKeyring;
         state.pendingKeyringLogout = false;
         state.source = storedInKeyring ? 'keyring' : 'plaintext';
 
