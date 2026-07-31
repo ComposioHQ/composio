@@ -421,11 +421,12 @@ describe('ComposioUserContext', () => {
       readonly keyring?: FakeKeyring;
       readonly security?: SecurityBackend;
       readonly env?: Map<string, string>;
+      readonly fileSystem?: Layer.Layer<FileSystem.FileSystem>;
     }) =>
       Layer.provideMerge(
         makeUserContextLive({ keyring: options.keyring, security: options.security }),
         Layer.mergeAll(
-          BunFileSystem.layer,
+          options.fileSystem ?? BunFileSystem.layer,
           BunPath.layer,
           Layer.succeed(NodeOs, defaultNodeOs({ homedir: options.homedir })),
           withMapConfigProvider(options.env ?? new Map())
@@ -448,6 +449,28 @@ describe('ComposioUserContext', () => {
 
     /** Filesystem-only layer, for arranging and inspecting `user_data.json`. */
     const fsLayer = Layer.mergeAll(BunFileSystem.layer, BunPath.layer);
+
+    const recordingFileSystem = (
+      writes: Array<FileSystem.WriteFileStringOptions | undefined>
+    ): Layer.Layer<FileSystem.FileSystem> =>
+      Layer.effect(
+        FileSystem.FileSystem,
+        FileSystem.FileSystem.pipe(
+          Effect.map(fs => ({
+            ...fs,
+            writeFileString: (
+              filePath: string,
+              data: string,
+              options?: FileSystem.WriteFileStringOptions
+            ) => {
+              if (filePath.endsWith('.tmp') && data.includes('fallback_key')) {
+                writes.push(options);
+              }
+              return fs.writeFileString(filePath, data, options);
+            },
+          }))
+        )
+      ).pipe(Layer.provide(BunFileSystem.layer));
 
     /**
      * Effect-based seeding, safe only when the caller writes the file in
@@ -580,6 +603,56 @@ describe('ComposioUserContext', () => {
       }
     );
 
+    it.effect('[R13] [Then] plaintext temp files are owner-only from creation', () => {
+      const homedir = tempy.temporaryDirectory();
+      const writes: Array<FileSystem.WriteFileStringOptions | undefined> = [];
+
+      return Effect.gen(function* () {
+        const ctx = yield* ComposioUserContext;
+        yield* ctx.login('fallback_key');
+
+        assertEquals(writes.length, 1);
+        assertEquals(writes[0]?.flag, 'wx');
+        assertEquals(writes[0]?.mode, 0o600);
+      }).pipe(
+        Effect.provide(
+          contextLayer({
+            homedir,
+            keyring: makeUnavailableKeyring(),
+            fileSystem: recordingFileSystem(writes),
+          })
+        )
+      );
+    });
+
+    it.effect('[R13] [Then] legacy plaintext files become owner-only before use', () => {
+      const cases: ReadonlyArray<{
+        readonly security: SecurityBackend;
+        readonly keyring: FakeKeyring;
+      }> = [
+        { security: 'json', keyring: makeFakeKeyring() },
+        { security: 'auto', keyring: makeUnavailableKeyring() },
+      ];
+
+      return Effect.forEach(cases, ({ security, keyring }) => {
+        const homedir = tempy.temporaryDirectory();
+
+        return Effect.gen(function* () {
+          const fs = yield* FileSystem.FileSystem;
+          yield* seedUserDataFile(homedir, { api_key: 'legacy_plaintext_key' });
+          yield* fs.chmod(userDataPath(homedir), 0o644);
+
+          yield* Effect.gen(function* () {
+            const ctx = yield* ComposioUserContext;
+            assertEquals(Option.getOrUndefined(ctx.data.apiKey), 'legacy_plaintext_key');
+          }).pipe(Effect.provide(contextLayer({ homedir, keyring, security })));
+
+          const info = yield* fs.stat(userDataPath(homedir));
+          assertEquals(info.mode & 0o777, 0o600);
+        });
+      }).pipe(Effect.provide(fsLayer));
+    });
+
     it.effect(
       '[AE5] [Then] a newer plaintext key overwrites a stale keyring value before being scrubbed',
       () => {
@@ -632,6 +705,41 @@ describe('ComposioUserContext', () => {
           yield* fs.chmod(path.join(homedir, '.composio'), 0o700);
           const onDisk = yield* readUserDataFile(homedir);
           assertEquals(onDisk['api_key'], 'plaintext_key');
+        }).pipe(Effect.provide(fsLayer));
+      }
+    );
+
+    it.effect(
+      '[Then] login reports failure when a previous plaintext key cannot be scrubbed',
+      () => {
+        const homedir = tempy.temporaryDirectory();
+        const keyring = makeFakeKeyring();
+
+        return Effect.gen(function* () {
+          const fs = yield* FileSystem.FileSystem;
+          yield* seedUserDataFile(homedir, { api_key: 'old_plaintext_key' });
+          yield* fs.chmod(path.join(homedir, '.composio'), 0o500);
+
+          yield* Effect.gen(function* () {
+            const ctx = yield* ComposioUserContext;
+            assertEquals(ctx.credentialSource(), 'plaintext');
+
+            const error = yield* expectPersistenceError(ctx.login('new_key'));
+            assertEquals(error.keyringStored, true);
+            assertEquals(Option.getOrUndefined(ctx.data.apiKey), 'old_plaintext_key');
+          }).pipe(Effect.provide(contextLayer({ homedir, keyring })));
+
+          yield* fs.chmod(path.join(homedir, '.composio'), 0o700);
+
+          // A later process observes the old plaintext only after login
+          // reported failure, then restores that authoritative key.
+          yield* Effect.gen(function* () {
+            const ctx = yield* ComposioUserContext;
+            assertEquals(Option.getOrUndefined(ctx.data.apiKey), 'old_plaintext_key');
+            assertEquals(ctx.credentialSource(), 'keyring');
+          }).pipe(Effect.provide(contextLayer({ homedir, keyring })));
+
+          assertEquals(keyring.peek(KEYRING_SERVICE, KEYRING_USER), 'old_plaintext_key');
         }).pipe(Effect.provide(fsLayer));
       }
     );
@@ -883,6 +991,32 @@ describe('ComposioUserContext', () => {
         }).pipe(Effect.provide(fsLayer));
       }
     );
+
+    it.effect('[Then] logout does not delete the keyring before cleared state is durable', () => {
+      const homedir = tempy.temporaryDirectory();
+      const keyring = makeFakeKeyring({
+        seed: [[KEYRING_SERVICE, KEYRING_USER, 'stored_key']],
+      });
+
+      seedUserData(homedir, { api_key: null, org_id: 'org_before_logout' });
+
+      return Effect.gen(function* () {
+        const fs = yield* FileSystem.FileSystem;
+        const ctx = yield* ComposioUserContext;
+        yield* fs.chmod(path.join(homedir, '.composio'), 0o500);
+
+        yield* ctx.logout.pipe(Effect.flip);
+
+        assertEquals(ctx.isLoggedIn(), true);
+        assertEquals(Option.getOrUndefined(ctx.data.orgId), 'org_before_logout');
+        assertEquals(keyring.peek(KEYRING_SERVICE, KEYRING_USER), 'stored_key');
+        deepStrictEqual(keyring.operations(), ['get']);
+
+        yield* fs.chmod(path.join(homedir, '.composio'), 0o700);
+        const onDisk = yield* readUserDataFile(homedir);
+        assertEquals(onDisk['org_id'], 'org_before_logout');
+      }).pipe(Effect.provide(contextLayer({ homedir, keyring })), Effect.provide(fsLayer));
+    });
 
     it.effect('[AE14] [Then] a failed replacement leaves the previous complete file intact', () => {
       const homedir = tempy.temporaryDirectory();

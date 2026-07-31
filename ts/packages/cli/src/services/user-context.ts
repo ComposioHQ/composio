@@ -55,7 +55,7 @@ export class CredentialPersistenceError extends Data.TaggedError('CredentialPers
 }> {
   get message(): string {
     const detail = this.keyringStored
-      ? 'the OS credential store accepted the key, but the pending-logout marker in user_data.json could not be cleared'
+      ? 'the OS credential store accepted the key, but user_data.json could not be updated safely'
       : 'neither the OS credential store nor user_data.json could store the key';
     return (
       `Could not save your Composio credentials: ${detail}. ` +
@@ -107,18 +107,17 @@ const describeKeyringError = (err: unknown): string =>
  * store confirmed the write.
  */
 const writeKeyring = (deps: KeyringDeps, password: string) =>
-  Effect.gen(function* () {
-    if (!deps.enabled) return false;
-    return yield* deps.keyring.setPassword(KEYRING_SERVICE, KEYRING_USER, password).pipe(
-      Effect.as(true),
-      Effect.catchAll(err =>
-        Effect.logDebug(
-          `Keyring write failed (${describeKeyringError(err)}); ` +
-            'keeping the API key in user_data.json instead'
-        ).pipe(Effect.as(false))
+  deps.enabled
+    ? deps.keyring.setPassword(KEYRING_SERVICE, KEYRING_USER, password).pipe(
+        Effect.as(true),
+        Effect.catchAll(err =>
+          Effect.logDebug(
+            `Keyring write failed (${describeKeyringError(err)}); ` +
+              'keeping the API key in user_data.json instead'
+          ).pipe(Effect.as(false))
+        )
       )
-    );
-  });
+    : Effect.succeed(false);
 
 /**
  * Read the API key from the OS keyring. `Option.none()` covers both
@@ -126,17 +125,16 @@ const writeKeyring = (deps: KeyringDeps, password: string) =>
  * "no keyring-backed credential".
  */
 const readKeyring = (deps: KeyringDeps) =>
-  Effect.gen(function* () {
-    if (!deps.enabled) return Option.none<string>();
-    return yield* deps.keyring.getPassword(KEYRING_SERVICE, KEYRING_USER).pipe(
-      Effect.map(Option.some),
-      Effect.catchAll(err =>
-        Effect.logDebug(`No keyring-backed API key available (${describeKeyringError(err)})`).pipe(
-          Effect.as(Option.none<string>())
+  deps.enabled
+    ? deps.keyring.getPassword(KEYRING_SERVICE, KEYRING_USER).pipe(
+        Effect.map(Option.some),
+        Effect.catchAll(err =>
+          Effect.logDebug(
+            `No keyring-backed API key available (${describeKeyringError(err)})`
+          ).pipe(Effect.as(Option.none<string>()))
         )
       )
-    );
-  });
+    : Effect.succeed(Option.none<string>());
 
 /**
  * Delete the keyring credential. Returns `true` when the credential is
@@ -151,7 +149,7 @@ const deleteKeyring = (keyring: KeyringServiceShape) =>
   keyring.deleteCredential(KEYRING_SERVICE, KEYRING_USER).pipe(
     Effect.as(true),
     Effect.catchAll(err =>
-      err instanceof KeyringError && err.kind === 'NoEntry'
+      err instanceof KeyringError && err.is('NoEntry')
         ? Effect.succeed(true)
         : Effect.logWarning(
             `Could not remove the stored Composio credential (${describeKeyringError(err)}); ` +
@@ -210,10 +208,18 @@ const persistUserData = (file: UserDataFile, state: CredentialState) =>
 
     const nonce = yield* Random.nextIntBetween(0, 2_176_782_336);
     const tempPath = `${file.filePath}.${nonce.toString(36)}.tmp`;
+    const writeOptions = holdsPlaintextKey
+      ? ({ flag: 'wx', mode: 0o600 } as const)
+      : ({ flag: 'wx' } as const);
 
-    yield* file.fs.writeFileString(tempPath, normalized).pipe(
-      // Owner-only, because this file now holds the API key.
-      Effect.andThen(holdsPlaintextKey ? file.fs.chmod(tempPath, 0o600) : Effect.void),
+    // An exclusive create prevents an attacker-controlled sibling from being
+    // truncated or followed. A creation failure is not cleaned up because the
+    // path may belong to another process.
+    yield* file.fs.writeFileString(tempPath, normalized, writeOptions);
+
+    yield* (holdsPlaintextKey ? file.fs.chmod(tempPath, 0o600) : Effect.void).pipe(
+      // Defense in depth: the file is owner-only from creation when it
+      // carries the API key, and remains so through the atomic rename.
       Effect.andThen(file.fs.rename(tempPath, file.filePath)),
       Effect.onError(() => file.fs.remove(tempPath).pipe(Effect.ignore))
     );
@@ -232,6 +238,12 @@ const loadUserDataFile = (file: UserDataFile, state: CredentialState, env: Conte
   Effect.gen(function* () {
     const raw = yield* file.fs.readFileString(file.filePath, 'utf8');
     const parsed = yield* userDataFromJSON(raw);
+
+    // Legacy versions could leave plaintext credentials under the process
+    // umask. Tighten the file before allowing that credential into memory.
+    if (Option.isSome(parsed.apiKey)) {
+      yield* file.fs.chmod(file.filePath, 0o600);
+    }
 
     state.plaintextApiKey = parsed.apiKey;
     state.plaintextIsFallback = parsed.apiKeyFallback;
@@ -398,7 +410,7 @@ export const rawComposioUserContextLive = Layer.effect(
 
     if (yield* fs.exists(file.filePath)) {
       yield* loadUserDataFile(file, state, env).pipe(
-        Effect.catchAll(() =>
+        Effect.catchTag('ParseError', () =>
           Effect.logDebug(
             `${constants.USER_CONFIG_FILE_NAME} is empty or corrupted; resetting to defaults`
           ).pipe(Effect.zipRight(persistUserData(file, state)))
@@ -411,8 +423,7 @@ export const rawComposioUserContextLive = Layer.effect(
     yield* resolveCredential(file, state, kDeps, storageMode, env);
 
     const logout = Effect.gen(function* () {
-      const secureDeleteConfirmed = yield* deleteKeyring(keyring);
-
+      const previous = { ...state };
       state.userData = {
         apiKey: Option.none(),
         baseURL: Option.none(),
@@ -427,10 +438,24 @@ export const rawComposioUserContextLive = Layer.effect(
       // delete could not be confirmed; the marker drives the retry.
       state.plaintextApiKey = Option.none();
       state.plaintextIsFallback = false;
-      state.pendingKeyringLogout = !secureDeleteConfirmed;
+      state.pendingKeyringLogout = true;
       state.source = 'none';
 
-      yield* persistUserData(file, state);
+      // Make the logged-out state authoritative before touching the keyring.
+      // If this write fails, restore the current process and leave the secure
+      // credential untouched.
+      yield* persistUserData(file, state).pipe(
+        Effect.tapError(() => Effect.sync(() => Object.assign(state, previous)))
+      );
+
+      const secureDeleteConfirmed = yield* deleteKeyring(keyring);
+      if (!secureDeleteConfirmed) return;
+
+      state.pendingKeyringLogout = false;
+      if (!(yield* tryPersistUserData(file, state))) {
+        // Disk still contains the conservative pending marker written above.
+        state.pendingKeyringLogout = true;
+      }
     });
 
     const login = (apiKey: string, orgId?: string, testUserId?: string) =>
@@ -444,7 +469,6 @@ export const rawComposioUserContextLive = Layer.effect(
           baseURL: Option.some(baseURL),
           webURL: Option.some(webURL),
           orgId: Option.fromNullable(orgId),
-          projectId: state.userData.projectId,
           testUserId: Option.fromNullable(testUserId),
         };
         state.plaintextApiKey = storedInKeyring ? Option.none() : Option.some(apiKey);
@@ -459,7 +483,9 @@ export const rawComposioUserContextLive = Layer.effect(
         // The login survives this process when the keyring accepted the
         // key and no pending-logout marker is left behind to revoke it,
         // or when the plaintext fallback reached disk.
-        const durable = storedInKeyring ? !previous.pendingKeyringLogout || persisted : persisted;
+        const requiresUserDataCommit =
+          previous.pendingKeyringLogout || Option.isSome(previous.plaintextApiKey);
+        const durable = storedInKeyring ? !requiresUserDataCommit || persisted : persisted;
         if (durable) return;
 
         // The atomic write left the previous file intact, so restore the
@@ -488,9 +514,6 @@ export const rawComposioUserContextLive = Layer.effect(
       ...state.userData,
       baseURL: Option.getOrElse(state.userData.baseURL, () => baseURL),
       webURL: Option.getOrElse(state.userData.webURL, () => webURL),
-      orgId: state.userData.orgId,
-      projectId: state.userData.projectId,
-      testUserId: state.userData.testUserId,
       apiKeyFallback: state.source === 'plaintext' && state.plaintextIsFallback,
       pendingKeyringLogout: state.pendingKeyringLogout,
     });
@@ -537,7 +560,10 @@ export const ComposioUserContextLive = Layer.unwrapEffect(
     const backend = resolveMacOSBackend(cliConfig.data.security);
     return Layer.provide(
       rawComposioUserContextLive,
-      Layer.mergeAll(KeyringLiveWithBackend(backend), ComposioCliUserConfigLive)
+      Layer.mergeAll(
+        KeyringLiveWithBackend(backend),
+        Layer.succeed(ComposioCliUserConfig, cliConfig)
+      )
     );
   }).pipe(Effect.provide(ComposioCliUserConfigLive))
 );

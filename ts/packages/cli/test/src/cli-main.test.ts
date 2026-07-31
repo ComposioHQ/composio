@@ -9,7 +9,12 @@ describe('CLI process error handling', () => {
     const configDirectory = tempy.temporaryDirectory();
     fs.writeFileSync(
       path.join(configDirectory, 'config.json'),
-      JSON.stringify({ experimental_features: { local_tools: true } })
+      JSON.stringify({
+        experimental_features: { local_tools: true },
+        // Process tests use the production service graph, so they must opt
+        // out of the developer or CI host's credential store explicitly.
+        security: 'json',
+      })
     );
     fs.writeFileSync(
       path.join(configDirectory, 'user_data.json'),
