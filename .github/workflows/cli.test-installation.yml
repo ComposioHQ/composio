@@ -33,6 +33,9 @@ jobs:
       - name: Test release resolution fallback
         run: bash test/install-sh-release-resolution.test.sh
 
+      - name: Lint POSIX install scripts
+        run: shellcheck -s sh install.sh install/*.sh
+
   test-install-script:
     name: Test Install Script
     needs: install-script-unit-tests
@@ -160,23 +163,22 @@ jobs:
           echo "Testing installation with auto-detected latest CLI version..."
 
           # Test the install script without version (it will auto-detect latest CLI release)
-          bash install.sh
+          sh install.sh
 
           # Verify installation
-          source ~/.bashrc 2>/dev/null || source ~/.zshrc 2>/dev/null || true
-          export PATH="$HOME/.composio:$PATH"
+          export PATH="$HOME/.local/bin:$PATH"
 
-          # Check if binary exists
-          if [[ -f "$HOME/.composio/composio" ]]; then
-            echo "✅ Binary installed successfully"
-            ls -la "$HOME/.composio/composio"
+          # Check the bundle and entry point
+          if [[ -x "$HOME/.composio/composio" && -L "$HOME/.local/bin/composio" ]]; then
+            echo "✅ Bundle and entry point installed successfully"
+            ls -la "$HOME/.composio/composio" "$HOME/.local/bin/composio"
           else
-            echo "❌ Binary not found"
+            echo "❌ Bundle or entry point not found"
             exit 1
           fi
 
           # Test binary execution
-          if "$HOME/.composio/composio" --version; then
+          if "$HOME/.local/bin/composio" --version; then
             echo "✅ Binary executes successfully"
           else
             echo "❌ Binary execution failed"
@@ -192,23 +194,22 @@ jobs:
           echo "Testing installation with version: ${RELEASE_TAG}"
 
           # Test the install script with specific version
-          bash install.sh "${RELEASE_TAG}"
+          sh install.sh "${RELEASE_TAG}"
 
           # Verify installation
-          source ~/.bashrc 2>/dev/null || source ~/.zshrc 2>/dev/null || true
-          export PATH="$HOME/.composio:$PATH"
+          export PATH="$HOME/.local/bin:$PATH"
 
-          # Check if binary exists
-          if [[ -f "$HOME/.composio/composio" ]]; then
-            echo "✅ Binary installed successfully"
-            ls -la "$HOME/.composio/composio"
+          # Check the bundle and entry point
+          if [[ -x "$HOME/.composio/composio" && -L "$HOME/.local/bin/composio" ]]; then
+            echo "✅ Bundle and entry point installed successfully"
+            ls -la "$HOME/.composio/composio" "$HOME/.local/bin/composio"
           else
-            echo "❌ Binary not found"
+            echo "❌ Bundle or entry point not found"
             exit 1
           fi
 
           # Test binary execution
-          if "$HOME/.composio/composio" --version; then
+          if "$HOME/.local/bin/composio" --version; then
             echo "✅ Binary executes successfully"
           else
             echo "❌ Binary execution failed"
@@ -219,6 +220,8 @@ jobs:
         shell: bash
         run: |
           echo "Testing PATH integration with ${{ matrix.shell }}..."
+
+          COMPOSIO_BIN_DIR="$HOME/.local/bin" "$HOME/.composio/composio" install --shell "${{ matrix.shell }}"
 
           # Debug: Check what files exist and their contents
           echo "=== DEBUGGING ==="
@@ -352,7 +355,7 @@ jobs:
             exit 1
           fi
 
-          if grep -Fqx 'export PATH="$HOME/.composio:$PATH"' "$config_file"; then
+          if grep -Fqx 'export PATH="$HOME/.local/bin:$PATH"' "$config_file"; then
             echo "✅ $config_file updated with the installed binary directory"
           else
             echo "❌ $config_file PATH not updated"
@@ -377,27 +380,28 @@ jobs:
           echo "Testing custom install directory..."
 
           # Clean up previous installation
-          rm -rf ~/.composio
+          rm -rf ~/.composio /tmp/custom-composio /tmp/custom-composio-bin
 
           # Test with custom directory using the same version as the workflow
           export COMPOSIO_INSTALL_DIR="/tmp/custom-composio"
+          export COMPOSIO_BIN_DIR="/tmp/custom-composio-bin"
           if [[ "$USE_LATEST" == "true" ]]; then
-            bash install.sh
+            sh install.sh
           else
-            bash install.sh "${RELEASE_TAG}"
+            sh install.sh "${RELEASE_TAG}"
           fi
 
           # Verify custom installation
-          if [[ -f "/tmp/custom-composio/composio" ]]; then
+          if [[ -x "/tmp/custom-composio/composio" && -L "/tmp/custom-composio-bin/composio" ]]; then
             echo "✅ Custom directory installation successful"
-            ls -la "/tmp/custom-composio/composio"
+            ls -la "/tmp/custom-composio/composio" "/tmp/custom-composio-bin/composio"
           else
             echo "❌ Custom directory installation failed"
             exit 1
           fi
 
           # Test execution
-          if "/tmp/custom-composio/composio" --version; then
+          if "/tmp/custom-composio-bin/composio" --version; then
             echo "✅ Custom installation executes successfully"
           else
             echo "❌ Custom installation execution failed"
@@ -409,11 +413,12 @@ jobs:
           echo "Testing uninstallation..."
 
           # Remove binary
-          rm -rf ~/.composio /tmp/custom-composio
+          rm -f ~/.local/bin/composio /tmp/custom-composio-bin/composio
+          rm -rf ~/.composio /tmp/custom-composio /tmp/custom-composio-bin
 
           # Check if binary is gone
-          if [[ ! -f "$HOME/.composio/composio" ]]; then
-            echo "✅ Binary removed successfully"
+          if [[ ! -e "$HOME/.composio/composio" && ! -e "$HOME/.local/bin/composio" ]]; then
+            echo "✅ Bundle and entry point removed successfully"
           else
             echo "❌ Binary removal failed"
             exit 1
@@ -425,12 +430,11 @@ jobs:
           echo "Testing error handling..."
 
           # Test with invalid version
-          if bash install.sh v999.999.999 2>&1 | grep -q "Failed"; then
-            echo "✅ Error handling works for invalid version"
-          else
-            echo "❌ Error handling failed"
-            # Don't exit 1 here as this is expected to fail
+          if sh install.sh v999.999.999; then
+            echo "❌ Invalid version unexpectedly succeeded"
+            exit 1
           fi
+          echo "✅ Error handling works for invalid versions"
 
   test-architecture-detection:
     name: Test Architecture Detection
@@ -530,7 +534,7 @@ jobs:
           # Create a version of the script that will fail prerequisite check
           sed 's/command -v curl/command -v nonexistent-tool/' install.sh > test-install.sh
 
-          if bash test-install.sh 2>&1 | grep -q "required to install"; then
+          if sh test-install.sh 2>&1 | grep -q "required to install"; then
             echo "✅ Prerequisites check works"
           else
             echo "❌ Prerequisites check failed"

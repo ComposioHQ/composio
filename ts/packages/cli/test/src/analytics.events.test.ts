@@ -481,13 +481,23 @@ describe('CLI analytics journey taxonomy', () => {
     });
   });
 
-  it('marks the install.sh shell-integration run as installer-origin', () => {
+  it('keeps the base installer install-only and marks shell-variant delegation as installer-origin', () => {
     const installScript = readFileSync(
       new URL('../../../../../install.sh', import.meta.url),
       'utf8'
     );
-    const installLine = installScript.split('\n').find(line => line.includes('"$exe" install'));
+    expect(installScript).not.toContain('"$exe" install');
 
-    expect(installLine).toContain('COMPOSIO_CLI_INVOCATION_ORIGIN=installer');
+    for (const shell of ['zsh', 'bash', 'fish']) {
+      const variantScript = readFileSync(
+        new URL(`../../../../../install/${shell}.sh`, import.meta.url),
+        'utf8'
+      );
+      const installLine = variantScript
+        .split('\n')
+        .find(line => line.includes('"$variant_exe" install --shell'));
+
+      expect(installLine).toContain('COMPOSIO_CLI_INVOCATION_ORIGIN=installer');
+    }
   });
 });

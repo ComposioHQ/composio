@@ -1,445 +1,458 @@
-#!/usr/bin/env bash
-set -euo pipefail
+#!/bin/sh
+set -eu
 
-COMPOSIO_GITHUB_OWNER=${COMPOSIO_GITHUB_OWNER-"ComposioHQ"}
-COMPOSIO_GITHUB_REPO=${COMPOSIO_GITHUB_REPO-"composio"}
-COMPOSIO_GITHUB_URL=${COMPOSIO_GITHUB_URL-"https://github.com"}
-COMPOSIO_GITHUB_API_BASE_URL=${COMPOSIO_GITHUB_API_BASE_URL:-}
-COMPOSIO_INSTALL_DIR=${COMPOSIO_INSTALL_DIR:-$HOME/.composio}
-
-# --- Input validation ---
-
-# Only allow HTTPS URLs for the download source.
-if [[ ! "$COMPOSIO_GITHUB_URL" =~ ^https:// ]]; then
-    echo "error: COMPOSIO_GITHUB_URL must start with https:// (got \"$COMPOSIO_GITHUB_URL\")" >&2
+error() {
+    printf 'error: %s\n' "$*" >&2
     exit 1
-fi
+}
 
-# Owner and repo must be safe identifiers (alphanumeric, hyphens, underscores, dots).
-if [[ ! "$COMPOSIO_GITHUB_OWNER" =~ ^[a-zA-Z0-9._-]+$ ]]; then
-    echo "error: COMPOSIO_GITHUB_OWNER contains invalid characters (got \"$COMPOSIO_GITHUB_OWNER\")" >&2
-    exit 1
-fi
-if [[ ! "$COMPOSIO_GITHUB_REPO" =~ ^[a-zA-Z0-9._-]+$ ]]; then
-    echo "error: COMPOSIO_GITHUB_REPO contains invalid characters (got \"$COMPOSIO_GITHUB_REPO\")" >&2
-    exit 1
-fi
+warn() {
+    printf 'warning: %s\n' "$*" >&2
+}
 
-if [[ -n "$COMPOSIO_GITHUB_API_BASE_URL" && ! "$COMPOSIO_GITHUB_API_BASE_URL" =~ ^https:// ]]; then
-    echo "error: COMPOSIO_GITHUB_API_BASE_URL must start with https:// (got \"$COMPOSIO_GITHUB_API_BASE_URL\")" >&2
-    exit 1
-fi
+is_true() {
+    case ${1:-} in
+        1 | true) return 0 ;;
+        *) return 1 ;;
+    esac
+}
 
-github_repo="$COMPOSIO_GITHUB_URL/$COMPOSIO_GITHUB_OWNER/$COMPOSIO_GITHUB_REPO"
-
-if [[ -n "$COMPOSIO_GITHUB_API_BASE_URL" ]]; then
-    github_api_base="${COMPOSIO_GITHUB_API_BASE_URL%/}"
-elif [[ "$COMPOSIO_GITHUB_URL" = "https://github.com" ]]; then
-    github_api_base="https://api.github.com"
-else
-    github_api_base="${COMPOSIO_GITHUB_URL%/}/api/v3"
-fi
-
-github_api_repo="$github_api_base/repos/$COMPOSIO_GITHUB_OWNER/$COMPOSIO_GITHUB_REPO"
-
-# --- Colors (only when interactive) ---
-
-Color_Off='' Red='' Green='' Dim='' Bold_White='' Bold_Green=''
-
-if [[ -t 1 ]]; then
-    Color_Off='\033[0m'
-    Red='\033[0;31m'
-    Green='\033[0;32m'
-    Dim='\033[0;2m'
-    Bold_Green='\033[1;32m'
-    Bold_White='\033[1m'
-fi
-
-error()     { echo -e "${Red}error${Color_Off}:" "$@" >&2; exit 1; }
-warn()      { echo -e "${Red}warning${Color_Off}:" "$@" >&2; }
-info()      { echo -e "${Dim}$*${Color_Off}"; }
-info_bold() { echo -e "${Bold_White}$*${Color_Off}"; }
-success()   { echo -e "${Green}$*${Color_Off}"; }
-
-tildify() {
-    if [[ $1 = $HOME/* ]]; then
-        echo "~/${1#$HOME/}"
-    else
-        echo "$1"
+info() {
+    if ! is_true "${COMPOSIO_QUIET:-}"; then
+        printf '%s\n' "$*"
     fi
 }
 
-install_agent=false
-install_plugins=true
-version_arg=""
-
-case "${COMPOSIO_INSTALL_PLUGINS:-1}" in
-1) ;;
-0) install_plugins=false ;;
-*) error 'COMPOSIO_INSTALL_PLUGINS must be 1 or 0' ;;
-esac
-
-while [[ $# -gt 0 ]]; do
-    case "$1" in
-    --agent)
-        install_agent=true
-        shift
-        ;;
-    --no-plugins)
-        install_plugins=false
-        shift
-        ;;
-    -h|--help)
-        echo 'Usage: install.sh [--agent] [--no-plugins] [version-tag]  (e.g. "@composio/cli@0.1.32")'
-        echo '  --agent       After installing, sign up/log in as a Composio agent.'
-        echo '  --no-plugins  Skip installing plugins for detected agent hosts.'
-        echo '  Set COMPOSIO_INSTALL_PLUGINS=0 to skip plugin installation in automation.'
-        exit 0
-        ;;
-    --*)
-        error "Unknown option: $1"
-        ;;
-    *)
-        if [[ -n "$version_arg" ]]; then
-            error 'Too many arguments. Usage: install.sh [--agent] [--no-plugins] [version-tag]  (e.g. "@composio/cli@0.1.32")'
-        fi
-        version_arg=$1
-        shift
-        ;;
-    esac
-done
-
-# --- Platform detection ---
-
-platform=$(uname -ms)
-
-case $platform in
-'MINGW64'* | 'MSYS'* | 'CYGWIN'*)
-    error 'Windows is not supported. Please use WSL (https://learn.microsoft.com/windows/wsl/install) and run this script inside your WSL distribution.'
-    ;;
-esac
-
-# --- Prerequisites ---
-
-command -v curl  >/dev/null || error 'curl is required to install Composio CLI'
-command -v unzip >/dev/null || error 'unzip is required to install Composio CLI'
-
-case $platform in
-'Darwin x86_64')  target=darwin-x64     ;;
-'Darwin arm64')   target=darwin-aarch64  ;;
-'Linux aarch64' | 'Linux arm64')
-                  target=linux-aarch64   ;;
-'Linux x86_64')   target=linux-x64      ;;
-*)                error "Unsupported platform: $platform" ;;
-esac
-
-# Rosetta 2 detection on macOS
-if [[ $target = darwin-x64 ]]; then
-    if [[ $(sysctl -n sysctl.proc_translated 2>/dev/null) = 1 ]]; then
-        target=darwin-aarch64
-        info "Your shell is running in Rosetta 2. Downloading for $target instead"
+debug() {
+    if is_true "${COMPOSIO_DEBUG:-}"; then
+        printf '+ %s\n' "$*" >&2
     fi
-fi
+}
 
-archive_name="composio-$target.zip"
+tildify() {
+    case $1 in
+        "$HOME"/*) printf '%s/%s\n' '~' "${1#"$HOME"/}" ;;
+        *) printf '%s\n' "$1" ;;
+    esac
+}
+
+print_usage() {
+    printf '%s\n' \
+        'Usage: install.sh [--agent] [--no-plugins] [version-tag]' \
+        '' \
+        'Options:' \
+        '  --agent       Sign up or log in as a Composio agent after installation.' \
+        '  --no-plugins  Skip agent plugin installation (the default).' \
+        '  -h, --help    Show this help.' \
+        '' \
+        'Version tags may be stable or beta, for example 0.3.1 or @composio/cli@0.3.1-beta.2.'
+}
+
+validate_identifier() {
+    printf '%s\n' "$2" | grep -Eq '^[A-Za-z0-9._-]+$' ||
+        error "$1 contains invalid characters (got \"$2\")"
+}
+
+url_authority() {
+    printf '%s\n' "$1" | sed -e 's#^[a-zA-Z][a-zA-Z0-9+.-]*://##' -e 's#[/?#].*$##'
+}
+
+is_allowed_http_authority() {
+    case $1 in
+        localhost | localhost:* | 127.0.0.1 | 127.0.0.1:* | '[::1]' | '[::1]':*) return 0 ;;
+    esac
+
+    if [ -n "${COMPOSIO_INSTALL_ALLOW_HTTP_HOST:-}" ]; then
+        case $1 in
+            "$COMPOSIO_INSTALL_ALLOW_HTTP_HOST" | "$COMPOSIO_INSTALL_ALLOW_HTTP_HOST":*) return 0 ;;
+        esac
+    fi
+
+    return 1
+}
+
+validate_url() {
+    validate_url_value=$1
+    case $validate_url_value in
+        *[![:print:]]* | *[[:space:]]*) return 1 ;;
+    esac
+
+    validate_url_authority=$(url_authority "$validate_url_value")
+    [ -n "$validate_url_authority" ] || return 1
+    case $validate_url_authority in
+        *@*) return 1 ;;
+    esac
+
+    case $validate_url_value in
+        https://*) return 0 ;;
+        http://*) is_allowed_http_authority "$validate_url_authority" ;;
+        *) return 1 ;;
+    esac
+}
+
+curl_fetch() {
+    curl_fetch_url=$1
+    validate_url "$curl_fetch_url" || error "Refusing unsafe URL \"$curl_fetch_url\""
+    debug "curl GET $curl_fetch_url"
+    case $curl_fetch_url in
+        https://*)
+            curl --fail --silent --location --proto '=https' --proto-redir '=https' "$curl_fetch_url"
+            ;;
+        http://*)
+            curl --fail --silent --location --proto '=http,https' --proto-redir '=https' "$curl_fetch_url"
+            ;;
+    esac
+}
+
+curl_download() {
+    curl_download_url=$1
+    curl_download_output=$2
+    curl_download_quiet=${3:-0}
+    validate_url "$curl_download_url" || error "Refusing unsafe URL \"$curl_download_url\""
+    debug "curl GET $curl_download_url -> $curl_download_output"
+
+    if [ "$curl_download_quiet" = 1 ] || is_true "${COMPOSIO_QUIET:-}"; then
+        curl_download_ui=--silent
+    else
+        curl_download_ui=--progress-bar
+    fi
+
+    case $curl_download_url in
+        https://*)
+            curl --fail --location "$curl_download_ui" --proto '=https' --proto-redir '=https' \
+                --output "$curl_download_output" "$curl_download_url"
+            ;;
+        http://*)
+            curl --fail --location "$curl_download_ui" --proto '=http,https' --proto-redir '=https' \
+                --output "$curl_download_output" "$curl_download_url"
+            ;;
+    esac
+}
+
+normalize_version() {
+    normalize_version_value=$1
+    case $normalize_version_value in
+        @composio/cli@*) normalize_version_bare=${normalize_version_value#@composio/cli@} ;;
+        *) normalize_version_bare=$normalize_version_value ;;
+    esac
+
+    printf '%s\n' "$normalize_version_bare" |
+        grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+(-beta\.[0-9]+)?$' ||
+        error "Invalid Composio CLI version \"$normalize_version_value\". Expected X.Y.Z or X.Y.Z-beta.N."
+
+    printf '@composio/cli@%s\n' "$normalize_version_bare"
+}
 
 resolve_latest_cli_release() {
-    local page release_json release_line
-
-    for page in 1 2 3 4 5; do
-        release_json=$(curl --fail --silent --location "$github_api_repo/releases?per_page=100&page=$page") || return 1
-
-        release_line=$(printf '%s\n' "$release_json" \
-            | sed 's/"tag_name"/\
+    resolve_page=1
+    while [ "$resolve_page" -le 5 ]; do
+        resolve_url="$github_api_repo/releases?per_page=100&page=$resolve_page"
+        resolve_json=$(curl_fetch "$resolve_url") || return 1
+        resolve_release=$(printf '%s\n' "$resolve_json" |
+            sed 's/"tag_name"/\
 "tag_name"/g; s/"browser_download_url"/\
-"browser_download_url"/g' \
-            | awk -v asset_name="$archive_name" '
+"browser_download_url"/g' |
+            awk -v asset_name="$archive_name" '
                 BEGIN {
                     tag = ""
-                    stable_cli_release = "^@composio/cli@[0-9]+\\.[0-9]+\\.[0-9]+$"
+                    stable = "^@composio/cli@[0-9]+\\.[0-9]+\\.[0-9]+$"
                 }
                 /"tag_name":[[:space:]]*"/ {
                     tag = $0
                     sub(/^.*"tag_name":[[:space:]]*"/, "", tag)
                     sub(/".*$/, "", tag)
-                    if (tag !~ stable_cli_release) {
-                        tag = ""
-                    }
+                    if (tag !~ stable) tag = ""
                 }
                 tag != "" && /"browser_download_url":[[:space:]]*"/ && index($0, "/" asset_name "\"") > 0 {
                     url = $0
                     sub(/^.*"browser_download_url":[[:space:]]*"/, "", url)
                     sub(/".*$/, "", url)
-                    print tag "\t" url
+                    print tag
+                    print url
                     exit
                 }
             ')
 
-        if [[ -n "$release_line" ]]; then
-            printf '%s\n' "$release_line"
+        if [ -n "$resolve_release" ]; then
+            printf '%s\n' "$resolve_release"
             return 0
         fi
 
-        if ! printf '%s\n' "$release_json" | grep -q '"tag_name"'; then
-            break
-        fi
+        printf '%s\n' "$resolve_json" | grep -q '"tag_name"' || break
+        resolve_page=$((resolve_page + 1))
     done
 
     return 1
 }
 
-# --- Version resolution ---
+detect_target() {
+    platform=$(uname -ms)
+    case $platform in
+        'MINGW64'* | 'MSYS'* | 'CYGWIN'*)
+            error 'Windows is not supported. Use WSL (https://learn.microsoft.com/windows/wsl/install) and run this script inside your WSL distribution.'
+            ;;
+        'Darwin x86_64') target=darwin-x64 ;;
+        'Darwin arm64') target=darwin-aarch64 ;;
+        'Linux aarch64' | 'Linux arm64') target=linux-aarch64 ;;
+        'Linux x86_64') target=linux-x64 ;;
+        *) error "Unsupported platform: $platform" ;;
+    esac
 
-if [[ -z "$version_arg" ]]; then
-    info "Finding latest CLI release..."
-
-    latest_release=$(resolve_latest_cli_release) ||
-        error "Failed to determine the latest CLI release with a $archive_name asset. Please specify a version manually."
-
-    version=${latest_release%%$'\t'*}
-    archive_url=${latest_release#*$'\t'}
-
-    info "Found latest version: $version"
-else
-    version=$version_arg
-    archive_url="$github_repo/releases/download/$version/$archive_name"
-fi
-
-# --- Download into temp directory ---
-
-tmpdir="$(mktemp -d)"
-trap 'rm -rf "$tmpdir"' EXIT
-
-checksums_url="$github_repo/releases/download/$version/checksums.txt"
-
-info "Installing Composio CLI $version for $target"
-
-info "Downloading..."
-curl --fail --location --progress-bar --output "$tmpdir/$archive_name" "$archive_url" ||
-    error "Failed to download from \"$archive_url\""
-
-# --- Checksum verification ---
-
-if curl --fail --silent --location --output "$tmpdir/checksums.txt" "$checksums_url" 2>/dev/null; then
-    expected=$(grep "$archive_name" "$tmpdir/checksums.txt" | awk '{print $1}')
-
-    if [[ -n "$expected" ]]; then
-        if command -v sha256sum &>/dev/null; then
-            actual=$(sha256sum "$tmpdir/$archive_name" | awk '{print $1}')
-        elif command -v shasum &>/dev/null; then
-            actual=$(shasum -a 256 "$tmpdir/$archive_name" | awk '{print $1}')
-        else
-            actual=""
-            warn "No SHA-256 utility found — skipping verification"
+    if [ "$target" = darwin-x64 ]; then
+        translated=$(sysctl -n sysctl.proc_translated 2>/dev/null || printf '0')
+        if [ "$translated" = 1 ]; then
+            target=darwin-aarch64
+            info "Your shell is running in Rosetta 2. Downloading for $target instead"
         fi
-
-        if [[ -n "$actual" && "$expected" != "$actual" ]]; then
-            error "Checksum mismatch for $archive_name\n  Expected: $expected\n  Actual:   $actual"
-        fi
-
-        if [[ -n "$actual" ]]; then
-            info "Checksum verified"
-        fi
-    else
-        warn "No checksum entry found for $archive_name — skipping verification"
-    fi
-else
-    info "No checksums.txt in release — skipping verification"
-fi
-
-# --- Extract and install ---
-
-info "Extracting..."
-unzip -oqd "$tmpdir" "$tmpdir/$archive_name" ||
-    error 'Failed to extract archive'
-
-mkdir -p "$COMPOSIO_INSTALL_DIR" ||
-    error "Failed to create install directory \"$COMPOSIO_INSTALL_DIR\""
-
-exe="$COMPOSIO_INSTALL_DIR/composio"
-release_tag_file="$COMPOSIO_INSTALL_DIR/release-tag.txt"
-
-install_bundle_support_files() {
-    local source_dir="$1"
-    local installed_count=0
-
-    while IFS= read -r -d '' source_path; do
-        local relative_path=${source_path#"$source_dir"/}
-        local target_path="$COMPOSIO_INSTALL_DIR/$relative_path"
-
-        mkdir -p "$(dirname "$target_path")" ||
-            error "Failed to create support file directory \"$(dirname "$target_path")\""
-
-        mv "$source_path" "$target_path" ||
-            error "Failed to install support file \"$relative_path\""
-
-        installed_count=$((installed_count + 1))
-    done < <(find "$source_dir" -mindepth 1 -type f ! -path "$source_dir/composio" -print0)
-
-    if (( installed_count == 0 )); then
-        warn "This release archive does not include any bundled support files beyond the main binary. Some CLI features may be unavailable in this version."
     fi
 }
 
-# Handle nested directory structure (composio-<target>/composio)
-if [[ -f "$tmpdir/composio-$target/composio" ]]; then
-    mv "$tmpdir/composio-$target/composio" "$exe"
-    install_bundle_support_files "$tmpdir/composio-$target"
-elif [[ -f "$tmpdir/composio" ]]; then
-    mv "$tmpdir/composio" "$exe"
-    install_bundle_support_files "$tmpdir"
-else
-    error 'Binary not found in extracted archive'
-fi
+verify_checksum() {
+    checksum_archive=$1
+    checksum_manifest=$2
+    checksum_name=$3
+    checksum_expected=$(awk -v name="$checksum_name" '$2 == name || $2 == "*" name { print $1; exit }' "$checksum_manifest")
 
-chmod +x "$exe" ||
-    error 'Failed to set permissions on executable'
+    if [ -z "$checksum_expected" ]; then
+        warn "No checksum entry found for $checksum_name; continuing without verification"
+        return 0
+    fi
+    printf '%s\n' "$checksum_expected" | grep -Eq '^[0-9a-fA-F]{64}$' ||
+        error "Malformed checksum for $checksum_name"
 
-printf '%s\n' "$version" > "$release_tag_file" ||
-    error "Failed to write install metadata to \"$release_tag_file\""
-
-success "Composio CLI was installed successfully to $Bold_Green$(tildify "$exe")"
-
-# --- Shell integration (PATH + completions) ---
-
-# Delegate to the CLI's own install command, which handles:
-#   - Idempotent PATH setup in the correct rc file
-#   - Shell completions installation
-# If the binary can't run (e.g. missing runtime), fall back to inline setup.
-#
-# Run it with stderr left on the terminal. `composio install` reports which rc
-# file it changed and how to reload the shell, and it treats a redirected stderr
-# as "nobody is watching" — capturing that stream, even to replay it later, is
-# what makes the PATH guidance disappear. The version probe keeps a binary that
-# cannot run at all from spilling loader errors before the fallback takes over.
-
-echo
-
-if "$exe" --version >/dev/null 2>&1 &&
-    COMPOSIO_INSTALL_DIR="$COMPOSIO_INSTALL_DIR" COMPOSIO_CLI_INVOCATION_ORIGIN=installer "$exe" install; then
-    : # the CLI printed its own shell-integration guidance
-else
-    info "Setting up shell integration..."
-
-    refresh_command=''
-    quoted_install_dir=\"${COMPOSIO_INSTALL_DIR//\"/\\\"}\"
-
-    if [[ $quoted_install_dir = \"$HOME/* ]]; then
-        quoted_install_dir=${COMPOSIO_INSTALL_DIR/$HOME\//\$HOME/}
+    if command -v sha256sum >/dev/null 2>&1; then
+        checksum_actual=$(sha256sum "$checksum_archive" | awk '{ print $1 }')
+    elif command -v shasum >/dev/null 2>&1; then
+        checksum_actual=$(shasum -a 256 "$checksum_archive" | awk '{ print $1 }')
+    else
+        warn 'No SHA-256 utility found; continuing without verification'
+        return 0
     fi
 
-    shell_name=$(basename "${SHELL:-}")
-    marker='# Composio CLI'
+    [ "$checksum_expected" = "$checksum_actual" ] ||
+        error "Checksum mismatch for $checksum_name (expected $checksum_expected, got $checksum_actual)"
+    info 'Checksum verified'
+}
 
+resolve_directory() {
+    resolve_directory_value=$1
+    mkdir -p "$resolve_directory_value" || error "Failed to create directory \"$resolve_directory_value\""
+    (cd "$resolve_directory_value" && pwd -P)
+}
+
+install_bundle() {
+    install_bundle_root=$1
+    install_bundle_dir=$install_bundle_root/composio-$target
+
+    if [ ! -f "$install_bundle_dir/composio" ]; then
+        rm -f "$install_bundle_root/$archive_name" "$install_bundle_root/checksums.txt"
+        install_bundle_dir=$install_bundle_root
+    fi
+    [ -f "$install_bundle_dir/composio" ] || error 'Binary not found in extracted archive'
+
+    if ! find "$install_bundle_dir" -mindepth 1 ! -name composio -print -quit | grep -q .; then
+        warn 'This release archive has no bundled support files. Some CLI features may be unavailable.'
+    fi
+
+    cp -Rp "$install_bundle_dir"/. "$resolved_install_dir/" ||
+        error "Failed to install the CLI bundle to \"$resolved_install_dir\""
+    chmod +x "$resolved_install_dir/composio" || error 'Failed to set permissions on executable'
+    printf '%s\n' "$version" >"$resolved_install_dir/release-tag.txt" ||
+        error "Failed to write install metadata to \"$resolved_install_dir/release-tag.txt\""
+}
+
+install_entry_point() {
+    entry_point=$resolved_bin_dir/composio
+    if [ "$resolved_bin_dir" = "$resolved_install_dir" ]; then
+        return 0
+    fi
+    if [ -d "$entry_point" ]; then
+        error "Cannot replace entry point \"$entry_point\" because it is a directory"
+    fi
+    ln -sf "$resolved_install_dir/composio" "$entry_point" ||
+        error "Failed to create entry point \"$entry_point\""
+}
+
+path_contains_bin_dir() {
+    case :${PATH:-}: in
+        *:"$resolved_bin_dir":*) return 0 ;;
+        *) return 1 ;;
+    esac
+}
+
+print_post_install_help() {
+    [ "${COMPOSIO_INSTALL_HELP:-1}" != 0 ] || return 0
+    is_true "${COMPOSIO_QUIET:-}" && return 0
+
+    shell_name=${SHELL##*/}
+    shell_route=
+    shell_config=
     case $shell_name in
-    fish)
-        commands=(
-            "set --export COMPOSIO_INSTALL_DIR \"$COMPOSIO_INSTALL_DIR\""
-            "set --export PATH \$COMPOSIO_INSTALL_DIR \$PATH"
-        )
-        fish_config=$HOME/.config/fish/config.fish
-        if [[ -w $fish_config ]] || [[ -w $(dirname "$fish_config") ]]; then
-            mkdir -p "$(dirname "$fish_config")"
-            if ! grep -qxF "$marker" "$fish_config" 2>/dev/null; then
-                { echo -e "\n$marker"; for cmd in "${commands[@]}"; do echo "$cmd"; done; } >>"$fish_config"
-                info "Added \"$(tildify "$COMPOSIO_INSTALL_DIR")\" to \$PATH in \"$(tildify "$fish_config")\""
-            else
-                info "PATH already configured in \"$(tildify "$fish_config")\""
-            fi
-            refresh_command="source $(tildify "$fish_config")"
-        else
-            echo "Manually add the directory to $(tildify "$fish_config") (or similar):"
-            for cmd in "${commands[@]}"; do info_bold "  $cmd"; done
-        fi
-        ;;
-    zsh)
-        commands=(
-            "export COMPOSIO_INSTALL_DIR=\"$COMPOSIO_INSTALL_DIR\""
-            "export PATH=\"\$COMPOSIO_INSTALL_DIR:\$PATH\""
-        )
-        zsh_config=$HOME/.zshrc
-        if [[ ! -f $zsh_config && -w $(dirname "$zsh_config") ]]; then touch "$zsh_config"; fi
-        if [[ -w $zsh_config ]]; then
-            if ! grep -qxF "$marker" "$zsh_config" 2>/dev/null; then
-                { echo -e "\n$marker"; for cmd in "${commands[@]}"; do echo "$cmd"; done; } >>"$zsh_config"
-                info "Added \"$(tildify "$COMPOSIO_INSTALL_DIR")\" to \$PATH in \"$(tildify "$zsh_config")\""
-            else
-                info "PATH already configured in \"$(tildify "$zsh_config")\""
-            fi
-            refresh_command="source $(tildify "$zsh_config")"
-        else
-            echo "Manually add the directory to $(tildify "$zsh_config") (or similar):"
-            for cmd in "${commands[@]}"; do info_bold "  $cmd"; done
-        fi
-        ;;
-    bash)
-        commands=(
-            "export COMPOSIO_INSTALL_DIR=$quoted_install_dir"
-            "export PATH=\"\$COMPOSIO_INSTALL_DIR:\$PATH\""
-        )
-        bash_configs=("$HOME/.bashrc" "$HOME/.bash_profile")
-        if [[ ${XDG_CONFIG_HOME:-} ]]; then
-            bash_configs+=("$XDG_CONFIG_HOME/.bash_profile" "$XDG_CONFIG_HOME/.bashrc" "$XDG_CONFIG_HOME/bash_profile" "$XDG_CONFIG_HOME/bashrc")
-        fi
-        set_manually=true
-        for bash_config in "${bash_configs[@]}"; do
-            if [[ -w $bash_config ]]; then
-                if ! grep -qxF "$marker" "$bash_config" 2>/dev/null; then
-                    { echo -e "\n$marker"; for cmd in "${commands[@]}"; do echo "$cmd"; done; } >>"$bash_config"
-                    info "Added \"$(tildify "$COMPOSIO_INSTALL_DIR")\" to \$PATH in \"$(tildify "$bash_config")\""
-                else
-                    info "PATH already configured in \"$(tildify "$bash_config")\""
-                fi
-                refresh_command="source $bash_config"
-                set_manually=false
-                break
-            fi
-        done
-        if [[ $set_manually = true ]]; then
-            echo "Manually add the directory to ~/.bashrc (or similar):"
-            for cmd in "${commands[@]}"; do info_bold "  $cmd"; done
-        fi
-        ;;
-    *)
-        echo 'Manually add the directory to ~/.bashrc (or similar):'
-        info_bold "  export COMPOSIO_INSTALL_DIR=$quoted_install_dir"
-        info_bold "  export PATH=\"\$COMPOSIO_INSTALL_DIR:\$PATH\""
-        ;;
+        zsh)
+            shell_route=zsh
+            shell_config=~/.zshrc
+            ;;
+        bash)
+            shell_route=bash
+            shell_config=~/.bashrc
+            ;;
+        fish)
+            shell_route=fish
+            shell_config=~/.config/fish/config.fish
+            ;;
     esac
 
-fi
-
-if [[ $install_plugins = true ]]; then
-    echo
-    info "Checking for supported agent hosts..."
-    if ! COMPOSIO_CLI_INVOCATION_ORIGIN=installer "$exe" setup --target auto --yes --if-present; then
-        error 'Composio CLI was installed, but agent plugin setup failed. Retry with `composio setup --target auto --yes`.'
+    guidance_required=0
+    path_contains_bin_dir || guidance_required=1
+    if [ "$shell_name" = bash ] && { [ -f "$HOME/.bash_profile" ] || [ -f "$HOME/.bash_login" ]; }; then
+        guidance_required=1
     fi
-fi
 
-if [[ $install_agent = true ]]; then
-    echo
-    info "Setting up Composio agent login..."
-    if ! COMPOSIO_CLI_INVOCATION_ORIGIN=installer "$exe" login --agent --no-skill-install; then
-        error 'Failed to sign up/log in as a Composio agent. If this CLI is already signed in as a regular user, run `composio logout` and then `composio signup` or `composio agent login <composio_agent_key>`.'
+    printf '\n'
+    if [ -n "$shell_route" ]; then
+        if [ "$guidance_required" = 1 ]; then
+            printf 'Required next step for %s:\n\n' "$shell_name"
+        else
+            printf 'Optional shell setup for completions and future PATH changes:\n\n'
+        fi
+        printf '  curl -fsSL https://composio.dev/install/%s | sh\n' "$shell_route"
+        printf '\nThis configures %s.\n' "$shell_config"
+    elif path_contains_bin_dir; then
+        printf 'The composio command is available on PATH.\n'
+    else
+        printf 'Add %s to PATH, then start a new shell.\n' "$(tildify "$resolved_bin_dir")"
     fi
-fi
+    printf "\nRun \`composio --help\` to get started.\n"
+}
 
-echo
-# No PATH claim here: whichever branch ran above already reported what it did to
-# which file, and whether a reload is needed. Restating it unconditionally would
-# promise a configured PATH even on the branches that only printed manual
-# instructions.
-info "To get started, run:"
-echo
+cleanup() {
+    if [ -n "${tmpdir:-}" ] && [ -d "$tmpdir" ]; then
+        rm -rf "$tmpdir"
+    fi
+}
 
-if [[ ${refresh_command:-} ]]; then
-    info_bold "  $refresh_command"
-fi
+main() {
+    install_agent=0
+    install_plugins=${COMPOSIO_INSTALL_PLUGINS:-0}
+    version_arg=
 
-info_bold "  composio --help"
-if [[ $install_agent = true ]]; then
-    info_bold "  composio agent whoami"
-else
-    info_bold "  composio login"
-fi
+    case $install_plugins in
+        0 | 1) ;;
+        *) error 'COMPOSIO_INSTALL_PLUGINS must be 1 or 0' ;;
+    esac
+
+    while [ "$#" -gt 0 ]; do
+        case $1 in
+            --agent) install_agent=1 ;;
+            --no-plugins) install_plugins=0 ;;
+            -h | --help)
+                print_usage
+                return 0
+                ;;
+            --*) error "Unknown option: $1" ;;
+            *)
+                [ -z "$version_arg" ] || error 'Too many arguments. Expected at most one version tag.'
+                version_arg=$1
+                ;;
+        esac
+        shift
+    done
+
+    COMPOSIO_GITHUB_OWNER=${COMPOSIO_GITHUB_OWNER-ComposioHQ}
+    COMPOSIO_GITHUB_REPO=${COMPOSIO_GITHUB_REPO-composio}
+    COMPOSIO_GITHUB_URL=${COMPOSIO_GITHUB_URL-https://github.com}
+    COMPOSIO_GITHUB_API_BASE_URL=${COMPOSIO_GITHUB_API_BASE_URL:-}
+    COMPOSIO_INSTALL_DIR=${COMPOSIO_INSTALL_DIR:-"$HOME/.composio"}
+    COMPOSIO_BIN_DIR=${COMPOSIO_BIN_DIR:-"$HOME/.local/bin"}
+
+    validate_identifier COMPOSIO_GITHUB_OWNER "$COMPOSIO_GITHUB_OWNER"
+    validate_identifier COMPOSIO_GITHUB_REPO "$COMPOSIO_GITHUB_REPO"
+    validate_url "$COMPOSIO_GITHUB_URL" ||
+        error "COMPOSIO_GITHUB_URL must use https or an explicitly allowed test host (got \"$COMPOSIO_GITHUB_URL\")"
+    if [ -n "$COMPOSIO_GITHUB_API_BASE_URL" ]; then
+        validate_url "$COMPOSIO_GITHUB_API_BASE_URL" ||
+            error "COMPOSIO_GITHUB_API_BASE_URL must use https or an explicitly allowed test host (got \"$COMPOSIO_GITHUB_API_BASE_URL\")"
+    fi
+
+    detect_target
+    command -v curl >/dev/null 2>&1 || error 'curl is required to install Composio CLI'
+    command -v unzip >/dev/null 2>&1 || error 'unzip is required to install Composio CLI'
+
+    github_repo=${COMPOSIO_GITHUB_URL%/}/$COMPOSIO_GITHUB_OWNER/$COMPOSIO_GITHUB_REPO
+    if [ -n "$COMPOSIO_GITHUB_API_BASE_URL" ]; then
+        github_api_base=${COMPOSIO_GITHUB_API_BASE_URL%/}
+    elif [ "$COMPOSIO_GITHUB_URL" = https://github.com ]; then
+        github_api_base=https://api.github.com
+    else
+        github_api_base=${COMPOSIO_GITHUB_URL%/}/api/v3
+    fi
+    github_api_repo=$github_api_base/repos/$COMPOSIO_GITHUB_OWNER/$COMPOSIO_GITHUB_REPO
+    archive_name=composio-$target.zip
+
+    requested_version=$version_arg
+    if [ -z "$requested_version" ]; then
+        requested_version=${COMPOSIO_INSTALL_VERSION:-}
+    fi
+
+    if [ -n "$requested_version" ]; then
+        version=$(normalize_version "$requested_version")
+        archive_url=$github_repo/releases/download/$version/$archive_name
+    else
+        info 'Finding latest stable CLI release...'
+        latest_release=$(resolve_latest_cli_release) ||
+            error "Failed to determine the latest CLI release with a $archive_name asset. Specify a version manually."
+        version=$(printf '%s\n' "$latest_release" | sed -n '1p')
+        archive_url=$(printf '%s\n' "$latest_release" | sed -n '2p')
+        [ -n "$version" ] && [ -n "$archive_url" ] || error 'The release API returned an incomplete CLI release'
+        info "Found latest version: $version"
+    fi
+    validate_url "$archive_url" || error "Release API returned an unsafe archive URL \"$archive_url\""
+
+    checksums_url=$github_repo/releases/download/$version/checksums.txt
+    validate_url "$checksums_url" || error "Refusing unsafe checksum URL \"$checksums_url\""
+
+    tmpdir=$(mktemp -d) || error 'Failed to create a temporary directory'
+    trap cleanup 0 1 2 3 15
+    debug "temporary directory: $tmpdir"
+
+    info "Installing Composio CLI $version for $target"
+    curl_download "$archive_url" "$tmpdir/$archive_name" 0 ||
+        error "Failed to download from \"$archive_url\""
+
+    if curl_download "$checksums_url" "$tmpdir/checksums.txt" 1; then
+        verify_checksum "$tmpdir/$archive_name" "$tmpdir/checksums.txt" "$archive_name"
+    else
+        warn 'No checksums.txt in this release; continuing without verification'
+    fi
+
+    info 'Extracting bundle...'
+    unzip -oqd "$tmpdir" "$tmpdir/$archive_name" || error 'Failed to extract archive'
+
+    resolved_install_dir=$(resolve_directory "$COMPOSIO_INSTALL_DIR")
+    resolved_bin_dir=$(resolve_directory "$COMPOSIO_BIN_DIR")
+    install_bundle "$tmpdir"
+    install_entry_point
+
+    exe=$resolved_install_dir/composio
+    "$exe" --version >/dev/null 2>&1 || error 'The installed Composio CLI failed its version check'
+    info "Composio CLI was installed to $(tildify "$exe")"
+    if [ "$resolved_bin_dir" != "$resolved_install_dir" ]; then
+        info "The composio entry point is $(tildify "$resolved_bin_dir/composio")"
+    fi
+
+    if [ "$install_plugins" = 1 ]; then
+        info 'Installing plugins for detected agent hosts...'
+        COMPOSIO_CLI_INVOCATION_ORIGIN=installer "$exe" setup --target auto --yes --if-present ||
+            error "Composio CLI was installed, but agent plugin setup failed. Retry with \`composio setup --target auto --yes\`."
+    fi
+
+    if [ "$install_agent" = 1 ]; then
+        info 'Setting up Composio agent login...'
+        COMPOSIO_CLI_INVOCATION_ORIGIN=installer "$exe" login --agent --no-skill-install ||
+            error 'Failed to sign up or log in as a Composio agent.'
+    fi
+
+    print_post_install_help
+}
+
+main "$@"

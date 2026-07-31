@@ -697,8 +697,17 @@ if (!installHealthCheck.includes("| sed -n '1p'")) {
     'cli.install-health-check.yml must convert no matching release into empty output'
   );
 }
-if (!installHealthCheck.includes('bash -s -- "${{ steps.resolve.outputs.tag }}"')) {
+if (!installHealthCheck.includes('sh -s -- "${{ steps.resolve.outputs.tag }}"')) {
   throw new Error('cli.install-health-check.yml must install the resolved tag via the pinned path');
+}
+if (!installHealthCheck.includes('echo "$HOME/.local/bin" >> "$GITHUB_PATH"')) {
+  throw new Error('cli.install-health-check.yml must expose the installer entry-point directory');
+}
+if (!installHealthCheck.includes('test -L "$HOME/.local/bin/composio"')) {
+  throw new Error('cli.install-health-check.yml must verify the installer entry-point symlink');
+}
+if (installHealthCheck.includes('rm -rf "$HOME/.composio"')) {
+  throw new Error('cli.install-health-check.yml must preserve CLI user state between install legs');
 }
 
 const fakeBin = mkdtempSync(join(tmpdir(), 'composio-release-test-'));
