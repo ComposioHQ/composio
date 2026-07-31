@@ -431,7 +431,7 @@ if (!releaseScript.includes('New tag:[[:space:]]*@composio\\/cli@')) {
 
 const canonicalWindowsInstallGuidance = requireMatch(
   rootInstallGuide,
-  /^(- Windows — .+)$/m,
+  /^(- Windows: .+)$/m,
   'canonical Windows install guidance'
 );
 const generatedInstallGuide = requireMatch(
@@ -441,7 +441,7 @@ const generatedInstallGuide = requireMatch(
 );
 const generatedWindowsInstallGuidance = requireMatch(
   generatedInstallGuide,
-  /^\s*(- Windows — .+)$/m,
+  /^\s*(- Windows: .+)$/m,
   'generated Windows install guidance'
 );
 
@@ -592,7 +592,7 @@ if (!buildCliWorkflow.includes('bash .github/scripts/cli-release/resolve-release
 
 // Release archives contain a composio-<target>/ bundle with runtime support files next to the
 // executable. Both the checked-in guide and the workflow-generated guide must preserve that
-// directory contents and put the installed binary's directory on PATH.
+// directory contents and create the same two-directory layout as the installer.
 const manualInstallGuides = [
   {
     label: 'INSTALL.md',
@@ -616,8 +616,15 @@ for (const guide of manualInstallGuides) {
   if (!guide.source.includes('cp -Rp "$bundle"/. "$COMPOSIO_INSTALL_DIR/"')) {
     throw new Error(`${guide.label} must install the complete CLI release bundle`);
   }
-  if (!guide.source.includes('export PATH="$COMPOSIO_INSTALL_DIR:$PATH"')) {
-    throw new Error(`${guide.label} must expose the installed bundle's binary on PATH`);
+  if (!guide.source.includes('mkdir -p "$COMPOSIO_BIN_DIR"')) {
+    throw new Error(`${guide.label} must create the CLI entry-point directory`);
+  }
+  if (
+    !guide.source.includes(
+      'ln -sf "$COMPOSIO_INSTALL_DIR/composio" "$COMPOSIO_BIN_DIR/composio"'
+    )
+  ) {
+    throw new Error(`${guide.label} must link the CLI entry point to the release bundle`);
   }
 }
 

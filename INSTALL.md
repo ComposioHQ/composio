@@ -1,201 +1,105 @@
-# Composio CLI Installation Guide
+# Composio CLI installation
 
-This guide provides multiple ways to install the Composio CLI on your system.
+Install the CLI bundle in `~/.composio` and its entry point in `~/.local/bin`:
 
-## Quick Install (Recommended)
-
-### One-line Install
 ```bash
-curl -fsSL https://raw.githubusercontent.com/ComposioHQ/composio/next/install.sh | bash
+curl -fsSL https://composio.dev/install | sh
 ```
 
-### Install specific version
+The default installer changes no shell files and installs no agent plugins. If it reports that `~/.local/bin` is not available on `PATH`, run the shell-specific command it prints:
+
 ```bash
-curl -fsSL https://raw.githubusercontent.com/ComposioHQ/composio/next/install.sh | bash -s -- v0.1.24
+curl -fsSL https://composio.dev/install/zsh | sh
+curl -fsSL https://composio.dev/install/bash | sh
+curl -fsSL https://composio.dev/install/fish | sh
 ```
 
-### What the install script does:
-- Detects your platform and architecture automatically
-- Downloads the appropriate binary from GitHub releases
-- Installs to `~/.composio/bin/composio`
-- Updates your shell configuration (.bashrc, .zshrc, or .config/fish/config.fish)
-- Adds the binary to your PATH
+Pin a stable or beta release with `COMPOSIO_INSTALL_VERSION`, or pass the tag as a positional argument:
+
+```bash
+curl -fsSL https://composio.dev/install | COMPOSIO_INSTALL_VERSION=0.3.1 sh
+curl -fsSL https://composio.dev/install | sh -s -- @composio/cli@0.3.1-beta.2
+```
+
+The positional argument takes precedence over `COMPOSIO_INSTALL_VERSION`.
+
+| Variable or argument | Description | Default |
+|---|---|---|
+| `COMPOSIO_INSTALL_DIR` | Complete CLI bundle directory. | `$HOME/.composio` |
+| `COMPOSIO_BIN_DIR` | `composio` entry-point directory. | `$HOME/.local/bin` |
+| `COMPOSIO_INSTALL_VERSION` | Stable or beta version, with or without the package prefix. | Latest stable release |
+| `COMPOSIO_QUIET` | Set to `1` or `true` to hide progress output. | Unset |
+| `COMPOSIO_DEBUG` | Set to `1` or `true` to print installer traces. | Unset |
+| `COMPOSIO_INSTALL_HELP` | Set to `0` to hide post-install guidance. | `1` |
+| `COMPOSIO_INSTALL_PLUGINS` | Set to `1` to install plugins for detected agent hosts. | `0` |
+| `--agent` | Log in as a Composio agent after installation. | Off |
+| `--no-plugins` | Skip plugin setup. Kept for compatibility. | Off |
 
 ## Manual Installation
 
-### From GitHub Releases
+Download the archive for your platform from [GitHub Releases](https://github.com/ComposioHQ/composio/releases):
 
-1. Go to the [releases page](https://github.com/ComposioHQ/composio/releases)
-2. Download the appropriate binary for your platform:
-   - `composio-linux-x64.zip` - Linux 64-bit
-   - `composio-linux-aarch64.zip` - Linux ARM64
-   - `composio-darwin-x64.zip` - macOS Intel
-   - `composio-darwin-aarch64.zip` - macOS Apple Silicon
+- `composio-linux-x64.zip`
+- `composio-linux-aarch64.zip`
+- `composio-darwin-x64.zip`
+- `composio-darwin-aarch64.zip`
 
-3. Extract and install the complete bundle. The CLI loads support files shipped next to the
-   executable, so do not move only the nested `composio` file.
+Extract and install the complete bundle. The CLI loads support files beside the executable, so do not copy only the nested `composio` file.
 
 ```bash
-# Replace this with the downloaded archive name, without ".zip"
 bundle=composio-linux-x64
-export COMPOSIO_INSTALL_DIR="${COMPOSIO_INSTALL_DIR:-$HOME/.composio}"
+COMPOSIO_INSTALL_DIR=${COMPOSIO_INSTALL_DIR:-"$HOME/.composio"}
+COMPOSIO_BIN_DIR=${COMPOSIO_BIN_DIR:-"$HOME/.local/bin"}
 
 unzip "$bundle.zip"
 mkdir -p "$COMPOSIO_INSTALL_DIR"
 cp -Rp "$bundle"/. "$COMPOSIO_INSTALL_DIR/"
 chmod +x "$COMPOSIO_INSTALL_DIR/composio"
-export PATH="$COMPOSIO_INSTALL_DIR:$PATH"
+mkdir -p "$COMPOSIO_BIN_DIR"
+if [ "$COMPOSIO_BIN_DIR" != "$COMPOSIO_INSTALL_DIR" ]; then
+  ln -sf "$COMPOSIO_INSTALL_DIR/composio" "$COMPOSIO_BIN_DIR/composio"
+fi
+export PATH="$COMPOSIO_BIN_DIR:$PATH"
 ```
-
-Add both `export` commands to your shell profile to keep `composio` on `PATH` in new
-terminal sessions.
 
 ## Verification
 
-After installation, verify it works:
-
 ```bash
 composio --version
-composio --help
+which composio
 ```
 
-## Getting Started
+## Uninstall
 
-1. **Login to Composio:**
-   ```bash
-   composio login
-   ```
-
-2. **Generate types for your project:**
-   ```bash
-   # Auto-detect project type and generate
-   composio generate
-   
-   # Generate for TypeScript
-   composio ts generate
-   
-   # Generate for Python  
-   composio py generate
-   ```
-
-3. **Check your account:**
-   ```bash
-   composio whoami
-   ```
-
-## Supported Platforms
-
-✅ **Fully Supported:**
-- Linux x86_64
-- Linux ARM64 (aarch64)
-- macOS x86_64 (Intel)
-- macOS ARM64 (Apple Silicon)
-
-❌ **Not Supported:**
-- Windows — use [WSL](https://learn.microsoft.com/windows/wsl/install) and run the install script inside your WSL distribution
-
-## Troubleshooting
-
-### Permission Denied
-If you get permission errors:
-```bash
-chmod +x ~/.composio/bin/composio
-```
-
-### Command Not Found
-If `composio` is not found after installation:
-
-1. **Restart your shell:**
-   ```bash
-   exec $SHELL
-   ```
-
-2. **Or manually source your profile:**
-   ```bash
-   # For bash
-   source ~/.bashrc
-   
-   # For zsh  
-   source ~/.zshrc
-   
-   # For fish
-   source ~/.config/fish/config.fish
-   ```
-
-3. **Check if the binary exists:**
-   ```bash
-   ls -la ~/.composio/bin/composio
-   ```
-
-4. **Manually add to PATH:**
-   ```bash
-   export PATH="$HOME/.composio/bin:$PATH"
-   ```
-
-### Download Failures
-If the download fails:
-
-1. **Check your internet connection**
-2. **Try again with verbose output:**
-   ```bash
-   curl -v -fsSL https://raw.githubusercontent.com/ComposioHQ/composio/next/install.sh | bash
-   ```
-
-3. **Manual download:**
-   ```bash
-   # Download the install script first
-   curl -O https://raw.githubusercontent.com/ComposioHQ/composio/next/install.sh
-   
-   # Review the script
-   cat install.sh
-   
-   # Run it
-   bash install.sh
-   ```
-
-## Uninstallation
-
-To remove Composio CLI:
+Remove the entry point and release artifacts without deleting credentials, configuration, or caches:
 
 ```bash
-# Remove the binary
-rm -rf ~/.composio
+install_dir=${COMPOSIO_INSTALL_DIR:-"$HOME/.composio"}
+bin_dir=${COMPOSIO_BIN_DIR:-"$HOME/.local/bin"}
 
-# Remove from shell configuration
-# Edit ~/.bashrc, ~/.zshrc, or ~/.config/fish/config.fish
-# and remove the lines that were added by the installer:
-# export COMPOSIO_INSTALL="$HOME/.composio"
-# export PATH="$COMPOSIO_INSTALL/bin:$PATH"
+rm -f \
+  "$bin_dir/composio" \
+  "$install_dir/composio" \
+  "$install_dir/release-tag.txt" \
+  "$install_dir/run-helpers-runtime.mjs" \
+  "$install_dir/run-subagent-shared.mjs" \
+  "$install_dir/run-subagent-acp.mjs" \
+  "$install_dir/run-subagent-legacy.mjs" \
+  "$install_dir/run-subagent-output-mcp.mjs"
+rm -rf \
+  "$install_dir/services" \
+  "$install_dir/acp-adapters" \
+  "$install_dir/local-tools-binaries"
 ```
 
-## Environment Variables
+Remove `# Composio CLI` PATH blocks from `~/.zshrc`, `~/.bashrc`, `~/.bash_profile`, `~/.bash_login`, or `~/.config/fish/config.fish` if you used a shell-specific installer.
 
-The installer respects these environment variables:
+To purge credentials, configuration, caches, and every other CLI file, run `rm -rf "${COMPOSIO_INSTALL_DIR:-$HOME/.composio}"`. This is a complete reset and cannot be undone.
 
-- `COMPOSIO_INSTALL` - Installation directory (default: `~/.composio`)
-- `GITHUB` - GitHub base URL (default: `https://github.com`)
+## Supported platforms
 
-Example:
-```bash
-export COMPOSIO_INSTALL="/usr/local"
-curl -fsSL https://raw.githubusercontent.com/ComposioHQ/composio/next/install.sh | bash
-```
-
-## Development
-
-To build the CLI binary locally:
-
-```bash
-cd ts/packages/cli
-pnpm install
-pnpm build:binary
-```
-
-The binary will be created at `dist/composio`.
-
-## Support
-
-- 📖 [Documentation](https://docs.composio.dev)
-- 💬 [Discord Community](https://discord.gg/composio)
-- 🐛 [Report Issues](https://github.com/ComposioHQ/composio/issues)
-- 📧 [Email Support](mailto:support@composio.dev)
+- Linux x64
+- Linux ARM64
+- macOS Intel
+- macOS Apple Silicon
+- Windows: use [WSL](https://learn.microsoft.com/windows/wsl/install) and run the installer inside your WSL distribution
