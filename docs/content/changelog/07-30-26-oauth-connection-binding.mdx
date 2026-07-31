@@ -1,24 +1,15 @@
 ---
-title: "OAuth connection security: same-browser binding and callback identity verification"
+title: "Callback identity verification for OAuth connections"
 date: "2026-07-30"
-description: "Two controls against OAuth session fixation: same-browser binding, automatic on Composio managed apps, and opt-in callback identity verification per project."
+description: "Opt-in, per-project callback identity verification: confirm the returning user before an OAuth connection activates."
 ---
 
-OAuth session fixation lets someone start a connection, hand the authorization URL to another person,
-and capture whatever that person connects. Composio now ships two controls against it. Same-browser
-binding is automatic on Composio managed apps: a connection has to be finished in the browser that
-started it. Callback identity verification is opt-in per project, and it's the one to reach for on
-your own OAuth apps, since it ties activation to your signed-in user rather than the browser.
+You can now add an identity check to your OAuth connections. Set a verifier URL on your project, and
+Composio hands each OAuth return to your server, activating the connection only after your server
+confirms the signed-in user is the one it was created for.
 
-### What shipped
+It is opt-in per project and, once set, covers every OAuth connection in the project. Because it
+confirms the returning user, it holds however the user comes back from the provider. Turn it on in
+Settings → General.
 
-- **Same-browser binding**, for Composio managed apps (default auth configs). Composio owns the OAuth
-  app here, so it enforces this for you: a Connect Link has to be completed in the browser that
-  started it, and a callback from a different browser is rejected. It stays on for every managed
-  connection, including ones where identity verification is also on. Nothing to set up.
-  [Learn more](/reference/api-reference/connected-accounts#same-browser-binding)
-- **Callback identity verification**, an opt-in check you turn on per project. Set a verifier URL, and
-  Composio holds every OAuth connection in the project, managed and custom, until your server confirms
-  the returning user matches the one it was created for. It verifies the user rather than the browser,
-  so none of the same-browser edge cases apply. Turn it on in Settings → General.
-  [Learn more](/reference/api-reference/connected-accounts#callback-identity-verification)
+[Learn more](/reference/api-reference/connected-accounts#callback-identity-verification)
