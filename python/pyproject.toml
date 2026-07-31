@@ -34,5 +34,5 @@ dev = [
     "click>=8.4.2",
     "semver>=3.0.4",
     # CrewAI 1.x currently constrains Tomli to the 2.0 line.
-    "tomli>=2.0.2,<2.1",
+    "tomli>=2.0.2,<2.5",
 ]
