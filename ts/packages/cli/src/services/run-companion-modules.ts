@@ -340,9 +340,10 @@ export const resolveRunningCliReleaseTag = (
   appVersion: string,
   isReleaseBuild = IS_RELEASE_BUILD
 ): Effect.Effect<string, never, FileSystem.FileSystem | Path.Path> =>
-  isReleaseBuild
-    ? Effect.succeed(normalizeCliReleaseTag(appVersion))
-    : resolveInstalledCliReleaseTag(execPath, appVersion);
+  Effect.map(
+    resolveRunningCliVersion(execPath, appVersion, isReleaseBuild),
+    normalizeCliReleaseTag
+  );
 
 export const writeInstalledReleaseTag = (
   installDir: string,

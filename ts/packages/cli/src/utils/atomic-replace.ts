@@ -88,13 +88,7 @@ export const atomicReplaceDirectory = ({
         yield* fs.rename(targetPath, asidePath);
         yield* fs
           .rename(stagedPath, targetPath)
-          .pipe(
-            Effect.catchAll(cause =>
-              fs
-                .rename(asidePath, targetPath)
-                .pipe(Effect.ignore, Effect.zipRight(Effect.fail(cause)))
-            )
-          );
+          .pipe(Effect.tapError(() => fs.rename(asidePath, targetPath).pipe(Effect.ignore)));
         yield* fs.remove(asidePath, { recursive: true });
       })
     );

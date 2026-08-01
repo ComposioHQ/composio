@@ -3,6 +3,7 @@ import { BunFileSystem, BunPath } from '@effect/platform-bun';
 import { describe, expect, layer } from '@effect/vitest';
 import { Effect, Layer } from 'effect';
 import {
+  RUN_COMPANION_RELEASE_TAG_FILENAME,
   resolveRunningCliReleaseTag,
   resolveRunningCliVersion,
 } from 'src/services/run-companion-modules';
@@ -19,7 +20,10 @@ describe('running CLI version authority', () => {
         const execPath = path.join(installDirectory, 'composio');
 
         for (const installedTag of ['@composio/cli@9.9.9', '@composio/cli@0.2.31']) {
-          yield* fs.writeFileString(path.join(installDirectory, 'release-tag.txt'), installedTag);
+          yield* fs.writeFileString(
+            path.join(installDirectory, RUN_COMPANION_RELEASE_TAG_FILENAME),
+            installedTag
+          );
 
           expect(yield* resolveRunningCliVersion(execPath, '0.3.0', true)).toBe('0.3.0');
           expect(yield* resolveRunningCliReleaseTag(execPath, '0.3.0', true)).toBe(
@@ -49,7 +53,7 @@ describe('running CLI version authority', () => {
         const path = yield* Path.Path;
         const installDirectory = yield* fs.makeTempDirectoryScoped();
         const execPath = path.join(installDirectory, 'composio');
-        const releaseTagPath = path.join(installDirectory, 'release-tag.txt');
+        const releaseTagPath = path.join(installDirectory, RUN_COMPANION_RELEASE_TAG_FILENAME);
         yield* fs.writeFileString(releaseTagPath, '@composio/cli@0.2.31');
 
         expect(yield* resolveRunningCliVersion(execPath, '0.0.0-development', false)).toBe(
