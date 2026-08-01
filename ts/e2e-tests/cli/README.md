@@ -10,10 +10,11 @@ Tests use `runCmd` to execute shell commands in the container and assert on exit
 
 ## Test Suites
 
-| Suite | Description | Env Vars |
-| --- | --- | --- |
-| [version](./version/) | `composio version` output and exit code | None |
-| [whoami](./whoami/) | `composio whoami` prints the API key | `COMPOSIO_USER_API_KEY` |
+| Suite                 | Description                                            | Env Vars                |
+| --------------------- | ------------------------------------------------------ | ----------------------- |
+| [upgrade](./upgrade/) | `composio upgrade` replaces a running Linux executable | None                    |
+| [version](./version/) | `composio version` output and exit code                | None                    |
+| [whoami](./whoami/)   | `composio whoami` prints the API key                   | `COMPOSIO_USER_API_KEY` |
 
 ## Isolation Tool
 
@@ -28,4 +29,5 @@ pnpm test:e2e:cli
 # A specific suite
 cd ts/e2e-tests/cli/version && pnpm test:e2e:cli
 cd ts/e2e-tests/cli/whoami && pnpm test:e2e:cli
+cd ts/e2e-tests/cli/upgrade && pnpm test:e2e:cli
 ```
