@@ -1,4 +1,13 @@
-import { Data, Effect, Config, Match, Option, Predicate, Record as EffectRecord } from 'effect';
+import {
+  Data,
+  Effect,
+  Config,
+  Match,
+  Option,
+  Predicate,
+  Record as EffectRecord,
+  Scope,
+} from 'effect';
 import { HttpClient, HttpClientResponse, FileSystem, Path } from '@effect/platform';
 import { APP_VERSION } from '../constants';
 import { DEBUG_OVERRIDE_CONFIG } from 'src/effects/debug-config';
@@ -7,6 +16,11 @@ import { detectPlatform, type PlatformArch } from 'src/effects/detect-platform';
 import { CompareSemverError, semverComparator } from 'src/effects/compare-semver';
 import { fetchLatestCliRelease, GitHubRelease } from 'src/effects/resolve-cli-release';
 import { parseChecksumsText, sha256Hex } from 'src/utils/checksums';
+import {
+  atomicReplaceDirectory,
+  atomicReplaceFile,
+  type AtomicReplaceError,
+} from 'src/utils/atomic-replace';
 
 // Note: `node:zlib` does not support Github's zip files
 import extractZip from 'extract-zip';
@@ -14,6 +28,7 @@ import { renderPrettyError } from './utils/pretty-error';
 import { TerminalUI } from './terminal-ui';
 import {
   collectExpectedRunCompanionAssetRelativePaths,
+  RUN_COMPANION_RELEASE_TAG_FILENAME,
   resolveRunningCliReleaseTag,
   writeInstalledReleaseTag,
 } from './run-companion-modules';
@@ -160,9 +175,9 @@ const fetchLatestRelease = (
     return release;
   });
 
-const provideFsAndPath = <A, E>(
-  { fs, path }: UpgradeBinaryContext,
-  effect: Effect.Effect<A, E, FileSystem.FileSystem | Path.Path>
+const provideFsAndPath = <A, E, R>(
+  { fs, path }: Pick<UpgradeBinaryContext, 'fs' | 'path'>,
+  effect: Effect.Effect<A, E, FileSystem.FileSystem | Path.Path | R>
 ) =>
   effect.pipe(
     Effect.provideService(FileSystem.FileSystem, fs),
@@ -414,31 +429,23 @@ const getCurrentExecutablePath = Effect.fn(function* () {
 /**
  * Replace current executable binary with the new target one.
  */
+const mapAtomicReplaceError = (message: string) => (error: AtomicReplaceError) =>
+  new UpgradeBinaryError({
+    cause: error.cause,
+    message,
+  });
+
 const replaceBinary = (
-  ctx: UpgradeBinaryContext,
+  ctx: Pick<UpgradeBinaryContext, 'fs' | 'path'>,
   sourcePath: string,
   targetPath: string,
   options: {
     releaseTag?: string;
   } = {}
-): Effect.Effect<void, UpgradeBinaryError> =>
+): Effect.Effect<void, UpgradeBinaryError, Scope.Scope> =>
   Effect.gen(function* () {
     const { fs, path } = ctx;
     yield* Effect.logDebug(`Replacing binary: ${sourcePath} -> ${targetPath}`);
-    yield* fs
-      .copy(sourcePath, targetPath, {
-        // Note: without `overwrite: true`, the copy operation will silently bail out
-        overwrite: true,
-      })
-      .pipe(
-        Effect.mapError(
-          cause =>
-            new UpgradeBinaryError({
-              cause,
-              message: 'Failed to replace binary',
-            })
-        )
-      );
 
     const sourceDirectory = path.dirname(sourcePath);
     const targetDirectory = path.dirname(targetPath);
@@ -446,6 +453,12 @@ const replaceBinary = (
       ctx,
       collectExpectedRunCompanionAssetRelativePaths(sourceDirectory)
     );
+    const companionReplacements: Array<{
+      readonly relativePath: string;
+      readonly sourcePath: string;
+      readonly targetPath: string;
+    }> = [];
+
     for (const relativePath of companionRelativePaths) {
       const sourceCompanion = path.join(sourceDirectory, relativePath);
       const sourceExists = yield* fs
@@ -461,7 +474,39 @@ const replaceBinary = (
         );
       }
 
-      const targetCompanion = path.join(targetDirectory, relativePath);
+      companionReplacements.push({
+        relativePath,
+        sourcePath: sourceCompanion,
+        targetPath: path.join(targetDirectory, relativePath),
+      });
+    }
+
+    const localToolsAssetSource = path.join(sourceDirectory, LOCAL_TOOLS_BINARY_ASSET_DIRNAME);
+    const localToolsAssetExists = yield* fs
+      .exists(localToolsAssetSource)
+      .pipe(Effect.catchAll(() => Effect.succeed(false)));
+    const localToolsAssetTarget = path.join(targetDirectory, LOCAL_TOOLS_BINARY_ASSET_DIRNAME);
+
+    const releaseTag = options.releaseTag;
+    const stagedReleaseTagPath = path.join(sourceDirectory, RUN_COMPANION_RELEASE_TAG_FILENAME);
+    if (releaseTag) {
+      yield* provideFsAndPath(ctx, writeInstalledReleaseTag(sourceDirectory, releaseTag)).pipe(
+        Effect.mapError(
+          error =>
+            new UpgradeBinaryError({
+              cause: error,
+              message: 'Failed to update installed release metadata',
+            })
+        )
+      );
+    }
+
+    for (const replacement of companionReplacements) {
+      const {
+        relativePath,
+        sourcePath: sourceCompanion,
+        targetPath: targetCompanion,
+      } = replacement;
       yield* fs.makeDirectory(path.dirname(targetCompanion), { recursive: true }).pipe(
         Effect.mapError(
           cause =>
@@ -472,53 +517,39 @@ const replaceBinary = (
         )
       );
 
-      yield* fs
-        .copy(sourceCompanion, targetCompanion, {
-          overwrite: true,
-        })
-        .pipe(
-          Effect.mapError(
-            cause =>
-              new UpgradeBinaryError({
-                cause,
-                message: `Failed to replace companion module: ${relativePath}`,
-              })
-          )
-        );
+      yield* provideFsAndPath(
+        ctx,
+        atomicReplaceFile({ sourcePath: sourceCompanion, targetPath: targetCompanion })
+      ).pipe(
+        Effect.mapError(
+          mapAtomicReplaceError(`Failed to replace companion module: ${relativePath}`)
+        )
+      );
     }
 
-    const localToolsAssetSource = path.join(sourceDirectory, LOCAL_TOOLS_BINARY_ASSET_DIRNAME);
-    const localToolsAssetExists = yield* fs
-      .exists(localToolsAssetSource)
-      .pipe(Effect.catchAll(() => Effect.succeed(false)));
     if (localToolsAssetExists) {
-      const localToolsAssetTarget = path.join(targetDirectory, LOCAL_TOOLS_BINARY_ASSET_DIRNAME);
-      // Replace the whole asset directory: drop the previous tree, then copy
-      // the new one (fs.copy is recursive for directories).
-      yield* fs.remove(localToolsAssetTarget, { recursive: true, force: true }).pipe(
-        Effect.andThen(fs.copy(localToolsAssetSource, localToolsAssetTarget, { overwrite: true })),
-        Effect.mapError(
-          error =>
-            new UpgradeBinaryError({
-              cause: error,
-              message: 'Failed to replace local-tool binary assets',
-            })
-        )
-      );
+      yield* provideFsAndPath(
+        ctx,
+        atomicReplaceDirectory({
+          sourcePath: localToolsAssetSource,
+          targetPath: localToolsAssetTarget,
+        })
+      ).pipe(Effect.mapError(mapAtomicReplaceError('Failed to replace local-tool binary assets')));
     }
 
-    const releaseTag = options.releaseTag;
     if (releaseTag) {
-      yield* provideFsAndPath(ctx, writeInstalledReleaseTag(targetDirectory, releaseTag)).pipe(
-        Effect.mapError(
-          error =>
-            new UpgradeBinaryError({
-              cause: error,
-              message: 'Failed to update installed release metadata',
-            })
-        )
-      );
+      yield* provideFsAndPath(
+        ctx,
+        atomicReplaceFile({
+          sourcePath: stagedReleaseTagPath,
+          targetPath: path.join(targetDirectory, RUN_COMPANION_RELEASE_TAG_FILENAME),
+        })
+      ).pipe(Effect.mapError(mapAtomicReplaceError('Failed to update installed release metadata')));
     }
+
+    yield* provideFsAndPath(ctx, atomicReplaceFile({ sourcePath, targetPath, mode: 0o755 })).pipe(
+      Effect.mapError(mapAtomicReplaceError('Failed to replace binary'))
+    );
   });
 
 /**
@@ -546,7 +577,9 @@ const upgrade = (
     // If local binary path is provided (for testing), use it directly
     if (Option.isSome(upgradeTargetOpt)) {
       yield* ui.log.info(`New local version available (current: ${currentReleaseIdentifier})`);
-      yield* replaceBinary(ctx, upgradeTargetOpt.value, currentPath);
+      yield* replaceBinary(ctx, upgradeTargetOpt.value, currentPath, {
+        releaseTag: explicitTag,
+      });
       yield* ui.outro('Upgrade completed');
       return undefined;
     }

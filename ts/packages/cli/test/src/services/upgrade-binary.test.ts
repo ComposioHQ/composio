@@ -1,12 +1,16 @@
 import { describe, expect, it, vi } from '@effect/vitest';
-import { ConfigProvider, Effect, Layer } from 'effect';
+import { ConfigProvider, Effect, Layer, Option } from 'effect';
 import { FetchHttpClient, FileSystem, Path } from '@effect/platform';
+import * as PlatformError from '@effect/platform/Error';
 import { BunFileSystem, BunPath } from '@effect/platform-bun';
 import { withHttpServer } from 'test/__utils__/http-server';
 import { getTerminalCapabilities, TerminalUI } from 'src/services/terminal-ui';
 import { UpgradeBinary, UpgradeBinaryError } from 'src/services/upgrade-binary';
 import { NodeOs } from 'src/services/node-os';
-import { collectExpectedRunCompanionAssetRelativePaths } from 'src/services/run-companion-modules';
+import {
+  collectExpectedRunCompanionAssetRelativePaths,
+  RUN_COMPANION_RELEASE_TAG_FILENAME,
+} from 'src/services/run-companion-modules';
 
 const TerminalUINoop = Layer.succeed(
   TerminalUI,
@@ -55,11 +59,15 @@ const NodeOsTest = Layer.succeed(
 
 const TestPlatform = Layer.mergeAll(BunFileSystem.layer, BunPath.layer);
 
+type UpgradeOptions = {
+  readonly prerelease?: boolean;
+  readonly tag?: string;
+};
+
 const makeUpgradeEffect = (
   configEntries: ReadonlyArray<[string, string]>,
-  options?: {
-    prerelease?: boolean;
-  }
+  options?: UpgradeOptions,
+  fileSystemLayer: Layer.Layer<FileSystem.FileSystem> = BunFileSystem.layer
 ) =>
   Effect.gen(function* () {
     const service = yield* UpgradeBinary;
@@ -67,7 +75,7 @@ const makeUpgradeEffect = (
   }).pipe(
     Effect.provide(UpgradeBinary.Default),
     Effect.provide(FetchHttpClient.layer),
-    Effect.provide(BunFileSystem.layer),
+    Effect.provide(fileSystemLayer),
     Effect.provide(TerminalUINoop),
     Effect.provide(NodeOsTest),
     Effect.withConfigProvider(ConfigProvider.fromMap(new Map(configEntries))),
@@ -76,17 +84,43 @@ const makeUpgradeEffect = (
 
 const runUpgrade = (
   configEntries: ReadonlyArray<[string, string]>,
-  options?: {
-    prerelease?: boolean;
-  }
-) => makeUpgradeEffect(configEntries, options).pipe(Effect.flip);
+  options?: UpgradeOptions,
+  fileSystemLayer?: Layer.Layer<FileSystem.FileSystem>
+) => makeUpgradeEffect(configEntries, options, fileSystemLayer).pipe(Effect.flip);
 
 const runUpgradeSuccess = (
   configEntries: ReadonlyArray<[string, string]>,
-  options?: {
-    prerelease?: boolean;
-  }
-) => makeUpgradeEffect(configEntries, options);
+  options?: UpgradeOptions,
+  fileSystemLayer?: Layer.Layer<FileSystem.FileSystem>
+) => makeUpgradeEffect(configEntries, options, fileSystemLayer);
+
+const failRenameTo = (failedTargetPath: string) =>
+  Layer.effect(
+    FileSystem.FileSystem,
+    Effect.map(
+      FileSystem.FileSystem,
+      fs =>
+        new Proxy(fs, {
+          get(target, property, receiver) {
+            if (property !== 'rename') {
+              return Reflect.get(target, property, receiver);
+            }
+
+            return (oldPath: string, newPath: string) =>
+              newPath === failedTargetPath
+                ? Effect.fail(
+                    new PlatformError.SystemError({
+                      reason: 'Busy',
+                      module: 'FileSystem',
+                      method: 'rename',
+                      pathOrDescriptor: newPath,
+                    })
+                  )
+                : target.rename(oldPath, newPath);
+          },
+        })
+    )
+  ).pipe(Layer.provide(BunFileSystem.layer));
 
 /**
  * Bridge the promise-based `withHttpServer` harness into a scoped Effect:
@@ -434,11 +468,16 @@ describe('UpgradeBinary', () => {
         'darwin-arm64',
         'imessage-cli'
       );
+      const staleLocalToolPath = path.join(installDir, 'local-tools-binaries', 'stale-tool');
 
       yield* fs.writeFileString(fakeExecPath, 'old-binary');
       yield* fs.writeFileString(sourceBinaryPath, 'new-binary');
       yield* fs.makeDirectory(path.dirname(sourceLocalToolPath), { recursive: true });
       yield* fs.writeFileString(sourceLocalToolPath, 'imessage-sidecar');
+      yield* fs.makeDirectory(path.dirname(installedLocalToolPath), { recursive: true });
+      yield* fs.writeFileString(installedLocalToolPath, 'old-imessage-sidecar');
+      yield* fs.writeFileString(staleLocalToolPath, 'stale');
+      const originalBinaryInfo = yield* fs.stat(fakeExecPath);
 
       vi.spyOn(process, 'execPath', 'get').mockReturnValue(fakeExecPath);
 
@@ -456,8 +495,127 @@ describe('UpgradeBinary', () => {
 
       expect(result).toBeUndefined();
       expect(yield* fs.readFileString(fakeExecPath)).toBe('new-binary');
+      const replacedBinaryInfo = yield* fs.stat(fakeExecPath);
+      expect(replacedBinaryInfo.dev).toBe(originalBinaryInfo.dev);
+      expect(Option.getOrThrow(replacedBinaryInfo.ino)).not.toBe(
+        Option.getOrThrow(originalBinaryInfo.ino)
+      );
+      expect(replacedBinaryInfo.mode & 0o777).toBe(0o755);
       expect(yield* fs.exists(installedLocalToolPath)).toBe(true);
       expect(yield* fs.readFileString(installedLocalToolPath)).toBe('imessage-sidecar');
+      expect(yield* fs.exists(staleLocalToolPath)).toBe(false);
+    }).pipe(Effect.provide(TestPlatform), Effect.ensuring(restoreStubsAndMocks));
+  });
+
+  it.scoped('commits companions and release metadata before replacing the binary', () => {
+    vi.stubGlobal('Bun', { which: vi.fn(() => null) });
+
+    return Effect.gen(function* () {
+      const fs = yield* FileSystem.FileSystem;
+      const path = yield* Path.Path;
+      const installDir = yield* fs.makeTempDirectoryScoped({
+        prefix: 'composio-ordered-upgrade-target-',
+      });
+      const sourceDir = yield* fs.makeTempDirectoryScoped({
+        prefix: 'composio-ordered-upgrade-source-',
+      });
+      const fakeExecPath = path.join(installDir, 'composio');
+      const sourceBinaryPath = path.join(sourceDir, 'composio');
+      const releaseTagPath = path.join(installDir, RUN_COMPANION_RELEASE_TAG_FILENAME);
+      const newReleaseTag = '@composio/cli@0.3.0';
+      yield* fs.writeFileString(fakeExecPath, 'old-binary');
+      yield* fs.writeFileString(sourceBinaryPath, 'new-binary');
+      yield* fs.writeFileString(releaseTagPath, '@composio/cli@0.2.31\n');
+      const originalReleaseTagInfo = yield* fs.stat(releaseTagPath);
+
+      const companionRelativePaths =
+        yield* collectExpectedRunCompanionAssetRelativePaths(sourceDir);
+      for (const relativePath of companionRelativePaths) {
+        const companionPath = path.join(sourceDir, relativePath);
+        yield* fs.makeDirectory(path.dirname(companionPath), { recursive: true });
+        yield* fs.writeFileString(companionPath, 'new-support-file');
+      }
+      const observedCompanionPath = path.join(installDir, companionRelativePaths[0]!);
+      yield* fs.makeDirectory(path.dirname(observedCompanionPath), { recursive: true });
+      yield* fs.writeFileString(observedCompanionPath, 'old-support-file');
+      vi.spyOn(process, 'execPath', 'get').mockReturnValue(fakeExecPath);
+
+      const error = yield* runUpgrade(
+        [['DEBUG_OVERRIDE_UPGRADE_TARGET', sourceBinaryPath]],
+        { tag: newReleaseTag },
+        failRenameTo(fakeExecPath)
+      );
+
+      expect(error).toBeInstanceOf(UpgradeBinaryError);
+      if (!(error instanceof UpgradeBinaryError)) {
+        throw error;
+      }
+      expect(error.message).toBe('Failed to replace binary');
+      expect(error.cause).toBeInstanceOf(PlatformError.SystemError);
+      expect(yield* fs.readFileString(fakeExecPath)).toBe('old-binary');
+      expect(yield* fs.readFileString(observedCompanionPath)).toBe('new-support-file');
+      expect(yield* fs.readFileString(releaseTagPath)).toBe(`${newReleaseTag}\n`);
+      const replacedReleaseTagInfo = yield* fs.stat(releaseTagPath);
+      expect(Option.getOrThrow(replacedReleaseTagInfo.ino)).not.toBe(
+        Option.getOrThrow(originalReleaseTagInfo.ino)
+      );
+    }).pipe(Effect.provide(TestPlatform), Effect.ensuring(restoreStubsAndMocks));
+  });
+
+  it.scoped('preflights every companion before changing installed files', () => {
+    vi.stubGlobal('Bun', { which: vi.fn(() => null) });
+
+    return Effect.gen(function* () {
+      const fs = yield* FileSystem.FileSystem;
+      const path = yield* Path.Path;
+      const installDir = yield* fs.makeTempDirectoryScoped({
+        prefix: 'composio-incomplete-upgrade-target-',
+      });
+      const sourceDir = yield* fs.makeTempDirectoryScoped({
+        prefix: 'composio-incomplete-upgrade-source-',
+      });
+      const fakeExecPath = path.join(installDir, 'composio');
+      const sourceBinaryPath = path.join(sourceDir, 'composio');
+      const releaseTagPath = path.join(installDir, RUN_COMPANION_RELEASE_TAG_FILENAME);
+      yield* fs.writeFileString(fakeExecPath, 'old-binary');
+      yield* fs.writeFileString(sourceBinaryPath, 'new-binary');
+      yield* fs.writeFileString(releaseTagPath, '@composio/cli@0.2.31\n');
+
+      const companionRelativePaths =
+        yield* collectExpectedRunCompanionAssetRelativePaths(sourceDir);
+      const missingRelativePath = companionRelativePaths.at(-1)!;
+      for (const relativePath of companionRelativePaths) {
+        if (relativePath === missingRelativePath) continue;
+        const companionPath = path.join(sourceDir, relativePath);
+        yield* fs.makeDirectory(path.dirname(companionPath), { recursive: true });
+        yield* fs.writeFileString(companionPath, 'new-support-file');
+      }
+      const observedCompanionPath = path.join(installDir, companionRelativePaths[0]!);
+      yield* fs.makeDirectory(path.dirname(observedCompanionPath), { recursive: true });
+      yield* fs.writeFileString(observedCompanionPath, 'old-support-file');
+
+      const sourceLocalToolPath = path.join(sourceDir, 'local-tools-binaries', 'test-tool');
+      const installedLocalToolPath = path.join(installDir, 'local-tools-binaries', 'test-tool');
+      yield* fs.makeDirectory(path.dirname(sourceLocalToolPath), { recursive: true });
+      yield* fs.writeFileString(sourceLocalToolPath, 'new-local-tool');
+      yield* fs.makeDirectory(path.dirname(installedLocalToolPath), { recursive: true });
+      yield* fs.writeFileString(installedLocalToolPath, 'old-local-tool');
+      vi.spyOn(process, 'execPath', 'get').mockReturnValue(fakeExecPath);
+
+      const error = yield* runUpgrade([['DEBUG_OVERRIDE_UPGRADE_TARGET', sourceBinaryPath]], {
+        tag: '@composio/cli@0.3.0',
+      });
+
+      expect(error).toBeInstanceOf(UpgradeBinaryError);
+      if (!(error instanceof UpgradeBinaryError)) {
+        throw error;
+      }
+      expect(error.message).toBe('Downloaded binary package is incomplete');
+      expect(String(error.cause)).toContain(missingRelativePath);
+      expect(yield* fs.readFileString(fakeExecPath)).toBe('old-binary');
+      expect(yield* fs.readFileString(observedCompanionPath)).toBe('old-support-file');
+      expect(yield* fs.readFileString(installedLocalToolPath)).toBe('old-local-tool');
+      expect(yield* fs.readFileString(releaseTagPath)).toBe('@composio/cli@0.2.31\n');
     }).pipe(Effect.provide(TestPlatform), Effect.ensuring(restoreStubsAndMocks));
   });
 
