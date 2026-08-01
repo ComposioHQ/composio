@@ -156,45 +156,19 @@ jobs:
             echo "SHELL=$(which bash)" >> $GITHUB_ENV
           fi
 
-      - name: Test install script (latest version)
-        if: steps.release_target.outputs.use_latest == 'true'
-        shell: bash
-        run: |
-          echo "Testing installation with auto-detected latest CLI version..."
-
-          # Test the install script without version (it will auto-detect latest CLI release)
-          sh install.sh
-
-          # Verify installation
-          export PATH="$HOME/.local/bin:$PATH"
-
-          # Check the bundle and entry point
-          if [[ -x "$HOME/.composio/composio" && -L "$HOME/.local/bin/composio" ]]; then
-            echo "✅ Bundle and entry point installed successfully"
-            ls -la "$HOME/.composio/composio" "$HOME/.local/bin/composio"
-          else
-            echo "❌ Bundle or entry point not found"
-            exit 1
-          fi
-
-          # Test binary execution
-          if "$HOME/.local/bin/composio" --version; then
-            echo "✅ Binary executes successfully"
-          else
-            echo "❌ Binary execution failed"
-            exit 1
-          fi
-
-      - name: Test install script (specific version)
-        if: steps.release_target.outputs.use_latest != 'true'
+      - name: Test install script
         shell: bash
         env:
+          # Empty exactly when the release target resolved to `use_latest=true`.
           RELEASE_TAG: ${{ steps.release_target.outputs.release_tag }}
         run: |
-          echo "Testing installation with version: ${RELEASE_TAG}"
-
-          # Test the install script with specific version
-          sh install.sh "${RELEASE_TAG}"
+          if [[ -n "$RELEASE_TAG" ]]; then
+            echo "Testing installation with version: ${RELEASE_TAG}"
+            sh install.sh "${RELEASE_TAG}"
+          else
+            echo "Testing installation with auto-detected latest CLI version..."
+            sh install.sh
+          fi
 
           # Verify installation
           export PATH="$HOME/.local/bin:$PATH"
