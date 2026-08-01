@@ -714,3 +714,131 @@ export async function runCliContainer(options: RunCliContainerOptions): Promise<
 
   return exec('docker', dockerArgs);
 }
+
+// ============================================================================
+// CLI installer Docker utilities
+// ============================================================================
+
+export type InstallShell = 'bash' | 'zsh';
+export type InstallPlatform = 'linux/amd64' | 'linux/arm64';
+
+export interface EnsureInstallImageOptions {
+  repoRoot?: string;
+  dockerfilePath?: string;
+  platform?: InstallPlatform;
+}
+
+export interface RunInstallContainerOptions {
+  imageTag: string;
+  cmd: string[];
+  env?: Record<string, string | undefined>;
+  labels?: Record<string, string>;
+}
+
+function imageTagForInstallShell(shell: InstallShell): string {
+  return `composio-e2e-install:${shell}`;
+}
+
+function defaultInstallLabels(shell: InstallShell): Record<string, string> {
+  return {
+    'composio.e2e': 'true',
+    'composio.runtime': 'cli-install',
+    'composio.install_shell': shell,
+  };
+}
+
+export async function ensureInstallImage(
+  shell: InstallShell,
+  options: EnsureInstallImageOptions = {}
+): Promise<string> {
+  if (shell !== 'bash' && shell !== 'zsh') {
+    throw new Error(`ensureInstallImage(${shell}): shell must be bash or zsh`);
+  }
+
+  const repoRoot = options.repoRoot ?? getRepoRoot();
+  const dockerfilePath =
+    options.dockerfilePath ?? resolve(repoRoot, 'ts/e2e-tests/_utils/Dockerfile.install');
+  const platform = options.platform ?? (process.arch === 'arm64' ? 'linux/arm64' : 'linux/amd64');
+  const architecture = platform === 'linux/arm64' ? 'arm64' : 'amd64';
+  const imageTag = imageTagForInstallShell(shell);
+  const inspect = await exec(
+    'docker',
+    ['image', 'inspect', '--format', '{{.Architecture}}', imageTag],
+    { cwd: repoRoot }
+  );
+  if (inspect.exitCode === 0 && inspect.stdout.trim() === architecture) {
+    return imageTag;
+  }
+
+  const built = await exec(
+    'docker',
+    [
+      'build',
+      '--platform',
+      platform,
+      '-f',
+      dockerfilePath,
+      '--build-arg',
+      `INSTALL_SHELL=${shell}`,
+      ...labelsToArgs(defaultInstallLabels(shell)),
+      '-t',
+      imageTag,
+      repoRoot,
+    ],
+    { cwd: repoRoot }
+  );
+  if (built.exitCode !== 0) {
+    const err = new Error(`Failed to build Docker image ${imageTag}`);
+    (err as Error & { cause: Error }).cause = new Error(built.stderr || built.stdout);
+    throw err;
+  }
+
+  return imageTag;
+}
+
+export async function runInstallContainer(
+  options: RunInstallContainerOptions
+): Promise<ExecResult> {
+  const { imageTag, cmd, env, labels } = options;
+  const shellMatch = /^composio-e2e-install:(bash|zsh)$/.exec(imageTag);
+  if (!shellMatch) {
+    throw new Error(
+      'runInstallContainer({ imageTag, ... }): expected composio-e2e-install:<bash|zsh>'
+    );
+  }
+  if (!Array.isArray(cmd) || cmd.length === 0) {
+    throw new Error('runInstallContainer({ cmd, ... }): cmd must be a non-empty array');
+  }
+
+  const shell = shellMatch[1] as InstallShell;
+  const inspect = await exec('docker', [
+    'image',
+    'inspect',
+    '--format',
+    '{{.Architecture}}',
+    imageTag,
+  ]);
+  if (inspect.exitCode !== 0) {
+    throw new Error(`Failed to inspect Docker image ${imageTag}: ${inspect.stderr}`);
+  }
+  const platform = inspect.stdout.trim() === 'arm64' ? 'linux/arm64' : 'linux/amd64';
+  const dockerArgs = [
+    'run',
+    '--rm',
+    '--platform',
+    platform,
+    ...labelsToArgs({ ...defaultInstallLabels(shell), ...(labels ?? {}) }),
+    '--add-host',
+    'host.docker.internal:host-gateway',
+  ];
+
+  for (const [key, value] of Object.entries(env ?? {})) {
+    if (value !== undefined) {
+      dockerArgs.push('-e', `${key}=${value}`);
+    }
+  }
+
+  // Installer tests intentionally do not mount the host's ~/.composio directory.
+  dockerArgs.push(imageTag, ...cmd.map(String));
+  return exec('docker', dockerArgs);
+}
