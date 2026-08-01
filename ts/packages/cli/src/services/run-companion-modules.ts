@@ -7,6 +7,7 @@ import { FileSystem, Path } from '@effect/platform';
 import type { PlatformError } from '@effect/platform/Error';
 import { Config, ConfigProvider, Data, Effect, Option, Schema } from 'effect';
 import extractZip from 'extract-zip';
+import { IS_RELEASE_BUILD } from 'src/constants';
 import { GitHubRelease } from 'src/effects/resolve-cli-release';
 import { BaseConfigProviderLive, extendConfigProvider } from 'src/services/config';
 import { parseChecksumsText, sha256Hex } from 'src/utils/checksums';
@@ -324,6 +325,24 @@ export const resolveInstalledCliReleaseTag = (
     normalizeCliReleaseTag(releaseTag ?? fallbackVersion)
   );
 
+export const resolveRunningCliVersion = (
+  execPath: string,
+  appVersion: string,
+  isReleaseBuild = IS_RELEASE_BUILD
+): Effect.Effect<string, never, FileSystem.FileSystem | Path.Path> =>
+  isReleaseBuild
+    ? Effect.succeed(normalizeCliReleaseVersion(appVersion))
+    : resolveInstalledCliVersion(execPath, appVersion);
+
+export const resolveRunningCliReleaseTag = (
+  execPath: string,
+  appVersion: string,
+  isReleaseBuild = IS_RELEASE_BUILD
+): Effect.Effect<string, never, FileSystem.FileSystem | Path.Path> =>
+  isReleaseBuild
+    ? Effect.succeed(normalizeCliReleaseTag(appVersion))
+    : resolveInstalledCliReleaseTag(execPath, appVersion);
+
 export const writeInstalledReleaseTag = (
   installDir: string,
   releaseTag: string
@@ -451,7 +470,7 @@ const resolveRepairReleaseTag = ({
       return pinnedTag;
     }
 
-    return yield* resolveInstalledCliReleaseTag(execPath, appVersion);
+    return yield* resolveRunningCliReleaseTag(execPath, appVersion);
   });
 
 const nonEmptyConfigWithFallback = (name: string, fallback: string) =>
