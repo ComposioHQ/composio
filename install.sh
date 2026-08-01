@@ -45,7 +45,7 @@ print_usage() {
         '  --no-plugins  Skip agent plugin installation (the default).' \
         '  -h, --help    Show this help.' \
         '' \
-        'Version tags may be stable or beta, for example 0.3.1 or @composio/cli@0.3.1-beta.2.'
+        'Version tags may be stable or beta, for example 0.3.1 or @composio/cli@0.3.1-beta.329.'
 }
 
 validate_identifier() {
@@ -307,7 +307,7 @@ print_post_install_help() {
         if [ "$guidance_required" = 1 ]; then
             printf 'Required next step for %s:\n\n' "$shell_name"
         else
-            printf 'Optional shell setup for completions and future PATH changes:\n\n'
+            printf 'Optional shell setup for future PATH changes:\n\n'
         fi
         printf '  curl -fsSL https://composio.dev/install/%s | sh\n' "$shell_route"
         printf '\nThis configures %s.\n' "$shell_config"

@@ -18,6 +18,8 @@ curl -fsSL https://composio.dev/install | sh
 
 The installer downloads and verifies the release bundle in `~/.composio`, then creates the `~/.local/bin/composio` entry point. It does not edit shell files, install agent plugins, or log you in.
 
+If the installer reports that `~/.local/bin` is not on your `PATH`, run the command it prints for your shell — see [Configure your shell](#configure-your-shell) — and start a new shell.
+
 Log in after `composio` is available:
 
 ```bash
@@ -101,6 +103,14 @@ which composio
 
 The installer supports Linux x64, Linux ARM64, macOS Intel, and macOS Apple Silicon. On Windows, install and run it inside [WSL](https://learn.microsoft.com/windows/wsl/install).
 
+### Update
+
+```bash
+composio upgrade
+```
+
+This replaces the bundle in `~/.composio` in place and leaves the `~/.local/bin/composio` entry point pointing at it. Pass a version to pin a specific release (`composio upgrade 0.3.1`), or `--beta` for the latest prerelease.
+
 ### Install manually from GitHub Releases
 
 Download the archive for your platform from [GitHub Releases](https://github.com/ComposioHQ/composio/releases), then install the complete bundle. Keep the support files beside the executable.
@@ -123,7 +133,7 @@ export PATH="$COMPOSIO_BIN_DIR:$PATH"
 
 ### Uninstall
 
-Remove only installer-owned entry points and release artifacts. This keeps your credentials, configuration, and cache data in `~/.composio`.
+Remove only installer-owned entry points and release artifacts. This keeps your credentials, configuration, and cache data in `~/.composio`. The file list below matches the current release layout; if you installed a different version, compare it against the contents of that release's archive.
 
 ```bash
 install_dir=${COMPOSIO_INSTALL_DIR:-"$HOME/.composio"}
@@ -150,8 +160,12 @@ for file in \
   "$HOME/.bash_login" \
   "$HOME/.config/fish/config.fish"; do
   [ -f "$file" ] || continue
-  sed '/^# Composio CLI$/ { N; d; }' "$file" > "$file.tmp"
-  mv "$file.tmp" "$file"
+  awk '
+    /^# Composio CLI$/ { skip = 1; next }
+    skip && (/^export PATH=/ || /^export COMPOSIO_INSTALL_DIR=/ || /^set --export /) { next }
+    { skip = 0; print }
+  ' "$file" > "$file.tmp"
+  cat "$file.tmp" > "$file" && rm -f "$file.tmp"
 done
 ```
 

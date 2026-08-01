@@ -18,7 +18,7 @@ Pin a stable or beta release with `COMPOSIO_INSTALL_VERSION`, or pass the tag as
 
 ```bash
 curl -fsSL https://composio.dev/install | COMPOSIO_INSTALL_VERSION=0.3.1 sh
-curl -fsSL https://composio.dev/install | sh -s -- @composio/cli@0.3.1-beta.2
+curl -fsSL https://composio.dev/install | sh -s -- @composio/cli@0.3.1-beta.329
 ```
 
 The positional argument takes precedence over `COMPOSIO_INSTALL_VERSION`.
@@ -71,7 +71,7 @@ which composio
 
 ## Uninstall
 
-Remove the entry point and release artifacts without deleting credentials, configuration, or caches:
+Remove the entry point and release artifacts without deleting credentials, configuration, or caches. The file list below matches the current release layout; if you installed a different version, compare it against the contents of that release's archive.
 
 ```bash
 install_dir=${COMPOSIO_INSTALL_DIR:-"$HOME/.composio"}
@@ -92,7 +92,7 @@ rm -rf \
   "$install_dir/local-tools-binaries"
 ```
 
-Remove `# Composio CLI` PATH blocks from `~/.zshrc`, `~/.bashrc`, `~/.bash_profile`, `~/.bash_login`, or `~/.config/fish/config.fish` if you used a shell-specific installer.
+Remove `# Composio CLI` PATH blocks from `~/.zshrc`, `~/.bashrc`, `~/.bash_profile`, `~/.bash_login`, or `~/.config/fish/config.fish` if you used a shell-specific installer. Blocks written by older installers contain an extra `export COMPOSIO_INSTALL_DIR=...` line after the marker; remove that line too.
 
 To purge credentials, configuration, caches, and every other CLI file, run `rm -rf "${COMPOSIO_INSTALL_DIR:-$HOME/.composio}"`. This is a complete reset and cannot be undone.
 
