@@ -90,18 +90,20 @@ validate_url() {
     esac
 }
 
+# Callers must validate_url first, so the scheme is https, or http on an allowed host.
+curl_proto_flags() {
+    case $1 in
+        https://*) printf '%s\n' '=https' ;;
+        *) printf '%s\n' '=http,https' ;;
+    esac
+}
+
 curl_fetch() {
     curl_fetch_url=$1
     validate_url "$curl_fetch_url" || error "Refusing unsafe URL \"$curl_fetch_url\""
     debug "curl GET $curl_fetch_url"
-    case $curl_fetch_url in
-        https://*)
-            curl --fail --silent --location --proto '=https' --proto-redir '=https' "$curl_fetch_url"
-            ;;
-        http://*)
-            curl --fail --silent --location --proto '=http,https' --proto-redir '=https' "$curl_fetch_url"
-            ;;
-    esac
+    curl --fail --silent --location --proto "$(curl_proto_flags "$curl_fetch_url")" \
+        --proto-redir '=https' "$curl_fetch_url"
 }
 
 curl_download() {
@@ -117,16 +119,8 @@ curl_download() {
         curl_download_ui=--progress-bar
     fi
 
-    case $curl_download_url in
-        https://*)
-            curl --fail --location "$curl_download_ui" --proto '=https' --proto-redir '=https' \
-                --output "$curl_download_output" "$curl_download_url"
-            ;;
-        http://*)
-            curl --fail --location "$curl_download_ui" --proto '=http,https' --proto-redir '=https' \
-                --output "$curl_download_output" "$curl_download_url"
-            ;;
-    esac
+    curl --fail --location "$curl_download_ui" --proto "$(curl_proto_flags "$curl_download_url")" \
+        --proto-redir '=https' --output "$curl_download_output" "$curl_download_url"
 }
 
 normalize_version() {
