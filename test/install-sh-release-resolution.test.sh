@@ -34,6 +34,19 @@ for script in "$repo_root/install.sh" "$repo_root"/install/*.sh; do
   fi
 done
 
+# The shell variants are served as standalone scripts, so their shared logic
+# (including the URL-validation security checks) is intentionally copied.
+# Enforce that they stay byte-identical except for the shell each hardcodes in
+# requested_shell(), so a fix applied to one cannot silently miss the others.
+for variant in bash zsh fish; do
+  variant_script="$repo_root/install/$variant.sh"
+  grep -Fqx "requested_shell() { printf '%s\\n' $variant; }" "$variant_script" ||
+    fail "install/$variant.sh must hardcode requested_shell() for $variant"
+  diff <(grep -Fv 'requested_shell()' "$repo_root/install/bash.sh") \
+    <(grep -Fv 'requested_shell()' "$variant_script") >/dev/null ||
+    fail "install/$variant.sh drifted from install/bash.sh outside requested_shell()"
+done
+
 windows_bin="$suite_tmp/windows-bin"
 windows_home="$suite_tmp/windows-home"
 mkdir -p "$windows_bin" "$windows_home"
