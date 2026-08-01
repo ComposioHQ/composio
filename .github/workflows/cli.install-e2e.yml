@@ -167,3 +167,45 @@ jobs:
           COMPOSIO_INSTALL_E2E_SHELL: ${{ matrix.shell }}
           COMPOSIO_INSTALL_E2E_RELEASE_DIR: ${{ runner.temp }}/cli-install-fixture
         run: pnpm test:e2e:install
+
+  # The base installer resolves the CLI release at run time, so the checked-in
+  # scripts on any branch are complete working installers. Once the hermetic
+  # suite passes, hand reviewers copy-paste commands that exercise this PR's
+  # installer logic against the latest published release.
+  preview-comment:
+    name: Post installer preview comment
+    if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+    needs: local-install
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      pull-requests: write
+    steps:
+      - name: Render preview comment
+        env:
+          RAW_BASE: https://raw.githubusercontent.com/${{ github.repository }}/refs/heads/${{ github.event.pull_request.head.ref }}
+        run: |
+          set -euo pipefail
+          {
+            echo "### Preview this PR's installer"
+            echo ""
+            echo "The hermetic install E2E suite passed for this commit. These commands run the PR's installer scripts against the **latest published CLI release** — they preview installer behavior, not unreleased binaries."
+            echo ""
+            echo '```sh'
+            echo "curl -fsSL \"$RAW_BASE/install.sh\" | sh"
+            echo '```'
+            echo ""
+            echo "Shell-specific setup routes (the override points the variant at this PR's base installer):"
+            echo ""
+            echo '```sh'
+            for shell in bash zsh fish; do
+              echo "curl -fsSL \"$RAW_BASE/install/$shell.sh\" | COMPOSIO_INSTALL_SCRIPT_URL=\"$RAW_BASE/install.sh\" sh"
+            done
+            echo '```'
+          } > install-preview-comment.txt
+
+      - name: Post installer preview comment
+        uses: thollander/actions-comment-pull-request@24bffb9b452ba05a4f3f77933840a6a841d1b32b # v3.0.1
+        with:
+          file-path: install-preview-comment.txt
+          comment-tag: cli-install-preview
