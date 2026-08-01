@@ -432,7 +432,7 @@ const getCurrentExecutablePath = Effect.fn(function* () {
 const mapAtomicReplaceError = (message: string) => (error: AtomicReplaceError) =>
   new UpgradeBinaryError({
     cause: error.cause,
-    message,
+    message: `${message}: ${error.message}`,
   });
 
 const replaceBinary = (

@@ -550,7 +550,9 @@ describe('UpgradeBinary', () => {
       if (!(error instanceof UpgradeBinaryError)) {
         throw error;
       }
-      expect(error.message).toBe('Failed to replace binary');
+      expect(error.message).toBe(
+        `Failed to replace binary: Failed to replace file at ${fakeExecPath}`
+      );
       expect(error.cause).toBeInstanceOf(PlatformError.SystemError);
       expect(yield* fs.readFileString(fakeExecPath)).toBe('old-binary');
       expect(yield* fs.readFileString(observedCompanionPath)).toBe('new-support-file');
