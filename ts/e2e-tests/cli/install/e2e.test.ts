@@ -6,6 +6,7 @@ import {
   resolveInstallE2EConfig,
   runInstallContainer,
   type ExecResult,
+  type InstallImage,
 } from '@e2e-tests/utils';
 import { INSTALL_E2E_LOCAL_RELEASE_TAG } from '@e2e-tests/utils/const';
 import { startInstallReleaseServer, type InstallReleaseServer } from './release-server';
@@ -14,7 +15,7 @@ const config = resolveInstallE2EConfig();
 const repoRoot = resolve(import.meta.dir, '../../../..');
 const timeout = 600_000;
 
-let imageTag = '';
+let image: InstallImage | undefined;
 let releaseServer: InstallReleaseServer | undefined;
 
 function assertSuccess(result: ExecResult): void {
@@ -49,8 +50,12 @@ function installerEnvironment(): Record<string, string> {
 }
 
 async function run(script: string): Promise<ExecResult> {
+  if (!image) {
+    throw new Error('Install image is not ready');
+  }
   return runInstallContainer({
-    imageTag,
+    ...image,
+    shell: config.shell,
     cmd: [config.shell, '-lc', script],
     env: installerEnvironment(),
   });
@@ -68,7 +73,7 @@ beforeAll(async () => {
       releaseDir: config.releaseDir!,
     });
   }
-  imageTag = await ensureInstallImage(config.shell, {
+  image = await ensureInstallImage(config.shell, {
     repoRoot,
     platform: releaseServer?.platform,
   });

@@ -728,8 +728,15 @@ export interface EnsureInstallImageOptions {
   platform?: InstallPlatform;
 }
 
+export interface InstallImage {
+  imageTag: string;
+  platform: InstallPlatform;
+}
+
 export interface RunInstallContainerOptions {
   imageTag: string;
+  shell: InstallShell;
+  platform: InstallPlatform;
   cmd: string[];
   env?: Record<string, string | undefined>;
   labels?: Record<string, string>;
@@ -750,7 +757,7 @@ function defaultInstallLabels(shell: InstallShell): Record<string, string> {
 export async function ensureInstallImage(
   shell: InstallShell,
   options: EnsureInstallImageOptions = {}
-): Promise<string> {
+): Promise<InstallImage> {
   if (shell !== 'bash' && shell !== 'zsh') {
     throw new Error(`ensureInstallImage(${shell}): shell must be bash or zsh`);
   }
@@ -767,7 +774,7 @@ export async function ensureInstallImage(
     { cwd: repoRoot }
   );
   if (inspect.exitCode === 0 && inspect.stdout.trim() === architecture) {
-    return imageTag;
+    return { imageTag, platform };
   }
 
   const built = await exec(
@@ -793,35 +800,17 @@ export async function ensureInstallImage(
     throw err;
   }
 
-  return imageTag;
+  return { imageTag, platform };
 }
 
 export async function runInstallContainer(
   options: RunInstallContainerOptions
 ): Promise<ExecResult> {
-  const { imageTag, cmd, env, labels } = options;
-  const shellMatch = /^composio-e2e-install:(bash|zsh)$/.exec(imageTag);
-  if (!shellMatch) {
-    throw new Error(
-      'runInstallContainer({ imageTag, ... }): expected composio-e2e-install:<bash|zsh>'
-    );
-  }
+  const { imageTag, shell, platform, cmd, env, labels } = options;
   if (!Array.isArray(cmd) || cmd.length === 0) {
     throw new Error('runInstallContainer({ cmd, ... }): cmd must be a non-empty array');
   }
 
-  const shell = shellMatch[1] as InstallShell;
-  const inspect = await exec('docker', [
-    'image',
-    'inspect',
-    '--format',
-    '{{.Architecture}}',
-    imageTag,
-  ]);
-  if (inspect.exitCode !== 0) {
-    throw new Error(`Failed to inspect Docker image ${imageTag}: ${inspect.stderr}`);
-  }
-  const platform = inspect.stdout.trim() === 'arm64' ? 'linux/arm64' : 'linux/amd64';
   const dockerArgs = [
     'run',
     '--rm',

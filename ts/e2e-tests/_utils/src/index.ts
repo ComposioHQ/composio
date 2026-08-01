@@ -20,4 +20,5 @@ export {
   ensureInstallImage,
   runInstallContainer,
   type ExecResult,
+  type InstallImage,
 } from './image-lifecycle';
