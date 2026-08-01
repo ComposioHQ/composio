@@ -100,7 +100,16 @@ export const atomicReplaceDirectory = ({
           );
         yield* fs.rename(stagedPath, targetPath).pipe(
           Effect.matchEffect({
-            onSuccess: () => fs.remove(recoveryDirectory, { recursive: true }),
+            onSuccess: () =>
+              fs
+                .remove(recoveryDirectory, { recursive: true })
+                .pipe(
+                  Effect.catchAll(cause =>
+                    Effect.logWarning(
+                      `Published replacement at ${targetPath}; previous contents remain at ${asidePath}: ${String(cause)}`
+                    )
+                  )
+                ),
             onFailure: publishCause =>
               fs.rename(asidePath, targetPath).pipe(
                 Effect.matchEffect({

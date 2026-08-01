@@ -118,6 +118,22 @@ chmod +x "$bundle/composio"
 EOF
 chmod +x "$fake_bin/unzip"
 
+cat >"$fake_bin/rm" <<'EOF'
+#!/usr/bin/env bash
+set -euo pipefail
+
+if [[ ${TEST_FAIL_ASIDE_CLEANUP:-} == 1 ]]; then
+  for arg in "$@"; do
+    case $arg in
+    */.composio-aside.local-tools-binaries) exit 23 ;;
+    esac
+  done
+fi
+
+exec /bin/rm "$@"
+EOF
+chmod +x "$fake_bin/rm"
+
 interpreters=("$(command -v sh)")
 if command -v dash >/dev/null 2>&1 && [[ $(command -v dash) != "${interpreters[0]}" ]]; then
   interpreters+=("$(command -v dash)")
@@ -133,6 +149,7 @@ for interpreter in "${interpreters[@]}"; do
 
   run_installer() {
     local archive_mode=$1
+    local fail_aside_cleanup=${2:-0}
     env \
       PATH="$fake_bin:$PATH" \
       HOME="$home" \
@@ -146,6 +163,7 @@ for interpreter in "${interpreters[@]}"; do
       COMPOSIO_GITHUB_REPO=fake-repo \
       TEST_TARGET="$target" \
       TEST_ARCHIVE_MODE="$archive_mode" \
+      TEST_FAIL_ASIDE_CLEANUP="$fail_aside_cleanup" \
       "$interpreter" "$repo_root/install.sh" "$version"
   }
 
@@ -208,6 +226,21 @@ EOF
   [[ $(<"$install_dir/release-tag.txt") == "$tag_before" ]] ||
     fail "$interpreter_name missing binary changed metadata"
   assert_no_residue "$install_dir"
+
+  printf '%s\n' old-aside >"$install_dir/local-tools-binaries/recoverable.txt"
+  if ! aside_cleanup_output=$(run_installer complete 1 2>&1); then
+    fail "$interpreter_name aside cleanup failure aborted published install"
+  fi
+  grep -Fq 'Published install entry; previous contents retained at' <<<"$aside_cleanup_output" ||
+    fail "$interpreter_name aside cleanup warning"
+  grep -Fq 'Published CLI; retained recovery staging directory at' <<<"$aside_cleanup_output" ||
+    fail "$interpreter_name retained staging warning"
+  grep -Fq 'new-binary-marker' "$install_dir/composio" ||
+    fail "$interpreter_name aside cleanup did not publish executable"
+  retained_stage=$(find "$install_dir" -maxdepth 1 -type d -name '.composio-install.*' -print -quit)
+  [[ -n $retained_stage ]] || fail "$interpreter_name missing retained recovery staging directory"
+  [[ $(<"$retained_stage/.composio-aside.local-tools-binaries/recoverable.txt") == old-aside ]] ||
+    fail "$interpreter_name retained aside is not recoverable"
 
   printf 'install.sh atomic replacement passed under %s\n' "$interpreter_name"
 done

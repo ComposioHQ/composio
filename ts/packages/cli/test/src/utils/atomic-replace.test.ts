@@ -44,6 +44,34 @@ const failDirectoryPublish = (targetPath: string, failRestore = false) =>
     )
   ).pipe(Layer.provide(BunFileSystem.layer));
 
+const failDirectoryCleanup = () =>
+  Layer.effect(
+    FileSystem.FileSystem,
+    Effect.map(
+      FileSystem.FileSystem,
+      fs =>
+        new Proxy(fs, {
+          get(target, property, receiver) {
+            if (property !== 'remove') {
+              return Reflect.get(target, property, receiver);
+            }
+
+            return (path: string, options?: FileSystem.RemoveOptions) =>
+              path.includes('.composio-atomic-recovery-')
+                ? Effect.fail(
+                    new PlatformError.SystemError({
+                      reason: 'Busy',
+                      module: 'FileSystem',
+                      method: 'remove',
+                      pathOrDescriptor: path,
+                    })
+                  )
+                : target.remove(path, options);
+          },
+        })
+    )
+  ).pipe(Layer.provide(BunFileSystem.layer));
+
 const makeDirectoryFixture = (withTarget = true) =>
   Effect.gen(function* () {
     const fs = yield* FileSystem.FileSystem;
@@ -170,6 +198,25 @@ describe('atomic replace', () => {
         expect(error).toBeInstanceOf(AtomicReplaceError);
         expect(yield* fs.readFileString(path.join(targetPath, 'old.txt'))).toBe('old contents');
         expect((yield* fs.readDirectory(directory)).sort()).toEqual(['source', 'target']);
+      })
+    );
+
+    it.scoped('keeps the published directory when old-content cleanup fails', () =>
+      Effect.gen(function* () {
+        const { directory, fs, path, sourcePath, targetPath } = yield* makeDirectoryFixture();
+
+        yield* Effect.scoped(atomicReplaceDirectory({ sourcePath, targetPath })).pipe(
+          Effect.provide(failDirectoryCleanup())
+        );
+
+        const recoveryDirectory = (yield* fs.readDirectory(directory)).find(entry =>
+          entry.startsWith('.composio-atomic-recovery-')
+        );
+        expect(yield* fs.readFileString(path.join(targetPath, 'new.txt'))).toBe('new contents');
+        expect(recoveryDirectory).toBeDefined();
+        expect(
+          yield* fs.readFileString(path.join(directory, recoveryDirectory!, 'target', 'old.txt'))
+        ).toBe('old contents');
       })
     );
 

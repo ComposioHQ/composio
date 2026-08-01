@@ -245,7 +245,8 @@ publish_staged_entry() {
         mv "$publish_target" "$publish_aside" ||
             error "Failed to move existing install entry aside: $publish_target"
         if mv "$publish_source" "$publish_target"; then
-            rm -rf "$publish_aside" || error "Failed to remove old install entry: $publish_aside"
+            rm -rf "$publish_aside" ||
+                warn "Published install entry; previous contents retained at $publish_aside"
             return 0
         fi
 
@@ -297,7 +298,7 @@ install_bundle() {
 
     publish_staged_entry "$stage/release-tag.txt"
     publish_staged_entry "$stage/composio"
-    rmdir "$stage" || error "Failed to remove staging directory: $stage"
+    rmdir "$stage" || warn "Published CLI; retained recovery staging directory at $stage"
     stage=
 }
 
