@@ -50,7 +50,7 @@ download_installer() {
 }
 
 is_unsafe_path() {
-    case $1 in *';'* | *'`'* | *'$'* | *'|'* | *'&'* | *'"'* | *"'"* | *'('* | *')'* | *\\*) return 0 ;; esac
+    case $1 in *':'* | *';'* | *'`'* | *'$'* | *'|'* | *'&'* | *'"'* | *"'"* | *'('* | *')'* | *\\*) return 0 ;; esac
     variant_cr=$(printf '\r')
     case $1 in *"$variant_cr"* | *'
 '*) return 0 ;; esac
@@ -98,13 +98,24 @@ inline_shell_setup() {
 
 cleanup() { [ -z "${variant_tmpdir:-}" ] || [ ! -d "$variant_tmpdir" ] || rm -rf "$variant_tmpdir"; }
 
+cleanup_on_signal() {
+    cleanup_signal=$1
+    trap - 0 1 2 3 15
+    cleanup || :
+    exit $((128 + cleanup_signal))
+}
+
 main() {
     variant_shell=$(requested_shell)
     # Internal test override. User-facing docs intentionally omit this variable.
     variant_script_url=${COMPOSIO_INSTALL_SCRIPT_URL:-https://raw.githubusercontent.com/ComposioHQ/composio/refs/heads/next/install.sh}
     variant_tmpdir=$(mktemp -d) || error 'Failed to create a temporary directory'
     debug "temporary directory: $variant_tmpdir"
-    trap cleanup 0 1 2 3 15
+    trap cleanup 0
+    trap 'cleanup_on_signal 1' 1
+    trap 'cleanup_on_signal 2' 2
+    trap 'cleanup_on_signal 3' 3
+    trap 'cleanup_on_signal 15' 15
     download_installer "$variant_script_url" "$variant_tmpdir/install.sh" || error 'Failed to download the base installer'
     [ -s "$variant_tmpdir/install.sh" ] || error 'Downloaded base installer is empty'
 

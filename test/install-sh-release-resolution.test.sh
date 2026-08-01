@@ -26,6 +26,16 @@ assert_not_contains() {
   fi
 }
 
+wait_for_file() {
+  local file=$1
+  local label=$2
+  for _ in {1..100}; do
+    [[ -f $file ]] && return 0
+    sleep 0.05
+  done
+  fail "$label"
+}
+
 for script in "$repo_root/install.sh" "$repo_root"/install/*.sh; do
   [[ $(tail -n 1 "$script") == 'main "$@"' ]] || fail "$script must end with main \"\$@\""
   [[ $(grep -c '^main "\$@"$' "$script") -eq 1 ]] || fail "$script must contain one main entry point"
@@ -144,6 +154,11 @@ http://*)
   [[ $all_args == *"--proto =http,https"* && $all_args == *"--proto-redir =https"* ]] || exit 92
   ;;
 esac
+
+if [[ -n ${TEST_CURL_DELAY_URL:-} && $url == "$TEST_CURL_DELAY_URL" ]]; then
+  printf '%s\n' "$PPID" >"$TEST_CURL_PARENT_PID_FILE"
+  sleep "${TEST_CURL_DELAY_SECONDS:-1}"
+fi
 
 if [[ $url == "$TEST_SCRIPT_URL" ]]; then
   case ${TEST_BASE_MODE:-ok} in
@@ -267,7 +282,9 @@ EOF
   reset_case() {
     unset CASE_GITHUB_URL CASE_API_BASE CASE_INSTALL_VERSION CASE_PLUGINS CASE_QUIET CASE_DEBUG CASE_HELP
     unset CASE_ALLOW_HTTP_HOST CASE_CHECKSUM_MODE CASE_API_ASSET_URL CASE_BASE_MODE CASE_REDIRECT_DOWNGRADE
-    unset CASE_SHELL_CAPABILITY CASE_INSTALL_EXIT CASE_SETUP_EXIT CASE_VERSION_EXIT CASE_PATH_PREFIX
+    unset CASE_SHELL_CAPABILITY CASE_INSTALL_EXIT CASE_SETUP_EXIT CASE_VERSION_EXIT CASE_PATH_PREFIX CASE_UNSET_SHELL
+    unset CASE_CURL_DELAY_URL CASE_CURL_DELAY_SECONDS
+    rm -f "$case_root/curl-parent.pid"
     : >"$curl_log"
     : >"$composio_log"
   }
@@ -278,6 +295,10 @@ EOF
     local bin_dir=$3
     shift 3
     mkdir -p "$home" "$install_dir" "$bin_dir"
+    local -a installer_command=("$interpreter" "$repo_root/install.sh")
+    if [[ ${CASE_UNSET_SHELL:-0} == 1 ]]; then
+      installer_command=("$interpreter" -c 'unset SHELL; script=$1; shift; . "$script"' unset-shell "$repo_root/install.sh")
+    fi
     env \
       PATH="${CASE_PATH_PREFIX:-}$fake_bin:$PATH" \
       HOME="$home" \
@@ -301,7 +322,10 @@ EOF
       TEST_INSTALL_EXIT="${CASE_INSTALL_EXIT:-0}" \
       TEST_SETUP_EXIT="${CASE_SETUP_EXIT:-0}" \
       TEST_VERSION_EXIT="${CASE_VERSION_EXIT:-0}" \
-      "$interpreter" "$repo_root/install.sh" "$@"
+      TEST_CURL_DELAY_URL="${CASE_CURL_DELAY_URL:-}" \
+      TEST_CURL_DELAY_SECONDS="${CASE_CURL_DELAY_SECONDS:-1}" \
+      TEST_CURL_PARENT_PID_FILE="$case_root/curl-parent.pid" \
+      "${installer_command[@]}" "$@"
   }
 
   run_variant() {
@@ -327,6 +351,9 @@ EOF
       TEST_CHECKSUM_MODE=missing \
       TEST_SHELL_CAPABILITY="${CASE_SHELL_CAPABILITY:-supported}" \
       TEST_INSTALL_EXIT="${CASE_INSTALL_EXIT:-0}" \
+      TEST_CURL_DELAY_URL="${CASE_CURL_DELAY_URL:-}" \
+      TEST_CURL_DELAY_SECONDS="${CASE_CURL_DELAY_SECONDS:-1}" \
+      TEST_CURL_PARENT_PID_FILE="$case_root/curl-parent.pid" \
       "$interpreter" "$repo_root/install/$shell_name.sh" "$@"
   }
 
@@ -429,6 +456,41 @@ EOF
   assert_not_contains "$help_suppressed" 'next step' "$interpreter_name help suppression"
 
   reset_case
+  CASE_UNSET_SHELL=1
+  run_installer "$case_root/unset-shell-home" "$case_root/unset-shell-install" "$case_root/unset-shell-bin" "$stable_tag" >/dev/null 2>&1 ||
+    fail "$interpreter_name unset SHELL must not fail after installation"
+
+  reset_case
+  CASE_CURL_DELAY_URL="$github_url/FakeOwner/fake-repo/releases/download/$stable_tag/$archive_name"
+  signal_output="$case_root/signal-installer.log"
+  run_installer "$case_root/signal-home" "$case_root/signal-install" "$case_root/signal-bin" "$stable_tag" >"$signal_output" 2>&1 &
+  signal_job=$!
+  wait_for_file "$case_root/curl-parent.pid" "$interpreter_name installer did not reach delayed download"
+  signal_pid=$(<"$case_root/curl-parent.pid")
+  kill -TERM "$signal_pid"
+  if wait "$signal_job"; then
+    fail "$interpreter_name installer must terminate after SIGTERM"
+  else
+    signal_status=$?
+  fi
+  [[ $signal_status -eq 143 ]] || fail "$interpreter_name installer SIGTERM status (got $signal_status)"
+
+  reset_case
+  CASE_CURL_DELAY_URL=$script_url
+  variant_signal_output="$case_root/signal-variant.log"
+  run_variant zsh "$case_root/signal-variant-home" "$case_root/signal-variant-install" "$case_root/signal-variant-bin" "$stable_tag" >"$variant_signal_output" 2>&1 &
+  variant_signal_job=$!
+  wait_for_file "$case_root/curl-parent.pid" "$interpreter_name shell variant did not reach delayed download"
+  variant_signal_pid=$(<"$case_root/curl-parent.pid")
+  kill -TERM "$variant_signal_pid"
+  if wait "$variant_signal_job"; then
+    fail "$interpreter_name shell variant must terminate after SIGTERM"
+  else
+    variant_signal_status=$?
+  fi
+  [[ $variant_signal_status -eq 143 ]] || fail "$interpreter_name shell variant SIGTERM status (got $variant_signal_status)"
+
+  reset_case
   CASE_GITHUB_URL='http://127.0.0.1:8929'
   CASE_API_BASE='http://127.0.0.1:8929/api'
   run_installer "$case_root/loopback-home" "$case_root/loopback-install" "$case_root/loopback-bin" "$stable_tag" >/dev/null 2>&1
@@ -498,13 +560,15 @@ EOF
   grep -Fqx '# Composio CLI' "$bash_fallback_home/.bashrc" || fail "$interpreter_name bash fallback bashrc"
   grep -Fqx '# Composio CLI' "$bash_fallback_home/.bash_profile" || fail "$interpreter_name bash fallback login override"
 
-  reset_case
-  CASE_SHELL_CAPABILITY=unsupported
-  unsafe_home="$case_root/unsafe-variant-home"
-  if run_variant zsh "$unsafe_home" "$case_root/unsafe-variant-install" "$case_root/unsafe;variant-bin" "$stable_tag" >/dev/null 2>&1; then
-    fail "$interpreter_name unsafe variant bin dir must fail"
-  fi
-  [[ ! -e "$unsafe_home/.zshrc" ]] || fail "$interpreter_name unsafe variant must not write rc file"
+  for unsafe_character in ';' ':'; do
+    reset_case
+    CASE_SHELL_CAPABILITY=unsupported
+    unsafe_home="$case_root/unsafe-${unsafe_character//[^[:alnum:]]/delimiter}-variant-home"
+    if run_variant zsh "$unsafe_home" "$case_root/unsafe-variant-install" "$case_root/unsafe${unsafe_character}variant-bin" "$stable_tag" >/dev/null 2>&1; then
+      fail "$interpreter_name unsafe variant bin dir with $unsafe_character must fail"
+    fi
+    [[ ! -e "$unsafe_home/.zshrc" ]] || fail "$interpreter_name unsafe variant must not write rc file"
+  done
 
   for base_mode in fail empty; do
     reset_case

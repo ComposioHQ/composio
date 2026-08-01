@@ -278,7 +278,8 @@ print_post_install_help() {
     [ "${COMPOSIO_INSTALL_HELP:-1}" != 0 ] || return 0
     is_true "${COMPOSIO_QUIET:-}" && return 0
 
-    shell_name=${SHELL##*/}
+    shell_name=${SHELL:-}
+    shell_name=${shell_name##*/}
     shell_route=
     shell_config=
     case $shell_name in
@@ -323,6 +324,13 @@ cleanup() {
     if [ -n "${tmpdir:-}" ] && [ -d "$tmpdir" ]; then
         rm -rf "$tmpdir"
     fi
+}
+
+cleanup_on_signal() {
+    cleanup_signal=$1
+    trap - 0 1 2 3 15
+    cleanup || :
+    exit $((128 + cleanup_signal))
 }
 
 main() {
@@ -406,7 +414,11 @@ main() {
     validate_url "$checksums_url" || error "Refusing unsafe checksum URL \"$checksums_url\""
 
     tmpdir=$(mktemp -d) || error 'Failed to create a temporary directory'
-    trap cleanup 0 1 2 3 15
+    trap cleanup 0
+    trap 'cleanup_on_signal 1' 1
+    trap 'cleanup_on_signal 2' 2
+    trap 'cleanup_on_signal 3' 3
+    trap 'cleanup_on_signal 15' 15
     debug "temporary directory: $tmpdir"
 
     info "Installing Composio CLI $version for $target"
