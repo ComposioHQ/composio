@@ -54,8 +54,9 @@ export const atomicReplaceFile = ({
 
 /**
  * Replaces a directory with a staged copy using two renames. The old directory
- * is restored when publishing the replacement fails, but an abrupt process
- * exit between the renames can leave the target temporarily absent.
+ * is restored when publishing the replacement fails. An abrupt process exit
+ * between the renames can leave the target temporarily absent, with its prior
+ * contents retained in a same-directory recovery path.
  */
 export const atomicReplaceDirectory = ({
   sourcePath,
@@ -68,13 +69,13 @@ export const atomicReplaceDirectory = ({
   Effect.gen(function* () {
     const fs = yield* FileSystem.FileSystem;
     const path = yield* Path.Path;
+    const targetDirectory = path.dirname(targetPath);
     const stagingDirectory = yield* fs.makeTempDirectoryScoped({
-      directory: path.dirname(targetPath),
+      directory: targetDirectory,
       prefix: '.composio-atomic-replace-',
     });
     const targetName = path.basename(targetPath);
     const stagedPath = path.join(stagingDirectory, targetName);
-    const asidePath = path.join(stagingDirectory, `${targetName}.aside`);
 
     yield* fs.copy(sourcePath, stagedPath);
 
@@ -85,20 +86,50 @@ export const atomicReplaceDirectory = ({
 
     yield* Effect.uninterruptible(
       Effect.gen(function* () {
-        yield* fs.rename(targetPath, asidePath);
+        const recoveryDirectory = yield* fs.makeTempDirectory({
+          directory: targetDirectory,
+          prefix: '.composio-atomic-recovery-',
+        });
+        const asidePath = path.join(recoveryDirectory, targetName);
         yield* fs
-          .rename(stagedPath, targetPath)
-          .pipe(Effect.tapError(() => fs.rename(asidePath, targetPath).pipe(Effect.ignore)));
-        yield* fs.remove(asidePath, { recursive: true });
+          .rename(targetPath, asidePath)
+          .pipe(
+            Effect.tapError(() =>
+              fs.remove(recoveryDirectory, { recursive: true }).pipe(Effect.ignore)
+            )
+          );
+        yield* fs.rename(stagedPath, targetPath).pipe(
+          Effect.matchEffect({
+            onSuccess: () => fs.remove(recoveryDirectory, { recursive: true }),
+            onFailure: publishCause =>
+              fs.rename(asidePath, targetPath).pipe(
+                Effect.matchEffect({
+                  onSuccess: () =>
+                    fs
+                      .remove(recoveryDirectory, { recursive: true })
+                      .pipe(Effect.zipRight(Effect.fail(publishCause))),
+                  onFailure: restoreCause =>
+                    Effect.fail(
+                      new AtomicReplaceError({
+                        targetPath,
+                        message: `Failed to replace directory at ${targetPath}. Previous contents retained at ${asidePath}`,
+                        cause: { publishCause, restoreCause },
+                      })
+                    ),
+                })
+              ),
+          })
+        );
       })
     );
   }).pipe(
-    Effect.mapError(
-      cause =>
-        new AtomicReplaceError({
-          targetPath,
-          message: `Failed to replace directory at ${targetPath}`,
-          cause,
-        })
+    Effect.mapError(cause =>
+      cause instanceof AtomicReplaceError
+        ? cause
+        : new AtomicReplaceError({
+            targetPath,
+            message: `Failed to replace directory at ${targetPath}`,
+            cause,
+          })
     )
   );
