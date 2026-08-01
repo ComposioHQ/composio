@@ -85,6 +85,12 @@ export interface TestLiveInput {
   fixture?: string;
 
   /**
+   * Override for the mocked `NodeProcess.execPath`.
+   * Defaults to `<cwd>/composio`.
+   */
+  execPath?: string;
+
+  /**
    * Mock toolkit-related data to use in test.
    */
   toolkitsData?: {
@@ -804,7 +810,7 @@ export const TestLayer = (input?: TestLiveInput) =>
       NodeProcess,
       new NodeProcess({
         cwd,
-        execPath: path.join(cwd, 'composio'),
+        execPath: input?.execPath ?? path.join(cwd, 'composio'),
         platform: 'darwin',
         arch: 'arm64',
       })

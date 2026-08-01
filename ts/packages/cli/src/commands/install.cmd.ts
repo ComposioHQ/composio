@@ -220,7 +220,6 @@ const resolveWriteTarget = (
 
 export const installShellIntegration = (params: {
   readonly completions: boolean;
-  readonly execPath?: string;
   readonly shell?: Shell;
 }): Effect.Effect<
   void,
@@ -250,8 +249,6 @@ export const installShellIntegration = (params: {
 
     yield* ui.intro('composio install');
 
-    // Resolve the entry-point bin dir: explicit env, then an existing
-    // ~/.local/bin/composio, then the runtime executable's own directory.
     const envBinDir = yield* readOptionalEnv('COMPOSIO_BIN_DIR');
     const localBinDir = path.join(os.homedir, '.local', 'bin');
     const localBinComposioExists = yield* fs.exists(path.join(localBinDir, 'composio'));
@@ -260,7 +257,7 @@ export const installShellIntegration = (params: {
         envBinDir,
         localBinDir,
         localBinComposioExists,
-        execPath: params.execPath ?? nodeProcess.execPath,
+        execPath: nodeProcess.execPath,
         path,
       })
     );
@@ -414,7 +411,9 @@ export const installShellIntegration = (params: {
         // can alias the same physical file through symlinks, and this write must
         // not discard a previous iteration's append.
         const existingContents = yield* readMaybeMissingFile(filePath, fs);
-        const writeTarget = yield* resolveWriteTarget(filePath, fs);
+        // PATH files were already resolved above; only the completion file needs a fresh resolve.
+        const writeTarget =
+          pathFileTargets.get(filePath) ?? (yield* resolveWriteTarget(filePath, fs));
         const existingTargetInfo = yield* fs.stat(writeTarget).pipe(Effect.option);
 
         yield* fs
