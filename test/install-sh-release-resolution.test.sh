@@ -66,6 +66,18 @@ configured_line() {
   esac
 }
 
+# The recovery ending both failure-adjacent flows close with: an absolute,
+# copy-paste-safe login command. "now" is the install-only success variant
+# (setup skipped or unavailable, PATH untouched); "later" is the setup-failure
+# variant printed on stderr after the failure warning.
+recovery_tail() {
+  case $1 in
+  now) printf 'To get started now, run:\n\n  %s login' "$2" ;;
+  later) printf 'To get started, run:\n\n  %s login' "$2" ;;
+  *) fail "recovery_tail: unknown mode $1" ;;
+  esac
+}
+
 # macOS Terminal.app starts bash as a login shell, which reads only the first
 # existing of ~/.bash_profile, ~/.bash_login, ~/.profile and never ~/.bashrc.
 # Probe a real login bash over the sandboxed HOME to prove the PATH entry
@@ -651,7 +663,7 @@ EOF
   if grep -Fq 'install --shell' "$composio_log"; then
     fail "$interpreter_name unset SHELL must not run shell setup"
   fi
-  assert_tail "$unset_shell_output" $'To get started now, run:\n\n  '"$unset_shell_install/composio login" "$interpreter_name unset SHELL install-only tail"
+  assert_tail "$unset_shell_output" "$(recovery_tail now "$unset_shell_install/composio")" "$interpreter_name unset SHELL install-only tail"
 
   # Runs the given command in the background, SIGTERMs it once the delayed
   # download is reached, and asserts the process exits with 128+15.
@@ -804,7 +816,7 @@ EOF
     [[ -x "$unsafe_install/composio" ]] || fail "$interpreter_name unsafe variant must retain the binary"
     assert_contains "$unsafe_variant_output" 'warning:' "$interpreter_name unsafe variant warning"
     assert_contains "$unsafe_variant_output" "$unsafe_bin" "$interpreter_name unsafe variant warning names the rejected path"
-    assert_tail "$unsafe_variant_output" $'To get started, run:\n\n  '"$unsafe_install/composio login" "$interpreter_name unsafe variant recovery tail"
+    assert_tail "$unsafe_variant_output" "$(recovery_tail later "$unsafe_install/composio")" "$interpreter_name unsafe variant recovery tail"
   done
 
   for base_mode in fail empty; do
@@ -854,7 +866,7 @@ EOF
   fi
   [[ ! -e "$none_home/.bashrc" && ! -e "$none_home/.bash_profile" ]] || fail "$interpreter_name none must not write rc files"
   assert_contains "$none_output" 'COMPOSIO_INSTALL_SHELL=none' "$interpreter_name none skip disclosure"
-  assert_tail "$none_output" $'To get started now, run:\n\n  '"$none_install/composio login" "$interpreter_name none install-only tail"
+  assert_tail "$none_output" "$(recovery_tail now "$none_install/composio")" "$interpreter_name none install-only tail"
 
   # none + already-resolving installed command uses the bare Case A ending.
   reset_case
@@ -902,7 +914,7 @@ EOF
     fail "$interpreter_name unknown shell must not run shell setup"
   fi
   [[ ! -e "$unknown_home/.bashrc" ]] || fail "$interpreter_name unknown shell must not write rc files"
-  assert_tail "$unknown_output" $'To get started now, run:\n\n  '"$unknown_install/composio login" "$interpreter_name unknown shell install-only tail"
+  assert_tail "$unknown_output" "$(recovery_tail now "$unknown_install/composio")" "$interpreter_name unknown shell install-only tail"
 
   # Shadowing: bin dir on the inherited PATH, but another composio resolves
   # first. The ending must never run the shadowed bare command.
@@ -1017,11 +1029,17 @@ EOF
   [[ -x "$wf_delegated_install/composio" ]] || fail "$interpreter_name delegated setup failure must retain the binary"
   assert_contains "$wf_delegated_output" 'warning: Automatic PATH setup for zsh failed' "$interpreter_name delegated setup failure warning"
   assert_contains "$wf_delegated_output" 'COMPOSIO_DEBUG=1' "$interpreter_name delegated setup failure points at the captured output"
-  assert_tail "$wf_delegated_output" $'To get started, run:\n\n  '"$wf_delegated_install/composio login" "$interpreter_name delegated setup failure recovery tail"
+  assert_tail "$wf_delegated_output" "$(recovery_tail later "$wf_delegated_install/composio")" "$interpreter_name delegated setup failure recovery tail"
 
   # Inline path: helper failure inside a conditional must propagate explicitly.
+  # COMPOSIO_QUIET=1 and COMPOSIO_INSTALL_HELP=0 are set on purpose: both only
+  # gate the normal-success final block, so this one case also proves they are
+  # no-ops on the setup-failure path — the warning and the recovery tail reach
+  # the user even with all optional output suppressed.
   reset_case
   CASE_SHELL_CAPABILITY=unsupported
+  CASE_QUIET=1
+  CASE_HELP=0
   wf_inline_home="$case_root/write-failure-inline-home"
   wf_inline_install="$case_root/write-failure-inline-install"
   mkdir -p "$wf_inline_home/.bashrc"
@@ -1029,7 +1047,7 @@ EOF
     fail "$interpreter_name inline setup failure must keep the install successful"
   [[ -x "$wf_inline_install/composio" ]] || fail "$interpreter_name inline setup failure must retain the binary"
   assert_contains "$wf_inline_output" 'warning: Automatic PATH setup for bash failed' "$interpreter_name inline setup failure warning"
-  assert_tail "$wf_inline_output" $'To get started, run:\n\n  '"$wf_inline_install/composio login" "$interpreter_name inline setup failure recovery tail"
+  assert_tail "$wf_inline_output" "$(recovery_tail later "$wf_inline_install/composio")" "$interpreter_name inline setup failure recovery tail"
 
   # --- Managed-block reconciliation: a rerun replaces stale blocks instead of stacking duplicates ---
 
@@ -1165,7 +1183,7 @@ export PATH=\"$malformed_bin:\$PATH\"" ]] || fail "$interpreter_name malformed b
       fail "$interpreter_name unsafe auto bin dir must not write startup files"
     [[ -x "$unsafe_auto_install/composio" ]] || fail "$interpreter_name unsafe auto bin dir must retain the binary"
     assert_contains "$unsafe_auto_output" "$unsafe_auto_bin" "$interpreter_name unsafe auto warning names the rejected path"
-    assert_tail "$unsafe_auto_output" $'To get started, run:\n\n  '"$unsafe_auto_install/composio login" "$interpreter_name unsafe auto recovery tail"
+    assert_tail "$unsafe_auto_output" "$(recovery_tail later "$unsafe_auto_install/composio")" "$interpreter_name unsafe auto recovery tail"
   done
 
   # A valid absolute install dir containing spaces stays copy-paste safe in
@@ -1177,7 +1195,7 @@ export PATH=\"$malformed_bin:\$PATH\"" ]] || fail "$interpreter_name malformed b
   mkdir -p "$space_home/.bashrc"
   space_output=$(run_installer "$space_home" "$space_install" "$case_root/space-bin" "$stable_tag" 2>&1) ||
     fail "$interpreter_name spaced install dir setup failure must keep the install successful"
-  assert_tail "$space_output" $'To get started, run:\n\n  '"'$space_install/composio' login" "$interpreter_name spaced recovery tail"
+  assert_tail "$space_output" "$(recovery_tail later "'$space_install/composio'")" "$interpreter_name spaced recovery tail"
   space_recovery_line=$(printf '%s\n' "$space_output" | tail -n 1)
   space_recovery_command=${space_recovery_line#  }
   space_recovery_command=${space_recovery_command% login}
@@ -1232,30 +1250,6 @@ export PATH=\"$malformed_bin:\$PATH\"" ]] || fail "$interpreter_name malformed b
   agent_none_output=$(run_installer "$case_root/agent-none-home" "$agent_none_install" "$case_root/agent-none-bin" "$stable_tag" --agent 2>&1)
   assert_not_contains "$agent_none_output" 'composio login' "$interpreter_name agent none flow must not print a login command"
   assert_tail "$agent_none_output" $'Composio agent login complete.\nRun composio from its installed location:\n\n  '"$agent_none_install/composio --help" "$interpreter_name agent none tail"
-
-  # Quiet mode keeps setup-failure recovery visible.
-  reset_case
-  CASE_QUIET=1
-  CASE_SHELL_CAPABILITY=unsupported
-  quiet_fail_home="$case_root/quiet-fail-home"
-  quiet_fail_install="$case_root/quiet-fail-install"
-  mkdir -p "$quiet_fail_home/.bashrc"
-  quiet_fail_output=$(run_installer "$quiet_fail_home" "$quiet_fail_install" "$case_root/quiet-fail-bin" "$stable_tag" 2>&1) ||
-    fail "$interpreter_name quiet setup failure must keep the install successful"
-  assert_contains "$quiet_fail_output" 'warning: Automatic PATH setup for bash failed' "$interpreter_name quiet keeps the setup-failure warning"
-  assert_tail "$quiet_fail_output" $'To get started, run:\n\n  '"$quiet_fail_install/composio login" "$interpreter_name quiet keeps the recovery tail"
-
-  # COMPOSIO_INSTALL_HELP=0 also keeps setup-failure recovery visible.
-  reset_case
-  CASE_HELP=0
-  CASE_SHELL_CAPABILITY=unsupported
-  helpless_fail_home="$case_root/helpless-fail-home"
-  helpless_fail_install="$case_root/helpless-fail-install"
-  mkdir -p "$helpless_fail_home/.bashrc"
-  helpless_fail_output=$(run_installer "$helpless_fail_home" "$helpless_fail_install" "$case_root/helpless-fail-bin" "$stable_tag" 2>&1) ||
-    fail "$interpreter_name help-suppressed setup failure must keep the install successful"
-  assert_contains "$helpless_fail_output" 'warning: Automatic PATH setup for bash failed' "$interpreter_name help suppression keeps the setup-failure warning"
-  assert_tail "$helpless_fail_output" $'To get started, run:\n\n  '"$helpless_fail_install/composio login" "$interpreter_name help suppression keeps the recovery tail"
 
   printf 'install scripts passed under %s\n' "$interpreter_name"
 done
