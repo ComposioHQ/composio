@@ -6,15 +6,26 @@ Install the CLI bundle in `~/.composio` and its entry point in `~/.local/bin`:
 curl -fsSL https://composio.dev/install | sh
 ```
 
-The default installer changes no shell files and installs no agent plugins. If it reports that `~/.local/bin` is not available on `PATH`, run the shell-specific command it prints:
+The installer also configures your shell. It infers your login shell from `$SHELL` (`zsh`, `bash`, or `fish`) and writes a single managed `# Composio CLI` PATH block to the matching startup file so future terminals find `composio`. Open a new terminal, then run `composio login`.
+
+If your shell is not recognized, or shell setup fails, the binary install still succeeds and the installer prints a runnable command instead. The installer never installs agent plugins.
+
+## Choose or skip shell setup
+
+Set `COMPOSIO_INSTALL_SHELL` to force a specific shell, or to skip shell configuration entirely:
 
 ```bash
 curl -fsSL https://composio.dev/install | COMPOSIO_INSTALL_SHELL=zsh sh
 curl -fsSL https://composio.dev/install | COMPOSIO_INSTALL_SHELL=bash sh
 curl -fsSL https://composio.dev/install | COMPOSIO_INSTALL_SHELL=fish sh
+curl -fsSL https://composio.dev/install | COMPOSIO_INSTALL_SHELL=none sh
 ```
 
-Shell setup delegates to `composio install --shell <shell>` and falls back to writing the same `# Composio CLI` PATH block inline when the installed CLI release predates that flag.
+Use `none` for an install-only run that changes no shell files. Reach for it in CI, Docker images, or when a dotfile manager owns your startup files.
+
+Shell-specific installer variants ([`install/zsh.sh`](install/zsh.sh), [`install/bash.sh`](install/bash.sh), [`install/fish.sh`](install/fish.sh)) pin `COMPOSIO_INSTALL_SHELL` to their shell before delegating to the base installer.
+
+Shell setup is idempotent: repeated installs keep exactly one managed PATH block per startup file and reconcile it when the bin directory changes. Setup delegates to `composio install --shell <shell>` and falls back to writing the same `# Composio CLI` PATH block inline when the installed CLI release predates that flag.
 
 Pin a stable or beta release with `COMPOSIO_INSTALL_VERSION`, or pass the tag as a positional argument:
 
@@ -28,13 +39,13 @@ The positional argument takes precedence over `COMPOSIO_INSTALL_VERSION`.
 | Variable or argument | Description | Default |
 |---|---|---|
 | `COMPOSIO_INSTALL_DIR` | Complete CLI bundle directory. | `$HOME/.composio` |
-| `COMPOSIO_BIN_DIR` | `composio` entry-point directory. | `$HOME/.local/bin` |
+| `COMPOSIO_BIN_DIR` | `composio` entry-point directory. Trusted input: anyone with write access to this directory can replace commands that future terminals run. | `$HOME/.local/bin` |
 | `COMPOSIO_INSTALL_VERSION` | Stable or beta version, with or without the package prefix. | Latest stable release |
 | `COMPOSIO_QUIET` | Set to `1` or `true` to hide progress output. | Unset |
 | `COMPOSIO_DEBUG` | Set to `1` or `true` to print installer traces. | Unset |
 | `COMPOSIO_INSTALL_HELP` | Set to `0` to hide post-install guidance. | `1` |
 | `COMPOSIO_INSTALL_PLUGINS` | Set to `1` to install plugins for detected agent hosts. | `0` |
-| `COMPOSIO_INSTALL_SHELL` | Configure the requested shell (`zsh`, `bash`, or `fish`) after installation. | Unset |
+| `COMPOSIO_INSTALL_SHELL` | Shell setup mode: `auto` infers your login shell from `$SHELL`, `zsh`, `bash`, or `fish` force a specific shell, and `none` skips shell configuration. | `auto` |
 | `--agent` | Log in as a Composio agent after installation. | Off |
 | `--no-plugins` | Skip plugin setup. Kept for compatibility. | Off |
 
@@ -95,7 +106,7 @@ rm -rf \
   "$install_dir/local-tools-binaries"
 ```
 
-Remove `# Composio CLI` PATH blocks from `~/.zshrc`, `~/.bashrc`, `~/.bash_profile`, `~/.bash_login`, or `~/.config/fish/config.fish` if you used a shell-specific installer. Blocks written by older installers contain an extra `export COMPOSIO_INSTALL_DIR=...` line after the marker; remove that line too.
+Remove the managed `# Composio CLI` PATH block from `~/.zshrc`, `~/.bashrc`, `~/.bash_profile`, `~/.bash_login`, or `~/.config/fish/config.fish`. Blocks written by older installers contain an extra `export COMPOSIO_INSTALL_DIR=...` line after the marker; remove that line too.
 
 To purge credentials, configuration, caches, and every other CLI file, run `rm -rf "${COMPOSIO_INSTALL_DIR:-$HOME/.composio}"`. This is a complete reset and cannot be undone.
 

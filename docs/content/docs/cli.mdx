@@ -10,17 +10,15 @@ Reach for it when you want Claude to act in your connected apps directly, instea
 
 ## Install
 
-Install the CLI with the POSIX shell installer:
+Install the CLI with one command:
 
 ```bash
 curl -fsSL https://composio.dev/install | sh
 ```
 
-The installer downloads and verifies the release bundle in `~/.composio`, then creates the `~/.local/bin/composio` entry point. It does not edit shell files, install agent plugins, or log you in.
+The installer downloads and verifies the release bundle in `~/.composio`, creates the `~/.local/bin/composio` entry point, and configures your shell so future terminals find `composio` on `PATH`. It recognizes `zsh`, `bash`, and `fish` login shells from `$SHELL` and writes a single managed `# Composio CLI` block to the matching startup file. If your shell is not recognized, or shell setup fails, the CLI still installs and the installer prints a runnable command instead. It does not install agent plugins or log you in. To skip shell configuration entirely, see [Shell setup overrides](#shell-setup-overrides).
 
-If the installer reports that `~/.local/bin` is not on your `PATH`, run the command it prints for your shell — see [Configure your shell](#configure-your-shell) — and start a new shell.
-
-Log in after `composio` is available:
+Open a new terminal, then log in:
 
 ```bash
 composio login
@@ -50,14 +48,14 @@ curl -fsSL https://composio.dev/install | sh -s -- @composio/cli@0.3.1
 | Variable or argument | Description | Default |
 |---|---|---|
 | `COMPOSIO_INSTALL_DIR` | Directory that receives the complete CLI bundle and `release-tag.txt`. | `$HOME/.composio` |
-| `COMPOSIO_BIN_DIR` | Directory that receives the `composio` entry-point symlink. Set it to `COMPOSIO_INSTALL_DIR` to use the legacy single-directory layout. | `$HOME/.local/bin` |
+| `COMPOSIO_BIN_DIR` | Directory that receives the `composio` entry-point symlink. Set it to `COMPOSIO_INSTALL_DIR` to use the legacy single-directory layout. Trusted input: anyone with write access to this directory can replace commands that future terminals run. | `$HOME/.local/bin` |
 | `COMPOSIO_INSTALL_VERSION` | Stable or beta version to install, with or without the `@composio/cli@` prefix. | Latest stable release |
 | `version-tag` | Positional stable or beta version. This overrides `COMPOSIO_INSTALL_VERSION`. | None |
 | `COMPOSIO_QUIET` | Set to `1` or `true` to hide progress output. Warnings and errors still print. | Unset |
 | `COMPOSIO_DEBUG` | Set to `1` or `true` to print download URLs and temporary paths. | Unset |
 | `COMPOSIO_INSTALL_HELP` | Set to `0` to hide post-install guidance. | `1` |
 | `COMPOSIO_INSTALL_PLUGINS` | Set to `1` to run `composio setup --target auto --yes --if-present` after installation. | `0` |
-| `COMPOSIO_INSTALL_SHELL` | Configure the requested shell (`zsh`, `bash`, or `fish`) after installation. See [Configure your shell](#configure-your-shell). | Unset |
+| `COMPOSIO_INSTALL_SHELL` | Shell setup mode: `auto` infers your login shell from `$SHELL`, `zsh`, `bash`, or `fish` force a specific shell, and `none` skips shell configuration. See [Shell setup overrides](#shell-setup-overrides). | `auto` |
 | `COMPOSIO_GITHUB_OWNER` | GitHub owner used to resolve releases. | `ComposioHQ` |
 | `COMPOSIO_GITHUB_REPO` | GitHub repository used to resolve releases. | `composio` |
 | `COMPOSIO_GITHUB_URL` | GitHub web and release-download base URL. | `https://github.com` |
@@ -65,9 +63,9 @@ curl -fsSL https://composio.dev/install | sh -s -- @composio/cli@0.3.1
 | `--agent` | Log in as a Composio agent after installation. | Off |
 | `--no-plugins` | Skip agent plugin setup. Kept for compatibility and now matches the default. | Off |
 
-### Configure your shell
+### Shell setup overrides
 
-Set `COMPOSIO_INSTALL_SHELL` when `~/.local/bin` is not already on `PATH`, or when you want the CLI to configure the requested shell explicitly.
+By default the installer infers your login shell from `$SHELL` and configures it. Set `COMPOSIO_INSTALL_SHELL` to force a specific shell instead:
 
 <Tabs groupId="shell" items={['zsh','bash','fish']} persist>
 <Tab value="zsh">
@@ -93,7 +91,15 @@ This configures `~/.config/fish/config.fish` and delegates setup to `composio in
 </Tab>
 </Tabs>
 
-Shell setup is idempotent. It falls back to writing the same PATH block inline when you pin an older CLI release that does not support `composio install --shell`.
+Set `COMPOSIO_INSTALL_SHELL=none` for an install-only run that changes no shell files. Use it in CI, Docker images, or when a dotfile manager owns your startup files:
+
+```bash
+curl -fsSL https://composio.dev/install | COMPOSIO_INSTALL_SHELL=none sh
+```
+
+Shell-specific installer variants (`zsh.sh`, `bash.sh`, and `fish.sh` in the repository's [`install/` directory](https://github.com/ComposioHQ/composio/tree/next/install)) pin `COMPOSIO_INSTALL_SHELL` to their shell before delegating to the base installer.
+
+Shell setup is idempotent: repeated installs keep exactly one managed PATH block per startup file and reconcile it when the bin directory changes. Setup falls back to writing the same PATH block inline when you pin an older CLI release that does not support `composio install --shell`. Startup-file changes only affect future terminals; in the current one, either open a new terminal or run the absolute path the installer prints.
 
 ### Verify the installation
 
