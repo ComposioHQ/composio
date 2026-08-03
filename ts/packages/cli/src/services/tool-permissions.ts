@@ -5,6 +5,7 @@ import { detectCliPlatform } from '@composio/cli-local-tools';
 import { Data, Effect, Option, Record as EffectRecord, Schema } from 'effect';
 import { JsonRecordSchema } from 'src/effects/json';
 import { resolveCliConfigDirectorySync } from 'src/services/cli-user-config';
+import { atomicWriteFileString } from 'src/utils/atomic-write';
 import { collectDecodedEntries } from 'src/utils/collect-decoded-entries';
 import {
   detectNativeUiCallerAgent,
@@ -205,25 +206,20 @@ const writeCacheFile = (fs: FileSystem.FileSystem, path: Path.Path, cache: Cache
     const targetPath = cachePath(path);
     yield* fs.makeDirectory(path.dirname(targetPath), { recursive: true });
 
-    const tempPath = `${targetPath}.${process.pid}.${Date.now()}.${crypto.randomUUID()}.tmp`;
     // Atomic write: on failure the temp file is dropped (best effort) and the
     // original error is surfaced.
-    yield* fs
-      .writeFileString(
-        tempPath,
-        `${JSON.stringify(
-          {
-            entries: cache.entries,
-            allowEntries: pruneAllowEntries(cache.allowEntries),
-          } satisfies CacheFile,
-          null,
-          2
-        )}\n`
-      )
-      .pipe(
-        Effect.andThen(fs.rename(tempPath, targetPath)),
-        Effect.onError(() => fs.remove(tempPath, { force: true }).pipe(Effect.ignore))
-      );
+    yield* atomicWriteFileString({
+      fs,
+      target: targetPath,
+      contents: `${JSON.stringify(
+        {
+          entries: cache.entries,
+          allowEntries: pruneAllowEntries(cache.allowEntries),
+        } satisfies CacheFile,
+        null,
+        2
+      )}\n`,
+    });
   });
 
 // Serializes the read-modify-write cycles on the cache file so concurrent

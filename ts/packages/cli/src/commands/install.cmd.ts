@@ -7,6 +7,7 @@ import { NodeOs } from 'src/services/node-os';
 import { NodeProcess } from 'src/services/node-process';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { getCompletionScript } from 'src/effects/shell-completions';
+import { atomicWriteFileString } from 'src/utils/atomic-write';
 
 // ---------------------------------------------------------------------------
 // Options
@@ -384,27 +385,50 @@ const planPathBlockWrites = (params: {
   return { appendPathFiles, replacementsByTarget, loginOverrideWritten };
 };
 
-/** Atomically replace a physical target file's contents, preserving its file mode. */
-const atomicWriteWithMode = (
+/**
+ * Replace an rc file's contents via the shared atomic-write helper, preserving
+ * the existing file's mode so a private rc stays private across the rewrite.
+ */
+const replaceFilePreservingMode = (
   fs: FileSystem.FileSystem,
-  writeTarget: string,
+  target: string,
   contents: string
 ): Effect.Effect<void, PlatformError> =>
-  Effect.gen(function* () {
-    const existingTargetInfo = yield* fs.stat(writeTarget).pipe(Effect.option);
-    const tmpPath = `${writeTarget}.composio-tmp`;
+  atomicWriteFileString({ fs, target, contents, preserveMode: true });
 
-    yield* fs.writeFileString(tmpPath, contents);
-    // Mirror install.sh's write_path_block: when the chmod or rename step
-    // fails, remove the temp file before propagating the error so no
-    // `.composio-tmp` litter is left next to the target.
-    const promoteTmp = Effect.gen(function* () {
-      if (Option.isSome(existingTargetInfo)) {
-        yield* fs.chmod(tmpPath, existingTargetInfo.value.mode & 0o7777);
-      }
-      yield* fs.rename(tmpPath, writeTarget);
-    });
-    yield* promoteTmp.pipe(Effect.onError(() => fs.remove(tmpPath).pipe(Effect.ignore)));
+/** Append each file's queued blocks in one atomic, mode-preserving rewrite per file. */
+const appendQueuedBlocks = (params: {
+  readonly blocksByFile: ReadonlyMap<string, ReadonlyArray<string>>;
+  readonly pathFileTargets: ReadonlyMap<string, string>;
+  readonly fs: FileSystem.FileSystem;
+  readonly path: Path.Path;
+  readonly homedir: string;
+  readonly report: (message: string) => Effect.Effect<void>;
+}): Effect.Effect<void, PlatformError> =>
+  Effect.gen(function* () {
+    const { fs, path } = params;
+    for (const [filePath, blocks] of params.blocksByFile.entries()) {
+      // Re-read instead of reusing the pre-check snapshot: two configured paths
+      // can alias the same physical file through symlinks, and this write must
+      // not discard a previous iteration's append.
+      const existingContents = yield* readMaybeMissingFile(filePath, fs);
+      // PATH files were already resolved by the caller; only the completion
+      // file needs a fresh resolve.
+      const writeTarget =
+        params.pathFileTargets.get(filePath) ?? (yield* resolveWriteTarget(filePath, fs));
+
+      yield* fs
+        .makeDirectory(path.dirname(writeTarget), { recursive: true })
+        .pipe(
+          Effect.catchAll(e =>
+            Effect.logDebug('Could not create parent directory (may already exist):', e)
+          )
+        );
+
+      const appendContent = '\n' + blocks.join('\n\n') + '\n';
+      yield* replaceFilePreservingMode(fs, writeTarget, existingContents + appendContent);
+      yield* params.report(`Updated ${tildify(filePath, params.homedir)}`);
+    }
   });
 
 /** Atomically rewrite each reconciled physical target, preserving its file mode. */
@@ -416,7 +440,7 @@ const writeReconciledTargets = (params: {
 }): Effect.Effect<void, PlatformError> =>
   Effect.gen(function* () {
     for (const [writeTarget, replacement] of params.replacementsByTarget.entries()) {
-      yield* atomicWriteWithMode(params.fs, writeTarget, replacement.contents);
+      yield* replaceFilePreservingMode(params.fs, writeTarget, replacement.contents);
       yield* params.report(`Updated ${tildify(replacement.displayPath, params.homedir)}`);
     }
   });
@@ -526,38 +550,6 @@ const resolveWriteTarget = (
     Effect.flatMap(() => fs.realPath(filePath)),
     Effect.catchAll(() => Effect.succeed(filePath))
   );
-
-/**
- * Atomically replace `writeTarget` via a same-directory tmp file. The tmp copy
- * is created with the target's mode from the start so a private rc's contents
- * never sit in a default-mode, world-readable tmp file. open(2) masks the
- * requested mode with the process umask (only ever clearing bits), so a chmod
- * still follows to pin the exact mode.
- */
-const replaceFilePreservingMode = (
-  writeTarget: string,
-  contents: string,
-  fs: FileSystem.FileSystem
-): Effect.Effect<void, PlatformError> =>
-  Effect.gen(function* () {
-    const existingTargetInfo = yield* fs.stat(writeTarget).pipe(Effect.option);
-    const preservedMode = Option.map(existingTargetInfo, info => info.mode & 0o7777);
-    const tmpPath = `${writeTarget}.composio-tmp`;
-    yield* Option.match(preservedMode, {
-      onNone: () => fs.writeFileString(tmpPath, contents),
-      onSome: mode => fs.writeFileString(tmpPath, contents, { mode }),
-    });
-    // Mirror install.sh's write_path_block: when the chmod or rename step
-    // fails, remove the temp file before propagating the error so no
-    // `.composio-tmp` litter is left next to the target.
-    const promoteTmp = Effect.gen(function* () {
-      if (Option.isSome(preservedMode)) {
-        yield* fs.chmod(tmpPath, preservedMode.value);
-      }
-      yield* fs.rename(tmpPath, writeTarget);
-    });
-    yield* promoteTmp.pipe(Effect.onError(() => fs.remove(tmpPath).pipe(Effect.ignore)));
-  });
 
 // ---------------------------------------------------------------------------
 // Exported logic (reusable from install.sh post-install delegation)
@@ -771,30 +763,14 @@ export const installShellIntegration = (params: {
       report: success,
     });
 
-    if (blocksByFile.size > 0) {
-      for (const [filePath, blocks] of blocksByFile.entries()) {
-        // Re-read instead of reusing the pre-check snapshot: two configured paths
-        // can alias the same physical file through symlinks, and this write must
-        // not discard a previous iteration's append.
-        const existingContents = yield* readMaybeMissingFile(filePath, fs);
-        // PATH files were already resolved above; only the completion file needs a fresh resolve.
-        const writeTarget =
-          pathFileTargets.get(filePath) ?? (yield* resolveWriteTarget(filePath, fs));
-
-        yield* fs
-          .makeDirectory(path.dirname(writeTarget), { recursive: true })
-          .pipe(
-            Effect.catchAll(e =>
-              Effect.logDebug('Could not create parent directory (may already exist):', e)
-            )
-          );
-
-        const appendContent = '\n' + blocks.join('\n\n') + '\n';
-        yield* replaceFilePreservingMode(writeTarget, existingContents + appendContent, fs);
-
-        yield* success(`Updated ${tildify(filePath, os.homedir)}`);
-      }
-    }
+    yield* appendQueuedBlocks({
+      blocksByFile,
+      pathFileTargets,
+      fs,
+      path,
+      homedir: os.homedir,
+      report: success,
+    });
 
     const changesWritten = blocksByFile.size > 0 || replacementsByTarget.size > 0;
     if (!changesWritten) {

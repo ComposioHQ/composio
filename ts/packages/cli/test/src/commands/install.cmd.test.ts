@@ -52,6 +52,14 @@ const install = (
     shell: params.shell,
   });
 
+// The atomic-write tmp name embeds the pid, so litter checks scan the target's
+// directory for any `.composio-tmp` remnant instead of probing one fixed name.
+const expectNoTmpLitter = (fs: FileSystem.FileSystem, targetPath: string) =>
+  Effect.gen(function* () {
+    const entries = yield* fs.readDirectory(path.dirname(targetPath));
+    expect(entries.filter(name => name.includes('.composio-tmp'))).toEqual([]);
+  });
+
 // NOTE: `@effect/vitest`'s `layer(...)` builds one shared TestLive instance
 // (home dir, MockConsole buffer, etc.) for every `it.scoped` nested inside a
 // single call. Sharing is only safe when a later test doesn't read state a
@@ -121,7 +129,7 @@ describe('CLI: composio install', () => {
 
           expect(yield* fs.readLink(rcPath)).toBe(linkTarget);
           expect(yield* fs.readFileString(managedPath)).toContain('# Composio CLI');
-          expect(yield* fs.exists(`${rcPath}.composio-tmp`)).toBe(false);
+          yield* expectNoTmpLitter(fs, rcPath);
         })
       );
     });
@@ -253,7 +261,7 @@ describe('CLI: composio install', () => {
 
           const info = yield* fs.stat(bashProfilePath);
           expect(info.mode & 0o777).toBe(0o600);
-          expect(yield* fs.exists(`${bashProfilePath}.composio-tmp`)).toBe(false);
+          yield* expectNoTmpLitter(fs, bashProfilePath);
         })
       );
     });
@@ -734,7 +742,7 @@ describe('CLI: composio install', () => {
           // Both aliases must survive as symlinks to the same physical file.
           expect(yield* fs.readLink(bashrcPath)).toBe(managedPath);
           expect(yield* fs.readLink(bashProfilePath)).toBe(managedPath);
-          expect(yield* fs.exists(`${managedPath}.composio-tmp`)).toBe(false);
+          yield* expectNoTmpLitter(fs, managedPath);
         })
       );
     });
@@ -757,7 +765,7 @@ describe('CLI: composio install', () => {
           const exit = yield* install().pipe(Effect.exit);
 
           expect(Exit.isFailure(exit)).toBe(true);
-          expect(yield* fs.exists(`${rcPath}.composio-tmp`)).toBe(false);
+          yield* expectNoTmpLitter(fs, rcPath);
         })
       );
     });
