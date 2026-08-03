@@ -19,15 +19,14 @@ export function isNewerVersion(version1: string, version2: string): boolean {
   return false;
 }
 
-/** Upper bound on the npm registry version check. Kept short: it is best-effort and unawaited. */
-const VERSION_CHECK_TIMEOUT_MS = 2000;
+const VERSION_CHECK_TIMEOUT_MS = 2_000;
 
 /**
  * Checks for the latest version of the Composio SDK from NPM.
  * If a newer version is available, it logs a warning to the console.
  *
- * Best-effort: never throws, and never keeps the process alive for more than
- * {@link VERSION_CHECK_TIMEOUT_MS}.
+ * Best-effort: never throws. The npm registry request is aborted after
+ * {@link VERSION_CHECK_TIMEOUT_MS} milliseconds.
  */
 export async function checkForLatestVersionFromNPM(currentVersion: string) {
   try {
@@ -48,12 +47,7 @@ export async function checkForLatestVersionFromNPM(currentVersion: string) {
       return;
     }
 
-    // Bounded and abortable: this check is a non-essential background nicety that
-    // nobody awaits, so it must never extend process lifetime. An in-flight fetch
-    // keeps its socket referenced on the event loop, so without a signal a slow or
-    // black-holed registry (corporate proxy, egress firewall that drops rather than
-    // rejects, npm incident) keeps short-lived scripts alive until undici's own
-    // timeouts fire. The catch below already swallows the resulting TimeoutError.
+    // Bound this best-effort request so a stalled registry cannot leave it pending indefinitely.
     const response = await fetch(`https://registry.npmjs.org/${packageName}/latest`, {
       signal: AbortSignal.timeout(VERSION_CHECK_TIMEOUT_MS),
     });

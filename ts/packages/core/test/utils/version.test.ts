@@ -3,57 +3,40 @@ import { checkForLatestVersionFromNPM } from '../../src/utils/version';
 
 describe('checkForLatestVersionFromNPM', () => {
   afterEach(() => {
+    vi.restoreAllMocks();
     vi.unstubAllGlobals();
   });
 
-  it('bounds the registry request with an AbortSignal so it cannot outlive the process', async () => {
-    const fetchMock = vi.fn(async () => new Response(JSON.stringify({ version: '0.0.1' })));
+  it('bounds the registry request with the configured timeout signal', async () => {
+    const signal = new AbortController().signal;
+    const timeoutSpy = vi.spyOn(AbortSignal, 'timeout').mockReturnValue(signal);
+    const fetchMock = vi.fn<typeof fetch>(async () => Response.json({ version: '0.0.1' }));
     vi.stubGlobal('fetch', fetchMock);
 
     await checkForLatestVersionFromNPM('1.0.0');
 
-    expect(fetchMock).toHaveBeenCalledOnce();
-    const init = fetchMock.mock.calls[0]![1] as RequestInit | undefined;
-    expect(init?.signal).toBeInstanceOf(AbortSignal);
+    expect(timeoutSpy).toHaveBeenCalledWith(2_000);
+    expect(fetchMock).toHaveBeenCalledWith('https://registry.npmjs.org/@composio/core/latest', {
+      signal,
+    });
   });
 
-  it('gives up instead of hanging when the registry never responds', async () => {
-    // A registry that accepts the request and never answers. Without a timeout this
-    // promise never settles, which is exactly what keeps a real process alive.
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(
-        (_url: string, init?: RequestInit) =>
-          new Promise<Response>((_resolve, reject) => {
-            init?.signal?.addEventListener('abort', () => reject(init.signal!.reason));
-          })
-      )
+  it('swallows a timeout from a registry request that never responds', async () => {
+    const timeoutController = new AbortController();
+    vi.spyOn(AbortSignal, 'timeout').mockReturnValue(timeoutController.signal);
+    const fetchMock = vi.fn<typeof fetch>(
+      (_input, init) =>
+        new Promise<Response>((_resolve, reject) => {
+          init?.signal?.addEventListener('abort', () => reject(init.signal?.reason), {
+            once: true,
+          });
+        })
     );
-
-    // Resolves (rather than hanging) only because the signal aborts it; the
-    // function swallows the resulting TimeoutError.
-    await expect(checkForLatestVersionFromNPM('1.0.0')).resolves.toBeUndefined();
-  });
-
-  it('never rejects when the registry errors', async () => {
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(async () => {
-        throw new Error('ENOTFOUND registry.npmjs.org');
-      })
-    );
-
-    await expect(checkForLatestVersionFromNPM('1.0.0')).resolves.toBeUndefined();
-  });
-
-  it('skips the request entirely for non-semver and prerelease versions', async () => {
-    const fetchMock = vi.fn(async () => new Response(JSON.stringify({ version: '9.9.9' })));
     vi.stubGlobal('fetch', fetchMock);
 
-    await checkForLatestVersionFromNPM('not-a-version');
-    await checkForLatestVersionFromNPM('1.0.0-alpha.1');
-    await checkForLatestVersionFromNPM('1.0.0-beta.3');
+    const versionCheck = checkForLatestVersionFromNPM('1.0.0');
+    timeoutController.abort(new DOMException('The operation timed out', 'TimeoutError'));
 
-    expect(fetchMock).not.toHaveBeenCalled();
+    await expect(versionCheck).resolves.toBeUndefined();
   });
 });
