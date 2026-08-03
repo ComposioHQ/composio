@@ -352,15 +352,19 @@ if (config.mode === 'prod' && config.version === 'latest') {
     it(
       'makes composio available in a fresh login shell',
       async () => {
-        const route = config.shell === 'bash' ? 'install' : 'install/zsh';
+        // The /install/<shell> variant routes are not provisioned in production
+        // yet (404); select the shell through COMPOSIO_INSTALL_SHELL on the base
+        // route until they ship.
+        const loginShell = (script: string) =>
+          config.shell === 'fish' ? `fish -l -c '${script}'` : `${config.shell} -ilc '${script}'`;
         const result = await run(`
 set -eu
 test ! -d "$HOME/.local/bin"
-curl -fsSL "$INSTALL_BASE_URL/${route}" | SHELL=/bin/${config.shell} sh
+curl -fsSL "$INSTALL_BASE_URL/install" | COMPOSIO_INSTALL_SHELL=${config.shell} SHELL=/bin/${config.shell} sh
 test -x "$HOME/.composio/composio"
 test -L "$HOME/.local/bin/composio"
-test "$(${config.shell} -ilc 'command -v composio')" = "$HOME/.local/bin/composio"
-${config.shell} -ilc 'composio --version'
+test "$(${loginShell('command -v composio')})" = "$HOME/.local/bin/composio"
+${loginShell('composio --version')}
 `);
         assertSuccess(result);
       },
@@ -382,7 +386,7 @@ if "$HOME/.composio/composio" install --help | grep -q -- '--shell'; then
   exit 1
 fi
 test "$(grep -Fc '# Composio CLI' "$HOME/.${config.shell}rc")" = 1
-curl -fsSL "$INSTALL_BASE_URL/install/${config.shell}" | sh -s -- "$E2E_VERSION"
+curl -fsSL "$INSTALL_BASE_URL/install" | COMPOSIO_INSTALL_SHELL=${config.shell} sh -s -- "$E2E_VERSION"
 test "$(grep -Fc '# Composio CLI' "$HOME/.${config.shell}rc")" = 1
 test "$(${config.shell} -ilc 'command -v composio')" = "$HOME/.local/bin/composio"
 ${config.shell} -ilc 'composio --version'
