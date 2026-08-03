@@ -314,6 +314,22 @@ jobs:
           curl -fsSL https://composio.dev/install | sh
           ```
 
+          The installer downloads the CLI and sets up your shell automatically: when
+          your login shell (`$SHELL`) is zsh, bash, or fish, it adds the CLI's
+          directory to `PATH` in that shell's startup file. Re-running the installer
+          never duplicates the entry.
+
+          ### Install without shell setup
+
+          ```bash
+          curl -fsSL https://composio.dev/install | COMPOSIO_INSTALL_SHELL=none sh
+          ```
+
+          Use `COMPOSIO_INSTALL_SHELL=none` in CI, Docker images, or when you manage
+          shell startup files yourself: it installs the CLI and leaves every startup
+          file untouched. Set `COMPOSIO_INSTALL_SHELL=zsh`, `bash`, or `fish` instead
+          to configure a specific shell regardless of `$SHELL`.
+
           ### Install specific version
           ```bash
           curl -fsSL https://composio.dev/install | sh -s -- RELEASE_TAG_PLACEHOLDER
@@ -341,7 +357,9 @@ jobs:
           export PATH="$COMPOSIO_BIN_DIR:$PATH"
           ```
 
-          Run `curl -fsSL https://composio.dev/install | COMPOSIO_INSTALL_SHELL=zsh sh`, replacing `zsh` with `bash` or `fish`, when you want the CLI to configure your shell.
+          After a manual installation, run `composio install` to add the CLI to your
+          shell's `PATH` permanently (or `composio install --shell zsh|bash|fish` to
+          target a specific shell).
 
           ## Usage
 

@@ -190,11 +190,34 @@ jobs:
             exit 1
           fi
 
+          # The default (COMPOSIO_INSTALL_SHELL unset → auto) infers the target
+          # shell from $SHELL, which "Setup shell environment" exported for this
+          # matrix leg, so this no-argument install must persist a managed PATH
+          # block in that shell's startup file.
+          if [[ "${{ matrix.shell }}" == "zsh" ]]; then
+            config_file=~/.zshrc
+          else
+            config_file=~/.bashrc
+          fi
+
+          if grep -Fqx '# Composio CLI' "$config_file" \
+            && grep -Fqx 'export PATH="$HOME/.local/bin:$PATH"' "$config_file"; then
+            echo "✅ $config_file gained the managed Composio PATH block via automatic shell setup"
+          else
+            echo "❌ $config_file missing the managed Composio PATH block after the no-argument install"
+            echo "=== $config_file contents ==="
+            cat "$config_file"
+            exit 1
+          fi
+
       - name: Test PATH integration
         shell: bash
         run: |
           echo "Testing PATH integration with ${{ matrix.shell }}..."
 
+          # The no-argument install above already configured this shell through
+          # the auto default; this exercises the CLI command directly and must
+          # stay idempotent on top of it.
           COMPOSIO_BIN_DIR="$HOME/.local/bin" "$HOME/.composio/composio" install --shell "${{ matrix.shell }}"
 
           # Debug: Check what files exist and their contents
@@ -345,11 +368,28 @@ jobs:
             exit 1
           fi
 
+          # Automatic setup ran during the no-argument install and `composio
+          # install --shell` ran again afterwards: setup is idempotent, so the
+          # startup file must hold exactly one managed block.
+          marker_count=$(grep -Fcx '# Composio CLI' "$config_file" || true)
+          if [[ "$marker_count" == "1" ]]; then
+            echo "✅ $config_file contains exactly one managed Composio block"
+          else
+            echo "❌ $config_file contains $marker_count managed Composio blocks (expected 1)"
+            echo "=== $config_file contents ==="
+            cat "$config_file"
+            exit 1
+          fi
+
       - name: Test custom install directory
         shell: bash
         env:
           USE_LATEST: ${{ steps.release_target.outputs.use_latest }}
           RELEASE_TAG: ${{ steps.release_target.outputs.release_tag }}
+          # Install-only step: it verifies custom install locations, so opt out
+          # of automatic shell setup instead of re-pointing the managed PATH
+          # block at the throwaway custom bin dir.
+          COMPOSIO_INSTALL_SHELL: none
         run: |
           echo "Testing custom install directory..."
 

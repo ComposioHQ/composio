@@ -41,7 +41,10 @@ jobs:
       - name: Install newest stable (pinned — fails on a release with missing assets)
         run: |
           set -euo pipefail
-          curl -fsSL https://composio.dev/install | sh -s -- "${{ steps.resolve.outputs.tag }}"
+          # Install-only leg: this step's signal is asset availability, so it opts out of
+          # automatic shell setup with COMPOSIO_INSTALL_SHELL=none. Default-flow (auto)
+          # coverage stays with the no-arg leg below.
+          curl -fsSL https://composio.dev/install | COMPOSIO_INSTALL_SHELL=none sh -s -- "${{ steps.resolve.outputs.tag }}"
           echo "$HOME/.local/bin" >> "$GITHUB_PATH"
 
       - name: Verify pinned installation
@@ -53,8 +56,10 @@ jobs:
           which composio
           composio --version
 
-      # Secondary: the default no-arg flow most users run. Asset-aware and self-healing, so it
-      # is a coverage net rather than the primary signal.
+      # Secondary: the default no-arg flow most users run, exactly as they run it — including
+      # automatic shell setup (the default infers the shell from $SHELL; the idempotent rc
+      # edit on this ephemeral runner is harmless). Asset-aware and self-healing, so it is a
+      # coverage net rather than the primary signal.
       - name: Install via default no-arg flow
         run: |
           set -euo pipefail

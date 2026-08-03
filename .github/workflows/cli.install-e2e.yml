@@ -193,8 +193,10 @@ jobs:
             echo ""
             echo '```sh'
             echo "curl -fsSL \"$RAW_BASE/install.sh\" | sh"
-            echo "curl -fsSL \"$RAW_BASE/install.sh\" | COMPOSIO_INSTALL_SHELL=zsh sh"
+            echo "curl -fsSL \"$RAW_BASE/install.sh\" | COMPOSIO_INSTALL_SHELL=none sh"
             echo '```'
+            echo ""
+            echo "The first command is the default flow: it installs the CLI and configures your shell automatically. The second installs only, without touching shell startup files."
             echo ""
             echo "Shell-specific setup routes (the override points the variant at this PR's base installer):"
             echo ""
