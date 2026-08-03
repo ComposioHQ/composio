@@ -83,7 +83,7 @@ export const schemaHasFileProperty = (
 
   // Check nested properties
   if (schema.properties) {
-    for (const prop of Object.values(schema.properties) as JSONSchemaProperty[]) {
+    for (const prop of Object.values(schema.properties)) {
       if (schemaHasFileProperty(prop, property)) return true;
     }
   }

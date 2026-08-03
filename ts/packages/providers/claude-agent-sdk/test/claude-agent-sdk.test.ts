@@ -43,13 +43,14 @@ type MockedToolHandler = (
   args: unknown
 ) => Promise<{ content: Array<{ type: string; text: string }> }>;
 
-// Shape of the mocked `tool()` function from '@anthropic-ai/claude-agent-sdk', used to pull the
-// schema/handler arguments off `tool.mock.calls` directly for focused unit testing.
-type MockedToolFn = {
-  mock: {
-    calls: Array<[string, string | undefined, Record<string, MinimalZodSchema>, MockedToolHandler]>;
-  };
-};
+type MockedToolFn = Mock<
+  (
+    name: string,
+    description: string | undefined,
+    schema: Record<string, MinimalZodSchema>,
+    handler: MockedToolHandler
+  ) => unknown
+>;
 
 // `mockExecuteToolFn` is declared against the real `GlobalExecuteToolFn` contract, which always
 // resolves with a `ToolExecuteResponse`. A couple of tests deliberately stub it with a plain

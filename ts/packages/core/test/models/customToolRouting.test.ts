@@ -9,13 +9,6 @@ import { Tools } from '../../src/models/Tools';
 import type { CustomTool, SessionContext } from '../../src/types/customTool.types';
 import type { ComposioConfig } from '../../src/composio';
 
-// ── Local structural types for otherwise-`unknown` mock dereferences ────
-// These mirror just the members these tests actually touch on top of a
-// bare `as unknown` cast; see the double-assertion convention used
-// throughout this file (`x as unknown as SomeType`).
-
-/** One entry of the merged local+remote results[] produced by the
- * COMPOSIO_MULTI_EXECUTE_TOOL routing path. */
 type MultiExecuteResultItem = {
   tool_slug: string;
   index?: number;
@@ -27,9 +20,7 @@ type MultiExecuteResultItem = {
   error?: string;
 };
 
-/** Return shape of the captured provider-facing execute function. `data` is
- * intentionally loose (index signature) since single-tool passthrough
- * responses don't use the results[] shape. */
+// Single-tool passthrough responses do not use the results array.
 type MultiExecuteResponse = {
   data: {
     results: MultiExecuteResultItem[];
@@ -42,24 +33,15 @@ type MultiExecuteResponse = {
   successful: boolean;
 };
 
-/** The routing execute function captured off the provider by `wrapTools`. */
 type CapturedExecuteFn = (
   toolSlug: string,
   input: Record<string, unknown>
 ) => Promise<MultiExecuteResponse>;
 
-/** MockProvider with the ad hoc `_captured*` fields test helpers stash on it. */
-type ProviderWithCapturedExecuteFn = MockProvider & {
-  _capturedExecuteFn: CapturedExecuteFn;
-  _capturedTools: unknown;
-};
-
-/** Minimal shape of the mocked `Tools` instance used across these tests. */
 type MockedToolsInstance = {
   executeSessionTool: ReturnType<typeof vi.fn>;
 };
 
-/** Minimal shape of the mocked `Tools` constructor (vi.mock'd class). */
 type MockedToolsConstructor = {
   mock: {
     results: Array<{ value: MockedToolsInstance }>;
@@ -172,12 +154,12 @@ const createSessionWithProvider = (
 };
 
 const captureExecuteFn = (provider: MockProvider) => {
-  provider.wrapTools.mockImplementation((tools: unknown, executeFn: unknown) => {
-    (provider as unknown as ProviderWithCapturedExecuteFn)._capturedExecuteFn =
-      executeFn as CapturedExecuteFn;
-    (provider as unknown as ProviderWithCapturedExecuteFn)._capturedTools = tools;
+  let executeFn: CapturedExecuteFn;
+  provider.wrapTools.mockImplementation((_tools: unknown, capturedExecuteFn: unknown) => {
+    executeFn = capturedExecuteFn as CapturedExecuteFn;
     return 'wrapped-tools-with-routing';
   });
+  return () => executeFn;
 };
 
 // ────────────────────────────────────────────────────────────────
@@ -568,11 +550,11 @@ describe('ToolRouterSession execution routing', () => {
   describe('session.tools() — COMPOSIO_MULTI_EXECUTE_TOOL routing with tools[] array', () => {
     it('should route all-local tools[] to in-process execution', async () => {
       const provider = new MockProvider();
-      captureExecuteFn(provider);
+      const getExecuteFn = captureExecuteFn(provider);
       const session = createSessionWithProvider(mockClient, provider, [customToolHandle]);
 
       await session.tools();
-      const executeFn = (provider as unknown as ProviderWithCapturedExecuteFn)._capturedExecuteFn;
+      const executeFn = getExecuteFn();
 
       const result = await executeFn('COMPOSIO_MULTI_EXECUTE_TOOL', {
         tools: [{ tool_slug: 'LOCAL_GET_USER_CONTEXT', arguments: { category: 'test' } }],
@@ -588,11 +570,11 @@ describe('ToolRouterSession execution routing', () => {
 
     it('should route local tool by non-prefixed slug in multi-execute', async () => {
       const provider = new MockProvider();
-      captureExecuteFn(provider);
+      const getExecuteFn = captureExecuteFn(provider);
       const session = createSessionWithProvider(mockClient, provider, [customToolHandle]);
 
       await session.tools();
-      const executeFn = (provider as unknown as ProviderWithCapturedExecuteFn)._capturedExecuteFn;
+      const executeFn = getExecuteFn();
 
       const result = await executeFn('COMPOSIO_MULTI_EXECUTE_TOOL', {
         tools: [{ tool_slug: 'GET_USER_CONTEXT', arguments: { category: 'no-prefix' } }],
@@ -608,11 +590,11 @@ describe('ToolRouterSession execution routing', () => {
 
     it('should route all-remote tools[] to backend', async () => {
       const provider = new MockProvider();
-      captureExecuteFn(provider);
+      const getExecuteFn = captureExecuteFn(provider);
       const session = createSessionWithProvider(mockClient, provider, [customToolHandle]);
 
       await session.tools();
-      const executeFn = (provider as unknown as ProviderWithCapturedExecuteFn)._capturedExecuteFn;
+      const executeFn = getExecuteFn();
 
       const result = await executeFn('COMPOSIO_MULTI_EXECUTE_TOOL', {
         tools: [{ tool_slug: 'GMAIL_SEND_EMAIL', arguments: { to: 'test@test.com' } }],
@@ -625,11 +607,11 @@ describe('ToolRouterSession execution routing', () => {
 
     it('should route non-MULTI_EXECUTE session tools to backend', async () => {
       const provider = new MockProvider();
-      captureExecuteFn(provider);
+      const getExecuteFn = captureExecuteFn(provider);
       const session = createSessionWithProvider(mockClient, provider, [customToolHandle]);
 
       await session.tools();
-      const executeFn = (provider as unknown as ProviderWithCapturedExecuteFn)._capturedExecuteFn;
+      const executeFn = getExecuteFn();
 
       const result = await executeFn('COMPOSIO_SEARCH_TOOLS', {
         queries: [{ use_case: 'send email' }],
@@ -658,10 +640,10 @@ describe('ToolRouterSession execution routing', () => {
       customTools: CustomTool[]
     ) => {
       const provider = new MockProvider();
-      captureExecuteFn(provider);
+      const getExecuteFn = captureExecuteFn(provider);
       const session = createSessionWithProvider(client, provider, customTools);
       await session.tools();
-      const executeFn = (provider as unknown as ProviderWithCapturedExecuteFn)._capturedExecuteFn;
+      const executeFn = getExecuteFn();
       const toolsInstance = (Tools as unknown as MockedToolsConstructor).mock.results[
         (Tools as unknown as MockedToolsConstructor).mock.results.length - 1
       ].value;
@@ -997,10 +979,10 @@ describe('ToolRouterSession execution routing', () => {
       });
 
       const provider = new MockProvider();
-      captureExecuteFn(provider);
+      const getExecuteFn = captureExecuteFn(provider);
       const session = createSessionWithProvider(mockClient, provider, [slowLocalHandle]);
       await session.tools();
-      const executeFn = (provider as unknown as ProviderWithCapturedExecuteFn)._capturedExecuteFn;
+      const executeFn = getExecuteFn();
       const toolsInstance = (Tools as unknown as MockedToolsConstructor).mock.results[
         (Tools as unknown as MockedToolsConstructor).mock.results.length - 1
       ].value;
@@ -1052,7 +1034,7 @@ describe('ToolRouterSession execution routing', () => {
   describe('per-tool results — each tool gets its own entry in results[]', () => {
     it('should return per-tool results for mixed local+remote batch', async () => {
       const provider = new MockProvider();
-      captureExecuteFn(provider);
+      const getExecuteFn = captureExecuteFn(provider);
       const session = createSessionWithProvider(mockClient, provider, [customToolHandle]);
 
       await session.tools();
@@ -1082,7 +1064,7 @@ describe('ToolRouterSession execution routing', () => {
         successful: true,
       });
 
-      const executeFn = (provider as unknown as ProviderWithCapturedExecuteFn)._capturedExecuteFn;
+      const executeFn = getExecuteFn();
 
       const result = await executeFn('COMPOSIO_MULTI_EXECUTE_TOOL', {
         tools: [

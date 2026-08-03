@@ -2385,19 +2385,15 @@ describe('Tools', () => {
         );
 
         // Mock provider wrapping
-        type ContextWithStoredExecuteFn = { storedExecuteToolFn?: ExecuteToolFn };
-        context.mockProvider.wrapTools.mockImplementation((tools, executeToolFn) => {
-          // Store the execute function so we can test it
-          (context as unknown as ContextWithStoredExecuteFn).storedExecuteToolFn = executeToolFn;
+        let storedExecuteToolFn: ExecuteToolFn | undefined;
+        context.mockProvider.wrapTools.mockImplementation((_tools, executeToolFn) => {
+          storedExecuteToolFn = executeToolFn;
           return 'wrapped-tools-collection';
         });
 
         // Get the tool (this will internally create the execute tool function)
         await context.tools.get(userId, 'GITHUB_CREATE_ISSUE');
 
-        // Now call the stored execute function (simulating agentic provider calling it)
-        const storedExecuteToolFn = (context as unknown as ContextWithStoredExecuteFn)
-          .storedExecuteToolFn;
         expect(storedExecuteToolFn).toBeDefined();
 
         // Setup mocks for the actual execution
@@ -2405,7 +2401,7 @@ describe('Tools', () => {
 
         // Call the execute function that was passed to the provider
         // This should succeed because createExecuteToolFn sets dangerouslySkipVersionCheck: true
-        const result = await storedExecuteToolFn('GITHUB_CREATE_ISSUE', { title: 'Test Issue' });
+        const result = await storedExecuteToolFn!('GITHUB_CREATE_ISSUE', { title: 'Test Issue' });
 
         expect(result).toEqual(toolMocks.toolExecuteResponse);
         expect(mockClient.tools.execute).toHaveBeenCalledWith(

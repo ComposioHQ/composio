@@ -19,6 +19,8 @@ interface MockedMastraTool {
 // call sites in this file, so that's all this type declares.
 type CreateToolMockConfig = { execute: (...args: unknown[]) => unknown };
 type CreateToolMock = Mock<(config: CreateToolMockConfig) => unknown>;
+const getCreatedToolExecute = () =>
+  (createTool as unknown as CreateToolMock).mock.calls[0][0].execute;
 
 // Mock the @mastra/core/tools module
 vi.mock('@mastra/core/tools', () => {
@@ -233,7 +235,7 @@ describe('MastraProvider', () => {
       provider.wrapTool(mockTool, mockExecuteToolFn) as unknown as MockedMastraTool;
 
       // Extract the execute function from the call to createTool()
-      const executeFunction = (createTool as unknown as CreateToolMock).mock.calls[0][0].execute;
+      const executeFunction = getCreatedToolExecute();
 
       // Test the execute function
       const inputData = { input: 'test-value' };
@@ -252,7 +254,7 @@ describe('MastraProvider', () => {
       provider.wrapTool(toolWithVersion, mockExecuteToolFn) as unknown as MockedMastraTool;
 
       // Extract the execute function from the call to createTool()
-      const executeFunction = (createTool as unknown as CreateToolMock).mock.calls[0][0].execute;
+      const executeFunction = getCreatedToolExecute();
 
       // Test that the version is passed correctly
       const inputData = { input: 'version-test' };
@@ -266,7 +268,7 @@ describe('MastraProvider', () => {
       provider.wrapTool(toolWithoutVersion, mockExecuteToolFn) as unknown as MockedMastraTool;
 
       // Extract the execute function from the call to createTool()
-      const executeFunction = (createTool as unknown as CreateToolMock).mock.calls[0][0].execute;
+      const executeFunction = getCreatedToolExecute();
 
       // Test that undefined version is passed correctly
       const inputData = { input: 'no-version-test' };
@@ -279,7 +281,7 @@ describe('MastraProvider', () => {
       provider.wrapTool(mockTool, mockExecuteToolFn) as unknown as MockedMastraTool;
 
       // Extract the execute function from the call to createTool()
-      const executeFunction = (createTool as unknown as CreateToolMock).mock.calls[0][0].execute;
+      const executeFunction = getCreatedToolExecute();
 
       // Test the execute function with empty input
       const result = await executeFunction({});
@@ -296,7 +298,7 @@ describe('MastraProvider', () => {
       provider.wrapTool(mockTool, mockExecuteToolFn) as unknown as MockedMastraTool;
 
       // Extract the execute function from the call to createTool()
-      const executeFunction = (createTool as unknown as CreateToolMock).mock.calls[0][0].execute;
+      const executeFunction = getCreatedToolExecute();
 
       // Test the execute function without any parameters: a missing payload is
       // normalized to an empty object rather than forwarded as undefined (issue #2406).
@@ -494,7 +496,7 @@ describe('MastraProvider', () => {
         mockTool,
         errorExecuteToolFn
       ) as unknown as MockedMastraTool;
-      const executeFunction = (createTool as unknown as CreateToolMock).mock.calls[0][0].execute;
+      const executeFunction = getCreatedToolExecute();
 
       await expect(executeFunction({ input: 'test' })).rejects.toThrow('Execution failed');
     });

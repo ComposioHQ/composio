@@ -115,9 +115,9 @@ describe('VercelProvider', () => {
 
       // Extract the execute function from the call to tool()
       const executeFunction = (
-        tool as unknown as {
-          mock: { calls: Array<[{ execute: (input: unknown) => Promise<unknown> }]> };
-        }
+        tool as unknown as Mock<
+          (config: { execute: (input: unknown) => Promise<unknown> }) => unknown
+        >
       ).mock.calls[0][0].execute;
 
       // Test the execute function with an object parameter
