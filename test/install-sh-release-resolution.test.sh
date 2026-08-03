@@ -180,6 +180,49 @@ sanitize_path() {
 }
 ambient_path=$(sanitize_path "$PATH")
 
+# TS/sh managed-block contract conformance: the fixtures under
+# test/managed-block-fixtures also drive the CLI's reconciler
+# (ts/packages/cli/test/src/install-managed-block-conformance.test.ts), so an
+# edit to either implementation fails one of the two suites until the other
+# side produces byte-identical output again.
+conformance_fixtures="$repo_root/test/managed-block-fixtures"
+conformance_functions="$suite_tmp/install-sh-functions.sh"
+# The entry-point guard above pins install.sh to end with exactly one
+# `main "$@"` line, so dropping the final line leaves only definitions.
+sed '$d' "$repo_root/install.sh" >"$conformance_functions"
+conformance_driver="$suite_tmp/conformance-driver.sh"
+cat >"$conformance_driver" <<'EOF'
+#!/bin/sh
+set -eu
+functions_file=$1
+rc_file=$2
+shell_name=$3
+bin_dir=$4
+. "$functions_file"
+rendered=$(render_bin_dir "$bin_dir")
+write_path_block "$rc_file" "$shell_name" "$rendered"
+EOF
+[[ -d $conformance_fixtures ]] || fail 'managed-block fixtures directory is missing'
+for interpreter in "${interpreters[@]}"; do
+  interpreter_name=$(basename "$interpreter")
+  for fixture_dir in "$conformance_fixtures"/*/; do
+    fixture_name=$(basename "$fixture_dir")
+    fixture_home="$suite_tmp/conformance-$interpreter_name/$fixture_name"
+    mkdir -p "$fixture_home"
+    cp "$fixture_dir/before" "$fixture_home/rcfile"
+    fixture_bin_dir=$(sed "s|__HOME__|$fixture_home|" "$fixture_dir/bin-dir")
+    fixture_shell=$(<"$fixture_dir/shell")
+    env HOME="$fixture_home" COMPOSIO_QUIET=1 \
+      "$interpreter" "$conformance_driver" "$conformance_functions" \
+      "$fixture_home/rcfile" "$fixture_shell" "$fixture_bin_dir" ||
+      fail "$interpreter_name managed-block conformance: $fixture_name (driver failed)"
+    cmp -s "$fixture_dir/after" "$fixture_home/rcfile" || {
+      diff -u "$fixture_dir/after" "$fixture_home/rcfile" >&2 || :
+      fail "$interpreter_name managed-block conformance: $fixture_name (output drifted)"
+    }
+  done
+done
+
 for interpreter in "${interpreters[@]}"; do
   interpreter_name=$(basename "$interpreter")
   case_root="$suite_tmp/$interpreter_name"

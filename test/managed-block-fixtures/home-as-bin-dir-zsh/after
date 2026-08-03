@@ -1,0 +1,4 @@
+# rc prologue
+
+# Composio CLI
+export PATH="$HOME:$PATH"

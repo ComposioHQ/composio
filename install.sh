@@ -368,9 +368,17 @@ is_unsafe_path() {
     return 1
 }
 
+# Renders the home directory itself and paths under it with a literal $HOME
+# prefix. Must stay in lockstep with the CLI's renderWithHome (install.cmd.ts):
+# delegated_setup_verified compares the CLI-written line against this rendering
+# byte for byte, so any disagreement makes every delegated install look stale
+# and forces a needless inline rewrite.
 render_bin_dir() {
     render_bin_dir_value=$1
-    case $render_bin_dir_value in "$HOME"/*) render_bin_dir_value=\$HOME/${render_bin_dir_value#"$HOME"/} ;; esac
+    case $render_bin_dir_value in
+        "$HOME") render_bin_dir_value=\$HOME ;;
+        "$HOME"/*) render_bin_dir_value=\$HOME/${render_bin_dir_value#"$HOME"/} ;;
+    esac
     printf '%s\n' "$render_bin_dir_value"
 }
 

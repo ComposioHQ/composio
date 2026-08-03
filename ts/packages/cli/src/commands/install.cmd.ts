@@ -138,15 +138,19 @@ const resolveBinDir = (params: {
 /**
  * Render a path for embedding in a shell rc file. `~` never expands inside
  * double quotes, so home-relative paths use a literal `$HOME` prefix instead.
+ * Must stay in lockstep with install.sh's render_bin_dir: the installer's
+ * delegated_setup_verified compares its own rendering against the line this
+ * command wrote byte for byte, so any disagreement makes every delegated
+ * install look stale and forces a needless inline rewrite.
  */
-const renderWithHome = (dir: string, homedir: string): string =>
+export const renderWithHome = (dir: string, homedir: string): string =>
   dir === homedir
     ? '$HOME'
     : dir.startsWith(`${homedir}/`)
       ? `$HOME/${dir.slice(homedir.length + 1)}`
       : dir;
 
-const pathBlockForShell = (shell: Shell, binDir: string, homedir: string): string => {
+export const pathBlockForShell = (shell: Shell, binDir: string, homedir: string): string => {
   const rendered = renderWithHome(binDir, homedir);
   return shell === 'fish'
     ? [MARKER, `set --export PATH "${rendered}" $PATH`].join('\n')
@@ -242,9 +246,13 @@ const buildShellConfig = (
   completionBlock: completionScript ? `${COMPLETIONS_MARKER}\n${completionScript}` : undefined,
 });
 
-/** Check whether a file already contains a given marker line. */
+/**
+ * Check whether a file already contains a given marker line. Byte-exact, like
+ * install.sh's awk `$0 == "# Composio CLI"` match: a marker mangled by CRLF
+ * endings or stray whitespace is not ours and is left alone on both sides.
+ */
 const fileContains = (contents: string, marker: string): boolean =>
-  contents.split('\n').some(line => line.trim() === marker.trim());
+  contents.split('\n').some(line => line === marker);
 
 /** Outcome of reconciling a startup file's managed PATH block against the resolved bin dir. */
 type ManagedPathBlockState =
@@ -267,33 +275,43 @@ const isManagedPathAssignment = (line: string): boolean => {
 };
 
 /**
+ * Append managed blocks after existing content, separated by one blank line
+ * and ending with a newline. Content lacking a final newline gains one first,
+ * exactly as install.sh's line-based awk rewrite normalizes it.
+ */
+export const appendManagedBlocks = (contents: string, blocks: readonly string[]): string => {
+  const base = contents === '' || contents.endsWith('\n') ? contents : `${contents}\n`;
+  return `${base}\n${blocks.join('\n\n')}\n`;
+};
+
+/**
  * Reconcile the managed PATH block — the `MARKER` line plus the PATH
  * assignment right below it — with the currently resolved bin directory.
- * A well-formed block recording a stale bin dir is replaced in place,
- * duplicate managed PATH blocks collapse into a single current block, and
- * unmanaged content (including the completions block) is left byte-for-byte
- * untouched.
  *
- * A marker whose next line is not a recognizable managed assignment (a user
- * annotation, a blank line, another marker) is malformed: only the marker
- * line itself is removed, and the fresh block is appended after all remaining
- * content instead of replacing in place. That guarantees no user content is
- * ever deleted, and — because these prepend-style assignments make the
- * last-sourced line win — the new bin dir still takes PATH precedence over
- * any orphaned stale assignment left behind.
+ * This mirrors install.sh's write_path_block awk program step for step, and
+ * the shared fixtures under test/managed-block-fixtures pin both
+ * implementations to byte-identical outputs — any behavioral edit here must
+ * land in install.sh too. A file whose single byte-exact marker is directly
+ * followed by the expected assignment is current and left untouched.
+ * Otherwise every managed line — each marker, plus the next line only when it
+ * is a recognizable managed PATH assignment; anything else (a user
+ * annotation, a blank line, another marker) is not ours to delete — is
+ * removed and one fresh block is appended after the remaining content. No
+ * user content is ever deleted, and because these prepend-style assignments
+ * make the last-sourced line win, the new bin dir takes PATH precedence over
+ * any orphaned stale assignment that had to be preserved.
  */
-const reconcileManagedPathBlock = (contents: string, pathBlock: string): ManagedPathBlockState => {
+export const reconcileManagedPathBlock = (
+  contents: string,
+  pathBlock: string
+): ManagedPathBlockState => {
   const lines = contents.split('\n');
-  const markerIndexes = lines.flatMap((line, index) => (line.trim() === MARKER ? [index] : []));
+  const markerIndexes = lines.flatMap((line, index) => (line === MARKER ? [index] : []));
   const firstMarkerIndex = markerIndexes[0];
   if (firstMarkerIndex === undefined) return { state: 'absent' };
 
   const blockLines = pathBlock.split('\n');
-  const expectedAssignment = (blockLines[1] ?? '').trim();
-  if (
-    markerIndexes.length === 1 &&
-    (lines[firstMarkerIndex + 1] ?? '').trim() === expectedAssignment
-  ) {
+  if (markerIndexes.length === 1 && lines[firstMarkerIndex + 1] === blockLines[1]) {
     return { state: 'current' };
   }
 
@@ -307,24 +325,13 @@ const reconcileManagedPathBlock = (contents: string, pathBlock: string): Managed
         : [markerIndex];
     })
   );
-  const hasMalformedBlock = markerIndexes.some(
-    markerIndex => !isManagedPathAssignment(lines[markerIndex + 1] ?? '')
-  );
 
-  if (!hasMalformedBlock) {
-    const reconciledLines = lines.flatMap((line, index) => {
-      if (index === firstMarkerIndex) return blockLines;
-      return managedLineIndexes.has(index) ? [] : [line];
-    });
-    return { state: 'stale', reconciled: reconciledLines.join('\n') };
-  }
-
-  const keptLines = lines.flatMap((line, index) => (managedLineIndexes.has(index) ? [] : [line]));
-  const endsWithNewline = keptLines[keptLines.length - 1] === '';
-  const reconciledLines = endsWithNewline
-    ? [...keptLines.slice(0, -1), ...blockLines, '']
-    : [...keptLines, ...blockLines];
-  return { state: 'stale', reconciled: reconciledLines.join('\n') };
+  // Like the awk rewrite, kept content is a sequence of newline-terminated
+  // lines: drop the split's trailing sentinel and re-terminate the last line.
+  const keptLines = lines.filter((_, index) => !managedLineIndexes.has(index));
+  const contentLines = keptLines[keptLines.length - 1] === '' ? keptLines.slice(0, -1) : keptLines;
+  const kept = contentLines.length === 0 ? '' : contentLines.join('\n') + '\n';
+  return { state: 'stale', reconciled: appendManagedBlocks(kept, [pathBlock]) };
 };
 
 interface ManagedBlockReplacement {
@@ -425,8 +432,11 @@ const appendQueuedBlocks = (params: {
           )
         );
 
-      const appendContent = '\n' + blocks.join('\n\n') + '\n';
-      yield* replaceFilePreservingMode(fs, writeTarget, existingContents + appendContent);
+      yield* replaceFilePreservingMode(
+        fs,
+        writeTarget,
+        appendManagedBlocks(existingContents, blocks)
+      );
       yield* params.report(`Updated ${tildify(filePath, params.homedir)}`);
     }
   });
