@@ -322,7 +322,9 @@ shell_quote() {
 }
 
 # Follows symlinks and resolves the parent directory physically, so two paths
-# compare equal exactly when they name the same executable (KD3).
+# compare equal exactly when they name the same executable: the final block's
+# installed-vs-shadowed verdict must not change just because one side reaches
+# the binary through a symlink alias.
 resolve_physical_path() {
     resolve_physical_target=$1
     resolve_physical_steps=0
@@ -605,9 +607,10 @@ setup_requested_shell() {
     return 1
 }
 
-# Final action block for every non-failure flow (KD4 state matrix). KD7: this
-# is the last output; nothing prints after it. Suppressible because it only
-# covers normal success.
+# Final action block for every non-failure flow: one truthful ending chosen
+# from the inherited-resolution and setup-outcome state. It must be the last
+# output — the closing block is the instruction users copy, so nothing may
+# print after it. Suppressible because it only covers normal success.
 print_post_install_help() {
     [ "${COMPOSIO_INSTALL_HELP:-1}" != 0 ] || return 0
     if is_true "${COMPOSIO_QUIET:-}"; then

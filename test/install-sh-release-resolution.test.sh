@@ -30,7 +30,8 @@ assert_not_contains() {
 }
 
 # Asserts the exact final N lines of an output capture, proving nothing prints
-# after the final action block (KD7: the last block wins).
+# after the final action block: the ending is the instruction users copy, so
+# the last block must win.
 assert_tail() {
   local haystack=$1
   local expected=$2
@@ -156,7 +157,8 @@ github_url='https://github.example.test'
 archive_url="https://downloads.example.test/$stable_tag/$archive_name"
 script_url='https://installer.example.test/install.sh'
 
-# KD4 exact endings: plain indented lines, no box drawing, nothing after them.
+# Exact endings the installer must close with: plain indented lines, no box
+# drawing, nothing after them, so the final instruction stays copy-paste safe.
 case_a_tail=$'composio is ready.\n\n  composio login'
 case_b_tail=$'Open a new terminal, then run:\n\n  composio login'
 
@@ -815,7 +817,7 @@ EOF
     [[ ! -e "$base_failure_home/.zshrc" ]] || fail "$interpreter_name $base_mode download must not write rc"
   done
 
-  # --- Auto shell setup default (KD2/KD3) ---
+  # --- Auto shell setup default: $SHELL picks the shell, setup delegates to the CLI ---
 
   # Every recognized default-flow shell delegates through the setup chain.
   for auto_shell in zsh bash fish; do
@@ -1001,7 +1003,7 @@ EOF
   assert_contains "$bash_login_only_output" 'Configured bash shell setup in ~/.bashrc and ~/.bash_login.' "$interpreter_name .bash_login disclosure"
   assert_login_bash_path "$bash_login_only_home" "$bash_login_only_bin" "$interpreter_name .bash_login login shell"
 
-  # --- Setup write failures stay non-fatal (KD3/KD4) ---
+  # --- Setup write failures stay non-fatal: the binary stays installed and the ending stays truthful ---
 
   # Delegated path: CLI --shell fails, inline fallback also fails.
   reset_case
@@ -1029,7 +1031,7 @@ EOF
   assert_contains "$wf_inline_output" 'warning: Automatic PATH setup for bash failed' "$interpreter_name inline setup failure warning"
   assert_tail "$wf_inline_output" $'To get started, run:\n\n  '"$wf_inline_install/composio login" "$interpreter_name inline setup failure recovery tail"
 
-  # --- Managed-block reconciliation (KD3) ---
+  # --- Managed-block reconciliation: a rerun replaces stale blocks instead of stacking duplicates ---
 
   reset_case
   CASE_SHELL_CAPABILITY=unsupported
@@ -1145,7 +1147,7 @@ export PATH=\"$malformed_bin:\$PATH\"" ]] || fail "$interpreter_name malformed b
   grep -Fq 'alias stale-guard=1' "$stale_home/.zshrc" || fail "$interpreter_name stale reconcile preserves unmanaged content"
   assert_tail "$stale_output" "$case_b_tail" "$interpreter_name stale delegation Case B tail"
 
-  # --- Unsafe resolved bin dirs under the default flow (KD3) ---
+  # --- Unsafe resolved bin dirs under the default flow: shell metacharacters never reach rc files ---
 
   unsafe_auto_index=0
   for unsafe_character in ';' '$'; do
@@ -1183,7 +1185,7 @@ export PATH=\"$malformed_bin:\$PATH\"" ]] || fail "$interpreter_name malformed b
     fail "$interpreter_name spaced recovery command must execute when pasted"
   [[ $space_paste_output == 'composio fake 98.0.0' ]] || fail "$interpreter_name spaced recovery command output"
 
-  # --- Final-block contract combinations (KD4/KD7) ---
+  # --- Final-block contract combinations: exactly one truthful ending, always last ---
 
   # Plugin output completes before the final block.
   reset_case

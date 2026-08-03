@@ -631,10 +631,11 @@ export const installShellIntegration = (params: {
       return yield* new ShellSetupAbortError({ message });
     }
 
-    // KD7 (final-block contract): when install.sh delegates to this command it
-    // passes COMPOSIO_CLI_INVOCATION_ORIGIN=installer and owns the final action
-    // block itself. Keep the concise per-file status lines but suppress the
-    // boxed restart hint so the CLI never prints a competing instruction.
+    // The installer owns the closing message: when install.sh delegates to
+    // this command it passes COMPOSIO_CLI_INVOCATION_ORIGIN=installer and
+    // prints the final action block itself. Keep the concise per-file status
+    // lines but suppress the boxed restart hint so the CLI never prints a
+    // competing instruction.
     const invocationOrigin = yield* readOptionalEnv('COMPOSIO_CLI_INVOCATION_ORIGIN');
     const installerOwnsFinalMessaging = invocationOrigin === 'installer';
 
