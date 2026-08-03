@@ -222,6 +222,12 @@ const pathFilesForShell = (
     case 'fish':
       return [path.join(homedir, '.config', 'fish', 'config.fish')];
     case 'bash': {
+      // Bash is the only shell here that splits startup files by mode: an
+      // interactive non-login shell reads .bashrc, while a login shell (ssh,
+      // macOS Terminal.app) reads only its login files. Writing .bashrc alone
+      // would leave PATH unset in login shells whenever an override file
+      // shadows .profile, so the block lands in both. The override also stays
+      // a named value because the restart hint reports it separately.
       const bashrc = path.join(homedir, '.bashrc');
       return bashLoginFile ? [bashrc, bashLoginFile] : [bashrc];
     }
