@@ -179,7 +179,7 @@ importers:
         version: 7.8.5
       tsdown:
         specifier: 'catalog:'
-        version: 0.22.14(@arethetypeswrong/core@0.18.5)(publint@0.3.22)(tsx@4.23.1)(typescript@7.0.2)(unrun@0.2.27)
+        version: 0.22.14(@arethetypeswrong/core@0.18.5)(publint@0.3.22)(tsx@4.23.1)(typescript@7.0.2)(unrun@0.2.27(@emnapi/core@1.11.2)(@emnapi/runtime@1.11.2))
       tsx:
         specifier: 'catalog:'
         version: 4.23.1
@@ -1267,7 +1267,7 @@ importers:
         version: 3.2.0
       tsdown:
         specifier: 'catalog:'
-        version: 0.22.14(@arethetypeswrong/core@0.18.5)(@typescript/typescript6@6.0.2)(publint@0.3.22)(tsx@4.23.1)(unrun@0.2.27)
+        version: 0.22.14(@arethetypeswrong/core@0.18.5)(@typescript/typescript6@6.0.2)(publint@0.3.22)(tsx@4.23.1)(unrun@0.2.27(@emnapi/core@1.11.2)(@emnapi/runtime@1.11.2))
       tsx:
         specifier: 'catalog:'
         version: 4.23.1
@@ -1291,7 +1291,7 @@ importers:
         version: 3.22.0
       tsdown:
         specifier: 'catalog:'
-        version: 0.22.14(@arethetypeswrong/core@0.18.5)(publint@0.3.22)(tsx@4.23.1)(typescript@7.0.2)(unrun@0.2.27)
+        version: 0.22.14(@arethetypeswrong/core@0.18.5)(publint@0.3.22)(tsx@4.23.1)(typescript@7.0.2)(unrun@0.2.27(@emnapi/core@1.11.2)(@emnapi/runtime@1.11.2))
       typescript:
         specifier: 'catalog:'
         version: 7.0.2
@@ -1322,7 +1322,7 @@ importers:
         version: 1.6.0
       tsdown:
         specifier: 'catalog:'
-        version: 0.22.14(@arethetypeswrong/core@0.18.5)(publint@0.3.22)(tsx@4.23.1)(typescript@7.0.2)(unrun@0.2.27)
+        version: 0.22.14(@arethetypeswrong/core@0.18.5)(publint@0.3.22)(tsx@4.23.1)(typescript@7.0.2)(unrun@0.2.27(@emnapi/core@1.11.2)(@emnapi/runtime@1.11.2))
       typescript:
         specifier: 'catalog:'
         version: 7.0.2
@@ -1368,7 +1368,7 @@ importers:
         version: 7.7.1
       tsdown:
         specifier: 'catalog:'
-        version: 0.22.14(@arethetypeswrong/core@0.18.5)(@typescript/typescript6@6.0.2)(publint@0.3.22)(tsx@4.23.1)(unrun@0.2.27)
+        version: 0.22.14(@arethetypeswrong/core@0.18.5)(@typescript/typescript6@6.0.2)(publint@0.3.22)(tsx@4.23.1)(unrun@0.2.27(@emnapi/core@1.11.2)(@emnapi/runtime@1.11.2))
       tsx:
         specifier: 'catalog:'
         version: 4.23.1
@@ -1405,7 +1405,7 @@ importers:
         version: 0.27.3(@opentelemetry/api@1.9.0)(ai@7.0.37(zod@4.4.3))(dotenv@17.4.2)(jiti@2.7.0)(lru-cache@11.5.2)(miniflare@4.20260722.0)(rollup@4.62.2)(vite@7.3.5(@types/node@26.1.1)(jiti@2.7.0)(tsx@4.23.1)(yaml@2.9.0))(wrangler@4.114.0(@cloudflare/workers-types@5.20260724.1))
       tsdown:
         specifier: 'catalog:'
-        version: 0.22.14(@arethetypeswrong/core@0.18.5)(publint@0.3.22)(tsx@4.23.1)(typescript@7.0.2)(unrun@0.2.27)
+        version: 0.22.14(@arethetypeswrong/core@0.18.5)(publint@0.3.22)(tsx@4.23.1)(typescript@7.0.2)(unrun@0.2.27(@emnapi/core@1.11.2)(@emnapi/runtime@1.11.2))
       tsx:
         specifier: 'catalog:'
         version: 4.23.1
@@ -1430,7 +1430,7 @@ importers:
         version: link:../json-schema-to-zod
       tsdown:
         specifier: 'catalog:'
-        version: 0.22.14(@arethetypeswrong/core@0.18.5)(publint@0.3.22)(tsx@4.23.1)(typescript@7.0.2)(unrun@0.2.27)
+        version: 0.22.14(@arethetypeswrong/core@0.18.5)(publint@0.3.22)(tsx@4.23.1)(typescript@7.0.2)(unrun@0.2.27(@emnapi/core@1.11.2)(@emnapi/runtime@1.11.2))
       typescript:
         specifier: 'catalog:'
         version: 7.0.2
@@ -1451,7 +1451,7 @@ importers:
         version: 26.1.1
       tsdown:
         specifier: 'catalog:'
-        version: 0.22.14(@arethetypeswrong/core@0.18.5)(publint@0.3.22)(tsx@4.23.1)(typescript@7.0.2)(unrun@0.2.27)
+        version: 0.22.14(@arethetypeswrong/core@0.18.5)(publint@0.3.22)(tsx@4.23.1)(typescript@7.0.2)(unrun@0.2.27(@emnapi/core@1.11.2)(@emnapi/runtime@1.11.2))
       typescript:
         specifier: 'catalog:'
         version: 7.0.2
@@ -1481,7 +1481,7 @@ importers:
         version: 6.0.235(zod@4.4.3)
       tsdown:
         specifier: 'catalog:'
-        version: 0.22.14(@arethetypeswrong/core@0.18.5)(publint@0.3.22)(tsx@4.23.1)(typescript@7.0.2)(unrun@0.2.27)
+        version: 0.22.14(@arethetypeswrong/core@0.18.5)(publint@0.3.22)(tsx@4.23.1)(typescript@7.0.2)(unrun@0.2.27(@emnapi/core@1.11.2)(@emnapi/runtime@1.11.2))
       typescript:
         specifier: 'catalog:'
         version: 7.0.2
@@ -1503,7 +1503,7 @@ importers:
         version: link:../../core
       tsdown:
         specifier: 'catalog:'
-        version: 0.22.14(@arethetypeswrong/core@0.18.5)(publint@0.3.22)(tsx@4.23.1)(typescript@7.0.2)(unrun@0.2.27)
+        version: 0.22.14(@arethetypeswrong/core@0.18.5)(publint@0.3.22)(tsx@4.23.1)(typescript@7.0.2)(unrun@0.2.27(@emnapi/core@1.11.2)(@emnapi/runtime@1.11.2))
       typescript:
         specifier: 'catalog:'
         version: 7.0.2
@@ -1522,7 +1522,7 @@ importers:
         version: link:../../core
       tsdown:
         specifier: 'catalog:'
-        version: 0.22.14(@arethetypeswrong/core@0.18.5)(publint@0.3.22)(tsx@4.23.1)(typescript@7.0.2)(unrun@0.2.27)
+        version: 0.22.14(@arethetypeswrong/core@0.18.5)(publint@0.3.22)(tsx@4.23.1)(typescript@7.0.2)(unrun@0.2.27(@emnapi/core@1.11.2)(@emnapi/runtime@1.11.2))
       typescript:
         specifier: 'catalog:'
         version: 7.0.2
@@ -1541,7 +1541,7 @@ importers:
         version: link:../../core
       tsdown:
         specifier: 'catalog:'
-        version: 0.22.14(@arethetypeswrong/core@0.18.5)(publint@0.3.22)(tsx@4.23.1)(typescript@7.0.2)(unrun@0.2.27)
+        version: 0.22.14(@arethetypeswrong/core@0.18.5)(publint@0.3.22)(tsx@4.23.1)(typescript@7.0.2)(unrun@0.2.27(@emnapi/core@1.11.2)(@emnapi/runtime@1.11.2))
       typescript:
         specifier: 'catalog:'
         version: 7.0.2
@@ -1556,7 +1556,7 @@ importers:
         version: 1.2.3(@opentelemetry/api@1.9.1)(openai@6.49.0(@aws-sdk/credential-provider-node@3.972.71)(@smithy/signature-v4@5.6.9)(ws@8.21.1)(zod@4.4.3))(ws@8.21.1)
       tsdown:
         specifier: 'catalog:'
-        version: 0.22.14(@arethetypeswrong/core@0.18.5)(publint@0.3.22)(tsx@4.23.1)(typescript@7.0.2)(unrun@0.2.27)
+        version: 0.22.14(@arethetypeswrong/core@0.18.5)(publint@0.3.22)(tsx@4.23.1)(typescript@7.0.2)(unrun@0.2.27(@emnapi/core@1.11.2)(@emnapi/runtime@1.11.2))
       typescript:
         specifier: 'catalog:'
         version: 7.0.2
@@ -1578,7 +1578,7 @@ importers:
         version: link:../../core
       tsdown:
         specifier: 'catalog:'
-        version: 0.22.14(@arethetypeswrong/core@0.18.5)(publint@0.3.22)(tsx@4.23.1)(typescript@7.0.2)(unrun@0.2.27)
+        version: 0.22.14(@arethetypeswrong/core@0.18.5)(publint@0.3.22)(tsx@4.23.1)(typescript@7.0.2)(unrun@0.2.27(@emnapi/core@1.11.2)(@emnapi/runtime@1.11.2))
       typescript:
         specifier: 'catalog:'
         version: 7.0.2
@@ -1600,7 +1600,7 @@ importers:
         version: 6.0.235(zod@4.4.3)
       tsdown:
         specifier: 'catalog:'
-        version: 0.22.14(@arethetypeswrong/core@0.18.5)(publint@0.3.22)(tsx@4.23.1)(typescript@7.0.2)(unrun@0.2.27)
+        version: 0.22.14(@arethetypeswrong/core@0.18.5)(publint@0.3.22)(tsx@4.23.1)(typescript@7.0.2)(unrun@0.2.27(@emnapi/core@1.11.2)(@emnapi/runtime@1.11.2))
       typescript:
         specifier: 'catalog:'
         version: 7.0.2
@@ -1622,7 +1622,7 @@ importers:
         version: link:../../core
       tsdown:
         specifier: 'catalog:'
-        version: 0.22.14(@arethetypeswrong/core@0.18.5)(publint@0.3.22)(tsx@4.23.1)(typescript@7.0.2)(unrun@0.2.27)
+        version: 0.22.14(@arethetypeswrong/core@0.18.5)(publint@0.3.22)(tsx@4.23.1)(typescript@7.0.2)(unrun@0.2.27(@emnapi/core@1.11.2)(@emnapi/runtime@1.11.2))
       typescript:
         specifier: 'catalog:'
         version: 7.0.2
@@ -1640,7 +1640,7 @@ importers:
         version: 0.13.5(@aws-sdk/credential-provider-node@3.972.71)(@cfworker/json-schema@4.1.1)(@smithy/signature-v4@5.6.9)(supports-color@10.2.2)(ws@8.21.1)(zod@4.4.3)
       tsdown:
         specifier: 'catalog:'
-        version: 0.22.14(@arethetypeswrong/core@0.18.5)(publint@0.3.22)(tsx@4.23.1)(typescript@7.0.2)(unrun@0.2.27)
+        version: 0.22.14(@arethetypeswrong/core@0.18.5)(publint@0.3.22)(tsx@4.23.1)(typescript@7.0.2)(unrun@0.2.27(@emnapi/core@1.11.2)(@emnapi/runtime@1.11.2))
       typescript:
         specifier: 'catalog:'
         version: 7.0.2
@@ -1661,7 +1661,7 @@ importers:
         version: 7.0.37(zod@4.4.3)
       tsdown:
         specifier: 'catalog:'
-        version: 0.22.14(@arethetypeswrong/core@0.18.5)(publint@0.3.22)(tsx@4.23.1)(typescript@7.0.2)(unrun@0.2.27)
+        version: 0.22.14(@arethetypeswrong/core@0.18.5)(publint@0.3.22)(tsx@4.23.1)(typescript@7.0.2)(unrun@0.2.27(@emnapi/core@1.11.2)(@emnapi/runtime@1.11.2))
       typescript:
         specifier: 'catalog:'
         version: 7.0.2
@@ -1683,6 +1683,9 @@ importers:
       '@types/json-schema':
         specifier: ^7.0.15
         version: 7.0.15
+      is-fs-case-sensitive:
+        specifier: ^2.0.0
+        version: 2.0.0
       openai:
         specifier: 'catalog:'
         version: 6.49.0(@aws-sdk/credential-provider-node@3.972.71)(@smithy/signature-v4@5.6.9)(ws@8.21.1)(zod@4.4.3)
@@ -1720,7 +1723,7 @@ importers:
         version: link:@types/@babel/helper-validator-identifier
       tsdown:
         specifier: 'catalog:'
-        version: 0.22.14(@arethetypeswrong/core@0.18.5)(publint@0.3.22)(tsx@4.23.1)(typescript@7.0.2)(unrun@0.2.27)
+        version: 0.22.14(@arethetypeswrong/core@0.18.5)(publint@0.3.22)(tsx@4.23.1)(typescript@7.0.2)(unrun@0.2.27(@emnapi/core@1.11.2)(@emnapi/runtime@1.11.2))
       vitest:
         specifier: 'catalog:'
         version: 4.1.10(@opentelemetry/api@1.9.1)(@types/node@26.1.1)(@vitest/ui@4.1.10)(vite@7.3.5(@types/node@26.1.1)(jiti@2.7.0)(tsx@4.23.1)(yaml@2.9.0))
@@ -11675,7 +11678,7 @@ snapshots:
       '@ts-morph/common': 0.29.0
       code-block-writer: 13.0.3
 
-  tsdown@0.22.14(@arethetypeswrong/core@0.18.5)(@typescript/typescript6@6.0.2)(publint@0.3.22)(tsx@4.23.1)(unrun@0.2.27):
+  tsdown@0.22.14(@arethetypeswrong/core@0.18.5)(@typescript/typescript6@6.0.2)(publint@0.3.22)(tsx@4.23.1)(unrun@0.2.27(@emnapi/core@1.11.2)(@emnapi/runtime@1.11.2)):
     dependencies:
       ansis: 4.3.1
       cac: 7.0.0
@@ -11704,7 +11707,7 @@ snapshots:
       - oxc-resolver
       - vue-tsc
 
-  tsdown@0.22.14(@arethetypeswrong/core@0.18.5)(publint@0.3.22)(tsx@4.23.1)(typescript@7.0.2)(unrun@0.2.27):
+  tsdown@0.22.14(@arethetypeswrong/core@0.18.5)(publint@0.3.22)(tsx@4.23.1)(typescript@7.0.2)(unrun@0.2.27(@emnapi/core@1.11.2)(@emnapi/runtime@1.11.2)):
     dependencies:
       ansis: 4.3.1
       cac: 7.0.0
