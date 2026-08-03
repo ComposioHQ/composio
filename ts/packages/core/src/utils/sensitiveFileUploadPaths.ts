@@ -12,7 +12,8 @@ import { ComposioSensitiveFilePathBlockedError } from '../errors/FileModifierErr
 
 /**
  * Path segments (a single path component) that indicate a sensitive directory when
- * they appear anywhere in a resolved local path. Compared case-insensitively on Windows.
+ * they appear anywhere in a resolved local path. Compared case-insensitively on every
+ * platform, matching the basename rules below and the Python SDK.
  */
 export const BUILTIN_FILE_UPLOAD_PATH_DENY_SEGMENTS: readonly string[] = [
   '.ssh',
@@ -29,8 +30,6 @@ export const BUILTIN_FILE_UPLOAD_PATH_DENY_SEGMENTS: readonly string[] = [
 const SECRET_LIKE_BASENAME = /^(\.env(\.|$)|\.netrc$|\.pgpass$)/i;
 /** Default SSH private key basenames (public keys like id_rsa.pub are allowed). */
 const DEFAULT_PRIVATE_KEY_BASENAME = /^id_(rsa|ed25519|ecdsa|dsa|ecdsa_sk)(\.old)?$/i;
-
-const isWindows = typeof process !== 'undefined' && process.platform === 'win32';
 
 /**
  * Returns normalized path segments, resolving symlinks when the path exists.
@@ -68,11 +67,15 @@ function getSensitiveFileUploadPathBlockReason(
     [
       ...BUILTIN_FILE_UPLOAD_PATH_DENY_SEGMENTS,
       ...(additionalDenySegments ?? []).map(s => s.trim()).filter(Boolean),
-    ].map(s => (isWindows ? s.toLowerCase() : s))
+    ].map(s => s.toLowerCase())
   );
 
-  // Windows: compare segments case-insensitively; map once instead of toLowerCase per iteration.
-  const segmentsForMatch = isWindows ? segments.map(s => s.toLowerCase()) : segments;
+  // Always case-insensitive: Windows and macOS filesystems are case-insensitive by
+  // default, so ~/.Kube/config is the same file as ~/.kube/config. Over-blocking a
+  // case variant on Linux is the safe direction for a credential denylist, and it
+  // keeps this in line with the /i basename rules and the Python SDK.
+  // Map once instead of toLowerCase per iteration.
+  const segmentsForMatch = segments.map(s => s.toLowerCase());
   for (let i = 0; i < segments.length; i++) {
     if (deny.has(segmentsForMatch[i]!)) {
       return `path segment "${segments[i]}" is in the sensitive file upload denylist`;

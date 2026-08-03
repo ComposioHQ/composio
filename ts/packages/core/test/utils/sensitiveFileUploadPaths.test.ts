@@ -27,6 +27,35 @@ describe('sensitiveFileUploadPaths', () => {
     ).toBe(true);
   });
 
+  it('blocks credential directory segments regardless of case on every platform', () => {
+    // Windows and macOS filesystems are case-insensitive by default, so ~/.Kube/config
+    // is the same file as ~/.kube/config. These basenames are deliberately innocuous
+    // (`config`, `config.json`, ...) so only the segment rule can catch them - a
+    // basename rule would mask a regression here.
+    expect(isBlockedSensitiveFileUploadPath(path.join(os.homedir(), '.Kube', 'config'))).toBe(true);
+    expect(
+      isBlockedSensitiveFileUploadPath(path.join(os.homedir(), '.Docker', 'config.json'))
+    ).toBe(true);
+    expect(isBlockedSensitiveFileUploadPath(path.join(os.homedir(), '.GnuPG', 'pubring.kbx'))).toBe(
+      true
+    );
+    expect(
+      isBlockedSensitiveFileUploadPath(path.join(os.homedir(), '.Azure', 'azureProfile.json'))
+    ).toBe(true);
+    expect(isBlockedSensitiveFileUploadPath(path.join(os.homedir(), '.SSH', 'known_hosts'))).toBe(
+      true
+    );
+  });
+
+  it('matches additional deny segments case-insensitively too', () => {
+    expect(
+      isBlockedSensitiveFileUploadPath(path.join('/data', 'Secrets', 'x.txt'), ['secrets'])
+    ).toBe(true);
+    expect(
+      isBlockedSensitiveFileUploadPath(path.join('/data', 'secrets', 'x.txt'), ['SECRETS'])
+    ).toBe(true);
+  });
+
   it('blocks .env-style basenames', () => {
     expect(isBlockedSensitiveFileUploadPath(path.join('/app', 'repo', '.env'))).toBe(true);
     expect(isBlockedSensitiveFileUploadPath(path.join('/app', 'repo', '.env.local'))).toBe(true);
