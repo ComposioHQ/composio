@@ -122,7 +122,10 @@ Fetch tools by slug or toolkit. Pass them to your LLM or call `tools.execute()` 
 from composio import Composio
 from composio_openai import OpenAIProvider
 
-composio = Composio(provider=OpenAIProvider())
+composio = Composio(
+    provider=OpenAIProvider(),
+    toolkit_versions={"github": "latest"},  # required for direct execution
+)
 
 # Fetch specific tools
 tools = composio.tools.get(
@@ -153,6 +156,7 @@ import { OpenAIProvider } from '@composio/openai';
 const composio = new Composio({
   apiKey: process.env.COMPOSIO_API_KEY,
   provider: new OpenAIProvider(),
+  toolkitVersions: { github: 'latest' },  // required for direct execution
 });
 
 // Fetch specific tools
