@@ -16,7 +16,7 @@ Install the CLI with one command:
 curl -fsSL https://composio.dev/install | sh
 ```
 
-The installer downloads and verifies the release bundle in `~/.composio`, creates the `~/.local/bin/composio` entry point, and configures your shell so future terminals find `composio` on `PATH`. It recognizes `zsh`, `bash`, and `fish` login shells from `$SHELL` and writes a managed `# Composio CLI` block to their startup files. `bash` also updates the first existing login override, `~/.bash_profile` or `~/.bash_login`. If your shell is not recognized, or shell setup fails, the CLI still installs and the installer prints a runnable command instead. It does not install agent plugins or log you in unless you ask it to. To skip shell configuration entirely, see [Shell setup overrides](#shell-setup-overrides).
+The installer downloads and verifies the release bundle in `~/.composio`, creates the `~/.local/bin/composio` entry point, and configures your shell so future terminals find `composio` on `PATH`. It recognizes `zsh`, `bash`, and `fish` login shells from `$SHELL` and writes a managed `# Composio CLI` block to their startup files. `bash` also gets a login-mode startup file — the first existing of `~/.bash_profile` or `~/.bash_login`, or a newly created `~/.bash_profile` — because a login bash, which macOS Terminal.app starts, never reads `~/.bashrc`. If your shell is not recognized, or shell setup fails, the CLI still installs and the installer prints a runnable command instead. It does not install agent plugins or log you in unless you ask it to. To skip shell configuration entirely, see [Shell setup overrides](#shell-setup-overrides).
 
 Open a new terminal, then log in:
 
@@ -80,7 +80,7 @@ This configures `~/.zshrc` and delegates setup to `composio install --shell zsh`
 curl -fsSL https://composio.dev/install | COMPOSIO_INSTALL_SHELL=bash sh
 ```
 
-This configures `~/.bashrc` and delegates setup to `composio install --shell bash`. If `~/.bash_profile` or `~/.bash_login` exists, it also updates the first active login file so `bash -ilc` can find `composio`.
+This configures `~/.bashrc` and delegates setup to `composio install --shell bash`. It also configures a login-mode startup file so `bash -ilc` can find `composio`: the first active login file (`~/.bash_profile`, then `~/.bash_login`), or a new `~/.bash_profile` that sources your existing `~/.profile` when neither exists.
 </Tab>
 <Tab value="fish">
 ```bash

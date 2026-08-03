@@ -54,6 +54,34 @@ wait_for_file() {
   fail "$label"
 }
 
+# The single confirmation both setup paths print: it names the startup files
+# that now carry the managed block and never leaks internal vocabulary.
+configured_line() {
+  case $1 in
+  zsh) printf 'Configured zsh shell setup in ~/.zshrc.\n' ;;
+  bash) printf 'Configured bash shell setup in ~/.bashrc and ~/.bash_profile.\n' ;;
+  fish) printf 'Configured fish shell setup in ~/.config/fish/config.fish.\n' ;;
+  *) fail "configured_line: unknown shell $1" ;;
+  esac
+}
+
+# macOS Terminal.app starts bash as a login shell, which reads only the first
+# existing of ~/.bash_profile, ~/.bash_login, ~/.profile and never ~/.bashrc.
+# Probe a real login bash over the sandboxed HOME to prove the PATH entry
+# actually lands somewhere it reads.
+assert_login_bash_path() {
+  local home=$1
+  local bin=$2
+  local label=$3
+  local login_path
+  login_path=$(env -i HOME="$home" PATH=/usr/bin:/bin bash -lc 'printf %s "$PATH"') ||
+    fail "$label (login bash probe failed)"
+  case ":$login_path:" in
+  *":$bin:"*) ;;
+  *) fail "$label (login bash PATH lacks $bin: $login_path)" ;;
+  esac
+}
+
 for script in "$repo_root/install.sh" "$repo_root"/install/*.sh; do
   [[ $(tail -n 1 "$script") == 'main "$@"' ]] || fail "$script must end with main \"\$@\""
   [[ $(grep -c '^main "\$@"$' "$script") -eq 1 ]] || fail "$script must contain one main entry point"
@@ -317,11 +345,15 @@ install)
         write_block "$HOME/.config/fish/config.fish" "set --export PATH \"$COMPOSIO_BIN_DIR\" \$PATH"
         ;;
       bash)
+        # Login bash never reads .bashrc, so the CLI also configures a
+        # login-mode file, creating ~/.bash_profile when no override exists.
+        # (The real CLI additionally seeds a ~/.profile passthrough into a file
+        # it creates; that belongs to the CLI and is covered by its unit tests.)
         write_block "$HOME/.bashrc" "export PATH=\"$COMPOSIO_BIN_DIR:\$PATH\""
-        if [ -f "$HOME/.bash_profile" ]; then
-          write_block "$HOME/.bash_profile" "export PATH=\"$COMPOSIO_BIN_DIR:\$PATH\""
-        elif [ -f "$HOME/.bash_login" ]; then
+        if [ ! -f "$HOME/.bash_profile" ] && [ -f "$HOME/.bash_login" ]; then
           write_block "$HOME/.bash_login" "export PATH=\"$COMPOSIO_BIN_DIR:\$PATH\""
+        else
+          write_block "$HOME/.bash_profile" "export PATH=\"$COMPOSIO_BIN_DIR:\$PATH\""
         fi
         ;;
       esac
@@ -444,12 +476,19 @@ EOF
   [[ $(readlink "$bin_dir/composio") == "$expected_install_dir/composio" ]] || fail "$interpreter_name symlink target"
   assert_contains "$output" "Found latest version: $stable_tag" "$interpreter_name stable discovery"
   grep -Fq "|installer|$bin_dir|install --shell bash" "$composio_log" || fail "$interpreter_name default auto delegation"
-  assert_contains "$output" 'Configured bash shell setup (cli).' "$interpreter_name default auto confirmation"
+  assert_contains "$output" "$(configured_line bash)" "$interpreter_name default auto confirmation"
+  assert_not_contains "$output" '(cli)' "$interpreter_name confirmation must not leak internal labels"
+  assert_not_contains "$output" '(fallback)' "$interpreter_name confirmation must not leak internal labels"
   # Inherited-PATH contract: the installer prepends the bin dir to its own PATH
   # for delegated CLI calls, but the ending must reflect only the PATH the
   # invoking terminal inherited, which does not contain the bin dir here.
   assert_tail "$output" "$case_b_tail" "$interpreter_name default auto Case B tail"
   grep -Fq "export PATH=\"$bin_dir:\$PATH\"" "$home/.bashrc" || fail "$interpreter_name delegated default flow rc written by the CLI"
+  # A login bash reads none of ~/.bashrc, so the delegated path must reach a
+  # login-mode startup file as well.
+  grep -Fq "export PATH=\"$bin_dir:\$PATH\"" "$home/.bash_profile" ||
+    fail "$interpreter_name delegated default flow login file written by the CLI"
+  assert_login_bash_path "$home" "$bin_dir" "$interpreter_name delegated default flow login shell"
   assert_not_contains "$output" 'Updated ~/.bashrc' "$interpreter_name delegated default flow must not rewrite rc files inline"
   [[ $(wc -l <"$composio_log") -eq 3 ]] || fail "$interpreter_name default flow invoked extra CLI commands"
   grep -Fq '|--version' "$composio_log" || fail "$interpreter_name version probe"
@@ -537,7 +576,7 @@ EOF
   reset_case
   CASE_HELP=0
   help_suppressed=$(run_installer "$case_root/help-home" "$case_root/help-install" "$case_root/help-bin" "$stable_tag" 2>&1)
-  assert_contains "$help_suppressed" 'Configured bash shell setup (cli).' "$interpreter_name help suppression keeps setup status"
+  assert_contains "$help_suppressed" "$(configured_line bash)" "$interpreter_name help suppression keeps setup status"
   assert_not_contains "$help_suppressed" 'composio login' "$interpreter_name help suppression removes the final block"
   assert_not_contains "$help_suppressed" 'Open a new terminal' "$interpreter_name help suppression removes the final block"
 
@@ -627,7 +666,7 @@ EOF
     variant_output=$(run_variant "$shell_name" "$variant_home" "$variant_install" "$variant_bin" "$stable_tag" --no-plugins 2>&1)
     grep -Fq "|installer|$variant_bin|install --shell $shell_name" "$composio_log" ||
       fail "$interpreter_name $shell_name variant delegation"
-    assert_contains "$variant_output" "Configured $shell_name shell setup (cli)." "$interpreter_name $shell_name variant confirmation"
+    assert_contains "$variant_output" "$(configured_line "$shell_name")" "$interpreter_name $shell_name variant confirmation"
     assert_not_contains "$variant_output" 'Required next step' "$interpreter_name $shell_name variant must not print setup guidance"
     assert_not_contains "$variant_output" 'Optional shell setup' "$interpreter_name $shell_name variant must not print setup guidance"
   done
@@ -638,7 +677,7 @@ EOF
   direct_bin="$case_root/direct-shell-bin"
   direct_output=$(run_installer "$direct_home" "$case_root/direct-shell-install" "$direct_bin" "$stable_tag" 2>&1)
   grep -Fq "|installer|$direct_bin|install --shell zsh" "$composio_log" || fail "$interpreter_name COMPOSIO_INSTALL_SHELL delegation"
-  assert_contains "$direct_output" 'Configured zsh shell setup (cli).' "$interpreter_name COMPOSIO_INSTALL_SHELL confirmation"
+  assert_contains "$direct_output" "$(configured_line zsh)" "$interpreter_name COMPOSIO_INSTALL_SHELL confirmation"
   assert_not_contains "$direct_output" 'Required next step' "$interpreter_name COMPOSIO_INSTALL_SHELL must not print setup guidance"
   assert_tail "$direct_output" "$case_b_tail" "$interpreter_name COMPOSIO_INSTALL_SHELL Case B tail"
   grep -Fq "export PATH=\"$direct_bin:\$PATH\"" "$direct_home/.zshrc" || fail "$interpreter_name COMPOSIO_INSTALL_SHELL CLI-written block"
@@ -650,7 +689,7 @@ EOF
   direct_fallback_home="$case_root/direct-fallback-home"
   direct_fallback_output=$(run_installer "$direct_fallback_home" "$case_root/direct-fallback-install" "$case_root/direct-fallback-bin" "$stable_tag" 2>&1)
   grep -Fqx '# Composio CLI' "$direct_fallback_home/.zshrc" || fail "$interpreter_name COMPOSIO_INSTALL_SHELL unsupported CLI fallback"
-  assert_contains "$direct_fallback_output" 'Configured zsh shell setup (fallback).' "$interpreter_name COMPOSIO_INSTALL_SHELL fallback confirmation"
+  assert_contains "$direct_fallback_output" "$(configured_line zsh)" "$interpreter_name COMPOSIO_INSTALL_SHELL fallback confirmation"
 
   reset_case
   CASE_INSTALL_SHELL=fish
@@ -726,7 +765,7 @@ EOF
     auto_output=$(run_installer "$auto_home" "$auto_install" "$auto_bin" "$stable_tag" 2>&1)
     grep -Fq "|installer|$auto_bin|install --shell $auto_shell" "$composio_log" ||
       fail "$interpreter_name auto $auto_shell delegation"
-    assert_contains "$auto_output" "Configured $auto_shell shell setup (cli)." "$interpreter_name auto $auto_shell confirmation"
+    assert_contains "$auto_output" "$(configured_line "$auto_shell")" "$interpreter_name auto $auto_shell confirmation"
     assert_tail "$auto_output" "$case_b_tail" "$interpreter_name auto $auto_shell Case B tail"
   done
 
@@ -818,8 +857,9 @@ EOF
   # Pinned old CLI: supports --shell but ignores the invocation-origin hint,
   # prints its own boxed restart hint, and exits 0 without reconciling. A
   # relative COMPOSIO_BIN_DIR must never reach setup raw; the installer must
-  # detect the unreconciled startup file and repair it inline; its plain final
-  # block prints after the old hint and supersedes it.
+  # detect the unreconciled startup file and repair it inline. The delegated
+  # command's own presentation never reaches the user: the installer owns its
+  # output and its plain final block is the only ending.
   reset_case
   CASE_INSTALL_HINT=1
   CASE_INSTALL_RECONCILE=0
@@ -832,9 +872,72 @@ EOF
     fail "$interpreter_name old-CLI setup must receive the resolved absolute bin dir"
   grep -Fq "export PATH=\"$oldcli_work/rel-bin:\$PATH\"" "$oldcli_home/.bashrc" ||
     fail "$interpreter_name old-CLI delegation must be reconciled inline with the absolute bin dir"
-  assert_contains "$oldcli_output" 'Configured bash shell setup (fallback).' "$interpreter_name old-CLI reconciliation disclosure"
-  assert_contains "$oldcli_output" '│ Restart your shell so composio is on PATH │' "$interpreter_name old-CLI restart hint passes through"
+  assert_contains "$oldcli_output" "$(configured_line bash)" "$interpreter_name old-CLI reconciliation disclosure"
+  assert_not_contains "$oldcli_output" '│ Restart your shell so composio is on PATH │' "$interpreter_name delegated CLI output must not leak"
   assert_tail "$oldcli_output" "$case_b_tail" "$interpreter_name old-CLI hint superseded by the installer tail"
+
+  # The suppressed delegated output stays available for troubleshooting.
+  reset_case
+  CASE_INSTALL_HINT=1
+  CASE_DEBUG=1
+  delegated_debug_output=$(run_installer "$case_root/delegated-debug-home" "$case_root/delegated-debug-install" "$case_root/delegated-debug-bin" "$stable_tag" 2>&1)
+  assert_contains "$delegated_debug_output" 'delegated shell setup exited 0' "$interpreter_name debug reports the delegated exit status"
+  assert_contains "$delegated_debug_output" '│ Restart your shell so composio is on PATH │' "$interpreter_name debug replays the captured delegated output"
+  assert_contains "$delegated_debug_output" '+ shell setup source: cli' "$interpreter_name debug keeps the setup-source distinction"
+
+  # --- Login-shell reachability for bash (macOS Terminal.app) ---
+
+  # Inline path, virgin home: ~/.bashrc alone is unreachable from a login bash,
+  # so the installer must also create a login-mode startup file.
+  reset_case
+  CASE_SHELL_CAPABILITY=unsupported
+  CASE_SHELL_VALUE=/bin/bash
+  bash_login_home="$case_root/bash-login-home"
+  bash_login_bin="$case_root/bash-login-bin"
+  bash_login_output=$(run_installer "$bash_login_home" "$case_root/bash-login-install" "$bash_login_bin" "$stable_tag" 2>&1)
+  grep -Fq "export PATH=\"$bash_login_bin:\$PATH\"" "$bash_login_home/.bashrc" ||
+    fail "$interpreter_name inline bash setup must configure .bashrc"
+  grep -Fq "export PATH=\"$bash_login_bin:\$PATH\"" "$bash_login_home/.bash_profile" ||
+    fail "$interpreter_name inline bash setup must configure a login-mode startup file"
+  assert_login_bash_path "$bash_login_home" "$bash_login_bin" "$interpreter_name inline bash login shell"
+  assert_contains "$bash_login_output" "$(configured_line bash)" "$interpreter_name inline bash names both startup files"
+  [[ ! -e "$bash_login_home/.profile" ]] || fail "$interpreter_name inline bash setup must not create ~/.profile"
+
+  # A created ~/.bash_profile shadows an existing ~/.profile, so it must keep
+  # sourcing it — and must never rewrite ~/.profile itself.
+  reset_case
+  CASE_SHELL_CAPABILITY=unsupported
+  CASE_SHELL_VALUE=/bin/bash
+  bash_profile_home="$case_root/bash-profile-home"
+  bash_profile_bin="$case_root/bash-profile-bin"
+  mkdir -p "$bash_profile_home"
+  printf '%s\n' 'export DISTRO_PROFILE=1' >"$bash_profile_home/.profile"
+  run_installer "$bash_profile_home" "$case_root/bash-profile-install" "$bash_profile_bin" "$stable_tag" >/dev/null 2>&1
+  grep -Fq '. "$HOME/.profile"' "$bash_profile_home/.bash_profile" ||
+    fail "$interpreter_name a created .bash_profile must keep sourcing ~/.profile"
+  [[ $(<"$bash_profile_home/.profile") == 'export DISTRO_PROFILE=1' ]] ||
+    fail "$interpreter_name ~/.profile must not be modified"
+  assert_login_bash_path "$bash_profile_home" "$bash_profile_bin" "$interpreter_name shadowed profile login shell"
+  shadowed_profile_value=$(env -i HOME="$bash_profile_home" PATH=/usr/bin:/bin bash -lc 'printf %s "${DISTRO_PROFILE:-}"')
+  [[ $shadowed_profile_value == 1 ]] ||
+    fail "$interpreter_name a created .bash_profile must not shadow ~/.profile content"
+
+  # An existing ~/.bash_login is the login file bash reads, so it is reused and
+  # no ~/.bash_profile is invented in front of it.
+  reset_case
+  CASE_SHELL_CAPABILITY=unsupported
+  CASE_SHELL_VALUE=/bin/bash
+  bash_login_only_home="$case_root/bash-login-only-home"
+  bash_login_only_bin="$case_root/bash-login-only-bin"
+  mkdir -p "$bash_login_only_home"
+  printf '%s\n' 'export LOGIN_OVERRIDE=1' >"$bash_login_only_home/.bash_login"
+  bash_login_only_output=$(run_installer "$bash_login_only_home" "$case_root/bash-login-only-install" "$bash_login_only_bin" "$stable_tag" 2>&1)
+  grep -Fq "export PATH=\"$bash_login_only_bin:\$PATH\"" "$bash_login_only_home/.bash_login" ||
+    fail "$interpreter_name existing .bash_login must receive the managed block"
+  [[ ! -e "$bash_login_only_home/.bash_profile" ]] ||
+    fail "$interpreter_name an existing .bash_login must not be shadowed by a new .bash_profile"
+  assert_contains "$bash_login_only_output" 'Configured bash shell setup in ~/.bashrc and ~/.bash_login.' "$interpreter_name .bash_login disclosure"
+  assert_login_bash_path "$bash_login_only_home" "$bash_login_only_bin" "$interpreter_name .bash_login login shell"
 
   # --- Setup write failures stay non-fatal (KD3/KD4) ---
 
@@ -849,6 +952,7 @@ EOF
     fail "$interpreter_name delegated setup failure must keep the install successful"
   [[ -x "$wf_delegated_install/composio" ]] || fail "$interpreter_name delegated setup failure must retain the binary"
   assert_contains "$wf_delegated_output" 'warning: Automatic PATH setup for zsh failed' "$interpreter_name delegated setup failure warning"
+  assert_contains "$wf_delegated_output" 'COMPOSIO_DEBUG=1' "$interpreter_name delegated setup failure points at the captured output"
   assert_tail "$wf_delegated_output" $'To get started, run:\n\n  '"$wf_delegated_install/composio login" "$interpreter_name delegated setup failure recovery tail"
 
   # Inline path: helper failure inside a conditional must propagate explicitly.
@@ -970,7 +1074,7 @@ export PATH=\"$malformed_bin:\$PATH\"" ]] || fail "$interpreter_name malformed b
   printf '%s\n' 'alias stale-guard=1' '' '# Composio CLI' 'export PATH="/stale/old-bin:$PATH"' >"$stale_home/.zshrc"
   stale_output=$(run_installer "$stale_home" "$case_root/stale-delegated-install" "$stale_bin" "$stable_tag" 2>&1)
   grep -Fq "|installer|$stale_bin|install --shell zsh" "$composio_log" || fail "$interpreter_name stale delegation still delegates first"
-  assert_contains "$stale_output" 'Configured zsh shell setup (fallback).' "$interpreter_name stale delegation reconciles inline"
+  assert_contains "$stale_output" "$(configured_line zsh)" "$interpreter_name stale delegation reconciles inline"
   [[ $(grep -Fc '# Composio CLI' "$stale_home/.zshrc") -eq 1 ]] || fail "$interpreter_name stale reconcile keeps one marker block"
   grep -Fq "export PATH=\"$stale_bin:\$PATH\"" "$stale_home/.zshrc" || fail "$interpreter_name stale reconcile names the current bin dir"
   if grep -Fq '/stale/old-bin' "$stale_home/.zshrc"; then

@@ -29,6 +29,19 @@ debug() {
     fi
 }
 
+# Replays a captured subprocess log on the debug channel. The installer owns
+# its own presentation, so delegated output is suppressed by default and stays
+# available for troubleshooting through COMPOSIO_DEBUG.
+debug_captured_output() {
+    debug_captured_label=$1
+    debug_captured_file=$2
+    if ! is_true "${COMPOSIO_DEBUG:-}" || [ ! -s "$debug_captured_file" ]; then
+        return 0
+    fi
+    debug "$debug_captured_label"
+    sed 's/^/+   /' "$debug_captured_file" >&2 || :
+}
+
 tildify() {
     case $1 in
         "$HOME"/*) printf '%s/%s\n' '~' "${1#"$HOME"/}" ;;
@@ -410,6 +423,54 @@ write_path_block() {
     return 0
 }
 
+# Names the bash startup file a login shell reads the managed block from.
+# A login bash reads /etc/profile and then only the first existing of
+# ~/.bash_profile, ~/.bash_login, ~/.profile; it never reads ~/.bashrc, and
+# macOS Terminal.app starts exactly such a shell. An override that already
+# exists is reused; otherwise ~/.bash_profile is the file to create. ~/.profile
+# is never a target: every POSIX shell shares it.
+bash_login_path_file() {
+    if [ ! -f "$HOME/.bash_profile" ] && [ -f "$HOME/.bash_login" ]; then
+        printf '%s\n' "$HOME/.bash_login"
+    else
+        printf '%s\n' "$HOME/.bash_profile"
+    fi
+}
+
+# Single source of truth for the startup files the managed PATH block lands in,
+# in write order. Both setup paths and the confirmation message read it, so the
+# files the installer configures are exactly the files it verifies and names.
+shell_path_files() {
+    case $1 in
+        zsh) printf '%s\n' "$HOME/.zshrc" ;;
+        fish) printf '%s\n' "$HOME/.config/fish/config.fish" ;;
+        bash) printf '%s\n' "$HOME/.bashrc" "$(bash_login_path_file)" ;;
+        *) return 1 ;;
+    esac
+}
+
+# A ~/.bash_profile the installer creates shadows an existing ~/.profile, which
+# login bash read while no override existed. Seed the new file so it keeps
+# sourcing it; ~/.profile itself is left untouched.
+seed_bash_login_file() {
+    seed_login_shell=$1
+    seed_login_file=$2
+    if [ "$seed_login_shell" != bash ] || [ "$seed_login_file" != "$HOME/.bash_profile" ]; then
+        return 0
+    fi
+    if [ -e "$seed_login_file" ] || [ ! -f "$HOME/.profile" ]; then
+        return 0
+    fi
+    cat >"$seed_login_file" 2>/dev/null <<'SEED_BASH_LOGIN_FILE' || return 1
+# Created by the Composio CLI installer.
+# Bash reads this file instead of ~/.profile in login shells.
+if [ -f "$HOME/.profile" ]; then
+    . "$HOME/.profile"
+fi
+SEED_BASH_LOGIN_FILE
+    return 0
+}
+
 inline_shell_setup() {
     inline_setup_shell=$1
     inline_setup_bin_dir=$2
@@ -417,21 +478,20 @@ inline_shell_setup() {
         return 1
     fi
     inline_setup_rendered=$(render_bin_dir "$inline_setup_bin_dir")
-    case $inline_setup_shell in
-        zsh) write_path_block "$HOME/.zshrc" zsh "$inline_setup_rendered" || return 1 ;;
-        fish) write_path_block "$HOME/.config/fish/config.fish" fish "$inline_setup_rendered" || return 1 ;;
-        bash)
-            inline_setup_status=0
-            write_path_block "$HOME/.bashrc" bash "$inline_setup_rendered" || inline_setup_status=1
-            if [ -f "$HOME/.bash_profile" ]; then
-                write_path_block "$HOME/.bash_profile" bash "$inline_setup_rendered" || inline_setup_status=1
-            elif [ -f "$HOME/.bash_login" ]; then
-                write_path_block "$HOME/.bash_login" bash "$inline_setup_rendered" || inline_setup_status=1
-            fi
-            [ "$inline_setup_status" -eq 0 ] || return 1
-            ;;
-        *) return 1 ;;
-    esac
+    inline_setup_list=$(shell_path_files "$inline_setup_shell") || return 1
+    inline_setup_status=0
+    while IFS= read -r inline_setup_file; do
+        [ -n "$inline_setup_file" ] || continue
+        if ! seed_bash_login_file "$inline_setup_shell" "$inline_setup_file"; then
+            inline_setup_status=1
+            continue
+        fi
+        write_path_block "$inline_setup_file" "$inline_setup_shell" "$inline_setup_rendered" ||
+            inline_setup_status=1
+    done <<EOF
+$inline_setup_list
+EOF
+    [ "$inline_setup_status" -eq 0 ] || return 1
     return 0
 }
 
@@ -446,20 +506,39 @@ delegated_file_current() {
 # shell names the current bin dir before trusting the delegation.
 delegated_setup_verified() {
     delegated_rendered=$(render_bin_dir "$resolved_bin_dir")
-    case $requested_shell in
-        zsh) delegated_file_current "$HOME/.zshrc" "$(path_block_line zsh "$delegated_rendered")" ;;
-        fish) delegated_file_current "$HOME/.config/fish/config.fish" "$(path_block_line fish "$delegated_rendered")" ;;
-        bash)
-            delegated_line=$(path_block_line bash "$delegated_rendered")
-            delegated_file_current "$HOME/.bashrc" "$delegated_line" || return 1
-            if [ -f "$HOME/.bash_profile" ]; then
-                delegated_file_current "$HOME/.bash_profile" "$delegated_line"
-            elif [ -f "$HOME/.bash_login" ]; then
-                delegated_file_current "$HOME/.bash_login" "$delegated_line"
-            fi
-            ;;
-        *) return 1 ;;
-    esac
+    delegated_line=$(path_block_line "$requested_shell" "$delegated_rendered") || return 1
+    delegated_list=$(shell_path_files "$requested_shell") || return 1
+    delegated_status=0
+    while IFS= read -r delegated_file; do
+        [ -n "$delegated_file" ] || continue
+        delegated_file_current "$delegated_file" "$delegated_line" || delegated_status=1
+    done <<EOF
+$delegated_list
+EOF
+    [ "$delegated_status" -eq 0 ]
+}
+
+# Both setup paths disclose the same fact: which startup files now carry the
+# managed PATH block. Whether the CLI or the inline fallback wrote them is an
+# implementation detail that stays on the debug channel.
+report_configured_shell() {
+    report_configured_files=
+    report_configured_list=$(shell_path_files "$requested_shell") || report_configured_list=
+    while IFS= read -r report_configured_file; do
+        [ -n "$report_configured_file" ] || continue
+        if [ -z "$report_configured_files" ]; then
+            report_configured_files=$(tildify "$report_configured_file")
+        else
+            report_configured_files="$report_configured_files and $(tildify "$report_configured_file")"
+        fi
+    done <<EOF
+$report_configured_list
+EOF
+    if [ -n "$report_configured_files" ]; then
+        info "Configured $requested_shell shell setup in $report_configured_files."
+    else
+        info "Configured $requested_shell shell setup."
+    fi
 }
 
 setup_requested_shell() {
@@ -469,17 +548,28 @@ setup_requested_shell() {
     fi
     if "$exe" install --help 2>&1 | grep -q -- '--shell'; then
         debug "delegating shell setup to $exe install --shell $requested_shell"
-        if COMPOSIO_CLI_INVOCATION_ORIGIN=installer COMPOSIO_BIN_DIR="$resolved_bin_dir" "$exe" install --shell "$requested_shell" &&
-            delegated_setup_verified; then
-            shell_configured=cli
-            info "Configured $requested_shell shell setup ($shell_configured)."
+        # The delegated CLI prints its own branded report for a command the
+        # user never ran. Capture both of its streams so the installer keeps
+        # sole ownership of the presentation, and replay them under
+        # COMPOSIO_DEBUG so genuine failures stay diagnosable.
+        setup_delegated_log=$tmpdir/shell-setup-delegated.log
+        setup_delegated_status=0
+        COMPOSIO_CLI_INVOCATION_ORIGIN=installer COMPOSIO_BIN_DIR="$resolved_bin_dir" \
+            "$exe" install --shell "$requested_shell" >"$setup_delegated_log" 2>&1 ||
+            setup_delegated_status=$?
+        debug_captured_output \
+            "delegated shell setup exited $setup_delegated_status; captured output:" \
+            "$setup_delegated_log"
+        if [ "$setup_delegated_status" -eq 0 ] && delegated_setup_verified; then
+            debug "shell setup source: cli"
+            report_configured_shell
             return 0
         fi
     fi
     debug "falling back to inline $requested_shell shell setup"
     if inline_shell_setup "$requested_shell" "$resolved_bin_dir"; then
-        shell_configured=fallback
-        info "Configured $requested_shell shell setup ($shell_configured)."
+        debug "shell setup source: fallback"
+        report_configured_shell
         return 0
     fi
     return 1
@@ -555,6 +645,11 @@ print_setup_failure_ending() {
         printf '\nComposio agent login complete.\n'
     fi
     warn "Automatic PATH setup for $requested_shell failed. The Composio CLI is installed and unaffected."
+    # The delegated CLI's own output is captured, so point at the channel that
+    # replays it instead of leaving the failure undiagnosable.
+    if ! is_true "${COMPOSIO_DEBUG:-}"; then
+        warn 'Re-run with COMPOSIO_DEBUG=1 for details.'
+    fi
     if [ "$install_agent" = 1 ]; then
         printf '\nRun composio from its installed location:\n\n  %s --help\n' "$(shell_quote "$exe")" >&2
     else

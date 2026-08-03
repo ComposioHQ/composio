@@ -148,17 +148,55 @@ describe('CLI: composio install', () => {
 
   describe('[When] bash has neither .bash_profile nor .bash_login', () => {
     layer(InstallTestLive())(it => {
-      it.scoped('[Then] only .bashrc is created', () =>
+      // A login bash (macOS Terminal.app's default) never reads .bashrc, so
+      // the PATH block only reaches it through a created .bash_profile.
+      it.scoped('[Then] .bash_profile is created alongside .bashrc', () =>
         Effect.gen(function* () {
           const os = yield* NodeOs;
           vi.stubEnv('SHELL', '/bin/bash');
+          const expectedBinDir = expectedRuntimeBinDir();
 
           yield* install();
 
           const fs = yield* FileSystem.FileSystem;
+          const bashProfilePath = path.join(os.homedir, '.bash_profile');
           expect(yield* fs.exists(path.join(os.homedir, '.bashrc'))).toBe(true);
-          expect(yield* fs.exists(path.join(os.homedir, '.bash_profile'))).toBe(false);
+          expect(yield* fs.exists(bashProfilePath)).toBe(true);
           expect(yield* fs.exists(path.join(os.homedir, '.bash_login'))).toBe(false);
+
+          const bashProfileContents = yield* fs.readFileString(bashProfilePath);
+          expect(bashProfileContents).toContain(`export PATH="${expectedBinDir}:$PATH"`);
+          // No ~/.profile existed, so nothing had to be sourced back.
+          expect(bashProfileContents).not.toContain('.profile');
+        })
+      );
+    });
+  });
+
+  describe('[When] bash has no login file but an existing ~/.profile', () => {
+    layer(InstallTestLive())(it => {
+      it.scoped('[Then] the created .bash_profile sources ~/.profile, which stays untouched', () =>
+        Effect.gen(function* () {
+          const os = yield* NodeOs;
+          const fs = yield* FileSystem.FileSystem;
+          vi.stubEnv('SHELL', '/bin/bash');
+          const expectedBinDir = expectedRuntimeBinDir();
+
+          const profilePath = path.join(os.homedir, '.profile');
+          yield* fs.writeFileString(profilePath, '# distro profile\n');
+
+          yield* install();
+
+          const bashProfileContents = yield* fs.readFileString(
+            path.join(os.homedir, '.bash_profile')
+          );
+          expect(bashProfileContents).toContain('. "$HOME/.profile"');
+          expect(bashProfileContents).toContain(`export PATH="${expectedBinDir}:$PATH"`);
+          // The passthrough must precede the managed block it leads into.
+          expect(bashProfileContents.indexOf('. "$HOME/.profile"')).toBeLessThan(
+            bashProfileContents.indexOf('# Composio CLI')
+          );
+          expect(yield* fs.readFileString(profilePath)).toBe('# distro profile\n');
         })
       );
     });

@@ -103,14 +103,22 @@ if (config.mode === 'local' && config.shell === 'bash') {
       async () => {
         // Docker execs typically leave $SHELL unset, so every default-flow
         // invocation exports it explicitly for the auto-detection contract.
+        // A login bash never reads ~/.bashrc, so a virgin home must also come
+        // out with a login-mode startup file; `bash -lc` (no -i) proves it.
         const result = await run(`
 set -eu
+${shellHelpers}
 test ! -d "$HOME/.local/bin"
+test ! -e "$HOME/.bash_profile"
 curl -fsSL "$INSTALL_BASE_URL/install" | SHELL=/bin/bash sh
 test -x "$HOME/.composio/composio"
 test -L "$HOME/.local/bin/composio"
 test "$(readlink -f "$HOME/.local/bin/composio")" = "$HOME/.composio/composio"
 test "$(grep -Fc '# Composio CLI' "$HOME/.bashrc")" = 1
+test "$(grep -Fc '# Composio CLI' "$HOME/.bash_profile")" = 1
+grep -Fq '. "$HOME/.profile"' "$HOME/.bash_profile"
+assert_no_marker_block "$HOME/.profile"
+test "$(bash -lc 'command -v composio')" = "$HOME/.local/bin/composio"
 test "$(bash -ilc 'command -v composio')" = "$HOME/.local/bin/composio"
 test "$(bash -ilc 'composio --version')" = 98.0.0
 `);

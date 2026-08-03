@@ -123,37 +123,64 @@ const pathBlockForShell = (shell: Shell, binDir: string, homedir: string): strin
     : [MARKER, `export PATH="${rendered}:$PATH"`].join('\n');
 };
 
-/** Bash startup-file candidates that only bash's login mode reads, in read order. */
-const bashLoginOverrideCandidates = (path: Path.Path, homedir: string): string[] => [
-  path.join(homedir, '.bash_profile'),
-  path.join(homedir, '.bash_login'),
-];
+/**
+ * The bash startup file a login shell reads the managed PATH block from, and
+ * whether creating it means taking over from an existing `~/.profile`.
+ */
+interface BashLoginFile {
+  readonly file: string;
+  readonly seedsProfilePassthrough: boolean;
+}
 
 /**
- * First existing bash login-override file, if any. `bash -ilc` reads only the
- * first of `.bash_profile`, `.bash_login`, `.profile` that exists — so an
- * existing override shadows `.profile` and common `.profile` files source
- * `.bashrc`, unless the PATH line also lands in the override. `.profile` is
- * deliberately not a candidate below: when neither override exists, bash reads
- * `.profile` itself, and common `.profile` files already source `.bashrc`, so
- * nothing needs to be written to it.
+ * Preamble for a `~/.bash_profile` this command creates. A login bash reads
+ * `/etc/profile` and then only the first existing of `.bash_profile`,
+ * `.bash_login`, `.profile`, so a newly created `.bash_profile` shadows a
+ * `.profile` the shell read until now. Sourcing it back keeps that content —
+ * including the Debian-style `.profile` that itself sources `.bashrc` — while
+ * leaving `.profile` (shared with every other POSIX shell) untouched.
  */
-const resolveBashLoginOverride = (
-  candidates: readonly string[],
+const BASH_PROFILE_PASSTHROUGH = [
+  '# Created by the Composio CLI installer.',
+  '# Bash reads this file instead of ~/.profile in login shells.',
+  'if [ -f "$HOME/.profile" ]; then',
+  '    . "$HOME/.profile"',
+  'fi',
+].join('\n');
+
+/**
+ * Resolve the bash startup file that login-mode bash reads.
+ *
+ * Login bash never reads `.bashrc` — macOS Terminal.app starts exactly such a
+ * shell — so the PATH block has to reach a login-mode file too. An existing
+ * override (`.bash_profile`, then `.bash_login`) is reused; when neither
+ * exists, `.bash_profile` is created rather than writing the shared
+ * `.profile`, which a `.bash_profile` would shadow anyway.
+ */
+const resolveBashLoginFile = (
+  path: Path.Path,
+  homedir: string,
   fs: FileSystem.FileSystem
-): Effect.Effect<string | undefined, PlatformError> =>
+): Effect.Effect<BashLoginFile, PlatformError> =>
   Effect.gen(function* () {
-    for (const candidate of candidates) {
-      if (yield* fs.exists(candidate)) return candidate;
+    const bashProfile = path.join(homedir, '.bash_profile');
+    if (yield* fs.exists(bashProfile)) {
+      return { file: bashProfile, seedsProfilePassthrough: false };
     }
-    return undefined;
+    const bashLogin = path.join(homedir, '.bash_login');
+    if (yield* fs.exists(bashLogin)) {
+      return { file: bashLogin, seedsProfilePassthrough: false };
+    }
+    const profileExists = yield* fs.exists(path.join(homedir, '.profile'));
+    return { file: bashProfile, seedsProfilePassthrough: profileExists };
   });
 
+/** Bash always configures both files: `.bashrc` for interactive shells, the login file for login shells. */
 const pathFilesForShell = (
   path: Path.Path,
   shell: Shell,
   homedir: string,
-  bashLoginOverride: string | undefined
+  bashLoginFile: string | undefined
 ): string[] => {
   switch (shell) {
     case 'zsh':
@@ -162,7 +189,7 @@ const pathFilesForShell = (
       return [path.join(homedir, '.config', 'fish', 'config.fish')];
     case 'bash': {
       const bashrc = path.join(homedir, '.bashrc');
-      return bashLoginOverride ? [bashrc, bashLoginOverride] : [bashrc];
+      return bashLoginFile ? [bashrc, bashLoginFile] : [bashrc];
     }
   }
 };
@@ -579,10 +606,9 @@ export const installShellIntegration = (params: {
       completionScript = lines.length > 0 ? Arr.join(lines, '\n') : undefined;
     }
 
-    const bashLoginOverride =
-      shell === 'bash'
-        ? yield* resolveBashLoginOverride(bashLoginOverrideCandidates(path, os.homedir), fs)
-        : undefined;
+    const bashLoginFile =
+      shell === 'bash' ? yield* resolveBashLoginFile(path, os.homedir, fs) : undefined;
+    const bashLoginOverride = bashLoginFile?.file;
     const pathFiles = pathFilesForShell(path, shell, os.homedir, bashLoginOverride);
     const config = buildShellConfig(path, shell, pathFiles, binDir, completionScript, os.homedir);
 
@@ -631,6 +657,14 @@ export const installShellIntegration = (params: {
       skipPathWriteForReachability,
     });
     const { replacementsByTarget, loginOverrideWritten } = writePlan;
+    // A `.bash_profile` created here takes over from an existing `~/.profile`,
+    // so it leads with the passthrough that keeps sourcing it.
+    if (
+      bashLoginFile?.seedsProfilePassthrough === true &&
+      writePlan.appendPathFiles.includes(bashLoginFile.file)
+    ) {
+      pushBlock(bashLoginFile.file, BASH_PROFILE_PASSTHROUGH);
+    }
     for (const filePath of writePlan.appendPathFiles) {
       pushBlock(filePath, config.pathBlock);
     }

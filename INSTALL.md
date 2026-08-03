@@ -6,7 +6,7 @@ Install the CLI bundle in `~/.composio` and its entry point in `~/.local/bin`:
 curl -fsSL https://composio.dev/install | sh
 ```
 
-The installer also configures your shell. It infers your login shell from `$SHELL` (`zsh`, `bash`, or `fish`) and writes a managed `# Composio CLI` PATH block so future terminals find `composio`. For `zsh` and `fish`, it updates the matching startup file. For `bash`, it updates `~/.bashrc` and the first existing login override, `~/.bash_profile` or `~/.bash_login`. Open a new terminal, then run `composio login`.
+The installer also configures your shell. It infers your login shell from `$SHELL` (`zsh`, `bash`, or `fish`) and writes a managed `# Composio CLI` PATH block so future terminals find `composio`. For `zsh` and `fish`, it updates the matching startup file. For `bash`, it updates `~/.bashrc` plus a login-mode startup file, because a login bash (what macOS Terminal.app starts) never reads `~/.bashrc`: the first existing of `~/.bash_profile` or `~/.bash_login`, or a newly created `~/.bash_profile` when neither exists. A `~/.bash_profile` created this way sources `~/.profile` first, so nothing you already had stops loading; `~/.profile` itself is never modified. Open a new terminal, then run `composio login`.
 
 If your shell is not recognized, or shell setup fails, the binary install still succeeds and the installer prints a runnable command instead. The installer does not install agent plugins or log you in unless you ask it to.
 
