@@ -223,6 +223,9 @@ verify_checksum() {
     checksum_expected=$(awk -v name="$checksum_name" '$2 == name || $2 == "*" name { print $1; exit }' "$checksum_manifest")
 
     if [ -z "$checksum_expected" ]; then
+        if [ "$official_release_source" = 1 ]; then
+            error "checksums.txt has no entry for $checksum_name. Official releases always publish complete checksums, so this release cannot be verified. Refusing to install."
+        fi
         warn "No checksum entry found for $checksum_name; continuing without verification"
         return 0
     fi
@@ -234,7 +237,7 @@ verify_checksum() {
     elif command -v shasum >/dev/null 2>&1; then
         checksum_actual=$(shasum -a 256 "$checksum_archive" | awk '{ print $1 }')
     else
-        warn 'No SHA-256 utility found; continuing without verification'
+        warn 'Checksum verification skipped: no SHA-256 utility (sha256sum or shasum) is available on this system'
         return 0
     fi
 
@@ -835,6 +838,18 @@ main() {
     github_api_repo=$github_api_base/repos/$COMPOSIO_GITHUB_OWNER/$COMPOSIO_GITHUB_REPO
     archive_name=composio-$target.zip
 
+    # Official ComposioHQ releases always publish a complete checksums.txt, so
+    # a missing manifest or entry is a hard error there. Any overridden source
+    # (mirror, test host, custom API base) keeps the lenient warn-and-continue
+    # behavior, since its manifests are outside our control.
+    official_release_source=0
+    if [ "$COMPOSIO_GITHUB_URL" = https://github.com ] &&
+        [ "$COMPOSIO_GITHUB_OWNER" = ComposioHQ ] &&
+        [ "$COMPOSIO_GITHUB_REPO" = composio ] &&
+        [ -z "$COMPOSIO_GITHUB_API_BASE_URL" ]; then
+        official_release_source=1
+    fi
+
     requested_version=$version_arg
     if [ -z "$requested_version" ]; then
         requested_version=${COMPOSIO_INSTALL_VERSION:-}
@@ -871,6 +886,8 @@ main() {
 
     if curl_download "$checksums_url" "$tmpdir/checksums.txt" 1; then
         verify_checksum "$tmpdir/$archive_name" "$tmpdir/checksums.txt" "$archive_name"
+    elif [ "$official_release_source" = 1 ]; then
+        error "Failed to download checksums.txt from \"$checksums_url\". Official releases always publish checksums, so this release cannot be verified. Refusing to install."
     else
         warn 'No checksums.txt in this release; continuing without verification'
     fi

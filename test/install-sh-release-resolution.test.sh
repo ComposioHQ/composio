@@ -324,6 +324,7 @@ JSON
   valid) printf '%064d  %s\n' 0 "$TEST_ARCHIVE_NAME" | tr '0' 'a' >"$output" ;;
   mismatch) printf '%064d  %s\n' 0 "$TEST_ARCHIVE_NAME" | tr '0' 'b' >"$output" ;;
   malformed) printf 'not-a-hash  %s\n' "$TEST_ARCHIVE_NAME" >"$output" ;;
+  absent-entry) printf '%064d  %s\n' 0 'some-other-asset.zip' | tr '0' 'a' >"$output" ;;
   esac
   ;;
 *)
@@ -444,7 +445,7 @@ EOF
   export TEST_COMPOSIO_LOG="$composio_log"
 
   reset_case() {
-    unset CASE_GITHUB_URL CASE_API_BASE CASE_INSTALL_VERSION CASE_INSTALL_SHELL CASE_PLUGINS CASE_QUIET CASE_DEBUG CASE_HELP
+    unset CASE_GITHUB_URL CASE_GITHUB_OWNER CASE_GITHUB_REPO CASE_API_BASE CASE_INSTALL_VERSION CASE_INSTALL_SHELL CASE_PLUGINS CASE_QUIET CASE_DEBUG CASE_HELP
     unset CASE_ALLOW_HTTP_HOST CASE_CHECKSUM_MODE CASE_API_ASSET_URL CASE_BASE_MODE CASE_REDIRECT_DOWNGRADE
     unset CASE_SHELL_CAPABILITY CASE_INSTALL_EXIT CASE_SETUP_EXIT CASE_VERSION_EXIT CASE_PATH_PREFIX CASE_UNSET_SHELL
     unset CASE_CURL_DELAY_URL CASE_CURL_DELAY_SECONDS CASE_SHELL_VALUE CASE_INSTALL_HINT CASE_INSTALL_RECONCILE
@@ -465,9 +466,11 @@ EOF
       COMPOSIO_BIN_DIR="$bin_dir"
       COMPOSIO_INSTALL_PLUGINS="${CASE_PLUGINS:-0}"
       COMPOSIO_GITHUB_URL="${CASE_GITHUB_URL:-$github_url}"
-      COMPOSIO_GITHUB_API_BASE_URL="${CASE_API_BASE:-$api_base}"
-      COMPOSIO_GITHUB_OWNER=FakeOwner
-      COMPOSIO_GITHUB_REPO=fake-repo
+      # CASE_API_BASE set-but-empty passes an empty API base through, which the
+      # installer treats as "no override" (official-source cases need this).
+      COMPOSIO_GITHUB_API_BASE_URL="${CASE_API_BASE-$api_base}"
+      COMPOSIO_GITHUB_OWNER="${CASE_GITHUB_OWNER:-FakeOwner}"
+      COMPOSIO_GITHUB_REPO="${CASE_GITHUB_REPO:-fake-repo}"
       TEST_CHECKSUM_MODE="${CASE_CHECKSUM_MODE:-missing}"
       TEST_SHELL_CAPABILITY="${CASE_SHELL_CAPABILITY:-supported}"
       TEST_INSTALL_EXIT="${CASE_INSTALL_EXIT:-0}"
@@ -629,6 +632,59 @@ EOF
     fi
     grep -qi 'checksum' <<<"$checksum_output" || fail "$interpreter_name $checksum_mode checksum error"
   done
+
+  # Overridden sources (mirrors, test hosts) keep the lenient behavior: a
+  # missing checksums.txt or a manifest without an entry for the archive warns
+  # and the install proceeds.
+  reset_case
+  CASE_CHECKSUM_MODE=missing
+  lenient_output=$(run_installer "$case_root/lenient-home" "$case_root/lenient-install" "$case_root/lenient-bin" "$stable_tag" 2>&1) ||
+    fail "$interpreter_name overridden source with missing checksums.txt must proceed"
+  assert_contains "$lenient_output" 'No checksums.txt in this release; continuing without verification' \
+    "$interpreter_name overridden-source missing manifest warning"
+  [[ -x "$case_root/lenient-install/composio" ]] || fail "$interpreter_name overridden-source missing manifest must still install"
+
+  reset_case
+  CASE_CHECKSUM_MODE=absent-entry
+  entry_lenient_output=$(run_installer "$case_root/entry-lenient-home" "$case_root/entry-lenient-install" "$case_root/entry-lenient-bin" "$stable_tag" 2>&1) ||
+    fail "$interpreter_name overridden source with no checksum entry must proceed"
+  assert_contains "$entry_lenient_output" 'No checksum entry found' "$interpreter_name overridden-source absent entry warning"
+
+  # The official ComposioHQ source always publishes complete checksums, so the
+  # installer must hard-fail there when the manifest or the entry is missing.
+  # The env triple below matches the installer defaults exactly; the pinned
+  # version tag keeps the release API (and its overridden base) out of play.
+  official_env() {
+    CASE_GITHUB_URL=https://github.com
+    CASE_GITHUB_OWNER=ComposioHQ
+    CASE_GITHUB_REPO=composio
+    CASE_API_BASE=
+  }
+
+  reset_case
+  official_env
+  CASE_CHECKSUM_MODE=valid
+  run_installer "$case_root/official-valid-home" "$case_root/official-valid-install" "$case_root/official-valid-bin" "$stable_tag" >/dev/null 2>&1 ||
+    fail "$interpreter_name official source with a valid checksum must install"
+  [[ -x "$case_root/official-valid-install/composio" ]] || fail "$interpreter_name official-source valid checksum install"
+
+  reset_case
+  official_env
+  CASE_CHECKSUM_MODE=missing
+  if official_missing_output=$(run_installer "$case_root/official-missing-home" "$case_root/official-missing-install" "$case_root/official-missing-bin" "$stable_tag" 2>&1); then
+    fail "$interpreter_name official source with a missing checksums.txt must fail"
+  fi
+  assert_contains "$official_missing_output" 'Failed to download checksums.txt' "$interpreter_name official missing manifest error"
+  [[ ! -e "$case_root/official-missing-install/composio" ]] || fail "$interpreter_name official missing manifest must not install"
+
+  reset_case
+  official_env
+  CASE_CHECKSUM_MODE=absent-entry
+  if official_entry_output=$(run_installer "$case_root/official-entry-home" "$case_root/official-entry-install" "$case_root/official-entry-bin" "$stable_tag" 2>&1); then
+    fail "$interpreter_name official source with no checksum entry must fail"
+  fi
+  assert_contains "$official_entry_output" 'checksums.txt has no entry for' "$interpreter_name official absent entry error"
+  [[ ! -e "$case_root/official-entry-install/composio" ]] || fail "$interpreter_name official absent entry must not install"
 
   reset_case
   CASE_PLUGINS=1
