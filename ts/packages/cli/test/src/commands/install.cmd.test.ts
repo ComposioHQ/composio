@@ -74,6 +74,8 @@ describe('CLI: composio install', () => {
         Effect.gen(function* () {
           const os = yield* NodeOs;
           vi.stubEnv('SHELL', '/bin/zsh');
+          // A direct invocation (no installer origin) keeps the restart hint.
+          vi.stubEnv('COMPOSIO_CLI_INVOCATION_ORIGIN', '');
           const expectedBinDir = expectedRuntimeBinDir();
 
           yield* install();
@@ -93,6 +95,7 @@ describe('CLI: composio install', () => {
           expect(output).toContain('PATH: will add');
           expect(output).toContain('Completions: skipped for zsh');
           expect(output).toContain('Updated');
+          expect(output).toContain('Restart your shell to apply changes');
           expect(output).toContain('source ~/.zshrc');
         })
       );
@@ -500,20 +503,19 @@ describe('CLI: composio install', () => {
     });
   });
 
-  describe('[When] .zshrc already has the marker', () => {
+  describe('[When] .zshrc already has a managed block recording the current bin dir', () => {
     layer(InstallTestLive())(it => {
-      it.scoped('[Then] reports already configured', () =>
+      it.scoped('[Then] reports already configured and leaves the file byte-identical', () =>
         Effect.gen(function* () {
           const os = yield* NodeOs;
           const fs = yield* FileSystem.FileSystem;
           vi.stubEnv('SHELL', '/bin/zsh');
+          const expectedBinDir = expectedRuntimeBinDir();
 
-          // Pre-populate .zshrc with existing config
+          // Pre-populate .zshrc with a managed block that is already current.
           const rcPath = path.join(os.homedir, '.zshrc');
-          yield* fs.writeFileString(
-            rcPath,
-            '# existing config\n# Composio CLI\nexport PATH="$HOME/.local/bin:$PATH"\n# Composio CLI completions\n_composio() {}\n'
-          );
+          const original = `# existing config\n# Composio CLI\nexport PATH="${expectedBinDir}:$PATH"\n# Composio CLI completions\n_composio() {}\n`;
+          yield* fs.writeFileString(rcPath, original);
 
           yield* install({ completions: true });
 
@@ -522,11 +524,169 @@ describe('CLI: composio install', () => {
           expect(output).toContain('PATH: already configured');
           expect(output).toContain('Completions: skipped for zsh');
           expect(output).toContain('Shell integration already configured');
+          expect(output).not.toContain('Updated');
 
-          // File should not have grown
+          // File must not be rewritten at all.
           const contents = yield* fs.readFileString(rcPath);
-          const markerCount = contents.split('# Composio CLI').length - 1;
-          expect(markerCount).toBe(2);
+          expect(contents).toBe(original);
+        })
+      );
+    });
+  });
+
+  describe('[When] the managed PATH block records a stale bin dir', () => {
+    layer(InstallTestLive())(it => {
+      it.scoped('[Then] replaces only the managed block and keeps unmanaged content', () =>
+        Effect.gen(function* () {
+          const os = yield* NodeOs;
+          const fs = yield* FileSystem.FileSystem;
+          vi.stubEnv('SHELL', '/bin/zsh');
+          const expectedBinDir = expectedRuntimeBinDir();
+
+          const rcPath = path.join(os.homedir, '.zshrc');
+          yield* fs.writeFileString(
+            rcPath,
+            '# user prologue\n# Composio CLI\nexport PATH="/stale/bin:$PATH"\n# user epilogue\nalias ll="ls -la"\n'
+          );
+
+          yield* install();
+
+          const contents = yield* fs.readFileString(rcPath);
+          expect(contents).toContain(`export PATH="${expectedBinDir}:$PATH"`);
+          expect(contents).not.toContain('/stale/bin');
+          expect(contents).toContain('# user prologue');
+          expect(contents).toContain('# user epilogue');
+          expect(contents).toContain('alias ll="ls -la"');
+          expect(contents.match(/^# Composio CLI$/gm)?.length ?? 0).toBe(1);
+
+          const output = (yield* MockConsole.getLines()).join('\n');
+          expect(output).toContain('Updated ~/.zshrc');
+        })
+      );
+    });
+  });
+
+  describe('[When] duplicate managed PATH blocks exist in one file', () => {
+    layer(InstallTestLive())(it => {
+      it.scoped('[Then] they collapse into a single current block', () =>
+        Effect.gen(function* () {
+          const os = yield* NodeOs;
+          const fs = yield* FileSystem.FileSystem;
+          vi.stubEnv('SHELL', '/bin/zsh');
+          const expectedBinDir = expectedRuntimeBinDir();
+
+          const rcPath = path.join(os.homedir, '.zshrc');
+          yield* fs.writeFileString(
+            rcPath,
+            `# Composio CLI\nexport PATH="/stale/bin:$PATH"\n# unmanaged line\n# Composio CLI\nexport PATH="${expectedBinDir}:$PATH"\n`
+          );
+
+          yield* install();
+
+          const contents = yield* fs.readFileString(rcPath);
+          expect(contents.match(/^# Composio CLI$/gm)?.length ?? 0).toBe(1);
+          expect(contents).toContain(`export PATH="${expectedBinDir}:$PATH"`);
+          expect(contents).not.toContain('/stale/bin');
+          expect(contents).toContain('# unmanaged line');
+        })
+      );
+    });
+  });
+
+  describe('[When] .bashrc and .bash_profile alias one physical file with a stale managed block', () => {
+    layer(InstallTestLive())(it => {
+      it.scoped('[Then] the physical file ends with exactly one current block', () =>
+        Effect.gen(function* () {
+          const os = yield* NodeOs;
+          const fs = yield* FileSystem.FileSystem;
+          vi.stubEnv('SHELL', '/bin/bash');
+          const expectedBinDir = expectedRuntimeBinDir();
+
+          const bashrcPath = path.join(os.homedir, '.bashrc');
+          const bashProfilePath = path.join(os.homedir, '.bash_profile');
+          const managedPath = path.join(os.homedir, '.managed-bashrc');
+          yield* fs.remove(bashrcPath, { force: true });
+          yield* fs.writeFileString(
+            managedPath,
+            '# managed prologue\n# Composio CLI\nexport PATH="/stale/bin:$PATH"\n'
+          );
+          yield* fs.symlink(managedPath, bashrcPath);
+          yield* fs.symlink(managedPath, bashProfilePath);
+
+          yield* install();
+
+          const contents = yield* fs.readFileString(managedPath);
+          expect(contents.match(/^# Composio CLI$/gm)?.length ?? 0).toBe(1);
+          expect(contents).toContain(`export PATH="${expectedBinDir}:$PATH"`);
+          expect(contents).not.toContain('/stale/bin');
+          expect(contents).toContain('# managed prologue');
+
+          // Both aliases must survive as symlinks to the same physical file.
+          expect(yield* fs.readLink(bashrcPath)).toBe(managedPath);
+          expect(yield* fs.readLink(bashProfilePath)).toBe(managedPath);
+          expect(yield* fs.exists(`${managedPath}.composio-tmp`)).toBe(false);
+        })
+      );
+    });
+  });
+
+  describe('[When] COMPOSIO_CLI_INVOCATION_ORIGIN=installer delegates shell setup', () => {
+    layer(InstallTestLive())(it => {
+      it.scoped('[Then] keeps the Updated status line but suppresses the restart hint', () =>
+        Effect.gen(function* () {
+          vi.stubEnv('SHELL', '/bin/zsh');
+          vi.stubEnv('COMPOSIO_CLI_INVOCATION_ORIGIN', 'installer');
+
+          yield* install();
+
+          const output = (yield* MockConsole.getLines()).join('\n');
+          expect(output).toContain('Updated ~/.zshrc');
+          expect(output).not.toContain('Restart your shell');
+          expect(output).not.toContain('source ~/.zshrc');
+        })
+      );
+    });
+  });
+
+  describe('[When] COMPOSIO_CLI_INVOCATION_ORIGIN=installer and integration is already current', () => {
+    layer(InstallTestLive())(it => {
+      it.scoped('[Then] keeps the already-current status line', () =>
+        Effect.gen(function* () {
+          const os = yield* NodeOs;
+          const fs = yield* FileSystem.FileSystem;
+          vi.stubEnv('SHELL', '/bin/zsh');
+          vi.stubEnv('COMPOSIO_CLI_INVOCATION_ORIGIN', 'installer');
+          const expectedBinDir = expectedRuntimeBinDir();
+
+          const rcPath = path.join(os.homedir, '.zshrc');
+          yield* fs.writeFileString(
+            rcPath,
+            `# Composio CLI\nexport PATH="${expectedBinDir}:$PATH"\n`
+          );
+
+          yield* install();
+
+          const output = (yield* MockConsole.getLines()).join('\n');
+          expect(output).toContain('Shell integration already configured');
+          expect(output).not.toContain('Restart your shell');
+        })
+      );
+    });
+  });
+
+  describe('[When] COMPOSIO_CLI_INVOCATION_ORIGIN has a non-installer value', () => {
+    layer(InstallTestLive())(it => {
+      it.scoped('[Then] the restart hint still prints', () =>
+        Effect.gen(function* () {
+          vi.stubEnv('SHELL', '/bin/zsh');
+          vi.stubEnv('COMPOSIO_CLI_INVOCATION_ORIGIN', 'agent');
+
+          yield* install();
+
+          const output = (yield* MockConsole.getLines()).join('\n');
+          expect(output).toContain('Updated ~/.zshrc');
+          expect(output).toContain('Restart your shell to apply changes');
+          expect(output).toContain('source ~/.zshrc');
         })
       );
     });
