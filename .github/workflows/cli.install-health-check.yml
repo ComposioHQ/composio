@@ -68,6 +68,13 @@ jobs:
       # the assertions mirror cli.test-installation.yml's checks — the managed PATH block in
       # ~/.bashrc, plus that a login shell can actually resolve the binary.
       #
+      # COMPOSIO_BIN_DIR is pinned to a NON-default directory ($HOME/.composio-canary/bin)
+      # to isolate managed-PATH reachability: Ubuntu's skel ~/.profile already adds
+      # ~/.local/bin to PATH, and the ~/.bash_profile the installer seeds keeps sourcing
+      # ~/.profile — so with the default bin dir the login-shell probe below would find
+      # composio even if the managed block did nothing. No startup file but the managed
+      # block ever adds the canary dir, so resolving composio from it proves the block.
+      #
       # Deployment coupling: like the production legs in cli.install-e2e.yml, this installs
       # from the PRODUCTION installer (composio.dev/install), so the shell-setup assertions
       # only pass once the auto-default ships there. This workflow is schedule/workflow_dispatch
@@ -87,15 +94,20 @@ jobs:
           rm -rf \
             "$HOME/.composio/services" \
             "$HOME/.composio/acp-adapters" \
-            "$HOME/.composio/local-tools-binaries"
-          curl -fsSL https://composio.dev/install | SHELL=/bin/bash sh
+            "$HOME/.composio/local-tools-binaries" \
+            "$HOME/.composio-canary"
+          curl -fsSL https://composio.dev/install | SHELL=/bin/bash COMPOSIO_BIN_DIR="$HOME/.composio-canary/bin" sh
           test -x "$HOME/.composio/composio"
-          test -L "$HOME/.local/bin/composio"
-          "$HOME/.local/bin/composio" --version
+          test -L "$HOME/.composio-canary/bin/composio"
+          "$HOME/.composio-canary/bin/composio" --version
+          # The pinned leg's default entry point was removed above and must stay
+          # absent: the canary bin dir is the only place this install may surface
+          # the binary, so nothing outside the managed block can resolve it.
+          test ! -e "$HOME/.local/bin/composio"
 
           # Assert the auto shell-setup contract: the managed PATH block landed in ~/.bashrc.
           if grep -Fqx '# Composio CLI' "$HOME/.bashrc" \
-            && grep -Fqx 'export PATH="$HOME/.local/bin:$PATH"' "$HOME/.bashrc"; then
+            && grep -Fqx 'export PATH="$HOME/.composio-canary/bin:$PATH"' "$HOME/.bashrc"; then
             echo "✅ ~/.bashrc gained the managed Composio PATH block via automatic shell setup"
           else
             echo "❌ ~/.bashrc missing the managed Composio PATH block after the no-argument install"
@@ -114,7 +126,7 @@ jobs:
             login_file="$HOME/.bash_profile"
           fi
           if grep -Fqx '# Composio CLI' "$login_file" \
-            && grep -Fqx 'export PATH="$HOME/.local/bin:$PATH"' "$login_file"; then
+            && grep -Fqx 'export PATH="$HOME/.composio-canary/bin:$PATH"' "$login_file"; then
             echo "✅ $login_file gained the managed Composio PATH block via automatic shell setup"
           else
             echo "❌ $login_file missing the managed Composio PATH block after the no-argument install"
@@ -123,16 +135,19 @@ jobs:
             exit 1
           fi
 
-          # Assert a login shell actually resolves the binary through that PATH block.
-          # env -i drops the step's inherited PATH: GITHUB_PATH from the pinned-tag step
-          # and Ubuntu's skel ~/.profile both already prepend ~/.local/bin, so a probe
-          # that inherits them would pass even if the login-file write regressed. This
-          # mirrors the harness's assert_login_bash_path clean-environment probe.
-          if env -i HOME="$HOME" PATH=/usr/bin:/bin bash -ilc 'command -v composio' \
+          # Assert a login shell actually resolves the binary through the MANAGED
+          # PATH block. env -i drops the step's inherited PATH (GITHUB_PATH from the
+          # pinned-tag step), and the non-default canary bin dir defeats the other
+          # leak: ~/.profile — which the installer-seeded ~/.bash_profile keeps
+          # sourcing — prepends ~/.local/bin, never $HOME/.composio-canary/bin. The
+          # probe therefore requires the resolved path to be the canary entry point.
+          # This mirrors the harness's assert_login_bash_path clean-environment probe.
+          resolved=$(env -i HOME="$HOME" PATH=/usr/bin:/bin bash -ilc 'command -v composio' || true)
+          if [ "$resolved" = "$HOME/.composio-canary/bin/composio" ] \
             && env -i HOME="$HOME" PATH=/usr/bin:/bin bash -ilc 'composio --version'; then
-            echo "✅ composio resolves via a login bash shell"
+            echo "✅ composio resolves to the managed canary bin dir via a login bash shell"
           else
-            echo "❌ composio did not resolve via a login bash shell"
+            echo "❌ composio did not resolve to \$HOME/.composio-canary/bin/composio via a login bash shell (got: ${resolved:-nothing})"
             exit 1
           fi
 
