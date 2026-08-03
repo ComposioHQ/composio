@@ -232,6 +232,32 @@ const resolveWriteTarget = (
     Effect.catchAll(() => Effect.succeed(filePath))
   );
 
+/**
+ * Atomically replace `writeTarget` via a same-directory tmp file. The tmp copy
+ * is created with the target's mode from the start so a private rc's contents
+ * never sit in a default-mode, world-readable tmp file. open(2) masks the
+ * requested mode with the process umask (only ever clearing bits), so a chmod
+ * still follows to pin the exact mode.
+ */
+const replaceFilePreservingMode = (
+  writeTarget: string,
+  contents: string,
+  fs: FileSystem.FileSystem
+): Effect.Effect<void, PlatformError> =>
+  Effect.gen(function* () {
+    const existingTargetInfo = yield* fs.stat(writeTarget).pipe(Effect.option);
+    const preservedMode = Option.map(existingTargetInfo, info => info.mode & 0o7777);
+    const tmpPath = `${writeTarget}.composio-tmp`;
+    yield* Option.match(preservedMode, {
+      onNone: () => fs.writeFileString(tmpPath, contents),
+      onSome: mode => fs.writeFileString(tmpPath, contents, { mode }),
+    });
+    if (Option.isSome(preservedMode)) {
+      yield* fs.chmod(tmpPath, preservedMode.value);
+    }
+    yield* fs.rename(tmpPath, writeTarget);
+  });
+
 // ---------------------------------------------------------------------------
 // Exported logic (reusable from install.sh post-install delegation)
 // ---------------------------------------------------------------------------
@@ -438,7 +464,6 @@ export const installShellIntegration = (params: {
         // not discard a previous iteration's append.
         const existingContents = yield* readMaybeMissingFile(filePath, fs);
         const writeTarget = yield* resolveWriteTarget(filePath, fs);
-        const existingTargetInfo = yield* fs.stat(writeTarget).pipe(Effect.option);
 
         yield* fs
           .makeDirectory(path.dirname(writeTarget), { recursive: true })
@@ -449,13 +474,7 @@ export const installShellIntegration = (params: {
           );
 
         const appendContent = '\n' + blocks.join('\n\n') + '\n';
-        const tmpPath = `${writeTarget}.composio-tmp`;
-
-        yield* fs.writeFileString(tmpPath, existingContents + appendContent);
-        if (Option.isSome(existingTargetInfo)) {
-          yield* fs.chmod(tmpPath, existingTargetInfo.value.mode & 0o7777);
-        }
-        yield* fs.rename(tmpPath, writeTarget);
+        yield* replaceFilePreservingMode(writeTarget, existingContents + appendContent, fs);
 
         yield* success(`Updated ${tildify(filePath, os.homedir)}`);
       }

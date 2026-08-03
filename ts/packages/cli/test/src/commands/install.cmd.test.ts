@@ -208,6 +208,7 @@ describe('CLI: composio install', () => {
 
           const info = yield* fs.stat(bashProfilePath);
           expect(info.mode & 0o777).toBe(0o600);
+          expect(yield* fs.exists(`${bashProfilePath}.composio-tmp`)).toBe(false);
         })
       );
     });
