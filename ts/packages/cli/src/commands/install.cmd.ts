@@ -85,13 +85,31 @@ const isDirOnPath = (pathEnv: string, dir: string): boolean =>
   pathEnv.split(':').some(entry => entry === dir);
 
 /**
- * Bin-dir resolution order: explicit env, then `~/.local/bin` when it already
- * holds a `composio` entry point, then the real binary's own directory.
+ * True when `candidate` resolves (following symlinks) to the running
+ * executable. A bare exists-check is not enough for bin-dir resolution: a
+ * leftover `composio` from another installer (e.g. pip) would win, and the
+ * PATH line would point shells at the wrong program.
+ */
+const resolvesToCurrentExecutable = (
+  candidate: string,
+  execPath: string,
+  fs: FileSystem.FileSystem
+): Effect.Effect<boolean> =>
+  Effect.zipWith(
+    fs.realPath(candidate),
+    fs.realPath(execPath).pipe(Effect.orElseSucceed(() => execPath)),
+    (candidateReal, execReal) => candidateReal === execReal
+  ).pipe(Effect.orElseSucceed(() => false));
+
+/**
+ * Bin-dir resolution order: explicit env, then `~/.local/bin` when its
+ * `composio` entry point is the running executable, then the real binary's
+ * own directory.
  */
 const resolveBinDir = (params: {
   readonly envBinDir: string | undefined;
   readonly localBinDir: string;
-  readonly localBinComposioExists: boolean;
+  readonly localBinComposioIsCurrentExecutable: boolean;
   readonly execPath: string;
   readonly path: Path.Path;
 }): string => {
@@ -99,7 +117,7 @@ const resolveBinDir = (params: {
   if (trimmedEnvBinDir && trimmedEnvBinDir.length > 0) {
     return trimmedEnvBinDir;
   }
-  if (params.localBinComposioExists) {
+  if (params.localBinComposioIsCurrentExecutable) {
     return params.localBinDir;
   }
   return params.path.dirname(params.execPath);
@@ -250,17 +268,22 @@ export const installShellIntegration = (params: {
 
     yield* ui.intro('composio install');
 
-    // Resolve the entry-point bin dir: explicit env, then an existing
-    // ~/.local/bin/composio, then the runtime executable's own directory.
+    // Resolve the entry-point bin dir: explicit env, then a ~/.local/bin/composio
+    // that is this executable, then the runtime executable's own directory.
     const envBinDir = yield* readOptionalEnv('COMPOSIO_BIN_DIR');
     const localBinDir = path.join(os.homedir, '.local', 'bin');
-    const localBinComposioExists = yield* fs.exists(path.join(localBinDir, 'composio'));
+    const execPath = params.execPath ?? nodeProcess.execPath;
+    const localBinComposioIsCurrentExecutable = yield* resolvesToCurrentExecutable(
+      path.join(localBinDir, 'composio'),
+      execPath,
+      fs
+    );
     const binDir = path.normalize(
       resolveBinDir({
         envBinDir,
         localBinDir,
-        localBinComposioExists,
-        execPath: params.execPath ?? nodeProcess.execPath,
+        localBinComposioIsCurrentExecutable,
+        execPath,
         path,
       })
     );

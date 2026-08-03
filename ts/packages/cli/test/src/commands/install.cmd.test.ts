@@ -837,7 +837,7 @@ describe('CLI: composio install', () => {
     });
   });
 
-  describe('[When] COMPOSIO_BIN_DIR is unset and ~/.local/bin already has a composio entry point', () => {
+  describe('[When] COMPOSIO_BIN_DIR is unset and ~/.local/bin/composio is the running executable', () => {
     layer(TestLive())(it => {
       it.scoped('[Then] the PATH line targets ~/.local/bin via a literal $HOME prefix', () =>
         Effect.gen(function* () {
@@ -846,10 +846,11 @@ describe('CLI: composio install', () => {
           vi.stubEnv('SHELL', '/bin/zsh');
 
           const localBinDir = path.join(os.homedir, '.local', 'bin');
+          const localBinComposio = path.join(localBinDir, 'composio');
           yield* fs.makeDirectory(localBinDir, { recursive: true });
-          yield* fs.writeFileString(path.join(localBinDir, 'composio'), '');
+          yield* fs.writeFileString(localBinComposio, '#!/bin/sh\n');
 
-          yield* install();
+          yield* install({ execPath: localBinComposio });
 
           const contents = yield* fs.readFileString(path.join(os.homedir, '.zshrc'));
           expect(contents).toContain('export PATH="$HOME/.local/bin:$PATH"');
@@ -859,7 +860,57 @@ describe('CLI: composio install', () => {
     });
   });
 
-  describe('[When] COMPOSIO_BIN_DIR is set and ~/.local/bin also already has a composio entry point', () => {
+  describe('[When] ~/.local/bin/composio is a symlink chain to the running executable', () => {
+    layer(TestLive())(it => {
+      it.scoped('[Then] the PATH line still targets ~/.local/bin', () =>
+        Effect.gen(function* () {
+          const os = yield* NodeOs;
+          const fs = yield* FileSystem.FileSystem;
+          vi.stubEnv('SHELL', '/bin/zsh');
+
+          const execDir = path.join(os.homedir, '.composio-dist');
+          const execFile = path.join(execDir, 'composio');
+          const intermediateLink = path.join(os.homedir, '.composio-launcher');
+          const localBinDir = path.join(os.homedir, '.local', 'bin');
+          yield* fs.makeDirectory(execDir, { recursive: true });
+          yield* fs.makeDirectory(localBinDir, { recursive: true });
+          yield* fs.writeFileString(execFile, '#!/bin/sh\n');
+          yield* fs.symlink(execFile, intermediateLink);
+          yield* fs.symlink(intermediateLink, path.join(localBinDir, 'composio'));
+
+          yield* install({ execPath: execFile });
+
+          const contents = yield* fs.readFileString(path.join(os.homedir, '.zshrc'));
+          expect(contents).toContain('export PATH="$HOME/.local/bin:$PATH"');
+        })
+      );
+    });
+  });
+
+  describe('[When] ~/.local/bin/composio is a foreign program (e.g. a leftover pip install)', () => {
+    layer(TestLive())(it => {
+      it.scoped('[Then] the PATH line targets the running executable directory instead', () =>
+        Effect.gen(function* () {
+          const os = yield* NodeOs;
+          const fs = yield* FileSystem.FileSystem;
+          vi.stubEnv('SHELL', '/bin/zsh');
+          const expectedBinDir = expectedRuntimeBinDir();
+
+          const localBinDir = path.join(os.homedir, '.local', 'bin');
+          yield* fs.makeDirectory(localBinDir, { recursive: true });
+          yield* fs.writeFileString(path.join(localBinDir, 'composio'), '#!/usr/bin/env python\n');
+
+          yield* install();
+
+          const contents = yield* fs.readFileString(path.join(os.homedir, '.zshrc'));
+          expect(contents).toContain(`export PATH="${expectedBinDir}:$PATH"`);
+          expect(contents).not.toContain('.local/bin');
+        })
+      );
+    });
+  });
+
+  describe('[When] COMPOSIO_BIN_DIR is set and ~/.local/bin/composio is also the running executable', () => {
     layer(TestLive())(it => {
       it.scoped('[Then] the env var wins over the ~/.local/bin fallback', () =>
         Effect.gen(function* () {
@@ -869,10 +920,11 @@ describe('CLI: composio install', () => {
           vi.stubEnv('COMPOSIO_BIN_DIR', '/custom/bin');
 
           const localBinDir = path.join(os.homedir, '.local', 'bin');
+          const localBinComposio = path.join(localBinDir, 'composio');
           yield* fs.makeDirectory(localBinDir, { recursive: true });
-          yield* fs.writeFileString(path.join(localBinDir, 'composio'), '');
+          yield* fs.writeFileString(localBinComposio, '#!/bin/sh\n');
 
-          yield* install();
+          yield* install({ execPath: localBinComposio });
 
           const contents = yield* fs.readFileString(path.join(os.homedir, '.zshrc'));
           expect(contents).toContain('export PATH="/custom/bin:$PATH"');
