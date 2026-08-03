@@ -49,7 +49,7 @@ export async function checkForLatestVersionFromNPM(currentVersion: string) {
 
     if (semver.gt(latestVersion, currentVersionFromPackageJson) && !IS_DEVELOPMENT_OR_CI) {
       logger.info(
-        `🚀 Upgrade available! Your composio-core version (${currentVersionFromPackageJson}) is behind. Latest version: ${latestVersion}.`
+        `🚀 Upgrade available! Your ${packageName} version (${currentVersionFromPackageJson}) is behind. Latest version: ${latestVersion}.`
       );
     }
   } catch (_error) {
