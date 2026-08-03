@@ -335,6 +335,29 @@ describe('CLI: composio login', () => {
     });
   });
 
+  layer(TestLive())(it => {
+    it.scoped(
+      '[Given] an unreadable pending login cache [Then] poll reports the read failure, not a decode failure',
+      () =>
+        Effect.gen(function* () {
+          const fs = yield* FileSystem.FileSystem;
+          const cacheDir = yield* setupCacheDir;
+          // A directory at the cache path passes the exists check but fails the read.
+          yield* fs.makeDirectory(path.join(cacheDir, 'pending-login-session.json'), {
+            recursive: true,
+          });
+
+          const error = yield* cli(['login', '--poll']).pipe(Effect.flip);
+
+          expect(error).toMatchObject({
+            _tag: 'commands/PendingLoginError',
+            reason: 'io',
+            message: 'Failed to read pending login cache',
+          });
+        })
+    );
+  });
+
   const directLoginKeyring = makeFakeKeyring();
 
   layer(TestLive({ keyring: directLoginKeyring }))(it => {

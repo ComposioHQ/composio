@@ -26,6 +26,9 @@ const okResponse = () =>
     headers: { 'Content-Type': 'application/json' },
   });
 
+// Mirrors the module-private `cwdHash` in src/services/consumer-short-term-cache.ts
+// (djb2Hash + base36): the seeded cache key below must be byte-identical to what
+// the service computes for process.cwd() when it looks up the CLI session.
 const cwdHash = (cwd: string): string => {
   let hash = 5381;
   for (let index = 0; index < cwd.length; index += 1) {

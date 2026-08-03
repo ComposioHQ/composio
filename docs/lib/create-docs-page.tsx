@@ -1,8 +1,4 @@
-import {
-  DocsBody,
-  DocsPage,
-  DocsTitle,
-} from 'fumadocs-ui/layouts/docs/page';
+import { DocsBody, DocsPage, DocsTitle } from 'fumadocs-ui/layouts/docs/page';
 import { notFound } from 'next/navigation';
 import { getMDXComponents } from '@/mdx-components';
 import type { Metadata } from 'next';
@@ -11,7 +7,7 @@ import { PageActions } from '@/components/page-actions';
 import { EditOnGitHub } from '@/components/edit-on-github';
 import { getOgImageUrl } from '@/lib/source';
 
-type Source = any;
+type Source = typeof import('./source').examplesSource;
 
 export function createDocsPage(source: Source, contentDir: string = 'content/docs') {
   return async function Page({ params }: { params: Promise<{ slug?: string[] }> }) {
@@ -22,7 +18,12 @@ export function createDocsPage(source: Source, contentDir: string = 'content/doc
     const MDX = page.data.body;
 
     return (
-      <DocsPage toc={page.data.toc} full={page.data.full} footer={{ enabled: false }} tableOfContentPopover={{ enabled: false }}>
+      <DocsPage
+        toc={page.data.toc}
+        full={page.data.full}
+        footer={{ enabled: false }}
+        tableOfContentPopover={{ enabled: false }}
+      >
         <DocsTitle>{page.data.title}</DocsTitle>
         <PageActions path={page.url} />
         <DocsBody>

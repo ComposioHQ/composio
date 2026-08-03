@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { afterEach, describe, it, expect, vi } from 'vitest';
 import * as path from 'node:path';
 import * as os from 'node:os';
 import { mkdtempSync, writeFileSync, symlinkSync, rmSync, mkdirSync } from 'node:fs';
@@ -6,9 +6,14 @@ import {
   assertSafeFileUploadPath,
   isBlockedSensitiveFileUploadPath,
 } from '../../src/utils/sensitiveFileUploadPaths';
+import { platform } from '../../src/platform/node';
 import * as publicApi from '../../src';
 
 describe('sensitiveFileUploadPaths', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   it('allows normal project files', () => {
     const p = path.join('/tmp', 'composio-test', 'document.pdf');
     expect(isBlockedSensitiveFileUploadPath(p)).toBe(false);
@@ -47,6 +52,22 @@ describe('sensitiveFileUploadPaths', () => {
     expect(isBlockedSensitiveFileUploadPath(path.join('/data', 'ok', 'x.txt'), ['secrets'])).toBe(
       false
     );
+  });
+
+  it('matches deny segments without case on a case-insensitive filesystem', () => {
+    vi.spyOn(platform, 'isFileSystemCaseSensitive').mockReturnValue(false);
+
+    expect(isBlockedSensitiveFileUploadPath('/Users/me/.Kube/config')).toBe(true);
+    expect(isBlockedSensitiveFileUploadPath('/data/Secrets/x.txt', ['secrets'])).toBe(true);
+  });
+
+  it('preserves distinct segment casing on a case-sensitive filesystem', () => {
+    vi.spyOn(platform, 'isFileSystemCaseSensitive').mockReturnValue(true);
+
+    expect(isBlockedSensitiveFileUploadPath('/home/me/.kube/config')).toBe(true);
+    expect(isBlockedSensitiveFileUploadPath('/home/me/.Kube/config')).toBe(false);
+    expect(isBlockedSensitiveFileUploadPath('/data/secrets/x.txt', ['secrets'])).toBe(true);
+    expect(isBlockedSensitiveFileUploadPath('/data/Secrets/x.txt', ['secrets'])).toBe(false);
   });
 
   it('is re-exported from the package root for downstream consumers (e.g. @composio/cli)', () => {

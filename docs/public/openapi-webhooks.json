@@ -29,10 +29,10 @@
           {
             "schema": {
               "type": "string",
-              "description": "Unique message ID, stable across delivery retries. Use it as an idempotency key."
+              "description": "Unique message id, stable across delivery retries. Use it as an idempotency key. Equals the payload `id`."
             },
             "required": true,
-            "description": "Unique message ID, stable across delivery retries. Use it as an idempotency key.",
+            "description": "Unique message id, stable across delivery retries. Use it as an idempotency key. Equals the payload `id`.",
             "name": "webhook-id",
             "in": "header"
           },
@@ -195,10 +195,10 @@
           {
             "schema": {
               "type": "string",
-              "description": "Unique message ID, stable across delivery retries. Use it as an idempotency key."
+              "description": "Unique message id, stable across delivery retries. Use it as an idempotency key. Equals the payload `id`."
             },
             "required": true,
-            "description": "Unique message ID, stable across delivery retries. Use it as an idempotency key.",
+            "description": "Unique message id, stable across delivery retries. Use it as an idempotency key. Equals the payload `id`.",
             "name": "webhook-id",
             "in": "header"
           },
@@ -355,10 +355,10 @@
           {
             "schema": {
               "type": "string",
-              "description": "Unique message ID, stable across delivery retries. Use it as an idempotency key."
+              "description": "Unique message id, stable across delivery retries. Use it as an idempotency key. Equals the payload `id`."
             },
             "required": true,
-            "description": "Unique message ID, stable across delivery retries. Use it as an idempotency key.",
+            "description": "Unique message id, stable across delivery retries. Use it as an idempotency key. Equals the payload `id`.",
             "name": "webhook-id",
             "in": "header"
           },
@@ -475,10 +475,10 @@
           {
             "schema": {
               "type": "string",
-              "description": "Unique message ID, stable across delivery retries. Use it as an idempotency key."
+              "description": "Unique message id, stable across delivery retries. Use it as an idempotency key. Equals the payload `id`."
             },
             "required": true,
-            "description": "Unique message ID, stable across delivery retries. Use it as an idempotency key.",
+            "description": "Unique message id, stable across delivery retries. Use it as an idempotency key. Equals the payload `id`.",
             "name": "webhook-id",
             "in": "header"
           },
@@ -610,6 +610,27 @@
                         "type": "string",
                         "format": "connectedAccountId",
                         "description": "The id of the connection"
+                      },
+                      "authScheme": {
+                        "type": "string",
+                        "enum": [
+                          "OAUTH2",
+                          "OAUTH1",
+                          "API_KEY",
+                          "BASIC",
+                          "BILLCOM_AUTH",
+                          "BEARER_TOKEN",
+                          "GOOGLE_SERVICE_ACCOUNT",
+                          "NO_AUTH",
+                          "BASIC_WITH_JWT",
+                          "CALCOM_AUTH",
+                          "SERVICE_ACCOUNT",
+                          "SAML",
+                          "DCR_OAUTH",
+                          "S2S_OAUTH2"
+                        ],
+                        "description": "Duplicates state.authScheme. Kept for backward compatibility with existing readers; use state.authScheme instead.",
+                        "deprecated": true
                       },
                       "word_id": {
                         "type": [
@@ -2435,6 +2456,180 @@
                                       "status"
                                     ],
                                     "additionalProperties": {}
+                                  },
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "subdomain": {
+                                        "type": "string"
+                                      },
+                                      "your-domain": {
+                                        "type": "string"
+                                      },
+                                      "region": {
+                                        "type": "string"
+                                      },
+                                      "shop": {
+                                        "type": "string"
+                                      },
+                                      "account_url": {
+                                        "type": "string"
+                                      },
+                                      "COMPANYDOMAIN": {
+                                        "type": "string"
+                                      },
+                                      "extension": {
+                                        "type": "string"
+                                      },
+                                      "form_api_base_url": {
+                                        "type": "string"
+                                      },
+                                      "instanceEndpoint": {
+                                        "type": "string"
+                                      },
+                                      "api_url": {
+                                        "type": "string"
+                                      },
+                                      "borneo_dashboard_url": {
+                                        "type": "string"
+                                      },
+                                      "proxy_username": {
+                                        "type": "string"
+                                      },
+                                      "proxy_password": {
+                                        "type": "string"
+                                      },
+                                      "domain": {
+                                        "type": "string"
+                                      },
+                                      "version": {
+                                        "type": "string"
+                                      },
+                                      "dc": {
+                                        "type": "string"
+                                      },
+                                      "site_name": {
+                                        "type": "string"
+                                      },
+                                      "instanceName": {
+                                        "type": "string"
+                                      },
+                                      "account_id": {
+                                        "type": "string"
+                                      },
+                                      "your_server": {
+                                        "type": "string"
+                                      },
+                                      "server_location": {
+                                        "type": "string"
+                                      },
+                                      "base_url": {
+                                        "type": "string"
+                                      },
+                                      "status": {
+                                        "type": "string",
+                                        "enum": [
+                                          "REVOKED"
+                                        ]
+                                      },
+                                      "generic_api_key": {
+                                        "type": "string"
+                                      },
+                                      "api_key": {
+                                        "type": "string"
+                                      },
+                                      "bearer_token": {
+                                        "type": "string"
+                                      },
+                                      "basic_encoded": {
+                                        "type": "string"
+                                      }
+                                    },
+                                    "required": [
+                                      "status"
+                                    ],
+                                    "additionalProperties": {}
+                                  },
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "subdomain": {
+                                        "type": "string"
+                                      },
+                                      "your-domain": {
+                                        "type": "string"
+                                      },
+                                      "region": {
+                                        "type": "string"
+                                      },
+                                      "shop": {
+                                        "type": "string"
+                                      },
+                                      "account_url": {
+                                        "type": "string"
+                                      },
+                                      "COMPANYDOMAIN": {
+                                        "type": "string"
+                                      },
+                                      "extension": {
+                                        "type": "string"
+                                      },
+                                      "form_api_base_url": {
+                                        "type": "string"
+                                      },
+                                      "instanceEndpoint": {
+                                        "type": "string"
+                                      },
+                                      "api_url": {
+                                        "type": "string"
+                                      },
+                                      "borneo_dashboard_url": {
+                                        "type": "string"
+                                      },
+                                      "proxy_username": {
+                                        "type": "string"
+                                      },
+                                      "proxy_password": {
+                                        "type": "string"
+                                      },
+                                      "domain": {
+                                        "type": "string"
+                                      },
+                                      "version": {
+                                        "type": "string"
+                                      },
+                                      "dc": {
+                                        "type": "string"
+                                      },
+                                      "site_name": {
+                                        "type": "string"
+                                      },
+                                      "instanceName": {
+                                        "type": "string"
+                                      },
+                                      "account_id": {
+                                        "type": "string"
+                                      },
+                                      "your_server": {
+                                        "type": "string"
+                                      },
+                                      "server_location": {
+                                        "type": "string"
+                                      },
+                                      "base_url": {
+                                        "type": "string"
+                                      },
+                                      "status": {
+                                        "type": "string",
+                                        "enum": [
+                                          "EXPIRED"
+                                        ]
+                                      }
+                                    },
+                                    "required": [
+                                      "status"
+                                    ],
+                                    "additionalProperties": {}
                                   }
                                 ]
                               }
@@ -2792,6 +2987,90 @@
                                       "username"
                                     ],
                                     "additionalProperties": {}
+                                  },
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "subdomain": {
+                                        "type": "string"
+                                      },
+                                      "your-domain": {
+                                        "type": "string"
+                                      },
+                                      "region": {
+                                        "type": "string"
+                                      },
+                                      "shop": {
+                                        "type": "string"
+                                      },
+                                      "account_url": {
+                                        "type": "string"
+                                      },
+                                      "COMPANYDOMAIN": {
+                                        "type": "string"
+                                      },
+                                      "extension": {
+                                        "type": "string"
+                                      },
+                                      "form_api_base_url": {
+                                        "type": "string"
+                                      },
+                                      "instanceEndpoint": {
+                                        "type": "string"
+                                      },
+                                      "api_url": {
+                                        "type": "string"
+                                      },
+                                      "borneo_dashboard_url": {
+                                        "type": "string"
+                                      },
+                                      "proxy_username": {
+                                        "type": "string"
+                                      },
+                                      "proxy_password": {
+                                        "type": "string"
+                                      },
+                                      "domain": {
+                                        "type": "string"
+                                      },
+                                      "version": {
+                                        "type": "string"
+                                      },
+                                      "dc": {
+                                        "type": "string"
+                                      },
+                                      "site_name": {
+                                        "type": "string"
+                                      },
+                                      "instanceName": {
+                                        "type": "string"
+                                      },
+                                      "account_id": {
+                                        "type": "string"
+                                      },
+                                      "your_server": {
+                                        "type": "string"
+                                      },
+                                      "server_location": {
+                                        "type": "string"
+                                      },
+                                      "base_url": {
+                                        "type": "string"
+                                      },
+                                      "status": {
+                                        "type": "string",
+                                        "enum": [
+                                          "EXPIRED"
+                                        ]
+                                      },
+                                      "expired_at": {
+                                        "type": "string"
+                                      }
+                                    },
+                                    "required": [
+                                      "status"
+                                    ],
+                                    "additionalProperties": {}
                                   }
                                 ]
                               }
@@ -3141,6 +3420,87 @@
                                     "required": [
                                       "status",
                                       "token"
+                                    ],
+                                    "additionalProperties": {}
+                                  },
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "subdomain": {
+                                        "type": "string"
+                                      },
+                                      "your-domain": {
+                                        "type": "string"
+                                      },
+                                      "region": {
+                                        "type": "string"
+                                      },
+                                      "shop": {
+                                        "type": "string"
+                                      },
+                                      "account_url": {
+                                        "type": "string"
+                                      },
+                                      "COMPANYDOMAIN": {
+                                        "type": "string"
+                                      },
+                                      "extension": {
+                                        "type": "string"
+                                      },
+                                      "form_api_base_url": {
+                                        "type": "string"
+                                      },
+                                      "instanceEndpoint": {
+                                        "type": "string"
+                                      },
+                                      "api_url": {
+                                        "type": "string"
+                                      },
+                                      "borneo_dashboard_url": {
+                                        "type": "string"
+                                      },
+                                      "proxy_username": {
+                                        "type": "string"
+                                      },
+                                      "proxy_password": {
+                                        "type": "string"
+                                      },
+                                      "domain": {
+                                        "type": "string"
+                                      },
+                                      "version": {
+                                        "type": "string"
+                                      },
+                                      "dc": {
+                                        "type": "string"
+                                      },
+                                      "site_name": {
+                                        "type": "string"
+                                      },
+                                      "instanceName": {
+                                        "type": "string"
+                                      },
+                                      "account_id": {
+                                        "type": "string"
+                                      },
+                                      "your_server": {
+                                        "type": "string"
+                                      },
+                                      "server_location": {
+                                        "type": "string"
+                                      },
+                                      "base_url": {
+                                        "type": "string"
+                                      },
+                                      "status": {
+                                        "type": "string",
+                                        "enum": [
+                                          "EXPIRED"
+                                        ]
+                                      }
+                                    },
+                                    "required": [
+                                      "status"
                                     ],
                                     "additionalProperties": {}
                                   }
@@ -3499,6 +3859,90 @@
                                     "required": [
                                       "status",
                                       "credentials_json"
+                                    ],
+                                    "additionalProperties": {}
+                                  },
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "subdomain": {
+                                        "type": "string"
+                                      },
+                                      "your-domain": {
+                                        "type": "string"
+                                      },
+                                      "region": {
+                                        "type": "string"
+                                      },
+                                      "shop": {
+                                        "type": "string"
+                                      },
+                                      "account_url": {
+                                        "type": "string"
+                                      },
+                                      "COMPANYDOMAIN": {
+                                        "type": "string"
+                                      },
+                                      "extension": {
+                                        "type": "string"
+                                      },
+                                      "form_api_base_url": {
+                                        "type": "string"
+                                      },
+                                      "instanceEndpoint": {
+                                        "type": "string"
+                                      },
+                                      "api_url": {
+                                        "type": "string"
+                                      },
+                                      "borneo_dashboard_url": {
+                                        "type": "string"
+                                      },
+                                      "proxy_username": {
+                                        "type": "string"
+                                      },
+                                      "proxy_password": {
+                                        "type": "string"
+                                      },
+                                      "domain": {
+                                        "type": "string"
+                                      },
+                                      "version": {
+                                        "type": "string"
+                                      },
+                                      "dc": {
+                                        "type": "string"
+                                      },
+                                      "site_name": {
+                                        "type": "string"
+                                      },
+                                      "instanceName": {
+                                        "type": "string"
+                                      },
+                                      "account_id": {
+                                        "type": "string"
+                                      },
+                                      "your_server": {
+                                        "type": "string"
+                                      },
+                                      "server_location": {
+                                        "type": "string"
+                                      },
+                                      "base_url": {
+                                        "type": "string"
+                                      },
+                                      "status": {
+                                        "type": "string",
+                                        "enum": [
+                                          "EXPIRED"
+                                        ]
+                                      },
+                                      "expired_at": {
+                                        "type": "string"
+                                      }
+                                    },
+                                    "required": [
+                                      "status"
                                     ],
                                     "additionalProperties": {}
                                   }
@@ -5976,6 +6420,87 @@
                                       "private_key"
                                     ],
                                     "additionalProperties": {}
+                                  },
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "subdomain": {
+                                        "type": "string"
+                                      },
+                                      "your-domain": {
+                                        "type": "string"
+                                      },
+                                      "region": {
+                                        "type": "string"
+                                      },
+                                      "shop": {
+                                        "type": "string"
+                                      },
+                                      "account_url": {
+                                        "type": "string"
+                                      },
+                                      "COMPANYDOMAIN": {
+                                        "type": "string"
+                                      },
+                                      "extension": {
+                                        "type": "string"
+                                      },
+                                      "form_api_base_url": {
+                                        "type": "string"
+                                      },
+                                      "instanceEndpoint": {
+                                        "type": "string"
+                                      },
+                                      "api_url": {
+                                        "type": "string"
+                                      },
+                                      "borneo_dashboard_url": {
+                                        "type": "string"
+                                      },
+                                      "proxy_username": {
+                                        "type": "string"
+                                      },
+                                      "proxy_password": {
+                                        "type": "string"
+                                      },
+                                      "domain": {
+                                        "type": "string"
+                                      },
+                                      "version": {
+                                        "type": "string"
+                                      },
+                                      "dc": {
+                                        "type": "string"
+                                      },
+                                      "site_name": {
+                                        "type": "string"
+                                      },
+                                      "instanceName": {
+                                        "type": "string"
+                                      },
+                                      "account_id": {
+                                        "type": "string"
+                                      },
+                                      "your_server": {
+                                        "type": "string"
+                                      },
+                                      "server_location": {
+                                        "type": "string"
+                                      },
+                                      "base_url": {
+                                        "type": "string"
+                                      },
+                                      "status": {
+                                        "type": "string",
+                                        "enum": [
+                                          "EXPIRED"
+                                        ]
+                                      }
+                                    },
+                                    "required": [
+                                      "status"
+                                    ],
+                                    "additionalProperties": {}
                                   }
                                 ]
                               }
@@ -7833,7 +8358,7 @@
                           "string",
                           "null"
                         ],
-                        "description": "The reason the connection status changed. Possible reasons: Connection initiation did not complete within 10 minutes, Permanent auth error during token refresh, Max auth failures reached, OAuth callback failed during token exchange, Connection status updated by user, Auth config is disabled, Revoked via user-initiated revoke endpoint, Revoked via admin tool, Revoked as part of connection delete"
+                        "description": "The reason the connection status changed."
                       },
                       "is_disabled": {
                         "type": "boolean",
@@ -7890,7 +8415,7 @@
                       },
                       "org_id": {
                         "type": "string",
-                        "description": "ID of the organization.",
+                        "description": "ID of the organization. Deprecated and will be removed in a future version — scope by `project_id` instead.",
                         "deprecated": true
                       }
                     },
@@ -7967,10 +8492,10 @@
           {
             "schema": {
               "type": "string",
-              "description": "Unique message ID, stable across delivery retries. Use it as an idempotency key."
+              "description": "Unique message id, stable across delivery retries. Use it as an idempotency key. Equals the payload `id`."
             },
             "required": true,
-            "description": "Unique message ID, stable across delivery retries. Use it as an idempotency key.",
+            "description": "Unique message id, stable across delivery retries. Use it as an idempotency key. Equals the payload `id`.",
             "name": "webhook-id",
             "in": "header"
           },
