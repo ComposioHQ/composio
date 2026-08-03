@@ -15,8 +15,14 @@
 import { Config, ConfigProvider, Console, Effect, Stream, Logger, Layer, LogLevel } from 'effect';
 import { Command } from '@effect/platform';
 import { BunContext, BunRuntime } from '@effect/platform-bun';
-import { buildCompanionModules, copyLocalToolBinaryAssets, teardown } from './_shared';
+import {
+  buildCompanionModules,
+  copyLocalToolBinaryAssets,
+  posthogBakeArgs,
+  teardown,
+} from './_shared';
 import { BinaryBuildError } from './build-error';
+import { buildCliReleaseVersionDefineArgs } from '../src/utils/cli-release-version';
 
 /**
  * All cross-compilation targets and their artifact names.
@@ -36,6 +42,8 @@ function runBunBuild(target: string, outfile: string) {
       './src/bin.ts',
       '--env',
       'DEBUG_OVERRIDE_*',
+      ...posthogBakeArgs(),
+      ...buildCliReleaseVersionDefineArgs(process.env.RELEASE_TAG),
       '--compile',
       '--production',
       '--target',

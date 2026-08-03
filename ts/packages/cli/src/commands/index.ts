@@ -58,6 +58,7 @@ import { CLI_EXPERIMENTAL_FEATURES } from 'src/constants';
 import { installSkill, type SkillInstallTarget } from 'src/effects/install-skill';
 import { experimental, type CommandVisibility, tagged, visibleValues } from './feature-tags';
 import { withBackgroundUpdateCheck } from './background-update-check';
+import { configureCliAnalyticsReleaseVersion } from 'src/analytics/events';
 
 const ROOT_COMMANDS = [
   tagged(versionCmd),
@@ -453,6 +454,7 @@ export const runWithConfig = Effect.gen(function* () {
     isExperimentalFeatureEnabled: feature => cliUserConfig.isExperimentalFeatureEnabled(feature),
   };
   const version = yield* getVersion;
+  configureCliAnalyticsReleaseVersion(version);
   const rootCommand = withBackgroundUpdateCheck(buildRootCommand(visibility));
   const run = Command.run(rootCommand, {
     name: 'composio',

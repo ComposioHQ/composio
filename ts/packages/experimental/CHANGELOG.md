@@ -1,5 +1,11 @@
 # @composio/experimental
 
+## 0.2.1
+
+### Patch Changes
+
+- 503b50a: Refresh runtime dependencies across the TypeScript SDK packages.
+
 ## 0.2.0
 
 ### Minor Changes

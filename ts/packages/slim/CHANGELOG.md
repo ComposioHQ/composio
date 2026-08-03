@@ -1,5 +1,11 @@
 # @composio/slim
 
+## 0.14.1
+
+### Patch Changes
+
+- 503b50a: Refresh runtime dependencies across the TypeScript SDK packages.
+
 ## 0.14.0
 
 ### Patch Changes

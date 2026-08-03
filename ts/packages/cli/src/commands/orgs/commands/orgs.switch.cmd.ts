@@ -2,6 +2,7 @@ import { Command, Options } from '@effect/cli';
 import { Effect, Option } from 'effect';
 import { requireAuth } from 'src/effects/require-auth';
 import { runOrgSelection } from 'src/effects/select-org-project';
+import { linkAnalyticsIdentityForOrg } from 'src/effects/link-analytics-identity';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { ComposioUserContext } from 'src/services/user-context';
 
@@ -49,6 +50,11 @@ export const orgsCmd$Switch = Command.make('switch', { orgId, limit }, ({ orgId,
     }
 
     yield* ctx.login(apiKey, result.id, Option.getOrUndefined(ctx.data.testUserId));
+    yield* linkAnalyticsIdentityForOrg({
+      apiKey,
+      baseURL: ctx.data.baseURL,
+      orgId: result.id,
+    });
 
     yield* ui.log.success(`Updated current org to "${result.name}".`);
     yield* ui.output(

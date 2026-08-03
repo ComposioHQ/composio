@@ -6,6 +6,7 @@ import { cli, TestLive, MockConsole } from 'test/__utils__';
 import type { TestLiveInput } from 'test/__utils__/services/test-layer';
 import type { ConnectedAccountItem } from 'src/models/connected-accounts';
 import { getTerminalCapabilities, TerminalUI } from 'src/services/terminal-ui';
+import { ComposioUserContext } from 'src/services/user-context';
 import open from 'open';
 import { afterEach, vi } from 'vitest';
 
@@ -115,6 +116,7 @@ describe('CLI: composio dev connected-accounts link', () => {
   }));
 
   afterEach(() => {
+    vi.restoreAllMocks();
     vi.clearAllMocks();
   });
 
@@ -340,6 +342,85 @@ describe('CLI: composio dev connected-accounts link', () => {
         expect(parsed).not.toBeNull();
         expect(parsed?.status).toBe('success');
         expect(parsed?.connected_account_id).toBe('con_test_link');
+      })
+    );
+  });
+
+  layer(
+    TestLive({
+      baseConfigProvider: testConfigProvider,
+      connectedAccountsData: makeConnectedAccountsData(),
+      fixture: 'global-test-user-id',
+      toolRouter: {
+        link: async () => {
+          throw Object.assign(new Error('No managed auth'), {
+            slug: 'ToolRouterV2_NoManagedAuth',
+          });
+        },
+      },
+    })
+  )('[Given] unmanaged auth after an org switch [Then] resolves the selected membership', it => {
+    it.scoped('passes the active org to session info before linking analytics identity', () =>
+      Effect.gen(function* () {
+        const userContext = yield* ComposioUserContext;
+        yield* userContext.login('test_api_key', 'org_selected', 'consumer-user-org_selected');
+
+        const originalFetch = globalThis.fetch;
+        const sessionInfoRequests: Headers[] = [];
+        vi.spyOn(globalThis, 'fetch').mockImplementation(
+          async (requestInput: RequestInfo | URL, init?: RequestInit) => {
+            const url =
+              typeof requestInput === 'string'
+                ? requestInput
+                : requestInput instanceof URL
+                  ? requestInput.toString()
+                  : requestInput.url;
+
+            if (url.includes('/api/v3/auth/session/info')) {
+              const headers = new Headers(init?.headers);
+              sessionInfoRequests.push(headers);
+              return new Response(
+                JSON.stringify({
+                  project: {
+                    name: 'Selected Project',
+                    id: 'project_id_selected',
+                    org_id: 'org_selected',
+                    nano_id: 'project_selected',
+                    email: 'project@example.com',
+                    created_at: '2026-01-01T00:00:00.000Z',
+                    updated_at: '2026-01-01T00:00:00.000Z',
+                    org: {
+                      id: 'org_selected',
+                      name: 'Selected Org',
+                      plan: 'enterprise',
+                    },
+                  },
+                  org_member: {
+                    id: 'member_selected',
+                    user_id: 'user_123',
+                    email: 'cli@example.com',
+                    name: 'CLI User',
+                    role: 'admin',
+                  },
+                  api_key: null,
+                }),
+                {
+                  status: 200,
+                  headers: { 'Content-Type': 'application/json' },
+                }
+              );
+            }
+
+            return originalFetch(requestInput, init);
+          }
+        );
+
+        yield* cli(['link', 'gmail', '--no-browser']);
+
+        expect(sessionInfoRequests).toHaveLength(1);
+        expect(sessionInfoRequests[0].get('x-org-id')).toBe('org_selected');
+        const output = (yield* MockConsole.getLines({ stripAnsi: true })).join('\n');
+        expect(output).toContain('/Selected%20Org/~/connect/apps/gmail?open=true');
       })
     );
   });

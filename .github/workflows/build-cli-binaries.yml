@@ -23,6 +23,9 @@ on:
       beta_tag:
         description: 'Existing beta release tag to promote (only for promote-stable, e.g. @composio/cli@0.2.20-beta.42)'
         required: false
+      version:
+        description: 'Optional semver base for a manual beta (e.g. 0.3.0); omit for the next patch after latest stable'
+        required: false
 
 # Least privilege by default: only the release job creates/edits releases and uploads assets.
 # `prepare` reads releases (gh release list) and `build` uploads workflow artifacts — both work
@@ -58,6 +61,7 @@ jobs:
           EVENT_NAME: ${{ github.event_name }}
           ACTION_INPUT: ${{ inputs.action }}
           BETA_TAG_INPUT: ${{ inputs.beta_tag }}
+          VERSION_INPUT: ${{ inputs.version }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           REPOSITORY: ${{ github.repository }}
           RUN_NUMBER: ${{ github.run_number }}
@@ -132,6 +136,9 @@ jobs:
 
       - name: Cross-compile CLI binary
         working-directory: ts/packages/cli
+        env:
+          COMPOSIO_POSTHOG_PROJECT_API_KEY: ${{ vars.COMPOSIO_POSTHOG_PROJECT_API_KEY }}
+          RELEASE_TAG: ${{ needs.prepare.outputs.release_tag }}
         run: pnpm build:binary:cross --target ${{ matrix.target }}
 
       - name: Verify binary
@@ -139,6 +146,13 @@ jobs:
         run: |
           ls -la dist/binaries/${{ matrix.artifact }}
           file dist/binaries/${{ matrix.artifact }}
+
+      - name: Verify binary version
+        if: matrix.target == 'bun-linux-x64'
+        working-directory: ts/packages/cli
+        run: |
+          expected_version='${{ needs.prepare.outputs.release_tag }}'
+          test "$(./dist/binaries/${{ matrix.artifact }} --version)" = "${expected_version#@composio/cli@}"
 
       - name: Test binary
         if: matrix.target == 'bun-linux-x64'

@@ -7,23 +7,29 @@ import {
   getPluginLifecycleSucceededEvent,
 } from 'src/analytics/events';
 import { APP_VERSION } from 'src/constants';
+import {
+  AGENT_HOSTS,
+  AGENT_HOST_LABELS,
+  COMPOSIO_AGENT_PLUGIN_ID,
+  type AgentHost,
+} from './agent-host';
 import { CommandRunner, type CommandResult } from './command-runner';
 import { SetupSkillInstaller } from './setup-skill-installer';
 
-export const SETUP_TARGETS = ['auto', 'claude', 'codex', 'all'] as const;
+export const SETUP_TARGETS = ['auto', ...AGENT_HOSTS, 'all'] as const;
 export type SetupTarget = (typeof SETUP_TARGETS)[number];
-export type AgentHost = Exclude<SetupTarget, 'auto' | 'all'>;
+export type { AgentHost } from './agent-host';
 
 const CLAUDE_PLUGIN_MARKETPLACE = {
   name: 'composio',
   source: 'https://github.com/ComposioHQ/composio-plugin-cc.git',
-  plugin: 'composio@composio',
+  plugin: COMPOSIO_AGENT_PLUGIN_ID,
 } as const;
 
 const CODEX_PLUGIN_MARKETPLACE = {
   name: 'composio',
   source: 'https://github.com/ComposioHQ/composio-plugin-openai.git',
-  plugin: 'composio@composio',
+  plugin: COMPOSIO_AGENT_PLUGIN_ID,
 } as const;
 
 export interface SetupTargetStatus {
@@ -297,7 +303,7 @@ const captureOptional = (adapter: SetupTargetAdapter, args: ReadonlyArray<string
     )
   );
 
-const targetLabel = (target: AgentHost): string => (target === 'claude' ? 'Claude Code' : 'Codex');
+const targetLabel = (target: AgentHost): string => AGENT_HOST_LABELS[target];
 
 const hostUpdateCommand = (adapter: SetupTargetAdapter): string => `${adapter.executable} update`;
 
