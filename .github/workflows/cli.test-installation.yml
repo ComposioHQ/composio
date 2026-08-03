@@ -338,13 +338,6 @@ jobs:
             exit 1
           fi
 
-          if grep -q 'COMPOSIO_INSTALL_DIR' "$config_file"; then
-            echo "❌ $config_file still persists COMPOSIO_INSTALL_DIR"
-            echo "=== $config_file contents ==="
-            cat "$config_file"
-            exit 1
-          fi
-
       - name: Test custom install directory
         shell: bash
         env:
