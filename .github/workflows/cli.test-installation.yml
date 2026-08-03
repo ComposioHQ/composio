@@ -352,17 +352,26 @@ jobs:
             exit 1
           fi
 
+          # Every leg of this workflow installs a published release binary, never one
+          # built from this checkout: releases predating the CLI-managed PATH line
+          # (workflow_dispatch re-verification, workflow_call with the default
+          # 'latest', promote-stable rebuilds of an older beta) still write the
+          # legacy install.sh block with COMPOSIO_INSTALL_DIR, as does install.sh's
+          # fallback when the binary cannot run. Accept either working layout and
+          # fail only when neither PATH setup is present.
           if grep -Fqx 'export PATH="$HOME/.composio:$PATH"' "$config_file"; then
-            echo "✅ $config_file updated with the installed binary directory"
+            if grep -q 'COMPOSIO_INSTALL_DIR' "$config_file"; then
+              echo "❌ $config_file has the CLI-managed PATH line but still persists COMPOSIO_INSTALL_DIR"
+              echo "=== $config_file contents ==="
+              cat "$config_file"
+              exit 1
+            fi
+            echo "✅ $config_file updated with the CLI-managed PATH line"
+          elif grep -Fqx 'export PATH="$COMPOSIO_INSTALL_DIR:$PATH"' "$config_file" &&
+            grep -Eq '^export COMPOSIO_INSTALL_DIR=' "$config_file"; then
+            echo "✅ $config_file updated with the legacy install.sh PATH block"
           else
             echo "❌ $config_file PATH not updated"
-            echo "=== $config_file contents ==="
-            cat "$config_file"
-            exit 1
-          fi
-
-          if grep -q 'COMPOSIO_INSTALL_DIR' "$config_file"; then
-            echo "❌ $config_file still persists COMPOSIO_INSTALL_DIR"
             echo "=== $config_file contents ==="
             cat "$config_file"
             exit 1
