@@ -101,7 +101,7 @@
       "oxlint -c .oxlintrc.no-any.json --disable-nested-config"
     ],
     "ts/packages/**/*.{ts,tsx}": [
-      "oxlint --fix"
+      "oxlint --fix --no-error-on-unmatched-pattern"
     ],
     "ts/packages/**/*.{ts,tsx,js,jsx,json,md}": [
       "prettier --write"
