@@ -34,7 +34,7 @@ catalog:
   '@clack/core': '^1.4.3'
   '@clack/prompts': '^1.7.0'
   '@cloudflare/vitest-pool-workers': 0.18.8
-  '@cloudflare/workers-types': ^5.20260724.1
+  '@cloudflare/workers-types': ^5.20260731.1
   '@composio/client': 0.1.0-alpha.76
   '@effect/cli': ^0.77.0
   '@effect/language-service': ^0.87.1
@@ -49,7 +49,7 @@ catalog:
   ai: ^7.0.44
   dotenv: ^17.4.2
   effect: ^3.22.1
-  hono: ^4.12.31
+  hono: ^4.12.33
   openai: ^6.49.0
   picocolors: ^1.1.1
   pnpm: ^11.17.0

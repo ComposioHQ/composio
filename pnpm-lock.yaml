@@ -25,8 +25,8 @@ catalogs:
       specifier: 0.18.8
       version: 0.18.8
     '@cloudflare/workers-types':
-      specifier: ^5.20260724.1
-      version: 5.20260724.1
+      specifier: ^5.20260731.1
+      version: 5.20260731.1
     '@composio/client':
       specifier: 0.1.0-alpha.76
       version: 0.1.0-alpha.76
@@ -70,8 +70,8 @@ catalogs:
       specifier: ^3.22.1
       version: 3.22.1
     hono:
-      specifier: ^4.12.31
-      version: 4.12.31
+      specifier: ^4.12.33
+      version: 4.12.33
     openai:
       specifier: ^6.49.0
       version: 6.49.0
@@ -257,17 +257,17 @@ importers:
         version: link:../../../../packages/core
       hono:
         specifier: 'catalog:'
-        version: 4.12.31
+        version: 4.12.33
       openai:
         specifier: 'catalog:'
         version: 6.49.0(@aws-sdk/credential-provider-node@3.972.71)(@smithy/signature-v4@5.6.9)(ws@8.21.1)(zod@4.4.3)
     devDependencies:
       '@cloudflare/vitest-pool-workers':
         specifier: 'catalog:'
-        version: 0.18.8(@cloudflare/workers-types@5.20260724.1)(@vitest/runner@4.1.10)(@vitest/snapshot@4.1.10)(vitest@4.1.10)
+        version: 0.18.8(@cloudflare/workers-types@5.20260731.1)(@vitest/runner@4.1.10)(@vitest/snapshot@4.1.10)(vitest@4.1.10)
       '@cloudflare/workers-types':
         specifier: 'catalog:'
-        version: 5.20260724.1
+        version: 5.20260731.1
       dotenv:
         specifier: 'catalog:'
         version: 17.4.2
@@ -279,7 +279,7 @@ importers:
         version: 4.1.10(@opentelemetry/api@1.9.1)(@types/node@26.1.2)(@vitest/ui@4.1.10)(vite@7.3.5(@types/node@26.1.2)(jiti@2.7.0)(tsx@4.23.1)(yaml@2.9.0))
       wrangler:
         specifier: 'catalog:'
-        version: 4.114.0(@cloudflare/workers-types@5.20260724.1)
+        version: 4.114.0(@cloudflare/workers-types@5.20260731.1)
 
   ts/e2e-tests/runtimes/cloudflare/cf-workers-files:
     dependencies:
@@ -288,14 +288,14 @@ importers:
         version: link:../../../../packages/core
       hono:
         specifier: 'catalog:'
-        version: 4.12.31
+        version: 4.12.33
     devDependencies:
       '@cloudflare/vitest-pool-workers':
         specifier: 'catalog:'
-        version: 0.18.8(@cloudflare/workers-types@5.20260724.1)(@vitest/runner@4.1.10)(@vitest/snapshot@4.1.10)(vitest@4.1.10)
+        version: 0.18.8(@cloudflare/workers-types@5.20260731.1)(@vitest/runner@4.1.10)(@vitest/snapshot@4.1.10)(vitest@4.1.10)
       '@cloudflare/workers-types':
         specifier: 'catalog:'
-        version: 5.20260724.1
+        version: 5.20260731.1
       dotenv:
         specifier: 'catalog:'
         version: 17.4.2
@@ -307,7 +307,7 @@ importers:
         version: 4.1.10(@opentelemetry/api@1.9.1)(@types/node@26.1.2)(@vitest/ui@4.1.10)(vite@7.3.5(@types/node@26.1.2)(jiti@2.7.0)(tsx@4.23.1)(yaml@2.9.0))
       wrangler:
         specifier: 'catalog:'
-        version: 4.114.0(@cloudflare/workers-types@5.20260724.1)
+        version: 4.114.0(@cloudflare/workers-types@5.20260731.1)
 
   ts/e2e-tests/runtimes/cloudflare/cf-workers-tool-router-ai:
     dependencies:
@@ -328,14 +328,14 @@ importers:
         version: 7.0.44(zod@4.4.3)
       hono:
         specifier: 'catalog:'
-        version: 4.12.31
+        version: 4.12.33
     devDependencies:
       '@cloudflare/vitest-pool-workers':
         specifier: 'catalog:'
-        version: 0.18.8(@cloudflare/workers-types@5.20260724.1)(@vitest/runner@4.1.10)(@vitest/snapshot@4.1.10)(vitest@4.1.10)
+        version: 0.18.8(@cloudflare/workers-types@5.20260731.1)(@vitest/runner@4.1.10)(@vitest/snapshot@4.1.10)(vitest@4.1.10)
       '@cloudflare/workers-types':
         specifier: 'catalog:'
-        version: 5.20260724.1
+        version: 5.20260731.1
       dotenv:
         specifier: 'catalog:'
         version: 17.4.2
@@ -347,7 +347,7 @@ importers:
         version: 4.1.10(@opentelemetry/api@1.9.1)(@types/node@26.1.2)(@vitest/ui@4.1.10)(vite@7.3.5(@types/node@26.1.2)(jiti@2.7.0)(tsx@4.23.1)(yaml@2.9.0))
       wrangler:
         specifier: 'catalog:'
-        version: 4.114.0(@cloudflare/workers-types@5.20260724.1)
+        version: 4.114.0(@cloudflare/workers-types@5.20260731.1)
 
   ts/e2e-tests/runtimes/deno/esm-basic:
     devDependencies:
@@ -605,14 +605,14 @@ importers:
         version: link:../../packages/core
       hono:
         specifier: 'catalog:'
-        version: 4.12.31
+        version: 4.12.33
       openai:
         specifier: 'catalog:'
         version: 6.49.0(@aws-sdk/credential-provider-node@3.972.71)(@smithy/signature-v4@5.6.9)(ws@8.21.1)(zod@4.4.3)
     devDependencies:
       '@cloudflare/vitest-pool-workers':
         specifier: 'catalog:'
-        version: 0.18.8(@cloudflare/workers-types@5.20260724.1)(@vitest/runner@4.1.10)(@vitest/snapshot@4.1.10)(vitest@4.1.10)
+        version: 0.18.8(@cloudflare/workers-types@5.20260731.1)(@vitest/runner@4.1.10)(@vitest/snapshot@4.1.10)(vitest@4.1.10)
       typescript:
         specifier: 'catalog:'
         version: 7.0.2
@@ -621,7 +621,7 @@ importers:
         version: 4.1.10(@opentelemetry/api@1.9.1)(@types/node@26.1.2)(@vitest/ui@4.1.10)(vite@7.3.5(@types/node@26.1.2)(jiti@2.7.0)(tsx@4.23.1)(yaml@2.9.0))
       wrangler:
         specifier: 'catalog:'
-        version: 4.114.0(@cloudflare/workers-types@5.20260724.1)
+        version: 4.114.0(@cloudflare/workers-types@5.20260731.1)
 
   ts/examples/connected-accounts:
     dependencies:
@@ -765,13 +765,13 @@ importers:
         version: 0.4.23(@llamaindex/core@0.6.23)(@llamaindex/env@0.1.31)(ws@8.21.1)(zod@4.4.3)
       '@llamaindex/workflow':
         specifier: ^1.1.25
-        version: 1.1.25(@llamaindex/core@0.6.23)(@llamaindex/env@0.1.31)(@modelcontextprotocol/sdk@1.30.0(@cfworker/json-schema@4.1.1)(zod@4.4.3))(hono@4.12.31)(zod@4.4.3)
+        version: 1.1.25(@llamaindex/core@0.6.23)(@llamaindex/env@0.1.31)(@modelcontextprotocol/sdk@1.30.0(@cfworker/json-schema@4.1.1)(zod@4.4.3))(hono@4.12.33)(zod@4.4.3)
       dotenv:
         specifier: 'catalog:'
         version: 17.4.2
       llamaindex:
         specifier: ^0.12.1
-        version: 0.12.1(@modelcontextprotocol/sdk@1.30.0(@cfworker/json-schema@4.1.1)(zod@4.4.3))(hono@4.12.31)(tree-sitter@0.22.4)(web-tree-sitter@0.24.7)(zod@4.4.3)
+        version: 0.12.1(@modelcontextprotocol/sdk@1.30.0(@cfworker/json-schema@4.1.1)(zod@4.4.3))(hono@4.12.33)(tree-sitter@0.22.4)(web-tree-sitter@0.24.7)(zod@4.4.3)
     devDependencies:
       '@types/bun':
         specifier: 'catalog:'
@@ -806,7 +806,7 @@ importers:
     devDependencies:
       '@cloudflare/workers-types':
         specifier: 'catalog:'
-        version: 5.20260724.1
+        version: 5.20260731.1
       '@types/bun':
         specifier: 'catalog:'
         version: 1.3.14
@@ -818,7 +818,7 @@ importers:
         version: 7.0.2
       wrangler:
         specifier: 'catalog:'
-        version: 4.114.0(@cloudflare/workers-types@5.20260724.1)
+        version: 4.114.0(@cloudflare/workers-types@5.20260731.1)
 
   ts/examples/mcp:
     dependencies:
@@ -908,7 +908,7 @@ importers:
     devDependencies:
       '@cloudflare/workers-types':
         specifier: 'catalog:'
-        version: 5.20260724.1
+        version: 5.20260731.1
       '@types/bun':
         specifier: 'catalog:'
         version: 1.3.14
@@ -917,7 +917,7 @@ importers:
         version: 7.0.2
       wrangler:
         specifier: 'catalog:'
-        version: 4.114.0(@cloudflare/workers-types@5.20260724.1)
+        version: 4.114.0(@cloudflare/workers-types@5.20260731.1)
 
   ts/examples/session-management:
     dependencies:
@@ -1394,8 +1394,8 @@ importers:
         specifier: ^2.5.0
         version: 2.5.0
       typebox:
-        specifier: 1.3.7
-        version: 1.3.7
+        specifier: 1.3.9
+        version: 1.3.9
     devDependencies:
       '@composio/core':
         specifier: workspace:*
@@ -1405,7 +1405,7 @@ importers:
         version: 0.82.1(@modelcontextprotocol/sdk@1.30.0(@cfworker/json-schema@4.1.1)(zod@4.4.3))(supports-color@10.2.2)(ws@8.21.1)(zod@4.4.3)
       eve:
         specifier: ^0.27.13
-        version: 0.27.13(@opentelemetry/api@1.9.0)(ai@7.0.44(zod@4.4.3))(dotenv@17.4.2)(jiti@2.7.0)(lru-cache@11.5.2)(miniflare@4.20260722.0)(rollup@4.62.2)(vite@7.3.5(@types/node@26.1.2)(jiti@2.7.0)(tsx@4.23.1)(yaml@2.9.0))(wrangler@4.114.0(@cloudflare/workers-types@5.20260724.1))
+        version: 0.27.13(@opentelemetry/api@1.9.0)(ai@7.0.44(zod@4.4.3))(dotenv@17.4.2)(jiti@2.7.0)(lru-cache@11.5.2)(miniflare@4.20260722.0)(rollup@4.62.2)(vite@7.3.5(@types/node@26.1.2)(jiti@2.7.0)(tsx@4.23.1)(yaml@2.9.0))(wrangler@4.114.0(@cloudflare/workers-types@5.20260731.1))
       tsdown:
         specifier: 'catalog:'
         version: 0.22.14(@arethetypeswrong/core@0.18.5)(publint@0.3.22)(tsx@4.23.1)(typescript@7.0.2)(unrun@0.2.27(@emnapi/core@1.11.2)(@emnapi/runtime@1.11.2))
@@ -1518,7 +1518,7 @@ importers:
     dependencies:
       '@cloudflare/workers-types':
         specifier: 'catalog:'
-        version: 5.20260724.1
+        version: 5.20260731.1
     devDependencies:
       '@composio/core':
         specifier: workspace:*
@@ -1574,7 +1574,7 @@ importers:
     dependencies:
       llamaindex:
         specifier: ^0.12.0
-        version: 0.12.1(@modelcontextprotocol/sdk@1.30.0(@cfworker/json-schema@4.1.1)(zod@4.4.3))(hono@4.12.31)(tree-sitter@0.22.4)(web-tree-sitter@0.24.7)(zod@4.4.3)
+        version: 0.12.1(@modelcontextprotocol/sdk@1.30.0(@cfworker/json-schema@4.1.1)(zod@4.4.3))(hono@4.12.33)(tree-sitter@0.22.4)(web-tree-sitter@0.24.7)(zod@4.4.3)
     devDependencies:
       '@composio/core':
         specifier: workspace:*
@@ -2142,8 +2142,8 @@ packages:
     cpu: [x64]
     os: [win32]
 
-  '@cloudflare/workers-types@5.20260724.1':
-    resolution: {integrity: sha512-gl0brZ60JhkZU3INgr1jsxaFEiWf3AB9RsCjLTMwT5RKspWRUpsFd0wxwbys7gb8Ywkfq9tORhw0y9G+7bDUYw==}
+  '@cloudflare/workers-types@5.20260731.1':
+    resolution: {integrity: sha512-ly+eua642FCR2nbQGi/OxqlVaJI3fNdyqK7G4u6jWCAZ4WYhOBvZWyf0M7s5zurWbNQW3YjelOxuKqR0zYK90w==}
 
   '@colors/colors@1.5.0':
     resolution: {integrity: sha512-ooWCrlZP11i8GImSjTHYHLkvFDP48nS4+204nGb1RiX/WXYHmJA2III9/e2DWVabCESdW7hBAEzHRqUn9OUVvQ==}
@@ -5048,6 +5048,10 @@ packages:
     resolution: {integrity: sha512-zJIHFrl6bq3RDd2YusFNCDlM8qUprxKswyi/OPzPyzKDdyBXDqWx8bZlZ7R+saTdSTatUmb3O7K4SspGPaEOQg==}
     engines: {node: '>=16.9.0'}
 
+  hono@4.12.33:
+    resolution: {integrity: sha512-+SwvkaiJtxsiPjhy9LivY/1m7UsNqCJetM1BrZl9A5DkQhlbHQDU730mMiDPWjnoCYOM8Chf3WrCJw27kNTPFQ==}
+    engines: {node: '>=16.9.0'}
+
   hookable@6.1.1:
     resolution: {integrity: sha512-U9LYDy1CwhMCnprUfeAZWZGByVbhd54hwepegYTK7Pi5NvqEj63ifz5z+xukznehT7i6NIZRu89Ay1AZmRsLEQ==}
 
@@ -6417,8 +6421,8 @@ packages:
   typebox@1.1.38:
     resolution: {integrity: sha512-pZ0aQPmMmXoUvSbeuWf/Hzsc+avNw/Zd6VeE8CFgkVGWyuHPJvqeJJDeJqLve+K70LvjYIoleGcoJHPT17cWoA==}
 
-  typebox@1.3.7:
-    resolution: {integrity: sha512-meKuifc33Pccx0O6PdIzYMq3Og8zvP4TIi/a+Bw3AEMZMxOD0+RHGQvpglEe6Zdy3wZ8nqn/j95h8LUZLk/6Hg==}
+  typebox@1.3.9:
+    resolution: {integrity: sha512-erh7xzupOex0jkMRU72du2Bq7w1aL8625CJuFEiE7dM4YoJqaxKZqwZw00rsrohS78uDICG3h7FhQ9iJQRDRqg==}
 
   typedoc@0.28.20:
     resolution: {integrity: sha512-uSKqkh8Cr48vllnEy+jdaAgOeR6Y+QCBW7usgUsKj7gJEfR7stw9U/fE49LBnj2tPRKPY0c0EBJSWe9Appmplg==}
@@ -7449,7 +7453,7 @@ snapshots:
     optionalDependencies:
       workerd: 1.20260722.1
 
-  '@cloudflare/vitest-pool-workers@0.18.8(@cloudflare/workers-types@5.20260724.1)(@vitest/runner@4.1.10)(@vitest/snapshot@4.1.10)(vitest@4.1.10)':
+  '@cloudflare/vitest-pool-workers@0.18.8(@cloudflare/workers-types@5.20260731.1)(@vitest/runner@4.1.10)(@vitest/snapshot@4.1.10)(vitest@4.1.10)':
     dependencies:
       '@vitest/runner': 4.1.10
       '@vitest/snapshot': 4.1.10
@@ -7457,7 +7461,7 @@ snapshots:
       esbuild: 0.28.1
       miniflare: 4.20260722.0
       vitest: 4.1.10(@opentelemetry/api@1.9.1)(@types/node@26.1.2)(@vitest/ui@4.1.10)(vite@7.3.5(@types/node@26.1.2)(jiti@2.7.0)(tsx@4.23.1)(yaml@2.9.0))
-      wrangler: 4.114.0(@cloudflare/workers-types@5.20260724.1)
+      wrangler: 4.114.0(@cloudflare/workers-types@5.20260731.1)
       zod: 3.25.76
     transitivePeerDependencies:
       - '@cloudflare/workers-types'
@@ -7479,7 +7483,7 @@ snapshots:
   '@cloudflare/workerd-windows-64@1.20260722.1':
     optional: true
 
-  '@cloudflare/workers-types@5.20260724.1': {}
+  '@cloudflare/workers-types@5.20260731.1': {}
 
   '@colors/colors@1.5.0':
     optional: true
@@ -8111,17 +8115,17 @@ snapshots:
       - ws
       - zod
 
-  '@llamaindex/workflow-core@1.3.4(@modelcontextprotocol/sdk@1.30.0(@cfworker/json-schema@4.1.1)(zod@4.4.3))(hono@4.12.31)(zod@4.4.3)':
+  '@llamaindex/workflow-core@1.3.4(@modelcontextprotocol/sdk@1.30.0(@cfworker/json-schema@4.1.1)(zod@4.4.3))(hono@4.12.33)(zod@4.4.3)':
     optionalDependencies:
       '@modelcontextprotocol/sdk': 1.30.0(@cfworker/json-schema@4.1.1)(zod@4.4.3)
-      hono: 4.12.31
+      hono: 4.12.33
       zod: 4.4.3
 
-  '@llamaindex/workflow@1.1.24(@llamaindex/core@0.6.22)(@llamaindex/env@0.1.30)(@modelcontextprotocol/sdk@1.30.0(@cfworker/json-schema@4.1.1)(zod@4.4.3))(hono@4.12.31)(zod@4.4.3)':
+  '@llamaindex/workflow@1.1.24(@llamaindex/core@0.6.22)(@llamaindex/env@0.1.30)(@modelcontextprotocol/sdk@1.30.0(@cfworker/json-schema@4.1.1)(zod@4.4.3))(hono@4.12.33)(zod@4.4.3)':
     dependencies:
       '@llamaindex/core': 0.6.22
       '@llamaindex/env': 0.1.30
-      '@llamaindex/workflow-core': 1.3.4(@modelcontextprotocol/sdk@1.30.0(@cfworker/json-schema@4.1.1)(zod@4.4.3))(hono@4.12.31)(zod@4.4.3)
+      '@llamaindex/workflow-core': 1.3.4(@modelcontextprotocol/sdk@1.30.0(@cfworker/json-schema@4.1.1)(zod@4.4.3))(hono@4.12.33)(zod@4.4.3)
     transitivePeerDependencies:
       - '@modelcontextprotocol/sdk'
       - hono
@@ -8130,11 +8134,11 @@ snapshots:
       - rxjs
       - zod
 
-  '@llamaindex/workflow@1.1.25(@llamaindex/core@0.6.23)(@llamaindex/env@0.1.31)(@modelcontextprotocol/sdk@1.30.0(@cfworker/json-schema@4.1.1)(zod@4.4.3))(hono@4.12.31)(zod@4.4.3)':
+  '@llamaindex/workflow@1.1.25(@llamaindex/core@0.6.23)(@llamaindex/env@0.1.31)(@modelcontextprotocol/sdk@1.30.0(@cfworker/json-schema@4.1.1)(zod@4.4.3))(hono@4.12.33)(zod@4.4.3)':
     dependencies:
       '@llamaindex/core': 0.6.23
       '@llamaindex/env': 0.1.31
-      '@llamaindex/workflow-core': 1.3.4(@modelcontextprotocol/sdk@1.30.0(@cfworker/json-schema@4.1.1)(zod@4.4.3))(hono@4.12.31)(zod@4.4.3)
+      '@llamaindex/workflow-core': 1.3.4(@modelcontextprotocol/sdk@1.30.0(@cfworker/json-schema@4.1.1)(zod@4.4.3))(hono@4.12.33)(zod@4.4.3)
     transitivePeerDependencies:
       - '@modelcontextprotocol/sdk'
       - hono
@@ -9759,7 +9763,7 @@ snapshots:
 
   entities@4.5.0: {}
 
-  env-runner@0.1.16(miniflare@4.20260722.0)(wrangler@4.114.0(@cloudflare/workers-types@5.20260724.1)):
+  env-runner@0.1.16(miniflare@4.20260722.0)(wrangler@4.114.0(@cloudflare/workers-types@5.20260731.1)):
     dependencies:
       crossws: 0.4.10(srvx@0.11.22)
       exsolve: 1.1.0
@@ -9767,7 +9771,7 @@ snapshots:
       srvx: 0.11.22
     optionalDependencies:
       miniflare: 4.20260722.0
-      wrangler: 4.114.0(@cloudflare/workers-types@5.20260724.1)
+      wrangler: 4.114.0(@cloudflare/workers-types@5.20260731.1)
 
   environment@1.1.0: {}
 
@@ -9826,10 +9830,10 @@ snapshots:
 
   etag@1.8.1: {}
 
-  eve@0.27.13(@opentelemetry/api@1.9.0)(ai@7.0.44(zod@4.4.3))(dotenv@17.4.2)(jiti@2.7.0)(lru-cache@11.5.2)(miniflare@4.20260722.0)(rollup@4.62.2)(vite@7.3.5(@types/node@26.1.2)(jiti@2.7.0)(tsx@4.23.1)(yaml@2.9.0))(wrangler@4.114.0(@cloudflare/workers-types@5.20260724.1)):
+  eve@0.27.13(@opentelemetry/api@1.9.0)(ai@7.0.44(zod@4.4.3))(dotenv@17.4.2)(jiti@2.7.0)(lru-cache@11.5.2)(miniflare@4.20260722.0)(rollup@4.62.2)(vite@7.3.5(@types/node@26.1.2)(jiti@2.7.0)(tsx@4.23.1)(yaml@2.9.0))(wrangler@4.114.0(@cloudflare/workers-types@5.20260731.1)):
     dependencies:
       ai: 7.0.44(zod@4.4.3)
-      nitro: 3.0.260610-beta(dotenv@17.4.2)(jiti@2.7.0)(lru-cache@11.5.2)(miniflare@4.20260722.0)(rollup@4.62.2)(vite@7.3.5(@types/node@26.1.2)(jiti@2.7.0)(tsx@4.23.1)(yaml@2.9.0))(wrangler@4.114.0(@cloudflare/workers-types@5.20260724.1))
+      nitro: 3.0.260610-beta(dotenv@17.4.2)(jiti@2.7.0)(lru-cache@11.5.2)(miniflare@4.20260722.0)(rollup@4.62.2)(vite@7.3.5(@types/node@26.1.2)(jiti@2.7.0)(tsx@4.23.1)(yaml@2.9.0))(wrangler@4.114.0(@cloudflare/workers-types@5.20260731.1))
       undici: 8.9.0
     optionalDependencies:
       '@opentelemetry/api': 1.9.0
@@ -10179,6 +10183,8 @@ snapshots:
 
   hono@4.12.31: {}
 
+  hono@4.12.33: {}
+
   hookable@6.1.1: {}
 
   hosted-git-info@9.0.3:
@@ -10407,12 +10413,12 @@ snapshots:
     optionalDependencies:
       yaml: 2.9.0
 
-  llamaindex@0.12.1(@modelcontextprotocol/sdk@1.30.0(@cfworker/json-schema@4.1.1)(zod@4.4.3))(hono@4.12.31)(tree-sitter@0.22.4)(web-tree-sitter@0.24.7)(zod@4.4.3):
+  llamaindex@0.12.1(@modelcontextprotocol/sdk@1.30.0(@cfworker/json-schema@4.1.1)(zod@4.4.3))(hono@4.12.33)(tree-sitter@0.22.4)(web-tree-sitter@0.24.7)(zod@4.4.3):
     dependencies:
       '@llamaindex/core': 0.6.22
       '@llamaindex/env': 0.1.30
       '@llamaindex/node-parser': 2.0.22(@llamaindex/core@0.6.22)(@llamaindex/env@0.1.30)(tree-sitter@0.22.4)(web-tree-sitter@0.24.7)
-      '@llamaindex/workflow': 1.1.24(@llamaindex/core@0.6.22)(@llamaindex/env@0.1.30)(@modelcontextprotocol/sdk@1.30.0(@cfworker/json-schema@4.1.1)(zod@4.4.3))(hono@4.12.31)(zod@4.4.3)
+      '@llamaindex/workflow': 1.1.24(@llamaindex/core@0.6.22)(@llamaindex/env@0.1.30)(@modelcontextprotocol/sdk@1.30.0(@cfworker/json-schema@4.1.1)(zod@4.4.3))(hono@4.12.33)(zod@4.4.3)
       '@types/lodash': 4.17.24
       '@types/node': 24.13.3
       lodash: 4.18.1
@@ -10862,12 +10868,12 @@ snapshots:
 
   nf3@0.3.22: {}
 
-  nitro@3.0.260610-beta(dotenv@17.4.2)(jiti@2.7.0)(lru-cache@11.5.2)(miniflare@4.20260722.0)(rollup@4.62.2)(vite@7.3.5(@types/node@26.1.2)(jiti@2.7.0)(tsx@4.23.1)(yaml@2.9.0))(wrangler@4.114.0(@cloudflare/workers-types@5.20260724.1)):
+  nitro@3.0.260610-beta(dotenv@17.4.2)(jiti@2.7.0)(lru-cache@11.5.2)(miniflare@4.20260722.0)(rollup@4.62.2)(vite@7.3.5(@types/node@26.1.2)(jiti@2.7.0)(tsx@4.23.1)(yaml@2.9.0))(wrangler@4.114.0(@cloudflare/workers-types@5.20260731.1)):
     dependencies:
       consola: 3.4.2
       crossws: 0.4.10(srvx@0.11.22)
       db0: 0.3.4
-      env-runner: 0.1.16(miniflare@4.20260722.0)(wrangler@4.114.0(@cloudflare/workers-types@5.20260724.1))
+      env-runner: 0.1.16(miniflare@4.20260722.0)(wrangler@4.114.0(@cloudflare/workers-types@5.20260731.1))
       h3: 2.0.1-rc.22(crossws@0.4.10(srvx@0.11.22))
       hookable: 6.1.1
       nf3: 0.3.22
@@ -11781,7 +11787,7 @@ snapshots:
 
   typebox@1.1.38: {}
 
-  typebox@1.3.7: {}
+  typebox@1.3.9: {}
 
   typedoc@0.28.20(@typescript/typescript6@6.0.2):
     dependencies:
@@ -12009,7 +12015,7 @@ snapshots:
       '@cloudflare/workerd-linux-arm64': 1.20260722.1
       '@cloudflare/workerd-windows-64': 1.20260722.1
 
-  wrangler@4.114.0(@cloudflare/workers-types@5.20260724.1):
+  wrangler@4.114.0(@cloudflare/workers-types@5.20260731.1):
     dependencies:
       '@cloudflare/kv-asset-handler': 0.5.0
       '@cloudflare/unenv-preset': 2.16.1(unenv@2.0.0-rc.24)(workerd@1.20260722.1)
@@ -12020,7 +12026,7 @@ snapshots:
       unenv: 2.0.0-rc.24
       workerd: 1.20260722.1
     optionalDependencies:
-      '@cloudflare/workers-types': 5.20260724.1
+      '@cloudflare/workers-types': 5.20260731.1
       fsevents: 2.3.3
     transitivePeerDependencies:
       - bufferutil
