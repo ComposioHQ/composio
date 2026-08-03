@@ -41,6 +41,47 @@ describe('redactSensitiveText', () => {
     expect(redactSensitiveText('x-api-key: "ck_secretvalue"')).toContain('"[REDACTED]"');
   });
 
+  // Serialized payloads are the common shape in error text: the key's own
+  // closing quote sits between the name and the colon, so a pattern anchored on
+  // `name` followed directly by `:` never matches.
+  it('redacts secrets inside JSON payloads', () => {
+    for (const [sample, secret] of [
+      ['{"api_key": "ck_live_abc123"}', 'ck_live_abc123'],
+      ['{"api_key":"ck_live_abc123"}', 'ck_live_abc123'],
+      ['{"api_key" : "ck_live_abc123"}', 'ck_live_abc123'],
+      ['{"refresh_token":"rt-abc.def-123"}', 'rt-abc.def-123'],
+      ['{"x-api-key":"ck_hdr","user":"bob"}', 'ck_hdr'],
+      [`{'client_secret': 'cs_live_abc123'}`, 'cs_live_abc123'],
+      ['{"password": "hunter2"}', 'hunter2'],
+    ] as const) {
+      const out = redactSensitiveText(sample)!;
+      expect(out, sample).toContain('[REDACTED]');
+      expect(out, sample).not.toContain(secret);
+    }
+  });
+
+  it('redacts a secret in a serialized error payload while keeping context', () => {
+    const out = redactSensitiveText(
+      'Error executing tool: request body was rejected: ' +
+        '{"toolkit": "GMAIL", "arguments": {"api_key": "ck_live_CUSTOMER", "to": "x@y.z"}}'
+    )!;
+    expect(out).not.toContain('ck_live_CUSTOMER');
+    expect(out).toContain('GMAIL');
+  });
+
+  it('preserves JSON keys and quoting, replacing only the value', () => {
+    expect(redactSensitiveText('{"api_key": "ck_live_abc123"}')).toBe('{"api_key": "[REDACTED]"}');
+  });
+
+  it('leaves a key name with no attached value untouched', () => {
+    for (const benign of [
+      'the password field is required',
+      'no separator here "api_key" and nothing else',
+    ]) {
+      expect(redactSensitiveText(benign), benign).toBe(benign);
+    }
+  });
+
   it('leaves benign error text untouched', () => {
     const benign = 'TypeError: cannot read property foo of undefined at Object.<anonymous>';
     expect(redactSensitiveText(benign)).toBe(benign);

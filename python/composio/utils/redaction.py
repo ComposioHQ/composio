@@ -7,8 +7,11 @@ import re
 _REDACTED = "[REDACTED]"
 _URL_QUERY = re.compile(r"(\bhttps?://[^\s?#'\"]+)\?[^\s'\"]*", re.IGNORECASE)
 _AUTHORIZATION = re.compile(r"\b(bearer|basic)\s+[A-Za-z0-9._~+/=-]+", re.IGNORECASE)
+# The separator group allows a quote directly after the key name so JSON and
+# dict reprs are covered: in `{"api_key": "secret"}` the key's own closing quote
+# sits between the name and the colon.
 _SECRET_PAIR = re.compile(
-    r"\b(authorization|api[-_]?key|apikey|x-api-key|access[-_]?token|refresh[-_]?token|client[-_]?secret|secret|password|passwd|pwd)\b(\s*[:=]+\s*)([\"']?)([^\s\"',}&]+)\3",
+    r"\b(authorization|api[-_]?key|apikey|x-api-key|access[-_]?token|refresh[-_]?token|client[-_]?secret|secret|password|passwd|pwd)\b([\"']?\s*[:=]+\s*)([\"']?)([^\s\"',}&]+)\3",
     re.IGNORECASE,
 )
 
