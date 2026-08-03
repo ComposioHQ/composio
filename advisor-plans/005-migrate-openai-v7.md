@@ -139,12 +139,12 @@ tests, because Cloudflare examples also consume the OpenAI catalog entry.
 
 ## Done criteria
 
-- [ ] Core and slim resolve a policy-eligible OpenAI 7 runtime.
-- [ ] `@composio/openai` declares and proves OpenAI 6 and 7 peers.
-- [ ] Both packed consumer fixtures pass on Node 22, 24, and 25 without real keys.
-- [ ] Patch changesets cover core/slim; a minor changeset covers the provider.
+- [x] Core and slim resolve a policy-eligible OpenAI 7 runtime.
+- [x] `@composio/openai` declares and proves OpenAI 6 and 7 peers.
+- [x] Both packed consumer fixtures pass on Node 22, 24, and 25 without real keys.
+- [x] Patch changesets cover core/slim; a minor changeset covers the provider.
 - [ ] Frozen install, peer, examples, builds, types, tests, E2E, and audit pass.
-- [ ] The Node support floor and generated code are unchanged.
+- [x] The Node support floor and generated code are unchanged.
 
 ## STOP conditions
 
