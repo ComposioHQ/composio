@@ -92,6 +92,7 @@ if (tool_calls) {
     {
       userId,
       arguments: JSON.parse(toolArgs),
+      dangerouslySkipVersionCheck: true, // required when running "latest"
     },
     {
       beforeExecute: ({ toolSlug, toolkitSlug, params }) => {
@@ -206,6 +207,7 @@ composio.tools.execute(
     "GOOGLEDRIVE_UPLOAD_FILE",
     {"file_to_upload": "/path/to/document.pdf"},
     user_id="user_123",
+    dangerously_skip_version_check=True,  # required when running "latest"
     modifiers=[audit_path],
 )
 ```

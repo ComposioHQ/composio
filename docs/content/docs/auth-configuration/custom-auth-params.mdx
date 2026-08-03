@@ -27,6 +27,7 @@ result = composio.tools.execute(
     slug="GOOGLECALENDAR_LIST_EVENTS",
     user_id="user_123",
     arguments={},
+    dangerously_skip_version_check=True,  # required when running "latest"
     custom_auth_params={
         "parameters": [
             {
@@ -54,6 +55,7 @@ const result = await composio.tools.execute(
   {
     userId: "user_123",
     arguments: {},
+    dangerouslySkipVersionCheck: true, // required when running "latest"
     customAuthParams: {
       parameters: [
         {
@@ -127,6 +129,7 @@ result = composio.tools.execute(
     slug="NOTION_GET_DATABASE_ITEMS",
     user_id="user_123",
     arguments={},
+    dangerously_skip_version_check=True,  # required when running "latest"
     modifiers=[
         add_custom_auth,
     ],

@@ -90,6 +90,7 @@ if (tool_calls) {
     {
       userId,
       arguments: JSON.parse(toolArgs),
+      dangerouslySkipVersionCheck: true, // required when running "latest"
     },
     {
       afterExecute: ({ toolSlug, toolkitSlug, result }) => {
