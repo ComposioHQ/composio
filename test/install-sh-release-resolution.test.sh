@@ -52,6 +52,10 @@ for variant in bash zsh fish; do
   variant_script="$repo_root/install/$variant.sh"
   grep -Fqx "requested_shell() { printf '%s\\n' $variant; }" "$variant_script" ||
     fail "install/$variant.sh must hardcode requested_shell() for $variant"
+  # The diff below masks every requested_shell() line, so a second overriding
+  # definition would slip through it; require exactly one such line per variant.
+  [[ $(grep -Fc 'requested_shell()' "$variant_script") -eq 1 ]] ||
+    fail "install/$variant.sh must mention requested_shell() exactly once"
   diff <(grep -Fv 'requested_shell()' "$repo_root/install/bash.sh") \
     <(grep -Fv 'requested_shell()' "$variant_script") >/dev/null ||
     fail "install/$variant.sh drifted from install/bash.sh outside requested_shell()"
