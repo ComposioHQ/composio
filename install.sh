@@ -45,7 +45,8 @@ print_usage() {
         '  --no-plugins  Skip agent plugin installation (the default).' \
         '  -h, --help    Show this help.' \
         '' \
-        'Set COMPOSIO_INSTALL_SHELL=zsh|bash|fish to configure that shell after installation.' \
+        'Set COMPOSIO_INSTALL_SHELL=auto|zsh|bash|fish|none to control automatic shell setup' \
+        "(default auto: detect the login shell from \$SHELL; none: install only)." \
         'Version tags may be stable or beta, for example 0.3.1 or @composio/cli@0.3.1-beta.329.'
 }
 
@@ -268,11 +269,60 @@ install_entry_point() {
         error "Failed to create entry point \"$entry_point\""
 }
 
-path_contains_bin_dir() {
-    case :${PATH:-}: in
+inherited_path_contains_bin_dir() {
+    case :$inherited_path: in
         *:"$resolved_bin_dir":*) return 0 ;;
         *) return 1 ;;
     esac
+}
+
+# Renders a value as one POSIX-safe shell word so recovery commands stay
+# copy-paste safe even when the installed path contains whitespace.
+shell_quote() {
+    case $1 in
+        '') printf "''\n" ;;
+        *[!A-Za-z0-9_./-]*) printf '%s\n' "$1" | sed "s/'/'\\\\''/g; s/^/'/; s/\$/'/" ;;
+        *) printf '%s\n' "$1" ;;
+    esac
+}
+
+# Follows symlinks and resolves the parent directory physically, so two paths
+# compare equal exactly when they name the same executable (KD3).
+resolve_physical_path() {
+    resolve_physical_target=$1
+    resolve_physical_steps=0
+    while [ -L "$resolve_physical_target" ] && [ "$resolve_physical_steps" -lt 40 ]; do
+        resolve_physical_link=$(readlink "$resolve_physical_target") || break
+        case $resolve_physical_link in
+            /*) resolve_physical_target=$resolve_physical_link ;;
+            *) resolve_physical_target=$(dirname "$resolve_physical_target")/$resolve_physical_link ;;
+        esac
+        resolve_physical_steps=$((resolve_physical_steps + 1))
+    done
+    resolve_physical_base=$(basename "$resolve_physical_target")
+    if resolve_physical_dir=$(cd "$(dirname "$resolve_physical_target")" 2>/dev/null && pwd -P); then
+        printf '%s/%s\n' "$resolve_physical_dir" "$resolve_physical_base"
+    else
+        printf '%s\n' "$resolve_physical_target"
+    fi
+}
+
+# Resolves the composio command against the PATH snapshot taken before any
+# installer code could modify PATH: what the invoking terminal can run.
+resolve_inherited_command() {
+    PATH=$inherited_path command -v composio 2>/dev/null
+}
+
+compute_inherited_resolution() {
+    inherited_command=$(resolve_inherited_command) || inherited_command=
+    inherited_resolution=unresolved
+    if [ -n "$inherited_command" ]; then
+        if [ "$(resolve_physical_path "$inherited_command")" = "$(resolve_physical_path "$exe")" ]; then
+            inherited_resolution=installed
+        else
+            inherited_resolution=shadowed
+        fi
+    fi
 }
 
 is_unsafe_path() {
@@ -289,109 +339,183 @@ render_bin_dir() {
     printf '%s\n' "$render_bin_dir_value"
 }
 
-append_path_block() {
-    append_path_file=$1
-    append_path_shell=$2
-    append_path_bin=$3
-    mkdir -p "$(dirname "$append_path_file")"
-    touch "$append_path_file"
-    grep -Fqx '# Composio CLI' "$append_path_file" 2>/dev/null && return 0
-    case $append_path_shell in
-        fish) append_path_line="set --export PATH \"$append_path_bin\" \$PATH" ;;
-        *) append_path_line="export PATH=\"$append_path_bin:\$PATH\"" ;;
+path_block_line() {
+    case $1 in
+        fish) printf "set --export PATH \"%s\" \$PATH\n" "$2" ;;
+        *) printf "export PATH=\"%s:\$PATH\"\n" "$2" ;;
     esac
-    printf '\n# Composio CLI\n%s\n' "$append_path_line" >>"$append_path_file"
+}
+
+# Succeeds only when the file holds exactly one managed marker block and that
+# block already names the expected line.
+path_block_current() {
+    awk -v expected="$2" '
+        $0 == "# Composio CLI" { markers++; pending = 1; next }
+        pending { pending = 0; if ($0 == expected) matches++ }
+        END { exit !(markers == 1 && matches == 1) }
+    ' "$1" 2>/dev/null
+}
+
+# Reconciles the single managed PATH block in one startup file: keeps an
+# already-current block, replaces stale managed blocks, preserves unmanaged
+# content, and reports every failure through its return status.
+write_path_block() {
+    write_path_file=$1
+    write_path_line=$(path_block_line "$2" "$3") || return 1
+    mkdir -p "$(dirname "$write_path_file")" 2>/dev/null || return 1
+    if [ -e "$write_path_file" ] && [ ! -f "$write_path_file" ]; then
+        return 1
+    fi
+    if [ ! -f "$write_path_file" ]; then
+        touch "$write_path_file" 2>/dev/null || return 1
+    fi
+    if path_block_current "$write_path_file" "$write_path_line"; then
+        info "$(tildify "$write_path_file") is already up to date."
+        return 0
+    fi
+    write_path_tmp=$write_path_file.composio.tmp
+    if ! awk '
+        pending { pending = 0; next }
+        $0 == "# Composio CLI" { pending = 1; next }
+        { print }
+    ' "$write_path_file" >"$write_path_tmp" 2>/dev/null; then
+        rm -f "$write_path_tmp"
+        return 1
+    fi
+    if ! printf '\n# Composio CLI\n%s\n' "$write_path_line" >>"$write_path_tmp" 2>/dev/null; then
+        rm -f "$write_path_tmp"
+        return 1
+    fi
+    if ! mv "$write_path_tmp" "$write_path_file" 2>/dev/null; then
+        rm -f "$write_path_tmp"
+        return 1
+    fi
+    info "Updated $(tildify "$write_path_file")."
+    return 0
 }
 
 inline_shell_setup() {
     inline_setup_shell=$1
     inline_setup_bin_dir=$2
-    is_unsafe_path "$inline_setup_bin_dir" && error "COMPOSIO_BIN_DIR contains unsafe characters"
+    if is_unsafe_path "$inline_setup_bin_dir"; then
+        return 1
+    fi
     inline_setup_rendered=$(render_bin_dir "$inline_setup_bin_dir")
     case $inline_setup_shell in
-        zsh) append_path_block "$HOME/.zshrc" zsh "$inline_setup_rendered" ;;
-        fish) append_path_block "$HOME/.config/fish/config.fish" fish "$inline_setup_rendered" ;;
+        zsh) write_path_block "$HOME/.zshrc" zsh "$inline_setup_rendered" || return 1 ;;
+        fish) write_path_block "$HOME/.config/fish/config.fish" fish "$inline_setup_rendered" || return 1 ;;
         bash)
-            append_path_block "$HOME/.bashrc" bash "$inline_setup_rendered"
+            inline_setup_status=0
+            write_path_block "$HOME/.bashrc" bash "$inline_setup_rendered" || inline_setup_status=1
             if [ -f "$HOME/.bash_profile" ]; then
-                append_path_block "$HOME/.bash_profile" bash "$inline_setup_rendered"
+                write_path_block "$HOME/.bash_profile" bash "$inline_setup_rendered" || inline_setup_status=1
             elif [ -f "$HOME/.bash_login" ]; then
-                append_path_block "$HOME/.bash_login" bash "$inline_setup_rendered"
+                write_path_block "$HOME/.bash_login" bash "$inline_setup_rendered" || inline_setup_status=1
             fi
+            [ "$inline_setup_status" -eq 0 ] || return 1
             ;;
+        *) return 1 ;;
     esac
+    return 0
 }
 
 setup_requested_shell() {
+    if is_unsafe_path "$resolved_bin_dir"; then
+        warn "Skipping automatic shell setup: the executable directory \"$resolved_bin_dir\" contains unsupported characters."
+        return 1
+    fi
     if "$exe" install --help 2>&1 | grep -q -- '--shell'; then
         debug "delegating shell setup to $exe install --shell $requested_shell"
-        if COMPOSIO_CLI_INVOCATION_ORIGIN=installer COMPOSIO_BIN_DIR="$COMPOSIO_BIN_DIR" "$exe" install --shell "$requested_shell"; then
+        if COMPOSIO_CLI_INVOCATION_ORIGIN=installer COMPOSIO_BIN_DIR="$resolved_bin_dir" "$exe" install --shell "$requested_shell"; then
             shell_configured=cli
-        else
-            debug "falling back to inline $requested_shell shell setup"
-            inline_shell_setup "$requested_shell" "$COMPOSIO_BIN_DIR"
-            shell_configured=fallback
+            info "Configured $requested_shell shell setup ($shell_configured)."
+            return 0
         fi
-    else
-        debug "falling back to inline $requested_shell shell setup"
-        inline_shell_setup "$requested_shell" "$COMPOSIO_BIN_DIR"
-        shell_configured=fallback
     fi
-
-    info "Configured $requested_shell shell setup ($shell_configured)."
-    case $requested_shell in
-        zsh) info "Restart your shell or run \`source ~/.zshrc\`." ;;
-        bash) info "Restart your shell or run \`source ~/.bashrc\`." ;;
-        fish) info "Restart your shell or run \`source ~/.config/fish/config.fish\`." ;;
-    esac
+    debug "falling back to inline $requested_shell shell setup"
+    if inline_shell_setup "$requested_shell" "$resolved_bin_dir"; then
+        shell_configured=fallback
+        info "Configured $requested_shell shell setup ($shell_configured)."
+        return 0
+    fi
+    return 1
 }
 
+# Final action block for every non-failure flow (KD4 state matrix). KD7: this
+# is the last output; nothing prints after it. Suppressible because it only
+# covers normal success.
 print_post_install_help() {
     [ "${COMPOSIO_INSTALL_HELP:-1}" != 0 ] || return 0
-    is_true "${COMPOSIO_QUIET:-}" && return 0
+    if is_true "${COMPOSIO_QUIET:-}"; then
+        return 0
+    fi
 
-    shell_name=${SHELL:-}
-    shell_name=${shell_name##*/}
-    shell_route=
-    shell_config=
-    case $shell_name in
-        zsh)
-            shell_route=zsh
-            shell_config=~/.zshrc
-            ;;
-        bash)
-            shell_route=bash
-            shell_config=~/.bashrc
-            ;;
-        fish)
-            shell_route=fish
-            shell_config=~/.config/fish/config.fish
+    compute_inherited_resolution
+    printf '\n'
+
+    if [ "$install_agent" = 1 ]; then
+        printf 'Composio agent login complete.\n'
+        if [ "$inherited_resolution" != installed ]; then
+            if [ "$shell_setup_outcome" = success ]; then
+                printf 'Open a new terminal to use the composio command.\n'
+            else
+                printf 'Run composio from its installed location:\n\n  %s --help\n' "$(shell_quote "$exe")"
+            fi
+        fi
+        return 0
+    fi
+
+    # Case A: the invoking terminal already resolves the installed executable.
+    if [ "$inherited_resolution" = installed ]; then
+        if [ "$shell_setup_outcome" = success ] || [ "$shell_setup_mode" = none ]; then
+            printf 'composio is ready.\n\n  composio login\n'
+            return 0
+        fi
+    fi
+
+    if [ "$shell_setup_outcome" = success ]; then
+        if [ "$inherited_resolution" = shadowed ]; then
+            printf 'Another composio command at %s takes precedence in this terminal.\n' "$inherited_command"
+            printf 'To use the newly installed CLI, run:\n\n  %s login\n' "$(shell_quote "$exe")"
+        else
+            # Case B: configured for future terminals, vocabulary-free.
+            printf 'Open a new terminal, then run:\n\n  composio login\n'
+        fi
+        return 0
+    fi
+
+    # Install-only guidance: COMPOSIO_INSTALL_SHELL=none or an unrecognized
+    # login shell. Never point the user at a shadowed bare command.
+    if [ "$shell_setup_mode" = none ]; then
+        printf 'Shell setup was skipped (COMPOSIO_INSTALL_SHELL=none).\n'
+    else
+        printf 'Automatic shell setup is not available for your shell.\n'
+    fi
+    case $inherited_resolution in
+        shadowed) printf 'Another composio command at %s takes precedence in this terminal.\n' "$inherited_command" ;;
+        unresolved)
+            if ! inherited_path_contains_bin_dir; then
+                printf 'Add %s to your PATH to use composio in new terminals.\n' "$(tildify "$resolved_bin_dir")"
+            fi
             ;;
     esac
+    printf 'To get started now, run:\n\n  %s login\n' "$(shell_quote "$exe")"
+}
 
-    guidance_required=0
-    path_contains_bin_dir || guidance_required=1
-    if [ "$shell_name" = bash ] && { [ -f "$HOME/.bash_profile" ] || [ -f "$HOME/.bash_login" ]; }; then
-        guidance_required=1
-    fi
-
-    printf '\n'
-    if [ -n "$requested_shell" ]; then
-        : # Shell setup already ran; skip the setup suggestion.
-    elif [ -n "$shell_route" ]; then
-        if [ "$guidance_required" = 1 ]; then
-            printf 'Required next step for %s:\n\n' "$shell_name"
-        else
-            printf 'Optional shell setup for future PATH changes:\n\n'
+# Setup failure never fails the install. Recovery travels the stderr warn
+# channel so quiet mode and COMPOSIO_INSTALL_HELP=0 cannot suppress it, and the
+# trusted --version-verified installed executable is always the last output.
+print_setup_failure_ending() {
+    if [ "$install_agent" = 1 ]; then
+        if [ "${COMPOSIO_INSTALL_HELP:-1}" != 0 ] && ! is_true "${COMPOSIO_QUIET:-}"; then
+            printf '\nComposio agent login complete.\n'
         fi
-        printf '  curl -fsSL https://composio.dev/install | COMPOSIO_INSTALL_SHELL=%s sh\n' "$shell_route"
-        printf '\nThis configures %s.\n' "$shell_config"
-    elif path_contains_bin_dir; then
-        printf 'The composio command is available on PATH.\n'
+        warn "Automatic PATH setup for $requested_shell failed. The Composio CLI is installed and unaffected."
+        printf '\nRun composio from its installed location:\n\n  %s --help\n' "$(shell_quote "$exe")" >&2
     else
-        printf 'Add %s to PATH, then start a new shell.\n' "$(tildify "$resolved_bin_dir")"
+        warn "Automatic PATH setup for $requested_shell failed. The Composio CLI is installed and unaffected."
+        printf '\nTo get started, run:\n\n  %s login\n' "$(shell_quote "$exe")" >&2
     fi
-    printf "\nRun \`composio --help\` to get started.\n"
 }
 
 cleanup() {
@@ -408,6 +532,10 @@ cleanup_on_signal() {
 }
 
 main() {
+    # Snapshot the PATH the invoking terminal handed us before any installer
+    # code can modify it; every final-state decision uses only this snapshot.
+    inherited_path=${PATH:-}
+
     install_agent=0
     install_plugins=${COMPOSIO_INSTALL_PLUGINS:-0}
     version_arg=
@@ -419,8 +547,8 @@ main() {
     esac
 
     case $requested_shell in
-        '' | zsh | bash | fish) ;;
-        *) error "COMPOSIO_INSTALL_SHELL must be zsh, bash, or fish (got \"$requested_shell\")" ;;
+        '' | auto | zsh | bash | fish | none) ;;
+        *) error "COMPOSIO_INSTALL_SHELL must be auto, zsh, bash, fish, or none (got \"$requested_shell\")" ;;
     esac
 
     while [ "$#" -gt 0 ]; do
@@ -439,6 +567,21 @@ main() {
         esac
         shift
     done
+
+    # Resolve the setup mode right after argument parsing: auto (the default)
+    # infers the login shell from $SHELL and degrades to install-only when it
+    # is unset or unrecognized; none is the documented install-only opt-out.
+    shell_setup_mode=${requested_shell:-auto}
+    case $shell_setup_mode in
+        auto)
+            login_shell=$(basename "${SHELL:-}" 2>/dev/null) || login_shell=
+            case $login_shell in
+                zsh | bash | fish) requested_shell=$login_shell ;;
+                *) requested_shell= ;;
+            esac
+            ;;
+        none) requested_shell= ;;
+    esac
 
     COMPOSIO_GITHUB_OWNER=${COMPOSIO_GITHUB_OWNER-ComposioHQ}
     COMPOSIO_GITHUB_REPO=${COMPOSIO_GITHUB_REPO-composio}
@@ -526,6 +669,12 @@ main() {
         info "The composio entry point is $(tildify "$resolved_bin_dir/composio")"
     fi
 
+    # Delegated CLI invocations below may spawn composio subprocesses; make the
+    # fresh entry point resolvable for them. Final-state decisions keep using
+    # the inherited snapshot taken at the top of main().
+    PATH=$resolved_bin_dir:$PATH
+    export PATH
+
     if [ "$install_plugins" = 1 ]; then
         info 'Installing plugins for detected agent hosts...'
         COMPOSIO_CLI_INVOCATION_ORIGIN=installer "$exe" setup --target auto --yes --if-present ||
@@ -538,11 +687,20 @@ main() {
             error 'Failed to sign up or log in as a Composio agent.'
     fi
 
+    shell_setup_outcome=skipped
     if [ -n "$requested_shell" ]; then
-        setup_requested_shell
+        if setup_requested_shell; then
+            shell_setup_outcome=success
+        else
+            shell_setup_outcome=failure
+        fi
     fi
 
-    print_post_install_help
+    if [ "$shell_setup_outcome" = failure ]; then
+        print_setup_failure_ending
+    else
+        print_post_install_help
+    fi
 }
 
 main "$@"

@@ -481,23 +481,33 @@ describe('CLI analytics journey taxonomy', () => {
     });
   });
 
-  it('keeps the base installer install-only and marks shell-variant delegation as installer-origin', () => {
+  it('marks base-installer shell-setup delegation as installer-origin and keeps shell variants on the env override', () => {
+    // The base installer defaults to automatic shell setup, so it owns the
+    // `install --shell` delegation and must tag it as installer-origin.
     const installScript = readFileSync(
       new URL('../../../../../install.sh', import.meta.url),
       'utf8'
     );
-    expect(installScript).not.toContain('"$exe" install');
+    const delegationLine = installScript
+      .split('\n')
+      .find(line => line.includes('"$exe" install --shell'));
 
+    expect(delegationLine).toBeDefined();
+    expect(delegationLine).toContain('COMPOSIO_CLI_INVOCATION_ORIGIN=installer');
+
+    // Shell variants delegate to the base installer through the explicit
+    // COMPOSIO_INSTALL_SHELL override instead of invoking the CLI themselves.
     for (const shell of ['zsh', 'bash', 'fish']) {
       const variantScript = readFileSync(
         new URL(`../../../../../install/${shell}.sh`, import.meta.url),
         'utf8'
       );
-      const installLine = variantScript
-        .split('\n')
-        .find(line => line.includes('"$variant_exe" install --shell'));
 
-      expect(installLine).toContain('COMPOSIO_CLI_INVOCATION_ORIGIN=installer');
+      expect(variantScript).toContain(`requested_shell() { printf '%s\\n' ${shell}; }`);
+      expect(variantScript).toContain(
+        'COMPOSIO_INSTALL_SHELL="$variant_shell" sh "$variant_tmpdir/install.sh" "$@"'
+      );
+      expect(variantScript).not.toContain('install --shell');
     }
   });
 });

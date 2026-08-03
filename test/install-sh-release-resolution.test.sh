@@ -4,6 +4,9 @@ set -euo pipefail
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 suite_tmp="$(mktemp -d)"
 trap 'rm -rf "$suite_tmp"' EXIT
+# Case A and recovery-path assertions compare resolved physical paths, so the
+# suite root itself must be physical (macOS mktemp returns /var -> /private/var).
+suite_tmp="$(cd "$suite_tmp" && pwd -P)"
 
 fail() {
   printf 'FAIL: %s\n' "$*" >&2
@@ -23,6 +26,21 @@ assert_not_contains() {
   local label=$3
   if grep -Fq -- "$needle" <<<"$haystack"; then
     fail "$label (unexpected: $needle)"
+  fi
+}
+
+# Asserts the exact final N lines of an output capture, proving nothing prints
+# after the final action block (KD7: the last block wins).
+assert_tail() {
+  local haystack=$1
+  local expected=$2
+  local label=$3
+  local lines actual
+  lines=$(printf '%s\n' "$expected" | wc -l | tr -d '[:space:]')
+  actual=$(printf '%s\n' "$haystack" | tail -n "$lines")
+  if [[ $actual != "$expected" ]]; then
+    printf 'FAIL: %s\nexpected tail:\n%s\nactual tail:\n%s\n' "$label" "$expected" "$actual" >&2
+    exit 1
   fi
 }
 
@@ -101,10 +119,29 @@ github_url='https://github.example.test'
 archive_url="https://downloads.example.test/$stable_tag/$archive_name"
 script_url='https://installer.example.test/install.sh'
 
+# KD4 exact endings: plain indented lines, no box drawing, nothing after them.
+case_a_tail=$'composio is ready.\n\n  composio login'
+case_b_tail=$'Open a new terminal, then run:\n\n  composio login'
+
 interpreters=("$(command -v sh)")
 if command -v dash >/dev/null 2>&1 && [[ $(command -v dash) != "${interpreters[0]}" ]]; then
   interpreters+=("$(command -v dash)")
 fi
+
+# The installer's final block depends on what the inherited PATH resolves, so
+# strip any real composio installation from the ambient PATH to keep the
+# resolution cases deterministic on developer machines and CI runners.
+sanitize_path() {
+  local entry result=
+  local IFS=':'
+  for entry in $1; do
+    if [[ -n $entry && ! -x $entry/composio ]]; then
+      result+="${result:+:}$entry"
+    fi
+  done
+  printf '%s\n' "$result"
+}
+ambient_path=$(sanitize_path "$PATH")
 
 for interpreter in "${interpreters[@]}"; do
   interpreter_name=$(basename "$interpreter")
@@ -255,6 +292,9 @@ install)
     exit 0
   fi
   if [ "${2:-}" = --shell ]; then
+    if [ "${TEST_INSTALL_HINT:-0}" = 1 ]; then
+      printf '%s\n' '│ Restart your shell so composio is on PATH │'
+    fi
     exit "${TEST_INSTALL_EXIT:-0}"
   fi
   exit 98
@@ -283,7 +323,7 @@ EOF
     unset CASE_GITHUB_URL CASE_API_BASE CASE_INSTALL_VERSION CASE_INSTALL_SHELL CASE_PLUGINS CASE_QUIET CASE_DEBUG CASE_HELP
     unset CASE_ALLOW_HTTP_HOST CASE_CHECKSUM_MODE CASE_API_ASSET_URL CASE_BASE_MODE CASE_REDIRECT_DOWNGRADE
     unset CASE_SHELL_CAPABILITY CASE_INSTALL_EXIT CASE_SETUP_EXIT CASE_VERSION_EXIT CASE_PATH_PREFIX CASE_UNSET_SHELL
-    unset CASE_CURL_DELAY_URL CASE_CURL_DELAY_SECONDS
+    unset CASE_CURL_DELAY_URL CASE_CURL_DELAY_SECONDS CASE_SHELL_VALUE CASE_INSTALL_HINT
     rm -f "$case_root/curl-parent.pid"
     : >"$curl_log"
     : >"$composio_log"
@@ -300,9 +340,9 @@ EOF
       installer_command=("$interpreter" -c 'unset SHELL; script=$1; shift; . "$script"' unset-shell "$repo_root/install.sh")
     fi
     env \
-      PATH="${CASE_PATH_PREFIX:-}$fake_bin:$PATH" \
+      PATH="${CASE_PATH_PREFIX:-}$fake_bin:$ambient_path" \
       HOME="$home" \
-      SHELL=/bin/bash \
+      SHELL="${CASE_SHELL_VALUE:-/bin/bash}" \
       COMPOSIO_INSTALL_DIR="$install_dir" \
       COMPOSIO_BIN_DIR="$bin_dir" \
       COMPOSIO_INSTALL_VERSION="${CASE_INSTALL_VERSION:-}" \
@@ -321,6 +361,7 @@ EOF
       TEST_REDIRECT_DOWNGRADE="${CASE_REDIRECT_DOWNGRADE:-0}" \
       TEST_SHELL_CAPABILITY="${CASE_SHELL_CAPABILITY:-supported}" \
       TEST_INSTALL_EXIT="${CASE_INSTALL_EXIT:-0}" \
+      TEST_INSTALL_HINT="${CASE_INSTALL_HINT:-0}" \
       TEST_SETUP_EXIT="${CASE_SETUP_EXIT:-0}" \
       TEST_VERSION_EXIT="${CASE_VERSION_EXIT:-0}" \
       TEST_CURL_DELAY_URL="${CASE_CURL_DELAY_URL:-}" \
@@ -337,7 +378,7 @@ EOF
     shift 4
     mkdir -p "$home" "$install_dir" "$bin_dir"
     env \
-      PATH="$fake_bin:$PATH" \
+      PATH="$fake_bin:$ambient_path" \
       HOME="$home" \
       SHELL="/bin/$shell_name" \
       COMPOSIO_INSTALL_DIR="$install_dir" \
@@ -369,9 +410,14 @@ EOF
   expected_install_dir=$(cd "$install_dir" && pwd -P)
   [[ $(readlink "$bin_dir/composio") == "$expected_install_dir/composio" ]] || fail "$interpreter_name symlink target"
   assert_contains "$output" "Found latest version: $stable_tag" "$interpreter_name stable discovery"
-  assert_contains "$output" 'Required next step for bash:' "$interpreter_name required PATH guidance"
-  [[ ! -e "$home/.bashrc" ]] || fail "$interpreter_name default flow must not write rc files"
-  [[ $(wc -l <"$composio_log") -eq 1 ]] || fail "$interpreter_name default flow invoked extra CLI commands"
+  grep -Fq "|installer|$bin_dir|install --shell bash" "$composio_log" || fail "$interpreter_name default auto delegation"
+  assert_contains "$output" 'Configured bash shell setup (cli).' "$interpreter_name default auto confirmation"
+  # Inherited-PATH contract: the installer prepends the bin dir to its own PATH
+  # for delegated CLI calls, but the ending must reflect only the PATH the
+  # invoking terminal inherited, which does not contain the bin dir here.
+  assert_tail "$output" "$case_b_tail" "$interpreter_name default auto Case B tail"
+  [[ ! -e "$home/.bashrc" ]] || fail "$interpreter_name delegated default flow must not write rc files"
+  [[ $(wc -l <"$composio_log") -eq 3 ]] || fail "$interpreter_name default flow invoked extra CLI commands"
   grep -Fq '|--version' "$composio_log" || fail "$interpreter_name version probe"
   [[ ! -s "$case_root/git.log" ]] || fail "$interpreter_name must not use git"
 
@@ -445,6 +491,9 @@ EOF
   CASE_QUIET=1
   quiet_output=$(run_installer "$case_root/quiet-home" "$case_root/quiet-install" "$case_root/quiet-bin" "$stable_tag" 2>&1)
   assert_not_contains "$quiet_output" 'Installing Composio CLI' "$interpreter_name quiet output"
+  assert_not_contains "$quiet_output" 'composio login' "$interpreter_name quiet suppresses the normal-success final block"
+  assert_not_contains "$quiet_output" 'composio is ready' "$interpreter_name quiet suppresses the normal-success final block"
+  assert_not_contains "$quiet_output" 'Open a new terminal' "$interpreter_name quiet suppresses the normal-success final block"
 
   reset_case
   CASE_DEBUG=1
@@ -454,12 +503,19 @@ EOF
   reset_case
   CASE_HELP=0
   help_suppressed=$(run_installer "$case_root/help-home" "$case_root/help-install" "$case_root/help-bin" "$stable_tag" 2>&1)
-  assert_not_contains "$help_suppressed" 'next step' "$interpreter_name help suppression"
+  assert_contains "$help_suppressed" 'Configured bash shell setup (cli).' "$interpreter_name help suppression keeps setup status"
+  assert_not_contains "$help_suppressed" 'composio login' "$interpreter_name help suppression removes the final block"
+  assert_not_contains "$help_suppressed" 'Open a new terminal' "$interpreter_name help suppression removes the final block"
 
   reset_case
   CASE_UNSET_SHELL=1
-  run_installer "$case_root/unset-shell-home" "$case_root/unset-shell-install" "$case_root/unset-shell-bin" "$stable_tag" >/dev/null 2>&1 ||
+  unset_shell_install="$case_root/unset-shell-install"
+  unset_shell_output=$(run_installer "$case_root/unset-shell-home" "$unset_shell_install" "$case_root/unset-shell-bin" "$stable_tag" 2>&1) ||
     fail "$interpreter_name unset SHELL must not fail after installation"
+  if grep -Fq 'install --shell' "$composio_log"; then
+    fail "$interpreter_name unset SHELL must not run shell setup"
+  fi
+  assert_tail "$unset_shell_output" $'To get started now, run:\n\n  '"$unset_shell_install/composio login" "$interpreter_name unset SHELL install-only tail"
 
   reset_case
   CASE_CURL_DELAY_URL="$github_url/FakeOwner/fake-repo/releases/download/$stable_tag/$archive_name"
@@ -550,6 +606,7 @@ EOF
   grep -Fq "|installer|$direct_bin|install --shell zsh" "$composio_log" || fail "$interpreter_name COMPOSIO_INSTALL_SHELL delegation"
   assert_contains "$direct_output" 'Configured zsh shell setup (cli).' "$interpreter_name COMPOSIO_INSTALL_SHELL confirmation"
   assert_not_contains "$direct_output" 'Required next step' "$interpreter_name COMPOSIO_INSTALL_SHELL must not print setup guidance"
+  assert_tail "$direct_output" "$case_b_tail" "$interpreter_name COMPOSIO_INSTALL_SHELL Case B tail"
   [[ ! -e "$direct_home/.zshrc" ]] || fail "$interpreter_name COMPOSIO_INSTALL_SHELL CLI path must not write rc files"
 
   reset_case
@@ -572,7 +629,7 @@ EOF
   if invalid_shell_output=$(run_installer "$case_root/invalid-shell-home" "$case_root/invalid-shell-install" "$case_root/invalid-shell-bin" 2>&1); then
     fail "$interpreter_name invalid COMPOSIO_INSTALL_SHELL must fail"
   fi
-  assert_contains "$invalid_shell_output" 'COMPOSIO_INSTALL_SHELL must be zsh, bash, or fish' "$interpreter_name invalid COMPOSIO_INSTALL_SHELL message"
+  assert_contains "$invalid_shell_output" 'COMPOSIO_INSTALL_SHELL must be auto, zsh, bash, fish, or none' "$interpreter_name invalid COMPOSIO_INSTALL_SHELL message"
   [[ ! -s "$curl_log" ]] || fail "$interpreter_name invalid COMPOSIO_INSTALL_SHELL must fail before network"
 
   reset_case
@@ -599,11 +656,17 @@ EOF
   for unsafe_character in ';' ':'; do
     reset_case
     CASE_SHELL_CAPABILITY=unsupported
-    unsafe_home="$case_root/unsafe-${unsafe_character//[^[:alnum:]]/delimiter}-variant-home"
-    if run_variant zsh "$unsafe_home" "$case_root/unsafe-variant-install" "$case_root/unsafe${unsafe_character}variant-bin" "$stable_tag" >/dev/null 2>&1; then
-      fail "$interpreter_name unsafe variant bin dir with $unsafe_character must fail"
-    fi
+    unsafe_slug=${unsafe_character//[^[:alnum:]]/delimiter}
+    unsafe_home="$case_root/unsafe-$unsafe_slug-variant-home"
+    unsafe_install="$case_root/unsafe-$unsafe_slug-variant-install"
+    unsafe_bin="$case_root/unsafe${unsafe_character}variant-bin"
+    unsafe_variant_output=$(run_variant zsh "$unsafe_home" "$unsafe_install" "$unsafe_bin" "$stable_tag" 2>&1) ||
+      fail "$interpreter_name unsafe variant bin dir with $unsafe_character must keep the install successful"
     [[ ! -e "$unsafe_home/.zshrc" ]] || fail "$interpreter_name unsafe variant must not write rc file"
+    [[ -x "$unsafe_install/composio" ]] || fail "$interpreter_name unsafe variant must retain the binary"
+    assert_contains "$unsafe_variant_output" 'warning:' "$interpreter_name unsafe variant warning"
+    assert_contains "$unsafe_variant_output" "$unsafe_bin" "$interpreter_name unsafe variant warning names the rejected path"
+    assert_tail "$unsafe_variant_output" $'To get started, run:\n\n  '"$unsafe_install/composio login" "$interpreter_name unsafe variant recovery tail"
   done
 
   for base_mode in fail empty; do
@@ -615,6 +678,290 @@ EOF
     fi
     [[ ! -e "$base_failure_home/.zshrc" ]] || fail "$interpreter_name $base_mode download must not write rc"
   done
+
+  # --- Auto shell setup default (KD2/KD3) ---
+
+  # Every recognized default-flow shell delegates through the setup chain.
+  for auto_shell in zsh bash fish; do
+    reset_case
+    CASE_SHELL_VALUE="/bin/$auto_shell"
+    auto_home="$case_root/auto-$auto_shell-home"
+    auto_install="$case_root/auto-$auto_shell-install"
+    auto_bin="$case_root/auto-$auto_shell-bin"
+    auto_output=$(run_installer "$auto_home" "$auto_install" "$auto_bin" "$stable_tag" 2>&1)
+    grep -Fq "|installer|$auto_bin|install --shell $auto_shell" "$composio_log" ||
+      fail "$interpreter_name auto $auto_shell delegation"
+    assert_contains "$auto_output" "Configured $auto_shell shell setup (cli)." "$interpreter_name auto $auto_shell confirmation"
+    assert_tail "$auto_output" "$case_b_tail" "$interpreter_name auto $auto_shell Case B tail"
+  done
+
+  # Repeated default-flow installs keep taking the idempotent setup chain.
+  reset_case
+  idempotent_home="$case_root/idempotent-home"
+  idempotent_install="$case_root/idempotent-install"
+  idempotent_bin="$case_root/idempotent-bin"
+  run_installer "$idempotent_home" "$idempotent_install" "$idempotent_bin" "$stable_tag" >/dev/null 2>&1
+  run_installer "$idempotent_home" "$idempotent_install" "$idempotent_bin" "$stable_tag" >/dev/null 2>&1
+  [[ $(grep -c 'install --shell bash' "$composio_log") -eq 2 ]] ||
+    fail "$interpreter_name repeated auto installs must re-run idempotent setup"
+
+  # COMPOSIO_INSTALL_SHELL=none preserves install-only behavior.
+  reset_case
+  CASE_INSTALL_SHELL=none
+  none_home="$case_root/none-home"
+  none_install="$case_root/none-install"
+  none_output=$(run_installer "$none_home" "$none_install" "$case_root/none-bin" "$stable_tag" 2>&1)
+  if grep -Fq 'install --shell' "$composio_log"; then
+    fail "$interpreter_name none must not run shell setup"
+  fi
+  [[ ! -e "$none_home/.bashrc" && ! -e "$none_home/.bash_profile" ]] || fail "$interpreter_name none must not write rc files"
+  assert_contains "$none_output" 'COMPOSIO_INSTALL_SHELL=none' "$interpreter_name none skip disclosure"
+  assert_tail "$none_output" $'To get started now, run:\n\n  '"$none_install/composio login" "$interpreter_name none install-only tail"
+
+  # none + already-resolving installed command uses the bare Case A ending.
+  reset_case
+  CASE_INSTALL_SHELL=none
+  none_ready_bin="$case_root/none-ready-bin"
+  CASE_PATH_PREFIX="$none_ready_bin:"
+  none_ready_output=$(run_installer "$case_root/none-ready-home" "$case_root/none-ready-install" "$none_ready_bin" "$stable_tag" 2>&1)
+  assert_tail "$none_ready_output" "$case_a_tail" "$interpreter_name none Case A tail"
+
+  # Case A: recognized shell, setup succeeds, and the inherited PATH already
+  # resolves the installed entry point. Setup still runs (idempotent).
+  reset_case
+  ready_bin="$case_root/ready-bin"
+  CASE_PATH_PREFIX="$ready_bin:"
+  ready_output=$(run_installer "$case_root/ready-home" "$case_root/ready-install" "$ready_bin" "$stable_tag" 2>&1)
+  grep -Fq 'install --shell bash' "$composio_log" || fail "$interpreter_name Case A still runs idempotent setup"
+  assert_tail "$ready_output" "$case_a_tail" "$interpreter_name Case A tail"
+
+  # Explicit shell + resolving command also ends in Case A.
+  reset_case
+  CASE_INSTALL_SHELL=zsh
+  explicit_ready_bin="$case_root/explicit-ready-bin"
+  CASE_PATH_PREFIX="$explicit_ready_bin:"
+  explicit_ready_output=$(run_installer "$case_root/explicit-ready-home" "$case_root/explicit-ready-install" "$explicit_ready_bin" "$stable_tag" 2>&1)
+  assert_tail "$explicit_ready_output" "$case_a_tail" "$interpreter_name explicit shell Case A tail"
+
+  # Physical-path identity: a pre-existing symlink on PATH that resolves to the
+  # installed executable still counts as Case A.
+  reset_case
+  alias_dir="$case_root/alias-dir"
+  alias_install="$case_root/alias-install"
+  mkdir -p "$alias_dir" "$alias_install"
+  ln -sf "$alias_install/composio" "$alias_dir/composio"
+  CASE_PATH_PREFIX="$alias_dir:"
+  alias_output=$(run_installer "$case_root/alias-home" "$alias_install" "$case_root/alias-bin" "$stable_tag" 2>&1)
+  assert_tail "$alias_output" "$case_a_tail" "$interpreter_name symlink-alias Case A tail"
+
+  # Unknown $SHELL degrades to install-only guidance plus the trusted absolute command.
+  reset_case
+  CASE_SHELL_VALUE=/bin/tcsh
+  unknown_home="$case_root/unknown-shell-home"
+  unknown_install="$case_root/unknown-shell-install"
+  unknown_output=$(run_installer "$unknown_home" "$unknown_install" "$case_root/unknown-shell-bin" "$stable_tag" 2>&1)
+  if grep -Fq 'install --shell' "$composio_log"; then
+    fail "$interpreter_name unknown shell must not run shell setup"
+  fi
+  [[ ! -e "$unknown_home/.bashrc" ]] || fail "$interpreter_name unknown shell must not write rc files"
+  assert_tail "$unknown_output" $'To get started now, run:\n\n  '"$unknown_install/composio login" "$interpreter_name unknown shell install-only tail"
+
+  # Shadowing: bin dir on the inherited PATH, but another composio resolves
+  # first. The ending must never run the shadowed bare command.
+  reset_case
+  shadow_dir="$case_root/shadow-dir"
+  mkdir -p "$shadow_dir"
+  printf '#!/bin/sh\nexit 0\n' >"$shadow_dir/composio"
+  chmod +x "$shadow_dir/composio"
+  shadow_bin="$case_root/shadow-bin"
+  shadow_install="$case_root/shadow-install"
+  CASE_PATH_PREFIX="$shadow_dir:$shadow_bin:"
+  shadow_output=$(run_installer "$case_root/shadow-home" "$shadow_install" "$shadow_bin" "$stable_tag" 2>&1)
+  assert_contains "$shadow_output" "$shadow_dir/composio" "$interpreter_name shadow ending names the shadowing command"
+  assert_tail "$shadow_output" $'To use the newly installed CLI, run:\n\n  '"$shadow_install/composio login" "$interpreter_name shadow tail avoids the shadowed bare command"
+
+  # Pinned old CLI: supports --shell but ignores the invocation-origin hint and
+  # prints its own boxed restart hint. A relative COMPOSIO_BIN_DIR must never
+  # reach setup raw; startup files stay untouched; the installer's plain final
+  # block prints after the old hint and supersedes it.
+  reset_case
+  CASE_INSTALL_HINT=1
+  oldcli_home="$case_root/oldcli-home"
+  oldcli_work="$case_root/oldcli-work"
+  oldcli_install="$case_root/oldcli-install"
+  mkdir -p "$oldcli_work"
+  oldcli_output=$(cd "$oldcli_work" && run_installer "$oldcli_home" "$oldcli_install" "rel-bin" "$stable_tag" 2>&1)
+  grep -Fq "|installer|$oldcli_work/rel-bin|install --shell bash" "$composio_log" ||
+    fail "$interpreter_name old-CLI setup must receive the resolved absolute bin dir"
+  [[ ! -e "$oldcli_home/.bashrc" && ! -e "$oldcli_home/.bash_profile" ]] ||
+    fail "$interpreter_name old-CLI delegation must leave startup files unchanged"
+  assert_contains "$oldcli_output" '│ Restart your shell so composio is on PATH │' "$interpreter_name old-CLI restart hint passes through"
+  assert_tail "$oldcli_output" "$case_b_tail" "$interpreter_name old-CLI hint superseded by the installer tail"
+
+  # --- Setup write failures stay non-fatal (KD3/KD4) ---
+
+  # Delegated path: CLI --shell fails, inline fallback also fails.
+  reset_case
+  CASE_SHELL_VALUE=/bin/zsh
+  CASE_INSTALL_EXIT=23
+  wf_delegated_home="$case_root/write-failure-delegated-home"
+  wf_delegated_install="$case_root/write-failure-delegated-install"
+  mkdir -p "$wf_delegated_home/.zshrc"
+  wf_delegated_output=$(run_installer "$wf_delegated_home" "$wf_delegated_install" "$case_root/write-failure-delegated-bin" "$stable_tag" 2>&1) ||
+    fail "$interpreter_name delegated setup failure must keep the install successful"
+  [[ -x "$wf_delegated_install/composio" ]] || fail "$interpreter_name delegated setup failure must retain the binary"
+  assert_contains "$wf_delegated_output" 'warning: Automatic PATH setup for zsh failed' "$interpreter_name delegated setup failure warning"
+  assert_tail "$wf_delegated_output" $'To get started, run:\n\n  '"$wf_delegated_install/composio login" "$interpreter_name delegated setup failure recovery tail"
+
+  # Inline path: helper failure inside a conditional must propagate explicitly.
+  reset_case
+  CASE_SHELL_CAPABILITY=unsupported
+  wf_inline_home="$case_root/write-failure-inline-home"
+  wf_inline_install="$case_root/write-failure-inline-install"
+  mkdir -p "$wf_inline_home/.bashrc"
+  wf_inline_output=$(run_installer "$wf_inline_home" "$wf_inline_install" "$case_root/write-failure-inline-bin" "$stable_tag" 2>&1) ||
+    fail "$interpreter_name inline setup failure must keep the install successful"
+  [[ -x "$wf_inline_install/composio" ]] || fail "$interpreter_name inline setup failure must retain the binary"
+  assert_contains "$wf_inline_output" 'warning: Automatic PATH setup for bash failed' "$interpreter_name inline setup failure warning"
+  assert_tail "$wf_inline_output" $'To get started, run:\n\n  '"$wf_inline_install/composio login" "$interpreter_name inline setup failure recovery tail"
+
+  # --- Managed-block reconciliation (KD3) ---
+
+  reset_case
+  CASE_SHELL_CAPABILITY=unsupported
+  CASE_SHELL_VALUE=/bin/zsh
+  reconcile_home="$case_root/reconcile-home"
+  reconcile_install="$case_root/reconcile-install"
+  reconcile_bin_a="$case_root/reconcile-bin-a"
+  reconcile_bin_b="$case_root/reconcile-bin-b"
+  mkdir -p "$reconcile_home"
+  printf '%s\n' 'alias reconcile-before=1' >"$reconcile_home/.zshrc"
+  reconcile_first=$(run_installer "$reconcile_home" "$reconcile_install" "$reconcile_bin_a" "$stable_tag" 2>&1)
+  assert_contains "$reconcile_first" 'Updated ~/.zshrc' "$interpreter_name inline setup update disclosure"
+  grep -Fq "export PATH=\"$reconcile_bin_a:\$PATH\"" "$reconcile_home/.zshrc" || fail "$interpreter_name first managed block"
+  printf '%s\n' 'alias reconcile-after=1' >>"$reconcile_home/.zshrc"
+  reconcile_second=$(run_installer "$reconcile_home" "$reconcile_install" "$reconcile_bin_a" "$stable_tag" 2>&1)
+  assert_contains "$reconcile_second" 'already' "$interpreter_name inline setup already-current disclosure"
+  [[ $(grep -Fc '# Composio CLI' "$reconcile_home/.zshrc") -eq 1 ]] || fail "$interpreter_name idempotent rerun keeps one marker block"
+  reconcile_third=$(run_installer "$reconcile_home" "$reconcile_install" "$reconcile_bin_b" "$stable_tag" 2>&1)
+  assert_contains "$reconcile_third" 'Updated ~/.zshrc' "$interpreter_name reconcile update disclosure"
+  [[ $(grep -Fc '# Composio CLI' "$reconcile_home/.zshrc") -eq 1 ]] || fail "$interpreter_name reconcile keeps exactly one marker block"
+  grep -Fq "export PATH=\"$reconcile_bin_b:\$PATH\"" "$reconcile_home/.zshrc" || fail "$interpreter_name reconciled managed block"
+  if grep -Fq "$reconcile_bin_a" "$reconcile_home/.zshrc"; then
+    fail "$interpreter_name stale managed path must be replaced"
+  fi
+  grep -Fq 'alias reconcile-before=1' "$reconcile_home/.zshrc" || fail "$interpreter_name unmanaged content preserved (before block)"
+  grep -Fq 'alias reconcile-after=1' "$reconcile_home/.zshrc" || fail "$interpreter_name unmanaged content preserved (after block)"
+
+  # --- Unsafe resolved bin dirs under the default flow (KD3) ---
+
+  unsafe_auto_index=0
+  for unsafe_character in ';' '$'; do
+    unsafe_auto_index=$((unsafe_auto_index + 1))
+    reset_case
+    unsafe_auto_home="$case_root/unsafe-auto-$unsafe_auto_index-home"
+    unsafe_auto_install="$case_root/unsafe-auto-$unsafe_auto_index-install"
+    unsafe_auto_bin="$case_root/unsafe-auto${unsafe_character}$unsafe_auto_index-bin"
+    unsafe_auto_output=$(run_installer "$unsafe_auto_home" "$unsafe_auto_install" "$unsafe_auto_bin" "$stable_tag" 2>&1) ||
+      fail "$interpreter_name unsafe auto bin dir with $unsafe_character must keep the install successful"
+    if grep -Fq 'install --shell' "$composio_log"; then
+      fail "$interpreter_name unsafe auto bin dir must be rejected before delegation"
+    fi
+    [[ ! -e "$unsafe_auto_home/.bashrc" && ! -e "$unsafe_auto_home/.bash_profile" ]] ||
+      fail "$interpreter_name unsafe auto bin dir must not write startup files"
+    [[ -x "$unsafe_auto_install/composio" ]] || fail "$interpreter_name unsafe auto bin dir must retain the binary"
+    assert_contains "$unsafe_auto_output" "$unsafe_auto_bin" "$interpreter_name unsafe auto warning names the rejected path"
+    assert_tail "$unsafe_auto_output" $'To get started, run:\n\n  '"$unsafe_auto_install/composio login" "$interpreter_name unsafe auto recovery tail"
+  done
+
+  # A valid absolute install dir containing spaces stays copy-paste safe in
+  # recovery output: the printed command executes the installed binary as-is.
+  reset_case
+  CASE_SHELL_CAPABILITY=unsupported
+  space_home="$case_root/space-home"
+  space_install="$case_root/space install/dir"
+  mkdir -p "$space_home/.bashrc"
+  space_output=$(run_installer "$space_home" "$space_install" "$case_root/space-bin" "$stable_tag" 2>&1) ||
+    fail "$interpreter_name spaced install dir setup failure must keep the install successful"
+  assert_tail "$space_output" $'To get started, run:\n\n  '"'$space_install/composio' login" "$interpreter_name spaced recovery tail"
+  space_recovery_line=$(printf '%s\n' "$space_output" | tail -n 1)
+  space_recovery_command=${space_recovery_line#  }
+  space_recovery_command=${space_recovery_command% login}
+  space_paste_output=$(env TEST_COMPOSIO_LOG="$composio_log" "$interpreter" -c "$space_recovery_command --version") ||
+    fail "$interpreter_name spaced recovery command must execute when pasted"
+  [[ $space_paste_output == 'composio fake 98.0.0' ]] || fail "$interpreter_name spaced recovery command output"
+
+  # --- Final-block contract combinations (KD4/KD7) ---
+
+  # Plugin output completes before the final block.
+  reset_case
+  CASE_PLUGINS=1
+  plugin_order_output=$(run_installer "$case_root/plugin-order-home" "$case_root/plugin-order-install" "$case_root/plugin-order-bin" "$stable_tag" 2>&1)
+  assert_contains "$plugin_order_output" 'Installing plugins for detected agent hosts...' "$interpreter_name plugin status printed"
+  assert_tail "$plugin_order_output" "$case_b_tail" "$interpreter_name plugin output precedes the final block"
+
+  # --agent, setup succeeds, command not yet resolvable: completed state plus
+  # only the new-terminal notice; never a second login command.
+  reset_case
+  agent_home="$case_root/agent-home"
+  agent_output=$(run_installer "$agent_home" "$case_root/agent-install" "$case_root/agent-bin" "$stable_tag" --agent 2>&1)
+  grep -Fq 'login --agent --no-skill-install' "$composio_log" || fail "$interpreter_name agent login invocation"
+  assert_not_contains "$agent_output" 'composio login' "$interpreter_name agent flow must not print a generic login command"
+  assert_tail "$agent_output" $'Composio agent login complete.\nOpen a new terminal to use the composio command.' "$interpreter_name agent Case B tail"
+
+  # --agent with the installed command already resolvable: completed state only.
+  reset_case
+  agent_ready_bin="$case_root/agent-ready-bin"
+  CASE_PATH_PREFIX="$agent_ready_bin:"
+  agent_ready_output=$(run_installer "$case_root/agent-ready-home" "$case_root/agent-ready-install" "$agent_ready_bin" "$stable_tag" --agent 2>&1)
+  assert_not_contains "$agent_ready_output" 'Open a new terminal' "$interpreter_name agent ready flow needs no terminal notice"
+  assert_tail "$agent_ready_output" 'Composio agent login complete.' "$interpreter_name agent Case A tail"
+
+  # --agent with setup failure: completed state plus warning and trusted
+  # installed-path guidance; still no generic login command.
+  reset_case
+  CASE_SHELL_CAPABILITY=unsupported
+  agent_fail_home="$case_root/agent-fail-home"
+  agent_fail_install="$case_root/agent-fail-install"
+  mkdir -p "$agent_fail_home/.bashrc"
+  agent_fail_output=$(run_installer "$agent_fail_home" "$agent_fail_install" "$case_root/agent-fail-bin" "$stable_tag" --agent 2>&1) ||
+    fail "$interpreter_name agent setup failure must keep the install successful"
+  assert_contains "$agent_fail_output" 'Composio agent login complete.' "$interpreter_name agent completion survives setup failure"
+  assert_contains "$agent_fail_output" 'warning: Automatic PATH setup for bash failed' "$interpreter_name agent setup failure warning"
+  assert_not_contains "$agent_fail_output" 'composio login' "$interpreter_name agent setup failure must not print a login command"
+  assert_tail "$agent_fail_output" $'Run composio from its installed location:\n\n  '"$agent_fail_install/composio --help" "$interpreter_name agent setup failure recovery tail"
+
+  # --agent with setup skipped (none): completed state plus installed-path guidance.
+  reset_case
+  CASE_INSTALL_SHELL=none
+  agent_none_install="$case_root/agent-none-install"
+  agent_none_output=$(run_installer "$case_root/agent-none-home" "$agent_none_install" "$case_root/agent-none-bin" "$stable_tag" --agent 2>&1)
+  assert_not_contains "$agent_none_output" 'composio login' "$interpreter_name agent none flow must not print a login command"
+  assert_tail "$agent_none_output" $'Composio agent login complete.\nRun composio from its installed location:\n\n  '"$agent_none_install/composio --help" "$interpreter_name agent none tail"
+
+  # Quiet mode keeps setup-failure recovery visible.
+  reset_case
+  CASE_QUIET=1
+  CASE_SHELL_CAPABILITY=unsupported
+  quiet_fail_home="$case_root/quiet-fail-home"
+  quiet_fail_install="$case_root/quiet-fail-install"
+  mkdir -p "$quiet_fail_home/.bashrc"
+  quiet_fail_output=$(run_installer "$quiet_fail_home" "$quiet_fail_install" "$case_root/quiet-fail-bin" "$stable_tag" 2>&1) ||
+    fail "$interpreter_name quiet setup failure must keep the install successful"
+  assert_contains "$quiet_fail_output" 'warning: Automatic PATH setup for bash failed' "$interpreter_name quiet keeps the setup-failure warning"
+  assert_tail "$quiet_fail_output" $'To get started, run:\n\n  '"$quiet_fail_install/composio login" "$interpreter_name quiet keeps the recovery tail"
+
+  # COMPOSIO_INSTALL_HELP=0 also keeps setup-failure recovery visible.
+  reset_case
+  CASE_HELP=0
+  CASE_SHELL_CAPABILITY=unsupported
+  helpless_fail_home="$case_root/helpless-fail-home"
+  helpless_fail_install="$case_root/helpless-fail-install"
+  mkdir -p "$helpless_fail_home/.bashrc"
+  helpless_fail_output=$(run_installer "$helpless_fail_home" "$helpless_fail_install" "$case_root/helpless-fail-bin" "$stable_tag" 2>&1) ||
+    fail "$interpreter_name help-suppressed setup failure must keep the install successful"
+  assert_contains "$helpless_fail_output" 'warning: Automatic PATH setup for bash failed' "$interpreter_name help suppression keeps the setup-failure warning"
+  assert_tail "$helpless_fail_output" $'To get started, run:\n\n  '"$helpless_fail_install/composio login" "$interpreter_name help suppression keeps the recovery tail"
 
   printf 'install scripts passed under %s\n' "$interpreter_name"
 done
