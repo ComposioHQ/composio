@@ -10,6 +10,6 @@ The Composio CLI installer now separates the release bundle from the command you
 
 - `curl -fsSL https://composio.dev/install | sh` installs the verified release bundle in `~/.composio` and creates `~/.local/bin/composio`.
 - The default flow does not edit shell files, install agent plugins, or log you in.
-- `/install/zsh`, `/install/bash`, and `/install/fish` configure the requested shell explicitly.
+- `--shell zsh|bash|fish` configures the requested shell explicitly, for example `curl -fsSL https://composio.dev/install | sh -s -- --shell zsh`.
 - `COMPOSIO_INSTALL_VERSION`, `COMPOSIO_BIN_DIR`, `COMPOSIO_QUIET`, and `COMPOSIO_DEBUG` give you control over version, layout, and output.
 - Existing `COMPOSIO_INSTALL_DIR` configurations keep their bundle-directory meaning.

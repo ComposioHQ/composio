@@ -341,7 +341,7 @@ jobs:
           export PATH="$COMPOSIO_BIN_DIR:$PATH"
           ```
 
-          Run `curl -fsSL https://composio.dev/install/zsh | sh`, replacing `zsh` with `bash` or `fish`, when you want the CLI to configure your shell.
+          Run `curl -fsSL https://composio.dev/install | sh -s -- --shell zsh`, replacing `zsh` with `bash` or `fish`, when you want the CLI to configure your shell.
 
           ## Usage
 

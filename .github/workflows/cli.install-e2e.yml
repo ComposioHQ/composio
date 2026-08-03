@@ -193,6 +193,7 @@ jobs:
             echo ""
             echo '```sh'
             echo "curl -fsSL \"$RAW_BASE/install.sh\" | sh"
+            echo "curl -fsSL \"$RAW_BASE/install.sh\" | sh -s -- --shell zsh"
             echo '```'
             echo ""
             echo "Shell-specific setup routes (the override points the variant at this PR's base installer):"

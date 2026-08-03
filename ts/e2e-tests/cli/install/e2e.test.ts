@@ -125,6 +125,22 @@ test "$(grep -Fc '# Composio CLI' "$HOME/.bashrc")" = 1
       },
       timeout
     );
+
+    it(
+      'configures bash through the base installer --shell flag idempotently',
+      async () => {
+        const result = await run(`
+set -eu
+curl -fsSL "$INSTALL_BASE_URL/install" | sh -s -- --shell bash
+curl -fsSL "$INSTALL_BASE_URL/install" | sh -s -- --shell bash
+test "$(bash -ilc 'command -v composio')" = "$HOME/.local/bin/composio"
+test "$(bash -ilc 'composio --version')" = 98.0.0
+test "$(grep -Fc '# Composio CLI' "$HOME/.bashrc")" = 1
+`);
+        assertSuccess(result);
+      },
+      timeout
+    );
   });
 }
 

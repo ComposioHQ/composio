@@ -38,12 +38,13 @@ tildify() {
 
 print_usage() {
     printf '%s\n' \
-        'Usage: install.sh [--agent] [--no-plugins] [version-tag]' \
+        'Usage: install.sh [--agent] [--no-plugins] [--shell zsh|bash|fish] [version-tag]' \
         '' \
         'Options:' \
-        '  --agent       Sign up or log in as a Composio agent after installation.' \
-        '  --no-plugins  Skip agent plugin installation (the default).' \
-        '  -h, --help    Show this help.' \
+        '  --agent          Sign up or log in as a Composio agent after installation.' \
+        '  --no-plugins     Skip agent plugin installation (the default).' \
+        '  --shell <shell>  Configure zsh, bash, or fish so the composio command is on PATH.' \
+        '  -h, --help       Show this help.' \
         '' \
         'Version tags may be stable or beta, for example 0.3.1 or @composio/cli@0.3.1-beta.329.'
 }
@@ -274,6 +275,77 @@ path_contains_bin_dir() {
     esac
 }
 
+is_unsafe_path() {
+    case $1 in *':'* | *';'* | *'`'* | *'$'* | *'|'* | *'&'* | *'"'* | *"'"* | *'('* | *')'* | *\\*) return 0 ;; esac
+    unsafe_path_cr=$(printf '\r')
+    case $1 in *"$unsafe_path_cr"* | *'
+'*) return 0 ;; esac
+    return 1
+}
+
+render_bin_dir() {
+    render_bin_dir_value=$1
+    case $render_bin_dir_value in "$HOME"/*) render_bin_dir_value=\$HOME/${render_bin_dir_value#"$HOME"/} ;; esac
+    printf '%s\n' "$render_bin_dir_value"
+}
+
+append_path_block() {
+    append_path_file=$1
+    append_path_shell=$2
+    append_path_bin=$3
+    mkdir -p "$(dirname "$append_path_file")"
+    touch "$append_path_file"
+    grep -Fqx '# Composio CLI' "$append_path_file" 2>/dev/null && return 0
+    case $append_path_shell in
+        fish) append_path_line="set --export PATH \"$append_path_bin\" \$PATH" ;;
+        *) append_path_line="export PATH=\"$append_path_bin:\$PATH\"" ;;
+    esac
+    printf '\n# Composio CLI\n%s\n' "$append_path_line" >>"$append_path_file"
+}
+
+inline_shell_setup() {
+    inline_setup_shell=$1
+    inline_setup_bin_dir=$2
+    is_unsafe_path "$inline_setup_bin_dir" && error "COMPOSIO_BIN_DIR contains unsafe characters"
+    inline_setup_rendered=$(render_bin_dir "$inline_setup_bin_dir")
+    case $inline_setup_shell in
+        zsh) append_path_block "$HOME/.zshrc" zsh "$inline_setup_rendered" ;;
+        fish) append_path_block "$HOME/.config/fish/config.fish" fish "$inline_setup_rendered" ;;
+        bash)
+            append_path_block "$HOME/.bashrc" bash "$inline_setup_rendered"
+            if [ -f "$HOME/.bash_profile" ]; then
+                append_path_block "$HOME/.bash_profile" bash "$inline_setup_rendered"
+            elif [ -f "$HOME/.bash_login" ]; then
+                append_path_block "$HOME/.bash_login" bash "$inline_setup_rendered"
+            fi
+            ;;
+    esac
+}
+
+setup_requested_shell() {
+    if "$exe" install --help 2>&1 | grep -q -- '--shell'; then
+        debug "delegating shell setup to $exe install --shell $requested_shell"
+        if COMPOSIO_CLI_INVOCATION_ORIGIN=installer COMPOSIO_BIN_DIR="$COMPOSIO_BIN_DIR" "$exe" install --shell "$requested_shell"; then
+            shell_configured=cli
+        else
+            debug "falling back to inline $requested_shell shell setup"
+            inline_shell_setup "$requested_shell" "$COMPOSIO_BIN_DIR"
+            shell_configured=fallback
+        fi
+    else
+        debug "falling back to inline $requested_shell shell setup"
+        inline_shell_setup "$requested_shell" "$COMPOSIO_BIN_DIR"
+        shell_configured=fallback
+    fi
+
+    info "Configured $requested_shell shell setup ($shell_configured)."
+    case $requested_shell in
+        zsh) info "Restart your shell or run \`source ~/.zshrc\`." ;;
+        bash) info "Restart your shell or run \`source ~/.bashrc\`." ;;
+        fish) info "Restart your shell or run \`source ~/.config/fish/config.fish\`." ;;
+    esac
+}
+
 print_post_install_help() {
     [ "${COMPOSIO_INSTALL_HELP:-1}" != 0 ] || return 0
     is_true "${COMPOSIO_QUIET:-}" && return 0
@@ -304,13 +376,15 @@ print_post_install_help() {
     fi
 
     printf '\n'
-    if [ -n "$shell_route" ]; then
+    if [ -n "$requested_shell" ]; then
+        : # Shell setup already ran; skip the setup suggestion.
+    elif [ -n "$shell_route" ]; then
         if [ "$guidance_required" = 1 ]; then
             printf 'Required next step for %s:\n\n' "$shell_name"
         else
             printf 'Optional shell setup for future PATH changes:\n\n'
         fi
-        printf '  curl -fsSL https://composio.dev/install/%s | sh\n' "$shell_route"
+        printf '  curl -fsSL https://composio.dev/install | sh -s -- --shell %s\n' "$shell_route"
         printf '\nThis configures %s.\n' "$shell_config"
     elif path_contains_bin_dir; then
         printf 'The composio command is available on PATH.\n'
@@ -337,6 +411,7 @@ main() {
     install_agent=0
     install_plugins=${COMPOSIO_INSTALL_PLUGINS:-0}
     version_arg=
+    requested_shell=
 
     case $install_plugins in
         0 | 1) ;;
@@ -347,6 +422,14 @@ main() {
         case $1 in
             --agent) install_agent=1 ;;
             --no-plugins) install_plugins=0 ;;
+            --shell)
+                [ "$#" -ge 2 ] || error '--shell requires a value: zsh, bash, or fish'
+                case $2 in
+                    zsh | bash | fish) requested_shell=$2 ;;
+                    *) error "Invalid --shell value \"$2\". Expected zsh, bash, or fish." ;;
+                esac
+                shift
+                ;;
             -h | --help)
                 print_usage
                 return 0
@@ -456,6 +539,10 @@ main() {
         info 'Setting up Composio agent login...'
         COMPOSIO_CLI_INVOCATION_ORIGIN=installer "$exe" login --agent --no-skill-install ||
             error 'Failed to sign up or log in as a Composio agent.'
+    fi
+
+    if [ -n "$requested_shell" ]; then
+        setup_requested_shell
     fi
 
     print_post_install_help

@@ -63,36 +63,37 @@ curl -fsSL https://composio.dev/install | sh -s -- @composio/cli@0.3.1
 | `COMPOSIO_GITHUB_API_BASE_URL` | GitHub API base URL. | Derived from `COMPOSIO_GITHUB_URL` |
 | `--agent` | Log in as a Composio agent after installation. | Off |
 | `--no-plugins` | Skip agent plugin setup. Kept for compatibility and now matches the default. | Off |
+| `--shell` | Configure the requested shell (`zsh`, `bash`, or `fish`) after installation. See [Configure your shell](#configure-your-shell). | Off |
 
 ### Configure your shell
 
-Use a shell-specific installer when `~/.local/bin` is not already on `PATH`, or when you want the CLI to configure the requested shell explicitly.
+Pass `--shell` when `~/.local/bin` is not already on `PATH`, or when you want the CLI to configure the requested shell explicitly.
 
 <Tabs groupId="shell" items={['zsh','bash','fish']} persist>
 <Tab value="zsh">
 ```bash
-curl -fsSL https://composio.dev/install/zsh | sh
+curl -fsSL https://composio.dev/install | sh -s -- --shell zsh
 ```
 
 This configures `~/.zshrc` and delegates setup to `composio install --shell zsh`.
 </Tab>
 <Tab value="bash">
 ```bash
-curl -fsSL https://composio.dev/install/bash | sh
+curl -fsSL https://composio.dev/install | sh -s -- --shell bash
 ```
 
 This configures `~/.bashrc`. If `~/.bash_profile` or `~/.bash_login` exists, it also updates the first active login file so `bash -ilc` can find `composio`.
 </Tab>
 <Tab value="fish">
 ```bash
-curl -fsSL https://composio.dev/install/fish | sh
+curl -fsSL https://composio.dev/install | sh -s -- --shell fish
 ```
 
 This configures `~/.config/fish/config.fish` and delegates setup to `composio install --shell fish`.
 </Tab>
 </Tabs>
 
-Each shell installer is idempotent. It falls back to writing the same PATH block inline when you pin an older CLI release that does not support `--shell`.
+Shell setup is idempotent. It falls back to writing the same PATH block inline when you pin an older CLI release that does not support `composio install --shell`.
 
 ### Verify the installation
 

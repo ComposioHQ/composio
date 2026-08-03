@@ -533,11 +533,49 @@ EOF
     variant_home="$case_root/variant-$shell_name-home"
     variant_install="$case_root/variant-$shell_name-install"
     variant_bin="$case_root/variant-$shell_name-bin"
-    run_variant "$shell_name" "$variant_home" "$variant_install" "$variant_bin" "$stable_tag" --no-plugins >/dev/null 2>&1
+    variant_output=$(run_variant "$shell_name" "$variant_home" "$variant_install" "$variant_bin" "$stable_tag" --no-plugins 2>&1)
     grep -Fq "|installer|$variant_bin|install --shell $shell_name" "$composio_log" ||
       fail "$interpreter_name $shell_name variant delegation"
-    grep -Eq '^0\|\|[^|]+\|--version$' "$composio_log" || fail "$interpreter_name $shell_name nested help suppression"
+    assert_contains "$variant_output" "Configured $shell_name shell setup (cli)." "$interpreter_name $shell_name variant confirmation"
+    assert_not_contains "$variant_output" 'Required next step' "$interpreter_name $shell_name variant must not print setup guidance"
+    assert_not_contains "$variant_output" 'Optional shell setup' "$interpreter_name $shell_name variant must not print setup guidance"
   done
+
+  reset_case
+  direct_home="$case_root/direct-shell-home"
+  direct_bin="$case_root/direct-shell-bin"
+  direct_output=$(run_installer "$direct_home" "$case_root/direct-shell-install" "$direct_bin" "$stable_tag" --shell zsh 2>&1)
+  grep -Fq "|installer|$direct_bin|install --shell zsh" "$composio_log" || fail "$interpreter_name --shell delegation"
+  assert_contains "$direct_output" 'Configured zsh shell setup (cli).' "$interpreter_name --shell confirmation"
+  assert_not_contains "$direct_output" 'Required next step' "$interpreter_name --shell must not print setup guidance"
+  [[ ! -e "$direct_home/.zshrc" ]] || fail "$interpreter_name --shell CLI path must not write rc files"
+
+  reset_case
+  CASE_SHELL_CAPABILITY=unsupported
+  direct_fallback_home="$case_root/direct-fallback-home"
+  direct_fallback_output=$(run_installer "$direct_fallback_home" "$case_root/direct-fallback-install" "$case_root/direct-fallback-bin" "$stable_tag" --shell zsh 2>&1)
+  grep -Fqx '# Composio CLI' "$direct_fallback_home/.zshrc" || fail "$interpreter_name --shell unsupported CLI fallback"
+  assert_contains "$direct_fallback_output" 'Configured zsh shell setup (fallback).' "$interpreter_name --shell fallback confirmation"
+
+  reset_case
+  CASE_INSTALL_EXIT=23
+  direct_failed_home="$case_root/direct-failed-home"
+  run_installer "$direct_failed_home" "$case_root/direct-failed-install" "$case_root/direct-failed-bin" "$stable_tag" --shell fish >/dev/null 2>&1
+  grep -Fqx '# Composio CLI' "$direct_failed_home/.config/fish/config.fish" || fail "$interpreter_name --shell failed delegation fallback"
+
+  reset_case
+  if missing_shell_output=$(run_installer "$case_root/missing-shell-home" "$case_root/missing-shell-install" "$case_root/missing-shell-bin" --shell 2>&1); then
+    fail "$interpreter_name --shell without a value must fail"
+  fi
+  assert_contains "$missing_shell_output" '--shell requires a value' "$interpreter_name --shell missing value"
+  [[ ! -s "$curl_log" ]] || fail "$interpreter_name --shell missing value must fail before network"
+
+  reset_case
+  if invalid_shell_output=$(run_installer "$case_root/invalid-shell-home" "$case_root/invalid-shell-install" "$case_root/invalid-shell-bin" --shell tcsh 2>&1); then
+    fail "$interpreter_name invalid --shell value must fail"
+  fi
+  assert_contains "$invalid_shell_output" 'Invalid --shell value' "$interpreter_name invalid --shell message"
+  [[ ! -s "$curl_log" ]] || fail "$interpreter_name invalid --shell must fail before network"
 
   reset_case
   CASE_SHELL_CAPABILITY=unsupported
