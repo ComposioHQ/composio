@@ -49,8 +49,8 @@ catalogs:
       specifier: ^0.30.0
       version: 0.30.0
     '@mastra/core':
-      specifier: ^1.55.0
-      version: 1.55.0
+      specifier: 1.52.1
+      version: 1.52.1
     '@modelcontextprotocol/sdk':
       specifier: ^1.30.0
       version: 1.30.0
@@ -462,10 +462,10 @@ importers:
         version: link:../../../../packages/providers/mastra
       '@mastra/core':
         specifier: 'catalog:'
-        version: 1.55.0(@cfworker/json-schema@4.1.1)(ai@6.0.235(zod@3.25.76))(express@5.2.1)(zod@3.25.76)
+        version: 1.52.1(@cfworker/json-schema@4.1.1)(ai@6.0.235(zod@3.25.76))(express@5.2.1)(zod@3.25.76)
       '@mastra/mcp':
         specifier: ^1.15.0
-        version: 1.15.0(@cfworker/json-schema@4.1.1)(@mastra/core@1.55.0(@cfworker/json-schema@4.1.1)(ai@6.0.235(zod@3.25.76))(express@5.2.1)(zod@3.25.76))(zod@3.25.76)
+        version: 1.15.0(@cfworker/json-schema@4.1.1)(@mastra/core@1.52.1(@cfworker/json-schema@4.1.1)(ai@6.0.235(zod@3.25.76))(express@5.2.1)(zod@3.25.76))(zod@3.25.76)
       ai:
         specifier: ^6.0.219
         version: 6.0.235(zod@3.25.76)
@@ -490,10 +490,10 @@ importers:
         version: link:../../../../packages/providers/mastra
       '@mastra/core':
         specifier: 'catalog:'
-        version: 1.55.0(@cfworker/json-schema@4.1.1)(ai@6.0.235(zod@4.4.3))(express@5.2.1)(zod@4.4.3)
+        version: 1.52.1(@cfworker/json-schema@4.1.1)(ai@6.0.235(zod@4.4.3))(express@5.2.1)(zod@4.4.3)
       '@mastra/mcp':
         specifier: ^1.15.0
-        version: 1.15.0(@cfworker/json-schema@4.1.1)(@mastra/core@1.55.0(@cfworker/json-schema@4.1.1)(ai@6.0.235(zod@4.4.3))(express@5.2.1)(zod@4.4.3))(zod@4.4.3)
+        version: 1.15.0(@cfworker/json-schema@4.1.1)(@mastra/core@1.52.1(@cfworker/json-schema@4.1.1)(ai@6.0.235(zod@4.4.3))(express@5.2.1)(zod@4.4.3))(zod@4.4.3)
       ai:
         specifier: ^6.0.219
         version: 6.0.235(zod@4.4.3)
@@ -580,10 +580,10 @@ importers:
         version: link:../../packages/core
       '@mastra/core':
         specifier: 'catalog:'
-        version: 1.55.0(@cfworker/json-schema@4.1.1)(ai@6.0.235(zod@4.4.3))(express@5.2.1)(zod@4.4.3)
+        version: 1.52.1(@cfworker/json-schema@4.1.1)(ai@6.0.235(zod@4.4.3))(express@5.2.1)(zod@4.4.3)
       '@mastra/mcp':
         specifier: ^1.15.0
-        version: 1.15.0(@cfworker/json-schema@4.1.1)(@mastra/core@1.55.0(@cfworker/json-schema@4.1.1)(ai@6.0.235(zod@4.4.3))(express@5.2.1)(zod@4.4.3))(zod@4.4.3)
+        version: 1.15.0(@cfworker/json-schema@4.1.1)(@mastra/core@1.52.1(@cfworker/json-schema@4.1.1)(ai@6.0.235(zod@4.4.3))(express@5.2.1)(zod@4.4.3))(zod@4.4.3)
       ai:
         specifier: ^6.0.219
         version: 6.0.235(zod@4.4.3)
@@ -799,7 +799,7 @@ importers:
         version: link:../../packages/providers/mastra
       '@mastra/core':
         specifier: 'catalog:'
-        version: 1.55.0(@cfworker/json-schema@4.1.1)(ai@6.0.235(zod@4.4.3))(express@5.2.1)(zod@4.4.3)
+        version: 1.52.1(@cfworker/json-schema@4.1.1)(ai@6.0.235(zod@4.4.3))(express@5.2.1)(zod@4.4.3)
       ai:
         specifier: ^6.0.219
         version: 6.0.235(zod@4.4.3)
@@ -1481,10 +1481,10 @@ importers:
         version: link:../../core
       '@mastra/core':
         specifier: 'catalog:'
-        version: 1.55.0(@cfworker/json-schema@4.1.1)(ai@6.0.235(zod@4.4.3))(express@5.2.1)(zod@4.4.3)
+        version: 1.52.1(@cfworker/json-schema@4.1.1)(ai@6.0.235(zod@4.4.3))(express@5.2.1)(zod@4.4.3)
       '@mastra/mcp':
         specifier: ^1.15.0
-        version: 1.15.0(@cfworker/json-schema@4.1.1)(@mastra/core@1.55.0(@cfworker/json-schema@4.1.1)(ai@6.0.235(zod@4.4.3))(express@5.2.1)(zod@4.4.3))(zod@4.4.3)
+        version: 1.15.0(@cfworker/json-schema@4.1.1)(@mastra/core@1.52.1(@cfworker/json-schema@4.1.1)(ai@6.0.235(zod@4.4.3))(express@5.2.1)(zod@4.4.3))(zod@4.4.3)
       ai:
         specifier: ^6.0.219
         version: 6.0.235(zod@4.4.3)
@@ -1603,7 +1603,7 @@ importers:
         version: link:../../core
       '@mastra/core':
         specifier: 'catalog:'
-        version: 1.55.0(@cfworker/json-schema@4.1.1)(ai@6.0.235(zod@4.4.3))(express@5.2.1)(zod@4.4.3)
+        version: 1.52.1(@cfworker/json-schema@4.1.1)(ai@6.0.235(zod@4.4.3))(express@5.2.1)(zod@4.4.3)
       ai:
         specifier: ^6.0.219
         version: 6.0.235(zod@4.4.3)
@@ -1787,6 +1787,12 @@ packages:
     peerDependencies:
       zod: ^3.25.76 || ^4.1.8
 
+  '@ai-sdk/provider-utils@2.2.8':
+    resolution: {integrity: sha512-fqhG+4sCVv8x7nFzYnFo19ryhAa3w096Kmc3hWxMQfW/TubPOmt3A6tYZhl4mUfQWWQMsuSkLrtjlWuXBVSGQA==}
+    engines: {node: '>=18'}
+    peerDependencies:
+      zod: ^3.23.8
+
   '@ai-sdk/provider-utils@3.0.30':
     resolution: {integrity: sha512-NCJ9JKow5ENAgEZxzvEvF20thwDiH+hutvzmrUDbloRX0azpJHNst8+7pZIVryYhLM9wgpT5/ShTSjPTFhkxEQ==}
     engines: {node: '>=18'}
@@ -1811,6 +1817,10 @@ packages:
     peerDependencies:
       zod: ^3.25.76 || ^4.1.8
 
+  '@ai-sdk/provider@1.1.3':
+    resolution: {integrity: sha512-qZMxYJ0qqX/RfnuIaab+zp8UAeJn/ygXXAffR5I4N0n1IrvA6qBsjc8hXLmBiMV2zoXlifkacF7sEFnYnjBcqg==}
+    engines: {node: '>=18'}
+
   '@ai-sdk/provider@2.0.3':
     resolution: {integrity: sha512-h88OPkavHTiN9tMn2l5awAznGB0lXzjcLhgR1/rvjB2zlLprsNxbM2tt6OJsHUxduLC3klq0/eqaSf6fX5XVww==}
     engines: {node: '>=18'}
@@ -1826,6 +1836,12 @@ packages:
   '@ai-sdk/provider@4.0.4':
     resolution: {integrity: sha512-tbHKNLirllUNF3ZlkCsXnwab2ZV1Sl4b1H/Cp9ruCce15IBmskE8Gwkk0yo9xDWY+jho2of7lVXtwSsyrq7cwQ==}
     engines: {node: '>=22'}
+
+  '@ai-sdk/ui-utils@1.2.11':
+    resolution: {integrity: sha512-3zcwCc8ezzFlwp3ZD15wAPjf2Au4s3vAbKsXQVyhxODHcmu0iyPO2Eua6D/vicq/AUm/BAo60r97O6HU+EI0+w==}
+    engines: {node: '>=18'}
+    peerDependencies:
+      zod: ^3.23.8
 
   '@andrewbranch/untar.js@1.0.3':
     resolution: {integrity: sha512-Jh15/qVmrLGhkKJBdXlK1+9tY4lZruYjsgkDFj08ZmDiWVBLJcqkok7Z0/R0In+i1rScBpJlSvrTS2Lm41Pbnw==}
@@ -2984,8 +3000,8 @@ packages:
     resolution: {integrity: sha512-ABnA53mdfkGZwOFUdZNv2S0CWGO/EIuPj8Vv9xmBFmSYg/qFc7ihO6q5FcQjvoE67kZpWkEc4AhD6B/os04yuA==}
     engines: {node: '>= 10'}
 
-  '@mastra/core@1.55.0':
-    resolution: {integrity: sha512-h6Ic64TE3KbmbjUXOxSXfyhAGyT8AzCJgfe8GnC4zQukXhpfz0J7jUgOUr9B+O9sC6EQ1LsHjjsmXBfE0xNSrw==}
+  '@mastra/core@1.52.1':
+    resolution: {integrity: sha512-vODmqgg01nioh+hGIdFl9PKFC4kbToGOqM8HEUyzF/L8sSFfHIYBHCpkzK2C6QlcLbFaNyI79MSK4o0hhOll8w==}
     engines: {node: '>=22.13.0'}
     peerDependencies:
       zod: ^3.25.0 || ^4.0.0
@@ -6150,6 +6166,9 @@ packages:
     resolution: {integrity: sha512-vfD3pmTzGpufjScBh50YHKzEu2lxBWhVEHsNGoEXmCmn2hKGfeNLYMzCJpe8cD7gqX7TJluOVpBkAequ6dgMmA==}
     engines: {node: '>=4'}
 
+  secure-json-parse@2.7.0:
+    resolution: {integrity: sha512-6aU+Rwsezw7VR8/nyvKTx8QpWH9FrcYiXXlqC4z5d5XQBDRqtbfsRjnwGyqbi3gddNtWHuEk9OANUotL26qKUw==}
+
   selderee@0.11.0:
     resolution: {integrity: sha512-5TF+l7p4+OsnP8BCCvSyZiSPc4x4//p5uPwK8TCnVPJYRmU2aYKMpOXvw8zM5a5JvuuCGN1jmsMwuU2W02ukfA==}
 
@@ -6920,6 +6939,20 @@ snapshots:
       '@ai-sdk/provider-utils': 5.0.16(zod@4.4.3)
       zod: 4.4.3
 
+  '@ai-sdk/provider-utils@2.2.8(zod@3.25.76)':
+    dependencies:
+      '@ai-sdk/provider': 1.1.3
+      nanoid: 3.3.16
+      secure-json-parse: 2.7.0
+      zod: 3.25.76
+
+  '@ai-sdk/provider-utils@2.2.8(zod@4.4.3)':
+    dependencies:
+      '@ai-sdk/provider': 1.1.3
+      nanoid: 3.3.16
+      secure-json-parse: 2.7.0
+      zod: 4.4.3
+
   '@ai-sdk/provider-utils@3.0.30(zod@3.25.76)':
     dependencies:
       '@ai-sdk/provider': 2.0.3
@@ -6982,6 +7015,10 @@ snapshots:
       undici: 7.28.0
       zod: 4.4.3
 
+  '@ai-sdk/provider@1.1.3':
+    dependencies:
+      json-schema: 0.4.0
+
   '@ai-sdk/provider@2.0.3':
     dependencies:
       json-schema: 0.4.0
@@ -6997,6 +7034,20 @@ snapshots:
   '@ai-sdk/provider@4.0.4':
     dependencies:
       json-schema: 0.4.0
+
+  '@ai-sdk/ui-utils@1.2.11(zod@3.25.76)':
+    dependencies:
+      '@ai-sdk/provider': 1.1.3
+      '@ai-sdk/provider-utils': 2.2.8(zod@3.25.76)
+      zod: 3.25.76
+      zod-to-json-schema: 3.25.2(zod@3.25.76)
+
+  '@ai-sdk/ui-utils@1.2.11(zod@4.4.3)':
+    dependencies:
+      '@ai-sdk/provider': 1.1.3
+      '@ai-sdk/provider-utils': 2.2.8(zod@4.4.3)
+      zod: 4.4.3
+      zod-to-json-schema: 3.25.2(zod@4.4.3)
 
   '@andrewbranch/untar.js@1.0.3': {}
 
@@ -8247,7 +8298,7 @@ snapshots:
       '@mariozechner/clipboard-win32-x64-msvc': 0.3.9
     optional: true
 
-  '@mastra/core@1.55.0(@cfworker/json-schema@4.1.1)(ai@6.0.235(zod@3.25.76))(express@5.2.1)(zod@3.25.76)':
+  '@mastra/core@1.52.1(@cfworker/json-schema@4.1.1)(ai@6.0.235(zod@3.25.76))(express@5.2.1)(zod@3.25.76)':
     dependencies:
       '@a2a-js/sdk': 0.3.14(express@5.2.1)
       '@ai-sdk/provider-utils-v5': '@ai-sdk/provider-utils@3.0.30(zod@3.25.76)'
@@ -8256,6 +8307,7 @@ snapshots:
       '@ai-sdk/provider-v5': '@ai-sdk/provider@2.0.3'
       '@ai-sdk/provider-v6': '@ai-sdk/provider@3.0.14'
       '@ai-sdk/provider-v7': '@ai-sdk/provider@4.0.3'
+      '@ai-sdk/ui-utils-v5': '@ai-sdk/ui-utils@1.2.11(zod@3.25.76)'
       '@isaacs/ttlcache': 2.1.5
       '@lukeed/uuid': 2.0.1
       '@mastra/schema-compat': 1.3.4(zod@3.25.76)
@@ -8292,7 +8344,7 @@ snapshots:
       - supports-color
       - utf-8-validate
 
-  '@mastra/core@1.55.0(@cfworker/json-schema@4.1.1)(ai@6.0.235(zod@4.4.3))(express@5.2.1)(zod@4.4.3)':
+  '@mastra/core@1.52.1(@cfworker/json-schema@4.1.1)(ai@6.0.235(zod@4.4.3))(express@5.2.1)(zod@4.4.3)':
     dependencies:
       '@a2a-js/sdk': 0.3.14(express@5.2.1)
       '@ai-sdk/provider-utils-v5': '@ai-sdk/provider-utils@3.0.30(zod@4.4.3)'
@@ -8301,6 +8353,7 @@ snapshots:
       '@ai-sdk/provider-v5': '@ai-sdk/provider@2.0.3'
       '@ai-sdk/provider-v6': '@ai-sdk/provider@3.0.14'
       '@ai-sdk/provider-v7': '@ai-sdk/provider@4.0.3'
+      '@ai-sdk/ui-utils-v5': '@ai-sdk/ui-utils@1.2.11(zod@4.4.3)'
       '@isaacs/ttlcache': 2.1.5
       '@lukeed/uuid': 2.0.1
       '@mastra/schema-compat': 1.3.4(zod@4.4.3)
@@ -8337,9 +8390,9 @@ snapshots:
       - supports-color
       - utf-8-validate
 
-  '@mastra/mcp@1.15.0(@cfworker/json-schema@4.1.1)(@mastra/core@1.55.0(@cfworker/json-schema@4.1.1)(ai@6.0.235(zod@3.25.76))(express@5.2.1)(zod@3.25.76))(zod@3.25.76)':
+  '@mastra/mcp@1.15.0(@cfworker/json-schema@4.1.1)(@mastra/core@1.52.1(@cfworker/json-schema@4.1.1)(ai@6.0.235(zod@3.25.76))(express@5.2.1)(zod@3.25.76))(zod@3.25.76)':
     dependencies:
-      '@mastra/core': 1.55.0(@cfworker/json-schema@4.1.1)(ai@6.0.235(zod@3.25.76))(express@5.2.1)(zod@3.25.76)
+      '@mastra/core': 1.52.1(@cfworker/json-schema@4.1.1)(ai@6.0.235(zod@3.25.76))(express@5.2.1)(zod@3.25.76)
       '@modelcontextprotocol/ext-apps': 1.7.5(@modelcontextprotocol/sdk@1.29.0(@cfworker/json-schema@4.1.1)(zod@3.25.76))(zod@3.25.76)
       '@modelcontextprotocol/sdk': 1.29.0(@cfworker/json-schema@4.1.1)(zod@3.25.76)
       exit-hook: 5.1.0
@@ -8351,9 +8404,9 @@ snapshots:
       - supports-color
       - zod
 
-  '@mastra/mcp@1.15.0(@cfworker/json-schema@4.1.1)(@mastra/core@1.55.0(@cfworker/json-schema@4.1.1)(ai@6.0.235(zod@4.4.3))(express@5.2.1)(zod@4.4.3))(zod@4.4.3)':
+  '@mastra/mcp@1.15.0(@cfworker/json-schema@4.1.1)(@mastra/core@1.52.1(@cfworker/json-schema@4.1.1)(ai@6.0.235(zod@4.4.3))(express@5.2.1)(zod@4.4.3))(zod@4.4.3)':
     dependencies:
-      '@mastra/core': 1.55.0(@cfworker/json-schema@4.1.1)(ai@6.0.235(zod@4.4.3))(express@5.2.1)(zod@4.4.3)
+      '@mastra/core': 1.52.1(@cfworker/json-schema@4.1.1)(ai@6.0.235(zod@4.4.3))(express@5.2.1)(zod@4.4.3)
       '@modelcontextprotocol/ext-apps': 1.7.5(@modelcontextprotocol/sdk@1.29.0(@cfworker/json-schema@4.1.1)(zod@4.4.3))(zod@4.4.3)
       '@modelcontextprotocol/sdk': 1.29.0(@cfworker/json-schema@4.1.1)(zod@4.4.3)
       exit-hook: 5.1.0
@@ -8479,7 +8532,7 @@ snapshots:
 
   '@modelcontextprotocol/sdk@1.30.0(@cfworker/json-schema@4.1.1)(zod@3.25.76)':
     dependencies:
-      '@hono/node-server': 2.0.11(hono@4.12.31)
+      '@hono/node-server': 2.0.11(hono@4.12.33)
       ajv: 8.20.0
       ajv-formats: 3.0.1(ajv@8.20.0)
       content-type: 1.0.5
@@ -8489,7 +8542,7 @@ snapshots:
       eventsource-parser: 3.1.0
       express: 5.2.1
       express-rate-limit: 8.6.0(express@5.2.1)
-      hono: 4.12.31
+      hono: 4.12.33
       jose: 6.2.4
       json-schema-typed: 8.0.2
       pkce-challenge: 5.0.1
@@ -11479,6 +11532,8 @@ snapshots:
     dependencies:
       extend-shallow: 2.0.1
       kind-of: 6.0.3
+
+  secure-json-parse@2.7.0: {}
 
   selderee@0.11.0:
     dependencies:
