@@ -55,26 +55,20 @@ export const parseString = (jsonSchema: JsonSchemaObject & { type: 'string' }) =
   );
 
   // Handle generic 'min' property as alias for 'minLength'
-  if (
-    typeof (jsonSchema as unknown as { min?: number }).min === 'number' &&
-    typeof jsonSchema.minLength !== 'number'
-  ) {
+  if (typeof jsonSchema.min === 'number' && typeof jsonSchema.minLength !== 'number') {
     zodSchema = extendSchemaWithMessage(
       zodSchema,
-      { ...jsonSchema, minLength: (jsonSchema as unknown as { min?: number }).min },
+      { ...jsonSchema, minLength: jsonSchema.min },
       'minLength',
       (zs, minLength, errorMsg) => zs.min(minLength, errorMsg)
     );
   }
 
   // Handle generic 'max' property as alias for 'maxLength'
-  if (
-    typeof (jsonSchema as unknown as { max?: number }).max === 'number' &&
-    typeof jsonSchema.maxLength !== 'number'
-  ) {
+  if (typeof jsonSchema.max === 'number' && typeof jsonSchema.maxLength !== 'number') {
     zodSchema = extendSchemaWithMessage(
       zodSchema,
-      { ...jsonSchema, maxLength: (jsonSchema as unknown as { max?: number }).max },
+      { ...jsonSchema, maxLength: jsonSchema.max },
       'maxLength',
       (zs, maxLength, errorMsg) => zs.max(maxLength, errorMsg)
     );
