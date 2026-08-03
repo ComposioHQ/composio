@@ -1,5 +1,5 @@
 import * as tempy from 'tempy';
-import type { Composio as RawComposioClient } from '@composio/client';
+import { Composio as RawComposioClient } from '@composio/client';
 import { CliApp, CliConfig } from '@effect/cli';
 import { Command, FetchHttpClient, FileSystem, Path } from '@effect/platform';
 import { BunFileSystem, BunContext, BunPath } from '@effect/platform-bun';
@@ -990,7 +990,7 @@ export const TestLayer = (input?: TestLiveInput) =>
       };
     };
 
-    const mockComposioClient = {
+    const mockComposioClient = Object.assign(new RawComposioClient({ apiKey: 'test' }), {
       link: {
         create: async (params: { auth_config_id: string; user_id: string }) => {
           const response = connectedAccountsData.linkResponse ?? {
@@ -1187,19 +1187,16 @@ export const TestLayer = (input?: TestLiveInput) =>
           }),
         },
       },
-    };
+    });
 
     const ComposioClientSingletonTest = Layer.succeed(
       ComposioClientSingleton,
       new ComposioClientSingleton({
         get: Effect.fn(function* () {
-          // Partial mock: only implements `toolRouter.session.*` methods used by
-          // CLI commands under test. The full Composio client interface is too
-          // large to mock completely for unit tests.
-          return mockComposioClient as unknown as RawComposioClient;
+          return mockComposioClient;
         }),
         getFor: Effect.fn(function* () {
-          return mockComposioClient as unknown as RawComposioClient;
+          return mockComposioClient;
         }),
       })
     );
