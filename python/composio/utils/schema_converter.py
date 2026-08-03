@@ -17,7 +17,8 @@ from json_schema_to_pydantic import (
     SchemaError,
     create_model as create_model_from_schema,
 )
-from pydantic import Field, create_model as create_pydantic_model
+from pydantic import BaseModel, ConfigDict, Field
+from pydantic import create_model as create_pydantic_model
 from pydantic_core import core_schema
 
 from composio.utils.logging import get as get_logger
@@ -338,6 +339,26 @@ def _convert_object_with_unsatisfiable_properties(
     )
 
 
+def _create_permissive_object_model(
+    schema: t.Dict[str, t.Any],
+) -> t.Type[BaseModel]:
+    """
+    Create a pydantic model that accepts and preserves arbitrary keys.
+
+    Object schemas with no declared ``properties`` (e.g. a free-form payload
+    envelope like METABASE_POST_API_CARD's ``dataset_query``) would otherwise
+    become zero-field models whose default ``extra='ignore'`` silently strips
+    every key at validation time.
+    """
+    model_name = str(schema.get("title", "GeneratedModel")).replace(" ", "")
+    if not model_name.isidentifier():
+        model_name = "GeneratedModel"
+    return create_pydantic_model(
+        model_name,
+        __config__=ConfigDict(extra="allow"),
+    )
+
+
 def _convert_with_library(
     schema: t.Dict[str, t.Any],
 ) -> t.Union[t.Type, t.Any]:
@@ -356,6 +377,11 @@ def _convert_with_library(
                 return _convert_object_with_unsatisfiable_properties(schema)
             if "title" not in schema:
                 schema = {**schema, "title": "GeneratedModel"}
+            if (
+                not schema.get("properties")
+                and schema.get("additionalProperties") is not False
+            ):
+                return _create_permissive_object_model(schema)
             return create_model_from_schema(
                 schema,
                 allow_undefined_array_items=True,

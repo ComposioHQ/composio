@@ -1713,5 +1713,94 @@ class TestGetSignatureFormatFromSchemaParams:
         assert {str, int, type(None)} <= set(t.get_args(annotation))
 
 
+class TestObjectSchemaWithoutProperties:
+    """Regression tests for #4023: object schemas with no declared properties
+    must not strip nested content during pydantic validation."""
+
+    def test_bare_object_preserves_arbitrary_keys(self):
+        """An object schema with no properties accepts and keeps any keys."""
+        result = json_schema_to_pydantic_type(
+            {"type": "object", "description": "free-form payload"}
+        )
+
+        assert isinstance(result, type)
+        assert issubclass(result, BaseModel)
+        payload = {"database": 2, "type": "native", "native": {"query": "SELECT 1"}}
+        assert result(**payload).model_dump() == payload
+
+    def test_nested_object_without_properties_round_trips(self):
+        """Repro from #4023: METABASE_POST_API_CARD-shaped schema keeps the
+        content of dataset_query instead of validating it down to {}."""
+        tool_schema = {
+            "title": "PostApiCardRequest",
+            "type": "object",
+            "properties": {
+                "name": {"type": "string", "title": "Name"},
+                "dataset_query": {
+                    "type": "object",
+                    "description": "Query definition in MBQL or native SQL format.",
+                },
+            },
+            "required": ["name", "dataset_query"],
+        }
+        payload = {
+            "name": "test",
+            "dataset_query": {
+                "database": 2,
+                "type": "native",
+                "native": {"query": "SELECT 1"},
+            },
+        }
+
+        model = json_schema_to_model(tool_schema)
+        assert model(**payload).model_dump() == payload
+
+    def test_object_with_additional_properties_schema_is_permissive(self):
+        """No properties but a typed additionalProperties still passes content."""
+        result = json_schema_to_pydantic_type(
+            {"type": "object", "additionalProperties": {"type": "string"}}
+        )
+
+        assert isinstance(result, type)
+        assert issubclass(result, BaseModel)
+        payload = {"key": "value"}
+        assert result(**payload).model_dump() == payload
+
+    def test_object_with_properties_keeps_declared_field_validation(self):
+        """Schemas that declare properties still validate declared fields."""
+        result = json_schema_to_pydantic_type(
+            {
+                "type": "object",
+                "title": "TypedModel",
+                "properties": {"field": {"type": "string"}},
+                "required": ["field"],
+            }
+        )
+
+        assert issubclass(result, BaseModel)
+        assert result(field="ok").model_dump()["field"] == "ok"
+        with pytest.raises(ValidationError):
+            result()
+
+    def test_object_with_additional_properties_false_stays_strict(self):
+        """additionalProperties: false with no properties keeps the old
+        zero-field behavior instead of becoming permissive."""
+        result = json_schema_to_pydantic_type(
+            {"type": "object", "additionalProperties": False}
+        )
+
+        assert issubclass(result, BaseModel)
+        assert result(foo=1).model_dump() == {}
+
+    def test_permissive_model_name_falls_back_on_invalid_title(self):
+        """Titles that are not valid identifiers fall back to GeneratedModel."""
+        result = json_schema_to_pydantic_type(
+            {"type": "object", "title": "123 bad-title!"}
+        )
+
+        assert issubclass(result, BaseModel)
+        assert result.__name__ == "GeneratedModel"
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
