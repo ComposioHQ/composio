@@ -64,8 +64,8 @@ export function getSDKConfig(baseUrl?: string | null, apiKey?: string | null) {
  *
  * Priority order:
  * 1. If defaultVersions is a string, use it as global version for all toolkits
- * 2. Environment variables (COMPOSIO_TOOLKIT_VERSION_<TOOLKIT_NAME>)
- * 3. User-provided toolkit version mappings (defaultVersions object)
+ * 2. User-provided toolkit version mappings (defaultVersions object)
+ * 3. Environment variables (COMPOSIO_TOOLKIT_VERSION_<TOOLKIT_NAME>)
  * 4. Fallback to 'latest' if no versions are configured
  *
  * @param defaultVersions - Optional default versions configuration (string for global version or object mapping toolkit names to versions)
