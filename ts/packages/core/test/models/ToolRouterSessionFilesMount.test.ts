@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import ComposioClient from '@composio/client';
 import { ToolRouterSessionFilesMount } from '../../src/models/ToolRouterSessionFileMount';
 import { ComposioBlockedInternalUrlError, ValidationError } from '../../src/errors';
 import { DEFAULT_TOOL_ROUTER_SESSION_FILES_MOUNT_ID } from '../../src/utils/constants';
@@ -14,18 +15,18 @@ const mockLookup = vi.mocked(lookup);
 
 const sessionId = 'trs_session_123';
 
-const createMockClient = () => ({
-  toolRouter: {
-    session: {
-      files: {
-        list: vi.fn(),
-        createUploadURL: vi.fn(),
-        createDownloadURL: vi.fn(),
-        delete: vi.fn(),
-      },
-    },
-  },
-});
+const createMockClient = () => {
+  const client = new ComposioClient({ apiKey: 'test-api-key' });
+  const files = Object.assign(client.toolRouter.session.files, {
+    list: vi.fn<typeof client.toolRouter.session.files.list>(),
+    createUploadURL: vi.fn<typeof client.toolRouter.session.files.createUploadURL>(),
+    createDownloadURL: vi.fn<typeof client.toolRouter.session.files.createDownloadURL>(),
+    delete: vi.fn<typeof client.toolRouter.session.files.delete>(),
+  });
+  const session = Object.assign(client.toolRouter.session, { files });
+  const toolRouter = Object.assign(client.toolRouter, { session });
+  return Object.assign(client, { toolRouter });
+};
 
 describe('ToolRouterSessionFilesMount', () => {
   let mockClient: ReturnType<typeof createMockClient>;
@@ -35,7 +36,7 @@ describe('ToolRouterSessionFilesMount', () => {
     vi.clearAllMocks();
     mockLookup.mockReset();
     mockClient = createMockClient();
-    filesMount = new ToolRouterSessionFilesMount(mockClient as unknown, sessionId);
+    filesMount = new ToolRouterSessionFilesMount(mockClient, sessionId);
   });
 
   describe('list', () => {
