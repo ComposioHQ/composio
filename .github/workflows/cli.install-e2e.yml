@@ -141,7 +141,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        shell: [zsh, bash]
+        shell: [zsh, bash, fish]
 
     steps:
       - name: Checkout

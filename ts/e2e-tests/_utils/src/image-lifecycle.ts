@@ -715,7 +715,7 @@ export async function runCliContainer(options: RunCliContainerOptions): Promise<
 // CLI installer Docker utilities
 // ============================================================================
 
-export type InstallShell = 'bash' | 'zsh';
+export type InstallShell = 'bash' | 'zsh' | 'fish';
 export type InstallPlatform = 'linux/amd64' | 'linux/arm64';
 
 export interface EnsureInstallImageOptions {
@@ -754,8 +754,8 @@ export async function ensureInstallImage(
   shell: InstallShell,
   options: EnsureInstallImageOptions = {}
 ): Promise<InstallImage> {
-  if (shell !== 'bash' && shell !== 'zsh') {
-    throw new Error(`ensureInstallImage(${shell}): shell must be bash or zsh`);
+  if (shell !== 'bash' && shell !== 'zsh' && shell !== 'fish') {
+    throw new Error(`ensureInstallImage(${shell}): shell must be bash, zsh, or fish`);
   }
 
   const repoRoot = options.repoRoot ?? getRepoRoot();
