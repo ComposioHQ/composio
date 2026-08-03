@@ -34,7 +34,7 @@ from openai import OpenAI
 from composio import Composio, before_execute
 from composio.types import ToolExecuteParams
 
-composio = Composio()
+composio = Composio(toolkit_versions={"hackernews": "latest"})
 openai_client = OpenAI()
 user_id = "user@email.com"
 
@@ -201,7 +201,7 @@ def audit_path(ctx) -> str | bool:
     # return a new path string, or False to abort the upload
     return ctx["path"]
 
-composio = Composio()
+composio = Composio(toolkit_versions={"googledrive": "latest"})
 composio.tools.execute(
     "GOOGLEDRIVE_UPLOAD_FILE",
     {"file_to_upload": "/path/to/document.pdf"},

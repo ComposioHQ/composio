@@ -21,7 +21,7 @@ Pass `customAuthParams` in the `tools.execute()` call to inject your own token a
 ```python
 from composio import Composio
 
-composio = Composio()
+composio = Composio(toolkit_versions={"googlecalendar": "latest"})
 
 result = composio.tools.execute(
     slug="GOOGLECALENDAR_LIST_EVENTS",
@@ -46,6 +46,7 @@ import { Composio } from "@composio/core";
 
 const composio = new Composio({
   apiKey: process.env.COMPOSIO_API_KEY,
+  toolkitVersions: { googlecalendar: "latest" },
 });
 
 const result = await composio.tools.execute(
@@ -100,7 +101,7 @@ Before Execute Modifiers are a way to modify the parameters of a tool before it 
 from composio import Composio, before_execute
 from composio.types import ToolExecuteParams
 
-composio = Composio()
+composio = Composio(toolkit_versions={"notion": "latest"})
 
 
 @before_execute(toolkits=["NOTION"])
