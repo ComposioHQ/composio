@@ -5,7 +5,6 @@ import { ToolRouterSession } from '../../src/models/ToolRouterSession';
 import { createCustomTool, buildCustomToolsMap } from '../../src/models/CustomTool';
 import { MockProvider } from '../utils/mocks/provider.mock';
 import ComposioClient from '@composio/client';
-import { Tools } from '../../src/models/Tools';
 import type { CustomTool, SessionContext } from '../../src/types/customTool.types';
 import type { ComposioConfig } from '../../src/composio';
 
@@ -42,11 +41,9 @@ type MockedToolsInstance = {
   executeSessionTool: ReturnType<typeof vi.fn>;
 };
 
-type MockedToolsConstructor = {
-  mock: {
-    results: Array<{ value: MockedToolsInstance }>;
-  };
-};
+const toolsMockState = vi.hoisted(() => ({
+  latestInstance: undefined as MockedToolsInstance | undefined,
+}));
 
 // Mock telemetry
 vi.mock('../../src/telemetry/Telemetry', () => ({
@@ -56,7 +53,7 @@ vi.mock('../../src/telemetry/Telemetry', () => ({
 // Mock Tools class
 vi.mock('../../src/models/Tools', () => ({
   Tools: vi.fn().mockImplementation(function () {
-    return {
+    const instance = {
       getRawToolRouterSessionTools: vi.fn().mockResolvedValue([
         { slug: 'COMPOSIO_SEARCH_TOOLS', name: 'Search Tools' },
         { slug: 'COMPOSIO_MULTI_EXECUTE_TOOL', name: 'Multi Execute' },
@@ -68,8 +65,23 @@ vi.mock('../../src/models/Tools', () => ({
         successful: true,
       }),
     };
+
+    toolsMockState.latestInstance = instance;
+    return instance;
   }),
 }));
+
+const getLatestToolsInstance = (): MockedToolsInstance => {
+  const instance = toolsMockState.latestInstance;
+  if (!instance) {
+    throw new Error('Expected the Tools mock to have been instantiated');
+  }
+  return instance;
+};
+
+beforeEach(() => {
+  toolsMockState.latestInstance = undefined;
+});
 
 // ── Fixtures ─────────────────────────────────────────────────────
 
@@ -644,9 +656,7 @@ describe('ToolRouterSession execution routing', () => {
       const session = createSessionWithProvider(client, provider, customTools);
       await session.tools();
       const executeFn = getExecuteFn();
-      const toolsInstance = (Tools as unknown as MockedToolsConstructor).mock.results[
-        (Tools as unknown as MockedToolsConstructor).mock.results.length - 1
-      ].value;
+      const toolsInstance = getLatestToolsInstance();
       return { executeFn, toolsInstance, provider, session };
     };
 
@@ -983,9 +993,7 @@ describe('ToolRouterSession execution routing', () => {
       const session = createSessionWithProvider(mockClient, provider, [slowLocalHandle]);
       await session.tools();
       const executeFn = getExecuteFn();
-      const toolsInstance = (Tools as unknown as MockedToolsConstructor).mock.results[
-        (Tools as unknown as MockedToolsConstructor).mock.results.length - 1
-      ].value;
+      const toolsInstance = getLatestToolsInstance();
 
       toolsInstance.executeSessionTool.mockImplementation(async () => {
         callOrder.push('remote-start');
@@ -1039,9 +1047,7 @@ describe('ToolRouterSession execution routing', () => {
 
       await session.tools();
 
-      const latestToolsInstance = (Tools as unknown as MockedToolsConstructor).mock.results[
-        (Tools as unknown as MockedToolsConstructor).mock.results.length - 1
-      ].value;
+      const latestToolsInstance = getLatestToolsInstance();
       latestToolsInstance.executeSessionTool.mockResolvedValueOnce({
         data: {
           results: [
