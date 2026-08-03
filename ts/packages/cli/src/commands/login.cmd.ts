@@ -94,7 +94,7 @@ type PendingLoginSession = Schema.Schema.Type<typeof PendingLoginSession>;
 
 class PendingLoginError extends Data.TaggedError('commands/PendingLoginError')<{
   readonly message: string;
-  readonly reason: 'invalid' | 'missing' | 'expired';
+  readonly reason: 'invalid' | 'io' | 'missing' | 'expired';
   readonly cause?: unknown;
 }> {}
 
@@ -151,8 +151,19 @@ const readPendingLoginSession = Effect.gen(function* () {
     });
   }
 
-  const session = yield* fs.readFileString(filePath, 'utf8').pipe(
-    Effect.flatMap(Schema.decodeUnknown(Schema.parseJson(PendingLoginSession))),
+  const rawSession = yield* fs.readFileString(filePath, 'utf8').pipe(
+    Effect.mapError(
+      cause =>
+        new PendingLoginError({
+          message: 'Failed to read pending login cache',
+          reason: 'io',
+          cause,
+        })
+    )
+  );
+  const session = yield* Schema.decodeUnknown(Schema.parseJson(PendingLoginSession))(
+    rawSession
+  ).pipe(
     Effect.mapError(
       cause =>
         new PendingLoginError({
