@@ -41,11 +41,11 @@ Effect family, `openai`, AG2 v1, and Tomli respectively.
 
 | Plan | Title                                                                                 | Priority | Effort | Depends on               | Status                                              |
 | ---- | ------------------------------------------------------------------------------------- | -------- | ------ | ------------------------ | --------------------------------------------------- |
-| 001  | [Refresh `actions/stale` safely](./001-refresh-actions-stale.md)                      | P2       | S      | none                     | IN PROGRESS — local gates complete; CI pending      |
-| 002  | [Refresh development tooling](./002-refresh-development-tooling.md)                   | P2       | S      | none                     | IN PROGRESS — local gates complete; CI pending      |
-| 003  | [Align the Effect CLI family](./003-align-effect-cli-family.md)                       | P1       | M      | none                     | IN PROGRESS — local gates complete; CI pending      |
-| 004  | [Rebuild the npm production rollup](./004-rebuild-npm-production-rollup.md)           | P1       | M      | none                     | IN PROGRESS — local gates complete; CI pending      |
-| 005  | [Migrate published OpenAI consumers to v7](./005-migrate-openai-v7.md)                | P1       | M      | none                     | IN PROGRESS — local gates complete; CI pending      |
+| 001  | [Refresh `actions/stale` safely](./001-refresh-actions-stale.md)                      | P2       | S      | none                     | IN PROGRESS — implemented; CI observation pending   |
+| 002  | [Refresh development tooling](./002-refresh-development-tooling.md)                   | P2       | S      | none                     | IN PROGRESS — credentialed CLI E2E pending          |
+| 003  | [Align the Effect CLI family](./003-align-effect-cli-family.md)                       | P1       | M      | none                     | IN PROGRESS — credentialed CLI E2E pending          |
+| 004  | [Rebuild the npm production rollup](./004-rebuild-npm-production-rollup.md)           | P1       | M      | none                     | IN PROGRESS — credentialed container CI pending     |
+| 005  | [Migrate published OpenAI consumers to v7](./005-migrate-openai-v7.md)                | P1       | M      | none                     | IN PROGRESS — fresh-image and Cloudflare CI pending |
 | 006  | [Migrate the AutoGen provider to AG2 v1](./006-migrate-autogen-provider-to-ag2-v1.md) | P1       | M      | none                     | TODO                                                |
 | 007  | [Upgrade Tomli after CrewAI permits it](./007-upgrade-tomli-after-crewai.md)          | P3       | S      | upstream CrewAI metadata | BLOCKED — CrewAI 1.15.10 still requires Tomli 2.0.x |
 
