@@ -14,8 +14,8 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@anthropic-ai/claude-agent-sdk": "^0.3.218",
-    "@anthropic-ai/sdk": "^0.114.0",
+    "@anthropic-ai/claude-agent-sdk": "^0.3.220",
+    "@anthropic-ai/sdk": "^0.115.0",
     "@composio/anthropic": "workspace:*",
     "@composio/claude-agent-sdk": "workspace:*",
     "@composio/core": "workspace:*",
