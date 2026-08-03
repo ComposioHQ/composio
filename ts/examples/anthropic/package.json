@@ -21,7 +21,7 @@
     "@composio/core": "workspace:*",
     "@mastra/core": "catalog:",
     "@mastra/mcp": "^1.15.0",
-    "ai": "^6.0.219",
+    "ai": "^7.0.44",
     "dotenv": "catalog:",
     "zod": "catalog:",
     "zod-to-json-schema": "catalog:"
