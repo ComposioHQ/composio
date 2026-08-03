@@ -244,6 +244,12 @@ importers:
         specifier: workspace:*
         version: link:../../../_utils
 
+  ts/e2e-tests/cli/upgrade:
+    devDependencies:
+      '@e2e-tests/utils':
+        specifier: workspace:*
+        version: link:../../_utils
+
   ts/e2e-tests/cli/version:
     devDependencies:
       '@e2e-tests/utils':

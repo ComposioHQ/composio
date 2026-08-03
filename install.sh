@@ -249,6 +249,33 @@ resolve_directory() {
     (cd "$resolve_directory_value" && pwd -P)
 }
 
+publish_staged_entry() {
+    publish_source=$1
+    publish_name=${publish_source##*/}
+    publish_target=$resolved_install_dir/$publish_name
+
+    if [ -d "$publish_source" ] && [ ! -L "$publish_source" ] &&
+        { [ -e "$publish_target" ] || [ -L "$publish_target" ]; }; then
+        publish_aside=$stage/.composio-aside.$publish_name
+        mv "$publish_target" "$publish_aside" ||
+            error "Failed to move existing install entry aside: $publish_target"
+        if mv "$publish_source" "$publish_target"; then
+            rm -rf "$publish_aside" ||
+                warn "Published install entry; previous contents retained at $publish_aside"
+            return 0
+        fi
+
+        if mv "$publish_aside" "$publish_target"; then
+            error "Failed to publish install entry: $publish_target"
+        fi
+
+        preserve_stage=1
+        error "Failed to publish install entry and restore the previous entry. Recover it from $publish_aside"
+    fi
+
+    mv "$publish_source" "$publish_target" || error "Failed to publish install entry: $publish_target"
+}
+
 install_bundle() {
     install_bundle_root=$1
     install_bundle_dir=$install_bundle_root/composio-$target
@@ -263,33 +290,31 @@ install_bundle() {
         warn 'This release archive has no bundled support files. Some CLI features may be unavailable.'
     fi
 
-    # Stage the bundle on the same filesystem as the install dir, then move each
-    # top-level entry into place. rename() replaces a running binary atomically,
-    # where copying through the old inode fails with ETXTBSY on Linux and would
-    # leave a mixed old-binary/new-support-files install behind.
-    install_staging_dir=$resolved_install_dir/.composio-install-staging.$$
-    rm -rf "$install_staging_dir"
-    mkdir -p "$install_staging_dir" ||
-        error "Failed to create staging directory \"$install_staging_dir\""
-    cp -Rp "$install_bundle_dir"/. "$install_staging_dir/" ||
-        error "Failed to stage the CLI bundle in \"$install_staging_dir\""
-    chmod +x "$install_staging_dir/composio" || error 'Failed to set permissions on executable'
-    printf '%s\n' "$version" >"$install_staging_dir/release-tag.txt" ||
-        error "Failed to write install metadata to \"$install_staging_dir/release-tag.txt\""
+    stage=$(mktemp -d "$resolved_install_dir/.composio-install.XXXXXX") ||
+        error "Failed to create staging directory in \"$resolved_install_dir\""
+    debug "install staging directory: $stage"
 
-    for install_entry in "$install_staging_dir"/* "$install_staging_dir"/.[!.]* "$install_staging_dir"/..?*; do
-        [ -e "$install_entry" ] || [ -L "$install_entry" ] || continue
-        install_entry_name=${install_entry##*/}
-        install_entry_target=$resolved_install_dir/$install_entry_name
-        # Directories cannot be replaced by rename(); drop the outgoing entry so
-        # bundle directories are replaced wholesale rather than merged.
-        if [ -d "$install_entry" ] || [ -d "$install_entry_target" ]; then
-            rm -rf "$install_entry_target"
+    # Staging briefly holds a second copy of the bundle until the binary is published last.
+    cp -Rp "$install_bundle_dir"/. "$stage/" ||
+        error "Failed to stage the CLI bundle in \"$resolved_install_dir\""
+    chmod +x "$stage/composio" || error 'Failed to set permissions on staged executable'
+    printf '%s\n' "$version" >"$stage/release-tag.txt" ||
+        error "Failed to stage install metadata in \"$resolved_install_dir\""
+
+    for staged_entry in "$stage"/* "$stage"/.[!.]* "$stage"/..?*; do
+        if [ ! -e "$staged_entry" ] && [ ! -L "$staged_entry" ]; then
+            continue
         fi
-        mv -f "$install_entry" "$install_entry_target" ||
-            error "Failed to install the CLI bundle to \"$resolved_install_dir\""
+        case ${staged_entry##*/} in
+            composio | release-tag.txt) continue ;;
+        esac
+        publish_staged_entry "$staged_entry"
     done
-    rm -rf "$install_staging_dir"
+
+    publish_staged_entry "$stage/release-tag.txt"
+    publish_staged_entry "$stage/composio"
+    rmdir "$stage" || warn "Published CLI; retained recovery staging directory at $stage"
+    stage=
 }
 
 install_entry_point() {
@@ -694,8 +719,8 @@ cleanup() {
     if [ -n "${tmpdir:-}" ] && [ -d "$tmpdir" ]; then
         rm -rf "$tmpdir"
     fi
-    if [ -n "${install_staging_dir:-}" ] && [ -d "$install_staging_dir" ]; then
-        rm -rf "$install_staging_dir"
+    if [ "${preserve_stage:-0}" != 1 ] && [ -n "${stage:-}" ] && [ -d "$stage" ]; then
+        rm -rf "$stage"
     fi
 }
 

@@ -9,6 +9,12 @@
 
 ### Patch Changes
 
+- Fix Linux `composio upgrade` failures with `ETXTBSY` by staging CLI files in
+  the install directory and renaming the executable last. The installer and
+  companion repair use the same replacement strategy, and the running binary
+  now reports its compiled version when `release-tag.txt` disagrees. Users on
+  an affected build must re-run `install.sh` once to install the first fixed
+  version.
 - Make GitHub release metadata the sole version authority for standalone CLI
   binaries. Release builds now embed their exact tag version, manual skill
   installation follows the packaged release tag, and stable releases can only

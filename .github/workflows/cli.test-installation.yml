@@ -33,6 +33,9 @@ jobs:
       - name: Test release resolution fallback
         run: bash test/install-sh-release-resolution.test.sh
 
+      - name: Test atomic install replacement
+        run: bash test/install-sh-atomic-replace.test.sh
+
       - name: Lint POSIX install scripts
         run: shellcheck -s sh install.sh install/*.sh
 
