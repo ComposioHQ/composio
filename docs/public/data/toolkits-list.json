@@ -36,7 +36,7 @@
     "name": "Notion",
     "logo": "https://logos.composio.dev/api/notion",
     "category": "notes",
-    "toolCount": 48,
+    "toolCount": 56,
     "triggerCount": 8
   },
   {
@@ -748,7 +748,7 @@
     "name": "Meta Ads",
     "logo": "https://logos.composio.dev/api/metaads",
     "category": "ads & conversion",
-    "toolCount": 52,
+    "toolCount": 53,
     "triggerCount": 0
   },
   {
@@ -2008,6 +2008,14 @@
     "triggerCount": 0
   },
   {
+    "slug": "aiwyn_tax_mcp",
+    "name": "Aiwyn Tax MCP",
+    "logo": "https://logos.composio.dev/api/aiwyn_tax_mcp",
+    "category": "taxes",
+    "toolCount": 10,
+    "triggerCount": 0
+  },
+  {
     "slug": "algodocs",
     "name": "Algodocs",
     "logo": "https://logos.composio.dev/api/algodocs",
@@ -2029,6 +2037,14 @@
     "logo": "https://logos.composio.dev/api/all_images_ai",
     "category": "artificial intelligence",
     "toolCount": 7,
+    "triggerCount": 0
+  },
+  {
+    "slug": "alltrails_mcp",
+    "name": "AllTrails MCP",
+    "logo": "https://logos.composio.dev/api/alltrails_mcp",
+    "category": "fitness",
+    "toolCount": 5,
     "triggerCount": 0
   },
   {
@@ -2277,6 +2293,14 @@
     "logo": "https://logos.composio.dev/api/autom",
     "category": "ai web scraping",
     "toolCount": 4,
+    "triggerCount": 0
+  },
+  {
+    "slug": "aws_marketplace_mcp",
+    "name": "AWS Marketplace MCP",
+    "logo": "https://logos.composio.dev/api/aws_marketplace_mcp",
+    "category": "commerce",
+    "toolCount": 6,
     "triggerCount": 0
   },
   {
@@ -2848,6 +2872,14 @@
     "triggerCount": 0
   },
   {
+    "slug": "clarity_ai_mcp",
+    "name": "Clarity AI MCP",
+    "logo": "https://logos.composio.dev/api/clarity_ai_mcp",
+    "category": "analytics",
+    "toolCount": 6,
+    "triggerCount": 0
+  },
+  {
     "slug": "classmarker",
     "name": "Classmarker",
     "logo": "https://logos.composio.dev/api/classmarker",
@@ -3408,6 +3440,14 @@
     "triggerCount": 0
   },
   {
+    "slug": "dice_mcp",
+    "name": "Dice MCP",
+    "logo": "https://logos.composio.dev/api/dice_mcp",
+    "category": "hr talent & recruitment",
+    "toolCount": 2,
+    "triggerCount": 0
+  },
+  {
     "slug": "dictionary_api",
     "name": "Dictionary Api",
     "logo": "https://logos.composio.dev/api/dictionary_api",
@@ -3880,6 +3920,14 @@
     "triggerCount": 0
   },
   {
+    "slug": "excalidraw_mcp",
+    "name": "Excalidraw MCP",
+    "logo": "https://logos.composio.dev/api/excalidraw_mcp",
+    "category": "images & design",
+    "toolCount": 5,
+    "triggerCount": 0
+  },
+  {
     "slug": "excel",
     "name": "Excel",
     "logo": "https://logos.composio.dev/api/excel",
@@ -4336,6 +4384,14 @@
     "triggerCount": 0
   },
   {
+    "slug": "godaddy_mcp",
+    "name": "GoDaddy MCP",
+    "logo": "https://logos.composio.dev/api/godaddy_mcp",
+    "category": "website & app building",
+    "toolCount": 2,
+    "triggerCount": 0
+  },
+  {
     "slug": "godial",
     "name": "Godial",
     "logo": "https://godial.cc/wp-content/uploads/2020/06/GoDial-Logo-1.png",
@@ -4461,6 +4517,14 @@
     "logo": "https://logos.composio.dev/api/granola_mcp",
     "category": "productivity & project management",
     "toolCount": 4,
+    "triggerCount": 0
+  },
+  {
+    "slug": "granted_mcp",
+    "name": "Granted MCP",
+    "logo": "https://logos.composio.dev/api/granted_mcp",
+    "category": "fundraising",
+    "toolCount": 5,
     "triggerCount": 0
   },
   {
@@ -5432,6 +5496,14 @@
     "triggerCount": 0
   },
   {
+    "slug": "malwarebytes_mcp",
+    "name": "Malwarebytes MCP",
+    "logo": "https://logos.composio.dev/api/malwarebytes_mcp",
+    "category": "security & identity tools",
+    "toolCount": 6,
+    "triggerCount": 0
+  },
+  {
     "slug": "manus",
     "name": "Manus",
     "logo": "https://logos.composio.dev/api/manus",
@@ -5525,6 +5597,14 @@
     "logo": "https://logos.composio.dev/api/mercury_mcp",
     "category": "model context protocol",
     "toolCount": 30,
+    "triggerCount": 0
+  },
+  {
+    "slug": "mermaid_chart_mcp",
+    "name": "Mermaid Chart MCP",
+    "logo": "https://logos.composio.dev/api/mermaid_chart_mcp",
+    "category": "images & design",
+    "toolCount": 1,
     "triggerCount": 0
   },
   {
@@ -5669,6 +5749,14 @@
     "logo": "https://logos.composio.dev/api/moosend",
     "category": "email newsletters",
     "toolCount": 31,
+    "triggerCount": 0
+  },
+  {
+    "slug": "mospi_mcp",
+    "name": "MoSPI MCP",
+    "logo": "https://logos.composio.dev/api/mospi_mcp",
+    "category": "analytics",
+    "toolCount": 4,
     "triggerCount": 0
   },
   {
@@ -6389,6 +6477,14 @@
     "logo": "https://logos.composio.dev/api/poof",
     "category": "payment processing",
     "toolCount": 11,
+    "triggerCount": 0
+  },
+  {
+    "slug": "pophive_mcp",
+    "name": "PopHIVE MCP",
+    "logo": "https://logos.composio.dev/api/pophive_mcp",
+    "category": "analytics",
+    "toolCount": 7,
     "triggerCount": 0
   },
   {
@@ -7376,6 +7472,14 @@
     "triggerCount": 0
   },
   {
+    "slug": "slidesgpt_mcp",
+    "name": "SlidesGPT MCP",
+    "logo": "https://logos.composio.dev/api/slidesgpt_mcp",
+    "category": "ai content generation",
+    "toolCount": 2,
+    "triggerCount": 0
+  },
+  {
     "slug": "slite",
     "name": "Slite",
     "logo": "https://logos.composio.dev/api/slite",
@@ -7728,6 +7832,14 @@
     "triggerCount": 0
   },
   {
+    "slug": "taskrabbit_mcp",
+    "name": "Taskrabbit MCP",
+    "logo": "https://logos.composio.dev/api/taskrabbit_mcp",
+    "category": "scheduling & booking",
+    "toolCount": 3,
+    "triggerCount": 0
+  },
+  {
     "slug": "tave",
     "name": "Tave",
     "logo": "https://logos.composio.dev/api/tave",
@@ -7860,7 +7972,7 @@
     "name": "Tiktok",
     "logo": "https://logos.composio.dev/api/tiktok",
     "category": "social media accounts",
-    "toolCount": 10,
+    "toolCount": 9,
     "triggerCount": 0
   },
   {
@@ -7957,6 +8069,14 @@
     "logo": "https://logos.composio.dev/api/tripadvisor_content_api",
     "category": "reviews",
     "toolCount": 5,
+    "triggerCount": 0
+  },
+  {
+    "slug": "trivago_mcp",
+    "name": "Trivago MCP",
+    "logo": "https://logos.composio.dev/api/trivago_mcp",
+    "category": "scheduling & booking",
+    "toolCount": 2,
     "triggerCount": 0
   },
   {
@@ -8148,6 +8268,14 @@
     "name": "Vestaboard",
     "logo": "https://logos.composio.dev/api/vestaboard",
     "category": "notifications",
+    "toolCount": 2,
+    "triggerCount": 0
+  },
+  {
+    "slug": "viator_mcp",
+    "name": "Viator MCP",
+    "logo": "https://logos.composio.dev/api/viator_mcp",
+    "category": "scheduling & booking",
     "toolCount": 2,
     "triggerCount": 0
   },
@@ -8381,6 +8509,14 @@
     "logo": "https://logos.composio.dev/api/zerobounce",
     "category": "email",
     "toolCount": 20,
+    "triggerCount": 0
+  },
+  {
+    "slug": "ziprecruiter_mcp",
+    "name": "ZipRecruiter MCP",
+    "logo": "https://logos.composio.dev/api/ziprecruiter_mcp",
+    "category": "hr talent & recruitment",
+    "toolCount": 1,
     "triggerCount": 0
   },
   {
