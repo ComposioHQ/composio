@@ -24,7 +24,7 @@ import {
   groupCachedConnectedAccountsByToolkit,
   resolveDefaultConnectedAccountsByToolkit,
 } from 'src/services/connected-account-selection';
-import { decodeConnectedAccountItemsWithFallback } from 'src/effects/decode-connected-account-list';
+import { decodeConnectedAccountItems } from 'src/effects/decode-connected-account-list';
 
 class ConnectionPollingError extends Data.TaggedError('commands/ConnectionPollingError')<{
   readonly message: string;
@@ -538,7 +538,7 @@ const handleListConnectedAccounts = (params: {
           }),
       })
     );
-    const connectedAccounts = yield* decodeConnectedAccountItemsWithFallback(accounts.items).pipe(
+    const connectedAccounts = yield* decodeConnectedAccountItems(accounts.items).pipe(
       Effect.mapError(
         cause =>
           new ConnectedAccountsDecodeError({

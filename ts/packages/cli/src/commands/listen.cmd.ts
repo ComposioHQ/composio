@@ -23,7 +23,7 @@ import { parseJsonRecord } from 'src/utils/parse-json';
 import { toolkitFromToolSlug } from 'src/utils/toolkit-from-tool-slug';
 import { matchesTriggerListenFilters } from './triggers/filter';
 import { parseTriggerListenEvent } from './triggers/parse';
-import { decodeConnectedAccountItemsWithFallback } from 'src/effects/decode-connected-account-list';
+import { decodeConnectedAccountItems } from 'src/effects/decode-connected-account-list';
 
 type TriggerCreateParams = NonNullable<
   Parameters<RawComposioClient['triggerInstances']['upsert']>[1]
@@ -177,9 +177,7 @@ const resolveConnectedAccountIdForTrigger = (params: {
           cause,
         }),
     });
-    const selectableAccounts = yield* decodeConnectedAccountItemsWithFallback(
-      connectedAccounts.items
-    ).pipe(
+    const selectableAccounts = yield* decodeConnectedAccountItems(connectedAccounts.items).pipe(
       Effect.mapError(
         cause =>
           new ListenCommandError({
