@@ -535,7 +535,7 @@
     ],
     "toolCount": 893,
     "triggerCount": 20,
-    "version": "20260721_00",
+    "version": "20260728_00",
     "tools": [
       {
         "slug": "GITHUB_ABORT_REPOSITORY_MIGRATION",
@@ -5519,9 +5519,9 @@
     "composioManagedAuthSchemes": [
       "OAUTH2"
     ],
-    "toolCount": 48,
+    "toolCount": 56,
     "triggerCount": 8,
-    "version": "20260721_00",
+    "version": "20260730_00",
     "tools": [
       {
         "slug": "NOTION_ADD_MULTIPLE_PAGE_CONTENT",
@@ -5594,9 +5594,29 @@
         "description": "Creates a new page in a Notion workspace under a specified parent page or database. Supports creating pages with markdown content using the native markdown parameter, or as an empty page that can be populated later. PREREQUISITES: - Parent page/database must exist and be accessible in your Notion workspace - Use search_pages or list_databases first to obtain valid parent IDs LIMITATIONS: - Cannot create root-level pages (must have a parent) - May encounter conflicts if creating pages too quickly - Title-based parent search is less reliable than using UUIDs - The markdown parameter is mutually exclusive with children/content parameters"
       },
       {
+        "slug": "NOTION_CREATE_VIEW",
+        "name": "Create Notion view",
+        "description": "Create a Notion view."
+      },
+      {
+        "slug": "NOTION_CREATE_VIEW_QUERY",
+        "name": "Create Notion view query",
+        "description": "Create a Notion view query and return the first page of page references."
+      },
+      {
         "slug": "NOTION_DELETE_BLOCK",
         "name": "Delete a block",
         "description": "Archives a Notion block, page, or database using its ID, which sets its 'archived' property to true (like moving to \"Trash\" in the UI) and allows it to be restored later. Note: This operation will fail if the block has an archived parent or ancestor in the hierarchy. You must unarchive the ancestor before archiving/deleting its descendants. IMPORTANT LIMITATION: Workspace-level pages (top-level pages that are direct children of the workspace, not contained within other pages or databases) cannot be archived via the Notion API. This is a documented Notion API restriction. Only pages that are children of other pages or databases can be deleted through this action."
+      },
+      {
+        "slug": "NOTION_DELETE_VIEW",
+        "name": "Delete Notion view",
+        "description": "Delete a Notion view."
+      },
+      {
+        "slug": "NOTION_DELETE_VIEW_QUERY",
+        "name": "Delete Notion view query",
+        "description": "Delete a cached Notion view query."
       },
       {
         "slug": "NOTION_DUPLICATE_PAGE",
@@ -5659,6 +5679,11 @@
         "description": "Call this to get a specific property from a Notion page when you have a valid `page_id` and `property_id`; handles pagination for properties returning multiple items."
       },
       {
+        "slug": "NOTION_GET_VIEW_QUERY_RESULTS",
+        "name": "Get Notion view query results",
+        "description": "Get a page of results from a cached Notion view query."
+      },
+      {
         "slug": "NOTION_INSERT_ROW_DATABASE",
         "name": "Insert row database",
         "description": "Creates a new page (row) in a specified Notion database. Prerequisites: - Database must be shared with your integration - Property names AND types must match schema exactly (case-sensitive) - Use NOTION_FETCH_DATA with fetch_type='databases' first to get exact property names and types - Each database has ONE 'title' property; other text fields are 'rich_text' - Database must NOT have multiple data sources (synced databases are not supported) Common Errors: - 404: Database not shared with integration - 400 \"not a property\": Wrong property name - 400 \"expected to be X\": Wrong property type - 400 \"multiple_data_sources\": Database uses multiple data sources (not supported) Note: Rich text content in child_blocks is automatically truncated to 2000 characters per Notion API limits."
@@ -5684,6 +5709,11 @@
         "description": "Retrieves a paginated list of users (excluding guests) from the Notion workspace; the number of users returned per page may be less than the requested `page_size`."
       },
       {
+        "slug": "NOTION_LIST_VIEWS",
+        "name": "List Notion views",
+        "description": "List Notion views for a database or data source."
+      },
+      {
         "slug": "NOTION_MOVE_PAGE",
         "name": "Move Page",
         "description": "Tool to move a Notion page to a new parent (page or database). Use when you need to reorganize page hierarchy. Important: To move to a database, use data_source_id (NOT database_id). Get the data source ID from the database object using NOTION_FETCH_DATABASE."
@@ -5691,7 +5721,7 @@
       {
         "slug": "NOTION_QUERY_DATABASE",
         "name": "Query database",
-        "description": "Queries a Notion database to retrieve pages (rows). In Notion, databases are collections where each row is a page and columns are properties. Returns paginated results with metadata. Important requirements: - The database must be shared with your integration - Property names in sorts must match existing database properties exactly (case-sensitive) - For timestamp sorting, use 'created_time' or 'last_edited_time' (case-insensitive) - The start_cursor must be a valid UUID from a previous response's next_cursor field - Database IDs must be valid 32-character UUIDs (with or without hyphens) Use this action to: - Retrieve all or filtered database entries - Sort results by database properties or page timestamps - Paginate through large result sets - Get database content for processing or display"
+        "description": "Queries a Notion database to retrieve pages (rows). In Notion, databases are collections where each row is a page and columns are properties. Returns paginated results with metadata. Important requirements: - The database must be shared with your integration - Property names in sorts must match existing database properties exactly (case-sensitive) - For timestamp sorting, use 'created_time' or 'last_edited_time' (case-insensitive) - The start_cursor must be the opaque value from a previous response's next_cursor field - Database IDs must be valid 32-character UUIDs (with or without hyphens) Use this action to: - Retrieve all or filtered database entries - Sort results by database properties or page timestamps - Paginate through large result sets - Get database content for processing or display"
       },
       {
         "slug": "NOTION_QUERY_DATABASE_WITH_FILTER",
@@ -5729,6 +5759,11 @@
         "description": "Retrieve a Notion page's properties/metadata (not block content) by page_id. Use when you have a page URL/ID and need to access its properties; for page content use block-children tools."
       },
       {
+        "slug": "NOTION_RETRIEVE_VIEW",
+        "name": "Retrieve Notion view",
+        "description": "Retrieve a Notion view and its configuration."
+      },
+      {
         "slug": "NOTION_SEARCH_NOTION_PAGE",
         "name": "Search Notion pages and databases",
         "description": "Searches Notion pages and databases by title. Use specific search terms to find items by title (primary approach). KNOWN LIMITATIONS: (1) Search indexing is not immediate - recently shared items may not appear. (2) Search is not exhaustive - results may be incomplete. (3) Database pages return all custom properties with full nested structures, which can create large responses for databases with many properties - use filter_properties to reduce response size. FALLBACK STRATEGY: If a specific title search returns empty results despite knowing items exist, try an empty query to list all accessible items and filter client-side."
@@ -5757,6 +5792,11 @@
         "slug": "NOTION_UPDATE_SCHEMA_DATABASE",
         "name": "Update database schema",
         "description": "Updates an existing Notion database's schema including title, description, and/or properties (columns). IMPORTANT NOTES: - At least one update (title, description, or properties) must be provided - The database must be shared with your integration - Property names are case-sensitive and must match exactly - When changing a property to 'relation' type, you MUST provide the database_id of the target database - Removing properties will permanently delete that column and its data - Use NOTION_FETCH_DATA first to get the exact property names and database structure Common errors: - 'database_id' missing: Ensure you're passing the database_id parameter (not page_id) - 'data_source_id' undefined: When changing to relation type, database_id is required in PropertySchemaUpdate - Property name mismatch: Names must match exactly including case and special characters"
+      },
+      {
+        "slug": "NOTION_UPDATE_VIEW",
+        "name": "Update Notion view",
+        "description": "Update a Notion view."
       },
       {
         "slug": "NOTION_UPSERT_ROW_DATABASE",
@@ -15375,7 +15415,7 @@
     ],
     "toolCount": 574,
     "triggerCount": 6,
-    "version": "20260721_00",
+    "version": "20260729_00",
     "tools": [
       {
         "slug": "CANVAS_ABORT_QUIZ_REPORT_GENERATION",
@@ -26195,6 +26235,9 @@
       "OAUTH2",
       "S2S_OAUTH2"
     ],
+    "composioManagedAuthSchemes": [
+      "OAUTH2"
+    ],
     "toolCount": 407,
     "triggerCount": 0,
     "version": "20260721_00",
@@ -28769,7 +28812,7 @@
     ],
     "toolCount": 83,
     "triggerCount": 9,
-    "version": "20260724_00",
+    "version": "20260728_00",
     "tools": [
       {
         "slug": "ONE_DRIVE_ADD_WORKBOOK_WORKSHEET",
@@ -28998,8 +29041,8 @@
       },
       {
         "slug": "ONE_DRIVE_LIST_ALL_DRIVE_ITEMS",
-        "name": "List All Drive Items Recursively",
-        "description": "Recursively lists all files and folders in a OneDrive drive by traversing the entire folder hierarchy. Starts at the drive root and explores every subfolder to return a complete flattened list of all items. Use this action when you need a comprehensive inventory of all drive contents, want to search across all folders, or need to analyze the complete drive structure. For large drives with thousands of items, this operation may take significant time as it must traverse every folder."
+        "name": "List All Drive Items",
+        "description": "Lists a complete OneDrive or SharePoint drive safely, one Microsoft Graph delta page per invocation. Start without `page_token`, then pass each `next_page_token` back until `sync_complete` is true. The terminal `delta_token` can be saved and passed back later to fetch changes since the completed snapshot. Delta enumeration is stable under concurrent writes and avoids the request burst caused by recursively fetching every folder in one execution."
       },
       {
         "slug": "ONE_DRIVE_LIST_BUNDLES",
@@ -32013,7 +32056,7 @@
     ],
     "toolCount": 223,
     "triggerCount": 7,
-    "version": "20260721_00",
+    "version": "20260728_00",
     "tools": [
       {
         "slug": "SALESFORCE_ACCOUNT_CREATION_WITH_CONTENT_TYPE_OPTION",
@@ -60310,7 +60353,7 @@
     ],
     "toolCount": 452,
     "triggerCount": 2,
-    "version": "20260721_00",
+    "version": "20260728_00",
     "tools": [
       {
         "slug": "ZENDESK_APPLY_ZENDESK_MACRO",
@@ -62875,9 +62918,9 @@
       "OAUTH2",
       "API_KEY"
     ],
-    "toolCount": 52,
+    "toolCount": 53,
     "triggerCount": 0,
-    "version": "20260721_00",
+    "version": "20260731_00",
     "tools": [
       {
         "slug": "METAADS_CREATE_AD",
@@ -62983,6 +63026,11 @@
         "slug": "METAADS_LIST_BUSINESS_AD_ACCOUNTS",
         "name": "List Business Ad Accounts",
         "description": "Tool to retrieve all ad accounts owned by a specific Business Manager. Use when you need to get ad account information for a business including account IDs, names, and status."
+      },
+      {
+        "slug": "METAADS_LIST_BUSINESSES",
+        "name": "List Businesses",
+        "description": "Tool to discover every Business Manager the authenticated Meta principal can access, via `GET /me/businesses`. Use this first when you do not know a `business_id`: it works for both user and system-user tokens and returns the businesses you have a role in, so you can then reach Business-Manager-owned ad accounts (which do NOT appear in `/me/adaccounts`) through the owned/client ad-account tools. Requires the `business_management` permission on the connected token."
       },
       {
         "slug": "METAADS_LIST_BUSINESS_INVOICES",
@@ -63180,7 +63228,7 @@
                 "type": "string",
                 "description": "Scopes to request from the user, comma separated",
                 "required": false,
-                "default": "ads_read,ads_management"
+                "default": "ads_read,ads_management,business_management"
               }
             ]
           },
@@ -68045,7 +68093,7 @@
     ],
     "toolCount": 171,
     "triggerCount": 0,
-    "version": "20260721_00",
+    "version": "20260730_00",
     "tools": [
       {
         "slug": "SERVICENOW_ATTACH_FILE_TO_RECORD",
@@ -69254,7 +69302,7 @@
     ],
     "toolCount": 368,
     "triggerCount": 0,
-    "version": "20260721_00",
+    "version": "20260730_00",
     "tools": [
       {
         "slug": "PAGERDUTY_ADD_SERVICE_TO_INCIDENT_WORKFLOW_TRIGGER",
@@ -69309,7 +69357,7 @@
       {
         "slug": "PAGERDUTY_CREATE_AND_MANAGE_CUSTOM_INCIDENT_FIELDS",
         "name": "Create and manage custom incident fields",
-        "description": "Creates a new custom field for incidents in PagerDuty. This endpoint allows you to define additional data points to be associated with incidents, enhancing incident management and reporting capabilities. Custom fields can be used to store various types of information such as environment, severity, or any other relevant metadata. The field can be configured with different data types and value constraints, allowing for flexible and structured data capture. Use this endpoint when you need to extend the incident data model with organization-specific information. Note that once created, certain properties of a custom field cannot be changed, so careful planning of field structure is important."
+        "description": "Creates a new custom field for incidents in PagerDuty. This endpoint allows you to define additional data points to be associated with incidents, enhancing incident management and reporting capabilities. Custom fields can be used to store various types of information such as environment, severity, or any other relevant metadata. The field can be configured with different data types and value constraints, allowing for flexible and structured data capture. Use this endpoint when you need to extend the incident data model with organization-specific information. Note that once created, certain properties of a custom field cannot be changed, so careful planning of field structure is important. DEPRECATED: PagerDuty has deprecated this Base Incident Type endpoint. Use `create_a_custom_field_for_an_incident_type` for new integrations."
       },
       {
         "slug": "PAGERDUTY_CREATE_AN_INCIDENT_TYPE",
@@ -69319,7 +69367,7 @@
       {
         "slug": "PAGERDUTY_CREATE_A_RULESET",
         "name": "Create a ruleset",
-        "description": "Creates a new Ruleset in PagerDuty for managing incident routing and notification rules. This endpoint allows you to define a named set of rules that determine how incidents are processed and directed to specific teams or users. It's particularly useful when setting up or modifying your incident management workflow. The created Ruleset can be global, affecting all incoming incidents, or assigned to a specific team for more targeted incident routing. Note that while you can create the Ruleset structure with this call, the actual rules within the Ruleset must be added separately using other API endpoints."
+        "description": "Creates a new Ruleset in PagerDuty for managing incident routing and notification rules. This endpoint allows you to define a named set of rules that determine how incidents are processed and directed to specific teams or users. It's particularly useful when setting up or modifying your incident management workflow. The created Ruleset can be global, affecting all incoming incidents, or assigned to a specific team for more targeted incident routing. Note that while you can create the Ruleset structure with this call, the actual rules within the Ruleset must be added separately using other API endpoints. DEPRECATED: Rulesets/Event Rules are EOL; creates are rejected. Use Event Orchestrations."
       },
       {
         "slug": "PAGERDUTY_CREATE_A_TRIGGER",
@@ -69349,7 +69397,7 @@
       {
         "slug": "PAGERDUTY_CREATE_EVENT_RULE_IN_RULESET",
         "name": "Create event rule in ruleset",
-        "description": "Creates a new Event Rule within a specified Ruleset in PagerDuty's incident management system. This endpoint allows you to define complex conditions for event matching and specify actions to be taken when an event meets those conditions. Use this to automate incident response, customize alert routing, and fine-tune event processing based on specific criteria. The created rule becomes part of the Ruleset's evaluation sequence, affecting how incoming events are processed and managed. **DEPRECATION WARNING**: Rulesets and Event Rules reached end-of-life on January 31, 2025. While the API still supports accessing and modifying existing rulesets/rules, creating new rulesets is disabled. PagerDuty strongly recommends migrating to Event Orchestration for improved UI, advanced conditions, rule nesting, and better API/Terraform support. This action only works with pre-existing rulesets created before the EOL date."
+        "description": "Creates a new Event Rule within a specified Ruleset in PagerDuty's incident management system. This endpoint allows you to define complex conditions for event matching and specify actions to be taken when an event meets those conditions. Use this to automate incident response, customize alert routing, and fine-tune event processing based on specific criteria. The created rule becomes part of the Ruleset's evaluation sequence, affecting how incoming events are processed and managed. **DEPRECATION WARNING**: Rulesets and Event Rules reached end-of-life on January 31, 2025. While the API still supports accessing and modifying existing rulesets/rules, creating new rulesets is disabled. PagerDuty strongly recommends migrating to Event Orchestration for improved UI, advanced conditions, rule nesting, and better API/Terraform support. This action only works with pre-existing rulesets created before the EOL date. DEPRECATED: Rulesets/Event Rules are EOL; creates are rejected. Use Event Orchestrations."
       },
       {
         "slug": "PAGERDUTY_CREATE_EXTENSION_OBJECT",
@@ -69434,7 +69482,7 @@
       {
         "slug": "PAGERDUTY_CREATE_RESPONSE_PLAY_FOR_INCIDENTS",
         "name": "Create response play for incidents",
-        "description": "Creates a new Response Play in PagerDuty, which is a predefined set of actions to be executed in response to an incident. This endpoint allows you to configure automated responses, including adding subscribers, assigning responders, setting up conference details, and defining how the Response Play can be triggered. Use this when you want to standardize and automate your incident management process, ensuring consistent and efficient responses to different types of incidents. The Response Play can be set to run automatically for specific services or be manually triggered by team members or responders, depending on the configuration. This tool is particularly useful for creating templated responses for common incident types or for implementing best practices across your organization's incident management workflow."
+        "description": "Creates a new Response Play in PagerDuty, which is a predefined set of actions to be executed in response to an incident. This endpoint allows you to configure automated responses, including adding subscribers, assigning responders, setting up conference details, and defining how the Response Play can be triggered. Use this when you want to standardize and automate your incident management process, ensuring consistent and efficient responses to different types of incidents. The Response Play can be set to run automatically for specific services or be manually triggered by team members or responders, depending on the configuration. This tool is particularly useful for creating templated responses for common incident types or for implementing best practices across your organization's incident management workflow. DEPRECATED: Response Plays are EOL. On accounts with Incident Workflows enabled this always fails; use the Incident Workflows actions instead."
       },
       {
         "slug": "PAGERDUTY_CREATE_SCHEDULE_OVERRIDES_CONFIGURATION",
@@ -69444,7 +69492,7 @@
       {
         "slug": "PAGERDUTY_CREATE_SERVICE_EVENT_RULE",
         "name": "Create service event rule",
-        "description": "Creates a new event rule for a specific service in PagerDuty. This endpoint allows you to define complex conditions and actions for handling incoming events, enabling automated incident management and alert routing. Use this when you need to set up custom logic for processing events, such as setting priorities, annotating incidents, or suppressing alerts based on specific criteria. The rule's position in the evaluation order can be specified, and various time-based conditions can be applied to control when the rule is active. This endpoint is crucial for fine-tuning your incident response workflow and reducing alert noise."
+        "description": "Creates a new event rule for a specific service in PagerDuty. This endpoint allows you to define complex conditions and actions for handling incoming events, enabling automated incident management and alert routing. Use this when you need to set up custom logic for processing events, such as setting priorities, annotating incidents, or suppressing alerts based on specific criteria. The rule's position in the evaluation order can be specified, and various time-based conditions can be applied to control when the rule is active. This endpoint is crucial for fine-tuning your incident response workflow and reducing alert noise. DEPRECATED: Rulesets/Event Rules are EOL; creates are rejected. Use Event Orchestrations."
       },
       {
         "slug": "PAGERDUTY_CREATE_STATUS_PAGE_SUBSCRIPTION",
@@ -69609,7 +69657,7 @@
       {
         "slug": "PAGERDUTY_DELETE_RESPONSE_PLAY",
         "name": "Delete response play",
-        "description": "Deletes a specific Response Play from the PagerDuty system. This endpoint should be used when you need to remove an outdated or unnecessary Response Play from your incident management workflow. It permanently eliminates the predefined sequence of actions associated with the specified Response Play ID. Use this endpoint with caution, as the deletion is irreversible and may impact automated incident response processes. This operation is particularly useful for maintaining an up-to-date and efficient set of response strategies in your PagerDuty account. **IMPORTANT**: Response Plays are deprecated in favor of Incident Workflows. If your PagerDuty account has Incident Workflows enabled, this endpoint will return a 301 status code with the message \"Incident Workflows are enabled on this account.\" In such cases, you should use the Incident Workflows API instead."
+        "description": "Deletes a specific Response Play from the PagerDuty system. This endpoint should be used when you need to remove an outdated or unnecessary Response Play from your incident management workflow. It permanently eliminates the predefined sequence of actions associated with the specified Response Play ID. Use this endpoint with caution, as the deletion is irreversible and may impact automated incident response processes. This operation is particularly useful for maintaining an up-to-date and efficient set of response strategies in your PagerDuty account. **IMPORTANT**: Response Plays are deprecated in favor of Incident Workflows. If your PagerDuty account has Incident Workflows enabled, this endpoint will return a 301 status code with the message \"Incident Workflows are enabled on this account.\" In such cases, you should use the Incident Workflows API instead. DEPRECATED: Response Plays are EOL. On accounts with Incident Workflows enabled this always fails; use the Incident Workflows actions instead."
       },
       {
         "slug": "PAGERDUTY_DELETE_RULE_FROM_RULESET_BY_ID",
@@ -69619,7 +69667,7 @@
       {
         "slug": "PAGERDUTY_DELETE_RULESET_BY_ID",
         "name": "Delete ruleset by id",
-        "description": "Deletes a specific ruleset from the PagerDuty system based on the provided ID. This endpoint should be used when you need to remove an existing ruleset, which may be necessary during incident management reconfiguration or when cleaning up obsolete rulesets. The deletion is permanent and cannot be undone, so use this endpoint with caution. It's important to note that deleting a ruleset will affect the incident routing and escalation policies associated with it, potentially impacting your organization's incident response workflow."
+        "description": "Deletes a specific ruleset from the PagerDuty system based on the provided ID. This endpoint should be used when you need to remove an existing ruleset, which may be necessary during incident management reconfiguration or when cleaning up obsolete rulesets. The deletion is permanent and cannot be undone, so use this endpoint with caution. It's important to note that deleting a ruleset will affect the incident routing and escalation policies associated with it, potentially impacting your organization's incident response workflow. PagerDuty no longer permits creating Rulesets/Event Rules, but this endpoint remains available for deleting an existing Ruleset. PagerDuty recommends migrating existing Rulesets to Event Orchestration."
       },
       {
         "slug": "PAGERDUTY_DELETE_RUNNER_TEAM_ASSOCIATION",
@@ -69644,7 +69692,7 @@
       {
         "slug": "PAGERDUTY_DELETE_SERVICE_RULE_BY_ID",
         "name": "Delete service rule by id",
-        "description": "Deletes a specific rule from a PagerDuty service. This endpoint is used to permanently remove a rule that defines conditions for incident creation or automation within a particular service. It should be used when you need to eliminate an outdated, incorrect, or no longer needed rule from your service configuration. The operation cannot be undone, so use it with caution. This endpoint does not return the deleted rule's details; it only confirms the successful deletion."
+        "description": "Deletes a specific rule from a PagerDuty service. This endpoint is used to permanently remove a rule that defines conditions for incident creation or automation within a particular service. It should be used when you need to eliminate an outdated, incorrect, or no longer needed rule from your service configuration. The operation cannot be undone, so use it with caution. This endpoint does not return the deleted rule's details; it only confirms the successful deletion. PagerDuty no longer permits creating Rulesets/Event Rules, but this endpoint remains available for deleting an existing Service Event Rule. PagerDuty recommends migrating existing Event Rules to Event Orchestration."
       },
       {
         "slug": "PAGERDUTY_DELETE_STATUS_PAGE_POSTMORTEM",
@@ -69749,7 +69797,7 @@
       {
         "slug": "PAGERDUTY_EXECUTE_RESPONSE_PLAY_BY_ID",
         "name": "Execute response play by id",
-        "description": "Executes a predefined Response Play for a specific incident in PagerDuty. This endpoint allows you to trigger a sequence of automated actions designed to manage and respond to the given incident. It's useful for standardizing and streamlining your incident response process, ensuring consistent handling of similar incidents. The endpoint requires you to specify the incident for which the Response Play should be run, using the incident's unique identifier. Note that the Response Play itself is identified by the ID in the URL path, not in the request body."
+        "description": "Executes a predefined Response Play for a specific incident in PagerDuty. This endpoint allows you to trigger a sequence of automated actions designed to manage and respond to the given incident. It's useful for standardizing and streamlining your incident response process, ensuring consistent handling of similar incidents. The endpoint requires you to specify the incident for which the Response Play should be run, using the incident's unique identifier. Note that the Response Play itself is identified by the ID in the URL path, not in the request body. DEPRECATED: Response Plays are EOL. On accounts with Incident Workflows enabled this always fails; use the Incident Workflows actions instead."
       },
       {
         "slug": "PAGERDUTY_FETCH_CACHE_VARIABLE_FOR_EVENT_ORCHESTRATION",
@@ -69844,7 +69892,7 @@
       {
         "slug": "PAGERDUTY_GET_AGGREGATED_PD_ADVANCE_USAGE_DATA",
         "name": "Get aggregated pd advance usage data",
-        "description": "Provides aggregated metrics for the usage of PD Advance. <!-- theme: info --> > **Note:** Analytics data is updated [periodically](https://support.pagerduty.com/main/docs/insights#:~:text=Data%20Update%20Schedule). It takes up to 24 hours before new incidents appear in the Analytics API. Scoped OAuth requires: `analytics.read`"
+        "description": "Provides aggregated metrics for the usage of PD Advance. <!-- theme: info --> > **Note:** Analytics data is updated [periodically](https://support.pagerduty.com/main/docs/insights#:~:text=Data%20Update%20Schedule). It takes up to 24 hours before new incidents appear in the Analytics API. Scoped OAuth requires: `analytics.write`"
       },
       {
         "slug": "PAGERDUTY_GET_ALERT_GROUPING_SETTINGS",
@@ -70024,7 +70072,7 @@
       {
         "slug": "PAGERDUTY_GET_OAUTH_DELEGATIONS_REVOCATION_REQUESTS_STATUS",
         "name": "Get oauth delegations revocation requests status",
-        "description": "**DEPRECATED**: This endpoint is deprecated. The DELETE /oauth_delegations endpoint is now synchronous and completes immediately, eliminating the need to check revocation request status separately. Get the status of all OAuth delegations revocation requests for this account, specifically how many requests are still pending processing. OAuth delegations represent instances of app authorization (e.g., mobile app, Slack, Microsoft Teams) to access a PagerDuty account. This endpoint was previously used when deletion was asynchronous. **Access Requirements:** - Limited to account owners and admins only - Scoped OAuth requires: `oauth_delegations.read` **Note**: Since the DELETE operation is now synchronous, you should use the PAGERDUTY_DELETE_ALL_OAUTH_DELEGATIONS action directly, which returns the result immediately without needing to poll for status."
+        "description": "**DEPRECATED**: This endpoint is deprecated. The DELETE /oauth_delegations endpoint is now synchronous and completes immediately, eliminating the need to check revocation request status separately. Get the status of all OAuth delegations revocation requests for this account, specifically how many requests are still pending processing. OAuth delegations represent instances of app authorization (e.g., mobile app, Slack, Microsoft Teams) to access a PagerDuty account. This endpoint was previously used when deletion was asynchronous. **Access Requirements:** - Limited to account owners and admins only - Scoped OAuth requires: `oauth_delegations.read` **Note**: Since the DELETE operation is now synchronous, you should use the PAGERDUTY_DELETE_ALL_OAUTH_DELEGATIONS action directly, which returns the result immediately without needing to poll for status. DEPRECATED: returns 404. Use PAGERDUTY_DELETE_ALL_OAUTH_DELEGATIONS, which returns the result directly."
       },
       {
         "slug": "PAGERDUTY_GET_PAUSED_INCIDENT_ALERTS",
@@ -70039,7 +70087,7 @@
       {
         "slug": "PAGERDUTY_GET_RESPONSE_PLAYS",
         "name": "Get response plays",
-        "description": "**DEPRECATED**: This endpoint was deprecated and removed in June 2024. Response Plays have been replaced by Incident Workflows, which provide more robust and powerful automation capabilities. Accounts have been migrated to use Incident Workflows instead. If you need similar functionality, please use the Incident Workflows API endpoints: - List Incident Workflows: GET /incident_workflows - Get Incident Workflow: GET /incident_workflows/{id} Original functionality: This endpoint retrieved a list of response plays configured in the PagerDuty account. Response plays were predefined sets of actions that could be automatically executed when an incident occurred, helping to streamline and standardize incident response processes."
+        "description": "**DEPRECATED**: This endpoint was deprecated and removed in June 2024. Response Plays have been replaced by Incident Workflows, which provide more robust and powerful automation capabilities. Accounts have been migrated to use Incident Workflows instead. If you need similar functionality, please use the Incident Workflows API endpoints: - List Incident Workflows: GET /incident_workflows - Get Incident Workflow: GET /incident_workflows/{id} Original functionality: This endpoint retrieved a list of response plays configured in the PagerDuty account. Response plays were predefined sets of actions that could be automatically executed when an incident occurred, helping to streamline and standardize incident response processes. DEPRECATED: Response Plays are EOL. On accounts with Incident Workflows enabled this always fails; use the Incident Workflows actions instead."
       },
       {
         "slug": "PAGERDUTY_GET_RULE_FROM_RULESET_BY_ID",
@@ -70584,7 +70632,7 @@
       {
         "slug": "PAGERDUTY_RETRIEVE_RESPONSE_PLAY_BY_ID",
         "name": "Retrieve response play by id",
-        "description": "**DEPRECATED**: This endpoint has been deprecated and removed. Response Plays have been replaced by Incident Workflows. When calling this endpoint, the API returns HTTP 301 (Moved Permanently) with the error message: \"Incident Workflows are enabled on this account.\" **Migration Path**: Use Incident Workflows API instead: - List Incident Workflows: GET /incident_workflows - Get Incident Workflow: GET /incident_workflows/{id} **Original Functionality**: This endpoint previously retrieved detailed information about a specific response play in the PagerDuty incident management system, including configuration and actions for automating incident response processes."
+        "description": "**DEPRECATED**: This endpoint has been deprecated and removed. Response Plays have been replaced by Incident Workflows. When calling this endpoint, the API returns HTTP 301 (Moved Permanently) with the error message: \"Incident Workflows are enabled on this account.\" **Migration Path**: Use Incident Workflows API instead: - List Incident Workflows: GET /incident_workflows - Get Incident Workflow: GET /incident_workflows/{id} **Original Functionality**: This endpoint previously retrieved detailed information about a specific response play in the PagerDuty incident management system, including configuration and actions for automating incident response processes. DEPRECATED: Response Plays are EOL. On accounts with Incident Workflows enabled this always fails; use the Incident Workflows actions instead."
       },
       {
         "slug": "PAGERDUTY_RETRIEVE_RULE_BY_SERVICE_ID",
@@ -70934,12 +70982,12 @@
       {
         "slug": "PAGERDUTY_UPDATE_EVENT_RULE_BY_ID",
         "name": "Update event rule by id",
-        "description": "This endpoint allows you to update an existing Event Rule within a specified Ruleset in PagerDuty. Event Rules define conditions for matching events and actions to take when those conditions are met. You can modify various aspects of the rule, including its active status, matching conditions, time frames, variables, position in the ruleset, and associated actions. This endpoint is particularly useful for fine-tuning your incident management workflow, adjusting how events are processed, and controlling alert behavior. It's important to note that changes made through this endpoint will immediately affect how incoming events are handled, so careful consideration should be given to the potential impact on your alerting system."
+        "description": "This endpoint allows you to update an existing Event Rule within a specified Ruleset in PagerDuty. Event Rules define conditions for matching events and actions to take when those conditions are met. You can modify various aspects of the rule, including its active status, matching conditions, time frames, variables, position in the ruleset, and associated actions. This endpoint is particularly useful for fine-tuning your incident management workflow, adjusting how events are processed, and controlling alert behavior. It's important to note that changes made through this endpoint will immediately affect how incoming events are handled, so careful consideration should be given to the potential impact on your alerting system. PagerDuty no longer permits creating Rulesets/Event Rules, but this endpoint remains available for modifying an existing Ruleset Event Rule. PagerDuty recommends migrating existing Event Rules to Event Orchestration."
       },
       {
         "slug": "PAGERDUTY_UPDATE_EVENT_RULE_FOR_SERVICE",
         "name": "Update event rule for service",
-        "description": "This endpoint allows you to update an existing Event Rule for a specific service in PagerDuty. Event Rules are used to define how incoming events should be processed, including conditions for matching events and actions to take when a match occurs. You can modify various aspects of the rule, such as its conditions, time-based restrictions, variables for extraction, and actions to perform on matching events. This endpoint is particularly useful for fine-tuning event management processes, adjusting rule priorities, or temporarily disabling rules without removing them entirely. It provides granular control over event handling, allowing for sophisticated automation and incident management workflows."
+        "description": "This endpoint allows you to update an existing Event Rule for a specific service in PagerDuty. Event Rules are used to define how incoming events should be processed, including conditions for matching events and actions to take when a match occurs. You can modify various aspects of the rule, such as its conditions, time-based restrictions, variables for extraction, and actions to perform on matching events. This endpoint is particularly useful for fine-tuning event management processes, adjusting rule priorities, or temporarily disabling rules without removing them entirely. It provides granular control over event handling, allowing for sophisticated automation and incident management workflows. PagerDuty no longer permits creating Rulesets/Event Rules, but this endpoint remains available for modifying an existing Service Event Rule. PagerDuty recommends migrating existing Event Rules to Event Orchestration."
       },
       {
         "slug": "PAGERDUTY_UPDATE_EXTENSION_BY_ID",
@@ -71009,17 +71057,17 @@
       {
         "slug": "PAGERDUTY_UPDATE_RESPONSE_PLAY_BY_ID",
         "name": "Update response play by id",
-        "description": "Updates an existing Response Play in PagerDuty's incident management system. This endpoint allows you to modify various aspects of a Response Play, including its name, description, associated team, subscribers, responders, runnability, and conference details. Use this when you need to alter the behavior or configuration of an existing Response Play to better suit your incident response processes. The update is performed by specifying the Response Play's unique identifier and providing the updated information in the request body. This endpoint is particularly useful for refining your incident management automation based on evolving team structures, communication preferences, or response strategies."
+        "description": "Updates an existing Response Play in PagerDuty's incident management system. This endpoint allows you to modify various aspects of a Response Play, including its name, description, associated team, subscribers, responders, runnability, and conference details. Use this when you need to alter the behavior or configuration of an existing Response Play to better suit your incident response processes. The update is performed by specifying the Response Play's unique identifier and providing the updated information in the request body. This endpoint is particularly useful for refining your incident management automation based on evolving team structures, communication preferences, or response strategies. DEPRECATED: Response Plays are EOL. On accounts with Incident Workflows enabled this always fails; use the Incident Workflows actions instead."
       },
       {
         "slug": "PAGERDUTY_UPDATE_RULESET_BY_ID",
         "name": "Update ruleset by id",
-        "description": "Updates an existing ruleset in the PagerDuty incident management system. This endpoint allows you to modify the name of a ruleset or change its team association. It's used when you need to adjust the configuration of a specific ruleset, such as renaming it for better clarity or reassigning it to a different team. The endpoint requires the ruleset's unique ID and accepts updates to the name and team fields. It's important to note that other fields like routing keys, creation details, and update history are read-only and cannot be modified through this call. This endpoint is particularly useful for maintaining and organizing rulesets as your incident management needs evolve."
+        "description": "Updates an existing ruleset in the PagerDuty incident management system. This endpoint allows you to modify the name of a ruleset or change its team association. It's used when you need to adjust the configuration of a specific ruleset, such as renaming it for better clarity or reassigning it to a different team. The endpoint requires the ruleset's unique ID and accepts updates to the name and team fields. It's important to note that other fields like routing keys, creation details, and update history are read-only and cannot be modified through this call. This endpoint is particularly useful for maintaining and organizing rulesets as your incident management needs evolve. PagerDuty no longer permits creating Rulesets/Event Rules, but this endpoint remains available for modifying an existing Ruleset. PagerDuty recommends migrating existing Rulesets to Event Orchestration."
       },
       {
         "slug": "PAGERDUTY_UPDATE_SCHEDULE_BY_ID",
         "name": "Update schedule by id",
-        "description": "The UpdateSchedule endpoint modifies an existing on-call schedule in PagerDuty. It updates the schedule's name, time zone, description, and layers. Each layer defines a rotation pattern for on-call duties. Use this to adjust rotations, add/remove users, change time zones, or modify restrictions. Note: This replaces the entire schedule configuration, so include all desired layers and settings, even if only changing part of the schedule."
+        "description": "The UpdateSchedule endpoint modifies an existing on-call schedule in PagerDuty. It updates the schedule's name, time zone, description, and layers. Each layer defines a rotation pattern for on-call duties. Use this to adjust rotations, add/remove users, change time zones, or modify restrictions. The API requires `type` and `time_zone` in the schedule object. Schedule layers are optional. When supplied, each layer must include its start, users, virtual rotation start, and rotation turn length."
       },
       {
         "slug": "PAGERDUTY_UPDATE_SERVICE_BY_ID",
@@ -71049,7 +71097,7 @@
       {
         "slug": "PAGERDUTY_UPDATE_STATUS_PAGE_POST_POSTMORTEM",
         "name": "Update status page post postmortem",
-        "description": "Updates an existing postmortem for a specific status page post in PagerDuty. This endpoint allows you to modify the postmortem message and notification settings for an incident's detailed analysis. The postmortem provides insights about the incident's root causes, impact, and lessons learned. Use this when you need to revise or enhance an existing postmortem after it has been created. The postmortem message supports Rich-Text formatting (max 10,000 characters) and you can control whether subscribers receive notifications about the update. Note: This endpoint updates an existing postmortem - use POST to create a new one."
+        "description": "Legacy duplicate of `create_or_update_status_page_postmortem`. Both actions use the same PUT endpoint, which creates or replaces a postmortem for a Status Page Post. Use `create_or_update_status_page_postmortem` instead."
       },
       {
         "slug": "PAGERDUTY_UPDATE_STATUS_PAGE_POST_RESOURCE",
@@ -73691,11 +73739,12 @@
     "description": "A feature management platform that helps teams build better software faster using feature flags.",
     "category": "developer tools",
     "authSchemes": [
-      "API_KEY"
+      "API_KEY",
+      "OAUTH2"
     ],
     "toolCount": 248,
     "triggerCount": 0,
-    "version": "20260615_00",
+    "version": "20260729_00",
     "tools": [
       {
         "slug": "LAUNCH_DARKLY_ADD_MEMBER_TO_TEAMS",
@@ -74941,6 +74990,54 @@
     "triggers": [],
     "authConfigDetails": [
       {
+        "mode": "OAUTH2",
+        "name": "launchdarkly_oauth",
+        "fields": {
+          "auth_config_creation": {
+            "required": [
+              {
+                "name": "client_id",
+                "displayName": "Client id",
+                "type": "string",
+                "description": "Client id of the app",
+                "required": true,
+                "default": null
+              },
+              {
+                "name": "client_secret",
+                "displayName": "Client secret",
+                "type": "string",
+                "description": "Client secret of the app",
+                "required": true,
+                "default": null
+              }
+            ],
+            "optional": [
+              {
+                "name": "oauth_redirect_uri",
+                "displayName": "Redirect URI",
+                "type": "string",
+                "description": "Add this Redirect URL to your app's OAuth allow list.",
+                "required": false,
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
+              },
+              {
+                "name": "scopes",
+                "displayName": "Scopes",
+                "type": "string",
+                "description": "Scopes to request from the user, comma separated",
+                "required": false,
+                "default": "reader,writer,observability,offline_access"
+              }
+            ]
+          },
+          "connected_account_initiation": {
+            "required": [],
+            "optional": []
+          }
+        }
+      },
+      {
         "mode": "API_KEY",
         "name": "launchdarkly_api_key",
         "fields": {
@@ -75451,7 +75548,7 @@
     ],
     "toolCount": 124,
     "triggerCount": 0,
-    "version": "20260721_00",
+    "version": "20260731_00",
     "tools": [
       {
         "slug": "CONTENTFUL_ACTIVATE_CONTENT_TYPE",
@@ -77801,7 +77898,7 @@
     ],
     "toolCount": 22,
     "triggerCount": 0,
-    "version": "20260721_00",
+    "version": "20260729_00",
     "tools": [
       {
         "slug": "SURVEY_MONKEY_CREATE_BULK_CONTACTS",
@@ -90763,7 +90860,7 @@
     ],
     "toolCount": 84,
     "triggerCount": 1,
-    "version": "20260721_00",
+    "version": "20260731_00",
     "tools": [
       {
         "slug": "TODOIST_ADD_WORKSPACE",
@@ -100081,7 +100178,7 @@
     ],
     "toolCount": 9,
     "triggerCount": 0,
-    "version": "20260721_00",
+    "version": "20260731_00",
     "tools": [
       {
         "slug": "BITWARDEN_DELETE_GROUP",
@@ -105463,7 +105560,7 @@
     ],
     "toolCount": 84,
     "triggerCount": 0,
-    "version": "20260721_00",
+    "version": "20260729_00",
     "tools": [
       {
         "slug": "BREX_ADD_WEBHOOK_GROUP_MEMBERS",
@@ -110770,11 +110867,12 @@
     "category": "server monitoring",
     "authSchemes": [
       "OAUTH2",
-      "API_KEY"
+      "API_KEY",
+      "BEARER_TOKEN"
     ],
     "toolCount": 65,
     "triggerCount": 0,
-    "version": "20260721_00",
+    "version": "20260731_00",
     "tools": [
       {
         "slug": "DATADOG_AGGREGATE_LOGS",
@@ -111155,6 +111253,45 @@
                 "description": "Your Datadog site, shown in your browser address bar: app.datadoghq.com → us1, us5.datadoghq.com → us5, app.datadoghq.eu → eu. Most accounts can keep the default us1.",
                 "required": true,
                 "default": "us1"
+              }
+            ],
+            "optional": []
+          }
+        }
+      },
+      {
+        "mode": "BEARER_TOKEN",
+        "name": "datadog_pat",
+        "fields": {
+          "auth_config_creation": {
+            "required": [],
+            "optional": []
+          },
+          "connected_account_initiation": {
+            "required": [
+              {
+                "name": "token",
+                "displayName": "Bearer Token",
+                "type": "string",
+                "description": "Token for bearer authentication",
+                "required": true,
+                "default": null
+              },
+              {
+                "name": "region",
+                "displayName": "Datadog Site",
+                "type": "string",
+                "description": "Your Datadog site, shown in your browser address bar: app.datadoghq.com → us1, us5.datadoghq.com → us5, app.datadoghq.eu → eu. Most accounts can keep the default us1.",
+                "required": true,
+                "default": "us1"
+              },
+              {
+                "name": "bearer_token",
+                "displayName": "Personal Access Token",
+                "type": "string",
+                "description": "Your Datadog Personal Access Token. PATs authenticate API calls with a single short-lived, scoped credential and do not require a Datadog API key.",
+                "required": true,
+                "default": null
               }
             ],
             "optional": []
@@ -114841,6 +114978,88 @@
     ]
   },
   {
+    "slug": "aiwyn_tax_mcp",
+    "name": "Aiwyn Tax MCP",
+    "logo": "https://logos.composio.dev/api/aiwyn_tax_mcp",
+    "description": "Aiwyn Tax (formerly Column Tax) estimates federal and state taxes with Aiwyn's tax engine.",
+    "category": "taxes",
+    "authSchemes": [
+      "NO_AUTH"
+    ],
+    "toolCount": 10,
+    "triggerCount": 0,
+    "version": "20260730_01",
+    "tools": [
+      {
+        "slug": "AIWYN_TAX_MCP_CALCULATE_TAX",
+        "name": "Calculate tax",
+        "description": "Calculate a tax return for a given jurisdiction. The 'input' argument must conform to the JSON schema returned by the tax_namespace_schema tool. Returns computed tax return document on success, or validation errors if the input is invalid. If some inputs trigger a PARTIAL DISQUALIFICATION, the document is still returned for the supported fields; review the disqualification details and estimate the impact of the unsupported fields on the taxpayer's tax owed or refund due. Use the check_tax tool first to validate the input before calculating the tax return with this tool.IMPORTANT RULES: (1) All field values must be wrapped as {\"value\": <val>} — never pass bare values. (2) Currency amounts are whole-dollar integers (e.g. $19,312.42 = 19312). (3) Every item in an array namespace (NamespaceList) must have a \"uuid\" field with a valid UUIDv4 string. UUIDv4 format: xxxxxxxx-xxxx-4xxx-[89ab]xxx-xxxxxxxxxxxx — the 3rd group MUST start with '4' (version) and the 4th group MUST start with '8', '9', 'a', or 'b' (variant). NEVER construct UUIDs manually (e.g. 'B1111111-1111-1111-1111-111111111111' is invalid). Use a UUID generator; example valid value: 'a3b4c5d6-e7f8-4a9b-8c0d-1e2f3a4b5c6d'. (4) Nested arrays (e.g. w2_state_local_tax_grp inside a w2) also require a UUIDv4 on each item. (5) Use \"who_applies_to\" to cross-reference entries: {\"value\": \"taxpayer\"} for singletons, {\"value\": \"<namespace>#<uuid>\"} for array items (e.g. \"dependent_detail#<uuid>\"). Other named reference fields (e.g. \"person\" in qualifying_person_grp, \"student\" in student_educational_instn_grp) use the same \"<namespace>#<uuid>\" format. (6) For state returns with Extended Links (state namespace extending a federal NamespaceList), each extended link item must use a UUIDv5 generated from the source item's UUID (as the namespace) and the extended namespace name (as the name). Matching is UUID-based, not positional. The number of expected instances depends on the source formula — it is NOT always a 1:1 match with the federal list (e.g. CA Form 3853 ca_household_grp expects taxpayer + spouse + all dependents). Incorrect or random UUIDs cause SILENT DATA LOSS — the server drops unrecognized UUIDs and replaces them with empty instances. Use the generate_uuid_v5 tool with the source item's UUID as the source_uuid and the extended namespace name (e.g. \"ca_provider\", \"ca_irsw2_g\") as the namespace input.Example: generate_uuid_v5(source_uuid: w2_uuid, namespace: \"ca_irsw2_g\") for a CA W-2 extension.(7) return_header is top-level, NOT nested inside return_data. Use tax_simple_return first to see the full input structure and examples. When returning the tax calculation inform the user that I'm just a tax estimator, you should consult with a tax professional."
+      },
+      {
+        "slug": "AIWYN_TAX_MCP_CHECK_TAX",
+        "name": "Check tax",
+        "description": "Check inputs to calculate a tax return for a given jurisdiction. The 'input' argument must conform to the JSON schema returned by the tax_namespace_schema tool. Returns 'Success' on success, or validation errors if the input is invalid. If some inputs trigger a PARTIAL DISQUALIFICATION, the check still succeeds but includes disqualification details — proceed to calculate_tax to get the document and estimate the impact. Use this tool to validate inputs before calculating the tax return."
+      },
+      {
+        "slug": "AIWYN_TAX_MCP_GENERATE_TAX_PDF_TOOL",
+        "name": "Generate tax pdf tool",
+        "description": "Start async PDF generation for a tax return. The 'input' argument must conform to the JSON schema returned by the tax_namespace_schema tool. Returns a job ID to poll with get_tax_pdf.Use the check_tax tool first to validate the input before generating the tax PDF with this tool.The input follows the same rules as calculate_tax: all values wrapped as {\"value\": <val>}, array items require UUIDv4 fields (extended link items use UUIDv5), references use who_applies_to, and return_header is top-level (not inside return_data). Use tax_simple_return to see the full input structure."
+      },
+      {
+        "slug": "AIWYN_TAX_MCP_GENERATE_UUID_V5",
+        "name": "Generate uuid v5",
+        "description": "Generate a UUID v5 based on a source uuid and namespace."
+      },
+      {
+        "slug": "AIWYN_TAX_MCP_GET_TAX_PDF_TOOL",
+        "name": "Get tax pdf tool",
+        "description": "Check status of a PDF generation job. Returns the status and a download URL when completed, only     use this tool after generating the tax PDF with the generate_tax_pdf tool and it successfully returns a job ID.     When returning the url of the PDF inform the user that I'm just a tax estimator, you should consult with a tax     professional."
+      },
+      {
+        "slug": "AIWYN_TAX_MCP_TAX_JURISDICTIONS",
+        "name": "Tax jurisdictions",
+        "description": "List all supported tax jurisdictions for a given tax year."
+      },
+      {
+        "slug": "AIWYN_TAX_MCP_TAX_NAMESPACES",
+        "name": "Tax namespaces",
+        "description": "List all available input namespaces for a given jurisdiction. Use the returned names with the tax_namespace_schema tool to get the schema for a specific namespace. Requires a jurisdiction (e.g. \"us\" for federal, \"ca\" for California). Use the tax_jurisdictions tool first to discover available jurisdictions. NAMESPACE NAMING CONVENTIONS: Federal namespaces: irs1040, irs1040_schedule1, irs8962, w2, dependent_detail, etc. State namespaces: always prefixed with the state abbreviation (ca_form540, ny_it201, az_form140). NAMESPACE TYPES: Some namespaces are singletons (object), others are NamespaceLists (array) that can hold multiple items — e.g. w2 (multiple W-2s), dependent_detail (multiple dependents), irs1040_schedulec (multiple businesses). NamespaceList items require UUIDv4 fields. State NamespaceLists may act as Extended Links that extend a federal NamespaceList (e.g. ca_provider extends care_provider_grp). Extended link items must use UUIDv5 (deterministic, derived from source item UUID as namespace + extended namespace name as name). Matching is UUID-based, not positional. Wrong UUIDs cause silent data loss.Use the generate_uuid_v5 tool with the source item's UUID as the source_uuid and the extended namespace name (e.g. \"ca_provider\", \"ca_irsw2_g\") as the namespace input.Example: generate_uuid_v5(source_uuid: w2_uuid, namespace: \"ca_irsw2_g\") for a CA W-2 extension."
+      },
+      {
+        "slug": "AIWYN_TAX_MCP_TAX_NAMESPACE_SCHEMA",
+        "name": "Tax namespace schema",
+        "description": "Get the TCB input schema for a single namespace (e.g. \"irs1040\", \"irs1040_schedulec\", \"ca_form540\"). Returns the properties and types for that namespace. HOW TO READ THE SCHEMA: (1) Each field references a type like tcb_string_null, tcb_integer_null, or tcb_boolean_null. All values must be wrapped as {\"value\": <val>}. (2) If the namespace title ends in '_list' (e.g. 'w2_list', 'dependent_detail_list'), it is a NamespaceList — an array of objects. Each array item MUST include a \"uuid\" field (non-null UUIDv4 string). (3) Reference fields link entries to other namespaces e.g. \"person\" in qualifying_person_grp, \"student\" in student_educational_instn_grp. All use the same format: {\"value\": \"<namespace>#<uuid>\"} (e.g. \"dependent_detail#<uuid>\"). (4) Nested arrays within a namespace (e.g. w2_state_local_tax_grp inside w2) also require uuid on each nested item. (5) Pattern-validated strings (e.g. SSNs, ZIPs, dates) have regex constraints in the schema $defs. SSNs/EINs: 9-digit string (no dashes). ZIPs: 5 or 9 digits. Dates: YYYY-MM-DD."
+      },
+      {
+        "slug": "AIWYN_TAX_MCP_TAX_SIMPLE_RETURN",
+        "name": "Tax simple return",
+        "description": "Call this FIRST when beginning any tax return. Returns the curated namespace list, top-level structure guide, example input, and step-by-step filing workflow. By default returns a simple scenario (single or MFJ filer, W-2 income only, standard deduction, no dependents). Pass scenario=\"with_dependents\" for returns that include dependents, child care (Form 2441), and education credits (Form 8863). Optionally pass a state jurisdiction (e.g. \"ca\") to also include state-level namespaces — if you don't know which state applies, ask the user before calling."
+      },
+      {
+        "slug": "AIWYN_TAX_MCP_TAX_YEARS",
+        "name": "Tax years",
+        "description": "List all supported tax years."
+      }
+    ],
+    "triggers": [],
+    "authConfigDetails": [
+      {
+        "mode": "NO_AUTH",
+        "name": "AIWYN_TAX_MCP_NO_AUTH",
+        "fields": {
+          "auth_config_creation": {
+            "required": [],
+            "optional": []
+          },
+          "connected_account_initiation": {
+            "required": [],
+            "optional": []
+          }
+        }
+      }
+    ]
+  },
+  {
     "slug": "algodocs",
     "name": "Algodocs",
     "logo": "https://logos.composio.dev/api/algodocs",
@@ -115681,6 +115900,63 @@
                 "default": null
               }
             ],
+            "optional": []
+          }
+        }
+      }
+    ]
+  },
+  {
+    "slug": "alltrails_mcp",
+    "name": "AllTrails MCP",
+    "logo": "https://logos.composio.dev/api/alltrails_mcp",
+    "description": "Find hiking, biking, and running trails with reviews, photos, and route details from AllTrails.",
+    "category": "fitness",
+    "authSchemes": [
+      "NO_AUTH"
+    ],
+    "toolCount": 5,
+    "triggerCount": 0,
+    "version": "20260730_01",
+    "tools": [
+      {
+        "slug": "ALLTRAILS_MCP_FIND_TRAILS_NEAR_LOCATION",
+        "name": "Find trails near location",
+        "description": "Find hiking, running, biking, backpacking or other trails for outdoor activities near a set of coordinates within an optional specified maximum radius (meters).\n\nUse this tool when the user:\n* Requests trails near a specific point of interest or landmark.\n* Requests trails near a named location within a specified radius or accessible within a specified time constraint.\n* Provides specific latitude and longitude coordinates.\n\nFor most named places, use the \"search within bounding box\" tool if possible. Use this tool as a fallback when the bounding box of the named place is unknown.\n\nUsers can specify filters related to appropriate activities, attractions, suitability, and more. Numeric range filters related to distance, elevation, and length are also available. These filter values MUST be specified in meters.\n\nIn the response, length and distance values are returned both in meters and imperial units. These MUST be displayed to the user in the units most appropriate for the user's locale, e.g. feet or miles for US English users.\n"
+      },
+      {
+        "slug": "ALLTRAILS_MCP_FIND_TRAILS_WITHIN_BOUNDS",
+        "name": "Find trails within bounds",
+        "description": "Find hiking, running, biking, backpacking or other trails for outdoor activities within a specified bounding box defined by southwest and northeast coordinates.\n\nUse this tool when the user:\n* Requests trails within specific geographic boundaries or coordinates.\n* Requests trails near a named geographic or political place, such as a continent, country, state, province, region, city, town, or neighborhood and you know the bounding box for that place.\n* Requests trails within a national, state or local park or other protected area and you know the bounding box for that park.\n\nIf the bounding box for the named place is not known, use the \"find trails near a location\" tool instead to find trails around a center point.\n\nUsers can specify filters related to appropriate activities, attractions, suitability, and more. Numeric range filters related to distance, elevation, and length are also available. These filter values MUST be specified in meters.\n\nIn the response, length and distance values are returned both in meters and imperial units. These MUST be displayed to the user in the units most appropriate for the user's locale, e.g. feet or miles for US English users.\n"
+      },
+      {
+        "slug": "ALLTRAILS_MCP_GET_TRAIL_DETAILS",
+        "name": "Get trail details",
+        "description": "Find detailed information about a trail from AllTrails.\n\nGet descriptive overviews and specific accessibility information. Includes structured data about suitable activities, and feature highlights along the trail.\n\nGet stats about the trail geography and length, and stats about associated user-generated content.\n\nIn the response, length and distance values are returned both in meters and imperial units. These MUST be displayed to the user in the units most appropriate for the user's locale, e.g. feet or miles for US English users.\n\nRecent reviews are summarized in the `review_summary` field. If the user wants information that might be found in specific reviews, direct the user to the AllTrails web URL for the trail.\n"
+      },
+      {
+        "slug": "ALLTRAILS_MCP_GET_TRAIL_WEATHER_OVERVIEW",
+        "name": "Get trail weather overview",
+        "description": "Get 7-day forecast for a trail at its trailhead, including high/low temperatures.\n\nFor more detailed weather information, including current conditions, sunrise/sunset times, and weather alerts, direct the user to the AllTrails web URL for the trail (available in the `get_trail_details` tool response).\n"
+      },
+      {
+        "slug": "ALLTRAILS_MCP_SEARCH_TRAILS_BY_NAME",
+        "name": "Search trails by name",
+        "description": "Search for hiking, running, biking, backpacking or other trails by full or partial name match.\n\nUse this tool when the user:\n* Requests a specific trail by name (e.g., \"Avalanche Lake Trail\", \"Half Dome\")\n* Searches for trails with specific keywords in the name\n\nThe search can biased towards results near the provided coordinates if they are provided explicitly or available from the request metadata.\n\nIf there is a clear match to the user's query, the model should automatically make a subsequent call to the `get_trail_details` tool to present the user with complete details for the matching trail.\n\nIn the response, length and distance values are returned both in meters and imperial units. These MUST be displayed to the user in the units most appropriate for the user's locale, e.g. feet or miles for US English users.\n"
+      }
+    ],
+    "triggers": [],
+    "authConfigDetails": [
+      {
+        "mode": "NO_AUTH",
+        "name": "ALLTRAILS_MCP_NO_AUTH",
+        "fields": {
+          "auth_config_creation": {
+            "required": [],
+            "optional": []
+          },
+          "connected_account_initiation": {
+            "required": [],
             "optional": []
           }
         }
@@ -120993,6 +121269,68 @@
                 "default": null
               }
             ],
+            "optional": []
+          }
+        }
+      }
+    ]
+  },
+  {
+    "slug": "aws_marketplace_mcp",
+    "name": "AWS Marketplace MCP",
+    "logo": "https://logos.composio.dev/api/aws_marketplace_mcp",
+    "description": "Discover, evaluate, and procure cloud solutions across AWS Marketplace's 30K+ software, data, and service listings.",
+    "category": "commerce",
+    "authSchemes": [
+      "NO_AUTH"
+    ],
+    "toolCount": 6,
+    "triggerCount": 0,
+    "version": "20260730_01",
+    "tools": [
+      {
+        "slug": "AWS_MARKETPLACE_MCP_GET_AWS_MARKETPLACE_RELATED_SOLUTIONS",
+        "name": "Get aws marketplace related solutions",
+        "description": "Direct AWS Marketplace Catalog API call. Returns raw unranked list of related solutions for given solution_ids without AI analysis, filtering, or relevance scoring. Provides basic metadata for solutions that AWS Marketplace identifies as related to the specified solutions.\n\n**Input Parameters:**\n\n- **solution_ids** (required): Array of solution IDs (max 10) to find related solutions for. IDs start with `prodview-`, not `prod-`\n\n**Returns:** `{ results: [...] }` - Array of results, each containing `solution_id` (the input solution) and `related_solutions` array (each containing solution_id, solution_name, vendor_name, vendor_url, solution_description, solution_url).\n\n**Example:**\n```json\n{\n  \"solution_ids\": [\"prodview-abc123\", \"prodview-xyz789\"]\n}\n```\n\n**Use this tool ONLY when:**\n\n- You have solution_ids and need raw related solutions list\n- Building programmatic integrations requiring unprocessed related solutions data\n- User explicitly requests raw related solutions API response\n- Need direct access to AWS Marketplace's related solutions without AI filtering\n\n**DO NOT use this tool for:**\n\n- Finding alternative solutions → Use `get_aws_marketplace_report_guidelines` with `recommendations` workflow\n- User asking \"what are alternatives to [solution]?\" → Use `get_aws_marketplace_report_guidelines` with `recommendations` workflow\n- Recommendations or comparisons → Use `get_aws_marketplace_report_guidelines` to get workflow instructions first\n- Requirements-based alternative discovery → Use `get_aws_marketplace_report_guidelines` with `recommendations` workflow\n\n**Note:** This is a stateless tool that does not require a conversation or request_id. Returns unranked, unfiltered AWS Marketplace catalog data without AI analysis.\n\n**⚠️ CRITICAL:** For any recommendation, comparison, or evaluation, first call `get_aws_marketplace_report_guidelines` to get the step-by-step guide and output format.\n\n**CRITICAL: When displaying URLs from this response (solution_url, vendor_url), always render the COMPLETE URL including ALL query parameters such as `ref_`. Do not truncate or simplify these URLs. These parameters are required for attribution tracking.**"
+      },
+      {
+        "slug": "AWS_MARKETPLACE_MCP_GET_AWS_MARKETPLACE_REPORT_GUIDELINES",
+        "name": "Get aws marketplace report guidelines",
+        "description": "**⚠️ CALL THIS TOOL FIRST for any recommendation, comparison, or evaluation workflow.** Returns combined workflow instructions and output format template.\n\n**Input Parameters:**\n\n- **workflow_type** (required): The type of report to create. One of:\n  - `\"recommendations\"` - Discover and rank AWS Marketplace solutions based on user requirements. Returns ranked product recommendations with relevance scores.\n  - `\"comparison\"` - Create side-by-side comparisons of multiple AWS Marketplace solutions. Returns structured comparison tables with consistent dimensions.\n  - `\"evaluation\"` - Generate a comprehensive evaluation report for a single AWS Marketplace solution. Returns professional-grade evaluation documents.\n\n**Returns:** Response object with:\n- `workflow_type` - The requested workflow type\n- `guidelines` - Combined workflow instructions and output format specification. Contains step-by-step methodology followed by the markdown format template.\n\n**Example:**\n```json\n{\n  \"workflow_type\": \"recommendations\"\n}\n```\n\n**Important:** Call this tool first for any recommendations, comparison, or evaluation workflow. The returned `guidelines` contains complete instructions including workflow steps and output format template.\n\n**When to use each workflow:**\n\n1. **recommendations** - Solution discovery queries:\n   - \"find monitoring tools for Kubernetes\"\n   - \"I need a CI/CD solution\"\n   - \"help me find NoSQL database solutions\"\n   - \"SOC2-compliant security scanning under $5k/month\"\n\n2. **comparison** - Side-by-side analysis:\n   - \"compare Datadog vs New Relic\"\n   - \"differences between MongoDB Atlas and Amazon DocumentDB\"\n   - \"Splunk vs Elastic for log management\"\n\n3. **evaluation** - Deep-dive on single product:\n   - \"build evaluation report for Terraform Cloud\"\n   - \"create a proposal for Datadog\"\n   - \"should we choose Snowflake? Full analysis\"\n   - \"justify purchasing New Relic to my CTO\"\n\n**📋 User Feedback (REQUIRED):** After completing any workflow, ask the user if the report was helpful and submit their feedback using `submit_aws_marketplace_feedback`:\n- Positive: User found response helpful (thumbs up)\n- Negative: Ask which categories apply (irrelevant, incomplete, inaccurate, other) and optionally collect detailed feedback text"
+      },
+      {
+        "slug": "AWS_MARKETPLACE_MCP_GET_AWS_MARKETPLACE_SOLUTION",
+        "name": "Get aws marketplace solution",
+        "description": "Direct AWS Marketplace Catalog API call. Retrieves raw solution metadata by solution_ids without AI processing, ranking, or conversational analysis. Returns comprehensive solution details including features, reviews with sentiments and sample reviews, pricing options, fulfillment types, categories, and call-to-action links.\n\n**Input Parameters:**\n\n- **solution_ids** (required): Array of solution IDs (max 10). IDs start with `prodview-`, not `prod-`\n\n**Returns:** `{ solutions: [...] }` - Array of solution details\n\nEach solution includes: `solution_id`, `solution_name`, `solution_description`, `solution_url`, `vendor_name`, `vendor_url`, `highlights` array, `reviews_summary` with count/rating, `review_sentiments` array by category (functionality, ease_of_use, customer_service, cost_effectiveness) with scores and sample_reviews, optional `free_trial_available`, `pricing_options` array with name/description, optional `fulfillment_options_types` (e.g., SaaS, Container), optional `categories` (e.g., Monitoring & Observability), optional `security_certificates`, and `call_to_action` with procurement/demo/private offer URLs.\n\n**Example:**\n```json\n{\n  \"solution_ids\": [\"prodview-abc123\", \"prodview-xyz789\"]\n}\n```\n\n**Use this tool ONLY when:**\n\n- You have exact solution_ids and need raw catalog data\n- Building programmatic integrations requiring unprocessed solution information\n- User explicitly requests raw API response for specific solutions\n- Need direct access to solution metadata without conversational context\n\n**DO NOT use this tool for:**\n\n- Solution discovery or search queries → Use `get_aws_marketplace_report_guidelines` with `recommendations` workflow\n- User asking \"tell me about [solution]\" → Use `get_aws_marketplace_report_guidelines` with `evaluation` workflow\n- Comparative analysis → Use `get_aws_marketplace_report_guidelines` with `comparison` workflow\n- Recommendations or evaluations → Use `get_aws_marketplace_report_guidelines` to get workflow instructions first\n\n**Note:** This is a stateless tool that does not require a conversation or request_id.\n\n**⚠️ CRITICAL:** For any recommendation, comparison, or evaluation, first call `get_aws_marketplace_report_guidelines` to get the step-by-step guide and output format.\n\n**CRITICAL: When displaying URLs from this response (solution_url, vendor_url, procurement_url, request_for_demo_url, etc.), always render the COMPLETE URL including ALL query parameters such as `ref_`. Do not truncate or simplify these URLs. These parameters are required for attribution tracking.**"
+      },
+      {
+        "slug": "AWS_MARKETPLACE_MCP_RESEARCH_AWS_MARKETPLACE_SOLUTION",
+        "name": "Research aws marketplace solution",
+        "description": "Deep web research tool for AWS Marketplace solutions. Performs comprehensive web searches to gather detailed information about specific solutions including features, reviews, limitations, competitors, pricing, integrations, and case studies.\n\n**Input Parameters:**\n\n- **solution_ids** (required): Array of solution IDs (max 5) to research. IDs start with `prodview-`, not `prod-`\n- **sections** (optional): Array of specific sections to research. Default: all sections.\n\n**Section Reference:**\n| Section | Returns |\n|---------|---------|\n| features | Official documentation, capabilities, specifications |\n| reviews | G2, Gartner, TrustRadius customer feedback |\n| limitations | Known issues, drawbacks, criticisms |\n| competitors | Competitive positioning, alternatives |\n| pricing | Cost information, pricing models, tiers |\n| integrations | AWS ecosystem, APIs, third-party tools |\n| case_studies | Customer success stories, testimonials, ROI |\n\n**Returns:** `{ results: [...] }` - Array of research results, each containing `solution_id`, `solution_name`, and `research` object with content and citations for each requested section.\n\n**Examples:**\n\n*Comparison workflow (features + integrations only - reviews already available from get_aws_marketplace_solution catalog data):*\n```json\n{\n  \"solution_ids\": [\"prodview-abc123\", \"prodview-xyz789\"],\n  \"sections\": [\"features\", \"integrations\"]\n}\n```\n\n*Evaluation workflow (comprehensive research for proposal documents):*\n```json\n{\n  \"solution_ids\": [\"prodview-abc123\"],\n  \"sections\": [\"features\", \"reviews\", \"limitations\", \"case_studies\"]\n}\n```\n\n*General research:*\n```json\n{\n  \"solution_ids\": [\"prodview-abc123\"],\n  \"sections\": [\"features\", \"reviews\", \"pricing\", \"integrations\"]\n}\n```\n\n**Use this tool when:**\n\n- You need detailed research beyond basic catalog metadata\n- User asks for in-depth analysis of specific solutions\n- Gathering third-party reviews and testimonials\n- Researching competitor comparisons or alternatives\n- Understanding pricing models and cost structures\n\n**Note:** This tool performs web searches and may take longer than catalog API calls. Results include citations linking to source materials.\n\n**⚠️ CRITICAL:** For any recommendation, comparison, or evaluation, first call `get_aws_marketplace_report_guidelines` to get the step-by-step guide and output format."
+      },
+      {
+        "slug": "AWS_MARKETPLACE_MCP_SEARCH_AWS_MARKETPLACE_SOLUTIONS",
+        "name": "Search aws marketplace solutions",
+        "description": "Direct AWS Marketplace Catalog API search. Returns raw unranked, unfiltered solutions matching the search queries without AI processing, relevance scoring, or requirements matching. Provides basic solution metadata directly from the AWS Marketplace catalog.\n\n**Input Parameters:**\n\n- **queries** (required): Array of search queries (max 10)\n- **max_results** (optional): Maximum number of solutions to return per query\n- **cursor** (optional): Pagination cursor (only works for single query, ignored for batch)\n\n**Returns:** `{ results: [...], next_cursor: ... }` - Array of search results with optional pagination cursor\n\nEach result includes: solution_id, solution_name, vendor_name, vendor_url, solution_description, solution_url.\n\n**Example:**\n```json\n{\n  \"queries\": [\"Drata compliance\", \"Vanta compliance\"],\n  \"max_results\": 5\n}\n```\n\n**Use this tool ONLY when:**\n\n- Building programmatic integrations requiring raw search API access\n- Need unprocessed search results for custom processing\n- User explicitly requests raw AWS Marketplace search API response\n- Direct access to catalog search without AI analysis is required\n\n**DO NOT use this tool for:**\n\n- Solution discovery queries → Use `get_aws_marketplace_report_guidelines` with `recommendations` workflow\n- User asking \"find [solution type]\" → Use `get_aws_marketplace_report_guidelines` with `recommendations` workflow\n- Requirements-based search → Use `get_aws_marketplace_report_guidelines` with `recommendations` workflow\n- Recommendations or comparisons → Use `get_aws_marketplace_report_guidelines` to get workflow instructions first\n- Any conversational queries about finding solutions → Use `get_aws_marketplace_report_guidelines` with `recommendations` workflow\n\n**Pagination:** If `next_cursor` is returned (only for single-query requests), call this tool again with the same query and the `cursor` value to retrieve additional solutions. When `next_cursor` is `null`, all matching solutions have been retrieved.\n\n**Note:** This is a stateless tool that does not require a conversation or request_id. Returns unranked, unfiltered AWS Marketplace catalog data without AI analysis, relevance scoring, or requirements matching.\n\n**⚠️ CRITICAL:** For any recommendation, comparison, or evaluation, first call `get_aws_marketplace_report_guidelines` to get the step-by-step guide and output format.\n\n**CRITICAL: When displaying URLs from this response (solution_url, vendor_url), always render the COMPLETE URL including ALL query parameters such as `ref_`. Do not truncate or simplify these URLs. These parameters are required for attribution tracking.**"
+      },
+      {
+        "slug": "AWS_MARKETPLACE_MCP_SUBMIT_AWS_MARKETPLACE_FEEDBACK",
+        "name": "Submit aws marketplace feedback",
+        "description": "Submit user feedback about AWS Marketplace responses.\n\n**IMPORTANT: After completing any AWS Marketplace workflow, you MUST ask the user if they found the report helpful and submit their feedback using this tool.**\n\n**Input Parameters:**\n\n- **sentiment** (required): User sentiment\n  - `\"positive\"` - Response was helpful (thumbs up)\n  - `\"negative\"` - Response was not helpful (thumbs down)\n\n- **categories** (optional, for negative feedback): Array of feedback categories\n  - `\"irrelevant\"` - Didn't address the question\n  - `\"incomplete\"` - Missing important information\n  - `\"inaccurate\"` - Contained errors\n  - `\"other\"` - Other issues\n\n- **feedback_text** (optional): Free-form feedback (max 1000 characters)\n\n**Returns:** `{ success: boolean, message: string }`\n\n**Examples:**\n\nPositive feedback:\n```json\n{ \"sentiment\": \"positive\", \"feedback_text\": \"Great recommendations!\" }\n```\n\nNegative feedback with categories:\n```json\n{\n  \"sentiment\": \"negative\",\n  \"categories\": [\"incomplete\", \"other\"],\n  \"feedback_text\": \"Missing pricing details\"\n}\n```\n\n**Feedback collection flow:**\n1. Complete the user's request (recommendation, comparison, evaluation)\n2. Ask: \"Was this response helpful? (thumbs up/thumbs down)\"\n3. If negative, ask which categories apply\n4. Optionally collect additional text feedback\n5. Submit using this tool"
+      }
+    ],
+    "triggers": [],
+    "authConfigDetails": [
+      {
+        "mode": "NO_AUTH",
+        "name": "AWS_MARKETPLACE_MCP_NO_AUTH",
+        "fields": {
+          "auth_config_creation": {
+            "required": [],
+            "optional": []
+          },
+          "connected_account_initiation": {
+            "required": [],
             "optional": []
           }
         }
@@ -138928,6 +139266,68 @@
     ]
   },
   {
+    "slug": "clarity_ai_mcp",
+    "name": "Clarity AI MCP",
+    "logo": "https://logos.composio.dev/api/clarity_ai_mcp",
+    "description": "Simulate SFDR 2.0 fund classifications from name, ISIN, or CUSIP using Clarity AI's disclosure data and modeling.",
+    "category": "analytics",
+    "authSchemes": [
+      "NO_AUTH"
+    ],
+    "toolCount": 6,
+    "triggerCount": 0,
+    "version": "20260730_01",
+    "tools": [
+      {
+        "slug": "CLARITY_AI_MCP_INTERPRET_SFDR20_RESULT",
+        "name": "Interpret sfdr20 result",
+        "description": "Normalize raw SFDR20 flags into category-level assessment evidence."
+      },
+      {
+        "slug": "CLARITY_AI_MCP_SEARCH_SECURITIES",
+        "name": "Search securities",
+        "description": "Search securities by keyword, ISIN, or CUSIP through the upstream Clarity SFDR demo API."
+      },
+      {
+        "slug": "CLARITY_AI_MCP_SFDR20_ASSESS_FUND_NAME",
+        "name": "Sfdr20 assess fund name",
+        "description": "Preferred for fund names, partial names, and natural-language requests. Resolve a fund from free-text (for example S&P 500 or Nordea 1 Global Climate and Environment), then run the SFDR20 check and return an interpreted assessment. Example: use this for 'Show the SFDR 2.0 category assessment evidence for Nordea 1 Global Climate and Environment Fund'."
+      },
+      {
+        "slug": "CLARITY_AI_MCP_SFDR20_CHECK",
+        "name": "Sfdr20 check",
+        "description": "Deprecated alias for sfdr20_check_by_isin. Keep for backward compatibility only. Do not use for fund names or natural-language requests."
+      },
+      {
+        "slug": "CLARITY_AI_MCP_SFDR20_CHECK_BY_ISIN",
+        "name": "Sfdr20 check by isin",
+        "description": "Use only when the user already provided an explicit ISIN. Do not use for fund names, partial names, or natural-language fund requests; use sfdr20_assess_fund_name instead."
+      },
+      {
+        "slug": "CLARITY_AI_MCP_SFDR20_CHECK_BY_QUERY",
+        "name": "Sfdr20 check by query",
+        "description": "Deprecated alias for sfdr20_assess_fund_name. Keep for backward compatibility only. Prefer sfdr20_assess_fund_name for fund names and natural-language requests."
+      }
+    ],
+    "triggers": [],
+    "authConfigDetails": [
+      {
+        "mode": "NO_AUTH",
+        "name": "CLARITY_AI_MCP_NO_AUTH",
+        "fields": {
+          "auth_config_creation": {
+            "required": [],
+            "optional": []
+          },
+          "connected_account_initiation": {
+            "required": [],
+            "optional": []
+          }
+        }
+      }
+    ]
+  },
+  {
     "slug": "classmarker",
     "name": "Classmarker",
     "logo": "https://logos.composio.dev/api/classmarker",
@@ -146678,7 +147078,7 @@
     ],
     "toolCount": 384,
     "triggerCount": 0,
-    "version": "20260721_00",
+    "version": "20260729_00",
     "tools": [
       {
         "slug": "COUPA_ABANDON_AN_INVOICE",
@@ -151977,7 +152377,7 @@
     ],
     "toolCount": 427,
     "triggerCount": 0,
-    "version": "20260721_00",
+    "version": "20260729_00",
     "tools": [
       {
         "slug": "DATABRICKS_ADD_MEMBER_TO_SECURITY_GROUP",
@@ -158056,6 +158456,48 @@
                 "default": null
               }
             ],
+            "optional": []
+          }
+        }
+      }
+    ]
+  },
+  {
+    "slug": "dice_mcp",
+    "name": "Dice MCP",
+    "logo": "https://logos.composio.dev/api/dice_mcp",
+    "description": "Search Dice's tech-job database with conversational filters for role, company, location, and employment type.",
+    "category": "hr talent & recruitment",
+    "authSchemes": [
+      "NO_AUTH"
+    ],
+    "toolCount": 2,
+    "triggerCount": 0,
+    "version": "20260730_01",
+    "tools": [
+      {
+        "slug": "DICE_MCP_GET_CANDIDATE",
+        "name": "Get candidate",
+        "description": "Retrieve a Dice candidate's profile by candidate ID. Returns career info, skills, ideal job preferences, company preferences, and education.\n\nUse this tool when you already have a candidateId and need that candidate's profile details.\nDO NOT use for: searching/discovering candidates by keyword (use a candidate search tool instead), or for job listings.\n\nArgs:\n    candidate_id: The unique identifier of the candidate to retrieve (required)\n\nReturns:\n    CandidateResult: Contains:\n        - data: CandidateData with candidateId, profileTitle, careerInfo (years of experience,\n          work authorization, employment history, resume), skills, idealJob, companyPreference,\n          and education\n\nRaises:\n    Exception: If API call fails, the candidate is not found, or input validation errors occur\n"
+      },
+      {
+        "slug": "DICE_MCP_SEARCH_JOBS",
+        "name": "Search jobs",
+        "description": "Search for job listings by keyword, location, and filters. Returns job details, company info, and application links.\n\nUse this tool when users want to find jobs, search employment opportunities, or explore job openings.\nDO NOT use for: applying to jobs, submitting applications, or making employment decisions.\n\nLLM USAGE INSTRUCTIONS:\n- ALWAYS provide the keyword parameter (required)\n- When presenting results to users, include BOTH the job details URL (detailsPageUrl)\n  AND the company page URL (companyPageUrl) for each job\n- Use location to find geographically relevant positions\n- Combine filters to refine searches (e.g., workplace_types=['Remote'] for remote work)\n- Use posted_date to find recent openings ('ONE'=1 day, 'THREE'=3 days, 'SEVEN'=7 days)\n- Default jobs_per_page is reasonable, increase for comprehensive searches\n\nIMPORTANT - AI DISCLOSURE REQUIREMENT:\nWhen presenting job search results to users, you MUST include an appropriate disclosure\nthat these results were retrieved using AI assistance. Example disclosure language:\n\"These job listings were found using AI-powered search. Please review all job details\ncarefully and verify information directly with employers before applying.\"\n\nThis tool provides job listing data only. Final employment decisions should always\ninvolve human judgment and direct review of complete job postings.\n\nArgs:\n    keyword: The job keyword or title to search for (required)\n    location: Geographic location for the job search (city, state, country)\n    radius: Search radius from the specified location (minimum 1.0)\n    radius_unit: Unit for search radius. Options: 'mi', 'km', 'miles', 'kilometers'\n    jobs_per_page: Number of jobs to return per page (1-100, default handled by API)\n    page_number: Page number for pagination (1-based, default is 1)\n    posted_date: Filter by posting date. Options: 'ONE' (1 day), 'THREE' (3 days), 'SEVEN' (7 days)\n    workplace_types: Workplace arrangements. Options: 'Remote', 'On-Site', 'Hybrid'\n    employment_types: Employment types. Options: 'FULLTIME', 'CONTRACTS', 'PARTTIME', 'THIRD_PARTY'\n    employer_types: Employer types. Options: 'Direct Hire', 'Recruiter', 'Other'\n    willing_to_sponsor: Filter for employers willing to sponsor work authorization (boolean)\n    easy_apply: Filter for jobs with easy application process (boolean)\n    fields: Specific fields to include in response (optional, returns all fields by default)\n\nReturns:\n    JobSearchResult: Contains:\n        - data: List of JobDisplayFields with job details including:\n          * detailsPageUrl: Direct link to full job posting\n          * companyPageUrl: Link to company profile page\n          * title, summary, salary, location, employmentType, etc.\n        - meta: Search metadata with pagination info and facet results\n        - _links: Pagination navigation links\n\nRaises:\n    Exception: If API call fails or input validation errors occur\n"
+      }
+    ],
+    "triggers": [],
+    "authConfigDetails": [
+      {
+        "mode": "NO_AUTH",
+        "name": "DICE_MCP_NO_AUTH",
+        "fields": {
+          "auth_config_creation": {
+            "required": [],
+            "optional": []
+          },
+          "connected_account_initiation": {
+            "required": [],
             "optional": []
           }
         }
@@ -168796,6 +169238,63 @@
     ]
   },
   {
+    "slug": "excalidraw_mcp",
+    "name": "Excalidraw MCP",
+    "logo": "https://logos.composio.dev/api/excalidraw_mcp",
+    "description": "Create hand-drawn style diagrams in Excalidraw with viewport camera control and fullscreen editing.",
+    "category": "images & design",
+    "authSchemes": [
+      "NO_AUTH"
+    ],
+    "toolCount": 5,
+    "triggerCount": 0,
+    "version": "20260730_01",
+    "tools": [
+      {
+        "slug": "EXCALIDRAW_MCP_CREATE_VIEW",
+        "name": "Create view",
+        "description": "Renders a hand-drawn diagram using Excalidraw elements.\nElements stream in one by one with draw-on animations.\nCall read_me first to learn the element format."
+      },
+      {
+        "slug": "EXCALIDRAW_MCP_EXPORT_TO_EXCALIDRAW",
+        "name": "Export to excalidraw",
+        "description": "Upload diagram to excalidraw.com and return shareable URL."
+      },
+      {
+        "slug": "EXCALIDRAW_MCP_READ_CHECKPOINT",
+        "name": "Read checkpoint",
+        "description": "Read checkpoint state for restore."
+      },
+      {
+        "slug": "EXCALIDRAW_MCP_READ_ME",
+        "name": "Read me",
+        "description": "Returns the Excalidraw element format reference with color palettes, examples, and tips. Call this BEFORE using create_view for the first time."
+      },
+      {
+        "slug": "EXCALIDRAW_MCP_SAVE_CHECKPOINT",
+        "name": "Save checkpoint",
+        "description": "Update checkpoint with user-edited state."
+      }
+    ],
+    "triggers": [],
+    "authConfigDetails": [
+      {
+        "mode": "NO_AUTH",
+        "name": "EXCALIDRAW_MCP_NO_AUTH",
+        "fields": {
+          "auth_config_creation": {
+            "required": [],
+            "optional": []
+          },
+          "connected_account_initiation": {
+            "required": [],
+            "optional": []
+          }
+        }
+      }
+    ]
+  },
+  {
     "slug": "excel",
     "name": "Excel",
     "logo": "https://logos.composio.dev/api/excel",
@@ -175040,7 +175539,7 @@
     ],
     "toolCount": 76,
     "triggerCount": 0,
-    "version": "20260721_00",
+    "version": "20260731_00",
     "tools": [
       {
         "slug": "FREEAGENT_CASHFLOW_SUMMARY_FOR_A_GIVEN_DATE_RANGE",
@@ -176085,7 +176584,7 @@
     ],
     "toolCount": 8,
     "triggerCount": 0,
-    "version": "20260724_00",
+    "version": "20260728_00",
     "tools": [
       {
         "slug": "GEMINI_COUNT_TOKENS",
@@ -178346,7 +178845,7 @@
     ],
     "toolCount": 116,
     "triggerCount": 0,
-    "version": "20260721_00",
+    "version": "20260729_00",
     "tools": [
       {
         "slug": "GITLAB_ADD_SPENT_TIME",
@@ -180423,6 +180922,48 @@
                 "default": null
               }
             ],
+            "optional": []
+          }
+        }
+      }
+    ]
+  },
+  {
+    "slug": "godaddy_mcp",
+    "name": "GoDaddy MCP",
+    "logo": "https://logos.composio.dev/api/godaddy_mcp",
+    "description": "Search available domains and get AI-powered suggestions based on keywords or business ideas.",
+    "category": "website & app building",
+    "authSchemes": [
+      "NO_AUTH"
+    ],
+    "toolCount": 2,
+    "triggerCount": 0,
+    "version": "20260730_01",
+    "tools": [
+      {
+        "slug": "GODADDY_MCP_DOMAINS_CHECK_AVAILABILITY",
+        "name": "Domains check availability",
+        "description": "Check if domain names are available for registration. Works with single domains or lists of multiple domains. Returns formatted results with availability status and registration options ready for display. IMPORTANT: Always display the registration links from the response to the user - each domain has a direct GoDaddy registration URL that must be shown."
+      },
+      {
+        "slug": "GODADDY_MCP_DOMAINS_SUGGEST",
+        "name": "Domains suggest",
+        "description": "Generate domain name suggestions based on keywords, seed domains, or business descriptions. Returns an interactive widget with clickable domain links for clients that support HTML rendering (browsers, web-based AI assistants), with automatic fallback to formatted text for other clients. IMPORTANT: Always display the registration links from the response to the user - each domain has a direct GoDaddy registration URL that must be shown."
+      }
+    ],
+    "triggers": [],
+    "authConfigDetails": [
+      {
+        "mode": "NO_AUTH",
+        "name": "GODADDY_MCP_NO_AUTH",
+        "fields": {
+          "auth_config_creation": {
+            "required": [],
+            "optional": []
+          },
+          "connected_account_initiation": {
+            "required": [],
             "optional": []
           }
         }
@@ -183147,7 +183688,7 @@
     ],
     "toolCount": 4,
     "triggerCount": 0,
-    "version": "20260206_00",
+    "version": "20260731_02",
     "tools": [
       {
         "slug": "GRANOLA_MCP_GET_MEETINGS",
@@ -183212,6 +183753,63 @@
                 "default": "email,offline_access,openid,profile"
               }
             ]
+          },
+          "connected_account_initiation": {
+            "required": [],
+            "optional": []
+          }
+        }
+      }
+    ]
+  },
+  {
+    "slug": "granted_mcp",
+    "name": "Granted MCP",
+    "logo": "https://logos.composio.dev/api/granted_mcp",
+    "description": "Discover grant opportunities across funders, with eligibility and deadline details.",
+    "category": "fundraising",
+    "authSchemes": [
+      "NO_AUTH"
+    ],
+    "toolCount": 5,
+    "triggerCount": 0,
+    "version": "20260730_01",
+    "tools": [
+      {
+        "slug": "GRANTED_MCP_GET_FUNDER",
+        "name": "Get funder",
+        "description": "Get a full foundation profile including mission, 5-year financials, recent grants awarded, key officers, and application info. Accepts a foundation slug (from search_funders results) or EIN (e.g. '13-1684331')."
+      },
+      {
+        "slug": "GRANTED_MCP_GET_GRANT",
+        "name": "Get grant",
+        "description": "Get full details for a specific grant by its slug. Returns eligibility criteria, application link, deadline, amount, funder info, and tags. Use search_grants first to find valid slugs."
+      },
+      {
+        "slug": "GRANTED_MCP_GET_PAST_WINNERS",
+        "name": "Get past winners",
+        "description": "Competitive intelligence: see who has won a specific federal grant program. Shows top recipients grouped by organization with award counts, total funding, and year-over-year trends. Filter by CFDA number, agency, program name, or state. Supports agency abbreviations: NIH, NSF, EPA, DOE, DOD, USDA, NASA, SBA, etc."
+      },
+      {
+        "slug": "GRANTED_MCP_SEARCH_FUNDERS",
+        "name": "Search funders",
+        "description": "Search 133,000+ US foundations by name, state, NTEE code, asset range, and annual income range. Returns key metrics: name, state, total assets, annual income (from IRS 990), NTEE category, and mission. Use get_funder with the returned slug for full profiles including actual giving history."
+      },
+      {
+        "slug": "GRANTED_MCP_SEARCH_GRANTS",
+        "name": "Search grants",
+        "description": "Search 140,000+ grant opportunities by keyword, state, source type, funder, and more. Uses semantic search (embeddings + full-text + scoring) combined with live AI-powered web discovery for comprehensive results. Returns active grants ranked by relevance with fit scores, deadlines, amounts, and application links. Use this as the starting point to find relevant grants."
+      }
+    ],
+    "triggers": [],
+    "authConfigDetails": [
+      {
+        "mode": "NO_AUTH",
+        "name": "GRANTED_MCP_NO_AUTH",
+        "fields": {
+          "auth_config_creation": {
+            "required": [],
+            "optional": []
           },
           "connected_account_initiation": {
             "required": [],
@@ -185297,7 +185895,7 @@
     ],
     "toolCount": 192,
     "triggerCount": 0,
-    "version": "20260721_00",
+    "version": "20260729_00",
     "tools": [
       {
         "slug": "GUSTO_ADD_EMPLOYEES_TO_HOLIDAY_PAY_POLICY",
@@ -192158,7 +192756,7 @@
     ],
     "toolCount": 135,
     "triggerCount": 0,
-    "version": "20260721_00",
+    "version": "20260729_00",
     "tools": [
       {
         "slug": "HUGGING_FACE_CHANGE_DISCUSSIONS_STATUS",
@@ -195729,7 +196327,7 @@
     ],
     "toolCount": 36,
     "triggerCount": 0,
-    "version": "20260721_00",
+    "version": "20260730_00",
     "tools": [
       {
         "slug": "INSTAGRAM_CREATE_CAROUSEL_CONTAINER",
@@ -195754,7 +196352,7 @@
       {
         "slug": "INSTAGRAM_DELETE_MESSENGER_PROFILE",
         "name": "Delete Messenger Profile",
-        "description": "Tool to delete messenger profile settings for an Instagram account. Use when you need to remove ice breakers, persistent menu, greeting messages, or other messaging configuration from the messenger profile."
+        "description": "Delete ice breakers or a persistent menu from an Instagram messenger profile."
       },
       {
         "slug": "INSTAGRAM_GET_CONVERSATION",
@@ -195808,8 +196406,8 @@
       },
       {
         "slug": "INSTAGRAM_GET_IG_USER_TAGS",
-        "name": "Get IG User Tags",
-        "description": "Get Instagram media where the user has been tagged by other users. Use when you need to retrieve all media in which an Instagram Business or Creator account has been tagged, including tags in captions, comments, or on the media itself."
+        "name": "Get IG User Tags (Deprecated)",
+        "description": "Deprecated because the Instagram API with Instagram Login does not support tagging. Use a Facebook Login-based Instagram integration for tagged media."
       },
       {
         "slug": "INSTAGRAM_GET_MESSENGER_PROFILE",
@@ -195839,7 +196437,7 @@
       {
         "slug": "INSTAGRAM_GET_USER_INFO",
         "name": "Get User Info",
-        "description": "Get Instagram Business Account info including profile details and statistics. IMPORTANT: Only works for Business/Creator accounts you manage through Facebook Business Manager. Cannot query arbitrary public Instagram accounts. Use \"me\" to query your own authenticated account. NOTE: followers_count and follows_count are ONLY available when querying your own profile with ig_user_id=\"me\" - these fields return null for specific user IDs due to Instagram Graph API limitations."
+        "description": "Get Instagram Business Account info including profile details and statistics. Use \"me\" to query your own authenticated account, or provide the numeric Business Account ID of an account you manage. NOTE: followers_count and follows_count are returned for your own profile (ig_user_id=\"me\"). For other accounts, follower/follow counts are surfaced through the business_discovery edge rather than this direct-node action, so they may be null here."
       },
       {
         "slug": "INSTAGRAM_GET_USER_INSIGHTS",
@@ -195884,7 +196482,7 @@
       {
         "slug": "INSTAGRAM_POST_IG_USER_MEDIA_PUBLISH",
         "name": "Publish IG User Media",
-        "description": "Tool to publish a media container to an Instagram Business account. This action automatically waits for the container to finish processing before publishing. Rate limited to 25 API-published posts per 24-hour moving window. The publishing process: 1. First, create a media container using INSTAGRAM_CREATE_MEDIA_CONTAINER 2. Call this action with the creation_id - it will automatically poll for FINISHED status 3. Once ready, the media is published and the published media ID is returned For videos/reels, processing may take 30-120 seconds. Images are typically instant."
+        "description": "Tool to publish a media container to an Instagram Business account. This action automatically waits for the container to finish processing before publishing. Instagram enforces an account-specific content-publishing rate limit over a 24-hour moving window; the exact cap varies by account and should be read live via INSTAGRAM_GET_IG_USER_CONTENT_PUBLISHING_LIMIT before bulk publishing. The publishing process: 1. First, create a media container using INSTAGRAM_CREATE_MEDIA_CONTAINER 2. Call this action with the creation_id - it will automatically poll for FINISHED status 3. Once ready, the media is published and the published media ID is returned For videos/reels, processing may take 30-120 seconds. Images are typically instant."
       },
       {
         "slug": "INSTAGRAM_POST_IG_USER_MENTIONS",
@@ -205984,6 +206582,68 @@
     ]
   },
   {
+    "slug": "malwarebytes_mcp",
+    "name": "Malwarebytes MCP",
+    "logo": "https://logos.composio.dev/api/malwarebytes_mcp",
+    "description": "Verify links, emails, phone numbers, and domains against Malwarebytes threat intelligence.",
+    "category": "security & identity tools",
+    "authSchemes": [
+      "NO_AUTH"
+    ],
+    "toolCount": 6,
+    "triggerCount": 0,
+    "version": "20260730_01",
+    "tools": [
+      {
+        "slug": "MALWAREBYTES_MCP_REPUTATION_CHECK_EMAIL",
+        "name": "Reputation-check email",
+        "description": "Use this when you need to check if an email address is associated with phishing, scams, or malicious activity.\n\nChecks the email domain against threat intelligence database. Returns one of:\n- malicious: Confirmed phishing or malicious email domain\n- suspicious: Potentially dangerous email domain\n- safe: Verified legitimate email domain\n- unknown: No threat intelligence available\n\nCross-tool workflow:\n- If the email contains URLs, consider scanning them with reputation-check_link.\n- If the email contains phone numbers, consider scanning them with reputation-check_phone.\n- For unknown or suspicious verdicts, consider using reputation-whois to check domain\n  registration details (age, registrar, abuse contact).\n\nDo not use this for email validation, mailbox verification, or general email lookup services."
+      },
+      {
+        "slug": "MALWAREBYTES_MCP_REPUTATION_CHECK_LINK",
+        "name": "Reputation-check link",
+        "description": "Use this when you need to check if a link or URL is safe, suspicious, or malicious.\n\nProvides reputation verdict based on threat intelligence database. Returns one of:\n- malicious: Confirmed harmful link\n- suspicious: Potentially dangerous link\n- safe: Verified safe link\n- unknown: No threat intelligence available\n\nCross-tool workflow:\n- For unknown or suspicious verdicts, consider using reputation-whois to check domain\n  registration details (age, registrar, abuse contact).\n- If the URL redirects to a different domain, consider scanning the destination URL separately.\n- If the URL came from an email or text message, consider checking the sender with\n  reputation-check_email or reputation-check_phone.\n\nDo not use this for general web searches, content fetching, or webpage analysis."
+      },
+      {
+        "slug": "MALWAREBYTES_MCP_REPUTATION_CHECK_PHONE",
+        "name": "Reputation-check phone",
+        "description": "Use this when you need to check if a phone number is associated with scams or suspicious activity.\n\nProvides reputation verdict and additional phone information. Returns one of:\n- malicious: Confirmed scam or spam phone number\n- suspicious: Potentially dangerous number\n- safe: Verified legitimate number\n- unknown: No threat intelligence available\n\nAlso provides optional details like carrier, location, and phone type when available.\n\nCross-tool workflow:\n- If the caller provided links, consider scanning them with reputation-check_link.\n- If the caller provided email addresses, consider scanning them with reputation-check_email.\n\nDo not use this for phone number lookups, caller ID services, or general phone directory searches."
+      },
+      {
+        "slug": "MALWAREBYTES_MCP_REPUTATION_REPORT",
+        "name": "Reputation-report",
+        "description": "Use this when a user wants to report a suspicious link, email address, or phone number.\n\nSubmits the indicator to the threat intelligence system for analysis.\nOnly use when explicitly requested by the user.\n\nDo not use this to automatically report every checked item."
+      },
+      {
+        "slug": "MALWAREBYTES_MCP_REPUTATION_SCAN_ALL",
+        "name": "Reputation-scan all",
+        "description": "Use this when you need to check multiple links, emails, or phone numbers at once.\n\nScans all indicators concurrently and returns a unified result. Each indicator needs:\n- type: 'url', 'email', or 'phone'\n- value: the URL, email address, or phone number (E.164 format for phones)\n\nReturns a summary with counts per verdict and individual results for each indicator.\nPrefer this over individual scan tools when 3 or more indicators are present.\nMaximum 10 indicators per request.\n\nCross-tool workflow:\n- For unknown URL or email verdicts, consider using reputation-whois on the associated\n  domains for additional registration context and abuse contact information."
+      },
+      {
+        "slug": "MALWAREBYTES_MCP_REPUTATION_WHOIS",
+        "name": "Reputation-whois",
+        "description": "Use this when you need to look up domain registration information to verify legitimacy or identify suspicious patterns.\n\nProvides WHOIS/RDAP data including registrar, registration dates, name servers, and abuse contacts.\nParticularly useful for identifying newly registered domains (common in phishing and scams).\nReturns the registrar's abuse contact email when available, which can be used for filing\ncomplaints about fraudulent domains.\n\nCross-tool workflow:\n- Consider using reputation-check_link to check the domain's threat reputation alongside\n  WHOIS registration data.\n\nDo not use this for general domain availability checks or bulk domain searches."
+      }
+    ],
+    "triggers": [],
+    "authConfigDetails": [
+      {
+        "mode": "NO_AUTH",
+        "name": "MALWAREBYTES_MCP_NO_AUTH",
+        "fields": {
+          "auth_config_creation": {
+            "required": [],
+            "optional": []
+          },
+          "connected_account_initiation": {
+            "required": [],
+            "optional": []
+          }
+        }
+      }
+    ]
+  },
+  {
     "slug": "manus",
     "name": "Manus",
     "logo": "https://logos.composio.dev/api/manus",
@@ -208163,6 +208823,43 @@
                 "default": "read,offline_access"
               }
             ]
+          },
+          "connected_account_initiation": {
+            "required": [],
+            "optional": []
+          }
+        }
+      }
+    ]
+  },
+  {
+    "slug": "mermaid_chart_mcp",
+    "name": "Mermaid Chart MCP",
+    "logo": "https://logos.composio.dev/api/mermaid_chart_mcp",
+    "description": "Validates Mermaid syntax, renders diagrams as high-quality SVG, and displays them in an interactive UI for preview, zoom, and real-time iteration.",
+    "category": "images & design",
+    "authSchemes": [
+      "NO_AUTH"
+    ],
+    "toolCount": 1,
+    "triggerCount": 0,
+    "version": "20260730_01",
+    "tools": [
+      {
+        "slug": "MERMAID_CHART_MCP_VALIDATE_AND_RENDER_MERMAID_DIAGRAM",
+        "name": "Validate and render mermaid diagram",
+        "description": "\nUse this tool to output a Mermaid diagram:\n- The tool will validate the diagram syntax and render it to a UI widget.\n- The widget will contain the diagram code, a \"Copy Code\" button, and a rendered diagram.\n- If the diagram is invalid, the widget will give user a link to repair the diagram in Mermaid Live.\n"
+      }
+    ],
+    "triggers": [],
+    "authConfigDetails": [
+      {
+        "mode": "NO_AUTH",
+        "name": "MERMAID_CHART_MCP_NO_AUTH",
+        "fields": {
+          "auth_config_creation": {
+            "required": [],
+            "optional": []
           },
           "connected_account_initiation": {
             "required": [],
@@ -210536,7 +211233,7 @@
     ],
     "toolCount": 22,
     "triggerCount": 0,
-    "version": "00000000_00",
+    "version": "20260728_00",
     "tools": [
       {
         "slug": "MICROSOFT_TODO_COMPLETE_TASK",
@@ -213968,6 +214665,58 @@
                 "default": null
               }
             ],
+            "optional": []
+          }
+        }
+      }
+    ]
+  },
+  {
+    "slug": "mospi_mcp",
+    "name": "MoSPI MCP",
+    "logo": "https://logos.composio.dev/api/mospi_mcp",
+    "description": "India's official statistics from the Ministry of Statistics and Programme Implementation, queryable via natural language.",
+    "category": "analytics",
+    "authSchemes": [
+      "NO_AUTH"
+    ],
+    "toolCount": 4,
+    "triggerCount": 0,
+    "version": "20260730_01",
+    "tools": [
+      {
+        "slug": "MOSPI_MCP_GET_DATA",
+        "name": "Get data",
+        "description": "Fetches statistical data from a MoSPI dataset.\n\nThis is the final step of the workflow. It requires filter values from\nget_metadata ΓÇö filter codes are arbitrary (e.g., indicator_code=3 means\n\"Unemployment Rate\" in PLFS but something different in other datasets).\n\nAll filter parameters including limit and page go inside the filters dict,\nnot as top-level arguments.\n\nStep 4 of: list_datasets ΓåÆ get_indicators ΓåÆ get_metadata ΓåÆ get_data"
+      },
+      {
+        "slug": "MOSPI_MCP_GET_INDICATORS",
+        "name": "Get indicators",
+        "description": "Returns the full list of available indicators for a given dataset.\n\nDatasets often have broader coverage than expected ΓÇö for example, ASI covers\n57 indicators (capital structure, wages, employment, GVA, fuel consumption),\nand GENDER covers 147 indicators across health, education, labor, and crime.\n\nFor PLFS and ASUSE, indicators are grouped by frequency_code:\n  - PLFS frequency_code=1 (Annual): all 8 indicators including wages\n  - PLFS frequency_code=2 (Quarterly): indicators 1-3 only\n  - PLFS frequency_code=3 (Monthly): indicators 1-3 only\n  frequency_code selects the indicator set, not time granularity.\n\nStep 2 of: list_datasets ΓåÆ get_indicators ΓåÆ get_metadata ΓåÆ get_data"
+      },
+      {
+        "slug": "MOSPI_MCP_GET_METADATA",
+        "name": "Get metadata",
+        "description": "Returns the valid filter values (states, years, quarters, etc.) for a\ngiven dataset and indicator.\n\nFilter codes are arbitrary and dataset-specific ΓÇö for example, PLFS\nstate_code 99 means \"All India\", and NAS frequency_code 1 means \"Annual\".\nThese values cannot be inferred or guessed from parameter names alone.\n\nThe returned filter_values and api_params should be used as-is when\ncalling get_data.\n\nStep 3 of: list_datasets ΓåÆ get_indicators ΓåÆ get_metadata ΓåÆ get_data"
+      },
+      {
+        "slug": "MOSPI_MCP_LIST_DATASETS",
+        "name": "List datasets",
+        "description": "Returns an overview of all MoSPI statistical datasets with descriptions and coverage.\nThis is the starting point ΓÇö call this first to identify the right dataset.\n\nThe API covers 500+ indicators across employment, prices, industry, national\naccounts, health, education, disability, housing, environment, trade, and more. Each dataset has\nits own indicator codes, filter parameters, and valid values ΓÇö these are not\nstandardized and cannot be inferred or guessed from parameter names alone.\n\nFour-step workflow (each step depends on the previous):\n  1. list_datasets() ΓÇö identify the dataset\n  2. get_indicators(dataset) ΓÇö list available indicators\n  3. get_metadata(dataset, indicator_code) ΓÇö retrieve valid filter values\n  4. get_data(dataset, filters) ΓÇö fetch the data\n\nReturns:\n    dict with 'datasets' (name, description, use_for for each dataset)\n    and 'workflow' (the four-step sequence)."
+      }
+    ],
+    "triggers": [],
+    "authConfigDetails": [
+      {
+        "mode": "NO_AUTH",
+        "name": "MOSPI_MCP_NO_AUTH",
+        "fields": {
+          "auth_config_creation": {
+            "required": [],
+            "optional": []
+          },
+          "connected_account_initiation": {
+            "required": [],
             "optional": []
           }
         }
@@ -219881,7 +220630,7 @@
     ],
     "toolCount": 43,
     "triggerCount": 0,
-    "version": "20260721_00",
+    "version": "20260731_00",
     "tools": [
       {
         "slug": "OMNISEND_ADD_CART_PRODUCT",
@@ -224214,7 +224963,7 @@
     ],
     "toolCount": 78,
     "triggerCount": 0,
-    "version": "20260721_00",
+    "version": "20260729_00",
     "tools": [
       {
         "slug": "PAYPAL_ACTIVATE_PLAN",
@@ -230296,6 +231045,73 @@
                 "default": null
               }
             ],
+            "optional": []
+          }
+        }
+      }
+    ]
+  },
+  {
+    "slug": "pophive_mcp",
+    "name": "PopHIVE MCP",
+    "logo": "https://logos.composio.dev/api/pophive_mcp",
+    "description": "Yale's harmonized US public health surveillance data, covering disease, vaccination, and health outcome trends.",
+    "category": "analytics",
+    "authSchemes": [
+      "NO_AUTH"
+    ],
+    "toolCount": 7,
+    "triggerCount": 0,
+    "version": "20260730_01",
+    "tools": [
+      {
+        "slug": "POPHIVE_MCP_COMPARE",
+        "name": "Compare",
+        "description": "Side-by-side comparison of one disease across 2–5 US places, or\nagreement between surveillance sources in one place. For\nstraightforward single-slice questions only (e.g. \"is RSV worse in CT\nthan NY?\", \"do wastewater and ED visits agree on COVID?\"). If the\nanswer needs anything beyond reading one precomputed evidence block,\nuse get_data.\n\nExamples: \"Is RSV worse in CT than NY?\", \"Compare diabetes in Texas vs\nCalifornia\", \"Do wastewater and ED visits agree on COVID?\"\n\nNot for: one place's status (get_current_status), ranking many places\n(get_map).\n\nCall example: compare(disease='covid', geographies=['Texas', 'Florida'])\n\n    Scope: US-only aggregate surveillance; relay the precomputed evidence, never re-derive numbers."
+      },
+      {
+        "slug": "POPHIVE_MCP_GET_COVERAGE",
+        "name": "Get coverage",
+        "description": "US childhood vaccination coverage — the rate for one vaccine in one\nplace and whether it meets targets. For straightforward single-slice\nquestions only (e.g. \"kindergarten MMR rate in Idaho?\", \"is Texas\nbelow 95% MMR?\"). If the answer needs anything beyond reading one\nprecomputed evidence block, use get_data.\n\nExamples: \"Kindergarten MMR rate in Idaho?\", \"Is Texas below 95% MMR?\",\n\"Polio vaccination rate in Connecticut.\"\n\nNot for: disease activity (get_current_status), trends (get_trend),\ncoverage rankings across states (get_map with disease='mmr').\n\nCall example: get_coverage(vaccine='mmr', geography='Idaho')\n\n    Scope: US-only aggregate surveillance; relay the precomputed evidence, never re-derive numbers."
+      },
+      {
+        "slug": "POPHIVE_MCP_GET_CURRENT_STATUS",
+        "name": "Get current status",
+        "description": "Current-status verdict for one disease in one US place — level,\ndirection, and risk right now. For straightforward single-slice\nquestions only (e.g. \"is flu rising in Texas?\", \"how bad is COVID\nnationally?\"). If the answer needs anything beyond reading one\nprecomputed evidence block, use get_data.\n\nExamples: \"Is RSV rising in Connecticut?\", \"How bad is flu nationally?\",\n\"What is the risk of measles in Texas?\", \"Current COVID situation in\nNew York.\"\n\nNot for: trends over time (get_trend), ranking geographies (get_map),\nvaccination coverage (get_coverage).\n\nCall example: get_current_status(disease='rsv', geography='Connecticut')\n\n    Scope: US-only aggregate surveillance; relay the precomputed evidence, never re-derive numbers."
+      },
+      {
+        "slug": "POPHIVE_MCP_GET_DATA",
+        "name": "Get data",
+        "description": "Data catalog and raw-data gateway. The six specialized tools answer\nsingle-slice questions — current status, trend, map/ranking, A-vs-B\ncompare, coverage — with server-verified evidence; try them first,\nescalating here costs one call. Use get_data when evidence can't carry\nthe answer: multi-stratum gaps, history beyond the served window,\ncomplete lists, cross-dataset joins, custom math. Flow: (1) catalog,\n(2) disease='about' for the guide, (3) view schema + data_url,\n(4) download and compute — results are yours but carry the caveats and\naren't server-verified. include_query=true returns a runnable pandas\nsnippet.\n\nTopics: adhd, annual_wellness_visit, anxiety, breast_cancer_screening, cardiovascular_screening, cervical_cancer_screening, chlamydia_screening, colorectal_cancer_screening, combined7, covid19, depression, depression_screening, diabetes, diabetes_screening, dtap, firearm_injury, flu_vaccine_adult, heat_illness, hepa, hepb, hib, influenza, injury_deaths, measles, mmr, obesity, opioid_overdose, opioid_use_disorder, pcv, pelvic_exam, pneumococcal_vaccine_adult, polio, prostate_cancer_screening, rotavirus, rsv, vaccine_exemptions, varicella.\n\nExamples: \"What does PopHIVE track?\", \"Do you have Lyme disease data?\",\n\"Vaccination gaps across insurance types\", \"Raw RSV data for\nConnecticut.\"\n\nNot for: 'is flu rising in Texas?' → get_current_status; 'rank states\nby COVID wastewater' → get_map; 'is RSV worse in CT than NY?' → compare.\n\nCall example: get_data(disease='rsv', view='overall_trend')\n\n    Scope: US-only aggregate surveillance; relay the precomputed evidence, never re-derive numbers."
+      },
+      {
+        "slug": "POPHIVE_MCP_GET_MAP",
+        "name": "Get map",
+        "description": "Geographic ranking — which US states or counties are highest or lowest\non one disease, by current level or recent change. For straightforward\nsingle-slice questions only (e.g. \"which counties have the highest\nRSV?\", \"how does Texas rank on flu?\"). If the answer needs anything\nbeyond reading one precomputed evidence block, use get_data.\n\nExamples: \"What parts of the US have the highest rates of flu right\nnow?\", \"How do diabetes rates differ across the US by county?\", \"How\ndoes Texas rank?\", \"Which states are improving fastest on opioid\noverdose?\"\n\nNot for: trends over time (get_trend), one place's status\n(get_current_status).\n\nCall example: get_map(disease='flu', geo_level='state', top_n=10)\n\n    Scope: US-only aggregate surveillance; relay the precomputed evidence, never re-derive numbers."
+      },
+      {
+        "slug": "POPHIVE_MCP_GET_OVERVIEW",
+        "name": "Get overview",
+        "description": "Cross-disease situation report for one US state or the nation — what's\nelevated, rising, declining, or stale across every PopHIVE topic. For\nstraightforward single-slice questions only (e.g. \"anything elevated\nin Connecticut?\", \"public health sitrep for Florida?\"). If the answer\nneeds anything beyond reading one precomputed evidence block, use\nget_data.\n\nExamples: \"What's going on health-wise in Texas?\", \"Public health sitrep\nfor Florida\", \"Anything elevated in Connecticut?\"\n\nNot for: a single disease (get_current_status), time series (get_trend),\nranking states by one disease (get_map).\n\nCall example: get_overview(geography='Texas')\n\n    Scope: US-only aggregate surveillance; relay the precomputed evidence, never re-derive numbers."
+      },
+      {
+        "slug": "POPHIVE_MCP_GET_TREND",
+        "name": "Get trend",
+        "description": "Trend over time for one disease in one US place — direction, peak, and\nchange, optionally stratified or pinned to one source. For\nstraightforward single-slice questions only (e.g. \"how has RSV changed\nsince January?\", \"flu trend in Ohio\"). If the answer needs anything\nbeyond reading one precomputed evidence block, use get_data.\n\nExamples: \"What are the latest trends in COVID?\", \"How has flu changed\nsince January?\", \"Diabetes trend in Ohio over 5 years.\"\n\nseason_over_season evidence compares the current season to the\nimmediately prior season only; for older seasons use get_data.\n\nNot for: a current-status verdict (get_current_status), ranking\ngeographies (get_map), vaccination coverage (get_coverage).\n\nCall example: get_trend(disease='flu', geography='US', period='12w')\n\n    Scope: US-only aggregate surveillance; relay the precomputed evidence, never re-derive numbers."
+      }
+    ],
+    "triggers": [],
+    "authConfigDetails": [
+      {
+        "mode": "NO_AUTH",
+        "name": "POPHIVE_MCP_NO_AUTH",
+        "fields": {
+          "auth_config_creation": {
+            "required": [],
+            "optional": []
+          },
+          "connected_account_initiation": {
+            "required": [],
             "optional": []
           }
         }
@@ -255052,6 +255868,48 @@
     ]
   },
   {
+    "slug": "slidesgpt_mcp",
+    "name": "SlidesGPT MCP",
+    "logo": "https://logos.composio.dev/api/slidesgpt_mcp",
+    "description": "Generate presentations and slide decks from a prompt and export them to PowerPoint.",
+    "category": "ai content generation",
+    "authSchemes": [
+      "NO_AUTH"
+    ],
+    "toolCount": 2,
+    "triggerCount": 0,
+    "version": "20260730_01",
+    "tools": [
+      {
+        "slug": "SLIDESGPT_MCP_APPLY_THEME",
+        "name": "Apply theme",
+        "description": "Apply a visual theme to re-style the entire presentation.\n\nWHEN TO USE:\n- User says \"apply Tokyo Dark theme\", \"change theme to Paris\", etc.\n- User wants to customize the presentation appearance\n\nAVAILABLE THEMES (18 total):\n• Urban: copenhagen, tokyo, paris, berlin, new-york, la, zurich, shanghai (each has -light and -dark variants)\n• Gradient: cosmic-pulse-light/dark\n\nREQUIRES: presentation_id from previous slide creation. This re-renders all slides with the new theme."
+      },
+      {
+        "slug": "SLIDESGPT_MCP_CREATE_SLIDES",
+        "name": "Create slides",
+        "description": "Create one or more professional presentation slides. Pass a single slide in the array for one slide, or multiple slides for a full deck.\n\nUse when the user asks for slides, a presentation, or a deck. If the request is ambiguous about count, default to 2-3 slides.\n\nATTACHED PDFs / DOCUMENTS: Claude ingests user-attached files as document content blocks directly in the conversation. Read the document content from the conversation and pass the relevant material (topic, structure, key points) into this tool's slides argument — there is no separate file upload step.\n\nUSAGE NOTES:\n- Pass all slides for one request in a single call rather than multiple sequential calls.\n- To add to an existing presentation, pass the presentation_id from the previous response. For a new presentation, pass an empty string.\n- EDITING an existing slide: pass ONLY that slide, with its existing slidenum (from the previous response) and force_edit: true, plus the same presentation_id. This overwrites the slide in place. Do NOT resend the whole deck and do NOT omit force_edit, or a duplicate slide will be appended instead.\n\nIMAGES: Provide image_caption for every slide — describe the ideal slide image in 5-6 words (subject, setting, mood). Leave image_id empty; the system uses your caption to find the best matching photo.\n\nTHEMES: If the user asked for a specific theme, pass theme_id here rather than calling apply_theme separately afterwards.\n\nLAYOUT VARIETY (for multi-slide decks):\n- Use a variety of layouts across the deck, matching each layout to the slide's content.\n- Prefer \"title_and_two_columns\" (image layout) for the first content slide.\n- Use \"title_and_body\" for at most 1 slide (conclusion only), and avoid repeating the same layout on consecutive slides.\n- Use metric_rings only for percentage-based metrics (0-100).\n- Mix image slides, charts, timelines, grids, and text slides.\n\nLAYOUT OPTIONS (set layout for every slide):\n- \"title_and_two_columns\": Content with image alongside bullets (IMAGE LAYOUT)\n- \"title_and_two_to_four_columns_with_icons\": 2-4 key points with icons (good default)\n- \"title_and_body\": Single-column bullets (use sparingly — AT MOST 1 per deck, conclusion only)\n- \"title_and_subtitle\": Section divider or transition slide (title + subtitle only, minimal body)\n- \"image_full_width\": Full-width image with optional text below (IMAGE LAYOUT)\n- \"image_left_text_right\": Image on the left with bullet points on the right (IMAGE LAYOUT)\n- \"quadrant_grid\": EXACTLY 4 comparable items — SWOT, 2x2 matrices, pros/cons\n- \"data_table\": Structured comparisons in tabular format (key:value pairs in description)\n- \"timeline_horizontal\": Chronological events, milestones, or history (dates in point, short descriptions)\n- \"layered_pyramid\": Hierarchical structures with 3-6 levels (MUST include icon with fa- prefix per item)\n- \"phase_roadmap\": Project phases with milestones — point MUST use \"Period: Title\" format (e.g., \"Q1 2024: Launch\")\n- \"metric_rings\": KPIs, completion rates, market share (1-4 metrics, values 0-100 as percentages)\n\nCONTENT REQUIREMENTS:\n- 3-5 substantial bullet points per slide\n- Each bullet description: 2-4 lines with specific data, evidence, or actionable insights\n- Content should be PhD-level, detailed, and evidence-driven\n- Use FontAwesome 5.15 icons (e.g., fa-bolt, fa-chart-line, fa-lightbulb)\n- EVERY body item MUST include \"value\" (0-100) — enables chart rendering and layout switching\n\nLAYOUT-SPECIFIC FORMATTING:\n- quadrant_grid: EXACTLY 4 items. \"point\" under 15 chars, \"description\" under 80 chars\n- timeline_horizontal: Dates/years in \"point\" (max 15 chars). \"description\" max 50 chars\n- layered_pyramid: \"icon\" with fa- prefix REQUIRED (fa-star, fa-check, fa-rocket). 3-6 items\n- phase_roadmap: \"point\" = \"Period: Title\" (e.g., \"Q1 2024: Launch\"). Max 4 phases. \"description\" = milestones separated by \"; \"\n- metric_rings: 1-4 items. For part-of-whole metrics (market share), values sum to ~100. For standalone KPIs (NPS, satisfaction), each value stands alone\n- data_table: \"description\" should use structured key:value pairs\n\nSCHEMA: Use only the documented schema fields — do not invent custom properties like \"left_content\", \"right_content\", \"table\", \"rows\", or \"headers\". For tables, use the data_table layout with key:value pairs in body[].description."
+      }
+    ],
+    "triggers": [],
+    "authConfigDetails": [
+      {
+        "mode": "NO_AUTH",
+        "name": "SLIDESGPT_MCP_NO_AUTH",
+        "fields": {
+          "auth_config_creation": {
+            "required": [],
+            "optional": []
+          },
+          "connected_account_initiation": {
+            "required": [],
+            "optional": []
+          }
+        }
+      }
+    ]
+  },
+  {
     "slug": "slite",
     "name": "Slite",
     "logo": "https://logos.composio.dev/api/slite",
@@ -263303,6 +264161,53 @@
     ]
   },
   {
+    "slug": "taskrabbit_mcp",
+    "name": "Taskrabbit MCP",
+    "logo": "https://logos.composio.dev/api/taskrabbit_mcp",
+    "description": "Find and book local Taskrabbit services for home repair, moving, cleaning, and handyman tasks.",
+    "category": "scheduling & booking",
+    "authSchemes": [
+      "NO_AUTH"
+    ],
+    "toolCount": 3,
+    "triggerCount": 0,
+    "version": "20260730_01",
+    "tools": [
+      {
+        "slug": "TASKRABBIT_MCP_CHECK_SERVICE_AVAILABILITY",
+        "name": "Check service availability",
+        "description": "Check availability, pricing, and scoping questions for a service in a location. Provide either city + state OR postalCode to specify the location. When the response includes topTaskers, render each tasker as a visual card (not a plain list or table) with a circular avatar showing their initials, name, rating, review count, and description."
+      },
+      {
+        "slug": "TASKRABBIT_MCP_GENERATE_DEEP_LINK",
+        "name": "Generate deep link",
+        "description": "Generate a pre-filled Taskrabbit booking deep link using task template ID."
+      },
+      {
+        "slug": "TASKRABBIT_MCP_LIST_SUPPORTED_SERVICES",
+        "name": "List supported services",
+        "description": "List Taskrabbit services available in a location. Provide either city + state OR postalCode."
+      }
+    ],
+    "triggers": [],
+    "authConfigDetails": [
+      {
+        "mode": "NO_AUTH",
+        "name": "TASKRABBIT_MCP_NO_AUTH",
+        "fields": {
+          "auth_config_creation": {
+            "required": [],
+            "optional": []
+          },
+          "connected_account_initiation": {
+            "required": [],
+            "optional": []
+          }
+        }
+      }
+    ]
+  },
+  {
     "slug": "tave",
     "name": "Tave",
     "logo": "https://logos.composio.dev/api/tave",
@@ -266007,9 +266912,9 @@
     "authSchemes": [
       "OAUTH2"
     ],
-    "toolCount": 10,
+    "toolCount": 9,
     "triggerCount": 0,
-    "version": "20260721_00",
+    "version": "20260730_00",
     "tools": [
       {
         "slug": "TIKTOK_FETCH_PUBLISH_STATUS",
@@ -266017,29 +266922,14 @@
         "description": "Check the processing status of a TikTok video or photo post using its publish_id. Use this action to poll the status of content after initiating an upload or post. The API returns detailed information about processing stages (upload, download, moderation) and any errors that occurred. Non-terminal statuses mean processing is still pending — never re-initiate TIKTOK_PUBLISH_VIDEO for the same publish_id. Use exponential backoff when polling (e.g., 5s→10s→20s) to avoid the 30 requests/minute per access token rate limit."
       },
       {
-        "slug": "TIKTOK_GET_ACTION_CATEGORIES",
-        "name": "Get action categories",
-        "description": "Tool to retrieve available action categories from TikTok Marketing API. Use when you need to get the list of conversion event categories for creating or managing TikTok ad campaigns with conversion tracking."
-      },
-      {
-        "slug": "TIKTOK_GET_TERM",
-        "name": "Get terms",
-        "description": "Tool to retrieve terms from TikTok Business API. Use when you need to fetch advertiser or agency terms for a specific advertiser ID."
-      },
-      {
         "slug": "TIKTOK_GET_USER_STATS",
         "name": "Get user stats",
         "description": "Fetches TikTok user information and statistics for the authenticated user. Retrieves user stats (follower_count, following_count, likes_count, video_count) and can optionally fetch profile fields (display_name, username, bio_description, etc.) and basic info (open_id, union_id, avatar URLs). Returns only the fields requested in the fields parameter. Only works for the authenticated account; cannot fetch arbitrary public profiles. Stats may be delayed and not reflect the most recent activity."
       },
       {
-        "slug": "TIKTOK_LIST_GMV_MAX_OCCUPIED_CUSTOM_SHOP_ADS",
-        "name": "List GMV Max occupied custom shop ads",
-        "description": "Tool to get GMV Max occupied custom shop ads list for a TikTok advertiser. Use this action when you need to retrieve information about which custom shop ads are currently occupied for GMV Max campaigns. This is part of the TikTok Business API and requires appropriate advertiser access."
-      },
-      {
         "slug": "TIKTOK_LIST_VIDEOS",
         "name": "List videos",
-        "description": "Lists videos for the authenticated user (or specified creator). Does not provide a global TikTok-wide feed."
+        "description": "Lists the authenticated user's own **public** TikTok videos, newest first. Only public posts are returned — private/`SELF_ONLY`, friends-only, and draft videos never appear (this is a property of the underlying `video.list` scope, not a bug), so on an account with no public posts the list is empty. Cannot list an arbitrary creator's videos, and does not provide a global TikTok-wide feed. Returns a single page (up to `max_count`, capped at 20). It does NOT auto-loop: when `has_more` is true, call again passing the returned `cursor` to fetch the next page. Accounts with more than `max_count` public videos are otherwise silently truncated."
       },
       {
         "slug": "TIKTOK_POST_PHOTO",
@@ -266052,14 +266942,24 @@
         "description": "Publishes a video to TikTok by pulling it from a public URL. TikTok downloads the video from the provided URL and publishes it directly to the creator's profile. Publishing is asynchronous — after calling this action, poll TIKTOK_FETCH_PUBLISH_STATUS with the returned publish_id to check completion. For uploading video files instead of URLs, use TIKTOK_UPLOAD_VIDEO."
       },
       {
+        "slug": "TIKTOK_QUERY_CREATOR_INFO",
+        "name": "Query creator info",
+        "description": "Queries the authenticated creator's info and current posting options. Returns the account's available `privacy_level_options` and interaction settings (comment/duet/stitch), which the Content Posting API requires you to read before a direct post — the valid `privacy_level` values for an account are only discoverable here. Call this to pick a real privacy level instead of guessing (unaudited apps only ever get SELF_ONLY)."
+      },
+      {
+        "slug": "TIKTOK_QUERY_VIDEOS",
+        "name": "Query videos",
+        "description": "Fetches metadata for specific TikTok videos by ID (1-20 per request). Verifies the videos belong to the authenticated user and returns their details, refreshing the cover-image URL's expiration. Unlike List videos, this looks up known video IDs rather than walking recent uploads."
+      },
+      {
         "slug": "TIKTOK_UPLOAD_VIDEO",
         "name": "Upload video",
-        "description": "Uploads a video to TikTok via the Content Posting API (init + single-part upload). This action initializes an upload session to obtain a presigned upload URL, then uploads the entire file with a single PUT request. Use a subsequent action to publish the post. Ensure the video file is fully generated and available before calling this action."
+        "description": "Uploads a video to TikTok via the Content Posting API. This action initializes an upload session to obtain a presigned upload URL, then uploads the file in one or more sequential PUT requests with TikTok-compatible ranges. Use a subsequent action to publish the post. Ensure the video file is fully generated and available before calling this action."
       },
       {
         "slug": "TIKTOK_UPLOAD_VIDEOS",
         "name": "Upload videos (batch)",
-        "description": "Uploads multiple videos to TikTok concurrently (init + single-part upload per file)."
+        "description": "Uploads multiple videos to TikTok concurrently."
       }
     ],
     "triggers": [],
@@ -267638,6 +268538,48 @@
                 "default": null
               }
             ],
+            "optional": []
+          }
+        }
+      }
+    ]
+  },
+  {
+    "slug": "trivago_mcp",
+    "name": "Trivago MCP",
+    "logo": "https://logos.composio.dev/api/trivago_mcp",
+    "description": "Compare hotel prices across booking sites and find accommodation deals with Trivago.",
+    "category": "scheduling & booking",
+    "authSchemes": [
+      "NO_AUTH"
+    ],
+    "toolCount": 2,
+    "triggerCount": 0,
+    "version": "20260730_01",
+    "tools": [
+      {
+        "slug": "TRIVAGO_MCP_TRIVAGO_ACCOMMODATION_RADIUS_SEARCH",
+        "name": "Trivago-accommodation-radius-search",
+        "description": "Search for accommodations and hotels using coordinates on trivago.\n\nUse this tool when you want to find accommodations near a specific location (landmark, neighborhood, or address).\n\nAdditional Information: {\"knownInformation\":{\"currentYear\":\"2026\",\"today\":\"2026-07-30\"}}"
+      },
+      {
+        "slug": "TRIVAGO_MCP_TRIVAGO_ACCOMMODATION_SEARCH",
+        "name": "Trivago-accommodation-search",
+        "description": "Search for accommodations and hotels by destination or point of interest on trivago. Additional Information: {\"knownInformation\":{\"currentYear\":\"2026\",\"today\":\"2026-07-30\"}}"
+      }
+    ],
+    "triggers": [],
+    "authConfigDetails": [
+      {
+        "mode": "NO_AUTH",
+        "name": "TRIVAGO_MCP_NO_AUTH",
+        "fields": {
+          "auth_config_creation": {
+            "required": [],
+            "optional": []
+          },
+          "connected_account_initiation": {
+            "required": [],
             "optional": []
           }
         }
@@ -272366,6 +273308,48 @@
     ]
   },
   {
+    "slug": "viator_mcp",
+    "name": "Viator MCP",
+    "logo": "https://logos.composio.dev/api/viator_mcp",
+    "description": "Search and book tours, activities, and travel experiences around the world with Viator.",
+    "category": "scheduling & booking",
+    "authSchemes": [
+      "NO_AUTH"
+    ],
+    "toolCount": 2,
+    "triggerCount": 0,
+    "version": "20260730_01",
+    "tools": [
+      {
+        "slug": "VIATOR_MCP_GET_EXPERIENCE_DETAILS",
+        "name": "Get experience details",
+        "description": "Retrieves enriched information for a specific Viator experience, including detailed descriptions, highlights, imagery, pricing, duration, key features, and the click-out URL.The model should call this tool only when the user clearly refers to a specific experience—either by selecting it in the UI or by asking follow-up questions such as “Tell me more about…”;if multiple experiences were shown, the model must resolve ambiguity by asking which one the user means. This tool is intended for deepening experience understanding rather than search, and should only be invoked with a code previously returned by search_experiences."
+      },
+      {
+        "slug": "VIATOR_MCP_SEARCH_EXPERIENCES",
+        "name": "Search experiences",
+        "description": "Retrieves a curated list of Viator experiences based on a free-text search of what the user wants (destination, activity type, and preferences), plus trip dates and optional refiners (budget, duration, etc.).\nThe model must supply a non-blank searchTerm as natural language describing where and what the user is looking for (e.g. \"walking tours in Paris, France\", \"kid friendly food experiences in Rome\"). Dates, prices, duration limits, and currency belong in their dedicated parameters—not inside searchTerm.\nThe model must provide searchTerm and dates before calling this tool. The model may re-issue a refined searchExperiences call whenever the user adds, removes, or adjusts refinement criteria (e.g., kid-friendly, price range, shorter duration) to narrow or improve the results.\nIf the tool returns zero results, the model must proactively guide the user toward a successful refinement. It should review the parameters used in the failed request and recommend the most appropriate based on the proposed logic:\"\nIf > 1 categories applied, suggest removing some categories. Eg: “It looks like those categories combined are too restrictive. Would you like to narrow it down?”\nIf the query requests a specific feature (eg private tour), suggest removing this constraint. Eg: “Private tours may be limited in this area, would you like to consider group options too?”\nIf duration (avg from/to) > XX, suggest trying a shorter duration.\nIf duration (avg from/to) < XX, suggest trying a longer duration.\nIf price constraint was applied, suggest widening (or removing) price limits.\nElse, suggest broaden location search. Eg: “Nothing matches in central Siena, should we try Tuscany or nearby towns?”"
+      }
+    ],
+    "triggers": [],
+    "authConfigDetails": [
+      {
+        "mode": "NO_AUTH",
+        "name": "VIATOR_MCP_NO_AUTH",
+        "fields": {
+          "auth_config_creation": {
+            "required": [],
+            "optional": []
+          },
+          "connected_account_initiation": {
+            "required": [],
+            "optional": []
+          }
+        }
+      }
+    ]
+  },
+  {
     "slug": "virustotal",
     "name": "Virustotal",
     "logo": "https://logos.composio.dev/api/virustotal",
@@ -273717,7 +274701,7 @@
     ],
     "toolCount": 144,
     "triggerCount": 0,
-    "version": "20260721_00",
+    "version": "20260729_00",
     "tools": [
       {
         "slug": "WIX_ADD_SPECIAL_PERMISSIONS",
@@ -275213,7 +276197,7 @@
     ],
     "toolCount": 553,
     "triggerCount": 13,
-    "version": "20260724_00",
+    "version": "20260729_00",
     "tools": [
       {
         "slug": "WORKDAY_APPROVE_BUSINESS_PROCESS_EVENT_STEP",
@@ -279323,6 +280307,43 @@
                 "default": null
               }
             ],
+            "optional": []
+          }
+        }
+      }
+    ]
+  },
+  {
+    "slug": "ziprecruiter_mcp",
+    "name": "ZipRecruiter MCP",
+    "logo": "https://logos.composio.dev/api/ziprecruiter_mcp",
+    "description": "Search job listings across ZipRecruiter's marketplace by role, location, and salary.",
+    "category": "hr talent & recruitment",
+    "authSchemes": [
+      "NO_AUTH"
+    ],
+    "toolCount": 1,
+    "triggerCount": 0,
+    "version": "20260730_01",
+    "tools": [
+      {
+        "slug": "ZIPRECRUITER_MCP_SEARCH_JOBS",
+        "name": "Search jobs",
+        "description": "Use this tool whenever the user asks to find, browse, view, recommend, or search for jobs, roles, openings, gigs, internships, or job listings. It only shows jobs that are within the United States or Canada.\nGuidelines:\n- Do not provide fields unless the user explicitly provides them.\n- The tool provides the search results all in one list, so if the user intends to search for multiple job roles, it may be better to invoke the tool for each job role separately.\n- If the user has not provided a location and is not asking for remote jobs, ask the user for a location before calling this tool. If you call without a location, results will default to a United States-wide search and the user will be warned.\n\nNotes:\n- When provided radius_miles, jobs will be included in the result if their location's boundaries approximately fall within radius miles of the requested location's boundaries.\n- If a salary range is provided, a job will be included in the results if the job's salary range overlaps with the requested salary range.\n"
+      }
+    ],
+    "triggers": [],
+    "authConfigDetails": [
+      {
+        "mode": "NO_AUTH",
+        "name": "ZIPRECRUITER_MCP_NO_AUTH",
+        "fields": {
+          "auth_config_creation": {
+            "required": [],
+            "optional": []
+          },
+          "connected_account_initiation": {
+            "required": [],
             "optional": []
           }
         }
