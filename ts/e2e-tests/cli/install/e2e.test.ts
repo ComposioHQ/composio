@@ -174,14 +174,33 @@ test "$(zsh -ilc 'composio --version')" = 98.0.0
 if (config.mode === 'local') {
   describe('local failure handling', () => {
     it(
-      'rejects a corrupted release archive before creating the entry point',
+      'rejects an archive that fails checksum verification before extraction',
       async () => {
         const result = await run(`
 set -eu
-if curl -fsSL "$INSTALL_BASE_URL/install" | COMPOSIO_GITHUB_URL="$INSTALL_BASE_URL/corrupt" sh -s -- "$E2E_RELEASE_TAG"; then
+if output=$(curl -fsSL "$INSTALL_BASE_URL/install" | COMPOSIO_GITHUB_URL="$INSTALL_BASE_URL/checksum-mismatch" sh -s -- "$E2E_RELEASE_TAG" 2>&1); then
+  echo 'mismatched archive unexpectedly installed' >&2
+  exit 1
+fi
+printf '%s\n' "$output" | grep -F 'Checksum mismatch'
+test ! -e "$HOME/.local/bin/composio"
+`);
+        assertSuccess(result);
+      },
+      timeout
+    );
+
+    it(
+      'rejects a corrupted archive at extraction before creating the entry point',
+      async () => {
+        const result = await run(`
+set -eu
+if output=$(curl -fsSL "$INSTALL_BASE_URL/install" | COMPOSIO_GITHUB_URL="$INSTALL_BASE_URL/corrupt" sh -s -- "$E2E_RELEASE_TAG" 2>&1); then
   echo 'corrupted archive unexpectedly installed' >&2
   exit 1
 fi
+printf '%s\n' "$output" | grep -F 'Checksum verified'
+printf '%s\n' "$output" | grep -F 'Failed to extract archive'
 test ! -e "$HOME/.local/bin/composio"
 `);
         assertSuccess(result);
