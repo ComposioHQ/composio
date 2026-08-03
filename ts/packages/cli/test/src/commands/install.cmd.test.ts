@@ -593,6 +593,73 @@ describe('CLI: composio install', () => {
     });
   });
 
+  describe('[When] a user comment sits between the managed marker and the stale export', () => {
+    layer(InstallTestLive())(it => {
+      it.scoped('[Then] the comment survives and the fresh assignment wins PATH precedence', () =>
+        Effect.gen(function* () {
+          const os = yield* NodeOs;
+          const fs = yield* FileSystem.FileSystem;
+          vi.stubEnv('SHELL', '/bin/zsh');
+          const expectedBinDir = expectedRuntimeBinDir();
+
+          const rcPath = path.join(os.homedir, '.zshrc');
+          yield* fs.writeFileString(
+            rcPath,
+            '# Composio CLI\n# added by my dotfiles\nexport PATH="/stale/bin:$PATH"\n# user epilogue\n'
+          );
+
+          yield* install();
+
+          const contents = yield* fs.readFileString(rcPath);
+          // No user content may ever be deleted.
+          expect(contents).toContain('# added by my dotfiles');
+          expect(contents).toContain('# user epilogue');
+          // Exactly one marker, directly followed by the current assignment.
+          expect(contents.match(/^# Composio CLI$/gm)?.length ?? 0).toBe(1);
+          const newAssignment = `export PATH="${expectedBinDir}:$PATH"`;
+          const lines = contents.split('\n');
+          const markerIndex = lines.findIndex(line => line.trim() === '# Composio CLI');
+          expect(lines[markerIndex + 1]).toBe(newAssignment);
+          // Prepend-style exports make the last-sourced assignment win, so the
+          // fresh assignment must be removed-or-after any surviving stale one.
+          const staleIndex = contents.indexOf('export PATH="/stale/bin:$PATH"');
+          expect(contents.indexOf(newAssignment)).toBeGreaterThan(staleIndex);
+        })
+      );
+    });
+  });
+
+  describe('[When] a blank line sits between the managed marker and the stale export', () => {
+    layer(InstallTestLive())(it => {
+      it.scoped('[Then] nothing but the marker is removed and the fresh assignment wins', () =>
+        Effect.gen(function* () {
+          const os = yield* NodeOs;
+          const fs = yield* FileSystem.FileSystem;
+          vi.stubEnv('SHELL', '/bin/zsh');
+          const expectedBinDir = expectedRuntimeBinDir();
+
+          const rcPath = path.join(os.homedir, '.zshrc');
+          yield* fs.writeFileString(
+            rcPath,
+            '# user prologue\n# Composio CLI\n\nexport PATH="/stale/bin:$PATH"\n'
+          );
+
+          yield* install();
+
+          const contents = yield* fs.readFileString(rcPath);
+          expect(contents).toContain('# user prologue');
+          expect(contents.match(/^# Composio CLI$/gm)?.length ?? 0).toBe(1);
+          const newAssignment = `export PATH="${expectedBinDir}:$PATH"`;
+          const lines = contents.split('\n');
+          const markerIndex = lines.findIndex(line => line.trim() === '# Composio CLI');
+          expect(lines[markerIndex + 1]).toBe(newAssignment);
+          const staleIndex = contents.indexOf('export PATH="/stale/bin:$PATH"');
+          expect(contents.indexOf(newAssignment)).toBeGreaterThan(staleIndex);
+        })
+      );
+    });
+  });
+
   describe('[When] .bashrc and .bash_profile alias one physical file with a stale managed block', () => {
     layer(InstallTestLive())(it => {
       it.scoped('[Then] the physical file ends with exactly one current block', () =>
@@ -625,6 +692,29 @@ describe('CLI: composio install', () => {
           expect(yield* fs.readLink(bashrcPath)).toBe(managedPath);
           expect(yield* fs.readLink(bashProfilePath)).toBe(managedPath);
           expect(yield* fs.exists(`${managedPath}.composio-tmp`)).toBe(false);
+        })
+      );
+    });
+  });
+
+  describe('[When] the atomic write cannot replace the target file', () => {
+    layer(InstallTestLive())(it => {
+      it.scoped('[Then] the error propagates and no .composio-tmp file is left behind', () =>
+        Effect.gen(function* () {
+          const os = yield* NodeOs;
+          const fs = yield* FileSystem.FileSystem;
+          vi.stubEnv('SHELL', '/bin/zsh');
+
+          // A directory at the rc path makes the final rename(file, dir) fail
+          // after the temp file was already written.
+          const rcPath = path.join(os.homedir, '.zshrc');
+          yield* fs.remove(rcPath, { force: true, recursive: true });
+          yield* fs.makeDirectory(rcPath);
+
+          const exit = yield* install().pipe(Effect.exit);
+
+          expect(Exit.isFailure(exit)).toBe(true);
+          expect(yield* fs.exists(`${rcPath}.composio-tmp`)).toBe(false);
         })
       );
     });

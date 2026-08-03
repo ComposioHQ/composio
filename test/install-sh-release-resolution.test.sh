@@ -62,6 +62,11 @@ for script in "$repo_root/install.sh" "$repo_root"/install/*.sh; do
   fi
 done
 
+# Concurrent installer runs must not share one rc rewrite tmp file, so the
+# tmp suffix embeds the process id.
+grep -Fq '.composio.tmp.$$' "$repo_root/install.sh" ||
+  fail 'install.sh rc rewrites must use a per-process tmp suffix'
+
 # The shell variants are served as standalone scripts, so their shared logic
 # (including the URL-validation security checks) is intentionally copied.
 # Enforce that they stay byte-identical except for the shell each hardcodes in
@@ -295,6 +300,32 @@ install)
     if [ "${TEST_INSTALL_HINT:-0}" = 1 ]; then
       printf '%s\n' '│ Restart your shell so composio is on PATH │'
     fi
+    # Mirror the reconciling CLI: write the managed block to the same startup
+    # files the installer verifies. TEST_INSTALL_RECONCILE=0 models stable
+    # CLIs that exit 0 without reconciling (they skip marker-bearing files).
+    if [ "${TEST_INSTALL_EXIT:-0}" = 0 ] && [ "${TEST_INSTALL_RECONCILE:-1}" = 1 ]; then
+      write_block() {
+        if [ -f "$1" ] && grep -Fq "$2" "$1"; then
+          return 0
+        fi
+        printf '\n# Composio CLI\n%s\n' "$2" >>"$1"
+      }
+      case ${3:-} in
+      zsh) write_block "$HOME/.zshrc" "export PATH=\"$COMPOSIO_BIN_DIR:\$PATH\"" ;;
+      fish)
+        mkdir -p "$HOME/.config/fish"
+        write_block "$HOME/.config/fish/config.fish" "set --export PATH \"$COMPOSIO_BIN_DIR\" \$PATH"
+        ;;
+      bash)
+        write_block "$HOME/.bashrc" "export PATH=\"$COMPOSIO_BIN_DIR:\$PATH\""
+        if [ -f "$HOME/.bash_profile" ]; then
+          write_block "$HOME/.bash_profile" "export PATH=\"$COMPOSIO_BIN_DIR:\$PATH\""
+        elif [ -f "$HOME/.bash_login" ]; then
+          write_block "$HOME/.bash_login" "export PATH=\"$COMPOSIO_BIN_DIR:\$PATH\""
+        fi
+        ;;
+      esac
+    fi
     exit "${TEST_INSTALL_EXIT:-0}"
   fi
   exit 98
@@ -323,7 +354,7 @@ EOF
     unset CASE_GITHUB_URL CASE_API_BASE CASE_INSTALL_VERSION CASE_INSTALL_SHELL CASE_PLUGINS CASE_QUIET CASE_DEBUG CASE_HELP
     unset CASE_ALLOW_HTTP_HOST CASE_CHECKSUM_MODE CASE_API_ASSET_URL CASE_BASE_MODE CASE_REDIRECT_DOWNGRADE
     unset CASE_SHELL_CAPABILITY CASE_INSTALL_EXIT CASE_SETUP_EXIT CASE_VERSION_EXIT CASE_PATH_PREFIX CASE_UNSET_SHELL
-    unset CASE_CURL_DELAY_URL CASE_CURL_DELAY_SECONDS CASE_SHELL_VALUE CASE_INSTALL_HINT
+    unset CASE_CURL_DELAY_URL CASE_CURL_DELAY_SECONDS CASE_SHELL_VALUE CASE_INSTALL_HINT CASE_INSTALL_RECONCILE
     rm -f "$case_root/curl-parent.pid"
     : >"$curl_log"
     : >"$composio_log"
@@ -362,6 +393,7 @@ EOF
       TEST_SHELL_CAPABILITY="${CASE_SHELL_CAPABILITY:-supported}" \
       TEST_INSTALL_EXIT="${CASE_INSTALL_EXIT:-0}" \
       TEST_INSTALL_HINT="${CASE_INSTALL_HINT:-0}" \
+      TEST_INSTALL_RECONCILE="${CASE_INSTALL_RECONCILE:-1}" \
       TEST_SETUP_EXIT="${CASE_SETUP_EXIT:-0}" \
       TEST_VERSION_EXIT="${CASE_VERSION_EXIT:-0}" \
       TEST_CURL_DELAY_URL="${CASE_CURL_DELAY_URL:-}" \
@@ -393,6 +425,7 @@ EOF
       TEST_CHECKSUM_MODE=missing \
       TEST_SHELL_CAPABILITY="${CASE_SHELL_CAPABILITY:-supported}" \
       TEST_INSTALL_EXIT="${CASE_INSTALL_EXIT:-0}" \
+      TEST_INSTALL_RECONCILE="${CASE_INSTALL_RECONCILE:-1}" \
       TEST_CURL_DELAY_URL="${CASE_CURL_DELAY_URL:-}" \
       TEST_CURL_DELAY_SECONDS="${CASE_CURL_DELAY_SECONDS:-1}" \
       TEST_CURL_PARENT_PID_FILE="$case_root/curl-parent.pid" \
@@ -416,7 +449,8 @@ EOF
   # for delegated CLI calls, but the ending must reflect only the PATH the
   # invoking terminal inherited, which does not contain the bin dir here.
   assert_tail "$output" "$case_b_tail" "$interpreter_name default auto Case B tail"
-  [[ ! -e "$home/.bashrc" ]] || fail "$interpreter_name delegated default flow must not write rc files"
+  grep -Fq "export PATH=\"$bin_dir:\$PATH\"" "$home/.bashrc" || fail "$interpreter_name delegated default flow rc written by the CLI"
+  assert_not_contains "$output" 'Updated ~/.bashrc' "$interpreter_name delegated default flow must not rewrite rc files inline"
   [[ $(wc -l <"$composio_log") -eq 3 ]] || fail "$interpreter_name default flow invoked extra CLI commands"
   grep -Fq '|--version' "$composio_log" || fail "$interpreter_name version probe"
   [[ ! -s "$case_root/git.log" ]] || fail "$interpreter_name must not use git"
@@ -607,7 +641,8 @@ EOF
   assert_contains "$direct_output" 'Configured zsh shell setup (cli).' "$interpreter_name COMPOSIO_INSTALL_SHELL confirmation"
   assert_not_contains "$direct_output" 'Required next step' "$interpreter_name COMPOSIO_INSTALL_SHELL must not print setup guidance"
   assert_tail "$direct_output" "$case_b_tail" "$interpreter_name COMPOSIO_INSTALL_SHELL Case B tail"
-  [[ ! -e "$direct_home/.zshrc" ]] || fail "$interpreter_name COMPOSIO_INSTALL_SHELL CLI path must not write rc files"
+  grep -Fq "export PATH=\"$direct_bin:\$PATH\"" "$direct_home/.zshrc" || fail "$interpreter_name COMPOSIO_INSTALL_SHELL CLI-written block"
+  assert_not_contains "$direct_output" 'Updated ~/.zshrc' "$interpreter_name COMPOSIO_INSTALL_SHELL CLI path must not rewrite rc files inline"
 
   reset_case
   CASE_INSTALL_SHELL=zsh
@@ -780,12 +815,14 @@ EOF
   assert_contains "$shadow_output" "$shadow_dir/composio" "$interpreter_name shadow ending names the shadowing command"
   assert_tail "$shadow_output" $'To use the newly installed CLI, run:\n\n  '"$shadow_install/composio login" "$interpreter_name shadow tail avoids the shadowed bare command"
 
-  # Pinned old CLI: supports --shell but ignores the invocation-origin hint and
-  # prints its own boxed restart hint. A relative COMPOSIO_BIN_DIR must never
-  # reach setup raw; startup files stay untouched; the installer's plain final
+  # Pinned old CLI: supports --shell but ignores the invocation-origin hint,
+  # prints its own boxed restart hint, and exits 0 without reconciling. A
+  # relative COMPOSIO_BIN_DIR must never reach setup raw; the installer must
+  # detect the unreconciled startup file and repair it inline; its plain final
   # block prints after the old hint and supersedes it.
   reset_case
   CASE_INSTALL_HINT=1
+  CASE_INSTALL_RECONCILE=0
   oldcli_home="$case_root/oldcli-home"
   oldcli_work="$case_root/oldcli-work"
   oldcli_install="$case_root/oldcli-install"
@@ -793,8 +830,9 @@ EOF
   oldcli_output=$(cd "$oldcli_work" && run_installer "$oldcli_home" "$oldcli_install" "rel-bin" "$stable_tag" 2>&1)
   grep -Fq "|installer|$oldcli_work/rel-bin|install --shell bash" "$composio_log" ||
     fail "$interpreter_name old-CLI setup must receive the resolved absolute bin dir"
-  [[ ! -e "$oldcli_home/.bashrc" && ! -e "$oldcli_home/.bash_profile" ]] ||
-    fail "$interpreter_name old-CLI delegation must leave startup files unchanged"
+  grep -Fq "export PATH=\"$oldcli_work/rel-bin:\$PATH\"" "$oldcli_home/.bashrc" ||
+    fail "$interpreter_name old-CLI delegation must be reconciled inline with the absolute bin dir"
+  assert_contains "$oldcli_output" 'Configured bash shell setup (fallback).' "$interpreter_name old-CLI reconciliation disclosure"
   assert_contains "$oldcli_output" '│ Restart your shell so composio is on PATH │' "$interpreter_name old-CLI restart hint passes through"
   assert_tail "$oldcli_output" "$case_b_tail" "$interpreter_name old-CLI hint superseded by the installer tail"
 
@@ -852,6 +890,67 @@ EOF
   fi
   grep -Fq 'alias reconcile-before=1' "$reconcile_home/.zshrc" || fail "$interpreter_name unmanaged content preserved (before block)"
   grep -Fq 'alias reconcile-after=1' "$reconcile_home/.zshrc" || fail "$interpreter_name unmanaged content preserved (after block)"
+
+  # --- Symlinked startup files and mode preservation (managed dotfiles) ---
+
+  # Inline setup must write through a symlinked rc file: the symlink survives
+  # and its target receives the managed block (mirrors the CLI unit test
+  # 'preserves a symlinked .zshrc').
+  reset_case
+  CASE_SHELL_CAPABILITY=unsupported
+  CASE_SHELL_VALUE=/bin/zsh
+  symlink_home="$case_root/symlink-home"
+  symlink_store="$case_root/symlink-store"
+  symlink_bin="$case_root/symlink-bin"
+  mkdir -p "$symlink_home" "$symlink_store"
+  printf '%s\n' 'alias dotfiles-managed=1' >"$symlink_store/zshrc"
+  ln -s "$symlink_store/zshrc" "$symlink_home/.zshrc"
+  symlink_output=$(run_installer "$symlink_home" "$case_root/symlink-install" "$symlink_bin" "$stable_tag" 2>&1)
+  assert_contains "$symlink_output" 'Updated ~/.zshrc' "$interpreter_name symlinked rc update disclosure"
+  [[ -L "$symlink_home/.zshrc" ]] || fail "$interpreter_name symlinked rc must stay a symlink"
+  [[ $(readlink "$symlink_home/.zshrc") == "$symlink_store/zshrc" ]] || fail "$interpreter_name symlinked rc target must not change"
+  [[ $(grep -Fc '# Composio CLI' "$symlink_store/zshrc") -eq 1 ]] || fail "$interpreter_name symlink target must hold one managed block"
+  grep -Fq "export PATH=\"$symlink_bin:\$PATH\"" "$symlink_store/zshrc" || fail "$interpreter_name symlink target managed line"
+  grep -Fq 'alias dotfiles-managed=1' "$symlink_store/zshrc" || fail "$interpreter_name symlink target unmanaged content preserved"
+
+  # The inline rewrite must preserve the startup file's permission bits.
+  reset_case
+  CASE_SHELL_CAPABILITY=unsupported
+  CASE_SHELL_VALUE=/bin/zsh
+  mode_home="$case_root/mode-home"
+  mkdir -p "$mode_home"
+  printf '%s\n' 'alias mode-check=1' >"$mode_home/.zshrc"
+  chmod 600 "$mode_home/.zshrc"
+  run_installer "$mode_home" "$case_root/mode-install" "$case_root/mode-bin" "$stable_tag" >/dev/null 2>&1
+  grep -Fq '# Composio CLI' "$mode_home/.zshrc" || fail "$interpreter_name mode-preservation run must write the block"
+  case $(uname) in
+  Darwin) mode_actual=$(stat -f '%Lp' "$mode_home/.zshrc") ;;
+  *) mode_actual=$(stat -c '%a' "$mode_home/.zshrc") ;;
+  esac
+  [[ $mode_actual == 600 ]] || fail "$interpreter_name inline rewrite must preserve the file mode (got $mode_actual)"
+
+  # --- Delegated setup verification (stale managed blocks) ---
+
+  # A delegated CLI that exits 0 without reconciling a pre-seeded stale block
+  # must not be trusted: the installer verifies the startup file, reconciles
+  # inline, and reports the fallback disclosure with the Case B ending.
+  reset_case
+  CASE_INSTALL_SHELL=zsh
+  CASE_INSTALL_RECONCILE=0
+  stale_home="$case_root/stale-delegated-home"
+  stale_bin="$case_root/stale-delegated-bin"
+  mkdir -p "$stale_home"
+  printf '%s\n' 'alias stale-guard=1' '' '# Composio CLI' 'export PATH="/stale/old-bin:$PATH"' >"$stale_home/.zshrc"
+  stale_output=$(run_installer "$stale_home" "$case_root/stale-delegated-install" "$stale_bin" "$stable_tag" 2>&1)
+  grep -Fq "|installer|$stale_bin|install --shell zsh" "$composio_log" || fail "$interpreter_name stale delegation still delegates first"
+  assert_contains "$stale_output" 'Configured zsh shell setup (fallback).' "$interpreter_name stale delegation reconciles inline"
+  [[ $(grep -Fc '# Composio CLI' "$stale_home/.zshrc") -eq 1 ]] || fail "$interpreter_name stale reconcile keeps one marker block"
+  grep -Fq "export PATH=\"$stale_bin:\$PATH\"" "$stale_home/.zshrc" || fail "$interpreter_name stale reconcile names the current bin dir"
+  if grep -Fq '/stale/old-bin' "$stale_home/.zshrc"; then
+    fail "$interpreter_name stale managed path must be replaced after delegation"
+  fi
+  grep -Fq 'alias stale-guard=1' "$stale_home/.zshrc" || fail "$interpreter_name stale reconcile preserves unmanaged content"
+  assert_tail "$stale_output" "$case_b_tail" "$interpreter_name stale delegation Case B tail"
 
   # --- Unsafe resolved bin dirs under the default flow (KD3) ---
 

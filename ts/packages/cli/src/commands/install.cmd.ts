@@ -195,17 +195,35 @@ type ManagedPathBlockState =
   | { readonly state: 'current' }
   | { readonly state: 'stale'; readonly reconciled: string };
 
-const isAnyMarkerLine = (line: string): boolean => {
+/**
+ * A line this installer could have written as the managed PATH assignment:
+ * POSIX `export PATH="<dir>:$PATH"` or fish `set --export PATH "<dir>" $PATH`.
+ * Matched structurally on the prefix/suffix (any bin dir) so stale blocks
+ * recording another directory are still recognized as ours.
+ */
+const isManagedPathAssignment = (line: string): boolean => {
   const trimmed = line.trim();
-  return trimmed === MARKER || trimmed === COMPLETIONS_MARKER;
+  return (
+    (trimmed.startsWith('export PATH="') && trimmed.endsWith(':$PATH"')) ||
+    (trimmed.startsWith('set --export PATH "') && trimmed.endsWith('" $PATH'))
+  );
 };
 
 /**
  * Reconcile the managed PATH block — the `MARKER` line plus the PATH
  * assignment right below it — with the currently resolved bin directory.
- * A block recording a stale bin dir is replaced in place, duplicate managed
- * PATH blocks collapse into a single current block, and unmanaged content
- * (including the completions block) is left byte-for-byte untouched.
+ * A well-formed block recording a stale bin dir is replaced in place,
+ * duplicate managed PATH blocks collapse into a single current block, and
+ * unmanaged content (including the completions block) is left byte-for-byte
+ * untouched.
+ *
+ * A marker whose next line is not a recognizable managed assignment (a user
+ * annotation, a blank line, another marker) is malformed: only the marker
+ * line itself is removed, and the fresh block is appended after all remaining
+ * content instead of replacing in place. That guarantees no user content is
+ * ever deleted, and — because these prepend-style assignments make the
+ * last-sourced line win — the new bin dir still takes PATH precedence over
+ * any orphaned stale assignment left behind.
  */
 const reconcileManagedPathBlock = (contents: string, pathBlock: string): ManagedPathBlockState => {
   const lines = contents.split('\n');
@@ -213,7 +231,8 @@ const reconcileManagedPathBlock = (contents: string, pathBlock: string): Managed
   const firstMarkerIndex = markerIndexes[0];
   if (firstMarkerIndex === undefined) return { state: 'absent' };
 
-  const expectedAssignment = (pathBlock.split('\n')[1] ?? '').trim();
+  const blockLines = pathBlock.split('\n');
+  const expectedAssignment = (blockLines[1] ?? '').trim();
   if (
     markerIndexes.length === 1 &&
     (lines[firstMarkerIndex + 1] ?? '').trim() === expectedAssignment
@@ -221,21 +240,33 @@ const reconcileManagedPathBlock = (contents: string, pathBlock: string): Managed
     return { state: 'current' };
   }
 
-  // Managed lines: each marker line and its assignment line, unless that next
-  // line is itself a marker (never consume the completions block).
+  // Managed lines: each marker line, plus the next line only when it is a
+  // recognizable managed PATH assignment — anything else is not ours to delete.
   const managedLineIndexes = new Set<number>(
     markerIndexes.flatMap(markerIndex => {
       const assignment = lines[markerIndex + 1];
-      return assignment !== undefined && !isAnyMarkerLine(assignment)
+      return assignment !== undefined && isManagedPathAssignment(assignment)
         ? [markerIndex, markerIndex + 1]
         : [markerIndex];
     })
   );
+  const hasMalformedBlock = markerIndexes.some(
+    markerIndex => !isManagedPathAssignment(lines[markerIndex + 1] ?? '')
+  );
 
-  const reconciledLines = lines.flatMap((line, index) => {
-    if (index === firstMarkerIndex) return pathBlock.split('\n');
-    return managedLineIndexes.has(index) ? [] : [line];
-  });
+  if (!hasMalformedBlock) {
+    const reconciledLines = lines.flatMap((line, index) => {
+      if (index === firstMarkerIndex) return blockLines;
+      return managedLineIndexes.has(index) ? [] : [line];
+    });
+    return { state: 'stale', reconciled: reconciledLines.join('\n') };
+  }
+
+  const keptLines = lines.flatMap((line, index) => (managedLineIndexes.has(index) ? [] : [line]));
+  const endsWithNewline = keptLines[keptLines.length - 1] === '';
+  const reconciledLines = endsWithNewline
+    ? [...keptLines.slice(0, -1), ...blockLines, '']
+    : [...keptLines, ...blockLines];
   return { state: 'stale', reconciled: reconciledLines.join('\n') };
 };
 
@@ -308,10 +339,16 @@ const atomicWriteWithMode = (
     const tmpPath = `${writeTarget}.composio-tmp`;
 
     yield* fs.writeFileString(tmpPath, contents);
-    if (Option.isSome(existingTargetInfo)) {
-      yield* fs.chmod(tmpPath, existingTargetInfo.value.mode & 0o7777);
-    }
-    yield* fs.rename(tmpPath, writeTarget);
+    // Mirror install.sh's write_path_block: when the chmod or rename step
+    // fails, remove the temp file before propagating the error so no
+    // `.composio-tmp` litter is left next to the target.
+    const promoteTmp = Effect.gen(function* () {
+      if (Option.isSome(existingTargetInfo)) {
+        yield* fs.chmod(tmpPath, existingTargetInfo.value.mode & 0o7777);
+      }
+      yield* fs.rename(tmpPath, writeTarget);
+    });
+    yield* promoteTmp.pipe(Effect.onError(() => fs.remove(tmpPath).pipe(Effect.ignore)));
   });
 
 /** Atomically rewrite each reconciled physical target, preserving its file mode. */

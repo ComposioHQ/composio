@@ -60,6 +60,18 @@ jobs:
       # automatic shell setup (the default infers the shell from $SHELL; the idempotent rc
       # edit on this ephemeral runner is harmless). Asset-aware and self-healing, so it is a
       # coverage net rather than the primary signal.
+      #
+      # This leg is also the canary for the auto shell-setup default itself: shell-setup
+      # failure is non-fatal in install.sh (exit 0 + warning), so without asserting the
+      # actual contract below, a broken default would install a working binary and still
+      # report green. SHELL=/bin/bash pins deterministic auto-resolution on this runner, and
+      # the assertions mirror cli.test-installation.yml's checks — the managed PATH block in
+      # ~/.bashrc, plus that a login shell can actually resolve the binary.
+      #
+      # Deployment coupling: like the production legs in cli.install-e2e.yml, this installs
+      # from the PRODUCTION installer (composio.dev/install), so the shell-setup assertions
+      # only pass once the auto-default ships there. This workflow is schedule/workflow_dispatch
+      # only (no pull_request trigger), so it never runs against a pre-deploy PR or branch.
       - name: Install via default no-arg flow
         run: |
           set -euo pipefail
@@ -76,10 +88,29 @@ jobs:
             "$HOME/.composio/services" \
             "$HOME/.composio/acp-adapters" \
             "$HOME/.composio/local-tools-binaries"
-          curl -fsSL https://composio.dev/install | sh
+          curl -fsSL https://composio.dev/install | SHELL=/bin/bash sh
           test -x "$HOME/.composio/composio"
           test -L "$HOME/.local/bin/composio"
           "$HOME/.local/bin/composio" --version
+
+          # Assert the auto shell-setup contract: the managed PATH block landed in ~/.bashrc.
+          if grep -Fqx '# Composio CLI' "$HOME/.bashrc" \
+            && grep -Fqx 'export PATH="$HOME/.local/bin:$PATH"' "$HOME/.bashrc"; then
+            echo "✅ ~/.bashrc gained the managed Composio PATH block via automatic shell setup"
+          else
+            echo "❌ ~/.bashrc missing the managed Composio PATH block after the no-argument install"
+            echo "=== ~/.bashrc contents ==="
+            cat "$HOME/.bashrc" || true
+            exit 1
+          fi
+
+          # Assert a login shell actually resolves the binary through that PATH block.
+          if bash -ilc 'command -v composio' && bash -ilc 'composio --version'; then
+            echo "✅ composio resolves via a login bash shell"
+          else
+            echo "❌ composio did not resolve via a login bash shell"
+            exit 1
+          fi
 
       - name: Send Slack Notification (Failure)
         if: failure()

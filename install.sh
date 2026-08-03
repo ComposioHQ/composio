@@ -369,16 +369,25 @@ write_path_block() {
     if [ ! -f "$write_path_file" ]; then
         touch "$write_path_file" 2>/dev/null || return 1
     fi
-    if path_block_current "$write_path_file" "$write_path_line"; then
+    # Dotfile managers keep startup files as symlinks; rewrite the physical
+    # target so the tmp+rename replace below cannot detach the symlink.
+    write_path_target=$(resolve_physical_path "$write_path_file")
+    if path_block_current "$write_path_target" "$write_path_line"; then
         info "$(tildify "$write_path_file") is already up to date."
         return 0
     fi
-    write_path_tmp=$write_path_file.composio.tmp
+    write_path_tmp=$write_path_target.composio.tmp.$$
+    # cp -p seeds the tmp with the original permission bits; the awk rewrite
+    # below truncates its content while the copied mode survives the rename.
+    if ! cp -p "$write_path_target" "$write_path_tmp" 2>/dev/null; then
+        rm -f "$write_path_tmp"
+        return 1
+    fi
     if ! awk '
         pending { pending = 0; next }
         $0 == "# Composio CLI" { pending = 1; next }
         { print }
-    ' "$write_path_file" >"$write_path_tmp" 2>/dev/null; then
+    ' "$write_path_target" >"$write_path_tmp" 2>/dev/null; then
         rm -f "$write_path_tmp"
         return 1
     fi
@@ -386,7 +395,7 @@ write_path_block() {
         rm -f "$write_path_tmp"
         return 1
     fi
-    if ! mv "$write_path_tmp" "$write_path_file" 2>/dev/null; then
+    if ! mv "$write_path_tmp" "$write_path_target" 2>/dev/null; then
         rm -f "$write_path_tmp"
         return 1
     fi
@@ -419,6 +428,33 @@ inline_shell_setup() {
     return 0
 }
 
+# Succeeds when one startup file already holds the current managed block.
+delegated_file_current() {
+    [ -f "$1" ] && path_block_current "$1" "$2"
+}
+
+# Stable CLI --shell implementations skip any startup file that already
+# carries the managed marker, so a delegated exit 0 can leave a stale block
+# naming an old bin dir. Confirm every target startup file of the requested
+# shell names the current bin dir before trusting the delegation.
+delegated_setup_verified() {
+    delegated_rendered=$(render_bin_dir "$resolved_bin_dir")
+    case $requested_shell in
+        zsh) delegated_file_current "$HOME/.zshrc" "$(path_block_line zsh "$delegated_rendered")" ;;
+        fish) delegated_file_current "$HOME/.config/fish/config.fish" "$(path_block_line fish "$delegated_rendered")" ;;
+        bash)
+            delegated_line=$(path_block_line bash "$delegated_rendered")
+            delegated_file_current "$HOME/.bashrc" "$delegated_line" || return 1
+            if [ -f "$HOME/.bash_profile" ]; then
+                delegated_file_current "$HOME/.bash_profile" "$delegated_line"
+            elif [ -f "$HOME/.bash_login" ]; then
+                delegated_file_current "$HOME/.bash_login" "$delegated_line"
+            fi
+            ;;
+        *) return 1 ;;
+    esac
+}
+
 setup_requested_shell() {
     if is_unsafe_path "$resolved_bin_dir"; then
         warn "Skipping automatic shell setup: the executable directory \"$resolved_bin_dir\" contains unsupported characters."
@@ -426,7 +462,8 @@ setup_requested_shell() {
     fi
     if "$exe" install --help 2>&1 | grep -q -- '--shell'; then
         debug "delegating shell setup to $exe install --shell $requested_shell"
-        if COMPOSIO_CLI_INVOCATION_ORIGIN=installer COMPOSIO_BIN_DIR="$resolved_bin_dir" "$exe" install --shell "$requested_shell"; then
+        if COMPOSIO_CLI_INVOCATION_ORIGIN=installer COMPOSIO_BIN_DIR="$resolved_bin_dir" "$exe" install --shell "$requested_shell" &&
+            delegated_setup_verified; then
             shell_configured=cli
             info "Configured $requested_shell shell setup ($shell_configured)."
             return 0

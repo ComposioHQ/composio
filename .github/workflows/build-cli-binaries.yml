@@ -357,9 +357,9 @@ jobs:
           export PATH="$COMPOSIO_BIN_DIR:$PATH"
           ```
 
-          After a manual installation, run `composio install` to add the CLI to your
-          shell's `PATH` permanently (or `composio install --shell zsh|bash|fish` to
-          target a specific shell).
+          After a manual installation, run `composio install --shell zsh|bash|fish`
+          (with your shell in place of `zsh|bash|fish`) to add the CLI to your
+          shell's `PATH` permanently.
 
           ## Usage
 
