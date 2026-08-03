@@ -50,7 +50,7 @@ catalog:
   dotenv: ^17.4.2
   effect: ^3.22.1
   hono: ^4.12.33
-  openai: ^6.49.0
+  openai: ^7.2.0
   picocolors: ^1.1.1
   pnpm: ^11.17.0
   publint: ^0.3.22
