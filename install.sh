@@ -263,11 +263,33 @@ install_bundle() {
         warn 'This release archive has no bundled support files. Some CLI features may be unavailable.'
     fi
 
-    cp -Rp "$install_bundle_dir"/. "$resolved_install_dir/" ||
-        error "Failed to install the CLI bundle to \"$resolved_install_dir\""
-    chmod +x "$resolved_install_dir/composio" || error 'Failed to set permissions on executable'
-    printf '%s\n' "$version" >"$resolved_install_dir/release-tag.txt" ||
-        error "Failed to write install metadata to \"$resolved_install_dir/release-tag.txt\""
+    # Stage the bundle on the same filesystem as the install dir, then move each
+    # top-level entry into place. rename() replaces a running binary atomically,
+    # where copying through the old inode fails with ETXTBSY on Linux and would
+    # leave a mixed old-binary/new-support-files install behind.
+    install_staging_dir=$resolved_install_dir/.composio-install-staging.$$
+    rm -rf "$install_staging_dir"
+    mkdir -p "$install_staging_dir" ||
+        error "Failed to create staging directory \"$install_staging_dir\""
+    cp -Rp "$install_bundle_dir"/. "$install_staging_dir/" ||
+        error "Failed to stage the CLI bundle in \"$install_staging_dir\""
+    chmod +x "$install_staging_dir/composio" || error 'Failed to set permissions on executable'
+    printf '%s\n' "$version" >"$install_staging_dir/release-tag.txt" ||
+        error "Failed to write install metadata to \"$install_staging_dir/release-tag.txt\""
+
+    for install_entry in "$install_staging_dir"/* "$install_staging_dir"/.[!.]* "$install_staging_dir"/..?*; do
+        [ -e "$install_entry" ] || [ -L "$install_entry" ] || continue
+        install_entry_name=${install_entry##*/}
+        install_entry_target=$resolved_install_dir/$install_entry_name
+        # Directories cannot be replaced by rename(); drop the outgoing entry so
+        # bundle directories are replaced wholesale rather than merged.
+        if [ -d "$install_entry" ] || [ -d "$install_entry_target" ]; then
+            rm -rf "$install_entry_target"
+        fi
+        mv -f "$install_entry" "$install_entry_target" ||
+            error "Failed to install the CLI bundle to \"$resolved_install_dir\""
+    done
+    rm -rf "$install_staging_dir"
 }
 
 install_entry_point() {
@@ -660,6 +682,9 @@ print_setup_failure_ending() {
 cleanup() {
     if [ -n "${tmpdir:-}" ] && [ -d "$tmpdir" ]; then
         rm -rf "$tmpdir"
+    fi
+    if [ -n "${install_staging_dir:-}" ] && [ -d "$install_staging_dir" ]; then
+        rm -rf "$install_staging_dir"
     fi
 }
 

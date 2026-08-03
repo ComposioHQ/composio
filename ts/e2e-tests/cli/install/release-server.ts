@@ -7,6 +7,16 @@ const ARCHIVE_BY_ARCH = {
   x64: 'composio-linux-x64.zip',
 } as const;
 
+/**
+ * Body served in place of the release archive under the failure-mode prefixes.
+ *
+ * - `/corrupt/...` also serves a checksums.txt that matches this body, so the
+ *   installer passes checksum verification and fails at extraction.
+ * - `/checksum-mismatch/...` keeps the genuine checksums.txt, so the installer
+ *   fails at checksum verification before extraction.
+ */
+const CORRUPT_ARCHIVE_BODY = 'not a zip archive\n';
+
 export interface InstallReleaseServer {
   baseUrl: string;
   platform: 'linux/amd64' | 'linux/arm64';
@@ -64,8 +74,11 @@ export function startInstallReleaseServer(options: {
       }
 
       if (url.pathname.includes('/releases/download/') && url.pathname.endsWith(archiveName)) {
-        if (url.pathname.startsWith('/corrupt/')) {
-          return new Response('not a zip archive\n', {
+        if (
+          url.pathname.startsWith('/corrupt/') ||
+          url.pathname.startsWith('/checksum-mismatch/')
+        ) {
+          return new Response(CORRUPT_ARCHIVE_BODY, {
             headers: { 'content-type': 'application/zip' },
           });
         }
@@ -75,6 +88,14 @@ export function startInstallReleaseServer(options: {
       }
 
       if (url.pathname.includes('/releases/download/') && url.pathname.endsWith('checksums.txt')) {
+        if (url.pathname.startsWith('/corrupt/')) {
+          const corruptDigest = new Bun.CryptoHasher('sha256')
+            .update(CORRUPT_ARCHIVE_BODY)
+            .digest('hex');
+          return new Response(`${corruptDigest}  ${archiveName}\n`, {
+            headers: { 'content-type': 'text/plain; charset=utf-8' },
+          });
+        }
         return new Response(readFileSync(checksumsPath), {
           headers: { 'content-type': 'text/plain; charset=utf-8' },
         });

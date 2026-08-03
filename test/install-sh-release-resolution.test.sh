@@ -85,7 +85,7 @@ assert_login_bash_path() {
 for script in "$repo_root/install.sh" "$repo_root"/install/*.sh; do
   [[ $(tail -n 1 "$script") == 'main "$@"' ]] || fail "$script must end with main \"\$@\""
   [[ $(grep -c '^main "\$@"$' "$script") -eq 1 ]] || fail "$script must contain one main entry point"
-  if rg -n '(^|[[:space:]])\[\[[[:space:]]|set -[^[:space:]]*o[[:space:]]+pipefail|<\(|<<<|echo -e|(^|[[:space:]])local[[:space:]]' "$script"; then
+  if grep -En '(^|[[:space:]])\[\[[[:space:]]|set -[^[:space:]]*o[[:space:]]+pipefail|<\(|<<<|echo -e|(^|[[:space:]])local[[:space:]]' "$script"; then
     fail "$script contains a non-POSIX shell construct"
   fi
 done
@@ -103,6 +103,10 @@ for variant in bash zsh fish; do
   variant_script="$repo_root/install/$variant.sh"
   grep -Fqx "requested_shell() { printf '%s\\n' $variant; }" "$variant_script" ||
     fail "install/$variant.sh must hardcode requested_shell() for $variant"
+  # The diff below masks every requested_shell() line, so a second overriding
+  # definition would slip through it; require exactly one such line per variant.
+  [[ $(grep -Fc 'requested_shell()' "$variant_script") -eq 1 ]] ||
+    fail "install/$variant.sh must mention requested_shell() exactly once"
   diff <(grep -Fv 'requested_shell()' "$repo_root/install/bash.sh") \
     <(grep -Fv 'requested_shell()' "$variant_script") >/dev/null ||
     fail "install/$variant.sh drifted from install/bash.sh outside requested_shell()"
@@ -392,6 +396,30 @@ EOF
     : >"$composio_log"
   }
 
+  # Env assignments shared by run_installer and run_variant. Emitted into
+  # common_env_args; each runner appends its own entry-point-specific overrides.
+  common_env() {
+    local home=$1
+    local install_dir=$2
+    local bin_dir=$3
+    common_env_args=(
+      HOME="$home"
+      COMPOSIO_INSTALL_DIR="$install_dir"
+      COMPOSIO_BIN_DIR="$bin_dir"
+      COMPOSIO_INSTALL_PLUGINS="${CASE_PLUGINS:-0}"
+      COMPOSIO_GITHUB_URL="${CASE_GITHUB_URL:-$github_url}"
+      COMPOSIO_GITHUB_API_BASE_URL="${CASE_API_BASE:-$api_base}"
+      COMPOSIO_GITHUB_OWNER=FakeOwner
+      COMPOSIO_GITHUB_REPO=fake-repo
+      TEST_CHECKSUM_MODE="${CASE_CHECKSUM_MODE:-missing}"
+      TEST_SHELL_CAPABILITY="${CASE_SHELL_CAPABILITY:-supported}"
+      TEST_INSTALL_EXIT="${CASE_INSTALL_EXIT:-0}"
+      TEST_CURL_DELAY_URL="${CASE_CURL_DELAY_URL:-}"
+      TEST_CURL_DELAY_SECONDS="${CASE_CURL_DELAY_SECONDS:-1}"
+      TEST_CURL_PARENT_PID_FILE="$case_root/curl-parent.pid"
+    )
+  }
+
   run_installer() {
     local home=$1
     local install_dir=$2
@@ -402,35 +430,23 @@ EOF
     if [[ ${CASE_UNSET_SHELL:-0} == 1 ]]; then
       installer_command=("$interpreter" -c 'unset SHELL; script=$1; shift; . "$script"' unset-shell "$repo_root/install.sh")
     fi
+    common_env "$home" "$install_dir" "$bin_dir"
     env \
       PATH="${CASE_PATH_PREFIX:-}$fake_bin:$ambient_path" \
-      HOME="$home" \
       SHELL="${CASE_SHELL_VALUE:-/bin/bash}" \
-      COMPOSIO_INSTALL_DIR="$install_dir" \
-      COMPOSIO_BIN_DIR="$bin_dir" \
+      "${common_env_args[@]}" \
       COMPOSIO_INSTALL_VERSION="${CASE_INSTALL_VERSION:-}" \
       COMPOSIO_INSTALL_SHELL="${CASE_INSTALL_SHELL:-}" \
-      COMPOSIO_INSTALL_PLUGINS="${CASE_PLUGINS:-0}" \
       COMPOSIO_QUIET="${CASE_QUIET:-0}" \
       COMPOSIO_DEBUG="${CASE_DEBUG:-0}" \
       COMPOSIO_INSTALL_HELP="${CASE_HELP:-1}" \
       COMPOSIO_INSTALL_ALLOW_HTTP_HOST="${CASE_ALLOW_HTTP_HOST:-}" \
-      COMPOSIO_GITHUB_URL="${CASE_GITHUB_URL:-$github_url}" \
-      COMPOSIO_GITHUB_API_BASE_URL="${CASE_API_BASE:-$api_base}" \
-      COMPOSIO_GITHUB_OWNER=FakeOwner \
-      COMPOSIO_GITHUB_REPO=fake-repo \
-      TEST_CHECKSUM_MODE="${CASE_CHECKSUM_MODE:-missing}" \
       TEST_API_ASSET_URL="${CASE_API_ASSET_URL:-}" \
       TEST_REDIRECT_DOWNGRADE="${CASE_REDIRECT_DOWNGRADE:-0}" \
-      TEST_SHELL_CAPABILITY="${CASE_SHELL_CAPABILITY:-supported}" \
-      TEST_INSTALL_EXIT="${CASE_INSTALL_EXIT:-0}" \
       TEST_INSTALL_HINT="${CASE_INSTALL_HINT:-0}" \
       TEST_INSTALL_RECONCILE="${CASE_INSTALL_RECONCILE:-1}" \
       TEST_SETUP_EXIT="${CASE_SETUP_EXIT:-0}" \
       TEST_VERSION_EXIT="${CASE_VERSION_EXIT:-0}" \
-      TEST_CURL_DELAY_URL="${CASE_CURL_DELAY_URL:-}" \
-      TEST_CURL_DELAY_SECONDS="${CASE_CURL_DELAY_SECONDS:-1}" \
-      TEST_CURL_PARENT_PID_FILE="$case_root/curl-parent.pid" \
       "${installer_command[@]}" "$@"
   }
 
@@ -441,26 +457,14 @@ EOF
     local bin_dir=$4
     shift 4
     mkdir -p "$home" "$install_dir" "$bin_dir"
+    common_env "$home" "$install_dir" "$bin_dir"
     env \
       PATH="$fake_bin:$ambient_path" \
-      HOME="$home" \
       SHELL="/bin/$shell_name" \
-      COMPOSIO_INSTALL_DIR="$install_dir" \
-      COMPOSIO_BIN_DIR="$bin_dir" \
+      "${common_env_args[@]}" \
       COMPOSIO_INSTALL_SCRIPT_URL="$script_url" \
-      COMPOSIO_INSTALL_PLUGINS=0 \
-      COMPOSIO_GITHUB_URL="$github_url" \
-      COMPOSIO_GITHUB_API_BASE_URL="$api_base" \
-      COMPOSIO_GITHUB_OWNER=FakeOwner \
-      COMPOSIO_GITHUB_REPO=fake-repo \
       TEST_BASE_MODE="${CASE_BASE_MODE:-ok}" \
-      TEST_CHECKSUM_MODE=missing \
-      TEST_SHELL_CAPABILITY="${CASE_SHELL_CAPABILITY:-supported}" \
-      TEST_INSTALL_EXIT="${CASE_INSTALL_EXIT:-0}" \
       TEST_INSTALL_RECONCILE="${CASE_INSTALL_RECONCILE:-1}" \
-      TEST_CURL_DELAY_URL="${CASE_CURL_DELAY_URL:-}" \
-      TEST_CURL_DELAY_SECONDS="${CASE_CURL_DELAY_SECONDS:-1}" \
-      TEST_CURL_PARENT_PID_FILE="$case_root/curl-parent.pid" \
       "$interpreter" "$repo_root/install/$shell_name.sh" "$@"
   }
 
@@ -499,6 +503,20 @@ EOF
   run_installer "$case_root/equal-home" "$equal_dir" "$equal_dir" "$beta_tag" >/dev/null 2>&1
   [[ -x "$equal_dir/composio" && ! -L "$equal_dir/composio" ]] || fail "$interpreter_name equal-dir layout"
   [[ $(<"$equal_dir/release-tag.txt") == "$beta_tag" ]] || fail "$interpreter_name explicit beta tag"
+
+  reset_case
+  upgrade_home="$case_root/upgrade-home"
+  upgrade_install="$case_root/upgrade-install"
+  upgrade_bin="$case_root/upgrade-bin"
+  mkdir -p "$upgrade_install/services"
+  printf '%s\n' stale >"$upgrade_install/services/stale.txt"
+  printf '%s\n' old-binary >"$upgrade_install/composio"
+  run_installer "$upgrade_home" "$upgrade_install" "$upgrade_bin" "$stable_tag" >/dev/null 2>&1
+  [[ -x "$upgrade_install/composio" ]] || fail "$interpreter_name upgrade must replace the existing binary"
+  [[ $(<"$upgrade_install/services/example.txt") == service ]] || fail "$interpreter_name upgrade must install new support files"
+  [[ ! -e "$upgrade_install/services/stale.txt" ]] || fail "$interpreter_name upgrade must replace bundle directories wholesale"
+  [[ -z $(find "$upgrade_install" -maxdepth 1 -name '.composio-install-staging.*' -print -quit) ]] ||
+    fail "$interpreter_name upgrade must clean up the staging directory"
 
   reset_case
   legacy_home="$case_root/legacy-home"
@@ -590,35 +608,36 @@ EOF
   fi
   assert_tail "$unset_shell_output" $'To get started now, run:\n\n  '"$unset_shell_install/composio login" "$interpreter_name unset SHELL install-only tail"
 
+  # Runs the given command in the background, SIGTERMs it once the delayed
+  # download is reached, and asserts the process exits with 128+15.
+  assert_sigterm_143() {
+    local label=$1
+    local output_file=$2
+    shift 2
+    "$@" >"$output_file" 2>&1 &
+    local signal_job=$!
+    wait_for_file "$case_root/curl-parent.pid" "$interpreter_name $label did not reach delayed download"
+    local signal_pid
+    signal_pid=$(<"$case_root/curl-parent.pid")
+    kill -TERM "$signal_pid"
+    local signal_status=0
+    if wait "$signal_job"; then
+      fail "$interpreter_name $label must terminate after SIGTERM"
+    else
+      signal_status=$?
+    fi
+    [[ $signal_status -eq 143 ]] || fail "$interpreter_name $label SIGTERM status (got $signal_status)"
+  }
+
   reset_case
   CASE_CURL_DELAY_URL="$github_url/FakeOwner/fake-repo/releases/download/$stable_tag/$archive_name"
-  signal_output="$case_root/signal-installer.log"
-  run_installer "$case_root/signal-home" "$case_root/signal-install" "$case_root/signal-bin" "$stable_tag" >"$signal_output" 2>&1 &
-  signal_job=$!
-  wait_for_file "$case_root/curl-parent.pid" "$interpreter_name installer did not reach delayed download"
-  signal_pid=$(<"$case_root/curl-parent.pid")
-  kill -TERM "$signal_pid"
-  if wait "$signal_job"; then
-    fail "$interpreter_name installer must terminate after SIGTERM"
-  else
-    signal_status=$?
-  fi
-  [[ $signal_status -eq 143 ]] || fail "$interpreter_name installer SIGTERM status (got $signal_status)"
+  assert_sigterm_143 'installer' "$case_root/signal-installer.log" \
+    run_installer "$case_root/signal-home" "$case_root/signal-install" "$case_root/signal-bin" "$stable_tag"
 
   reset_case
   CASE_CURL_DELAY_URL=$script_url
-  variant_signal_output="$case_root/signal-variant.log"
-  run_variant zsh "$case_root/signal-variant-home" "$case_root/signal-variant-install" "$case_root/signal-variant-bin" "$stable_tag" >"$variant_signal_output" 2>&1 &
-  variant_signal_job=$!
-  wait_for_file "$case_root/curl-parent.pid" "$interpreter_name shell variant did not reach delayed download"
-  variant_signal_pid=$(<"$case_root/curl-parent.pid")
-  kill -TERM "$variant_signal_pid"
-  if wait "$variant_signal_job"; then
-    fail "$interpreter_name shell variant must terminate after SIGTERM"
-  else
-    variant_signal_status=$?
-  fi
-  [[ $variant_signal_status -eq 143 ]] || fail "$interpreter_name shell variant SIGTERM status (got $variant_signal_status)"
+  assert_sigterm_143 'shell variant' "$case_root/signal-variant.log" \
+    run_variant zsh "$case_root/signal-variant-home" "$case_root/signal-variant-install" "$case_root/signal-variant-bin" "$stable_tag"
 
   reset_case
   CASE_GITHUB_URL='http://127.0.0.1:8929'

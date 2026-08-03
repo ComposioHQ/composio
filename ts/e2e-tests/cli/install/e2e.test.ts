@@ -66,10 +66,13 @@ async function run(script: string): Promise<ExecResult> {
   if (!image) {
     throw new Error('Install image is not ready');
   }
+  // The test scripts are POSIX sh, which fish cannot interpret: drive fish legs
+  // from bash and let the assertions invoke fish login shells explicitly.
+  const scriptShell = config.shell === 'fish' ? 'bash' : config.shell;
   return runInstallContainer({
     ...image,
     shell: config.shell,
-    cmd: [config.shell, '-lc', script],
+    cmd: [scriptShell, '-lc', script],
     env: installerEnvironment(),
   });
 }
@@ -281,19 +284,62 @@ printf '%s\n' "$combined" | grep -F "$HOME/.composio/composio login"
   });
 }
 
-if (config.mode === 'local') {
-  describe('local failure handling', () => {
+if (config.mode === 'local' && config.shell === 'fish') {
+  describe('local fish installation', () => {
     it(
-      'rejects a corrupted release archive before creating the entry point',
+      'configures fish idempotently and exposes composio in a fresh fish login shell',
       async () => {
         const result = await run(`
 set -eu
-if curl -fsSL "$INSTALL_BASE_URL/install" | SHELL=/bin/${config.shell} COMPOSIO_GITHUB_URL="$INSTALL_BASE_URL/corrupt" sh -s -- "$E2E_RELEASE_TAG"; then
-  echo 'corrupted archive unexpectedly installed' >&2
+test ! -d "$HOME/.local/bin"
+curl -fsSL "$INSTALL_BASE_URL/install/fish" | sh
+curl -fsSL "$INSTALL_BASE_URL/install/fish" | sh
+test -x "$HOME/.composio/composio"
+test -L "$HOME/.local/bin/composio"
+test "$(readlink -f "$HOME/.local/bin/composio")" = "$HOME/.composio/composio"
+test "$(grep -Fc '# Composio CLI' "$HOME/.config/fish/config.fish")" = 1
+test "$(fish -l -c 'command -v composio')" = "$HOME/.local/bin/composio"
+test "$(fish -l -c 'composio --version')" = 98.0.0
+`);
+        assertSuccess(result);
+      },
+      timeout
+    );
+  });
+}
+
+if (config.mode === 'local') {
+  describe('local failure handling', () => {
+    it(
+      'rejects an archive that fails checksum verification before extraction',
+      async () => {
+        const result = await run(`
+set -eu
+if output=$(curl -fsSL "$INSTALL_BASE_URL/install" | COMPOSIO_GITHUB_URL="$INSTALL_BASE_URL/checksum-mismatch" sh -s -- "$E2E_RELEASE_TAG" 2>&1); then
+  echo 'mismatched archive unexpectedly installed' >&2
   exit 1
 fi
+printf '%s\n' "$output" | grep -F 'Checksum mismatch'
 test ! -e "$HOME/.local/bin/composio"
 `);
+        assertSuccess(result);
+      },
+      timeout
+    );
+
+    it(
+      'rejects a corrupted archive at extraction before creating the entry point',
+      async () => {
+        const result = await run(`
+        set -eu
+        if output=$(curl -fsSL "$INSTALL_BASE_URL/install" | SHELL=/bin/${config.shell} COMPOSIO_GITHUB_URL="$INSTALL_BASE_URL/corrupt" sh -s -- "$E2E_RELEASE_TAG" 2>&1); then
+          echo 'corrupted archive unexpectedly installed' >&2
+          exit 1
+        fi
+        printf '%s\n' "$output" | grep -F 'Checksum verified'
+        printf '%s\n' "$output" | grep -F 'Failed to extract archive'
+        test ! -e "$HOME/.local/bin/composio"
+        `);
         assertSuccess(result);
       },
       timeout

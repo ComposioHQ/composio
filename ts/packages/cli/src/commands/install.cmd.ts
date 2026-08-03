@@ -1,7 +1,7 @@
 import { Command, Options } from '@effect/cli';
 import { FileSystem, Path } from '@effect/platform';
 import type { PlatformError } from '@effect/platform/Error';
-import { Array as Arr, Config, ConfigProvider, Effect, Option } from 'effect';
+import { Array as Arr, Config, ConfigProvider, Data, Effect, Option } from 'effect';
 import { ComposioCliUserConfig } from 'src/services/cli-user-config';
 import { NodeOs } from 'src/services/node-os';
 import { NodeProcess } from 'src/services/node-process';
@@ -33,7 +33,18 @@ const shellOpt = Options.choice('shell', SHELLS).pipe(
 // Types
 // ---------------------------------------------------------------------------
 
-type Shell = (typeof SHELLS)[number];
+export type Shell = (typeof SHELLS)[number];
+
+/**
+ * Aborted shell setup must fail the process: install.sh only runs its guarded
+ * inline PATH fallback when `composio install` exits non-zero, so a successful
+ * exit here would leave the user with no PATH setup and a green install. The
+ * abort reason is already printed before this error is raised; cli-main.ts
+ * maps it to exit code 1 without printing anything further.
+ */
+export class ShellSetupAbortError extends Data.TaggedError('commands/ShellSetupAbortError')<{
+  readonly message: string;
+}> {}
 
 interface ShellConfig {
   readonly shell: Shell;
@@ -85,13 +96,31 @@ const isDirOnPath = (pathEnv: string, dir: string): boolean =>
   pathEnv.split(':').some(entry => entry === dir);
 
 /**
- * Bin-dir resolution order: explicit env, then `~/.local/bin` when it already
- * holds a `composio` entry point, then the real binary's own directory.
+ * True when `candidate` resolves (following symlinks) to the running
+ * executable. A bare exists-check is not enough for bin-dir resolution: a
+ * leftover `composio` from another installer (e.g. pip) would win, and the
+ * PATH line would point shells at the wrong program.
+ */
+const resolvesToCurrentExecutable = (
+  candidate: string,
+  execPath: string,
+  fs: FileSystem.FileSystem
+): Effect.Effect<boolean> =>
+  Effect.zipWith(
+    fs.realPath(candidate),
+    fs.realPath(execPath).pipe(Effect.orElseSucceed(() => execPath)),
+    (candidateReal, execReal) => candidateReal === execReal
+  ).pipe(Effect.orElseSucceed(() => false));
+
+/**
+ * Bin-dir resolution order: explicit env, then `~/.local/bin` when its
+ * `composio` entry point is the running executable, then the real binary's
+ * own directory.
  */
 const resolveBinDir = (params: {
   readonly envBinDir: string | undefined;
   readonly localBinDir: string;
-  readonly localBinComposioExists: boolean;
+  readonly localBinComposioIsCurrentExecutable: boolean;
   readonly execPath: string;
   readonly path: Path.Path;
 }): string => {
@@ -99,7 +128,7 @@ const resolveBinDir = (params: {
   if (trimmedEnvBinDir && trimmedEnvBinDir.length > 0) {
     return trimmedEnvBinDir;
   }
-  if (params.localBinComposioExists) {
+  if (params.localBinComposioIsCurrentExecutable) {
     return params.localBinDir;
   }
   return params.path.dirname(params.execPath);
@@ -498,6 +527,38 @@ const resolveWriteTarget = (
     Effect.catchAll(() => Effect.succeed(filePath))
   );
 
+/**
+ * Atomically replace `writeTarget` via a same-directory tmp file. The tmp copy
+ * is created with the target's mode from the start so a private rc's contents
+ * never sit in a default-mode, world-readable tmp file. open(2) masks the
+ * requested mode with the process umask (only ever clearing bits), so a chmod
+ * still follows to pin the exact mode.
+ */
+const replaceFilePreservingMode = (
+  writeTarget: string,
+  contents: string,
+  fs: FileSystem.FileSystem
+): Effect.Effect<void, PlatformError> =>
+  Effect.gen(function* () {
+    const existingTargetInfo = yield* fs.stat(writeTarget).pipe(Effect.option);
+    const preservedMode = Option.map(existingTargetInfo, info => info.mode & 0o7777);
+    const tmpPath = `${writeTarget}.composio-tmp`;
+    yield* Option.match(preservedMode, {
+      onNone: () => fs.writeFileString(tmpPath, contents),
+      onSome: mode => fs.writeFileString(tmpPath, contents, { mode }),
+    });
+    // Mirror install.sh's write_path_block: when the chmod or rename step
+    // fails, remove the temp file before propagating the error so no
+    // `.composio-tmp` litter is left next to the target.
+    const promoteTmp = Effect.gen(function* () {
+      if (Option.isSome(preservedMode)) {
+        yield* fs.chmod(tmpPath, preservedMode.value);
+      }
+      yield* fs.rename(tmpPath, writeTarget);
+    });
+    yield* promoteTmp.pipe(Effect.onError(() => fs.remove(tmpPath).pipe(Effect.ignore)));
+  });
+
 // ---------------------------------------------------------------------------
 // Exported logic (reusable from install.sh post-install delegation)
 // ---------------------------------------------------------------------------
@@ -507,7 +568,7 @@ export const installShellIntegration = (params: {
   readonly shell?: Shell;
 }): Effect.Effect<
   void,
-  PlatformError,
+  PlatformError | ShellSetupAbortError,
   TerminalUI | NodeOs | NodeProcess | FileSystem.FileSystem | Path.Path | ComposioCliUserConfig
 > =>
   Effect.gen(function* () {
@@ -533,31 +594,39 @@ export const installShellIntegration = (params: {
 
     yield* ui.intro('composio install');
 
+    // Resolve the entry-point bin dir: explicit env, then a ~/.local/bin/composio
+    // that is this executable, then the runtime executable's own directory.
     const envBinDir = yield* readOptionalEnv('COMPOSIO_BIN_DIR');
     const localBinDir = path.join(os.homedir, '.local', 'bin');
-    const localBinComposioExists = yield* fs.exists(path.join(localBinDir, 'composio'));
+    const execPath = nodeProcess.execPath;
+    const localBinComposioIsCurrentExecutable = yield* resolvesToCurrentExecutable(
+      path.join(localBinDir, 'composio'),
+      execPath,
+      fs
+    );
     const binDir = path.normalize(
       resolveBinDir({
         envBinDir,
         localBinDir,
-        localBinComposioExists,
-        execPath: nodeProcess.execPath,
+        localBinComposioIsCurrentExecutable,
+        execPath,
         path,
       })
     );
 
     if (!path.isAbsolute(binDir)) {
-      yield* failure('Resolved bin directory must be an absolute path.');
+      const message = 'Resolved bin directory must be an absolute path.';
+      yield* failure(message);
       yield* ui.outro('Aborted.');
-      return;
+      return yield* new ShellSetupAbortError({ message });
     }
 
     if (isUnsafePath(binDir)) {
-      yield* failure(
-        'Resolved bin directory contains unsafe characters and cannot be written to shell config.'
-      );
+      const message =
+        'Resolved bin directory contains unsafe characters and cannot be written to shell config.';
+      yield* failure(message);
       yield* ui.outro('Aborted.');
-      return;
+      return yield* new ShellSetupAbortError({ message });
     }
 
     // KD7 (final-block contract): when install.sh delegates to this command it
@@ -721,7 +790,7 @@ export const installShellIntegration = (params: {
           );
 
         const appendContent = '\n' + blocks.join('\n\n') + '\n';
-        yield* atomicWriteWithMode(fs, writeTarget, existingContents + appendContent);
+        yield* replaceFilePreservingMode(writeTarget, existingContents + appendContent, fs);
 
         yield* success(`Updated ${tildify(filePath, os.homedir)}`);
       }

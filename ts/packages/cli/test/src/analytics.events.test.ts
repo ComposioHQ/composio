@@ -481,33 +481,37 @@ describe('CLI analytics journey taxonomy', () => {
     });
   });
 
-  it('marks base-installer shell-setup delegation as installer-origin and keeps shell variants on the env override', () => {
-    // The base installer defaults to automatic shell setup, so it owns the
-    // `install --shell` delegation and must tag it as installer-origin.
+  it('keeps the base installer install-only and marks shell-setup delegation as installer-origin', () => {
     const installScript = readFileSync(
       new URL('../../../../../install.sh', import.meta.url),
       'utf8'
     );
-    const delegationLine = installScript
-      .split('\n')
-      .find(line => line.includes('"$exe" install --shell'));
+    // Join backslash-continued lines so multi-line invocations match as one logical line.
+    const logicalLines = installScript.replace(/\\\n\s*/g, ' ').split('\n');
+    const installInvocations = logicalLines.filter(line => line.includes('"$exe" install'));
 
-    expect(delegationLine).toBeDefined();
-    expect(delegationLine).toContain('COMPOSIO_CLI_INVOCATION_ORIGIN=installer');
+    // The installer may invoke `composio install` only for the `--shell` capability probe
+    // and the shell-setup delegation; any other invocation would emit install analytics
+    // events without the installer origin attached.
+    const helpProbes = installInvocations.filter(line => line.includes('"$exe" install --help'));
+    const shellDelegations = installInvocations.filter(line =>
+      line.includes('"$exe" install --shell')
+    );
+    expect(helpProbes).toHaveLength(1);
+    expect(shellDelegations).toHaveLength(1);
+    expect(installInvocations).toHaveLength(2);
+    expect(shellDelegations[0]).toContain('COMPOSIO_CLI_INVOCATION_ORIGIN=installer');
 
-    // Shell variants delegate to the base installer through the explicit
-    // COMPOSIO_INSTALL_SHELL override instead of invoking the CLI themselves.
     for (const shell of ['zsh', 'bash', 'fish']) {
       const variantScript = readFileSync(
         new URL(`../../../../../install/${shell}.sh`, import.meta.url),
         'utf8'
       );
-
-      expect(variantScript).toContain(`requested_shell() { printf '%s\\n' ${shell}; }`);
-      expect(variantScript).toContain(
-        'COMPOSIO_INSTALL_SHELL="$variant_shell" sh "$variant_tmpdir/install.sh" "$@"'
-      );
-      expect(variantScript).not.toContain('install --shell');
+      // Variants never invoke the CLI themselves: they re-exec the base installer with the
+      // shell pinned, so the delegation asserted above stays the only CLI install call.
+      expect(variantScript).not.toContain('"$exe"');
+      expect(variantScript).not.toContain(' install --shell');
+      expect(variantScript).toContain('COMPOSIO_INSTALL_SHELL="$variant_shell"');
     }
   });
 });

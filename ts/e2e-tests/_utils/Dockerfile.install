@@ -2,9 +2,9 @@ FROM debian:bookworm-slim
 
 ARG INSTALL_SHELL=bash
 
-RUN case "$INSTALL_SHELL" in bash|zsh) ;; *) exit 2 ;; esac && \
+RUN case "$INSTALL_SHELL" in bash|zsh|fish) ;; *) exit 2 ;; esac && \
     apt-get update && \
-    apt-get install -y --no-install-recommends bash ca-certificates curl passwd unzip $([ "$INSTALL_SHELL" = zsh ] && printf zsh) && \
+    apt-get install -y --no-install-recommends bash ca-certificates curl passwd unzip $([ "$INSTALL_SHELL" = bash ] || printf '%s' "$INSTALL_SHELL") && \
     rm -rf /var/lib/apt/lists/* && \
     useradd -m -s "/bin/$INSTALL_SHELL" composio
 

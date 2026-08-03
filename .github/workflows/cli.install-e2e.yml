@@ -141,7 +141,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        shell: [zsh, bash]
+        shell: [zsh, bash, fish]
 
     steps:
       - name: Checkout
@@ -183,7 +183,7 @@ jobs:
     steps:
       - name: Render preview comment
         env:
-          RAW_BASE: https://raw.githubusercontent.com/${{ github.repository }}/refs/heads/${{ github.event.pull_request.head.ref }}
+          RAW_BASE: https://raw.githubusercontent.com/${{ github.repository }}/${{ github.event.pull_request.head.sha }}
         run: |
           set -euo pipefail
           {

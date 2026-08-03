@@ -85,7 +85,8 @@ export interface TestLiveInput {
   fixture?: string;
 
   /**
-   * Override for the mocked `NodeProcess.execPath`.
+   * Override for the mocked `NodeProcess.execPath`. A relative value resolves
+   * against the test home directory, which is only known once the layer builds.
    * Defaults to `<cwd>/composio`.
    */
   execPath?: string;
@@ -810,7 +811,7 @@ export const TestLayer = (input?: TestLiveInput) =>
       NodeProcess,
       new NodeProcess({
         cwd,
-        execPath: input?.execPath ?? path.join(cwd, 'composio'),
+        execPath: input?.execPath ? path.resolve(cwd, input.execPath) : path.join(cwd, 'composio'),
         platform: 'darwin',
         arch: 'arm64',
       })
