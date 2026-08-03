@@ -16,38 +16,23 @@
     "**/.next/**",
     "**/dist/**",
     "**/site-packages/**",
-    "**/__fixtures__/**",
-    "**/fixtures/**",
-    // New exclusion vs eslint.config.mjs: mock modules are test scaffolding,
-    // same as fixtures; the CI gate (pnpm lint → ts/packages) never reached them.
-    "**/__mocks__/**",
     // The docs site has its own Bun dependency tree and nested oxlint config.
     "docs/**",
     "ts/vendor/**",
     "ts/packages/cli-local-tools/vendor/**",
+    "ts/packages/core/generated/**",
+    "ts/packages/core/pack/generated/**",
+    "ts/packages/slim/generated/**",
     "ts/packages/**/.generated/**",
     "ts/packages/**/acp-adapters/**",
     "node_modules/**",
     "ts/examples/**/dist-worker/**",
-    "scripts/**",
-    "test/**",
-    "ts/packages/*/test/**",
-    "ts/packages/providers/*/test/**",
-    "!ts/packages/cli/test/**",
-    "ts/packages/cli/test/__utils__/**",
-    // New exclusions vs eslint.config.mjs: the CI gate (pnpm lint) only ever
-    // targeted ts/packages, so e2e suites and repo scripts were lint:fix-only
-    // surface. Excluded explicitly now that oxlint also runs from the repo root.
-    "ts/e2e-tests/**",
-    "ts/scripts/**",
+    "ts/examples/cloudflare-wrangler/worker-configuration.d.ts",
     // ESLint only linted .ts/.tsx (--ext .ts,.tsx); keep that scope.
     "**/*.js",
     "**/*.mjs",
     "**/*.cjs",
-    "**/*.jsx",
-    // New exclusion vs eslint.config.mjs (which matched .d.ts via --ext .ts):
-    // ambient declarations are type-only surface covered by typecheck.
-    "**/*.d.ts"
+    "**/*.jsx"
   ],
   "rules": {
     // tseslint.configs.recommended rules that oxlint's correctness category
@@ -105,6 +90,34 @@
     ]
   },
   "overrides": [
+    {
+      // These files still enforce the repository-wide no-any rule, but are
+      // exempt from source-only policies that do not fit test helpers, large
+      // suites, scripts, fixtures, or ambient declarations.
+      "files": [
+        "**/__fixtures__/**/*.{ts,tsx,mts,cts}",
+        "**/__mocks__/**/*.{ts,tsx,mts,cts}",
+        "**/fixtures/**/*.{ts,tsx,mts,cts}",
+        "scripts/**/*.{ts,tsx,mts,cts}",
+        "test/**/*.{ts,tsx,mts,cts}",
+        "ts/e2e-tests/**/*.{ts,tsx,mts,cts}",
+        "ts/packages/**/test/**/*.{ts,tsx,mts,cts}",
+        "ts/packages/**/*.d.ts",
+        "ts/scripts/**/*.{ts,tsx,mts,cts}"
+      ],
+      "rules": {
+        "max-lines-per-function": "off",
+        "no-console": "off",
+        "no-restricted-globals": "off",
+        "no-restricted-imports": "off",
+        "no-unused-vars": "off",
+        "prefer-const": "off",
+        "require-yield": "off",
+        "typescript/ban-ts-comment": "off",
+        "typescript/no-empty-object-type": "off",
+        "typescript/no-namespace": "off"
+      }
+    },
     {
       "files": ["ts/packages/cli/src/**/*.{ts,tsx}"],
       "rules": {

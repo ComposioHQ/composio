@@ -39,9 +39,8 @@
     "typecheck": "turbo typecheck --filter=./ts/packages/**",
     "typecheck:examples": "turbo typecheck --filter='./ts/examples/*'",
     "lint:examples": "turbo lint --filter='./ts/examples/*'",
-    "lint": "pnpm run lint:packages && pnpm run lint:no-any",
+    "lint": "oxlint ts test tsdown.config.base.ts",
     "lint:packages": "oxlint ts/packages",
-    "lint:no-any": "oxlint -c .oxlintrc.no-any.json --disable-nested-config .",
     "lint:fix": "oxlint --fix .",
     "lint:fix:packages": "oxlint --fix ts/packages",
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\"",
@@ -97,11 +96,11 @@
     "zod": "catalog:"
   },
   "lint-staged": {
-    "**/*.{ts,tsx,mts,cts}": [
-      "oxlint -c .oxlintrc.no-any.json --disable-nested-config"
+    "{test,ts}/**/*.{ts,tsx,mts,cts}": [
+      "oxlint --fix"
     ],
-    "ts/packages/**/*.{ts,tsx}": [
-      "oxlint --fix --no-error-on-unmatched-pattern"
+    "tsdown.config.base.ts": [
+      "oxlint --fix"
     ],
     "ts/packages/**/*.{ts,tsx,js,jsx,json,md}": [
       "prettier --write"
