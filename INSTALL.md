@@ -9,9 +9,9 @@ curl -fsSL https://composio.dev/install | sh
 The default installer changes no shell files and installs no agent plugins. If it reports that `~/.local/bin` is not available on `PATH`, run the shell-specific command it prints:
 
 ```bash
-curl -fsSL https://composio.dev/install | sh -s -- --shell zsh
-curl -fsSL https://composio.dev/install | sh -s -- --shell bash
-curl -fsSL https://composio.dev/install | sh -s -- --shell fish
+curl -fsSL https://composio.dev/install | COMPOSIO_INSTALL_SHELL=zsh sh
+curl -fsSL https://composio.dev/install | COMPOSIO_INSTALL_SHELL=bash sh
+curl -fsSL https://composio.dev/install | COMPOSIO_INSTALL_SHELL=fish sh
 ```
 
 Shell setup delegates to `composio install --shell <shell>` and falls back to writing the same `# Composio CLI` PATH block inline when the installed CLI release predates that flag.
@@ -34,9 +34,9 @@ The positional argument takes precedence over `COMPOSIO_INSTALL_VERSION`.
 | `COMPOSIO_DEBUG` | Set to `1` or `true` to print installer traces. | Unset |
 | `COMPOSIO_INSTALL_HELP` | Set to `0` to hide post-install guidance. | `1` |
 | `COMPOSIO_INSTALL_PLUGINS` | Set to `1` to install plugins for detected agent hosts. | `0` |
+| `COMPOSIO_INSTALL_SHELL` | Configure the requested shell (`zsh`, `bash`, or `fish`) after installation. | Unset |
 | `--agent` | Log in as a Composio agent after installation. | Off |
 | `--no-plugins` | Skip plugin setup. Kept for compatibility. | Off |
-| `--shell` | Configure the requested shell (`zsh`, `bash`, or `fish`) after installation. | Off |
 
 ## Manual Installation
 

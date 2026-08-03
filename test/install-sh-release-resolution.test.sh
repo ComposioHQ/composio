@@ -280,7 +280,7 @@ EOF
   export TEST_COMPOSIO_LOG="$composio_log"
 
   reset_case() {
-    unset CASE_GITHUB_URL CASE_API_BASE CASE_INSTALL_VERSION CASE_PLUGINS CASE_QUIET CASE_DEBUG CASE_HELP
+    unset CASE_GITHUB_URL CASE_API_BASE CASE_INSTALL_VERSION CASE_INSTALL_SHELL CASE_PLUGINS CASE_QUIET CASE_DEBUG CASE_HELP
     unset CASE_ALLOW_HTTP_HOST CASE_CHECKSUM_MODE CASE_API_ASSET_URL CASE_BASE_MODE CASE_REDIRECT_DOWNGRADE
     unset CASE_SHELL_CAPABILITY CASE_INSTALL_EXIT CASE_SETUP_EXIT CASE_VERSION_EXIT CASE_PATH_PREFIX CASE_UNSET_SHELL
     unset CASE_CURL_DELAY_URL CASE_CURL_DELAY_SECONDS
@@ -306,6 +306,7 @@ EOF
       COMPOSIO_INSTALL_DIR="$install_dir" \
       COMPOSIO_BIN_DIR="$bin_dir" \
       COMPOSIO_INSTALL_VERSION="${CASE_INSTALL_VERSION:-}" \
+      COMPOSIO_INSTALL_SHELL="${CASE_INSTALL_SHELL:-}" \
       COMPOSIO_INSTALL_PLUGINS="${CASE_PLUGINS:-0}" \
       COMPOSIO_QUIET="${CASE_QUIET:-0}" \
       COMPOSIO_DEBUG="${CASE_DEBUG:-0}" \
@@ -542,40 +543,37 @@ EOF
   done
 
   reset_case
+  CASE_INSTALL_SHELL=zsh
   direct_home="$case_root/direct-shell-home"
   direct_bin="$case_root/direct-shell-bin"
-  direct_output=$(run_installer "$direct_home" "$case_root/direct-shell-install" "$direct_bin" "$stable_tag" --shell zsh 2>&1)
-  grep -Fq "|installer|$direct_bin|install --shell zsh" "$composio_log" || fail "$interpreter_name --shell delegation"
-  assert_contains "$direct_output" 'Configured zsh shell setup (cli).' "$interpreter_name --shell confirmation"
-  assert_not_contains "$direct_output" 'Required next step' "$interpreter_name --shell must not print setup guidance"
-  [[ ! -e "$direct_home/.zshrc" ]] || fail "$interpreter_name --shell CLI path must not write rc files"
+  direct_output=$(run_installer "$direct_home" "$case_root/direct-shell-install" "$direct_bin" "$stable_tag" 2>&1)
+  grep -Fq "|installer|$direct_bin|install --shell zsh" "$composio_log" || fail "$interpreter_name COMPOSIO_INSTALL_SHELL delegation"
+  assert_contains "$direct_output" 'Configured zsh shell setup (cli).' "$interpreter_name COMPOSIO_INSTALL_SHELL confirmation"
+  assert_not_contains "$direct_output" 'Required next step' "$interpreter_name COMPOSIO_INSTALL_SHELL must not print setup guidance"
+  [[ ! -e "$direct_home/.zshrc" ]] || fail "$interpreter_name COMPOSIO_INSTALL_SHELL CLI path must not write rc files"
 
   reset_case
+  CASE_INSTALL_SHELL=zsh
   CASE_SHELL_CAPABILITY=unsupported
   direct_fallback_home="$case_root/direct-fallback-home"
-  direct_fallback_output=$(run_installer "$direct_fallback_home" "$case_root/direct-fallback-install" "$case_root/direct-fallback-bin" "$stable_tag" --shell zsh 2>&1)
-  grep -Fqx '# Composio CLI' "$direct_fallback_home/.zshrc" || fail "$interpreter_name --shell unsupported CLI fallback"
-  assert_contains "$direct_fallback_output" 'Configured zsh shell setup (fallback).' "$interpreter_name --shell fallback confirmation"
+  direct_fallback_output=$(run_installer "$direct_fallback_home" "$case_root/direct-fallback-install" "$case_root/direct-fallback-bin" "$stable_tag" 2>&1)
+  grep -Fqx '# Composio CLI' "$direct_fallback_home/.zshrc" || fail "$interpreter_name COMPOSIO_INSTALL_SHELL unsupported CLI fallback"
+  assert_contains "$direct_fallback_output" 'Configured zsh shell setup (fallback).' "$interpreter_name COMPOSIO_INSTALL_SHELL fallback confirmation"
 
   reset_case
+  CASE_INSTALL_SHELL=fish
   CASE_INSTALL_EXIT=23
   direct_failed_home="$case_root/direct-failed-home"
-  run_installer "$direct_failed_home" "$case_root/direct-failed-install" "$case_root/direct-failed-bin" "$stable_tag" --shell fish >/dev/null 2>&1
-  grep -Fqx '# Composio CLI' "$direct_failed_home/.config/fish/config.fish" || fail "$interpreter_name --shell failed delegation fallback"
+  run_installer "$direct_failed_home" "$case_root/direct-failed-install" "$case_root/direct-failed-bin" "$stable_tag" >/dev/null 2>&1
+  grep -Fqx '# Composio CLI' "$direct_failed_home/.config/fish/config.fish" || fail "$interpreter_name COMPOSIO_INSTALL_SHELL failed delegation fallback"
 
   reset_case
-  if missing_shell_output=$(run_installer "$case_root/missing-shell-home" "$case_root/missing-shell-install" "$case_root/missing-shell-bin" --shell 2>&1); then
-    fail "$interpreter_name --shell without a value must fail"
+  CASE_INSTALL_SHELL=tcsh
+  if invalid_shell_output=$(run_installer "$case_root/invalid-shell-home" "$case_root/invalid-shell-install" "$case_root/invalid-shell-bin" 2>&1); then
+    fail "$interpreter_name invalid COMPOSIO_INSTALL_SHELL must fail"
   fi
-  assert_contains "$missing_shell_output" '--shell requires a value' "$interpreter_name --shell missing value"
-  [[ ! -s "$curl_log" ]] || fail "$interpreter_name --shell missing value must fail before network"
-
-  reset_case
-  if invalid_shell_output=$(run_installer "$case_root/invalid-shell-home" "$case_root/invalid-shell-install" "$case_root/invalid-shell-bin" --shell tcsh 2>&1); then
-    fail "$interpreter_name invalid --shell value must fail"
-  fi
-  assert_contains "$invalid_shell_output" 'Invalid --shell value' "$interpreter_name invalid --shell message"
-  [[ ! -s "$curl_log" ]] || fail "$interpreter_name invalid --shell must fail before network"
+  assert_contains "$invalid_shell_output" 'COMPOSIO_INSTALL_SHELL must be zsh, bash, or fish' "$interpreter_name invalid COMPOSIO_INSTALL_SHELL message"
+  [[ ! -s "$curl_log" ]] || fail "$interpreter_name invalid COMPOSIO_INSTALL_SHELL must fail before network"
 
   reset_case
   CASE_SHELL_CAPABILITY=unsupported

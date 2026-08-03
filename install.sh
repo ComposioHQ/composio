@@ -38,14 +38,14 @@ tildify() {
 
 print_usage() {
     printf '%s\n' \
-        'Usage: install.sh [--agent] [--no-plugins] [--shell zsh|bash|fish] [version-tag]' \
+        'Usage: install.sh [--agent] [--no-plugins] [version-tag]' \
         '' \
         'Options:' \
-        '  --agent          Sign up or log in as a Composio agent after installation.' \
-        '  --no-plugins     Skip agent plugin installation (the default).' \
-        '  --shell <shell>  Configure zsh, bash, or fish so the composio command is on PATH.' \
-        '  -h, --help       Show this help.' \
+        '  --agent       Sign up or log in as a Composio agent after installation.' \
+        '  --no-plugins  Skip agent plugin installation (the default).' \
+        '  -h, --help    Show this help.' \
         '' \
+        'Set COMPOSIO_INSTALL_SHELL=zsh|bash|fish to configure that shell after installation.' \
         'Version tags may be stable or beta, for example 0.3.1 or @composio/cli@0.3.1-beta.329.'
 }
 
@@ -384,7 +384,7 @@ print_post_install_help() {
         else
             printf 'Optional shell setup for future PATH changes:\n\n'
         fi
-        printf '  curl -fsSL https://composio.dev/install | sh -s -- --shell %s\n' "$shell_route"
+        printf '  curl -fsSL https://composio.dev/install | COMPOSIO_INSTALL_SHELL=%s sh\n' "$shell_route"
         printf '\nThis configures %s.\n' "$shell_config"
     elif path_contains_bin_dir; then
         printf 'The composio command is available on PATH.\n'
@@ -411,25 +411,22 @@ main() {
     install_agent=0
     install_plugins=${COMPOSIO_INSTALL_PLUGINS:-0}
     version_arg=
-    requested_shell=
+    requested_shell=${COMPOSIO_INSTALL_SHELL:-}
 
     case $install_plugins in
         0 | 1) ;;
         *) error 'COMPOSIO_INSTALL_PLUGINS must be 1 or 0' ;;
     esac
 
+    case $requested_shell in
+        '' | zsh | bash | fish) ;;
+        *) error "COMPOSIO_INSTALL_SHELL must be zsh, bash, or fish (got \"$requested_shell\")" ;;
+    esac
+
     while [ "$#" -gt 0 ]; do
         case $1 in
             --agent) install_agent=1 ;;
             --no-plugins) install_plugins=0 ;;
-            --shell)
-                [ "$#" -ge 2 ] || error '--shell requires a value: zsh, bash, or fish'
-                case $2 in
-                    zsh | bash | fish) requested_shell=$2 ;;
-                    *) error "Invalid --shell value \"$2\". Expected zsh, bash, or fish." ;;
-                esac
-                shift
-                ;;
             -h | --help)
                 print_usage
                 return 0

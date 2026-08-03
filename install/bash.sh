@@ -71,8 +71,8 @@ main() {
     download_installer "$variant_script_url" "$variant_tmpdir/install.sh" || error 'Failed to download the base installer'
     [ -s "$variant_tmpdir/install.sh" ] || error 'Downloaded base installer is empty'
 
-    # The trailing --shell wins over any forwarded one, so the route stays authoritative.
-    sh "$variant_tmpdir/install.sh" "$@" --shell "$variant_shell"
+    # The explicit override wins over any inherited COMPOSIO_INSTALL_SHELL, so the route stays authoritative.
+    COMPOSIO_INSTALL_SHELL="$variant_shell" sh "$variant_tmpdir/install.sh" "$@"
 }
 
 main "$@"

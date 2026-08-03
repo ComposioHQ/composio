@@ -127,12 +127,12 @@ test "$(grep -Fc '# Composio CLI' "$HOME/.bashrc")" = 1
     );
 
     it(
-      'configures bash through the base installer --shell flag idempotently',
+      'configures bash through COMPOSIO_INSTALL_SHELL idempotently',
       async () => {
         const result = await run(`
 set -eu
-curl -fsSL "$INSTALL_BASE_URL/install" | sh -s -- --shell bash
-curl -fsSL "$INSTALL_BASE_URL/install" | sh -s -- --shell bash
+curl -fsSL "$INSTALL_BASE_URL/install" | COMPOSIO_INSTALL_SHELL=bash sh
+curl -fsSL "$INSTALL_BASE_URL/install" | COMPOSIO_INSTALL_SHELL=bash sh
 test "$(bash -ilc 'command -v composio')" = "$HOME/.local/bin/composio"
 test "$(bash -ilc 'composio --version')" = 98.0.0
 test "$(grep -Fc '# Composio CLI' "$HOME/.bashrc")" = 1

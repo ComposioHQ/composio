@@ -57,36 +57,36 @@ curl -fsSL https://composio.dev/install | sh -s -- @composio/cli@0.3.1
 | `COMPOSIO_DEBUG` | Set to `1` or `true` to print download URLs and temporary paths. | Unset |
 | `COMPOSIO_INSTALL_HELP` | Set to `0` to hide post-install guidance. | `1` |
 | `COMPOSIO_INSTALL_PLUGINS` | Set to `1` to run `composio setup --target auto --yes --if-present` after installation. | `0` |
+| `COMPOSIO_INSTALL_SHELL` | Configure the requested shell (`zsh`, `bash`, or `fish`) after installation. See [Configure your shell](#configure-your-shell). | Unset |
 | `COMPOSIO_GITHUB_OWNER` | GitHub owner used to resolve releases. | `ComposioHQ` |
 | `COMPOSIO_GITHUB_REPO` | GitHub repository used to resolve releases. | `composio` |
 | `COMPOSIO_GITHUB_URL` | GitHub web and release-download base URL. | `https://github.com` |
 | `COMPOSIO_GITHUB_API_BASE_URL` | GitHub API base URL. | Derived from `COMPOSIO_GITHUB_URL` |
 | `--agent` | Log in as a Composio agent after installation. | Off |
 | `--no-plugins` | Skip agent plugin setup. Kept for compatibility and now matches the default. | Off |
-| `--shell` | Configure the requested shell (`zsh`, `bash`, or `fish`) after installation. See [Configure your shell](#configure-your-shell). | Off |
 
 ### Configure your shell
 
-Pass `--shell` when `~/.local/bin` is not already on `PATH`, or when you want the CLI to configure the requested shell explicitly.
+Set `COMPOSIO_INSTALL_SHELL` when `~/.local/bin` is not already on `PATH`, or when you want the CLI to configure the requested shell explicitly.
 
 <Tabs groupId="shell" items={['zsh','bash','fish']} persist>
 <Tab value="zsh">
 ```bash
-curl -fsSL https://composio.dev/install | sh -s -- --shell zsh
+curl -fsSL https://composio.dev/install | COMPOSIO_INSTALL_SHELL=zsh sh
 ```
 
 This configures `~/.zshrc` and delegates setup to `composio install --shell zsh`.
 </Tab>
 <Tab value="bash">
 ```bash
-curl -fsSL https://composio.dev/install | sh -s -- --shell bash
+curl -fsSL https://composio.dev/install | COMPOSIO_INSTALL_SHELL=bash sh
 ```
 
 This configures `~/.bashrc`. If `~/.bash_profile` or `~/.bash_login` exists, it also updates the first active login file so `bash -ilc` can find `composio`.
 </Tab>
 <Tab value="fish">
 ```bash
-curl -fsSL https://composio.dev/install | sh -s -- --shell fish
+curl -fsSL https://composio.dev/install | COMPOSIO_INSTALL_SHELL=fish sh
 ```
 
 This configures `~/.config/fish/config.fish` and delegates setup to `composio install --shell fish`.
