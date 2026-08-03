@@ -1,7 +1,7 @@
 import { Command, Options } from '@effect/cli';
 import { FileSystem, Path } from '@effect/platform';
 import type { PlatformError } from '@effect/platform/Error';
-import { Array as Arr, Config, ConfigProvider, Effect, Option } from 'effect';
+import { Array as Arr, Config, ConfigProvider, Data, Effect, Option } from 'effect';
 import { ComposioCliUserConfig } from 'src/services/cli-user-config';
 import { NodeOs } from 'src/services/node-os';
 import { NodeProcess } from 'src/services/node-process';
@@ -34,6 +34,17 @@ const shellOpt = Options.choice('shell', SHELLS).pipe(
 // ---------------------------------------------------------------------------
 
 export type Shell = (typeof SHELLS)[number];
+
+/**
+ * Aborted shell setup must fail the process: install.sh only runs its guarded
+ * inline PATH fallback when `composio install` exits non-zero, so a successful
+ * exit here would leave the user with no PATH setup and a green install. The
+ * abort reason is already printed before this error is raised; cli-main.ts
+ * maps it to exit code 1 without printing anything further.
+ */
+export class ShellSetupAbortError extends Data.TaggedError('commands/ShellSetupAbortError')<{
+  readonly message: string;
+}> {}
 
 interface ShellConfig {
   readonly shell: Shell;
@@ -268,7 +279,7 @@ export const installShellIntegration = (params: {
   readonly shell?: Shell;
 }): Effect.Effect<
   void,
-  PlatformError,
+  PlatformError | ShellSetupAbortError,
   TerminalUI | NodeOs | NodeProcess | FileSystem.FileSystem | Path.Path | ComposioCliUserConfig
 > =>
   Effect.gen(function* () {
@@ -315,17 +326,18 @@ export const installShellIntegration = (params: {
     );
 
     if (!path.isAbsolute(binDir)) {
-      yield* failure('Resolved bin directory must be an absolute path.');
+      const message = 'Resolved bin directory must be an absolute path.';
+      yield* failure(message);
       yield* ui.outro('Aborted.');
-      return;
+      return yield* new ShellSetupAbortError({ message });
     }
 
     if (isUnsafePath(binDir)) {
-      yield* failure(
-        'Resolved bin directory contains unsafe characters and cannot be written to shell config.'
-      );
+      const message =
+        'Resolved bin directory contains unsafe characters and cannot be written to shell config.';
+      yield* failure(message);
       yield* ui.outro('Aborted.');
-      return;
+      return yield* new ShellSetupAbortError({ message });
     }
 
     const isExplicitShell = params.shell !== undefined;

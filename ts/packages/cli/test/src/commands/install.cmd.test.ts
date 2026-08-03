@@ -5,7 +5,11 @@ import { describe, expect, layer } from '@effect/vitest';
 import { Effect, Exit } from 'effect';
 import { FileSystem } from '@effect/platform';
 import { NodeOs } from 'src/services/node-os';
-import { installShellIntegration, type Shell } from 'src/commands/install.cmd';
+import {
+  installShellIntegration,
+  ShellSetupAbortError,
+  type Shell,
+} from 'src/commands/install.cmd';
 import { makeTerminalUI } from 'src/services/terminal-ui';
 import { cli, TestLive, MockConsole } from 'test/__utils__';
 
@@ -960,7 +964,8 @@ describe('CLI: composio install', () => {
           vi.stubEnv('SHELL', '/bin/zsh');
           vi.stubEnv('COMPOSIO_BIN_DIR', '/tmp/x; curl evil.com');
 
-          yield* install();
+          const error = yield* install().pipe(Effect.flip);
+          expect(error).toBeInstanceOf(ShellSetupAbortError);
 
           const lines = yield* MockConsole.getLines();
           const output = lines.join('\n');
@@ -979,7 +984,8 @@ describe('CLI: composio install', () => {
           vi.stubEnv('SHELL', '/bin/zsh');
           vi.stubEnv('COMPOSIO_BIN_DIR', './bin');
 
-          yield* install();
+          const error = yield* install().pipe(Effect.flip);
+          expect(error).toBeInstanceOf(ShellSetupAbortError);
 
           const output = (yield* MockConsole.getLines()).join('\n');
           expect(output).toContain('must be an absolute path');
@@ -996,7 +1002,8 @@ describe('CLI: composio install', () => {
           vi.stubEnv('SHELL', '/bin/zsh');
           vi.stubEnv('COMPOSIO_BIN_DIR', '/custom/bin:/tmp/extra');
 
-          yield* install();
+          const error = yield* install().pipe(Effect.flip);
+          expect(error).toBeInstanceOf(ShellSetupAbortError);
 
           const output = (yield* MockConsole.getLines()).join('\n');
           expect(output).toContain('Resolved bin directory');
@@ -1013,7 +1020,8 @@ describe('CLI: composio install', () => {
         Effect.gen(function* () {
           vi.stubEnv('SHELL', '/bin/zsh');
 
-          yield* install({ execPath: "/tmp/o'brien/composio" });
+          const error = yield* install({ execPath: "/tmp/o'brien/composio" }).pipe(Effect.flip);
+          expect(error).toBeInstanceOf(ShellSetupAbortError);
 
           const output = (yield* MockConsole.getLines()).join('\n');
           expect(output).toContain('Resolved bin directory');
