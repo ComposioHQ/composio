@@ -11,6 +11,12 @@
  * `toolkit_versions` / `toolkitVersions` (constructor), `version=` /
  * `version:` (per-call), or a `COMPOSIO_TOOLKIT_VERSION_*` env var.
  *
+ * Additionally: `"latest"` as a toolkit_versions value is rejected by the
+ * SDK for manual execution (runtime-verified 2026-08-03: ToolVersionRequiredError,
+ * '"latest" is not supported in manual execution') unless the execute call
+ * passes `dangerously_skip_version_check` / `dangerouslySkipVersionCheck`.
+ * Pages showing "latest" alongside execute samples must also show the flag.
+ *
  * Scope: content/docs and content/examples. Excluded: content/reference
  * (generated upstream), changelog (historical records), and
  * docs/migration-guide (point-in-time documents that may show old APIs).
@@ -35,6 +41,8 @@ const EXCLUDED_PATH_SEGMENTS = ["docs/migration-guide/"];
 const EXECUTE_CALL_RE = /\btools\.execute\s*\(/;
 const VERSION_TOKEN_RE =
   /toolkit_versions|toolkitVersions|version\s*[=:]|COMPOSIO_TOOLKIT_VERSION_|dangerously_skip_version_check|dangerouslySkipVersionCheck/;
+const LATEST_VALUE_RE = /toolkit_?[vV]ersions[^}\n]{0,120}["']latest["']/;
+const SKIP_FLAG_RE = /dangerously_skip_version_check|dangerouslySkipVersionCheck/;
 
 async function findMdxFiles(dir: string): Promise<string[]> {
   const results: string[] = [];
@@ -70,9 +78,14 @@ function fencedCode(content: string): string {
   return fences.join("\n");
 }
 
-function violates(content: string): boolean {
+function violates(content: string): string | null {
   const code = fencedCode(content);
-  return EXECUTE_CALL_RE.test(code) && !VERSION_TOKEN_RE.test(code);
+  if (!EXECUTE_CALL_RE.test(code)) return null;
+  if (!VERSION_TOKEN_RE.test(code)) return "no version configuration";
+  if (LATEST_VALUE_RE.test(code) && !SKIP_FLAG_RE.test(code)) {
+    return '"latest" without dangerously_skip_version_check (rejected at runtime for manual execution)';
+  }
+  return null;
 }
 
 describe("direct-execution samples show toolkit versions", () => {
@@ -88,16 +101,16 @@ describe("direct-execution samples show toolkit versions", () => {
         continue;
       }
       const content = await readFile(file, "utf-8");
-      if (violates(content)) {
-        failures.push(relPath);
+      const problem = violates(content);
+      if (problem) {
+        failures.push(`${relPath} — ${problem}`);
       }
     }
 
     expect(
       failures,
-      `Pages with tools.execute() samples but no version configuration ` +
-        `(add toolkit_versions/toolkitVersions to the constructor or ` +
-        `version= per call — see /docs/tools-direct/toolkit-versioning):\n` +
+      `Pages with broken tools.execute() version handling ` +
+        `(see /docs/tools-direct/toolkit-versioning):\n` +
         failures.map((f) => `  - ${f}`).join("\n"),
     ).toEqual([]);
   });
@@ -109,8 +122,8 @@ describe("direct-execution samples show toolkit versions", () => {
     ] as const) {
       expect(
         violates(guardrails),
-        `${name} contains a tools.execute() sample without version configuration`,
-      ).toBe(false);
+        `${name} has broken tools.execute() version handling: ${violates(guardrails)}`,
+      ).toBeNull();
     }
   });
 });

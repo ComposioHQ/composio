@@ -144,7 +144,8 @@ tools = composio.tools.get(
 result = composio.tools.execute(
     "GITHUB_CREATE_ISSUE",
     user_id="user_123",
-    arguments={"owner": "my-org", "repo": "my-repo", "title": "Fix login bug"}
+    arguments={"owner": "my-org", "repo": "my-repo", "title": "Fix login bug"},
+    dangerously_skip_version_check=True,  # required when running "latest"; or pin via version=...
 )
 ```
 </Tab>
@@ -174,6 +175,7 @@ const allTools = await composio.tools.get("user_123", {
 const result = await composio.tools.execute("GITHUB_CREATE_ISSUE", {
   userId: "user_123",
   arguments: { owner: "my-org", repo: "my-repo", title: "Fix login bug" },
+  dangerouslySkipVersionCheck: true, // required when running "latest"; or pin via version
 });
 ```
 </Tab>
