@@ -66,7 +66,7 @@ function toParameterSchema(node: RawSchemaNode): ParameterSchema {
     description: node.description,
     default: node.default,
     example: node.example,
-    enum: node.enum,
+    enum: node.enum.length > 0 ? node.enum : undefined,
   };
 
   if (node.properties) {
@@ -144,8 +144,8 @@ function toolFromRaw(raw: RawApiTool): Tool {
     description: raw.description,
     input_parameters: processSchema(raw.input_parameters || raw.parameters),
     output_parameters: processSchema(raw.output_parameters || raw.response),
-    scopes: raw.scopes,
-    tags: raw.tags,
+    scopes: raw.scopes.length > 0 ? raw.scopes : undefined,
+    tags: raw.tags.length > 0 ? raw.tags : undefined,
     is_deprecated: raw.is_deprecated,
   };
 }

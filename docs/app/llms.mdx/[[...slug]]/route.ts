@@ -210,6 +210,26 @@ const llmPageSchema: z.ZodType<LLMPage> = z.object({
   }),
 });
 
+const degradedPageSchema = z.object({
+  url: z.unknown().optional(),
+  data: z
+    .object({
+      title: z.unknown().optional(),
+      description: z.unknown().optional(),
+    })
+    .catch({}),
+});
+
+export function degradedPageToMarkdown(value: unknown): string | null {
+  const parsed = degradedPageSchema.safeParse(value);
+  if (!parsed.success) return null;
+
+  const title = parsed.data.data.title || 'Documentation';
+  const description = parsed.data.data.description || '';
+  const url = parsed.data.url || '';
+  return `# ${String(title)} (${String(url)})\n\n${String(description)}`;
+}
+
 // Generate sample value for a schema
 function generateSampleValue(schema: OpenAPISchema, depth = 0): unknown {
   if (depth > 3) return '...'; // Prevent infinite recursion
@@ -1203,6 +1223,15 @@ export async function GET(_req: Request, { params }: { params: Promise<{ slug?: 
             },
           });
         }
+      }
+
+      const degradedMarkdown = degradedPageToMarkdown(page);
+      if (degradedMarkdown !== null) {
+        return new Response(degradedMarkdown, {
+          headers: {
+            'Content-Type': 'text/markdown; charset=utf-8',
+          },
+        });
       }
     }
 

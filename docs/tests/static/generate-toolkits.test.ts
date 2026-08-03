@@ -19,6 +19,7 @@ import {
   parseNamedItems,
   parseToolkitsPage,
   transformAuthConfigField,
+  transformAuthConfigDetail,
   transformToolkit,
 } from "../../scripts/generate-toolkits";
 import { transformTool } from "../../scripts/generate-meta-tools";
@@ -138,6 +139,13 @@ describe("transformToolkit", () => {
     expect(transformToolkit({ slug: "test", meta: { categories: "dev-tools" } }).category).toBeNull();
   });
 
+  test("empty category names fall back to null", () => {
+    expect(transformToolkit({ slug: "test", meta: { categories: [""] } }).category).toBeNull();
+    expect(
+      transformToolkit({ slug: "test", meta: { categories: [{ name: "" }] } }).category
+    ).toBeNull();
+  });
+
   test("malformed/empty input objects do not throw", () => {
     expect(() => transformToolkit({})).not.toThrow();
     expect(() => transformToolkit(null)).not.toThrow();
@@ -186,6 +194,11 @@ describe("transformAuthConfigField", () => {
     expect(field.displayName).toBe("client_id");
   });
 
+  test("empty displayName falls back to name", () => {
+    const field = transformAuthConfigField({ name: "client_id", displayName: "" }, true);
+    expect(field.displayName).toBe("client_id");
+  });
+
   test("required falls back to the caller-supplied requirement when the API omits it", () => {
     const required = transformAuthConfigField({ name: "x" }, true);
     const optional = transformAuthConfigField({ name: "x" }, false);
@@ -220,6 +233,18 @@ describe("transformAuthConfigField", () => {
     expect(field.description).toBe("");
     expect(field.required).toBe(true);
     expect(field.default).toBeNull();
+  });
+});
+
+describe("transformAuthConfigDetail", () => {
+  test("empty names fall back to the auth mode", () => {
+    const detail = transformAuthConfigDetail({ mode: "oauth2", name: "" });
+    expect(detail?.name).toBe("oauth2");
+  });
+
+  test("non-object entries are dropped", () => {
+    expect(transformAuthConfigDetail(null)).toBeNull();
+    expect(transformAuthConfigDetail("oauth2")).toBeNull();
   });
 });
 

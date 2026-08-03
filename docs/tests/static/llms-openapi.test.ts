@@ -33,9 +33,10 @@ mock.module("@/lib/toolkit-schema", () => ({
 }));
 
 let openapiPageToMarkdown: typeof import("../../app/llms.mdx/[[...slug]]/route").openapiPageToMarkdown;
+let degradedPageToMarkdown: typeof import("../../app/llms.mdx/[[...slug]]/route").degradedPageToMarkdown;
 
 beforeAll(async () => {
-  ({ openapiPageToMarkdown } = await import(
+  ({ openapiPageToMarkdown, degradedPageToMarkdown } = await import(
     "../../app/llms.mdx/[[...slug]]/route"
   ));
 });
@@ -181,5 +182,16 @@ describe("LLM OpenAPI markdown", () => {
     expect(markdown).toContain(
       "- `tree` (array<array<array<array<array<...>>>>>):",
     );
+  });
+});
+
+describe("LLM page degradation", () => {
+  test("keeps a readable response when typed page parsing fails", () => {
+    expect(
+      degradedPageToMarkdown({
+        url: "/docs/example",
+        data: { title: 42, description: "Fallback copy" },
+      })
+    ).toBe("# 42 (/docs/example)\n\nFallback copy");
   });
 });

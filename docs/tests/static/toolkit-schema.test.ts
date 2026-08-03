@@ -120,6 +120,16 @@ describe("processSchema", () => {
 
     expect(params?.priority.enum).toEqual(["1", "2", "3", "true"]);
   });
+
+  test("omits empty enum arrays from the serialized parameter shape", () => {
+    const params = processSchema({
+      type: "object",
+      properties: { query: { type: "string" } },
+    });
+
+    expect(params?.query.enum).toBeUndefined();
+    expect(JSON.stringify(params?.query)).not.toContain('"enum"');
+  });
 });
 
 describe("toolFromApi", () => {
@@ -167,5 +177,14 @@ describe("toolFromApi", () => {
         description: "A test trigger",
       }).name
     ).toBe("Test trigger");
+  });
+
+  test("omits empty scope and tag arrays from the serialized tool shape", () => {
+    const tool = toolFromApi({ slug: "TEST_TOOL" });
+
+    expect(tool.scopes).toBeUndefined();
+    expect(tool.tags).toBeUndefined();
+    expect(JSON.stringify(tool)).not.toContain('"scopes"');
+    expect(JSON.stringify(tool)).not.toContain('"tags"');
   });
 });

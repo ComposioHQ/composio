@@ -289,7 +289,7 @@ export function transformAuthConfigField(value: unknown, required: boolean): Aut
 
   return {
     name: field.name,
-    displayName: field.displayName ?? field.name,
+    displayName: field.displayName || field.name,
     type: field.type,
     description: field.description,
     required: field.required ?? required,
@@ -308,6 +308,27 @@ export function authConfigFields(
   );
 }
 
+export function transformAuthConfigDetail(value: unknown): AuthConfigDetail | null {
+  const raw = z.record(z.string(), z.unknown()).safeParse(value);
+  if (!raw.success) return null;
+
+  const { mode, name } = rawAuthConfigDetailSchema.parse(raw.data);
+  return {
+    mode,
+    name: name || mode,
+    fields: {
+      auth_config_creation: {
+        required: authConfigFields(raw.data, 'auth_config_creation', 'required'),
+        optional: authConfigFields(raw.data, 'auth_config_creation', 'optional'),
+      },
+      connected_account_initiation: {
+        required: authConfigFields(raw.data, 'connected_account_initiation', 'required'),
+        optional: authConfigFields(raw.data, 'connected_account_initiation', 'optional'),
+      },
+    },
+  };
+}
+
 async function fetchAuthConfigDetails(slug: string): Promise<AuthConfigDetail[]> {
   const response = await fetchWithRetry(`${API_BASE}/toolkits/${slug}`, {
     headers: {
@@ -321,26 +342,8 @@ async function fetchAuthConfigDetails(slug: string): Promise<AuthConfigDetail[]>
   const data = authConfigDetailsResponseSchema.parse(await response.json());
 
   return data.auth_config_details.flatMap(item => {
-    const raw = z.record(z.string(), z.unknown()).safeParse(item);
-    if (!raw.success) return [];
-
-    const { mode, name } = rawAuthConfigDetailSchema.parse(raw.data);
-    return [
-      {
-        mode,
-        name: name ?? mode,
-        fields: {
-          auth_config_creation: {
-            required: authConfigFields(raw.data, 'auth_config_creation', 'required'),
-            optional: authConfigFields(raw.data, 'auth_config_creation', 'optional'),
-          },
-          connected_account_initiation: {
-            required: authConfigFields(raw.data, 'connected_account_initiation', 'required'),
-            optional: authConfigFields(raw.data, 'connected_account_initiation', 'optional'),
-          },
-        },
-      },
-    ];
+    const detail = transformAuthConfigDetail(item);
+    return detail ? [detail] : [];
   });
 }
 
@@ -359,7 +362,7 @@ export function transformToolkit(raw: unknown): Toolkit {
     name: toolkit.name || toolkit.slug,
     logo: toolkit.meta.logo || toolkit.logo || null,
     description: toolkit.meta.description || toolkit.description,
-    category,
+    category: category || null,
     authSchemes,
     ...(composioManaged.length > 0 ? { composioManagedAuthSchemes: composioManaged } : {}),
     toolCount: toolkit.tool_count || toolkit.toolCount || 0,
