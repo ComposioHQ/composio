@@ -6,7 +6,7 @@ import { DynamicStructuredTool } from '@langchain/core/tools';
 describe('LangchainProvider', () => {
   let provider: LangchainProvider;
   let sampleTool: Tool;
-  let executeToolFn: (toolSlug: string, params: Record<string, unknown>) => Promise<any>;
+  let executeToolFn: (toolSlug: string, params: Record<string, unknown>) => Promise<unknown>;
 
   beforeEach(() => {
     provider = new LangchainProvider();

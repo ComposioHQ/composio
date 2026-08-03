@@ -7,8 +7,7 @@ import { its } from '../utils/its';
 import type { JSONSchema7TypeName } from 'json-schema';
 
 type MetadataFields =
-  | keyof Pick<JsonSchemaObject, 'default' | 'description' | 'title'>
-  | 'examples';
+  keyof Pick<JsonSchemaObject, 'default' | 'description' | 'title'> | 'examples';
 
 export const parseArray = (jsonSchema: JsonSchemaObject & { type: 'array' }, refs: Refs) => {
   // Handle anyOf pattern first
@@ -84,26 +83,20 @@ export const parseArray = (jsonSchema: JsonSchemaObject & { type: 'array' }, ref
   );
 
   // Handle generic 'min' property as alias for 'minItems'
-  if (
-    typeof (jsonSchema as unknown as { min?: number }).min === 'number' &&
-    typeof jsonSchema.minItems !== 'number'
-  ) {
+  if (typeof jsonSchema.min === 'number' && typeof jsonSchema.minItems !== 'number') {
     zodSchema = extendSchemaWithMessage(
       zodSchema,
-      { ...jsonSchema, minItems: (jsonSchema as unknown as { min?: number }).min },
+      { ...jsonSchema, minItems: jsonSchema.min },
       'minItems',
       (zs, minItems, errorMessage) => zs.min(minItems, errorMessage)
     );
   }
 
   // Handle generic 'max' property as alias for 'maxItems'
-  if (
-    typeof (jsonSchema as unknown as { max?: number }).max === 'number' &&
-    typeof jsonSchema.maxItems !== 'number'
-  ) {
+  if (typeof jsonSchema.max === 'number' && typeof jsonSchema.maxItems !== 'number') {
     zodSchema = extendSchemaWithMessage(
       zodSchema,
-      { ...jsonSchema, maxItems: (jsonSchema as unknown as { max?: number }).max },
+      { ...jsonSchema, maxItems: jsonSchema.max },
       'maxItems',
       (zs, maxItems, errorMessage) => zs.max(maxItems, errorMessage)
     );

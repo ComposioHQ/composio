@@ -4,7 +4,7 @@ import * as path from 'node:path';
 import { HelpDoc, ValidationError } from '@effect/cli';
 import { describe, expect, it, layer } from '@effect/vitest';
 import { vi, beforeEach, afterEach } from 'vitest';
-import { Config, ConfigProvider, Effect, Option, Predicate } from 'effect';
+import { Config, ConfigProvider, DateTime, Effect, Option, Predicate } from 'effect';
 import { extendConfigProvider } from 'src/services/config';
 import { ComposioNoActiveConnectionError } from 'src/services/composio-error-overrides';
 import { setupCacheDir } from 'src/effects/setup-cache-dir';
@@ -675,8 +675,8 @@ describe('CLI: composio execute', () => {
             meta: {
               description: 'Email service',
               categories: [],
-              created_at: new Date('2024-05-03T11:44:32.061Z') as any,
-              updated_at: new Date('2024-05-03T11:44:32.061Z') as any,
+              created_at: DateTime.unsafeMake('2024-05-03T11:44:32.061Z'),
+              updated_at: DateTime.unsafeMake('2024-05-03T11:44:32.061Z'),
               available_versions: ['20260115_00', '20260101_00'],
               tools_count: 36,
               triggers_count: 2,
@@ -745,8 +745,8 @@ describe('CLI: composio execute', () => {
             meta: {
               description: 'Email service',
               categories: [],
-              created_at: new Date('2024-05-03T11:44:32.061Z') as any,
-              updated_at: new Date('2024-05-03T11:44:32.061Z') as any,
+              created_at: DateTime.unsafeMake('2024-05-03T11:44:32.061Z'),
+              updated_at: DateTime.unsafeMake('2024-05-03T11:44:32.061Z'),
               available_versions: ['20260316_00'],
               tools_count: 36,
               triggers_count: 2,
@@ -823,8 +823,8 @@ describe('CLI: composio execute', () => {
             meta: {
               description: 'Email service',
               categories: [],
-              created_at: new Date('2024-05-03T11:44:32.061Z') as any,
-              updated_at: new Date('2024-05-03T11:44:32.061Z') as any,
+              created_at: DateTime.unsafeMake('2024-05-03T11:44:32.061Z'),
+              updated_at: DateTime.unsafeMake('2024-05-03T11:44:32.061Z'),
               available_versions: ['20260115_00', '20260101_00'],
               tools_count: 36,
               triggers_count: 2,
@@ -1706,8 +1706,8 @@ describe('CLI: composio execute', () => {
             meta: {
               description: 'Email service',
               categories: [],
-              created_at: new Date('2024-05-03T11:44:32.061Z') as any,
-              updated_at: new Date('2024-05-03T11:44:32.061Z') as any,
+              created_at: DateTime.unsafeMake('2024-05-03T11:44:32.061Z'),
+              updated_at: DateTime.unsafeMake('2024-05-03T11:44:32.061Z'),
               available_versions: ['20260316_00'],
               tools_count: 36,
               triggers_count: 2,
