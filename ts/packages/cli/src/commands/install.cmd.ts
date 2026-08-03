@@ -33,7 +33,7 @@ const shellOpt = Options.choice('shell', SHELLS).pipe(
 // Types
 // ---------------------------------------------------------------------------
 
-type Shell = (typeof SHELLS)[number];
+export type Shell = (typeof SHELLS)[number];
 
 interface ShellConfig {
   readonly shell: Shell;

@@ -5,7 +5,7 @@ import { describe, expect, layer } from '@effect/vitest';
 import { Effect, Exit } from 'effect';
 import { FileSystem } from '@effect/platform';
 import { NodeOs } from 'src/services/node-os';
-import { installShellIntegration } from 'src/commands/install.cmd';
+import { installShellIntegration, type Shell } from 'src/commands/install.cmd';
 import { makeTerminalUI } from 'src/services/terminal-ui';
 import { cli, TestLive, MockConsole } from 'test/__utils__';
 
@@ -39,13 +39,13 @@ const install = (
   params: {
     readonly completions?: boolean;
     readonly execPath?: string;
-    readonly shell?: string;
+    readonly shell?: Shell;
   } = {}
 ) =>
   installShellIntegration({
     completions: params.completions ?? false,
     execPath: params.execPath ?? TEST_EXEC_PATH,
-    shell: params.shell as 'zsh' | 'bash' | 'fish' | undefined,
+    shell: params.shell,
   });
 
 // NOTE: `@effect/vitest`'s `layer(...)` builds one shared TestLive instance
