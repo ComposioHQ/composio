@@ -104,8 +104,32 @@ jobs:
             exit 1
           fi
 
+          # Assert the login-mode startup file (the file a login bash actually reads —
+          # ~/.bashrc is not it) also carries the managed block. Mirrors install.sh's
+          # bash_login_path_file selection: first existing of ~/.bash_profile or
+          # ~/.bash_login, else the ~/.bash_profile the installer creates.
+          if [ ! -f "$HOME/.bash_profile" ] && [ -f "$HOME/.bash_login" ]; then
+            login_file="$HOME/.bash_login"
+          else
+            login_file="$HOME/.bash_profile"
+          fi
+          if grep -Fqx '# Composio CLI' "$login_file" \
+            && grep -Fqx 'export PATH="$HOME/.local/bin:$PATH"' "$login_file"; then
+            echo "✅ $login_file gained the managed Composio PATH block via automatic shell setup"
+          else
+            echo "❌ $login_file missing the managed Composio PATH block after the no-argument install"
+            echo "=== $login_file contents ==="
+            cat "$login_file" || true
+            exit 1
+          fi
+
           # Assert a login shell actually resolves the binary through that PATH block.
-          if bash -ilc 'command -v composio' && bash -ilc 'composio --version'; then
+          # env -i drops the step's inherited PATH: GITHUB_PATH from the pinned-tag step
+          # and Ubuntu's skel ~/.profile both already prepend ~/.local/bin, so a probe
+          # that inherits them would pass even if the login-file write regressed. This
+          # mirrors the harness's assert_login_bash_path clean-environment probe.
+          if env -i HOME="$HOME" PATH=/usr/bin:/bin bash -ilc 'command -v composio' \
+            && env -i HOME="$HOME" PATH=/usr/bin:/bin bash -ilc 'composio --version'; then
             echo "✅ composio resolves via a login bash shell"
           else
             echo "❌ composio did not resolve via a login bash shell"
