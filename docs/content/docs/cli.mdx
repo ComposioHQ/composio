@@ -80,7 +80,7 @@ This configures `~/.zshrc` and delegates setup to `composio install --shell zsh`
 curl -fsSL https://composio.dev/install | COMPOSIO_INSTALL_SHELL=bash sh
 ```
 
-This configures `~/.bashrc`. If `~/.bash_profile` or `~/.bash_login` exists, it also updates the first active login file so `bash -ilc` can find `composio`.
+This configures `~/.bashrc` and delegates setup to `composio install --shell bash`. If `~/.bash_profile` or `~/.bash_login` exists, it also updates the first active login file so `bash -ilc` can find `composio`.
 </Tab>
 <Tab value="fish">
 ```bash
