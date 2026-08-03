@@ -384,7 +384,14 @@ write_path_block() {
         return 1
     fi
     if ! awk '
-        pending { pending = 0; next }
+        function is_managed_path_assignment(line) {
+            return line ~ /^[[:space:]]*export PATH=".*:\$PATH"[[:space:]]*$/ ||
+                line ~ /^[[:space:]]*set --export PATH ".*" \$PATH[[:space:]]*$/
+        }
+        pending {
+            pending = 0
+            if (is_managed_path_assignment($0)) next
+        }
         $0 == "# Composio CLI" { pending = 1; next }
         { print }
     ' "$write_path_target" >"$write_path_tmp" 2>/dev/null; then

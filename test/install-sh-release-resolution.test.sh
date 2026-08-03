@@ -891,6 +891,33 @@ EOF
   grep -Fq 'alias reconcile-before=1' "$reconcile_home/.zshrc" || fail "$interpreter_name unmanaged content preserved (before block)"
   grep -Fq 'alias reconcile-after=1' "$reconcile_home/.zshrc" || fail "$interpreter_name unmanaged content preserved (after block)"
 
+  # A marker followed by unmanaged content is malformed. Remove only the
+  # marker, preserve every following line, and append the current managed block
+  # after the orphaned stale assignment so the new bin dir wins PATH order.
+  reset_case
+  CASE_SHELL_CAPABILITY=unsupported
+  CASE_SHELL_VALUE=/bin/zsh
+  malformed_home="$case_root/malformed-block-home"
+  malformed_bin="$case_root/malformed-block-bin"
+  mkdir -p "$malformed_home"
+  printf '%s\n' \
+    'alias malformed-before=1' \
+    '# Composio CLI' \
+    '# keep this dotfile-manager annotation' \
+    '' \
+    'export PATH="/stale/malformed-bin:$PATH"' \
+    'alias malformed-after=1' >"$malformed_home/.zshrc"
+  malformed_output=$(run_installer "$malformed_home" "$case_root/malformed-block-install" "$malformed_bin" "$stable_tag" 2>&1)
+  assert_contains "$malformed_output" 'Updated ~/.zshrc' "$interpreter_name malformed block update disclosure"
+  grep -Fq '# keep this dotfile-manager annotation' "$malformed_home/.zshrc" || fail "$interpreter_name malformed block preserves the line after its marker"
+  grep -Fq 'export PATH="/stale/malformed-bin:$PATH"' "$malformed_home/.zshrc" || fail "$interpreter_name malformed block preserves an orphaned stale assignment"
+  grep -Fq 'alias malformed-before=1' "$malformed_home/.zshrc" || fail "$interpreter_name malformed block preserves content before its marker"
+  grep -Fq 'alias malformed-after=1' "$malformed_home/.zshrc" || fail "$interpreter_name malformed block preserves content after its marker"
+  [[ $(grep -Fc '# Composio CLI' "$malformed_home/.zshrc") -eq 1 ]] || fail "$interpreter_name malformed block leaves one fresh marker"
+  malformed_tail=$(tail -n 2 "$malformed_home/.zshrc")
+  [[ $malformed_tail == "# Composio CLI
+export PATH=\"$malformed_bin:\$PATH\"" ]] || fail "$interpreter_name malformed block appends the current assignment last"
+
   # --- Symlinked startup files and mode preservation (managed dotfiles) ---
 
   # Inline setup must write through a symlinked rc file: the symlink survives

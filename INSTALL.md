@@ -6,9 +6,9 @@ Install the CLI bundle in `~/.composio` and its entry point in `~/.local/bin`:
 curl -fsSL https://composio.dev/install | sh
 ```
 
-The installer also configures your shell. It infers your login shell from `$SHELL` (`zsh`, `bash`, or `fish`) and writes a single managed `# Composio CLI` PATH block to the matching startup file so future terminals find `composio`. Open a new terminal, then run `composio login`.
+The installer also configures your shell. It infers your login shell from `$SHELL` (`zsh`, `bash`, or `fish`) and writes a managed `# Composio CLI` PATH block so future terminals find `composio`. For `zsh` and `fish`, it updates the matching startup file. For `bash`, it updates `~/.bashrc` and the first existing login override, `~/.bash_profile` or `~/.bash_login`. Open a new terminal, then run `composio login`.
 
-If your shell is not recognized, or shell setup fails, the binary install still succeeds and the installer prints a runnable command instead. The installer never installs agent plugins.
+If your shell is not recognized, or shell setup fails, the binary install still succeeds and the installer prints a runnable command instead. The installer does not install agent plugins or log you in unless you ask it to.
 
 ## Choose or skip shell setup
 
@@ -25,7 +25,7 @@ Use `none` for an install-only run that changes no shell files. Reach for it in 
 
 Shell-specific installer variants ([`install/zsh.sh`](install/zsh.sh), [`install/bash.sh`](install/bash.sh), [`install/fish.sh`](install/fish.sh)) pin `COMPOSIO_INSTALL_SHELL` to their shell before delegating to the base installer.
 
-Shell setup is idempotent: repeated installs keep exactly one managed PATH block per startup file and reconcile it when the bin directory changes. Setup delegates to `composio install --shell <shell>` and falls back to writing the same `# Composio CLI` PATH block inline when the installed CLI release predates that flag.
+Shell setup is idempotent: repeated installs keep exactly one managed PATH block per startup file and reconcile it when the bin directory changes. Setup delegates to `composio install --shell <shell>` and falls back to writing the same `# Composio CLI` PATH block inline when the installed CLI predates that flag, delegated setup fails, or delegated setup leaves a stale block.
 
 Pin a stable or beta release with `COMPOSIO_INSTALL_VERSION`, or pass the tag as a positional argument:
 
@@ -39,11 +39,11 @@ The positional argument takes precedence over `COMPOSIO_INSTALL_VERSION`.
 | Variable or argument | Description | Default |
 |---|---|---|
 | `COMPOSIO_INSTALL_DIR` | Complete CLI bundle directory. | `$HOME/.composio` |
-| `COMPOSIO_BIN_DIR` | `composio` entry-point directory. Trusted input: anyone with write access to this directory can replace commands that future terminals run. | `$HOME/.local/bin` |
+| `COMPOSIO_BIN_DIR` | `composio` entry-point directory. Treat this as trusted input: anyone who can write to this directory can replace commands that future terminals run. | `$HOME/.local/bin` |
 | `COMPOSIO_INSTALL_VERSION` | Stable or beta version, with or without the package prefix. | Latest stable release |
 | `COMPOSIO_QUIET` | Set to `1` or `true` to hide progress output. | Unset |
 | `COMPOSIO_DEBUG` | Set to `1` or `true` to print installer traces. | Unset |
-| `COMPOSIO_INSTALL_HELP` | Set to `0` to hide post-install guidance. | `1` |
+| `COMPOSIO_INSTALL_HELP` | Set to `0` to hide normal post-install guidance. Shell-setup failures still warn and print a recovery command to stderr. | `1` |
 | `COMPOSIO_INSTALL_PLUGINS` | Set to `1` to install plugins for detected agent hosts. | `0` |
 | `COMPOSIO_INSTALL_SHELL` | Shell setup mode: `auto` infers your login shell from `$SHELL`, `zsh`, `bash`, or `fish` force a specific shell, and `none` skips shell configuration. | `auto` |
 | `--agent` | Log in as a Composio agent after installation. | Off |
