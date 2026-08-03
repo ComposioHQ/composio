@@ -129,7 +129,7 @@ curl --request POST \
       "name": "Acme",
       "app_url": "https://mcp.example.com/mcp",
       "logo_file": {
-        "content": "'"$(base64 -i logo.png)"'",
+        "content": "iVBORw0KGgoAAAANSUhEUgAA...",
         "mime_type": "image/png"
       },
       "auth_schemes": [
@@ -141,13 +141,11 @@ curl --request POST \
   }'
 ```
 
-The image must be:
+Set `content` to your image encoded as base64: a single line, with no line breaks or whitespace. The image must be:
 
 - **PNG or JPEG** (`mime_type` of `image/png` or `image/jpeg`)
 - **Square**, between 256 and 1024 pixels
 - **At most 3MB** before encoding
-
-The base64 `content` must be a single line. macOS `base64 -i logo.png` produces single-line output; on Linux, use `base64 -w0 logo.png` to disable line wrapping.
 
 Omit `logo_file` to keep the Composio default. Because registration is insert-only, changing a logo later means deleting the toolkit and registering it again with the new image.
 
