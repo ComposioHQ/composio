@@ -7,7 +7,7 @@ import { getGuardrails } from './llm-guardrails';
 import { HIDDEN_API_TAGS } from './filter-api-version';
 import { FILE_BUILDS } from './file-builds';
 import { replaceRepoBrowserMarkdown } from './repo-browser-markdown';
-import { deprecatedApiSidebarTransformer } from './deprecated-api-sidebar';
+import { transformDeprecatedApiSidebarNode } from './deprecated-api-sidebar';
 
 /**
  * True if a reference URL belongs to an intentionally-hidden API tag
@@ -30,35 +30,28 @@ function isHiddenReferenceUrl(url: string): boolean {
   return false;
 }
 
-/**
- * Transformer to set defaultOpen: true for specific folders in the reference sidebar.
- */
-const defaultOpenTransformer = {
-  folder(node: { name: string; defaultOpen?: boolean }, folderPath: string) {
-    if (folderPath === 'api-reference' || folderPath === 'sdk-reference' || folderPath === 'v3/api-reference') {
-      return { ...node, defaultOpen: true };
-    }
-    return node;
-  },
-};
-
 export const source = loader({
   baseUrl: '/docs',
   source: docs.toFumadocsSource(),
   plugins: [lucideIconsPlugin()],
 });
 
+function loadOpenapiPages() {
+  return Promise.all([
+    openapiSource(openapi, { groupBy: 'tag', baseDir: 'api-reference' }),
+    openapiSource(openapiV3, { groupBy: 'tag', baseDir: 'v3/api-reference' }),
+  ]);
+}
+
+type OpenapiPages = Awaited<ReturnType<typeof loadOpenapiPages>>;
+
 // One combined reference source with both v3.1 and v3.0 OpenAPI pages.
 // v3.1 at api-reference/, v3.0 at api-reference/v3/
-let _referenceSource: any = null;
-let _openapiPagesPromise: Promise<any> | null = null;
+let _openapiPagesPromise: ReturnType<typeof loadOpenapiPages> | null = null;
 
 async function getOpenapiPages() {
   if (!_openapiPagesPromise) {
-    _openapiPagesPromise = Promise.all([
-      openapiSource(openapi, { groupBy: 'tag', baseDir: 'api-reference' }),
-      openapiSource(openapiV3, { groupBy: 'tag', baseDir: 'v3/api-reference' }),
-    ]).catch((e) => {
+    _openapiPagesPromise = loadOpenapiPages().catch(e => {
       // Don't permanently cache a failed load (e.g. a transient OpenAPI spec
       // resolution error in a serverless instance). Clearing the memo lets the
       // next request retry instead of re-throwing the same cached rejection.
@@ -69,36 +62,56 @@ async function getOpenapiPages() {
   return _openapiPagesPromise;
 }
 
+function createReferenceSource(openapiLatest: OpenapiPages[0], openapiV3Pages: OpenapiPages[1]) {
+  const loaded = loader({
+    baseUrl: '/reference',
+    source: multiple({
+      mdx: reference.toFumadocsSource(),
+      openapi: openapiLatest,
+      'openapi-v3': openapiV3Pages,
+    }),
+    plugins: [lucideIconsPlugin(), openapiPlugin()],
+    pageTree: {
+      transformers: [
+        {
+          folder(node, folderPath) {
+            if (
+              folderPath === 'api-reference' ||
+              folderPath === 'sdk-reference' ||
+              folderPath === 'v3/api-reference'
+            ) {
+              return { ...node, defaultOpen: true };
+            }
+            return node;
+          },
+        },
+        {
+          file(node, filePath) {
+            return transformDeprecatedApiSidebarNode(node, filePath, this.storage);
+          },
+        },
+      ],
+    },
+  });
+
+  // Exclude intentionally-hidden API tags (consumer, invite-codes) from the
+  // flat page list so validate-links, llms.mdx, llms.txt, and sitemap skip
+  // their fumadocs-openapi operation pages. The sidebar tree is filtered
+  // separately via prepareTree (lib/filter-api-version.ts).
+  const originalGetPages = loaded.getPages.bind(loaded);
+  loaded.getPages = (...args: Parameters<typeof originalGetPages>) =>
+    originalGetPages(...args).filter((page: { url: string }) => !isHiddenReferenceUrl(page.url));
+
+  return loaded;
+}
+
+type ReferenceSource = ReturnType<typeof createReferenceSource>;
+let _referenceSource: ReferenceSource | null = null;
+
 export async function getReferenceSource() {
   if (!_referenceSource) {
     const [openapiLatest, openapiV3Pages] = await getOpenapiPages();
-    const loaded = loader({
-      baseUrl: '/reference',
-      source: multiple({
-        mdx: reference.toFumadocsSource(),
-        openapi: openapiLatest,
-        'openapi-v3': openapiV3Pages,
-      }),
-      plugins: [lucideIconsPlugin(), openapiPlugin()],
-      pageTree: {
-        transformers: [
-          defaultOpenTransformer as any,
-          deprecatedApiSidebarTransformer as any,
-        ],
-      },
-    });
-
-    // Exclude intentionally-hidden API tags (consumer, invite-codes) from the
-    // flat page list so validate-links, llms.mdx, llms.txt, and sitemap skip
-    // their fumadocs-openapi operation pages. The sidebar tree is filtered
-    // separately via prepareTree (lib/filter-api-version.ts).
-    const originalGetPages = loaded.getPages.bind(loaded);
-    (loaded as any).getPages = (...args: Parameters<typeof originalGetPages>) =>
-      originalGetPages(...args).filter(
-        (page: { url: string }) => !isHiddenReferenceUrl(page.url),
-      );
-
-    _referenceSource = loaded;
+    _referenceSource = createReferenceSource(openapiLatest, openapiV3Pages);
   }
   return _referenceSource;
 }
@@ -109,6 +122,8 @@ export const referenceSource = loader({
   source: reference.toFumadocsSource(),
   plugins: [lucideIconsPlugin()],
 });
+
+export type ReferenceMdxPageData = InferPageType<typeof referenceSource>['data'];
 
 export const examplesSource = loader({
   baseUrl: '/examples',
@@ -124,7 +139,12 @@ export const toolkitsSource = loader({
 
 export const changelogEntries = changelog;
 
-export function getOgImageUrl(_section: string, _slugs: string[], title?: string, _description?: string): string {
+export function getOgImageUrl(
+  _section: string,
+  _slugs: string[],
+  title?: string,
+  _description?: string
+): string {
   const encodedTitle = encodeURIComponent(title ?? 'Composio Docs');
   return `https://og.composio.dev/api/og?title=${encodedTitle}`;
 }
@@ -180,11 +200,20 @@ export function mdxToCleanMarkdown(content: string): string {
 
   result = result.replace(/<TabsList>[\s\S]*?<\/TabsList>/g, '');
   result = result.replace(/<TabsTrigger[^>]*>[^<]*<\/TabsTrigger>/g, '');
-  result = result.replace(/<TabsContent[\s\S]*?value="([^"]*)"[\s\S]*?>([\s\S]*?)<\/TabsContent>/g, '\n**$1:**\n$2');
-  result = result.replace(/<Tab[\s\S]*?value="([^"]*)"[\s\S]*?>([\s\S]*?)<\/Tab>/g, '\n**$1:**\n$2');
+  result = result.replace(
+    /<TabsContent[\s\S]*?value="([^"]*)"[\s\S]*?>([\s\S]*?)<\/TabsContent>/g,
+    '\n**$1:**\n$2'
+  );
+  result = result.replace(
+    /<Tab[\s\S]*?value="([^"]*)"[\s\S]*?>([\s\S]*?)<\/Tab>/g,
+    '\n**$1:**\n$2'
+  );
 
   result = result.replace(/<StepTitle>([\s\S]*?)<\/StepTitle>/g, (_, title) => {
-    const cleanTitle = title.replace(/^[\s#]*#\s*/, '').replace(/\s+$/, '').trim();
+    const cleanTitle = title
+      .replace(/^[\s#]*#\s*/, '')
+      .replace(/\s+$/, '')
+      .trim();
     return cleanTitle ? `#### ${cleanTitle}` : '';
   });
   result = result.replace(/<Step>\s*###\s*(.+)/g, '#### $1');
@@ -193,10 +222,7 @@ export function mdxToCleanMarkdown(content: string): string {
   result = result.replace(/^(\s*#{1,6})\s*#\s+(.+)$/gm, '$1 $2');
   result = result.replace(/^\s*#\s*$/gm, '');
 
-  result = result.replace(
-    /<FrameworkOption[\s\S]*?name="([^"]*)"[\s\S]*?>/g,
-    '\n## $1\n'
-  );
+  result = result.replace(/<FrameworkOption[\s\S]*?name="([^"]*)"[\s\S]*?>/g, '\n## $1\n');
   result = result.replace(/<\/FrameworkOption>/g, '');
 
   const tabLabelMap: Record<string, string> = { native: 'Native Tools', mcp: 'MCP' };
@@ -236,10 +262,7 @@ export function mdxToCleanMarkdown(content: string): string {
     '![$2]($1)'
   );
 
-  result = result.replace(
-    /<ToolTypeOption[\s\S]*?name="([^"]*)"[\s\S]*?>/g,
-    '\n### $1\n'
-  );
+  result = result.replace(/<ToolTypeOption[\s\S]*?name="([^"]*)"[\s\S]*?>/g, '\n### $1\n');
   result = result.replace(/<\/ToolTypeOption>/g, '');
 
   result = result.replace(
@@ -259,15 +282,15 @@ export function mdxToCleanMarkdown(content: string): string {
   result = result.replace(
     /<AIToolsBanner\s*\/>/g,
     '### For AI tools\n\n' +
-    '**Skills:**\n' +
-    '```bash\nnpx skills add composiohq/skills\n```\n' +
-    '[Skills.sh](https://skills.sh/composiohq/skills/composio) · [GitHub](https://github.com/composiohq/skills)\n\n' +
-    '**CLI:**\n' +
-    '```bash\ncurl -fsSL https://composio.dev/install | bash\n```\n' +
-    '[CLI Reference](/docs/cli)\n\n' +
-    '**Context:**\n' +
-    '- [llms.txt](/llms.txt) — Documentation index with links\n' +
-    '- [llms-full.txt](/llms-full.txt) — Complete documentation in one file'
+      '**Skills:**\n' +
+      '```bash\nnpx skills add composiohq/skills\n```\n' +
+      '[Skills.sh](https://skills.sh/composiohq/skills/composio) · [GitHub](https://github.com/composiohq/skills)\n\n' +
+      '**CLI:**\n' +
+      '```bash\ncurl -fsSL https://composio.dev/install | bash\n```\n' +
+      '[CLI Reference](/docs/cli)\n\n' +
+      '**Context:**\n' +
+      '- [llms.txt](/llms.txt) — Documentation index with links\n' +
+      '- [llms-full.txt](/llms-full.txt) — Complete documentation in one file'
   );
 
   result = result.replace(
@@ -300,7 +323,10 @@ export function mdxToCleanMarkdown(content: string): string {
 
   result = replaceRepoBrowserMarkdown(result);
 
-  result = result.replace(/<\/?(ProviderGrid|Tabs|Frame|div|QuickstartFlow|IntegrationTabs|Accordions|ToolTypeFlow|ToolkitsLanding|TemplateGrid|Glossary|ConnectFlow|ConnectClientOption)[^>]*>/g, '');
+  result = result.replace(
+    /<\/?(ProviderGrid|Tabs|Frame|div|QuickstartFlow|IntegrationTabs|Accordions|ToolTypeFlow|ToolkitsLanding|TemplateGrid|Glossary|ConnectFlow|ConnectClientOption)[^>]*>/g,
+    ''
+  );
 
   result = result.replace(/<[A-Z][a-zA-Z]*[\s\S]*?\/>/g, '');
   result = result.replace(/<\/?[A-Z][a-zA-Z]*[^>]*>/g, '');
@@ -313,9 +339,10 @@ export function mdxToCleanMarkdown(content: string): string {
   const flushCodeBlock = () => {
     if (codeBlockLines.length > 0) {
       const nonEmptyLines = codeBlockLines.filter(l => l.trim().length > 0);
-      const minIndent = nonEmptyLines.length > 0
-        ? Math.min(...nonEmptyLines.map(l => l.match(/^(\s*)/)?.[1]?.length || 0))
-        : 0;
+      const minIndent =
+        nonEmptyLines.length > 0
+          ? Math.min(...nonEmptyLines.map(l => l.match(/^(\s*)/)?.[1]?.length || 0))
+          : 0;
       for (const codeLine of codeBlockLines) {
         normalizedLines.push(codeLine.slice(minIndent));
       }
@@ -376,7 +403,22 @@ function stripTwoslashFromCodeBlocks(content: string): string {
   });
 }
 
-export async function getLLMText(page: InferPageType<typeof source>, options?: { includeFooter?: boolean; includeGuardrails?: boolean }) {
+export interface LLMPage {
+  url: string;
+  data: {
+    title: string;
+    description?: string;
+    getText?: (mode: 'processed' | 'raw') => Promise<string>;
+    legacy?: boolean;
+    written?: string;
+    llmGuardrails?: Parameters<typeof getGuardrails>[0];
+  };
+}
+
+export async function getLLMText(
+  page: LLMPage,
+  options?: { includeFooter?: boolean; includeGuardrails?: boolean }
+) {
   const includeFooter = options?.includeFooter ?? true;
   const includeGuardrails = options?.includeGuardrails ?? true;
   if (typeof page.data.getText !== 'function') {
@@ -420,7 +462,10 @@ ${page.data.description || ''}`;
   const cleanSegments = segments.map(s => mdxToCleanMarkdown(s));
   let cleanContent = cleanSegments[0];
   for (let i = 0; i < mermaidCharts.length; i++) {
-    const chart = mermaidCharts[i].replace(/&#x22;/g, '"').replace(/&#x27;/g, "'").replace(/&amp;/g, '&');
+    const chart = mermaidCharts[i]
+      .replace(/&#x22;/g, '"')
+      .replace(/&#x27;/g, "'")
+      .replace(/&amp;/g, '&');
     cleanContent += `\n\n\`\`\`mermaid\n${chart}\n\`\`\`\n\n${cleanSegments[i + 1]}`;
   }
 
@@ -440,8 +485,7 @@ ${page.data.description || ''}`;
       ? `\n> _Written ${written}._\n`
       : '';
 
-  const guardrails =
-    includeGuardrails && !isLegacy ? getGuardrails(page.data.llmGuardrails) : '';
+  const guardrails = includeGuardrails && !isLegacy ? getGuardrails(page.data.llmGuardrails) : '';
 
   return `# ${page.data.title} (${page.url})
 ${topNote}
@@ -460,9 +504,7 @@ const DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
 
 function validateDateFormat(dateStr: string): void {
   if (!DATE_REGEX.test(dateStr)) {
-    throw new Error(
-      `Invalid date format: "${dateStr}". Expected YYYY-MM-DD (e.g., "2025-12-29")`
-    );
+    throw new Error(`Invalid date format: "${dateStr}". Expected YYYY-MM-DD (e.g., "2025-12-29")`);
   }
 }
 
