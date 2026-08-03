@@ -55,7 +55,7 @@
     "@effect/language-service": "catalog:",
     "@effect/platform": "catalog:",
     "@effect/printer": "^0.50.0",
-    "@effect/printer-ansi": "^0.50.0",
+    "@effect/printer-ansi": "^0.51.0",
     "@effect/rpc": "^0.76.0",
     "@effect/sql": "^0.52.0",
     "@effect/typeclass": "^0.41.0",
