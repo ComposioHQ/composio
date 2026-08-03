@@ -39,7 +39,7 @@ wait_for_file() {
 for script in "$repo_root/install.sh" "$repo_root"/install/*.sh; do
   [[ $(tail -n 1 "$script") == 'main "$@"' ]] || fail "$script must end with main \"\$@\""
   [[ $(grep -c '^main "\$@"$' "$script") -eq 1 ]] || fail "$script must contain one main entry point"
-  if rg -n '(^|[[:space:]])\[\[[[:space:]]|set -[^[:space:]]*o[[:space:]]+pipefail|<\(|<<<|echo -e|(^|[[:space:]])local[[:space:]]' "$script"; then
+  if grep -En '(^|[[:space:]])\[\[[[:space:]]|set -[^[:space:]]*o[[:space:]]+pipefail|<\(|<<<|echo -e|(^|[[:space:]])local[[:space:]]' "$script"; then
     fail "$script contains a non-POSIX shell construct"
   fi
 done
