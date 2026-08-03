@@ -458,12 +458,33 @@ write_path_block() {
             return line ~ /^[[:space:]]*export PATH=".*:\$PATH"[[:space:]]*$/ ||
                 line ~ /^[[:space:]]*set --export PATH ".*" \$PATH[[:space:]]*$/
         }
+        # The previously released installer wrote a three-line managed block:
+        # the marker, an install-dir export, then a PATH line referencing it.
+        # Recognizing that exact pair migrates the whole legacy block instead
+        # of orphaning the two export lines once the marker is consumed.
+        function is_legacy_install_dir_assignment(line) {
+            return line ~ /^[[:space:]]*export COMPOSIO_INSTALL_DIR=".*"[[:space:]]*$/ ||
+                line ~ /^[[:space:]]*set --export COMPOSIO_INSTALL_DIR ".*"[[:space:]]*$/
+        }
+        function is_legacy_pair(first, second) {
+            if (first ~ /^[[:space:]]*export COMPOSIO_INSTALL_DIR=".*"[[:space:]]*$/)
+                return second ~ /^[[:space:]]*export PATH="\$COMPOSIO_INSTALL_DIR:\$PATH"[[:space:]]*$/
+            return second ~ /^[[:space:]]*set --export PATH \$COMPOSIO_INSTALL_DIR \$PATH[[:space:]]*$/
+        }
+        holding {
+            holding = 0
+            if (is_legacy_pair(held, $0)) { held = ""; next }
+            print held
+            held = ""
+        }
         pending {
             pending = 0
             if (is_managed_path_assignment($0)) next
+            if (is_legacy_install_dir_assignment($0)) { held = $0; holding = 1; next }
         }
         $0 == "# Composio CLI" { pending = 1; next }
         { print }
+        END { if (holding) print held }
     ' "$write_path_target" >"$write_path_tmp" 2>/dev/null; then
         rm -f "$write_path_tmp"
         return 1

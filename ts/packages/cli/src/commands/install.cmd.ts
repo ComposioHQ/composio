@@ -280,6 +280,43 @@ const isManagedPathAssignment = (line: string): boolean => {
   );
 };
 
+const LEGACY_POSIX_INSTALL_DIR_PREFIX = 'export COMPOSIO_INSTALL_DIR="';
+const LEGACY_FISH_INSTALL_DIR_PREFIX = 'set --export COMPOSIO_INSTALL_DIR "';
+
+/**
+ * The install-dir assignment the previously released installer wrote as the
+ * second line of its three-line managed block: POSIX
+ * `export COMPOSIO_INSTALL_DIR="<dir>"` or fish
+ * `set --export COMPOSIO_INSTALL_DIR "<dir>"`. Matched structurally on the
+ * prefix/quotes (any dir), like `isManagedPathAssignment`.
+ */
+const isLegacyInstallDirAssignment = (line: string): boolean => {
+  const trimmed = line.trim();
+  return (
+    (trimmed.startsWith(LEGACY_POSIX_INSTALL_DIR_PREFIX) &&
+      trimmed.endsWith('"') &&
+      trimmed.length > LEGACY_POSIX_INSTALL_DIR_PREFIX.length) ||
+    (trimmed.startsWith(LEGACY_FISH_INSTALL_DIR_PREFIX) &&
+      trimmed.endsWith('"') &&
+      trimmed.length > LEGACY_FISH_INSTALL_DIR_PREFIX.length)
+  );
+};
+
+/**
+ * True when `first` and `second` are the two export lines of the legacy
+ * three-line block, in the same shell dialect. The closing PATH line is
+ * matched byte-for-byte (modulo surrounding whitespace) against the exact
+ * text the legacy installer emitted, so anything else after an install-dir
+ * assignment is user content and stays untouched.
+ */
+const isLegacyManagedPair = (first: string, second: string): boolean => {
+  if (!isLegacyInstallDirAssignment(first)) return false;
+  const secondTrimmed = second.trim();
+  return first.trim().startsWith(LEGACY_POSIX_INSTALL_DIR_PREFIX)
+    ? secondTrimmed === 'export PATH="$COMPOSIO_INSTALL_DIR:$PATH"'
+    : secondTrimmed === 'set --export PATH $COMPOSIO_INSTALL_DIR $PATH';
+};
+
 /**
  * Append managed blocks after existing content, separated by one blank line
  * and ending with a newline. Content lacking a final newline gains one first,
@@ -300,9 +337,12 @@ export const appendManagedBlocks = (contents: string, blocks: readonly string[])
  * land in install.sh too. A file whose single byte-exact marker is directly
  * followed by the expected assignment is current and left untouched.
  * Otherwise every managed line — each marker, plus the next line only when it
- * is a recognizable managed PATH assignment; anything else (a user
- * annotation, a blank line, another marker) is not ours to delete — is
- * removed and one fresh block is appended after the remaining content. No
+ * is a recognizable managed PATH assignment, or the next two lines when they
+ * are the exact export pair of the legacy three-line block (marker,
+ * `export COMPOSIO_INSTALL_DIR=...`, PATH line, in POSIX or fish form);
+ * anything else (a user annotation, a blank line, another marker) is not
+ * ours to delete — is removed and one fresh block is appended after the
+ * remaining content. No
  * user content is ever deleted, and because these prepend-style assignments
  * make the last-sourced line win, the new bin dir takes PATH precedence over
  * any orphaned stale assignment that had to be preserved.
@@ -322,13 +362,19 @@ export const reconcileManagedPathBlock = (
   }
 
   // Managed lines: each marker line, plus the next line only when it is a
-  // recognizable managed PATH assignment — anything else is not ours to delete.
+  // recognizable managed PATH assignment, or the next two lines when they are
+  // the exact export pair of the legacy three-line block — anything else is
+  // not ours to delete.
   const managedLineIndexes = new Set<number>(
     markerIndexes.flatMap(markerIndex => {
       const assignment = lines[markerIndex + 1];
-      return assignment !== undefined && isManagedPathAssignment(assignment)
-        ? [markerIndex, markerIndex + 1]
-        : [markerIndex];
+      if (assignment === undefined) return [markerIndex];
+      if (isManagedPathAssignment(assignment)) return [markerIndex, markerIndex + 1];
+      const legacyPathLine = lines[markerIndex + 2];
+      if (legacyPathLine !== undefined && isLegacyManagedPair(assignment, legacyPathLine)) {
+        return [markerIndex, markerIndex + 1, markerIndex + 2];
+      }
+      return [markerIndex];
     })
   );
 
