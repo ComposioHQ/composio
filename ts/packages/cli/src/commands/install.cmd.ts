@@ -297,6 +297,23 @@ const planPathBlockWrites = (params: {
   return { appendPathFiles, replacementsByTarget, loginOverrideWritten };
 };
 
+/** Atomically replace a physical target file's contents, preserving its file mode. */
+const atomicWriteWithMode = (
+  fs: FileSystem.FileSystem,
+  writeTarget: string,
+  contents: string
+): Effect.Effect<void, PlatformError> =>
+  Effect.gen(function* () {
+    const existingTargetInfo = yield* fs.stat(writeTarget).pipe(Effect.option);
+    const tmpPath = `${writeTarget}.composio-tmp`;
+
+    yield* fs.writeFileString(tmpPath, contents);
+    if (Option.isSome(existingTargetInfo)) {
+      yield* fs.chmod(tmpPath, existingTargetInfo.value.mode & 0o7777);
+    }
+    yield* fs.rename(tmpPath, writeTarget);
+  });
+
 /** Atomically rewrite each reconciled physical target, preserving its file mode. */
 const writeReconciledTargets = (params: {
   readonly replacementsByTarget: ReadonlyMap<string, ManagedBlockReplacement>;
@@ -306,15 +323,7 @@ const writeReconciledTargets = (params: {
 }): Effect.Effect<void, PlatformError> =>
   Effect.gen(function* () {
     for (const [writeTarget, replacement] of params.replacementsByTarget.entries()) {
-      const existingTargetInfo = yield* params.fs.stat(writeTarget).pipe(Effect.option);
-      const tmpPath = `${writeTarget}.composio-tmp`;
-
-      yield* params.fs.writeFileString(tmpPath, replacement.contents);
-      if (Option.isSome(existingTargetInfo)) {
-        yield* params.fs.chmod(tmpPath, existingTargetInfo.value.mode & 0o7777);
-      }
-      yield* params.fs.rename(tmpPath, writeTarget);
-
+      yield* atomicWriteWithMode(params.fs, writeTarget, replacement.contents);
       yield* params.report(`Updated ${tildify(replacement.displayPath, params.homedir)}`);
     }
   });
@@ -631,7 +640,6 @@ export const installShellIntegration = (params: {
         // PATH files were already resolved above; only the completion file needs a fresh resolve.
         const writeTarget =
           pathFileTargets.get(filePath) ?? (yield* resolveWriteTarget(filePath, fs));
-        const existingTargetInfo = yield* fs.stat(writeTarget).pipe(Effect.option);
 
         yield* fs
           .makeDirectory(path.dirname(writeTarget), { recursive: true })
@@ -642,13 +650,7 @@ export const installShellIntegration = (params: {
           );
 
         const appendContent = '\n' + blocks.join('\n\n') + '\n';
-        const tmpPath = `${writeTarget}.composio-tmp`;
-
-        yield* fs.writeFileString(tmpPath, existingContents + appendContent);
-        if (Option.isSome(existingTargetInfo)) {
-          yield* fs.chmod(tmpPath, existingTargetInfo.value.mode & 0o7777);
-        }
-        yield* fs.rename(tmpPath, writeTarget);
+        yield* atomicWriteWithMode(fs, writeTarget, existingContents + appendContent);
 
         yield* success(`Updated ${tildify(filePath, os.homedir)}`);
       }

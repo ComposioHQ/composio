@@ -506,14 +506,14 @@ print_post_install_help() {
 # channel so quiet mode and COMPOSIO_INSTALL_HELP=0 cannot suppress it, and the
 # trusted --version-verified installed executable is always the last output.
 print_setup_failure_ending() {
+    if [ "$install_agent" = 1 ] &&
+        [ "${COMPOSIO_INSTALL_HELP:-1}" != 0 ] && ! is_true "${COMPOSIO_QUIET:-}"; then
+        printf '\nComposio agent login complete.\n'
+    fi
+    warn "Automatic PATH setup for $requested_shell failed. The Composio CLI is installed and unaffected."
     if [ "$install_agent" = 1 ]; then
-        if [ "${COMPOSIO_INSTALL_HELP:-1}" != 0 ] && ! is_true "${COMPOSIO_QUIET:-}"; then
-            printf '\nComposio agent login complete.\n'
-        fi
-        warn "Automatic PATH setup for $requested_shell failed. The Composio CLI is installed and unaffected."
         printf '\nRun composio from its installed location:\n\n  %s --help\n' "$(shell_quote "$exe")" >&2
     else
-        warn "Automatic PATH setup for $requested_shell failed. The Composio CLI is installed and unaffected."
         printf '\nTo get started, run:\n\n  %s login\n' "$(shell_quote "$exe")" >&2
     fi
 }
