@@ -1,8 +1,5 @@
 /**
- * OpenAI v6 + Zod v4 compatibility e2e test
- *
- * Verifies that packed @composio/core and @composio/openai packages install,
- * typecheck, and run with openai@6 and zod@4.
+ * Packed @composio/core and @composio/openai compatibility with OpenAI 7.
  */
 
 import { e2e, type E2ETestResultWithSetup } from '@e2e-tests/utils';
@@ -14,7 +11,6 @@ e2e(import.meta.url, {
   defineTests: ({ runFixture }) => {
     let result: E2ETestResultWithSetup;
 
-    // npm install inside Docker needs more time than the default TIMEOUTS.FIXTURE (120s)
     beforeAll(async () => {
       result = await runFixture({
         filename: 'index.mjs',
@@ -25,33 +21,30 @@ e2e(import.meta.url, {
     describe('setup', () => {
       it('installs and typechecks successfully', () => {
         expect(result.setup.exitCode).toBe(0);
-        expect(result.setup.stdout).toContain('openai v6 compatibility typecheck passed');
+        expect(result.setup.stdout).toContain('openai v7 compatibility typecheck passed');
       });
     });
 
-    describe('OpenAI v6 + Zod v4 compatibility', () => {
+    describe('OpenAI v7 + Zod v4 compatibility', () => {
       it('exits successfully', () => {
         expect(result.exitCode).toBe(0);
       });
 
-      it('zod@4 works', () => {
+      it('loads OpenAI 7 and Zod 4', () => {
         expect(result.stdout).toContain('zod@4 works');
+        expect(result.stdout).toContain('openai@7 works');
       });
 
-      it('openai@6 works', () => {
-        expect(result.stdout).toContain('openai@6 works');
-      });
-
-      it('@composio/core works', () => {
+      it('constructs the Composio client', () => {
         expect(result.stdout).toContain('@composio/core works');
       });
 
-      it('wrapTool works', () => {
+      it('wraps tools through both providers', () => {
         expect(result.stdout).toContain('core wrapTool works');
         expect(result.stdout).toContain('responses wrapTool works');
       });
 
-      it('all packages work together', () => {
+      it('runs without network access', () => {
         expect(result.stdout).toContain('All packages work together!');
       });
     });

@@ -505,8 +505,26 @@ importers:
         specifier: workspace:*
         version: link:../../../_utils
 
+  ts/e2e-tests/runtimes/node/openai-v7-zod4-compat:
+    devDependencies:
+      '@composio/core':
+        specifier: workspace:*
+        version: link:../../../../packages/core
+      '@composio/openai':
+        specifier: workspace:*
+        version: link:../../../../packages/providers/openai
+      '@e2e-tests/utils':
+        specifier: workspace:*
+        version: link:../../../_utils
+
   ts/e2e-tests/runtimes/node/openai-zod4-compat:
     devDependencies:
+      '@composio/core':
+        specifier: workspace:*
+        version: link:../../../../packages/core
+      '@composio/openai':
+        specifier: workspace:*
+        version: link:../../../../packages/providers/openai
       '@e2e-tests/utils':
         specifier: workspace:*
         version: link:../../../_utils
@@ -7802,6 +7820,10 @@ snapshots:
     dependencies:
       hono: 4.12.31
 
+  '@hono/node-server@2.0.11(hono@4.12.33)':
+    dependencies:
+      hono: 4.12.33
+
   '@img/colour@1.1.0': {}
 
   '@img/sharp-darwin-arm64@0.33.5':
@@ -8473,7 +8495,7 @@ snapshots:
 
   '@modelcontextprotocol/sdk@1.30.0(@cfworker/json-schema@4.1.1)(zod@4.4.3)':
     dependencies:
-      '@hono/node-server': 2.0.11(hono@4.12.31)
+      '@hono/node-server': 2.0.11(hono@4.12.33)
       ajv: 8.20.0
       ajv-formats: 3.0.1(ajv@8.20.0)
       content-type: 1.0.5
@@ -8483,7 +8505,7 @@ snapshots:
       eventsource-parser: 3.1.0
       express: 5.2.1
       express-rate-limit: 8.6.0(express@5.2.1)
-      hono: 4.12.31
+      hono: 4.12.33
       jose: 6.2.4
       json-schema-typed: 8.0.2
       pkce-challenge: 5.0.1

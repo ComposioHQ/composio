@@ -1,6 +1,7 @@
-# OpenAI + Zod v4 Compatibility Test
+# OpenAI v6 + Zod v4 Compatibility Test
 
-Verifies that `@composio/core` works correctly with `openai` and `zod@4`.
+Verifies that packed `@composio/core` and `@composio/openai` packages work with
+`openai@6` and `zod@4`.
 
 ## Background
 
@@ -8,29 +9,30 @@ Issue [#2336](https://github.com/ComposioHQ/composio/issues/2336) reported peer 
 
 ## What It Tests
 
-| Test                | Description                                           |
-| ------------------- | ----------------------------------------------------- |
-| npm install         | Installs `@composio/core`, `openai`, and `zod@4`      |
-| Package integration | Verifies all packages work together without conflicts |
-| wrapTool            | Confirms OpenAI provider tool wrapping works          |
+| Test                | Description                                               |
+| ------------------- | --------------------------------------------------------- |
+| npm install         | Installs packed Composio packages with OpenAI 6 and Zod 4 |
+| TypeScript          | Checks exported provider types against OpenAI 6           |
+| Package integration | Verifies all packages work together without conflicts     |
+| wrapTool            | Confirms both OpenAI provider surfaces wrap tools         |
 
 ## Fixture
 
 ```
 fixtures/
-├── index.mjs      # Test script that imports and uses all packages
-└── package.json   # Declares dependencies: @composio/core, openai@^6.16.0, zod@^4.3.5
+├── index.mjs      # Offline runtime assertions
+├── index.ts       # Exported-type compatibility checks
+├── package.json   # Explicit OpenAI 6 and Zod 4 dependencies
+└── tsconfig.json  # Strict consumer compiler settings
 ```
 
-The fixture uses `usesFixtures: true` with a setup phase to install dependencies at runtime:
-
-- `package.json` declares `@composio/core` (linked from monorepo), `openai`, and `zod@4`
-- `index.mjs` imports all three packages and verifies they work together
-- Tests `wrapTool` to ensure schema conversion works with Zod v4
+The setup phase packs both Composio packages, installs them with explicit
+OpenAI 6 and Zod 4 versions, and typechecks without `skipLibCheck`.
 
 ## Setup
 
-The `setup` phase runs `npm install --legacy-peer-deps` in a Docker volume, then the fixture runs with the installed `node_modules` mounted read-only.
+The runtime phase constructs clients with fake keys and never makes a network
+request.
 
 ## Isolation Tool
 
