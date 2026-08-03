@@ -386,6 +386,20 @@ EOF
   [[ $(<"$equal_dir/release-tag.txt") == "$beta_tag" ]] || fail "$interpreter_name explicit beta tag"
 
   reset_case
+  upgrade_home="$case_root/upgrade-home"
+  upgrade_install="$case_root/upgrade-install"
+  upgrade_bin="$case_root/upgrade-bin"
+  mkdir -p "$upgrade_install/services"
+  printf '%s\n' stale >"$upgrade_install/services/stale.txt"
+  printf '%s\n' old-binary >"$upgrade_install/composio"
+  run_installer "$upgrade_home" "$upgrade_install" "$upgrade_bin" "$stable_tag" >/dev/null 2>&1
+  [[ -x "$upgrade_install/composio" ]] || fail "$interpreter_name upgrade must replace the existing binary"
+  [[ $(<"$upgrade_install/services/example.txt") == service ]] || fail "$interpreter_name upgrade must install new support files"
+  [[ ! -e "$upgrade_install/services/stale.txt" ]] || fail "$interpreter_name upgrade must replace bundle directories wholesale"
+  [[ -z $(find "$upgrade_install" -maxdepth 1 -name '.composio-install-staging.*' -print -quit) ]] ||
+    fail "$interpreter_name upgrade must clean up the staging directory"
+
+  reset_case
   legacy_home="$case_root/legacy-home"
   mkdir -p "$legacy_home"
   printf '%s\n' 'export COMPOSIO_INSTALL_DIR="$HOME/.composio"' >"$legacy_home/.bashrc"
