@@ -1,5 +1,5 @@
 /**
- * Simple test script to verify @composio/core works with openai@6 and zod@4
+ * Simple test script to verify @composio/core works with openai@7 and zod@4
  *
  * This test verifies that the packages can be imported and instantiated together
  * without peer dependency conflicts. It doesn't make actual API calls.
@@ -13,14 +13,15 @@ import { OpenAIResponsesProvider } from '@composio/openai';
 
 // Verify zod@4 works
 const schema = z.object({ name: z.string() });
+schema.parse({ name: 'OpenAI 7' });
 console.log('✅ zod@4 works');
 
-// Verify openai@6 works without making a network request.
+// Verify openai@7 works without making a network request.
 const openai = new OpenAI({ apiKey: 'test-key' });
 if (!openai.responses) {
   throw new Error('OpenAI client does not expose the Responses API');
 }
-console.log('✅ openai@6 works');
+console.log('✅ openai@7 works');
 
 // Verify @composio/core works
 const provider = new OpenAIProvider();

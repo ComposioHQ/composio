@@ -505,18 +505,6 @@ importers:
         specifier: workspace:*
         version: link:../../../_utils
 
-  ts/e2e-tests/runtimes/node/openai-v7-zod4-compat:
-    devDependencies:
-      '@composio/core':
-        specifier: workspace:*
-        version: link:../../../../packages/core
-      '@composio/openai':
-        specifier: workspace:*
-        version: link:../../../../packages/providers/openai
-      '@e2e-tests/utils':
-        specifier: workspace:*
-        version: link:../../../_utils
-
   ts/e2e-tests/runtimes/node/openai-zod4-compat:
     devDependencies:
       '@composio/core':

@@ -13,7 +13,9 @@ ARG NODE_VERSION
 FROM node:${NODE_VERSION}-slim
 
 ENV MISE_DATA_DIR="/mise"
+ENV MISE_CACHE_DIR="/mise/cache"
 ENV MISE_DISABLE_TOOLS="node,deno,python,uv"
+ENV MISE_TRUSTED_CONFIG_PATHS="/app"
 ENV PATH="/mise/shims:$PATH"
 
 WORKDIR /app
@@ -24,14 +26,12 @@ RUN apt-get update && \
     rm -rf /var/lib/apt/lists/*
 
 # Install bun + pnpm via mise (versions pinned in mise.toml/mise.lock).
-# mise is installed to /usr/local/bin; the tool binaries are symlinked there too so
-# they stay on PATH for the non-root runtime user (login shells reset PATH).
+# mise is installed to /usr/local/bin; its shared cache and shims keep the tools
+# available to the non-root runtime user.
+ENV XDG_CACHE_HOME="/mise/cache"
 RUN curl -fsSL https://mise.run | MISE_INSTALL_PATH=/usr/local/bin/mise sh
 COPY mise.toml mise.lock ./
-RUN mise trust /app/mise.toml && \
-    mise install && \
-    ln -sf "$(mise which bun)" /usr/local/bin/bun && \
-    ln -sf "$(mise which pnpm)" /usr/local/bin/pnpm && \
+RUN mise install && \
     pnpm --version && \
     bun --version
 
@@ -81,5 +81,8 @@ RUN chown -R node:node /app
 RUN mkdir -p /home/node/.composio && chown node:node /home/node/.composio
 
 USER node
+
+RUN pnpm --version && \
+    bun --version
 
 CMD ["sh"]

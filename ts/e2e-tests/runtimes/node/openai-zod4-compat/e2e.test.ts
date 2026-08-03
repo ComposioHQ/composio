@@ -1,8 +1,8 @@
 /**
- * OpenAI v6 + Zod v4 compatibility e2e test
+ * OpenAI v7 + Zod v4 compatibility e2e test
  *
  * Verifies that packed @composio/core and @composio/openai packages install,
- * typecheck, and run with openai@6 and zod@4.
+ * typecheck, and run with openai@7 and zod@4.
  */
 
 import { e2e, type E2ETestResultWithSetup } from '@e2e-tests/utils';
@@ -25,11 +25,11 @@ e2e(import.meta.url, {
     describe('setup', () => {
       it('installs and typechecks successfully', () => {
         expect(result.setup.exitCode).toBe(0);
-        expect(result.setup.stdout).toContain('openai v6 compatibility typecheck passed');
+        expect(result.setup.stdout).toContain('openai v7 compatibility typecheck passed');
       });
     });
 
-    describe('OpenAI v6 + Zod v4 compatibility', () => {
+    describe('OpenAI v7 + Zod v4 compatibility', () => {
       it('exits successfully', () => {
         expect(result.exitCode).toBe(0);
       });
@@ -38,8 +38,8 @@ e2e(import.meta.url, {
         expect(result.stdout).toContain('zod@4 works');
       });
 
-      it('openai@6 works', () => {
-        expect(result.stdout).toContain('openai@6 works');
+      it('openai@7 works', () => {
+        expect(result.stdout).toContain('openai@7 works');
       });
 
       it('@composio/core works', () => {

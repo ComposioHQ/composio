@@ -1,7 +1,7 @@
-# OpenAI v6 + Zod v4 Compatibility Test
+# OpenAI v7 + Zod v4 Compatibility Test
 
 Verifies that packed `@composio/core` and `@composio/openai` packages work with
-`openai@6` and `zod@4`.
+`openai@7` and `zod@4`.
 
 ## Background
 
@@ -11,8 +11,8 @@ Issue [#2336](https://github.com/ComposioHQ/composio/issues/2336) reported peer 
 
 | Test                | Description                                               |
 | ------------------- | --------------------------------------------------------- |
-| npm install         | Installs packed Composio packages with OpenAI 6 and Zod 4 |
-| TypeScript          | Checks exported provider types against OpenAI 6           |
+| npm install         | Installs packed Composio packages with OpenAI 7 and Zod 4 |
+| TypeScript          | Checks exported provider types against OpenAI 7           |
 | Package integration | Verifies all packages work together without conflicts     |
 | wrapTool            | Confirms both OpenAI provider surfaces wrap tools         |
 
@@ -22,12 +22,12 @@ Issue [#2336](https://github.com/ComposioHQ/composio/issues/2336) reported peer 
 fixtures/
 ├── index.mjs      # Offline runtime assertions
 ├── index.ts       # Exported-type compatibility checks
-├── package.json   # Explicit OpenAI 6 and Zod 4 dependencies
+├── package.json   # Explicit OpenAI 7 and Zod 4 dependencies
 └── tsconfig.json  # Strict consumer compiler settings
 ```
 
 The setup phase packs both Composio packages, installs them with explicit
-OpenAI 6 and Zod 4 versions, and typechecks without `skipLibCheck`.
+OpenAI 7 and Zod 4 versions, and typechecks without `skipLibCheck`.
 
 ## Setup
 
