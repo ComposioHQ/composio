@@ -75,5 +75,6 @@ const result = await composio.tools.execute("GITHUB_CREATE_ISSUE", {
 3. **A toolkit version is required** — configure \`toolkit_versions\` (Python) / \`toolkitVersions\` (TypeScript) at SDK init, or pass \`version\` per execute call; omitting both raises \`ToolVersionRequiredError\`.
 4. **Provider at init** — \`Composio(provider=OpenAIProvider())\` in Python, \`new Composio({ provider: new OpenAIProvider() })\` in TypeScript. Defaults to OpenAI if omitted.
 5. **Correct provider imports** — \`composio_<provider>\` for Python, \`@composio/<provider>\` for TypeScript. For OpenAI Agents SDK use \`composio_openai_agents\` / \`@composio/openai-agents\`.
+6. **Finding toolkit and tool slugs** — browse the Toolkits catalog at https://docs.composio.dev/toolkits (each toolkit page lists tool slugs and versions), or search by task with the CLI: \`composio search "<what you want to do>"\`.
 ${TERMINOLOGY_MIGRATION}
 `;
