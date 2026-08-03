@@ -36,6 +36,9 @@ jobs:
       - name: Test atomic install replacement
         run: bash test/install-sh-atomic-replace.test.sh
 
+      - name: Test documented uninstall snippet
+        run: bash test/install-sh-uninstall-snippet.test.sh
+
       - name: Lint POSIX install scripts
         run: shellcheck -s sh install.sh install/*.sh
 

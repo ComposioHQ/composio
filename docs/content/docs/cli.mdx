@@ -167,15 +167,26 @@ for file in \
   "$HOME/.bash_login" \
   "$HOME/.config/fish/config.fish"; do
   [ -f "$file" ] || continue
-  awk '
-    /^# Composio CLI$/ { skip = 1; next }
-    skip && /^export COMPOSIO_INSTALL_DIR=/ { next }
-    skip && (/^export PATH=/ || /^set --export PATH /) { skip = 0; next }
-    { skip = 0; print }
-  ' "$file" > "$file.tmp"
-  cat "$file.tmp" > "$file" && rm -f "$file.tmp"
+  tmp=$(mktemp) || continue
+  if awk '
+    $0 == "# Composio CLI" { in_block = 1; next }
+    in_block && (/^export COMPOSIO_INSTALL_DIR=/ || /^set --export COMPOSIO_INSTALL_DIR /) { next }
+    in_block && (/^export PATH=/ || /^set --export PATH /) { in_block = 0; next }
+    { in_block = 0; print }
+  ' "$file" > "$tmp"; then
+    if [ "$file" = "$HOME/.bash_profile" ] && ! grep -q '[^[:space:]]' "$tmp"; then
+      rm -f "$file"
+    else
+      cat "$tmp" > "$file"
+    fi
+  fi
+  rm -f "$tmp"
 done
 ```
+
+The loop stages every rewrite in a `mktemp` scratch file — created with an unpredictable name and `0600` permissions, so startup-file contents never pass through a world-readable path — and writes the result back only when `awk` succeeds. A failed or missing `awk` leaves the startup file untouched, and the scratch file is always removed. Writing back with `cat` keeps a symlinked startup file intact: the symlink, its target's inode, owner, and mode all survive. The filter removes the current managed block and the three-line block written by older installers (marker plus `export COMPOSIO_INSTALL_DIR=...` or `set --export COMPOSIO_INSTALL_DIR ...`).
+
+`~/.bash_profile` gets one extra step: when removing the block leaves only blank lines, the file is deleted. The installer creates `~/.bash_profile` on bash systems that had no login startup file, and bash prefers even an empty `~/.bash_profile` over `~/.profile`, so leaving the empty file behind would silently override bash's normal startup-file selection forever. Note the edge case: a `~/.bash_profile` you created yourself but left empty is also removed.
 
 <Callout type="warn">
 **Purge all CLI state**
