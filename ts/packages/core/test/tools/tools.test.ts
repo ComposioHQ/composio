@@ -2,8 +2,8 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { mockClient } from '../utils/mocks/client.mock';
 import { toolMocks } from '../utils/mocks/data.mock';
 import { Tool, ToolListParams, ToolExecuteParams } from '../../src/types/tool.types';
+import { ExecuteToolFn } from '../../src/types/provider.types';
 import { Tools } from '../../src/models/Tools';
-import ComposioClient from '@composio/client';
 import {
   createTestContext,
   setupTest,
@@ -13,19 +13,33 @@ import {
 import { MockProvider } from '../utils/mocks/provider.mock';
 import { ValidationError } from '../../src/errors/ValidationErrors';
 
+// Minimal structural shape for a ComposioError-like value (possibly wrapping
+// another error as its `cause`), used to narrow `catch (error: unknown)`
+// blocks that assert on `.code` / `.message` / `.possibleFixes`.
+type ErrorWithPossibleFixes = {
+  code?: string;
+  message?: string;
+  possibleFixes?: string[];
+  cause?: {
+    code?: string;
+    message?: string;
+    possibleFixes?: string[];
+  };
+};
+
 describe('Tools', () => {
   const context = createTestContext();
   setupTest(context);
 
   describe('constructor', () => {
     it('should throw an error if client is not provided', () => {
-      expect(() => new Tools(null as any, { provider: context.mockProvider })).toThrow(
+      expect(() => new Tools(null as unknown, { provider: context.mockProvider })).toThrow(
         'ComposioClient is required'
       );
     });
 
     it('should throw an error if provider is not provided', () => {
-      expect(() => new Tools(mockClient as unknown as ComposioClient, null as any)).toThrow(
+      expect(() => new Tools(mockClient, null as unknown)).toThrow(
         'Provider not passed into Tools instance'
       );
     });
@@ -296,7 +310,7 @@ describe('Tools', () => {
     it('should throw a validation error when scopes are provided without toolkits', async () => {
       const invalidQuery = {
         scopes: ['task:add'],
-      } as any;
+      } as unknown;
 
       await expect(context.tools.getRawComposioTools(invalidQuery)).rejects.toThrow(
         'Invalid tool list parameters'
@@ -335,7 +349,7 @@ describe('Tools', () => {
     });
 
     it('should throw an error if schema modifier is not a function', async () => {
-      const invalidModifier = 'not a function' as any;
+      const invalidModifier = 'not a function' as unknown;
 
       mockClient.tools.list.mockResolvedValueOnce({
         items: [toolMocks.rawTool],
@@ -356,7 +370,7 @@ describe('Tools', () => {
       const invalidQuery = {
         tools: ['TOOL1'],
         toolkits: ['github'],
-      } as any;
+      } as unknown;
 
       await expect(context.tools.getRawComposioTools(invalidQuery)).rejects.toThrow(
         'Invalid tool list parameters'
@@ -364,7 +378,7 @@ describe('Tools', () => {
     });
 
     it('should throw a validation error when no required parameters are provided', async () => {
-      const emptyQuery = {} as any;
+      const emptyQuery = {} as unknown;
 
       await expect(context.tools.getRawComposioTools(emptyQuery)).rejects.toThrow(ValidationError);
     });
@@ -493,7 +507,7 @@ describe('Tools', () => {
       mockClient.tools.retrieve.mockResolvedValueOnce(toolMocks.rawTool);
 
       // Create a Tools instance with SDK-level toolkitVersions as mapping object
-      const toolsWithVersions = new Tools(mockClient as any, {
+      const toolsWithVersions = new Tools(mockClient, {
         provider: context.mockProvider,
         toolkitVersions: versionMapping,
       });
@@ -533,7 +547,7 @@ describe('Tools', () => {
       const explicitVersion = '20250909_00';
 
       // Create a Tools instance with SDK-level toolkitVersions
-      const toolsWithVersions = new Tools(mockClient as any, {
+      const toolsWithVersions = new Tools(mockClient, {
         provider: context.mockProvider,
         toolkitVersions: { github: explicitVersion },
       });
@@ -1226,7 +1240,7 @@ describe('Tools', () => {
     it('should throw validation error for invalid parameters', async () => {
       const invalidProxyParams = {
         endpoint: '/api/test',
-        method: 'INVALID_METHOD' as any,
+        method: 'INVALID_METHOD' as unknown,
         parameters: [
           {
             in: 'header' as const,
@@ -1322,7 +1336,7 @@ describe('Tools', () => {
         const invalidBody = {
           // missing sessionId
           arguments: { query: 'test' },
-        } as any;
+        } as unknown;
 
         await expect(
           context.tools.executeSessionTool('COMPOSIO_TOOL', invalidBody)
@@ -1508,7 +1522,10 @@ describe('Tools', () => {
       it('should create execute function that calls executeSessionTool', async () => {
         const tools = [toolMocks.transformedTool as unknown as Tool];
 
-        let capturedExecuteFn: (toolSlug: string, input: Record<string, unknown>) => Promise<any>;
+        let capturedExecuteFn: (
+          toolSlug: string,
+          input: Record<string, unknown>
+        ) => Promise<unknown>;
 
         context.mockProvider.wrapTools.mockImplementation((tools, executeFn) => {
           capturedExecuteFn = executeFn;
@@ -1552,7 +1569,10 @@ describe('Tools', () => {
           })),
         };
 
-        let capturedExecuteFn: (toolSlug: string, input: Record<string, unknown>) => Promise<any>;
+        let capturedExecuteFn: (
+          toolSlug: string,
+          input: Record<string, unknown>
+        ) => Promise<unknown>;
 
         context.mockProvider.wrapTools.mockImplementation((tools, executeFn) => {
           capturedExecuteFn = executeFn;
@@ -1633,9 +1653,9 @@ describe('Tools', () => {
 
       it('should pass global version string when configured', async () => {
         const mockProvider = new MockProvider();
-        const tools = new Tools(mockClient as unknown as ComposioClient, {
+        const tools = new Tools(mockClient, {
           provider: mockProvider,
-          toolkitVersions: '20251201_03' as any,
+          toolkitVersions: '20251201_03' as unknown,
         });
 
         mockClient.tools.list.mockResolvedValueOnce({
@@ -1657,7 +1677,7 @@ describe('Tools', () => {
 
       it('should pass toolkit-specific versions when configured as object', async () => {
         const mockProvider = new MockProvider();
-        const tools = new Tools(mockClient as unknown as ComposioClient, {
+        const tools = new Tools(mockClient, {
           provider: mockProvider,
           toolkitVersions: {
             github: '20251201_01',
@@ -1689,7 +1709,7 @@ describe('Tools', () => {
 
       it('should pass versions when fetching tools by tool slugs', async () => {
         const mockProvider = new MockProvider();
-        const tools = new Tools(mockClient as unknown as ComposioClient, {
+        const tools = new Tools(mockClient, {
           provider: mockProvider,
           toolkitVersions: {
             github: '20251201_01',
@@ -1719,7 +1739,7 @@ describe('Tools', () => {
 
       it('should pass versions when searching tools', async () => {
         const mockProvider = new MockProvider();
-        const tools = new Tools(mockClient as unknown as ComposioClient, {
+        const tools = new Tools(mockClient, {
           provider: mockProvider,
           toolkitVersions: 'latest',
         });
@@ -1760,9 +1780,9 @@ describe('Tools', () => {
 
       it('should pass global version when retrieving single tool', async () => {
         const mockProvider = new MockProvider();
-        const tools = new Tools(mockClient as unknown as ComposioClient, {
+        const tools = new Tools(mockClient, {
           provider: mockProvider,
-          toolkitVersions: '20251201_03' as any,
+          toolkitVersions: '20251201_03' as unknown,
         });
 
         mockClient.tools.retrieve.mockResolvedValueOnce(toolMocks.rawTool);
@@ -1780,7 +1800,7 @@ describe('Tools', () => {
 
       it('should pass toolkit-specific versions when retrieving single tool', async () => {
         const mockProvider = new MockProvider();
-        const tools = new Tools(mockClient as unknown as ComposioClient, {
+        const tools = new Tools(mockClient, {
           provider: mockProvider,
           toolkitVersions: {
             github: '20251201_01',
@@ -1838,9 +1858,9 @@ describe('Tools', () => {
 
       it('should use global version when configured', async () => {
         const mockProvider = new MockProvider();
-        const tools = new Tools(mockClient as unknown as ComposioClient, {
+        const tools = new Tools(mockClient, {
           provider: mockProvider,
-          toolkitVersions: '20251201_03' as any,
+          toolkitVersions: '20251201_03' as unknown,
         });
         const spies = await mockToolExecution(tools);
 
@@ -1869,7 +1889,7 @@ describe('Tools', () => {
 
       it('should use toolkit-specific version when configured as object', async () => {
         const mockProvider = new MockProvider();
-        const tools = new Tools(mockClient as unknown as ComposioClient, {
+        const tools = new Tools(mockClient, {
           provider: mockProvider,
           toolkitVersions: {
             'test-toolkit': '20251201_01', // Use the actual toolkit slug from mock
@@ -1914,7 +1934,7 @@ describe('Tools', () => {
 
       it('should use fallback to "latest" when toolkit not in version mapping', async () => {
         const mockProvider = new MockProvider();
-        const tools = new Tools(mockClient as unknown as ComposioClient, {
+        const tools = new Tools(mockClient, {
           provider: mockProvider,
           toolkitVersions: {
             github: '20251201_01',
@@ -1957,7 +1977,7 @@ describe('Tools', () => {
 
       it('should prioritize explicit version parameter over configured versions', async () => {
         const mockProvider = new MockProvider();
-        const tools = new Tools(mockClient as unknown as ComposioClient, {
+        const tools = new Tools(mockClient, {
           provider: mockProvider,
           toolkitVersions: {
             github: '20251201_01',
@@ -1993,7 +2013,7 @@ describe('Tools', () => {
 
       it('should handle tool without toolkit gracefully', async () => {
         const mockProvider = new MockProvider();
-        const tools = new Tools(mockClient as unknown as ComposioClient, {
+        const tools = new Tools(mockClient, {
           provider: mockProvider,
           toolkitVersions: {
             github: '20251201_01',
@@ -2054,7 +2074,7 @@ describe('Tools', () => {
 
         const mockProvider = new MockProvider();
         // Pass the processed environment variables to the Tools constructor
-        const tools = new Tools(mockClient as unknown as ComposioClient, {
+        const tools = new Tools(mockClient, {
           provider: mockProvider,
           toolkitVersions: {
             github: '20251201_08',
@@ -2088,7 +2108,7 @@ describe('Tools', () => {
         process.env.COMPOSIO_TOOLKIT_VERSION_SLACK = 'latest';
 
         const mockProvider = new MockProvider();
-        const tools = new Tools(mockClient as unknown as ComposioClient, {
+        const tools = new Tools(mockClient, {
           provider: mockProvider,
           toolkitVersions: {
             github: '20251201_04', // should override env
@@ -2122,9 +2142,9 @@ describe('Tools', () => {
         process.env.COMPOSIO_TOOLKIT_VERSION_SLACK = 'latest';
 
         const mockProvider = new MockProvider();
-        const tools = new Tools(mockClient as unknown as ComposioClient, {
+        const tools = new Tools(mockClient, {
           provider: mockProvider,
-          toolkitVersions: '20251201_09' as any, // global version overrides everything
+          toolkitVersions: '20251201_09' as unknown, // global version overrides everything
         });
 
         mockClient.tools.list.mockResolvedValueOnce({
@@ -2207,7 +2227,7 @@ describe('Tools', () => {
 
       it('should succeed when executing with a specific version (not "latest") without dangerouslySkipVersionCheck', async () => {
         const mockProvider = new MockProvider();
-        const tools = new Tools(mockClient as unknown as ComposioClient, {
+        const tools = new Tools(mockClient, {
           provider: mockProvider,
           toolkitVersions: {
             'test-toolkit': '20251201_01',
@@ -2280,7 +2300,7 @@ describe('Tools', () => {
 
       it('should throw error when explicit version parameter is "latest" without dangerouslySkipVersionCheck', async () => {
         const mockProvider = new MockProvider();
-        const tools = new Tools(mockClient as unknown as ComposioClient, {
+        const tools = new Tools(mockClient, {
           provider: mockProvider,
           toolkitVersions: {
             'test-toolkit': '20251201_01', // specific version in config
@@ -2319,7 +2339,8 @@ describe('Tools', () => {
         try {
           await context.tools.execute('GITHUB_CREATE_ISSUE', executeParams);
           expect.fail('Should have thrown an error');
-        } catch (error: any) {
+        } catch (rawError: unknown) {
+          const error = rawError as unknown as ErrorWithPossibleFixes;
           // The error should be wrapped in ComposioToolExecutionError
           expect(error).toBeDefined();
 
@@ -2364,17 +2385,15 @@ describe('Tools', () => {
         );
 
         // Mock provider wrapping
-        context.mockProvider.wrapTools.mockImplementation((tools, executeToolFn) => {
-          // Store the execute function so we can test it
-          (context as any).storedExecuteToolFn = executeToolFn;
+        let storedExecuteToolFn: ExecuteToolFn | undefined;
+        context.mockProvider.wrapTools.mockImplementation((_tools, executeToolFn) => {
+          storedExecuteToolFn = executeToolFn;
           return 'wrapped-tools-collection';
         });
 
         // Get the tool (this will internally create the execute tool function)
         await context.tools.get(userId, 'GITHUB_CREATE_ISSUE');
 
-        // Now call the stored execute function (simulating agentic provider calling it)
-        const storedExecuteToolFn = (context as any).storedExecuteToolFn;
         expect(storedExecuteToolFn).toBeDefined();
 
         // Setup mocks for the actual execution
@@ -2382,7 +2401,7 @@ describe('Tools', () => {
 
         // Call the execute function that was passed to the provider
         // This should succeed because createExecuteToolFn sets dangerouslySkipVersionCheck: true
-        const result = await storedExecuteToolFn('GITHUB_CREATE_ISSUE', { title: 'Test Issue' });
+        const result = await storedExecuteToolFn!('GITHUB_CREATE_ISSUE', { title: 'Test Issue' });
 
         expect(result).toEqual(toolMocks.toolExecuteResponse);
         expect(mockClient.tools.execute).toHaveBeenCalledWith(

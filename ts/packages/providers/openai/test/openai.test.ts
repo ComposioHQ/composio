@@ -37,14 +37,14 @@ interface MockedOpenAIChatCompletionTool {
   function: {
     name: string;
     description?: string;
-    parameters?: any;
+    parameters?: unknown;
   };
 }
 
 describe('OpenAIProvider', () => {
   let provider: OpenAIProvider;
   let mockTool: Tool;
-  let mockExecuteToolFn: any;
+  let mockExecuteToolFn: unknown;
 
   beforeEach(() => {
     provider = new OpenAIProvider();

@@ -5,7 +5,7 @@ import { Tool } from '@composio/core';
 describe('GoogleProvider', () => {
   let provider: GoogleProvider;
   let mockTool: Tool;
-  let mockExecuteToolFn: any;
+  let mockExecuteToolFn: unknown;
 
   beforeEach(() => {
     provider = new GoogleProvider();

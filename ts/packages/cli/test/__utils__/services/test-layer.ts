@@ -1,5 +1,6 @@
 import path from 'node:path';
 import * as tempy from 'tempy';
+import { Composio as RawComposioClient } from '@composio/client';
 import { CliApp, CliConfig } from '@effect/cli';
 import { Command, FetchHttpClient, FileSystem, Path } from '@effect/platform';
 import { BunFileSystem, BunContext, BunPath } from '@effect/platform-bun';
@@ -85,22 +86,26 @@ export interface TestLiveInput {
   fixture?: string;
 
   /**
-   * Override for the mocked `NodeProcess.execPath`. A relative value resolves
-   * against the test home directory, which is only known once the layer builds.
-   * Defaults to `<cwd>/composio`.
+   * Override the running-executable path reported by `NodeProcess`.
+   *
+   * A relative value resolves against the per-test home directory, which is a
+   * fresh temp dir created while the layer is being built — so a scenario that
+   * needs an exec path underneath it (e.g. `.local/bin/composio`) can stay
+   * relative instead of spelling out a path it cannot know up front.
+   * Defaults to `<homedir>/composio`.
    */
   execPath?: string;
 
   /**
-   * Mock toolkit-related data to use in test.
-   */
-  toolkitsData?: {
-    toolkits?: Toolkits;
-    detailedToolkits?: ToolkitDetailed[];
-    tools?: Tools;
-    triggerTypesAsEnums?: TriggerTypesAsEnums;
-    triggerTypes?: TriggerTypes;
-  };
+ * Mock toolkit-related data to use in test.
+ */
+toolkitsData?: {
+  toolkits?: Toolkits;
+  detailedToolkits?: ToolkitDetailed[];
+  tools?: Tools;
+  triggerTypesAsEnums?: TriggerTypesAsEnums;
+  triggerTypes?: TriggerTypes;
+};
 
   /**
    * Mock auth-config data to use in test.
@@ -226,7 +231,7 @@ export interface TestLiveInput {
  * Layer<RequirementsOut, Error, RequirementsIn>
  */
 
-type RequiredLayer = Layer.Layer<any, any, never>;
+type RequiredLayer = Layer.Layer<CliApp.CliApp.Environment, unknown, never>;
 
 const ConsumerProjectResolveFetchMock = Layer.scopedDiscard(
   Effect.acquireRelease(
@@ -998,7 +1003,7 @@ export const TestLayer = (input?: TestLiveInput) =>
       };
     };
 
-    const mockComposioClient = {
+    const mockComposioClient = Object.assign(new RawComposioClient({ apiKey: 'test' }), {
       link: {
         create: async (params: { auth_config_id: string; user_id: string }) => {
           const response = connectedAccountsData.linkResponse ?? {
@@ -1195,21 +1200,16 @@ export const TestLayer = (input?: TestLiveInput) =>
           }),
         },
       },
-    };
+    });
 
     const ComposioClientSingletonTest = Layer.succeed(
       ComposioClientSingleton,
       new ComposioClientSingleton({
         get: Effect.fn(function* () {
-          // Partial mock: only implements `toolRouter.session.*` methods used by
-          // CLI commands under test. The full Composio client interface is too
-          // large to mock completely for unit tests.
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          return mockComposioClient as any;
+          return mockComposioClient;
         }),
         getFor: Effect.fn(function* () {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          return mockComposioClient as any;
+          return mockComposioClient;
         }),
       })
     );

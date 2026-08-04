@@ -640,15 +640,35 @@ EOF
   grep -Fqx '# Composio CLI' "$bash_fallback_home/.bashrc" || fail "$interpreter_name bash fallback bashrc"
   grep -Fqx '# Composio CLI' "$bash_fallback_home/.bash_profile" || fail "$interpreter_name bash fallback login override"
 
-  for unsafe_character in ';' ':'; do
+  # The inline fallback embeds the resolved bin dir in an rc line, so a dir
+  # holding a character double quotes still expand -- `$`, a backtick, `"`, `\`
+  # -- or a structural `:` is refused outright, on the same set
+  # `composio install` refuses. A dir the CLI rejects must not slip into an rc
+  # file just because the CLI could not run.
+  injection_marker="$case_root/injection-marker"
+  unsafe_case=0
+  for unsafe_bin in "inject-\$(touch $injection_marker)" 'inject-`id`' 'inject-"quote"' 'inject\backslash' 'inject:colon'; do
     reset_case
     CASE_SHELL_CAPABILITY=unsupported
-    unsafe_home="$case_root/unsafe-${unsafe_character//[^[:alnum:]]/delimiter}-variant-home"
-    if run_variant zsh "$unsafe_home" "$case_root/unsafe-variant-install" "$case_root/unsafe${unsafe_character}variant-bin" "$stable_tag" >/dev/null 2>&1; then
-      fail "$interpreter_name unsafe variant bin dir with $unsafe_character must fail"
+    unsafe_case=$((unsafe_case + 1))
+    unsafe_home="$case_root/unsafe-$unsafe_case-variant-home"
+    if run_variant zsh "$unsafe_home" "$case_root/unsafe-variant-install" "$case_root/$unsafe_bin" "$stable_tag" >/dev/null 2>&1; then
+      fail "$interpreter_name unsafe variant bin dir must fail: $unsafe_bin"
     fi
-    [[ ! -e "$unsafe_home/.zshrc" ]] || fail "$interpreter_name unsafe variant must not write rc file"
+    [[ ! -e "$unsafe_home/.zshrc" ]] || fail "$interpreter_name unsafe variant must not write rc file: $unsafe_bin"
   done
+  [[ ! -e "$injection_marker" ]] || fail "$interpreter_name command substitution in the bin dir must never run"
+
+  # The denylist stops at what double quotes actually expand: characters that
+  # are literal there stay legal and are written verbatim.
+  reset_case
+  CASE_SHELL_CAPABILITY=unsupported
+  literal_home="$case_root/literal-variant-home"
+  literal_bin="$case_root/o'brien;bin"
+  run_variant zsh "$literal_home" "$case_root/literal-variant-install" "$literal_bin" "$stable_tag" >/dev/null 2>&1
+  expected_literal_bin=$(cd "$literal_bin" && pwd -P)
+  grep -Fq "export PATH=\"$expected_literal_bin:\$PATH\"" "$literal_home/.zshrc" ||
+    fail "$interpreter_name apostrophe bin dir must be written verbatim"
 
   for base_mode in fail empty; do
     reset_case

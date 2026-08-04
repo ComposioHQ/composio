@@ -23,7 +23,7 @@ vi.mock('llamaindex', () => {
 describe('LlamaindexProvider', () => {
   let provider: LlamaindexProvider;
   let sampleTool: Tool;
-  let executeToolFn: (toolSlug: string, params: Record<string, unknown>) => Promise<any>;
+  let executeToolFn: (toolSlug: string, params: Record<string, unknown>) => Promise<unknown>;
 
   beforeEach(() => {
     provider = new LlamaindexProvider();
