@@ -50,6 +50,7 @@ interface ShellConfig {
   readonly shell: Shell;
   readonly pathFiles: readonly string[];
   readonly completionFile: string;
+  readonly pathLine: string;
   readonly pathBlock: string;
   readonly completionBlock: string | undefined;
 }
@@ -61,8 +62,24 @@ interface ShellConfig {
 const MARKER = '# Composio CLI';
 const COMPLETIONS_MARKER = '# Composio CLI completions';
 
-/** Reject bin-dir paths containing shell metacharacters to prevent injection into rc files. */
-const UNSAFE_PATH_CHARS = /[:;`$|&"'()\n\r\\]/;
+/**
+ * Reject bin-dir paths that cannot be embedded safely in a managed rc line.
+ *
+ * The resolved dir is only ever emitted inside double quotes — `export
+ * PATH="<dir>:$PATH"` for bash/zsh and `set --export PATH "<dir>" $PATH` for
+ * fish — so the set is deliberately narrow:
+ *
+ * - `` ` ``, `$`, `\`, `"`: the only characters bash and zsh still expand
+ *   inside double quotes (`!` history expansion does not apply to sourced
+ *   files). fish expands a strict subset of those. Everything else — `;`, `|`,
+ *   `&`, `(`, `)`, `'` — is literal there, so a path like
+ *   `/Users/o'brien/.composio` is written verbatim rather than rejected.
+ * - `\n`, `\r`: structural, not a quoting concern — either would split the
+ *   managed block into extra rc lines.
+ * - `:`: structural too, as the PATH separator: a dir containing one would
+ *   silently prepend more than one entry.
+ */
+const UNSAFE_PATH_CHARS = /[`$"\\\n\r:]/;
 const isUnsafePath = (p: string): boolean => UNSAFE_PATH_CHARS.test(p);
 
 // SHELL, PATH, and COMPOSIO_BIN_DIR are read from the literal environment: SHELL
@@ -145,12 +162,15 @@ const renderWithHome = (dir: string, homedir: string): string =>
       ? `$HOME/${dir.slice(homedir.length + 1)}`
       : dir;
 
-const pathBlockForShell = (shell: Shell, binDir: string, homedir: string): string => {
+const pathLineForShell = (shell: Shell, binDir: string, homedir: string): string => {
   const rendered = renderWithHome(binDir, homedir);
   return shell === 'fish'
-    ? [MARKER, `set --export PATH "${rendered}" $PATH`].join('\n')
-    : [MARKER, `export PATH="${rendered}:$PATH"`].join('\n');
+    ? `set --export PATH "${rendered}" $PATH`
+    : `export PATH="${rendered}:$PATH"`;
 };
+
+const pathBlockForShell = (shell: Shell, binDir: string, homedir: string): string =>
+  [MARKER, pathLineForShell(shell, binDir, homedir)].join('\n');
 
 /** Bash startup-file candidates that only bash's login mode reads, in read order. */
 const bashLoginOverrideCandidates = (path: Path.Path, homedir: string): string[] => [
@@ -216,6 +236,7 @@ const buildShellConfig = (
     shell === 'fish'
       ? path.join(homedir, '.config', 'fish', 'completions', 'composio.fish')
       : pathFiles[0]!,
+  pathLine: pathLineForShell(shell, binDir, homedir),
   pathBlock: pathBlockForShell(shell, binDir, homedir),
   completionBlock: completionScript ? `${COMPLETIONS_MARKER}\n${completionScript}` : undefined,
 });
@@ -223,6 +244,38 @@ const buildShellConfig = (
 /** Check whether a file already contains a given marker line. */
 const fileContains = (contents: string, marker: string): boolean =>
   contents.split('\n').some(line => line.trim() === marker.trim());
+
+/**
+ * Splice the current managed PATH block over the one already in `contents`.
+ *
+ * The managed block runs from its `# Composio CLI` marker line up to the first
+ * blank line, the completions marker, or end of file — the exact layout both
+ * this command and install.sh's inline fallback produce, since blocks are
+ * always separated by a blank line. That is what lets a legacy three-line block
+ * (`export COMPOSIO_INSTALL_DIR=...` plus a PATH line derived from it) be
+ * migrated to the current single-line form without touching a completions block
+ * further down the file.
+ *
+ * Returns `None` when the file carries no marker at all, so the caller appends.
+ */
+const replaceManagedPathBlock = (contents: string, block: string): Option.Option<string> => {
+  const lines = contents.split('\n');
+  const isBlockEnd = (line: string): boolean =>
+    line.trim() === '' || line.trim() === COMPLETIONS_MARKER;
+
+  return Arr.findFirstIndex(lines, line => line.trim() === MARKER).pipe(
+    Option.map(markerIndex => {
+      const endIndex = Arr.findFirstIndex(Arr.drop(lines, markerIndex + 1), isBlockEnd).pipe(
+        Option.map(offset => markerIndex + 1 + offset),
+        Option.getOrElse(() => lines.length)
+      );
+      return Arr.appendAll(
+        Arr.appendAll(Arr.take(lines, markerIndex), block.split('\n')),
+        Arr.drop(lines, endIndex)
+      ).join('\n');
+    })
+  );
+};
 
 const tildify = (p: string, homedir: string): string =>
   p.startsWith(homedir + '/') ? `~/${p.slice(homedir.length + 1)}` : p;
@@ -275,13 +328,53 @@ const replaceFilePreservingMode = (
     yield* fs.rename(tmpPath, writeTarget);
   });
 
+/**
+ * Apply one rc file's queued changes: a stale managed block is spliced in
+ * place, everything else is appended at the end.
+ */
+const applyFileChanges = (params: {
+  readonly filePath: string;
+  readonly rewritePathBlock: Option.Option<string>;
+  readonly appendBlocks: ReadonlyArray<string>;
+  readonly fs: FileSystem.FileSystem;
+  readonly path: Path.Path;
+}): Effect.Effect<void, PlatformError> =>
+  Effect.gen(function* () {
+    const { filePath, fs, path } = params;
+
+    // Re-read instead of reusing the pre-check snapshot: two configured paths
+    // can alias the same physical file through symlinks, and this write must
+    // not discard a previous iteration's append.
+    const existingContents = yield* readMaybeMissingFile(filePath, fs);
+    const writeTarget = yield* resolveWriteTarget(filePath, fs);
+
+    yield* fs
+      .makeDirectory(path.dirname(writeTarget), { recursive: true })
+      .pipe(
+        Effect.catchAll(e =>
+          Effect.logDebug('Could not create parent directory (may already exist):', e)
+        )
+      );
+
+    const migrated = Option.match(params.rewritePathBlock, {
+      onNone: () => existingContents,
+      onSome: block =>
+        Option.getOrElse(replaceManagedPathBlock(existingContents, block), () => existingContents),
+    });
+    const contents =
+      params.appendBlocks.length > 0
+        ? migrated + '\n' + params.appendBlocks.join('\n\n') + '\n'
+        : migrated;
+
+    yield* replaceFilePreservingMode(writeTarget, contents, fs);
+  });
+
 // ---------------------------------------------------------------------------
 // Exported logic (reusable from install.sh post-install delegation)
 // ---------------------------------------------------------------------------
 
 export const installShellIntegration = (params: {
   readonly completions: boolean;
-  readonly execPath?: string;
   readonly shell?: Shell;
 }): Effect.Effect<
   void,
@@ -315,7 +408,7 @@ export const installShellIntegration = (params: {
     // that is this executable, then the runtime executable's own directory.
     const envBinDir = yield* readOptionalEnv('COMPOSIO_BIN_DIR');
     const localBinDir = path.join(os.homedir, '.local', 'bin');
-    const execPath = params.execPath ?? nodeProcess.execPath;
+    const execPath = nodeProcess.execPath;
     const localBinComposioIsCurrentExecutable = yield* resolvesToCurrentExecutable(
       path.join(localBinDir, 'composio'),
       execPath,
@@ -346,7 +439,6 @@ export const installShellIntegration = (params: {
       return yield* new ShellSetupAbortError({ message });
     }
 
-    const isExplicitShell = params.shell !== undefined;
     const shellEnv = yield* readEnvWithDefault('SHELL', '');
     const shell = params.shell ?? detectShellFromEnv(path, shellEnv);
 
@@ -354,8 +446,13 @@ export const installShellIntegration = (params: {
     const binDirOnPath = isDirOnPath(pathEnv, binDir);
 
     if (!shell) {
+      // With no shell there is no rc file to write, so the current process's
+      // $PATH is all the evidence available. It says nothing about future
+      // shells, hence the deliberately hedged wording.
       if (binDirOnPath) {
-        yield* success(`PATH: ${tildify(binDir, os.homedir)} is already on $PATH — nothing to do.`);
+        yield* success(
+          `PATH: ${tildify(binDir, os.homedir)} is already on $PATH in this process, and no shell config file could be identified — nothing to update.`
+        );
         yield* ui.outro('Done');
         return;
       }
@@ -417,31 +514,27 @@ export const installShellIntegration = (params: {
       }
     };
 
-    // Auto-detected mode may skip the PATH write entirely when the bin dir is
-    // already reachable; an explicit --shell always configures its files.
-    // Only applies to a genuinely fresh install: if any target file already
-    // carries our marker from a prior run, a file that appeared since then
-    // (e.g. a freshly created .bash_profile) still needs its own write, even
-    // though the invoking process's current $PATH already resolves.
-    const anyPathFileAlreadyMarked = config.pathFiles.some(filePath =>
-      fileContains(existingByFile.get(filePath) ?? '', MARKER)
-    );
-    const skipPathWriteForReachability =
-      !isExplicitShell && binDirOnPath && !anyPathFileAlreadyMarked;
+    // Path files whose existing managed block is stale and must be replaced in
+    // place rather than appended to.
+    const pathRewrites = new Set<string>();
     let pathWritten = false;
     let loginOverrideWritten = false;
     const queuedPathTargets = new Set<string>();
     for (const filePath of config.pathFiles) {
       const existing = existingByFile.get(filePath) ?? '';
       const target = pathFileTargets.get(filePath)!;
-      if (
-        fileContains(existing, MARKER) ||
-        skipPathWriteForReachability ||
-        queuedPathTargets.has(target)
-      ) {
-        continue;
+      if (queuedPathTargets.has(target)) continue;
+      // The marker alone does not mean "configured": a block written by a
+      // pre-`--shell` CLI or by install.sh's inline fallback still carries the
+      // legacy `export COMPOSIO_INSTALL_DIR=` pair, and a block written for a
+      // different bin dir points shells at the wrong binary. Only the exact
+      // rendered line for the resolved bin dir is a no-op.
+      if (fileContains(existing, config.pathLine)) continue;
+      if (fileContains(existing, MARKER)) {
+        pathRewrites.add(filePath);
+      } else {
+        pushBlock(filePath, config.pathBlock);
       }
-      pushBlock(filePath, config.pathBlock);
       queuedPathTargets.add(target);
       pathWritten = true;
       if (filePath === bashLoginOverride) loginOverrideWritten = true;
@@ -449,8 +542,6 @@ export const installShellIntegration = (params: {
 
     if (pathWritten) {
       yield* step(`PATH: will add ${tildify(binDir, os.homedir)} to $PATH`);
-    } else if (skipPathWriteForReachability) {
-      yield* step('PATH: already on $PATH — nothing to do.');
     } else {
       yield* step('PATH: already configured');
     }
@@ -475,24 +566,21 @@ export const installShellIntegration = (params: {
       }
     }
 
-    if (blocksByFile.size > 0) {
-      for (const [filePath, blocks] of blocksByFile.entries()) {
-        // Re-read instead of reusing the pre-check snapshot: two configured paths
-        // can alias the same physical file through symlinks, and this write must
-        // not discard a previous iteration's append.
-        const existingContents = yield* readMaybeMissingFile(filePath, fs);
-        const writeTarget = yield* resolveWriteTarget(filePath, fs);
+    const filesToWrite = [...new Set([...pathRewrites, ...blocksByFile.keys()])];
 
-        yield* fs
-          .makeDirectory(path.dirname(writeTarget), { recursive: true })
-          .pipe(
-            Effect.catchAll(e =>
-              Effect.logDebug('Could not create parent directory (may already exist):', e)
-            )
-          );
-
-        const appendContent = '\n' + blocks.join('\n\n') + '\n';
-        yield* replaceFilePreservingMode(writeTarget, existingContents + appendContent, fs);
+    if (filesToWrite.length > 0) {
+      for (const filePath of filesToWrite) {
+        // A stale managed block is replaced where it stands, so the user's own
+        // ordering survives; everything else is appended.
+        yield* applyFileChanges({
+          filePath,
+          rewritePathBlock: pathRewrites.has(filePath)
+            ? Option.some(config.pathBlock)
+            : Option.none(),
+          appendBlocks: blocksByFile.get(filePath) ?? [],
+          fs,
+          path,
+        });
 
         yield* success(`Updated ${tildify(filePath, os.homedir)}`);
       }
@@ -500,7 +588,7 @@ export const installShellIntegration = (params: {
       yield* success('Shell integration already configured — nothing to do.');
     }
 
-    if (blocksByFile.size > 0) {
+    if (filesToWrite.length > 0) {
       if (shell === 'fish') {
         yield* note('exec fish', 'Restart your shell to apply changes');
       } else if (shell === 'zsh') {
@@ -530,12 +618,18 @@ export const installShellIntegration = (params: {
 /**
  * CLI command to set up shell integration (PATH and completions).
  *
+ * The directory added to `PATH` is `COMPOSIO_BIN_DIR` when set — the documented
+ * override an installer hands to this command — then `~/.local/bin` when its
+ * `composio` entry point is this executable, then the running binary's own
+ * directory.
+ *
  * @example
  * ```bash
  * composio install
  * composio install --completions
  * composio install --no-completions
  * composio install --shell zsh
+ * COMPOSIO_BIN_DIR=~/.local/bin composio install
  * ```
  */
 export const installCmd = Command.make(
@@ -546,4 +640,8 @@ export const installCmd = Command.make(
       completions: completions && !noCompletions,
       shell: Option.getOrUndefined(shell),
     })
-).pipe(Command.withDescription('Set up shell integration (PATH and completions).'));
+).pipe(
+  Command.withDescription(
+    'Set up shell integration (PATH and completions). Set COMPOSIO_BIN_DIR to choose the directory added to PATH; it otherwise defaults to ~/.local/bin when that holds this executable, and to the directory of the running binary.'
+  )
+);

