@@ -26,6 +26,17 @@
   credential fields, and schema warnings no longer print raw response values.
 - `composio login --poll` now reports unreadable cache files as I/O errors
   instead of treating them as invalid session data.
+- Tools belonging to multi-word toolkits now resolve to the right toolkit.
+  `composio tools execute GOOGLE_ANALYTICS_RUN_REPORT --account <alias>`
+  previously looked for a `google` account instead of a `google_analytics` one,
+  because the toolkit was guessed from the text before the first underscore.
+  The toolkit is now matched against the known toolkit list, longest prefix
+  first. This also corrects the toolkit shown in errors, file uploads, trigger
+  listening, and telemetry.
+- Session meta tools such as `COMPOSIO_SEARCH_TOOLS` are no longer attributed
+  to the `composio_search` toolkit, whose slug their names happen to start
+  with. A failed meta call used to suggest linking an app that had nothing to
+  do with the call.
 
 ## 0.3.1
 

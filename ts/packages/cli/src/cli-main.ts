@@ -35,12 +35,14 @@ import { showUpdateNotice } from 'src/services/update-check';
 import {
   configureCliAnalyticsReleaseVersion,
   createCliCommandTelemetryContext,
+  getExecuteCommandToolSlug,
   getPrimaryLifecycleFailedEvent,
   getPrimaryLifecycleInvokedEvent,
   getPrimaryLifecycleSucceededEvent,
 } from 'src/analytics/events';
 import { trackCliEventEffect } from 'src/analytics/dispatch';
 import { getVersion } from 'src/effects/version';
+import { toolkitFromToolSlug } from 'src/effects/toolkit-from-tool-slug';
 import { mapOnlyComposioOverrideError } from 'src/services/composio-error-overrides';
 import { SetupSkillInstaller } from 'src/services/setup-skill-installer';
 import { SetupCommandError } from 'src/services/setup';
@@ -151,7 +153,12 @@ const runWithTelemetry = Effect.gen(function* () {
 
   const version = yield* getVersion;
   configureCliAnalyticsReleaseVersion(version);
-  const commandTelemetryContext = createCliCommandTelemetryContext(process.argv, version, terminal);
+  const baseTelemetryContext = createCliCommandTelemetryContext(process.argv, version, terminal);
+  const executeToolSlug = getExecuteCommandToolSlug(baseTelemetryContext);
+  const commandTelemetryContext =
+    executeToolSlug === undefined
+      ? baseTelemetryContext
+      : { ...baseTelemetryContext, toolkitSlug: yield* toolkitFromToolSlug(executeToolSlug) };
   if (commandTelemetryContext.commandPath === 'run' && commandTelemetryContext.runId) {
     // effect/Config is read-only; the run id must be written into the environment so the run
     // command and the child processes it spawns observe the same telemetry run id.
