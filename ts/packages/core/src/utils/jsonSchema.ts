@@ -259,6 +259,45 @@ export function dereferenceJsonSchema<T = unknown>(
 }
 
 /**
+ * Returns a deep-cloned JSON Schema in which every node that carries a
+ * `properties` keyword also carries `type: "object"` when it has no explicit
+ * `type`. OpenAI tolerates the omission, but Google Gemini enforces OpenAPI
+ * 3.0 strictly and rejects function declarations whose nested objects are
+ * missing the `type` (see https://github.com/ComposioHQ/composio/issues/4022).
+ *
+ * The function is recursive and handles `items`, `properties`, `anyOf`,
+ * `oneOf`, and `allOf` branches so nested objects at any depth are fixed.
+ * Nodes that already declare a `type` are left untouched.
+ */
+export function ensureObjectTypeOnProperties<T = unknown>(schema: T): T {
+  function walk(value: unknown, depth = 0): unknown {
+    if (depth > MAX_NODE_DEPTH) {
+      throw new RangeError(`JSON Schema exceeds maximum nesting depth of ${MAX_NODE_DEPTH}`);
+    }
+
+    if (Array.isArray(value)) {
+      return value.map(item => walk(item, depth + 1));
+    }
+
+    if (!isPlainObject(value)) return value;
+
+    const clone: Record<string, unknown> = {};
+    for (const [key, child] of Object.entries(value)) {
+      if (POLLUTING_KEYS.has(key)) continue;
+      clone[key] = walk(child, depth + 1);
+    }
+
+    if (clone.properties !== undefined && clone.type === undefined) {
+      clone.type = 'object';
+    }
+
+    return clone;
+  }
+
+  return walk(schema) as T;
+}
+
+/**
  * Returns a deep-cloned JSON Schema whose `required` arrays contain each entry
  * at most once. Duplicate entries are invalid in JSON Schema 2020-12 but do
  * not change the schema's meaning, so preserving the first occurrence is safe.

@@ -2,6 +2,7 @@ import { describe, it, expect, vi } from 'vitest';
 import {
   deduplicateJsonSchemaRequiredArrays,
   dereferenceJsonSchema,
+  ensureObjectTypeOnProperties,
 } from '../../src/utils/jsonSchema';
 import { JsonSchemaRefResolutionError } from '../../src/errors/ValidationErrors';
 import logger from '../../src/utils/logger';
@@ -592,5 +593,77 @@ describe('deduplicateJsonSchemaRequiredArrays', () => {
 
     expect(tool.inputParameters?.required).toEqual(['name']);
     expect(tool.inputParameters?.properties.options.required).toEqual(['enabled']);
+  });
+});
+
+describe('ensureObjectTypeOnProperties', () => {
+  it('adds type:object to nested nodes that have properties but no type', () => {
+    const schema = {
+      type: 'object',
+      properties: {
+        target: {
+          properties: {
+            name: { type: 'string' },
+          },
+        },
+      },
+    };
+
+    const result = ensureObjectTypeOnProperties(schema);
+    expect(result).toEqual({
+      type: 'object',
+      properties: {
+        target: {
+          type: 'object',
+          properties: {
+            name: { type: 'string' },
+          },
+        },
+      },
+    });
+  });
+
+  it('leaves nodes that already declare a type untouched', () => {
+    const schema = {
+      type: 'object',
+      properties: {
+        target: {
+          type: 'object',
+          properties: { name: { type: 'string' } },
+        },
+      },
+    };
+
+    const result = ensureObjectTypeOnProperties(schema);
+    expect(result).toEqual(schema);
+  });
+
+  it('handles deeply nested properties inside array items', () => {
+    const schema = {
+      type: 'object',
+      properties: {
+        list: {
+          type: 'array',
+          items: {
+            properties: { id: { type: 'string' } },
+          },
+        },
+      },
+    };
+
+    const result = ensureObjectTypeOnProperties(schema) as typeof schema;
+    expect(result.properties.list.items).toHaveProperty('type', 'object');
+  });
+
+  it('does not mutate the input schema', () => {
+    const schema = {
+      type: 'object',
+      properties: {
+        target: { properties: { name: { type: 'string' } } },
+      },
+    };
+
+    ensureObjectTypeOnProperties(schema);
+    expect(schema.properties.target).not.toHaveProperty('type');
   });
 });

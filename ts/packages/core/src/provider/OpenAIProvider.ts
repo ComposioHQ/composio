@@ -16,7 +16,10 @@ import { ExecuteToolModifiers } from '../types/modifiers.types';
 import { ExecuteToolFnOptions } from '../types/provider.types';
 import { McpUrlResponse, McpServerGetResponse } from '../types/mcp.types';
 import { normalizeToolArguments } from '../utils/toolArguments';
-import { deduplicateJsonSchemaRequiredArrays } from '../utils/jsonSchema';
+import {
+  deduplicateJsonSchemaRequiredArrays,
+  ensureObjectTypeOnProperties,
+} from '../utils/jsonSchema';
 
 export type OpenAiTool = OpenAI.ChatCompletionTool;
 export type OpenAiToolCollection = Array<OpenAiTool>;
@@ -97,7 +100,9 @@ export class OpenAIProvider extends BaseNonAgenticProvider<
     const formattedSchema: OpenAI.FunctionDefinition = {
       name: tool.slug,
       description: tool.description,
-      parameters: deduplicateJsonSchemaRequiredArrays(tool.inputParameters),
+      parameters: ensureObjectTypeOnProperties(
+        deduplicateJsonSchemaRequiredArrays(tool.inputParameters)
+      ),
     };
     return {
       type: 'function',
