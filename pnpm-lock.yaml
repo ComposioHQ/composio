@@ -67,8 +67,8 @@ catalogs:
       specifier: ^3.22.0
       version: 3.22.0
     hono:
-      specifier: ^4.12.31
-      version: 4.12.31
+      specifier: ^4.12.34
+      version: 4.13.0
     openai:
       specifier: ^6.49.0
       version: 6.49.0
@@ -256,7 +256,7 @@ importers:
         version: link:../../../../packages/core
       hono:
         specifier: 'catalog:'
-        version: 4.12.31
+        version: 4.13.0
       openai:
         specifier: 'catalog:'
         version: 6.49.0(@aws-sdk/credential-provider-node@3.972.71)(@smithy/signature-v4@5.6.9)(ws@8.21.1)(zod@4.4.3)
@@ -287,7 +287,7 @@ importers:
         version: link:../../../../packages/core
       hono:
         specifier: 'catalog:'
-        version: 4.12.31
+        version: 4.13.0
     devDependencies:
       '@cloudflare/vitest-pool-workers':
         specifier: 'catalog:'
@@ -327,7 +327,7 @@ importers:
         version: 7.0.37(zod@4.4.3)
       hono:
         specifier: 'catalog:'
-        version: 4.12.31
+        version: 4.13.0
     devDependencies:
       '@cloudflare/vitest-pool-workers':
         specifier: 'catalog:'
@@ -604,7 +604,7 @@ importers:
         version: link:../../packages/core
       hono:
         specifier: 'catalog:'
-        version: 4.12.31
+        version: 4.13.0
       openai:
         specifier: 'catalog:'
         version: 6.49.0(@aws-sdk/credential-provider-node@3.972.71)(@smithy/signature-v4@5.6.9)(ws@8.21.1)(zod@4.4.3)
@@ -764,13 +764,13 @@ importers:
         version: 0.4.23(@llamaindex/core@0.6.23)(@llamaindex/env@0.1.31)(ws@8.21.1)(zod@4.4.3)
       '@llamaindex/workflow':
         specifier: ^1.1.25
-        version: 1.1.25(@llamaindex/core@0.6.23)(@llamaindex/env@0.1.31)(@modelcontextprotocol/sdk@1.29.0(@cfworker/json-schema@4.1.1)(zod@4.4.3))(hono@4.12.31)(zod@4.4.3)
+        version: 1.1.25(@llamaindex/core@0.6.23)(@llamaindex/env@0.1.31)(@modelcontextprotocol/sdk@1.29.0(@cfworker/json-schema@4.1.1)(zod@4.4.3))(hono@4.13.0)(zod@4.4.3)
       dotenv:
         specifier: 'catalog:'
         version: 17.4.2
       llamaindex:
         specifier: ^0.12.1
-        version: 0.12.1(@modelcontextprotocol/sdk@1.29.0(@cfworker/json-schema@4.1.1)(zod@4.4.3))(hono@4.12.31)(tree-sitter@0.22.4)(web-tree-sitter@0.24.7)(zod@4.4.3)
+        version: 0.12.1(@modelcontextprotocol/sdk@1.29.0(@cfworker/json-schema@4.1.1)(zod@4.4.3))(hono@4.13.0)(tree-sitter@0.22.4)(web-tree-sitter@0.24.7)(zod@4.4.3)
     devDependencies:
       '@types/bun':
         specifier: 'catalog:'
@@ -1573,7 +1573,7 @@ importers:
     dependencies:
       llamaindex:
         specifier: ^0.12.0
-        version: 0.12.1(@modelcontextprotocol/sdk@1.29.0(@cfworker/json-schema@4.1.1)(zod@4.4.3))(hono@4.12.31)(tree-sitter@0.22.4)(web-tree-sitter@0.24.7)(zod@4.4.3)
+        version: 0.12.1(@modelcontextprotocol/sdk@1.29.0(@cfworker/json-schema@4.1.1)(zod@4.4.3))(hono@4.13.0)(tree-sitter@0.22.4)(web-tree-sitter@0.24.7)(zod@4.4.3)
     devDependencies:
       '@composio/core':
         specifier: workspace:*
@@ -5055,6 +5055,10 @@ packages:
     resolution: {integrity: sha512-zJIHFrl6bq3RDd2YusFNCDlM8qUprxKswyi/OPzPyzKDdyBXDqWx8bZlZ7R+saTdSTatUmb3O7K4SspGPaEOQg==}
     engines: {node: '>=16.9.0'}
 
+  hono@4.13.0:
+    resolution: {integrity: sha512-jhunvfHWxd7J5EFfSgH4xsYJzSe/lfqbUCxiyyeaQasUsXeEHXtzVid+7EOGByc5JnFa23SSFL3Y2RV/z1T+eQ==}
+    engines: {node: '>=16.9.0'}
+
   hookable@6.1.1:
     resolution: {integrity: sha512-U9LYDy1CwhMCnprUfeAZWZGByVbhd54hwepegYTK7Pi5NvqEj63ifz5z+xukznehT7i6NIZRu89Ay1AZmRsLEQ==}
 
@@ -8150,17 +8154,17 @@ snapshots:
       - ws
       - zod
 
-  '@llamaindex/workflow-core@1.3.4(@modelcontextprotocol/sdk@1.29.0(@cfworker/json-schema@4.1.1)(zod@4.4.3))(hono@4.12.31)(zod@4.4.3)':
+  '@llamaindex/workflow-core@1.3.4(@modelcontextprotocol/sdk@1.29.0(@cfworker/json-schema@4.1.1)(zod@4.4.3))(hono@4.13.0)(zod@4.4.3)':
     optionalDependencies:
       '@modelcontextprotocol/sdk': 1.29.0(@cfworker/json-schema@4.1.1)(zod@4.4.3)
-      hono: 4.12.31
+      hono: 4.13.0
       zod: 4.4.3
 
-  '@llamaindex/workflow@1.1.24(@llamaindex/core@0.6.22)(@llamaindex/env@0.1.30)(@modelcontextprotocol/sdk@1.29.0(@cfworker/json-schema@4.1.1)(zod@4.4.3))(hono@4.12.31)(zod@4.4.3)':
+  '@llamaindex/workflow@1.1.24(@llamaindex/core@0.6.22)(@llamaindex/env@0.1.30)(@modelcontextprotocol/sdk@1.29.0(@cfworker/json-schema@4.1.1)(zod@4.4.3))(hono@4.13.0)(zod@4.4.3)':
     dependencies:
       '@llamaindex/core': 0.6.22
       '@llamaindex/env': 0.1.30
-      '@llamaindex/workflow-core': 1.3.4(@modelcontextprotocol/sdk@1.29.0(@cfworker/json-schema@4.1.1)(zod@4.4.3))(hono@4.12.31)(zod@4.4.3)
+      '@llamaindex/workflow-core': 1.3.4(@modelcontextprotocol/sdk@1.29.0(@cfworker/json-schema@4.1.1)(zod@4.4.3))(hono@4.13.0)(zod@4.4.3)
     transitivePeerDependencies:
       - '@modelcontextprotocol/sdk'
       - hono
@@ -8169,11 +8173,11 @@ snapshots:
       - rxjs
       - zod
 
-  '@llamaindex/workflow@1.1.25(@llamaindex/core@0.6.23)(@llamaindex/env@0.1.31)(@modelcontextprotocol/sdk@1.29.0(@cfworker/json-schema@4.1.1)(zod@4.4.3))(hono@4.12.31)(zod@4.4.3)':
+  '@llamaindex/workflow@1.1.25(@llamaindex/core@0.6.23)(@llamaindex/env@0.1.31)(@modelcontextprotocol/sdk@1.29.0(@cfworker/json-schema@4.1.1)(zod@4.4.3))(hono@4.13.0)(zod@4.4.3)':
     dependencies:
       '@llamaindex/core': 0.6.23
       '@llamaindex/env': 0.1.31
-      '@llamaindex/workflow-core': 1.3.4(@modelcontextprotocol/sdk@1.29.0(@cfworker/json-schema@4.1.1)(zod@4.4.3))(hono@4.12.31)(zod@4.4.3)
+      '@llamaindex/workflow-core': 1.3.4(@modelcontextprotocol/sdk@1.29.0(@cfworker/json-schema@4.1.1)(zod@4.4.3))(hono@4.13.0)(zod@4.4.3)
     transitivePeerDependencies:
       - '@modelcontextprotocol/sdk'
       - hono
@@ -10167,6 +10171,8 @@ snapshots:
 
   hono@4.12.31: {}
 
+  hono@4.13.0: {}
+
   hookable@6.1.1: {}
 
   hosted-git-info@9.0.3:
@@ -10395,12 +10401,12 @@ snapshots:
     optionalDependencies:
       yaml: 2.9.0
 
-  llamaindex@0.12.1(@modelcontextprotocol/sdk@1.29.0(@cfworker/json-schema@4.1.1)(zod@4.4.3))(hono@4.12.31)(tree-sitter@0.22.4)(web-tree-sitter@0.24.7)(zod@4.4.3):
+  llamaindex@0.12.1(@modelcontextprotocol/sdk@1.29.0(@cfworker/json-schema@4.1.1)(zod@4.4.3))(hono@4.13.0)(tree-sitter@0.22.4)(web-tree-sitter@0.24.7)(zod@4.4.3):
     dependencies:
       '@llamaindex/core': 0.6.22
       '@llamaindex/env': 0.1.30
       '@llamaindex/node-parser': 2.0.22(@llamaindex/core@0.6.22)(@llamaindex/env@0.1.30)(tree-sitter@0.22.4)(web-tree-sitter@0.24.7)
-      '@llamaindex/workflow': 1.1.24(@llamaindex/core@0.6.22)(@llamaindex/env@0.1.30)(@modelcontextprotocol/sdk@1.29.0(@cfworker/json-schema@4.1.1)(zod@4.4.3))(hono@4.12.31)(zod@4.4.3)
+      '@llamaindex/workflow': 1.1.24(@llamaindex/core@0.6.22)(@llamaindex/env@0.1.30)(@modelcontextprotocol/sdk@1.29.0(@cfworker/json-schema@4.1.1)(zod@4.4.3))(hono@4.13.0)(zod@4.4.3)
       '@types/lodash': 4.17.24
       '@types/node': 24.13.3
       lodash: 4.18.1

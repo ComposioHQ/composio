@@ -48,7 +48,7 @@ catalog:
   ai: ^7.0.37
   dotenv: ^17.4.2
   effect: ^3.22.0
-  hono: ^4.12.31
+  hono: ^4.12.34
   openai: ^6.49.0
   picocolors: ^1.1.1
   pnpm: ^11.17.0
