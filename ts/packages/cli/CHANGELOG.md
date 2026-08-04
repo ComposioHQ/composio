@@ -37,6 +37,13 @@
   to the `composio_search` toolkit, whose slug their names happen to start
   with. A failed meta call used to suggest linking an app that had nothing to
   do with the call.
+- Commands that consult the toolkit catalog more than once now fetch it once.
+  `composio tools execute` was downloading the full ~800 KB list up to four
+  times per run.
+- A cached API request that fails is no longer sent a second time. The caching
+  layer treated the request's own failure as a cache failure and retried it,
+  so every failed toolkit, tool, or trigger listing cost two round trips and
+  twice the wait before reporting the same error.
 
 ## 0.3.1
 
