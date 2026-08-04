@@ -4,10 +4,37 @@
 
 ### Patch Changes
 
-- Make GitHub release metadata the sole version authority for standalone CLI
-  binaries. Release builds now embed their exact tag version, manual skill
-  installation follows the packaged release tag, and stable releases can only
-  promote a tested beta.
+- Connected-account statuses added by the server no longer break
+  `connected-accounts`, `link`, or `listen`. Piped output still strips
+  credential fields, and schema warnings no longer print raw response values.
+- `composio login --poll` now reports unreadable cache files as I/O errors
+  instead of treating them as invalid session data.
+
+## 0.3.1
+
+### Minor Changes
+
+- The CLI now points Claude Code and Codex users to `composio setup` when the
+  Composio agent plugin is missing. The hint goes to stderr, appears at most
+  once every 24 hours, remains visible in non-TTY agent sessions, and stays
+  suppressed inside `composio run` children.
+- Telemetry now goes directly to PostHog. This captures `install` and `setup`
+  events before login without changing existing opt-outs.
+- Telemetry events now include `journey_stage` (`install`, `setup`, `login`,
+  `connect`, `execute`, or `other`) and `cli_channel` (`stable` or `beta`).
+  `install.sh` also labels `composio install` with
+  `invocation_origin: installer`, so script installs can be separated from
+  manual runs. npm and Homebrew installs do not pass through `install.sh` and
+  therefore have no installer origin.
+
+## 0.3.0
+
+### Patch Changes
+
+- The GitHub release tag is now the only version source for standalone CLI
+  binaries. Release builds embed the exact tag version, manual skill
+  installation uses that tag, and stable releases can only promote a tested
+  beta.
 
 ## 0.2.33
 
@@ -19,9 +46,6 @@
 
 ### Minor Changes
 
-- Cross-promote the Composio agent plugin (PRDE-1153): when the bare CLI runs inside Claude Code or Codex and the Composio plugin is not installed in that host, the CLI prints one stderr tip per 24 hours pointing at `composio setup`. The tip is deliberately visible to non-TTY (agent-driven) shells, never touches stdout, and is suppressed inside `composio run` children.
-- Telemetry now delivers directly to PostHog, so pre-login `install`/`setup` events are captured. Opt-outs are unchanged.
-- Telemetry events now carry `journey_stage` (install/setup/login/connect/execute/other) and `cli_channel` (stable/beta) properties, and `install.sh` marks its `composio install` run with `invocation_origin: installer` so script installs are distinguishable from manual ones. npm and Homebrew installs do not run `install.sh`, so their installs carry no installer origin.
 - Make headless `composio login` agent-friendly (PRDE-1138): the non-interactive instructions now offer the unattended `composio login --agent` path, and a machine with a stored READY agent identity (`~/.composio/agent.json`) completes plain headless `composio login` unattended by reusing it. Reuse only — a human piping `composio login` still gets the URL + poll instructions and never has an account auto-created.
 - a0bef5d: Bump `@composio/client` to `0.1.0-alpha.74`.
 - 025a657: Drop CommonJS entrypoints and publish the TypeScript SDK packages as ESM-only packages. This is a breaking change within the existing 0.x release line: consumers must use Node.js 22.22.3 or newer. CommonJS callers can only rely on Node's native `require(esm)` interop, and the SDK no longer ships custom CommonJS compatibility machinery or `.cjs` artifacts.
