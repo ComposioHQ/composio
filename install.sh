@@ -347,16 +347,16 @@ inline_shell_setup() {
 setup_requested_shell() {
     if "$exe" install --help 2>&1 | grep -q -- '--shell'; then
         debug "delegating shell setup to $exe install --shell $requested_shell"
-        if COMPOSIO_CLI_INVOCATION_ORIGIN=installer COMPOSIO_BIN_DIR="$COMPOSIO_BIN_DIR" "$exe" install --shell "$requested_shell"; then
+        if COMPOSIO_CLI_INVOCATION_ORIGIN=installer COMPOSIO_BIN_DIR="$resolved_bin_dir" "$exe" install --shell "$requested_shell"; then
             shell_configured=cli
         else
             debug "falling back to inline $requested_shell shell setup"
-            inline_shell_setup "$requested_shell" "$COMPOSIO_BIN_DIR"
+            inline_shell_setup "$requested_shell" "$resolved_bin_dir"
             shell_configured=fallback
         fi
     else
         debug "falling back to inline $requested_shell shell setup"
-        inline_shell_setup "$requested_shell" "$COMPOSIO_BIN_DIR"
+        inline_shell_setup "$requested_shell" "$resolved_bin_dir"
         shell_configured=fallback
     fi
 

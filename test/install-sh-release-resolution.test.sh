@@ -554,7 +554,8 @@ EOF
     variant_install="$case_root/variant-$shell_name-install"
     variant_bin="$case_root/variant-$shell_name-bin"
     variant_output=$(run_variant "$shell_name" "$variant_home" "$variant_install" "$variant_bin" "$stable_tag" --no-plugins 2>&1)
-    grep -Fq "|installer|$variant_bin|install --shell $shell_name" "$composio_log" ||
+    expected_variant_bin=$(cd "$variant_bin" && pwd -P)
+    grep -Fq "|installer|$expected_variant_bin|install --shell $shell_name" "$composio_log" ||
       fail "$interpreter_name $shell_name variant delegation"
     assert_contains "$variant_output" "Configured $shell_name shell setup (cli)." "$interpreter_name $shell_name variant confirmation"
     assert_not_contains "$variant_output" 'Required next step' "$interpreter_name $shell_name variant must not print setup guidance"
@@ -566,10 +567,34 @@ EOF
   direct_home="$case_root/direct-shell-home"
   direct_bin="$case_root/direct-shell-bin"
   direct_output=$(run_installer "$direct_home" "$case_root/direct-shell-install" "$direct_bin" "$stable_tag" 2>&1)
-  grep -Fq "|installer|$direct_bin|install --shell zsh" "$composio_log" || fail "$interpreter_name COMPOSIO_INSTALL_SHELL delegation"
+  expected_direct_bin=$(cd "$direct_bin" && pwd -P)
+  grep -Fq "|installer|$expected_direct_bin|install --shell zsh" "$composio_log" || fail "$interpreter_name COMPOSIO_INSTALL_SHELL delegation"
   assert_contains "$direct_output" 'Configured zsh shell setup (cli).' "$interpreter_name COMPOSIO_INSTALL_SHELL confirmation"
   assert_not_contains "$direct_output" 'Required next step' "$interpreter_name COMPOSIO_INSTALL_SHELL must not print setup guidance"
   [[ ! -e "$direct_home/.zshrc" ]] || fail "$interpreter_name COMPOSIO_INSTALL_SHELL CLI path must not write rc files"
+
+  reset_case
+  CASE_INSTALL_SHELL=zsh
+  relative_work="$case_root/relative-shell-work"
+  relative_home="$case_root/relative-shell-home"
+  relative_install="$case_root/relative-shell-install"
+  mkdir -p "$relative_work"
+  (cd "$relative_work" && run_installer "$relative_home" "$relative_install" relative-bin "$stable_tag" >/dev/null 2>&1)
+  expected_relative_bin=$(cd "$relative_work/relative-bin" && pwd -P)
+  grep -Fq "|installer|$expected_relative_bin|install --shell zsh" "$composio_log" ||
+    fail "$interpreter_name relative COMPOSIO_BIN_DIR delegation must receive the resolved absolute path"
+
+  reset_case
+  CASE_INSTALL_SHELL=zsh
+  CASE_SHELL_CAPABILITY=unsupported
+  relative_fallback_work="$case_root/relative-fallback-work"
+  relative_fallback_home="$case_root/relative-fallback-home"
+  relative_fallback_install="$case_root/relative-fallback-install"
+  mkdir -p "$relative_fallback_work"
+  (cd "$relative_fallback_work" && run_installer "$relative_fallback_home" "$relative_fallback_install" relative-bin "$stable_tag" >/dev/null 2>&1)
+  expected_relative_fallback_bin=$(cd "$relative_fallback_work/relative-bin" && pwd -P)
+  grep -Fq "export PATH=\"$expected_relative_fallback_bin:\$PATH\"" "$relative_fallback_home/.zshrc" ||
+    fail "$interpreter_name relative COMPOSIO_BIN_DIR fallback must persist the resolved absolute path"
 
   reset_case
   CASE_INSTALL_SHELL=zsh
