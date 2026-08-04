@@ -2,15 +2,23 @@ import { Brand, Schema } from 'effect';
 import { JSONTransformSchema } from './utils/json-transform-schema';
 
 /**
- * A toolkit slug used to derive generated source filenames.
+ * The shape of a toolkit slug: a single, safe path segment (no `/`, `\`, or
+ * `..`), which prevents path traversal / arbitrary file write when a slug is
+ * interpolated into a filename and joined to the generator's output directory.
+ * See CWE-22.
  *
- * Restricted to a single, safe path segment (no `/`, `\`, or `..`) to prevent
- * path traversal / arbitrary file write when the slug is interpolated into a
- * filename and joined to the generator's output directory. See CWE-22.
+ * Shared so that every place that has to vouch for a slug — the schema below,
+ * the baked-catalog generator, and the test guarding its output — tightens
+ * together rather than drifting apart.
+ */
+export const TOOLKIT_SLUG_PATTERN = /^[a-z0-9_][a-z0-9_-]*$/;
+
+/**
+ * A toolkit slug used to derive generated source filenames.
  */
 export const ToolkitSlug = Schema.Trim.pipe(
   Schema.nonEmptyString(),
-  Schema.pattern(/^[a-z0-9_][a-z0-9_-]*$/, {
+  Schema.pattern(TOOLKIT_SLUG_PATTERN, {
     identifier: 'ToolkitSlug',
     message: () =>
       'Toolkit slug must contain only lowercase letters, digits, underscores, and hyphens (no path separators)',
