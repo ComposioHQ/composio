@@ -53,11 +53,22 @@ export async function checkForLatestVersionFromNPM(currentVersion: string) {
     // keeps its socket referenced on the event loop, so without a signal a slow or
     // black-holed registry (corporate proxy, egress firewall that drops rather than
     // rejects, npm incident) keeps short-lived scripts alive until undici's own
-    // timeouts fire. The catch below already swallows the resulting TimeoutError.
-    const response = await fetch(`https://registry.npmjs.org/${packageName}/latest`, {
-      signal: AbortSignal.timeout(VERSION_CHECK_TIMEOUT_MS),
-    });
-    const data = await response.json();
+    // timeouts fire. The catch below already swallows the resulting abort.
+    //
+    // A hand-rolled timer rather than AbortSignal.timeout so it can be cleared the
+    // moment the response lands: an uncleared timer is itself pending work, which on
+    // workerd pins the request context open for the full timeout on every success.
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), VERSION_CHECK_TIMEOUT_MS);
+    let data;
+    try {
+      const response = await fetch(`https://registry.npmjs.org/${packageName}/latest`, {
+        signal: controller.signal,
+      });
+      data = await response.json();
+    } finally {
+      clearTimeout(timer);
+    }
     const latestVersion = data.version;
 
     if (semver.gt(latestVersion, currentVersionFromPackageJson) && !IS_DEVELOPMENT_OR_CI) {

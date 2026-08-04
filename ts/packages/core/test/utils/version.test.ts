@@ -17,6 +17,20 @@ describe('checkForLatestVersionFromNPM', () => {
     expect(init?.signal).toBeInstanceOf(AbortSignal);
   });
 
+  it('leaves no pending timer once the registry responds', async () => {
+    vi.useFakeTimers();
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => new Response(JSON.stringify({ version: '0.0.1' })))
+    );
+
+    await checkForLatestVersionFromNPM('1.0.0');
+
+    // An uncleared timeout keeps a workerd request context alive for its full duration.
+    expect(vi.getTimerCount()).toBe(0);
+    vi.useRealTimers();
+  });
+
   it('gives up instead of hanging when the registry never responds', async () => {
     // A registry that accepts the request and never answers. Without a timeout this
     // promise never settles, which is exactly what keeps a real process alive.
