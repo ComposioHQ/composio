@@ -30,6 +30,11 @@ permissions:
   contents: read
 
 jobs:
+  # The shell-variant routes (/install/bash, /install/zsh, /install/fish) are not
+  # provisioned in production yet — they 404. Until they ship, the harness's prod
+  # mode installs through the base /install route and selects the shell with
+  # COMPOSIO_INSTALL_SHELL (see ts/e2e-tests/cli/install/e2e.test.ts); restore the
+  # variant-route coverage there once the routes are live.
   production:
     name: Production install (${{ matrix.shell }}, ${{ matrix.version }})
     if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
@@ -42,6 +47,8 @@ jobs:
           - shell: bash
             version: latest
           - shell: zsh
+            version: latest
+          - shell: fish
             version: latest
           - shell: zsh
             version: '@composio/cli@0.3.1'
