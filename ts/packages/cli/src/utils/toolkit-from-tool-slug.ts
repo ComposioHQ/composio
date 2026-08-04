@@ -24,15 +24,37 @@ export const guessToolkitFromToolSlug = (toolSlug: string): string | undefined =
 export const longestPrefix = (
   toolSlug: string,
   knownToolkitSlugs: ReadonlyArray<string>
-): string | undefined => {
+): string | undefined => makeLongestPrefixMatcher(knownToolkitSlugs)(toolSlug);
+
+/**
+ * {@link longestPrefix} against a list that does not change, with the lookup
+ * set built once and closed over. The known list runs to a thousand-odd slugs
+ * and a single command resolves several tool slugs against it, so callers that
+ * hold onto the returned function pay for the set once instead of per lookup.
+ */
+export const makeLongestPrefixMatcher = (
+  knownToolkitSlugs: ReadonlyArray<string>
+): ((toolSlug: string) => string | undefined) => {
   const known = new Set(knownToolkitSlugs.map(slug => slug.toLowerCase()));
-  const segments = toolSlug.toLowerCase().split('_');
-  for (let end = segments.length - 1; end >= 1; end -= 1) {
-    const candidate = segments.slice(0, end).join('_');
-    if (known.has(candidate)) return candidate;
-  }
-  return undefined;
+
+  return toolSlug => {
+    const segments = toolSlug.toLowerCase().split('_');
+    for (let end = segments.length - 1; end >= 1; end -= 1) {
+      const candidate = segments.slice(0, end).join('_');
+      if (known.has(candidate)) return candidate;
+    }
+    return undefined;
+  };
 };
+
+/**
+ * Bare `composio`-prefixed slugs are meta tools, not user-linkable toolkits;
+ * longer matches such as `composio_search` are real toolkits. A `composio`
+ * match is a resolved answer rather than a miss, so callers must not fall
+ * through to a wider search on the `undefined` it returns.
+ */
+export const toolkitFromMatchedPrefix = (match: string): string | undefined =>
+  match === 'composio' ? undefined : match;
 
 /**
  * `longestPrefix` with the toolkit-resolution policy applied on top: the
@@ -45,9 +67,7 @@ export const matchToolkitFromToolSlug = (
 ): string | undefined => {
   const match = longestPrefix(toolSlug, knownToolkitSlugs);
   if (match !== undefined) {
-    // Bare `composio`-prefixed slugs are meta tools, not user-linkable
-    // toolkits; longer matches such as `composio_search` are real toolkits.
-    return match === 'composio' ? undefined : match;
+    return toolkitFromMatchedPrefix(match);
   }
   return guessToolkitFromToolSlug(toolSlug);
 };

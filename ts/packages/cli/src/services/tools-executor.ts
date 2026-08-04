@@ -16,6 +16,7 @@ import {
 import { getOrFetchToolInputDefinition } from 'src/services/tool-input-validation';
 import { ToolFileUploadError, uploadToolInputFiles } from 'src/services/tool-file-uploads';
 import { toolkitFromToolSlug } from 'src/effects/toolkit-from-tool-slug';
+import { ToolkitSlugCatalog } from 'src/services/toolkit-slug-catalog';
 import { isMetaToolSlug } from 'src/utils/meta-tool-slugs';
 import type { NodeOs } from 'src/services/node-os';
 import type { NodeProcess } from 'src/services/node-process';
@@ -130,6 +131,11 @@ export const ToolsExecutorLive = Layer.effect(
     // The `get` instance method is an Effect.fn that lazily initializes
     // the raw Composio client on first call — no environment requirements.
     const clientSingleton = yield* ComposioClientSingleton;
+
+    // Held rather than required per call: which slugs resolve locally is an
+    // implementation detail of toolkit resolution, not part of what a caller
+    // has to hand the executor.
+    const slugCatalog = yield* ToolkitSlugCatalog;
 
     return ToolsExecutor.of({
       execute: (slug, params) =>
@@ -252,7 +258,8 @@ export const ToolsExecutorLive = Layer.effect(
                 );
               })
             )
-          )
+          ),
+          Effect.provideService(ToolkitSlugCatalog, slugCatalog)
         ),
     });
   })
