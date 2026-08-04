@@ -18,6 +18,15 @@ on:
         required: false
         default: 'latest'
         type: string
+      built_from_this_checkout:
+        description: >-
+          Set by callers whose run built the release under test from this
+          branch. Those legs must produce the CLI-managed PATH line; legs that
+          install an older published release may still produce install.sh's
+          legacy block.
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   contents: read
@@ -334,6 +343,8 @@ jobs:
           fi
 
       - name: Test shell config updates
+        env:
+          BUILT_FROM_THIS_CHECKOUT: ${{ inputs.built_from_this_checkout }}
         run: |
           echo "Checking shell configuration updates..."
 
@@ -352,13 +363,16 @@ jobs:
             exit 1
           fi
 
-          # Every leg of this workflow installs a published release binary, never one
-          # built from this checkout: releases predating the CLI-managed PATH line
-          # (workflow_dispatch re-verification, workflow_call with the default
-          # 'latest', promote-stable rebuilds of an older beta) still write the
-          # legacy install.sh block with COMPOSIO_INSTALL_DIR, as does install.sh's
-          # fallback when the binary cannot run. Accept either working layout and
-          # fail only when neither PATH setup is present.
+          # Which PATH layout is acceptable depends on where the binary under test
+          # came from. Build CLI Binaries calls this workflow with
+          # built_from_this_checkout, having released the binary in that same run
+          # from this branch, so `composio install` must have written the
+          # CLI-managed line — a broken install that silently falls through to
+          # install.sh's inline writer has to fail here. Every other leg
+          # (workflow_dispatch re-verification, the default 'latest', tag pushes,
+          # promote-stable rebuilds of an older beta's commit) installs a release
+          # that may predate the CLI-managed line and still writes the legacy
+          # install.sh block with COMPOSIO_INSTALL_DIR, which stays acceptable.
           if grep -Fqx 'export PATH="$HOME/.composio:$PATH"' "$config_file"; then
             if grep -q 'COMPOSIO_INSTALL_DIR' "$config_file"; then
               echo "❌ $config_file has the CLI-managed PATH line but still persists COMPOSIO_INSTALL_DIR"
@@ -367,6 +381,12 @@ jobs:
               exit 1
             fi
             echo "✅ $config_file updated with the CLI-managed PATH line"
+          elif [[ "$BUILT_FROM_THIS_CHECKOUT" == "true" ]]; then
+            echo "❌ $config_file has no CLI-managed PATH line, so \`composio install\` did not configure PATH"
+            echo "This release was built from this checkout, so install.sh's legacy fallback block is not acceptable here."
+            echo "=== $config_file contents ==="
+            cat "$config_file"
+            exit 1
           elif grep -Fqx 'export PATH="$COMPOSIO_INSTALL_DIR:$PATH"' "$config_file" &&
             grep -Eq '^export COMPOSIO_INSTALL_DIR=' "$config_file"; then
             echo "✅ $config_file updated with the legacy install.sh PATH block"
