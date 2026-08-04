@@ -33,6 +33,9 @@ jobs:
       - name: Test release resolution fallback
         run: bash test/install-sh-release-resolution.test.sh
 
+      - name: Test documented uninstall snippet
+        run: bash test/install-sh-uninstall-snippet.test.sh
+
       - name: Lint POSIX install scripts
         run: shellcheck -s sh install.sh install/*.sh
 

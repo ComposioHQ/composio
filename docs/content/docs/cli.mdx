@@ -163,7 +163,7 @@ for file in \
   [ -f "$file" ] || continue
   awk '
     /^# Composio CLI$/ { skip = 1; next }
-    skip && /^export COMPOSIO_INSTALL_DIR=/ { next }
+    skip && (/^export COMPOSIO_INSTALL_DIR=/ || /^set --export COMPOSIO_INSTALL_DIR /) { next }
     skip && (/^export PATH=/ || /^set --export PATH /) { skip = 0; next }
     { skip = 0; print }
   ' "$file" > "$file.tmp"

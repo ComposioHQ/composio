@@ -95,7 +95,7 @@ rm -rf \
   "$install_dir/local-tools-binaries"
 ```
 
-Remove `# Composio CLI` PATH blocks from `~/.zshrc`, `~/.bashrc`, `~/.bash_profile`, `~/.bash_login`, or `~/.config/fish/config.fish` if you used a shell-specific installer. Blocks written by older installers contain an extra `export COMPOSIO_INSTALL_DIR=...` line after the marker; remove that line too.
+Remove `# Composio CLI` PATH blocks from `~/.zshrc`, `~/.bashrc`, `~/.bash_profile`, `~/.bash_login`, or `~/.config/fish/config.fish` if you used a shell-specific installer. Blocks written by older installers contain an extra `export COMPOSIO_INSTALL_DIR=...` or `set --export COMPOSIO_INSTALL_DIR ...` line after the marker; remove that line too.
 
 To purge credentials, configuration, caches, and every other CLI file, run `rm -rf "${COMPOSIO_INSTALL_DIR:-$HOME/.composio}"`. This is a complete reset and cannot be undone.
 
