@@ -1,4 +1,3 @@
-import { createServer, type IncomingMessage, type Server, type ServerResponse } from 'node:http';
 import { describe, expect, it, vi } from '@effect/vitest';
 import { Config, ConfigProvider, Effect, Exit, Layer } from 'effect';
 import { FetchHttpClient, FileSystem, HttpClient, Path } from '@effect/platform';
@@ -6,6 +5,7 @@ import type * as PlatformError from '@effect/platform/Error';
 import { BunFileSystem, BunPath } from '@effect/platform-bun';
 import * as tempy from 'tempy';
 import { TerminalUITest } from 'test/__utils__/services/terminal-ui-test';
+import { startTestHttpServer } from 'test/__utils__/http-server';
 import {
   inferSkillReleaseChannel,
   installSkill,
@@ -54,41 +54,6 @@ const makeInstallEffect = (
       )
     ),
     Effect.scoped
-  );
-
-/**
- * Spin up a local HTTP server on an ephemeral port as a scoped resource and
- * return its base URL. Scope closure tears the server down.
- */
-const startTestHttpServer = (handler: (req: IncomingMessage, res: ServerResponse) => void) =>
-  Effect.map(
-    Effect.acquireRelease(
-      Effect.promise(
-        () =>
-          new Promise<Server>((resolve, reject) => {
-            const server = createServer(handler);
-            server.once('error', reject);
-            server.listen({ port: 0, host: '127.0.0.1' }, () => {
-              server.off('error', reject);
-              resolve(server);
-            });
-          })
-      ),
-      server =>
-        Effect.promise(
-          () =>
-            new Promise<void>((resolve, reject) => {
-              server.close(error => (error ? reject(error) : resolve()));
-            })
-        )
-    ),
-    server => {
-      const address = server.address();
-      if (address === null || typeof address === 'string') {
-        throw new Error('Failed to bind test server to an ephemeral port');
-      }
-      return `http://127.0.0.1:${address.port}`;
-    }
   );
 
 const startSkillReleaseServer = (skillZip: Uint8Array) =>

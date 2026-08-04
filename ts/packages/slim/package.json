@@ -107,6 +107,7 @@
     "@composio/client": "catalog:",
     "@composio/json-schema-to-zod": "workspace:*",
     "@types/json-schema": "^7.0.15",
+    "is-fs-case-sensitive": "^2.0.0",
     "openai": "catalog:",
     "picocolors": "catalog:",
     "pusher-js": "^8.6.0",

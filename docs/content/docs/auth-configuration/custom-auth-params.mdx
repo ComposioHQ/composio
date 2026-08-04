@@ -21,12 +21,13 @@ Pass `customAuthParams` in the `tools.execute()` call to inject your own token a
 ```python
 from composio import Composio
 
-composio = Composio()
+composio = Composio(toolkit_versions={"googlecalendar": "latest"})
 
 result = composio.tools.execute(
     slug="GOOGLECALENDAR_LIST_EVENTS",
     user_id="user_123",
     arguments={},
+    dangerously_skip_version_check=True,  # required when running "latest"
     custom_auth_params={
         "parameters": [
             {
@@ -46,6 +47,7 @@ import { Composio } from "@composio/core";
 
 const composio = new Composio({
   apiKey: process.env.COMPOSIO_API_KEY,
+  toolkitVersions: { googlecalendar: "latest" },
 });
 
 const result = await composio.tools.execute(
@@ -53,6 +55,7 @@ const result = await composio.tools.execute(
   {
     userId: "user_123",
     arguments: {},
+    dangerouslySkipVersionCheck: true, // required when running "latest"
     customAuthParams: {
       parameters: [
         {
@@ -100,7 +103,7 @@ Before Execute Modifiers are a way to modify the parameters of a tool before it 
 from composio import Composio, before_execute
 from composio.types import ToolExecuteParams
 
-composio = Composio()
+composio = Composio(toolkit_versions={"notion": "latest"})
 
 
 @before_execute(toolkits=["NOTION"])
@@ -126,6 +129,7 @@ result = composio.tools.execute(
     slug="NOTION_GET_DATABASE_ITEMS",
     user_id="user_123",
     arguments={},
+    dangerously_skip_version_check=True,  # required when running "latest"
     modifiers=[
         add_custom_auth,
     ],

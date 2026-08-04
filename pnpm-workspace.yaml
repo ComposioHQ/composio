@@ -100,16 +100,23 @@ overrides:
   # The floor also clears GHSA-9mqv-5hh9-4cgg (WebSocket handshake DoS, fixed
   # in 2.0.10); drop when the SDK depends on >=2.0.10 itself.
   '@hono/node-server@<2.0.10': '>=2.0.10 <3'
-  # temporary: GHSA-mh99-v99m-4gvg (HIGH, unbounded-expansion OOM) covers every
-  # version <=5.0.7 with no 1.x or 2.x backport, so this selector spans majors
-  # deliberately -- narrowing it to the 5.x line would reintroduce a HIGH
-  # finding on the production openapi-typescript path and fail the audit gate.
+  # temporary: GHSA-7p8r-x3mc-p8w7; ajv accepts the patched 3.x line. Drop when
+  # its lockfile resolution is >=3.1.5 without an override.
+  'fast-uri@>=3.0.0 <3.1.5': '>=3.1.5 <4'
+  # temporary: GHSA-mwp4-54f8-5fhr; express-rate-limit accepts the patched 10.x
+  # line. Drop when its lockfile resolution is >=10.3.1 without an override.
+  'ip-address@>=10.0.0 <=10.3.0': '>=10.3.1 <11'
+  # temporary: GHSA-mh99-v99m-4gvg requires the 5.x line for older majors, and
+  # GHSA-rgw5-rvv9-x895 raises its patched floor to 5.0.9. This selector spans
+  # majors deliberately -- narrowing it to the 5.x line would reintroduce a
+  # HIGH finding on the production openapi-typescript path and fail the audit
+  # gate.
   # Known trade-off: minimatch@5.1.9 (via @redocly/openapi-core) consumes
   # brace-expansion as a callable CJS export, which 5.x replaced with a named
   # `expand`, so a brace-containing pattern throws there. Not reachable today --
   # the CLI's only openapi-typescript call passes an in-memory document and no
   # redocly globs. Drop when openapi-typescript ships a @redocly/openapi-core
   # whose minimatch accepts brace-expansion 5.x.
-  'brace-expansion@<=5.0.7': '>=5.0.8 <6'
+  'brace-expansion@<=5.0.8': '>=5.0.9 <6'
   'vite@<=7.3.4': 7.3.5
   'esbuild@>=0.27.3 <0.28.1': 0.28.1

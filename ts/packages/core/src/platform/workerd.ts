@@ -82,6 +82,11 @@ export const platform: Platform = {
     return filePath;
   },
 
+  isFileSystemCaseSensitive(_filePath: string): boolean {
+    // Preserve exact matching when there is no filesystem to inspect.
+    return true;
+  },
+
   mkdirSync(_dirPath: string): void {
     // No-op in edge runtimes - directories cannot be created
   },

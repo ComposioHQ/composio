@@ -227,8 +227,7 @@ describe('dereferenceJsonSchema', () => {
         v: { $ref: '#/$defs/User' },
       },
       $defs: {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        User: { type: 'object', __proto__: { polluted: true } } as any,
+        User: { type: 'object', __proto__: { polluted: true } },
       },
     } as Record<string, unknown>);
 

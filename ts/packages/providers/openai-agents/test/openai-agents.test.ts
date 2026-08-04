@@ -7,7 +7,7 @@ import { tool as createOpenAIAgentTool } from '@openai/agents';
 interface MockedOpenAIAgentTool {
   name: string;
   description: string;
-  parameters: any;
+  parameters: unknown;
   execute: Function;
   _isMockedOpenAIAgentTool: boolean;
 }
@@ -27,7 +27,7 @@ vi.mock('@openai/agents', () => {
 describe('OpenAIAgentsProvider', () => {
   let provider: OpenAIAgentsProvider;
   let mockTool: Tool;
-  let mockExecuteToolFn: any;
+  let mockExecuteToolFn: unknown;
 
   beforeEach(() => {
     provider = new OpenAIAgentsProvider();

@@ -120,7 +120,9 @@ describe('MCP', () => {
     });
 
     it('should validate configuration', async () => {
-      await expect(mcp.create('test', { toolkits: null as any })).rejects.toThrow(ValidationError);
+      await expect(mcp.create('test', { toolkits: null as unknown })).rejects.toThrow(
+        ValidationError
+      );
     });
   });
 
@@ -198,7 +200,7 @@ describe('MCP', () => {
     });
 
     it('should handle validation errors', async () => {
-      await expect(mcp.list({ page: 'invalid' as any })).rejects.toThrow(ValidationError);
+      await expect(mcp.list({ page: 'invalid' as unknown })).rejects.toThrow(ValidationError);
     });
   });
 
@@ -287,7 +289,7 @@ describe('MCP', () => {
     });
 
     it('should validate update parameters', async () => {
-      await expect(mcp.update('mcp_123', { toolkits: 'invalid' as any })).rejects.toThrow(
+      await expect(mcp.update('mcp_123', { toolkits: 'invalid' as unknown })).rejects.toThrow(
         ValidationError
       );
     });
@@ -369,7 +371,7 @@ describe('MCP', () => {
       mockClient.mcp.retrieve.mockResolvedValueOnce(mockRetrieveResponse);
 
       await expect(
-        mcp.generate('user123', 'mcp_123', { manuallyManageConnections: 'invalid' as any })
+        mcp.generate('user123', 'mcp_123', { manuallyManageConnections: 'invalid' as unknown })
       ).rejects.toThrow(ValidationError);
     });
   });
