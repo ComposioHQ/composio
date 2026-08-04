@@ -666,4 +666,27 @@ describe('ensureObjectTypeOnProperties', () => {
     ensureObjectTypeOnProperties(schema);
     expect(schema.properties.target).not.toHaveProperty('type');
   });
+
+  it('does not inject type:object into instance-value keywords (const, default, enum, examples)', () => {
+    const schema = {
+      type: 'object',
+      properties: {
+        choice: {
+          type: 'object',
+          properties: { id: { type: 'string' } },
+          default: { properties: { should_not_gain_type: true } },
+          const: { properties: { marker: true } },
+          examples: [{ properties: { marker: true } }],
+          enum: [{ properties: { marker: true } }],
+        },
+      },
+    };
+
+    const result = ensureObjectTypeOnProperties(schema) as typeof schema;
+    const choice = result.properties.choice as Record<string, unknown>;
+    expect((choice.default as Record<string, unknown>).type).toBeUndefined();
+    expect((choice.const as Record<string, unknown>).type).toBeUndefined();
+    expect((choice.examples as Record<string, unknown>[])[0].type).toBeUndefined();
+    expect((choice.enum as Record<string, unknown>[])[0].type).toBeUndefined();
+  });
 });

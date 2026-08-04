@@ -96,6 +96,25 @@ describe('GoogleProvider', () => {
 
       expect(wrapped.parameters?.required).toEqual(['input']);
     });
+
+    it('injects type:object into nested properties for strict OpenAPI consumers', () => {
+      const wrapped = provider.wrapTool({
+        ...mockTool,
+        inputParameters: {
+          type: 'object',
+          properties: {
+            target: {
+              properties: { name: { type: 'string' } },
+            },
+          },
+        },
+      });
+
+      const params = wrapped.parameters as unknown as {
+        properties: { target: { type?: string } };
+      };
+      expect(params.properties.target.type).toBe('object');
+    });
   });
 
   describe('wrapTools', () => {

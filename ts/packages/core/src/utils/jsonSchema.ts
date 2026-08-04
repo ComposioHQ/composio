@@ -270,13 +270,15 @@ export function dereferenceJsonSchema<T = unknown>(
  * Nodes that already declare a `type` are left untouched.
  */
 export function ensureObjectTypeOnProperties<T = unknown>(schema: T): T {
-  function walk(value: unknown, depth = 0): unknown {
+  const instanceValueKeywords = new Set(['const', 'default', 'enum', 'examples']);
+
+  function walk(value: unknown, isSchema: boolean, depth = 0): unknown {
     if (depth > MAX_NODE_DEPTH) {
       throw new RangeError(`JSON Schema exceeds maximum nesting depth of ${MAX_NODE_DEPTH}`);
     }
 
     if (Array.isArray(value)) {
-      return value.map(item => walk(item, depth + 1));
+      return value.map(item => walk(item, isSchema, depth + 1));
     }
 
     if (!isPlainObject(value)) return value;
@@ -284,17 +286,17 @@ export function ensureObjectTypeOnProperties<T = unknown>(schema: T): T {
     const clone: Record<string, unknown> = {};
     for (const [key, child] of Object.entries(value)) {
       if (POLLUTING_KEYS.has(key)) continue;
-      clone[key] = walk(child, depth + 1);
+      clone[key] = walk(child, isSchema && !instanceValueKeywords.has(key), depth + 1);
     }
 
-    if (clone.properties !== undefined && clone.type === undefined) {
+    if (isSchema && clone.properties !== undefined && clone.type === undefined) {
       clone.type = 'object';
     }
 
     return clone;
   }
 
-  return walk(schema) as T;
+  return walk(schema, true) as T;
 }
 
 /**
