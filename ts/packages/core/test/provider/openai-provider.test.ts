@@ -22,7 +22,7 @@ vi.mock('openai/streaming', () => {
 describe('OpenAIProvider', () => {
   let provider: OpenAIProvider;
   let mockTool: Tool;
-  let mockExecuteToolFn: any;
+  let mockExecuteToolFn: unknown;
 
   // Sample tool data
   beforeEach(() => {
@@ -632,7 +632,7 @@ describe('OpenAIProvider', () => {
       client.beta.threads.runs.retrieve = vi.fn().mockResolvedValue(finalRun);
 
       // Collect the yielded events
-      const collectedEvents: any[] = [];
+      const collectedEvents: unknown[] = [];
       for await (const event of provider.waitAndHandleAssistantStreamToolCalls(
         userId,
         client,

@@ -281,7 +281,7 @@ describe('BatchProcessor', () => {
       const batchesProcessed: number[][] = [];
       let resolvers: (() => void)[] = [];
 
-      const asyncCallback = vi.fn().mockImplementation((batch: any[]) => {
+      const asyncCallback = vi.fn().mockImplementation((batch: unknown[]) => {
         return new Promise<void>(resolve => {
           resolvers.push(resolve);
         }).then(() => {
@@ -317,8 +317,8 @@ describe('BatchProcessor', () => {
 
 describe('TelemetryTransport', () => {
   let transport: TelemetryTransport;
-  let sendMetricSpy: any;
-  let sendErrorLogSpy: any;
+  let sendMetricSpy: unknown;
+  let sendErrorLogSpy: unknown;
   const metadata: TelemetryMetadata = {
     apiKey: 'test-key',
     baseUrl: 'http://localhost',
@@ -329,8 +329,8 @@ describe('TelemetryTransport', () => {
   };
 
   beforeEach(async () => {
-    sendMetricSpy = vi.spyOn(TelemetryService, 'sendMetric').mockResolvedValue({} as any);
-    sendErrorLogSpy = vi.spyOn(TelemetryService, 'sendErrorLog').mockResolvedValue({} as any);
+    sendMetricSpy = vi.spyOn(TelemetryService, 'sendMetric').mockResolvedValue({} as unknown);
+    sendErrorLogSpy = vi.spyOn(TelemetryService, 'sendErrorLog').mockResolvedValue({} as unknown);
     transport = new TelemetryTransport();
     transport.setup(metadata);
     await transport.flush();
@@ -391,7 +391,7 @@ describe('TelemetryTransport', () => {
     sendErrorLogSpy.mockImplementationOnce(
       () =>
         new Promise(resolve => {
-          resolveTelemetry = () => resolve({} as any);
+          resolveTelemetry = () => resolve({} as unknown);
         })
     );
 

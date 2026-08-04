@@ -43,7 +43,7 @@ console.log(connection.redirectUrl); // send user here to authenticate
 
 ### Executing Tools
 
-A toolkit version is **required** for direct execution — \`tools.execute()\` without one raises \`ToolVersionRequiredError\`. Set \`toolkit_versions\` / \`toolkitVersions\` at SDK initialization (or pass \`version\` per call). Use \`"latest"\` unless outputs are parsed programmatically, in which case pin a version from \`composio.toolkits.get(slug).meta.available_versions\`.
+A toolkit version is **required** for direct execution — \`tools.execute()\` without one raises \`ToolVersionRequiredError\`, and \`"latest"\` alone is NOT accepted for manual execution. Either pass \`dangerously_skip_version_check=True\` (TS: \`dangerouslySkipVersionCheck: true\`) on the execute call to run the newest version, or pin a dated version from \`composio.toolkits.get(slug).meta.version\` when outputs are parsed programmatically.
 
 \`\`\`python
 composio = Composio(toolkit_versions={"github": "latest"})
@@ -53,6 +53,7 @@ result = composio.tools.execute(
     "GITHUB_CREATE_ISSUE",
     {"owner": "org", "repo": "repo", "title": "Bug report"},
     user_id="user_123",
+    dangerously_skip_version_check=True,  # required when running "latest"
 )
 \`\`\`
 
@@ -63,6 +64,7 @@ const tools = await composio.tools.get("user_123", { tools: ["GITHUB_CREATE_ISSU
 const result = await composio.tools.execute("GITHUB_CREATE_ISSUE", {
     userId: "user_123",
     arguments: { owner: "org", repo: "repo", title: "Bug report" },
+    dangerouslySkipVersionCheck: true, // required when running "latest"
 });
 \`\`\`
 
@@ -72,8 +74,9 @@ const result = await composio.tools.execute("GITHUB_CREATE_ISSUE", {
 
 1. **\`user_id\` is required** — pass it to \`tools.get()\`, \`tools.execute()\`, and \`provider.handle_tool_calls()\`.
 2. **\`tools.execute()\` signature** — Python: \`execute(slug, arguments_dict, *, user_id=..., version=...)\` (arguments is the second positional param). TypeScript: \`execute(slug, { userId, arguments, version })\`.
-3. **A toolkit version is required** — configure \`toolkit_versions\` (Python) / \`toolkitVersions\` (TypeScript) at SDK init, or pass \`version\` per execute call; omitting both raises \`ToolVersionRequiredError\`.
+3. **A toolkit version is required** — configure \`toolkit_versions\` (Python) / \`toolkitVersions\` (TypeScript) at SDK init, or pass \`version\` per execute call; omitting both raises \`ToolVersionRequiredError\`. \`"latest"\` is rejected for manual execution unless the execute call also passes \`dangerously_skip_version_check=True\` / \`dangerouslySkipVersionCheck: true\`.
 4. **Provider at init** — \`Composio(provider=OpenAIProvider())\` in Python, \`new Composio({ provider: new OpenAIProvider() })\` in TypeScript. Defaults to OpenAI if omitted.
 5. **Correct provider imports** — \`composio_<provider>\` for Python, \`@composio/<provider>\` for TypeScript. For OpenAI Agents SDK use \`composio_openai_agents\` / \`@composio/openai-agents\`.
+6. **Finding toolkit and tool slugs** — browse the Toolkits catalog at https://docs.composio.dev/toolkits (each toolkit page lists tool slugs and versions), or search by task with the CLI: \`composio search "<what you want to do>"\`.
 ${TERMINOLOGY_MIGRATION}
 `;

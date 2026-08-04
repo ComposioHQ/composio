@@ -1,6 +1,6 @@
-import { Data, Effect, Schema } from 'effect';
+import { Data, Effect } from 'effect';
 import type { Composio } from '@composio/client';
-import { ConnectedAccountItem } from 'src/models/connected-accounts';
+import { isKnownConnectedAccountStatus } from 'src/models/connected-accounts';
 import {
   compareNewestFirst,
   groupCachedConnectedAccountsByToolkit,
@@ -48,9 +48,6 @@ export type ToolRouterSessionConnectionContext = {
     }>
   >;
 };
-
-// Derived from the model schema so the known-status list can't drift from it.
-const isKnownConnectedAccountStatus = Schema.is(ConnectedAccountItem.fields.status);
 
 const normalizeConnectedAccountStatus = (
   status?: string | null

@@ -19,15 +19,14 @@ export function isNewerVersion(version1: string, version2: string): boolean {
   return false;
 }
 
-/** Upper bound on the npm registry version check. Kept short: it is best-effort and unawaited. */
-const VERSION_CHECK_TIMEOUT_MS = 2000;
+const VERSION_CHECK_TIMEOUT_MS = 2_000;
 
 /**
  * Checks for the latest version of the Composio SDK from NPM.
  * If a newer version is available, it logs a warning to the console.
  *
- * Best-effort: never throws, and never keeps the process alive for more than
- * {@link VERSION_CHECK_TIMEOUT_MS}.
+ * Best-effort: never throws. The npm registry request is aborted after
+ * {@link VERSION_CHECK_TIMEOUT_MS} milliseconds.
  */
 export async function checkForLatestVersionFromNPM(currentVersion: string) {
   try {
@@ -48,16 +47,11 @@ export async function checkForLatestVersionFromNPM(currentVersion: string) {
       return;
     }
 
-    // Bounded and abortable: this check is a non-essential background nicety that
-    // nobody awaits, so it must never extend process lifetime. An in-flight fetch
-    // keeps its socket referenced on the event loop, so without a signal a slow or
-    // black-holed registry (corporate proxy, egress firewall that drops rather than
-    // rejects, npm incident) keeps short-lived scripts alive until undici's own
-    // timeouts fire. The catch below already swallows the resulting abort.
-    //
-    // A hand-rolled timer rather than AbortSignal.timeout so it can be cleared the
-    // moment the response lands: an uncleared timer is itself pending work, which on
-    // workerd pins the request context open for the full timeout on every success.
+    // Bound this best-effort request so a stalled registry cannot leave it pending
+    // indefinitely. A hand-rolled timer rather than AbortSignal.timeout so it can be
+    // cleared the moment the response lands: an uncleared timer is itself pending work,
+    // which on workerd pins the request context open for the full timeout on every
+    // successful check.
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), VERSION_CHECK_TIMEOUT_MS);
     let data;
@@ -73,7 +67,7 @@ export async function checkForLatestVersionFromNPM(currentVersion: string) {
 
     if (semver.gt(latestVersion, currentVersionFromPackageJson) && !IS_DEVELOPMENT_OR_CI) {
       logger.info(
-        `🚀 Upgrade available! Your composio-core version (${currentVersionFromPackageJson}) is behind. Latest version: ${latestVersion}.`
+        `🚀 Upgrade available! Your ${packageName} version (${currentVersionFromPackageJson}) is behind. Latest version: ${latestVersion}.`
       );
     }
   } catch (_error) {

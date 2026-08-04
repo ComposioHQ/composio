@@ -1,7 +1,9 @@
 import { describe, expect, layer } from '@effect/vitest';
 import { Console, Effect, Layer, ParseResult } from 'effect';
-import { decodeConnectedAccountItemsWithFallback } from 'src/effects/decode-connected-account-list';
-import type { ConnectedAccountItem } from 'src/models/connected-accounts';
+import {
+  decodeConnectedAccountItems,
+  decodeConnectedAccountListWithFallback,
+} from 'src/effects/decode-connected-account-list';
 import { MockConsole } from 'test/__utils__';
 import { TerminalUITest } from 'test/__utils__/services/terminal-ui-test';
 
@@ -32,11 +34,11 @@ const makeItem = (overrides?: Record<string, unknown>) => ({
   ...overrides,
 });
 
-describe('decodeConnectedAccountItemsWithFallback', () => {
-  layer(TestLayer)('[Given] items matching the strict schema', it => {
+describe('decodeConnectedAccountItems', () => {
+  layer(TestLayer)('[Given] items with statuses this CLI build knows', it => {
     it.effect('decodes without warning', () =>
       Effect.gen(function* () {
-        const items = yield* decodeConnectedAccountItemsWithFallback([makeItem()]);
+        const items = yield* decodeConnectedAccountItems([makeItem()]);
 
         expect(items).toStrictEqual([makeItem()]);
         expect(yield* MockConsole.getLines()).toStrictEqual([]);
@@ -45,7 +47,7 @@ describe('decodeConnectedAccountItemsWithFallback', () => {
   });
 
   layer(TestLayer)('[Given] a status newer than this CLI build', it => {
-    it.effect('warns, keeps the unknown status, and still strips credential fields', () =>
+    it.effect('decodes, warns with only the status value, and still strips credential fields', () =>
       Effect.gen(function* () {
         const raw = makeItem({
           status: 'QUANTUM_LINKED',
@@ -53,28 +55,74 @@ describe('decodeConnectedAccountItemsWithFallback', () => {
           data: { refresh_token: 'must-not-leak' },
         });
 
-        const items = yield* decodeConnectedAccountItemsWithFallback([raw]);
+        const items = yield* decodeConnectedAccountItems([raw]);
 
-        expect(items).toStrictEqual([
-          makeItem({ status: 'QUANTUM_LINKED' }) as unknown as ConnectedAccountItem,
-        ]);
+        expect(items).toStrictEqual([makeItem({ status: 'QUANTUM_LINKED' })]);
         expect(JSON.stringify(items)).not.toContain('must-not-leak');
 
         const output = (yield* MockConsole.getLines()).join('\n');
-        expect(output).toContain('does not recognize');
+        expect(output).toContain('QUANTUM_LINKED');
+        expect(output).toContain('composio upgrade');
+        expect(output).not.toContain('must-not-leak');
+      })
+    );
+  });
+
+  layer(TestLayer)('[Given] a malformed payload', it => {
+    it.effect('fails with ParseError', () =>
+      Effect.gen(function* () {
+        const error = yield* Effect.flip(
+          decodeConnectedAccountItems([{ definitely: 'not-an-account' }])
+        );
+
+        expect(ParseResult.isParseError(error)).toBe(true);
+      })
+    );
+  });
+});
+
+describe('decodeConnectedAccountListWithFallback', () => {
+  layer(TestLayer)('[Given] a response with a status newer than this CLI build', it => {
+    it.effect('decodes and warns instead of falling back to the raw payload', () =>
+      Effect.gen(function* () {
+        const result = yield* decodeConnectedAccountListWithFallback({
+          items: [makeItem({ status: 'QUANTUM_LINKED' })],
+          total_items: 1,
+          total_pages: 1,
+          current_page: 1,
+          next_cursor: null,
+        });
+
+        expect(result.items).toStrictEqual([makeItem({ status: 'QUANTUM_LINKED' })]);
+
+        const output = (yield* MockConsole.getLines()).join('\n');
+        expect(output).toContain('QUANTUM_LINKED');
         expect(output).toContain('composio upgrade');
       })
     );
   });
 
-  layer(TestLayer)('[Given] a payload the permissive schema cannot decode', it => {
-    it.effect('fails with ParseError instead of leaking the raw payload', () =>
+  layer(TestLayer)('[Given] a shape-skewed response carrying credential fields', it => {
+    it.effect('falls back to raw but never echoes payload values in the warning', () =>
       Effect.gen(function* () {
-        const error = yield* Effect.flip(
-          decodeConnectedAccountItemsWithFallback([{ definitely: 'not-an-account' }])
-        );
+        // `items` is not an array: the decode fails at the container level,
+        // where an unredacted formatter would print the whole actual value.
+        const raw = {
+          items: { 0: makeItem({ state: { access_token: 'must-not-leak' } }) },
+          total_items: 1,
+          total_pages: 1,
+          current_page: 1,
+          next_cursor: null,
+        };
 
-        expect(ParseResult.isParseError(error)).toBe(true);
+        const result = yield* decodeConnectedAccountListWithFallback(raw);
+
+        expect(result).toBe(raw);
+
+        const output = (yield* MockConsole.getLines()).join('\n');
+        expect(output).toContain('composio upgrade');
+        expect(output).toContain('items');
+        expect(output).not.toContain('must-not-leak');
       })
     );
   });

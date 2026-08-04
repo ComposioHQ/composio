@@ -13,12 +13,11 @@ interface PageTreeNode {
   url?: string;
   children?: PageTreeNode[];
   index?: PageTreeNode;
-  [key: string]: unknown;
 }
 
 interface PageTreeRoot {
+  name: unknown;
   children: PageTreeNode[];
-  [key: string]: unknown;
 }
 
 /**
@@ -70,11 +69,11 @@ function isHiddenTagNode(node: PageTreeNode): boolean {
 /** Recursively drops folders/pages whose tag slug is in HIDDEN_API_TAGS. */
 function filterHiddenTags(nodes: PageTreeNode[]): PageTreeNode[] {
   return nodes
-    .filter((node) => !isHiddenTagNode(node))
-    .map((node) =>
+    .filter(node => !isHiddenTagNode(node))
+    .map(node =>
       node.type === 'folder' && node.children
         ? { ...node, children: filterHiddenTags(node.children) }
-        : node,
+        : node
     );
 }
 
@@ -115,19 +114,17 @@ export function prepareTree<T extends PageTreeRoot>(tree: T, version: string): T
     // Just hide the V3 folder
     return {
       ...tree,
-      children: children.filter((node) => !isV3Node(node)),
+      children: children.filter(node => !isV3Node(node)),
     };
   }
 
   // v3.0: lift V3 folder contents, keep version-independent folders (SDK Reference, Meta Tools)
-  const v3Folder = children.find(
-    (node) => node.type === 'folder' && isV3Node(node),
-  );
+  const v3Folder = children.find(node => node.type === 'folder' && isV3Node(node));
 
   // Nodes that should appear in both versions (exclude v3 nodes, v3.1 API Reference folder,
   // and top-level pages which are version-specific — both versions have their own copies)
   const sharedNodes = children.filter(
-    (node) => node.type !== 'page' && !isV3Node(node) && !isV31ApiFolder(node),
+    node => node.type !== 'page' && !isV3Node(node) && !isV31ApiFolder(node)
   );
 
   if (v3Folder?.children) {

@@ -719,6 +719,11 @@
                     "description": {
                       "type": "string",
                       "description": "Description of the toolkit"
+                    },
+                    "isNoAuth": {
+                      "type": "boolean",
+                      "description": "Duplicates the top-level is_no_auth field. Kept for backward compatibility with existing readers; use is_no_auth instead.",
+                      "deprecated": true
                     }
                   },
                   "required": [
@@ -2449,7 +2454,20 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "properties": {}
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "description": "Whether the auth config was updated"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "A human-readable result message"
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "message"
+                  ]
                 }
               }
             }
@@ -2545,12 +2563,24 @@
                 "schema": {
                   "type": "object",
                   "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "description": "Whether the auth config was deleted"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "A human-readable result message"
+                    },
                     "revoke_job_id": {
                       "type": "string",
                       "description": "Identifier of the background revoke job started for this delete. Present only when `revoke_on_delete=true`. Track the job and its per-connection results from the Composio dashboard — a programmatic endpoint to poll this job is not yet generally available.",
                       "example": "pj_1a2b3c4d5e6f"
                     }
-                  }
+                  },
+                  "required": [
+                    "success",
+                    "message"
+                  ]
                 }
               }
             }
@@ -2646,7 +2676,20 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "properties": {}
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "description": "Whether the status update succeeded"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "A human-readable result message"
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "message"
+                  ]
                 }
               }
             }
@@ -2937,6 +2980,27 @@
                             "format": "connectedAccountId",
                             "description": "The id of the connection"
                           },
+                          "authScheme": {
+                            "type": "string",
+                            "enum": [
+                              "OAUTH2",
+                              "OAUTH1",
+                              "API_KEY",
+                              "BASIC",
+                              "BILLCOM_AUTH",
+                              "BEARER_TOKEN",
+                              "GOOGLE_SERVICE_ACCOUNT",
+                              "NO_AUTH",
+                              "BASIC_WITH_JWT",
+                              "CALCOM_AUTH",
+                              "SERVICE_ACCOUNT",
+                              "SAML",
+                              "DCR_OAUTH",
+                              "S2S_OAUTH2"
+                            ],
+                            "description": "Duplicates state.authScheme. Kept for backward compatibility with existing readers; use state.authScheme instead.",
+                            "deprecated": true
+                          },
                           "word_id": {
                             "type": "string",
                             "nullable": true,
@@ -3156,17 +3220,17 @@
                                     "type": "string"
                                   }
                                 },
+                                "additionalProperties": true,
                                 "required": [
                                   "status"
-                                ],
-                                "additionalProperties": true
+                                ]
                               }
                             },
+                            "additionalProperties": true,
                             "required": [
                               "authScheme",
                               "val"
-                            ],
-                            "additionalProperties": true
+                            ]
                           },
                           "data": {
                             "type": "object",
@@ -3177,7 +3241,7 @@
                           "status_reason": {
                             "type": "string",
                             "nullable": true,
-                            "description": "The reason the connection status changed. Possible reasons: Connection initiation did not complete within 10 minutes, Permanent auth error during token refresh, Max auth failures reached, OAuth callback failed during token exchange, Connection status updated by user, Auth config is disabled, Revoked via user-initiated revoke endpoint, Revoked via admin tool, Revoked as part of connection delete"
+                            "description": "The reason the connection status changed."
                           },
                           "is_disabled": {
                             "type": "boolean",
@@ -3453,17 +3517,17 @@
                                 "type": "string"
                               }
                             },
+                            "additionalProperties": true,
                             "required": [
                               "status"
-                            ],
-                            "additionalProperties": true
+                            ]
                           }
                         },
+                        "additionalProperties": true,
                         "required": [
                           "authScheme",
                           "val"
-                        ],
-                        "additionalProperties": true
+                        ]
                       },
                       "data": {
                         "type": "object",
@@ -3711,17 +3775,17 @@
                               "type": "string"
                             }
                           },
+                          "additionalProperties": true,
                           "required": [
                             "status"
-                          ],
-                          "additionalProperties": true
+                          ]
                         }
                       },
+                      "additionalProperties": true,
                       "required": [
                         "authScheme",
                         "val"
-                      ],
-                      "additionalProperties": true
+                      ]
                     },
                     "status": {
                       "type": "string",
@@ -3960,6 +4024,27 @@
                       "format": "connectedAccountId",
                       "description": "The id of the connection"
                     },
+                    "authScheme": {
+                      "type": "string",
+                      "enum": [
+                        "OAUTH2",
+                        "OAUTH1",
+                        "API_KEY",
+                        "BASIC",
+                        "BILLCOM_AUTH",
+                        "BEARER_TOKEN",
+                        "GOOGLE_SERVICE_ACCOUNT",
+                        "NO_AUTH",
+                        "BASIC_WITH_JWT",
+                        "CALCOM_AUTH",
+                        "SERVICE_ACCOUNT",
+                        "SAML",
+                        "DCR_OAUTH",
+                        "S2S_OAUTH2"
+                      ],
+                      "description": "Duplicates state.authScheme. Kept for backward compatibility with existing readers; use state.authScheme instead.",
+                      "deprecated": true
+                    },
                     "word_id": {
                       "type": "string",
                       "nullable": true,
@@ -4179,17 +4264,17 @@
                               "type": "string"
                             }
                           },
+                          "additionalProperties": true,
                           "required": [
                             "status"
-                          ],
-                          "additionalProperties": true
+                          ]
                         }
                       },
+                      "additionalProperties": true,
                       "required": [
                         "authScheme",
                         "val"
-                      ],
-                      "additionalProperties": true
+                      ]
                     },
                     "data": {
                       "type": "object",
@@ -4200,7 +4285,7 @@
                     "status_reason": {
                       "type": "string",
                       "nullable": true,
-                      "description": "The reason the connection status changed. Possible reasons: Connection initiation did not complete within 10 minutes, Permanent auth error during token refresh, Max auth failures reached, OAuth callback failed during token exchange, Connection status updated by user, Auth config is disabled, Revoked via user-initiated revoke endpoint, Revoked via admin tool, Revoked as part of connection delete"
+                      "description": "The reason the connection status changed."
                     },
                     "is_disabled": {
                       "type": "boolean",
@@ -4418,8 +4503,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {}
+                  "$ref": "#/components/schemas/Error"
                 }
               }
             }
@@ -4568,6 +4652,16 @@
               }
             }
           },
+          "409": {
+            "description": "Conflict - A concurrent write holds the connection lease; retry the request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
           "500": {
             "description": "Internal server error - Failed to update connected account",
             "content": {
@@ -4688,8 +4782,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {}
+                  "$ref": "#/components/schemas/Error"
                 }
               }
             }
@@ -5882,6 +5975,16 @@
           },
           "401": {
             "description": "Unauthorized. Authentication is required or the provided credentials are invalid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict. A project with this name already exists in the organization.",
             "content": {
               "application/json": {
                 "schema": {
@@ -10326,12 +10429,12 @@
                         "additionalProperties": {}
                       }
                     },
+                    "additionalProperties": true,
                     "required": [
                       "authScheme",
                       "toolkitSlug",
                       "val"
-                    ],
-                    "additionalProperties": true
+                    ]
                   },
                   "arguments": {
                     "type": "object",
@@ -11078,12 +11181,12 @@
                         "additionalProperties": {}
                       }
                     },
+                    "additionalProperties": true,
                     "required": [
                       "authScheme",
                       "toolkitSlug",
                       "val"
-                    ],
-                    "additionalProperties": true
+                    ]
                   }
                 },
                 "required": [
@@ -11769,6 +11872,7 @@
                           },
                           "state": {
                             "type": "object",
+                            "nullable": true,
                             "additionalProperties": {},
                             "description": "DEPRECATED: This field exposes internal state and will be removed in a future version.",
                             "deprecated": true
@@ -13405,6 +13509,16 @@
               }
             }
           },
+          "409": {
+            "description": "Conflict. An MCP server with the specified name already exists in this project.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
           "500": {
             "description": "Internal server error. An unexpected error occurred while processing the request.",
             "content": {
@@ -13647,6 +13761,16 @@
           },
           "404": {
             "description": "Not Found. One or more of the specified auth_config_ids do not exist or are not accessible to the authenticated user.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict. A custom MCP server with the specified name already exists in this project.",
             "content": {
               "application/json": {
                 "schema": {
@@ -17019,6 +17143,10 @@
                                     "original_slug": {
                                       "type": "string",
                                       "description": "Original tool slug as provided by the user"
+                                    },
+                                    "preload": {
+                                      "type": "boolean",
+                                      "description": "Echoes the SDK-local preload hint provided for this tool"
                                     }
                                   },
                                   "required": [
@@ -17029,6 +17157,10 @@
                                     "original_slug"
                                   ]
                                 }
+                              },
+                              "preload": {
+                                "type": "boolean",
+                                "description": "Echoes the SDK-local preload hint provided for this toolkit"
                               }
                             },
                             "required": [
@@ -17074,6 +17206,10 @@
                               "original_slug": {
                                 "type": "string",
                                 "description": "Original tool slug as provided by the user"
+                              },
+                              "preload": {
+                                "type": "boolean",
+                                "description": "Echoes the SDK-local preload hint provided for this tool"
                               }
                             },
                             "required": [
@@ -17985,6 +18121,10 @@
                                     "original_slug": {
                                       "type": "string",
                                       "description": "Original tool slug as provided by the user"
+                                    },
+                                    "preload": {
+                                      "type": "boolean",
+                                      "description": "Echoes the SDK-local preload hint provided for this tool"
                                     }
                                   },
                                   "required": [
@@ -17995,6 +18135,10 @@
                                     "original_slug"
                                   ]
                                 }
+                              },
+                              "preload": {
+                                "type": "boolean",
+                                "description": "Echoes the SDK-local preload hint provided for this toolkit"
                               }
                             },
                             "required": [
@@ -18040,6 +18184,10 @@
                               "original_slug": {
                                 "type": "string",
                                 "description": "Original tool slug as provided by the user"
+                              },
+                              "preload": {
+                                "type": "boolean",
+                                "description": "Echoes the SDK-local preload hint provided for this tool"
                               }
                             },
                             "required": [
@@ -18977,6 +19125,10 @@
                                     "original_slug": {
                                       "type": "string",
                                       "description": "Original tool slug as provided by the user"
+                                    },
+                                    "preload": {
+                                      "type": "boolean",
+                                      "description": "Echoes the SDK-local preload hint provided for this tool"
                                     }
                                   },
                                   "required": [
@@ -18987,6 +19139,10 @@
                                     "original_slug"
                                   ]
                                 }
+                              },
+                              "preload": {
+                                "type": "boolean",
+                                "description": "Echoes the SDK-local preload hint provided for this toolkit"
                               }
                             },
                             "required": [
@@ -19032,6 +19188,10 @@
                               "original_slug": {
                                 "type": "string",
                                 "description": "Original tool slug as provided by the user"
+                              },
+                              "preload": {
+                                "type": "boolean",
+                                "description": "Echoes the SDK-local preload hint provided for this tool"
                               }
                             },
                             "required": [
@@ -19786,12 +19946,12 @@
                         "additionalProperties": {}
                       }
                     },
+                    "additionalProperties": true,
                     "required": [
                       "authScheme",
                       "toolkitSlug",
                       "val"
-                    ],
-                    "additionalProperties": true
+                    ]
                   }
                 },
                 "required": [
@@ -20109,7 +20269,7 @@
     "/api/v3/tool_router/session/{session_id}/tools": {
       "get": {
         "summary": "List tools with schemas for a tool router session",
-        "description": "Returns the tools available in a tool router session with their complete schemas. This includes both meta tools and any preloaded app tools exposed by the session.",
+        "description": "Returns the tools available in a tool router session with their complete schemas. This includes both meta tools and any preloaded app tools exposed by the session. Tools are returned in alphabetical order.",
         "tags": [
           "Tool Router"
         ],
