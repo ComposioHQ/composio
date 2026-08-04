@@ -5,7 +5,7 @@ import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { FileSystem, Path } from '@effect/platform';
 import { BunFileSystem, BunPath } from '@effect/platform-bun';
 import { Effect, Layer } from 'effect';
-import type { Composio as RawComposioClient } from '@composio/client';
+import { Composio as RawComposioClient } from '@composio/client';
 import { ComposioSensitiveFilePathBlockedError } from '@composio/core';
 import { schemaHasFileUploadable, uploadToolInputFiles } from 'src/services/tool-file-uploads';
 
@@ -19,7 +19,9 @@ const inputSchema = {
 };
 
 const makeClient = (createPresignedURL = vi.fn()) =>
-  ({ files: { createPresignedURL } }) as unknown as RawComposioClient;
+  Object.assign(new RawComposioClient({ apiKey: 'test' }), {
+    files: { createPresignedURL },
+  });
 
 describe('uploadToolInputFiles — sensitive-path guard (issue #3746)', () => {
   afterEach(() => {

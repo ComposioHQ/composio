@@ -29,15 +29,12 @@ const addDescribes = (jsonSchema: JsonSchemaObject, zodSchema: z.ZodTypeAny): z.
   }
 
   // Append example(s) if they exist
-  if ((jsonSchema as unknown as { example?: unknown }).example !== undefined) {
-    const exampleText = `Example: ${JSON.stringify((jsonSchema as unknown as { example?: unknown }).example)}`;
+  if (jsonSchema.example !== undefined) {
+    const exampleText = `Example: ${JSON.stringify(jsonSchema.example)}`;
     description = description ? `${description}\n${exampleText}` : exampleText;
-  } else if (
-    (jsonSchema as unknown as { examples?: unknown[] }).examples !== undefined &&
-    Array.isArray((jsonSchema as unknown as { examples?: unknown[] }).examples)
-  ) {
-    const examples = (jsonSchema as unknown as { examples?: unknown[] }).examples;
-    if (examples && examples.length && examples.length > 0) {
+  } else if (jsonSchema.examples !== undefined && Array.isArray(jsonSchema.examples)) {
+    const examples = jsonSchema.examples;
+    if (examples.length > 0) {
       const exampleText =
         examples.length === 1
           ? `Example: ${JSON.stringify(examples[0])}`
@@ -69,7 +66,7 @@ const addDefaults = (
         inAnyOfOrOneOf &&
         jsonSchema.type &&
         jsonSchema.type !== 'null' &&
-        // @ts-ignore: `nullable` is not publicly available in Zod 4
+        // @ts-expect-error: `nullable` is not publicly available in Zod 4
         !jsonSchema.nullable
       ) {
         return zodSchema;

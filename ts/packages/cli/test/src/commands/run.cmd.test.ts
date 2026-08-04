@@ -42,7 +42,7 @@ describe('CLI: composio run', () => {
       '[Given] inline code and args [Then] it forwards them to the embedded Bun runtime',
       () =>
         Effect.gen(function* () {
-          const spawn = vi.fn(() => ({ exited: Promise.resolve(7) }));
+          const spawn = vi.fn((_options: unknown) => ({ exited: Promise.resolve(7) }));
           const exit = vi.spyOn(process, 'exit').mockImplementation((() => undefined) as never);
           vi.stubGlobal('Bun', { spawn });
 
@@ -50,7 +50,7 @@ describe('CLI: composio run', () => {
           const output = yield* MockConsole.getLines();
 
           expect(spawn).toHaveBeenCalledTimes(1);
-          const spawnConfig = (spawn as any).mock.calls[0][0] as {
+          const spawnConfig = spawn.mock.calls[0][0] as {
             cmd: string[];
             env: unknown;
             stdio: string[];
@@ -81,14 +81,14 @@ describe('CLI: composio run', () => {
       '[Given] --acp-only [Then] run accepts the flag and forwards execution normally',
       () =>
         Effect.gen(function* () {
-          const spawn = vi.fn(() => ({ exited: Promise.resolve(0) }));
+          const spawn = vi.fn((_options: unknown) => ({ exited: Promise.resolve(0) }));
           const exit = vi.spyOn(process, 'exit').mockImplementation((() => undefined) as never);
           vi.stubGlobal('Bun', { spawn });
 
           yield* cli(['run', '--acp-only', 'console.log("hi")']);
 
           expect(spawn).toHaveBeenCalledTimes(1);
-          const spawnConfig = (spawn as any).mock.calls[0][0] as {
+          const spawnConfig = spawn.mock.calls[0][0] as {
             cmd: string[];
           };
           expect(spawnConfig.cmd[3]).toBe('--eval');
@@ -102,14 +102,14 @@ describe('CLI: composio run', () => {
       '[Given] --logs-off [Then] run accepts the flag and forwards execution normally',
       () =>
         Effect.gen(function* () {
-          const spawn = vi.fn(() => ({ exited: Promise.resolve(0) }));
+          const spawn = vi.fn((_options: unknown) => ({ exited: Promise.resolve(0) }));
           const exit = vi.spyOn(process, 'exit').mockImplementation((() => undefined) as never);
           vi.stubGlobal('Bun', { spawn });
 
           yield* cli(['run', '--logs-off', 'console.log("hi")']);
 
           expect(spawn).toHaveBeenCalledTimes(1);
-          const spawnConfig = (spawn as any).mock.calls[0][0] as {
+          const spawnConfig = spawn.mock.calls[0][0] as {
             cmd: string[];
           };
           expect(spawnConfig.cmd[3]).toBe('--eval');
@@ -140,14 +140,14 @@ describe('CLI: composio run', () => {
             console.log(JSON.stringify(brief));
             console.log(JSON.stringify(brief.structuredOutput));
           `;
-          const spawn = vi.fn(() => ({ exited: Promise.resolve(0) }));
+          const spawn = vi.fn((_options: unknown) => ({ exited: Promise.resolve(0) }));
           const exit = vi.spyOn(process, 'exit').mockImplementation((() => undefined) as never);
           vi.stubGlobal('Bun', { spawn });
 
           yield* cli(['run', '--logs-off', script]);
 
           expect(spawn).toHaveBeenCalledTimes(1);
-          const spawnConfig = (spawn as any).mock.calls[0][0] as {
+          const spawnConfig = spawn.mock.calls[0][0] as {
             cmd: string[];
           };
           expect(spawnConfig.cmd[3]).toBe('--eval');
@@ -171,7 +171,7 @@ describe('CLI: composio run', () => {
         const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'composio-run-test-'));
         const scriptPath = path.join(tempDir, 'script.ts');
         fs.writeFileSync(scriptPath, 'const value = 1 + 1;\nvalue * 2;\n', 'utf8');
-        const spawn = vi.fn(() => ({ exited: Promise.resolve(0) }));
+        const spawn = vi.fn((_options: unknown) => ({ exited: Promise.resolve(0) }));
         const exit = vi.spyOn(process, 'exit').mockImplementation((() => undefined) as never);
         vi.stubGlobal('Bun', { spawn });
 
@@ -179,7 +179,7 @@ describe('CLI: composio run', () => {
           yield* cli(['run', '--file', scriptPath, '--', 'hello']);
 
           expect(spawn).toHaveBeenCalledTimes(1);
-          const spawnConfig = (spawn as any).mock.calls[0][0] as {
+          const spawnConfig = spawn.mock.calls[0][0] as {
             cmd: string[];
             env: unknown;
             stdio: string[];

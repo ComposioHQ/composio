@@ -205,7 +205,7 @@ const mockIncomingTriggerPayload: IncomingTriggerPayload = {
 };
 
 describe('Triggers', () => {
-  let triggers: Triggers<any>;
+  let triggers: Triggers<unknown>;
   let mockClient: ReturnType<typeof createMockClient>;
   let mockPusherService: {
     subscribe: Mock;
@@ -547,7 +547,7 @@ describe('Triggers', () => {
         triggerConfig: null,
       };
 
-      await expect(triggers.create(userId, slug, invalidBody as any)).rejects.toThrow(
+      await expect(triggers.create(userId, slug, invalidBody as unknown)).rejects.toThrow(
         ValidationError
       );
       expect(mockClient.triggerInstances.upsert).not.toHaveBeenCalled();
@@ -753,7 +753,7 @@ describe('Triggers', () => {
     });
 
     it('should throw error if function is not provided', async () => {
-      await expect(triggers.subscribe(null as any)).rejects.toThrow(
+      await expect(triggers.subscribe(null as unknown)).rejects.toThrow(
         'Function is required for trigger subscription'
       );
     });

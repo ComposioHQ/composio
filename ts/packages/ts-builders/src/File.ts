@@ -6,8 +6,8 @@ import type { ExportFrom } from './ExportFrom';
 import type { Import } from './Import';
 import { Writer } from './Writer';
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export type FileItem = AnyDeclarationBuilder | Export<any> | ExportFrom | DocSectionComment;
+export type FileItem =
+  AnyDeclarationBuilder | Export<AnyDeclarationBuilder> | ExportFrom | DocSectionComment;
 export class File implements BasicBuilder {
   private imports: Import[] = [];
   private declarations: FileItem[] = [];
