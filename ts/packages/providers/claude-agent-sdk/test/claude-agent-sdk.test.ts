@@ -52,6 +52,19 @@ type MockedToolFn = Mock<
   ) => unknown
 >;
 
+type MockedSchemaToolFn = Mock<
+  (
+    name: string,
+    description: string | undefined,
+    schema: {
+      safeParse: (
+        value: unknown
+      ) => { success: true; data: unknown } | { success: false; error: unknown };
+    },
+    handler: MockedToolHandler
+  ) => unknown
+>;
+
 // `mockExecuteToolFn` is declared against the real `GlobalExecuteToolFn` contract, which always
 // resolves with a `ToolExecuteResponse`. A couple of tests deliberately stub it with a plain
 // string / `undefined` to exercise the wrapTool handler's defensive "stringify anything" branch,
@@ -146,6 +159,22 @@ describe('ClaudeAgentSDKProvider', () => {
       expect(Object.keys(schemaShape)).toEqual(['to', 'subject', 'body']);
       expect(schemaShape.to.safeParse('test@example.com').success).toBe(true);
       expect(schemaShape.to.safeParse(123).success).toBe(false);
+    });
+
+    it('should preserve arbitrary properties in a free-form root input schema', () => {
+      const freeFormTool: Tool = {
+        ...mockTool,
+        inputParameters: {
+          type: 'object',
+          properties: {},
+        },
+      };
+
+      provider.wrapTool(freeFormTool, mockExecuteToolFn);
+
+      const schema = (tool as unknown as MockedSchemaToolFn).mock.calls[0][2];
+      const input = { database: 1, type: 'native' };
+      expect(schema.safeParse(input)).toEqual({ success: true, data: input });
     });
 
     it('should handle tools without input parameters', () => {

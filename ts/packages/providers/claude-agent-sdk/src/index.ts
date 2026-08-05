@@ -14,6 +14,7 @@ import {
   ExecuteToolFn,
   McpUrlResponse,
   McpServerGetResponse,
+  jsonSchemaToZodSchema,
   normalizeToolArguments,
 } from '@composio/core';
 import { jsonSchemaToZodShape } from '@composio/core/utils/json-schema';
@@ -102,9 +103,11 @@ export class ClaudeAgentSDKProvider extends BaseAgenticProvider<
    * ```
    */
   wrapTool(composioTool: Tool, executeTool: ExecuteToolFn): ClaudeAgentTool {
-    const inputZodShape = jsonSchemaToZodShape(
-      composioTool.inputParameters ?? { type: 'object', properties: {} }
-    );
+    const inputParameters = composioTool.inputParameters ?? { type: 'object', properties: {} };
+    const inputZodSchema =
+      composioTool.inputParameters && Object.keys(inputParameters.properties ?? {}).length === 0
+        ? jsonSchemaToZodSchema(inputParameters)
+        : jsonSchemaToZodShape(inputParameters);
 
     // The SDK types tool() generically over its zod raw shape, which makes the handler argument
     // instantiate excessively deep against the v3 shape returned here (TS2589). Narrow tool() to a
@@ -113,7 +116,8 @@ export class ClaudeAgentSDKProvider extends BaseAgenticProvider<
     const defineTool = sdkTool as unknown as (
       name: string,
       description: string,
-      inputShape: ReturnType<typeof jsonSchemaToZodShape>,
+      inputSchema:
+        ReturnType<typeof jsonSchemaToZodShape> | ReturnType<typeof jsonSchemaToZodSchema>,
       handler: (
         args: Record<string, unknown>
       ) => Promise<{ content: Array<{ type: 'text'; text: string }> }>
@@ -122,7 +126,7 @@ export class ClaudeAgentSDKProvider extends BaseAgenticProvider<
     return defineTool(
       composioTool.slug,
       composioTool.description ?? `Execute ${composioTool.slug}`,
-      inputZodShape,
+      inputZodSchema,
       async args => {
         try {
           // Models occasionally emit tool input as a JSON string rather than an object (issue #2406).
