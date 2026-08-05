@@ -14,3 +14,7 @@ ts/packages/core/pack/generated/** linguist-generated=true
 pnpm-lock.yaml linguist-generated=true
 uv.lock linguist-generated=true
 **/bun.lock linguist-generated=true
+
+# Managed-block conformance fixtures are byte-exact inputs/outputs shared by
+# the sh harness and the TS reconciler test; never normalize their line endings.
+test/managed-block-fixtures/** -text

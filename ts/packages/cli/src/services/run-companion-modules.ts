@@ -7,8 +7,10 @@ import { FileSystem, Path } from '@effect/platform';
 import type { PlatformError } from '@effect/platform/Error';
 import { Config, ConfigProvider, Data, Effect, Option, Schema } from 'effect';
 import extractZip from 'extract-zip';
+import { IS_RELEASE_BUILD } from 'src/constants';
 import { GitHubRelease } from 'src/effects/resolve-cli-release';
 import { BaseConfigProviderLive, extendConfigProvider } from 'src/services/config';
+import { atomicReplaceFile } from 'src/utils/atomic-replace';
 import { parseChecksumsText, sha256Hex } from 'src/utils/checksums';
 import { CLI_RELEASE_TAG_PREFIX } from 'src/utils/cli-release-version';
 
@@ -324,6 +326,25 @@ export const resolveInstalledCliReleaseTag = (
     normalizeCliReleaseTag(releaseTag ?? fallbackVersion)
   );
 
+export const resolveRunningCliVersion = (
+  execPath: string,
+  appVersion: string,
+  isReleaseBuild = IS_RELEASE_BUILD
+): Effect.Effect<string, never, FileSystem.FileSystem | Path.Path> =>
+  isReleaseBuild
+    ? Effect.succeed(normalizeCliReleaseVersion(appVersion))
+    : resolveInstalledCliVersion(execPath, appVersion);
+
+export const resolveRunningCliReleaseTag = (
+  execPath: string,
+  appVersion: string,
+  isReleaseBuild = IS_RELEASE_BUILD
+): Effect.Effect<string, never, FileSystem.FileSystem | Path.Path> =>
+  Effect.map(
+    resolveRunningCliVersion(execPath, appVersion, isReleaseBuild),
+    normalizeCliReleaseTag
+  );
+
 export const writeInstalledReleaseTag = (
   installDir: string,
   releaseTag: string
@@ -451,7 +472,7 @@ const resolveRepairReleaseTag = ({
       return pinnedTag;
     }
 
-    return yield* resolveInstalledCliReleaseTag(execPath, appVersion);
+    return yield* resolveRunningCliReleaseTag(execPath, appVersion);
   });
 
 const nonEmptyConfigWithFallback = (name: string, fallback: string) =>
@@ -609,7 +630,19 @@ export const repairMissingInstalledRunCompanionModules = ({
 
           const targetPath = path.join(installDirectory, relativePath);
           yield* fs.makeDirectory(path.dirname(targetPath), { recursive: true });
-          yield* fs.copyFile(sourcePath, targetPath);
+          yield* atomicReplaceFile({ sourcePath, targetPath }).pipe(
+            Effect.mapError(
+              error =>
+                new RunCompanionRepairError({
+                  message: [
+                    `Unable to restore the files required by 'composio run' for ${releaseTag}.`,
+                    error.message,
+                    `Reinstall the CLI, or set GITHUB_TAG to the exact release tag for this build and try again.`,
+                  ].join('\n'),
+                  cause: error.cause,
+                })
+            )
+          );
         }
 
         yield* writeInstalledReleaseTag(installDirectory, release.tag_name);

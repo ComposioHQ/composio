@@ -6,6 +6,17 @@ on:
       # Temporary compatibility window: support both legacy v* and package-scoped CLI tags.
       - 'v*'
       - '@composio/cli@*'
+  # An installer-only change ships nothing through the TypeScript packages, so
+  # nothing else would lint or test it before it lands. Only the cheap
+  # ubuntu-only unit-test job runs here; the multi-OS matrix installs a
+  # published release and stays on the release path (a push to `next` reaches
+  # it through Build CLI Binaries, whose path filter covers these files too).
+  pull_request:
+    paths:
+      - 'install.sh'
+      - 'install/**'
+      - 'test/install-sh-*.test.sh'
+      - '.github/workflows/cli.test-installation.yml'
   workflow_dispatch:
     inputs:
       version:
@@ -18,15 +29,6 @@ on:
         required: false
         default: 'latest'
         type: string
-      built_from_this_checkout:
-        description: >-
-          Set by callers whose run built the release under test from this
-          branch. Those legs must produce the CLI-managed PATH line; legs that
-          install an older published release may still produce install.sh's
-          legacy block.
-        required: false
-        default: false
-        type: boolean
 
 permissions:
   contents: read
@@ -42,6 +44,9 @@ jobs:
       - name: Test release resolution fallback
         run: bash test/install-sh-release-resolution.test.sh
 
+      - name: Test atomic install replacement
+        run: bash test/install-sh-atomic-replace.test.sh
+
       - name: Test documented uninstall snippet
         run: bash test/install-sh-uninstall-snippet.test.sh
 
@@ -51,6 +56,9 @@ jobs:
   test-install-script:
     name: Test Install Script
     needs: install-script-unit-tests
+    # The multi-OS matrix installs an already-published release, which a pull
+    # request cannot produce. Keep pull requests on the unit-test job only.
+    if: github.event_name != 'pull_request'
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -202,11 +210,34 @@ jobs:
             exit 1
           fi
 
+          # The default (COMPOSIO_INSTALL_SHELL unset → auto) infers the target
+          # shell from $SHELL, which "Setup shell environment" exported for this
+          # matrix leg, so this no-argument install must persist a managed PATH
+          # block in that shell's startup file.
+          if [[ "${{ matrix.shell }}" == "zsh" ]]; then
+            config_file=~/.zshrc
+          else
+            config_file=~/.bashrc
+          fi
+
+          if grep -Fqx '# Composio CLI' "$config_file" \
+            && grep -Fqx 'export PATH="$HOME/.local/bin:$PATH"' "$config_file"; then
+            echo "✅ $config_file gained the managed Composio PATH block via automatic shell setup"
+          else
+            echo "❌ $config_file missing the managed Composio PATH block after the no-argument install"
+            echo "=== $config_file contents ==="
+            cat "$config_file"
+            exit 1
+          fi
+
       - name: Test PATH integration
         shell: bash
         run: |
           echo "Testing PATH integration with ${{ matrix.shell }}..."
 
+          # The no-argument install above already configured this shell through
+          # the auto default; this exercises the CLI command directly and must
+          # stay idempotent on top of it.
           COMPOSIO_BIN_DIR="$HOME/.local/bin" "$HOME/.composio/composio" install --shell "${{ matrix.shell }}"
 
           # Debug: Check what files exist and their contents
@@ -323,9 +354,13 @@ jobs:
           fi
 
       - name: Test shell config updates
-        env:
-          BUILT_FROM_THIS_CHECKOUT: ${{ inputs.built_from_this_checkout }}
         run: |
+          # This assertion holds for every leg, whatever release it installs.
+          # install.sh always comes from this checkout, and it only trusts a
+          # delegated `composio install --shell` when delegated_setup_verified
+          # confirms the startup file byte-for-byte against its own rendering;
+          # otherwise it rewrites the block inline. An older published CLI can
+          # therefore never leave a legacy block behind.
           echo "Checking shell configuration updates..."
 
           if [[ "${{ matrix.shell }}" == "zsh" ]]; then
@@ -352,11 +387,28 @@ jobs:
             exit 1
           fi
 
+          # Automatic setup ran during the no-argument install and `composio
+          # install --shell` ran again afterwards: setup is idempotent, so the
+          # startup file must hold exactly one managed block.
+          marker_count=$(grep -Fcx '# Composio CLI' "$config_file" || true)
+          if [[ "$marker_count" == "1" ]]; then
+            echo "✅ $config_file contains exactly one managed Composio block"
+          else
+            echo "❌ $config_file contains $marker_count managed Composio blocks (expected 1)"
+            echo "=== $config_file contents ==="
+            cat "$config_file"
+            exit 1
+          fi
+
       - name: Test custom install directory
         shell: bash
         env:
           USE_LATEST: ${{ steps.release_target.outputs.use_latest }}
           RELEASE_TAG: ${{ steps.release_target.outputs.release_tag }}
+          # Install-only step: it verifies custom install locations, so opt out
+          # of automatic shell setup instead of re-pointing the managed PATH
+          # block at the throwaway custom bin dir.
+          COMPOSIO_INSTALL_SHELL: none
         run: |
           echo "Testing custom install directory..."
 
@@ -419,6 +471,9 @@ jobs:
 
   test-architecture-detection:
     name: Test Architecture Detection
+    # The multi-OS matrix installs an already-published release, which a pull
+    # request cannot produce. Keep pull requests on the unit-test job only.
+    if: github.event_name != 'pull_request'
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -476,6 +531,9 @@ jobs:
 
   test-prerequisites:
     name: Test Prerequisites
+    # The multi-OS matrix installs an already-published release, which a pull
+    # request cannot produce. Keep pull requests on the unit-test job only.
+    if: github.event_name != 'pull_request'
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -534,7 +592,7 @@ jobs:
         test-prerequisites,
       ]
     runs-on: ubuntu-latest
-    if: always()
+    if: always() && github.event_name != 'pull_request'
 
     steps:
       - name: Test Results Summary

@@ -9,6 +9,8 @@ on:
       - '.github/actions/setup-node-pnpm-bun/action.yml'
       - '.github/scripts/cli-release/**'
       - '.github/workflows/build-cli-binaries.yml'
+      - 'install.sh'
+      - 'install/**'
       - 'mise.toml'
       - 'mise.lock'
   workflow_dispatch:
@@ -291,11 +293,6 @@ jobs:
     uses: ./.github/workflows/cli.test-installation.yml
     with:
       version: ${{ needs.prepare.outputs.release_tag }}
-      # A beta (push to next, or a manual build-beta) is built from this branch's
-      # HEAD, so its `composio install` must write the CLI-managed PATH line.
-      # promote-stable instead rebuilds the promoted beta's own commit, which can
-      # predate that writer, so it keeps the permissive check.
-      built_from_this_checkout: ${{ inputs.action != 'promote-stable' }}
 
   create-install-instructions:
     name: Create Install Instructions
@@ -318,6 +315,22 @@ jobs:
           ```bash
           curl -fsSL https://composio.dev/install | sh
           ```
+
+          The installer downloads the CLI and sets up your shell automatically: when
+          your login shell (`$SHELL`) is zsh, bash, or fish, it adds the CLI's
+          directory to `PATH` in that shell's startup file. Re-running the installer
+          never duplicates the entry.
+
+          ### Install without shell setup
+
+          ```bash
+          curl -fsSL https://composio.dev/install | COMPOSIO_INSTALL_SHELL=none sh
+          ```
+
+          Use `COMPOSIO_INSTALL_SHELL=none` in CI, Docker images, or when you manage
+          shell startup files yourself: it installs the CLI and leaves every startup
+          file untouched. Set `COMPOSIO_INSTALL_SHELL=zsh`, `bash`, or `fish` instead
+          to configure a specific shell regardless of `$SHELL`.
 
           ### Install specific version
           ```bash
@@ -346,7 +359,9 @@ jobs:
           export PATH="$COMPOSIO_BIN_DIR:$PATH"
           ```
 
-          Run `curl -fsSL https://composio.dev/install | COMPOSIO_INSTALL_SHELL=zsh sh`, replacing `zsh` with `bash` or `fish`, when you want the CLI to configure your shell.
+          After a manual installation, run `composio install --shell zsh|bash|fish`
+          (with your shell in place of `zsh|bash|fish`) to add the CLI to your
+          shell's `PATH` permanently.
 
           ## Usage
 
