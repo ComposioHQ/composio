@@ -6,6 +6,17 @@ on:
       # Temporary compatibility window: support both legacy v* and package-scoped CLI tags.
       - 'v*'
       - '@composio/cli@*'
+  # An installer-only change ships nothing through the TypeScript packages, so
+  # nothing else would lint or test it before it lands. Only the cheap
+  # ubuntu-only unit-test job runs here; the multi-OS matrix installs a
+  # published release and stays on the release path (a push to `next` reaches
+  # it through Build CLI Binaries, whose path filter covers these files too).
+  pull_request:
+    paths:
+      - 'install.sh'
+      - 'install/**'
+      - 'test/install-sh-*.test.sh'
+      - '.github/workflows/cli.test-installation.yml'
   workflow_dispatch:
     inputs:
       version:
@@ -45,6 +56,9 @@ jobs:
   test-install-script:
     name: Test Install Script
     needs: install-script-unit-tests
+    # The multi-OS matrix installs an already-published release, which a pull
+    # request cannot produce. Keep pull requests on the unit-test job only.
+    if: github.event_name != 'pull_request'
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -457,6 +471,9 @@ jobs:
 
   test-architecture-detection:
     name: Test Architecture Detection
+    # The multi-OS matrix installs an already-published release, which a pull
+    # request cannot produce. Keep pull requests on the unit-test job only.
+    if: github.event_name != 'pull_request'
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -514,6 +531,9 @@ jobs:
 
   test-prerequisites:
     name: Test Prerequisites
+    # The multi-OS matrix installs an already-published release, which a pull
+    # request cannot produce. Keep pull requests on the unit-test job only.
+    if: github.event_name != 'pull_request'
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -572,7 +592,7 @@ jobs:
         test-prerequisites,
       ]
     runs-on: ubuntu-latest
-    if: always()
+    if: always() && github.event_name != 'pull_request'
 
     steps:
       - name: Test Results Summary
