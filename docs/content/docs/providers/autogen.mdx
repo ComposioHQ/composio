@@ -6,13 +6,13 @@ keywords: [autogen, microsoft autogen, ag2]
 
 The AutoGen provider turns Composio tools into AutoGen [`FunctionTool`](https://microsoft.github.io/autogen/) objects and registers them with your agents. You connect an account, fetch the tools, register them with a caller and executor agent, and AutoGen handles the conversation and tool calls.
 
-The provider runs on the [`ag2`](https://github.com/ag2ai/ag2) distribution, the community-maintained continuation of AutoGen 0.2, so it works for AG2 projects out of the box.
+The provider targets [AG2 Classic](https://github.com/ag2ai/ag2-classic), published as the `autogen` distribution. AG2 v1 uses the `ag2` import and is not a drop-in replacement for the Classic API.
 
 <Steps>
 <Step>
 **Install**
 
-<PackageInstall ecosystem="python" packages="composio composio_autogen 'ag2[openai]'" />
+<PackageInstall ecosystem="python" packages="composio composio_autogen 'autogen[openai]'" />
 </Step>
 
 <Step>
