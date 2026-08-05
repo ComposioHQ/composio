@@ -35,19 +35,21 @@ jobs:
           echo "Latest published release: ${tag}"
 
       # Install the PINNED newest tag. This is the path that 404s when a release ships without
-      # assets. The no-arg `curl | bash` below is asset-aware and silently falls back to the
+      # assets. The no-arg `curl | sh` below is asset-aware and silently falls back to the
       # previous good release, so it would stay green even when the newest release is broken —
       # which is exactly why the previous canary never caught the recurring outage.
       - name: Install newest stable (pinned — fails on a release with missing assets)
         run: |
           set -euo pipefail
-          curl -fsSL https://composio.dev/install | bash -s -- "${{ steps.resolve.outputs.tag }}"
-          echo "$HOME/.composio" >> "$GITHUB_PATH"
+          curl -fsSL https://composio.dev/install | sh -s -- "${{ steps.resolve.outputs.tag }}"
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
 
       - name: Verify pinned installation
         run: |
           set -euo pipefail
           ls -la "$HOME/.composio" || true
+          test -x "$HOME/.composio/composio"
+          test -L "$HOME/.local/bin/composio"
           which composio
           composio --version
 
@@ -56,9 +58,23 @@ jobs:
       - name: Install via default no-arg flow
         run: |
           set -euo pipefail
-          rm -rf "$HOME/.composio"
-          curl -fsSL https://composio.dev/install | bash
-          "$HOME/.composio/composio" --version
+          rm -f \
+            "$HOME/.local/bin/composio" \
+            "$HOME/.composio/composio" \
+            "$HOME/.composio/release-tag.txt" \
+            "$HOME/.composio/run-helpers-runtime.mjs" \
+            "$HOME/.composio/run-subagent-shared.mjs" \
+            "$HOME/.composio/run-subagent-acp.mjs" \
+            "$HOME/.composio/run-subagent-legacy.mjs" \
+            "$HOME/.composio/run-subagent-output-mcp.mjs"
+          rm -rf \
+            "$HOME/.composio/services" \
+            "$HOME/.composio/acp-adapters" \
+            "$HOME/.composio/local-tools-binaries"
+          curl -fsSL https://composio.dev/install | sh
+          test -x "$HOME/.composio/composio"
+          test -L "$HOME/.local/bin/composio"
+          "$HOME/.local/bin/composio" --version
 
       - name: Send Slack Notification (Failure)
         if: failure()

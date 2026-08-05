@@ -94,7 +94,7 @@ export function AIToolsBanner() {
           {/* CLI */}
           <div className="flex flex-1 flex-col gap-1">
             <span className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--composio-orange)]">CLI</span>
-            <CopyableCommand text="curl -fsSL https://composio.dev/install | bash" />
+            <CopyableCommand text="curl -fsSL https://composio.dev/install | sh" />
             <div className="flex items-center gap-2.5 pl-0.5 text-[11px]">
               <Link
                 href="/docs/cli"

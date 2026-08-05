@@ -461,6 +461,50 @@ describe('UpgradeBinary', () => {
     }).pipe(Effect.provide(TestPlatform), Effect.ensuring(restoreStubsAndMocks));
   });
 
+  it.scoped('replaces the bundle target without replacing its entry-point symlink', () => {
+    vi.stubGlobal('Bun', { which: vi.fn(() => null) });
+
+    return Effect.gen(function* () {
+      const fs = yield* FileSystem.FileSystem;
+      const path = yield* Path.Path;
+      const installDir = yield* fs.makeTempDirectoryScoped({
+        prefix: 'composio-symlink-upgrade-target-',
+      });
+      const binDir = yield* fs.makeTempDirectoryScoped({
+        prefix: 'composio-symlink-upgrade-entry-',
+      });
+      const sourceDir = yield* fs.makeTempDirectoryScoped({
+        prefix: 'composio-symlink-upgrade-source-',
+      });
+      const installedBinaryPath = path.join(installDir, 'composio');
+      const entryPointPath = path.join(binDir, 'composio');
+      const sourceBinaryPath = path.join(sourceDir, 'composio');
+
+      yield* fs.writeFileString(installedBinaryPath, 'old-binary');
+      yield* fs.writeFileString(sourceBinaryPath, 'new-binary');
+      yield* fs.symlink(installedBinaryPath, entryPointPath);
+      const originalLinkTarget = yield* fs.readLink(entryPointPath);
+      vi.spyOn(process, 'execPath', 'get').mockReturnValue(installedBinaryPath);
+
+      const companionRelativePaths =
+        yield* collectExpectedRunCompanionAssetRelativePaths(sourceDir);
+      for (const relativePath of companionRelativePaths) {
+        const companionPath = path.join(sourceDir, relativePath);
+        yield* fs.makeDirectory(path.dirname(companionPath), { recursive: true });
+        yield* fs.writeFileString(companionPath, 'support-file');
+      }
+
+      const result = yield* runUpgradeSuccess([
+        ['DEBUG_OVERRIDE_UPGRADE_TARGET', sourceBinaryPath],
+      ]);
+
+      expect(result).toBeUndefined();
+      expect(yield* fs.readFileString(installedBinaryPath)).toBe('new-binary');
+      expect(yield* fs.readLink(entryPointPath)).toBe(originalLinkTarget);
+      expect(yield* fs.exists(entryPointPath)).toBe(true);
+    }).pipe(Effect.provide(TestPlatform), Effect.ensuring(restoreStubsAndMocks));
+  });
+
   it.scoped('uses the installed beta release tag when comparing beta updates', () => {
     vi.stubGlobal('Bun', { which: vi.fn(() => null) });
 
