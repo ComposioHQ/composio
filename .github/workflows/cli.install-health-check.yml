@@ -94,8 +94,12 @@ jobs:
           rm -rf \
             "$HOME/.composio/services" \
             "$HOME/.composio/acp-adapters" \
-            "$HOME/.composio/local-tools-binaries" \
-            "$HOME/.composio-canary"
+            "$HOME/.composio/local-tools-binaries"
+          # Torn down separately, and deliberately not part of the block above:
+          # test/release-workflow.test.ts pins that block against INSTALL.md's
+          # documented uninstall, and the canary bin dir is this workflow's own
+          # isolation directory rather than something a user would ever remove.
+          rm -rf "$HOME/.composio-canary"
           curl -fsSL https://composio.dev/install | SHELL=/bin/bash COMPOSIO_BIN_DIR="$HOME/.composio-canary/bin" sh
           test -x "$HOME/.composio/composio"
           test -L "$HOME/.composio-canary/bin/composio"
