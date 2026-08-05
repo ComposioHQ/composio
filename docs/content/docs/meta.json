@@ -30,7 +30,7 @@
     "---Security and Data---",
     "security/overview",
     "security/data-retention",
-    "---Direct Tool Execution Guides (Legacy)---",
+    "---Direct Tool Execution Guides---",
     "sessions-vs-direct-execution",
     "tools-direct",
     "auth-configuration",

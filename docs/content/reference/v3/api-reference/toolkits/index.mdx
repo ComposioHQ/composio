@@ -18,7 +18,7 @@ Reach for these endpoints when you want to:
 These endpoints authenticate with your project API key in the `x-api-key` header.
 
 <Callout type="info">
-Tools within a toolkit are versioned. When you execute a tool, resolve to a known version with `toolkit_versions=latest` or a pinned dated version. See the [toolkit versioning migration guide](/docs/migration-guide/toolkit-versioning).
+Tools within a toolkit are versioned. When you execute a tool, resolve to a known version with the `toolkit_versions=latest` query parameter or a pinned dated version. Naming differs by surface: `toolkit_versions` is the **REST query parameter**; in the SDKs the same setting is `toolkit_versions` / `toolkitVersions` on the constructor but `version=` on a per-call basis — and manual `tools.execute()` additionally rejects `latest` without `dangerously_skip_version_check`. See [toolkit versioning](/docs/tools-direct/toolkit-versioning).
 </Callout>
 
 To browse toolkits visually, see the [toolkits catalog](/toolkits). For the concepts and SDK usage, see [Tools and toolkits](/docs/how-composio-works) and [Configuring sessions](/docs/configuring-sessions).

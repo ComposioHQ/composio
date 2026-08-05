@@ -2,7 +2,6 @@
 title: Sessions vs Direct Execution
 description: When to use session-based meta tools vs direct tool fetching and execution
 keywords: [session, direct execution, tool router, meta tools, architecture, decision]
-legacy: true
 ---
 
 A **session** is the runtime context Composio creates for one of your users with `composio.create(userId)`. It ties together the user, available toolkits, auth, and connected accounts. By default it gives your agent [meta tools](/docs/how-composio-works#meta-tools) so the agent discovers which app tools to use, authenticates users, and executes tools at runtime.
