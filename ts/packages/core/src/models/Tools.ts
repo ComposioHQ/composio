@@ -57,6 +57,7 @@ import { resolveEffectiveUploadAllowlist } from '../utils/fileDirs';
 import { schemaHasFileUploadable } from '../utils/modifiers/FileToolModifier.utils.neutral';
 import { ComposioRequestOptions } from '../types/requestOptions.types';
 import { withCancellation } from '../utils/cancellation';
+import { getAllPages } from '../utils/pagination';
 import { ComposioRequestCancelledError } from '../errors/SDKErrors';
 
 const TOOL_ROUTER_SESSION_TOOLS_PAGE_LIMIT = 500;
@@ -483,18 +484,20 @@ export class Tools<
       );
     }
 
-    // if tools are provided, set the limit to 9999 so that all tools are fetched
-    let limit = 'limit' in queryParams.data ? queryParams.data.limit : undefined;
-    if ('tools' in queryParams.data) {
-      limit = 9999;
-    }
+    // When the caller sets an explicit limit we honor it as a hard cap and
+    // fetch a single page. Otherwise we page through every result: the API
+    // caps the page size (getAllPages requests MAX_LIMIT_ALLOWED_BY_API = 100
+    // per page), so the previous implicit `limit = 9999` was silently clamped
+    // and every tool past the first page was dropped (e.g. `toolkits:
+    // ['github']`, a >100-entry `tools` list, or a broad `search`).
+    const explicitLimit = 'limit' in queryParams.data ? queryParams.data.limit : undefined;
 
     const filters: ComposioToolListParams = {
       ...('tools' in queryParams.data ? { tool_slugs: queryParams.data.tools?.join(',') } : {}),
       ...('toolkits' in queryParams.data
         ? { toolkit_slug: queryParams.data.toolkits?.join(',') }
         : {}),
-      ...(limit ? { limit } : {}),
+      ...(explicitLimit ? { limit: explicitLimit } : {}),
       ...('tags' in queryParams.data ? { tags: queryParams.data.tags } : {}),
       ...('scopes' in queryParams.data ? { scopes: queryParams.data.scopes } : {}),
       ...('search' in queryParams.data ? { search: queryParams.data.search } : {}),
@@ -507,15 +510,17 @@ export class Tools<
 
     logger.debug(`Fetching tools with filters: ${JSON.stringify(filters, null, 2)}`);
 
-    const tools = await withCancellation(
-      () => this.client.tools.list(filters, requestOptions),
+    const rawTools = await withCancellation(
+      () =>
+        explicitLimit !== undefined
+          ? this.client.tools.list(filters, requestOptions).then(response => response?.items ?? [])
+          : getAllPages(params =>
+              this.client.tools.list({ ...filters, ...params }, requestOptions)
+            ),
       requestOptions?.signal
     );
 
-    if (!tools) {
-      return [];
-    }
-    const caseTransformedTools = tools.items.map(tool => this.transformToolCases(tool));
+    const caseTransformedTools = rawTools.map(tool => this.transformToolCases(tool));
 
     let modifiedTools = await this.applyDefaultSchemaModifiers(caseTransformedTools);
 
