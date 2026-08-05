@@ -2,79 +2,15 @@ import * as z from 'zod/v3';
 
 import { parseAllOf } from './parse-all-of';
 import { parseAnyOf } from './parse-any-of';
+import { parseObjectShape } from './parse-object-shape';
 import { parseOneOf } from './parse-one-of';
 import { parseSchema } from './parse-schema';
-import type { JsonSchemaObject, Refs, JsonSchema } from '../types';
+import type { JsonSchemaObject, Refs } from '../types';
 import { its } from '../utils/its';
 
 function parseObjectProperties(objectSchema: JsonSchemaObject & { type?: 'object' }, refs: Refs) {
-  if (!objectSchema.properties) {
-    return undefined;
-  }
-
-  const propertyKeys = Object.keys(objectSchema.properties);
-  if (propertyKeys.length === 0) {
-    return undefined;
-  }
-
-  const properties: Record<string, z.ZodTypeAny> = {};
-
-  for (const key of propertyKeys) {
-    const propJsonSchema = objectSchema.properties[key];
-
-    const propZodSchema = parseSchema(propJsonSchema, {
-      ...refs,
-      path: [...refs.path, 'properties', key],
-    });
-
-    const required = Array.isArray(objectSchema.required)
-      ? objectSchema.required.includes(key)
-      : false;
-
-    // Handle default values for optional properties
-    if (
-      !required &&
-      propJsonSchema &&
-      typeof propJsonSchema === 'object' &&
-      'default' in propJsonSchema
-    ) {
-      // If default is null, make the field nullable with the null default
-      // But don't make it nullable if it's already an anyOf/oneOf that includes null
-      if (propJsonSchema.default === null) {
-        const hasAnyOfWithNull =
-          propJsonSchema.anyOf &&
-          Array.isArray(propJsonSchema.anyOf) &&
-          propJsonSchema.anyOf.some(
-            (schema: JsonSchema) =>
-              typeof schema === 'object' && schema !== null && schema.type === 'null'
-          );
-        const hasOneOfWithNull =
-          propJsonSchema.oneOf &&
-          Array.isArray(propJsonSchema.oneOf) &&
-          propJsonSchema.oneOf.some(
-            (schema: JsonSchema) =>
-              typeof schema === 'object' && schema !== null && schema.type === 'null'
-          );
-        const isNullable =
-          'nullable' in propJsonSchema &&
-          (propJsonSchema as JsonSchemaObject & { nullable?: boolean }).nullable === true;
-
-        if (hasAnyOfWithNull || hasOneOfWithNull || isNullable) {
-          // The schema already handles null through anyOf/oneOf/nullable, just make it optional with default
-          properties[key] = propZodSchema.optional().default(null);
-        } else {
-          // Make the field nullable with the null default
-          properties[key] = propZodSchema.nullable().optional().default(null);
-        }
-      } else {
-        properties[key] = propZodSchema.optional().default(propJsonSchema.default);
-      }
-    } else {
-      properties[key] = required ? propZodSchema : propZodSchema.optional();
-    }
-  }
-
-  return z.object(properties);
+  const properties = parseObjectShape(objectSchema, refs);
+  return Object.keys(properties).length === 0 ? undefined : z.object(properties);
 }
 
 export function parseObject(

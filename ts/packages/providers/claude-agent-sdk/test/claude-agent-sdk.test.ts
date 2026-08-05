@@ -43,27 +43,20 @@ type MockedToolHandler = (
   args: unknown
 ) => Promise<{ content: Array<{ type: string; text: string }> }>;
 
-type MockedToolFn = Mock<
+type MockedToolFn<TSchema = Record<string, MinimalZodSchema>> = Mock<
   (
     name: string,
     description: string | undefined,
-    schema: Record<string, MinimalZodSchema>,
+    schema: TSchema,
     handler: MockedToolHandler
   ) => unknown
 >;
 
-type MockedSchemaToolFn = Mock<
-  (
-    name: string,
-    description: string | undefined,
-    schema: {
-      safeParse: (
-        value: unknown
-      ) => { success: true; data: unknown } | { success: false; error: unknown };
-    },
-    handler: MockedToolHandler
-  ) => unknown
->;
+type MockedZodObject = {
+  safeParse: (
+    value: unknown
+  ) => { success: true; data: unknown } | { success: false; error: unknown };
+};
 
 // `mockExecuteToolFn` is declared against the real `GlobalExecuteToolFn` contract, which always
 // resolves with a `ToolExecuteResponse`. A couple of tests deliberately stub it with a plain
@@ -161,7 +154,7 @@ describe('ClaudeAgentSDKProvider', () => {
       expect(schemaShape.to.safeParse(123).success).toBe(false);
     });
 
-    it('should preserve arbitrary properties in a free-form root input schema', () => {
+    it('should preserve arbitrary properties in a free-form root input schema', async () => {
       const freeFormTool: Tool = {
         ...mockTool,
         inputParameters: {
@@ -172,9 +165,23 @@ describe('ClaudeAgentSDKProvider', () => {
 
       provider.wrapTool(freeFormTool, mockExecuteToolFn);
 
-      const schema = (tool as unknown as MockedSchemaToolFn).mock.calls[0][2];
+      const schema = (tool as unknown as MockedToolFn<MockedZodObject>).mock.calls[0][2];
       const input = { database: 1, type: 'native' };
       expect(schema.safeParse(input)).toEqual({ success: true, data: input });
+
+      const claudeAgentSdk = await vi.importActual<typeof import('@anthropic-ai/claude-agent-sdk')>(
+        '@anthropic-ai/claude-agent-sdk'
+      );
+      const sdkTool = claudeAgentSdk.tool(
+        'FREE_FORM',
+        'Free-form input',
+        // The runtime accepts complete object schemas although tool() only declares raw shapes.
+        schema as never,
+        async () => ({ content: [] })
+      );
+      expect(() =>
+        claudeAgentSdk.createSdkMcpServer({ name: 'test', tools: [sdkTool] })
+      ).not.toThrow();
     });
 
     it('should handle tools without input parameters', () => {

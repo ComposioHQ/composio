@@ -109,10 +109,9 @@ export class ClaudeAgentSDKProvider extends BaseAgenticProvider<
         ? jsonSchemaToZodSchema(inputParameters)
         : jsonSchemaToZodShape(inputParameters);
 
-    // The SDK types tool() generically over its zod raw shape, which makes the handler argument
-    // instantiate excessively deep against the v3 shape returned here (TS2589). Narrow tool() to a
-    // concrete, monomorphic signature once — this sidesteps the deep instantiation and lets the
-    // handler keep a precise argument type, instead of scattering `as never` casts at the call.
+    // The SDK runtime accepts both raw Zod shapes and complete object schemas, but tool() only
+    // exposes the raw-shape type. Free-form roots need the complete schema to retain unknown keys.
+    // Keep the compatibility cast centralized and the handler type concrete to avoid TS2589.
     const defineTool = sdkTool as unknown as (
       name: string,
       description: string,
