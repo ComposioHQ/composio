@@ -101,7 +101,8 @@ overrides:
   # in 2.0.10); drop when the SDK depends on >=2.0.10 itself.
   '@hono/node-server@<2.0.10': '>=2.0.10 <3'
   # temporary: GHSA-mh99-v99m-4gvg (HIGH, unbounded-expansion OOM) covers every
-  # version <=5.0.7 with no 1.x or 2.x backport, so this selector spans majors
+  # version <=5.0.7 with no 1.x or 2.x backport, and GHSA-rgw5-rvv9-x895 (HIGH)
+  # then reopened the same DoS on <5.0.9, so this selector spans majors
   # deliberately -- narrowing it to the 5.x line would reintroduce a HIGH
   # finding on the production openapi-typescript path and fail the audit gate.
   # Known trade-off: minimatch@5.1.9 (via @redocly/openapi-core) consumes
@@ -110,6 +111,13 @@ overrides:
   # the CLI's only openapi-typescript call passes an in-memory document and no
   # redocly globs. Drop when openapi-typescript ships a @redocly/openapi-core
   # whose minimatch accepts brace-expansion 5.x.
-  'brace-expansion@<=5.0.7': '>=5.0.8 <6'
+  'brace-expansion@<=5.0.8': '>=5.0.9 <6'
   'vite@<=7.3.4': 7.3.5
   'esbuild@>=0.27.3 <0.28.1': 0.28.1
+  # temporary: GHSA-7p8r-x3mc-p8w7 (HIGH, ReDoS). ajv@8.20.0 already allows
+  # ^3.0.1, so this only pulls the lockfile forward; drop on the next refresh.
+  'fast-uri@>=3.0.0 <3.1.5': '>=3.1.5 <4'
+  # temporary: GHSA-mwp4-54f8-5fhr (HIGH, octal-octet SSRF). express-rate-limit
+  # already allows ^10.2.0, so this only pulls the lockfile forward; drop on the
+  # next refresh.
+  'ip-address@<=10.3.0': '>=10.3.1 <11'
