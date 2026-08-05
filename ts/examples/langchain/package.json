@@ -15,7 +15,7 @@
   "dependencies": {
     "@composio/core": "workspace:*",
     "@composio/langchain": "workspace:*",
-    "@langchain/core": "^1.2.3",
+    "@langchain/core": "^1.2.4",
     "@langchain/langgraph": "^1.4.8",
     "@langchain/openai": "^1.5.5",
     "dotenv": "catalog:",

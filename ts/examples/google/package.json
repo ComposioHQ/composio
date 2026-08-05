@@ -22,7 +22,7 @@
   "dependencies": {
     "@composio/core": "workspace:*",
     "@composio/google": "workspace:*",
-    "@google/genai": "^2.13.0",
+    "@google/genai": "^2.15.0",
     "@modelcontextprotocol/sdk": "catalog:",
     "dotenv": "catalog:"
   },
