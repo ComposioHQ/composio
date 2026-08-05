@@ -18,9 +18,19 @@ jobs:
       id-token: write
 
     steps:
+      # See docs.changelog-to-docs.yml: `GITHUB_TOKEN` cannot open pull requests
+      # in this repository, so the PR step below needs a release-bot App token.
+      - name: Generate GitHub App token
+        id: app-token
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        with:
+          client-id: ${{ vars.RELEASE_BOT_CLIENT_ID }}
+          private-key: ${{ secrets.RELEASE_BOT_APP_PRIVATE_KEY }}
+
       - name: Checkout repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          token: ${{ steps.app-token.outputs.token }}
           ref: next
           fetch-depth: 1
 
@@ -71,6 +81,7 @@ jobs:
         id: create-pr
         uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8.1.1
         with:
+          token: ${{ steps.app-token.outputs.token }}
           commit-message: 'docs: sync Connect clients from dashboard'
           title: 'docs: sync Connect clients from dashboard'
           body: |
@@ -95,7 +106,7 @@ jobs:
       - name: Request review from trigger actor
         if: steps.create-pr.outputs.pull-request-number
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
           PR_NUMBER: ${{ steps.create-pr.outputs.pull-request-number }}
           AUTHOR: ${{ github.actor }}
         run: gh pr edit "$PR_NUMBER" --add-reviewer "$AUTHOR"
