@@ -334,6 +334,7 @@ const replaceFilePreservingMode = (
  */
 const applyFileChanges = (params: {
   readonly filePath: string;
+  readonly resolvedWriteTarget: Option.Option<string>;
   readonly rewritePathBlock: Option.Option<string>;
   readonly appendBlocks: ReadonlyArray<string>;
   readonly fs: FileSystem.FileSystem;
@@ -346,7 +347,12 @@ const applyFileChanges = (params: {
     // can alias the same physical file through symlinks, and this write must
     // not discard a previous iteration's append.
     const existingContents = yield* readMaybeMissingFile(filePath, fs);
-    const writeTarget = yield* resolveWriteTarget(filePath, fs);
+    // PATH files were already resolved by the caller; only the completion file
+    // needs a fresh resolve.
+    const writeTarget = yield* Option.match(params.resolvedWriteTarget, {
+      onNone: () => resolveWriteTarget(filePath, fs),
+      onSome: Effect.succeed,
+    });
 
     yield* fs
       .makeDirectory(path.dirname(writeTarget), { recursive: true })
@@ -574,6 +580,7 @@ export const installShellIntegration = (params: {
         // ordering survives; everything else is appended.
         yield* applyFileChanges({
           filePath,
+          resolvedWriteTarget: Option.fromNullable(pathFileTargets.get(filePath)),
           rewritePathBlock: pathRewrites.has(filePath)
             ? Option.some(config.pathBlock)
             : Option.none(),

@@ -286,7 +286,7 @@ export function mdxToCleanMarkdown(content: string): string {
       '```bash\nnpx skills add composiohq/skills\n```\n' +
       '[Skills.sh](https://skills.sh/composiohq/skills/composio) · [GitHub](https://github.com/composiohq/skills)\n\n' +
       '**CLI:**\n' +
-      '```bash\ncurl -fsSL https://composio.dev/install | bash\n```\n' +
+      '```bash\ncurl -fsSL https://composio.dev/install | sh\n```\n' +
       '[CLI Reference](/docs/cli)\n\n' +
       '**Context:**\n' +
       '- [llms.txt](/llms.txt) — Documentation index with links\n' +

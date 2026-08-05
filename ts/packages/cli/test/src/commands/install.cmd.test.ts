@@ -44,10 +44,11 @@ const expectedRuntimeBinDir = (): string => path.dirname(TEST_EXEC_PATH);
 /**
  * `installShellIntegration` reads the running executable from `NodeProcess`, so
  * a scenario picks its exec path when it builds the layer, not when it calls
- * the command.
+ * the command. A relative override resolves against the per-test home dir,
+ * which only exists once the layer builds.
  */
 const TestInstallLive = (input: TestLiveInput = {}) =>
-  TestLive({ execPath: () => TEST_EXEC_PATH, ...input });
+  TestLive({ execPath: TEST_EXEC_PATH, ...input });
 
 const install = (
   params: {
@@ -977,9 +978,7 @@ describe('CLI: composio install', () => {
   });
 
   describe('[When] COMPOSIO_BIN_DIR is unset and ~/.local/bin/composio is the running executable', () => {
-    layer(
-      TestInstallLive({ execPath: homedir => path.join(homedir, '.local', 'bin', 'composio') })
-    )(it => {
+    layer(TestInstallLive({ execPath: '.local/bin/composio' }))(it => {
       it.scoped('[Then] the PATH line targets ~/.local/bin via a literal $HOME prefix', () =>
         Effect.gen(function* () {
           const os = yield* NodeOs;
@@ -1002,7 +1001,7 @@ describe('CLI: composio install', () => {
   });
 
   describe('[When] the resolved bin dir contains an apostrophe', () => {
-    layer(TestInstallLive({ execPath: () => "/opt/o'brien/bin/composio" }))(it => {
+    layer(TestInstallLive({ execPath: "/opt/o'brien/bin/composio" }))(it => {
       it.scoped("[Then] it is written verbatim, since `'` is literal inside double quotes", () =>
         Effect.gen(function* () {
           const os = yield* NodeOs;
@@ -1019,9 +1018,7 @@ describe('CLI: composio install', () => {
   });
 
   describe('[When] ~/.local/bin/composio is a symlink chain to the running executable', () => {
-    layer(
-      TestInstallLive({ execPath: homedir => path.join(homedir, '.composio-dist', 'composio') })
-    )(it => {
+    layer(TestInstallLive({ execPath: '.composio-dist/composio' }))(it => {
       it.scoped('[Then] the PATH line still targets ~/.local/bin', () =>
         Effect.gen(function* () {
           const os = yield* NodeOs;
@@ -1071,9 +1068,7 @@ describe('CLI: composio install', () => {
   });
 
   describe('[When] COMPOSIO_BIN_DIR is set and ~/.local/bin/composio is also the running executable', () => {
-    layer(
-      TestInstallLive({ execPath: homedir => path.join(homedir, '.local', 'bin', 'composio') })
-    )(it => {
+    layer(TestInstallLive({ execPath: '.local/bin/composio' }))(it => {
       it.scoped('[Then] the env var wins over the ~/.local/bin fallback', () =>
         Effect.gen(function* () {
           const os = yield* NodeOs;
@@ -1172,7 +1167,7 @@ describe('CLI: composio install', () => {
   });
 
   describe('[When] the runtime executable resolves to an unsafe directory', () => {
-    layer(TestInstallLive({ execPath: () => '/tmp/we`ird/composio' }))(it => {
+    layer(TestInstallLive({ execPath: '/tmp/we`ird/composio' }))(it => {
       it.scoped('[Then] reports an origin-neutral error', () =>
         Effect.gen(function* () {
           vi.stubEnv('SHELL', '/bin/zsh');

@@ -213,6 +213,15 @@ importers:
         specifier: workspace:*
         version: link:../../_utils
 
+  ts/e2e-tests/cli/install:
+    devDependencies:
+      '@e2e-tests/utils':
+        specifier: workspace:*
+        version: link:../../_utils
+      '@types/bun':
+        specifier: 'catalog:'
+        version: 1.3.14
+
   ts/e2e-tests/cli/setup-plugins:
     devDependencies:
       '@e2e-tests/utils':
