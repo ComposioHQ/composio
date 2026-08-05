@@ -53,6 +53,12 @@ const isObjectSchema = (schema: JsonObject): boolean =>
   'patternProperties' in schema ||
   'additionalProperties' in schema;
 
+const hasEntries = (value: unknown): boolean =>
+  isJsonObject(value) && Object.keys(value).length > 0;
+
+const declaresProperties = (schema: JsonObject): boolean =>
+  hasEntries(schema.properties) || hasEntries(schema.patternProperties);
+
 const appendAllOf = (schema: JsonObject, constraint: JsonObject): void => {
   const current = schema.allOf;
   schema.allOf = Array.isArray(current) ? [...current, constraint] : [constraint];
@@ -162,7 +168,11 @@ const normalizeSchemaNode = (
     }
   }
 
-  if (isObjectSchema(normalized) && normalized.additionalProperties === undefined) {
+  if (
+    isObjectSchema(normalized) &&
+    normalized.additionalProperties === undefined &&
+    declaresProperties(normalized)
+  ) {
     normalized.additionalProperties = false;
   }
 

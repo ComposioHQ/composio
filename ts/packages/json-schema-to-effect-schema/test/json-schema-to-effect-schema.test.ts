@@ -40,6 +40,27 @@ describe('jsonSchemaToEffectSchema', () => {
     expectParity({ type: 'object', additionalProperties: true }, { arbitrary: 'value' }, true);
   });
 
+  it('keeps the content of free-form object schemas', () => {
+    const freeFormField = {
+      type: 'object',
+      required: ['dataset_query'],
+      properties: {
+        dataset_query: { type: 'object', description: 'Query definition in MBQL or native SQL' },
+      },
+    } satisfies JsonSchema;
+
+    expectParity(freeFormField, { dataset_query: { database: 1, type: 'native' } }, true);
+    expectParity({ type: 'object' }, { arbitrary: 'value' }, true);
+    expectParity({ type: 'object', properties: {} }, { arbitrary: 'value' }, true);
+    expectParity(
+      { type: 'object', properties: { rows: { type: 'array', items: { type: 'object' } } } },
+      { rows: [{ a: 1 }] },
+      true
+    );
+
+    expectParity({ type: 'object', additionalProperties: false }, { arbitrary: 'value' }, false);
+  });
+
   it('normalizes the OpenAPI and Composio extensions accepted by the previous validator', () => {
     expectParity({ type: 'string', nullable: true }, null, true);
     expectParity({ type: 'string', nullable: true }, 42, false);
