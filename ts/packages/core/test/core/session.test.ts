@@ -112,7 +112,7 @@ describe('Composio Session Management', () => {
 
   it('should expose sessions.create and keep composio.create as a bound alias', async () => {
     const composio = new Composio(baseConfig);
-    const client = composio.getClient() as any;
+    const client = composio.getClient() as unknown;
     client.toolRouter.session.create = vi.fn().mockResolvedValue({
       session_id: 'session_123',
       mcp: {
@@ -185,7 +185,7 @@ describe('Session Headers Generation', () => {
     it('should use fallback source when provider name is undefined', () => {
       const mockProvider = {
         name: undefined,
-      } as any;
+      } as unknown;
       const headers = getSessionHeaders(mockProvider);
 
       expect(headers).toEqual({

@@ -136,6 +136,19 @@ function labelsToArgs(labels: Record<string, string> = {}): string[] {
 }
 
 /**
+ * Converts environment variables to Docker CLI arguments array.
+ * Skips undefined values to avoid passing empty env vars to Docker.
+ */
+function envToArgs(env: Record<string, string | undefined> = {}): string[] {
+  const args: string[] = [];
+  for (const [k, v] of Object.entries(env)) {
+    if (v === undefined) continue;
+    args.push('-e', `${k}=${v}`);
+  }
+  return args;
+}
+
+/**
  * Adds a bind mount for host ~/.composio into container home.
  * This allows E2E jobs to inject `user_data.json` once per job.
  */
@@ -304,13 +317,7 @@ export async function runNodeContainer(options: RunNodeContainerOptions): Promis
   addHostComposioMount(dockerArgs, '/root/.composio');
 
   // Pass environment variables to the container for runtime configuration.
-  if (env) {
-    for (const [k, v] of Object.entries(env)) {
-      // Skip undefined values to avoid passing empty env vars to Docker.
-      if (v === undefined) continue;
-      dockerArgs.push('-e', `${k}=${v}`);
-    }
-  }
+  dockerArgs.push(...envToArgs(env));
 
   // Configure bind mounts to share host directories with the container.
   if (mounts) {
@@ -489,13 +496,7 @@ export async function runDenoContainer(options: RunDenoContainerOptions): Promis
   addHostComposioMount(dockerArgs, '/root/.composio');
 
   // Pass environment variables to the container for runtime configuration.
-  if (env) {
-    for (const [k, v] of Object.entries(env)) {
-      // Skip undefined values to avoid passing empty env vars to Docker.
-      if (v === undefined) continue;
-      dockerArgs.push('-e', `${k}=${v}`);
-    }
-  }
+  dockerArgs.push(...envToArgs(env));
 
   // Configure bind mounts to share host directories with the container.
   if (mounts) {
@@ -672,12 +673,7 @@ export async function runCliContainer(options: RunCliContainerOptions): Promise<
 
   addHostComposioMount(dockerArgs, '/tmp/.composio');
 
-  if (env) {
-    for (const [k, v] of Object.entries(env)) {
-      if (v === undefined) continue;
-      dockerArgs.push('-e', `${k}=${v}`);
-    }
-  }
+  dockerArgs.push(...envToArgs(env));
 
   if (mounts) {
     for (const m of mounts) {
@@ -712,5 +708,132 @@ export async function runCliContainer(options: RunCliContainerOptions): Promise<
     throw new Error('runCliContainer({ cmd, ... }): cmd must be a non-empty string or string[]');
   }
 
+  return exec('docker', dockerArgs);
+}
+
+// ============================================================================
+// CLI installer Docker utilities
+// ============================================================================
+
+export type InstallShell = 'bash' | 'zsh' | 'fish';
+export type InstallPlatform = 'linux/amd64' | 'linux/arm64';
+
+export interface EnsureInstallImageOptions {
+  repoRoot?: string;
+  dockerfilePath?: string;
+  platform?: InstallPlatform;
+}
+
+export interface InstallImage {
+  imageTag: string;
+  platform: InstallPlatform;
+}
+
+export interface RunInstallContainerOptions {
+  imageTag: string;
+  shell: InstallShell;
+  platform: InstallPlatform;
+  cmd: string[];
+  env?: Record<string, string | undefined>;
+  labels?: Record<string, string>;
+}
+
+function imageTagForInstallShell(shell: InstallShell): string {
+  return `composio-e2e-install:${shell}`;
+}
+
+function defaultInstallLabels(shell: InstallShell): Record<string, string> {
+  return {
+    'composio.e2e': 'true',
+    'composio.runtime': 'cli-install',
+    'composio.install_shell': shell,
+  };
+}
+
+export async function ensureInstallImage(
+  shell: InstallShell,
+  options: EnsureInstallImageOptions = {}
+): Promise<InstallImage> {
+  if (shell !== 'bash' && shell !== 'zsh' && shell !== 'fish') {
+    throw new Error(`ensureInstallImage(${shell}): shell must be bash, zsh, or fish`);
+  }
+
+  const repoRoot = options.repoRoot ?? getRepoRoot();
+  const dockerfilePath =
+    options.dockerfilePath ?? resolve(repoRoot, 'ts/e2e-tests/_utils/Dockerfile.install');
+  const platform = options.platform ?? (process.arch === 'arm64' ? 'linux/arm64' : 'linux/amd64');
+  const architecture = platform === 'linux/arm64' ? 'arm64' : 'amd64';
+  const imageTag = imageTagForInstallShell(shell);
+  const inspect = await exec(
+    'docker',
+    ['image', 'inspect', '--format', '{{.Architecture}}', imageTag],
+    { cwd: repoRoot }
+  );
+  if (inspect.exitCode === 0 && inspect.stdout.trim() === architecture) {
+    return { imageTag, platform };
+  }
+
+  const built = await exec(
+    'docker',
+    [
+      'build',
+      '--platform',
+      platform,
+      '-f',
+      dockerfilePath,
+      '--build-arg',
+      `INSTALL_SHELL=${shell}`,
+      ...labelsToArgs(defaultInstallLabels(shell)),
+      '-t',
+      imageTag,
+      repoRoot,
+    ],
+    { cwd: repoRoot }
+  );
+  if (built.exitCode !== 0) {
+    // Handle race condition: concurrent builds may fail because another build
+    // already tagged the image. If the image now exists, treat it as success.
+    const output = built.stderr || built.stdout;
+    if (output.includes('already exists')) {
+      const recheck = await exec(
+        'docker',
+        ['image', 'inspect', '--format', '{{.Architecture}}', imageTag],
+        { cwd: repoRoot }
+      );
+      if (recheck.exitCode === 0 && recheck.stdout.trim() === architecture) {
+        return { imageTag, platform };
+      }
+    }
+
+    const err = new Error(`Failed to build Docker image ${imageTag}`);
+    (err as Error & { cause: Error }).cause = new Error(output);
+    throw err;
+  }
+
+  return { imageTag, platform };
+}
+
+export async function runInstallContainer(
+  options: RunInstallContainerOptions
+): Promise<ExecResult> {
+  const { imageTag, shell, platform, cmd, env, labels } = options;
+  if (!Array.isArray(cmd) || cmd.length === 0) {
+    throw new Error('runInstallContainer({ cmd, ... }): cmd must be a non-empty array');
+  }
+
+  const dockerArgs = [
+    'run',
+    '--rm',
+    '--platform',
+    platform,
+    ...labelsToArgs({ ...defaultInstallLabels(shell), ...(labels ?? {}) }),
+    '--add-host',
+    'host.docker.internal:host-gateway',
+  ];
+
+  dockerArgs.push(...envToArgs(env));
+
+  // Installer tests intentionally do not mount the host's ~/.composio directory.
+  dockerArgs.push(imageTag, ...cmd.map(String));
   return exec('docker', dockerArgs);
 }

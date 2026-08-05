@@ -10,7 +10,7 @@ import {
 } from 'src/effects/install-skill';
 import { GITHUB_CONFIG } from 'src/effects/github-config';
 import { APP_VERSION } from 'src/constants';
-import { readInstalledReleaseTag } from 'src/services/run-companion-modules';
+import { resolveRunningCliReleaseTag } from 'src/services/run-companion-modules';
 import { NodeOs } from './node-os';
 
 export const resolveSetupSkillReleaseTag = (
@@ -20,7 +20,7 @@ export const resolveSetupSkillReleaseTag = (
   Effect.gen(function* () {
     const httpClient = yield* HttpClient.HttpClient;
     const githubConfig = yield* Config.all(GITHUB_CONFIG);
-    const installedReleaseTag = yield* readInstalledReleaseTag(execPath);
+    const installedReleaseTag = yield* resolveRunningCliReleaseTag(execPath, fallbackVersion);
 
     return yield* resolveSkillReleaseTag({
       channel: inferSkillReleaseChannel(fallbackVersion),

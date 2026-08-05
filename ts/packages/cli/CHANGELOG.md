@@ -2,12 +2,56 @@
 
 ## Unreleased
 
+### Minor Changes
+
+- The installer (`curl -fsSL https://composio.dev/install | sh`) now configures your shell automatically: `COMPOSIO_INSTALL_SHELL` defaults to `auto`, which infers the login shell from `$SHELL` (zsh, bash, or fish) and always runs idempotent PATH setup for it; `COMPOSIO_INSTALL_SHELL=none` keeps the old install-only behavior for CI, Docker, and dotfile managers. Startup-file setup failures no longer fail the install — the installer keeps the binary, warns, and prints a runnable absolute-path command. `composio install` now reconciles an existing managed PATH block whose bin directory changed (one block per physical file, symlink-aware) and suppresses its boxed restart hint when invoked by the installer, which owns the final message.
+- `composio install` gains a `--shell <zsh|bash|fish>` flag that overrides `$SHELL` detection, in preparation for the mise-style installer rewrite. The bin-dir PATH target now resolves through `COMPOSIO_BIN_DIR`, an existing `~/.local/bin/composio`, or the real binary's own directory, in that order, instead of hardcoding `~/.composio`; rc blocks write only a PATH line (the `export COMPOSIO_INSTALL_DIR=...` line is gone, since that variable identifies the install bundle, not the PATH entry point). Bash now always writes the PATH line to a login-mode startup file as well as `~/.bashrc`, so `bash -ilc` (and macOS Terminal.app, which starts a login shell) picks it up: the first existing of `~/.bash_profile` or `~/.bash_login`, or a newly created `~/.bash_profile` when neither exists. A `~/.bash_profile` created this way shadows `~/.profile`, so it is seeded to source it first; `~/.profile` itself is never modified. The restart hint bug is fixed: bash now prints `source ~/.bashrc` instead of the literal string `exec $SHELL`.
+- `COMPOSIO_BIN_DIR` is a documented public override: set it to the absolute directory `composio install` should add to `PATH` when the entry point users reach is a shim or symlink rather than the binary itself. See the CLI README for the full resolution order.
+- `composio install` now exits non-zero, having written nothing, when it cannot produce a safe PATH line. There are two abort conditions: the resolved bin directory is not absolute, or it contains a character that cannot be embedded in a quoted rc line. A non-zero exit is what makes `install.sh` run its inline PATH fallback, so an aborted run still leaves the user with a working `PATH` — previously the command exited 0 and the fallback never ran.
+- The unsafe-character set is narrower than the one first shipped in this entry. The bin dir is only ever written inside double quotes, where `;`, `|`, `&`, `(`, `)`, and `'` are literal — only `` ` ``, `$`, `"`, `\`, newline, carriage return, and the `:` PATH separator abort now. Paths like `/Users/o'brien/.composio` are accepted instead of rejected.
+- An rc file that carries the older three-line Composio block (`export COMPOSIO_INSTALL_DIR=...` plus a PATH line derived from it), written by a previous CLI or by `install.sh`'s fallback, is migrated to the current single-line block instead of being treated as configured forever. The stale managed lines are removed where they stood and one refreshed block is appended after the remaining content, so your own lines keep their order and the last-sourced PATH line wins. Re-running the command is still idempotent, and a completions block elsewhere in the file is untouched.
+- `composio install` no longer skips the rc write when the bin directory happens to be on the invoking process's `$PATH`. That said nothing about future shells — an ad-hoc `export` or a version-manager shim made the command persist nothing and still report success.
+- Note for custom install directories: the rc block no longer records `COMPOSIO_INSTALL_DIR`. If you installed to a custom directory with `COMPOSIO_INSTALL_DIR=... curl ... | bash` and later re-run the install script without re-specifying it, the script installs a second copy under `~/.composio` while your rc `PATH` still points at the old one. Re-specify `COMPOSIO_INSTALL_DIR` when reinstalling, or use `composio upgrade`, which replaces the running binary in place.
+
 ### Patch Changes
 
-- Make GitHub release metadata the sole version authority for standalone CLI
-  binaries. Release builds now embed their exact tag version, manual skill
-  installation follows the packaged release tag, and stable releases can only
-  promote a tested beta.
+- Fix Linux `composio upgrade` failures with `ETXTBSY` by staging CLI files in
+  the install directory and renaming the executable last. The installer and
+  companion repair use the same replacement strategy, and the running binary
+  now reports its compiled version when `release-tag.txt` disagrees. Users on
+  an affected build must re-run `install.sh` once to install the first fixed
+  version.
+- Connected-account statuses added by the server no longer break
+  `connected-accounts`, `link`, or `listen`. Piped output still strips
+  credential fields, and schema warnings no longer print raw response values.
+- `composio login --poll` now reports unreadable cache files as I/O errors
+  instead of treating them as invalid session data.
+
+## 0.3.1
+
+### Minor Changes
+
+- The CLI now points Claude Code and Codex users to `composio setup` when the
+  Composio agent plugin is missing. The hint goes to stderr, appears at most
+  once every 24 hours, remains visible in non-TTY agent sessions, and stays
+  suppressed inside `composio run` children.
+- Telemetry now goes directly to PostHog. This captures `install` and `setup`
+  events before login without changing existing opt-outs.
+- Telemetry events now include `journey_stage` (`install`, `setup`, `login`,
+  `connect`, `execute`, or `other`) and `cli_channel` (`stable` or `beta`).
+  `install.sh` also labels `composio install` with
+  `invocation_origin: installer`, so script installs can be separated from
+  manual runs. npm and Homebrew installs do not pass through `install.sh` and
+  therefore have no installer origin.
+
+## 0.3.0
+
+### Patch Changes
+
+- The GitHub release tag is now the only version source for standalone CLI
+  binaries. Release builds embed the exact tag version, manual skill
+  installation uses that tag, and stable releases can only promote a tested
+  beta.
 
 ## 0.2.33
 
@@ -19,9 +63,6 @@
 
 ### Minor Changes
 
-- Cross-promote the Composio agent plugin (PRDE-1153): when the bare CLI runs inside Claude Code or Codex and the Composio plugin is not installed in that host, the CLI prints one stderr tip per 24 hours pointing at `composio setup`. The tip is deliberately visible to non-TTY (agent-driven) shells, never touches stdout, and is suppressed inside `composio run` children.
-- Telemetry now delivers directly to PostHog, so pre-login `install`/`setup` events are captured. Opt-outs are unchanged.
-- Telemetry events now carry `journey_stage` (install/setup/login/connect/execute/other) and `cli_channel` (stable/beta) properties, and `install.sh` marks its `composio install` run with `invocation_origin: installer` so script installs are distinguishable from manual ones. npm and Homebrew installs do not run `install.sh`, so their installs carry no installer origin.
 - Make headless `composio login` agent-friendly (PRDE-1138): the non-interactive instructions now offer the unattended `composio login --agent` path, and a machine with a stored READY agent identity (`~/.composio/agent.json`) completes plain headless `composio login` unattended by reusing it. Reuse only — a human piping `composio login` still gets the URL + poll instructions and never has an account auto-created.
 - a0bef5d: Bump `@composio/client` to `0.1.0-alpha.74`.
 - 025a657: Drop CommonJS entrypoints and publish the TypeScript SDK packages as ESM-only packages. This is a breaking change within the existing 0.x release line: consumers must use Node.js 22.22.3 or newer. CommonJS callers can only rely on Node's native `require(esm)` interop, and the SDK no longer ships custom CommonJS compatibility machinery or `.cjs` artifacts.

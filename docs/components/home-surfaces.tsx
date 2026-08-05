@@ -157,7 +157,7 @@ function SurfaceCard({
   );
 }
 
-const CLI_INSTALL_COMMAND = 'curl -fsSL https://composio.dev/install | bash';
+const CLI_INSTALL_COMMAND = 'curl -fsSL https://composio.dev/install | sh';
 
 function CliInstall() {
   const [copied, setCopied] = useState(false);

@@ -14,3 +14,11 @@ export type {
 } from './types';
 export { e2e } from './e2e';
 export { sanitizeOutput, parseJsonStdout } from './sanitize';
+export { resolveInstallE2EConfig, type InstallE2EConfig } from './config';
+export {
+  checkDocker,
+  ensureInstallImage,
+  runInstallContainer,
+  type ExecResult,
+  type InstallImage,
+} from './image-lifecycle';

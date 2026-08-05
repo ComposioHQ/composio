@@ -1,0 +1,6 @@
+export COMPOSIO_INSTALL_DIR="/legacy/.composio"
+export PATH="/custom/bin:$PATH"
+# user epilogue
+
+# Composio CLI
+export PATH="$HOME/.local/bin:$PATH"
