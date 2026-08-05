@@ -1,41 +1,17 @@
 ---
 title: "Install the Composio CLI with a POSIX shell"
-description: "The CLI installer now runs on POSIX sh, verifies official release checksums, and configures your shell's PATH by default."
+description: "The CLI installer now runs on POSIX sh, keeps the release bundle separate from the entry point, and makes shell configuration opt-in."
 date: "2026-07-31"
 ---
 
-The Composio CLI installer now separates the release bundle from the command you run, works with POSIX `sh`, and puts `composio` on `PATH` for future terminals automatically.
-
-<Callout type="warn">
-**Behavior change: `curl | sh` now edits shell startup files by default**
-
-Previous installers only copied files into place. The installer now also writes a managed `PATH` block to your shell's startup files so new terminals find `composio` without manual setup:
-
-- zsh: `~/.zshrc`
-- bash: `~/.bashrc` and your login file — `~/.bash_profile`, or `~/.bash_login` when that is the only login file present
-- fish: `~/.config/fish/config.fish`
-
-On bash systems with no login file at all, the installer **creates `~/.bash_profile`**. When `~/.profile` exists, the new file is seeded to keep sourcing it, so your existing login settings still load.
-
-To keep the previous install-only behavior, opt out with `COMPOSIO_INSTALL_SHELL=none`:
-
-```sh
-curl -fsSL https://composio.dev/install | COMPOSIO_INSTALL_SHELL=none sh
-```
-</Callout>
+The Composio CLI installer now separates the release bundle from the command you run, works with POSIX `sh`, and leaves shell configuration opt-in.
 
 ### What's new
 
-- `curl -fsSL https://composio.dev/install | sh` installs the release bundle in `~/.composio` and creates `~/.local/bin/composio`.
-- The default flow infers your shell from `$SHELL` and configures `PATH` for future terminals. Set `COMPOSIO_INSTALL_SHELL=none` for an install-only run in CI, Docker images, or when a dotfile manager owns your startup files.
-- Agent plugin installation and login remain opt-in.
-- `COMPOSIO_INSTALL_SHELL=zsh|bash|fish` forces a specific shell, for example `curl -fsSL https://composio.dev/install | COMPOSIO_INSTALL_SHELL=zsh sh`.
+- `curl -fsSL https://composio.dev/install | sh` installs the verified release bundle in `~/.composio` and creates `~/.local/bin/composio`.
+- The default flow does not edit shell files, install agent plugins, or log you in.
+- `COMPOSIO_INSTALL_SHELL=zsh|bash|fish` configures the requested shell explicitly, for example `curl -fsSL https://composio.dev/install | COMPOSIO_INSTALL_SHELL=zsh sh`.
 - `COMPOSIO_INSTALL_VERSION`, `COMPOSIO_BIN_DIR`, `COMPOSIO_QUIET`, and `COMPOSIO_DEBUG` give you control over version, layout, and output.
 - Existing `COMPOSIO_INSTALL_DIR` configurations keep their bundle-directory meaning.
 
-### Download verification
-
-- Every download uses HTTPS, and redirects can only lead to HTTPS URLs.
-- Official releases — the default `github.com/ComposioHQ/composio` source — must pass checksum verification: a missing `checksums.txt`, a manifest with no entry for your platform's archive, a malformed entry, or a checksum mismatch aborts the install.
-- On systems with no SHA-256 utility (`sha256sum` or `shasum`), rare outside minimal containers, the installer warns that checksum verification was skipped and continues.
-- Overridden sources (`COMPOSIO_GITHUB_URL`, `COMPOSIO_GITHUB_OWNER`, `COMPOSIO_GITHUB_REPO`, or a custom API base) are lenient: a missing manifest or entry warns and continues, and only a checksum mismatch or malformed entry aborts.
+The opt-in default described here was later replaced: see [the installer now configures your shell by default](/docs/changelog/2026/08/05).

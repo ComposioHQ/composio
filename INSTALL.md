@@ -10,6 +10,8 @@ The installer also configures your shell. It infers your login shell from `$SHEL
 
 If your shell is not recognized, or shell setup fails, the binary install still succeeds and the installer prints a runnable command instead. The installer does not install agent plugins or log you in unless you ask it to.
 
+Official releases must pass SHA-256 verification against the release's `checksums.txt`: a missing manifest, a manifest with no entry for your platform's archive, a malformed entry, or a mismatch aborts the install with `Refusing to install`. On systems with no `sha256sum` or `shasum`, the installer warns that verification was skipped and continues.
+
 ## Choose or skip shell setup
 
 Set `COMPOSIO_INSTALL_SHELL` to force a specific shell, or to skip shell configuration entirely:
@@ -106,7 +108,7 @@ rm -rf \
   "$install_dir/local-tools-binaries"
 ```
 
-Remove the managed `# Composio CLI` PATH block from `~/.zshrc`, `~/.bashrc`, `~/.bash_profile`, `~/.bash_login`, or `~/.config/fish/config.fish`. Blocks written by older installers contain an extra `export COMPOSIO_INSTALL_DIR=...` (or `set --export COMPOSIO_INSTALL_DIR ...`) line after the marker; remove that line too. If removing the block leaves `~/.bash_profile` with nothing but blank lines, delete the file: the installer creates it on bash systems that had no login startup file, and even an empty `~/.bash_profile` keeps bash from reading `~/.profile`.
+Remove the managed `# Composio CLI` PATH block from `~/.zshrc`, `~/.bashrc`, `~/.bash_profile`, `~/.bash_login`, or `~/.config/fish/config.fish`. Blocks written by older installers contain an extra `export COMPOSIO_INSTALL_DIR=...` (or `set --export COMPOSIO_INSTALL_DIR ...`) line after the marker; remove that line too. If removing the block leaves `~/.bash_profile` with nothing but blank lines, delete the file: the installer creates it on bash systems that had no login startup file, and even an empty `~/.bash_profile` keeps bash from reading `~/.profile`. If you had a `~/.profile` at install time, that created file instead holds a passthrough sourcing it, starts with `# Created by the Composio CLI installer.`, and is left in place; delete it as well to restore bash's default startup-file selection.
 
 To purge credentials, configuration, caches, and every other CLI file, run `rm -rf "${COMPOSIO_INSTALL_DIR:-$HOME/.composio}"`. This is a complete reset and cannot be undone.
 
