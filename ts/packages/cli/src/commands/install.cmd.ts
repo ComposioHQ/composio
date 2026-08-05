@@ -62,8 +62,25 @@ interface ShellConfig {
 const MARKER = '# Composio CLI';
 const COMPLETIONS_MARKER = '# Composio CLI completions';
 
-/** Reject bin-dir paths containing shell metacharacters to prevent injection into rc files. */
-const UNSAFE_PATH_CHARS = /[:;`$|&"'()\n\r\\]/;
+/**
+ * Reject bin-dir paths that cannot be embedded safely in a managed rc line.
+ *
+ * The resolved dir is only ever emitted inside double quotes — `export
+ * PATH="<dir>:$PATH"` for bash/zsh and `set --export PATH "<dir>" $PATH` for
+ * fish — so the set is deliberately narrow and mirrors `is_unsafe_path` in
+ * install.sh, keeping the inline fallback and this command on one contract:
+ *
+ * - `` ` ``, `$`, `\`, `"`: the only characters bash and zsh still expand
+ *   inside double quotes (`!` history expansion does not apply to sourced
+ *   files). fish expands a strict subset of those. Everything else — `;`, `|`,
+ *   `&`, `(`, `)`, `'` — is literal there, so a path like
+ *   `/Users/o'brien/.composio` is written verbatim rather than rejected.
+ * - `\n`, `\r`: structural, not a quoting concern — either would split the
+ *   managed block into extra rc lines.
+ * - `:`: structural too, as the PATH separator: a dir containing one would
+ *   silently prepend more than one entry.
+ */
+const UNSAFE_PATH_CHARS = /[`$"\\\n\r:]/;
 const isUnsafePath = (p: string): boolean => UNSAFE_PATH_CHARS.test(p);
 
 // SHELL, PATH, and COMPOSIO_BIN_DIR are read from the literal environment: SHELL
@@ -410,7 +427,6 @@ const planPathBlockWrites = (params: {
   readonly pathFileTargets: ReadonlyMap<string, string>;
   readonly pathBlock: string;
   readonly bashLoginOverride: string | undefined;
-  readonly skipPathWriteForReachability: boolean;
 }): PathBlockWritePlan => {
   const appendPathFiles: string[] = [];
   const replacementsByTarget = new Map<string, ManagedBlockReplacement>();
@@ -430,11 +446,10 @@ const planPathBlockWrites = (params: {
       }
       continue;
     }
-    if (
-      reconciliation.state === 'current' ||
-      params.skipPathWriteForReachability ||
-      queuedPathTargets.has(target)
-    ) {
+    // Only a byte-exact current block is a no-op. A `$PATH` that already
+    // resolves in the invoking process is deliberately not a reason to skip:
+    // it is transient evidence that says nothing about future shells.
+    if (reconciliation.state === 'current' || queuedPathTargets.has(target)) {
       continue;
     }
     appendPathFiles.push(filePath);
@@ -544,7 +559,6 @@ const planCompletionWrite = (params: {
 const pathStatusLines = (params: {
   readonly pathWritten: boolean;
   readonly pathReplaced: boolean;
-  readonly skipPathWriteForReachability: boolean;
   readonly renderedBinDir: string;
 }): readonly string[] => {
   const lines: string[] = [];
@@ -552,13 +566,7 @@ const pathStatusLines = (params: {
   if (params.pathReplaced) {
     lines.push(`PATH: will update the managed block to ${params.renderedBinDir}`);
   }
-  if (lines.length === 0) {
-    lines.push(
-      params.skipPathWriteForReachability
-        ? 'PATH: already on $PATH — nothing to do.'
-        : 'PATH: already configured'
-    );
-  }
+  if (lines.length === 0) lines.push('PATH: already configured');
   return lines;
 };
 
@@ -691,7 +699,6 @@ export const installShellIntegration = (params: {
     const invocationOrigin = yield* readOptionalEnv('COMPOSIO_CLI_INVOCATION_ORIGIN');
     const installerOwnsFinalMessaging = invocationOrigin === 'installer';
 
-    const isExplicitShell = params.shell !== undefined;
     const shellEnv = yield* readEnvWithDefault('SHELL', '');
     const shell = params.shell ?? detectShellFromEnv(path, shellEnv);
 
@@ -699,8 +706,13 @@ export const installShellIntegration = (params: {
     const binDirOnPath = isDirOnPath(pathEnv, binDir);
 
     if (!shell) {
+      // With no shell there is no rc file to write, so the current process's
+      // $PATH is all the evidence available. It says nothing about future
+      // shells, hence the deliberately hedged wording.
       if (binDirOnPath) {
-        yield* success(`PATH: ${tildify(binDir, os.homedir)} is already on $PATH — nothing to do.`);
+        yield* success(
+          `PATH: ${tildify(binDir, os.homedir)} is already on $PATH in this process, and no shell config file could be identified — nothing to update.`
+        );
         yield* ui.outro('Done');
         return;
       }
@@ -761,24 +773,12 @@ export const installShellIntegration = (params: {
       }
     };
 
-    // Auto-detected mode may skip the PATH write entirely when the bin dir is
-    // already reachable; an explicit --shell always configures its files.
-    // Only applies to a genuinely fresh install: if any target file already
-    // carries our marker from a prior run, a file that appeared since then
-    // (e.g. a freshly created .bash_profile) still needs its own write, even
-    // though the invoking process's current $PATH already resolves.
-    const anyPathFileAlreadyMarked = config.pathFiles.some(filePath =>
-      fileContains(existingByFile.get(filePath) ?? '', MARKER)
-    );
-    const skipPathWriteForReachability =
-      !isExplicitShell && binDirOnPath && !anyPathFileAlreadyMarked;
     const writePlan = planPathBlockWrites({
       pathFiles: config.pathFiles,
       existingByFile,
       pathFileTargets,
       pathBlock: config.pathBlock,
       bashLoginOverride,
-      skipPathWriteForReachability,
     });
     const { replacementsByTarget, loginOverrideWritten } = writePlan;
     // A `.bash_profile` created here takes over from an existing `~/.profile`,
@@ -798,7 +798,6 @@ export const installShellIntegration = (params: {
       pathStatusLines({
         pathWritten,
         pathReplaced: replacementsByTarget.size > 0,
-        skipPathWriteForReachability,
         renderedBinDir: tildify(binDir, os.homedir),
       }),
       step
@@ -864,12 +863,18 @@ export const installShellIntegration = (params: {
 /**
  * CLI command to set up shell integration (PATH and completions).
  *
+ * The directory added to `PATH` is `COMPOSIO_BIN_DIR` when set — the documented
+ * override an installer hands to this command — then `~/.local/bin` when its
+ * `composio` entry point is this executable, then the running binary's own
+ * directory.
+ *
  * @example
  * ```bash
  * composio install
  * composio install --completions
  * composio install --no-completions
  * composio install --shell zsh
+ * COMPOSIO_BIN_DIR=~/.local/bin composio install
  * ```
  */
 export const installCmd = Command.make(
@@ -880,4 +885,8 @@ export const installCmd = Command.make(
       completions: completions && !noCompletions,
       shell: Option.getOrUndefined(shell),
     })
-).pipe(Command.withDescription('Set up shell integration (PATH and completions).'));
+).pipe(
+  Command.withDescription(
+    'Set up shell integration (PATH and completions). Set COMPOSIO_BIN_DIR to choose the directory added to PATH; it otherwise defaults to ~/.local/bin when that holds this executable, and to the directory of the running binary.'
+  )
+);

@@ -28,14 +28,14 @@ interface MockedOpenAITool {
   type: 'function';
   name: string;
   description?: string;
-  parameters?: any;
+  parameters?: unknown;
   strict?: boolean;
 }
 
 describe('OpenAIResponsesProvider', () => {
   let provider: OpenAIResponsesProvider;
   let mockTool: Tool;
-  let mockExecuteToolFn: any;
+  let mockExecuteToolFn: unknown;
 
   beforeEach(() => {
     provider = new OpenAIResponsesProvider();

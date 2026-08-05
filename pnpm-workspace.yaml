@@ -48,7 +48,7 @@ catalog:
   ai: ^7.0.37
   dotenv: ^17.4.2
   effect: ^3.22.0
-  hono: ^4.12.31
+  hono: ^4.12.34
   openai: ^6.49.0
   picocolors: ^1.1.1
   pnpm: ^11.17.0
@@ -81,6 +81,16 @@ minimumReleaseAgeExclude:
   - '@mastra/core'
   - '@composio/client'
   - chrome-devtools-mcp
+  # temporary: hono >=4.12.34 carries the CORS ReDoS fix
+  # (GHSA-hp3h-89pf-5q58 class, Access-Control-Request-Headers), but both
+  # 4.12.34 and 4.13.0 were published within the 4320-minute floor, so
+  # --frozen-lockfile rejects the lockfile on every branch. The last version
+  # old enough to pass the gate is 4.12.33, which is the vulnerable one.
+  # hono is only pulled in by ts/e2e-tests/runtimes/cloudflare/* and
+  # ts/examples/cloudflare-wrangler -- it ships in no published package --
+  # so taking the fix ahead of the floor is the safer trade. Drop this entry
+  # once the resolved version is older than the floor (after 2026-08-06).
+  - hono
 
 peerDependencyRules:
   allowedVersions:
@@ -100,16 +110,23 @@ overrides:
   # The floor also clears GHSA-9mqv-5hh9-4cgg (WebSocket handshake DoS, fixed
   # in 2.0.10); drop when the SDK depends on >=2.0.10 itself.
   '@hono/node-server@<2.0.10': '>=2.0.10 <3'
-  # temporary: GHSA-mh99-v99m-4gvg (HIGH, unbounded-expansion OOM) covers every
-  # version <=5.0.7 with no 1.x or 2.x backport, so this selector spans majors
-  # deliberately -- narrowing it to the 5.x line would reintroduce a HIGH
-  # finding on the production openapi-typescript path and fail the audit gate.
+  # temporary: GHSA-7p8r-x3mc-p8w7; ajv accepts the patched 3.x line. Drop when
+  # its lockfile resolution is >=3.1.5 without an override.
+  'fast-uri@>=3.0.0 <3.1.5': '>=3.1.5 <4'
+  # temporary: GHSA-mwp4-54f8-5fhr; express-rate-limit accepts the patched 10.x
+  # line. Drop when its lockfile resolution is >=10.3.1 without an override.
+  'ip-address@>=10.0.0 <=10.3.0': '>=10.3.1 <11'
+  # temporary: GHSA-mh99-v99m-4gvg requires the 5.x line for older majors, and
+  # GHSA-rgw5-rvv9-x895 raises its patched floor to 5.0.9. This selector spans
+  # majors deliberately -- narrowing it to the 5.x line would reintroduce a
+  # HIGH finding on the production openapi-typescript path and fail the audit
+  # gate.
   # Known trade-off: minimatch@5.1.9 (via @redocly/openapi-core) consumes
   # brace-expansion as a callable CJS export, which 5.x replaced with a named
   # `expand`, so a brace-containing pattern throws there. Not reachable today --
   # the CLI's only openapi-typescript call passes an in-memory document and no
   # redocly globs. Drop when openapi-typescript ships a @redocly/openapi-core
   # whose minimatch accepts brace-expansion 5.x.
-  'brace-expansion@<=5.0.7': '>=5.0.8 <6'
+  'brace-expansion@<=5.0.8': '>=5.0.9 <6'
   'vite@<=7.3.4': 7.3.5
   'esbuild@>=0.27.3 <0.28.1': 0.28.1

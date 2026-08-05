@@ -114,6 +114,41 @@ Despite `upsert` in the route name, this endpoint does not update or replace an 
 To change the server URL, name, or authentication scheme, [delete the existing toolkit](#delete-or-replace-a-custom-mcp), then register it again. Deletion also revokes and removes the toolkit's auth configurations and connected accounts.
 </Callout>
 
+## Add a toolkit logo
+
+Without a logo, your toolkit shows the Composio logo in the dashboard and on end-user connect screens. To ship your own branding, include `toolkit_config.logo_file` when you register: the image itself, base64-encoded. Composio validates it, stores it on Composio-hosted asset storage, and renders it everywhere the toolkit appears. You don't host anything, and the logo keeps working even if your own site changes or goes down.
+
+```bash
+curl --request POST \
+  --url https://backend.composio.dev/api/v3.1/custom/toolkits/upsert \
+  --header "x-api-key: $COMPOSIO_API_KEY" \
+  --header "Content-Type: application/json" \
+  --data '{
+    "slug": "ACME",
+    "toolkit_config": {
+      "name": "Acme",
+      "app_url": "https://mcp.example.com/mcp",
+      "logo_file": {
+        "content": "iVBORw0KGgoAAAANSUhEUgAA...",
+        "mime_type": "image/png"
+      },
+      "auth_schemes": [
+        {
+          "mode": "NO_AUTH"
+        }
+      ]
+    }
+  }'
+```
+
+Set `content` to your image encoded as base64: a single line, with no line breaks or whitespace. The image must be:
+
+- **PNG or JPEG** (`mime_type` of `image/png` or `image/jpeg`)
+- **Square**, between 256 and 1024 pixels
+- **At most 3MB** before encoding
+
+Omit `logo_file` to keep the Composio default. Because registration is insert-only, changing a logo later means deleting the toolkit and registering it again with the new image.
+
 ## Complete setup for your authentication mode
 
 Choose the mode that matches your server, then complete any required connection:
@@ -125,6 +160,36 @@ Choose the mode that matches your server, then complete any required connection:
 | DCR OAuth | The server supports OAuth Dynamic Client Registration. | Authorize a connection. Initial sync starts when it becomes active. |
 
 For DCR OAuth, the server must support the standard authorization-code flow. Other OAuth grant types aren't supported.
+
+### Create the auth config for automatic account matching
+
+For API-key and DCR OAuth servers, create the toolkit's auth config with `is_enabled_for_tool_router` set to `true`:
+
+```bash
+curl --request POST \
+  --url https://backend.composio.dev/api/v3.1/auth_configs \
+  --header "x-api-key: $COMPOSIO_API_KEY" \
+  --header "Content-Type: application/json" \
+  --data '{
+    "toolkit": { "slug": "CUSTOM_ACME" },
+    "auth_config": {
+      "type": "use_custom_auth",
+      "authScheme": "API_KEY",
+      "credentials": {},
+      "is_enabled_for_tool_router": true
+    }
+  }'
+```
+
+This flag is what lets sessions find the toolkit's connected accounts by `user_id` automatically. Without it, session executions fail with `NoActiveConnection` even when an active account exists, and you must [select the account explicitly](#use-an-authenticated-server) in every session. If you already created the config without the flag, patch it:
+
+```bash
+curl --request PATCH \
+  --url https://backend.composio.dev/api/v3.1/auth_configs/ac_xxxxxxxx \
+  --header "x-api-key: $COMPOSIO_API_KEY" \
+  --header "Content-Type: application/json" \
+  --data '{ "is_enabled_for_tool_router": true }'
+```
 
 ## Sync and resync tools
 
@@ -242,7 +307,7 @@ With the default search-first session, your agent can discover the custom tools 
 
 ### Use an authenticated server
 
-For API-key and DCR OAuth servers, explicitly select the connected account in the session config. Don't rely on automatic account matching for Custom MCP toolkits yet.
+Sessions match a connected account by `user_id` automatically when the toolkit's auth config was [created with `is_enabled_for_tool_router: true`](#create-the-auth-config-for-automatic-account-matching). If your auth config doesn't have that flag, explicitly select the connected account in the session config instead:
 
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
 <Tab value="Python">
@@ -326,7 +391,7 @@ See [Toolkit Versioning](/docs/tools-direct/toolkit-versioning) for more example
 </Accordion>
 <Accordion title="Sessions and tool APIs">
 
-- **Select authenticated accounts explicitly:** Custom MCP sessions don't reliably match a connected account automatically. Pass its ID through `connected_accounts` in Python or `connectedAccounts` in TypeScript.
+- **Automatic account matching requires a flag:** sessions only match a custom toolkit's connected accounts when its auth config has `is_enabled_for_tool_router: true`. Set it at creation (or PATCH it in later); otherwise pass the account ID through `connected_accounts` in Python or `connectedAccounts` in TypeScript.
 - **Prefer the v3.1 tools API:** The v3 tools API pins a default version that doesn't contain custom tools. If you must use v3, explicitly select `latest` as described above.
 
 </Accordion>

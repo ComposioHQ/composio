@@ -19,7 +19,7 @@ To view available versions, go to [Dashboard](https://dashboard.composio.dev?utm
 You can also find the latest version for each toolkit on the [Toolkits](/toolkits) page in the docs. Select a toolkit to see its current version and available tools.
 
 <Callout type="info">
-Starting from Python SDK v0.9.0 and TypeScript SDK v0.2.0, specifying versions is required for manual tool execution.
+Starting from Python SDK v0.9.0 and TypeScript SDK v0.2.0, specifying versions is required for manual tool execution — and `"latest"` is **not** accepted there on its own. To run the newest version with `tools.execute()`, pass `dangerously_skip_version_check=True` (TypeScript: `dangerouslySkipVersionCheck: true`) on the call; otherwise pin a dated version. `"latest"` works without the flag everywhere else (fetching tools, sessions).
 </Callout>
 
 ## Default version behavior
@@ -140,7 +140,8 @@ Versions follow the format `YYYYMMDD_NN`:
 # Pin to a specific version
 toolkit_versions = {"github": "20251027_00"}
 
-# Always use the newest tools
+# Always use the newest tools (manual execution additionally requires
+# dangerously_skip_version_check=True on the execute call)
 toolkit_versions = {"github": "latest"}
 ```
 
@@ -148,7 +149,7 @@ toolkit_versions = {"github": "latest"}
 
 The right choice depends on how your application consumes tool outputs:
 
-- **Use `latest`** when tool outputs are consumed by an LLM or AI agent. Agents interpret responses dynamically and adapt to changes in output structure. Using `latest` ensures your agent always has access to the newest tools and improvements without manual intervention.
+- **Use `latest`** when tool outputs are consumed by an LLM or AI agent. Agents interpret responses dynamically and adapt to changes in output structure. Using `latest` ensures your agent always has access to the newest tools and improvements without manual intervention. For manual execution (`tools.execute()`), `latest` requires the explicit opt-in `dangerously_skip_version_check=True` / `dangerouslySkipVersionCheck: true` on the call — the flag's name is the reminder that output schemas can change between releases.
 
 - **Pin a specific version** when tool outputs are consumed programmatically — for example, if your code destructures specific fields from a response, maps outputs to a database schema, or feeds results into a typed pipeline. Schema changes in a new version could silently break these integrations.
 

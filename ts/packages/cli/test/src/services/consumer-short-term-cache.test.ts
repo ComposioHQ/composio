@@ -1,7 +1,7 @@
 import { describe, expect, layer } from '@effect/vitest';
 import { vi, beforeEach, afterEach } from 'vitest';
 import { FileSystem } from '@effect/platform';
-import { ConfigProvider, Effect, Option } from 'effect';
+import { ConfigProvider, DateTime, Effect, Option } from 'effect';
 import path from 'node:path';
 import { setupCacheDir } from 'src/effects/setup-cache-dir';
 import { extendConfigProvider } from 'src/services/config';
@@ -83,8 +83,8 @@ describe('consumer short-term cache', () => {
             meta: {
               description: 'GitHub toolkit',
               categories: [],
-              created_at: new Date('2024-05-03T11:44:32.061Z') as any,
-              updated_at: new Date('2024-05-03T11:44:32.061Z') as any,
+              created_at: DateTime.unsafeMake('2024-05-03T11:44:32.061Z'),
+              updated_at: DateTime.unsafeMake('2024-05-03T11:44:32.061Z'),
               available_versions: [],
               tools_count: 0,
               triggers_count: 0,
@@ -100,8 +100,8 @@ describe('consumer short-term cache', () => {
             meta: {
               description: 'No-auth toolkit',
               categories: [],
-              created_at: new Date('2024-05-03T11:44:32.061Z') as any,
-              updated_at: new Date('2024-05-03T11:44:32.061Z') as any,
+              created_at: DateTime.unsafeMake('2024-05-03T11:44:32.061Z'),
+              updated_at: DateTime.unsafeMake('2024-05-03T11:44:32.061Z'),
               available_versions: [],
               tools_count: 0,
               triggers_count: 0,
@@ -147,8 +147,8 @@ describe('consumer short-term cache', () => {
             meta: {
               description: 'GitHub toolkit',
               categories: [],
-              created_at: new Date('2024-05-03T11:44:32.061Z') as any,
-              updated_at: new Date('2024-05-03T11:44:32.061Z') as any,
+              created_at: DateTime.unsafeMake('2024-05-03T11:44:32.061Z'),
+              updated_at: DateTime.unsafeMake('2024-05-03T11:44:32.061Z'),
               available_versions: [],
               tools_count: 0,
               triggers_count: 0,
@@ -164,8 +164,8 @@ describe('consumer short-term cache', () => {
             meta: {
               description: 'No-auth toolkit',
               categories: [],
-              created_at: new Date('2024-05-03T11:44:32.061Z') as any,
-              updated_at: new Date('2024-05-03T11:44:32.061Z') as any,
+              created_at: DateTime.unsafeMake('2024-05-03T11:44:32.061Z'),
+              updated_at: DateTime.unsafeMake('2024-05-03T11:44:32.061Z'),
               available_versions: [],
               tools_count: 0,
               triggers_count: 0,

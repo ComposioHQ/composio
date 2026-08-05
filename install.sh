@@ -390,8 +390,27 @@ compute_inherited_resolution() {
     fi
 }
 
+# Reject bin dirs that cannot be embedded safely in a managed rc line. The dir
+# is only ever emitted inside double quotes -- `export PATH="<dir>:$PATH"` for
+# bash/zsh and `set --export PATH "<dir>" $PATH` for fish -- so the set is
+# deliberately narrow and mirrors UNSAFE_PATH_CHARS in
+# ts/packages/cli/src/commands/install.cmd.ts, keeping this inline fallback and
+# `composio install` on one contract:
+#
+#   ` $ " \  the only characters bash and zsh still expand inside double
+#            quotes (fish expands a strict subset). Everything else -- `;`,
+#            `|`, `&`, `(`, `)`, `'` -- is literal there, so a bin dir like
+#            /Users/o'brien/.local/bin is written verbatim, not rejected.
+#   CR LF    structural: either would split the managed block into extra lines.
+#   :        structural: the PATH separator would silently prepend two entries.
+#
+# Aborting rather than escaping is what keeps the two branches equivalent: a dir
+# the CLI refuses must not slip into an rc file just because the CLI could not
+# run. It also means the value reaching append_path_block can no longer carry a
+# character that double quotes would interpret, so no escaping pass is needed
+# (and `${var//x/y}` is a bashism this POSIX script cannot use anyway).
 is_unsafe_path() {
-    case $1 in *':'* | *';'* | *'`'* | *'$'* | *'|'* | *'&'* | *'"'* | *"'"* | *'('* | *')'* | *\\*) return 0 ;; esac
+    case $1 in *':'* | *'`'* | *'$'* | *'"'* | *\\*) return 0 ;; esac
     unsafe_path_cr=$(printf '\r')
     case $1 in *"$unsafe_path_cr"* | *'
 '*) return 0 ;; esac
@@ -403,6 +422,10 @@ is_unsafe_path() {
 # delegated_setup_verified compares the CLI-written line against this rendering
 # byte for byte, so any disagreement makes every delegated install look stale
 # and forces a needless inline rewrite.
+#
+# Callers must run is_unsafe_path first, so the only `$` in the result is the
+# `$HOME` this function introduces -- it survives as a live variable reference
+# in the rc line without any user-supplied `$` riding along with it.
 render_bin_dir() {
     render_bin_dir_value=$1
     case $render_bin_dir_value in
@@ -864,7 +887,9 @@ main() {
             error "Failed to determine the latest CLI release with a $archive_name asset. Specify a version manually."
         version=$(printf '%s\n' "$latest_release" | sed -n '1p')
         archive_url=$(printf '%s\n' "$latest_release" | sed -n '2p')
-        [ -n "$version" ] && [ -n "$archive_url" ] || error 'The release API returned an incomplete CLI release'
+        if [ -z "$version" ] || [ -z "$archive_url" ]; then
+            error 'The release API returned an incomplete CLI release'
+        fi
         info "Found latest version: $version"
     fi
     validate_url "$archive_url" || error "Release API returned an unsafe archive URL \"$archive_url\""

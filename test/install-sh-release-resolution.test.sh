@@ -796,7 +796,8 @@ EOF
     variant_install="$case_root/variant-$shell_name-install"
     variant_bin="$case_root/variant-$shell_name-bin"
     variant_output=$(run_variant "$shell_name" "$variant_home" "$variant_install" "$variant_bin" "$stable_tag" --no-plugins 2>&1)
-    grep -Fq "|installer|$variant_bin|install --shell $shell_name" "$composio_log" ||
+    expected_variant_bin=$(cd "$variant_bin" && pwd -P)
+    grep -Fq "|installer|$expected_variant_bin|install --shell $shell_name" "$composio_log" ||
       fail "$interpreter_name $shell_name variant delegation"
     assert_contains "$variant_output" "$(configured_line "$shell_name")" "$interpreter_name $shell_name variant confirmation"
     assert_not_contains "$variant_output" 'Required next step' "$interpreter_name $shell_name variant must not print setup guidance"
@@ -808,12 +809,36 @@ EOF
   direct_home="$case_root/direct-shell-home"
   direct_bin="$case_root/direct-shell-bin"
   direct_output=$(run_installer "$direct_home" "$case_root/direct-shell-install" "$direct_bin" "$stable_tag" 2>&1)
-  grep -Fq "|installer|$direct_bin|install --shell zsh" "$composio_log" || fail "$interpreter_name COMPOSIO_INSTALL_SHELL delegation"
+  expected_direct_bin=$(cd "$direct_bin" && pwd -P)
+  grep -Fq "|installer|$expected_direct_bin|install --shell zsh" "$composio_log" || fail "$interpreter_name COMPOSIO_INSTALL_SHELL delegation"
   assert_contains "$direct_output" "$(configured_line zsh)" "$interpreter_name COMPOSIO_INSTALL_SHELL confirmation"
   assert_not_contains "$direct_output" 'Required next step' "$interpreter_name COMPOSIO_INSTALL_SHELL must not print setup guidance"
   assert_tail "$direct_output" "$case_b_tail" "$interpreter_name COMPOSIO_INSTALL_SHELL Case B tail"
   grep -Fq "export PATH=\"$direct_bin:\$PATH\"" "$direct_home/.zshrc" || fail "$interpreter_name COMPOSIO_INSTALL_SHELL CLI-written block"
   assert_not_contains "$direct_output" 'Updated ~/.zshrc' "$interpreter_name COMPOSIO_INSTALL_SHELL CLI path must not rewrite rc files inline"
+
+  reset_case
+  CASE_INSTALL_SHELL=zsh
+  relative_work="$case_root/relative-shell-work"
+  relative_home="$case_root/relative-shell-home"
+  relative_install="$case_root/relative-shell-install"
+  mkdir -p "$relative_work"
+  (cd "$relative_work" && run_installer "$relative_home" "$relative_install" relative-bin "$stable_tag" >/dev/null 2>&1)
+  expected_relative_bin=$(cd "$relative_work/relative-bin" && pwd -P)
+  grep -Fq "|installer|$expected_relative_bin|install --shell zsh" "$composio_log" ||
+    fail "$interpreter_name relative COMPOSIO_BIN_DIR delegation must receive the resolved absolute path"
+
+  reset_case
+  CASE_INSTALL_SHELL=zsh
+  CASE_SHELL_CAPABILITY=unsupported
+  relative_fallback_work="$case_root/relative-fallback-work"
+  relative_fallback_home="$case_root/relative-fallback-home"
+  relative_fallback_install="$case_root/relative-fallback-install"
+  mkdir -p "$relative_fallback_work"
+  (cd "$relative_fallback_work" && run_installer "$relative_fallback_home" "$relative_fallback_install" relative-bin "$stable_tag" >/dev/null 2>&1)
+  expected_relative_fallback_bin=$(cd "$relative_fallback_work/relative-bin" && pwd -P)
+  grep -Fq "export PATH=\"$expected_relative_fallback_bin:\$PATH\"" "$relative_fallback_home/.zshrc" ||
+    fail "$interpreter_name relative COMPOSIO_BIN_DIR fallback must persist the resolved absolute path"
 
   reset_case
   CASE_INSTALL_SHELL=zsh
@@ -859,21 +884,40 @@ EOF
   grep -Fqx '# Composio CLI' "$bash_fallback_home/.bashrc" || fail "$interpreter_name bash fallback bashrc"
   grep -Fqx '# Composio CLI' "$bash_fallback_home/.bash_profile" || fail "$interpreter_name bash fallback login override"
 
-  for unsafe_character in ';' ':'; do
+  # The inline fallback embeds the resolved bin dir in an rc line, so a dir
+  # holding a character double quotes still expand -- `$`, a backtick, `"`, `\`
+  # -- or a structural `:` is refused outright, on the same set
+  # `composio install` refuses. A dir the CLI rejects must not slip into an rc
+  # file just because the CLI could not run.
+  injection_marker="$case_root/injection-marker"
+  unsafe_case=0
+  for unsafe_bin in "inject-\$(touch $injection_marker)" 'inject-`id`' 'inject-"quote"' 'inject\backslash' 'inject:colon'; do
     reset_case
     CASE_SHELL_CAPABILITY=unsupported
-    unsafe_slug=${unsafe_character//[^[:alnum:]]/delimiter}
-    unsafe_home="$case_root/unsafe-$unsafe_slug-variant-home"
-    unsafe_install="$case_root/unsafe-$unsafe_slug-variant-install"
-    unsafe_bin="$case_root/unsafe${unsafe_character}variant-bin"
-    unsafe_variant_output=$(run_variant zsh "$unsafe_home" "$unsafe_install" "$unsafe_bin" "$stable_tag" 2>&1) ||
-      fail "$interpreter_name unsafe variant bin dir with $unsafe_character must keep the install successful"
-    [[ ! -e "$unsafe_home/.zshrc" ]] || fail "$interpreter_name unsafe variant must not write rc file"
-    [[ -x "$unsafe_install/composio" ]] || fail "$interpreter_name unsafe variant must retain the binary"
-    assert_contains "$unsafe_variant_output" 'warning:' "$interpreter_name unsafe variant warning"
-    assert_contains "$unsafe_variant_output" "$unsafe_bin" "$interpreter_name unsafe variant warning names the rejected path"
-    assert_tail "$unsafe_variant_output" "$(recovery_tail later "$unsafe_install/composio")" "$interpreter_name unsafe variant recovery tail"
+    unsafe_case=$((unsafe_case + 1))
+    unsafe_home="$case_root/unsafe-$unsafe_case-variant-home"
+    unsafe_install="$case_root/unsafe-$unsafe_case-variant-install"
+    unsafe_bin_dir="$case_root/$unsafe_bin"
+    unsafe_variant_output=$(run_variant zsh "$unsafe_home" "$unsafe_install" "$unsafe_bin_dir" "$stable_tag" 2>&1) ||
+      fail "$interpreter_name unsafe variant bin dir must keep the install successful: $unsafe_bin"
+    [[ ! -e "$unsafe_home/.zshrc" ]] || fail "$interpreter_name unsafe variant must not write rc file: $unsafe_bin"
+    [[ -x "$unsafe_install/composio" ]] || fail "$interpreter_name unsafe variant must retain the binary: $unsafe_bin"
+    assert_contains "$unsafe_variant_output" 'warning:' "$interpreter_name unsafe variant warning: $unsafe_bin"
+    assert_contains "$unsafe_variant_output" "$unsafe_bin_dir" "$interpreter_name unsafe variant warning names the rejected path: $unsafe_bin"
+    assert_tail "$unsafe_variant_output" "$(recovery_tail later "$unsafe_install/composio")" "$interpreter_name unsafe variant recovery tail: $unsafe_bin"
   done
+  [[ ! -e "$injection_marker" ]] || fail "$interpreter_name command substitution in the bin dir must never run"
+
+  # The denylist stops at what double quotes actually expand: characters that
+  # are literal there stay legal and are written verbatim.
+  reset_case
+  CASE_SHELL_CAPABILITY=unsupported
+  literal_home="$case_root/literal-variant-home"
+  literal_bin="$case_root/o'brien;bin"
+  run_variant zsh "$literal_home" "$case_root/literal-variant-install" "$literal_bin" "$stable_tag" >/dev/null 2>&1
+  expected_literal_bin=$(cd "$literal_bin" && pwd -P)
+  grep -Fq "export PATH=\"$expected_literal_bin:\$PATH\"" "$literal_home/.zshrc" ||
+    fail "$interpreter_name apostrophe bin dir must be written verbatim"
 
   for base_mode in fail empty; do
     reset_case
@@ -1223,8 +1267,10 @@ export PATH=\"$malformed_bin:\$PATH\"" ]] || fail "$interpreter_name malformed b
 
   # --- Unsafe resolved bin dirs under the default flow: shell metacharacters never reach rc files ---
 
+  # Only characters double quotes still expand are rejected: `;` is literal
+  # inside them and stays legal, so it is deliberately not probed here.
   unsafe_auto_index=0
-  for unsafe_character in ';' '$'; do
+  for unsafe_character in '$' '`'; do
     unsafe_auto_index=$((unsafe_auto_index + 1))
     reset_case
     unsafe_auto_home="$case_root/unsafe-auto-$unsafe_auto_index-home"

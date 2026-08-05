@@ -1,6 +1,7 @@
 import { createPatch } from 'diff';
 import { getSingularPatch } from '@pierre/diffs';
 import { preloadFileDiff } from '@pierre/diffs/ssr';
+import type { FileDiffProps } from '@pierre/diffs/react';
 import { DiffView, HIDE_DIFF_STATS_CSS } from './diff-view';
 import { FILE_BUILDS } from '@/lib/file-builds';
 
@@ -27,7 +28,7 @@ function StepCard({
   file: string;
   description?: string;
 
-  fileDiff: any;
+  fileDiff: FileDiffProps<undefined>['fileDiff'];
   prerenderedHTML: string;
   code: string;
 }) {

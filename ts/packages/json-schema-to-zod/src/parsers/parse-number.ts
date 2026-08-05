@@ -85,26 +85,20 @@ export const parseNumber = (jsonSchema: JsonSchemaObject & { type: 'number' | 'i
   }
 
   // Handle generic 'min' property as alias for 'minimum'
-  if (
-    typeof (jsonSchema as unknown as { min?: number }).min === 'number' &&
-    typeof jsonSchema.minimum !== 'number'
-  ) {
+  if (typeof jsonSchema.min === 'number' && typeof jsonSchema.minimum !== 'number') {
     zodSchema = extendSchemaWithMessage(
       zodSchema,
-      { ...jsonSchema, minimum: (jsonSchema as unknown as { min?: number }).min },
+      { ...jsonSchema, minimum: jsonSchema.min },
       'minimum',
       (zs, minimum, errorMsg) => zs.gte(minimum, errorMsg)
     );
   }
 
   // Handle generic 'max' property as alias for 'maximum'
-  if (
-    typeof (jsonSchema as unknown as { max?: number }).max === 'number' &&
-    typeof jsonSchema.maximum !== 'number'
-  ) {
+  if (typeof jsonSchema.max === 'number' && typeof jsonSchema.maximum !== 'number') {
     zodSchema = extendSchemaWithMessage(
       zodSchema,
-      { ...jsonSchema, maximum: (jsonSchema as unknown as { max?: number }).max },
+      { ...jsonSchema, maximum: jsonSchema.max },
       'maximum',
       (zs, maximum, errorMsg) => zs.lte(maximum, errorMsg)
     );

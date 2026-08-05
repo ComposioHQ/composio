@@ -87,6 +87,10 @@ describe('workerd platform path helpers (js/polynomial-redos regression)', () =>
     expect(platform.joinPath(allSlashes, `${allSlashes}name.txt${allSlashes}`)).toBe('name.txt');
   });
 
+  it('preserves exact path matching when no filesystem is available', () => {
+    expect(platform.isFileSystemCaseSensitive('/virtual/.Kube/config')).toBe(true);
+  });
+
   it('rejects backtracking-prone slash-trim regexes at the source level', () => {
     const source = readFileSync(WORKERD_SOURCE, 'utf8');
     // Matches an escaped slash immediately followed by a `+`/`*` or a
