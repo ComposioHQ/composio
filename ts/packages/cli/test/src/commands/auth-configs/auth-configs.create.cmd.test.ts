@@ -181,4 +181,54 @@ describe('CLI: composio dev auth-configs create', () => {
       );
     }
   );
+
+  let capturedCreateAuthConfig: { auth_config?: Record<string, unknown> } | undefined;
+
+  layer(
+    TestLive({
+      baseConfigProvider: testConfigProvider,
+      ...dangerousDevConfig,
+      authConfigsData: {
+        createResponse: {
+          auth_config: { id: 'ac_oauth', auth_scheme: 'OAUTH2', is_composio_managed: false },
+          toolkit: { slug: 'shopify' },
+        },
+        onCreate: params => {
+          capturedCreateAuthConfig = params as { auth_config?: Record<string, unknown> };
+        },
+      },
+    })
+  )(
+    '[Given] --custom-credentials with OAuth fields [Then] nests credentials under auth_config.credentials',
+    it => {
+      it.scoped('sends client_id/client_secret inside credentials, not at the top level', () =>
+        Effect.gen(function* () {
+          capturedCreateAuthConfig = undefined;
+
+          yield* cli([
+            'dev',
+            'auth-configs',
+            'create',
+            '--toolkit',
+            'shopify',
+            '--auth-scheme',
+            'OAUTH2',
+            '--custom-credentials',
+            '{"client_id":"my_client_id","client_secret":"my_client_secret"}',
+            '--dangerously-allow',
+          ]);
+
+          const authConfig = capturedCreateAuthConfig?.auth_config;
+          const credentials = authConfig?.['credentials'] as Record<string, unknown> | undefined;
+
+          expect(authConfig?.['type']).toBe('use_custom_auth');
+          expect(authConfig?.['authScheme']).toBe('OAUTH2');
+          // client_id/client_secret must be nested under credentials, not spread at the top level
+          expect(authConfig?.['client_id']).toBeUndefined();
+          expect(credentials?.['client_id']).toBe('my_client_id');
+          expect(credentials?.['client_secret']).toBe('my_client_secret');
+        })
+      );
+    }
+  );
 });
