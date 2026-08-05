@@ -28,28 +28,30 @@ allowBuilds:
   workerd: true
 
 catalog:
-  '@ai-sdk/openai': ^4.0.20
+  '@ai-sdk/mcp': ^2.0.20
+  '@ai-sdk/openai': ^4.0.25
   '@arethetypeswrong/cli': ^0.18.5
   '@clack/core': '^1.4.3'
   '@clack/prompts': '^1.7.0'
   '@cloudflare/vitest-pool-workers': 0.18.8
-  '@cloudflare/workers-types': ^5.20260724.1
+  '@cloudflare/workers-types': ^5.20260731.1
   '@composio/client': 0.1.0-alpha.76
-  '@effect/cli': ^0.76.0
+  '@effect/cli': ^0.77.0
   '@effect/language-service': ^0.87.1
-  '@effect/platform': ^0.97.0
-  '@effect/platform-bun': ^0.91.0
+  '@effect/platform': ^0.97.1
+  '@effect/platform-bun': ^0.91.2
   '@effect/platform-node': ^0.108.0
-  '@effect/platform-node-shared': ^0.61.0
+  '@effect/platform-node-shared': ^0.61.1
   '@effect/vitest': ^0.30.0
-  '@mastra/core': ^1.52.1
-  '@modelcontextprotocol/sdk': ^1.29.0
+  # 1.55.0 pulls Node-only execa code into Workers bundles.
+  '@mastra/core': 1.52.1
+  '@modelcontextprotocol/sdk': ^1.30.0
   '@types/bun': ^1.3.14
-  ai: ^7.0.37
+  ai: ^7.0.44
   dotenv: ^17.4.2
-  effect: ^3.22.0
+  effect: ^3.22.1
   hono: ^4.12.34
-  openai: ^6.49.0
+  openai: ^7.2.0
   picocolors: ^1.1.1
   pnpm: ^11.17.0
   publint: ^0.3.22
@@ -116,6 +118,9 @@ overrides:
   # temporary: GHSA-mwp4-54f8-5fhr; express-rate-limit accepts the patched 10.x
   # line. Drop when its lockfile resolution is >=10.3.1 without an override.
   'ip-address@>=10.0.0 <=10.3.0': '>=10.3.1 <11'
+  # temporary: GHSA-4cwx-7wf7-3272; @ai-sdk/provider-utils accepts the patched
+  # 7.x line. Drop when its lockfile resolution is >=7.29.0 without an override.
+  'undici@>=7.0.0 <7.29.0': '>=7.29.0 <8'
   # temporary: GHSA-mh99-v99m-4gvg requires the 5.x line for older majors, and
   # GHSA-rgw5-rvv9-x895 raises its patched floor to 5.0.9. This selector spans
   # majors deliberately -- narrowing it to the 5.x line would reintroduce a

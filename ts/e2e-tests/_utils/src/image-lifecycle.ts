@@ -352,9 +352,9 @@ export async function runNodeContainer(options: RunNodeContainerOptions): Promis
   // Handle cmd as array for direct execution without shell interpretation.
   if (Array.isArray(cmd)) {
     dockerArgs.push(...cmd.map(String));
-    // Handle cmd as string by wrapping in login shell for proper environment setup.
+    // Preserve the image's configured PATH instead of resetting it in a login shell.
   } else if (typeof cmd === 'string' && cmd.length > 0) {
-    dockerArgs.push('sh', '-lc', cmd);
+    dockerArgs.push('sh', '-c', cmd);
   } else {
     throw new Error('runNodeContainer({ cmd, ... }): cmd must be a non-empty string or string[]');
   }
@@ -531,10 +531,10 @@ export async function runDenoContainer(options: RunDenoContainerOptions): Promis
   // Handle cmd as array for direct execution without shell interpretation.
   if (Array.isArray(cmd)) {
     dockerArgs.push(...cmd.map(String));
-    // Handle cmd as string by wrapping in login shell for proper environment setup.
+    // Preserve the image's configured PATH instead of resetting it in a login shell.
     // Callers must explicitly use 'deno run --allow-all <file>' when running Deno scripts.
   } else if (typeof cmd === 'string' && cmd.length > 0) {
-    dockerArgs.push('sh', '-lc', cmd);
+    dockerArgs.push('sh', '-c', cmd);
   } else {
     throw new Error('runDenoContainer({ cmd, ... }): cmd must be a non-empty string or string[]');
   }

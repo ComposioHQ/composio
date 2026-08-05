@@ -7,7 +7,9 @@ ARG CLI_VERSION=0.0.0
 FROM node:${NODE_VERSION}-slim AS builder
 
 ENV MISE_DATA_DIR="/mise"
+ENV MISE_CACHE_DIR="/mise/cache"
 ENV MISE_DISABLE_TOOLS="node,deno,python,uv"
+ENV MISE_TRUSTED_CONFIG_PATHS="/app"
 ENV PATH="/mise/shims:$PATH"
 
 WORKDIR /app
@@ -18,14 +20,12 @@ RUN apt-get update && \
     rm -rf /var/lib/apt/lists/*
 
 # Install bun + pnpm via mise (versions pinned in mise.toml/mise.lock).
-# mise is installed to /usr/local/bin and the tool binaries are symlinked there too;
-# Node is disabled so the base image's Node is used.
+# mise is installed to /usr/local/bin; its shared cache and shims expose bun and
+# pnpm while Node stays on the base image.
+ENV XDG_CACHE_HOME="/mise/cache"
 RUN curl -fsSL https://mise.run | MISE_INSTALL_PATH=/usr/local/bin/mise sh
 COPY mise.toml mise.lock ./
-RUN mise trust /app/mise.toml && \
-    mise install && \
-    ln -sf "$(mise which bun)" /usr/local/bin/bun && \
-    ln -sf "$(mise which pnpm)" /usr/local/bin/pnpm && \
+RUN mise install && \
     pnpm --version && \
     bun --version
 

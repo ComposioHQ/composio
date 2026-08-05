@@ -38,10 +38,11 @@
   "license": "ISC",
   "peerDependencies": {
     "@composio/core": ">=0.10.0 <1.0.0",
-    "openai": "catalog:"
+    "openai": "^6.49.0 || ^7.0.0"
   },
   "devDependencies": {
     "@composio/core": "workspace:*",
+    "openai": "catalog:",
     "tsdown": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"
