@@ -8,7 +8,7 @@ error() {
     exit 1
 }
 is_true() { case ${1:-} in 1 | true) return 0 ;; *) return 1 ;; esac }
-debug() { is_true "${COMPOSIO_DEBUG:-}" && printf '+ %s\n' "$*" >&2 || :; }
+debug() { if is_true "${COMPOSIO_DEBUG:-}"; then printf '+ %s\n' "$*" >&2; fi; }
 
 url_authority() {
     printf '%s\n' "$1" | sed -e 's#^[a-zA-Z][a-zA-Z0-9+.-]*://##' -e 's#[/?#].*$##'

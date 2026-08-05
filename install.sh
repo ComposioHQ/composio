@@ -532,7 +532,9 @@ main() {
             error "Failed to determine the latest CLI release with a $archive_name asset. Specify a version manually."
         version=$(printf '%s\n' "$latest_release" | sed -n '1p')
         archive_url=$(printf '%s\n' "$latest_release" | sed -n '2p')
-        [ -n "$version" ] && [ -n "$archive_url" ] || error 'The release API returned an incomplete CLI release'
+        if [ -z "$version" ] || [ -z "$archive_url" ]; then
+            error 'The release API returned an incomplete CLI release'
+        fi
         info "Found latest version: $version"
     fi
     validate_url "$archive_url" || error "Release API returned an unsafe archive URL \"$archive_url\""
