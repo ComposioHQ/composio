@@ -19,9 +19,14 @@ export function isNewerVersion(version1: string, version2: string): boolean {
   return false;
 }
 
+const VERSION_CHECK_TIMEOUT_MS = 2_000;
+
 /**
  * Checks for the latest version of the Composio SDK from NPM.
  * If a newer version is available, it logs a warning to the console.
+ *
+ * Best-effort: never throws. The npm registry request is aborted after
+ * {@link VERSION_CHECK_TIMEOUT_MS} milliseconds.
  */
 export async function checkForLatestVersionFromNPM(currentVersion: string) {
   try {
@@ -42,9 +47,22 @@ export async function checkForLatestVersionFromNPM(currentVersion: string) {
       return;
     }
 
-    // @TODO: Check if fetch is available, if not use node-fetch
-    const response = await fetch(`https://registry.npmjs.org/${packageName}/latest`);
-    const data = await response.json();
+    // Bound this best-effort request so a stalled registry cannot leave it pending
+    // indefinitely. A hand-rolled timer rather than AbortSignal.timeout so it can be
+    // cleared the moment the response lands: an uncleared timer is itself pending work,
+    // which on workerd pins the request context open for the full timeout on every
+    // successful check.
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), VERSION_CHECK_TIMEOUT_MS);
+    let data;
+    try {
+      const response = await fetch(`https://registry.npmjs.org/${packageName}/latest`, {
+        signal: controller.signal,
+      });
+      data = await response.json();
+    } finally {
+      clearTimeout(timer);
+    }
     const latestVersion = data.version;
 
     if (semver.gt(latestVersion, currentVersionFromPackageJson) && !IS_DEVELOPMENT_OR_CI) {
