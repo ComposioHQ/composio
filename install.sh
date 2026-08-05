@@ -69,6 +69,24 @@ tildify() {
     fi
 }
 
+# Escape a value for embedding inside a double-quoted shell rc line, so an
+# install directory containing `$(...)`, a backtick, or a quote is written as
+# literal text instead of becoming live code the next time the rc is sourced.
+# Backslashes must be escaped first. The second argument selects whether
+# backticks are escaped: bash and zsh perform backtick substitution inside
+# double quotes, fish does not — and fish does not recognize \` there either,
+# so escaping it for fish would corrupt the path.
+escape_for_double_quotes() {
+    local value=$1 escape_backticks=${2:-true}
+    value=${value//\\/\\\\}
+    if [[ $escape_backticks = true ]]; then
+        value=${value//\`/\\\`}
+    fi
+    value=${value//\$/\\\$}
+    value=${value//\"/\\\"}
+    printf '%s' "$value"
+}
+
 install_agent=false
 install_plugins=true
 version_arg=""
@@ -322,10 +340,16 @@ else
     info "Setting up shell integration..."
 
     refresh_command=''
-    quoted_install_dir=\"${COMPOSIO_INSTALL_DIR//\"/\\\"}\"
 
-    if [[ $quoted_install_dir = \"$HOME/* ]]; then
-        quoted_install_dir=${COMPOSIO_INSTALL_DIR/$HOME\//\$HOME/}
+    # Every rc line below embeds one of these inside double quotes. `$HOME` is
+    # re-applied after escaping so the intended variable reference survives as
+    # a literal `$HOME` while any user-supplied `$` stays escaped.
+    escaped_install_dir=$(escape_for_double_quotes "$COMPOSIO_INSTALL_DIR")
+    escaped_install_dir_fish=$(escape_for_double_quotes "$COMPOSIO_INSTALL_DIR" false)
+    home_relative_install_dir=$escaped_install_dir
+
+    if [[ $COMPOSIO_INSTALL_DIR = "$HOME"/* ]]; then
+        home_relative_install_dir='$HOME/'$(escape_for_double_quotes "${COMPOSIO_INSTALL_DIR#"$HOME"/}")
     fi
 
     shell_name=$(basename "${SHELL:-}")
@@ -334,7 +358,7 @@ else
     case $shell_name in
     fish)
         commands=(
-            "set --export COMPOSIO_INSTALL_DIR \"$COMPOSIO_INSTALL_DIR\""
+            "set --export COMPOSIO_INSTALL_DIR \"$escaped_install_dir_fish\""
             "set --export PATH \$COMPOSIO_INSTALL_DIR \$PATH"
         )
         fish_config=$HOME/.config/fish/config.fish
@@ -354,7 +378,7 @@ else
         ;;
     zsh)
         commands=(
-            "export COMPOSIO_INSTALL_DIR=\"$COMPOSIO_INSTALL_DIR\""
+            "export COMPOSIO_INSTALL_DIR=\"$escaped_install_dir\""
             "export PATH=\"\$COMPOSIO_INSTALL_DIR:\$PATH\""
         )
         zsh_config=$HOME/.zshrc
@@ -374,7 +398,7 @@ else
         ;;
     bash)
         commands=(
-            "export COMPOSIO_INSTALL_DIR=$quoted_install_dir"
+            "export COMPOSIO_INSTALL_DIR=\"$home_relative_install_dir\""
             "export PATH=\"\$COMPOSIO_INSTALL_DIR:\$PATH\""
         )
         bash_configs=("$HOME/.bashrc" "$HOME/.bash_profile")
@@ -402,7 +426,7 @@ else
         ;;
     *)
         echo 'Manually add the directory to ~/.bashrc (or similar):'
-        info_bold "  export COMPOSIO_INSTALL_DIR=$quoted_install_dir"
+        info_bold "  export COMPOSIO_INSTALL_DIR=\"$home_relative_install_dir\""
         info_bold "  export PATH=\"\$COMPOSIO_INSTALL_DIR:\$PATH\""
         ;;
     esac

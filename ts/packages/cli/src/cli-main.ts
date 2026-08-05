@@ -44,6 +44,7 @@ import { getVersion } from 'src/effects/version';
 import { mapOnlyComposioOverrideError } from 'src/services/composio-error-overrides';
 import { SetupSkillInstaller } from 'src/services/setup-skill-installer';
 import { SetupCommandError } from 'src/services/setup';
+import { ShellSetupAbortError } from 'src/commands/install.cmd';
 
 // Layer is contravariant in ROut and covariant in E, so `never`/`unknown` accept any
 // produced context and error type while still pinning the requirements (RIn) to `never`.
@@ -222,6 +223,16 @@ showUpdateNotice.pipe(
         } else {
           yield* ui.error(`${summary} ${error.message}`);
         }
+        process.exitCode = 1;
+      })
+  ),
+  Effect.catchIf(
+    (error): error is ShellSetupAbortError => error instanceof ShellSetupAbortError,
+    // `composio install` already printed the abort reason; the typed failure
+    // only exists so the process exits non-zero and install.sh runs its
+    // guarded inline PATH fallback instead of reporting a green install.
+    () =>
+      Effect.sync(() => {
         process.exitCode = 1;
       })
   ),

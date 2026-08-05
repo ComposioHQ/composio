@@ -42,18 +42,6 @@
       "target": "process.env.COMPOSIO_RUN_ACP_ONLY = acpOnly ? '1' : '0';"
     }
   ],
-  "src/commands/install.cmd.ts": [
-    {
-      "rule": "eslint-js/no-restricted-syntax",
-      "reason": "$SHELL is read inside a plain synchronous helper that mirrors install.sh's shell detection, outside any Effect context",
-      "target": "const shellEnv = process.env.SHELL ?? '';"
-    },
-    {
-      "rule": "eslint-js/no-restricted-syntax",
-      "reason": "COMPOSIO_INSTALL_DIR is the handoff variable set by the install.sh bootstrapper for this one-shot post-install step; read directly to stay byte-compatible with the script",
-      "target": "const installDir = process.env.COMPOSIO_INSTALL_DIR ?? path.join(os.homedir, '.composio');"
-    }
-  ],
   "src/commands/run.cmd.ts": [
     {
       "rule": "eslint-js/no-restricted-syntax",

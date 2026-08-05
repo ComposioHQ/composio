@@ -383,6 +383,28 @@ if ! grep -qxF '# Composio CLI' "$failed_probe_home/.bashrc"; then
     exit 1
 fi
 
+# The inline fallback embeds the install directory in rc lines. A directory
+# holding `$(...)` must land there as literal text, not as a command that runs
+# at every shell start.
+injection_home="$tmpdir/home-injection"
+injection_marker="$tmpdir/injection-marker"
+injection_install="$tmpdir/inject-\$(touch $injection_marker)"
+mkdir -p "$injection_home" "$injection_install"
+: > "$injection_home/.bashrc"
+: > "$composio_log"
+TEST_VERSION_EXIT=126 run_installer "$injection_home" "$injection_install" --no-plugins >/dev/null 2>&1
+bash -c 'source "$1"' _ "$injection_home/.bashrc" >/dev/null 2>&1 || true
+if [[ -e "$injection_marker" ]]; then
+    echo 'Expected inline shell integration to escape command substitution in COMPOSIO_INSTALL_DIR.' >&2
+    cat "$injection_home/.bashrc" >&2
+    exit 1
+fi
+if ! grep -qF '\$(touch' "$injection_home/.bashrc"; then
+    echo 'Expected the escaped install directory to be written to .bashrc.' >&2
+    cat "$injection_home/.bashrc" >&2
+    exit 1
+fi
+
 no_plugins_home="$tmpdir/home-no-plugins"
 no_plugins_install="$tmpdir/install-no-plugins"
 mkdir -p "$no_plugins_home" "$no_plugins_install"
