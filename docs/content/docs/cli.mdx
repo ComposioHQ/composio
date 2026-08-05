@@ -60,6 +60,7 @@ curl -fsSL https://composio.dev/install | sh -s -- @composio/cli@0.3.1
 | `COMPOSIO_GITHUB_REPO` | GitHub repository used to resolve releases. | `composio` |
 | `COMPOSIO_GITHUB_URL` | GitHub web and release-download base URL. | `https://github.com` |
 | `COMPOSIO_GITHUB_API_BASE_URL` | GitHub API base URL. | Derived from `COMPOSIO_GITHUB_URL` |
+| `COMPOSIO_INSTALL_ALLOW_HTTP_HOST` | Host allowed to use plain HTTP for a custom release source. Redirects must still use HTTPS. | Unset |
 | `--agent` | Log in as a Composio agent after installation. | Off |
 | `--no-plugins` | Skip agent plugin setup. Kept for compatibility and now matches the default. | Off |
 
@@ -100,6 +101,14 @@ curl -fsSL https://composio.dev/install | COMPOSIO_INSTALL_SHELL=none sh
 Shell-specific installer variants (`zsh.sh`, `bash.sh`, and `fish.sh` in the repository's [`install/` directory](https://github.com/ComposioHQ/composio/tree/next/install)) pin `COMPOSIO_INSTALL_SHELL` to their shell before delegating to the base installer.
 
 Shell setup is idempotent: repeated installs keep exactly one managed PATH block per startup file and reconcile it when the bin directory changes. Setup falls back to writing the same PATH block inline when the installed CLI predates `composio install --shell`, delegated setup fails, or delegated setup leaves a stale block. Startup-file changes only affect future terminals; in the current one, either open a new terminal or run the absolute path the installer prints.
+
+### Download verification
+
+The installer requires HTTPS for every download and redirect. Plain HTTP is allowed only for loopback addresses or a custom host you explicitly set with `COMPOSIO_INSTALL_ALLOW_HTTP_HOST`.
+
+Official releases from `github.com/ComposioHQ/composio` must pass SHA-256 verification against the release's `checksums.txt`. The installer stops if the manifest is missing, malformed, has no entry for your platform's archive, or contains a checksum that does not match. If neither `sha256sum` nor `shasum` is available, the installer warns you and continues without verification.
+
+Custom release sources configured with `COMPOSIO_GITHUB_URL`, `COMPOSIO_GITHUB_OWNER`, `COMPOSIO_GITHUB_REPO`, or `COMPOSIO_GITHUB_API_BASE_URL` allow a missing manifest or archive entry with a warning. A malformed entry or checksum mismatch still stops the installation.
 
 ### Verify the installation
 
