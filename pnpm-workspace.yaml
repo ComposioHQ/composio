@@ -118,6 +118,9 @@ overrides:
   # temporary: GHSA-mwp4-54f8-5fhr; express-rate-limit accepts the patched 10.x
   # line. Drop when its lockfile resolution is >=10.3.1 without an override.
   'ip-address@>=10.0.0 <=10.3.0': '>=10.3.1 <11'
+  # temporary: GHSA-4cwx-7wf7-3272; @ai-sdk/provider-utils accepts the patched
+  # 7.x line. Drop when its lockfile resolution is >=7.29.0 without an override.
+  'undici@>=7.0.0 <7.29.0': '>=7.29.0 <8'
   # temporary: GHSA-mh99-v99m-4gvg requires the 5.x line for older majors, and
   # GHSA-rgw5-rvv9-x895 raises its patched floor to 5.0.9. This selector spans
   # majors deliberately -- narrowing it to the 5.x line would reintroduce a
