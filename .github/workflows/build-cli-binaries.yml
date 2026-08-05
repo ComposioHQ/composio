@@ -291,11 +291,6 @@ jobs:
     uses: ./.github/workflows/cli.test-installation.yml
     with:
       version: ${{ needs.prepare.outputs.release_tag }}
-      # A beta (push to next, or a manual build-beta) is built from this branch's
-      # HEAD, so its `composio install` must write the CLI-managed PATH line.
-      # promote-stable instead rebuilds the promoted beta's own commit, which can
-      # predate that writer, so it keeps the permissive check.
-      built_from_this_checkout: ${{ inputs.action != 'promote-stable' }}
 
   create-install-instructions:
     name: Create Install Instructions

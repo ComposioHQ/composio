@@ -18,15 +18,6 @@ on:
         required: false
         default: 'latest'
         type: string
-      built_from_this_checkout:
-        description: >-
-          Set by callers whose run built the release under test from this
-          branch. Those legs must produce the CLI-managed PATH line; legs that
-          install an older published release may still produce install.sh's
-          legacy block.
-        required: false
-        default: false
-        type: boolean
 
 permissions:
   contents: read
@@ -47,7 +38,6 @@ jobs:
 
       - name: Test documented uninstall snippet
         run: bash test/install-sh-uninstall-snippet.test.sh
-
 
       - name: Lint POSIX install scripts
         run: shellcheck -s sh install.sh install/*.sh
@@ -350,9 +340,13 @@ jobs:
           fi
 
       - name: Test shell config updates
-        env:
-          BUILT_FROM_THIS_CHECKOUT: ${{ inputs.built_from_this_checkout }}
         run: |
+          # This assertion holds for every leg, whatever release it installs.
+          # install.sh always comes from this checkout, and it only trusts a
+          # delegated `composio install --shell` when delegated_setup_verified
+          # confirms the startup file byte-for-byte against its own rendering;
+          # otherwise it rewrites the block inline. An older published CLI can
+          # therefore never leave a legacy block behind.
           echo "Checking shell configuration updates..."
 
           if [[ "${{ matrix.shell }}" == "zsh" ]]; then
