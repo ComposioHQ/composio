@@ -9,14 +9,7 @@ import semver from 'semver';
  * @returns boolean indicating if version1 is newer than version2
  */
 export function isNewerVersion(version1: string, version2: string): boolean {
-  const v1 = version1.split('.').map(Number);
-  const v2 = version2.split('.').map(Number);
-
-  for (let i = 0; i < 3; i++) {
-    if (v1[i] > v2[i]) return true;
-    if (v1[i] < v2[i]) return false;
-  }
-  return false;
+  return semver.gt(version1, version2);
 }
 
 const VERSION_CHECK_TIMEOUT_MS = 2_000;
