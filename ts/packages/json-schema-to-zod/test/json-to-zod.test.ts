@@ -386,6 +386,62 @@ describe('jsonSchemaToZod', () => {
       expect(() => zodSchema.parse({ key1: 123 })).toThrow();
     });
 
+    it('should preserve content of a property-less object schema', () => {
+      const schema: JsonSchema = {
+        type: 'object',
+        properties: {
+          dataset_query: {
+            type: 'object',
+            description: 'Query definition in MBQL or native SQL format',
+          },
+        },
+        required: ['dataset_query'],
+      };
+      const zodSchema = jsonSchemaToZod(schema);
+      const payload = { dataset_query: { database: 1, type: 'native' } };
+      expect(zodSchema.parse(payload)).toEqual(payload);
+    });
+
+    it('should allow additional properties when neither properties nor additionalProperties are specified', () => {
+      const schema: JsonSchema = {
+        type: 'object',
+      };
+      const zodSchema = jsonSchemaToZod(schema);
+      expect(zodSchema.parse({})).toEqual({});
+      expect(zodSchema.parse({ anything: 1 })).toEqual({ anything: 1 });
+    });
+
+    it('should allow additional properties when properties is an empty object', () => {
+      const schema: JsonSchema = {
+        type: 'object',
+        properties: {},
+      };
+      const zodSchema = jsonSchemaToZod(schema);
+      expect(zodSchema.parse({ anything: 1 })).toEqual({ anything: 1 });
+    });
+
+    it('should preserve content of property-less objects inside arrays', () => {
+      const schema: JsonSchema = {
+        type: 'object',
+        properties: {
+          rows: { type: 'array', items: { type: 'object' } },
+        },
+      };
+      const zodSchema = jsonSchemaToZod(schema);
+      const payload = { rows: [{ a: 1 }, { b: 'two' }] };
+      expect(zodSchema.parse(payload)).toEqual(payload);
+    });
+
+    it('should still reject content for a property-less object with additionalProperties: false', () => {
+      const schema: JsonSchema = {
+        type: 'object',
+        additionalProperties: false,
+      };
+      const zodSchema = jsonSchemaToZod(schema);
+      expect(zodSchema.parse({})).toEqual({});
+      expect(() => zodSchema.parse({ anything: 1 })).toThrow();
+    });
+
     it('should handle additionalProperties: false with patternProperties', () => {
       const schema: JsonSchema = {
         type: 'object',

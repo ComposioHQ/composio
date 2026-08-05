@@ -9,13 +9,12 @@ import { its } from '../utils/its';
 
 function parseObjectProperties(objectSchema: JsonSchemaObject & { type?: 'object' }, refs: Refs) {
   if (!objectSchema.properties) {
-    // leave it as an empty object or else this will break openai responses
-    return z.object({});
+    return undefined;
   }
 
   const propertyKeys = Object.keys(objectSchema.properties);
   if (propertyKeys.length === 0) {
-    return z.object({});
+    return undefined;
   }
 
   const properties: Record<string, z.ZodTypeAny> = {};
@@ -89,8 +88,8 @@ export function parseObject(
     objectSchema.type === 'object' ? objectSchema : { ...objectSchema, type: 'object' as const };
 
   const propertiesSchema:
-    | z.ZodObject<Record<string, z.ZodTypeAny>, 'strip', z.ZodTypeAny>
-    | undefined = parseObjectProperties(normalizedSchema, refs);
+    z.ZodObject<Record<string, z.ZodTypeAny>, 'strip', z.ZodTypeAny> | undefined =
+    parseObjectProperties(normalizedSchema, refs);
   let zodSchema: z.ZodTypeAny | undefined = propertiesSchema;
 
   const additionalProperties =
