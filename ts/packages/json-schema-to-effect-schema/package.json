@@ -35,6 +35,7 @@
   },
   "devDependencies": {
     "@composio/json-schema-to-zod": "workspace:*",
+    "@types/node": "^24.13.3",
     "tsdown": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:",

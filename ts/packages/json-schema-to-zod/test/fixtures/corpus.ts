@@ -7,9 +7,11 @@
  * convention as the webhook fixtures. Every consumer resolves its own copy
  * module-relatively — no working-directory or repository-root assumptions.
  */
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import * as z from 'zod';
 
-import objectCases from '../../../core/test/fixtures/json-schema-conversion/object-cases.json';
+const CORPUS_PATH = '../../../core/test/fixtures/json-schema-conversion/object-cases.json';
 
 const JsonObject = z.record(z.string(), z.unknown());
 
@@ -73,7 +75,8 @@ let cached: ReadonlyArray<CorpusCase> | undefined;
 /** Decode the shared corpus and enforce its cross-language invariants. */
 export const loadObjectCases = (): ReadonlyArray<CorpusCase> => {
   if (!cached) {
-    const { cases } = Corpus.parse(objectCases);
+    const raw = readFileSync(fileURLToPath(new URL(CORPUS_PATH, import.meta.url)), 'utf8');
+    const { cases } = Corpus.parse(JSON.parse(raw));
     assertCorpusInvariants(cases);
     cached = cases;
   }
