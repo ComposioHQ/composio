@@ -1,7 +1,7 @@
 ---
-title: "Free-Form Object Arguments Are Preserved Across SDKs"
-description: "Tool arguments declared as bare objects are no longer rejected or silently emptied, and Python now enforces the same unknown-key rules as TypeScript"
-date: "2026-08-06"
+title: 'Free-Form Object Arguments Are Preserved Across SDKs'
+description: 'Tool arguments declared as bare objects are no longer rejected or silently emptied, and Python now enforces the same unknown-key rules as TypeScript'
+date: '2026-08-06'
 ---
 
 ## Version Information
@@ -13,8 +13,8 @@ date: "2026-08-06"
 
 ### TypeScript/JavaScript
 
-- Packages: `@composio/core`, `@composio/json-schema-to-zod`
-- Versions: `0.15.0`+, `0.3.0`+
+- Packages: `@composio/core`, `@composio/json-schema-to-zod`, `@composio/claude-agent-sdk`
+- Versions: `0.15.0`+, `0.3.0`+, `0.11.0`+
 
 ---
 
@@ -65,6 +65,7 @@ Root-level `patternProperties` and boolean- or schema-valued `additionalProperti
 In the Python SDK, an object schema that **does** name properties and omits `additionalProperties` now rejects unknown keys instead of silently dropping them.
 
 This affects the providers that build a Pydantic `args_schema` from a tool schema: `composio_langchain`, `composio_langgraph`, and `composio_crewai`. If a model emits an argument the tool does not declare, the call now raises a `ValidationError` instead of executing with that argument removed.
+
 </Callout>
 
 **Before:**
@@ -89,8 +90,25 @@ This brings Python in line with the TypeScript SDK, where the Zod converter has 
 - **`composio_openai`, `composio_anthropic`, `composio_gemini`, and the other non-agentic providers.** These hand the raw JSON schema to the model API and pass the returned arguments straight through, so they never build a Pydantic model from a tool schema.
 - **Declared field behavior, aliases for reserved Python keywords, `skip_default`, combiners, and references.** All unchanged.
 
+## Behavior Change for the Claude Agent SDK Provider
+
+<Callout type="warn">
+**Behavior change**
+
+`@composio/claude-agent-sdk` now registers each tool with its complete object schema rather than a raw property shape.
+
+A raw shape carries only the per-property map, so root-level `additionalProperties` and `patternProperties` were dropped before the Claude Agent SDK ever saw them. An unknown key was stripped from the arguments and the tool executed anyway. It is now rejected with an MCP invalid-params error, matching every other TypeScript provider.
+
+</Callout>
+
+This is also what makes free-form object arguments reach execution intact through this provider: the content of a bare `{"type": "object"}` argument survives registration instead of being discarded with the rest of the root constraints.
+
+### Not affected
+
+- **`@composio/vercel`, `@composio/langchain`, and `@composio/llamaindex`.** These already registered complete schemas, so they picked the fix up with no change.
+
 ## Backward Compatibility
 
 Accepting and preserving free-form object content is backward compatible: payloads that previously failed now succeed, and payloads that previously arrived empty now arrive complete.
 
-The Python unknown-key rejection described above is the one behavior change. Tools whose schemas set `additionalProperties: true`, or whose objects declare no properties, are unaffected.
+The two unknown-key rejections described above — Python agentic providers, and the Claude Agent SDK provider — are the behavior changes. Tools whose schemas set `additionalProperties: true`, or whose objects declare no properties, are unaffected.
