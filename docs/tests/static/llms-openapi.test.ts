@@ -8,17 +8,6 @@ import { SESSION_GUARDRAILS } from "../../lib/llm-guardrails";
 
 let bundledSpec: Record<string, unknown> = {};
 
-mock.module("@/lib/source", () => ({
-  source: {},
-  getReferenceSource: async () => ({}),
-  examplesSource: {},
-  toolkitsSource: {},
-  changelogEntries: [],
-  slugToDate: () => null,
-  formatDate: () => "",
-  getLLMText: async () => "",
-  mdxToCleanMarkdown: async () => "",
-}));
 mock.module("next/navigation", () => ({
   notFound: () => {
     throw new Error("not found");
