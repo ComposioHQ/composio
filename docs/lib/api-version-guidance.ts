@@ -23,20 +23,20 @@ export const TOOL_VERSION_PATHS = [
   '/tools/scopes/required',
 ] as const;
 
-/** Guidance for the changed tool-endpoint defaults. */
+/** Guidance for the tool-endpoint defaults that differ across REST versions. */
 export const TOOL_VERSION_GUIDANCE = `## Tool-endpoint version defaults on v3.1
 
-On v3.1 the five tool endpoints below default their version parameter to the latest toolkit version instead of the pinned \`00000000_00\`:
+On v3.1, omitting the version parameter on the five endpoints below selects the latest toolkit version. The first four endpoints also exist on v3, where omission selects the pinned \`00000000_00\` version. \`POST /tools/scopes/required\` is v3.1-only.
 
 | Endpoint | Version parameter |
 | --- | --- |
 | \`GET /tools\` | \`toolkit_versions\` (query) |
-| \`GET /tools/{tool_slug}\` | \`version\` (query) |
+| \`GET /tools/{tool_slug}\` | \`version\` or \`toolkit_versions\` (query) |
 | \`POST /tools/execute/{tool_slug}\` | \`version\` (body) |
 | \`POST /tools/execute/{tool_slug}/input\` | \`version\` (body) |
 | \`POST /tools/scopes/required\` | \`version\` (body) |
 
-A caller already passing \`version: "latest"\` or \`toolkit_versions: "latest"\` sees no change and can drop the parameter. A caller that wants the v3 pinned default must pass it explicitly — \`version=00000000_00\`, or \`toolkit_versions=00000000_00\` on \`GET /tools\`.
+A v3.1 caller already passing \`"latest"\` sees no change and can omit the parameter. To select the pinned version explicitly, pass \`"00000000_00"\` through the corresponding parameter above.
 
 Triggers and every non-tool endpoint are unchanged between the two prefixes.`;
 
@@ -44,6 +44,25 @@ const TOOL_VERSION_PATH_SET: ReadonlySet<string> = new Set(TOOL_VERSION_PATHS);
 
 /** Longest prefix first to avoid matching `/api/v3` inside `/api/v3.1`. */
 const VERSION_PREFIXES = ['/api/v3.1', '/api/v3'] as const;
+
+/**
+ * Replaces stale OpenAPI default prose with the deployed REST-version default.
+ * The source specs are generated upstream, so the agent-facing renderer fixes
+ * their description without mutating the generated snapshots.
+ */
+export function toolVersionParameterDescription(
+  rawSpecPath: string,
+  description = 'Tool version to use'
+): string {
+  if (!isToolVersionPath(rawSpecPath)) return description;
+
+  const apiVersion = rawSpecPath.startsWith('/api/v3.1') ? '3.1' : '3.0';
+  const defaultVersion = apiVersion === '3.1' ? 'latest' : '00000000_00';
+  const withoutDefault = description.replace(/\s*\(?defaults?\s+to\b[\s\S]*$/i, '').trim();
+  const base = (withoutDefault || 'Tool version to use').replace(/[.:]\s*$/, '');
+
+  return `${base}. Defaults to \`${defaultVersion}\` when omitted on REST API v${apiVersion}.`;
+}
 
 /**
  * The short version pointer for a reference page: which version this page

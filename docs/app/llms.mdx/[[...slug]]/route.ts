@@ -16,6 +16,7 @@ import {
   TOOL_VERSION_GUIDANCE,
   apiVersionPointer,
   isToolVersionPath,
+  toolVersionParameterDescription,
 } from '@/lib/api-version-guidance';
 import { notFound } from 'next/navigation';
 import { readFile } from 'fs/promises';
@@ -378,6 +379,23 @@ function renderSchema(schema: OpenAPISchema, indent = 0, maxDepth = 4, depth = 0
   return lines;
 }
 
+/** Overrides only the top-level request-body version field for affected tool operations. */
+function withToolVersionDescription(rawSpecPath: string, schema: OpenAPISchema): OpenAPISchema {
+  const versionProperty = schema.properties?.version;
+  if (!versionProperty || !isToolVersionPath(rawSpecPath)) return schema;
+
+  return {
+    ...schema,
+    properties: {
+      ...schema.properties,
+      version: {
+        ...versionProperty,
+        description: toolVersionParameterDescription(rawSpecPath, versionProperty.description),
+      },
+    },
+  };
+}
+
 // Get a readable type string
 function getTypeString(schema: OpenAPISchema, depth = 0, maxDepth = 4): string {
   if (depth > maxDepth) return '...';
@@ -563,7 +581,11 @@ export async function openapiPageToMarkdown(page: {
       for (const param of queryParams) {
         const typeStr = getTypeString(param.schema || { type: 'string' });
         const reqMark = param.required ? ' *(required)*' : '';
-        lines.push(`- \`${param.name}\` (${typeStr})${reqMark}: ${param.description || ''}`);
+        const description =
+          param.name === 'version' || param.name === 'toolkit_versions'
+            ? toolVersionParameterDescription(name, param.description)
+            : param.description || '';
+        lines.push(`- \`${param.name}\` (${typeStr})${reqMark}: ${description}`);
       }
       lines.push('');
     }
@@ -588,8 +610,9 @@ export async function openapiPageToMarkdown(page: {
       }
       const schema = operation.requestBody.content['application/json'].schema;
       if (schema) {
+        const renderedSchema = withToolVersionDescription(name, schema);
         lines.push('**Schema:**', '');
-        lines.push(...renderSchema(schema));
+        lines.push(...renderSchema(renderedSchema));
         lines.push('');
 
         // Example
