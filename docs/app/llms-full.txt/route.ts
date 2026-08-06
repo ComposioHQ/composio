@@ -114,58 +114,110 @@ function orderDocPages(pages: PageLike[], treeNodes: TreeNode[]): PageLike[] {
   });
 }
 
-async function getTextForPages(pages: PageLike[]) {
-  return Promise.all(
-    pages.map(async page => {
-      try {
-        return await getLLMText(page, {
-          includeFooter: false,
-          includeGuardrails: false,
-        });
-      } catch {
-        // Graceful fallback if getText fails
-        return `# ${page.data.title} (${page.url})\n\n${page.data.description || ''}`;
-      }
-    })
-  );
+/** Joins the emitted sections, byte-for-byte what `results.join()` produced. */
+const SECTION_SEPARATOR = '\n\n---\n\n';
+
+async function getTextForPage(page: PageLike) {
+  try {
+    return await getLLMText(page, {
+      includeFooter: false,
+      includeGuardrails: false,
+    });
+  } catch {
+    // Graceful fallback if getText fails
+    return `# ${page.data.title} (${page.url})\n\n${page.data.description || ''}`;
+  }
 }
 
-export async function GET() {
-  try {
-    const treeChildren = source.pageTree.children as TreeNode[];
-    const legacyUrls = collectLegacyUrls(treeChildren);
-    const orderedDocsPages = orderDocPages(
-      source.getPages().filter(page => !legacyUrls.has(page.url)),
-      treeChildren
-    );
+async function* getTextForPages(pages: PageLike[]): AsyncGenerator<string> {
+  // Sequential on purpose: `Promise.all` over the whole corpus kept every
+  // rendered page alive at once. Rendering is synchronous CPU work anyway, so
+  // fanning out buys no parallelism — it only raises the high-water mark.
+  for (const page of pages) {
+    yield await getTextForPage(page);
+  }
+}
 
-    const [docsResults, examplesResults, referenceResults, toolkitsResults] = await Promise.all([
-      getTextForPages(orderedDocsPages),
-      getTextForPages(examplesSource.getPages()),
+/**
+ * The page lists, resolved eagerly. Enumerating the sources is what can realistically
+ * fail for the whole response, and it has to fail before the stream starts so the
+ * route can still answer 500 rather than tearing a 200 in half.
+ */
+function collectSections(): { heading: string; pages: PageLike[] }[] {
+  const treeChildren = source.pageTree.children as TreeNode[];
+  const legacyUrls = collectLegacyUrls(treeChildren);
+
+  return [
+    {
+      heading: `# Composio Documentation\n\n> Composio powers 1000+ toolkits, tool search, context management, authentication, and a sandboxed workbench to help you build AI agents that turn intent into action.${SESSION_GUARDRAILS}\n# Documentation\n`,
+      pages: orderDocPages(
+        source.getPages().filter(page => !legacyUrls.has(page.url)),
+        treeChildren
+      ),
+    },
+    { heading: '\n# Examples\n', pages: examplesSource.getPages() },
+    {
+      heading: '\n# API Reference\n',
       // v3.0 page text is dropped from the default LLM context so generators
       // do not learn the superseded prefix — the same reasoning the legacy
       // separator sections already get above. This removes the MDX pages under
       // content/reference/v3/; operation pages were never in this route, which
       // reads the synchronous MDX-only reference source. Filtered with
       // detectApiVersion, not a literal path test.
-      getTextForPages(
-        referenceSource.getPages().filter(page => detectApiVersion(page.url) === '3.1')
-      ),
-      getTextForPages(toolkitsSource.getPages()),
-    ]);
+      pages: referenceSource.getPages().filter(page => detectApiVersion(page.url) === '3.1'),
+    },
+    { heading: '\n# Toolkits\n', pages: toolkitsSource.getPages() },
+  ];
+}
 
-    const results = [
-      `# Composio Documentation\n\n> Composio powers 1000+ toolkits, tool search, context management, authentication, and a sandboxed workbench to help you build AI agents that turn intent into action.${SESSION_GUARDRAILS}\n# Documentation\n`,
-      ...docsResults,
-      '\n# Examples\n',
-      ...examplesResults,
-      '\n# API Reference\n',
-      ...referenceResults,
-      '\n# Toolkits\n',
-      ...toolkitsResults,
-    ];
+/**
+ * Every part of the response, in order, one page at a time. The caller writes
+ * `SECTION_SEPARATOR` between consecutive yields, which reproduces the old
+ * `[...].join('\n\n---\n\n')` exactly.
+ */
+async function* llmsFullParts(sections: { heading: string; pages: PageLike[] }[]) {
+  for (const section of sections) {
+    yield section.heading;
+    yield* getTextForPages(section.pages);
+  }
+}
 
-    return new Response(results.join('\n\n---\n\n'), {
+/**
+ * Streams the parts out instead of materialising the whole corpus twice (once
+ * as an array of rendered pages, once as the joined string). Only the page
+ * being rendered is held.
+ */
+export function partsToStream(parts: AsyncIterable<string>): ReadableStream<Uint8Array> {
+  const encoder = new TextEncoder();
+  const separator = encoder.encode(SECTION_SEPARATOR);
+  const iterator = parts[Symbol.asyncIterator]();
+  let wroteFirst = false;
+
+  return new ReadableStream<Uint8Array>({
+    async pull(controller) {
+      try {
+        const { value, done } = await iterator.next();
+        if (done) {
+          controller.close();
+          return;
+        }
+        if (wroteFirst) controller.enqueue(separator);
+        controller.enqueue(encoder.encode(value));
+        wroteFirst = true;
+      } catch (error) {
+        console.error('[llms-full.txt] Error generating content:', error);
+        controller.error(error);
+      }
+    },
+    async cancel(reason) {
+      await iterator.return?.(reason);
+    },
+  });
+}
+
+export function GET() {
+  try {
+    return new Response(partsToStream(llmsFullParts(collectSections())), {
       headers: {
         'Content-Type': 'text/plain; charset=utf-8',
       },
