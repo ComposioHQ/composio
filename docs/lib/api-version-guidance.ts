@@ -36,15 +36,19 @@ import {
   toCurrentVersionUrl,
 } from './api-version';
 
-/** Baseline: which REST version is current, and what `/api/v3` still is. */
-export const REST_VERSION_GUIDANCE = `
-
-## REST API version
+/**
+ * Baseline: which REST version is current, and what `/api/v3` still is.
+ *
+ * Carries no leading or trailing whitespace. Callers own the spacing around
+ * it, so the exact string survives interpolation, `Array.join`, and a trailing
+ * `trim()` — which is what lets the tests assert containment of the constant
+ * itself rather than of a copied literal.
+ */
+export const REST_VERSION_GUIDANCE = `## REST API version
 
 The current REST API version is **v3.1**, served at \`${API_BASE_URLS['3.1']}\`. Prefer it for new code and new examples.
 
-\`${API_BASE_URLS['3.0']}\` is the previous version. It is frozen with pinned tool-version defaults and remains supported — existing v3 integrations keep working and do not need to migrate.
-`;
+\`${API_BASE_URLS['3.0']}\` is the previous version. It is frozen with pinned tool-version defaults and remains supported — existing v3 integrations keep working and do not need to migrate.`;
 
 /**
  * The five path keys, version prefix stripped, whose version-parameter default
@@ -59,10 +63,11 @@ export const TOOL_VERSION_PATHS = [
   '/tools/scopes/required',
 ] as const;
 
-/** The one behavioral difference between `/api/v3` and `/api/v3.1`. */
-export const TOOL_VERSION_GUIDANCE = `
-
-## Tool-endpoint version defaults on v3.1
+/**
+ * The one behavioral difference between `/api/v3` and `/api/v3.1`.
+ * Whitespace-clean for the same reason as `REST_VERSION_GUIDANCE`.
+ */
+export const TOOL_VERSION_GUIDANCE = `## Tool-endpoint version defaults on v3.1
 
 On v3.1 the five tool endpoints below default their version parameter to the latest toolkit version instead of the pinned \`00000000_00\`:
 
@@ -76,8 +81,7 @@ On v3.1 the five tool endpoints below default their version parameter to the lat
 
 A caller already passing \`version: "latest"\` or \`toolkit_versions: "latest"\` sees no change and can drop the parameter. A caller that wants the v3 pinned default must pass it explicitly — \`version=00000000_00\`, or \`toolkit_versions=00000000_00\` on \`GET /tools\`.
 
-Triggers and every non-tool endpoint are unchanged between the two prefixes.
-`;
+Triggers and every non-tool endpoint are unchanged between the two prefixes.`;
 
 const TOOL_VERSION_PATH_SET: ReadonlySet<string> = new Set(TOOL_VERSION_PATHS);
 

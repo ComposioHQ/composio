@@ -1,5 +1,11 @@
 import { beforeAll, describe, expect, mock, test } from "bun:test";
 
+import {
+  REST_VERSION_GUIDANCE,
+  TOOL_VERSION_GUIDANCE,
+} from "../../lib/api-version-guidance";
+import { SESSION_GUARDRAILS } from "../../lib/llm-guardrails";
+
 let bundledSpec: Record<string, unknown> = {};
 
 mock.module("@/lib/source", () => ({
@@ -182,6 +188,123 @@ describe("LLM OpenAPI markdown", () => {
     expect(markdown).toContain(
       "- `tree` (array<array<array<array<array<...>>>>>):",
     );
+  });
+});
+
+/**
+ * Version identity on operation pages.
+ *
+ * These are the pages that publish a complete working curl example, so they
+ * are the strongest signal an agent acts on — and they never touch
+ * mdxToCleanMarkdown, so a fix confined to lib/source.ts leaves them alone.
+ *
+ * Every fixture below uses production-shaped spec path keys — `/api/v3.1/…`
+ * and `/api/v3/…`, with the `/api` segment — because that is what the
+ * committed specs contain. The synthetic `/v3.1/test` keys in the fixtures
+ * above predate this and are deliberately left alone; do not copy their shape
+ * down here, or these tests will pass against an implementation that
+ * mis-normalizes production paths.
+ */
+describe("LLM OpenAPI markdown — API version identity", () => {
+  function specWith(pathKey: string) {
+    return {
+      paths: {
+        [pathKey]: {
+          get: {
+            summary: "Fixture operation",
+            responses: { 200: { description: "Success" } },
+          },
+        },
+      },
+      servers: [{ url: "https://backend.composio.dev" }],
+    };
+  }
+
+  function renderOperation(pageUrl: string, pathKey: string) {
+    bundledSpec = specWith(pathKey);
+    return openapiPageToMarkdown({
+      url: pageUrl,
+      data: {
+        title: "Fixture operation",
+        getOpenAPIPageProps: () => ({
+          payload: { bundled: bundledSpec },
+          operations: [{ path: pathKey, method: "GET" }],
+        }),
+      },
+    });
+  }
+
+  const V31_PAGE = "/reference/api-reference/auth-configs/getAuthConfigs";
+  const V30_PAGE = "/reference/v3/api-reference/auth-configs/getAuthConfigs";
+
+  test("a v3.1 operation page carries the current-version pointer above the endpoint line", async () => {
+    const markdown = await renderOperation(V31_PAGE, "/api/v3.1/auth_configs");
+
+    expect(markdown).toContain("**API version:**");
+    // Above **Endpoint:**, so a truncating reader still sees it.
+    expect(markdown.indexOf("**API version:**")).toBeLessThan(
+      markdown.indexOf("**Endpoint:**"),
+    );
+  });
+
+  test("a v3.0 operation page carries the legacy pointer and links its v3.1 page", async () => {
+    const markdown = await renderOperation(V30_PAGE, "/api/v3/auth_configs");
+
+    expect(markdown).toContain("**API version:**");
+    expect(markdown).toContain("v3.0");
+    expect(markdown).toContain(
+      "https://docs.composio.dev/reference/api-reference/auth-configs/getAuthConfigs.md",
+    );
+    expect(markdown.indexOf("**API version:**")).toBeLessThan(
+      markdown.indexOf("**Endpoint:**"),
+    );
+  });
+
+  test.each([
+    ["v3.1", V31_PAGE, "/api/v3.1/tools/{tool_slug}"],
+    ["v3.0", V30_PAGE, "/api/v3/tools/{tool_slug}"],
+  ])(
+    "a tool endpoint on %s carries both guidance constants exactly once",
+    async (_label, pageUrl, pathKey) => {
+      const markdown = await renderOperation(pageUrl, pathKey);
+
+      // The v3.1 case fails if the predicate strips /v3.1 without /api, or
+      // tries /api/v3 before /api/v3.1.
+      expect(markdown.split(REST_VERSION_GUIDANCE)).toHaveLength(2);
+      expect(markdown.split(TOOL_VERSION_GUIDANCE)).toHaveLength(2);
+    },
+  );
+
+  test("a non-tool endpoint carries the baseline and NOT the tool-version guidance", async () => {
+    const markdown = await renderOperation(V31_PAGE, "/api/v3.1/auth_configs");
+
+    expect(markdown).toContain(REST_VERSION_GUIDANCE);
+    expect(markdown).not.toContain(TOOL_VERSION_GUIDANCE);
+  });
+
+  test("a near-miss endpoint under /tools behaves like a non-tool endpoint", async () => {
+    // Under /tools, not one of the five — the case a prefix match gets wrong.
+    const markdown = await renderOperation(
+      "/reference/api-reference/tools/getToolsEnum",
+      "/api/v3.1/tools/enum",
+    );
+
+    expect(markdown).toContain(REST_VERSION_GUIDANCE);
+    expect(markdown).not.toContain(TOOL_VERSION_GUIDANCE);
+  });
+
+  test("neither page pulls in SESSION_GUARDRAILS", async () => {
+    // SESSION_GUARDRAILS composes TOOL_VERSION_GUIDANCE. If an operation page
+    // ever appended it, the tool-version text would arrive on every non-tool
+    // page through the back door and the scoping above would be theatre.
+    for (const [pageUrl, pathKey] of [
+      [V31_PAGE, "/api/v3.1/auth_configs"],
+      [V30_PAGE, "/api/v3/auth_configs"],
+    ]) {
+      const markdown = await renderOperation(pageUrl, pathKey);
+      expect(markdown).not.toContain(SESSION_GUARDRAILS);
+      expect(markdown).not.toContain("Instructions for AI Code Generators");
+    }
   });
 });
 

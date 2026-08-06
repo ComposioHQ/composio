@@ -76,5 +76,9 @@ Do **not** generate \`composio.tools.get()\`, \`composio.tools.execute()\`, or \
 ---
 
 # 3. Calling the REST API directly
-${REST_VERSION_GUIDANCE}${TOOL_VERSION_GUIDANCE}${TERMINOLOGY_MIGRATION}
+
+${REST_VERSION_GUIDANCE}
+
+${TOOL_VERSION_GUIDANCE}
+${TERMINOLOGY_MIGRATION}
 `;
