@@ -1,8 +1,14 @@
 import { TERMINOLOGY_MIGRATION } from './terminology';
+import { REST_VERSION_GUIDANCE, TOOL_VERSION_GUIDANCE } from '../api-version-guidance';
 
 /**
  * Default guardrails appended to most pages.
  * Steers LLMs toward the session-based pattern (composio.create + session.tools).
+ *
+ * A reader of a session guide may call any endpoint, so this is a broad
+ * channel: it composes both version guidance constants. They are interpolated
+ * from `lib/api-version-guidance.ts`, never retyped — see the composition rule
+ * there.
  */
 export const SESSION_GUARDRAILS = `
 
@@ -66,5 +72,9 @@ Use \`session.mcp.url\` and \`session.mcp.headers\` with any MCP-compatible clie
 ### 2.3 — DISCOURAGED (do not use unless user explicitly asks)
 
 Do **not** generate \`composio.tools.get()\`, \`composio.tools.execute()\`, or \`composio.provider.handle_tool_calls()\` unless the user explicitly requests direct tool execution. These are a supported but **not recommended** low-level interface.
-${TERMINOLOGY_MIGRATION}
+
+---
+
+# 3. Calling the REST API directly
+${REST_VERSION_GUIDANCE}${TOOL_VERSION_GUIDANCE}${TERMINOLOGY_MIGRATION}
 `;

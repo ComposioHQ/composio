@@ -1,8 +1,12 @@
 import { TERMINOLOGY_MIGRATION } from './terminology';
+import { REST_VERSION_GUIDANCE, TOOL_VERSION_GUIDANCE } from '../api-version-guidance';
 
 /**
  * Guardrails for pages tagged with llmGuardrails: "direct-execution".
  * Concise rules + key patterns for LLMs generating direct execution code.
+ *
+ * Broad channel, so it composes both version guidance constants — interpolated
+ * from `lib/api-version-guidance.ts`, never retyped.
  */
 export const DIRECT_EXECUTION_GUARDRAILS = `
 
@@ -78,5 +82,9 @@ const result = await composio.tools.execute("GITHUB_CREATE_ISSUE", {
 4. **Provider at init** — \`Composio(provider=OpenAIProvider())\` in Python, \`new Composio({ provider: new OpenAIProvider() })\` in TypeScript. Defaults to OpenAI if omitted.
 5. **Correct provider imports** — \`composio_<provider>\` for Python, \`@composio/<provider>\` for TypeScript. For OpenAI Agents SDK use \`composio_openai_agents\` / \`@composio/openai-agents\`.
 6. **Finding toolkit and tool slugs** — browse the Toolkits catalog at https://docs.composio.dev/toolkits (each toolkit page lists tool slugs and versions), or search by task with the CLI: \`composio search "<what you want to do>"\`.
-${TERMINOLOGY_MIGRATION}
+
+---
+
+# Calling the REST API directly
+${REST_VERSION_GUIDANCE}${TOOL_VERSION_GUIDANCE}${TERMINOLOGY_MIGRATION}
 `;

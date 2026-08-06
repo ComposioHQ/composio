@@ -26,6 +26,7 @@ import {
   isToolVersionPath,
 } from '../../lib/api-version-guidance';
 import { getLLMText, mdxToCleanMarkdown, type LLMPage } from '../../lib/source';
+import { DIRECT_EXECUTION_GUARDRAILS, SESSION_GUARDRAILS } from '../../lib/llm-guardrails';
 
 const V31_BASE = 'https://backend.composio.dev/api/v3.1';
 const V30_BASE = 'https://backend.composio.dev/api/v3';
@@ -159,6 +160,19 @@ describe('getLLMText — version pointer', () => {
     // llmGuardrails selector ever runs. Deliberate: appending "enforce the
     // CURRENT patterns" to a point-in-time migration guide contradicts it.
     expect(text).not.toContain('Instructions for AI Code Generators');
+  });
+});
+
+describe('guardrail sets compose the guidance rather than restating it', () => {
+  // Containment of the exported constant, not a substring of prose. A test
+  // matching a copied literal would pass just as happily against two strings
+  // that currently agree and are free to drift.
+  test.each([
+    ['SESSION_GUARDRAILS', SESSION_GUARDRAILS],
+    ['DIRECT_EXECUTION_GUARDRAILS', DIRECT_EXECUTION_GUARDRAILS],
+  ])('%s contains both guidance constants verbatim', (_name, guardrails) => {
+    expect(guardrails).toContain(REST_VERSION_GUIDANCE);
+    expect(guardrails).toContain(TOOL_VERSION_GUIDANCE);
   });
 });
 
