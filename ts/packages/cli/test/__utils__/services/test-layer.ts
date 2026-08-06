@@ -97,15 +97,15 @@ export interface TestLiveInput {
   execPath?: string;
 
   /**
- * Mock toolkit-related data to use in test.
- */
-toolkitsData?: {
-  toolkits?: Toolkits;
-  detailedToolkits?: ToolkitDetailed[];
-  tools?: Tools;
-  triggerTypesAsEnums?: TriggerTypesAsEnums;
-  triggerTypes?: TriggerTypes;
-};
+   * Mock toolkit-related data to use in test.
+   */
+  toolkitsData?: {
+    toolkits?: Toolkits;
+    detailedToolkits?: ToolkitDetailed[];
+    tools?: Tools;
+    triggerTypesAsEnums?: TriggerTypesAsEnums;
+    triggerTypes?: TriggerTypes;
+  };
 
   /**
    * Mock auth-config data to use in test.
@@ -850,6 +850,9 @@ export const TestLayer = (input?: TestLiveInput) =>
             artifactDirectory: Option.getOrUndefined(rawCliUserConfig.artifactDirectory),
             experimentalSubagentTarget: 'auto' as const,
             security: 'auto' as const,
+            onboarding: {
+              hasExecuted: rawCliUserConfig.onboarding.hasExecuted,
+            },
           };
         },
         get raw() {
