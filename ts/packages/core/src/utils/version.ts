@@ -2,23 +2,6 @@ import logger from './logger';
 import { IS_DEVELOPMENT_OR_CI } from './constants';
 import semver from 'semver';
 
-/**
- * Compares two semantic versions and returns true if the first version is newer than the second.
- * @param version1 The first version to compare
- * @param version2 The second version to compare
- * @returns boolean indicating if version1 is newer than version2
- */
-export function isNewerVersion(version1: string, version2: string): boolean {
-  const v1 = version1.split('.').map(Number);
-  const v2 = version2.split('.').map(Number);
-
-  for (let i = 0; i < 3; i++) {
-    if (v1[i] > v2[i]) return true;
-    if (v1[i] < v2[i]) return false;
-  }
-  return false;
-}
-
 const VERSION_CHECK_TIMEOUT_MS = 2_000;
 
 /**
