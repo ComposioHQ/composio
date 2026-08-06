@@ -582,7 +582,8 @@ export async function openapiPageToMarkdown(page: {
         const typeStr = getTypeString(param.schema || { type: 'string' });
         const reqMark = param.required ? ' *(required)*' : '';
         const description =
-          param.name === 'version' || param.name === 'toolkit_versions'
+          (param.name === 'version' || param.name === 'toolkit_versions') &&
+          isToolVersionPath(name)
             ? toolVersionParameterDescription(name, param.description)
             : param.description || '';
         lines.push(`- \`${param.name}\` (${typeStr})${reqMark}: ${description}`);
