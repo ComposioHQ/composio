@@ -1,6 +1,6 @@
 import { Validator } from '@cfworker/json-schema';
 import type { OutputUnit, Schema as InterpreterSchema, SchemaDraft } from '@cfworker/json-schema';
-import { Either, ParseResult, Schema } from 'effect';
+import { Schema } from 'effect';
 
 export type JsonSchemaValidationIssue = {
   readonly code: string;
@@ -232,6 +232,14 @@ const propertyNameFromError = (error: OutputUnit): string | undefined =>
 const requiredNameFromError = (error: OutputUnit): string | undefined =>
   error.error.match(/required property "([^"]+)"/)?.[1];
 
+const matchesPattern = (pattern: string, key: string): boolean => {
+  try {
+    return new RegExp(pattern, 'u').test(key);
+  } catch {
+    return false;
+  }
+};
+
 const propertyIsDeclared = (parent: JsonObject | null, key: string): boolean => {
   if (!parent) {
     return false;
@@ -243,12 +251,7 @@ const propertyIsDeclared = (parent: JsonObject | null, key: string): boolean => 
     return false;
   }
 
-  return Object.keys(parent.patternProperties).some(pattern =>
-    Either.getOrElse(
-      Either.try(() => new RegExp(pattern, 'u').test(key)),
-      () => false
-    )
-  );
+  return Object.keys(parent.patternProperties).some(pattern => matchesPattern(pattern, key));
 };
 
 const hasSpecificChildError = (errors: ReadonlyArray<OutputUnit>, error: OutputUnit): boolean =>
@@ -340,35 +343,43 @@ const defaultFormatIssues = (
     return `${location}: ${issue.message}`;
   });
 
+// Validation is expressed as a filter over `Schema.Unknown` rather than a
+// `Schema.declare` codec: the interpreter already owns the whole decision, so
+// there is nothing to decode, and a filter reports every failure through the
+// `{ path, message }` shape Effect normalizes for us. `Schema.filter` is also
+// the API that survives the Effect 4 rewrite — where `ParseResult` is split
+// into `SchemaIssue`/`SchemaParser` and declarations lose their encode half —
+// as a rename to `Schema.check(Schema.makeFilter(...))`.
 export const jsonSchemaToEffectSchema = (
   jsonSchema: JsonObject,
   options: JsonSchemaToEffectSchemaOptions = {}
-) => {
+): Schema.Schema<unknown> => {
   const normalizedSchema = normalizeJsonSchema(jsonSchema);
   const validator = new Validator(normalizedSchema, options.draft ?? '7', false);
   const formatIssues = options.formatIssues ?? defaultFormatIssues;
 
-  return Schema.declare([Schema.Unknown], {
-    decode: () => (input, _parseOptions, ast) => {
-      const validation = Either.try(() => validator.validate(input));
-      if (Either.isLeft(validation)) {
-        return ParseResult.fail(
-          new ParseResult.Type(ast, input, `JSON Schema validation failed: ${validation.left}`)
-        );
+  return Schema.Unknown.pipe(
+    Schema.filter(input => {
+      let validation: ReturnType<Validator['validate']>;
+      try {
+        validation = validator.validate(input);
+      } catch (error) {
+        return `JSON Schema validation failed: ${error}`;
       }
-      if (validation.right.valid) {
-        return ParseResult.succeed(input);
+      if (validation.valid) {
+        return true;
       }
 
-      const issues = mapValidationErrors(validation.right.errors, normalizedSchema);
+      const issues = mapValidationErrors(validation.errors, normalizedSchema);
       const messages = formatIssues(issues);
-      const [first, ...rest] = messages.map(message => new ParseResult.Type(ast, input, message));
-      return ParseResult.fail(
-        first
-          ? new ParseResult.Composite(ast, input, [first, ...rest])
-          : new ParseResult.Type(ast, input, 'Input does not match the JSON schema.')
-      );
-    },
-    encode: () => input => ParseResult.succeed(input),
-  });
+      if (messages.length === 0) {
+        return 'Input does not match the JSON schema.';
+      }
+
+      // `formatIssues` may fan one issue out into several messages, so the
+      // location stays inside the message (as it always has) instead of being
+      // reported as a structural path.
+      return messages.map(message => ({ path: [], message }));
+    })
+  );
 };

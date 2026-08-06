@@ -1,5 +1,5 @@
 import { jsonSchemaToZod } from '@composio/json-schema-to-zod';
-import { Either, Schema } from 'effect';
+import { Option, Schema } from 'effect';
 import { describe, expect, it } from 'vitest';
 import { jsonSchemaToEffectSchema, type JsonSchemaValidationIssue } from '../src/index';
 import { acceptedFor, loadObjectCases } from './fixtures/corpus';
@@ -7,8 +7,8 @@ import { acceptedFor, loadObjectCases } from './fixtures/corpus';
 type JsonSchema = Record<string, unknown>;
 
 const effectAccepts = (schema: JsonSchema, input: unknown): boolean =>
-  Either.isRight(
-    Schema.decodeUnknownEither(jsonSchemaToEffectSchema(schema), { errors: 'all' })(input)
+  Option.isSome(
+    Schema.decodeUnknownOption(jsonSchemaToEffectSchema(schema), { errors: 'all' })(input)
   );
 
 const zodAccepts = (schema: JsonSchema, input: unknown): boolean =>
@@ -100,13 +100,13 @@ describe('jsonSchemaToEffectSchema', () => {
       },
     });
 
-    const result = Schema.decodeUnknownEither(effectSchema, { errors: 'all' })({
+    const result = Schema.decodeUnknownOption(effectSchema, { errors: 'all' })({
       email: 42,
       profile: { age: 'old', extra: true },
       typo: true,
     });
 
-    expect(Either.isLeft(result)).toBe(true);
+    expect(Option.isNone(result)).toBe(true);
     expect(captured).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ code: 'type', path: ['email'] }),
@@ -125,16 +125,16 @@ describe('shared cross-SDK object corpus', () => {
         const expected = acceptedFor(instance, 'effect');
 
         it(`instance ${index} is ${expected ? 'accepted' : 'rejected'}`, () => {
-          const result = Schema.decodeUnknownEither(
+          const result = Schema.decodeUnknownOption(
             jsonSchemaToEffectSchema(testCase.schema as JsonSchema),
             { errors: 'all' }
           )(instance.input);
 
-          expect(Either.isRight(result)).toBe(expected);
-          if (Either.isRight(result) && instance.effect && 'output' in instance.effect) {
+          expect(Option.isSome(result)).toBe(expected);
+          if (Option.isSome(result) && instance.effect && 'output' in instance.effect) {
             // Effect decoding is validation-only: a successful decode returns the
             // input value unchanged, with no default materialization.
-            expect(result.right).toEqual(instance.effect.output);
+            expect(result.value).toEqual(instance.effect.output);
           }
         });
       }
