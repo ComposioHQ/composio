@@ -265,6 +265,24 @@ describe('ToolRouterSessionFilesMount', () => {
       expect(mockClient.toolRouter.session.files.createUploadURL).not.toHaveBeenCalled();
     });
 
+    it('should release a failed URL response body before throwing', async () => {
+      mockLookup.mockResolvedValue([{ address: '93.184.216.34', family: 4 }] as never);
+      const cancel = vi.fn();
+      const response = new Response(new ReadableStream({ cancel }), {
+        status: 500,
+        statusText: 'Internal Server Error',
+      });
+      vi.mocked(fetch).mockResolvedValueOnce(response);
+
+      await expect(filesMount.upload('https://files.example/failed.txt')).rejects.toThrow(
+        'Failed to fetch file from URL: Internal Server Error'
+      );
+
+      expect(cancel).toHaveBeenCalledOnce();
+      expect(response.bodyUsed).toBe(true);
+      expect(mockClient.toolRouter.session.files.createUploadURL).not.toHaveBeenCalled();
+    });
+
     it('should fetch and upload a public URL through the SSRF-safe path', async () => {
       mockLookup.mockResolvedValue([{ address: '93.184.216.34', family: 4 }] as never);
       vi.mocked(fetch)
