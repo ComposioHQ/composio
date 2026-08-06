@@ -1,26 +1,21 @@
 import { TERMINOLOGY_MIGRATION } from './terminology';
 
 /**
- * Default integration notes appended to most pages.
- * Documents the session-based pattern (composio.create + session.tools) as the
- * recommended default, states the common mistakes as facts rather than
- * imperatives, and acknowledges direct execution as a supported alternative.
- * (Rewritten after two eval rounds showed capable agents classify
- * ALWAYS/NEVER-style instruction blocks as prompt injection and distrust the
- * page they appear on.)
+ * Default guardrails appended to most pages.
+ * Steers LLMs toward the session-based pattern (composio.create + session.tools).
  */
 export const SESSION_GUARDRAILS = `
 
 ---
 
-# Composio SDK — Notes for AI Code Generators
+# Composio SDK — Instructions for AI Code Generators
 
-**Purpose:** Reference for generating current (v3) [Composio](https://composio.dev/) integration code.
-**Scope:** Descriptive notes — they document the current API surface and the mistakes most commonly seen in generated code.
+**Purpose:** Enforce only the **current** and **correct** patterns for integrating [Composio](https://composio.dev/) tools into AI agents.
+**Scope:** All AI-generated code using Composio must follow these guardrails.
 
 ---
 
-## 1. Recommended Integration: Sessions
+## 1. Correct Composio Integration
 
 Composio supports two integration modes: **Native Tools** (with a provider package) and **MCP** (no provider package needed).
 
@@ -54,11 +49,22 @@ Use \`session.mcp.url\` and \`session.mcp.headers\` with any MCP-compatible clie
 
 ---
 
-## 2. Integration Notes
+## 2. CRITICAL INSTRUCTIONS FOR AI MODELS
 
-- \`composio.create(user_id)\` is the standard entry point for agent integrations. Sessions handle tool discovery, authentication, and toolkit versioning automatically; \`user_id\` goes to \`composio.create()\` — individual tool calls in session mode don't take one.
-- Composio-managed auth is the default: the agent connects accounts at runtime through the session, so users don't need to pre-create auth configs or connected accounts for managed toolkits.
-- Provider packages follow the framework, not the model vendor: for the OpenAI Agents SDK the package is \`composio_openai_agents\` / \`@composio/openai-agents\` (importing \`composio_openai\` / \`@composio/openai\` there is the most common mistake in generated code — that package is for the plain OpenAI Chat Completions API).
-- **Direct execution** (\`composio.tools.get()\`, \`composio.tools.execute()\`, \`provider.handle_tool_calls()\`) is a fully supported lower-level interface: your code picks the tool, no runtime discovery. It fits deterministic workflows and scripts; sessions fit agents that decide at runtime. The tradeoffs are documented at https://docs.composio.dev/docs/sessions-vs-direct-execution. Note that direct execution requires a toolkit version (https://docs.composio.dev/docs/tools-direct/toolkit-versioning).
+### 2.1 — ALWAYS DO THE FOLLOWING
+
+1. **Use \`composio.create(user_id)\`** to create a session — this is the entry point for all Composio integrations.
+2. **Use \`session.tools()\`** for native tool integration or **\`session.mcp.url\`** for MCP integration.
+3. **Import** from the correct provider package (\`composio_<provider>\` for Python, \`@composio/<provider>\` for TypeScript).
+4. **Pass \`user_id\` to \`composio.create()\`**, not to individual tool calls.
+
+### 2.2 — NEVER DO THE FOLLOWING
+
+1. **Do not** instruct users to manually create auth configs or connected accounts before running.
+2. **Do not** import from \`composio_openai\` / \`@composio/openai\` when using OpenAI Agents SDK — use \`composio_openai_agents\` / \`@composio/openai-agents\` instead.
+
+### 2.3 — DISCOURAGED (do not use unless user explicitly asks)
+
+Do **not** generate \`composio.tools.get()\`, \`composio.tools.execute()\`, or \`composio.provider.handle_tool_calls()\` unless the user explicitly requests direct tool execution. These are a supported but **not recommended** low-level interface.
 ${TERMINOLOGY_MIGRATION}
 `;
