@@ -55,7 +55,7 @@ app.get('/test/mcp-client', async c => {
     provider: new VercelProvider(),
   });
 
-  const session = await composio.create('default', {
+  const session = await composio.sessions.create('default', {
     toolkits: ['hackernews'],
     manageConnections: true,
     tools: {
@@ -98,7 +98,7 @@ app.get('/test/agent', async c => {
     provider: new VercelProvider(),
   });
 
-  const session = await composio.create('default', {
+  const session = await composio.sessions.create('default', {
     toolkits: ['hackernews'],
     manageConnections: true,
     preload: { tools: ['HACKERNEWS_GET_USER'] },

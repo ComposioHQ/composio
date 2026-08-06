@@ -13,7 +13,7 @@ import { Composio } from '@composio/core';
 
 const composio = new Composio({ apiKey: process.env.COMPOSIO_API_KEY });
 
-const session = await composio.create('user_123');
+const session = await composio.sessions.create('user_123');
 const tools = await session.tools();
 ```
 

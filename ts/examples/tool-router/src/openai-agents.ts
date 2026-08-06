@@ -3,7 +3,7 @@ import { Agent, hostedMcpTool, run, type AgentInputItem } from '@openai/agents';
 import { createInterface } from 'node:readline/promises';
 
 const composio = new Composio();
-const { mcp } = await composio.create('default', { mcp: true });
+const { mcp } = await composio.sessions.create('default', { mcp: true });
 
 const agent = new Agent({
   name: 'Personal Assistant',

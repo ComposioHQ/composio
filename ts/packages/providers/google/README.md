@@ -25,7 +25,7 @@ const composio = new Composio({
 const ai = new GoogleGenAI({ apiKey: process.env.GOOGLE_API_KEY! });
 
 // Create a session for your user
-const session = await composio.create('user_123');
+const session = await composio.sessions.create('user_123');
 const tools = await session.tools();
 
 const chat = ai.chats.create({

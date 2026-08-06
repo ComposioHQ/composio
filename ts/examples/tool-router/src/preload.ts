@@ -112,7 +112,7 @@ const composio = new Composio({
   provider: new OpenAIAgentsProvider(),
 });
 
-const session = await composio.create('preload-example-user', {
+const session = await composio.sessions.create('preload-example-user', {
   toolkits: ['hackernews'],
   tools: {
     hackernews: {

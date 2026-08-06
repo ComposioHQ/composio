@@ -614,7 +614,7 @@ const getIssueInfo = experimental_createTool("GET_ISSUE_INFO", {
   },
 });
 
-const session = await composio.create("default", {
+const session = await composio.sessions.create("default", {
   experimental: { customTools: [getIssueInfo] },
 });
 ```

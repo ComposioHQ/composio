@@ -42,7 +42,7 @@ e2e(import.meta.url, {
       it(
         'should work with Tool Router',
         async () => {
-          const session = await composio.create('default', {
+          const session = await composio.sessions.create('default', {
             toolkits: ['hackernews'],
             mcp: true,
             manageConnections: true,

@@ -4,7 +4,7 @@ description: What Composio sessions do, and how they scope users, tools, toolkit
 keywords: [session, userID, tools, toolkits, meta tools, mcp, workbench]
 ---
 
-A **session** is the runtime context for an agentic run: the scoped environment an AI agent works in while it acts for one of your users. You create it with `composio.create(userId)`, and it ties together the user, the toolkits available, authentication, and connected accounts. By default it gives the agent meta tools to discover, authenticate, and execute app tools at runtime, instead of loading hundreds of tool definitions into context.
+A **session** is the runtime context for an agentic run: the scoped environment an AI agent works in while it acts for one of your users. In TypeScript, you create it with `composio.sessions.create(userId)`; Python uses `composio.create(user_id)`. It ties together the user, the toolkits available, authentication, and connected accounts. By default it gives the agent meta tools to discover, authenticate, and execute app tools at runtime, instead of loading hundreds of tool definitions into context.
 
 ## The basics
 
@@ -13,7 +13,7 @@ Create a session for a user, then read its tools formatted for your framework. T
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
 <Tab value="Python">
 ```python
-session = composio.sessions.create(user_id="user_123")
+session = composio.create(user_id="user_123")
 
 tools = session.tools()
 ```
@@ -23,7 +23,7 @@ tools = session.tools()
 import { Composio } from '@composio/core';
 const composio = new Composio({ apiKey: 'your_api_key' });
 // ---cut---
-const session = await composio.create("user_123");
+const session = await composio.sessions.create("user_123");
 
 const tools = await session.tools();
 ```
@@ -50,12 +50,12 @@ Every toolkit in the catalog is discoverable by default. Create a session withou
 A user is an identifier from your app. Composio stores connections under that ID, so tools run with the right account and stay isolated from other users. Use a stable identifier like your database ID, never one that can change.
 
 <Accordions>
-<Accordion title="userID best practices">
-- **Recommended:** database UUID or primary key (`user.id`)
-- **Acceptable:** unique username (`user.username`)
-- **Avoid:** email addresses (they can change)
-- **Never:** `default` in production (it exposes other users' data)
-</Accordion>
+  <Accordion title="userID best practices">
+    - **Recommended:** database UUID or primary key (`user.id`)
+    - **Acceptable:** unique username (`user.username`)
+    - **Avoid:** email addresses (they can change)
+    - **Never:** `default` in production (it exposes other users' data)
+  </Accordion>
 </Accordions>
 
 A user can connect multiple accounts for the same toolkit, like work and personal Gmail. Use the same userID, then select the connected account when a session needs a specific one. See [Managing multiple connected accounts](/docs/managing-multiple-connected-accounts).
@@ -86,9 +86,9 @@ The sandbox is scoped to the session, so files, variables, helper functions, and
 
 ## How sessions behave
 
-Every `create()` call returns a new session ID. Use it for a fresh task context.
+Every session-creation call returns a new session ID. Use it for a fresh task context.
 
-Sessions persist on the server and don't expire. For multi-turn conversations, store the session ID and reuse it with `composio.use()` instead of calling `create()` again.
+Sessions persist on the server and don't expire. For multi-turn conversations, store the session ID and reuse it with TypeScript's `composio.sessions.use()` or Python's `composio.use()` instead of creating another session.
 
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
 <Tab value="Python">
@@ -102,7 +102,7 @@ tools = session.tools()
 import { Composio } from '@composio/core';
 const composio = new Composio({ apiKey: 'your_api_key' });
 // ---cut---
-const session = await composio.use("session_id");
+const session = await composio.sessions.use("session_id");
 const tools = await session.tools();
 ```
 </Tab>
@@ -124,7 +124,7 @@ session.update(
 ```typescript
 import { Composio } from '@composio/core';
 const composio = new Composio({ apiKey: 'your_api_key' });
-const session = await composio.use("session_id");
+const session = await composio.sessions.use("session_id");
 // ---cut---
 await session.update({
   toolkits: ["gmail", "slack"],
@@ -139,4 +139,9 @@ Create a new session for a different user or a fundamentally different task setu
 
 ## Next
 
-<Card icon={<Wrench />} title="Configuring Sessions" href="/docs/configuring-sessions" description="Enable toolkits, set auth configs, and select connected accounts" />
+<Card
+  icon={<Wrench />}
+  title="Configuring Sessions"
+  href="/docs/configuring-sessions"
+  description="Enable toolkits, set auth configs, and select connected accounts"
+/>

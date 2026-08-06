@@ -4,10 +4,10 @@ This is your always-on map of Composio's concepts and the canonical page for eac
 
 ## Core model
 
-- **Session** — the runtime context for one user. `composio.create(userId)` (or the canonical `composio.sessions.create(...)`) returns a session that ties together the user, toolkits, authentication, connected accounts, and a code-execution sandbox. By default it exposes meta tools the agent calls at runtime to discover, authenticate, and execute tools. → [What is a session?](/docs/how-composio-works)
+- **Session** — the runtime context for one user. In TypeScript, `composio.sessions.create(userId)` returns a session; Python uses `composio.create(user_id)`. It ties together the user, toolkits, authentication, connected accounts, and a code-execution sandbox. By default it exposes meta tools the agent calls at runtime to discover, authenticate, and execute tools. → [What is a session?](/docs/how-composio-works)
 - **Configuring a session** — filter toolkits and tools, set auth configs, select connected accounts, preload tools, the direct-tools preset, sandbox tier, and session methods (`tools()`, `toolkits()`, `authorize()`). → [Configuring sessions](/docs/configuring-sessions)
 - **Sessions via MCP** — create a session with `{ mcp: true }` to expose `session.mcp.url` / `session.mcp.headers` for any MCP client. → [Using sessions via MCP](/docs/sessions-via-mcp)
-- **Reusing sessions** — sessions persist on the server; store the session ID and reuse with `composio.use(sessionId)`, or update in place with `session.update(...)`. → [What is a session?](/docs/how-composio-works)
+- **Reusing sessions** — sessions persist on the server; store the session ID and reuse it with TypeScript's `composio.sessions.use(sessionId)` or Python's `composio.use(session_id)`, or update in place with `session.update(...)`. → [What is a session?](/docs/how-composio-works)
 
 ## Tools and toolkits
 

@@ -6,9 +6,8 @@ import { ToolRouter } from './ToolRouter';
 /**
  * First-class API for creating and reusing Composio sessions.
  *
- * `composio.sessions.create(...)` is the canonical session creation entrypoint.
- * The top-level `composio.create(...)` method remains as a backwards-compatible
- * alias for `composio.sessions.create(...)`.
+ * Use `composio.sessions.create(...)` to create a session and
+ * `composio.sessions.use(...)` to reuse one.
  */
 export class Sessions<
   TToolCollection,
