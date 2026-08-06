@@ -263,7 +263,7 @@ describe('API version guidance constants', () => {
     expect(TOOL_VERSION_GUIDANCE.toLowerCase()).not.toContain('identical');
   });
 
-  test('exactly five tool paths flip their version default', () => {
+  test('exactly five tool paths need explicit version-default guidance', () => {
     expect(TOOL_VERSION_PATHS).toHaveLength(5);
   });
 });

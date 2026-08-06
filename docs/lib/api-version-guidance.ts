@@ -14,7 +14,7 @@ The current REST API version is **v3.1**, served at \`${API_BASE_URLS['3.1']}\`.
 
 \`${API_BASE_URLS['3.0']}\` is the previous version. It is frozen with pinned tool-version defaults and remains supported — existing v3 integrations keep working and do not need to migrate.`;
 
-/** Version-stripped paths whose defaults change. */
+/** Version-stripped tool paths whose defaults need explicit guidance. */
 export const TOOL_VERSION_PATHS = [
   '/tools',
   '/tools/{tool_slug}',
