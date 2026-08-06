@@ -13,6 +13,11 @@
     "CODE_OF_CONDUCT.md",
     "code_of_conduct.md"
   ],
-  "rules": [], 
+  "rules": [
+    "The current Composio REST API version is v3.1, served at https://backend.composio.dev/api/v3.1. Prefer it for new code and new examples.",
+    "https://backend.composio.dev/api/v3 is the previous REST API version. It is frozen with pinned tool-version defaults and remains supported — existing v3 integrations keep working and do not need to migrate.",
+    "On v3.1, GET /tools, GET /tools/{tool_slug}, POST /tools/execute/{tool_slug}, POST /tools/execute/{tool_slug}/input, and POST /tools/scopes/required default their version parameter to the latest toolkit version instead of the pinned 00000000_00. Code that needs the v3 pinned default must pass it explicitly: version=00000000_00, or toolkit_versions=00000000_00 on GET /tools. Triggers and every non-tool endpoint are unchanged.",
+    "TypeScript (@composio/core) and Python (composio) SDK callers are already on v3.1 through the generated client; this only affects direct REST calls."
+  ],
   "previousVersions": []
 }

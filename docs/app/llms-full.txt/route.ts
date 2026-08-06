@@ -7,6 +7,7 @@ import {
   type LLMPage,
 } from '@/lib/source';
 import { SESSION_GUARDRAILS } from '@/lib/llm-guardrails';
+import { detectApiVersion } from '@/lib/api-version';
 import type { ReactNode } from 'react';
 
 export const revalidate = false;
@@ -141,7 +142,15 @@ export async function GET() {
     const [docsResults, examplesResults, referenceResults, toolkitsResults] = await Promise.all([
       getTextForPages(orderedDocsPages),
       getTextForPages(examplesSource.getPages()),
-      getTextForPages(referenceSource.getPages()),
+      // v3.0 page text is dropped from the default LLM context so generators
+      // do not learn the superseded prefix — the same reasoning the legacy
+      // separator sections already get above. This removes the MDX pages under
+      // content/reference/v3/; operation pages were never in this route, which
+      // reads the synchronous MDX-only reference source. Filtered with
+      // detectApiVersion, not a literal path test.
+      getTextForPages(
+        referenceSource.getPages().filter(page => detectApiVersion(page.url) === '3.1')
+      ),
       getTextForPages(toolkitsSource.getPages()),
     ]);
 
