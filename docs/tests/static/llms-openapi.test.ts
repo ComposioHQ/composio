@@ -34,6 +34,8 @@ mock.module("@/lib/meta-tools-data", () => ({
   getMetaToolBySlug: async () => null,
 }));
 mock.module("@/lib/toolkit-schema", () => ({
+  apiToolListSchema: { safeParse: (value: unknown) => ({ success: true, data: value }) },
+  apiTriggerListSchema: { safeParse: (value: unknown) => ({ success: true, data: value }) },
   processSchema: (schema: unknown) => schema,
   toolFromApi: (tool: unknown) => tool,
 }));

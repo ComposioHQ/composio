@@ -186,6 +186,21 @@ describe('getLLMText — version pointer', () => {
     expect(text).not.toContain('**API version:**');
   });
 
+  test('an SDK reference page gets no REST version pointer', async () => {
+    const text = await getLLMText(
+      llmPage('/reference/sdk-reference/typescript/tools', '# Tools')
+    );
+    expect(text).not.toContain('**API version:**');
+  });
+
+  test('the legacy authentication page links to its renamed current counterpart', async () => {
+    const text = await getLLMText(
+      llmPage('/reference/v3/authentication', '# Authentication'),
+      { includeGuardrails: false }
+    );
+    expect(text).toContain('https://docs.composio.dev/reference/authenticating-to-composio.md');
+  });
+
   test('a legacy: true page keeps its legacy note and still emits no guardrails', async () => {
     const text = await getLLMText(
       llmPage('/docs/tools-direct/executing-tools', '# Executing tools', { legacy: true })

@@ -29,7 +29,7 @@ function serializeEndpoints(endpoints: unknown, label: string): string {
       `Invalid ApiEndpointsTable payload for ${label}:\n${z.prettifyError(parsed.error)}`
     );
   }
-  return JSON.stringify(parsed.data);
+  return JSON.stringify(endpoints);
 }
 
 /**
