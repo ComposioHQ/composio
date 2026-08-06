@@ -38,7 +38,7 @@ On v3.1, omitting the version parameter on the five endpoints below selects the 
 
 A v3.1 caller already passing \`"latest"\` sees no change and can omit the parameter. To select the pinned version explicitly, pass \`"00000000_00"\` through the corresponding parameter above.
 
-Triggers and every non-tool endpoint are unchanged between the two prefixes.`;
+This version-default change is limited to the five endpoints above.`;
 
 const TOOL_VERSION_PATH_SET: ReadonlySet<string> = new Set(TOOL_VERSION_PATHS);
 

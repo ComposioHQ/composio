@@ -115,7 +115,7 @@ describe("Content - provider compatibility", () => {
 });
 
 describe("Content - Context7 ingest rules", () => {
-  test("context7.json states that v3.1 is the current REST API", async () => {
+  test("context7.json states the current REST version without claiming route parity", async () => {
     // Context7 ingests this repo for coding agents. Without a rule, nothing in
     // the ingested corpus says which REST version is current.
     const raw = await readFile(join(import.meta.dir, "../../../context7.json"), "utf-8");
@@ -126,6 +126,12 @@ describe("Content - Context7 ingest rules", () => {
     expect(
       (rules as string[]).some(rule => rule.includes("https://backend.composio.dev/api/v3.1")),
     ).toBe(true);
+    expect(
+      (rules as string[]).some(rule =>
+        rule.includes("This version-default change is limited to these five endpoints."),
+      ),
+    ).toBe(true);
+    expect((rules as string[]).join("\n")).not.toMatch(/every non-tool endpoint.*unchanged/i);
   });
 });
 

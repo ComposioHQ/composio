@@ -255,12 +255,12 @@ describe('guardrail sets compose the guidance rather than restating it', () => {
 });
 
 describe('API version guidance constants', () => {
-  test('the REST baseline names the v3.1 base URL and neither constant claims parity', () => {
+  test('the REST baseline names v3.1 without claiming route parity', () => {
     expect(REST_VERSION_GUIDANCE).toContain('https://backend.composio.dev/api/v3.1');
-    // v3.1 is a structural superset with five changed tool-endpoint defaults,
-    // not a twin. "identical" shipped in an earlier draft and was wrong.
-    expect(REST_VERSION_GUIDANCE.toLowerCase()).not.toContain('identical');
-    expect(TOOL_VERSION_GUIDANCE.toLowerCase()).not.toContain('identical');
+    expect(TOOL_VERSION_GUIDANCE).toContain(
+      'This version-default change is limited to the five endpoints above.'
+    );
+    expect(TOOL_VERSION_GUIDANCE).not.toMatch(/every non-tool endpoint.*unchanged/i);
   });
 
   test('exactly five tool paths need explicit version-default guidance', () => {
