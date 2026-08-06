@@ -71,7 +71,7 @@ e2e(import.meta.url, {
         blocked: true,
         blocked_reason: 'login_required',
         human_action: expect.stringContaining('cliKey='),
-        next_command: 'composio login',
+        next_command: 'composio login --poll',
         toolkit: null,
       });
       expect(loginServer.requests).toEqual(['POST /api/v3.1/cli/create-session']);
