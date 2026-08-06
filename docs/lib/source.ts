@@ -153,6 +153,41 @@ export function getOgImageUrl(
 }
 
 /**
+ * `<ApiEndpointsTable />` reaches this converter in two different shapes.
+ *
+ * `getLLMText` reads fumadocs' *processed* markdown, which re-serializes the
+ * JSX expression attribute as a quoted string with the inner quotes escaped:
+ *
+ *   <ApiEndpointsTable endpoints="[{&#x22;method&#x22;:&#x22;GET&#x22;, ...}]" />
+ *
+ * while `lib/search-index.ts` passes the raw file content, which keeps the
+ * authored form:
+ *
+ *   <ApiEndpointsTable endpoints={[{"method":"GET", ...}]} />
+ *
+ * Matching only the authored form is what left the Endpoints section empty on
+ * every live tag page, so both are matched here. Braces are not escaped in the
+ * processed form, and every inner `"` is — so a non-greedy match to the next
+ * unescaped quote is exact.
+ */
+const API_ENDPOINTS_TABLE_REGEX =
+  /<ApiEndpointsTable\s+endpoints=(?:\{([\s\S]*?)\}\s*\/>|"([\s\S]*?)"\s*\/>)/g;
+
+/** Reverses the entity escaping fumadocs applies to JSX attribute values. */
+function decodeHtmlEntities(value: string): string {
+  return value
+    .replace(/&#x([0-9a-fA-F]+);/g, (_, hex: string) =>
+      String.fromCodePoint(Number.parseInt(hex, 16))
+    )
+    .replace(/&#(\d+);/g, (_, dec: string) => String.fromCodePoint(Number.parseInt(dec, 10)))
+    .replace(/&quot;/g, '"')
+    .replace(/&apos;/g, "'")
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&amp;/g, '&');
+}
+
+/**
  * Renders an `<ApiEndpointsTable />` payload as a markdown table.
  *
  * Degrades rather than throws: a malformed payload emits nothing for that one
@@ -213,8 +248,14 @@ export function mdxToCleanMarkdown(content: string, url?: string): string {
   // section to every agent while the superseded v3.0 operation pages published
   // a complete working request. That asymmetry is why agents reached for v3.
   result = result.replace(/<ApiBaseUrl\s*\/>/g, `\`${API_BASE_URLS[version]}\``);
-  result = result.replace(/<ApiEndpointsTable\s+endpoints=\{([\s\S]*?)\}\s*\/>/g, (_, payload) =>
-    endpointsTableToMarkdown(payload, version, url)
+  result = result.replace(
+    API_ENDPOINTS_TABLE_REGEX,
+    (_, bracedPayload?: string, quotedPayload?: string) =>
+      endpointsTableToMarkdown(
+        bracedPayload ?? decodeHtmlEntities(quotedPayload ?? ''),
+        version,
+        url
+      )
   );
 
   // Convert YouTube to link

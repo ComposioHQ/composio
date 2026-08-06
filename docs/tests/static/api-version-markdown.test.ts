@@ -35,8 +35,22 @@ const V30_BASE = 'https://backend.composio.dev/api/v3';
 const CURRENT_URL = '/reference/api-reference/tools';
 const LEGACY_URL = '/reference/v3/api-reference/tools';
 
+/** The authored MDX shape, which `lib/search-index.ts` reads from the file. */
 function endpointsTable(endpoints: unknown[]): string {
   return `## Endpoints\n\n<ApiEndpointsTable endpoints={${JSON.stringify(endpoints)}} />\n`;
+}
+
+/**
+ * The shape `getLLMText` actually receives: fumadocs' processed markdown
+ * re-serializes the JSX expression attribute as a quoted string with the inner
+ * quotes entity-escaped. Matching only the authored shape above still passes a
+ * unit test while leaving every live tag page's Endpoints section empty, which
+ * is exactly the defect this work exists to fix — so the production shape gets
+ * its own fixture.
+ */
+function processedEndpointsTable(endpoints: unknown[]): string {
+  const escaped = JSON.stringify(endpoints).replace(/"/g, '&#x22;');
+  return `## Endpoints\n\n<ApiEndpointsTable endpoints="${escaped}" />\n`;
 }
 
 const TOOLS_ENDPOINT = {
@@ -92,6 +106,27 @@ describe('mdxToCleanMarkdown — ApiEndpointsTable', () => {
     // href kept as a relative link, summary preserved
     expect(markdown).toContain('[List tools](/reference/api-reference/tools/getTools)');
     expect(markdown).toContain('[Execute a tool](/reference/api-reference/tools/executeTool)');
+  });
+
+  test('renders the processed-markdown shape getLLMText actually receives', () => {
+    const markdown = mdxToCleanMarkdown(
+      processedEndpointsTable([
+        TOOLS_ENDPOINT,
+        {
+          method: 'GET',
+          pathV31: '/api/v3.1/tools/{tool_slug}',
+          pathV3: '/api/v3/tools/{tool_slug}',
+          summary: 'Get tool by slug',
+          href: '/reference/api-reference/tools/getToolsByToolSlug',
+        },
+      ]),
+      CURRENT_URL
+    );
+
+    expect(markdown).toContain('[List tools](/reference/api-reference/tools/getTools)');
+    expect(markdown).toContain('`/api/v3.1/tools/{tool_slug}`');
+    // The escaping must actually be reversed, not carried through.
+    expect(markdown).not.toContain('&#x22;');
   });
 
   test('uses pathV3 on a legacy-tree URL', () => {
