@@ -103,7 +103,11 @@ export class ClaudeAgentSDKProvider extends BaseAgenticProvider<
    */
   wrapTool(composioTool: Tool, executeTool: ExecuteToolFn): ClaudeAgentTool {
     const inputZodSchema = jsonSchemaToZodSchema(
-      composioTool.inputParameters ?? { type: 'object', properties: {} }
+      composioTool.inputParameters ?? {
+        type: 'object',
+        properties: {},
+        additionalProperties: false,
+      }
     );
 
     // The SDK runtime accepts complete Zod schemas, but tool() only exposes a raw-shape type.

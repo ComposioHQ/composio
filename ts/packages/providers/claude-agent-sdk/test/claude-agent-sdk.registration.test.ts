@@ -14,7 +14,7 @@ type RootInputSchema = JSONSchemaProperty & {
   properties: Record<string, JSONSchemaProperty>;
 };
 
-function createToolHarness(inputParameters: RootInputSchema) {
+function createToolHarness(inputParameters: RootInputSchema | undefined) {
   const provider = new ClaudeAgentSDKProvider();
   const executeTool: Mock<GlobalExecuteToolFn> = vi.fn().mockResolvedValue({
     data: { result: 'success' },
@@ -29,7 +29,7 @@ function createToolHarness(inputParameters: RootInputSchema) {
       version: '20260806_00',
       availableVersions: ['20260806_00'],
       // The Tool root type has not yet caught up with the recursive JSON Schema property type.
-      inputParameters: inputParameters as NonNullable<Tool['inputParameters']>,
+      inputParameters: inputParameters as Tool['inputParameters'],
       tags: ['test'],
     },
     executeTool
@@ -72,6 +72,21 @@ afterEach(async () => {
 });
 
 describe('Claude Agent SDK root schema registration', () => {
+  it('rejects unexpected arguments when the tool has no input schema', async () => {
+    const harness = createToolHarness(undefined);
+    await harness.connect();
+
+    const response = await harness.call({ unexpected: true });
+
+    expect(harness.executeTool).not.toHaveBeenCalled();
+    expect(response).toMatchObject({
+      result: {
+        isError: true,
+        content: [{ type: 'text', text: expect.stringContaining('Input validation error') }],
+      },
+    });
+  });
+
   it('preserves unknown fields when additionalProperties is true', async () => {
     const harness = createToolHarness({
       type: 'object',
