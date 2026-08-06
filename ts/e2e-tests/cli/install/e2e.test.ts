@@ -139,8 +139,8 @@ test "$(bash -ilc 'composio --version')" = 98.0.0
 set -eu
 printf '%s\n' 'export PROFILE_TRAP=1' > "$HOME/.bash_profile"
 output=$(curl -fsSL "$INSTALL_BASE_URL/install" | SHELL=/bin/bash sh)
-ending=$(printf '%s\n' "$output" | tail -n 3)
-case_b=$(printf 'Connect an account and try your first tool:\n  Human: composio onboard\n  Agent: composio onboard --json')
+ending=$(printf '%s\n' "$output" | tail -n 5)
+case_b=$(printf 'Open a new terminal, then run:\n\nConnect an account and try your first tool:\n  Human: composio onboard\n  Agent: composio onboard --json')
 test "$ending" = "$case_b"
 curl -fsSL "$INSTALL_BASE_URL/install" | SHELL=/bin/bash sh
 test "$(bash -ilc 'command -v composio')" = "$HOME/.local/bin/composio"

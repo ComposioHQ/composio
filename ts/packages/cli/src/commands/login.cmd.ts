@@ -795,7 +795,7 @@ export const browserLogin = (params: {
       initialProjectId: xProjectId,
       fallbackEmail: linkedSession.account.email,
       skipHints: willRunPicker,
-      skipOutput: willRunPicker,
+      skipOutput: willRunPicker || params.suppressOutput,
       deferAnalyticsIdentity: willRunPicker,
     });
 
@@ -839,7 +839,7 @@ export const browserLogin = (params: {
         email: linkedSession.account.email ?? undefined,
         orgId: finalOrgId,
         orgName: finalOrgName,
-      });
+      }).pipe(Effect.unless(() => params.suppressOutput === true));
     }
 
     return { status: 'linked' as const, url };

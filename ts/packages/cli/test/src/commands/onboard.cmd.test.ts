@@ -159,6 +159,51 @@ const sessionInfo = {
   api_key: null,
 };
 
+const makeLinkedSessions = Effect.gen(function* () {
+  const now = yield* DateTime.now;
+  const createSession = vi.fn(() =>
+    Effect.succeed({
+      id: 'session_test',
+      code: '001122',
+      expiresAt: DateTime.add(now, { minutes: 10 }),
+      status: 'pending' as const,
+    })
+  );
+  const sessions = new ComposioSessionRepository({
+    createSession,
+    getSession: () =>
+      Effect.succeed({
+        id: 'session_test',
+        code: '001122',
+        expiresAt: DateTime.add(now, { minutes: 10 }),
+        status: 'linked' as const,
+        api_key: 'uak_onboard',
+        account: { id: 'account_test', name: 'Test User', email: 'test@example.com' },
+      }),
+    getRealtimeCredentials: () =>
+      Effect.succeed({
+        project_id: 'proj_test',
+        pusher_key: 'pusher_test',
+        pusher_cluster: 'mt1',
+      }),
+    authRealtimeChannel: () => Effect.succeed({ auth: 'mock:auth' }),
+  });
+  return { createSession, sessions };
+});
+
+const mockSessionInfoFetch = () => {
+  const originalFetch = globalThis.fetch;
+  vi.spyOn(globalThis, 'fetch').mockImplementation(async (request, init) => {
+    const url = typeof request === 'string' ? request : request.toString();
+    return url.includes('/api/v3/auth/session/info')
+      ? new Response(JSON.stringify(sessionInfo), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        })
+      : originalFetch(request, init);
+  });
+};
+
 describe('CLI: composio onboard', () => {
   afterEach(() => {
     onboardingAnalytics.events.length = 0;
@@ -356,34 +401,7 @@ describe('CLI: composio onboard', () => {
       () =>
         Effect.gen(function* () {
           interactiveAccounts.length = 0;
-          const now = yield* DateTime.now;
-          const createSession = vi.fn(() =>
-            Effect.succeed({
-              id: 'session_test',
-              code: '001122',
-              expiresAt: DateTime.add(now, { minutes: 10 }),
-              status: 'pending' as const,
-            })
-          );
-          const sessions = new ComposioSessionRepository({
-            createSession,
-            getSession: () =>
-              Effect.succeed({
-                id: 'session_test',
-                code: '001122',
-                expiresAt: DateTime.add(now, { minutes: 10 }),
-                status: 'linked' as const,
-                api_key: 'uak_onboard',
-                account: { id: 'account_test', name: 'Test User', email: 'test@example.com' },
-              }),
-            getRealtimeCredentials: () =>
-              Effect.succeed({
-                project_id: 'proj_test',
-                pusher_key: 'pusher_test',
-                pusher_cluster: 'mt1',
-              }),
-            authRealtimeChannel: () => Effect.succeed({ auth: 'mock:auth' }),
-          });
+          const { createSession, sessions } = yield* makeLinkedSessions;
           const execute = vi.fn(() =>
             Effect.succeed({
               successful: true,
@@ -392,16 +410,7 @@ describe('CLI: composio onboard', () => {
               logId: 'log_test',
             })
           );
-          const originalFetch = globalThis.fetch;
-          vi.spyOn(globalThis, 'fetch').mockImplementation(async (request, init) => {
-            const url = typeof request === 'string' ? request : request.toString();
-            return url.includes('/api/v3/auth/session/info')
-              ? new Response(JSON.stringify(sessionInfo), {
-                  status: 200,
-                  headers: { 'Content-Type': 'application/json' },
-                })
-              : originalFetch(request, init);
-          });
+          mockSessionInfoFetch();
 
           const result = yield* cli(['onboard']).pipe(
             Effect.provideService(ComposioSessionRepository, sessions),
@@ -504,6 +513,26 @@ describe('onboarding primitives', () => {
           url: 'https://dashboard.composio.dev/?cliKey=te00st11-d0c4-4efa-8117-c638886063e0',
         });
         expect(yield* MockConsole.getLines()).toEqual([]);
+      })
+    );
+  });
+
+  layer(TestLive({ terminalUI: quietUI(true) }))(it => {
+    it.scoped('browserLogin suppresses its linked-result document for embedded callers', () =>
+      Effect.gen(function* () {
+        yield* Console.clear;
+        const { sessions } = yield* makeLinkedSessions;
+        mockSessionInfoFetch();
+
+        const result = yield* browserLogin({
+          scope: 'user',
+          noBrowser: true,
+          skipOrgProjectPicker: true,
+          suppressOutput: true,
+        }).pipe(Effect.provideService(ComposioSessionRepository, sessions));
+
+        expect(result.status).toBe('linked');
+        expect((yield* MockConsole.getLines()).filter(line => line.startsWith('{'))).toEqual([]);
       })
     );
   });
