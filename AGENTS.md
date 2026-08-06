@@ -73,6 +73,19 @@ pnpm validate:agent-skills
 pnpm validate:skill-routing
 ```
 
+Run common development entry points from the repository root:
+
+```bash
+# Run the CLI directly from source
+pnpm --filter @composio/cli cli -- --help
+
+# Run the docs app; bind externally when working on a remote devbox
+pnpm --filter @composio/docs dev --hostname 0.0.0.0 --port 8000
+
+# Run a TypeScript example in watch mode (replace the package selector)
+pnpm --filter <example-package-name> dev
+```
+
 Python commands run from `python/` unless otherwise noted:
 
 ```bash
