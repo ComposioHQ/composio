@@ -26,3 +26,21 @@ export function detectApiVersion(pathname: string): ApiVersion {
     ? '3.0'
     : '3.1';
 }
+
+/** True for the reference tree — the only tree that carries a REST version. */
+export function isReferenceUrl(pathname: string): boolean {
+  return pathname === '/reference' || pathname.startsWith('/reference/');
+}
+
+/**
+ * The current-version URL for a legacy-tree page, so an agent reading a v3.0
+ * page can be pointed at the same operation on v3.1. Any other pathname is
+ * returned unchanged.
+ */
+export function toCurrentVersionUrl(pathname: string): string {
+  if (pathname === '/reference/v3') return '/reference';
+  if (pathname.startsWith('/reference/v3/')) {
+    return `/reference/${pathname.slice('/reference/v3/'.length)}`;
+  }
+  return pathname;
+}

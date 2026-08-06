@@ -8,6 +8,9 @@ import { HIDDEN_API_TAGS } from './filter-api-version';
 import { FILE_BUILDS } from './file-builds';
 import { replaceRepoBrowserMarkdown } from './repo-browser-markdown';
 import { transformDeprecatedApiSidebarNode } from './deprecated-api-sidebar';
+import { API_BASE_URLS, detectApiVersion, type ApiVersion } from './api-version';
+import { apiVersionPointer } from './api-version-guidance';
+import { apiEndpointsSchema } from './api-endpoints-table-schema';
 
 /**
  * True if a reference URL belongs to an intentionally-hidden API tag
@@ -150,14 +153,69 @@ export function getOgImageUrl(
 }
 
 /**
+ * Renders an `<ApiEndpointsTable />` payload as a markdown table.
+ *
+ * Degrades rather than throws: a malformed payload emits nothing for that one
+ * table and warns, because taking the whole `.md` response down over one bad
+ * page is worse. The failure signal for checked-in content lives in the static
+ * suite instead — `tests/static/api-reference-routes.test.ts` runs every
+ * committed payload through the same schema, and
+ * `scripts/generate-api-index.ts` refuses to write an invalid one.
+ */
+function endpointsTableToMarkdown(payload: string, version: ApiVersion, url?: string): string {
+  const where = url ?? '(no page url)';
+
+  let json: unknown;
+  try {
+    json = JSON.parse(payload);
+  } catch {
+    console.warn(`[mdxToCleanMarkdown] unparseable ApiEndpointsTable payload on ${where}`);
+    return '';
+  }
+
+  const parsed = apiEndpointsSchema.safeParse(json);
+  if (!parsed.success) {
+    console.warn(`[mdxToCleanMarkdown] invalid ApiEndpointsTable payload on ${where}`);
+    return '';
+  }
+
+  const rows = parsed.data.map(endpoint => {
+    const path = version === '3.0' ? endpoint.pathV3 : endpoint.pathV31;
+    const summary = endpoint.summary.replace(/\|/g, '\\|').replace(/\n/g, ' ');
+    const label = endpoint.legacy ? `${summary} (Legacy)` : summary;
+    return `| \`${endpoint.method}\` | \`${path}\` | [${label}](${endpoint.href}) |`;
+  });
+
+  return ['| Method | Path | Endpoint |', '| --- | --- | --- |', ...rows].join('\n');
+}
+
+/**
  * Converts MDX content to clean markdown for AI agents.
  * Strips JSX components and converts them to plain text equivalents.
+ *
+ * `url` is the page URL. `ApiBaseUrl` and `ApiEndpointsTable` are client
+ * components that pick a version from `usePathname()`, which the `.md` channel
+ * has no access to — so the URL is passed in and resolved with the same
+ * `detectApiVersion`. Optional because the changelog call sites have no page
+ * URL; with none, the page is treated as current (v3.1), which is correct
+ * there since the changelog tree is not versioned.
  */
-export function mdxToCleanMarkdown(content: string): string {
+export function mdxToCleanMarkdown(content: string, url?: string): string {
   let result = content;
+  const version = url ? detectApiVersion(url) : '3.1';
 
   // Remove frontmatter
   result = result.replace(/^---[\s\S]*?---\n*/m, '');
+
+  // Version-dependent API components. These must run before the generic JSX
+  // strippers at the bottom of this function, which would otherwise drop both
+  // tags — publishing an empty `Base URL` bullet and an empty `Endpoints`
+  // section to every agent while the superseded v3.0 operation pages published
+  // a complete working request. That asymmetry is why agents reached for v3.
+  result = result.replace(/<ApiBaseUrl\s*\/>/g, `\`${API_BASE_URLS[version]}\``);
+  result = result.replace(/<ApiEndpointsTable\s+endpoints=\{([\s\S]*?)\}\s*\/>/g, (_, payload) =>
+    endpointsTableToMarkdown(payload, version, url)
+  );
 
   // Convert YouTube to link
   result = result.replace(
@@ -459,7 +517,7 @@ ${page.data.description || ''}`;
   }
   segments.push(content.slice(lastIndex));
 
-  const cleanSegments = segments.map(s => mdxToCleanMarkdown(s));
+  const cleanSegments = segments.map(s => mdxToCleanMarkdown(s, page.url));
   let cleanContent = cleanSegments[0];
   for (let i = 0; i < mermaidCharts.length; i++) {
     const chart = mermaidCharts[i]
@@ -479,11 +537,16 @@ ${page.data.description || ''}`;
   // legacy guide contradicts the guide's own (older) content.
   const isLegacy = page.data.legacy === true;
   const written = page.data.written;
-  const topNote = isLegacy
+  const frontmatterNote = isLegacy
     ? `\n> **Legacy${written ? ` · written ${written}` : ''}.** This is a point-in-time migration/legacy guide and may describe outdated APIs. For current guidance, see https://docs.composio.dev.\n`
     : written
       ? `\n> _Written ${written}._\n`
       : '';
+
+  // Which REST version this page documents. Scoped to the reference tree —
+  // /docs/** has no REST version — and carries no guidance paragraph, because
+  // the guardrail block further down this same response already does.
+  const topNote = `${frontmatterNote}${apiVersionPointer(page.url)}`;
 
   const guardrails = includeGuardrails && !isLegacy ? getGuardrails(page.data.llmGuardrails) : '';
 

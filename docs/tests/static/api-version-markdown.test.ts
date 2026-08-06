@@ -25,6 +25,142 @@ import {
   TOOL_VERSION_PATHS,
   isToolVersionPath,
 } from '../../lib/api-version-guidance';
+import { getLLMText, mdxToCleanMarkdown, type LLMPage } from '../../lib/source';
+
+const V31_BASE = 'https://backend.composio.dev/api/v3.1';
+const V30_BASE = 'https://backend.composio.dev/api/v3';
+
+/** A current-tree tag page and its legacy twin. */
+const CURRENT_URL = '/reference/api-reference/tools';
+const LEGACY_URL = '/reference/v3/api-reference/tools';
+
+function endpointsTable(endpoints: unknown[]): string {
+  return `## Endpoints\n\n<ApiEndpointsTable endpoints={${JSON.stringify(endpoints)}} />\n`;
+}
+
+const TOOLS_ENDPOINT = {
+  method: 'GET',
+  pathV31: '/api/v3.1/tools',
+  pathV3: '/api/v3/tools',
+  summary: 'List tools',
+  href: '/reference/api-reference/tools/getTools',
+};
+
+function llmPage(url: string, content: string, data: Partial<LLMPage['data']> = {}): LLMPage {
+  return {
+    url,
+    data: { title: 'Tools', getText: async () => content, ...data },
+  };
+}
+
+describe('mdxToCleanMarkdown — ApiBaseUrl', () => {
+  test('renders the v3.1 base URL on a current-tree URL', () => {
+    expect(mdxToCleanMarkdown('**Base URL**: <ApiBaseUrl />', CURRENT_URL)).toContain(V31_BASE);
+  });
+
+  test('renders the v3 base URL on a legacy-tree URL', () => {
+    const markdown = mdxToCleanMarkdown('**Base URL**: <ApiBaseUrl />', LEGACY_URL);
+    expect(markdown).toContain(`\`${V30_BASE}\``);
+    expect(markdown).not.toContain(V31_BASE);
+  });
+
+  test('renders the v3.1 base URL with no url argument — the changelog call site', () => {
+    expect(mdxToCleanMarkdown('**Base URL**: <ApiBaseUrl />')).toContain(V31_BASE);
+  });
+});
+
+describe('mdxToCleanMarkdown — ApiEndpointsTable', () => {
+  test('emits one row per endpoint using pathV31 on a current-tree URL', () => {
+    const markdown = mdxToCleanMarkdown(
+      endpointsTable([
+        TOOLS_ENDPOINT,
+        {
+          method: 'POST',
+          pathV31: '/api/v3.1/tools/execute/{tool_slug}',
+          pathV3: '/api/v3/tools/execute/{tool_slug}',
+          summary: 'Execute a tool',
+          href: '/reference/api-reference/tools/executeTool',
+        },
+      ]),
+      CURRENT_URL
+    );
+
+    expect(markdown).toContain('/api/v3.1/tools');
+    expect(markdown).toContain('/api/v3.1/tools/execute/{tool_slug}');
+    expect(markdown).not.toContain('/api/v3/tools');
+    // href kept as a relative link, summary preserved
+    expect(markdown).toContain('[List tools](/reference/api-reference/tools/getTools)');
+    expect(markdown).toContain('[Execute a tool](/reference/api-reference/tools/executeTool)');
+  });
+
+  test('uses pathV3 on a legacy-tree URL', () => {
+    const markdown = mdxToCleanMarkdown(endpointsTable([TOOLS_ENDPOINT]), LEGACY_URL);
+    expect(markdown).toContain('`/api/v3/tools`');
+    expect(markdown).not.toContain('/api/v3.1/tools');
+  });
+
+  test('renders a visible legacy marker for a deprecated endpoint', () => {
+    const markdown = mdxToCleanMarkdown(
+      endpointsTable([{ ...TOOLS_ENDPOINT, legacy: true }]),
+      CURRENT_URL
+    );
+    expect(markdown).toContain('Legacy');
+  });
+
+  test('emits no table and does not throw on a truncated payload', () => {
+    const content = 'Surrounding prose.\n\n<ApiEndpointsTable endpoints={[{"method":"GET"} />\n';
+    const markdown = mdxToCleanMarkdown(content, CURRENT_URL);
+    // The rest of the page survives — one bad table must not take the whole
+    // .md response down.
+    expect(markdown).toContain('Surrounding prose.');
+    expect(markdown).not.toContain('| Method |');
+  });
+
+  test('emits no table on a structurally invalid payload a bare JSON.parse would accept', () => {
+    // Valid JSON, pathV31 missing.
+    const markdown = mdxToCleanMarkdown(
+      `Surrounding prose.\n\n${endpointsTable([
+        { method: 'GET', pathV3: '/api/v3/tools', summary: 'List tools', href: '/x' },
+      ])}`,
+      CURRENT_URL
+    );
+    expect(markdown).toContain('Surrounding prose.');
+    expect(markdown).not.toContain('| Method |');
+    expect(markdown).not.toContain('List tools');
+  });
+});
+
+describe('getLLMText — version pointer', () => {
+  test('a current /reference/** page carries the v3.1 pointer and base URL', async () => {
+    const text = await getLLMText(llmPage(CURRENT_URL, '# Tools'), { includeGuardrails: false });
+    expect(text).toContain('**API version:**');
+    expect(text).toContain(V31_BASE);
+  });
+
+  test('a legacy /reference/v3/** page carries the v3.0 pointer and links its v3.1 page', async () => {
+    const text = await getLLMText(llmPage(LEGACY_URL, '# Tools'), { includeGuardrails: false });
+    expect(text).toContain('**API version:**');
+    expect(text).toContain('v3.0');
+    expect(text).toContain(V31_BASE);
+    expect(text).toContain('https://docs.composio.dev/reference/api-reference/tools.md');
+  });
+
+  test('a /docs/** page gets no API version pointer — the pointer is reference-scoped', async () => {
+    const text = await getLLMText(llmPage('/docs/quickstart', '# Quickstart'));
+    expect(text).not.toContain('**API version:**');
+  });
+
+  test('a legacy: true page keeps its legacy note and still emits no guardrails', async () => {
+    const text = await getLLMText(
+      llmPage('/docs/tools-direct/executing-tools', '# Executing tools', { legacy: true })
+    );
+    expect(text).toContain('**Legacy');
+    // legacy: true gates the whole guardrail block at source.ts, before the
+    // llmGuardrails selector ever runs. Deliberate: appending "enforce the
+    // CURRENT patterns" to a point-in-time migration guide contradicts it.
+    expect(text).not.toContain('Instructions for AI Code Generators');
+  });
+});
 
 describe('API version guidance constants', () => {
   test('the REST baseline names the v3.1 base URL and neither constant claims parity', () => {

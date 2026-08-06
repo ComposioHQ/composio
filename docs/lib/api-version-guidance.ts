@@ -29,7 +29,12 @@
  * v3.1 is a structural superset with five changed defaults, not a twin.
  */
 
-import { API_BASE_URLS } from './api-version';
+import {
+  API_BASE_URLS,
+  detectApiVersion,
+  isReferenceUrl,
+  toCurrentVersionUrl,
+} from './api-version';
 
 /** Baseline: which REST version is current, and what `/api/v3` still is. */
 export const REST_VERSION_GUIDANCE = `
@@ -96,6 +101,28 @@ const VERSION_PREFIXES = ['/api/v3.1', '/api/v3'] as const;
  * of them is affected, and a looser test would attach the tool-version
  * guidance to all three.
  */
+/**
+ * The short version pointer for a reference page: which version this page
+ * documents, its base URL, and — on a legacy page — the link to the same page
+ * on v3.1. Empty outside the reference tree.
+ *
+ * A pointer, not guidance: the guardrail block (MDX pages) or
+ * `REST_VERSION_GUIDANCE` (operation pages) already carries the explanation
+ * further down the same response, and repeating it would put the same
+ * paragraph twice. Both renderers call this so their pointers agree by
+ * construction.
+ */
+export function apiVersionPointer(pageUrl: string): string {
+  if (!isReferenceUrl(pageUrl)) return '';
+
+  if (detectApiVersion(pageUrl) === '3.0') {
+    const currentUrl = `https://docs.composio.dev${toCurrentVersionUrl(pageUrl)}.md`;
+    return `\n> **API version:** This page documents Composio REST API v3.0 at \`${API_BASE_URLS['3.0']}\`, the previous version. v3.1 is current, at \`${API_BASE_URLS['3.1']}\` — the same page on v3.1 is ${currentUrl}.\n`;
+  }
+
+  return `\n> **API version:** This page documents Composio REST API v3.1, the current version, at \`${API_BASE_URLS['3.1']}\`. \`${API_BASE_URLS['3.0']}\` is the previous version and remains supported.\n`;
+}
+
 export function isToolVersionPath(rawSpecPath: string): boolean {
   for (const prefix of VERSION_PREFIXES) {
     if (rawSpecPath.startsWith(prefix)) {
