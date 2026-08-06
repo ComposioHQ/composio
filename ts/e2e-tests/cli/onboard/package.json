@@ -9,6 +9,7 @@
     "test:e2e:cli": "bun test e2e.test.ts"
   },
   "devDependencies": {
-    "@e2e-tests/utils": "workspace:*"
+    "@e2e-tests/utils": "workspace:*",
+    "effect": "catalog:"
   }
 }

@@ -1,25 +1,28 @@
 import { e2e, type E2ETestResult } from '@e2e-tests/utils';
 import { TIMEOUTS } from '@e2e-tests/utils/const';
 import { afterAll, beforeAll, expect, it } from 'bun:test';
+import { Schema } from 'effect';
 import {
   startMockAgentsServer,
   type MockAgentsServer,
 } from '../../../packages/cli/scripts/mock-agents-server';
 
-type OnboardDocument = {
-  readonly kind: string;
-  readonly version: number;
-  readonly onboarded: boolean;
-  readonly next_gate: string | null;
-  readonly blocked: boolean;
-  readonly blocked_reason: string | null;
-  readonly human_action: string | null;
-  readonly next_command: string | null;
-  readonly toolkit: string | null;
-};
+const OnboardDocument = Schema.Struct({
+  kind: Schema.String,
+  version: Schema.Number,
+  onboarded: Schema.Boolean,
+  next_gate: Schema.NullOr(Schema.String),
+  blocked: Schema.Boolean,
+  blocked_reason: Schema.NullOr(Schema.String),
+  human_action: Schema.NullOr(Schema.String),
+  next_command: Schema.NullOr(Schema.String),
+  toolkit: Schema.NullOr(Schema.String),
+});
+type OnboardDocument = Schema.Schema.Type<typeof OnboardDocument>;
 
-const soleDocument = (stdout: string): OnboardDocument =>
-  JSON.parse(stdout.trim()) as OnboardDocument;
+const decodeOnboardDocument = Schema.decodeUnknownSync(Schema.parseJson(OnboardDocument));
+
+const soleDocument = (stdout: string): OnboardDocument => decodeOnboardDocument(stdout.trim());
 
 const runOnboard = (server: MockAgentsServer, suffix: string, args: string): string =>
   [

@@ -92,11 +92,14 @@ const makeAccount = (status: 'ACTIVE' | 'INITIATED') => ({
   test_request_endpoint: '',
 });
 
+const JsonRecord = Schema.Record({ key: Schema.String, value: Schema.Unknown });
+const decodeJsonRecord = Schema.decodeUnknownSync(Schema.parseJson(JsonRecord));
+
 const stateOutput = Effect.gen(function* () {
   const lines = yield* MockConsole.getLines({ stripAnsi: true });
-  const documents = lines.filter(line => line.startsWith('{')).map(line => JSON.parse(line));
+  const documents = lines.filter(line => line.startsWith('{')).map(line => decodeJsonRecord(line));
   expect(documents).toHaveLength(1);
-  return documents[0] as Record<string, unknown>;
+  return documents[0]!;
 });
 
 const pendingLink = vi.fn(async () => ({
@@ -205,6 +208,25 @@ describe('CLI: composio onboard', () => {
       })
     );
 
+    it.scoped('[Given] an unsupported OAuth-looking toolkit [Then] does not track it', () =>
+      Effect.gen(function* () {
+        const oauthCallback = 'https://callback.example.test/?code=abc123';
+        const error = yield* cli(['onboard', '--toolkit', oauthCallback, '--json']).pipe(
+          Effect.flip
+        );
+
+        expect(error).toMatchObject({
+          _tag: 'commands/UnsupportedOnboardingToolkitError',
+        });
+        expect(onboardingAnalytics.events.map(event => event.name)).toEqual([
+          'cli_onboarding_started',
+          'cli_onboarding_failed',
+        ]);
+        expect(JSON.stringify(onboardingAnalytics.events)).not.toContain(oauthCallback);
+        expect(JSON.stringify(onboardingAnalytics.events)).not.toContain('code=abc123');
+      })
+    );
+
     it.scoped('[Given] machine mode without a toolkit [Then] lists curated choices', () =>
       Effect.gen(function* () {
         yield* Console.clear;
@@ -292,6 +314,33 @@ describe('CLI: composio onboard', () => {
         });
         expect(JSON.stringify(onboardingAnalytics.events)).not.toContain('raw provider token');
       })
+    );
+
+    it.scoped(
+      '[Given] an unsuccessful tool response [Then] fails without completing onboarding',
+      () =>
+        Effect.gen(function* () {
+          const execute = vi.fn(() =>
+            Effect.succeed({
+              successful: false,
+              data: {},
+              error: 'raw provider response must not leak',
+              logId: 'log_test',
+            })
+          );
+          const error = yield* cli(['onboard', '--toolkit', 'gmail', '--json']).pipe(
+            Effect.provideService(ToolsExecutor, ToolsExecutor.of({ execute })),
+            Effect.flip
+          );
+
+          expect(error).toMatchObject({ _tag: 'commands/OnboardingToolExecutionError' });
+          expect((error as { message: string }).message).not.toContain('raw provider response');
+          expect((yield* readPersistedOnboarding).hasExecuted).toBe(false);
+          expect(onboardingAnalytics.events.map(event => event.name)).not.toContain(
+            'cli_onboarding_completed'
+          );
+          expect(JSON.stringify(onboardingAnalytics.events)).not.toContain('raw provider response');
+        })
     );
   });
 
@@ -433,6 +482,7 @@ describe('CLI: composio onboard', () => {
           blocked_reason: 'login_required',
           human_action:
             'https://dashboard.composio.dev/?cliKey=te00st11-d0c4-4efa-8117-c638886063e0',
+          next_command: 'composio login --poll',
         });
       })
     );

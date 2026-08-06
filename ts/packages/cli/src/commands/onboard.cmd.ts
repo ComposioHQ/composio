@@ -190,7 +190,11 @@ const withInvocationAction = (params: {
   Match.value(params).pipe(
     Match.when(
       { pendingLoginUrl: Match.string, resolved: { blocked_reason: 'login_required' } },
-      current => ({ ...current.resolved, human_action: current.pendingLoginUrl })
+      current => ({
+        ...current.resolved,
+        human_action: current.pendingLoginUrl,
+        next_command: 'composio login --poll',
+      })
     ),
     Match.when(
       {
@@ -222,7 +226,7 @@ export const runOnboard = (params: {
       Match.when({ json: true }, () => 'json' as const),
       Match.orElse(() => 'interactive' as const)
     );
-    let analyticsToolkit = Option.getOrUndefined(params.toolkit);
+    let analyticsToolkit: CuratedToolkit | undefined;
     let analyticsGate: OnboardingGate | undefined;
     let connectionSource: 'existing' | 'resumed' | 'new' | undefined;
     let errorCode: string | undefined;
@@ -244,11 +248,12 @@ export const runOnboard = (params: {
         );
       }).pipe(Effect.catchAllCause(() => Effect.void));
 
-    yield* trackOnboarding(CLI_ONBOARDING_EVENTS.STARTED);
     errorCode = 'unsupported_toolkit';
 
     return yield* Effect.gen(function* () {
       const selectedTask = Option.flatMap(params.toolkit, findCuratedOnboardingTask);
+      analyticsToolkit = Option.getOrUndefined(Option.map(selectedTask, task => task.toolkit));
+      yield* trackOnboarding(CLI_ONBOARDING_EVENTS.STARTED);
       yield* Option.match(params.toolkit, {
         onNone: () => Effect.void,
         onSome: supplied =>

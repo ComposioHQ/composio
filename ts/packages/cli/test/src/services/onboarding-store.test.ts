@@ -3,11 +3,14 @@ import fs from 'node:fs';
 import * as tempy from 'tempy';
 import { describe, expect, it } from '@effect/vitest';
 import { BunFileSystem, BunPath } from '@effect/platform-bun';
-import { ConfigProvider, Effect, Layer } from 'effect';
+import { ConfigProvider, Effect, Layer, Schema } from 'effect';
 import { extendConfigProvider } from 'src/services/config';
 import { ComposioCliUserConfig, ComposioCliUserConfigLive } from 'src/services/cli-user-config';
 import { defaultNodeOs, NodeOs } from 'src/services/node-os';
 import { readPersistedOnboarding, recordSuccessfulOnboarding } from 'src/services/onboarding-store';
+
+const JsonRecord = Schema.Record({ key: Schema.String, value: Schema.Unknown });
+const decodeJsonRecord = Schema.decodeUnknownSync(Schema.parseJson(JsonRecord));
 
 describe('onboarding store', () => {
   it.scoped('persists only the successful-demo boolean', () => {
@@ -34,9 +37,9 @@ describe('onboarding store', () => {
       expect(yield* readPersistedOnboarding).toEqual({ hasExecuted: true });
       expect(config.data.onboarding).toEqual({ hasExecuted: true });
 
-      const persisted = JSON.parse(
+      const persisted = decodeJsonRecord(
         fs.readFileSync(path.join(cwd, '.composio', 'config.json'), 'utf8')
-      ) as Record<string, unknown>;
+      );
       expect(persisted.onboarding).toEqual({ has_executed: true });
     }).pipe(Effect.provide(configLayer));
   });

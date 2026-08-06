@@ -231,6 +231,9 @@ importers:
       '@e2e-tests/utils':
         specifier: workspace:*
         version: link:../../_utils
+      effect:
+        specifier: 'catalog:'
+        version: 3.22.1
 
   ts/e2e-tests/cli/setup-plugins:
     devDependencies:
