@@ -1,12 +1,14 @@
 ---
 title: Skills
-description: Browse the execution playbooks Composio derives from real usage, so your agent spends fewer tokens and fewer retries getting a task right
-keywords: [skills, playbooks, use cases, execution plan, pitfalls, tool sequence, efficiency, tokens]
+description: Execution playbooks Composio derives from real usage, returned to your agent by session search so it spends fewer tokens and fewer retries getting a task right
+keywords: [skills, playbooks, use cases, execution plan, pitfalls, tool sequence, search, sessions, efficiency, tokens]
 ---
 
 A **skill** is an execution playbook for one concrete task — "send an email to someone", "post a message to a Slack channel", "query a Notion database". Each skill records the tools the task needs, the order to call them in, and the mistakes that make it fail.
 
-Composio derives skills from real usage across the platform rather than hand-writing them, so the catalog reflects how these tasks are actually completed in practice.
+Composio derives skills from real usage across the platform rather than hand-writing them, so they reflect how these tasks are actually completed in practice.
+
+Your agent does not fetch skills itself. They come back in the search results it already asks for: when the agent searches for the tools to do something, a skill for that use case is returned alongside them.
 
 ## Why skills matter
 
@@ -19,7 +21,7 @@ Handing an agent a toolkit tells it *what* it can call. It does not tell it *how
 A skill front-loads that knowledge. The sequence is already known, and so are the pitfalls, so the work that would have gone into rediscovering them is not spent at all.
 
 <Callout type="info">
-Skills are read-only. They are a catalog you browse to understand how a task is normally executed — there is nothing to install, enable, or configure.
+Skills are read-only. You never attach one to a session or reference it by ID — search matches them to the use case your agent describes, so there is nothing to install, enable, or configure. They are part of search results by default, and there is no opt-out today.
 </Callout>
 
 ## What a skill contains
@@ -34,6 +36,22 @@ Skills are read-only. They are a catalog you browse to understand how a task is 
 
 A skill is not limited to one app. A task may span Slack and Gmail, and a skill that spans several toolkits appears under each of them.
 
+## How a skill reaches your agent
+
+Skills arrive through the search step a [session](/docs/how-composio-works) already does:
+
+1. You create a session and give your agent its meta tools.
+2. The agent has something to do, so it calls [`COMPOSIO_SEARCH_TOOLS`](/toolkits/meta-tools/search_tools) with the task described in plain language, one `use_case` per query.
+3. Composio searches for tools and for a skill covering that use case at the same time.
+4. The response carries the tools to call, in `primary_tool_slugs` and `related_tool_slugs`, along with their schemas. When a skill covers the use case, the same response also carries the skill: `recommended_plan_steps`, `known_pitfalls`, and `difficulty`.
+5. The agent works through the returned steps in order and checks the pitfalls as it goes, instead of inferring a sequence from the tool schemas.
+
+The agent gets tools either way. What the skill adds is the part the tools cannot tell it: the order to call them in and the mistakes that break the task. Because it arrives inside the search response, it lands in the agent's context before the first execution, so the sequence is right the first time and the known failure modes are avoided rather than discovered from an error.
+
+Search matches on the use case, not on a tool name, so the phrasing the agent uses matters. "Start a DM with someone in Slack and send them a message" matches a skill; "slack tools" does not.
+
+The skills you browse in the dashboard are the same ones search returns. There is no separate contract for them: they ride inside the search response, so nothing in your code has to ask for them.
+
 ## Browsing skills
 
 Skills live in the [Composio dashboard](https://dashboard.composio.dev/~/project/skills?utm_source=docs&utm_medium=content&utm_campaign=docs-skills) under **Skills**, alongside Toolkits.
@@ -47,10 +65,11 @@ You can:
 Browsing with no query lists the catalog by maturity, so the most-refined skills come first.
 
 <Callout type="warn">
-There is no public API for skills yet. The catalog is currently dashboard-only, so unlike most of Composio there is no cURL equivalent for these operations. This page will be updated when an API is available.
+There is no public API for browsing skills yet. The catalog is currently dashboard-only, so unlike most of Composio there is no cURL equivalent for these operations. Your agent still receives skills at runtime through search — this limit is on listing and reading them yourself. This page will be updated when an API is available.
 </Callout>
 
 ## Related
 
-- [How Composio works](/docs/how-composio-works) — where tool execution fits in the platform
+- [How Composio works](/docs/how-composio-works) — sessions, meta tools, and where search fits
+- [`COMPOSIO_SEARCH_TOOLS`](/toolkits/meta-tools/search_tools) — the search meta tool and its response fields
 - [Configuring sessions](/docs/configuring-sessions) — how you give an agent access to tools
