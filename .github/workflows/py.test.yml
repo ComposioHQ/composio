@@ -5,6 +5,7 @@ on:
     branches: [master, next]
     paths:
       - 'python/**/*.py'
+      - 'python/**/*.json'
       - '.github/workflows/py.test.yml'
       - '.github/actions/setup-python-uv/action.yml'
       - 'mise.toml'
@@ -16,6 +17,7 @@ on:
     branches: [master, next]
     paths:
       - 'python/**/*.py'
+      - 'python/**/*.json'
       - '.github/workflows/py.test.yml'
       - '.github/actions/setup-python-uv/action.yml'
       - 'mise.toml'

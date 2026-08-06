@@ -53,6 +53,9 @@ const isObjectSchema = (schema: JsonObject): boolean =>
   'patternProperties' in schema ||
   'additionalProperties' in schema;
 
+const hasNamedProperties = (schema: JsonObject): boolean =>
+  isJsonObject(schema.properties) && Object.keys(schema.properties).length > 0;
+
 const appendAllOf = (schema: JsonObject, constraint: JsonObject): void => {
   const current = schema.allOf;
   schema.allOf = Array.isArray(current) ? [...current, constraint] : [constraint];
@@ -162,7 +165,16 @@ const normalizeSchemaNode = (
     }
   }
 
-  if (isObjectSchema(normalized) && normalized.additionalProperties === undefined) {
+  // Composio tool inputs treat an omitted `additionalProperties` as strict, but
+  // only for objects that actually name properties. Injecting `false` into a
+  // property-less object (`{ type: "object" }`, `properties: {}`) or a
+  // pattern-only object turned every valid free-form payload into an unknown-key
+  // rejection.
+  if (
+    isObjectSchema(normalized) &&
+    normalized.additionalProperties === undefined &&
+    hasNamedProperties(normalized)
+  ) {
     normalized.additionalProperties = false;
   }
 

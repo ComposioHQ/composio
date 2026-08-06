@@ -24,7 +24,14 @@
       "outputs": ["dist/"]
     },
     "test": {
-      "dependsOn": ["^build"]
+      "dependsOn": ["^build"],
+      // the shared cross-SDK JSON Schema conversion corpus is owned by
+      // `@composio/core` but read by the Zod, Effect, and CLI test suites, whose
+      // $TURBO_DEFAULT$ inputs stop at their own package directory
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "../core/test/fixtures/json-schema-conversion/object-cases.json"
+      ]
     },
     "test:e2e": {
       "dependsOn": ["^build"],

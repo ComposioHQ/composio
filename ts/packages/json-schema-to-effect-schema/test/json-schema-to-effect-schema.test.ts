@@ -2,6 +2,7 @@ import { jsonSchemaToZod } from '@composio/json-schema-to-zod';
 import { Either, Schema } from 'effect';
 import { describe, expect, it } from 'vitest';
 import { jsonSchemaToEffectSchema, type JsonSchemaValidationIssue } from '../src/index';
+import { acceptedFor, loadObjectCases } from './fixtures/corpus';
 
 type JsonSchema = Record<string, unknown>;
 
@@ -115,4 +116,28 @@ describe('jsonSchemaToEffectSchema', () => {
       ])
     );
   });
+});
+
+describe('shared cross-SDK object corpus', () => {
+  for (const testCase of loadObjectCases()) {
+    describe(testCase.id, () => {
+      for (const [index, instance] of testCase.instances.entries()) {
+        const expected = acceptedFor(instance, 'effect');
+
+        it(`instance ${index} is ${expected ? 'accepted' : 'rejected'}`, () => {
+          const result = Schema.decodeUnknownEither(
+            jsonSchemaToEffectSchema(testCase.schema as JsonSchema),
+            { errors: 'all' }
+          )(instance.input);
+
+          expect(Either.isRight(result)).toBe(expected);
+          if (Either.isRight(result) && instance.effect && 'output' in instance.effect) {
+            // Effect decoding is validation-only: a successful decode returns the
+            // input value unchanged, with no default materialization.
+            expect(result.right).toEqual(instance.effect.output);
+          }
+        });
+      }
+    });
+  }
 });

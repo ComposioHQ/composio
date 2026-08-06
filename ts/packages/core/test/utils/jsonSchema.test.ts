@@ -6,6 +6,11 @@ import {
 import { JsonSchemaRefResolutionError } from '../../src/errors/ValidationErrors';
 import logger from '../../src/utils/logger';
 import { ToolSchema } from '../../src/types/tool.types';
+import {
+  assertCorpusInvariants,
+  loadObjectCases,
+  type CorpusCase,
+} from '../fixtures/json-schema-conversion/corpus';
 
 const containsRef = (value: unknown): boolean => {
   if (value === null || typeof value !== 'object') return false;
@@ -592,5 +597,84 @@ describe('deduplicateJsonSchemaRequiredArrays', () => {
 
     expect(tool.inputParameters?.required).toEqual(['name']);
     expect(tool.inputParameters?.properties.options.required).toEqual(['enabled']);
+  });
+});
+
+describe('ToolSchema parameter-root preservation', () => {
+  for (const testCase of loadObjectCases()) {
+    const { ingress } = testCase;
+    if (!ingress) {
+      continue;
+    }
+
+    it(`preserves the ${testCase.id} parameter root exactly`, () => {
+      const result = ToolSchema.safeParse({
+        slug: 'TEST_TOOL',
+        name: 'Test tool',
+        inputParameters: testCase.schema,
+      });
+
+      expect(result.success).toBe(ingress.accepted);
+      if (result.success) {
+        expect(result.data.inputParameters).toEqual(ingress.preserved);
+      }
+    });
+  }
+
+  it('leaves an omitted root additionalProperties omitted', () => {
+    const tool = ToolSchema.parse({
+      slug: 'TEST_TOOL',
+      name: 'Test tool',
+      inputParameters: { type: 'object', properties: { name: { type: 'string' } } },
+    });
+
+    expect(tool.inputParameters).not.toHaveProperty('additionalProperties');
+  });
+});
+
+describe('shared corpus invariants', () => {
+  const baseCase = (id: string): CorpusCase => ({
+    id,
+    schema: { type: 'object' },
+    instances: [{ input: {}, accepted: true }],
+  });
+
+  it('accepts the checked-in corpus', () => {
+    expect(() => assertCorpusInvariants(loadObjectCases())).not.toThrow();
+  });
+
+  it('rejects duplicate case ids', () => {
+    expect(() => assertCorpusInvariants([baseCase('dup'), baseCase('dup')])).toThrow(
+      'Duplicate corpus case id: dup'
+    );
+  });
+
+  it('rejects a per-language acceptance override without a declared divergence', () => {
+    const undeclared: CorpusCase = {
+      id: 'undeclared',
+      schema: { type: 'object' },
+      instances: [{ input: {}, accepted: true, python: { accepted: false } }],
+    };
+
+    expect(() => assertCorpusInvariants([undeclared])).toThrow(
+      'overrides python acceptance without a divergence reason'
+    );
+  });
+
+  it('allows a per-language acceptance override that declares its reason', () => {
+    const declared: CorpusCase = {
+      id: 'declared',
+      schema: { type: 'object' },
+      instances: [
+        {
+          input: {},
+          accepted: true,
+          python: { accepted: false },
+          divergence: { reason: 'documented Pydantic limitation' },
+        },
+      ],
+    };
+
+    expect(() => assertCorpusInvariants([declared])).not.toThrow();
   });
 });
