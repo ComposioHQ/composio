@@ -2,6 +2,7 @@ import { describe, it, expect, vi } from 'vitest';
 import {
   deduplicateJsonSchemaRequiredArrays,
   dereferenceJsonSchema,
+  jsonSchemaToZodSchema,
 } from '../../src/utils/jsonSchema';
 import { JsonSchemaRefResolutionError } from '../../src/errors/ValidationErrors';
 import logger from '../../src/utils/logger';
@@ -592,5 +593,51 @@ describe('deduplicateJsonSchemaRequiredArrays', () => {
 
     expect(tool.inputParameters?.required).toEqual(['name']);
     expect(tool.inputParameters?.properties.options.required).toEqual(['enabled']);
+  });
+
+  it('preserves root patternProperties at the shared ToolSchema API boundary', () => {
+    const tool = ToolSchema.parse({
+      slug: 'TEST_TOOL',
+      name: 'Test tool',
+      inputParameters: {
+        type: 'object',
+        properties: { name: { type: 'string' } },
+        patternProperties: { '^metric_': { type: 'number' } },
+        additionalProperties: false,
+      },
+    });
+
+    expect(tool.inputParameters?.patternProperties).toEqual({
+      '^metric_': { type: 'number' },
+    });
+  });
+
+  it('preserves schema-valued root additionalProperties at the shared ToolSchema API boundary', () => {
+    const tool = ToolSchema.parse({
+      slug: 'TEST_TOOL',
+      name: 'Test tool',
+      inputParameters: {
+        type: 'object',
+        properties: { name: { type: 'string' } },
+        additionalProperties: { type: 'number' },
+      },
+    });
+
+    expect(tool.inputParameters?.additionalProperties).toEqual({ type: 'number' });
+  });
+
+  it('keeps omitted root additionalProperties strict', () => {
+    const tool = ToolSchema.parse({
+      slug: 'TEST_TOOL',
+      name: 'Test tool',
+      inputParameters: {
+        type: 'object',
+        properties: { name: { type: 'string' } },
+      },
+    });
+
+    expect(tool.inputParameters).not.toHaveProperty('additionalProperties');
+    const schema = jsonSchemaToZodSchema(tool.inputParameters ?? {});
+    expect(schema.safeParse({ name: 'Ada', extra: true }).success).toBe(false);
   });
 });

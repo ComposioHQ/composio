@@ -145,7 +145,11 @@ const ParametersSchema = z.preprocess(
     default: z.unknown().optional(),
     nullable: z.boolean().optional(),
     description: z.string().optional(),
-    additionalProperties: z.boolean().default(false).optional(),
+    patternProperties: z.lazy(() => z.record(z.string(), JSONSchemaPropertySchema)).optional(),
+    additionalProperties: z
+      .union([z.boolean(), z.lazy(() => JSONSchemaPropertySchema)])
+      .default(false)
+      .optional(),
     // Definition blocks targeted by `$ref` pointers. The Composio API ships
     // these at the parameters root (e.g. `data` → `$ref` → `#/$defs/...`), but
     // because `z.object` strips unknown keys they were being dropped on parse —

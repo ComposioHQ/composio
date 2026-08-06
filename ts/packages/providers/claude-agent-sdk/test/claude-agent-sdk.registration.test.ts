@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi, type Mock } from 'vitest';
 import { createSdkMcpServer } from '@anthropic-ai/claude-agent-sdk';
-import { type GlobalExecuteToolFn, type JSONSchemaProperty, type Tool } from '@composio/core';
+import { type GlobalExecuteToolFn, type JSONSchemaProperty } from '@composio/core';
 import { ClaudeAgentSDKProvider } from '../src';
 
 type SdkMcpServer = ReturnType<typeof createSdkMcpServer>;
@@ -28,8 +28,7 @@ function createToolHarness(inputParameters: RootInputSchema | undefined) {
       description: 'Exercise root object schema behavior',
       version: '20260806_00',
       availableVersions: ['20260806_00'],
-      // The Tool root type has not yet caught up with the recursive JSON Schema property type.
-      inputParameters: inputParameters as Tool['inputParameters'],
+      inputParameters,
       tags: ['test'],
     },
     executeTool
