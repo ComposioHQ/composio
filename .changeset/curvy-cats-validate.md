@@ -4,4 +4,4 @@
 '@composio/json-schema-to-zod': patch
 ---
 
-Preserve and correctly enforce root `patternProperties` and schema-valued `additionalProperties` when parsing tool schemas and registering Composio tools with the Claude Agent SDK.
+Preserve, validate, and apply parsed output from root `patternProperties` and schema-valued `additionalProperties` when parsing tool schemas and registering Composio tools with the Claude Agent SDK.

@@ -137,6 +137,8 @@ export function parseObject(
                   issues: result.error.issues,
                 },
               });
+            } else {
+              value[key] = result.data;
             }
           }
         }
@@ -158,6 +160,8 @@ export function parseObject(
                 issues: result.error.issues,
               },
             });
+          } else {
+            value[key] = result.data;
           }
         }
       }

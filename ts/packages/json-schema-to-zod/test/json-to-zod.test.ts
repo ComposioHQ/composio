@@ -363,6 +363,53 @@ describe('jsonSchemaToZod', () => {
       expect(() => zodSchema.parse({ metric_score: 'high' })).toThrow();
     });
 
+    it('should preserve parsed defaults for matching pattern properties', () => {
+      const schema: JsonSchema = {
+        type: 'object',
+        properties: {
+          name: { type: 'string' },
+        },
+        patternProperties: {
+          '^config_': {
+            type: 'object',
+            properties: {
+              enabled: { type: 'boolean', default: true },
+            },
+          },
+        },
+      };
+      const zodSchema = jsonSchemaToZod(schema);
+
+      expect(zodSchema.parse({ name: 'John', config_primary: {} })).toEqual({
+        name: 'John',
+        config_primary: { enabled: true },
+      });
+    });
+
+    it('should preserve parsed defaults for schema-valued additional properties', () => {
+      const schema: JsonSchema = {
+        type: 'object',
+        properties: {
+          name: { type: 'string' },
+        },
+        patternProperties: {
+          '^metric_': { type: 'number' },
+        },
+        additionalProperties: {
+          type: 'object',
+          properties: {
+            enabled: { type: 'boolean', default: true },
+          },
+        },
+      };
+      const zodSchema = jsonSchemaToZod(schema);
+
+      expect(zodSchema.parse({ name: 'John', config: {} })).toEqual({
+        name: 'John',
+        config: { enabled: true },
+      });
+    });
+
     it('should handle additionalProperties with patternProperties', () => {
       const schema: JsonSchema = {
         type: 'object',

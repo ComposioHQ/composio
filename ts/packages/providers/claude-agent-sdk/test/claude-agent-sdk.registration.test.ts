@@ -202,4 +202,29 @@ describe('Claude Agent SDK root schema registration', () => {
       },
     });
   });
+
+  it('forwards parsed defaults from dynamic root properties', async () => {
+    const defaultedObject: JSONSchemaProperty = {
+      type: 'object',
+      properties: {
+        enabled: { type: 'boolean', default: true },
+      },
+    };
+    const harness = createToolHarness({
+      type: 'object',
+      properties: { name: { type: 'string' } },
+      required: ['name'],
+      patternProperties: { '^pattern_': defaultedObject },
+      additionalProperties: defaultedObject,
+    });
+    await harness.connect();
+
+    await harness.call({ name: 'Ada', pattern_config: {}, fallback_config: {} });
+
+    expect(harness.executeTool).toHaveBeenCalledWith('ROOT_SCHEMA_TEST', {
+      name: 'Ada',
+      pattern_config: { enabled: true },
+      fallback_config: { enabled: true },
+    });
+  });
 });
