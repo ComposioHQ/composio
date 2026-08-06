@@ -216,7 +216,10 @@ function endpointsTableToMarkdown(payload: string, version: ApiVersion, url?: st
 
   const rows = parsed.data.map(endpoint => {
     const path = version === '3.0' ? endpoint.pathV3 : endpoint.pathV31;
-    const summary = endpoint.summary.replace(/\|/g, '\\|').replace(/\n/g, ' ');
+    const summary = endpoint.summary
+      .replace(/\\/g, '\\\\')
+      .replace(/\|/g, '\\|')
+      .replace(/\n/g, ' ');
     const label = endpoint.legacy ? `${summary} (Legacy)` : summary;
     return `| \`${endpoint.method}\` | \`${path}\` | [${label}](${endpoint.href}) |`;
   });

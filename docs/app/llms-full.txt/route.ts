@@ -7,7 +7,7 @@ import {
   type LLMPage,
 } from '@/lib/source';
 import { SESSION_GUARDRAILS } from '@/lib/llm-guardrails';
-import { detectApiVersion } from '@/lib/api-version';
+import { detectReferenceApiVersion } from '@/lib/api-version';
 import type { ReactNode } from 'react';
 
 export const revalidate = false;
@@ -141,7 +141,9 @@ export async function GET() {
     const [docsResults, examplesResults, referenceResults, toolkitsResults] = await Promise.all([
       getTextForPages(orderedDocsPages),
       getTextForPages(examplesSource.getPages()),
-      getTextForPages(referenceSource.getPages().filter(page => detectApiVersion(page.url) === '3.1')),
+      getTextForPages(
+        referenceSource.getPages().filter(page => detectReferenceApiVersion(page.url) !== '3.0')
+      ),
       getTextForPages(toolkitsSource.getPages()),
     ]);
 

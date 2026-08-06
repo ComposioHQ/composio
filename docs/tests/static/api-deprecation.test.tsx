@@ -29,7 +29,12 @@ interface SerializedEndpoint {
 
 function createSpec(version: "v3.1" | "v3") {
   return {
-    tags: [{ name: "Tasks", description: "Task endpoints" }],
+    tags: [
+      {
+        name: "Tasks",
+        description: version === "v3.1" ? "Current task endpoints" : "Legacy task endpoints",
+      },
+    ],
     paths: {
       [`/${version}/tasks/deprecated`]: {
         get: {
@@ -113,6 +118,11 @@ async function generateFixture(options?: { webhookSpec?: ReturnType<typeof creat
   await writeFile(
     join(fixtureDir, "public/openapi-v3.json"),
     JSON.stringify(createSpec("v3")),
+  );
+  await mkdir(join(fixtureDir, "api-overviews"), { recursive: true });
+  await writeFile(
+    join(fixtureDir, "api-overviews/tasks.mdx"),
+    "Current task overview with POST /api/v3.1/tasks/active",
   );
   if (options?.webhookSpec) {
     await writeFile(
@@ -351,6 +361,23 @@ describe("deprecated API endpoints", () => {
         endpoints.find(endpoint => endpoint.summary === "Active task endpoint"),
       ).not.toHaveProperty("legacy");
     }
+  });
+
+  test("does not reuse a current overview on the legacy index", async () => {
+    const fixtureDir = await generateFixture();
+    const v31Content = await readFile(
+      join(fixtureDir, "content/reference/api-reference/tasks/index.mdx"),
+      "utf-8",
+    );
+    const v3Content = await readFile(
+      join(fixtureDir, "content/reference/v3/api-reference/tasks/index.mdx"),
+      "utf-8",
+    );
+
+    expect(v31Content).toContain("Current task overview with POST /api/v3.1/tasks/active");
+    expect(v3Content).toContain("Legacy task endpoints");
+    expect(v3Content).not.toContain("Current task overview");
+    expect(v3Content).not.toContain("/api/v3.1/tasks/active");
   });
 
   test("renders one Legacy badge for a deprecated endpoint and none for an active endpoint", () => {

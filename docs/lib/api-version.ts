@@ -4,6 +4,7 @@
  */
 
 export type ApiVersion = '3.1' | '3.0';
+export type ReferenceApiVersion = ApiVersion | null;
 
 /**
  * REST base URL per API version. Single source of truth — the browser
@@ -30,9 +31,16 @@ export function detectApiVersion(pathname: string): ApiVersion {
 /** True for reference pages that describe the REST API. */
 export function isReferenceUrl(pathname: string): boolean {
   return (
+    pathname !== '/reference/glossary' &&
+    pathname !== '/reference/sdk-reference' &&
     !pathname.startsWith('/reference/sdk-reference/') &&
     (pathname === '/reference' || pathname.startsWith('/reference/'))
   );
+}
+
+/** The REST version described by a reference page, or null for SDK/glossary pages. */
+export function detectReferenceApiVersion(pathname: string): ReferenceApiVersion {
+  return isReferenceUrl(pathname) ? detectApiVersion(pathname) : null;
 }
 
 const CURRENT_VERSION_URLS: Record<string, string> = {

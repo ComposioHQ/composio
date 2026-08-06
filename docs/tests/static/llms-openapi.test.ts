@@ -244,7 +244,7 @@ describe("LLM OpenAPI markdown — API version identity", () => {
     expect(markdown).toContain("**API version:**");
     expect(markdown).toContain("v3.0");
     expect(markdown).toContain(
-      "https://docs.composio.dev/reference/api-reference/auth-configs/getAuthConfigs.md",
+      "/reference/api-reference/auth-configs/getAuthConfigs.md",
     );
     expect(markdown.indexOf("**API version:**")).toBeLessThan(
       markdown.indexOf("**Endpoint:**"),

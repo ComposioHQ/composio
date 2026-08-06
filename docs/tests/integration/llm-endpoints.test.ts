@@ -67,6 +67,7 @@ describe("LLM endpoints - API reference version labelling", () => {
   test("/llms-full.txt carries no v3.0 page bodies", async () => {
     const text = await (await fetchPage("/llms-full.txt")).text();
     expect(text).not.toContain("/reference/v3/");
+    expect(text).toContain("# Tools (/reference/api-reference/tools)");
   });
 });
 

@@ -1,5 +1,5 @@
 import { source, examplesSource, referenceSource, toolkitsSource } from '@/lib/source';
-import { detectApiVersion } from '@/lib/api-version';
+import { detectReferenceApiVersion } from '@/lib/api-version';
 import type { ReactNode } from 'react';
 
 export const revalidate = false;
@@ -115,10 +115,14 @@ function formatPage(page: { url: string }) {
 function partitionByApiVersion<T extends { url: string }>(pages: T[]) {
   const current: T[] = [];
   const legacy: T[] = [];
+  const versionIndependent: T[] = [];
   for (const page of pages) {
-    (detectApiVersion(page.url) === '3.0' ? legacy : current).push(page);
+    const version = detectReferenceApiVersion(page.url);
+    if (version === '3.0') legacy.push(page);
+    else if (version === '3.1') current.push(page);
+    else versionIndependent.push(page);
   }
-  return { current, legacy };
+  return { current, legacy, versionIndependent };
 }
 
 export async function GET() {
@@ -127,8 +131,11 @@ export async function GET() {
 
     const examplesPages = examplesSource.getPages();
     const toolkitsPages = toolkitsSource.getPages();
-    const { current: currentReferencePages, legacy: legacyReferencePages } =
-      partitionByApiVersion(referenceSource.getPages());
+    const {
+      current: currentReferencePages,
+      legacy: legacyReferencePages,
+      versionIndependent: versionIndependentReferencePages,
+    } = partitionByApiVersion(referenceSource.getPages());
 
     const legacyReferenceSection =
       legacyReferencePages.length > 0
@@ -155,6 +162,10 @@ ${examplesPages.map(formatPage).join('\n')}
 
 ${currentReferencePages.map(formatPage).join('\n')}
 ${legacyReferenceSection}
+## SDK and product reference (version-independent)
+
+${versionIndependentReferencePages.map(formatPage).join('\n')}
+
 ## Toolkits
 
 ${toolkitsPages.map(formatPage).join('\n')}

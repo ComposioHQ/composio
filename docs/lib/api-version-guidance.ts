@@ -60,7 +60,7 @@ export function apiVersionPointer(pageUrl: string): string {
   if (!isReferenceUrl(pageUrl)) return '';
 
   if (detectApiVersion(pageUrl) === '3.0') {
-    const currentUrl = `https://docs.composio.dev${toCurrentVersionUrl(pageUrl)}.md`;
+    const currentUrl = `${toCurrentVersionUrl(pageUrl)}.md`;
     return `\n> **API version:** This page documents Composio REST API v3.0 at \`${API_BASE_URLS['3.0']}\`, the previous version. v3.1 is current, at \`${API_BASE_URLS['3.1']}\` — the same page on v3.1 is ${currentUrl}.\n`;
   }
 

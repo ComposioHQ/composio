@@ -25,6 +25,7 @@ import {
   TOOL_VERSION_PATHS,
   isToolVersionPath,
 } from '../../lib/api-version-guidance';
+import { detectReferenceApiVersion } from '../../lib/api-version';
 import { getLLMText, mdxToCleanMarkdown, type LLMPage } from '../../lib/source';
 import { DIRECT_EXECUTION_GUARDRAILS, SESSION_GUARDRAILS } from '../../lib/llm-guardrails';
 
@@ -143,6 +144,15 @@ describe('mdxToCleanMarkdown — ApiEndpointsTable', () => {
     expect(markdown).toContain('Legacy');
   });
 
+  test('preserves backslashes and pipes in endpoint summaries', () => {
+    const markdown = mdxToCleanMarkdown(
+      endpointsTable([{ ...TOOLS_ENDPOINT, summary: String.raw`Path \| pipe` }]),
+      CURRENT_URL
+    );
+
+    expect(markdown).toContain(String.raw`[Path \\\| pipe]`);
+  });
+
   test('emits no table and does not throw on a truncated payload', () => {
     const content = 'Surrounding prose.\n\n<ApiEndpointsTable endpoints={[{"method":"GET"} />\n';
     const markdown = mdxToCleanMarkdown(content, CURRENT_URL);
@@ -178,7 +188,8 @@ describe('getLLMText — version pointer', () => {
     expect(text).toContain('**API version:**');
     expect(text).toContain('v3.0');
     expect(text).toContain(V31_BASE);
-    expect(text).toContain('https://docs.composio.dev/reference/api-reference/tools.md');
+    expect(text).toContain('/reference/api-reference/tools.md');
+    expect(text).not.toContain('https://docs.composio.dev/reference/api-reference/tools.md');
   });
 
   test('a /docs/** page gets no API version pointer — the pointer is reference-scoped', async () => {
@@ -193,12 +204,17 @@ describe('getLLMText — version pointer', () => {
     expect(text).not.toContain('**API version:**');
   });
 
+  test('the glossary gets no REST version pointer', async () => {
+    const text = await getLLMText(llmPage('/reference/glossary', '# Glossary'));
+    expect(text).not.toContain('**API version:**');
+  });
+
   test('the legacy authentication page links to its renamed current counterpart', async () => {
     const text = await getLLMText(
       llmPage('/reference/v3/authentication', '# Authentication'),
       { includeGuardrails: false }
     );
-    expect(text).toContain('https://docs.composio.dev/reference/authenticating-to-composio.md');
+    expect(text).toContain('/reference/authenticating-to-composio.md');
   });
 
   test('a legacy: true page keeps its legacy note and still emits no guardrails', async () => {
@@ -210,6 +226,18 @@ describe('getLLMText — version pointer', () => {
     // llmGuardrails selector ever runs. Deliberate: appending "enforce the
     // CURRENT patterns" to a point-in-time migration guide contradicts it.
     expect(text).not.toContain('Instructions for AI Code Generators');
+  });
+});
+
+describe('detectReferenceApiVersion', () => {
+  test.each([
+    ['/reference/api-reference/tools', '3.1'],
+    ['/reference/v3/api-reference/tools', '3.0'],
+    ['/reference/glossary', null],
+    ['/reference/sdk-reference', null],
+    ['/reference/sdk-reference/typescript/tools', null],
+  ] as const)('%s is classified as %s', (url, expected) => {
+    expect(detectReferenceApiVersion(url)).toBe(expected);
   });
 });
 
