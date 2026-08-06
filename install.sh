@@ -715,7 +715,7 @@ print_post_install_help() {
     if [ "$shell_setup_outcome" = success ]; then
         if [ "$inherited_resolution" = shadowed ]; then
             printf 'Another composio command at %s takes precedence in this terminal.\n' "$inherited_command"
-            printf 'To use the newly installed CLI, run:\n\n  %s login\n' "$(shell_quote "$exe")"
+            printf 'To use the newly installed CLI, run:\n\n  %s onboard\n' "$(shell_quote "$exe")"
         else
             # Case B: configured for future terminals, vocabulary-free.
             printf 'Open a new terminal, then run:\n\n  composio onboard\n'
