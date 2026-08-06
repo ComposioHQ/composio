@@ -23,10 +23,16 @@ import {
   REST_VERSION_GUIDANCE,
   TOOL_VERSION_GUIDANCE,
   TOOL_VERSION_PATHS,
+  apiVersionPointer,
   isToolVersionPath,
 } from '../../lib/api-version-guidance';
-import { detectReferenceApiVersion } from '../../lib/api-version';
-import { getLLMText, mdxToCleanMarkdown, type LLMPage } from '../../lib/source';
+import { detectReferenceApiVersion, toCurrentVersionUrl } from '../../lib/api-version';
+import {
+  getLLMText,
+  getReferenceSource,
+  mdxToCleanMarkdown,
+  type LLMPage,
+} from '../../lib/source';
 import { DIRECT_EXECUTION_GUARDRAILS, SESSION_GUARDRAILS } from '../../lib/llm-guardrails';
 
 const V31_BASE = 'https://backend.composio.dev/api/v3.1';
@@ -215,6 +221,35 @@ describe('getLLMText — version pointer', () => {
       { includeGuardrails: false }
     );
     expect(text).toContain('/reference/authenticating-to-composio.md');
+  });
+
+  test('every published legacy page links to an existing current-version page', async () => {
+    const reference = await getReferenceSource();
+    const routes = new Set(reference.getPages().map(page => page.url));
+    const legacyRoutes = [...routes].filter(
+      url => detectReferenceApiVersion(url) === '3.0'
+    );
+    const invalidPointers = legacyRoutes.flatMap(source => {
+      const target = toCurrentVersionUrl(source);
+      const pointer = apiVersionPointer(source);
+      return routes.has(target) &&
+        detectReferenceApiVersion(target) === '3.1' &&
+        pointer.includes(`${target}.md`)
+        ? []
+        : [`${source} -> ${target}`];
+    });
+
+    expect(legacyRoutes.some(url => /^\/reference\/v3\/[^/]+$/.test(url))).toBe(true);
+    expect(
+      legacyRoutes.some(url => /^\/reference\/v3\/api-reference\/[^/]+$/.test(url))
+    ).toBe(true);
+    expect(
+      legacyRoutes.some(url => /^\/reference\/v3\/api-reference\/[^/]+\/[^/]+$/.test(url))
+    ).toBe(true);
+    expect(
+      invalidPointers,
+      `invalid current-version pointers:\n${invalidPointers.join('\n')}`
+    ).toEqual([]);
   });
 
   test('a legacy: true page keeps its legacy note and still emits no guardrails', async () => {
