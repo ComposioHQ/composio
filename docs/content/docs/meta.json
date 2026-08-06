@@ -27,6 +27,8 @@
     "setting-up-triggers/subscribing-to-events",
     "setting-up-triggers/managing-triggers",
     "setting-up-triggers/custom-oauth-webhooks",
+    "---Skills---",
+    "skills",
     "---Security and Data---",
     "security/overview",
     "security/data-retention",

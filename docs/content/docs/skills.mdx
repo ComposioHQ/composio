@@ -1,0 +1,56 @@
+---
+title: Skills
+description: Browse the execution playbooks Composio derives from real usage, so your agent spends fewer tokens and fewer retries getting a task right
+keywords: [skills, playbooks, use cases, execution plan, pitfalls, tool sequence, efficiency, tokens]
+---
+
+A **skill** is an execution playbook for one concrete task — "send an email to someone", "post a message to a Slack channel", "query a Notion database". Each skill records the tools the task needs, the order to call them in, and the mistakes that make it fail.
+
+Composio derives skills from real usage across the platform rather than hand-writing them, so the catalog reflects how these tasks are actually completed in practice.
+
+## Why skills matter
+
+Handing an agent a toolkit tells it *what* it can call. It does not tell it *how* the call usually goes wrong. An agent discovering that on its own pays for it in tokens and retries:
+
+- It calls a tool with the wrong identifier, reads the error, and tries again.
+- It fetches a whole inbox when it needed one search.
+- It skips a lookup step and posts to a channel that never resolves.
+
+A skill front-loads that knowledge. The sequence is already known, and so are the pitfalls, so the work that would have gone into rediscovering them is not spent at all.
+
+<Callout type="info">
+Skills are read-only. They are a catalog you browse to understand how a task is normally executed — there is nothing to install, enable, or configure.
+</Callout>
+
+## What a skill contains
+
+**Use case** — the task in plain language, e.g. *Start a direct message with someone in Slack and send a message*. This is what search matches against.
+
+**Tools** — the tool slugs the task uses, such as `SLACK_FIND_USERS`, `SLACK_OPEN_DM`, `SLACK_SEND_MESSAGE`. A skill distinguishes the main tools from supporting ones.
+
+**Execution plan** — the ordered steps for completing the task, including optional steps and fallback paths for when the primary route is unavailable.
+
+**Pitfalls** — the known failure modes for this task: the wrong-identifier mistakes, the missing lookups, the assumptions that do not hold.
+
+A skill is not limited to one app. A task may span Slack and Gmail, and a skill that spans several toolkits appears under each of them.
+
+## Browsing skills
+
+Skills live in the [Composio dashboard](https://platform.composio.dev) under **Skills**, alongside Toolkits.
+
+You can:
+
+- **Search by use case** — describe the task the way you would say it ("archive promotional emails from last week") rather than guessing a tool name.
+- **Filter by app** — narrow to a single toolkit, or use the app chips to see how many skills each one covers.
+- **Open a skill** — see its full execution plan, the tools each step calls, and its pitfalls.
+
+Browsing with no query lists the catalog by maturity, so the most-refined skills come first.
+
+<Callout type="warn">
+There is no public API for skills yet. The catalog is currently dashboard-only, so unlike most of Composio there is no cURL equivalent for these operations. This page will be updated when an API is available.
+</Callout>
+
+## Related
+
+- [How Composio works](/docs/how-composio-works) — where tool execution fits in the platform
+- [Configuring sessions](/docs/configuring-sessions) — how you give an agent access to tools
