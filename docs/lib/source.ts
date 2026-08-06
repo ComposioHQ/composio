@@ -11,6 +11,7 @@ import { transformDeprecatedApiSidebarNode } from './deprecated-api-sidebar';
 import { API_BASE_URLS, detectApiVersion, type ApiVersion } from './api-version';
 import { apiVersionPointer } from './api-version-guidance';
 import { apiEndpointsSchema } from './api-endpoints-table-schema';
+import { replaceHomeNavigationMarkdown } from './home-navigation';
 
 /**
  * True if a reference URL belongs to an intentionally-hidden API tag
@@ -260,6 +261,9 @@ export function mdxToCleanMarkdown(content: string, url?: string): string {
         url
       )
   );
+
+  // Keep the Welcome page's human and agent paths in sync.
+  result = replaceHomeNavigationMarkdown(result);
 
   // Convert YouTube to link
   result = result.replace(

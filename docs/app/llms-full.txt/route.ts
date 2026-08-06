@@ -8,6 +8,7 @@ import {
 } from '@/lib/source';
 import { SESSION_GUARDRAILS } from '@/lib/llm-guardrails';
 import { detectReferenceApiVersion } from '@/lib/api-version';
+import { collectDefaultLlmExcludedUrls } from '@/lib/llm-page-policy';
 import type { ReactNode } from 'react';
 
 export const revalidate = false;
@@ -63,42 +64,6 @@ function collectPageUrls(nodes: TreeNode[]): string[] {
   return urls;
 }
 
-/** All page URLs under a folder, including its index. */
-function collectFolderUrls(folder: FolderNode): string[] {
-  const urls: string[] = [];
-  if (folder.index) urls.push(folder.index.url);
-  for (const child of folder.children) {
-    if (child.type === 'page') urls.push(child.url);
-    else if (child.type === 'folder') urls.push(...collectFolderUrls(child));
-  }
-  return urls;
-}
-
-/**
- * URLs that live under a legacy/deprecated separator section (e.g. "Direct
- * Tool Execution Guides (Legacy)"). We drop their full text from the default
- * LLM context so generators don't learn deprecated patterns.
- */
-function collectLegacyUrls(nodes: TreeNode[]): Set<string> {
-  const legacy = new Set<string>();
-  let inLegacySection = false;
-
-  for (const node of nodes) {
-    if (node.type === 'separator') {
-      const text = typeof node.name === 'string' ? node.name : '';
-      inLegacySection = /legacy|deprecated/i.test(text);
-      continue;
-    }
-    if (!inLegacySection) continue;
-    if (node.type === 'page') legacy.add(node.url);
-    else if (node.type === 'folder') {
-      for (const url of collectFolderUrls(node)) legacy.add(url);
-    }
-  }
-
-  return legacy;
-}
-
 /**
  * Order pages according to the page tree structure from meta.json.
  * Pages not in the tree are appended at the end.
@@ -132,9 +97,10 @@ async function getTextForPages(pages: PageLike[]) {
 export async function GET() {
   try {
     const treeChildren = source.pageTree.children as TreeNode[];
-    const legacyUrls = collectLegacyUrls(treeChildren);
+    const docsPages = source.getPages();
+    const excludedUrls = collectDefaultLlmExcludedUrls(docsPages);
     const orderedDocsPages = orderDocPages(
-      source.getPages().filter(page => !legacyUrls.has(page.url)),
+      docsPages.filter(page => !excludedUrls.has(page.url)),
       treeChildren
     );
 

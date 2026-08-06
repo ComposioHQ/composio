@@ -1,5 +1,5 @@
 {
-  "title": "Authentication",
+  "title": "Direct execution authentication",
   "defaultOpen": false,
   "pages": [
     "custom-auth-configs",

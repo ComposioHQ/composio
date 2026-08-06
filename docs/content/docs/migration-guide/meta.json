@@ -1,6 +1,7 @@
 {
-  "title": "Migration Guide",
+  "title": "Migration guides",
   "pages": [
+    "index",
     "direct-to-sessions",
     "mcp-servers-to-sessions",
     "tool-router-beta",

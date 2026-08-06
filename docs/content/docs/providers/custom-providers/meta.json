@@ -1,6 +1,7 @@
 {
-  "title": "Custom Providers",
+  "title": "Custom providers",
   "pages": [
+    "index",
     "typescript",
     "python"
   ]

@@ -1,5 +1,6 @@
 import { source, examplesSource, referenceSource, toolkitsSource } from '@/lib/source';
 import { detectReferenceApiVersion } from '@/lib/api-version';
+import { collectDefaultLlmExcludedUrls } from '@/lib/llm-page-policy';
 import type { ReactNode } from 'react';
 
 export const revalidate = false;
@@ -33,30 +34,20 @@ function nodeText(name: ReactNode): string | null {
 }
 
 /**
- * A section is legacy/deprecated when its separator heading says so (e.g.
- * "Direct Tool Execution Guides (Legacy)"). We omit those sections from the
- * default LLM index so code generators reach for the current session-based
- * APIs, not deprecated ones.
- */
-function isLegacySeparator(name: ReactNode): boolean {
-  const text = nodeText(name);
-  return text != null && /legacy|deprecated/i.test(text);
-}
-
-/**
  * Walk the fumadocs page tree and generate a markdown index.
- * Separators become ## headings, pages become URL entries, folders recurse.
- * Legacy/deprecated sections (and everything under them) are skipped.
+ * Separators become headings, pages become URL entries, and folders become
+ * nested list groups so following root pages do not inherit a folder heading.
+ * Pages excluded by the explicit LLM policy are skipped.
  */
-function walkPageTree(nodes: TreeNode[], depth = 2): string {
+function walkPageTree(
+  nodes: TreeNode[],
+  excludedUrls: ReadonlySet<string>,
+  depth = 2
+): string {
   const lines: string[] = [];
-  let skippingSection = false;
 
   for (const node of nodes) {
     if (node.type === 'separator') {
-      // A separator starts a new section; skip it and its pages when legacy.
-      skippingSection = isLegacySeparator(node.name);
-      if (skippingSection) continue;
       const text = nodeText(node.name);
       if (text) {
         lines.push('', `${'#'.repeat(depth)} ${text}`, '');
@@ -64,26 +55,37 @@ function walkPageTree(nodes: TreeNode[], depth = 2): string {
       continue;
     }
 
-    if (skippingSection) continue;
-
     switch (node.type) {
       case 'page':
-        lines.push(`- https://docs.composio.dev${node.url}.md`);
+        if (!excludedUrls.has(node.url)) {
+          lines.push(`- https://docs.composio.dev${node.url}.md`);
+        }
         break;
 
       case 'folder': {
-        // Folders are sub-sections within separator sections, so one level deeper
+        const folderLines: string[] = [];
+        if (node.index && !excludedUrls.has(node.index.url)) {
+          folderLines.push(`- https://docs.composio.dev${node.index.url}.md`);
+        }
+        if (node.children.length > 0) {
+          const children = walkPageTree(node.children, excludedUrls, depth + 1);
+          if (children) folderLines.push(children);
+        }
+
+        if (folderLines.length === 0) break;
+
         const text = nodeText(node.name);
         if (text) {
-          lines.push('', `${'#'.repeat(depth + 1)} ${text}`, '');
-        }
-        // If folder has an index page, include it
-        if (node.index) {
-          lines.push(`- https://docs.composio.dev${node.index.url}.md`);
-        }
-        // Recurse into children
-        if (node.children.length > 0) {
-          lines.push(walkPageTree(node.children, depth + 1));
+          lines.push(`- **${text}**`);
+          lines.push(
+            ...folderLines.flatMap(line =>
+              line
+                .split('\n')
+                .map(folderLine => (folderLine ? `  ${folderLine}` : folderLine))
+            )
+          );
+        } else {
+          lines.push(...folderLines);
         }
         break;
       }
@@ -127,7 +129,8 @@ function partitionByApiVersion<T extends { url: string }>(pages: T[]) {
 
 export async function GET() {
   try {
-    const docsTree = walkPageTree(source.pageTree.children as TreeNode[]);
+    const excludedUrls = collectDefaultLlmExcludedUrls(source.getPages());
+    const docsTree = walkPageTree(source.pageTree.children as TreeNode[], excludedUrls);
 
     const examplesPages = examplesSource.getPages();
     const toolkitsPages = toolkitsSource.getPages();

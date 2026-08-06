@@ -42,6 +42,27 @@ async function exists(path: string): Promise<boolean> {
 }
 
 describe("Navigation - meta.json validity", () => {
+  test("root navigation exposes the approved Get Started and Guides modes", async () => {
+    const metaPath = join(CONTENT_DIR, "meta.json");
+    const meta = JSON.parse(await readFile(metaPath, "utf-8"));
+    const pages = meta.pages as string[];
+    const separators = pages.filter(isSeparator);
+
+    expect(separators).toEqual(["---Get Started---", "---Guides---"]);
+
+    const guidesIndex = pages.indexOf("---Guides---");
+    const getStartedPages = pages.slice(1, guidesIndex);
+    expect(getStartedPages).toEqual([
+      "index",
+      "quickstart",
+      "providers",
+      "sessions-via-mcp",
+      "composio-connect",
+      "cli",
+      "claude-code-plugin",
+    ]);
+  });
+
   test("root meta.json entries all resolve to files or directories", async () => {
     const metaPath = join(CONTENT_DIR, "meta.json");
     const meta = JSON.parse(await readFile(metaPath, "utf-8"));
@@ -148,7 +169,8 @@ describe("Navigation - meta.json validity", () => {
           orphans.map((o) => `  - ${o}`).join("\n")
       );
     }
-    // Warn but don't fail — orphans aren't necessarily bugs
-    expect(orphans.length).toBeLessThan(20);
+    // The single-toolkit MCP page stays deliberately deferred until its
+    // product status is resolved. Every other authored page is navigable.
+    expect(orphans.sort()).toEqual(["docs/single-toolkit-mcp.mdx"]);
   });
 });
