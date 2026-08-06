@@ -363,7 +363,7 @@ describe("deprecated API endpoints", () => {
     }
   });
 
-  test("does not reuse a current overview on the legacy index", async () => {
+  test("preserves the shared overview on current and legacy indexes", async () => {
     const fixtureDir = await generateFixture();
     const v31Content = await readFile(
       join(fixtureDir, "content/reference/api-reference/tasks/index.mdx"),
@@ -375,9 +375,7 @@ describe("deprecated API endpoints", () => {
     );
 
     expect(v31Content).toContain("Current task overview with POST /api/v3.1/tasks/active");
-    expect(v3Content).toContain("Legacy task endpoints");
-    expect(v3Content).not.toContain("Current task overview");
-    expect(v3Content).not.toContain("/api/v3.1/tasks/active");
+    expect(v3Content).toContain("Current task overview with POST /api/v3.1/tasks/active");
   });
 
   test("renders one Legacy badge for a deprecated endpoint and none for an active endpoint", () => {

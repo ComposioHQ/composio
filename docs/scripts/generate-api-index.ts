@@ -79,19 +79,13 @@ function slugify(text: string): string {
 
 /**
  * Optional hand-written overview for a tag, merged above the generated
- * endpoints table. Current overviews live in `api-overviews/<tagSlug>.mdx`;
- * legacy-specific overviews live in `api-overviews/v3/<tagSlug>.mdx` and never
- * fall back to current-version prose. Both locations are outside `content/`,
- * so Fumadocs never renders them as their own pages. Frontmatter, if present,
- * is stripped — the generator owns the frontmatter.
+ * endpoints table. Lives in `api-overviews/<tagSlug>.mdx` (outside `content/`,
+ * so Fumadocs never renders it as its own page). Use this to fold a conceptual
+ * guide into the API reference page instead of keeping a separate docs page.
+ * Frontmatter, if present, is stripped — the generator owns the frontmatter.
  */
-function readOverview(tagSlug: string, version: 'v3.1' | 'v3' = 'v3.1'): string | null {
-  const overviewPath = join(
-    process.cwd(),
-    'api-overviews',
-    ...(version === 'v3' ? ['v3'] : []),
-    `${tagSlug}.mdx`,
-  );
+function readOverview(tagSlug: string): string | null {
+  const overviewPath = join(process.cwd(), 'api-overviews', `${tagSlug}.mdx`);
   if (!existsSync(overviewPath)) return null;
   const raw = readFileSync(overviewPath, 'utf-8');
   const stripped = raw.replace(/^---\n[\s\S]*?\n---\n/, '').trim();
@@ -289,11 +283,9 @@ function generateIndexPages() {
   const specV31: OpenAPISpec = JSON.parse(readFileSync(specV31Path, 'utf-8'));
   const v31Ops = getOperationsByTag(specV31);
 
-  let specV3: OpenAPISpec | null = null;
   let v3Ops: Record<string, OperationEntry[]> = {};
   if (existsSync(specV3Path)) {
     const loadedSpecV3: OpenAPISpec = JSON.parse(readFileSync(specV3Path, 'utf-8'));
-    specV3 = loadedSpecV3;
     v3Ops = getOperationsByTag(loadedSpecV3);
   }
 
@@ -301,11 +293,6 @@ function generateIndexPages() {
   for (const tag of specV31.tags) {
     v31TagDescriptions[tag.name] = tag.description || '';
   }
-  const v3TagDescriptions: Record<string, string> = {};
-  for (const tag of specV3?.tags ?? []) {
-    v3TagDescriptions[tag.name] = tag.description || '';
-  }
-
   const outputDir = join(process.cwd(), 'content/reference/api-reference');
   const webhookSpec = loadWebhookSpec();
 
@@ -421,12 +408,6 @@ ${body}
 
     // Also generate v3 index page with v3-specific hrefs
     if (ops3.length > 0) {
-      const v3TagDescription = v3TagDescriptions[tagName] || `${tagName} API endpoints`;
-      const v3Overview = readOverview(tagSlug, 'v3');
-      const v3Body = v3Overview ?? v3TagDescription;
-      const v3GenComment = v3Overview
-        ? `{/* Auto-generated from OpenAPI spec. Edit the overview at api-overviews/v3/${tagSlug}.mdx, not this file. */}`
-        : '{/* Auto-generated from OpenAPI spec. Do not edit directly. */}';
       const v3Endpoints = ops3.map(op => ({
         method: op.method,
         pathV31: op.path.replace('/v3/', '/v3.1/'),
@@ -441,12 +422,12 @@ ${body}
 
       const v3Content = `---
 title: ${displayTitle}
-description: "${v3TagDescription}"
+description: "${tagDescription}"
 ---
 
-${v3GenComment}
+${genComment}
 
-${v3Body}
+${body}
 
 ## Endpoints
 
