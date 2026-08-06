@@ -679,6 +679,18 @@ setup_requested_shell() {
     return 1
 }
 
+print_first_tool_commands() {
+    first_tool_command=$1
+    case $version in
+        *-*) printf '  %s login\n' "$first_tool_command" ;;
+        *)
+            printf 'Connect an account and try your first tool:\n'
+            printf '  Human: %s onboard\n' "$first_tool_command"
+            printf '  Agent: %s onboard --json\n' "$first_tool_command"
+            ;;
+    esac
+}
+
 # Final action block for every non-failure flow: one truthful ending chosen
 # from the inherited-resolution and setup-outcome state. It must be the last
 # output — the closing block is the instruction users copy, so nothing may
@@ -707,7 +719,8 @@ print_post_install_help() {
     # Case A: the invoking terminal already resolves the installed executable.
     if [ "$inherited_resolution" = installed ]; then
         if [ "$shell_setup_outcome" = success ] || [ "$shell_setup_mode" = none ]; then
-            printf 'composio is ready.\n\n  composio login\n'
+            printf 'composio is ready.\n\n'
+            print_first_tool_commands composio
             return 0
         fi
     fi
@@ -715,10 +728,12 @@ print_post_install_help() {
     if [ "$shell_setup_outcome" = success ]; then
         if [ "$inherited_resolution" = shadowed ]; then
             printf 'Another composio command at %s takes precedence in this terminal.\n' "$inherited_command"
-            printf 'To use the newly installed CLI, run:\n\n  %s login\n' "$(shell_quote "$exe")"
+            printf 'To use the newly installed CLI, run:\n\n'
+            print_first_tool_commands "$(shell_quote "$exe")"
         else
             # Case B: configured for future terminals, vocabulary-free.
-            printf 'Open a new terminal, then run:\n\n  composio login\n'
+            printf 'Open a new terminal, then run:\n\n'
+            print_first_tool_commands composio
         fi
         return 0
     fi
@@ -738,7 +753,8 @@ print_post_install_help() {
             fi
             ;;
     esac
-    printf 'To get started now, run:\n\n  %s login\n' "$(shell_quote "$exe")"
+    printf 'To get started now, run:\n\n'
+    print_first_tool_commands "$(shell_quote "$exe")"
 }
 
 # Setup failure never fails the install. Recovery travels the stderr warn
@@ -758,7 +774,8 @@ print_setup_failure_ending() {
     if [ "$install_agent" = 1 ]; then
         printf '\nRun composio from its installed location:\n\n  %s --help\n' "$(shell_quote "$exe")" >&2
     else
-        printf '\nTo get started, run:\n\n  %s login\n' "$(shell_quote "$exe")" >&2
+        printf '\nTo get started, run:\n\n' >&2
+        print_first_tool_commands "$(shell_quote "$exe")" >&2
     fi
 }
 
