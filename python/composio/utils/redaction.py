@@ -11,7 +11,9 @@ _AUTHORIZATION = re.compile(r"\b(bearer|basic)\s+[A-Za-z0-9._~+/=-]+", re.IGNORE
 # dict reprs are covered: in `{"api_key": "secret"}` the key's own closing quote
 # sits between the name and the colon.
 _SECRET_PAIR = re.compile(
-    r"\b(authorization|api[-_]?key|apikey|x-api-key|access[-_]?token|refresh[-_]?token|client[-_]?secret|secret|password|passwd|pwd)\b([\"']?\s*[:=]+\s*)([\"']?)([^\s\"',}&]+)\3",
+    # Leading lookbehind (not \\b) so env-style names like COMPOSIO_API_KEY still
+    # match: underscore is a word char, so \\b can't fire between COMPOSIO_ and API.
+    r"(?<![A-Za-z0-9])(authorization|api[-_]?key|apikey|x-api-key|access[-_]?token|refresh[-_]?token|client[-_]?secret|secret|password|passwd|pwd)\b([\"']?\s*[:=]+\s*)([\"']?)([^\s\"',}&]+)\3",
     re.IGNORECASE,
 )
 

@@ -73,3 +73,24 @@ def test_json_keys_are_preserved() -> None:
 def test_leaves_benign_text_untouched(text: str) -> None:
     """A key name with no value attached must not trigger redaction."""
     assert redact_sensitive_text(text) == text
+
+
+@pytest.mark.parametrize(
+    ("text", "secret"),
+    [
+        ("COMPOSIO_API_KEY=sk_live_9f3c", "sk_live_9f3c"),
+        ("OPENAI_API_KEY=sk_live_9f3c", "sk_live_9f3c"),
+        ('export COMPOSIO_API_KEY="sk_live_9f3c"', "sk_live_9f3c"),
+    ],
+)
+def test_redacts_env_style_prefixed_api_keys(text: str, secret: str) -> None:
+    """Underscore before api_key is a word char, so a leading \\b would miss these."""
+    redacted = redact_sensitive_text(text)
+
+    assert secret not in redacted
+    assert "[REDACTED]" in redacted
+
+
+def test_does_not_match_secret_name_embedded_in_letters() -> None:
+    """Lookbehind still refuses letter-prefixed collisions like myapikey=x."""
+    assert redact_sensitive_text("myapikey=sk_live_9f3c") == "myapikey=sk_live_9f3c"

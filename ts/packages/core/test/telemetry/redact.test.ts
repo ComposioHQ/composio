@@ -86,4 +86,21 @@ describe('redactSensitiveText', () => {
     const benign = 'TypeError: cannot read property foo of undefined at Object.<anonymous>';
     expect(redactSensitiveText(benign)).toBe(benign);
   });
+
+  // Underscore before api_key is a word char, so a leading \b would miss these.
+  it('redacts env-style prefixed API keys', () => {
+    for (const [sample, secret] of [
+      ['COMPOSIO_API_KEY=sk_live_9f3c', 'sk_live_9f3c'],
+      ['OPENAI_API_KEY=sk_live_9f3c', 'sk_live_9f3c'],
+      ['export COMPOSIO_API_KEY="sk_live_9f3c"', 'sk_live_9f3c'],
+    ] as const) {
+      const out = redactSensitiveText(sample)!;
+      expect(out, sample).toContain('[REDACTED]');
+      expect(out, sample).not.toContain(secret);
+    }
+  });
+
+  it('does not match a secret name embedded in letters', () => {
+    expect(redactSensitiveText('myapikey=sk_live_9f3c')).toBe('myapikey=sk_live_9f3c');
+  });
 });
