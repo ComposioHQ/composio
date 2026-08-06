@@ -318,7 +318,13 @@ export function mdxToCleanMarkdown(content: string, url?: string): string {
   result = result.replace(/<Step>\s*###\s*(.+)/g, '#### $1');
   result = result.replace(/<\/?Steps>/g, '');
   result = result.replace(/<\/?Step>/g, '');
-  result = result.replace(/^(\s*#{1,6})\s*#\s+(.+)$/gm, '$1 $2');
+  // Collapse the doubled-hash artifact the two rules above leave behind:
+  // `<StepTitle>` rewrites its body to `#### Title`, then the `<Step>` rule
+  // matches that output's own leading `###` and re-prefixes it, producing
+  // `#### # Title`. The separator must be a required space or tab — with an
+  // optional one, `## Heading` also matched (first `#` as the prefix, second
+  // as the stray hash) and every authored heading below h1 lost a level.
+  result = result.replace(/^([ \t]*#{1,6})[ \t]+#\s+(.+)$/gm, '$1 $2');
   result = result.replace(/^\s*#\s*$/gm, '');
 
   result = result.replace(/<FrameworkOption[\s\S]*?name="([^"]*)"[\s\S]*?>/g, '\n## $1\n');
