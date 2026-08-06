@@ -1,8 +1,15 @@
 import type { Composio as RawComposioClient } from '@composio/client';
 import { Command, Options } from '@effect/cli';
-import { Data, Effect, Match, Option } from 'effect';
+import { Clock, Data, Effect, Match, Option } from 'effect';
+import { trackCliEventEffect } from 'src/analytics/dispatch';
+import {
+  CLI_ONBOARDING_EVENTS,
+  getCliOnboardingEvent,
+  type CliOnboardingEventName,
+} from 'src/analytics/events';
 import { browserLogin } from 'src/commands/login.cmd';
 import { linkRootConsumerToolkit } from 'src/commands/connected-accounts/commands/connected-accounts.link.cmd';
+import { APP_VERSION } from 'src/constants';
 import { decodeConnectedAccountItems } from 'src/effects/decode-connected-account-list';
 import {
   formatResolveCommandProjectError,
@@ -10,6 +17,8 @@ import {
   type ResolvedCommandProject,
 } from 'src/services/command-project';
 import { ComposioClientSingleton } from 'src/services/composio-clients';
+import { ComposioCliUserConfig } from 'src/services/cli-user-config';
+import { NodeOs } from 'src/services/node-os';
 import {
   findCuratedOnboardingTask,
   CURATED_ONBOARDING_TASKS,
@@ -205,139 +214,193 @@ export const runOnboard = (params: {
 }) =>
   Effect.gen(function* () {
     const ui = yield* TerminalUI;
-    const selectedTask = Option.flatMap(params.toolkit, findCuratedOnboardingTask);
-    yield* Option.match(params.toolkit, {
-      onNone: () => Effect.void,
-      onSome: supplied =>
-        Option.isSome(selectedTask)
-          ? Effect.void
-          : Effect.fail(
-              new UnsupportedOnboardingToolkitError({
-                message: `Unsupported onboarding toolkit "${supplied}". Choose: ${CURATED_ONBOARDING_TASKS.map(task => task.toolkit).join(', ')}.`,
-              })
-            ),
-    });
-
-    let task = Option.getOrNull(selectedTask);
-    let executedLocally = false;
-    let pendingLoginUrl: string | null = null;
-    let pendingRedirectUrl: string | null = null;
-    let gathered = yield* gatherFacts(task?.toolkit ?? null, executedLocally);
-    const attempted = new Set<OnboardingGate>();
-    const { canPrompt } = yield* ui.capabilities;
-    const maxAdvances = params.status ? 0 : params.json ? 1 : 3;
-    const interactive = canPrompt && !params.json;
-
-    for (let advance = 0; advance < maxAdvances; advance += 1) {
-      const state = resolveOnboardingState(gathered.facts);
-      const gate = state.next_gate;
-      if (gate === null) break;
-      if ([attempted.has(gate), state.blocked_reason === 'oauth_required'].some(Boolean)) break;
-
-      if (gate === 'connect' && task === null) {
-        if (!interactive) break;
-        const selected = yield* ui.select(
-          'Choose a toolkit to try',
-          CURATED_ONBOARDING_TASKS.map(entry => ({
-            value: entry.toolkit,
-            label: entry.label,
-          }))
+    const config = yield* ComposioCliUserConfig;
+    const os = yield* NodeOs;
+    const startedAt = yield* Clock.currentTimeMillis;
+    const mode = Match.value(params).pipe(
+      Match.when({ status: true }, () => 'status' as const),
+      Match.when({ json: true }, () => 'json' as const),
+      Match.orElse(() => 'interactive' as const)
+    );
+    let analyticsToolkit = Option.getOrUndefined(params.toolkit);
+    let analyticsGate: OnboardingGate | undefined;
+    let connectionSource: 'existing' | 'resumed' | 'new' | undefined;
+    let errorCode: string | undefined;
+    const trackOnboarding = (name: CliOnboardingEventName) =>
+      Effect.gen(function* () {
+        const now = yield* Clock.currentTimeMillis;
+        yield* trackCliEventEffect(
+          getCliOnboardingEvent(name, {
+            release_channel: config.data.channel,
+            mode,
+            toolkit: analyticsToolkit,
+            gate: analyticsGate,
+            cli_version: APP_VERSION,
+            os: os.platform,
+            connection_source: connectionSource,
+            duration_ms: now - startedAt,
+            error_code: errorCode,
+          })
         );
-        task = Option.getOrThrow(findCuratedOnboardingTask(selected));
-      }
+      }).pipe(Effect.catchAllCause(() => Effect.void));
 
-      attempted.add(gate);
-      switch (gate) {
-        case 'login': {
-          const login = yield* browserLogin({
-            scope: 'user',
-            noBrowser: !interactive,
-            noWait: !interactive,
-            skipOrgProjectPicker: true,
-            suppressOutput: true,
-          }).pipe(
-            Effect.mapError(
-              () => new OnboardingActionError({ message: 'Could not start Composio login.' })
-            )
-          );
-          pendingLoginUrl = login.status === 'pending' ? login.url : null;
-          break;
-        }
-        case 'connect': {
-          const currentTask = Option.getOrThrow(Option.fromNullable(task));
-          const linked = yield* linkRootConsumerToolkit({
-            toolkit: currentTask.toolkit,
-            wait: interactive,
-          }).pipe(
-            Effect.mapError(
-              () =>
-                new OnboardingConnectionError({
-                  message: `Could not connect ${currentTask.toolkit}. Run \`composio link ${currentTask.toolkit}\` and try again.`,
+    yield* trackOnboarding(CLI_ONBOARDING_EVENTS.STARTED);
+    errorCode = 'unsupported_toolkit';
+
+    return yield* Effect.gen(function* () {
+      const selectedTask = Option.flatMap(params.toolkit, findCuratedOnboardingTask);
+      yield* Option.match(params.toolkit, {
+        onNone: () => Effect.void,
+        onSome: supplied =>
+          Option.isSome(selectedTask)
+            ? Effect.void
+            : Effect.fail(
+                new UnsupportedOnboardingToolkitError({
+                  message: `Unsupported onboarding toolkit "${supplied}". Choose: ${CURATED_ONBOARDING_TASKS.map(task => task.toolkit).join(', ')}.`,
                 })
-            )
+              ),
+      });
+
+      let task = Option.getOrNull(selectedTask);
+      let executedLocally = false;
+      let pendingLoginUrl: string | null = null;
+      let pendingRedirectUrl: string | null = null;
+      errorCode = 'facts_failed';
+      let gathered = yield* gatherFacts(task?.toolkit ?? null, executedLocally);
+      connectionSource = Match.value(gathered.facts.connection).pipe(
+        Match.when('active', () => 'existing' as const),
+        Match.when('pending', () => 'resumed' as const),
+        Match.orElse(() => undefined)
+      );
+      const attempted = new Set<OnboardingGate>();
+      const { canPrompt } = yield* ui.capabilities;
+      const maxAdvances = params.status ? 0 : params.json ? 1 : 3;
+      const interactive = canPrompt && !params.json;
+
+      for (let advance = 0; advance < maxAdvances; advance += 1) {
+        const state = resolveOnboardingState(gathered.facts);
+        const gate = state.next_gate;
+        if (gate === null) break;
+        analyticsGate = gate;
+        errorCode = undefined;
+        yield* trackOnboarding(CLI_ONBOARDING_EVENTS.GATE_VIEWED);
+        if ([attempted.has(gate), state.blocked_reason === 'oauth_required'].some(Boolean)) break;
+        errorCode = `${gate}_failed`;
+
+        if (gate === 'connect' && task === null) {
+          if (!interactive) break;
+          const selected = yield* ui.select(
+            'Choose a toolkit to try',
+            CURATED_ONBOARDING_TASKS.map(entry => ({
+              value: entry.toolkit,
+              label: entry.label,
+            }))
           );
-          pendingRedirectUrl = linked.status === 'pending' ? linked.redirectUrl : null;
-          break;
+          task = Option.getOrThrow(findCuratedOnboardingTask(selected));
+          analyticsToolkit = task.toolkit;
         }
-        case 'execute': {
-          const currentTask = Option.getOrThrow(Option.fromNullable(task));
-          const { client, project, activeConnectionId } = gathered;
-          if (!client || !project?.consumerUserId || !activeConnectionId) {
-            return yield* new OnboardingFactsError({
-              message: 'The active connected account could not be resolved.',
-            });
+
+        attempted.add(gate);
+        switch (gate) {
+          case 'login': {
+            const login = yield* browserLogin({
+              scope: 'user',
+              noBrowser: !interactive,
+              noWait: !interactive,
+              skipOrgProjectPicker: true,
+              suppressOutput: true,
+            }).pipe(
+              Effect.mapError(
+                () => new OnboardingActionError({ message: 'Could not start Composio login.' })
+              )
+            );
+            pendingLoginUrl = login.status === 'pending' ? login.url : null;
+            break;
           }
-          const result = yield* (yield* ToolsExecutor)
-            .execute(currentTask.tool, {
-              userId: project.consumerUserId,
-              arguments: { ...currentTask.args },
-              client,
-              connectedAccounts: { [currentTask.toolkit]: activeConnectionId },
-              cacheScope: {
-                orgId: project.orgId,
-                projectId: project.projectId,
-                consumerUserId: project.consumerUserId,
-              },
-            })
-            .pipe(
+          case 'connect': {
+            const currentTask = Option.getOrThrow(Option.fromNullable(task));
+            const linked = yield* linkRootConsumerToolkit({
+              toolkit: currentTask.toolkit,
+              wait: interactive,
+            }).pipe(
               Effect.mapError(
                 () =>
-                  new OnboardingToolExecutionError({
-                    message: `The demo failed. Run \`composio link ${currentTask.toolkit}\` and try again.`,
+                  new OnboardingConnectionError({
+                    message: `Could not connect ${currentTask.toolkit}. Run \`composio link ${currentTask.toolkit}\` and try again.`,
                   })
               )
             );
-          if (!result.successful) {
-            return yield* new OnboardingToolExecutionError({
-              message: `The demo failed. Run \`composio link ${currentTask.toolkit}\` and try again.`,
-            });
+            pendingRedirectUrl = linked.status === 'pending' ? linked.redirectUrl : null;
+            connectionSource = 'new';
+            break;
           }
-          const summary = currentTask.summarize(result.data);
-          if (summary) yield* ui.log.success(summary);
-          executedLocally = true;
-          yield* recordSuccessfulOnboarding;
-          break;
+          case 'execute': {
+            const currentTask = Option.getOrThrow(Option.fromNullable(task));
+            const { client, project, activeConnectionId } = gathered;
+            if (!client || !project?.consumerUserId || !activeConnectionId) {
+              return yield* new OnboardingFactsError({
+                message: 'The active connected account could not be resolved.',
+              });
+            }
+            const result = yield* (yield* ToolsExecutor)
+              .execute(currentTask.tool, {
+                userId: project.consumerUserId,
+                arguments: { ...currentTask.args },
+                client,
+                connectedAccounts: { [currentTask.toolkit]: activeConnectionId },
+                cacheScope: {
+                  orgId: project.orgId,
+                  projectId: project.projectId,
+                  consumerUserId: project.consumerUserId,
+                },
+              })
+              .pipe(
+                Effect.mapError(
+                  () =>
+                    new OnboardingToolExecutionError({
+                      message: `The demo failed. Run \`composio link ${currentTask.toolkit}\` and try again.`,
+                    })
+                )
+              );
+            if (!result.successful) {
+              return yield* new OnboardingToolExecutionError({
+                message: `The demo failed. Run \`composio link ${currentTask.toolkit}\` and try again.`,
+              });
+            }
+            const summary = currentTask.summarize(result.data);
+            if (summary) yield* ui.log.success(summary);
+            executedLocally = true;
+            yield* recordSuccessfulOnboarding;
+            break;
+          }
         }
+
+        errorCode = 'facts_failed';
+        const next = yield* gatherFacts(task?.toolkit ?? null, executedLocally);
+        if (!factsChanged(gathered.facts, next.facts)) break;
+        errorCode = undefined;
+        yield* trackOnboarding(CLI_ONBOARDING_EVENTS.GATE_COMPLETED);
+        gathered = next;
       }
 
-      const next = yield* gatherFacts(task?.toolkit ?? null, executedLocally);
-      if (!factsChanged(gathered.facts, next.facts)) break;
-      gathered = next;
-    }
-
-    const resolved = resolveOnboardingState(gathered.facts);
-    const document = withInvocationAction({
-      pendingLoginUrl,
-      pendingRedirectUrl,
-      resolved,
-      task,
-    });
-    if (params.json) {
-      yield* ui.output(JSON.stringify(document), { force: true });
-    } else {
-      yield* renderHumanState(ui, document);
-    }
-    return document;
+      const resolved = resolveOnboardingState(gathered.facts);
+      const document = withInvocationAction({
+        pendingLoginUrl,
+        pendingRedirectUrl,
+        resolved,
+        task,
+      });
+      if (params.json) {
+        yield* ui.output(JSON.stringify(document), { force: true });
+      } else {
+        yield* renderHumanState(ui, document);
+      }
+      errorCode = undefined;
+      yield* trackOnboarding(CLI_ONBOARDING_EVENTS.COMPLETED).pipe(
+        Effect.when(() => document.onboarded)
+      );
+      return document;
+    }).pipe(Effect.tapError(() => trackOnboarding(CLI_ONBOARDING_EVENTS.FAILED)));
   });
 
 export const onboardCmd = Command.make('onboard', { toolkit, json, status }, runOnboard).pipe(

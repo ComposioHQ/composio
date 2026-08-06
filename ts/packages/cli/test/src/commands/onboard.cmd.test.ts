@@ -17,6 +17,25 @@ vi.mock('open', () => ({
   default: vi.fn(async () => undefined),
 }));
 
+const onboardingAnalytics = vi.hoisted(() => ({
+  events: [] as Array<{ name: string; properties?: Record<string, unknown> }>,
+  fail: false,
+}));
+
+vi.mock('src/analytics/dispatch', async importOriginal => {
+  const actual = await importOriginal<typeof import('src/analytics/dispatch')>();
+  const { Effect } = await import('effect');
+  return {
+    ...actual,
+    trackCliEventEffect: (event: { name: string; properties?: Record<string, unknown> } | null) =>
+      onboardingAnalytics.fail
+        ? Effect.fail(new Error('analytics unavailable'))
+        : Effect.sync(() => {
+            if (event) onboardingAnalytics.events.push(event);
+          }),
+  };
+});
+
 const loggedInConfig = ConfigProvider.fromMap(
   new Map([['COMPOSIO_USER_API_KEY', 'test_api_key']])
 ).pipe(extendConfigProvider);
@@ -139,6 +158,8 @@ const sessionInfo = {
 
 describe('CLI: composio onboard', () => {
   afterEach(() => {
+    onboardingAnalytics.events.length = 0;
+    onboardingAnalytics.fail = false;
     vi.restoreAllMocks();
     vi.clearAllMocks();
   });
@@ -154,6 +175,7 @@ describe('CLI: composio onboard', () => {
     it.scoped('[Given] --status --json [Then] reports facts without side effects', () =>
       Effect.gen(function* () {
         yield* Console.clear;
+        onboardingAnalytics.fail = true;
         const execute = vi.fn(() =>
           Effect.succeed({ successful: true, data: {}, error: null, logId: 'log_test' })
         );
@@ -213,6 +235,10 @@ describe('CLI: composio onboard', () => {
         });
         expect(pendingLink).not.toHaveBeenCalled();
         expect(vi.mocked(open)).not.toHaveBeenCalled();
+        expect(onboardingAnalytics.events.at(-1)).toMatchObject({
+          name: 'cli_onboarding_gate_viewed',
+          properties: { connection_source: 'resumed' },
+        });
       })
     );
   });
@@ -260,6 +286,11 @@ describe('CLI: composio onboard', () => {
         expect((error as { message: string }).message).toContain('composio link gmail');
         expect((error as { message: string }).message).not.toContain('raw provider token');
         expect((yield* readPersistedOnboarding).hasExecuted).toBe(false);
+        expect(onboardingAnalytics.events.at(-1)).toMatchObject({
+          name: 'cli_onboarding_failed',
+          properties: { connection_source: 'existing', error_code: 'execute_failed' },
+        });
+        expect(JSON.stringify(onboardingAnalytics.events)).not.toContain('raw provider token');
       })
     );
   });
@@ -333,6 +364,25 @@ describe('CLI: composio onboard', () => {
           expect(interactiveLink).toHaveBeenCalledOnce();
           expect(execute).toHaveBeenCalledOnce();
           expect((yield* readPersistedOnboarding).hasExecuted).toBe(true);
+          const onboardingEvents = onboardingAnalytics.events.filter(event =>
+            event.name.startsWith('cli_onboarding_')
+          );
+          expect(onboardingEvents.map(event => event.name)).toEqual([
+            'cli_onboarding_started',
+            'cli_onboarding_gate_viewed',
+            'cli_onboarding_gate_completed',
+            'cli_onboarding_gate_viewed',
+            'cli_onboarding_gate_completed',
+            'cli_onboarding_gate_viewed',
+            'cli_onboarding_gate_completed',
+            'cli_onboarding_completed',
+          ]);
+          expect(onboardingEvents.at(-1)?.properties).toMatchObject({
+            connection_source: 'new',
+          });
+          expect(JSON.stringify(onboardingEvents)).not.toMatch(
+            /uak_onboard|lt_test_token|private-result|max_results|verbose/
+          );
         })
     );
   });
