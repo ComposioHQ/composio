@@ -8,7 +8,29 @@
 
 import { readFileSync, writeFileSync, mkdirSync, existsSync, rmSync, readdirSync } from 'fs';
 import { join } from 'path';
+import { z } from 'zod';
 import { HIDDEN_API_TAGS } from '../lib/filter-api-version';
+import { apiEndpointsSchema } from '../lib/api-endpoints-table-schema';
+
+/**
+ * Serializes an endpoints array for the `<ApiEndpointsTable />` prop, refusing
+ * to write a payload the readers cannot parse.
+ *
+ * At runtime `mdxToCleanMarkdown` degrades a malformed payload to an empty
+ * table (one bad page must not 500 the whole `.md` response), so an invalid
+ * payload written here would render as a silently empty Endpoints section —
+ * exactly the defect this pipeline exists to avoid. A generator that cannot
+ * produce a valid payload should fail the generation run instead.
+ */
+function serializeEndpoints(endpoints: unknown, label: string): string {
+  const parsed = apiEndpointsSchema.safeParse(endpoints);
+  if (!parsed.success) {
+    throw new Error(
+      `Invalid ApiEndpointsTable payload for ${label}:\n${z.prettifyError(parsed.error)}`
+    );
+  }
+  return JSON.stringify(parsed.data);
+}
 
 /**
  * API-reference tags hidden on our side even though the upstream OpenAPI spec
@@ -377,7 +399,7 @@ ${body}
 
 ## Endpoints
 
-<ApiEndpointsTable endpoints={${JSON.stringify(endpoints)}} />
+<ApiEndpointsTable endpoints={${serializeEndpoints(endpoints, `${tagSlug} (v3.1)`)}} />
 `;
 
       const folderPath = join(outputDir, tagSlug);
@@ -411,7 +433,7 @@ ${body}
 
 ## Endpoints
 
-<ApiEndpointsTable endpoints={${JSON.stringify(v3Endpoints)}} />
+<ApiEndpointsTable endpoints={${serializeEndpoints(v3Endpoints, `${tagSlug} (v3.0)`)}} />
 `;
 
       const v3FolderPath = join(process.cwd(), 'content/reference/v3/api-reference', tagSlug);
