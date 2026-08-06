@@ -13,6 +13,7 @@ import { versionCmd } from './version.cmd';
 import { upgradeCmd } from './upgrade.cmd';
 import { whoamiCmd } from './whoami.cmd';
 import { loginCmd } from './login.cmd';
+import { onboardCmd } from './onboard.cmd';
 import { signupCmd } from './signup.cmd';
 import { setupCmd } from './setup.cmd';
 import { listenCmd } from './listen.cmd';
@@ -65,6 +66,7 @@ const ROOT_COMMANDS = [
   tagged(upgradeCmd),
   tagged(whoamiCmd),
   tagged(loginCmd),
+  tagged(onboardCmd),
   tagged(signupCmd),
   tagged(setupCmd),
   tagged(agentCmd),
