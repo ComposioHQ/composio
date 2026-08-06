@@ -4,23 +4,20 @@ description: 'Tool arguments declared as bare objects are no longer rejected or 
 date: '2026-08-06'
 ---
 
-## Version Information
+### SDK Versions
 
-### Python
-
-- Package: `composio`
-- Version: `0.19.0`+
-
-### TypeScript/JavaScript
-
-- Packages: `@composio/core`, `@composio/json-schema-to-zod`, `@composio/claude-agent-sdk`
-- Versions: `0.15.0`+, `0.3.0`+, `0.11.0`+
+| SDK                                       | Version  |
+| ----------------------------------------- | -------- |
+| Python `composio`                         | `0.19.0` |
+| TypeScript `@composio/core`               | `0.15.0` |
+| TypeScript `@composio/json-schema-to-zod` | `0.3.0`  |
+| TypeScript `@composio/claude-agent-sdk`   | `0.11.0` |
 
 ---
 
 A tool argument declared as a bare `{"type": "object"}` — with no `properties` of its own — was rejected or silently emptied at every schema conversion boundary. This affects any tool that takes a free-form payload, such as `dataset_query` on `METABASE_POST_API_CARD`.
 
-## What Changed
+### What Changed
 
 An object schema that names no properties is now treated as open: arbitrary content is accepted and preserved, at the root, nested inside another object, and inside array items.
 
@@ -47,7 +44,9 @@ In TypeScript the same schema was rejected outright rather than emptied, both in
 
 Those inputs are now accepted.
 
-### Dynamic keys apply only where they should
+The CLI-side fix ships with the CLI binary rather than the npm packages above. Upgrade it with `composio upgrade`.
+
+#### Dynamic keys apply only where they should
 
 Where a schema declares `patternProperties` or a schema-valued `additionalProperties`, each key is now validated against exactly the schemas that claim it. Previously a key could pass by satisfying an unrelated pattern instead of its own.
 
@@ -57,7 +56,7 @@ Where a schema declares `patternProperties` or a schema-valued `additionalProper
 
 Root-level `patternProperties` and boolean- or schema-valued `additionalProperties` also survive tool schema parsing; they were previously dropped before any converter could see them.
 
-## Behavior Change for Python Agentic Providers
+### Behavior Change for Python Agentic Providers
 
 <Callout type="warn">
 **Behavior change**
@@ -85,12 +84,13 @@ wrapped.run({"name": "a", "typo": 1})
 
 This brings Python in line with the TypeScript SDK, where the Zod converter has always rejected unknown keys for schemas that name properties. Strictness applies only when `additionalProperties` is omitted; `additionalProperties: true` and schema-valued forms behave as declared.
 
-### Not affected
+#### Not affected
 
-- **`composio_openai`, `composio_anthropic`, `composio_gemini`, and the other non-agentic providers.** These hand the raw JSON schema to the model API and pass the returned arguments straight through, so they never build a Pydantic model from a tool schema.
+- **`composio_openai`, `composio_anthropic`, and the other non-agentic providers.** These hand the raw JSON schema to the model API and pass the returned arguments straight through, so they never build a Pydantic model from a tool schema.
+- **`composio_gemini`.** Gemini builds a typed signature through `json_schema_to_pydantic_type`, so free-form object arguments now use `Dict[str, Any]` instead of an empty model. It does not use `json_schema_to_model`, so the unknown-key rejection above does not apply.
 - **Declared field behavior, aliases for reserved Python keywords, `skip_default`, combiners, and references.** All unchanged.
 
-## Behavior Change for the Claude Agent SDK Provider
+### Behavior Change for the Claude Agent SDK Provider
 
 <Callout type="warn">
 **Behavior change**
@@ -103,11 +103,11 @@ A raw shape carries only the per-property map, so root-level `additionalProperti
 
 This is also what makes free-form object arguments reach execution intact through this provider: the content of a bare `{"type": "object"}` argument survives registration instead of being discarded with the rest of the root constraints.
 
-### Not affected
+#### Not affected
 
 - **`@composio/vercel`, `@composio/langchain`, and `@composio/llamaindex`.** These already registered complete schemas, so they picked the fix up with no change.
 
-## Backward Compatibility
+### Backward Compatibility
 
 Accepting and preserving free-form object content is backward compatible: payloads that previously failed now succeed, and payloads that previously arrived empty now arrive complete.
 

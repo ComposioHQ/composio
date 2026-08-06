@@ -15,6 +15,7 @@
 
 ### Patch Changes
 
+- Free-form object arguments now pass CLI tool-input validation and keep their content instead of failing with an unknown-key error. Run `composio upgrade` to install the fixed CLI binary.
 - Fix Linux `composio upgrade` failures with `ETXTBSY` by staging CLI files in
   the install directory and renaming the executable last. The installer and
   companion repair use the same replacement strategy, and the running binary
