@@ -168,13 +168,12 @@ describe('Claude Agent SDK root schema registration', () => {
     });
   });
 
-  it('preserves patternProperties validation', async () => {
+  it('preserves patternProperties with default strict additional properties', async () => {
     const harness = createToolHarness({
       type: 'object',
       properties: { name: { type: 'string' } },
       required: ['name'],
       patternProperties: { '^metric_': { type: 'number' } },
-      additionalProperties: false,
     });
     await harness.connect();
 

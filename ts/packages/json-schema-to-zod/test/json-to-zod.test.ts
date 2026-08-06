@@ -325,6 +325,44 @@ describe('jsonSchemaToZod', () => {
       expect(() => zodSchema.parse({ name: 'John', extra: 'field' })).toThrow();
     });
 
+    it('should reject keys outside patternProperties when additionalProperties is not specified', () => {
+      const schema: JsonSchema = {
+        type: 'object',
+        properties: {
+          name: { type: 'string' },
+        },
+        patternProperties: {
+          '^metric_': { type: 'number' },
+        },
+      };
+      const zodSchema = jsonSchemaToZod(schema);
+
+      expect(zodSchema.parse({ name: 'John', metric_score: 42 })).toEqual({
+        name: 'John',
+        metric_score: 42,
+      });
+      expect(() => zodSchema.parse({ name: 'John', metric_score: 'high' })).toThrow(
+        'Key matching regex /^metric_/ must match schema'
+      );
+      expect(() => zodSchema.parse({ name: 'John', other: 42 })).toThrow();
+    });
+
+    it('should allow unmatched keys for a property-less pattern schema by default', () => {
+      const schema: JsonSchema = {
+        type: 'object',
+        patternProperties: {
+          '^metric_': { type: 'number' },
+        },
+      };
+      const zodSchema = jsonSchemaToZod(schema);
+
+      expect(zodSchema.parse({ metric_score: 42, other: 'value' })).toEqual({
+        metric_score: 42,
+        other: 'value',
+      });
+      expect(() => zodSchema.parse({ metric_score: 'high' })).toThrow();
+    });
+
     it('should handle additionalProperties with patternProperties', () => {
       const schema: JsonSchema = {
         type: 'object',

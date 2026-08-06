@@ -89,8 +89,8 @@ export function parseObject(
     objectSchema.type === 'object' ? objectSchema : { ...objectSchema, type: 'object' as const };
 
   const propertiesSchema:
-    | z.ZodObject<Record<string, z.ZodTypeAny>, 'strip', z.ZodTypeAny>
-    | undefined = parseObjectProperties(normalizedSchema, refs);
+    z.ZodObject<Record<string, z.ZodTypeAny>, 'strip', z.ZodTypeAny> | undefined =
+    parseObjectProperties(normalizedSchema, refs);
   let zodSchema: z.ZodTypeAny | undefined = propertiesSchema;
 
   const additionalProperties =
@@ -116,33 +116,9 @@ export function parseObject(
         ];
       })
     );
-    const patternPropertyValues = Object.values(parsedPatternProperties);
-
-    if (propertiesSchema) {
-      if (additionalProperties) {
-        zodSchema = propertiesSchema.catchall(
-          z.union([...patternPropertyValues, additionalProperties] as [z.ZodTypeAny, z.ZodTypeAny])
-        );
-      } else if (Object.keys(parsedPatternProperties).length > 1) {
-        zodSchema = propertiesSchema.catchall(
-          z.union(patternPropertyValues as [z.ZodTypeAny, z.ZodTypeAny])
-        );
-      } else {
-        zodSchema = propertiesSchema.catchall(patternPropertyValues[0]);
-      }
-    } else {
-      if (additionalProperties) {
-        zodSchema = z.record(
-          z.union([...patternPropertyValues, additionalProperties] as [z.ZodTypeAny, z.ZodTypeAny])
-        );
-      } else if (patternPropertyValues.length > 1) {
-        zodSchema = z.record(z.union(patternPropertyValues as [z.ZodTypeAny, z.ZodTypeAny]));
-      } else {
-        zodSchema = z.record(patternPropertyValues[0]);
-      }
-    }
-
     const objectPropertyKeys = new Set(Object.keys(normalizedSchema.properties ?? {}));
+    const hasDeclaredProperties = objectPropertyKeys.size > 0;
+    zodSchema = (propertiesSchema ?? z.object({})).passthrough();
     zodSchema = zodSchema.superRefine((value: Record<string, unknown>, ctx) => {
       for (const key in value) {
         let wasMatched = objectPropertyKeys.has(key);
@@ -156,7 +132,7 @@ export function parseObject(
               ctx.addIssue({
                 path: [...ctx.path, key],
                 code: 'custom',
-                message: `Invalid input: Key matching regex /${key}/ must match schema`,
+                message: `Invalid input: Key matching regex /${patternPropertyKey}/ must match schema`,
                 params: {
                   issues: result.error.issues,
                 },
@@ -165,7 +141,13 @@ export function parseObject(
           }
         }
 
-        if (!wasMatched && additionalProperties) {
+        if (!wasMatched && !additionalProperties && hasDeclaredProperties) {
+          ctx.addIssue({
+            path: [...ctx.path, key],
+            code: 'custom',
+            message: 'Invalid input: key must match a pattern property',
+          });
+        } else if (!wasMatched && additionalProperties) {
           const result = additionalProperties.safeParse(value[key]);
           if (!result.success) {
             ctx.addIssue({
