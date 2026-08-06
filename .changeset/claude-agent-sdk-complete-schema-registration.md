@@ -2,8 +2,40 @@
 '@composio/claude-agent-sdk': minor
 ---
 
-Register tools with their complete Zod object schema instead of a raw property shape, so root-level constraints survive registration.
+Register each tool with its complete schema, so root rules reach the Claude Agent SDK.
 
-A raw shape is only the per-property map, so `additionalProperties` — boolean or schema-valued — and `patternProperties` were structurally unrepresentable and dropped before the Claude Agent SDK ever saw them. Free-form object arguments lost the content they exist to carry, and unknown keys were silently stripped from tool input rather than rejected.
+The provider used to register a raw property shape. A raw shape is only the map of named properties, so it cannot carry any root rule. `additionalProperties` and `patternProperties` were dropped before the SDK saw them.
 
-Behavior change: a tool whose schema names properties and omits `additionalProperties` is strict, so an argument the model invents now fails validation with an MCP invalid-params error instead of being quietly removed before execution. Tools with no input parameters stay closed for the same reason.
+Two things went wrong because of that. Free-form object arguments lost their content. An argument the tool never declared was quietly removed, and the tool ran anyway.
+
+Both are fixed. The provider now registers the whole object schema.
+
+**What no longer works**
+
+An undeclared argument no longer passes silently.
+
+```ts
+// The tool declares `to` and nothing else. The model also sends `hallucinated`.
+{ to: 'someone@example.com', hallucinated: 'value' }
+
+// before: `hallucinated` was stripped, and the tool ran with { to: '...' }
+// now:    the call is rejected with an MCP invalid-params error (-32602)
+```
+
+Tools with no input parameters behave the same way. They stay closed and reject every argument.
+
+**What to do instead**
+
+If the model should be allowed to send extra keys, say so in the tool schema:
+
+```json
+{
+  "type": "object",
+  "properties": { "to": { "type": "string" } },
+  "additionalProperties": true
+}
+```
+
+If an argument is one the tool really accepts, declare it in `properties`. Rejection is usually the better outcome, because the agent sees the error and can correct itself instead of running with a silently dropped argument.
+
+This brings the provider in line with `@composio/vercel`, `@composio/langchain`, and `@composio/llamaindex`, which already registered complete schemas.
