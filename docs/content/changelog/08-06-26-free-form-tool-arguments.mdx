@@ -1,0 +1,96 @@
+---
+title: "Free-Form Object Arguments Are Preserved Across SDKs"
+description: "Tool arguments declared as bare objects are no longer rejected or silently emptied, and Python now enforces the same unknown-key rules as TypeScript"
+date: "2026-08-06"
+---
+
+## Version Information
+
+### Python
+
+- Package: `composio`
+- Version: `0.18.2`+
+
+### TypeScript/JavaScript
+
+- Packages: `@composio/core`, `@composio/json-schema-to-zod`
+- Versions: `0.14.2`+, `0.2.2`+
+
+---
+
+A tool argument declared as a bare `{"type": "object"}` — with no `properties` of its own — was rejected or silently emptied at every schema conversion boundary. This affects any tool that takes a free-form payload, such as `dataset_query` on `METABASE_POST_API_CARD`.
+
+## What Changed
+
+An object schema that names no properties is now treated as open: arbitrary content is accepted and preserved, at the root, nested inside another object, and inside array items.
+
+**Before:**
+
+```python
+# dataset_query is declared as {"type": "object"} with no properties
+tool.run({"dataset_query": {"database": 1, "query": {"source-table": 2}}})
+# The argument was accepted, then arrived at execution as an empty object
+```
+
+**After:**
+
+```python
+tool.run({"dataset_query": {"database": 1, "query": {"source-table": 2}}})
+# The full payload reaches execution intact
+```
+
+In TypeScript the same schema was rejected outright rather than emptied, both in the Zod converter and in CLI tool-input validation:
+
+```
+<root>: Unknown key "database". Allowed top-level keys: dataset_query
+```
+
+Those inputs are now accepted.
+
+### Dynamic keys apply only where they should
+
+Where a schema declares `patternProperties` or a schema-valued `additionalProperties`, each key is now validated against exactly the schemas that claim it. Previously a key could pass by satisfying an unrelated pattern instead of its own.
+
+- Every matching `patternProperties` entry validates its key.
+- `additionalProperties` applies only to keys that no declared property and no pattern matches.
+- A key declared in `properties` is still checked against every pattern it matches.
+
+Root-level `patternProperties` and boolean- or schema-valued `additionalProperties` also survive tool schema parsing; they were previously dropped before any converter could see them.
+
+## Behavior Change for Python Agentic Providers
+
+<Callout type="warn">
+**Behavior change**
+
+In the Python SDK, an object schema that **does** name properties and omits `additionalProperties` now rejects unknown keys instead of silently dropping them.
+
+This affects the providers that build a Pydantic `args_schema` from a tool schema: `composio_langchain`, `composio_langgraph`, and `composio_crewai`. If a model emits an argument the tool does not declare, the call now raises a `ValidationError` instead of executing with that argument removed.
+</Callout>
+
+**Before:**
+
+```python
+# Tool declares only `name`. The model also emits `typo`.
+wrapped.run({"name": "a", "typo": 1})
+# The tool executed with {"name": "a"} - the extra argument was dropped in silence
+```
+
+**After:**
+
+```python
+wrapped.run({"name": "a", "typo": 1})
+# Raises ValidationError before execution, so the agent can correct and retry
+```
+
+This brings Python in line with the TypeScript SDK, where the Zod converter has always rejected unknown keys for schemas that name properties. Strictness applies only when `additionalProperties` is omitted; `additionalProperties: true` and schema-valued forms behave as declared.
+
+### Not affected
+
+- **`composio_openai`, `composio_anthropic`, `composio_gemini`, and the other non-agentic providers.** These hand the raw JSON schema to the model API and pass the returned arguments straight through, so they never build a Pydantic model from a tool schema.
+- **Declared field behavior, aliases for reserved Python keywords, `skip_default`, combiners, and references.** All unchanged.
+
+## Backward Compatibility
+
+Accepting and preserving free-form object content is backward compatible: payloads that previously failed now succeed, and payloads that previously arrived empty now arrive complete.
+
+The Python unknown-key rejection described above is the one behavior change. Tools whose schemas set `additionalProperties: true`, or whose objects declare no properties, are unaffected.
