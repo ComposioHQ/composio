@@ -51,7 +51,7 @@ The Slack bot itself follows a deterministic flow: the same menu every day. When
 
 ## Setup
 
-You need a [Composio API key](https://dashboard.composio.dev/~/project/settings/api-keys?utm_source=docs&utm_medium=content&utm_campaign=examples-standup-slackbot), a Slack workspace you can install an app into, Node.js 20 or newer, and the [Vercel CLI](https://vercel.com/docs/cli). The finished bot deploys to Vercel as two serverless functions, a cron and an interactivity handler, so there's no long-running server.
+You need a [Composio API key](https://dashboard.composio.dev/~/project/settings/api-keys?utm_source=docs&utm_medium=content&utm_campaign=examples-standup-slackbot), a Slack workspace you can install an app into, Node.js 22, and the [Vercel CLI](https://vercel.com/docs/cli). The finished bot deploys to Vercel as two serverless functions, a cron and an interactivity handler, so there's no long-running server.
 
 <PackageInstall packages="@composio/core @composio/vercel ai dayjs" />
 
@@ -225,7 +225,7 @@ The complete, deployable bot lives in its own repository:
 
 ## Run it
 
-Clone the repository and follow its README. Edit `standup.config.ts`, copy `.env.local.example` to `.env.local`, run `npm install` and `npm run setup`, then deploy with `vercel deploy --prod`.
+Clone the repository and follow its README. Edit `standup.config.ts`, copy `.env.local.example` to `.env.local`, run `npm ci` and `npm run setup`, then deploy with `vercel deploy --prod`.
 <Cards>
   <Card title="Configuring sessions" href="/docs/configuring-sessions" description="What a session can scope: toolkits, tools, connections, and connection management" />
   <Card title="White-labeling authentication" href="/docs/white-labeling-authentication" description="Ship a bot under your own app's name, icon, and credentials" />
