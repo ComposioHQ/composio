@@ -349,6 +349,8 @@ export const linkRootConsumerToolkit = (params: { toolkit: string; wait: boolean
     });
     const { sessionId } = yield* resolveToolRouterSession(client, userId, {
       manageConnections: true,
+      toolkits: [params.toolkit],
+      localTools: { enable: false },
       cacheScope: getConsumerCacheScope(resolvedProject),
       excludeConnectedAccountsForToolkits: [params.toolkit],
     });

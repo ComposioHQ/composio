@@ -81,7 +81,7 @@ const gatherFacts = (selectedToolkit: CuratedToolkit | null, executedLocally: bo
     const user = yield* ComposioUserContext;
     const persisted = yield* readPersistedOnboarding;
     const loggedIn = user.isLoggedIn();
-    const hasExecuted = [persisted.hasExecuted, executedLocally].some(Boolean);
+    const hasExecuted = persisted.hasExecuted || executedLocally;
     if (!loggedIn || selectedToolkit === null) {
       return {
         facts: { loggedIn, toolkit: selectedToolkit, connection: 'none', hasExecuted },
@@ -284,7 +284,7 @@ export const runOnboard = (params: {
         analyticsGate = gate;
         errorCode = undefined;
         yield* trackOnboarding(CLI_ONBOARDING_EVENTS.GATE_VIEWED);
-        if ([attempted.has(gate), state.blocked_reason === 'oauth_required'].some(Boolean)) break;
+        if (attempted.has(gate) || state.blocked_reason === 'oauth_required') break;
         errorCode = `${gate}_failed`;
 
         if (gate === 'connect' && task === null) {
@@ -348,6 +348,8 @@ export const runOnboard = (params: {
                 arguments: { ...currentTask.args },
                 client,
                 connectedAccounts: { [currentTask.toolkit]: activeConnectionId },
+                toolkits: [currentTask.toolkit],
+                localTools: { enable: false },
                 cacheScope: {
                   orgId: project.orgId,
                   projectId: project.projectId,
