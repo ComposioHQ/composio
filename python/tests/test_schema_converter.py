@@ -8,6 +8,7 @@ from composio.utils.schema_converter import (
     json_schema_to_pydantic_type,
 )
 from composio.utils.shared import json_schema_to_model
+from tests.fixtures.json_schema_conversion_corpus import load_object_cases
 
 
 def test_true_becomes_empty_schema():
@@ -194,3 +195,39 @@ def test_schema_converter_required_unsatisfiable_property_has_no_valid_value():
     for impossible_value in (None, "some string", 123):
         with pytest.raises(ValidationError):
             model(impossible=impossible_value)
+
+
+@pytest.mark.parametrize(
+    "case,index",
+    [
+        (case, index)
+        for case in load_object_cases()
+        for index in range(len(case.instances))
+    ],
+    ids=[
+        f"{case.id}[{index}]"
+        for case in load_object_cases()
+        for index in range(len(case.instances))
+    ],
+)
+def test_shared_object_corpus_through_json_schema_to_pydantic_type(case, index):
+    """`json_schema_to_pydantic_type` must agree with `json_schema_to_model`.
+
+    The two entry points return different things — a Pydantic type versus a
+    `BaseModel` subclass — so the type is exercised through a `TypeAdapter` and
+    compared as a JSON-shaped value.
+    """
+    instance = case.instances[index]
+    adapter = TypeAdapter(json_schema_to_pydantic_type(case.schema_))
+
+    if not instance.accepted_for("python"):
+        with pytest.raises(ValidationError):
+            adapter.validate_python(instance.input)
+        return
+
+    result = adapter.validate_python(instance.input)
+    if instance.python is not None and instance.python.has_output:
+        assert (
+            adapter.dump_python(result, mode="json", by_alias=True)
+            == instance.python.output
+        )

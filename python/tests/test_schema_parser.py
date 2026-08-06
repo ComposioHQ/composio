@@ -11,6 +11,8 @@ import pytest
 from pydantic import BaseModel, TypeAdapter, ValidationError
 from pydantic.fields import PydanticUndefined
 
+from tests.fixtures.json_schema_conversion_corpus import find_case, load_object_cases
+
 from composio.utils.shared import (
     get_signature_format_from_schema_params,
     json_schema_to_fields_dict,
@@ -1715,3 +1717,50 @@ class TestGetSignatureFormatFromSchemaParams:
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
+
+
+class TestSharedObjectCorpusThroughJsonSchemaToModel:
+    """`json_schema_to_model` must satisfy the shared cross-SDK object contract.
+
+    This is the provider-facing entry point (`args_schema`), so a model that
+    accepts an argument but discards it is as much a defect as one that rejects
+    a valid payload.
+    """
+
+    @pytest.mark.parametrize(
+        "case,index",
+        [
+            (case, index)
+            for case in load_object_cases()
+            for index in range(len(case.instances))
+        ],
+        ids=[
+            f"{case.id}[{index}]"
+            for case in load_object_cases()
+            for index in range(len(case.instances))
+        ],
+    )
+    def test_case(self, case, index: int) -> None:
+        instance = case.instances[index]
+        model = json_schema_to_model(case.schema_)
+
+        if not instance.accepted_for("python"):
+            with pytest.raises(ValidationError):
+                model.model_validate(instance.input)
+            return
+
+        result = model.model_validate(instance.input)
+        if instance.python is not None and instance.python.has_output:
+            assert (
+                result.model_dump(mode="json", by_alias=True) == instance.python.output
+            )
+
+    def test_free_form_content_is_readable_as_attributes(self) -> None:
+        """Preserved dynamic keys must survive `getattr`, not just `model_dump`."""
+        case = find_case("root-free-form-absent-properties")
+        model = json_schema_to_model(case.schema_)
+
+        result = model.model_validate(case.instances[0].input)
+
+        assert getattr(result, "anything") == {"a": 1}
+        assert getattr(result, "other") == "x"

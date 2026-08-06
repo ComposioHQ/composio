@@ -22,6 +22,7 @@ from composio.utils.schema_converter import (
     CONTAINER_TYPE,
     FALLBACK_VALUES,
     PYDANTIC_TYPE_TO_PYTHON_TYPE,
+    apply_object_policy,
     json_schema_to_pydantic_type,
 )
 
@@ -457,7 +458,13 @@ def json_schema_to_model(
             skip_default=skip_default,
         )
         field_definitions[updated_name] = (pydantic_type, pydantic_field)
-    return create_model(model_name, **field_definitions)  # type: ignore
+    # The dynamic-key policy is shared with `json_schema_to_pydantic_type` so the
+    # two entry points cannot disagree about which arguments survive conversion.
+    return apply_object_policy(
+        json_schema,
+        create_model(model_name, **field_definitions),  # type: ignore
+        model_name=model_name,
+    )
 
 
 def pydantic_model_from_param_schema(param_schema: t.Dict) -> t.Type:

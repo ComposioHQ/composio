@@ -9,6 +9,7 @@ boolean schemas (true/false values that are valid in JSON Schema draft-06+).
 We handle those by pre-filtering them before passing to the library.
 """
 
+import re
 import typing as t
 from functools import reduce
 
@@ -17,12 +18,21 @@ from json_schema_to_pydantic import (
     SchemaError,
     create_model as create_model_from_schema,
 )
-from pydantic import Field, create_model as create_pydantic_model
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    TypeAdapter,
+    create_model as create_pydantic_model,
+    model_validator,
+)
 from pydantic_core import core_schema
 
 from composio.utils.logging import get as get_logger
 
 logger = get_logger(__name__)
+
+_MISSING = object()
 
 
 class _UnsatisfiableSchema:
@@ -221,6 +231,208 @@ def _contains_unsatisfiable_schema(schema: t.Any) -> bool:
     return False
 
 
+_PRIMITIVE_TYPES = frozenset({"string", "number", "integer", "boolean", "null"})
+
+# JSON Schema keyword -> Pydantic `Field` constraint, by instance type. Simple
+# primitives lose their constraints in `PYDANTIC_TYPE_TO_PYTHON_TYPE`, which is
+# fine for declared fields the library models but not for dynamic keys, where
+# this module is the only validator.
+_CONSTRAINTS: t.Dict[str, t.Dict[str, str]] = {
+    "string": {
+        "minLength": "min_length",
+        "maxLength": "max_length",
+        "pattern": "pattern",
+    },
+    "array": {"minItems": "min_length", "maxItems": "max_length"},
+}
+_NUMERIC_CONSTRAINTS = {
+    "minimum": "ge",
+    "maximum": "le",
+    "exclusiveMinimum": "gt",
+    "exclusiveMaximum": "lt",
+    "multipleOf": "multiple_of",
+}
+_CONSTRAINTS["number"] = _NUMERIC_CONSTRAINTS
+_CONSTRAINTS["integer"] = _NUMERIC_CONSTRAINTS
+
+
+class _DynamicKeyValidator(t.NamedTuple):
+    """Validator for one dynamic-key schema, plus how strictly to apply it."""
+
+    adapter: TypeAdapter
+    strict: bool
+
+    def coerce(self, value: t.Any) -> t.Any:
+        return self.adapter.dump_python(
+            self.adapter.validate_python(value, strict=self.strict)
+        )
+
+
+class _ObjectPolicy(t.NamedTuple):
+    """Compiled dynamic-key policy for one JSON Schema object node.
+
+    This is the single place the covered object contract lives, so
+    ``json_schema_to_model`` and ``json_schema_to_pydantic_type`` cannot drift
+    apart on which keys are accepted, validated, or preserved.
+    """
+
+    declared: t.FrozenSet[str]
+    patterns: t.Tuple[t.Tuple[t.Pattern[str], t.Optional[_DynamicKeyValidator]], ...]
+    additional: t.Optional[_DynamicKeyValidator]
+    rejects_unmatched: bool
+
+    @property
+    def is_trivial(self) -> bool:
+        """No dynamic keys to police and nothing to reject."""
+        return (
+            not self.patterns and not self.rejects_unmatched and self.additional is None
+        )
+
+
+def object_is_open(schema: t.Dict[str, t.Any]) -> bool:
+    """Whether an object schema accepts arbitrary keys it says nothing about.
+
+    An object is open when it declares no named properties and either omits
+    ``additionalProperties`` or sets it to ``true``. Objects that *do* name
+    properties stay strict on omission, matching the TypeScript converters.
+    """
+    additional = schema.get("additionalProperties", _MISSING)
+    return not (schema.get("properties") or {}) and additional in (_MISSING, True)
+
+
+def _dynamic_key_validator(schema: t.Any) -> t.Optional[_DynamicKeyValidator]:
+    """Build the validator for one dynamic-key schema, or ``None`` if unmodellable."""
+    try:
+        annotation: t.Any = json_schema_to_pydantic_type(schema)
+        strict = False
+
+        if isinstance(schema, dict):
+            schema_type = schema.get("type") or ""
+            constraints = {
+                field: schema[keyword]
+                for keyword, field in _CONSTRAINTS.get(schema_type, {}).items()
+                if keyword in schema
+            }
+            if constraints:
+                annotation = t.Annotated[annotation, Field(**constraints)]
+            # Primitives validate strictly so Pydantic's lax coercion cannot
+            # admit a value the TypeScript converters reject (`true` as a
+            # number, `1` as a boolean).
+            strict = schema_type in _PRIMITIVE_TYPES
+
+        return _DynamicKeyValidator(TypeAdapter(annotation), strict)
+    except Exception as exc:  # pragma: no cover - defensive
+        logger.debug(f"Could not build a dynamic-key validator for {schema!r}: {exc}")
+        return None
+
+
+def _compile_object_policy(schema: t.Dict[str, t.Any]) -> _ObjectPolicy:
+    declared = frozenset(schema.get("properties") or {})
+    additional = schema.get("additionalProperties", _MISSING)
+
+    patterns = []
+    for pattern, pattern_schema in (schema.get("patternProperties") or {}).items():
+        try:
+            patterns.append(
+                (re.compile(pattern), _dynamic_key_validator(pattern_schema))
+            )
+        except re.error:
+            logger.debug(f"Skipping uncompilable patternProperties regex: {pattern!r}")
+
+    return _ObjectPolicy(
+        declared=declared,
+        patterns=tuple(patterns),
+        additional=(
+            _dynamic_key_validator(additional) if isinstance(additional, dict) else None
+        ),
+        rejects_unmatched=additional is False
+        or (additional is _MISSING and bool(declared)),
+    )
+
+
+class _DynamicObjectModel(BaseModel):
+    """Base for object models that must police and preserve dynamic keys.
+
+    ``extra="allow"`` is what makes preservation possible at all: Pydantic's
+    default silently discards accepted arguments, so a provider that re-reads
+    them (``LangchainProvider`` uses ``getattr``) would lose valid payloads.
+    Coerced values are written back into ``__pydantic_extra__`` so they show up
+    in ``model_dump()`` and remain readable as attributes.
+    """
+
+    model_config = ConfigDict(extra="allow")
+
+    @model_validator(mode="after")
+    def _apply_object_policy(self):
+        policy: t.Optional[_ObjectPolicy] = getattr(
+            type(self), "__composio_object_policy__", None
+        )
+        if policy is None or policy.is_trivial:
+            return self
+
+        # A key declared in `properties` is still checked against every matching
+        # pattern; its declared value is authoritative and is not overwritten.
+        for name, field in type(self).model_fields.items():
+            if name not in self.model_fields_set:
+                continue
+            key = field.alias or name
+            for regex, validator in policy.patterns:
+                if validator is not None and regex.search(key):
+                    validator.coerce(getattr(self, name))
+
+        extra = self.__pydantic_extra__
+        if not extra:
+            return self
+
+        unrecognized = []
+        for key, value in list(extra.items()):
+            matched = False
+            for regex, validator in policy.patterns:
+                if regex.search(key):
+                    matched = True
+                    if validator is not None:
+                        extra[key] = validator.coerce(value)
+
+            if matched or key in policy.declared:
+                continue
+
+            if policy.rejects_unmatched:
+                unrecognized.append(key)
+            elif policy.additional is not None:
+                extra[key] = policy.additional.coerce(value)
+
+        if unrecognized:
+            raise ValueError(
+                f"Unrecognized key(s) in object: {', '.join(repr(key) for key in unrecognized)}"
+            )
+
+        return self
+
+
+def apply_object_policy(
+    schema: t.Dict[str, t.Any],
+    base_model: t.Type[BaseModel],
+    model_name: t.Optional[str] = None,
+) -> t.Type[BaseModel]:
+    """Wrap ``base_model`` with the covered dynamic-key policy for ``schema``."""
+    policy = _compile_object_policy(schema)
+    name = model_name or base_model.__name__
+
+    return t.cast(
+        t.Type[BaseModel],
+        type(
+            name,
+            (_DynamicObjectModel, base_model),
+            {
+                "__module__": __name__,
+                "__qualname__": name,
+                "model_config": ConfigDict(extra="allow"),
+                "__composio_object_policy__": policy,
+            },
+        ),
+    )
+
+
 def json_schema_to_pydantic_type(
     json_schema: t.Union[t.Dict[str, t.Any], bool],
 ) -> t.Union[t.Type, t.Optional[t.Any]]:
@@ -354,12 +566,20 @@ def _convert_with_library(
         if schema.get("type") == "object":
             if _contains_unsatisfiable_schema(schema.get("properties", {})):
                 return _convert_object_with_unsatisfiable_properties(schema)
+            # A property-less object with no dynamic-key constraints accepts and
+            # preserves arbitrary content. Modelling it as an empty Pydantic
+            # model instead silently discarded every key (issue #4064).
+            if object_is_open(schema) and not schema.get("patternProperties"):
+                return t.cast(t.Type, t.Dict[str, t.Any])
             if "title" not in schema:
                 schema = {**schema, "title": "GeneratedModel"}
-            return create_model_from_schema(
+            return apply_object_policy(
                 schema,
-                allow_undefined_array_items=True,
-                allow_undefined_type=True,
+                create_model_from_schema(
+                    schema,
+                    allow_undefined_array_items=True,
+                    allow_undefined_type=True,
+                ),
             )
 
         # For array schemas
