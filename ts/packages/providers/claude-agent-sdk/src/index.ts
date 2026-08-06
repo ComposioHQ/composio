@@ -15,8 +15,8 @@ import {
   McpUrlResponse,
   McpServerGetResponse,
   normalizeToolArguments,
+  jsonSchemaToZodSchema,
 } from '@composio/core';
-import { jsonSchemaToZodShape } from '@composio/core/utils/json-schema';
 import {
   tool as sdkTool,
   type Options as ClaudeAgentOptions,
@@ -102,18 +102,16 @@ export class ClaudeAgentSDKProvider extends BaseAgenticProvider<
    * ```
    */
   wrapTool(composioTool: Tool, executeTool: ExecuteToolFn): ClaudeAgentTool {
-    const inputZodShape = jsonSchemaToZodShape(
+    const inputZodSchema = jsonSchemaToZodSchema(
       composioTool.inputParameters ?? { type: 'object', properties: {} }
     );
 
-    // The SDK types tool() generically over its zod raw shape, which makes the handler argument
-    // instantiate excessively deep against the v3 shape returned here (TS2589). Narrow tool() to a
-    // concrete, monomorphic signature once — this sidesteps the deep instantiation and lets the
-    // handler keep a precise argument type, instead of scattering `as never` casts at the call.
+    // The SDK runtime accepts complete Zod schemas, but tool() only exposes a raw-shape type.
+    // Keep this compatibility cast centralized so root object constraints survive registration.
     const defineTool = sdkTool as unknown as (
       name: string,
       description: string,
-      inputShape: ReturnType<typeof jsonSchemaToZodShape>,
+      inputSchema: ReturnType<typeof jsonSchemaToZodSchema>,
       handler: (
         args: Record<string, unknown>
       ) => Promise<{ content: Array<{ type: 'text'; text: string }> }>
@@ -122,7 +120,7 @@ export class ClaudeAgentSDKProvider extends BaseAgenticProvider<
     return defineTool(
       composioTool.slug,
       composioTool.description ?? `Execute ${composioTool.slug}`,
-      inputZodShape,
+      inputZodSchema,
       async args => {
         try {
           // Models occasionally emit tool input as a JSON string rather than an object (issue #2406).

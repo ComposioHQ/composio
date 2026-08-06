@@ -29,10 +29,11 @@ interface MockedClaudeAgentTool {
   _isMockedClaudeAgentTool: boolean;
 }
 
-// Minimal structural type for a zod-like raw shape value, matching only the member these
-// tests dereference (`safeParse`).
+// Minimal structural type for the complete Zod schema passed to the SDK.
 type MinimalZodSchema = {
-  safeParse: (value: unknown) => { success: boolean };
+  safeParse: (
+    value: unknown
+  ) => { success: true; data: unknown } | { success: false; error: unknown };
 };
 
 // The handler captured off the mocked `tool()` call. Some tests intentionally pass a raw
@@ -47,7 +48,7 @@ type MockedToolFn = Mock<
   (
     name: string,
     description: string | undefined,
-    schema: Record<string, MinimalZodSchema>,
+    schema: MinimalZodSchema,
     handler: MockedToolHandler
   ) => unknown
 >;
@@ -139,13 +140,24 @@ describe('ClaudeAgentSDKProvider', () => {
       expect(wrapped.description).toBe(mockTool.description);
     });
 
-    it('should pass a raw Zod shape to the Claude Agent SDK', () => {
+    it('should pass a complete Zod schema to the Claude Agent SDK', () => {
       provider.wrapTool(mockTool, mockExecuteToolFn);
 
-      const schemaShape = (tool as unknown as MockedToolFn).mock.calls[0][2];
-      expect(Object.keys(schemaShape)).toEqual(['to', 'subject', 'body']);
-      expect(schemaShape.to.safeParse('test@example.com').success).toBe(true);
-      expect(schemaShape.to.safeParse(123).success).toBe(false);
+      const schema = (tool as unknown as MockedToolFn).mock.calls[0][2];
+      expect(
+        schema.safeParse({
+          to: 'test@example.com',
+          subject: 'Test',
+          body: 'Hello',
+        }).success
+      ).toBe(true);
+      expect(
+        schema.safeParse({
+          to: 123,
+          subject: 'Test',
+          body: 'Hello',
+        }).success
+      ).toBe(false);
     });
 
     it('should handle tools without input parameters', () => {
