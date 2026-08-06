@@ -133,6 +133,31 @@ describe('ClaudeAgentSDKProvider registration boundary', () => {
     expect(executeToolFn).not.toHaveBeenCalled();
   });
 
+  it('preserves schema-valued additionalProperties through MCP registration', async () => {
+    const { inputSchema, executeToolFn, call } = await registerTool(
+      buildTool({
+        type: 'object',
+        properties: { name: { type: 'string' } },
+        additionalProperties: { type: 'number' },
+      })
+    );
+
+    expect(inputSchema.additionalProperties).toEqual({ type: 'number' });
+
+    const accepted = await call({ name: 'report', count: 2 });
+    expect(accepted.isError ?? false).toBe(false);
+    expect(executeToolFn).toHaveBeenCalledWith(
+      'TEST_TOOL',
+      expect.objectContaining({ name: 'report', count: 2 })
+    );
+
+    executeToolFn.mockClear();
+
+    const rejected = await call({ name: 'report', count: 'two' });
+    expect(rejected.isError).toBe(true);
+    expect(executeToolFn).not.toHaveBeenCalled();
+  });
+
   it('keeps a tool with no input parameters closed', async () => {
     const { inputSchema, executeToolFn, call } = await registerTool(buildTool(undefined));
 

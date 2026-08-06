@@ -1764,3 +1764,84 @@ class TestSharedObjectCorpusThroughJsonSchemaToModel:
 
         assert getattr(result, "anything") == {"a": 1}
         assert getattr(result, "other") == "x"
+
+    @pytest.mark.parametrize(
+        ("case_id", "expected"),
+        [
+            ("named-properties-strict-by-default", {"additionalProperties": False}),
+            (
+                "root-additional-properties-schema-valued",
+                {"additionalProperties": {"type": "number"}},
+            ),
+            (
+                "pattern-only-object",
+                {"patternProperties": {"^s_": {"type": "string"}}},
+            ),
+        ],
+    )
+    def test_model_json_schema_preserves_root_object_policy(
+        self,
+        case_id: str,
+        expected: t.Dict[str, t.Any],
+    ) -> None:
+        model = json_schema_to_model(find_case(case_id).schema_)
+        advertised = model.model_json_schema()
+
+        for key, value in expected.items():
+            assert advertised[key] == value
+
+    def test_dynamic_schema_resolves_local_json_pointer(self) -> None:
+        schema = {
+            "$defs": {"positive": {"type": "integer", "minimum": 1}},
+            "type": "object",
+            "patternProperties": {"^count_": {"$ref": "#/$defs/positive"}},
+        }
+        model = json_schema_to_model(schema)
+
+        assert model.model_validate({"count_a": 1}).model_dump() == {"count_a": 1}
+        with pytest.raises(ValidationError):
+            model.model_validate({"count_a": 0})
+
+    def test_dynamic_schema_materialization_cannot_reject_valid_input(self) -> None:
+        schema = {
+            "type": "object",
+            "patternProperties": {"^value_": {"enum": [1], "default": 1}},
+        }
+        model = json_schema_to_model(schema)
+
+        assert model.model_validate({"value_a": 1}).model_dump() == {"value_a": 1}
+
+    @pytest.mark.parametrize(
+        "reference",
+        ["#/$defs/missing", "https://example.com/schema.json"],
+    )
+    def test_dynamic_schema_rejects_unresolvable_reference(
+        self,
+        reference: str,
+    ) -> None:
+        schema = {
+            "type": "object",
+            "patternProperties": {"^value_": {"$ref": reference}},
+        }
+
+        with pytest.raises(ValueError, match="schema reference"):
+            json_schema_to_model(schema)
+
+    def test_dynamic_schema_rejects_invalid_pattern(self) -> None:
+        schema = {
+            "type": "object",
+            "patternProperties": {"[": {"type": "string"}},
+        }
+
+        with pytest.raises(ValueError, match="Invalid patternProperties"):
+            json_schema_to_model(schema)
+
+    def test_dynamic_schema_checks_references_inside_local_target(self) -> None:
+        schema = {
+            "$defs": {"nested": {"$ref": "https://example.com/external-schema.json"}},
+            "type": "object",
+            "patternProperties": {"^value_": {"$ref": "#/$defs/nested"}},
+        }
+
+        with pytest.raises(ValueError, match="must be a local JSON Pointer"):
+            json_schema_to_model(schema)

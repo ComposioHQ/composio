@@ -139,7 +139,7 @@ const ParametersSchema = z.preprocess(
     oneOf: z.array(JSONSchemaPropertySchema).optional(),
     allOf: z.array(JSONSchemaPropertySchema).optional(),
     not: JSONSchemaPropertySchema.optional(),
-    properties: z.record(z.string(), JSONSchemaPropertySchema),
+    properties: z.record(z.string(), JSONSchemaPropertySchema).optional(),
     required: z.array(z.string()).optional(),
     title: z.string().optional(),
     default: z.unknown().optional(),

@@ -2,9 +2,9 @@
 '@composio/core': minor
 ---
 
-Keep root `patternProperties` and `additionalProperties` when parsing a tool schema.
+Keep free-form object roots, `patternProperties`, and `additionalProperties` when parsing a tool schema.
 
-`ToolSchema.parse` used to drop root `patternProperties` as an unknown key, and it rejected a root `additionalProperties` written as a schema instead of a boolean. Both constraints were lost before any converter or provider could read them. They now survive parsing exactly as written.
+`ToolSchema.parse` used to reject a bare `{ "type": "object" }` root, drop root `patternProperties` as an unknown key, and reject a root `additionalProperties` written as a schema instead of a boolean. Free-form roots now parse successfully, and both constraints survive parsing exactly as written. The public `ToolSchema` type now makes `properties` optional to reflect those valid property-less object schemas.
 
 This matters downstream. Every provider reads `inputParameters` after parsing, so a tool that declares dynamic keys had those rules stripped before the model ever saw them.
 

@@ -12,19 +12,26 @@ We handle those by pre-filtering them before passing to the library.
 import re
 import typing as t
 from functools import reduce
+from urllib.parse import unquote
 
 from json_schema_to_pydantic import (
     CombinerError,
     SchemaError,
+)
+from json_schema_to_pydantic import (
     create_model as create_model_from_schema,
 )
+from jsonschema import validators as jsonschema_validators
+from jsonschema.protocols import Validator
 from pydantic import (
     BaseModel,
     ConfigDict,
     Field,
     TypeAdapter,
-    create_model as create_pydantic_model,
     model_validator,
+)
+from pydantic import (
+    create_model as create_pydantic_model,
 )
 from pydantic_core import core_schema
 
@@ -231,41 +238,30 @@ def _contains_unsatisfiable_schema(schema: t.Any) -> bool:
     return False
 
 
-_PRIMITIVE_TYPES = frozenset({"string", "number", "integer", "boolean", "null"})
-
-# JSON Schema keyword -> Pydantic `Field` constraint, by instance type. Simple
-# primitives lose their constraints in `PYDANTIC_TYPE_TO_PYTHON_TYPE`, which is
-# fine for declared fields the library models but not for dynamic keys, where
-# this module is the only validator.
-_CONSTRAINTS: t.Dict[str, t.Dict[str, str]] = {
-    "string": {
-        "minLength": "min_length",
-        "maxLength": "max_length",
-        "pattern": "pattern",
-    },
-    "array": {"minItems": "min_length", "maxItems": "max_length"},
-}
-_NUMERIC_CONSTRAINTS = {
-    "minimum": "ge",
-    "maximum": "le",
-    "exclusiveMinimum": "gt",
-    "exclusiveMaximum": "lt",
-    "multipleOf": "multiple_of",
-}
-_CONSTRAINTS["number"] = _NUMERIC_CONSTRAINTS
-_CONSTRAINTS["integer"] = _NUMERIC_CONSTRAINTS
-
-
 class _DynamicKeyValidator(t.NamedTuple):
-    """Validator for one dynamic-key schema, plus how strictly to apply it."""
+    """Exact JSON Schema validation with optional default materialization."""
 
-    adapter: TypeAdapter
-    strict: bool
+    validator: Validator
+    materializer: t.Optional[TypeAdapter]
 
-    def coerce(self, value: t.Any) -> t.Any:
-        return self.adapter.dump_python(
-            self.adapter.validate_python(value, strict=self.strict)
-        )
+    def validate(self, value: t.Any) -> None:
+        error = next(self.validator.iter_errors(value), None)
+        if error is not None:
+            raise ValueError(error.message)
+
+    def materialize(self, value: t.Any) -> t.Any:
+        if self.materializer is None:
+            return value
+        try:
+            return self.materializer.dump_python(
+                self.materializer.validate_python(value)
+            )
+        except (TypeError, ValueError):
+            # JSON Schema alone decides acceptance. Pydantic is only retained
+            # for the existing default-materialization behavior, and an
+            # incomplete Pydantic representation must not reject valid input.
+            logger.debug("Could not materialize dynamic-key defaults; preserving input")
+            return value
 
 
 class _ObjectPolicy(t.NamedTuple):
@@ -277,7 +273,7 @@ class _ObjectPolicy(t.NamedTuple):
     """
 
     declared: t.FrozenSet[str]
-    patterns: t.Tuple[t.Tuple[t.Pattern[str], t.Optional[_DynamicKeyValidator]], ...]
+    patterns: t.Tuple[t.Tuple[t.Pattern[str], _DynamicKeyValidator], ...]
     additional: t.Optional[_DynamicKeyValidator]
     rejects_unmatched: bool
 
@@ -300,50 +296,128 @@ def object_is_open(schema: t.Dict[str, t.Any]) -> bool:
     return not (schema.get("properties") or {}) and additional in (_MISSING, True)
 
 
-def _dynamic_key_validator(schema: t.Any) -> t.Optional[_DynamicKeyValidator]:
-    """Build the validator for one dynamic-key schema, or ``None`` if unmodellable."""
-    try:
-        annotation: t.Any = json_schema_to_pydantic_type(schema)
-        strict = False
+def _contains_default(schema: t.Any) -> bool:
+    """Whether Pydantic must run after validation to materialize a default."""
+    if isinstance(schema, list):
+        return any(_contains_default(item) for item in schema)
+    if not isinstance(schema, dict):
+        return False
+    return "default" in schema or any(
+        _contains_default(value) for value in schema.values()
+    )
 
-        if isinstance(schema, dict):
-            schema_type = schema.get("type") or ""
-            constraints = {
-                field: schema[keyword]
-                for keyword, field in _CONSTRAINTS.get(schema_type, {}).items()
-                if keyword in schema
-            }
-            if constraints:
-                annotation = t.Annotated[annotation, Field(**constraints)]
-            # Primitives validate strictly so Pydantic's lax coercion cannot
-            # admit a value the TypeScript converters reject (`true` as a
-            # number, `1` as a boolean).
-            strict = schema_type in _PRIMITIVE_TYPES
 
-        return _DynamicKeyValidator(TypeAdapter(annotation), strict)
-    except Exception as exc:  # pragma: no cover - defensive
-        logger.debug(f"Could not build a dynamic-key validator for {schema!r}: {exc}")
-        return None
+def _resolve_local_json_pointer(
+    reference: str,
+    root_schema: t.Dict[str, t.Any],
+) -> t.Any:
+    """Resolve a local JSON Pointer or fail while the model is constructed."""
+    if reference == "#":
+        return root_schema
+    if not reference.startswith("#/"):
+        raise ValueError(
+            f"Dynamic-key schema reference {reference!r} must be a local JSON Pointer"
+        )
+
+    current: t.Any = root_schema
+    for raw_token in unquote(reference[2:]).split("/"):
+        token = raw_token.replace("~1", "/").replace("~0", "~")
+        if isinstance(current, dict) and token in current:
+            current = current[token]
+            continue
+        if isinstance(current, list):
+            try:
+                current = current[int(token)]
+                continue
+            except (ValueError, IndexError):
+                pass
+        raise ValueError(f"Unresolvable dynamic-key schema reference: {reference!r}")
+    return current
+
+
+def _check_dynamic_references(
+    schema: t.Any,
+    root_schema: t.Dict[str, t.Any],
+    checked_references: t.Optional[t.Set[str]] = None,
+) -> None:
+    """Reject external, anchored, and unresolved references before validation."""
+    if checked_references is None:
+        checked_references = set()
+    if isinstance(schema, list):
+        for item in schema:
+            _check_dynamic_references(item, root_schema, checked_references)
+        return
+    if not isinstance(schema, dict):
+        return
+
+    reference = schema.get("$ref")
+    if reference is not None:
+        if not isinstance(reference, str):
+            raise ValueError("Dynamic-key schema `$ref` must be a string")
+        resolved = _resolve_local_json_pointer(reference, root_schema)
+        if not isinstance(resolved, (dict, bool)):
+            raise ValueError(
+                f"Dynamic-key schema reference {reference!r} does not target a schema"
+            )
+        if reference not in checked_references:
+            checked_references.add(reference)
+            _check_dynamic_references(resolved, root_schema, checked_references)
+
+    for value in schema.values():
+        _check_dynamic_references(value, root_schema, checked_references)
+
+
+def _dynamic_key_validator(
+    schema: t.Any,
+    root_schema: t.Dict[str, t.Any],
+    root_validator: Validator,
+) -> _DynamicKeyValidator:
+    """Compile a complete inline JSON subschema without coercive acceptance."""
+    validator_type = type(root_validator)
+    validator_type.check_schema(schema)
+    _check_dynamic_references(schema, root_schema)
+
+    materializer = None
+    if _contains_default(schema):
+        annotation = json_schema_to_pydantic_type(schema)
+        materializer = TypeAdapter(annotation)
+
+    return _DynamicKeyValidator(
+        validator=root_validator.evolve(schema=schema),
+        materializer=materializer,
+    )
 
 
 def _compile_object_policy(schema: t.Dict[str, t.Any]) -> _ObjectPolicy:
     declared = frozenset(schema.get("properties") or {})
     additional = schema.get("additionalProperties", _MISSING)
+    validator_type = jsonschema_validators.validator_for(
+        schema,
+        default=jsonschema_validators.Draft7Validator,
+    )
+    root_validator = validator_type(schema)
 
     patterns = []
     for pattern, pattern_schema in (schema.get("patternProperties") or {}).items():
         try:
             patterns.append(
-                (re.compile(pattern), _dynamic_key_validator(pattern_schema))
+                (
+                    re.compile(pattern),
+                    _dynamic_key_validator(pattern_schema, schema, root_validator),
+                )
             )
-        except re.error:
-            logger.debug(f"Skipping uncompilable patternProperties regex: {pattern!r}")
+        except re.error as exc:
+            raise ValueError(
+                f"Invalid patternProperties regular expression: {pattern!r}"
+            ) from exc
 
     return _ObjectPolicy(
         declared=declared,
         patterns=tuple(patterns),
         additional=(
-            _dynamic_key_validator(additional) if isinstance(additional, dict) else None
+            _dynamic_key_validator(additional, schema, root_validator)
+            if isinstance(additional, dict)
+            else None
         ),
         rejects_unmatched=additional is False
         or (additional is _MISSING and bool(declared)),
@@ -356,42 +430,28 @@ class _DynamicObjectModel(BaseModel):
     ``extra="allow"`` is what makes preservation possible at all: Pydantic's
     default silently discards accepted arguments, so a provider that re-reads
     them (``LangchainProvider`` uses ``getattr``) would lose valid payloads.
-    Coerced values are written back into ``__pydantic_extra__`` so they show up
-    in ``model_dump()`` and remain readable as attributes.
+    Materialized defaults are written back into ``__pydantic_extra__`` so they
+    show up in ``model_dump()`` and remain readable as attributes.
     """
 
     model_config = ConfigDict(extra="allow")
 
-    @model_validator(mode="after")
-    def _apply_object_policy(self):
+    @model_validator(mode="before")
+    @classmethod
+    def _validate_object_policy(cls, value: t.Any) -> t.Any:
         policy: t.Optional[_ObjectPolicy] = getattr(
-            type(self), "__composio_object_policy__", None
+            cls, "__composio_object_policy__", None
         )
-        if policy is None or policy.is_trivial:
-            return self
-
-        # A key declared in `properties` is still checked against every matching
-        # pattern; its declared value is authoritative and is not overwritten.
-        for name, field in type(self).model_fields.items():
-            if name not in self.model_fields_set:
-                continue
-            key = field.alias or name
-            for regex, validator in policy.patterns:
-                if validator is not None and regex.search(key):
-                    validator.coerce(getattr(self, name))
-
-        extra = self.__pydantic_extra__
-        if not extra:
-            return self
+        if policy is None or policy.is_trivial or not isinstance(value, dict):
+            return value
 
         unrecognized = []
-        for key, value in list(extra.items()):
+        for key, item in value.items():
             matched = False
             for regex, validator in policy.patterns:
                 if regex.search(key):
                     matched = True
-                    if validator is not None:
-                        extra[key] = validator.coerce(value)
+                    validator.validate(item)
 
             if matched or key in policy.declared:
                 continue
@@ -399,12 +459,39 @@ class _DynamicObjectModel(BaseModel):
             if policy.rejects_unmatched:
                 unrecognized.append(key)
             elif policy.additional is not None:
-                extra[key] = policy.additional.coerce(value)
+                policy.additional.validate(item)
 
         if unrecognized:
             raise ValueError(
                 f"Unrecognized key(s) in object: {', '.join(repr(key) for key in unrecognized)}"
             )
+
+        return value
+
+    @model_validator(mode="after")
+    def _materialize_dynamic_defaults(self):
+        policy: t.Optional[_ObjectPolicy] = getattr(
+            type(self), "__composio_object_policy__", None
+        )
+        if policy is None or policy.is_trivial:
+            return self
+
+        extra = self.__pydantic_extra__
+        if not extra:
+            return self
+
+        for key, value in list(extra.items()):
+            matched = False
+            for regex, validator in policy.patterns:
+                if regex.search(key):
+                    matched = True
+                    extra[key] = validator.materialize(extra[key])
+
+            if matched or key in policy.declared:
+                continue
+
+            if policy.additional is not None:
+                extra[key] = policy.additional.materialize(value)
 
         return self
 
@@ -417,6 +504,13 @@ def apply_object_policy(
     """Wrap ``base_model`` with the covered dynamic-key policy for ``schema``."""
     policy = _compile_object_policy(schema)
     name = model_name or base_model.__name__
+    json_schema_extra: t.Dict[str, t.Any] = {}
+    if "patternProperties" in schema:
+        json_schema_extra["patternProperties"] = schema["patternProperties"]
+    if "additionalProperties" in schema:
+        json_schema_extra["additionalProperties"] = schema["additionalProperties"]
+    elif policy.rejects_unmatched:
+        json_schema_extra["additionalProperties"] = False
 
     return t.cast(
         t.Type[BaseModel],
@@ -426,7 +520,10 @@ def apply_object_policy(
             {
                 "__module__": __name__,
                 "__qualname__": name,
-                "model_config": ConfigDict(extra="allow"),
+                "model_config": ConfigDict(
+                    extra="allow",
+                    json_schema_extra=json_schema_extra,
+                ),
                 "__composio_object_policy__": policy,
             },
         ),

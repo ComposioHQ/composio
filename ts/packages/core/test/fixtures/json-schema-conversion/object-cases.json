@@ -34,6 +34,10 @@
       "id": "root-free-form-absent-properties",
       "description": "A root object with no `properties` member and omitted `additionalProperties` is open.",
       "schema": { "type": "object" },
+      "ingress": {
+        "accepted": true,
+        "preserved": { "type": "object" }
+      },
       "instances": [
         {
           "input": { "anything": { "a": 1 }, "other": "x" },
@@ -344,6 +348,169 @@
         },
         {
           "input": { "name": "a", "flag": 1 },
+          "accepted": false
+        }
+      ]
+    },
+    {
+      "id": "empty-schema-additional-properties",
+      "description": "An empty schema accepts every unmatched value without coercing or discarding it.",
+      "schema": {
+        "type": "object",
+        "properties": { "name": { "type": "string" } },
+        "additionalProperties": {}
+      },
+      "instances": [
+        {
+          "input": { "name": "a", "count": 1, "metadata": { "active": true } },
+          "accepted": true,
+          "zod": {
+            "output": { "name": "a", "count": 1, "metadata": { "active": true } }
+          },
+          "effect": {
+            "output": { "name": "a", "count": 1, "metadata": { "active": true } }
+          },
+          "python": {
+            "output": { "name": "a", "count": 1, "metadata": { "active": true } }
+          }
+        }
+      ]
+    },
+    {
+      "id": "pattern-property-enum",
+      "description": "A matching dynamic key must satisfy an enum-only schema with no explicit type.",
+      "schema": {
+        "type": "object",
+        "patternProperties": { "^status_": { "enum": ["ready", "done"] } }
+      },
+      "instances": [
+        {
+          "input": { "status_job": "ready" },
+          "accepted": true,
+          "zod": { "output": { "status_job": "ready" } },
+          "effect": { "output": { "status_job": "ready" } },
+          "python": { "output": { "status_job": "ready" } }
+        },
+        {
+          "input": { "status_job": "blocked" },
+          "accepted": false
+        }
+      ]
+    },
+    {
+      "id": "pattern-property-strict-nested-array",
+      "description": "Nested container values are validated without coercing strings into integers.",
+      "schema": {
+        "type": "object",
+        "patternProperties": {
+          "^batch_": {
+            "type": "object",
+            "properties": {
+              "values": { "type": "array", "items": { "type": "integer" } }
+            },
+            "required": ["values"],
+            "additionalProperties": false
+          }
+        }
+      },
+      "instances": [
+        {
+          "input": { "batch_a": { "values": [1, 2] } },
+          "accepted": true,
+          "zod": { "output": { "batch_a": { "values": [1, 2] } } },
+          "effect": { "output": { "batch_a": { "values": [1, 2] } } },
+          "python": { "output": { "batch_a": { "values": [1, 2] } } }
+        },
+        {
+          "input": { "batch_a": { "values": ["1"] } },
+          "accepted": false
+        }
+      ]
+    },
+    {
+      "id": "false-pattern-property-schema",
+      "description": "A boolean-false pattern schema rejects every value for matching keys.",
+      "schema": {
+        "type": "object",
+        "patternProperties": { "^forbidden$": false }
+      },
+      "instances": [
+        {
+          "input": { "other": 1 },
+          "accepted": true,
+          "zod": { "output": { "other": 1 } },
+          "effect": { "output": { "other": 1 } },
+          "python": { "output": { "other": 1 } }
+        },
+        {
+          "input": { "forbidden": null },
+          "accepted": false
+        }
+      ]
+    },
+    {
+      "id": "pattern-property-type-union",
+      "description": "A list-valued type accepts only the listed JSON instance types.",
+      "schema": {
+        "type": "object",
+        "patternProperties": { "^value_": { "type": ["string", "null"] } }
+      },
+      "instances": [
+        {
+          "input": { "value_a": "text", "value_b": null },
+          "accepted": true,
+          "zod": { "output": { "value_a": "text", "value_b": null } },
+          "effect": { "output": { "value_a": "text", "value_b": null } },
+          "python": { "output": { "value_a": "text", "value_b": null } }
+        },
+        {
+          "input": { "value_a": 1 },
+          "accepted": false
+        }
+      ]
+    },
+    {
+      "id": "pattern-property-json-integer",
+      "description": "A mathematically integral JSON number satisfies the integer type even when decoded as a float.",
+      "schema": {
+        "type": "object",
+        "patternProperties": { "^count_": { "type": "integer" } }
+      },
+      "instances": [
+        {
+          "input": { "count_a": 1.0 },
+          "accepted": true,
+          "zod": { "output": { "count_a": 1.0 } },
+          "effect": { "output": { "count_a": 1.0 } },
+          "python": { "output": { "count_a": 1.0 } }
+        },
+        {
+          "input": { "count_a": 1.5 },
+          "accepted": false
+        }
+      ]
+    },
+    {
+      "id": "pattern-property-composed-const-exclusion",
+      "description": "Composed dynamic-key schemas retain const and not semantics.",
+      "schema": {
+        "type": "object",
+        "patternProperties": {
+          "^label_": {
+            "allOf": [{ "type": "string" }, { "not": { "const": "blocked" } }]
+          }
+        }
+      },
+      "instances": [
+        {
+          "input": { "label_job": "ready" },
+          "accepted": true,
+          "zod": { "output": { "label_job": "ready" } },
+          "effect": { "output": { "label_job": "ready" } },
+          "python": { "output": { "label_job": "ready" } }
+        },
+        {
+          "input": { "label_job": "blocked" },
           "accepted": false
         }
       ]
