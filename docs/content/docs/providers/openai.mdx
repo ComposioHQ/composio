@@ -291,6 +291,7 @@ let response = await client.chat.completions.create({
 while (response.choices[0].message.tool_calls) {
     messages.push(response.choices[0].message);
     for (const tc of response.choices[0].message.tool_calls) {
+        if (tc.type !== "function") continue;
         const result = await session.execute(tc.function.name, JSON.parse(tc.function.arguments));
         messages.push({
             role: "tool",
