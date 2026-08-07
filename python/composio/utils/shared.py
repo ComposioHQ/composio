@@ -47,6 +47,7 @@ __all__ = [
     "substitute_reserved_python_keywords",
     "reinstate_reserved_python_keywords",
     "normalize_tool_arguments",
+    "validate_and_serialize_tool_arguments",
 ]
 
 reserved_names = ["validate"]
@@ -54,6 +55,7 @@ reserved_names = ["validate"]
 _OBJ_MARKER = "-_object_-"
 _ARR_MARKER = "-_array_-"
 _MAX_PROVIDER_ALIAS_LENGTH = 64
+_EXPLICIT_DEFAULT_FIELDS_ATTRIBUTE = "__composio_explicit_default_fields__"
 
 
 def normalize_tool_arguments(arguments: t.Any) -> t.Dict[str, t.Any]:
@@ -99,6 +101,34 @@ def _as_dict(value: t.Any) -> t.Dict[str, t.Any]:
         return value
     raise InvalidParams(
         f"Tool arguments must resolve to an object, received {type(value).__name__}"
+    )
+
+
+def validate_and_serialize_tool_arguments(
+    args_schema: t.Type[BaseModel],
+    arguments: t.Dict[str, t.Any],
+) -> t.Dict[str, t.Any]:
+    """Validate provider arguments and serialize only values the backend should see.
+
+    Pydantic models use ``None`` for optional fields that were not supplied, so a
+    plain ``model_dump()`` changes omission into an explicit null. Conversely,
+    ``exclude_unset=True`` also drops defaults declared by the source JSON Schema.
+    Track those defaults on the generated model and combine them with
+    ``model_fields_set`` so aliases, explicit nulls, defaults, and dynamic extras
+    all survive without padding the payload.
+    """
+    validated = args_schema.model_validate(arguments)
+    included_fields = set(validated.model_fields_set)
+    included_fields.update(
+        getattr(type(validated), _EXPLICIT_DEFAULT_FIELDS_ATTRIBUTE, ())
+    )
+    return t.cast(
+        t.Dict[str, t.Any],
+        validated.model_dump(
+            mode="python",
+            by_alias=True,
+            include=included_fields,
+        ),
     )
 
 
@@ -450,6 +480,7 @@ def json_schema_to_model(
     if model_name is None:
         model_name = "GeneratedModel"
     field_definitions = {}
+    explicit_default_fields: t.Set[str] = set()
     for name, prop in json_schema.get("properties", {}).items():
         updated_name, pydantic_type, pydantic_field = json_schema_to_pydantic_field(
             name,
@@ -458,11 +489,19 @@ def json_schema_to_model(
             skip_default=skip_default,
         )
         field_definitions[updated_name] = (pydantic_type, pydantic_field)
+        if not skip_default and "default" in prop:
+            explicit_default_fields.add(updated_name)
     # The dynamic-key policy is shared with `json_schema_to_pydantic_type` so the
     # two entry points cannot disagree about which arguments survive conversion.
+    base_model = create_model(model_name, **field_definitions)  # type: ignore
+    setattr(
+        base_model,
+        _EXPLICIT_DEFAULT_FIELDS_ATTRIBUTE,
+        frozenset(explicit_default_fields),
+    )
     return apply_object_policy(
         json_schema,
-        create_model(model_name, **field_definitions),  # type: ignore
+        base_model,
         model_name=model_name,
     )
 

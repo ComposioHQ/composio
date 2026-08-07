@@ -16,10 +16,27 @@ from composio.utils.shared import (
     normalize_tool_arguments,
     reinstate_reserved_python_keywords,
     substitute_reserved_python_keywords,
+    validate_and_serialize_tool_arguments,
 )
 
 
 class StructuredTool(BaseStructuredTool):  # type: ignore[misc]
+    def _to_args_and_kwargs(
+        self,
+        tool_input: t.Union[str, t.Dict[str, t.Any]],
+        tool_call_id: t.Optional[str],
+    ) -> t.Tuple[t.Tuple[str, ...], t.Dict[str, t.Any]]:
+        """Validate dynamic-only schemas before LangChain's no-field shortcut."""
+        args_schema = self.args_schema
+        if (
+            isinstance(tool_input, dict)
+            and isinstance(args_schema, type)
+            and issubclass(args_schema, pydantic.BaseModel)
+        ):
+            arguments = validate_and_serialize_tool_arguments(args_schema, tool_input)
+            return (), arguments
+        return super()._to_args_and_kwargs(tool_input, tool_call_id)
+
     def run(self, *args, **kwargs):
         try:
             return super().run(*args, **kwargs)
