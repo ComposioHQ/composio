@@ -6,7 +6,7 @@ export interface HomeIntentLink {
 
 export interface HomeIntent {
   id: 'build' | 'use';
-  audience: 'For you' | 'For your platform';
+  audience: 'For you' | 'Platform';
   title: string;
   description: string;
   links: HomeIntentLink[];
@@ -20,7 +20,7 @@ export interface HomeIntent {
 export const HOME_INTENTS: HomeIntent[] = [
   {
     id: 'build',
-    audience: 'For your platform',
+    audience: 'Platform',
     title: 'Build with Composio',
     description: 'Add Composio tools and authentication to your own agent or application.',
     links: [

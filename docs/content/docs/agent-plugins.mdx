@@ -1,81 +1,86 @@
 ---
 title: Agent plugins
 sidebar: false
-description: Install the native Composio plugin for Codex or Claude Code
+description: Install Composio for Codex or Claude Code
 keywords: [agent plugins, codex, claude code, cli, composio setup, skills]
 ---
 
-Use a native agent plugin when you want Codex or Claude Code to act through Composio without building an SDK application or configuring MCP. Both plugins use the Composio CLI for tool search, authentication, and execution.
+Agent plugins let Codex and Claude Code use Composio from your current conversation. The plugin teaches your agent how to find tools, connect accounts, and run actions through the Composio CLI.
 
-This is also the starting page when you want a reusable coding-agent skill that operates the Composio CLI. Install the native plugin with `composio setup`; the plugin makes the CLI skill available to the agent.
+## Install the plugin
 
-If you are using another agent and explicitly want MCP, use [Composio Connect](/docs/composio-connect). If you are building an application, start with the [SDK Quickstart](/docs/quickstart).
-
-## Install automatically
-
-Install the CLI:
+Install the Composio CLI:
 
 ```bash
 curl -fsSL https://composio.dev/install | sh
 ```
 
-Open a new terminal, then sign in:
+Open a new terminal, sign in, and configure every supported agent on your machine:
 
 ```bash
 composio login
-```
-
-Then install the plugin for every supported agent detected on your machine:
-
-```bash
 composio setup --target auto
 ```
 
-`auto` currently detects Codex and Claude Code. To install for one agent only, choose it explicitly:
+`auto` detects Codex and Claude Code. If both are installed, it configures both.
+
+## Try a task
+
+Ask Codex or Claude Code to work with one of your apps:
+
+- `List the open GitHub issues assigned to me.`
+- `Summarize the unread Gmail messages I received today.`
+- `Create a Linear issue from these release notes: ...`
+
+You do not need to know a tool slug or connection ID. The agent searches by task and selects a matching tool. If the toolkit is not connected, the agent starts `composio link` and gives you a Connect Link. Approve the connection, then ask the agent to continue.
+
+## Configure one agent
+
+Use an explicit target when you only want to configure one agent.
+
+<Tabs items={['Codex', 'Claude Code']}>
+<Tab value="Codex">
 
 ```bash
 composio setup --target codex
-composio setup --target claude
 ```
 
-The setup command installs the native plugin and makes its Composio CLI skill available. The Codex plugin bundles the skill; Claude Code uses the standalone CLI skill.
-
-## Codex
-
-The Codex plugin is the default path when you use Composio from Codex and did not explicitly ask for MCP. The automatic setup command is:
-
-```bash
-composio setup --target codex
-```
-
-To use Codex's plugin commands directly instead:
+The Codex plugin bundles the Composio CLI skill. You can also install the plugin with Codex directly:
 
 ```bash
 codex plugin marketplace add https://github.com/ComposioHQ/composio-plugin-openai.git --json
 codex plugin add composio@composio --json
 ```
 
-The plugin source is [ComposioHQ/composio-plugin-openai](https://github.com/ComposioHQ/composio-plugin-openai).
+The plugin source is available in [`ComposioHQ/composio-plugin-openai`](https://github.com/ComposioHQ/composio-plugin-openai).
 
-## Claude Code
-
-The Claude Code plugin is the default path when you use Composio from Claude Code and did not explicitly ask for MCP. The automatic setup command is:
+</Tab>
+<Tab value="Claude Code">
 
 ```bash
 composio setup --target claude
 ```
 
-You can also install it from inside Claude Code:
+You can also install the plugin from Claude Code:
 
 ```bash
 /plugin marketplace add ComposioHQ/composio-plugin-cc
 /plugin install composio@composio
 ```
 
-See the [Claude Code plugin guide](/docs/claude-code-plugin) for team setup, updates, and troubleshooting.
+See the [Claude Code plugin guide](/docs/claude-code-plugin) for team installation, updates, and troubleshooting.
 
-## Use the CLI directly
+</Tab>
+</Tabs>
 
-The plugins call the Composio CLI underneath. You can also use the CLI directly from a terminal to search for tools, connect accounts, run actions, inspect schemas, and script workflows. See the [CLI guide](/docs/cli).
+## What the plugin uses
 
-Use [Composio Connect](/docs/composio-connect) instead only when you explicitly want an MCP connection, or when your existing agent does not have a native Composio plugin.
+Both plugins run the Composio CLI underneath. The agent uses `composio search` to find an unknown tool, `composio link` to connect an account, and `composio execute` to run a known tool. The same connections are available when you use the [CLI directly](/docs/cli).
+
+## Choose another setup
+
+<Cards>
+  <Card title="Build an agent" href="/docs/quickstart" description="Add Composio tools and authentication to your application." />
+  <Card title="Use the CLI" href="/docs/cli" description="Search, connect, and run tools from your terminal." />
+  <Card title="Connect over MCP" href="/docs/composio-connect" description="Add Composio to an existing MCP client." />
+</Cards>

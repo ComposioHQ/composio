@@ -13,7 +13,7 @@ describe('Welcome navigation', () => {
       'Use Composio',
     ]);
     expect(HOME_INTENTS.map(intent => intent.audience)).toEqual([
-      'For your platform',
+      'Platform',
       'For you',
     ]);
 
@@ -45,4 +45,15 @@ describe('Welcome navigation', () => {
     expect(markdown).toContain('native Composio plugin for Codex or Claude Code');
   });
 
+  test('uses the dashboard product badge treatments', async () => {
+    const source = await Bun.file(
+      new URL('../../components/home-surfaces.tsx', import.meta.url)
+    ).text();
+
+    expect(source).toContain("audience === 'Platform'");
+    expect(source).toContain('rgb(0, 230, 138)');
+    expect(source).toContain('rgb(0, 180, 216)');
+    expect(source).toContain('rgb(0, 119, 255)');
+    expect(source).toContain('text-[var(--composio-brand)]');
+  });
 });

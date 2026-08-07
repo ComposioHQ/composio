@@ -31,9 +31,7 @@ function IntentCard({ intent }: { intent: HomeIntent }) {
 
   return (
     <article className="flex flex-col border border-fd-border bg-fd-card p-5 shadow-[0_1px_0_rgba(15,15,15,0.04)] sm:p-6">
-      <span className="mb-4 inline-flex w-fit rounded-sm border border-[var(--composio-brand)]/50 bg-[var(--composio-brand)]/[0.05] px-1.5 py-1 font-mono text-[10px] font-medium uppercase leading-none tracking-[0.08em] text-[var(--composio-brand)]">
-        {intent.audience}
-      </span>
+      <AudienceBadge audience={intent.audience} />
       <div className="mb-4 flex items-center gap-2 text-[var(--composio-brand)]">
         <Icon aria-hidden="true" className="size-4" />
         <h3 className="text-[18px] font-medium tracking-[-0.01em] text-fd-foreground">
@@ -67,5 +65,51 @@ function IntentCard({ intent }: { intent: HomeIntent }) {
         ))}
       </ul>
     </article>
+  );
+}
+
+const PLATFORM_BADGE_GRADIENT =
+  'linear-gradient(135deg, rgb(0, 230, 138), rgb(0, 180, 216), rgb(0, 119, 255))';
+
+function AudienceBadge({ audience }: { audience: HomeIntent['audience'] }) {
+  const isPlatform = audience === 'Platform';
+
+  return (
+    <span
+      className={
+        'relative mb-4 inline-flex w-fit items-center rounded-[4px] px-[6px] py-[4px] font-mono text-[10px] font-semibold uppercase leading-none tracking-wide ' +
+        (isPlatform ? '' : 'text-[var(--composio-brand)]')
+      }
+      style={
+        isPlatform
+          ? {
+              background: `${PLATFORM_BADGE_GRADIENT} text`,
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+            }
+          : undefined
+      }
+    >
+      <span
+        aria-hidden="true"
+        className={
+          'pointer-events-none absolute inset-0 rounded-[4px] ' +
+          (isPlatform ? '' : 'border border-current')
+        }
+        style={
+          isPlatform
+            ? {
+                padding: '1px',
+                background: PLATFORM_BADGE_GRADIENT,
+                WebkitMask:
+                  'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
+                WebkitMaskComposite: 'xor',
+                maskComposite: 'exclude',
+              }
+            : undefined
+        }
+      />
+      {audience}
+    </span>
   );
 }

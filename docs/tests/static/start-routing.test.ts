@@ -9,11 +9,14 @@ describe('getting-started routing policy', () => {
   test('publishes native plugins for both supported agent hosts', async () => {
     const plugins = await read('content/docs/agent-plugins.mdx');
 
-    expect(plugins).toContain('reusable coding-agent skill');
+    expect(plugins).toContain('Agent plugins let Codex and Claude Code use Composio');
     expect(plugins).toContain('composio setup --target codex');
     expect(plugins).toContain('composio setup --target claude');
     expect(plugins).toContain('codex plugin marketplace add');
     expect(plugins).toContain('/plugin marketplace add');
+    expect(plugins).toContain('composio search');
+    expect(plugins).toContain('composio link');
+    expect(plugins).toContain('composio execute');
   });
 
   test('keeps native plugins ahead of CLI and explicit MCP on Welcome', () => {
