@@ -14,6 +14,7 @@ import { ComposioUserContext } from 'src/services/user-context';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { commandHintStep } from 'src/services/command-hints';
 import { runOrgSelection } from 'src/effects/select-org-project';
+import { linkAnalyticsIdentityForOrg } from 'src/effects/link-analytics-identity';
 import { setupCacheDir } from 'src/effects/setup-cache-dir';
 import { primeConsumerConnectedToolkitsCacheInBackground } from 'src/services/consumer-short-term-cache';
 import { inferSkillReleaseChannel, installSkillSafe } from 'src/effects/install-skill';
@@ -93,7 +94,7 @@ type PendingLoginSession = Schema.Schema.Type<typeof PendingLoginSession>;
 
 class PendingLoginError extends Data.TaggedError('commands/PendingLoginError')<{
   readonly message: string;
-  readonly reason: 'invalid' | 'missing' | 'expired';
+  readonly reason: 'invalid' | 'io' | 'missing' | 'expired';
   readonly cause?: unknown;
 }> {}
 
@@ -150,8 +151,19 @@ const readPendingLoginSession = Effect.gen(function* () {
     });
   }
 
-  const session = yield* fs.readFileString(filePath, 'utf8').pipe(
-    Effect.flatMap(Schema.decodeUnknown(Schema.parseJson(PendingLoginSession))),
+  const rawSession = yield* fs.readFileString(filePath, 'utf8').pipe(
+    Effect.mapError(
+      cause =>
+        new PendingLoginError({
+          message: 'Failed to read pending login cache',
+          reason: 'io',
+          cause,
+        })
+    )
+  );
+  const session = yield* Schema.decodeUnknown(Schema.parseJson(PendingLoginSession))(
+    rawSession
+  ).pipe(
     Effect.mapError(
       cause =>
         new PendingLoginError({
@@ -351,6 +363,15 @@ const directLogin = (params: { userApiKey: string; org?: string }) =>
       : Option.getOrUndefined(ctx.data.testUserId);
 
     yield* ctx.login(params.userApiKey, selectedOrg.id, testUserId);
+    yield* linkAnalyticsIdentityForOrg({
+      apiKey: params.userApiKey,
+      baseURL: ctx.data.baseURL,
+      orgId: selectedOrg.id,
+      knownIdentity: {
+        orgId: sessionInfo.project.org.id,
+        orgMemberId: sessionInfo.org_member.id,
+      },
+    });
     yield* primeConsumerConnectedToolkitsCacheInBackground({
       orgId: selectedOrg.id,
     });
@@ -378,6 +399,8 @@ const storeCredentials = (params: {
   skipHints?: boolean;
   /** When true, skip JSON output (emitted later after org picker with final selection). */
   skipOutput?: boolean;
+  /** When true, wait to link analytics until the org picker has made its final selection. */
+  deferAnalyticsIdentity?: boolean;
 }) =>
   Effect.gen(function* () {
     const ctx = yield* ComposioUserContext;
@@ -390,6 +413,7 @@ const storeCredentials = (params: {
       fallbackEmail,
       skipHints = false,
       skipOutput = false,
+      deferAnalyticsIdentity = false,
     } = params;
 
     // Call session/info to enrich the login with org/project metadata.
@@ -430,6 +454,20 @@ const storeCredentials = (params: {
     }
 
     yield* ctx.login(uakApiKey, orgId, testUserId);
+    // Linked only after the credential persists, so stitching cannot outlive a failed login.
+    if (!deferAnalyticsIdentity) {
+      yield* linkAnalyticsIdentityForOrg({
+        apiKey: uakApiKey,
+        baseURL,
+        orgId,
+        knownIdentity: sessionInfo
+          ? {
+              orgId: sessionInfo.project.org.id,
+              orgMemberId: sessionInfo.org_member.id,
+            }
+          : undefined,
+      });
+    }
     yield* primeConsumerConnectedToolkitsCacheInBackground({
       orgId,
     });
@@ -548,6 +586,7 @@ const loginWithKey = (params: {
       fallbackEmail: linkedSession.account.email,
       skipHints: willRunPicker,
       skipOutput: true,
+      deferAnalyticsIdentity: willRunPicker,
     });
 
     if (willRunPicker) {
@@ -577,6 +616,15 @@ const loginWithKey = (params: {
       }
       const finalOrgId = result?.id ?? xOrgId;
       const finalOrgName = result?.name ?? uakSessionInfo.project.org.name ?? '';
+      yield* linkAnalyticsIdentityForOrg({
+        apiKey: uakApiKey,
+        baseURL: ctx.data.baseURL,
+        orgId: finalOrgId,
+        knownIdentity: {
+          orgId: uakSessionInfo.project.org.id,
+          orgMemberId: uakSessionInfo.org_member.id,
+        },
+      });
       yield* emitLoginComplete({
         email: linkedSession.account.email ?? undefined,
         orgId: finalOrgId,
@@ -742,6 +790,7 @@ export const browserLogin = (params: {
       fallbackEmail: linkedSession.account.email,
       skipHints: willRunPicker,
       skipOutput: willRunPicker,
+      deferAnalyticsIdentity: willRunPicker,
     });
 
     if (willRunPicker) {
@@ -771,6 +820,15 @@ export const browserLogin = (params: {
       }
       const finalOrgId = result?.id ?? xOrgId;
       const finalOrgName = result?.name ?? uakSessionInfo.project.org.name ?? '';
+      yield* linkAnalyticsIdentityForOrg({
+        apiKey: uakApiKey,
+        baseURL: ctx.data.baseURL,
+        orgId: finalOrgId,
+        knownIdentity: {
+          orgId: uakSessionInfo.project.org.id,
+          orgMemberId: uakSessionInfo.org_member.id,
+        },
+      });
       yield* emitLoginComplete({
         email: linkedSession.account.email ?? undefined,
         orgId: finalOrgId,

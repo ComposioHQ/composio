@@ -355,17 +355,18 @@ describe('CLI: composio setup telemetry', () => {
         const exit = yield* Effect.exit(cli(['setup', '--target', 'claude', '--yes']));
         expect(Exit.isFailure(exit)).toBe(true);
 
-        expect(eventsNamed('CLI_PLUGIN_SETUP_FAILED')).toEqual([
+        const failureEvents = eventsNamed('CLI_PLUGIN_SETUP_FAILED');
+        expect(failureEvents).toEqual([
           expect.objectContaining({
             properties: expect.objectContaining({
               agent_host: 'claude',
               operation: 'setup',
               phase: 'install',
               error_name: 'services/SetupProcessError',
-              error_message: expect.stringContaining('native operation failed'),
             }),
           }),
         ]);
+        expect(failureEvents[0]?.properties).not.toHaveProperty('error_message');
         expect(eventsNamed('CLI_PLUGIN_SETUP_SUCCEEDED')).toHaveLength(0);
       })
     );

@@ -7,6 +7,7 @@ import {
 } from 'src/services/agents';
 import { ComposioUserContext } from 'src/services/user-context';
 import { TerminalUI } from 'src/services/terminal-ui';
+import { clearApolloIdentityForAnalytics } from 'src/analytics/dispatch';
 
 /**
  * CLI command to log out from the Composio CLI.
@@ -54,6 +55,7 @@ export const logoutCmd = Command.make('logout', { force }, ({ force }) =>
     }
 
     yield* ctx.logout;
+    yield* clearApolloIdentityForAnalytics;
 
     if (Option.isSome(loggedInAgent)) {
       yield* removeStoredAgentIdentity;

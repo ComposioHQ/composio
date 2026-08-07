@@ -55,7 +55,7 @@
     "zod": "^4.0.0"
   },
   "devDependencies": {
-    "@anthropic-ai/claude-agent-sdk": "^0.3.218",
+    "@anthropic-ai/claude-agent-sdk": "^0.3.221",
     "@composio/core": "workspace:*",
     "tsdown": "catalog:",
     "typescript": "catalog:",

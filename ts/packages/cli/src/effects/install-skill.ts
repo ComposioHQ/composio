@@ -4,7 +4,7 @@ import { NodeOs } from 'src/services/node-os';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { GITHUB_CONFIG } from 'src/effects/github-config';
 import { APP_VERSION, type CliReleaseChannel } from 'src/constants';
-import { readInstalledReleaseTag } from 'src/services/run-companion-modules';
+import { resolveRunningCliReleaseTag } from 'src/services/run-companion-modules';
 import {
   fetchLatestCliRelease,
   fetchCliReleaseByTag,
@@ -150,7 +150,7 @@ export const installSkill = (options?: {
       channel: options?.channel,
       githubConfig,
       httpClient,
-      installedReleaseTag: yield* readInstalledReleaseTag(process.execPath),
+      installedReleaseTag: yield* resolveRunningCliReleaseTag(process.execPath, APP_VERSION),
       releaseTag: options?.releaseTag,
     });
 

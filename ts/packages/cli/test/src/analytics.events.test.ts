@@ -1,7 +1,16 @@
-import { describe, expect, it } from 'vitest';
+import { readFileSync, writeFileSync } from 'node:fs';
+import path from 'node:path';
+import * as tempy from 'tempy';
+import { it } from '@effect/vitest';
+import { afterEach, describe, expect, vi } from 'vitest';
+import { BunFileSystem, BunPath } from '@effect/platform-bun';
+import { Effect, Layer } from 'effect';
 import { createCliCodactFailureBody } from 'src/analytics/dispatch';
 import {
   CLI_ANALYTICS_EVENTS,
+  CLI_EVENT_JOURNEY_STAGES,
+  CLI_JOURNEY_STAGES,
+  configureCliAnalyticsReleaseVersion,
   createCliCommandTelemetryContext,
   getPluginLifecycleFailedEvent,
   getPluginLifecycleSucceededEvent,
@@ -18,7 +27,10 @@ import {
   isMaybeToolValidationError,
 } from 'src/analytics/events';
 import { APP_VERSION } from 'src/constants';
+import { inferSkillReleaseChannel } from 'src/effects/install-skill';
+import { CLI_RELEASE_CHANNELS } from 'src/experimental-features';
 import { ToolInputValidationError } from 'src/services/tool-input-validation';
+import { resolveInstalledCliVersion } from 'src/services/run-companion-modules';
 
 describe('CLI analytics execute failure events', () => {
   it('records terminal capabilities supplied by the terminal service', () => {
@@ -197,6 +209,33 @@ describe('CLI analytics setup and install lifecycle events', () => {
     });
   });
 
+  it('summarizes user-controlled search and proxy input without recording it', () => {
+    const terminal = { stdoutIsTTY: false, stderrIsTTY: false };
+    const search = getPrimaryLifecycleInvokedEvent(
+      createCliCommandTelemetryContext(
+        ['bun', 'composio', 'search', 'customer@example.com secret'],
+        APP_VERSION,
+        terminal
+      )
+    );
+    const proxy = getPrimaryLifecycleInvokedEvent(
+      createCliCommandTelemetryContext(
+        ['bun', 'composio', 'proxy', 'https://user:password@example.com/private?token=small'],
+        APP_VERSION,
+        terminal
+      )
+    );
+
+    expect(search?.properties).toMatchObject({
+      query_length: 'customer@example.com secret'.length,
+      query_term_count: 2,
+    });
+    expect(search?.properties).not.toHaveProperty('query');
+    expect(search?.properties).not.toHaveProperty('search_query');
+    expect(proxy?.properties).toMatchObject({ has_endpoint: true });
+    expect(proxy?.properties).not.toHaveProperty('endpoint');
+  });
+
   it('tracks a verified per-host plugin change', () => {
     expect(
       getPluginLifecycleSucceededEvent({
@@ -268,7 +307,7 @@ describe('CLI analytics setup runtime-context events', () => {
     });
   });
 
-  it('tracks a per-host failure with truncated error details', () => {
+  it('tracks a per-host failure without recording its free-form message', () => {
     const error = new Error(`Adding the claude marketplace failed${'x'.repeat(600)}`);
 
     const event = getPluginLifecycleFailedEvent({
@@ -289,7 +328,7 @@ describe('CLI analytics setup runtime-context events', () => {
         error_name: 'Error',
       },
     });
-    expect(String(event?.properties?.error_message).length).toBeLessThanOrEqual(500);
+    expect(event?.properties).not.toHaveProperty('error_message');
   });
 
   it('tracks user cancellation and installer skips with normalized reasons', () => {
@@ -324,5 +363,155 @@ describe('CLI analytics setup runtime-context events', () => {
         reason: 'no_host_detected',
       },
     });
+  });
+});
+
+describe('CLI analytics journey taxonomy', () => {
+  afterEach(() => {
+    configureCliAnalyticsReleaseVersion(APP_VERSION);
+    vi.unstubAllEnvs();
+  });
+
+  const contextFor = (argv: ReadonlyArray<string>) =>
+    createCliCommandTelemetryContext(['bun', 'composio', ...argv], APP_VERSION, {
+      stdoutIsTTY: false,
+      stderrIsTTY: false,
+    });
+
+  const lifecycleCases: ReadonlyArray<[ReadonlyArray<string>, string]> = [
+    [['execute', 'GMAIL_SEND_EMAIL'], 'execute'],
+    [['search', 'send email'], 'other'],
+    [['link', 'github'], 'connect'],
+    [['login'], 'login'],
+    [['logout'], 'other'],
+    [['proxy', '/api/v3/toolkits'], 'other'],
+    [['run', 'echo hi'], 'other'],
+    [['install'], 'install'],
+    [['setup'], 'setup'],
+    [['version'], 'other'],
+  ];
+
+  it.each(lifecycleCases)('stamps %j lifecycle events with journey_stage %s', (argv, stage) => {
+    const context = contextFor(argv);
+
+    expect(getPrimaryLifecycleInvokedEvent(context)?.properties?.journey_stage).toBe(stage);
+    expect(getPrimaryLifecycleSucceededEvent(context)?.properties?.journey_stage).toBe(stage);
+    expect(
+      getPrimaryLifecycleFailedEvent(context, new Error('boom'))?.properties?.journey_stage
+    ).toBe(stage);
+  });
+
+  it('maps every analytics event name to a declared journey stage', () => {
+    for (const name of Object.values(CLI_ANALYTICS_EVENTS)) {
+      expect(CLI_JOURNEY_STAGES).toContain(CLI_EVENT_JOURNEY_STAGES[name]);
+    }
+  });
+
+  it('stamps standalone setup and tool-invocation events with their stages', () => {
+    expect(
+      getPluginLifecycleSucceededEvent({
+        operation: 'setup',
+        target: 'claude',
+        action: 'installed',
+        cliVersion: APP_VERSION,
+      })?.properties?.journey_stage
+    ).toBe('setup');
+
+    expect(
+      getSetupSkippedEvent({
+        operation: 'setup',
+        requestedTarget: 'auto',
+        cliVersion: APP_VERSION,
+      })?.properties?.journey_stage
+    ).toBe('setup');
+
+    expect(
+      getToolExecuteFailedEvent({
+        toolSlug: 'GMAIL_SEND_EMAIL',
+        args: {},
+        surface: 'root',
+        projectMode: 'consumer',
+        stage: 'execution',
+        failureOrigin: 'main_endpoint',
+      })?.properties?.journey_stage
+    ).toBe('execute');
+  });
+
+  it('stamps events with the release channel of the running build', () => {
+    const properties = getPrimaryLifecycleInvokedEvent(contextFor(['login']))?.properties;
+
+    expect(properties?.cli_channel).toBe(inferSkillReleaseChannel(APP_VERSION));
+    expect(CLI_RELEASE_CHANNELS).toContain(properties?.cli_channel);
+  });
+
+  it.effect('uses beta release metadata even when the package version is stable', () => {
+    const installDir = tempy.temporaryDirectory();
+    const execPath = path.join(installDir, 'composio');
+    writeFileSync(execPath, 'fake binary');
+    writeFileSync(path.join(installDir, 'release-tag.txt'), '@composio/cli@0.3.1-beta.7\n');
+
+    return Effect.gen(function* () {
+      const resolvedVersion = yield* resolveInstalledCliVersion(execPath, APP_VERSION);
+      configureCliAnalyticsReleaseVersion(resolvedVersion);
+
+      const context = createCliCommandTelemetryContext(
+        ['bun', 'composio', 'login'],
+        resolvedVersion,
+        { stdoutIsTTY: false, stderrIsTTY: false }
+      );
+      const properties = getPrimaryLifecycleInvokedEvent(context)?.properties;
+      const pluginProperties = getPluginLifecycleSucceededEvent({
+        operation: 'setup',
+        target: 'codex',
+        action: 'installed',
+        cliVersion: APP_VERSION,
+      })?.properties;
+      expect(inferSkillReleaseChannel(APP_VERSION)).toBe('stable');
+      expect(properties?.cli_channel).toBe('beta');
+      expect(pluginProperties?.cli_channel).toBe('beta');
+    }).pipe(Effect.provide(Layer.merge(BunFileSystem.layer, BunPath.layer)));
+  });
+
+  it('propagates the installer invocation origin from the environment', () => {
+    vi.stubEnv('COMPOSIO_CLI_INVOCATION_ORIGIN', 'installer');
+
+    expect(getPrimaryLifecycleInvokedEvent(contextFor(['install']))?.properties).toMatchObject({
+      invocation_origin: 'installer',
+      journey_stage: 'install',
+    });
+  });
+
+  it('keeps the base installer install-only and marks shell-setup delegation as installer-origin', () => {
+    const installScript = readFileSync(
+      new URL('../../../../../install.sh', import.meta.url),
+      'utf8'
+    );
+    // Join backslash-continued lines so multi-line invocations match as one logical line.
+    const logicalLines = installScript.replace(/\\\n\s*/g, ' ').split('\n');
+    const installInvocations = logicalLines.filter(line => line.includes('"$exe" install'));
+
+    // The installer may invoke `composio install` only for the `--shell` capability probe
+    // and the shell-setup delegation; any other invocation would emit install analytics
+    // events without the installer origin attached.
+    const helpProbes = installInvocations.filter(line => line.includes('"$exe" install --help'));
+    const shellDelegations = installInvocations.filter(line =>
+      line.includes('"$exe" install --shell')
+    );
+    expect(helpProbes).toHaveLength(1);
+    expect(shellDelegations).toHaveLength(1);
+    expect(installInvocations).toHaveLength(2);
+    expect(shellDelegations[0]).toContain('COMPOSIO_CLI_INVOCATION_ORIGIN=installer');
+
+    for (const shell of ['zsh', 'bash', 'fish']) {
+      const variantScript = readFileSync(
+        new URL(`../../../../../install/${shell}.sh`, import.meta.url),
+        'utf8'
+      );
+      // Variants never invoke the CLI themselves: they re-exec the base installer with the
+      // shell pinned, so the delegation asserted above stays the only CLI install call.
+      expect(variantScript).not.toContain('"$exe"');
+      expect(variantScript).not.toContain(' install --shell');
+      expect(variantScript).toContain('COMPOSIO_INSTALL_SHELL="$variant_shell"');
+    }
   });
 });

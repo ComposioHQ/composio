@@ -27,7 +27,7 @@
     "cli:record": "turbo run record --filter=./ts/packages/cli",
     "record": "turbo run record",
     "test": "pnpm run test:install-sh && pnpm run test:release-workflow && pnpm run test:sdk-release && turbo test --filter=./ts/packages/** --filter=!@e2e-tests/* && pnpm run test:examples",
-    "test:install-sh": "bash test/install-sh-release-resolution.test.sh",
+    "test:install-sh": "bash test/install-sh-release-resolution.test.sh && bash test/install-sh-atomic-replace.test.sh",
     "test:release-workflow": "bun run test/release-workflow.test.ts",
     "test:sdk-release": "bun run test/sdk-release-changelog.test.ts",
     "test:examples": "tsx ts/scripts/validate-examples.ts",
@@ -35,12 +35,13 @@
     "test:e2e:node": "turbo test:e2e:node --filter='@e2e-tests/node-*'",
     "test:e2e:deno": "turbo test:e2e:deno --filter='@e2e-tests/deno-*'",
     "test:e2e:cli": "turbo test:e2e:cli --filter='@e2e-tests/cli-*'",
+    "test:e2e:install": "turbo test:e2e:install --filter='@e2e-tests/cli-install'",
     "test:e2e:cloudflare": "turbo test:e2e:cloudflare --filter='@e2e-tests/cf-*'",
     "test:ui": "vitest --ui",
     "typecheck": "turbo typecheck --filter=./ts/packages/**",
     "typecheck:examples": "turbo typecheck --filter='./ts/examples/*'",
     "lint:examples": "turbo lint --filter='./ts/examples/*'",
-    "lint": "oxlint ts/packages",
+    "lint": "oxlint ts test tsdown.config.base.ts",
     "lint:packages": "oxlint ts/packages",
     "lint:fix": "oxlint --fix .",
     "lint:fix:packages": "oxlint --fix ts/packages",
@@ -80,25 +81,28 @@
     "@composio/core": "workspace:*",
     "@composio/openai": "workspace:*",
     "@types/bun": "catalog:",
-    "@types/node": "^26.1.1",
+    "@types/node": "^26.1.2",
     "@vitest/ui": "catalog:",
     "husky": "^9.1.7",
-    "lint-staged": "^17.2.0",
-    "oxlint": "1.75.0",
-    "oxlint-plugin-eslint": "1.75.0",
+    "lint-staged": "^17.3.0",
+    "oxlint": "1.77.0",
+    "oxlint-plugin-eslint": "1.77.0",
     "prettier": "^3.9.6",
     "publint": "catalog:",
     "semver": "^7.8.5",
     "tsdown": "catalog:",
     "tsx": "catalog:",
-    "turbo": "^2.10.6",
+    "turbo": "^2.10.7",
     "typescript": "catalog:",
     "typescript6": "catalog:ts6",
     "vitest": "catalog:",
     "zod": "catalog:"
   },
   "lint-staged": {
-    "ts/packages/**/*.{ts,tsx}": [
+    "{test,ts}/**/*.{ts,tsx,mts,cts}": [
+      "oxlint --fix"
+    ],
+    "tsdown.config.base.ts": [
       "oxlint --fix"
     ],
     "ts/packages/**/*.{ts,tsx,js,jsx,json,md}": [

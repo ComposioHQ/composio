@@ -53,6 +53,15 @@ export interface Platform {
   realpathSync(filePath: string): string;
 
   /**
+   * Returns whether paths on the filesystem containing `filePath` are
+   * case-sensitive. Node checks the nearest existing directory so the result
+   * follows the target mount rather than the operating-system default.
+   * Runtimes without a filesystem return true to preserve exact path matching.
+   * @param filePath - A file or directory on the filesystem to inspect.
+   */
+  isFileSystemCaseSensitive?(filePath: string): boolean;
+
+  /**
    * Creates a directory at the given path, including parent directories if needed.
    * @param dirPath - The directory path to create.
    */

@@ -99,7 +99,7 @@
   "license": "ISC",
   "devDependencies": {
     "@type-challenges/utils": "^0.1.1",
-    "@types/semver": "^7.7.1",
+    "@types/semver": "^7.8.0",
     "tsdown": "catalog:",
     "tsx": "catalog:",
     "typedoc": "^0.28.20",
@@ -114,6 +114,7 @@
     "@composio/client": "catalog:",
     "@composio/json-schema-to-zod": "workspace:*",
     "@types/json-schema": "^7.0.15",
+    "is-fs-case-sensitive": "^2.0.0",
     "openai": "catalog:",
     "picocolors": "catalog:",
     "pusher-js": "^8.6.0",
