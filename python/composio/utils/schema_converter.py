@@ -379,7 +379,7 @@ def _dynamic_key_validator(
 
     materializer = None
     if _contains_default(schema):
-        annotation = json_schema_to_pydantic_type(schema)
+        annotation = json_schema_to_pydantic_type(schema, root_schema=root_schema)
         materializer = TypeAdapter(annotation)
 
     return _DynamicKeyValidator(
@@ -388,14 +388,18 @@ def _dynamic_key_validator(
     )
 
 
-def _compile_object_policy(schema: t.Dict[str, t.Any]) -> _ObjectPolicy:
+def _compile_object_policy(
+    schema: t.Dict[str, t.Any],
+    root_schema: t.Optional[t.Dict[str, t.Any]] = None,
+) -> _ObjectPolicy:
+    document_root = root_schema if root_schema is not None else schema
     declared = frozenset(schema.get("properties") or {})
     additional = schema.get("additionalProperties", _MISSING)
     validator_type = jsonschema_validators.validator_for(
-        schema,
+        document_root,
         default=jsonschema_validators.Draft7Validator,
     )
-    root_validator = validator_type(schema)
+    root_validator = validator_type(document_root)
 
     patterns = []
     for pattern, pattern_schema in (schema.get("patternProperties") or {}).items():
@@ -403,7 +407,11 @@ def _compile_object_policy(schema: t.Dict[str, t.Any]) -> _ObjectPolicy:
             patterns.append(
                 (
                     re.compile(pattern),
-                    _dynamic_key_validator(pattern_schema, schema, root_validator),
+                    _dynamic_key_validator(
+                        pattern_schema,
+                        document_root,
+                        root_validator,
+                    ),
                 )
             )
         except re.error as exc:
@@ -415,7 +423,7 @@ def _compile_object_policy(schema: t.Dict[str, t.Any]) -> _ObjectPolicy:
         declared=declared,
         patterns=tuple(patterns),
         additional=(
-            _dynamic_key_validator(additional, schema, root_validator)
+            _dynamic_key_validator(additional, document_root, root_validator)
             if isinstance(additional, dict)
             else None
         ),
@@ -500,9 +508,11 @@ def apply_object_policy(
     schema: t.Dict[str, t.Any],
     base_model: t.Type[BaseModel],
     model_name: t.Optional[str] = None,
+    *,
+    root_schema: t.Optional[t.Dict[str, t.Any]] = None,
 ) -> t.Type[BaseModel]:
     """Wrap ``base_model`` with the covered dynamic-key policy for ``schema``."""
-    policy = _compile_object_policy(schema)
+    policy = _compile_object_policy(schema, root_schema)
     name = model_name or base_model.__name__
     json_schema_extra: t.Dict[str, t.Any] = {}
     if "patternProperties" in schema:
@@ -532,6 +542,8 @@ def apply_object_policy(
 
 def json_schema_to_pydantic_type(
     json_schema: t.Union[t.Dict[str, t.Any], bool],
+    *,
+    root_schema: t.Optional[t.Dict[str, t.Any]] = None,
 ) -> t.Union[t.Type, t.Optional[t.Any]]:
     """
     Converts a JSON schema type to a Pydantic type.
@@ -540,6 +552,7 @@ def json_schema_to_pydantic_type(
     falls back to simple type mapping for primitive types.
 
     :param json_schema: The JSON schema to convert (can be dict or boolean).
+    :param root_schema: Full schema document used to resolve nested local references.
     :return: A Pydantic type.
     """
     # Handle boolean schemas (JSON Schema draft-06+)
@@ -552,10 +565,18 @@ def json_schema_to_pydantic_type(
     # Pre-filter boolean schemas from combiners
     filtered_schema = _filter_boolean_schemas(json_schema)
     filtered_schema = _resolve_unsatisfiable_references(filtered_schema)
-    return _filtered_schema_to_pydantic_type(filtered_schema)
+    document_root = root_schema if root_schema is not None else json_schema
+    return _filtered_schema_to_pydantic_type(
+        filtered_schema,
+        root_schema=document_root,
+    )
 
 
-def _filtered_schema_to_pydantic_type(schema: t.Any) -> t.Type[t.Any]:
+def _filtered_schema_to_pydantic_type(
+    schema: t.Any,
+    *,
+    root_schema: t.Optional[t.Dict[str, t.Any]] = None,
+) -> t.Type[t.Any]:
     """Convert a schema after boolean-schema normalization."""
     if schema is None or _is_unsatisfiable_schema(schema):
         return _UnsatisfiableSchema
@@ -565,7 +586,7 @@ def _filtered_schema_to_pydantic_type(schema: t.Any) -> t.Type[t.Any]:
         return _convert_simple_type(schema)
 
     # Use library for complex schemas (anyOf, allOf, oneOf, nested objects)
-    return _convert_with_library(schema)
+    return _convert_with_library(schema, root_schema=root_schema)
 
 
 def _is_simple_primitive(schema: t.Dict[str, t.Any]) -> bool:
@@ -590,6 +611,8 @@ def _convert_simple_type(schema: t.Dict[str, t.Any]) -> t.Type[t.Any]:
 
 def _convert_object_with_unsatisfiable_properties(
     schema: t.Dict[str, t.Any],
+    *,
+    root_schema: t.Optional[t.Dict[str, t.Any]] = None,
 ) -> t.Type[t.Any]:
     """Build an object model while retaining always-rejecting properties."""
     properties = schema.get("properties", {})
@@ -622,7 +645,10 @@ def _convert_object_with_unsatisfiable_properties(
 
     field_definitions = {}
     for name, prop_schema in rejecting_properties.items():
-        annotation = _filtered_schema_to_pydantic_type(prop_schema)
+        annotation = _filtered_schema_to_pydantic_type(
+            prop_schema,
+            root_schema=root_schema,
+        )
         default = (
             ...
             if name in required
@@ -649,6 +675,8 @@ def _convert_object_with_unsatisfiable_properties(
 
 def _convert_with_library(
     schema: t.Dict[str, t.Any],
+    *,
+    root_schema: t.Optional[t.Dict[str, t.Any]] = None,
 ) -> t.Union[t.Type, t.Any]:
     """Use json-schema-to-pydantic for complex schema conversion."""
     try:
@@ -657,12 +685,15 @@ def _convert_with_library(
             any(k in schema for k in ("anyOf", "allOf", "oneOf"))
             and "type" not in schema
         ):
-            return _handle_toplevel_combiner(schema)
+            return _handle_toplevel_combiner(schema, root_schema=root_schema)
 
         # For object schemas, create model directly
         if schema.get("type") == "object":
             if _contains_unsatisfiable_schema(schema.get("properties", {})):
-                return _convert_object_with_unsatisfiable_properties(schema)
+                return _convert_object_with_unsatisfiable_properties(
+                    schema,
+                    root_schema=root_schema,
+                )
             # A property-less object with no dynamic-key constraints accepts and
             # preserves arbitrary content. Modelling it as an empty Pydantic
             # model instead silently discarded every key (issue #4064).
@@ -677,6 +708,7 @@ def _convert_with_library(
                     allow_undefined_array_items=True,
                     allow_undefined_type=True,
                 ),
+                root_schema=root_schema,
             )
 
         # For array schemas
@@ -685,7 +717,10 @@ def _convert_with_library(
             if _is_unsatisfiable_schema(items):
                 return t.List[_UnsatisfiableSchema]  # type: ignore[return-value]
             if items:
-                item_type = _filtered_schema_to_pydantic_type(items)
+                item_type = _filtered_schema_to_pydantic_type(
+                    items,
+                    root_schema=root_schema,
+                )
                 return t.List[t.cast(t.Type, item_type)]  # type: ignore
             return t.List
 
@@ -704,6 +739,8 @@ def _convert_with_library(
 
 def _handle_toplevel_combiner(
     schema: t.Dict[str, t.Any],
+    *,
+    root_schema: t.Optional[t.Dict[str, t.Any]] = None,
 ) -> t.Union[t.Type, t.Any]:
     """
     Handle top-level combiner schemas (anyOf, allOf, oneOf without "type").
@@ -730,23 +767,30 @@ def _handle_toplevel_combiner(
     # Fallback: manually build union type for anyOf/oneOf
     if "anyOf" in schema or "oneOf" in schema:
         options = schema.get("anyOf", schema.get("oneOf", []))
-        return _build_union_from_options(options)
+        return _build_union_from_options(options, root_schema=root_schema)
 
     # Fallback: use first option for allOf
     if "allOf" in schema and schema["allOf"]:
-        return json_schema_to_pydantic_type(schema["allOf"][0])
+        return json_schema_to_pydantic_type(
+            schema["allOf"][0],
+            root_schema=root_schema,
+        )
 
     return t.Any
 
 
-def _build_union_from_options(options: t.List[t.Dict[str, t.Any]]) -> t.Type:
+def _build_union_from_options(
+    options: t.List[t.Dict[str, t.Any]],
+    *,
+    root_schema: t.Optional[t.Dict[str, t.Any]] = None,
+) -> t.Type:
     """Build a Union type from a list of schema options."""
     pydantic_types = []
     null_type = PYDANTIC_TYPE_TO_PYTHON_TYPE.get("null")
     has_null = False
 
     for option in options:
-        ptype = json_schema_to_pydantic_type(option)
+        ptype = json_schema_to_pydantic_type(option, root_schema=root_schema)
         if ptype is None:
             continue
         if ptype == null_type or ptype is type(None):

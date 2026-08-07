@@ -1802,6 +1802,26 @@ class TestSharedObjectCorpusThroughJsonSchemaToModel:
         with pytest.raises(ValidationError):
             model.model_validate({"count_a": 0})
 
+    def test_nested_dynamic_schema_resolves_against_document_root(self) -> None:
+        schema = {
+            "$defs": {"positive": {"type": "integer", "minimum": 1}},
+            "type": "object",
+            "properties": {
+                "payload": {
+                    "type": "object",
+                    "patternProperties": {"^count_": {"$ref": "#/$defs/positive"}},
+                    "additionalProperties": False,
+                }
+            },
+            "required": ["payload"],
+        }
+        model = json_schema_to_model(schema)
+
+        result = model.model_validate({"payload": {"count_a": 1}})
+        assert result.model_dump() == {"payload": {"count_a": 1}}
+        with pytest.raises(ValidationError):
+            model.model_validate({"payload": {"count_a": 0}})
+
     def test_dynamic_schema_materialization_cannot_reject_valid_input(self) -> None:
         schema = {
             "type": "object",
