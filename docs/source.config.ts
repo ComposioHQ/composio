@@ -23,6 +23,8 @@ const docsSchema = frontmatterSchema.extend({
   isNew: z.boolean().optional(),
   /** When true, the page shows a "Legacy" badge at the top of the page. */
   legacy: z.boolean().optional(),
+  /** When false, the page stays searchable and linkable but is omitted from the sidebar. */
+  sidebar: z.boolean().optional(),
   /** Human-readable date the page/guide was written (e.g. "December 2025").
    *  Renders a "Written <date>" stamp at the top of the page, independent of the
    *  `legacy` flag, so time-sensitive guides carry their own date whether or not

@@ -1,6 +1,6 @@
 {
   "title": "Sandboxes",
-  "defaultOpen": true,
+  "defaultOpen": false,
   "pages": [
     "remote",
     "local"

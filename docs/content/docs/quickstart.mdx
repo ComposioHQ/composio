@@ -4,11 +4,7 @@ description: Build a Python agent that uses Composio to take its first action
 keywords: [tutorial, setup, first agent, python, openai agents]
 ---
 
-Build a Python agent that uses Composio to star a GitHub repository. The first run connects your GitHub account, and the second completes the action.
-
-<Callout type="info" title="Default path">
-This guide uses Python, `uv`, and OpenAI Agents. Finish this path before choosing another language, framework, or MCP. Those options are linked at the end.
-</Callout>
+Build a Python agent that stars a GitHub repository. Composio gives the agent the tools it needs and handles the GitHub connection.
 
 ## Prerequisites
 
@@ -85,11 +81,7 @@ agent = Agent(
 
 result = Runner.run_sync(
     starting_agent=agent,
-    input=(
-        "Star the composiohq/composio repository on GitHub. "
-        "When the repository is starred, respond exactly with "
-        "'Composio quickstart complete.'"
-    ),
+    input="Star the composiohq/composio repository on GitHub.",
 )
 
 print(result.final_output)
@@ -109,19 +101,13 @@ If GitHub is not connected for `quickstart-user`, the agent returns a Connect Li
 uv run main.py
 ```
 
-Composio stores the connection under `quickstart-user`, so the second session can reuse it. If GitHub was already connected for this ID, the first run can complete the action.
+Composio stores the connection under `quickstart-user`, so the next run can reuse it. If GitHub is already connected for this ID, the action can complete immediately.
 
 </Step>
 <Step>
 <StepTitle>Confirm the result</StepTitle>
 
-The terminal should end with:
-
-```text
-Composio quickstart complete.
-```
-
-Confirm that **Starred** is selected on the [`ComposioHQ/composio` repository](https://github.com/ComposioHQ/composio). To inspect the tool request, response, and timing, use the [Logs API](/reference/api-reference/logs).
+The agent should confirm that it starred the repository. You can also check that **Starred** is selected on the [`ComposioHQ/composio` repository](https://github.com/ComposioHQ/composio). To inspect the tool request, response, and timing, use the [Logs API](/reference/api-reference/logs).
 
 </Step>
 </Steps>
@@ -136,9 +122,9 @@ Confirm that **Starred** is selected on the [`ComposioHQ/composio` repository](h
 `quickstart-user` is only for this local example. In your application, pass the signed-in user's stable database ID so every person's connections and tool calls stay isolated.
 </Callout>
 
-## Choose another path
+## Try a different setup
 
-Once the Python example works, choose the integration that matches your application:
+Want to use another framework or connect Composio through MCP? Start here:
 
 <Cards>
   <Card title="OpenAI provider" href="/docs/providers/openai" description="Use TypeScript, the Responses API, or Chat Completions." />

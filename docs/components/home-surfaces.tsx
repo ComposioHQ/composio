@@ -15,7 +15,7 @@ export function HomeSurfaces() {
     <section className="not-prose mb-14">
       <SectionHeading
         eyebrow="Get started"
-        title="Choose how you want to use Composio."
+        title="Two ways to start"
       />
       <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
         {HOME_INTENTS.map(intent => (

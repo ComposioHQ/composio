@@ -14,7 +14,7 @@ describe('Quickstart default path', () => {
       '<StepTitle>Create the agent</StepTitle>',
       '<StepTitle>Run the agent</StepTitle>',
       '<StepTitle>Confirm the result</StepTitle>',
-      '## Choose another path',
+      '## Try a different setup',
     ];
     const positions = milestones.map(milestone => content.indexOf(milestone));
 
@@ -22,6 +22,8 @@ describe('Quickstart default path', () => {
     expect([...positions].sort((a, b) => a - b)).toEqual(positions);
     expect(content).not.toContain('<QuickstartFlow>');
     expect(content).not.toContain('<FrameworkOption');
+    expect(content).not.toContain('Finish this path');
+    expect(content).not.toContain('respond exactly');
   });
 
   test('includes runnable setup, connection recovery, and success checks', async () => {
@@ -35,7 +37,7 @@ describe('Quickstart default path', () => {
     expect(content).toContain('composio.create(user_id="quickstart-user")');
     expect(content).toContain('uv run main.py');
     expect(content).toContain('the agent returns a Connect Link');
-    expect(content).toContain('Composio quickstart complete.');
+    expect(content).toContain('The agent should confirm that it starred the repository.');
     expect(content).toContain('[Logs API](/reference/api-reference/logs)');
   });
 });

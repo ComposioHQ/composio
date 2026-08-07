@@ -1,6 +1,9 @@
 import { source, examplesSource, referenceSource, toolkitsSource } from '@/lib/source';
 import { detectReferenceApiVersion } from '@/lib/api-version';
-import { collectDefaultLlmExcludedUrls } from '@/lib/llm-page-policy';
+import {
+  collectDefaultLlmExcludedUrls,
+  collectSidebarHiddenLlmUrls,
+} from '@/lib/llm-page-policy';
 import type { ReactNode } from 'react';
 
 export const revalidate = false;
@@ -129,8 +132,12 @@ function partitionByApiVersion<T extends { url: string }>(pages: T[]) {
 
 export async function GET() {
   try {
-    const excludedUrls = collectDefaultLlmExcludedUrls(source.getPages());
+    const docsPages = source.getPages();
+    const excludedUrls = collectDefaultLlmExcludedUrls(docsPages);
     const docsTree = walkPageTree(source.pageTree.children as TreeNode[], excludedUrls);
+    const detailedGuides = collectSidebarHiddenLlmUrls(docsPages)
+      .map(url => formatPage({ url }))
+      .join('\n');
 
     const examplesPages = examplesSource.getPages();
     const toolkitsPages = toolkitsSource.getPages();
@@ -156,6 +163,10 @@ ${legacyReferencePages.map(formatPage).join('\n')}
 > **For AI agents:** Give your agent tools it can call directly with \`composio.create(user_id)\` + \`session.tools()\` and a provider package (e.g. \`composio_openai\`, \`@composio/openai\`). To connect over MCP instead, create the session with \`mcp: true\` and read \`session.mcp.url\` from any MCP-compatible client. See any page's .md endpoint for full usage instructions.
 
 ${docsTree}
+
+## Detailed guides
+
+${detailedGuides}
 
 ## Examples
 

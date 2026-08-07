@@ -7,6 +7,7 @@
 import { describe, test, expect } from "bun:test";
 import { readdir, readFile, stat } from "fs/promises";
 import { join, basename, dirname, relative } from "path";
+import { HOME_INTENTS } from "../../lib/home-navigation";
 
 const CONTENT_DIR = join(import.meta.dir, "../../content/docs");
 
@@ -31,6 +32,22 @@ async function findMetaFiles(dir: string): Promise<string[]> {
   return results;
 }
 
+/** Recursively find authored MDX pages under a directory. */
+async function findMdxFiles(dir: string): Promise<string[]> {
+  const results: string[] = [];
+  const entries = await readdir(dir, { withFileTypes: true });
+
+  for (const entry of entries) {
+    const fullPath = join(dir, entry.name);
+    if (entry.isDirectory()) {
+      results.push(...(await findMdxFiles(fullPath)));
+    } else if (entry.name.endsWith(".mdx")) {
+      results.push(fullPath);
+    }
+  }
+  return results;
+}
+
 /** Check if a path exists as a file or directory */
 async function exists(path: string): Promise<boolean> {
   try {
@@ -41,17 +58,30 @@ async function exists(path: string): Promise<boolean> {
   }
 }
 
+/** Pages can opt out of the sidebar when a visible hub links to them. */
+async function isHiddenFromSidebar(path: string): Promise<boolean> {
+  if (!path.endsWith('.mdx')) return false;
+  const content = await readFile(path, 'utf-8');
+  const frontmatter = content.match(/^---\n([\s\S]*?)\n---/)?.[1] ?? '';
+  return /^sidebar:\s*false\s*$/m.test(frontmatter);
+}
+
 describe("Navigation - meta.json validity", () => {
-  test("root navigation exposes the approved Get Started and Guides modes", async () => {
+  test("root navigation uses progressive Start, Core concepts, and Guides sections", async () => {
     const metaPath = join(CONTENT_DIR, "meta.json");
     const meta = JSON.parse(await readFile(metaPath, "utf-8"));
     const pages = meta.pages as string[];
     const separators = pages.filter(isSeparator);
 
-    expect(separators).toEqual(["---Get Started---", "---Guides---"]);
+    expect(separators).toEqual([
+      "---Get Started---",
+      "---Core concepts---",
+      "---Guides---",
+    ]);
 
+    const coreIndex = pages.indexOf("---Core concepts---");
     const guidesIndex = pages.indexOf("---Guides---");
-    const getStartedPages = pages.slice(1, guidesIndex);
+    const getStartedPages = pages.slice(1, coreIndex);
     expect(getStartedPages).toEqual([
       "index",
       "quickstart",
@@ -59,7 +89,24 @@ describe("Navigation - meta.json validity", () => {
       "sessions-via-mcp",
       "composio-connect",
       "cli",
-      "claude-code-plugin",
+    ]);
+
+    expect(pages.slice(coreIndex + 1, guidesIndex)).toEqual([
+      "how-composio-works",
+      "configuring-sessions",
+      "authentication",
+      "triggers",
+    ]);
+
+    expect(pages.slice(guidesIndex + 1)).toEqual([
+      "sandbox",
+      "extending-sessions",
+      "setting-up-triggers",
+      "sessions-vs-direct-execution",
+      "tools-direct",
+      "auth-configuration",
+      "migration-guide",
+      "security",
     ]);
   });
 
@@ -135,6 +182,7 @@ describe("Navigation - meta.json validity", () => {
       const name = file.isFile() ? basename(file.name, ".mdx") : file.name;
       if (file.isFile() && !file.name.endsWith(".mdx")) continue;
       if (!rootEntries.has(name)) {
+        if (await isHiddenFromSidebar(join(CONTENT_DIR, file.name))) continue;
         orphans.push(`docs/${file.name}`);
       }
     }
@@ -158,6 +206,7 @@ describe("Navigation - meta.json validity", () => {
         const name = file.isFile() ? basename(file.name, ".mdx") : file.name;
         if (file.isFile() && !file.name.endsWith(".mdx")) continue;
         if (!entries.has(name)) {
+          if (await isHiddenFromSidebar(join(dir, file.name))) continue;
           orphans.push(`${relDir}/${file.name}`);
         }
       }
@@ -170,7 +219,33 @@ describe("Navigation - meta.json validity", () => {
       );
     }
     // The single-toolkit MCP page stays deliberately deferred until its
-    // product status is resolved. Every other authored page is navigable.
+    // product status is resolved. Other pages outside the sidebar opt out in
+    // frontmatter and remain reachable from a visible hub.
     expect(orphans.sort()).toEqual(["docs/single-toolkit-mcp.mdx"]);
+  });
+
+  test("pages hidden from the sidebar remain linked from visible content", async () => {
+    const mdxFiles = await findMdxFiles(CONTENT_DIR);
+    const linkedRoutes = new Set(
+      HOME_INTENTS.flatMap((intent) => intent.links.map((link) => link.href)),
+    );
+    const hiddenRoutes: string[] = [];
+
+    for (const file of mdxFiles) {
+      const content = await readFile(file, "utf-8");
+      for (const match of content.matchAll(/(?:\]\(|href=")(?<href>\/docs\/[A-Za-z0-9/_-]+)/g)) {
+        linkedRoutes.add(match.groups!.href);
+      }
+
+      if (await isHiddenFromSidebar(file)) {
+        const route = relative(CONTENT_DIR, file)
+          .replace(/\.mdx$/, "")
+          .replace(/\/index$/, "");
+        hiddenRoutes.push(`/docs/${route}`);
+      }
+    }
+
+    expect(hiddenRoutes.length).toBeGreaterThan(0);
+    expect(hiddenRoutes.filter((route) => !linkedRoutes.has(route))).toEqual([]);
   });
 });
