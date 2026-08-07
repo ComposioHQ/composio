@@ -1,7 +1,7 @@
 import { openai } from '@ai-sdk/openai';
 import { createMCPClient } from '@ai-sdk/mcp';
 import { Composio } from '@composio/core';
-import { stepCountIs, streamText } from 'ai';
+import { stepCountIs, streamText, type ToolSet } from 'ai';
 import ora from 'ora';
 
 const composio = new Composio();
@@ -30,6 +30,11 @@ const client = await createMCPClient({
 const tools = await client.tools();
 mcpProgress.succeed(`${Object.values(tools).length} tools retrieved from MCP`);
 
+// @ai-sdk/mcp and ai can resolve different patch versions of provider-utils.
+// Their runtime tool shape is compatible, but TypeScript treats the schema
+// types from those package copies as distinct.
+const streamTools = tools as ToolSet;
+
 console.log(`🤖 Waiting for agent response...`);
 const stream = await streamText({
   model: openai('gpt-4o-mini'),
@@ -42,7 +47,7 @@ const stream = await streamText({
       }
     }
   },
-  tools,
+  tools: streamTools,
 });
 
 for await (const textPart of stream.textStream) {

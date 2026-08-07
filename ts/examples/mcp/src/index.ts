@@ -3,7 +3,7 @@ import { openai } from '@ai-sdk/openai';
 import { Composio } from '@composio/core';
 import { VercelProvider } from '@composio/vercel';
 import { SSEClientTransport } from '@modelcontextprotocol/sdk/client/sse.js';
-import { stepCountIs, streamText } from 'ai';
+import { stepCountIs, streamText, type ToolSet } from 'ai';
 import 'dotenv/config';
 
 // 1. Initialize Composio.
@@ -41,6 +41,11 @@ const mcpClient = await createMCPClient({
 // 5. Retrieve tools.
 const tools = await mcpClient.tools();
 
+// @ai-sdk/mcp and ai can resolve different patch versions of provider-utils.
+// Their runtime tool shape is compatible, but TypeScript treats the schema
+// types from those package copies as distinct.
+const streamTools = tools as ToolSet;
+
 // 6. Pass tools to Vercel-specific Agent.
 const stream = streamText({
   model: openai('gpt-4o-mini'),
@@ -51,7 +56,7 @@ const stream = streamText({
     },
   ],
   stopWhen: stepCountIs(5),
-  tools,
+  tools: streamTools,
 });
 
 // 7. Execute the Vercel AI-specific Agent.
