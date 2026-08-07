@@ -79,7 +79,7 @@
     "@composio/core": "workspace:*",
     "@composio/openai": "workspace:*",
     "@types/bun": "catalog:",
-    "@types/node": "catalog:",
+    "@types/node": "^26.1.2",
     "@vitest/ui": "catalog:",
     "husky": "^9.1.7",
     "lint-staged": "^17.3.0",
