@@ -824,7 +824,7 @@ export class Tools<
     tools: Tool[],
     modifiers?: ExecuteToolModifiers
   ): ReturnType<T['wrapTools']> {
-    const executeToolFn = this.createExecuteToolFn(userId, modifiers);
+    const executeToolFn = this.createExecuteToolFn(userId, tools, modifiers);
     return this.provider.wrapTools(tools, executeToolFn) as ReturnType<T['wrapTools']>;
   }
 
@@ -853,22 +853,28 @@ export class Tools<
    * This function is used by agentic providers to execute the tool
    *
    * @param {string} userId - The user id
+   * @param {Tool[]} tools - The fetched tools available to the provider
    * @param {ExecuteToolModifiers} modifiers - The modifiers to be applied to the tool
    * @returns {ExecuteToolFn} The execute tool function
    */
-  private createExecuteToolFn(userId: string, modifiers?: ExecuteToolModifiers): ExecuteToolFn {
+  private createExecuteToolFn(
+    userId: string,
+    tools: Tool[],
+    modifiers?: ExecuteToolModifiers
+  ): ExecuteToolFn {
+    const toolBySlug = new Map(tools.map(tool => [tool.slug.toUpperCase(), tool]));
     const executeToolFn = async (toolSlug: string, input: Record<string, unknown>) => {
-      return await this.execute(
-        toolSlug,
-        {
-          userId,
-          arguments: input,
-          // dangerously skip version check for agentic tool execution via providers
-          // this can be safe because most agentic flows users fetch latest version and then execute the tool
-          dangerouslySkipVersionCheck: true,
-        },
-        modifiers
-      );
+      const body: ToolExecuteParams = {
+        userId,
+        arguments: input,
+        // dangerously skip version check for agentic tool execution via providers
+        // this can be safe because most agentic flows users fetch latest version and then execute the tool
+        dangerouslySkipVersionCheck: true,
+      };
+      const tool = toolBySlug.get(toolSlug.toUpperCase());
+      return tool
+        ? this.executeWithTool(toolSlug, body, modifiers, tool)
+        : this.execute(toolSlug, body, modifiers);
     };
     return executeToolFn;
   }
@@ -961,6 +967,51 @@ export class Tools<
     }
   }
 
+  private async executeWithTool(
+    slug: string,
+    body: ToolExecuteParams,
+    options: (ExecuteToolModifiers & ComposioRequestOptions) | undefined,
+    tool: Tool
+  ): Promise<ToolExecuteResponse> {
+    const executeParams = ToolExecuteParamsSchema.safeParse(body);
+    if (!executeParams.success) {
+      throw new ValidationError('Invalid tool execute parameters', { cause: executeParams.error });
+    }
+
+    const requestOptions: ComposioRequestOptions | undefined =
+      options?.signal != null ? { signal: options.signal } : undefined;
+    const { signal: _, ...modifiers } = options ?? {};
+    const toolkitSlug = tool.toolkit?.slug ?? 'unknown';
+
+    // Apply before execute modifiers
+    const params = await this.applyBeforeExecuteModifiers(
+      tool,
+      {
+        toolSlug: slug,
+        toolkitSlug,
+        params: executeParams.data,
+      },
+      modifiers as ExecuteToolModifiers,
+      requestOptions
+    );
+
+    let result = await this.executeComposioTool(tool, params, requestOptions);
+
+    // Apply after execute modifiers
+    result = await this.applyAfterExecuteModifiers(
+      tool,
+      {
+        toolSlug: slug,
+        toolkitSlug,
+        result,
+      },
+      (modifiers as ExecuteToolModifiers).afterExecute,
+      requestOptions
+    );
+
+    return result;
+  }
+
   /**
    * Executes a given tool with the provided parameters.
    *
@@ -1051,46 +1102,14 @@ export class Tools<
       throw new ValidationError('Invalid tool execute parameters', { cause: executeParams.error });
     }
 
-    const requestOptions: ComposioRequestOptions | undefined =
-      options?.signal != null ? { signal: options.signal } : undefined;
-    const { signal: _, ...modifiers } = options ?? {};
-
     const tool = await this.getRawComposioToolBySlug(
       slug,
       {
         version: body.version,
       },
-      requestOptions
+      options?.signal != null ? { signal: options.signal } : undefined
     );
-    const toolkitSlug = tool.toolkit?.slug ?? 'unknown';
-
-    // Apply before execute modifiers
-    const params = await this.applyBeforeExecuteModifiers(
-      tool,
-      {
-        toolSlug: slug,
-        toolkitSlug,
-        params: executeParams.data,
-      },
-      modifiers as ExecuteToolModifiers,
-      requestOptions
-    );
-
-    let result = await this.executeComposioTool(tool, params, requestOptions);
-
-    // Apply after execute modifiers
-    result = await this.applyAfterExecuteModifiers(
-      tool,
-      {
-        toolSlug: slug,
-        toolkitSlug,
-        result,
-      },
-      (modifiers as ExecuteToolModifiers).afterExecute,
-      requestOptions
-    );
-
-    return result;
+    return this.executeWithTool(slug, body, options, tool);
   }
 
   /**

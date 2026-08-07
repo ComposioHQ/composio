@@ -2419,6 +2419,36 @@ describe('Tools', () => {
           undefined
         );
       });
+
+      it('should reuse the fetched tool schema during agentic execution', async () => {
+        const context = createTestContext();
+        const userId = 'test-user';
+        const toolSlug = 'GITHUB_CREATE_ISSUE';
+        const fetchedTool = {
+          ...toolMocks.transformedTool,
+          slug: toolSlug,
+          toolkit: { slug: 'github', name: 'GitHub' },
+        } as unknown as Tool;
+        const getRawComposioToolBySlugSpy = vi
+          .spyOn(context.tools, 'getRawComposioToolBySlug')
+          .mockResolvedValueOnce(fetchedTool);
+        let storedExecuteToolFn: ExecuteToolFn | undefined;
+
+        context.mockProvider.wrapTools.mockImplementation((_tools, executeToolFn) => {
+          storedExecuteToolFn = executeToolFn;
+          return 'wrapped-tools-collection';
+        });
+
+        await context.tools.get(userId, toolSlug);
+        mockClient.tools.execute.mockResolvedValueOnce(toolMocks.rawToolExecuteResponse);
+
+        const result = await storedExecuteToolFn!(toolSlug, { title: 'Test Issue' });
+
+        expect(result).toEqual(toolMocks.toolExecuteResponse);
+        expect(getRawComposioToolBySlugSpy).toHaveBeenCalledTimes(1);
+        expect(mockClient.tools.retrieve).not.toHaveBeenCalled();
+        expect(mockClient.tools.execute).toHaveBeenCalledTimes(1);
+      });
     });
   });
 });
