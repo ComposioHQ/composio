@@ -315,7 +315,7 @@ function contentFor(
   const found = readPageByUrl(page.url);
 
   if (found) {
-    const markdown = toCleanMarkdown(found.raw);
+    const markdown = toCleanMarkdown(found.raw, page.url);
     const evidence = excerpt(markdown, terms, maxContentChars);
 
     return {

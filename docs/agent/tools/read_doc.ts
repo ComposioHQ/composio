@@ -21,7 +21,7 @@ export default defineTool({
     const clean = url.split('#')[0].split('?')[0].replace(/\/$/, '');
     const page = readPageByUrl(url);
     if (page) {
-      const markdown = toCleanMarkdown(page.raw);
+      const markdown = toCleanMarkdown(page.raw, clean);
       const truncated = markdown.length > MAX_CHARS;
       return {
         found: true,

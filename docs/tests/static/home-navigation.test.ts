@@ -41,6 +41,7 @@ describe('Welcome navigation', () => {
     }
 
     expect(replaceHomeNavigationMarkdown('<HomeSurfaces />')).toBe(markdown);
+    expect(markdown).not.toContain('<HomeSurfaces');
     expect(markdown.toLowerCase()).not.toContain('skills');
     expect(markdown).toContain('native Composio plugin for Codex or Claude Code');
   });

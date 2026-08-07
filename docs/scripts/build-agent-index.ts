@@ -21,7 +21,7 @@
  */
 import { existsSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join, relative } from 'node:path';
-import { replaceHomeNavigationMarkdown } from '../lib/home-navigation';
+import { homeIntentsToMarkdown } from '../lib/home-navigation';
 
 const ROOT = process.cwd();
 const CONTENT = join(ROOT, 'content');
@@ -153,7 +153,7 @@ function toPlainText(body: string): string {
 
 function toCleanMarkdown(raw: string): string {
   const { body } = parseFrontmatter(raw);
-  return replaceHomeNavigationMarkdown(body)
+  return body
     .replace(/<\/?[A-Za-z][A-Za-z0-9.]*(\s[^>]*)?\/?>/g, '')
     .replace(/\n{3,}/g, '\n\n')
     .trim();
@@ -315,7 +315,7 @@ for (const collection of COLLECTIONS) {
       title: title || url,
       description,
       legacy: legacy || isLegacyUrl(url),
-      markdown: toCleanMarkdown(raw),
+      markdown: url === '/docs' ? homeIntentsToMarkdown() : toCleanMarkdown(raw),
     });
   }
 }
