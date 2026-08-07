@@ -80,19 +80,26 @@ response = client.responses.create(
     ]
 )
 
-# Agentic loop: keep executing tool calls until the model responds with text
+# Agentic loop: keep executing tool calls until the model responds with text.
+# Session tools MUST be executed through session.execute() — it routes the call
+# through your session's tool router. Provider tool-call helpers use the
+# direct path instead, so session meta-tools fail through them with
+# "can only be called inside a tool-router session".
 while True:
     tool_calls = [o for o in response.output if o.type == "function_call"]
     if not tool_calls:
         break
-    results = composio.provider.handle_tool_calls(response=response, user_id="user_123")
     response = client.responses.create(
         model="gpt-5.2",
         tools=tools,
         previous_response_id=response.id,
         input=[
-            {"type": "function_call_output", "call_id": tool_calls[i].call_id, "output": json.dumps(result)}
-            for i, result in enumerate(results)
+            {
+                "type": "function_call_output",
+                "call_id": call.call_id,
+                "output": session.execute(call.name, arguments=json.loads(call.arguments)).model_dump_json(),
+            }
+            for call in tool_calls
         ]
     )
 
@@ -128,21 +135,29 @@ let response = await client.responses.create({
     ],
 });
 
-// Agentic loop: keep executing tool calls until the model responds with text
+// Agentic loop: keep executing tool calls until the model responds with text.
+// Session tools MUST be executed through session.execute() — it routes the call
+// through your session's tool router. Provider tool-call helpers use the
+// direct path instead, so session meta-tools fail through them with
+// "can only be called inside a tool-router session".
 while (true) {
     const toolCalls = response.output.filter((o) => o.type === "function_call");
     if (toolCalls.length === 0) break;
 
-    const results = await composio.provider.handleToolCalls("user_123", response.output);
+    const outputs = [];
+    for (const call of toolCalls) {
+        const result = await session.execute(call.name, JSON.parse(call.arguments));
+        outputs.push({
+            type: "function_call_output" as const,
+            call_id: call.call_id,
+            output: JSON.stringify(result),
+        });
+    }
     response = await client.responses.create({
         model: "gpt-5.2",
         tools: tools,
         previous_response_id: response.id,
-        input: results.map((result, i) => ({
-            type: "function_call_output" as const,
-            call_id: toolCalls[i].call_id,
-            output: JSON.stringify(result),
-        })),
+        input: outputs,
     });
 }
 
@@ -223,15 +238,16 @@ response = client.chat.completions.create(
     messages=messages,
 )
 
-# Agentic loop: keep executing tool calls until the model responds with text
+# Agentic loop: keep executing tool calls until the model responds with text.
+# Session tools MUST be executed through session.execute() — see the callout below.
 while response.choices[0].message.tool_calls:
-    results = composio.provider.handle_tool_calls(response=response, user_id="user_123")
     messages.append(response.choices[0].message)
-    for i, tc in enumerate(response.choices[0].message.tool_calls):
+    for tc in response.choices[0].message.tool_calls:
+        result = session.execute(tc.function.name, arguments=json.loads(tc.function.arguments))
         messages.append({
             "role": "tool",
             "tool_call_id": tc.id,
-            "content": json.dumps(results[i]),
+            "content": result.model_dump_json(),
         })
     response = client.chat.completions.create(
         model="gpt-5.2",
@@ -270,15 +286,16 @@ let response = await client.chat.completions.create({
     messages: messages,
 });
 
-// Agentic loop: keep executing tool calls until the model responds with text
+// Agentic loop: keep executing tool calls until the model responds with text.
+// Session tools MUST be executed through session.execute() — see the callout below.
 while (response.choices[0].message.tool_calls) {
-    const results = await composio.provider.handleToolCalls("user_123", response);
     messages.push(response.choices[0].message);
-    for (const [i, tc] of response.choices[0].message.tool_calls.entries()) {
+    for (const tc of response.choices[0].message.tool_calls) {
+        const result = await session.execute(tc.function.name, JSON.parse(tc.function.arguments));
         messages.push({
             role: "tool",
             tool_call_id: tc.id,
-            content: JSON.stringify(results[i]),
+            content: JSON.stringify(result),
         });
     }
     response = await client.chat.completions.create({
@@ -400,9 +417,13 @@ console.log(result.finalOutput);
 
 The OpenAI integration ships three providers, one per API surface:
 
-- **`OpenAIResponsesProvider`** for the Responses API. `handleToolCalls` executes the tool calls and returns `function_call_output` items keyed by `call_id`. You pair it with `previous_response_id` so you only resend new outputs each turn.
+- **`OpenAIResponsesProvider`** for the Responses API. You execute each `function_call` with `session.execute()` and return `function_call_output` items keyed by `call_id`, paired with `previous_response_id` so you only resend new outputs each turn.
 - **`OpenAIProvider`** for the Chat Completions API. This is the SDK default, so `new Composio()` with no provider uses it. You keep the full message list and append each assistant message plus its `tool` results yourself.
-- **`OpenAIAgentsProvider`** for the Agents SDK. Tools come with execution wired in, so the SDK runs the loop and you do not call `handleToolCalls` at all.
+- **`OpenAIAgentsProvider`** for the Agents SDK. Tools come with execution wired in, so the SDK runs the loop for you.
+
+<Callout type="warn">
+Execute session tools with `session.execute(toolSlug, arguments)`, as shown above. The provider's `handleToolCalls` helper executes tools through the direct path, which does not carry your session — session meta-tools (`COMPOSIO_SEARCH_TOOLS`, `COMPOSIO_MANAGE_CONNECTIONS`, …) are rejected there with `"can only be called inside a tool-router session"`. Use `handleToolCalls` only with tools fetched via [`tools.get`](/docs/tools-direct/executing-tools), not with `session.tools()`.
+</Callout>
 
 Use the Responses or Agents provider for new agentic flows; reach for Chat Completions when you are extending an existing Chat Completions codebase.
 
