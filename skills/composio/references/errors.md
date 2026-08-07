@@ -2,9 +2,11 @@
 
 These rules apply to both Composio products.
 
-## Start with the log ID
+## Start in Dashboard Logs
 
-Get the Composio log ID or request ID before diagnosing a failure. Framework wrappers often hide the underlying error.
+Open the applicable product's Dashboard Logs first and use the Composio log ID or request ID to inspect the exact execution. Framework wrappers often hide the underlying error.
+
+CLI diagnostics are optional. Use them only when the CLI is already installed and configured for the applicable product:
 
 ```bash
 composio dev logs tools
@@ -22,7 +24,19 @@ For manual legacy v3 execution, a missing tool is often a toolkit-version proble
 
 ## Authentication failures
 
-A 401 generally means the provider token was revoked, expired, or invalidated by a password, 2FA, or administrator-policy change. Reconnect the account and retry.
+Identify which boundary returned the 401 before changing anything.
+
+### Composio API or session 401
+
+This failure happens while creating or using a session, before a provider tool call succeeds. The project credential may be invalid, masked, a placeholder, or for the wrong dashboard project.
+
+Stop and re-run the no-output `COMPOSIO_API_KEY` preflight from the Platform guide. Do not print, rotate, replace, or request the key in chat. Direct the developer to Platform → project → Getting Started → Step 1 when the repository does not have the correct unmasked project credential. The next SDK request, not key length, validates it over the network.
+
+### Provider tool-call 401
+
+This failure appears on a real tool execution in Dashboard Logs, usually with a Composio log ID. The Composio project credential and session reached the provider, but the selected user's connected-account credential was revoked, expired, or invalidated by a password, 2FA, consent, or administrator-policy change.
+
+Keep the same project key and user ID. Generate a fresh Connect Link for that integration, reconnect the account, and retry the safe read-only call. Do not replace the Composio project credential.
 
 If an authorization link expired, request a new one. Do not reuse it.
 

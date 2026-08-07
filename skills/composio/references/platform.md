@@ -16,43 +16,23 @@ Before choosing packages or generating files, identify:
 
 Extend the existing architecture. Do not create a separate demo agent when the repository already has one.
 
-## 2. Authenticate the project
+## 2. Require the existing project credential
 
-Run from the project directory. Install the CLI when it is missing; upgrade it
-first when an installed CLI reports that a newer version is available:
+The dashboard Getting Started Step 1 supplies the one project credential as `COMPOSIO_API_KEY=ak_*`. Use that credential from `.env.local`, the current process environment, or the repository's existing secret mechanism.
 
-```bash
-curl -fsSL https://composio.dev/install | bash
-composio dev init
-```
+Platform onboarding never creates, rotates, or replaces an API key. Never print the value, place it in a command or URL, copy it to another file unnecessarily, or ask the developer to paste it into chat. The key already identifies the dashboard project; do not select or bind a project separately.
 
-`composio dev init` logs in when needed, binds the directory to the selected Composio project, and provisions `COMPOSIO_API_KEY` in `.env.local`. If developer mode is off, run `composio dev --mode on` first. When the agent cannot open a browser, use `composio dev init --no-browser` and give the returned URL to the user.
+Complete this preflight before installing packages or changing application code:
 
-Before opening the initializer, run `composio dev projects list` and confirm the
-exact project is visible. Do this only when initialization is still required; do
-not repeat the online project-list check after a local binding already exists. If
-the project is missing, stop and ask the developer to sign in to the account or
-organization that owns it. Do not accept the selector's default project.
-`--no-browser` changes the login step; project selection is still interactive.
+1. Find how the repository already loads environment variables or secrets.
+2. Check for `COMPOSIO_API_KEY` without opening, echoing, or logging the value.
+3. Require the value to begin with `ak_`.
+4. Reject values containing `*`, mask glyphs, ellipses, angle-bracket templates, or placeholder words such as `example`, `placeholder`, `replace`, or `your_key`.
+5. When the credential is in a file, verify that the containing file is ignored by source control. Check the path only; never print the matching line.
 
-Select the exact project the user named. Do not use `-y` when multiple projects exist unless the current CLI project context already matches it. There is no bare `composio init` command.
+These checks catch missing, masked, or placeholder values. They do not prove that a key is authentic, and key length is not validation. The first SDK request is the network validation.
 
-After initialization, verify both checkpoints without printing the credential:
-
-- `.composio/project.json` names the exact selected project.
-- `.env.local` contains a plausible `COMPOSIO_API_KEY` (`ak_...`, at least 10
-  characters).
-
-Treat an HTTP error, a missing key, a shorter placeholder key, or an SDK 401 as
-incomplete setup. Perform these local checks before any SDK or network call. If
-either local checkpoint fails, stop: do not install dependencies, call the CLI or
-backend again, change application code, or claim success. Use the dashboard
-fallback to create or copy a project key, store it in `.env.local`, then retry
-the SDK call.
-
-If the developer already has a key, store it as `COMPOSIO_API_KEY`. Never print it back, place it in a URL, or commit it.
-
-Dashboard fallback: Platform → project → API Keys.
+If the credential is missing, masked, placeholder-like, or stored in a tracked file, hard stop before package installation or app-code changes. Direct the developer to Platform → project → Getting Started → Step 1, then resume only after the repository's normal secret-loading path supplies an unmasked value. Do not accept the key through chat.
 
 ## 3. Install only what the codebase needs
 
@@ -72,9 +52,11 @@ Add a provider package only when the repository's framework requires one, for ex
 
 Do not introduce a second LLM framework solely for onboarding.
 
-## 4. Create a session for the current user
+## 4. Preserve the current user identity
 
 A session is the runtime context for one user. It carries identity, connections, tool scope, and the remote sandbox.
+
+Trace the application's current authenticated user or tenant ID before creating a session. Pass that same stable ID to Composio. Do not add a parallel user system, replace an existing session model, or use one shared placeholder identity for multiple users.
 
 TypeScript:
 
@@ -82,7 +64,7 @@ TypeScript:
 import { Composio } from "@composio/core";
 
 const composio = new Composio();
-const session = await composio.sessions.create("user_123");
+const session = await composio.sessions.create(existingUserId);
 const tools = await session.tools();
 ```
 
@@ -92,11 +74,11 @@ Python:
 from composio import Composio
 
 composio = Composio()
-session = composio.sessions.create(user_id="user_123")
+session = composio.sessions.create(user_id=existing_user_id)
 tools = session.tools()
 ```
 
-Use the application's stable database ID in production. Never use a shared `default` identity for multiple users.
+Do not pass the API key inline. The SDK reads the existing `COMPOSIO_API_KEY`. If this first SDK request returns a Composio API/session 401, stop and follow [Errors and provider gotchas](errors.md); do not modify packages or application code to work around it.
 
 Create a session for an agentic run. For a multi-turn conversation, persist the returned session ID and resume it instead of creating a fresh session on every message:
 
@@ -134,12 +116,12 @@ For onboarding:
 
 1. Use the installed Composio skill and the existing agent path.
 2. Ask the developer which integration they want to try unless the repository already makes the choice clear.
-3. Let the session discover the actual toolkit and tool slug; never hard-code or guess one.
-4. If the integration is not connected, return the Connect Link, wait for authorization, and retry.
-5. Run one safe, read-only tool from the existing agent through the project selected during `composio dev init`.
-6. Capture the real result and log ID.
+3. Let the session discover the actual toolkit and tool slug for that integration; never hard-code or guess one.
+4. If the integration is not connected for the existing user ID, return the Connect Link, wait for authorization, and retry.
+5. Execute one safe, read-only tool through the existing agent.
+6. Require a real result payload and a non-empty `logId` (`log_id` in Python).
 
-The smoke test must hit Composio. A mocked response, Playground call, schema fetch, or SDK initialization does not count.
+The proof must hit Composio and the selected provider. A mock, Playground call, tool search, schema fetch, session creation, or Connect Link alone does not count as success.
 
 If the repository has no runnable agent loop, add the smallest test entrypoint compatible with its existing LLM provider. Do not require a new hosted model solely for onboarding.
 
@@ -151,20 +133,23 @@ Start with managed auth. A custom auth config is needed only for custom branding
 
 ## 8. Hand off the useful next steps
 
-After the first call succeeds, show the developer where to continue:
+After the first call succeeds, report:
 
-- Logs for the exact request, response, duration, and log ID.
-- Toolkits to discover integrations.
-- Users for stable per-user identities and connections.
-- Auth Configs when the product needs custom authentication behavior.
+- Where Composio was added in the existing codebase.
+- Which existing application identity supplies Composio's `userId`, and how the resulting session ID is persisted or resumed.
+- The integration and exact read-only tool used.
+- A safe summary of the actual result and the Composio log ID.
+- Where to continue: Platform dashboard → Logs for the request/response, Users for identity and connections, and Toolkits for integrations.
+
+Link the developer to the relevant framework guide from `https://docs.composio.dev/docs/providers` and the selected integration guide at `https://docs.composio.dev/toolkits/<toolkit>`.
 
 ## Do not
 
 - Do not stop after linking documentation.
-- Do not use a fixed GitHub starring task as the onboarding concept.
+- Do not substitute a canned integration task for the developer's choice or repository context.
 - Do not create an auth config as a prerequisite.
 - Do not guess tool or toolkit slugs.
 - Do not use direct execution for a new agent integration.
-- Do not claim success before a real programmatic tool call appears in logs.
+- Do not claim success before a real programmatic tool call returns a result and log ID.
 
 Current documentation index: `https://docs.composio.dev/llms.txt`.

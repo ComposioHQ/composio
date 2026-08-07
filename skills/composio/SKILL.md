@@ -43,16 +43,17 @@ For provider- and toolkit-level failures shared by both products, read [Errors a
 
 ## Finish the work
 
-Install the dependency, write the configuration, and run the command. Setup is not complete until one real tool call succeeds.
+Install the dependency, write the configuration, and run the existing agent path. Setup is not complete until one safe, read-only real tool call returns an actual result and log ID.
 
 ## Stable rules
 
 1. Establish which product applies before setup.
-2. Never invent a toolkit or tool slug. For Platform sessions, use `COMPOSIO_SEARCH_TOOLS`; for direct CLI work, use `composio search` and inspect with `composio execute --get-schema`.
-3. Do not build an OAuth flow. Composio supplies a Connect Link when authentication is required.
-4. Use sessions for new Platform integrations. Direct execution is a legacy migration path.
-5. Keep credentials in environment variables and out of source control.
-6. Get the log ID before diagnosing a failed tool call.
+2. For Platform, use the existing project `COMPOSIO_API_KEY` from the repository's environment or secret mechanism. Platform onboarding never creates, rotates, or replaces a key and never asks the user to paste one into chat.
+3. Never invent a toolkit or tool slug. For Platform sessions, discover tools at runtime. For direct CLI work in the For You path, use `composio search` and inspect with `composio execute --get-schema`.
+4. Do not build an OAuth flow. Composio supplies a Connect Link when authentication is required.
+5. Use sessions for new Platform integrations. Preserve the application's existing user identity mapping and agent architecture.
+6. Keep credentials out of source control, URLs, logs, chat, and command output.
+7. Get the log ID before diagnosing a failed tool call.
 
 ## Fresh information
 
