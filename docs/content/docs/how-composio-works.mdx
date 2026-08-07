@@ -77,7 +77,7 @@ When your model asks to call a session tool, execute it with `session.execute()`
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
 <Tab value="Python">
 ```python
-result = session.execute("COMPOSIO_SEARCH_TOOLS", arguments={"queries": ["send an email"]})
+result = session.execute("COMPOSIO_SEARCH_TOOLS", arguments={"queries": [{"use_case": "send an email"}]})
 ```
 </Tab>
 <Tab value="TypeScript">
@@ -86,7 +86,7 @@ import { Composio } from '@composio/core';
 const composio = new Composio({ apiKey: 'your_api_key' });
 const session = await composio.create("user_123");
 // ---cut---
-const result = await session.execute("COMPOSIO_SEARCH_TOOLS", { queries: ["send an email"] });
+const result = await session.execute("COMPOSIO_SEARCH_TOOLS", { queries: [{ use_case: "send an email" }] });
 ```
 </Tab>
 </Tabs>

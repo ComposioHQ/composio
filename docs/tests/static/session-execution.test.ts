@@ -33,7 +33,8 @@ const EXCLUDED_PATH_SEGMENTS = ["docs/migration-guide/"];
 
 const SESSION_TOKEN_RE =
   /session\.tools\s*\(|sessions\.create\s*\(|composio\.create\s*\(/;
-const HELPER_TOKEN_RE = /handle_tool_calls|handleToolCalls/;
+const HELPER_TOKEN_RE =
+  /handle_tool_calls|handleToolCalls|execute_tool_call|executeToolCall/;
 
 async function findMdxFiles(dir: string): Promise<string[]> {
   const results: string[] = [];

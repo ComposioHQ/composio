@@ -290,7 +290,7 @@ A few things are specific to the Anthropic provider:
 
 - **Tool caching.** Pass `cacheTools: true` to the constructor (`new AnthropicProvider({ cacheTools: true })`) to attach Anthropic's ephemeral `cache_control` to every tool definition and tool-result block. This lets Claude reuse cached tool schemas across requests and can cut prompt cost when you send the same large tool set on every turn.
 - **`session.execute` returns the raw tool result.** You wrap each result in a `tool_result` block keyed by the originating `tool_use` block's id, as the loop above shows, and send them back as a single `user` message.
-- **String-encoded tool inputs are handled for you.** Claude occasionally emits a tool's `input` as a JSON string instead of an object. The provider normalizes this before execution, so you do not have to parse it yourself.
+- **String-encoded tool inputs.** Claude occasionally emits a tool's `input` as a JSON string instead of an object. The provider's `handleToolCalls` helper normalizes this for you on the direct path; on the `session.execute()` path shown above, guard it yourself before executing: `args = block.input if isinstance(block.input, dict) else json.loads(block.input)`.
 - **`cacheTools` only.** The constructor takes no other options. There is no agentic execution in this provider; you run the loop (Messages API) or hand the loop to the Claude Agent SDK (Agent SDK tab).
 
 ## Next
