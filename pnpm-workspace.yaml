@@ -43,8 +43,9 @@ catalog:
   '@effect/platform-node': ^0.108.0
   '@effect/platform-node-shared': ^0.61.1
   '@effect/vitest': ^0.30.0
-  # 1.55.0 pulls Node-only execa code into Workers bundles.
-  '@mastra/core': 1.55.0
+  # 1.52.1 is the latest version that keeps Node-only execa code out of
+  # Workers bundles.
+  '@mastra/core': 1.52.1
   '@modelcontextprotocol/sdk': ^1.30.0
   '@types/bun': ^1.3.14
   ai: ^7.0.44
@@ -105,8 +106,12 @@ overrides:
   protobufjs: 7.6.5
   # temporary: @zed-industries/claude-code-acp@0.16.2 (latest) exact-pins vulnerable 10.2.1; drop when it ships >=10.2.3
   'minimatch@>=10.0.0 <10.2.3': '>=10.2.3 <11'
-  # temporary: @redocly/openapi-core@1.34.x (via openapi-typescript) exact-pins vulnerable 4.2.0; drop when it ships >=4.3.0
-  'js-yaml@>=4.0.0 <4.3.0': '>=4.3.0 <5'
+  # temporary: @redocly/openapi-core@1.34.x (via openapi-typescript) exact-pins vulnerable 4.2.0; drop when it ships >=4.3.1
+  'js-yaml@>=4.0.0 <4.3.1': '>=4.3.1 <5'
+  # temporary: @ai-sdk/provider-utils@4 exact-pins vulnerable undici 5.x; drop when it ships >=6.28.0.
+  'undici@>=5.0.0 <6.28.0': '>=6.28.0 <7'
+  # temporary: gray-matter exact-pins vulnerable js-yaml 3.15.0; drop when it ships >=3.15.1.
+  'js-yaml@>=3.0.0 <3.15.1': '>=3.15.1 <4'
   # temporary: @modelcontextprotocol/sdk depends on the 1.x line, which
   # GHSA-frvp-7c67-39w9 (serve-static path traversal) patches only in 2.0.5.
   # The floor also clears GHSA-9mqv-5hh9-4cgg (WebSocket handshake DoS, fixed
