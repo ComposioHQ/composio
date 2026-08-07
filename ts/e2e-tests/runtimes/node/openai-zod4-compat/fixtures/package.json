@@ -1,9 +1,13 @@
 {
   "private": true,
   "type": "module",
+  "scripts": {
+    "install:composio": "pnpm --dir /app/ts/packages/core pack --pack-destination \"$PWD\" --silent >/dev/null && pnpm --dir /app/ts/packages/providers/openai pack --pack-destination \"$PWD\" --silent >/dev/null && npm install --ignore-scripts --package-lock=false ./composio-core-*.tgz ./composio-openai-*.tgz",
+    "typecheck": "tsc --noEmit && echo openai v7 compatibility typecheck passed"
+  },
   "dependencies": {
-    "@composio/core": "file:/app/ts/packages/core",
-    "openai": "^6.16.0",
-    "zod": "^4.3.5"
+    "openai": "7.2.0",
+    "typescript": "7.0.2",
+    "zod": "4.4.3"
   }
 }

@@ -102,9 +102,10 @@ By default a session gets meta tools that discover, authenticate, and execute ap
 The `composio` CLI runs Composio from your shell and gives coding agents like Claude Code a local tool surface.
 
 ```bash
-curl -fsSL https://composio.dev/install | bash
-composio login
+curl -fsSL https://composio.dev/install | sh
 ```
+
+The installer puts `composio` on your `PATH` for future terminals. Open a new terminal, then run `composio login`. See [INSTALL.md](INSTALL.md) for shell setup overrides, including `COMPOSIO_INSTALL_SHELL=none` for install-only runs.
 
 Use `composio search` to find tools, `composio execute` to run them, `composio link` to connect accounts, and `composio run` to script workflows in TypeScript. See the [CLI docs](https://docs.composio.dev/docs/cli).
 
@@ -142,7 +143,7 @@ Everything published from this repo:
 |---------|-------------|
 | [`@composio/core`](ts/packages/core) | TypeScript SDK |
 | [`@composio/slim`](ts/packages/slim) | `@composio/core` without packaged source or docs; same API, smaller install |
-| [`composio` CLI](ts/packages/cli) | Standalone CLI binary: `curl -fsSL https://composio.dev/install \| bash` |
+| [`composio` CLI](ts/packages/cli) | Standalone CLI binary: `curl -fsSL https://composio.dev/install \| sh` |
 | [`@composio/experimental`](ts/packages/experimental) | Experimental integrations, including the Pi provider |
 | [`@composio/json-schema-to-zod`](ts/packages/json-schema-to-zod) | JSON Schema to Zod conversion |
 | `@composio/*` [provider adapters](#providers) | OpenAI, OpenAI Agents, Anthropic, Claude Agent SDK, Vercel, Google, LangChain, LlamaIndex, Mastra, Cloudflare |

@@ -5,7 +5,7 @@ import semver from 'semver';
 import { bold, cyanBright, dim } from 'src/ui/colors';
 import { APP_VERSION, GITHUB_REPO } from '../constants';
 import { NodeOs } from './node-os';
-import { resolveInstalledCliVersion } from './run-companion-modules';
+import { resolveRunningCliVersion } from './run-companion-modules';
 import { TerminalUI } from './terminal-ui';
 
 /**
@@ -35,7 +35,7 @@ export interface UpdateCheckState {
 
 /** Machine-readable update status for `composio version --check`. */
 export interface UpdateStatus {
-  /** Installed CLI version (release-tag.txt next to the binary, or APP_VERSION). */
+  /** Version reported by the running CLI executable. */
   current: string;
   /** Latest known stable release with a binary for this platform, if known. */
   latestStable: string | null;
@@ -98,7 +98,7 @@ function getCurrentBinaryAssetName(os: Pick<NodeOs, 'platform' | 'arch'>): strin
 const defaultConfig = (stateFile: string) =>
   Effect.gen(function* () {
     const os = yield* NodeOs;
-    const currentVersion = yield* resolveInstalledCliVersion(process.execPath, APP_VERSION);
+    const currentVersion = yield* resolveRunningCliVersion(process.execPath, APP_VERSION);
     const accessToken = yield* Effect.orDie(
       Config.option(Config.string('COMPOSIO_GITHUB_ACCESS_TOKEN')).pipe(
         Config.map(Option.getOrUndefined)

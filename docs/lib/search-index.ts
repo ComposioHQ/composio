@@ -332,7 +332,7 @@ function recordsFromMarkdownPage(input: {
   const isLegacy = input.legacy === true;
   const resolvedPageRank = isLegacy ? LEGACY_PAGE_RANK : pageRank(input.url, input.type);
   const resolvedTags = isLegacy ? [...(input.tags ?? []), 'legacy'] : input.tags;
-  const clean = mdxToCleanMarkdown(input.markdown);
+  const clean = mdxToCleanMarkdown(input.markdown, input.url);
   const lines = clean.split('\n');
   const headingSlugs = new Map<string, number>();
   const headings: string[] = [];

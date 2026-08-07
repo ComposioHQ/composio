@@ -28,37 +28,40 @@ allowBuilds:
   workerd: true
 
 catalog:
-  '@ai-sdk/openai': ^4.0.20
+  '@ai-sdk/mcp': ^2.0.24
+  '@ai-sdk/openai': ^4.0.29
   '@arethetypeswrong/cli': ^0.18.5
   '@clack/core': '^1.4.3'
   '@clack/prompts': '^1.7.0'
-  '@cloudflare/vitest-pool-workers': 0.18.8
-  '@cloudflare/workers-types': ^5.20260724.1
+  '@cloudflare/vitest-pool-workers': 0.20.1
+  '@cloudflare/workers-types': ^5.20260804.1
   '@composio/client': 0.1.0-alpha.76
-  '@effect/cli': ^0.76.0
+  '@effect/cli': ^0.77.0
   '@effect/language-service': ^0.87.1
-  '@effect/platform': ^0.97.0
-  '@effect/platform-bun': ^0.91.0
+  '@effect/platform': ^0.97.1
+  '@effect/platform-bun': ^0.91.2
   '@effect/platform-node': ^0.108.0
-  '@effect/platform-node-shared': ^0.61.0
+  '@effect/platform-node-shared': ^0.61.1
   '@effect/vitest': ^0.30.0
-  '@mastra/core': ^1.52.1
-  '@modelcontextprotocol/sdk': ^1.29.0
+  # 1.52.1 is the latest version that keeps Node-only execa code out of
+  # Workers bundles.
+  '@mastra/core': 1.52.1
+  '@modelcontextprotocol/sdk': ^1.30.0
   '@types/bun': ^1.3.14
-  ai: ^7.0.37
+  ai: ^7.0.51
   dotenv: ^17.4.2
-  effect: ^3.22.0
-  hono: ^4.12.34
-  openai: ^6.49.0
+  effect: ^3.22.1
+  hono: ^4.13.0
+  openai: ^7.2.0
   picocolors: ^1.1.1
-  pnpm: ^11.17.0
-  publint: ^0.3.22
+  pnpm: ^11.20.0
+  publint: ^0.3.23
   tsdown: ^0.22.14
-  tsx: ^4.23.1
+  tsx: ^4.23.5
   typescript: ^7.0.2
   '@vitest/ui': ^4.1.10
   vitest: ^4.1.10
-  wrangler: ^4.114.0
+  wrangler: ^4.118.0
   zod: ^4.4.3
   zod-to-json-schema: ^3.25.2
 
@@ -103,8 +106,12 @@ overrides:
   protobufjs: 7.6.5
   # temporary: @zed-industries/claude-code-acp@0.16.2 (latest) exact-pins vulnerable 10.2.1; drop when it ships >=10.2.3
   'minimatch@>=10.0.0 <10.2.3': '>=10.2.3 <11'
-  # temporary: @redocly/openapi-core@1.34.x (via openapi-typescript) exact-pins vulnerable 4.2.0; drop when it ships >=4.3.0
-  'js-yaml@>=4.0.0 <4.3.0': '>=4.3.0 <5'
+  # temporary: @redocly/openapi-core@1.34.x (via openapi-typescript) exact-pins vulnerable 4.2.0; drop when it ships >=4.3.1
+  'js-yaml@>=4.0.0 <4.3.1': '>=4.3.1 <5'
+  # temporary: @ai-sdk/provider-utils@4 exact-pins vulnerable undici 5.x; drop when it ships >=6.28.0.
+  'undici@>=5.0.0 <6.28.0': '>=6.28.0 <7'
+  # temporary: gray-matter exact-pins vulnerable js-yaml 3.15.0; drop when it ships >=3.15.1.
+  'js-yaml@>=3.0.0 <3.15.1': '>=3.15.1 <4'
   # temporary: @modelcontextprotocol/sdk depends on the 1.x line, which
   # GHSA-frvp-7c67-39w9 (serve-static path traversal) patches only in 2.0.5.
   # The floor also clears GHSA-9mqv-5hh9-4cgg (WebSocket handshake DoS, fixed
@@ -116,6 +123,9 @@ overrides:
   # temporary: GHSA-mwp4-54f8-5fhr; express-rate-limit accepts the patched 10.x
   # line. Drop when its lockfile resolution is >=10.3.1 without an override.
   'ip-address@>=10.0.0 <=10.3.0': '>=10.3.1 <11'
+  # temporary: GHSA-4cwx-7wf7-3272; @ai-sdk/provider-utils accepts the patched
+  # 7.x line. Drop when its lockfile resolution is >=7.29.0 without an override.
+  'undici@>=7.0.0 <7.29.0': '>=7.29.0 <8'
   # temporary: GHSA-mh99-v99m-4gvg requires the 5.x line for older majors, and
   # GHSA-rgw5-rvv9-x895 raises its patched floor to 5.0.9. This selector spans
   # majors deliberately -- narrowing it to the 5.x line would reintroduce a

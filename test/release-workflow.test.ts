@@ -56,6 +56,7 @@ const installHealthCheck = readFileSync(
   new URL('../.github/workflows/cli.install-health-check.yml', import.meta.url),
   'utf8'
 );
+const cliDocsGuide = readFileSync(new URL('../docs/content/docs/cli.mdx', import.meta.url), 'utf8');
 const resolveTargetScriptUrl = new URL(
   '../.github/scripts/cli-release/resolve-release-target.sh',
   import.meta.url
@@ -95,7 +96,10 @@ function readSdkVersions(rows) {
     /\bv?(\d+(?:\.\d+)+(?:[._-]?(?:a|b|c|rc|alpha|beta|pre|preview)\d*)?(?:[._-]?(?:post|rev|r)\d*)?(?:[._-]?dev\d*)?(?:\+[a-z0-9]+(?:[._-][a-z0-9]+)*)?)\b/gi;
 
   for (const row of rows) {
-    const cells = row.split('|').map(cell => cell.trim()).filter(Boolean);
+    const cells = row
+      .split('|')
+      .map(cell => cell.trim())
+      .filter(Boolean);
     const releaseVersionCell = cells[cells.length - 1];
     if (!releaseVersionCell) continue;
 
@@ -229,12 +233,8 @@ touch "$target/dist/provider.whl"
 
 {
   const directVersion = readSdkVersions(['| Python `composio` | `9.9.9` |']);
-  const versionWithPrevious = readSdkVersions([
-    '| Python `composio` | v9.9.8 | **v9.9.9** |',
-  ]);
-  const previousVersionOnly = readSdkVersions([
-    '| Python `composio` | v9.9.9 | **v9.9.10** |',
-  ]);
+  const versionWithPrevious = readSdkVersions(['| Python `composio` | v9.9.8 | **v9.9.9** |']);
+  const previousVersionOnly = readSdkVersions(['| Python `composio` | v9.9.9 | **v9.9.10** |']);
   const pep440Versions = readSdkVersions([
     '| Python `composio` | `9.9.9rc1` |',
     '| Python `composio` | `9.9.9.post1` |',
@@ -245,11 +245,15 @@ touch "$target/dist/provider.whl"
     throw new Error('Python SDK changelog version rows must recognize the released version');
   }
   if (previousVersionOnly.has('9.9.9')) {
-    throw new Error('Python SDK changelog version rows must not treat the previous version as released');
+    throw new Error(
+      'Python SDK changelog version rows must not treat the previous version as released'
+    );
   }
   for (const version of ['9.9.9rc1', '9.9.9.post1', '9.9.9.dev1']) {
     if (!pep440Versions.has(version)) {
-      throw new Error(`Python SDK changelog version rows must recognize PEP 440 version ${version}`);
+      throw new Error(
+        `Python SDK changelog version rows must recognize PEP 440 version ${version}`
+      );
     }
   }
 }
@@ -431,7 +435,7 @@ if (!releaseScript.includes('New tag:[[:space:]]*@composio\\/cli@')) {
 
 const canonicalWindowsInstallGuidance = requireMatch(
   rootInstallGuide,
-  /^(- Windows — .+)$/m,
+  /^(- Windows: .+)$/m,
   'canonical Windows install guidance'
 );
 const generatedInstallGuide = requireMatch(
@@ -441,7 +445,7 @@ const generatedInstallGuide = requireMatch(
 );
 const generatedWindowsInstallGuidance = requireMatch(
   generatedInstallGuide,
-  /^\s*(- Windows — .+)$/m,
+  /^\s*(- Windows: .+)$/m,
   'generated Windows install guidance'
 );
 
@@ -499,9 +503,11 @@ if (publishIdx === -1) {
     'build-cli-binaries.yml must publish by flipping the draft (gh release edit --draft=false)'
   );
 }
-if (
-  !(helperCheckoutIdx < draftStepIdx && draftStepIdx < verifyStepIdx && verifyStepIdx < publishIdx)
-) {
+if (!(
+  helperCheckoutIdx < draftStepIdx &&
+  draftStepIdx < verifyStepIdx &&
+  verifyStepIdx < publishIdx
+)) {
   throw new Error(
     'build-cli-binaries.yml must order steps helper checkout → draft → verify → publish'
   );
@@ -592,7 +598,7 @@ if (!buildCliWorkflow.includes('bash .github/scripts/cli-release/resolve-release
 
 // Release archives contain a composio-<target>/ bundle with runtime support files next to the
 // executable. Both the checked-in guide and the workflow-generated guide must preserve that
-// directory contents and put the installed binary's directory on PATH.
+// directory contents and create the same two-directory layout as the installer.
 const manualInstallGuides = [
   {
     label: 'INSTALL.md',
@@ -616,8 +622,13 @@ for (const guide of manualInstallGuides) {
   if (!guide.source.includes('cp -Rp "$bundle"/. "$COMPOSIO_INSTALL_DIR/"')) {
     throw new Error(`${guide.label} must install the complete CLI release bundle`);
   }
-  if (!guide.source.includes('export PATH="$COMPOSIO_INSTALL_DIR:$PATH"')) {
-    throw new Error(`${guide.label} must expose the installed bundle's binary on PATH`);
+  if (!guide.source.includes('mkdir -p "$COMPOSIO_BIN_DIR"')) {
+    throw new Error(`${guide.label} must create the CLI entry-point directory`);
+  }
+  if (
+    !guide.source.includes('ln -sf "$COMPOSIO_INSTALL_DIR/composio" "$COMPOSIO_BIN_DIR/composio"')
+  ) {
+    throw new Error(`${guide.label} must link the CLI entry point to the release bundle`);
   }
 }
 
@@ -697,8 +708,74 @@ if (!installHealthCheck.includes("| sed -n '1p'")) {
     'cli.install-health-check.yml must convert no matching release into empty output'
   );
 }
-if (!installHealthCheck.includes('bash -s -- "${{ steps.resolve.outputs.tag }}"')) {
+if (!installHealthCheck.includes('sh -s -- "${{ steps.resolve.outputs.tag }}"')) {
   throw new Error('cli.install-health-check.yml must install the resolved tag via the pinned path');
+}
+if (!installHealthCheck.includes('echo "$HOME/.local/bin" >> "$GITHUB_PATH"')) {
+  throw new Error('cli.install-health-check.yml must expose the installer entry-point directory');
+}
+if (!installHealthCheck.includes('test -L "$HOME/.local/bin/composio"')) {
+  throw new Error('cli.install-health-check.yml must verify the installer entry-point symlink');
+}
+if (installHealthCheck.includes('rm -rf "$HOME/.composio"')) {
+  throw new Error('cli.install-health-check.yml must preserve CLI user state between install legs');
+}
+
+// --- uninstall file lists: the hand-maintained copies must stay in sync ---
+
+// The uninstall file list mirrors the release bundle layout and is duplicated in INSTALL.md,
+// docs/content/docs/cli.mdx, and cli.install-health-check.yml. Drift between them ships
+// uninstall guidance (or a health-check reset) that leaves release artifacts behind.
+function readUninstallEntries(source, command, label) {
+  const block = requireMatch(
+    source,
+    new RegExp(`${command} \\\\\\n((?:[ \\t]*"[^"]+"(?: \\\\)?\\n)+)`),
+    `${label} ${command} uninstall block`
+  );
+  return [...block.matchAll(/"([^"]+)"/g)].map(entry =>
+    entry[1]
+      .replace(/^\$install_dir\//, '')
+      .replace(/^\$bin_dir\//, '')
+      .replace(/^\$HOME\/\.composio\//, '')
+      .replace(/^\$HOME\/\.local\/bin\//, '')
+  );
+}
+
+const uninstallGuides = [
+  { label: 'INSTALL.md', source: installGuide },
+  { label: 'docs/content/docs/cli.mdx', source: cliDocsGuide },
+  { label: 'cli.install-health-check.yml', source: installHealthCheck },
+].map(({ label, source }) => ({
+  label,
+  files: readUninstallEntries(source, 'rm -f', label),
+  directories: readUninstallEntries(source, 'rm -rf', label),
+}));
+
+const [canonicalUninstall, ...mirroredUninstallGuides] = uninstallGuides;
+
+// Guard the parser itself: a mis-anchored match must not pass vacuously.
+if (
+  !canonicalUninstall.files.includes('run-helpers-runtime.mjs') ||
+  !canonicalUninstall.directories.includes('services')
+) {
+  throw new Error('INSTALL.md uninstall list must cover the release bundle layout');
+}
+
+for (const guide of mirroredUninstallGuides) {
+  if (JSON.stringify(guide.files) !== JSON.stringify(canonicalUninstall.files)) {
+    throw new Error(
+      `${guide.label} uninstall file list drifted from INSTALL.md:\n` +
+        `  ${guide.label}: ${JSON.stringify(guide.files)}\n` +
+        `  INSTALL.md: ${JSON.stringify(canonicalUninstall.files)}`
+    );
+  }
+  if (JSON.stringify(guide.directories) !== JSON.stringify(canonicalUninstall.directories)) {
+    throw new Error(
+      `${guide.label} uninstall directory list drifted from INSTALL.md:\n` +
+        `  ${guide.label}: ${JSON.stringify(guide.directories)}\n` +
+        `  INSTALL.md: ${JSON.stringify(canonicalUninstall.directories)}`
+    );
+  }
 }
 
 const fakeBin = mkdtempSync(join(tmpdir(), 'composio-release-test-'));

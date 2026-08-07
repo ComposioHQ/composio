@@ -9,6 +9,8 @@ on:
       - '.github/actions/setup-node-pnpm-bun/action.yml'
       - '.github/scripts/cli-release/**'
       - '.github/workflows/build-cli-binaries.yml'
+      - 'install.sh'
+      - 'install/**'
       - 'mise.toml'
       - 'mise.lock'
   workflow_dispatch:
@@ -306,18 +308,33 @@ jobs:
         run: |
           RELEASE_TAG="${{ needs.prepare.outputs.release_tag }}"
           cat > INSTALL.md << 'EOF'
-          # Composio CLI Installation
+          # Composio CLI installation
 
-          ## Quick Install (Recommended)
+          ## Quick install
 
-          ### Linux and macOS
           ```bash
-          curl -fsSL https://raw.githubusercontent.com/ComposioHQ/composio/next/install.sh | bash
+          curl -fsSL https://composio.dev/install | sh
           ```
+
+          The installer downloads the CLI and sets up your shell automatically: when
+          your login shell (`$SHELL`) is zsh, bash, or fish, it adds the CLI's
+          directory to `PATH` in that shell's startup file. Re-running the installer
+          never duplicates the entry.
+
+          ### Install without shell setup
+
+          ```bash
+          curl -fsSL https://composio.dev/install | COMPOSIO_INSTALL_SHELL=none sh
+          ```
+
+          Use `COMPOSIO_INSTALL_SHELL=none` in CI, Docker images, or when you manage
+          shell startup files yourself: it installs the CLI and leaves every startup
+          file untouched. Set `COMPOSIO_INSTALL_SHELL=zsh`, `bash`, or `fish` instead
+          to configure a specific shell regardless of `$SHELL`.
 
           ### Install specific version
           ```bash
-          curl -fsSL https://raw.githubusercontent.com/ComposioHQ/composio/next/install.sh | bash -s -- RELEASE_TAG_PLACEHOLDER
+          curl -fsSL https://composio.dev/install | sh -s -- RELEASE_TAG_PLACEHOLDER
           ```
 
           ## Manual Installation
@@ -328,16 +345,23 @@ jobs:
           ```bash
           # Replace this with the downloaded archive name, without ".zip"
           bundle=composio-linux-x64
-          export COMPOSIO_INSTALL_DIR="${COMPOSIO_INSTALL_DIR:-$HOME/.composio}"
+          COMPOSIO_INSTALL_DIR=${COMPOSIO_INSTALL_DIR:-"$HOME/.composio"}
+          COMPOSIO_BIN_DIR=${COMPOSIO_BIN_DIR:-"$HOME/.local/bin"}
 
           unzip "$bundle.zip"
           mkdir -p "$COMPOSIO_INSTALL_DIR"
           cp -Rp "$bundle"/. "$COMPOSIO_INSTALL_DIR/"
           chmod +x "$COMPOSIO_INSTALL_DIR/composio"
-          export PATH="$COMPOSIO_INSTALL_DIR:$PATH"
+          mkdir -p "$COMPOSIO_BIN_DIR"
+          if [ "$COMPOSIO_BIN_DIR" != "$COMPOSIO_INSTALL_DIR" ]; then
+            ln -sf "$COMPOSIO_INSTALL_DIR/composio" "$COMPOSIO_BIN_DIR/composio"
+          fi
+          export PATH="$COMPOSIO_BIN_DIR:$PATH"
           ```
 
-          Add both `export` commands to your shell profile to keep `composio` on `PATH` in new terminal sessions.
+          After a manual installation, run `composio install --shell zsh|bash|fish`
+          (with your shell in place of `zsh|bash|fish`) to add the CLI to your
+          shell's `PATH` permanently.
 
           ## Usage
 
@@ -354,8 +378,8 @@ jobs:
           - macOS x64 (Intel)
           - macOS ARM64 (Apple Silicon)
 
-          ❌ **Not Supported:**
-          - Windows — use [WSL](https://learn.microsoft.com/windows/wsl/install) and run the install script inside your WSL distribution
+          **Not supported:**
+          - Windows: use [WSL](https://learn.microsoft.com/windows/wsl/install) and run the installer inside your WSL distribution
           EOF
           sed -i.bak "s|RELEASE_TAG_PLACEHOLDER|$RELEASE_TAG|g" INSTALL.md && rm -f INSTALL.md.bak
 
