@@ -1,6 +1,5 @@
 ---
 title: Agent plugins
-sidebar: false
 description: Install Composio for Codex or Claude Code
 keywords: [agent plugins, codex, claude code, cli, composio setup, skills]
 ---
@@ -76,6 +75,17 @@ See the [Claude Code plugin guide](/docs/claude-code-plugin) for team installati
 ## What the plugin uses
 
 Both plugins run the Composio CLI underneath. The agent uses `composio search` to find an unknown tool, `composio link` to connect an account, and `composio execute` to run a known tool. The same connections are available when you use the [CLI directly](/docs/cli).
+
+## Install only the CLI skill
+
+The plugin includes a Composio CLI skill that teaches your agent how to search for and run tools. Codex receives it with the plugin, while `composio login` installs it for Claude Code by default.
+
+If you want the skill without the plugin, install it for your agent directly:
+
+```bash
+composio --install-skill composio-cli claude
+composio --install-skill composio-cli codex
+```
 
 ## Choose another setup
 

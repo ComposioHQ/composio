@@ -77,13 +77,13 @@ function AudienceBadge({ audience }: { audience: HomeIntent['audience'] }) {
   return (
     <span
       className={
-        'relative mb-4 inline-flex w-fit items-center rounded-[4px] px-[6px] py-[4px] font-mono text-[10px] font-semibold uppercase leading-none tracking-wide ' +
-        (isPlatform ? '' : 'text-[var(--composio-brand)]')
+        'relative mb-4 inline-flex w-fit items-center rounded-[4px] px-[6px] py-[4px] font-mono text-[10px] font-semibold uppercase leading-none tracking-wide text-[var(--composio-brand)]'
       }
       style={
         isPlatform
           ? {
-              background: `${PLATFORM_BADGE_GRADIENT} text`,
+              backgroundImage: PLATFORM_BADGE_GRADIENT,
+              backgroundClip: 'text',
               WebkitBackgroundClip: 'text',
               WebkitTextFillColor: 'transparent',
             }

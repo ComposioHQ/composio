@@ -51,9 +51,10 @@ describe('Welcome navigation', () => {
     ).text();
 
     expect(source).toContain("audience === 'Platform'");
-    expect(source).toContain('rgb(0, 230, 138)');
-    expect(source).toContain('rgb(0, 180, 216)');
-    expect(source).toContain('rgb(0, 119, 255)');
+    expect(source).toContain('backgroundImage: PLATFORM_BADGE_GRADIENT');
+    expect(source).toContain("backgroundClip: 'text'");
+    expect(source).toContain("WebkitBackgroundClip: 'text'");
+    expect(source).toContain("WebkitTextFillColor: 'transparent'");
     expect(source).toContain('text-[var(--composio-brand)]');
   });
 });

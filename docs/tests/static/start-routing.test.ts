@@ -17,6 +17,9 @@ describe('getting-started routing policy', () => {
     expect(plugins).toContain('composio search');
     expect(plugins).toContain('composio link');
     expect(plugins).toContain('composio execute');
+    expect(plugins).toContain('composio --install-skill composio-cli claude');
+    expect(plugins).toContain('composio --install-skill composio-cli codex');
+    expect(plugins).not.toContain('sidebar: false');
   });
 
   test('keeps native plugins ahead of CLI and explicit MCP on Welcome', () => {

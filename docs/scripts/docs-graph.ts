@@ -23,7 +23,6 @@
 import { readFile, writeFile } from 'node:fs/promises';
 import { glob } from 'node:fs/promises';
 import { relative, resolve } from 'node:path';
-import { HOME_INTENTS } from '../lib/home-navigation';
 
 // ---------------------------------------------------------------------------
 // Config / args
@@ -126,21 +125,6 @@ for (const node of nodes.values()) {
     } else {
       // cross-section internal link (/toolkits, /reference, /examples, ...)
       node.crossOut.push(href.split('#')[0]);
-    }
-  }
-}
-
-// The Welcome page renders its primary links from shared TypeScript data so
-// the human page and agent-readable Markdown stay aligned. Add those links to
-// the static graph as well, otherwise the graph incorrectly reports the index
-// as an island.
-if (ROOT === 'content/docs') {
-  const index = nodes.get('');
-  for (const link of HOME_INTENTS.flatMap((intent) => intent.links)) {
-    const target = normalizeDocTarget(link.href);
-    if (index && target !== null && nodes.has(target)) {
-      index.out.add(target);
-      nodes.get(target)!.in.add('');
     }
   }
 }
