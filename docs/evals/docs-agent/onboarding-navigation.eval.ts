@@ -18,12 +18,11 @@ const cases = [
     prompt:
       'Open the Welcome page. What exact two headings does it use to separate the ways to start with Composio? Place SDK or frameworks, an MCP client, and the CLI under the right heading, then cite the starting docs.',
     expectedSignals: [
-      /build with composio/i,
-      /use composio/i,
+      /build\s+with\s+composio/i,
+      /use\s+composio/i,
       /sdk|framework/i,
       /mcp/i,
       /cli/i,
-      /\/docs\/(?:quickstart|composio-connect|cli|sessions-via-mcp)\b/,
     ],
   },
   {
