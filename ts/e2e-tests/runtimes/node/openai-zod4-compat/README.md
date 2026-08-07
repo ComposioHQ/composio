@@ -26,8 +26,16 @@ fixtures/
 └── tsconfig.json  # Strict consumer compiler settings
 ```
 
-The setup phase packs both Composio packages, installs them with explicit
+The setup phase packs the Composio packages, installs them with explicit
 OpenAI 7 and Zod 4 versions, and typechecks without `skipLibCheck`.
+
+`@composio/json-schema-to-zod` is packed alongside `@composio/core` and
+`@composio/openai` even though the fixture never imports it directly. `pnpm
+pack` rewrites `@composio/core`'s `workspace:*` dependency on it to the exact
+workspace version, so installing the core tarball alone makes npm fetch that
+version from the registry. On a release branch the workspace version is the
+one about to be published and does not exist yet, which fails the install.
+Packing it locally keeps the fixture resolvable before publication.
 
 ## Setup
 
