@@ -53,6 +53,8 @@ ANTHROPIC_API_KEY=xxxxxxxxx
 <Tabs groupId="language" items={["Python", "TypeScript"]} persist>
 <Tab value="Python">
 ```python
+import json
+
 import anthropic
 from composio import Composio
 from composio_anthropic import AnthropicProvider
@@ -83,17 +85,17 @@ response = client.messages.create(
 while response.stop_reason == "tool_use":
     tool_use_blocks = [block for block in response.content if block.type == "tool_use"]
     messages.append({"role": "assistant", "content": response.content})
-    messages.append({
-        "role": "user",
-        "content": [
-            {
-                "type": "tool_result",
-                "tool_use_id": block.id,
-                "content": session.execute(block.name, arguments=block.input).model_dump_json(),
-            }
-            for block in tool_use_blocks
-        ]
-    })
+    tool_results = []
+    for block in tool_use_blocks:
+        # Claude occasionally emits input as a JSON string instead of an object
+        args = block.input if isinstance(block.input, dict) else json.loads(block.input)
+        result = session.execute(block.name, arguments=args)
+        tool_results.append({
+            "type": "tool_result",
+            "tool_use_id": block.id,
+            "content": result.model_dump_json(),
+        })
+    messages.append({"role": "user", "content": tool_results})
     response = client.messages.create(
         model="claude-opus-4-6",
         max_tokens=4096,
@@ -145,7 +147,11 @@ while (response.stop_reason === "tool_use") {
     const toolUseBlocks = response.content.filter((block) => block.type === "tool_use");
     const toolResults: Anthropic.ToolResultBlockParam[] = [];
     for (const block of toolUseBlocks) {
-        const result = await session.execute(block.name, block.input as Record<string, unknown>);
+        // Claude occasionally emits input as a JSON string instead of an object
+        const args = typeof block.input === "string"
+            ? JSON.parse(block.input)
+            : (block.input as Record<string, unknown>);
+        const result = await session.execute(block.name, args);
         toolResults.push({
             type: "tool_result",
             tool_use_id: block.id,
@@ -290,7 +296,7 @@ A few things are specific to the Anthropic provider:
 
 - **Tool caching.** Pass `cacheTools: true` to the constructor (`new AnthropicProvider({ cacheTools: true })`) to attach Anthropic's ephemeral `cache_control` to every tool definition and tool-result block. This lets Claude reuse cached tool schemas across requests and can cut prompt cost when you send the same large tool set on every turn.
 - **`session.execute` returns the raw tool result.** You wrap each result in a `tool_result` block keyed by the originating `tool_use` block's id, as the loop above shows, and send them back as a single `user` message.
-- **String-encoded tool inputs.** Claude occasionally emits a tool's `input` as a JSON string instead of an object. The provider's `handleToolCalls` helper normalizes this for you on the direct path; on the `session.execute()` path shown above, guard it yourself before executing: `args = block.input if isinstance(block.input, dict) else json.loads(block.input)`.
+- **String-encoded tool inputs.** Claude occasionally emits a tool's `input` as a JSON string instead of an object. The sample loops above guard for this before executing (`isinstance` / `typeof` check); `handleToolCalls` performs the same normalization on the direct path.
 - **`cacheTools` only.** The constructor takes no other options. There is no agentic execution in this provider; you run the loop (Messages API) or hand the loop to the Claude Agent SDK (Agent SDK tab).
 
 ## Next

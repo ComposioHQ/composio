@@ -109,7 +109,7 @@ while (response.functionCalls && response.functionCalls.length > 0) {
             functionResponse: {
                 id: fc.id,
                 name: fc.name,
-                response: result.data,
+                response: result.error ? { error: result.error } : result.data,
             },
         });
     }

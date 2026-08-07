@@ -70,9 +70,10 @@ describe("session execution samples", () => {
         if (EXCLUDED_PATH_SEGMENTS.some((seg) => rel.includes(seg))) continue;
 
         const fences = codeFences(await readFile(file, "utf8"));
-        const hasSession = fences.some((f) => SESSION_TOKEN_RE.test(f));
-        const hasHelper = fences.some((f) => HELPER_TOKEN_RE.test(f));
-        if (hasSession && hasHelper) {
+        const offending = fences.some(
+          (f) => SESSION_TOKEN_RE.test(f) && HELPER_TOKEN_RE.test(f),
+        );
+        if (offending) {
           offenders.push(rel);
         }
       }
