@@ -462,10 +462,12 @@ describe('fileUtils', () => {
     });
 
     it('should handle fetch errors for URLs', async () => {
-      mockFetch.mockResolvedValue({
-        ok: false,
+      const cancel = vi.fn();
+      const response = new Response(new ReadableStream({ cancel }), {
+        status: 500,
         statusText: 'Internal Server Error',
       });
+      mockFetch.mockResolvedValue(response);
 
       await expect(
         getFileDataAfterUploadingToS3('https://example.com/file.pdf', {
@@ -474,6 +476,9 @@ describe('fileUtils', () => {
           client: mockClient,
         })
       ).rejects.toThrow('Failed to fetch file: Internal Server Error');
+
+      expect(cancel).toHaveBeenCalledOnce();
+      expect(response.bodyUsed).toBe(true);
     });
 
     it('should handle S3 upload errors', async () => {

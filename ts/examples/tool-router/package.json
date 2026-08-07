@@ -23,7 +23,7 @@
   "dependencies": {
     "@ai-sdk/mcp": "catalog:",
     "@ai-sdk/openai": "catalog:",
-    "@anthropic-ai/claude-agent-sdk": "^0.3.220",
+    "@anthropic-ai/claude-agent-sdk": "^0.3.221",
     "@composio/claude-agent-sdk": "workspace:*",
     "@composio/core": "workspace:*",
     "@composio/openai-agents": "workspace:*",
