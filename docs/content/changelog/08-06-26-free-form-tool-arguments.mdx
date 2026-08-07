@@ -84,6 +84,8 @@ wrapped.run({"metadata": {"count_a": 3}})
 
 In Python, an invalid `patternProperties` or schema-valued `additionalProperties` schema now raises while the tool is wrapped instead of being ignored. This includes an external, anchored, or unresolvable `$ref`, a `patternProperties` key that is not a valid regular expression, or a dynamic-key subschema that is not valid Draft 7. A `$ref` in these schemas must be a local JSON Pointer such as `#/properties/foo`. The rule is transitive: a local pointer whose target carries a non-local reference raises too. A `$ref`-shaped value under `const`, `default`, `enum`, or `examples` is instance data rather than a reference, and is left alone.
 
+The CLI's validator fails early on the two of those it can detect: a `patternProperties` key that is not a valid regular expression, and a reference inside a dynamic-key subschema that does not resolve, following local pointers transitively. Both are now reported when the schema is compiled, naming the cached schema path, rather than once per call as though the arguments were at fault. A reference outside a dynamic-key subschema is still left to the validator, so a tool whose unused branch carries a dangling reference keeps working.
+
 ### Behavior Change for Python Agentic Providers
 
 <Callout type="warn">
@@ -143,4 +145,4 @@ The two unknown-key rejections described above (Python agentic providers and the
 
 `additionalProperties: true` still opts an object out of unknown-key rejection, and so does declaring no properties. Neither opts out of the third change: if the object also carries `patternProperties` or a schema-valued `additionalProperties`, its keys are validated against those schemas. Objects with no dynamic-key constraints at all are unaffected.
 
-The one remaining change happens earlier, while a Python tool is wrapped: an invalid dynamic-key schema now raises instead of being ignored. Only tools whose `patternProperties` or schema-valued `additionalProperties` contain an invalid reference, regular expression, or Draft 7 subschema are affected.
+The remaining changes happen earlier, when the tool's schema is first read rather than when it is called: an invalid dynamic-key schema now fails instead of being ignored. In Python that is a raise while the tool is wrapped, covering an invalid reference, regular expression, or Draft 7 subschema. In the CLI it is a schema compile failure, covering an invalid `patternProperties` regular expression or an unresolvable reference inside a dynamic-key subschema. Only tools whose `patternProperties` or schema-valued `additionalProperties` carry one of those defects are affected.
