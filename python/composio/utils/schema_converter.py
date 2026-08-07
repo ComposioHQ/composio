@@ -412,15 +412,24 @@ def _check_dynamic_references(
                         )
 
 
+def _validate_dynamic_key_schema(
+    schema: t.Any,
+    root_schema: t.Dict[str, t.Any],
+    root_validator: Validator,
+) -> None:
+    """Validate one dynamic-key subschema without constructing a materializer."""
+    validator_type = type(root_validator)
+    validator_type.check_schema(schema)
+    _check_dynamic_references(schema, root_schema)
+
+
 def _dynamic_key_validator(
     schema: t.Any,
     root_schema: t.Dict[str, t.Any],
     root_validator: Validator,
 ) -> _DynamicKeyValidator:
     """Compile a complete inline JSON subschema without coercive acceptance."""
-    validator_type = type(root_validator)
-    validator_type.check_schema(schema)
-    _check_dynamic_references(schema, root_schema)
+    _validate_dynamic_key_schema(schema, root_schema, root_validator)
 
     materializer = None
     if _contains_default(schema):
@@ -431,6 +440,39 @@ def _dynamic_key_validator(
         validator=root_validator.evolve(schema=schema),
         materializer=materializer,
     )
+
+
+def _compile_pattern_property(pattern: str) -> t.Pattern[str]:
+    try:
+        return re.compile(pattern)
+    except re.error as exc:
+        raise ValueError(
+            f"Invalid patternProperties regular expression: {pattern!r}"
+        ) from exc
+
+
+def _validate_object_policy_schema(
+    schema: t.Dict[str, t.Any],
+    root_schema: t.Dict[str, t.Any],
+) -> None:
+    """Validate a dynamic object policy without materializing defaults."""
+    validator_type = jsonschema_validators.validator_for(
+        root_schema,
+        default=jsonschema_validators.Draft7Validator,
+    )
+    root_validator = validator_type(root_schema)
+
+    for pattern, pattern_schema in (schema.get("patternProperties") or {}).items():
+        _compile_pattern_property(pattern)
+        _validate_dynamic_key_schema(
+            pattern_schema,
+            root_schema,
+            root_validator,
+        )
+
+    additional = schema.get("additionalProperties")
+    if isinstance(additional, dict):
+        _validate_dynamic_key_schema(additional, root_schema, root_validator)
 
 
 def _compile_object_policy(
@@ -448,21 +490,16 @@ def _compile_object_policy(
 
     patterns = []
     for pattern, pattern_schema in (schema.get("patternProperties") or {}).items():
-        try:
-            patterns.append(
-                (
-                    re.compile(pattern),
-                    _dynamic_key_validator(
-                        pattern_schema,
-                        document_root,
-                        root_validator,
-                    ),
-                )
+        patterns.append(
+            (
+                _compile_pattern_property(pattern),
+                _dynamic_key_validator(
+                    pattern_schema,
+                    document_root,
+                    root_validator,
+                ),
             )
-        except re.error as exc:
-            raise ValueError(
-                f"Invalid patternProperties regular expression: {pattern!r}"
-            ) from exc
+        )
 
     return _ObjectPolicy(
         declared=declared,
@@ -477,26 +514,22 @@ def _compile_object_policy(
     )
 
 
-def _validate_dynamic_object_policies(
+def _iter_reachable_schemas(
     schema: t.Any,
     root_schema: t.Dict[str, t.Any],
     visited: t.Optional[t.Set[int]] = None,
-) -> None:
-    """Compile every reachable dynamic object policy before conversion fallback."""
+) -> t.Iterator[t.Dict[str, t.Any]]:
+    """Yield schema nodes reached through Draft 7 schema-valued keywords."""
     if visited is None:
         visited = set()
     if isinstance(schema, list):
         for item in schema:
-            _validate_dynamic_object_policies(item, root_schema, visited)
+            yield from _iter_reachable_schemas(item, root_schema, visited)
         return
     if not isinstance(schema, dict) or id(schema) in visited:
         return
     visited.add(id(schema))
-
-    if schema.get("patternProperties") or isinstance(
-        schema.get("additionalProperties"), dict
-    ):
-        _compile_object_policy(schema, root_schema)
+    yield schema
 
     reference = schema.get("$ref")
     if isinstance(reference, str) and (reference == "#" or reference.startswith("#/")):
@@ -504,37 +537,112 @@ def _validate_dynamic_object_policies(
             resolved = _resolve_local_json_pointer(reference, root_schema)
         except ValueError:
             # Ordinary references retain the converter's legacy fallback.
-            # References used by dynamic-key constraints are rejected by
-            # `_compile_object_policy` above.
+            # Dynamic-key references are checked when their owning policy is
+            # validated.
             resolved = None
         if isinstance(resolved, (dict, list)):
-            _validate_dynamic_object_policies(resolved, root_schema, visited)
+            yield from _iter_reachable_schemas(resolved, root_schema, visited)
 
     for keyword in ("properties", "patternProperties"):
         values = schema.get(keyword)
         if isinstance(values, dict):
             for child in values.values():
-                _validate_dynamic_object_policies(child, root_schema, visited)
+                yield from _iter_reachable_schemas(child, root_schema, visited)
 
     for keyword in _SCHEMA_VALUED_KEYWORDS:
         child = schema.get(keyword)
         if isinstance(child, (dict, list)):
-            _validate_dynamic_object_policies(child, root_schema, visited)
+            yield from _iter_reachable_schemas(child, root_schema, visited)
 
     for keyword in _SCHEMA_LIST_KEYWORDS:
         children = schema.get(keyword)
         if isinstance(children, list):
-            _validate_dynamic_object_policies(children, root_schema, visited)
+            yield from _iter_reachable_schemas(children, root_schema, visited)
 
     items = schema.get("items")
     if isinstance(items, (dict, list)):
-        _validate_dynamic_object_policies(items, root_schema, visited)
+        yield from _iter_reachable_schemas(items, root_schema, visited)
 
     dependencies = schema.get("dependencies")
     if isinstance(dependencies, dict):
         for child in dependencies.values():
             if isinstance(child, (dict, bool)):
-                _validate_dynamic_object_policies(child, root_schema, visited)
+                yield from _iter_reachable_schemas(child, root_schema, visited)
+
+
+def _has_dynamic_object_policy(schema: t.Dict[str, t.Any]) -> bool:
+    return bool(schema.get("patternProperties")) or isinstance(
+        schema.get("additionalProperties"), dict
+    )
+
+
+def _validate_dynamic_object_policies(
+    schema: t.Any,
+    root_schema: t.Dict[str, t.Any],
+) -> None:
+    """Validate every reachable dynamic object policy before conversion fallback."""
+    for candidate in _iter_reachable_schemas(schema, root_schema):
+        if _has_dynamic_object_policy(candidate):
+            _validate_object_policy_schema(candidate, root_schema)
+
+
+def _contains_inline_object_policy(
+    schema: t.Any,
+    visited: t.Optional[t.Set[int]] = None,
+) -> bool:
+    """Whether direct object or array nesting contains a dynamic policy."""
+    if visited is None:
+        visited = set()
+    if isinstance(schema, list):
+        return any(_contains_inline_object_policy(item, visited) for item in schema)
+    if not isinstance(schema, dict) or id(schema) in visited:
+        return False
+    visited.add(id(schema))
+    if _has_dynamic_object_policy(schema):
+        return True
+
+    properties = schema.get("properties")
+    if isinstance(properties, dict) and any(
+        _contains_inline_object_policy(child, visited) for child in properties.values()
+    ):
+        return True
+
+    items = schema.get("items")
+    return isinstance(items, (dict, list)) and _contains_inline_object_policy(
+        items,
+        visited,
+    )
+
+
+def _apply_nested_object_policies(
+    schema: t.Dict[str, t.Any],
+    base_model: t.Type[BaseModel],
+    root_schema: t.Dict[str, t.Any],
+) -> t.Type[BaseModel]:
+    """Replace fields whose schemas contain dynamic object policies."""
+    field_overrides = {}
+    for name, property_schema in (schema.get("properties") or {}).items():
+        if not _contains_inline_object_policy(property_schema):
+            continue
+        field = base_model.model_fields.get(name)
+        if field is None:
+            continue
+        field_overrides[name] = (
+            _filtered_schema_to_pydantic_type(
+                property_schema,
+                root_schema=root_schema,
+            ),
+            field,
+        )
+
+    if not field_overrides:
+        return base_model
+
+    return create_pydantic_model(  # type: ignore[call-overload]
+        schema.get("title", "GeneratedModel"),
+        __base__=base_model,
+        **field_overrides,
+    )
 
 
 class _DynamicObjectModel(BaseModel):
@@ -789,11 +897,12 @@ def _convert_with_library(
     # outside the legacy library-conversion fallback below. Invalid patterns or
     # references must fail closed instead of silently changing the field to str.
     if schema.get("type") == "object":
+        document_root = root_schema if root_schema is not None else schema
         if _contains_unsatisfiable_schema(schema.get("properties", {})):
             try:
-                return _convert_object_with_unsatisfiable_properties(
+                base_model = _convert_object_with_unsatisfiable_properties(
                     schema,
-                    root_schema=root_schema,
+                    root_schema=document_root,
                 )
             except (SchemaError, CombinerError) as e:
                 logger.debug(
@@ -805,6 +914,11 @@ def _convert_with_library(
                     f"Unexpected error in schema conversion: {e}, falling back to string"
                 )
                 return str
+            return apply_object_policy(
+                schema,
+                _apply_nested_object_policies(schema, base_model, document_root),
+                root_schema=document_root,
+            )
         # A property-less object with no dynamic-key constraints accepts and
         # preserves arbitrary content. Modelling it as an empty Pydantic
         # model instead silently discarded every key (issue #4064).
@@ -832,8 +946,8 @@ def _convert_with_library(
 
         return apply_object_policy(
             schema,
-            base_model,
-            root_schema=root_schema,
+            _apply_nested_object_policies(schema, base_model, document_root),
+            root_schema=document_root,
         )
 
     try:

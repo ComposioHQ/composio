@@ -1,6 +1,8 @@
 """Tests for the schema_converter boolean-schema pre-filter."""
 
 import pytest
+from jsonschema import Draft7Validator
+from jsonschema.exceptions import SchemaError
 from pydantic import TypeAdapter, ValidationError
 
 from composio.utils.schema_converter import (
@@ -198,7 +200,33 @@ def test_schema_converter_required_unsatisfiable_property_has_no_valid_value():
 
 
 @pytest.mark.parametrize(
-    "invalid_object_schema,error_match",
+    "converter",
+    [json_schema_to_model, json_schema_to_pydantic_type],
+    ids=["model", "pydantic-type"],
+)
+def test_unsatisfiable_declared_property_keeps_root_dynamic_policy(converter):
+    schema = {
+        "type": "object",
+        "properties": {"impossible": {"allOf": [False, {"type": "string"}]}},
+        "patternProperties": {"^count_": {"type": "integer"}},
+    }
+    adapter = TypeAdapter(converter(schema))
+
+    result = adapter.validate_python({"count_a": 1})
+    assert adapter.dump_python(
+        result,
+        mode="json",
+        by_alias=True,
+        exclude_none=True,
+    ) == {"count_a": 1}
+    with pytest.raises(ValidationError):
+        adapter.validate_python({"count_a": "1"})
+    with pytest.raises(ValidationError):
+        adapter.validate_python({"impossible": None})
+
+
+@pytest.mark.parametrize(
+    "invalid_object_schema,error_type,error_match",
     [
         (
             {
@@ -207,6 +235,7 @@ def test_schema_converter_required_unsatisfiable_property_has_no_valid_value():
                     "^value_": {"$ref": "https://example.com/schema.json"}
                 },
             },
+            ValueError,
             "must be a local JSON Pointer",
         ),
         (
@@ -214,17 +243,77 @@ def test_schema_converter_required_unsatisfiable_property_has_no_valid_value():
                 "type": "object",
                 "patternProperties": {"^value_": {"$ref": "#/$defs/missing"}},
             },
+            ValueError,
             "Unresolvable dynamic-key schema reference",
+        ),
+        (
+            {
+                "type": "object",
+                "patternProperties": {"^value_": {"$ref": "#anchor"}},
+            },
+            ValueError,
+            "must be a local JSON Pointer",
         ),
         (
             {
                 "type": "object",
                 "patternProperties": {"[": {"type": "string"}},
             },
+            ValueError,
             "Invalid patternProperties regular expression",
         ),
+        (
+            {
+                "type": "object",
+                "patternProperties": {"^value_": {"type": "not-a-json-schema-type"}},
+            },
+            SchemaError,
+            "not valid under any of the given schemas",
+        ),
+        (
+            {
+                "type": "object",
+                "additionalProperties": {"$ref": "https://example.com/schema.json"},
+            },
+            ValueError,
+            "must be a local JSON Pointer",
+        ),
+        (
+            {
+                "type": "object",
+                "additionalProperties": {"$ref": "#/$defs/missing"},
+            },
+            ValueError,
+            "Unresolvable dynamic-key schema reference",
+        ),
+        (
+            {
+                "type": "object",
+                "additionalProperties": {"$ref": "#anchor"},
+            },
+            ValueError,
+            "must be a local JSON Pointer",
+        ),
+        (
+            {
+                "type": "object",
+                "additionalProperties": {"type": "not-a-json-schema-type"},
+            },
+            SchemaError,
+            "not valid under any of the given schemas",
+        ),
     ],
-    ids=["external-ref", "missing-local-ref", "invalid-pattern"],
+    ids=[
+        "pattern-external-ref",
+        "pattern-missing-local-ref",
+        "pattern-anchored-ref",
+        "invalid-pattern",
+        "pattern-invalid-draft7",
+        "additional-external-ref",
+        "additional-missing-local-ref",
+        "additional-anchored-ref",
+        "additional-invalid-draft7",
+    ],
 )
 @pytest.mark.parametrize(
     "converter",
@@ -234,6 +323,7 @@ def test_schema_converter_required_unsatisfiable_property_has_no_valid_value():
 @pytest.mark.parametrize("nested", [False, True], ids=["root", "nested"])
 def test_invalid_dynamic_object_schema_fails_closed_across_public_entry_points(
     invalid_object_schema,
+    error_type,
     error_match,
     converter,
     nested,
@@ -246,8 +336,135 @@ def test_invalid_dynamic_object_schema_fails_closed_across_public_entry_points(
             "required": ["payload"],
         }
 
-    with pytest.raises(ValueError, match=error_match):
+    with pytest.raises(error_type, match=error_match):
         converter(schema)
+
+
+_INVALID_DYNAMIC_POLICY = {
+    "type": "object",
+    "patternProperties": {"[": {"type": "string"}},
+}
+
+
+@pytest.mark.parametrize(
+    "schema",
+    [
+        {"type": "object", "properties": {"payload": _INVALID_DYNAMIC_POLICY}},
+        {"type": "array", "items": _INVALID_DYNAMIC_POLICY},
+        {"type": "array", "items": [{}, _INVALID_DYNAMIC_POLICY]},
+        {"allOf": [_INVALID_DYNAMIC_POLICY]},
+        {"anyOf": [_INVALID_DYNAMIC_POLICY]},
+        {"oneOf": [_INVALID_DYNAMIC_POLICY]},
+        {"not": _INVALID_DYNAMIC_POLICY},
+        {"if": _INVALID_DYNAMIC_POLICY},
+        {"then": _INVALID_DYNAMIC_POLICY},
+        {"else": _INVALID_DYNAMIC_POLICY},
+        {"type": "array", "contains": _INVALID_DYNAMIC_POLICY},
+        {"type": "object", "propertyNames": _INVALID_DYNAMIC_POLICY},
+        {
+            "type": "array",
+            "items": [{}],
+            "additionalItems": _INVALID_DYNAMIC_POLICY,
+        },
+        {
+            "type": "object",
+            "dependencies": {"flag": _INVALID_DYNAMIC_POLICY},
+        },
+        {
+            "$defs": {"Invalid": _INVALID_DYNAMIC_POLICY},
+            "$ref": "#/$defs/Invalid",
+        },
+        {
+            "definitions": {"Invalid": _INVALID_DYNAMIC_POLICY},
+            "$ref": "#/definitions/Invalid",
+        },
+    ],
+    ids=[
+        "property",
+        "array-items",
+        "tuple-items",
+        "all-of",
+        "any-of",
+        "one-of",
+        "not",
+        "if",
+        "then",
+        "else",
+        "contains",
+        "property-names",
+        "additional-items",
+        "dependency-schema",
+        "defs-reference",
+        "legacy-definitions-reference",
+    ],
+)
+def test_invalid_dynamic_policy_is_found_in_reachable_draft7_schema_positions(schema):
+    with pytest.raises(ValueError, match="Invalid patternProperties"):
+        json_schema_to_pydantic_type(schema)
+
+
+def _recursive_dynamic_schema(dynamic_keyword, nested):
+    recursive_ref = "#/$defs/Recursive" if nested else "#"
+
+    def make_recursive_object():
+        dynamic_schema = {
+            "allOf": [{"$ref": recursive_ref}],
+            "default": {},
+        }
+        recursive_object = {"type": "object"}
+        if dynamic_keyword == "patternProperties":
+            recursive_object[dynamic_keyword] = {"^child_": dynamic_schema}
+        else:
+            recursive_object[dynamic_keyword] = dynamic_schema
+        return recursive_object
+
+    recursive_object = make_recursive_object()
+    recursive_input = {"child_one": {}}
+
+    if not nested:
+        return recursive_object, recursive_input
+
+    return (
+        {
+            "$defs": {"Recursive": recursive_object},
+            "type": "object",
+            "properties": {"payload": make_recursive_object()},
+            "required": ["payload"],
+        },
+        {"payload": recursive_input},
+    )
+
+
+@pytest.mark.parametrize(
+    "dynamic_keyword",
+    ["patternProperties", "additionalProperties"],
+    ids=["pattern-properties", "additional-properties"],
+)
+@pytest.mark.parametrize(
+    "converter",
+    [json_schema_to_model, json_schema_to_pydantic_type],
+    ids=["model", "pydantic-type"],
+)
+@pytest.mark.parametrize("nested", [False, True], ids=["root", "nested"])
+def test_recursive_dynamic_schema_with_default_does_not_reenter_policy_validation(
+    dynamic_keyword,
+    converter,
+    nested,
+):
+    schema, input_value = _recursive_dynamic_schema(dynamic_keyword, nested)
+    Draft7Validator.check_schema(schema)
+
+    annotation = converter(schema)
+    adapter = TypeAdapter(annotation)
+    result = adapter.validate_python(input_value)
+
+    assert adapter.dump_python(result, mode="json", by_alias=True) == input_value
+
+    invalid_value = {"child_one": "not-an-object"}
+    if nested:
+        invalid_value = {"payload": invalid_value}
+    with pytest.raises(ValidationError):
+        adapter.validate_python(invalid_value)
 
 
 @pytest.mark.parametrize(
