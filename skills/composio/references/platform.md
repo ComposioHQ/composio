@@ -18,7 +18,8 @@ Extend the existing architecture. Do not create a separate demo agent when the r
 
 ## 2. Authenticate the project
 
-Run from the project directory:
+Run from the project directory. Install the CLI when it is missing; upgrade it
+first when an installed CLI reports that a newer version is available:
 
 ```bash
 curl -fsSL https://composio.dev/install | bash
@@ -27,7 +28,27 @@ composio dev init
 
 `composio dev init` logs in when needed, binds the directory to the selected Composio project, and provisions `COMPOSIO_API_KEY` in `.env.local`. If developer mode is off, run `composio dev --mode on` first. When the agent cannot open a browser, use `composio dev init --no-browser` and give the returned URL to the user.
 
+Before opening the initializer, run `composio dev projects list` and confirm the
+exact project is visible. Do this only when initialization is still required; do
+not repeat the online project-list check after a local binding already exists. If
+the project is missing, stop and ask the developer to sign in to the account or
+organization that owns it. Do not accept the selector's default project.
+`--no-browser` changes the login step; project selection is still interactive.
+
 Select the exact project the user named. Do not use `-y` when multiple projects exist unless the current CLI project context already matches it. There is no bare `composio init` command.
+
+After initialization, verify both checkpoints without printing the credential:
+
+- `.composio/project.json` names the exact selected project.
+- `.env.local` contains a plausible `COMPOSIO_API_KEY` (`ak_...`, at least 10
+  characters).
+
+Treat an HTTP error, a missing key, a shorter placeholder key, or an SDK 401 as
+incomplete setup. Perform these local checks before any SDK or network call. If
+either local checkpoint fails, stop: do not install dependencies, call the CLI or
+backend again, change application code, or claim success. Use the dashboard
+fallback to create or copy a project key, store it in `.env.local`, then retry
+the SDK call.
 
 If the developer already has a key, store it as `COMPOSIO_API_KEY`. Never print it back, place it in a URL, or commit it.
 
