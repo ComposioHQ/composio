@@ -335,12 +335,41 @@ def _resolve_local_json_pointer(
     return current
 
 
+# Draft 7 keywords whose value is itself a schema. `items` and `dependencies`
+# are handled separately because they also accept non-schema forms.
+_SCHEMA_VALUED_KEYWORDS = frozenset(
+    {
+        "additionalItems",
+        "additionalProperties",
+        "contains",
+        "else",
+        "if",
+        "not",
+        "propertyNames",
+        "then",
+    }
+)
+
+# Draft 7 keywords whose value is a list of schemas.
+_SCHEMA_LIST_KEYWORDS = frozenset({"allOf", "anyOf", "oneOf"})
+
+# Draft 7 keywords whose value maps names to schemas.
+_SCHEMA_MAP_KEYWORDS = frozenset(
+    {"$defs", "definitions", "patternProperties", "properties"}
+)
+
+
 def _check_dynamic_references(
     schema: t.Any,
     root_schema: t.Dict[str, t.Any],
     checked_references: t.Optional[t.Set[str]] = None,
 ) -> None:
-    """Reject external, anchored, and unresolved references before validation."""
+    """Reject external, anchored, and unresolved references before validation.
+
+    Only schema positions are walked. ``const``, ``default``, ``enum``, and
+    ``examples`` hold instance data, so a ``$ref``-shaped value stored there is
+    a payload rather than a reference and must not block tool wrapping.
+    """
     if checked_references is None:
         checked_references = set()
     if isinstance(schema, list):
@@ -363,8 +392,24 @@ def _check_dynamic_references(
             checked_references.add(reference)
             _check_dynamic_references(resolved, root_schema, checked_references)
 
-    for value in schema.values():
-        _check_dynamic_references(value, root_schema, checked_references)
+    for keyword, value in schema.items():
+        if keyword in _SCHEMA_VALUED_KEYWORDS or keyword in _SCHEMA_LIST_KEYWORDS:
+            _check_dynamic_references(value, root_schema, checked_references)
+        elif keyword in _SCHEMA_MAP_KEYWORDS:
+            if isinstance(value, dict):
+                for entry in value.values():
+                    _check_dynamic_references(entry, root_schema, checked_references)
+        elif keyword == "items":
+            # A schema, or a list of schemas for tuple validation.
+            _check_dynamic_references(value, root_schema, checked_references)
+        elif keyword == "dependencies":
+            # Each entry is either a schema or a list of required property names.
+            if isinstance(value, dict):
+                for entry in value.values():
+                    if isinstance(entry, (dict, bool)):
+                        _check_dynamic_references(
+                            entry, root_schema, checked_references
+                        )
 
 
 def _dynamic_key_validator(

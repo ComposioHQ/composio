@@ -1865,3 +1865,63 @@ class TestSharedObjectCorpusThroughJsonSchemaToModel:
 
         with pytest.raises(ValueError, match="must be a local JSON Pointer"):
             json_schema_to_model(schema)
+
+    @pytest.mark.parametrize(
+        "keyword,value,accepted",
+        [
+            (
+                "default",
+                {"$ref": "https://example.com/schema.json"},
+                {"$ref": "kept"},
+            ),
+            ("const", {"$ref": "other.json#/thing"}, {"$ref": "other.json#/thing"}),
+            ("enum", [{"$ref": "#/$defs/missing"}], {"$ref": "#/$defs/missing"}),
+            ("examples", [{"$ref": "#anchor"}], {"$ref": "kept"}),
+        ],
+    )
+    def test_dynamic_schema_ignores_reference_shaped_instance_data(
+        self,
+        keyword: str,
+        value: t.Any,
+        accepted: t.Dict[str, t.Any],
+    ) -> None:
+        """`$ref`-shaped payloads are data, not references, and must not raise."""
+        schema = {
+            "type": "object",
+            "patternProperties": {"^value_": {"type": "object", keyword: value}},
+        }
+
+        model = json_schema_to_model(schema)
+
+        assert model.model_validate({"value_a": accepted}).model_dump() == {
+            "value_a": accepted
+        }
+
+    @pytest.mark.parametrize(
+        "dynamic_schema",
+        [
+            {"type": "array", "items": {"$ref": "https://example.com/schema.json"}},
+            {"allOf": [{"$ref": "https://example.com/schema.json"}]},
+            {
+                "type": "object",
+                "properties": {"inner": {"$ref": "https://example.com/schema.json"}},
+            },
+            {
+                "type": "object",
+                "additionalProperties": {
+                    "$ref": "https://example.com/schema.json",
+                },
+            },
+        ],
+    )
+    def test_dynamic_schema_checks_references_in_nested_schema_positions(
+        self,
+        dynamic_schema: t.Dict[str, t.Any],
+    ) -> None:
+        schema = {
+            "type": "object",
+            "patternProperties": {"^value_": dynamic_schema},
+        }
+
+        with pytest.raises(ValueError, match="must be a local JSON Pointer"):
+            json_schema_to_model(schema)
