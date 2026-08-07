@@ -79,7 +79,9 @@ def fix(session: Session):
 def tst(session: Session):
     """Run the Python unit test suite."""
     session.install(".", "--group", "dev")
+    session.install("./providers/crewai")
     session.install("./providers/langchain")
+    session.install("./providers/langgraph")
     session.install("./providers/autogen")
     test_paths = session.posargs or ["tests/"]
     session.run("pytest", *test_paths, "-v", "--tb=short")
