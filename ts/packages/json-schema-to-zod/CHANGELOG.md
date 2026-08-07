@@ -1,5 +1,11 @@
 # @composio/json-schema-to-zod
 
+## 0.2.2
+
+### Patch Changes
+
+- 1503786: Model the parser-supported `min`, `max`, and `example` JSON Schema extensions in the exported recursive schema type.
+
 ## 0.2.1
 
 ### Patch Changes
