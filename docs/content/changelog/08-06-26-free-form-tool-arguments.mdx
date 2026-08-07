@@ -19,7 +19,7 @@ A tool argument declared as a bare `{"type": "object"}` — with no `properties`
 
 ### What Changed
 
-An object schema that names no properties is now treated as open: arbitrary content is accepted and preserved, at the root, nested inside another object, and inside array items.
+An object schema that names no properties is now treated as open, unless it sets `additionalProperties: false`: arbitrary content is accepted and preserved, at the root, nested inside another object, and inside array items.
 
 **Before:**
 
@@ -143,6 +143,6 @@ Accepting and preserving free-form object content is backward compatible: payloa
 
 The two unknown-key rejections described above (Python agentic providers and the Claude Agent SDK provider) are two of the three behavior changes at call time. The third is [Python dynamic-key validation](#dynamic-keys-apply-only-where-they-should): a key that used to be dropped in silence now raises a `ValidationError` when it does not match the `patternProperties` or `additionalProperties` schema that claims it.
 
-`additionalProperties: true` still opts an object out of unknown-key rejection, and so does declaring no properties. Neither opts out of the third change: if the object also carries `patternProperties` or a schema-valued `additionalProperties`, its keys are validated against those schemas. Objects with no dynamic-key constraints at all are unaffected.
+`additionalProperties: true` still opts an object out of unknown-key rejection. Declaring no properties does too, unless the object sets `additionalProperties: false` — an explicit `false` closes it, and Python now raises on the unknown keys it used to drop there, the same drop-to-raise transition as the first change. Neither opt-out covers the third change: if the object carries `patternProperties` or a schema-valued `additionalProperties`, its keys are validated against those schemas. An open object with no dynamic-key constraints is unaffected by it.
 
 The remaining changes happen earlier, when the tool's schema is first read rather than when it is called: an invalid dynamic-key schema now fails instead of being ignored. In Python that is a raise while the tool is wrapped, covering an invalid reference, regular expression, or Draft 7 subschema. In the CLI it is a schema compile failure, covering an invalid `patternProperties` regular expression or an unresolvable reference inside a dynamic-key subschema. Only tools whose `patternProperties` or schema-valued `additionalProperties` carry one of those defects are affected.
