@@ -66,6 +66,34 @@ type CorpusLoad = {
   fallbackReason?: string;
 };
 
+type CanonicalRouteRule = {
+  route: string;
+  matches: (query: string) => boolean;
+};
+
+const CANONICAL_ROUTE_RULES: CanonicalRouteRule[] = [
+  {
+    route: '/docs/tools-direct/executing-tools',
+    matches: query => /\bcomposio\s*\.\s*tools\s*\.\s*execute\s*\(/i.test(query),
+  },
+  {
+    route: '/docs/composio-connect',
+    matches: query => {
+      const normalized = query.toLowerCase();
+      if (!/\bmcp\b/.test(normalized)) return false;
+
+      const hasExistingClient =
+        /\b(?:already have|existing)\b.{0,48}\b(?:mcp\s+)?client\b/.test(normalized) ||
+        /\b(?:mcp\s+)?client\b.{0,48}\b(?:already have|existing)\b/.test(normalized);
+      const rejectsSdkSession =
+        /\bnot\s+(?:an?\s+)?(?:sdk\s+)?session\b/.test(normalized) ||
+        /\bwithout\s+(?:an?\s+)?(?:sdk\s+)?session\b/.test(normalized);
+
+      return hasExistingClient || rejectsSdkSession;
+    },
+  },
+];
+
 let corpusCache: Corpus | undefined;
 let corpusCacheSource: CorpusSource | undefined;
 let corpusCacheFallbackReason: string | undefined;
@@ -284,6 +312,31 @@ function dedupeByUrl(ranked: { page: DocPage; s: number }[]): { page: DocPage; s
   return deduped;
 }
 
+export function canonicalRouteForQuery(query: string): string | undefined {
+  return CANONICAL_ROUTE_RULES.find(rule => rule.matches(query))?.route;
+}
+
+function promoteCanonicalRoute(
+  ranked: { page: DocPage; s: number }[],
+  route: string | undefined,
+  corpus: Corpus
+): { page: DocPage; s: number }[] {
+  if (!route) return ranked;
+
+  const existingIndex = ranked.findIndex(item => item.page.url === route);
+  if (existingIndex === 0) return ranked;
+
+  if (existingIndex > 0) {
+    const [canonical] = ranked.splice(existingIndex, 1);
+    if (canonical) ranked.unshift(canonical);
+    return ranked;
+  }
+
+  const canonicalEntry = corpus.entries.find(entry => entry.page.url === route);
+  if (canonicalEntry) ranked.unshift({ page: canonicalEntry.page, s: 0 });
+  return ranked;
+}
+
 function contentFor(
   page: DocPage,
   terms: string[],
@@ -380,13 +433,18 @@ export function searchDocs(query: string, options: SearchDocsOptions = {}): Sear
 
   const corpusLoad = getCorpus();
   const corpus = corpusLoad.corpus;
+  const canonicalRoute = canonicalRouteForQuery(query);
 
   const rankStarted = performance.now();
-  const ranked = dedupeByUrl(
-    corpus.entries
-      .map(entry => ({ page: entry.page, s: score(entry, effective, corpus) }))
-      .filter(({ s }) => s > 0)
-      .sort((a, b) => b.s - a.s)
+  const ranked = promoteCanonicalRoute(
+    dedupeByUrl(
+      corpus.entries
+        .map(entry => ({ page: entry.page, s: score(entry, effective, corpus) }))
+        .filter(({ s }) => s > 0)
+        .sort((a, b) => b.s - a.s)
+    ),
+    canonicalRoute,
+    corpus
   ).slice(0, limit);
   const rankMs = performance.now() - rankStarted;
 
@@ -423,6 +481,7 @@ export function searchDocs(query: string, options: SearchDocsOptions = {}): Sear
     corpusPages: corpus.entries.length,
     corpusTerms: corpus.documentFrequency.size,
     topUrls: results.slice(0, 5).map(result => result.url),
+    canonicalRoute,
     ...(PERF_LOG_QUERY ? { query, terms: effective } : {}),
   });
 

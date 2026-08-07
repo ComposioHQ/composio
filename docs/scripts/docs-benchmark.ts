@@ -15,6 +15,7 @@ interface CliOptions {
   trials: number;
   maxConcurrency: number;
   output: string;
+  scenarios?: string[];
   fromResults?: string;
   skipSiteAudit: boolean;
   siteOnly: boolean;
@@ -145,6 +146,16 @@ const parseArgs = (args: string[]): CliOptions => {
       if (!value) throw new Error(`${flag} requires a path.`);
       options.output = value;
       index += 1;
+    } else if (flag === '--scenarios') {
+      if (!value) throw new Error(`${flag} requires comma-separated scenario ids.`);
+      options.scenarios = value
+        .split(',')
+        .map(id => id.trim())
+        .filter(Boolean);
+      if (options.scenarios.length === 0) {
+        throw new Error(`${flag} requires at least one scenario id.`);
+      }
+      index += 1;
     } else if (flag === '--from-results') {
       if (!value) throw new Error(`${flag} requires a results.json path.`);
       options.fromResults = value;
@@ -166,6 +177,16 @@ const parseArgs = (args: string[]): CliOptions => {
 };
 
 const normalizeBase = (value: string): string => value.replace(/\/$/, '');
+
+const selectScenarios = (ids?: string[]): DocsBenchmarkScenario[] => {
+  if (!ids) return DOCS_BENCHMARK_SCENARIOS;
+  const uniqueIds = [...new Set(ids)];
+  return uniqueIds.map(id => {
+    const scenario = DOCS_BENCHMARK_SCENARIOS.find(row => row.id === id);
+    if (!scenario) throw new Error(`Unknown benchmark scenario: ${id}`);
+    return scenario;
+  });
+};
 
 const routeAppears = (message: string, route: string): boolean => {
   const escaped = route.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -309,15 +330,21 @@ const runModelTrial = async (
   targetName: string,
   targetUrl: string,
   trial: number,
-  maxConcurrency: number
+  maxConcurrency: number,
+  scenarios: DocsBenchmarkScenario[]
 ): Promise<ScenarioScore[]> => {
   console.log(`[model] ${targetName} trial ${trial}: ${targetUrl}`);
   const artifactsRoot = resolve('.eve/evals');
   await mkdir(artifactsRoot, { recursive: true });
   const beforeArtifacts = new Set(await readdir(artifactsRoot));
+  const selected = scenarios.map(scenario => {
+    const index = DOCS_BENCHMARK_SCENARIOS.indexOf(scenario);
+    if (index < 0) throw new Error(`Scenario is not registered: ${scenario.id}`);
+    return { scenario, index, evalId: `docs-benchmark/benchmark/${String(index).padStart(4, '0')}` };
+  });
   const command = await runCommand(EVE_BIN, [
     'eval',
-    'docs-benchmark',
+    ...selected.map(row => row.evalId),
     '--url',
     targetUrl,
     '--skip-report',
@@ -336,7 +363,7 @@ const runModelTrial = async (
   }
   const artifactRoot = join(artifactsRoot, artifactName);
   const results = await Promise.all(
-    DOCS_BENCHMARK_SCENARIOS.map(async (_, index) => {
+    selected.map(async ({ index }) => {
       const suffix = String(index).padStart(4, '0');
       const evalRoot = join(artifactRoot, 'evals/docs-benchmark/benchmark');
       const result = JSON.parse(await readFile(join(evalRoot, `${suffix}.json`), 'utf8')) as EveResult;
@@ -354,9 +381,9 @@ const runModelTrial = async (
     })
   );
 
-  if (results.length !== DOCS_BENCHMARK_SCENARIOS.length) {
+  if (results.length !== scenarios.length) {
     throw new Error(
-      `${targetName} trial ${trial} returned ${results.length} results; expected ${DOCS_BENCHMARK_SCENARIOS.length}.`
+      `${targetName} trial ${trial} returned ${results.length} results; expected ${scenarios.length}.`
     );
   }
 
@@ -452,7 +479,11 @@ const auditQuickstart = async (markdown: string): Promise<QuickstartAudit> => {
   };
 };
 
-const auditSite = async (targetName: string, rawBaseUrl: string): Promise<SiteAudit> => {
+const auditSite = async (
+  targetName: string,
+  rawBaseUrl: string,
+  scenarios: DocsBenchmarkScenario[]
+): Promise<SiteAudit> => {
   const baseUrl = normalizeBase(rawBaseUrl);
   console.log(`[site] ${targetName}: ${baseUrl}`);
   const paths = ['/docs', '/docs.md', '/llms.txt', '/llms-full.txt', '/sitemap.xml'];
@@ -480,7 +511,7 @@ const auditSite = async (targetName: string, rawBaseUrl: string): Promise<SiteAu
   });
 
   const scenarioRoutes = [
-    ...new Set(DOCS_BENCHMARK_SCENARIOS.flatMap(scenario => scenario.expectedRoutes)),
+    ...new Set(scenarios.flatMap(scenario => scenario.expectedRoutes)),
   ];
   await mapLimit(
     scenarioRoutes.filter(route => !routeStatuses.has(route)),
@@ -537,7 +568,8 @@ const aggregateDimensions = (scores: ScenarioScore[]) => ({
 const renderReport = (
   options: CliOptions,
   scores: ScenarioScore[],
-  siteAudits: SiteAudit[]
+  siteAudits: SiteAudit[],
+  scenarios: DocsBenchmarkScenario[]
 ): string => {
   const targets = ['before', 'after'];
   const aggregates = Object.fromEntries(
@@ -548,7 +580,7 @@ const renderReport = (
     '',
     `- Before: ${options.before}`,
     `- After: ${options.after}`,
-    `- Scenarios: ${DOCS_BENCHMARK_SCENARIOS.length}`,
+    `- Scenarios: ${scenarios.length}`,
     `- Trials per target: ${options.siteOnly ? 0 : options.trials}`,
     `- Model scenario executions: ${scores.length}`,
   ];
@@ -580,7 +612,7 @@ const renderReport = (
       '| --- | --- | ---: | ---: | ---: |'
     );
 
-    for (const scenario of DOCS_BENCHMARK_SCENARIOS) {
+    for (const scenario of scenarios) {
       const before = scores.filter(score => score.target === 'before' && score.scenarioId === scenario.id);
       const after = scores.filter(score => score.target === 'after' && score.scenarioId === scenario.id);
       lines.push(
@@ -641,6 +673,10 @@ const main = async () => {
     options.before = saved.config.before;
     options.after = saved.config.after;
     options.trials = saved.config.trials;
+    options.scenarios = saved.config.scenarios;
+    const scenarios = selectScenarios(
+      options.scenarios ?? [...new Set(saved.scores.map(score => score.scenarioId))]
+    );
     const rescored = saved.scores.map(score => {
       const scenario = DOCS_BENCHMARK_SCENARIOS.find(row => row.id === score.scenarioId);
       if (!scenario) throw new Error(`Unknown saved scenario: ${score.scenarioId}`);
@@ -651,7 +687,7 @@ const main = async () => {
     const payload = {
       generatedAt: new Date().toISOString(),
       config: options,
-      scenarios: DOCS_BENCHMARK_SCENARIOS.map(scenario => ({
+      scenarios: scenarios.map(scenario => ({
         ...scenario,
         expectedContent: scenario.expectedContent.map(pattern => pattern.source),
       })),
@@ -660,7 +696,10 @@ const main = async () => {
     };
     await Promise.all([
       writeFile(resolve(outputDirectory, 'results.json'), `${JSON.stringify(payload, null, 2)}\n`),
-      writeFile(resolve(outputDirectory, 'report.md'), renderReport(options, rescored, saved.siteAudits)),
+      writeFile(
+        resolve(outputDirectory, 'report.md'),
+        renderReport(options, rescored, saved.siteAudits, scenarios)
+      ),
     ]);
     console.log(`Regraded ${resolve(outputDirectory, 'report.md')}`);
     return;
@@ -668,6 +707,7 @@ const main = async () => {
   options.before = normalizeBase(options.before);
   const after = normalizeBase(options.after!);
   options.after = after;
+  const scenarios = selectScenarios(options.scenarios);
   const outputDirectory = resolve(options.output);
   await mkdir(outputDirectory, { recursive: true });
 
@@ -677,14 +717,22 @@ const main = async () => {
   ];
   const siteAudits = options.skipSiteAudit
     ? []
-    : await Promise.all(targets.map(target => auditSite(target.name, target.url)));
+    : await Promise.all(
+        targets.map(target => auditSite(target.name, target.url, scenarios))
+      );
 
   const scores: ScenarioScore[] = [];
   if (!options.siteOnly) {
     for (let trial = 1; trial <= options.trials; trial += 1) {
       for (const target of targets) {
         scores.push(
-          ...(await runModelTrial(target.name, target.url, trial, options.maxConcurrency))
+          ...(await runModelTrial(
+            target.name,
+            target.url,
+            trial,
+            options.maxConcurrency,
+            scenarios
+          ))
         );
       }
     }
@@ -693,14 +741,14 @@ const main = async () => {
   const payload = {
     generatedAt: new Date().toISOString(),
     config: options,
-    scenarios: DOCS_BENCHMARK_SCENARIOS.map(scenario => ({
+    scenarios: scenarios.map(scenario => ({
       ...scenario,
       expectedContent: scenario.expectedContent.map(pattern => pattern.source),
     })),
     siteAudits,
     scores,
   };
-  const report = renderReport(options, scores, siteAudits);
+  const report = renderReport(options, scores, siteAudits, scenarios);
   await Promise.all([
     writeFile(resolve(outputDirectory, 'results.json'), `${JSON.stringify(payload, null, 2)}\n`),
     writeFile(resolve(outputDirectory, 'report.md'), report),

@@ -70,3 +70,5 @@ These features are documented **only in the API reference** — there is no `/do
 ## Legacy — do not lead with these
 
 Direct tool execution and the `tools-direct/*` pages are the **legacy**, pre-session API. Do not mention "direct execution" or link these pages unless the user explicitly asks about the low-level / direct-execution API. For everything else, answer with the session-based model above.
+
+- **Maintaining code that explicitly calls `composio.tools.execute()`** → [Executing tools directly](/docs/tools-direct/executing-tools)

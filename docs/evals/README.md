@@ -1,6 +1,6 @@
 # Documentation evals
 
-The docs benchmark compares the public canonical site with a candidate deployment. It runs the same 30 prompts repeatedly and scores five dimensions independently:
+The docs benchmark compares the public canonical site with a candidate deployment. It runs the same 31 prompts repeatedly and scores five dimensions independently:
 
 - execution: the docs agent completed without a failed action
 - content: the answer contains the scenario's required concepts
@@ -23,6 +23,20 @@ bun run eval:docs:benchmark -- \
 ```
 
 Use one trial while editing, then 5 to 10 trials for a comparison. Outputs are `report.md` for review and `results.json` for per-trial answers and scores.
+
+Run only the scenarios affected by an iteration while editing:
+
+```bash
+bun run eval:docs:benchmark -- \
+  --before https://docs.composio.dev \
+  --after https://your-preview.preview.composio.dev \
+  --scenarios codex-without-mcp,generic-mcp-client,application-session-mcp \
+  --trials 10 \
+  --skip-site-audit \
+  --output evals/results/focused
+```
+
+`--scenarios` accepts comma-separated scenario IDs. Run the full suite once the focused routes are stable.
 
 Regrade saved answers after adjusting deterministic route, content, or citation rules without making new model calls:
 

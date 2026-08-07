@@ -28,6 +28,14 @@ The userID scopes connected accounts and tool executions and isolates users from
 
 By default a session gives your application tools it calls directly through a provider package; this integrates with your framework and supports modifiers and custom tools. When the application creates the session and needs MCP transport, `{ mcp: true }` also exposes `session.mcp.url` and `session.mcp.headers`. MCP is more portable across clients, but modifiers and custom tools do not apply over the MCP surface. Existing clients with explicit MCP intent use Composio Connect; Codex or Claude Code users without MCP intent use the native agent plugin.
 
+## Existing MCP client without an SDK session (/docs/composio-connect)
+
+If the user already has an MCP-compatible client and explicitly wants a Composio MCP URL, use Composio Connect at `https://connect.composio.dev/mcp`. This route does not require the application to create an SDK session. Codex and Claude Code users who did not explicitly ask for MCP should use their native Composio plugin instead.
+
+## Legacy composio.tools.execute() implementation (/docs/tools-direct/executing-tools)
+
+When a user explicitly asks how to maintain code that calls `composio.tools.execute()`, use the direct-execution guide. This is a legacy, pre-session API and should not be recommended for new applications. New applications should use sessions.
+
 ## Sandbox files and the /mnt/files mount (/docs/sandbox)
 
 The sandbox has a persistent file mount at `/mnt/files/` that survives sandbox restarts (changing the compute tier clears in-memory state but keeps the mount). Move files between your app and the mount with `session.experimental.files` (`upload`, `list`, `download`, `delete`). A `RemoteFile`'s `expiresAt` is the download-link expiry, not a file TTL, and there is no SDK call to create custom mounts.
