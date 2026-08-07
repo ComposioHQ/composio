@@ -243,9 +243,7 @@ describe('Tools Modifiers', () => {
       // Verify schema modification
       expect(getRawComposioToolBySlugSpy).toHaveBeenCalledWith(
         slug,
-        {
-          modifySchema: schemaModifier,
-        },
+        undefined,
         undefined
       );
       expect(mockTool.description).toBe('Enhanced GITHUB_GET_REPOS for better context');
@@ -256,7 +254,8 @@ describe('Tools Modifiers', () => {
       // Verify execution function creation
       expect(createExecuteToolFnSpy).toHaveBeenCalledWith(
         userId,
-        expect.objectContaining(executionModifiers)
+        expect.objectContaining(executionModifiers),
+        expect.any(Array)
       );
 
       // Mock a tool execution to verify the full flow

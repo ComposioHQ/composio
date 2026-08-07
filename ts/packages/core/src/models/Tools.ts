@@ -766,33 +766,45 @@ export class Tools<
     const { signal: _, ...modifiers } = options ?? {};
 
     if (typeof arg2 === 'string') {
-      const tool = await this.getRawComposioToolBySlug(
-        arg2,
-        {
-          modifySchema: options?.modifySchema as TransformToolSchemaModifier,
-        },
-        requestOptions
-      );
+      const rawTool = await this.getRawComposioToolBySlug(arg2, undefined, requestOptions);
+      const tool = await this.applySchemaModifier(rawTool, options?.modifySchema);
       return this.wrapToolsForProvider(
         userId,
         [tool],
-        modifiers as ExecuteToolModifiers
+        modifiers as ExecuteToolModifiers,
+        [rawTool]
       ) as TToolCollection;
     } else {
-      const tools = await this.getRawComposioTools(
-        arg2,
-        {
-          modifySchema: options?.modifySchema as TransformToolSchemaModifier,
-        },
-        requestOptions
+      const rawTools = await this.getRawComposioTools(arg2, undefined, requestOptions);
+      const tools = await Promise.all(
+        rawTools.map(tool => this.applySchemaModifier(tool, options?.modifySchema))
       );
       return this.wrapToolsForProvider(
         userId,
         tools,
-        modifiers as ExecuteToolModifiers
+        modifiers as ExecuteToolModifiers,
+        rawTools
       ) as TToolCollection;
     }
   }
+
+  private async applySchemaModifier(
+    tool: Tool,
+    modifier?: TransformToolSchemaModifier
+  ): Promise<Tool> {
+    if (!modifier) {
+      return tool;
+    }
+    if (typeof modifier !== 'function') {
+      throw new ComposioInvalidModifierError('Invalid schema modifier. Not a function.');
+    }
+    return modifier({
+      toolSlug: tool.slug,
+      toolkitSlug: tool.toolkit?.slug ?? 'unknown',
+      schema: tool,
+    });
+  }
+
   /**
    * @internal
    * Creates a global execute tool function.
@@ -817,14 +829,16 @@ export class Tools<
    * @param userId - The user id to get the tools for
    * @param tools - The tools to wrap
    * @param modifiers - The modifiers to be applied to the tools
+   * @param rawTools - The unmodified tool schemas used for execution metadata
    * @returns The wrapped tools
    */
   wrapToolsForProvider<T extends TProvider>(
     userId: string,
     tools: Tool[],
-    modifiers?: ExecuteToolModifiers
+    modifiers?: ExecuteToolModifiers,
+    rawTools: Tool[] = tools
   ): ReturnType<T['wrapTools']> {
-    const executeToolFn = this.createExecuteToolFn(userId, tools, modifiers);
+    const executeToolFn = this.createExecuteToolFn(userId, modifiers, rawTools);
     return this.provider.wrapTools(tools, executeToolFn) as ReturnType<T['wrapTools']>;
   }
 
@@ -853,14 +867,14 @@ export class Tools<
    * This function is used by agentic providers to execute the tool
    *
    * @param {string} userId - The user id
-   * @param {Tool[]} tools - The fetched tools available to the provider
    * @param {ExecuteToolModifiers} modifiers - The modifiers to be applied to the tool
+   * @param {Tool[]} tools - The fetched tools available to the provider
    * @returns {ExecuteToolFn} The execute tool function
    */
   private createExecuteToolFn(
     userId: string,
-    tools: Tool[],
-    modifiers?: ExecuteToolModifiers
+    modifiers: ExecuteToolModifiers | undefined,
+    tools: Tool[]
   ): ExecuteToolFn {
     const toolBySlug = new Map(tools.map(tool => [tool.slug.toUpperCase(), tool]));
     const executeToolFn = async (toolSlug: string, input: Record<string, unknown>) => {

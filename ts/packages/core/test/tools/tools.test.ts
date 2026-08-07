@@ -741,9 +741,7 @@ describe('Tools', () => {
 
       expect(getRawComposioToolBySlugSpy).toHaveBeenCalledWith(
         slug,
-        {
-          modifySchema: undefined,
-        },
+        undefined,
         undefined
       );
       expect(context.mockProvider.wrapTools).toHaveBeenCalledWith(
@@ -766,7 +764,7 @@ describe('Tools', () => {
 
       expect(getRawComposioToolsSpy).toHaveBeenCalledWith(
         filters,
-        { modifySchema: undefined },
+        undefined,
         undefined
       );
       expect(context.mockProvider.wrapTools).toHaveBeenCalled();
@@ -789,9 +787,7 @@ describe('Tools', () => {
 
       expect(getRawComposioToolBySlugSpy).toHaveBeenCalledWith(
         slug,
-        {
-          modifySchema: schemaModifier,
-        },
+        undefined,
         undefined
       );
     });
@@ -2448,6 +2444,42 @@ describe('Tools', () => {
         expect(getRawComposioToolBySlugSpy).toHaveBeenCalledTimes(1);
         expect(mockClient.tools.retrieve).not.toHaveBeenCalled();
         expect(mockClient.tools.execute).toHaveBeenCalledTimes(1);
+      });
+
+      it('should resolve toolkit versions from the raw schema when modifySchema rewrites toolkit', async () => {
+        const mockProvider = new MockProvider();
+        const tools = new Tools(mockClient, {
+          provider: mockProvider,
+          toolkitVersions: { 'test-toolkit': '20250101_00' },
+        });
+        const userId = 'test-user';
+        const toolSlug = 'GITHUB_CREATE_ISSUE';
+        const rawTool = {
+          ...toolMocks.transformedTool,
+          slug: toolSlug,
+          toolkit: { slug: 'test-toolkit', name: 'Test Toolkit' },
+        } as unknown as Tool;
+        const modifiedTool = {
+          ...rawTool,
+          toolkit: { slug: 'renamed-toolkit', name: 'Renamed Toolkit' },
+        } as unknown as Tool;
+        vi.spyOn(tools, 'getRawComposioToolBySlug').mockResolvedValueOnce(rawTool);
+        const schemaModifier = vi.fn().mockResolvedValueOnce(modifiedTool);
+        let storedExecuteToolFn: ExecuteToolFn | undefined;
+        mockProvider.wrapTools.mockImplementation((_tools, executeToolFn) => {
+          storedExecuteToolFn = executeToolFn;
+          return 'wrapped-tools';
+        });
+
+        await tools.get(userId, toolSlug, { modifySchema: schemaModifier });
+        mockClient.tools.execute.mockResolvedValueOnce(toolMocks.rawToolExecuteResponse);
+        await storedExecuteToolFn!(toolSlug, {});
+
+        expect(mockClient.tools.execute).toHaveBeenCalledWith(
+          toolSlug,
+          expect.objectContaining({ version: '20250101_00' }),
+          undefined
+        );
       });
     });
   });
