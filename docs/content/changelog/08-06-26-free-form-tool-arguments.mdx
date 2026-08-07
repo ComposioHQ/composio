@@ -10,6 +10,7 @@ date: '2026-08-06'
 | ----------------------------------------- | -------- |
 | Python `composio`                         | `0.19.0` |
 | TypeScript `@composio/core`               | `0.15.0` |
+| TypeScript `@composio/slim`               | `0.15.0` |
 | TypeScript `@composio/json-schema-to-zod` | `0.3.0`  |
 | TypeScript `@composio/claude-agent-sdk`   | `0.11.0` |
 
@@ -145,4 +146,8 @@ The two unknown-key rejections described above (Python agentic providers and the
 
 `additionalProperties: true` still opts an object out of unknown-key rejection. Declaring no properties does too, unless the object sets `additionalProperties: false` — an explicit `false` closes it, and Python now raises on the unknown keys it used to drop there, the same drop-to-raise transition as the first change. Neither opt-out covers the third change: if the object carries `patternProperties` or a schema-valued `additionalProperties`, its keys are validated against those schemas. An open object with no dynamic-key constraints is unaffected by it.
 
-The remaining changes happen earlier, when the tool's schema is first read rather than when it is called: an invalid dynamic-key schema now fails instead of being ignored. In Python that is a raise while the tool is wrapped, covering an invalid reference, regular expression, or Draft 7 subschema. In the CLI it is a schema compile failure, covering an invalid `patternProperties` regular expression or an unresolvable reference inside a dynamic-key subschema. Only tools whose `patternProperties` or schema-valued `additionalProperties` carry one of those defects are affected. Note that this can fail a call that previously succeeded: both SDKs used to surface such a defect only if validation happened to descend into that part of the schema, so a payload that stayed out of the affected branch ran against a schema that could not fully validate it. That is now a failure naming the schema, rather than a silent gap in validation.
+The remaining changes are about the schema itself rather than the arguments checked against it: an invalid dynamic-key schema now fails instead of being ignored. Only tools whose `patternProperties` or schema-valued `additionalProperties` carry such a defect are affected, and the two SDKs get there differently.
+
+In Python it is a raise while the tool is wrapped, covering an invalid reference, regular expression, or Draft 7 subschema. Neither keyword was read before, so the defect never surfaced at all and every dynamic key was dropped. A tool carrying one now fails when it is wrapped, for every caller, rather than on a particular payload.
+
+In the CLI it is a schema compile failure, covering an invalid `patternProperties` regular expression or an unresolvable reference inside a dynamic-key subschema. There the defect did surface, but only when validation descended into that part of the schema, and it was reported as though the arguments were at fault. A payload that stayed out of the affected branch validated against a schema that could not fully check it, and is now rejected.
