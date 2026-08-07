@@ -1,10 +1,12 @@
 ---
 title: Quickstart
-description: Build a Python agent that uses Composio to take its first action
-keywords: [tutorial, setup, first agent, python, openai agents]
+description: Build a general-purpose Python agent that can discover and use Composio tools
+keywords: [tutorial, setup, first agent, python, openai agents, sessions, tool router]
 ---
 
-Build a Python agent that stars a GitHub repository. Composio gives the agent the tools it needs and handles the GitHub connection.
+Build an interactive agent that can work across your apps. You give it a task; the agent finds the right Composio tools, asks you to connect an app when needed, and runs the tools for that task.
+
+This guide uses Python and OpenAI Agents to keep the setup short. The Composio pattern—create a session for a user, then give its tools to your agent—is the same across [supported providers and frameworks](/docs/providers).
 
 ## Prerequisites
 
@@ -14,7 +16,7 @@ You need:
 - A `COMPOSIO_API_KEY` from [Composio Settings](https://dashboard.composio.dev/~/project/settings/api-keys?utm_source=docs&utm_medium=content&utm_campaign=docs-quickstart).
 - An `OPENAI_API_KEY` from [OpenAI](https://platform.openai.com/api-keys).
 
-## Build and run the agent
+## Build your agent
 
 <Steps>
 <Step>
@@ -59,7 +61,7 @@ echo ".env" >> .gitignore
 Replace the generated `main.py` with this complete program:
 
 ```python title="main.py"
-from agents import Agent, Runner
+from agents import Agent, Runner, SQLiteSession
 from composio import Composio
 from composio_openai_agents import OpenAIAgentsProvider
 from dotenv import load_dotenv
@@ -67,24 +69,39 @@ from dotenv import load_dotenv
 load_dotenv()
 
 composio = Composio(provider=OpenAIAgentsProvider())
-session = composio.create(user_id="quickstart-user")
-tools = session.tools()
+
+# A Composio session scopes tools and connected accounts to this user.
+composio_session = composio.sessions.create(user_id="quickstart-user")
+tools = composio_session.tools()
 
 agent = Agent(
-    name="GitHub assistant",
+    name="Composio assistant",
     instructions=(
-        "Use Composio tools to complete the request. "
-        "If GitHub is not connected, return the connection link to the user."
+        "Help the user complete tasks with Composio tools. "
+        "Search for relevant tools before acting. "
+        "If an app is not connected, share the Connect Link and wait. "
+        "Confirm the target and details before consequential actions."
     ),
     tools=tools,
 )
 
-result = Runner.run_sync(
-    starting_agent=agent,
-    input="Star the composiohq/composio repository on GitHub.",
-)
+# This is chat history for OpenAI Agents, separate from the Composio session.
+conversation = SQLiteSession("quickstart-conversation")
 
-print(result.final_output)
+print("Ask me to work across your apps. Type 'exit' to quit.")
+while True:
+    task = input("You: ").strip()
+    if task.lower() == "exit":
+        break
+    if not task:
+        continue
+
+    result = Runner.run_sync(
+        starting_agent=agent,
+        input=task,
+        session=conversation,
+    )
+    print(f"Assistant: {result.final_output}\n")
 ```
 
 </Step>
@@ -95,47 +112,45 @@ print(result.final_output)
 uv run main.py
 ```
 
-If GitHub is not connected for `quickstart-user`, the agent returns a Connect Link. Open that link, approve access to GitHub, then run the same command again:
+Try a task that is useful to you. For example:
 
-```bash
-uv run main.py
-```
+- `Find the three most recent open issues in a public GitHub repository.`
+- `Summarize my unread emails from today.`
+- `Turn these release notes into a new Linear issue: ...`
 
-Composio stores the connection under `quickstart-user`, so the next run can reuse it. If GitHub is already connected for this ID, the action can complete immediately.
+These are examples, not a required sequence. The agent discovers tools based on whatever task you enter.
 
-</Step>
-<Step>
-<StepTitle>Confirm the result</StepTitle>
-
-The agent should confirm that it starred the repository. You can also check that **Starred** is selected on the [`ComposioHQ/composio` repository](https://github.com/ComposioHQ/composio). To inspect the tool request, response, and timing, use the [Logs API](/reference/api-reference/logs).
+If a task needs access to one of your apps, the agent returns a Connect Link. Open the link, approve the connection, then tell the agent to continue. The same `quickstart-user` can reuse that connection for later tasks.
 
 </Step>
 </Steps>
 
-## What the code does
+## How the tool router works
 
-- `OpenAIAgentsProvider` converts Composio tools into the format OpenAI Agents expects.
-- `composio.create()` creates a [session](/docs/how-composio-works) for one user. The session handles tool discovery, authentication, and execution.
-- `session.tools()` gives the agent a small set of meta tools that can find and run tools from [1000+ toolkits](/toolkits).
+The code follows the same four-part flow you will use in an application:
 
-<Callout type="warn" title="Use a real user ID in production">
+1. `Composio(...)` adapts Composio tools to your agent framework.
+2. `composio.sessions.create(user_id=...)` creates a [session](/docs/how-composio-works) for one user and scopes that user's connections and tool calls.
+3. `session.tools()` returns a small set of meta tools—not thousands of app-tool schemas. These meta tools let the agent search, authenticate, and execute at runtime.
+4. Your agent decides which tools fit each request. When a connection is missing, the same session can provide a Connect Link before the agent continues.
+
+This is why the example is not tied to Gmail, GitHub, Linear, or any single workflow. The task changes; the session pattern does not.
+
+<Callout type="warn" title="Use your application's user ID in production">
 `quickstart-user` is only for this local example. In your application, pass the signed-in user's stable database ID so every person's connections and tool calls stay isolated.
 </Callout>
 
-## Other ways to start
+To inspect a run, including the selected tools, inputs, responses, and timing, use the [Logs API](/reference/api-reference/logs).
 
-Choose the path that matches your framework or how you want to use Composio:
+## Adapt it to your stack
 
-<Cards>
-  <Card title="OpenAI provider" href="/docs/providers/openai" description="Use TypeScript, the Responses API, or Chat Completions." />
-  <Card title="Other SDKs and frameworks" href="/docs/providers" description="Use Anthropic, Vercel AI SDK, LangChain, CrewAI, or another provider." />
-  <Card title="MCP for your application" href="/docs/sessions-via-mcp" description="Expose a Composio session through a hosted MCP endpoint." />
-  <Card title="Agent plugins" href="/docs/agent-plugins" description="Use the native Composio plugin in Codex or Claude Code." />
-</Cards>
-
-## Next
+Keep the session pattern and replace the provider and agent runner with the ones your application already uses:
 
 <Cards>
-  <Card title="Configure sessions" href="/docs/configuring-sessions" description="Restrict toolkits, preload tools, and select connected accounts." />
-  <Card title="Understand authentication" href="/docs/authentication" description="Learn how Connect Links and per-user connections work." />
+  <Card title="OpenAI" href="/docs/providers/openai" description="Use OpenAI Agents, the Responses API, or Chat Completions in Python or TypeScript." />
+  <Card title="Other providers and frameworks" href="/docs/providers" description="Use Anthropic, Vercel AI SDK, LangChain, CrewAI, or another supported framework." />
+  <Card title="Configure sessions" href="/docs/configuring-sessions" description="Restrict toolkits, preload known tools, or select connected accounts." />
+  <Card title="Session authentication" href="/docs/authentication" description="Design Connect Link and per-user connection flows for your application." />
 </Cards>
+
+If your application already speaks MCP, you can expose the same session through its hosted MCP endpoint. See [Using sessions via MCP](/docs/sessions-via-mcp).

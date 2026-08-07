@@ -12,6 +12,10 @@ describe('Welcome navigation', () => {
       'Build with Composio',
       'Use Composio',
     ]);
+    expect(HOME_INTENTS.map(intent => intent.audience)).toEqual([
+      'For your platform',
+      'For you',
+    ]);
 
     expect(HOME_INTENTS[0].links.map(link => link.href)).toEqual([
       '/docs/quickstart',
@@ -30,6 +34,7 @@ describe('Welcome navigation', () => {
 
     for (const intent of HOME_INTENTS) {
       expect(markdown).toContain(`### ${intent.title}`);
+      expect(markdown).toContain(`**${intent.audience}**`);
       for (const link of intent.links) {
         expect(markdown).toContain(`[${link.title}](${link.href})`);
       }

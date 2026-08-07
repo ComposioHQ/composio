@@ -86,9 +86,9 @@ describe("Navigation - meta.json validity", () => {
       "index",
       "quickstart",
       "providers",
-      "sessions-via-mcp",
-      "composio-connect",
+      "agent-plugins",
       "cli",
+      "composio-connect",
     ]);
 
     expect(pages.slice(coreIndex + 1, guidesIndex)).toEqual([
@@ -99,6 +99,7 @@ describe("Navigation - meta.json validity", () => {
     ]);
 
     expect(pages.slice(guidesIndex + 1)).toEqual([
+      "sessions-via-mcp",
       "sandbox",
       "extending-sessions",
       "setting-up-triggers",

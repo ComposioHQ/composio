@@ -73,7 +73,7 @@ The automated navigation score is a content-link graph proxy, not a replacement 
 
 ## Quickstart execution
 
-The default audit compiles every Python block without importing packages or calling external services. A full live run needs dedicated Composio credentials and a disposable GitHub account/repository because the documented example performs a real GitHub action. Keep that credentialed job opt-in rather than running it on every pull request.
+The default audit compiles every Python block without importing packages or calling external services. A live smoke test should run the interactive agent with dedicated credentials, verify that a read-only task reaches tool discovery, and verify that a task requiring authentication returns a Connect Link. Keep connected-account flows and any write action opt-in; use a disposable account and target when testing consequential tools.
 
 ## CI shape
 

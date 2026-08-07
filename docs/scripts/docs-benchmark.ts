@@ -674,7 +674,7 @@ const renderReport = (
     '',
     `- Dimension failures across all trials: ${failures.length}`,
     '- Full final answers and failure reasons are in `results.json`.',
-    '- Quickstart live execution is intentionally not run: it needs dedicated credentials and a disposable GitHub target because the documented action mutates external state.',
+    '- Quickstart live execution is intentionally not run: it needs dedicated Composio and model credentials. Keep connected-account flows and write actions opt-in, using disposable accounts and targets.',
     '- The same scenarios can be handed to human testers; use route found, completion, time, and wrong turns as the human rubric.',
     ''
   );
