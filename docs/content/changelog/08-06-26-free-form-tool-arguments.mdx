@@ -49,13 +49,38 @@ The CLI-side fix ships with the CLI binary rather than the npm packages above. U
 
 #### Dynamic keys apply only where they should
 
-Where a schema declares `patternProperties` or a schema-valued `additionalProperties`, each key is now validated against exactly the schemas that claim it. Previously a key could pass by satisfying an unrelated pattern instead of its own.
+Where a schema declares `patternProperties` or a schema-valued `additionalProperties`, each key is now validated against exactly the schemas that claim it. In TypeScript a key could previously pass by satisfying an unrelated pattern instead of its own. In Python neither keyword was read at all, so dynamic keys were never validated.
 
 - Every matching `patternProperties` entry validates its key.
 - `additionalProperties` applies only to keys that no declared property and no pattern matches.
 - A key declared in `properties` is still checked against every pattern it matches.
 
 Root-level `patternProperties` and boolean- or schema-valued `additionalProperties` also survive tool schema parsing; they were previously dropped before any converter could see them.
+
+<Callout type="warn">
+**Behavior change**
+
+Because the Python converter read neither keyword, an object that declared no properties became an empty Pydantic model: every dynamic key was dropped and the call ran without it. Those keys are now validated — at the root, nested under a declared property, and inside array items — and preserved when they pass.
+
+</Callout>
+
+**Before:**
+
+```python
+# `metadata` is {"type": "object"} with "patternProperties": {"^count_": {"type": "integer"}}
+wrapped.run({"metadata": {"count_a": "not-an-integer"}})
+# The tool executed with {"metadata": {}} - every dynamic key was dropped in silence
+```
+
+**After:**
+
+```python
+wrapped.run({"metadata": {"count_a": "not-an-integer"}})
+# Raises ValidationError before execution
+
+wrapped.run({"metadata": {"count_a": 3}})
+# The tool executes with {"metadata": {"count_a": 3}} intact
+```
 
 In Python, an invalid `patternProperties` or schema-valued `additionalProperties` schema now raises while the tool is wrapped instead of being ignored. This includes an external, anchored, or unresolvable `$ref`, a `patternProperties` key that is not a valid regular expression, or a dynamic-key subschema that is not valid Draft 7. A `$ref` in these schemas must be a local JSON Pointer such as `#/properties/foo`. The rule is transitive: a local pointer whose target carries a non-local reference raises too. A `$ref`-shaped value under `const`, `default`, `enum`, or `examples` is instance data rather than a reference, and is left alone.
 
@@ -114,6 +139,8 @@ This is also what makes free-form object arguments reach execution intact throug
 
 Accepting and preserving free-form object content is backward compatible: payloads that previously failed now succeed, and payloads that previously arrived empty now arrive complete.
 
-The two unknown-key rejections described above (Python agentic providers and the Claude Agent SDK provider) are the behavior changes at call time. Tools whose schemas set `additionalProperties: true`, or whose objects declare no properties, are unaffected.
+The two unknown-key rejections described above (Python agentic providers and the Claude Agent SDK provider) are two of the three behavior changes at call time. The third is [Python dynamic-key validation](#dynamic-keys-apply-only-where-they-should): a key that used to be dropped in silence now raises a `ValidationError` when it does not match the `patternProperties` or `additionalProperties` schema that claims it.
+
+`additionalProperties: true` still opts an object out of unknown-key rejection, and so does declaring no properties. Neither opts out of the third change: if the object also carries `patternProperties` or a schema-valued `additionalProperties`, its keys are validated against those schemas. Objects with no dynamic-key constraints at all are unaffected.
 
 The one remaining change happens earlier, while a Python tool is wrapped: an invalid dynamic-key schema now raises instead of being ignored. Only tools whose `patternProperties` or schema-valued `additionalProperties` contain an invalid reference, regular expression, or Draft 7 subschema are affected.
