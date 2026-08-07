@@ -17,6 +17,7 @@ describe('docs benchmark scenarios', () => {
     const preferred = DOCS_BENCHMARK_SCENARIOS.filter(scenario =>
       [
         'claude-code-default',
+        'agent-skill',
         'terminal-cli',
         'codex-without-mcp',
         'codex-plugin-explicit',
@@ -32,6 +33,9 @@ describe('docs benchmark scenarios', () => {
     expect(
       preferred.find(scenario => scenario.id === 'codex-without-mcp')?.expectedRoutes
     ).toEqual(['/docs/agent-plugins']);
+    expect(preferred.find(scenario => scenario.id === 'agent-skill')?.expectedRoutes).toEqual([
+      '/docs/agent-plugins',
+    ]);
     expect(explicitMcp.map(scenario => scenario.expectedRoutes[0])).toEqual([
       '/docs/composio-connect',
       '/docs/composio-connect',

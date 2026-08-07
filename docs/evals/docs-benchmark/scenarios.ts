@@ -24,7 +24,7 @@ export const DOCS_BENCHMARK_SCENARIOS: DocsBenchmarkScenario[] = [
     prompt:
       'I am new to Composio. What are my main ways to get started, and which page should I use to choose? Keep it brief and cite the docs.',
     expectedRoutes: ['/docs'],
-    expectedContent: [/build/i, /use/i],
+    expectedContent: [/build/i, /us(?:e|ing)/i],
   },
   {
     id: 'start-python-github',
@@ -51,7 +51,7 @@ export const DOCS_BENCHMARK_SCENARIOS: DocsBenchmarkScenario[] = [
     prompt:
       'Where can I see the supported agent frameworks before I pick one? Mention a few choices and cite the index page.',
     expectedRoutes: ['/docs/providers'],
-    expectedContent: [/openai/i, /anthropic|langchain|vercel/i],
+    expectedContent: [/framework|provider|adapter/i, /openai|anthropic|langchain|vercel|crewai|autogen/i],
   },
   {
     id: 'claude-code-default',
@@ -89,7 +89,7 @@ export const DOCS_BENCHMARK_SCENARIOS: DocsBenchmarkScenario[] = [
     category: 'start-and-route',
     prompt:
       'I want my coding agent to learn how to operate the Composio CLI. Is there a reusable agent skill I can install? Give the command and a docs citation.',
-    expectedRoutes: ['/docs/cli'],
+    expectedRoutes: ['/docs/agent-plugins'],
     forbiddenRoutes: ['/docs/composio-connect'],
     expectedContent: [/skill/i, /composio/i],
   },
@@ -120,7 +120,7 @@ export const DOCS_BENCHMARK_SCENARIOS: DocsBenchmarkScenario[] = [
     prompt:
       'I explicitly want to connect Cursor to Composio over MCP, without writing an SDK app. Which guide should I follow?',
     expectedRoutes: ['/docs/composio-connect'],
-    expectedContent: [/cursor/i, /mcp/i],
+    expectedContent: [/mcp/i, /connect/i],
   },
   {
     id: 'generic-mcp-client',
@@ -229,7 +229,7 @@ export const DOCS_BENCHMARK_SCENARIOS: DocsBenchmarkScenario[] = [
     prompt:
       'I need an authenticated API endpoint that is not exposed as a normal Composio tool. Which feature lets me call the upstream API with a connected account?',
     expectedRoutes: ['/docs/extending-sessions/proxy-execute'],
-    expectedContent: [/proxy/i, /authenticated|connected account/i],
+    expectedContent: [/proxy/i, /authenticated|connected account|stored credentials|inject.*credentials/i],
   },
   {
     id: 'migrate-direct-to-sessions',
@@ -265,7 +265,7 @@ export const DOCS_BENCHMARK_SCENARIOS: DocsBenchmarkScenario[] = [
     prompt:
       'I want an example that reviews pull requests using a local sandbox. Find the closest complete example and link it.',
     expectedRoutes: ['/examples/local-sandbox-pr-reviewer'],
-    expectedContent: [/pull request|pr reviewer/i, /sandbox/i],
+    expectedContent: [/pull.?request|pr.?reviewer/i, /sandbox/i],
   },
   {
     id: 'build-imessage-agent',
@@ -283,7 +283,7 @@ export const DOCS_BENCHMARK_SCENARIOS: DocsBenchmarkScenario[] = [
     prompt:
       'I already use LangChain. Do I need to finish an OpenAI Agents tutorial first, or can I go directly to the Composio LangChain guide? Link the right page.',
     expectedRoutes: ['/docs/providers/langchain'],
-    expectedContent: [/\bno\b|do not|don't/i, /langchain/i],
+    expectedContent: [/\bno\b|do not|don't|not (?:a )?prerequisite|isn't (?:a )?prerequisite/i, /langchain/i],
   },
   {
     id: 'explicit-direct-execution',

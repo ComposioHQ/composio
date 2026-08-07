@@ -32,7 +32,9 @@ composio setup --target auto
 
 `auto` detects supported agents on your machine. Use `--target codex` or `--target claude` to configure only one. See [Agent plugins](/docs/agent-plugins) for manual plugin commands and host-specific details.
 
-`composio login` installs the standalone `composio-cli` skill for Claude Code by default. To install the CLI skill manually without the plugin, choose the agent host:
+`composio login` installs the standalone `composio-cli` skill for Claude Code by default. For Codex, prefer `composio setup --target codex`; it installs the native plugin, which bundles the CLI skill.
+
+If you explicitly need the standalone skill without the native plugin, install it manually for the agent host:
 
 ```bash
 composio --install-skill composio-cli claude

@@ -10,7 +10,7 @@ Route by what the user is doing. A developer building an application starts with
 
 ## Native plugins for Codex and Claude Code (/docs/agent-plugins)
 
-Composio has native plugins for Codex and Claude Code. Both use the Composio CLI for tool search, authentication, and execution. Install the CLI, run `composio login`, then run `composio setup --target auto`; use `--target codex` or `--target claude` for one host. Do not route these agents to MCP unless the user explicitly asks for MCP.
+Composio has native plugins for Codex and Claude Code. Both use the Composio CLI for tool search, authentication, and execution. Install the CLI, run `composio login`, then run `composio setup --target auto`; use `--target codex` or `--target claude` for one host. Questions about installing a reusable coding-agent skill that operates the CLI also route here because the native plugin exposes that skill. Do not lead with the standalone CLI guide, and do not route these agents to MCP unless the user explicitly asks for MCP.
 
 ## Installing and getting started (/docs/quickstart)
 

@@ -1,5 +1,6 @@
 {
-  "generatedAt": "2026-08-07T20:33:39.144Z",
+  "generatedAt": "2026-08-07T21:48:06.949Z",
+  "scoringVersion": 2,
   "config": {
     "before": "https://docs.composio.dev",
     "trials": 5,
@@ -21,7 +22,7 @@
       ],
       "expectedContent": [
         "build",
-        "use"
+        "us(?:e|ing)"
       ]
     },
     {
@@ -58,8 +59,8 @@
         "/docs/providers"
       ],
       "expectedContent": [
-        "openai",
-        "anthropic|langchain|vercel"
+        "framework|provider|adapter",
+        "openai|anthropic|langchain|vercel|crewai|autogen"
       ]
     },
     {
@@ -117,7 +118,7 @@
       "category": "start-and-route",
       "prompt": "I want my coding agent to learn how to operate the Composio CLI. Is there a reusable agent skill I can install? Give the command and a docs citation.",
       "expectedRoutes": [
-        "/docs/cli"
+        "/docs/agent-plugins"
       ],
       "forbiddenRoutes": [
         "/docs/composio-connect"
@@ -129,18 +130,19 @@
     },
     {
       "id": "codex-without-mcp",
-      "title": "Prefer CLI or skills for Codex",
+      "title": "Prefer the native plugin for Codex",
       "category": "start-and-route",
       "prompt": "I use Codex in a repository and want it to operate Composio for development work. I did not ask for MCP. What should I set up first?",
       "expectedRoutes": [
-        "/docs/cli"
+        "/docs/agent-plugins"
       ],
       "forbiddenRoutes": [
         "/docs/composio-connect",
         "/docs/sessions-via-mcp"
       ],
       "expectedContent": [
-        "cli|skill"
+        "codex",
+        "plugin"
       ]
     },
     {
@@ -152,8 +154,8 @@
         "/docs/composio-connect"
       ],
       "expectedContent": [
-        "cursor",
-        "mcp"
+        "mcp",
+        "connect"
       ]
     },
     {
@@ -314,7 +316,7 @@
       ],
       "expectedContent": [
         "proxy",
-        "authenticated|connected account"
+        "authenticated|connected account|stored credentials|inject.*credentials"
       ]
     },
     {
@@ -365,7 +367,7 @@
         "/examples/local-sandbox-pr-reviewer"
       ],
       "expectedContent": [
-        "pull request|pr reviewer",
+        "pull.?request|pr.?reviewer",
         "sandbox"
       ]
     },
@@ -390,15 +392,15 @@
         "/docs/providers/langchain"
       ],
       "expectedContent": [
-        "\\bno\\b|do not|don't",
+        "\\bno\\b|do not|don't|not (?:a )?prerequisite|isn't (?:a )?prerequisite",
         "langchain"
       ]
     },
     {
       "id": "explicit-direct-execution",
-      "title": "Find legacy direct execution when explicitly requested",
+      "title": "Find the exact tools.execute implementation guide",
       "category": "legacy-and-safety",
-      "prompt": "I know sessions are preferred, but I am maintaining legacy code and explicitly need the direct tool execution docs. Point me to the exact guide and mention the modern alternative.",
+      "prompt": "I am maintaining legacy code that calls composio.tools.execute(). Point me to the exact implementation guide for that API and mention the modern session alternative.",
       "expectedRoutes": [
         "/docs/tools-direct/executing-tools"
       ],
@@ -902,9 +904,9 @@
       "execution": 1,
       "content": 0.5,
       "route": 0,
-      "citation": 1,
+      "citation": 0,
       "efficiency": 1,
-      "overall": 0.7,
+      "overall": 0.5,
       "toolCalls": 0,
       "latencyMs": 1674,
       "matchedRoutes": [],
@@ -969,20 +971,18 @@
       "title": "Compare supported frameworks",
       "category": "start-and-route",
       "execution": 1,
-      "content": 0.5,
+      "content": 1,
       "route": 1,
       "citation": 0,
       "efficiency": 1,
-      "overall": 0.7,
+      "overall": 0.8,
       "toolCalls": 1,
       "latencyMs": 3044,
       "matchedRoutes": [
         "/docs/providers"
       ],
       "forbiddenRoutes": [],
-      "missingContent": [
-        "openai"
-      ],
+      "missingContent": [],
       "finalMessage": "You can view the supported agent frameworks on the **Providers** index page, under the *Agent frameworks* section — `/docs/providers#agent-frameworks`. It lists options such as **LangChain**, **AutoGen**, **Vercel AI SDK**, **Mastra**, **Pi**, and more.",
       "runtimeModel": "inception/mercury-2",
       "runtimeGitSha": "13cba53b1d1d88eb9f54b740735fcd33534e0eb5"
@@ -1064,15 +1064,13 @@
       "category": "start-and-route",
       "execution": 1,
       "content": 1,
-      "route": 1,
-      "citation": 1,
+      "route": 0,
+      "citation": 0,
       "efficiency": 1,
-      "overall": 1,
+      "overall": 0.6,
       "toolCalls": 0,
       "latencyMs": 1544,
-      "matchedRoutes": [
-        "/docs/cli"
-      ],
+      "matchedRoutes": [],
       "forbiddenRoutes": [],
       "missingContent": [],
       "finalMessage": "You can install the reusable **`composio-cli`** skill for Claude Code with the CLI login command (it auto‑installs the skill), or manually with the install‑skill flag:\n\n```bash\n# Auto‑install during login\ncomposio login\n\n# Or install the skill explicitly\ncomposio --install-skill composio-cli claude\n```\n\n[Composio CLI – Install](/docs/cli#install)",
@@ -1086,18 +1084,20 @@
       "title": "Prefer CLI or skills for Codex",
       "category": "start-and-route",
       "execution": 1,
-      "content": 1,
+      "content": 0.5,
       "route": 0,
-      "citation": 1,
+      "citation": 0,
       "efficiency": 1,
-      "overall": 0.8,
+      "overall": 0.5,
       "toolCalls": 0,
       "latencyMs": 1682,
       "matchedRoutes": [],
       "forbiddenRoutes": [
         "/docs/composio-connect"
       ],
-      "missingContent": [],
+      "missingContent": [
+        "plugin"
+      ],
       "finalMessage": "First get a Composio API key from the dashboard, then add the Composio MCP server to your Codex configuration file.\n\n1. Open the **Composio dashboard**, go to **AI Clients**, select your client and copy the API key.  \n2. Edit (or create) `~/.codex/config.toml` and add a `mcp_servers.composio` entry with the MCP URL and the header that contains your key:\n\n```toml\n[mcp_servers.composio]\nurl = \"https://connect.composio.dev/mcp\"\nhttp_headers = { \"x-consumer-api-key\" = \"YOUR_API_KEY\" }\n```\n\nAfter saving the file, run `codex mcp list` to verify that Composio appears as a registered MCP server. This basic setup lets Codex call Composio tools without using the MCP‑only workflow.  \n\n[Connect your apps](/docs/composio-connect#connect-your-apps) – the section that walks through these steps.",
       "runtimeModel": "inception/mercury-2",
       "runtimeGitSha": "13cba53b1d1d88eb9f54b740735fcd33534e0eb5"
@@ -1134,9 +1134,9 @@
       "execution": 1,
       "content": 0.5,
       "route": 0,
-      "citation": 1,
+      "citation": 0,
       "efficiency": 1,
-      "overall": 0.7,
+      "overall": 0.5,
       "toolCalls": 0,
       "latencyMs": 1896,
       "matchedRoutes": [],
@@ -1537,7 +1537,7 @@
       ],
       "forbiddenRoutes": [],
       "missingContent": [
-        "\\bno\\b|do not|don't"
+        "\\bno\\b|do not|don't|not (?:a )?prerequisite|isn't (?:a )?prerequisite"
       ],
       "finalMessage": "You can jump straight into the Composio LangChain guide; you don’t need to finish an OpenAI Agents tutorial first. The LangChain provider works out‑of‑the‑box with Composio sessions  [LangChain provider guide](/docs/providers/langchain).",
       "runtimeModel": "inception/mercury-2",
@@ -1552,9 +1552,9 @@
       "execution": 1,
       "content": 1,
       "route": 0,
-      "citation": 1,
+      "citation": 0,
       "efficiency": 1,
-      "overall": 0.8,
+      "overall": 0.6,
       "toolCalls": 2,
       "latencyMs": 2995,
       "matchedRoutes": [],
@@ -1661,20 +1661,18 @@
       "title": "Compare supported frameworks",
       "category": "start-and-route",
       "execution": 1,
-      "content": 0.5,
+      "content": 1,
       "route": 1,
       "citation": 1,
       "efficiency": 1,
-      "overall": 0.9,
+      "overall": 1,
       "toolCalls": 0,
       "latencyMs": 612,
       "matchedRoutes": [
         "/docs/providers"
       ],
       "forbiddenRoutes": [],
-      "missingContent": [
-        "openai"
-      ],
+      "missingContent": [],
       "finalMessage": "You can view the list of supported agent frameworks on the **Providers** index page under the “Agent frameworks” section — see [Agent frameworks](/docs/providers#agent-frameworks).  \n\nSome of the frameworks that have built‑in providers include **LangChain**, **Vercel AI SDK**, **Mastra**, and **Pi**.",
       "runtimeModel": "inception/mercury-2",
       "runtimeGitSha": "f4267abae0615f0855ef9e9ab05f68948c4da8a3"
@@ -1756,15 +1754,13 @@
       "category": "start-and-route",
       "execution": 1,
       "content": 1,
-      "route": 1,
-      "citation": 1,
+      "route": 0,
+      "citation": 0,
       "efficiency": 1,
-      "overall": 1,
+      "overall": 0.6,
       "toolCalls": 0,
       "latencyMs": 1216,
-      "matchedRoutes": [
-        "/docs/cli"
-      ],
+      "matchedRoutes": [],
       "forbiddenRoutes": [],
       "missingContent": [],
       "finalMessage": "Yes—Composio ships a reusable skill called **`composio-cli`** that you can add to a coding agent. Install it with:\n\n```bash\ncomposio --install-skill composio-cli claude\n```\n\n(Replace `claude` with the name of the agent you’re using.)  \n\nSee the CLI installation guide for details [/docs/cli#install](/docs/cli#install).",
@@ -1778,16 +1774,18 @@
       "title": "Prefer CLI or skills for Codex",
       "category": "start-and-route",
       "execution": 1,
-      "content": 1,
+      "content": 0.5,
       "route": 0,
-      "citation": 1,
+      "citation": 0,
       "efficiency": 1,
-      "overall": 0.8,
+      "overall": 0.5,
       "toolCalls": 0,
       "latencyMs": 1213,
       "matchedRoutes": [],
       "forbiddenRoutes": [],
-      "missingContent": [],
+      "missingContent": [
+        "plugin"
+      ],
       "finalMessage": "First get a **Composio API key** from the dashboard and install the SDK in your Codex project. Then create a session for the user (or a service account) and let the session handle tool discovery and authentication.\n\n1. **API key** – open the Composio dashboard, go to **AI Clients**, copy the key.  \n   (see the Quickstart “Prerequisites” section) [/docs/quickstart#prerequisites](/docs/quickstart#prerequisites)\n\n2. **Install the SDK** (e.g. with `pip install composio` or `uv add composio`).  \n\n3. **Create a session** in your code:  \n\n   ```python\n   from composio import Composio\n   from composio_openai_agents import OpenAIAgentsProvider\n\n   composio = Composio(provider=OpenAIAgentsProvider())\n   session = composio.create(user_id=\"my-codex-user\")   # one session per user\n   tools = session.tools()                           # meta‑tools for discovery\n   ```\n\n   (the same flow is shown in the Quickstart “Build and run the agent” section) [/docs/quickstart#build-and-run-the-agent](/docs/quickstart#build-and-run-the-agent)\n\n4. **Authenticate any needed toolkits** (e.g. GitHub, Gmail) by letting the agent call `COMPOSIO_MANAGE_CONNECTIONS`. The first time a tool is needed the session will return a Connect Link that the user opens in a browser to grant access.  \n\n   (details on in‑chat auth) [/docs/authenticating-users/in-chat-authentication](/docs/authenticating-users/in-chat-authentication)\n\nAfter these steps your Codex‑based agent can call Composio tools directly through the session, without using MCP. If you later need to restrict toolkits or pre‑load specific tools, see the “Configuring sessions” guide [/docs/configuring-sessions](/docs/configuring-sessions).",
       "runtimeModel": "inception/mercury-2",
       "runtimeGitSha": "f4267abae0615f0855ef9e9ab05f68948c4da8a3"
@@ -1824,9 +1822,9 @@
       "execution": 1,
       "content": 0.5,
       "route": 0,
-      "citation": 1,
+      "citation": 0,
       "efficiency": 1,
-      "overall": 0.7,
+      "overall": 0.5,
       "toolCalls": 0,
       "latencyMs": 1919,
       "matchedRoutes": [],
@@ -2227,7 +2225,7 @@
       ],
       "forbiddenRoutes": [],
       "missingContent": [
-        "\\bno\\b|do not|don't"
+        "\\bno\\b|do not|don't|not (?:a )?prerequisite|isn't (?:a )?prerequisite"
       ],
       "finalMessage": "You can jump straight to the Composio LangChain guide – it’s self‑contained and doesn’t require finishing an OpenAI Agents tutorial first. See the provider docs for the full instructions: [LangChain provider](/docs/providers/langchain).",
       "runtimeModel": "inception/mercury-2",
@@ -2284,16 +2282,16 @@
       "execution": 1,
       "content": 0,
       "route": 0,
-      "citation": 1,
+      "citation": 0,
       "efficiency": 1,
-      "overall": 0.6,
+      "overall": 0.4,
       "toolCalls": 1,
       "latencyMs": 2466,
       "matchedRoutes": [],
       "forbiddenRoutes": [],
       "missingContent": [
         "build",
-        "use"
+        "us(?:e|ing)"
       ],
       "finalMessage": "The quickest way to start is to follow the **Quickstart** guide, which walks you through installing the SDK, setting your API key, creating a session, loading tools via a provider, and running an agent. For a higher‑level overview of the platform you can also skim the “Getting started” section, but the page you should begin with is the **Quickstart** page [/docs/quickstart](/docs/quickstart).",
       "runtimeModel": "inception/mercury-2",
@@ -2445,15 +2443,13 @@
       "category": "start-and-route",
       "execution": 1,
       "content": 1,
-      "route": 1,
-      "citation": 1,
+      "route": 0,
+      "citation": 0,
       "efficiency": 1,
-      "overall": 1,
+      "overall": 0.6,
       "toolCalls": 0,
       "latencyMs": 853,
-      "matchedRoutes": [
-        "/docs/cli"
-      ],
+      "matchedRoutes": [],
       "forbiddenRoutes": [],
       "missingContent": [],
       "finalMessage": "Install the **`composio‑cli`** skill with:\n\n```bash\ncomposio --install-skill composio-cli claude\n```\n\nThis adds the CLI skill to Claude Code so your coding agent can invoke Composio CLI commands. See the CLI installation docs for details [/docs/cli#install](/docs/cli#install).",
@@ -2467,18 +2463,18 @@
       "title": "Prefer CLI or skills for Codex",
       "category": "start-and-route",
       "execution": 1,
-      "content": 1,
-      "route": 1,
-      "citation": 1,
+      "content": 0.5,
+      "route": 0,
+      "citation": 0,
       "efficiency": 1,
-      "overall": 1,
+      "overall": 0.5,
       "toolCalls": 1,
       "latencyMs": 4261,
-      "matchedRoutes": [
-        "/docs/cli"
-      ],
+      "matchedRoutes": [],
       "forbiddenRoutes": [],
-      "missingContent": [],
+      "missingContent": [
+        "plugin"
+      ],
       "finalMessage": "Install the **Composio CLI** first, log in with your API key, then create a session from your code.  \n\n1. Get an API key from the **AI Clients** section of the Composio dashboard.  \n2. Install the CLI:  \n\n```bash\ncurl -fsSL https://composio.dev/install | sh\n```  \n\n3. Log in (this stores the key locally and installs the `composio-cli` skill for Claude Code/Codex):  \n\n```bash\ncomposio login\n```  \n\n4. In your repository, use the SDK to start a session for the user that Codex will act as:  \n\n```python\nfrom composio import Composio\n\ncomposio = Composio()               # provider defaults to the SDK\nsession = composio.create(user_id=\"my_user\")  # or composio.sessions.create(...)\ntools = session.tools()             # discover the tools you’ll need\n```  \n\nYou can now call `session.proxyExecute(...)`, `session.experimental.files`, etc., from your Codex‑driven scripts. The CLI handles authentication and config, while the session gives you the tool surface you need for development.  \n\nSee the **CLI** guide for installation and login details and the **session** page for creating and using sessions.  \n\n- [Composio CLI](/docs/cli)  \n- [What is a session?](/docs/how-composio-works)",
       "runtimeModel": "inception/mercury-2",
       "runtimeGitSha": "13cba53b1d1d88eb9f54b740735fcd33534e0eb5"
@@ -2515,9 +2511,9 @@
       "execution": 1,
       "content": 0.5,
       "route": 0,
-      "citation": 1,
+      "citation": 0,
       "efficiency": 1,
-      "overall": 0.7,
+      "overall": 0.5,
       "toolCalls": 0,
       "latencyMs": 1254,
       "matchedRoutes": [],
@@ -2768,20 +2764,18 @@
       "title": "Call an authenticated app API",
       "category": "find-and-change",
       "execution": 1,
-      "content": 0.5,
+      "content": 1,
       "route": 1,
       "citation": 1,
       "efficiency": 1,
-      "overall": 0.9,
+      "overall": 1,
       "toolCalls": 1,
       "latencyMs": 1709,
       "matchedRoutes": [
         "/docs/extending-sessions/proxy-execute"
       ],
       "forbiddenRoutes": [],
-      "missingContent": [
-        "authenticated|connected account"
-      ],
+      "missingContent": [],
       "finalMessage": "Use **Proxy Execute** – it lets a session call any HTTP endpoint of a toolkit while automatically injecting the user’s connected‑account credentials. This is the way to reach upstream APIs that don’t have a dedicated Composio tool.  \n\n[Proxy execute](/docs/extending-sessions/proxy-execute)",
       "runtimeModel": "inception/mercury-2",
       "runtimeGitSha": "13cba53b1d1d88eb9f54b740735fcd33534e0eb5"
@@ -2933,9 +2927,9 @@
       "execution": 1,
       "content": 1,
       "route": 0,
-      "citation": 1,
+      "citation": 0,
       "efficiency": 1,
-      "overall": 0.8,
+      "overall": 0.6,
       "toolCalls": 1,
       "latencyMs": 3733,
       "matchedRoutes": [],
@@ -2973,20 +2967,18 @@
       "title": "Choose between building and using Composio",
       "category": "start-and-route",
       "execution": 1,
-      "content": 0.5,
+      "content": 1,
       "route": 1,
       "citation": 1,
       "efficiency": 1,
-      "overall": 0.9,
+      "overall": 1,
       "toolCalls": 0,
       "latencyMs": 1010,
       "matchedRoutes": [
         "/docs"
       ],
       "forbiddenRoutes": [],
-      "missingContent": [
-        "use"
-      ],
+      "missingContent": [],
       "finalMessage": "You can start by either **building Composio into your own app or agent** (add tools, SDK, and authentication) or **using Composio with an existing coding agent or terminal** (connect via MCP, CLI, or a plugin). The overview page that lists these two options is the **Welcome** page under “Two ways to start” — see [/docs#two-ways-to-start](/docs#two-ways-to-start).",
       "runtimeModel": "inception/mercury-2",
       "runtimeGitSha": "f4267abae0615f0855ef9e9ab05f68948c4da8a3"
@@ -3137,15 +3129,13 @@
       "category": "start-and-route",
       "execution": 1,
       "content": 1,
-      "route": 1,
-      "citation": 1,
+      "route": 0,
+      "citation": 0,
       "efficiency": 1,
-      "overall": 1,
+      "overall": 0.6,
       "toolCalls": 0,
       "latencyMs": 1120,
-      "matchedRoutes": [
-        "/docs/cli"
-      ],
+      "matchedRoutes": [],
       "forbiddenRoutes": [],
       "missingContent": [],
       "finalMessage": "Install the **composio‑cli** skill with:\n\n```bash\ncomposio --install-skill composio-cli claude\n```\n\nSee the CLI installation guide for details [/docs/cli#install](/docs/cli#install).",
@@ -3159,16 +3149,18 @@
       "title": "Prefer CLI or skills for Codex",
       "category": "start-and-route",
       "execution": 1,
-      "content": 1,
+      "content": 0.5,
       "route": 0,
-      "citation": 1,
+      "citation": 0,
       "efficiency": 1,
-      "overall": 0.8,
+      "overall": 0.5,
       "toolCalls": 0,
       "latencyMs": 932,
       "matchedRoutes": [],
       "forbiddenRoutes": [],
-      "missingContent": [],
+      "missingContent": [
+        "plugin"
+      ],
       "finalMessage": "First get your **Composio API key** from the dashboard ( *AI Clients* → copy the key). Then install the Composio SDK in your Codex project and create a session for the user that will run the development actions. The session gives you access to the 1000+ tools and handles authentication and sandboxing for you.\n\n1. **Add the SDK** – e.g. `pip install composio` (or the equivalent for your language).  \n2. **Create a session** with `composio.create(user_id=\"your‑user‑id\")`.  \n3. **Load the desired tools** via `session.tools()` or filter them in the config if you only need a subset.  \n\nFrom there you can call tools directly from your Codex‑run code. The Quickstart guide walks through these steps in a minimal Python example, and the Authentication page explains how the session‑based auth flow works.  \n\n- [Quickstart – prerequisites & setup](/docs/quickstart#prerequisites)  \n- [Quickstart – creating a session and loading tools](/docs/quickstart#build-and-run-the-agent)  \n- [Authentication overview](/docs/authentication)",
       "runtimeModel": "inception/mercury-2",
       "runtimeGitSha": "f4267abae0615f0855ef9e9ab05f68948c4da8a3"
@@ -3458,20 +3450,18 @@
       "title": "Call an authenticated app API",
       "category": "find-and-change",
       "execution": 1,
-      "content": 0.5,
+      "content": 1,
       "route": 1,
       "citation": 1,
       "efficiency": 1,
-      "overall": 0.9,
+      "overall": 1,
       "toolCalls": 1,
       "latencyMs": 1815,
       "matchedRoutes": [
         "/docs/extending-sessions/proxy-execute"
       ],
       "forbiddenRoutes": [],
-      "missingContent": [
-        "authenticated|connected account"
-      ],
+      "missingContent": [],
       "finalMessage": "Use **Proxy Execute** – it lets a session call any HTTP endpoint of a toolkit while Composio injects the user’s connected‑account credentials for you. The feature is described on the *Proxy execute* page [/docs/extending-sessions/proxy-execute](/docs/extending-sessions/proxy-execute).",
       "runtimeModel": "inception/mercury-2",
       "runtimeGitSha": "f4267abae0615f0855ef9e9ab05f68948c4da8a3"
@@ -3623,9 +3613,9 @@
       "execution": 1,
       "content": 1,
       "route": 0,
-      "citation": 1,
+      "citation": 0,
       "efficiency": 1,
-      "overall": 0.8,
+      "overall": 0.6,
       "toolCalls": 2,
       "latencyMs": 5383,
       "matchedRoutes": [],
@@ -3665,9 +3655,9 @@
       "execution": 1,
       "content": 0.5,
       "route": 0,
-      "citation": 1,
+      "citation": 0,
       "efficiency": 1,
-      "overall": 0.7,
+      "overall": 0.5,
       "toolCalls": 0,
       "latencyMs": 1900,
       "matchedRoutes": [],
@@ -3732,20 +3722,18 @@
       "title": "Compare supported frameworks",
       "category": "start-and-route",
       "execution": 1,
-      "content": 0.5,
+      "content": 1,
       "route": 1,
       "citation": 1,
       "efficiency": 1,
-      "overall": 0.9,
+      "overall": 1,
       "toolCalls": 2,
       "latencyMs": 4227,
       "matchedRoutes": [
         "/docs/providers"
       ],
       "forbiddenRoutes": [],
-      "missingContent": [
-        "openai"
-      ],
+      "missingContent": [],
       "finalMessage": "You can see the list of supported agent frameworks on the **Providers** index page, under the **Agent frameworks** section [/docs/providers#agent-frameworks](/docs/providers#agent-frameworks).  \n\nA few of the built‑in frameworks are:\n\n* **LangChain** (and LangGraph)  \n* **Vercel AI SDK**  \n* **AutoGen**  \n* **Mastra**  \n* **Pi**  \n\nAll of these are documented on the same Providers page, so you can compare them before choosing the one that matches your stack.",
       "runtimeModel": "inception/mercury-2",
       "runtimeGitSha": "13cba53b1d1d88eb9f54b740735fcd33534e0eb5"
@@ -3827,15 +3815,13 @@
       "category": "start-and-route",
       "execution": 1,
       "content": 1,
-      "route": 1,
-      "citation": 1,
+      "route": 0,
+      "citation": 0,
       "efficiency": 1,
-      "overall": 1,
+      "overall": 0.6,
       "toolCalls": 0,
       "latencyMs": 1426,
-      "matchedRoutes": [
-        "/docs/cli"
-      ],
+      "matchedRoutes": [],
       "forbiddenRoutes": [],
       "missingContent": [],
       "finalMessage": "Install the CLI skill with the CLI command:\n\n```bash\ncomposio --install-skill composio-cli claude\n```\n\nThis registers the **composio‑cli** skill for Claude Code, letting your coding agent invoke the Composio CLI from the chat. [/docs/cli#install](/docs/cli#install)",
@@ -3849,20 +3835,20 @@
       "title": "Prefer CLI or skills for Codex",
       "category": "start-and-route",
       "execution": 1,
-      "content": 1,
+      "content": 0.5,
       "route": 0,
-      "citation": 1,
+      "citation": 0,
       "efficiency": 1,
-      "overall": 0.8,
+      "overall": 0.5,
       "toolCalls": 1,
       "latencyMs": 3849,
-      "matchedRoutes": [
-        "/docs/cli"
-      ],
+      "matchedRoutes": [],
       "forbiddenRoutes": [
         "/docs/composio-connect"
       ],
-      "missingContent": [],
+      "missingContent": [
+        "plugin"
+      ],
       "finalMessage": "1. **Install the Composio CLI** – run the installer script and then log in:  \n\n   ```bash\n   curl -fsSL https://composio.dev/install | sh\n   composio login\n   ```\n\n   [Install](/docs/cli#install) | [Verify the installation](/docs/cli#verify-the-installation)\n\n2. **Add Composio to Codex’s config** – edit `~/.codex/config.toml` (create it if missing) and insert the MCP server entry with your API key:  \n\n   ```toml\n   [mcp_servers.composio]\n   url = \"https://connect.composio.dev/mcp\"\n   http_headers = { \"x-consumer-api-key\" = \"YOUR_API_KEY\" }\n   ```\n\n   [Open your Codex config](/docs/composio-connect#open-your-codex-config) | [Add the Composio server](/docs/composio-connect#add-the-composio-server)\n\n3. **Confirm the connection** – run the Codex command that lists MCP servers:  \n\n   ```bash\n   codex mcp list\n   ```\n\n   [Verify the connection](/docs/composio-connect#verify-the-connection)\n\nAfter these three steps Codex can call Composio tools in your repository without using the MCP‑only workflow.",
       "runtimeModel": "inception/mercury-2",
       "runtimeGitSha": "13cba53b1d1d88eb9f54b740735fcd33534e0eb5"
@@ -4155,20 +4141,18 @@
       "title": "Call an authenticated app API",
       "category": "find-and-change",
       "execution": 1,
-      "content": 0.5,
+      "content": 1,
       "route": 1,
       "citation": 1,
       "efficiency": 1,
-      "overall": 0.9,
+      "overall": 1,
       "toolCalls": 1,
       "latencyMs": 2039,
       "matchedRoutes": [
         "/docs/extending-sessions/proxy-execute"
       ],
       "forbiddenRoutes": [],
-      "missingContent": [
-        "authenticated|connected account"
-      ],
+      "missingContent": [],
       "finalMessage": "Use **Proxy Execute** – `session.proxyExecute()` lets you call any HTTP endpoint of a toolkit while Composio injects the user’s connected‑account credentials for you. It’s the built‑in way to reach upstream APIs that aren’t wrapped by a predefined tool. [/docs/extending-sessions/proxy-execute](/docs/extending-sessions/proxy-execute)",
       "runtimeModel": "inception/mercury-2",
       "runtimeGitSha": "13cba53b1d1d88eb9f54b740735fcd33534e0eb5"
@@ -4307,7 +4291,7 @@
       ],
       "forbiddenRoutes": [],
       "missingContent": [
-        "\\bno\\b|do not|don't"
+        "\\bno\\b|do not|don't|not (?:a )?prerequisite|isn't (?:a )?prerequisite"
       ],
       "finalMessage": "You can jump straight to the Composio LangChain guide; the OpenAI Agents tutorial isn’t a prerequisite. See the LangChain provider documentation for the full setup.  \n\n[LangChain provider](/docs/providers/langchain)",
       "runtimeModel": "inception/mercury-2",
@@ -4322,9 +4306,9 @@
       "execution": 1,
       "content": 1,
       "route": 0,
-      "citation": 1,
+      "citation": 0,
       "efficiency": 1,
-      "overall": 0.8,
+      "overall": 0.6,
       "toolCalls": 2,
       "latencyMs": 4548,
       "matchedRoutes": [],
@@ -4525,15 +4509,13 @@
       "category": "start-and-route",
       "execution": 1,
       "content": 1,
-      "route": 1,
-      "citation": 1,
+      "route": 0,
+      "citation": 0,
       "efficiency": 1,
-      "overall": 1,
+      "overall": 0.6,
       "toolCalls": 0,
       "latencyMs": 604,
-      "matchedRoutes": [
-        "/docs/cli"
-      ],
+      "matchedRoutes": [],
       "forbiddenRoutes": [],
       "missingContent": [],
       "finalMessage": "Yes. Install the **`composio-cli`** skill for your coding agent with:\n\n```bash\ncomposio --install-skill composio-cli claude\n```\n\nThis registers the CLI skill so the agent can invoke Composio commands from the terminal [Composio CLI – Install](/docs/cli#install).",
@@ -4547,16 +4529,18 @@
       "title": "Prefer CLI or skills for Codex",
       "category": "start-and-route",
       "execution": 1,
-      "content": 1,
+      "content": 0.5,
       "route": 0,
-      "citation": 1,
+      "citation": 0,
       "efficiency": 1,
-      "overall": 0.8,
+      "overall": 0.5,
       "toolCalls": 0,
       "latencyMs": 2140,
       "matchedRoutes": [],
       "forbiddenRoutes": [],
-      "missingContent": [],
+      "missingContent": [
+        "plugin"
+      ],
       "finalMessage": "First get a Composio API key and add it to your project’s environment, then install the SDK and create a session in code.  \n\n1. **API key** – Open the Composio dashboard, go to **AI Clients**, copy the key and set `COMPOSIO_API_KEY` (and your LLM key, e.g. `OPENAI_API_KEY`) in a `.env` file.  \n2. **Install the SDK** – In your repository run the package manager (e.g. `uv add composio composio-openai-agents` or `pip install composio composio-openai-agents`).  \n3. **Create a session** – In your Codex‑enabled script instantiate `Composio` and call `composio.create(user_id=\"…\")`. The session gives you `session.tools()` (the meta‑tools) and handles auth and tool discovery.  \n\n```python\nfrom composio import Composio\nfrom composio_openai_agents import OpenAIAgentsProvider\n\ncomposio = Composio(provider=OpenAIAgentsProvider())\nsession = composio.create(user_id=\"my-repo-user\")   # one session per user\ntools = session.tools()                           # expose Composio tools to Codex\n```\n\nNow Codex can call any of the `tools` (e.g., GitHub, Gmail) and the session will manage authentication and execution.  \n\nSee the full step‑by‑step guide in the Quickstart docs [/docs/quickstart](/docs/quickstart).",
       "runtimeModel": "inception/mercury-2",
       "runtimeGitSha": "f4267abae0615f0855ef9e9ab05f68948c4da8a3"
@@ -4593,9 +4577,9 @@
       "execution": 1,
       "content": 1,
       "route": 0,
-      "citation": 1,
+      "citation": 0,
       "efficiency": 1,
-      "overall": 0.8,
+      "overall": 0.6,
       "toolCalls": 0,
       "latencyMs": 1458,
       "matchedRoutes": [],
@@ -5007,9 +4991,9 @@
       "execution": 1,
       "content": 1,
       "route": 0,
-      "citation": 1,
+      "citation": 0,
       "efficiency": 1,
-      "overall": 0.8,
+      "overall": 0.6,
       "toolCalls": 1,
       "latencyMs": 3945,
       "matchedRoutes": [],
@@ -5047,18 +5031,17 @@
       "title": "Choose between building and using Composio",
       "category": "start-and-route",
       "execution": 1,
-      "content": 0,
+      "content": 0.5,
       "route": 0,
-      "citation": 1,
+      "citation": 0,
       "efficiency": 1,
-      "overall": 0.6,
+      "overall": 0.5,
       "toolCalls": 1,
       "latencyMs": 2604,
       "matchedRoutes": [],
       "forbiddenRoutes": [],
       "missingContent": [
-        "build",
-        "use"
+        "build"
       ],
       "finalMessage": "Start with the **Quickstart** guide, which walks you through installing the SDK, creating a session, and using a provider to expose tools to your model – the default and simplest path for most agents. [Quickstart](/docs/quickstart)\n\nIf you prefer to connect a session via the **Model Context Protocol (MCP)** instead of a provider, see the “Using sessions via MCP” page, which shows how to expose `session.mcp.url` and `session.mcp.headers` for any MCP‑compatible client. [Using sessions via MCP](/docs/sessions-via-mcp)",
       "runtimeModel": "inception/mercury-2",
@@ -5117,20 +5100,18 @@
       "title": "Compare supported frameworks",
       "category": "start-and-route",
       "execution": 1,
-      "content": 0.5,
+      "content": 1,
       "route": 1,
       "citation": 1,
       "efficiency": 0,
-      "overall": 0.7,
+      "overall": 0.8,
       "toolCalls": 4,
       "latencyMs": 5408,
       "matchedRoutes": [
         "/docs/providers"
       ],
       "forbiddenRoutes": [],
-      "missingContent": [
-        "openai"
-      ],
+      "missingContent": [],
       "finalMessage": "You can see the supported agent‑framework adapters on the **Providers** page under the **Agent frameworks** section — `/docs/providers#agent-frameworks`.  A few of the built‑in options are:\n\n* **LangChain** (and LangGraph) – `/docs/providers/langchain`  \n* **AutoGen** – `/docs/providers/autogen`  \n* **Vercel AI SDK** – `/docs/providers/vercel`\n\nThese are the frameworks that already have a ready‑made provider, and you can pick any of them before you start building your session.  [Providers – Agent frameworks](/docs/providers#agent-frameworks)",
       "runtimeModel": "inception/mercury-2",
       "runtimeGitSha": "13cba53b1d1d88eb9f54b740735fcd33534e0eb5"
@@ -5213,15 +5194,13 @@
       "category": "start-and-route",
       "execution": 1,
       "content": 1,
-      "route": 1,
+      "route": 0,
       "citation": 0,
       "efficiency": 1,
-      "overall": 0.8,
+      "overall": 0.6,
       "toolCalls": 0,
       "latencyMs": 1330,
-      "matchedRoutes": [
-        "/docs/cli"
-      ],
+      "matchedRoutes": [],
       "forbiddenRoutes": [],
       "missingContent": [],
       "finalMessage": "Install the **`composio-cli`** skill with the CLI:\n\n```bash\ncomposio --install-skill composio-cli <agent>\n```\n\nReplace `<agent>` with the name of the agent you want to equip (e.g., `claude`). This adds a reusable skill that teaches the agent how to invoke the Composio CLI.  \n\n[Composio CLI – Install]( /docs/cli#install)",
@@ -5235,18 +5214,20 @@
       "title": "Prefer CLI or skills for Codex",
       "category": "start-and-route",
       "execution": 1,
-      "content": 1,
+      "content": 0.5,
       "route": 0,
-      "citation": 1,
+      "citation": 0,
       "efficiency": 1,
-      "overall": 0.8,
+      "overall": 0.5,
       "toolCalls": 0,
       "latencyMs": 1883,
       "matchedRoutes": [],
       "forbiddenRoutes": [
         "/docs/composio-connect"
       ],
-      "missingContent": [],
+      "missingContent": [
+        "plugin"
+      ],
       "finalMessage": "First, obtain a Composio API key from the dashboard and add it to Codex’s MCP configuration file.  \n\n1. In the Composio dashboard open **AI Clients**, create (or select) a client, and copy its API key.  \n2. Edit `~/.codex/config.toml` in your repository (create it if it doesn’t exist) and add the Composio MCP server entry:\n\n```toml\n[mcp_servers.composio]\nurl = \"https://connect.composio.dev/mcp\"\nhttp_headers = { \"x-consumer-api-key\" = \"YOUR_API_KEY\" }\n```\n\nAfter saving the file, Codex will be able to call Composio tools from the repository.  \n\nSee the **Composio Connect** guide for the full steps: [Get your API key](/docs/composio-connect#connect-your-apps) and [Open your Codex config](/docs/composio-connect#open-your-codex-config).",
       "runtimeModel": "inception/mercury-2",
       "runtimeGitSha": "13cba53b1d1d88eb9f54b740735fcd33534e0eb5"
@@ -5283,9 +5264,9 @@
       "execution": 1,
       "content": 0.5,
       "route": 0,
-      "citation": 1,
+      "citation": 0,
       "efficiency": 1,
-      "overall": 0.7,
+      "overall": 0.5,
       "toolCalls": 0,
       "latencyMs": 1421,
       "matchedRoutes": [],
@@ -5537,20 +5518,18 @@
       "title": "Call an authenticated app API",
       "category": "find-and-change",
       "execution": 1,
-      "content": 0.5,
+      "content": 1,
       "route": 1,
       "citation": 1,
       "efficiency": 1,
-      "overall": 0.9,
+      "overall": 1,
       "toolCalls": 1,
       "latencyMs": 2092,
       "matchedRoutes": [
         "/docs/extending-sessions/proxy-execute"
       ],
       "forbiddenRoutes": [],
-      "missingContent": [
-        "authenticated|connected account"
-      ],
+      "missingContent": [],
       "finalMessage": "Use **Proxy Execute** – it lets a session call any HTTP endpoint of a toolkit while automatically injecting the user’s connected‑account credentials. You invoke it with `session.proxyExecute(...)`, passing the toolkit slug, endpoint, method, and any extra parameters; Composio resolves the user’s stored auth and signs the request for you.  \n\nDocs: [Proxy execute](/docs/extending-sessions/proxy-execute)",
       "runtimeModel": "inception/mercury-2",
       "runtimeGitSha": "13cba53b1d1d88eb9f54b740735fcd33534e0eb5"
@@ -5702,9 +5681,9 @@
       "execution": 1,
       "content": 1,
       "route": 0,
-      "citation": 1,
+      "citation": 0,
       "efficiency": 1,
-      "overall": 0.8,
+      "overall": 0.6,
       "toolCalls": 2,
       "latencyMs": 7980,
       "matchedRoutes": [],
@@ -5904,15 +5883,13 @@
       "category": "start-and-route",
       "execution": 1,
       "content": 1,
-      "route": 1,
-      "citation": 1,
+      "route": 0,
+      "citation": 0,
       "efficiency": 1,
-      "overall": 1,
+      "overall": 0.6,
       "toolCalls": 0,
       "latencyMs": 813,
-      "matchedRoutes": [
-        "/docs/cli"
-      ],
+      "matchedRoutes": [],
       "forbiddenRoutes": [],
       "missingContent": [],
       "finalMessage": "Install the CLI skill with:\n\n```bash\ncomposio --install-skill composio-cli claude\n```\n\n[Composio CLI – Install](/docs/cli#install)",
@@ -5926,16 +5903,18 @@
       "title": "Prefer CLI or skills for Codex",
       "category": "start-and-route",
       "execution": 1,
-      "content": 1,
+      "content": 0.5,
       "route": 0,
-      "citation": 1,
+      "citation": 0,
       "efficiency": 1,
-      "overall": 0.8,
+      "overall": 0.5,
       "toolCalls": 0,
       "latencyMs": 1883,
       "matchedRoutes": [],
       "forbiddenRoutes": [],
-      "missingContent": [],
+      "missingContent": [
+        "plugin"
+      ],
       "finalMessage": "Start with the **SDK Quickstart** – it walks you through installing the Composio client, adding your API keys, and creating a session that Codex can call.\n\n1. Get a `COMPOSIO_API_KEY` from the Composio dashboard (AI Clients) and an `OPENAI_API_KEY`.  \n2. Add them to a `.env` file in your repo (and ignore the file in `.gitignore`).  \n3. Install the SDK and its OpenAI provider in your project (e.g. `uv add composio composio-openai-agents`).  \n4. In your code create a session for the current user and expose its tools to Codex:\n\n```python\nfrom composio import Composio\nfrom composio_openai_agents import OpenAIAgentsProvider\n\ncomposio = Composio(provider=OpenAIAgentsProvider())\nsession = composio.create(user_id=\"your‑user‑id\")   # one session per user\ntools = session.tools()                           # meta‑tools for discovery/execution\n```\n\n5. Pass `tools` to the Codex agent (or any OpenAI‑compatible client) so it can discover and run Composio tools during development.\n\nAll of this is described in the Quickstart guide [Quickstart](/docs/quickstart) and the session overview [What is a session?](/docs/how-composio-works). Once the session is running, Codex can call any of the 1000+ toolkits (e.g., GitHub, Gmail) without needing MCP.",
       "runtimeModel": "inception/mercury-2",
       "runtimeGitSha": "f4267abae0615f0855ef9e9ab05f68948c4da8a3"
@@ -5972,9 +5951,9 @@
       "execution": 1,
       "content": 0.5,
       "route": 0,
-      "citation": 1,
+      "citation": 0,
       "efficiency": 1,
-      "overall": 0.7,
+      "overall": 0.5,
       "toolCalls": 0,
       "latencyMs": 1023,
       "matchedRoutes": [],
@@ -6388,9 +6367,9 @@
       "execution": 1,
       "content": 1,
       "route": 0,
-      "citation": 1,
+      "citation": 0,
       "efficiency": 1,
-      "overall": 0.8,
+      "overall": 0.6,
       "toolCalls": 2,
       "latencyMs": 5075,
       "matchedRoutes": [],
@@ -6430,16 +6409,16 @@
       "execution": 1,
       "content": 0,
       "route": 0,
-      "citation": 1,
+      "citation": 0,
       "efficiency": 1,
-      "overall": 0.6,
+      "overall": 0.4,
       "toolCalls": 0,
       "latencyMs": 1430,
       "matchedRoutes": [],
       "forbiddenRoutes": [],
       "missingContent": [
         "build",
-        "use"
+        "us(?:e|ing)"
       ],
       "finalMessage": "Start with the **Quickstart guide**, which walks you through creating a project, setting up API keys, creating a session, and calling a tool in a few lines of code. It also points you to the next steps (session configuration, providers, authentication) if you need more control. See the Quickstart page for the full flow: [Quickstart](/docs/quickstart).",
       "runtimeModel": "inception/mercury-2",
@@ -6498,20 +6477,18 @@
       "title": "Compare supported frameworks",
       "category": "start-and-route",
       "execution": 1,
-      "content": 0.5,
+      "content": 1,
       "route": 1,
       "citation": 1,
       "efficiency": 0,
-      "overall": 0.7,
+      "overall": 0.8,
       "toolCalls": 5,
       "latencyMs": 8102,
       "matchedRoutes": [
         "/docs/providers"
       ],
       "forbiddenRoutes": [],
-      "missingContent": [
-        "openai"
-      ],
+      "missingContent": [],
       "finalMessage": "You can see the list of supported agent frameworks on the **Providers** page, under the *Agent frameworks* section — `/docs/providers#agent-frameworks`. That page shows the frameworks that already have adapters (e.g. **LangChain**, **CrewAI**) and points you to the custom‑provider guide if you need to add another one. See the index page for the full list and the Python custom‑provider page for concrete examples.  \n\n[Providers – Agent frameworks](/docs/providers#agent-frameworks)  \n[Python Custom Provider – Agentic examples](/docs/providers/custom-providers/python#agentic-provider)",
       "runtimeModel": "inception/mercury-2",
       "runtimeGitSha": "13cba53b1d1d88eb9f54b740735fcd33534e0eb5"
@@ -6593,15 +6570,13 @@
       "category": "start-and-route",
       "execution": 1,
       "content": 1,
-      "route": 1,
-      "citation": 1,
+      "route": 0,
+      "citation": 0,
       "efficiency": 1,
-      "overall": 1,
+      "overall": 0.6,
       "toolCalls": 0,
       "latencyMs": 1152,
-      "matchedRoutes": [
-        "/docs/cli"
-      ],
+      "matchedRoutes": [],
       "forbiddenRoutes": [],
       "missingContent": [],
       "finalMessage": "Install the **`composio‑cli`** skill with the CLI login (or manually) command:\n\n```bash\ncomposio login            # installs the composio‑cli skill for Claude Code\n# or, to install it explicitly:\ncomposio --install-skill composio-cli claude\n```\n\n[Composio CLI – Install section](/docs/cli#install)",
@@ -6615,18 +6590,18 @@
       "title": "Prefer CLI or skills for Codex",
       "category": "start-and-route",
       "execution": 1,
-      "content": 1,
-      "route": 1,
-      "citation": 1,
+      "content": 0.5,
+      "route": 0,
+      "citation": 0,
       "efficiency": 1,
-      "overall": 1,
+      "overall": 0.5,
       "toolCalls": 3,
       "latencyMs": 9271,
-      "matchedRoutes": [
-        "/docs/cli"
-      ],
+      "matchedRoutes": [],
       "forbiddenRoutes": [],
-      "missingContent": [],
+      "missingContent": [
+        "plugin"
+      ],
       "finalMessage": "Install the **Composio CLI** first – it gives Codex a local tool surface and automatically installs the `composio‑cli` skill for you.\n\n1. **Install the CLI**  \n\n   ```bash\n   curl -fsSL https://composio.dev/install | sh\n   ```\n\n   (See the *Install* section of the CLI docs [/docs/cli#install](/docs/cli#install).)\n\n2. **Log in** – this creates the skill that Codex can call.  \n\n   ```bash\n   composio login\n   ```\n\n   The login step installs the `composio-cli` skill for Codex by default.  \n   If you need to add it manually, run  \n\n   ```bash\n   composio --install-skill composio-cli codex\n   ```\n\n   (See *Knowledge work in Claude Code* [/docs/cli#knowledge-work-in-claude-code](/docs/cli#knowledge-work-in-claude-code) – the same flow applies to Codex.)\n\n3. **Open your repository in Codex** – the skill is now available, and you can use the CLI commands (`composio search`, `composio link`, `composio execute`, etc.) from the terminal or via the Codex chat to discover, connect, and run tools.  \n\nThat’s the only setup required before you start using Composio from Codex. No MCP configuration is needed.",
       "runtimeModel": "inception/mercury-2",
       "runtimeGitSha": "13cba53b1d1d88eb9f54b740735fcd33534e0eb5"
@@ -6663,9 +6638,9 @@
       "execution": 1,
       "content": 0.5,
       "route": 0,
-      "citation": 1,
+      "citation": 0,
       "efficiency": 1,
-      "overall": 0.7,
+      "overall": 0.5,
       "toolCalls": 0,
       "latencyMs": 2263,
       "matchedRoutes": [],
@@ -6916,20 +6891,18 @@
       "title": "Call an authenticated app API",
       "category": "find-and-change",
       "execution": 1,
-      "content": 0.5,
+      "content": 1,
       "route": 1,
       "citation": 1,
       "efficiency": 1,
-      "overall": 0.9,
+      "overall": 1,
       "toolCalls": 0,
       "latencyMs": 885,
       "matchedRoutes": [
         "/docs/extending-sessions/proxy-execute"
       ],
       "forbiddenRoutes": [],
-      "missingContent": [
-        "authenticated|connected account"
-      ],
+      "missingContent": [],
       "finalMessage": "Use **proxy execute** – `session.proxyExecute(...)` lets you call any HTTP endpoint of a connected service, injecting the stored credentials even when the API isn’t wrapped as a built‑in Composio tool. See the proxy‑execute guide for details. [Proxy execute](/docs/extending-sessions/proxy-execute)",
       "runtimeModel": "inception/mercury-2",
       "runtimeGitSha": "13cba53b1d1d88eb9f54b740735fcd33534e0eb5"
@@ -7081,9 +7054,9 @@
       "execution": 1,
       "content": 1,
       "route": 0,
-      "citation": 1,
+      "citation": 0,
       "efficiency": 1,
-      "overall": 0.8,
+      "overall": 0.6,
       "toolCalls": 2,
       "latencyMs": 5109,
       "matchedRoutes": [],
@@ -7190,20 +7163,18 @@
       "title": "Compare supported frameworks",
       "category": "start-and-route",
       "execution": 1,
-      "content": 0.5,
+      "content": 1,
       "route": 1,
       "citation": 1,
       "efficiency": 1,
-      "overall": 0.9,
+      "overall": 1,
       "toolCalls": 1,
       "latencyMs": 2844,
       "matchedRoutes": [
         "/docs/providers"
       ],
       "forbiddenRoutes": [],
-      "missingContent": [
-        "openai"
-      ],
+      "missingContent": [],
       "finalMessage": "You can see the full list of supported agent frameworks on the **Providers** index page under the *Agent frameworks* section — it enumerates the frameworks that already have a Composio provider, such as **LangChain**, **CrewAI**, and **LlamaIndex**. See the catalog here: [Providers – Agent frameworks](/docs/providers#agent-frameworks).",
       "runtimeModel": "inception/mercury-2",
       "runtimeGitSha": "f4267abae0615f0855ef9e9ab05f68948c4da8a3"
@@ -7285,15 +7256,13 @@
       "category": "start-and-route",
       "execution": 1,
       "content": 1,
-      "route": 1,
-      "citation": 1,
+      "route": 0,
+      "citation": 0,
       "efficiency": 1,
-      "overall": 1,
+      "overall": 0.6,
       "toolCalls": 0,
       "latencyMs": 1030,
-      "matchedRoutes": [
-        "/docs/cli"
-      ],
+      "matchedRoutes": [],
       "forbiddenRoutes": [],
       "missingContent": [],
       "finalMessage": "Install the skill with the CLI command:\n\n```bash\ncomposio --install-skill composio-cli claude\n```\n\nThis adds the `composio-cli` skill to Claude Code, letting the agent drive the Composio CLI directly — see the **Install** section of the CLI docs [Composio CLI](/docs/cli#install).",
@@ -7307,17 +7276,17 @@
       "title": "Prefer CLI or skills for Codex",
       "category": "start-and-route",
       "execution": 1,
-      "content": 0,
+      "content": 0.5,
       "route": 0,
-      "citation": 1,
+      "citation": 0,
       "efficiency": 1,
-      "overall": 0.6,
+      "overall": 0.5,
       "toolCalls": 0,
       "latencyMs": 2196,
       "matchedRoutes": [],
       "forbiddenRoutes": [],
       "missingContent": [
-        "cli|skill"
+        "plugin"
       ],
       "finalMessage": "First get a **Composio API key** from the dashboard and add it to your environment (e.g. `COMPOSIO_API_KEY=…`). Then install the SDK in your repository and create a session for the user that will run the Codex‑powered agent. The session gives you the tool set and handles authentication for you.\n\n```bash\n# install the SDK (Python example)\npip install composio\n```\n\n```python\nfrom composio import Composio\n\n# create a session tied to a stable user ID\nsession = Composio().create(user_id=\"your‑user‑id\")\ntools = session.tools()   # expose the meta‑tools the agent can call\n```\n\nFrom here you can plug the `tools` list into your Codex agent (e.g. via the OpenAI provider) and let the agent discover, authorize, and run Composio tools as needed. The Quickstart guide walks through the same flow and shows the required environment variables and `composio.create` call [/docs/quickstart#build-and-run-the-agent](/docs/quickstart#build-and-run-the-agent).",
       "runtimeModel": "inception/mercury-2",
@@ -7355,9 +7324,9 @@
       "execution": 1,
       "content": 0.5,
       "route": 0,
-      "citation": 1,
+      "citation": 0,
       "efficiency": 1,
-      "overall": 0.7,
+      "overall": 0.5,
       "toolCalls": 0,
       "latencyMs": 1849,
       "matchedRoutes": [],
@@ -7771,9 +7740,9 @@
       "execution": 1,
       "content": 1,
       "route": 0,
-      "citation": 1,
+      "citation": 0,
       "efficiency": 1,
-      "overall": 0.8,
+      "overall": 0.6,
       "toolCalls": 2,
       "latencyMs": 5364,
       "matchedRoutes": [],

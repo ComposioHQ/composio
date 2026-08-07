@@ -5,7 +5,7 @@ The docs benchmark compares the public canonical site with a candidate deploymen
 - execution: the docs agent completed without a failed action
 - content: the answer contains the scenario's required concepts
 - route: it chooses an expected page and avoids explicitly worse routes
-- citation: it provides a Markdown link to docs, examples, or reference content
+- citation: it provides a Markdown link to an expected canonical route
 - efficiency: it stays within the scenario's tool-call budget
 
 It also audits `/docs`, Markdown endpoints, `llms.txt`, `llms-full.txt`, the sitemap, content-link navigation depth, and Python syntax in the Quickstart.
@@ -45,6 +45,8 @@ bun run eval:docs:benchmark -- \
   --from-results evals/results/latest/results.json \
   --output evals/results/latest
 ```
+
+Reports record a scoring version so regraded artifacts remain reviewable when the deterministic rubric changes.
 
 Run only deterministic crawl, corpus, navigation, and Quickstart syntax checks:
 

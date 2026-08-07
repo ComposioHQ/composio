@@ -7,6 +7,7 @@ This is your always-on map of Composio's concepts and the canonical page for eac
 - **Building an application** without explicit MCP intent → [Quickstart](/docs/quickstart) or [Providers](/docs/providers)
 - **Building an application that creates a session over MCP** → [Using sessions via MCP](/docs/sessions-via-mcp)
 - **Using Codex or Claude Code** without explicit MCP intent → [Agent plugins](/docs/agent-plugins)
+- **Installing a reusable coding-agent skill that operates the CLI** → [Agent plugins](/docs/agent-plugins). The native plugin exposes the CLI skill; do not lead with the standalone CLI guide.
 - **Connecting an existing client with explicit MCP intent** → [Composio Connect](/docs/composio-connect)
 - **Using the terminal directly** → [Composio CLI](/docs/cli)
 

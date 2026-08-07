@@ -7,7 +7,7 @@ import { DOCS_BENCHMARK_SCENARIOS, type DocsBenchmarkScenario } from '../evals/d
 
 const EVE_BIN = process.env.EVE_BIN ?? './node_modules/.bin/eve';
 const DEFAULT_BEFORE = 'https://docs.composio.dev';
-const CITATION_PATTERN = /\[[^\]]+\]\((?:https?:\/\/[^/)]+)?\/(?:docs|examples|reference)(?:\/[^)#\s]+)?(?:#[^)\s]+)?\)/i;
+const SCORING_VERSION = 2;
 
 interface CliOptions {
   before: string;
@@ -193,6 +193,14 @@ const routeAppears = (message: string, route: string): boolean => {
   return new RegExp(`${escaped}(?![a-z0-9/_-])`, 'i').test(message);
 };
 
+const routeCitationAppears = (message: string, route: string): boolean => {
+  const escaped = route.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  return new RegExp(
+    `\\[[^\\]]+\\]\\((?:https?:\\/\\/[^/)]+)?${escaped}(?![a-z0-9/_-])(?:#[^)\\s]+)?\\)`,
+    'i'
+  ).test(message);
+};
+
 const mean = (values: number[]): number =>
   values.length === 0 ? 0 : values.reduce((sum, value) => sum + value, 0) / values.length;
 
@@ -260,7 +268,12 @@ const scoreResult = (
     (scenario.expectedRoutes.length === 0 || matchedRoutes.length > 0) && forbiddenRoutes.length === 0
       ? 1
       : 0;
-  const citation = scenario.citation === false ? null : CITATION_PATTERN.test(message) ? 1 : 0;
+  const citation =
+    scenario.citation === false
+      ? null
+      : scenario.expectedRoutes.some(route => routeCitationAppears(message, route))
+        ? 1
+        : 0;
   const efficiency = result.result.derived.toolCallCount <= (scenario.maxToolCalls ?? 3) ? 1 : 0;
   const dimensions = [execution, content, route, efficiency];
   if (citation !== null) dimensions.push(citation);
@@ -308,7 +321,12 @@ const rescoreSavedResult = (
     (scenario.expectedRoutes.length === 0 || matchedRoutes.length > 0) && forbiddenRoutes.length === 0
       ? 1
       : 0;
-  const citation = scenario.citation === false ? null : CITATION_PATTERN.test(saved.finalMessage) ? 1 : 0;
+  const citation =
+    scenario.citation === false
+      ? null
+      : scenario.expectedRoutes.some(route => routeCitationAppears(saved.finalMessage, route))
+        ? 1
+        : 0;
   const efficiency = saved.toolCalls <= (scenario.maxToolCalls ?? 3) ? 1 : 0;
   const dimensions = [saved.execution, content, route, efficiency];
   if (citation !== null) dimensions.push(citation);
@@ -583,6 +601,7 @@ const renderReport = (
     `- Scenarios: ${scenarios.length}`,
     `- Trials per target: ${options.siteOnly ? 0 : options.trials}`,
     `- Model scenario executions: ${scores.length}`,
+    `- Scoring version: ${SCORING_VERSION}`,
   ];
 
   if (scores.length > 0) {
@@ -686,6 +705,7 @@ const main = async () => {
     await mkdir(outputDirectory, { recursive: true });
     const payload = {
       generatedAt: new Date().toISOString(),
+      scoringVersion: SCORING_VERSION,
       config: options,
       scenarios: scenarios.map(scenario => ({
         ...scenario,
@@ -740,6 +760,7 @@ const main = async () => {
 
   const payload = {
     generatedAt: new Date().toISOString(),
+    scoringVersion: SCORING_VERSION,
     config: options,
     scenarios: scenarios.map(scenario => ({
       ...scenario,
