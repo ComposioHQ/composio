@@ -9,6 +9,7 @@
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { dirname, join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { replaceHomeNavigationMarkdown } from '../../lib/home-navigation';
 // Build-time snapshot of content/, imported so eve bundles it into the deployed
 // service. The deployed runtime has the agent/ dir but NOT content/, so we fall
 // back to this bundle whenever the content tree isn't on disk. Regenerate with
@@ -229,7 +230,7 @@ function toPlainText(body: string): string {
 /** Clean MDX into Markdown the model can read: drop frontmatter and bare JSX tags. */
 export function toCleanMarkdown(raw: string): string {
   const { body } = parseFrontmatter(raw);
-  return body
+  return replaceHomeNavigationMarkdown(body)
     .replace(/<\/?[A-Za-z][A-Za-z0-9.]*(\s[^>]*)?\/?>/g, '')
     .replace(/\n{3,}/g, '\n\n')
     .trim();
@@ -267,13 +268,14 @@ function makePage(args: {
   legacy: boolean;
   body: string;
 }): DocPage {
-  const headings = (args.body.match(/^#{1,4}\s+(.+)$/gm) ?? []).map(h =>
+  const body = replaceHomeNavigationMarkdown(args.body);
+  const headings = (body.match(/^#{1,4}\s+(.+)$/gm) ?? []).map(h =>
     h
       .replace(/^#{1,4}\s+/, '')
       .toLowerCase()
       .trim()
   );
-  const text = toPlainText(args.body);
+  const text = toPlainText(body);
   return {
     collection: args.collection,
     title: args.title || args.url,
