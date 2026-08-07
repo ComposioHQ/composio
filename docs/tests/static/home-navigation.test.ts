@@ -19,9 +19,9 @@ describe('Welcome navigation', () => {
       '/docs/sessions-via-mcp',
     ]);
     expect(HOME_INTENTS[1].links.map(link => link.href)).toEqual([
-      '/docs/composio-connect',
+      '/docs/agent-plugins',
       '/docs/cli',
-      '/docs/claude-code-plugin',
+      '/docs/composio-connect',
     ]);
   });
 
@@ -37,6 +37,7 @@ describe('Welcome navigation', () => {
 
     expect(replaceHomeNavigationMarkdown('<HomeSurfaces />')).toBe(markdown);
     expect(markdown.toLowerCase()).not.toContain('skills');
+    expect(markdown).toContain('native Composio plugin for Codex or Claude Code');
   });
 
 });

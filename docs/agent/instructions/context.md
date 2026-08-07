@@ -2,11 +2,19 @@
 
 This is your always-on map of Composio's concepts and the canonical page for each. Use it to ground answers and to link the right page. Prefer these links over anything `search_docs` returns. Use the full bounded content from `search_docs` first, and call `read_doc` on the relevant page only when you need detail beyond that included content.
 
+## Choosing a starting surface
+
+- **Building an application** without explicit MCP intent → [Quickstart](/docs/quickstart) or [Providers](/docs/providers)
+- **Building an application that creates a session over MCP** → [Using sessions via MCP](/docs/sessions-via-mcp)
+- **Using Codex or Claude Code** without explicit MCP intent → [Agent plugins](/docs/agent-plugins)
+- **Connecting an existing client with explicit MCP intent** → [Composio Connect](/docs/composio-connect)
+- **Using the terminal directly** → [Composio CLI](/docs/cli)
+
 ## Core model
 
 - **Session** — the runtime context for one user. `composio.create(userId)` (or the canonical `composio.sessions.create(...)`) returns a session that ties together the user, toolkits, authentication, connected accounts, and a code-execution sandbox. By default it exposes meta tools the agent calls at runtime to discover, authenticate, and execute tools. → [What is a session?](/docs/how-composio-works)
 - **Configuring a session** — filter toolkits and tools, set auth configs, select connected accounts, preload tools, the direct-tools preset, sandbox tier, and session methods (`tools()`, `toolkits()`, `authorize()`). → [Configuring sessions](/docs/configuring-sessions)
-- **Sessions via MCP** — create a session with `{ mcp: true }` to expose `session.mcp.url` / `session.mcp.headers` for any MCP client. → [Using sessions via MCP](/docs/sessions-via-mcp)
+- **Sessions via MCP** — when an application creates a session and needs MCP transport, use `{ mcp: true }` to expose `session.mcp.url` / `session.mcp.headers`. → [Using sessions via MCP](/docs/sessions-via-mcp)
 - **Reusing sessions** — sessions persist on the server; store the session ID and reuse with `composio.use(sessionId)`, or update in place with `session.update(...)`. → [What is a session?](/docs/how-composio-works)
 
 ## Tools and toolkits
@@ -52,6 +60,9 @@ These features are documented **only in the API reference** — there is no `/do
 ## Getting started and reference
 
 - **Quickstart** → [Quickstart](/docs/quickstart)
+- **Agent plugins for Codex and Claude Code** → [Agent plugins](/docs/agent-plugins)
+- **Composio CLI** → [Composio CLI](/docs/cli)
+- **Existing clients over MCP** → [Composio Connect](/docs/composio-connect)
 - **Glossary** → [Glossary](/reference/glossary)
 - **SDK reference (TypeScript Session)** → [Session](/reference/sdk-reference/typescript/session)
 - **API reference** → [API reference](/reference/api-reference)

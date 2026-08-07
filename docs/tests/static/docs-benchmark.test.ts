@@ -15,7 +15,12 @@ describe('docs benchmark scenarios', () => {
 
   test('encodes plugin and CLI preference separately from explicit MCP intent', () => {
     const preferred = DOCS_BENCHMARK_SCENARIOS.filter(scenario =>
-      ['claude-code-default', 'terminal-cli', 'codex-without-mcp'].includes(scenario.id)
+      [
+        'claude-code-default',
+        'terminal-cli',
+        'codex-without-mcp',
+        'codex-plugin-explicit',
+      ].includes(scenario.id)
     );
     const explicitMcp = DOCS_BENCHMARK_SCENARIOS.filter(scenario =>
       ['cursor-explicit-mcp', 'generic-mcp-client', 'application-session-mcp'].includes(scenario.id)
@@ -24,6 +29,9 @@ describe('docs benchmark scenarios', () => {
     for (const scenario of preferred) {
       expect(scenario.forbiddenRoutes).toContain('/docs/composio-connect');
     }
+    expect(
+      preferred.find(scenario => scenario.id === 'codex-without-mcp')?.expectedRoutes
+    ).toEqual(['/docs/agent-plugins']);
     expect(explicitMcp.map(scenario => scenario.expectedRoutes[0])).toEqual([
       '/docs/composio-connect',
       '/docs/composio-connect',

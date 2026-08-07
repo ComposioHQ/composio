@@ -160,7 +160,7 @@ ${legacyReferencePages.map(formatPage).join('\n')}
 
 > Composio powers 1000+ toolkits, tool search, context management, authentication, and a sandboxed workbench to help you build AI agents that turn intent into action.
 
-> **For AI agents:** Give your agent tools it can call directly with \`composio.create(user_id)\` + \`session.tools()\` and a provider package (e.g. \`composio_openai\`, \`@composio/openai\`). To connect over MCP instead, create the session with \`mcp: true\` and read \`session.mcp.url\` from any MCP-compatible client. See any page's .md endpoint for full usage instructions.
+> **For AI agents:** Route by intent. To build an application, start with [Quickstart](/docs/quickstart) or [Providers](/docs/providers) and use \`composio.create(user_id)\` + \`session.tools()\`. To use Composio from Codex or Claude Code without explicit MCP intent, install the [native agent plugin](/docs/agent-plugins). To connect an existing client over MCP, use [Composio Connect](/docs/composio-connect). When an application creates a session and needs MCP transport, use [Sessions via MCP](/docs/sessions-via-mcp). See any page's .md endpoint for full usage instructions.
 
 ${docsTree}
 

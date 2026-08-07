@@ -4,6 +4,14 @@ Curated, searchable knowledge for the docs assistant. Each `## Heading (/url)`
 section is indexed by `search_docs` and links its canonical page. Add entries
 here to expose more answers to search without changing the docs themselves.
 
+## Choosing how to start (/docs)
+
+Route by what the user is doing. A developer building an application starts with the [Quickstart](/docs/quickstart) or [provider guides](/docs/providers). An application that creates a session and explicitly needs MCP uses [Sessions via MCP](/docs/sessions-via-mcp). A Codex or Claude Code user who did not ask for MCP uses the [native agent plugin](/docs/agent-plugins). An existing client with explicit MCP intent uses [Composio Connect](/docs/composio-connect). A terminal-only workflow uses the [CLI](/docs/cli).
+
+## Native plugins for Codex and Claude Code (/docs/agent-plugins)
+
+Composio has native plugins for Codex and Claude Code. Both use the Composio CLI for tool search, authentication, and execution. Install the CLI, run `composio login`, then run `composio setup --target auto`; use `--target codex` or `--target claude` for one host. Do not route these agents to MCP unless the user explicitly asks for MCP.
+
 ## Installing and getting started (/docs/quickstart)
 
 Install the SDK with `npm install @composio/core` (TypeScript) or `pip install composio` (Python), set `COMPOSIO_API_KEY`, then create a session with `composio.create("user_123")`. The quickstart walks through creating a session, fetching tools for your framework via a provider, and running an agent.
@@ -18,7 +26,7 @@ The userID scopes connected accounts and tool executions and isolates users from
 
 ## Native tools vs MCP (/docs/sessions-via-mcp)
 
-By default a session gives your agent tools it calls directly through a provider package; this integrates with your framework and supports modifiers and custom tools. Creating a session with `{ mcp: true }` also exposes `session.mcp.url` and `session.mcp.headers` for any MCP-compatible client. MCP is more portable across clients, but modifiers and custom tools do not apply over the MCP surface.
+By default a session gives your application tools it calls directly through a provider package; this integrates with your framework and supports modifiers and custom tools. When the application creates the session and needs MCP transport, `{ mcp: true }` also exposes `session.mcp.url` and `session.mcp.headers`. MCP is more portable across clients, but modifiers and custom tools do not apply over the MCP surface. Existing clients with explicit MCP intent use Composio Connect; Codex or Claude Code users without MCP intent use the native agent plugin.
 
 ## Sandbox files and the /mnt/files mount (/docs/sandbox)
 

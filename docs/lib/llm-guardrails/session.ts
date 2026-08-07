@@ -54,9 +54,11 @@ const tools = await session.tools();
 
 For other providers, pass the provider explicitly. Provider packages follow the naming convention: \`composio_<provider>\` for Python, \`@composio/<provider>\` for TypeScript.
 
-### MCP
+### MCP for an application session
 
-Use \`session.mcp.url\` and \`session.mcp.headers\` with any MCP-compatible client (Claude Desktop, Cursor, OpenAI Agents, etc.). No provider package needed.
+When an application creates the session and needs MCP transport, create it with \`mcp: true\`, then use \`session.mcp.url\` and \`session.mcp.headers\`. No provider package is needed. See https://docs.composio.dev/docs/sessions-via-mcp.
+
+This is different from configuring an existing agent. For Codex or Claude Code without explicit MCP intent, use the native Composio plugin at https://docs.composio.dev/docs/agent-plugins. When a user explicitly wants MCP in an existing client, use Composio Connect at https://docs.composio.dev/docs/composio-connect.
 
 ---
 

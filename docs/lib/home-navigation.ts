@@ -45,19 +45,19 @@ export const HOME_INTENTS: HomeIntent[] = [
     description: 'Connect an existing coding agent or terminal to Composio.',
     links: [
       {
-        title: 'Connect an MCP client',
-        description: 'Add Composio to Codex, Claude Code, Cursor, or another client.',
-        href: '/docs/composio-connect',
+        title: 'Agent plugins',
+        description: 'Install the native Composio plugin for Codex or Claude Code.',
+        href: '/docs/agent-plugins',
       },
       {
-        title: 'Use the CLI',
+        title: 'Composio CLI',
         description: 'Search, connect, and run tools from your terminal.',
         href: '/docs/cli',
       },
       {
-        title: 'Claude Code plugin',
-        description: 'Install Composio commands directly in Claude Code.',
-        href: '/docs/claude-code-plugin',
+        title: 'Connect over MCP',
+        description: 'Use Composio with Cursor or another existing MCP client.',
+        href: '/docs/composio-connect',
       },
     ],
   },

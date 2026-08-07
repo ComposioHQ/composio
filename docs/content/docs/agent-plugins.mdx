@@ -1,0 +1,79 @@
+---
+title: Agent plugins
+sidebar: false
+description: Install the native Composio plugin for Codex or Claude Code
+keywords: [agent plugins, codex, claude code, cli, composio setup, skills]
+---
+
+Use a native agent plugin when you want Codex or Claude Code to act through Composio without building an SDK application or configuring MCP. Both plugins use the Composio CLI for tool search, authentication, and execution.
+
+If you are using another agent and explicitly want MCP, use [Composio Connect](/docs/composio-connect). If you are building an application, start with the [SDK Quickstart](/docs/quickstart).
+
+## Install automatically
+
+Install the CLI:
+
+```bash
+curl -fsSL https://composio.dev/install | sh
+```
+
+Open a new terminal, then sign in:
+
+```bash
+composio login
+```
+
+Then install the plugin for every supported agent detected on your machine:
+
+```bash
+composio setup --target auto
+```
+
+`auto` currently detects Codex and Claude Code. To install for one agent only, choose it explicitly:
+
+```bash
+composio setup --target codex
+composio setup --target claude
+```
+
+The setup command installs the native plugin and makes its Composio CLI skill available. The Codex plugin bundles the skill; Claude Code uses the standalone CLI skill.
+
+## Codex
+
+The Codex plugin is the default path when you use Composio from Codex and did not explicitly ask for MCP. The automatic setup command is:
+
+```bash
+composio setup --target codex
+```
+
+To use Codex's plugin commands directly instead:
+
+```bash
+codex plugin marketplace add https://github.com/ComposioHQ/composio-plugin-openai.git --json
+codex plugin add composio@composio --json
+```
+
+The plugin source is [ComposioHQ/composio-plugin-openai](https://github.com/ComposioHQ/composio-plugin-openai).
+
+## Claude Code
+
+The Claude Code plugin is the default path when you use Composio from Claude Code and did not explicitly ask for MCP. The automatic setup command is:
+
+```bash
+composio setup --target claude
+```
+
+You can also install it from inside Claude Code:
+
+```bash
+/plugin marketplace add ComposioHQ/composio-plugin-cc
+/plugin install composio@composio
+```
+
+See the [Claude Code plugin guide](/docs/claude-code-plugin) for team setup, updates, and troubleshooting.
+
+## Use the CLI directly
+
+The plugins call the Composio CLI underneath. You can also use the CLI directly from a terminal to search for tools, connect accounts, run actions, inspect schemas, and script workflows. See the [CLI guide](/docs/cli).
+
+Use [Composio Connect](/docs/composio-connect) instead only when you explicitly want an MCP connection, or when your existing agent does not have a native Composio plugin.

@@ -14,7 +14,7 @@ describe('Quickstart default path', () => {
       '<StepTitle>Create the agent</StepTitle>',
       '<StepTitle>Run the agent</StepTitle>',
       '<StepTitle>Confirm the result</StepTitle>',
-      '## Try a different setup',
+      '## Other ways to start',
     ];
     const positions = milestones.map(milestone => content.indexOf(milestone));
 

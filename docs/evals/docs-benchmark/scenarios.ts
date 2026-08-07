@@ -95,13 +95,23 @@ export const DOCS_BENCHMARK_SCENARIOS: DocsBenchmarkScenario[] = [
   },
   {
     id: 'codex-without-mcp',
-    title: 'Prefer CLI or skills for Codex',
+    title: 'Prefer the native plugin for Codex',
     category: 'start-and-route',
     prompt:
       'I use Codex in a repository and want it to operate Composio for development work. I did not ask for MCP. What should I set up first?',
-    expectedRoutes: ['/docs/cli'],
+    expectedRoutes: ['/docs/agent-plugins'],
     forbiddenRoutes: ['/docs/composio-connect', '/docs/sessions-via-mcp'],
-    expectedContent: [/cli|skill/i],
+    expectedContent: [/codex/i, /plugin/i],
+  },
+  {
+    id: 'codex-plugin-explicit',
+    title: 'Install the Codex plugin directly',
+    category: 'start-and-route',
+    prompt:
+      'I specifically want the native Composio plugin for Codex. Show the direct Codex marketplace and plugin install commands, then cite the guide.',
+    expectedRoutes: ['/docs/agent-plugins'],
+    forbiddenRoutes: ['/docs/composio-connect', '/docs/sessions-via-mcp'],
+    expectedContent: [/codex plugin marketplace add/i, /codex plugin add/i],
   },
   {
     id: 'cursor-explicit-mcp',
@@ -277,10 +287,10 @@ export const DOCS_BENCHMARK_SCENARIOS: DocsBenchmarkScenario[] = [
   },
   {
     id: 'explicit-direct-execution',
-    title: 'Find legacy direct execution when explicitly requested',
+    title: 'Find the exact tools.execute implementation guide',
     category: 'legacy-and-safety',
     prompt:
-      'I know sessions are preferred, but I am maintaining legacy code and explicitly need the direct tool execution docs. Point me to the exact guide and mention the modern alternative.',
+      'I am maintaining legacy code that calls composio.tools.execute(). Point me to the exact implementation guide for that API and mention the modern session alternative.',
     expectedRoutes: ['/docs/tools-direct/executing-tools'],
     expectedContent: [/direct/i, /session/i],
   },
@@ -297,4 +307,3 @@ export const DOCS_BENCHMARK_SCENARIOS: DocsBenchmarkScenario[] = [
     maxToolCalls: 0,
   },
 ];
-
