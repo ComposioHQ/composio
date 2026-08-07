@@ -2,7 +2,7 @@ import { openai } from '@ai-sdk/openai';
 import { createMCPClient } from '@ai-sdk/mcp';
 import { Composio } from '@composio/core';
 import { VercelProvider } from '@composio/vercel';
-import { stepCountIs, streamText, type ToolSet } from 'ai';
+import { stepCountIs, streamText } from 'ai';
 
 // 1. Initialize Composio.
 const composio = new Composio({
@@ -43,11 +43,6 @@ const tools = await mcpClient.tools();
 console.log(`✅ ${Object.values(tools).length} tools retrieved from MCP client`);
 console.log(`🔎 Available tools: ${Object.keys(tools).join(', ')}`);
 
-// @ai-sdk/mcp and ai can resolve different patch versions of provider-utils.
-// Their runtime tool shape is compatible, but TypeScript treats the schema
-// types from those package copies as distinct.
-const streamTools = tools as ToolSet;
-
 // 5. Pass tools to Vercel-specific Agent.
 console.log(`🔄 Executing agent...`);
 const stream = streamText({
@@ -59,7 +54,7 @@ const stream = streamText({
       for (let i = 0; i < step.toolCalls.length; i++) {
         const toolCall = step.toolCalls[i];
         console.log(`🔧 Executed ${toolCall.toolName}`);
-        // @ts-ignore
+        // @ts-expect-error
         const toolResult = step.toolResults?.[i];
         if (toolResult !== undefined) {
           console.log(`✅ Result for ${toolCall.toolName}:`, toolResult);
@@ -75,7 +70,7 @@ const stream = streamText({
   //     sender: z.string(),
   //   }),
   // }),
-  tools: streamTools,
+  tools,
 });
 
 // 6. Execute the Vercel AI-specific Agent.
