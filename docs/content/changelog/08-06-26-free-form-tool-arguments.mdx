@@ -57,7 +57,7 @@ Where a schema declares `patternProperties` or a schema-valued `additionalProper
 
 Root-level `patternProperties` and boolean- or schema-valued `additionalProperties` also survive tool schema parsing; they were previously dropped before any converter could see them.
 
-In Python, a `$ref` inside a `patternProperties` or schema-valued `additionalProperties` schema must be a local JSON Pointer such as `#/properties/foo`. External, anchored, and unresolvable references now raise a `ValueError` while the tool is wrapped, rather than being ignored along with the constraint that carried them.
+In Python, a `$ref` inside a `patternProperties` or schema-valued `additionalProperties` schema must be a local JSON Pointer such as `#/properties/foo`. External, anchored, and unresolvable references now raise a `ValueError` while the tool is wrapped, rather than being ignored along with the constraint that carried them. The rule is transitive: a local pointer whose target carries a non-local reference raises too. A `$ref`-shaped value under `const`, `default`, `enum`, or `examples` is instance data rather than a reference, and is left alone.
 
 ### Behavior Change for Python Agentic Providers
 
@@ -100,7 +100,7 @@ This brings Python in line with the TypeScript SDK, where the Zod converter has 
 
 `@composio/claude-agent-sdk` now registers each tool with its complete object schema rather than a raw property shape.
 
-A raw shape carries only the per-property map, so root-level `additionalProperties` and `patternProperties` were dropped before the Claude Agent SDK ever saw them. An unknown key was stripped from the arguments and the tool executed anyway. It is now rejected with an MCP invalid-params error, matching every other TypeScript provider.
+A raw shape carries only the per-property map, so root-level `additionalProperties` and `patternProperties` were dropped before the Claude Agent SDK ever saw them. An unknown key was stripped from the arguments and the tool executed anyway. It is now rejected before the tool runs, and the caller receives an error result instead, matching every other TypeScript provider.
 
 </Callout>
 
