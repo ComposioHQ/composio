@@ -92,6 +92,59 @@ components/api-endpoints-table.tsx ← Endpoint tables in index pages, shows ver
 components/version-badge.tsx ← Badge on endpoint pages showing API version
 ```
 
+Markdown channels (what agents read — see "Version identity in the markdown
+channels" below):
+
+```
+lib/source.ts                ← mdxToCleanMarkdown renders ApiBaseUrl + ApiEndpointsTable for .md
+app/llms.mdx/[[...slug]]/route.ts ← openapiPageToMarkdown emits the version pointer + guidance
+lib/api-endpoints-table-schema.ts ← shared zod schema for the ApiEndpointsTable prop
+lib/api-version-guidance.ts  ← the two guidance constants + the tool-path predicate
+```
+
+### Version identity in the markdown channels
+
+The signals that separate v3.1 from v3.0 (version dropdown, base URL, endpoint
+tables, version badge) all live in the **browser** rendering path. Agents read
+`.md`, `llms.txt`, `llms-full.txt`, and the Context7 ingest, none of which walk
+that path — so every one of those signals used to be dropped, and the only
+concrete request an agent could find was a v3.0 curl example.
+
+There are **two markdown renderers**, and they fail differently:
+
+| Surface | Renderer |
+|---------|----------|
+| MDX pages under `/reference/**` (incl. `reference.md`, tag pages) | `getLLMText` + `mdxToCleanMarkdown` in `lib/source.ts` |
+| OpenAPI operation pages (e.g. `getTools.md`) | `openapiPageToMarkdown` in `app/llms.mdx/[[...slug]]/route.ts` |
+
+A fix in `lib/source.ts` alone does not reach operation pages.
+
+**Composition rule** — the rule most likely to be violated by the next person
+adding a channel:
+
+- **Broad channels** (`SESSION_GUARDRAILS`, `DIRECT_EXECUTION_GUARDRAILS`)
+  compose **both** `REST_VERSION_GUIDANCE` and `TOOL_VERSION_GUIDANCE`. Their
+  reader may call any endpoint.
+- **OpenAPI operation pages** get `REST_VERSION_GUIDANCE` always, and
+  `TOOL_VERSION_GUIDANCE` only when `isToolVersionPath` matches. They do **not**
+  get `SESSION_GUARDRAILS` — it is about SDK code generation, and since it
+  composes the tool-version text it would force it onto operations it does not
+  apply to.
+- **Top notes** (`getLLMText`, `openapiPageToMarkdown`) carry **neither**. They
+  are a pointer only: which version, the base URL, the cross-version link. The
+  guidance already appears further down the same response.
+
+Two more rules:
+
+- **Any new version-dependent rendering must go through `detectApiVersion`**
+  (`lib/api-version.ts`), never an inline `/reference/v3/` string test. Moving
+  the legacy tree's URL should be a one-line change in that file.
+- **Normalization is `isToolVersionPath`'s job, and only its job.** Callers pass
+  the raw spec path key verbatim (`/api/v3.1/tools/{tool_slug}`, with the `/api`
+  segment). It strips `/api/v3.1` before `/api/v3` and compares by exact set
+  membership — `/tools/enum`, `/tools/execute/proxy`, and
+  `tool_router/…/tools` all mention `tools` and none of them is affected.
+
 ### Content structure
 
 v3.0 has its own complete page tree under `content/reference/v3/`:
