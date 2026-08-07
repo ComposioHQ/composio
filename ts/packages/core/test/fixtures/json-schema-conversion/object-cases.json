@@ -176,6 +176,7 @@
     {
       "id": "named-properties-with-pattern-properties",
       "description": "With named `properties` plus `patternProperties` and omitted `additionalProperties`, pattern-matching keys are admitted and validated while other unknown keys stay rejected.",
+      "divergesFromJsonSchema": "JSON Schema treats omitted `additionalProperties` as permissive; Composio tool inputs keep it strict.",
       "schema": {
         "type": "object",
         "properties": { "name": { "type": "string" } },

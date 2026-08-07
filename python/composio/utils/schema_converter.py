@@ -477,6 +477,66 @@ def _compile_object_policy(
     )
 
 
+def _validate_dynamic_object_policies(
+    schema: t.Any,
+    root_schema: t.Dict[str, t.Any],
+    visited: t.Optional[t.Set[int]] = None,
+) -> None:
+    """Compile every reachable dynamic object policy before conversion fallback."""
+    if visited is None:
+        visited = set()
+    if isinstance(schema, list):
+        for item in schema:
+            _validate_dynamic_object_policies(item, root_schema, visited)
+        return
+    if not isinstance(schema, dict) or id(schema) in visited:
+        return
+    visited.add(id(schema))
+
+    if schema.get("patternProperties") or isinstance(
+        schema.get("additionalProperties"), dict
+    ):
+        _compile_object_policy(schema, root_schema)
+
+    reference = schema.get("$ref")
+    if isinstance(reference, str) and (reference == "#" or reference.startswith("#/")):
+        try:
+            resolved = _resolve_local_json_pointer(reference, root_schema)
+        except ValueError:
+            # Ordinary references retain the converter's legacy fallback.
+            # References used by dynamic-key constraints are rejected by
+            # `_compile_object_policy` above.
+            resolved = None
+        if isinstance(resolved, (dict, list)):
+            _validate_dynamic_object_policies(resolved, root_schema, visited)
+
+    for keyword in ("properties", "patternProperties"):
+        values = schema.get(keyword)
+        if isinstance(values, dict):
+            for child in values.values():
+                _validate_dynamic_object_policies(child, root_schema, visited)
+
+    for keyword in _SCHEMA_VALUED_KEYWORDS:
+        child = schema.get(keyword)
+        if isinstance(child, (dict, list)):
+            _validate_dynamic_object_policies(child, root_schema, visited)
+
+    for keyword in _SCHEMA_LIST_KEYWORDS:
+        children = schema.get(keyword)
+        if isinstance(children, list):
+            _validate_dynamic_object_policies(children, root_schema, visited)
+
+    items = schema.get("items")
+    if isinstance(items, (dict, list)):
+        _validate_dynamic_object_policies(items, root_schema, visited)
+
+    dependencies = schema.get("dependencies")
+    if isinstance(dependencies, dict):
+        for child in dependencies.values():
+            if isinstance(child, (dict, bool)):
+                _validate_dynamic_object_policies(child, root_schema, visited)
+
+
 class _DynamicObjectModel(BaseModel):
     """Base for object models that must police and preserve dynamic keys.
 
@@ -611,6 +671,7 @@ def json_schema_to_pydantic_type(
     filtered_schema = _filter_boolean_schemas(json_schema)
     filtered_schema = _resolve_unsatisfiable_references(filtered_schema)
     document_root = root_schema if root_schema is not None else json_schema
+    _validate_dynamic_object_policies(json_schema, document_root)
     return _filtered_schema_to_pydantic_type(
         filtered_schema,
         root_schema=document_root,
@@ -724,6 +785,57 @@ def _convert_with_library(
     root_schema: t.Optional[t.Dict[str, t.Any]] = None,
 ) -> t.Union[t.Type, t.Any]:
     """Use json-schema-to-pydantic for complex schema conversion."""
+    # Dynamic-key policy compilation is an acceptance boundary, so it must run
+    # outside the legacy library-conversion fallback below. Invalid patterns or
+    # references must fail closed instead of silently changing the field to str.
+    if schema.get("type") == "object":
+        if _contains_unsatisfiable_schema(schema.get("properties", {})):
+            try:
+                return _convert_object_with_unsatisfiable_properties(
+                    schema,
+                    root_schema=root_schema,
+                )
+            except (SchemaError, CombinerError) as e:
+                logger.debug(
+                    f"Library schema conversion failed: {e}, falling back to string"
+                )
+                return str
+            except Exception as e:
+                logger.debug(
+                    f"Unexpected error in schema conversion: {e}, falling back to string"
+                )
+                return str
+        # A property-less object with no dynamic-key constraints accepts and
+        # preserves arbitrary content. Modelling it as an empty Pydantic
+        # model instead silently discarded every key (issue #4064).
+        if object_is_open(schema) and not schema.get("patternProperties"):
+            return t.cast(t.Type, t.Dict[str, t.Any])
+        if "title" not in schema:
+            schema = {**schema, "title": "GeneratedModel"}
+
+        try:
+            base_model = create_model_from_schema(
+                schema,
+                allow_undefined_array_items=True,
+                allow_undefined_type=True,
+            )
+        except (SchemaError, CombinerError) as e:
+            logger.debug(
+                f"Library schema conversion failed: {e}, falling back to string"
+            )
+            return str
+        except Exception as e:
+            logger.debug(
+                f"Unexpected error in schema conversion: {e}, falling back to string"
+            )
+            return str
+
+        return apply_object_policy(
+            schema,
+            base_model,
+            root_schema=root_schema,
+        )
+
     try:
         # Handle top-level combiner without type (e.g., {"anyOf": [...]})
         if (
@@ -731,30 +843,6 @@ def _convert_with_library(
             and "type" not in schema
         ):
             return _handle_toplevel_combiner(schema, root_schema=root_schema)
-
-        # For object schemas, create model directly
-        if schema.get("type") == "object":
-            if _contains_unsatisfiable_schema(schema.get("properties", {})):
-                return _convert_object_with_unsatisfiable_properties(
-                    schema,
-                    root_schema=root_schema,
-                )
-            # A property-less object with no dynamic-key constraints accepts and
-            # preserves arbitrary content. Modelling it as an empty Pydantic
-            # model instead silently discarded every key (issue #4064).
-            if object_is_open(schema) and not schema.get("patternProperties"):
-                return t.cast(t.Type, t.Dict[str, t.Any])
-            if "title" not in schema:
-                schema = {**schema, "title": "GeneratedModel"}
-            return apply_object_policy(
-                schema,
-                create_model_from_schema(
-                    schema,
-                    allow_undefined_array_items=True,
-                    allow_undefined_type=True,
-                ),
-                root_schema=root_schema,
-            )
 
         # For array schemas
         if schema.get("type") == "array":

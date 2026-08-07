@@ -198,6 +198,59 @@ def test_schema_converter_required_unsatisfiable_property_has_no_valid_value():
 
 
 @pytest.mark.parametrize(
+    "invalid_object_schema,error_match",
+    [
+        (
+            {
+                "type": "object",
+                "patternProperties": {
+                    "^value_": {"$ref": "https://example.com/schema.json"}
+                },
+            },
+            "must be a local JSON Pointer",
+        ),
+        (
+            {
+                "type": "object",
+                "patternProperties": {"^value_": {"$ref": "#/$defs/missing"}},
+            },
+            "Unresolvable dynamic-key schema reference",
+        ),
+        (
+            {
+                "type": "object",
+                "patternProperties": {"[": {"type": "string"}},
+            },
+            "Invalid patternProperties regular expression",
+        ),
+    ],
+    ids=["external-ref", "missing-local-ref", "invalid-pattern"],
+)
+@pytest.mark.parametrize(
+    "converter",
+    [json_schema_to_model, json_schema_to_pydantic_type],
+    ids=["model", "pydantic-type"],
+)
+@pytest.mark.parametrize("nested", [False, True], ids=["root", "nested"])
+def test_invalid_dynamic_object_schema_fails_closed_across_public_entry_points(
+    invalid_object_schema,
+    error_match,
+    converter,
+    nested,
+):
+    schema = invalid_object_schema
+    if nested:
+        schema = {
+            "type": "object",
+            "properties": {"payload": invalid_object_schema},
+            "required": ["payload"],
+        }
+
+    with pytest.raises(ValueError, match=error_match):
+        converter(schema)
+
+
+@pytest.mark.parametrize(
     "case,index",
     [
         (case, index)

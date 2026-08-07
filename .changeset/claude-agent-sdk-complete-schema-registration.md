@@ -19,7 +19,7 @@ An undeclared argument no longer passes silently.
 { to: 'someone@example.com', hallucinated: 'value' }
 
 // before: `hallucinated` was stripped, and the tool ran with { to: '...' }
-// now:    the call is rejected with an MCP invalid-params error (-32602)
+// now:    the caller receives an error result, and the tool does not run
 ```
 
 Tools with no input parameters behave the same way. They stay closed and reject every argument.
