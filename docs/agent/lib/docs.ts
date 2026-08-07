@@ -232,6 +232,10 @@ export function toCleanMarkdown(raw: string): string {
   const { body } = parseFrontmatter(raw);
   return replaceHomeNavigationMarkdown(body)
     .replace(/<\/?[A-Za-z][A-Za-z0-9.]*(\s[^>]*)?\/?>/g, '')
+    // A malformed or nested tag can survive tag removal. Encode any remaining
+    // angle brackets so agent responses can never interpret them as HTML.
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
     .replace(/\n{3,}/g, '\n\n')
     .trim();
 }
