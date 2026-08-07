@@ -22,7 +22,7 @@
   "dependencies": {
     "@composio/core": "workspace:*",
     "@composio/experimental": "workspace:*",
-    "@tenkicloud/sandbox": "^0.3.6",
+    "@tenkicloud/sandbox": "^0.5.4",
     "dotenv": "catalog:"
   },
   "devDependencies": {

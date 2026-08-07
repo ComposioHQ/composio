@@ -92,8 +92,6 @@ async function main() {
     // can read it — treat the sandbox as your trust boundary and rotate the
     // key if a run could have leaked it.
     env,
-    workspaceId: process.env.TENKI_WORKSPACE_ID,
-    projectId: process.env.TENKI_PROJECT_ID,
   });
   console.log(`✅ microVM ready in ${((Date.now() - startedAt) / 1000).toFixed(1)}s`);
 

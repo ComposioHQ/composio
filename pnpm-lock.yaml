@@ -815,8 +815,8 @@ importers:
         specifier: workspace:*
         version: link:../../packages/experimental
       '@tenkicloud/sandbox':
-        specifier: ^0.3.6
-        version: 0.3.7
+        specifier: ^0.5.4
+        version: 0.5.4
       dotenv:
         specifier: 'catalog:'
         version: 17.4.2
@@ -4054,8 +4054,8 @@ packages:
   '@standard-schema/spec@1.1.0':
     resolution: {integrity: sha512-l2aFy5jALhniG5HgqrD6jXLi/rUWrKvqN/qJx6yoJsgKhblVd+iqqU4RCXavm/jPityDo5TCvKMnpjKnOriy0w==}
 
-  '@tenkicloud/sandbox@0.3.7':
-    resolution: {integrity: sha512-gvRLKRpHOANjaPJW6T0CyXBDAjarxsSJvasdY3Uo/5+CHXh3YwGbc4n5ap8F8n7RT68MrXK2sr6B/gF7zKOnZg==}
+  '@tenkicloud/sandbox@0.5.4':
+    resolution: {integrity: sha512-U/oV8TAB1rjpXHuo9DIrpxnd2tlO2MojNjzLjqKgx4+zkD4NjgpR6QzRv5awoXib0DND3bnu0qoQCIgsfcXTCw==}
     engines: {node: '>=18'}
 
   '@ts-morph/common@0.29.0':
@@ -9544,12 +9544,12 @@ snapshots:
 
   '@standard-schema/spec@1.1.0': {}
 
-  '@tenkicloud/sandbox@0.3.7':
+  '@tenkicloud/sandbox@0.5.4':
     dependencies:
       '@bufbuild/protobuf': 2.12.1
       '@connectrpc/connect': 2.1.2(@bufbuild/protobuf@2.12.1)
       '@connectrpc/connect-node': 2.1.2(@bufbuild/protobuf@2.12.1)(@connectrpc/connect@2.1.2(@bufbuild/protobuf@2.12.1))
-      ws: 8.21.0
+      ws: 8.21.1
     transitivePeerDependencies:
       - bufferutil
       - utf-8-validate

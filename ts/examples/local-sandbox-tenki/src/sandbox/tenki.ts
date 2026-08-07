@@ -27,9 +27,6 @@ export interface SandboxOptions {
   remoteDir: string;
   helperSource: string;
   env: Record<string, string>;
-  /** Optional pins; default to the first workspace/project visible to the API key. */
-  workspaceId?: string;
-  projectId?: string;
 }
 
 export interface UserSandbox {
@@ -71,40 +68,11 @@ export function commandErrorText(error: unknown): string {
 export async function createTenkiSandbox(options: SandboxOptions): Promise<UserSandbox> {
   const tenki = new TenkiSandbox({ authToken: options.apiKey });
 
-  // Session creation requires a project; resolve one from the key's identity.
-  // Pinned ids must match exactly — a mistyped id fails loudly instead of
-  // silently booting the microVM in whatever workspace/project comes first.
-  const identity = await tenki.whoAmI();
-  const workspace = options.workspaceId
-    ? identity.workspaces.find(ws => ws.id === options.workspaceId)
-    : identity.workspaces[0];
-  if (!workspace) {
-    throw new Error(
-      options.workspaceId
-        ? `Tenki workspace ${options.workspaceId} not visible to this API key ` +
-            `(visible: ${identity.workspaces.map(ws => ws.id).join(', ') || 'none'})`
-        : 'No Tenki workspace visible to this API key'
-    );
-  }
-  const project = options.projectId
-    ? workspace.projects.find(p => p.id === options.projectId)
-    : workspace.projects[0];
-  if (!project) {
-    throw new Error(
-      options.projectId
-        ? `Tenki project ${options.projectId} not found in workspace "${workspace.name}" ` +
-            `(visible: ${workspace.projects.map(p => p.id).join(', ') || 'none'})`
-        : `No Tenki project visible in workspace "${workspace.name}"`
-    );
-  }
-
   // Failure-atomic boot: take the session handle *before* waiting for
   // readiness, so a failed or timed-out boot can still be terminated instead
   // of leaking a running microVM. `maxDurationMs` covers the host-crash case.
   const session = await tenki.create({
     name: 'composio-local-sandbox',
-    workspaceId: workspace.id,
-    projectId: project.id,
     allowOutbound: true, // the Composio helper calls the Tool Router from inside the guest
     maxDurationMs: options.maxDurationMs,
     waitReady: false,
