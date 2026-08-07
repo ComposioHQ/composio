@@ -126,6 +126,15 @@ function readDocumentedSdkVersions(sdkLabel) {
     rows.push(...(source.match(rowPattern) ?? []));
   }
 
+  // The release PR bumps versions and writes the changelog entry as a draft; the
+  // publish job runs this gate BEFORE finalize promotes the draft into
+  // docs/content/changelog. Without reading the draft, the first release (and every
+  // open PR between the release PR merging and the changelog landing) fails here.
+  const draftPath = new URL('../.github/sdk-release/draft.mdx', import.meta.url);
+  if (existsSync(draftPath)) {
+    rows.push(...(readFileSync(draftPath, 'utf8').match(rowPattern) ?? []));
+  }
+
   return readSdkVersions(rows);
 }
 
@@ -254,8 +263,11 @@ touch "$target/dist/provider.whl"
   }
 }
 
-if (!sdkReleaseWorkflow.includes('run: pnpm changeset:release')) {
-  throw new Error('sdk.release.yml must use the repository-controlled changeset:release script');
+if (!sdkReleaseWorkflow.includes('publish: pnpm changeset:release')) {
+  throw new Error(
+    'sdk.release.yml must publish through changesets/action with the repository-controlled ' +
+      'changeset:release script, so New tag: lines create GitHub Releases'
+  );
 }
 
 if (packageJson.scripts?.['changeset:release'] !== 'bash ts/scripts/changeset-release.sh') {

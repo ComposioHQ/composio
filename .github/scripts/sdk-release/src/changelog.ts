@@ -42,28 +42,57 @@ const OpenAi = OpenAiClient.layerConfig({
   apiUrl: Config.string('OPENAI_BASE_URL').pipe(Config.withDefault(undefined)),
 }).pipe(Layer.provide(FetchHttpClient.layer));
 
+/**
+ * Fail fast with a clear, actionable error when OPENAI_API_KEY is missing,
+ * instead of letting the OpenAI client layer surface whatever opaque
+ * config-resolution error it produces deep inside the model call. Only checks
+ * that the key is present — `Config.option` never exposes the value itself,
+ * so nothing here can leak the secret into logs.
+ */
+export const requireOpenAiKey = Config.option(Config.redacted('OPENAI_API_KEY')).pipe(
+  Effect.flatMap(key =>
+    Option.isSome(key)
+      ? Effect.void
+      : Effect.fail(
+          new ChangelogError({
+            reason:
+              'OPENAI_API_KEY is not set. Set the secret and re-run, or write the changelog draft by hand at ' +
+              '.github/sdk-release/draft.mdx so the release PR is not blocked on it.',
+          })
+        )
+  )
+);
+
 const callModel = (factsJson: string, instructions: string) =>
-  LanguageModel.generateObject({
-    prompt: [
-      { role: 'system', content: instructions },
-      { role: 'user', content: factsJson },
-    ],
-    schema: DraftContent,
-    objectName: 'changelog_draft',
-  }).pipe(
-    Effect.map(response => response.value),
-    Effect.provide(
-      OpenAiLanguageModel.model(OPENAI_MODEL, {
-        reasoning: { effort: 'low' },
-        max_output_tokens: 4000,
-        strict: true,
-      })
-    ),
-    Effect.provide(OpenAi),
-    Effect.mapError(
-      error => new ChangelogError({ reason: `changelog generation failed: ${error}` })
-    ),
-    Effect.timeout('120 seconds')
+  requireOpenAiKey.pipe(
+    Effect.zipRight(
+      LanguageModel.generateObject({
+        prompt: [
+          { role: 'system', content: instructions },
+          { role: 'user', content: factsJson },
+        ],
+        schema: DraftContent,
+        objectName: 'changelog_draft',
+      }).pipe(
+        Effect.map(response => response.value),
+        Effect.provide(
+          OpenAiLanguageModel.model(OPENAI_MODEL, {
+            reasoning: { effort: 'low' },
+            max_output_tokens: 4000,
+            strict: true,
+          })
+        ),
+        Effect.provide(OpenAi),
+        // timeout must be applied before mapError, so a slow call's
+        // TimeoutException still gets wrapped into ChangelogError — mapError
+        // only catches errors from what it wraps, and pipe order is
+        // outer-to-inner in the order written.
+        Effect.timeout('120 seconds'),
+        Effect.mapError(
+          error => new ChangelogError({ reason: `changelog generation failed: ${error}` })
+        )
+      )
+    )
   );
 
 /** Escape MDX-active characters in model output, leaving inline code spans untouched. */
@@ -89,14 +118,14 @@ export const renderDraft = (
     `{/* sdk-release input-hash ${inputHash} */}`,
     '',
     ...content.sections.flatMap(section => [
-      `## ${escapeMdx(section.heading)}`,
+      `### ${escapeMdx(section.heading)}`,
       '',
       escapeMdx(section.body),
       '',
     ]),
     // The row format below is a repo invariant: test/release-workflow.test.ts
     // requires every current SDK version to be documented as such a table row.
-    '## Released versions',
+    '### SDK versions',
     '',
     '| SDK | Version |',
     '| --- | --- |',
@@ -107,11 +136,21 @@ export const renderDraft = (
     '',
   ].join('\n');
 
+/**
+ * Hash of the release identity only — the packages, versions, and changeset
+ * summaries being shipped. `facts.date` is deliberately excluded: it changes on
+ * a UTC day rollover (a re-run, or another push to the release PR) for the very
+ * same release, and hashing it would regenerate the draft and silently discard
+ * human edits made during review.
+ */
+export const releaseInputHash = (facts: ReleaseFacts) =>
+  sha256(JSON.stringify({ typescript: facts.typescript, python: facts.python }));
+
 export const generateDraft = (facts: ReleaseFacts) =>
   Effect.gen(function* () {
     const fs = yield* FileSystem.FileSystem;
     const factsJson = JSON.stringify(facts, null, 2);
-    const inputHash = sha256(factsJson);
+    const inputHash = releaseInputHash(facts);
     // Prefer an existing draft for identical facts — the working tree first, then
     // the open release-PR branch (changesets/action rebuilds it from next each
     // push, and regenerating would discard human edits made in the PR).

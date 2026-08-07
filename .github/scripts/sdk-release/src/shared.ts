@@ -109,17 +109,39 @@ export const publishablePackages = Effect.gen(function* () {
 
 export const pyprojectPath = resolve(repoRoot, 'python/pyproject.toml');
 export const pyVersionFilePath = resolve(repoRoot, 'python/composio/__version__.py');
+export const pythonProvidersDir = resolve(repoRoot, 'python/providers');
+
+const readPyprojectPackage = (fs: FileSystem.FileSystem, path: string) =>
+  Effect.gen(function* () {
+    const pyproject = yield* fs.readFileString(path);
+    const name = pyproject.match(/^name = "([^"]+)"$/m)?.[1];
+    const version = pyproject.match(/^version = "([^"]+)"$/m)?.[1];
+    if (name === undefined || version === undefined) {
+      return yield* Effect.fail(new ExecError({ command: `parse ${path}`, exitCode: 1 }));
+    }
+    return { name, version };
+  });
 
 /** Name and version of the Python SDK, read from python/pyproject.toml. */
 export const pythonPackage = Effect.gen(function* () {
   const fs = yield* FileSystem.FileSystem;
-  const pyproject = yield* fs.readFileString(pyprojectPath);
-  const name = pyproject.match(/^name = "([^"]+)"$/m)?.[1];
-  const version = pyproject.match(/^version = "([^"]+)"$/m)?.[1];
-  if (name === undefined || version === undefined) {
-    return yield* Effect.fail(
-      new ExecError({ command: 'parse python/pyproject.toml', exitCode: 1 })
-    );
+  return yield* readPyprojectPackage(fs, pyprojectPath);
+});
+
+/**
+ * Name and version of every provider under python/providers with a pyproject.toml.
+ * `python/Makefile`'s `build` target copies every provider wheel into the same
+ * python/dist that pypi-publish uploads, so these ship to PyPI alongside
+ * `composio` on every release and must be verified the same way.
+ */
+export const pythonProviderPackages = Effect.gen(function* () {
+  const fs = yield* FileSystem.FileSystem;
+  const entries = yield* fs.readDirectory(pythonProvidersDir);
+  const providers: Array<{ name: string; version: string }> = [];
+  for (const entry of entries.sort()) {
+    const pyprojectFile = resolve(pythonProvidersDir, entry, 'pyproject.toml');
+    const decoded = yield* readPyprojectPackage(fs, pyprojectFile).pipe(Effect.option);
+    if (Option.isSome(decoded)) providers.push(decoded.value);
   }
-  return { name, version };
+  return providers;
 });

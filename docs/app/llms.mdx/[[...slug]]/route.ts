@@ -721,7 +721,10 @@ function generateChangelogIndex(): string {
   for (const date of sortedDates) {
     const entries = entriesByDate.get(date) || [];
     const [year, month, day] = date.split('-');
-    const mdUrl = `https://docs.composio.dev/docs/changelog/${year}/${month}/${day}.md`;
+    // Canonical /reference/changelog path (not the legacy /docs/changelog one)
+    // with digit-only date segments, so the request survives the redirect in
+    // next.config.mjs and actually reaches the per-date branch below.
+    const mdUrl = `https://docs.composio.dev/reference/changelog/${year}/${month}/${day}.md`;
     const formattedDate = formatDate(date);
     const titles = entries.map(e => e.title).join(', ');
     lines.push(`| [${formattedDate}](${mdUrl}) | ${titles} |`);
@@ -750,7 +753,7 @@ async function changelogToMarkdown(dateStr: string): Promise<string | null> {
   const lines: string[] = [
     `# Changelog - ${formattedDate}`,
     '',
-    `**Documentation:** https://docs.composio.dev/docs/changelog/${dateStr.replace(/-/g, '/')}`,
+    `**Documentation:** https://docs.composio.dev/reference/changelog#${dateStr}`,
     '',
   ];
 

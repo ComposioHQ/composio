@@ -5,6 +5,7 @@ import {
   publishablePackages,
   pypiVersionUrl,
   pythonPackage,
+  pythonProviderPackages,
   urlExists,
 } from './shared.ts';
 
@@ -32,6 +33,10 @@ const describe = (artifacts: ReadonlyArray<Artifact>) =>
 const missingArtifacts = Effect.gen(function* () {
   const packages = yield* publishablePackages;
   const python = yield* pythonPackage;
+  // python/Makefile's `build` target copies every provider wheel into the same
+  // python/dist that pypi-publish uploads, so provider packages ship on every
+  // Python release too and must be verified live, not just `composio` itself.
+  const pythonProviders = yield* pythonProviderPackages;
   const artifacts: ReadonlyArray<Artifact> = [
     ...packages.map(pkg => ({
       registry: 'npm' as const,
@@ -40,11 +45,17 @@ const missingArtifacts = Effect.gen(function* () {
       url: npmVersionUrl(pkg.name, pkg.version),
     })),
     {
-      registry: 'pypi',
+      registry: 'pypi' as const,
       name: python.name,
       version: python.version,
       url: pypiVersionUrl(python.name, python.version),
     },
+    ...pythonProviders.map(pkg => ({
+      registry: 'pypi' as const,
+      name: pkg.name,
+      version: pkg.version,
+      url: pypiVersionUrl(pkg.name, pkg.version),
+    })),
   ];
   return yield* Effect.filter(artifacts, artifact => Effect.negate(urlExists(artifact.url)), {
     concurrency: 8,

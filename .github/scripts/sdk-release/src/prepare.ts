@@ -36,8 +36,14 @@ const readChangesets = Effect.gen(function* () {
   return changesets;
 });
 
-/** Keep python/composio/__version__.py in lockstep with pyproject.toml, and report
- * the Python package when its current version is not on PyPI yet. */
+/**
+ * Keep python/composio/__version__.py in lockstep with pyproject.toml, and report
+ * the Python package when its current version is not on PyPI yet.
+ * This only runs when changesets/action invokes the `version` script, which only happens
+ * when at least one changeset file is pending in .changeset/. A pure Python-only release
+ * (pyproject.toml bumped, zero pending TS changesets) does NOT trigger this job —
+ * __version__.py and the changelog entry must be updated by hand in that case.
+ */
 const pythonRelease = Effect.gen(function* () {
   const fs = yield* FileSystem.FileSystem;
   const python = yield* pythonPackage;
@@ -56,6 +62,10 @@ const pythonRelease = Effect.gen(function* () {
  * generate the changelog draft for everything the next publish will ship.
  * Designed to run as the changesets/action `version` command, so every file it
  * touches lands in the release PR for human review.
+ * This only runs when changesets/action invokes the `version` script, which only happens
+ * when at least one changeset file is pending in .changeset/. A pure Python-only release
+ * (pyproject.toml bumped, zero pending TS changesets) does NOT trigger this job —
+ * __version__.py and the changelog entry must be updated by hand in that case.
  */
 export const prepare = Effect.gen(function* () {
   const changesets = yield* readChangesets;
