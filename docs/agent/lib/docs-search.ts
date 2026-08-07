@@ -9,6 +9,7 @@ import {
   tokenize,
   type DocPage,
 } from './docs';
+import { canonicalRouteForQuery, promoteCanonicalRoute } from './docs-routing';
 
 /**
  * search_docs — find the most relevant Composio docs pages for a query.
@@ -65,34 +66,6 @@ type CorpusLoad = {
   loadMs: number;
   fallbackReason?: string;
 };
-
-type CanonicalRouteRule = {
-  route: string;
-  matches: (query: string) => boolean;
-};
-
-const CANONICAL_ROUTE_RULES: CanonicalRouteRule[] = [
-  {
-    route: '/docs/tools-direct/executing-tools',
-    matches: query => /\bcomposio\s*\.\s*tools\s*\.\s*execute\s*\(/i.test(query),
-  },
-  {
-    route: '/docs/composio-connect',
-    matches: query => {
-      const normalized = query.toLowerCase();
-      if (!/\bmcp\b/.test(normalized)) return false;
-
-      const hasExistingClient =
-        /\b(?:already have|existing)\b.{0,48}\b(?:mcp\s+)?client\b/.test(normalized) ||
-        /\b(?:mcp\s+)?client\b.{0,48}\b(?:already have|existing)\b/.test(normalized);
-      const rejectsSdkSession =
-        /\bnot\s+(?:an?\s+)?(?:sdk\s+)?session\b/.test(normalized) ||
-        /\bwithout\s+(?:an?\s+)?(?:sdk\s+)?session\b/.test(normalized);
-
-      return hasExistingClient || rejectsSdkSession;
-    },
-  },
-];
 
 let corpusCache: Corpus | undefined;
 let corpusCacheSource: CorpusSource | undefined;
@@ -312,29 +285,17 @@ function dedupeByUrl(ranked: { page: DocPage; s: number }[]): { page: DocPage; s
   return deduped;
 }
 
-export function canonicalRouteForQuery(query: string): string | undefined {
-  return CANONICAL_ROUTE_RULES.find(rule => rule.matches(query))?.route;
-}
-
-function promoteCanonicalRoute(
+function ensureCanonicalRoute(
   ranked: { page: DocPage; s: number }[],
   route: string | undefined,
   corpus: Corpus
 ): { page: DocPage; s: number }[] {
-  if (!route) return ranked;
-
-  const existingIndex = ranked.findIndex(item => item.page.url === route);
-  if (existingIndex === 0) return ranked;
-
-  if (existingIndex > 0) {
-    const [canonical] = ranked.splice(existingIndex, 1);
-    if (canonical) ranked.unshift(canonical);
-    return ranked;
+  if (route && !ranked.some(item => item.page.url === route)) {
+    const canonicalEntry = corpus.entries.find(entry => entry.page.url === route);
+    if (canonicalEntry) ranked.push({ page: canonicalEntry.page, s: 0 });
   }
 
-  const canonicalEntry = corpus.entries.find(entry => entry.page.url === route);
-  if (canonicalEntry) ranked.unshift({ page: canonicalEntry.page, s: 0 });
-  return ranked;
+  return promoteCanonicalRoute(ranked, route, item => item.page.url);
 }
 
 function contentFor(
@@ -436,7 +397,7 @@ export function searchDocs(query: string, options: SearchDocsOptions = {}): Sear
   const canonicalRoute = canonicalRouteForQuery(query);
 
   const rankStarted = performance.now();
-  const ranked = promoteCanonicalRoute(
+  const ranked = ensureCanonicalRoute(
     dedupeByUrl(
       corpus.entries
         .map(entry => ({ page: entry.page, s: score(entry, effective, corpus) }))

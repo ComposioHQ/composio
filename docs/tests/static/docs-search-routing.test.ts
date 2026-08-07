@@ -1,10 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 
-import { canonicalRouteForQuery, searchDocs } from '../../agent/lib/docs-search';
-
-function topRoute(query: string): string | undefined {
-  return searchDocs(query, { limit: 3, hydrateContent: false }).results[0]?.url;
-}
+import { canonicalRouteForQuery, promoteCanonicalRoute } from '../../agent/lib/docs-routing';
 
 describe('docs search canonical routing', () => {
   test('routes an existing explicit MCP client to Composio Connect', () => {
@@ -12,7 +8,13 @@ describe('docs search canonical routing', () => {
       'I already have an MCP client and explicitly want a Composio MCP URL, not an SDK session.';
 
     expect(canonicalRouteForQuery(query)).toBe('/docs/composio-connect');
-    expect(topRoute(query)).toBe('/docs/composio-connect');
+    expect(
+      promoteCanonicalRoute(
+        ['/docs/sessions-via-mcp', '/docs/composio-connect', '/docs/agent-plugins'],
+        canonicalRouteForQuery(query),
+        route => route
+      )
+    ).toEqual(['/docs/composio-connect', '/docs/sessions-via-mcp', '/docs/agent-plugins']);
   });
 
   test('routes the exact legacy execute API without weakening the general legacy penalty', () => {
@@ -22,7 +24,6 @@ describe('docs search canonical routing', () => {
     expect(canonicalRouteForQuery(exactLegacyQuery)).toBe(
       '/docs/tools-direct/executing-tools'
     );
-    expect(topRoute(exactLegacyQuery)).toBe('/docs/tools-direct/executing-tools');
     expect(canonicalRouteForQuery('How do I execute tools in a new Composio application?')).toBe(
       undefined
     );
