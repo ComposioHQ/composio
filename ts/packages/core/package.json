@@ -99,7 +99,7 @@
   "license": "ISC",
   "devDependencies": {
     "@type-challenges/utils": "^0.1.1",
-    "@types/semver": "^7.7.1",
+    "@types/semver": "^7.8.0",
     "tsdown": "catalog:",
     "tsx": "catalog:",
     "typedoc": "^0.28.20",
