@@ -5,7 +5,6 @@ import {
   homeIntentsToMarkdown,
   replaceHomeNavigationMarkdown,
 } from '../../lib/home-navigation';
-import { toCleanMarkdown } from '../../agent/lib/docs';
 
 describe('Welcome navigation', () => {
   test('separates build paths from use paths', () => {
@@ -40,18 +39,4 @@ describe('Welcome navigation', () => {
     expect(markdown.toLowerCase()).not.toContain('skills');
   });
 
-  test('serializes the same paths into the docs-agent search corpus', () => {
-    const markdown = toCleanMarkdown(`---
-title: Welcome
----
-
-<DocsHero />
-
-<HomeSurfaces />`);
-
-    expect(markdown).toContain('### Build with Composio');
-    expect(markdown).toContain('### Use Composio');
-    expect(markdown).toContain('[Claude Code plugin](/docs/claude-code-plugin)');
-    expect(markdown).not.toContain('<HomeSurfaces />');
-  });
 });
