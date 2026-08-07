@@ -24,6 +24,7 @@ An object schema that names no properties is now treated as open: arbitrary cont
 **Before:**
 
 ```python
+# tool comes from Composio(provider=LangchainProvider()).tools.get(...)
 # dataset_query is declared as {"type": "object"} with no properties
 tool.run({"dataset_query": {"database": 1, "query": {"source-table": 2}}})
 # The argument was accepted, then arrived at execution as an empty object
@@ -55,6 +56,8 @@ Where a schema declares `patternProperties` or a schema-valued `additionalProper
 - A key declared in `properties` is still checked against every pattern it matches.
 
 Root-level `patternProperties` and boolean- or schema-valued `additionalProperties` also survive tool schema parsing; they were previously dropped before any converter could see them.
+
+In Python, a `$ref` inside a `patternProperties` or schema-valued `additionalProperties` schema must be a local JSON Pointer such as `#/properties/foo`. External, anchored, and unresolvable references now raise a `ValueError` while the tool is wrapped, rather than being ignored along with the constraint that carried them.
 
 ### Behavior Change for Python Agentic Providers
 
@@ -88,7 +91,7 @@ This brings Python in line with the TypeScript SDK, where the Zod converter has 
 
 - **`composio_openai`, `composio_anthropic`, and the other non-agentic providers.** These hand the raw JSON schema to the model API and pass the returned arguments straight through, so they never build a Pydantic model from a tool schema.
 - **`composio_gemini`.** Gemini builds a typed signature through `json_schema_to_pydantic_type`, so free-form object arguments now use `Dict[str, Any]` instead of an empty model. It does not use `json_schema_to_model`, so the unknown-key rejection above does not apply.
-- **Declared field behavior, aliases for reserved Python keywords, `skip_default`, combiners, and references.** All unchanged.
+- **Declared field behavior, aliases for reserved Python keywords, `skip_default`, combiners, and references in declared fields.** All unchanged. References inside a dynamic-key schema are the exception, as described above.
 
 ### Behavior Change for the Claude Agent SDK Provider
 
@@ -111,4 +114,6 @@ This is also what makes free-form object arguments reach execution intact throug
 
 Accepting and preserving free-form object content is backward compatible: payloads that previously failed now succeed, and payloads that previously arrived empty now arrive complete.
 
-The two unknown-key rejections described above — Python agentic providers, and the Claude Agent SDK provider — are the behavior changes. Tools whose schemas set `additionalProperties: true`, or whose objects declare no properties, are unaffected.
+The two unknown-key rejections described above — Python agentic providers, and the Claude Agent SDK provider — are the behavior changes at call time. Tools whose schemas set `additionalProperties: true`, or whose objects declare no properties, are unaffected.
+
+The one remaining change happens earlier, while a Python tool is wrapped: a non-local `$ref` inside a dynamic-key schema now raises instead of being ignored. Only tools whose `patternProperties` or schema-valued `additionalProperties` carry an external, anchored, or unresolvable reference are affected.
