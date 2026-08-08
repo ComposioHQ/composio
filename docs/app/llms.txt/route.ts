@@ -1,4 +1,5 @@
 import { source, examplesSource, referenceSource, toolkitsSource } from '@/lib/source';
+import { detectReferenceApiVersion } from '@/lib/api-version';
 import type { ReactNode } from 'react';
 
 export const revalidate = false;
@@ -99,13 +100,51 @@ function formatPage(page: { url: string }) {
   return `- https://docs.composio.dev${page.url}.md`;
 }
 
+/**
+ * Splits reference pages by REST version.
+ *
+ * This list is built with a flat `.map(formatPage)` that bypasses the
+ * `isLegacySeparator` filter the guides tree gets, so the two trees used to
+ * arrive interleaved under one unlabelled heading — and `/reference/v3/` is
+ * the only version-shaped path in the corpus, so it is the highest-precision
+ * match for the query most readers intend as "current Composio".
+ *
+ * Partitioned with `detectApiVersion`, not a literal path test, so moving the
+ * legacy tree's URL stays a one-line change in `lib/api-version.ts`.
+ */
+function partitionByApiVersion<T extends { url: string }>(pages: T[]) {
+  const current: T[] = [];
+  const legacy: T[] = [];
+  const versionIndependent: T[] = [];
+  for (const page of pages) {
+    const version = detectReferenceApiVersion(page.url);
+    if (version === '3.0') legacy.push(page);
+    else if (version === '3.1') current.push(page);
+    else versionIndependent.push(page);
+  }
+  return { current, legacy, versionIndependent };
+}
+
 export async function GET() {
   try {
     const docsTree = walkPageTree(source.pageTree.children as TreeNode[]);
 
     const examplesPages = examplesSource.getPages();
-    const referencePages = referenceSource.getPages();
     const toolkitsPages = toolkitsSource.getPages();
+    const {
+      current: currentReferencePages,
+      legacy: legacyReferencePages,
+      versionIndependent: versionIndependentReferencePages,
+    } = partitionByApiVersion(referenceSource.getPages());
+
+    const legacyReferenceSection =
+      legacyReferencePages.length > 0
+        ? `
+## API Reference (v3.0, legacy — supported, not for new code)
+
+${legacyReferencePages.map(formatPage).join('\n')}
+`
+        : '';
 
     const index = `# Composio Documentation
 
@@ -119,9 +158,13 @@ ${docsTree}
 
 ${examplesPages.map(formatPage).join('\n')}
 
-## API Reference
+## API Reference (v3.1, current)
 
-${referencePages.map(formatPage).join('\n')}
+${currentReferencePages.map(formatPage).join('\n')}
+${legacyReferenceSection}
+## SDK and product reference (version-independent)
+
+${versionIndependentReferencePages.map(formatPage).join('\n')}
 
 ## Toolkits
 

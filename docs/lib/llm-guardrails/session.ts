@@ -1,4 +1,5 @@
 import { TERMINOLOGY_MIGRATION } from './terminology';
+import { REST_VERSION_GUIDANCE, TOOL_VERSION_GUIDANCE } from '../api-version-guidance';
 
 /**
  * Default integration notes appended to most pages.
@@ -8,6 +9,11 @@ import { TERMINOLOGY_MIGRATION } from './terminology';
  * (Rewritten after two eval rounds showed capable agents classify
  * ALWAYS/NEVER-style instruction blocks as prompt injection and distrust the
  * page they appear on.)
+ *
+ * A reader of a session guide may call any endpoint, so this is a broad
+ * channel: it composes both version guidance constants. They are interpolated
+ * from `lib/api-version-guidance.ts`, never retyped — see the composition rule
+ * there.
  */
 export const SESSION_GUARDRAILS = `
 
@@ -60,5 +66,13 @@ Use \`session.mcp.url\` and \`session.mcp.headers\` with any MCP-compatible clie
 - Composio-managed auth is the default: the agent connects accounts at runtime through the session, so users don't need to pre-create auth configs or connected accounts for managed toolkits.
 - Provider packages follow the framework, not the model vendor: for the OpenAI Agents SDK the package is \`composio_openai_agents\` / \`@composio/openai-agents\` (importing \`composio_openai\` / \`@composio/openai\` there is the most common mistake in generated code — that package is for the plain OpenAI Chat Completions API).
 - **Direct execution** (\`composio.tools.get()\`, \`composio.tools.execute()\`, \`provider.handle_tool_calls()\`) is a fully supported lower-level interface: your code picks the tool, no runtime discovery. It fits deterministic workflows and scripts; sessions fit agents that decide at runtime. The tradeoffs are documented at https://docs.composio.dev/docs/sessions-vs-direct-execution. Note that direct execution requires a toolkit version (https://docs.composio.dev/docs/tools-direct/toolkit-versioning).
+
+---
+
+# 3. Calling the REST API directly
+
+${REST_VERSION_GUIDANCE}
+
+${TOOL_VERSION_GUIDANCE}
 ${TERMINOLOGY_MIGRATION}
 `;

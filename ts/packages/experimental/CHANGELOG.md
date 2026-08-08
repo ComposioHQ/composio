@@ -1,5 +1,11 @@
 # @composio/experimental
 
+## 0.2.2
+
+### Patch Changes
+
+- 4ceaede: Refresh the TypeBox runtime dependency.
+
 ## 0.2.1
 
 ### Patch Changes

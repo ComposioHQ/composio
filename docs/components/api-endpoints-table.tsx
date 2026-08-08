@@ -3,23 +3,16 @@
 import { useApiVersion } from '@/lib/use-api-version';
 import { DeprecatedApiLegacyBadge } from '@/components/legacy-badge';
 import { getApiDisplayTitle } from '@/lib/api-deprecation';
-
-interface Endpoint {
-  method: string;
-  pathV31: string;
-  pathV3: string;
-  summary: string;
-  href: string;
-  /** Set by the generator for operations flagged `deprecated` in the OpenAPI
-   *  spec. Surfaced with the existing "Legacy" tag (see components/legacy-badge.tsx). */
-  legacy?: boolean;
-}
+import type { ApiEndpoint } from '@/lib/api-endpoints-table-schema';
 
 /**
  * Renders an endpoint table that updates based on the selected API version.
  * Used in auto-generated index pages.
+ *
+ * The prop shape lives in `lib/api-endpoints-table-schema.ts` — one type, one
+ * source, shared with the `.md` converter and the generator's validation.
  */
-export function ApiEndpointsTable({ endpoints }: { endpoints: Endpoint[] }) {
+export function ApiEndpointsTable({ endpoints }: { endpoints: ApiEndpoint[] }) {
   const version = useApiVersion();
 
   return (
