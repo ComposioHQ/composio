@@ -81,10 +81,7 @@ response = client.responses.create(
 )
 
 # Agentic loop: keep executing tool calls until the model responds with text.
-# Session tools MUST be executed through session.execute() — it routes the call
-# through your session's tool router. Provider tool-call helpers use the
-# direct path instead, so session meta-tools fail through them with
-# "can only be called inside a tool-router session".
+# Session tools must be executed with session.execute() — see the callout below.
 while True:
     tool_calls = [o for o in response.output if o.type == "function_call"]
     if not tool_calls:
@@ -136,10 +133,7 @@ let response = await client.responses.create({
 });
 
 // Agentic loop: keep executing tool calls until the model responds with text.
-// Session tools MUST be executed through session.execute() — it routes the call
-// through your session's tool router. Provider tool-call helpers use the
-// direct path instead, so session meta-tools fail through them with
-// "can only be called inside a tool-router session".
+// Session tools must be executed with session.execute() — see the callout below.
 while (true) {
     const toolCalls = response.output.filter((o) => o.type === "function_call");
     if (toolCalls.length === 0) break;

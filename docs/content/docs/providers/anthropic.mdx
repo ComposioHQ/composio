@@ -78,10 +78,7 @@ response = client.messages.create(
 )
 
 # Agentic loop: keep executing tool calls until the model responds with text.
-# Session tools MUST be executed through session.execute() — it routes the call
-# through your session's tool router. Provider tool-call helpers use the
-# direct path instead, so session meta-tools fail through them with
-# "can only be called inside a tool-router session".
+# Session tools must be executed with session.execute() — see the callout below.
 while response.stop_reason == "tool_use":
     tool_use_blocks = [block for block in response.content if block.type == "tool_use"]
     messages.append({"role": "assistant", "content": response.content})
@@ -139,10 +136,7 @@ let response = await client.messages.create({
 });
 
 // Agentic loop: keep executing tool calls until the model responds with text.
-// Session tools MUST be executed through session.execute() — it routes the call
-// through your session's tool router. Provider tool-call helpers use the
-// direct path instead, so session meta-tools fail through them with
-// "can only be called inside a tool-router session".
+// Session tools must be executed with session.execute() — see the callout below.
 while (response.stop_reason === "tool_use") {
     const toolUseBlocks = response.content.filter((block) => block.type === "tool_use");
     const toolResults: Anthropic.ToolResultBlockParam[] = [];

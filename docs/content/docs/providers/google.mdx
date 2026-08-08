@@ -97,10 +97,7 @@ let response = await chat.sendMessage({
 });
 
 // Agentic loop: keep executing tool calls until the model responds with text.
-// Session tools MUST be executed through session.execute() — it routes the call
-// through your session's tool router. Provider tool-call helpers use the
-// direct path instead, so session meta-tools fail through them with
-// "can only be called inside a tool-router session".
+// Session tools must be executed with session.execute() — see the callout below.
 while (response.functionCalls && response.functionCalls.length > 0) {
     const parts: Part[] = [];
     for (const fc of response.functionCalls) {
