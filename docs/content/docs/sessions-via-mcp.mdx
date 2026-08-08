@@ -1,12 +1,16 @@
 ---
 title: Using sessions via MCP
-description: Connect any MCP-compatible client to a Composio session
+description: Build an application that exposes a Composio session to an MCP-compatible client
 keywords: [mcp, model context protocol, sessions, remote server, hosted mcp]
 ---
 
-By default Composio gives your agent **tools it can call directly**. Composio formats them as function schemas for your framework through a [provider package](/docs/providers). That's what the [Quickstart](/docs/quickstart) uses, and it's the right choice for most agents.
+Use this guide when you are building an application with Composio and want to expose one user's session over MCP. The application creates and configures the session, then passes its hosted MCP endpoint to a compatible client.
 
-If you'd rather connect over the [Model Context Protocol](https://modelcontextprotocol.io), every session also exposes a hosted MCP endpoint. This is useful when you want to plug a session into an MCP-native client like Claude Desktop, Cursor, or any framework's MCP transport. No provider package required.
+By default, Composio gives your agent tools it can call directly through a [provider package](/docs/providers). That is what the [Quickstart](/docs/quickstart) uses. Set `mcp: true` when an MCP transport fits your application better. No provider package is required for this route.
+
+<Callout type="info" title="Connecting an existing agent instead?">
+If you use Codex or Claude Code and did not explicitly choose MCP, install the native [Composio agent plugin](/docs/agent-plugins). If you explicitly want MCP in an existing client, use [Composio Connect](/docs/composio-connect).
+</Callout>
 
 <Callout type="info">
 Want to bring tools from your own remote MCP server into Composio instead? See [Custom MCP](/docs/extending-sessions/custom-mcp).
