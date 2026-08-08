@@ -1,66 +1,75 @@
 ---
 name: composio
-description: Use when the user mentions Composio, wants to add Composio to an agent or codebase, wants an AI agent to act in real apps such as Gmail, Slack, GitHub, Notion, Calendar, or Linear, or needs help fixing a Composio setup, connection, or tool call.
+description: Route and complete Composio work across Composio For You and Composio Platform. Use when the user mentions Composio; wants an agent to use apps such as Gmail, Slack, GitHub, Notion, Calendar, or Linear; needs first-time setup, an SDK or MCP integration, CLI operation, migration guidance, current documentation, or help diagnosing a connection or tool call.
 ---
 
 # Composio
 
-Composio gives AI agents tools and authenticated access to external apps.
+Use this skill as a router. Identify the product and the job, load only the relevant guidance, consult canonical documentation for volatile details, and then answer or do the work the user requested.
 
-There are two products. They have different URLs, keys, and setup paths. Decide which one applies before doing anything else, and do not blend them.
+## 1. Choose the product
+
+Do not blend the products. They use different credentials and setup paths.
 
 | | Composio For You | Composio Platform |
 |---|---|---|
-| For | You want your agent to use your apps | You are building a product where your users connect their accounts |
-| Surface | An MCP server attached to an AI client | An SDK integrated into a codebase |
-| Key | `ck_...` consumer key | `COMPOSIO_API_KEY` project key |
+| Use when | Someone wants their own agent to use their own apps | A developer is building a product whose users connect accounts |
+| Primary surface | MCP or the Composio CLI | SDK sessions inside an application |
+| Credential | `ck_...` consumer key when the client requires a header | `COMPOSIO_API_KEY` project key |
 | Dashboard | `dashboard.composio.dev` → For You | `dashboard.composio.dev` → Platform |
 
-## First decide the product
+Ask one short question only when context does not establish the product:
 
-Ask one question when the answer is not already clear:
+> Is this for your own agent and accounts, or for a product where your users connect their accounts?
 
-> Are you setting Composio up for yourself so your coding agent can use your apps, or are you building a product where your own users connect their accounts?
+Treat a named personal AI client with no product code as For You. Treat an application codebase, SDK, user or tenant identity, backend, or product agent as Platform.
 
-Skip the question when context is sufficient:
+## 2. Choose the job
 
-- The user names an AI client and is not building code → For You.
-- The user is inside a codebase or mentions users, tenants, `user_id`, an SDK, or an agent they are building → Platform.
+Identify the requested outcome before taking action:
 
-Read exactly one product guide. Do not read both.
+- **Explain or discover:** answer a question, compare approaches, or find the current API.
+- **Set up:** establish credentials, an MCP client, the CLI, or an SDK for the first time.
+- **Build or change:** integrate Composio into an existing agent or application.
+- **Operate:** find, connect, and run tools for a real task.
+- **Debug or migrate:** diagnose a failure, update an older integration, or move from legacy direct execution or Tool Router.
 
-### 1. Composio For You
+Do not turn an explanation, documentation lookup, or narrow bug fix into onboarding.
 
-Read [Composio For You](references/for-you.md).
+## 3. Load only the relevant guidance
 
-### 2. Composio Platform
+- For You: read [Composio For You](references/for-you.md).
+- Platform: read [Composio Platform](references/platform.md).
+- Provider, connection, or execution failure: also read [Errors and provider gotchas](references/errors.md).
 
-Read [Composio Platform](references/platform.md).
+## Complete the selected job
 
-### 3. Errors and provider failures
-
-For provider- and toolkit-level failures shared by both products, read [Errors and provider gotchas](references/errors.md).
-
-## Finish the work
-
-Install the dependency, write the configuration, and run the existing agent path. Setup is not complete until one safe, read-only real tool call returns an actual result and log ID.
+- For a question, fetch current documentation when needed and give the concrete answer. Do not mutate a project or force a tool call.
+- For setup or integration, inspect the existing environment, preserve its architecture and identity model, make the smallest useful change, and verify it with one safe real tool call when credentials and user authorization are available.
+- For an operational request, connect only the apps the task needs and execute the requested workflow.
+- For debugging, get the Composio log or request ID, identify the failing boundary, fix that boundary, and retry when the user authorized execution.
 
 ## Stable rules
 
-1. Establish which product applies before setup.
-2. For Platform, use the existing project `COMPOSIO_API_KEY` from the repository's environment or secret mechanism. Platform onboarding never creates, rotates, or replaces a key and never asks the user to paste one into chat.
-3. Never invent a toolkit or tool slug. For Platform sessions, discover tools at runtime. For direct CLI work in the For You path, use `composio search` and inspect with `composio execute --get-schema`.
-4. Do not build an OAuth flow. Composio supplies a Connect Link when authentication is required.
-5. Use sessions for new Platform integrations. Preserve the application's existing user identity mapping and agent architecture.
-6. Keep credentials out of source control, URLs, logs, chat, and command output.
-7. Get the log ID before diagnosing a failed tool call.
+1. Establish the product before choosing credentials, URLs, SDKs, or commands.
+2. Treat dashboard onboarding as a context, not the skill's identity. When the developer arrives with an existing `COMPOSIO_API_KEY` from Getting Started, use it and never create, rotate, replace, print, or request it in chat. Do not run `composio dev init` in that path.
+3. For a general first-time Platform setup with no dashboard credential handoff, follow the current setup path in the Platform guide.
+4. Never invent toolkit or tool slugs. Discover them at runtime or with the CLI.
+5. Do not build a provider OAuth flow. Composio returns a Connect Link when authentication is needed.
+6. Use sessions for new Platform integrations. Preserve the application's existing user identity and agent architecture.
+7. Keep credentials out of source control, URLs, logs, chat, and command output.
+8. Get the log or request ID before diagnosing a failed tool call.
+9. Prefer the smallest configuration that completes the current job. Keep toolkit filters, tag policies, sandbox controls, custom auth, provider-specific hardening, and other advanced options out of the first path unless the request or existing code requires them.
+10. Do not invent repository facts. Never claim that a file, framework, environment loader, identity field, agent path, or dependency exists until it was provided or inspected. If codebase context is unavailable, state the unknown and ask for access or one necessary detail.
 
-## Fresh information
+## Canonical information
 
-When a detail is not covered by the selected guide, fetch the current markdown documentation and complete the work from it:
+Use bundled references for stable decisions. For versions, provider adapters, client-specific setup, toolkit behavior, or APIs that may have changed, fetch the current Markdown source before answering or editing code:
 
 ```text
-https://docs.composio.dev/docs/<page>.md
 https://docs.composio.dev/llms.txt
+https://docs.composio.dev/docs/<page>.md
 https://docs.composio.dev/toolkits/<toolkit>.md
 ```
+
+Use the documentation to complete the task. Do not merely hand the user a link unless they asked for one.

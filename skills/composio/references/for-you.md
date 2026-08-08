@@ -1,45 +1,66 @@
 # Composio For You
 
-Use this path when someone wants their own coding agent or AI client to use their own connected apps. This is an MCP setup, not an SDK integration.
+Use this product when someone wants their own AI client or terminal agent to use their own connected apps. Route by task: answer a question, configure an MCP client, operate through the CLI, connect an app, or debug an existing setup.
 
-## MCP endpoint
+## Stable product contract
+
+- MCP endpoint: `https://connect.composio.dev/mcp`
+- Consumer key when a client needs a header: `ck_...`
+- Header name: `x-consumer-api-key`
+- Key location: Dashboard → For You → AI Clients → select the client
+
+The removed `mcp.composio.dev` endpoint and Platform MCP URLs are not substitutes. The `ck_...` key and Platform's `COMPOSIO_API_KEY` are not interchangeable.
+
+## Choose MCP or CLI
+
+Default to MCP for desktop and hosted AI clients. Use the CLI for terminal agents that can execute commands and operate tools directly.
+
+### MCP clients
+
+Claude Desktop and ChatGPT use browser OAuth and do not need a consumer key. Header-based clients use the endpoint and header above.
+
+Client configuration changes over time. Before giving client-specific steps, fetch the current source of truth:
 
 ```text
-https://connect.composio.dev/mcp
+https://docs.composio.dev/docs/composio-connect.md
 ```
 
-Do not use the removed `mcp.composio.dev` endpoint or a Platform MCP URL.
+For any other MCP-capable client, configure HTTP transport with the endpoint and, when required, the `x-consumer-api-key` header. Keep credentials out of committed configuration.
 
-## Authentication
+### Terminal agents
 
-Claude Desktop and ChatGPT use browser OAuth. Header-based clients use the consumer key from Dashboard → For You → Settings → Sessions & API Key:
-
-```text
-x-consumer-api-key: ck_...
-```
-
-The `ck_...` consumer key and Platform's `COMPOSIO_API_KEY` are not interchangeable.
-
-## Terminal coding agents
-
-Terminal agents can use the Composio CLI directly:
+Install and authenticate the CLI only when the task needs it:
 
 ```bash
 curl -fsSL https://composio.dev/install | bash
 composio login
+```
+
+For a real task:
+
+```bash
 composio search "<what the user wants>"
 composio link <toolkit>
 composio execute <TOOL_SLUG> -d '{...}'
 ```
 
-Use `composio login --no-wait | jq` when the agent cannot open a browser. Share the returned login URL, then complete login with the returned key.
+Use `composio login --no-wait | jq` when the agent cannot open a browser. Give the returned login URL to the user and complete authentication with the returned key. Once installed, prefer the bundled `composio-cli` skill for current command and flag details.
 
-## Client configuration
+## Connect apps when the task needs them
 
-For any MCP-capable client, configure HTTP transport with the endpoint above and, when required, the `x-consumer-api-key` header. Fetch `https://docs.composio.dev/docs/composio-connect.md` for current client-specific steps.
+Do not pre-connect every app. Start the requested task. When an integration is required, Composio returns an authorization link and the connection persists for future runs.
 
-## Connect apps naturally
+For setup or an operational request, verify the selected path with one safe real call when authorization is available. For a question or configuration explanation, answer it without forcing execution.
 
-Do not pre-connect every app. Start the real task. When an app is required, Composio returns an authorization link and the connection persists for future runs.
+## Debugging
 
-Setup is complete only after one real tool call succeeds.
+First confirm that the client is connected to the correct MCP endpoint or that the CLI is authenticated. Then get the Composio log or request ID and read [Errors and provider gotchas](errors.md).
+
+Common product-specific checks:
+
+- If MCP tools do not appear, confirm the connector is enabled, clear its cache when the client supports that, and reconnect it.
+- If browser OAuth repeatedly selects the wrong account, retry in a clean browser profile with one Composio account signed in.
+- If an authorization link expired, request a new link rather than reusing it.
+- If a connected app action returns an auth error, reconnect that app and retry without regenerating the consumer key.
+
+Manage connections in Dashboard → For You → Connect Apps. Manage consumer keys and MCP or CLI sessions in Settings → Sessions & API Key.

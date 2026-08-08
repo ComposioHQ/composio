@@ -1,12 +1,12 @@
 # Errors and provider gotchas
 
-These rules apply to both Composio products.
+Use this guide for failures shared by Composio For You and Composio Platform. Keep product-specific credential and client setup in the selected product guide.
 
-## Start in Dashboard Logs
+## Start with evidence
 
-Open the applicable product's Dashboard Logs first and use the Composio log ID or request ID to inspect the exact execution. Framework wrappers often hide the underlying error.
+Get the Composio log or request ID and inspect Dashboard Logs before changing credentials or code. Agent frameworks often wrap the underlying provider error.
 
-CLI diagnostics are optional. Use them only when the CLI is already installed and configured for the applicable product:
+When the CLI is already installed and authenticated for the applicable product, these commands can provide additional evidence:
 
 ```bash
 composio dev logs tools
@@ -14,46 +14,57 @@ composio dev logs triggers
 composio connections list
 ```
 
-The dashboard Logs page provides the same execution trail.
+Do not install or reinitialize the CLI solely to diagnose a dashboard log that already contains the failure.
 
 ## Tool does not exist
 
-Never guess the slug. In a Platform session, discover it through `COMPOSIO_SEARCH_TOOLS`. In a direct CLI workflow, use `composio search`, then inspect the result with `composio execute <slug> --get-schema`.
+Never guess a slug. In a Platform session, discover tools through the session meta tools. In a CLI workflow, use `composio search`, then inspect the returned tool.
 
-For manual legacy v3 execution, a missing tool is often a toolkit-version problem. Use a verified version or the v3.1 path that defaults to the current version. New session integrations should use runtime discovery instead of manually executing a guessed slug.
+For legacy manual execution, a missing tool may be a toolkit-version problem. Fetch current migration and execution docs rather than assuming the provider lacks the operation. New session integrations should use runtime discovery.
 
-## Authentication failures
+## Identify the authentication boundary
 
-Identify which boundary returned the 401 before changing anything.
+### Composio project or session 401
 
-### Composio API or session 401
+This happens before a provider tool call succeeds. The Platform project credential may be missing, masked, invalid, or associated with a different project.
 
-This failure happens while creating or using a session, before a provider tool call succeeds. The project credential may be invalid, masked, a placeholder, or for the wrong dashboard project.
+Re-run the no-output credential checks from the Platform guide. Do not print, rotate, replace, or request the key in chat. If the developer arrived from Dashboard Getting Started, direct them back to that project's Step 1 rather than running `composio dev init`.
 
-Stop and re-run the no-output `COMPOSIO_API_KEY` preflight from the Platform guide. Do not print, rotate, replace, or request the key in chat. Direct the developer to Platform → project → Getting Started → Step 1 when the repository does not have the correct unmasked project credential. The next SDK request, not key length, validates it over the network.
+### Provider connected-account 401
 
-### Provider tool-call 401
+This appears on a real tool execution after the project and session reached the provider. The selected user's provider token may be revoked, expired, or invalidated by a password, 2FA, consent, or administrator-policy change.
 
-This failure appears on a real tool execution in Dashboard Logs, usually with a Composio log ID. The Composio project credential and session reached the provider, but the selected user's connected-account credential was revoked, expired, or invalidated by a password, 2FA, consent, or administrator-policy change.
+Keep the same project key and application user ID. Generate a fresh Connect Link for that integration, reconnect the provider account, and retry the safe call. If a link expired, request a new one.
 
-Keep the same project key and user ID. Generate a fresh Connect Link for that integration, reconnect the account, and retry the safe read-only call. Do not replace the Composio project credential.
+### For You client authentication
 
-If an authorization link expired, request a new one. Do not reuse it.
+If the MCP client itself cannot authenticate, verify the consumer endpoint, OAuth session, or `ck_...` header path from the For You guide. Do not substitute a Platform project key.
 
-## Provider constraints
+## Common provider constraints
 
-- Google "App is blocked": remove unnecessary scopes or use a verified custom OAuth app.
-- Slack 429s: managed apps share a provider quota; use a custom Slack app for a dedicated rate-limit bucket.
-- Microsoft 403s: the tenant may require administrator consent.
-- GitHub Apps: OAuth credentials and repository installation are separate steps.
-- Session Restriction errors for payment tools are policy restrictions, not plan or connection failures.
+- **Google "App is blocked":** remove unnecessary scopes or use a verified custom OAuth app.
+- **Google API disabled:** enable the required provider API in the Google Cloud project that owns the custom credentials.
+- **Slack 429:** managed apps share provider quota; use a custom Slack app for a dedicated bucket when needed.
+- **Microsoft 403:** the tenant may require administrator consent.
+- **GitHub App access:** OAuth credentials and repository installation are separate steps.
+- **Payment toolkit session restriction:** treat it as a surface policy restriction, not a plan or connection failure.
 
-## Production
+## Branding and production auth
 
-Managed auth is intended to make initial development easy. Before launch, use custom OAuth apps for integrations that need the developer's branding, scopes, or dedicated quotas.
+Managed auth is intended to make initial development easy. Before launch, move integrations that require the application's branding, scopes, or dedicated quotas onto its own OAuth apps.
 
-For toolkit-specific details, fetch:
+When someone asks to remove Composio branding, identify the surface first: Connect Link page, provider consent screen, secured badge, callback domain, or success page. They have different fixes. Fetch `white-labeling-authentication.md` before proposing an implementation.
+
+## Triggers and webhooks
+
+Check the Composio status page and trigger logs before changing a trigger. Use current trigger documentation for event names, polling limits, and connection-state verification. Do not promise static outbound IPs; use documented webhook signature verification.
+
+## Canonical follow-up
+
+For provider- or toolkit-specific behavior, fetch:
 
 ```text
 https://docs.composio.dev/toolkits/<toolkit>.md
 ```
+
+For APIs, migrations, triggers, or compliance questions, find the current page through `https://docs.composio.dev/llms.txt`. If the problem remains unresolved, include the log ID when escalating to Composio support.
