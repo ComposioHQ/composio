@@ -80,8 +80,7 @@ response = client.responses.create(
     ]
 )
 
-# Agentic loop: keep executing tool calls until the model responds with text.
-# Session tools must be executed with session.execute() — see the callout below.
+# Agentic loop: run each tool call with session.execute() until the model responds with text
 while True:
     tool_calls = [o for o in response.output if o.type == "function_call"]
     if not tool_calls:
@@ -132,8 +131,7 @@ let response = await client.responses.create({
     ],
 });
 
-// Agentic loop: keep executing tool calls until the model responds with text.
-// Session tools must be executed with session.execute() — see the callout below.
+// Agentic loop: run each tool call with session.execute() until the model responds with text
 while (true) {
     const toolCalls = response.output.filter((o) => o.type === "function_call");
     if (toolCalls.length === 0) break;
@@ -232,8 +230,7 @@ response = client.chat.completions.create(
     messages=messages,
 )
 
-# Agentic loop: keep executing tool calls until the model responds with text.
-# Session tools MUST be executed through session.execute() — see the callout below.
+# Agentic loop: run each tool call with session.execute() until the model responds with text
 while response.choices[0].message.tool_calls:
     messages.append(response.choices[0].message)
     for tc in response.choices[0].message.tool_calls:
@@ -280,8 +277,7 @@ let response = await client.chat.completions.create({
     messages: messages,
 });
 
-// Agentic loop: keep executing tool calls until the model responds with text.
-// Session tools MUST be executed through session.execute() — see the callout below.
+// Agentic loop: run each tool call with session.execute() until the model responds with text
 while (response.choices[0].message.tool_calls) {
     messages.push(response.choices[0].message);
     for (const tc of response.choices[0].message.tool_calls) {

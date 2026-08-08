@@ -96,8 +96,7 @@ let response = await chat.sendMessage({
     message: "Send an email to john@example.com with the subject 'Hello' and body 'Hello from Composio!'",
 });
 
-// Agentic loop: keep executing tool calls until the model responds with text.
-// Session tools must be executed with session.execute() — see the callout below.
+// Agentic loop: run each tool call with session.execute() until the model responds with text
 while (response.functionCalls && response.functionCalls.length > 0) {
     const parts: Part[] = [];
     for (const fc of response.functionCalls) {
