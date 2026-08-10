@@ -63,9 +63,11 @@ jobs:
             cp -R ".source/skills/${{ matrix.skill }}/evals/sources" \
               "skill-eval-workspace/skills/${{ matrix.skill }}/evals/sources"
           fi
-          node .source/ts/scripts/run-skill-evals.mjs prompt \
-            "${{ matrix.skill }}/${{ matrix.case }}" \
-            > skill-eval-workspace/eval-input.md
+          (
+            cd .source
+            node ts/scripts/run-skill-evals.mjs prompt \
+              "${{ matrix.skill }}/${{ matrix.case }}"
+          ) > skill-eval-workspace/eval-input.md
           rm -rf .source
 
       - name: Run blind skill behavior
