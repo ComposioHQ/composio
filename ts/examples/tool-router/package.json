@@ -44,5 +44,6 @@
     "@types/bun": "catalog:",
     "@types/node": "^26.1.2",
     "typescript": "catalog:"
-  }
+  },
+  "type": "module"
 }

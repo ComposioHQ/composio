@@ -19,8 +19,9 @@ const session = await composio.create('user_123', {
 });
 
 // Set an alias while authorizing a connected account for easier identification.
+// Aliases are unique per entity and toolkit, so suffix to keep reruns working.
 await session.authorize('gmail', {
-  alias: 'work-gmail',
+  alias: `work-gmail-${Date.now()}`,
 });
 
 const tools = await session.tools();

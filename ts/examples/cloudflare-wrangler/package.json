@@ -1,23 +1,24 @@
 {
-	"name": "cloudflare-wrangler-example",
-	"version": "0.0.0",
-	"private": true,
-	"scripts": {
-		"deploy": "wrangler deploy",
-		"dev": "wrangler dev",
-		"start": "wrangler dev",
-		"test": "vitest",
-		"cf-typegen": "wrangler types"
-	},
-	"devDependencies": {
-		"@cloudflare/vitest-pool-workers": "catalog:",
-		"typescript": "catalog:",
-		"vitest": "catalog:",
-		"wrangler": "catalog:"
-	},
-	"dependencies": {
-		"@composio/core": "workspace:^",
-		"hono": "catalog:",
-		"openai": "catalog:"
-	}
+  "name": "cloudflare-wrangler-example",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "deploy": "wrangler deploy",
+    "dev": "wrangler dev",
+    "start": "wrangler dev",
+    "test": "vitest",
+    "cf-typegen": "wrangler types"
+  },
+  "devDependencies": {
+    "@cloudflare/vitest-pool-workers": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:",
+    "wrangler": "catalog:"
+  },
+  "dependencies": {
+    "@composio/core": "workspace:^",
+    "hono": "catalog:",
+    "openai": "catalog:"
+  },
+  "type": "module"
 }
