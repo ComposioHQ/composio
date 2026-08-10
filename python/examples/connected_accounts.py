@@ -31,7 +31,7 @@ connection_request = composio.connected_accounts.initiate(
     auth_config_id=os.environ["COMPOSIO_EXAMPLES_APIKEY_AUTH_CONFIG_ID"],
     config=auth_scheme.api_key(
         options={
-            "generic_api_key": os.environ["COMPOSIO_EXAMPLES_APIKEY_SECRET"],
+            "generic_api_key": os.environ["COMPOSIO_EXAMPLES_APIKEY_PLACEHOLDER"],
         },
     ),
 )

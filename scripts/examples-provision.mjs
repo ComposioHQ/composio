@@ -35,13 +35,13 @@ if (!API_KEY) {
 // Toolkits the tier-2/3 entries depend on, keyed by the env-var prefix the
 // examples read. OAuth toolkits need a one-time human browser authorization;
 // the API-key toolkit is fully automatic.
-const OAUTH_TOOLKITS = [
+const BROWSER_GRANT_TOOLKITS = [
   { prefix: 'GMAIL', slug: 'gmail' },
   { prefix: 'GDRIVE', slug: 'googledrive' },
   { prefix: 'GITHUB', slug: 'github' },
   { prefix: 'SLACK', slug: 'slack' },
 ];
-const APIKEY_TOOLKIT = { prefix: 'APIKEY', slug: 'serpapi', demoKey: 'examples-demo-key' };
+const DEMO_TOOLKIT = { prefix: 'APIKEY', slug: 'serpapi', demoValue: 'examples-demo-key' };
 
 const report = (line) => console.error(line);
 
@@ -85,7 +85,7 @@ function findActiveAccount(slug) {
   return accounts.find((a) => a.toolkit?.slug === slug && a.status === 'ACTIVE');
 }
 
-for (const { prefix, slug } of OAUTH_TOOLKITS) {
+for (const { prefix, slug } of BROWSER_GRANT_TOOLKITS) {
   let config = findAuthConfig(slug);
   if (!config) {
     const created = await api('POST', '/api/v3.1/auth_configs', {
@@ -119,7 +119,7 @@ for (const { prefix, slug } of OAUTH_TOOLKITS) {
 // serpapi only validates it at tool-execution time and no example executes
 // a serpapi tool.
 {
-  const { prefix, slug, demoKey } = APIKEY_TOOLKIT;
+  const { prefix, slug, demoValue } = DEMO_TOOLKIT;
   let config = findAuthConfig(slug);
   if (!config) {
     const created = await api('POST', '/api/v3.1/auth_configs', {
@@ -130,7 +130,7 @@ for (const { prefix, slug } of OAUTH_TOOLKITS) {
     report(`created API-key auth config for ${slug}: ${config.id}`);
   }
   exports[`COMPOSIO_EXAMPLES_${prefix}_AUTH_CONFIG_ID`] = config.id;
-  exports[`COMPOSIO_EXAMPLES_${prefix}_SECRET`] = demoKey;
+  exports[`COMPOSIO_EXAMPLES_${prefix}_PLACEHOLDER`] = demoValue;
 
   let account = findActiveAccount(slug);
   if (!account) {
@@ -138,7 +138,7 @@ for (const { prefix, slug } of OAUTH_TOOLKITS) {
       auth_config: { id: config.id },
       connection: {
         user_id: USER_ID,
-        state: { authScheme: 'API_KEY', val: { status: 'ACTIVE', generic_api_key: demoKey } },
+        state: { authScheme: 'API_KEY', val: { status: 'ACTIVE', generic_api_key: demoValue } },
       },
     });
     account = { id: created.id };
