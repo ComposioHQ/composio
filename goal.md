@@ -77,6 +77,37 @@ holdout exclusively, and the final acceptance run must be the CI
   human later and never include `goal.md`, `spec.md`, `LOG.md`, `harness/`,
   or `eval/`.
 
+## Session bootstrap (state as of 2026-08-10, after cycle 5)
+
+A fresh operator session starts here — do not re-derive any of this:
+
+1. Branch `goal/examples-live-parity`, repo `~/work/composio/composio`. Read
+   the LOG.md tail (cycles 1–5). Current dev score **30.6** (ts 45/62 green,
+   py 11/22 green, parity 0/…: no candidate artifacts provided yet).
+   Stage 0 ✓ · A1 mostly ✓ · A2/A3/A4/B open.
+2. Credentials: `source .envrc` provides COMPOSIO_API_KEY (disposable
+   production project — the only project you may touch), OPENAI_API_KEY,
+   ANTHROPIC_API_KEY, and the provisioned `COMPOSIO_EXAMPLES_*` ids
+   (gmail/googledrive/github/slack connected for user_id `examples`).
+   Gemini and Notion are out of scope permanently.
+3. Score with `bash harness/score.sh`; instruments and VOID semantics are
+   unchanged and non-negotiable. Known levers, highest first:
+   - **Stage A2 env plumbing (~+11):** the ~17 skipped entries need their
+     placeholder/hardcoded ids replaced with the `COMPOSIO_EXAMPLES_*` env
+     vars (contract rule 2), plus `scripts/examples-provision.mjs` as the
+     idempotent check/report of provisioned state.
+   - **Characterized drift fixes (~+4, details in LOG.md cycle 5):**
+     vercel/stream stale tool slug (404) · openai agents-api MCP
+     `server_label` pattern violation · py experimental_tool_router_advanced
+     `payload.toolkits` 400 · py/auth_configs dummy OAuth ids → env-driven.
+   - **Stage A3 first parity run:** requires the human-built tarball
+     (`pnpm build && npm pack` in `~/work/composio/composio-client`) via
+     `COMPOSIO_CLIENT_TARBALL`; then `score.sh` produces the first P_ts.
+4. Repo-rot findings already logged (do not re-diagnose): ESM/type-module,
+   retired Claude model ids, openai↔openai-agents lock skew (pyWith overlay
+   in the manifest is the sanctioned workaround; the real uv.lock bump is
+   outside this goal), dead trace on cloudflare-wrangler `.dev.vars`.
+
 ## Cycle protocol
 
 1. Score (dev): `harness/score.sh`.
