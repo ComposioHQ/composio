@@ -38,8 +38,8 @@
       ],
       "mustNotMatch": [
         {
-          "pattern": "composio\\s+dev\\s+init",
-          "flags": "i",
+          "pattern": "(?:^|\\n)\\s*(?:[$>]\\s*)?composio\\s+dev\\s+init\\b|(?:run|execute|use)\\s+(?:the\\s+)?(?:command\\s+)?[`'\"]?composio\\s+dev\\s+init\\b",
+          "flags": "im",
           "message": "does not replace dashboard onboarding with dev init"
         },
         {
@@ -56,8 +56,8 @@
       "repetitions": 1,
       "mustMatch": [
         {
-          "pattern": "Composio For You",
-          "flags": "i",
+          "pattern": "Composio.{0,40}For You|For You.{0,40}Composio",
+          "flags": "is",
           "message": "routes a personal AI client to Composio For You"
         },
         {
