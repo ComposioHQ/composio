@@ -1117,7 +1117,8 @@
       ],
       "pyWith": [
         "claude-agent-sdk",
-        "composio-claude-agent-sdk"
+        "composio-claude-agent-sdk",
+        "./python"
       ],
       "timeoutSec": 300,
       "ids": [

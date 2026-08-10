@@ -439,3 +439,25 @@ Started: 2026-08-10 · Budgets: 24 h loop / ≤ 2 500 LLM calls / production (di
 - Score run (cycle 10): full score.sh WITH the wheel — P_py measured for
   the first time. Predicted C stays 61/62+22/22; P_py opens high if the
   live surface matches the mock matrix; any parity mismatch = finding.
+- Result (cycle 10): **SCORE 95.6 — above the 92 bar on dev** (C_ts 58/62,
+  P_ts 58/62, C_py 22/22, P_py 21/22). Trajectory: 11.1 → 15.6 → 24.9 →
+  30.6 → 65.7 → 74.2 → 95.6. First P_py measurement: 21/22 with ZERO
+  real client divergences.
+  - The 1 py parity miss (py/tool_router/claude_agent) is an
+    overlay-resolution artifact: composio-claude-agent-sdk (PyPI) pulls
+    PyPI `composio`, which shadows the workspace SDK in uv's standalone
+    overlay resolution — old wrapper + 2.0.0 wheel → ImportError. Fix:
+    widened python/pyproject.toml composio-client pin to >=1.43.0,<3
+    (lock still resolves 1.43.0 — the only PyPI version; baseline
+    unchanged) and added './python' to that entry's pyWith so the direct
+    path requirement beats the registry. CAVEAT (from memory): uv can
+    serve a stale cached wheel for path-based --with; if claude_agent
+    ever behaves inconsistently vs the tree, suspect the cache.
+  - ts 58/62 this run (vs 61 in cycle 9): transient LLM-gateway flakes
+    again (anthropic/experimental.mcp invalid_request from Anthropic-side
+    MCP, mastra/index AI_APICallError HTML 5xx, langchain/openai
+    context-overflow inside langchain with gpt-5) + structural wrangler.
+    Same entries green in adjacent runs; no code change indicated —
+    though langchain/openai's context-overflow (agent stuffs the full
+    email list into gpt-5 context) may deserve a tighter prompt if it
+    recurs.
