@@ -10,6 +10,7 @@ We handle those by pre-filtering them before passing to the library.
 """
 
 import re
+import types
 import typing as t
 from functools import reduce
 from urllib.parse import unquote
@@ -40,6 +41,7 @@ from composio.utils.logging import get as get_logger
 logger = get_logger(__name__)
 
 _MISSING = object()
+_EXPLICIT_DEFAULT_FIELDS_ATTRIBUTE = "__composio_explicit_default_fields__"
 
 
 class _UnsatisfiableSchema:
@@ -253,8 +255,8 @@ class _DynamicKeyValidator(t.NamedTuple):
         if self.materializer is None:
             return value
         try:
-            return self.materializer.dump_python(
-                self.materializer.validate_python(value)
+            return _materialized_value_to_python(
+                self.materializer.validate_python(_materialized_value_to_python(value))
             )
         except (TypeError, ValueError):
             # JSON Schema alone decides acceptance. Pydantic is only retained
@@ -262,6 +264,30 @@ class _DynamicKeyValidator(t.NamedTuple):
             # incomplete Pydantic representation must not reject valid input.
             logger.debug("Could not materialize dynamic-key defaults; preserving input")
             return value
+
+
+def _materialized_value_to_python(value: t.Any) -> t.Any:
+    """Convert a previous materializer result back into validation input."""
+    if isinstance(value, BaseModel):
+        included_fields = set(value.model_fields_set)
+        included_fields.update(
+            getattr(type(value), _EXPLICIT_DEFAULT_FIELDS_ATTRIBUTE, ())
+        )
+        result = {}
+        for name, field in type(value).model_fields.items():
+            if name not in included_fields:
+                continue
+            alias = field.serialization_alias or field.alias
+            output_name = alias if isinstance(alias, str) else name
+            result[output_name] = _materialized_value_to_python(getattr(value, name))
+        for name, item in (value.model_extra or {}).items():
+            result[name] = _materialized_value_to_python(item)
+        return result
+    if isinstance(value, dict):
+        return {key: _materialized_value_to_python(item) for key, item in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [_materialized_value_to_python(item) for item in value]
+    return value
 
 
 class _ObjectPolicy(t.NamedTuple):
@@ -333,6 +359,210 @@ def _resolve_local_json_pointer(
                 pass
         raise ValueError(f"Unresolvable dynamic-key schema reference: {reference!r}")
     return current
+
+
+def _resolve_default_metadata_schema(
+    schema: t.Any,
+    root_schema: t.Dict[str, t.Any],
+    visited_refs: t.Optional[t.Set[str]] = None,
+) -> t.Any:
+    """Resolve a schema node without traversing instance-valued annotations."""
+    if not isinstance(schema, dict):
+        return schema
+    reference = schema.get("$ref")
+    if not isinstance(reference, str) or not reference.startswith("#/"):
+        return schema
+    if visited_refs is None:
+        visited_refs = set()
+    if reference in visited_refs:
+        return {key: value for key, value in schema.items() if key != "$ref"}
+    visited_refs.add(reference)
+
+    target = _resolve_local_json_pointer(reference, root_schema)
+    if not isinstance(target, dict):
+        return schema
+    resolved = _resolve_default_metadata_schema(target, root_schema, visited_refs)
+    if not isinstance(resolved, dict):
+        return schema
+    return {
+        **resolved,
+        **{key: value for key, value in schema.items() if key != "$ref"},
+    }
+
+
+def _default_metadata_properties(
+    schema: t.Any,
+    root_schema: t.Dict[str, t.Any],
+) -> t.Dict[str, t.Any]:
+    schema = _resolve_default_metadata_schema(schema, root_schema)
+    if not isinstance(schema, dict) or "anyOf" in schema or "oneOf" in schema:
+        return {}
+    properties = schema.get("properties")
+    result = dict(properties) if isinstance(properties, dict) else {}
+    for option in schema.get("allOf", []):
+        result.update(_default_metadata_properties(option, root_schema))
+    return result
+
+
+def _default_metadata_schema_for_model(
+    schema: t.Any,
+    model: t.Type[BaseModel],
+    root_schema: t.Dict[str, t.Any],
+) -> t.Any:
+    schema = _resolve_default_metadata_schema(schema, root_schema)
+    if not isinstance(schema, dict):
+        return None
+    for combiner in ("anyOf", "oneOf"):
+        titled = [
+            option
+            for option in schema.get(combiner, [])
+            if isinstance(option, dict) and option.get("title") == model.__name__
+        ]
+        if len(titled) == 1:
+            return titled[0]
+    return schema if "anyOf" not in schema and "oneOf" not in schema else None
+
+
+def _default_metadata_field_aliases(
+    model: t.Type[BaseModel],
+) -> t.Dict[str, t.Tuple[str, t.Any]]:
+    fields = {}
+    for name, field in model.model_fields.items():
+        alias = field.serialization_alias or field.alias
+        fields[alias if isinstance(alias, str) else name] = (name, field)
+    return fields
+
+
+def _mark_explicit_default_fields(
+    annotation: t.Any,
+    schema: t.Any,
+    root_schema: t.Dict[str, t.Any],
+    visiting: t.Optional[t.Set[t.Type[BaseModel]]] = None,
+) -> None:
+    """Attach recursive default-presence metadata to generated model classes."""
+    origin = t.get_origin(annotation)
+    arguments = t.get_args(annotation)
+    if origin in (t.Union, types.UnionType):
+        options: t.List[t.Dict[str, t.Any]] = []
+        resolved_schema = _resolve_default_metadata_schema(schema, root_schema)
+        if isinstance(resolved_schema, dict):
+            for combiner in ("anyOf", "oneOf"):
+                options.extend(
+                    option
+                    for option in resolved_schema.get(combiner, [])
+                    if isinstance(option, dict)
+                )
+        for index, argument in enumerate(arguments):
+            argument_schema = None
+            if isinstance(argument, type) and issubclass(argument, BaseModel):
+                titled = [
+                    option
+                    for option in options
+                    if option.get("title") == argument.__name__
+                ]
+                if len(titled) == 1:
+                    argument_schema = titled[0]
+            if argument_schema is None and index < len(options):
+                argument_schema = options[index]
+            _mark_explicit_default_fields(
+                argument,
+                argument_schema,
+                root_schema,
+                visiting,
+            )
+        return
+
+    if origin in (list, set, frozenset):
+        resolved_schema = _resolve_default_metadata_schema(schema, root_schema)
+        item_schema = (
+            resolved_schema.get("items") if isinstance(resolved_schema, dict) else None
+        )
+        if arguments:
+            _mark_explicit_default_fields(
+                arguments[0],
+                item_schema,
+                root_schema,
+                visiting,
+            )
+        return
+
+    if origin is tuple:
+        resolved_schema = _resolve_default_metadata_schema(schema, root_schema)
+        items = (
+            resolved_schema.get("items") if isinstance(resolved_schema, dict) else None
+        )
+        for index, argument in enumerate(arguments):
+            item_schema = (
+                items[index]
+                if isinstance(items, list) and index < len(items)
+                else items
+                if isinstance(items, dict)
+                else None
+            )
+            _mark_explicit_default_fields(
+                argument,
+                item_schema,
+                root_schema,
+                visiting,
+            )
+        return
+
+    if origin is dict:
+        resolved_schema = _resolve_default_metadata_schema(schema, root_schema)
+        additional = (
+            resolved_schema.get("additionalProperties")
+            if isinstance(resolved_schema, dict)
+            else None
+        )
+        if len(arguments) == 2:
+            _mark_explicit_default_fields(
+                arguments[1],
+                additional,
+                root_schema,
+                visiting,
+            )
+        return
+
+    if not isinstance(annotation, type) or not issubclass(annotation, BaseModel):
+        return
+
+    model_schema = _default_metadata_schema_for_model(
+        schema,
+        annotation,
+        root_schema,
+    )
+    properties = _default_metadata_properties(model_schema, root_schema)
+    fields = _default_metadata_field_aliases(annotation)
+    explicit_defaults = {
+        internal_name
+        for alias, (internal_name, field) in fields.items()
+        if (not field.is_required() and field.default is not None)
+        or (isinstance(properties.get(alias), dict) and "default" in properties[alias])
+    }
+    explicit_defaults.update(
+        getattr(annotation, _EXPLICIT_DEFAULT_FIELDS_ATTRIBUTE, ())
+    )
+    setattr(
+        annotation,
+        _EXPLICIT_DEFAULT_FIELDS_ATTRIBUTE,
+        frozenset(explicit_defaults),
+    )
+
+    if visiting is None:
+        visiting = set()
+    if annotation in visiting:
+        return
+    visiting.add(annotation)
+    try:
+        for alias, (_, field) in fields.items():
+            _mark_explicit_default_fields(
+                field.annotation,
+                properties.get(alias),
+                root_schema,
+                visiting,
+            )
+    finally:
+        visiting.remove(annotation)
 
 
 # Draft 7 keywords whose value is itself a schema. `items` and `dependencies`
@@ -434,6 +664,7 @@ def _dynamic_key_validator(
     materializer = None
     if _contains_default(schema):
         annotation = json_schema_to_pydantic_type(schema, root_schema=root_schema)
+        _mark_explicit_default_fields(annotation, schema, root_schema)
         materializer = TypeAdapter(annotation)
 
     return _DynamicKeyValidator(

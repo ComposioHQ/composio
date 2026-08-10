@@ -5,6 +5,10 @@ import typing as t
 import pytest
 
 from composio.client.types import Tool, tool_list_response
+from composio.utils.shared import (
+    json_schema_to_model,
+    validate_and_serialize_tool_arguments,
+)
 
 
 PROVIDERS = ("crewai", "langchain", "langgraph")
@@ -96,6 +100,383 @@ def test_provider_serialization_preserves_argument_presence_and_aliases(name: st
             "validate": "yes",
         }
     ]
+
+
+@pytest.mark.parametrize("name", PROVIDERS)
+def test_provider_serialization_preserves_nested_argument_presence(name: str):
+    wrapped, received = _wrap(
+        name,
+        {
+            "type": "object",
+            "title": "NestedArguments",
+            "properties": {
+                "payload": {
+                    "type": "object",
+                    "title": "Payload",
+                    "properties": {
+                        "query": {"type": "string"},
+                        "note": {
+                            "anyOf": [{"type": "string"}, {"type": "null"}],
+                        },
+                        "explicit_null": {
+                            "anyOf": [{"type": "string"}, {"type": "null"}],
+                        },
+                        "null_default": {
+                            "anyOf": [{"type": "string"}, {"type": "null"}],
+                            "default": None,
+                        },
+                        "page": {"type": "integer", "default": 5},
+                        "items": {
+                            "type": "array",
+                            "items": {
+                                "type": "object",
+                                "title": "Item",
+                                "properties": {
+                                    "name": {"type": "string"},
+                                    "label": {
+                                        "anyOf": [
+                                            {"type": "string"},
+                                            {"type": "null"},
+                                        ],
+                                    },
+                                    "enabled": {
+                                        "type": "boolean",
+                                        "default": True,
+                                    },
+                                },
+                                "required": ["name"],
+                            },
+                        },
+                        "mapping": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "object",
+                                "title": "Entry",
+                                "properties": {
+                                    "name": {"type": "string"},
+                                    "label": {
+                                        "anyOf": [
+                                            {"type": "string"},
+                                            {"type": "null"},
+                                        ],
+                                    },
+                                    "null_default": {
+                                        "anyOf": [
+                                            {"type": "string"},
+                                            {"type": "null"},
+                                        ],
+                                        "default": None,
+                                    },
+                                    "config": {
+                                        "type": "object",
+                                        "properties": {
+                                            "implicit": {
+                                                "anyOf": [
+                                                    {"type": "string"},
+                                                    {"type": "null"},
+                                                ],
+                                            },
+                                            "null_default": {
+                                                "anyOf": [
+                                                    {"type": "string"},
+                                                    {"type": "null"},
+                                                ],
+                                                "default": None,
+                                            },
+                                        },
+                                    },
+                                    "score": {"type": "integer", "default": 2},
+                                },
+                                "required": ["name", "config"],
+                            },
+                        },
+                    },
+                    "required": ["query", "items", "mapping"],
+                },
+            },
+            "required": ["payload"],
+        },
+    )
+
+    _run(
+        name,
+        wrapped,
+        {
+            "payload": {
+                "query": "agents",
+                "explicit_null": None,
+                "items": [
+                    {"name": "first"},
+                    {"name": "second", "label": None},
+                ],
+                "mapping": {
+                    "one": {"name": "one", "config": {}},
+                    "two": {"name": "two", "label": None, "config": {}},
+                },
+            },
+        },
+    )
+
+    assert received == [
+        {
+            "payload": {
+                "query": "agents",
+                "explicit_null": None,
+                "null_default": None,
+                "page": 5,
+                "items": [
+                    {"name": "first", "enabled": True},
+                    {"name": "second", "label": None, "enabled": True},
+                ],
+                "mapping": {
+                    "one": {
+                        "name": "one",
+                        "null_default": None,
+                        "config": {"null_default": None},
+                        "score": 2,
+                    },
+                    "two": {
+                        "name": "two",
+                        "label": None,
+                        "null_default": None,
+                        "config": {"null_default": None},
+                        "score": 2,
+                    },
+                },
+            },
+        }
+    ]
+
+
+@pytest.mark.parametrize("name", PROVIDERS)
+def test_provider_serialization_preserves_dynamic_array_item_defaults(name: str):
+    wrapped, received = _wrap(
+        name,
+        {
+            "type": "object",
+            "title": "DynamicArrayArguments",
+            "patternProperties": {
+                "^items_": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "implicit": {
+                                "anyOf": [
+                                    {"type": "string"},
+                                    {"type": "null"},
+                                ],
+                            },
+                            "null_default": {
+                                "anyOf": [
+                                    {"type": "string"},
+                                    {"type": "null"},
+                                ],
+                                "default": None,
+                            },
+                        },
+                    },
+                },
+            },
+            "additionalProperties": False,
+        },
+    )
+
+    _run(name, wrapped, {"items_a": [{}, {"implicit": None}]})
+
+    assert received == [
+        {
+            "items_a": [
+                {"null_default": None},
+                {"implicit": None, "null_default": None},
+            ]
+        }
+    ]
+
+
+@pytest.mark.parametrize("name", PROVIDERS)
+def test_provider_serialization_preserves_presence_across_overlapping_patterns(
+    name: str,
+):
+    object_schema = {
+        "type": "object",
+        "properties": {
+            "implicit": {
+                "anyOf": [{"type": "string"}, {"type": "null"}],
+            },
+            "defaulted": {"type": "integer", "default": 1},
+        },
+    }
+    wrapped, received = _wrap(
+        name,
+        {
+            "type": "object",
+            "title": "OverlappingPatternArguments",
+            "patternProperties": {
+                "^x": {**object_schema, "title": "First"},
+                "x$": {**object_schema, "title": "Second"},
+            },
+            "additionalProperties": False,
+        },
+    )
+
+    _run(name, wrapped, {"x": {}})
+
+    assert received == [{"x": {"defaulted": 1}}]
+
+
+@pytest.mark.parametrize("name", PROVIDERS)
+@pytest.mark.parametrize("combiner", ("anyOf", "oneOf"))
+def test_provider_serialization_uses_selected_composed_object_defaults(
+    name: str,
+    combiner: str,
+):
+    wrapped, received = _wrap(
+        name,
+        {
+            "type": "object",
+            "title": "ComposedArguments",
+            "properties": {
+                "payload": {
+                    combiner: [
+                        {
+                            "type": "object",
+                            "properties": {
+                                "kind": {"type": "string", "enum": ["defaulted"]},
+                                "value": {"type": "integer", "default": 5},
+                                "config": {
+                                    "type": "object",
+                                    "properties": {
+                                        "nested": {
+                                            "type": "integer",
+                                            "default": 7,
+                                        },
+                                    },
+                                },
+                            },
+                            "required": ["kind", "config"],
+                        },
+                        {
+                            "type": "object",
+                            "properties": {
+                                "kind": {"type": "string", "enum": ["plain"]},
+                                "value": {
+                                    "anyOf": [
+                                        {"type": "integer"},
+                                        {"type": "null"},
+                                    ],
+                                },
+                                "config": {
+                                    "type": "object",
+                                    "properties": {
+                                        "nested": {
+                                            "anyOf": [
+                                                {"type": "integer"},
+                                                {"type": "null"},
+                                            ],
+                                        },
+                                    },
+                                },
+                            },
+                            "required": ["kind", "config"],
+                        },
+                    ],
+                },
+            },
+            "required": ["payload"],
+        },
+    )
+
+    _run(name, wrapped, {"payload": {"kind": "plain", "config": {}}})
+    _run(name, wrapped, {"payload": {"kind": "defaulted", "config": {}}})
+
+    assert received == [
+        {"payload": {"kind": "plain", "config": {}}},
+        {
+            "payload": {
+                "kind": "defaulted",
+                "value": 5,
+                "config": {"nested": 7},
+            }
+        },
+    ]
+
+
+@pytest.mark.parametrize("name", PROVIDERS)
+@pytest.mark.parametrize("combiner", ("anyOf", "oneOf"))
+def test_provider_serialization_preserves_selected_composed_null_defaults(
+    name: str,
+    combiner: str,
+):
+    nullable_string = {
+        "anyOf": [{"type": "string"}, {"type": "null"}],
+    }
+    wrapped, received = _wrap(
+        name,
+        {
+            "type": "object",
+            "title": "ComposedNullDefaultArguments",
+            "properties": {
+                "payload": {
+                    combiner: [
+                        {
+                            "type": "object",
+                            "properties": {
+                                "kind": {"type": "string", "enum": ["defaulted"]},
+                                "value": {**nullable_string, "default": None},
+                            },
+                            "required": ["kind"],
+                        },
+                        {
+                            "type": "object",
+                            "properties": {
+                                "kind": {"type": "string", "enum": ["plain"]},
+                                "value": nullable_string,
+                            },
+                            "required": ["kind"],
+                        },
+                    ],
+                },
+            },
+            "required": ["payload"],
+        },
+    )
+
+    _run(name, wrapped, {"payload": {"kind": "plain"}})
+    _run(name, wrapped, {"payload": {"kind": "defaulted"}})
+
+    assert received == [
+        {"payload": {"kind": "plain"}},
+        {"payload": {"kind": "defaulted", "value": None}},
+    ]
+
+
+def test_provider_serialization_preserves_ref_shaped_object_defaults():
+    schema = {
+        "$defs": {
+            "RefTarget": {
+                "type": "object",
+                "properties": {"value": {"type": "string"}},
+            },
+        },
+        "type": "object",
+        "title": "RefShapedDefaultArguments",
+        "properties": {
+            "payload": {
+                "type": "object",
+                "additionalProperties": True,
+                "default": {"$ref": "#/$defs/RefTarget"},
+            },
+        },
+    }
+    model = json_schema_to_model(schema)
+
+    assert model.model_validate({}).model_dump(mode="python", by_alias=True) == {
+        "payload": {"$ref": "#/$defs/RefTarget"}
+    }
+    assert validate_and_serialize_tool_arguments(model, {}) == {
+        "payload": {"$ref": "#/$defs/RefTarget"}
+    }
 
 
 @pytest.mark.parametrize("name", PROVIDERS)
