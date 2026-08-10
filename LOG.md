@@ -58,9 +58,19 @@ Started: 2026-08-10 · Budgets: 24 h loop / ≤ 2 500 LLM calls / production (di
   leaving a residual swallower.
 - Diagnostic: targeted `run.mjs neg --ids <the 17>` must go all-red; then a
   full `score.sh` must print a number, not VOID.
-- Change: (this entry written before the edits)
-- Result:
-- Reflection:
+- Change: fail-loudly conversions in 13 files (commit 2dfa5dd6b); dropped 4
+  module-only pseudo-entries and fixed readiness regexes that matched stack
+  traces (commit 3c8e62e3d).
+- Result: hypothesis confirmed — **SCORE 11.1, first numeric cycle, zero
+  VOID** (ts 9/64 green, py 7/23 green, parity 0 pending candidate
+  artifacts). Sweep: 16 green / 52 red / 19 skipped. All negative controls
+  red; trace liveness clean.
+- Reflection: generalizing — the instruments removed fake coverage rather
+  than added it (23 "green" in cycle 1 were worth 16 honest ones). The
+  score is now blocked on inputs only the human can provide: a valid
+  OPENAI_API_KEY (~30 entries), provisioned COMPOSIO_EXAMPLES_* IDs +
+  connected accounts (19 skips), GEMINI/NOTION keys (3 entries), and
+  candidate artifacts (COMPOSIO_CLIENT_TARBALL) to open the parity half.
 
 ## Final report
 - Best holdout score:
