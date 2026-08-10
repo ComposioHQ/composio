@@ -50,8 +50,12 @@ async function main() {
     console.log(JSON.stringify(result2, null, 2));
   } catch (error) {
     console.error('❌ Error running example:', error);
+    process.exitCode = 1;
   }
 }
 
 // Run the example
-main().catch(console.error);
+main().catch(error => {
+  console.error(error);
+  process.exitCode = 1;
+});
