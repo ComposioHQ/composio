@@ -50,6 +50,10 @@ ANTHROPIC_API_KEY=xxxxxxxxx
 <Step>
 **Create session and run**
 
+<Callout type="info">
+Passing a session to `handle_tool_calls` / `handleToolCalls` requires `composio` newer than 0.18.2 (Python) or `@composio/core` ≥ 0.15.1 with `@composio/anthropic` ≥ 0.10.2 (TypeScript). On earlier versions, execute session tools with [`session.execute()`](/docs/how-composio-works#executing-session-tools).
+</Callout>
+
 <Tabs groupId="language" items={["Python", "TypeScript"]} persist>
 <Tab value="Python">
 ```python
@@ -103,6 +107,7 @@ for block in response.content:
 ```
 </Tab>
 <Tab value="TypeScript">
+{/* TODO: remove the `@errors: 2345` twoslash marker below once docs/package.json resolves @composio/core >= 0.15.1 and @composio/anthropic >= 0.10.2 (session-aware handleToolCalls). */}
 ```typescript
 // @errors: 2345
 import Anthropic from '@anthropic-ai/sdk';

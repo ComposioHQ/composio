@@ -54,6 +54,10 @@ OPENAI_API_KEY=xxxxxxxxx
 
 The [Responses API](https://platform.openai.com/docs/api-reference/responses) is the recommended way to build agentic flows with OpenAI. You pass `previous_response_id` on each turn so the model keeps the prior context, and you send back only the new `function_call_output` items.
 
+<Callout type="info">
+Passing a session to `handle_tool_calls` / `handleToolCalls` requires `composio` newer than 0.18.2 (Python) or `@composio/core` ≥ 0.15.1 with `@composio/openai` ≥ 0.11.1 (TypeScript). On earlier versions, execute session tools with [`session.execute()`](/docs/how-composio-works#executing-session-tools).
+</Callout>
+
 <Tabs groupId="language" items={["Python", "TypeScript"]} persist>
 <Tab value="Python">
 ```python
@@ -107,6 +111,7 @@ for item in response.output:
 ```
 </Tab>
 <Tab value="TypeScript">
+{/* TODO: remove the `@errors: 2345` twoslash marker below once docs/package.json resolves @composio/core >= 0.15.1 and @composio/openai >= 0.11.1 (session-aware handleToolCalls). */}
 ```typescript
 // @errors: 2345
 import OpenAI from 'openai';
@@ -199,6 +204,10 @@ OPENAI_API_KEY=xxxxxxxxx
 
 The [Chat Completions API](https://platform.openai.com/docs/api-reference/chat) generates a model response from a list of messages. You keep the full message list yourself and append each assistant message and its `tool` results before the next call.
 
+<Callout type="info">
+Passing a session to `handle_tool_calls` / `handleToolCalls` requires `composio` newer than 0.18.2 (Python) or `@composio/core` ≥ 0.15.1 with `@composio/openai` ≥ 0.11.1 (TypeScript). On earlier versions, execute session tools with [`session.execute()`](/docs/how-composio-works#executing-session-tools).
+</Callout>
+
 <Tabs groupId="language" items={["Python", "TypeScript"]} persist>
 <Tab value="Python">
 ```python
@@ -244,6 +253,7 @@ print(response.choices[0].message.content)
 ```
 </Tab>
 <Tab value="TypeScript">
+{/* TODO: remove the `@errors: 2345` twoslash marker below once docs/package.json resolves @composio/core >= 0.15.1 and @composio/openai >= 0.11.1 (session-aware handleToolCalls). */}
 ```typescript
 // @errors: 2345
 import OpenAI from 'openai';

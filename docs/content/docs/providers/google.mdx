@@ -120,7 +120,7 @@ console.log(response.text);
 </Steps>
 
 <Callout type="warn">
-In TypeScript, execute session tools with `session.execute(toolSlug, arguments)`, as shown above. The provider's `executeToolCall` helper executes tools through the direct path, which does not carry your session — session meta-tools (`COMPOSIO_SEARCH_TOOLS`, `COMPOSIO_MANAGE_CONNECTIONS`, …) are rejected there with `"can only be called inside a tool-router session"`. Use `executeToolCall` only with tools fetched via [`tools.get`](/docs/tools-direct/executing-tools), not with `session.tools()`. (The Python Gemini tab is unaffected: Automatic Function Calling runs provider-wrapped callables, which carry the session.)
+In TypeScript, execute session tools with `session.execute(toolSlug, arguments)`, as shown above. The provider's `executeToolCall` helper executes tools through the direct path, which does not carry your session — session meta-tools (`COMPOSIO_SEARCH_TOOLS`, `COMPOSIO_MANAGE_CONNECTIONS`, …) are rejected there with `"can only be called inside a tool-router session"`. Use `executeToolCall` only with tools fetched via [`tools.get`](/docs/tools-direct/executing-tools), not with `session.tools()`. Unlike the [OpenAI](/docs/providers/openai) and [Anthropic](/docs/providers/anthropic) helpers, the Google provider's `executeToolCall` does not yet accept a session. (The Python Gemini tab is unaffected: Automatic Function Calling runs provider-wrapped callables, which carry the session.)
 </Callout>
 
 </IntegrationContent>

@@ -91,7 +91,7 @@ const result = await session.execute("COMPOSIO_SEARCH_TOOLS", { queries: [{ use_
 </Tab>
 </Tabs>
 
-Do not execute session tools with `tools.execute()` or a provider's `handle_tool_calls` helper — those use the direct execution path, which does not carry your session, and meta-tools fail there with `"can only be called inside a tool-router session"`.
+Do not execute session tools with `tools.execute()`, or by passing a user ID to a provider's `handle_tool_calls` helper — both take the direct execution path, which does not carry your session, and meta-tools fail there with `"can only be called inside a tool-router session"`. The [OpenAI](/docs/providers/openai) and [Anthropic](/docs/providers/anthropic) helpers also accept the session itself (`handle_tool_calls(response=response, session=session)` in Python, `handleToolCalls(session, response)` in TypeScript), which routes through the session while keeping provider argument normalization.
 
 ## Authentication
 
