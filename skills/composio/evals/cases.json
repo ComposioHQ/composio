@@ -19,8 +19,9 @@
       ],
       "mustNotMatch": [
         {
-          "pattern": "COMPOSIO_API_KEY|ck_[A-Za-z0-9]",
-          "message": "does not choose credentials before the product is known"
+          "pattern": "(?:^|\\n)\\s*(?:(?:[-*]|\\d+[.)])\\s*)?(?:(?:first|next),?\\s+|(?:please|you should|you need to|you have to)\\s+)?(?:use|set|export|configure|paste)\\b.{0,60}(?:COMPOSIO_API_KEY|ck_[A-Za-z0-9])|(?:^|\\n)\\s*(?:(?:[-*]|\\d+[.)])\\s*)?(?:export\\s+COMPOSIO_API_KEY|COMPOSIO_API_KEY\\s*[:=])",
+          "flags": "is",
+          "message": "does not choose Platform or For You credentials before the product is known"
         }
       ]
     },
@@ -43,7 +44,7 @@
           "message": "does not replace dashboard onboarding with dev init"
         },
         {
-          "pattern": "(?:paste|send|share).{0,50}(?:COMPOSIO_API_KEY|API key)",
+          "pattern": "(?:^|\\n)\\s*(?:(?:[-*]|\\d+[.)])\\s*)?(?:(?:first|next),?\\s+|(?:please|you should|you need to|you have to)\\s+)?(?:paste|send|share)\\b.{0,50}(?:COMPOSIO_API_KEY|API key)",
           "flags": "is",
           "message": "does not request the secret in chat"
         }
@@ -93,7 +94,7 @@
       ],
       "mustNotMatch": [
         {
-          "pattern": "(?:rotate|replace|regenerate).{0,60}COMPOSIO_API_KEY",
+          "pattern": "(?:^|\\n)\\s*(?:(?:[-*]|\\d+[.)])\\s*)?(?:(?:first|next),?\\s+|(?:please|you should|you need to|you have to)\\s+)?(?:rotate|replace|regenerate)\\b.{0,60}COMPOSIO_API_KEY",
           "flags": "is",
           "message": "does not rotate a working project key"
         }
@@ -106,9 +107,9 @@
       "repetitions": 1,
       "mustMatch": [
         {
-          "pattern": "custom.{0,80}OAuth.{0,40}(?:app|client)|OAuth.{0,80}custom.{0,40}(?:app|client)",
+          "pattern": "OAuth.{0,40}(?:app|client)|(?:app|client).{0,40}OAuth",
           "flags": "is",
-          "message": "uses a custom provider OAuth app"
+          "message": "uses a provider OAuth app or client"
         },
         {
           "pattern": "custom.{0,40}(?:auth config|authentication config)|(?:auth config|authentication config).{0,40}custom",
