@@ -641,7 +641,10 @@
       "toolkits": [
         "gmail"
       ],
-      "timeoutSec": 180
+      "timeoutSec": 180,
+      "ids": [
+        "COMPOSIO_EXAMPLES_USER_ID"
+      ]
     },
     {
       "id": "ts/tool-router/mcp",
@@ -1113,9 +1116,13 @@
         "gmail"
       ],
       "pyWith": [
-        "claude-agent-sdk"
+        "claude-agent-sdk",
+        "composio-claude-agent-sdk"
       ],
-      "timeoutSec": 300
+      "timeoutSec": 300,
+      "ids": [
+        "COMPOSIO_EXAMPLES_USER_ID"
+      ]
     },
     {
       "id": "py/tool_router/crewai_agent",
@@ -1129,9 +1136,12 @@
         "gmail"
       ],
       "pyWith": [
-        "crewai"
+        "crewai>=1.15"
       ],
-      "timeoutSec": 300
+      "timeoutSec": 300,
+      "ids": [
+        "COMPOSIO_EXAMPLES_USER_ID"
+      ]
     },
     {
       "id": "py/tool_router/direct_tools_preset",
@@ -1189,9 +1199,13 @@
       ],
       "pyWith": [
         "langchain",
-        "langchain-openai"
+        "langchain-openai",
+        "langchain-mcp-adapters"
       ],
-      "timeoutSec": 240
+      "timeoutSec": 240,
+      "ids": [
+        "COMPOSIO_EXAMPLES_USER_ID"
+      ]
     },
     {
       "id": "py/tool_router/openai_agents",

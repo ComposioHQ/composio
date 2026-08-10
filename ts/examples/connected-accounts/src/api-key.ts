@@ -11,6 +11,8 @@ if (!authConfigId || !apiKey) {
 }
 
 const connectionRequest = await composio.connectedAccounts.initiate('default', authConfigId, {
+  // Allow more than one connected account per user for this auth config
+  allowMultiple: true,
   config: AuthScheme.APIKey({
     generic_api_key: apiKey,
   }),

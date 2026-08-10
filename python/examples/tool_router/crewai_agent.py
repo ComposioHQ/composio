@@ -1,3 +1,5 @@
+import os
+
 from crewai import Agent, Crew, Task
 from crewai.mcp import MCPServerHTTP
 
@@ -5,7 +7,8 @@ from composio import Composio
 
 composio = Composio()
 session = composio.create(
-    user_id="user_123",
+    # A user with a connected Gmail account (raises KeyError when unset)
+    user_id=os.environ["COMPOSIO_EXAMPLES_USER_ID"],
 )
 
 agent = Agent(

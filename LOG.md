@@ -243,3 +243,43 @@ Started: 2026-08-10 · Budgets: 24 h loop / ≤ 2 500 LLM calls / production (di
     lost its response_data wrapper (data IS the file object now);
     agents-api-tool-router ALSO needed x-api-key headers (session MCP).
 - Next: full score.sh run = cycle 8 (baseline + first TS candidate sweep).
+
+## Cycle 8 — 2026-08-10 (first full score with TS candidate: P_ts opens)
+- Score (dev): prev 30.6 · Probe: NC red, liveness clean
+- Hypothesis: with A2 + drift fixes all verified green in targeted sweeps,
+  the full baseline sweep lands around ts 58-60/62 and py 15-17/22
+  (C ≈ 23.4+8.0 → ~40-46 before parity). The TS candidate sweep (tarball
+  0.0.0) runs for the first time; if the self-managed client is truly
+  drop-in, P_ts ≈ C_ts and the score roughly doubles on the ts axis
+  (predicted total ≈ 60-68). Any per-entry parity mismatch is treated as a
+  candidate-client divergence FINDING (recorded here), not a variance entry.
+- Expected failure modes: (a) pnpm override/rebuild of ts/packages against
+  the 0.0.0 tarball fails → no candidate run (finding, ts/packages is
+  off-surface); (b) candidate green but trace sets differ on some entries
+  (real divergence findings); (c) LLM nondeterminism produces spurious
+  trace-set diffs on agentic entries (distinguish before recording).
+- Diagnostic: score.sh output + harness/parity.mjs per-entry report.
+- Interim result: first score.sh attempt VOIDed at the negative-control
+  gate — py/fastapi_app boots uvicorn and prints its readiness line even
+  under garbage credentials (it was skipped in every earlier cycle, so the
+  instrument had never seen it run). The instrument is right: readiness
+  green without any authenticated call is fake coverage. Fix: fail-fast
+  `auth_configs.get(...)` before `uvicorn.run` — also guarantees a live
+  trace (the app otherwise makes no backend call until a request arrives).
+  Baseline sweep itself: 78/84 green, 0 skipped. Remaining 6 reds fixed in
+  the same pass (except one structural):
+  - ts/connected-accounts/api-key: MULTIPLE_CONNECTED_ACCOUNTS on rerun
+    (the provisioned serpapi connection already exists) → allowMultiple.
+  - ts/tool-router/langchain: OpenAI now enforces ^[^\s<|\\/>]+$ on
+    message.name; agent name 'Gmail Assistant' (space) → 'gmail-assistant'.
+    Also user_123 → COMPOSIO_EXAMPLES_USER_ID.
+  - py claude/crewai/langchain agents: missing overlay deps
+    (composio-claude-agent-sdk from PyPI; crewai>=1.15 for crewai.mcp;
+    langchain-mcp-adapters) + user_123 → env; langchain_agent's
+    swallowing except→print removed (fail-loudly).
+  - ts/cloudflare-wrangler/dev: STRUCTURAL FINDING — the worker runs in
+    workerd, which neither trace shim can reach, so a readiness-green
+    would always be trace-dead (VOID). Green is impossible under the
+    read-only harness; stays red (~0.4pt per axis). Needs a harness
+    accommodation or an X reason like worker-module WITH a tier-3→X move,
+    which the frozen tiers forbid. Reported, not gamed.

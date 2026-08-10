@@ -35,4 +35,7 @@ if __name__ == "__main__":
         if not os.environ.get(var):
             raise SystemExit(f"{var} is required")
 
+    # Fail fast on bad credentials or a stale auth config before serving requests
+    composio.auth_configs.get(os.environ["COMPOSIO_EXAMPLES_GMAIL_AUTH_CONFIG_ID"])
+
     uvicorn.run(app, host="127.0.0.1", port=8000)
