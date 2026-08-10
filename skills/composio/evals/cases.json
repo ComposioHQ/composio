@@ -38,7 +38,7 @@
       ],
       "mustNotMatch": [
         {
-          "pattern": "(?:^|\\n)\\s*(?:[-*]\\s*)?(?:(?:(?:first|next),?\\s+|(?:please|you should|you need to|you have to)\\s+)?(?:run|execute|use)\\s+(?:the\\s+)?(?:command\\s+)?|[$>]\\s*)?[`'\"]?composio\\s+dev\\s+init\\b",
+          "pattern": "(?:^|\\n)\\s*(?:(?:[-*]|\\d+[.)])\\s*)?(?:(?:(?:first|next),?\\s+|(?:please|you should|you need to|you have to)\\s+)?(?:run|execute|use)\\s+(?:the\\s+)?(?:command\\s+)?|[$>]\\s*)?[`'\"]?composio\\s+dev\\s+init\\b",
           "flags": "im",
           "message": "does not replace dashboard onboarding with dev init"
         },
@@ -136,7 +136,7 @@
       ],
       "mustNotMatch": [
         {
-          "pattern": "(?:^|\\n)\\s*(?:[-*]\\s*)?(?:(?:first|next),?\\s+|(?:please|you should|you need to|you have to)\\s+)?(?:build|implement|create)\\b.{0,80}(?:OAuth|authorization).{0,40}(?:flow|callback)",
+          "pattern": "(?:^|\\n)\\s*(?:(?:[-*]|\\d+[.)])\\s*)?(?:(?:first|next),?\\s+|(?:please|you should|you need to|you have to)\\s+)?(?:build|implement|create)\\b.{0,80}(?:OAuth|authorization).{0,40}(?:flow|callback)",
           "flags": "is",
           "message": "does not build a provider OAuth flow"
         }
