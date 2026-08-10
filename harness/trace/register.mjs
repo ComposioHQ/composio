@@ -20,7 +20,7 @@ if (traceFile) {
   })();
 
   const ID_SEG =
-    /^(ca_|ac_|ti_|tr_|sess_|auth_|req_|proj_|org_)[\w-]+$|^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$|^\d+$/i;
+    /^(ca_|ac_|ti_|tr_|trs_|sess_|auth_|req_|proj_|org_)[\w-]+$|^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$|^\d+$/i;
   const template = (path) =>
     path
       .split('/')

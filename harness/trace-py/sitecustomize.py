@@ -24,7 +24,7 @@ if _TRACE:
             or "backend.composio.dev"
         )
         _ID_SEG = re.compile(
-            r"^(ca_|ac_|ti_|tr_|sess_|auth_|req_|proj_|org_)[\w-]+$"
+            r"^(ca_|ac_|ti_|tr_|trs_|sess_|auth_|req_|proj_|org_)[\w-]+$"
             r"|^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
             r"|^\d+$",
             re.IGNORECASE,

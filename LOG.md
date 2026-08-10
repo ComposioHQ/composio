@@ -319,3 +319,35 @@ Started: 2026-08-10 · Budgets: 24 h loop / ≤ 2 500 LLM calls / production (di
   override) instead of refusing; audit-dir integrity baseline refreshed to
   match; lint OK. Validating with a 1-entry candidate sweep, then score
   run #3.
+- Result (cycle 8, attempt 3): **SCORE 65.7** (C_ts 59/62, P_ts 42/62,
+  C_py 22/22 — full marks — P_py 0 pre-Stage-B). Trajectory:
+  11.1 → 15.6 → 24.9 → 30.6 → 65.7. First TS parity verdict:
+  **zero real candidate-client divergences.** The 20 parity misses:
+  - 15 = harness normalizer bug: shims template `tr_` ids but production
+    tool-router sessions are `trs_` → fresh raw ids each run, parity
+    impossible for every tool-router entry. NOT a client difference.
+  - 2 status flips = transient Cloudflare-HTML 5xx from the LLM gateway
+    (mastra/index candidate-red, mastra/tool-router baseline-red) —
+    the same entries are green in adjacent runs.
+  - 1 = ts/tool-router/multi-account: EXAMPLE rerunnability bug — alias
+    'work-gmail' is unique per entity, so the second run (candidate)
+    400s. Fixed (suffixed alias).
+  - 1 = claude-agents-sdk transient (baseline-red/candidate-green).
+  - 1 = cloudflare-wrangler (structural, red/red).
+  Also: py candidate sweep DID run (wheel 2.0.0 passes the version gate;
+  the 1.43-era SDK then fails on every entry) — burns ~22 runs per score
+  for a guaranteed 0. Unsetting COMPOSIO_CLIENT_WHEEL for dev scores
+  until Stage B; holdout/acceptance runs keep it.
+
+## Cycle 9 — 2026-08-10 (trs_ shim fix + rerunnability fixes)
+- Score (dev): prev 65.7 · Probe: NC all red, liveness clean
+- Hypothesis: with the human-approved `trs_` normalizer fix in both shims
+  (one-character prefix bug, integrity refreshed, selftest PASS) and the
+  multi-account alias fix, the 15 trs-only parity misses + multi-account
+  flip green under parity. Predicted P_ts ≈ 57-59/62 → score ≈ 71-73
+  (ts-axis nearly saturated; the residual gap is transient LLM-gateway
+  flakes + cloudflare-wrangler structural).
+- Expected failure mode: LLM-gateway 5xx flakes shift which entries are
+  green between the two sweeps → a couple of status-flip parity misses
+  regardless of code.
+- Diagnostic: parity.mjs classification (trs-only bucket must be empty).
