@@ -31,6 +31,7 @@
     "validate:boundaries": "tsx ./scripts/validate-lint-boundaries.ts",
     "install:binary": "bun run ./scripts/install-binary.ts ./dist/composio",
     "table:metrics": "bun run ./scripts/optimize-metrics-table.ts",
+    "generate:toolkit-slugs": "bun run ./scripts/generate-toolkit-slugs.ts",
     "mock": "bun run ./scripts/copy-mocks-from-cache.ts",
     "prebuild": "pnpm run typecheck",
     "build": "tsdown && bun run ./scripts/copy-local-tools-assets.ts ./dist",
