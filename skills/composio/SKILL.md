@@ -66,6 +66,8 @@ Do not turn an explanation, documentation lookup, or narrow bug fix into onboard
 
 Use bundled references for stable decisions. For versions, provider adapters, client-specific setup, toolkit behavior, or APIs that may have changed, fetch the current Markdown source before answering or editing code:
 
+When sources disagree, prefer the current API reference and live endpoint behavior over any page marked Legacy, and name the REST API version explicitly.
+
 ```text
 https://docs.composio.dev/llms.txt
 https://docs.composio.dev/docs/<page>.md
