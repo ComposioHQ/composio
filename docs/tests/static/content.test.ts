@@ -140,9 +140,9 @@ describe("Content - toolkit version guidance", () => {
   test("the SDK fetching guide distinguishes SDK, REST v3, and REST v3.1 defaults", async () => {
     const content = await readFile(FETCHING_TOOLS_DOC, "utf-8");
 
-    expect(content).toContain("These SDK examples default to `latest`");
-    expect(content).toContain("v3 defaults to the pinned base version (`00000000_00`)");
-    expect(content).toContain("v3.1 defaults to `latest`");
+    expect(content).toContain("don't configure `toolkit_versions` (TypeScript: `toolkitVersions`)");
+    expect(content).toContain("v3 tools endpoints default to the pinned base version (`00000000_00`)");
+    expect(content).toContain("v3.1 tools endpoints default to `latest`");
     expect(content).not.toMatch(/the API returns tools from the base version/i);
     expect(content).not.toContain("Never use `latest` in production");
   });
