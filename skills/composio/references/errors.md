@@ -26,9 +26,9 @@ For legacy manual execution, a missing tool may be a toolkit-version problem. Fe
 
 ### Composio project or session 401
 
-This happens before a provider tool call succeeds. The Platform project credential may be missing, masked, invalid, or associated with a different project.
+This happens before a provider tool call succeeds. The Platform project credential may be missing, masked, invalid, revoked, or associated with a different project.
 
-Re-run the no-output credential checks from the Platform guide. Do not print, rotate, replace, or request the key in chat. If the developer arrived from Dashboard Getting Started, direct them back to that project's Step 1 rather than running `composio dev init`.
+Re-run the no-output credential state machine from the Platform guide in the real server runtime. Do not print, rotate, replace, or request the key in chat. If the developer arrived from Dashboard Getting Started, preserve completed code work and direct them to that exact project's credential-recovery path rather than initializing or selecting a project. A response from a different project is a mismatch, not success.
 
 ### Provider connected-account 401
 
