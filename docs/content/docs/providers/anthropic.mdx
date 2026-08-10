@@ -107,7 +107,7 @@ for block in response.content:
 ```
 </Tab>
 <Tab value="TypeScript">
-{/* TODO: remove the `@errors: 2345` twoslash marker below once docs/package.json resolves @composio/core >= 0.15.1 and @composio/anthropic >= 0.10.2 (session-aware handleToolCalls). */}
+{/* TODO: remove the `@errors: 2345` twoslash marker below once the docs lockfile resolves @composio/core >= 0.15.1 and @composio/anthropic >= 0.10.2 (session-aware handleToolCalls). The anthropic pin (^0.10.1) already admits 0.10.2, so this needs a `bun update` plus the core bump to ^0.15.1 — no @composio/anthropic range change. */}
 ```typescript
 // @errors: 2345
 import Anthropic from '@anthropic-ai/sdk';

@@ -39,12 +39,13 @@ const EXCLUDED_PATH_SEGMENTS = ["docs/migration-guide/"];
 
 const SESSION_TOKEN_RE =
   /session\.tools\s*\(|sessions\.create\s*\(|composio\.create\s*\(/;
-// Python branch: user_id= must appear inside the helper's argument list
-// ([^)]* keeps the match from running past the closing paren into later
-// code). TS branch: a string-literal first argument, or an identifier that
-// names a user ID (`userId`, `user_id`, …) — a session argument never does.
+// Python branch: user_id= must appear inside the helper's argument list —
+// the bound tolerates one level of nested calls (`response=build_response()`)
+// but never runs past the helper's closing paren into later code. TS branch:
+// a string-literal first argument, or a whole identifier that names a user ID
+// (`userId`, `user_id`, `uid`) — a session argument never does.
 const DIRECT_HELPER_TOKEN_RE =
-  /(?:handle_tool_calls|execute_tool_call)\s*\([^)]*\buser_id\s*=|(?:handleToolCalls|executeToolCall)\s*\(\s*(?:["'`]|user)/;
+  /(?:handle_tool_calls|execute_tool_call)\s*\((?:[^()]*\([^()]*\))*[^()]*\buser_id\s*=|(?:handleToolCalls|executeToolCall)\s*\(\s*(?:["'`]|(?:user_?[iI]d|uid)\b)/;
 const SAMPLE_BOUNDARY_RE = /^\s*(?:<\/?(?:Tab|Step)\b|#{1,6}\s)/;
 const FENCE_OPEN_RE = /^\s*(`{3,}|~{3,})/;
 const FENCE_CLOSE_RE = /^\s*(`{3,}|~{3,})\s*$/;
@@ -171,6 +172,32 @@ results = composio.provider.handle_tool_calls(response=response, session=session
 \`\`\`
 \`\`\`python
 other_session = composio.create(user_id="user_456")
+\`\`\`
+</Tab>`;
+
+    expect(hasDirectHelperBoundToSessionTools(source)).toBe(false);
+  });
+
+  test("detects a user_id hidden behind a nested call in the same argument list", () => {
+    const source = `
+<Tab value="Python">
+\`\`\`python
+session = composio.create(user_id="user_123")
+tools = session.tools()
+results = composio.provider.handle_tool_calls(response=build_response(), user_id="user_123")
+\`\`\`
+</Tab>`;
+
+    expect(hasDirectHelperBoundToSessionTools(source)).toBe(true);
+  });
+
+  test("session variables that merely start with 'user' are not flagged", () => {
+    const source = `
+<Tab value="TypeScript">
+\`\`\`typescript
+const userSession = await composio.create("user_123");
+const tools = await userSession.tools();
+const results = await composio.provider.handleToolCalls(userSession, response);
 \`\`\`
 </Tab>`;
 
