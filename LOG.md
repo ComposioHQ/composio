@@ -130,6 +130,28 @@ Started: 2026-08-10 · Budgets: 24 h loop / ≤ 2 500 LLM calls / production (di
   shapes (unlikely — plain messages.create); (b) newer openai-agents has
   incompatible API surface with the example code.
 - Diagnostic: targeted sweep of the affected ids before/after.
-- Change: model IDs in 4 anthropic example files; pyWith experiments.
-- Result:
-- Reflection:
+- Change: model IDs in 4 anthropic example files (commit 8604355d8);
+  pyWith "openai-agents>=0.19" on the 6 entries importing `agents`
+  (commit 63d0387ce).
+- Result: both hypotheses confirmed — **SCORE 30.6** (ts 45/62, py 11/22).
+  Trajectory: 11.1 → 15.6 → 24.9 → 30.6. Remaining 12 reds characterized:
+  - ts/vercel/stream: Composio 404 on getRawComposioToolBySlug (stale tool
+    slug in the example) — doc rot.
+  - ts/openai/agents-api-tool-router: OpenAI 400 — MCP `server_label`
+    violates `^[A-Za-z][A-Za-z0-9_-]*$` (example builds an invalid label) —
+    integration drift vs OpenAI Responses API validation.
+  - py/experimental_tool_router_advanced: Composio 400 `payload.toolkits:
+    Invalid input` — example payload shape drift vs current API.
+  - py/auth_configs: dummy OAuth client ids rejected (contract rule 2 work).
+  - ts/tools/index + ai: gdrive account not provisioned (Stage A2).
+  - ts/cloudflare-wrangler/dev: env → .dev.vars plumbing (Stage A2).
+  - py claude_agent / crewai_agent / langchain_agent / custom_tools_agent_test
+    (TIMEOUT): heavyweight deps + gmail provisioning (Stage A2).
+  - ts/tool-router/langchain: TBD (output truncated by pnpm noise).
+  17 entries still skip on missing COMPOSIO_EXAMPLES_* ids — provisioning is
+  now the single biggest lever (~+11 points), then the 4 drift fixes (~+4).
+- Reflection: generalizing. Repo-rot findings produced so far: dead OpenAI
+  key, missing ESM declarations, retired Claude model ids, openai/openai-agents
+  lock skew, stale tool slug, invalid MCP server_label, toolkits payload
+  drift. The uv.lock skew and the two API-drift items deserve upstream fixes
+  beyond this goal's surface.
