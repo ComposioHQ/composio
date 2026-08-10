@@ -9,7 +9,7 @@ until selftest is green. Selftest stays green every cycle thereafter.
 ## Target (outer loop)
 
 `SCORE = 25·C_ts + 25·P_ts + 25·C_py + 25·P_py`, where per language, against
-the FROZEN denominators in `eval/baseline-tiers.json` (ts=64, py=23):
+the FROZEN denominators in `eval/baseline-tiers.json` (ts=62, py=22):
 
 - `C` — entrypoints green under the **baseline** (Stainless) client / denominator.
   Punishes missing coverage: a skipped, red, or manifest-shrunk entry is a zero.
@@ -36,8 +36,8 @@ holdout exclusively, and the final acceptance run must be the CI
   backend/LLM call counts, and holdout usage. Watch gain per cycle; a flat
   gradient at high burn means stop and report.
 - Spend ceilings: ≤ 150 LLM calls per sweep, ≤ 2 500 LLM calls total
-  (`status.sh` reports the count; OpenAI/Anthropic/Gemini keys are the paid
-  surface). One full sweep ≤ 45 min. Production, disposable project only — `COMPOSIO_BASE_URL` defaults to
+  (`status.sh` reports the count; OpenAI/Anthropic keys are the paid
+  surface; Gemini and Notion are out of scope entirely). One full sweep ≤ 45 min. Production, disposable project only — `COMPOSIO_BASE_URL` defaults to
   `https://backend.composio.dev`; the runner refuses local URLs; the
   `COMPOSIO_API_KEY` in use must be the dedicated examples-project key (no
   valuable connections or data), never the org's main key.
@@ -53,8 +53,9 @@ holdout exclusively, and the final acceptance run must be the CI
   `~/work/composio/composio-client` (candidate artifacts arrive prebuilt via
   `COMPOSIO_CLIENT_TARBALL`/`COMPOSIO_CLIENT_WHEEL`), the audit directory
   (`~/.composio-goal-audit`), and the existing CI workflows.
-- Capacity caps: excluded (tier X) entries ≤ 6, frozen reasons only
-  (`stdin-repl`, `external-tunnel`, `worker-module`, `outbound-email`) ·
+- Capacity caps: excluded (tier X) entries ≤ 9, frozen reasons only
+  (`stdin-repl`, `external-tunnel`, `worker-module`, `outbound-email`,
+  `dropped-provider`) ·
   `parity-variance.json` ≤ 10 entries, each with a real justification · tier
   moves only toward more coverage (X→3→2→1) · no example may branch on which
   client is installed, on `COMPOSIO_TRACE_FILE`, or on CI-detection env vars.

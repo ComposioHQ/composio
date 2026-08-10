@@ -1,10 +1,10 @@
 {
   "frozen": "2026-08-10",
   "denominators": {
-    "ts": 64,
-    "py": 23
+    "ts": 62,
+    "py": 22
   },
-  "excludedCap": 6,
+  "excludedCap": 9,
   "tiers": {
     "ts/anthropic/index": "1",
     "ts/anthropic/streaming": "1",
@@ -21,8 +21,8 @@
     "ts/error-handling-demo/index": "1",
     "ts/file-handling/index": "X",
     "ts/file-handling/url": "X",
-    "ts/google/index": "1",
-    "ts/google/experimental.mcp": "2",
+    "ts/google/index": "X",
+    "ts/google/experimental.mcp": "X",
     "ts/json-schema-to-zod/index": "1",
     "ts/langchain/index": "1",
     "ts/langchain/openai": "2",
@@ -81,7 +81,7 @@
     "py/auth_configs": "2",
     "py/connected_accounts": "3",
     "py/triggers": "3",
-    "py/modifiers": "2",
+    "py/modifiers": "X",
     "py/mcp": "2",
     "py/fastapi_app": "3",
     "py/custom_tools_agent_test": "2",
@@ -209,8 +209,6 @@
     "ts/connected-accounts/scopes": 195,
     "ts/connected-accounts/toolkit-authorize": 1095,
     "ts/error-handling-demo/index": 1015,
-    "ts/google/index": 1972,
-    "ts/google/experimental.mcp": 2112,
     "ts/json-schema-to-zod/index": 1276,
     "ts/langchain/index": 2627,
     "ts/langchain/openai": 615,
@@ -265,7 +263,6 @@
     "py/auth_configs": 2028,
     "py/connected_accounts": 1579,
     "py/triggers": 2440,
-    "py/modifiers": 2317,
     "py/mcp": 837,
     "py/fastapi_app": 1037,
     "py/custom_tools_agent_test": 6445,

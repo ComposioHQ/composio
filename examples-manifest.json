@@ -208,21 +208,22 @@
       "lang": "ts",
       "pkg": "google-example",
       "file": "ts/examples/google/src/index.ts",
-      "tier": "1",
+      "tier": "X",
       "env": [
         "GEMINI_API_KEY"
       ],
       "toolkits": [
         "hackernews"
       ],
-      "timeoutSec": 180
+      "reason": "dropped-provider",
+      "notes": "gemini/notion are out of scope for this goal by decision (2026-08-10)"
     },
     {
       "id": "ts/google/experimental.mcp",
       "lang": "ts",
       "pkg": "google-example",
       "file": "ts/examples/google/src/experimental.mcp.ts",
-      "tier": "2",
+      "tier": "X",
       "env": [
         "GEMINI_API_KEY"
       ],
@@ -233,7 +234,8 @@
       "toolkits": [
         "gmail"
       ],
-      "timeoutSec": 180
+      "reason": "dropped-provider",
+      "notes": "gemini/notion are out of scope for this goal by decision (2026-08-10)"
     },
     {
       "id": "ts/json-schema-to-zod/index",
@@ -983,7 +985,7 @@
       "id": "py/modifiers",
       "lang": "py",
       "file": "python/examples/modifiers.py",
-      "tier": "2",
+      "tier": "X",
       "env": [
         "NOTION_API_KEY"
       ],
@@ -991,7 +993,8 @@
         "hackernews",
         "notion"
       ],
-      "timeoutSec": 180
+      "reason": "dropped-provider",
+      "notes": "gemini/notion are out of scope for this goal by decision (2026-08-10)"
     },
     {
       "id": "py/mcp",

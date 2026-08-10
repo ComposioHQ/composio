@@ -78,3 +78,20 @@ Started: 2026-08-10 · Budgets: 24 h loop / ≤ 2 500 LLM calls / production (di
 - Divergences found (feed back to composio-client):
 - What was abandoned (and why):
 - Highest-leverage next steps:
+
+## Cycle 3 — 2026-08-10 (valid OpenAI key; gemini/notion dropped)
+- Score (dev): prev 11.1 · Probe: NC all red, liveness clean (cycle 2)
+- Hypothesis: with a working OPENAI_API_KEY (verified 200 on /v1/models) the
+  ~invalid_api_key reds flip; gemini/notion entries leave the denominators
+  (ts 64→62, py 23→22, X=9 `dropped-provider`). Predicted score 18–26
+  (ts green 9→~22-27, py 7→~9-11). Non-LLM reds from cycle 2 (anthropic/
+  streaming, toolkits/*, triggers/trigger-types, tools/tool-conversion,
+  tool-router/toolkits) are NOT explained by the key and should persist —
+  they are cycle 4's real investigation targets.
+- Expected failure mode: sweep wall-clock grows (real LLM calls now run
+  to completion); some agentic entries burn >150 LLM calls or hit timeouts.
+- Diagnostic: status.sh LLM call count for the sweep; timedOut flags in
+  results.jsonl.
+- Change: manifest/baseline re-freeze only (this entry precedes the run).
+- Result:
+- Reflection:
