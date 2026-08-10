@@ -26,6 +26,7 @@ import { UpgradeBinary } from 'src/services/upgrade-binary';
 import { TerminalUI, TerminalUILive } from 'src/services/terminal-ui';
 import { TriggersRealtime } from 'src/services/triggers-realtime';
 import { ToolsExecutorLive as _ToolsExecutorLive } from 'src/services/tools-executor';
+import { ToolkitSlugCatalog } from 'src/services/toolkit-slug-catalog';
 import { ProjectContext } from 'src/services/project-context';
 import { ProjectEnvironmentDetector } from 'src/services/project-environment-detector';
 import { CommandRunner } from 'src/services/command-runner';
@@ -94,9 +95,16 @@ export const ComposioClientSingletonLive = Layer.provide(
   Layer.mergeAll(BunFileSystem.layer, BunPath.layer, NodeOs.Default, ConfigLive)
 ) satisfies RequiredLayer;
 
+// Fed the cached repository so that the staleness refresh behind it shares the
+// one catalog fetch a run is allowed, rather than starting a second.
+export const ToolkitSlugCatalogLive = Layer.provide(
+  ToolkitSlugCatalog.Default,
+  ComposioToolkitsRepositoryCachedLive
+) satisfies RequiredLayer;
+
 export const ToolsExecutorLive = Layer.provide(
   _ToolsExecutorLive,
-  ComposioClientSingletonLive
+  Layer.mergeAll(ComposioClientSingletonLive, ToolkitSlugCatalogLive)
 ) satisfies RequiredLayer;
 
 export const ProjectContextLive = Layer.provide(
@@ -119,6 +127,7 @@ const layers = Layer.mergeAll(
   ComposioSessionRepositoryLive,
   ComposioClientSingletonLive,
   ComposioToolkitsRepositoryCachedLive,
+  ToolkitSlugCatalogLive,
   ToolsExecutorLive,
   JsPackageManagerDetector.Default,
   ProjectEnvironmentDetector.Default,

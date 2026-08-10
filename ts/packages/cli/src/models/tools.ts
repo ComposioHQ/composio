@@ -58,16 +58,6 @@ export const Tool = Schema.Struct({
    * List of tags associated with the tool for categorization and filtering.
    */
   tags: Schema.Array(Schema.String),
-  /**
-   * Parent toolkit of the tool. Absent in cache entries written before the
-   * field was captured.
-   */
-  toolkit: Schema.optional(
-    Schema.Struct({
-      name: Schema.String,
-      slug: Schema.String,
-    })
-  ),
 }).annotations({ identifier: 'Tool' });
 export type Tool = Schema.Schema.Type<typeof Tool>;
 

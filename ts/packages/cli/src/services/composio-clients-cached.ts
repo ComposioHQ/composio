@@ -3,6 +3,7 @@ import { FileSystem, Path } from '@effect/platform';
 import { BunFileSystem } from '@effect/platform-bun';
 import { setupCacheDir } from 'src/effects/setup-cache-dir';
 import { FORCE_CONFIG } from 'src/effects/force-config';
+import { writeFileAtomic } from 'src/effects/write-file-atomic';
 import { ComposioToolkitsRepository, InvalidToolkitsError } from './composio-clients';
 import type { ToolkitVersionSpec } from 'src/effects/toolkit-version-overrides';
 import { NodeOs } from './node-os';
@@ -90,9 +91,14 @@ function createCachedEffect<T, E, R>(
       )
     );
 
-  const writeToCache = (fs: FileSystem.FileSystem, cacheFilePath: string, result: T) =>
+  /**
+   * Atomic: these files are hundreds of KB, and a run killed mid-write — or
+   * two CLI processes writing at once — would otherwise leave behind a
+   * truncated file that the next run reads back as a parse failure.
+   */
+  const writeToCache = (cacheFilePath: string, result: T) =>
     encoder(result).pipe(
-      Effect.flatMap(content => fs.writeFileString(cacheFilePath, content)),
+      Effect.flatMap(content => writeFileAtomic(cacheFilePath, content)),
       Effect.catchAll(error =>
         Effect.logWarning(`Failed to write to cache ${cacheFilePath}: ${error}`)
       )
@@ -130,7 +136,7 @@ function createCachedEffect<T, E, R>(
     // Write to cache only if we're fetching the full dataset (no cacheFilter).
     // Filtered API calls fetch partial data that would corrupt the shared cache file.
     if (!cacheFilter && Option.isSome(cacheFilePath)) {
-      yield* writeToCache(fs, cacheFilePath.value, result);
+      yield* writeToCache(cacheFilePath.value, result);
     }
 
     return result;
