@@ -1,10 +1,10 @@
 /**
  * Session tool-execution policy for docs samples.
  *
- * Session tools must be executed with `session.execute()` — the provider
- * helpers (`handle_tool_calls` / `handleToolCalls`) use the direct execution
- * path, which does not carry the session, so session meta-tools fail at
- * runtime with: '... can only be called inside a tool-router session'.
+ * Session tools must be executed with `session.execute()` — provider
+ * direct-execution helpers do not carry the session, so session meta-tools
+ * fail at runtime with: '... can only be called inside a tool-router
+ * session'.
  *
  * A 102-run agent eval of the docs (August 2026, two-phase build+probe)
  * found 58/102 runs hit that rejection by copying provider-page samples
@@ -14,8 +14,9 @@
  *
  * Rule: no authored MDX page may pair session tools (`session.tools()` /
  * `sessions.create` / `composio.create(`) with a provider tool-call helper
- * (`handle_tool_calls` / `handleToolCalls`) in its code fences. Pages
- * showing the helper for the direct path (`tools.get`) are fine.
+ * (`handle_tool_calls` / `handleToolCalls` / `execute_tool_call` /
+ * `executeToolCall`) in its code fences. Pages showing the helper for the
+ * direct path (`tools.get`) are fine.
  *
  * Scope: content/docs and content/examples. Excluded: content/reference
  * (generated upstream), changelog (historical), docs/migration-guide
@@ -81,7 +82,7 @@ describe("session execution samples", () => {
 
     expect(
       offenders,
-      `These pages pair session tools with handle_tool_calls/handleToolCalls, ` +
+      `These pages pair session tools with a provider direct-execution helper, ` +
         `which fails at runtime for session meta-tools. Use session.execute() ` +
         `in session samples instead:\n  ${offenders.join("\n  ")}`,
     ).toEqual([]);
