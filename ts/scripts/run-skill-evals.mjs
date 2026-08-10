@@ -101,11 +101,11 @@ const findCase = (suites, qualifiedId) => {
   const suite = suites.find(candidate => candidate.skill === skill);
   const evalCase = suite?.data.cases.find(candidate => candidate.id === id);
   if (!suite || !evalCase) die(`Unknown skill eval case: ${qualifiedId}`);
-  return evalCase;
+  return { suite, evalCase };
 };
 
 const grade = (qualifiedId, outputFile, suites) => {
-  const evalCase = findCase(suites, qualifiedId);
+  const { evalCase } = findCase(suites, qualifiedId);
   if (!outputFile || !fs.existsSync(outputFile)) {
     die(`${qualifiedId}: missing output file ${outputFile ?? ''}`);
   }
@@ -131,6 +131,28 @@ const grade = (qualifiedId, outputFile, suites) => {
     die(`${qualifiedId}: FAIL\n${failures.map(failure => `- ${failure}`).join('\n')}`);
   }
   console.log(`${qualifiedId}: PASS`);
+};
+
+const renderPrompt = (qualifiedId, suites) => {
+  const { suite, evalCase } = findCase(suites, qualifiedId);
+  const sources = (evalCase.sources ?? []).map(source =>
+    path.posix.join('skills', suite.skill, 'evals', source)
+  );
+  const lines = [
+    '# Skill eval input',
+    '',
+    `Skill: ${suite.skill}`,
+    `Mode: ${evalCase.mode}`,
+    '',
+    '## User prompt',
+    '',
+    evalCase.prompt,
+    '',
+    '## Source fixtures',
+    '',
+    ...(sources.length > 0 ? sources.map(source => `- ${source}`) : ['- None']),
+  ];
+  console.log(lines.join('\n'));
 };
 
 let suites;
@@ -160,8 +182,12 @@ if (command === 'validate') {
       )
   );
   console.log(JSON.stringify({ include }));
+} else if (command === 'has-dry-cases') {
+  console.log(suites.some(suite => suite.data.cases.some(evalCase => evalCase.mode === 'dry')));
+} else if (command === 'prompt') {
+  renderPrompt(args[0], suites);
 } else if (command === 'grade') {
   grade(args[0], args[1], suites);
 } else {
-  die(`Unknown command ${command}. Use validate, matrix, or grade.`);
+  die(`Unknown command ${command}. Use validate, matrix, has-dry-cases, prompt, or grade.`);
 }

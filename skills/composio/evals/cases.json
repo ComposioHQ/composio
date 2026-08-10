@@ -163,7 +163,7 @@
           "message": "states that v3.1 omission selects latest"
         },
         {
-          "pattern": "(?:\\bv3\\b.{0,160}(?:omit|omission|default).{0,160}00000000_00|(?:omit|omission|default).{0,160}\\bv3\\b.{0,160}00000000_00)",
+          "pattern": "(?:\\bv3\\b(?!\\.1).{0,160}(?:omit|omission|default).{0,160}00000000_00|(?:omit|omission|default).{0,160}\\bv3\\b(?!\\.1).{0,160}00000000_00)",
           "flags": "is",
           "message": "states that v3 omission selects the pinned base version"
         }

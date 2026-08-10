@@ -22,6 +22,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       matrix: ${{ steps.matrix.outputs.matrix }}
+      has-dry-cases: ${{ steps.matrix.outputs.has-dry-cases }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -31,12 +32,14 @@ jobs:
 
       - name: Build dry-eval matrix
         id: matrix
-        run: echo "matrix=$(node ts/scripts/run-skill-evals.mjs matrix)" >> "$GITHUB_OUTPUT"
+        run: |
+          echo "matrix=$(node ts/scripts/run-skill-evals.mjs matrix)" >> "$GITHUB_OUTPUT"
+          echo "has-dry-cases=$(node ts/scripts/run-skill-evals.mjs has-dry-cases)" >> "$GITHUB_OUTPUT"
 
   behavioral:
     name: ${{ matrix.skill }} / ${{ matrix.case }} (${{ matrix.repetition }})
     needs: prepare
-    if: ${{ github.event_name == 'workflow_dispatch' || !github.event.pull_request.head.repo.fork }}
+    if: ${{ needs.prepare.outputs.has-dry-cases == 'true' && (github.event_name == 'workflow_dispatch' || !github.event.pull_request.head.repo.fork) }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
     strategy:
@@ -45,33 +48,55 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          path: .source
 
-      - name: Prepare output directory
-        run: mkdir -p skill-eval-output
+      - name: Prepare isolated blind workspace
+        run: |
+          mkdir -p "skill-eval-workspace/skills/${{ matrix.skill }}" skill-eval-output
+          cp ".source/skills/${{ matrix.skill }}/SKILL.md" \
+            "skill-eval-workspace/skills/${{ matrix.skill }}/SKILL.md"
+          cp -R ".source/skills/${{ matrix.skill }}/references" \
+            "skill-eval-workspace/skills/${{ matrix.skill }}/references"
+          if [ -d ".source/skills/${{ matrix.skill }}/evals/sources" ]; then
+            mkdir -p "skill-eval-workspace/skills/${{ matrix.skill }}/evals"
+            cp -R ".source/skills/${{ matrix.skill }}/evals/sources" \
+              "skill-eval-workspace/skills/${{ matrix.skill }}/evals/sources"
+          fi
+          node .source/ts/scripts/run-skill-evals.mjs prompt \
+            "${{ matrix.skill }}/${{ matrix.case }}" \
+            > skill-eval-workspace/eval-input.md
+          rm -rf .source
 
       - name: Run blind skill behavior
         uses: openai/codex-action@52fe01ec70a42f454c9d2ebd47598f9fd6893d56 # v1.11
         with:
           openai-api-key: ${{ secrets.OPENAI_API_KEY }}
-          sandbox: workspace-write
+          permission-profile: :read-only
+          working-directory: skill-eval-workspace
+          output-file: ${{ github.workspace }}/skill-eval-output/${{ matrix.skill }}-${{ matrix.case }}-${{ matrix.repetition }}.md
           prompt: |
             Run one blind behavioral evaluation. Do not inspect git history, pull-request text,
-            workspace reports, or any case other than the selected case.
+            workspace reports, eval definitions, or grading code.
 
             1. Read skills/${{ matrix.skill }}/SKILL.md and only the references it routes you to.
-            2. Read case "${{ matrix.case }}" from skills/${{ matrix.skill }}/evals/cases.json.
-            3. Read only that case's listed source fixtures, if any.
+            2. Read eval-input.md.
+            3. Read only the source fixtures listed in that input file, if any.
             4. Respond to the case prompt as a normal assistant. Do not execute external actions
                or claim success; these are dry cases.
-            5. Write only the user-facing answer to:
-               skill-eval-output/${{ matrix.skill }}-${{ matrix.case }}-${{ matrix.repetition }}.md
-            6. Do not modify any other file.
+            5. Return only the user-facing answer.
+
+      - name: Checkout clean grader
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          path: .skill-eval-grader
 
       - name: Grade output
+        working-directory: .skill-eval-grader
         run: >-
           node ts/scripts/run-skill-evals.mjs grade
           "${{ matrix.skill }}/${{ matrix.case }}"
-          "skill-eval-output/${{ matrix.skill }}-${{ matrix.case }}-${{ matrix.repetition }}.md"
+          "../skill-eval-output/${{ matrix.skill }}-${{ matrix.case }}-${{ matrix.repetition }}.md"
 
       - name: Upload transcript
         if: always()
