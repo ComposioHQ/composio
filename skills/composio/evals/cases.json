@@ -1,0 +1,200 @@
+{
+  "version": 1,
+  "cases": [
+    {
+      "id": "ambiguous-product-routing",
+      "mode": "dry",
+      "prompt": "Help me get Composio working.",
+      "repetitions": 1,
+      "mustMatch": [
+        {
+          "pattern": "(?:own|personal).{0,100}(?:agent|account).{0,240}(?:product|users)|(?:product|users).{0,240}(?:own|personal).{0,100}(?:agent|account)",
+          "flags": "is",
+          "message": "asks whether this is personal-agent or product-user work"
+        },
+        {
+          "pattern": "\\?",
+          "message": "asks one routing question"
+        }
+      ],
+      "mustNotMatch": [
+        {
+          "pattern": "COMPOSIO_API_KEY|ck_[A-Za-z0-9]",
+          "message": "does not choose credentials before the product is known"
+        }
+      ]
+    },
+    {
+      "id": "dashboard-key-missing-repository",
+      "mode": "dry",
+      "prompt": "I finished Platform Getting Started and already have COMPOSIO_API_KEY in the dashboard, but the repository is not attached here. Add Composio to my TypeScript app.",
+      "repetitions": 1,
+      "mustMatch": [
+        {
+          "pattern": "(?:attach|open|share|provide|access).{0,100}(?:repo|repository|codebase|project path)",
+          "flags": "is",
+          "message": "asks for repository access instead of inventing its contents"
+        }
+      ],
+      "mustNotMatch": [
+        {
+          "pattern": "composio\\s+dev\\s+init",
+          "flags": "i",
+          "message": "does not replace dashboard onboarding with dev init"
+        },
+        {
+          "pattern": "(?:paste|send|share).{0,50}(?:COMPOSIO_API_KEY|API key)",
+          "flags": "is",
+          "message": "does not request the secret in chat"
+        }
+      ]
+    },
+    {
+      "id": "cursor-personal-apps",
+      "mode": "dry",
+      "prompt": "Set up my personal Cursor so it can use my Gmail and Google Calendar through Composio.",
+      "repetitions": 1,
+      "mustMatch": [
+        {
+          "pattern": "Composio For You",
+          "flags": "i",
+          "message": "routes a personal AI client to Composio For You"
+        },
+        {
+          "pattern": "\\bMCP\\b",
+          "flags": "i",
+          "message": "uses the For You MCP path"
+        }
+      ],
+      "mustNotMatch": [
+        {
+          "pattern": "(?:export\\s+COMPOSIO_API_KEY|COMPOSIO_API_KEY\\s*[:=]|new Composio\\(|from ['\"]@composio)",
+          "flags": "i",
+          "message": "does not route personal Cursor setup through Platform SDK credentials"
+        }
+      ]
+    },
+    {
+      "id": "provider-401-boundary",
+      "mode": "dry",
+      "prompt": "My GitHub tool call returns 401, but the same COMPOSIO_API_KEY works for other calls. Help me fix it.",
+      "repetitions": 1,
+      "mustMatch": [
+        {
+          "pattern": "(?:log|request)[ -]?id",
+          "flags": "i",
+          "message": "requests the Composio log or request ID"
+        },
+        {
+          "pattern": "(?:connected account|provider auth|GitHub App|installation)",
+          "flags": "i",
+          "message": "checks provider authorization separately from the project key"
+        }
+      ],
+      "mustNotMatch": [
+        {
+          "pattern": "(?:rotate|replace|regenerate).{0,60}COMPOSIO_API_KEY",
+          "flags": "is",
+          "message": "does not rotate a working project key"
+        }
+      ]
+    },
+    {
+      "id": "provider-consent-branding",
+      "mode": "dry",
+      "prompt": "Google's OAuth consent screen says Composio. I need it to show my product's name. What should I change?",
+      "repetitions": 1,
+      "mustMatch": [
+        {
+          "pattern": "custom.{0,40}OAuth.{0,160}(?:auth config|authentication config)|OAuth.{0,160}custom (?:auth config|authentication config)|(?:auth config|authentication config).{0,160}custom.{0,40}OAuth",
+          "flags": "is",
+          "message": "uses a custom provider OAuth app and auth config"
+        }
+      ]
+    },
+    {
+      "id": "python-multi-user-session",
+      "mode": "dry",
+      "prompt": "I'm building my first Python agent. Each customer needs to connect their own Gmail account. Show me the right Composio architecture.",
+      "repetitions": 1,
+      "mustMatch": [
+        {
+          "pattern": "\\bsession",
+          "flags": "i",
+          "message": "uses sessions for a new Platform integration"
+        },
+        {
+          "pattern": "user[_ ]id|customer.{0,50}(?:id|identity)",
+          "flags": "is",
+          "message": "preserves the application's user identity"
+        },
+        {
+          "pattern": "Connect Link|authorize\\(",
+          "flags": "i",
+          "message": "lets Composio return the provider authentication link"
+        }
+      ],
+      "mustNotMatch": [
+        {
+          "pattern": "(?<!not )(?<!never )(?<!don't )\\b(?:build|implement|create).{0,80}(?:OAuth|authorization).{0,40}(?:flow|callback)",
+          "flags": "is",
+          "message": "does not build a provider OAuth flow"
+        }
+      ]
+    },
+    {
+      "id": "direct-rest-version-default",
+      "mode": "dry",
+      "critical": true,
+      "prompt": "I am writing a new direct REST integration. Should I use v3 or v3.1, and what happens when I omit the toolkit version?",
+      "repetitions": 3,
+      "sources": [
+        "sources/direct-rest-version-default.md"
+      ],
+      "mustMatch": [
+        {
+          "pattern": "\\bv3\\.1\\b",
+          "flags": "i",
+          "message": "recommends the current REST API version"
+        },
+        {
+          "pattern": "(?:v3\\.1.{0,160}(?:omit|omission|default).{0,160}latest|(?:omit|omission|default).{0,160}v3\\.1.{0,160}latest)",
+          "flags": "is",
+          "message": "states that v3.1 omission selects latest"
+        },
+        {
+          "pattern": "(?:\\bv3\\b.{0,160}(?:omit|omission|default).{0,160}00000000_00|(?:omit|omission|default).{0,160}\\bv3\\b.{0,160}00000000_00)",
+          "flags": "is",
+          "message": "states that v3 omission selects the pinned base version"
+        }
+      ],
+      "mustNotMatch": [
+        {
+          "pattern": "v3\\.1\\s+(?:omission\\s+)?(?:defaults?|resolves?|selects?)\\s+(?:to\\s+)?(?:the\\s+)?(?:pinned\\s+)?(?:base\\s+)?(?:version\\s+)?00000000_00",
+          "flags": "i",
+          "message": "does not assign the v3 base default to v3.1"
+        }
+      ]
+    },
+    {
+      "id": "hacker-news-read-only-canary",
+      "mode": "live",
+      "prompt": "Use Composio to get today's top five Hacker News stories.",
+      "repetitions": 1,
+      "mustMatch": [
+        {
+          "pattern": "(?:^|\\n)(?:1[.)]|-).{1,200}(?:https?://|news\\.ycombinator\\.com)",
+          "flags": "i",
+          "message": "returns ranked, linked live results"
+        }
+      ],
+      "mustNotMatch": [
+        {
+          "pattern": "I (?:would|could) use|I cannot access",
+          "flags": "i",
+          "message": "does not substitute a plan for live execution"
+        }
+      ]
+    }
+  ]
+}

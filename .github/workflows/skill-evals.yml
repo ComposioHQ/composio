@@ -1,0 +1,82 @@
+name: Skill evals
+
+on:
+  pull_request:
+    paths:
+      - 'skills/**'
+      - 'ts/scripts/run-skill-evals.mjs'
+      - 'package.json'
+      - '.github/workflows/skill-evals.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.ref || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+jobs:
+  prepare:
+    name: Validate eval definitions
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.matrix.outputs.matrix }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Validate eval definitions
+        run: node ts/scripts/run-skill-evals.mjs validate
+
+      - name: Build dry-eval matrix
+        id: matrix
+        run: echo "matrix=$(node ts/scripts/run-skill-evals.mjs matrix)" >> "$GITHUB_OUTPUT"
+
+  behavioral:
+    name: ${{ matrix.skill }} / ${{ matrix.case }} (${{ matrix.repetition }})
+    needs: prepare
+    if: ${{ github.event_name == 'workflow_dispatch' || !github.event.pull_request.head.repo.fork }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.prepare.outputs.matrix) }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Prepare output directory
+        run: mkdir -p skill-eval-output
+
+      - name: Run blind skill behavior
+        uses: openai/codex-action@52fe01ec70a42f454c9d2ebd47598f9fd6893d56 # v1.11
+        with:
+          openai-api-key: ${{ secrets.OPENAI_API_KEY }}
+          sandbox: workspace-write
+          prompt: |
+            Run one blind behavioral evaluation. Do not inspect git history, pull-request text,
+            workspace reports, or any case other than the selected case.
+
+            1. Read skills/${{ matrix.skill }}/SKILL.md and only the references it routes you to.
+            2. Read case "${{ matrix.case }}" from skills/${{ matrix.skill }}/evals/cases.json.
+            3. Read only that case's listed source fixtures, if any.
+            4. Respond to the case prompt as a normal assistant. Do not execute external actions
+               or claim success; these are dry cases.
+            5. Write only the user-facing answer to:
+               skill-eval-output/${{ matrix.skill }}-${{ matrix.case }}-${{ matrix.repetition }}.md
+            6. Do not modify any other file.
+
+      - name: Grade output
+        run: >-
+          node ts/scripts/run-skill-evals.mjs grade
+          "${{ matrix.skill }}/${{ matrix.case }}"
+          "skill-eval-output/${{ matrix.skill }}-${{ matrix.case }}-${{ matrix.repetition }}.md"
+
+      - name: Upload transcript
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: skill-eval-${{ matrix.skill }}-${{ matrix.case }}-${{ matrix.repetition }}
+          path: skill-eval-output/
+          retention-days: 7

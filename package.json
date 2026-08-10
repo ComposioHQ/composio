@@ -53,6 +53,7 @@
     "update:peer-deps": "tsx ts/scripts/update-peer-deps.ts",
     "validate:agent-skills": "node ts/scripts/validate-agent-skills.mjs",
     "validate:changesets": "node ts/scripts/validate-changesets.mjs",
+    "validate:skill-evals": "node ts/scripts/run-skill-evals.mjs validate",
     "validate:skill-routing": "node ts/scripts/test-skill-routing.mjs",
     "prepublish": "pnpm run build:packages",
     "changeset": "changeset",
