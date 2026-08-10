@@ -3,7 +3,7 @@
 //
 // Verifies that the dedicated (disposable) Composio project holds the auth
 // configs and connected accounts the tier-2/3 examples need, creates whatever
-// can be created without a human (API-key auth config + connection), and
+// can be created without a human (API-key auth config), and
 // prints the remaining one-time OAuth authorizations.
 //
 //   node scripts/examples-provision.mjs            # report (stderr) + exports (stdout)
@@ -32,14 +32,13 @@ if (!API_KEY) {
   process.exit(1);
 }
 
-// Toolkits the tier-2/3 entries depend on, keyed by the env-var prefix the
-// examples read. OAuth toolkits need a one-time human browser authorization;
-// the API-key toolkit is fully automatic.
+// Toolkits the tier-2/3 entries depend on. OAuth toolkits need a one-time human
+// browser authorization. Only export ids that examples consume directly.
 const BROWSER_GRANT_TOOLKITS = [
-  { prefix: 'GMAIL', slug: 'gmail' },
-  { prefix: 'GDRIVE', slug: 'googledrive' },
-  { prefix: 'GITHUB', slug: 'github' },
-  { prefix: 'SLACK', slug: 'slack' },
+  { exportPrefix: 'GMAIL', slug: 'gmail' },
+  { slug: 'googledrive' },
+  { exportPrefix: 'GITHUB', slug: 'github' },
+  { exportPrefix: 'SLACK', slug: 'slack' },
 ];
 const DEMO_TOOLKIT = { prefix: 'APIKEY', slug: 'serpapi', demoValue: 'examples-demo-key' };
 
@@ -71,8 +70,10 @@ async function listAll(path, key = 'items') {
   return out;
 }
 
-const authConfigs = await listAll('/api/v3.1/auth_configs');
-const accounts = await listAll(`/api/v3.1/connected_accounts?user_ids=${encodeURIComponent(USER_ID)}`);
+const [authConfigs, accounts] = await Promise.all([
+  listAll('/api/v3.1/auth_configs'),
+  listAll(`/api/v3.1/connected_accounts?user_ids=${encodeURIComponent(USER_ID)}`),
+]);
 
 const exports = { COMPOSIO_EXAMPLES_USER_ID: USER_ID };
 const pendingGrants = [];
@@ -85,7 +86,7 @@ function findActiveAccount(slug) {
   return accounts.find((a) => a.toolkit?.slug === slug && a.status === 'ACTIVE');
 }
 
-for (const { prefix, slug } of BROWSER_GRANT_TOOLKITS) {
+for (const { exportPrefix, slug } of BROWSER_GRANT_TOOLKITS) {
   let config = findAuthConfig(slug);
   if (!config) {
     const created = await api('POST', '/api/v3.1/auth_configs', {
@@ -95,11 +96,15 @@ for (const { prefix, slug } of BROWSER_GRANT_TOOLKITS) {
     config = { id: created.auth_config?.id ?? created.id };
     report(`created auth config for ${slug}: ${config.id}`);
   }
-  exports[`COMPOSIO_EXAMPLES_${prefix}_AUTH_CONFIG_ID`] = config.id;
+  if (exportPrefix) {
+    exports[`COMPOSIO_EXAMPLES_${exportPrefix}_AUTH_CONFIG_ID`] = config.id;
+  }
 
   const account = findActiveAccount(slug);
   if (account) {
-    exports[`COMPOSIO_EXAMPLES_${prefix}_CONNECTED_ACCOUNT_ID`] = account.id;
+    if (exportPrefix) {
+      exports[`COMPOSIO_EXAMPLES_${exportPrefix}_CONNECTED_ACCOUNT_ID`] = account.id;
+    }
     report(`${slug}: ACTIVE connection ${account.id} (user ${USER_ID})`);
   } else {
     ok = false;
@@ -115,9 +120,10 @@ for (const { prefix, slug } of BROWSER_GRANT_TOOLKITS) {
   }
 }
 
-// API-key toolkit: everything is automatic. The stored key is a placeholder;
-// serpapi only validates it at tool-execution time and no example executes
-// a serpapi tool.
+// API-key toolkit: create the auth config automatically. The examples create
+// their own connected accounts to demonstrate that API. The stored value is a
+// placeholder; serpapi only validates it at tool-execution time and no example
+// executes a serpapi tool.
 {
   const { prefix, slug, demoValue } = DEMO_TOOLKIT;
   let config = findAuthConfig(slug);
@@ -131,22 +137,6 @@ for (const { prefix, slug } of BROWSER_GRANT_TOOLKITS) {
   }
   exports[`COMPOSIO_EXAMPLES_${prefix}_AUTH_CONFIG_ID`] = config.id;
   exports[`COMPOSIO_EXAMPLES_${prefix}_PLACEHOLDER`] = demoValue;
-
-  let account = findActiveAccount(slug);
-  if (!account) {
-    const created = await api('POST', '/api/v3.1/connected_accounts', {
-      auth_config: { id: config.id },
-      connection: {
-        user_id: USER_ID,
-        state: { authScheme: 'API_KEY', val: { status: 'ACTIVE', generic_api_key: demoValue } },
-      },
-    });
-    account = { id: created.id };
-    report(`created API-key connection for ${slug}: ${account.id}`);
-  } else {
-    report(`${slug}: ACTIVE connection ${account.id} (user ${USER_ID})`);
-  }
-  exports[`COMPOSIO_EXAMPLES_${prefix}_CONNECTED_ACCOUNT_ID`] = account.id;
 }
 
 if (pendingGrants.length) {
