@@ -35,6 +35,10 @@ if (traceFile) {
     }
   };
 
+  // Outbound-email guard: tool executions matching the denylist are refused at
+  // the transport, never forwarded to the backend.
+  const DENY = new RegExp(process.env.COMPOSIO_TOOL_DENYLIST ?? 'GMAIL_SEND|GMAIL_REPLY|SEND_EMAIL|SEND_DRAFT|OUTLOOK[A-Z_]*SEND', 'i');
+
   const origFetch = globalThis.fetch;
   globalThis.fetch = async function tracedFetch(input, init) {
     let url;
@@ -48,6 +52,11 @@ if (traceFile) {
       (typeof input === 'object' && input !== null && 'method' in input ? input.method : 'GET') ??
       'GET'
     ).toUpperCase();
+
+    if (url.hostname === backendHost && DENY.test(url.pathname)) {
+      record({ m: method, p: template(url.pathname), s: 'BLOCKED' });
+      throw new Error(`harness: outbound-email tool execution blocked (${url.pathname})`);
+    }
 
     let res;
     try {

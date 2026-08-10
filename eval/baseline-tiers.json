@@ -1,10 +1,10 @@
 {
   "frozen": "2026-08-10",
   "denominators": {
-    "ts": 70,
+    "ts": 68,
     "py": 23
   },
-  "excludedCap": 4,
+  "excludedCap": 6,
   "tiers": {
     "ts/anthropic/index": "1",
     "ts/anthropic/streaming": "1",
@@ -19,8 +19,8 @@
     "ts/connected-accounts/scopes": "2",
     "ts/connected-accounts/toolkit-authorize": "3",
     "ts/error-handling-demo/index": "1",
-    "ts/file-handling/index": "2",
-    "ts/file-handling/url": "2",
+    "ts/file-handling/index": "X",
+    "ts/file-handling/url": "X",
     "ts/google/index": "1",
     "ts/google/experimental.mcp": "2",
     "ts/json-schema-to-zod/index": "1",
@@ -217,8 +217,6 @@
     "ts/connected-accounts/scopes": 195,
     "ts/connected-accounts/toolkit-authorize": 1095,
     "ts/error-handling-demo/index": 1015,
-    "ts/file-handling/index": 2105,
-    "ts/file-handling/url": 1486,
     "ts/google/index": 1899,
     "ts/google/experimental.mcp": 2112,
     "ts/json-schema-to-zod/index": 1203,

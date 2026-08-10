@@ -9,7 +9,7 @@ until selftest is green. Selftest stays green every cycle thereafter.
 ## Target (outer loop)
 
 `SCORE = 25·C_ts + 25·P_ts + 25·C_py + 25·P_py`, where per language, against
-the FROZEN denominators in `eval/baseline-tiers.json` (ts=70, py=23):
+the FROZEN denominators in `eval/baseline-tiers.json` (ts=68, py=23):
 
 - `C` — entrypoints green under the **baseline** (Stainless) client / denominator.
   Punishes missing coverage: a skipped, red, or manifest-shrunk entry is a zero.
@@ -52,11 +52,18 @@ holdout exclusively, and the final acceptance run must be the CI
   `~/work/composio/composio-client` (candidate artifacts arrive prebuilt via
   `COMPOSIO_CLIENT_TARBALL`/`COMPOSIO_CLIENT_WHEEL`), the audit directory
   (`~/.composio-goal-audit`), and the existing CI workflows.
-- Capacity caps: excluded (tier X) entries ≤ 4, frozen reasons only
-  (`stdin-repl`, `external-tunnel`, `worker-module`) · `parity-variance.json`
-  ≤ 10 entries, each with a real justification · tier moves only toward more
-  coverage (X→3→2→1) · no example may branch on which client is installed, on
-  `COMPOSIO_TRACE_FILE`, or on CI-detection env vars.
+- Capacity caps: excluded (tier X) entries ≤ 6, frozen reasons only
+  (`stdin-repl`, `external-tunnel`, `worker-module`, `outbound-email`) ·
+  `parity-variance.json` ≤ 10 entries, each with a real justification · tier
+  moves only toward more coverage (X→3→2→1) · no example may branch on which
+  client is installed, on `COMPOSIO_TRACE_FILE`, or on CI-detection env vars.
+- **No outbound email, ever.** The trace shims refuse email-send tool
+  executions (`GMAIL_SEND*`, `GMAIL_REPLY*`, `*SEND_EMAIL*`, …) at the
+  transport and the runner marks any run that tripped the guard red — catching
+  the refusal and continuing is not coverage. The denylist is part of the
+  read-only harness and `COMPOSIO_TOOL_DENYLIST` is stripped from every run's
+  env; do not try to widen, narrow, or work around it. Gmail examples that
+  only read (fetch, list, triggers) are unaffected.
 - Examples stay teaching artifacts: fixes keep them idiomatic and readable.
   Fail-loudly conversions replace swallowed errors with propagation, not with
   assertion frameworks.

@@ -52,6 +52,12 @@ Every tier 1/2/3 entrypoint must:
    servers logging their port; add one where missing).
 5. **Stay a teaching artifact.** These are user-facing examples: fixes must
    keep them idiomatic and readable, not turn them into test harnesses.
+6. **Never send email.** The harness shims refuse email-send tool executions
+   at the transport (default denylist `GMAIL_SEND|GMAIL_REPLY|SEND_EMAIL|
+   SEND_DRAFT|OUTLOOK[A-Z_]*SEND`) and a run that trips the guard is red
+   regardless of exit code. Read-only Gmail usage (fetch/list/triggers) is
+   fine. Send-by-design examples (`ts/file-handling/*`) are tier X
+   (`outbound-email`).
 
 ## Manifest schema (`examples-manifest.json`, repo root, agent-editable)
 
@@ -163,6 +169,7 @@ workflow is stable, then the human decides on consolidation.
 
 ## Non-goals
 
-Production runs; modifying `~/work/composio/composio-client`; publishing
-packages; making the CI job a required check; byte-level response diffing
-(already covered by composio-client's live-parity harness).
+Production runs; sending email (or any outbound messaging) from example runs;
+modifying `~/work/composio/composio-client`; publishing packages; making the
+CI job a required check; byte-level response diffing (already covered by
+composio-client's live-parity harness).

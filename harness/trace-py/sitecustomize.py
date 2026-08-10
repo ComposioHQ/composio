@@ -48,9 +48,25 @@ if _TRACE:
             elif host in _LLM_HOSTS:
                 _record({"llm": host})
 
+        # Outbound-email guard: tool executions matching the denylist are
+        # refused at the transport, never forwarded to the backend.
+        _DENY = re.compile(
+            os.environ.get(
+                "COMPOSIO_TOOL_DENYLIST",
+                r"GMAIL_SEND|GMAIL_REPLY|SEND_EMAIL|SEND_DRAFT|OUTLOOK[A-Z_]*SEND",
+            ),
+            re.IGNORECASE,
+        )
+
+        def _guard(request) -> None:
+            if request.url.host == _BACKEND_HOST and _DENY.search(request.url.path):
+                _record({"m": request.method.upper(), "p": _template(request.url.path), "s": "BLOCKED"})
+                raise RuntimeError(f"harness: outbound-email tool execution blocked ({request.url.path})")
+
         _orig_send = httpx.Client.send
 
         def _send(self, request, *args, **kwargs):
+            _guard(request)
             response = None
             try:
                 response = _orig_send(self, request, *args, **kwargs)
@@ -63,6 +79,7 @@ if _TRACE:
         _orig_send_async = httpx.AsyncClient.send
 
         async def _send_async(self, request, *args, **kwargs):
+            _guard(request)
             response = None
             try:
                 response = await _orig_send_async(self, request, *args, **kwargs)

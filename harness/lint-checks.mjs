@@ -52,7 +52,7 @@ for (const e of manifest.entries) {
 }
 
 // 2. Excluded cap and reason codes.
-const X_REASONS = new Set(['stdin-repl', 'external-tunnel', 'worker-module']);
+const X_REASONS = new Set(['stdin-repl', 'external-tunnel', 'worker-module', 'outbound-email']);
 const excluded = manifest.entries.filter((e) => e.tier === 'X');
 if (excluded.length > baseline.excludedCap) {
   findings.push(`excluded entries ${excluded.length} > cap ${baseline.excludedCap}`);

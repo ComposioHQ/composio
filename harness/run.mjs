@@ -157,6 +157,8 @@ const buildEnv = (entry, runDir, { garbage = false } = {}) => {
   env.COMPOSIO_BASE_URL = baseUrl();
   env.COMPOSIO_TRACE_FILE = traceFile;
   env.COMPOSIO_LOG_LEVEL ??= 'error';
+  // The outbound-email denylist is fixed by the shims; never overridable per run.
+  delete env.COMPOSIO_TOOL_DENYLIST;
   if (entry.lang === 'ts') {
     env.NODE_OPTIONS = `${env.NODE_OPTIONS ?? ''} --import=file://${join(ROOT, 'harness', 'trace', 'register.mjs')}`.trim();
   } else {
@@ -195,11 +197,16 @@ const runPool = async (entries, runDir, { garbage = false, concurrency = 4 } = {
       }
       const { env, traceFile } = buildEnv(entry, runDir, { garbage });
       const r = await runEntry(entry, env, { garbage });
-      const green = isGreen(entry, r);
+      // An entry that tripped the outbound-email guard is red no matter how it
+      // exited: catching the refusal and continuing is not coverage.
+      const blocked =
+        existsSync(traceFile) && readFileSync(traceFile, 'utf8').includes('"s":"BLOCKED"');
+      const green = !blocked && isGreen(entry, r);
       results.push({
         id: entry.id,
         tier: entry.tier,
         status: green ? 'green' : 'red',
+        ...(blocked ? { reason: 'blocked-tool' } : {}),
         exit: r.exit,
         timedOut: r.timedOut,
         readinessMatched: r.readinessMatched,
