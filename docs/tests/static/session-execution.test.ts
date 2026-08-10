@@ -19,10 +19,17 @@
  * Scope: content/docs and content/examples. Excluded: content/reference
  * (generated upstream), changelog (historical), docs/migration-guide
  * (point-in-time documents that may show old APIs).
+ * The LLM guardrail blocks appended to .md responses are checked too —
+ * they are samples agents copy verbatim.
  */
 import { describe, test, expect } from "bun:test";
 import { readdir, readFile } from "fs/promises";
 import { join, relative } from "path";
+
+import {
+  SESSION_GUARDRAILS,
+  DIRECT_EXECUTION_GUARDRAILS,
+} from "../../lib/llm-guardrails";
 
 const CONTENT_DIRS = ["docs", "examples"].map((dir) =>
   join(import.meta.dir, "../../content", dir),
@@ -32,8 +39,12 @@ const EXCLUDED_PATH_SEGMENTS = ["docs/migration-guide/"];
 
 const SESSION_TOKEN_RE =
   /session\.tools\s*\(|sessions\.create\s*\(|composio\.create\s*\(/;
+// Python branch: user_id= must appear inside the helper's argument list
+// ([^)]* keeps the match from running past the closing paren into later
+// code). TS branch: a string-literal first argument, or an identifier that
+// names a user ID (`userId`, `user_id`, …) — a session argument never does.
 const DIRECT_HELPER_TOKEN_RE =
-  /(?:handle_tool_calls|execute_tool_call)\s*\([\s\S]*?\buser_id\s*=|(?:handleToolCalls|executeToolCall)\s*\(\s*["'`]/;
+  /(?:handle_tool_calls|execute_tool_call)\s*\([^)]*\buser_id\s*=|(?:handleToolCalls|executeToolCall)\s*\(\s*(?:["'`]|user)/;
 const SAMPLE_BOUNDARY_RE = /^\s*(?:<\/?(?:Tab|Step)\b|#{1,6}\s)/;
 const FENCE_OPEN_RE = /^\s*(`{3,}|~{3,})/;
 const FENCE_CLOSE_RE = /^\s*(`{3,}|~{3,})\s*$/;
@@ -148,6 +159,42 @@ const results = await composio.provider.handleToolCalls("user_123", response);
 
     expect(hasDirectHelperBoundToSessionTools(sessionTarget)).toBe(false);
     expect(hasDirectHelperBoundToSessionTools(separateTargets)).toBe(false);
+  });
+
+  test("session-bound helper is not flagged by a later unrelated user_id", () => {
+    const source = `
+<Tab value="Python">
+\`\`\`python
+session = composio.create(user_id="user_123")
+tools = session.tools()
+results = composio.provider.handle_tool_calls(response=response, session=session)
+\`\`\`
+\`\`\`python
+other_session = composio.create(user_id="user_456")
+\`\`\`
+</Tab>`;
+
+    expect(hasDirectHelperBoundToSessionTools(source)).toBe(false);
+  });
+
+  test("detects a TypeScript helper bound to a user-ID variable", () => {
+    const source = `
+<Tab value="TypeScript">
+\`\`\`typescript
+const userId = "user_123";
+const session = await composio.create(userId);
+const tools = await session.tools();
+const results = await composio.provider.handleToolCalls(userId, response);
+\`\`\`
+</Tab>`;
+
+    expect(hasDirectHelperBoundToSessionTools(source)).toBe(true);
+  });
+
+  test("LLM guardrail blocks never bind provider helpers to a user ID", () => {
+    for (const guardrails of [SESSION_GUARDRAILS, DIRECT_EXECUTION_GUARDRAILS]) {
+      expect(hasDirectHelperBoundToSessionTools(guardrails)).toBe(false);
+    }
   });
 
   test("session samples do not bind provider helpers to a user ID", async () => {
