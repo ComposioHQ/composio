@@ -1,0 +1,118 @@
+name: Examples Live (production)
+
+# Runs the example entrypoints from examples-manifest.json against the
+# PRODUCTION backend using a dedicated, disposable examples project — never
+# the org's main key. Non-blocking by design: scheduled + on demand, never a
+# required PR check. Local runs and CI share the same code path
+# (harness/run.mjs sweep).
+on:
+  schedule:
+    - cron: '0 7 * * *' # 07:00 UTC nightly
+  workflow_dispatch:
+    inputs:
+      lang:
+        description: 'Language to sweep'
+        type: choice
+        options: [all, ts, py]
+        default: all
+      client:
+        description: 'Client under test'
+        type: choice
+        options: [baseline, candidate]
+        default: baseline
+      ids:
+        description: 'Comma-separated entry ids (empty = full manifest)'
+        type: string
+        default: ''
+      client_artifact_url:
+        description: 'URL of the candidate client tarball/wheel (required for client=candidate)'
+        type: string
+        default: ''
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  # Production URL is not a secret; the keys are. The key must belong to a
+  # project that holds no valuable connections or data — never the org's
+  # main project. Example runs create their own resources and only ever
+  # delete what they created.
+  COMPOSIO_BASE_URL: https://backend.composio.dev
+  COMPOSIO_API_KEY: ${{ secrets.COMPOSIO_API_KEY }}
+  OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+  ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+
+jobs:
+  examples-live:
+    name: ${{ inputs.client || 'baseline' }} sweep (${{ inputs.lang || 'all' }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Setup Node.js, pnpm, Bun
+        uses: ./.github/actions/setup-node-pnpm-bun
+        with:
+          enable-turbo-cache: 'true'
+
+      - name: Setup Python and uv
+        uses: ./.github/actions/setup-python-uv
+
+      - name: Require live credentials
+        if: ${{ env.COMPOSIO_API_KEY == '' || env.OPENAI_API_KEY == '' || env.ANTHROPIC_API_KEY == '' }}
+        run: |
+          echo "::error::COMPOSIO_API_KEY, OPENAI_API_KEY and ANTHROPIC_API_KEY are required."
+          exit 1
+
+      - name: Install Dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build SDK packages
+        run: pnpm run build:packages
+
+      - name: Fetch candidate client artifact
+        if: ${{ inputs.client == 'candidate' }}
+        run: |
+          if [ -z "${{ inputs.client_artifact_url }}" ]; then
+            echo "::error::client=candidate requires client_artifact_url"
+            exit 1
+          fi
+          mkdir -p .artifacts/candidate
+          curl -fsSL -o .artifacts/candidate/composio-client.tgz "${{ inputs.client_artifact_url }}"
+          echo "COMPOSIO_CLIENT_TARBALL=$PWD/.artifacts/candidate/composio-client.tgz" >> "$GITHUB_ENV"
+
+      - name: Harness selftest
+        run: node harness/run.mjs selftest
+
+      - name: Verify provisioned project state
+        run: node scripts/examples-provision.mjs > /tmp/examples-provision.env
+
+      - name: Sweep
+        run: |
+          set -euo pipefail
+          # Load the provisioned COMPOSIO_EXAMPLES_* ids emitted above.
+          source /tmp/examples-provision.env
+          ARGS=(--client "${{ inputs.client || 'baseline' }}")
+          LANG_INPUT="${{ inputs.lang || 'all' }}"
+          if [ "$LANG_INPUT" != "all" ]; then
+            ARGS+=(--lang "$LANG_INPUT")
+          fi
+          if [ -n "${{ inputs.ids }}" ]; then
+            ARGS+=(--ids "${{ inputs.ids }}")
+          fi
+          node harness/run.mjs sweep "${ARGS[@]}"
+
+      - name: Upload sweep results and traces
+        if: ${{ always() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: examples-live-results
+          path: .artifacts/examples-parity/
+          retention-days: 14
+          if-no-files-found: ignore
