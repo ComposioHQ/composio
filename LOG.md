@@ -426,3 +426,16 @@ Started: 2026-08-10 · Budgets: 24 h loop / ≤ 2 500 LLM calls / production (di
     cached sibling (v1 with_options / v2 second client, max_retries=0).
     Call sites then migrate file-by-file to the v2 convention; tests
     updated where they assert kwargs-style calls.
+- Change (cycle 10): Stage B implemented (delegated build, independently
+  verified) — python/composio/client/compat.py facade + call-site
+  migration to the 2.0.0 convention; pytest 925/923 green under
+  Stainless 1.43 and the 2.0.0 wheel respectively (2 v1-only
+  raw-response deprecation-header tests skip under v2 — with_raw_response
+  is not in the 2.0.0 MVP; the v2 client emits ComposioDeprecationWarning
+  natively). No response-shape divergences found for any field the SDK
+  reads; two benign relaxed-type notes (floats for numerics, (str,Enum)
+  members). Targeted py candidate sweep vs production: 6/6 green.
+  Commit 7730409f1.
+- Score run (cycle 10): full score.sh WITH the wheel — P_py measured for
+  the first time. Predicted C stays 61/62+22/22; P_py opens high if the
+  live surface matches the mock matrix; any parity mismatch = finding.
