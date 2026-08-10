@@ -37,10 +37,12 @@ permissions:
   contents: read
 
 env:
-  # Production URL is not a secret; the keys are. COMPOSIO_API_KEY must be the
-  # dedicated examples-project key (no valuable connections or data).
+  # Production URL is not a secret; the keys are. The key must belong to a
+  # project that holds no valuable connections or data — never the org's
+  # main project. Example runs create their own resources and only ever
+  # delete what they created.
   COMPOSIO_BASE_URL: https://backend.composio.dev
-  COMPOSIO_API_KEY: ${{ secrets.EXAMPLES_COMPOSIO_API_KEY }}
+  COMPOSIO_API_KEY: ${{ secrets.COMPOSIO_API_KEY }}
   OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
   ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
 
@@ -65,7 +67,7 @@ jobs:
       - name: Require live credentials
         if: ${{ env.COMPOSIO_API_KEY == '' || env.OPENAI_API_KEY == '' || env.ANTHROPIC_API_KEY == '' }}
         run: |
-          echo "::error::EXAMPLES_COMPOSIO_API_KEY, OPENAI_API_KEY and ANTHROPIC_API_KEY are required."
+          echo "::error::COMPOSIO_API_KEY, OPENAI_API_KEY and ANTHROPIC_API_KEY are required."
           exit 1
 
       - name: Install Dependencies
