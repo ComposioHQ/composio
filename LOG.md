@@ -1,19 +1,49 @@
 # Iteration Log — examples live parity (Stainless → self-managed clients)
 
-Started: <fill at cycle 1> · Budgets: 24 h loop / ≤ 2 500 LLM calls / production (disposable project) only
+Started: 2026-08-10 · Budgets: 24 h loop / ≤ 2 500 LLM calls / production (disposable project) only
 
 <!-- One entry per cycle. Hypothesis, expected failure mode, and diagnostic are
      written BEFORE the change — a hypothesis written after the result is a
      rationalization. -->
 
-## Cycle 1 — <timestamp>
-- Score (dev): · Probe: negative controls / trace liveness / variance usage
-- Hypothesis:
-- Expected failure mode:
-- Diagnostic:
-- Change: (commit )
-- Result:
-- Reflection:
+## Cycle 1 — 2026-08-10 (operator-babysat first scored run)
+- Score (dev): pending · Probe: pending
+- Hypothesis: first `score.sh` on production with the disposable key will
+  VOID on the negative-control gate — the inventory flagged ~10 scaffold-template
+  examples (versioning, session-management, json-schema-to-zod, llamaindex,
+  google, triggers/index, anthropic/index, tools/index, py langchain_agent)
+  whose try/catch-and-log wrappers exit 0 even when broken, so they stay green
+  under garbage credentials. Tier-1 baseline green should otherwise land
+  around 25–35 of 68 TS entries (OPENAI/ANTHROPIC keys present, GEMINI absent)
+  and 5–7 of 23 Python.
+- Expected failure mode: the sweep hangs on a tier-3 entry whose readiness
+  regex never matches, or `uv --with` installs (crewai) blow the timeout —
+  both would show as timeout reds, not VOID.
+- Diagnostic: `run.mjs neg` summary names swallowers (legit fix targets, not
+  memorization); sweep results.jsonl separates `timedOut` from exit-code reds.
+- Change: none this cycle — pure measurement to establish the honest baseline.
+- Result: **VOID on the negative-control gate, as hypothesized** — 17
+  swallowers stayed green under garbage credentials (predicted list confirmed
+  plus: mastra/openai hackernews-agent pairs, openai/chat-completions,
+  triggers/subscribe, py fastapi_app, both py experimental_tool_router
+  scripts; prediction was 10, actual 17). Baseline sweep before the VOID:
+  23 green / 49 red / 19 skipped.
+  - 49 reds are dominated by ONE environment fact, not by example bugs: the
+    OpenAI key in `.envrc` (`OPEN_API_KEY`) is dead — 401 from
+    `GET https://api.openai.com/v1/models` directly. Every OpenAI-dependent
+    entry failed with `invalid_api_key`; Anthropic-dependent and no-LLM
+    entries ran fine (both smoke scripts green on production).
+  - 19 skips = missing `COMPOSIO_EXAMPLES_*` provisioned IDs (expected pre-A2)
+    plus GEMINI_API_KEY / NOTION_API_KEY absent locally.
+  - `ts/triggers/index` timed out: subscribes without printing anything the
+    readiness regex can match — needs a readiness line (contract rule 4).
+  - `py/auth_configs` fails for real against production (dummy OAuth client
+    IDs rejected) — needs env-driven values (contract rule 2).
+- Reflection: instruments, not memorization, did the work — a third of the
+  "green" entries are fake-green swallowers, which is exactly why C alone
+  would have been a lying metric. Cycle 2 priorities: (1) BLOCKED on human:
+  a valid OPENAI_API_KEY; (2) fix the 17 swallowers (fail-loudly
+  conversions); (3) add the missing readiness line to ts/triggers/index.
 
 ## Final report
 - Best holdout score:
