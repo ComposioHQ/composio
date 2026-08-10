@@ -34,6 +34,9 @@ const SESSION_TOKEN_RE =
   /session\.tools\s*\(|sessions\.create\s*\(|composio\.create\s*\(/;
 const DIRECT_HELPER_TOKEN_RE =
   /(?:handle_tool_calls|execute_tool_call)\s*\([\s\S]*?\buser_id\s*=|(?:handleToolCalls|executeToolCall)\s*\(\s*["'`]/;
+const SAMPLE_BOUNDARY_RE = /^\s*(?:<\/?(?:Tab|Step)\b|#{1,6}\s)/;
+const FENCE_OPEN_RE = /^\s*(`{3,}|~{3,})/;
+const FENCE_CLOSE_RE = /^\s*(`{3,}|~{3,})\s*$/;
 
 async function findMdxFiles(dir: string): Promise<string[]> {
   const results: string[] = [];
@@ -55,11 +58,98 @@ async function findMdxFiles(dir: string): Promise<string[]> {
   return results;
 }
 
-function codeFences(source: string): string[] {
-  return source.match(/```[\s\S]*?```/g) ?? [];
+function codeSampleGroups(source: string): string[] {
+  const groups: string[] = [];
+  let current: string[] = [];
+  let fenceMarker: string | undefined;
+
+  const flush = () => {
+    if (current.length > 0) groups.push(current.join("\n"));
+    current = [];
+  };
+
+  for (const line of source.split(/\r?\n/)) {
+    if (fenceMarker === undefined && SAMPLE_BOUNDARY_RE.test(line)) flush();
+
+    if (fenceMarker === undefined) {
+      const opening = line.match(FENCE_OPEN_RE)?.[1];
+      if (opening !== undefined) {
+        fenceMarker = opening;
+        current.push(line);
+      }
+      continue;
+    }
+
+    current.push(line);
+    const closing = line.match(FENCE_CLOSE_RE)?.[1];
+    if (
+      closing !== undefined &&
+      closing[0] === fenceMarker[0] &&
+      closing.length >= fenceMarker.length
+    ) {
+      fenceMarker = undefined;
+    }
+  }
+
+  flush();
+  return groups;
+}
+
+function hasDirectHelperBoundToSessionTools(source: string): boolean {
+  return codeSampleGroups(source).some(
+    (sample) => SESSION_TOKEN_RE.test(sample) && DIRECT_HELPER_TOKEN_RE.test(sample),
+  );
 }
 
 describe("session execution samples", () => {
+  test("detects a direct helper split from session setup within one sample", () => {
+    const source = `
+<Tab value="Python">
+~~~python
+session = composio.create(user_id="user_123")
+tools = session.tools()
+~~~
+
+Run the model, then execute its calls:
+
+~~~python
+results = composio.provider.handle_tool_calls(
+    response=response,
+    user_id="user_123",
+)
+~~~
+</Tab>`;
+
+    expect(hasDirectHelperBoundToSessionTools(source)).toBe(true);
+  });
+
+  test("allows session targets and keeps separate tab samples independent", () => {
+    const sessionTarget = `
+<Tab value="Python">
+\`\`\`python
+session = composio.create(user_id="user_123")
+tools = session.tools()
+\`\`\`
+\`\`\`python
+results = composio.provider.handle_tool_calls(response=response, session=session)
+\`\`\`
+</Tab>`;
+    const separateTargets = `
+<Tab value="Session">
+\`\`\`typescript
+const tools = await session.tools();
+\`\`\`
+</Tab>
+<Tab value="Direct">
+\`\`\`typescript
+const results = await composio.provider.handleToolCalls("user_123", response);
+\`\`\`
+</Tab>`;
+
+    expect(hasDirectHelperBoundToSessionTools(sessionTarget)).toBe(false);
+    expect(hasDirectHelperBoundToSessionTools(separateTargets)).toBe(false);
+  });
+
   test("session samples do not bind provider helpers to a user ID", async () => {
     const offenders: string[] = [];
 
@@ -68,11 +158,8 @@ describe("session execution samples", () => {
         const rel = relative(CONTENT_ROOT, file);
         if (EXCLUDED_PATH_SEGMENTS.some((seg) => rel.includes(seg))) continue;
 
-        const fences = codeFences(await readFile(file, "utf8"));
-        const offending = fences.some(
-          (f) => SESSION_TOKEN_RE.test(f) && DIRECT_HELPER_TOKEN_RE.test(f),
-        );
-        if (offending) {
+        const source = await readFile(file, "utf8");
+        if (hasDirectHelperBoundToSessionTools(source)) {
           offenders.push(rel);
         }
       }
