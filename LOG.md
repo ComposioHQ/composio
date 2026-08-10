@@ -367,3 +367,35 @@ Started: 2026-08-10 · Budgets: 24 h loop / ≤ 2 500 LLM calls / production (di
 - Stage state: 0 ✓ · A1 ✓ · A2 ✓ · A3 ✓ · A4 open (workflow drafted;
   needs default-branch presence + EXAMPLES_COMPOSIO_API_KEY secret —
   human) · B open (the remaining +25: py SDK 1.43→2.0 migration).
+
+## Cycle 10 — 2026-08-10 (Stage B opened: py SDK dual-client migration — DESIGN)
+- Score (dev): prev 74.2 · Probe: NC red, liveness clean, variance 0/10
+- Constraint analysis: the bar (≥92) needs C_py AND P_py green in the same
+  cycle; baseline py is pinned to Stainless 1.43 by the frozen spec, the
+  candidate is the 2.0.0 wheel overlay (uv run --with). Therefore
+  python/composio must run correctly under BOTH clients at runtime —
+  a pin swap alone caps the score at 74.2 forever.
+- Design (per MIGRATION.md + wheel inspection):
+  - 2.0.0 wheel layout: no composio_client.types package; models in
+    composio_client/_generated/pydantic_gen.py; resources tree matches the
+    accessor paths; errors unchanged; NO with_raw_response/streaming/file
+    upload helpers.
+  - Plan: (1) version gate in python/composio/client/ (importlib.metadata
+    major → IS_V2). (2) Migrate SDK call sites to the 2.0.0 convention
+    (positional path params + single body/query mapping + request_options)
+    per MIGRATION.md. (3) A small v1 adapter shim in
+    python/composio/client/ that, when Stainless 1.43 is installed, maps
+    the 2.0.0-style invocation back to Stainless kwargs
+    (body dict → **kwargs; query dict → **kwargs; special-case the
+    files.* methods whose v1 signatures mix positional/kw path params).
+    (4) client/types.py: conditional imports — Stainless typed aliases
+    under v1, hey-api pydantic equivalents (or t.Any fallbacks where
+    typing-only) under v2. (5) Audit runtime (non-typing) uses of
+    composio_client.types across ~19 files. (6) python/tests green under
+    BOTH: pytest with 1.43 (workspace) and with the wheel overlaid
+    (uv run --with $COMPOSIO_CLIENT_WHEEL). (7) Score: expect C_py stays
+    22/22 and P_py rises toward 22/22 → score toward ~99 dev.
+- Expected failure modes: RootModel `.root` response-shape differences
+  leak into SDK response handling; with_raw_response/streaming usage in
+  the SDK (must audit — not ported in 2.0.0); files upload helpers.
+- Diagnostic: pytest matrix (v1/v2) + targeted py candidate sweep.
