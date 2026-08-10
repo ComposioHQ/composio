@@ -15,7 +15,7 @@ import httpx
 import pytest
 from composio_client import APIError
 
-from composio.client import DEFAULT_MAX_RETRIES, HttpClient
+from composio.client import DEFAULT_MAX_RETRIES, HttpClient, compat
 from composio.core.models.base import allow_tracking
 from composio.core.models.tools import Tools
 
@@ -70,6 +70,7 @@ class TestCopyOverride:
         assert clone.max_retries == 0
         assert clone.provider == "myprovider"
         assert clone.request_ctx.get()["provider"] == "myprovider"
+        assert clone.request_ctx is client.request_ctx
         # The original client keeps its retries.
         assert client.max_retries == DEFAULT_MAX_RETRIES
 
@@ -97,6 +98,38 @@ class TestCopyOverride:
         )
 
         assert client.without_retries._strict_response_validation is True
+
+    @pytest.mark.skipif(not compat.IS_V2, reason="v2 transport contract")
+    def test_v2_clone_reuses_implicit_transport(self) -> None:
+        client = HttpClient(
+            provider="test",
+            api_key="sk-test",
+            base_url="https://backend.invalid",
+        )
+        transport = client._ctor_kwargs["http_client"]
+
+        clone = client.without_retries
+
+        assert transport is not None
+        assert clone._ctor_kwargs["http_client"] is transport
+
+    @pytest.mark.skipif(not compat.IS_V2, reason="v2 transport contract")
+    def test_v2_clone_reuses_transport_without_duplicate_hook(self) -> None:
+        transport = httpx.Client(
+            transport=httpx.MockTransport(lambda _: httpx.Response(200))
+        )
+        client = HttpClient(
+            provider="test",
+            api_key="sk-test",
+            base_url="https://backend.invalid",
+            http_client=transport,
+        )
+        request_hooks = list(transport.event_hooks["request"])
+
+        clone = client.without_retries
+
+        assert clone._ctor_kwargs["http_client"] is transport
+        assert transport.event_hooks["request"] == request_hooks
 
 
 class TestFacadeCopyContract:

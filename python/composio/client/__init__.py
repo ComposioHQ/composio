@@ -156,6 +156,18 @@ def _sdk_version() -> str:
 _RUNTIME_ENV = f"{_detect_runtime_environment()}_{_get_python_implementation()}"
 
 
+class _RequestContextHook:
+    """Inject dynamic telemetry without duplicating hooks on shared clients."""
+
+    def __init__(self, request_ctx: contextvars.ContextVar[RequestContext]) -> None:
+        self.request_ctx = request_ctx
+
+    def __call__(self, request: Request) -> None:
+        ctx = self.request_ctx.get()
+        request.headers["x-request-id"] = ctx.get("id") or uuid4().hex
+        request.headers["x-framework"] = ctx["provider"]
+
+
 if not compat.IS_V2:
 
     class _StainlessBackend(_GeneratedComposio):  # type: ignore[misc, valid-type]
@@ -203,6 +215,7 @@ class HttpClient(WithLogger):
         default_query: t.Optional[t.Mapping[str, object]] = None,
         http_client: t.Optional[Client] = None,
         _strict_response_validation: bool = False,
+        _request_ctx: t.Optional[contextvars.ContextVar[RequestContext]] = None,
     ) -> None:
         """
         Initialize the client.
@@ -219,12 +232,8 @@ class HttpClient(WithLogger):
         """
         WithLogger.__init__(self)
         self.provider = provider
-        self.request_ctx = contextvars.ContextVar[RequestContext](
-            "request_ctx",
-            default={
-                "id": None,
-                "provider": provider,
-            },
+        self.request_ctx = _request_ctx or contextvars.ContextVar[RequestContext](
+            "request_ctx", default={"id": None, "provider": provider}
         )
         self._strict_response_validation = _strict_response_validation
         # Remember the constructor arguments so sibling facades
@@ -243,7 +252,7 @@ class HttpClient(WithLogger):
         }
 
         if compat.IS_V2:
-            self._backend = self._build_v2_backend(
+            self._backend, http_client = self._build_v2_backend(
                 api_key=api_key,
                 environment=environment,
                 base_url=base_url,
@@ -265,6 +274,11 @@ class HttpClient(WithLogger):
                 http_client=http_client,
                 _strict_response_validation=_strict_response_validation,
             )
+
+        # Clones share the request context and resolved transport. This keeps
+        # telemetry consistent and avoids opening a second connection pool.
+        self._ctor_kwargs["http_client"] = http_client
+        self._ctor_kwargs["_request_ctx"] = self.request_ctx
 
         # Lazily-built sibling facade with retries disabled; see `without_retries`.
         self._without_retries: t.Optional["HttpClient"] = None
@@ -311,7 +325,7 @@ class HttpClient(WithLogger):
         default_headers: t.Optional[t.Mapping[str, str]],
         default_query: t.Optional[t.Mapping[str, object]],
         http_client: t.Optional[Client],
-    ) -> t.Any:
+    ) -> t.Tuple[t.Any, Client]:
         # Static telemetry headers ride on every request as client defaults;
         # the per-request ``x-request-id`` is injected via an httpx request
         # event hook (the v2 client has no ``_prepare_request`` seam).
@@ -324,19 +338,21 @@ class HttpClient(WithLogger):
         if default_headers:
             headers.update(default_headers)
 
-        request_ctx = self.request_ctx
-
-        def _inject_request_id(request: Request) -> None:
-            ctx = request_ctx.get()
-            request.headers["x-request-id"] = ctx.get("id") or uuid4().hex
-            request.headers["x-framework"] = ctx["provider"]
-
         if http_client is None:
-            http_client = Client(event_hooks={"request": [_inject_request_id]})
+            http_client = Client(
+                event_hooks={"request": [_RequestContextHook(self.request_ctx)]}
+            )
         else:
-            http_client.event_hooks["request"].append(_inject_request_id)
-            # httpx copies the hook mapping on property access; write it back.
-            http_client.event_hooks = http_client.event_hooks
+            event_hooks = http_client.event_hooks
+            request_hooks = event_hooks.setdefault("request", [])
+            if not any(
+                isinstance(hook, _RequestContextHook)
+                and hook.request_ctx is self.request_ctx
+                for hook in request_hooks
+            ):
+                request_hooks.append(_RequestContextHook(self.request_ctx))
+                # httpx copies the hook mapping on property access; write it back.
+                http_client.event_hooks = event_hooks
 
         resolved_base_url = str(base_url) if _is_given(base_url) else None
         resolved_environment: t.Optional[str]
@@ -351,15 +367,18 @@ class HttpClient(WithLogger):
         # v1 package, whose constructor signature differs from the v2 one used
         # at runtime in this branch.
         client_cls: t.Any = _GeneratedComposio
-        return client_cls(
-            api_key=api_key,
-            environment=resolved_environment,
-            base_url=resolved_base_url,
-            timeout=timeout if _is_given(timeout) else None,
-            max_retries=max_retries,
-            default_headers=headers,
-            default_query=default_query,
-            http_client=http_client,
+        return (
+            client_cls(
+                api_key=api_key,
+                environment=resolved_environment,
+                base_url=resolved_base_url,
+                timeout=timeout if _is_given(timeout) else None,
+                max_retries=max_retries,
+                default_headers=headers,
+                default_query=default_query,
+                http_client=http_client,
+            ),
+            http_client,
         )
 
     # -- generated-resource access ------------------------------------------
