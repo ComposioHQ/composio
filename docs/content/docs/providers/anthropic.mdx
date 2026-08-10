@@ -77,21 +77,18 @@ response = client.messages.create(
     messages=messages,
 )
 
-# Agentic loop: run each tool call with session.execute() until the model responds with text
+# Agentic loop: keep executing tool calls until the model responds with text
 while response.stop_reason == "tool_use":
     tool_use_blocks = [block for block in response.content if block.type == "tool_use"]
+    results = composio.provider.handle_tool_calls(response=response, session=session)
     messages.append({"role": "assistant", "content": response.content})
-    tool_results = []
-    for block in tool_use_blocks:
-        # Claude occasionally emits input as a JSON string instead of an object
-        args = block.input if isinstance(block.input, dict) else json.loads(block.input)
-        result = session.execute(block.name, arguments=args)
-        tool_results.append({
-            "type": "tool_result",
-            "tool_use_id": block.id,
-            "content": result.model_dump_json(),
-        })
-    messages.append({"role": "user", "content": tool_results})
+    messages.append({
+        "role": "user",
+        "content": [
+            {"type": "tool_result", "tool_use_id": tool_use_blocks[i].id, "content": json.dumps(result)}
+            for i, result in enumerate(results)
+        ],
+    })
     response = client.messages.create(
         model="claude-opus-4-6",
         max_tokens=4096,
@@ -134,24 +131,11 @@ let response = await client.messages.create({
     messages: messages,
 });
 
-// Agentic loop: run each tool call with session.execute() until the model responds with text
+// Agentic loop: keep executing tool calls until the model responds with text
 while (response.stop_reason === "tool_use") {
-    const toolUseBlocks = response.content.filter((block) => block.type === "tool_use");
-    const toolResults: Anthropic.ToolResultBlockParam[] = [];
-    for (const block of toolUseBlocks) {
-        // Claude occasionally emits input as a JSON string instead of an object
-        const args = typeof block.input === "string"
-            ? JSON.parse(block.input)
-            : (block.input as Record<string, unknown>);
-        const result = await session.execute(block.name, args);
-        toolResults.push({
-            type: "tool_result",
-            tool_use_id: block.id,
-            content: JSON.stringify(result),
-        });
-    }
+    const toolResults = await composio.provider.handleToolCalls(session, response);
     messages.push({ role: "assistant", content: response.content });
-    messages.push({ role: "user", content: toolResults });
+    messages.push(...toolResults);
     response = await client.messages.create({
         model: "claude-opus-4-6",
         max_tokens: 4096,
@@ -172,8 +156,8 @@ for (const block of response.content) {
 </Step>
 </Steps>
 
-<Callout type="warn">
-Execute session tools with `session.execute(toolSlug, arguments)`, as shown above. The provider's `handleToolCalls` helper executes tools through the direct path, which does not carry your session — session meta-tools (`COMPOSIO_SEARCH_TOOLS`, `COMPOSIO_MANAGE_CONNECTIONS`, …) are rejected there with `"can only be called inside a tool-router session"`. Use `handleToolCalls` only with tools fetched via [`tools.get`](/docs/tools-direct/executing-tools), not with `session.tools()`.
+<Callout type="info">
+Pass the session to `handleToolCalls` / `handle_tool_calls` when the model received tools from `session.tools()`. The helper preserves Anthropic input normalization and restored schema aliases before executing every call through that session. For tools fetched via [`tools.get`](/docs/tools-direct/executing-tools), pass the user ID instead.
 </Callout>
 
 </IntegrationContent>
@@ -287,8 +271,8 @@ for await (const content of query({
 A few things are specific to the Anthropic provider:
 
 - **Tool caching.** Pass `cacheTools: true` to the constructor (`new AnthropicProvider({ cacheTools: true })`) to attach Anthropic's ephemeral `cache_control` to every tool definition and tool-result block. This lets Claude reuse cached tool schemas across requests and can cut prompt cost when you send the same large tool set on every turn.
-- **`session.execute` returns the raw tool result.** You wrap each result in a `tool_result` block keyed by the originating `tool_use` block's id, as the loop above shows, and send them back as a single `user` message.
-- **String-encoded tool inputs.** Claude occasionally emits a tool's `input` as a JSON string instead of an object. The sample loops above guard for this before executing (`isinstance` / `typeof` check); `handleToolCalls` performs the same normalization on the direct path.
+- **`handleToolCalls` returns Messages API content, not raw strings.** TypeScript returns a ready-to-append `user` message of `tool_result` blocks. Python returns raw results in model-call order, which the sample wraps into `tool_result` blocks.
+- **String-encoded tool inputs are handled for you.** Claude occasionally emits a tool's `input` as a JSON string instead of an object. The provider normalizes it before both direct and session execution.
 - **`cacheTools` only.** The constructor takes no other options. There is no agentic execution in this provider; you run the loop (Messages API) or hand the loop to the Claude Agent SDK (Agent SDK tab).
 
 ## Next

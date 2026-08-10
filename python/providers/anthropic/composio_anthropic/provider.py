@@ -65,7 +65,8 @@ class AnthropicProvider(
         """
         Execute a tool call.
 
-        :param user_id: User ID to use for executing function calls.
+        :param user_id: User ID for direct tool execution.
+        :param session: Tool Router session that produced session tools.
         :param tool_call: Tool call metadata.
         :param modifiers: Modifiers to use for executing function calls.
         :return: Object containing output data from the tool call.
@@ -117,7 +118,8 @@ class AnthropicProvider(
 
         :param response: Chat completion object from
             `anthropic.Anthropic.beta.tools.messages.create` function call.
-        :param user_id: User ID to use for executing function calls.
+        :param user_id: User ID for direct tool execution.
+        :param session: Tool Router session that produced session tools.
         :param modifiers: Modifiers to use for executing function calls.
         :return: A list of output objects from the tool calls.
         """

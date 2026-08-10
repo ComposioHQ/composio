@@ -1,22 +1,20 @@
 /**
  * Session tool-execution policy for docs samples.
  *
- * Session tools must be executed with `session.execute()` — provider
- * direct-execution helpers do not carry the session, so session meta-tools
- * fail at runtime with: '... can only be called inside a tool-router
- * session'.
+ * Provider helpers must receive the Tool Router session that produced the
+ * model-visible tools. Passing a user ID chooses direct execution instead,
+ * so session meta-tools fail at runtime.
  *
  * A 102-run agent eval of the docs (August 2026, two-phase build+probe)
  * found 58/102 runs hit that rejection by copying provider-page samples
  * that paired `session.tools()` with `handle_tool_calls`. All recovering
- * runs converged on `session.execute()`, discovered from SDK source
- * because no docs page documented it.
+ * runs converged on `session.execute()`, discovered from SDK source. The SDK
+ * helpers now accept the session directly and retain provider normalization.
  *
  * Rule: no authored MDX page may pair session tools (`session.tools()` /
- * `sessions.create` / `composio.create(`) with a provider tool-call helper
- * (`handle_tool_calls` / `handleToolCalls` / `execute_tool_call` /
- * `executeToolCall`) in its code fences. Pages showing the helper for the
- * direct path (`tools.get`) are fine.
+ * `sessions.create` / `composio.create(`) with a provider helper explicitly
+ * bound to a user ID. Session-bound helper calls and direct-path (`tools.get`)
+ * samples are valid.
  *
  * Scope: content/docs and content/examples. Excluded: content/reference
  * (generated upstream), changelog (historical), docs/migration-guide
@@ -34,8 +32,8 @@ const EXCLUDED_PATH_SEGMENTS = ["docs/migration-guide/"];
 
 const SESSION_TOKEN_RE =
   /session\.tools\s*\(|sessions\.create\s*\(|composio\.create\s*\(/;
-const HELPER_TOKEN_RE =
-  /handle_tool_calls|handleToolCalls|execute_tool_call|executeToolCall/;
+const DIRECT_HELPER_TOKEN_RE =
+  /(?:handle_tool_calls|execute_tool_call)\s*\([\s\S]*?\buser_id\s*=|(?:handleToolCalls|executeToolCall)\s*\(\s*["'`]/;
 
 async function findMdxFiles(dir: string): Promise<string[]> {
   const results: string[] = [];
@@ -62,7 +60,7 @@ function codeFences(source: string): string[] {
 }
 
 describe("session execution samples", () => {
-  test("no page pairs session tools with a provider tool-call helper", async () => {
+  test("session samples do not bind provider helpers to a user ID", async () => {
     const offenders: string[] = [];
 
     for (const dir of CONTENT_DIRS) {
@@ -72,7 +70,7 @@ describe("session execution samples", () => {
 
         const fences = codeFences(await readFile(file, "utf8"));
         const offending = fences.some(
-          (f) => SESSION_TOKEN_RE.test(f) && HELPER_TOKEN_RE.test(f),
+          (f) => SESSION_TOKEN_RE.test(f) && DIRECT_HELPER_TOKEN_RE.test(f),
         );
         if (offending) {
           offenders.push(rel);
@@ -82,9 +80,8 @@ describe("session execution samples", () => {
 
     expect(
       offenders,
-      `These pages pair session tools with a provider direct-execution helper, ` +
-        `which fails at runtime for session meta-tools. Use session.execute() ` +
-        `in session samples instead:\n  ${offenders.join("\n  ")}`,
+      `These pages bind session tools to a direct user-ID execution target. ` +
+        `Pass the session to the provider helper instead:\n  ${offenders.join("\n  ")}`,
     ).toEqual([]);
   });
 });

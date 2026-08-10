@@ -244,7 +244,7 @@ export class AnthropicProvider extends BaseNonAgenticProvider<
    * This method processes a tool call from Anthropic's Claude API,
    * executes the corresponding Composio tool, and returns the result.
    *
-   * @param userId - The user ID for authentication and tracking
+   * @param executionTarget - A user ID for direct tools or the session that produced session tools
    * @param toolUse - The tool use object from Anthropic
    * @param options - Additional options for tool execution
    * @param modifiers - Modifiers for tool execution
@@ -315,7 +315,7 @@ export class AnthropicProvider extends BaseNonAgenticProvider<
    * This method processes tool calls from an Anthropic message response,
    * extracts the tool use blocks, executes each tool call, and returns the results.
    *
-   * @param userId - The user ID for authentication and tracking
+   * @param executionTarget - A user ID for direct tools or the session that produced session tools
    * @param message - The message response from Anthropic
    * @param options - Additional options for tool execution
    * @param modifiers - Modifiers for tool execution

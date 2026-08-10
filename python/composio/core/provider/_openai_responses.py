@@ -63,7 +63,8 @@ class OpenAIResponsesProvider(
         """Execute a tool call from the Responses API.
 
         :param tool_call: Tool call metadata from Responses API.
-        :param user_id: User ID to use for executing the function call.
+        :param user_id: User ID for direct tool execution.
+        :param session: Tool Router session that produced session tools.
         :param modifiers: Optional modifiers for tool execution.
         :return: Object containing output data from the tool call.
         """
@@ -113,7 +114,8 @@ class OpenAIResponsesProvider(
         Handle tool calls from OpenAI Responses API.
 
         :param response: Response object from openai.OpenAI.beta.responses.create
-        :param user_id: User ID to use for executing the function call.
+        :param user_id: User ID for direct tool execution.
+        :param session: Tool Router session that produced session tools.
         :param modifiers: Optional modifiers for tool execution
         :return: List[ToolExecutionResponse] with tool execution results
         """

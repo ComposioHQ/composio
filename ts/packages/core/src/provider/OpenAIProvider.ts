@@ -157,7 +157,7 @@ export class OpenAIProvider extends BaseNonAgenticProvider<
    * This method processes a tool call from OpenAI's chat completion API,
    * executes the corresponding Composio tool, and returns the result.
    *
-   * @param {string} userId - The user ID for authentication and tracking
+   * @param {string | ToolCallSession} executionTarget - A user ID for direct tools or the session that produced session tools
    * @param {OpenAI.ChatCompletionMessageToolCall} tool - The tool call from OpenAI
    * @param {ExecuteToolFnOptions} [options] - Optional execution options
    * @param {ExecuteToolModifiers} [modifiers] - Optional execution modifiers
@@ -218,7 +218,7 @@ export class OpenAIProvider extends BaseNonAgenticProvider<
    * This method processes tool calls from an OpenAI chat completion response,
    * executes each tool call, and returns the results.
    *
-   * @param {string} userId - The user ID for authentication and tracking
+   * @param {string | ToolCallSession} executionTarget - A user ID for direct tools or the session that produced session tools
    * @param {OpenAI.ChatCompletion} chatCompletion - The chat completion response from OpenAI
    * @param {ExecuteToolFnOptions} [options] - Optional execution options
    * @param {ExecuteToolModifiers} [modifiers] - Optional execution modifiers

@@ -73,7 +73,8 @@ class OpenAIProvider(
         """Execute a tool call.
 
         :param tool_call: Tool call metadata.
-        :param user_id: User ID to use for executing the function call.
+        :param user_id: User ID for direct tool execution.
+        :param session: Tool Router session that produced session tools.
         :return: Object containing output data from the tool call.
         """
         if tool_call is None:
@@ -120,7 +121,8 @@ class OpenAIProvider(
 
         :param response: Chat completion object from
                         openai.OpenAI.chat.completions.create function call
-        :param user_id: User ID to use for executing the function call.
+        :param user_id: User ID for direct tool execution.
+        :param session: Tool Router session that produced session tools.
         :return: A list of output objects from the function calls.
         """
         if response is None:
