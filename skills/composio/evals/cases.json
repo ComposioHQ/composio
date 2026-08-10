@@ -106,9 +106,14 @@
       "repetitions": 1,
       "mustMatch": [
         {
-          "pattern": "custom.{0,40}OAuth.{0,160}(?:auth config|authentication config)|OAuth.{0,160}custom (?:auth config|authentication config)|(?:auth config|authentication config).{0,160}custom.{0,40}OAuth",
+          "pattern": "custom.{0,80}OAuth.{0,40}(?:app|client)|OAuth.{0,80}custom.{0,40}(?:app|client)",
           "flags": "is",
-          "message": "uses a custom provider OAuth app and auth config"
+          "message": "uses a custom provider OAuth app"
+        },
+        {
+          "pattern": "custom.{0,40}(?:auth config|authentication config)|(?:auth config|authentication config).{0,40}custom",
+          "flags": "is",
+          "message": "links the provider app through a custom auth config"
         }
       ]
     },
