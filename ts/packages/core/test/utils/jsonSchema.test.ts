@@ -689,4 +689,31 @@ describe('ensureObjectTypeOnProperties', () => {
     expect((choice.examples as Record<string, unknown>[])[0].type).toBeUndefined();
     expect((choice.enum as Record<string, unknown>[])[0].type).toBeUndefined();
   });
+
+  it('does not treat a properties map as a schema when a field is named properties', () => {
+    const schema = {
+      type: 'object',
+      properties: {
+        properties: {
+          properties: {
+            name: { type: 'string' },
+          },
+        },
+      },
+    };
+
+    const result = ensureObjectTypeOnProperties(schema) as {
+      properties: Record<string, unknown>;
+    };
+
+    expect(result.properties).toEqual({
+      properties: {
+        type: 'object',
+        properties: {
+          name: { type: 'string' },
+        },
+      },
+    });
+    expect(result.properties).not.toHaveProperty('type');
+  });
 });

@@ -97,13 +97,13 @@ describe('GoogleProvider', () => {
       expect(wrapped.parameters?.required).toEqual(['input']);
     });
 
-    it('injects type:object into nested properties for strict OpenAPI consumers', () => {
+    it('normalizes nested object schemas without treating property maps as schemas', () => {
       const wrapped = provider.wrapTool({
         ...mockTool,
         inputParameters: {
           type: 'object',
           properties: {
-            target: {
+            properties: {
               properties: { name: { type: 'string' } },
             },
           },
@@ -111,9 +111,15 @@ describe('GoogleProvider', () => {
       });
 
       const params = wrapped.parameters as unknown as {
-        properties: { target: { type?: string } };
+        properties: Record<string, unknown>;
       };
-      expect(params.properties.target.type).toBe('object');
+      expect(params.properties).toEqual({
+        properties: {
+          type: 'object',
+          properties: { name: { type: 'string' } },
+        },
+      });
+      expect(params.properties).not.toHaveProperty('type');
     });
   });
 

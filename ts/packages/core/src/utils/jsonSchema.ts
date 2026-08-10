@@ -265,20 +265,43 @@ export function dereferenceJsonSchema<T = unknown>(
  * 3.0 strictly and rejects function declarations whose nested objects are
  * missing the `type` (see https://github.com/ComposioHQ/composio/issues/4022).
  *
- * The function is recursive and handles `items`, `properties`, `anyOf`,
- * `oneOf`, and `allOf` branches so nested objects at any depth are fixed.
- * Nodes that already declare a `type` are left untouched.
+ * The function follows JSON Schema's schema-bearing keywords while keeping
+ * property maps and instance values as containers. Nodes that already declare
+ * a `type` are left untouched.
  */
 export function ensureObjectTypeOnProperties<T = unknown>(schema: T): T {
-  const instanceValueKeywords = new Set(['const', 'default', 'enum', 'examples']);
+  type WalkMode = 'schema' | 'schema-array' | 'schema-map' | 'dependencies-map' | 'value';
 
-  function walk(value: unknown, isSchema: boolean, depth = 0): unknown {
+  const schemaKeywords = new Set([
+    'additionalItems',
+    'additionalProperties',
+    'contains',
+    'contentSchema',
+    'else',
+    'if',
+    'not',
+    'propertyNames',
+    'then',
+    'unevaluatedItems',
+    'unevaluatedProperties',
+  ]);
+  const schemaArrayKeywords = new Set(['allOf', 'anyOf', 'oneOf', 'prefixItems']);
+  const schemaMapKeywords = new Set([
+    '$defs',
+    'definitions',
+    'dependentSchemas',
+    'patternProperties',
+    'properties',
+  ]);
+
+  function walk(value: unknown, mode: WalkMode, depth = 0): unknown {
     if (depth > MAX_NODE_DEPTH) {
       throw new RangeError(`JSON Schema exceeds maximum nesting depth of ${MAX_NODE_DEPTH}`);
     }
 
     if (Array.isArray(value)) {
-      return value.map(item => walk(item, isSchema, depth + 1));
+      const itemMode = mode === 'schema-array' ? 'schema' : 'value';
+      return value.map(item => walk(item, itemMode, depth + 1));
     }
 
     if (!isPlainObject(value)) return value;
@@ -286,17 +309,35 @@ export function ensureObjectTypeOnProperties<T = unknown>(schema: T): T {
     const clone: Record<string, unknown> = {};
     for (const [key, child] of Object.entries(value)) {
       if (POLLUTING_KEYS.has(key)) continue;
-      clone[key] = walk(child, isSchema && !instanceValueKeywords.has(key), depth + 1);
+
+      let childMode: WalkMode = 'value';
+      if (mode === 'schema-map') {
+        childMode = 'schema';
+      } else if (mode === 'dependencies-map') {
+        childMode = Array.isArray(child) ? 'value' : 'schema';
+      } else if (mode === 'schema') {
+        if (schemaMapKeywords.has(key)) {
+          childMode = 'schema-map';
+        } else if (schemaArrayKeywords.has(key) || (key === 'items' && Array.isArray(child))) {
+          childMode = 'schema-array';
+        } else if (schemaKeywords.has(key) || key === 'items') {
+          childMode = 'schema';
+        } else if (key === 'dependencies') {
+          childMode = 'dependencies-map';
+        }
+      }
+
+      clone[key] = walk(child, childMode, depth + 1);
     }
 
-    if (isSchema && clone.properties !== undefined && clone.type === undefined) {
+    if (mode === 'schema' && clone.properties !== undefined && clone.type === undefined) {
       clone.type = 'object';
     }
 
     return clone;
   }
 
-  return walk(schema, true) as T;
+  return walk(schema, 'schema') as T;
 }
 
 /**
