@@ -13,9 +13,10 @@ import { OpenAI } from 'openai';
 import {
   BaseNonAgenticProvider,
   Tool,
-  ToolExecuteParams,
   ExecuteToolModifiers,
   ExecuteToolFnOptions,
+  ToolCallExecutionTarget,
+  ToolCallSession,
   removeNonRequiredProperties,
   McpUrlResponse,
   normalizeToolArguments,
@@ -217,21 +218,31 @@ export class OpenAIResponsesProvider extends BaseNonAgenticProvider<
    * ```
    */
   async executeToolCall(
+    session: ToolCallSession,
+    tool: OpenAI.Responses.ResponseFunctionToolCall
+  ): Promise<string>;
+  async executeToolCall(
     userId: string,
     tool: OpenAI.Responses.ResponseFunctionToolCall,
     options?: ExecuteToolFnOptions,
     modifiers?: ExecuteToolModifiers
+  ): Promise<string>;
+  async executeToolCall(
+    executionTarget: ToolCallExecutionTarget,
+    tool: OpenAI.Responses.ResponseFunctionToolCall,
+    options?: ExecuteToolFnOptions,
+    modifiers?: ExecuteToolModifiers
   ): Promise<string> {
-    const payload: ToolExecuteParams = {
-      // OpenAI always serializes tool arguments as a JSON string; normalize tolerates
-      // empty / object-shaped payloads too (issue #2406).
-      arguments: normalizeToolArguments(tool.arguments, tool.name),
-      connectedAccountId: options?.connectedAccountId,
-      customAuthParams: options?.customAuthParams,
-      customConnectionData: options?.customConnectionData,
-      userId: userId,
-    };
-    const result = await this.executeTool(tool.name, payload, modifiers);
+    // OpenAI always serializes tool arguments as a JSON string; normalize tolerates
+    // empty / object-shaped payloads too (issue #2406).
+    const arguments_ = normalizeToolArguments(tool.arguments, tool.name);
+    const result = await this.executeToolForTarget(
+      executionTarget,
+      tool.name,
+      arguments_,
+      options,
+      modifiers
+    );
     return JSON.stringify(result);
   }
 
@@ -272,7 +283,17 @@ export class OpenAIResponsesProvider extends BaseNonAgenticProvider<
    * ```
    */
   async handleToolCalls(
+    session: ToolCallSession,
+    toolCalls: OpenAI.Responses.ResponseOutputItem[]
+  ): Promise<OpenAI.Responses.ResponseInputItem.FunctionCallOutput[]>;
+  async handleToolCalls(
     userId: string,
+    toolCalls: OpenAI.Responses.ResponseOutputItem[],
+    options?: ExecuteToolFnOptions,
+    modifiers?: ExecuteToolModifiers
+  ): Promise<OpenAI.Responses.ResponseInputItem.FunctionCallOutput[]>;
+  async handleToolCalls(
+    executionTarget: ToolCallExecutionTarget,
     toolCalls: OpenAI.Responses.ResponseOutputItem[],
     options?: ExecuteToolFnOptions,
     modifiers?: ExecuteToolModifiers
@@ -286,7 +307,10 @@ export class OpenAIResponsesProvider extends BaseNonAgenticProvider<
           arguments: output.arguments,
         } as OpenAI.Responses.ResponseFunctionToolCall;
         try {
-          const toolOutput = await this.executeToolCall(userId, tool_call, options, modifiers);
+          const toolOutput =
+            typeof executionTarget === 'string'
+              ? await this.executeToolCall(executionTarget, tool_call, options, modifiers)
+              : await this.executeToolCall(executionTarget, tool_call);
           toolOutputs.push({
             call_id: output.call_id ?? '',
             type: 'function_call_output',

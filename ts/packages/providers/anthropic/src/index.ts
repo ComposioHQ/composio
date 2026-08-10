@@ -12,7 +12,8 @@ import {
   Tool as ComposioTool,
   ExecuteToolModifiers,
   ExecuteToolFnOptions,
-  ToolExecuteParams,
+  ToolCallExecutionTarget,
+  ToolCallSession,
   logger,
   McpUrlResponse,
   normalizeToolArguments,
@@ -269,8 +270,15 @@ export class AnthropicProvider extends BaseNonAgenticProvider<
    * console.log(JSON.parse(result));
    * ```
    */
+  async executeToolCall(session: ToolCallSession, toolUse: AnthropicToolUseBlock): Promise<string>;
   async executeToolCall(
     userId: string,
+    toolUse: AnthropicToolUseBlock,
+    options?: ExecuteToolFnOptions,
+    modifiers?: ExecuteToolModifiers
+  ): Promise<string>;
+  async executeToolCall(
+    executionTarget: ToolCallExecutionTarget,
     toolUse: AnthropicToolUseBlock,
     options?: ExecuteToolFnOptions,
     modifiers?: ExecuteToolModifiers
@@ -291,14 +299,13 @@ export class AnthropicProvider extends BaseNonAgenticProvider<
       logger.debug(`AnthropicProvider restored original argument keys for tool "${toolUse.name}"`);
     }
 
-    const payload: ToolExecuteParams = {
-      arguments: toolArguments,
-      connectedAccountId: options?.connectedAccountId,
-      customAuthParams: options?.customAuthParams,
-      customConnectionData: options?.customConnectionData,
-      userId: userId,
-    };
-    const result = await this.executeTool(toolUse.name, payload, modifiers);
+    const result = await this.executeToolForTarget(
+      executionTarget,
+      toolUse.name,
+      toolArguments,
+      options,
+      modifiers
+    );
     return JSON.stringify(result.data);
   }
 
@@ -343,7 +350,17 @@ export class AnthropicProvider extends BaseNonAgenticProvider<
    * ```
    */
   async handleToolCalls(
+    session: ToolCallSession,
+    message: Anthropic.Message
+  ): Promise<Anthropic.Messages.MessageParam[]>;
+  async handleToolCalls(
     userId: string,
+    message: Anthropic.Message,
+    options?: ExecuteToolFnOptions,
+    modifiers?: ExecuteToolModifiers
+  ): Promise<Anthropic.Messages.MessageParam[]>;
+  async handleToolCalls(
+    executionTarget: ToolCallExecutionTarget,
     message: Anthropic.Message,
     options?: ExecuteToolFnOptions,
     modifiers?: ExecuteToolModifiers
@@ -374,7 +391,10 @@ export class AnthropicProvider extends BaseNonAgenticProvider<
     }
 
     for (const toolUse of toolUseBlocks) {
-      const toolResult = await this.executeToolCall(userId, toolUse, options, modifiers);
+      const toolResult =
+        typeof executionTarget === 'string'
+          ? await this.executeToolCall(executionTarget, toolUse, options, modifiers)
+          : await this.executeToolCall(executionTarget, toolUse);
       outputs.push({
         type: 'tool_result',
         tool_use_id: toolUse.id,

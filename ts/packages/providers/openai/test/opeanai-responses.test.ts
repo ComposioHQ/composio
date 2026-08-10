@@ -253,6 +253,60 @@ describe('OpenAIResponsesProvider', () => {
   });
 
   describe('handleToolCalls', () => {
+    it('preserves Responses output order and errors when executing through a session', async () => {
+      const session = {
+        execute: vi
+          .fn()
+          .mockResolvedValueOnce({ data: { index: 1 }, error: null, logId: 'log-1' })
+          .mockRejectedValueOnce(new Error('session execution failed')),
+      };
+      const toolCalls = [
+        {
+          id: 'item-1',
+          type: 'function_call',
+          name: 'COMPOSIO_SEARCH_TOOLS',
+          arguments: JSON.stringify({ queries: [{ use_case: 'first' }] }),
+          call_id: 'call-1',
+        },
+        {
+          id: 'item-2',
+          type: 'function_call',
+          name: 'COMPOSIO_SEARCH_TOOLS',
+          arguments: JSON.stringify({ queries: [{ use_case: 'second' }] }),
+          call_id: 'call-2',
+        },
+      ] as OpenAI.Responses.ResponseOutputItem[];
+
+      const results = await provider.handleToolCalls(session, toolCalls);
+
+      expect(session.execute).toHaveBeenNthCalledWith(1, 'COMPOSIO_SEARCH_TOOLS', {
+        queries: [{ use_case: 'first' }],
+      });
+      expect(session.execute).toHaveBeenNthCalledWith(2, 'COMPOSIO_SEARCH_TOOLS', {
+        queries: [{ use_case: 'second' }],
+      });
+      expect(mockExecuteToolFn).not.toHaveBeenCalled();
+      expect(results).toEqual([
+        {
+          call_id: 'call-1',
+          type: 'function_call_output',
+          output: JSON.stringify({
+            data: { index: 1 },
+            error: null,
+            logId: 'log-1',
+            successful: true,
+          }),
+          status: 'completed',
+        },
+        {
+          call_id: 'call-2',
+          type: 'function_call_output',
+          output: 'session execution failed',
+          status: 'incomplete',
+        },
+      ]);
+    });
+
     it('should handle tool calls from OpenAI response', async () => {
       const userId = 'test-user';
       const toolCalls = [

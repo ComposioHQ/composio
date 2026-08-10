@@ -200,6 +200,53 @@ describe('OpenAIProvider', () => {
   });
 
   describe('handleToolCalls', () => {
+    it('routes session tool calls through the session executor', async () => {
+      const session = {
+        execute: vi.fn().mockResolvedValue({
+          data: { tools: ['GMAIL_SEND_EMAIL'] },
+          error: null,
+          logId: 'log-session',
+        }),
+      };
+      const chatCompletion = {
+        choices: [
+          {
+            message: {
+              tool_calls: [
+                {
+                  id: 'call-search',
+                  type: 'function',
+                  function: {
+                    name: 'COMPOSIO_SEARCH_TOOLS',
+                    arguments: JSON.stringify({ queries: [{ use_case: 'send email' }] }),
+                  },
+                },
+              ],
+            },
+          },
+        ],
+      } as OpenAI.ChatCompletion;
+
+      const results = await provider.handleToolCalls(session, chatCompletion);
+
+      expect(session.execute).toHaveBeenCalledWith('COMPOSIO_SEARCH_TOOLS', {
+        queries: [{ use_case: 'send email' }],
+      });
+      expect(mockExecuteToolFn).not.toHaveBeenCalled();
+      expect(results).toEqual([
+        {
+          role: 'tool',
+          tool_call_id: 'call-search',
+          content: JSON.stringify({
+            data: { tools: ['GMAIL_SEND_EMAIL'] },
+            error: null,
+            logId: 'log-session',
+            successful: true,
+          }),
+        },
+      ]);
+    });
+
     it('should handle tool calls from chat completion', async () => {
       const userId = 'test-user';
       const chatCompletion = {

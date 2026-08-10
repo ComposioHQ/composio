@@ -10,10 +10,14 @@
 import { OpenAI } from 'openai';
 import { Stream } from 'openai/streaming';
 import { BaseNonAgenticProvider } from './BaseProvider';
-import { Tool, ToolExecuteParams } from '../types/tool.types';
+import { Tool } from '../types/tool.types';
 import logger from '../utils/logger';
 import { ExecuteToolModifiers } from '../types/modifiers.types';
-import { ExecuteToolFnOptions } from '../types/provider.types';
+import {
+  ExecuteToolFnOptions,
+  ToolCallExecutionTarget,
+  ToolCallSession,
+} from '../types/provider.types';
 import { McpUrlResponse, McpServerGetResponse } from '../types/mcp.types';
 import { normalizeToolArguments } from '../utils/toolArguments';
 import { deduplicateJsonSchemaRequiredArrays } from '../utils/jsonSchema';
@@ -180,21 +184,31 @@ export class OpenAIProvider extends BaseNonAgenticProvider<
    * ```
    */
   async executeToolCall(
+    session: ToolCallSession,
+    tool: OpenAI.ChatCompletionMessageFunctionToolCall
+  ): Promise<string>;
+  async executeToolCall(
     userId: string,
     tool: OpenAI.ChatCompletionMessageFunctionToolCall,
     options?: ExecuteToolFnOptions,
     modifiers?: ExecuteToolModifiers
+  ): Promise<string>;
+  async executeToolCall(
+    executionTarget: ToolCallExecutionTarget,
+    tool: OpenAI.ChatCompletionMessageFunctionToolCall,
+    options?: ExecuteToolFnOptions,
+    modifiers?: ExecuteToolModifiers
   ): Promise<string> {
-    const payload: ToolExecuteParams = {
-      // OpenAI always serializes tool arguments as a JSON string; normalize tolerates
-      // empty / object-shaped payloads too (issue #2406).
-      arguments: normalizeToolArguments(tool.function.arguments, tool.function.name),
-      connectedAccountId: options?.connectedAccountId,
-      customAuthParams: options?.customAuthParams,
-      customConnectionData: options?.customConnectionData,
-      userId: userId,
-    };
-    const result = await this.executeTool(tool.function.name, payload, modifiers);
+    // OpenAI always serializes tool arguments as a JSON string; normalize tolerates
+    // empty / object-shaped payloads too (issue #2406).
+    const arguments_ = normalizeToolArguments(tool.function.arguments, tool.function.name);
+    const result = await this.executeToolForTarget(
+      executionTarget,
+      tool.function.name,
+      arguments_,
+      options,
+      modifiers
+    );
     return JSON.stringify(result);
   }
 
@@ -241,7 +255,17 @@ export class OpenAIProvider extends BaseNonAgenticProvider<
    * ```
    */
   async handleToolCalls(
+    session: ToolCallSession,
+    chatCompletion: OpenAI.ChatCompletion
+  ): Promise<OpenAI.ChatCompletionToolMessageParam[]>;
+  async handleToolCalls(
     userId: string,
+    chatCompletion: OpenAI.ChatCompletion,
+    options?: ExecuteToolFnOptions,
+    modifiers?: ExecuteToolModifiers
+  ): Promise<OpenAI.ChatCompletionToolMessageParam[]>;
+  async handleToolCalls(
+    executionTarget: ToolCallExecutionTarget,
     chatCompletion: OpenAI.ChatCompletion,
     options?: ExecuteToolFnOptions,
     modifiers?: ExecuteToolModifiers
@@ -259,7 +283,10 @@ export class OpenAIProvider extends BaseNonAgenticProvider<
       if (toolCall.type !== 'function') {
         continue;
       }
-      const toolResult = await this.executeToolCall(userId, toolCall, options, modifiers);
+      const toolResult =
+        typeof executionTarget === 'string'
+          ? await this.executeToolCall(executionTarget, toolCall, options, modifiers)
+          : await this.executeToolCall(executionTarget, toolCall);
       outputs.push({
         role: 'tool',
         tool_call_id: toolCall.id,
