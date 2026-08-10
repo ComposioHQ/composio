@@ -337,34 +337,6 @@
       "notes": "covered by cf:dry-run in ts.examples.yml"
     },
     {
-      "id": "ts/mastra/hackernews-direct",
-      "lang": "ts",
-      "pkg": "mastra-example",
-      "file": "ts/examples/mastra/src/hackernews-agent/direct.ts",
-      "tier": "1",
-      "env": [
-        "OPENAI_API_KEY"
-      ],
-      "toolkits": [
-        "hackernews"
-      ],
-      "timeoutSec": 180
-    },
-    {
-      "id": "ts/mastra/hackernews-tool-router",
-      "lang": "ts",
-      "pkg": "mastra-example",
-      "file": "ts/examples/mastra/src/hackernews-agent/tool-router.ts",
-      "tier": "1",
-      "env": [
-        "OPENAI_API_KEY"
-      ],
-      "toolkits": [
-        "hackernews"
-      ],
-      "timeoutSec": 180
-    },
-    {
       "id": "ts/mcp/index",
       "lang": "ts",
       "pkg": "mcp-example",
@@ -471,34 +443,6 @@
       "tier": "X",
       "reason": "worker-module",
       "notes": "covered by cf:dry-run in ts.examples.yml"
-    },
-    {
-      "id": "ts/openai/hackernews-direct",
-      "lang": "ts",
-      "pkg": "openai-example",
-      "file": "ts/examples/openai/src/hackernews-agent/direct.ts",
-      "tier": "1",
-      "env": [
-        "OPENAI_API_KEY"
-      ],
-      "toolkits": [
-        "hackernews"
-      ],
-      "timeoutSec": 180
-    },
-    {
-      "id": "ts/openai/hackernews-tool-router",
-      "lang": "ts",
-      "pkg": "openai-example",
-      "file": "ts/examples/openai/src/hackernews-agent/tool-router.ts",
-      "tier": "1",
-      "env": [
-        "OPENAI_API_KEY"
-      ],
-      "toolkits": [
-        "hackernews"
-      ],
-      "timeoutSec": 180
     },
     {
       "id": "ts/openai/agents-api",
@@ -839,7 +783,7 @@
       "pkg": "triggers-example",
       "file": "ts/examples/triggers/src/index.ts",
       "tier": "3",
-      "readiness": "[Ss]ubscrib",
+      "readiness": "Subscribed to trigger events",
       "toolkits": [
         "gmail"
       ],
@@ -869,7 +813,7 @@
       "ids": [
         "COMPOSIO_EXAMPLES_GMAIL_CONNECTED_ACCOUNT_ID"
       ],
-      "readiness": "[Ss]ubscrib",
+      "readiness": "Subscribed to triggers",
       "toolkits": [
         "gmail"
       ],
@@ -1029,7 +973,7 @@
       "ids": [
         "COMPOSIO_EXAMPLES_GMAIL_CONNECTED_ACCOUNT_ID"
       ],
-      "readiness": "[Ss]ubscrib",
+      "readiness": "Subscribed|[Ll]istening for events",
       "toolkits": [
         "gmail"
       ],

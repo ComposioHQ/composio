@@ -45,13 +45,6 @@ Started: 2026-08-10 · Budgets: 24 h loop / ≤ 2 500 LLM calls / production (di
   a valid OPENAI_API_KEY; (2) fix the 17 swallowers (fail-loudly
   conversions); (3) add the missing readiness line to ts/triggers/index.
 
-## Final report
-- Best holdout score:
-- Stage state (0/A1/A2/A3/A4/B):
-- Divergences found (feed back to composio-client):
-- What was abandoned (and why):
-- Highest-leverage next steps:
-
 ## Cycle 2 — 2026-08-10 (operator-driven: fail-loudly conversions)
 - Score (dev): prev VOID · Probe: 17 swallowers named in cycle 1
 - Hypothesis: converting the 17 swallowers to fail-loudly (rethrow /
@@ -68,3 +61,10 @@ Started: 2026-08-10 · Budgets: 24 h loop / ≤ 2 500 LLM calls / production (di
 - Change: (this entry written before the edits)
 - Result:
 - Reflection:
+
+## Final report
+- Best holdout score:
+- Stage state (0/A1/A2/A3/A4/B):
+- Divergences found (feed back to composio-client):
+- What was abandoned (and why):
+- Highest-leverage next steps:

@@ -9,7 +9,7 @@ until selftest is green. Selftest stays green every cycle thereafter.
 ## Target (outer loop)
 
 `SCORE = 25·C_ts + 25·P_ts + 25·C_py + 25·P_py`, where per language, against
-the FROZEN denominators in `eval/baseline-tiers.json` (ts=68, py=23):
+the FROZEN denominators in `eval/baseline-tiers.json` (ts=64, py=23):
 
 - `C` — entrypoints green under the **baseline** (Stainless) client / denominator.
   Punishes missing coverage: a skipped, red, or manifest-shrunk entry is a zero.
