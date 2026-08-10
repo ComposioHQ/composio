@@ -399,3 +399,30 @@ Started: 2026-08-10 · Budgets: 24 h loop / ≤ 2 500 LLM calls / production (di
   leak into SDK response handling; with_raw_response/streaming usage in
   the SDK (must audit — not ported in 2.0.0); files upload helpers.
 - Diagnostic: pytest matrix (v1/v2) + targeted py candidate sweep.
+- Audit result (Stage B, task 1):
+  - v2 call convention: method(*path_args, body=None, *, query=None,
+    headers=None, request_options=None); many list/retrieve responses are
+    pydantic RootModel (payload under .root) — incl. tools.list and
+    tools.retrieve. v2 exports NO NotGiven/NOT_GIVEN/omit; RequestOptions
+    replaces extra_headers/timeout/max_retries kwargs. No _prepare_request
+    hook, no copy/with_options; constructor kwargs match v1 minus
+    _strict_response_validation; per-request RequestOptions(max_retries=)
+    exists; httpx event hooks usable for per-request telemetry headers.
+  - SDK touchpoints: ~35 resource methods (all exist in v2); raw verbs
+    get/patch/post at 4 sites (triggers webhook subs + internal realtime
+    creds; v1 options={"params": ...} → v2 query=...); with_raw_response
+    1 site with graceful fallback; not_given via client attr +
+    none_to_omit(omit) in utils/pydantic.py; typed imports from
+    composio_client.types in client/types.py (+ models) — v2 has NO types
+    package (models in _generated/pydantic_gen.py).
+  - Facade design (implementing): python/composio/client/compat.py with
+    an OMIT sentinel + ResourceProxy/MethodProxy translating the SDK's
+    v2-style calls to either backend (v1: splat body/query as kwargs,
+    request_options→extra_*; v2: pass through + RootModel .root
+    unwrapping). HttpClient becomes a facade (composition, not
+    inheritance): v1 backend keeps the existing Stainless subclass with
+    _prepare_request; v2 backend = 2.0.0 client with static telemetry in
+    default_headers + httpx event hook for x-request-id; without_retries =
+    cached sibling (v1 with_options / v2 second client, max_retries=0).
+    Call sites then migrate file-by-file to the v2 convention; tests
+    updated where they assert kwargs-style calls.
