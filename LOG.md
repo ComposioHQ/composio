@@ -461,3 +461,56 @@ Started: 2026-08-10 · Budgets: 24 h loop / ≤ 2 500 LLM calls / production (di
     though langchain/openai's context-overflow (agent stuffs the full
     email list into gpt-5 context) may deserve a tighter prompt if it
     recurs.
+
+## Final report — 2026-08-10 (bar cleared on local holdout; CI dispatch pending human)
+- Best holdout score: **98.0** (bar 92.0, zero VOID; dev trajectory
+  11.1 → 15.6 → 24.9 → 30.6 → 65.7 → 74.2 → 95.6). All local instruments
+  clean at close: negative controls all red, trace liveness green,
+  parity-variance allowlist EMPTY (0/10 used), LLM/sweep within ceiling.
+- Stage state: 0 ✓ · A1 ✓ · A2 ✓ (provision script + all env plumbing) ·
+  A3 ✓ (P_ts == C_ts, 61/62) · B ✓ code-complete (dual-client facade,
+  pytest 925/923 both clients, P_py 21-22/22 live) · A4 OPEN — the only
+  remaining acceptance step is the CI workflow_dispatch run, which needs
+  repo-admin inputs (below).
+- Divergences found in the candidate clients: **NONE.** Across two full
+  TS parity runs (62 entries) and two py parity runs (22 entries), every
+  mismatch traced to harness bugs (trs_ normalizer), example rot, uv
+  overlay shadowing, or transient LLM-gateway flakes — never to the
+  self-managed clients. That is the harness's headline verdict for
+  composio-client: TS 0.0.0 tarball and py 2.0.0 wheel are drop-in
+  against production.
+- Repo-rot/API-drift findings produced (all fixed in examples unless
+  noted): dead OpenAI key · missing ESM type:module (18 pkgs) · retired
+  Claude model ids · openai↔openai-agents lock skew (pyWith overlay) ·
+  stale HACKERNEWS_GET_FRONTPAGE slug · MCP server_label/message.name
+  charset limits at OpenAI · py tool-router payload rot (disable/enable,
+  manage_connections keys, ids now backend-validated) · auth_configs
+  tools_for_connected_account_creation wants tool slugs · MCP endpoints
+  now REQUIRE auth headers (standalone: x-api-key only; session: also
+  Bearer; SSE 405) · mcp.py filename shadowed the mcp package · MCP
+  server names unique per project · slack MCP > OpenAI 128-tool cap ·
+  py readiness prints need flush=True · file upload needs
+  dangerouslyAllowAutoUploadDownloadFiles + fileUploadDirs ·
+  GOOGLEDRIVE_UPLOAD_FILE response lost response_data wrapper ·
+  connection alias uniqueness · uv --with overlay shadows workspace
+  composio. Harness fixes (human-approved, integrity refreshed):
+  overrides-block merge in run.mjs, trs_ in both trace shims.
+- Abandoned: ts/cloudflare-wrangler/dev green (workerd is unreachable by
+  the trace shims → any green is a liveness VOID; needs a harness
+  accommodation; costs ~0.8 total points and is priced into 98.0).
+  Notion/Gemini entries: out of scope by decree (tier X dropped-provider).
+- Highest-leverage next steps:
+  1. A4/acceptance (HUMAN): add repo secrets EXAMPLES_COMPOSIO_API_KEY
+     (disposable examples-project key), OPENAI_API_KEY, ANTHROPIC_API_KEY;
+     land .github/workflows/examples-live.yml on the default branch (or
+     dispatch via this branch's ref once it exists there); dispatch
+     workflow (client=baseline, then client=candidate with
+     client_artifact_url) → final CI acceptance run.
+  2. Upstream cherry-picks for deliverable PRs: the example fixes
+     (teaching-artifact repairs), scripts/examples-provision.mjs, the
+     workflow, and the py dual-client facade (7730409f1 — later delete
+     the v1 dispatch path when the 2.0.0 client ships on PyPI).
+  3. Watch-items: ts/langchain/openai context-overflow with gpt-5 if it
+     recurs (tighten the prompt); uv path-overlay stale-wheel cache on
+     py/tool_router/claude_agent; LLM-gateway flake cluster (16:07Z run)
+     if sweeps run at peak hours.
