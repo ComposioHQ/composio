@@ -56,7 +56,7 @@ console.log('\n=== Fetching and Summarizing Recent Emails ===');
 
 // Use Anthropic with the MCP servers
 const stream = anthropic.beta.messages.stream({
-  model: 'claude-4-sonnet-20250514',
+  model: 'claude-sonnet-5',
   max_tokens: 64_000,
   mcp_servers: servers,
   messages: [

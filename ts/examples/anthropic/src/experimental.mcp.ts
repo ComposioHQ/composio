@@ -34,7 +34,7 @@ const anthropic = new Anthropic({
 
 // 5. Pass servers to Anthropic-specific Agent.
 const stream = anthropic.beta.messages.stream({
-  model: 'claude-4-sonnet-20250514',
+  model: 'claude-sonnet-5',
   max_tokens: 64_000,
   mcp_servers: [
     {
