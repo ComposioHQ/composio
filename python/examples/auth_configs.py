@@ -59,7 +59,7 @@ auth_config_updated = composio.auth_configs.update(
             "client_secret": "1234567890",
         },
         "tool_access_config": {
-            "tools_for_connected_account_creation": ["github"],
+            "tools_for_connected_account_creation": ["NOTION_ADD_PAGE_CONTENT"],
         },
     },
 )

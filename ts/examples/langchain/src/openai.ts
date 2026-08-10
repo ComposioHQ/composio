@@ -8,11 +8,16 @@ const composio = new Composio({
   provider: new LangchainProvider(),
 });
 
-const githubTool = await composio.tools.get('jkomyno', 'GMAIL_FETCH_EMAILS');
+const userId = process.env.COMPOSIO_EXAMPLES_USER_ID; // the user id from your database
+if (!userId) {
+  throw new Error('Set COMPOSIO_EXAMPLES_USER_ID');
+}
+
+const gmailTool = await composio.tools.get(userId, 'GMAIL_FETCH_EMAILS');
 
 const agent = createAgent({
     model: new ChatOpenAI({ model: "gpt-5" }),
-    tools: githubTool,
+    tools: gmailTool,
   });
   
   console.log(

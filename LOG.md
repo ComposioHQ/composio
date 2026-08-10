@@ -155,3 +155,91 @@ Started: 2026-08-10 · Budgets: 24 h loop / ≤ 2 500 LLM calls / production (di
   lock skew, stale tool slug, invalid MCP server_label, toolkits payload
   drift. The uv.lock skew and the two API-drift items deserve upstream fixes
   beyond this goal's surface.
+
+## Cycle 6 — 2026-08-10 (Stage A2: env plumbing + provisioning script)
+- Score (dev): prev 30.6 · Probe: NC red, liveness clean (cycle 5)
+- Hypothesis: the 16 skipped entries skip only because their declared
+  `ids` env vars were absent at sweep time; .envrc now provides all of them
+  except COMPOSIO_EXAMPLES_APIKEY_AUTH_CONFIG_ID. Replacing the placeholder
+  literals with the COMPOSIO_EXAMPLES_* env vars (contract rule 2, loud
+  error when missing) plus a new scripts/examples-provision.mjs that
+  verifies provisioned state and creates the missing API-key auth config
+  (weathermap) flips most of the 16 green. Also: ts/tools/index + ai are red
+  on `__dirname` (undefined under ESM) and on userId 'default' (gdrive is
+  connected for the provisioned user, not 'default') — fixing both flips
+  them. Predicted ts green 45→~55-58, py 11→~14-16, score ≈ 40-44
+  (parity axis still 0 this cycle; full parity run is next).
+- Expected failure modes: (a) an MCP example fails downstream of the env
+  swap (server_label rot, model access) — those become characterized reds,
+  not skips; (b) creating a weathermap auth config needs fields the API
+  rejects; (c) py/connected_accounts readiness "https?://" doesn't match
+  because the ConnectionRequest repr hides the URL — mitigated by printing
+  redirect_url explicitly (idiomatic teaching flow anyway); (d) py/triggers
+  GITHUB_COMMIT_EVENT rewrite: manifest declares the GMAIL connected
+  account, so the example moves to GMAIL_NEW_GMAIL_MESSAGE and real
+  instance ids instead of "123" literals.
+- Diagnostic: `run.mjs sweep --ids <the 16 + tools pair>` after
+  provisioning; each formerly-skipped entry must be green or a
+  characterized red (no skips left except APIKEY if provisioning fails).
+- Change (cycle 6): env plumbing in 15 example files + scripts/examples-provision.mjs
+  (weathermap is NO_AUTH now → serpapi is the API-key toolkit; field name is
+  generic_api_key, not api_key). First targeted sweep: 0 skips, 7/18 green.
+  The 11 reds all characterized as REAL drift, fixed in the same cycle:
+  - MCP auth drift (4 entries + py/mcp): generated MCP URLs (both the
+    deprecated `composio.mcp.generate` kind and session `mcp.url`) now
+    REQUIRE auth headers — bare-URL examples got 401/405/424. Standalone
+    URLs accept x-api-key but NOT `Bearer <api key>` (wants a JWT); session
+    URLs accept both. Fixes: anthropic pair → sessions.create + mcp:true +
+    authorization_token (Anthropic can only send Bearer); openai pair →
+    headers: x-api-key on the hosted MCP tool; ts/mcp + py/mcp → x-api-key
+    via transport headers; ts/mcp also SSE→StreamableHTTP (SSE GET now 405).
+  - triggers user mismatch (ts create+subscribe): backend enforces
+    connected-account-owner == user id; 'default' + examples-owned ca_ → 400.
+    Both now use COMPOSIO_EXAMPLES_USER_ID.
+  - ts/tools/index: auto file upload requires the
+    `dangerouslyAllowAutoUploadDownloadFiles: true` client flag; without it
+    the raw path string reaches the backend → 400. Flag added (also ai.ts).
+  - py/mcp: manifest lacked pyWith deps (langchain-mcp-adapters etc).
+  - py/triggers + ts/langchain/openai: timeouts (120/180s) too tight for
+    the full teaching flow; bumped to 300s in the manifest.
+
+## Cycle 7 — 2026-08-10 (the four characterized drift fixes from cycle 5)
+- Score (dev): prev 30.6 (cycle 6 targeted verify in flight) · Probe: NC red, liveness clean
+- Hypothesis, per entry (diagnosed from sweep outputTails + live API probes):
+  (a) ts/vercel/stream: HACKERNEWS_GET_FRONTPAGE no longer exists; the live
+      toolkit lists HACKERNEWS_GET_TOP_STORIES — swapping the slug flips it.
+  (b) ts/openai/agents-api-tool-router: serverLabel 'composio tool router'
+      violates OpenAI's ^[A-Za-z][A-Za-z0-9_-]*$ — 'composio-tool-router'
+      fixes it (session MCP URL itself confirmed working via probe).
+  (c) py/experimental_tool_router_advanced: three distinct rots — toolkits
+      {"disabled": [...]} must be {"disable": [...]} (probe-confirmed both
+      SDKs use enable/disable on the wire); manage_connections keys are
+      enable/callback_url (not enabled/callback_uri — wrong keys silently
+      accepted, fixed for honesty); fake auth_configs/connected_accounts ids
+      ARE validated by the backend now (probe: 400 for both) → env-driven
+      real ids; ToolRouterToolkitsDisabledConfig / infer_scopes_from_tools
+      don't exist in the SDK → ToolRouterToolkitsDisableConfig etc.
+  (d) py/auth_configs: cycle-5's characterization was WRONG — dummy OAuth
+      client ids are accepted; the real failure is
+      tool_access_config.tools_for_connected_account_creation: ["github"]
+      (a toolkit slug where tool slugs are required) → 404 'Could not
+      resolve tool(s): github'. Fix: a real notion tool slug (the config
+      being updated is the notion one).
+- Expected failure modes: (c) connected_accounts in sessions must belong to
+  the session user → user_id must be COMPOSIO_EXAMPLES_USER_ID for those
+  functions; (d) notion tool slugs may also have rotated — fetch live.
+- Diagnostic: targeted sweep of the 4 ids after the edits.
+- Result (cycles 6+7 targeted verification, all 22 touched ids green):
+  - A2 entries: 18/18 green (16 formerly-skipped + ts/tools pair).
+  - Drift fixes: 4/4 green (vercel/stream, agents-api-tool-router,
+    py tool_router advanced, py/auth_configs).
+  - Additional real-drift findings fixed en route: py example file named
+    mcp.py shadowed the `mcp` PyPI package (renamed mcp_example.py);
+    slack MCP without allowedTools exposes 161 tools > OpenAI's 128-tool
+    cap; MCP server names are unique per project (Date.now()/time.time()
+    suffixes); py readiness prints must flush=True (block-buffered stdout
+    swallowed the readiness line → 300s timeouts); auto file upload
+    enforces a fileUploadDirs allowlist; GOOGLEDRIVE_UPLOAD_FILE response
+    lost its response_data wrapper (data IS the file object now);
+    agents-api-tool-router ALSO needed x-api-key headers (session MCP).
+- Next: full score.sh run = cycle 8 (baseline + first TS candidate sweep).
