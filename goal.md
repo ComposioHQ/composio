@@ -83,8 +83,8 @@ A fresh operator session starts here — do not re-derive any of this:
 
 1. Branch `goal/examples-live-parity`, repo `~/work/composio/composio`. Read
    the LOG.md tail (cycles 1–5). Current dev score **30.6** (ts 45/62 green,
-   py 11/22 green, parity 0/…: no candidate artifacts provided yet).
-   Stage 0 ✓ · A1 mostly ✓ · A2/A3/A4/B open.
+   py 11/22 green, parity 0 — candidate artifacts are NOW exported in .envrc,
+   first TS parity sweep not yet run). Stage 0 ✓ · A1 mostly ✓ · A2/A3/A4/B open.
 2. Credentials: `source .envrc` provides COMPOSIO_API_KEY (disposable
    production project — the only project you may touch), OPENAI_API_KEY,
    ANTHROPIC_API_KEY, and the provisioned `COMPOSIO_EXAMPLES_*` ids
@@ -100,9 +100,14 @@ A fresh operator session starts here — do not re-derive any of this:
      vercel/stream stale tool slug (404) · openai agents-api MCP
      `server_label` pattern violation · py experimental_tool_router_advanced
      `payload.toolkits` 400 · py/auth_configs dummy OAuth ids → env-driven.
-   - **Stage A3 first parity run:** requires the human-built tarball
-     (`pnpm build && npm pack` in `~/work/composio/composio-client`) via
-     `COMPOSIO_CLIENT_TARBALL`; then `score.sh` produces the first P_ts.
+   - **Stage A3 first parity run — UNBLOCKED:** `.envrc` now exports
+     `COMPOSIO_CLIENT_TARBALL` (npm tarball, version 0.0.0 — differs from
+     the Stainless 0.1.0-alpha.76, so the override guard passes) and
+     `COMPOSIO_CLIENT_WHEEL` (2.0.0, conformance-gate green). With the
+     tarball set, `score.sh` runs the TS candidate sweep automatically and
+     produces the first P_ts. The wheel contributes nothing until Stage B
+     (the runner's 2.x guard blocks the py candidate against the Stainless
+     1.43.0 SDK pin) — that is correct behavior, not a failure.
 4. Repo-rot findings already logged (do not re-diagnose): ESM/type-module,
    retired Claude model ids, openai↔openai-agents lock skew (pyWith overlay
    in the manifest is the sanctioned workaround; the real uv.lock bump is
