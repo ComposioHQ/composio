@@ -5,7 +5,6 @@ on:
     paths:
       - 'docs/**'
       - '.github/actions/setup-node-pnpm-bun/action.yml'
-      - '.github/workflows/docs-update-data.yml'
       - '.github/workflows/docs-tests.yml'
       - 'mise.toml'
       - 'mise.lock'
