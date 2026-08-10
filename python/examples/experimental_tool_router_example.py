@@ -80,7 +80,7 @@ def authorize_toolkit_example():
         return connection_request
     except Exception as e:
         print(f"Error authorizing toolkit: {e}")
-        return None
+        raise
 
 
 # Example 4: Get toolkit connection states
@@ -135,6 +135,7 @@ def full_workflow_example():
             print(f"  → Redirect URL: {connection_request.redirect_url}")
     except Exception as e:
         print(f"✗ Authorization error: {e}")
+        raise
 
     return session
 
@@ -182,6 +183,4 @@ if __name__ == "__main__":
 
     except Exception as e:
         print(f"\n✗ Error running examples: {e}")
-        import traceback
-
-        traceback.print_exc()
+        raise
