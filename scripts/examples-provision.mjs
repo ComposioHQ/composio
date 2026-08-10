@@ -75,7 +75,7 @@ const authConfigs = await listAll('/api/v3.1/auth_configs');
 const accounts = await listAll(`/api/v3.1/connected_accounts?user_ids=${encodeURIComponent(USER_ID)}`);
 
 const exports = { COMPOSIO_EXAMPLES_USER_ID: USER_ID };
-const pendingOauth = [];
+const pendingGrants = [];
 let ok = true;
 
 function findAuthConfig(slug) {
@@ -108,9 +108,9 @@ for (const { prefix, slug } of BROWSER_GRANT_TOOLKITS) {
         auth_config: { id: config.id },
         connection: { user_id: USER_ID },
       });
-      pendingOauth.push(`${slug}: authorize in a browser -> ${created.connectionData?.val?.redirectUrl ?? created.redirect_url ?? created.redirect_uri ?? '(no redirect url returned)'}`);
+      pendingGrants.push(`${slug}: authorize in a browser -> ${created.connectionData?.val?.redirectUrl ?? created.redirect_url ?? created.redirect_uri ?? '(no redirect url returned)'}`);
     } else {
-      pendingOauth.push(`${slug}: no ACTIVE connection for user ${USER_ID} — rerun with --initiate-missing to get an authorization URL`);
+      pendingGrants.push(`${slug}: no ACTIVE connection for user ${USER_ID} — rerun with --initiate-missing to get an authorization URL`);
     }
   }
 }
@@ -149,10 +149,10 @@ for (const { prefix, slug } of BROWSER_GRANT_TOOLKITS) {
   exports[`COMPOSIO_EXAMPLES_${prefix}_CONNECTED_ACCOUNT_ID`] = account.id;
 }
 
-if (pendingOauth.length) {
+if (pendingGrants.length) {
   report('');
   report('OAuth connections still needing a one-time human authorization:');
-  for (const line of pendingOauth) report(`  - ${line}`);
+  for (const line of pendingGrants) report(`  - ${line}`);
 }
 report('');
 report(ok ? 'provisioned state: complete' : 'provisioned state: INCOMPLETE (see above)');
