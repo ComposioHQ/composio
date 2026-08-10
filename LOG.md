@@ -283,3 +283,33 @@ Started: 2026-08-10 · Budgets: 24 h loop / ≤ 2 500 LLM calls / production (di
     read-only harness; stays red (~0.4pt per axis). Needs a harness
     accommodation or an X reason like worker-module WITH a tier-3→X move,
     which the frozen tiers forbid. Reported, not gamed.
+- Result (cycle 8, two attempts, both VOID before a score row):
+  1. VOID #1: py/fastapi_app negative-control pass (fixed, see above).
+  2. VOID #2: the TS candidate swap is HARD-BLOCKED — harness/run.mjs
+     applyTsCandidate() refuses when pnpm-workspace.yaml already has an
+     `overrides:` block, and the repo now ships one legitimately (security
+     pins: qs/protobufjs/minimatch/js-yaml/undici, commit 0c4c5a360 via
+     dependabot remediation). The refusal aborts the candidate sweep with
+     no results dir → the liveness step ENOENTs → VOID "trace-liveness
+     (ts candidate)". pnpm-workspace.yaml and harness/ are both outside my
+     surface: BLOCKED, needs the operator's human. Proposed harness fix
+     (one line): merge into the existing block instead of refusing —
+     replace the append with an insertion under the existing `overrides:`
+     key; the restore path (git checkout -- pnpm-workspace.yaml
+     pnpm-lock.yaml) already handles cleanup either way. Note the
+     trust-on-first-use integrity hashes in the audit dir must be
+     refreshed by the human alongside the patch, or lint VOIDs on
+     "read-only file modified".
+  - Baseline #2 health: 74/84 green, 0 skipped, NC all red, trace
+    liveness clean, LLM calls 125/sweep (back under the 150 ceiling after
+    the custom_tools_agent_test trim). 9 of 10 reds are a TIMEOUT cluster
+    confined to LLM-calling entries (openai ×2, mastra ×2, llamaindex,
+    langchain/openai, anthropic/claude-agents-sdk, ts/mcp/index,
+    py/crewai_agent) with EMPTY output tails — all of them green in
+    run #1 or in targeted sweeps within the same hour. Reads as provider
+    rate-limit/stall during the 16:07–16:47Z window (heavy usage all
+    day), not code. Re-scoring after a cool-down; if it recurs,
+    concurrency or model choice needs revisiting.
+  - Best honest baseline observed this cycle (run #1 + the 6 verified
+    fixes): 83/84 baseline-green candidates for C when the sweep is not
+    rate-starved; only ts/cloudflare-wrangler/dev is structurally red.
