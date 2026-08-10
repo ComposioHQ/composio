@@ -20,6 +20,7 @@ import {
 } from 'src/commands/tools/commands/tools.execute.cmd';
 import { ComposioCliUserConfig } from 'src/services/cli-user-config';
 import type { ToolkitDetailed } from 'src/models/toolkits';
+import { makeToolkitFixture } from 'test/__utils__/models/toolkits';
 
 const testConfigProvider = ConfigProvider.fromMap(
   new Map([['COMPOSIO_USER_API_KEY', 'test_api_key']])
@@ -433,6 +434,122 @@ describe('CLI: composio execute', () => {
         expect(recordedSessionCreateParams.map(params => params.connected_accounts)).toEqual(
           expect.arrayContaining([{ gmail: 'con_gmail_secondary' }, { gmail: 'con_gmail_default' }])
         );
+      })
+    );
+  });
+
+  layer(
+    TestLive({
+      baseConfigProvider: testConfigProvider,
+      fixture: 'global-test-user-id',
+      stdin: { isTTY: true, data: '' },
+      toolkitsData: {
+        toolkits: [
+          makeToolkitFixture('google', 'Google'),
+          makeToolkitFixture('google_analytics', 'Google Analytics'),
+          makeToolkitFixture('microsoft', 'Microsoft'),
+          makeToolkitFixture('microsoft_teams', 'Microsoft Teams'),
+        ],
+      },
+      connectedAccountsData: {
+        items: [
+          {
+            id: 'con_google_analytics_default',
+            alias: 'default',
+            word_id: 'meadow',
+            status: 'ACTIVE',
+            status_reason: null,
+            is_disabled: false,
+            user_id: 'consumer-user-org_test',
+            toolkit: { slug: 'google_analytics' },
+            auth_config: {
+              id: 'ac_google_analytics_oauth',
+              auth_scheme: 'OAUTH2',
+              is_composio_managed: true,
+              is_disabled: false,
+            },
+            created_at: '2026-01-01T00:00:00.000Z',
+            updated_at: '2026-01-01T00:00:00.000Z',
+            test_request_endpoint: '',
+          },
+          {
+            id: 'con_microsoft_teams_default',
+            alias: 'default',
+            word_id: 'harbor',
+            status: 'ACTIVE',
+            status_reason: null,
+            is_disabled: false,
+            user_id: 'consumer-user-org_test',
+            toolkit: { slug: 'microsoft_teams' },
+            auth_config: {
+              id: 'ac_microsoft_teams_oauth',
+              auth_scheme: 'OAUTH2',
+              is_composio_managed: true,
+              is_disabled: false,
+            },
+            created_at: '2026-01-01T00:00:00.000Z',
+            updated_at: '2026-01-01T00:00:00.000Z',
+            test_request_endpoint: '',
+          },
+        ],
+      },
+      toolRouter: {
+        create: async params => {
+          recordedSessionCreateParams.push(params as unknown as Record<string, unknown>);
+          return {
+            session_id: 'trs_google_analytics_session',
+            config: {
+              user_id: params.user_id,
+              execute: {},
+              search: {},
+              preload: { tools: [] },
+            },
+            config_version: 1,
+            mcp: { type: 'http' as const, url: 'https://mcp.test.composio.dev' },
+            tool_router_tools: ['COMPOSIO_SEARCH_TOOLS', 'COMPOSIO_MANAGE_CONNECTIONS'],
+          };
+        },
+        execute: async (_sessionId, params) => ({
+          data: { tool_slug: params.tool_slug, arguments: params.arguments },
+          error: null,
+          log_id: 'log_google_analytics',
+        }),
+      },
+    })
+  )('[Given] a multi-word toolkit [Then] execute resolves it from the known toolkit list', it => {
+    it.scoped('pins the google_analytics connected account for GOOGLE_ANALYTICS_RUN_REPORT', () =>
+      Effect.gen(function* () {
+        yield* cli([
+          'execute',
+          'GOOGLE_ANALYTICS_RUN_REPORT',
+          '--account',
+          'meadow',
+          '--skip-connection-check',
+          '-d',
+          '{"property_id":"1"}',
+        ]);
+
+        expect(recordedSessionCreateParams[0]?.connected_accounts).toMatchObject({
+          google_analytics: 'con_google_analytics_default',
+        });
+      })
+    );
+
+    it.scoped('pins the microsoft_teams connected account for MICROSOFT_TEAMS_SEND_MESSAGE', () =>
+      Effect.gen(function* () {
+        yield* cli([
+          'execute',
+          'MICROSOFT_TEAMS_SEND_MESSAGE',
+          '--account',
+          'harbor',
+          '--skip-connection-check',
+          '-d',
+          '{"message":"hi"}',
+        ]);
+
+        expect(recordedSessionCreateParams[0]?.connected_accounts).toMatchObject({
+          microsoft_teams: 'con_microsoft_teams_default',
+        });
       })
     );
   });

@@ -70,6 +70,22 @@ jobs:
           COMMIT_SHA: ${{ github.sha }}
         run: bash .github/scripts/cli-release/resolve-release-target.sh
 
+      # The baked toolkit slugs decide whether `composio execute` resolves a
+      # toolkit locally or pays for a catalog fetch. A stale list is never
+      # wrong, only slow, so this warns and never blocks a release.
+      # Refresh with the `CLI - Update Toolkit Slugs` workflow.
+      - name: Check baked toolkit slugs freshness
+        continue-on-error: true
+        run: |
+          set -euo pipefail
+          refreshed_at=$(sed -n "s/.*BAKED_TOOLKIT_SLUGS_REFRESHED_AT = '\(.*\)'.*/\1/p" \
+            ts/packages/cli/src/generated/toolkit-slugs.ts)
+          age_days=$(( ( $(date -u +%s) - $(date -u -d "$refreshed_at" +%s) ) / 86400 ))
+          echo "Baked toolkit slugs were refreshed $age_days day(s) ago ($refreshed_at)."
+          if [ "$age_days" -gt 14 ]; then
+            echo "::warning::Baked toolkit slugs are $age_days days old. Run the 'CLI - Update Toolkit Slugs' workflow."
+          fi
+
   build:
     name: Build ${{ matrix.artifact }}
     needs: prepare
