@@ -1040,7 +1040,10 @@
       "toolkits": [
         "gmail"
       ],
-      "timeoutSec": 240
+      "timeoutSec": 240,
+      "pyWith": [
+        "openai-agents>=0.19"
+      ]
     },
     {
       "id": "py/experimental_tool_router",
@@ -1120,7 +1123,10 @@
       "toolkits": [
         "hackernews"
       ],
-      "timeoutSec": 180
+      "timeoutSec": 180,
+      "pyWith": [
+        "openai-agents>=0.19"
+      ]
     },
     {
       "id": "py/tool_router/preload",
@@ -1133,7 +1139,10 @@
       "toolkits": [
         "hackernews"
       ],
-      "timeoutSec": 180
+      "timeoutSec": 180,
+      "pyWith": [
+        "openai-agents>=0.19"
+      ]
     },
     {
       "id": "py/tool_router/files",
@@ -1175,7 +1184,7 @@
         "gmail"
       ],
       "pyWith": [
-        "openai-agents"
+        "openai-agents>=0.19"
       ],
       "timeoutSec": 240
     },
@@ -1191,7 +1200,10 @@
         "github",
         "gmail"
       ],
-      "timeoutSec": 240
+      "timeoutSec": 240,
+      "pyWith": [
+        "openai-agents>=0.19"
+      ]
     },
     {
       "id": "py/tool_router/session_update",
@@ -1223,7 +1235,10 @@
       "toolkits": [
         "gmail"
       ],
-      "timeoutSec": 180
+      "timeoutSec": 180,
+      "pyWith": [
+        "openai-agents>=0.19"
+      ]
     }
   ]
 }

@@ -115,3 +115,21 @@ Started: 2026-08-10 · Budgets: 24 h loop / ≤ 2 500 LLM calls / production (di
   (.dev.vars plumbing), py/auth_configs (dummy OAuth ids), plus 4 singles.
 - Reflection: generalizing — two systemic fixes (fail-loudly, ESM) moved
   the score 11.1 → 24.9 without touching the metric surface.
+
+## Cycle 5 — 2026-08-10 (anthropic model rot + py dependency drift)
+- Score (dev): prev 24.9 · Probe: NC red, liveness clean
+- Hypothesis: (a) the anthropic trio fails on retired model IDs
+  (claude-3-7-sonnet-latest / claude-3-5-sonnet-latest retired 2026-02-19;
+  claude-4-sonnet-20250514 malformed+deprecated) — replacing with
+  claude-sonnet-5 per the migration guide's retired-model table flips
+  ts/anthropic/index + streaming green. (b) the py tool_router family dies
+  inside openai-agents (pydantic InputTokensDetails.cache_write_tokens) —
+  a version overlay via manifest pyWith can confirm whether newer
+  openai-agents fixes it without touching uv.lock.
+- Expected failure mode: (a) examples also depend on retired-model response
+  shapes (unlikely — plain messages.create); (b) newer openai-agents has
+  incompatible API surface with the example code.
+- Diagnostic: targeted sweep of the affected ids before/after.
+- Change: model IDs in 4 anthropic example files; pyWith experiments.
+- Result:
+- Reflection:
