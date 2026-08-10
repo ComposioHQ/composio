@@ -95,3 +95,18 @@ Started: 2026-08-10 · Budgets: 24 h loop / ≤ 2 500 LLM calls / production (di
 - Change: manifest/baseline re-freeze only (this entry precedes the run).
 - Result:
 - Reflection:
+
+## Cycle 4 — 2026-08-10 (ESM fix for top-level await)
+- Score (dev): prev 15.6 · Probe: NC all red, liveness clean
+- Hypothesis: 18 example packages lacked "type": "module" (only the two
+  nightly-blessed ones had it), so tsx transpiled to CJS and every top-level-
+  await entrypoint died at transform time — that's most of the surviving TS
+  red cluster. Adding the field flips them. Spot-verified 4/4 green.
+  Predicted score 24–30 (ts green 19→~32; py unchanged, its cluster is an
+  openai-agents/pydantic version drift — cycle 5 target).
+- Expected failure mode: an example that implicitly relied on CJS semantics
+  breaks; or wrangler/cf tooling objects to the field.
+- Diagnostic: per-entry outputTail; ts.examples.yml cf:dry-run in CI later.
+- Change: "type": "module" in 18 example package.jsons (commit follows).
+- Result:
+- Reflection:
