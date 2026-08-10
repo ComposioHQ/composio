@@ -129,7 +129,7 @@ The CLI implements a file-based caching system for improved performance and offl
 ### Cache Features
 
 - **Cache-first reads**: When `FORCE_USE_CACHE=true`, the CLI first checks for cached data before making API calls. If you already ran `composio generate` before, it will work even if you're offline.
-- **Best-effort writes**: All successful API responses are automatically cached to disk for future use.
+- **Best-effort writes**: All successful API responses are automatically cached to disk for future use. Writes are atomic — a run interrupted mid-write leaves the previous cache intact rather than a truncated file.
 - **Graceful fallback**: If cache files are corrupted or missing, the CLI falls back to making API calls.
 - **Parameter-aware caching**: Methods with parameters include those parameters in the cache key.
 
@@ -147,6 +147,14 @@ The following files are cached:
 - `tools.json` - Results from tool listings
 - `trigger-types-as-enums.json` - Results from trigger type enumerations
 - `trigger-types.json` - Results from paginated trigger types payloads
+
+### Known toolkit slugs
+
+`known-toolkit-slugs.json` also lives in the cache directory, but it is not one of the files above.
+
+Running a tool means knowing which toolkit it belongs to, and the tool slug alone does not say: `GOOGLE_ANALYTICS_RUN_REPORT` belongs to `google_analytics`, not `google`. The CLI ships with the list of toolkit slugs that existed when it was built and records any it learns afterwards in this file, so resolving a toolkit costs a small local read instead of downloading the catalog.
+
+It holds derived data, not saved API responses, so it is read on every run regardless of `FORCE_USE_CACHE` — that variable keeps its meaning of opting in to replaying previously cached API responses. Deleting the file is safe: the CLI re-learns what it needs. Being out of date is also safe, because the backend never removes a toolkit; a slug the file has never seen simply costs one catalog fetch, after which it is remembered and refreshed weekly in the background.
 
 ## Development
 

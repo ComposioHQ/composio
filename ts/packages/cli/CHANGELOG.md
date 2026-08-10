@@ -26,6 +26,40 @@
   credential fields, and schema warnings no longer print raw response values.
 - `composio login --poll` now reports unreadable cache files as I/O errors
   instead of treating them as invalid session data.
+- Tools belonging to multi-word toolkits now resolve to the right toolkit.
+  `composio tools execute GOOGLE_ANALYTICS_RUN_REPORT --account <alias>`
+  previously looked for a `google` account instead of a `google_analytics` one,
+  because the toolkit was guessed from the text before the first underscore.
+  The toolkit is now matched against the known toolkit list, longest prefix
+  first. This also corrects the toolkit shown in errors, file uploads, trigger
+  listening, and telemetry.
+- Session meta tools such as `COMPOSIO_SEARCH_TOOLS` are no longer attributed
+  to the `composio_search` toolkit, whose slug their names happen to start
+  with. A failed meta call used to suggest linking an app that had nothing to
+  do with the call.
+- Commands that consult the toolkit catalog more than once now fetch it once.
+  `composio tools execute` was downloading the full ~800 KB list up to four
+  times per run.
+- A cached API request that fails is no longer sent a second time. The caching
+  layer treated the request's own failure as a cache failure and retried it,
+  so every failed toolkit, tool, or trigger listing cost two round trips and
+  twice the wait before reporting the same error.
+- Resolving a tool's toolkit no longer downloads the toolkit catalog. The CLI
+  ships with the toolkit slugs it knew at build time and remembers any it
+  learns since in `known-toolkit-slugs.json`, so `composio tools execute` only
+  reaches for the catalog when a slug matches nothing it knows — a toolkit
+  released after your CLI version. `FORCE_USE_CACHE` is unaffected.
+- Resolving a tool's toolkit now reads what the CLI knows locally once per run
+  rather than once per lookup. A single `composio tools execute` resolves the
+  same toolkit up to four times — and once per tool with `--parallel` — and
+  each of those re-read `known-toolkit-slugs.json`, re-parsed it, and rebuilt
+  the lookup table over it. The weekly background refresh now also runs once per
+  run instead of rewriting the file after every lookup.
+- The background catalog refresh is abandoned after ten seconds. A finished
+  command ends when the event loop drains, so a slow network could otherwise
+  hold an exiting `composio` process open until the refresh completed.
+- Cache files are now written atomically, so an interrupted run can no longer
+  leave a truncated `toolkits.json` or `tools.json` behind.
 
 ## 0.3.1
 

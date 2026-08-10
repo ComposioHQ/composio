@@ -20,7 +20,7 @@ import {
   resolveConnectedAccountSelection,
 } from 'src/services/connected-account-selection';
 import { parseJsonRecord } from 'src/utils/parse-json';
-import { toolkitFromToolSlug } from 'src/utils/toolkit-from-tool-slug';
+import { toolkitFromToolSlug } from 'src/effects/toolkit-from-tool-slug';
 import { matchesTriggerListenFilters } from './triggers/filter';
 import { parseTriggerListenEvent } from './triggers/parse';
 import { decodeConnectedAccountItems } from 'src/effects/decode-connected-account-list';
@@ -151,7 +151,7 @@ const resolveConnectedAccountIdForTrigger = (params: {
   account: Option.Option<string>;
 }) =>
   Effect.gen(function* () {
-    const toolkitSlug = toolkitFromToolSlug(params.slug);
+    const toolkitSlug = yield* toolkitFromToolSlug(params.slug);
     if (!toolkitSlug) {
       return yield* Effect.fail(
         invalidOptionValue(

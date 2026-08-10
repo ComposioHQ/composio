@@ -739,13 +739,7 @@ describe('Tools', () => {
 
       const result = await context.tools.get(userId, slug);
 
-      expect(getRawComposioToolBySlugSpy).toHaveBeenCalledWith(
-        slug,
-        {
-          modifySchema: undefined,
-        },
-        undefined
-      );
+      expect(getRawComposioToolBySlugSpy).toHaveBeenCalledWith(slug, undefined, undefined);
       expect(context.mockProvider.wrapTools).toHaveBeenCalledWith(
         [toolMocks.transformedTool],
         expect.any(Function)
@@ -764,16 +758,12 @@ describe('Tools', () => {
 
       const result = await context.tools.get(userId, filters);
 
-      expect(getRawComposioToolsSpy).toHaveBeenCalledWith(
-        filters,
-        { modifySchema: undefined },
-        undefined
-      );
+      expect(getRawComposioToolsSpy).toHaveBeenCalledWith(filters, undefined, undefined);
       expect(context.mockProvider.wrapTools).toHaveBeenCalled();
       expect(result).toEqual('wrapped-tools-collection');
     });
 
-    it('should pass modifiers to the underlying methods', async () => {
+    it('should apply schema modifiers before wrapping tools for the provider', async () => {
       const userId = 'test-user';
       const slug = 'TOOL_SLUG';
       const schemaModifier = createSchemaModifier({
@@ -787,13 +777,21 @@ describe('Tools', () => {
 
       await context.tools.get(userId, slug, { modifySchema: schemaModifier });
 
-      expect(getRawComposioToolBySlugSpy).toHaveBeenCalledWith(
-        slug,
-        {
-          modifySchema: schemaModifier,
-        },
-        undefined
+      expect(getRawComposioToolBySlugSpy).toHaveBeenCalledWith(slug, undefined, undefined);
+      expect(schemaModifier).toHaveBeenCalledOnce();
+      expect(context.mockProvider.wrapTools).toHaveBeenCalledWith(
+        [expect.objectContaining({ description: 'Modified description' })],
+        expect.any(Function)
       );
+    });
+
+    it('should reject an invalid schema modifier when no tools are returned', async () => {
+      const invalidModifier = 'not a function' as unknown;
+      vi.spyOn(context.tools, 'getRawComposioTools').mockResolvedValueOnce([]);
+
+      await expect(
+        context.tools.get('test-user', { toolkits: ['github'] }, { modifySchema: invalidModifier })
+      ).rejects.toThrow('Invalid schema modifier. Not a function.');
     });
   });
 
@@ -2374,38 +2372,33 @@ describe('Tools', () => {
         }
       });
 
-      it('should allow agentic provider execution with dangerouslySkipVersionCheck in createExecuteToolFn', async () => {
+      it('should reuse the fetched schema during agentic provider execution', async () => {
         const context = createTestContext();
         const userId = 'test-user';
-
-        // Mock tool retrieval for the get method
+        const toolSlug = 'GITHUB_CREATE_ISSUE';
+        const fetchedTool = {
+          ...toolMocks.transformedTool,
+          slug: toolSlug,
+          toolkit: { slug: 'github', name: 'GitHub' },
+        } as unknown as Tool;
         const getRawComposioToolBySlugSpy = vi.spyOn(context.tools, 'getRawComposioToolBySlug');
-        getRawComposioToolBySlugSpy.mockResolvedValueOnce(
-          toolMocks.transformedTool as unknown as Tool
-        );
+        getRawComposioToolBySlugSpy.mockResolvedValue(fetchedTool);
 
-        // Mock provider wrapping
         let storedExecuteToolFn: ExecuteToolFn | undefined;
         context.mockProvider.wrapTools.mockImplementation((_tools, executeToolFn) => {
           storedExecuteToolFn = executeToolFn;
           return 'wrapped-tools-collection';
         });
 
-        // Get the tool (this will internally create the execute tool function)
-        await context.tools.get(userId, 'GITHUB_CREATE_ISSUE');
-
-        expect(storedExecuteToolFn).toBeDefined();
-
-        // Setup mocks for the actual execution
-        const spies = await mockToolExecution(context.tools);
-
-        // Call the execute function that was passed to the provider
-        // This should succeed because createExecuteToolFn sets dangerouslySkipVersionCheck: true
-        const result = await storedExecuteToolFn!('GITHUB_CREATE_ISSUE', { title: 'Test Issue' });
+        await context.tools.get(userId, toolSlug);
+        mockClient.tools.execute.mockResolvedValueOnce(toolMocks.rawToolExecuteResponse);
+        const result = await storedExecuteToolFn!(toolSlug, { title: 'Test Issue' });
 
         expect(result).toEqual(toolMocks.toolExecuteResponse);
+        expect(getRawComposioToolBySlugSpy).toHaveBeenCalledTimes(1);
+        expect(mockClient.tools.retrieve).not.toHaveBeenCalled();
         expect(mockClient.tools.execute).toHaveBeenCalledWith(
-          'COMPOSIO_TOOL',
+          toolSlug,
           {
             allow_tracing: undefined,
             connected_account_id: undefined,
@@ -2416,6 +2409,113 @@ describe('Tools', () => {
             version: 'latest',
             text: undefined,
           },
+          undefined
+        );
+      });
+
+      it('should reject invalid agentic provider input before execution', async () => {
+        const context = createTestContext();
+        const toolSlug = 'GITHUB_CREATE_ISSUE';
+        const fetchedTool = {
+          ...toolMocks.transformedTool,
+          slug: toolSlug,
+          toolkit: { slug: 'github', name: 'GitHub' },
+        } as unknown as Tool;
+        const getRawComposioToolBySlugSpy = vi.spyOn(context.tools, 'getRawComposioToolBySlug');
+        getRawComposioToolBySlugSpy.mockResolvedValue(fetchedTool);
+        let storedExecuteToolFn: ExecuteToolFn | undefined;
+
+        context.mockProvider.wrapTools.mockImplementation((_tools, executeToolFn) => {
+          storedExecuteToolFn = executeToolFn;
+          return 'wrapped-tools-collection';
+        });
+
+        await context.tools.get('test-user', toolSlug);
+
+        await expect(
+          storedExecuteToolFn!(toolSlug, 42 as unknown as Record<string, unknown>)
+        ).rejects.toThrow(ValidationError);
+        expect(getRawComposioToolBySlugSpy).toHaveBeenCalledTimes(1);
+        expect(mockClient.tools.execute).not.toHaveBeenCalled();
+      });
+
+      it('should retrieve an unknown provider tool before execution', async () => {
+        const context = createTestContext();
+        const userId = 'test-user';
+        const fetchedToolSlug = 'GITHUB_CREATE_ISSUE';
+        const unknownToolSlug = 'GITHUB_GET_ISSUE';
+        const fetchedTool = {
+          ...toolMocks.transformedTool,
+          slug: fetchedToolSlug,
+          toolkit: { slug: 'github', name: 'GitHub' },
+        } as unknown as Tool;
+        const unknownTool = { ...fetchedTool, slug: unknownToolSlug };
+        const getRawComposioToolBySlugSpy = vi.spyOn(context.tools, 'getRawComposioToolBySlug');
+        getRawComposioToolBySlugSpy
+          .mockResolvedValueOnce(fetchedTool)
+          .mockResolvedValueOnce(unknownTool);
+        let storedExecuteToolFn: ExecuteToolFn | undefined;
+
+        context.mockProvider.wrapTools.mockImplementation((_tools, executeToolFn) => {
+          storedExecuteToolFn = executeToolFn;
+          return 'wrapped-tools-collection';
+        });
+
+        await context.tools.get(userId, fetchedToolSlug);
+        mockClient.tools.execute.mockResolvedValueOnce(toolMocks.rawToolExecuteResponse);
+        await storedExecuteToolFn!(unknownToolSlug, {});
+
+        expect(getRawComposioToolBySlugSpy).toHaveBeenCalledTimes(2);
+        expect(getRawComposioToolBySlugSpy).toHaveBeenNthCalledWith(
+          2,
+          unknownToolSlug,
+          { version: undefined },
+          undefined
+        );
+        expect(mockClient.tools.execute).toHaveBeenCalledWith(
+          unknownToolSlug,
+          expect.objectContaining({ user_id: userId, version: 'latest' }),
+          undefined
+        );
+      });
+
+      it('should preserve execution metadata when modifySchema mutates the fetched tool', async () => {
+        const mockProvider = new MockProvider();
+        const tools = new Tools(mockClient, {
+          provider: mockProvider,
+          toolkitVersions: { 'test-toolkit': '20250101_00' },
+        });
+        const userId = 'test-user';
+        const toolSlug = 'GITHUB_CREATE_ISSUE';
+        const rawTool = {
+          ...toolMocks.rawTool,
+          slug: toolSlug,
+          toolkit: { slug: 'test-toolkit', name: 'Test Toolkit' },
+        };
+        let wrappedTools: Tool[] | undefined;
+        let storedExecuteToolFn: ExecuteToolFn | undefined;
+
+        mockClient.tools.retrieve.mockReset().mockResolvedValueOnce(rawTool);
+        mockProvider.wrapTools.mockImplementation((toolsToWrap, executeToolFn) => {
+          wrappedTools = toolsToWrap;
+          storedExecuteToolFn = executeToolFn;
+          return 'wrapped-tools';
+        });
+
+        await tools.get(userId, toolSlug, {
+          modifySchema: ({ schema }) => {
+            schema.toolkit = { slug: 'renamed-toolkit', name: 'Renamed Toolkit' };
+            return schema;
+          },
+        });
+        mockClient.tools.execute.mockResolvedValueOnce(toolMocks.rawToolExecuteResponse);
+        await storedExecuteToolFn!(toolSlug, {});
+
+        expect(wrappedTools?.[0].toolkit?.slug).toBe('renamed-toolkit');
+        expect(mockClient.tools.retrieve).toHaveBeenCalledTimes(1);
+        expect(mockClient.tools.execute).toHaveBeenCalledWith(
+          toolSlug,
+          expect.objectContaining({ version: '20250101_00' }),
           undefined
         );
       });
