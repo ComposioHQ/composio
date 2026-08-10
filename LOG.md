@@ -51,3 +51,20 @@ Started: 2026-08-10 · Budgets: 24 h loop / ≤ 2 500 LLM calls / production (di
 - Divergences found (feed back to composio-client):
 - What was abandoned (and why):
 - Highest-leverage next steps:
+
+## Cycle 2 — 2026-08-10 (operator-driven: fail-loudly conversions)
+- Score (dev): prev VOID · Probe: 17 swallowers named in cycle 1
+- Hypothesis: converting the 17 swallowers to fail-loudly (rethrow /
+  process.exitCode = 1 / raise instead of catch-and-log; plus a readiness
+  line for ts/triggers/index and a real __main__ server for py/fastapi_app)
+  clears the negative-control VOID and yields the first numeric score.
+  Predicted ≈ 10–14 (dead OpenAI key keeps most LLM entries red; the fixes
+  legitimately flip several fake-greens to red).
+- Expected failure mode: a conversion accidentally changes example semantics
+  (e.g. exits before the teaching flow completes) or misses a nested catch,
+  leaving a residual swallower.
+- Diagnostic: targeted `run.mjs neg --ids <the 17>` must go all-red; then a
+  full `score.sh` must print a number, not VOID.
+- Change: (this entry written before the edits)
+- Result:
+- Reflection:
