@@ -112,7 +112,7 @@
       "tier": "2",
       "ids": [
         "COMPOSIO_EXAMPLES_APIKEY_AUTH_CONFIG_ID",
-        "COMPOSIO_EXAMPLES_APIKEY_SECRET"
+        "COMPOSIO_EXAMPLES_APIKEY_PLACEHOLDER"
       ],
       "toolkits": [],
       "timeoutSec": 90
