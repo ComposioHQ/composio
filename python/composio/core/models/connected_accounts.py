@@ -1,16 +1,16 @@
 from __future__ import annotations
 
-import functools
 import logging
 import time
 import typing as t
 import warnings
 
 import typing_extensions as te
-from composio_client import BadRequestError, omit
+from composio_client import BadRequestError
 
 from composio import exceptions
 from composio.client import HttpClient
+from composio.client.compat import IS_V2, OMIT
 from composio.client.types import (
     connected_account_create_params,
     connected_account_patch_params,
@@ -78,7 +78,7 @@ class ConnectionRequest(Resource):
         timeout = self.DEFAULT_WAIT_TIMEOUT if timeout is None else timeout
         deadline = time.time() + timeout
         while deadline > time.time():
-            connection = self._client.connected_accounts.retrieve(nanoid=self.id)
+            connection = self._client.connected_accounts.retrieve(self.id)
             self.status = connection.status
             if self.status == "ACTIVE":
                 return connection
@@ -99,7 +99,7 @@ class ConnectionRequest(Resource):
     def from_id(cls, id: str, client: HttpClient) -> te.Self:
         return cls(
             id=id,
-            status=client.connected_accounts.retrieve(nanoid=id).status,
+            status=client.connected_accounts.retrieve(id).status,
             redirect_url=None,
             client=client,
         )
@@ -345,18 +345,6 @@ class ConnectedAccounts:
     These are used to authenticate with third-party services.
     """
 
-    enable: t.Callable[
-        [str],
-        connected_account_update_status_response.ConnectedAccountUpdateStatusResponse,
-    ]
-    """Enable a connected account."""
-
-    disable: t.Callable[
-        [str],
-        connected_account_update_status_response.ConnectedAccountUpdateStatusResponse,
-    ]
-    """Disable a connected account."""
-
     def __init__(self, client: HttpClient):
         """
         Initialize the connected accounts resource.
@@ -364,19 +352,51 @@ class ConnectedAccounts:
         :param client: The client to use for the connected accounts resource.
         """
         self._client = client
-        self.get = self._client.connected_accounts.retrieve
-        self.list = self._client.connected_accounts.list
-        self.delete = self._client.connected_accounts.delete
-        self.update_status = self._client.connected_accounts.update_status
-        self.refresh = self._client.connected_accounts.refresh
-        self.enable = functools.partial(
-            self._client.connected_accounts.update_status,
-            enabled=True,
+
+    def get(self, nanoid: str, **kwargs: t.Any) -> t.Any:
+        """Retrieve a connected account by its ID."""
+        return self._client.connected_accounts.retrieve(nanoid, **kwargs)
+
+    def list(self, **query: t.Any) -> t.Any:
+        """List connected accounts based on provided filter criteria."""
+        return self._client.connected_accounts.list(query=query or None)
+
+    def delete(self, nanoid: str, **query: t.Any) -> t.Any:
+        """Delete a connected account by its ID."""
+        return self._client.connected_accounts.delete(nanoid, query=query or None)
+
+    def update_status(
+        self, nano_id: str, *, enabled: bool
+    ) -> connected_account_update_status_response.ConnectedAccountUpdateStatusResponse:
+        """Enable or disable a connected account."""
+        return self._client.connected_accounts.update_status(
+            nano_id, {"enabled": enabled}
         )
-        self.disable = functools.partial(
-            self._client.connected_accounts.update_status,
-            enabled=False,
+
+    def refresh(self, nanoid: str, **kwargs: t.Any) -> t.Any:
+        """Refresh a connected account's credentials."""
+        query: t.Dict[str, t.Any] = {}
+        body: t.Dict[str, t.Any] = {}
+        if "query_redirect_url" in kwargs:
+            query["redirect_url"] = kwargs.pop("query_redirect_url")
+        if "body_redirect_url" in kwargs:
+            body["redirect_url"] = kwargs.pop("body_redirect_url")
+        body.update(kwargs)
+        return self._client.connected_accounts.refresh(
+            nanoid, body, query=query or None
         )
+
+    def enable(
+        self, nano_id: str
+    ) -> connected_account_update_status_response.ConnectedAccountUpdateStatusResponse:
+        """Enable a connected account."""
+        return self.update_status(nano_id, enabled=True)
+
+    def disable(
+        self, nano_id: str
+    ) -> connected_account_update_status_response.ConnectedAccountUpdateStatusResponse:
+        """Disable a connected account."""
+        return self.update_status(nano_id, enabled=False)
 
     def update(
         self,
@@ -403,8 +423,10 @@ class ConnectedAccounts:
         """
         return self._client.connected_accounts.patch(
             nanoid,
-            alias=alias if alias is not None else omit,
-            connection=connection if connection is not None else omit,
+            {
+                "alias": alias if alias is not None else OMIT,
+                "connection": connection if connection is not None else OMIT,
+            },
         )
 
     def update_acl(
@@ -462,11 +484,13 @@ class ConnectedAccounts:
         try:
             return self._client.connected_accounts.patch(
                 nanoid,
-                experimental={
-                    "acl_config_for_shared": t.cast(
-                        connected_account_patch_params.ExperimentalACLConfigForShared,
-                        acl,
-                    ),
+                {
+                    "experimental": {
+                        "acl_config_for_shared": t.cast(
+                            "connected_account_patch_params.ExperimentalACLConfigForShared",
+                            acl,
+                        ),
+                    },
                 },
             )
         except BadRequestError as error:
@@ -553,14 +577,19 @@ class ConnectedAccounts:
         deprecation_header: t.Optional[str] = None
         try:
             ca_client = self._client.connected_accounts
-            raw_create = getattr(
-                getattr(ca_client, "with_raw_response", None), "create", None
-            )
+            # `with_raw_response` exists only on the Stainless (v1) client; on
+            # v2 (and on test mocks that don't stub it) fall back to the
+            # parsed-only path below.
+            raw_create = None
+            if not IS_V2:
+                raw_create = getattr(
+                    getattr(ca_client, "with_raw_response", None), "create", None
+                )
             if callable(raw_create):
                 raw = raw_create(
                     auth_config={"id": auth_config_id},
                     connection=t.cast(
-                        connected_account_create_params.Connection, connection
+                        "connected_account_create_params.Connection", connection
                     ),
                 )
                 response = raw.parse() if callable(getattr(raw, "parse", None)) else raw
@@ -570,14 +599,15 @@ class ConnectedAccounts:
                     if isinstance(value, str):
                         deprecation_header = value
             else:
-                # Test mocks may not stub `with_raw_response`. Fall back to
-                # the parsed-only path; the deprecation gate stays off (no
-                # header to read).
+                # Fall back to the parsed-only path; the deprecation gate
+                # stays off (no header to read).
                 response = ca_client.create(
-                    auth_config={"id": auth_config_id},
-                    connection=t.cast(
-                        connected_account_create_params.Connection, connection
-                    ),
+                    {
+                        "auth_config": {"id": auth_config_id},
+                        "connection": t.cast(
+                            "connected_account_create_params.Connection", connection
+                        ),
+                    }
                 )
         except BadRequestError as error:
             # When the server has flipped this org to the retired path, the
@@ -705,11 +735,13 @@ class ConnectedAccounts:
 
         try:
             response = self._client.link.create(
-                auth_config_id=auth_config_id,
-                user_id=user_id,
-                callback_url=callback_url if callback_url is not None else omit,
-                alias=alias if alias is not None else omit,
-                experimental=experimental if experimental is not None else omit,
+                {
+                    "auth_config_id": auth_config_id,
+                    "user_id": user_id,
+                    "callback_url": callback_url if callback_url is not None else OMIT,
+                    "alias": alias if alias is not None else OMIT,
+                    "experimental": experimental if experimental is not None else OMIT,
+                }
             )
         except BadRequestError as error:
             # The server rejects ACL on PRIVATE connections — surface that

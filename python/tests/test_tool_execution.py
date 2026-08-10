@@ -5,7 +5,7 @@ from unittest.mock import Mock, patch
 
 import pytest
 from pydantic import BaseModel, RootModel
-from composio_client import omit
+from composio.client.compat import OMIT
 
 from composio.client.types import Tool, tool_list_response
 from composio.core.models.base import allow_tracking
@@ -71,14 +71,12 @@ class TestToolExecution:
 
         assert [tool.slug for tool in result] == ["FIRST_TOOL", "SECOND_TOOL"]
         mock_client.tool_router.session.tools.assert_any_call(
-            session_id="session_123",
-            cursor=omit,
-            limit=500,
+            "session_123",
+            query={"cursor": OMIT, "limit": 500},
         )
         mock_client.tool_router.session.tools.assert_any_call(
-            session_id="session_123",
-            limit=500,
-            cursor="next_page",
+            "session_123",
+            query={"cursor": "next_page", "limit": 500},
         )
 
     def test_tool_execution_uses_toolkit_version(self):
@@ -125,7 +123,7 @@ class TestToolExecution:
             call_args = mock_client.tools.execute.call_args
 
             # Should have called with version="20251201_01" (resolved from github toolkit)
-            assert call_args.kwargs["version"] == "20251201_01"
+            assert call_args.args[1]["version"] == "20251201_01"
 
     def test_tool_execution_with_explicit_version(self):
         """Test that explicit version overrides toolkit version."""
@@ -174,7 +172,7 @@ class TestToolExecution:
             call_args = mock_client.tools.execute.call_args
 
             # Should have called with explicit version, not resolved from toolkit
-            assert call_args.kwargs["version"] == "20251201_03"
+            assert call_args.args[1]["version"] == "20251201_03"
 
     def test_tool_execution_unknown_toolkit_fallback(self):
         """Test that unknown toolkit falls back to 'latest'."""
@@ -223,7 +221,7 @@ class TestToolExecution:
             call_args = mock_client.tools.execute.call_args
 
             # Should have called with "latest" since github is not in toolkit_versions
-            assert call_args.kwargs["version"] == "latest"
+            assert call_args.args[1]["version"] == "latest"
 
     def test_tool_execution_with_global_version_string(self):
         """Test that global version string is used for all toolkits."""
@@ -269,7 +267,7 @@ class TestToolExecution:
             call_args = mock_client.tools.execute.call_args
 
             # Should have called with the global version string
-            assert call_args.kwargs["version"] == "20251201_03"
+            assert call_args.args[1]["version"] == "20251201_03"
 
     def test_tool_execution_matches_typescript_behavior(self):
         """Test that Python execution matches TypeScript behavior exactly."""
@@ -345,7 +343,7 @@ class TestToolExecution:
 
                 # Verify the version matches expected
                 call_args = mock_client.tools.execute.call_args
-                assert call_args.kwargs["version"] == expected_version, (
+                assert call_args.args[1]["version"] == expected_version, (
                     f"Tool {tool_slug} with toolkit {toolkit_slug} should use version {expected_version}"
                 )
 
@@ -426,7 +424,7 @@ class TestToolExecution:
             # Verify the client was called with version="latest"
             mock_client.tools.execute.assert_called_once()
             call_args = mock_client.tools.execute.call_args
-            assert call_args.kwargs["version"] == "latest"
+            assert call_args.args[1]["version"] == "latest"
 
     def test_execute_with_specific_version_no_error(self):
         """Test that execute works with specific version without raising error."""
@@ -472,7 +470,7 @@ class TestToolExecution:
             # Verify the client was called with the specific version
             mock_client.tools.execute.assert_called_once()
             call_args = mock_client.tools.execute.call_args
-            assert call_args.kwargs["version"] == "20251201_01"
+            assert call_args.args[1]["version"] == "20251201_01"
 
     def test_execute_uses_instance_toolkit_versions(self):
         """Test that execute method uses instance-level toolkit versions."""
@@ -521,7 +519,7 @@ class TestToolExecution:
             # Verify the client was called with the configured version
             mock_client.tools.execute.assert_called_once()
             call_args = mock_client.tools.execute.call_args
-            assert call_args.kwargs["version"] == "20251201_01"
+            assert call_args.args[1]["version"] == "20251201_01"
 
     def test_execute_version_parameter_overrides_toolkit_versions(self):
         """Test that explicit version parameter overrides instance toolkit versions."""
@@ -571,7 +569,7 @@ class TestToolExecution:
             # Verify the client was called with the explicit version, not instance version
             mock_client.tools.execute.assert_called_once()
             call_args = mock_client.tools.execute.call_args
-            assert call_args.kwargs["version"] == "20251201_03"
+            assert call_args.args[1]["version"] == "20251201_03"
 
     def test_execute_with_connected_account_id(self):
         """Test that execute passes connected_account_id correctly."""
@@ -618,7 +616,7 @@ class TestToolExecution:
             # Verify the client was called with the connected_account_id
             mock_client.tools.execute.assert_called_once()
             call_args = mock_client.tools.execute.call_args
-            assert call_args.kwargs["connected_account_id"] == "test-account-123"
+            assert call_args.args[1]["connected_account_id"] == "test-account-123"
 
     def test_execute_with_custom_auth_params(self):
         """Test that execute passes custom_auth_params correctly."""
@@ -666,7 +664,7 @@ class TestToolExecution:
             # Verify the client was called with the custom_auth_params
             mock_client.tools.execute.assert_called_once()
             call_args = mock_client.tools.execute.call_args
-            assert call_args.kwargs["custom_auth_params"] == custom_auth
+            assert call_args.args[1]["custom_auth_params"] == custom_auth
 
     def test_execute_with_user_id_and_text(self):
         """Test that execute passes user_id and text parameters correctly."""
@@ -714,8 +712,8 @@ class TestToolExecution:
             # Verify the client was called with user_id and text
             mock_client.tools.execute.assert_called_once()
             call_args = mock_client.tools.execute.call_args
-            assert call_args.kwargs["user_id"] == "user-123"
-            assert call_args.kwargs["text"] == "Additional context"
+            assert call_args.args[1]["user_id"] == "user-123"
+            assert call_args.args[1]["text"] == "Additional context"
 
     def test_execute_with_modifiers_before_execute(self):
         """Test that execute applies before_execute modifiers correctly."""
@@ -771,7 +769,7 @@ class TestToolExecution:
             # Verify the client was called with modified arguments
             mock_client.tools.execute.assert_called_once()
             call_args = mock_client.tools.execute.call_args
-            assert call_args.kwargs["arguments"]["owner"] == "modified-owner"
+            assert call_args.args[1]["arguments"]["owner"] == "modified-owner"
 
     def test_execute_with_modifiers_after_execute(self):
         """Test that execute applies after_execute modifiers correctly."""
@@ -1065,7 +1063,7 @@ class TestToolExecution:
             # Verify the client was called with the env variable version
             mock_client.tools.execute.assert_called_once()
             call_args = mock_client.tools.execute.call_args
-            assert call_args.kwargs["version"] == "20251201_08"
+            assert call_args.args[1]["version"] == "20251201_08"
         finally:
             # Clean up environment variable
             if "COMPOSIO_TOOLKIT_VERSION_GITHUB" in os.environ:
@@ -1154,7 +1152,7 @@ class TestToolExecution:
             # Verify the client was called with custom_connection_data
             mock_client.tools.execute.assert_called_once()
             call_args = mock_client.tools.execute.call_args
-            assert call_args.kwargs["custom_connection_data"] == custom_connection
+            assert call_args.args[1]["custom_connection_data"] == custom_connection
 
 
 class TestSerializeArguments:
@@ -1276,7 +1274,7 @@ class TestSerializeArguments:
             )
 
             call_args = mock_client.tools.execute.call_args
-            sent_arguments = call_args.kwargs["arguments"]
+            sent_arguments = call_args.args[1]["arguments"]
             assert sent_arguments == {
                 "page_id": "abc-123",
                 "children": [

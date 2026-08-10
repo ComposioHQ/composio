@@ -10,14 +10,17 @@ import typing as t
 from dataclasses import dataclass, field
 
 import typing_extensions as te
-from composio_client.types.tool_router import session_create_params
 from pydantic import BaseModel
 
-from composio_client.types.tool_router.session_execute_response import (
-    SessionExecuteResponse,
+from composio.client.types import session_create_params
+from composio.client.types import session_execute_response as _session_execute_response
+from composio.client.types import (
+    session_proxy_execute_response as _session_proxy_execute_response,
 )
-from composio_client.types.tool_router.session_proxy_execute_response import (
-    SessionProxyExecuteResponse,
+
+SessionExecuteResponse = _session_execute_response.SessionExecuteResponse
+SessionProxyExecuteResponse = (
+    _session_proxy_execute_response.SessionProxyExecuteResponse
 )
 
 # ────────────────────────────────────────────────────────────────

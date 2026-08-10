@@ -77,7 +77,7 @@ class TestAuthConfigs:
 
         result = auth_configs.list()
 
-        mock_client.auth_configs.list.assert_called_once_with()
+        mock_client.auth_configs.list.assert_called_once_with(query=None)
         assert result == mock_response
 
     def test_list_with_params(self, auth_configs, mock_client):
@@ -94,10 +94,12 @@ class TestAuthConfigs:
         )
 
         mock_client.auth_configs.list.assert_called_once_with(
-            cursor="cursor_123",
-            is_composio_managed=True,
-            limit=10,
-            toolkit_slug="github",
+            query={
+                "cursor": "cursor_123",
+                "is_composio_managed": True,
+                "limit": 10,
+                "toolkit_slug": "github",
+            }
         )
         assert result == mock_response
 
@@ -137,8 +139,8 @@ class TestAuthConfigs:
 
         mock_client.auth_configs.create.assert_called_once()
         call_args = mock_client.auth_configs.create.call_args
-        assert call_args.kwargs["toolkit"] == {"slug": "github"}
-        assert call_args.kwargs["auth_config"] == options
+        assert call_args.args[0]["toolkit"] == {"slug": "github"}
+        assert call_args.args[0]["auth_config"] == options
         assert result == mock_auth_config
 
     def test_create_with_custom_auth_and_credentials(self, auth_configs, mock_client):
@@ -167,8 +169,8 @@ class TestAuthConfigs:
 
         mock_client.auth_configs.create.assert_called_once()
         call_args = mock_client.auth_configs.create.call_args
-        assert call_args.kwargs["toolkit"] == {"slug": "github"}
-        assert call_args.kwargs["auth_config"] == options
+        assert call_args.args[0]["toolkit"] == {"slug": "github"}
+        assert call_args.args[0]["auth_config"] == options
         assert result.is_composio_managed is False
         assert result.auth_scheme == "OAUTH2"
 
@@ -281,9 +283,9 @@ class TestAuthConfigs:
 
         mock_client.auth_configs.update.assert_called_once()
         call_args = mock_client.auth_configs.update.call_args
-        assert call_args.kwargs["nanoid"] == "auth_12345"
-        assert call_args.kwargs["type"] == "custom"
-        assert call_args.kwargs["credentials"] == options["credentials"]
+        assert call_args.args[0] == "auth_12345"
+        assert call_args.args[1]["type"] == "custom"
+        assert call_args.args[1]["credentials"] == options["credentials"]
         assert result == mock_response
 
     def test_update_default_auth_config_with_scopes(self, auth_configs, mock_client):
@@ -301,8 +303,8 @@ class TestAuthConfigs:
         mock_client.auth_configs.update.assert_called_once()
         # Check that scopes are not directly passed but other fields are
         call_args = mock_client.auth_configs.update.call_args
-        assert call_args.kwargs["nanoid"] == "auth_12345"
-        assert call_args.kwargs["type"] == "default"
+        assert call_args.args[0] == "auth_12345"
+        assert call_args.args[1]["type"] == "default"
         assert result == mock_response
 
     def test_update_with_is_enabled_for_tool_router(self, auth_configs, mock_client):
@@ -319,7 +321,7 @@ class TestAuthConfigs:
         result = auth_configs.update("auth_12345", options=options)
 
         call_args = mock_client.auth_configs.update.call_args
-        assert call_args.kwargs["is_enabled_for_tool_router"] is True
+        assert call_args.args[1]["is_enabled_for_tool_router"] is True
         assert result == mock_response
 
     def test_update_with_tool_access_config(self, auth_configs, mock_client):
@@ -338,7 +340,7 @@ class TestAuthConfigs:
         result = auth_configs.update("auth_12345", options=options)
 
         call_args = mock_client.auth_configs.update.call_args
-        assert call_args.kwargs["tool_access_config"] == options["tool_access_config"]
+        assert call_args.args[1]["tool_access_config"] == options["tool_access_config"]
         assert result == mock_response
 
     def test_update_with_large_credential_object(self, auth_configs, mock_client):
@@ -363,7 +365,7 @@ class TestAuthConfigs:
         result = auth_configs.update("auth_12345", options=options)
 
         call_args = mock_client.auth_configs.update.call_args
-        assert call_args.kwargs["credentials"] == large_credentials
+        assert call_args.args[1]["credentials"] == large_credentials
         assert result == mock_response
 
     def test_update_handles_api_error(self, auth_configs, mock_client):
@@ -409,7 +411,7 @@ class TestAuthConfigs:
         result = auth_configs.enable("auth_12345")
 
         mock_client.auth_configs.update_status.assert_called_once_with(
-            "ENABLED", nanoid="auth_12345"
+            "auth_12345", "ENABLED"
         )
         assert result == mock_response
 
@@ -421,7 +423,7 @@ class TestAuthConfigs:
         result = auth_configs.disable("auth_12345")
 
         mock_client.auth_configs.update_status.assert_called_once_with(
-            "DISABLED", nanoid="auth_12345"
+            "auth_12345", "DISABLED"
         )
         assert result == mock_response
 
@@ -458,8 +460,8 @@ class TestAuthConfigs:
 
         call_args = mock_client.auth_configs.update.call_args
         # Verify that optional fields use the sentinel value
-        assert call_args.kwargs["is_enabled_for_tool_router"] == mock_client.not_given
-        assert call_args.kwargs["tool_access_config"] == mock_client.not_given
+        assert call_args.args[1]["is_enabled_for_tool_router"] == mock_client.not_given
+        assert call_args.args[1]["tool_access_config"] == mock_client.not_given
         assert result == mock_response
 
     def test_create_with_minimal_options(self, auth_configs, mock_client):
