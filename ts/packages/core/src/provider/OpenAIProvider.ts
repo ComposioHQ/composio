@@ -270,6 +270,7 @@ export class OpenAIProvider extends BaseNonAgenticProvider<
     options?: ExecuteToolFnOptions,
     modifiers?: ExecuteToolModifiers
   ): Promise<OpenAI.ChatCompletionToolMessageParam[]> {
+    this.assertToolCallExecutionOptions(executionTarget, options, modifiers);
     const outputs: OpenAI.ChatCompletionToolMessageParam[] = [];
     // Only the first choice is actionable: its tool results feed back into a
     // single assistant turn. With n > 1, iterating every choice would run each

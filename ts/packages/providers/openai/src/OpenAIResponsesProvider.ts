@@ -298,6 +298,7 @@ export class OpenAIResponsesProvider extends BaseNonAgenticProvider<
     options?: ExecuteToolFnOptions,
     modifiers?: ExecuteToolModifiers
   ): Promise<OpenAI.Responses.ResponseInputItem.FunctionCallOutput[]> {
+    this.assertToolCallExecutionOptions(executionTarget, options, modifiers);
     const toolOutputs: OpenAI.Responses.ResponseInputItem.FunctionCallOutput[] = [];
     for (const output of toolCalls) {
       if (output.type === 'function_call') {

@@ -65,6 +65,19 @@ abstract class BaseProvider<TMcpResponse> {
     return this._globalExecuteToolFn(toolSlug, body, modifers);
   }
 
+  /** Reject direct-only configuration when execution is bound to a session. */
+  protected assertToolCallExecutionOptions(
+    target: ToolCallExecutionTarget,
+    options?: ExecuteToolFnOptions,
+    modifiers?: ExecuteToolModifiers
+  ): void {
+    if (typeof target !== 'string' && (options !== undefined || modifiers !== undefined)) {
+      throw new TypeError(
+        'Direct execution options and modifiers cannot be used with a Tool Router session'
+      );
+    }
+  }
+
   /**
    * Execute normalized provider arguments against either the direct tools API or
    * the Tool Router session that produced the model-visible tools.
@@ -76,6 +89,8 @@ abstract class BaseProvider<TMcpResponse> {
     options?: ExecuteToolFnOptions,
     modifiers?: ExecuteToolModifiers
   ): Promise<ToolExecuteResponse> {
+    this.assertToolCallExecutionOptions(target, options, modifiers);
+
     if (typeof target === 'string') {
       return this.executeTool(
         toolSlug,
@@ -87,12 +102,6 @@ abstract class BaseProvider<TMcpResponse> {
           userId: target,
         },
         modifiers
-      );
-    }
-
-    if (options !== undefined || modifiers !== undefined) {
-      throw new TypeError(
-        'Direct execution options and modifiers cannot be used with a Tool Router session'
       );
     }
 

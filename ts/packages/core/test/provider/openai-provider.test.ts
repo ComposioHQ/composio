@@ -247,6 +247,27 @@ describe('OpenAIProvider', () => {
       ]);
     });
 
+    it('rejects direct execution options for session tool calls', async () => {
+      const session = {
+        execute: vi.fn(),
+      };
+      const chatCompletion = { choices: [] } as unknown as OpenAI.ChatCompletion;
+      const handleToolCallsWithOptions = provider.handleToolCalls as unknown as (
+        executionTarget: typeof session,
+        response: OpenAI.ChatCompletion,
+        options: { connectedAccountId: string }
+      ) => ReturnType<OpenAIProvider['handleToolCalls']>;
+
+      await expect(
+        handleToolCallsWithOptions.call(provider, session, chatCompletion, {
+          connectedAccountId: 'conn-123',
+        })
+      ).rejects.toThrow(
+        'Direct execution options and modifiers cannot be used with a Tool Router session'
+      );
+      expect(session.execute).not.toHaveBeenCalled();
+    });
+
     it('should handle tool calls from chat completion', async () => {
       const userId = 'test-user';
       const chatCompletion = {

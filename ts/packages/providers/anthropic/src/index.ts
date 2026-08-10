@@ -365,6 +365,7 @@ export class AnthropicProvider extends BaseNonAgenticProvider<
     options?: ExecuteToolFnOptions,
     modifiers?: ExecuteToolModifiers
   ): Promise<Anthropic.Messages.MessageParam[]> {
+    this.assertToolCallExecutionOptions(executionTarget, options, modifiers);
     const outputs: Anthropic.Messages.ToolResultBlockParam[] = [];
 
     // Filter and map tool use blocks from message content
