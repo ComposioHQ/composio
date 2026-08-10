@@ -26,6 +26,17 @@ import { z } from 'zod';
 const API_BASE = requireProductionApiV3Url(process.env.COMPOSIO_API_BASE);
 const API_KEY = process.env.COMPOSIO_API_KEY;
 
+/** The docs generator intentionally mirrors the public Composio Connect MCP surface. */
+export const CONNECT_META_TOOL_SLUGS = [
+  'COMPOSIO_SEARCH_TOOLS',
+  'COMPOSIO_GET_TOOL_SCHEMAS',
+  'COMPOSIO_MANAGE_CONNECTIONS',
+  'COMPOSIO_WAIT_FOR_CONNECTIONS',
+  'COMPOSIO_MULTI_EXECUTE_TOOL',
+  'COMPOSIO_REMOTE_WORKBENCH',
+  'COMPOSIO_REMOTE_BASH_TOOL',
+] as const;
+
 const DATA_DIR = join(process.cwd(), 'public/data');
 const CONTENT_DIR = join(process.cwd(), 'content/toolkits/meta-tools');
 
@@ -35,7 +46,7 @@ interface GeneratedMetaTool {
   displayName: string;
   description: string;
   tags: string[];
-  toolkit: string | null;
+  toolkit: string | Record<string, unknown> | null;
   inputParameters: Record<string, unknown>;
   responseSchema: Record<string, unknown>;
 }
@@ -72,7 +83,10 @@ const rawMetaToolSchema = z.object({
   name: z.string().catch(''),
   description: z.string().catch(''),
   tags: stringArraySchema,
-  toolkit: z.string().optional().catch(undefined),
+  toolkit: z
+    .union([z.string(), z.record(z.string(), z.unknown())])
+    .optional()
+    .catch(undefined),
   input_parameters: recordSchema,
   output_parameters: recordSchema,
 });
@@ -87,11 +101,11 @@ async function createSession(): Promise<string> {
       'x-api-key': API_KEY!,
     },
     body: JSON.stringify({
+      // Connect explicitly enables the optional WAIT helper; generic sessions default it off.
       user_id: 'default',
-      config: {
-        autoManageConnections: true,
-        recipesEnabled: true,
-        enableWaitForConnections: true,
+      manage_connections: {
+        enable: true,
+        enable_wait_for_connections: true,
       },
     }),
   });
@@ -108,9 +122,20 @@ async function createSession(): Promise<string> {
     throw new Error('No session_id in response');
   }
 
+  assertConnectMetaTools(data.tool_router_tools);
+
   console.log(`  Session created: ${sessionId}`);
   console.log(`  Tools available: ${data.tool_router_tools.join(', ')}`);
   return sessionId;
+}
+
+export function assertConnectMetaTools(toolSlugs: string[]): void {
+  const missing = CONNECT_META_TOOL_SLUGS.filter(slug => !toolSlugs.includes(slug));
+  if (missing.length > 0) {
+    throw new Error(
+      `Missing meta tools for the Connect-shaped docs session: ${missing.join(', ')}. Check the session request before publishing generated meta-tool reference data.`
+    );
+  }
 }
 
 async function fetchMetaTools(sessionId: string): Promise<unknown[]> {
@@ -186,7 +211,7 @@ function indexLine(tool: GeneratedMetaTool): string {
 function generateIndexMdx(tools: GeneratedMetaTool[]): string {
   let content = `---
 title: Meta Tools
-description: The system tools every Composio session gives your agent to discover, authenticate, execute, and process tools at runtime.
+description: The configurable Tool Router helpers agents use to discover, authenticate, execute, and process tools at runtime.
 keywords: [meta tools, session]
 ---
 
@@ -194,11 +219,15 @@ keywords: [meta tools, session]
 
 import { Callout } from 'fumadocs-ui/components/callout';
 
-Every Composio [session](/docs/how-composio-works) hands your agent a small set of meta tools instead of hundreds of raw tool definitions. The agent uses them to find the right tools for a task, connect the accounts those tools need, execute them, and process the results, all at runtime and all sharing one \`session_id\`.
+A Composio [session](/docs/how-composio-works) exposes a configurable set of meta tools instead of hundreds of raw tool definitions. The agent uses the enabled helpers to find the right tools for a task, connect the accounts those tools need, execute them, and process the results, all at runtime and all sharing one \`session_id\`.
 
 This keeps your context window small: you load a handful of meta tools, not a catalog of 500+ apps. The agent searches for what it needs when it needs it.
 
-A typical workflow runs in order: call \`COMPOSIO_SEARCH_TOOLS\` to discover tools and open a session, call \`COMPOSIO_MANAGE_CONNECTIONS\` if a toolkit is not yet connected, then run the tools with \`COMPOSIO_MULTI_EXECUTE_TOOL\`. Reach for the workbench and bash tools when responses are large enough to process out of context.
+A typical workflow runs in order: call \`COMPOSIO_SEARCH_TOOLS\` to discover tools, call \`COMPOSIO_MANAGE_CONNECTIONS\` if a toolkit is not connected, show the returned authentication link, and—when the optional helper is enabled—call \`COMPOSIO_WAIT_FOR_CONNECTIONS\` before execution. Run tools with \`COMPOSIO_MULTI_EXECUTE_TOOL\`; reach for workbench and bash when responses are large enough to process out of context.
+
+<Callout type="info">
+Tool Router supports seven helper-tool types. A default session exposes six because \`COMPOSIO_WAIT_FOR_CONNECTIONS\` is opt-in. Composio Connect enables all seven; other session flags can reduce the exposed set further.
+</Callout>
 
 | Tool | What it does |
 |------|--------------|

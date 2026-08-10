@@ -44,6 +44,14 @@ export const META_TOOL_OVERRIDES: Record<string, MetaToolOverride> = {
     usageNote:
       'When the tool returns a `redirect_url`, show it to the user as a formatted markdown link and wait for the connection to go active before executing. Set `reinitiate_all` to force a fresh connection when credentials are stale.',
   },
+  COMPOSIO_WAIT_FOR_CONNECTIONS: {
+    summary:
+      'Waits for one or more authentication flows to reach an active or failed state before the agent continues.',
+    whenToUse:
+      'Call `COMPOSIO_WAIT_FOR_CONNECTIONS` immediately after `COMPOSIO_MANAGE_CONNECTIONS` returns an authentication link and you have shown that link to the user. Continue to tool execution only after the required connection is active.',
+    usageNote:
+      'Pass the exact toolkit slugs from the connection request and reuse the same `session_id`. Use `mode: "all"` when every requested connection must finish, or `mode: "any"` when the first completed connection is enough. Do not call this tool before initiating authentication.',
+  },
   COMPOSIO_MULTI_EXECUTE_TOOL: {
     summary:
       'Executes up to 50 tools in parallel and returns structured outputs ready for immediate analysis.',

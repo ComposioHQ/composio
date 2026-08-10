@@ -1,6 +1,6 @@
 ---
 title: Meta Tools
-description: The system tools every Composio session gives your agent to discover, authenticate, execute, and process tools at runtime.
+description: The configurable Tool Router helpers agents use to discover, authenticate, execute, and process tools at runtime.
 keywords: [meta tools, session]
 ---
 
@@ -8,11 +8,15 @@ keywords: [meta tools, session]
 
 import { Callout } from 'fumadocs-ui/components/callout';
 
-Every Composio [session](/docs/how-composio-works) hands your agent a small set of meta tools instead of hundreds of raw tool definitions. The agent uses them to find the right tools for a task, connect the accounts those tools need, execute them, and process the results, all at runtime and all sharing one `session_id`.
+A Composio [session](/docs/how-composio-works) exposes a configurable set of meta tools instead of hundreds of raw tool definitions. The agent uses the enabled helpers to find the right tools for a task, connect the accounts those tools need, execute them, and process the results, all at runtime and all sharing one `session_id`.
 
 This keeps your context window small: you load a handful of meta tools, not a catalog of 500+ apps. The agent searches for what it needs when it needs it.
 
-A typical workflow runs in order: call `COMPOSIO_SEARCH_TOOLS` to discover tools and open a session, call `COMPOSIO_MANAGE_CONNECTIONS` if a toolkit is not yet connected, then run the tools with `COMPOSIO_MULTI_EXECUTE_TOOL`. Reach for the workbench and bash tools when responses are large enough to process out of context.
+A typical workflow runs in order: call `COMPOSIO_SEARCH_TOOLS` to discover tools, call `COMPOSIO_MANAGE_CONNECTIONS` if a toolkit is not connected, show the returned authentication link, and—when the optional helper is enabled—call `COMPOSIO_WAIT_FOR_CONNECTIONS` before execution. Run tools with `COMPOSIO_MULTI_EXECUTE_TOOL`; reach for workbench and bash when responses are large enough to process out of context.
+
+<Callout type="info">
+Tool Router supports seven helper-tool types. A default session exposes six because `COMPOSIO_WAIT_FOR_CONNECTIONS` is opt-in. Composio Connect enables all seven; other session flags can reduce the exposed set further.
+</Callout>
 
 | Tool | What it does |
 |------|--------------|
@@ -22,6 +26,7 @@ A typical workflow runs in order: call `COMPOSIO_SEARCH_TOOLS` to discover tools
 | [`COMPOSIO_REMOTE_BASH_TOOL`](/toolkits/meta-tools/remote_bash_tool) | Runs bash commands in a remote sandbox for file operations, data processing, and system tasks |
 | [`COMPOSIO_REMOTE_WORKBENCH`](/toolkits/meta-tools/remote_workbench) | Runs Python in a persistent remote sandbox to process large remote files and script bulk or repeated tool executions |
 | [`COMPOSIO_SEARCH_TOOLS`](/toolkits/meta-tools/search_tools) | Discovers the right tools across 500+ apps for a task and returns them with an execution plan, connection status, and the `session_id` that ties the rest of the workflow together |
+| [`COMPOSIO_WAIT_FOR_CONNECTIONS`](/toolkits/meta-tools/wait_for_connections) | Waits for one or more authentication flows to reach an active or failed state before the agent continues |
 
 <Callout type="warn">
 These schemas are for reference only. We do not guarantee backward compatibility for parameter names or response shapes, so do not rely on them as structured type definitions in your code.

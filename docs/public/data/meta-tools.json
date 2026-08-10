@@ -1311,5 +1311,137 @@
       "title": "SearchToolsResponseWrapper",
       "type": "object"
     }
+  },
+  {
+    "slug": "COMPOSIO_WAIT_FOR_CONNECTIONS",
+    "name": "wait_for_connection",
+    "displayName": "Wait For Connection",
+    "description": "\nWait for user auth to finish. Call ONLY after you have shown the Auth link from COMPOSIO_MANAGE_CONNECTIONS.\nWait until mode=any/all toolkits reach a terminal state (ACTIVE/FAILED) or timeout.\n\nExample Input: { toolkits: [\"gmail\",\"outlook\"], mode: \"any\" }\n    ",
+    "tags": [
+      "readOnlyHint",
+      "idempotentHint"
+    ],
+    "toolkit": {
+      "slug": "COMPOSIO",
+      "name": "composio",
+      "logo": "https://cdn.jsdelivr.net/gh/ComposioHQ/open-logos@master/composio-logo.png"
+    },
+    "inputParameters": {
+      "properties": {
+        "toolkits": {
+          "description": "List of toolkit slugs to wait for.",
+          "items": {
+            "properties": {},
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Toolkits",
+          "type": "array"
+        },
+        "mode": {
+          "default": "any",
+          "description": "Wait for ANY connection or ALL connections to reach active/failed state (default: any)",
+          "enum": [
+            "any",
+            "all"
+          ],
+          "title": "Mode",
+          "type": "string"
+        },
+        "session_id": {
+          "description": "Pass the session_id if you received one from a prior COMPOSIO_SEARCH_TOOLS call.",
+          "title": "Session ID",
+          "type": "string"
+        }
+      },
+      "required": [
+        "toolkits"
+      ],
+      "title": "WaitForConnectionRequest",
+      "type": "object"
+    },
+    "responseSchema": {
+      "properties": {
+        "data": {
+          "description": "Data from the action execution",
+          "properties": {
+            "message": {
+              "description": "Status message summarizing connection statuses",
+              "type": "string"
+            },
+            "results": {
+              "description": "Connection status for each toolkit (keyed by toolkit slug)",
+              "type": "object",
+              "additionalProperties": {
+                "type": "object",
+                "properties": {
+                  "toolkit": {
+                    "type": "string"
+                  },
+                  "status": {
+                    "type": "string",
+                    "description": "Connection status: ACTIVE=ready, INITIATED=auth pending, FAILED=auth failed/expired, NOT_FOUND=no connection exists"
+                  },
+                  "has_active_connection": {
+                    "type": "boolean"
+                  },
+                  "connected_account_id": {
+                    "type": "string"
+                  },
+                  "auth_config_id": {
+                    "type": "string"
+                  },
+                  "created_at": {
+                    "type": "string"
+                  },
+                  "current_user_info": {
+                    "type": "object",
+                    "additionalProperties": true
+                  },
+                  "error_message": {
+                    "type": "string"
+                  }
+                }
+              }
+            },
+            "session": {
+              "description": "Session info echoed back for correlation",
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "instructions": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "required": [
+            "message",
+            "results"
+          ],
+          "type": "object"
+        },
+        "error": {
+          "default": null,
+          "description": "Error if any occurred during the execution of the action",
+          "nullable": true,
+          "title": "Error",
+          "type": "string"
+        },
+        "successful": {
+          "description": "Whether or not the action execution was successful or not",
+          "title": "Successful",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "data",
+        "successful"
+      ],
+      "title": "WaitForConnectionResponseWrapper",
+      "type": "object"
+    }
   }
 ]

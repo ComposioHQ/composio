@@ -14,6 +14,7 @@
  * suite.
  */
 import { describe, test, expect } from "bun:test";
+import { readFileSync } from "node:fs";
 import {
   authConfigFields,
   parseNamedItems,
@@ -22,7 +23,12 @@ import {
   transformAuthConfigDetail,
   transformToolkit,
 } from "../../scripts/generate-toolkits";
-import { transformTool } from "../../scripts/generate-meta-tools";
+import {
+  assertConnectMetaTools,
+  pageSlug,
+  CONNECT_META_TOOL_SLUGS,
+  transformTool,
+} from "../../scripts/generate-meta-tools";
 
 describe("transformToolkit", () => {
   test("maps a representative full toolkit object end to end", () => {
@@ -316,6 +322,15 @@ describe("transformTool (generate-meta-tools.ts)", () => {
     expect(transformTool({ slug: "x", name: "x", toolkit: 7 }).toolkit).toBeNull();
   });
 
+  test("preserves the toolkit object returned by the production API", () => {
+    const toolkit = {
+      slug: "COMPOSIO",
+      name: "composio",
+      logo: "https://example.com/composio.png",
+    };
+    expect(transformTool({ slug: "x", name: "x", toolkit }).toolkit).toEqual(toolkit);
+  });
+
   test("displayName falls back to the slug when name is empty", () => {
     const tool = transformTool({ slug: "COMPOSIO_X", name: "" });
     expect(tool.displayName).toBe("COMPOSIO_X");
@@ -334,6 +349,45 @@ describe("transformTool (generate-meta-tools.ts)", () => {
     expect(tool.toolkit).toBeNull();
     expect(tool.inputParameters).toEqual({});
     expect(tool.responseSchema).toEqual({});
+  });
+});
+
+describe("assertConnectMetaTools (generate-meta-tools.ts)", () => {
+  const connectMetaTools = [
+    "COMPOSIO_SEARCH_TOOLS",
+    "COMPOSIO_GET_TOOL_SCHEMAS",
+    "COMPOSIO_MANAGE_CONNECTIONS",
+    "COMPOSIO_WAIT_FOR_CONNECTIONS",
+    "COMPOSIO_MULTI_EXECUTE_TOOL",
+    "COMPOSIO_REMOTE_WORKBENCH",
+    "COMPOSIO_REMOTE_BASH_TOOL",
+  ];
+
+  test("accepts a session that includes the complete Connect set", () => {
+    expect(() => assertConnectMetaTools(connectMetaTools)).not.toThrow();
+  });
+
+  test("reports every missing tool before publishing an incomplete reference", () => {
+    expect(() => assertConnectMetaTools(connectMetaTools.slice(0, -2))).toThrow(
+      "Missing meta tools for the Connect-shaped docs session: COMPOSIO_REMOTE_WORKBENCH, COMPOSIO_REMOTE_BASH_TOOL"
+    );
+  });
+});
+
+describe("committed meta-tool reference", () => {
+  test("matches the Connect-shaped docs session and generated navigation", () => {
+    const tools = JSON.parse(
+      readFileSync(new URL("../../public/data/meta-tools.json", import.meta.url), "utf8")
+    ) as Array<{ slug: string }>;
+    const navigation = JSON.parse(
+      readFileSync(
+        new URL("../../content/toolkits/meta-tools/meta.json", import.meta.url),
+        "utf8"
+      )
+    ) as { pages: string[] };
+
+    expect(tools.map(tool => tool.slug).sort()).toEqual([...CONNECT_META_TOOL_SLUGS].sort());
+    expect(navigation.pages).toEqual(tools.map(tool => pageSlug(tool.slug)));
   });
 });
 

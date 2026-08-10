@@ -7,6 +7,7 @@
     "multi_execute_tool",
     "remote_bash_tool",
     "remote_workbench",
-    "search_tools"
+    "search_tools",
+    "wait_for_connections"
   ]
 }
