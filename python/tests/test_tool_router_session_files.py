@@ -69,8 +69,8 @@ class TestToolRouterSessionFilesMount:
 
         mock_client.tool_router.session.files.list.assert_called_once()
         call_args = mock_client.tool_router.session.files.list.call_args
-        assert call_args[0][0] == "files"  # mount_id positional
-        assert call_args[1]["session_id"] == "session_123"
+        assert call_args[0][0] == "session_123"  # session_id positional first
+        assert call_args[0][1] == "files"  # mount_id positional second
         assert result.items == []
         assert result.next_cursor is None
 
@@ -78,10 +78,10 @@ class TestToolRouterSessionFilesMount:
         """Test list with path and pagination params."""
         files_mount.list(path="/documents", cursor="c123", limit=10)
 
-        call_kwargs = mock_client.tool_router.session.files.list.call_args[1]
-        assert call_kwargs.get("mount_relative_prefix") == "documents"
-        assert call_kwargs.get("cursor") == "c123"
-        assert call_kwargs.get("limit") == 10.0
+        call_query = mock_client.tool_router.session.files.list.call_args[1]["query"]
+        assert call_query.get("mount_relative_prefix") == "documents"
+        assert call_query.get("cursor") == "c123"
+        assert call_query.get("limit") == 10
 
     def test_upload_from_bytes_requires_mimetype_or_remote_path(self, files_mount):
         """Test that buffer upload requires mimetype or remote_path."""
@@ -133,10 +133,10 @@ class TestToolRouterSessionFilesMount:
             result = files_mount.upload(str(test_file))
 
             assert isinstance(result, RemoteFile)
-            call_kwargs = (
-                mock_client.tool_router.session.files.create_upload_url.call_args[1]
+            call_body = (
+                mock_client.tool_router.session.files.create_upload_url.call_args[0][2]
             )
-            assert call_kwargs["mount_relative_path"] == "report.pdf"
+            assert call_body["mount_relative_path"] == "report.pdf"
 
     def test_download(self, files_mount, mock_client):
         """Test download returns RemoteFile."""
@@ -146,9 +146,9 @@ class TestToolRouterSessionFilesMount:
         assert result.download_url == "https://s3.example.com/download"
         assert result.mount_relative_path == "output/test.txt"
         mock_client.tool_router.session.files.create_download_url.assert_called_once_with(
+            "session_123",
             "files",
-            session_id="session_123",
-            mount_relative_path="/output/report.pdf",
+            {"mount_relative_path": "/output/report.pdf"},
         )
 
     def test_delete(self, files_mount, mock_client):
@@ -157,9 +157,9 @@ class TestToolRouterSessionFilesMount:
 
         assert result.mount_relative_path == "deleted.txt"
         mock_client.tool_router.session.files.delete.assert_called_once_with(
+            "session_123",
             "files",
-            session_id="session_123",
-            mount_relative_path="/temp/cache.json",
+            {"mount_relative_path": "/temp/cache.json"},
         )
 
 

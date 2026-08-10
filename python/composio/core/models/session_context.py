@@ -8,15 +8,17 @@ from __future__ import annotations
 
 import typing as t
 
-from composio_client import omit
-from composio_client.types.tool_router.session_proxy_execute_params import Parameter
-from composio_client.types.tool_router.session_execute_response import (
-    SessionExecuteResponse,
-)
-from composio_client.types.tool_router.session_proxy_execute_response import (
-    SessionProxyExecuteResponse,
-)
 from composio.client import HttpClient
+from composio.client.compat import OMIT
+from composio.client.types import (
+    session_execute_response as _session_execute_response,
+)
+from composio.client.types import (
+    session_proxy_execute_params as _session_proxy_execute_params,
+)
+from composio.client.types import (
+    session_proxy_execute_response as _session_proxy_execute_response,
+)
 from composio.core.models.custom_tool_execution import (
     execute_custom_tool,
     find_custom_tool,
@@ -31,6 +33,11 @@ from composio.core.models.inline_custom_tools_payload import (
 from composio.core.models.tools import _serialize_arguments
 from composio.exceptions import ValidationError
 
+Parameter = _session_proxy_execute_params.Parameter
+SessionExecuteResponse = _session_execute_response.SessionExecuteResponse
+SessionProxyExecuteResponse = (
+    _session_proxy_execute_response.SessionProxyExecuteResponse
+)
 
 _VALID_METHODS = frozenset({"GET", "POST", "PUT", "DELETE", "PATCH"})
 _VALID_PARAM_TYPES = frozenset({"header", "query"})
@@ -80,12 +87,14 @@ def proxy_execute_impl(
             )
 
     return client.tool_router.session.proxy_execute(
-        session_id=session_id,
-        toolkit_slug=toolkit,
-        endpoint=endpoint,
-        method=method,
-        body=body if body is not None else omit,
-        parameters=api_params if api_params else omit,
+        session_id,
+        {
+            "toolkit_slug": toolkit,
+            "endpoint": endpoint,
+            "method": method,
+            "body": body if body is not None else OMIT,
+            "parameters": api_params if api_params else OMIT,
+        },
     )
 
 
@@ -143,12 +152,14 @@ class SessionContextImpl:
         serialized = _serialize_arguments(arguments)
 
         return self._client.tool_router.session.execute(
-            session_id=self._session_id,
-            tool_slug=tool_slug,
-            arguments=serialized,
-            experimental=inline_custom_tools_execute_experimental(
-                self._inline_custom_tools_payload
-            ),
+            self._session_id,
+            {
+                "tool_slug": tool_slug,
+                "arguments": serialized,
+                "experimental": inline_custom_tools_execute_experimental(
+                    self._inline_custom_tools_payload
+                ),
+            },
         )
 
     def proxy_execute(

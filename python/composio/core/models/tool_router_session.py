@@ -12,27 +12,28 @@ import typing as t
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 
-from composio_client import BadRequestError, Omit, omit
-from composio_client._types import SequenceNotStr
-from composio_client.types.tool_list_response import (
-    ItemDeprecated,
-    ItemDeprecatedToolkit,
-    ItemToolkit,
-)
-from composio_client.types.tool_router import session_link_params, session_patch_params
-from composio_client.types.tool_router.session_execute_response import (
-    SessionExecuteResponse,
-)
-from composio_client.types.tool_router.session_proxy_execute_response import (
-    SessionProxyExecuteResponse,
-)
-from composio_client.types.tool_router.session_search_response import (
-    SessionSearchResponse,
-)
+from composio_client import BadRequestError
 
 from composio import exceptions
 from composio.client import HttpClient
-from composio.client.types import Tool
+from composio.client.compat import OMIT as omit
+from composio.client.compat import OmitType as Omit
+from composio.client.types import (
+    SequenceNotStr,
+    Tool,
+    session_link_params,
+    session_patch_params,
+    tool_list_response,
+)
+from composio.client.types import (
+    session_execute_response as _session_execute_response,
+)
+from composio.client.types import (
+    session_proxy_execute_response as _session_proxy_execute_response,
+)
+from composio.client.types import (
+    session_search_response as _session_search_response,
+)
 from composio.core.models._modifiers import Modifiers, apply_modifier_by_type
 from composio.core.models.connected_accounts import ConnectionRequest
 from composio.core.models.custom_tool import find_custom_tool_map_entry_by_final_slug
@@ -60,6 +61,15 @@ from composio.core.models.tool_router_session_delete import (
 from composio.core.models.tools import ToolExecuteParams, ToolExecutionResponse
 from composio.core.provider import TTool, TToolCollection
 from composio.core.provider.base import BaseProvider
+
+ItemDeprecated = tool_list_response.ItemDeprecated
+ItemDeprecatedToolkit = tool_list_response.ItemDeprecatedToolkit
+ItemToolkit = tool_list_response.ItemToolkit
+SessionExecuteResponse = _session_execute_response.SessionExecuteResponse
+SessionProxyExecuteResponse = (
+    _session_proxy_execute_response.SessionProxyExecuteResponse
+)
+SessionSearchResponse = _session_search_response.SessionSearchResponse
 
 if t.TYPE_CHECKING:
     from composio.core.models.tool_router import (
@@ -570,11 +580,13 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
         """
         try:
             response = self._client.tool_router.session.link(
-                session_id=self.session_id,
-                toolkit=toolkit,
-                callback_url=callback_url if callback_url else omit,
-                alias=alias if alias is not None else omit,
-                experimental=experimental if experimental is not None else omit,
+                self.session_id,
+                {
+                    "toolkit": toolkit,
+                    "callback_url": callback_url if callback_url else omit,
+                    "alias": alias if alias is not None else omit,
+                    "experimental": experimental if experimental is not None else omit,
+                },
             )
         except BadRequestError as error:
             # The server rejects ACL on PRIVATE connections — surface that
@@ -624,8 +636,8 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
             toolkits_params["search"] = search
 
         result = self._client.tool_router.session.toolkits(
-            session_id=self.session_id,
-            **toolkits_params,
+            self.session_id,
+            query=toolkits_params,
         )
 
         toolkit_states: t.List[ToolkitConnectionState] = []
@@ -687,12 +699,14 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
         Returns relevant tools for the given query with schemas and guidance.
         """
         return self._client.tool_router.session.search(
-            session_id=self.session_id,
-            queries=[{"use_case": query}],
-            model=model if model else omit,
-            experimental=inline_custom_tools_search_experimental(
-                self._inline_custom_tools_payload
-            ),
+            self.session_id,
+            {
+                "queries": [{"use_case": query}],
+                "model": model if model else omit,
+                "experimental": inline_custom_tools_search_experimental(
+                    self._inline_custom_tools_payload
+                ),
+            },
         )
 
     def execute(
@@ -716,10 +730,6 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
         Both paths return a ``SessionExecuteResponse`` with ``data``,
         ``error``, and ``log_id`` attributes.
         """
-        from composio_client.types.tool_router.session_execute_response import (
-            SessionExecuteResponse,
-        )
-
         # Check if this is a local tool (by original or final slug)
         entry = find_custom_tool(self._custom_tools_map, tool_slug)
         if entry and self._session_context:
@@ -731,13 +741,15 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
             )
 
         return self._client.tool_router.session.execute(
-            session_id=self.session_id,
-            tool_slug=tool_slug,
-            arguments=arguments if arguments is not None else omit,
-            account=account if account is not None else omit,
-            experimental=inline_custom_tools_execute_experimental(
-                self._inline_custom_tools_payload
-            ),
+            self.session_id,
+            {
+                "tool_slug": tool_slug,
+                "arguments": arguments if arguments is not None else omit,
+                "account": account if account is not None else omit,
+                "experimental": inline_custom_tools_execute_experimental(
+                    self._inline_custom_tools_payload
+                ),
+            },
         )
 
     def custom_tools(
@@ -877,16 +889,18 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
         workbench_payload = sandbox if sandbox is not omit else workbench
 
         response = self._client.tool_router.session.patch(
-            session_id=self.session_id,
-            toolkits=toolkits,
-            tools=tools,
-            tags=tags,
-            auth_configs=auth_configs,
-            connected_accounts=connected_accounts,
-            manage_connections=manage_connections,
-            workbench=workbench_payload,
-            multi_account=multi_account,
-            preload=preload,
+            self.session_id,
+            {
+                "toolkits": toolkits,
+                "tools": tools,
+                "tags": tags,
+                "auth_configs": auth_configs,
+                "connected_accounts": connected_accounts,
+                "manage_connections": manage_connections,
+                "workbench": workbench_payload,
+                "multi_account": multi_account,
+                "preload": preload,
+            },
         )
         self.preload = _session_preload_config(response.config.preload)
 

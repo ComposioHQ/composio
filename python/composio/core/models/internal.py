@@ -1,5 +1,4 @@
-from composio_client import BaseModel
-
+from composio.client.compat import ClientBaseModel as BaseModel
 from composio.core.models.base import Resource
 
 INTERNAL_SDK_REALTIME_CREDENTIALS_ENDPOINT = "/api/v3/internal/sdk/realtime/credentials"

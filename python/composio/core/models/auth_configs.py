@@ -27,7 +27,7 @@ class AuthConfigs(Resource):
         """
         Lists authentication configurations based on provided filter criteria.
         """
-        return self._client.auth_configs.list(**query)
+        return self._client.auth_configs.list(query=t.cast(t.Dict, query) or None)
 
     @t.overload
     def create(
@@ -50,7 +50,7 @@ class AuthConfigs(Resource):
         :return: The created auth config.
         """
         return self._client.auth_configs.create(
-            toolkit={"slug": toolkit}, auth_config=options
+            {"toolkit": {"slug": toolkit}, "auth_config": options}
         ).auth_config
 
     def get(
@@ -92,15 +92,17 @@ class AuthConfigs(Resource):
         return t.cast(
             t.Dict,
             self._client.auth_configs.update(
-                nanoid=nanoid,
-                type=options["type"],  # type: ignore
-                credentials=options.get("credentials", self._client.not_given),
-                is_enabled_for_tool_router=options.get(
-                    "is_enabled_for_tool_router", self._client.not_given
-                ),
-                tool_access_config=options.get(
-                    "tool_access_config", self._client.not_given
-                ),
+                nanoid,
+                {
+                    "type": options["type"],  # type: ignore
+                    "credentials": options.get("credentials", self._client.not_given),
+                    "is_enabled_for_tool_router": options.get(
+                        "is_enabled_for_tool_router", self._client.not_given
+                    ),
+                    "tool_access_config": options.get(
+                        "tool_access_config", self._client.not_given
+                    ),
+                },
             ),
         )
 
@@ -120,10 +122,7 @@ class AuthConfigs(Resource):
     ) -> t.Dict:
         return t.cast(
             t.Dict,
-            self._client.auth_configs.update_status(
-                status,
-                nanoid=nanoid,
-            ),
+            self._client.auth_configs.update_status(nanoid, status),
         )
 
     def enable(self, nanoid: str) -> t.Dict:
