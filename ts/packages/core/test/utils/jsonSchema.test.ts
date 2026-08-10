@@ -643,6 +643,14 @@ describe('shared corpus invariants', () => {
     expect(() => assertCorpusInvariants(loadObjectCases())).not.toThrow();
   });
 
+  it('documents the patternProperties strictness divergence from JSON Schema', () => {
+    const testCase = loadObjectCases().find(
+      ({ id }) => id === 'named-properties-with-pattern-properties'
+    );
+
+    expect(testCase?.divergesFromJsonSchema).toContain('omitted `additionalProperties`');
+  });
+
   it('rejects duplicate case ids', () => {
     expect(() => assertCorpusInvariants([baseCase('dup'), baseCase('dup')])).toThrow(
       'Duplicate corpus case id: dup'

@@ -2,9 +2,8 @@
   "$schema": "https://json.schemastore.org/tsconfig",
   "extends": "./tsconfig.options.json",
   "compilerOptions": {
-    "rootDir": ".",
-    // the corpus loader reads its fixture copy with `node:fs`
-    "types": ["node"]
+    // widened so the shared corpus loader, owned by `@composio/core`, is in range
+    "rootDir": "../.."
   },
   "include": ["src/**/*", "test/**/*", "package.json"],
   "exclude": ["node_modules", "../../../node_modules", "**/dist", "test/e2e", "test-sandboxes"]

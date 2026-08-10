@@ -23,8 +23,10 @@ import { readFileSync, readdirSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import { loader, multiple } from 'fumadocs-core/source';
 import { createOpenAPI, openapiSource } from 'fumadocs-openapi/server';
+import { z } from 'zod';
 
 import { openapi, openapiV3 } from '../../lib/openapi';
+import { apiEndpointsSchema } from '../../lib/api-endpoints-table-schema';
 import { HIDDEN_API_TAGS } from '../../lib/filter-api-version';
 
 const DOCS_DIR = join(import.meta.dir, '../..');
@@ -235,7 +237,15 @@ describe('API reference quick links', () => {
     return files;
   }
 
-  /** Parses the serialized endpoints of every ApiEndpointsTable in a file. */
+  /**
+   * Parses the serialized endpoints of every ApiEndpointsTable in a file.
+   *
+   * Validated through the same schema the runtime uses, not a bare
+   * JSON.parse: `mdxToCleanMarkdown` degrades a malformed payload to an empty
+   * table so one bad page cannot 500 the whole .md response, which means a
+   * structurally broken committed payload would otherwise render nothing with
+   * no failure signal anywhere. This is that signal.
+   */
   function parseEndpointHrefs(content: string, file: string): string[] {
     const hrefs: string[] = [];
     const prefix = /<ApiEndpointsTable endpoints=\{/g;
@@ -244,8 +254,15 @@ describe('API reference quick links', () => {
       const start = match.index + match[0].length;
       const end = content.indexOf('} />', start);
       expect(end, `${file}: unterminated ApiEndpointsTable`).toBeGreaterThan(start);
-      const endpoints: { href: string }[] = JSON.parse(content.slice(start, end));
-      hrefs.push(...endpoints.map((endpoint) => endpoint.href));
+      const parsed = apiEndpointsSchema.safeParse(JSON.parse(content.slice(start, end)));
+      expect(
+        parsed.success,
+        `${file}: ApiEndpointsTable payload fails apiEndpointsSchema:\n${
+          parsed.success ? '' : z.prettifyError(parsed.error)
+        }`,
+      ).toBe(true);
+      if (!parsed.success) continue;
+      hrefs.push(...parsed.data.map((endpoint) => endpoint.href));
     }
     // A file mentioning the component but yielding no parsed table means the
     // generator's serialization drifted from this extractor — fail loudly

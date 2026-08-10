@@ -1,5 +1,31 @@
 # @composio/core
 
+## 0.15.0
+
+### Minor Changes
+
+- 1503786: Replace the loose JSON Schema property type with a recursive, type-safe definition.
+
+  `JSONSchemaProperty` (re-exported from `@composio/core` and reachable through
+  `Tool.input_parameters` / `Tool.output_parameters`) is now a concrete recursive
+  interface instead of effectively `any`. Runtime behavior is unchanged, but
+  consumer code that indexed into it without narrowing (for example
+  `schema.properties.foo.type` or `schema.default.someField`) may see new type
+  errors: `properties` entries are now possibly `undefined` and `default` /
+  `enum` values are `unknown`. Narrow with optional chaining or explicit type
+  guards when upgrading.
+
+### Patch Changes
+
+- 2ac6ad3: Bound the background npm version check so registry outages cannot leave the request pending indefinitely.
+- 5105612: Match sensitive upload path segments using the target filesystem's actual case sensitivity so case-insensitive mounts cannot bypass the denylist without over-blocking distinct paths on case-sensitive mounts.
+- 051c8c5: Redact secrets that appear inside JSON payloads in telemetry error text. The key/value rule required the separator to follow the key name directly, so a serialized body such as `{"api_key": "..."}` — the shape error messages usually carry — was sent unredacted.
+- e5c9ada: Refresh the OpenAI runtime dependency to version 7.
+- ecd0861: Release unread response bodies on the paths the SDK knowingly abandons: cancel every intermediate redirect body in `ssrfSafeFetch`, and the response body before throwing on `!response.ok` in both URL-upload call sites, instead of leaving them for the garbage collector to reclaim.
+- 2a6a051: Remove the unused internal `isNewerVersion` helper.
+- Updated dependencies [1503786]
+  - @composio/json-schema-to-zod@0.2.2
+
 ## 0.14.1
 
 ### Patch Changes

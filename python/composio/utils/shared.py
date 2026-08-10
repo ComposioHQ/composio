@@ -389,6 +389,8 @@ def json_schema_to_pydantic_field(
     json_schema: t.Dict[str, t.Any],
     required: t.List[str],
     skip_default: bool = False,
+    *,
+    root_schema: t.Optional[t.Dict[str, t.Any]] = None,
 ) -> t.Tuple[str, t.Type, FieldInfo]:
     """
     Converts a JSON schema property to a Pydantic field definition.
@@ -396,6 +398,7 @@ def json_schema_to_pydantic_field(
     :param name: The field name.
     :param json_schema: The JSON schema property.
     :param required: List of required properties.
+    :param root_schema: Full schema document used to resolve local references.
     :return: A Pydantic field definition.
     """
     description = json_schema.get("description")
@@ -434,6 +437,7 @@ def json_schema_to_pydantic_field(
             t.Type,
             json_schema_to_pydantic_type(
                 json_schema=json_schema,
+                root_schema=root_schema,
             ),
         ),
         Field(**field),  # type: ignore
@@ -459,7 +463,10 @@ def json_schema_to_fields_dict(json_schema: t.Dict[str, t.Any]) -> t.Dict[str, t
     field_definitions = {}
     for name, prop in json_schema.get("properties", {}).items():
         updated_name, pydantic_type, pydantic_field = json_schema_to_pydantic_field(
-            name, prop, json_schema.get("required", [])
+            name,
+            prop,
+            json_schema.get("required", []),
+            root_schema=json_schema,
         )
         field_definitions[updated_name] = (pydantic_type, pydantic_field)
     return field_definitions  # type: ignore
@@ -487,6 +494,7 @@ def json_schema_to_model(
             prop,
             json_schema.get("required", []),
             skip_default=skip_default,
+            root_schema=json_schema,
         )
         field_definitions[updated_name] = (pydantic_type, pydantic_field)
         if not skip_default and "default" in prop:

@@ -328,7 +328,7 @@ export const removeNonRequiredProperties = <
     type: 'object';
     properties: Record<string, unknown>;
     required?: string[];
-    additionalProperties?: boolean;
+    additionalProperties?: unknown;
   },
 >(
   schema: T

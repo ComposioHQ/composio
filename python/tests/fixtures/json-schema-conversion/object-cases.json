@@ -95,6 +95,98 @@
       ]
     },
     {
+      "id": "nested-pattern-properties-object",
+      "description": "A dynamic-key policy nested under a declared property validates and preserves matching keys.",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "payload": {
+            "type": "object",
+            "patternProperties": { "^count_": { "type": "integer" } },
+            "additionalProperties": false
+          }
+        },
+        "required": ["payload"]
+      },
+      "ingress": {
+        "accepted": true,
+        "preserved": {
+          "type": "object",
+          "properties": {
+            "payload": {
+              "type": "object",
+              "patternProperties": { "^count_": { "type": "integer" } },
+              "additionalProperties": false
+            }
+          },
+          "required": ["payload"]
+        }
+      },
+      "instances": [
+        {
+          "input": { "payload": { "count_a": 1 } },
+          "accepted": true,
+          "zod": { "output": { "payload": { "count_a": 1 } } },
+          "effect": { "output": { "payload": { "count_a": 1 } } },
+          "python": { "output": { "payload": { "count_a": 1 } } }
+        },
+        {
+          "input": { "payload": { "count_a": "1" } },
+          "accepted": false
+        },
+        {
+          "input": { "payload": { "other": 1 } },
+          "accepted": false
+        }
+      ]
+    },
+    {
+      "id": "schema-valued-additional-properties-in-array-items",
+      "description": "A schema-valued dynamic-key policy inside array items validates every preserved value.",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "records": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": { "type": "number" }
+            }
+          }
+        },
+        "required": ["records"]
+      },
+      "ingress": {
+        "accepted": true,
+        "preserved": {
+          "type": "object",
+          "properties": {
+            "records": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": { "type": "number" }
+              }
+            }
+          },
+          "required": ["records"]
+        }
+      },
+      "instances": [
+        {
+          "input": { "records": [{ "a": 1 }, { "b": 2.5 }] },
+          "accepted": true,
+          "zod": { "output": { "records": [{ "a": 1 }, { "b": 2.5 }] } },
+          "effect": { "output": { "records": [{ "a": 1 }, { "b": 2.5 }] } },
+          "python": { "output": { "records": [{ "a": 1 }, { "b": 2.5 }] } }
+        },
+        {
+          "input": { "records": [{ "a": "1" }] },
+          "accepted": false
+        }
+      ]
+    },
+    {
       "id": "explicit-additional-properties-false",
       "description": "An explicit `additionalProperties: false` closes an otherwise property-less object.",
       "schema": { "type": "object", "properties": {}, "additionalProperties": false },
@@ -176,6 +268,7 @@
     {
       "id": "named-properties-with-pattern-properties",
       "description": "With named `properties` plus `patternProperties` and omitted `additionalProperties`, pattern-matching keys are admitted and validated while other unknown keys stay rejected.",
+      "divergesFromJsonSchema": "JSON Schema treats omitted `additionalProperties` as permissive; Composio tool inputs keep it strict.",
       "schema": {
         "type": "object",
         "properties": { "name": { "type": "string" } },

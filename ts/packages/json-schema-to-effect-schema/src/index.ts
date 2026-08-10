@@ -1,4 +1,4 @@
-import { Validator } from '@cfworker/json-schema';
+import { dereference, Validator } from '@cfworker/json-schema';
 import type { OutputUnit, Schema as InterpreterSchema, SchemaDraft } from '@cfworker/json-schema';
 import { Schema } from 'effect';
 
@@ -188,6 +188,102 @@ const normalizeSchemaNode = (
 const normalizeJsonSchema = (schema: JsonObject): InterpreterSchema =>
   normalizeSchemaNode(schema, new WeakMap()) as InterpreterSchema;
 
+// Walks the same child positions `normalizeSchemaNode` does, so a node is
+// visited exactly where the interpreter would descend into it.
+const forEachSchemaNode = (
+  value: unknown,
+  seen: WeakSet<object>,
+  visit: (node: JsonObject) => void
+): void => {
+  if (!isJsonObject(value) || seen.has(value)) {
+    return;
+  }
+  seen.add(value);
+  visit(value);
+
+  for (const [key, child] of Object.entries(value)) {
+    if (schemaMapKeywords.has(key) && isJsonObject(child)) {
+      for (const nested of Object.values(child)) {
+        forEachSchemaNode(nested, seen, visit);
+      }
+    } else if (schemaArrayKeywords.has(key) && Array.isArray(child)) {
+      for (const nested of child) {
+        forEachSchemaNode(nested, seen, visit);
+      }
+    } else if (schemaValueKeywords.has(key)) {
+      for (const nested of Array.isArray(child) ? child : [child]) {
+        forEachSchemaNode(nested, seen, visit);
+      }
+    }
+  }
+};
+
+const assertRegexCompiles = (pattern: string, keyword: string): void => {
+  try {
+    // The same flag `@cfworker/json-schema` compiles with, so this accepts
+    // exactly the patterns the interpreter would.
+    new RegExp(pattern, 'u');
+  } catch (cause) {
+    throw new Error(`Invalid ${keyword} regular expression ${JSON.stringify(pattern)}.`, { cause });
+  }
+};
+
+// Follows every reference reachable from one dynamic-key subschema, including
+// through the schemas those references resolve to, so a local pointer whose
+// target carries a dangling reference is caught as well.
+const assertDynamicReferencesResolve = (
+  subSchema: unknown,
+  lookup: Record<string, unknown>,
+  seen: WeakSet<object>
+): void => {
+  forEachSchemaNode(subSchema, seen, node => {
+    const ref = node.$ref;
+    if (typeof ref !== 'string') {
+      return;
+    }
+
+    const absolute = (node as { readonly __absolute_ref__?: string }).__absolute_ref__ ?? ref;
+    const target = lookup[absolute];
+    if (target === undefined) {
+      throw new Error(`Unresolved $ref ${JSON.stringify(ref)} in a dynamic-key schema.`);
+    }
+
+    assertDynamicReferencesResolve(target, lookup, seen);
+  });
+};
+
+// `@cfworker/json-schema` compiles `patternProperties` keys and resolves `$ref`
+// lazily, inside `validate`. Left alone, a defect in the schema surfaces once
+// per call through the same channel as a genuine input failure, telling the
+// caller their arguments are wrong when the tool's schema is what is broken.
+// Checking eagerly moves those defects to construction, where the CLI already
+// reports them as a compile failure against the cached schema path.
+//
+// The scope matches what the Python SDK rejects while wrapping a tool: the keys
+// of `patternProperties`, and references inside a dynamic-key subschema. A
+// reference in a declared property is deliberately left to the interpreter —
+// widening past parity would reject tool schemas that validate today.
+const assertSchemaIsInterpretable = (schema: InterpreterSchema): void => {
+  // Re-derives the lookup the `Validator` keeps private. `dereference` builds a
+  // fresh map per call and reuses the `__absolute_ref__` it already stamped, so
+  // running it a second time is consistent with the interpreter's own view.
+  const lookup = dereference(schema);
+
+  forEachSchemaNode(schema, new WeakSet(), node => {
+    const patternProperties = node.patternProperties;
+    if (isJsonObject(patternProperties)) {
+      for (const [pattern, patternSchema] of Object.entries(patternProperties)) {
+        assertRegexCompiles(pattern, 'patternProperties');
+        assertDynamicReferencesResolve(patternSchema, lookup, new WeakSet());
+      }
+    }
+
+    if (isJsonObject(node.additionalProperties)) {
+      assertDynamicReferencesResolve(node.additionalProperties, lookup, new WeakSet());
+    }
+  });
+};
+
 const decodePointer = (pointer: string): ReadonlyArray<string> => {
   if (pointer === '#' || pointer === '') {
     return [];
@@ -356,6 +452,7 @@ export const jsonSchemaToEffectSchema = (
 ): Schema.Schema<unknown> => {
   const normalizedSchema = normalizeJsonSchema(jsonSchema);
   const validator = new Validator(normalizedSchema, options.draft ?? '7', false);
+  assertSchemaIsInterpretable(normalizedSchema);
   const formatIssues = options.formatIssues ?? defaultFormatIssues;
 
   return Schema.Unknown.pipe(
@@ -364,6 +461,11 @@ export const jsonSchemaToEffectSchema = (
       try {
         validation = validator.validate(input);
       } catch (error) {
+        // Schema defects are rejected at construction, so what reaches here is
+        // input the interpreter cannot represent at all — a `bigint`, `symbol`,
+        // `function`, or `undefined`. That is a property of the input, so it
+        // belongs in the filter. A string is `Schema.filter`'s shorthand for the
+        // `ParseResult.Type` issue Effect would otherwise build by hand.
         return `JSON Schema validation failed: ${error}`;
       }
       if (validation.valid) {

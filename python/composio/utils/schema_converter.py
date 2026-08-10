@@ -335,12 +335,41 @@ def _resolve_local_json_pointer(
     return current
 
 
+# Draft 7 keywords whose value is itself a schema. `items` and `dependencies`
+# are handled separately because they also accept non-schema forms.
+_SCHEMA_VALUED_KEYWORDS = frozenset(
+    {
+        "additionalItems",
+        "additionalProperties",
+        "contains",
+        "else",
+        "if",
+        "not",
+        "propertyNames",
+        "then",
+    }
+)
+
+# Draft 7 keywords whose value is a list of schemas.
+_SCHEMA_LIST_KEYWORDS = frozenset({"allOf", "anyOf", "oneOf"})
+
+# Draft 7 keywords whose value maps names to schemas.
+_SCHEMA_MAP_KEYWORDS = frozenset(
+    {"$defs", "definitions", "patternProperties", "properties"}
+)
+
+
 def _check_dynamic_references(
     schema: t.Any,
     root_schema: t.Dict[str, t.Any],
     checked_references: t.Optional[t.Set[str]] = None,
 ) -> None:
-    """Reject external, anchored, and unresolved references before validation."""
+    """Reject external, anchored, and unresolved references before validation.
+
+    Only schema positions are walked. ``const``, ``default``, ``enum``, and
+    ``examples`` hold instance data, so a ``$ref``-shaped value stored there is
+    a payload rather than a reference and must not block tool wrapping.
+    """
     if checked_references is None:
         checked_references = set()
     if isinstance(schema, list):
@@ -363,8 +392,35 @@ def _check_dynamic_references(
             checked_references.add(reference)
             _check_dynamic_references(resolved, root_schema, checked_references)
 
-    for value in schema.values():
-        _check_dynamic_references(value, root_schema, checked_references)
+    for keyword, value in schema.items():
+        if keyword in _SCHEMA_VALUED_KEYWORDS or keyword in _SCHEMA_LIST_KEYWORDS:
+            _check_dynamic_references(value, root_schema, checked_references)
+        elif keyword in _SCHEMA_MAP_KEYWORDS:
+            if isinstance(value, dict):
+                for entry in value.values():
+                    _check_dynamic_references(entry, root_schema, checked_references)
+        elif keyword == "items":
+            # A schema, or a list of schemas for tuple validation.
+            _check_dynamic_references(value, root_schema, checked_references)
+        elif keyword == "dependencies":
+            # Each entry is either a schema or a list of required property names.
+            if isinstance(value, dict):
+                for entry in value.values():
+                    if isinstance(entry, (dict, bool)):
+                        _check_dynamic_references(
+                            entry, root_schema, checked_references
+                        )
+
+
+def _validate_dynamic_key_schema(
+    schema: t.Any,
+    root_schema: t.Dict[str, t.Any],
+    root_validator: Validator,
+) -> None:
+    """Validate one dynamic-key subschema without constructing a materializer."""
+    validator_type = type(root_validator)
+    validator_type.check_schema(schema)
+    _check_dynamic_references(schema, root_schema)
 
 
 def _dynamic_key_validator(
@@ -373,13 +429,11 @@ def _dynamic_key_validator(
     root_validator: Validator,
 ) -> _DynamicKeyValidator:
     """Compile a complete inline JSON subschema without coercive acceptance."""
-    validator_type = type(root_validator)
-    validator_type.check_schema(schema)
-    _check_dynamic_references(schema, root_schema)
+    _validate_dynamic_key_schema(schema, root_schema, root_validator)
 
     materializer = None
     if _contains_default(schema):
-        annotation = json_schema_to_pydantic_type(schema)
+        annotation = json_schema_to_pydantic_type(schema, root_schema=root_schema)
         materializer = TypeAdapter(annotation)
 
     return _DynamicKeyValidator(
@@ -388,39 +442,206 @@ def _dynamic_key_validator(
     )
 
 
-def _compile_object_policy(schema: t.Dict[str, t.Any]) -> _ObjectPolicy:
+def _compile_pattern_property(pattern: str) -> t.Pattern[str]:
+    try:
+        return re.compile(pattern)
+    except re.error as exc:
+        raise ValueError(
+            f"Invalid patternProperties regular expression: {pattern!r}"
+        ) from exc
+
+
+def _validate_object_policy_schema(
+    schema: t.Dict[str, t.Any],
+    root_schema: t.Dict[str, t.Any],
+) -> None:
+    """Validate a dynamic object policy without materializing defaults."""
+    validator_type = jsonschema_validators.validator_for(
+        root_schema,
+        default=jsonschema_validators.Draft7Validator,
+    )
+    root_validator = validator_type(root_schema)
+
+    for pattern, pattern_schema in (schema.get("patternProperties") or {}).items():
+        _compile_pattern_property(pattern)
+        _validate_dynamic_key_schema(
+            pattern_schema,
+            root_schema,
+            root_validator,
+        )
+
+    additional = schema.get("additionalProperties")
+    if isinstance(additional, dict):
+        _validate_dynamic_key_schema(additional, root_schema, root_validator)
+
+
+def _compile_object_policy(
+    schema: t.Dict[str, t.Any],
+    root_schema: t.Optional[t.Dict[str, t.Any]] = None,
+) -> _ObjectPolicy:
+    document_root = root_schema if root_schema is not None else schema
     declared = frozenset(schema.get("properties") or {})
     additional = schema.get("additionalProperties", _MISSING)
     validator_type = jsonschema_validators.validator_for(
-        schema,
+        document_root,
         default=jsonschema_validators.Draft7Validator,
     )
-    root_validator = validator_type(schema)
+    root_validator = validator_type(document_root)
 
     patterns = []
     for pattern, pattern_schema in (schema.get("patternProperties") or {}).items():
-        try:
-            patterns.append(
-                (
-                    re.compile(pattern),
-                    _dynamic_key_validator(pattern_schema, schema, root_validator),
-                )
+        patterns.append(
+            (
+                _compile_pattern_property(pattern),
+                _dynamic_key_validator(
+                    pattern_schema,
+                    document_root,
+                    root_validator,
+                ),
             )
-        except re.error as exc:
-            raise ValueError(
-                f"Invalid patternProperties regular expression: {pattern!r}"
-            ) from exc
+        )
 
     return _ObjectPolicy(
         declared=declared,
         patterns=tuple(patterns),
         additional=(
-            _dynamic_key_validator(additional, schema, root_validator)
+            _dynamic_key_validator(additional, document_root, root_validator)
             if isinstance(additional, dict)
             else None
         ),
         rejects_unmatched=additional is False
         or (additional is _MISSING and bool(declared)),
+    )
+
+
+def _iter_reachable_schemas(
+    schema: t.Any,
+    root_schema: t.Dict[str, t.Any],
+    visited: t.Optional[t.Set[int]] = None,
+) -> t.Iterator[t.Dict[str, t.Any]]:
+    """Yield schema nodes reached through Draft 7 schema-valued keywords."""
+    if visited is None:
+        visited = set()
+    if isinstance(schema, list):
+        for item in schema:
+            yield from _iter_reachable_schemas(item, root_schema, visited)
+        return
+    if not isinstance(schema, dict) or id(schema) in visited:
+        return
+    visited.add(id(schema))
+    yield schema
+
+    reference = schema.get("$ref")
+    if isinstance(reference, str) and (reference == "#" or reference.startswith("#/")):
+        try:
+            resolved = _resolve_local_json_pointer(reference, root_schema)
+        except ValueError:
+            # Ordinary references retain the converter's legacy fallback.
+            # Dynamic-key references are checked when their owning policy is
+            # validated.
+            resolved = None
+        if isinstance(resolved, (dict, list)):
+            yield from _iter_reachable_schemas(resolved, root_schema, visited)
+
+    for keyword in ("properties", "patternProperties"):
+        values = schema.get(keyword)
+        if isinstance(values, dict):
+            for child in values.values():
+                yield from _iter_reachable_schemas(child, root_schema, visited)
+
+    for keyword in _SCHEMA_VALUED_KEYWORDS:
+        child = schema.get(keyword)
+        if isinstance(child, (dict, list)):
+            yield from _iter_reachable_schemas(child, root_schema, visited)
+
+    for keyword in _SCHEMA_LIST_KEYWORDS:
+        children = schema.get(keyword)
+        if isinstance(children, list):
+            yield from _iter_reachable_schemas(children, root_schema, visited)
+
+    items = schema.get("items")
+    if isinstance(items, (dict, list)):
+        yield from _iter_reachable_schemas(items, root_schema, visited)
+
+    dependencies = schema.get("dependencies")
+    if isinstance(dependencies, dict):
+        for child in dependencies.values():
+            if isinstance(child, (dict, bool)):
+                yield from _iter_reachable_schemas(child, root_schema, visited)
+
+
+def _has_dynamic_object_policy(schema: t.Dict[str, t.Any]) -> bool:
+    return bool(schema.get("patternProperties")) or isinstance(
+        schema.get("additionalProperties"), dict
+    )
+
+
+def _validate_dynamic_object_policies(
+    schema: t.Any,
+    root_schema: t.Dict[str, t.Any],
+) -> None:
+    """Validate every reachable dynamic object policy before conversion fallback."""
+    for candidate in _iter_reachable_schemas(schema, root_schema):
+        if _has_dynamic_object_policy(candidate):
+            _validate_object_policy_schema(candidate, root_schema)
+
+
+def _contains_inline_object_policy(
+    schema: t.Any,
+    visited: t.Optional[t.Set[int]] = None,
+) -> bool:
+    """Whether direct object or array nesting contains a dynamic policy."""
+    if visited is None:
+        visited = set()
+    if isinstance(schema, list):
+        return any(_contains_inline_object_policy(item, visited) for item in schema)
+    if not isinstance(schema, dict) or id(schema) in visited:
+        return False
+    visited.add(id(schema))
+    if _has_dynamic_object_policy(schema):
+        return True
+
+    properties = schema.get("properties")
+    if isinstance(properties, dict) and any(
+        _contains_inline_object_policy(child, visited) for child in properties.values()
+    ):
+        return True
+
+    items = schema.get("items")
+    return isinstance(items, (dict, list)) and _contains_inline_object_policy(
+        items,
+        visited,
+    )
+
+
+def _apply_nested_object_policies(
+    schema: t.Dict[str, t.Any],
+    base_model: t.Type[BaseModel],
+    root_schema: t.Dict[str, t.Any],
+) -> t.Type[BaseModel]:
+    """Replace fields whose schemas contain dynamic object policies."""
+    field_overrides = {}
+    for name, property_schema in (schema.get("properties") or {}).items():
+        if not _contains_inline_object_policy(property_schema):
+            continue
+        field = base_model.model_fields.get(name)
+        if field is None:
+            continue
+        field_overrides[name] = (
+            _filtered_schema_to_pydantic_type(
+                property_schema,
+                root_schema=root_schema,
+            ),
+            field,
+        )
+
+    if not field_overrides:
+        return base_model
+
+    return create_pydantic_model(  # type: ignore[call-overload]
+        schema.get("title", "GeneratedModel"),
+        __base__=base_model,
+        **field_overrides,
     )
 
 
@@ -500,9 +721,11 @@ def apply_object_policy(
     schema: t.Dict[str, t.Any],
     base_model: t.Type[BaseModel],
     model_name: t.Optional[str] = None,
+    *,
+    root_schema: t.Optional[t.Dict[str, t.Any]] = None,
 ) -> t.Type[BaseModel]:
     """Wrap ``base_model`` with the covered dynamic-key policy for ``schema``."""
-    policy = _compile_object_policy(schema)
+    policy = _compile_object_policy(schema, root_schema)
     name = model_name or base_model.__name__
     json_schema_extra: t.Dict[str, t.Any] = {}
     if "patternProperties" in schema:
@@ -532,6 +755,8 @@ def apply_object_policy(
 
 def json_schema_to_pydantic_type(
     json_schema: t.Union[t.Dict[str, t.Any], bool],
+    *,
+    root_schema: t.Optional[t.Dict[str, t.Any]] = None,
 ) -> t.Union[t.Type, t.Optional[t.Any]]:
     """
     Converts a JSON schema type to a Pydantic type.
@@ -540,6 +765,7 @@ def json_schema_to_pydantic_type(
     falls back to simple type mapping for primitive types.
 
     :param json_schema: The JSON schema to convert (can be dict or boolean).
+    :param root_schema: Full schema document used to resolve nested local references.
     :return: A Pydantic type.
     """
     # Handle boolean schemas (JSON Schema draft-06+)
@@ -552,10 +778,19 @@ def json_schema_to_pydantic_type(
     # Pre-filter boolean schemas from combiners
     filtered_schema = _filter_boolean_schemas(json_schema)
     filtered_schema = _resolve_unsatisfiable_references(filtered_schema)
-    return _filtered_schema_to_pydantic_type(filtered_schema)
+    document_root = root_schema if root_schema is not None else json_schema
+    _validate_dynamic_object_policies(json_schema, document_root)
+    return _filtered_schema_to_pydantic_type(
+        filtered_schema,
+        root_schema=document_root,
+    )
 
 
-def _filtered_schema_to_pydantic_type(schema: t.Any) -> t.Type[t.Any]:
+def _filtered_schema_to_pydantic_type(
+    schema: t.Any,
+    *,
+    root_schema: t.Optional[t.Dict[str, t.Any]] = None,
+) -> t.Type[t.Any]:
     """Convert a schema after boolean-schema normalization."""
     if schema is None or _is_unsatisfiable_schema(schema):
         return _UnsatisfiableSchema
@@ -565,7 +800,7 @@ def _filtered_schema_to_pydantic_type(schema: t.Any) -> t.Type[t.Any]:
         return _convert_simple_type(schema)
 
     # Use library for complex schemas (anyOf, allOf, oneOf, nested objects)
-    return _convert_with_library(schema)
+    return _convert_with_library(schema, root_schema=root_schema)
 
 
 def _is_simple_primitive(schema: t.Dict[str, t.Any]) -> bool:
@@ -590,6 +825,8 @@ def _convert_simple_type(schema: t.Dict[str, t.Any]) -> t.Type[t.Any]:
 
 def _convert_object_with_unsatisfiable_properties(
     schema: t.Dict[str, t.Any],
+    *,
+    root_schema: t.Optional[t.Dict[str, t.Any]] = None,
 ) -> t.Type[t.Any]:
     """Build an object model while retaining always-rejecting properties."""
     properties = schema.get("properties", {})
@@ -622,7 +859,10 @@ def _convert_object_with_unsatisfiable_properties(
 
     field_definitions = {}
     for name, prop_schema in rejecting_properties.items():
-        annotation = _filtered_schema_to_pydantic_type(prop_schema)
+        annotation = _filtered_schema_to_pydantic_type(
+            prop_schema,
+            root_schema=root_schema,
+        )
         default = (
             ...
             if name in required
@@ -649,35 +889,74 @@ def _convert_object_with_unsatisfiable_properties(
 
 def _convert_with_library(
     schema: t.Dict[str, t.Any],
+    *,
+    root_schema: t.Optional[t.Dict[str, t.Any]] = None,
 ) -> t.Union[t.Type, t.Any]:
     """Use json-schema-to-pydantic for complex schema conversion."""
+    # Dynamic-key policy compilation is an acceptance boundary, so it must run
+    # outside the legacy library-conversion fallback below. Invalid patterns or
+    # references must fail closed instead of silently changing the field to str.
+    if schema.get("type") == "object":
+        document_root = root_schema if root_schema is not None else schema
+        if _contains_unsatisfiable_schema(schema.get("properties", {})):
+            try:
+                base_model = _convert_object_with_unsatisfiable_properties(
+                    schema,
+                    root_schema=document_root,
+                )
+            except (SchemaError, CombinerError) as e:
+                logger.debug(
+                    f"Library schema conversion failed: {e}, falling back to string"
+                )
+                return str
+            except Exception as e:
+                logger.debug(
+                    f"Unexpected error in schema conversion: {e}, falling back to string"
+                )
+                return str
+            return apply_object_policy(
+                schema,
+                _apply_nested_object_policies(schema, base_model, document_root),
+                root_schema=document_root,
+            )
+        # A property-less object with no dynamic-key constraints accepts and
+        # preserves arbitrary content. Modelling it as an empty Pydantic
+        # model instead silently discarded every key (issue #4064).
+        if object_is_open(schema) and not schema.get("patternProperties"):
+            return t.cast(t.Type, t.Dict[str, t.Any])
+        if "title" not in schema:
+            schema = {**schema, "title": "GeneratedModel"}
+
+        try:
+            base_model = create_model_from_schema(
+                schema,
+                allow_undefined_array_items=True,
+                allow_undefined_type=True,
+            )
+        except (SchemaError, CombinerError) as e:
+            logger.debug(
+                f"Library schema conversion failed: {e}, falling back to string"
+            )
+            return str
+        except Exception as e:
+            logger.debug(
+                f"Unexpected error in schema conversion: {e}, falling back to string"
+            )
+            return str
+
+        return apply_object_policy(
+            schema,
+            _apply_nested_object_policies(schema, base_model, document_root),
+            root_schema=document_root,
+        )
+
     try:
         # Handle top-level combiner without type (e.g., {"anyOf": [...]})
         if (
             any(k in schema for k in ("anyOf", "allOf", "oneOf"))
             and "type" not in schema
         ):
-            return _handle_toplevel_combiner(schema)
-
-        # For object schemas, create model directly
-        if schema.get("type") == "object":
-            if _contains_unsatisfiable_schema(schema.get("properties", {})):
-                return _convert_object_with_unsatisfiable_properties(schema)
-            # A property-less object with no dynamic-key constraints accepts and
-            # preserves arbitrary content. Modelling it as an empty Pydantic
-            # model instead silently discarded every key (issue #4064).
-            if object_is_open(schema) and not schema.get("patternProperties"):
-                return t.cast(t.Type, t.Dict[str, t.Any])
-            if "title" not in schema:
-                schema = {**schema, "title": "GeneratedModel"}
-            return apply_object_policy(
-                schema,
-                create_model_from_schema(
-                    schema,
-                    allow_undefined_array_items=True,
-                    allow_undefined_type=True,
-                ),
-            )
+            return _handle_toplevel_combiner(schema, root_schema=root_schema)
 
         # For array schemas
         if schema.get("type") == "array":
@@ -685,7 +964,10 @@ def _convert_with_library(
             if _is_unsatisfiable_schema(items):
                 return t.List[_UnsatisfiableSchema]  # type: ignore[return-value]
             if items:
-                item_type = _filtered_schema_to_pydantic_type(items)
+                item_type = _filtered_schema_to_pydantic_type(
+                    items,
+                    root_schema=root_schema,
+                )
                 return t.List[t.cast(t.Type, item_type)]  # type: ignore
             return t.List
 
@@ -704,6 +986,8 @@ def _convert_with_library(
 
 def _handle_toplevel_combiner(
     schema: t.Dict[str, t.Any],
+    *,
+    root_schema: t.Optional[t.Dict[str, t.Any]] = None,
 ) -> t.Union[t.Type, t.Any]:
     """
     Handle top-level combiner schemas (anyOf, allOf, oneOf without "type").
@@ -730,23 +1014,30 @@ def _handle_toplevel_combiner(
     # Fallback: manually build union type for anyOf/oneOf
     if "anyOf" in schema or "oneOf" in schema:
         options = schema.get("anyOf", schema.get("oneOf", []))
-        return _build_union_from_options(options)
+        return _build_union_from_options(options, root_schema=root_schema)
 
     # Fallback: use first option for allOf
     if "allOf" in schema and schema["allOf"]:
-        return json_schema_to_pydantic_type(schema["allOf"][0])
+        return json_schema_to_pydantic_type(
+            schema["allOf"][0],
+            root_schema=root_schema,
+        )
 
     return t.Any
 
 
-def _build_union_from_options(options: t.List[t.Dict[str, t.Any]]) -> t.Type:
+def _build_union_from_options(
+    options: t.List[t.Dict[str, t.Any]],
+    *,
+    root_schema: t.Optional[t.Dict[str, t.Any]] = None,
+) -> t.Type:
     """Build a Union type from a list of schema options."""
     pydantic_types = []
     null_type = PYDANTIC_TYPE_TO_PYTHON_TYPE.get("null")
     has_null = False
 
     for option in options:
-        ptype = json_schema_to_pydantic_type(option)
+        ptype = json_schema_to_pydantic_type(option, root_schema=root_schema)
         if ptype is None:
             continue
         if ptype == null_type or ptype is type(None):

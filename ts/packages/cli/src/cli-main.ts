@@ -26,6 +26,7 @@ import { UpgradeBinary } from 'src/services/upgrade-binary';
 import { TerminalUI, TerminalUILive } from 'src/services/terminal-ui';
 import { TriggersRealtime } from 'src/services/triggers-realtime';
 import { ToolsExecutorLive as _ToolsExecutorLive } from 'src/services/tools-executor';
+import { ToolkitSlugCatalog } from 'src/services/toolkit-slug-catalog';
 import { ProjectContext } from 'src/services/project-context';
 import { ProjectEnvironmentDetector } from 'src/services/project-environment-detector';
 import { CommandRunner } from 'src/services/command-runner';
@@ -35,12 +36,14 @@ import { showUpdateNotice } from 'src/services/update-check';
 import {
   configureCliAnalyticsReleaseVersion,
   createCliCommandTelemetryContext,
+  getExecuteCommandToolSlug,
   getPrimaryLifecycleFailedEvent,
   getPrimaryLifecycleInvokedEvent,
   getPrimaryLifecycleSucceededEvent,
 } from 'src/analytics/events';
 import { trackCliEventEffect } from 'src/analytics/dispatch';
 import { getVersion } from 'src/effects/version';
+import { toolkitFromToolSlug } from 'src/effects/toolkit-from-tool-slug';
 import { mapOnlyComposioOverrideError } from 'src/services/composio-error-overrides';
 import { SetupSkillInstaller } from 'src/services/setup-skill-installer';
 import { SetupCommandError } from 'src/services/setup';
@@ -92,9 +95,16 @@ export const ComposioClientSingletonLive = Layer.provide(
   Layer.mergeAll(BunFileSystem.layer, BunPath.layer, NodeOs.Default, ConfigLive)
 ) satisfies RequiredLayer;
 
+// Fed the cached repository so that the staleness refresh behind it shares the
+// one catalog fetch a run is allowed, rather than starting a second.
+export const ToolkitSlugCatalogLive = Layer.provide(
+  ToolkitSlugCatalog.Default,
+  ComposioToolkitsRepositoryCachedLive
+) satisfies RequiredLayer;
+
 export const ToolsExecutorLive = Layer.provide(
   _ToolsExecutorLive,
-  ComposioClientSingletonLive
+  Layer.mergeAll(ComposioClientSingletonLive, ToolkitSlugCatalogLive)
 ) satisfies RequiredLayer;
 
 export const ProjectContextLive = Layer.provide(
@@ -117,6 +127,7 @@ const layers = Layer.mergeAll(
   ComposioSessionRepositoryLive,
   ComposioClientSingletonLive,
   ComposioToolkitsRepositoryCachedLive,
+  ToolkitSlugCatalogLive,
   ToolsExecutorLive,
   JsPackageManagerDetector.Default,
   ProjectEnvironmentDetector.Default,
@@ -151,7 +162,12 @@ const runWithTelemetry = Effect.gen(function* () {
 
   const version = yield* getVersion;
   configureCliAnalyticsReleaseVersion(version);
-  const commandTelemetryContext = createCliCommandTelemetryContext(process.argv, version, terminal);
+  const baseTelemetryContext = createCliCommandTelemetryContext(process.argv, version, terminal);
+  const executeToolSlug = getExecuteCommandToolSlug(baseTelemetryContext);
+  const commandTelemetryContext =
+    executeToolSlug === undefined
+      ? baseTelemetryContext
+      : { ...baseTelemetryContext, toolkitSlug: yield* toolkitFromToolSlug(executeToolSlug) };
   if (commandTelemetryContext.commandPath === 'run' && commandTelemetryContext.runId) {
     // effect/Config is read-only; the run id must be written into the environment so the run
     // command and the child processes it spawns observe the same telemetry run id.

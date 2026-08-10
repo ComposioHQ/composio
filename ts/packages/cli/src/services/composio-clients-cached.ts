@@ -3,6 +3,7 @@ import { FileSystem, Path } from '@effect/platform';
 import { BunFileSystem } from '@effect/platform-bun';
 import { setupCacheDir } from 'src/effects/setup-cache-dir';
 import { FORCE_CONFIG } from 'src/effects/force-config';
+import { writeFileAtomic } from 'src/effects/write-file-atomic';
 import { ComposioToolkitsRepository, InvalidToolkitsError } from './composio-clients';
 import type { ToolkitVersionSpec } from 'src/effects/toolkit-version-overrides';
 import { NodeOs } from './node-os';
@@ -55,69 +56,95 @@ function createCachedEffect<T, E, R>(
   computation: Effect.Effect<T, E, R>,
   cacheFilter?: (data: T) => Effect.Effect<T, E, never>
 ): Effect.Effect<T, E, R> {
-  // First define the cache-handling function that will run with all required services
+  /**
+   * The cached value, or none when there is nothing usable to serve: caching
+   * is off, the file is absent, it does not parse, or it does not cover the
+   * request. Every one of those is a cache miss, never a failure — the caller
+   * falls through to the computation.
+   */
+  const readFromCache = (fs: FileSystem.FileSystem, cacheFilePath: string) =>
+    Effect.gen(function* () {
+      const consumeFromCache = yield* FORCE_CONFIG['USE_CACHE'];
+      if (!consumeFromCache) {
+        return Option.none<T>();
+      }
+
+      const cacheFileExists = yield* fs
+        .exists(cacheFilePath)
+        .pipe(Effect.orElse(() => Effect.succeed(false)));
+      if (!cacheFileExists) {
+        return Option.none<T>();
+      }
+
+      yield* Effect.logDebug(`Cache HIT for ${cacheFileName}`);
+
+      const cached = yield* fs.readFileString(cacheFilePath).pipe(Effect.flatMap(decoder));
+
+      // A filter that rejects the cached data means the cache does not answer
+      // this request — e.g. it predates a toolkit the caller asked for.
+      return Option.some(cacheFilter ? yield* cacheFilter(cached) : cached);
+    }).pipe(
+      Effect.catchAll(error =>
+        Effect.logWarning(`Ignoring cache ${cacheFilePath}: ${error}`).pipe(
+          Effect.as(Option.none<T>())
+        )
+      )
+    );
+
+  /**
+   * Atomic: these files are hundreds of KB, and a run killed mid-write — or
+   * two CLI processes writing at once — would otherwise leave behind a
+   * truncated file that the next run reads back as a parse failure.
+   */
+  const writeToCache = (cacheFilePath: string, result: T) =>
+    encoder(result).pipe(
+      Effect.flatMap(content => writeFileAtomic(cacheFilePath, content)),
+      Effect.catchAll(error =>
+        Effect.logWarning(`Failed to write to cache ${cacheFilePath}: ${error}`)
+      )
+    );
+
   const cacheEffect = Effect.gen(function* () {
     const fs = yield* FileSystem.FileSystem;
     const path = yield* Path.Path;
-    const cacheDir = yield* setupCacheDir;
 
-    const cacheFilePath = path.join(cacheDir, cacheFileName);
-    const cacheFileExists = yield* fs
-      .exists(cacheFilePath)
-      .pipe(Effect.orElse(() => Effect.succeed(false)));
-    const consumeFromCache = yield* FORCE_CONFIG['USE_CACHE'];
+    // A cache directory we cannot resolve or create means no caching, not a
+    // failed command.
+    const cacheFilePath = yield* setupCacheDir.pipe(
+      Effect.map(cacheDir => Option.some(path.join(cacheDir, cacheFileName))),
+      Effect.catchAll(error =>
+        Effect.logWarning(`Cache unavailable for ${cacheFileName}: ${error}`).pipe(
+          Effect.as(Option.none<string>())
+        )
+      )
+    );
 
-    if (consumeFromCache && cacheFileExists) {
-      yield* Effect.logDebug(`Cache HIT for ${cacheFileName}`);
-
-      // Try to read from cache
-      const cachedResult = yield* fs.readFileString(cacheFilePath).pipe(
-        Effect.flatMap(decoder),
-        Effect.asSome,
-        Effect.catchAll(error => {
-          // Log cache read/parse errors but don't fail - fall through to computation
-          return Effect.logWarning(`Failed to read/parse cache ${cacheFilePath}: ${error}`).pipe(
-            Effect.as(Option.none<T>())
-          );
-        })
-      );
-
-      if (Option.isSome(cachedResult)) {
-        return yield* cacheFilter
-          ? cacheFilter(cachedResult.value)
-          : Effect.succeed(cachedResult.value);
+    if (Option.isSome(cacheFilePath)) {
+      const cached = yield* readFromCache(fs, cacheFilePath.value);
+      if (Option.isSome(cached)) {
+        return cached.value;
       }
     }
 
     yield* Effect.logDebug(`Cache MISS for ${cacheFileName}`);
 
-    // Fetch from the underlying service
+    // Fetch from the underlying service. Its failure is the caller's failure:
+    // retrying here would double every failed request, and the retry would
+    // fail the same way.
     const result = yield* computation;
 
     // Write to cache only if we're fetching the full dataset (no cacheFilter).
     // Filtered API calls fetch partial data that would corrupt the shared cache file.
-    if (!cacheFilter) {
-      yield* encoder(result).pipe(
-        Effect.flatMap(content => fs.writeFileString(cacheFilePath, content)),
-        Effect.catchAll(error =>
-          Effect.logWarning(`Failed to write to cache ${cacheFilePath}: ${error}`)
-        )
-      );
+    if (!cacheFilter && Option.isSome(cacheFilePath)) {
+      yield* writeToCache(cacheFilePath.value, result);
     }
 
     return result;
   });
 
-  // Handle any cache errors by falling back to the original computation
-  const handledCacheEffect = cacheEffect.pipe(
-    Effect.catchAll(error =>
-      Effect.logWarning(`Cache operation failed: ${error}`).pipe(Effect.flatMap(() => computation))
-    )
-  );
-
   // This ensures the returned effect has the same error type as the original computation
   // by providing all the required cache services
-  return handledCacheEffect.pipe(
+  return cacheEffect.pipe(
     Effect.provide(Layer.mergeAll(BunFileSystem.layer, Path.layer, NodeOs.Default))
   ) as Effect.Effect<T, E, R>;
 }
@@ -133,16 +160,30 @@ export const ComposioToolkitsRepositoryCached = Layer.effect(
   Effect.gen(function* () {
     const underlyingRepository = yield* ComposioToolkitsRepository;
 
+    // The full toolkit list is ~800 KB over two pages, and a single command can
+    // ask for it several times (toolkit resolution, validation, telemetry). The
+    // file cache only helps when `FORCE_USE_CACHE` is on, so memoize the whole
+    // lookup for the lifetime of the layer: the first caller pays, the rest
+    // await the same result.
+    //
+    // `Effect.cached` memoizes the outcome, not just the success — a failed
+    // first fetch stays failed for the rest of the process. That is the right
+    // trade for a one-shot CLI, where retrying a broken network per call would
+    // only multiply the wait before the same error surfaces.
+    const cachedGetToolkits = yield* Effect.cached(
+      createCachedEffect(
+        CACHE_FILES.toolkits,
+        toolkitsFromJSON,
+        toolkitsToJSON,
+        underlyingRepository.getToolkits()
+      )
+    );
+
     // Create the cached implementation that wraps the original implementation
     return ComposioToolkitsRepository.make({
-      getToolkits: () => {
-        return createCachedEffect(
-          CACHE_FILES.toolkits,
-          toolkitsFromJSON,
-          toolkitsToJSON,
-          underlyingRepository.getToolkits()
-        );
-      },
+      // Memoized per layer instance; `getToolkitsBySlugs` stays unmemoized
+      // because its result depends on the requested slugs.
+      getToolkits: () => cachedGetToolkits,
 
       getToolkitsBySlugs: slugs => {
         const cacheFilter = (data: Toolkits) => {
