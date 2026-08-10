@@ -12,6 +12,10 @@ Composio Connect is an MCP server at `https://connect.composio.dev/mcp` that giv
 
 Rather than exposing every app tool directly, Composio exposes **7 meta-tools** that let the agent discover what's available, authorize apps on demand, and execute tools across apps in parallel. The first time your agent needs an app, Composio generates an OAuth link you approve in your browser; after that the connection persists across sessions. See [Available MCP tools](#available-mcp-tools) for the full list.
 
+<Callout type="info">
+A raw MCP connection makes these tools and their schemas available; it does not install an agent skill. Host plugins may bundle their own runtime skill, while the Composio CLI can install the separate `composio-cli` skill. Run `npx skills add ComposioHQ/composio --skill composio` to install the public product and integration router explicitly.
+</Callout>
+
 To get started, pick your client below.
 
 <ConnectFlow>

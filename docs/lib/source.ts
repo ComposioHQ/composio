@@ -385,8 +385,8 @@ export function mdxToCleanMarkdown(content: string, url?: string): string {
     /<AIToolsBanner\s*\/>/g,
     '### For AI tools\n\n' +
       '**Skills:**\n' +
-      '```bash\nnpx skills add composiohq/skills\n```\n' +
-      '[Skills.sh](https://skills.sh/composiohq/skills/composio) · [GitHub](https://github.com/composiohq/skills)\n\n' +
+      '```bash\nnpx skills add ComposioHQ/composio --skill composio\n```\n' +
+      '[GitHub](https://github.com/ComposioHQ/composio/tree/next/skills/composio)\n\n' +
       '**CLI:**\n' +
       '```bash\ncurl -fsSL https://composio.dev/install | sh\n```\n' +
       '[CLI Reference](/docs/cli)\n\n' +

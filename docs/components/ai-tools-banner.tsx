@@ -68,19 +68,10 @@ export function AIToolsBanner() {
           {/* Skills */}
           <div className="flex flex-1 flex-col gap-1">
             <span className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--composio-orange)]">Skills</span>
-            <CopyableCommand text="npx skills add composiohq/skills" />
+            <CopyableCommand text="npx skills add ComposioHQ/composio --skill composio" />
             <div className="flex items-center gap-2.5 pl-0.5 text-[11px]">
               <Link
-                href="https://skills.sh/composiohq/skills/composio"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-fd-muted-foreground hover:text-[var(--composio-orange)] transition-colors"
-              >
-                Skills.sh
-                <ExternalLink aria-hidden="true" className="ml-1 inline h-2.5 w-2.5" />
-              </Link>
-              <Link
-                href="https://github.com/composiohq/skills"
+                href="https://github.com/ComposioHQ/composio/tree/next/skills/composio"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-fd-muted-foreground hover:text-[var(--composio-orange)] transition-colors"

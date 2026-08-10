@@ -30,6 +30,18 @@ Open Claude Code in the project you want to work in. `composio login` installs t
 composio --install-skill composio-cli claude
 ```
 
+### What each setup path installs
+
+| Action | What becomes available |
+|---|---|
+| Run the shell installer | The `composio` command. It does not install plugins, skills, or log you in unless you opt in. |
+| Run `composio login` in an interactive terminal | An authenticated CLI session and the `composio-cli` skill for Claude Code by default. Pass `--no-skill-install` to skip the skill. |
+| Run `composio setup --target auto` | Plugins for detected Claude Code and Codex hosts. The Claude plugin uses the separately installed CLI skill; the OpenAI/Codex plugin bundles its own `composio-runtime` router. |
+| Configure raw Composio MCP | Callable tools and schemas, not an agent skill. MCP setup is separate from CLI and plugin setup. |
+| Run `npx skills add ComposioHQ/composio --skill composio` | The separate public `composio` product and integration router. None of the paths above installs it automatically. |
+
+The three skills have different jobs: `composio` selects the product and integration path, `composio-runtime` selects the OpenAI plugin's hosted or local execution surface, and `composio-cli` owns current CLI commands and workflows.
+
 ### Install with options
 
 Pin a version and opt in to agent plugin setup:
