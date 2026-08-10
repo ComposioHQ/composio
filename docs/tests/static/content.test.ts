@@ -12,6 +12,7 @@ const DOCS_DIR = join(import.meta.dir, "../../content/docs");
 const EXAMPLES_DIR = join(import.meta.dir, "../../content/examples");
 const CHANGELOG_DIR = join(import.meta.dir, "../../content/changelog");
 const GOOGLE_PROVIDER_DOC = join(DOCS_DIR, "providers/google.mdx");
+const FETCHING_TOOLS_DOC = join(DOCS_DIR, "tools-direct/fetching-tools.mdx");
 
 /** Recursively find all .mdx files */
 async function findMdxFiles(dir: string): Promise<string[]> {
@@ -132,6 +133,18 @@ describe("Content - Context7 ingest rules", () => {
       ),
     ).toBe(true);
     expect((rules as string[]).join("\n")).not.toMatch(/every non-tool endpoint.*unchanged/i);
+  });
+});
+
+describe("Content - toolkit version guidance", () => {
+  test("the SDK fetching guide distinguishes SDK, REST v3, and REST v3.1 defaults", async () => {
+    const content = await readFile(FETCHING_TOOLS_DOC, "utf-8");
+
+    expect(content).toContain("These SDK examples default to `latest`");
+    expect(content).toContain("v3 defaults to the pinned base version (`00000000_00`)");
+    expect(content).toContain("v3.1 defaults to `latest`");
+    expect(content).not.toMatch(/the API returns tools from the base version/i);
+    expect(content).not.toContain("Never use `latest` in production");
   });
 });
 
