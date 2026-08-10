@@ -351,3 +351,19 @@ Started: 2026-08-10 · Budgets: 24 h loop / ≤ 2 500 LLM calls / production (di
   green between the two sweeps → a couple of status-flip parity misses
   regardless of code.
 - Diagnostic: parity.mjs classification (trs-only bucket must be empty).
+- Wrinkle: cycle-9 attempt 1 VOIDed on lint — the integrity baseline also
+  hashes harness/trace-py/__pycache__/sitecustomize.cpython-312.pyc, which
+  Python regenerated after the approved source patch. Refreshed that hash
+  under the same approval; lint OK; re-scoring.
+- Result (cycle 9): **SCORE 74.2** (C_ts 61/62, P_ts 61/62, C_py 22/22,
+  P_py 0). Trajectory: 11.1 → 15.6 → 24.9 → 30.6 → 65.7 → 74.2.
+  **Stage A3 COMPLETE**: P_ts == C_ts — every runnable TS entry is green
+  under the candidate client with identical (method, path-template) trace
+  sets. parity-variance.json still EMPTY (0/10 used). The only non-parity
+  entry is ts/cloudflare-wrangler/dev (structural red/red). The transient
+  LLM-gateway flakes did not recur this run (83/84 baseline green).
+  Verdict for composio-client: the TS 0.0.0 artifact is drop-in against
+  production across all 62 example entrypoints — no divergences found.
+- Stage state: 0 ✓ · A1 ✓ · A2 ✓ · A3 ✓ · A4 open (workflow drafted;
+  needs default-branch presence + EXAMPLES_COMPOSIO_API_KEY secret —
+  human) · B open (the remaining +25: py SDK 1.43→2.0 migration).
