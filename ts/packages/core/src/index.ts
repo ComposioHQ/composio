@@ -7,6 +7,7 @@ export type { BaseComposioProvider } from './provider/BaseProvider';
 export {
   dereferenceJsonSchema,
   deduplicateJsonSchemaRequiredArrays,
+  ensureObjectTypeOnProperties,
   jsonSchemaToZodSchema,
   removeNonRequiredProperties,
 } from './utils/jsonSchema';
