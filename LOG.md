@@ -313,3 +313,9 @@ Started: 2026-08-10 · Budgets: 24 h loop / ≤ 2 500 LLM calls / production (di
   - Best honest baseline observed this cycle (run #1 + the 6 verified
     fixes): 83/84 baseline-green candidates for C when the sweep is not
     rate-starved; only ts/cloudflare-wrangler/dev is structurally red.
+- Unblock (human-approved via session prompt): patched harness/run.mjs
+  applyTsCandidate() to merge the '@composio/client' override into the
+  repo's existing overrides block (guarding against a pre-existing client
+  override) instead of refusing; audit-dir integrity baseline refreshed to
+  match; lint OK. Validating with a 1-entry candidate sweep, then score
+  run #3.

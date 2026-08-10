@@ -244,8 +244,13 @@ const resolvedTsClientVersion = async () => {
 const applyTsCandidate = async (tarball) => {
   if (!existsSync(tarball)) fail(`COMPOSIO_CLIENT_TARBALL not found: ${tarball}`);
   const yaml = readFileSync(WORKSPACE_YAML, 'utf8');
-  if (/^overrides:/m.test(yaml)) fail('pnpm-workspace.yaml already has an overrides block; refusing to edit');
-  writeFileSync(WORKSPACE_YAML, `${yaml}\noverrides:\n  '@composio/client': file:${tarball}\n`);
+  if (/^overrides:$/m.test(yaml)) {
+    // Merge into the repo's existing overrides block (e.g. security pins);
+    // restoreTsBaseline() reverts via git checkout either way.
+    writeFileSync(WORKSPACE_YAML, yaml.replace(/^overrides:$/m, `overrides:\n  '@composio/client': file:${tarball}`));
+  } else {
+    writeFileSync(WORKSPACE_YAML, `${yaml}\noverrides:\n  '@composio/client': file:${tarball}\n`);
+  }
   await sh(['pnpm', 'install', '--no-frozen-lockfile']);
   const version = await resolvedTsClientVersion();
   if (version === STAINLESS_TS_VERSION) {
