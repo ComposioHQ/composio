@@ -9,10 +9,11 @@ date: '2026-08-06'
 | SDK                                       | Version  |
 | ----------------------------------------- | -------- |
 | Python `composio`                         | `0.19.0` |
-| TypeScript `@composio/core`               | `0.15.0` |
-| TypeScript `@composio/slim`               | `0.15.0` |
+| TypeScript `@composio/core`               | `0.16.0` |
+| TypeScript `@composio/slim`               | `0.16.0` |
 | TypeScript `@composio/json-schema-to-zod` | `0.3.0`  |
 | TypeScript `@composio/claude-agent-sdk`   | `0.11.0` |
+| TypeScript `@composio/google`             | `0.10.2` |
 
 ---
 
@@ -21,6 +22,10 @@ A tool argument declared as a bare `{"type": "object"}` — with no `properties`
 ### What Changed
 
 An object schema that names no properties is now treated as open, unless it sets `additionalProperties: false`: arbitrary content is accepted and preserved, at the root, nested inside another object, and inside array items.
+
+#### Google Gemini schema compatibility
+
+`@composio/google` now adds `type: "object"` to schema nodes that declare `properties` without a type before emitting Google GenAI function declarations. The normalization follows only schema-bearing keywords, so property maps — including a field literally named `properties` — and instance values under `const`, `default`, `enum`, and `examples` remain unchanged. This provider release requires `@composio/core >=0.16.0 <1.0.0`.
 
 **Before:**
 
