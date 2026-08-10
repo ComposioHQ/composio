@@ -14,7 +14,7 @@ import { dirname, join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const STAGING_URL = 'https://staging-backend.composio.dev';
+const DEFAULT_BASE_URL = 'https://backend.composio.dev';
 const ARTIFACTS = join(ROOT, '.artifacts', 'examples-parity');
 const STAINLESS_TS_VERSION = '0.1.0-alpha.76';
 
@@ -54,7 +54,7 @@ const selectEntries = () => {
 };
 
 const baseUrl = () => {
-  const url = process.env.COMPOSIO_BASE_URL ?? STAGING_URL;
+  const url = process.env.COMPOSIO_BASE_URL ?? DEFAULT_BASE_URL;
   if (/localhost|127\.0\.0\.1|0\.0\.0\.0/.test(url)) fail(`refusing local COMPOSIO_BASE_URL: ${url}`);
   return url;
 };
@@ -278,7 +278,7 @@ const cmdSweep = async () => {
   if (!['baseline', 'candidate'].includes(client)) fail(`--client must be baseline|candidate`);
   const entries = selectEntries();
   if (entries.length === 0) fail('no entries selected');
-  if (!process.env.COMPOSIO_API_KEY) fail('COMPOSIO_API_KEY is required for a sweep (staging key)', 2);
+  if (!process.env.COMPOSIO_API_KEY) fail('COMPOSIO_API_KEY is required for a sweep (disposable examples-project key)', 2);
 
   const id = `${runId()}-${client}`;
   const runDir = join(ARTIFACTS, id);
@@ -368,7 +368,7 @@ const cmdSelftest = async () => {
   const badPy = await sh(['uv', 'run', '--project', 'python', 'python', 'harness/fixtures/always_fails.py']).then(() => 0).catch(() => 1);
   check('known-bad py fixture exits non-zero', badPy === 1);
 
-  // 3. trace shims: unauthenticated staging request must appear in the trace.
+  // 3. trace shims: an unauthenticated backend request must appear in the trace.
   const tsTrace = join(runDir, 'traces', 'shim-ts.jsonl');
   await sh(['pnpm', 'exec', 'tsx', 'harness/fixtures/trace-check.ts'], {
     env: { ...process.env, COMPOSIO_TRACE_FILE: tsTrace, COMPOSIO_BASE_URL: baseUrl(), NODE_OPTIONS: `--import=file://${join(ROOT, 'harness', 'trace', 'register.mjs')}` },

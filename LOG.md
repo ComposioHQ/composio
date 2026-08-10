@@ -1,6 +1,6 @@
 # Iteration Log — examples live parity (Stainless → self-managed clients)
 
-Started: <fill at cycle 1> · Budgets: 24 h loop / ≤ 2 500 LLM calls / staging only
+Started: <fill at cycle 1> · Budgets: 24 h loop / ≤ 2 500 LLM calls / production (disposable project) only
 
 <!-- One entry per cycle. Hypothesis, expected failure mode, and diagnostic are
      written BEFORE the change — a hypothesis written after the result is a

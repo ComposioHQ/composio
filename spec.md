@@ -1,10 +1,11 @@
 # Spec — Examples Live Parity
 
 Make every example script in this monorepo runnable unattended against the
-real Composio staging backend, locally and on CI, under BOTH the Stainless
+real Composio production backend (a dedicated, disposable project), locally and on CI, under BOTH the Stainless
 clients (baseline) and the new self-managed clients from
 `~/work/composio/composio-client` (candidate), with no observable behavioral
-difference.
+difference. The API key used must belong to a project holding no valuable
+connections or data.
 
 ## Vocabulary
 
@@ -25,7 +26,7 @@ Every entrypoint carries exactly one tier in `examples-manifest.json`:
 | Tier | Meaning | Green criterion |
 |---|---|---|
 | `1` | Unattended: hackernews / read-only / no external account | exit 0 within timeout |
-| `2` | Unattended given pre-provisioned state (connected accounts, auth configs, env-injected IDs) on the dedicated staging project | exit 0 within timeout |
+| `2` | Unattended given pre-provisioned state (connected accounts, auth configs, env-injected IDs) on the dedicated disposable production project | exit 0 within timeout |
 | `3` | Bounded: interactive or long-running (OAuth redirect flows, listeners, servers). Runner waits for the `readiness` regex on stdout/stderr, then terminates the process and counts it green | readiness matched within timeout |
 | `X` | Excluded from scoring (stdin REPL, public-tunnel webhook, worker modules). Capped; see constraints | never run |
 
@@ -94,7 +95,7 @@ Every tier 1/2/3 entrypoint must:
 - Python entries run as `uv run --project python [--with dep]... python <file>`
   with `PYTHONPATH=<abs>/harness/trace-py` prepended (sitecustomize hook).
 - Injected env per entry: `COMPOSIO_API_KEY`, `COMPOSIO_BASE_URL`
-  (staging, refused if localhost/127.0.0.1), LLM keys, provisioned
+  (production by default, refused if localhost/127.0.0.1), LLM keys, provisioned
   `COMPOSIO_EXAMPLES_*` IDs, `COMPOSIO_TRACE_FILE` (unique per entry run).
 - `node harness/run.mjs neg --ids ...` reruns entries with garbage
   `COMPOSIO_API_KEY`/LLM keys; expectation: non-zero exit AND (tier 3) no
@@ -103,7 +104,7 @@ Every tier 1/2/3 entrypoint must:
 - `node harness/run.mjs selftest` — no credentials needed: runs the
   known-good fixture (error-handling-demo), the known-bad fixture
   (`harness/fixtures/always-fails.{ts,py}`), and a trace-shim check (a
-  scripted 401 against staging must appear in the trace file). All three must
+  scripted 401 against the backend must appear in the trace file). All three must
   behave as labeled.
 
 ## Trace capture and parity
@@ -137,7 +138,7 @@ Every tier 1/2/3 entrypoint must:
 
 ## Provisioning (`scripts/examples-provision.mjs`, deliverable, agent-authored)
 
-Idempotent script against the dedicated staging project: ensures auth configs
+Idempotent script against the dedicated disposable production project: ensures auth configs
 and connected accounts for the toolkits tier-2 entries need (gmail,
 googledrive, github, notion, slack, weathermap), creates missing API-key-auth
 connections automatically, prints exactly which OAuth connections still need a
@@ -147,7 +148,7 @@ exports. Never prints secrets.
 ## CI (deliverable, agent-authored)
 
 `.github/workflows/examples-live.yml`: `workflow_dispatch` (inputs: lang,
-client, ids) + nightly cron; staging URL + existing secrets; uploads
+client, ids) + nightly cron; production URL + a dedicated disposable examples-project key secret (never the org's main key); uploads
 results/trace artifacts; never a required PR check. It invokes the same
 runner (`harness/run.mjs sweep`), so local and CI runs are the same code
 path. The existing `ts.examples-nightly.yml` stays untouched until this
@@ -169,7 +170,7 @@ workflow is stable, then the human decides on consolidation.
 
 ## Non-goals
 
-Production runs; sending email (or any outbound messaging) from example runs;
+Staging or local/mock backends (the target is production with a disposable project); sending email (or any outbound messaging) from example runs;
 modifying `~/work/composio/composio-client`; publishing packages; making the
 CI job a required check; byte-level response diffing (already covered by
 composio-client's live-parity harness).

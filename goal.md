@@ -1,4 +1,4 @@
-# Goal: every Composio example runs green against staging under both the Stainless and the self-managed clients, with no observable behavioral difference
+# Goal: every Composio example runs green against production (disposable project) under both the Stainless and the self-managed clients, with no observable behavioral difference
 
 ## Stage 0 — Build to spec (inner loop)
 
@@ -37,9 +37,10 @@ holdout exclusively, and the final acceptance run must be the CI
   gradient at high burn means stop and report.
 - Spend ceilings: ≤ 150 LLM calls per sweep, ≤ 2 500 LLM calls total
   (`status.sh` reports the count; OpenAI/Anthropic/Gemini keys are the paid
-  surface). One full sweep ≤ 45 min. Staging only — `COMPOSIO_BASE_URL` is
-  pinned to `https://staging-backend.composio.dev`; the runner refuses local
-  URLs and you never point anything at production.
+  surface). One full sweep ≤ 45 min. Production, disposable project only — `COMPOSIO_BASE_URL` defaults to
+  `https://backend.composio.dev`; the runner refuses local URLs; the
+  `COMPOSIO_API_KEY` in use must be the dedicated examples-project key (no
+  valuable connections or data), never the org's main key.
 - Surface — editable:
   `ts/examples/**`, `python/examples/**`, `examples-manifest.json`,
   `parity-variance.json`, `scripts/examples-provision.mjs`,
