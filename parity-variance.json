@@ -1,0 +1,1 @@
+{"$comment": "Parity variance allowlist. HARD CAP 10 entries. Each entry: {\"pair\": \"METHOD /path/{id}/template\", \"justification\": \"...\"}. Abused normalization = VOID.", "entries": []}
