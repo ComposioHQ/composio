@@ -107,6 +107,11 @@ Started: 2026-08-10 · Budgets: 24 h loop / ≤ 2 500 LLM calls / production (di
 - Expected failure mode: an example that implicitly relied on CJS semantics
   breaks; or wrangler/cf tooling objects to the field.
 - Diagnostic: per-entry outputTail; ts.examples.yml cf:dry-run in CI later.
-- Change: "type": "module" in 18 example package.jsons (commit follows).
-- Result:
-- Reflection:
+- Change: "type": "module" in 18 example package.jsons (commit 29acb2137).
+- Result: hypothesis confirmed — **SCORE 24.9** (ts 42/62 green, py 7/22).
+  Remaining reds cluster cleanly: anthropic trio (not_found_error — model
+  id rot), py openai-agents family (pydantic InputTokensDetails drift),
+  tools/* (gdrive account not provisioned yet), cloudflare-wrangler dev
+  (.dev.vars plumbing), py/auth_configs (dummy OAuth ids), plus 4 singles.
+- Reflection: generalizing — two systemic fixes (fail-loudly, ESM) moved
+  the score 11.1 → 24.9 without touching the metric surface.
