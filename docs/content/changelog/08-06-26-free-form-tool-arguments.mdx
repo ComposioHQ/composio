@@ -120,11 +120,23 @@ wrapped.run({"name": "a", "typo": 1})
 
 This brings Python in line with the TypeScript SDK, where the Zod converter has always rejected unknown keys for schemas that name properties. Strictness applies only when `additionalProperties` is omitted; `additionalProperties: true` and schema-valued forms behave as declared.
 
+#### Provider argument presence is preserved
+
+CrewAI, LangChain, and LangGraph now keep the difference between an omitted optional field and a field explicitly set to `None`. JSON Schema defaults are included, while optional fields with no default stay absent. The same rules apply inside nested objects, arrays, maps, combiners, and dynamic-key values.
+
+```python
+# The schema requires `query`, allows a nullable `note`, and defaults `page` to 5.
+wrapped.run({"query": "agents", "note": None})
+# The tool receives {"query": "agents", "note": None, "page": 5}.
+```
+
+If you omit `note`, the tool does not receive it. Before this release, provider serialization could add an omitted nullable field as `None`, or drop an explicit `None`, a declared default, or a dynamic extra.
+
 #### Not affected
 
 - **`composio_openai`, `composio_anthropic`, and the other non-agentic providers.** These hand the raw JSON schema to the model API and pass the returned arguments straight through, so they never build a Pydantic model from a tool schema.
 - **`composio_gemini`.** Gemini builds a typed signature through `json_schema_to_pydantic_type`, so free-form object arguments now use `Dict[str, Any]` instead of an empty model. It does not use `json_schema_to_model`, so the unknown-key rejection above does not apply.
-- **Declared field behavior, aliases for reserved Python keywords, `skip_default`, combiners, and references in declared fields.** All unchanged. Dynamic-key schema validation is the exception, as described above.
+- **Provider APIs and invocation signatures.** You wrap and call tools the same way. The change is limited to validated arguments passed to the tool.
 
 ### Behavior Change for the Claude Agent SDK Provider
 
