@@ -36,11 +36,13 @@ if (!API_KEY) {
 // browser authorization. Only export ids that examples consume directly.
 const BROWSER_GRANT_TOOLKITS = [
   { exportPrefix: 'GMAIL', slug: 'gmail' },
+  // googledrive exports nothing: examples reach Drive through the user's
+  // standing connection (COMPOSIO_EXAMPLES_USER_ID), never through ids.
   { slug: 'googledrive' },
   { exportPrefix: 'GITHUB', slug: 'github' },
   { exportPrefix: 'SLACK', slug: 'slack' },
 ];
-const DEMO_TOOLKIT = { prefix: 'APIKEY', slug: 'serpapi', demoValue: 'examples-demo-key' };
+const DEMO_TOOLKIT = { exportPrefix: 'APIKEY', slug: 'serpapi', demoValue: 'examples-demo-key' };
 
 const report = (line) => console.error(line);
 
@@ -80,7 +82,10 @@ const pendingGrants = [];
 let ok = true;
 
 function findAuthConfig(slug) {
-  return authConfigs.find((c) => c.toolkit?.slug === slug && c.status !== 'DISABLED');
+  // Prefer the config this script names on creation so a project holding
+  // unrelated configs for the same toolkit stays deterministic.
+  const candidates = authConfigs.filter((c) => c.toolkit?.slug === slug && c.status !== 'DISABLED');
+  return candidates.find((c) => c.name === `examples-${slug}`) ?? candidates[0];
 }
 function findActiveAccount(slug) {
   return accounts.find((a) => a.toolkit?.slug === slug && a.status === 'ACTIVE');
@@ -125,7 +130,7 @@ for (const { exportPrefix, slug } of BROWSER_GRANT_TOOLKITS) {
 // placeholder; serpapi only validates it at tool-execution time and no example
 // executes a serpapi tool.
 {
-  const { prefix, slug, demoValue } = DEMO_TOOLKIT;
+  const { exportPrefix, slug, demoValue } = DEMO_TOOLKIT;
   let config = findAuthConfig(slug);
   if (!config) {
     const created = await api('POST', '/api/v3.1/auth_configs', {
@@ -135,8 +140,8 @@ for (const { exportPrefix, slug } of BROWSER_GRANT_TOOLKITS) {
     config = { id: created.auth_config?.id ?? created.id };
     report(`created API-key auth config for ${slug}: ${config.id}`);
   }
-  exports[`COMPOSIO_EXAMPLES_${prefix}_AUTH_CONFIG_ID`] = config.id;
-  exports[`COMPOSIO_EXAMPLES_${prefix}_PLACEHOLDER`] = demoValue;
+  exports[`COMPOSIO_EXAMPLES_${exportPrefix}_AUTH_CONFIG_ID`] = config.id;
+  exports[`COMPOSIO_EXAMPLES_${exportPrefix}_PLACEHOLDER`] = demoValue;
 }
 
 if (pendingGrants.length) {
