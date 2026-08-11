@@ -76,6 +76,12 @@ jobs:
           cd python/
           uv run nox -s chk
 
+      - name: Example type checks
+        shell: bash
+        run: |
+          cd python/
+          uv run nox -s chk_examples
+
       - name: Type inference tests
         shell: bash
         run: |

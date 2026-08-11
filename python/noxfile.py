@@ -76,6 +76,31 @@ def fix(session: Session):
 
 
 @nox.session
+def chk_examples(session: Session):
+    """Type-check example scripts against the SDK surface.
+
+    Examples run one mypy invocation per file: duplicate basenames
+    (examples/tools.py, examples/tool_router/tools.py) collide as module
+    names inside a single run. Third-party agent frameworks stay
+    unresolved on purpose; the check targets composio API usage.
+    """
+    from pathlib import Path
+
+    session.install(".", "--group", "dev", mypy, *type_stubs)
+    for path in sorted(Path("examples").rglob("*.py")):
+        session.run(
+            "mypy",
+            "--config-file",
+            "config/mypy.ini",
+            "--ignore-missing-imports",
+            # Examples wrap their bodies in unannotated main()s; without this
+            # mypy skips those bodies entirely and the gate checks almost nothing.
+            "--check-untyped-defs",
+            str(path),
+        )
+
+
+@nox.session
 def tst(session: Session):
     """Run the Python unit test suite."""
     session.install(".", "--group", "dev")

@@ -43,7 +43,7 @@ async function main() {
      * Create a message with Anthropic that may use tools
      */
     const message = await anthropic.messages.create({
-      model: 'claude-3-7-sonnet-latest',
+      model: 'claude-sonnet-5',
       max_tokens: 1024,
       tools: tools,
       messages,
@@ -75,7 +75,7 @@ async function main() {
        * Send a follow-up message with the tool results
        */
       const followUpMessage = await anthropic.messages.create({
-        model: 'claude-3-7-sonnet-latest',
+        model: 'claude-sonnet-5',
         max_tokens: 1024,
         messages,
       });
@@ -105,6 +105,7 @@ async function main() {
     }
   } catch (error) {
     console.error('Error:', error);
+    process.exitCode = 1;
   }
 }
 
