@@ -65,6 +65,8 @@ print(result)
 
 Each Composio tool becomes a CrewAI `BaseTool` whose `args_schema` is built from the tool's input schema, so CrewAI validates arguments before running anything.
 
+Free-form object arguments accept and preserve arbitrary nested keys. For objects that declare named properties, undeclared keys are rejected unless the schema allows them with `additionalProperties`. CrewAI also preserves whether an optional argument was omitted or explicitly set to `None`: declared defaults are included, while optional arguments without defaults stay absent.
+
 When validation fails, the tool does not raise. It returns a structured result instead:
 
 ```python

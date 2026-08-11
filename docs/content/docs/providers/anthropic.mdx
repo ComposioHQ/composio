@@ -165,6 +165,8 @@ for (const block of response.content) {
 
 The `ClaudeAgentSDKProvider` exposes your Composio tools to the Claude Agent SDK as an in-process MCP server. You build the server with `create_sdk_mcp_server` (Python) or `createSdkMcpServer` (TypeScript), register it on the agent, and the SDK runs the tool-call loop for you.
 
+The provider registers each tool's complete object schema. Free-form object arguments reach the tool unchanged, while undeclared keys are rejected when the schema does not allow them.
+
 <Steps>
 <Step>
 **Install**
