@@ -1,5 +1,49 @@
 # @composio/core
 
+## 0.16.0
+
+### Minor Changes
+
+- 5e57815: Keep free-form object roots, `patternProperties`, and `additionalProperties` when parsing a tool schema.
+
+  `ToolSchema.parse` used to reject a bare `{ "type": "object" }` root, drop root `patternProperties` as an unknown key, and reject a root `additionalProperties` written as a schema instead of a boolean. Free-form roots now parse successfully, and both constraints survive parsing exactly as written. The public `ToolSchema` type now makes `properties` optional to reflect those valid property-less object schemas.
+
+  This matters downstream. Every provider reads `inputParameters` after parsing, so a tool that declares dynamic keys had those rules stripped before the model ever saw them.
+
+  An omitted `additionalProperties` still stays omitted. The parser does not invent a value, because each converter decides its own default.
+
+  **What no longer works**
+
+  Parsing no longer fails on a schema-valued root `additionalProperties`.
+
+  ```ts
+  const tool = ToolSchema.parse({
+    slug: 'MY_TOOL',
+    inputParameters: {
+      type: 'object',
+      properties: { name: { type: 'string' } },
+      additionalProperties: { type: 'number' },
+    },
+    // ...
+  });
+
+  // before: parsing failed, because only a boolean was accepted
+  // now:    tool.inputParameters.additionalProperties is { type: 'number' }
+  ```
+
+  **What to do instead**
+
+  Nothing, if you only ever passed boolean values. That case is unchanged.
+
+  If your code assumed `inputParameters` never carries `patternProperties`, or that `additionalProperties` is always a boolean, widen that assumption. Both keywords can now appear, and `additionalProperties` can be a boolean or a schema object.
+
+### Patch Changes
+
+- a2f6b96: Add `type: "object"` to nested JSON Schema nodes that carry `properties` without an explicit type, so tool schemas work with strict OpenAPI 3.0 consumers like Google Gemini.
+- c625edc: Reuse fetched tool schemas when provider-wrapped tools execute to avoid a redundant retrieval request.
+- Updated dependencies [5e57815]
+  - @composio/json-schema-to-zod@0.3.0
+
 ## 0.15.0
 
 ### Minor Changes
