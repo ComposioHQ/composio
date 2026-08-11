@@ -176,6 +176,14 @@ print(result["messages"][-1].content)
 
 </IntegrationTabs>
 
+## Python argument validation
+
+The Python LangChain and LangGraph providers build a Pydantic argument model from each tool's JSON Schema. Object arguments that declare no properties accept and preserve arbitrary nested keys. For objects that declare named properties, undeclared keys are rejected unless the schema allows them with `additionalProperties`.
+
+Schemas that use `patternProperties` or schema-valued `additionalProperties` validate dynamic keys before execution. The providers also preserve whether an optional argument was omitted or explicitly set to `None`. By default, declared defaults are included, while optional arguments without defaults stay absent. Set `schema_config={"skip_defaults": True}` when creating the provider to leave declared defaults absent too.
+
+When validation fails, the tool does not run. LangChain surfaces the failure as a tool error observation so the agent can correct its arguments and retry.
+
 ## Next
 
 <Card icon={<BookOpen />} title="What is a session?" href="/docs/how-composio-works" description="How sessions scope users, tools, and auth, and how to reuse them across requests." />
