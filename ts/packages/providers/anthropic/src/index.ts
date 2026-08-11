@@ -306,7 +306,7 @@ export class AnthropicProvider extends BaseNonAgenticProvider<
       options,
       modifiers
     );
-    return JSON.stringify(result.data);
+    return JSON.stringify(result.error === null ? result.data : { error: result.error });
   }
 
   /**
