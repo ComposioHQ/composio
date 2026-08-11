@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Idempotent provisioning check for the live example sweeps.
+// Idempotent provisioning check for the live example runs.
 //
 // Verifies that the dedicated (disposable) Composio project holds the auth
 // configs and connected accounts the tier-2/3 examples need, creates whatever
@@ -15,12 +15,15 @@
 //        also starts an OAuth connection request for each missing account and
 //        prints the redirect URL to authorize it (one browser visit per toolkit)
 //   node scripts/examples-provision.mjs --gc [--dry-run]
-//        DESTRUCTIVE. Deletes resources example runs leak into the disposable
-//        project: connected accounts that never became ACTIVE, surplus serpapi
-//        demo accounts, and sweep-created MCP configs (timestamp-suffixed
-//        names). Only touches resources older than 24h so a concurrent sweep is
-//        safe. It sweeps every user in whatever project COMPOSIO_API_KEY names,
-//        so run --dry-run first and never point it at a shared project.
+//        DESTRUCTIVE. Deletes resources example runs leak into the project:
+//        connected accounts that never became ACTIVE, surplus serpapi demo
+//        accounts, and MCP configs created by earlier runs (timestamp-suffixed
+//        names).
+//        Connected accounts are only ever deleted when they are bound to an
+//        `examples-<slug>` auth config, which only this script creates. An
+//        account the examples did not create is never touched, whatever user
+//        owns it. Only resources older than 24h are removed, so a concurrent run
+//        is safe. Preview with --dry-run.
 //
 // Auth config ids and connected account ids are not secrets; no credential
 // values are ever printed. The API-key demo value stored for serpapi is a
@@ -33,7 +36,7 @@ const INITIATE_MISSING = process.argv.includes('--initiate-missing');
 const GC = process.argv.includes('--gc');
 const DRY_RUN = process.argv.includes('--dry-run');
 
-// The example sweeps only ever run against the production backend with the
+// The examples only ever run against the production backend with the
 // disposable project key. Allowlist the Composio hosts rather than denylisting
 // loopback spellings: the API key travels in every request, so anything that is
 // not a Composio backend must be refused, not just localhost.
@@ -72,7 +75,7 @@ async function api(method, path, body) {
     method,
     headers: { 'x-api-key': API_KEY, 'content-type': 'application/json' },
     body: body === undefined ? undefined : JSON.stringify(body),
-    // Without this a hung backend hangs the whole sweep instead of failing it.
+    // Without this a hung backend hangs the whole run instead of failing it.
     signal: AbortSignal.timeout(30_000),
   });
   const text = await res.text();
@@ -85,7 +88,7 @@ async function api(method, path, body) {
 // Two pagination shapes are in play. Most v3.1 collections (auth_configs,
 // connected_accounts) return `next_cursor`; /mcp/servers never does and reports
 // current_page/total_pages instead. Follow whichever the response actually
-// offers, otherwise the MCP sweep silently stops after one page.
+// offers, otherwise the MCP cleanup silently stops after one page.
 const MAX_PAGES = 50;
 
 async function listAll(path, key = 'items') {
@@ -141,10 +144,29 @@ if (GC) {
     report(`gc: deleted ${label}`);
   };
 
-  // Accounts that never became ACTIVE are dead weight from OAuth-initiating
-  // example runs; surplus serpapi demo accounts pile up from api-key runs.
-  // Standing ACTIVE accounts for the OAuth toolkits are never touched.
-  const allAccounts = await listAll('/api/v3.1/connected_accounts');
+  // Ownership marker: this script is the only thing that creates auth configs
+  // named `examples-<slug>`, so an account bound to one of them was created by
+  // an example run. Match the name exactly. findAuthConfig's fallback to any
+  // config for the toolkit is fine for reading, but must never authorise a
+  // delete, or a project's own gmail config would look example-owned.
+  // Keying on the auth config rather than the user id matters: some examples
+  // connect as 'default' rather than COMPOSIO_EXAMPLES_USER_ID.
+  const ownedNames = new Set(
+    [...BROWSER_GRANT_TOOLKITS, DEMO_TOOLKIT].map(({ slug }) => `examples-${slug}`)
+  );
+  const ownedAuthConfigIds = new Set(
+    authConfigs.filter(c => ownedNames.has(c.name)).map(c => c.id)
+  );
+  const isExampleOwned = a => ownedAuthConfigIds.has(a.auth_config?.id);
+
+  if (ownedAuthConfigIds.size === 0) {
+    report('gc: no examples-* auth configs in this project; skipping account cleanup');
+  }
+
+  // Among example-created accounts only: ones that never became ACTIVE are dead
+  // weight from OAuth-initiating runs, and surplus serpapi demo accounts pile up
+  // from api-key runs. The newest standing account per toolkit is never touched.
+  const allAccounts = (await listAll('/api/v3.1/connected_accounts')).filter(isExampleOwned);
   const serpapiActive = allAccounts
     .filter(a => a.toolkit?.slug === 'serpapi' && a.status === 'ACTIVE')
     .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
@@ -156,7 +178,7 @@ if (GC) {
     await gcDelete('connected account', `/api/v3.1/connected_accounts/${account.id}`, account);
   }
 
-  // Sweep-created MCP configs carry a timestamp (suffix or full name).
+  // MCP configs created by example runs carry a timestamp (suffix or full name).
   const mcpServers = await listAll('/api/v3.1/mcp/servers');
   for (const server of mcpServers.filter(s => /(?:^|-)\d{10,}$/.test(s.name ?? '') && stale(s))) {
     await gcDelete('mcp config', `/api/v3.1/mcp/${server.id}`, server);
