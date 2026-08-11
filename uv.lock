@@ -719,6 +719,7 @@ source = { editable = "python" }
 dependencies = [
     { name = "composio-client" },
     { name = "json-schema-to-pydantic" },
+    { name = "jsonschema" },
     { name = "openai" },
     { name = "pydantic" },
     { name = "pysher" },
@@ -746,6 +747,7 @@ dev = [
 requires-dist = [
     { name = "composio-client", specifier = "==1.43.0" },
     { name = "json-schema-to-pydantic", specifier = ">=0.4.11" },
+    { name = "jsonschema", specifier = ">=4.23.0" },
     { name = "openai", specifier = ">=2.48.0" },
     { name = "pydantic", specifier = ">=2.11.9" },
     { name = "pysher", specifier = ">=1.0.8" },

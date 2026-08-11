@@ -15,7 +15,10 @@ from composio.client.types import Tool, tool_list_response
 from composio.core.models.base import allow_tracking
 from composio.core.models.tools import Tools
 from composio.core.provider import AgenticProvider, NonAgenticProvider
+from pydantic import ValidationError
+
 from tests.conftest import mock_http_client
+from tests.fixtures.json_schema_conversion_corpus import find_case
 
 
 @pytest.fixture(autouse=True)
@@ -900,6 +903,82 @@ class TestLangchainReservedKeywords:
         wrapped = provider.wrap_tool(tool, mock_execute)
         wrapped.run({"from_rs": "2024-01-01"})
         assert captured == {"from": "2024-01-01"}
+
+
+class TestLangchainFreeFormObjectArguments:
+    """Regression for issue #4064 at the Python provider boundary.
+
+    `LangchainProvider.wrap_tool` builds its `args_schema` from
+    `json_schema_to_model` and re-reads each argument with `getattr`, so a
+    property-less object that validates but drops its content never reaches
+    execution.
+    """
+
+    def _make_tool(self, properties: dict):
+        return Tool(
+            name="Metabase Create Card",
+            slug="METABASE_POST_API_CARD",
+            description="A tool with a free-form object argument",
+            input_parameters={
+                "type": "object",
+                "title": "MetabaseCreateCardRequest",
+                "properties": properties,
+                "required": list(properties),
+            },
+            output_parameters={},
+            available_versions=["12012025_00"],
+            version="12012025_00",
+            scopes=[],
+            toolkit=tool_list_response.ItemToolkit(
+                name="Metabase", slug="metabase", logo=""
+            ),
+            deprecated=tool_list_response.ItemDeprecated(
+                available_versions=["12012025_00"],
+                displayName="Metabase Create Card",
+                version="12012025_00",
+                toolkit=tool_list_response.ItemDeprecatedToolkit(logo=""),
+                is_deprecated=False,
+            ),
+            is_deprecated=False,
+            no_auth=False,
+            tags=[],
+        )
+
+    def test_free_form_object_reaches_execution_intact(self):
+        from composio_langchain import LangchainProvider
+
+        case = find_case("nested-free-form-object")
+        payload = case.instances[0].input
+
+        captured = {}
+
+        def mock_execute(slug, arguments):
+            captured.update(arguments)
+            return {"data": {}, "error": None, "successful": True}
+
+        wrapped = LangchainProvider().wrap_tool(
+            self._make_tool(case.schema_["properties"]), mock_execute
+        )
+        wrapped.run(payload)
+
+        assert captured == payload
+
+    def test_unknown_keys_are_still_rejected_before_execution(self):
+        from composio_langchain import LangchainProvider
+
+        executed = []
+
+        def mock_execute(slug, arguments):
+            executed.append(arguments)
+            return {"data": {}, "error": None, "successful": True}
+
+        wrapped = LangchainProvider().wrap_tool(
+            self._make_tool({"name": {"type": "string"}}), mock_execute
+        )
+
+        with pytest.raises(ValidationError):
+            wrapped.args_schema.model_validate({"name": "a", "typo": 1})
+        assert executed == []
 
 
 class TestProviderEdgeCases:

@@ -31,6 +31,7 @@ modules_for_ruff = [
 type_stubs = [
     "types-requests==2.33.0.20260712",
     "types-protobuf==7.34.1.20260518",
+    "types-jsonschema==4.26.0.20260518",
     "anthropic==0.120.0",
     # Keep this aligned with the CrewAI provider dependency metadata.
     "crewai==1.15.7",

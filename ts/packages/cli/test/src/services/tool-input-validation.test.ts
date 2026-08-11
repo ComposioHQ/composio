@@ -10,6 +10,7 @@ import {
   validateToolInputArgumentsWithDefinition,
 } from 'src/services/tool-input-validation';
 import { defaultNodeOs, NodeOs } from 'src/services/node-os';
+import { loadObjectCases } from '../../fixtures/corpus';
 
 const definition = {
   schemaPath: '/tmp/GMAIL_SEND_EMAIL.json',
@@ -159,6 +160,42 @@ describe('tool input validation', () => {
       expect(error.issues).toContain(
         '<root>: Unknown key "recipent_email". Use "recipient_email" instead. Allowed top-level keys: recipient_email, subject, body'
       );
+    })
+  );
+});
+
+describe('free-form object tool inputs', () => {
+  const freeFormCase = loadObjectCases().find(entry => entry.id === 'nested-free-form-object');
+  if (!freeFormCase) {
+    throw new Error('Corpus is missing the nested-free-form-object case');
+  }
+
+  const freeFormDefinition = {
+    schemaPath: '/tmp/METABASE_POST_API_CARD.json',
+    schema: freeFormCase.schema,
+  } as const;
+
+  it.effect('accepts arbitrary content inside a property-less object', () =>
+    Effect.gen(function* () {
+      const result = yield* validateToolInputArgumentsWithDefinition(
+        'METABASE_POST_API_CARD',
+        freeFormCase.instances[0].input,
+        freeFormDefinition
+      );
+
+      expect(result).toEqual(freeFormDefinition);
+    })
+  );
+
+  it.effect('still reports unknown keys for named-property schemas', () =>
+    Effect.gen(function* () {
+      const error = yield* validateToolInputArgumentsWithDefinition(
+        'GMAIL_SEND_EMAIL',
+        { recipient_email: 'karan@composio.dev', nope: 1 },
+        definition
+      ).pipe(Effect.flip);
+
+      expect(error).toBeInstanceOf(ToolInputValidationError);
     })
   );
 });

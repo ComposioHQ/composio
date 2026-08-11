@@ -15,6 +15,8 @@
 
 ### Patch Changes
 
+- Free-form object arguments now pass CLI tool-input validation and keep their content instead of failing with an unknown-key error. Run `composio upgrade` to install the fixed CLI binary.
+- A tool schema the validator cannot interpret is now reported as a schema compile failure naming the cached schema path, instead of as an input error blaming your arguments. This covers a `patternProperties` key that is not a valid regular expression, and a reference inside a `patternProperties` or schema-valued `additionalProperties` subschema that does not resolve.
 - Fix Linux `composio upgrade` failures with `ETXTBSY` by staging CLI files in
   the install directory and renaming the executable last. The installer and
   companion repair use the same replacement strategy, and the running binary
