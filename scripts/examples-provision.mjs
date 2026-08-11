@@ -17,8 +17,9 @@
 //   node scripts/examples-provision.mjs --gc [--dry-run]
 //        DESTRUCTIVE. Deletes resources example runs leak into the project:
 //        connected accounts that never became ACTIVE, surplus serpapi demo
-//        accounts, and MCP configs named `examples-mcp-<label>-<timestamp>`,
+//        accounts, and MCP configs named `examples-<label>-<unix-seconds>`,
 //        which is the name every example gives the configs it creates.
+//        Configs from runs predating that convention are not matched.
 //        Connected accounts are only ever deleted when they are bound to an
 //        `examples-<slug>` auth config, which only this script creates. An
 //        account the examples did not create is never touched, whatever user
@@ -40,15 +41,21 @@ const DRY_RUN = process.argv.includes('--dry-run');
 // disposable project key. Allowlist the Composio hosts rather than denylisting
 // loopback spellings: the API key travels in every request, so anything that is
 // not a Composio backend must be refused, not just localhost.
-const baseHost = (() => {
+const { baseHost, baseProtocol } = (() => {
   try {
-    return new URL(BASE_URL).hostname;
+    const url = new URL(BASE_URL);
+    return { baseHost: url.hostname, baseProtocol: url.protocol };
   } catch {
-    return null;
+    return { baseHost: null, baseProtocol: null };
   }
 })();
 if (!baseHost || !(baseHost === 'composio.dev' || baseHost.endsWith('.composio.dev'))) {
   console.error(`refusing non-Composio COMPOSIO_BASE_URL: ${BASE_URL}`);
+  process.exit(1);
+}
+if (baseProtocol !== 'https:') {
+  // The API key is sent on every request. Plain http would put it on the wire.
+  console.error(`refusing non-https COMPOSIO_BASE_URL: ${BASE_URL}`);
   process.exit(1);
 }
 if (!API_KEY) {
@@ -77,6 +84,10 @@ async function api(method, path, body) {
     body: body === undefined ? undefined : JSON.stringify(body),
     // Without this a hung backend hangs the whole run instead of failing it.
     signal: AbortSignal.timeout(30_000),
+    // The host allowlist above only checks BASE_URL. fetch follows redirects by
+    // default and forwards x-api-key across origins (only Authorization is
+    // stripped), so a 3xx would hand the key to whatever host it names.
+    redirect: 'error',
   });
   const text = await res.text();
   if (!res.ok) {
@@ -105,6 +116,10 @@ async function listAll(path, key = 'items') {
     out.push(...(data?.[key] ?? []));
 
     if (data?.next_cursor) {
+      if (data.next_cursor === cursor) {
+        report(`warning: ${path} repeated cursor ${cursor}; stopping to avoid a loop`);
+        return out;
+      }
       cursor = data.next_cursor;
       continue;
     }
@@ -112,6 +127,10 @@ async function listAll(path, key = 'items') {
     const totalPages = Number(data?.total_pages);
     const currentPage = Number(data?.current_page ?? pageNo);
     if (Number.isFinite(totalPages) && Number.isFinite(currentPage) && currentPage < totalPages) {
+      // Clear the cursor before falling back to page numbers. Leaving it set
+      // would resend the same cursor every iteration and repeat one page until
+      // the page cap.
+      cursor = undefined;
       pageNo = currentPage + 1;
       continue;
     }
@@ -178,12 +197,13 @@ if (GC) {
     await gcDelete('connected account', `/api/v3.1/connected_accounts/${account.id}`, account);
   }
 
-  // Example runs name their MCP configs `examples-mcp-<label>-<timestamp>`.
-  // Both halves are load-bearing. The reserved `examples-mcp-` prefix is what
-  // proves an example created it, and the trailing timestamp keeps a hand-made
-  // `examples-mcp-scratch` out of the delete set. Matching a bare trailing digit
-  // run instead would also claim names like `release-1754923456`.
-  const EXAMPLE_MCP_NAME = /^examples-mcp-[a-z0-9-]+-\d{10,}$/;
+  // Example runs name their MCP configs `examples-<label>-<unix-seconds>`.
+  // Both halves are load-bearing. The reserved `examples-` prefix is what proves
+  // an example created it, and the trailing timestamp keeps a hand-made
+  // `examples-scratch` out of the delete set. Matching a bare trailing digit run
+  // instead would also claim names like `release-1754923456`. Seconds, not
+  // milliseconds: the API caps MCP names at 30 characters.
+  const EXAMPLE_MCP_NAME = /^examples-[a-z0-9-]+-\d{10}$/;
   const mcpServers = await listAll('/api/v3.1/mcp/servers');
   for (const server of mcpServers.filter(s => EXAMPLE_MCP_NAME.test(s.name ?? '') && stale(s))) {
     await gcDelete('mcp config', `/api/v3.1/mcp/${server.id}`, server);
@@ -195,10 +215,13 @@ const pendingGrants = [];
 let ok = true;
 
 function findAuthConfig(slug) {
-  // Prefer the config this script names on creation so a project holding
-  // unrelated configs for the same toolkit stays deterministic.
-  const candidates = authConfigs.filter(c => c.toolkit?.slug === slug && c.status !== 'DISABLED');
-  return candidates.find(c => c.name === `examples-${slug}`) ?? candidates[0];
+  // Only the exactly-named config counts. Adopting a project's own config for
+  // the same toolkit would bind example-created accounts to a config --gc does
+  // not recognise, so they could never be cleaned up, and it would point the
+  // examples at credentials the examples do not own.
+  return authConfigs.find(
+    c => c.toolkit?.slug === slug && c.status !== 'DISABLED' && c.name === `examples-${slug}`
+  );
 }
 function findActiveAccount(slug) {
   return accounts.find(a => a.toolkit?.slug === slug && a.status === 'ACTIVE');

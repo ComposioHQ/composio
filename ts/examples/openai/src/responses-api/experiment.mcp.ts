@@ -18,7 +18,7 @@ if (!authConfigId || !externalUserId) {
 const allowedTools = ['GMAIL_FETCH_EMAILS'];
 
 // 2. Create an MCP config
-const mcpConfig = await composio.mcp.create(`examples-mcp-gmail-responses-${Date.now()}`, {
+const mcpConfig = await composio.mcp.create(`examples-gm-resp-${Math.floor(Date.now() / 1000)}`, {
   toolkits: [
     {
       toolkit: 'gmail',

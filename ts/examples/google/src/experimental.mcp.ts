@@ -19,9 +19,12 @@ if (!externalUserId) {
   throw new Error('Set COMPOSIO_EXAMPLES_USER_ID');
 }
 
-// 2. Create a session scoped to the Gmail toolkit; it exposes a hosted MCP endpoint
+// 2. Create a session scoped to the Gmail toolkit; it exposes a hosted MCP endpoint.
+// manageConnections defaults to true, which would add connection-management tools
+// this example does not use. The config it replaced set manuallyManageConnections.
 const session = await composio.sessions.create(externalUserId, {
   toolkits: ['gmail'],
+  manageConnections: false,
   mcp: true,
 });
 

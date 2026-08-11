@@ -14,9 +14,10 @@ slack_auth_config_id = os.environ["COMPOSIO_EXAMPLES_SLACK_AUTH_CONFIG_ID"]
 user_id = os.environ["COMPOSIO_EXAMPLES_USER_ID"]
 
 mcp_config = composio.mcp.create(
-    # Named `examples-mcp-<label>-<timestamp>` so the provisioning script's
-    # --gc can tell this throwaway config from one created by hand.
-    name=f"examples-mcp-langchain-slack-{int(time.time())}",
+    # Named `examples-<label>-<unix-seconds>` so the provisioning script's --gc
+    # can tell this throwaway config from one created by hand. The API caps
+    # this name at 30 characters, so the label stays short.
+    name=f"examples-lc-slack-{int(time.time())}",
     toolkits=[{"toolkit": "slack", "auth_config_id": slack_auth_config_id}],
     # Keep the exposed tool list small; LLM providers cap tools per request
     allowed_tools=["SLACK_LIST_ALL_CHANNELS", "SLACK_SEARCH_MESSAGES"],
