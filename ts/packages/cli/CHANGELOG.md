@@ -2,32 +2,12 @@
 
 ## Unreleased
 
-### Minor Changes
-
-- The installer (`curl -fsSL https://composio.dev/install | sh`) now configures your shell automatically: `COMPOSIO_INSTALL_SHELL` defaults to `auto`, which infers the login shell from `$SHELL` (zsh, bash, or fish) and always runs idempotent PATH setup for it; `COMPOSIO_INSTALL_SHELL=none` keeps the old install-only behavior for CI, Docker, and dotfile managers. Startup-file setup failures no longer fail the install — the installer keeps the binary, warns, and prints a runnable absolute-path command. `composio install` now reconciles an existing managed PATH block whose bin directory changed (one block per physical file, symlink-aware) and suppresses its boxed restart hint when invoked by the installer, which owns the final message.
-- `composio install` gains a `--shell <zsh|bash|fish>` flag that overrides `$SHELL` detection, in preparation for the mise-style installer rewrite. The bin-dir PATH target now resolves through `COMPOSIO_BIN_DIR`, an existing `~/.local/bin/composio`, or the real binary's own directory, in that order, instead of hardcoding `~/.composio`; rc blocks write only a PATH line (the `export COMPOSIO_INSTALL_DIR=...` line is gone, since that variable identifies the install bundle, not the PATH entry point). Bash now always writes the PATH line to a login-mode startup file as well as `~/.bashrc`, so `bash -ilc` (and macOS Terminal.app, which starts a login shell) picks it up: the first existing of `~/.bash_profile` or `~/.bash_login`, or a newly created `~/.bash_profile` when neither exists. A `~/.bash_profile` created this way shadows `~/.profile`, so it is seeded to source it first; `~/.profile` itself is never modified. The restart hint bug is fixed: bash now prints `source ~/.bashrc` instead of the literal string `exec $SHELL`.
-- `COMPOSIO_BIN_DIR` is a documented public override: set it to the absolute directory `composio install` should add to `PATH` when the entry point users reach is a shim or symlink rather than the binary itself. See the CLI README for the full resolution order.
-- `composio install` now exits non-zero, having written nothing, when it cannot produce a safe PATH line. There are two abort conditions: the resolved bin directory is not absolute, or it contains a character that cannot be embedded in a quoted rc line. A non-zero exit is what makes `install.sh` run its inline PATH fallback, so an aborted run still leaves the user with a working `PATH` — previously the command exited 0 and the fallback never ran.
-- The unsafe-character set is narrower than the one first shipped in this entry. The bin dir is only ever written inside double quotes, where `;`, `|`, `&`, `(`, `)`, and `'` are literal — only `` ` ``, `$`, `"`, `\`, newline, carriage return, and the `:` PATH separator abort now. Paths like `/Users/o'brien/.composio` are accepted instead of rejected.
-- An rc file that carries the older three-line Composio block (`export COMPOSIO_INSTALL_DIR=...` plus a PATH line derived from it), written by a previous CLI or by `install.sh`'s fallback, is migrated to the current single-line block instead of being treated as configured forever. The stale managed lines are removed where they stood and one refreshed block is appended after the remaining content, so your own lines keep their order and the last-sourced PATH line wins. Re-running the command is still idempotent, and a completions block elsewhere in the file is untouched.
-- `composio install` no longer skips the rc write when the bin directory happens to be on the invoking process's `$PATH`. That said nothing about future shells — an ad-hoc `export` or a version-manager shim made the command persist nothing and still report success.
-- Note for custom install directories: the rc block no longer records `COMPOSIO_INSTALL_DIR`. If you installed to a custom directory with `COMPOSIO_INSTALL_DIR=... curl ... | bash` and later re-run the install script without re-specifying it, the script installs a second copy under `~/.composio` while your rc `PATH` still points at the old one. Re-specify `COMPOSIO_INSTALL_DIR` when reinstalling, or use `composio upgrade`, which replaces the running binary in place.
+## 0.3.3
 
 ### Patch Changes
 
 - Free-form object arguments now pass CLI tool-input validation and keep their content instead of failing with an unknown-key error. Run `composio upgrade` to install the fixed CLI binary.
 - A tool schema the validator cannot interpret is now reported as a schema compile failure naming the cached schema path, instead of as an input error blaming your arguments. This covers a `patternProperties` key that is not a valid regular expression, and a reference inside a `patternProperties` or schema-valued `additionalProperties` subschema that does not resolve.
-- Fix Linux `composio upgrade` failures with `ETXTBSY` by staging CLI files in
-  the install directory and renaming the executable last. The installer and
-  companion repair use the same replacement strategy, and the running binary
-  now reports its compiled version when `release-tag.txt` disagrees. Users on
-  an affected build must re-run `install.sh` once to install the first fixed
-  version.
-- Connected-account statuses added by the server no longer break
-  `connected-accounts`, `link`, or `listen`. Piped output still strips
-  credential fields, and schema warnings no longer print raw response values.
-- `composio login --poll` now reports unreadable cache files as I/O errors
-  instead of treating them as invalid session data.
 - Tools belonging to multi-word toolkits now resolve to the right toolkit.
   `composio tools execute GOOGLE_ANALYTICS_RUN_REPORT --account <alias>`
   previously looked for a `google` account instead of a `google_analytics` one,
@@ -62,6 +42,33 @@
   hold an exiting `composio` process open until the refresh completed.
 - Cache files are now written atomically, so an interrupted run can no longer
   leave a truncated `toolkits.json` or `tools.json` behind.
+
+## 0.3.2
+
+### Minor Changes
+
+- The installer (`curl -fsSL https://composio.dev/install | sh`) now configures your shell automatically: `COMPOSIO_INSTALL_SHELL` defaults to `auto`, which infers the login shell from `$SHELL` (zsh, bash, or fish) and always runs idempotent PATH setup for it; `COMPOSIO_INSTALL_SHELL=none` keeps the old install-only behavior for CI, Docker, and dotfile managers. Startup-file setup failures no longer fail the install — the installer keeps the binary, warns, and prints a runnable absolute-path command. `composio install` now reconciles an existing managed PATH block whose bin directory changed (one block per physical file, symlink-aware) and suppresses its boxed restart hint when invoked by the installer, which owns the final message.
+- `composio install` gains a `--shell <zsh|bash|fish>` flag that overrides `$SHELL` detection, in preparation for the mise-style installer rewrite. The bin-dir PATH target now resolves through `COMPOSIO_BIN_DIR`, an existing `~/.local/bin/composio`, or the real binary's own directory, in that order, instead of hardcoding `~/.composio`; rc blocks write only a PATH line (the `export COMPOSIO_INSTALL_DIR=...` line is gone, since that variable identifies the install bundle, not the PATH entry point). Bash now always writes the PATH line to a login-mode startup file as well as `~/.bashrc`, so `bash -ilc` (and macOS Terminal.app, which starts a login shell) picks it up: the first existing of `~/.bash_profile` or `~/.bash_login`, or a newly created `~/.bash_profile` when neither exists. A `~/.bash_profile` created this way shadows `~/.profile`, so it is seeded to source it first; `~/.profile` itself is never modified. The restart hint bug is fixed: bash now prints `source ~/.bashrc` instead of the literal string `exec $SHELL`.
+- `COMPOSIO_BIN_DIR` is a documented public override: set it to the absolute directory `composio install` should add to `PATH` when the entry point users reach is a shim or symlink rather than the binary itself. See the CLI README for the full resolution order.
+- `composio install` now exits non-zero, having written nothing, when it cannot produce a safe PATH line. There are two abort conditions: the resolved bin directory is not absolute, or it contains a character that cannot be embedded in a quoted rc line. A non-zero exit is what makes `install.sh` run its inline PATH fallback, so an aborted run still leaves the user with a working `PATH` — previously the command exited 0 and the fallback never ran.
+- The unsafe-character set is narrower than the one first shipped in this entry. The bin dir is only ever written inside double quotes, where `;`, `|`, `&`, `(`, `)`, and `'` are literal — only `` ` ``, `$`, `"`, `\`, newline, carriage return, and the `:` PATH separator abort now. Paths like `/Users/o'brien/.composio` are accepted instead of rejected.
+- An rc file that carries the older three-line Composio block (`export COMPOSIO_INSTALL_DIR=...` plus a PATH line derived from it), written by a previous CLI or by `install.sh`'s fallback, is migrated to the current single-line block instead of being treated as configured forever. The stale managed lines are removed where they stood and one refreshed block is appended after the remaining content, so your own lines keep their order and the last-sourced PATH line wins. Re-running the command is still idempotent, and a completions block elsewhere in the file is untouched.
+- `composio install` no longer skips the rc write when the bin directory happens to be on the invoking process's `$PATH`. That said nothing about future shells — an ad-hoc `export` or a version-manager shim made the command persist nothing and still report success.
+- Note for custom install directories: the rc block no longer records `COMPOSIO_INSTALL_DIR`. If you installed to a custom directory with `COMPOSIO_INSTALL_DIR=... curl ... | bash` and later re-run the install script without re-specifying it, the script installs a second copy under `~/.composio` while your rc `PATH` still points at the old one. Re-specify `COMPOSIO_INSTALL_DIR` when reinstalling, or use `composio upgrade`, which replaces the running binary in place.
+
+### Patch Changes
+
+- Fix Linux `composio upgrade` failures with `ETXTBSY` by staging CLI files in
+  the install directory and renaming the executable last. The installer and
+  companion repair use the same replacement strategy, and the running binary
+  now reports its compiled version when `release-tag.txt` disagrees. Users on
+  an affected build must re-run `install.sh` once to install the first fixed
+  version.
+- Connected-account statuses added by the server no longer break
+  `connected-accounts`, `link`, or `listen`. Piped output still strips
+  credential fields, and schema warnings no longer print raw response values.
+- `composio login --poll` now reports unreadable cache files as I/O errors
+  instead of treating them as invalid session data.
 
 ## 0.3.1
 
