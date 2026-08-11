@@ -17,8 +17,8 @@
 //   node scripts/examples-provision.mjs --gc [--dry-run]
 //        DESTRUCTIVE. Deletes resources example runs leak into the project:
 //        connected accounts that never became ACTIVE, surplus serpapi demo
-//        accounts, and MCP configs created by earlier runs (timestamp-suffixed
-//        names).
+//        accounts, and MCP configs named `examples-mcp-<label>-<timestamp>`,
+//        which is the name every example gives the configs it creates.
 //        Connected accounts are only ever deleted when they are bound to an
 //        `examples-<slug>` auth config, which only this script creates. An
 //        account the examples did not create is never touched, whatever user
@@ -178,9 +178,14 @@ if (GC) {
     await gcDelete('connected account', `/api/v3.1/connected_accounts/${account.id}`, account);
   }
 
-  // MCP configs created by example runs carry a timestamp (suffix or full name).
+  // Example runs name their MCP configs `examples-mcp-<label>-<timestamp>`.
+  // Both halves are load-bearing. The reserved `examples-mcp-` prefix is what
+  // proves an example created it, and the trailing timestamp keeps a hand-made
+  // `examples-mcp-scratch` out of the delete set. Matching a bare trailing digit
+  // run instead would also claim names like `release-1754923456`.
+  const EXAMPLE_MCP_NAME = /^examples-mcp-[a-z0-9-]+-\d{10,}$/;
   const mcpServers = await listAll('/api/v3.1/mcp/servers');
-  for (const server of mcpServers.filter(s => /(?:^|-)\d{10,}$/.test(s.name ?? '') && stale(s))) {
+  for (const server of mcpServers.filter(s => EXAMPLE_MCP_NAME.test(s.name ?? '') && stale(s))) {
     await gcDelete('mcp config', `/api/v3.1/mcp/${server.id}`, server);
   }
 }

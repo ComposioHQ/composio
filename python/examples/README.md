@@ -27,7 +27,7 @@ Examples read configuration from environment variables and raise a `KeyError` na
 
 Add `--initiate-missing` to also start an OAuth connection request for any toolkit (gmail, googledrive, github, slack) that has no active connected account yet; it prints an authorization URL to visit once in a browser. The serpapi API-key auth config is created automatically, no browser step needed.
 
-Run `node ../scripts/examples-provision.mjs --gc` to delete what example runs leave behind: connected accounts that never reached ACTIVE, surplus serpapi demo accounts, and MCP configs created by earlier runs. It skips anything created in the last 24h. Connected accounts are only deleted when they belong to an `examples-<slug>` auth config, which only this script creates, so an account the examples did not create is never touched. It deletes for real, so preview it with `--gc --dry-run` first and point it only at the disposable examples project.
+Run `node ../scripts/examples-provision.mjs --gc` to delete what example runs leave behind: connected accounts that never reached ACTIVE, surplus serpapi demo accounts, and MCP configs created by earlier runs. It skips anything created in the last 24h. Two reserved names decide what it may delete. A connected account has to belong to an `examples-<slug>` auth config, which only this script creates. An MCP config has to be named `examples-mcp-<label>-<timestamp>`, which is the name every example gives the configs it creates. Anything else is left alone, whoever owns it. It deletes for real, so preview it with `--gc --dry-run` first and point it only at the disposable examples project.
 
 ## A note on connection examples
 

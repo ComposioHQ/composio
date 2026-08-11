@@ -20,7 +20,9 @@ if (!authConfigId || !externalUserId) {
 const allowedTools = ['GMAIL_FETCH_EMAILS'];
 
 // 2. Create an MCP config
-const mcpConfig = await composio.mcp.create(`${Date.now()}`, {
+// Named `examples-mcp-<label>-<timestamp>` so the provisioning script's --gc
+// can tell an example's throwaway config from one someone created by hand.
+const mcpConfig = await composio.mcp.create(`examples-mcp-gmail-${Date.now()}`, {
   toolkits: [
     {
       toolkit: 'gmail',
