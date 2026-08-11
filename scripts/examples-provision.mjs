@@ -11,6 +11,11 @@
 //   node scripts/examples-provision.mjs --initiate-missing
 //        also starts an OAuth connection request for each missing account and
 //        prints the redirect URL to authorize it (one browser visit per toolkit)
+//   node scripts/examples-provision.mjs --gc
+//        also deletes resources example runs leak into the disposable project:
+//        connected accounts that never became ACTIVE, surplus serpapi demo
+//        accounts, and sweep-created MCP configs (timestamp-suffixed names).
+//        Only touches resources older than 24h so a concurrent sweep is safe.
 //
 // Auth config ids and connected account ids are not secrets; no credential
 // values are ever printed. The API-key demo value stored for serpapi is a
@@ -20,6 +25,7 @@ const BASE_URL = process.env.COMPOSIO_BASE_URL ?? 'https://backend.composio.dev'
 const API_KEY = process.env.COMPOSIO_API_KEY;
 const USER_ID = process.env.COMPOSIO_EXAMPLES_USER_ID ?? 'examples';
 const INITIATE_MISSING = process.argv.includes('--initiate-missing');
+const GC = process.argv.includes('--gc');
 
 // The example sweeps only ever run against the production backend with the
 // disposable project key; refuse anything that looks local, like the runner does.
@@ -76,6 +82,36 @@ const [authConfigs, accounts] = await Promise.all([
   listAll('/api/v3.1/auth_configs'),
   listAll(`/api/v3.1/connected_accounts?user_ids=${encodeURIComponent(USER_ID)}`),
 ]);
+
+if (GC) {
+  const cutoff = Date.now() - 24 * 60 * 60 * 1000;
+  const stale = (r) => new Date(r.created_at ?? 0).getTime() < cutoff;
+  const gcDelete = async (kind, path, item) => {
+    await api('DELETE', path);
+    report(`gc: deleted ${kind} ${item.id} (${item.toolkit?.slug ?? item.name}, created ${item.created_at})`);
+  };
+
+  // Accounts that never became ACTIVE are dead weight from OAuth-initiating
+  // example runs; surplus serpapi demo accounts pile up from api-key runs.
+  // Standing ACTIVE accounts for the OAuth toolkits are never touched.
+  const allAccounts = await listAll('/api/v3.1/connected_accounts');
+  const serpapiActive = allAccounts
+    .filter((a) => a.toolkit?.slug === 'serpapi' && a.status === 'ACTIVE')
+    .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+  const doomedAccounts = [
+    ...allAccounts.filter((a) => a.status !== 'ACTIVE' && stale(a)),
+    ...serpapiActive.slice(1).filter(stale),
+  ];
+  for (const account of doomedAccounts) {
+    await gcDelete('connected account', `/api/v3.1/connected_accounts/${account.id}`, account);
+  }
+
+  // Sweep-created MCP configs carry a timestamp (suffix or full name).
+  const mcpServers = await listAll('/api/v3.1/mcp/servers');
+  for (const server of mcpServers.filter((s) => /(?:^|-)\d{10,}$/.test(s.name ?? '') && stale(s))) {
+    await gcDelete('mcp config', `/api/v3.1/mcp/${server.id}`, server);
+  }
+}
 
 const exports = { COMPOSIO_EXAMPLES_USER_ID: USER_ID };
 const pendingGrants = [];
