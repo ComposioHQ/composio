@@ -112,7 +112,8 @@
       "tier": "2",
       "ids": [
         "COMPOSIO_EXAMPLES_APIKEY_AUTH_CONFIG_ID",
-        "COMPOSIO_EXAMPLES_APIKEY_PLACEHOLDER"
+        "COMPOSIO_EXAMPLES_APIKEY_PLACEHOLDER",
+        "COMPOSIO_EXAMPLES_USER_ID"
       ],
       "toolkits": [],
       "timeoutSec": 90
@@ -673,7 +674,10 @@
       "toolkits": [
         "gmail"
       ],
-      "timeoutSec": 120
+      "timeoutSec": 120,
+      "ids": [
+        "COMPOSIO_EXAMPLES_USER_ID"
+      ]
     },
     {
       "id": "ts/tool-router/openai-agents",
@@ -973,7 +977,10 @@
       "tier": "3",
       "readiness": "Visit this URL to authorize: https?://",
       "ids": [
-        "COMPOSIO_EXAMPLES_GMAIL_AUTH_CONFIG_ID"
+        "COMPOSIO_EXAMPLES_GMAIL_AUTH_CONFIG_ID",
+        "COMPOSIO_EXAMPLES_APIKEY_AUTH_CONFIG_ID",
+        "COMPOSIO_EXAMPLES_APIKEY_PLACEHOLDER",
+        "COMPOSIO_EXAMPLES_USER_ID"
       ],
       "toolkits": [
         "gmail"

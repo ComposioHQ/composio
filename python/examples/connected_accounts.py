@@ -5,17 +5,20 @@ from composio.types import auth_scheme
 
 composio = Composio()
 
-# Auth config to connect against (raises KeyError when unset)
+# Auth config to connect against and the connecting user (raise KeyError when unset)
 gmail_auth_config_id = os.environ["COMPOSIO_EXAMPLES_GMAIL_AUTH_CONFIG_ID"]
+user_id = os.environ["COMPOSIO_EXAMPLES_USER_ID"]
 
 # List all connected accounts
 connected_accounts = composio.connected_accounts.list()
 print(connected_accounts)
 
-# Create a new connected account (OAuth)
+# Create a new connected account (OAuth). The user may already have a
+# connected account for this auth config, so allow another one.
 connection_request = composio.connected_accounts.initiate(
-    user_id="default",
+    user_id=user_id,
     auth_config_id=gmail_auth_config_id,
+    allow_multiple=True,
 )
 
 # Send the user to this URL to authorize the connection
@@ -27,8 +30,9 @@ print(connected_account)
 
 # Create a new connected account (API Key)
 connection_request = composio.connected_accounts.initiate(
-    user_id="default",
+    user_id=user_id,
     auth_config_id=os.environ["COMPOSIO_EXAMPLES_APIKEY_AUTH_CONFIG_ID"],
+    allow_multiple=True,
     config=auth_scheme.api_key(
         options={
             "generic_api_key": os.environ["COMPOSIO_EXAMPLES_APIKEY_PLACEHOLDER"],

@@ -7,9 +7,14 @@ const composio = new Composio({
   provider: new VercelProvider(),
 });
 
+const userId = process.env.COMPOSIO_EXAMPLES_USER_ID; // the user id from your database
+if (!userId) {
+  throw new Error('Set COMPOSIO_EXAMPLES_USER_ID');
+}
+
 // Enable multi-account mode so the user can connect multiple accounts
 // per toolkit (e.g. two Gmail accounts).
-const session = await composio.create('user_123', {
+const session = await composio.create(userId, {
   toolkits: ['gmail'],
   multiAccount: {
     enable: true,
