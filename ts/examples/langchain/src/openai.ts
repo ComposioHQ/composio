@@ -1,6 +1,6 @@
 import { Composio } from '@composio/core';
 import { LangchainProvider } from '@composio/langchain';
-import { createAgent } from "langchain";
+import { createAgent } from 'langchain';
 import { ChatOpenAI } from '@langchain/openai';
 
 // initiate composio
@@ -16,12 +16,12 @@ if (!userId) {
 const gmailTool = await composio.tools.get(userId, 'GMAIL_FETCH_EMAILS');
 
 const agent = createAgent({
-    model: new ChatOpenAI({ model: "gpt-5" }),
-    tools: gmailTool,
-  });
-  
-  console.log(
-    await agent.invoke({
-      messages: [{ role: "user", content: "Provide a summary of my last email received." }],
-    })
-  );
+  model: new ChatOpenAI({ model: 'gpt-5' }),
+  tools: gmailTool,
+});
+
+console.log(
+  await agent.invoke({
+    messages: [{ role: 'user', content: 'Provide a summary of my last email received.' }],
+  })
+);

@@ -31,6 +31,9 @@ const connectionRequest = await session.authorize('gmail', {
 
 console.log(`Visit this URL to authorize: ${connectionRequest.redirectUrl}`);
 
+// requireExplicitSelection means the new alias is only usable once it is ACTIVE.
+await connectionRequest.waitForConnection();
+
 const tools = await session.tools();
 
 const stream = await streamText({

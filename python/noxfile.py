@@ -92,6 +92,9 @@ def chk_examples(session: Session):
             "--config-file",
             "config/mypy.ini",
             "--ignore-missing-imports",
+            # Examples wrap their bodies in unannotated main()s; without this
+            # mypy skips those bodies entirely and the gate checks almost nothing.
+            "--check-untyped-defs",
             str(path),
         )
 

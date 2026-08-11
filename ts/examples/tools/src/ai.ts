@@ -17,15 +17,15 @@ const composio = new Composio({
   fileUploadDirs: [import.meta.dirname],
 });
 
-/**
- * Get the tools
- * This tool is automatically typed and wrapped with the OpenAI Provider
- */
 const userId = process.env.COMPOSIO_EXAMPLES_USER_ID; // a user with a Google Drive connection
 if (!userId) {
   throw new Error('Set COMPOSIO_EXAMPLES_USER_ID');
 }
 
+/**
+ * Get the tools
+ * This tool is automatically typed and wrapped with the OpenAI Provider
+ */
 console.log('🔄 Getting tools...');
 const tools = await composio.tools.get(userId, 'GOOGLEDRIVE_UPLOAD_FILE');
 console.log('✅ Tools fetched successfully...');
@@ -59,7 +59,10 @@ console.log('✅ Chat completion created successfully...');
  * If the assistant has tool calls, execute them and log the result
  */
 console.log('🔄 Calling tool...');
-if (response.choices[0].message.tool_calls && response.choices[0].message.tool_calls[0].type === 'function') {
+if (
+  response.choices[0].message.tool_calls &&
+  response.choices[0].message.tool_calls[0].type === 'function'
+) {
   console.log(`✅ Calling tool ${response.choices[0].message.tool_calls[0].function.name}`);
   const result = await composio.provider.handleToolCalls(userId, response);
   console.log(result);

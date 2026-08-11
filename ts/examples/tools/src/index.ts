@@ -23,14 +23,14 @@ const composio = new Composio({
   fileUploadDirs: [import.meta.dirname],
 });
 
-/**
- * Main function to run the example
- */
 const userId = process.env.COMPOSIO_EXAMPLES_USER_ID; // a user with a Google Drive connection
 if (!userId) {
   throw new Error('Set COMPOSIO_EXAMPLES_USER_ID');
 }
 
+/**
+ * Main function to run the example
+ */
 async function main() {
   try {
     console.log('🚀 Starting Upload file Example...');

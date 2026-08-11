@@ -59,5 +59,5 @@ console.log('\n📰 HackerNews Profile:');
 
 const output = response.output.filter(({ type }) => type === 'message').at(0);
 
-// @ts-expect-error
+// @ts-expect-error: the agents SDK types `output` as a union whose message variant is not narrowed by the `type` filter above
 console.log(output?.content[0].text);

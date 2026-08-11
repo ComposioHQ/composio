@@ -10,6 +10,8 @@ composio = Composio(provider=ClaudeAgentSDKProvider())
 session = composio.create(
     # A user with a connected Gmail account (raises KeyError when unset)
     user_id=os.environ["COMPOSIO_EXAMPLES_USER_ID"],
+    # mcp=True surfaces session.mcp on the returned type
+    mcp=True,
 )
 
 

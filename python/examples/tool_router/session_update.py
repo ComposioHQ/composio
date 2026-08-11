@@ -6,13 +6,16 @@ after creation — e.g. adding toolkits, changing workbench settings, or
 updating preload config without creating a new session.
 """
 
+import os
+
 from composio import Composio
 
 composio = Composio()
 
 # Create a session with gmail only
 session = composio.create(
-    user_id="session-update-demo",
+    # The provisioned examples user (raises KeyError when unset)
+    user_id=os.environ["COMPOSIO_EXAMPLES_USER_ID"],
     toolkits=["gmail"],
     manage_connections=False,
 )

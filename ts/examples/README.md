@@ -7,7 +7,7 @@ Each directory here is its own private workspace package (`<name>-example`) show
 ```bash
 cd ts
 pnpm install
-eval "$(node ../scripts/examples-provision.mjs)"
+out=$(node ../scripts/examples-provision.mjs) && eval "$out"
 pnpm --filter openai-example start
 ```
 
@@ -23,10 +23,12 @@ Examples read configuration from environment variables and fail loudly, naming t
 - `COMPOSIO_EXAMPLES_APIKEY_AUTH_CONFIG_ID` and `COMPOSIO_EXAMPLES_APIKEY_PLACEHOLDER` — the serpapi API-key auth config and its placeholder key value.
 - `OPENAI_API_KEY` / `ANTHROPIC_API_KEY` — only needed by examples that call that LLM provider.
 
-`node ../scripts/examples-provision.mjs` (run from `ts/`, or `node scripts/examples-provision.mjs` from the repo root) checks a Composio project for this state, prints a report to stderr, and prints `export COMPOSIO_EXAMPLES_*=...` lines to stdout. Wrap it in `eval "$(...)"` to load everything into your shell in one step. It's idempotent — it verifies what already exists and only creates what's missing — and it never prints credential values.
+`node ../scripts/examples-provision.mjs` (run from `ts/`, or `node scripts/examples-provision.mjs` from the repo root) checks a Composio project for this state, prints a report to stderr, and prints `export COMPOSIO_EXAMPLES_*=...` lines to stdout. Load them with `out=$(node ../scripts/examples-provision.mjs) && eval "$out"` — capture first, then eval, because `eval "$(...)"` reports the status of the text it evaluates and would hide a failed provisioning run. It's idempotent — it verifies what already exists and only creates what's missing — and it never prints credential values.
 
 Add `--initiate-missing` to also start an OAuth connection request for any toolkit (gmail, googledrive, github, slack) that has no active connected account yet; it prints an authorization URL to visit once in a browser. The serpapi API-key auth config is created automatically, no browser step needed.
 
+Run `node ../scripts/examples-provision.mjs --gc` to delete resources example runs leak into the project (connected accounts that never went ACTIVE, surplus serpapi demo accounts, and sweep-created MCP configs), skipping anything created in the last 24h. It is destructive and sweeps every user in whatever project `COMPOSIO_API_KEY` names, so preview it with `--gc --dry-run` and only ever point it at the disposable examples project.
+
 ## A note on connection examples
 
-Examples that demonstrate *creating* a connection (for example `connected-accounts/`) only initiate the OAuth flow and print a line like `Please visit the following URL to authorize the user: ...` — running them does not require you to complete that authorization. Examples that *use* a connection (calling a tool through Gmail, GitHub, or Slack) rely on the standing connected accounts that the provisioning script already verified are active.
+Examples that demonstrate _creating_ a connection (for example `connected-accounts/`) only initiate the OAuth flow and print a line like `Please visit the following URL to authorize the user: ...` — running them does not require you to complete that authorization. Examples that _use_ a connection (calling a tool through Gmail, GitHub, or Slack) rely on the standing connected accounts that the provisioning script already verified are active.

@@ -1,10 +1,13 @@
+import os
+
 from agents import Agent, HostedMCPTool, Runner
 
 from composio import Composio
 
 composio = Composio()
 session = composio.create(
-    user_id="user_123",
+    # A user with a connected Gmail account (raises KeyError when unset)
+    user_id=os.environ["COMPOSIO_EXAMPLES_USER_ID"],
     # mcp=True surfaces session.mcp on the returned type
     mcp=True,
 )

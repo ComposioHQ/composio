@@ -7,15 +7,20 @@
 // prints the remaining one-time OAuth authorizations.
 //
 //   node scripts/examples-provision.mjs            # report (stderr) + exports (stdout)
-//   eval "$(node scripts/examples-provision.mjs)"  # load COMPOSIO_EXAMPLES_* into the shell
+//   out=$(node scripts/examples-provision.mjs) && eval "$out"
+//        load COMPOSIO_EXAMPLES_* into the shell. Do NOT collapse this into
+//        eval "$(...)": eval reports the status of the text it evaluates, so a
+//        failed provisioning run would look like success.
 //   node scripts/examples-provision.mjs --initiate-missing
 //        also starts an OAuth connection request for each missing account and
 //        prints the redirect URL to authorize it (one browser visit per toolkit)
-//   node scripts/examples-provision.mjs --gc
-//        also deletes resources example runs leak into the disposable project:
-//        connected accounts that never became ACTIVE, surplus serpapi demo
-//        accounts, and sweep-created MCP configs (timestamp-suffixed names).
-//        Only touches resources older than 24h so a concurrent sweep is safe.
+//   node scripts/examples-provision.mjs --gc [--dry-run]
+//        DESTRUCTIVE. Deletes resources example runs leak into the disposable
+//        project: connected accounts that never became ACTIVE, surplus serpapi
+//        demo accounts, and sweep-created MCP configs (timestamp-suffixed
+//        names). Only touches resources older than 24h so a concurrent sweep is
+//        safe. It sweeps every user in whatever project COMPOSIO_API_KEY names,
+//        so run --dry-run first and never point it at a shared project.
 //
 // Auth config ids and connected account ids are not secrets; no credential
 // values are ever printed. The API-key demo value stored for serpapi is a
@@ -26,11 +31,21 @@ const API_KEY = process.env.COMPOSIO_API_KEY;
 const USER_ID = process.env.COMPOSIO_EXAMPLES_USER_ID ?? 'examples';
 const INITIATE_MISSING = process.argv.includes('--initiate-missing');
 const GC = process.argv.includes('--gc');
+const DRY_RUN = process.argv.includes('--dry-run');
 
 // The example sweeps only ever run against the production backend with the
-// disposable project key; refuse anything that looks local, like the runner does.
-if (/localhost|127\.0\.0\.1|0\.0\.0\.0/.test(BASE_URL)) {
-  console.error(`refusing local COMPOSIO_BASE_URL: ${BASE_URL}`);
+// disposable project key. Allowlist the Composio hosts rather than denylisting
+// loopback spellings: the API key travels in every request, so anything that is
+// not a Composio backend must be refused, not just localhost.
+const baseHost = (() => {
+  try {
+    return new URL(BASE_URL).hostname;
+  } catch {
+    return null;
+  }
+})();
+if (!baseHost || !(baseHost === 'composio.dev' || baseHost.endsWith('.composio.dev'))) {
+  console.error(`refusing non-Composio COMPOSIO_BASE_URL: ${BASE_URL}`);
   process.exit(1);
 }
 if (!API_KEY) {
@@ -50,13 +65,15 @@ const BROWSER_GRANT_TOOLKITS = [
 ];
 const DEMO_TOOLKIT = { exportPrefix: 'APIKEY', slug: 'serpapi', demoValue: 'examples-demo-key' };
 
-const report = (line) => console.error(line);
+const report = line => console.error(line);
 
 async function api(method, path, body) {
   const res = await fetch(`${BASE_URL}${path}`, {
     method,
     headers: { 'x-api-key': API_KEY, 'content-type': 'application/json' },
     body: body === undefined ? undefined : JSON.stringify(body),
+    // Without this a hung backend hangs the whole sweep instead of failing it.
+    signal: AbortSignal.timeout(30_000),
   });
   const text = await res.text();
   if (!res.ok) {
@@ -65,16 +82,39 @@ async function api(method, path, body) {
   return text ? JSON.parse(text) : undefined;
 }
 
+// Two pagination shapes are in play. Most v3.1 collections (auth_configs,
+// connected_accounts) return `next_cursor`; /mcp/servers never does and reports
+// current_page/total_pages instead. Follow whichever the response actually
+// offers, otherwise the MCP sweep silently stops after one page.
+const MAX_PAGES = 50;
+
 async function listAll(path, key = 'items') {
   const out = [];
   let cursor;
-  for (let page = 0; page < 20; page++) {
+  let pageNo = 1;
+  for (let page = 0; page < MAX_PAGES; page++) {
     const sep = path.includes('?') ? '&' : '?';
-    const data = await api('GET', `${path}${sep}limit=100${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ''}`);
+    let query = 'limit=100';
+    if (cursor) query += `&cursor=${encodeURIComponent(cursor)}`;
+    else if (pageNo > 1) query += `&page_no=${pageNo}`;
+
+    const data = await api('GET', `${path}${sep}${query}`);
     out.push(...(data?.[key] ?? []));
-    cursor = data?.next_cursor;
-    if (!cursor) break;
+
+    if (data?.next_cursor) {
+      cursor = data.next_cursor;
+      continue;
+    }
+
+    const totalPages = Number(data?.total_pages);
+    const currentPage = Number(data?.current_page ?? pageNo);
+    if (Number.isFinite(totalPages) && Number.isFinite(currentPage) && currentPage < totalPages) {
+      pageNo = currentPage + 1;
+      continue;
+    }
+    return out;
   }
+  report(`warning: stopped paginating ${path} after ${MAX_PAGES} pages; results may be incomplete`);
   return out;
 }
 
@@ -85,10 +125,20 @@ const [authConfigs, accounts] = await Promise.all([
 
 if (GC) {
   const cutoff = Date.now() - 24 * 60 * 60 * 1000;
-  const stale = (r) => new Date(r.created_at ?? 0).getTime() < cutoff;
+  // Fail closed: a missing or unparseable created_at must not read as "old
+  // enough to delete", which `new Date(0)` would.
+  const stale = r => {
+    const created = new Date(r.created_at ?? '').getTime();
+    return Number.isFinite(created) && created < cutoff;
+  };
   const gcDelete = async (kind, path, item) => {
+    const label = `${kind} ${item.id} (${item.toolkit?.slug ?? item.name}, created ${item.created_at})`;
+    if (DRY_RUN) {
+      report(`gc: would delete ${label}`);
+      return;
+    }
     await api('DELETE', path);
-    report(`gc: deleted ${kind} ${item.id} (${item.toolkit?.slug ?? item.name}, created ${item.created_at})`);
+    report(`gc: deleted ${label}`);
   };
 
   // Accounts that never became ACTIVE are dead weight from OAuth-initiating
@@ -96,10 +146,10 @@ if (GC) {
   // Standing ACTIVE accounts for the OAuth toolkits are never touched.
   const allAccounts = await listAll('/api/v3.1/connected_accounts');
   const serpapiActive = allAccounts
-    .filter((a) => a.toolkit?.slug === 'serpapi' && a.status === 'ACTIVE')
+    .filter(a => a.toolkit?.slug === 'serpapi' && a.status === 'ACTIVE')
     .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
   const doomedAccounts = [
-    ...allAccounts.filter((a) => a.status !== 'ACTIVE' && stale(a)),
+    ...allAccounts.filter(a => a.status !== 'ACTIVE' && stale(a)),
     ...serpapiActive.slice(1).filter(stale),
   ];
   for (const account of doomedAccounts) {
@@ -108,7 +158,7 @@ if (GC) {
 
   // Sweep-created MCP configs carry a timestamp (suffix or full name).
   const mcpServers = await listAll('/api/v3.1/mcp/servers');
-  for (const server of mcpServers.filter((s) => /(?:^|-)\d{10,}$/.test(s.name ?? '') && stale(s))) {
+  for (const server of mcpServers.filter(s => /(?:^|-)\d{10,}$/.test(s.name ?? '') && stale(s))) {
     await gcDelete('mcp config', `/api/v3.1/mcp/${server.id}`, server);
   }
 }
@@ -120,11 +170,11 @@ let ok = true;
 function findAuthConfig(slug) {
   // Prefer the config this script names on creation so a project holding
   // unrelated configs for the same toolkit stays deterministic.
-  const candidates = authConfigs.filter((c) => c.toolkit?.slug === slug && c.status !== 'DISABLED');
-  return candidates.find((c) => c.name === `examples-${slug}`) ?? candidates[0];
+  const candidates = authConfigs.filter(c => c.toolkit?.slug === slug && c.status !== 'DISABLED');
+  return candidates.find(c => c.name === `examples-${slug}`) ?? candidates[0];
 }
 function findActiveAccount(slug) {
-  return accounts.find((a) => a.toolkit?.slug === slug && a.status === 'ACTIVE');
+  return accounts.find(a => a.toolkit?.slug === slug && a.status === 'ACTIVE');
 }
 
 for (const { exportPrefix, slug } of BROWSER_GRANT_TOOLKITS) {
@@ -154,9 +204,13 @@ for (const { exportPrefix, slug } of BROWSER_GRANT_TOOLKITS) {
         auth_config: { id: config.id },
         connection: { user_id: USER_ID },
       });
-      pendingGrants.push(`${slug}: authorize in a browser -> ${created.connectionData?.val?.redirectUrl ?? created.redirect_url ?? created.redirect_uri ?? '(no redirect url returned)'}`);
+      pendingGrants.push(
+        `${slug}: authorize in a browser -> ${created.connectionData?.val?.redirectUrl ?? created.redirect_url ?? created.redirect_uri ?? '(no redirect url returned)'}`
+      );
     } else {
-      pendingGrants.push(`${slug}: no ACTIVE connection for user ${USER_ID} — rerun with --initiate-missing to get an authorization URL`);
+      pendingGrants.push(
+        `${slug}: no ACTIVE connection for user ${USER_ID} — rerun with --initiate-missing to get an authorization URL`
+      );
     }
   }
 }
@@ -188,8 +242,17 @@ if (pendingGrants.length) {
 report('');
 report(ok ? 'provisioned state: complete' : 'provisioned state: INCOMPLETE (see above)');
 
+// stdout is meant to be eval'd, so every value is single-quoted: an id the
+// backend returned with a space or a shell metacharacter must not become code.
+const shellQuote = value => `'${String(value).replace(/'/g, `'\\''`)}'`;
+
 for (const [name, value] of Object.entries(exports)) {
-  console.log(`export ${name}=${value}`);
+  if (value === undefined || value === null) {
+    ok = false;
+    report(`error: ${name} could not be resolved; not exporting it`);
+    continue;
+  }
+  console.log(`export ${name}=${shellQuote(value)}`);
 }
 
 process.exitCode = ok ? 0 : 1;

@@ -26,7 +26,8 @@ print(f"Visit this URL to authorize: {connection_request.redirect_url}")
 
 # Wait for the connection to be established (OAuth)
 connected_account = connection_request.wait_for_connection()
-print(connected_account)
+# Print identifying fields only: the full object carries live OAuth credentials.
+print(f"Connected account {connected_account.id} is {connected_account.status}")
 
 # Create a new connected account (API Key)
 connection_request = composio.connected_accounts.initiate(
