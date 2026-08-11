@@ -458,7 +458,9 @@
       "toolkits": [
         "hackernews"
       ],
-      "timeoutSec": 180
+      "timeoutSec": 180,
+      "llmMock": false,
+      "notes": "@openai/agents rejects aimock responses-api output; live canary only."
     },
     {
       "id": "ts/openai/agents-api-mcp",
@@ -490,7 +492,9 @@
       "toolkits": [
         "hackernews"
       ],
-      "timeoutSec": 180
+      "timeoutSec": 180,
+      "llmMock": false,
+      "notes": "@openai/agents rejects aimock responses-api output; live canary only."
     },
     {
       "id": "ts/openai/responses-api",

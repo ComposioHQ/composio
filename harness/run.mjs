@@ -2,7 +2,7 @@
 // Examples runner — the measuring instrument for the examples-live-parity
 // goal. Read-only for the optimizer (see goal.md).
 //
-//   node harness/run.mjs sweep    --client baseline|candidate [--lang ts|py] [--ids a,b] [--tiers 1,2,3]
+//   node harness/run.mjs sweep    --client baseline|candidate [--lang ts|py] [--ids a,b] [--tiers 1,2,3] [--llm live|mock]
 //   node harness/run.mjs neg      [--lang ts|py] [--ids a,b] [--sample N] [--seed S]
 //   node harness/run.mjs selftest
 //
@@ -17,6 +17,12 @@ const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const DEFAULT_BASE_URL = 'https://backend.composio.dev';
 const ARTIFACTS = join(ROOT, '.artifacts', 'examples-parity');
 const STAINLESS_TS_VERSION = '0.1.0-alpha.76';
+const AIMOCK_VERSION = '1.38.0';
+const AIMOCK_PORT = Number(process.env.AIMOCK_PORT ?? 4010);
+
+// Set by cmdSweep when --llm mock: LLM traffic goes to a local aimock server
+// and provider keys are overridden so a mock sweep can never spend tokens.
+let LLM_MOCK = false;
 
 const args = process.argv.slice(2);
 const cmd = args[0];
@@ -170,12 +176,24 @@ const buildEnv = (entry, runDir, { garbage = false } = {}) => {
     env.ANTHROPIC_API_KEY = 'nc-invalid';
     env.GEMINI_API_KEY = 'nc-invalid';
     env.NOTION_API_KEY = 'nc-invalid';
+  } else if (LLM_MOCK) {
+    const mock = `http://127.0.0.1:${AIMOCK_PORT}`;
+    env.OPENAI_BASE_URL = `${mock}/v1`;
+    // langchain/litellm read the older variable name.
+    env.OPENAI_API_BASE = `${mock}/v1`;
+    env.ANTHROPIC_BASE_URL = mock;
+    env.OPENAI_API_KEY = 'aimock';
+    env.ANTHROPIC_API_KEY = 'aimock';
   }
   return { env, traceFile };
 };
 
+const LLM_KEYS = new Set(['OPENAI_API_KEY', 'ANTHROPIC_API_KEY', 'GEMINI_API_KEY']);
+
 const missingEnv = (entry) => {
-  const wanted = [...(entry.env ?? []), ...(entry.ids ?? [])];
+  const wanted = [...(entry.env ?? []), ...(entry.ids ?? [])].filter(
+    (k) => !(LLM_MOCK && LLM_KEYS.has(k))
+  );
   if (entry.backend !== false) wanted.unshift('COMPOSIO_API_KEY');
   return wanted.filter((k) => !process.env[k]);
 };
@@ -189,6 +207,11 @@ const runPool = async (entries, runDir, { garbage = false, concurrency = 4 } = {
     for (;;) {
       const entry = queue.shift();
       if (!entry) return;
+      if (LLM_MOCK && entry.llmMock === false) {
+        results.push({ id: entry.id, tier: entry.tier, status: 'skipped', reason: 'llm-mock-unsupported' });
+        console.log(`  ~ ${entry.id} skipped (llm-mock-unsupported)`);
+        continue;
+      }
       const missing = garbage ? [] : missingEnv(entry);
       if (missing.length > 0) {
         results.push({ id: entry.id, tier: entry.tier, status: 'skipped', reason: `missing-env:${missing.join(',')}` });
@@ -276,22 +299,60 @@ const verifyPyCandidate = async (wheel) => {
   return version;
 };
 
+// --- llm mock ---------------------------------------------------------------
+
+/** Start aimock serving harness/llm-mock/fixtures; resolve once it answers. */
+const startLlmMock = async (runDir) => {
+  const mockDir = join(ROOT, 'harness', 'llm-mock');
+  const logFile = join(runDir, 'aimock.log');
+  const child = spawn(
+    'npx',
+    ['-y', `@copilotkit/aimock@${AIMOCK_VERSION}`, '-c', 'aimock.json', '-p', String(AIMOCK_PORT), '-h', '127.0.0.1'],
+    { cwd: mockDir, detached: true, stdio: ['ignore', 'pipe', 'pipe'] }
+  );
+  child.stdout.on('data', (c) => appendFileSync(logFile, c));
+  child.stderr.on('data', (c) => appendFileSync(logFile, c));
+
+  // First run may download the package; allow a generous readiness window.
+  const deadline = Date.now() + 120_000;
+  for (;;) {
+    try {
+      const res = await fetch(`http://127.0.0.1:${AIMOCK_PORT}/v1/models`);
+      if (res.ok) break;
+    } catch { /* not up yet */ }
+    if (Date.now() > deadline) {
+      try { process.kill(-child.pid, 'SIGKILL'); } catch { /* gone */ }
+      fail(`aimock did not become ready on :${AIMOCK_PORT} (see ${relative(ROOT, logFile)})`);
+    }
+    await new Promise((r) => setTimeout(r, 500));
+  }
+  console.log(`aimock ${AIMOCK_VERSION} ready on :${AIMOCK_PORT}`);
+  return () => {
+    try { process.kill(-child.pid, 'SIGTERM'); } catch { /* gone */ }
+  };
+};
+
 // --- commands ---------------------------------------------------------------
 
 const cmdSweep = async () => {
   const client = opt('client', 'baseline');
   if (!['baseline', 'candidate'].includes(client)) fail(`--client must be baseline|candidate`);
+  const llm = opt('llm', 'live');
+  if (!['live', 'mock'].includes(llm)) fail(`--llm must be live|mock`);
+  LLM_MOCK = llm === 'mock';
   const entries = selectEntries();
   if (entries.length === 0) fail('no entries selected');
   if (!process.env.COMPOSIO_API_KEY) fail('COMPOSIO_API_KEY is required for a sweep (disposable examples-project key)', 2);
 
-  const id = `${runId()}-${client}`;
+  const id = `${runId()}-${client}${LLM_MOCK ? '-mock' : ''}`;
   const runDir = join(ARTIFACTS, id);
   mkdirSync(join(runDir, 'traces'), { recursive: true });
 
   let tsCandidateApplied = false;
+  let stopLlmMock;
   const pyWheel = process.env.COMPOSIO_CLIENT_WHEEL;
   try {
+    if (LLM_MOCK) stopLlmMock = await startLlmMock(runDir);
     if (client === 'candidate') {
       const wantTs = entries.some((e) => e.lang === 'ts');
       const wantPy = entries.some((e) => e.lang === 'py');
@@ -318,11 +379,12 @@ const cmdSweep = async () => {
     };
     writeFileSync(
       join(runDir, 'summary.json'),
-      JSON.stringify({ runId: id, client, baseUrl: baseUrl(), counts, startedAt: new Date().toISOString() }, null, 2)
+      JSON.stringify({ runId: id, client, llm, baseUrl: baseUrl(), counts, startedAt: new Date().toISOString() }, null, 2)
     );
     console.log(`sweep ${id}: ${counts.green} green / ${counts.red} red / ${counts.skipped} skipped`);
     process.exitCode = counts.red > 0 ? 1 : 0;
   } finally {
+    if (stopLlmMock) stopLlmMock();
     if (tsCandidateApplied) await restoreTsBaseline();
   }
 };
