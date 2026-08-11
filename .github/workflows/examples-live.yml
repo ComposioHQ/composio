@@ -28,6 +28,11 @@ on:
         description: 'URL of the candidate client tarball/wheel (required for client=candidate)'
         type: string
         default: ''
+      llm:
+        description: 'LLM traffic: mock (aimock, zero model spend) or live'
+        type: choice
+        options: [mock, live]
+        default: mock
 
 concurrency:
   group: ${{ github.workflow }}
@@ -45,6 +50,11 @@ env:
   COMPOSIO_API_KEY: ${{ secrets.COMPOSIO_API_KEY }}
   OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
   ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+  # mock unless explicitly dispatched live; the nightly adds a small live canary.
+  LLM_MODE: ${{ inputs.llm || 'mock' }}
+  # Entries mocks cannot cover (llmMock:false) plus one representative
+  # tool-calling example per language: the drift signal mocks can't see.
+  CANARY_IDS: ts/openai/agents-api,ts/openai/agents-api-tool-router,ts/openai/chat-completions,py/tool_router/langchain_agent
 
 jobs:
   examples-live:
@@ -64,11 +74,20 @@ jobs:
       - name: Setup Python and uv
         uses: ./.github/actions/setup-python-uv
 
-      - name: Require live credentials
-        if: ${{ env.COMPOSIO_API_KEY == '' || env.OPENAI_API_KEY == '' || env.ANTHROPIC_API_KEY == '' }}
+      - name: Require credentials
         run: |
-          echo "::error::COMPOSIO_API_KEY, OPENAI_API_KEY and ANTHROPIC_API_KEY are required."
-          exit 1
+          if [ -z "$COMPOSIO_API_KEY" ]; then
+            echo "::error::COMPOSIO_API_KEY is required."
+            exit 1
+          fi
+          # LLM keys are only needed when live model traffic will run:
+          # an explicit live dispatch, or the nightly's live canary step.
+          if [ "$LLM_MODE" = "live" ] || [ "${{ github.event_name }}" = "schedule" ]; then
+            if [ -z "$OPENAI_API_KEY" ] || [ -z "$ANTHROPIC_API_KEY" ]; then
+              echo "::error::OPENAI_API_KEY and ANTHROPIC_API_KEY are required for live LLM runs."
+              exit 1
+            fi
+          fi
 
       - name: Install Dependencies
         run: pnpm install --frozen-lockfile
@@ -91,14 +110,14 @@ jobs:
         run: node harness/run.mjs selftest
 
       - name: Verify provisioned project state
-        run: node scripts/examples-provision.mjs > /tmp/examples-provision.env
+        run: node scripts/examples-provision.mjs --gc > /tmp/examples-provision.env
 
       - name: Sweep
         run: |
           set -euo pipefail
           # Load the provisioned COMPOSIO_EXAMPLES_* ids emitted above.
           source /tmp/examples-provision.env
-          ARGS=(--client "${{ inputs.client || 'baseline' }}")
+          ARGS=(--client "${{ inputs.client || 'baseline' }}" --llm "$LLM_MODE")
           LANG_INPUT="${{ inputs.lang || 'all' }}"
           if [ "$LANG_INPUT" != "all" ]; then
             ARGS+=(--lang "$LANG_INPUT")
@@ -107,6 +126,13 @@ jobs:
             ARGS+=(--ids "${{ inputs.ids }}")
           fi
           node harness/run.mjs sweep "${ARGS[@]}"
+
+      - name: Live LLM canary
+        if: ${{ github.event_name == 'schedule' }}
+        run: |
+          set -euo pipefail
+          source /tmp/examples-provision.env
+          node harness/run.mjs sweep --client baseline --llm live --ids "$CANARY_IDS"
 
       - name: Upload sweep results and traces
         if: ${{ always() }}

@@ -1,5 +1,5 @@
 {
-  "$comment": "Inventory of runnable example entrypoints. Tiers: 1=unattended, 2=needs provisioned state, 3=bounded (readiness+terminate), X=excluded. See spec.md. Tier moves are monotone toward more coverage vs eval/baseline-tiers.json. Readiness regexes must anchor on a labeled output line the example prints on success (e.g. 'Visit this URL to authorize: https?://'), never a bare 'https?://' — a URL inside an error message must not count as ready.",
+  "$comment": "Inventory of runnable example entrypoints, consumed by harness/run.mjs. Tiers: 1=unattended, 2=needs provisioned state (scripts/examples-provision.mjs), 3=bounded (pass at readiness match, then terminate), X=excluded. Readiness regexes must anchor on a labeled output line the example prints on success (e.g. 'Visit this URL to authorize: https?://'), never a bare 'https?://' — a URL inside an error message must not count as ready. llmMock:false marks entries whose LLM traffic cannot run against the mock server (live canary only).",
   "entries": [
     {
       "id": "ts/anthropic/index",
