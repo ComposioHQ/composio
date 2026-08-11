@@ -225,6 +225,32 @@ def test_unsatisfiable_declared_property_keeps_root_dynamic_policy(converter):
         adapter.validate_python({"impossible": None})
 
 
+def test_dynamic_default_materialization_preserves_plain_python_values():
+    model = json_schema_to_model(
+        {
+            "type": "object",
+            "patternProperties": {
+                "^item_": {
+                    "type": "object",
+                    "properties": {
+                        "implicit": {
+                            "anyOf": [{"type": "string"}, {"type": "null"}],
+                        },
+                        "defaulted": {"type": "integer", "default": 1},
+                    },
+                },
+            },
+            "additionalProperties": False,
+        }
+    )
+
+    result = model.model_validate({"item_a": {}})
+
+    assert result.model_extra == {"item_a": {"defaulted": 1}}
+    assert isinstance(result.model_extra["item_a"], dict)
+    assert getattr(result, "item_a") == {"defaulted": 1}
+
+
 @pytest.mark.parametrize(
     "invalid_object_schema,error_type,error_match",
     [
