@@ -34,7 +34,7 @@ connection_request = composio.connected_accounts.initiate(
     auth_config_id=os.environ["COMPOSIO_EXAMPLES_APIKEY_AUTH_CONFIG_ID"],
     allow_multiple=True,
     config=auth_scheme.api_key(
-        options={
+        options={  # type: ignore[arg-type]  # api_key() injects "status"; the field is Required on the generated TypedDict but not needed here
             "generic_api_key": os.environ["COMPOSIO_EXAMPLES_APIKEY_PLACEHOLDER"],
         },
     ),

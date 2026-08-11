@@ -9,6 +9,8 @@ composio = Composio()
 session = composio.create(
     # A user with a connected Gmail account (raises KeyError when unset)
     user_id=os.environ["COMPOSIO_EXAMPLES_USER_ID"],
+    # mcp=True surfaces session.mcp on the returned type
+    mcp=True,
 )
 
 agent = Agent(
@@ -18,7 +20,7 @@ agent = Agent(
     mcps=[
         MCPServerHTTP(
             url=session.mcp.url,
-            headers=session.mcp.headers,
+            headers=session.mcp.headers,  # type: ignore[arg-type]  # headers is typed Dict[str, Optional[str]]; the SDK always populates it with str values
         )
     ],
 )

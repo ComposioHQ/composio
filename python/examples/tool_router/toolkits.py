@@ -14,6 +14,8 @@ composio = Composio()
 session = composio.create(
     user_id="pg-test-37ee710c-d5be-4775-91f2-a8e06b937d9b",
     manage_connections=True,
+    # mcp=True surfaces session.mcp on the returned type
+    mcp=True,
 )
 
 print(f"Session created: {session.session_id}")

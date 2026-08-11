@@ -21,7 +21,6 @@ from composio import Composio
 from composio_openai_agents import OpenAIAgentsProvider
 
 composio = Composio(
-    base_url=os.environ.get("COMPOSIO_BASE_URL"),
     provider=OpenAIAgentsProvider(),
 )
 
