@@ -2,6 +2,49 @@
 
 ## Unreleased
 
+## 0.3.3
+
+### Patch Changes
+
+- Free-form object arguments now pass CLI tool-input validation and keep their content instead of failing with an unknown-key error. Run `composio upgrade` to install the fixed CLI binary.
+- A tool schema the validator cannot interpret is now reported as a schema compile failure naming the cached schema path, instead of as an input error blaming your arguments. This covers a `patternProperties` key that is not a valid regular expression, and a reference inside a `patternProperties` or schema-valued `additionalProperties` subschema that does not resolve.
+- Tools belonging to multi-word toolkits now resolve to the right toolkit.
+  `composio tools execute GOOGLE_ANALYTICS_RUN_REPORT --account <alias>`
+  previously looked for a `google` account instead of a `google_analytics` one,
+  because the toolkit was guessed from the text before the first underscore.
+  The toolkit is now matched against the known toolkit list, longest prefix
+  first. This also corrects the toolkit shown in errors, file uploads, trigger
+  listening, and telemetry.
+- Session meta tools such as `COMPOSIO_SEARCH_TOOLS` are no longer attributed
+  to the `composio_search` toolkit, whose slug their names happen to start
+  with. A failed meta call used to suggest linking an app that had nothing to
+  do with the call.
+- Commands that consult the toolkit catalog more than once now fetch it once.
+  `composio tools execute` was downloading the full ~800 KB list up to four
+  times per run.
+- A cached API request that fails is no longer sent a second time. The caching
+  layer treated the request's own failure as a cache failure and retried it,
+  so every failed toolkit, tool, or trigger listing cost two round trips and
+  twice the wait before reporting the same error.
+- Resolving a tool's toolkit no longer downloads the toolkit catalog. The CLI
+  ships with the toolkit slugs it knew at build time and remembers any it
+  learns since in `known-toolkit-slugs.json`, so `composio tools execute` only
+  reaches for the catalog when a slug matches nothing it knows — a toolkit
+  released after your CLI version. `FORCE_USE_CACHE` is unaffected.
+- Resolving a tool's toolkit now reads what the CLI knows locally once per run
+  rather than once per lookup. A single `composio tools execute` resolves the
+  same toolkit up to four times — and once per tool with `--parallel` — and
+  each of those re-read `known-toolkit-slugs.json`, re-parsed it, and rebuilt
+  the lookup table over it. The weekly background refresh now also runs once per
+  run instead of rewriting the file after every lookup.
+- The background catalog refresh is abandoned after ten seconds. A finished
+  command ends when the event loop drains, so a slow network could otherwise
+  hold an exiting `composio` process open until the refresh completed.
+- Cache files are now written atomically, so an interrupted run can no longer
+  leave a truncated `toolkits.json` or `tools.json` behind.
+
+## 0.3.2
+
 ### Minor Changes
 
 - The installer (`curl -fsSL https://composio.dev/install | sh`) now configures your shell automatically: `COMPOSIO_INSTALL_SHELL` defaults to `auto`, which infers the login shell from `$SHELL` (zsh, bash, or fish) and always runs idempotent PATH setup for it; `COMPOSIO_INSTALL_SHELL=none` keeps the old install-only behavior for CI, Docker, and dotfile managers. Startup-file setup failures no longer fail the install — the installer keeps the binary, warns, and prints a runnable absolute-path command. `composio install` now reconciles an existing managed PATH block whose bin directory changed (one block per physical file, symlink-aware) and suppresses its boxed restart hint when invoked by the installer, which owns the final message.

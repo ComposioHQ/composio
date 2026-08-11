@@ -30,6 +30,24 @@ def get_ts_fixtures_dir() -> Path:
     )
 
 
+def get_py_json_schema_corpus_dir() -> Path:
+    """Get the Python JSON Schema conversion corpus directory path."""
+    return Path(__file__).parent / "fixtures" / "json-schema-conversion"
+
+
+def get_ts_json_schema_corpus_dir() -> Path:
+    """Get the TypeScript JSON Schema conversion corpus directory path."""
+    return (
+        Path(__file__).parent.parent.parent
+        / "ts"
+        / "packages"
+        / "core"
+        / "test"
+        / "fixtures"
+        / "json-schema-conversion"
+    )
+
+
 def compute_signature(
     webhook_id: str, timestamp: str, payload: str, secret: str
 ) -> str:

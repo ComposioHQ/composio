@@ -2,7 +2,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "install:composio": "pnpm --dir /app/ts/packages/core pack --pack-destination \"$PWD\" --silent >/dev/null && pnpm --dir /app/ts/packages/providers/openai pack --pack-destination \"$PWD\" --silent >/dev/null && npm install --ignore-scripts --package-lock=false ./composio-core-*.tgz ./composio-openai-*.tgz",
+    "install:composio": "pnpm --dir /app/ts/packages/json-schema-to-zod pack --pack-destination \"$PWD\" --silent >/dev/null && pnpm --dir /app/ts/packages/core pack --pack-destination \"$PWD\" --silent >/dev/null && pnpm --dir /app/ts/packages/providers/openai pack --pack-destination \"$PWD\" --silent >/dev/null && npm install --ignore-scripts --package-lock=false ./composio-json-schema-to-zod-*.tgz ./composio-core-*.tgz ./composio-openai-*.tgz",
     "typecheck": "tsc --noEmit && echo openai v7 compatibility typecheck passed"
   },
   "dependencies": {

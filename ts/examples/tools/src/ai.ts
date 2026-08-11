@@ -12,20 +12,28 @@ const openai = new OpenAI({
  */
 const composio = new Composio({
   apiKey: process.env.COMPOSIO_API_KEY,
+  // Local file paths under fileUploadDirs are uploaded automatically when the tool expects a file
+  dangerouslyAllowAutoUploadDownloadFiles: true,
+  fileUploadDirs: [import.meta.dirname],
 });
+
+const userId = process.env.COMPOSIO_EXAMPLES_USER_ID; // a user with a Google Drive connection
+if (!userId) {
+  throw new Error('Set COMPOSIO_EXAMPLES_USER_ID');
+}
 
 /**
  * Get the tools
  * This tool is automatically typed and wrapped with the OpenAI Provider
  */
 console.log('🔄 Getting tools...');
-const tools = await composio.tools.get('default', 'GOOGLEDRIVE_UPLOAD_FILE');
+const tools = await composio.tools.get(userId, 'GOOGLEDRIVE_UPLOAD_FILE');
 console.log('✅ Tools fetched successfully...');
 console.log(JSON.stringify(tools, null, 2));
 /**
  * Define a task for the assistant based on the tools in hand
  */
-const fileToUpload = path.join(__dirname, 'image.png');
+const fileToUpload = path.join(import.meta.dirname, 'image.png');
 const task = `Upload the file ${fileToUpload} to Google Drive`;
 
 /**
@@ -51,9 +59,12 @@ console.log('✅ Chat completion created successfully...');
  * If the assistant has tool calls, execute them and log the result
  */
 console.log('🔄 Calling tool...');
-if (response.choices[0].message.tool_calls && response.choices[0].message.tool_calls[0].type === 'function') {
+if (
+  response.choices[0].message.tool_calls &&
+  response.choices[0].message.tool_calls[0].type === 'function'
+) {
   console.log(`✅ Calling tool ${response.choices[0].message.tool_calls[0].function.name}`);
-  const result = await composio.provider.handleToolCalls('default', response);
+  const result = await composio.provider.handleToolCalls(userId, response);
   console.log(result);
 }
 console.log('✅ Tool called successfully...');

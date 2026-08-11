@@ -2,10 +2,16 @@ import { describe, it, expect, vi } from 'vitest';
 import {
   deduplicateJsonSchemaRequiredArrays,
   dereferenceJsonSchema,
+  ensureObjectTypeOnProperties,
 } from '../../src/utils/jsonSchema';
 import { JsonSchemaRefResolutionError } from '../../src/errors/ValidationErrors';
 import logger from '../../src/utils/logger';
 import { ToolSchema } from '../../src/types/tool.types';
+import {
+  assertCorpusInvariants,
+  loadObjectCases,
+  type CorpusCase,
+} from '../fixtures/json-schema-conversion/corpus';
 
 const containsRef = (value: unknown): boolean => {
   if (value === null || typeof value !== 'object') return false;
@@ -592,5 +598,271 @@ describe('deduplicateJsonSchemaRequiredArrays', () => {
 
     expect(tool.inputParameters?.required).toEqual(['name']);
     expect(tool.inputParameters?.properties.options.required).toEqual(['enabled']);
+  });
+});
+
+describe('ToolSchema parameter-root preservation', () => {
+  for (const testCase of loadObjectCases()) {
+    const { ingress } = testCase;
+    if (!ingress) {
+      continue;
+    }
+
+    it(`preserves the ${testCase.id} parameter root exactly`, () => {
+      const result = ToolSchema.safeParse({
+        slug: 'TEST_TOOL',
+        name: 'Test tool',
+        inputParameters: testCase.schema,
+      });
+
+      expect(result.success).toBe(ingress.accepted);
+      if (result.success) {
+        expect(result.data.inputParameters).toEqual(ingress.preserved);
+      }
+    });
+  }
+
+  it('leaves an omitted root additionalProperties omitted', () => {
+    const tool = ToolSchema.parse({
+      slug: 'TEST_TOOL',
+      name: 'Test tool',
+      inputParameters: { type: 'object', properties: { name: { type: 'string' } } },
+    });
+
+    expect(tool.inputParameters).not.toHaveProperty('additionalProperties');
+  });
+});
+
+describe('shared corpus invariants', () => {
+  const baseCase = (id: string): CorpusCase => ({
+    id,
+    schema: { type: 'object' },
+    instances: [{ input: {}, accepted: true }],
+  });
+
+  it('accepts the checked-in corpus', () => {
+    expect(() => assertCorpusInvariants(loadObjectCases())).not.toThrow();
+  });
+
+  it('documents the patternProperties strictness divergence from JSON Schema', () => {
+    const testCase = loadObjectCases().find(
+      ({ id }) => id === 'named-properties-with-pattern-properties'
+    );
+
+    expect(testCase?.divergesFromJsonSchema).toContain('omitted `additionalProperties`');
+  });
+
+  it('rejects duplicate case ids', () => {
+    expect(() => assertCorpusInvariants([baseCase('dup'), baseCase('dup')])).toThrow(
+      'Duplicate corpus case id: dup'
+    );
+  });
+
+  it('rejects a per-language acceptance override without a declared divergence', () => {
+    const undeclared: CorpusCase = {
+      id: 'undeclared',
+      schema: { type: 'object' },
+      instances: [{ input: {}, accepted: true, python: { accepted: false } }],
+    };
+
+    expect(() => assertCorpusInvariants([undeclared])).toThrow(
+      'overrides python acceptance without a divergence reason'
+    );
+  });
+
+  it('allows a per-language acceptance override that declares its reason', () => {
+    const declared: CorpusCase = {
+      id: 'declared',
+      schema: { type: 'object' },
+      instances: [
+        {
+          input: {},
+          accepted: true,
+          python: { accepted: false },
+          divergence: { reason: 'documented Pydantic limitation' },
+        },
+      ],
+    };
+
+    expect(() => assertCorpusInvariants([declared])).not.toThrow();
+  });
+});
+
+describe('ensureObjectTypeOnProperties', () => {
+  it('adds type:object to nested nodes that have properties but no type', () => {
+    const schema = {
+      type: 'object',
+      properties: {
+        target: {
+          properties: {
+            name: { type: 'string' },
+          },
+        },
+      },
+    };
+
+    const result = ensureObjectTypeOnProperties(schema);
+    expect(result).toEqual({
+      type: 'object',
+      properties: {
+        target: {
+          type: 'object',
+          properties: {
+            name: { type: 'string' },
+          },
+        },
+      },
+    });
+  });
+
+  it('leaves nodes that already declare a type untouched', () => {
+    const schema = {
+      type: 'object',
+      properties: {
+        target: {
+          type: 'object',
+          properties: { name: { type: 'string' } },
+        },
+      },
+    };
+
+    const result = ensureObjectTypeOnProperties(schema);
+    expect(result).toEqual(schema);
+  });
+
+  it('handles deeply nested properties inside array items', () => {
+    const schema = {
+      type: 'object',
+      properties: {
+        list: {
+          type: 'array',
+          items: {
+            properties: { id: { type: 'string' } },
+          },
+        },
+      },
+    };
+
+    const result = ensureObjectTypeOnProperties(schema) as typeof schema;
+    expect(result.properties.list.items).toHaveProperty('type', 'object');
+  });
+
+  it('does not mutate the input schema', () => {
+    const schema = {
+      type: 'object',
+      properties: {
+        target: { properties: { name: { type: 'string' } } },
+      },
+    };
+
+    ensureObjectTypeOnProperties(schema);
+    expect(schema.properties.target).not.toHaveProperty('type');
+  });
+
+  it('does not inject type:object into instance-value keywords (const, default, enum, examples)', () => {
+    const schema = {
+      type: 'object',
+      properties: {
+        choice: {
+          type: 'object',
+          properties: { id: { type: 'string' } },
+          default: { properties: { should_not_gain_type: true } },
+          const: { properties: { marker: true } },
+          examples: [{ properties: { marker: true } }],
+          enum: [{ properties: { marker: true } }],
+        },
+      },
+    };
+
+    const result = ensureObjectTypeOnProperties(schema) as typeof schema;
+    const choice = result.properties.choice as Record<string, unknown>;
+    expect((choice.default as Record<string, unknown>).type).toBeUndefined();
+    expect((choice.const as Record<string, unknown>).type).toBeUndefined();
+    expect((choice.examples as Record<string, unknown>[])[0].type).toBeUndefined();
+    expect((choice.enum as Record<string, unknown>[])[0].type).toBeUndefined();
+  });
+
+  it('does not treat a properties map as a schema when a field is named properties', () => {
+    const schema = {
+      type: 'object',
+      properties: {
+        properties: {
+          properties: {
+            name: { type: 'string' },
+          },
+        },
+      },
+    };
+
+    const result = ensureObjectTypeOnProperties(schema) as {
+      properties: Record<string, unknown>;
+    };
+
+    expect(result.properties).toEqual({
+      properties: {
+        type: 'object',
+        properties: {
+          name: { type: 'string' },
+        },
+      },
+    });
+    expect(result.properties).not.toHaveProperty('type');
+  });
+
+  it('preserves reserved property names without changing the property-map prototype', () => {
+    const propertySchemas: Record<string, unknown> = {};
+    for (const key of ['constructor', 'prototype', '__proto__']) {
+      Object.defineProperty(propertySchemas, key, {
+        configurable: true,
+        enumerable: true,
+        value: { properties: { value: { type: 'string' } } },
+        writable: true,
+      });
+    }
+
+    const result = ensureObjectTypeOnProperties({
+      type: 'object',
+      properties: propertySchemas,
+    });
+
+    expect(Object.getPrototypeOf(result.properties)).toBe(Object.prototype);
+    for (const key of ['constructor', 'prototype', '__proto__']) {
+      expect(Object.hasOwn(result.properties, key)).toBe(true);
+      expect(result.properties[key]).toEqual({
+        type: 'object',
+        properties: { value: { type: 'string' } },
+      });
+    }
+  });
+
+  it('preserves reserved keys in instance defaults without treating their values as schemas', () => {
+    const defaultValue: Record<string, unknown> = {};
+    for (const key of ['constructor', 'prototype', '__proto__']) {
+      Object.defineProperty(defaultValue, key, {
+        configurable: true,
+        enumerable: true,
+        value: { properties: { marker: true } },
+        writable: true,
+      });
+    }
+
+    const result = ensureObjectTypeOnProperties({
+      type: 'object',
+      properties: {
+        choice: {
+          type: 'object',
+          properties: {},
+          default: defaultValue,
+        },
+      },
+    });
+    const normalizedDefault = result.properties.choice.default;
+
+    expect(Object.getPrototypeOf(normalizedDefault)).toBe(Object.prototype);
+    for (const key of ['constructor', 'prototype', '__proto__']) {
+      expect(Object.hasOwn(normalizedDefault, key)).toBe(true);
+      expect(normalizedDefault[key]).toEqual({ properties: { marker: true } });
+      expect(normalizedDefault[key]).not.toHaveProperty('type');
+    }
   });
 });

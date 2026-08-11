@@ -1,7 +1,6 @@
 {
-  "title": "Providers",
+  "title": "SDKs and frameworks",
   "pages": [
-    "...",
     "anthropic",
     "openai",
     "vercel",
@@ -13,6 +12,7 @@
     "crewai",
     "llamaindex",
     "mastra",
-    "custom-providers"
+    "custom-providers",
+    "..."
   ]
 }

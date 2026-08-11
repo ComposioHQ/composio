@@ -11,7 +11,7 @@ import { DocsHeroV2 } from './docs-hero-v2';
  */
 export function DocsHero() {
   return (
-    <div className="not-prose mb-10">
+    <div className="not-prose mb-2">
       <DocsHeroV2 />
       {/* <HeroSection /> */}
     </div>

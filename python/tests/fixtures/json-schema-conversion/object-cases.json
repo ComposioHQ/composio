@@ -1,0 +1,682 @@
+{
+  "cases": [
+    {
+      "id": "nested-free-form-object",
+      "description": "A nested `{ type: \"object\" }` property must accept and preserve arbitrary content (issue #4064, METABASE_POST_API_CARD.dataset_query).",
+      "schema": {
+        "type": "object",
+        "properties": { "dataset_query": { "type": "object" } }
+      },
+      "ingress": {
+        "accepted": true,
+        "preserved": {
+          "type": "object",
+          "properties": { "dataset_query": { "type": "object" } }
+        }
+      },
+      "instances": [
+        {
+          "input": { "dataset_query": { "database": 1, "query": { "source-table": 2 } } },
+          "accepted": true,
+          "zod": {
+            "output": { "dataset_query": { "database": 1, "query": { "source-table": 2 } } }
+          },
+          "effect": {
+            "output": { "dataset_query": { "database": 1, "query": { "source-table": 2 } } }
+          },
+          "python": {
+            "output": { "dataset_query": { "database": 1, "query": { "source-table": 2 } } }
+          }
+        }
+      ]
+    },
+    {
+      "id": "root-free-form-absent-properties",
+      "description": "A root object with no `properties` member and omitted `additionalProperties` is open.",
+      "schema": { "type": "object" },
+      "ingress": {
+        "accepted": true,
+        "preserved": { "type": "object" }
+      },
+      "instances": [
+        {
+          "input": { "anything": { "a": 1 }, "other": "x" },
+          "accepted": true,
+          "zod": { "output": { "anything": { "a": 1 }, "other": "x" } },
+          "effect": { "output": { "anything": { "a": 1 }, "other": "x" } },
+          "python": { "output": { "anything": { "a": 1 }, "other": "x" } }
+        }
+      ]
+    },
+    {
+      "id": "root-free-form-empty-properties",
+      "description": "`properties: {}` is property-less too, and stays open when `additionalProperties` is omitted.",
+      "schema": { "type": "object", "properties": {} },
+      "ingress": {
+        "accepted": true,
+        "preserved": { "type": "object", "properties": {} }
+      },
+      "instances": [
+        {
+          "input": { "foo": 1, "bar": { "baz": true } },
+          "accepted": true,
+          "zod": { "output": { "foo": 1, "bar": { "baz": true } } },
+          "effect": { "output": { "foo": 1, "bar": { "baz": true } } },
+          "python": { "output": { "foo": 1, "bar": { "baz": true } } }
+        }
+      ]
+    },
+    {
+      "id": "free-form-object-in-array-items",
+      "description": "Property-less objects placed as array items preserve arbitrary content.",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "records": { "type": "array", "items": { "type": "object" } }
+        }
+      },
+      "ingress": {
+        "accepted": true,
+        "preserved": {
+          "type": "object",
+          "properties": {
+            "records": { "type": "array", "items": { "type": "object" } }
+          }
+        }
+      },
+      "instances": [
+        {
+          "input": { "records": [{ "a": 1 }, { "b": { "c": 2 } }] },
+          "accepted": true,
+          "zod": { "output": { "records": [{ "a": 1 }, { "b": { "c": 2 } }] } },
+          "effect": { "output": { "records": [{ "a": 1 }, { "b": { "c": 2 } }] } },
+          "python": { "output": { "records": [{ "a": 1 }, { "b": { "c": 2 } }] } }
+        }
+      ]
+    },
+    {
+      "id": "nested-pattern-properties-object",
+      "description": "A dynamic-key policy nested under a declared property validates and preserves matching keys.",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "payload": {
+            "type": "object",
+            "patternProperties": { "^count_": { "type": "integer" } },
+            "additionalProperties": false
+          }
+        },
+        "required": ["payload"]
+      },
+      "ingress": {
+        "accepted": true,
+        "preserved": {
+          "type": "object",
+          "properties": {
+            "payload": {
+              "type": "object",
+              "patternProperties": { "^count_": { "type": "integer" } },
+              "additionalProperties": false
+            }
+          },
+          "required": ["payload"]
+        }
+      },
+      "instances": [
+        {
+          "input": { "payload": { "count_a": 1 } },
+          "accepted": true,
+          "zod": { "output": { "payload": { "count_a": 1 } } },
+          "effect": { "output": { "payload": { "count_a": 1 } } },
+          "python": { "output": { "payload": { "count_a": 1 } } }
+        },
+        {
+          "input": { "payload": { "count_a": "1" } },
+          "accepted": false
+        },
+        {
+          "input": { "payload": { "other": 1 } },
+          "accepted": false
+        }
+      ]
+    },
+    {
+      "id": "schema-valued-additional-properties-in-array-items",
+      "description": "A schema-valued dynamic-key policy inside array items validates every preserved value.",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "records": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": { "type": "number" }
+            }
+          }
+        },
+        "required": ["records"]
+      },
+      "ingress": {
+        "accepted": true,
+        "preserved": {
+          "type": "object",
+          "properties": {
+            "records": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": { "type": "number" }
+              }
+            }
+          },
+          "required": ["records"]
+        }
+      },
+      "instances": [
+        {
+          "input": { "records": [{ "a": 1 }, { "b": 2.5 }] },
+          "accepted": true,
+          "zod": { "output": { "records": [{ "a": 1 }, { "b": 2.5 }] } },
+          "effect": { "output": { "records": [{ "a": 1 }, { "b": 2.5 }] } },
+          "python": { "output": { "records": [{ "a": 1 }, { "b": 2.5 }] } }
+        },
+        {
+          "input": { "records": [{ "a": "1" }] },
+          "accepted": false
+        }
+      ]
+    },
+    {
+      "id": "explicit-additional-properties-false",
+      "description": "An explicit `additionalProperties: false` closes an otherwise property-less object.",
+      "schema": { "type": "object", "properties": {}, "additionalProperties": false },
+      "ingress": {
+        "accepted": true,
+        "preserved": { "type": "object", "properties": {}, "additionalProperties": false }
+      },
+      "instances": [
+        {
+          "input": {},
+          "accepted": true,
+          "zod": { "output": {} },
+          "effect": { "output": {} },
+          "python": { "output": {} }
+        },
+        {
+          "input": { "foo": 1 },
+          "accepted": false
+        }
+      ]
+    },
+    {
+      "id": "explicit-additional-properties-true",
+      "description": "An explicit `additionalProperties: true` preserves unknown keys alongside named properties.",
+      "schema": {
+        "type": "object",
+        "properties": { "name": { "type": "string" } },
+        "additionalProperties": true
+      },
+      "ingress": {
+        "accepted": true,
+        "preserved": {
+          "type": "object",
+          "properties": { "name": { "type": "string" } },
+          "additionalProperties": true
+        }
+      },
+      "instances": [
+        {
+          "input": { "name": "a", "extra": 1 },
+          "accepted": true,
+          "zod": { "output": { "name": "a", "extra": 1 } },
+          "effect": { "output": { "name": "a", "extra": 1 } },
+          "python": { "output": { "name": "a", "extra": 1 } }
+        }
+      ]
+    },
+    {
+      "id": "named-properties-strict-by-default",
+      "description": "Composio divergence: named `properties` with omitted `additionalProperties` stay strict for tool inputs, while JSON Schema itself would allow unknown keys.",
+      "divergesFromJsonSchema": "JSON Schema treats omitted `additionalProperties` as permissive; Composio tool inputs keep it strict.",
+      "schema": {
+        "type": "object",
+        "properties": { "name": { "type": "string" } },
+        "required": ["name"]
+      },
+      "ingress": {
+        "accepted": true,
+        "preserved": {
+          "type": "object",
+          "properties": { "name": { "type": "string" } },
+          "required": ["name"]
+        }
+      },
+      "instances": [
+        {
+          "input": { "name": "a" },
+          "accepted": true,
+          "zod": { "output": { "name": "a" } },
+          "effect": { "output": { "name": "a" } },
+          "python": { "output": { "name": "a" } }
+        },
+        {
+          "input": { "name": "a", "extra": 1 },
+          "accepted": false
+        }
+      ]
+    },
+    {
+      "id": "named-properties-with-pattern-properties",
+      "description": "With named `properties` plus `patternProperties` and omitted `additionalProperties`, pattern-matching keys are admitted and validated while other unknown keys stay rejected.",
+      "divergesFromJsonSchema": "JSON Schema treats omitted `additionalProperties` as permissive; Composio tool inputs keep it strict.",
+      "schema": {
+        "type": "object",
+        "properties": { "name": { "type": "string" } },
+        "patternProperties": { "^x-": { "type": "number" } }
+      },
+      "ingress": {
+        "accepted": true,
+        "preserved": {
+          "type": "object",
+          "properties": { "name": { "type": "string" } },
+          "patternProperties": { "^x-": { "type": "number" } }
+        }
+      },
+      "instances": [
+        {
+          "input": { "name": "a", "x-count": 3 },
+          "accepted": true,
+          "zod": { "output": { "name": "a", "x-count": 3 } },
+          "effect": { "output": { "name": "a", "x-count": 3 } },
+          "python": { "output": { "name": "a", "x-count": 3 } }
+        },
+        {
+          "input": { "name": "a", "x-count": "nope" },
+          "accepted": false
+        },
+        {
+          "input": { "name": "a", "other": 1 },
+          "accepted": false
+        }
+      ]
+    },
+    {
+      "id": "root-additional-properties-schema-valued",
+      "description": "A schema-valued root `additionalProperties` survives `ToolSchema.parse` and validates unknown keys.",
+      "schema": {
+        "type": "object",
+        "properties": { "name": { "type": "string" } },
+        "additionalProperties": { "type": "number" }
+      },
+      "ingress": {
+        "accepted": true,
+        "preserved": {
+          "type": "object",
+          "properties": { "name": { "type": "string" } },
+          "additionalProperties": { "type": "number" }
+        }
+      },
+      "instances": [
+        {
+          "input": { "name": "a", "count": 2 },
+          "accepted": true,
+          "zod": { "output": { "name": "a", "count": 2 } },
+          "effect": { "output": { "name": "a", "count": 2 } },
+          "python": { "output": { "name": "a", "count": 2 } }
+        },
+        {
+          "input": { "name": "a", "count": "x" },
+          "accepted": false
+        }
+      ]
+    },
+    {
+      "id": "pattern-only-object",
+      "description": "A pattern-only object with no named `properties` accepts unmatched keys while still validating matched ones.",
+      "schema": {
+        "type": "object",
+        "patternProperties": { "^s_": { "type": "string" } }
+      },
+      "instances": [
+        {
+          "input": { "s_a": "x", "other": 1 },
+          "accepted": true,
+          "zod": { "output": { "s_a": "x", "other": 1 } },
+          "effect": { "output": { "s_a": "x", "other": 1 } },
+          "python": { "output": { "s_a": "x", "other": 1 } }
+        },
+        {
+          "input": { "s_a": 5 },
+          "accepted": false
+        }
+      ]
+    },
+    {
+      "id": "multiple-matching-patterns",
+      "description": "A key matching several non-transforming patterns must satisfy all of them.",
+      "schema": {
+        "type": "object",
+        "patternProperties": {
+          "^a": { "type": "string" },
+          "b$": { "type": "string", "minLength": 2 }
+        }
+      },
+      "instances": [
+        {
+          "input": { "ab": "xy" },
+          "accepted": true,
+          "zod": { "output": { "ab": "xy" } },
+          "effect": { "output": { "ab": "xy" } },
+          "python": { "output": { "ab": "xy" } }
+        },
+        {
+          "input": { "ab": "x" },
+          "accepted": false
+        },
+        {
+          "input": { "ab": 5 },
+          "accepted": false
+        }
+      ]
+    },
+    {
+      "id": "declared-property-also-matching-a-pattern",
+      "description": "A key declared in `properties` is still checked against every matching pattern.",
+      "schema": {
+        "type": "object",
+        "properties": { "x_id": { "type": "string" } },
+        "patternProperties": { "^x_": { "type": "string", "minLength": 3 } }
+      },
+      "ingress": {
+        "accepted": true,
+        "preserved": {
+          "type": "object",
+          "properties": { "x_id": { "type": "string" } },
+          "patternProperties": { "^x_": { "type": "string", "minLength": 3 } }
+        }
+      },
+      "instances": [
+        {
+          "input": { "x_id": "abc" },
+          "accepted": true,
+          "zod": { "output": { "x_id": "abc" } },
+          "effect": { "output": { "x_id": "abc" } },
+          "python": { "output": { "x_id": "abc" } }
+        },
+        {
+          "input": { "x_id": "ab" },
+          "accepted": false
+        }
+      ]
+    },
+    {
+      "id": "schema-valued-additional-applies-only-to-unmatched-keys",
+      "description": "Schema-valued `additionalProperties` must not rescue a key that a `patternProperties` entry already claims and rejects.",
+      "schema": {
+        "type": "object",
+        "properties": { "name": { "type": "string" } },
+        "patternProperties": { "^n_": { "type": "number" } },
+        "additionalProperties": { "type": "boolean" }
+      },
+      "ingress": {
+        "accepted": true,
+        "preserved": {
+          "type": "object",
+          "properties": { "name": { "type": "string" } },
+          "patternProperties": { "^n_": { "type": "number" } },
+          "additionalProperties": { "type": "boolean" }
+        }
+      },
+      "instances": [
+        {
+          "input": { "name": "a", "n_x": 1, "flag": true },
+          "accepted": true,
+          "zod": { "output": { "name": "a", "n_x": 1, "flag": true } },
+          "effect": { "output": { "name": "a", "n_x": 1, "flag": true } },
+          "python": { "output": { "name": "a", "n_x": 1, "flag": true } }
+        },
+        {
+          "input": { "name": "a", "n_x": true },
+          "accepted": false
+        },
+        {
+          "input": { "name": "a", "flag": 1 },
+          "accepted": false
+        }
+      ]
+    },
+    {
+      "id": "empty-schema-additional-properties",
+      "description": "An empty schema accepts every unmatched value without coercing or discarding it.",
+      "schema": {
+        "type": "object",
+        "properties": { "name": { "type": "string" } },
+        "additionalProperties": {}
+      },
+      "instances": [
+        {
+          "input": { "name": "a", "count": 1, "metadata": { "active": true } },
+          "accepted": true,
+          "zod": {
+            "output": { "name": "a", "count": 1, "metadata": { "active": true } }
+          },
+          "effect": {
+            "output": { "name": "a", "count": 1, "metadata": { "active": true } }
+          },
+          "python": {
+            "output": { "name": "a", "count": 1, "metadata": { "active": true } }
+          }
+        }
+      ]
+    },
+    {
+      "id": "pattern-property-enum",
+      "description": "A matching dynamic key must satisfy an enum-only schema with no explicit type.",
+      "schema": {
+        "type": "object",
+        "patternProperties": { "^status_": { "enum": ["ready", "done"] } }
+      },
+      "instances": [
+        {
+          "input": { "status_job": "ready" },
+          "accepted": true,
+          "zod": { "output": { "status_job": "ready" } },
+          "effect": { "output": { "status_job": "ready" } },
+          "python": { "output": { "status_job": "ready" } }
+        },
+        {
+          "input": { "status_job": "blocked" },
+          "accepted": false
+        }
+      ]
+    },
+    {
+      "id": "pattern-property-strict-nested-array",
+      "description": "Nested container values are validated without coercing strings into integers.",
+      "schema": {
+        "type": "object",
+        "patternProperties": {
+          "^batch_": {
+            "type": "object",
+            "properties": {
+              "values": { "type": "array", "items": { "type": "integer" } }
+            },
+            "required": ["values"],
+            "additionalProperties": false
+          }
+        }
+      },
+      "instances": [
+        {
+          "input": { "batch_a": { "values": [1, 2] } },
+          "accepted": true,
+          "zod": { "output": { "batch_a": { "values": [1, 2] } } },
+          "effect": { "output": { "batch_a": { "values": [1, 2] } } },
+          "python": { "output": { "batch_a": { "values": [1, 2] } } }
+        },
+        {
+          "input": { "batch_a": { "values": ["1"] } },
+          "accepted": false
+        }
+      ]
+    },
+    {
+      "id": "false-pattern-property-schema",
+      "description": "A boolean-false pattern schema rejects every value for matching keys.",
+      "schema": {
+        "type": "object",
+        "patternProperties": { "^forbidden$": false }
+      },
+      "instances": [
+        {
+          "input": { "other": 1 },
+          "accepted": true,
+          "zod": { "output": { "other": 1 } },
+          "effect": { "output": { "other": 1 } },
+          "python": { "output": { "other": 1 } }
+        },
+        {
+          "input": { "forbidden": null },
+          "accepted": false
+        }
+      ]
+    },
+    {
+      "id": "pattern-property-type-union",
+      "description": "A list-valued type accepts only the listed JSON instance types.",
+      "schema": {
+        "type": "object",
+        "patternProperties": { "^value_": { "type": ["string", "null"] } }
+      },
+      "instances": [
+        {
+          "input": { "value_a": "text", "value_b": null },
+          "accepted": true,
+          "zod": { "output": { "value_a": "text", "value_b": null } },
+          "effect": { "output": { "value_a": "text", "value_b": null } },
+          "python": { "output": { "value_a": "text", "value_b": null } }
+        },
+        {
+          "input": { "value_a": 1 },
+          "accepted": false
+        }
+      ]
+    },
+    {
+      "id": "pattern-property-json-integer",
+      "description": "A mathematically integral JSON number satisfies the integer type even when decoded as a float.",
+      "schema": {
+        "type": "object",
+        "patternProperties": { "^count_": { "type": "integer" } }
+      },
+      "instances": [
+        {
+          "input": { "count_a": 1.0 },
+          "accepted": true,
+          "zod": { "output": { "count_a": 1.0 } },
+          "effect": { "output": { "count_a": 1.0 } },
+          "python": { "output": { "count_a": 1.0 } }
+        },
+        {
+          "input": { "count_a": 1.5 },
+          "accepted": false
+        }
+      ]
+    },
+    {
+      "id": "pattern-property-composed-const-exclusion",
+      "description": "Composed dynamic-key schemas retain const and not semantics.",
+      "schema": {
+        "type": "object",
+        "patternProperties": {
+          "^label_": {
+            "allOf": [{ "type": "string" }, { "not": { "const": "blocked" } }]
+          }
+        }
+      },
+      "instances": [
+        {
+          "input": { "label_job": "ready" },
+          "accepted": true,
+          "zod": { "output": { "label_job": "ready" } },
+          "effect": { "output": { "label_job": "ready" } },
+          "python": { "output": { "label_job": "ready" } }
+        },
+        {
+          "input": { "label_job": "blocked" },
+          "accepted": false
+        }
+      ]
+    },
+    {
+      "id": "pattern-property-default-materialization",
+      "description": "Composio divergence: Zod and Pydantic materialize `default` inside a matching pattern schema, while Effect decoding is validation-only and returns the input unchanged.",
+      "divergesFromJsonSchema": "`default` is annotation-only in JSON Schema; the Zod and Pydantic converters materialize it.",
+      "schema": {
+        "type": "object",
+        "properties": {},
+        "patternProperties": {
+          "^p_": {
+            "type": "object",
+            "properties": { "mode": { "type": "string", "default": "auto" } }
+          }
+        }
+      },
+      "ingress": {
+        "accepted": true,
+        "preserved": {
+          "type": "object",
+          "properties": {},
+          "patternProperties": {
+            "^p_": {
+              "type": "object",
+              "properties": { "mode": { "type": "string", "default": "auto" } }
+            }
+          }
+        }
+      },
+      "instances": [
+        {
+          "input": { "p_a": {} },
+          "accepted": true,
+          "zod": { "output": { "p_a": { "mode": "auto" } } },
+          "effect": { "output": { "p_a": {} } },
+          "python": { "output": { "p_a": { "mode": "auto" } } }
+        }
+      ]
+    },
+    {
+      "id": "additional-property-default-materialization",
+      "description": "Composio divergence: a schema-valued `additionalProperties` also materializes defaults in Zod and Pydantic while Effect leaves the input unchanged.",
+      "divergesFromJsonSchema": "`default` is annotation-only in JSON Schema; the Zod and Pydantic converters materialize it.",
+      "schema": {
+        "type": "object",
+        "properties": { "name": { "type": "string" } },
+        "additionalProperties": {
+          "type": "object",
+          "properties": { "enabled": { "type": "boolean", "default": false } }
+        }
+      },
+      "ingress": {
+        "accepted": true,
+        "preserved": {
+          "type": "object",
+          "properties": { "name": { "type": "string" } },
+          "additionalProperties": {
+            "type": "object",
+            "properties": { "enabled": { "type": "boolean", "default": false } }
+          }
+        }
+      },
+      "instances": [
+        {
+          "input": { "name": "a", "extra": {} },
+          "accepted": true,
+          "zod": { "output": { "name": "a", "extra": { "enabled": false } } },
+          "effect": { "output": { "name": "a", "extra": {} } },
+          "python": { "output": { "name": "a", "extra": { "enabled": false } } }
+        }
+      ]
+    }
+  ]
+}
