@@ -11,6 +11,7 @@ import { transformDeprecatedApiSidebarNode } from './deprecated-api-sidebar';
 import { API_BASE_URLS, detectApiVersion, type ApiVersion } from './api-version';
 import { apiVersionPointer } from './api-version-guidance';
 import { apiEndpointsSchema } from './api-endpoints-table-schema';
+import { replaceHomeNavigationMarkdown } from './home-navigation';
 
 /**
  * True if a reference URL belongs to an intentionally-hidden API tag
@@ -261,6 +262,8 @@ export function mdxToCleanMarkdown(content: string, url?: string): string {
       )
   );
 
+  result = replaceHomeNavigationMarkdown(result);
+
   // Convert YouTube to link
   result = result.replace(
     /<YouTube\s+id="([^"]+)"\s+title="([^"]+)"\s*\/>/g,
@@ -321,7 +324,7 @@ export function mdxToCleanMarkdown(content: string, url?: string): string {
   result = result.replace(/<Step>\s*###\s*(.+)/g, '#### $1');
   result = result.replace(/<\/?Steps>/g, '');
   result = result.replace(/<\/?Step>/g, '');
-  result = result.replace(/^(\s*#{1,6})\s*#\s+(.+)$/gm, '$1 $2');
+  result = result.replace(/^(\s*#{1,6})\s+#\s+(.+)$/gm, '$1 $2');
   result = result.replace(/^\s*#\s*$/gm, '');
 
   result = result.replace(/<FrameworkOption[\s\S]*?name="([^"]*)"[\s\S]*?>/g, '\n## $1\n');
