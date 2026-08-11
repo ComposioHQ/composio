@@ -6,9 +6,9 @@ from pathlib import Path
 
 import typing_extensions as te
 from pydantic import BaseModel as PydanticBaseModel
+from composio_client import omit
 
 from composio.client import HttpClient
-from composio.client.compat import OMIT
 from composio.client.types import (
     Tool,
     tool_execute_params,
@@ -173,8 +173,8 @@ class Tools(Resource, t.Generic[TTool, TToolCollection]):
         return t.cast(
             Tool,
             self._client.tools.retrieve(
-                slug,
-                query={"toolkit_versions": none_to_omit(self._toolkit_versions)},
+                tool_slug=slug,
+                toolkit_versions=none_to_omit(self._toolkit_versions),
             ),
         )
 
@@ -199,10 +199,8 @@ class Tools(Resource, t.Generic[TTool, TToolCollection]):
             if len(tools):
                 tools_list.extend(
                     self._client.tools.list(
-                        query={
-                            "tool_slugs": ",".join(tools),
-                            "toolkit_versions": none_to_omit(self._toolkit_versions),
-                        },
+                        tool_slugs=",".join(tools),
+                        toolkit_versions=none_to_omit(self._toolkit_versions),
                     ).items
                 )
 
@@ -210,15 +208,11 @@ class Tools(Resource, t.Generic[TTool, TToolCollection]):
         if toolkits is not None or search is not None:
             tools_list.extend(
                 self._client.tools.list(
-                    query={
-                        "toolkit_slug": none_to_omit(
-                            ",".join(toolkits) if toolkits else None
-                        ),
-                        "search": none_to_omit(search),
-                        "scopes": scopes,
-                        "limit": limit,
-                        "toolkit_versions": none_to_omit(self._toolkit_versions),
-                    },
+                    toolkit_slug=none_to_omit(",".join(toolkits) if toolkits else None),
+                    search=none_to_omit(search),
+                    scopes=scopes,
+                    limit=limit,
+                    toolkit_versions=none_to_omit(self._toolkit_versions),
                 ).items
             )
         return tools_list
@@ -271,11 +265,9 @@ class Tools(Resource, t.Generic[TTool, TToolCollection]):
 
         while True:
             tools_response = self._client.tool_router.session.tools(
-                session_id,
-                query={
-                    "cursor": none_to_omit(cursor),
-                    "limit": TOOL_ROUTER_SESSION_TOOLS_PAGE_LIMIT,
-                },
+                session_id=session_id,
+                cursor=none_to_omit(cursor),
+                limit=TOOL_ROUTER_SESSION_TOOLS_PAGE_LIMIT,
             )
             # Cast to Tool type - session.tools returns compatible Item type from different response schema
             tools_list.extend(t.cast(Tool, item) for item in tools_response.items)
@@ -480,10 +472,8 @@ class Tools(Resource, t.Generic[TTool, TToolCollection]):
                 tool = t.cast(
                     Tool,
                     self._client.tools.retrieve(
-                        slug,
-                        query={
-                            "toolkit_versions": none_to_omit(self._toolkit_versions)
-                        },
+                        tool_slug=slug,
+                        toolkit_versions=none_to_omit(self._toolkit_versions),
                     ),
                 )
                 self._tool_schemas[slug] = tool
@@ -523,17 +513,15 @@ class Tools(Resource, t.Generic[TTool, TToolCollection]):
             processed_arguments = _serialize_arguments(processed_arguments)
 
             response = self._client.tool_router.session.execute(
-                session_id,
-                {
-                    "tool_slug": slug,
-                    "arguments": processed_arguments,
-                    # Provider-wrapped session tools are agentic calls, so they opt into
-                    # direct tool offload when the backend session workbench allows it.
-                    "enable_auto_workbench_offload": True,
-                    "experimental": inline_custom_tools_execute_experimental(
-                        inline_custom_tools_payload
-                    ),
-                },
+                session_id=session_id,
+                tool_slug=slug,
+                arguments=processed_arguments,
+                # Provider-wrapped session tools are agentic calls, so they opt into
+                # direct tool offload when the backend session workbench allows it.
+                enable_auto_workbench_offload=True,
+                experimental=inline_custom_tools_execute_experimental(
+                    inline_custom_tools_payload
+                ),
             )
 
             # Convert response to standard format
@@ -597,16 +585,14 @@ class Tools(Resource, t.Generic[TTool, TToolCollection]):
             # Disable retries: tool execution is a non-idempotent write, and a
             # silent retry after a read timeout can duplicate the side effect.
             self._client.without_retries.tools.execute(
-                slug,
-                {
-                    "arguments": arguments,
-                    "connected_account_id": none_to_omit(connected_account_id),
-                    "custom_auth_params": none_to_omit(custom_auth_params),
-                    "custom_connection_data": none_to_omit(custom_connection_data),
-                    "user_id": none_to_omit(user_id),
-                    "text": none_to_omit(text),
-                    "version": none_to_omit(version),
-                },
+                tool_slug=slug,
+                arguments=arguments,
+                connected_account_id=none_to_omit(connected_account_id),
+                custom_auth_params=none_to_omit(custom_auth_params),
+                custom_connection_data=none_to_omit(custom_connection_data),
+                user_id=none_to_omit(user_id),
+                text=none_to_omit(text),
+                version=none_to_omit(version),
             ).model_dump(
                 exclude={
                     "log_id",
@@ -655,8 +641,8 @@ class Tools(Resource, t.Generic[TTool, TToolCollection]):
             tool = t.cast(
                 Tool,
                 self._client.tools.retrieve(
-                    slug,
-                    query={"toolkit_versions": none_to_omit(self._toolkit_versions)},
+                    tool_slug=slug,
+                    toolkit_versions=none_to_omit(self._toolkit_versions),
                 ),
             )
             self._tool_schemas[slug] = tool
@@ -759,18 +745,16 @@ class Tools(Resource, t.Generic[TTool, TToolCollection]):
         # Disable retries: a proxied call is a non-idempotent write, and a silent
         # retry after a read timeout can duplicate the side effect.
         return self._client.without_retries.tools.proxy(
-            {
-                "endpoint": endpoint,
-                "method": method,
-                "body": body if body is not None else OMIT,
-                "connected_account_id": connected_account_id
-                if connected_account_id is not None
-                else OMIT,
-                "parameters": parameters if parameters is not None else OMIT,
-                "custom_connection_data": custom_connection_data
-                if custom_connection_data is not None
-                else OMIT,
-            }
+            endpoint=endpoint,
+            method=method,
+            body=body if body is not None else omit,
+            connected_account_id=connected_account_id
+            if connected_account_id is not None
+            else omit,
+            parameters=parameters if parameters is not None else omit,
+            custom_connection_data=custom_connection_data
+            if custom_connection_data is not None
+            else omit,
         )
 
 

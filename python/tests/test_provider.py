@@ -301,7 +301,7 @@ class TestProviderExecuteToolFunctionality:
         assert result["successful"] is True
 
         call_args = mock_client.tools.execute.call_args
-        assert call_args.args[1]["user_id"] == "user-123"
+        assert call_args.kwargs["user_id"] == "user-123"
 
     def test_execute_tool_passes_modifiers(self):
         """Test that execute_tool correctly passes modifiers."""
@@ -344,7 +344,7 @@ class TestProviderExecuteToolFunctionality:
         assert result["successful"] is True
 
         call_args = mock_client.tools.execute.call_args
-        assert call_args.args[1]["arguments"]["modified"] is True
+        assert call_args.kwargs["arguments"]["modified"] is True
 
     def test_execute_tool_with_toolkit_versions(self):
         """Test that execute_tool uses configured toolkit versions."""
@@ -378,7 +378,7 @@ class TestProviderExecuteToolFunctionality:
         assert result["successful"] is True
 
         call_args = mock_client.tools.execute.call_args
-        assert call_args.args[1]["version"] == "12012025_00"
+        assert call_args.kwargs["version"] == "12012025_00"
 
 
 class TestNonAgenticProviderHelperMethods:
@@ -978,7 +978,7 @@ class TestProviderEdgeCases:
             assert result["successful"] is True
 
             call_args = mock_client.tools.execute.call_args
-            assert call_args.args[1]["version"] == version
+            assert call_args.kwargs["version"] == version
 
 
 class TestProviderIntegration:

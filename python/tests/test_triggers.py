@@ -11,10 +11,9 @@ from unittest.mock import Mock, patch
 
 import httpx
 import pytest
-from composio_client import NotFoundError
+from composio_client import NotFoundError, omit
 
 from composio import exceptions
-from composio.client.compat import OMIT
 from composio.core.models.triggers import (
     _MAX_LOGGED_FRAME_CHARS,
     ComposioSDKTimeoutError,
@@ -192,10 +191,10 @@ class TestTriggers:
 
         result = triggers.get_type("GITHUB_COMMIT_EVENT")
 
-        # When toolkit_versions is None, it should be converted to OMIT
-        call_args = mock_client.triggers_types.retrieve.call_args
-        assert call_args.args[0] == "GITHUB_COMMIT_EVENT"
-        assert call_args.kwargs["query"]["toolkit_versions"] is OMIT
+        # When toolkit_versions is None, it should be converted to omit
+        call_kwargs = mock_client.triggers_types.retrieve.call_args.kwargs
+        assert call_kwargs["slug"] == "GITHUB_COMMIT_EVENT"
+        assert call_kwargs["toolkit_versions"] is omit
         assert result == mock_trigger_type
 
     def test_get_type_with_custom_versions(
@@ -208,8 +207,8 @@ class TestTriggers:
         result = triggers_with_versions.get_type("GITHUB_COMMIT_EVENT")
 
         mock_client.triggers_types.retrieve.assert_called_once_with(
-            "GITHUB_COMMIT_EVENT",
-            query={"toolkit_versions": custom_versions},
+            slug="GITHUB_COMMIT_EVENT",
+            toolkit_versions=custom_versions,
         )
         assert result == mock_trigger_type
 
@@ -241,14 +240,14 @@ class TestTriggers:
         )
 
         mock_client.trigger_instances.list_active.assert_called_once()
-        call_query = mock_client.trigger_instances.list_active.call_args.kwargs["query"]
-        assert call_query["trigger_ids"] == ["trigger-1"]
-        assert call_query["trigger_names"] == ["GITHUB_COMMIT_EVENT"]
-        assert call_query["auth_config_ids"] == ["auth-123"]
-        assert call_query["connected_account_ids"] == ["conn-123"]
-        assert call_query["show_disabled"] is False
-        assert call_query["limit"] == 10
-        assert call_query["cursor"] == "cursor-abc"
+        call_kwargs = mock_client.trigger_instances.list_active.call_args.kwargs
+        assert call_kwargs["query_trigger_ids_1"] == ["trigger-1"]
+        assert call_kwargs["query_trigger_names_1"] == ["GITHUB_COMMIT_EVENT"]
+        assert call_kwargs["query_auth_config_ids_1"] == ["auth-123"]
+        assert call_kwargs["query_connected_account_ids_1"] == ["conn-123"]
+        assert call_kwargs["query_show_disabled_1"] is False
+        assert call_kwargs["limit"] == 10
+        assert call_kwargs["cursor"] == "cursor-abc"
         assert result == mock_trigger_instances
 
     def test_list_trigger_types_without_filters(self, triggers, mock_client):
@@ -274,11 +273,11 @@ class TestTriggers:
         )
 
         mock_client.triggers_types.list.assert_called_once()
-        call_query = mock_client.triggers_types.list.call_args.kwargs["query"]
-        assert call_query["cursor"] == "cursor-123"
-        assert call_query["limit"] == 10
-        assert call_query["toolkit_slugs"] == ["github", "slack"]
-        assert call_query["toolkit_versions"] == custom_versions
+        call_kwargs = mock_client.triggers_types.list.call_args.kwargs
+        assert call_kwargs["cursor"] == "cursor-123"
+        assert call_kwargs["limit"] == 10
+        assert call_kwargs["toolkit_slugs"] == ["github", "slack"]
+        assert call_kwargs["toolkit_versions"] == custom_versions
         assert result == mock_response
 
     def test_create_with_connected_account_id(self, triggers, mock_client):
@@ -296,14 +295,15 @@ class TestTriggers:
         # No extra lookup when an explicit connection is pinned.
         mock_client.connected_accounts.list.assert_not_called()
         mock_client.trigger_instances.upsert.assert_called_once()
-        call_args = mock_client.trigger_instances.upsert.call_args
-        assert call_args.args[0] == "GITHUB_COMMIT_EVENT"
-        body = call_args.args[1]
-        assert body["connected_account_id"] == "conn-123"
-        assert body["trigger_config"] == {"webhook_url": "https://example.com/webhook"}
-        assert body["toolkit_versions"] is None
-        # No user_id supplied → omitted from the request (native body field, not extra_body).
-        assert body["user_id"] is OMIT
+        call_kwargs = mock_client.trigger_instances.upsert.call_args.kwargs
+        assert call_kwargs["slug"] == "GITHUB_COMMIT_EVENT"
+        assert call_kwargs["connected_account_id"] == "conn-123"
+        assert call_kwargs["body_trigger_config_1"] == {
+            "webhook_url": "https://example.com/webhook"
+        }
+        assert call_kwargs["toolkit_versions"] is None
+        # No user_id supplied → omitted from the request (native kwarg, not extra_body).
+        assert call_kwargs["user_id"] is omit
         assert result == mock_response
 
     def test_create_with_user_id(self, triggers, mock_client):
@@ -328,14 +328,15 @@ class TestTriggers:
         mock_client.triggers_types.retrieve.assert_called_once()
 
         mock_client.trigger_instances.upsert.assert_called_once()
-        call_args = mock_client.trigger_instances.upsert.call_args
-        assert call_args.args[0] == "GITHUB_COMMIT_EVENT"
-        body = call_args.args[1]
-        # No explicit connection pinned → omitted; user_id is sent as a native body field.
-        assert body["connected_account_id"] is OMIT
-        assert body["user_id"] == "user-123"
-        assert body["trigger_config"] == {"webhook_url": "https://example.com/webhook"}
-        assert body["toolkit_versions"] is None
+        call_kwargs = mock_client.trigger_instances.upsert.call_args.kwargs
+        assert call_kwargs["slug"] == "GITHUB_COMMIT_EVENT"
+        # No explicit connection pinned → omitted; user_id is sent as a native kwarg.
+        assert call_kwargs["connected_account_id"] is omit
+        assert call_kwargs["user_id"] == "user-123"
+        assert call_kwargs["body_trigger_config_1"] == {
+            "webhook_url": "https://example.com/webhook"
+        }
+        assert call_kwargs["toolkit_versions"] is None
         assert result == mock_response
 
     def test_create_with_user_id_and_connected_account_id(self, triggers, mock_client):
@@ -358,12 +359,13 @@ class TestTriggers:
 
         mock_client.connected_accounts.list.assert_not_called()
         mock_client.trigger_instances.upsert.assert_called_once()
-        call_args = mock_client.trigger_instances.upsert.call_args
-        assert call_args.args[0] == "GITHUB_COMMIT_EVENT"
-        body = call_args.args[1]
-        assert body["connected_account_id"] == "conn-123"
-        assert body["user_id"] == "user-123"
-        assert body["trigger_config"] == {"webhook_url": "https://example.com/webhook"}
+        call_kwargs = mock_client.trigger_instances.upsert.call_args.kwargs
+        assert call_kwargs["slug"] == "GITHUB_COMMIT_EVENT"
+        assert call_kwargs["connected_account_id"] == "conn-123"
+        assert call_kwargs["user_id"] == "user-123"
+        assert call_kwargs["body_trigger_config_1"] == {
+            "webhook_url": "https://example.com/webhook"
+        }
         assert result == mock_response
 
     def test_create_raises_trigger_type_not_found_for_unknown_slug(
@@ -405,12 +407,13 @@ class TestTriggers:
         )
 
         mock_client.trigger_instances.upsert.assert_called_once()
-        call_args = mock_client.trigger_instances.upsert.call_args
-        assert call_args.args[0] == "GITHUB_COMMIT_EVENT"
-        body = call_args.args[1]
-        assert body["connected_account_id"] == "conn-123"
-        assert body["trigger_config"] == {"webhook_url": "https://example.com/webhook"}
-        assert body["toolkit_versions"] == custom_versions
+        call_kwargs = mock_client.trigger_instances.upsert.call_args.kwargs
+        assert call_kwargs["slug"] == "GITHUB_COMMIT_EVENT"
+        assert call_kwargs["connected_account_id"] == "conn-123"
+        assert call_kwargs["body_trigger_config_1"] == {
+            "webhook_url": "https://example.com/webhook"
+        }
+        assert call_kwargs["toolkit_versions"] == custom_versions
         assert result == mock_response
 
     def test_create_without_user_id_or_connected_account_raises_error(
@@ -435,7 +438,8 @@ class TestTriggers:
         result = triggers.enable(trigger_id="trigger-123")
 
         mock_client.trigger_instances.manage.update.assert_called_once_with(
-            "trigger-123", {"status": "enable"}
+            trigger_id="trigger-123",
+            status="enable",
         )
         assert result == mock_response
 
@@ -447,7 +451,8 @@ class TestTriggers:
         result = triggers.disable(trigger_id="trigger-123")
 
         mock_client.trigger_instances.manage.update.assert_called_once_with(
-            "trigger-123", {"status": "disable"}
+            trigger_id="trigger-123",
+            status="disable",
         )
         assert result == mock_response
 
@@ -459,7 +464,7 @@ class TestTriggers:
         result = triggers.delete(trigger_id="trigger-123")
 
         mock_client.trigger_instances.manage.delete.assert_called_once_with(
-            "trigger-123"
+            trigger_id="trigger-123"
         )
         assert result == mock_response
 

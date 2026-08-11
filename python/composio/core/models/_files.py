@@ -11,9 +11,8 @@ import datetime
 
 import requests
 import typing_extensions as te
+from composio_client import BaseModel as _ComposioBaseModel
 from pydantic import BaseModel, ConfigDict, Field
-
-from composio.client.compat import ClientBaseModel as _ComposioBaseModel
 
 from composio.client import HttpClient
 from composio.client.types import Tool

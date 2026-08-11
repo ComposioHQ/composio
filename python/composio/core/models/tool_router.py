@@ -12,16 +12,16 @@ from dataclasses import dataclass
 from enum import Enum
 
 import typing_extensions as te
+from composio_client import omit
+from composio_client.types.tool_router import session_create_params
+from composio_client.types.tool_router.session_attach_response import (
+    SessionAttachResponse,
+)
+from composio_client.types.tool_router.session_retrieve_response import (
+    SessionRetrieveResponse,
+)
 
 from composio.client import HttpClient
-from composio.client.compat import OMIT as omit
-from composio.client.types import session_create_params
-from composio.client.types import (
-    session_attach_response as _session_attach_response,
-)
-from composio.client.types import (
-    session_retrieve_response as _session_retrieve_response,
-)
 from composio.core.models.base import Resource
 from composio.core.models.custom_tool import (
     ExperimentalToolkit,
@@ -57,9 +57,6 @@ from composio.core.models.tool_router_session_files import ToolRouterSessionFile
 from composio.core.provider import TTool, TToolCollection
 from composio.core.provider.base import BaseProvider
 from composio.exceptions import InvalidParams
-
-SessionAttachResponse = _session_attach_response.SessionAttachResponse
-SessionRetrieveResponse = _session_retrieve_response.SessionRetrieveResponse
 
 # Type alias for MCP tag literals
 ToolRouterTag = t.Literal[
@@ -1081,7 +1078,7 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
             )
 
         # Make API call to create session
-        session = self._client.tool_router.session.create(create_params)
+        session = self._client.tool_router.session.create(**create_params)
 
         # Build custom tools routing map from backend response
         custom_tools_map: t.Optional[CustomToolsMap] = None
@@ -1216,11 +1213,9 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
         if has_customs:
             session = self._client.tool_router.session.attach(
                 session_id,
-                {
-                    "experimental": inline_custom_tools_attach_experimental(
-                        attach_inline_custom_tools_payload
-                    ),
-                },
+                experimental=inline_custom_tools_attach_experimental(
+                    attach_inline_custom_tools_payload
+                ),
             )
         else:
             session = self._client.tool_router.session.retrieve(session_id)

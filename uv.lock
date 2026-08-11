@@ -744,7 +744,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "composio-client", specifier = ">=1.43.0,<3" },
+    { name = "composio-client", specifier = "==1.43.0" },
     { name = "json-schema-to-pydantic", specifier = ">=0.4.11" },
     { name = "openai", specifier = ">=2.48.0" },
     { name = "pydantic", specifier = ">=2.11.9" },

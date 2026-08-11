@@ -1,10 +1,5 @@
 """
-This module is a facade over the auto-generated composio client.
-
-It works with either supported generation of the generated client package —
-the Stainless ``composio-client`` 1.x line (v1) or the self-managed 2.x line
-(v2) — presenting one internal call convention to the rest of the SDK (see
-:mod:`composio.client.compat`).
+This module is a light wrapper around the auto-generated composio client.
 """
 
 import contextvars
@@ -15,43 +10,20 @@ from importlib.metadata import version
 from uuid import uuid4
 
 import typing_extensions as te
-from httpx import Client, Request
+from composio_client import (
+    DEFAULT_MAX_RETRIES,
+    NOT_GIVEN,
+    APIError,
+    NotGiven,
+    _base_client,
+)
+from composio_client import Composio as BaseComposio
+from httpx import URL, Client, Request, Timeout
 
-from composio.client import compat
-from composio.client.compat import OMIT, ResourceProxy
 from composio.utils.logging import WithLogger
-
-if compat.IS_V2:
-    from composio_client import APIError
-    from composio_client import Composio as _GeneratedComposio
-    from composio_client._base_client import DEFAULT_MAX_RETRIES
-else:
-    from composio_client import (
-        DEFAULT_MAX_RETRIES,
-        NOT_GIVEN,
-        APIError,
-        _base_client,
-    )
-    from composio_client import Composio as _GeneratedComposio
 
 ComposioAPIError = APIError
 APIEnvironment = te.Literal["production", "staging", "local"]
-
-#: Default sentinel for optional constructor arguments ("not given").
-_UNSET = OMIT
-
-
-def _is_given(value: t.Any) -> bool:
-    """True when a constructor argument was explicitly provided.
-
-    ``None`` and the OMIT sentinel count as "not given"; under v1 the
-    Stainless ``NOT_GIVEN`` sentinel does too.
-    """
-    if value is None or isinstance(value, compat.OmitType):
-        return False
-    if not compat.IS_V2 and value is NOT_GIVEN:
-        return False
-    return True
 
 
 def _get_python_implementation() -> str:
@@ -146,76 +118,33 @@ class RequestContext(te.TypedDict):
     provider: str
 
 
-def _sdk_version() -> str:
-    try:
-        return version("composio")
-    except Exception:
-        return "unknown"
-
-
-_RUNTIME_ENV = f"{_detect_runtime_environment()}_{_get_python_implementation()}"
-
-
-class _RequestContextHook:
-    """Inject dynamic telemetry without duplicating hooks on shared clients."""
-
-    def __init__(self, request_ctx: contextvars.ContextVar[RequestContext]) -> None:
-        self.request_ctx = request_ctx
-
-    def __call__(self, request: Request) -> None:
-        ctx = self.request_ctx.get()
-        request.headers["x-request-id"] = ctx.get("id") or uuid4().hex
-        request.headers["x-framework"] = ctx["provider"]
-
-
-if not compat.IS_V2:
-
-    class _StainlessBackend(_GeneratedComposio):  # type: ignore[misc, valid-type]
-        """Internal v1 backend: the Stainless client + telemetry interceptor."""
-
-        _request_ctx_ref: contextvars.ContextVar[RequestContext]
-
-        def _prepare_request(self, request: Request) -> None:
-            """
-            Request interceptor to inject request id, provider, and SDK version.
-            """
-            ctx = self._request_ctx_ref.get()
-            request.headers["x-request-id"] = ctx.get("id") or uuid4().hex
-            request.headers["x-framework"] = ctx["provider"]
-            request.headers["x-source"] = "PYTHON_SDK"
-            request.headers["x-runtime"] = _RUNTIME_ENV
-            request.headers["x-sdk-version"] = _sdk_version()
-
-
-class HttpClient(WithLogger):
+# TODO: Rename `Composio` to `HttpClient` in stainless generator
+class HttpClient(BaseComposio, WithLogger):
     """
-    Facade over the auto-generated composio client.
-
-    Presents one internal call convention (see :mod:`composio.client.compat`)
-    to the SDK regardless of which generated-client generation is installed,
-    and injects the SDK telemetry headers on every request.
+    Wrapper around the auto-generated composio client.
     """
 
     request_ctx: contextvars.ContextVar[RequestContext]
-    not_given = OMIT
+    not_given = NOT_GIVEN
 
     # Detect once at class initialization
-    _runtime_env: str = _RUNTIME_ENV
+    _runtime_env: str = (
+        f"{_detect_runtime_environment()}_{_get_python_implementation()}"
+    )
 
     def __init__(
         self,
         *,
         provider: str,
         api_key: t.Optional[str] = None,
-        environment: t.Any = "production",
-        base_url: t.Any = _UNSET,
-        timeout: t.Any = _UNSET,
+        environment: te.Union[NotGiven, APIEnvironment] = "production",
+        base_url: t.Optional[t.Union[str, URL, NotGiven]] = NOT_GIVEN,
+        timeout: t.Optional[t.Union[float, Timeout, NotGiven]] = NOT_GIVEN,
         max_retries: int = DEFAULT_MAX_RETRIES,
         default_headers: t.Optional[t.Mapping[str, str]] = None,
         default_query: t.Optional[t.Mapping[str, object]] = None,
         http_client: t.Optional[Client] = None,
         _strict_response_validation: bool = False,
-        _request_ctx: t.Optional[contextvars.ContextVar[RequestContext]] = None,
     ) -> None:
         """
         Initialize the client.
@@ -231,302 +160,66 @@ class HttpClient(WithLogger):
         :param http_client: The HTTP client to use for the client.
         """
         WithLogger.__init__(self)
-        self.provider = provider
-        self.request_ctx = _request_ctx or contextvars.ContextVar[RequestContext](
-            "request_ctx", default={"id": None, "provider": provider}
-        )
-        self._strict_response_validation = _strict_response_validation
-        # Remember the constructor arguments so sibling facades
-        # (``with_options`` / ``without_retries``) can be rebuilt from them.
-        self._ctor_kwargs: t.Dict[str, t.Any] = {
-            "provider": provider,
-            "api_key": api_key,
-            "environment": environment,
-            "base_url": base_url,
-            "timeout": timeout,
-            "max_retries": max_retries,
-            "default_headers": default_headers,
-            "default_query": default_query,
-            "http_client": http_client,
-            "_strict_response_validation": _strict_response_validation,
-        }
-
-        if compat.IS_V2:
-            self._backend, http_client = self._build_v2_backend(
-                api_key=api_key,
-                environment=environment,
-                base_url=base_url,
-                timeout=timeout,
-                max_retries=max_retries,
-                default_headers=default_headers,
-                default_query=default_query,
-                http_client=http_client,
-            )
-        else:
-            self._backend = self._build_v1_backend(
-                api_key=api_key,
-                environment=environment,
-                base_url=base_url,
-                timeout=timeout,
-                max_retries=max_retries,
-                default_headers=default_headers,
-                default_query=default_query,
-                http_client=http_client,
-                _strict_response_validation=_strict_response_validation,
-            )
-
-        # Clones share the request context and resolved transport. This keeps
-        # telemetry consistent and avoids opening a second connection pool.
-        self._ctor_kwargs["http_client"] = http_client
-        self._ctor_kwargs["_request_ctx"] = self.request_ctx
-
-        # Lazily-built sibling facade with retries disabled; see `without_retries`.
-        self._without_retries: t.Optional["HttpClient"] = None
-
-    # -- backend construction ----------------------------------------------
-
-    def _build_v1_backend(
-        self,
-        *,
-        api_key: t.Optional[str],
-        environment: t.Any,
-        base_url: t.Any,
-        timeout: t.Any,
-        max_retries: int,
-        default_headers: t.Optional[t.Mapping[str, str]],
-        default_query: t.Optional[t.Mapping[str, object]],
-        http_client: t.Optional[Client],
-        _strict_response_validation: bool,
-    ) -> t.Any:
-        backend = _StainlessBackend(
+        BaseComposio.__init__(
+            self,
             api_key=api_key,
-            environment=environment if _is_given(environment) else NOT_GIVEN,
-            base_url=base_url if _is_given(base_url) else NOT_GIVEN,
-            timeout=timeout if not isinstance(timeout, compat.OmitType) else NOT_GIVEN,
+            environment=environment,
+            base_url=base_url,
+            timeout=timeout,
             max_retries=max_retries,
             default_headers=default_headers,
             default_query=default_query,
             http_client=http_client,
             _strict_response_validation=_strict_response_validation,
         )
-        backend._request_ctx_ref = self.request_ctx
         # TOFIX: Verbosity wrapper impl
         _base_client.log = self._logger  # type: ignore
-        return backend
+        self.provider = provider
+        self.request_ctx = contextvars.ContextVar[RequestContext](
+            "request_ctx",
+            default={
+                "id": None,
+                "provider": provider,
+            },
+        )
+        # Lazily-built sibling client with retries disabled; see `without_retries`.
+        self._without_retries: t.Optional[te.Self] = None
 
-    def _build_v2_backend(
+    def copy(  # type: ignore[override]
         self,
         *,
-        api_key: t.Optional[str],
-        environment: t.Any,
-        base_url: t.Any,
-        timeout: t.Any,
-        max_retries: int,
-        default_headers: t.Optional[t.Mapping[str, str]],
-        default_query: t.Optional[t.Mapping[str, object]],
-        http_client: t.Optional[Client],
-    ) -> t.Tuple[t.Any, Client]:
-        # Static telemetry headers ride on every request as client defaults;
-        # the per-request ``x-request-id`` is injected via an httpx request
-        # event hook (the v2 client has no ``_prepare_request`` seam).
-        headers: t.Dict[str, str] = {
-            "x-framework": self.provider,
-            "x-source": "PYTHON_SDK",
-            "x-runtime": _RUNTIME_ENV,
-            "x-sdk-version": _sdk_version(),
-        }
-        if default_headers:
-            headers.update(default_headers)
-
-        if http_client is None:
-            http_client = Client(
-                event_hooks={"request": [_RequestContextHook(self.request_ctx)]}
-            )
-        else:
-            event_hooks = http_client.event_hooks
-            request_hooks = event_hooks.setdefault("request", [])
-            if not any(
-                isinstance(hook, _RequestContextHook)
-                and hook.request_ctx is self.request_ctx
-                for hook in request_hooks
-            ):
-                request_hooks.append(_RequestContextHook(self.request_ctx))
-                # httpx copies the hook mapping on property access; write it back.
-                http_client.event_hooks = event_hooks
-
-        resolved_base_url = str(base_url) if _is_given(base_url) else None
-        resolved_environment: t.Optional[str]
-        if resolved_base_url is not None:
-            # Mirror v1 semantics: an explicit base_url wins over the
-            # (defaulted) environment literal.
-            resolved_environment = None
-        else:
-            resolved_environment = str(environment) if _is_given(environment) else None
-
-        # Typed as Any: static checkers resolve ``composio_client`` against the
-        # v1 package, whose constructor signature differs from the v2 one used
-        # at runtime in this branch.
-        client_cls: t.Any = _GeneratedComposio
-        return (
-            client_cls(
-                api_key=api_key,
-                environment=resolved_environment,
-                base_url=resolved_base_url,
-                timeout=timeout if _is_given(timeout) else None,
-                max_retries=max_retries,
-                default_headers=headers,
-                default_query=default_query,
-                http_client=http_client,
-            ),
-            http_client,
-        )
-
-    # -- generated-resource access ------------------------------------------
-
-    def __getattr__(self, name: str) -> t.Any:
-        # Only called for attributes not found on the facade itself: treat
-        # them as generated-client resource accessors.
-        backend = self.__dict__.get("_backend")
-        if name.startswith("_") or backend is None:
-            raise AttributeError(name)
-        return ResourceProxy(backend, (name,))
-
-    # -- raw verb methods ---------------------------------------------------
-
-    def get(
-        self,
-        path: str,
-        *,
-        cast_to: t.Any,
-        options: t.Optional[t.Mapping[str, t.Any]] = None,
-    ) -> t.Any:
-        if not compat.IS_V2:
-            return self._backend.get(path, cast_to=cast_to, options=dict(options or {}))
-        return compat._unwrap_root(
-            self._backend.get(
-                path,
-                cast_to=_v2_cast_to(cast_to),
-                query=(options or {}).get("params"),
-                headers=(options or {}).get("headers"),
-            )
-        )
-
-    def post(
-        self,
-        path: str,
-        *,
-        cast_to: t.Any,
-        body: t.Optional[t.Any] = None,
-        options: t.Optional[t.Mapping[str, t.Any]] = None,
-    ) -> t.Any:
-        if not compat.IS_V2:
-            return self._backend.post(
-                path, cast_to=cast_to, body=body, options=dict(options or {})
-            )
-        return compat._unwrap_root(
-            self._backend.post(
-                path,
-                cast_to=_v2_cast_to(cast_to),
-                body=body,
-                query=(options or {}).get("params"),
-                headers=(options or {}).get("headers"),
-            )
-        )
-
-    def patch(
-        self,
-        path: str,
-        *,
-        cast_to: t.Any,
-        body: t.Optional[t.Any] = None,
-        options: t.Optional[t.Mapping[str, t.Any]] = None,
-    ) -> t.Any:
-        if not compat.IS_V2:
-            return self._backend.patch(
-                path, cast_to=cast_to, body=body, options=dict(options or {})
-            )
-        return compat._unwrap_root(
-            self._backend.patch(
-                path,
-                cast_to=_v2_cast_to(cast_to),
-                body=body,
-                query=(options or {}).get("params"),
-                headers=(options or {}).get("headers"),
-            )
-        )
-
-    def put(
-        self,
-        path: str,
-        *,
-        cast_to: t.Any,
-        body: t.Optional[t.Any] = None,
-        options: t.Optional[t.Mapping[str, t.Any]] = None,
-    ) -> t.Any:
-        if not compat.IS_V2:
-            return self._backend.put(
-                path, cast_to=cast_to, body=body, options=dict(options or {})
-            )
-        return compat._unwrap_root(
-            self._backend.put(
-                path,
-                cast_to=_v2_cast_to(cast_to),
-                body=body,
-                query=(options or {}).get("params"),
-                headers=(options or {}).get("headers"),
-            )
-        )
-
-    def delete(
-        self,
-        path: str,
-        *,
-        cast_to: t.Any,
-        body: t.Optional[t.Any] = None,
-        options: t.Optional[t.Mapping[str, t.Any]] = None,
-    ) -> t.Any:
-        if not compat.IS_V2:
-            return self._backend.delete(
-                path, cast_to=cast_to, body=body, options=dict(options or {})
-            )
-        return compat._unwrap_root(
-            self._backend.delete(
-                path,
-                cast_to=_v2_cast_to(cast_to),
-                body=body,
-                query=(options or {}).get("params"),
-                headers=(options or {}).get("headers"),
-            )
-        )
-
-    # -- facade plumbing ----------------------------------------------------
-
-    @property
-    def api_key(self) -> t.Any:
-        return self._backend.api_key
-
-    @property
-    def base_url(self) -> t.Any:
-        return self._backend.base_url
-
-    @property
-    def max_retries(self) -> int:
-        return self._backend.max_retries
-
-    def copy(self, **kwargs: t.Any) -> "HttpClient":
+        _extra_kwargs: t.Mapping[str, t.Any] = {},
+        **kwargs: t.Any,
+    ) -> te.Self:
         """
-        Build a sibling facade with some constructor options overridden
-        (e.g. ``with_options(max_retries=0)``). Both backends are rebuilt from
-        the remembered constructor arguments; the underlying ``http_client``
-        (and thus transport) is shared with the parent when one was provided.
-        """
-        merged = {**self._ctor_kwargs, **kwargs}
-        return type(self)(**merged)
+        Clone the client, re-injecting the required ``provider`` keyword.
 
+        The Stainless-generated ``copy`` rebuilds the client via
+        ``self.__class__(...)`` without passing ``provider``, which this subclass
+        requires — so the inherited ``copy``/``with_options`` raise ``TypeError``.
+        Threading ``provider`` through ``_extra_kwargs`` makes them work again
+        (e.g. ``with_options(max_retries=0)``).
+        """
+        return super().copy(  # type: ignore[misc]
+            _extra_kwargs={
+                "provider": self.provider,
+                # The generated `copy` does not re-pass `_strict_response_validation`,
+                # so without this the clone would silently fall back to the default
+                # (False) even when the original had it enabled — keeping the sibling
+                # a faithful copy that differs from the parent only in `max_retries`.
+                "_strict_response_validation": self._strict_response_validation,
+                **_extra_kwargs,
+            },
+            **kwargs,
+        )
+
+    # Re-alias `with_options` to this override. The base class binds
+    # `with_options = copy` at class-definition time, so without this it would
+    # still resolve to the base `copy` and miss the `provider` re-injection.
     with_options = copy
 
     @property
-    def without_retries(self) -> "HttpClient":
+    def without_retries(self) -> te.Self:
         """
         A cached sibling client that never retries requests.
 
@@ -549,19 +242,17 @@ class HttpClient(WithLogger):
             self._without_retries = self.with_options(max_retries=0)
         return self._without_retries
 
+    def _prepare_request(self, request: Request) -> None:
+        """
+        Request interceptor to inject request id, provider, and SDK version.
+        """
+        ctx = self.request_ctx.get()
+        request.headers["x-request-id"] = ctx.get("id") or uuid4().hex
+        request.headers["x-framework"] = ctx["provider"]
+        request.headers["x-source"] = "PYTHON_SDK"
+        request.headers["x-runtime"] = HttpClient._runtime_env
 
-def _v2_cast_to(cast_to: t.Any) -> t.Any:
-    """Translate a raw-verb ``cast_to`` for the v2 backend.
-
-    The v2 client validates typed responses via ``cast_to.model_validate``; for
-    untyped targets (``object``, ``t.Dict[...]``) pass ``cast_to=None`` so the
-    decoded JSON is returned as-is (matching the v1 behaviour at our call
-    sites).
-    """
-    import inspect
-
-    import pydantic
-
-    if inspect.isclass(cast_to) and issubclass(cast_to, pydantic.BaseModel):
-        return cast_to
-    return None
+        try:
+            request.headers["x-sdk-version"] = version("composio")
+        except Exception:
+            request.headers["x-sdk-version"] = "unknown"

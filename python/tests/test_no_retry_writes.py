@@ -13,9 +13,10 @@ from unittest.mock import Mock, patch
 
 import httpx
 import pytest
-from composio_client import APIError
+from composio_client import DEFAULT_MAX_RETRIES, APIError
+from composio_client import Composio as BaseComposio
 
-from composio.client import DEFAULT_MAX_RETRIES, HttpClient, compat
+from composio.client import HttpClient
 from composio.core.models.base import allow_tracking
 from composio.core.models.tools import Tools
 
@@ -70,7 +71,6 @@ class TestCopyOverride:
         assert clone.max_retries == 0
         assert clone.provider == "myprovider"
         assert clone.request_ctx.get()["provider"] == "myprovider"
-        assert clone.request_ctx is client.request_ctx
         # The original client keeps its retries.
         assert client.max_retries == DEFAULT_MAX_RETRIES
 
@@ -99,64 +99,23 @@ class TestCopyOverride:
 
         assert client.without_retries._strict_response_validation is True
 
-    @pytest.mark.skipif(not compat.IS_V2, reason="v2 transport contract")
-    def test_v2_clone_reuses_implicit_transport(self) -> None:
-        client = HttpClient(
-            provider="test",
-            api_key="sk-test",
-            base_url="https://backend.invalid",
-        )
-        transport = client._ctor_kwargs["http_client"]
 
-        clone = client.without_retries
+class TestStainlessCopyContract:
+    """Pin the generated-client internals the ``copy()`` override depends on.
 
-        assert transport is not None
-        assert clone._ctor_kwargs["http_client"] is transport
-
-    @pytest.mark.skipif(not compat.IS_V2, reason="v2 transport contract")
-    def test_v2_clone_reuses_transport_without_duplicate_hook(self) -> None:
-        transport = httpx.Client(
-            transport=httpx.MockTransport(lambda _: httpx.Response(200))
-        )
-        client = HttpClient(
-            provider="test",
-            api_key="sk-test",
-            base_url="https://backend.invalid",
-            http_client=transport,
-        )
-        request_hooks = list(transport.event_hooks["request"])
-
-        clone = client.without_retries
-
-        assert clone._ctor_kwargs["http_client"] is transport
-        assert transport.event_hooks["request"] == request_hooks
-
-
-class TestFacadeCopyContract:
-    """Pin the facade ``copy()``/``with_options`` contract.
-
-    The facade rebuilds a sibling client from its remembered constructor
-    arguments, so a regression here fails as an obvious assertion rather than
-    a cryptic ``TypeError`` raised deep inside ``with_options`` at runtime.
+    These guard the contract so a ``composio_client`` regen that breaks it fails
+    as an obvious assertion here rather than a cryptic ``TypeError`` raised deep
+    inside ``with_options`` at runtime.
     """
 
-    def test_copy_accepts_constructor_overrides(self) -> None:
-        # `with_options` merges overrides into the remembered constructor
-        # kwargs; every constructor parameter must be a valid override.
-        params = inspect.signature(HttpClient.__init__).parameters
-        assert "max_retries" in params
-        client = HttpClient(
-            provider="test",
-            api_key="sk-test",
-            base_url="https://backend.invalid",
-        )
-        clone = client.copy(max_retries=0)
-        assert clone is not client
-        assert clone.max_retries == 0
-        assert clone.api_key == client.api_key
+    def test_base_copy_accepts_extra_kwargs(self) -> None:
+        # The override threads `provider` (and `_strict_response_validation`)
+        # through `_extra_kwargs`; the base `copy` must still accept it.
+        assert "_extra_kwargs" in inspect.signature(BaseComposio.copy).parameters
 
     def test_with_options_is_aliased_to_our_copy_override(self) -> None:
-        # `with_options` must stay an alias of `copy` on the facade.
+        # The base binds `with_options = copy` at class-definition time, so the
+        # subclass must re-alias it to the override that re-injects `provider`.
         # (Accessing these bound methods via the generic class trips mypy's
         # "generic instance variable via class" check; the identity assert is
         # intentional.)

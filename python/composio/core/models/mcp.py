@@ -9,14 +9,12 @@ from __future__ import annotations
 import typing as t
 
 import typing_extensions as te
+from composio_client.types.mcp.custom_create_response import CustomCreateResponse
 
 from composio.client import HttpClient
-from composio.client.types import custom_create_response as _custom_create_response
 from composio.core.models.base import Resource
 from composio.exceptions import ValidationError
 from composio.utils.pydantic import none_to_omit
-
-CustomCreateResponse = _custom_create_response.CustomCreateResponse
 
 # Data Types (matching TypeScript specification)
 
@@ -220,13 +218,11 @@ class MCP(Resource):
 
             # Use the custom MCP create endpoint
             response = self._client.mcp.custom.create(
-                {
-                    "name": name,
-                    "toolkits": toolkit_names,
-                    "auth_config_ids": auth_config_ids,
-                    "custom_tools": custom_tools,
-                    "managed_auth_via_composio": not manually_manage_connections,
-                }
+                name=name,
+                toolkits=toolkit_names,
+                auth_config_ids=auth_config_ids,
+                custom_tools=custom_tools,
+                managed_auth_via_composio=not manually_manage_connections,
             )
 
             # Return response with generate method (matching TypeScript behavior)
@@ -271,15 +267,13 @@ class MCP(Resource):
         try:
             # Use the MCP list endpoint with filters
             response = self._client.mcp.list(
-                query={
-                    "page_no": page_no,
-                    "limit": limit,
-                    "toolkits": none_to_omit(toolkits),
-                    "auth_config_ids": none_to_omit(auth_config_ids),
-                    "name": none_to_omit(name),
-                    "order_by": none_to_omit(order_by),
-                    "order_direction": none_to_omit(order_direction),
-                },
+                page_no=page_no,
+                limit=limit,
+                toolkits=none_to_omit(toolkits),
+                auth_config_ids=none_to_omit(auth_config_ids),
+                name=none_to_omit(name),
+                order_by=none_to_omit(order_by),
+                order_direction=none_to_omit(order_direction),
             )
 
             items = (
@@ -409,7 +403,7 @@ class MCP(Resource):
                 ] = not manually_manage_connections
 
             # Use the MCP update endpoint
-            response = self._client.mcp.update(server_id, update_params)
+            response = self._client.mcp.update(server_id, **update_params)
 
             return response
 
@@ -476,13 +470,9 @@ class MCP(Resource):
 
             # Generate server URLs (matching TS: this.client.mcp.generate.url)
             url_response = self._client.mcp.generate.url(
-                {
-                    "mcp_server_id": mcp_config_id,
-                    "user_ids": [user_id],
-                    "managed_auth_by_composio": False
-                    if manually_manage_connections
-                    else True,
-                }
+                mcp_server_id=mcp_config_id,
+                user_ids=[user_id],
+                managed_auth_by_composio=False if manually_manage_connections else True,
             )
 
             # Get the generated URL (matching TS: urlResponse.user_ids_url[0])

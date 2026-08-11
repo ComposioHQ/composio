@@ -5,10 +5,10 @@ from unittest.mock import MagicMock, patch
 
 import httpx
 import pytest
+from composio_client import omit
 from pydantic import BaseModel, Field
 
 from composio.client import HttpClient
-from composio.client.compat import OMIT
 from composio.core.models.experimental import ExperimentalAPI
 from composio.core.models.tool_router import (
     SESSION_PRESET_DIRECT_TOOLS,
@@ -249,9 +249,9 @@ class TestToolRouter:
         # Verify the API was called with correct parameters
         call_args = mock_client.tool_router.session.create.call_args
         assert call_args is not None
-        body = call_args.args[0]
-        assert "toolkits" in body
-        assert body["toolkits"] == {"enable": ["github", "slack"]}
+        kwargs = call_args.kwargs
+        assert "toolkits" in kwargs
+        assert kwargs["toolkits"] == {"enable": ["github", "slack"]}
 
     def test_create_session_with_disable_toolkits(self, tool_router, mock_client):
         """Test creating a session with disable toolkits."""
@@ -263,8 +263,8 @@ class TestToolRouter:
 
         # Verify the API was called with correct parameters
         call_args = mock_client.tool_router.session.create.call_args
-        body = call_args.args[0]
-        assert body["toolkits"] == {"disable": ["linear", "notion"]}
+        kwargs = call_args.kwargs
+        assert kwargs["toolkits"] == {"disable": ["linear", "notion"]}
 
     def test_create_session_with_tools_config(self, tool_router, mock_client):
         """Test creating a session with per-toolkit tool configuration."""
@@ -280,13 +280,13 @@ class TestToolRouter:
 
         # Verify the API was called with tools config
         call_args = mock_client.tool_router.session.create.call_args
-        body = call_args.args[0]
-        assert "tools" in body
-        assert "gmail" in body["tools"]
-        assert body["tools"]["gmail"] == {
+        kwargs = call_args.kwargs
+        assert "tools" in kwargs
+        assert "gmail" in kwargs["tools"]
+        assert kwargs["tools"]["gmail"] == {
             "enable": ["GMAIL_SEND_EMAIL", "GMAIL_SEARCH"]
         }
-        assert body["tools"]["github"] == {"enable": ["GITHUB_CREATE_ISSUE"]}
+        assert kwargs["tools"]["github"] == {"enable": ["GITHUB_CREATE_ISSUE"]}
 
     def test_create_session_with_global_tags(self, tool_router, mock_client):
         """Test creating a session with global tag filtering (array format)."""
@@ -298,9 +298,9 @@ class TestToolRouter:
 
         # Verify the API was called with tags transformed to enable format
         call_args = mock_client.tool_router.session.create.call_args
-        body = call_args.args[0]
-        assert "tags" in body
-        assert body["tags"] == {"enable": ["readOnlyHint", "idempotentHint"]}
+        kwargs = call_args.kwargs
+        assert "tags" in kwargs
+        assert kwargs["tags"] == {"enable": ["readOnlyHint", "idempotentHint"]}
 
     def test_create_session_with_global_tags_object_enable(
         self, tool_router, mock_client
@@ -313,9 +313,9 @@ class TestToolRouter:
         assert session.session_id == "session_123"
 
         call_args = mock_client.tool_router.session.create.call_args
-        body = call_args.args[0]
-        assert "tags" in body
-        assert body["tags"] == {"enable": ["readOnlyHint", "idempotentHint"]}
+        kwargs = call_args.kwargs
+        assert "tags" in kwargs
+        assert kwargs["tags"] == {"enable": ["readOnlyHint", "idempotentHint"]}
 
     def test_create_session_with_global_tags_object_disable(
         self, tool_router, mock_client
@@ -328,9 +328,9 @@ class TestToolRouter:
         assert session.session_id == "session_123"
 
         call_args = mock_client.tool_router.session.create.call_args
-        body = call_args.args[0]
-        assert "tags" in body
-        assert body["tags"] == {"disable": ["destructiveHint"]}
+        kwargs = call_args.kwargs
+        assert "tags" in kwargs
+        assert kwargs["tags"] == {"disable": ["destructiveHint"]}
 
     def test_create_session_with_global_tags_object_both(
         self, tool_router, mock_client
@@ -347,9 +347,9 @@ class TestToolRouter:
         assert session.session_id == "session_123"
 
         call_args = mock_client.tool_router.session.create.call_args
-        body = call_args.args[0]
-        assert "tags" in body
-        assert body["tags"] == {
+        kwargs = call_args.kwargs
+        assert "tags" in kwargs
+        assert kwargs["tags"] == {
             "enable": ["readOnlyHint", "idempotentHint"],
             "disable": ["destructiveHint"],
         }
@@ -367,10 +367,10 @@ class TestToolRouter:
         assert session.session_id == "session_123"
 
         call_args = mock_client.tool_router.session.create.call_args
-        body = call_args.args[0]
-        assert "tools" in body
-        assert body["tools"]["gmail"] == {"tags": {"enable": ["readOnlyHint"]}}
-        assert body["tools"]["github"] == {
+        kwargs = call_args.kwargs
+        assert "tools" in kwargs
+        assert kwargs["tools"]["gmail"] == {"tags": {"enable": ["readOnlyHint"]}}
+        assert kwargs["tools"]["github"] == {
             "tags": {"enable": ["readOnlyHint", "idempotentHint"]}
         }
 
@@ -388,9 +388,9 @@ class TestToolRouter:
         assert session.session_id == "session_123"
 
         call_args = mock_client.tool_router.session.create.call_args
-        body = call_args.args[0]
-        assert "tools" in body
-        assert body["tools"]["gmail"] == {
+        kwargs = call_args.kwargs
+        assert "tools" in kwargs
+        assert kwargs["tools"]["gmail"] == {
             "tags": {"enable": ["readOnlyHint", "idempotentHint"]}
         }
 
@@ -408,9 +408,9 @@ class TestToolRouter:
         assert session.session_id == "session_123"
 
         call_args = mock_client.tool_router.session.create.call_args
-        body = call_args.args[0]
-        assert "tools" in body
-        assert body["tools"]["gmail"] == {"tags": {"disable": ["destructiveHint"]}}
+        kwargs = call_args.kwargs
+        assert "tools" in kwargs
+        assert kwargs["tools"]["gmail"] == {"tags": {"disable": ["destructiveHint"]}}
 
     def test_create_session_with_toolkit_specific_tags_object_both(
         self, tool_router, mock_client
@@ -431,9 +431,9 @@ class TestToolRouter:
         assert session.session_id == "session_123"
 
         call_args = mock_client.tool_router.session.create.call_args
-        body = call_args.args[0]
-        assert "tools" in body
-        assert body["tools"]["gmail"] == {
+        kwargs = call_args.kwargs
+        assert "tools" in kwargs
+        assert kwargs["tools"]["gmail"] == {
             "tags": {
                 "enable": ["readOnlyHint", "idempotentHint"],
                 "disable": ["destructiveHint"],
@@ -450,9 +450,9 @@ class TestToolRouter:
         assert session.session_id == "session_123"
 
         call_args = mock_client.tool_router.session.create.call_args
-        body = call_args.args[0]
-        assert "tags" in body
-        assert body["tags"] == {"enable": ["openWorldHint", "readOnlyHint"]}
+        kwargs = call_args.kwargs
+        assert "tags" in kwargs
+        assert kwargs["tags"] == {"enable": ["openWorldHint", "readOnlyHint"]}
 
     def test_create_session_with_mixed_tools_config(self, tool_router, mock_client):
         """Test creating a session with mixed tool configuration (enable, disable, tags)."""
@@ -468,10 +468,10 @@ class TestToolRouter:
         assert session.session_id == "session_123"
 
         call_args = mock_client.tool_router.session.create.call_args
-        body = call_args.args[0]
-        assert body["tools"]["gmail"] == {"enable": ["GMAIL_SEND_EMAIL"]}
-        assert body["tools"]["slack"] == {"disable": ["SLACK_DELETE_MESSAGE"]}
-        assert body["tools"]["github"] == {"tags": {"enable": ["readOnlyHint"]}}
+        kwargs = call_args.kwargs
+        assert kwargs["tools"]["gmail"] == {"enable": ["GMAIL_SEND_EMAIL"]}
+        assert kwargs["tools"]["slack"] == {"disable": ["SLACK_DELETE_MESSAGE"]}
+        assert kwargs["tools"]["github"] == {"tags": {"enable": ["readOnlyHint"]}}
 
     def test_create_session_with_global_and_toolkit_tags(
         self, tool_router, mock_client
@@ -493,9 +493,9 @@ class TestToolRouter:
         assert session.session_id == "session_123"
 
         call_args = mock_client.tool_router.session.create.call_args
-        body = call_args.args[0]
-        assert body["tags"] == {"enable": ["readOnlyHint"]}
-        assert body["tools"]["gmail"] == {
+        kwargs = call_args.kwargs
+        assert kwargs["tags"] == {"enable": ["readOnlyHint"]}
+        assert kwargs["tools"]["gmail"] == {
             "tags": {"enable": ["idempotentHint"], "disable": ["destructiveHint"]}
         }
 
@@ -509,8 +509,8 @@ class TestToolRouter:
         assert session.session_id == "session_123"
 
         call_args = mock_client.tool_router.session.create.call_args
-        body = call_args.args[0]
-        assert body["tags"] == {"enable": []}
+        kwargs = call_args.kwargs
+        assert kwargs["tags"] == {"enable": []}
 
     def test_create_session_with_all_tag_types(self, tool_router, mock_client):
         """Test creating a session with all available tag types."""
@@ -527,8 +527,8 @@ class TestToolRouter:
         assert session.session_id == "session_123"
 
         call_args = mock_client.tool_router.session.create.call_args
-        body = call_args.args[0]
-        assert body["tags"] == {
+        kwargs = call_args.kwargs
+        assert kwargs["tags"] == {
             "enable": [
                 "readOnlyHint",
                 "destructiveHint",
@@ -546,8 +546,8 @@ class TestToolRouter:
         assert session.session_id == "session_123"
 
         call_args = mock_client.tool_router.session.create.call_args
-        body = call_args.args[0]
-        assert body["manage_connections"]["enable"] is True
+        kwargs = call_args.kwargs
+        assert kwargs["manage_connections"]["enable"] is True
 
     def test_create_session_with_manage_connections_config(
         self, tool_router, mock_client
@@ -564,10 +564,11 @@ class TestToolRouter:
         assert session.session_id == "session_123"
 
         call_args = mock_client.tool_router.session.create.call_args
-        body = call_args.args[0]
-        assert body["manage_connections"]["enable"] is True
+        kwargs = call_args.kwargs
+        assert kwargs["manage_connections"]["enable"] is True
         assert (
-            body["manage_connections"]["callback_url"] == "https://example.com/callback"
+            kwargs["manage_connections"]["callback_url"]
+            == "https://example.com/callback"
         )
 
     def test_create_session_with_wait_for_connections(self, tool_router, mock_client):
@@ -584,12 +585,13 @@ class TestToolRouter:
         assert session.session_id == "session_123"
 
         call_args = mock_client.tool_router.session.create.call_args
-        body = call_args.args[0]
-        assert body["manage_connections"]["enable"] is True
+        kwargs = call_args.kwargs
+        assert kwargs["manage_connections"]["enable"] is True
         assert (
-            body["manage_connections"]["callback_url"] == "https://example.com/callback"
+            kwargs["manage_connections"]["callback_url"]
+            == "https://example.com/callback"
         )
-        assert body["manage_connections"]["enable_wait_for_connections"] is True
+        assert kwargs["manage_connections"]["enable_wait_for_connections"] is True
 
     def test_create_session_with_auth_configs(self, tool_router, mock_client):
         """Test creating a session with auth configs."""
@@ -600,8 +602,8 @@ class TestToolRouter:
         assert session.session_id == "session_123"
 
         call_args = mock_client.tool_router.session.create.call_args
-        body = call_args.args[0]
-        assert body["auth_configs"] == {"github": "ac_xxx", "slack": "ac_yyy"}
+        kwargs = call_args.kwargs
+        assert kwargs["auth_configs"] == {"github": "ac_xxx", "slack": "ac_yyy"}
 
     def test_create_session_with_connected_accounts(self, tool_router, mock_client):
         """Test creating a session with connected accounts."""
@@ -613,8 +615,8 @@ class TestToolRouter:
         assert session.session_id == "session_123"
 
         call_args = mock_client.tool_router.session.create.call_args
-        body = call_args.args[0]
-        assert body["connected_accounts"] == {
+        kwargs = call_args.kwargs
+        assert kwargs["connected_accounts"] == {
             "github": ["ca_xxx"],
             "slack": ["ca_yyy"],
         }
@@ -633,9 +635,9 @@ class TestToolRouter:
         assert session.session_id == "session_123"
 
         call_args = mock_client.tool_router.session.create.call_args
-        body = call_args.args[0]
-        assert "workbench" in body
-        assert body["workbench"] == {
+        kwargs = call_args.kwargs
+        assert "workbench" in kwargs
+        assert kwargs["workbench"] == {
             "enable": True,
             "enable_proxy_execution": False,
             "auto_offload_threshold": 300,
@@ -665,11 +667,11 @@ class TestToolRouter:
         assert session.session_id == "session_123"
 
         call_args = mock_client.tool_router.session.create.call_args
-        body = call_args.args[0]
-        assert "workbench" in body
-        assert body["workbench"]["enable"] is True
-        assert body["workbench"]["enable_proxy_execution"] is False
-        assert body["workbench"]["auto_offload_threshold"] == 300
+        kwargs = call_args.kwargs
+        assert "workbench" in kwargs
+        assert kwargs["workbench"]["enable"] is True
+        assert kwargs["workbench"]["enable_proxy_execution"] is False
+        assert kwargs["workbench"]["auto_offload_threshold"] == 300
 
     def test_create_session_with_workbench_disabled(self, tool_router, mock_client):
         """Test creating a session with workbench entirely disabled."""
@@ -681,9 +683,9 @@ class TestToolRouter:
         assert session.session_id == "session_123"
 
         call_args = mock_client.tool_router.session.create.call_args
-        body = call_args.args[0]
-        assert "workbench" in body
-        assert body["workbench"]["enable"] is False
+        kwargs = call_args.kwargs
+        assert "workbench" in kwargs
+        assert kwargs["workbench"]["enable"] is False
 
     def test_create_session_with_workbench_enabled_and_configured(
         self, tool_router, mock_client
@@ -701,11 +703,11 @@ class TestToolRouter:
         assert session.session_id == "session_123"
 
         call_args = mock_client.tool_router.session.create.call_args
-        body = call_args.args[0]
-        assert "workbench" in body
-        assert body["workbench"]["enable"] is True
-        assert body["workbench"]["enable_proxy_execution"] is False
-        assert body["workbench"]["auto_offload_threshold"] == 20000
+        kwargs = call_args.kwargs
+        assert "workbench" in kwargs
+        assert kwargs["workbench"]["enable"] is True
+        assert kwargs["workbench"]["enable_proxy_execution"] is False
+        assert kwargs["workbench"]["auto_offload_threshold"] == 20000
 
     def test_create_session_with_workbench_sandbox_size(self, tool_router, mock_client):
         """sandbox_size is forwarded on the wire when set, omitted otherwise."""
@@ -713,15 +715,15 @@ class TestToolRouter:
             user_id="user_123",
             workbench={"sandbox_size": "large"},
         )
-        body = mock_client.tool_router.session.create.call_args.args[0]
-        assert body["workbench"]["sandbox_size"] == "large"
+        kwargs = mock_client.tool_router.session.create.call_args.kwargs
+        assert kwargs["workbench"]["sandbox_size"] == "large"
 
         tool_router.create(
             user_id="user_123",
             workbench={"enable_proxy_execution": True},
         )
-        body = mock_client.tool_router.session.create.call_args.args[0]
-        assert "sandbox_size" not in body["workbench"]
+        kwargs = mock_client.tool_router.session.create.call_args.kwargs
+        assert "sandbox_size" not in kwargs["workbench"]
 
     def test_create_session_with_multi_account(self, tool_router, mock_client):
         """multi_account is forwarded on the wire when set, omitted otherwise."""
@@ -734,8 +736,8 @@ class TestToolRouter:
                 "require_explicit_selection": True,
             },
         )
-        body = mock_client.tool_router.session.create.call_args.args[0]
-        assert body["multi_account"] == {
+        kwargs = mock_client.tool_router.session.create.call_args.kwargs
+        assert kwargs["multi_account"] == {
             "enable": True,
             "max_accounts_per_toolkit": 3,
             "require_explicit_selection": True,
@@ -743,8 +745,8 @@ class TestToolRouter:
 
         # Omitted entirely when not provided.
         tool_router.create(user_id="user_123")
-        body = mock_client.tool_router.session.create.call_args.args[0]
-        assert "multi_account" not in body
+        kwargs = mock_client.tool_router.session.create.call_args.kwargs
+        assert "multi_account" not in kwargs
 
     def test_create_session_with_preload(self, tool_router, mock_client):
         """preload is forwarded and exposed on the session."""
@@ -757,8 +759,8 @@ class TestToolRouter:
             preload={"tools": ["GMAIL_FETCH_EMAILS"]},
         )
 
-        body = mock_client.tool_router.session.create.call_args.args[0]
-        assert body["preload"] == {"tools": ["GMAIL_FETCH_EMAILS"]}
+        kwargs = mock_client.tool_router.session.create.call_args.kwargs
+        assert kwargs["preload"] == {"tools": ["GMAIL_FETCH_EMAILS"]}
         assert session.preload.tools == ["GMAIL_FETCH_EMAILS"]
 
     def test_create_session_with_preload_all(self, tool_router, mock_client):
@@ -770,8 +772,8 @@ class TestToolRouter:
             preload={"tools": "all"},
         )
 
-        body = mock_client.tool_router.session.create.call_args.args[0]
-        assert body["preload"] == {"tools": "all"}
+        kwargs = mock_client.tool_router.session.create.call_args.kwargs
+        assert kwargs["preload"] == {"tools": "all"}
         assert session.preload.tools == "all"
 
     def test_create_session_rejects_custom_slug_in_top_level_preload(
@@ -821,13 +823,13 @@ class TestToolRouter:
             toolkits=["github"],
         )
 
-        body = mock_client.tool_router.session.create.call_args.args[0]
-        assert body["toolkits"] == {"enable": ["github"]}
-        assert body["manage_connections"] == {"enable": False}
-        assert body["workbench"] == {"enable": False}
-        assert body["preload"] == {"tools": "all"}
-        assert body["search"] == {"enable": False}
-        assert body["execute"] == {"enable_multi_execute": False}
+        kwargs = mock_client.tool_router.session.create.call_args.kwargs
+        assert kwargs["toolkits"] == {"enable": ["github"]}
+        assert kwargs["manage_connections"] == {"enable": False}
+        assert kwargs["workbench"] == {"enable": False}
+        assert kwargs["preload"] == {"tools": "all"}
+        assert kwargs["search"] == {"enable": False}
+        assert kwargs["execute"] == {"enable_multi_execute": False}
         assert session.preload.tools == "all"
 
     def test_create_session_with_direct_tools_preset_overrides(
@@ -847,12 +849,12 @@ class TestToolRouter:
             preload={"tools": ["GITHUB_CREATE_ISSUE"]},
         )
 
-        body = mock_client.tool_router.session.create.call_args.args[0]
-        assert body["manage_connections"] == {"enable": True}
-        assert body["workbench"] == {"enable": True}
-        assert body["preload"] == {"tools": ["GITHUB_CREATE_ISSUE"]}
-        assert body["search"] == {"enable": False}
-        assert body["execute"] == {"enable_multi_execute": False}
+        kwargs = mock_client.tool_router.session.create.call_args.kwargs
+        assert kwargs["manage_connections"] == {"enable": True}
+        assert kwargs["workbench"] == {"enable": True}
+        assert kwargs["preload"] == {"tools": ["GITHUB_CREATE_ISSUE"]}
+        assert kwargs["search"] == {"enable": False}
+        assert kwargs["execute"] == {"enable_multi_execute": False}
         assert session.preload.tools == ["GITHUB_CREATE_ISSUE"]
 
     def test_direct_tools_does_not_default_custom_preload_when_preload_overridden(
@@ -887,9 +889,9 @@ class TestToolRouter:
             experimental={"custom_tools": [grep]},
         )
 
-        body = mock_client.tool_router.session.create.call_args.args[0]
-        assert body["preload"] == {"tools": ["GITHUB_CREATE_ISSUE"]}
-        assert "preload" not in body["experimental"]["custom_tools"][0]
+        kwargs = mock_client.tool_router.session.create.call_args.kwargs
+        assert kwargs["preload"] == {"tools": ["GITHUB_CREATE_ISSUE"]}
+        assert "preload" not in kwargs["experimental"]["custom_tools"][0]
 
     def test_create_session_complex_config(self, tool_router, mock_client):
         """Test creating a session with complex configuration."""
@@ -915,16 +917,16 @@ class TestToolRouter:
 
         # Verify all parameters were passed correctly
         call_args = mock_client.tool_router.session.create.call_args
-        body = call_args.args[0]
-        assert body["user_id"] == "user_123"
-        assert "toolkits" in body
-        assert "tools" in body
-        assert "tags" in body
-        assert "manage_connections" in body
-        assert "auth_configs" in body
-        assert "connected_accounts" in body
-        assert "workbench" in body
-        assert body["multi_account"] == {
+        kwargs = call_args.kwargs
+        assert kwargs["user_id"] == "user_123"
+        assert "toolkits" in kwargs
+        assert "tools" in kwargs
+        assert "tags" in kwargs
+        assert "manage_connections" in kwargs
+        assert "auth_configs" in kwargs
+        assert "connected_accounts" in kwargs
+        assert "workbench" in kwargs
+        assert kwargs["multi_account"] == {
             "enable": True,
             "max_accounts_per_toolkit": 5,
             "require_explicit_selection": True,
@@ -945,9 +947,9 @@ class TestToolRouter:
 
         # Verify the API was called with experimental config transformed correctly
         call_args = mock_client.tool_router.session.create.call_args
-        body = call_args.args[0]
-        assert "experimental" in body
-        assert body["experimental"] == {
+        kwargs = call_args.kwargs
+        assert "experimental" in kwargs
+        assert kwargs["experimental"] == {
             "assistive_prompt_config": {
                 "user_timezone": "America/New_York",
             }
@@ -966,8 +968,8 @@ class TestToolRouter:
 
         # Verify experimental is not included when empty
         call_args = mock_client.tool_router.session.create.call_args
-        body = call_args.args[0]
-        assert "experimental" not in body
+        kwargs = call_args.kwargs
+        assert "experimental" not in kwargs
 
     def test_create_session_with_experimental_no_timezone(
         self, tool_router, mock_client
@@ -984,8 +986,8 @@ class TestToolRouter:
 
         # Verify experimental is not included when timezone is not set
         call_args = mock_client.tool_router.session.create.call_args
-        body = call_args.args[0]
-        assert "experimental" not in body
+        kwargs = call_args.kwargs
+        assert "experimental" not in kwargs
 
     def test_create_session_with_experimental_empty_string_timezone(
         self, tool_router, mock_client
@@ -1007,8 +1009,8 @@ class TestToolRouter:
 
         # Verify experimental is not included when timezone is empty string
         call_args = mock_client.tool_router.session.create.call_args
-        body = call_args.args[0]
-        assert "experimental" not in body
+        kwargs = call_args.kwargs
+        assert "experimental" not in kwargs
 
     def test_create_session_experimental_response_transformation(
         self, tool_router, mock_client
@@ -1147,9 +1149,9 @@ class TestToolRouter:
         session = tool_router.use(session_id="session_123", custom_tools=[grep])
 
         mock_client.tool_router.session.attach.assert_called_once()
-        body = mock_client.tool_router.session.attach.call_args.args[1]
-        assert body["experimental"]["custom_tools"][0]["slug"] == "GREP"
-        assert "custom_toolkits" not in body["experimental"]
+        kwargs = mock_client.tool_router.session.attach.call_args.kwargs
+        assert kwargs["experimental"]["custom_tools"][0]["slug"] == "GREP"
+        assert "custom_toolkits" not in kwargs["experimental"]
         mock_client.tool_router.session.retrieve.assert_not_called()
         mock_client.post.assert_not_called()
         assert session.custom_tools()[0].slug == "SERVER_GREP"
@@ -1200,9 +1202,9 @@ class TestToolRouter:
         session.tools()
 
         mock_client.tool_router.session.attach.assert_called_once()
-        attach_body = mock_client.tool_router.session.attach.call_args.args[1]
-        assert attach_body["experimental"]["custom_tools"][0]["slug"] == "GREP"
-        assert attach_body["experimental"]["custom_tools"][0]["preload"] is True
+        attach_kwargs = mock_client.tool_router.session.attach.call_args.kwargs
+        assert attach_kwargs["experimental"]["custom_tools"][0]["slug"] == "GREP"
+        assert attach_kwargs["experimental"]["custom_tools"][0]["preload"] is True
         mock_client.post.assert_not_called()
         mock_client.tool_router.session.retrieve.assert_not_called()
 
@@ -1262,9 +1264,9 @@ class TestToolRouter:
             "LOCAL_GREP",
         ]
         mock_client.tool_router.session.search.assert_called_once()
-        search_body = mock_client.tool_router.session.search.call_args.args[1]
-        assert search_body["experimental"]["custom_tools"][0]["slug"] == "GREP"
-        assert search_body["experimental"]["custom_tools"][0]["preload"] is True
+        search_kwargs = mock_client.tool_router.session.search.call_args.kwargs
+        assert search_kwargs["experimental"]["custom_tools"][0]["slug"] == "GREP"
+        assert search_kwargs["experimental"]["custom_tools"][0]["preload"] is True
 
     def test_use_session_with_different_user(self, tool_router, mock_client):
         """Test that use() extracts user_id from session config."""
@@ -1312,13 +1314,11 @@ class TestToolRouter:
         )
 
         mock_client.tool_router.session.execute.assert_called_once_with(
-            "session_123",
-            {
-                "tool_slug": "GMAIL_FETCH_EMAILS",
-                "arguments": {"max_results": 1},
-                "account": "work",
-                "experimental": OMIT,
-            },
+            session_id="session_123",
+            tool_slug="GMAIL_FETCH_EMAILS",
+            arguments={"max_results": 1},
+            account="work",
+            experimental=omit,
         )
 
     def test_authorize_function(self, tool_router, mock_client):
@@ -1330,8 +1330,8 @@ class TestToolRouter:
         # Verify link was called
         mock_client.tool_router.session.link.assert_called_once()
         call_args = mock_client.tool_router.session.link.call_args
-        assert call_args.args[0] == "session_123"
-        assert call_args.args[1]["toolkit"] == "github"
+        assert call_args.kwargs["session_id"] == "session_123"
+        assert call_args.kwargs["toolkit"] == "github"
 
     def test_authorize_function_with_callback_url(self, tool_router, mock_client):
         """Test the authorize function with callback URL."""
@@ -1341,7 +1341,7 @@ class TestToolRouter:
 
         # Verify link was called with callback_url
         call_args = mock_client.tool_router.session.link.call_args
-        assert call_args.args[1]["callback_url"] == "https://myapp.com/callback"
+        assert call_args.kwargs.get("callback_url") == "https://myapp.com/callback"
 
     def test_authorize_forwards_experimental_block(self, tool_router, mock_client):
         """authorize() should pass the experimental options through verbatim."""
@@ -1358,8 +1358,8 @@ class TestToolRouter:
             },
         )
 
-        link_body = mock_client.tool_router.session.link.call_args.args[1]
-        assert link_body["experimental"] == {
+        call_kwargs = mock_client.tool_router.session.link.call_args.kwargs
+        assert call_kwargs["experimental"] == {
             "account_type": "SHARED",
             "acl_config_for_shared": {
                 "allow_all_users": True,
@@ -1375,8 +1375,7 @@ class TestToolRouter:
 
         # Verify toolkits was called
         mock_client.tool_router.session.toolkits.assert_called_once_with(
-            "session_123",
-            query={},
+            session_id="session_123"
         )
 
         # Verify result structure
@@ -1393,9 +1392,8 @@ class TestToolRouter:
 
         # Verify toolkits was called with pagination params
         call_args = mock_client.tool_router.session.toolkits.call_args
-        query = call_args.kwargs["query"]
-        assert query.get("cursor") == "cursor_abc"
-        assert query.get("limit") == 10
+        assert call_args.kwargs.get("cursor") == "cursor_abc"
+        assert call_args.kwargs.get("limit") == 10
 
     def test_toolkits_transform_active_connection(self, tool_router, mock_client):
         """Test that toolkits function correctly transforms active connections."""
@@ -1438,8 +1436,8 @@ class TestToolRouter:
 
         # Verify toolkits was called with search param
         call_args = mock_client.tool_router.session.toolkits.call_args
-        assert call_args.kwargs["query"].get("search") == "gmail"
-        assert call_args.args[0] == "session_123"
+        assert call_args.kwargs.get("search") == "gmail"
+        assert call_args.kwargs["session_id"] == "session_123"
 
     def test_toolkits_function_with_search_and_toolkits_filter(
         self, tool_router, mock_client
@@ -1451,10 +1449,9 @@ class TestToolRouter:
 
         # Verify toolkits was called with both search and toolkits params
         call_args = mock_client.tool_router.session.toolkits.call_args
-        query = call_args.kwargs["query"]
-        assert query.get("search") == "github"
-        assert query.get("toolkits") == ["github", "slack"]
-        assert call_args.args[0] == "session_123"
+        assert call_args.kwargs.get("search") == "github"
+        assert call_args.kwargs.get("toolkits") == ["github", "slack"]
+        assert call_args.kwargs["session_id"] == "session_123"
 
     def test_toolkits_function_with_search_and_is_connected(
         self, tool_router, mock_client
@@ -1466,10 +1463,9 @@ class TestToolRouter:
 
         # Verify toolkits was called with search and is_connected params
         call_args = mock_client.tool_router.session.toolkits.call_args
-        query = call_args.kwargs["query"]
-        assert query.get("search") == "mail"
-        assert query.get("is_connected") is True
-        assert call_args.args[0] == "session_123"
+        assert call_args.kwargs.get("search") == "mail"
+        assert call_args.kwargs.get("is_connected") is True
+        assert call_args.kwargs["session_id"] == "session_123"
 
     def test_toolkits_function_with_search_and_pagination(
         self, tool_router, mock_client
@@ -1481,11 +1477,10 @@ class TestToolRouter:
 
         # Verify toolkits was called with search and pagination params
         call_args = mock_client.tool_router.session.toolkits.call_args
-        query = call_args.kwargs["query"]
-        assert query.get("search") == "slack"
-        assert query.get("cursor") == "cursor_xyz"
-        assert query.get("limit") == 5
-        assert call_args.args[0] == "session_123"
+        assert call_args.kwargs.get("search") == "slack"
+        assert call_args.kwargs.get("cursor") == "cursor_xyz"
+        assert call_args.kwargs.get("limit") == 5
+        assert call_args.kwargs["session_id"] == "session_123"
 
     def test_toolkits_function_with_search_all_params(self, tool_router, mock_client):
         """Test the toolkits function with search and all other parameters."""
@@ -1501,13 +1496,12 @@ class TestToolRouter:
 
         # Verify toolkits was called with all params including search
         call_args = mock_client.tool_router.session.toolkits.call_args
-        query = call_args.kwargs["query"]
-        assert query.get("search") == "gmail"
-        assert query.get("toolkits") == ["gmail", "github"]
-        assert query.get("cursor") == "cursor_123"
-        assert query.get("limit") == 20
-        assert query.get("is_connected") is False
-        assert call_args.args[0] == "session_123"
+        assert call_args.kwargs.get("search") == "gmail"
+        assert call_args.kwargs.get("toolkits") == ["gmail", "github"]
+        assert call_args.kwargs.get("cursor") == "cursor_123"
+        assert call_args.kwargs.get("limit") == 20
+        assert call_args.kwargs.get("is_connected") is False
+        assert call_args.kwargs["session_id"] == "session_123"
 
     def test_toolkits_function_with_empty_search(self, tool_router, mock_client):
         """Test the toolkits function with empty search string."""
@@ -1517,8 +1511,8 @@ class TestToolRouter:
 
         # Verify toolkits was called with empty search string
         call_args = mock_client.tool_router.session.toolkits.call_args
-        assert call_args.kwargs["query"].get("search") == ""
-        assert call_args.args[0] == "session_123"
+        assert call_args.kwargs.get("search") == ""
+        assert call_args.kwargs["session_id"] == "session_123"
 
     @patch("composio.core.models.tools.Tools")
     def test_tools_function(
@@ -1924,13 +1918,11 @@ class TestToolRouterExecution:
 
         # Verify execute was called with direct offload opt-in for agentic calls
         mock_client.tool_router.session.execute.assert_called_once_with(
-            "session_123",
-            {
-                "tool_slug": "GMAIL_SEND_EMAIL",
-                "arguments": {"to": "test@example.com"},
-                "enable_auto_workbench_offload": True,
-                "experimental": OMIT,
-            },
+            session_id="session_123",
+            tool_slug="GMAIL_SEND_EMAIL",
+            arguments={"to": "test@example.com"},
+            enable_auto_workbench_offload=True,
+            experimental=omit,
         )
 
         # Verify result format
@@ -1972,13 +1964,11 @@ class TestToolRouterExecution:
         execute_fn("GMAIL_SEND_EMAIL", {"to": "test@example.com"})
 
         mock_client.tool_router.session.execute.assert_called_once_with(
-            "session_123",
-            {
-                "tool_slug": "GMAIL_SEND_EMAIL",
-                "arguments": {"to": "test@example.com"},
-                "enable_auto_workbench_offload": True,
-                "experimental": inline_payload,
-            },
+            session_id="session_123",
+            tool_slug="GMAIL_SEND_EMAIL",
+            arguments={"to": "test@example.com"},
+            enable_auto_workbench_offload=True,
+            experimental=inline_payload,
         )
 
     def test_modifiers_applied_in_tool_router_execution(
@@ -2030,8 +2020,8 @@ class TestToolRouterExecution:
         # Verify execute was called with modified arguments
         mock_client.tool_router.session.execute.assert_called_once()
         call_args = mock_client.tool_router.session.execute.call_args
-        assert call_args.args[1]["arguments"] == {"to": "modified@example.com"}
-        assert call_args.args[1]["enable_auto_workbench_offload"] is True
+        assert call_args.kwargs["arguments"] == {"to": "modified@example.com"}
+        assert call_args.kwargs["enable_auto_workbench_offload"] is True
 
         # Verify result was modified by after_execute
         assert result["data"] == {"modified": True}

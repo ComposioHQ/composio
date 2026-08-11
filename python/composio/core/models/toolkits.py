@@ -48,13 +48,11 @@ class Toolkits(Resource):
     ) -> toolkit_list_response.ToolkitListResponse:
         """List all toolkits."""
         return self._client.toolkits.list(
-            query={
-                "category": none_to_omit(category),
-                "cursor": none_to_omit(cursor),
-                "limit": none_to_omit(limit),
-                "managed_by": none_to_omit(managed_by),
-                "sort_by": none_to_omit(sort_by),
-            },
+            category=none_to_omit(category),
+            cursor=none_to_omit(cursor),
+            limit=none_to_omit(limit),
+            managed_by=none_to_omit(managed_by),
+            sort_by=none_to_omit(sort_by),
         )
 
     @t.overload
@@ -83,8 +81,8 @@ class Toolkits(Resource):
         t.List[toolkit_list_response.Item],
     ]:
         if slug is not None:
-            return self._client.toolkits.retrieve(slug)
-        return self._client.toolkits.list(query=t.cast(t.Dict, query) or None).items
+            return self._client.toolkits.retrieve(slug=slug)
+        return self._client.toolkits.list(**(query or {})).items
 
     def list_categories(self):
         """List all categories of toolkits."""
@@ -92,7 +90,7 @@ class Toolkits(Resource):
 
     def _get_auth_config_id(self, toolkit: str) -> str:
         """Get the auth config ID for a toolkit."""
-        auth_configs = self._client.auth_configs.list(query={"toolkit_slug": toolkit})
+        auth_configs = self._client.auth_configs.list(toolkit_slug=toolkit)
         if len(auth_configs.items) > 0:
             (auth_config, *_) = sorted(
                 auth_configs.items,
@@ -102,15 +100,13 @@ class Toolkits(Resource):
             return auth_config.id
 
         return self._client.auth_configs.create(
-            {
-                "toolkit": {"slug": toolkit},
-                "auth_config": {
-                    "type": "use_composio_managed_auth",
-                    "tool_access_config": {
-                        "tools_for_connected_account_creation": [],
-                    },
+            toolkit={"slug": toolkit},
+            auth_config={
+                "type": "use_composio_managed_auth",
+                "tool_access_config": {
+                    "tools_for_connected_account_creation": [],
                 },
-            }
+            },
         ).auth_config.id
 
     def authorize(self, *, user_id: str, toolkit: str):
@@ -139,7 +135,7 @@ class Toolkits(Resource):
         """
         Get the required property for a given toolkit and auth scheme.
         """
-        details = self._client.toolkits.retrieve(toolkit).auth_config_details or []
+        details = self._client.toolkits.retrieve(slug=toolkit).auth_config_details or []
         for auth_detail in details:
             if auth_detail.mode != auth_scheme:
                 continue
@@ -169,7 +165,7 @@ class Toolkits(Resource):
         """
         Get the required property for a given toolkit and auth scheme.
         """
-        info = self._client.toolkits.retrieve(toolkit)
+        info = self._client.toolkits.retrieve(slug=toolkit)
         for auth_detail in info.auth_config_details or []:
             if auth_detail.mode != auth_scheme:
                 continue

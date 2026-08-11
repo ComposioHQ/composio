@@ -4,7 +4,7 @@ import warnings
 from unittest.mock import Mock, patch
 
 import pytest
-from composio.client.compat import IS_V2, OMIT
+from composio_client import omit
 
 from composio import exceptions
 from composio.core.models.connected_accounts import (
@@ -17,8 +17,7 @@ from composio.core.models.connected_accounts import (
 def _set_initiate_response(mock_client, body, headers=None):
     """SEC-339: route an `initiate()` mock response through the
     ``with_raw_response.create`` surface that the SDK consumes for
-    deprecation-header gating (v1 only; the v2 generated client has no
-    ``with_raw_response`` and the SDK uses the parsed ``create`` there).
+    deprecation-header gating.
 
     ``headers`` defaults to ``None`` (no Deprecation header → no warning,
     matching custom-auth-config / non-OAuth-scheme behavior). Pass
@@ -28,21 +27,7 @@ def _set_initiate_response(mock_client, body, headers=None):
     raw.parse.return_value = body
     raw.headers = headers or {}
     mock_client.connected_accounts.with_raw_response.create.return_value = raw
-    # v2 (and any mock without a raw surface) goes through the parsed path.
-    mock_client.connected_accounts.create.return_value = body
     return raw
-
-
-def _initiate_create_payload(mock_client):
-    """Return the (auth_config, connection) payload ``initiate()`` sent, read
-    from whichever create surface the installed client generation uses:
-    v1 sends Stainless kwargs through ``with_raw_response.create``, v2 sends a
-    single positional body dict through ``create``."""
-    if IS_V2:
-        (body,) = mock_client.connected_accounts.create.call_args.args
-        return body["auth_config"], body["connection"]
-    kwargs = mock_client.connected_accounts.with_raw_response.create.call_args.kwargs
-    return kwargs["auth_config"], kwargs["connection"]
 
 
 class TestAuthScheme:
@@ -174,7 +159,7 @@ class TestConnectionRequest:
         assert result is active
         assert req.status == "ACTIVE"
         assert mock_client.connected_accounts.retrieve.call_count == 2
-        mock_client.connected_accounts.retrieve.assert_called_with("conn-123")
+        mock_client.connected_accounts.retrieve.assert_called_with(nanoid="conn-123")
 
     def test_wait_for_connection_times_out(self, monkeypatch):
         mock_client = Mock()
@@ -281,7 +266,9 @@ class TestConnectionRequest:
 
         req = ConnectionRequest.from_id("conn-from-id", client=mock_client)
 
-        mock_client.connected_accounts.retrieve.assert_called_once_with("conn-from-id")
+        mock_client.connected_accounts.retrieve.assert_called_once_with(
+            nanoid="conn-from-id"
+        )
         assert req.id == "conn-from-id"
         assert req.status == "PENDING"
         assert req.redirect_url is None
@@ -306,36 +293,24 @@ class TestConnectedAccounts:
         return ConnectedAccounts(client=mock_client)
 
     def test_constructor_binds_methods(self, connected_accounts, mock_client):
-        connected_accounts.get("conn-get")
-        mock_client.connected_accounts.retrieve.assert_called_once_with("conn-get")
-
-        connected_accounts.list()
-        mock_client.connected_accounts.list.assert_called_once_with(query=None)
-
-        connected_accounts.delete("conn-del")
-        mock_client.connected_accounts.delete.assert_called_once_with(
-            "conn-del", query=None
+        assert connected_accounts.get is mock_client.connected_accounts.retrieve
+        assert connected_accounts.list is mock_client.connected_accounts.list
+        assert connected_accounts.delete is mock_client.connected_accounts.delete
+        assert (
+            connected_accounts.update_status
+            is mock_client.connected_accounts.update_status
         )
-
-        connected_accounts.update_status("conn-upd", enabled=True)
-        mock_client.connected_accounts.update_status.assert_called_once_with(
-            "conn-upd", {"enabled": True}
-        )
-
-        connected_accounts.refresh("conn-ref")
-        mock_client.connected_accounts.refresh.assert_called_once_with(
-            "conn-ref", {}, query=None
-        )
+        assert connected_accounts.refresh is mock_client.connected_accounts.refresh
 
     def test_enable_and_disable_partials(self, connected_accounts, mock_client):
         connected_accounts.enable("conn-1")
         connected_accounts.disable("conn-2")
 
         mock_client.connected_accounts.update_status.assert_any_call(
-            "conn-1", {"enabled": True}
+            "conn-1", enabled=True
         )
         mock_client.connected_accounts.update_status.assert_any_call(
-            "conn-2", {"enabled": False}
+            "conn-2", enabled=False
         )
 
     def test_initiate_raises_when_multiple_accounts_and_not_allow_multiple(
@@ -371,11 +346,7 @@ class TestConnectedAccounts:
 
         # Verify that list is called with statuses=["ACTIVE"] to filter only active accounts
         mock_client.connected_accounts.list.assert_called_once_with(
-            query={
-                "user_ids": ["user-1"],
-                "auth_config_ids": ["auth-1"],
-                "statuses": ["ACTIVE"],
-            }
+            user_ids=["user-1"], auth_config_ids=["auth-1"], statuses=["ACTIVE"]
         )
 
     def test_initiate_warns_and_creates_when_allow_multiple(
@@ -406,17 +377,15 @@ class TestConnectedAccounts:
             )
 
         mock_client.connected_accounts.list.assert_called_once_with(
-            query={
-                "user_ids": ["user-1"],
-                "auth_config_ids": ["auth-1"],
-                "statuses": ["ACTIVE"],
-            }
+            user_ids=["user-1"], auth_config_ids=["auth-1"], statuses=["ACTIVE"]
         )
-        auth_config, connection = _initiate_create_payload(mock_client)
-        assert auth_config == {"id": "auth-1"}
-        assert connection["user_id"] == "user-1"
-        assert connection["callback_url"] == "https://cb"
-        assert connection["state"] == config
+        call_kwargs = (
+            mock_client.connected_accounts.with_raw_response.create.call_args.kwargs
+        )
+        assert call_kwargs["auth_config"] == {"id": "auth-1"}
+        assert call_kwargs["connection"]["user_id"] == "user-1"
+        assert call_kwargs["connection"]["callback_url"] == "https://cb"
+        assert call_kwargs["connection"]["state"] == config
 
         assert isinstance(result, ConnectionRequest)
         assert result.id == "conn-123"
@@ -444,10 +413,10 @@ class TestConnectedAccounts:
             callback_url="https://cb",
         )
 
-        call_body = mock_client.link.create.call_args.args[0]
-        assert call_body["auth_config_id"] == "auth-1"
-        assert call_body["user_id"] == "user-1"
-        assert call_body["callback_url"] == "https://cb"
+        call_kwargs = mock_client.link.create.call_args.kwargs
+        assert call_kwargs["auth_config_id"] == "auth-1"
+        assert call_kwargs["user_id"] == "user-1"
+        assert call_kwargs["callback_url"] == "https://cb"
 
         assert isinstance(result, ConnectionRequest)
         assert result.id == "conn-999"
@@ -468,10 +437,10 @@ class TestConnectedAccounts:
 
         connected_accounts.link(user_id="user-1", auth_config_id="auth-1")
 
-        call_body = mock_client.link.create.call_args.args[0]
-        assert call_body["auth_config_id"] == "auth-1"
-        assert call_body["user_id"] == "user-1"
-        assert call_body["callback_url"] is OMIT
+        call_kwargs = mock_client.link.create.call_args.kwargs
+        assert call_kwargs["auth_config_id"] == "auth-1"
+        assert call_kwargs["user_id"] == "user-1"
+        assert call_kwargs["callback_url"] is omit
 
     def test_link_raises_when_active_connection_exists_and_not_allow_multiple(
         self, connected_accounts, mock_client
@@ -485,11 +454,7 @@ class TestConnectedAccounts:
             connected_accounts.link(user_id="user-1", auth_config_id="auth-1")
 
         mock_client.connected_accounts.list.assert_called_once_with(
-            query={
-                "user_ids": ["user-1"],
-                "auth_config_ids": ["auth-1"],
-                "statuses": ["ACTIVE"],
-            }
+            user_ids=["user-1"], auth_config_ids=["auth-1"], statuses=["ACTIVE"]
         )
         mock_client.link.create.assert_not_called()
 
@@ -513,8 +478,8 @@ class TestConnectedAccounts:
             allow_multiple=True,
         )
 
-        call_body = mock_client.link.create.call_args.args[0]
-        assert call_body["alias"] == "work"
+        call_kwargs = mock_client.link.create.call_args.kwargs
+        assert call_kwargs["alias"] == "work"
         assert result.id == "conn-new"
 
     def test_initiate_with_oauth2_tokens_returns_active_connection_request(
@@ -629,8 +594,8 @@ class TestConnectedAccountsAcl:
             },
         )
 
-        call_body = mock_client.link.create.call_args.args[0]
-        assert call_body["experimental"] == {
+        call_kwargs = mock_client.link.create.call_args.kwargs
+        assert call_kwargs["experimental"] == {
             "account_type": "SHARED",
             "acl_config_for_shared": {
                 "allow_all_users": True,
@@ -646,8 +611,8 @@ class TestConnectedAccountsAcl:
             auth_config_id="auth_config_123",
         )
 
-        call_body = mock_client.link.create.call_args.args[0]
-        assert call_body["experimental"] is OMIT
+        call_kwargs = mock_client.link.create.call_args.kwargs
+        assert call_kwargs["experimental"] is omit
 
     def test_link_preserves_explicit_empty_lists(self, connected_accounts, mock_client):
         """An empty list is meaningful (clear the allow/deny list)."""
@@ -663,8 +628,8 @@ class TestConnectedAccountsAcl:
             },
         )
 
-        call_body = mock_client.link.create.call_args.args[0]
-        assert call_body["experimental"]["acl_config_for_shared"] == {
+        call_kwargs = mock_client.link.create.call_args.kwargs
+        assert call_kwargs["experimental"]["acl_config_for_shared"] == {
             "allowed_user_ids": [],
             "not_allowed_user_ids": [],
         }
@@ -716,12 +681,10 @@ class TestConnectedAccountsAcl:
 
         mock_client.connected_accounts.patch.assert_called_once_with(
             "ca_abc",
-            {
-                "experimental": {
-                    "acl_config_for_shared": {
-                        "allow_all_users": True,
-                        "not_allowed_user_ids": ["user_bob"],
-                    }
+            experimental={
+                "acl_config_for_shared": {
+                    "allow_all_users": True,
+                    "not_allowed_user_ids": ["user_bob"],
                 }
             },
         )
@@ -732,10 +695,8 @@ class TestConnectedAccountsAcl:
 
         mock_client.connected_accounts.patch.assert_called_once_with(
             "ca_abc",
-            {
-                "experimental": {
-                    "acl_config_for_shared": {"allowed_user_ids": ["user_alice"]}
-                }
+            experimental={
+                "acl_config_for_shared": {"allowed_user_ids": ["user_alice"]}
             },
         )
 
@@ -744,7 +705,7 @@ class TestConnectedAccountsAcl:
 
         mock_client.connected_accounts.patch.assert_called_once_with(
             "ca_abc",
-            {"experimental": {"acl_config_for_shared": {"allowed_user_ids": []}}},
+            experimental={"acl_config_for_shared": {"allowed_user_ids": []}},
         )
 
     def test_update_acl_rejects_all_none(self, experimental, mock_client):
@@ -784,7 +745,7 @@ class TestConnectedAccountsAcl:
     def test_list_forwards_account_type_filter(self, connected_accounts, mock_client):
         connected_accounts.list(account_type="SHARED", user_ids=["user_creator"])
         mock_client.connected_accounts.list.assert_called_once_with(
-            query={"account_type": "SHARED", "user_ids": ["user_creator"]}
+            account_type="SHARED", user_ids=["user_creator"]
         )
 
 
@@ -825,11 +786,6 @@ class TestInitiateDeprecationHeaderGate:
         body.connection_data.val.redirect_url = "https://redirect"
         return body
 
-    @pytest.mark.skipif(
-        IS_V2,
-        reason="SDK deprecation-header gating reads v1's with_raw_response surface; "
-        "the v2 generated client emits ComposioDeprecationWarning natively instead",
-    )
     def test_warns_once_when_response_carries_deprecation_header(self, mock_client):
         """Managed + redirectable-OAuth path: apollo sets `Deprecation`,
         SDK emits a `DeprecationWarning` pointing callers at link()."""
@@ -875,11 +831,6 @@ class TestInitiateDeprecationHeaderGate:
         deprecations = [w for w in caught if issubclass(w.category, DeprecationWarning)]
         assert deprecations == []
 
-    @pytest.mark.skipif(
-        IS_V2,
-        reason="SDK deprecation-header gating reads v1's with_raw_response surface; "
-        "the v2 generated client emits ComposioDeprecationWarning natively instead",
-    )
     def test_warns_at_most_once_per_process_across_calls(self, mock_client):
         """The one-time guard must hold across multiple calls in the same
         process even when each response carries the Deprecation header."""

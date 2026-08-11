@@ -2,8 +2,8 @@
 
 import pydantic
 import pytest
+from composio_client import omit
 
-from composio.client.compat import OMIT
 from composio.utils.pydantic import none_to_omit, parse_pydantic_error
 
 
@@ -13,7 +13,7 @@ class _Model(pydantic.BaseModel):
 
 
 def test_none_to_omit_converts_none():
-    assert none_to_omit(None) is OMIT
+    assert none_to_omit(None) is omit
 
 
 def test_none_to_omit_passes_values_through():

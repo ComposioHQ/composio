@@ -10,24 +10,22 @@ from pathlib import Path
 from urllib.parse import unquote, urlparse
 
 import requests
+from composio_client import omit
+from composio_client.types.tool_router.session.file_create_download_url_response import (
+    FileCreateDownloadURLResponse,
+)
+from composio_client.types.tool_router.session.file_delete_response import (
+    FileDeleteResponse,
+)
+from composio_client.types.tool_router.session.file_list_response import (
+    FileListResponse,
+)
 
 from composio.client import HttpClient
-from composio.client.compat import OMIT
-from composio.client.types import (
-    file_create_download_url_response as _file_create_download_url_response,
-)
-from composio.client.types import file_delete_response as _file_delete_response
-from composio.client.types import file_list_response as _file_list_response
 from composio.exceptions import RemoteFileDownloadError, ValidationError
 from composio.utils.mimetypes import get_extension_from_mime_type
 from composio.utils.url_safety import assert_safe_fetch_target
 from composio.utils.uuid import generate_short_id
-
-FileCreateDownloadURLResponse = (
-    _file_create_download_url_response.FileCreateDownloadURLResponse
-)
-FileDeleteResponse = _file_delete_response.FileDeleteResponse
-FileListResponse = _file_list_response.FileListResponse
 
 DEFAULT_TOOL_ROUTER_SESSION_FILES_MOUNT_ID = "files"
 COMPOSIO_DIR = ".composio"
@@ -217,19 +215,17 @@ class ToolRouterSessionFilesMount:
         """
         raw_path = path or ""
         if raw_path in ("", "/"):
-            mount_relative_prefix_arg: t.Any = OMIT
+            mount_relative_prefix_arg: t.Any = omit
         else:
             prefix_str = raw_path[1:] if raw_path.startswith("/") else raw_path
-            mount_relative_prefix_arg = prefix_str if prefix_str else OMIT
+            mount_relative_prefix_arg = prefix_str if prefix_str else omit
 
         return self._client.tool_router.session.files.list(
-            self._session_id,
             mount_id,
-            query={
-                "mount_relative_prefix": mount_relative_prefix_arg,
-                "cursor": cursor if cursor else OMIT,
-                "limit": int(limit) if limit is not None else OMIT,
-            },
+            session_id=self._session_id,
+            mount_relative_prefix=mount_relative_prefix_arg,
+            cursor=cursor if cursor else omit,
+            limit=int(limit) if limit is not None else omit,
         )
 
     def _normalize_upload_input(
@@ -298,12 +294,10 @@ class ToolRouterSessionFilesMount:
         )
 
         create_resp = self._client.tool_router.session.files.create_upload_url(
-            self._session_id,
             mount_id,
-            {
-                "mount_relative_path": rpath,
-                "mimetype": mime,
-            },
+            session_id=self._session_id,
+            mount_relative_path=rpath,
+            mimetype=mime,
         )
 
         try:
@@ -322,9 +316,9 @@ class ToolRouterSessionFilesMount:
             )
 
         download_resp = self._client.tool_router.session.files.create_download_url(
-            self._session_id,
             mount_id,
-            {"mount_relative_path": create_resp.mount_relative_path},
+            session_id=self._session_id,
+            mount_relative_path=create_resp.mount_relative_path,
         )
 
         return RemoteFile.from_api_response(download_resp)
@@ -339,9 +333,9 @@ class ToolRouterSessionFilesMount:
 
         Returns a RemoteFile with download_url, buffer(), text(), save() methods."""
         resp = self._client.tool_router.session.files.create_download_url(
-            self._session_id,
             mount_id,
-            {"mount_relative_path": file_path},
+            session_id=self._session_id,
+            mount_relative_path=file_path,
         )
         return RemoteFile.from_api_response(resp)
 
@@ -353,7 +347,7 @@ class ToolRouterSessionFilesMount:
     ) -> FileDeleteResponse:
         """Delete a file or directory at the specified path on the session's file mount."""
         return self._client.tool_router.session.files.delete(
-            self._session_id,
             mount_id,
-            {"mount_relative_path": remote_path},
+            session_id=self._session_id,
+            mount_relative_path=remote_path,
         )

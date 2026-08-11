@@ -15,11 +15,8 @@ from enum import Enum
 from unittest import mock
 
 import typing_extensions as te
-from composio_client import APIStatusError
-
-from composio.client.compat import OMIT as omit
-from composio.client.compat import OmitType as Omit
-from composio.client.types import TriggersTypeRetrieveResponse
+from composio_client import APIStatusError, Omit, omit
+from composio_client.types import TriggersTypeRetrieveResponse
 from pysher import Pusher
 from pysher.channel import Channel as PusherChannel
 from pysher.connection import Connection as PusherConnection
@@ -959,26 +956,15 @@ class Triggers(Resource):
         self._client = client
         self._toolkit_versions = toolkit_versions
         self.list_enum = self._client.triggers_types.retrieve_enum
+        self.delete = self._client.trigger_instances.manage.delete
         self.enable = functools.partial(
-            self._update_status,
+            self._client.trigger_instances.manage.update,
             status="enable",
         )
         self.disable = functools.partial(
-            self._update_status,
+            self._client.trigger_instances.manage.update,
             status="disable",
         )
-
-    def _update_status(
-        self, trigger_id: str, *, status: t.Literal["enable", "disable"]
-    ) -> t.Any:
-        """Enable or disable a trigger instance by its id."""
-        return self._client.trigger_instances.manage.update(
-            trigger_id, {"status": status}
-        )
-
-    def delete(self, trigger_id: str) -> t.Any:
-        """Delete a trigger instance given its id."""
-        return self._client.trigger_instances.manage.delete(trigger_id)
 
     def set_webhook_subscription(
         self,
@@ -1112,8 +1098,7 @@ class Triggers(Resource):
         :return: The trigger type
         """
         return self._client.triggers_types.retrieve(
-            slug,
-            query={"toolkit_versions": none_to_omit(self._toolkit_versions)},
+            slug=slug, toolkit_versions=none_to_omit(self._toolkit_versions)
         )
 
     def list_active(
@@ -1139,15 +1124,13 @@ class Triggers(Resource):
         :return: List of active triggers
         """
         return self._client.trigger_instances.list_active(
-            query={
-                "trigger_ids": trigger_ids,
-                "trigger_names": trigger_names,
-                "auth_config_ids": auth_config_ids,
-                "connected_account_ids": connected_account_ids,
-                "show_disabled": show_disabled,
-                "limit": limit if limit is not None else omit,
-                "cursor": cursor if cursor is not None else omit,
-            },
+            query_trigger_ids_1=trigger_ids,
+            query_trigger_names_1=trigger_names,
+            query_auth_config_ids_1=auth_config_ids,
+            query_connected_account_ids_1=connected_account_ids,
+            query_show_disabled_1=show_disabled,
+            limit=limit if limit is not None else omit,
+            cursor=cursor if cursor is not None else omit,
         )
 
     def list(
@@ -1166,12 +1149,10 @@ class Triggers(Resource):
         :return: The list of trigger types
         """
         return self._client.triggers_types.list(
-            query={
-                "cursor": none_to_omit(cursor),
-                "limit": none_to_omit(limit),
-                "toolkit_slugs": none_to_omit(toolkit_slugs),
-                "toolkit_versions": none_to_omit(self._toolkit_versions),
-            },
+            cursor=none_to_omit(cursor),
+            limit=none_to_omit(limit),
+            toolkit_slugs=none_to_omit(toolkit_slugs),
+            toolkit_versions=none_to_omit(self._toolkit_versions),
         )
 
     @t.overload
@@ -1240,13 +1221,11 @@ class Triggers(Resource):
         # trigger's toolkit (parity with tool execution). When 2FA is enabled and
         # connected_account_id is pinned, the backend validates that user_id owns it.
         return self._client.trigger_instances.upsert(
-            slug,
-            {
-                "connected_account_id": none_to_omit(connected_account_id),
-                "toolkit_versions": self._toolkit_versions,
-                "trigger_config": none_to_omit(trigger_config),
-                "user_id": none_to_omit(user_id),
-            },
+            slug=slug,
+            connected_account_id=none_to_omit(connected_account_id),
+            toolkit_versions=self._toolkit_versions,
+            body_trigger_config_1=none_to_omit(trigger_config),
+            user_id=none_to_omit(user_id),
         )
 
     def subscribe(self, timeout: float = 15.0) -> TriggerSubscription:

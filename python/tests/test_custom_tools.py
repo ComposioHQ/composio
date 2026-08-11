@@ -16,10 +16,12 @@ from dataclasses import replace
 from unittest.mock import MagicMock
 
 import pytest
-from composio.client.compat import OMIT
-from composio.client.types import (
-    session_execute_response,
-    session_proxy_execute_response,
+from composio_client import omit
+from composio_client.types.tool_router.session_execute_response import (
+    SessionExecuteResponse,
+)
+from composio_client.types.tool_router.session_proxy_execute_response import (
+    SessionProxyExecuteResponse,
 )
 from pydantic import BaseModel, Field
 
@@ -38,9 +40,6 @@ from composio.core.models.experimental import ExperimentalAPI
 from composio.core.models.session_context import SessionContextImpl
 from composio.core.models.tool_router_session import ToolRouterSession
 from composio.exceptions import ValidationError
-
-SessionExecuteResponse = session_execute_response.SessionExecuteResponse
-SessionProxyExecuteResponse = session_proxy_execute_response.SessionProxyExecuteResponse
 
 # ────────────────────────────────────────────────────────────────
 # Fixtures
@@ -567,12 +566,10 @@ class TestSessionContextImpl:
         )
         ctx.execute("NONEXISTENT", {"arg": "val"})
         mock_client.tool_router.session.execute.assert_called_once_with(
-            "s",
-            {
-                "tool_slug": "NONEXISTENT",
-                "arguments": {"arg": "val"},
-                "experimental": OMIT,
-            },
+            session_id="s",
+            tool_slug="NONEXISTENT",
+            arguments={"arg": "val"},
+            experimental=omit,
         )
 
     def test_remote_fallback_passes_inline_custom_tools(self):
@@ -598,12 +595,10 @@ class TestSessionContextImpl:
         )
         ctx.execute("GMAIL_SEND_EMAIL", {"to": "a@b.com"})
         mock_client.tool_router.session.execute.assert_called_once_with(
-            "s",
-            {
-                "tool_slug": "GMAIL_SEND_EMAIL",
-                "arguments": {"to": "a@b.com"},
-                "experimental": inline_payload,
-            },
+            session_id="s",
+            tool_slug="GMAIL_SEND_EMAIL",
+            arguments={"to": "a@b.com"},
+            experimental=inline_payload,
         )
 
     def test_proxy_execute(self):
@@ -673,15 +668,11 @@ class TestToolRouterSessionCustomTools:
         result = s.execute("GMAIL_SEND_EMAIL", arguments={"to": "a@b.com"})
         mock_session_deps["client"].tool_router.session.execute.assert_called_once()
         call_args = mock_session_deps["client"].tool_router.session.execute.call_args
-        assert call_args.args[0] == "s"
-        body = call_args.args[1]
-        assert body["tool_slug"] == "GMAIL_SEND_EMAIL"
-        assert body["arguments"] == {"to": "a@b.com"}
-        assert "extra_body" not in body and "extra_body" not in call_args.kwargs
-        assert (
-            "enable_auto_workbench_offload" not in body
-            and "enable_auto_workbench_offload" not in call_args.kwargs
-        )
+        assert call_args.kwargs["session_id"] == "s"
+        assert call_args.kwargs["tool_slug"] == "GMAIL_SEND_EMAIL"
+        assert call_args.kwargs["arguments"] == {"to": "a@b.com"}
+        assert "extra_body" not in call_args.kwargs
+        assert "enable_auto_workbench_offload" not in call_args.kwargs
         # Remote returns client model as-is (backward compat, supports attribute access)
         assert isinstance(result, SessionExecuteResponse)
         assert result.data == {"sent": True}
@@ -708,7 +699,7 @@ class TestToolRouterSessionCustomTools:
         s.execute("GMAIL_SEND_EMAIL", arguments={"to": "a@b.com"})
 
         call_args = mock_session_deps["client"].tool_router.session.execute.call_args
-        assert call_args.args[1]["experimental"] == inline_payload
+        assert call_args.kwargs["experimental"] == inline_payload
 
     def test_proxy_execute(self, mock_session_deps):
         mock_session_deps[
