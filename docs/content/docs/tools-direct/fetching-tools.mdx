@@ -242,7 +242,7 @@ const toolkitSearchRaw = await composio.tools.getRawComposioTools({
 </Tabs>
 
 <Callout type="info">
-These SDK examples use `latest`, the default when you don't configure `toolkit_versions` (TypeScript: `toolkitVersions`) on the client. For direct REST calls, omission depends on the API version: the v3 tools endpoints default to the pinned base version (`00000000_00`), while the v3.1 tools endpoints default to `latest`. Use `latest` when an LLM consumes tool output; pin a dated version when application code parses the output. See [toolkit versioning](/docs/tools-direct/toolkit-versioning).
+These SDK examples use `latest` by default. REST v3 tool endpoints default to `00000000_00`; REST v3.1 tool endpoints default to `latest`. Pin a dated version when application code parses tool output. See [toolkit versioning](/docs/tools-direct/toolkit-versioning).
 </Callout>
 
 ## Next
