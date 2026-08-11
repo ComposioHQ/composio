@@ -6,7 +6,7 @@ const connectionRequest = await session.authorize("gmail", {
   callbackUrl: "https://google.com"
 });
 
-console.log(connectionRequest);
+console.log(`Visit this URL to authorize: ${connectionRequest.redirectUrl}`);
 
 const connectedAccount = await connectionRequest.waitForConnection();
 console.log(connectedAccount);
