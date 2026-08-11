@@ -176,6 +176,12 @@ print(result["messages"][-1].content)
 
 </IntegrationTabs>
 
+## Argument validation
+
+The Python LangChain and LangGraph providers build a Pydantic argument model from each tool's JSON Schema. Objects declared without `properties` accept and preserve free-form keys. Objects that declare `properties` reject undeclared keys unless their schema explicitly allows them with `additionalProperties`.
+
+Schemas that use `patternProperties` or schema-valued `additionalProperties` validate dynamic keys before execution. If validation fails, the tool does not run, which gives the agent a chance to correct its arguments and retry.
+
 ## Next
 
 <Card icon={<BookOpen />} title="What is a session?" href="/docs/how-composio-works" description="How sessions scope users, tools, and auth, and how to reuse them across requests." />

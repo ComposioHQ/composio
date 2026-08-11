@@ -261,6 +261,8 @@ for await (const content of query({
 </Step>
 </Steps>
 
+The TypeScript provider registers each tool's complete object schema. Free-form object arguments reach execution unchanged, while root-level constraints such as `additionalProperties` and `patternProperties` remain enforced. Invalid arguments return an error result and the tool does not run.
+
 </IntegrationContent>
 
 </IntegrationTabs>

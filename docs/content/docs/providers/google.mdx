@@ -122,6 +122,8 @@ console.log(response.text);
 </Step>
 </Steps>
 
+Both Gemini providers preserve arguments for object schemas that do not declare `properties`, so tools can accept free-form JSON payloads. The TypeScript provider also normalizes object schema nodes for Google GenAI when they declare `properties` without an explicit `type`.
+
 </IntegrationContent>
 
 <IntegrationContent value="adk">

@@ -65,6 +65,8 @@ print(result)
 
 Each Composio tool becomes a CrewAI `BaseTool` whose `args_schema` is built from the tool's input schema, so CrewAI validates arguments before running anything.
 
+Objects declared without `properties` accept and preserve free-form keys. Objects that declare `properties` reject undeclared keys unless their schema explicitly allows them with `additionalProperties`. Schemas that use `patternProperties` or schema-valued `additionalProperties` also validate dynamic keys before execution.
+
 When validation fails, the tool does not raise. It returns a structured result instead:
 
 ```python
