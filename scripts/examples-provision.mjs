@@ -223,8 +223,14 @@ function findAuthConfig(slug) {
     c => c.toolkit?.slug === slug && c.status !== 'DISABLED' && c.name === `examples-${slug}`
   );
 }
-function findActiveAccount(slug) {
-  return accounts.find(a => a.toolkit?.slug === slug && a.status === 'ACTIVE');
+function findActiveAccount(slug, authConfigId) {
+  // Must agree with findAuthConfig. Accepting any ACTIVE account for the toolkit
+  // would pair a freshly created examples-<slug> config with an account bound to
+  // a different one, report the run complete, and leave the examples-owned
+  // config with no connection --initiate-missing would ever create.
+  return accounts.find(
+    a => a.toolkit?.slug === slug && a.status === 'ACTIVE' && a.auth_config?.id === authConfigId
+  );
 }
 
 for (const { exportPrefix, slug } of BROWSER_GRANT_TOOLKITS) {
@@ -241,7 +247,7 @@ for (const { exportPrefix, slug } of BROWSER_GRANT_TOOLKITS) {
     exports[`COMPOSIO_EXAMPLES_${exportPrefix}_AUTH_CONFIG_ID`] = config.id;
   }
 
-  const account = findActiveAccount(slug);
+  const account = findActiveAccount(slug, config.id);
   if (account) {
     if (exportPrefix) {
       exports[`COMPOSIO_EXAMPLES_${exportPrefix}_CONNECTED_ACCOUNT_ID`] = account.id;

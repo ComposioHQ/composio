@@ -12,8 +12,10 @@ from composio import Composio
 # Initialize Composio SDK
 composio = Composio()
 
-# The provisioned examples user (raises KeyError when unset)
+# Provisioned project state (raises KeyError when unset). The backend validates
+# auth config ids, so a placeholder would abort session creation.
 user_id = os.environ["COMPOSIO_EXAMPLES_USER_ID"]
+github_auth_config_id = os.environ["COMPOSIO_EXAMPLES_GITHUB_AUTH_CONFIG_ID"]
 
 
 # Example 1: Create a basic tool router session
@@ -109,7 +111,7 @@ def full_workflow_example():
         user_id=user_id,
         toolkits=["github", "slack"],
         manage_connections=True,
-        auth_configs={"github": "ac_demo_123"},
+        auth_configs={"github": github_auth_config_id},
     )
 
     print(f"✓ Created session: {session.session_id}")
