@@ -50,22 +50,10 @@ The agent gets tools either way. What the skill adds is the part the tools canno
 
 Search matches on the use case, not on a tool name, so the phrasing the agent uses matters. "Start a DM with someone in Slack and send them a message" matches a skill; "slack tools" does not.
 
-The skills you browse in the dashboard are the same ones search returns. There is no separate contract for them: they ride inside the search response, so nothing in your code has to ask for them.
+Skills ride inside the search response. There is no separate contract for them, so nothing in your code has to ask for them.
 
-## Browsing skills
-
-Skills live in the [Composio dashboard](https://dashboard.composio.dev/~/project/skills?utm_source=docs&utm_medium=content&utm_campaign=docs-skills) under **Skills**, alongside Toolkits.
-
-You can:
-
-- **Search by use case** — describe the task the way you would say it ("archive promotional emails from last week") rather than guessing a tool name.
-- **Filter by app** — narrow to a single toolkit, or use the app chips to see how many skills each one covers.
-- **Open a skill** — see its full execution plan, the tools each step calls, and its pitfalls.
-
-Browsing with no query lists the catalog by maturity, so the most-refined skills come first.
-
-<Callout type="warn">
-There is no public API for browsing skills yet. The catalog is currently dashboard-only, so unlike most of Composio there is no cURL equivalent for these operations. Your agent still receives skills at runtime through search — this limit is on listing and reading them yourself. This page will be updated when an API is available.
+<Callout type="info">
+There is no API for listing or reading skills, so unlike most of Composio there is no cURL equivalent on this page. Your agent still receives them at runtime through search — the limit is on browsing the catalog yourself. This page will be updated when that changes.
 </Callout>
 
 ## Related
