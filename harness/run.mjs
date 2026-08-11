@@ -1,6 +1,6 @@
 #!/usr/bin/env node
-// Examples runner — the measuring instrument for the examples-live-parity
-// goal. Read-only for the optimizer (see goal.md).
+// Examples runner: sweeps the entrypoints in examples-manifest.json against
+// the live backend, recording per-entry results and Composio traces.
 //
 //   node harness/run.mjs sweep    --client baseline|candidate [--lang ts|py] [--ids a,b] [--tiers 1,2,3] [--llm live|mock]
 //   node harness/run.mjs neg      [--lang ts|py] [--ids a,b] [--sample N] [--seed S]
