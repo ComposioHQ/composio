@@ -20,7 +20,7 @@ mcp_config = composio.mcp.create(
     allowed_tools=["SLACK_LIST_ALL_CHANNELS", "SLACK_SEARCH_MESSAGES"],
 )
 
-mcp_server = mcp_config.generate(user_id=user_id)
+mcp_server = mcp_config.generate(user_id=user_id)  # type: ignore[call-arg]  # generate is typed as a bare Callable; runtime accepts the user_id keyword
 
 client = MultiServerMCPClient(
     {

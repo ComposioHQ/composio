@@ -6,11 +6,9 @@ after creation — e.g. adding toolkits, changing workbench settings, or
 updating preload config without creating a new session.
 """
 
-import os
-
 from composio import Composio
 
-composio = Composio(base_url=os.environ.get("COMPOSIO_BASE_URL"))
+composio = Composio()
 
 # Create a session with gmail only
 session = composio.create(
