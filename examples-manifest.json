@@ -1,5 +1,5 @@
 {
-  "$comment": "Inventory of runnable example entrypoints. Tiers: 1=unattended, 2=needs provisioned state, 3=bounded (readiness+terminate), X=excluded. See spec.md. Tier moves are monotone toward more coverage vs eval/baseline-tiers.json.",
+  "$comment": "Inventory of runnable example entrypoints. Tiers: 1=unattended, 2=needs provisioned state, 3=bounded (readiness+terminate), X=excluded. See spec.md. Tier moves are monotone toward more coverage vs eval/baseline-tiers.json. Readiness regexes must anchor on a labeled output line the example prints on success (e.g. 'Visit this URL to authorize: https?://'), never a bare 'https?://' — a URL inside an error message must not count as ready.",
   "entries": [
     {
       "id": "ts/anthropic/index",
@@ -98,7 +98,7 @@
       "pkg": "connected-accounts-example",
       "file": "ts/examples/connected-accounts/src/index.ts",
       "tier": "3",
-      "readiness": "https?://",
+      "readiness": "authorize the user: https?://",
       "toolkits": [
         "github"
       ],
@@ -126,7 +126,7 @@
       "env": [
         "OPENAI_API_KEY"
       ],
-      "readiness": "https?://",
+      "readiness": "Redirect the user to https?://",
       "timeoutSec": 120
     },
     {
@@ -163,7 +163,7 @@
       "pkg": "connected-accounts-example",
       "file": "ts/examples/connected-accounts/src/toolkit-authorize.ts",
       "tier": "3",
-      "readiness": "https?://",
+      "readiness": "authorize the toolkit: https?://",
       "toolkits": [
         "github"
       ],
@@ -554,7 +554,7 @@
       "pkg": "tool-router-example",
       "file": "ts/examples/tool-router/src/authorize.ts",
       "tier": "3",
-      "readiness": "https?://",
+      "readiness": "Visit this URL to authorize: https?://",
       "toolkits": [
         "gmail"
       ],
@@ -666,7 +666,10 @@
       "pkg": "tool-router-example",
       "file": "ts/examples/tool-router/src/multi-account.ts",
       "tier": "3",
-      "readiness": "https?://",
+      "env": [
+        "OPENAI_API_KEY"
+      ],
+      "readiness": "Visit this URL to authorize: https?://",
       "toolkits": [
         "gmail"
       ],
@@ -723,7 +726,7 @@
       "env": [
         "OPENAI_API_KEY"
       ],
-      "readiness": "https?://",
+      "readiness": "authorize the toolkit: https?://",
       "toolkits": [
         "github"
       ],
@@ -968,7 +971,7 @@
       "lang": "py",
       "file": "python/examples/connected_accounts.py",
       "tier": "3",
-      "readiness": "https?://",
+      "readiness": "Visit this URL to authorize: https?://",
       "ids": [
         "COMPOSIO_EXAMPLES_GMAIL_AUTH_CONFIG_ID"
       ],
@@ -1067,7 +1070,7 @@
       "lang": "py",
       "file": "python/examples/experimental_tool_router_example.py",
       "tier": "3",
-      "readiness": "https?://",
+      "readiness": "Redirect URL: https?://",
       "toolkits": [
         "github"
       ],
@@ -1098,7 +1101,7 @@
       "lang": "py",
       "file": "python/examples/tool_router/authorize.py",
       "tier": "3",
-      "readiness": "https?://",
+      "readiness": "Redirect URL: https?://",
       "toolkits": [
         "gmail"
       ],

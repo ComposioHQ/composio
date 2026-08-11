@@ -19,7 +19,7 @@ connection_request = composio.connected_accounts.initiate(
 )
 
 # Send the user to this URL to authorize the connection
-print(connection_request.redirect_url)
+print(f"Visit this URL to authorize: {connection_request.redirect_url}")
 
 # Wait for the connection to be established (OAuth)
 connected_account = connection_request.wait_for_connection()
