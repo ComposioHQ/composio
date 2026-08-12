@@ -1,6 +1,7 @@
 import path from 'node:path';
 import * as tempy from 'tempy';
 import { Composio as RawComposioClient } from '@composio/client';
+import type { AuthConfigCreateParams } from '@composio/client/resources/auth-configs';
 import { CliApp, CliConfig } from '@effect/cli';
 import { Command, FetchHttpClient, FileSystem, Path } from '@effect/platform';
 import { BunFileSystem, BunContext, BunPath } from '@effect/platform-bun';
@@ -114,6 +115,7 @@ toolkitsData?: {
   authConfigsData?: {
     items?: AuthConfigItem[];
     createResponse?: AuthConfigCreateResponse;
+    onCreate?: (params: AuthConfigCreateParams) => void;
   };
 
   /**
@@ -611,13 +613,15 @@ export const TestLayer = (input?: TestLiveInput) =>
           }
           return Effect.succeed(found);
         },
-        createAuthConfig: () =>
-          Effect.succeed(
+        createAuthConfig: (params: AuthConfigCreateParams) => {
+          authConfigsData.onCreate?.(params);
+          return Effect.succeed(
             authConfigsData.createResponse ?? {
               auth_config: { id: 'ac_test', auth_scheme: 'OAUTH2', is_composio_managed: true },
               toolkit: { slug: 'test' },
             }
-          ),
+          );
+        },
         deleteAuthConfig: (nanoid: string) => {
           const found = authConfigsData.items.find(item => item.id === nanoid);
           if (!found) {
