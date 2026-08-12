@@ -29,8 +29,8 @@ interface MockedClaudeAgentTool {
   _isMockedClaudeAgentTool: boolean;
 }
 
-// Minimal structural type for a zod-like raw shape value, matching only the member these
-// tests dereference (`safeParse`).
+// Minimal structural type for the complete Zod object schema the provider registers, matching
+// only the member these tests dereference (`safeParse`).
 type MinimalZodSchema = {
   safeParse: (value: unknown) => { success: boolean };
 };
@@ -47,7 +47,7 @@ type MockedToolFn = Mock<
   (
     name: string,
     description: string | undefined,
-    schema: Record<string, MinimalZodSchema>,
+    schema: MinimalZodSchema,
     handler: MockedToolHandler
   ) => unknown
 >;
@@ -139,13 +139,21 @@ describe('ClaudeAgentSDKProvider', () => {
       expect(wrapped.description).toBe(mockTool.description);
     });
 
-    it('should pass a raw Zod shape to the Claude Agent SDK', () => {
+    it('should pass a complete Zod object schema to the Claude Agent SDK', () => {
+      // A raw property shape drops every root-level constraint, so the provider registers the
+      // whole object schema instead. See claude-agent-sdk.registration.test.ts for what that
+      // buys at the real SDK boundary.
       provider.wrapTool(mockTool, mockExecuteToolFn);
 
-      const schemaShape = (tool as unknown as MockedToolFn).mock.calls[0][2];
-      expect(Object.keys(schemaShape)).toEqual(['to', 'subject', 'body']);
-      expect(schemaShape.to.safeParse('test@example.com').success).toBe(true);
-      expect(schemaShape.to.safeParse(123).success).toBe(false);
+      const schema = (tool as unknown as MockedToolFn).mock.calls[0][2];
+      expect(schema.safeParse({ to: 'test@example.com', subject: 's', body: 'b' }).success).toBe(
+        true
+      );
+      expect(schema.safeParse({ to: 123, subject: 's', body: 'b' }).success).toBe(false);
+      // The root is strict: `additionalProperties` is omitted on a named-properties schema.
+      expect(
+        schema.safeParse({ to: 'test@example.com', subject: 's', body: 'b', extra: 'x' }).success
+      ).toBe(false);
     });
 
     it('should handle tools without input parameters', () => {

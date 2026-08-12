@@ -15,8 +15,8 @@ import {
   McpUrlResponse,
   McpServerGetResponse,
   normalizeToolArguments,
+  jsonSchemaToZodSchema,
 } from '@composio/core';
-import { jsonSchemaToZodShape } from '@composio/core/utils/json-schema';
 import {
   tool as sdkTool,
   type Options as ClaudeAgentOptions,
@@ -102,18 +102,29 @@ export class ClaudeAgentSDKProvider extends BaseAgenticProvider<
    * ```
    */
   wrapTool(composioTool: Tool, executeTool: ExecuteToolFn): ClaudeAgentTool {
-    const inputZodShape = jsonSchemaToZodShape(
-      composioTool.inputParameters ?? { type: 'object', properties: {} }
+    // Register the complete object schema rather than its raw property shape. A raw shape is only
+    // the per-property map, so every root-level constraint — `additionalProperties`, whether
+    // boolean or schema-valued, and `patternProperties` — is structurally unrepresentable and gets
+    // dropped at registration. The SDK then silently strips unknown keys instead of rejecting them,
+    // and free-form roots lose the content they exist to carry.
+    //
+    // A tool with no input parameters stays closed: the fallback spells out
+    // `additionalProperties: false`, because a bare `properties: {}` is now an open object.
+    const inputZodSchema = jsonSchemaToZodSchema(
+      composioTool.inputParameters ?? {
+        type: 'object',
+        properties: {},
+        additionalProperties: false,
+      }
     );
 
-    // The SDK types tool() generically over its zod raw shape, which makes the handler argument
-    // instantiate excessively deep against the v3 shape returned here (TS2589). Narrow tool() to a
-    // concrete, monomorphic signature once — this sidesteps the deep instantiation and lets the
-    // handler keep a precise argument type, instead of scattering `as never` casts at the call.
+    // The SDK runtime accepts a complete schema, but `tool()` only exposes the raw-shape type, and
+    // that generic signature also makes the handler argument instantiate excessively deep (TS2589).
+    // Narrow it to a concrete, monomorphic signature once, instead of scattering casts at the call.
     const defineTool = sdkTool as unknown as (
       name: string,
       description: string,
-      inputShape: ReturnType<typeof jsonSchemaToZodShape>,
+      inputSchema: ReturnType<typeof jsonSchemaToZodSchema>,
       handler: (
         args: Record<string, unknown>
       ) => Promise<{ content: Array<{ type: 'text'; text: string }> }>
@@ -122,7 +133,7 @@ export class ClaudeAgentSDKProvider extends BaseAgenticProvider<
     return defineTool(
       composioTool.slug,
       composioTool.description ?? `Execute ${composioTool.slug}`,
-      inputZodShape,
+      inputZodSchema,
       async args => {
         try {
           // Models occasionally emit tool input as a JSON string rather than an object (issue #2406).

@@ -139,13 +139,19 @@ const ParametersSchema = z.preprocess(
     oneOf: z.array(JSONSchemaPropertySchema).optional(),
     allOf: z.array(JSONSchemaPropertySchema).optional(),
     not: JSONSchemaPropertySchema.optional(),
-    properties: z.record(z.string(), JSONSchemaPropertySchema),
+    properties: z.record(z.string(), JSONSchemaPropertySchema).optional(),
     required: z.array(z.string()).optional(),
     title: z.string().optional(),
     default: z.unknown().optional(),
     nullable: z.boolean().optional(),
     description: z.string().optional(),
-    additionalProperties: z.boolean().default(false).optional(),
+    // Dynamic-key constraints the Composio API ships at the parameters root.
+    // Both were previously lost on parse: `patternProperties` was stripped as an
+    // unknown key, and a schema-valued `additionalProperties` was rejected
+    // outright by the boolean-only schema. Omission still stays omission —
+    // downstream converters, not the parser, decide the implicit policy.
+    patternProperties: z.record(z.string(), JSONSchemaPropertySchema).optional(),
+    additionalProperties: z.union([z.boolean(), JSONSchemaPropertySchema]).optional(),
     // Definition blocks targeted by `$ref` pointers. The Composio API ships
     // these at the parameters root (e.g. `data` → `$ref` → `#/$defs/...`), but
     // because `z.object` strips unknown keys they were being dropped on parse —

@@ -11,6 +11,13 @@ import {
   type LLMPage,
 } from '@/lib/source';
 import { dereferenceDocument } from '@/lib/openapi-deref';
+import {
+  REST_VERSION_GUIDANCE,
+  TOOL_VERSION_GUIDANCE,
+  apiVersionPointer,
+  isToolVersionPath,
+  toolVersionParameterDescription,
+} from '@/lib/api-version-guidance';
 import { notFound } from 'next/navigation';
 import { readFile } from 'fs/promises';
 import { join } from 'path';
@@ -372,6 +379,23 @@ function renderSchema(schema: OpenAPISchema, indent = 0, maxDepth = 4, depth = 0
   return lines;
 }
 
+/** Overrides only the top-level request-body version field for affected tool operations. */
+function withToolVersionDescription(rawSpecPath: string, schema: OpenAPISchema): OpenAPISchema {
+  const versionProperty = schema.properties?.version;
+  if (!versionProperty || !isToolVersionPath(rawSpecPath)) return schema;
+
+  return {
+    ...schema,
+    properties: {
+      ...schema.properties,
+      version: {
+        ...versionProperty,
+        description: toolVersionParameterDescription(rawSpecPath, versionProperty.description),
+      },
+    },
+  };
+}
+
 // Get a readable type string
 function getTypeString(schema: OpenAPISchema, depth = 0, maxDepth = 4): string {
   if (depth > maxDepth) return '...';
@@ -450,6 +474,15 @@ export async function openapiPageToMarkdown(page: {
 
   const lines: string[] = [`# ${title}`, ''];
   lines.push(`**Documentation:** ${page.url}`, '');
+
+  // Which REST version this page documents, emitted above the `**Endpoint:**`
+  // line below so a truncating reader still sees it. These pages publish a
+  // complete working curl example and never touch mdxToCleanMarkdown, so
+  // without this the strongest v3 signal in the corpus stays unlabelled.
+  const versionPointer = apiVersionPointer(page.url);
+  if (versionPointer) {
+    lines.push(versionPointer.trim(), '');
+  }
 
   if (description) {
     lines.push(description, '');
@@ -548,7 +581,12 @@ export async function openapiPageToMarkdown(page: {
       for (const param of queryParams) {
         const typeStr = getTypeString(param.schema || { type: 'string' });
         const reqMark = param.required ? ' *(required)*' : '';
-        lines.push(`- \`${param.name}\` (${typeStr})${reqMark}: ${param.description || ''}`);
+        const description =
+          (param.name === 'version' || param.name === 'toolkit_versions') &&
+          isToolVersionPath(name)
+            ? toolVersionParameterDescription(name, param.description)
+            : param.description || '';
+        lines.push(`- \`${param.name}\` (${typeStr})${reqMark}: ${description}`);
       }
       lines.push('');
     }
@@ -573,8 +611,9 @@ export async function openapiPageToMarkdown(page: {
       }
       const schema = operation.requestBody.content['application/json'].schema;
       if (schema) {
+        const renderedSchema = withToolVersionDescription(name, schema);
         lines.push('**Schema:**', '');
-        lines.push(...renderSchema(schema));
+        lines.push(...renderSchema(renderedSchema));
         lines.push('');
 
         // Example
@@ -620,6 +659,24 @@ export async function openapiPageToMarkdown(page: {
       lines.push('```bash');
       lines.push(generateCurl(method, name, baseUrl, operation.parameters, operation.requestBody));
       lines.push('```', '');
+    }
+  }
+
+  // Guidance goes after the operation body. Operation pages deliberately do
+  // NOT receive SESSION_GUARDRAILS: that block is about SDK code generation,
+  // it would be noise on a REST operation page, and — because it composes
+  // TOOL_VERSION_GUIDANCE — it would force the tool-version text onto every
+  // operation regardless of scope.
+  //
+  // The baseline applies to every operation. The tool-version note applies to
+  // exactly the five endpoints whose version default changes, decided by
+  // isToolVersionPath on the RAW spec path key (`/api/v3.1/tools/{tool_slug}`)
+  // — normalization belongs to the predicate, so nothing is stripped here and
+  // nothing keys off the page URL.
+  if (selectedOperations.length > 0) {
+    lines.push('---', '', REST_VERSION_GUIDANCE);
+    if (selectedOperations.some(selected => isToolVersionPath(selected.name))) {
+      lines.push('', TOOL_VERSION_GUIDANCE);
     }
   }
 

@@ -5,7 +5,7 @@ import {
   extractSlug,
   type ApiErrorDetails,
 } from 'src/utils/api-error-extraction';
-import { toolkitFromToolSlug } from 'src/utils/toolkit-from-tool-slug';
+import { guessToolkitFromToolSlug } from 'src/utils/toolkit-from-tool-slug';
 
 const NO_CONNECTION_SLUGS: ReadonlySet<string> = new Set([
   'ActionExecute_ConnectedAccountNotFound',
@@ -124,9 +124,11 @@ export const buildNoActiveConnectionMessage = (params: {
     return `No active connection found for toolkit "${params.toolkit}". Run \`composio link ${params.toolkit}\`, then retry.`;
   }
   if (params.toolSlug) {
-    // `toolkitFromToolSlug` returns the whole slug lowercased when there is no
-    // underscore, so keep the explicit 'composio' guard for the bare-slug case.
-    const toolkit = toolkitFromToolSlug(params.toolSlug);
+    // Best-effort fallback for callers that could not resolve the toolkit.
+    // `guessToolkitFromToolSlug` returns the whole slug lowercased when there
+    // is no underscore, so keep the explicit 'composio' guard for the
+    // bare-slug case.
+    const toolkit = guessToolkitFromToolSlug(params.toolSlug);
     if (toolkit && toolkit !== 'composio') {
       return `No active connection found for toolkit "${toolkit}". Run \`composio link ${toolkit}\`, then retry.`;
     }
@@ -161,7 +163,7 @@ export class ComposioNoActiveConnectionError extends Error {
 }
 
 /**
- * The toolkit a remediation can name. `toolkitFromToolSlug` returns the whole slug lowercased when
+ * The toolkit a remediation can name. `guessToolkitFromToolSlug` returns the whole slug lowercased when
  * there is no underscore, so a bare slug degrades to no toolkit rather than to `'composio'`.
  */
 const remediationToolkit = (params: {
@@ -170,7 +172,7 @@ const remediationToolkit = (params: {
 }): string | undefined => {
   if (params.toolkit) return params.toolkit;
   if (!params.toolSlug) return undefined;
-  const derived = toolkitFromToolSlug(params.toolSlug);
+  const derived = guessToolkitFromToolSlug(params.toolSlug);
   return derived && derived !== 'composio' ? derived : undefined;
 };
 

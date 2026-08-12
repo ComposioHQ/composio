@@ -6,6 +6,7 @@
   "main": "src/index.ts",
   "scripts": {
     "clean": "git clean -xdf node_modules",
+    "typecheck": "tsc --noEmit -p ./tsconfig.json",
     "start": "bun src/index.ts",
     "dev": "bun --watch src/index.ts",
     "webhook:server": "bun src/webhook-server.ts",
@@ -25,5 +26,6 @@
   "devDependencies": {
     "@types/bun": "catalog:",
     "typescript": "catalog:"
-  }
+  },
+  "type": "module"
 }

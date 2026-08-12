@@ -114,6 +114,9 @@ export class ToolRouterSessionFilesMount {
       if (input.startsWith('http://') || input.startsWith('https://')) {
         const response = await ssrfSafeFetch(input);
         if (!response.ok) {
+          // The error path never reads the body, so release it explicitly (mirrors
+          // `readResponseBodyWithLimit`) instead of leaving it to the garbage collector.
+          await response.body?.cancel().catch(() => undefined);
           throw new Error(`Failed to fetch file from URL: ${response.statusText}`);
         }
         const content = await readResponseBodyWithLimit(response);

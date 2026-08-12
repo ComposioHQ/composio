@@ -47,6 +47,7 @@ import { UpgradeBinary } from 'src/services/upgrade-binary';
 import { NodeOs } from 'src/services/node-os';
 import { TriggersRealtime } from 'src/services/triggers-realtime';
 import { ToolsExecutor, ToolsExecutorLive } from 'src/services/tools-executor';
+import { ToolkitSlugCatalog } from 'src/services/toolkit-slug-catalog';
 import type { ToolExecuteResponse } from 'src/services/tools-executor';
 import type {
   SessionCreateResponse,
@@ -1226,6 +1227,13 @@ export const TestLayer = (input?: TestLiveInput) =>
       })
     );
 
+    // Built per test layer, so each test resolves toolkit slugs against its own
+    // cache directory rather than inheriting a memo from an earlier test.
+    const ToolkitSlugCatalogTest = Layer.provide(
+      ToolkitSlugCatalog.Default,
+      ComposioToolkitsRepositoryTest
+    );
+
     // --- ToolsExecutor ---
     // When `input.toolsExecutor` is set, use a canned mock (bypasses Tool Router).
     // Otherwise, use the real ToolsExecutorLive which flows through the mock ComposioClientSingleton.
@@ -1249,7 +1257,10 @@ export const TestLayer = (input?: TestLiveInput) =>
             },
           })
         )
-      : Layer.provide(ToolsExecutorLive, ComposioClientSingletonTest);
+      : Layer.provide(
+          ToolsExecutorLive,
+          Layer.mergeAll(ComposioClientSingletonTest, ToolkitSlugCatalogTest)
+        );
 
     const CliConfigLive = CliConfig.layer(ComposioCliConfig);
 
@@ -1298,6 +1309,7 @@ export const TestLayer = (input?: TestLiveInput) =>
       ComposioSessionRepositoryTest,
       TriggersRealtimeTest,
       ComposioToolkitsRepositoryTest,
+      ToolkitSlugCatalogTest,
       JsPackageManagerDetector.Default,
       ProjectEnvironmentDetector.Default,
       CommandRunnerTest,

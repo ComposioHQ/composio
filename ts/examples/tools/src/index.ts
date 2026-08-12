@@ -18,7 +18,15 @@ import path from 'path';
 const composio = new Composio({
   apiKey: process.env.COMPOSIO_API_KEY,
   allowTracking: false,
+  // Local file paths under fileUploadDirs are uploaded automatically when the tool expects a file
+  dangerouslyAllowAutoUploadDownloadFiles: true,
+  fileUploadDirs: [import.meta.dirname],
 });
+
+const userId = process.env.COMPOSIO_EXAMPLES_USER_ID; // a user with a Google Drive connection
+if (!userId) {
+  throw new Error('Set COMPOSIO_EXAMPLES_USER_ID');
+}
 
 /**
  * Main function to run the example
@@ -31,9 +39,9 @@ async function main() {
     const result = await composio.tools.execute('GOOGLEDRIVE_UPLOAD_FILE', {
       dangerouslySkipVersionCheck: true,
       arguments: {
-        file_to_upload: path.join(__dirname, 'image.png'),
+        file_to_upload: path.join(import.meta.dirname, 'image.png'),
       },
-      userId: 'default',
+      userId,
     });
     console.log('✅ File uploaded successfully...');
     console.log(JSON.stringify(result, null, 2));
@@ -42,16 +50,20 @@ async function main() {
     const result2 = await composio.tools.execute('GOOGLEDRIVE_DOWNLOAD_FILE', {
       dangerouslySkipVersionCheck: true,
       arguments: {
-        file_id: (result.data.response_data as unknown as { id: string }).id,
+        file_id: (result.data as unknown as { id: string }).id,
       },
-      userId: 'default',
+      userId,
     });
     console.log('✅ File downloaded successfully...');
     console.log(JSON.stringify(result2, null, 2));
   } catch (error) {
     console.error('❌ Error running example:', error);
+    process.exitCode = 1;
   }
 }
 
 // Run the example
-main().catch(console.error);
+main().catch(error => {
+  console.error(error);
+  process.exitCode = 1;
+});

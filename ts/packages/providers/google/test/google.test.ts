@@ -96,6 +96,31 @@ describe('GoogleProvider', () => {
 
       expect(wrapped.parameters?.required).toEqual(['input']);
     });
+
+    it('normalizes nested object schemas without treating property maps as schemas', () => {
+      const wrapped = provider.wrapTool({
+        ...mockTool,
+        inputParameters: {
+          type: 'object',
+          properties: {
+            properties: {
+              properties: { name: { type: 'string' } },
+            },
+          },
+        },
+      });
+
+      const params = wrapped.parameters as unknown as {
+        properties: Record<string, unknown>;
+      };
+      expect(params.properties).toEqual({
+        properties: {
+          type: 'object',
+          properties: { name: { type: 'string' } },
+        },
+      });
+      expect(params.properties).not.toHaveProperty('type');
+    });
   });
 
   describe('wrapTools', () => {

@@ -1,4 +1,5 @@
 import { source, examplesSource, referenceSource, toolkitsSource } from '@/lib/source';
+import { detectReferenceApiVersion } from '@/lib/api-version';
 import type { ReactNode } from 'react';
 
 export const revalidate = false;
@@ -99,29 +100,86 @@ function formatPage(page: { url: string }) {
   return `- https://docs.composio.dev${page.url}.md`;
 }
 
+const AUTHENTICATION_GUIDE_URLS = [
+  '/docs/manually-authenticating',
+  '/docs/managing-multiple-connected-accounts',
+  '/docs/shared-connections',
+  '/docs/importing-existing-connections',
+  '/docs/custom-app-vs-managed-app',
+  '/docs/programmatic-auth-configs',
+  '/docs/controlling-scopes',
+  '/docs/white-labeling-authentication',
+];
+
+/**
+ * Splits reference pages by REST version.
+ *
+ * This list is built with a flat `.map(formatPage)` that bypasses the
+ * `isLegacySeparator` filter the guides tree gets, so the two trees used to
+ * arrive interleaved under one unlabelled heading — and `/reference/v3/` is
+ * the only version-shaped path in the corpus, so it is the highest-precision
+ * match for the query most readers intend as "current Composio".
+ *
+ * Partitioned with `detectApiVersion`, not a literal path test, so moving the
+ * legacy tree's URL stays a one-line change in `lib/api-version.ts`.
+ */
+function partitionByApiVersion<T extends { url: string }>(pages: T[]) {
+  const current: T[] = [];
+  const legacy: T[] = [];
+  const versionIndependent: T[] = [];
+  for (const page of pages) {
+    const version = detectReferenceApiVersion(page.url);
+    if (version === '3.0') legacy.push(page);
+    else if (version === '3.1') current.push(page);
+    else versionIndependent.push(page);
+  }
+  return { current, legacy, versionIndependent };
+}
+
 export async function GET() {
   try {
     const docsTree = walkPageTree(source.pageTree.children as TreeNode[]);
 
     const examplesPages = examplesSource.getPages();
-    const referencePages = referenceSource.getPages();
     const toolkitsPages = toolkitsSource.getPages();
+    const {
+      current: currentReferencePages,
+      legacy: legacyReferencePages,
+      versionIndependent: versionIndependentReferencePages,
+    } = partitionByApiVersion(referenceSource.getPages());
+
+    const legacyReferenceSection =
+      legacyReferencePages.length > 0
+        ? `
+## API Reference (v3.0, legacy — supported, not for new code)
+
+${legacyReferencePages.map(formatPage).join('\n')}
+`
+        : '';
 
     const index = `# Composio Documentation
 
 > Composio powers 1000+ toolkits, tool search, context management, authentication, and a sandboxed workbench to help you build AI agents that turn intent into action.
 
-> **For AI agents:** Give your agent tools it can call directly with \`composio.create(user_id)\` + \`session.tools()\` and a provider package (e.g. \`composio_openai\`, \`@composio/openai\`). To connect over MCP instead, create the session with \`mcp: true\` and read \`session.mcp.url\` from any MCP-compatible client. See any page's .md endpoint for full usage instructions.
+> **For AI agents:** Route by intent. To build an application, start with [Quickstart](https://docs.composio.dev/docs/quickstart.md) or [Providers](https://docs.composio.dev/docs/providers.md) and use \`composio.create(user_id)\` + \`session.tools()\`. To use Composio from Codex or Claude Code without explicit MCP intent, install the [native agent plugin](https://docs.composio.dev/docs/agent-plugins.md). To connect an existing client over MCP, use [Composio Connect](https://docs.composio.dev/docs/composio-connect.md). When an application creates a session and needs MCP transport, use [Sessions via MCP](https://docs.composio.dev/docs/sessions-via-mcp.md). See any page's .md endpoint for full usage instructions.
 
 ${docsTree}
+
+## Authentication guides
+
+${AUTHENTICATION_GUIDE_URLS.map(url => formatPage({ url })).join('\n')}
 
 ## Examples
 
 ${examplesPages.map(formatPage).join('\n')}
 
-## API Reference
+## API Reference (v3.1, current)
 
-${referencePages.map(formatPage).join('\n')}
+${currentReferencePages.map(formatPage).join('\n')}
+${legacyReferenceSection}
+## SDK and product reference (version-independent)
+
+${versionIndependentReferencePages.map(formatPage).join('\n')}
 
 ## Toolkits
 

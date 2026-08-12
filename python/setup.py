@@ -29,6 +29,7 @@ setup(
         "typing-extensions>=4.16.0",
         "openai>=2.48.0",
         "json-schema-to-pydantic>=0.4.11",
+        "jsonschema>=4.23.0",
     ],
     include_package_data=True,
 )

@@ -1,6 +1,6 @@
 {
-  "title": "Extending sessions capabilities",
-  "defaultOpen": true,
+  "title": "Extend sessions",
+  "defaultOpen": false,
   "pages": [
     "proxy-execute",
     "custom-tools-and-toolkits",

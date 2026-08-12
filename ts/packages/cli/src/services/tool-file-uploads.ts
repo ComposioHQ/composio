@@ -7,7 +7,7 @@ import type { FileSystem, Path } from '@effect/platform';
 import type { Composio as RawComposioClient } from '@composio/client';
 import { assertSafeFileUploadPath } from '@composio/core';
 import { Cause, Data, Effect, Exit, Predicate } from 'effect';
-import { toolkitFromToolSlug } from 'src/utils/toolkit-from-tool-slug';
+import { guessToolkitFromToolSlug } from 'src/utils/toolkit-from-tool-slug';
 
 type JsonSchema = Record<string, unknown>;
 
@@ -353,7 +353,7 @@ export const uploadToolInputFiles = async (params: {
     fs: params.fs,
     path: params.path,
     toolSlug: params.toolSlug,
-    toolkitSlug: params.toolkitSlug ?? toolkitFromToolSlug(params.toolSlug) ?? 'unknown',
+    toolkitSlug: params.toolkitSlug ?? guessToolkitFromToolSlug(params.toolSlug) ?? 'unknown',
     client: params.client,
   });
 
