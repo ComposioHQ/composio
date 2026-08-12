@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+### Patch Changes
+
+- `composio dev auth-configs create` now sends custom OAuth credentials and scopes
+  in the API's expected shape instead of failing validation.
+
 ## 0.3.3
 
 ### Patch Changes
