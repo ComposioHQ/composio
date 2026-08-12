@@ -7,10 +7,13 @@ describe('Google Drive tool schemas', () => {
     slug => {
       const tool = TOOLS_TYPES_GOOGLEDRIVE.find(item => item.slug === slug);
 
-      expect(tool?.input_parameters.properties).toHaveProperty('fields');
-      expect(tool?.input_parameters.properties.fields).toMatchObject({
-        nullable: true,
-        type: 'string',
+      expect(tool?.input_parameters).toMatchObject({
+        properties: {
+          fields: {
+            nullable: true,
+            type: 'string',
+          },
+        },
       });
     }
   );
