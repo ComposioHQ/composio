@@ -7,11 +7,7 @@
     "tags": [
       "readOnlyHint"
     ],
-    "toolkit": {
-      "slug": "COMPOSIO",
-      "name": "composio",
-      "logo": "https://cdn.jsdelivr.net/gh/ComposioHQ/open-logos@master/composio-logo.png"
-    },
+    "toolkit": null,
     "inputParameters": {
       "properties": {
         "tool_slugs": {
@@ -166,11 +162,7 @@
       "openWorldHint",
       "destructiveHint"
     ],
-    "toolkit": {
-      "slug": "COMPOSIO",
-      "name": "composio",
-      "logo": "https://cdn.jsdelivr.net/gh/ComposioHQ/open-logos@master/composio-logo.png"
-    },
+    "toolkit": null,
     "inputParameters": {
       "properties": {
         "toolkits": {
@@ -441,11 +433,7 @@
       "destructiveHint",
       "important"
     ],
-    "toolkit": {
-      "slug": "COMPOSIO",
-      "name": "composio",
-      "logo": "https://cdn.jsdelivr.net/gh/ComposioHQ/open-logos@master/composio-logo.png"
-    },
+    "toolkit": null,
     "inputParameters": {
       "properties": {
         "tools": {
@@ -694,11 +682,7 @@
       "destructiveHint",
       "openWorldHint"
     ],
-    "toolkit": {
-      "slug": "COMPOSIO",
-      "name": "composio",
-      "logo": "https://cdn.jsdelivr.net/gh/ComposioHQ/open-logos@master/composio-logo.png"
-    },
+    "toolkit": null,
     "inputParameters": {
       "properties": {
         "command": {
@@ -817,11 +801,7 @@
       "destructiveHint",
       "openWorldHint"
     ],
-    "toolkit": {
-      "slug": "COMPOSIO",
-      "name": "composio",
-      "logo": "https://cdn.jsdelivr.net/gh/ComposioHQ/open-logos@master/composio-logo.png"
-    },
+    "toolkit": null,
     "inputParameters": {
       "description": "Remote Workbench - Run Python in a persistent remote sandbox for remote artifacts or scripted Composio tool calls. Avoid when needed data is already inline.",
       "properties": {
@@ -966,11 +946,7 @@
       "openWorldHint",
       "readOnlyHint"
     ],
-    "toolkit": {
-      "slug": "COMPOSIO",
-      "name": "composio",
-      "logo": "https://cdn.jsdelivr.net/gh/ComposioHQ/open-logos@master/composio-logo.png"
-    },
+    "toolkit": null,
     "inputParameters": {
       "properties": {
         "queries": {

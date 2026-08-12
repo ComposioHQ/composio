@@ -3901,6 +3901,16 @@
               }
             }
           },
+          "422": {
+            "description": "Unprocessable entity. The auth scheme could not be resolved or the connected account is in an invalid state for this operation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
           "500": {
             "description": "Internal server error",
             "content": {
@@ -4613,7 +4623,7 @@
             }
           },
           "400": {
-            "description": "Bad request - Invalid nanoid, duplicate alias, or invalid credential values",
+            "description": "Bad request - Invalid nanoid or invalid credential values",
             "content": {
               "application/json": {
                 "schema": {
@@ -4653,7 +4663,7 @@
             }
           },
           "409": {
-            "description": "Conflict - A concurrent write holds the connection lease; retry the request",
+            "description": "Conflict - Duplicate alias, or a concurrent write holds the connection lease; retry the request",
             "content": {
               "application/json": {
                 "schema": {
@@ -5442,6 +5452,16 @@
               }
             }
           },
+          "429": {
+            "description": "Too many requests",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
           "500": {
             "description": "Internal server error",
             "content": {
@@ -5905,6 +5925,11 @@
                         "nullable": true,
                         "format": "uri",
                         "description": "Developer-hosted OAuth callback verifier URL. Setting it enables per-user callback identity verification; null disables it. Must be https and pass SSRF checks."
+                      },
+                      "theme": {
+                        "type": "object",
+                        "additionalProperties": {},
+                        "description": "Link-auth theme for the hosted connect page. Opaque to Apollo; the dashboard owns the token vocabulary and all value validation."
                       }
                     },
                     "required": [
@@ -8541,6 +8566,16 @@
               }
             }
           },
+          "429": {
+            "description": "Too many requests. The upstream service is rate limiting the request; retry after a short backoff.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
           "500": {
             "description": "Internal server error. An unexpected error occurred while processing the request.",
             "content": {
@@ -8655,6 +8690,411 @@
           },
           "500": {
             "description": "Internal server error. An unexpected error occurred while processing the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "x-api-version": "3.0"
+      }
+    },
+    "/api/v3/custom/toolkits/upsert": {
+      "post": {
+        "summary": "Upsert a custom toolkit",
+        "description": "Experimental: custom toolkits are in pilot and this contract may change. Creates a custom toolkit for the project with the provided slug, or updates its display metadata (name, API key field copy) when the project already owns a toolkit with that slug. app_url and auth_schemes cannot be changed on an existing toolkit: re-sending them unchanged is a no-op, changing them returns 409 (delete and re-register the toolkit instead, which revokes its connections).",
+        "tags": [
+          "Toolkits"
+        ],
+        "operationId": "postCustomToolkitsUpsert",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "UserApiKeyAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "description": "Toolkit creation data",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "slug": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 30,
+                    "pattern": "^[a-zA-Z0-9_\\s]+$",
+                    "description": "Unique slug identifier for the toolkit. Your slug will be prefixed with CUSTOM_ to avoid collision with composio managed toolkits. Spaces will be converted to underscores.",
+                    "example": "MY_TOOLKIT"
+                  },
+                  "toolkit_config": {
+                    "type": "object",
+                    "properties": {
+                      "name": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 200,
+                        "description": "Human readable name for your application"
+                      },
+                      "app_url": {
+                        "type": "string",
+                        "format": "uri",
+                        "description": "App URL for the toolkit. For MCP apps, please provide the MCP URL here"
+                      },
+                      "logo_file": {
+                        "type": "object",
+                        "properties": {
+                          "content": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 4000000,
+                            "pattern": "^[A-Za-z0-9+/]+={0,2}$",
+                            "description": "Base64-encoded image bytes, max 3MB decoded"
+                          },
+                          "mime_type": {
+                            "type": "string",
+                            "enum": [
+                              "image/png",
+                              "image/jpeg"
+                            ],
+                            "description": "Image MIME type of the encoded bytes"
+                          }
+                        },
+                        "required": [
+                          "content",
+                          "mime_type"
+                        ],
+                        "additionalProperties": false,
+                        "description": "Square logo image (PNG or JPEG, 256-1024px, max 3MB) shown for this toolkit in the dashboard and on connect pages. Uploaded to Composio-hosted storage; defaults to the Composio logo when omitted."
+                      },
+                      "auth_schemes": {
+                        "type": "array",
+                        "items": {
+                          "oneOf": [
+                            {
+                              "type": "object",
+                              "properties": {
+                                "mode": {
+                                  "type": "string",
+                                  "enum": [
+                                    "NO_AUTH"
+                                  ]
+                                }
+                              },
+                              "required": [
+                                "mode"
+                              ],
+                              "additionalProperties": false
+                            },
+                            {
+                              "type": "object",
+                              "properties": {
+                                "mode": {
+                                  "type": "string",
+                                  "enum": [
+                                    "API_KEY"
+                                  ]
+                                },
+                                "headers": {
+                                  "type": "object",
+                                  "additionalProperties": {
+                                    "type": "string"
+                                  },
+                                  "description": "Headers to be used for the API key authentication. Please replace your actual api key with {{generic_api_key}}"
+                                },
+                                "api_key_field": {
+                                  "type": "object",
+                                  "properties": {
+                                    "display_name": {
+                                      "type": "string",
+                                      "minLength": 1,
+                                      "maxLength": 100,
+                                      "description": "Label shown to end users for the API key input on the connect page"
+                                    },
+                                    "description": {
+                                      "type": "string",
+                                      "minLength": 1,
+                                      "maxLength": 500,
+                                      "description": "Help text shown to end users below the API key input on the connect page"
+                                    }
+                                  },
+                                  "additionalProperties": false,
+                                  "description": "End-user-facing copy for the API key input on the connect page"
+                                }
+                              },
+                              "required": [
+                                "mode",
+                                "headers"
+                              ],
+                              "additionalProperties": false
+                            },
+                            {
+                              "type": "object",
+                              "properties": {
+                                "mode": {
+                                  "type": "string",
+                                  "enum": [
+                                    "DCR_OAUTH"
+                                  ]
+                                },
+                                "discovery_url": {
+                                  "type": "string",
+                                  "format": "uri",
+                                  "description": "URL to fetch the full auth scheme from, usually the /.well-known/oauth-authorization-server path of your MCP URL"
+                                }
+                              },
+                              "required": [
+                                "mode",
+                                "discovery_url"
+                              ],
+                              "additionalProperties": false
+                            }
+                          ]
+                        },
+                        "minItems": 1,
+                        "description": "Authentication schemes for the toolkit"
+                      }
+                    },
+                    "required": [
+                      "name",
+                      "app_url",
+                      "auth_schemes"
+                    ],
+                    "additionalProperties": false
+                  }
+                },
+                "required": [
+                  "slug",
+                  "toolkit_config"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successfully upserted toolkit",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "slug": {
+                      "type": "string",
+                      "description": "Slug to be used with composio",
+                      "example": "CUSTOM_MY_TOOLKIT"
+                    }
+                  },
+                  "required": [
+                    "slug"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - Invalid parameters",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - Invalid or missing admin credentials",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found - Toolkit not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "408": {
+            "description": "Request timeout",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict - app_url or auth_schemes differ from the registered toolkit; delete and re-register to change them",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error - Failed to sync toolkit",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "x-api-version": "3.0"
+      }
+    },
+    "/api/v3/custom/toolkits/sync": {
+      "post": {
+        "summary": "Sync a custom toolkit",
+        "description": "Experimental: custom toolkits are in pilot and this contract may change. Re-fetches tool definitions from the remote MCP server for the custom toolkit with the provided slug. Call it when automatic sync fails or the remote tool definitions change.",
+        "tags": [
+          "Toolkits"
+        ],
+        "operationId": "postCustomToolkitsSync",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "UserApiKeyAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "description": "Toolkit sync data",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "slug": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 37,
+                    "pattern": "^[a-zA-Z0-9_]+$",
+                    "description": "Toolkit slug to sync",
+                    "example": "CUSTOM_MY_TOOLKIT"
+                  },
+                  "connected_account_id": {
+                    "type": "string",
+                    "format": "connectedAccountId",
+                    "description": "The unique identifier for the connected account",
+                    "example": "ca_1a2b3c4d5e6f"
+                  }
+                },
+                "required": [
+                  "slug"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successfully synced toolkit",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "slug": {
+                      "type": "string",
+                      "description": "Synced toolkit slug",
+                      "example": "CUSTOM_MY_TOOLKIT"
+                    },
+                    "version": {
+                      "type": "string",
+                      "description": "Version of the toolkit created after sync",
+                      "example": "00000000_00"
+                    },
+                    "synced_count": {
+                      "type": "number",
+                      "description": "Number of tools synced for toolkit",
+                      "example": 1
+                    }
+                  },
+                  "required": [
+                    "slug",
+                    "version",
+                    "synced_count"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - Invalid parameters",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - Invalid or missing credentials",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found - Toolkit not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "408": {
+            "description": "Request timeout",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict - Toolkit already exists",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error - Failed to sync toolkit",
             "content": {
               "application/json": {
                 "schema": {
@@ -10036,6 +10476,16 @@
           },
           "404": {
             "description": "Not found. The toolkits you are looking for do not exist.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests. The upstream service is rate limiting the request; retry after a short backoff.",
             "content": {
               "application/json": {
                 "schema": {
@@ -11571,6 +12021,16 @@
               }
             }
           },
+          "429": {
+            "description": "Too many requests",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
           "500": {
             "description": "Internal server error",
             "content": {
@@ -12944,8 +13404,9 @@
           },
           {
             "schema": {
-              "type": "number",
-              "nullable": true,
+              "type": "integer",
+              "minimum": 0,
+              "exclusiveMinimum": true,
               "default": 1,
               "description": "Page number to retrieve",
               "example": 1
@@ -12957,8 +13418,9 @@
           },
           {
             "schema": {
-              "type": "number",
-              "nullable": true,
+              "type": "integer",
+              "minimum": 0,
+              "exclusiveMinimum": true,
               "default": 10,
               "description": "Number of servers to return per page",
               "example": 10
@@ -14635,8 +15097,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {}
+                  "$ref": "#/components/schemas/Error"
                 }
               }
             }
@@ -14743,8 +15204,9 @@
           },
           {
             "schema": {
-              "type": "number",
-              "nullable": true,
+              "type": "integer",
+              "minimum": 0,
+              "exclusiveMinimum": true,
               "default": 1,
               "description": "Page number to retrieve",
               "example": 1
@@ -14756,8 +15218,9 @@
           },
           {
             "schema": {
-              "type": "number",
-              "nullable": true,
+              "type": "integer",
+              "minimum": 0,
+              "exclusiveMinimum": true,
               "default": 10,
               "description": "Number of servers to return per page",
               "example": 10
@@ -17311,6 +17774,16 @@
               }
             }
           },
+          "429": {
+            "description": "Too many requests. The upstream service is rate limiting the request; retry after a short backoff.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
           "500": {
             "description": "Internal server error. An unexpected error occurred while processing the request.",
             "content": {
@@ -19303,6 +19776,16 @@
               }
             }
           },
+          "429": {
+            "description": "Too many requests. The upstream service is rate limiting the request; retry after a short backoff.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
           "500": {
             "description": "Internal server error.",
             "content": {
@@ -19534,6 +20017,16 @@
           },
           "404": {
             "description": "Not found. The session does not exist, toolkit not found, or no auth config exists for the toolkit.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests. The upstream service is rate limiting the request; retry after a short backoff.",
             "content": {
               "application/json": {
                 "schema": {
