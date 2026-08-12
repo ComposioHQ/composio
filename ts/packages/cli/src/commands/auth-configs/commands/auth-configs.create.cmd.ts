@@ -87,20 +87,20 @@ export const authConfigsCmd$Create = Command.make(
       let params: AuthConfigCreateParams;
 
       if (Option.isSome(authScheme)) {
-        // Custom auth mode — custom credentials must be nested under `credentials`
-        // (the API schema for `use_custom_auth` requires it, e.g.
-        // client_id/client_secret for OAUTH2/S2S_OAUTH2). Scopes, when provided,
-        // are merged into the same object.
+        // Custom credentials must be nested under `credentials` for the API to accept them.
         params = {
           toolkit: { slug: toolkit },
           auth_config: {
             type: 'use_custom_auth' as const,
             authScheme: authScheme.value as AuthConfigCreateParams.UnionMember1['authScheme'],
             name: nameValue,
-            credentials: {
-              ...(parsedCustomCredentials ?? {}),
-              ...(scopesList ? { scopes: scopesList } : {}),
-            },
+            credentials:
+              parsedCustomCredentials || scopesList
+                ? {
+                    ...(parsedCustomCredentials ?? {}),
+                    ...(scopesList ? { scopes: scopesList } : {}),
+                  }
+                : undefined,
           },
         };
       } else {

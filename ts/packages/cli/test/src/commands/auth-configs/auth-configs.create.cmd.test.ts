@@ -1,4 +1,5 @@
 import { describe, expect, layer } from '@effect/vitest';
+import type { AuthConfigCreateParams } from '@composio/client/resources/auth-configs';
 import { ConfigProvider, Effect } from 'effect';
 import { extendConfigProvider } from 'src/services/config';
 import { cli, TestLive, MockConsole } from 'test/__utils__';
@@ -182,7 +183,7 @@ describe('CLI: composio dev auth-configs create', () => {
     }
   );
 
-  let capturedCreateAuthConfig: { auth_config?: Record<string, unknown> } | undefined;
+  let capturedCreateAuthConfig: AuthConfigCreateParams | undefined;
 
   layer(
     TestLive({
@@ -194,14 +195,14 @@ describe('CLI: composio dev auth-configs create', () => {
           toolkit: { slug: 'shopify' },
         },
         onCreate: params => {
-          capturedCreateAuthConfig = params as { auth_config?: Record<string, unknown> };
+          capturedCreateAuthConfig = params;
         },
       },
     })
   )(
-    '[Given] --custom-credentials with OAuth fields [Then] nests credentials under auth_config.credentials',
+    '[Given] custom OAuth credentials and scopes [Then] nests them under auth_config.credentials',
     it => {
-      it.scoped('sends client_id/client_secret inside credentials, not at the top level', () =>
+      it.scoped('sends custom OAuth settings inside credentials', () =>
         Effect.gen(function* () {
           capturedCreateAuthConfig = undefined;
 
@@ -215,18 +216,24 @@ describe('CLI: composio dev auth-configs create', () => {
             'OAUTH2',
             '--custom-credentials',
             '{"client_id":"my_client_id","client_secret":"my_client_secret"}',
+            '--scopes',
+            'read_products, write_products',
             '--dangerously-allow',
           ]);
 
-          const authConfig = capturedCreateAuthConfig?.auth_config;
-          const credentials = authConfig?.['credentials'] as Record<string, unknown> | undefined;
-
-          expect(authConfig?.['type']).toBe('use_custom_auth');
-          expect(authConfig?.['authScheme']).toBe('OAUTH2');
-          // client_id/client_secret must be nested under credentials, not spread at the top level
-          expect(authConfig?.['client_id']).toBeUndefined();
-          expect(credentials?.['client_id']).toBe('my_client_id');
-          expect(credentials?.['client_secret']).toBe('my_client_secret');
+          expect(capturedCreateAuthConfig).toStrictEqual({
+            toolkit: { slug: 'shopify' },
+            auth_config: {
+              type: 'use_custom_auth',
+              authScheme: 'OAUTH2',
+              name: undefined,
+              credentials: {
+                client_id: 'my_client_id',
+                client_secret: 'my_client_secret',
+                scopes: ['read_products', 'write_products'],
+              },
+            },
+          });
         })
       );
     }
