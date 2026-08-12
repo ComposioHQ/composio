@@ -19,6 +19,58 @@ describe("LLM endpoints - llms.txt", () => {
   });
 });
 
+/**
+ * Version labelling of the machine-readable indexes.
+ *
+ * `/reference/v3/` is the only version-shaped path in the corpus, so a search
+ * for "composio api v3" matches the superseded tree exactly. Both index files
+ * used to list the two trees interleaved under one unlabelled `## API
+ * Reference` heading with no v3.1 string anywhere.
+ */
+describe("LLM endpoints - API reference version labelling", () => {
+  const CURRENT_HEADING = "## API Reference (v3.1, current)";
+  const LEGACY_HEADING_PREFIX = "## API Reference (v3.0, legacy";
+
+  test("/llms.txt labels the current reference group", async () => {
+    const text = await (await fetchPage("/llms.txt")).text();
+    expect(text).toContain(CURRENT_HEADING);
+  });
+
+  test("/llms.txt has no unlabelled API Reference heading", async () => {
+    const text = await (await fetchPage("/llms.txt")).text();
+    expect(text.split("\n")).not.toContain("## API Reference");
+  });
+
+  test("/llms.txt groups every legacy URL under the legacy heading, not interleaved", async () => {
+    const lines = (await (await fetchPage("/llms.txt")).text()).split("\n");
+
+    const legacyStart = lines.findIndex(line => line.startsWith(LEGACY_HEADING_PREFIX));
+    expect(legacyStart, "no legacy reference group").toBeGreaterThan(-1);
+
+    // The legacy group runs to the next ## heading.
+    let legacyEnd = lines.findIndex(
+      (line, i) => i > legacyStart && line.startsWith("## "),
+    );
+    if (legacyEnd === -1) legacyEnd = lines.length;
+
+    const strays = lines
+      .map((line, i) => ({ line, i }))
+      .filter(
+        ({ line, i }) =>
+          line.includes("/reference/v3/") && (i < legacyStart || i >= legacyEnd),
+      )
+      .map(({ line }) => line);
+
+    expect(strays, `legacy URLs outside the legacy group:\n${strays.join("\n")}`).toEqual([]);
+  });
+
+  test("/llms-full.txt carries no v3.0 page bodies", async () => {
+    const text = await (await fetchPage("/llms-full.txt")).text();
+    expect(text).not.toContain("/reference/v3/");
+    expect(text).toContain("# Tools (/reference/api-reference/tools)");
+  });
+});
+
 describe("LLM endpoints - .md pages", () => {
   const MD_PAGES = [
     { path: "/docs/quickstart.md", name: "Quickstart" },

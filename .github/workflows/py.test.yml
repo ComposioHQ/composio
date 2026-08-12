@@ -5,6 +5,7 @@ on:
     branches: [master, next]
     paths:
       - 'python/**/*.py'
+      - 'python/**/*.json'
       - '.github/workflows/py.test.yml'
       - '.github/actions/setup-python-uv/action.yml'
       - 'mise.toml'
@@ -16,6 +17,7 @@ on:
     branches: [master, next]
     paths:
       - 'python/**/*.py'
+      - 'python/**/*.json'
       - '.github/workflows/py.test.yml'
       - '.github/actions/setup-python-uv/action.yml'
       - 'mise.toml'
@@ -81,7 +83,9 @@ jobs:
           uv venv --python ${{ matrix.python-version }}
           source .venv/bin/activate
           uv pip install -e .
+          uv pip install -e providers/crewai
           uv pip install -e providers/langchain
+          uv pip install -e providers/langgraph
           uv pip install -e providers/autogen
           uv pip install pytest pytest-mock
 

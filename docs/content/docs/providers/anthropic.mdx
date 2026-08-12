@@ -256,6 +256,8 @@ for await (const content of query({
     }
 }
 ```
+
+The provider registers each tool's complete object schema. Object arguments that declare no properties reach execution with arbitrary nested keys unchanged, while root-level constraints such as `additionalProperties` and `patternProperties` remain enforced. Invalid arguments return an error result, and the tool does not run.
 </Tab>
 </Tabs>
 </Step>

@@ -5,6 +5,7 @@
   "description": "Example project for File-handling",
   "main": "src/index.ts",
   "scripts": {
+    "typecheck": "tsc --noEmit -p ./tsconfig.json",
     "start": "bun src/index.ts",
     "dev": "bun --watch src/index.ts",
     "test": "echo \"Error: no test specified\" && exit 1"
@@ -23,5 +24,6 @@
   "devDependencies": {
     "@types/bun": "catalog:",
     "typescript": "catalog:"
-  }
+  },
+  "type": "module"
 }

@@ -21,4 +21,5 @@ export type CliCommandTelemetryContext = {
   readonly stderrIsTTY: boolean;
   readonly startedAt: number;
   readonly runId?: string;
+  readonly toolkitSlug?: string;
 };

@@ -4,7 +4,12 @@ const composio = new Composio({
   apiKey: process.env.COMPOSIO_API_KEY,
 });
 
-const connectionRequest = await composio.connectedAccounts.initiate('default', 'ac_NSC2s9WqTE4n', {
+const authConfigId = process.env.COMPOSIO_EXAMPLES_GMAIL_AUTH_CONFIG_ID; // your auth config ID
+if (!authConfigId) {
+  throw new Error('Set COMPOSIO_EXAMPLES_GMAIL_AUTH_CONFIG_ID');
+}
+
+const connectionRequest = await composio.connectedAccounts.initiate('default', authConfigId, {
   allowMultiple: true,
 });
 

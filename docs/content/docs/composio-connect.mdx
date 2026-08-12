@@ -1,14 +1,18 @@
 ---
 title: Composio Connect
-description: Add Composio tools to your AI agent via MCP
+description: Connect Composio to an existing MCP client without using the SDK
 keywords: [composio connect, mcp, claude code, cursor, vscode, windsurf, cline, chatgpt, notion, n8n, codex]
 ---
 
-Give any AI agent the ability to act across 1000+ apps. Bring your agent to where you work.
+Use Composio Connect when you already have an MCP-compatible client and want the shared Composio MCP URL, without creating an SDK session. Connect it to `https://connect.composio.dev/mcp`.
+
+If you use Codex or Claude Code and did not explicitly choose MCP, install the native [Composio agent plugin](/docs/agent-plugins) instead. The plugin uses the Composio CLI and is the shortest path for those agents.
+
+If you are building an application, start with the [SDK Quickstart](/docs/quickstart) or create a [session MCP endpoint](/docs/sessions-via-mcp) instead.
 
 ## How Composio Connect works
 
-Composio Connect is an MCP server at `https://connect.composio.dev/mcp` that gives your AI agent access to 1000+ apps — Gmail, Notion, Slack, GitHub, Linear, HubSpot, Strava, and more — through a single connection.
+Composio Connect is an MCP server at `https://connect.composio.dev/mcp` that gives your AI agent access to 1000+ apps, including Gmail, Notion, Slack, GitHub, Linear, HubSpot, and Strava, through a single connection.
 
 Rather than exposing every app tool directly, Composio exposes **7 meta-tools** that let the agent discover what's available, authorize apps on demand, and execute tools across apps in parallel. The first time your agent needs an app, Composio generates an OAuth link you approve in your browser; after that the connection persists across sessions. See [Available MCP tools](#available-mcp-tools) for the full list.
 

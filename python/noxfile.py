@@ -31,6 +31,7 @@ modules_for_ruff = [
 type_stubs = [
     "types-requests==2.33.0.20260712",
     "types-protobuf==7.34.1.20260518",
+    "types-jsonschema==4.26.0.20260518",
     "anthropic==0.120.0",
     # Keep this aligned with the CrewAI provider dependency metadata.
     "crewai==1.15.7",
@@ -75,10 +76,37 @@ def fix(session: Session):
 
 
 @nox.session
+def chk_examples(session: Session):
+    """Type-check example scripts against the SDK surface.
+
+    Examples run one mypy invocation per file: duplicate basenames
+    (examples/tools.py, examples/tool_router/tools.py) collide as module
+    names inside a single run. Third-party agent frameworks stay
+    unresolved on purpose; the check targets composio API usage.
+    """
+    from pathlib import Path
+
+    session.install(".", "--group", "dev", mypy, *type_stubs)
+    for path in sorted(Path("examples").rglob("*.py")):
+        session.run(
+            "mypy",
+            "--config-file",
+            "config/mypy.ini",
+            "--ignore-missing-imports",
+            # Examples wrap their bodies in unannotated main()s; without this
+            # mypy skips those bodies entirely and the gate checks almost nothing.
+            "--check-untyped-defs",
+            str(path),
+        )
+
+
+@nox.session
 def tst(session: Session):
     """Run the Python unit test suite."""
     session.install(".", "--group", "dev")
+    session.install("./providers/crewai")
     session.install("./providers/langchain")
+    session.install("./providers/langgraph")
     session.install("./providers/autogen")
     test_paths = session.posargs or ["tests/"]
     session.run("pytest", *test_paths, "-v", "--tb=short")

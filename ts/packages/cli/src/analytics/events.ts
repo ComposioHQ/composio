@@ -2,7 +2,7 @@ import type { CliCommandTelemetryContext, TrackEvent } from './types';
 import { APP_VERSION, type CliReleaseChannel } from 'src/constants';
 import { inferSkillReleaseChannel } from 'src/effects/install-skill';
 import { ToolInputValidationError } from 'src/services/tool-input-validation';
-import { toolkitFromToolSlug } from 'src/utils/toolkit-from-tool-slug';
+import { guessToolkitFromToolSlug } from 'src/utils/toolkit-from-tool-slug';
 
 export const CLI_ANALYTICS_EVENTS = {
   CLI_COMMAND_INVOKED: 'CLI_COMMAND_INVOKED',
@@ -343,7 +343,9 @@ const getExecuteCommandProperties = (context: CliCommandTelemetryContext) => {
     surface: context.commandPath === 'execute' ? 'root' : 'dev',
     tool_slug: slug,
     tool_name: slug,
-    toolkit_slug: typeof slug === 'string' ? toolkitFromToolSlug(slug) : undefined,
+    toolkit_slug:
+      context.toolkitSlug ??
+      (typeof slug === 'string' ? guessToolkitFromToolSlug(slug) : undefined),
     dry_run: isFlagPresent(context.argv, '--dry-run'),
     get_schema: isFlagPresent(context.argv, '--get-schema'),
     has_data: isFlagPresent(context.argv, '--data', '-d'),
@@ -485,6 +487,16 @@ const isSetupCommand = (commandPath: string): boolean => commandPath === 'setup'
 
 const isGenericOnlyCommand = (commandPath: string): boolean =>
   commandPath === 'composio' || commandPath.startsWith('dev');
+
+/**
+ * Tool slug positional of an execute-family invocation, so the CLI bootstrap
+ * can resolve the toolkit slug once and stamp it on the telemetry context for
+ * the synchronous lifecycle event builders.
+ */
+export const getExecuteCommandToolSlug = (
+  context: CliCommandTelemetryContext
+): string | undefined =>
+  isExecuteCommand(context.commandPath) ? getTrailingPositionals(context)[0] : undefined;
 
 export const createCliCommandTelemetryContext = (
   argv: ReadonlyArray<string>,
@@ -748,6 +760,7 @@ export const getSetupSkippedEvent = (params: {
 
 export const getToolExecuteValidationFailedEvent = (params: {
   readonly toolSlug: string;
+  readonly toolkitSlug?: string;
   readonly args: Record<string, unknown>;
   readonly error: ToolInputValidationError;
   readonly surface: 'root' | 'dev';
@@ -760,7 +773,7 @@ export const getToolExecuteValidationFailedEvent = (params: {
     source: 'cli',
     invocation_origin: getInvocationOrigin(),
     tool_slug: params.toolSlug,
-    toolkit_slug: toolkitFromToolSlug(params.toolSlug),
+    toolkit_slug: params.toolkitSlug ?? guessToolkitFromToolSlug(params.toolSlug),
     surface: params.surface,
     project_mode: params.projectMode,
     stage: params.stage,
@@ -798,6 +811,7 @@ export const isMaybeToolValidationError = (params: {
 
 export const getToolExecuteToolNotFoundEvent = (params: {
   readonly toolSlug: string;
+  readonly toolkitSlug?: string;
   readonly args: Record<string, unknown>;
   readonly surface: 'root' | 'dev';
   readonly projectMode: 'consumer' | 'developer';
@@ -813,7 +827,7 @@ export const getToolExecuteToolNotFoundEvent = (params: {
     source: 'cli',
     invocation_origin: getInvocationOrigin(),
     tool_slug: params.toolSlug,
-    toolkit_slug: toolkitFromToolSlug(params.toolSlug),
+    toolkit_slug: params.toolkitSlug ?? guessToolkitFromToolSlug(params.toolSlug),
     surface: params.surface,
     project_mode: params.projectMode,
     stage: params.stage,
@@ -827,6 +841,7 @@ export const getToolExecuteToolNotFoundEvent = (params: {
 
 export const getToolExecuteFailedEvent = (params: {
   readonly toolSlug: string;
+  readonly toolkitSlug?: string;
   readonly args: Record<string, unknown>;
   readonly surface: 'root' | 'dev';
   readonly projectMode: 'consumer' | 'developer';
@@ -844,7 +859,7 @@ export const getToolExecuteFailedEvent = (params: {
     source: 'cli',
     invocation_origin: getInvocationOrigin(),
     tool_slug: params.toolSlug,
-    toolkit_slug: toolkitFromToolSlug(params.toolSlug),
+    toolkit_slug: params.toolkitSlug ?? guessToolkitFromToolSlug(params.toolSlug),
     surface: params.surface,
     project_mode: params.projectMode,
     stage: params.stage,

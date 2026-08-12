@@ -1,7 +1,7 @@
 {
   "name": "@composio/core",
   "type": "module",
-  "version": "0.14.1",
+  "version": "0.16.0",
   "description": "",
   "main": "src/index.ts",
   "publishConfig": {
@@ -99,7 +99,7 @@
   "license": "ISC",
   "devDependencies": {
     "@type-challenges/utils": "^0.1.1",
-    "@types/semver": "^7.7.1",
+    "@types/semver": "^7.8.0",
     "tsdown": "catalog:",
     "tsx": "catalog:",
     "typedoc": "^0.28.20",

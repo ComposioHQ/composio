@@ -21,6 +21,14 @@ jobs:
       pull-requests: write
       issues: write
     env:
+      # Git 2.54 moved automatic cleanup from gc.auto to maintenance.auto, but
+      # actions/checkout@v7.0.1 only disables the former. Disable maintenance
+      # for every Git process in this job so its background task cannot race the
+      # shallow fetch used to update docs/auto-update-data.
+      # https://github.com/actions/checkout/issues/2437
+      GIT_CONFIG_COUNT: '1'
+      GIT_CONFIG_KEY_0: maintenance.auto
+      GIT_CONFIG_VALUE_0: 'false'
       # Deliberately NOT secrets.COMPOSIO_API_KEY. That secret is shared with
       # ts.test-e2e, py.test, py.check and ts.examples-nightly, all of which run
       # against staging — it is a staging-scoped credential. This job is the only

@@ -7,15 +7,25 @@ import { parseSchema } from './parse-schema';
 import type { JsonSchemaObject, Refs, JsonSchema } from '../types';
 import { its } from '../utils/its';
 
+/**
+ * Build the static part of an object parser, or `undefined` when the schema
+ * declares no named properties.
+ *
+ * A property-less object (`properties` absent or `{}`) deliberately returns
+ * `undefined` so the caller can apply the open-object policy. This supersedes
+ * an earlier `z.object({})` fallback that was kept "or else this will break
+ * openai responses": collapsing `{ type: "object" }` to a strict empty object
+ * is the defect it was masking, and the OpenAI provider suite is part of this
+ * package's verification precisely so the claim stays checked.
+ */
 function parseObjectProperties(objectSchema: JsonSchemaObject & { type?: 'object' }, refs: Refs) {
   if (!objectSchema.properties) {
-    // leave it as an empty object or else this will break openai responses
-    return z.object({});
+    return undefined;
   }
 
   const propertyKeys = Object.keys(objectSchema.properties);
   if (propertyKeys.length === 0) {
-    return z.object({});
+    return undefined;
   }
 
   const properties: Record<string, z.ZodTypeAny> = {};
@@ -78,6 +88,96 @@ function parseObjectProperties(objectSchema: JsonSchemaObject & { type?: 'object
   return z.object(properties);
 }
 
+/**
+ * Object parser for schemas carrying `patternProperties`.
+ *
+ * Every key is routed to exactly the schemas that apply to it — each matching
+ * pattern, and `additionalProperties` only when no pattern and no named
+ * property claims the key. A catch-all union would instead let a key sneak past
+ * its own pattern by satisfying an unrelated one.
+ */
+function parseDynamicKeyObject(
+  normalizedSchema: JsonSchemaObject & { type?: 'object' },
+  propertiesSchema: z.ZodObject<Record<string, z.ZodTypeAny>, 'strip', z.ZodTypeAny> | undefined,
+  additionalProperties: z.ZodTypeAny | undefined,
+  refs: Refs
+): z.ZodTypeAny {
+  const patterns = Object.entries(normalizedSchema.patternProperties ?? {}).map(
+    ([pattern, schema]) => ({
+      regex: new RegExp(pattern),
+      parser: parseSchema(schema, {
+        ...refs,
+        path: [...refs.path, 'patternProperties', pattern],
+      }),
+    })
+  );
+
+  const declaredKeys = new Set(Object.keys(normalizedSchema.properties ?? {}));
+  const rejectsUnmatched =
+    additionalProperties instanceof z.ZodNever ||
+    (additionalProperties === undefined && declaredKeys.size > 0);
+  const validatesUnmatched =
+    additionalProperties !== undefined &&
+    !(additionalProperties instanceof z.ZodNever) &&
+    normalizedSchema.additionalProperties !== true;
+
+  const base = (propertiesSchema ?? z.object({})).passthrough();
+
+  return base.transform((value: Record<string, unknown>, ctx) => {
+    const result: Record<string, unknown> = { ...value };
+    const unrecognizedKeys: string[] = [];
+
+    for (const key of Object.keys(value)) {
+      const matching = patterns.filter(({ regex }) => regex.test(key));
+
+      for (const { parser } of matching) {
+        const parsed = parser.safeParse(value[key]);
+        if (!parsed.success) {
+          ctx.addIssue({
+            path: [...ctx.path, key],
+            code: 'custom',
+            message: `Invalid input: key "${key}" must match its patternProperties schema`,
+            params: { issues: parsed.error.issues },
+          });
+        } else if (!declaredKeys.has(key)) {
+          result[key] = parsed.data;
+        }
+      }
+
+      if (matching.length > 0 || declaredKeys.has(key)) {
+        continue;
+      }
+
+      if (rejectsUnmatched) {
+        unrecognizedKeys.push(key);
+      } else if (validatesUnmatched) {
+        const parsed = additionalProperties!.safeParse(value[key]);
+        if (!parsed.success) {
+          ctx.addIssue({
+            path: [...ctx.path, key],
+            code: 'custom',
+            message: `Invalid input: key "${key}" must match the additionalProperties schema`,
+            params: { issues: parsed.error.issues },
+          });
+        } else {
+          result[key] = parsed.data;
+        }
+      }
+    }
+
+    if (unrecognizedKeys.length > 0) {
+      ctx.addIssue({
+        path: [...ctx.path],
+        code: 'unrecognized_keys',
+        keys: unrecognizedKeys,
+        message: `Unrecognized key(s) in object: ${unrecognizedKeys.map(key => `'${key}'`).join(', ')}`,
+      });
+    }
+
+    return result;
+  });
+}
+
 export function parseObject(
   objectSchema: JsonSchemaObject & { type?: 'object' },
   refs: Refs
@@ -89,9 +189,8 @@ export function parseObject(
     objectSchema.type === 'object' ? objectSchema : { ...objectSchema, type: 'object' as const };
 
   const propertiesSchema:
-    | z.ZodObject<Record<string, z.ZodTypeAny>, 'strip', z.ZodTypeAny>
-    | undefined = parseObjectProperties(normalizedSchema, refs);
-  let zodSchema: z.ZodTypeAny | undefined = propertiesSchema;
+    z.ZodObject<Record<string, z.ZodTypeAny>, 'strip', z.ZodTypeAny> | undefined =
+    parseObjectProperties(normalizedSchema, refs);
 
   const additionalProperties =
     normalizedSchema.additionalProperties !== undefined
@@ -104,88 +203,11 @@ export function parseObject(
   // Track if additionalProperties was explicitly set to true
   const isAdditionalPropertiesTrue = normalizedSchema.additionalProperties === true;
 
-  if (normalizedSchema.patternProperties) {
-    const parsedPatternProperties = Object.fromEntries(
-      Object.entries(normalizedSchema.patternProperties).map(([key, value]) => {
-        return [
-          key,
-          parseSchema(value, {
-            ...refs,
-            path: [...refs.path, 'patternProperties', key],
-          }),
-        ];
-      })
-    );
-    const patternPropertyValues = Object.values(parsedPatternProperties);
-
-    if (propertiesSchema) {
-      if (additionalProperties) {
-        zodSchema = propertiesSchema.catchall(
-          z.union([...patternPropertyValues, additionalProperties] as [z.ZodTypeAny, z.ZodTypeAny])
-        );
-      } else if (Object.keys(parsedPatternProperties).length > 1) {
-        zodSchema = propertiesSchema.catchall(
-          z.union(patternPropertyValues as [z.ZodTypeAny, z.ZodTypeAny])
-        );
-      } else {
-        zodSchema = propertiesSchema.catchall(patternPropertyValues[0]);
-      }
-    } else {
-      if (additionalProperties) {
-        zodSchema = z.record(
-          z.union([...patternPropertyValues, additionalProperties] as [z.ZodTypeAny, z.ZodTypeAny])
-        );
-      } else if (patternPropertyValues.length > 1) {
-        zodSchema = z.record(z.union(patternPropertyValues as [z.ZodTypeAny, z.ZodTypeAny]));
-      } else {
-        zodSchema = z.record(patternPropertyValues[0]);
-      }
-    }
-
-    const objectPropertyKeys = new Set(Object.keys(normalizedSchema.properties ?? {}));
-    zodSchema = zodSchema.superRefine((value: Record<string, unknown>, ctx) => {
-      for (const key in value) {
-        let wasMatched = objectPropertyKeys.has(key);
-
-        for (const patternPropertyKey in normalizedSchema.patternProperties) {
-          const regex = new RegExp(patternPropertyKey);
-          if (key.match(regex)) {
-            wasMatched = true;
-            const result = parsedPatternProperties[patternPropertyKey].safeParse(value[key]);
-            if (!result.success) {
-              ctx.addIssue({
-                path: [...ctx.path, key],
-                code: 'custom',
-                message: `Invalid input: Key matching regex /${key}/ must match schema`,
-                params: {
-                  issues: result.error.issues,
-                },
-              });
-            }
-          }
-        }
-
-        if (!wasMatched && additionalProperties) {
-          const result = additionalProperties.safeParse(value[key]);
-          if (!result.success) {
-            ctx.addIssue({
-              path: [...ctx.path, key],
-              code: 'custom',
-              message: 'Invalid input: must match catchall schema',
-              params: {
-                issues: result.error.issues,
-              },
-            });
-          }
-        }
-      }
-    });
-  }
   let output: z.ZodTypeAny;
-  if (propertiesSchema) {
-    if (hasPatternProperties) {
-      output = zodSchema!;
-    } else if (additionalProperties) {
+  if (hasPatternProperties) {
+    output = parseDynamicKeyObject(normalizedSchema, propertiesSchema, additionalProperties, refs);
+  } else if (propertiesSchema) {
+    if (additionalProperties) {
       if (additionalProperties instanceof z.ZodNever) {
         output = propertiesSchema.strict();
       } else if (isAdditionalPropertiesTrue) {
@@ -195,13 +217,12 @@ export function parseObject(
         output = propertiesSchema.catchall(additionalProperties);
       }
     } else {
-      // When additionalProperties is not specified, treat it as false
+      // Named properties with an omitted `additionalProperties` stay strict for
+      // tool inputs, even though JSON Schema itself would allow unknown keys.
       output = propertiesSchema.strict();
     }
   } else {
-    if (hasPatternProperties) {
-      output = zodSchema!;
-    } else if (additionalProperties) {
+    if (additionalProperties) {
       if (additionalProperties instanceof z.ZodNever) {
         // When additionalProperties is false, create strict empty object
         output = z.object({}).strict();
@@ -212,7 +233,8 @@ export function parseObject(
         output = z.record(additionalProperties);
       }
     } else {
-      // When no properties and no additionalProperties specified, default to allowing additional properties
+      // A property-less object with no `additionalProperties` keyword is open:
+      // arbitrary content is accepted and preserved verbatim.
       output = z.object({}).passthrough();
     }
   }

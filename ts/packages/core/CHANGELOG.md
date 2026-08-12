@@ -1,5 +1,75 @@
 # @composio/core
 
+## 0.16.0
+
+### Minor Changes
+
+- 5e57815: Keep free-form object roots, `patternProperties`, and `additionalProperties` when parsing a tool schema.
+
+  `ToolSchema.parse` used to reject a bare `{ "type": "object" }` root, drop root `patternProperties` as an unknown key, and reject a root `additionalProperties` written as a schema instead of a boolean. Free-form roots now parse successfully, and both constraints survive parsing exactly as written. The public `ToolSchema` type now makes `properties` optional to reflect those valid property-less object schemas.
+
+  This matters downstream. Every provider reads `inputParameters` after parsing, so a tool that declares dynamic keys had those rules stripped before the model ever saw them.
+
+  An omitted `additionalProperties` still stays omitted. The parser does not invent a value, because each converter decides its own default.
+
+  **What no longer works**
+
+  Parsing no longer fails on a schema-valued root `additionalProperties`.
+
+  ```ts
+  const tool = ToolSchema.parse({
+    slug: 'MY_TOOL',
+    inputParameters: {
+      type: 'object',
+      properties: { name: { type: 'string' } },
+      additionalProperties: { type: 'number' },
+    },
+    // ...
+  });
+
+  // before: parsing failed, because only a boolean was accepted
+  // now:    tool.inputParameters.additionalProperties is { type: 'number' }
+  ```
+
+  **What to do instead**
+
+  Nothing, if you only ever passed boolean values. That case is unchanged.
+
+  If your code assumed `inputParameters` never carries `patternProperties`, or that `additionalProperties` is always a boolean, widen that assumption. Both keywords can now appear, and `additionalProperties` can be a boolean or a schema object.
+
+### Patch Changes
+
+- a2f6b96: Add `type: "object"` to nested JSON Schema nodes that carry `properties` without an explicit type, so tool schemas work with strict OpenAPI 3.0 consumers like Google Gemini.
+- c625edc: Reuse fetched tool schemas when provider-wrapped tools execute to avoid a redundant retrieval request.
+- Updated dependencies [5e57815]
+  - @composio/json-schema-to-zod@0.3.0
+
+## 0.15.0
+
+### Minor Changes
+
+- 1503786: Replace the loose JSON Schema property type with a recursive, type-safe definition.
+
+  `JSONSchemaProperty` (re-exported from `@composio/core` and reachable through
+  `Tool.input_parameters` / `Tool.output_parameters`) is now a concrete recursive
+  interface instead of effectively `any`. Runtime behavior is unchanged, but
+  consumer code that indexed into it without narrowing (for example
+  `schema.properties.foo.type` or `schema.default.someField`) may see new type
+  errors: `properties` entries are now possibly `undefined` and `default` /
+  `enum` values are `unknown`. Narrow with optional chaining or explicit type
+  guards when upgrading.
+
+### Patch Changes
+
+- 2ac6ad3: Bound the background npm version check so registry outages cannot leave the request pending indefinitely.
+- 5105612: Match sensitive upload path segments using the target filesystem's actual case sensitivity so case-insensitive mounts cannot bypass the denylist without over-blocking distinct paths on case-sensitive mounts.
+- 051c8c5: Redact secrets that appear inside JSON payloads in telemetry error text. The key/value rule required the separator to follow the key name directly, so a serialized body such as `{"api_key": "..."}` — the shape error messages usually carry — was sent unredacted.
+- e5c9ada: Refresh the OpenAI runtime dependency to version 7.
+- ecd0861: Release unread response bodies on the paths the SDK knowingly abandons: cancel every intermediate redirect body in `ssrfSafeFetch`, and the response body before throwing on `!response.ok` in both URL-upload call sites, instead of leaving them for the garbage collector to reclaim.
+- 2a6a051: Remove the unused internal `isNewerVersion` helper.
+- Updated dependencies [1503786]
+  - @composio/json-schema-to-zod@0.2.2
+
 ## 0.14.1
 
 ### Patch Changes

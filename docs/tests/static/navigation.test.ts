@@ -42,6 +42,41 @@ async function exists(path: string): Promise<boolean> {
 }
 
 describe("Navigation - meta.json validity", () => {
+  test("root navigation separates current and legacy paths", async () => {
+    const metaPath = join(CONTENT_DIR, "meta.json");
+    const meta = JSON.parse(await readFile(metaPath, "utf-8"));
+    const pages = meta.pages as string[];
+    const separators = pages.filter(isSeparator);
+
+    expect(separators).toEqual([
+      "---Get Started---",
+      "---Core concepts---",
+      "---Guides---",
+      "---Direct execution (legacy)---",
+      "---Migration and security---",
+    ]);
+
+    expect(pages.slice(1, pages.indexOf("---Core concepts---"))).toEqual([
+      "index",
+      "quickstart",
+      "providers",
+      "agent-plugins",
+      "cli",
+      "composio-connect",
+    ]);
+
+    expect(
+      pages.slice(
+        pages.indexOf("---Direct execution (legacy)---") + 1,
+        pages.indexOf("---Migration and security---")
+      )
+    ).toEqual([
+      "sessions-vs-direct-execution",
+      "tools-direct",
+      "auth-configuration",
+    ]);
+  });
+
   test("root meta.json entries all resolve to files or directories", async () => {
     const metaPath = join(CONTENT_DIR, "meta.json");
     const meta = JSON.parse(await readFile(metaPath, "utf-8"));

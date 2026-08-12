@@ -8,7 +8,29 @@
 
 import { readFileSync, writeFileSync, mkdirSync, existsSync, rmSync, readdirSync } from 'fs';
 import { join } from 'path';
+import { z } from 'zod';
 import { HIDDEN_API_TAGS } from '../lib/filter-api-version';
+import { apiEndpointsSchema } from '../lib/api-endpoints-table-schema';
+
+/**
+ * Serializes an endpoints array for the `<ApiEndpointsTable />` prop, refusing
+ * to write a payload the readers cannot parse.
+ *
+ * At runtime `mdxToCleanMarkdown` degrades a malformed payload to an empty
+ * table (one bad page must not 500 the whole `.md` response), so an invalid
+ * payload written here would render as a silently empty Endpoints section —
+ * exactly the defect this pipeline exists to avoid. A generator that cannot
+ * produce a valid payload should fail the generation run instead.
+ */
+function serializeEndpoints(endpoints: unknown, label: string): string {
+  const parsed = apiEndpointsSchema.safeParse(endpoints);
+  if (!parsed.success) {
+    throw new Error(
+      `Invalid ApiEndpointsTable payload for ${label}:\n${z.prettifyError(parsed.error)}`
+    );
+  }
+  return JSON.stringify(endpoints);
+}
 
 /**
  * API-reference tags hidden on our side even though the upstream OpenAPI spec
@@ -263,16 +285,14 @@ function generateIndexPages() {
 
   let v3Ops: Record<string, OperationEntry[]> = {};
   if (existsSync(specV3Path)) {
-    const specV3: OpenAPISpec = JSON.parse(readFileSync(specV3Path, 'utf-8'));
-    v3Ops = getOperationsByTag(specV3);
+    const loadedSpecV3: OpenAPISpec = JSON.parse(readFileSync(specV3Path, 'utf-8'));
+    v3Ops = getOperationsByTag(loadedSpecV3);
   }
 
-  // Collect tag descriptions from v3.1 spec
-  const tagDescriptions: Record<string, string> = {};
+  const v31TagDescriptions: Record<string, string> = {};
   for (const tag of specV31.tags) {
-    tagDescriptions[tag.name] = tag.description || '';
+    v31TagDescriptions[tag.name] = tag.description || '';
   }
-
   const outputDir = join(process.cwd(), 'content/reference/api-reference');
   const webhookSpec = loadWebhookSpec();
 
@@ -332,7 +352,7 @@ function generateIndexPages() {
       continue;
     }
 
-    const tagDescription = tagDescriptions[tagName] || `${tagName} API endpoints`;
+    const tagDescription = v31TagDescriptions[tagName] || `${tagName} API endpoints`;
     // Display-title overrides for tags whose OpenAPI name is stale (e.g. the
     // tool router is now Sessions). Keyed by slug.
     const displayTitle = TITLE_OVERRIDES[tagSlug] ?? tagName;
@@ -377,7 +397,7 @@ ${body}
 
 ## Endpoints
 
-<ApiEndpointsTable endpoints={${JSON.stringify(endpoints)}} />
+<ApiEndpointsTable endpoints={${serializeEndpoints(endpoints, `${tagSlug} (v3.1)`)}} />
 `;
 
       const folderPath = join(outputDir, tagSlug);
@@ -411,7 +431,7 @@ ${body}
 
 ## Endpoints
 
-<ApiEndpointsTable endpoints={${JSON.stringify(v3Endpoints)}} />
+<ApiEndpointsTable endpoints={${serializeEndpoints(v3Endpoints, `${tagSlug} (v3.0)`)}} />
 `;
 
       const v3FolderPath = join(process.cwd(), 'content/reference/v3/api-reference', tagSlug);

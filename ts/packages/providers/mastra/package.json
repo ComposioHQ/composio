@@ -49,7 +49,7 @@
   "devDependencies": {
     "@composio/core": "workspace:*",
     "@mastra/core": "catalog:",
-    "ai": "^6.0.219",
+    "ai": "^6.0.241",
     "tsdown": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:",

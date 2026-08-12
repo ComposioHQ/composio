@@ -1,12 +1,12 @@
 ---
 title: Composio CLI
-description: Use the Composio CLI inside Claude Code for knowledge work, debugging, and developer workflows.
-keywords: [cli, claude code, command line, terminal, composio for you, knowledge work, dev commands]
+description: Use the Composio CLI from Codex, Claude Code, or your terminal for agent workflows and development.
+keywords: [cli, codex, claude code, command line, terminal, agent plugins, knowledge work, dev commands]
 ---
 
-The Composio CLI gives Claude Code a local tool surface. From your terminal, Claude can connect apps, execute tools, inspect schemas, call authenticated APIs, and debug Composio projects while it works with you. It's the command-line side of [Composio for You](https://composio.dev/for-you).
+The Composio CLI gives coding agents and terminals a local tool surface. Codex, Claude Code, or a person at the terminal can connect apps, execute tools, inspect schemas, call authenticated APIs, and debug Composio projects. It is also the runtime underneath the native [Composio agent plugins](/docs/agent-plugins).
 
-Reach for it when you want Claude to act in your connected apps directly, instead of pasting API keys, schemas, and one-off scripts into the chat.
+Reach for it when you want an agent to act in your connected apps directly, without building an SDK application or configuring MCP.
 
 ## Install
 
@@ -24,10 +24,23 @@ Open a new terminal, then log in:
 composio login
 ```
 
-Open Claude Code in the project you want to work in. `composio login` installs the `composio-cli` skill for Claude Code by default. To install it manually:
+Install the native plugin for Codex or Claude Code:
+
+```bash
+composio setup --target auto
+```
+
+`auto` detects supported agents on your machine. Use `--target codex` or `--target claude` to configure only one. See [Agent plugins](/docs/agent-plugins) for manual plugin commands and host-specific details.
+
+Setup asks before changing local files. Add `--yes` when you run it from an agent, script, CI job, or another non-interactive shell.
+
+`composio login` installs the standalone `composio-cli` skill for Claude Code by default. For Codex, prefer `composio setup --target codex`; it installs the native plugin, which bundles the CLI skill.
+
+If you explicitly need the standalone skill without the native plugin, install it manually for the agent host:
 
 ```bash
 composio --install-skill composio-cli claude
+composio --install-skill composio-cli codex
 ```
 
 ### Install with options
@@ -198,13 +211,13 @@ rm -rf "${COMPOSIO_INSTALL_DIR:-$HOME/.composio}"
 ```
 </Callout>
 
-## Knowledge work in Claude Code
+## Agent and terminal workflows
 
-This is the recommended way to use Composio from inside Claude Code. The CLI executes tools, connects accounts, scripts workflows, calls authenticated APIs, and inspects trigger events, all without you wiring up a custom integration first.
+The CLI executes tools, connects accounts, scripts workflows, calls authenticated APIs, and inspects trigger events without you wiring up a custom integration first. Native Codex and Claude Code plugins expose these capabilities to the agent; the same commands work directly in your terminal.
 
 ### Search, connect, and execute tools
 
-Use this flow when Claude needs to act in one of your connected apps:
+Use this flow when you or your agent needs to act in one of your connected apps:
 
 ```bash
 # Find the right tool
@@ -230,7 +243,7 @@ The commands you'll reach for most:
 | `composio link` | Connect an app account |
 | `composio proxy` | Call provider APIs with Composio-managed auth |
 
-Use `composio proxy` when Claude already knows the provider's API endpoint and just needs Composio to inject auth from your connected account:
+Use `composio proxy` when the agent already knows the provider's API endpoint and just needs Composio to inject auth from your connected account:
 
 ```bash
 composio proxy https://gmail.googleapis.com/gmail/v1/users/me/profile --toolkit gmail
@@ -238,7 +251,7 @@ composio proxy https://gmail.googleapis.com/gmail/v1/users/me/profile --toolkit 
 
 ### Run scripts and sub-agents
 
-Reach for `composio run` when Claude needs a multi-step workflow: loops, parallel fan-out, data transformation, or LLM-assisted summarization. It runs inline TS/JS or a file, with `execute()`, `search()`, `proxy()`, `experimental_subAgent()`, `result.prompt()`, and `z` injected.
+Reach for `composio run` when the agent needs a multi-step workflow: loops, parallel fan-out, data transformation, or LLM-assisted summarization. It runs inline TS/JS or a file, with `execute()`, `search()`, `proxy()`, `experimental_subAgent()`, `result.prompt()`, and `z` injected.
 
 Run a single scripted workflow:
 
@@ -297,7 +310,7 @@ composio run --file ./workflow.ts -- --repo composiohq/composio
 
 ### Listen to trigger events
 
-Use trigger listening when Claude needs to wait for new events, inspect incoming payloads, or forward events while debugging. Event streaming lives in the developer namespace:
+Use trigger listening when the agent needs to wait for new events, inspect incoming payloads, or forward events while debugging. Event streaming lives in the developer namespace:
 
 ```bash
 # Compact table view for matching events
@@ -309,7 +322,7 @@ composio dev listen --trigger-slug GMAIL_NEW_GMAIL_MESSAGE --json --max-events 5
 # Forward each matching event to a local or hosted webhook
 composio dev listen --toolkits github --forward https://example.com/webhook
 
-# Append matching events to a local file for Claude to inspect
+# Append matching events to a local file for an agent to inspect
 composio dev listen --toolkits slack --out ./events.jsonl
 ```
 

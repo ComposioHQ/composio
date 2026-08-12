@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { z } from 'zod/v3';
 import { jsonSchemaToZod } from '../src/json-schema-to-zod';
 import type { JsonSchema } from '../src/types';
+import { acceptedFor, loadObjectCases } from './fixtures/corpus';
 
 describe('jsonSchemaToZod', () => {
   describe('Basic Types', () => {
@@ -1512,4 +1513,24 @@ describe('jsonSchemaToZod', () => {
       expect(() => zodSchema.parse({ age: 30 })).toThrow();
     });
   });
+});
+
+describe('shared cross-SDK object corpus', () => {
+  for (const testCase of loadObjectCases()) {
+    describe(testCase.id, () => {
+      for (const [index, instance] of testCase.instances.entries()) {
+        const expected = acceptedFor(instance, 'zod');
+
+        it(`instance ${index} is ${expected ? 'accepted' : 'rejected'}`, () => {
+          const zodSchema = jsonSchemaToZod(testCase.schema as JsonSchema);
+          const result = zodSchema.safeParse(instance.input);
+
+          expect(result.success).toBe(expected);
+          if (result.success && instance.zod && 'output' in instance.zod) {
+            expect(result.data).toEqual(instance.zod.output);
+          }
+        });
+      }
+    });
+  }
 });

@@ -5,7 +5,7 @@ import { Cause, Data, Effect, Either, Exit, Fiber, HashSet, Option, Predicate } 
 import { encodingForModel } from 'js-tiktoken';
 import { redact } from 'src/ui/redact';
 import { parseJsonRecord } from 'src/utils/parse-json';
-import { toolkitFromToolSlug } from 'src/utils/toolkit-from-tool-slug';
+import { toolkitFromToolSlug } from 'src/effects/toolkit-from-tool-slug';
 import { requireAuth } from 'src/effects/require-auth';
 import { resolveOptionalTextInput } from 'src/effects/resolve-optional-text-input';
 import {
@@ -245,8 +245,12 @@ const injectSingleFileArgument = (params: {
     return setNestedKey(params.args, targetPath, params.filePath);
   });
 
-const connectionTips = (toolSlug: string, surface: 'root' | 'dev') => {
-  const toolkit = toolkitFromToolSlug(toolSlug);
+const connectionTips = (params: {
+  readonly toolkit: string | undefined;
+  readonly toolSlug: string;
+  readonly surface: 'root' | 'dev';
+}) => {
+  const { toolkit, toolSlug, surface } = params;
   const executeStep =
     surface === 'dev'
       ? commandHintStep('Retry', 'dev.playgroundExecute', {
@@ -413,6 +417,7 @@ const emitExecuteFailureTelemetry = (params: {
   readonly mappedError?: ReturnType<typeof mapComposioError>;
 }) =>
   Effect.gen(function* () {
+    const toolkitSlug = yield* toolkitFromToolSlug(params.toolSlug);
     const normalized = params.mappedError?.normalized ?? normalizeCliError(params.error);
     const failureOrigin: 'fast_fail' | 'main_endpoint' =
       normalized instanceof ToolInputValidationError || params.stage !== 'execution'
@@ -423,6 +428,7 @@ const emitExecuteFailureTelemetry = (params: {
       yield* trackCliEventEffect(
         getToolExecuteValidationFailedEvent({
           toolSlug: params.toolSlug,
+          toolkitSlug,
           args: params.args,
           error: normalized,
           surface: params.surface,
@@ -435,9 +441,7 @@ const emitExecuteFailureTelemetry = (params: {
       yield* trackCliCodactFailureEffect({
         failureType: 'wrong_tool_input_param',
         toolInfo: {
-          ...(toolkitFromToolSlug(params.toolSlug)
-            ? { toolkit: toolkitFromToolSlug(params.toolSlug) }
-            : {}),
+          ...(toolkitSlug ? { toolkit: toolkitSlug } : {}),
         },
         ctx: {
           tool_slug: params.toolSlug,
@@ -460,6 +464,7 @@ const emitExecuteFailureTelemetry = (params: {
       params.mappedError ??
       mapComposioError({
         error: params.error,
+        toolkit: toolkitSlug,
         toolSlug: params.toolSlug,
       });
     const apiDetails = mapped.apiDetails;
@@ -477,6 +482,7 @@ const emitExecuteFailureTelemetry = (params: {
     })
       ? getToolExecuteValidationFailedEvent({
           toolSlug: params.toolSlug,
+          toolkitSlug,
           args: params.args,
           error: new ToolInputValidationError({
             toolSlug: params.toolSlug,
@@ -502,6 +508,7 @@ const emitExecuteFailureTelemetry = (params: {
           })
         ? getToolExecuteToolNotFoundEvent({
             toolSlug: params.toolSlug,
+            toolkitSlug,
             args: params.args,
             surface: params.surface,
             projectMode: params.projectMode,
@@ -515,6 +522,7 @@ const emitExecuteFailureTelemetry = (params: {
           })
         : getToolExecuteFailedEvent({
             toolSlug: params.toolSlug,
+            toolkitSlug,
             args: params.args,
             surface: params.surface,
             projectMode: params.projectMode,
@@ -545,9 +553,7 @@ const emitExecuteFailureTelemetry = (params: {
       yield* trackCliCodactFailureEffect({
         failureType: 'wrong_tool_input_param',
         toolInfo: {
-          ...(toolkitFromToolSlug(params.toolSlug)
-            ? { toolkit: toolkitFromToolSlug(params.toolSlug) }
-            : {}),
+          ...(toolkitSlug ? { toolkit: toolkitSlug } : {}),
         },
         ctx: {
           tool_slug: params.toolSlug,
@@ -580,9 +586,7 @@ const emitExecuteFailureTelemetry = (params: {
       yield* trackCliCodactFailureEffect({
         failureType: 'wrong_tool_slug',
         toolInfo: {
-          ...(toolkitFromToolSlug(params.toolSlug)
-            ? { toolkit: toolkitFromToolSlug(params.toolSlug) }
-            : {}),
+          ...(toolkitSlug ? { toolkit: toolkitSlug } : {}),
         },
         ctx: {
           invalid_tool_slug: params.toolSlug,
@@ -663,7 +667,8 @@ const handleExecutionError = (
   }
 ) =>
   Effect.gen(function* () {
-    const mapped = mapComposioError({ error, toolSlug: context.toolSlug });
+    const toolkit = yield* toolkitFromToolSlug(context.toolSlug);
+    const mapped = mapComposioError({ error, toolkit, toolSlug: context.toolSlug });
     const normalized = mapped.normalized;
     if (normalized instanceof ToolInputValidationError) {
       yield* emitExecuteFailureTelemetry({
@@ -701,8 +706,11 @@ const handleExecutionError = (
 
     if (normalized instanceof ComposioNoActiveConnectionError) {
       yield* ui.log.error(mapped.message);
-      if (toolkitFromToolSlug(context.toolSlug)) {
-        yield* ui.note(connectionTips(context.toolSlug, context.surface), 'Tips');
+      if (toolkit) {
+        yield* ui.note(
+          connectionTips({ toolkit, toolSlug: context.toolSlug, surface: context.surface }),
+          'Tips'
+        );
       }
       return { error: mapped.message, slug: slugValue ?? context.toolSlug };
     }
@@ -1046,7 +1054,9 @@ const resolveExecuteContext = (params: RunToolsExecuteParams) =>
       orgId: resolvedProject.orgId,
       projectId: resolvedProject.projectId,
     });
-    const toolkitSlug = isLocalToolSlug(params.slug) ? undefined : toolkitFromToolSlug(params.slug);
+    const toolkitSlug = isLocalToolSlug(params.slug)
+      ? undefined
+      : yield* toolkitFromToolSlug(params.slug);
     const selectedConnectedAccountId = yield* resolveConnectedAccountForToolkit({
       client,
       toolkitSlug,
@@ -1173,7 +1183,7 @@ const runConnectedToolkitFailFast = (params: {
       Effect.asVoid
     );
 
-    const toolkit = toolkitFromToolSlug(params.slug);
+    const toolkit = yield* toolkitFromToolSlug(params.slug);
     if (!toolkit) return;
 
     const cachedToolkits = yield* getFreshConsumerConnectedToolkitsFromCache({
@@ -1202,7 +1212,10 @@ const runConnectedToolkitFailFast = (params: {
       });
       const message = `Toolkit "${toolkit}" is not connected for this user (cached within the last 5 minutes). If you just connected the account, use --skip-connection-check.`;
       yield* params.ui.log.error(message);
-      yield* params.ui.note(connectionTips(params.slug, params.surface), 'Tips');
+      yield* params.ui.note(
+        connectionTips({ toolkit, toolSlug: params.slug, surface: params.surface }),
+        'Tips'
+      );
       yield* writeExecuteStdout(
         params.ui,
         JSON.stringify(
@@ -1771,7 +1784,7 @@ const checkConnectedToolkitOrFail = (params: {
       Effect.asVoid
     );
 
-    const toolkit = toolkitFromToolSlug(params.slug);
+    const toolkit = yield* toolkitFromToolSlug(params.slug);
     if (!toolkit) return;
 
     const cachedToolkits = yield* getFreshConsumerConnectedToolkitsFromCache({
@@ -1832,14 +1845,18 @@ const runParallelSchemaFetchFromParsed = (params: ParsedParallelExecuteArgs) =>
             { readonly inputSchema: Record<string, unknown> }
           >;
         }).pipe(
-          Effect.catchAll(error => {
-            const mapped = mapComposioError({ error, toolSlug: spec.slug });
-            return Effect.succeed({
-              slug: spec.slug,
-              successful: false,
-              error: mapped.message,
-            } satisfies Extract<ParallelExecuteResult, { readonly successful: false }>);
-          })
+          Effect.catchAll(error =>
+            toolkitFromToolSlug(spec.slug).pipe(
+              Effect.map(toolkit => {
+                const mapped = mapComposioError({ error, toolkit, toolSlug: spec.slug });
+                return {
+                  slug: spec.slug,
+                  successful: false,
+                  error: mapped.message,
+                } satisfies Extract<ParallelExecuteResult, { readonly successful: false }>;
+              })
+            )
+          )
         ),
       { concurrency: 'unbounded' }
     );
@@ -1980,14 +1997,18 @@ const runParallelToolsExecuteFromParsed = (params: ParsedParallelExecuteArgs) =>
             ...result,
           };
         }).pipe(
-          Effect.catchAll(error => {
-            const mapped = mapComposioError({ error, toolSlug: spec.slug });
-            return Effect.succeed({
-              slug: spec.slug,
-              successful: false,
-              error: mapped.message,
-            } satisfies ParallelExecuteResult);
-          })
+          Effect.catchAll(error =>
+            toolkitFromToolSlug(spec.slug).pipe(
+              Effect.map(toolkit => {
+                const mapped = mapComposioError({ error, toolkit, toolSlug: spec.slug });
+                return {
+                  slug: spec.slug,
+                  successful: false,
+                  error: mapped.message,
+                } satisfies ParallelExecuteResult;
+              })
+            )
+          )
         ),
       { concurrency: 'unbounded' }
     );

@@ -15,6 +15,8 @@ The Google provider formats Composio tools for [Gemini](https://ai.google.dev/) 
 
 In Python, the Gemini provider (`composio_gemini`) wraps Composio tools as typed callables, and the `google-genai` SDK's Automatic Function Calling executes tool calls inside the chat loop for you. In TypeScript, the Google provider transforms Composio tools into Gemini function declarations, and you run the loop: execute each call with `composio.provider.executeToolCall`, feed the result back, and repeat until the model replies with text.
 
+Object arguments that declare no properties preserve arbitrary nested keys in both providers. The TypeScript provider also adds `type: "object"` to schema nodes that declare `properties` without a type, which is the shape Gemini expects for object schemas.
+
 <Steps>
 <Step>
 **Install**
