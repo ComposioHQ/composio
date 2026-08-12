@@ -1,12 +1,15 @@
 import http from 'node:http';
-import fs from 'node:fs/promises';
-import path from 'node:path';
+import { FileSystem, Path } from '@effect/platform';
 import open from 'open';
 import { detectCliPlatform } from '@composio/cli-local-tools';
-import { Effect, Option } from 'effect';
+import { Data, Effect, Option, Record as EffectRecord, Schema } from 'effect';
+import { JsonRecordSchema } from 'src/effects/json';
 import { resolveCliConfigDirectorySync } from 'src/services/cli-user-config';
+import { atomicWriteFileString } from 'src/utils/atomic-write';
+import { collectDecodedEntries } from 'src/utils/collect-decoded-entries';
 import {
   detectNativeUiCallerAgent,
+  isInteractivePermissionUiDisabled,
   requestNativeUiPermissionDecision,
   type NativeUiCallerAgent,
 } from 'src/services/native-ui-sidecar';
@@ -25,52 +28,138 @@ const ALLOW_FOR_DURATION_LABEL = '1 hr';
 const ALLOW_FOR_DURATION_MS = 60 * 60 * 1000;
 const NO_CONNECTED_ACCOUNT = '__none__';
 
-export type PermissionDefaultMode = 'allow_all' | 'ask_every_call' | 'ask_once_per_session';
-export type PermissionOverrideState = 'always_allow' | 'always_deny' | 'ask_once' | 'ask_always';
 export type PermissionDecision = 'allow_once' | 'allow_session' | 'deny';
 export type PermissionApprovalStatus =
-  | 'always_approved'
-  | 'cached_approved'
-  | 'approved_once'
-  | 'approved_for_session';
+  'always_approved' | 'cached_approved' | 'approved_once' | 'approved_for_session';
 export type PermissionGateResult =
-  | { readonly approvalStatus: PermissionApprovalStatus }
-  | undefined;
+  { readonly approvalStatus: PermissionApprovalStatus } | undefined;
 
-export interface ToolRouterPermissionsConfig {
-  readonly default: PermissionDefaultMode;
-  readonly overrides?: Readonly<Record<string, PermissionOverrideState>>;
-}
+const PermissionDefaultModeLiteralSchema = Schema.Literal(
+  'allow_all',
+  'ask_every_call',
+  'ask_once_per_session'
+);
+const PermissionOverrideStateLiteralSchema = Schema.Literal(
+  'always_allow',
+  'always_deny',
+  'ask_once',
+  'ask_always'
+);
+const isPermissionDefaultMode = Schema.is(PermissionDefaultModeLiteralSchema);
+const isPermissionOverrideState = Schema.is(PermissionOverrideStateLiteralSchema);
 
-export interface ConsumerPermissionSnapshot {
-  readonly orgId: string;
-  readonly projectId: string;
-  readonly consumerUserId: string;
-  readonly enhancedControlsEnabled: boolean;
-  readonly permissions?: ToolRouterPermissionsConfig;
-  readonly connectedAccountIds: ReadonlyArray<string>;
-  readonly fetchedAt: number;
-}
+// The permissions API can add modes before every installed CLI has upgraded.
+// Preserve validation without failing open during that version-skew window:
+// unknown defaults and overrides decode to their interactive safe equivalents.
+const PermissionDefaultModeSchema = Schema.String.pipe(
+  Schema.transform(PermissionDefaultModeLiteralSchema, {
+    decode: value => (isPermissionDefaultMode(value) ? value : 'ask_every_call'),
+    encode: value => value,
+    strict: true,
+  })
+);
+const PermissionOverrideStateSchema = Schema.String.pipe(
+  Schema.transform(PermissionOverrideStateLiteralSchema, {
+    decode: value => (isPermissionOverrideState(value) ? value : 'ask_always'),
+    encode: value => value,
+    strict: true,
+  })
+);
+const ToolRouterPermissionsConfigSchema = Schema.Struct({
+  default: PermissionDefaultModeSchema,
+  overrides: Schema.optional(
+    Schema.Record({ key: Schema.String, value: PermissionOverrideStateSchema })
+  ),
+});
+export const decodeToolRouterPermissionsConfig = Schema.decodeUnknownOption(
+  ToolRouterPermissionsConfigSchema
+);
+const ConsumerPermissionSnapshotSchema = Schema.Struct({
+  orgId: Schema.String,
+  projectId: Schema.String,
+  consumerUserId: Schema.String,
+  enhancedControlsEnabled: Schema.Boolean,
+  permissions: Schema.optional(ToolRouterPermissionsConfigSchema),
+  connectedAccountIds: Schema.Array(Schema.String),
+  fetchedAt: Schema.Number,
+});
+const CachedAllowDecisionSchema = Schema.Struct({ expiresAt: Schema.Number });
+const PermissionResolveResponseSchema = Schema.Struct({
+  experimental: Schema.optional(
+    Schema.Struct({ permissions: Schema.optional(ToolRouterPermissionsConfigSchema) })
+  ),
+});
+const ConsumerConfigResponseSchema = Schema.Struct({
+  enhanced_controls: Schema.optional(Schema.Boolean),
+  enhancedControls: Schema.optional(Schema.Boolean),
+});
 
-interface CachedAllowDecision {
-  readonly expiresAt: number;
-}
-
-interface CacheFile {
+export type PermissionDefaultMode = typeof PermissionDefaultModeSchema.Type;
+export type PermissionOverrideState = typeof PermissionOverrideStateSchema.Type;
+export type ToolRouterPermissionsConfig = typeof ToolRouterPermissionsConfigSchema.Type;
+export type ConsumerPermissionSnapshot = typeof ConsumerPermissionSnapshotSchema.Type;
+type CachedAllowDecision = typeof CachedAllowDecisionSchema.Type;
+// Decoding of the cache file is per-entry (decodeCacheShell + decodeSnapshotEntry /
+// decodeAllowEntry below), so the file shape only needs a type, not a schema value.
+type CacheFile = {
   readonly entries: Readonly<Record<string, ConsumerPermissionSnapshot>>;
-  readonly allowEntries?: Readonly<Record<string, CachedAllowDecision>>;
-}
+  readonly allowEntries?: Readonly<Record<string, CachedAllowDecision>> | undefined;
+};
+type ConsumerConfigResponse = typeof ConsumerConfigResponseSchema.Type;
+const decodeCacheShell = Schema.decodeUnknownOption(
+  Schema.parseJson(
+    Schema.Struct({
+      entries: Schema.optional(JsonRecordSchema),
+      allowEntries: Schema.optional(JsonRecordSchema),
+    })
+  )
+);
+const decodeSnapshotEntry = Schema.decodeUnknownOption(ConsumerPermissionSnapshotSchema);
+const decodeAllowEntry = Schema.decodeUnknownOption(CachedAllowDecisionSchema);
 
-interface PermissionResolveResponse {
-  readonly experimental?: {
-    readonly permissions?: ToolRouterPermissionsConfig;
-  };
-}
+// Per-entry decode: one stale or version-skewed entry drops only itself.
+// Discarding the whole file would also wipe all cached allow decisions and
+// be persisted back on the next write.
+export const decodeCacheFileTolerant = (raw: string): CacheFile =>
+  Option.match(decodeCacheShell(raw), {
+    onNone: (): CacheFile => ({ entries: {} }),
+    onSome: shell => ({
+      entries: collectDecodedEntries(shell.entries, decodeSnapshotEntry),
+      allowEntries: collectDecodedEntries(shell.allowEntries, decodeAllowEntry),
+    }),
+  });
 
-interface ConsumerConfigResponse {
-  readonly enhanced_controls?: boolean;
-  readonly enhancedControls?: boolean;
-}
+export class ToolPermissionDeniedError extends Data.TaggedError(
+  'services/ToolPermissionDeniedError'
+)<{
+  readonly toolSlug: string;
+  readonly deniedBy: 'permissions' | 'user';
+  readonly message: string;
+}> {}
+
+export class ToolPermissionsRequestError extends Data.TaggedError(
+  'services/ToolPermissionsRequestError'
+)<{
+  readonly path: string;
+  readonly message: string;
+  readonly cause: unknown;
+}> {}
+
+export class ToolPermissionsCacheError extends Data.TaggedError(
+  'services/ToolPermissionsCacheError'
+)<{
+  readonly operation: 'read' | 'write';
+  readonly message: string;
+  readonly cause: unknown;
+}> {}
+
+export class ToolPermissionPromptError extends Data.TaggedError(
+  'services/ToolPermissionPromptError'
+)<{
+  readonly toolSlug: string;
+  readonly message: string;
+  readonly cause: unknown;
+}> {}
 
 interface GateParams {
   readonly toolSlug: string;
@@ -81,7 +170,7 @@ interface GateParams {
 
 const allowDecisionMemoryCache = new Map<string, number>();
 
-const cachePath = () => path.join(resolveCliConfigDirectorySync(), CACHE_FILE_NAME);
+const cachePath = (path: Path.Path) => path.join(resolveCliConfigDirectorySync(), CACHE_FILE_NAME);
 const cacheKey = (params: { orgId: string; projectId: string; consumerUserId: string }) =>
   [params.orgId, params.projectId, params.consumerUserId].join(':');
 const normalizeBaseUrl = (baseURL: string) => baseURL.replace(/\/$/, '');
@@ -93,37 +182,36 @@ const uniq = (values: ReadonlyArray<string | undefined>) => [
 const pruneAllowEntries = (
   entries: Readonly<Record<string, CachedAllowDecision>> | undefined,
   now = Date.now()
-): Record<string, CachedAllowDecision> => {
-  const freshEntries: Record<string, CachedAllowDecision> = {};
-  for (const [key, entry] of Object.entries(entries ?? {})) {
-    if (typeof entry.expiresAt === 'number' && entry.expiresAt > now) {
-      freshEntries[key] = entry;
-    }
-  }
-  return freshEntries;
-};
+): Record<string, CachedAllowDecision> =>
+  EffectRecord.filter(
+    entries ?? {},
+    entry => typeof entry.expiresAt === 'number' && entry.expiresAt > now
+  );
 
-const readCacheFile = async (): Promise<CacheFile> => {
-  try {
-    const raw = await fs.readFile(cachePath(), 'utf8');
-    const parsed = JSON.parse(raw) as CacheFile;
-    return parsed && typeof parsed === 'object' && parsed.entries
-      ? { entries: parsed.entries, allowEntries: pruneAllowEntries(parsed.allowEntries) }
-      : { entries: {} };
-  } catch {
-    return { entries: {} };
-  }
-};
+// A missing or unreadable cache file degrades to an empty cache.
+const readCacheFile = (fs: FileSystem.FileSystem, path: Path.Path): Effect.Effect<CacheFile> =>
+  fs.readFileString(cachePath(path)).pipe(
+    Effect.map((raw): CacheFile => {
+      const parsed = decodeCacheFileTolerant(raw);
+      return {
+        entries: parsed.entries,
+        allowEntries: pruneAllowEntries(parsed.allowEntries),
+      };
+    }),
+    Effect.orElseSucceed((): CacheFile => ({ entries: {} }))
+  );
 
-const writeCacheFile = async (cache: CacheFile): Promise<void> => {
-  const targetPath = cachePath();
-  await fs.mkdir(path.dirname(targetPath), { recursive: true });
+const writeCacheFile = (fs: FileSystem.FileSystem, path: Path.Path, cache: CacheFile) =>
+  Effect.gen(function* () {
+    const targetPath = cachePath(path);
+    yield* fs.makeDirectory(path.dirname(targetPath), { recursive: true });
 
-  const tempPath = `${targetPath}.${process.pid}.${Date.now()}.${crypto.randomUUID()}.tmp`;
-  try {
-    await fs.writeFile(
-      tempPath,
-      `${JSON.stringify(
+    // Atomic write: on failure the temp file is dropped (best effort) and the
+    // original error is surfaced.
+    yield* atomicWriteFileString({
+      fs,
+      target: targetPath,
+      contents: `${JSON.stringify(
         {
           entries: cache.entries,
           allowEntries: pruneAllowEntries(cache.allowEntries),
@@ -131,32 +219,31 @@ const writeCacheFile = async (cache: CacheFile): Promise<void> => {
         null,
         2
       )}\n`,
-      'utf8'
-    );
-    await fs.rename(tempPath, targetPath);
-  } catch (error) {
-    await fs.rm(tempPath, { force: true }).catch(() => undefined);
-    throw error;
-  }
-};
-
-let cacheWriteQueue: Promise<void> = Promise.resolve();
-
-const updateCacheFile = async (
-  update: (current: CacheFile) => CacheFile | Promise<CacheFile>
-): Promise<void> => {
-  const previous = cacheWriteQueue.catch(() => undefined);
-  const next = previous.then(async () => {
-    const current = await readCacheFile();
-    await writeCacheFile(await update(current));
+    });
   });
 
-  cacheWriteQueue = next.catch(() => undefined);
-  await next;
-};
+// Serializes the read-modify-write cycles on the cache file so concurrent
+// writers cannot interleave (the same role the previous promise write queue
+// played for the plain async helpers).
+const cacheWriteSemaphore = Effect.unsafeMakeSemaphore(1);
 
-const writeCacheEntry = async (entry: ConsumerPermissionSnapshot): Promise<void> =>
-  updateCacheFile(current => ({
+const updateCacheFile = (
+  fs: FileSystem.FileSystem,
+  path: Path.Path,
+  update: (current: CacheFile) => CacheFile
+) =>
+  cacheWriteSemaphore.withPermits(1)(
+    readCacheFile(fs, path).pipe(
+      Effect.flatMap(current => writeCacheFile(fs, path, update(current)))
+    )
+  );
+
+const writeCacheEntry = (
+  fs: FileSystem.FileSystem,
+  path: Path.Path,
+  entry: ConsumerPermissionSnapshot
+) =>
+  updateCacheFile(fs, path, current => ({
     entries: {
       ...current.entries,
       [cacheKey(entry)]: entry,
@@ -164,14 +251,16 @@ const writeCacheEntry = async (entry: ConsumerPermissionSnapshot): Promise<void>
     allowEntries: current.allowEntries,
   }));
 
-const readCachedEntry = async (params: {
-  orgId: string;
-  projectId: string;
-  consumerUserId: string;
-}): Promise<ConsumerPermissionSnapshot | undefined> => {
-  const cache = await readCacheFile();
-  return cache.entries[cacheKey(params)];
-};
+const readCachedEntry = (
+  fs: FileSystem.FileSystem,
+  path: Path.Path,
+  params: {
+    orgId: string;
+    projectId: string;
+    consumerUserId: string;
+  }
+): Effect.Effect<ConsumerPermissionSnapshot | undefined> =>
+  readCacheFile(fs, path).pipe(Effect.map(cache => cache.entries[cacheKey(params)]));
 
 const isFreshForAccounts = (
   entry: ConsumerPermissionSnapshot | undefined,
@@ -186,23 +275,26 @@ const isFreshForAccounts = (
 const readEnhancedControlsFlag = (payload: ConsumerConfigResponse): boolean =>
   payload.enhanced_controls === true || payload.enhancedControls === true;
 
-const fetchJson = async <T>({
-  baseURL,
-  apiKey,
-  orgId,
-  projectId,
-  path,
-  method = 'GET',
-  body,
-}: {
-  readonly baseURL: string;
-  readonly apiKey: string;
-  readonly orgId: string;
-  readonly projectId: string;
-  readonly path: string;
-  readonly method?: 'GET' | 'POST';
-  readonly body?: unknown;
-}): Promise<T> => {
+const fetchJson = async <A, I>(
+  responseSchema: Schema.Schema<A, I, never>,
+  {
+    baseURL,
+    apiKey,
+    orgId,
+    projectId,
+    path,
+    method = 'GET',
+    body,
+  }: {
+    readonly baseURL: string;
+    readonly apiKey: string;
+    readonly orgId: string;
+    readonly projectId: string;
+    readonly path: string;
+    readonly method?: 'GET' | 'POST';
+    readonly body?: unknown;
+  }
+): Promise<A> => {
   const response = await fetch(`${normalizeBaseUrl(baseURL)}${path}`, {
     method,
     redirect: 'error',
@@ -219,7 +311,8 @@ const fetchJson = async <T>({
   if (!response.ok) {
     throw new Error(`HTTP ${response.status} ${response.statusText}`);
   }
-  return (await response.json()) as T;
+  const responseBody: unknown = await response.json();
+  return Schema.decodeUnknownPromise(responseSchema)(responseBody);
 };
 
 export const refreshConsumerPermissionSnapshot = (params: {
@@ -229,20 +322,29 @@ export const refreshConsumerPermissionSnapshot = (params: {
   readonly connectedAccountIds?: ReadonlyArray<string>;
 }) =>
   Effect.gen(function* () {
+    const fs = yield* FileSystem.FileSystem;
+    const path = yield* Path.Path;
     const userContext = yield* ComposioUserContext;
     const apiKey = Option.getOrUndefined(userContext.data.apiKey);
     if (!apiKey) return undefined;
 
     const connectedAccountIds = uniq(params.connectedAccountIds ?? []);
-    const config = yield* Effect.tryPromise(() =>
-      fetchJson<ConsumerConfigResponse>({
-        baseURL: userContext.data.baseURL,
-        apiKey,
-        orgId: params.orgId,
-        projectId: params.projectId,
-        path: '/api/v3.1/org/consumer/config',
-      })
-    );
+    const config = yield* Effect.tryPromise({
+      try: () =>
+        fetchJson(ConsumerConfigResponseSchema, {
+          baseURL: userContext.data.baseURL,
+          apiKey,
+          orgId: params.orgId,
+          projectId: params.projectId,
+          path: '/api/v3.1/org/consumer/config',
+        }),
+      catch: cause =>
+        new ToolPermissionsRequestError({
+          path: '/api/v3.1/org/consumer/config',
+          message: 'Failed to fetch the org consumer config.',
+          cause,
+        }),
+    });
     const platformSupportsEnhancedControls = isEnhancedControlsPlatformSupported();
     const remoteEnhancedControlsEnabled = readEnhancedControlsFlag(config);
     if (remoteEnhancedControlsEnabled && !platformSupportsEnhancedControls) {
@@ -252,37 +354,78 @@ export const refreshConsumerPermissionSnapshot = (params: {
     }
     const enhancedControlsEnabled =
       remoteEnhancedControlsEnabled && platformSupportsEnhancedControls;
-    const permissions =
+    const resolved =
       enhancedControlsEnabled && connectedAccountIds.length > 0
-        ? yield* Effect.tryPromise(() =>
-            fetchJson<PermissionResolveResponse>({
-              baseURL: userContext.data.baseURL,
-              apiKey,
-              orgId: params.orgId,
-              projectId: params.projectId,
-              path: '/api/v3.1/consumer/permissions/resolve',
-              method: 'POST',
-              body: {
-                connected_account_ids: connectedAccountIds,
-                default: 'ask_every_call',
-              },
-            })
-          ).pipe(Effect.map(response => response.experimental?.permissions))
-        : undefined;
+        ? yield* Effect.tryPromise({
+            try: () =>
+              fetchJson(PermissionResolveResponseSchema, {
+                baseURL: userContext.data.baseURL,
+                apiKey,
+                orgId: params.orgId,
+                projectId: params.projectId,
+                path: '/api/v3.1/consumer/permissions/resolve',
+                method: 'POST',
+                body: {
+                  connected_account_ids: connectedAccountIds,
+                  default: 'ask_every_call',
+                },
+              }),
+            catch: cause =>
+              new ToolPermissionsRequestError({
+                path: '/api/v3.1/consumer/permissions/resolve',
+                message: 'Failed to resolve consumer permissions.',
+                cause,
+              }),
+          }).pipe(
+            Effect.map(response => ({
+              permissions: response.experimental?.permissions,
+              resolveFailed: false,
+            })),
+            // The org said enhanced controls are ON but the policy could not
+            // be learned: fail closed to the interactive default instead of
+            // silently allowing tools the policy may explicitly deny.
+            Effect.catchTag('services/ToolPermissionsRequestError', error =>
+              Effect.logDebug(
+                'Failed to resolve consumer permissions; failing closed to ask_every_call',
+                error
+              ).pipe(
+                Effect.as({
+                  permissions: { default: 'ask_every_call' } as ToolRouterPermissionsConfig,
+                  resolveFailed: true,
+                })
+              )
+            )
+          )
+        : { permissions: undefined, resolveFailed: false };
 
     const snapshot: ConsumerPermissionSnapshot = {
       orgId: params.orgId,
       projectId: params.projectId,
       consumerUserId: params.consumerUserId,
       enhancedControlsEnabled,
-      permissions,
+      permissions: resolved.permissions,
       connectedAccountIds,
       fetchedAt: Date.now(),
     };
-    yield* Effect.tryPromise(() => writeCacheEntry(snapshot));
+    // A fail-closed snapshot is not persisted, so a healthy fetch replaces it
+    // on the next command instead of pinning ask_every_call for the TTL.
+    if (!resolved.resolveFailed) {
+      yield* writeCacheEntry(fs, path, snapshot).pipe(
+        Effect.catchAll(cause =>
+          Effect.logDebug(
+            'Failed to write the tool permissions cache',
+            new ToolPermissionsCacheError({
+              operation: 'write',
+              message: 'Failed to write the tool permissions cache.',
+              cause,
+            })
+          )
+        )
+      );
+    }
     return snapshot;
   }).pipe(
-    Effect.catchAll(error =>
+    Effect.catchTag('services/ToolPermissionsRequestError', error =>
       Effect.gen(function* () {
         yield* Effect.logDebug('Failed to refresh consumer permission cache', error);
         return undefined;
@@ -297,10 +440,12 @@ export const getConsumerPermissionSnapshot = (params: {
   readonly connectedAccountIds?: ReadonlyArray<string>;
 }) =>
   Effect.gen(function* () {
+    const fs = yield* FileSystem.FileSystem;
+    const path = yield* Path.Path;
     const connectedAccountIds = uniq(params.connectedAccountIds ?? []);
-    const cached = yield* Effect.tryPromise(() => readCachedEntry(params)).pipe(
-      Effect.catchAll(() => Effect.succeed(undefined))
-    );
+    // Read failures are absorbed inside readCacheFile (empty cache), so an
+    // unreadable cache file behaves exactly like a cache miss here.
+    const cached = yield* readCachedEntry(fs, path, params);
 
     if (isFreshForAccounts(cached, connectedAccountIds)) {
       yield* refreshConsumerPermissionSnapshot({ ...params, connectedAccountIds }).pipe(
@@ -328,15 +473,22 @@ export const getOrgEnhancedControlsStatus = (params: {
     const apiKey = Option.getOrUndefined(userContext.data.apiKey);
     if (!apiKey) return undefined;
 
-    const config = yield* Effect.tryPromise(() =>
-      fetchJson<ConsumerConfigResponse>({
-        baseURL: userContext.data.baseURL,
-        apiKey,
-        orgId: params.orgId,
-        projectId: params.projectId,
-        path: '/api/v3.1/org/consumer/config',
-      })
-    );
+    const config = yield* Effect.tryPromise({
+      try: () =>
+        fetchJson(ConsumerConfigResponseSchema, {
+          baseURL: userContext.data.baseURL,
+          apiKey,
+          orgId: params.orgId,
+          projectId: params.projectId,
+          path: '/api/v3.1/org/consumer/config',
+        }),
+      catch: cause =>
+        new ToolPermissionsRequestError({
+          path: '/api/v3.1/org/consumer/config',
+          message: 'Failed to fetch the org consumer config.',
+          cause,
+        }),
+    });
     const remoteEnabled = readEnhancedControlsFlag(config);
     const platformSupported = isEnhancedControlsPlatformSupported();
     return {
@@ -345,7 +497,7 @@ export const getOrgEnhancedControlsStatus = (params: {
       platformSupported,
     };
   }).pipe(
-    Effect.catchAll(error =>
+    Effect.catchTag('services/ToolPermissionsRequestError', error =>
       Effect.gen(function* () {
         yield* Effect.logDebug('Failed to read enhanced controls status', error);
         return undefined;
@@ -366,13 +518,24 @@ export const getConnectedAccountPermissionGroup = (params: {
 };
 
 const resolvePermissionState = (
-  params: GateParams
+  params: GateParams & { readonly snapshot: ConsumerPermissionSnapshot }
 ): PermissionOverrideState | PermissionDefaultMode => {
-  const permissions = params.snapshot?.permissions;
+  const permissions = params.snapshot.permissions;
   const override =
     permissions?.overrides?.[permissionField(params.toolSlug, params.connectedAccountId)] ??
     permissions?.overrides?.[accountPermissionField(params.connectedAccountId)];
   return override ?? permissions?.default ?? 'allow_all';
+};
+
+// The gate's decision table: 'skip' means gating does not apply (developer
+// mode, or controls known disabled). A snapshot synthesized from a failed
+// permission resolve carries default: 'ask_every_call' and therefore prompts.
+export const resolveGateState = (
+  params: GateParams
+): PermissionOverrideState | PermissionDefaultMode | 'skip' => {
+  if (params.snapshot === undefined) return 'skip';
+  if (!params.snapshot.enhancedControlsEnabled || !params.snapshot.permissions) return 'skip';
+  return resolvePermissionState({ ...params, snapshot: params.snapshot });
 };
 
 const allowCacheKey = (params: GateParams) =>
@@ -388,29 +551,44 @@ const isAllowCachedInMemory = (cacheKey: string, now = Date.now()): boolean => {
   return true;
 };
 
-const isAllowCached = async (cacheKey: string, now = Date.now()): Promise<boolean> => {
-  if (isAllowCachedInMemory(cacheKey, now)) return true;
+const isAllowCached = (
+  fs: FileSystem.FileSystem,
+  path: Path.Path,
+  cacheKey: string,
+  now = Date.now()
+): Effect.Effect<boolean> =>
+  Effect.suspend(() => {
+    if (isAllowCachedInMemory(cacheKey, now)) return Effect.succeed(true);
 
-  const cache = await readCacheFile();
-  const expiresAt = cache.allowEntries?.[cacheKey]?.expiresAt;
-  if (expiresAt === undefined || expiresAt <= now) return false;
+    return readCacheFile(fs, path).pipe(
+      Effect.map(cache => {
+        const expiresAt = cache.allowEntries?.[cacheKey]?.expiresAt;
+        if (expiresAt === undefined || expiresAt <= now) return false;
 
-  allowDecisionMemoryCache.set(cacheKey, expiresAt);
-  return true;
-};
+        allowDecisionMemoryCache.set(cacheKey, expiresAt);
+        return true;
+      })
+    );
+  });
 
-const cacheAllowDecision = async (cacheKey: string, now = Date.now()): Promise<void> => {
-  const expiresAt = now + ALLOW_FOR_DURATION_MS;
-  allowDecisionMemoryCache.set(cacheKey, expiresAt);
+const cacheAllowDecision = (
+  fs: FileSystem.FileSystem,
+  path: Path.Path,
+  cacheKey: string,
+  now = Date.now()
+) =>
+  Effect.suspend(() => {
+    const expiresAt = now + ALLOW_FOR_DURATION_MS;
+    allowDecisionMemoryCache.set(cacheKey, expiresAt);
 
-  await updateCacheFile(current => ({
-    entries: current.entries,
-    allowEntries: {
-      ...current.allowEntries,
-      [cacheKey]: { expiresAt },
-    },
-  }));
-};
+    return updateCacheFile(fs, path, current => ({
+      entries: current.entries,
+      allowEntries: {
+        ...current.allowEntries,
+        [cacheKey]: { expiresAt },
+      },
+    }));
+  });
 
 const escapeHtml = (value: string): string =>
   value.replace(/[&<>"']/g, char => {
@@ -825,6 +1003,7 @@ const requestPermissionInBrowser = (params: {
       reject(error);
     });
     server.listen(0, '127.0.0.1', async () => {
+      // eslint-disable-next-line eslint-js/no-restricted-syntax -- node:http listen callback inside a Promise executor: on failure to open the browser, close the server and reject the surrounding Promise; Effect's error channel is not available here
       try {
         const address = server.address();
         const port = typeof address === 'object' && address ? address.port : undefined;
@@ -843,52 +1022,90 @@ const requestPermissionDecision = async (params: {
   readonly toolSlug: string;
   readonly accountLabel?: string;
 }): Promise<PermissionDecision> => {
+  if (await Effect.runPromise(isInteractivePermissionUiDisabled)) {
+    throw new Error(
+      `Interactive permission prompts are disabled in this environment (CI/VITEST, or COMPOSIO_DISABLE_PERMISSION_UI); cannot collect an approval for ${params.toolSlug}.`
+    );
+  }
+
   // Prefer the bundled macOS native sidecar when it is available. The browser
   // prompt remains the cross-platform fallback and is only opened when the
   // native sidecar is missing or fails before returning a decision.
   const nativeDecision = await requestNativeUiPermissionDecision(params).catch(() => undefined);
   if (nativeDecision === 'allow_once' || nativeDecision === 'allow_session') return nativeDecision;
   if (nativeDecision === 'deny' || nativeDecision === 'dismissed') return 'deny';
-  return requestPermissionInBrowser({ ...params, agent: detectNativeUiCallerAgent() });
+  return requestPermissionInBrowser({ ...params, agent: await detectNativeUiCallerAgent() });
 };
 
 export const gateToolExecution = (params: GateParams) =>
   Effect.gen(function* () {
-    if (!params.snapshot?.enhancedControlsEnabled || !params.snapshot.permissions) return;
+    const state = resolveGateState(params);
+    if (state === 'skip') return;
 
-    const state = resolvePermissionState(params);
     if (state === 'allow_all' || state === 'always_allow') {
       return { approvalStatus: 'always_approved' } satisfies PermissionGateResult;
     }
     if (state === 'always_deny') {
-      return yield* Effect.fail(
-        new Error(`Tool execution denied by permissions: ${params.toolSlug}`)
-      );
+      return yield* new ToolPermissionDeniedError({
+        toolSlug: params.toolSlug,
+        deniedBy: 'permissions',
+        message: `Tool execution denied by permissions: ${params.toolSlug}`,
+      });
     }
 
+    const fs = yield* FileSystem.FileSystem;
+    const path = yield* Path.Path;
     const cacheKey = allowCacheKey(params);
-    const hasCachedAllow = yield* Effect.tryPromise(() => isAllowCached(cacheKey)).pipe(
-      Effect.catchAll(() => Effect.succeed(false))
-    );
+    // Read failures are absorbed inside readCacheFile (empty cache), so an
+    // unreadable allow cache behaves exactly like "no cached allow decision".
+    const hasCachedAllow = yield* isAllowCached(fs, path, cacheKey);
     if (hasCachedAllow) {
       return { approvalStatus: 'cached_approved' } satisfies PermissionGateResult;
     }
 
-    const decision = yield* Effect.tryPromise(() =>
-      requestPermissionDecision({
+    // Fail closed instead of spawning approval UI where nobody can answer it
+    // (tests, CI). Cached allow decisions above still apply.
+    if (yield* isInteractivePermissionUiDisabled) {
+      return yield* new ToolPermissionDeniedError({
         toolSlug: params.toolSlug,
-        accountLabel: params.connectedAccountWordId,
-      })
-    );
+        deniedBy: 'permissions',
+        message: `Tool execution requires interactive approval, but permission prompts are disabled in this environment (CI/VITEST, or COMPOSIO_DISABLE_PERMISSION_UI): ${params.toolSlug}`,
+      });
+    }
+
+    const decision = yield* Effect.tryPromise({
+      try: () =>
+        requestPermissionDecision({
+          toolSlug: params.toolSlug,
+          accountLabel: params.connectedAccountWordId,
+        }),
+      catch: cause =>
+        new ToolPermissionPromptError({
+          toolSlug: params.toolSlug,
+          message: `Failed to collect a permission decision for: ${params.toolSlug}`,
+          cause,
+        }),
+    });
 
     if (decision === 'deny') {
-      return yield* Effect.fail(new Error(`Tool execution denied by user: ${params.toolSlug}`));
+      return yield* new ToolPermissionDeniedError({
+        toolSlug: params.toolSlug,
+        deniedBy: 'user',
+        message: `Tool execution denied by user: ${params.toolSlug}`,
+      });
     }
     const cachesAllowOnce = state === 'ask_once' || state === 'ask_once_per_session';
     if (decision === 'allow_session' || (cachesAllowOnce && decision === 'allow_once')) {
-      yield* Effect.tryPromise(() => cacheAllowDecision(cacheKey)).pipe(
-        Effect.catchAll(error =>
-          Effect.logDebug('Failed to cache tool permission allow decision', error)
+      yield* cacheAllowDecision(fs, path, cacheKey).pipe(
+        Effect.catchAll(cause =>
+          Effect.logDebug(
+            'Failed to cache tool permission allow decision',
+            new ToolPermissionsCacheError({
+              operation: 'write',
+              message: 'Failed to cache the tool permission allow decision.',
+              cause,
+            })
+          )
         )
       );
     }

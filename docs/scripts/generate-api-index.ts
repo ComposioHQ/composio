@@ -8,7 +8,29 @@
 
 import { readFileSync, writeFileSync, mkdirSync, existsSync, rmSync, readdirSync } from 'fs';
 import { join } from 'path';
+import { z } from 'zod';
 import { HIDDEN_API_TAGS } from '../lib/filter-api-version';
+import { apiEndpointsSchema } from '../lib/api-endpoints-table-schema';
+
+/**
+ * Serializes an endpoints array for the `<ApiEndpointsTable />` prop, refusing
+ * to write a payload the readers cannot parse.
+ *
+ * At runtime `mdxToCleanMarkdown` degrades a malformed payload to an empty
+ * table (one bad page must not 500 the whole `.md` response), so an invalid
+ * payload written here would render as a silently empty Endpoints section —
+ * exactly the defect this pipeline exists to avoid. A generator that cannot
+ * produce a valid payload should fail the generation run instead.
+ */
+function serializeEndpoints(endpoints: unknown, label: string): string {
+  const parsed = apiEndpointsSchema.safeParse(endpoints);
+  if (!parsed.success) {
+    throw new Error(
+      `Invalid ApiEndpointsTable payload for ${label}:\n${z.prettifyError(parsed.error)}`
+    );
+  }
+  return JSON.stringify(endpoints);
+}
 
 /**
  * API-reference tags hidden on our side even though the upstream OpenAPI spec
@@ -108,6 +130,134 @@ function activeTagSlugs(opsByTag: Record<string, OperationEntry[]>): Set<string>
   return active;
 }
 
+interface WebhookSpec {
+  tags?: { name: string; description?: string }[];
+  webhooks?: Record<string, Record<string, OpenAPIOperation>>;
+}
+
+function loadWebhookSpec(): WebhookSpec | null {
+  const specPath = join(process.cwd(), 'public/openapi-webhooks.json');
+  if (!existsSync(specPath)) return null;
+  return JSON.parse(readFileSync(specPath, 'utf-8'));
+}
+
+/**
+ * Tag slugs contributed by the separate webhook-events spec (PLEN-2793). Its
+ * operations live under the OpenAPI 3.1 `webhooks` block (not `paths`) and its
+ * tag ("Webhook Events") is absent from openapi.json — so without folding these
+ * into the active set, `removeStaleTagIndexes` would recursively delete the
+ * hand-authored `webhook-events` overview folder on the next docs data run.
+ */
+function webhookTagSlugs(spec: WebhookSpec | null): Set<string> {
+  const slugs = new Set<string>();
+  if (!spec) return slugs;
+
+  for (const item of Object.values(spec.webhooks ?? {})) {
+    for (const operation of Object.values(item)) {
+      for (const tag of operation.tags ?? []) {
+        slugs.add(slugify(tag));
+      }
+    }
+  }
+  return slugs;
+}
+
+/**
+ * Generates the Webhook Events overview page from the webhooks spec.
+ *
+ * The event list MUST be derived, not hand-maintained: adding an event to the
+ * Apollo registry would otherwise leave it off this page, and removing one would
+ * leave a link to a page Fumadocs no longer builds (a 404). Prose lives in
+ * `api-overviews/webhook-events.mdx`; everything below it is generated.
+ *
+ * Individual event pages are rendered by Fumadocs straight from the spec, so
+ * this page only needs the index tables.
+ */
+function generateWebhookEventsIndex(spec: WebhookSpec | null, outputDir: string) {
+  if (!spec) return;
+
+  const entries = Object.entries(spec.webhooks ?? {});
+  if (entries.length === 0) return;
+
+  const operationTags = new Set(
+    entries.flatMap(([, item]) => item.post?.tags ?? []),
+  );
+  if (operationTags.size !== 1) {
+    throw new Error(
+      `Expected webhook operations to share exactly one tag, found: ${[...operationTags].join(', ') || 'none'}`,
+    );
+  }
+
+  const [operationTag] = operationTags;
+  const tag = spec.tags?.find(candidate => candidate.name === operationTag);
+  if (!tag) {
+    throw new Error(`Webhook operation tag "${operationTag}" is not declared in spec.tags`);
+  }
+  const tagSlug = slugify(tag.name);
+
+  const current: string[] = [];
+  const legacy: string[] = [];
+
+  for (const [key, item] of entries) {
+    const operation = item.post;
+    if (!operation?.operationId) continue;
+
+    const href = `/reference/api-reference/${tagSlug}/${operation.operationId}`;
+    const label = operation.summary ?? key;
+
+    if (operation.deprecated !== true) {
+      current.push(`| \`${key}\` | [${label}](${href}) |`);
+      continue;
+    }
+
+    // Legacy payloads are keyed `<event>.<version>` so each format gets its own
+    // page — but `composio.trigger.message.v2` is NOT an event type anyone ever
+    // receives. Split the synthetic key back apart so the table shows the real
+    // event plus the payload version it applies to.
+    const versioned = /^(.*)\.(v\d+)$/.exec(key);
+    const event = versioned ? versioned[1] : key;
+    const version = versioned ? versioned[2].toUpperCase() : '—';
+    legacy.push(`| \`${event}\` | ${version} | [${label}](${href}) |`);
+  }
+
+  const overview = readOverview(tagSlug);
+  const body = overview ?? tag?.description ?? '';
+
+  const legacySection =
+    legacy.length > 0
+      ? `
+
+## Legacy payloads (deprecated)
+
+Older subscriptions may still receive these payload formats. The event type is unchanged — only the payload shape differs, selected by the subscription's version. You can upgrade an existing subscription at any time by updating its \`version\` — see [Update a webhook subscription](/reference/api-reference/webhook-subscriptions/patchWebhookSubscriptionsById). New integrations should use the current events above.
+
+| Event | Version | Description |
+|-------|---------|-------------|
+${legacy.join('\n')}`
+      : '';
+
+  const content = `---
+title: ${tag?.name ?? 'Webhook Events'}
+description: "${tag?.description ?? ''}"
+---
+
+{/* Auto-generated from openapi-webhooks.json. Edit the overview at api-overviews/${tagSlug}.mdx, not this file. */}
+
+${body}
+
+## Events
+
+| Event | Description |
+|-------|-------------|
+${current.join('\n')}${legacySection}
+`;
+
+  const folderPath = join(outputDir, tagSlug);
+  mkdirSync(folderPath, { recursive: true });
+  writeFileSync(join(folderPath, 'index.mdx'), content);
+  console.log(`Generated: ${tagSlug}/index.mdx (${current.length} events, ${legacy.length} legacy)`);
+}
+
 function removeStaleTagIndexes(baseDir: string, activeSlugs: Set<string>) {
   if (!existsSync(baseDir)) return;
 
@@ -135,23 +285,33 @@ function generateIndexPages() {
 
   let v3Ops: Record<string, OperationEntry[]> = {};
   if (existsSync(specV3Path)) {
-    const specV3: OpenAPISpec = JSON.parse(readFileSync(specV3Path, 'utf-8'));
-    v3Ops = getOperationsByTag(specV3);
+    const loadedSpecV3: OpenAPISpec = JSON.parse(readFileSync(specV3Path, 'utf-8'));
+    v3Ops = getOperationsByTag(loadedSpecV3);
   }
 
-  // Collect tag descriptions from v3.1 spec
-  const tagDescriptions: Record<string, string> = {};
+  const v31TagDescriptions: Record<string, string> = {};
   for (const tag of specV31.tags) {
-    tagDescriptions[tag.name] = tag.description || '';
+    v31TagDescriptions[tag.name] = tag.description || '';
   }
-
   const outputDir = join(process.cwd(), 'content/reference/api-reference');
+  const webhookSpec = loadWebhookSpec();
 
-  removeStaleTagIndexes(outputDir, activeTagSlugs(v31Ops));
+  // `Webhook Events` is tagged only in openapi-webhooks.json, so it never appears
+  // in the openapi.json-derived active set. Without folding it in, the section is
+  // recursively deleted on every run (and immediately regenerated below) — and if
+  // that ordering ever changed, the docs would silently lose the whole section.
+  removeStaleTagIndexes(
+    outputDir,
+    new Set([...activeTagSlugs(v31Ops), ...webhookTagSlugs(webhookSpec)]),
+  );
   removeStaleTagIndexes(
     join(process.cwd(), 'content/reference/v3/api-reference'),
     activeTagSlugs(v3Ops),
   );
+
+  // Webhook events come from a separate 3.1 spec, so they're generated here
+  // rather than in the tag loop below (which iterates openapi.json operations).
+  generateWebhookEventsIndex(webhookSpec, outputDir);
 
   // Get all unique tag names
   const allTags = new Set([...Object.keys(v31Ops), ...Object.keys(v3Ops)]);
@@ -192,7 +352,7 @@ function generateIndexPages() {
       continue;
     }
 
-    const tagDescription = tagDescriptions[tagName] || `${tagName} API endpoints`;
+    const tagDescription = v31TagDescriptions[tagName] || `${tagName} API endpoints`;
     // Display-title overrides for tags whose OpenAPI name is stale (e.g. the
     // tool router is now Sessions). Keyed by slug.
     const displayTitle = TITLE_OVERRIDES[tagSlug] ?? tagName;
@@ -237,7 +397,7 @@ ${body}
 
 ## Endpoints
 
-<ApiEndpointsTable endpoints={${JSON.stringify(endpoints)}} />
+<ApiEndpointsTable endpoints={${serializeEndpoints(endpoints, `${tagSlug} (v3.1)`)}} />
 `;
 
       const folderPath = join(outputDir, tagSlug);
@@ -271,7 +431,7 @@ ${body}
 
 ## Endpoints
 
-<ApiEndpointsTable endpoints={${JSON.stringify(v3Endpoints)}} />
+<ApiEndpointsTable endpoints={${serializeEndpoints(v3Endpoints, `${tagSlug} (v3.0)`)}} />
 `;
 
       const v3FolderPath = join(process.cwd(), 'content/reference/v3/api-reference', tagSlug);

@@ -2,8 +2,8 @@
  * Anthropic MCP Gmail Example
  *
  * This example demonstrates how to use Composio SDK with Anthropic to:
- * 1. Create an MCP server for Gmail toolkit
- * 2. Connect to the server and use it with Anthropic's API
+ * 1. Create a tool-router session scoped to the Gmail toolkit
+ * 2. Connect Anthropic's MCP client to the session's hosted MCP endpoint
  * 3. Fetch and summarize emails using the MCP tools
  *
  * Prerequisites:
@@ -30,35 +30,33 @@ const composio = new Composio({
   provider,
 });
 
-const authConfigId = '<auth_config_id>'; // Use your auth config ID
-const externalUserId = '<external_user_id>'; // Replace it with your user ID
-const allowedTools = ['GMAIL_FETCH_EMAILS'];
+const externalUserId = process.env.COMPOSIO_EXAMPLES_USER_ID; // the user ID from your database
+if (!externalUserId) {
+  throw new Error('Set COMPOSIO_EXAMPLES_USER_ID');
+}
 
-// Create an MCP server with Gmail toolkit
-const mcpConfig = await composio.mcp.create('gmail-anthropic-' + Date.now(), {
-  toolkits: [
-    {
-      toolkit: 'gmail',
-      authConfigId,
-    },
-  ],
-  allowedTools,
+// Create a session scoped to the Gmail toolkit; every session exposes a hosted MCP endpoint
+const session = await composio.sessions.create(externalUserId, {
+  toolkits: ['gmail'],
+  mcp: true,
 });
 
-console.log(`✅ MCP server created: ${mcpConfig.id}`);
-console.log(`🔧 Available toolkits: ${mcpConfig.allowedTools.join(', ')}`);
-
-// Generate a user-scoped MCP endpoint and adapt it for Anthropic's MCP beta.
-const mcp = await mcpConfig.generate(externalUserId);
-const servers = provider.wrapMcpServerResponse([{ name: mcp.name, url: mcp.url }]);
+console.log(`✅ MCP session created: ${session.sessionId}`);
 
 console.log('\n=== Fetching and Summarizing Recent Emails ===');
 
-// Use Anthropic with the MCP servers
+// Use Anthropic with the session's MCP endpoint
 const stream = anthropic.beta.messages.stream({
-  model: 'claude-4-sonnet-20250514',
+  model: 'claude-sonnet-5',
   max_tokens: 64_000,
-  mcp_servers: servers,
+  mcp_servers: [
+    {
+      type: 'url',
+      url: session.mcp.url,
+      name: 'composio-gmail',
+      authorization_token: process.env.COMPOSIO_API_KEY,
+    },
+  ],
   messages: [
     {
       role: 'user',

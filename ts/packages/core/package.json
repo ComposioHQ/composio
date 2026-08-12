@@ -1,7 +1,7 @@
 {
   "name": "@composio/core",
   "type": "module",
-  "version": "0.14.0",
+  "version": "0.16.0",
   "description": "",
   "main": "src/index.ts",
   "publishConfig": {
@@ -33,6 +33,12 @@
       "edge-light": "./dist/utils/config-defaults/ConfigDefaults.workerd.mjs",
       "node": "./dist/utils/config-defaults/ConfigDefaults.node.mjs",
       "default": "./dist/utils/config-defaults/ConfigDefaults.node.mjs"
+    },
+    "#ssrf_guard": {
+      "workerd": "./dist/utils/ssrfGuard.workerd.mjs",
+      "edge-light": "./dist/utils/ssrfGuard.workerd.mjs",
+      "node": "./dist/utils/ssrfGuard.node.mjs",
+      "default": "./dist/utils/ssrfGuard.node.mjs"
     }
   },
   "exports": {
@@ -82,8 +88,7 @@
     "clean": "git clean -xdf node_modules",
     "build": "pnpm exec tsdown",
     "test": "vitest run",
-    "typecheck": "pnpm exec tsgo --noEmit --skipLibCheck && pnpm exec tsgo --noEmit --skipLibCheck -p tsconfig.type-tests.json",
-    "typecheck:tsc": "tsc --noEmit --skipLibCheck && tsc --noEmit --skipLibCheck -p tsconfig.type-tests.json",
+    "typecheck": "tsc --noEmit --skipLibCheck && tsc --noEmit --skipLibCheck -p tsconfig.type-tests.json",
     "generate:docs": "tsx scripts/generate-docs.ts"
   },
   "keywords": [],
@@ -94,11 +99,11 @@
   "license": "ISC",
   "devDependencies": {
     "@type-challenges/utils": "^0.1.1",
-    "@types/semver": "^7.7.1",
+    "@types/semver": "^7.8.0",
     "tsdown": "catalog:",
     "tsx": "catalog:",
     "typedoc": "^0.28.20",
-    "typescript": "catalog:",
+    "typescript": "catalog:ts6",
     "vitest": "catalog:",
     "zod": "catalog:"
   },
@@ -109,9 +114,10 @@
     "@composio/client": "catalog:",
     "@composio/json-schema-to-zod": "workspace:*",
     "@types/json-schema": "^7.0.15",
+    "is-fs-case-sensitive": "^2.0.0",
     "openai": "catalog:",
     "picocolors": "catalog:",
-    "pusher-js": "^8.5.0",
+    "pusher-js": "^8.6.0",
     "semver": "^7.8.5",
     "zod-to-json-schema": "catalog:"
   },

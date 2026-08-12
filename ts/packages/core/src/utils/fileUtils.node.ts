@@ -10,6 +10,7 @@ import type { FileDownloadData, FileUploadData } from '../types/files.types';
 import { assertSafeFileUploadPath } from './sensitiveFileUploadPaths';
 import { assertPathInsideUploadDirs } from './uploadDirAllowlist.node';
 import { ssrfSafeFetch } from './ssrfGuard.node';
+import { readResponseBodyWithLimit } from './readResponseBody';
 
 /**
  * Options for {@link getFileDataAfterUploadingToS3} (S3 presigned upload from local path, URL, or File).
@@ -175,10 +176,12 @@ const readFileContentFromURL = async (
   // redirect into them. See ssrfGuard.node.ts.
   const response = await ssrfSafeFetch(path, { signal });
   if (!response.ok) {
+    // The error path never reads the body, so release it explicitly (mirrors
+    // `readResponseBodyWithLimit`) instead of leaving it to the garbage collector.
+    await response.body?.cancel().catch(() => undefined);
     throw new Error(`Failed to fetch file: ${response.statusText}`);
   }
-  const arrayBuffer = await response.arrayBuffer();
-  const content = new Uint8Array(arrayBuffer);
+  const content = await readResponseBodyWithLimit(response);
   const mimeType = response.headers.get('content-type') || 'application/octet-stream';
 
   // Extract clean filename from URL, removing query parameters

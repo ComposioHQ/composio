@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import ComposioClient from '@composio/client';
 import { z as z4 } from 'zod';
 import { z } from 'zod/v3';
 import {
@@ -227,20 +228,20 @@ describe('createCustomTool', () => {
     });
 
     it('should throw if inputParams is missing', () => {
-      expect(() => createCustomTool('SLUG', { ...baseOptions, inputParams: null as any })).toThrow(
-        'inputParams is required'
-      );
+      expect(() =>
+        createCustomTool('SLUG', { ...baseOptions, inputParams: null as unknown })
+      ).toThrow('inputParams is required');
     });
 
     it('should throw if execute is not a function', () => {
-      expect(() => createCustomTool('SLUG', { ...baseOptions, execute: 'not-fn' as any })).toThrow(
-        'execute must be a function'
-      );
+      expect(() =>
+        createCustomTool('SLUG', { ...baseOptions, execute: 'not-fn' as unknown })
+      ).toThrow('execute must be a function');
     });
 
     it('should throw if a Zod v4 input schema is not an object', () => {
       expect(() =>
-        createCustomTool('SLUG', { ...baseOptions, inputParams: z4.string() as any })
+        createCustomTool('SLUG', { ...baseOptions, inputParams: z4.string() as unknown })
       ).toThrow('inputParams must be a z.object() schema');
     });
   });
@@ -254,7 +255,7 @@ describe('createCustomTool', () => {
         execute: noSessionExecute,
       });
 
-      const result = await tool.execute({ category: 'test' } as any);
+      const result = await tool.execute({ category: 'test' } as unknown);
       expect(result.result).toBe(42);
       expect(noSessionExecute).toHaveBeenCalledWith({ category: 'test' });
     });
@@ -612,21 +613,20 @@ describe('serializeCustomToolkits', () => {
 // ────────────────────────────────────────────────────────────────
 
 describe('SessionContextImpl', () => {
-  const mockClient = {
-    toolRouter: {
-      session: {
-        execute: vi.fn(),
-        proxyExecute: vi.fn(),
-      },
-    },
-  };
+  const client = new ComposioClient({ apiKey: 'test-api-key' });
+  const session = Object.assign(client.toolRouter.session, {
+    execute: vi.fn<typeof client.toolRouter.session.execute>(),
+    proxyExecute: vi.fn<typeof client.toolRouter.session.proxyExecute>(),
+  });
+  const toolRouter = Object.assign(client.toolRouter, { session });
+  const mockClient = Object.assign(client, { toolRouter });
 
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
   it('should expose userId', () => {
-    const ctx = new SessionContextImpl(mockClient as any, 'user_1', 'sess_1');
+    const ctx = new SessionContextImpl(mockClient, 'user_1', 'sess_1');
     expect(ctx.userId).toBe('user_1');
   });
 
@@ -637,7 +637,7 @@ describe('SessionContextImpl', () => {
       log_id: 'log_1',
     });
 
-    const ctx = new SessionContextImpl(mockClient as any, 'user_1', 'sess_1');
+    const ctx = new SessionContextImpl(mockClient, 'user_1', 'sess_1');
     const result = await ctx.execute('GMAIL_SEND_EMAIL', { to: 'test@test.com' });
 
     expect(mockClient.toolRouter.session.execute).toHaveBeenCalledWith(
@@ -662,7 +662,7 @@ describe('SessionContextImpl', () => {
       log_id: 'log_1',
     });
 
-    const ctx = new SessionContextImpl(mockClient as any, 'user_1', 'sess_1', undefined, {
+    const ctx = new SessionContextImpl(mockClient, 'user_1', 'sess_1', undefined, {
       custom_tools: [
         {
           slug: 'GREP',
@@ -694,7 +694,7 @@ describe('SessionContextImpl', () => {
       log_id: 'log_2',
     });
 
-    const ctx = new SessionContextImpl(mockClient as any, 'user_1', 'sess_1');
+    const ctx = new SessionContextImpl(mockClient, 'user_1', 'sess_1');
     const result = await ctx.execute('BAD_TOOL', {});
 
     expect(result.logId).toBe('log_2');
@@ -706,7 +706,7 @@ describe('SessionContextImpl', () => {
       status: 200,
       data: { proxy_result: true },
     });
-    const ctx = new SessionContextImpl(mockClient as any, 'user_1', 'sess_1');
+    const ctx = new SessionContextImpl(mockClient, 'user_1', 'sess_1');
 
     const result = await ctx.proxyExecute({
       toolkit: 'github',
@@ -732,9 +732,9 @@ describe('SessionContextImpl', () => {
   });
 
   it('should throw on proxyExecute() with invalid params', async () => {
-    const ctx = new SessionContextImpl(mockClient as any, 'user_1', 'sess_1');
+    const ctx = new SessionContextImpl(mockClient, 'user_1', 'sess_1');
     await expect(
-      ctx.proxyExecute({ toolkit: 'github', endpoint: '/test', method: 'INVALID' as any })
+      ctx.proxyExecute({ toolkit: 'github', endpoint: '/test', method: 'INVALID' as unknown })
     ).rejects.toThrow('Invalid proxy execute parameters');
   });
 
@@ -750,7 +750,7 @@ describe('SessionContextImpl', () => {
         }),
       ]);
 
-      const ctx = new SessionContextImpl(mockClient as any, 'user_1', 'sess_1', customToolsMap);
+      const ctx = new SessionContextImpl(mockClient, 'user_1', 'sess_1', customToolsMap);
       const result = await ctx.execute('SIBLING_TOOL', { key: 'val' });
 
       expect(siblingExecute).toHaveBeenCalledWith({ key: 'val' }, ctx);
@@ -774,7 +774,7 @@ describe('SessionContextImpl', () => {
         log_id: 'log_3',
       });
 
-      const ctx = new SessionContextImpl(mockClient as any, 'user_1', 'sess_1', customToolsMap);
+      const ctx = new SessionContextImpl(mockClient, 'user_1', 'sess_1', customToolsMap);
       const result = await ctx.execute('REMOTE_TOOL', { key: 'val' });
 
       expect(mockClient.toolRouter.session.execute).toHaveBeenCalledWith(
@@ -795,7 +795,7 @@ describe('SessionContextImpl', () => {
         log_id: 'log_4',
       });
 
-      const ctx = new SessionContextImpl(mockClient as any, 'user_1', 'sess_1');
+      const ctx = new SessionContextImpl(mockClient, 'user_1', 'sess_1');
       const result = await ctx.execute('ANY_TOOL', {});
 
       expect(mockClient.toolRouter.session.execute).toHaveBeenCalled();

@@ -4,9 +4,20 @@ const composio = new Composio({
   apiKey: process.env.COMPOSIO_API_KEY,
 });
 
-const connectionRequest = await composio.connectedAccounts.initiate('user_123', 'auth_config_123', {
+const authConfigId = process.env.COMPOSIO_EXAMPLES_APIKEY_AUTH_CONFIG_ID; // an API-key-scheme auth config ID
+const apiKey = process.env.COMPOSIO_EXAMPLES_APIKEY_PLACEHOLDER; // the service API key to store
+const userId = process.env.COMPOSIO_EXAMPLES_USER_ID; // the user id from your database
+if (!authConfigId || !apiKey || !userId) {
+  throw new Error(
+    'Set COMPOSIO_EXAMPLES_APIKEY_AUTH_CONFIG_ID, COMPOSIO_EXAMPLES_APIKEY_PLACEHOLDER and COMPOSIO_EXAMPLES_USER_ID'
+  );
+}
+
+const connectionRequest = await composio.connectedAccounts.initiate(userId, authConfigId, {
+  // Allow more than one connected account per user for this auth config
+  allowMultiple: true,
   config: AuthScheme.APIKey({
-    api_key: 'your_api_key',
+    generic_api_key: apiKey,
   }),
 });
 

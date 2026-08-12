@@ -64,10 +64,6 @@ const connectedAccountsData = {
   items: testConnectedAccounts,
 } satisfies TestLiveInput['connectedAccountsData'];
 
-const testConfigProvider = ConfigProvider.fromMap(
-  new Map([['COMPOSIO_USER_API_KEY', 'test_api_key']])
-).pipe(extendConfigProvider);
-
 const testDevConfigProvider = ConfigProvider.fromMap(
   new Map([
     ['COMPOSIO_USER_API_KEY', 'test_api_key'],
@@ -237,8 +233,8 @@ describe('CLI: composio dev connected-accounts list', () => {
     {
       ...testConnectedAccounts[0],
       id: 'con_future_status',
-      // Cast bypasses the closed status literal — that's the point.
-      status: 'FUTURE_NOT_YET_KNOWN' as ConnectedAccountItem['status'],
+      // Open enum: a status newer than this build decodes as a plain string.
+      status: 'FUTURE_NOT_YET_KNOWN',
     },
   ];
 

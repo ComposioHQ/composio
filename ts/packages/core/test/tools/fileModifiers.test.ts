@@ -2088,7 +2088,7 @@ describe('Tools with dangerouslyAllowAutoUploadDownloadFiles', () => {
       mockClient.tools.execute.mockResolvedValueOnce(mockResponse);
 
       // Mock transformToolExecuteResponse to return the same data structure
-      vi.spyOn(context.tools as any, 'transformToolExecuteResponse').mockReturnValue({
+      vi.spyOn(context.tools as unknown, 'transformToolExecuteResponse').mockReturnValue({
         data: mockResponse.data,
         error: mockResponse.error,
         successful: mockResponse.successful,

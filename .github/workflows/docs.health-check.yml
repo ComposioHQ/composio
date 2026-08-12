@@ -54,7 +54,7 @@ jobs:
           check_url "/llms.txt" "${BASE_URL}/llms.txt"
           check_url "/llms-full.txt" "${BASE_URL}/llms-full.txt"
           check_url "/docs/quickstart.md" "${BASE_URL}/docs/quickstart.md"
-          check_url "/docs/tools-and-toolkits.md" "${BASE_URL}/docs/tools-and-toolkits.md"
+          check_url "/docs/how-composio-works.md" "${BASE_URL}/docs/how-composio-works.md"
 
           # Main pages
           check_url "/docs" "${BASE_URL}/docs"
@@ -111,7 +111,7 @@ jobs:
 
       - name: Notify Slack
         if: steps.check.outputs.has_failures == 'true'
-        uses: slackapi/slack-github-action@45a88b9581bfab2566dc881e2cd66d334e621e2c # v3.0.3
+        uses: slackapi/slack-github-action@dcb1066f776dd043e64d0e8ba94ca15cc7e1875d # v4.0.0
         with:
           webhook: ${{ secrets.SLACK_POD_DX_WEBHOOK_URL }}
           webhook-type: incoming-webhook

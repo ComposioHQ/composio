@@ -33,7 +33,7 @@ The LangChain provider transforms each Composio tool into a LangChain [`DynamicS
 **Configure API Keys**
 
 <Callout type="info">
-Set `COMPOSIO_API_KEY` with your API key from [Settings](https://dashboard.composio.dev/~/project/settings/api-keys) and `OPENAI_API_KEY` with your [OpenAI API key](https://platform.openai.com/api-keys).
+Set `COMPOSIO_API_KEY` with your API key from [Settings](https://dashboard.composio.dev/~/project/settings/api-keys?utm_source=docs&utm_medium=content&utm_campaign=docs-providers-langchain) and `OPENAI_API_KEY` with your [OpenAI API key](https://platform.openai.com/api-keys).
 </Callout>
 
 ```txt title=".env"
@@ -139,7 +139,7 @@ The LangGraph provider transforms Composio tools into the same LangChain `Dynami
 **Configure API Keys**
 
 <Callout type="info">
-Set `COMPOSIO_API_KEY` with your API key from [Settings](https://dashboard.composio.dev/~/project/settings/api-keys) and `OPENAI_API_KEY` with your [OpenAI API key](https://platform.openai.com/api-keys).
+Set `COMPOSIO_API_KEY` with your API key from [Settings](https://dashboard.composio.dev/~/project/settings/api-keys?utm_source=docs&utm_medium=content&utm_campaign=docs-providers-langchain) and `OPENAI_API_KEY` with your [OpenAI API key](https://platform.openai.com/api-keys).
 </Callout>
 
 ```txt title=".env"
@@ -175,6 +175,14 @@ print(result["messages"][-1].content)
 </IntegrationContent>
 
 </IntegrationTabs>
+
+## Python argument validation
+
+The Python LangChain and LangGraph providers build a Pydantic argument model from each tool's JSON Schema. Object arguments that declare no properties accept and preserve arbitrary nested keys. For objects that declare named properties, undeclared keys are rejected unless the schema allows them with `additionalProperties`.
+
+Schemas that use `patternProperties` or schema-valued `additionalProperties` validate dynamic keys before execution. The providers also preserve whether an optional argument was omitted or explicitly set to `None`. By default, declared defaults are included, while optional arguments without defaults stay absent. Set `schema_config={"skip_defaults": True}` when creating the provider to leave declared defaults absent too.
+
+When validation fails, the tool does not run. LangChain surfaces the failure as a tool error observation so the agent can correct its arguments and retry.
 
 ## Next
 

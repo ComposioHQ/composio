@@ -16,6 +16,19 @@ updates:
       day: "friday"
       time: "06:30"
     open-pull-requests-limit: 10
+    # These majors are compatibility boundaries exercised by explicit test
+    # lanes. Upgrade them manually with parallel old/new coverage. Dependabot
+    # security updates are not affected by update-type ignores.
+    ignore:
+      - dependency-name: "ai"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "openai"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "zod"
+        update-types: ["version-update:semver-major"]
+      # Version 1.0.0 is not compatible with the Effect package family in use.
+      - dependency-name: "@effect/printer-ansi"
+        versions: ["1.0.0"]
     groups:
       npm-production:
         applies-to: version-updates
@@ -41,6 +54,13 @@ updates:
       day: "friday"
       time: "06:30"
     open-pull-requests-limit: 10
+    ignore:
+      # CrewAI 1.15.x requires Tomli 2.0.x. Keep patch and security updates,
+      # then remove this when CrewAI accepts a newer Tomli line.
+      - dependency-name: "tomli"
+        update-types:
+          - "version-update:semver-minor"
+          - "version-update:semver-major"
     groups:
       pip-version:
         applies-to: version-updates

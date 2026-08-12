@@ -12,7 +12,8 @@ import { ComposioSensitiveFilePathBlockedError } from '../errors/FileModifierErr
 
 /**
  * Path segments (a single path component) that indicate a sensitive directory when
- * they appear anywhere in a resolved local path. Compared case-insensitively on Windows.
+ * they appear anywhere in a resolved local path. Matching follows the case sensitivity
+ * of the filesystem containing that path.
  */
 export const BUILTIN_FILE_UPLOAD_PATH_DENY_SEGMENTS: readonly string[] = [
   '.ssh',
@@ -30,12 +31,10 @@ const SECRET_LIKE_BASENAME = /^(\.env(\.|$)|\.netrc$|\.pgpass$)/i;
 /** Default SSH private key basenames (public keys like id_rsa.pub are allowed). */
 const DEFAULT_PRIVATE_KEY_BASENAME = /^id_(rsa|ed25519|ecdsa|dsa|ecdsa_sk)(\.old)?$/i;
 
-const isWindows = typeof process !== 'undefined' && process.platform === 'win32';
-
 /**
  * Returns normalized path segments, resolving symlinks when the path exists.
  */
-function normalizePathSegments(filePath: string): string[] {
+function normalizePath(filePath: string): { resolvedPath: string; segments: string[] } {
   const absolute = platform.resolvePath(filePath);
   let resolved = absolute;
   try {
@@ -45,7 +44,10 @@ function normalizePathSegments(filePath: string): string[] {
   } catch {
     // If realpath fails (e.g. race), use resolved path
   }
-  return resolved.split(/[/\\]+/).filter(Boolean);
+  return {
+    resolvedPath: resolved,
+    segments: resolved.split(/[/\\]+/).filter(Boolean),
+  };
 }
 
 /**
@@ -63,16 +65,17 @@ function getSensitiveFileUploadPathBlockReason(
   filePath: string,
   additionalDenySegments?: string[]
 ): string | null {
-  const segments = normalizePathSegments(filePath);
+  const { resolvedPath, segments } = normalizePath(filePath);
+  const isCaseSensitive = platform.isFileSystemCaseSensitive?.(resolvedPath) ?? true;
+  const normalizeSegment = (segment: string) => (isCaseSensitive ? segment : segment.toLowerCase());
   const deny = new Set(
     [
       ...BUILTIN_FILE_UPLOAD_PATH_DENY_SEGMENTS,
       ...(additionalDenySegments ?? []).map(s => s.trim()).filter(Boolean),
-    ].map(s => (isWindows ? s.toLowerCase() : s))
+    ].map(normalizeSegment)
   );
 
-  // Windows: compare segments case-insensitively; map once instead of toLowerCase per iteration.
-  const segmentsForMatch = isWindows ? segments.map(s => s.toLowerCase()) : segments;
+  const segmentsForMatch = isCaseSensitive ? segments : segments.map(normalizeSegment);
   for (let i = 0; i < segments.length; i++) {
     if (deny.has(segmentsForMatch[i]!)) {
       return `path segment "${segments[i]}" is in the sensitive file upload denylist`;

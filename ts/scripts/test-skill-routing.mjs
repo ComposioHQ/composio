@@ -48,6 +48,16 @@ const probes = [
     terms: ['Docker-based', 'end-to-end tests', 'binary invocation', 'fixture isolation'],
   },
   {
+    task: 'promote a tested Composio CLI beta to a stable first-party binary release',
+    expect: 'cli-release',
+    terms: [
+      'first-party Composio CLI binaries',
+      'promote-stable',
+      'beta-tag selection',
+      'failed release recovery',
+    ],
+  },
+  {
     task: 'align TypeScript and Python behavior after a backend API contract change',
     expect: 'cross-sdk-parity',
     terms: ['backend API contract', 'both SDKs', 'generated client pins', 'comparing TS/Python'],
@@ -61,6 +71,16 @@ const probes = [
     task: 'build or debug a durable backend agent with eve channels and schedules',
     expect: 'eve',
     terms: ['durable backend AI agents', 'eve framework', 'channels', 'schedules'],
+  },
+  {
+    task: 'draft a new guide in the house documentation voice',
+    expect: 'good-docs-writing',
+    terms: ['writing style guide', "modal's documentation voice", 'second-person', 'example-first'],
+  },
+  {
+    task: 'review a README for voice and tone violations and report suggested rewrites',
+    expect: 'good-docs-audit',
+    terms: ['report violations', 'critique', 'suggested rewrite', 'rule violated'],
   },
   {
     task: 'create a Python provider adapter under python/providers with metadata',

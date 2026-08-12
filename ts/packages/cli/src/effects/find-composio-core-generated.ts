@@ -1,5 +1,4 @@
-import path from 'node:path';
-import { Command, FileSystem } from '@effect/platform';
+import { Command, FileSystem, Path } from '@effect/platform';
 import { Data, Effect, Match } from 'effect';
 import {
   JsPackageManagerDetector,
@@ -12,8 +11,12 @@ export class ComposioCorePkgNotFound extends Data.TaggedError('error/ComposioCor
   readonly fix?: string;
 }> {}
 
+const DEFAULT_PACKAGE_MANAGER: PackageManager = 'npm';
+
 export function pyFindComposioCoreGenerated(cwd: string) {
   return Effect.gen(function* () {
+    const path = yield* Path.Path;
+
     /**
      * Returns a `ComposioCorePkgNotFound` error with the given message and cause.
      * It lazily identifies the package manager used by the user to tell them how to install `@composio/core`.
@@ -25,7 +28,7 @@ export function pyFindComposioCoreGenerated(cwd: string) {
         const pkgManager = yield* pkgManagerDetector.detectJsPackageManager(cwd).pipe(
           Effect.andThen(pkgManager => pkgManager),
           Effect.tapError(e => Effect.logError(e)),
-          Effect.catchAll(() => Effect.succeed('npm' as PackageManager))
+          Effect.catchAll(() => Effect.succeed(DEFAULT_PACKAGE_MANAGER))
         );
 
         yield* Effect.logDebug({ pkgManager });
@@ -101,12 +104,13 @@ export function jsFindComposioCoreGenerated(cwd: string) {
         }) satisfies Effect.Effect<never, ComposioCorePkgNotFound, JsPackageManagerDetector>;
 
     const fs = yield* FileSystem.FileSystem;
+    const path = yield* Path.Path;
 
     yield* Effect.logDebug('Detecting package manager...');
     const pkgManagerDetector = yield* JsPackageManagerDetector;
     const pkgManager = yield* pkgManagerDetector.detectJsPackageManager(cwd).pipe(
       Effect.tapError(e => Effect.logError(e)),
-      Effect.catchAll(() => Effect.succeed('npm' as PackageManager))
+      Effect.catchAll(() => Effect.succeed(DEFAULT_PACKAGE_MANAGER))
     );
     yield* Effect.logDebug({ pkgManager });
 

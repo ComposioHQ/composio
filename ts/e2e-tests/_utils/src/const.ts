@@ -28,6 +28,12 @@ export const WELL_KNOWN_DENO_VERSIONS = [...toolchainVersions.deno, 'current'] a
  */
 export const WELL_KNOWN_CLI_VERSIONS = ['current'] as const;
 
+export const INSTALL_E2E_SHELLS = ['bash', 'zsh', 'fish'] as const;
+
+export const INSTALL_E2E_MODES = ['local', 'prod'] as const;
+
+export const INSTALL_E2E_LOCAL_RELEASE_TAG = '@composio/cli@98.0.0';
+
 export const TIMEOUTS = {
   DEFAULT: 5_000,
   FIXTURE: 120_000,

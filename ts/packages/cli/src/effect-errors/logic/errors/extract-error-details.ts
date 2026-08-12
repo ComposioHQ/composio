@@ -7,6 +7,41 @@ interface ErrorDetails {
   message: unknown;
 }
 
+// Wrappers like UpgradeBinaryError carry the actionable specifics (a
+// ParseError path, an HTTP body) in `cause`; surface the deepest message so
+// the rendered error is debuggable, not just the wrapper's summary line.
+const causeDetail = (cause: unknown): string | undefined => {
+  const seen = new Set<unknown>();
+  let current: unknown = cause;
+  let detail: string | undefined;
+
+  while (current !== undefined && current !== null) {
+    if (typeof current === 'object') {
+      if (seen.has(current)) break;
+      seen.add(current);
+    }
+
+    if (typeof current === 'string' && current.length > 0) {
+      detail = current;
+    } else if (
+      hasProperty(current, 'message') &&
+      typeof current.message === 'string' &&
+      current.message.length > 0
+    ) {
+      detail = current.message;
+    }
+
+    current = hasProperty(current, 'cause') ? current.cause : undefined;
+  }
+
+  return detail;
+};
+
+const withCauseDetail = (message: string, cause: unknown): string => {
+  const detail = causeDetail(cause);
+  return detail !== undefined && detail !== message ? `${message}\nCaused by: ${detail}` : message;
+};
+
 export const extractErrorDetails = (error: unknown): ErrorDetails => {
   if (typeof error === 'string') {
     return {
@@ -20,8 +55,8 @@ export const extractErrorDetails = (error: unknown): ErrorDetails => {
   if (isTaggedErrorWithCause) {
     return {
       isPlainString: false,
-      type: error._tag,
-      message: error.cause,
+      type: error.name,
+      message: withCauseDetail(error.message, error.cause),
     };
   }
 
@@ -39,18 +74,22 @@ export const extractErrorDetails = (error: unknown): ErrorDetails => {
   if (isPlainObjectsWithTagAttribute) {
     return {
       isPlainString: false,
-      type: error._tag,
+      type: error['_tag'],
       message: error.message,
     };
   }
 
-  const isPlainObjectsWithToStringImpl =
-    hasProperty(error, 'toString') &&
-    isFunction(error.toString) &&
-    error.toString !== Object.prototype.toString &&
-    error.toString !== Array.prototype.toString;
-  if (isPlainObjectsWithToStringImpl) {
-    const message = (error as { toString: () => string }).toString();
+  if (hasProperty(error, 'toString')) {
+    const toString = error.toString;
+    const isPlainObjectsWithToStringImpl =
+      isFunction(toString) &&
+      toString !== Object.prototype.toString &&
+      toString !== Array.prototype.toString;
+    if (!isPlainObjectsWithToStringImpl) {
+      return { message: `Error: ${JSON.stringify(error)}`, isPlainString: false };
+    }
+
+    const message = String(toString.call(error));
     const maybeWithUnderlyingType = message.split(': ');
 
     if (maybeWithUnderlyingType.length > 1) {

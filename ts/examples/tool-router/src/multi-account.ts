@@ -7,9 +7,14 @@ const composio = new Composio({
   provider: new VercelProvider(),
 });
 
+const userId = process.env.COMPOSIO_EXAMPLES_USER_ID; // the user id from your database
+if (!userId) {
+  throw new Error('Set COMPOSIO_EXAMPLES_USER_ID');
+}
+
 // Enable multi-account mode so the user can connect multiple accounts
 // per toolkit (e.g. two Gmail accounts).
-const session = await composio.create('user_123', {
+const session = await composio.create(userId, {
   toolkits: ['gmail'],
   multiAccount: {
     enable: true,
@@ -19,9 +24,15 @@ const session = await composio.create('user_123', {
 });
 
 // Set an alias while authorizing a connected account for easier identification.
-await session.authorize('gmail', {
-  alias: 'work-gmail',
+// Aliases are unique per entity and toolkit, so suffix to keep reruns working.
+const connectionRequest = await session.authorize('gmail', {
+  alias: `work-gmail-${Date.now()}`,
 });
+
+console.log(`Visit this URL to authorize: ${connectionRequest.redirectUrl}`);
+
+// requireExplicitSelection means the new alias is only usable once it is ACTIVE.
+await connectionRequest.waitForConnection();
 
 const tools = await session.tools();
 

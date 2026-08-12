@@ -1,4 +1,4 @@
-import { FileSystem, Path } from '@effect/platform';
+import { FileSystem, HttpClient, HttpClientResponse, Path } from '@effect/platform';
 import { BunFileSystem, BunPath } from '@effect/platform-bun';
 import { describe, expect, layer } from '@effect/vitest';
 import { Effect, Layer } from 'effect';
@@ -11,7 +11,36 @@ import {
   resolveSetupSkillReleaseTag,
 } from 'src/services/setup-skill-installer';
 
-const TestPlatform = Layer.mergeAll(BunFileSystem.layer, BunPath.layer);
+const TestHttpClient = Layer.succeed(
+  HttpClient.HttpClient,
+  HttpClient.make(request =>
+    Effect.succeed(
+      HttpClientResponse.fromWeb(
+        request,
+        new Response(
+          JSON.stringify([
+            {
+              tag_name: '@composio/cli@0.2.21',
+              prerelease: false,
+              assets: [
+                {
+                  name: 'composio-skill.zip',
+                  browser_download_url: 'https://example.test/composio-skill.zip',
+                },
+              ],
+            },
+          ]),
+          {
+            status: 200,
+            headers: { 'Content-Type': 'application/json' },
+          }
+        )
+      )
+    )
+  )
+);
+
+const TestPlatform = Layer.mergeAll(BunFileSystem.layer, BunPath.layer, TestHttpClient);
 
 describe('SetupSkillInstaller', () => {
   layer(TestPlatform)(it => {
@@ -26,16 +55,18 @@ describe('SetupSkillInstaller', () => {
           '@composio/cli@0.2.20-beta.42\n'
         );
 
-        expect(resolveSetupSkillReleaseTag(execPath, '0.3.0')).toBe('@composio/cli@0.2.20-beta.42');
+        expect(yield* resolveSetupSkillReleaseTag(execPath, '0.3.0')).toBe(
+          '@composio/cli@0.2.20-beta.42'
+        );
       })
     );
 
-    it.effect('falls back to the build version outside a packaged install', () =>
+    it.effect('uses the running package fallback outside a packaged install', () =>
       Effect.gen(function* () {
         const path = yield* Path.Path;
         const installDir = tempy.temporaryDirectory();
 
-        expect(resolveSetupSkillReleaseTag(path.join(installDir, 'composio'), '0.3.0')).toBe(
+        expect(yield* resolveSetupSkillReleaseTag(path.join(installDir, 'composio'), '0.3.0')).toBe(
           '@composio/cli@0.3.0'
         );
       })

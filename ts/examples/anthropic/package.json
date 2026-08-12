@@ -6,6 +6,7 @@
   "main": "index.js",
   "scripts": {
     "clean": "git clean -xdf node_modules",
+    "typecheck": "tsc --noEmit -p ./tsconfig.json",
     "start": "bun src/index.ts",
     "start:claude-agents-sdk": "bun src/claude-agents-sdk.ts",
     "test": "echo \"Error: no test specified\" && exit 1"
@@ -14,20 +15,21 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@anthropic-ai/claude-agent-sdk": "^0.3.199",
-    "@anthropic-ai/sdk": "^0.110.0",
+    "@anthropic-ai/claude-agent-sdk": "^0.3.221",
+    "@anthropic-ai/sdk": "^0.115.0",
     "@composio/anthropic": "workspace:*",
     "@composio/claude-agent-sdk": "workspace:*",
     "@composio/core": "workspace:*",
     "@mastra/core": "catalog:",
-    "@mastra/mcp": "^1.13.1",
-    "ai": "^6.0.219",
+    "@mastra/mcp": "^1.15.0",
+    "ai": "^6.0.241",
     "dotenv": "catalog:",
-    "zod": "^4.4.3",
+    "zod": "catalog:",
     "zod-to-json-schema": "catalog:"
   },
   "devDependencies": {
     "@types/bun": "catalog:",
     "typescript": "catalog:"
-  }
+  },
+  "type": "module"
 }

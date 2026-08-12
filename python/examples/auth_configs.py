@@ -16,7 +16,7 @@ auth_config = composio.auth_configs.create(
 print(auth_config)
 
 # Use custom auth
-auth_config = composio.auth_configs.create(
+auth_config = composio.auth_configs.create(  # type: ignore[call-overload]  # credentials TypedDict omits client_id/client_secret/oauth_redirect_uri; API accepts them
     toolkit="notion",
     options={
         "name": "Notion Auth",
@@ -50,7 +50,7 @@ required_input_fields = [
 print(required_input_fields)
 
 # Update an auth config
-auth_config_updated = composio.auth_configs.update(
+auth_config_updated = composio.auth_configs.update(  # type: ignore[call-overload]  # credentials TypedDict omits client_id/client_secret, which the API accepts
     auth_config.id,
     options={
         "type": "custom",
@@ -59,7 +59,7 @@ auth_config_updated = composio.auth_configs.update(
             "client_secret": "1234567890",
         },
         "tool_access_config": {
-            "tools_for_connected_account_creation": ["github"],
+            "tools_for_connected_account_creation": ["NOTION_ADD_PAGE_CONTENT"],
         },
     },
 )

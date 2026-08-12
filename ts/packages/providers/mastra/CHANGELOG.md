@@ -1,5 +1,11 @@
 # @composio/mastra
 
+## 0.10.3
+
+### Patch Changes
+
+- 503b50a: Refresh runtime dependencies across the TypeScript SDK packages.
+
 ## 0.10.2
 
 ### Patch Changes

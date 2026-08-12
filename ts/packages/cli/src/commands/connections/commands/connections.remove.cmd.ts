@@ -1,5 +1,5 @@
 import { Args, Command } from '@effect/cli';
-import { Effect } from 'effect';
+import { Data, Effect } from 'effect';
 import { decodeConnectedAccountListWithFallback } from 'src/effects/decode-connected-account-list';
 import { requireAuth } from 'src/effects/require-auth';
 import type { ConnectedAccountItem } from 'src/models/connected-accounts';
@@ -11,6 +11,19 @@ import {
 import { TerminalUI } from 'src/services/terminal-ui';
 import { bold } from 'src/ui/colors';
 import { redact } from 'src/ui/redact';
+
+class MissingConnectionRemovalConsumerUserIdError extends Data.TaggedError(
+  'commands/MissingConnectionRemovalConsumerUserIdError'
+)<{
+  readonly message: string;
+}> {}
+
+class ConnectionsRemovalRequestError extends Data.TaggedError(
+  'commands/ConnectionsRemovalRequestError'
+)<{
+  readonly message: string;
+  readonly cause: unknown;
+}> {}
 
 const account = Args.text({ name: 'account' }).pipe(
   Args.withDescription('Connection selector: toolkit slug, alias, word_id, or connected account ID')
@@ -60,12 +73,14 @@ const resolveAccount = (params: {
   const idMatches = matches.filter(
     item => normalizeSelector(item.id) === normalizeSelector(params.selector)
   );
-  if (idMatches.length === 1) {
-    return idMatches[0]!;
+  const idMatch = idMatches[0];
+  if (idMatch && idMatches.length === 1) {
+    return idMatch;
   }
 
-  if (matches.length === 1) {
-    return matches[0]!;
+  const match = matches[0];
+  if (match && matches.length === 1) {
+    return match;
   }
 
   return {
@@ -89,9 +104,9 @@ export const connectionsCmd$Remove = Command.make('remove', { account }, ({ acco
 
     const consumerUserId = resolvedProject.consumerUserId;
     if (!consumerUserId) {
-      return yield* Effect.fail(
-        new Error('Missing consumer user id. Run `composio login` and try again.')
-      );
+      return yield* new MissingConnectionRemovalConsumerUserIdError({
+        message: 'Missing consumer user id. Run `composio login` and try again.',
+      });
     }
 
     const client = yield* clientSingleton.getFor({
@@ -100,12 +115,18 @@ export const connectionsCmd$Remove = Command.make('remove', { account }, ({ acco
     });
     const rawResult = yield* ui.withSpinner(
       'Fetching connections...',
-      Effect.tryPromise(() =>
-        client.connectedAccounts.list({
-          user_ids: [consumerUserId],
-          limit: 1000,
-        })
-      )
+      Effect.tryPromise({
+        try: () =>
+          client.connectedAccounts.list({
+            user_ids: [consumerUserId],
+            limit: 1000,
+          }),
+        catch: cause =>
+          new ConnectionsRemovalRequestError({
+            message: 'Failed to list connections.',
+            cause,
+          }),
+      })
     );
     const result = yield* decodeConnectedAccountListWithFallback(rawResult);
     const resolved = resolveAccount({ accounts: result.items, selector: account });
@@ -130,7 +151,14 @@ export const connectionsCmd$Remove = Command.make('remove', { account }, ({ acco
 
     yield* ui.withSpinner(
       `Removing ${resolved.toolkit.slug} connection...`,
-      Effect.tryPromise(() => client.connectedAccounts.delete(resolved.id)),
+      Effect.tryPromise({
+        try: () => client.connectedAccounts.delete(resolved.id),
+        catch: cause =>
+          new ConnectionsRemovalRequestError({
+            message: `Failed to remove connected account "${resolved.id}".`,
+            cause,
+          }),
+      }),
       {
         successMessage: `Removed ${resolved.toolkit.slug} connection.`,
         errorMessage: `Failed to remove ${resolved.toolkit.slug} connection.`,

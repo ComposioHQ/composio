@@ -162,4 +162,46 @@ describe('ssrfSafeFetch', () => {
       ComposioBlockedInternalUrlError
     );
   });
+
+  it('releases the redirect body before following the hop', async () => {
+    resolvesTo('93.184.216.34');
+    const fetchCallsWhenReleased: number[] = [];
+    const cancel = vi.fn(() => {
+      fetchCallsWhenReleased.push(mockFetch.mock.calls.length);
+    });
+    const redirect = new Response(new ReadableStream({ cancel }), {
+      status: 302,
+      headers: { location: 'https://example.com/final' },
+    });
+    mockFetch
+      .mockResolvedValueOnce(redirect)
+      .mockResolvedValueOnce(new Response('data', { status: 200 }));
+
+    const res = await ssrfSafeFetch('https://example.com/start');
+
+    expect(res.status).toBe(200);
+    expect(cancel).toHaveBeenCalledOnce();
+    expect(redirect.bodyUsed).toBe(true);
+    // Released while following the first hop, not left dangling for the rest of the call.
+    expect(fetchCallsWhenReleased).toEqual([1]);
+  });
+
+  it('releases every hop body when the redirect budget is exhausted', async () => {
+    resolvesTo('93.184.216.34');
+    const cancel = vi.fn();
+    // A fresh body per hop: cancelling the same stream twice is a no-op the second time.
+    mockFetch.mockImplementation(
+      async () =>
+        new Response(new ReadableStream({ cancel }), {
+          status: 302,
+          headers: { location: 'https://example.com/again' },
+        })
+    );
+
+    await expect(ssrfSafeFetch('https://example.com/start', {}, 2)).rejects.toBeInstanceOf(
+      ComposioBlockedInternalUrlError
+    );
+    // maxRedirects = 2 => hops 0, 1, 2 are fetched before the budget throws.
+    expect(cancel).toHaveBeenCalledTimes(3);
+  });
 });

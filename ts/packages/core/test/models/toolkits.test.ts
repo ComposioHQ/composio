@@ -5,6 +5,7 @@ import { telemetry } from '../../src/telemetry/Telemetry';
 import { ComposioAuthConfigNotFoundError } from '../../src/errors/AuthConfigErrors';
 import { AuthSchemeTypes } from '../../src/types/authConfigs.types';
 import { APIError } from '@composio/client';
+import type { ToolkitListParams } from '../../src/types/toolkit.types';
 
 // Mock dependencies
 vi.mock('../../src/telemetry/Telemetry', () => ({
@@ -12,6 +13,12 @@ vi.mock('../../src/telemetry/Telemetry', () => ({
     instrument: vi.fn(),
   },
 }));
+
+// Minimal structural shape for overriding `Toolkits.prototype.getToolkitBySlug`
+// (a protected method) with a mock implementation in tests.
+type ToolkitsPrototypeOverride = {
+  getToolkitBySlug: unknown;
+};
 
 // Create mock client with toolkit-related methods
 const createMockClient = () => ({
@@ -222,7 +229,7 @@ describe('Toolkits', () => {
     });
 
     it('should throw ValidationError for invalid list query', async () => {
-      const promise = toolkits.get({ category: 123 } as any);
+      const promise = toolkits.get({ category: 123 } as unknown as ToolkitListParams);
       await expect(promise).rejects.toThrowError('Failed to fetch toolkits');
     });
 
@@ -552,7 +559,9 @@ describe('Toolkits', () => {
     };
 
     beforeEach(() => {
-      vi.spyOn(Toolkits.prototype as any, 'getToolkitBySlug').mockResolvedValue(mockToolkit as any);
+      vi.spyOn(Toolkits.prototype as unknown, 'getToolkitBySlug').mockResolvedValue(
+        mockToolkit as unknown
+      );
     });
 
     it('returns all fields when requiredOnly is false', async () => {
@@ -617,7 +626,9 @@ describe('Toolkits', () => {
           },
         ],
       };
-      (Toolkits.prototype as any).getToolkitBySlug = vi.fn().mockResolvedValueOnce(multiToolkit);
+      (Toolkits.prototype as unknown as ToolkitsPrototypeOverride).getToolkitBySlug = vi
+        .fn()
+        .mockResolvedValueOnce(multiToolkit);
       const result = await toolkits.getAuthConfigCreationFields(
         toolkitSlug,
         AuthSchemeTypes.API_KEY,
@@ -629,7 +640,9 @@ describe('Toolkits', () => {
     });
 
     it('throws if no authConfigDetails', async () => {
-      (Toolkits.prototype as any).getToolkitBySlug = vi.fn().mockResolvedValueOnce({});
+      (Toolkits.prototype as unknown as ToolkitsPrototypeOverride).getToolkitBySlug = vi
+        .fn()
+        .mockResolvedValueOnce({});
       await expect(
         toolkits.getAuthConfigCreationFields(toolkitSlug, AuthSchemeTypes.API_KEY, {
           requiredOnly: true,
@@ -660,7 +673,9 @@ describe('Toolkits', () => {
     };
 
     beforeEach(() => {
-      vi.spyOn(Toolkits.prototype as any, 'getToolkitBySlug').mockResolvedValue(mockToolkit as any);
+      vi.spyOn(Toolkits.prototype as unknown, 'getToolkitBySlug').mockResolvedValue(
+        mockToolkit as unknown
+      );
     });
 
     it('returns all fields when requiredOnly is false', async () => {
@@ -713,7 +728,9 @@ describe('Toolkits', () => {
           },
         ],
       };
-      (Toolkits.prototype as any).getToolkitBySlug = vi.fn().mockResolvedValueOnce(multiToolkit);
+      (Toolkits.prototype as unknown as ToolkitsPrototypeOverride).getToolkitBySlug = vi
+        .fn()
+        .mockResolvedValueOnce(multiToolkit);
       const result = await toolkits.getConnectedAccountInitiationFields(
         toolkitSlug,
         AuthSchemeTypes.API_KEY,
@@ -725,7 +742,9 @@ describe('Toolkits', () => {
     });
 
     it('throws if no authConfigDetails', async () => {
-      (Toolkits.prototype as any).getToolkitBySlug = vi.fn().mockResolvedValueOnce({});
+      (Toolkits.prototype as unknown as ToolkitsPrototypeOverride).getToolkitBySlug = vi
+        .fn()
+        .mockResolvedValueOnce({});
       await expect(
         toolkits.getConnectedAccountInitiationFields(toolkitSlug, AuthSchemeTypes.API_KEY, {
           requiredOnly: true,

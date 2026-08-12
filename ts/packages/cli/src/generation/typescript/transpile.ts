@@ -1,4 +1,5 @@
 import ts from 'typescript';
+import { Path } from '@effect/platform';
 import { Effect, Data } from 'effect';
 import {
   buildVirtualFileMap,
@@ -25,6 +26,8 @@ export function transpileTypeScriptSources({ sources, outputDir }: TranspileType
       return yield* Effect.void;
     }
 
+    const path = yield* Path.Path;
+
     const compilerOptions = {
       target: ts.ScriptTarget.ES2022,
       module: ts.ModuleKind.NodeNext,
@@ -42,7 +45,7 @@ export function transpileTypeScriptSources({ sources, outputDir }: TranspileType
     const virtualFileNames = Array.from(virtualFileMap.keys());
 
     const tsHost = ts.createCompilerHost(compilerOptions);
-    patchCompilerHostWithVirtualFiles(tsHost, virtualFileMap, 'delegate');
+    patchCompilerHostWithVirtualFiles(tsHost, virtualFileMap, path, 'delegate');
 
     const program = ts.createProgram(virtualFileNames, compilerOptions, tsHost);
     const emitResult = program.emit();

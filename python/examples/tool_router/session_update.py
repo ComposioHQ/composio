@@ -10,11 +10,12 @@ import os
 
 from composio import Composio
 
-composio = Composio(base_url=os.environ.get("COMPOSIO_BASE_URL"))
+composio = Composio()
 
 # Create a session with gmail only
 session = composio.create(
-    user_id="session-update-demo",
+    # The provisioned examples user (raises KeyError when unset)
+    user_id=os.environ["COMPOSIO_EXAMPLES_USER_ID"],
     toolkits=["gmail"],
     manage_connections=False,
 )

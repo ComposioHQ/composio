@@ -18,6 +18,13 @@ inputs:
     description: 'Cache .turbo build outputs'
     required: false
     default: 'false'
+  cache-save:
+    description: >-
+      Persist pnpm/turbo caches in the post-job phase. Set to 'false' on runs
+      whose caches other branches cannot restore (e.g. pull_request runs) to
+      skip the post-job save and avoid evicting default-branch caches.
+    required: false
+    default: 'true'
 
 outputs:
   node-version:
@@ -60,7 +67,7 @@ runs:
         echo "pnpm=$(bash "$resolver" pnpm)" >> "$GITHUB_OUTPUT"
 
     - name: Setup Node.js
-      uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+      uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
       with:
         node-version: ${{ steps.tool-versions.outputs.node }}
 
@@ -84,8 +91,17 @@ runs:
         echo "NODE_VERSION=$(node --version | sed 's/^v//')" >> "$GITHUB_OUTPUT"
 
     - name: Cache pnpm store
-      if: inputs.enable-caching == 'true'
-      uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
+      if: inputs.enable-caching == 'true' && inputs.cache-save == 'true'
+      uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: ${{ steps.pnpm-store.outputs.STORE_PATH }}
+        key: ${{ runner.os }}-node${{ steps.pnpm-store.outputs.NODE_VERSION }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+        restore-keys: |
+          ${{ runner.os }}-node${{ steps.pnpm-store.outputs.NODE_VERSION }}-pnpm-store-
+
+    - name: Restore pnpm store (read-only)
+      if: inputs.enable-caching == 'true' && inputs.cache-save != 'true'
+      uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
       with:
         path: ${{ steps.pnpm-store.outputs.STORE_PATH }}
         key: ${{ runner.os }}-node${{ steps.pnpm-store.outputs.NODE_VERSION }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
@@ -93,12 +109,24 @@ runs:
           ${{ runner.os }}-node${{ steps.pnpm-store.outputs.NODE_VERSION }}-pnpm-store-
 
     - name: Cache turbo build outputs
-      if: inputs.enable-caching == 'true' && inputs.enable-turbo-cache == 'true'
-      uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
+      if: inputs.enable-caching == 'true' && inputs.enable-turbo-cache == 'true' && inputs.cache-save == 'true'
+      uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
       with:
         path: .turbo/cache
         # Keyed per job: concurrent jobs save different task graphs under the
         # same commit, and actions/cache is first-writer-wins on exact keys.
+        # The per-commit suffix is intentional even though it never exact-hits:
+        # the turbo cache accumulates, so every save must use a fresh key and
+        # readers match through the restore-keys prefix.
+        key: ${{ runner.os }}-turbo-${{ github.job }}-${{ github.sha }}
+        restore-keys: |
+          ${{ runner.os }}-turbo-${{ github.job }}-
+
+    - name: Restore turbo build outputs (read-only)
+      if: inputs.enable-caching == 'true' && inputs.enable-turbo-cache == 'true' && inputs.cache-save != 'true'
+      uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: .turbo/cache
         key: ${{ runner.os }}-turbo-${{ github.job }}-${{ github.sha }}
         restore-keys: |
           ${{ runner.os }}-turbo-${{ github.job }}-

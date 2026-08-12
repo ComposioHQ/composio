@@ -1,8 +1,7 @@
 import { DocsLayout } from 'fumadocs-ui/layouts/docs';
 import type { ReactNode } from 'react';
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type Source = any;
+type Source = typeof import('./source').examplesSource;
 
 export function createDocsLayout(source: Source) {
   return function Layout({ children }: { children: ReactNode }) {

@@ -67,10 +67,6 @@ export const resolveSkillBuildContext = (
       CLI_EXPERIMENTAL_FEATURES.LOCAL_TOOLS,
       channel
     ),
-    [CLI_EXPERIMENTAL_FEATURES.MULTI_ACCOUNT]: isExperimentalFeatureEnabledByDefault(
-      CLI_EXPERIMENTAL_FEATURES.MULTI_ACCOUNT,
-      channel
-    ),
     ...overrides,
   },
 });

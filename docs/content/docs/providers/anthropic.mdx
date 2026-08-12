@@ -7,7 +7,7 @@ keywords: [claude, messages api, claude agent sdk, agents sdk]
 The Anthropic provider formats Composio tools for Claude and executes the tool calls Claude returns. It works two ways:
 
 - The [Claude Messages API](https://docs.anthropic.com/en/api/messages), where you run the tool-call loop yourself.
-- The [Claude Agent SDK](https://docs.anthropic.com/en/docs/agents-and-tools/claude-agent-sdk), where the SDK runs the loop and Composio tools are exposed as an in-process MCP server.
+- The [Claude Agent SDK](https://platform.claude.com/docs/en/agent-sdk/overview), where the SDK runs the loop and Composio tools are exposed as an in-process MCP server.
 
 Pick the tab that matches your integration.
 
@@ -38,7 +38,7 @@ The `AnthropicProvider` transforms Composio tools into the format the Claude Mes
 **Configure API Keys**
 
 <Callout type="info">
-Set `COMPOSIO_API_KEY` with your API key from [Settings](https://dashboard.composio.dev/~/project/settings/api-keys) and `ANTHROPIC_API_KEY` with your [Anthropic API key](https://console.anthropic.com/settings/keys).
+Set `COMPOSIO_API_KEY` with your API key from [Settings](https://dashboard.composio.dev/~/project/settings/api-keys?utm_source=docs&utm_medium=content&utm_campaign=docs-providers-anthropic) and `ANTHROPIC_API_KEY` with your [Anthropic API key](https://console.anthropic.com/settings/keys).
 </Callout>
 
 ```txt title=".env"
@@ -183,7 +183,7 @@ The `ClaudeAgentSDKProvider` exposes your Composio tools to the Claude Agent SDK
 **Configure API Keys**
 
 <Callout type="info">
-Set `COMPOSIO_API_KEY` with your API key from [Settings](https://dashboard.composio.dev/~/project/settings/api-keys) and `ANTHROPIC_API_KEY` with your [Anthropic API key](https://console.anthropic.com/settings/keys).
+Set `COMPOSIO_API_KEY` with your API key from [Settings](https://dashboard.composio.dev/~/project/settings/api-keys?utm_source=docs&utm_medium=content&utm_campaign=docs-providers-anthropic) and `ANTHROPIC_API_KEY` with your [Anthropic API key](https://console.anthropic.com/settings/keys).
 </Callout>
 
 ```txt title=".env"
@@ -256,6 +256,8 @@ for await (const content of query({
     }
 }
 ```
+
+The provider registers each tool's complete object schema. Object arguments that declare no properties reach execution with arbitrary nested keys unchanged, while root-level constraints such as `additionalProperties` and `patternProperties` remain enforced. Invalid arguments return an error result, and the tool does not run.
 </Tab>
 </Tabs>
 </Step>

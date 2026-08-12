@@ -1,14 +1,18 @@
 ---
 title: Composio Connect
-description: Add Composio tools to your AI agent via MCP
+description: Connect Composio to an existing MCP client without using the SDK
 keywords: [composio connect, mcp, claude code, cursor, vscode, windsurf, cline, chatgpt, notion, n8n, codex]
 ---
 
-Give any AI agent the ability to act across 1000+ apps. Bring your agent to where you work.
+Use Composio Connect when you already have an MCP-compatible client and want the shared Composio MCP URL, without creating an SDK session. Connect it to `https://connect.composio.dev/mcp`.
+
+If you use Codex or Claude Code and did not explicitly choose MCP, install the native [Composio agent plugin](/docs/agent-plugins) instead. The plugin uses the Composio CLI and is the shortest path for those agents.
+
+If you are building an application, start with the [SDK Quickstart](/docs/quickstart) or create a [session MCP endpoint](/docs/sessions-via-mcp) instead.
 
 ## How Composio Connect works
 
-Composio Connect is an MCP server at `https://connect.composio.dev/mcp` that gives your AI agent access to 1000+ apps — Gmail, Notion, Slack, GitHub, Linear, HubSpot, Strava, and more — through a single connection.
+Composio Connect is an MCP server at `https://connect.composio.dev/mcp` that gives your AI agent access to 1000+ apps, including Gmail, Notion, Slack, GitHub, Linear, HubSpot, and Strava, through a single connection.
 
 Rather than exposing every app tool directly, Composio exposes **7 meta-tools** that let the agent discover what's available, authorize apps on demand, and execute tools across apps in parallel. The first time your agent needs an app, Composio generates an OAuth link you approve in your browser; after that the connection persists across sessions. See [Available MCP tools](#available-mcp-tools) for the full list.
 
@@ -23,7 +27,7 @@ To get started, pick your client below.
 <Step>
 <StepTitle>Get your API key</StepTitle>
 
-Open the [Composio dashboard](https://dashboard.composio.dev) and click **AI Clients** in the sidebar. Select your client and copy your API key.
+Open the [Composio dashboard](https://dashboard.composio.dev?utm_source=docs&utm_medium=content&utm_campaign=docs-composio-connect) and click **AI Clients** in the sidebar. Select your client and copy your API key.
 
 </Step>
 <Step>
@@ -53,7 +57,7 @@ Type `/mcp` in Claude Code to open the MCP server manager and confirm Composio a
 <Step>
 <StepTitle>Get your API key</StepTitle>
 
-Open the [Composio dashboard](https://dashboard.composio.dev) and click **AI Clients** in the sidebar. Select your client and copy your API key.
+Open the [Composio dashboard](https://dashboard.composio.dev?utm_source=docs&utm_medium=content&utm_campaign=docs-composio-connect) and click **AI Clients** in the sidebar. Select your client and copy your API key.
 
 </Step>
 <Step>
@@ -89,7 +93,7 @@ Run `codex mcp list` to confirm Composio appears as a registered MCP server.
 <Step>
 <StepTitle>Get your API key</StepTitle>
 
-Open the [Composio dashboard](https://dashboard.composio.dev) and click **AI Clients** in the sidebar. Select your client and copy your API key.
+Open the [Composio dashboard](https://dashboard.composio.dev?utm_source=docs&utm_medium=content&utm_campaign=docs-composio-connect) and click **AI Clients** in the sidebar. Select your client and copy your API key.
 
 </Step>
 <Step>
@@ -175,7 +179,7 @@ A browser window will open automatically. Sign in to authorize ChatGPT to access
 <Step>
 <StepTitle>Get your API key</StepTitle>
 
-Open the [Composio dashboard](https://dashboard.composio.dev) and click **AI Clients** in the sidebar. Select your client and copy your API key.
+Open the [Composio dashboard](https://dashboard.composio.dev?utm_source=docs&utm_medium=content&utm_campaign=docs-composio-connect) and click **AI Clients** in the sidebar. Select your client and copy your API key.
 
 </Step>
 <Step>
@@ -214,7 +218,7 @@ Restart Cursor. Composio tools are now available in Composer and Agent mode.
 <Step>
 <StepTitle>Get your API key</StepTitle>
 
-Open the [Composio dashboard](https://dashboard.composio.dev) and click **AI Clients** in the sidebar. Select your client and copy your API key.
+Open the [Composio dashboard](https://dashboard.composio.dev?utm_source=docs&utm_medium=content&utm_campaign=docs-composio-connect) and click **AI Clients** in the sidebar. Select your client and copy your API key.
 
 </Step>
 <Step>
@@ -252,7 +256,7 @@ Select **API Key** as the authentication type. Set the key to `x-consumer-api-ke
 <Step>
 <StepTitle>Get your API key</StepTitle>
 
-Open the [Composio dashboard](https://dashboard.composio.dev) and click **AI Clients** in the sidebar. Select your client and copy your API key.
+Open the [Composio dashboard](https://dashboard.composio.dev?utm_source=docs&utm_medium=content&utm_campaign=docs-composio-connect) and click **AI Clients** in the sidebar. Select your client and copy your API key.
 
 </Step>
 <Step>
@@ -294,7 +298,7 @@ Open a GitHub Copilot chat. Composio tools are now available.
 <Step>
 <StepTitle>Get your API key</StepTitle>
 
-Open the [Composio dashboard](https://dashboard.composio.dev) and click **AI Clients** in the sidebar. Select your client and copy your API key.
+Open the [Composio dashboard](https://dashboard.composio.dev?utm_source=docs&utm_medium=content&utm_campaign=docs-composio-connect) and click **AI Clients** in the sidebar. Select your client and copy your API key.
 
 </Step>
 <Step>
@@ -339,7 +343,7 @@ Restart Windsurf. Composio tools are now available in Cascade.
 <Step>
 <StepTitle>Get your API key</StepTitle>
 
-Open the [Composio dashboard](https://dashboard.composio.dev) and click **AI Clients** in the sidebar. Select your client and copy your API key.
+Open the [Composio dashboard](https://dashboard.composio.dev?utm_source=docs&utm_medium=content&utm_campaign=docs-composio-connect) and click **AI Clients** in the sidebar. Select your client and copy your API key.
 
 </Step>
 <Step>
@@ -383,7 +387,7 @@ Save the configuration. Composio tools are now available in Cline.
 <Step>
 <StepTitle>Get your API key</StepTitle>
 
-Open the [Composio dashboard](https://dashboard.composio.dev) and click **AI Clients** in the sidebar. Select your client and copy your API key.
+Open the [Composio dashboard](https://dashboard.composio.dev?utm_source=docs&utm_medium=content&utm_campaign=docs-composio-connect) and click **AI Clients** in the sidebar. Select your client and copy your API key.
 
 </Step>
 <Step>
@@ -415,7 +419,7 @@ Select **Custom headers**. Add a header with name `x-consumer-api-key` and paste
 <Step>
 <StepTitle>Get your API key</StepTitle>
 
-Open the [Composio dashboard](https://dashboard.composio.dev) and click **AI Clients** in the sidebar. Select your client and copy your API key.
+Open the [Composio dashboard](https://dashboard.composio.dev?utm_source=docs&utm_medium=content&utm_campaign=docs-composio-connect) and click **AI Clients** in the sidebar. Select your client and copy your API key.
 
 </Step>
 <Step>
@@ -447,7 +451,7 @@ Select **Header Auth** and create a new credential. Set the header name to `x-co
 <Step>
 <StepTitle>Get your API key</StepTitle>
 
-Open the [Composio dashboard](https://dashboard.composio.dev) and click **AI Clients** in the sidebar. Select your client and copy your API key.
+Open the [Composio dashboard](https://dashboard.composio.dev?utm_source=docs&utm_medium=content&utm_campaign=docs-composio-connect) and click **AI Clients** in the sidebar. Select your client and copy your API key.
 
 </Step>
 <Step>
@@ -477,7 +481,7 @@ Use this config with any MCP-compatible client:
 
 ## Connect your apps
 
-Your agent will prompt you to connect apps when needed. If you want to connect apps ahead of time, open the [Composio dashboard](https://dashboard.composio.dev) and click **Connect Apps** in the sidebar.
+Your agent will prompt you to connect apps when needed. If you want to connect apps ahead of time, open the [Composio dashboard](https://dashboard.composio.dev?utm_source=docs&utm_medium=content&utm_campaign=docs-composio-connect) and click **Connect Apps** in the sidebar.
 
 ## Available MCP tools
 
@@ -503,18 +507,18 @@ Composio Connect exposes 7 meta-tools that orchestrate access to all supported a
 
 ### The OAuth link expired or didn't open
 
-OAuth links are short-lived. If the browser window doesn't open or the link has expired, ask your agent to retry the action — Composio will generate a fresh link. You can also open the [Composio dashboard](https://dashboard.composio.dev), click **Connect Apps**, and start the flow manually.
+OAuth links are short-lived. If the browser window doesn't open or the link has expired, ask your agent to retry the action — Composio will generate a fresh link. You can also open the [Composio dashboard](https://dashboard.composio.dev?utm_source=docs&utm_medium=content&utm_campaign=docs-composio-connect), click **Connect Apps**, and start the flow manually.
 
 ### An app action is failing with an auth error
 
-1. Open the [Composio dashboard](https://dashboard.composio.dev) and click **Connect Apps**.
+1. Open the [Composio dashboard](https://dashboard.composio.dev?utm_source=docs&utm_medium=content&utm_campaign=docs-composio-connect) and click **Connect Apps**.
 2. Find the app in question. If the connection is unhealthy, click **Disconnect** and reconnect.
 3. Retry the action in your agent.
 
 ### I want to remove or reconnect an app
 
-Open [dashboard.composio.dev](https://dashboard.composio.dev) and click **Connect Apps**. From there you can disconnect, delete, or re-authorize any app.
+Open [dashboard.composio.dev](https://dashboard.composio.dev?utm_source=docs&utm_medium=content&utm_campaign=docs-composio-connect) and click **Connect Apps**. From there you can disconnect, delete, or re-authorize any app.
 
 ### I still need help
 
-Reach out at [tech@composio.dev](mailto:tech@composio.dev) or join the [Composio Discord](https://discord.com/invite/cNruWaAhQk).
+Reach out at [support@composio.dev](mailto:support@composio.dev) or join the [Composio Discord](https://discord.com/invite/cNruWaAhQk).

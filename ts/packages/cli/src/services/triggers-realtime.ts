@@ -1,4 +1,5 @@
-import { Data, Effect, Runtime } from 'effect';
+import { Array as Arr, Data, Effect, Either, Option, Predicate, Runtime, Schema } from 'effect';
+import { JsonRecordSchema } from 'src/effects/json';
 import {
   ComposioClientSingleton,
   ComposioSessionRepository,
@@ -6,64 +7,68 @@ import {
   type CliRealtimeCredentialsResponse,
 } from 'src/services/composio-clients';
 
-type RawRealtimeEvent = Record<string, unknown>;
+const RawRealtimeEvent = JsonRecordSchema;
+type RawRealtimeEvent = typeof RawRealtimeEvent.Type;
+const decodeRawRealtimeEvent = Schema.decodeUnknownOption(RawRealtimeEvent);
 
-type PusherAuthOptions = {
-  params?: {
-    channel_name?: string;
-    socket_id?: string;
-    channelName?: string;
-    socketId?: string;
-  };
-  channel_name?: string;
-  socket_id?: string;
-  channelName?: string;
-  socketId?: string;
-};
-
-type PusherAuthCallback = (error: unknown, data?: unknown) => void;
-
-type PusherChannel = {
-  bind: (event: string, callback: (data: unknown) => void) => void;
-  bind_global?: (callback: (eventName: string, data: unknown) => void) => void;
-  unbind?: (event?: string, callback?: (data: unknown) => void) => void;
-  unbind_all?: () => void;
-};
-
-type PusherClient = {
-  subscribe: (channelName: string) => PusherChannel;
-  unsubscribe: (channelName: string) => void;
-  disconnect: () => void;
-  connection?: {
-    bind?: (event: string, callback: (data: unknown) => void) => void;
-  };
-};
-
-type PusherCtor = new (
-  key: string,
-  options: {
-    cluster: string;
-    channelAuthorization: {
-      customHandler: (
-        authOptions: PusherAuthOptions,
-        callback?: PusherAuthCallback
-      ) => Promise<unknown> | void;
-    };
-  }
-) => PusherClient;
-
-type ChunkedRealtimeEvent = {
-  id: string;
-  index: number;
-  chunk: string;
-  final: boolean;
-};
+const ChunkedRealtimeEvent = Schema.Struct({
+  id: Schema.String,
+  index: Schema.Int,
+  chunk: Schema.String,
+  final: Schema.Boolean,
+});
+const decodeChunkedRealtimeEvent = Schema.decodeUnknownOption(ChunkedRealtimeEvent);
 
 export class TriggerRealtimeSubscriptionError extends Data.TaggedError(
   'services/TriggerRealtimeSubscriptionError'
 )<{
+  readonly message: string;
   readonly cause?: unknown;
 }> {}
+
+const subscriptionError = (message: string) => (cause: unknown) =>
+  new TriggerRealtimeSubscriptionError({ message, cause });
+
+type PusherConstructor = (typeof import('pusher-js'))['default'];
+
+const isPusherConstructor = (value: unknown): value is PusherConstructor =>
+  Predicate.isFunction(value);
+
+const propertyOf = (value: unknown, property: string): unknown =>
+  Predicate.hasProperty(value, property) ? value[property] : undefined;
+
+/**
+ * Resolves the Pusher constructor across ESM/CJS interop shapes. pusher-js
+ * ships CJS and has changed its export shape across versions: 8.4.x and 8.6.0
+ * export the constructor itself (`module.exports = Pusher`), while 8.5.0's
+ * Node bundle exports a namespace object (`module.exports = { Pusher }`) — an
+ * undocumented upstream packaging regression (pusher/pusher-js#935, fixed by
+ * pusher/pusher-js#936, first released in 8.6.0). With 8.5.0,
+ * `module.default` stops being callable under both Node and Bun — from source
+ * and in compiled binaries alike (issue #3918). The probes cover, in order: a
+ * defensively double-wrapped default (`module.default.default`), the direct
+ * class export (`module.default`, 8.4.0/8.6.0), a raw CJS module that is
+ * itself the constructor, and the named `Pusher` export on either level
+ * (`module.default.Pusher` is the 8.5.0 shape that crashed compiled release
+ * binaries; runtimes also hoist it to `module.Pusher`).
+ *
+ * Exported for tests.
+ */
+export const resolvePusherConstructor = (
+  pusherModule: unknown
+): Option.Option<PusherConstructor> => {
+  const moduleDefault = propertyOf(pusherModule, 'default');
+  return Arr.findFirst(
+    [
+      propertyOf(moduleDefault, 'default'),
+      moduleDefault,
+      pusherModule,
+      propertyOf(moduleDefault, 'Pusher'),
+      propertyOf(pusherModule, 'Pusher'),
+    ],
+    isPusherConstructor
+  );
+};
 
 /**
  * Service for listening to trigger events over Composio CLI realtime channels.
@@ -80,11 +85,14 @@ export class TriggersRealtime extends Effect.Service<TriggersRealtime>()(
       const runtime = yield* Effect.runtime<never>();
 
       const listenWith = (params: {
-        getRealtimeCredentials: () => Effect.Effect<CliRealtimeCredentialsResponse>;
+        getRealtimeCredentials: () => Effect.Effect<
+          CliRealtimeCredentialsResponse,
+          TriggerRealtimeSubscriptionError
+        >;
         authRealtimeChannel: (params: {
           channel_name: string;
           socket_id: string;
-        }) => Effect.Effect<CliRealtimeAuthResponse>;
+        }) => Effect.Effect<CliRealtimeAuthResponse, TriggerRealtimeSubscriptionError>;
         onEvent: (data: RawRealtimeEvent) => void;
       }) =>
         Effect.acquireUseRelease(
@@ -94,49 +102,49 @@ export class TriggersRealtime extends Effect.Service<TriggersRealtime>()(
 
             const pusherModule = yield* Effect.tryPromise({
               try: () => import('pusher-js'),
-              catch: cause => new TriggerRealtimeSubscriptionError({ cause }),
+              catch: subscriptionError('Failed to load the realtime client'),
             });
 
-            const Pusher = pusherModule.default as unknown as PusherCtor;
+            const Pusher = yield* resolvePusherConstructor(pusherModule).pipe(
+              Effect.mapError(
+                subscriptionError('Realtime client module does not expose a constructor')
+              )
+            );
 
-            const pusher = new Pusher(creds.pusher_key, {
-              cluster: creds.pusher_cluster,
-              channelAuthorization: {
-                customHandler: (authOptions: PusherAuthOptions, callback?: PusherAuthCallback) => {
-                  const authParams = authOptions.params ?? authOptions;
-                  const channel_name = authParams.channel_name ?? authParams.channelName;
-                  const socket_id = authParams.socket_id ?? authParams.socketId;
+            const pusher = yield* Effect.try({
+              try: () =>
+                new Pusher(creds.pusher_key, {
+                  cluster: creds.pusher_cluster,
+                  channelAuthorization: {
+                    customHandler: (authOptions, callback) => {
+                      const channel_name = authOptions.channelName;
+                      const socket_id = authOptions.socketId;
 
-                  const doAuth = async () => {
-                    if (!channel_name || !socket_id) {
-                      throw new Error('Missing channel_name or socket_id for realtime auth');
-                    }
+                      const doAuth = async () => {
+                        const response = await Runtime.runPromise(runtime)(
+                          params.authRealtimeChannel({
+                            channel_name,
+                            socket_id,
+                          })
+                        );
+                        // Pusher private channels verify signatures without channel_data.
+                        // Some auth endpoints may still return channel_data, which can cause
+                        // "Invalid signature" if included in the verification input.
+                        const normalizedResponse = channel_name.startsWith('private-')
+                          ? { auth: response.auth }
+                          : response;
+                        return normalizedResponse;
+                      };
 
-                    const response = await Runtime.runPromise(runtime)(
-                      params.authRealtimeChannel({
-                        channel_name,
-                        socket_id,
-                      })
-                    );
-                    // Pusher private channels verify signatures without channel_data.
-                    // Some auth endpoints may still return channel_data, which can cause
-                    // "Invalid signature" if included in the verification input.
-                    const normalizedResponse = channel_name.startsWith('private-')
-                      ? { auth: response.auth }
-                      : response;
-                    return normalizedResponse;
-                  };
-
-                  if (callback) {
-                    void doAuth()
-                      .then(data => callback(null, data))
-                      .catch(error => callback(error));
-                    return;
-                  }
-
-                  return doAuth();
-                },
-              },
+                      void doAuth()
+                        .then(data => callback(null, data))
+                        .catch(cause =>
+                          callback(cause instanceof Error ? cause : new Error(String(cause)), null)
+                        );
+                    },
+                  },
+                }),
+              catch: subscriptionError('Failed to construct the realtime client'),
             });
 
             const channel = pusher.subscribe(channelName);
@@ -179,15 +187,16 @@ export class TriggersRealtime extends Effect.Service<TriggersRealtime>()(
               }
             }, CHUNK_TTL_MS);
 
-            channel.bind('trigger_to_client', eventData => {
-              params.onEvent((eventData ?? {}) as RawRealtimeEvent);
+            channel.bind('trigger_to_client', (eventData: unknown) => {
+              params.onEvent(Option.getOrElse(decodeRawRealtimeEvent(eventData), () => ({})));
             });
 
-            channel.bind('chunked-trigger_to_client', data => {
-              const typed = data as ChunkedRealtimeEvent;
-              if (!typed || typeof typed.id !== 'string' || typeof typed.index !== 'number') {
+            channel.bind('chunked-trigger_to_client', (data: unknown) => {
+              const decoded = decodeChunkedRealtimeEvent(data);
+              if (Option.isNone(decoded)) {
                 return;
               }
+              const typed = decoded.value;
 
               // Reject non-integer or out-of-range indices to prevent a single
               // malformed event from creating a massive sparse array.
@@ -214,7 +223,10 @@ export class TriggersRealtime extends Effect.Service<TriggersRealtime>()(
                 });
               }
 
-              const current = chunkedEvents.get(typed.id)!;
+              const current = chunkedEvents.get(typed.id);
+              if (!current) {
+                return;
+              }
               current.chunks[typed.index] = typed.chunk;
               if (typed.final) {
                 current.receivedFinal = true;
@@ -228,13 +240,16 @@ export class TriggersRealtime extends Effect.Service<TriggersRealtime>()(
                 current.receivedFinal &&
                 current.chunks.length === Object.keys(current.chunks).length
               ) {
-                try {
-                  const parsed = JSON.parse(current.chunks.join('')) as RawRealtimeEvent;
-                  params.onEvent(parsed);
-                } catch {
-                  // Silently discard events that fail to parse after chunk reassembly
-                } finally {
-                  chunkedEvents.delete(typed.id);
+                const reassembled = current.chunks.join('');
+                chunkedEvents.delete(typed.id);
+                // Silently discard events that fail to parse after chunk
+                // reassembly; the buffer entry is already cleared either way.
+                const parsed = Either.try((): unknown => JSON.parse(reassembled)).pipe(
+                  Either.getRight,
+                  Option.flatMap(decodeRawRealtimeEvent)
+                );
+                if (Option.isSome(parsed)) {
+                  params.onEvent(parsed.value);
                 }
               }
             });
@@ -252,14 +267,20 @@ export class TriggersRealtime extends Effect.Service<TriggersRealtime>()(
           resource =>
             Effect.tryPromise({
               try: () => resource.shutdown(),
-              catch: cause => new TriggerRealtimeSubscriptionError({ cause }),
+              catch: subscriptionError('Failed to shut down the realtime subscription'),
             }).pipe(Effect.catchAll(() => Effect.void))
         );
 
       const listen = (onEvent: (data: RawRealtimeEvent) => void) =>
         listenWith({
-          getRealtimeCredentials: () => sessionRepo.getRealtimeCredentials().pipe(Effect.orDie),
-          authRealtimeChannel: params => sessionRepo.authRealtimeChannel(params).pipe(Effect.orDie),
+          getRealtimeCredentials: () =>
+            sessionRepo
+              .getRealtimeCredentials()
+              .pipe(Effect.mapError(subscriptionError('Failed to fetch realtime credentials'))),
+          authRealtimeChannel: params =>
+            sessionRepo
+              .authRealtimeChannel(params)
+              .pipe(Effect.mapError(subscriptionError('Failed to authorize the realtime channel'))),
           onEvent,
         });
 
@@ -277,13 +298,13 @@ export class TriggersRealtime extends Effect.Service<TriggersRealtime>()(
             getRealtimeCredentials: () =>
               Effect.tryPromise({
                 try: () => client.cli.realtime.credentials(),
-                catch: cause => new TriggerRealtimeSubscriptionError({ cause }),
-              }).pipe(Effect.orDie),
+                catch: subscriptionError('Failed to fetch realtime credentials'),
+              }),
             authRealtimeChannel: params =>
               Effect.tryPromise({
                 try: () => client.cli.realtime.auth(params),
-                catch: cause => new TriggerRealtimeSubscriptionError({ cause }),
-              }).pipe(Effect.orDie),
+                catch: subscriptionError('Failed to authorize the realtime channel'),
+              }),
             onEvent,
           });
         });

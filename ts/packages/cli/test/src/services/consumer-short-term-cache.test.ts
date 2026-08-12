@@ -1,6 +1,9 @@
 import { describe, expect, layer } from '@effect/vitest';
-import { vi, afterEach } from 'vitest';
-import { ConfigProvider, Effect, Option } from 'effect';
+import { vi, beforeEach, afterEach } from 'vitest';
+import { FileSystem } from '@effect/platform';
+import { ConfigProvider, DateTime, Effect, Option } from 'effect';
+import path from 'node:path';
+import { setupCacheDir } from 'src/effects/setup-cache-dir';
 import { extendConfigProvider } from 'src/services/config';
 import * as composioClients from 'src/services/composio-clients';
 import {
@@ -26,8 +29,20 @@ const cacheEnabledTestConfigProvider = makeTestConfigProvider([
   ['COMPOSIO_DISABLE_CONNECTED_ACCOUNT_CACHE', 'false'],
 ]);
 
+// Instant the wall clock is pinned to; fixture expiresAt values below are
+// written relative to it so freshness checks in the SUT stay deterministic.
+const PINNED_NOW = '2026-01-01T00:00:00.000Z';
+const ONE_MINUTE_FROM_PINNED_NOW = '2026-01-01T00:01:00.000Z';
+
 describe('consumer short-term cache', () => {
+  beforeEach(() => {
+    // Fake ONLY Date so real timers and promise scheduling keep working.
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date(PINNED_NOW));
+  });
+
   afterEach(() => {
+    vi.useRealTimers();
     vi.restoreAllMocks();
   });
 
@@ -68,8 +83,8 @@ describe('consumer short-term cache', () => {
             meta: {
               description: 'GitHub toolkit',
               categories: [],
-              created_at: new Date('2024-05-03T11:44:32.061Z') as any,
-              updated_at: new Date('2024-05-03T11:44:32.061Z') as any,
+              created_at: DateTime.unsafeMake('2024-05-03T11:44:32.061Z'),
+              updated_at: DateTime.unsafeMake('2024-05-03T11:44:32.061Z'),
               available_versions: [],
               tools_count: 0,
               triggers_count: 0,
@@ -85,8 +100,8 @@ describe('consumer short-term cache', () => {
             meta: {
               description: 'No-auth toolkit',
               categories: [],
-              created_at: new Date('2024-05-03T11:44:32.061Z') as any,
-              updated_at: new Date('2024-05-03T11:44:32.061Z') as any,
+              created_at: DateTime.unsafeMake('2024-05-03T11:44:32.061Z'),
+              updated_at: DateTime.unsafeMake('2024-05-03T11:44:32.061Z'),
               available_versions: [],
               tools_count: 0,
               triggers_count: 0,
@@ -132,8 +147,8 @@ describe('consumer short-term cache', () => {
             meta: {
               description: 'GitHub toolkit',
               categories: [],
-              created_at: new Date('2024-05-03T11:44:32.061Z') as any,
-              updated_at: new Date('2024-05-03T11:44:32.061Z') as any,
+              created_at: DateTime.unsafeMake('2024-05-03T11:44:32.061Z'),
+              updated_at: DateTime.unsafeMake('2024-05-03T11:44:32.061Z'),
               available_versions: [],
               tools_count: 0,
               triggers_count: 0,
@@ -149,8 +164,8 @@ describe('consumer short-term cache', () => {
             meta: {
               description: 'No-auth toolkit',
               categories: [],
-              created_at: new Date('2024-05-03T11:44:32.061Z') as any,
-              updated_at: new Date('2024-05-03T11:44:32.061Z') as any,
+              created_at: DateTime.unsafeMake('2024-05-03T11:44:32.061Z'),
+              updated_at: DateTime.unsafeMake('2024-05-03T11:44:32.061Z'),
               available_versions: [],
               tools_count: 0,
               triggers_count: 0,
@@ -177,6 +192,64 @@ describe('consumer short-term cache', () => {
       })
     );
   });
+
+  layer(TestLive({ baseConfigProvider: cacheEnabledTestConfigProvider }))(
+    '[Given] a malformed persisted cache [Then] cache reads fail closed',
+    it => {
+      it.scoped('ignores cache entries that do not match the persisted schema', () =>
+        Effect.gen(function* () {
+          const fs = yield* FileSystem.FileSystem;
+          const cacheDir = yield* setupCacheDir;
+          yield* fs.writeFileString(
+            path.join(cacheDir, 'consumer-short-term-cache.json'),
+            JSON.stringify({
+              'org_test:consumer-user-test': {
+                toolkits: 'github',
+                expiresAt: ONE_MINUTE_FROM_PINNED_NOW,
+              },
+            })
+          );
+
+          const cached = yield* getFreshConsumerConnectedToolkitsFromCache({
+            orgId: 'org_test',
+            consumerUserId: 'consumer-user-test',
+          });
+
+          expect(cached).toEqual(Option.none());
+        })
+      );
+    }
+  );
+
+  layer(TestLive({ baseConfigProvider: cacheEnabledTestConfigProvider }))(
+    '[Given] one corrupt entry among valid ones [Then] only the corrupt entry is dropped',
+    it => {
+      it.scoped('keeps valid cache entries when a sibling entry is corrupt', () =>
+        Effect.gen(function* () {
+          const fs = yield* FileSystem.FileSystem;
+          const cacheDir = yield* setupCacheDir;
+          yield* fs.writeFileString(
+            path.join(cacheDir, 'consumer-short-term-cache.json'),
+            JSON.stringify({
+              'org_bad:consumer-user-bad': { toolkits: 'not-an-array', expiresAt: 42 },
+              'org_test:consumer-user-test': {
+                toolkits: ['github'],
+                expiresAt: ONE_MINUTE_FROM_PINNED_NOW,
+              },
+            })
+          );
+
+          const cached = yield* getFreshConsumerConnectedToolkitsFromCache({
+            orgId: 'org_test',
+            consumerUserId: 'consumer-user-test',
+          });
+
+          const toolkits = Option.getOrElse(cached, (): ReadonlyArray<string> => []);
+          expect(toolkits).toContain('github');
+        })
+      );
+    }
+  );
 
   layer(TestLive({ baseConfigProvider: cacheEnabledTestConfigProvider }))(
     '[Given] a full auth-config cache hit [Then] cache reads are toolkit-complete',

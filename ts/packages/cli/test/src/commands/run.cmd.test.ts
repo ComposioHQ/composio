@@ -3,7 +3,9 @@ import * as os from 'node:os';
 import * as path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { describe, expect, layer } from '@effect/vitest';
-import { Effect } from 'effect';
+import { Path } from '@effect/platform';
+import { BunContext } from '@effect/platform-bun';
+import { Effect, Exit } from 'effect';
 import { afterEach, it, vi } from 'vitest';
 import {
   buildRunHelpersSource,
@@ -40,17 +42,15 @@ describe('CLI: composio run', () => {
       '[Given] inline code and args [Then] it forwards them to the embedded Bun runtime',
       () =>
         Effect.gen(function* () {
-          const spawn = vi.fn(() => ({ exited: Promise.resolve(7) }));
+          const spawn = vi.fn((_options: unknown) => ({ exited: Promise.resolve(7) }));
           const exit = vi.spyOn(process, 'exit').mockImplementation((() => undefined) as never);
-          const stderrWrite = vi
-            .spyOn(process.stderr, 'write')
-            .mockImplementation((() => true) as never);
           vi.stubGlobal('Bun', { spawn });
 
           yield* cli(['run', 'console.log("hi")', '--flag', 'value']);
+          const output = yield* MockConsole.getLines();
 
           expect(spawn).toHaveBeenCalledTimes(1);
-          const spawnConfig = (spawn as any).mock.calls[0][0] as {
+          const spawnConfig = spawn.mock.calls[0][0] as {
             cmd: string[];
             env: unknown;
             stdio: string[];
@@ -70,9 +70,7 @@ describe('CLI: composio run', () => {
             })
           );
           expect(spawnConfig.stdio).toEqual(['inherit', 'inherit', 'inherit']);
-          expect(stderrWrite).toHaveBeenCalledWith(
-            expect.stringMatching(/^RUN_LOG_FILE=.*run\.log\n$/)
-          );
+          expect(output).toContainEqual(expect.stringMatching(/^RUN_LOG_FILE=.*run\.log$/));
           expect(exit).toHaveBeenCalledWith(7);
         })
     );
@@ -83,14 +81,14 @@ describe('CLI: composio run', () => {
       '[Given] --acp-only [Then] run accepts the flag and forwards execution normally',
       () =>
         Effect.gen(function* () {
-          const spawn = vi.fn(() => ({ exited: Promise.resolve(0) }));
+          const spawn = vi.fn((_options: unknown) => ({ exited: Promise.resolve(0) }));
           const exit = vi.spyOn(process, 'exit').mockImplementation((() => undefined) as never);
           vi.stubGlobal('Bun', { spawn });
 
           yield* cli(['run', '--acp-only', 'console.log("hi")']);
 
           expect(spawn).toHaveBeenCalledTimes(1);
-          const spawnConfig = (spawn as any).mock.calls[0][0] as {
+          const spawnConfig = spawn.mock.calls[0][0] as {
             cmd: string[];
           };
           expect(spawnConfig.cmd[3]).toBe('--eval');
@@ -104,14 +102,14 @@ describe('CLI: composio run', () => {
       '[Given] --logs-off [Then] run accepts the flag and forwards execution normally',
       () =>
         Effect.gen(function* () {
-          const spawn = vi.fn(() => ({ exited: Promise.resolve(0) }));
+          const spawn = vi.fn((_options: unknown) => ({ exited: Promise.resolve(0) }));
           const exit = vi.spyOn(process, 'exit').mockImplementation((() => undefined) as never);
           vi.stubGlobal('Bun', { spawn });
 
           yield* cli(['run', '--logs-off', 'console.log("hi")']);
 
           expect(spawn).toHaveBeenCalledTimes(1);
-          const spawnConfig = (spawn as any).mock.calls[0][0] as {
+          const spawnConfig = spawn.mock.calls[0][0] as {
             cmd: string[];
           };
           expect(spawnConfig.cmd[3]).toBe('--eval');
@@ -142,14 +140,14 @@ describe('CLI: composio run', () => {
             console.log(JSON.stringify(brief));
             console.log(JSON.stringify(brief.structuredOutput));
           `;
-          const spawn = vi.fn(() => ({ exited: Promise.resolve(0) }));
+          const spawn = vi.fn((_options: unknown) => ({ exited: Promise.resolve(0) }));
           const exit = vi.spyOn(process, 'exit').mockImplementation((() => undefined) as never);
           vi.stubGlobal('Bun', { spawn });
 
           yield* cli(['run', '--logs-off', script]);
 
           expect(spawn).toHaveBeenCalledTimes(1);
-          const spawnConfig = (spawn as any).mock.calls[0][0] as {
+          const spawnConfig = spawn.mock.calls[0][0] as {
             cmd: string[];
           };
           expect(spawnConfig.cmd[3]).toBe('--eval');
@@ -173,7 +171,7 @@ describe('CLI: composio run', () => {
         const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'composio-run-test-'));
         const scriptPath = path.join(tempDir, 'script.ts');
         fs.writeFileSync(scriptPath, 'const value = 1 + 1;\nvalue * 2;\n', 'utf8');
-        const spawn = vi.fn(() => ({ exited: Promise.resolve(0) }));
+        const spawn = vi.fn((_options: unknown) => ({ exited: Promise.resolve(0) }));
         const exit = vi.spyOn(process, 'exit').mockImplementation((() => undefined) as never);
         vi.stubGlobal('Bun', { spawn });
 
@@ -181,7 +179,7 @@ describe('CLI: composio run', () => {
           yield* cli(['run', '--file', scriptPath, '--', 'hello']);
 
           expect(spawn).toHaveBeenCalledTimes(1);
-          const spawnConfig = (spawn as any).mock.calls[0][0] as {
+          const spawnConfig = spawn.mock.calls[0][0] as {
             cmd: string[];
             env: unknown;
             stdio: string[];
@@ -211,7 +209,7 @@ describe('CLI: composio run', () => {
     it.scoped('[Given] no inline code and no --file [Then] it fails with a clear error', () =>
       Effect.gen(function* () {
         const exit = yield* cli(['run']).pipe(Effect.exit);
-        expect(exit._tag).toBe('Failure');
+        expect(Exit.isFailure(exit)).toBe(true);
       })
     );
   });
@@ -245,17 +243,23 @@ describe('CLI: composio run', () => {
 
 describe('buildRunHelpersSource', () => {
   it('[Given] consumer context [Then] it embeds auth and consumer metadata in the helper source', () => {
-    const source = buildRunHelpersSource(['/tmp/composio'], {
-      apiKey: 'test_api_key',
-      baseURL: 'https://api.example.test',
-      webURL: 'https://app.example.test',
-      orgId: 'org_test',
-      consumerUserId: 'consumer_user_test',
-      acpOnly: true,
-      logsOff: true,
-      dryRun: true,
-      runLogFilePath: '/tmp/composio-run/run.log',
-    });
+    const source = buildRunHelpersSource(
+      ['/tmp/composio'],
+      {
+        apiKey: 'test_api_key',
+        baseURL: 'https://api.example.test',
+        webURL: 'https://app.example.test',
+        orgId: 'org_test',
+        consumerUserId: 'consumer_user_test',
+        acpOnly: true,
+        logsOff: true,
+        dryRun: true,
+        runLogFilePath: '/tmp/composio-run/run.log',
+      },
+      {
+        helpersRuntimeModuleUrl: pathToFileURL('/tmp/composio-run/run-helpers-runtime.mjs').href,
+      }
+    );
 
     expect(source).toContain('import { installRunHelpers } from "file://');
     expect(source).toContain('await installRunHelpers(');
@@ -382,191 +386,231 @@ describe('run-subagent-shared', () => {
 });
 
 describe('inferCliInvocationPrefix', () => {
-  it('[Given] a compiled bunfs entrypoint [Then] it falls back to the binary path only', () => {
-    expect(inferCliInvocationPrefix(['node', '/$bunfs/root/composio'])).toEqual([process.execPath]);
+  layer(Path.layer)(it => {
+    it.effect(
+      '[Given] a compiled bunfs entrypoint [Then] it falls back to the binary path only',
+      () =>
+        Effect.gen(function* () {
+          const pathService = yield* Path.Path;
+          expect(inferCliInvocationPrefix(pathService, ['node', '/$bunfs/root/composio'])).toEqual([
+            process.execPath,
+          ]);
+        })
+    );
   });
 });
 
 describe('resolveRunCompanionModulePath', () => {
-  it('[Given] a bundled dist chunk [Then] it resolves sibling companion modules in dist', () => {
-    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'composio-run-companion-dist-'));
-    const callerPath = path.join(tempDir, 'commands-abc.mjs');
-    const servicesDir = path.join(tempDir, 'services');
-    const companionPath = path.join(servicesDir, 'run-subagent-shared.mjs');
-    fs.writeFileSync(callerPath, '', 'utf8');
-    fs.mkdirSync(servicesDir);
-    fs.writeFileSync(companionPath, '', 'utf8');
+  layer(BunContext.layer)(it => {
+    it.effect(
+      '[Given] a bundled dist chunk [Then] it resolves sibling companion modules in dist',
+      () =>
+        Effect.gen(function* () {
+          const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'composio-run-companion-dist-'));
+          const callerPath = path.join(tempDir, 'commands-abc.mjs');
+          const servicesDir = path.join(tempDir, 'services');
+          const companionPath = path.join(servicesDir, 'run-subagent-shared.mjs');
+          fs.writeFileSync(callerPath, '', 'utf8');
+          fs.mkdirSync(servicesDir);
+          fs.writeFileSync(companionPath, '', 'utf8');
 
-    expect(
-      resolveRunCompanionModulePath({
-        callerImportMetaUrl: pathToFileURL(callerPath).href,
-        execPath: '/tmp/composio',
-        relativeNoExtensionFromCaller: '../services/run-subagent-shared',
-      })
-    ).toBe(companionPath);
-  });
+          expect(
+            yield* resolveRunCompanionModulePath({
+              callerImportMetaUrl: pathToFileURL(callerPath).href,
+              execPath: '/tmp/composio',
+              relativeNoExtensionFromCaller: '../services/run-subagent-shared',
+            })
+          ).toBe(companionPath);
+        })
+    );
 
-  it('[Given] a compiled bunfs caller [Then] it falls back to modules next to the binary', () => {
-    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'composio-run-companion-bin-'));
-    const execPath = path.join(tempDir, 'composio');
-    const companionPath = path.join(tempDir, 'run-subagent-shared.mjs');
-    fs.writeFileSync(companionPath, '', 'utf8');
+    it.effect(
+      '[Given] a compiled bunfs caller [Then] it falls back to modules next to the binary',
+      () =>
+        Effect.gen(function* () {
+          const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'composio-run-companion-bin-'));
+          const execPath = path.join(tempDir, 'composio');
+          const companionPath = path.join(tempDir, 'run-subagent-shared.mjs');
+          fs.writeFileSync(companionPath, '', 'utf8');
 
-    expect(
-      resolveRunCompanionModulePath({
-        callerImportMetaUrl: 'file:///$bunfs/root/commands.mjs',
-        execPath,
-        relativeNoExtensionFromCaller: '../services/run-subagent-shared',
-      })
-    ).toBe(companionPath);
+          expect(
+            yield* resolveRunCompanionModulePath({
+              callerImportMetaUrl: 'file:///$bunfs/root/commands.mjs',
+              execPath,
+              relativeNoExtensionFromCaller: '../services/run-subagent-shared',
+            })
+          ).toBe(companionPath);
+        })
+    );
   });
 });
 
 describe('run companion install metadata', () => {
-  it('[Given] an installed release tag file [Then] run helpers can read it back from the install dir', () => {
-    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'composio-run-release-tag-'));
-    const execPath = path.join(tempDir, 'composio');
+  layer(BunContext.layer)(it => {
+    it.effect(
+      '[Given] an installed release tag file [Then] run helpers can read it back from the install dir',
+      () =>
+        Effect.gen(function* () {
+          const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'composio-run-release-tag-'));
+          const execPath = path.join(tempDir, 'composio');
 
-    writeInstalledReleaseTag(tempDir, '@composio/cli@0.2.12');
+          yield* writeInstalledReleaseTag(tempDir, '@composio/cli@0.2.12');
 
-    expect(readInstalledReleaseTag(execPath)).toBe('@composio/cli@0.2.12');
-  });
-
-  it('[Given] a partial companion install [Then] it reports only the missing companion files', () => {
-    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'composio-run-missing-'));
-    const execPath = path.join(tempDir, 'composio');
-    fs.writeFileSync(path.join(tempDir, RUN_COMPANION_MODULE_FILENAMES[0]!), '', 'utf8');
-
-    expect(listMissingInstalledRunCompanionModules(execPath)).toEqual(
-      [...RUN_COMPANION_MODULE_FILENAMES.slice(1), ...RUN_COMPANION_STATIC_ASSET_RELATIVE_PATHS]
-        .slice()
-        .sort()
-    );
-  });
-
-  it('[Given] a nested companion dependency is missing [Then] it reports the missing helper asset', () => {
-    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'composio-run-missing-nested-'));
-    const execPath = path.join(tempDir, 'composio');
-    const servicesDir = path.join(tempDir, 'services');
-    fs.mkdirSync(servicesDir, { recursive: true });
-
-    fs.writeFileSync(
-      path.join(tempDir, 'run-helpers-runtime.mjs'),
-      'export * from "./services/run-helpers-runtime.mjs";\n',
-      'utf8'
-    );
-    fs.writeFileSync(
-      path.join(tempDir, 'run-subagent-shared.mjs'),
-      'export * from "./services/run-subagent-shared.mjs";\n',
-      'utf8'
-    );
-    fs.writeFileSync(
-      path.join(tempDir, 'run-subagent-acp.mjs'),
-      'export * from "./services/run-subagent-acp.mjs";\n',
-      'utf8'
-    );
-    fs.writeFileSync(
-      path.join(tempDir, 'run-subagent-legacy.mjs'),
-      'export * from "./services/run-subagent-legacy.mjs";\n',
-      'utf8'
-    );
-    fs.writeFileSync(
-      path.join(tempDir, 'run-subagent-output-mcp.mjs'),
-      'export * from "./services/run-subagent-output-mcp.mjs";\n',
-      'utf8'
+          expect(yield* readInstalledReleaseTag(execPath)).toBe('@composio/cli@0.2.12');
+        })
     );
 
-    fs.writeFileSync(
-      path.join(servicesDir, 'run-helpers-runtime.mjs'),
-      'export const runtimeValue = 1;\n',
-      'utf8'
-    );
-    fs.writeFileSync(
-      path.join(servicesDir, 'run-subagent-shared.mjs'),
-      'export const x = 1;\n',
-      'utf8'
-    );
-    fs.writeFileSync(
-      path.join(servicesDir, 'run-subagent-acp.mjs'),
-      'export * from "../run-companion-modules-abc123.mjs";\n',
-      'utf8'
-    );
-    fs.writeFileSync(
-      path.join(servicesDir, 'run-subagent-legacy.mjs'),
-      'export const y = 1;\n',
-      'utf8'
-    );
-    fs.writeFileSync(
-      path.join(servicesDir, 'run-subagent-output-mcp.mjs'),
-      'export const z = 1;\n',
-      'utf8'
+    it.effect(
+      '[Given] a partial companion install [Then] it reports only the missing companion files',
+      () =>
+        Effect.gen(function* () {
+          const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'composio-run-missing-'));
+          const execPath = path.join(tempDir, 'composio');
+          fs.writeFileSync(path.join(tempDir, RUN_COMPANION_MODULE_FILENAMES[0]!), '', 'utf8');
+
+          expect(yield* listMissingInstalledRunCompanionModules(execPath)).toEqual(
+            [
+              ...RUN_COMPANION_MODULE_FILENAMES.slice(1),
+              ...RUN_COMPANION_STATIC_ASSET_RELATIVE_PATHS,
+            ]
+              .slice()
+              .sort()
+          );
+        })
     );
 
-    expect(listMissingInstalledRunCompanionModules(execPath)).toContain(
-      'run-companion-modules-abc123.mjs'
-    );
-  });
+    it.effect(
+      '[Given] a nested companion dependency is missing [Then] it reports the missing helper asset',
+      () =>
+        Effect.gen(function* () {
+          const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'composio-run-missing-nested-'));
+          const execPath = path.join(tempDir, 'composio');
+          const servicesDir = path.join(tempDir, 'services');
+          fs.mkdirSync(servicesDir, { recursive: true });
 
-  it('[Given] a named re-export dependency is missing [Then] it reports the missing helper asset', () => {
-    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'composio-run-missing-reexport-'));
-    const execPath = path.join(tempDir, 'composio');
-    const servicesDir = path.join(tempDir, 'services');
-    fs.mkdirSync(servicesDir, { recursive: true });
+          fs.writeFileSync(
+            path.join(tempDir, 'run-helpers-runtime.mjs'),
+            'export * from "./services/run-helpers-runtime.mjs";\n',
+            'utf8'
+          );
+          fs.writeFileSync(
+            path.join(tempDir, 'run-subagent-shared.mjs'),
+            'export * from "./services/run-subagent-shared.mjs";\n',
+            'utf8'
+          );
+          fs.writeFileSync(
+            path.join(tempDir, 'run-subagent-acp.mjs'),
+            'export * from "./services/run-subagent-acp.mjs";\n',
+            'utf8'
+          );
+          fs.writeFileSync(
+            path.join(tempDir, 'run-subagent-legacy.mjs'),
+            'export * from "./services/run-subagent-legacy.mjs";\n',
+            'utf8'
+          );
+          fs.writeFileSync(
+            path.join(tempDir, 'run-subagent-output-mcp.mjs'),
+            'export * from "./services/run-subagent-output-mcp.mjs";\n',
+            'utf8'
+          );
 
-    fs.writeFileSync(
-      path.join(tempDir, 'run-helpers-runtime.mjs'),
-      'export * from "./services/run-helpers-runtime.mjs";\n',
-      'utf8'
-    );
-    fs.writeFileSync(
-      path.join(tempDir, 'run-subagent-shared.mjs'),
-      'export * from "./services/run-subagent-shared.mjs";\n',
-      'utf8'
-    );
-    fs.writeFileSync(
-      path.join(tempDir, 'run-subagent-acp.mjs'),
-      'export * from "./services/run-subagent-acp.mjs";\n',
-      'utf8'
-    );
-    fs.writeFileSync(
-      path.join(tempDir, 'run-subagent-legacy.mjs'),
-      'export * from "./services/run-subagent-legacy.mjs";\n',
-      'utf8'
-    );
-    fs.writeFileSync(
-      path.join(tempDir, 'run-subagent-output-mcp.mjs'),
-      'export * from "./services/run-subagent-output-mcp.mjs";\n',
-      'utf8'
+          fs.writeFileSync(
+            path.join(servicesDir, 'run-helpers-runtime.mjs'),
+            'export const runtimeValue = 1;\n',
+            'utf8'
+          );
+          fs.writeFileSync(
+            path.join(servicesDir, 'run-subagent-shared.mjs'),
+            'export const x = 1;\n',
+            'utf8'
+          );
+          fs.writeFileSync(
+            path.join(servicesDir, 'run-subagent-acp.mjs'),
+            'export * from "../run-companion-modules-abc123.mjs";\n',
+            'utf8'
+          );
+          fs.writeFileSync(
+            path.join(servicesDir, 'run-subagent-legacy.mjs'),
+            'export const y = 1;\n',
+            'utf8'
+          );
+          fs.writeFileSync(
+            path.join(servicesDir, 'run-subagent-output-mcp.mjs'),
+            'export const z = 1;\n',
+            'utf8'
+          );
+
+          expect(yield* listMissingInstalledRunCompanionModules(execPath)).toContain(
+            'run-companion-modules-abc123.mjs'
+          );
+        })
     );
 
-    fs.writeFileSync(
-      path.join(servicesDir, 'run-helpers-runtime.mjs'),
-      'export const runtimeValue = 1;\n',
-      'utf8'
-    );
-    fs.writeFileSync(
-      path.join(servicesDir, 'run-subagent-shared.mjs'),
-      'export const sharedValue = 1;\n',
-      'utf8'
-    );
-    fs.writeFileSync(
-      path.join(servicesDir, 'run-subagent-acp.mjs'),
-      'export { helperValue } from "../run-companion-modules-def456.mjs";\n',
-      'utf8'
-    );
-    fs.writeFileSync(
-      path.join(servicesDir, 'run-subagent-legacy.mjs'),
-      'export const legacyValue = 1;\n',
-      'utf8'
-    );
-    fs.writeFileSync(
-      path.join(servicesDir, 'run-subagent-output-mcp.mjs'),
-      'export const outputValue = 1;\n',
-      'utf8'
-    );
+    it.effect(
+      '[Given] a named re-export dependency is missing [Then] it reports the missing helper asset',
+      () =>
+        Effect.gen(function* () {
+          const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'composio-run-missing-reexport-'));
+          const execPath = path.join(tempDir, 'composio');
+          const servicesDir = path.join(tempDir, 'services');
+          fs.mkdirSync(servicesDir, { recursive: true });
 
-    expect(listMissingInstalledRunCompanionModules(execPath)).toContain(
-      'run-companion-modules-def456.mjs'
+          fs.writeFileSync(
+            path.join(tempDir, 'run-helpers-runtime.mjs'),
+            'export * from "./services/run-helpers-runtime.mjs";\n',
+            'utf8'
+          );
+          fs.writeFileSync(
+            path.join(tempDir, 'run-subagent-shared.mjs'),
+            'export * from "./services/run-subagent-shared.mjs";\n',
+            'utf8'
+          );
+          fs.writeFileSync(
+            path.join(tempDir, 'run-subagent-acp.mjs'),
+            'export * from "./services/run-subagent-acp.mjs";\n',
+            'utf8'
+          );
+          fs.writeFileSync(
+            path.join(tempDir, 'run-subagent-legacy.mjs'),
+            'export * from "./services/run-subagent-legacy.mjs";\n',
+            'utf8'
+          );
+          fs.writeFileSync(
+            path.join(tempDir, 'run-subagent-output-mcp.mjs'),
+            'export * from "./services/run-subagent-output-mcp.mjs";\n',
+            'utf8'
+          );
+
+          fs.writeFileSync(
+            path.join(servicesDir, 'run-helpers-runtime.mjs'),
+            'export const runtimeValue = 1;\n',
+            'utf8'
+          );
+          fs.writeFileSync(
+            path.join(servicesDir, 'run-subagent-shared.mjs'),
+            'export const sharedValue = 1;\n',
+            'utf8'
+          );
+          fs.writeFileSync(
+            path.join(servicesDir, 'run-subagent-acp.mjs'),
+            'export { helperValue } from "../run-companion-modules-def456.mjs";\n',
+            'utf8'
+          );
+          fs.writeFileSync(
+            path.join(servicesDir, 'run-subagent-legacy.mjs'),
+            'export const legacyValue = 1;\n',
+            'utf8'
+          );
+          fs.writeFileSync(
+            path.join(servicesDir, 'run-subagent-output-mcp.mjs'),
+            'export const outputValue = 1;\n',
+            'utf8'
+          );
+
+          expect(yield* listMissingInstalledRunCompanionModules(execPath)).toContain(
+            'run-companion-modules-def456.mjs'
+          );
+        })
     );
   });
 });

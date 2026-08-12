@@ -1,9 +1,11 @@
+// eslint-disable-next-line no-restricted-imports -- synchronous fs (mkdtempSync/writeFileSync/rmSync/existsSync) builds and tears down the run preload files in plain helpers that execute outside the Effect runtime
 import * as fs from 'node:fs';
+// eslint-disable-next-line no-restricted-imports -- os.tmpdir and os.homedir locate the preload scratch directory and ~/.composio in the same synchronous helpers
 import * as os from 'node:os';
-import * as path from 'node:path';
 import process from 'node:process';
 import { pathToFileURL } from 'node:url';
 import { Args, Command, Options } from '@effect/cli';
+import { FileSystem, Path } from '@effect/platform';
 import { Effect, Option } from 'effect';
 import { ts } from 'ts-morph';
 import { APP_VERSION } from 'src/constants';
@@ -22,6 +24,7 @@ import {
   resolveCliSessionArtifacts,
 } from 'src/services/cli-session-artifacts';
 import { USER_COMPOSIO_DIR } from 'src/constants';
+import { TerminalUI } from 'src/services/terminal-ui';
 
 const file = Options.text('file').pipe(
   Options.withAlias('f'),
@@ -147,6 +150,7 @@ export const wrapFileSourceForRun = (source: string): string => {
 };
 
 export const inferCliInvocationPrefix = (
+  path: Path.Path,
   argv: ReadonlyArray<string> = process.argv
 ): ReadonlyArray<string> => {
   const entrypoint = argv[1];
@@ -171,19 +175,22 @@ type RunHelperModuleUrls = {
   readonly helpersRuntimeModuleUrl: string;
 };
 
-const resolveRunHelperModuleUrls = (): RunHelperModuleUrls => ({
-  helpersRuntimeModuleUrl: pathToFileURL(
-    resolveRunCompanionModulePath({
-      callerImportMetaUrl: import.meta.url,
-      execPath: process.execPath,
-      relativeNoExtensionFromCaller: '../services/run-helpers-runtime',
-    })
-  ).href,
-});
+const resolveRunHelperModuleUrls: Effect.Effect<
+  RunHelperModuleUrls,
+  never,
+  FileSystem.FileSystem | Path.Path
+> = Effect.map(
+  resolveRunCompanionModulePath({
+    callerImportMetaUrl: import.meta.url,
+    execPath: process.execPath,
+    relativeNoExtensionFromCaller: '../services/run-helpers-runtime',
+  }),
+  modulePath => ({ helpersRuntimeModuleUrl: pathToFileURL(modulePath).href })
+);
 export const buildRunHelpersSource = (
   cliPrefix: ReadonlyArray<string>,
   context: RunHelperContext = {},
-  moduleUrls: RunHelperModuleUrls = resolveRunHelperModuleUrls()
+  moduleUrls: RunHelperModuleUrls
 ): string =>
   [
     `import { installRunHelpers } from ${JSON.stringify(moduleUrls.helpersRuntimeModuleUrl)};`,
@@ -192,6 +199,7 @@ export const buildRunHelpersSource = (
   ].join('\n');
 
 const createRunHelpersPreloadFile = (
+  path: Path.Path,
   cliPrefix: ReadonlyArray<string>,
   context: RunHelperContext,
   moduleUrls: RunHelperModuleUrls
@@ -231,11 +239,13 @@ const createRunHelpersPreloadFile = (
 };
 
 export const buildRunCommand = ({
+  path,
   file,
   args,
   preloadPath,
   preloadDirectory,
 }: {
+  path: Path.Path;
   file: Option.Option<string>;
   args: ReadonlyArray<string>;
   preloadPath: string;
@@ -285,11 +295,13 @@ export const buildRunCommand = ({
 
 const resolveRunHelperContext = () =>
   Effect.gen(function* () {
+    const path = yield* Path.Path;
     const userContext = yield* ComposioUserContext;
     const apiKey = Option.getOrUndefined(userContext.data.apiKey);
     const orgId = Option.getOrUndefined(userContext.data.orgId);
     const defaultComposioDir = path.join(os.homedir(), USER_COMPOSIO_DIR);
     const configuredCacheDir =
+      // eslint-disable-next-line eslint-js/no-restricted-syntax -- honors the same COMPOSIO_CACHE_DIR/CACHE_DIR overrides the run-helpers child runtime reads, so the sandbox read roots match the child's cache location
       process.env.COMPOSIO_CACHE_DIR?.trim() || process.env.CACHE_DIR?.trim() || defaultComposioDir;
     const baseReadAccessRoots = [
       ...new Set([defaultComposioDir, configuredCacheDir].map(value => path.resolve(value))),
@@ -417,9 +429,12 @@ export const runCmd = Command.make('run', {
       args,
     }) =>
       Effect.gen(function* () {
+        const path = yield* Path.Path;
+        // eslint-disable-next-line eslint-js/no-restricted-syntax -- reuses the run ID a parent `composio run` process passed via env so nested runs share one run identity
         const runId = process.env.COMPOSIO_CLI_PARENT_RUN_ID ?? crypto.randomUUID();
         const perfDebug = isPerfDebugEnabled();
         const toolDebug = isToolDebugEnabled();
+        // eslint-disable-next-line eslint-js/no-restricted-syntax -- reads the COMPOSIO_RUN_ACP_ONLY flag a parent process sets to force the ACP-only subagent path in the child run
         const acpOnly = process.env.COMPOSIO_RUN_ACP_ONLY === '1';
         if (Option.isNone(file)) {
           const [inlineCode] = args;
@@ -446,29 +461,23 @@ export const runCmd = Command.make('run', {
           skipToolParamsCheck,
           skipChecks,
         };
-        const runHelperModuleUrls = yield* Effect.tryPromise({
-          try: async () => {
-            await repairMissingInstalledRunCompanionModules({
-              callerImportMetaUrl: import.meta.url,
-              execPath: process.execPath,
-              appVersion: APP_VERSION,
-            });
-
-            return resolveRunHelperModuleUrls();
-          },
-          catch: error =>
-            new Error(
-              error instanceof Error
-                ? error.message
-                : `Failed to prepare the modules required by 'composio run': ${String(error)}`
-            ),
-        });
+        const runHelperModuleUrls = yield* repairMissingInstalledRunCompanionModules({
+          callerImportMetaUrl: import.meta.url,
+          execPath: process.execPath,
+          appVersion: APP_VERSION,
+        }).pipe(
+          Effect.mapError(error => new Error(error.message)),
+          Effect.andThen(resolveRunHelperModuleUrls)
+        );
         const preload = createRunHelpersPreloadFile(
-          inferCliInvocationPrefix(),
+          path,
+          inferCliInvocationPrefix(path),
           helperContext,
           runHelperModuleUrls
         );
+        const ui = yield* TerminalUI;
         let cleanupPaths: ReadonlyArray<string> = [];
+        // eslint-disable-next-line eslint-js/no-restricted-syntax -- try/finally removes the temp preload and wrapper files around the imperative Bun.spawn block, whose success path ends in process.exit
         try {
           yield* appendCliSessionHistory({
             orgId: helperContext.orgId,
@@ -481,8 +490,9 @@ export const runCmd = Command.make('run', {
               debug,
             },
           }).pipe(Effect.catchAll(() => Effect.void));
-          process.stderr.write(`RUN_LOG_FILE=${preload.runLogFilePath}\n`);
+          yield* ui.error(`RUN_LOG_FILE=${preload.runLogFilePath}`);
           const runCommand = buildRunCommand({
+            path,
             file,
             args,
             preloadPath: preload.preloadPath,
@@ -492,6 +502,7 @@ export const runCmd = Command.make('run', {
           const child = Bun.spawn({
             cmd: runCommand.cmd,
             env: {
+              // eslint-disable-next-line eslint-js/no-restricted-syntax -- spreads the caller's full environment into the spawned script so user-provided variables reach the child process
               ...process.env,
               BUN_BE_BUN: '1',
               COMPOSIO_CLI_PARENT_RUN_ID: runId,

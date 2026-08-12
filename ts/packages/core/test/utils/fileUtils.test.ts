@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach, Mock } from 'vitest';
 import * as path from 'node:path';
 import { getFileDataAfterUploadingToS3, downloadFileFromS3 } from '../../src/utils/fileUtils.node';
 import ComposioClient from '@composio/client';
@@ -53,6 +53,12 @@ vi.mock('node:dns/promises', () => ({
 const mockFetch = vi.fn();
 global.fetch = mockFetch;
 
+const fetchedFileResponse = (contentType: string = 'application/pdf') =>
+  new Response(new Uint8Array(10), {
+    status: 200,
+    headers: { 'content-type': contentType },
+  });
+
 describe('fileUtils', () => {
   let mockClient: ComposioClient;
 
@@ -76,14 +82,10 @@ describe('fileUtils', () => {
   describe('URL filename generation with query parameters', () => {
     beforeEach(() => {
       // Mock successful fetch response
-      mockFetch.mockResolvedValue({
-        ok: true,
-        arrayBuffer: () => Promise.resolve(new ArrayBuffer(10)),
-        headers: new Map([['content-type', 'application/pdf']]),
-      });
+      mockFetch.mockResolvedValue(fetchedFileResponse());
 
       // Mock successful S3 upload
-      (mockClient.files.createPresignedURL as any).mockResolvedValue({
+      (mockClient.files.createPresignedURL as unknown as Mock).mockResolvedValue({
         key: 'test-key',
         type: 'new',
         new_presigned_url: 'https://s3.example.com/upload',
@@ -95,11 +97,7 @@ describe('fileUtils', () => {
           return Promise.resolve({ ok: true });
         }
         // For the initial file fetch
-        return Promise.resolve({
-          ok: true,
-          arrayBuffer: () => Promise.resolve(new ArrayBuffer(10)),
-          headers: new Map([['content-type', 'application/pdf']]),
-        });
+        return Promise.resolve(fetchedFileResponse());
       });
     });
 
@@ -155,6 +153,29 @@ describe('fileUtils', () => {
 
       expect(result.name).toBe('file_ts1640995200000abc12345.pdf');
     });
+
+    it('should reject an oversized URL response before requesting an upload URL', async () => {
+      mockFetch.mockReset();
+      mockFetch.mockResolvedValueOnce(
+        new Response('small body', {
+          status: 200,
+          headers: {
+            'content-type': 'application/pdf',
+            'content-length': String(100 * 1024 * 1024 + 1),
+          },
+        })
+      );
+
+      await expect(
+        getFileDataAfterUploadingToS3('https://example.com/oversized.pdf', {
+          toolSlug: 'test-tool',
+          toolkitSlug: 'test-toolkit',
+          client: mockClient,
+        })
+      ).rejects.toThrow('exceeds maximum allowed size');
+
+      expect(mockClient.files.createPresignedURL).not.toHaveBeenCalled();
+    });
   });
 
   describe('MIME type extension handling', () => {
@@ -175,14 +196,10 @@ describe('fileUtils', () => {
         vi.clearAllMocks();
 
         // Mock successful fetch response
-        mockFetch.mockResolvedValueOnce({
-          ok: true,
-          arrayBuffer: () => Promise.resolve(new ArrayBuffer(10)),
-          headers: new Map([['content-type', mimeType]]),
-        });
+        mockFetch.mockResolvedValueOnce(fetchedFileResponse(mimeType));
 
         // Mock successful S3 upload
-        (mockClient.files.createPresignedURL as any).mockResolvedValueOnce({
+        (mockClient.files.createPresignedURL as unknown as Mock).mockResolvedValueOnce({
           key: 'test-key',
           type: 'new',
           new_presigned_url: 'https://s3.example.com/upload',
@@ -205,14 +222,10 @@ describe('fileUtils', () => {
       // Reset mocks
       vi.clearAllMocks();
 
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        arrayBuffer: () => Promise.resolve(new ArrayBuffer(10)),
-        headers: new Map([['content-type', 'text/plain; charset=utf-8']]),
-      });
+      mockFetch.mockResolvedValueOnce(fetchedFileResponse('text/plain; charset=utf-8'));
 
       // Mock successful S3 upload
-      (mockClient.files.createPresignedURL as any).mockResolvedValueOnce({
+      (mockClient.files.createPresignedURL as unknown as Mock).mockResolvedValueOnce({
         key: 'test-key',
         type: 'new',
         new_presigned_url: 'https://s3.example.com/upload',
@@ -244,14 +257,10 @@ describe('fileUtils', () => {
         // Reset mocks for each iteration
         vi.clearAllMocks();
 
-        mockFetch.mockResolvedValueOnce({
-          ok: true,
-          arrayBuffer: () => Promise.resolve(new ArrayBuffer(10)),
-          headers: new Map([['content-type', mimeType]]),
-        });
+        mockFetch.mockResolvedValueOnce(fetchedFileResponse(mimeType));
 
         // Mock successful S3 upload
-        (mockClient.files.createPresignedURL as any).mockResolvedValueOnce({
+        (mockClient.files.createPresignedURL as unknown as Mock).mockResolvedValueOnce({
           key: 'test-key',
           type: 'new',
           new_presigned_url: 'https://s3.example.com/upload',
@@ -274,14 +283,10 @@ describe('fileUtils', () => {
       // Reset mocks
       vi.clearAllMocks();
 
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        arrayBuffer: () => Promise.resolve(new ArrayBuffer(10)),
-        headers: new Map([['content-type', 'application/custom-format']]),
-      });
+      mockFetch.mockResolvedValueOnce(fetchedFileResponse('application/custom-format'));
 
       // Mock successful S3 upload
-      (mockClient.files.createPresignedURL as any).mockResolvedValueOnce({
+      (mockClient.files.createPresignedURL as unknown as Mock).mockResolvedValueOnce({
         key: 'test-key',
         type: 'new',
         new_presigned_url: 'https://s3.example.com/upload',
@@ -405,7 +410,7 @@ describe('fileUtils', () => {
       vi.clearAllMocks();
 
       // Mock successful S3 upload
-      (mockClient.files.createPresignedURL as any).mockResolvedValueOnce({
+      (mockClient.files.createPresignedURL as unknown as Mock).mockResolvedValueOnce({
         key: 'test-key',
         type: 'new',
         new_presigned_url: 'https://s3.example.com/upload',
@@ -457,10 +462,12 @@ describe('fileUtils', () => {
     });
 
     it('should handle fetch errors for URLs', async () => {
-      mockFetch.mockResolvedValue({
-        ok: false,
+      const cancel = vi.fn();
+      const response = new Response(new ReadableStream({ cancel }), {
+        status: 500,
         statusText: 'Internal Server Error',
       });
+      mockFetch.mockResolvedValue(response);
 
       await expect(
         getFileDataAfterUploadingToS3('https://example.com/file.pdf', {
@@ -469,16 +476,15 @@ describe('fileUtils', () => {
           client: mockClient,
         })
       ).rejects.toThrow('Failed to fetch file: Internal Server Error');
+
+      expect(cancel).toHaveBeenCalledOnce();
+      expect(response.bodyUsed).toBe(true);
     });
 
     it('should handle S3 upload errors', async () => {
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        arrayBuffer: () => Promise.resolve(new ArrayBuffer(10)),
-        headers: new Map([['content-type', 'application/pdf']]),
-      });
+      mockFetch.mockResolvedValueOnce(fetchedFileResponse());
 
-      (mockClient.files.createPresignedURL as any).mockResolvedValue({
+      (mockClient.files.createPresignedURL as unknown as Mock).mockResolvedValue({
         key: 'test-key',
         type: 'new',
         new_presigned_url: 'https://s3.example.com/upload',
@@ -501,7 +507,7 @@ describe('fileUtils', () => {
 
     it('should handle invalid file types', async () => {
       await expect(
-        getFileDataAfterUploadingToS3(123 as any, {
+        getFileDataAfterUploadingToS3(123 as unknown as string, {
           toolSlug: 'test-tool',
           toolkitSlug: 'test-toolkit',
           client: mockClient,

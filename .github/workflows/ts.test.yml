@@ -4,20 +4,28 @@ on:
   push:
     branches: [master, next]
     paths:
+      - '.changeset/**'
       - 'ts/**'
       - '.github/actions/setup-node-pnpm-bun/action.yml'
+      - '.github/workflows/ts.release.yml'
       - '.github/workflows/ts.test.yml'
       - 'mise.toml'
       - 'mise.lock'
+      - 'package.json'
+      - 'test/release-workflow.test.ts'
       - 'turbo.jsonc'
   pull_request:
     branches: [master, next]
     paths:
+      - '.changeset/**'
       - 'ts/**'
       - '.github/actions/setup-node-pnpm-bun/action.yml'
+      - '.github/workflows/ts.release.yml'
       - '.github/workflows/ts.test.yml'
       - 'mise.toml'
       - 'mise.lock'
+      - 'package.json'
+      - 'test/release-workflow.test.ts'
       - 'turbo.jsonc'
 
 concurrency:
@@ -34,7 +42,7 @@ jobs:
 
     steps:
       - name: Checkout Code
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Setup Node.js, pnpm, Bun
         uses: ./.github/actions/setup-node-pnpm-bun

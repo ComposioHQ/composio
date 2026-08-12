@@ -1,5 +1,5 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { Tool } from '@composio/core';
+import { describe, it, expect, vi, beforeEach, type Mock } from 'vitest';
+import { Tool, GlobalExecuteToolFn } from '@composio/core';
 import { ClaudeAgentSDKProvider } from '../src';
 
 // Mock the claude-agent-sdk module
@@ -24,15 +24,46 @@ import { tool } from '@anthropic-ai/claude-agent-sdk';
 interface MockedClaudeAgentTool {
   name: string;
   description: string;
-  schema: any;
+  schema: unknown;
   handler: Function;
   _isMockedClaudeAgentTool: boolean;
 }
 
+// Minimal structural type for the complete Zod object schema the provider registers, matching
+// only the member these tests dereference (`safeParse`).
+type MinimalZodSchema = {
+  safeParse: (value: unknown) => { success: boolean };
+};
+
+// The handler captured off the mocked `tool()` call. Some tests intentionally pass a raw
+// (possibly malformed) JSON string instead of an object to exercise the stringified-input
+// normalization path (issue #2406), so the parameter is typed `unknown` here rather than the
+// stricter `Record<string, unknown>` used by the real `wrapTool` handler signature.
+type MockedToolHandler = (
+  args: unknown
+) => Promise<{ content: Array<{ type: string; text: string }> }>;
+
+type MockedToolFn = Mock<
+  (
+    name: string,
+    description: string | undefined,
+    schema: MinimalZodSchema,
+    handler: MockedToolHandler
+  ) => unknown
+>;
+
+// `mockExecuteToolFn` is declared against the real `GlobalExecuteToolFn` contract, which always
+// resolves with a `ToolExecuteResponse`. A couple of tests deliberately stub it with a plain
+// string / `undefined` to exercise the wrapTool handler's defensive "stringify anything" branch,
+// so those specific stubbing calls need a widened, minimal view of just the method they use.
+type MockResolvableWithAnyValue = {
+  mockResolvedValueOnce: (value: unknown) => void;
+};
+
 describe('ClaudeAgentSDKProvider', () => {
   let provider: ClaudeAgentSDKProvider;
   let mockTool: Tool;
-  let mockExecuteToolFn: any;
+  let mockExecuteToolFn: Mock<GlobalExecuteToolFn>;
 
   beforeEach(() => {
     provider = new ClaudeAgentSDKProvider();
@@ -108,13 +139,21 @@ describe('ClaudeAgentSDKProvider', () => {
       expect(wrapped.description).toBe(mockTool.description);
     });
 
-    it('should pass a raw Zod shape to the Claude Agent SDK', () => {
+    it('should pass a complete Zod object schema to the Claude Agent SDK', () => {
+      // A raw property shape drops every root-level constraint, so the provider registers the
+      // whole object schema instead. See claude-agent-sdk.registration.test.ts for what that
+      // buys at the real SDK boundary.
       provider.wrapTool(mockTool, mockExecuteToolFn);
 
-      const schemaShape = (tool as any).mock.calls[0][2];
-      expect(Object.keys(schemaShape)).toEqual(['to', 'subject', 'body']);
-      expect(schemaShape.to.safeParse('test@example.com').success).toBe(true);
-      expect(schemaShape.to.safeParse(123).success).toBe(false);
+      const schema = (tool as unknown as MockedToolFn).mock.calls[0][2];
+      expect(schema.safeParse({ to: 'test@example.com', subject: 's', body: 'b' }).success).toBe(
+        true
+      );
+      expect(schema.safeParse({ to: 123, subject: 's', body: 'b' }).success).toBe(false);
+      // The root is strict: `additionalProperties` is omitted on a named-properties schema.
+      expect(
+        schema.safeParse({ to: 'test@example.com', subject: 's', body: 'b', extra: 'x' }).success
+      ).toBe(false);
     });
 
     it('should handle tools without input parameters', () => {
@@ -161,7 +200,7 @@ describe('ClaudeAgentSDKProvider', () => {
       provider.wrapTool(mockTool, mockExecuteToolFn);
 
       // Extract the handler function from the call to tool()
-      const handler = (tool as any).mock.calls[0][3];
+      const handler = (tool as unknown as MockedToolFn).mock.calls[0][3];
 
       // Test the handler
       const params = { to: 'test@example.com', subject: 'Test', body: 'Hello' };
@@ -184,7 +223,7 @@ describe('ClaudeAgentSDKProvider', () => {
 
     it('should normalize a stringified-JSON input to an object before executing (issue #2406)', async () => {
       provider.wrapTool(mockTool, mockExecuteToolFn);
-      const handler = (tool as any).mock.calls[0][3];
+      const handler = (tool as unknown as MockedToolFn).mock.calls[0][3];
 
       const params = { to: 'test@example.com', subject: 'Test', body: 'Hello' };
       await handler(JSON.stringify(params));
@@ -194,7 +233,7 @@ describe('ClaudeAgentSDKProvider', () => {
 
     it('should surface a typed error for a malformed-JSON string input (issue #2406)', async () => {
       provider.wrapTool(mockTool, mockExecuteToolFn);
-      const handler = (tool as any).mock.calls[0][3];
+      const handler = (tool as unknown as MockedToolFn).mock.calls[0][3];
 
       const result = await handler('{"to":');
 
@@ -206,10 +245,12 @@ describe('ClaudeAgentSDKProvider', () => {
     });
 
     it('should handle string results from tool execution', async () => {
-      mockExecuteToolFn.mockResolvedValueOnce('Simple string result');
+      (mockExecuteToolFn as unknown as MockResolvableWithAnyValue).mockResolvedValueOnce(
+        'Simple string result'
+      );
       provider.wrapTool(mockTool, mockExecuteToolFn);
 
-      const handler = (tool as any).mock.calls[0][3];
+      const handler = (tool as unknown as MockedToolFn).mock.calls[0][3];
       const result = await handler({ to: 'test@example.com', subject: 'Test', body: 'Hello' });
 
       expect(result).toEqual({
@@ -223,10 +264,10 @@ describe('ClaudeAgentSDKProvider', () => {
     });
 
     it('should handle undefined results from tool execution and convert to "null" string', async () => {
-      mockExecuteToolFn.mockResolvedValueOnce(undefined);
+      (mockExecuteToolFn as unknown as MockResolvableWithAnyValue).mockResolvedValueOnce(undefined);
       provider.wrapTool(mockTool, mockExecuteToolFn);
 
-      const handler = (tool as any).mock.calls[0][3];
+      const handler = (tool as unknown as MockedToolFn).mock.calls[0][3];
       const result = await handler({ to: 'test@example.com', subject: 'Test', body: 'Hello' });
 
       // text should always be a string, never undefined
@@ -239,7 +280,7 @@ describe('ClaudeAgentSDKProvider', () => {
       mockExecuteToolFn.mockRejectedValueOnce(testError);
       provider.wrapTool(mockTool, mockExecuteToolFn);
 
-      const handler = (tool as any).mock.calls[0][3];
+      const handler = (tool as unknown as MockedToolFn).mock.calls[0][3];
       const result = await handler({ to: 'test@example.com', subject: 'Test', body: 'Hello' });
 
       expect(result.content[0].type).toBe('text');

@@ -22,7 +22,8 @@
       "#config_defaults": [
         "./src/utils/config-defaults/ConfigDefaults.node.ts",
         "./src/utils/config-defaults/ConfigDefaults.workerd.ts"
-      ]
+      ],
+      "#ssrf_guard": ["./src/utils/ssrfGuard.node.ts", "./src/utils/ssrfGuard.workerd.ts"]
     }
   },
   "include": ["src/**/*.ts"]

@@ -1,7 +1,58 @@
 import process from 'node:process';
+import type { Writable } from 'node:stream';
 import * as p from '@clack/prompts';
 import { Context, Effect, Exit, Layer } from 'effect';
-import { canRenderTerminalDecoration, isInteractiveTerminal } from 'src/utils/stdio';
+
+export type TtyLikeStream = {
+  readonly isTTY?: boolean;
+};
+
+export type TerminalStdio = {
+  readonly stdin: TtyLikeStream;
+  readonly stdout: TtyLikeStream;
+  readonly stderr: TtyLikeStream;
+};
+
+/**
+ * Per-stream terminal capabilities.
+ *
+ * The three streams are independent contracts, so each derived capability
+ * depends only on the streams that actually serve it:
+ *
+ * - `canPrompt` — stdin must accept human input and stderr must display the
+ *   Clack prompt. stdout is irrelevant: piping data must not change prompting
+ *   or authentication behavior.
+ * - `canDecorate` — decoration (spinners, logs, notes) renders on stderr, so it
+ *   only needs stderr.
+ * - machine output — `TerminalUI.output()` consults `stdoutIsTTY` alone.
+ *
+ * There is deliberately no aggregate "interactive" flag: it conflated these
+ * concerns and let output routing change program behavior.
+ */
+export type TerminalCapabilities = {
+  readonly stdinIsTTY: boolean;
+  readonly stdoutIsTTY: boolean;
+  readonly stderrIsTTY: boolean;
+  /** Whether Clack prompts can run (`stdinIsTTY && stderrIsTTY`). */
+  readonly canPrompt: boolean;
+  /** Whether stderr decoration can render (`stderrIsTTY`). */
+  readonly canDecorate: boolean;
+};
+
+/** Classify terminal streams without coupling callers or tests to Node globals. */
+export const getTerminalCapabilities = (stdio: TerminalStdio): TerminalCapabilities => {
+  const stdinIsTTY = Boolean(stdio.stdin.isTTY);
+  const stdoutIsTTY = Boolean(stdio.stdout.isTTY);
+  const stderrIsTTY = Boolean(stdio.stderr.isTTY);
+
+  return {
+    stdinIsTTY,
+    stdoutIsTTY,
+    stderrIsTTY,
+    canPrompt: stdinIsTTY && stderrIsTTY,
+    canDecorate: stderrIsTTY,
+  };
+};
 
 // ---------------------------------------------------------------------------
 // SpinnerHandle — returned by `useMakeSpinner` for manual control
@@ -21,17 +72,30 @@ export interface SpinnerHandle {
 // ---------------------------------------------------------------------------
 
 export interface TerminalUI {
+  /** Capabilities of the streams backing this terminal service. */
+  readonly capabilities: Effect.Effect<TerminalCapabilities>;
+
   /**
    * Write raw data to stdout for piping and scripting.
    *
    * This is the ONLY method that writes to stdout — everything else goes to stderr.
-   * When stdout is a TTY (interactive terminal), this is a no-op — the human already
+   * When stdout is a TTY (a human is watching it), this is a no-op — the human already
    * sees the data via decoration on stderr. When stdout is redirected (pipe, subshell,
-   * file), the raw value is written for machine consumption.
+   * file), the raw value is written for machine consumption. Only stdout's own TTY
+   * state participates in this decision; redirecting stdin or stderr must never make
+   * data leak onto a visible stdout terminal.
    *
    * Use this for values that scripts should capture (API keys, version strings, etc.).
    */
   readonly output: (data: string, options?: { readonly force?: boolean }) => Effect.Effect<void>;
+
+  /**
+   * Write an unformatted line to stderr even when stderr is redirected.
+   *
+   * Use this for diagnostics and protocol metadata that must survive piping.
+   * Human-facing decoration belongs in `log`, `note`, `intro`, or `outro`.
+   */
+  readonly error: (data: string) => Effect.Effect<void>;
 
   /** Display a session start marker (e.g., `┌  title`). Writes to stderr. */
   readonly intro: (title: string) => Effect.Effect<void>;
@@ -72,7 +136,7 @@ export interface TerminalUI {
 
   /**
    * Ask the user a yes/no confirmation question.
-   * In non-interactive mode (piped), returns `defaultValue` (defaults to `true`).
+   * When prompting is unavailable, returns `defaultValue` (defaults to `true`).
    */
   readonly confirm: (
     message: string,
@@ -81,7 +145,7 @@ export interface TerminalUI {
 
   /**
    * Present a single-select list to the user.
-   * In non-interactive mode (piped), returns the first option's value.
+   * When prompting is unavailable, returns the first option's value.
    */
   readonly select: <Value>(
     message: string,
@@ -108,27 +172,20 @@ export interface TerminalUI {
 export const TerminalUI = Context.GenericTag<TerminalUI>('services/TerminalUI');
 
 // ---------------------------------------------------------------------------
-// TerminalUILive — production layer using @clack/prompts
+// makeTerminalUI — build a TerminalUI from explicit streams
 // ---------------------------------------------------------------------------
 
 /**
- * Whether the CLI can prompt for human input. Human-only prompts are shown only
- * when stdin/stdout/stderr are all TTYs; agent and shell pipelines get
- * non-interactive behavior.
+ * Intentionally a Node.js Writable rather than an Effect Sink: Clack accepts
+ * Writable streams and writes to them synchronously.
  */
-const canPrompt = isInteractiveTerminal();
+type TerminalWritable = TtyLikeStream & Writable;
 
-/**
- * Whether the CLI can render auxiliary UI. Logs, notes, and spinners only need
- * stderr, so they can still be shown when stdin is redirected from /dev/null or
- * stdout is reserved for machine-readable JSON/data.
- */
-const canDecorate = canRenderTerminalDecoration();
-
-/** Run a decoration side-effect only when stderr is a terminal. */
-function decorate(fn: () => void): void {
-  if (canDecorate) fn();
-}
+type TerminalUIStreams = {
+  readonly stdin: TtyLikeStream;
+  readonly stdout: TerminalWritable;
+  readonly stderr: TerminalWritable;
+};
 
 function createClackSpinnerHandle(
   s: p.SpinnerResult,
@@ -153,118 +210,161 @@ function createClackSpinnerHandle(
   };
 }
 
-/** No-op spinner handle used when decoration is suppressed (piped mode). */
+/** No-op spinner handle used when decoration is suppressed (stderr redirected). */
 const silentSpinnerHandle: SpinnerHandle = {
   message: () => Effect.void,
   stop: () => Effect.void,
   error: () => Effect.void,
 };
 
-const makeLive: TerminalUI = {
-  output: (data, options) =>
-    Effect.sync(() => {
-      if (options?.force || !canPrompt) {
-        process.stdout.write(`${data}\n`);
+/**
+ * Build a TerminalUI backed by the given streams.
+ *
+ * Each stream governs exactly one concern:
+ * - stdin + stderr decide prompting (`canPrompt`);
+ * - stdout alone decides machine output (`output()` writes only when stdout
+ *   is not a TTY, or when `force` is set);
+ * - stderr alone decides decoration (`canDecorate`).
+ */
+export const makeTerminalUI = (streams: TerminalUIStreams): TerminalUI => {
+  const capabilities = getTerminalCapabilities(streams);
+  const { canPrompt, canDecorate, stdoutIsTTY } = capabilities;
+  const stderr = streams.stderr;
+
+  const decorate = (render: () => void): Effect.Effect<void> => {
+    if (!canDecorate) {
+      return Effect.void;
+    }
+    return Effect.sync(render);
+  };
+
+  return {
+    capabilities: Effect.succeed(capabilities),
+
+    output: (data, options) =>
+      Effect.sync(() => {
+        if (options?.force || !stdoutIsTTY) {
+          streams.stdout.write(`${data}\n`);
+        }
+      }),
+
+    error: data => Effect.sync(() => stderr.write(`${data}\n`)),
+
+    intro: title => decorate(() => p.intro(title, { output: stderr })),
+    outro: message => decorate(() => p.outro(message, { output: stderr })),
+
+    log: {
+      info: message => decorate(() => p.log.info(message, { output: stderr })),
+      success: message => decorate(() => p.log.success(message, { output: stderr })),
+      warn: message => decorate(() => p.log.warn(message, { output: stderr })),
+      error: message => decorate(() => p.log.error(message, { output: stderr })),
+      step: message => decorate(() => p.log.step(message, { output: stderr })),
+      message: message => decorate(() => p.log.message(message, { output: stderr })),
+    },
+
+    note: (message, title) =>
+      decorate(() => p.note(message, title ?? '', { format: line => line, output: stderr })),
+
+    select: ((
+      message: string,
+      options: ReadonlyArray<{ value: unknown; label: string; hint?: string }>
+    ) => {
+      if (!canPrompt) {
+        return Effect.succeed(options[0].value);
       }
-    }),
 
-  intro: title => Effect.sync(() => decorate(() => p.intro(title, { output: process.stderr }))),
-  outro: message => Effect.sync(() => decorate(() => p.outro(message, { output: process.stderr }))),
+      return Effect.promise(async () => {
+        const result = await p.select({
+          message,
+          options: [...options],
+          output: stderr,
+        });
+        // p.select returns Value | symbol (symbol on cancel)
+        if (typeof result === 'symbol') return options[0].value;
+        return result;
+      });
+    }) as TerminalUI['select'],
 
-  log: {
-    info: message =>
-      Effect.sync(() => decorate(() => p.log.info(message, { output: process.stderr }))),
-    success: message =>
-      Effect.sync(() => decorate(() => p.log.success(message, { output: process.stderr }))),
-    warn: message =>
-      Effect.sync(() => decorate(() => p.log.warn(message, { output: process.stderr }))),
-    error: message =>
-      Effect.sync(() => decorate(() => p.log.error(message, { output: process.stderr }))),
-    step: message =>
-      Effect.sync(() => decorate(() => p.log.step(message, { output: process.stderr }))),
-    message: message =>
-      Effect.sync(() => decorate(() => p.log.message(message, { output: process.stderr }))),
-  },
+    confirm: (message, options) => {
+      if (!canPrompt) {
+        return Effect.succeed(options?.defaultValue ?? true);
+      }
 
-  note: (message, title) =>
-    Effect.sync(() =>
-      decorate(() => p.note(message, title ?? '', { format: line => line, output: process.stderr }))
-    ),
+      return Effect.promise(async () => {
+        const result = await p.confirm({
+          message,
+          initialValue: options?.defaultValue ?? true,
+          output: stderr,
+        });
+        if (p.isCancel(result)) return false;
+        return result;
+      });
+    },
 
-  select: ((
-    message: string,
-    options: ReadonlyArray<{ value: unknown; label: string; hint?: string }>
-  ) =>
-    canPrompt
-      ? Effect.promise(async () => {
-          const result = await p.select({
-            message,
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            options: [...options] as any,
-            output: process.stderr,
-          });
-          // p.select returns Value | symbol (symbol on cancel)
-          if (typeof result === 'symbol') return options[0].value;
-          return result;
-        })
-      : Effect.succeed(options[0].value)) as TerminalUI['select'],
+    withSpinner: (message, effect, options) => {
+      if (!canDecorate) {
+        return effect;
+      }
 
-  confirm: (message, options) =>
-    canPrompt
-      ? Effect.promise(async () => {
-          const result = await p.confirm({
-            message,
-            initialValue: options?.defaultValue ?? true,
-            output: process.stderr,
-          });
-          // p.confirm returns boolean | symbol (symbol on cancel)
-          return typeof result === 'boolean' ? result : false;
-        })
-      : Effect.succeed(options?.defaultValue ?? true),
-
-  withSpinner: (message, effect, options) =>
-    canDecorate
-      ? Effect.acquireUseRelease(
+      return Effect.acquireUseRelease(
+        Effect.sync(() => {
+          const s = p.spinner({ output: stderr });
+          s.start(message);
+          return s;
+        }),
+        () => effect,
+        (s, exit) =>
           Effect.sync(() => {
-            const s = p.spinner({ output: process.stderr });
-            s.start(message);
-            return s;
-          }),
-          () => effect,
-          (s, exit) =>
-            Effect.sync(() => {
-              if (Exit.isSuccess(exit)) {
-                const successMsg =
-                  typeof options?.successMessage === 'function'
-                    ? options.successMessage(exit.value)
-                    : (options?.successMessage ?? message);
-                s.stop(successMsg);
-              } else {
-                s.error(options?.errorMessage ?? message);
+            if (Exit.isSuccess(exit)) {
+              let successMessage = message;
+              const configuredSuccessMessage = options?.successMessage;
+              if (typeof configuredSuccessMessage === 'function') {
+                successMessage = configuredSuccessMessage(exit.value);
+              } else if (configuredSuccessMessage !== undefined) {
+                successMessage = configuredSuccessMessage;
               }
-            })
-        )
-      : effect,
+              s.stop(successMessage);
+            } else {
+              s.error(options?.errorMessage ?? message);
+            }
+          })
+      );
+    },
 
-  useMakeSpinner: (message, use) =>
-    canDecorate
-      ? Effect.acquireUseRelease(
+    useMakeSpinner: (message, use) => {
+      if (!canDecorate) {
+        return use(silentSpinnerHandle);
+      }
+
+      return Effect.acquireUseRelease(
+        Effect.sync(() => {
+          const s = p.spinner({ output: stderr });
+          s.start(message);
+          const { handle, isStopped } = createClackSpinnerHandle(s, message);
+          return { raw: s, handle, isStopped };
+        }),
+        ({ handle }) => use(handle),
+        ({ raw, isStopped }, exit) =>
           Effect.sync(() => {
-            const s = p.spinner({ output: process.stderr });
-            s.start(message);
-            const { handle, isStopped } = createClackSpinnerHandle(s, message);
-            return { raw: s, handle, isStopped };
-          }),
-          ({ handle }) => use(handle),
-          ({ raw, isStopped }, exit) =>
-            Effect.sync(() => {
-              // Only clean up if the spinner hasn't been stopped/errored by the callback
-              if (Exit.isFailure(exit) && !isStopped()) {
-                raw.error(message);
-              }
-            })
-        )
-      : use(silentSpinnerHandle),
+            // Only clean up if the spinner hasn't been stopped/errored by the callback
+            if (Exit.isFailure(exit) && !isStopped()) {
+              raw.error(message);
+            }
+          })
+      );
+    },
+  };
 };
 
-export const TerminalUILive = Layer.succeed(TerminalUI, makeLive);
+// ---------------------------------------------------------------------------
+// TerminalUILive — production layer using @clack/prompts
+// ---------------------------------------------------------------------------
+
+export const TerminalUILive = Layer.succeed(
+  TerminalUI,
+  makeTerminalUI({
+    stdin: process.stdin,
+    stdout: process.stdout,
+    stderr: process.stderr,
+  })
+);

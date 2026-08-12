@@ -1,7 +1,6 @@
 {
-  "title": "Providers",
+  "title": "SDKs and frameworks",
   "pages": [
-    "...",
     "anthropic",
     "openai",
     "vercel",
@@ -16,6 +15,7 @@
     "mastra",
     "aimlapi",
     "community-integrations",
-    "custom-providers"
+    "custom-providers",
+    "..."
   ]
 }

@@ -6,6 +6,7 @@
   "main": "src/index.ts",
   "scripts": {
     "clean": "git clean -xdf node_modules",
+    "typecheck": "tsc --noEmit -p ./tsconfig.json",
     "start": "bun src/index.ts",
     "dev": "bun --watch src/index.ts",
     "test": "echo \"Error: no test specified\" && exit 1"
@@ -22,12 +23,13 @@
   "dependencies": {
     "@composio/core": "workspace:*",
     "@composio/google": "workspace:*",
-    "@google/genai": "^2.10.0",
+    "@google/genai": "^2.15.0",
     "@modelcontextprotocol/sdk": "catalog:",
     "dotenv": "catalog:"
   },
   "devDependencies": {
     "@types/bun": "catalog:",
     "typescript": "catalog:"
-  }
+  },
+  "type": "module"
 }

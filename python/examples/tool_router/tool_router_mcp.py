@@ -28,8 +28,11 @@ async def main():
 
     # Create a tool router session
     session = composio.create(
-        user_id="user_123",
+        # A user with connected GitHub and Gmail accounts (raises KeyError when unset)
+        user_id=os.environ["COMPOSIO_EXAMPLES_USER_ID"],
         toolkits=["github", "gmail"],
+        # mcp=True surfaces session.mcp on the returned type
+        mcp=True,
     )
 
     mcpTool = HostedMCPTool(
@@ -38,7 +41,7 @@ async def main():
             "server_label": "tool_router",
             "server_url": session.mcp.url,
             "require_approval": "never",
-            "headers": session.mcp.headers,
+            "headers": session.mcp.headers,  # type: ignore[typeddict-item]  # headers is typed Dict[str, Optional[str]]; the SDK always populates it with str values
         }
     )
 

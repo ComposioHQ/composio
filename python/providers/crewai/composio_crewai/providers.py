@@ -6,7 +6,11 @@ from crewai.tools import BaseTool
 from composio.core.provider import AgenticProvider, AgenticProviderExecuteFn
 from composio.types import Tool
 from composio.utils.pydantic import parse_pydantic_error
-from composio.utils.shared import json_schema_to_model, normalize_tool_arguments
+from composio.utils.shared import (
+    json_schema_to_model,
+    normalize_tool_arguments,
+    validate_and_serialize_tool_arguments,
+)
 
 
 class CrewAIProvider(AgenticProvider[BaseTool, list[BaseTool]], name="crewai"):
@@ -22,6 +26,24 @@ class CrewAIProvider(AgenticProvider[BaseTool, list[BaseTool]], name="crewai"):
         """Wrap a tool as a CrewAI tool."""
 
         class Wrapper(BaseTool):
+            def _validate_kwargs(
+                self, kwargs: t.Dict[str, t.Any]
+            ) -> t.Dict[str, t.Any]:
+                """Validate zero-field schemas and preserve argument presence."""
+                if self.args_schema is None:
+                    return kwargs
+                return validate_and_serialize_tool_arguments(self.args_schema, kwargs)
+
+            def run(self, *args, **kwargs):
+                try:
+                    return super().run(*args, **kwargs)
+                except pydantic.ValidationError as e:
+                    return {
+                        "successful": False,
+                        "error": parse_pydantic_error(e),
+                        "data": None,
+                    }
+
             def _run(self, **kwargs):
                 try:
                     # Normalize defensively so a stringified payload is coerced to a dict (issue #2406).

@@ -1,12 +1,17 @@
-import { describe, expect, layer } from '@effect/vitest';
-import { ConfigProvider, Effect, Option } from 'effect';
-import { afterEach, it, vi } from 'vitest';
+import { describe, expect, it, layer } from '@effect/vitest';
+import { ConfigProvider, Effect, Exit, Option } from 'effect';
+import { afterEach, vi } from 'vitest';
 import type {
   SessionCreateParams,
   SessionProxyExecuteParams,
 } from '@composio/client/resources/tool-router';
 import { extendConfigProvider } from 'src/services/config';
-import { normalizeProxyMethod, parseProxyBody, parseProxyHeader } from 'src/commands/proxy.cmd';
+import {
+  normalizeProxyMethod,
+  parseProxyBody,
+  parseProxyHeader,
+  ProxyCommandError,
+} from 'src/commands/proxy.cmd';
 import * as consumerShortTermCache from 'src/services/consumer-short-term-cache';
 import { cli, MockConsole, TestLive } from 'test/__utils__';
 
@@ -51,6 +56,49 @@ describe('CLI: composio proxy', () => {
           const live = TestLive({
             baseConfigProvider: testConfigProvider,
             fixture: 'global-test-user-id',
+            cliUserConfig: { experimentalFeatures: { multi_account: false } },
+            connectedAccountsData: {
+              items: [
+                {
+                  id: 'con_gmail_work',
+                  alias: 'work',
+                  word_id: 'gmail-work',
+                  status: 'ACTIVE',
+                  status_reason: null,
+                  is_disabled: false,
+                  user_id: 'consumer-user-org_test',
+                  toolkit: { slug: 'gmail' },
+                  auth_config: {
+                    id: 'ac_gmail_oauth',
+                    auth_scheme: 'OAUTH2',
+                    is_composio_managed: true,
+                    is_disabled: false,
+                  },
+                  created_at: '2026-01-01T00:00:00.000Z',
+                  updated_at: '2026-01-01T00:00:00.000Z',
+                  test_request_endpoint: '',
+                },
+                {
+                  id: 'con_gmail_personal',
+                  alias: 'personal',
+                  word_id: 'gmail-personal',
+                  status: 'ACTIVE',
+                  status_reason: null,
+                  is_disabled: false,
+                  user_id: 'consumer-user-org_test',
+                  toolkit: { slug: 'gmail' },
+                  auth_config: {
+                    id: 'ac_gmail_oauth',
+                    auth_scheme: 'OAUTH2',
+                    is_composio_managed: true,
+                    is_disabled: false,
+                  },
+                  created_at: '2026-01-02T00:00:00.000Z',
+                  updated_at: '2026-01-02T00:00:00.000Z',
+                  test_request_endpoint: '',
+                },
+              ],
+            },
             toolRouter: {
               create: async (params: SessionCreateParams) => {
                 createParams = params;
@@ -87,6 +135,8 @@ describe('CLI: composio proxy', () => {
             'https://gmail.googleapis.com/gmail/v1/users/me/drafts',
             '--toolkit',
             'gmail',
+            '--account',
+            'work',
             '-X',
             'post',
             '-H',
@@ -97,6 +147,7 @@ describe('CLI: composio proxy', () => {
 
           expect(createParams).toEqual({
             user_id: 'consumer-user-org_test',
+            connected_accounts: { gmail: 'con_gmail_work' },
             manage_connections: { enable: false },
             toolkits: { enable: ['gmail'] },
           });
@@ -161,17 +212,19 @@ describe('CLI: composio proxy', () => {
             },
           });
 
-          yield* cli([
+          const failure = yield* cli([
             'proxy',
             'https://gmail.googleapis.com/gmail/v1/users/me/profile',
             '--toolkit',
             'gmail',
-          ]).pipe(
-            Effect.provide(live),
-            Effect.catchAll(() => Effect.void)
-          );
+          ]).pipe(Effect.provide(live), Effect.flip);
 
           expect(createCalled).toBe(false);
+          expect(failure).toBeInstanceOf(ProxyCommandError);
+          if (failure instanceof ProxyCommandError) {
+            expect(failure.reason).toBe('toolkit_not_connected');
+            expect(failure.toolkit).toBe('gmail');
+          }
 
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
           const output = lines.join('\n');
@@ -214,7 +267,7 @@ describe('CLI: composio proxy', () => {
             '--skip-connection-check',
           ]).pipe(Effect.provide(live), Effect.exit);
 
-          expect(exit._tag).toBe('Failure');
+          expect(Exit.isFailure(exit)).toBe(true);
 
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
           const output = lines.join('\n');
