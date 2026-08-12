@@ -5,10 +5,22 @@ This example shows various ways to configure tool router sessions with
 different parameters matching the TypeScript implementation.
 """
 
+import os
+
 from composio import Composio
 
 # Initialize Composio SDK
 composio = Composio()
+
+# Provisioned project state (raise KeyError when unset). Auth config and
+# connected account ids are validated by the backend, so real ids are required.
+user_id = os.environ["COMPOSIO_EXAMPLES_USER_ID"]
+github_auth_config_id = os.environ["COMPOSIO_EXAMPLES_GITHUB_AUTH_CONFIG_ID"]
+slack_auth_config_id = os.environ["COMPOSIO_EXAMPLES_SLACK_AUTH_CONFIG_ID"]
+github_connected_account_id = os.environ[
+    "COMPOSIO_EXAMPLES_GITHUB_CONNECTED_ACCOUNT_ID"
+]
+slack_connected_account_id = os.environ["COMPOSIO_EXAMPLES_SLACK_CONNECTED_ACCOUNT_ID"]
 
 
 def example_with_specific_toolkits():
@@ -16,7 +28,7 @@ def example_with_specific_toolkits():
     print("=== Specific Toolkits Example ===")
 
     session = composio.tool_router.create(
-        user_id="user_toolkit", toolkits=["github", "slack", "linear"]
+        user_id=user_id, toolkits=["github", "slack", "linear"]
     )
 
     print(f"Session ID: {session.session_id}")
@@ -29,7 +41,7 @@ def example_with_disabled_toolkits():
     print("\n=== Disabled Toolkits Example ===")
 
     session = composio.tool_router.create(
-        user_id="user_disabled", toolkits={"disabled": ["linear", "jira"]}
+        user_id=user_id, toolkits={"disable": ["linear", "jira"]}
     )
 
     print(f"Session ID: {session.session_id}")
@@ -42,10 +54,10 @@ def example_with_connection_management_config():
     print("\n=== Connection Management with Callback Example ===")
 
     session = composio.tool_router.create(
-        user_id="user_callback",
+        user_id=user_id,
         manage_connections={
-            "enabled": True,
-            "callback_uri": "https://myapp.com/oauth/callback",
+            "enable": True,
+            "callback_url": "https://myapp.com/oauth/callback",
         },
     )
 
@@ -59,13 +71,15 @@ def example_with_auth_configs():
     print("\n=== Auth Configs Example ===")
 
     session = composio.tool_router.create(
-        user_id="user_auth",
+        user_id=user_id,
         toolkits=["github", "slack"],
-        auth_configs={"github": "ac_github_123", "slack": "ac_slack_456"},
+        auth_configs={"github": github_auth_config_id, "slack": slack_auth_config_id},
     )
 
     print(f"Session ID: {session.session_id}")
-    print("Auth configs: github → ac_github_123, slack → ac_slack_456")
+    print(
+        f"Auth configs: github → {github_auth_config_id}, slack → {slack_auth_config_id}"
+    )
     return session
 
 
@@ -74,13 +88,19 @@ def example_with_connected_accounts():
     print("\n=== Connected Accounts Example ===")
 
     session = composio.tool_router.create(
-        user_id="user_connected",
+        user_id=user_id,
         toolkits=["github", "slack"],
-        connected_accounts={"github": "ca_github_789", "slack": "ca_slack_012"},
+        connected_accounts={
+            "github": github_connected_account_id,
+            "slack": slack_connected_account_id,
+        },
     )
 
     print(f"Session ID: {session.session_id}")
-    print("Connected accounts: github → ca_github_789, slack → ca_slack_012")
+    print(
+        f"Connected accounts: github → {github_connected_account_id}, "
+        f"slack → {slack_connected_account_id}"
+    )
     return session
 
 
@@ -89,24 +109,26 @@ def example_with_all_parameters():
     print("\n=== All Parameters Example ===")
 
     session = composio.tool_router.create(
-        user_id="user_complete",
-        toolkits=["github", "slack", "notion"],
+        user_id=user_id,
+        toolkits=["github", "slack"],
         manage_connections={
-            "enabled": True,
-            "callback_uri": "https://myapp.com/callback",
+            "enable": True,
+            "callback_url": "https://myapp.com/callback",
         },
         auth_configs={
-            "github": "ac_github_xyz",
-            "slack": "ac_slack_abc",
-            "notion": "ac_notion_def",
+            "github": github_auth_config_id,
+            "slack": slack_auth_config_id,
         },
-        connected_accounts={"github": "ca_github_111", "slack": "ca_slack_222"},
+        connected_accounts={
+            "github": github_connected_account_id,
+            "slack": slack_connected_account_id,
+        },
     )
 
     print(f"✓ Session ID: {session.session_id}")
-    print("✓ Toolkits: github, slack, notion")
+    print("✓ Toolkits: github, slack")
     print("✓ Connection management: enabled with callback")
-    print("✓ Auth configs: configured for 3 toolkits")
+    print("✓ Auth configs: configured for 2 toolkits")
     print("✓ Connected accounts: 2 pre-configured")
 
     return session
@@ -117,16 +139,16 @@ def example_minimal_vs_maximal():
     print("\n=== Minimal vs Maximal Example ===")
 
     # Minimal - just user ID
-    minimal_session = composio.tool_router.create(user_id="user_minimal")
+    minimal_session = composio.tool_router.create(user_id=user_id)
     print(f"Minimal session: {minimal_session.session_id}")
 
     # Maximal - all options
     maximal_session = composio.tool_router.create(
-        user_id="user_maximal",
+        user_id=user_id,
         toolkits=["github", "slack"],
-        manage_connections={"enabled": True, "callback_uri": "https://app.com/cb"},
-        auth_configs={"github": "ac_1", "slack": "ac_2"},
-        connected_accounts={"github": "ca_1"},
+        manage_connections={"enable": True, "callback_url": "https://app.com/cb"},
+        auth_configs={"github": github_auth_config_id, "slack": slack_auth_config_id},
+        connected_accounts={"github": github_connected_account_id},
     )
     print(f"Maximal session: {maximal_session.session_id}")
 
@@ -139,21 +161,20 @@ def example_type_safe_configuration():
 
     from composio.core.models.tool_router import (
         ToolRouterManageConnectionsConfig,
-        ToolRouterToolkitsDisabledConfig,
+        ToolRouterToolkitsDisableConfig,
     )
 
     # Type-safe toolkit config
-    toolkit_config: ToolRouterToolkitsDisabledConfig = {"disabled": ["linear", "asana"]}
+    toolkit_config: ToolRouterToolkitsDisableConfig = {"disable": ["linear", "asana"]}
 
     # Type-safe connection management config
     connection_config: ToolRouterManageConnectionsConfig = {
-        "enabled": True,
-        "callback_uri": "https://secure.app.com/oauth",
-        "infer_scopes_from_tools": False,
+        "enable": True,
+        "callback_url": "https://secure.app.com/oauth",
     }
 
     session = composio.tool_router.create(
-        user_id="user_typesafe",
+        user_id=user_id,
         toolkits=toolkit_config,
         manage_connections=connection_config,
     )
@@ -184,6 +205,4 @@ if __name__ == "__main__":
 
     except Exception as e:
         print(f"\n✗ Error running examples: {e}")
-        import traceback
-
-        traceback.print_exc()
+        raise

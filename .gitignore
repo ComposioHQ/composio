@@ -4,6 +4,8 @@ node_modules
 # output
 out
 dist
+# wrangler deploy --dry-run --outdir, used by the examples' cf:dry-run script
+dist-worker
 *.tgz
 
 # code coverage

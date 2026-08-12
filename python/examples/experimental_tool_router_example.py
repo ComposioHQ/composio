@@ -5,10 +5,17 @@ This example shows how to create a tool router session for a user,
 get provider-wrapped tools, and authorize toolkits.
 """
 
+import os
+
 from composio import Composio
 
 # Initialize Composio SDK
 composio = Composio()
+
+# Provisioned project state (raises KeyError when unset). The backend validates
+# auth config ids, so a placeholder would abort session creation.
+user_id = os.environ["COMPOSIO_EXAMPLES_USER_ID"]
+github_auth_config_id = os.environ["COMPOSIO_EXAMPLES_GITHUB_AUTH_CONFIG_ID"]
 
 
 # Example 1: Create a basic tool router session
@@ -16,10 +23,9 @@ def basic_session_example():
     """Create a basic tool router session."""
     print("=== Basic Session Example ===")
 
-    user_id = "user_123"
-
-    # Create a tool router session
-    session = composio.tool_router.create(user_id=user_id)
+    # Create a tool router session. mcp=True surfaces session.mcp on the
+    # returned type; without it the endpoint exists but is not typed.
+    session = composio.tool_router.create(user_id=user_id, mcp=True)
 
     print(f"Session ID: {session.session_id}")
     print(f"MCP Server Type: {session.mcp.type}")
@@ -38,8 +44,6 @@ def basic_session_example():
 def session_with_connections_example():
     """Create a session with connection management enabled."""
     print("\n=== Session with Connection Management ===")
-
-    user_id = "user_456"
 
     # Create a tool router session with connection management
     session = composio.tool_router.create(user_id=user_id, manage_connections=True)
@@ -61,8 +65,6 @@ def authorize_toolkit_example():
     """Demonstrate toolkit authorization."""
     print("\n=== Authorize Toolkit Example ===")
 
-    user_id = "user_789"
-
     # Create a session
     session = composio.tool_router.create(user_id=user_id)
 
@@ -80,15 +82,13 @@ def authorize_toolkit_example():
         return connection_request
     except Exception as e:
         print(f"Error authorizing toolkit: {e}")
-        return None
+        raise
 
 
 # Example 4: Get toolkit connection states
 def get_toolkits_example():
     """Get toolkit connection states for a session."""
     print("\n=== Get Toolkits Example ===")
-
-    user_id = "user_101"
 
     # Create a session
     session = composio.tool_router.create(user_id=user_id)
@@ -106,14 +106,12 @@ def full_workflow_example():
     """Complete workflow with session, tools, and authorization."""
     print("\n=== Full Workflow Example ===")
 
-    user_id = "user_full"
-
     # 1. Create session with multiple configurations
     session = composio.tool_router.create(
         user_id=user_id,
         toolkits=["github", "slack"],
         manage_connections=True,
-        auth_configs={"github": "ac_demo_123"},
+        auth_configs={"github": github_auth_config_id},
     )
 
     print(f"✓ Created session: {session.session_id}")
@@ -135,6 +133,7 @@ def full_workflow_example():
             print(f"  → Redirect URL: {connection_request.redirect_url}")
     except Exception as e:
         print(f"✗ Authorization error: {e}")
+        raise
 
     return session
 
@@ -144,18 +143,14 @@ def session_with_modifiers_example():
     """Create a session and use tools with custom modifiers."""
     print("\n=== Session with Modifiers Example ===")
 
-    user_id = "user_modifiers"
-
     # Create session
     session = composio.tool_router.create(user_id=user_id)
 
-    # Get tools with custom modifiers
-    modifiers = {
-        # Add any custom modifiers here
-        # Example: timeout, custom headers, etc.
-    }
+    # Modifiers are a list of before/after execute hooks; an empty list means
+    # "no modifiers", which is what this example passes.
+    modifiers: list = []
 
-    tools = session.tools(modifiers=modifiers if modifiers else None)
+    tools = session.tools(modifiers=modifiers or None)
     print(
         f"✓ Retrieved {len(tools) if isinstance(tools, list) else 'N/A'} tools with modifiers"
     )
@@ -182,6 +177,4 @@ if __name__ == "__main__":
 
     except Exception as e:
         print(f"\n✗ Error running examples: {e}")
-        import traceback
-
-        traceback.print_exc()
+        raise

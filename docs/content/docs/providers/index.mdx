@@ -1,11 +1,15 @@
 ---
-title: Providers
+title: SDKs and frameworks
 description: Composio works with any AI framework. Pick your preferred SDK to get started.
 ---
 
 Composio works with any AI framework. A provider is the adapter that turns Composio tools into the native tool format your framework expects, so you don't write glue code.
 
 Pick the provider that matches the SDK or agent framework you already use. Each one fetches tools, handles execution, and hands your agent objects it understands. If your framework isn't listed, you can [build your own provider](/docs/providers/custom-providers).
+
+<Callout type="info" title="Using TypeScript?">
+The TypeScript SDK is ESM-only and requires Node.js 22.22.3 or newer. Use `import` instead of CommonJS `require()`.
+</Callout>
 
 ## AI SDKs
 

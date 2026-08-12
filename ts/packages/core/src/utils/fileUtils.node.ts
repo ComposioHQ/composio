@@ -176,6 +176,9 @@ const readFileContentFromURL = async (
   // redirect into them. See ssrfGuard.node.ts.
   const response = await ssrfSafeFetch(path, { signal });
   if (!response.ok) {
+    // The error path never reads the body, so release it explicitly (mirrors
+    // `readResponseBodyWithLimit`) instead of leaving it to the garbage collector.
+    await response.body?.cancel().catch(() => undefined);
     throw new Error(`Failed to fetch file: ${response.statusText}`);
   }
   const content = await readResponseBodyWithLimit(response);

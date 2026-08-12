@@ -1,0 +1,170 @@
+---
+title: 'Free-Form Object Arguments Are Preserved Across SDKs'
+description: 'Tool arguments declared as bare objects are no longer rejected or silently emptied, and Python now enforces the same unknown-key rules as TypeScript'
+date: '2026-08-06'
+---
+
+### SDK Versions
+
+| SDK                                       | Version  |
+| ----------------------------------------- | -------- |
+| Python `composio`                         | `0.19.0` |
+| TypeScript `@composio/core`               | `0.16.0` |
+| TypeScript `@composio/slim`               | `0.16.0` |
+| TypeScript `@composio/json-schema-to-zod` | `0.3.0`  |
+| TypeScript `@composio/claude-agent-sdk`   | `0.11.0` |
+| TypeScript `@composio/google`             | `0.10.2` |
+
+---
+
+A tool argument declared as a bare `{"type": "object"}` — with no `properties` of its own — was rejected or silently emptied at every schema conversion boundary. This affects any tool that takes a free-form payload, such as `dataset_query` on `METABASE_POST_API_CARD`.
+
+### What Changed
+
+An object schema that names no properties is now treated as open, unless it sets `additionalProperties: false`: arbitrary content is accepted and preserved, at the root, nested inside another object, and inside array items.
+
+#### Google Gemini schema compatibility
+
+`@composio/google` now adds `type: "object"` to schema nodes that declare `properties` without a type before emitting Google GenAI function declarations. The normalization follows only schema-bearing keywords, so property maps — including a field literally named `properties` — and instance values under `const`, `default`, `enum`, and `examples` remain unchanged. This provider release requires `@composio/core >=0.16.0 <1.0.0`.
+
+**Before:**
+
+```python
+# tool comes from Composio(provider=LangchainProvider()).tools.get(...)
+# dataset_query is declared as {"type": "object"} with no properties
+tool.run({"dataset_query": {"database": 1, "query": {"source-table": 2}}})
+# The argument was accepted, then arrived at execution as an empty object
+```
+
+**After:**
+
+```python
+tool.run({"dataset_query": {"database": 1, "query": {"source-table": 2}}})
+# The full payload reaches execution intact
+```
+
+In TypeScript the same schema was rejected outright rather than emptied, both in the Zod converter and in CLI tool-input validation:
+
+```
+<root>: Unknown key "database". Allowed top-level keys: dataset_query
+```
+
+Those inputs are now accepted.
+
+The CLI-side fix ships with the CLI binary rather than the npm packages above. Upgrade it with `composio upgrade`.
+
+#### Dynamic keys apply only where they should
+
+Where a schema declares `patternProperties` or a schema-valued `additionalProperties`, each key is now validated against exactly the schemas that claim it. In TypeScript a key could previously pass by satisfying an unrelated pattern instead of its own. In Python neither keyword was read at all, so dynamic keys were never validated.
+
+- Every matching `patternProperties` entry validates its key.
+- `additionalProperties` applies only to keys that no declared property and no pattern matches.
+- A key declared in `properties` is still checked against every pattern it matches.
+
+Root-level `patternProperties` and boolean- or schema-valued `additionalProperties` also survive tool schema parsing; they were previously dropped before any converter could see them.
+
+<Callout type="warn">
+**Behavior change**
+
+Because the Python converter read neither keyword, an object that declared no properties became an empty Pydantic model: every dynamic key was dropped and the call ran without it. Those keys are now validated — at the root, nested under a declared property, and inside array items — and preserved when they pass.
+
+</Callout>
+
+**Before:**
+
+```python
+# `metadata` is {"type": "object"} with "patternProperties": {"^count_": {"type": "integer"}}
+wrapped.run({"metadata": {"count_a": "not-an-integer"}})
+# The tool executed with {"metadata": {}} - every dynamic key was dropped in silence
+```
+
+**After:**
+
+```python
+wrapped.run({"metadata": {"count_a": "not-an-integer"}})
+# Raises ValidationError before execution
+
+wrapped.run({"metadata": {"count_a": 3}})
+# The tool executes with {"metadata": {"count_a": 3}} intact
+```
+
+In Python, an invalid `patternProperties` or schema-valued `additionalProperties` schema now raises while the tool is wrapped instead of being ignored. This includes an external, anchored, or unresolvable `$ref`, a `patternProperties` key that is not a valid regular expression, or a dynamic-key subschema that is not valid Draft 7. A `$ref` in these schemas must be a local JSON Pointer such as `#/properties/foo`. The rule is transitive: a local pointer whose target carries a non-local reference raises too. A `$ref`-shaped value under `const`, `default`, `enum`, or `examples` is instance data rather than a reference, and is left alone.
+
+The CLI's validator fails early on the two of those it can detect: a `patternProperties` key that is not a valid regular expression, and a reference inside a dynamic-key subschema that does not resolve, following local pointers transitively. Both are now reported as a schema compile failure naming the cached schema path, rather than as an input error blaming the arguments. A reference outside a dynamic-key subschema is still left to the validator, so a tool whose unused branch carries a dangling reference keeps working.
+
+### Behavior Change for Python Agentic Providers
+
+<Callout type="warn">
+**Behavior change**
+
+In the Python SDK, an object schema that **does** name properties and omits `additionalProperties` now rejects unknown keys instead of silently dropping them.
+
+This affects the providers that build a Pydantic `args_schema` from a tool schema: `composio_langchain`, `composio_langgraph`, and `composio_crewai`. If a model emits an argument the tool does not declare, the call now raises a `ValidationError` instead of executing with that argument removed.
+
+</Callout>
+
+**Before:**
+
+```python
+# Tool declares only `name`. The model also emits `typo`.
+wrapped.run({"name": "a", "typo": 1})
+# The tool executed with {"name": "a"} - the extra argument was dropped in silence
+```
+
+**After:**
+
+```python
+wrapped.run({"name": "a", "typo": 1})
+# Raises ValidationError before execution, so the agent can correct and retry
+```
+
+This brings Python in line with the TypeScript SDK, where the Zod converter has always rejected unknown keys for schemas that name properties. Strictness applies only when `additionalProperties` is omitted; `additionalProperties: true` and schema-valued forms behave as declared.
+
+#### Provider argument presence is preserved
+
+CrewAI, LangChain, and LangGraph now keep the difference between an omitted optional field and a field explicitly set to `None`. JSON Schema defaults are included, while optional fields with no default stay absent. The same rules apply inside nested objects, arrays, maps, combiners, and dynamic-key values.
+
+```python
+# The schema requires `query`, allows a nullable `note`, and defaults `page` to 5.
+wrapped.run({"query": "agents", "note": None})
+# The tool receives {"query": "agents", "note": None, "page": 5}.
+```
+
+If you omit `note`, the tool does not receive it. Before this release, provider serialization could add an omitted nullable field as `None`, or drop an explicit `None`, a declared default, or a dynamic extra.
+
+#### Not affected
+
+- **`composio_openai`, `composio_anthropic`, and the other non-agentic providers.** These hand the raw JSON schema to the model API and pass the returned arguments straight through, so they never build a Pydantic model from a tool schema.
+- **`composio_gemini`.** Gemini builds a typed signature through `json_schema_to_pydantic_type`, so free-form object arguments now use `Dict[str, Any]` instead of an empty model. It does not use `json_schema_to_model`, so the unknown-key rejection above does not apply.
+- **Provider APIs and invocation signatures.** You wrap and call tools the same way. The change is limited to validated arguments passed to the tool.
+
+### Behavior Change for the Claude Agent SDK Provider
+
+<Callout type="warn">
+**Behavior change**
+
+`@composio/claude-agent-sdk` now registers each tool with its complete object schema rather than a raw property shape.
+
+A raw shape carries only the per-property map, so root-level `additionalProperties` and `patternProperties` were dropped before the Claude Agent SDK ever saw them. An unknown key was stripped from the arguments and the tool executed anyway. It is now rejected before the tool runs, and the caller receives an error result instead, matching every other TypeScript provider.
+
+</Callout>
+
+This is also what makes free-form object arguments reach execution intact through this provider: the content of a bare `{"type": "object"}` argument survives registration instead of being discarded with the rest of the root constraints.
+
+#### Not affected
+
+- **`@composio/vercel`, `@composio/langchain`, and `@composio/llamaindex`.** These already registered complete schemas, so they picked the fix up with no change.
+
+### Backward Compatibility
+
+Accepting and preserving free-form object content is backward compatible: payloads that previously failed now succeed, and payloads that previously arrived empty now arrive complete.
+
+The two unknown-key rejections described above (Python agentic providers and the Claude Agent SDK provider) are two of the three behavior changes at call time. The third is [Python dynamic-key validation](#dynamic-keys-apply-only-where-they-should): a key that used to be dropped in silence now raises a `ValidationError` when it does not match the `patternProperties` or `additionalProperties` schema that claims it.
+
+`additionalProperties: true` still opts an object out of unknown-key rejection. Declaring no properties does too, unless the object sets `additionalProperties: false` — an explicit `false` closes it, and Python now raises on the unknown keys it used to drop there, the same drop-to-raise transition as the first change. Neither opt-out covers the third change: if the object carries `patternProperties` or a schema-valued `additionalProperties`, its keys are validated against those schemas. An open object with no dynamic-key constraints is unaffected by it.
+
+The remaining changes are about the schema itself rather than the arguments checked against it: an invalid dynamic-key schema now fails instead of being ignored. Only tools whose `patternProperties` or schema-valued `additionalProperties` carry such a defect are affected, and the two SDKs get there differently.
+
+In Python it is a raise while the tool is wrapped, covering an invalid reference, regular expression, or Draft 7 subschema. Neither keyword was read before, so the defect never surfaced at all and every dynamic key was dropped. A tool carrying one now fails when it is wrapped, for every caller, rather than on a particular payload.
+
+In the CLI it is a schema compile failure, covering an invalid `patternProperties` regular expression or an unresolvable reference inside a dynamic-key subschema. There the defect did surface, but only when validation descended into that part of the schema, and it was reported as though the arguments were at fault. A payload that stayed out of the affected branch validated against a schema that could not fully check it, and is now rejected.

@@ -1140,6 +1140,21 @@ html:not(.dark) .terminal-theme-claude {
 	}
 }
 
+@media (forced-colors: active) {
+  .audience-badge-platform {
+    background: none !important;
+    color: CanvasText !important;
+    -webkit-text-fill-color: CanvasText !important;
+  }
+
+  .audience-badge-platform-border {
+    background: none !important;
+    border: 1px solid CanvasText;
+    mask: none !important;
+    -webkit-mask: none !important;
+  }
+}
+
 /* @pierre/diffs: the +/- stat counts in the file header are hidden via the
    `unsafeCSS` option in components/diff-view.tsx, NOT here — the header renders
    inside an open shadow root that global CSS can't pierce. */

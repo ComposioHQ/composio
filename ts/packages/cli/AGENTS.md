@@ -38,7 +38,7 @@ Each command uses `@effect/cli`'s `Command.make()` pattern. Top-level command fi
 | `signup` | Create a Composio account |
 | `upgrade` | Self-update binary from GitHub releases |
 | `init` | Bootstrap a Composio project in the current directory |
-| `install` | Install local-tool integrations |
+| `install` | Set up shell integration (PATH and completions) |
 | `generate {ts        | py}` | Generate type stubs (auto-detects project language if no subcommand) |
 | `agent` | Manage AI agent presets |
 | `toolkits` | List / inspect / version toolkits |

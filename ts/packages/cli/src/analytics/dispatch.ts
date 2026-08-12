@@ -14,6 +14,7 @@ import {
 } from 'effect';
 import * as constants from 'src/constants';
 import { getDetachedWorkerSpawnArgs, spawnDetached } from 'src/services/detached-process';
+import { atomicWriteFileString } from 'src/utils/atomic-write';
 import { sha256Hex } from 'src/utils/checksums';
 import { djb2Hash } from 'src/utils/djb2';
 import { NodeOs } from 'src/services/node-os';
@@ -291,11 +292,7 @@ const writeAnalyticsStateFile = (contents: string) =>
   Effect.gen(function* () {
     const fs = yield* FileSystem.FileSystem;
     const paths = yield* getAnalyticsPaths;
-    const temporaryPath = `${paths.analyticsStatePath}.${crypto.randomUUID().slice(0, 8)}.tmp`;
-    yield* fs.writeFileString(temporaryPath, contents);
-    yield* fs
-      .rename(temporaryPath, paths.analyticsStatePath)
-      .pipe(Effect.tapError(() => fs.remove(temporaryPath).pipe(Effect.ignore)));
+    yield* atomicWriteFileString({ fs, target: paths.analyticsStatePath, contents });
   });
 
 const getOrCreateInstallIdUnlocked = Effect.gen(function* () {

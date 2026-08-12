@@ -6037,20 +6037,12 @@
                                           "EXPIRED"
                                         ]
                                       },
-                                      "username": {
-                                        "type": "string"
-                                      },
-                                      "password": {
-                                        "type": "string"
-                                      },
                                       "expired_at": {
                                         "type": "string"
                                       }
                                     },
                                     "required": [
-                                      "status",
-                                      "username",
-                                      "password"
+                                      "status"
                                     ],
                                     "additionalProperties": {}
                                   }

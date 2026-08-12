@@ -171,8 +171,8 @@ export const assertSafeFetchTarget = async (rawUrl: string): Promise<void> => {
 /**
  * Drop-in replacement for `fetch` that blocks SSRF. Validates the target before
  * connecting and re-validates every redirect hop (redirects are followed
- * manually up to {@link MAX_REDIRECTS}). Non-redirect responses are returned
- * unchanged.
+ * manually up to {@link MAX_REDIRECTS}). Intermediate redirect bodies are
+ * cancelled; non-redirect responses are returned unchanged.
  */
 export const ssrfSafeFetch = async (
   rawUrl: string,
@@ -191,6 +191,10 @@ export const ssrfSafeFetch = async (
     if (!isRedirect) {
       return response;
     }
+
+    // Only `location` is read from a redirect, so release its body explicitly rather
+    // than leaving it to the garbage collector (mirrors `readResponseBodyWithLimit`).
+    await response.body?.cancel().catch(() => undefined);
 
     currentUrl = new URL(response.headers.get('location')!, currentUrl).toString();
   }

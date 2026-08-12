@@ -54,6 +54,9 @@ export const CACHE_FILENAMES = {
   TRIGGER_TYPES: 'trigger-types.json',
 };
 
+/** Whether the CLI has an exact release version compiled into it. */
+export const IS_RELEASE_BUILD = typeof __COMPOSIO_CLI_RELEASE_VERSION__ !== 'undefined';
+
 /**
  * Version of the running Composio CLI.
  *

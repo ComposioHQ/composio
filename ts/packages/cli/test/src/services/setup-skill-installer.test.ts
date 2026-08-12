@@ -61,13 +61,13 @@ describe('SetupSkillInstaller', () => {
       })
     );
 
-    it.effect('discovers the latest stable release outside a packaged install', () =>
+    it.effect('uses the running package fallback outside a packaged install', () =>
       Effect.gen(function* () {
         const path = yield* Path.Path;
         const installDir = tempy.temporaryDirectory();
 
         expect(yield* resolveSetupSkillReleaseTag(path.join(installDir, 'composio'), '0.3.0')).toBe(
-          '@composio/cli@0.2.21'
+          '@composio/cli@0.3.0'
         );
       })
     );

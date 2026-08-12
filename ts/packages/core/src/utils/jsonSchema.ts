@@ -259,6 +259,91 @@ export function dereferenceJsonSchema<T = unknown>(
 }
 
 /**
+ * Returns a deep-cloned JSON Schema in which every node that carries a
+ * `properties` keyword also carries `type: "object"` when it has no explicit
+ * `type`. OpenAI tolerates the omission, but Google Gemini enforces OpenAPI
+ * 3.0 strictly and rejects function declarations whose nested objects are
+ * missing the `type` (see https://github.com/ComposioHQ/composio/issues/4022).
+ *
+ * The function follows JSON Schema's schema-bearing keywords while keeping
+ * property maps and instance values as containers. Nodes that already declare
+ * a `type` are left untouched.
+ */
+export function ensureObjectTypeOnProperties<T = unknown>(schema: T): T {
+  type WalkMode = 'schema' | 'schema-array' | 'schema-map' | 'dependencies-map' | 'value';
+
+  const schemaKeywords = new Set([
+    'additionalItems',
+    'additionalProperties',
+    'contains',
+    'contentSchema',
+    'else',
+    'if',
+    'not',
+    'propertyNames',
+    'then',
+    'unevaluatedItems',
+    'unevaluatedProperties',
+  ]);
+  const schemaArrayKeywords = new Set(['allOf', 'anyOf', 'oneOf', 'prefixItems']);
+  const schemaMapKeywords = new Set([
+    '$defs',
+    'definitions',
+    'dependentSchemas',
+    'patternProperties',
+    'properties',
+  ]);
+
+  function walk(value: unknown, mode: WalkMode, depth = 0): unknown {
+    if (depth > MAX_NODE_DEPTH) {
+      throw new RangeError(`JSON Schema exceeds maximum nesting depth of ${MAX_NODE_DEPTH}`);
+    }
+
+    if (Array.isArray(value)) {
+      const itemMode = mode === 'schema-array' ? 'schema' : 'value';
+      return value.map(item => walk(item, itemMode, depth + 1));
+    }
+
+    if (!isPlainObject(value)) return value;
+
+    const clone: Record<string, unknown> = {};
+    for (const [key, child] of Object.entries(value)) {
+      let childMode: WalkMode = 'value';
+      if (mode === 'schema-map') {
+        childMode = 'schema';
+      } else if (mode === 'dependencies-map') {
+        childMode = Array.isArray(child) ? 'value' : 'schema';
+      } else if (mode === 'schema') {
+        if (schemaMapKeywords.has(key)) {
+          childMode = 'schema-map';
+        } else if (schemaArrayKeywords.has(key) || (key === 'items' && Array.isArray(child))) {
+          childMode = 'schema-array';
+        } else if (schemaKeywords.has(key) || key === 'items') {
+          childMode = 'schema';
+        } else if (key === 'dependencies') {
+          childMode = 'dependencies-map';
+        }
+      }
+
+      Object.defineProperty(clone, key, {
+        configurable: true,
+        enumerable: true,
+        value: walk(child, childMode, depth + 1),
+        writable: true,
+      });
+    }
+
+    if (mode === 'schema' && clone.properties !== undefined && clone.type === undefined) {
+      clone.type = 'object';
+    }
+
+    return clone;
+  }
+
+  return walk(schema, 'schema') as T;
+}
+
+/**
  * Returns a deep-cloned JSON Schema whose `required` arrays contain each entry
  * at most once. Duplicate entries are invalid in JSON Schema 2020-12 but do
  * not change the schema's meaning, so preserving the first occurrence is safe.
@@ -328,7 +413,7 @@ export const removeNonRequiredProperties = <
     type: 'object';
     properties: Record<string, unknown>;
     required?: string[];
-    additionalProperties?: boolean;
+    additionalProperties?: unknown;
   },
 >(
   schema: T

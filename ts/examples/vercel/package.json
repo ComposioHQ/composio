@@ -15,7 +15,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@ai-sdk/mcp": "^2.0.16",
+    "@ai-sdk/mcp": "catalog:",
     "@ai-sdk/openai": "catalog:",
     "@composio/core": "workspace:*",
     "@composio/vercel": "workspace:*",
@@ -27,7 +27,8 @@
   },
   "devDependencies": {
     "@types/bun": "catalog:",
-    "@types/node": "^26.1.1",
+    "@types/node": "^26.1.2",
     "typescript": "catalog:"
-  }
+  },
+  "type": "module"
 }

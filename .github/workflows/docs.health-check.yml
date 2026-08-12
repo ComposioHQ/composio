@@ -54,7 +54,7 @@ jobs:
           check_url "/llms.txt" "${BASE_URL}/llms.txt"
           check_url "/llms-full.txt" "${BASE_URL}/llms-full.txt"
           check_url "/docs/quickstart.md" "${BASE_URL}/docs/quickstart.md"
-          check_url "/docs/tools-and-toolkits.md" "${BASE_URL}/docs/tools-and-toolkits.md"
+          check_url "/docs/how-composio-works.md" "${BASE_URL}/docs/how-composio-works.md"
 
           # Main pages
           check_url "/docs" "${BASE_URL}/docs"

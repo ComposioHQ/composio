@@ -48,6 +48,7 @@ import { UpgradeBinary } from 'src/services/upgrade-binary';
 import { NodeOs } from 'src/services/node-os';
 import { TriggersRealtime } from 'src/services/triggers-realtime';
 import { ToolsExecutor, ToolsExecutorLive } from 'src/services/tools-executor';
+import { ToolkitSlugCatalog } from 'src/services/toolkit-slug-catalog';
 import type { ToolExecuteResponse } from 'src/services/tools-executor';
 import type {
   SessionCreateResponse,
@@ -87,15 +88,26 @@ export interface TestLiveInput {
   fixture?: string;
 
   /**
-   * Mock toolkit-related data to use in test.
+   * Override the running-executable path reported by `NodeProcess`.
+   *
+   * A relative value resolves against the per-test home directory, which is a
+   * fresh temp dir created while the layer is being built — so a scenario that
+   * needs an exec path underneath it (e.g. `.local/bin/composio`) can stay
+   * relative instead of spelling out a path it cannot know up front.
+   * Defaults to `<homedir>/composio`.
    */
-  toolkitsData?: {
-    toolkits?: Toolkits;
-    detailedToolkits?: ToolkitDetailed[];
-    tools?: Tools;
-    triggerTypesAsEnums?: TriggerTypesAsEnums;
-    triggerTypes?: TriggerTypes;
-  };
+  execPath?: string;
+
+  /**
+ * Mock toolkit-related data to use in test.
+ */
+toolkitsData?: {
+  toolkits?: Toolkits;
+  detailedToolkits?: ToolkitDetailed[];
+  tools?: Tools;
+  triggerTypesAsEnums?: TriggerTypesAsEnums;
+  triggerTypes?: TriggerTypes;
+};
 
   /**
    * Mock auth-config data to use in test.
@@ -210,16 +222,6 @@ export interface TestLiveInput {
    * When set, replaces the default TerminalUITest (which auto-selects first option).
    */
   terminalUI?: TerminalUI;
-
-  /**
-   * Override the running-executable path reported by `NodeProcess`.
-   *
-   * Declared as a function of the per-test home directory because that
-   * directory is a fresh temp dir created while the layer is being built, so a
-   * scenario that needs an exec path underneath it (e.g. `~/.local/bin/composio`)
-   * cannot spell it out up front. Defaults to `<homedir>/composio`.
-   */
-  execPath?: (homedir: string) => string;
 }
 
 /**
@@ -819,7 +821,7 @@ export const TestLayer = (input?: TestLiveInput) =>
       NodeProcess,
       new NodeProcess({
         cwd,
-        execPath: input?.execPath?.(cwd) ?? path.join(cwd, 'composio'),
+        execPath: input?.execPath ? path.resolve(cwd, input.execPath) : path.join(cwd, 'composio'),
         platform: 'darwin',
         arch: 'arm64',
       })
@@ -1217,6 +1219,13 @@ export const TestLayer = (input?: TestLiveInput) =>
       })
     );
 
+    // Built per test layer, so each test resolves toolkit slugs against its own
+    // cache directory rather than inheriting a memo from an earlier test.
+    const ToolkitSlugCatalogTest = Layer.provide(
+      ToolkitSlugCatalog.Default,
+      ComposioToolkitsRepositoryTest
+    );
+
     // --- ToolsExecutor ---
     // When `input.toolsExecutor` is set, use a canned mock (bypasses Tool Router).
     // Otherwise, use the real ToolsExecutorLive which flows through the mock ComposioClientSingleton.
@@ -1240,7 +1249,10 @@ export const TestLayer = (input?: TestLiveInput) =>
             },
           })
         )
-      : Layer.provide(ToolsExecutorLive, ComposioClientSingletonTest);
+      : Layer.provide(
+          ToolsExecutorLive,
+          Layer.mergeAll(ComposioClientSingletonTest, ToolkitSlugCatalogTest)
+        );
 
     const CliConfigLive = CliConfig.layer(ComposioCliConfig);
 
@@ -1289,6 +1301,7 @@ export const TestLayer = (input?: TestLiveInput) =>
       ComposioSessionRepositoryTest,
       TriggersRealtimeTest,
       ComposioToolkitsRepositoryTest,
+      ToolkitSlugCatalogTest,
       JsPackageManagerDetector.Default,
       ProjectEnvironmentDetector.Default,
       CommandRunnerTest,
