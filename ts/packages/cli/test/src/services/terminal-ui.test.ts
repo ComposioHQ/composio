@@ -1,9 +1,171 @@
-import { describe, expect, layer } from '@effect/vitest';
-import { Effect } from 'effect';
-import { TerminalUI } from 'src/services/terminal-ui';
+import { Writable } from 'node:stream';
+import { describe, expect, it, layer } from '@effect/vitest';
+import { beforeEach, vi } from 'vitest';
+import * as p from '@clack/prompts';
+import { Array as Arr, Data, Effect, Exit, pipe } from 'effect';
+import { getTerminalCapabilities, makeTerminalUI, TerminalUI } from 'src/services/terminal-ui';
 import { TestLive, MockConsole } from 'test/__utils__';
 
+vi.mock('@clack/prompts', async importOriginal => {
+  const actual = await importOriginal<typeof import('@clack/prompts')>();
+  return { ...actual, confirm: vi.fn(), select: vi.fn() };
+});
+
+class TestFailure extends Data.TaggedError('test/TestFailure')<{
+  readonly message: string;
+}> {}
+
+const booleanStates = [false, true] as const;
+
+const ttyCombinations = pipe(
+  Arr.Do,
+  Arr.bind('stdin', () => booleanStates),
+  Arr.bind('stdout', () => booleanStates),
+  Arr.bind('stderr', () => booleanStates)
+);
+
+/** An intentional Node.js Writable test double matching Clack's output contract. */
+const makeSink = (isTTY: boolean) => {
+  const chunks: string[] = [];
+  const sink = new Writable({
+    write(chunk, _encoding, callback) {
+      chunks.push(String(chunk));
+      callback();
+    },
+  });
+  return Object.assign(sink, { isTTY, chunks });
+};
+
+const makeStreamedUi = (tty: { stdin: boolean; stdout: boolean; stderr: boolean }) => {
+  const stdout = makeSink(tty.stdout);
+  const stderr = makeSink(tty.stderr);
+  const ui = makeTerminalUI({ stdin: { isTTY: tty.stdin }, stdout, stderr });
+  return { ui, stdout, stderr };
+};
+
 describe('TerminalUI', () => {
+  it.each(ttyCombinations)(
+    'derives each capability from only the streams that serve it (stdin=$stdin, stdout=$stdout, stderr=$stderr)',
+    ({ stdin, stdout, stderr }) => {
+      expect(
+        getTerminalCapabilities({
+          stdin: { isTTY: stdin },
+          stdout: { isTTY: stdout },
+          stderr: { isTTY: stderr },
+        })
+      ).toEqual({
+        stdinIsTTY: stdin,
+        stdoutIsTTY: stdout,
+        stderrIsTTY: stderr,
+        canPrompt: stdin && stderr,
+        canDecorate: stderr,
+      });
+    }
+  );
+
+  describe('each capability is decided only by its own streams (behavior, not booleans)', () => {
+    beforeEach(() => {
+      vi.mocked(p.confirm).mockReset();
+      vi.mocked(p.select).mockReset();
+    });
+
+    it.effect(
+      'stdin redirected, stdout+stderr TTY: prompts fall back, stdout stays clean, decoration renders',
+      () =>
+        Effect.gen(function* () {
+          const { ui, stdout, stderr } = makeStreamedUi({
+            stdin: false,
+            stdout: true,
+            stderr: true,
+          });
+
+          const confirmed = yield* ui.confirm('proceed?', { defaultValue: false });
+          expect(confirmed).toBe(false);
+          expect(p.confirm).not.toHaveBeenCalled();
+
+          const selected = yield* ui.select('pick', [
+            { value: 'first', label: 'First' },
+            { value: 'second', label: 'Second' },
+          ]);
+          expect(selected).toBe('first');
+          expect(p.select).not.toHaveBeenCalled();
+
+          yield* ui.output('{"machine":"data"}');
+          expect(stdout.chunks).toEqual([]);
+
+          yield* ui.output('forced-data', { force: true });
+          expect(stdout.chunks.join('')).toContain('forced-data');
+
+          yield* ui.log.info('stdin-redirect decoration');
+          expect(stderr.chunks.join('')).toContain('stdin-redirect decoration');
+        })
+    );
+
+    it.effect(
+      'stdout piped, stdin+stderr TTY: prompting stays available, data emits, decoration renders',
+      () =>
+        Effect.gen(function* () {
+          vi.mocked(p.confirm).mockResolvedValue(false);
+          const { ui, stdout, stderr } = makeStreamedUi({
+            stdin: true,
+            stdout: false,
+            stderr: true,
+          });
+
+          const confirmed = yield* ui.confirm('proceed?', { defaultValue: true });
+          expect(p.confirm).toHaveBeenCalledTimes(1);
+          expect(confirmed).toBe(false);
+
+          yield* ui.output('{"machine":"data"}');
+          expect(stdout.chunks.join('')).toContain('{"machine":"data"}');
+
+          yield* ui.log.info('stdout-piped decoration');
+          expect(stderr.chunks.join('')).toContain('stdout-piped decoration');
+        })
+    );
+
+    it.effect(
+      'stderr captured, stdin+stdout TTY: no prompts, no decoration, stdout silent unless forced',
+      () =>
+        Effect.gen(function* () {
+          const { ui, stdout, stderr } = makeStreamedUi({
+            stdin: true,
+            stdout: true,
+            stderr: false,
+          });
+
+          const confirmed = yield* ui.confirm('proceed?', { defaultValue: true });
+          expect(confirmed).toBe(true);
+          expect(p.confirm).not.toHaveBeenCalled();
+
+          yield* ui.log.info('captured decoration');
+          expect(stderr.chunks).toEqual([]);
+
+          yield* ui.output('{"machine":"data"}');
+          expect(stdout.chunks).toEqual([]);
+
+          yield* ui.output('forced-data', { force: true });
+          expect(stdout.chunks.join('')).toContain('forced-data');
+        })
+    );
+
+    it.effect('all streams redirected: machine output still emits', () =>
+      Effect.gen(function* () {
+        const { ui, stdout, stderr } = makeStreamedUi({
+          stdin: false,
+          stdout: false,
+          stderr: false,
+        });
+
+        yield* ui.output('{"machine":"data"}');
+        expect(stdout.chunks.join('')).toContain('{"machine":"data"}');
+
+        yield* ui.log.info('invisible decoration');
+        expect(stderr.chunks).toEqual([]);
+      })
+    );
+  });
+
   layer(TestLive())(it => {
     // -----------------------------------------------------------------------
     // Data output
@@ -16,6 +178,16 @@ describe('TerminalUI', () => {
 
         const lines = yield* MockConsole.getLines();
         expect(lines).toContain('ak_test123');
+      })
+    );
+
+    it.scoped('error writes raw diagnostics capturable by MockConsole', () =>
+      Effect.gen(function* () {
+        const ui = yield* TerminalUI;
+        yield* ui.error('diagnostic');
+
+        const lines = yield* MockConsole.getLines();
+        expect(lines).toContain('diagnostic');
       })
     );
 
@@ -119,10 +291,10 @@ describe('TerminalUI', () => {
       Effect.gen(function* () {
         const ui = yield* TerminalUI;
         const exit = yield* Effect.exit(
-          ui.withSpinner('loading', Effect.fail(new Error('network error')))
+          ui.withSpinner('loading', Effect.fail(new TestFailure({ message: 'network error' })))
         );
 
-        expect(exit._tag).toBe('Failure');
+        expect(Exit.isFailure(exit)).toBe(true);
       })
     );
 
@@ -135,10 +307,12 @@ describe('TerminalUI', () => {
         const ui = yield* TerminalUI;
 
         const exit = yield* Effect.exit(
-          ui.useMakeSpinner('fetching data', _spinner => Effect.fail(new Error('API returned 400')))
+          ui.useMakeSpinner('fetching data', _spinner =>
+            Effect.fail(new TestFailure({ message: 'API returned 400' }))
+          )
         );
 
-        expect(exit._tag).toBe('Failure');
+        expect(Exit.isFailure(exit)).toBe(true);
 
         // The spinner error message should be captured
         const lines = yield* MockConsole.getLines();
@@ -207,12 +381,12 @@ describe('TerminalUI', () => {
               Effect.gen(function* () {
                 // Simulate tapError pattern: callback calls spinner.error(), then the effect fails
                 yield* spinner.error('Login timed out. Please try again.');
-                return yield* Effect.fail(new Error('timed out'));
+                return yield* new TestFailure({ message: 'timed out' });
               })
             )
           );
 
-          expect(exit._tag).toBe('Failure');
+          expect(Exit.isFailure(exit)).toBe(true);
 
           const lines = yield* MockConsole.getLines();
           // Should see the user's error message

@@ -1,4 +1,4 @@
-import path from 'node:path';
+import { Path } from '@effect/platform';
 import { Data, Effect } from 'effect';
 
 export class SafeOutputPathError extends Data.TaggedError('generation/SafeOutputPathError')<{
@@ -22,24 +22,27 @@ export class SafeOutputPathError extends Data.TaggedError('generation/SafeOutput
 export function safeOutputPath(
   outputDir: string,
   filename: string
-): Effect.Effect<string, SafeOutputPathError> {
-  const resolvedDir = path.resolve(outputDir);
-  const resolved = path.resolve(resolvedDir, filename);
-  const relative = path.relative(resolvedDir, resolved);
-  const isWithinOutputDir =
-    relative === '' ||
-    (!relative.startsWith(`..${path.sep}`) && relative !== '..' && !path.isAbsolute(relative));
+): Effect.Effect<string, SafeOutputPathError, Path.Path> {
+  return Effect.gen(function* () {
+    const path = yield* Path.Path;
+    const resolvedDir = path.resolve(outputDir);
+    const resolved = path.resolve(resolvedDir, filename);
+    const relative = path.relative(resolvedDir, resolved);
+    const isWithinOutputDir =
+      relative === '' ||
+      (!relative.startsWith(`..${path.sep}`) && relative !== '..' && !path.isAbsolute(relative));
 
-  if (path.isAbsolute(filename) || !isWithinOutputDir) {
-    return Effect.fail(
-      new SafeOutputPathError({
-        filename,
-        outputDir,
-        resolvedPath: resolved,
-        message: `Refusing unsafe generated filename: ${filename} resolves to ${resolved}`,
-      })
-    );
-  }
+    if (path.isAbsolute(filename) || !isWithinOutputDir) {
+      return yield* Effect.fail(
+        new SafeOutputPathError({
+          filename,
+          outputDir,
+          resolvedPath: resolved,
+          message: `Refusing unsafe generated filename: ${filename} resolves to ${resolved}`,
+        })
+      );
+    }
 
-  return Effect.succeed(path.join(outputDir, filename));
+    return path.join(outputDir, filename);
+  });
 }

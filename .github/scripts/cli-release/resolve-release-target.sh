@@ -3,12 +3,12 @@
 # Resolve the CLI release target and write its metadata to $GITHUB_OUTPUT for the
 # build/release jobs of build-cli-binaries.yml. Three modes:
 #
-#   - push to `next` with a ts/packages/cli/package.json version bump → stable release
-#   - push to `next` without a bump, or workflow_dispatch build-beta     → rolling beta
-#   - workflow_dispatch promote-stable <beta tag>                        → stable promotion
+#   - push to `next`                                      → rolling beta
+#   - workflow_dispatch build-beta [version]              → rolling or explicitly versioned beta
+#   - workflow_dispatch promote-stable <beta tag>         → stable promotion
 #
-# Inputs (env): EVENT_NAME, ACTION_INPUT, BETA_TAG_INPUT, GITHUB_TOKEN,
-#               REPOSITORY, RUN_NUMBER, COMMIT_SHA
+# Inputs (env): EVENT_NAME, ACTION_INPUT, BETA_TAG_INPUT, VERSION_INPUT,
+#               GITHUB_TOKEN, REPOSITORY, RUN_NUMBER, COMMIT_SHA
 # Output: key=value lines appended to $GITHUB_OUTPUT
 set -euo pipefail
 
@@ -30,26 +30,57 @@ latest_stable_tag() {
           | last | .tagName // empty'
 }
 
-# Echo the next "<major>.<minor>.<patch+1>" off the latest stable release, falling
-# back to the working-tree package.json when no stable release exists yet.
+# Echo the next "<major>.<minor>.<patch+1>" off the latest stable release.
 next_beta_base_version() {
   local latest current
   latest=$(latest_stable_tag)
   if [[ -z "$latest" ]]; then
-    echo "No stable @composio/cli release found, falling back to package.json" >&2
-    current=$(node -p "require('./ts/packages/cli/package.json').version")
-  else
-    current=${latest#@composio/cli@}
+    echo "No stable @composio/cli release found; provide VERSION_INPUT for the first beta" >&2
+    return 1
   fi
+  current=${latest#@composio/cli@}
 
   local major minor patch
   IFS='.' read -r major minor patch <<<"$current"
   echo "${major}.${minor}.$((patch + 1))"
 }
 
+version_is_greater() {
+  local candidate=$1 baseline=$2
+  local candidate_major candidate_minor candidate_patch
+  local baseline_major baseline_minor baseline_patch
+  IFS='.' read -r candidate_major candidate_minor candidate_patch <<<"$candidate"
+  IFS='.' read -r baseline_major baseline_minor baseline_patch <<<"$baseline"
+
+  ((candidate_major > baseline_major)) ||
+    ((candidate_major == baseline_major && candidate_minor > baseline_minor)) ||
+    ((
+      candidate_major == baseline_major &&
+        candidate_minor == baseline_minor &&
+        candidate_patch > baseline_patch
+    ))
+}
+
 emit_beta_target() {
-  local next_version release_tag
-  next_version=$(next_beta_base_version)
+  local requested_version=${1:-}
+  local latest latest_version next_version release_tag
+  if [[ -n "$requested_version" ]]; then
+    if [[ ! "$requested_version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+      echo "Beta version must match <major>.<minor>.<patch>" >&2
+      return 1
+    fi
+    next_version=$requested_version
+    latest=$(latest_stable_tag)
+    if [[ -n "$latest" ]]; then
+      latest_version=${latest#@composio/cli@}
+      if ! version_is_greater "$next_version" "$latest_version"; then
+        echo "Beta version ${next_version} must be newer than latest stable ${latest_version}" >&2
+        return 1
+      fi
+    fi
+  else
+    next_version=$(next_beta_base_version)
+  fi
   release_tag="@composio/cli@${next_version}-beta.${RUN_NUMBER}"
   {
     echo "checkout_ref=${COMMIT_SHA}"
@@ -73,24 +104,16 @@ emit_stable_target() {
   } >>"$GITHUB_OUTPUT"
 }
 
-# ── Push to next ──
+# Every push to next is a beta. Stable releases always promote an already-tested
+# beta, so package metadata can never create a second version authority.
 if [[ "$EVENT_NAME" == "push" ]]; then
-  current_version=$(node -p "require('./ts/packages/cli/package.json').version")
-  previous_version=$(git show HEAD^:ts/packages/cli/package.json 2>/dev/null \
-    | node -p "JSON.parse(require('fs').readFileSync('/dev/stdin','utf8')).version" 2>/dev/null || echo "")
-
-  # A version bump on push is a stable release; anything else is a rolling beta.
-  if [[ -n "$previous_version" && "$current_version" != "$previous_version" ]]; then
-    emit_stable_target "@composio/cli@${current_version}" "$current_version" "$COMMIT_SHA"
-  else
-    emit_beta_target
-  fi
+  emit_beta_target
   exit 0
 fi
 
 # ── workflow_dispatch: build-beta ──
 if [[ "$EVENT_NAME" == "workflow_dispatch" && "$ACTION_INPUT" == "build-beta" ]]; then
-  emit_beta_target
+  emit_beta_target "${VERSION_INPUT:-}"
   exit 0
 fi
 

@@ -1,6 +1,12 @@
+import os
+
 from composio import Composio
 
 composio = Composio()
+
+# Connected account with Gmail access and its owner (raise KeyError when unset)
+gmail_connected_account_id = os.environ["COMPOSIO_EXAMPLES_GMAIL_CONNECTED_ACCOUNT_ID"]
+user_id = os.environ["COMPOSIO_EXAMPLES_USER_ID"]
 
 
 # List all triggers
@@ -16,41 +22,35 @@ trigger_enums = composio.triggers.list_enum()
 print(trigger_enums)
 
 # Get a trigger by id
-trigger = composio.triggers.get_type(slug="GITHUB_COMMIT_EVENT")
+trigger = composio.triggers.get_type(slug="GMAIL_NEW_GMAIL_MESSAGE")
 print(trigger)
 
-# Create a trigger instance
+# Create a trigger instance pinned to a connected account
 instance = composio.triggers.create(
-    slug="GITHUB_COMMIT_EVENT",
-    connected_account_id="123",
-    trigger_config={
-        "repo": "composio",
-        "owner": "composiohq",
-    },
+    slug="GMAIL_NEW_GMAIL_MESSAGE",
+    connected_account_id=gmail_connected_account_id,
+    trigger_config={},
 )
 print(instance)
 
-# Or use user ID
+# Or use user ID and let the backend resolve the active connection
 instance = composio.triggers.create(
-    slug="GITHUB_COMMIT_EVENT",
-    user_id="user@email.com",
-    trigger_config={
-        "repo": "composio",
-        "owner": "composiohq",
-    },
+    slug="GMAIL_NEW_GMAIL_MESSAGE",
+    user_id=user_id,
+    trigger_config={},
 )
 print(instance)
 
 # Disable a trigger instance
-disabled_instance = composio.triggers.disable(trigger_id="123")
+disabled_instance = composio.triggers.disable(trigger_id=instance.trigger_id)
 print(disabled_instance)
 
 # Enable a trigger instance
-enabled_instance = composio.triggers.enable(trigger_id="123")
+enabled_instance = composio.triggers.enable(trigger_id=instance.trigger_id)
 print(enabled_instance)
 
 # Delete a trigger instance
-deleted_instance = composio.triggers.delete(trigger_id="123")
+deleted_instance = composio.triggers.delete(trigger_id=instance.trigger_id)
 print(deleted_instance)
 
 
@@ -92,4 +92,5 @@ def handle_slack_event(data):
     print(data)
 
 
+print("Subscribed to triggers. Waiting for events...", flush=True)
 subscription.wait_forever()

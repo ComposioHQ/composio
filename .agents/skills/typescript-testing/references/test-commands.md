@@ -6,7 +6,6 @@
 pnpm lint
 pnpm lint:packages
 pnpm typecheck
-pnpm typecheck:tsc
 pnpm build:packages
 pnpm test
 pnpm test:e2e

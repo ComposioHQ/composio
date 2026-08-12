@@ -1,9 +1,26 @@
-import { Context, Schema, LogLevel, String, pipe, Layer, Effect } from 'effect';
+import { Context, Schema, LogLevel, Equal, Layer, Effect } from 'effect';
 import { Command, Options } from '@effect/cli';
 import { setMinimumLogLevel } from 'src/effects/with-log-level';
 import type { ConfigError } from 'effect/ConfigError';
 
-const logLevelChoices = LogLevel.allLevels.map(level => String.toLowerCase(level._tag));
+const logLevelEntries = [
+  ['all', LogLevel.All],
+  ['fatal', LogLevel.Fatal],
+  ['error', LogLevel.Error],
+  ['warning', LogLevel.Warning],
+  ['info', LogLevel.Info],
+  ['debug', LogLevel.Debug],
+  ['trace', LogLevel.Trace],
+  ['none', LogLevel.None],
+] as const satisfies ReadonlyArray<readonly [string, LogLevel.LogLevel]>;
+
+const logLevelChoices = logLevelEntries.map(([choice]) => choice);
+
+const decodeLogLevel = (literal: (typeof logLevelChoices)[number]): LogLevel.LogLevel =>
+  logLevelEntries.find(([choice]) => choice === literal)?.[1] ?? LogLevel.None;
+
+const encodeLogLevel = (logLevel: LogLevel.LogLevel): (typeof logLevelChoices)[number] =>
+  logLevelEntries.find(([, value]) => Equal.equals(value, logLevel))?.[0] ?? 'none';
 
 const LogLevelLiteralSchema = Schema.Literal(...logLevelChoices)
   .annotations({
@@ -12,13 +29,13 @@ const LogLevelLiteralSchema = Schema.Literal(...logLevelChoices)
   .pipe(
     Schema.transform(
       Schema.declare((input: unknown): input is LogLevel.LogLevel =>
-        LogLevel.allLevels.includes(input as LogLevel.LogLevel)
+        logLevelEntries.some(([, logLevel]) => Equal.equals(input, logLevel))
       ).annotations({
         identifier: 'LogLevel',
       }),
       {
-        decode: literal => pipe(literal, String.capitalize, LogLevel.fromLiteral),
-        encode: logLevel => String.toLowerCase(logLevel._tag),
+        decode: decodeLogLevel,
+        encode: encodeLogLevel,
         strict: true,
       }
     )

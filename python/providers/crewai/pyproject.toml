@@ -1,6 +1,6 @@
 [project]
 name = "composio-crewai"
-version = "0.17.1"
+version = "0.19.0"
 description = "Use Composio to get an array of tools with your CrewAI agent."
 readme = "README.md"
 requires-python = ">=3.10,<4"
@@ -13,7 +13,7 @@ classifiers = [
     "Operating System :: OS Independent",
 ]
 dependencies = [
-    "crewai>=0.134.0,<1.16.0",
+    "crewai>=1.15.7,<2.0.0",
     "composio",
 ]
 

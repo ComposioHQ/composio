@@ -14,10 +14,13 @@ const expectedSkills = [
   'bug-fixing',
   'cli-command',
   'cli-e2e',
+  'cli-release',
   'cross-sdk-parity',
   'docs-decisions',
   'effect-v4',
   'eve',
+  'good-docs-audit',
+  'good-docs-writing',
   'python-providers',
   'python-release',
   'python-sdk',
@@ -225,6 +228,7 @@ for (const relativePath of ['docs/decisions/README.md', 'docs/agent-guidance/REA
 
 const ignoredDirs = new Set([
   '.git',
+  '.generated',
   'node_modules',
   '.turbo',
   '.ruff_cache',

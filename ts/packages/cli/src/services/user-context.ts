@@ -1,12 +1,12 @@
-import { FileSystem } from '@effect/platform';
-import { Effect, Context, Layer, Option } from 'effect';
-import path from 'path';
+import { FileSystem, Path } from '@effect/platform';
+import { Effect, Context, Layer, Option, Predicate, Schema } from 'effect';
 import {
   type UserDataWithDefaults,
   UserData,
   userDataFromJSON,
   userDataToJSON,
 } from 'src/models/user-data';
+import { JsonRecordSchema } from 'src/effects/json';
 import { setupCacheDir } from 'src/effects/setup-cache-dir';
 import * as constants from 'src/constants';
 import type { PlatformError } from '@effect/platform/Error';
@@ -26,6 +26,16 @@ import { ComposioCliUserConfig, ComposioCliUserConfigLive } from 'src/services/c
  */
 const KEYRING_SERVICE = 'com.composio.cli';
 const KEYRING_USER = 'default';
+const decodeUserDataJsonObject = Schema.decodeUnknown(Schema.parseJson(JsonRecordSchema));
+
+const normalizeEncodedUserData = (encoded: string, omitApiKey: boolean) =>
+  Effect.gen(function* () {
+    const decoded = yield* decodeUserDataJsonObject(encoded);
+    const parsed = { ...decoded };
+    if (parsed.project_id === null) delete parsed.project_id;
+    if (omitApiKey && parsed.api_key === null) delete parsed.api_key;
+    return JSON.stringify(parsed);
+  });
 
 // -----------------------------------------------------------------------------
 // Keyring helpers — extracted from the generator so it stays within
@@ -59,7 +69,7 @@ const writeKeyring = (deps: KeyringDeps, password: string) =>
           } else {
             yield* Effect.logDebug(
               'Unexpected keyring error while writing api_key, falling back to plaintext: ' +
-                (err instanceof Error ? err.message : String(err))
+                (Predicate.isError(err) ? err.message : String(err))
             );
           }
           return false;
@@ -93,7 +103,7 @@ const readKeyring = (deps: KeyringDeps) =>
           } else {
             yield* Effect.logDebug(
               'Unexpected keyring error while reading api_key, falling back to plaintext: ' +
-                (err instanceof Error ? err.message : String(err))
+                (Predicate.isError(err) ? err.message : String(err))
             );
           }
           return Option.none<string>();
@@ -120,7 +130,7 @@ const deleteKeyring = (deps: KeyringDeps) =>
             yield* Effect.logDebug(`Keyring delete skipped: ${err.kind}`);
           } else {
             yield* Effect.logWarning(
-              'Keyring delete failed: ' + (err instanceof Error ? err.message : String(err))
+              'Keyring delete failed: ' + (Predicate.isError(err) ? err.message : String(err))
             );
           }
         })
@@ -151,6 +161,7 @@ export const rawComposioUserContextLive = Layer.effect(
   ComposioUserContext,
   Effect.gen(function* () {
     const fs = yield* FileSystem.FileSystem;
+    const path = yield* Path.Path;
     const apiKey = yield* APP_CONFIG['USER_API_KEY'];
     const baseURL = yield* APP_CONFIG['BASE_URL'];
     const webURL = yield* APP_CONFIG['WEB_URL'];
@@ -183,14 +194,7 @@ export const rawComposioUserContextLive = Layer.effect(
           ? snapshot
           : { ...snapshot, apiKey: Option.none() };
         const encoded = yield* userDataToJSON(onDisk);
-        const normalized = JSON.stringify(
-          (() => {
-            const parsed = JSON.parse(encoded) as Record<string, unknown>;
-            if (parsed.project_id === null) delete parsed.project_id;
-            if (!useLegacyStorage && parsed.api_key === null) delete parsed.api_key;
-            return parsed;
-          })()
-        );
+        const normalized = yield* normalizeEncodedUserData(encoded, !useLegacyStorage);
         yield* Effect.logDebug('Saving user data:', normalized);
         yield* fs.writeFileString(jsonUserConfigPath, normalized);
       });
@@ -233,13 +237,7 @@ export const rawComposioUserContextLive = Layer.effect(
           // process restarts. We bypass writeJson's strip logic by
           // temporarily writing with the legacy-storage codepath.
           const onDisk = yield* userDataToJSON(next);
-          const normalized = JSON.stringify(
-            (() => {
-              const parsed = JSON.parse(onDisk) as Record<string, unknown>;
-              if (parsed.project_id === null) delete parsed.project_id;
-              return parsed;
-            })()
-          );
+          const normalized = yield* normalizeEncodedUserData(onDisk, false);
           yield* Effect.logDebug('Saving user data (keyring fallback):', normalized);
           yield* fs.writeFileString(jsonUserConfigPath, normalized);
         }
@@ -354,7 +352,7 @@ const resolveMacOSBackend = (
 
 /**
  * Public layer that pre-provides the keyring and CLI-config deps,
- * leaving only `FileSystem` as the external requirement. The keyring
+ * leaving only `FileSystem` and `Path` as external requirements. The keyring
  * backend is chosen dynamically from the user's `config.json`
  * `security` field — `"auto"` / `"keychain-subprocess"` select the
  * subprocess path (default); `"keychain"` opts into the experimental

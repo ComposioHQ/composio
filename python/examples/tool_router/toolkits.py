@@ -5,6 +5,8 @@ This example demonstrates how to retrieve available toolkits
 and their connection status in a Tool Router session.
 """
 
+import os
+
 from composio import Composio
 
 composio = Composio()
@@ -12,8 +14,11 @@ composio = Composio()
 # Create a tool router session
 # When manage_connections is enabled, tools for managing connections are included
 session = composio.create(
-    user_id="pg-test-37ee710c-d5be-4775-91f2-a8e06b937d9b",
+    # The provisioned examples user (raises KeyError when unset)
+    user_id=os.environ["COMPOSIO_EXAMPLES_USER_ID"],
     manage_connections=True,
+    # mcp=True surfaces session.mcp on the returned type
+    mcp=True,
 )
 
 print(f"Session created: {session.session_id}")

@@ -214,8 +214,8 @@ describe('Tools Modifiers', () => {
       };
       getRawComposioToolBySlugSpy.mockResolvedValueOnce(mockTool);
 
-      const createExecuteToolFnSpy = vi.spyOn(context.tools as any, 'createExecuteToolFn');
-      const executeWithModifiers = async (params: any) => {
+      const createExecuteToolFnSpy = vi.spyOn(context.tools as unknown, 'createExecuteToolFn');
+      const executeWithModifiers = async (params: unknown) => {
         // Apply beforeExecute modifier
         const modifiedParams = await executionModifiers.beforeExecute({
           toolSlug: slug,
@@ -241,22 +241,14 @@ describe('Tools Modifiers', () => {
       });
 
       // Verify schema modification
-      expect(getRawComposioToolBySlugSpy).toHaveBeenCalledWith(
-        slug,
-        {
-          modifySchema: schemaModifier,
-        },
-        undefined
-      );
-      expect(mockTool.description).toBe('Enhanced GITHUB_GET_REPOS for better context');
-      expect(mockTool.tags).toContain('enhanced');
-      expect(mockTool.tags).toContain('modified');
-      expect(mockTool.inputParameters).toHaveProperty(['properties', 'tracking']);
+      expect(getRawComposioToolBySlugSpy).toHaveBeenCalledWith(slug, undefined, undefined);
+      expect(schemaModifier).toHaveBeenCalledOnce();
 
       // Verify execution function creation
       expect(createExecuteToolFnSpy).toHaveBeenCalledWith(
         userId,
-        expect.objectContaining(executionModifiers)
+        expect.objectContaining(executionModifiers),
+        expect.any(Array)
       );
 
       // Mock a tool execution to verify the full flow

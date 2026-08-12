@@ -8,7 +8,7 @@ from setuptools import setup
 
 setup(
     name="composio_gemini",
-    version="0.17.1",
+    version="0.19.0",
     author="Composio",
     author_email="tech@composio.dev",
     description="Use Composio to get an array of tools with your Gemini agent.",
@@ -22,7 +22,7 @@ setup(
     ],
     python_requires=">=3.10,<4",
     install_requires=[
-        "google-genai>=2.8.0",
+        "google-genai>=2.14.0",
         "composio",
     ],
     include_package_data=True,

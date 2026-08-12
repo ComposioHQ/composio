@@ -54,7 +54,6 @@ const stream = streamText({
       for (let i = 0; i < step.toolCalls.length; i++) {
         const toolCall = step.toolCalls[i];
         console.log(`🔧 Executed ${toolCall.toolName}`);
-        // @ts-ignore
         const toolResult = step.toolResults?.[i];
         if (toolResult !== undefined) {
           console.log(`✅ Result for ${toolCall.toolName}:`, toolResult);

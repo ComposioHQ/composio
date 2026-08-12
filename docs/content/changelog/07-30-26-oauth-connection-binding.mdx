@@ -1,0 +1,15 @@
+---
+title: "Callback identity verification for OAuth connections"
+date: "2026-07-30"
+description: "Opt-in, per-project callback identity verification: confirm the returning user before an OAuth connection activates."
+---
+
+You can now add an identity check to your OAuth connections. Set a verifier URL on your project, and
+Composio hands each OAuth return to your server, activating the connection only after your server
+confirms the signed-in user is the one it was created for.
+
+It is opt-in per project and, once set, covers every OAuth connection in the project. Because it
+confirms the returning user, it holds however the user comes back from the provider. Turn it on in
+Settings → General.
+
+[Learn more](/reference/api-reference/connected-accounts#callback-identity-verification)

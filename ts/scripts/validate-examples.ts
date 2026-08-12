@@ -1,6 +1,9 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import ts from 'typescript';
+// TS7 (tsgo) ships no JS compiler API yet
+// (see: https://devblogs.microsoft.com/typescript/announcing-typescript-7-0/#the-road-forward).
+// Use the TS6 alias for transpileModule for now.
+import ts from 'typescript6';
 
 const repoRoot = process.cwd();
 const examplesRoot = path.join(repoRoot, 'ts', 'examples');

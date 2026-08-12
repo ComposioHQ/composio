@@ -1,0 +1,131 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  // Ported from eslint.config.mjs and eslint-config-next/core-web-vitals.
+  // Native oxlint plugins cover the Next.js, React, import, and accessibility
+  // rules, plus the two classic hooks rules (rules-of-hooks, exhaustive-deps).
+  // Dashboard-link policy uses the same ESLint-compatible no-restricted-syntax
+  // plugin as the root workspace config.
+  "plugins": ["typescript", "nextjs", "react", "import", "jsx-a11y"],
+  "jsPlugins": [{ "name": "eslint-js", "specifier": "oxlint-plugin-eslint" }],
+  "categories": {
+    "correctness": "off"
+  },
+  "env": {
+    "builtin": true
+  },
+  "ignorePatterns": [".next/**", "out/**", "build/**", "next-env.d.ts", ".source/**"],
+  "rules": {
+    "typescript/no-explicit-any": [
+      "error",
+      {
+        "fixToUnknown": true
+      }
+    ],
+    "nextjs/google-font-display": "warn",
+    "nextjs/google-font-preconnect": "warn",
+    "nextjs/next-script-for-ga": "warn",
+    "nextjs/no-async-client-component": "warn",
+    "nextjs/no-before-interactive-script-outside-document": "warn",
+    "nextjs/no-css-tags": "warn",
+    "nextjs/no-head-element": "warn",
+    "nextjs/no-html-link-for-pages": "error",
+    "nextjs/no-img-element": "warn",
+    "nextjs/no-page-custom-font": "warn",
+    "nextjs/no-styled-jsx-in-document": "warn",
+    "nextjs/no-sync-scripts": "error",
+    "nextjs/no-title-in-document-head": "warn",
+    "nextjs/no-typos": "warn",
+    "nextjs/no-unwanted-polyfillio": "warn",
+    "nextjs/inline-script-id": "error",
+    "nextjs/no-assign-module-variable": "error",
+    "nextjs/no-document-import-in-page": "error",
+    "nextjs/no-duplicate-head": "error",
+    "nextjs/no-head-import-in-document": "error",
+    "nextjs/no-script-component-in-head": "error",
+    "eslint-js/no-restricted-syntax": [
+      "error",
+      {
+        "selector": "Literal[value=/dashboard\\.composio\\.dev/]:not([value=/utm_source=/])",
+        "message": "Links to the Composio dashboard must carry utm_source=docs plus utm_medium and utm_campaign so sign-ups can be attributed to docs (MDX links are checked by tests/static/dashboard-links.test.ts)."
+      },
+      {
+        "selector": "TemplateElement[value.raw=/dashboard\\.composio\\.dev/]:not([value.raw=/utm_source=/])",
+        "message": "Links to the Composio dashboard must carry utm_source=docs plus utm_medium and utm_campaign so sign-ups can be attributed to docs (MDX links are checked by tests/static/dashboard-links.test.ts)."
+      },
+      {
+        "selector": "Literal[value=/(?<![a-z0-9-])(app|platform)\\.composio\\.dev/]",
+        "message": "The app/platform composio hosts do not exist; link to the Composio dashboard with a go-link path instead."
+      },
+      {
+        "selector": "TemplateElement[value.raw=/(?<![a-z0-9-])(app|platform)\\.composio\\.dev/]",
+        "message": "The app/platform composio hosts do not exist; link to the Composio dashboard with a go-link path instead."
+      },
+      {
+        "selector": "Literal[value=/dashboard\\.composio\\.dev\\u002F(?!~\\u002F(project|org)([\\u002F?#]|$)|login([\\u002F?#]|$))/]",
+        "message": "Composio dashboard links with a path must be go-links (/~/project/... or /~/org/...) or /login so they resolve inside the user workspace."
+      },
+      {
+        "selector": "TemplateElement[value.raw=/dashboard\\.composio\\.dev\\u002F(?!~\\u002F(project|org)([\\u002F?#]|$)|login([\\u002F?#]|$))/]",
+        "message": "Composio dashboard links with a path must be go-links (/~/project/... or /~/org/...) or /login so they resolve inside the user workspace."
+      }
+    ]
+  },
+  "overrides": [
+    {
+      "files": ["**/*.{js,jsx,mjs,ts,tsx,mts,cts}"],
+      "rules": {
+        "react/display-name": "error",
+        "react/jsx-key": "error",
+        "react/jsx-no-comment-textnodes": "error",
+        "react/jsx-no-duplicate-props": "error",
+        "react/jsx-no-target-blank": "off",
+        "react/jsx-no-undef": "error",
+        "react/no-children-prop": "error",
+        "react/no-danger-with-children": "error",
+        "react/no-direct-mutation-state": "error",
+        "react/no-find-dom-node": "error",
+        "react/no-is-mounted": "error",
+        "react/no-render-return-value": "error",
+        "react/no-string-refs": "error",
+        "react/no-unescaped-entities": "error",
+        "react/no-unknown-property": "off",
+        "react/no-unsafe": "off",
+        "react/react-in-jsx-scope": "off",
+        "react/rules-of-hooks": "error",
+        "react/exhaustive-deps": "warn",
+        // The ESLint config also ran the compiler-powered react-hooks rules
+        // set-state-in-effect, immutability, and purity at "warn" over
+        // pre-existing violations in interactive components, to be flipped to
+        // "error" once the debt is burned down. oxlint has no port of those
+        // three; react-compiler is the closest signal until it does.
+        "react/react-compiler": "warn",
+        "import/no-anonymous-default-export": "warn",
+        "jsx-a11y/alt-text": [
+          "warn",
+          {
+            "elements": ["img"],
+            "img": ["Image"]
+          }
+        ],
+        "jsx-a11y/aria-props": "warn",
+        "jsx-a11y/aria-proptypes": "warn",
+        "jsx-a11y/aria-unsupported-elements": "warn",
+        "jsx-a11y/role-has-required-aria-props": "warn",
+        "jsx-a11y/role-supports-aria-props": "warn"
+      },
+      "globals": {
+        "AudioWorkletGlobalScope": "readonly",
+        "AudioWorkletProcessor": "readonly",
+        "currentFrame": "readonly",
+        "currentTime": "readonly",
+        "registerProcessor": "readonly",
+        "sampleRate": "readonly",
+        "WorkletGlobalScope": "readonly"
+      },
+      "env": {
+        "browser": true,
+        "node": true
+      }
+    }
+  ]
+}

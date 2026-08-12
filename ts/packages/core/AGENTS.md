@@ -27,3 +27,4 @@ pnpm test
 - Add regression coverage for behavior changes.
 - Do not hand-edit generated client code unless the generator output is explicitly in scope.
 - Check Python parity before changing shared concepts such as tools, toolkits, sessions, auth configs, or connected accounts.
+- Parse untyped or external data (API payloads, JSON, `unknown`) at the boundary with zod schemas and let `z.infer` types flow downstream. Never hand-roll structural guards (`'x' in obj` / `typeof` chains) or cast parsed JSON with `as` — an assertion is not validation.

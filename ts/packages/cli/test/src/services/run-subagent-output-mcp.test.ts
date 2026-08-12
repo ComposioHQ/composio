@@ -1,8 +1,13 @@
 import * as fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
+import { decodeStructuredSchemaJson } from 'src/services/run-subagent-shared';
 
 describe('run-subagent-output-mcp source', () => {
+  it('[Given] a non-object schema file [Then] it rejects the malformed boundary payload', () => {
+    expect(() => decodeStructuredSchemaJson('[]')).toThrow();
+  });
+
   it('[Given] the structured output helper source [Then] it statically imports the MCP SDK', () => {
     const sourcePath = fileURLToPath(
       new URL('../../../src/services/run-subagent-output-mcp.ts', import.meta.url)

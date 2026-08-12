@@ -1,3 +1,4 @@
+import { HelpDoc, ValidationError } from '@effect/cli';
 import { FileSystem } from '@effect/platform';
 import { Effect, Option } from 'effect';
 
@@ -22,7 +23,9 @@ export const resolveOptionalTextInput = (
       if (value.startsWith('@')) {
         const filePath = value.slice(1).trim();
         if (!filePath) {
-          return yield* Effect.fail(new Error('Missing file path after "@" in --data'));
+          return yield* Effect.fail(
+            ValidationError.invalidValue(HelpDoc.p('Missing file path after "@" in --data'))
+          );
         }
         return yield* fs.readFileString(filePath, 'utf-8');
       }

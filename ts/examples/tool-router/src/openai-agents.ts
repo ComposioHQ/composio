@@ -1,5 +1,5 @@
 import { Composio } from '@composio/core';
-import { Agent, hostedMcpTool, run } from '@openai/agents';
+import { Agent, hostedMcpTool, run, type AgentInputItem } from '@openai/agents';
 import { createInterface } from 'node:readline/promises';
 
 const composio = new Composio();
@@ -22,10 +22,13 @@ const agent = new Agent({
 
 const rl = createInterface({ input: process.stdin, output: process.stdout });
 
-for (let input: any = await rl.question('You: '); input !== 'exit';) {
+for (let input: string | AgentInputItem[] = await rl.question('You: '); input !== 'exit';) {
   const result = await run(agent, input);
   console.log(`Agent: ${result.finalOutput}\n`);
-  input = [...result.history, { role: 'user' as const, content: await rl.question('You: ') }];
+  input = [
+    ...result.history,
+    { role: 'user' as const, content: await rl.question('You: ') },
+  ] as AgentInputItem[];
 }
 
 rl.close();

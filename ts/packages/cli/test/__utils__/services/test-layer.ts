@@ -1,4 +1,6 @@
+import path from 'node:path';
 import * as tempy from 'tempy';
+import { Composio as RawComposioClient } from '@composio/client';
 import { CliApp, CliConfig } from '@effect/cli';
 import { Command, FetchHttpClient, FileSystem, Path } from '@effect/platform';
 import { BunFileSystem, BunContext, BunPath } from '@effect/platform-bun';
@@ -45,6 +47,7 @@ import { UpgradeBinary } from 'src/services/upgrade-binary';
 import { NodeOs } from 'src/services/node-os';
 import { TriggersRealtime } from 'src/services/triggers-realtime';
 import { ToolsExecutor, ToolsExecutorLive } from 'src/services/tools-executor';
+import { ToolkitSlugCatalog } from 'src/services/toolkit-slug-catalog';
 import type { ToolExecuteResponse } from 'src/services/tools-executor';
 import type {
   SessionCreateResponse,
@@ -84,15 +87,26 @@ export interface TestLiveInput {
   fixture?: string;
 
   /**
-   * Mock toolkit-related data to use in test.
+   * Override the running-executable path reported by `NodeProcess`.
+   *
+   * A relative value resolves against the per-test home directory, which is a
+   * fresh temp dir created while the layer is being built — so a scenario that
+   * needs an exec path underneath it (e.g. `.local/bin/composio`) can stay
+   * relative instead of spelling out a path it cannot know up front.
+   * Defaults to `<homedir>/composio`.
    */
-  toolkitsData?: {
-    toolkits?: Toolkits;
-    detailedToolkits?: ToolkitDetailed[];
-    tools?: Tools;
-    triggerTypesAsEnums?: TriggerTypesAsEnums;
-    triggerTypes?: TriggerTypes;
-  };
+  execPath?: string;
+
+  /**
+ * Mock toolkit-related data to use in test.
+ */
+toolkitsData?: {
+  toolkits?: Toolkits;
+  detailedToolkits?: ToolkitDetailed[];
+  tools?: Tools;
+  triggerTypesAsEnums?: TriggerTypesAsEnums;
+  triggerTypes?: TriggerTypes;
+};
 
   /**
    * Mock auth-config data to use in test.
@@ -218,7 +232,7 @@ export interface TestLiveInput {
  * Layer<RequirementsOut, Error, RequirementsIn>
  */
 
-type RequiredLayer = Layer.Layer<any, any, never>;
+type RequiredLayer = Layer.Layer<CliApp.CliApp.Environment, unknown, never>;
 
 const ConsumerProjectResolveFetchMock = Layer.scopedDiscard(
   Effect.acquireRelease(
@@ -787,11 +801,12 @@ export const TestLayer = (input?: TestLiveInput) =>
       })
     );
 
-    // Mock `node:os`
+    // Mock operating-system details
     const NodeOsTest = Layer.succeed(
       NodeOs,
       new NodeOs({
         homedir: cwd,
+        tmpdir: tempy.rootTemporaryDirectory,
         arch: 'arm64',
         platform: 'darwin',
       })
@@ -802,6 +817,7 @@ export const TestLayer = (input?: TestLiveInput) =>
       NodeProcess,
       new NodeProcess({
         cwd,
+        execPath: input?.execPath ? path.resolve(cwd, input.execPath) : path.join(cwd, 'composio'),
         platform: 'darwin',
         arch: 'arm64',
       })
@@ -809,7 +825,7 @@ export const TestLayer = (input?: TestLiveInput) =>
 
     const ComposioUserContextTest = Layer.provideMerge(
       ComposioUserContextLive,
-      Layer.merge(BunFileSystem.layer, NodeOsTest)
+      Layer.mergeAll(BunFileSystem.layer, BunPath.layer, NodeOsTest)
     );
 
     let rawCliUserConfig = CliUserConfig.make({
@@ -832,7 +848,7 @@ export const TestLayer = (input?: TestLiveInput) =>
             developerModeEnabled: rawCliUserConfig.developer.enabled,
             developerDangerousCommandsEnabled: rawCliUserConfig.developer.destructiveActions,
             experimentalFeatures: rawCliUserConfig.experimentalFeatures,
-            artifactDirectory: undefined,
+            artifactDirectory: Option.getOrUndefined(rawCliUserConfig.artifactDirectory),
             experimentalSubagentTarget: 'auto' as const,
             security: 'auto' as const,
           };
@@ -988,7 +1004,7 @@ export const TestLayer = (input?: TestLiveInput) =>
       };
     };
 
-    const mockComposioClient = {
+    const mockComposioClient = Object.assign(new RawComposioClient({ apiKey: 'test' }), {
       link: {
         create: async (params: { auth_config_id: string; user_id: string }) => {
           const response = connectedAccountsData.linkResponse ?? {
@@ -1185,23 +1201,25 @@ export const TestLayer = (input?: TestLiveInput) =>
           }),
         },
       },
-    };
+    });
 
     const ComposioClientSingletonTest = Layer.succeed(
       ComposioClientSingleton,
       new ComposioClientSingleton({
         get: Effect.fn(function* () {
-          // Partial mock: only implements `toolRouter.session.*` methods used by
-          // CLI commands under test. The full Composio client interface is too
-          // large to mock completely for unit tests.
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          return mockComposioClient as any;
+          return mockComposioClient;
         }),
         getFor: Effect.fn(function* () {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          return mockComposioClient as any;
+          return mockComposioClient;
         }),
       })
+    );
+
+    // Built per test layer, so each test resolves toolkit slugs against its own
+    // cache directory rather than inheriting a memo from an earlier test.
+    const ToolkitSlugCatalogTest = Layer.provide(
+      ToolkitSlugCatalog.Default,
+      ComposioToolkitsRepositoryTest
     );
 
     // --- ToolsExecutor ---
@@ -1227,7 +1245,10 @@ export const TestLayer = (input?: TestLiveInput) =>
             },
           })
         )
-      : Layer.provide(ToolsExecutorLive, ComposioClientSingletonTest);
+      : Layer.provide(
+          ToolsExecutorLive,
+          Layer.mergeAll(ComposioClientSingletonTest, ToolkitSlugCatalogTest)
+        );
 
     const CliConfigLive = CliConfig.layer(ComposioCliConfig);
 
@@ -1276,6 +1297,7 @@ export const TestLayer = (input?: TestLiveInput) =>
       ComposioSessionRepositoryTest,
       TriggersRealtimeTest,
       ComposioToolkitsRepositoryTest,
+      ToolkitSlugCatalogTest,
       JsPackageManagerDetector.Default,
       ProjectEnvironmentDetector.Default,
       CommandRunnerTest,

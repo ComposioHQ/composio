@@ -6,7 +6,7 @@ import {
   type LocalReadinessStatus,
   type LocalToolsReadinessReport,
 } from '@composio/cli-local-tools';
-import { Effect, Option } from 'effect';
+import { Data, Effect, Option, Predicate } from 'effect';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { bold, gray, green, red } from 'src/ui/colors';
 import { truncate } from 'src/ui/truncate';
@@ -30,6 +30,18 @@ const toolkits = Options.text('toolkits').pipe(
   Options.optional,
   Options.withDescription('Filter by local toolkit slugs, comma-separated')
 );
+
+export class LocalToolsDoctorError extends Data.TaggedError(
+  'commands/local-tools/LocalToolsDoctorError'
+)<{
+  readonly message: string;
+  readonly operation: 'check' | 'strict';
+  readonly notReadyTools: ReadonlyArray<string>;
+  readonly cause?: unknown;
+}> {}
+
+const errorMessage = (error: unknown): string =>
+  Predicate.isError(error) ? error.message : String(error);
 
 const parseToolkitFilter = (value: Option.Option<string>): ReadonlyArray<string> | undefined => {
   const raw = Option.getOrUndefined(value);
@@ -59,9 +71,11 @@ const statusLabel = (status: LocalReadinessStatus): string => {
   return red(status);
 };
 
-const hasProblems = (report: LocalToolsReadinessReport): boolean =>
-  report.toolkits.some(toolkit =>
-    toolkit.tools.some(tool => tool.status !== 'ready' && tool.status !== 'unsupported')
+const notReadyTools = (report: LocalToolsReadinessReport): ReadonlyArray<string> =>
+  report.toolkits.flatMap(toolkit =>
+    toolkit.tools
+      .filter(tool => tool.status !== 'ready' && tool.status !== 'unsupported')
+      .map(tool => tool.finalSlug)
   );
 
 const formatDoctorReport = (report: LocalToolsReadinessReport, metadataPath: string): string => {
@@ -115,12 +129,20 @@ export const localToolsCmd$Doctor = Command.make(
       const ui = yield* TerminalUI;
       const toolkitFilter = parseToolkitFilter(toolkits);
       const metadataPath = getLocalToolsMetaPath();
-      const report = yield* Effect.tryPromise(() =>
-        checkLocalToolkitsReadiness({
-          includeUnsupported: allPlatforms,
-          toolkits: toolkitFilter,
-        })
-      );
+      const report = yield* Effect.tryPromise({
+        try: () =>
+          checkLocalToolkitsReadiness({
+            includeUnsupported: allPlatforms,
+            toolkits: toolkitFilter,
+          }),
+        catch: cause =>
+          new LocalToolsDoctorError({
+            message: errorMessage(cause),
+            operation: 'check',
+            notReadyTools: [],
+            cause,
+          }),
+      });
 
       if (json) {
         yield* ui.output(JSON.stringify({ metadataPath, ...report }, null, 2), { force: true });
@@ -128,10 +150,15 @@ export const localToolsCmd$Doctor = Command.make(
         yield* ui.log.message(formatDoctorReport(report, metadataPath));
       }
 
-      if (strict && hasProblems(report)) {
-        return yield* Effect.fail(
-          new Error('One or more local tools are not ready. Run without --strict for setup hints.')
-        );
+      if (strict) {
+        const problems = notReadyTools(report);
+        if (problems.length > 0) {
+          return yield* new LocalToolsDoctorError({
+            message: 'One or more local tools are not ready. Run without --strict for setup hints.',
+            operation: 'strict',
+            notReadyTools: problems,
+          });
+        }
       }
     })
 ).pipe(

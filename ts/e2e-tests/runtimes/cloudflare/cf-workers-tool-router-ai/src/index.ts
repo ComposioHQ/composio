@@ -136,7 +136,7 @@ app.get('/test/agent', async c => {
   const openai = createOpenAI({ apiKey: c.env.OPENAI_API_KEY });
 
   const result = await generateText({
-    model: openai('gpt-5.1-codex'),
+    model: openai('gpt-5.1'),
     prompt: `Look up the HackerNews user "pg" with HACKERNEWS_GET_USER, then return the exact karma value from that tool result.`,
     output: Output.object({
       schema: z.object({

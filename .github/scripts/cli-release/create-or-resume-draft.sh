@@ -4,7 +4,7 @@
 # draft by re-uploading (--clobber). Refuse to mutate a tag that is already published.
 #
 # Drafts fire no `release: published` event and are excluded from `/releases/latest`, so no
-# anonymous consumer (install.sh, Homebrew, the redirect) can observe a release before its
+# anonymous consumer (install.sh, the redirect) can observe a release before its
 # assets are attached and verified. The release is only flipped to published by a later step.
 #
 # Inputs (env): RELEASE_TAG, RELEASE_NAME, CHECKOUT_REF, PRERELEASE, GH_TOKEN

@@ -10,6 +10,7 @@ Verifies:
 """
 
 import inspect
+import typing as t
 from unittest.mock import MagicMock, Mock
 
 import pytest
@@ -175,6 +176,26 @@ class TestWrapTool:
         assert "body" in sig.parameters
         assert sig.parameters["title"].annotation is str
         assert sig.parameters["body"].annotation is str
+
+    def test_callable_has_typed_free_form_object_argument(self):
+        from composio_gemini import GeminiProvider
+
+        provider = GeminiProvider()
+        tool = create_mock_tool(
+            "PROCESS_PAYLOAD",
+            "test",
+            input_parameters={
+                "type": "object",
+                "properties": {"payload": {"type": "object"}},
+                "required": ["payload"],
+            },
+        )
+
+        result = provider.wrap_tool(tool, create_mock_execute_tool())
+        parameter = inspect.signature(result).parameters["payload"]
+
+        assert parameter.annotation == t.Dict[str, t.Any]  # noqa: UP006
+        assert result.__annotations__["payload"] == t.Dict[str, t.Any]  # noqa: UP006
 
     def test_callable_has_annotations(self):
         from composio_gemini import GeminiProvider

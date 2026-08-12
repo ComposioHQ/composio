@@ -12,6 +12,8 @@ If you're building an agent, we recommend using [sessions](/docs/configuring-ses
 
 Fetch specific tools, filter by permissions or search, and inspect schemas for type information. Tools are automatically formatted for your provider.
 
+Not sure which toolkit covers your use case? Browse the [Toolkits catalog](/toolkits) — each toolkit page lists its tool slugs — or [search by task](#by-search-experimental) below.
+
 ## Basic usage
 
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
@@ -61,7 +63,7 @@ const tool = await composio.tools.getRawComposioToolBySlug("GMAIL_SEND_EMAIL");
 Generate type-safe code for direct SDK execution with [`composio generate`](/docs/cli#generate-type-definitions). This creates TypeScript or Python types from tool schemas.
 
 <Callout type="info">
-View tool parameters and schemas visually in the [Composio platform](https://dashboard.composio.dev). Navigate to any toolkit and select a tool to see its input/output parameters.
+View tool parameters and schemas visually in the [Composio platform](https://dashboard.composio.dev?utm_source=docs&utm_medium=content&utm_campaign=docs-tools-direct-fetching-tools). Navigate to any toolkit and select a tool to see its input/output parameters.
 </Callout>
 
 ## Filtering tools
@@ -239,8 +241,8 @@ const toolkitSearchRaw = await composio.tools.getRawComposioTools({
   </Tab>
 </Tabs>
 
-<Callout type="warn">
-When no toolkit version is specified, the API returns tools from the base version (`00000000_00`), which may be fewer than what's available. Pass `toolkit_versions="latest"` or a specific version to get all tools. Never use `latest` in production. See [toolkit versioning](/docs/tools-direct/toolkit-versioning).
+<Callout type="info">
+These SDK examples use `latest` by default. REST v3 tool endpoints default to `00000000_00`; REST v3.1 tool endpoints default to `latest`. Pin a dated version when application code parses tool output. See [toolkit versioning](/docs/tools-direct/toolkit-versioning).
 </Callout>
 
 ## Next

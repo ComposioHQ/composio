@@ -50,4 +50,4 @@ Edit `src/index.ts` to:
 
 - [Documentation](https://docs.composio.dev)
 - [Discord Community](https://discord.gg/composio)
-- [GitHub Issues](https://github.com/composio/composio/issues)
+- [GitHub Issues](https://github.com/ComposioHQ/composio/issues)

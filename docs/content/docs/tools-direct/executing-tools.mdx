@@ -1,6 +1,6 @@
 ---
-title: Executing Tools
-description: Learn how to execute Composio tools with different providers and frameworks
+title: Executing tools directly
+description: Maintain legacy code that calls composio.tools.execute() and other direct tool APIs
 keywords: [execute, run, tool calling, function calling, direct execution]
 llmGuardrails: "direct-execution"
 legacy: true
@@ -208,10 +208,21 @@ console.log(text);
 
 If you just want to call a tool without using any framework or LLM provider, you can use the `execute` method directly.
 
+<Callout type="warn">
+**A toolkit version is required for direct execution** — calling `tools.execute()` without one raises `ToolVersionRequiredError`, and `"latest"` alone is not accepted here. Two ways to satisfy it:
+
+- **An LLM or agent consumes the outputs:** keep `"latest"` and pass `dangerously_skip_version_check=True` (TypeScript: `dangerouslySkipVersionCheck: true`) on the execute call — you always run the newest tools, and the flag's name is the reminder that output schemas can change between releases.
+- **Your code parses the outputs:** pin a dated version — look it up with `composio.toolkits.get(slug="...").meta.version` or in the [Toolkits catalog](/toolkits), and pass it at SDK initialization or per call via `version="..."`.
+
+See [toolkit versioning](/docs/tools-direct/toolkit-versioning) for the full tradeoffs.
+</Callout>
+
 <Callout type="info">
+**Finding a toolkit and tool:** browse the [Toolkits catalog](/toolkits) — each toolkit page lists its tool slugs and current version — or search by task from the CLI: `composio search "send an email"`. You can also [search tools semantically](/docs/tools-direct/fetching-tools#by-search-experimental) from the SDK.
+
 **Finding tool parameters and types:**
 
-**Platform UI**: [Auth Configs](https://dashboard.composio.dev/~/project/auth-configs) → Select your toolkit → Tools & Triggers → Select the tool to see its required and optional parameters
+**Platform UI**: [Auth Configs](https://dashboard.composio.dev/~/project/auth-configs?utm_source=docs&utm_medium=content&utm_campaign=docs-tools-direct-executing-tools) → Select your toolkit → Tools & Triggers → Select the tool to see its required and optional parameters
 
 **CLI**: For Python and TypeScript projects, run `composio generate` to generate types. [Learn more →](/docs/cli#generate-type-definitions)
 </Callout>
@@ -222,17 +233,20 @@ If you just want to call a tool without using any framework or LLM provider, you
 from composio import Composio
 
 user_id = "user-k7334"
-# Configure toolkit versions at SDK level
+# Configure toolkit versions at SDK level for every toolkit you execute.
+# Use "latest", or pin a version — find them with composio.toolkits.get(slug="github").meta.available_versions
 composio = Composio(
     api_key="your_composio_key",
-    toolkit_versions={"github": "20251027_00"}
+    toolkit_versions={"github": "latest"}
 )
 
 # Find available arguments for any tool in the Composio dashboard
 result = composio.tools.execute(
     "GITHUB_LIST_STARGAZERS",
     user_id=user_id,
-    arguments={"owner": "ComposioHQ", "repo": "composio", "page": 1, "per_page": 5}
+    arguments={"owner": "ComposioHQ", "repo": "composio", "page": 1, "per_page": 5},
+    # "latest" requires this opt-in; to pin instead, pass version=composio.toolkits.get(slug="github").meta.version
+    dangerously_skip_version_check=True,
 )
 print(result)
 ```
@@ -242,10 +256,11 @@ print(result)
 import { Composio } from "@composio/core";
 
 const userId = "user-k7334";
-// Configure toolkit versions at SDK level
+// Configure toolkit versions at SDK level for every toolkit you execute.
+// Use "latest", or pin a version — find them with (await composio.toolkits.get("github")).meta.availableVersions
 const composio = new Composio({
     apiKey: "your_composio_key",
-    toolkitVersions: { github: "20251027_00" }
+    toolkitVersions: { github: "latest" }
 });
 
 // Find available arguments for any tool in the Composio dashboard
@@ -257,6 +272,8 @@ const result = await composio.tools.execute("GITHUB_LIST_STARGAZERS", {
     "page": 1,
     "per_page": 5
   },
+  // "latest" requires this opt-in; to pin instead, pass version from (await composio.toolkits.get("github")).meta.version
+  dangerouslySkipVersionCheck: true,
 });
 console.log('GitHub stargazers:', JSON.stringify(result, null, 2));
 ```
@@ -344,6 +361,7 @@ Pass local file paths, URLs, or File objects to tools that accept files. The SDK
 ```python
 composio = Composio(
     api_key="your_composio_key",
+    toolkit_versions={"googledrive": "latest", "gmail": "latest"},
     dangerously_allow_auto_upload_download_files=True,
 )
 
@@ -352,6 +370,7 @@ result = composio.tools.execute(
     slug="GOOGLEDRIVE_UPLOAD_FILE",
     user_id="user-1235***",
     arguments={"file_to_upload": os.path.join(os.getcwd(), "document.pdf")},
+    dangerously_skip_version_check=True,  # required when running "latest"
 )
 
 print(result)  # Print Google Drive file details
@@ -364,6 +383,7 @@ import { Composio } from '@composio/core';
 import path from 'path';
 const composio = new Composio({
   apiKey: 'your_api_key',
+  toolkitVersions: { googledrive: 'latest' },
   dangerouslyAllowAutoUploadDownloadFiles: true,
 });
 // ---cut---
@@ -372,7 +392,8 @@ const result = await composio.tools.execute('GOOGLEDRIVE_UPLOAD_FILE', {
   userId: 'user-4235***',
   arguments: {
     file_to_upload: path.join(__dirname, 'document.pdf')
-  }
+  },
+  dangerouslySkipVersionCheck: true, // required when running "latest"
 });
 
 console.log(result.data);  // Contains Google Drive file details
@@ -394,13 +415,17 @@ result = composio.tools.execute(
         "body": "Please find the report attached.",
         "attachment": "https://example.com/report.pdf",
     },
+    dangerously_skip_version_check=True,  # required when running "latest"
 )
 ```
   </Tab>
   <Tab value="TypeScript">
 ```typescript
 import { Composio } from '@composio/core';
-const composio = new Composio({ apiKey: 'your_api_key' });
+const composio = new Composio({
+  apiKey: 'your_api_key',
+  toolkitVersions: { gmail: 'latest' },
+});
 // ---cut---
 const result = await composio.tools.execute('GMAIL_SEND_EMAIL', {
   userId: 'user-1235***',
@@ -410,6 +435,7 @@ const result = await composio.tools.execute('GMAIL_SEND_EMAIL', {
     body: 'Please find the report attached.',
     attachment: 'https://example.com/report.pdf',
   },
+  dangerouslySkipVersionCheck: true, // required when running "latest"
 });
 ```
   </Tab>
@@ -424,6 +450,7 @@ When tools return files, Composio downloads them to the local directory and prov
 ```python
 composio = Composio(
     api_key="your_composio_key",
+    toolkit_versions={"googledrive": "latest"},
     dangerously_allow_auto_upload_download_files=True,
     file_download_dir="./downloads",  # Optional: Specify download directory
 )
@@ -432,6 +459,7 @@ result = composio.tools.execute(
     "GOOGLEDRIVE_DOWNLOAD_FILE",
     user_id="user-1235***",
     arguments={"file_id": "your_file_id"},
+    dangerously_skip_version_check=True,  # required when running "latest"
 )
 
 # Result includes local file path
@@ -444,6 +472,7 @@ print(result)
 import { Composio } from '@composio/core';
 const composio = new Composio({
   apiKey: 'your_api_key',
+  toolkitVersions: { googledrive: 'latest' },
   dangerouslyAllowAutoUploadDownloadFiles: true,
 });
 // ---cut---
@@ -452,7 +481,8 @@ const result = await composio.tools.execute('GOOGLEDRIVE_DOWNLOAD_FILE', {
     userId: 'user-1235***',
     arguments: {
       file_id: 'your-file-id'
-    }
+    },
+    dangerouslySkipVersionCheck: true, // required when running "latest"
   });
 
 // Result includes local file path
@@ -507,7 +537,10 @@ composio = Composio(
 // @noErrors
 import { Composio, type beforeFileUploadModifier } from '@composio/core';
 import path from 'node:path';
-const composio = new Composio({ apiKey: 'your_api_key' });
+const composio = new Composio({
+  apiKey: 'your_api_key',
+  toolkitVersions: { googledrive: 'latest' },
+});
 // ctx.source is 'path' | 'url' | 'file' — useful if you only want to audit
 // local paths and let URLs / File objects pass through unchanged.
 const beforeFileUpload: beforeFileUploadModifier = async ctx => {
@@ -521,7 +554,7 @@ await composio.tools.execute(
   {
     userId: 'user-4235***',
     arguments: { file_to_upload: path.join(__dirname, 'document.pdf') },
-    dangerouslySkipVersionCheck: true,
+    dangerouslySkipVersionCheck: true, // required when running "latest"
   },
   { beforeFileUpload }
 );
@@ -541,12 +574,13 @@ def audit_path(ctx) -> str | bool:
     # ...audit ctx["path"]...
     return ctx["path"]
 
-composio = Composio()
+composio = Composio(toolkit_versions={"googledrive": "latest"})
 
 composio.tools.execute(
     "GOOGLEDRIVE_UPLOAD_FILE",
     {"file_to_upload": os.path.join(os.getcwd(), "document.pdf")},
     user_id="user-1235***",
+    dangerously_skip_version_check=True,  # required when running "latest"
     modifiers=[audit_path],
 )
 ```
@@ -572,6 +606,7 @@ from composio import Composio
 
 composio = Composio(
     api_key="your_composio_key",
+    toolkit_versions={"googledrive": "latest"},
     dangerously_allow_auto_upload_download_files=True,
     file_upload_dirs=["/srv/agent/uploads", "~/.composio/temp"],
 )
@@ -584,6 +619,7 @@ result = composio.tools.execute(
     "GOOGLEDRIVE_UPLOAD_FILE",
     user_id="user-1",
     arguments={"file_to_upload": prestaged_descriptor},
+    dangerously_skip_version_check=True,  # required when running "latest"
 )
 ```
   </Tab>
@@ -596,6 +632,7 @@ import path from 'path';
 // ---cut---
 const composio = new Composio({
   apiKey: process.env.COMPOSIO_API_KEY,
+  toolkitVersions: { googledrive: 'latest' },
   // Default: dangerouslyAllowAutoUploadDownloadFiles is false; set true only to opt in
 });
 
@@ -610,6 +647,7 @@ const fileData = await composio.files.upload({
 await composio.tools.execute('GOOGLEDRIVE_UPLOAD_FILE', {
   userId: 'user-1',
   arguments: { file_to_upload: fileData },
+  dangerouslySkipVersionCheck: true, // required when running "latest"
 });
 ```
   </Tab>

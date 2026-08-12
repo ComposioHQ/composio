@@ -1,24 +1,18 @@
 'use client';
 
 import { useApiVersion } from '@/lib/use-api-version';
-import { LegacyBadge } from '@/components/legacy-badge';
-
-interface Endpoint {
-  method: string;
-  pathV31: string;
-  pathV3: string;
-  summary: string;
-  href: string;
-  /** Set by the generator for operations flagged `deprecated` in the OpenAPI
-   *  spec. Surfaced with the existing "Legacy" tag (see components/legacy-badge.tsx). */
-  legacy?: boolean;
-}
+import { DeprecatedApiLegacyBadge } from '@/components/legacy-badge';
+import { getApiDisplayTitle } from '@/lib/api-deprecation';
+import type { ApiEndpoint } from '@/lib/api-endpoints-table-schema';
 
 /**
  * Renders an endpoint table that updates based on the selected API version.
  * Used in auto-generated index pages.
+ *
+ * The prop shape lives in `lib/api-endpoints-table-schema.ts` — one type, one
+ * source, shared with the `.md` converter and the generator's validation.
  */
-export function ApiEndpointsTable({ endpoints }: { endpoints: Endpoint[] }) {
+export function ApiEndpointsTable({ endpoints }: { endpoints: ApiEndpoint[] }) {
   const version = useApiVersion();
 
   return (
@@ -36,12 +30,12 @@ export function ApiEndpointsTable({ endpoints }: { endpoints: Endpoint[] }) {
             <tr key={i}>
               <td><code>{ep.method} {path}</code></td>
               <td>
-                <a href={ep.href}>{ep.summary}</a>
+                <a href={ep.href}>
+                  {getApiDisplayTitle(ep.summary, ep.legacy === true)}
+                </a>
                 {ep.legacy && (
                   <span className="ml-2 inline-flex align-middle">
-                    <LegacyBadge
-                      title="Deprecated API endpoint; kept for existing integrations and may be removed in a future release"
-                    />
+                    <DeprecatedApiLegacyBadge />
                   </span>
                 )}
               </td>

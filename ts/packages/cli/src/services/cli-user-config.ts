@@ -1,9 +1,10 @@
-import { FileSystem } from '@effect/platform';
+import { FileSystem, Path } from '@effect/platform';
 import type { PlatformError } from '@effect/platform/Error';
-import { Context, Effect, Layer, Option } from 'effect';
+import { Context, Effect, Layer, Option, Predicate, Schema } from 'effect';
 import type { ParseError } from 'effect/ParseResult';
+// eslint-disable-next-line no-restricted-imports -- os.homedir feeds resolveCliConfigDirectorySync, which runs from synchronous non-Effect call sites (dev.cmd messages, run-helpers-runtime readFileSync) where the NodeOs service is unavailable
 import os from 'node:os';
-import path from 'node:path';
+import { JsonRecordSchema } from 'src/effects/json';
 import { setupCacheDir } from 'src/effects/setup-cache-dir';
 import { getVersion } from 'src/effects/version';
 import {
@@ -34,11 +35,42 @@ export type CliUserConfigResolved = {
 const detectReleaseChannel = (version: string): CliReleaseChannel =>
   /-[0-9A-Za-z.-]+$/.test(version) ? 'beta' : 'stable';
 
+const DEFAULT_CLI_USER_CONFIG = CliUserConfig.make({
+  developer: {
+    enabled: true,
+    destructiveActions: false,
+  },
+  experimentalFeatures: {},
+  artifactDirectory: Option.none(),
+  experimentalSubagent: Option.none(),
+  security: 'auto',
+});
+
+const decodeConfigJson = Schema.decodeUnknown(Schema.parseJson(JsonRecordSchema));
+
+// The sync resolvers below run from non-Effect call sites (the
+// run-helpers-runtime child process), so the Path service is materialized once
+// from its pure default layer instead of being yielded from context.
+const syncPath = Effect.runSync(Path.Path.pipe(Effect.provide(Path.layer)));
+
 export const resolveCliConfigDirectorySync = (): string =>
-  process.env.COMPOSIO_CACHE_DIR?.trim() || path.join(os.homedir(), constants.USER_COMPOSIO_DIR);
+  // eslint-disable-next-line eslint-js/no-restricted-syntax -- this resolver is called from synchronous non-Effect code, so the COMPOSIO_CACHE_DIR override cannot come from effect/Config here
+  process.env.COMPOSIO_CACHE_DIR?.trim() ||
+  syncPath.join(os.homedir(), constants.USER_COMPOSIO_DIR);
 
 export const resolveCliConfigPathSync = (): string =>
-  path.join(resolveCliConfigDirectorySync(), constants.CLI_CONFIG_FILE_NAME);
+  syncPath.join(resolveCliConfigDirectorySync(), constants.CLI_CONFIG_FILE_NAME);
+
+/**
+ * Effect-based resolver for the CLI config file path. Prefer this over
+ * `resolveCliConfigPathSync` inside Effect-hosted code: it honors the
+ * COMPOSIO_CACHE_DIR override via `effect/Config` and the NodeOs service.
+ */
+export const resolveCliConfigPath = Effect.gen(function* () {
+  const path = yield* Path.Path;
+  const configDir = yield* setupCacheDir;
+  return path.join(configDir, constants.CLI_CONFIG_FILE_NAME);
+});
 
 export class ComposioCliUserConfig extends Context.Tag('ComposioCliUserConfig')<
   ComposioCliUserConfig,
@@ -74,30 +106,17 @@ export const ComposioCliUserConfigLive = Layer.effect(
     const fs = yield* FileSystem.FileSystem;
     const version = yield* getVersion;
     const channel = detectReleaseChannel(version);
-    const configDir = yield* setupCacheDir;
-    const jsonConfigPath = path.join(configDir, constants.CLI_CONFIG_FILE_NAME);
+    const jsonConfigPath = yield* resolveCliConfigPath;
 
-    let rawConfig = CliUserConfig.make({
-      developer: {
-        enabled: true,
-        destructiveActions: false,
-      },
-      experimentalFeatures: {},
-      artifactDirectory: Option.none(),
-      experimentalSubagent: Option.none(),
-      security: 'auto',
-    });
+    let rawConfig = DEFAULT_CLI_USER_CONFIG;
 
     const normalizeRawConfigJson = (value: unknown): unknown => {
-      if (!value || typeof value !== 'object' || Array.isArray(value)) {
+      if (!Predicate.isRecord(value)) {
         return value;
       }
 
-      const record = { ...(value as Record<string, unknown>) };
-      const existingDeveloper =
-        record.developer && typeof record.developer === 'object' && !Array.isArray(record.developer)
-          ? { ...(record.developer as Record<string, unknown>) }
-          : {};
+      const record = { ...value };
+      const existingDeveloper = Predicate.isRecord(record.developer) ? { ...record.developer } : {};
 
       if (!('enabled' in existingDeveloper) && 'developer_mode_enabled' in record) {
         existingDeveloper.enabled = record.developer_mode_enabled;
@@ -135,29 +154,13 @@ export const ComposioCliUserConfigLive = Layer.effect(
 
     const load = Effect.gen(function* () {
       const configJson = yield* fs.readFileString(jsonConfigPath, 'utf8');
-      rawConfig = yield* cliUserConfigFromJSON(
-        JSON.stringify(normalizeRawConfigJson(JSON.parse(configJson)))
-      );
+      const parsed = yield* decodeConfigJson(configJson);
+      rawConfig = yield* cliUserConfigFromJSON(JSON.stringify(normalizeRawConfigJson(parsed)));
       return rawConfig;
     });
 
     if (yield* fs.exists(jsonConfigPath)) {
-      yield* load.pipe(
-        Effect.catchAll(() =>
-          persist(
-            CliUserConfig.make({
-              developer: {
-                enabled: true,
-                destructiveActions: false,
-              },
-              experimentalFeatures: {},
-              artifactDirectory: Option.none(),
-              experimentalSubagent: Option.none(),
-              security: 'auto',
-            })
-          )
-        )
-      );
+      yield* load.pipe(Effect.catchAll(() => persist(DEFAULT_CLI_USER_CONFIG)));
     } else {
       yield* persist(rawConfig);
     }

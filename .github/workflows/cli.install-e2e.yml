@@ -1,0 +1,221 @@
+name: CLI Install E2E
+
+on:
+  schedule:
+    - cron: '0 7 * * *'
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'install.sh'
+      - 'install/**'
+      - 'test/install-sh-release-resolution.test.sh'
+      - 'ts/packages/cli/**'
+      - 'ts/packages/cli-local-tools/**'
+      - 'ts/e2e-tests/cli/install/**'
+      - 'ts/e2e-tests/_utils/**'
+      - '.github/actions/setup-node-pnpm-bun/action.yml'
+      - '.github/workflows/cli.install-e2e.yml'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - 'pnpm-workspace.yaml'
+      - 'turbo.jsonc'
+      - 'mise.toml'
+      - 'mise.lock'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  # The shell-variant routes (/install/bash, /install/zsh, /install/fish) are not
+  # provisioned in production yet — they 404. Until they ship, the harness's prod
+  # mode installs through the base /install route and selects the shell with
+  # COMPOSIO_INSTALL_SHELL (see ts/e2e-tests/cli/install/e2e.test.ts); restore the
+  # variant-route coverage there once the routes are live.
+  production:
+    name: Production install (${{ matrix.shell }}, ${{ matrix.version }})
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - shell: bash
+            version: latest
+          - shell: zsh
+            version: latest
+          - shell: fish
+            version: latest
+          - shell: zsh
+            version: '@composio/cli@0.3.1'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Setup Node.js, pnpm, Bun
+        uses: ./.github/actions/setup-node-pnpm-bun
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Test production installer
+        env:
+          COMPOSIO_INSTALL_E2E_MODE: prod
+          COMPOSIO_INSTALL_E2E_SHELL: ${{ matrix.shell }}
+          COMPOSIO_INSTALL_E2E_VERSION: ${{ matrix.version }}
+        run: pnpm test:e2e:install
+
+      - name: Send Slack notification on failure
+        if: failure()
+        uses: slackapi/slack-github-action@dcb1066f776dd043e64d0e8ba94ca15cc7e1875d # v4.0.0
+        with:
+          webhook: ${{ secrets.SLACK_RELEASE_WEBHOOK_URL }}
+          webhook-type: incoming-webhook
+          payload: |
+            {
+              "text": "CLI install E2E failed\n*Case:* ${{ matrix.shell }} / ${{ matrix.version }}\n*Repository:* ${{ github.repository }}\n*Run:* ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}\n*Commit:* ${{ github.sha }}"
+            }
+
+  build-local-fixture:
+    name: Build local install fixture
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Setup Node.js, pnpm, Bun
+        uses: ./.github/actions/setup-node-pnpm-bun
+        with:
+          enable-turbo-cache: 'true'
+          cache-save: 'false'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Typecheck install E2E suite
+        run: pnpm turbo typecheck --filter=@e2e-tests/cli-install
+
+      - name: Build packages
+        run: pnpm build:packages
+
+      - name: Test upgrade through an entry-point symlink
+        working-directory: ts/packages/cli
+        run: pnpm vitest run test/src/services/upgrade-binary.test.ts
+
+      - name: Build and package Linux fixture
+        working-directory: ts/packages/cli
+        env:
+          RELEASE_TAG: '@composio/cli@98.0.0'
+        run: |
+          pnpm build:binary:cross --target bun-linux-x64
+          pnpm build:binary:package
+          pnpm build:binary:checksums
+
+      - name: Verify and stage fixture
+        working-directory: ts/packages/cli
+        run: |
+          set -euo pipefail
+          fixture_dir="$RUNNER_TEMP/cli-install-fixture"
+          mkdir -p "$fixture_dir"
+          cp dist/binaries/composio-linux-x64.zip dist/binaries/checksums.txt "$fixture_dir/"
+          unzip -p "$fixture_dir/composio-linux-x64.zip" composio-linux-x64/release-tag.txt \
+            | grep -Fx '@composio/cli@98.0.0'
+          verify_dir=$(mktemp -d)
+          unzip -q "$fixture_dir/composio-linux-x64.zip" -d "$verify_dir"
+          test "$("$verify_dir/composio-linux-x64/composio" --version)" = 98.0.0
+
+      - name: Upload local fixture
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: cli-install-linux-x64
+          path: ${{ runner.temp }}/cli-install-fixture
+          retention-days: 1
+
+  local-install:
+    name: Local install (${{ matrix.shell }})
+    if: github.event_name == 'pull_request'
+    needs: build-local-fixture
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        shell: [zsh, bash, fish]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Setup Node.js, pnpm, Bun
+        uses: ./.github/actions/setup-node-pnpm-bun
+        with:
+          cache-save: 'false'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Download local fixture
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: cli-install-linux-x64
+          path: ${{ runner.temp }}/cli-install-fixture
+
+      - name: Test local installer
+        env:
+          COMPOSIO_INSTALL_E2E_MODE: local
+          COMPOSIO_INSTALL_E2E_SHELL: ${{ matrix.shell }}
+          COMPOSIO_INSTALL_E2E_RELEASE_DIR: ${{ runner.temp }}/cli-install-fixture
+        run: pnpm test:e2e:install
+
+  # The base installer resolves the CLI release at run time, so the checked-in
+  # scripts on any branch are complete working installers. Once the hermetic
+  # suite passes, hand reviewers copy-paste commands that exercise this PR's
+  # installer logic against the latest published release.
+  preview-comment:
+    name: Post installer preview comment
+    if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+    needs: local-install
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      pull-requests: write
+    steps:
+      - name: Render preview comment
+        env:
+          RAW_BASE: https://raw.githubusercontent.com/${{ github.repository }}/${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          {
+            echo "### Preview this PR's installer"
+            echo ""
+            echo "The hermetic install E2E suite passed for this commit. These commands run the PR's installer scripts against the **latest published CLI release** — they preview installer behavior, not unreleased binaries."
+            echo ""
+            echo '```sh'
+            echo "curl -fsSL \"$RAW_BASE/install.sh\" | sh"
+            echo "curl -fsSL \"$RAW_BASE/install.sh\" | COMPOSIO_INSTALL_SHELL=none sh"
+            echo '```'
+            echo ""
+            echo "The first command is the default flow: it installs the CLI and configures your shell automatically. The second installs only, without touching shell startup files."
+            echo ""
+            echo "Shell-specific setup routes (the override points the variant at this PR's base installer):"
+            echo ""
+            echo '```sh'
+            for shell in bash zsh fish; do
+              echo "curl -fsSL \"$RAW_BASE/install/$shell.sh\" | COMPOSIO_INSTALL_SCRIPT_URL=\"$RAW_BASE/install.sh\" sh"
+            done
+            echo '```'
+          } > install-preview-comment.txt
+
+      - name: Post installer preview comment
+        uses: thollander/actions-comment-pull-request@24bffb9b452ba05a4f3f77933840a6a841d1b32b # v3.0.1
+        with:
+          file-path: install-preview-comment.txt
+          comment-tag: cli-install-preview

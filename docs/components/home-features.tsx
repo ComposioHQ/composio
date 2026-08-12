@@ -298,9 +298,11 @@ function StaticCpuLights() {
 
 export function SectionHeading({
   eyebrow,
+  id,
   title,
 }: {
   eyebrow: string;
+  id?: string;
   title: string;
 }) {
   return (
@@ -308,7 +310,10 @@ export function SectionHeading({
       <span className="font-mono text-[10.5px] uppercase tracking-[0.08em] text-fd-foreground/55">
         {eyebrow}
       </span>
-      <h2 className="text-xl font-medium leading-[1.15] tracking-[-0.01em] text-fd-foreground sm:text-2xl">
+      <h2
+        className="text-xl font-medium leading-[1.15] tracking-[-0.01em] text-fd-foreground sm:text-2xl"
+        id={id}
+      >
         {title}
       </h2>
     </div>

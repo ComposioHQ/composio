@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { z } from 'zod/v3';
 import { jsonSchemaToZod } from '../src/json-schema-to-zod';
 import type { JsonSchema } from '../src/types';
+import { acceptedFor, loadObjectCases } from './fixtures/corpus';
 
 describe('jsonSchemaToZod', () => {
   describe('Basic Types', () => {
@@ -125,11 +126,11 @@ describe('jsonSchemaToZod', () => {
     });
 
     it('should handle generic min and max properties for numbers', () => {
-      const schema: JsonSchema = {
+      const schema = {
         type: 'number',
         min: 0,
         max: 100,
-      } as any;
+      } satisfies JsonSchema;
       const zodSchema = jsonSchemaToZod(schema);
       expect(zodSchema.parse(50)).toBe(50);
       expect(() => zodSchema.parse(-1)).toThrow();
@@ -137,13 +138,13 @@ describe('jsonSchemaToZod', () => {
     });
 
     it('should prioritize minimum/maximum over min/max for numbers', () => {
-      const schema: JsonSchema = {
+      const schema = {
         type: 'number',
         minimum: 10,
         maximum: 90,
         min: 0,
         max: 100,
-      } as any;
+      } satisfies JsonSchema;
       const zodSchema = jsonSchemaToZod(schema);
       expect(zodSchema.parse(50)).toBe(50);
       expect(zodSchema.parse(10)).toBe(10);
@@ -155,11 +156,11 @@ describe('jsonSchemaToZod', () => {
 
   describe('String Validations', () => {
     it('should handle generic min and max properties for strings', () => {
-      const schema: JsonSchema = {
+      const schema = {
         type: 'string',
         min: 3,
         max: 10,
-      } as any;
+      } satisfies JsonSchema;
       const zodSchema = jsonSchemaToZod(schema);
       expect(zodSchema.parse('hello')).toBe('hello');
       expect(() => zodSchema.parse('hi')).toThrow();
@@ -167,13 +168,13 @@ describe('jsonSchemaToZod', () => {
     });
 
     it('should prioritize minLength/maxLength over min/max for strings', () => {
-      const schema: JsonSchema = {
+      const schema = {
         type: 'string',
         minLength: 5,
         maxLength: 8,
         min: 3,
         max: 10,
-      } as any;
+      } satisfies JsonSchema;
       const zodSchema = jsonSchemaToZod(schema);
       expect(zodSchema.parse('hello')).toBe('hello');
       expect(zodSchema.parse('testing')).toBe('testing');
@@ -183,6 +184,28 @@ describe('jsonSchemaToZod', () => {
   });
 
   describe('Object Schemas', () => {
+    it('should support extension keywords in nested schemas', () => {
+      const schema = {
+        type: 'object',
+        properties: {
+          username: {
+            type: 'string',
+            min: 3,
+            max: 10,
+            example: 'john_doe',
+          },
+        },
+        required: ['username'],
+      } satisfies JsonSchema;
+
+      const zodSchema = jsonSchemaToZod(schema) as z.ZodObject<z.ZodRawShape>;
+
+      expect(zodSchema.parse({ username: 'john_doe' })).toEqual({ username: 'john_doe' });
+      expect(() => zodSchema.parse({ username: 'ab' })).toThrow();
+      expect(() => zodSchema.parse({ username: 'a very long username' })).toThrow();
+      expect(zodSchema.shape.username.description).toBe('Example: "john_doe"');
+    });
+
     it('should validate required properties', () => {
       const schema: JsonSchema = {
         type: 'object',
@@ -514,12 +537,12 @@ describe('jsonSchemaToZod', () => {
     });
 
     it('should handle generic min and max properties for arrays', () => {
-      const schema: JsonSchema = {
+      const schema = {
         type: 'array',
         items: { type: 'string' },
         min: 1,
         max: 3,
-      } as any;
+      } satisfies JsonSchema;
       const zodSchema = jsonSchemaToZod(schema);
       expect(zodSchema.parse(['one'])).toEqual(['one']);
       expect(zodSchema.parse(['one', 'two', 'three'])).toEqual(['one', 'two', 'three']);
@@ -528,14 +551,14 @@ describe('jsonSchemaToZod', () => {
     });
 
     it('should prioritize minItems/maxItems over min/max for arrays', () => {
-      const schema: JsonSchema = {
+      const schema = {
         type: 'array',
         items: { type: 'string' },
         minItems: 2,
         maxItems: 4,
         min: 1,
         max: 3,
-      } as any;
+      } satisfies JsonSchema;
       const zodSchema = jsonSchemaToZod(schema);
       expect(zodSchema.parse(['one', 'two'])).toEqual(['one', 'two']);
       expect(zodSchema.parse(['one', 'two', 'three', 'four'])).toEqual([
@@ -994,55 +1017,55 @@ describe('jsonSchemaToZod', () => {
       });
 
       // Test property description
-      const shape = (zodSchema as any)._def.shape();
+      const shape = (zodSchema as z.ZodObject<z.ZodRawShape>).shape;
       expect(shape.username.description).toBe('The username of the Hacker News user to retrieve.');
     });
 
     it('should append example to description', () => {
-      const schema: JsonSchema = {
+      const schema = {
         type: 'string',
         description: 'User name',
         example: 'john_doe',
-      } as any;
+      } satisfies JsonSchema;
       const zodSchema = jsonSchemaToZod(schema);
       expect(zodSchema.description).toBe('User name\nExample: "john_doe"');
     });
 
     it('should handle example without description', () => {
-      const schema: JsonSchema = {
+      const schema = {
         type: 'number',
         example: 42,
-      } as any;
+      } satisfies JsonSchema;
       const zodSchema = jsonSchemaToZod(schema);
       expect(zodSchema.description).toBe('Example: 42');
     });
 
     it('should handle example with title but no description', () => {
-      const schema: JsonSchema = {
+      const schema = {
         type: 'object',
         title: 'User Object',
         example: { name: 'John', age: 30 },
-      } as any;
+      } satisfies JsonSchema;
       const zodSchema = jsonSchemaToZod(schema);
       expect(zodSchema.description).toBe('User Object\nExample: {"name":"John","age":30}');
     });
 
     it('should handle single example in examples array', () => {
-      const schema: JsonSchema = {
+      const schema = {
         type: 'string',
         description: 'Property name',
         examples: ['lifecyclestage'],
-      } as any;
+      } satisfies JsonSchema;
       const zodSchema = jsonSchemaToZod(schema);
       expect(zodSchema.description).toBe('Property name\nExample: "lifecyclestage"');
     });
 
     it('should handle multiple examples in examples array', () => {
-      const schema: JsonSchema = {
+      const schema = {
         type: 'array',
         description: 'List of property names',
         examples: ["['lifecyclestage', 'hs_lead_status']", "['hubspot_owner_id']"],
-      } as any;
+      } satisfies JsonSchema;
       const zodSchema = jsonSchemaToZod(schema);
       expect(zodSchema.description).toBe(
         "List of property names\nExamples:\n  \"['lifecyclestage', 'hs_lead_status']\"\n  \"['hubspot_owner_id']\""
@@ -1050,28 +1073,28 @@ describe('jsonSchemaToZod', () => {
     });
 
     it('should prioritize example over examples', () => {
-      const schema: JsonSchema = {
+      const schema = {
         type: 'string',
         description: 'Property name',
         example: 'single_example',
         examples: ['example1', 'example2'],
-      } as any;
+      } satisfies JsonSchema;
       const zodSchema = jsonSchemaToZod(schema);
       expect(zodSchema.description).toBe('Property name\nExample: "single_example"');
     });
 
     it('should handle empty examples array', () => {
-      const schema: JsonSchema = {
+      const schema = {
         type: 'string',
         description: 'Property name',
         examples: [],
-      } as any;
+      } satisfies JsonSchema;
       const zodSchema = jsonSchemaToZod(schema);
       expect(zodSchema.description).toBe('Property name');
     });
 
     it('should preserve array structure in examples', () => {
-      const schema: JsonSchema = {
+      const schema = {
         type: 'array',
         description: 'Property combinations',
         examples: [
@@ -1079,7 +1102,7 @@ describe('jsonSchemaToZod', () => {
           ['hubspot_owner_id'],
           ['created_date', 'modified_date', 'status'],
         ],
-      } as any;
+      } satisfies JsonSchema;
       const zodSchema = jsonSchemaToZod(schema);
       expect(zodSchema.description).toBe(
         'Property combinations\nExamples:\n  ["lifecyclestage","hs_lead_status"]\n  ["hubspot_owner_id"]\n  ["created_date","modified_date","status"]'
@@ -1087,11 +1110,11 @@ describe('jsonSchemaToZod', () => {
     });
 
     it('should handle primitive types in examples array', () => {
-      const schema: JsonSchema = {
+      const schema = {
         type: 'string',
         description: 'Status values',
         examples: ['active', 'inactive', 'pending'],
-      } as any;
+      } satisfies JsonSchema;
       const zodSchema = jsonSchemaToZod(schema);
       expect(zodSchema.description).toBe(
         'Status values\nExamples:\n  "active"\n  "inactive"\n  "pending"'
@@ -1099,11 +1122,11 @@ describe('jsonSchemaToZod', () => {
     });
 
     it('should handle mixed primitive types in examples array', () => {
-      const schema: JsonSchema = {
+      const schema = {
         type: 'number',
         description: 'Various numbers',
         examples: [42, 3.14, 0, -5],
-      } as any;
+      } satisfies JsonSchema;
       const zodSchema = jsonSchemaToZod(schema);
       expect(zodSchema.description).toBe('Various numbers\nExamples:\n  42\n  3.14\n  0\n  -5');
     });
@@ -1490,4 +1513,24 @@ describe('jsonSchemaToZod', () => {
       expect(() => zodSchema.parse({ age: 30 })).toThrow();
     });
   });
+});
+
+describe('shared cross-SDK object corpus', () => {
+  for (const testCase of loadObjectCases()) {
+    describe(testCase.id, () => {
+      for (const [index, instance] of testCase.instances.entries()) {
+        const expected = acceptedFor(instance, 'zod');
+
+        it(`instance ${index} is ${expected ? 'accepted' : 'rejected'}`, () => {
+          const zodSchema = jsonSchemaToZod(testCase.schema as JsonSchema);
+          const result = zodSchema.safeParse(instance.input);
+
+          expect(result.success).toBe(expected);
+          if (result.success && instance.zod && 'output' in instance.zod) {
+            expect(result.data).toEqual(instance.zod.output);
+          }
+        });
+      }
+    });
+  }
 });

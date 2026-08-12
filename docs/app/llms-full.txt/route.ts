@@ -1,5 +1,13 @@
-import { getLLMText, source, examplesSource, referenceSource, toolkitsSource } from '@/lib/source';
+import {
+  getLLMText,
+  source,
+  examplesSource,
+  referenceSource,
+  toolkitsSource,
+  type LLMPage,
+} from '@/lib/source';
 import { SESSION_GUARDRAILS } from '@/lib/llm-guardrails';
+import { detectReferenceApiVersion } from '@/lib/api-version';
 import type { ReactNode } from 'react';
 
 export const revalidate = false;
@@ -26,14 +34,7 @@ interface FolderNode {
 type TreeNode = PageNode | SeparatorNode | FolderNode;
 
 // Generic page type that works for all sources
-interface PageLike {
-  url: string;
-  slugs: string[];
-  data: {
-    title: string;
-    description?: string;
-  };
-}
+type PageLike = LLMPage & { slugs: string[] };
 
 /**
  * Collect page URLs from the page tree in sidebar order.
@@ -113,15 +114,15 @@ function orderDocPages(pages: PageLike[], treeNodes: TreeNode[]): PageLike[] {
   });
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function getTextForPages(pages: PageLike[]) {
   return Promise.all(
-    pages.map(async (page) => {
+    pages.map(async page => {
       try {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        return await getLLMText(page as any, { includeFooter: false, includeGuardrails: false });
+        return await getLLMText(page, {
+          includeFooter: false,
+          includeGuardrails: false,
+        });
       } catch {
-        // Graceful fallback if getText fails
         return `# ${page.data.title} (${page.url})\n\n${page.data.description || ''}`;
       }
     })
@@ -133,15 +134,17 @@ export async function GET() {
     const treeChildren = source.pageTree.children as TreeNode[];
     const legacyUrls = collectLegacyUrls(treeChildren);
     const orderedDocsPages = orderDocPages(
-      (source.getPages() as PageLike[]).filter((page) => !legacyUrls.has(page.url)),
+      source.getPages().filter(page => !legacyUrls.has(page.url)),
       treeChildren
     );
 
     const [docsResults, examplesResults, referenceResults, toolkitsResults] = await Promise.all([
       getTextForPages(orderedDocsPages),
-      getTextForPages(examplesSource.getPages() as PageLike[]),
-      getTextForPages(referenceSource.getPages() as PageLike[]),
-      getTextForPages(toolkitsSource.getPages() as PageLike[]),
+      getTextForPages(examplesSource.getPages()),
+      getTextForPages(
+        referenceSource.getPages().filter(page => detectReferenceApiVersion(page.url) !== '3.0')
+      ),
+      getTextForPages(toolkitsSource.getPages()),
     ]);
 
     const results = [
