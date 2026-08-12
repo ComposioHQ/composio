@@ -50,6 +50,8 @@ function IntentCard({ intent }: { intent: HomeIntent }) {
             <Link
               className="group flex items-start justify-between gap-4 border border-fd-border bg-fd-background p-3.5 no-underline transition-[border-color,background-color] hover:border-fd-foreground/15 hover:bg-fd-accent/40"
               href={link.href}
+              rel={link.external ? 'noreferrer' : undefined}
+              target={link.external ? '_blank' : undefined}
             >
               <span className="flex min-w-0 flex-col gap-0.5">
                 <span className="text-[14px] font-medium text-fd-foreground">

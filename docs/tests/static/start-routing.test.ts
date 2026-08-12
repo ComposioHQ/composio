@@ -24,11 +24,14 @@ describe('getting-started routing policy', () => {
     expect(plugins).not.toContain('<Tabs');
   });
 
-  test('keeps native plugins ahead of CLI and explicit MCP on Welcome', () => {
-    expect(HOME_INTENTS[1].links.map(link => link.href)).toEqual([
-      '/docs/agent-plugins',
-      '/docs/cli',
-      '/docs/composio-connect',
+  test('sends the no-code audience off-site instead of documenting For You', () => {
+    expect(HOME_INTENTS[1].links).toEqual([
+      {
+        title: 'Composio For You',
+        description: 'Set it up on composio.dev — these developer docs cover the platform.',
+        href: 'https://composio.dev/for-you',
+        external: true,
+      },
     ]);
   });
 

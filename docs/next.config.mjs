@@ -174,6 +174,13 @@ const config = {
         permanent: true,
       },
       // === end docs v3 reorganization redirects ===
+      // Composio For You is a consumer product, not developer documentation.
+      // Its setup guide now lives on the marketing site.
+      {
+        source: '/docs/composio-connect',
+        destination: 'https://composio.dev/for-you',
+        permanent: true,
+      },
       {
         source: '/',
         destination: '/docs',

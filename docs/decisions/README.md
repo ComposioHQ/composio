@@ -5,6 +5,7 @@ Neutral decision records and long-running docs plans. Add every new decision rec
 Read these when a docs change touches an existing architecture, generated-data pipeline, or documented product pattern:
 
 - `examples.md` - cookbook/examples restructuring plan.
+- `for-you.md` - why Composio For You is linked, not documented, here.
 - `feedback.md` - feedback collection system.
 - `llm-guardrails.md` - LLM guardrail injection for markdown endpoints.
 - `toolkits.md` - toolkit page data and rendering decisions.

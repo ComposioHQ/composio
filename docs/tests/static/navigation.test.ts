@@ -62,7 +62,6 @@ describe("Navigation - meta.json validity", () => {
       "providers",
       "agent-plugins",
       "cli",
-      "composio-connect",
     ]);
 
     expect(

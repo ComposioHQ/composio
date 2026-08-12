@@ -398,11 +398,6 @@ export function mdxToCleanMarkdown(content: string, url?: string): string {
       '- [llms-full.txt](/llms-full.txt) — Complete documentation in one file'
   );
 
-  result = result.replace(
-    /<ConnectClientOption[^>]*\bname="([^"]*)"[^>]*>/g,
-    (_, name) => `## ${name}\n`
-  );
-
   // FileBuildup renders an example's file growing step by step. The JSX can't
   // serialize to markdown, so the .md an agent reads would otherwise lose every
   // line of real code. Emit the actual source from the FILE_BUILDS registry:
@@ -429,7 +424,7 @@ export function mdxToCleanMarkdown(content: string, url?: string): string {
   result = replaceRepoBrowserMarkdown(result);
 
   result = result.replace(
-    /<\/?(ProviderGrid|Tabs|Frame|div|QuickstartFlow|IntegrationTabs|Accordions|ToolTypeFlow|ToolkitsLanding|TemplateGrid|Glossary|ConnectFlow|ConnectClientOption)[^>]*>/g,
+    /<\/?(ProviderGrid|Tabs|Frame|div|QuickstartFlow|IntegrationTabs|Accordions|ToolTypeFlow|ToolkitsLanding|TemplateGrid|Glossary)[^>]*>/g,
     ''
   );
 

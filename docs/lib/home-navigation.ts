@@ -2,6 +2,8 @@ export interface HomeIntentLink {
   title: string;
   description: string;
   href: string;
+  /** Set for links that leave the docs site, so the card opens a new tab. */
+  external?: boolean;
 }
 
 export interface HomeIntent {
@@ -40,22 +42,14 @@ export const HOME_INTENTS: HomeIntent[] = [
     id: 'use',
     audience: 'For you',
     title: 'Use Composio',
-    description: 'Connect an existing coding agent or terminal to Composio.',
+    description:
+      'Connect the apps you already use to Claude, Codex, and other agents. No SDK, no code.',
     links: [
       {
-        title: 'Agent plugins',
-        description: 'Install the native Composio plugin for Codex or Claude Code.',
-        href: '/docs/agent-plugins',
-      },
-      {
-        title: 'Composio CLI',
-        description: 'Search, connect, and run tools from your terminal.',
-        href: '/docs/cli',
-      },
-      {
-        title: 'Connect over MCP',
-        description: 'Use Composio with Cursor or another existing MCP client.',
-        href: '/docs/composio-connect',
+        title: 'Composio For You',
+        description: 'Set it up on composio.dev — these developer docs cover the platform.',
+        href: 'https://composio.dev/for-you',
+        external: true,
       },
     ],
   },

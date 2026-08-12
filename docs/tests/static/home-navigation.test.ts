@@ -20,10 +20,15 @@ describe('Welcome navigation', () => {
       '/docs/sessions-via-mcp',
     ]);
     expect(HOME_INTENTS[1].links.map(link => link.href)).toEqual([
-      '/docs/agent-plugins',
-      '/docs/cli',
-      '/docs/composio-connect',
+      'https://composio.dev/for-you',
     ]);
+  });
+
+  test('keeps Composio For You out of the docs and points off-site', () => {
+    const forYou = HOME_INTENTS[1].links[0];
+
+    expect(forYou.external).toBe(true);
+    expect(homeIntentsToMarkdown()).not.toContain('/docs/composio-connect');
   });
 
   test('serializes the same paths for agent-readable Markdown', () => {
@@ -42,7 +47,7 @@ describe('Welcome navigation', () => {
     expect(mdxToCleanMarkdown('<HomeSurfaces />')).toContain('### Build with Composio');
     expect(markdown).not.toContain('<HomeSurfaces');
     expect(markdown.toLowerCase()).not.toContain('skills');
-    expect(markdown).toContain('native Composio plugin for Codex or Claude Code');
+    expect(markdown).toContain('[Composio For You](https://composio.dev/for-you)');
   });
 
   test('keeps rendered headings linkable and badges visible', async () => {
