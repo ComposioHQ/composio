@@ -1,0 +1,78 @@
+---
+title: Skills
+description: Execution playbooks Composio derives from real usage, returned to your agent by session search so it spends fewer tokens and fewer retries getting a task right
+keywords: [skills, playbooks, use cases, execution plan, pitfalls, tool sequence, search, sessions, efficiency, tokens]
+---
+
+A **skill** is an execution playbook for one concrete task: "send an email to someone", "post a message to a Slack channel", "query a Notion database". It records the tools the task needs, the order to call them in, and the mistakes that make it fail.
+
+You don't install skills or reference them by ID. When your agent calls [`COMPOSIO_SEARCH_TOOLS`](/toolkits/meta-tools/search_tools) to find the tools for a task, a skill covering that task comes back in the same response:
+
+```json
+{
+  "primary_tool_slugs": ["SLACK_FIND_CHANNELS", "SLACK_SEND_MESSAGE"],
+  "related_tool_slugs": ["SLACK_FIND_USERS"],
+  "difficulty": "easy - Simple single-tool operation with known parameters",
+  "recommended_plan_steps": [
+    "Resolve the channel ID with SLACK_FIND_CHANNELS before posting.",
+    "Send the message with SLACK_SEND_MESSAGE using the resolved ID."
+  ],
+  "known_pitfalls": [
+    "Passing a channel name where the API expects an ID returns channel_not_found."
+  ]
+}
+```
+
+What just happened: your agent asked for tools and got a sequence. `primary_tool_slugs` and `related_tool_slugs` come back on every search. `recommended_plan_steps`, `known_pitfalls`, and `difficulty` appear only when a skill covers the use case, so treat them as optional in your handling.
+
+Composio derives skills from real usage across the platform rather than writing them by hand, so they reflect how these tasks get completed, not how they ought to work.
+
+## Why skills matter
+
+Handing an agent a toolkit tells it *what* it can call. It doesn't tell it *how* the call usually goes wrong, and an agent that works this out on its own pays for it in tokens and retries:
+
+- It calls a tool with the wrong identifier, reads the error, and tries again.
+- It fetches a whole inbox when it needed one search.
+- It skips a lookup step and posts to a channel that never resolves.
+
+A skill front-loads that knowledge. The sequence is already known and so are the pitfalls, so the work of rediscovering them is never spent. Because the skill arrives inside the search response, it lands in your agent's context before the first execution: the sequence is right the first time, and the known failure modes are avoided rather than discovered from an error.
+
+<Callout type="info">
+Skills are read-only. Search matches them to the use case your agent describes, so there is nothing to install, enable, or configure. They are part of search results by default, and there is no opt-out today.
+</Callout>
+
+## What a skill contains
+
+**Use case.** The task in plain language, for example *Start a direct message with someone in Slack and send a message*. This is what search matches against.
+
+**Tools.** The tool slugs the task uses, such as `SLACK_FIND_USERS`, `SLACK_OPEN_DM`, and `SLACK_SEND_MESSAGE`. A skill distinguishes the main tools from the supporting ones.
+
+**Execution plan.** The ordered steps for completing the task, including optional steps and fallback paths for when the primary route is unavailable.
+
+**Pitfalls.** The known failure modes for this task: the wrong-identifier mistakes, the missing lookups, and the assumptions that don't hold.
+
+A skill isn't limited to one app. A task may span Slack and Gmail, and a skill covering several toolkits appears under each of them.
+
+## How a skill reaches your agent
+
+Skills arrive through the search step a [session](/docs/how-composio-works) already performs:
+
+1. You create a session and give your agent its meta tools.
+2. Your agent has something to do, so it calls `COMPOSIO_SEARCH_TOOLS` with the task in plain language, one `use_case` per query.
+3. Composio searches for tools and for a skill covering that use case at the same time.
+4. The response carries the tool slugs and their schemas. When a skill covers the use case, that same response carries the plan and pitfalls.
+5. Your agent works through the returned steps in order and checks the pitfalls as it goes, instead of inferring a sequence from the tool schemas.
+
+Search matches on the use case, not on a tool name, so the phrasing your agent uses matters. "Start a DM with someone in Slack and send them a message" matches a skill. "slack tools" does not.
+
+Note that skills ride inside the search response, so there is no separate contract to code against and nothing in your application has to ask for them.
+
+<Callout type="info">
+There is no API for listing or reading skills, so unlike most of Composio there is no cURL equivalent on this page. Your agent still receives them at runtime through search. This page will be updated when that changes.
+</Callout>
+
+## Related
+
+- [How Composio works](/docs/how-composio-works): sessions, meta tools, and where search fits.
+- [`COMPOSIO_SEARCH_TOOLS`](/toolkits/meta-tools/search_tools): the search meta tool and its response fields.
+- [Configuring sessions](/docs/configuring-sessions): how you give an agent access to tools.
