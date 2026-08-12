@@ -48,7 +48,8 @@ composio.provider.register_tools(caller=chatbot, executor=user_proxy, tools=tool
 response = user_proxy.run(
     chatbot,
     message="Send an email to john@example.com with the subject 'Hello' and body 'Hello from Composio!'",
-).process()
+)
+response.process()
 
 print(response)
 ```

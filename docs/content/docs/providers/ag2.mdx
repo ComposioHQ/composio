@@ -4,7 +4,7 @@ description: Build an AG2 agent with Composio tools through the AutoGen-compatib
 keywords: [ag2, autogen, agent framework, composio_autogen]
 ---
 
-AG2 is the community-maintained continuation of the classic AutoGen agent framework. The Composio AutoGen provider already targets the `ag2` distribution, so AG2 users should install `ag2[openai]` with `composio_autogen` and use the AG2 `run(...).process()` flow.
+AG2 is the community-maintained continuation of the classic AutoGen agent framework. The Composio AutoGen provider already targets the `ag2` distribution, so AG2 users should install `ag2[openai]` with `composio_autogen` and use the AG2 `run(...)` flow.
 
 This page is intentionally separate from the AutoGen page so AG2 users can find the supported setup path directly.
 
@@ -63,7 +63,8 @@ composio.provider.register_tools(caller=assistant, executor=user_proxy, tools=to
 result = user_proxy.run(
     assistant,
     message="Send an email to john@example.com with the subject 'Hello' and body 'Hello from Composio!'",
-).process()
+)
+result.process()
 
 print(result)
 ```

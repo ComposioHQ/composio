@@ -52,7 +52,8 @@ def main():
     task = "Star a repo composiohq/composio on GitHub"
 
     # Execute task.
-    response = user_proxy.run(chatbot, message=task).process()
+    response = user_proxy.run(chatbot, message=task)
+    response.process()
 
     # Print response
     print(response)
