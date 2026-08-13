@@ -4,6 +4,8 @@
 
 ### Patch Changes
 
+- `COMPOSIO_ENVIRONMENT=staging` now opens the staging dashboard at
+  `https://staging-dashboard.composio.dev/`.
 - `composio dev auth-configs create` now sends custom OAuth credentials and scopes
   in the API's expected shape instead of failing validation.
 
