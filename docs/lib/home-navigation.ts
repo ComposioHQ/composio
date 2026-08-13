@@ -41,13 +41,23 @@ export const HOME_INTENTS: HomeIntent[] = [
   {
     id: 'use',
     audience: 'For you',
-    title: 'Use Composio',
+    title: 'Composio For You',
     description:
-      'Connect the apps you already use to Claude, Codex, and other agents. No SDK, no code.',
+      'Connect the apps you already use to Claude, Codex, and your terminal. No SDK, no code.',
     links: [
       {
-        title: 'Composio For You',
-        description: 'Set it up on composio.dev — these developer docs cover the platform.',
+        title: 'Agent plugins',
+        description: 'Install the native Composio plugin for Codex or Claude Code.',
+        href: '/docs/agent-plugins',
+      },
+      {
+        title: 'Composio CLI',
+        description: 'Search, connect, and run tools from your terminal.',
+        href: '/docs/cli',
+      },
+      {
+        title: 'Connect an MCP client',
+        description: 'Set up Cursor, Claude Desktop, or another client on composio.dev.',
         href: 'https://composio.dev/for-you',
         external: true,
       },

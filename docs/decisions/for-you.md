@@ -1,51 +1,60 @@
-# Composio For You lives outside the developer docs
+# Composio For You in the developer docs
 
 ## Decision
 
-Composio For You — the no-code consumer product, previously documented here as "Composio Connect" —
-is not documented on docs.composio.dev. These docs cover the platform: the SDK, the API, the CLI,
-and the agent plugins. Anyone who wants to connect their own apps to Claude, Codex, or another MCP
-client without writing code is sent to <https://composio.dev/for-you>.
+"Composio Connect" is now **Composio For You**. Do not reintroduce the old name for the product.
 
-Do not add a page, section, or setup guide for it back into `docs/content/`. Link out instead.
+These docs cover the parts of Composio For You that a developer drives from their own machine —
+the agent plugins and the CLI — grouped under a `Composio For You` sidebar section. They do not
+cover MCP-client setup. Anyone connecting Cursor, Claude Desktop, ChatGPT, or another client with no
+native plugin goes to <https://composio.dev/for-you>.
 
 ## Context
 
-`/docs/composio-connect` was a 524-line setup guide for `https://connect.composio.dev/mcp`, with
-per-client instructions for ten MCP clients and an `x-consumer-api-key` header. It documented a
-consumer product inside a developer reference, and it duplicated setup instructions that the
-marketing site and the dashboard both own. The client list was kept in sync by a daily Claude Code
-workflow reading from `ComposioHQ/composio_dashboard`, so a consumer-side UI change could open a PR
-against the developer docs.
+`/docs/composio-connect` was a 524-line setup guide for `connect.composio.dev/mcp`, with per-client
+instructions for ten MCP clients and an `x-consumer-api-key` header. A daily Claude Code workflow
+kept its client list in sync with `ComposioHQ/composio_dashboard`, so a consumer-side UI change could
+open a PR against the developer docs. That guide is the marketing site's to own, and keeping a second
+copy here meant two sources of truth for the same ten setup flows.
 
-The docs home offered "two ways to start": build with the platform, or use Composio from an existing
-agent. The second card carried a "For you" badge and pointed at three docs pages. That framing put
-the consumer funnel inside the developer funnel.
+The agent plugins and the CLI are a different case. They authenticate with a developer API key, they
+are driven from a terminal, and the CLI is the runtime underneath both plugins — so they stay
+documented here. Before this change they sat under `Get Started` with no shared label, next to the
+SDK quickstart, which gave a reader no way to tell which pages assumed they were building an
+application and which did not.
 
 ## Consequences
 
 - `content/docs/composio-connect.mdx` is deleted. `/docs/composio-connect` permanently redirects to
   `https://composio.dev/for-you` (see `next.config.mjs`).
-- The home "For you" card holds a single outbound link to `https://composio.dev/for-you`.
-  `HomeIntentLink.external` marks links that leave the site; the card opens them in a new tab.
-- The Composio CLI (`/docs/cli`) and agent plugins (`/docs/agent-plugins`,
-  `/docs/claude-code-plugin`) stay. They are developer tooling, authenticated with a developer API
-  key, and they remain in the sidebar.
+- `agent-plugins` and `cli` sit under a `---Composio For You---` separator in
+  `content/docs/meta.json`, after the SDK pages in `Get Started`.
+- `claude-code-plugin` stays an orphan page reachable from `agent-plugins`, matching how the
+  authentication sub-guides are organized.
+- The home card is titled "Composio For You" and carries both docs pages plus an outbound link for
+  MCP-client setup. `HomeIntentLink.external` marks links that leave the site.
 - `.github/workflows/docs.sync-connect-clients.yml` and
   `agent-guidance/agents/connect-clients-sync.md` are deleted. The dashboard repo still emits a
-  `dashboard-production-deploy` repository dispatch; nothing in this repo listens for it now, which
-  is a no-op. Remove the dispatch on the dashboard side when convenient.
-- `ConnectFlow` / `ConnectClientOption` and the eleven client logos that only that page used are
-  gone. `claude.svg` and `chatgpt.png` stay — other components use them.
-- Prose that referred to the product by name (the MCP-to-sessions migration guide, the agent-plugin
-  and sessions-via-MCP callouts, the `llms.txt` routing paragraph) now links to
-  `https://composio.dev/for-you` rather than to a docs page.
-- Changelog entries are dated records and keep their original wording and links.
+  `dashboard-production-deploy` repository dispatch; nothing here listens for it now, which is a
+  no-op. Remove the dispatch on the dashboard side when convenient.
+- `ConnectFlow` / `ConnectClientOption` and the eleven client logos only that page used are gone.
+  `claude.svg` and `chatgpt.png` stay — other components use them.
+
+## Two things that keep the old name, deliberately
+
+Neither is the consumer product, and renaming either in docs alone would make the docs wrong:
+
+- **Composio Connect Link** — the hosted auth sign-in page at `connect.composio.dev/link/…`. It is a
+  developer auth feature, and `Composio Connect Link` is the wording in both SDKs
+  (`ts/packages/core/src/models/ConnectedAccounts.ts`, `python/composio/core/models/connected_accounts.py`).
+  Rename the SDK first, then the docs.
+- **`/composio-connect`** — the Claude Code slash command. The file is `commands/composio-connect.md`
+  in `ComposioHQ/composio-plugin-cc`. Rename the command in that repo first, then the docs.
 
 ## Verification
 
-- `bun run test` — `tests/static/home-navigation.test.ts` asserts the home card holds exactly the
-  outbound For You link and that the serialized Markdown contains no `/docs/composio-connect`.
-  `tests/static/navigation.test.ts` pins the Get Started nav order.
+- `bun run test` — `tests/static/home-navigation.test.ts` pins the home card's contents and asserts
+  the serialized Markdown contains no `/docs/composio-connect`. `tests/static/navigation.test.ts`
+  pins the `Composio For You` separator and the pages under it.
 - `bun run lint:links` — catches any internal link reintroduced to the deleted page.
 - `bun run build` — fails if an MDX file references the removed `ConnectFlow` components.

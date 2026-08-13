@@ -50,19 +50,27 @@ describe("Navigation - meta.json validity", () => {
 
     expect(separators).toEqual([
       "---Get Started---",
+      "---Composio For You---",
       "---Core concepts---",
       "---Guides---",
       "---Direct execution (legacy)---",
       "---Migration and security---",
     ]);
 
-    expect(pages.slice(1, pages.indexOf("---Core concepts---"))).toEqual([
+    expect(pages.slice(1, pages.indexOf("---Composio For You---"))).toEqual([
       "index",
       "quickstart",
       "providers",
-      "agent-plugins",
-      "cli",
     ]);
+
+    // Using Composio from an agent you already have, not building one. The
+    // MCP-client half of Composio For You lives on composio.dev, not here.
+    expect(
+      pages.slice(
+        pages.indexOf("---Composio For You---") + 1,
+        pages.indexOf("---Core concepts---")
+      )
+    ).toEqual(["agent-plugins", "cli"]);
 
     expect(
       pages.slice(

@@ -6,6 +6,8 @@ keywords: [agent plugins, codex, claude code, cli, composio setup, skills]
 
 Agent plugins let Codex and Claude Code use Composio from your current conversation. The plugin teaches your agent how to find tools, connect accounts, and run actions through the Composio CLI.
 
+This is part of **Composio For You** — using Composio from an agent you already have, rather than building one. To connect an MCP client that has no native plugin, such as Cursor or Claude Desktop, set it up at [composio.dev/for-you](https://composio.dev/for-you).
+
 ## Install the plugin
 
 Install the Composio CLI:
@@ -21,7 +23,7 @@ composio login
 composio setup --target auto
 ```
 
-`auto` detects Codex and Claude Code. If both are installed, it configures both.
+`auto` detects Codex and Claude Code. If both are installed, it configures both. Use `--target all` when you want the command to fail rather than skip: it requires both agents and errors if either is missing.
 
 <Callout type="info" title="Running setup from an agent or script?">
 Setup asks before changing local files. Add `--yes` in a non-interactive shell: `composio setup --target auto --yes`.
@@ -86,10 +88,12 @@ composio --install-skill composio-cli claude
 composio --install-skill composio-cli codex
 ```
 
+The supported hosts are `claude`, `codex`, and `openclaw`.
+
 ## Choose another setup
 
 <Cards>
   <Card title="Build an agent" href="/docs/quickstart" description="Add Composio tools and authentication to your application." />
   <Card title="Use the CLI" href="/docs/cli" description="Search, connect, and run tools from your terminal." />
-  <Card title="Composio For You" href="https://composio.dev/for-you" description="Connect your apps to an existing MCP client, no code required." />
+  <Card title="Connect an MCP client" href="https://composio.dev/for-you" description="Set up Cursor, Claude Desktop, or another MCP client on composio.dev." />
 </Cards>
