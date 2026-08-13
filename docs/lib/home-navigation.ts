@@ -56,8 +56,8 @@ export const HOME_INTENTS: HomeIntent[] = [
         href: '/docs/cli',
       },
       {
-        title: 'Connect an MCP client',
-        description: 'Set up Cursor, Claude Desktop, or another client on composio.dev.',
+        title: 'Composio MCP',
+        description: 'Search, connect and run tools via MCP.',
         href: 'https://composio.dev/for-you',
         external: true,
       },

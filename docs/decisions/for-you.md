@@ -6,8 +6,11 @@
 
 These docs cover the parts of Composio For You that a developer drives from their own machine —
 the agent plugins and the CLI — grouped under a `Composio For You` sidebar section. They do not
-cover MCP-client setup. Anyone connecting Cursor, Claude Desktop, ChatGPT, or another client with no
-native plugin goes to <https://composio.dev/for-you>.
+cover **Composio MCP** setup; that lives at <https://composio.dev/for-you>.
+
+Do not describe any specific client as lacking a native plugin. The set of hosts with one is
+growing (Claude Code, Codex, and Cursor each have their own repo as of August 2026), so name the
+transport, not the client.
 
 ## Context
 
@@ -48,8 +51,20 @@ Neither is the consumer product, and renaming either in docs alone would make th
   developer auth feature, and `Composio Connect Link` is the wording in both SDKs
   (`ts/packages/core/src/models/ConnectedAccounts.ts`, `python/composio/core/models/connected_accounts.py`).
   Rename the SDK first, then the docs.
-- **`/composio-connect`** — the Claude Code slash command. The file is `commands/composio-connect.md`
-  in `ComposioHQ/composio-plugin-cc`. Rename the command in that repo first, then the docs.
+- **`/composio-connect`** — the Claude Code slash command. As of 2026-08-12 the file is still
+  `plugins/composio/commands/composio-connect.md` in `ComposioHQ/composio-plugin-cc`, and
+  `ts/packages/cli/src/services/setup.ts` still installs from that repo. Rename the command there
+  first, then the docs.
+
+## Plugin repos, as of 2026-08-12
+
+Three, one per host. `composio-mcp-plugin` is **not** a replacement for `composio-plugin-cc`:
+
+| Repo | Host | Wired into the CLI? |
+|---|---|---|
+| `composio-plugin-cc` | Claude Code | yes, `CLAUDE_PLUGIN_MARKETPLACE` |
+| `composio-plugin-openai` | Codex | yes, `CODEX_PLUGIN_MARKETPLACE` |
+| `composio-mcp-plugin` | Cursor | no — installed from the Cursor marketplace, undocumented here |
 
 ## Verification
 

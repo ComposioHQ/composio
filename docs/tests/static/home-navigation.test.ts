@@ -54,7 +54,7 @@ describe('Welcome navigation', () => {
     expect(markdown).not.toContain('<HomeSurfaces');
     expect(markdown.toLowerCase()).not.toContain('skills');
     expect(markdown).toContain('native Composio plugin for Codex or Claude Code');
-    expect(markdown).toContain('](https://composio.dev/for-you)');
+    expect(markdown).toContain('[Composio MCP](https://composio.dev/for-you)');
   });
 
   test('keeps rendered headings linkable and badges visible', async () => {
