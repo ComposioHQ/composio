@@ -291651,10 +291651,266 @@
     "authSchemes": [
       "DCR_OAUTH"
     ],
-    "toolCount": 0,
+    "toolCount": 51,
     "triggerCount": 0,
-    "version": "00000000_00",
-    "tools": [],
+    "version": "20260812_00",
+    "tools": [
+      {
+        "slug": "ZERNIO_MCP_ACCOUNT_GROUPS_LIST_ACCOUNT_GROUPS",
+        "name": "Account groups list account groups",
+        "description": "List groups"
+      },
+      {
+        "slug": "ZERNIO_MCP_ACCOUNTS_GET",
+        "name": "Accounts get",
+        "description": "Get account details for a specific platform.\n\nReturns username and ID for the first account matching the platform."
+      },
+      {
+        "slug": "ZERNIO_MCP_ACCOUNTS_GET_ACCOUNT_HEALTH",
+        "name": "Accounts get account health",
+        "description": "Check account health"
+      },
+      {
+        "slug": "ZERNIO_MCP_ACCOUNTS_GET_ALL_ACCOUNTS_HEALTH",
+        "name": "Accounts get all accounts health",
+        "description": "Check accounts health"
+      },
+      {
+        "slug": "ZERNIO_MCP_ACCOUNTS_GET_FOLLOWER_STATS",
+        "name": "Accounts get follower stats",
+        "description": "Get follower stats"
+      },
+      {
+        "slug": "ZERNIO_MCP_ACCOUNTS_LIST",
+        "name": "Accounts list",
+        "description": "List all connected social media accounts.\n\nReturns the platform, username, and account ID for each connected account.\nUse this to find account IDs needed for creating posts."
+      },
+      {
+        "slug": "ZERNIO_MCP_ACCOUNTS_MOVE_ACCOUNT_TO_PROFILE",
+        "name": "Accounts move account to profile",
+        "description": "Move account to another profile"
+      },
+      {
+        "slug": "ZERNIO_MCP_ANALYTICS_GET_ANALYTICS",
+        "name": "Analytics get analytics",
+        "description": "Get post analytics"
+      },
+      {
+        "slug": "ZERNIO_MCP_ANALYTICS_GET_BEST_TIME_TO_POST",
+        "name": "Analytics get best time to post",
+        "description": "Get best times to post"
+      },
+      {
+        "slug": "ZERNIO_MCP_ANALYTICS_GET_DAILY_METRICS",
+        "name": "Analytics get daily metrics",
+        "description": "Get daily aggregated metrics\n\n    Args:\n        platform: Filter by platform (e.g. \"instagram\", \"tiktok\"). Omit for all platforms.\n        profile_id: Filter by profile ID. Omit for all profiles.\n        account_id: Filter by social account ID\n        from_date: Inclusive start date (ISO 8601). Defaults to 180 days ago.\n        to_date: Inclusive end date (ISO 8601). Defaults to now.\n        source: Filter by post origin. \"late\" for posts published via Zernio, \"external\" for posts imported from platforms.\n        attribution: How each post's engagement is attributed to a day.\n\"publish\" (default) sums each post's lifetime total on its publish date.\n\"received\" buckets the per-day increase in engagement by the day it actually arrived (engagement-over-time), so engagement on older posts appears on the day it was gained rather than the post's publish date."
+      },
+      {
+        "slug": "ZERNIO_MCP_ANALYTICS_GET_POST_TIMELINE",
+        "name": "Analytics get post timeline",
+        "description": "Get post analytics timeline\n\n   Args:\n       post_id: The post to fetch timeline for. Accepts an ExternalPost ID, a platformPostId, or a Zernio Post ID.\n(required)\n       from_date: Start of date range (ISO 8601). Defaults to 90 days ago.\n       to_date: End of date range (ISO 8601). Defaults to now."
+      },
+      {
+        "slug": "ZERNIO_MCP_CALL_TOOL",
+        "name": "Call tool",
+        "description": "Call a tool by name with the given arguments.\n\nUse this to execute tools discovered via search_tools."
+      },
+      {
+        "slug": "ZERNIO_MCP_COMMENTS_GET_INBOX_POST_COMMENTS",
+        "name": "Comments get inbox post comments",
+        "description": "Get post comments"
+      },
+      {
+        "slug": "ZERNIO_MCP_COMMENTS_LIST_INBOX_COMMENTS",
+        "name": "Comments list inbox comments",
+        "description": "List commented posts"
+      },
+      {
+        "slug": "ZERNIO_MCP_COMMENTS_REPLY_TO_INBOX_POST",
+        "name": "Comments reply to inbox post",
+        "description": "Reply to comment"
+      },
+      {
+        "slug": "ZERNIO_MCP_DOCS_SEARCH",
+        "name": "Docs search",
+        "description": "Search across the Late API documentation to find relevant information, code examples, API references, and guides.\n\nUse this tool when you need to answer questions about Late, find specific documentation, understand how features work, or locate implementation details.\n\nThe search returns contextual content with section titles and relevant snippets."
+      },
+      {
+        "slug": "ZERNIO_MCP_MEDIA_CHECK_UPLOAD_STATUS",
+        "name": "Media check upload status",
+        "description": "Check the status of an upload token and get uploaded file URLs.\n\nUse this after the user has uploaded files through the browser upload page.\nReturns: pending (waiting for upload), completed (files ready), or expired (token expired)."
+      },
+      {
+        "slug": "ZERNIO_MCP_MEDIA_GENERATE_UPLOAD_LINK",
+        "name": "Media generate upload link",
+        "description": "Generate a unique upload URL for the user to upload files via browser.\n\nUse this when the user wants to include images or videos in their post.\nThe flow is:\n1. Call this tool to get an upload URL\n2. Ask the user to open the URL in their browser\n3. User uploads files through the web interface\n4. Call media_check_upload_status to get the uploaded file URLs\n5. Use those URLs when creating the post with posts_create"
+      },
+      {
+        "slug": "ZERNIO_MCP_MENTIONS_LIST_INBOX_MENTIONS",
+        "name": "Mentions list inbox mentions",
+        "description": "List mentions"
+      },
+      {
+        "slug": "ZERNIO_MCP_MENTIONS_REPLY_TO_MENTION",
+        "name": "Mentions reply to mention",
+        "description": "Reply to a mention"
+      },
+      {
+        "slug": "ZERNIO_MCP_POSTS_BULK_UPLOAD_POSTS",
+        "name": "Posts bulk upload posts",
+        "description": "Bulk upload from CSV\n\nArgs:\n    dry_run"
+      },
+      {
+        "slug": "ZERNIO_MCP_POSTS_CREATE",
+        "name": "Posts create",
+        "description": "Create a social media post. Can be saved as DRAFT, SCHEDULED, or PUBLISHED immediately.\n\n⚠️ IMPORTANT - Choose the correct mode based on user intent:\n\n**DRAFT MODE (is_draft=True)**\nUse when user says: \"draft\", \"borrador\", \"save for later\", \"don't publish\", \"save it\", \"guardar\"\n→ Post is saved but NOT published and NOT scheduled. User can edit it later.\n\n**IMMEDIATE MODE (publish_now=True)**\nUse when user says: \"publish now\", \"post now\", \"publica ya\", \"immediately\", \"right now\", \"ahora\"\n→ Post goes live IMMEDIATELY.\n\n**SCHEDULED MODE (default)**\nUse when user says: \"schedule\", \"programar\", \"in X minutes/hours\", \"at 3pm\", \"tomorrow\"\n→ Post is scheduled for future publication. Use schedule_minutes to set the delay.\n\n⚠️ MULTI-ACCOUNT USERS (agencies, multi-client setups):\nIf the user has more than one account on the target platform, you MUST pass\n`account_id`. Call `accounts_list` (or `profiles_list` then `accounts_list`)\nfirst to discover the right ID. If you omit account_id when multiple accounts\nexist, the tool returns an error listing the candidates - use it to retry.\n\nExamples:\n- \"Create a draft tweet\" → is_draft=True\n- \"Post this to Twitter now\" → publish_now=True\n- \"Schedule a LinkedIn post for 2 hours from now\" → schedule_minutes=120\n- \"Post this to Acme's Twitter\" → call accounts_list, find Acme's twitter ID, pass account_id"
+      },
+      {
+        "slug": "ZERNIO_MCP_POSTS_CROSS_POST",
+        "name": "Posts cross post",
+        "description": "Post the same content to multiple platforms at once.\n\n⚠️ IMPORTANT - Choose the correct mode based on user intent:\n\n**DRAFT MODE (is_draft=True)**\nUse when user says: \"draft\", \"borrador\", \"save for later\", \"don't publish\"\n→ Posts are saved but NOT published. User can edit them later.\n\n**IMMEDIATE MODE (publish_now=True)**\nUse when user says: \"publish now\", \"post now\", \"immediately\"\n→ Posts go live IMMEDIATELY on all platforms.\n\n**SCHEDULED MODE (default)**\nUse when user says: \"schedule\", \"programar\", \"in X hours\"\n→ Posts are scheduled for 1 hour from now.\n\n⚠️ MULTI-ACCOUNT USERS:\n- To pick a specific account per platform, pass `account_ids` parallel to\n  `platforms` (same order, comma-separated). Use empty string for a position\n  to fall back to profile/auto-resolution.\n- To target multiple accounts of the SAME platform in one call, repeat the\n  platform: platforms='twitter,twitter', account_ids='acc_a,acc_b'.\n- If you omit account_ids and the user has multiple accounts for any of the\n  requested platforms, the tool errors with the candidate list - use it to retry."
+      },
+      {
+        "slug": "ZERNIO_MCP_POSTS_DELETE",
+        "name": "Posts delete",
+        "description": "Delete a post by ID.\n\nPublished posts cannot be deleted."
+      },
+      {
+        "slug": "ZERNIO_MCP_POSTS_EDIT_POST",
+        "name": "Posts edit post",
+        "description": "Edit published post"
+      },
+      {
+        "slug": "ZERNIO_MCP_POSTS_GET",
+        "name": "Posts get",
+        "description": "Get full details of a specific post including content, status, and scheduling info."
+      },
+      {
+        "slug": "ZERNIO_MCP_POSTS_LIST",
+        "name": "Posts list",
+        "description": "List posts with optional filtering by status.\n\nStatus options: draft, scheduled, published, failed"
+      },
+      {
+        "slug": "ZERNIO_MCP_POSTS_LIST_FAILED",
+        "name": "Posts list failed",
+        "description": "List all failed posts that can be retried."
+      },
+      {
+        "slug": "ZERNIO_MCP_POSTS_PUBLISH_NOW",
+        "name": "Posts publish now",
+        "description": "Publish a post immediately to a platform. The post goes live right away.\n\nUse this when user explicitly wants to publish NOW, not schedule for later.\nThis is a convenience wrapper around posts_create with publish_now=True.\n\n⚠️ MULTI-ACCOUNT USERS: pass `account_id` when the user has more than one\naccount on this platform. Call `accounts_list` first to find the right ID."
+      },
+      {
+        "slug": "ZERNIO_MCP_POSTS_RETRY",
+        "name": "Posts retry",
+        "description": "Retry publishing a failed post. Only works on posts with 'failed' status."
+      },
+      {
+        "slug": "ZERNIO_MCP_POSTS_RETRY_ALL_FAILED",
+        "name": "Posts retry all failed",
+        "description": "Retry all failed posts at once."
+      },
+      {
+        "slug": "ZERNIO_MCP_POSTS_UNPUBLISH_POST",
+        "name": "Posts unpublish post",
+        "description": "Unpublish post"
+      },
+      {
+        "slug": "ZERNIO_MCP_POSTS_UPDATE",
+        "name": "Posts update",
+        "description": "Update an existing post.\n\nOnly draft, scheduled, and failed posts can be updated.\nPublished posts cannot be modified."
+      },
+      {
+        "slug": "ZERNIO_MCP_PROFILES_CREATE",
+        "name": "Profiles create",
+        "description": "Create a new profile for grouping social accounts."
+      },
+      {
+        "slug": "ZERNIO_MCP_PROFILES_DELETE",
+        "name": "Profiles delete",
+        "description": "Delete a profile. The profile must have no connected accounts."
+      },
+      {
+        "slug": "ZERNIO_MCP_PROFILES_GET",
+        "name": "Profiles get",
+        "description": "Get details of a specific profile including name, description, and color."
+      },
+      {
+        "slug": "ZERNIO_MCP_PROFILES_LIST",
+        "name": "Profiles list",
+        "description": "List all profiles.\n\nProfiles group multiple social accounts together for easier management."
+      },
+      {
+        "slug": "ZERNIO_MCP_PROFILES_UPDATE",
+        "name": "Profiles update",
+        "description": "Update an existing profile. Only provided fields will be changed."
+      },
+      {
+        "slug": "ZERNIO_MCP_QUEUE_CREATE_QUEUE_SLOT",
+        "name": "Queue create queue slot",
+        "description": "Create schedule"
+      },
+      {
+        "slug": "ZERNIO_MCP_QUEUE_DELETE_QUEUE_SLOT",
+        "name": "Queue delete queue slot",
+        "description": "Delete schedule"
+      },
+      {
+        "slug": "ZERNIO_MCP_QUEUE_GET_NEXT_QUEUE_SLOT",
+        "name": "Queue get next queue slot",
+        "description": "Get next available slot"
+      },
+      {
+        "slug": "ZERNIO_MCP_QUEUE_LIST_QUEUE_SLOTS",
+        "name": "Queue list queue slots",
+        "description": "List schedules"
+      },
+      {
+        "slug": "ZERNIO_MCP_QUEUE_PREVIEW_QUEUE",
+        "name": "Queue preview queue",
+        "description": "Preview upcoming slots"
+      },
+      {
+        "slug": "ZERNIO_MCP_QUEUE_UPDATE_QUEUE_SLOT",
+        "name": "Queue update queue slot",
+        "description": "Update schedule"
+      },
+      {
+        "slug": "ZERNIO_MCP_SEARCH_TOOLS",
+        "name": "Search tools",
+        "description": "Search for tools using natural language.\n\nReturns matching tool definitions ranked by relevance,\nin the same format as list_tools."
+      },
+      {
+        "slug": "ZERNIO_MCP_TRACKING_TAGS_GET_TRACKING_TAG_STATS",
+        "name": "Tracking tags get tracking tag stats",
+        "description": "Get aggregated event stats"
+      },
+      {
+        "slug": "ZERNIO_MCP_TRACKING_TAGS_LIST_TRACKING_TAGS",
+        "name": "Tracking tags list tracking tags",
+        "description": "List tracking tags"
+      },
+      {
+        "slug": "ZERNIO_MCP_USAGE_GET_USAGE",
+        "name": "Usage get usage",
+        "description": "Usage snapshot (default) or billed-spend metering (with params)\n\n    Args:\n        reconcile: Snapshot mode only. For Stripe subscription users, `true` forces a\nsubscription reconciliation pass even when cached plan data looks\ncomplete.\n        range: Window to report. `cycle` / `prev-cycle` resolve to the customer's\nreal billing-period bounds (falling back to a trailing 30 days when\nno invoice exists yet); `7d`…`12mo` are trailing windows; `custom`\nuses `from` / `to`.\n        from_: Inclusive start (UTC date). Required when `range=custom`.\n        to: Inclusive end (UTC date). Required when `range=custom`. Max span 366 days.\n        granularity: Bucketing of the `days` series: `day` (one row per UTC day),\n`month` (one row per calendar month, dated to the 1st), or `total`\n(no series — read `totals`). Does not affect `totals`."
+      },
+      {
+        "slug": "ZERNIO_MCP_VALIDATE_MEDIA",
+        "name": "Validate media",
+        "description": "Validate media URL"
+      },
+      {
+        "slug": "ZERNIO_MCP_VALIDATE_POST",
+        "name": "Validate post",
+        "description": "Validate post content"
+      },
+      {
+        "slug": "ZERNIO_MCP_VALIDATE_POST_LENGTH",
+        "name": "Validate post length",
+        "description": "Validate character count"
+      }
+    ],
     "triggers": [],
     "authConfigDetails": [
       {
