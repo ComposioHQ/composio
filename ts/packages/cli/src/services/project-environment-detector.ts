@@ -1,8 +1,8 @@
 import { BunFileSystem } from '@effect/platform-bun';
 import { FileSystem, Path } from '@effect/platform';
 import { Data, Effect, Match } from 'effect';
-import process from 'node:process';
 import { getAncestors } from 'src/utils/get-ancestors';
+import { readRawOptionalEnv } from 'src/services/config';
 
 const toError = (e: unknown): Error => (e instanceof Error ? e : new Error(String(e)));
 
@@ -498,8 +498,7 @@ const detectJsPackageManager = (fs: FileSystem.FileSystem, cwd: string) =>
       if (fileSet.has('pnpm-workspace.yaml')) return 'pnpm' as const;
     }
 
-    // eslint-disable-next-line eslint-js/no-restricted-syntax -- npm_config_user_agent is transient metadata injected by the package manager that spawned this process, not CLI configuration; read once as the last-resort heuristic when no lockfile or manifest evidence exists
-    const userAgent = parseUserAgent(process.env.npm_config_user_agent);
+    const userAgent = parseUserAgent(yield* readRawOptionalEnv('npm_config_user_agent'));
     if (userAgent) return userAgent;
 
     return 'npm' as const;

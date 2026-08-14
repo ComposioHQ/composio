@@ -3,7 +3,6 @@ import * as fs from 'node:fs';
 // eslint-disable-next-line no-restricted-imports -- os.tmpdir and os.homedir locate the preload scratch directory and ~/.composio in the same synchronous helpers
 import * as os from 'node:os';
 import process from 'node:process';
-import { pathToFileURL } from 'node:url';
 import { Args, Command, Options } from '@effect/cli';
 import { FileSystem, Path } from '@effect/platform';
 import { Effect, Option } from 'effect';
@@ -25,6 +24,7 @@ import {
 } from 'src/services/cli-session-artifacts';
 import { USER_COMPOSIO_DIR } from 'src/constants';
 import { TerminalUI } from 'src/services/terminal-ui';
+import { readRawOptionalEnv, readRawOptionalTrimmedEnv } from 'src/services/config';
 
 const file = Options.text('file').pipe(
   Options.withAlias('f'),
@@ -179,14 +179,16 @@ const resolveRunHelperModuleUrls: Effect.Effect<
   RunHelperModuleUrls,
   never,
   FileSystem.FileSystem | Path.Path
-> = Effect.map(
-  resolveRunCompanionModulePath({
+> = Effect.gen(function* () {
+  const path = yield* Path.Path;
+  const modulePath = yield* resolveRunCompanionModulePath({
     callerImportMetaUrl: import.meta.url,
     execPath: process.execPath,
     relativeNoExtensionFromCaller: '../services/run-helpers-runtime',
-  }),
-  modulePath => ({ helpersRuntimeModuleUrl: pathToFileURL(modulePath).href })
-);
+  });
+  const moduleUrl = yield* Effect.orDie(path.toFileUrl(modulePath));
+  return { helpersRuntimeModuleUrl: moduleUrl.href };
+});
 export const buildRunHelpersSource = (
   cliPrefix: ReadonlyArray<string>,
   context: RunHelperContext = {},
@@ -300,9 +302,9 @@ const resolveRunHelperContext = () =>
     const apiKey = Option.getOrUndefined(userContext.data.apiKey);
     const orgId = Option.getOrUndefined(userContext.data.orgId);
     const defaultComposioDir = path.join(os.homedir(), USER_COMPOSIO_DIR);
-    const configuredCacheDir =
-      // eslint-disable-next-line eslint-js/no-restricted-syntax -- honors the same COMPOSIO_CACHE_DIR/CACHE_DIR overrides the run-helpers child runtime reads, so the sandbox read roots match the child's cache location
-      process.env.COMPOSIO_CACHE_DIR?.trim() || process.env.CACHE_DIR?.trim() || defaultComposioDir;
+    const composioCacheDir = yield* readRawOptionalTrimmedEnv('COMPOSIO_CACHE_DIR');
+    const cacheDir = yield* readRawOptionalTrimmedEnv('CACHE_DIR');
+    const configuredCacheDir = composioCacheDir || cacheDir || defaultComposioDir;
     const baseReadAccessRoots = [
       ...new Set([defaultComposioDir, configuredCacheDir].map(value => path.resolve(value))),
     ];
@@ -430,12 +432,11 @@ export const runCmd = Command.make('run', {
     }) =>
       Effect.gen(function* () {
         const path = yield* Path.Path;
-        // eslint-disable-next-line eslint-js/no-restricted-syntax -- reuses the run ID a parent `composio run` process passed via env so nested runs share one run identity
-        const runId = process.env.COMPOSIO_CLI_PARENT_RUN_ID ?? crypto.randomUUID();
-        const perfDebug = isPerfDebugEnabled();
-        const toolDebug = isToolDebugEnabled();
-        // eslint-disable-next-line eslint-js/no-restricted-syntax -- reads the COMPOSIO_RUN_ACP_ONLY flag a parent process sets to force the ACP-only subagent path in the child run
-        const acpOnly = process.env.COMPOSIO_RUN_ACP_ONLY === '1';
+        const parentRunId = yield* readRawOptionalEnv('COMPOSIO_CLI_PARENT_RUN_ID');
+        const runId = parentRunId ?? crypto.randomUUID();
+        const perfDebug = yield* isPerfDebugEnabled();
+        const toolDebug = yield* isToolDebugEnabled();
+        const acpOnly = (yield* readRawOptionalEnv('COMPOSIO_RUN_ACP_ONLY')) === '1';
         if (Option.isNone(file)) {
           const [inlineCode] = args;
           const preloadSlugs = extractInlineExecuteToolSlugs(inlineCode ?? '');

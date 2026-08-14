@@ -6,6 +6,7 @@ import { ComposioUserContext } from 'src/services/user-context';
 import { getSessionInfoByUserApiKey } from 'src/services/composio-clients';
 import { primeConsumerConnectedToolkitsCacheInBackground } from 'src/services/consumer-short-term-cache';
 import { linkApolloIdentityForAnalytics } from 'src/analytics/dispatch';
+import { readRawOptionalEnv } from 'src/services/config';
 
 export const AGENT_CONFIG_FILE_NAME = 'agent.json';
 export const DEFAULT_AGENTS_BASE_URL = 'https://agents.composio.dev';
@@ -81,9 +82,9 @@ export class AgentResponseDecodeError extends Data.TaggedError(
   readonly cause: unknown;
 }> {}
 
-const agentsBaseURL = (): string =>
-  // eslint-disable-next-line eslint-js/no-restricted-syntax -- read lazily at request time inside a plain sync helper so tests can repoint agents.composio.dev per call without rebuilding a Config layer
-  (process.env.COMPOSIO_AGENTS_BASE_URL ?? DEFAULT_AGENTS_BASE_URL).replace(/\/+$/, '');
+const agentsBaseURL = readRawOptionalEnv('COMPOSIO_AGENTS_BASE_URL').pipe(
+  Effect.map(value => (value ?? DEFAULT_AGENTS_BASE_URL).replace(/\/+$/, ''))
+);
 
 const decodeAgentResponse =
   <A, I>(pathname: string, schema: Schema.Schema<A, I>) =>
@@ -197,9 +198,10 @@ export const removeStoredAgentIdentity = Effect.gen(function* () {
 
 const fetchAgentJson = (pathname: string, init: RequestInit = {}) =>
   Effect.gen(function* () {
+    const baseURL = yield* agentsBaseURL;
     const response = yield* Effect.tryPromise({
       try: () =>
-        fetch(`${agentsBaseURL()}${pathname}`, {
+        fetch(`${baseURL}${pathname}`, {
           redirect: 'error',
           ...init,
           headers: {

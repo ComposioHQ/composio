@@ -6,10 +6,11 @@ import * as fs from 'node:fs';
 import * as os from 'node:os';
 import process from 'node:process';
 import { Path } from '@effect/platform';
-import { Effect, Predicate, Schema } from 'effect';
+import { Effect, Either, Predicate, Schema } from 'effect';
 import { z } from 'zod';
 import { JsonRecordSchema } from 'src/effects/json';
 import { resolveCliConfigPathSync } from 'src/services/cli-user-config';
+import { readRawOptionalEnv } from 'src/services/config';
 import { detectMaster, type MasterKind } from 'src/services/master-detector';
 import {
   isAcpInvokeError,
@@ -262,12 +263,10 @@ const stringifyForPrompt = (value: unknown): string => {
   if (typeof value === 'number' || typeof value === 'boolean' || typeof value === 'bigint') {
     return String(value);
   }
-  // eslint-disable-next-line eslint-js/no-restricted-syntax -- JSON.stringify throws on circular user values in this sync formatter injected into user code; String() is the entire fallback
-  try {
-    return JSON.stringify(value, null, 2);
-  } catch {
-    return String(value);
-  }
+  return Either.getOrElse(
+    Either.try(() => JSON.stringify(value, null, 2)),
+    () => String(value)
+  );
 };
 
 const attachPromptMethod = <T>(value: T): T => {
@@ -319,15 +318,15 @@ const summarizeCliResultPreview = (result: RunCliResult): unknown => {
 };
 
 const readConfiguredExperimentalSubagentTarget = (): 'auto' | 'claude' | 'codex' => {
-  // eslint-disable-next-line eslint-js/no-restricted-syntax -- sync config read at the child-process boundary; a missing or malformed CLI config file just means the 'auto' target
-  try {
-    const raw = fs.readFileSync(resolveCliConfigPathSync(), 'utf8');
-    const parsed = decodeExperimentalSubagentConfig(raw);
-    const target = parsed.experimental_subagent?.target;
-    return target === 'claude' || target === 'codex' || target === 'auto' ? target : 'auto';
-  } catch {
-    return 'auto';
-  }
+  return Either.getOrElse(
+    Either.try(() => {
+      const raw = fs.readFileSync(resolveCliConfigPathSync(), 'utf8');
+      const parsed = decodeExperimentalSubagentConfig(raw);
+      const target = parsed.experimental_subagent?.target;
+      return target === 'claude' || target === 'codex' || target === 'auto' ? target : 'auto';
+    }),
+    () => 'auto' as const
+  );
 };
 
 const normalizeInvokeAgentOptions = (
@@ -805,20 +804,16 @@ const createExperimentalSubAgent = (params: {
       resolvedTarget: target,
       master,
     });
-    // eslint-disable-next-line eslint-js/no-restricted-syntax -- async fallback chain in the user's child process: ACP invoke errors route to the legacy sub-agent path, everything else rethrows
-    try {
-      const response = await invokeAcpSubAgent({
-        prompt: prompt.trim(),
-        options: normalizedOptions,
-        master,
-        target,
-        allowedReadRoots: Array.isArray(helperContext.readAccessRoots)
-          ? helperContext.readAccessRoots
-          : [],
-        helperDebugLog,
-      });
-      return logFilePath ? { ...response, logFilePath } : response;
-    } catch (error) {
+    const response = await invokeAcpSubAgent({
+      prompt: prompt.trim(),
+      options: normalizedOptions,
+      master,
+      target,
+      allowedReadRoots: Array.isArray(helperContext.readAccessRoots)
+        ? helperContext.readAccessRoots
+        : [],
+      helperDebugLog,
+    }).catch(error => {
       if (!isAcpInvokeError(error)) throw error;
       if (helperContext.acpOnly === true) throw error;
       helperDebugLog('subAgent.acp.fallback', {
@@ -826,15 +821,15 @@ const createExperimentalSubAgent = (params: {
         code: error.code,
         message: error.message,
       });
-      const response = await invokeLegacySubAgent({
+      return invokeLegacySubAgent({
         prompt: prompt.trim(),
         options: normalizedOptions,
         master,
         target,
         helperDebugLog,
       });
-      return logFilePath ? { ...response, logFilePath } : response;
-    }
+    });
+    return logFilePath ? { ...response, logFilePath } : response;
   };
 
   Object.defineProperty(experimentalSubAgentImpl, 'schema', { value: experimentalSubAgentSchema });
@@ -970,12 +965,14 @@ export const installRunHelpers = async ({
   Reflect.set(globalThis, 'z', z);
   Reflect.set(globalThis, 'zod', z);
 
-  const perfDebugEnabled =
-    // eslint-disable-next-line eslint-js/no-restricted-syntax -- debug flag reaches the child process via inherited environment; the CLI's Config provider is not available here
-    helperContext.perfDebug === true || process.env.COMPOSIO_PERF_DEBUG === '1';
-  const toolDebugEnabled =
-    // eslint-disable-next-line eslint-js/no-restricted-syntax -- debug flag reaches the child process via inherited environment; the CLI's Config provider is not available here
-    helperContext.toolDebug === true || process.env.COMPOSIO_TOOL_DEBUG === '1';
+  const [perfDebugEnv, toolDebugEnv] = Effect.runSync(
+    Effect.all([
+      readRawOptionalEnv('COMPOSIO_PERF_DEBUG'),
+      readRawOptionalEnv('COMPOSIO_TOOL_DEBUG'),
+    ])
+  );
+  const perfDebugEnabled = helperContext.perfDebug === true || perfDebugEnv === '1';
+  const toolDebugEnabled = helperContext.toolDebug === true || toolDebugEnv === '1';
   const perfDebugStart = Date.now();
   const composioBaseURL = (helperContext.baseURL || 'https://backend.composio.dev').replace(
     /\/$/,

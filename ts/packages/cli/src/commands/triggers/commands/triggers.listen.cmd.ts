@@ -3,6 +3,7 @@ import { FileSystem, Path } from '@effect/platform';
 import { Deferred, Effect, Option, Runtime } from 'effect';
 import { requireAuth } from 'src/effects/require-auth';
 import { TerminalUI } from 'src/services/terminal-ui';
+import { readRawOptionalEnv } from 'src/services/config';
 import { TriggersRealtime } from 'src/services/triggers-realtime';
 import { matchesTriggerListenFilters } from '../filter';
 import {
@@ -184,8 +185,8 @@ export const triggersCmd$Listen = Command.make(
       const runtime = yield* Effect.runtime<never>();
       const forwardUrl = Option.getOrUndefined(forward);
       const generatedWebhookSecret = `composio-forward-secret-${randomUUID()}`;
-      // eslint-disable-next-line eslint-js/no-restricted-syntax -- the forward signing secret is an optional raw passthrough from the user's shell; its literal presence/absence selects the generated-secret fallback
-      const webhookSecret = process.env.COMPOSIO_WEBHOOK_SECRET ?? generatedWebhookSecret;
+      const configuredWebhookSecret = yield* readRawOptionalEnv('COMPOSIO_WEBHOOK_SECRET');
+      const webhookSecret = configuredWebhookSecret ?? generatedWebhookSecret;
       const outputFilePathOption = Option.getOrUndefined(out);
       const outputFilePath = outputFilePathOption ? path.resolve(outputFilePathOption) : undefined;
 
@@ -211,8 +212,7 @@ export const triggersCmd$Listen = Command.make(
 
       yield* ui.intro('composio dev triggers listen');
       if (forwardUrl) {
-        // eslint-disable-next-line eslint-js/no-restricted-syntax -- re-checks the same raw env var to tell the user whether they supplied a secret or this session generated one
-        if (process.env.COMPOSIO_WEBHOOK_SECRET) {
+        if (configuredWebhookSecret) {
           yield* ui.note(
             `Forward URL: ${forwardUrl}\nSigning secret: ${webhookSecret}`,
             'Forwarding'

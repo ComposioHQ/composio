@@ -101,6 +101,7 @@
         "scripts/**/*.{ts,tsx,mts,cts}",
         "test/**/*.{ts,tsx,mts,cts}",
         "ts/e2e-tests/**/*.{ts,tsx,mts,cts}",
+        "ts/packages/cli/scripts/**/*.{ts,tsx,mts,cts}",
         "ts/packages/**/test/**/*.{ts,tsx,mts,cts}",
         "ts/packages/**/*.d.ts",
         "ts/scripts/**/*.{ts,tsx,mts,cts}"

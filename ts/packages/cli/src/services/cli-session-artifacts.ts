@@ -2,18 +2,19 @@ import { FileSystem, Path } from '@effect/platform';
 import { Effect, Option } from 'effect';
 import { getOrCreateProbablyMyCliSessionIdForCurrentCwd } from 'src/services/consumer-short-term-cache';
 import { ComposioCliUserConfig } from 'src/services/cli-user-config';
+import { readRawOptionalTrimmedEnv } from 'src/services/config';
 import { NodeOs } from 'src/services/node-os';
 
 export const resolveArtifactsRoot = Effect.gen(function* () {
   const path = yield* Path.Path;
   const os = yield* NodeOs;
   const cliUserConfig = yield* ComposioCliUserConfig;
+  const sessionDirectory = yield* readRawOptionalTrimmedEnv('COMPOSIO_SESSION_DIR');
+  const cacheDirectory = yield* readRawOptionalTrimmedEnv('COMPOSIO_CACHE_DIR');
 
   return (
-    // eslint-disable-next-line eslint-js/no-restricted-syntax -- read inline so a blank/whitespace-only COMPOSIO_SESSION_DIR falls through the || precedence chain (session dir > cache dir > user config > tmpdir)
-    process.env.COMPOSIO_SESSION_DIR?.trim() ||
-    // eslint-disable-next-line eslint-js/no-restricted-syntax -- COMPOSIO_CACHE_DIR is the second rung of the same fall-through chain: env overrides must beat the persisted artifactDirectory before the tmpdir default
-    process.env.COMPOSIO_CACHE_DIR?.trim() ||
+    sessionDirectory ||
+    cacheDirectory ||
     cliUserConfig.data.artifactDirectory?.trim() ||
     path.join(os.tmpdir, 'composio')
   );

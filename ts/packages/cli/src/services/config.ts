@@ -1,4 +1,4 @@
-import { Option, Effect, ConfigProvider, Layer, Logger } from 'effect';
+import { Config, Option, Effect, ConfigProvider, Layer, Logger } from 'effect';
 import * as constants from 'src/constants';
 import { DEBUG_OVERRIDE_CONFIG } from 'src/effects/debug-config';
 import { APP_CONFIG } from 'src/effects/app-config';
@@ -22,6 +22,18 @@ import { APP_CONFIG } from 'src/effects/app-config';
  */
 
 export const BaseConfigProviderLive = ConfigProvider.fromEnv();
+
+const rawEnvironmentProvider = ConfigProvider.fromEnv();
+
+/** Read an exact environment variable name without the CLI's COMPOSIO_ prefix mapping. */
+export const readRawOptionalEnv = (name: string) =>
+  rawEnvironmentProvider
+    .load(Config.option(Config.string(name)))
+    .pipe(Effect.orDie, Effect.map(Option.getOrUndefined));
+
+/** Read and trim an exact environment variable, treating blank values as absent. */
+export const readRawOptionalTrimmedEnv = (name: string) =>
+  readRawOptionalEnv(name).pipe(Effect.map(value => value?.trim() || undefined));
 
 export function extendConfigProvider(baseConfigProvider: ConfigProvider.ConfigProvider) {
   return baseConfigProvider.pipe(

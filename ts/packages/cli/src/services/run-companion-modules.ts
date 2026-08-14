@@ -2,7 +2,6 @@
 // the bundled `composio run` companion modules, and the binary build scripts. Every
 // helper is an Effect over the @effect/platform FileSystem/Path services; consumers
 // outside the CLI runtime (companion runtimes, scripts) provide their own platform layers.
-import { fileURLToPath } from 'node:url';
 import { FileSystem, Path } from '@effect/platform';
 import type { PlatformError } from '@effect/platform/Error';
 import { Config, ConfigProvider, Data, Effect, Option, Schema } from 'effect';
@@ -85,6 +84,9 @@ const isImportGraphFile = (relativePath: string) => /\.(?:m?js|ts)$/.test(relati
 
 const fileExists = (fs: FileSystem.FileSystem, filePath: string) =>
   fs.exists(filePath).pipe(Effect.orElseSucceed(() => false));
+
+const filePathFromUrl = (path: Path.Path, url: string): Effect.Effect<string> =>
+  Schema.decodeUnknown(Schema.URL)(url).pipe(Effect.flatMap(path.fromFileUrl), Effect.orDie);
 
 const collectRelativeImportPaths = ({
   fs,
@@ -199,7 +201,7 @@ export const resolveRunCompanionAssetPath = ({
   Effect.gen(function* () {
     const fs = yield* FileSystem.FileSystem;
     const path = yield* Path.Path;
-    const currentFilePath = fileURLToPath(callerImportMetaUrl);
+    const currentFilePath = yield* filePathFromUrl(path, callerImportMetaUrl);
     const currentDirectory = path.dirname(currentFilePath);
     const executableDirectory = path.dirname(execPath);
 
@@ -510,7 +512,7 @@ export const repairMissingInstalledRunCompanionModules = ({
     const fs = yield* FileSystem.FileSystem;
     const path = yield* Path.Path;
 
-    const currentFilePath = fileURLToPath(callerImportMetaUrl);
+    const currentFilePath = yield* filePathFromUrl(path, callerImportMetaUrl);
     if (!currentFilePath.startsWith('/$bunfs/')) {
       return { repaired: false as const };
     }
@@ -666,7 +668,7 @@ export const resolveRunCompanionModulePath = ({
   Effect.gen(function* () {
     const fs = yield* FileSystem.FileSystem;
     const path = yield* Path.Path;
-    const currentFilePath = fileURLToPath(callerImportMetaUrl);
+    const currentFilePath = yield* filePathFromUrl(path, callerImportMetaUrl);
     const currentDirectory = path.dirname(currentFilePath);
     const executableDirectory = path.dirname(execPath);
     const baseName = path.basename(relativeNoExtensionFromCaller);
