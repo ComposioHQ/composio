@@ -24,8 +24,12 @@ on:
         description: 'Comma-separated entry ids (empty = full manifest)'
         type: string
         default: ''
-      client_artifact_url:
-        description: 'URL of the candidate client tarball/wheel (required for client=candidate)'
+      client_tarball_url:
+        description: 'Candidate TypeScript client tarball URL (required for TS candidate entries)'
+        type: string
+        default: ''
+      client_wheel_url:
+        description: 'Candidate Python client wheel URL (required for Python candidate entries)'
         type: string
         default: ''
       llm:
@@ -59,6 +63,7 @@ env:
 jobs:
   examples-live:
     name: ${{ inputs.client || 'baseline' }} sweep (${{ inputs.lang || 'all' }})
+    environment: staging
     runs-on: ubuntu-latest
     timeout-minutes: 60
 
@@ -95,16 +100,31 @@ jobs:
       - name: Build SDK packages
         run: pnpm run build:packages
 
-      - name: Fetch candidate client artifact
+      - name: Fetch candidate client artifacts
         if: ${{ inputs.client == 'candidate' }}
+        env:
+          CLIENT_TARBALL_URL: ${{ inputs.client_tarball_url }}
+          CLIENT_WHEEL_URL: ${{ inputs.client_wheel_url }}
+          LANG_INPUT: ${{ inputs.lang || 'all' }}
         run: |
-          if [ -z "${{ inputs.client_artifact_url }}" ]; then
-            echo "::error::client=candidate requires client_artifact_url"
-            exit 1
-          fi
+          set -euo pipefail
           mkdir -p .artifacts/candidate
-          curl -fsSL -o .artifacts/candidate/composio-client.tgz "${{ inputs.client_artifact_url }}"
-          echo "COMPOSIO_CLIENT_TARBALL=$PWD/.artifacts/candidate/composio-client.tgz" >> "$GITHUB_ENV"
+          if [ "$LANG_INPUT" = "all" ] || [ "$LANG_INPUT" = "ts" ]; then
+            if [[ "$CLIENT_TARBALL_URL" != https://* ]]; then
+              echo "::error::TS candidate entries require an HTTPS client_tarball_url"
+              exit 1
+            fi
+            curl -fsSL -o .artifacts/candidate/composio-client.tgz "$CLIENT_TARBALL_URL"
+            echo "COMPOSIO_CLIENT_TARBALL=$PWD/.artifacts/candidate/composio-client.tgz" >> "$GITHUB_ENV"
+          fi
+          if [ "$LANG_INPUT" = "all" ] || [ "$LANG_INPUT" = "py" ]; then
+            if [[ "$CLIENT_WHEEL_URL" != https://* ]]; then
+              echo "::error::Python candidate entries require an HTTPS client_wheel_url"
+              exit 1
+            fi
+            curl -fsSL -o .artifacts/candidate/composio-client.whl "$CLIENT_WHEEL_URL"
+            echo "COMPOSIO_CLIENT_WHEEL=$PWD/.artifacts/candidate/composio-client.whl" >> "$GITHUB_ENV"
+          fi
 
       - name: Harness selftest
         run: node harness/run.mjs selftest
@@ -113,17 +133,20 @@ jobs:
         run: node scripts/examples-provision.mjs --gc > /tmp/examples-provision.env
 
       - name: Sweep
+        env:
+          CLIENT_INPUT: ${{ inputs.client || 'baseline' }}
+          IDS_INPUT: ${{ inputs.ids }}
+          LANG_INPUT: ${{ inputs.lang || 'all' }}
         run: |
           set -euo pipefail
           # Load the provisioned COMPOSIO_EXAMPLES_* ids emitted above.
           source /tmp/examples-provision.env
-          ARGS=(--client "${{ inputs.client || 'baseline' }}" --llm "$LLM_MODE")
-          LANG_INPUT="${{ inputs.lang || 'all' }}"
+          ARGS=(--client "$CLIENT_INPUT" --llm "$LLM_MODE")
           if [ "$LANG_INPUT" != "all" ]; then
             ARGS+=(--lang "$LANG_INPUT")
           fi
-          if [ -n "${{ inputs.ids }}" ]; then
-            ARGS+=(--ids "${{ inputs.ids }}")
+          if [ -n "$IDS_INPUT" ]; then
+            ARGS+=(--ids "$IDS_INPUT")
           fi
           node harness/run.mjs sweep "${ARGS[@]}"
 

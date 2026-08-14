@@ -31,9 +31,15 @@ const opt = (name, fallback) => {
   return i >= 0 && args[i + 1] !== undefined ? args[i + 1] : fallback;
 };
 
+class HarnessError extends Error {
+  constructor(message, exitCode = 2) {
+    super(message);
+    this.exitCode = exitCode;
+  }
+}
+
 const fail = (msg, code = 2) => {
-  console.error(`run.mjs: ${msg}`);
-  process.exit(code);
+  throw new HarnessError(msg, code);
 };
 
 const loadManifest = () => {
@@ -251,6 +257,7 @@ const runPool = async (entries, runDir, { garbage = false, concurrency = 4 } = {
 // --- candidate swap (TS) --------------------------------------------------
 
 const WORKSPACE_YAML = join(ROOT, 'pnpm-workspace.yaml');
+const LOCKFILE = join(ROOT, 'pnpm-lock.yaml');
 
 const sh = (cmdline, opts = {}) =>
   new Promise((resolveSh, rejectSh) => {
@@ -271,7 +278,7 @@ const applyTsCandidate = async (tarball) => {
   const yaml = readFileSync(WORKSPACE_YAML, 'utf8');
   if (/^overrides:$/m.test(yaml)) {
     // Merge into the repo's existing overrides block (e.g. security pins);
-    // restoreTsBaseline() reverts via git checkout either way.
+    // restoreTsBaseline() writes back the exact pre-run snapshot either way.
     writeFileSync(WORKSPACE_YAML, yaml.replace(/^overrides:$/m, `overrides:\n  '@composio/client': file:${tarball}`));
   } else {
     writeFileSync(WORKSPACE_YAML, `${yaml}\noverrides:\n  '@composio/client': file:${tarball}\n`);
@@ -279,15 +286,22 @@ const applyTsCandidate = async (tarball) => {
   await sh(['pnpm', 'install', '--no-frozen-lockfile']);
   const version = await resolvedTsClientVersion();
   if (version === STAINLESS_TS_VERSION) {
-    await restoreTsBaseline();
     fail(`override did not take effect: @composio/client still resolves to ${version}`);
   }
   console.log(`candidate @composio/client resolved: ${version}`);
   await sh(['pnpm', 'run', 'build:packages']);
 };
 
-const restoreTsBaseline = async () => {
-  await sh(['git', 'checkout', '--', 'pnpm-workspace.yaml', 'pnpm-lock.yaml']);
+const snapshotFiles = (paths) => new Map(paths.map((path) => [path, readFileSync(path)]));
+
+const restoreFiles = (snapshot) => {
+  for (const [path, contents] of snapshot) writeFileSync(path, contents);
+};
+
+const snapshotTsBaseline = () => snapshotFiles([WORKSPACE_YAML, LOCKFILE]);
+
+const restoreTsBaseline = async (snapshot) => {
+  restoreFiles(snapshot);
   await sh(['pnpm', 'install', '--frozen-lockfile']);
 };
 
@@ -350,7 +364,7 @@ const cmdSweep = async () => {
   const runDir = join(ARTIFACTS, id);
   mkdirSync(join(runDir, 'traces'), { recursive: true });
 
-  let tsCandidateApplied = false;
+  let tsBaselineSnapshot;
   let stopLlmMock;
   const pyWheel = process.env.COMPOSIO_CLIENT_WHEEL;
   try {
@@ -360,8 +374,8 @@ const cmdSweep = async () => {
       const wantPy = entries.some((e) => e.lang === 'py');
       if (wantTs) {
         if (!process.env.COMPOSIO_CLIENT_TARBALL) fail('candidate sweep with ts entries needs COMPOSIO_CLIENT_TARBALL');
+        tsBaselineSnapshot = snapshotTsBaseline();
         await applyTsCandidate(process.env.COMPOSIO_CLIENT_TARBALL);
-        tsCandidateApplied = true;
       }
       if (wantPy) {
         if (!pyWheel) fail('candidate sweep with py entries needs COMPOSIO_CLIENT_WHEEL');
@@ -387,7 +401,7 @@ const cmdSweep = async () => {
     process.exitCode = counts.red > 0 ? 1 : 0;
   } finally {
     if (stopLlmMock) stopLlmMock();
-    if (tsCandidateApplied) await restoreTsBaseline();
+    if (tsBaselineSnapshot) await restoreTsBaseline(tsBaselineSnapshot);
   }
 };
 
@@ -434,6 +448,29 @@ const cmdSelftest = async () => {
   }
   check('production backend is rejected', productionRejected);
 
+  let cleanupRan = false;
+  let cleanupError;
+  try {
+    try {
+      fail('expected selftest failure');
+    } finally {
+      cleanupRan = true;
+    }
+  } catch (error) {
+    cleanupError = error;
+  }
+  check(
+    'usage failures unwind through cleanup',
+    cleanupRan && cleanupError instanceof HarnessError
+  );
+
+  const cleanupFixture = join(runDir, 'cleanup-fixture.txt');
+  writeFileSync(cleanupFixture, 'user contents');
+  const cleanupSnapshot = snapshotFiles([cleanupFixture]);
+  writeFileSync(cleanupFixture, 'candidate contents');
+  restoreFiles(cleanupSnapshot);
+  check('cleanup restores pre-run file contents', readFileSync(cleanupFixture, 'utf8') === 'user contents');
+
   // 1. known-good: error-handling-demo (no backend, no keys).
   const good = loadManifest().find((e) => e.id === 'ts/error-handling-demo/index');
   const { env: goodEnv } = buildEnv(good, runDir);
@@ -462,21 +499,47 @@ const cmdSelftest = async () => {
   const pyLines = existsSync(pyTrace) ? readFileSync(pyTrace, 'utf8').trim().split('\n').filter(Boolean) : [];
   check('py httpx shim recorded a composio call', pyLines.some((l) => JSON.parse(l).p?.includes('/api/')));
 
+  // 4. parity must compare at least one entry and reject missing candidates.
+  const parityBase = join(runDir, 'parity-base');
+  const parityCandidate = join(runDir, 'parity-candidate');
+  for (const dir of [parityBase, parityCandidate]) {
+    mkdirSync(join(dir, 'traces'), { recursive: true });
+    writeFileSync(join(dir, 'results.jsonl'), `${JSON.stringify({ id: 'fixture', status: 'green' })}\n`);
+    writeFileSync(
+      join(dir, 'traces', 'fixture.jsonl'),
+      `${JSON.stringify({ m: 'GET', p: '/api/v3/toolkits', s: '2xx' })}\n`
+    );
+  }
+  const parityMatches = await sh(['node', 'harness/parity.mjs', parityBase, parityCandidate])
+    .then(() => true)
+    .catch(() => false);
+  check('parity accepts matching runs', parityMatches);
+  writeFileSync(join(parityCandidate, 'results.jsonl'), '');
+  const missingCandidateRejected = await sh(['node', 'harness/parity.mjs', parityBase, parityCandidate])
+    .then(() => false)
+    .catch(() => true);
+  check('parity rejects missing candidate entries', missingCandidateRejected);
+
   rmSync(runDir, { recursive: true, force: true });
   console.log(failures === 0 ? 'selftest: PASS' : `selftest: FAIL (${failures})`);
   process.exitCode = failures === 0 ? 0 : 1;
 };
 
-switch (cmd) {
-  case 'sweep':
-    await cmdSweep();
-    break;
-  case 'neg':
-    await cmdNeg();
-    break;
-  case 'selftest':
-    await cmdSelftest();
-    break;
-  default:
-    fail('usage: run.mjs <sweep|neg|selftest> [options]');
+try {
+  switch (cmd) {
+    case 'sweep':
+      await cmdSweep();
+      break;
+    case 'neg':
+      await cmdNeg();
+      break;
+    case 'selftest':
+      await cmdSelftest();
+      break;
+    default:
+      fail('usage: run.mjs <sweep|neg|selftest> [options]');
+  }
+} catch (error) {
+  console.error(`run.mjs: ${error instanceof Error ? error.message : String(error)}`);
+  process.exitCode = error instanceof HarnessError ? error.exitCode : 1;
 }

@@ -44,9 +44,18 @@ const baseline = loadRun(baseDir);
 const candidate = loadRun(candDir);
 
 const report = [];
-for (const [id, b] of baseline) {
+const ids = new Set([...baseline.keys(), ...candidate.keys()]);
+for (const id of [...ids].sort()) {
+  const b = baseline.get(id);
   const c = candidate.get(id);
-  if (!c) continue;
+  if (!b || !c) {
+    report.push({
+      id,
+      parity: false,
+      reason: `missing ${b ? 'candidate' : 'baseline'} result`,
+    });
+    continue;
+  }
   if (b.status !== 'green' || c.status !== 'green') {
     report.push({ id, parity: false, reason: `status baseline=${b.status} candidate=${c.status}` });
     continue;
@@ -61,4 +70,4 @@ for (const [id, b] of baseline) {
 
 const green = report.filter((r) => r.parity).length;
 console.log(JSON.stringify({ compared: report.length, parityGreen: green, ignoredPairs: ignored.size, entries: report }, null, 2));
-process.exit(report.every((r) => r.parity) ? 0 : 1);
+process.exit(report.length > 0 && report.every((r) => r.parity) ? 0 : 1);
