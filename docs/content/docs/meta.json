@@ -22,9 +22,8 @@
     "sessions-vs-direct-execution",
     "tools-direct",
     "auth-configuration",
-    "---Migration---",
+    "---Migration and security---",
     "migration-guide",
-    "---Security---",
     "security"
   ]
 }
