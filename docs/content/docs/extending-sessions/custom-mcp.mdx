@@ -24,7 +24,7 @@ A Custom MCP moves through this lifecycle:
 5. **Use** the toolkit in a session. For authenticated servers, explicitly select the connected account.
 
 <Callout type="warn" title="API-only while Custom MCP is experimental">
-Use the lifecycle endpoints below to register, sync, and delete Custom MCP toolkits. They aren't included in the public API reference or SDKs yet, and their contracts may change. Dashboard management is coming soon for customers who prefer a UI.
+Use the lifecycle endpoints below to register, sync, and delete Custom MCP toolkits. The SDKs don't expose these endpoints yet, and their contracts may change while Custom MCP is experimental. The API reference has the full request and response schemas for [upsert](/reference/api-reference/toolkits/postCustomToolkitsUpsert), [sync](/reference/api-reference/toolkits/postCustomToolkitsSync), and [delete](/reference/api-reference/toolkits/deleteCustomToolkitsBySlug). Dashboard management is coming soon for customers who prefer a UI.
 </Callout>
 
 ## Register a Custom MCP
@@ -108,10 +108,8 @@ Composio adds the `CUSTOM_` prefix and returns the normalized toolkit slug:
 }
 ```
 
-<Callout type="warn" title="This endpoint only registers new toolkits">
-Despite `upsert` in the route name, this endpoint does not update or replace an existing toolkit. If the slug already exists, the request returns `409 Conflict`.
-
-To change the server URL, name, or authentication scheme, [delete the existing toolkit](#delete-or-replace-a-custom-mcp), then register it again. Deletion also revokes and removes the toolkit's auth configurations and connected accounts.
+<Callout type="warn" title="app_url and auth_schemes are immutable">
+Re-registering a slug your project already owns updates the toolkit in place: mutable fields like the name and logo take the new values, and an identical config is a harmless no-op. Two fields can't change after registration: `app_url` and `auth_schemes`. Changing either returns `409 Conflict`; [delete the existing toolkit](#delete-or-replace-a-custom-mcp), then register it again.
 </Callout>
 
 ## Add a toolkit logo
@@ -147,7 +145,7 @@ Set `content` to your image encoded as base64: a single line, with no line break
 - **Square**, between 256 and 1024 pixels
 - **At most 3MB** before encoding
 
-Omit `logo_file` to keep the Composio default. Because registration is insert-only, changing a logo later means deleting the toolkit and registering it again with the new image.
+Omit `logo_file` to keep the Composio default. To change a logo later, re-register the same slug with the new image: the upsert updates the toolkit in place.
 
 ## Complete setup for your authentication mode
 
@@ -163,7 +161,7 @@ For DCR OAuth, the server must support the standard authorization-code flow. Oth
 
 ### Create the auth config for automatic account matching
 
-For API-key and DCR OAuth servers, create the toolkit's auth config with `is_enabled_for_tool_router` set to `true`:
+Registering a toolkit does not create an auth config. For API-key and DCR OAuth servers, creating one yourself is a *required* separate step: without an auth config there is nothing for end users to connect to, and the toolkit's tools can't authenticate. Create it right after registration, with `is_enabled_for_tool_router` set to `true` so sessions can match connected accounts by `user_id`:
 
 ```bash
 curl --request POST \
@@ -188,7 +186,7 @@ curl --request PATCH \
   --url https://backend.composio.dev/api/v3.1/auth_configs/ac_xxxxxxxx \
   --header "x-api-key: $COMPOSIO_API_KEY" \
   --header "Content-Type: application/json" \
-  --data '{ "is_enabled_for_tool_router": true }'
+  --data '{ "type": "custom", "is_enabled_for_tool_router": true }'
 ```
 
 ## Sync and resync tools
@@ -241,7 +239,7 @@ A Custom MCP toolkit can contain at most 500 tools. If the server returns more t
 
 ## Delete or replace a Custom MCP
 
-The registration endpoint cannot update an existing toolkit. To replace its URL, name, or authentication scheme, delete the toolkit and register it again.
+Re-registering a slug updates mutable fields like the name and logo, but `app_url` and `auth_schemes` can't change after registration. To replace either, delete the toolkit and register it again.
 
 Call `DELETE /api/v3.1/custom/toolkits/{slug}`:
 
@@ -361,6 +359,14 @@ Each registered server becomes a custom toolkit scoped to your project:
 - Its tools are available through Tool Router search and toolkit-filtered tool listing.
 - Tool execution is proxied to your MCP server with the selected connected account's credentials.
 
+On v3, `GET /api/v3/tools?toolkit_slug=CUSTOM_ACME` can return an empty list even after a successful sync. This is *not* a sync failure: v3 reads from a pinned toolkit version by default, and custom tools only exist in the latest version. Add `toolkit_versions=latest` to the request, or use v3.1, which always resolves the latest version:
+
+```bash
+curl --request GET \
+  --url "https://backend.composio.dev/api/v3/tools?toolkit_slug=CUSTOM_ACME&toolkit_versions=latest" \
+  --header "x-api-key: $COMPOSIO_API_KEY"
+```
+
 Custom toolkits use dated registry versions. The v3.1 tools API selects the latest version by default. If you use v3 directly, select the latest version for each operation:
 
 | v3 operation | Select the latest version |
@@ -379,7 +385,7 @@ See [Toolkit Versioning](/docs/tools-direct/toolkit-versioning) for more example
 - **API-only setup:** The SDKs don't expose registration, sync, update, or deletion methods yet. Use the lifecycle endpoints on this page, then use the toolkit slug through the SDK.
 - **Dashboard coming soon:** Custom MCP management isn't available in the dashboard yet.
 - **Remote servers only:** Composio doesn't host your server. Deploy it at a public HTTPS endpoint; local and STDIO-only servers aren't supported.
-- **Insert-only registration:** The `upsert` endpoint returns `409 Conflict` for an existing slug. Delete the toolkit, then register it again. Deletion also removes its auth configurations and connected accounts.
+- **Immutable `app_url` and `auth_schemes`:** Re-registering an existing slug updates other fields in place, but changing `app_url` or `auth_schemes` returns `409 Conflict`. Delete the toolkit, then register it again. Deletion also removes its auth configurations and connected accounts.
 - **500-tool limit:** Split larger servers into smaller MCP servers. If a later sync exceeds the limit, the last successful version stays available.
 
 </Accordion>
