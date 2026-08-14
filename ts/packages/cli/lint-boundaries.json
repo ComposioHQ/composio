@@ -1,21 +1,4 @@
 {
-  "src/analytics/events.ts": [
-    {
-      "rule": "eslint-js/no-restricted-syntax",
-      "reason": "spawn-time env handoff from parent run",
-      "target": "(process.env.COMPOSIO_CLI_PARENT_RUN_ID ?? crypto.randomUUID())"
-    },
-    {
-      "rule": "eslint-js/no-restricted-syntax",
-      "reason": "spawn-time env handoff read outside Effect",
-      "target": "const getInvocationOrigin = (): string => process.env.COMPOSIO_CLI_INVOCATION_ORIGIN ?? 'cli';"
-    },
-    {
-      "rule": "eslint-js/no-restricted-syntax",
-      "reason": "spawn-time env handoff read outside Effect",
-      "target": "const getParentRunId = (): string | undefined => process.env.COMPOSIO_CLI_PARENT_RUN_ID;"
-    }
-  ],
   "src/bin.ts": [
     {
       "rule": "eslint-js/no-restricted-syntax",
@@ -23,57 +6,11 @@
       "target": "process.env[CLI_TELEMETRY_DEBUG_ENV_VAR] = 'true';"
     }
   ],
-  "src/cli-main.ts": [
-    {
-      "rule": "eslint-js/no-restricted-syntax",
-      "reason": "env write propagates run id to children",
-      "target": "process.env.COMPOSIO_CLI_PARENT_RUN_ID = commandTelemetryContext.runId;"
-    }
-  ],
-  "src/commands/index.ts": [
-    {
-      "rule": "eslint-js/no-restricted-syntax",
-      "reason": "env delete clears a stale hidden-flag value",
-      "target": "delete process.env.COMPOSIO_RUN_ACP_ONLY;"
-    },
-    {
-      "rule": "eslint-js/no-restricted-syntax",
-      "reason": "env write hands the stripped flag to run.cmd",
-      "target": "process.env.COMPOSIO_RUN_ACP_ONLY = acpOnly ? '1' : '0';"
-    }
-  ],
   "src/commands/run.cmd.ts": [
     {
       "rule": "eslint-js/no-restricted-syntax",
       "reason": "spreads the caller's full environment into the spawned script so user-provided variables reach the child process",
       "target": "...process.env,"
-    },
-    {
-      "rule": "eslint-js/no-restricted-syntax",
-      "reason": "try/finally removes the temp preload and wrapper files around the imperative Bun.spawn block, whose success path ends in process.exit",
-      "target": "try {"
-    },
-    {
-      "rule": "no-restricted-imports",
-      "reason": "os.tmpdir and os.homedir locate the preload scratch directory and ~/.composio in the same synchronous helpers",
-      "target": "import * as os from 'node:os';"
-    },
-    {
-      "rule": "no-restricted-imports",
-      "reason": "synchronous fs (mkdtempSync/writeFileSync/rmSync/existsSync) builds and tears down the run preload files in plain helpers that execute outside the Effect runtime",
-      "target": "import * as fs from 'node:fs';"
-    }
-  ],
-  "src/services/cli-user-config.ts": [
-    {
-      "rule": "eslint-js/no-restricted-syntax",
-      "reason": "this resolver is called from synchronous non-Effect code, so the COMPOSIO_CACHE_DIR override cannot come from effect/Config here",
-      "target": "process.env.COMPOSIO_CACHE_DIR?.trim() ||"
-    },
-    {
-      "rule": "no-restricted-imports",
-      "reason": "os.homedir feeds resolveCliConfigDirectorySync, which runs from synchronous non-Effect call sites (dev.cmd messages, run-helpers-runtime readFileSync) where the NodeOs service is unavailable",
-      "target": "import os from 'node:os';"
     }
   ],
   "src/services/detached-process.ts": [
@@ -133,13 +70,6 @@
       "rule": "no-restricted-imports",
       "reason": "MD5 for the presigned-upload checksum is not available in Web Crypto",
       "target": "const { createHash } = await import('node:crypto');"
-    }
-  ],
-  "src/services/tool-permissions.ts": [
-    {
-      "rule": "eslint-js/no-restricted-syntax",
-      "reason": "node:http listen callback inside a Promise executor: on failure to open the browser, close the server and reject the surrounding Promise; Effect's error channel is not available here",
-      "target": "try {"
     }
   ],
   "src/ui/colors.ts": [

@@ -5,8 +5,9 @@ import { pathToFileURL } from 'node:url';
 import { describe, expect, layer } from '@effect/vitest';
 import { Path } from '@effect/platform';
 import { BunContext } from '@effect/platform-bun';
-import { Effect, Exit } from 'effect';
+import { ConfigProvider, Effect, Exit } from 'effect';
 import { afterEach, it, vi } from 'vitest';
+import { createCliCommandTelemetryContext } from 'src/analytics/events';
 import {
   buildRunHelpersSource,
   extractInlineExecuteToolSlugs,
@@ -29,12 +30,57 @@ import {
   buildStructuredToolPrompt,
   finalizeInvokeAgentText,
 } from 'src/services/run-subagent-shared';
+import { extendConfigProvider } from 'src/services/config';
+import {
+  configureRuntimeCliInvocationContext,
+  setRuntimeCliRunId,
+} from 'src/services/runtime-cli-context';
 import { cli, MockConsole, TestLive } from 'test/__utils__';
+
+const acpOnlyConfigProvider = ConfigProvider.fromMap(
+  new Map([['COMPOSIO_RUN_ACP_ONLY', '1']])
+).pipe(extendConfigProvider);
+
+const readRunPreloadSource = (command: ReadonlyArray<string>): string => {
+  const preloadPath = command[2];
+  if (preloadPath === undefined) {
+    throw new Error('Expected the run command to include a preload file.');
+  }
+  return fs.readFileSync(preloadPath, 'utf8');
+};
 
 describe('CLI: composio run', () => {
   afterEach(() => {
+    process.exitCode = undefined;
+    configureRuntimeCliInvocationContext({ invocationOrigin: undefined, parentRunId: undefined });
     vi.unstubAllGlobals();
     vi.restoreAllMocks();
+  });
+
+  layer(TestLive())(it => {
+    it.scoped('[Given] a root run telemetry id [Then] the child receives the same run id', () =>
+      Effect.gen(function* () {
+        const telemetryContext = createCliCommandTelemetryContext(
+          ['bun', 'composio', 'run', 'console.log("hi")'],
+          '0.0.0-test',
+          { stdoutIsTTY: false, stderrIsTTY: false }
+        );
+        const runId = telemetryContext.runId;
+        expect(runId).toBeDefined();
+        if (runId === undefined) return;
+        setRuntimeCliRunId(runId);
+
+        const spawn = vi.fn((options: { env: Record<string, string> }) => {
+          expect(options.env.COMPOSIO_CLI_PARENT_RUN_ID).toBe(runId);
+          return { exited: Promise.resolve(0) };
+        });
+        vi.stubGlobal('Bun', { spawn });
+
+        yield* cli(['run', 'console.log("hi")']);
+
+        expect(spawn).toHaveBeenCalledTimes(1);
+      })
+    );
   });
 
   layer(TestLive())(it => {
@@ -43,7 +89,6 @@ describe('CLI: composio run', () => {
       () =>
         Effect.gen(function* () {
           const spawn = vi.fn((_options: unknown) => ({ exited: Promise.resolve(7) }));
-          const exit = vi.spyOn(process, 'exit').mockImplementation((() => undefined) as never);
           vi.stubGlobal('Bun', { spawn });
 
           yield* cli(['run', 'console.log("hi")', '--flag', 'value']);
@@ -71,8 +116,41 @@ describe('CLI: composio run', () => {
           );
           expect(spawnConfig.stdio).toEqual(['inherit', 'inherit', 'inherit']);
           expect(output).toContainEqual(expect.stringMatching(/^RUN_LOG_FILE=.*run\.log$/));
-          expect(exit).toHaveBeenCalledWith(7);
+          expect(fs.existsSync(spawnConfig.cmd[2]!)).toBe(false);
+          expect(process.exitCode).toBe(7);
         })
+    );
+  });
+
+  layer(TestLive({ baseConfigProvider: acpOnlyConfigProvider }))(it => {
+    it.scoped(
+      '[Given] COMPOSIO_RUN_ACP_ONLY=1 [Then] run enables ACP-only execution without a flag',
+      () =>
+        Effect.gen(function* () {
+          const spawn = vi.fn((options: { cmd: string[] }) => {
+            expect(readRunPreloadSource(options.cmd)).toContain('"acpOnly":true');
+            return { exited: Promise.resolve(0) };
+          });
+          vi.stubGlobal('Bun', { spawn });
+
+          yield* cli(['run', 'console.log("hi")']);
+
+          expect(spawn).toHaveBeenCalledTimes(1);
+        })
+    );
+
+    it.scoped('[Given] --acp-only=false and configured ACP-only mode [Then] the flag wins', () =>
+      Effect.gen(function* () {
+        const spawn = vi.fn((options: { cmd: string[] }) => {
+          expect(readRunPreloadSource(options.cmd)).toContain('"acpOnly":false');
+          return { exited: Promise.resolve(0) };
+        });
+        vi.stubGlobal('Bun', { spawn });
+
+        yield* cli(['run', '--acp-only=false', 'console.log("hi")']);
+
+        expect(spawn).toHaveBeenCalledTimes(1);
+      })
     );
   });
 
@@ -81,8 +159,10 @@ describe('CLI: composio run', () => {
       '[Given] --acp-only [Then] run accepts the flag and forwards execution normally',
       () =>
         Effect.gen(function* () {
-          const spawn = vi.fn((_options: unknown) => ({ exited: Promise.resolve(0) }));
-          const exit = vi.spyOn(process, 'exit').mockImplementation((() => undefined) as never);
+          const spawn = vi.fn((options: { cmd: string[] }) => {
+            expect(readRunPreloadSource(options.cmd)).toContain('"acpOnly":true');
+            return { exited: Promise.resolve(0) };
+          });
           vi.stubGlobal('Bun', { spawn });
 
           yield* cli(['run', '--acp-only', 'console.log("hi")']);
@@ -92,8 +172,26 @@ describe('CLI: composio run', () => {
             cmd: string[];
           };
           expect(spawnConfig.cmd[3]).toBe('--eval');
-          expect(exit).toHaveBeenCalledWith(0);
+          expect(process.exitCode).toBe(0);
         })
+    );
+
+    it.scoped('[Given] repeated invocations [Then] hidden flags do not leak', () =>
+      Effect.gen(function* () {
+        const preloadSources: string[] = [];
+        const spawn = vi.fn((options: { cmd: string[] }) => {
+          preloadSources.push(readRunPreloadSource(options.cmd));
+          return { exited: Promise.resolve(0) };
+        });
+        vi.stubGlobal('Bun', { spawn });
+
+        yield* cli(['run', '--acp-only', 'console.log("first")']);
+        yield* cli(['run', 'console.log("second")']);
+
+        expect(preloadSources).toHaveLength(2);
+        expect(preloadSources[0]).toContain('"acpOnly":true');
+        expect(preloadSources[1]).toContain('"acpOnly":false');
+      })
     );
   });
 
@@ -103,7 +201,6 @@ describe('CLI: composio run', () => {
       () =>
         Effect.gen(function* () {
           const spawn = vi.fn((_options: unknown) => ({ exited: Promise.resolve(0) }));
-          const exit = vi.spyOn(process, 'exit').mockImplementation((() => undefined) as never);
           vi.stubGlobal('Bun', { spawn });
 
           yield* cli(['run', '--logs-off', 'console.log("hi")']);
@@ -113,7 +210,7 @@ describe('CLI: composio run', () => {
             cmd: string[];
           };
           expect(spawnConfig.cmd[3]).toBe('--eval');
-          expect(exit).toHaveBeenCalledWith(0);
+          expect(process.exitCode).toBe(0);
         })
     );
   });
@@ -141,7 +238,6 @@ describe('CLI: composio run', () => {
             console.log(JSON.stringify(brief.structuredOutput));
           `;
           const spawn = vi.fn((_options: unknown) => ({ exited: Promise.resolve(0) }));
-          const exit = vi.spyOn(process, 'exit').mockImplementation((() => undefined) as never);
           vi.stubGlobal('Bun', { spawn });
 
           yield* cli(['run', '--logs-off', script]);
@@ -160,7 +256,7 @@ describe('CLI: composio run', () => {
             'return (console.log(JSON.stringify(brief.structuredOutput)));'
           );
           expect(spawnConfig.cmd[4]).not.toContain('"Do not run terminal\n');
-          expect(exit).toHaveBeenCalledWith(0);
+          expect(process.exitCode).toBe(0);
         })
     );
   });
@@ -172,7 +268,6 @@ describe('CLI: composio run', () => {
         const scriptPath = path.join(tempDir, 'script.ts');
         fs.writeFileSync(scriptPath, 'const value = 1 + 1;\nvalue * 2;\n', 'utf8');
         const spawn = vi.fn((_options: unknown) => ({ exited: Promise.resolve(0) }));
-        const exit = vi.spyOn(process, 'exit').mockImplementation((() => undefined) as never);
         vi.stubGlobal('Bun', { spawn });
 
         try {
@@ -197,7 +292,9 @@ describe('CLI: composio run', () => {
             })
           );
           expect(spawnConfig.stdio).toEqual(['inherit', 'inherit', 'inherit']);
-          expect(exit).toHaveBeenCalledWith(0);
+          expect(fs.existsSync(spawnConfig.cmd[2]!)).toBe(false);
+          expect(fs.existsSync(spawnConfig.cmd[3]!)).toBe(false);
+          expect(process.exitCode).toBe(0);
         } finally {
           fs.rmSync(tempDir, { recursive: true, force: true });
         }
@@ -386,15 +483,15 @@ describe('run-subagent-shared', () => {
 });
 
 describe('inferCliInvocationPrefix', () => {
-  layer(Path.layer)(it => {
+  layer(BunContext.layer)(it => {
     it.effect(
       '[Given] a compiled bunfs entrypoint [Then] it falls back to the binary path only',
       () =>
         Effect.gen(function* () {
           const pathService = yield* Path.Path;
-          expect(inferCliInvocationPrefix(pathService, ['node', '/$bunfs/root/composio'])).toEqual([
-            process.execPath,
-          ]);
+          expect(
+            yield* inferCliInvocationPrefix(pathService, ['node', '/$bunfs/root/composio'])
+          ).toEqual([process.execPath]);
         })
     );
   });

@@ -1,4 +1,3 @@
-import process from 'node:process';
 import { Array as Arr, Data, Effect, HashSet, Option } from 'effect';
 import { Command, HelpDoc, ValidationError } from '@effect/cli';
 import {
@@ -45,7 +44,7 @@ import { configCmd } from './config/config.cmd';
 import { rootConnectionsCmd } from './connections/connections.cmd';
 import { agentCmd } from './agent/agent.cmd';
 import { renderCommandHintGraph } from 'src/services/command-hints';
-import { resetRuntimeDebugFlags, setRuntimeDebugFlags } from 'src/services/runtime-debug-flags';
+import { configureRuntimeFlags } from 'src/services/runtime-flags';
 import { ComposioCliUserConfig } from 'src/services/cli-user-config';
 import { ComposioUserContext } from 'src/services/user-context';
 import { TerminalUI } from 'src/services/terminal-ui';
@@ -310,20 +309,11 @@ const normalizeHiddenDebugFlags = (argv: ReadonlyArray<string>): ReadonlyArray<s
     retainedArgs.push(argument);
   }
 
-  resetRuntimeDebugFlags();
-  setRuntimeDebugFlags({
-    ...(perfDebug === undefined ? {} : { perfDebug }),
-    ...(toolDebug === undefined ? {} : { toolDebug }),
+  configureRuntimeFlags({
+    perfDebug,
+    toolDebug,
+    acpOnly,
   });
-  // The hidden --acp-only flag is stripped from argv before @effect/cli parses it, so its value
-  // travels to run.cmd.ts through the environment; effect/Config cannot write or delete env vars.
-  if (acpOnly === undefined) {
-    // eslint-disable-next-line eslint-js/no-restricted-syntax -- env delete clears a stale hidden-flag value
-    delete process.env.COMPOSIO_RUN_ACP_ONLY;
-  } else {
-    // eslint-disable-next-line eslint-js/no-restricted-syntax -- env write hands the stripped flag to run.cmd
-    process.env.COMPOSIO_RUN_ACP_ONLY = acpOnly ? '1' : '0';
-  }
 
   return Arr.appendAll(Arr.take(argv, 2), retainedArgs);
 };

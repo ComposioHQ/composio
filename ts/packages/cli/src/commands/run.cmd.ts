@@ -1,7 +1,3 @@
-// eslint-disable-next-line no-restricted-imports -- synchronous fs (mkdtempSync/writeFileSync/rmSync/existsSync) builds and tears down the run preload files in plain helpers that execute outside the Effect runtime
-import * as fs from 'node:fs';
-// eslint-disable-next-line no-restricted-imports -- os.tmpdir and os.homedir locate the preload scratch directory and ~/.composio in the same synchronous helpers
-import * as os from 'node:os';
 import process from 'node:process';
 import { Args, Command, Options } from '@effect/cli';
 import { FileSystem, Path } from '@effect/platform';
@@ -13,8 +9,13 @@ import { resolveCommandProject } from 'src/services/command-project';
 import { type RunHelperContext } from 'src/services/run-helpers-runtime';
 import { warmToolInputDefinitions } from 'src/services/tool-input-validation';
 import { ComposioUserContext } from 'src/services/user-context';
-import { isPerfDebugEnabled, isToolDebugEnabled } from 'src/services/runtime-debug-flags';
+import {
+  isAcpOnlyEnabled,
+  isPerfDebugEnabled,
+  isToolDebugEnabled,
+} from 'src/services/runtime-flags';
 import { detectMaster } from 'src/services/master-detector';
+import { getRuntimeCliInvocationContext } from 'src/services/runtime-cli-context';
 import {
   repairMissingInstalledRunCompanionModules,
   resolveRunCompanionModulePath,
@@ -26,6 +27,8 @@ import {
 import { USER_COMPOSIO_DIR } from 'src/constants';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { readUnprefixedOptionalEnv } from 'src/services/config';
+import { resolveCliConfigPath } from 'src/services/cli-user-config';
+import { NodeOs } from 'src/services/node-os';
 
 const file = Options.text('file').pipe(
   Options.withAlias('f'),
@@ -153,24 +156,26 @@ export const wrapFileSourceForRun = (source: string): string => {
 export const inferCliInvocationPrefix = (
   path: Path.Path,
   argv: ReadonlyArray<string> = process.argv
-): ReadonlyArray<string> => {
-  const entrypoint = argv[1];
-  if (!entrypoint) {
-    return [process.execPath];
-  }
+) =>
+  Effect.gen(function* () {
+    const entrypoint = argv[1];
+    if (!entrypoint) {
+      return [process.execPath];
+    }
 
-  // Compiled Bun binaries report an internal $bunfs entrypoint which cannot be
-  // re-executed as a real filesystem path. In that case the binary itself is
-  // the CLI entrypoint.
-  if (entrypoint.startsWith('/$bunfs/')) {
-    return [process.execPath];
-  }
+    // Compiled Bun binaries report an internal $bunfs entrypoint which cannot be
+    // re-executed as a real filesystem path. In that case the binary itself is
+    // the CLI entrypoint.
+    if (entrypoint.startsWith('/$bunfs/')) {
+      return [process.execPath];
+    }
 
-  const resolvedEntrypoint = path.resolve(entrypoint);
-  return fs.existsSync(resolvedEntrypoint)
-    ? [process.execPath, resolvedEntrypoint]
-    : [process.execPath];
-};
+    const fs = yield* FileSystem.FileSystem;
+    const resolvedEntrypoint = path.resolve(entrypoint);
+    return (yield* fs.exists(resolvedEntrypoint))
+      ? [process.execPath, resolvedEntrypoint]
+      : [process.execPath];
+  });
 
 type RunHelperModuleUrls = {
   readonly helpersRuntimeModuleUrl: string;
@@ -206,40 +211,45 @@ const createRunHelpersPreloadFile = (
   cliPrefix: ReadonlyArray<string>,
   context: RunHelperContext,
   moduleUrls: RunHelperModuleUrls
-) => {
-  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'composio-run-'));
-  const preloadPath = path.join(directory, 'globals.mjs');
-  const runOutputDir =
-    typeof context.runOutputDir === 'string' && context.runOutputDir.length > 0
-      ? context.runOutputDir
-      : path.join(directory, 'artifacts');
-  const runLogFilePath = path.join(runOutputDir, 'run.log');
-  const readAccessRoots = [
-    ...new Set(
-      [
-        ...(Array.isArray(context.readAccessRoots) ? context.readAccessRoots : []),
-        runOutputDir,
-      ].map(value => path.resolve(value))
-    ),
-  ];
-  fs.mkdirSync(runOutputDir, { recursive: true });
-  fs.writeFileSync(runLogFilePath, '', 'utf8');
-  fs.writeFileSync(
-    preloadPath,
-    buildRunHelpersSource(
-      cliPrefix,
-      {
-        ...context,
-        runOutputDir,
-        runLogFilePath,
-        readAccessRoots,
-      },
-      moduleUrls
-    ),
-    'utf8'
-  );
-  return { directory, preloadPath, runOutputDir, runLogFilePath };
-};
+) =>
+  Effect.gen(function* () {
+    const fs = yield* FileSystem.FileSystem;
+    const os = yield* NodeOs;
+    const directory = yield* fs.makeTempDirectoryScoped({
+      directory: os.tmpdir,
+      prefix: 'composio-run-',
+    });
+    const preloadPath = path.join(directory, 'globals.mjs');
+    const runOutputDir =
+      typeof context.runOutputDir === 'string' && context.runOutputDir.length > 0
+        ? context.runOutputDir
+        : path.join(directory, 'artifacts');
+    const runLogFilePath = path.join(runOutputDir, 'run.log');
+    const readAccessRoots = [
+      ...new Set(
+        [
+          ...(Array.isArray(context.readAccessRoots) ? context.readAccessRoots : []),
+          runOutputDir,
+        ].map(value => path.resolve(value))
+      ),
+    ];
+    yield* fs.makeDirectory(runOutputDir, { recursive: true });
+    yield* fs.writeFileString(runLogFilePath, '');
+    yield* fs.writeFileString(
+      preloadPath,
+      buildRunHelpersSource(
+        cliPrefix,
+        {
+          ...context,
+          runOutputDir,
+          runLogFilePath,
+          readAccessRoots,
+        },
+        moduleUrls
+      )
+    );
+    return { directory, preloadPath, runOutputDir, runLogFilePath };
+  });
 
 export const buildRunCommand = ({
   path,
@@ -253,56 +263,58 @@ export const buildRunCommand = ({
   args: ReadonlyArray<string>;
   preloadPath: string;
   preloadDirectory: string;
-}) => {
-  // Use process.execPath directly — the child is spawned with BUN_BE_BUN=1
-  // which makes compiled Bun binaries act as a plain Bun runtime.
-  // Avoid the `run` subcommand entirely since Bun intercepts it as its own
-  // built-in; `bun --preload <file> <script>` works without it.
-  const base = [process.execPath, '--preload', preloadPath];
-  if (Option.isSome(file)) {
-    const filePath = path.resolve(file.value);
-    const wrapperFilePath = path.join(
-      path.dirname(filePath),
-      `.composio-run-${path.basename(preloadDirectory)}${path.extname(filePath) || '.ts'}`
-    );
-    fs.writeFileSync(
-      wrapperFilePath,
-      wrapFileSourceForRun(fs.readFileSync(filePath, 'utf8')),
-      'utf8'
-    );
-    return {
-      cmd: [...base, wrapperFilePath, ...withArgDelimiter(args)],
-      cleanupPaths: [wrapperFilePath],
-    };
-  }
+}) =>
+  Effect.gen(function* () {
+    const fs = yield* FileSystem.FileSystem;
+    // Use process.execPath directly — the child is spawned with BUN_BE_BUN=1
+    // which makes compiled Bun binaries act as a plain Bun runtime.
+    // Avoid the `run` subcommand entirely since Bun intercepts it as its own
+    // built-in; `bun --preload <file> <script>` works without it.
+    const base = [process.execPath, '--preload', preloadPath];
+    if (Option.isSome(file)) {
+      const filePath = path.resolve(file.value);
+      const wrapperFilePath = path.join(
+        path.dirname(filePath),
+        `.composio-run-${path.basename(preloadDirectory)}${path.extname(filePath) || '.ts'}`
+      );
+      yield* fs.writeFileString(
+        wrapperFilePath,
+        wrapFileSourceForRun(yield* fs.readFileString(filePath, 'utf8'))
+      );
+      return {
+        cmd: [...base, wrapperFilePath, ...withArgDelimiter(args)],
+        cleanupPaths: [wrapperFilePath],
+      };
+    }
 
-  const [inlineCode, ...scriptArgs] = args;
-  if (inlineCode) {
-    const wrappedInlineCode = [
-      '(async () => {',
-      wrapInlineCodeForRun(inlineCode),
-      '})().then((__composioResult) => {',
-      '  if (__composioResult !== undefined) {',
-      '    console.log(__composioResult);',
-      '  }',
-      '});',
-    ].join('\n');
-    return {
-      cmd: [...base, '--eval', wrappedInlineCode, ...withArgDelimiter(scriptArgs)],
-      cleanupPaths: [],
-    };
-  }
+    const [inlineCode, ...scriptArgs] = args;
+    if (inlineCode) {
+      const wrappedInlineCode = [
+        '(async () => {',
+        wrapInlineCodeForRun(inlineCode),
+        '})().then((__composioResult) => {',
+        '  if (__composioResult !== undefined) {',
+        '    console.log(__composioResult);',
+        '  }',
+        '});',
+      ].join('\n');
+      return {
+        cmd: [...base, '--eval', wrappedInlineCode, ...withArgDelimiter(scriptArgs)],
+        cleanupPaths: [],
+      };
+    }
 
-  throw new Error('Provide inline code or use --file to run a script file.');
-};
+    return yield* Effect.dieMessage('Provide inline code or use --file to run a script file.');
+  });
 
 const resolveRunHelperContext = () =>
   Effect.gen(function* () {
     const path = yield* Path.Path;
+    const os = yield* NodeOs;
     const userContext = yield* ComposioUserContext;
     const apiKey = Option.getOrUndefined(userContext.data.apiKey);
     const orgId = Option.getOrUndefined(userContext.data.orgId);
-    const defaultComposioDir = path.join(os.homedir(), USER_COMPOSIO_DIR);
+    const defaultComposioDir = path.join(os.homedir, USER_COMPOSIO_DIR);
     const composioCacheDir = yield* APP_CONFIG.CACHE_DIR;
     const cacheDir = (yield* readUnprefixedOptionalEnv('CACHE_DIR'))?.trim();
     const configuredCacheDir = composioCacheDir || cacheDir || defaultComposioDir;
@@ -315,6 +327,7 @@ const resolveRunHelperContext = () =>
       baseURL: userContext.data.baseURL,
       webURL: userContext.data.webURL,
       orgId,
+      cliConfigPath: yield* resolveCliConfigPath,
       readAccessRoots: baseReadAccessRoots,
     } satisfies RunHelperContext;
 
@@ -432,12 +445,14 @@ export const runCmd = Command.make('run', {
       args,
     }) =>
       Effect.gen(function* () {
+        const fs = yield* FileSystem.FileSystem;
         const path = yield* Path.Path;
-        const parentRunId = yield* APP_CONFIG.CLI_PARENT_RUN_ID;
-        const runId = parentRunId ?? crypto.randomUUID();
+        const invocationContext = getRuntimeCliInvocationContext();
+        const runId =
+          invocationContext.currentRunId ?? invocationContext.parentRunId ?? crypto.randomUUID();
         const perfDebug = yield* isPerfDebugEnabled();
         const toolDebug = yield* isToolDebugEnabled();
-        const acpOnly = yield* APP_CONFIG.RUN_ACP_ONLY;
+        const acpOnly = yield* isAcpOnlyEnabled();
         if (Option.isNone(file)) {
           const [inlineCode] = args;
           const preloadSlugs = extractInlineExecuteToolSlugs(inlineCode ?? '');
@@ -471,36 +486,34 @@ export const runCmd = Command.make('run', {
           Effect.mapError(error => new Error(error.message)),
           Effect.andThen(resolveRunHelperModuleUrls)
         );
-        const preload = createRunHelpersPreloadFile(
+        const cliPrefix = yield* inferCliInvocationPrefix(path);
+        const preload = yield* createRunHelpersPreloadFile(
           path,
-          inferCliInvocationPrefix(path),
+          cliPrefix,
           helperContext,
           runHelperModuleUrls
         );
         const ui = yield* TerminalUI;
-        let cleanupPaths: ReadonlyArray<string> = [];
-        // eslint-disable-next-line eslint-js/no-restricted-syntax -- try/finally removes the temp preload and wrapper files around the imperative Bun.spawn block, whose success path ends in process.exit
-        try {
-          yield* appendCliSessionHistory({
-            orgId: helperContext.orgId,
-            consumerUserId: helperContext.consumerUserId,
-            entry: {
-              command: 'run',
-              status: 'start',
-              file: Option.getOrUndefined(file),
-              args,
-              debug,
-            },
-          }).pipe(Effect.catchAll(() => Effect.void));
-          yield* ui.error(`RUN_LOG_FILE=${preload.runLogFilePath}`);
-          const runCommand = buildRunCommand({
-            path,
-            file,
+        yield* appendCliSessionHistory({
+          orgId: helperContext.orgId,
+          consumerUserId: helperContext.consumerUserId,
+          entry: {
+            command: 'run',
+            status: 'start',
+            file: Option.getOrUndefined(file),
             args,
-            preloadPath: preload.preloadPath,
-            preloadDirectory: preload.directory,
-          });
-          cleanupPaths = runCommand.cleanupPaths;
+            debug,
+          },
+        }).pipe(Effect.catchAll(() => Effect.void));
+        yield* ui.error(`RUN_LOG_FILE=${preload.runLogFilePath}`);
+        const runCommand = yield* buildRunCommand({
+          path,
+          file,
+          args,
+          preloadPath: preload.preloadPath,
+          preloadDirectory: preload.directory,
+        });
+        const exitCode = yield* Effect.gen(function* () {
           const child = Bun.spawn({
             cmd: runCommand.cmd,
             env: {
@@ -513,15 +526,17 @@ export const runCmd = Command.make('run', {
             },
             stdio: ['inherit', 'inherit', 'inherit'],
           });
-
-          const exitCode = yield* Effect.promise(() => child.exited);
-          process.exit(exitCode);
-        } finally {
-          for (const cleanupPath of cleanupPaths) {
-            fs.rmSync(cleanupPath, { force: true });
-          }
-          fs.rmSync(preload.directory, { recursive: true, force: true });
-        }
-      })
+          return yield* Effect.promise(() => child.exited);
+        }).pipe(
+          Effect.ensuring(
+            Effect.forEach(
+              runCommand.cleanupPaths,
+              cleanupPath => fs.remove(cleanupPath, { force: true }),
+              { discard: true }
+            ).pipe(Effect.orDie)
+          )
+        );
+        process.exitCode = exitCode;
+      }).pipe(Effect.scoped)
   )
 );

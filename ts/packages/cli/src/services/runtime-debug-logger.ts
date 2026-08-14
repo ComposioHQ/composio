@@ -1,5 +1,5 @@
 import { Effect } from 'effect';
-import { isPerfDebugEnabled, isToolDebugEnabled } from 'src/services/runtime-debug-flags';
+import { isPerfDebugEnabled, isToolDebugEnabled } from 'src/services/runtime-flags';
 import { TerminalUI } from 'src/services/terminal-ui';
 
 const writeJsonDebugLine = (channel: string, payload: Record<string, unknown>) =>

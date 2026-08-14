@@ -9,7 +9,6 @@ import { Path } from '@effect/platform';
 import { Effect, Either, Predicate, Schema } from 'effect';
 import { z } from 'zod';
 import { JsonRecordSchema } from 'src/effects/json';
-import { resolveCliConfigPathSync } from 'src/services/cli-user-config';
 import { detectMaster, type MasterKind } from 'src/services/master-detector';
 import {
   isAcpInvokeError,
@@ -43,6 +42,7 @@ export type RunHelperContext = {
   readonly runOutputDir?: string;
   readonly runLogFilePath?: string;
   readonly readAccessRoots?: ReadonlyArray<string>;
+  readonly cliConfigPath?: string;
 };
 
 type RunHelpersInstallParams = {
@@ -316,10 +316,14 @@ const summarizeCliResultPreview = (result: RunCliResult): unknown => {
   return result;
 };
 
-const readConfiguredExperimentalSubagentTarget = (): 'auto' | 'claude' | 'codex' => {
+const readConfiguredExperimentalSubagentTarget = (
+  cliConfigPath: string | undefined
+): 'auto' | 'claude' | 'codex' => {
+  if (!cliConfigPath) return 'auto';
+
   return Either.getOrElse(
     Either.try(() => {
-      const raw = fs.readFileSync(resolveCliConfigPathSync(), 'utf8');
+      const raw = fs.readFileSync(cliConfigPath, 'utf8');
       const parsed = decodeExperimentalSubagentConfig(raw);
       const target = parsed.experimental_subagent?.target;
       return target === 'claude' || target === 'codex' || target === 'auto' ? target : 'auto';
@@ -773,7 +777,7 @@ const createExperimentalSubAgent = (params: {
 
   const resolveInvokeAgentTarget = (requestedTarget?: string): 'claude' | 'codex' => {
     if (requestedTarget === 'claude' || requestedTarget === 'codex') return requestedTarget;
-    const configuredTarget = readConfiguredExperimentalSubagentTarget();
+    const configuredTarget = readConfiguredExperimentalSubagentTarget(helperContext.cliConfigPath);
     if (configuredTarget === 'claude' || configuredTarget === 'codex') return configuredTarget;
     const detected = requestedTarget === 'user' ? 'user' : detectInvokeAgentMaster();
     if (detected === 'codex' || detected === 'claude') return detected;

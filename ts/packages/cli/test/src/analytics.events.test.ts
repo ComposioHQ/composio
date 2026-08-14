@@ -29,6 +29,7 @@ import {
 import { APP_VERSION } from 'src/constants';
 import { inferSkillReleaseChannel } from 'src/effects/install-skill';
 import { CLI_RELEASE_CHANNELS } from 'src/experimental-features';
+import { configureRuntimeCliInvocationContext } from 'src/services/runtime-cli-context';
 import { ToolInputValidationError } from 'src/services/tool-input-validation';
 import { resolveInstalledCliVersion } from 'src/services/run-companion-modules';
 
@@ -368,6 +369,7 @@ describe('CLI analytics setup runtime-context events', () => {
 
 describe('CLI analytics journey taxonomy', () => {
   afterEach(() => {
+    configureRuntimeCliInvocationContext({ invocationOrigin: undefined, parentRunId: undefined });
     configureCliAnalyticsReleaseVersion(APP_VERSION);
     vi.unstubAllEnvs();
   });
@@ -472,12 +474,29 @@ describe('CLI analytics journey taxonomy', () => {
     }).pipe(Effect.provide(Layer.merge(BunFileSystem.layer, BunPath.layer)));
   });
 
-  it('propagates the installer invocation origin from the environment', () => {
-    vi.stubEnv('COMPOSIO_CLI_INVOCATION_ORIGIN', 'installer');
+  it('propagates the configured installer invocation origin', () => {
+    configureRuntimeCliInvocationContext({
+      invocationOrigin: 'installer',
+      parentRunId: undefined,
+    });
 
     expect(getPrimaryLifecycleInvokedEvent(contextFor(['install']))?.properties).toMatchObject({
       invocation_origin: 'installer',
       journey_stage: 'install',
+    });
+  });
+
+  it('uses the configured parent run id for nested run telemetry', () => {
+    configureRuntimeCliInvocationContext({
+      invocationOrigin: 'run',
+      parentRunId: 'run_parent',
+    });
+
+    const context = contextFor(['run', 'console.log("hi")']);
+    expect(context.runId).toBe('run_parent');
+    expect(getPrimaryLifecycleInvokedEvent(context)?.properties).toMatchObject({
+      invocation_origin: 'run',
+      run_id: 'run_parent',
     });
   });
 

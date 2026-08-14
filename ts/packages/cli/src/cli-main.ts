@@ -48,6 +48,11 @@ import { mapOnlyComposioOverrideError } from 'src/services/composio-error-overri
 import { SetupSkillInstaller } from 'src/services/setup-skill-installer';
 import { SetupCommandError } from 'src/services/setup';
 import { ShellSetupAbortError } from 'src/commands/install.cmd';
+import { APP_CONFIG } from 'src/effects/app-config';
+import {
+  configureRuntimeCliInvocationContext,
+  setRuntimeCliRunId,
+} from 'src/services/runtime-cli-context';
 
 // Layer is contravariant in ROut and covariant in E, so `never`/`unknown` accept any
 // produced context and error type while still pinning the requirements (RIn) to `never`.
@@ -162,6 +167,10 @@ const runWithTelemetry = Effect.gen(function* () {
 
   const version = yield* getVersion;
   configureCliAnalyticsReleaseVersion(version);
+  configureRuntimeCliInvocationContext({
+    invocationOrigin: yield* APP_CONFIG.CLI_INVOCATION_ORIGIN,
+    parentRunId: yield* APP_CONFIG.CLI_PARENT_RUN_ID,
+  });
   const baseTelemetryContext = createCliCommandTelemetryContext(process.argv, version, terminal);
   const executeToolSlug = getExecuteCommandToolSlug(baseTelemetryContext);
   const commandTelemetryContext =
@@ -169,12 +178,8 @@ const runWithTelemetry = Effect.gen(function* () {
       ? baseTelemetryContext
       : { ...baseTelemetryContext, toolkitSlug: yield* toolkitFromToolSlug(executeToolSlug) };
   if (commandTelemetryContext.commandPath === 'run' && commandTelemetryContext.runId) {
-    // effect/Config is read-only; the run id must be written into the environment so the run
-    // command and the child processes it spawns observe the same telemetry run id.
-    // eslint-disable-next-line eslint-js/no-restricted-syntax -- env write propagates run id to children
-    process.env.COMPOSIO_CLI_PARENT_RUN_ID = commandTelemetryContext.runId;
+    setRuntimeCliRunId(commandTelemetryContext.runId);
   }
-
   return yield* trackCliEventEffect(getPrimaryLifecycleInvokedEvent(commandTelemetryContext)).pipe(
     Effect.andThen(runWithArgs),
     Effect.scoped,

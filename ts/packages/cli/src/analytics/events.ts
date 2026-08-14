@@ -1,6 +1,7 @@
 import type { CliCommandTelemetryContext, TrackEvent } from './types';
 import { APP_VERSION } from 'src/constants';
 import { inferSkillReleaseChannel } from 'src/effects/install-skill';
+import { getRuntimeCliInvocationContext } from 'src/services/runtime-cli-context';
 import { ToolInputValidationError } from 'src/services/tool-input-validation';
 import { guessToolkitFromToolSlug } from 'src/utils/toolkit-from-tool-slug';
 
@@ -179,13 +180,8 @@ const TOOL_VALIDATION_CODES: ReadonlySet<number> = new Set([
   1607, // Upstream_ValidationError
   3702, // ComposioTools_ValidationError
 ]);
-// A parent `composio run` process hands these values to child CLI invocations through the
-// environment at spawn time; the event builders below are plain synchronous functions that
-// run outside any Effect context, so effect/Config is not available here.
-// eslint-disable-next-line eslint-js/no-restricted-syntax -- spawn-time env handoff read outside Effect
-const getInvocationOrigin = (): string => process.env.COMPOSIO_CLI_INVOCATION_ORIGIN ?? 'cli';
-// eslint-disable-next-line eslint-js/no-restricted-syntax -- spawn-time env handoff read outside Effect
-const getParentRunId = (): string | undefined => process.env.COMPOSIO_CLI_PARENT_RUN_ID;
+const getInvocationOrigin = (): string => getRuntimeCliInvocationContext().invocationOrigin;
+const getParentRunId = (): string | undefined => getRuntimeCliInvocationContext().parentRunId;
 
 const extractCommandPath = (argv: ReadonlyArray<string>): string => {
   const commandTokens: string[] = [];
@@ -482,11 +478,7 @@ export const createCliCommandTelemetryContext = (
   stdoutIsTTY: terminal.stdoutIsTTY,
   stderrIsTTY: terminal.stderrIsTTY,
   startedAt: Date.now(),
-  runId:
-    extractCommandPath(argv) === 'run'
-      ? // eslint-disable-next-line eslint-js/no-restricted-syntax -- spawn-time env handoff from parent run
-        (process.env.COMPOSIO_CLI_PARENT_RUN_ID ?? crypto.randomUUID())
-      : undefined,
+  runId: extractCommandPath(argv) === 'run' ? (getParentRunId() ?? crypto.randomUUID()) : undefined,
 });
 
 const getCliCommandInvokedEvent = (context: CliCommandTelemetryContext): TrackEvent =>
