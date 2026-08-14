@@ -54,7 +54,7 @@ describe("Navigation - meta.json validity", () => {
       "---Guides---",
       "---Direct execution (legacy)---",
       "---Migration---",
-      "---Security and data---",
+      "---Security---",
     ]);
 
     expect(pages.slice(1, pages.indexOf("---Core concepts---"))).toEqual([

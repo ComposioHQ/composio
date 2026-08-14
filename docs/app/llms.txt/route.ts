@@ -47,14 +47,29 @@ function isLegacySeparator(name: ReactNode): boolean {
  * Walk the fumadocs page tree and generate a markdown index.
  * Separators become ## headings, pages become URL entries, folders recurse.
  * Legacy/deprecated sections (and everything under them) are skipped.
+ *
+ * A folder emits a heading one level deeper, and markdown headings do not
+ * close — so a plain page emitted after a folder reads as belonging to that
+ * folder. `meta.json` order is the human sidebar's order and cannot absorb
+ * this, so each section's direct pages are buffered and flushed ahead of its
+ * folders. Within pages, and within folders, `meta.json` order is preserved.
  */
 function walkPageTree(nodes: TreeNode[], depth = 2): string {
   const lines: string[] = [];
   let skippingSection = false;
+  let sectionPages: string[] = [];
+  let sectionFolders: string[] = [];
+
+  function flushSection() {
+    lines.push(...sectionPages, ...sectionFolders);
+    sectionPages = [];
+    sectionFolders = [];
+  }
 
   for (const node of nodes) {
     if (node.type === 'separator') {
       // A separator starts a new section; skip it and its pages when legacy.
+      flushSection();
       skippingSection = isLegacySeparator(node.name);
       if (skippingSection) continue;
       const text = nodeText(node.name);
@@ -68,27 +83,29 @@ function walkPageTree(nodes: TreeNode[], depth = 2): string {
 
     switch (node.type) {
       case 'page':
-        lines.push(`- https://docs.composio.dev${node.url}.md`);
+        sectionPages.push(`- https://docs.composio.dev${node.url}.md`);
         break;
 
       case 'folder': {
         // Folders are sub-sections within separator sections, so one level deeper
         const text = nodeText(node.name);
         if (text) {
-          lines.push('', `${'#'.repeat(depth + 1)} ${text}`, '');
+          sectionFolders.push('', `${'#'.repeat(depth + 1)} ${text}`, '');
         }
         // If folder has an index page, include it
         if (node.index) {
-          lines.push(`- https://docs.composio.dev${node.index.url}.md`);
+          sectionFolders.push(`- https://docs.composio.dev${node.index.url}.md`);
         }
         // Recurse into children
         if (node.children.length > 0) {
-          lines.push(walkPageTree(node.children, depth + 1));
+          sectionFolders.push(walkPageTree(node.children, depth + 1));
         }
         break;
       }
     }
   }
+
+  flushSection();
 
   return lines
     .join('\n')

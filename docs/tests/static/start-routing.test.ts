@@ -80,13 +80,19 @@ describe('getting-started routing policy', () => {
     const { GET } = await import('../../app/llms.txt/route');
     const llms = await (await GET()).text();
 
-    for (const url of GUIDE_URLS) {
+    for (const url of ['/docs/authentication', ...GUIDE_URLS]) {
       const occurrences = llms.split(`https://docs.composio.dev${url}.md`).length - 1;
       expect(occurrences, `${url} appears ${occurrences}x in llms.txt`).toBe(1);
     }
   });
 
-  test('files the authentication guides under Core concepts, not a trailing section', async () => {
+  /**
+   * `nearest` is the closest preceding heading of any level. Markdown headings
+   * do not close, so it is what an agent reads a URL as belonging to: a page
+   * emitted after a folder reads as one of that folder's children even though
+   * the sidebar shows it as a sibling.
+   */
+  test('files each page under the section it belongs to', async () => {
     const { GET } = await import('../../app/llms.txt/route');
     const lines = (await (await GET()).text()).split('\n');
 
@@ -94,21 +100,47 @@ describe('getting-started routing policy', () => {
       const index = lines.findIndex(line => line.endsWith(`${url}.md`));
       expect(index, `${url} missing from llms.txt`).toBeGreaterThan(-1);
       const preceding = lines.slice(0, index);
-      const last = (prefix: string) => preceding.findLast(line => line.startsWith(prefix));
-      return [last('## '), last('### ')];
+      return {
+        section: preceding.findLast(line => line.startsWith('## ')),
+        nearest: preceding.findLast(line => line.startsWith('#')),
+      };
     };
 
     for (const guide of AUTH_GUIDES) {
-      expect(sectionOf(`/docs/authentication/${guide}`)).toEqual([
-        '## Core concepts',
-        '### Authentication',
-      ]);
+      expect(sectionOf(`/docs/authentication/${guide}`)).toEqual({
+        section: '## Core concepts',
+        nearest: '### Authentication',
+      });
     }
 
-    expect(sectionOf('/docs/extending-sessions/shared-connections')).toEqual([
-      '## Guides',
-      '### Extend sessions',
-    ]);
+    expect(sectionOf('/docs/authentication')).toEqual({
+      section: '## Core concepts',
+      nearest: '### Authentication',
+    });
+
+    expect(sectionOf('/docs/extending-sessions/shared-connections')).toEqual({
+      section: '## Guides',
+      nearest: '### Extend sessions',
+    });
+
+    // Siblings that follow the Authentication folder in meta.json. These fell
+    // under `### Authentication` when folders were emitted in meta.json order.
+    for (const sibling of ['/docs/triggers', '/docs/skills']) {
+      expect(sectionOf(sibling)).toEqual({
+        section: '## Core concepts',
+        nearest: '## Core concepts',
+      });
+    }
+
+    // Same failure mode, pre-dating this folder: Get Started's pages sit after
+    // the `providers` folder and used to read as SDKs-and-frameworks children.
+    for (const sibling of ['/docs/agent-plugins', '/docs/cli', '/docs/composio-connect']) {
+      expect(sectionOf(sibling)).toEqual({
+        section: '## Get Started',
+        nearest: '## Get Started',
+      });
+    }
+
     expect(lines).not.toContain('## Authentication guides');
   });
 });

@@ -1,7 +1,6 @@
 {
   "title": "Authentication",
   "pages": [
-    "index",
     "manually-authenticating",
     "managing-multiple-connected-accounts",
     "importing-existing-connections",
