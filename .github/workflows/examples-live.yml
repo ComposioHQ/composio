@@ -1,7 +1,7 @@
-name: Examples Live (production)
+name: Examples Manifest Sweep (staging)
 
 # Runs the example entrypoints from examples-manifest.json against the
-# PRODUCTION backend using a dedicated, disposable examples project — never
+# STAGING backend using a dedicated, disposable examples project — never
 # the org's main key. Non-blocking by design: scheduled + on demand, never a
 # required PR check. Local runs and CI share the same code path
 # (harness/run.mjs sweep).
@@ -42,11 +42,11 @@ permissions:
   contents: read
 
 env:
-  # Production URL is not a secret; the keys are. The key must belong to a
+  # Staging URL is not a secret; the keys are. The key must belong to a
   # project that holds no valuable connections or data — never the org's
   # main project. Example runs create their own resources and only ever
   # delete what they created.
-  COMPOSIO_BASE_URL: https://backend.composio.dev
+  COMPOSIO_BASE_URL: https://staging-backend.composio.dev
   COMPOSIO_API_KEY: ${{ secrets.COMPOSIO_API_KEY }}
   OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
   ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}

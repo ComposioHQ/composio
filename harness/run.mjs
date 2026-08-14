@@ -12,9 +12,9 @@ import { spawn } from 'node:child_process';
 import { mkdirSync, readFileSync, writeFileSync, appendFileSync, existsSync, rmSync } from 'node:fs';
 import { dirname, join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { requireStagingBaseUrl, STAGING_BASE_URL } from './staging-backend.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const DEFAULT_BASE_URL = 'https://backend.composio.dev';
 const ARTIFACTS = join(ROOT, '.artifacts', 'examples-parity');
 const STAINLESS_TS_VERSION = '0.1.0-alpha.76';
 const AIMOCK_VERSION = '1.38.0';
@@ -60,9 +60,11 @@ const selectEntries = () => {
 };
 
 const baseUrl = () => {
-  const url = process.env.COMPOSIO_BASE_URL ?? DEFAULT_BASE_URL;
-  if (/localhost|127\.0\.0\.1|0\.0\.0\.0/.test(url)) fail(`refusing local COMPOSIO_BASE_URL: ${url}`);
-  return url;
+  try {
+    return requireStagingBaseUrl();
+  } catch (error) {
+    fail(error instanceof Error ? error.message : String(error));
+  }
 };
 
 // Deterministic PRNG so --seed reproduces a negative-control sample.
@@ -421,6 +423,16 @@ const cmdSelftest = async () => {
     console.log(`  ${ok ? '✓' : '✗'} ${name}`);
     if (!ok) failures += 1;
   };
+
+  // 0. backend safety: the harness accepts only the canonical staging root.
+  check('staging backend is accepted', requireStagingBaseUrl() === STAGING_BASE_URL);
+  let productionRejected = false;
+  try {
+    requireStagingBaseUrl('https://backend.composio.dev');
+  } catch {
+    productionRejected = true;
+  }
+  check('production backend is rejected', productionRejected);
 
   // 1. known-good: error-handling-demo (no backend, no keys).
   const good = loadManifest().find((e) => e.id === 'ts/error-handling-demo/index');

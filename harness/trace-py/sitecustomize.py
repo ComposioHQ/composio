@@ -6,11 +6,30 @@ Examples must never reference COMPOSIO_TRACE_FILE themselves (lint-enforced).
 import json
 import os
 import re
+import sys
 from urllib.parse import urlsplit
 
 _TRACE = os.environ.get("COMPOSIO_TRACE_FILE")
+_STAGING_BASE_URL = "https://staging-backend.composio.dev"
 
 if _TRACE:
+    _base_url = os.environ.get("COMPOSIO_BASE_URL", _STAGING_BASE_URL)
+    _parsed_base_url = urlsplit(_base_url)
+    if not (
+        _parsed_base_url.scheme == "https"
+        and _parsed_base_url.hostname == "staging-backend.composio.dev"
+        and _parsed_base_url.path in {"", "/"}
+        and not _parsed_base_url.query
+        and not _parsed_base_url.fragment
+        and not _parsed_base_url.username
+        and not _parsed_base_url.password
+    ):
+        print(
+            f"sitecustomize: refusing non-staging COMPOSIO_BASE_URL: {_base_url}",
+            file=sys.stderr,
+        )
+        os._exit(78)
+
     try:
         import httpx
 
@@ -19,10 +38,7 @@ if _TRACE:
             "api.anthropic.com",
             "generativelanguage.googleapis.com",
         }
-        _BACKEND_HOST = (
-            urlsplit(os.environ.get("COMPOSIO_BASE_URL", "https://backend.composio.dev")).hostname
-            or "backend.composio.dev"
-        )
+        _BACKEND_HOST = _parsed_base_url.hostname
         _ID_SEG = re.compile(
             r"^(ca_|ac_|ti_|tr_|trs_|sess_|auth_|req_|proj_|org_)[\w-]+$"
             r"|^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
