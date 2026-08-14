@@ -28,16 +28,16 @@ allowBuilds:
   workerd: true
 
 catalog:
-  '@ai-sdk/mcp': ^2.0.24
-  '@ai-sdk/openai': ^4.0.29
+  '@ai-sdk/mcp': ^2.0.30
+  '@ai-sdk/openai': ^4.0.37
   '@arethetypeswrong/cli': ^0.18.5
   '@clack/core': '^1.4.3'
   '@clack/prompts': '^1.7.0'
-  '@cloudflare/vitest-pool-workers': 0.20.1
-  '@cloudflare/workers-types': ^5.20260804.1
+  '@cloudflare/vitest-pool-workers': 0.21.0
+  '@cloudflare/workers-types': ^5.20260811.1
   '@composio/client': 0.1.0-alpha.76
   '@effect/cli': ^0.77.0
-  '@effect/language-service': ^0.87.1
+  '@effect/language-service': ^0.87.2
   '@effect/platform': ^0.97.1
   '@effect/platform-bun': ^0.91.2
   '@effect/platform-node': ^0.108.0
@@ -45,7 +45,7 @@ catalog:
   '@effect/vitest': ^0.30.0
   # 1.52.1 is the latest version that keeps Node-only execa code out of
   # Workers bundles.
-  '@mastra/core': 1.52.1
+  '@mastra/core': 1.57.0
   '@modelcontextprotocol/sdk': ^1.30.0
   '@types/bun': ^1.3.14
   ai: ^7.0.51
@@ -54,14 +54,14 @@ catalog:
   hono: ^4.13.0
   openai: ^7.2.0
   picocolors: ^1.1.1
-  pnpm: ^11.20.0
+  pnpm: ^11.21.0
   publint: ^0.3.23
   tsdown: ^0.22.14
-  tsx: ^4.23.5
+  tsx: ^4.23.12
   typescript: ^7.0.2
   '@vitest/ui': ^4.1.10
   vitest: ^4.1.10
-  wrangler: ^4.118.0
+  wrangler: ^4.120.1
   zod: ^4.4.3
   zod-to-json-schema: ^3.25.2
 
