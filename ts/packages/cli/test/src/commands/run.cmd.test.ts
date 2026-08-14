@@ -3,9 +3,9 @@ import * as os from 'node:os';
 import * as path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { describe, expect, layer } from '@effect/vitest';
-import { Path } from '@effect/platform';
+import { Command as PlatformCommand, CommandExecutor, Path } from '@effect/platform';
 import { BunContext } from '@effect/platform-bun';
-import { ConfigProvider, Effect, Exit } from 'effect';
+import { ConfigProvider, Effect, Exit, HashMap } from 'effect';
 import { afterEach, it, vi } from 'vitest';
 import { createCliCommandTelemetryContext } from 'src/analytics/events';
 import {
@@ -36,9 +36,18 @@ import {
   setRuntimeCliRunId,
 } from 'src/services/runtime-cli-context';
 import { cli, MockConsole, TestLive } from 'test/__utils__';
+import { CommandRunner } from 'src/services/command-runner';
 
 const acpOnlyConfigProvider = ConfigProvider.fromMap(
   new Map([['COMPOSIO_RUN_ACP_ONLY', '1']])
+).pipe(extendConfigProvider);
+
+const enabledRuntimeFlagsConfigProvider = ConfigProvider.fromMap(
+  new Map([
+    ['COMPOSIO_RUN_ACP_ONLY', '1'],
+    ['COMPOSIO_PERF_DEBUG', '1'],
+    ['COMPOSIO_TOOL_DEBUG', '1'],
+  ])
 ).pipe(extendConfigProvider);
 
 const readRunPreloadSource = (command: ReadonlyArray<string>): string => {
@@ -49,15 +58,39 @@ const readRunPreloadSource = (command: ReadonlyArray<string>): string => {
   return fs.readFileSync(preloadPath, 'utf8');
 };
 
+const commandRuns = vi.fn((_: PlatformCommand.Command) =>
+  Effect.succeed(CommandExecutor.ExitCode(0))
+);
+
+const RunTestLive = (input: Parameters<typeof TestLive>[0] = {}) =>
+  TestLive({
+    ...input,
+    commandRunner: new CommandRunner({
+      run: command => commandRuns(command),
+      capture: () => Effect.succeed({ exitCode: 0, stdout: '', stderr: '' }),
+    }),
+  });
+
+const inspectRunCommand = (command: PlatformCommand.Command) => {
+  const [standard] = PlatformCommand.flatten(command);
+  return {
+    cmd: [standard.command, ...standard.args],
+    env: Object.fromEntries(HashMap.entries(standard.env)),
+    extendEnv: standard.extendEnv,
+    stdio: [standard.stdin, standard.stdout, standard.stderr],
+  };
+};
+
 describe('CLI: composio run', () => {
   afterEach(() => {
     process.exitCode = undefined;
     configureRuntimeCliInvocationContext({ invocationOrigin: undefined, parentRunId: undefined });
+    commandRuns.mockReset().mockImplementation(() => Effect.succeed(CommandExecutor.ExitCode(0)));
     vi.unstubAllGlobals();
     vi.restoreAllMocks();
   });
 
-  layer(TestLive())(it => {
+  layer(RunTestLive())(it => {
     it.scoped('[Given] a root run telemetry id [Then] the child receives the same run id', () =>
       Effect.gen(function* () {
         const telemetryContext = createCliCommandTelemetryContext(
@@ -70,36 +103,30 @@ describe('CLI: composio run', () => {
         if (runId === undefined) return;
         setRuntimeCliRunId(runId);
 
-        const spawn = vi.fn((options: { env: Record<string, string> }) => {
-          expect(options.env.COMPOSIO_CLI_PARENT_RUN_ID).toBe(runId);
-          return { exited: Promise.resolve(0) };
+        commandRuns.mockImplementation(command => {
+          expect(inspectRunCommand(command).env.COMPOSIO_CLI_PARENT_RUN_ID).toBe(runId);
+          return Effect.succeed(CommandExecutor.ExitCode(0));
         });
-        vi.stubGlobal('Bun', { spawn });
 
         yield* cli(['run', 'console.log("hi")']);
 
-        expect(spawn).toHaveBeenCalledTimes(1);
+        expect(commandRuns).toHaveBeenCalledTimes(1);
       })
     );
   });
 
-  layer(TestLive())(it => {
+  layer(RunTestLive())(it => {
     it.scoped(
       '[Given] inline code and args [Then] it forwards them to the embedded Bun runtime',
       () =>
         Effect.gen(function* () {
-          const spawn = vi.fn((_options: unknown) => ({ exited: Promise.resolve(7) }));
-          vi.stubGlobal('Bun', { spawn });
+          commandRuns.mockImplementation(() => Effect.succeed(CommandExecutor.ExitCode(7)));
 
           yield* cli(['run', 'console.log("hi")', '--flag', 'value']);
           const output = yield* MockConsole.getLines();
 
-          expect(spawn).toHaveBeenCalledTimes(1);
-          const spawnConfig = spawn.mock.calls[0][0] as {
-            cmd: string[];
-            env: unknown;
-            stdio: string[];
-          };
+          expect(commandRuns).toHaveBeenCalledTimes(1);
+          const spawnConfig = inspectRunCommand(commandRuns.mock.calls[0]![0]);
           expect(spawnConfig.cmd[0]).toBe(process.execPath);
           expect(spawnConfig.cmd[1]).toBe('--preload');
           expect(spawnConfig.cmd[2]).toMatch(/globals\.mjs$/);
@@ -108,12 +135,8 @@ describe('CLI: composio run', () => {
           expect(spawnConfig.cmd[4]).toContain('return (console.log("hi"));');
           expect(spawnConfig.cmd[4]).toContain('if (__composioResult !== undefined) {');
           expect(spawnConfig.cmd.slice(5)).toEqual(['--', '--flag', 'value']);
-          expect(spawnConfig.env).toEqual(
-            expect.objectContaining({
-              ...process.env,
-              BUN_BE_BUN: '1',
-            })
-          );
+          expect(spawnConfig.env).toEqual(expect.objectContaining({ BUN_BE_BUN: '1' }));
+          expect(spawnConfig.extendEnv).toBe(true);
           expect(spawnConfig.stdio).toEqual(['inherit', 'inherit', 'inherit']);
           expect(output).toContainEqual(expect.stringMatching(/^RUN_LOG_FILE=.*run\.log$/));
           expect(fs.existsSync(spawnConfig.cmd[2]!)).toBe(false);
@@ -122,55 +145,82 @@ describe('CLI: composio run', () => {
     );
   });
 
-  layer(TestLive({ baseConfigProvider: acpOnlyConfigProvider }))(it => {
+  layer(RunTestLive({ baseConfigProvider: acpOnlyConfigProvider }))(it => {
     it.scoped(
       '[Given] COMPOSIO_RUN_ACP_ONLY=1 [Then] run enables ACP-only execution without a flag',
       () =>
         Effect.gen(function* () {
-          const spawn = vi.fn((options: { cmd: string[] }) => {
-            expect(readRunPreloadSource(options.cmd)).toContain('"acpOnly":true');
-            return { exited: Promise.resolve(0) };
+          commandRuns.mockImplementation(command => {
+            expect(readRunPreloadSource(inspectRunCommand(command).cmd)).toContain(
+              '"acpOnly":true'
+            );
+            return Effect.succeed(CommandExecutor.ExitCode(0));
           });
-          vi.stubGlobal('Bun', { spawn });
 
           yield* cli(['run', 'console.log("hi")']);
 
-          expect(spawn).toHaveBeenCalledTimes(1);
+          expect(commandRuns).toHaveBeenCalledTimes(1);
         })
     );
 
     it.scoped('[Given] --acp-only=false and configured ACP-only mode [Then] the flag wins', () =>
       Effect.gen(function* () {
-        const spawn = vi.fn((options: { cmd: string[] }) => {
-          expect(readRunPreloadSource(options.cmd)).toContain('"acpOnly":false');
-          return { exited: Promise.resolve(0) };
+        commandRuns.mockImplementation(command => {
+          expect(readRunPreloadSource(inspectRunCommand(command).cmd)).toContain('"acpOnly":false');
+          return Effect.succeed(CommandExecutor.ExitCode(0));
         });
-        vi.stubGlobal('Bun', { spawn });
 
         yield* cli(['run', '--acp-only=false', 'console.log("hi")']);
 
-        expect(spawn).toHaveBeenCalledTimes(1);
+        expect(commandRuns).toHaveBeenCalledTimes(1);
       })
     );
   });
 
-  layer(TestLive())(it => {
+  layer(RunTestLive({ baseConfigProvider: enabledRuntimeFlagsConfigProvider }))(it => {
+    it.scoped('[Given] explicit false flags [Then] inherited true values are cleared', () =>
+      Effect.gen(function* () {
+        let preloadSource = '';
+        commandRuns.mockImplementation(command => {
+          preloadSource = readRunPreloadSource(inspectRunCommand(command).cmd);
+          return Effect.succeed(CommandExecutor.ExitCode(0));
+        });
+
+        yield* cli([
+          'run',
+          '--perf-debug=false',
+          '--tool-debug=false',
+          '--acp-only=false',
+          'console.log("hi")',
+        ]);
+
+        const command = inspectRunCommand(commandRuns.mock.calls[0]![0]);
+        expect(command.env).toMatchObject({
+          COMPOSIO_PERF_DEBUG: '0',
+          COMPOSIO_TOOL_DEBUG: '0',
+          COMPOSIO_RUN_ACP_ONLY: '0',
+        });
+        expect(preloadSource).toContain('"acpOnly":false');
+      })
+    );
+  });
+
+  layer(RunTestLive())(it => {
     it.scoped(
       '[Given] --acp-only [Then] run accepts the flag and forwards execution normally',
       () =>
         Effect.gen(function* () {
-          const spawn = vi.fn((options: { cmd: string[] }) => {
-            expect(readRunPreloadSource(options.cmd)).toContain('"acpOnly":true');
-            return { exited: Promise.resolve(0) };
+          commandRuns.mockImplementation(command => {
+            expect(readRunPreloadSource(inspectRunCommand(command).cmd)).toContain(
+              '"acpOnly":true'
+            );
+            return Effect.succeed(CommandExecutor.ExitCode(0));
           });
-          vi.stubGlobal('Bun', { spawn });
 
           yield* cli(['run', '--acp-only', 'console.log("hi")']);
 
-          expect(spawn).toHaveBeenCalledTimes(1);
-          const spawnConfig = spawn.mock.calls[0][0] as {
-            cmd: string[];
-          };
+          expect(commandRuns).toHaveBeenCalledTimes(1);
+          const spawnConfig = inspectRunCommand(commandRuns.mock.calls[0]![0]);
           expect(spawnConfig.cmd[3]).toBe('--eval');
           expect(process.exitCode).toBe(0);
         })
@@ -179,11 +229,10 @@ describe('CLI: composio run', () => {
     it.scoped('[Given] repeated invocations [Then] hidden flags do not leak', () =>
       Effect.gen(function* () {
         const preloadSources: string[] = [];
-        const spawn = vi.fn((options: { cmd: string[] }) => {
-          preloadSources.push(readRunPreloadSource(options.cmd));
-          return { exited: Promise.resolve(0) };
+        commandRuns.mockImplementation(command => {
+          preloadSources.push(readRunPreloadSource(inspectRunCommand(command).cmd));
+          return Effect.succeed(CommandExecutor.ExitCode(0));
         });
-        vi.stubGlobal('Bun', { spawn });
 
         yield* cli(['run', '--acp-only', 'console.log("first")']);
         yield* cli(['run', 'console.log("second")']);
@@ -195,27 +244,22 @@ describe('CLI: composio run', () => {
     );
   });
 
-  layer(TestLive())(it => {
+  layer(RunTestLive())(it => {
     it.scoped(
       '[Given] --logs-off [Then] run accepts the flag and forwards execution normally',
       () =>
         Effect.gen(function* () {
-          const spawn = vi.fn((_options: unknown) => ({ exited: Promise.resolve(0) }));
-          vi.stubGlobal('Bun', { spawn });
-
           yield* cli(['run', '--logs-off', 'console.log("hi")']);
 
-          expect(spawn).toHaveBeenCalledTimes(1);
-          const spawnConfig = spawn.mock.calls[0][0] as {
-            cmd: string[];
-          };
+          expect(commandRuns).toHaveBeenCalledTimes(1);
+          const spawnConfig = inspectRunCommand(commandRuns.mock.calls[0]![0]);
           expect(spawnConfig.cmd[3]).toBe('--eval');
           expect(process.exitCode).toBe(0);
         })
     );
   });
 
-  layer(TestLive())(it => {
+  layer(RunTestLive())(it => {
     it.scoped(
       '[Given] a multiline structured experimental_subAgent script [Then] run preserves the inline TypeScript source',
       () =>
@@ -237,15 +281,10 @@ describe('CLI: composio run', () => {
             console.log(JSON.stringify(brief));
             console.log(JSON.stringify(brief.structuredOutput));
           `;
-          const spawn = vi.fn((_options: unknown) => ({ exited: Promise.resolve(0) }));
-          vi.stubGlobal('Bun', { spawn });
-
           yield* cli(['run', '--logs-off', script]);
 
-          expect(spawn).toHaveBeenCalledTimes(1);
-          const spawnConfig = spawn.mock.calls[0][0] as {
-            cmd: string[];
-          };
+          expect(commandRuns).toHaveBeenCalledTimes(1);
+          const spawnConfig = inspectRunCommand(commandRuns.mock.calls[0]![0]);
           expect(spawnConfig.cmd[3]).toBe('--eval');
           expect(spawnConfig.cmd[4]).toContain('const brief = await experimental_subAgent(');
           expect(spawnConfig.cmd[4]).toContain('"Do not run terminal commands."');
@@ -261,36 +300,25 @@ describe('CLI: composio run', () => {
     );
   });
 
-  layer(TestLive())(it => {
+  layer(RunTestLive())(it => {
     it.scoped('[Given] --file [Then] it forwards file execution to the embedded Bun runtime', () =>
       Effect.gen(function* () {
         const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'composio-run-test-'));
         const scriptPath = path.join(tempDir, 'script.ts');
         fs.writeFileSync(scriptPath, 'const value = 1 + 1;\nvalue * 2;\n', 'utf8');
-        const spawn = vi.fn((_options: unknown) => ({ exited: Promise.resolve(0) }));
-        vi.stubGlobal('Bun', { spawn });
-
         try {
           yield* cli(['run', '--file', scriptPath, '--', 'hello']);
 
-          expect(spawn).toHaveBeenCalledTimes(1);
-          const spawnConfig = spawn.mock.calls[0][0] as {
-            cmd: string[];
-            env: unknown;
-            stdio: string[];
-          };
+          expect(commandRuns).toHaveBeenCalledTimes(1);
+          const spawnConfig = inspectRunCommand(commandRuns.mock.calls[0]![0]);
           expect(spawnConfig.cmd[0]).toBe(process.execPath);
           expect(spawnConfig.cmd[1]).toBe('--preload');
           expect(spawnConfig.cmd[2]).toMatch(/globals\.mjs$/);
           expect(spawnConfig.cmd[3]).toMatch(/\.composio-run-.*\.ts$/);
           expect(spawnConfig.cmd[4]).toBe('--');
           expect(spawnConfig.cmd[5]).toBe('hello');
-          expect(spawnConfig.env).toEqual(
-            expect.objectContaining({
-              ...process.env,
-              BUN_BE_BUN: '1',
-            })
-          );
+          expect(spawnConfig.env).toEqual(expect.objectContaining({ BUN_BE_BUN: '1' }));
+          expect(spawnConfig.extendEnv).toBe(true);
           expect(spawnConfig.stdio).toEqual(['inherit', 'inherit', 'inherit']);
           expect(fs.existsSync(spawnConfig.cmd[2]!)).toBe(false);
           expect(fs.existsSync(spawnConfig.cmd[3]!)).toBe(false);
@@ -302,7 +330,7 @@ describe('CLI: composio run', () => {
     );
   });
 
-  layer(TestLive())(it => {
+  layer(RunTestLive())(it => {
     it.scoped('[Given] no inline code and no --file [Then] it fails with a clear error', () =>
       Effect.gen(function* () {
         const exit = yield* cli(['run']).pipe(Effect.exit);
@@ -311,7 +339,7 @@ describe('CLI: composio run', () => {
     );
   });
 
-  layer(TestLive())(it => {
+  layer(RunTestLive())(it => {
     it.scoped(
       '[Given] run help [Then] it documents injected execute, search, proxy, experimental_subAgent, and z helpers',
       () =>

@@ -48,7 +48,7 @@ import { configureRuntimeFlags } from 'src/services/runtime-flags';
 import { ComposioCliUserConfig } from 'src/services/cli-user-config';
 import { ComposioUserContext } from 'src/services/user-context';
 import { TerminalUI } from 'src/services/terminal-ui';
-import { detectMaster } from 'src/services/master-detector';
+import { detectMasterFromHost } from 'src/services/master-detector';
 import {
   formatResolveCommandProjectError,
   resolveCommandProject,
@@ -425,11 +425,11 @@ const printDebugApiInfo = Effect.gen(function* () {
   );
 });
 
-const printDetectedMaster = Effect.suspend(() =>
-  Effect.flatMap(TerminalUI, ui =>
-    ui.output(JSON.stringify({ master: detectMaster() }, null, 2), { force: true })
-  )
-);
+const printDetectedMaster = Effect.gen(function* () {
+  const ui = yield* TerminalUI;
+  const master = yield* detectMasterFromHost;
+  yield* ui.output(JSON.stringify({ master }, null, 2), { force: true });
+});
 
 const printDevModeDisabled = Effect.gen(function* () {
   const ui = yield* TerminalUI;

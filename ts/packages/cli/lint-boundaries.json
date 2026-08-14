@@ -1,37 +1,9 @@
 {
-  "src/bin.ts": [
-    {
-      "rule": "eslint-js/no-restricted-syntax",
-      "reason": "pre-runtime env write during bootstrap",
-      "target": "process.env[CLI_TELEMETRY_DEBUG_ENV_VAR] = 'true';"
-    }
-  ],
-  "src/commands/run.cmd.ts": [
-    {
-      "rule": "eslint-js/no-restricted-syntax",
-      "reason": "spreads the caller's full environment into the spawned script so user-provided variables reach the child process",
-      "target": "...process.env,"
-    }
-  ],
   "src/services/detached-process.ts": [
     {
       "rule": "no-restricted-imports",
       "reason": "This Effect helper is the sole detached-spawn boundary for CLI source: @effect/platform Command processes are scope-bound and are killed when their scope closes, while these children must outlive the CLI process.",
       "target": "import { spawn } from 'node:child_process';"
-    }
-  ],
-  "src/services/master-detector.ts": [
-    {
-      "rule": "eslint-js/no-restricted-syntax",
-      "reason": "classifies the driving agent by scanning every env key for CODEX_/CLAUDE_ prefixes; effect/Config reads known keys and cannot enumerate the whole environment",
-      "target": "export const detectMaster = (env: Record<string, string | undefined> = process.env): MasterKind => {"
-    }
-  ],
-  "src/services/native-ui-sidecar.ts": [
-    {
-      "rule": "eslint-js/no-restricted-syntax",
-      "reason": "Sole raw-env boundary of this module: prefix scanning needs the full environment map, which effect/Config cannot enumerate.",
-      "target": "const rawProcessEnv: NodeJS.ProcessEnv = process.env;"
     }
   ],
   "src/services/node-os.ts": [
@@ -43,25 +15,8 @@
   ],
   "src/services/run-helpers-runtime.ts": [
     {
-      "rule": "eslint-js/no-restricted-syntax",
-      "reason": "the spawned CLI child must inherit the caller's full environment before Composio-specific overrides are layered on top",
-      "target": "...process.env,"
-    },
-    {
-      "rule": "no-restricted-imports",
-      "reason": "os.tmpdir() locates the fallback run-files directory in the child process, outside the Effect runtime",
-      "target": "import * as os from 'node:os';"
-    },
-    {
       "rule": "no-restricted-imports",
       "reason": "sync fs for run-log appends, run-file writes, and CLI config reads in the child process, outside the Effect runtime",
-      "target": "import * as fs from 'node:fs';"
-    }
-  ],
-  "src/services/run-subagent-output-mcp.ts": [
-    {
-      "rule": "no-restricted-imports",
-      "reason": "standalone MCP stdio sidecar entrypoint runs outside the CLI's Effect runtime; sync fs reads the schema file and writes the structured result file",
       "target": "import * as fs from 'node:fs';"
     }
   ],
@@ -70,20 +25,6 @@
       "rule": "no-restricted-imports",
       "reason": "MD5 for the presigned-upload checksum is not available in Web Crypto",
       "target": "const { createHash } = await import('node:crypto');"
-    }
-  ],
-  "src/ui/colors.ts": [
-    {
-      "rule": "eslint-js/no-restricted-syntax",
-      "reason": "palette is created eagerly at import time, before any Effect runtime; honors the NO_COLOR convention",
-      "target": "} = color.createColors(!Boolean(process.env.NO_COLOR));"
-    }
-  ],
-  "src/ui/redact.ts": [
-    {
-      "rule": "eslint-js/no-restricted-syntax",
-      "reason": "plain sync string helper called from formatting code; CI flag toggles redaction in recorded CLI output",
-      "target": "if (process.env.CI !== 'true') return value as `${Prefix}${string}`;"
     }
   ]
 }

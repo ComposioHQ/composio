@@ -1,5 +1,8 @@
 import { Effect } from 'effect';
-import { APP_CONFIG } from 'src/effects/app-config';
+import { APP_CONFIG, HOST_CONFIG } from 'src/effects/app-config';
+import { loadHostConfig } from 'src/services/config';
+
+export const TELEMETRY_DEBUG_FLAG = '--telemetry-debug';
 
 type RuntimeFlags = {
   readonly perfDebug: boolean | undefined;
@@ -13,6 +16,8 @@ let runtimeFlags: RuntimeFlags = {
   acpOnly: undefined,
 };
 
+let telemetryDebugOverride: boolean | undefined;
+
 export const configureRuntimeFlags = (flags: RuntimeFlags): void => {
   runtimeFlags = flags;
 };
@@ -23,6 +28,11 @@ export const resetRuntimeFlags = (): void => {
     toolDebug: undefined,
     acpOnly: undefined,
   };
+  telemetryDebugOverride = undefined;
+};
+
+export const enableRuntimeTelemetryDebug = (): void => {
+  telemetryDebugOverride = true;
 };
 
 export const isPerfDebugEnabled = () =>
@@ -41,4 +51,9 @@ export const isAcpOnlyEnabled = () =>
   APP_CONFIG.RUN_ACP_ONLY.pipe(
     Effect.orDie,
     Effect.map(configured => runtimeFlags.acpOnly ?? configured)
+  );
+
+export const isTelemetryDebugEnabled = () =>
+  loadHostConfig(HOST_CONFIG.TELEMETRY_DEBUG).pipe(
+    Effect.map(configured => telemetryDebugOverride ?? configured)
   );

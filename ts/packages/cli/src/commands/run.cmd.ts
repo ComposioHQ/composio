@@ -1,6 +1,6 @@
 import process from 'node:process';
 import { Args, Command, Options } from '@effect/cli';
-import { FileSystem, Path } from '@effect/platform';
+import { Command as PlatformCommand, FileSystem, Path } from '@effect/platform';
 import { Effect, Option } from 'effect';
 import { ts } from 'ts-morph';
 import { APP_VERSION } from 'src/constants';
@@ -14,7 +14,7 @@ import {
   isPerfDebugEnabled,
   isToolDebugEnabled,
 } from 'src/services/runtime-flags';
-import { detectMaster } from 'src/services/master-detector';
+import { detectMasterFromHost } from 'src/services/master-detector';
 import { getRuntimeCliInvocationContext } from 'src/services/runtime-cli-context';
 import {
   repairMissingInstalledRunCompanionModules,
@@ -29,6 +29,7 @@ import { TerminalUI } from 'src/services/terminal-ui';
 import { readUnprefixedOptionalEnv } from 'src/services/config';
 import { resolveCliConfigPath } from 'src/services/cli-user-config';
 import { NodeOs } from 'src/services/node-os';
+import { CommandRunner } from 'src/services/command-runner';
 
 const file = Options.text('file').pipe(
   Options.withAlias('f'),
@@ -447,6 +448,7 @@ export const runCmd = Command.make('run', {
       Effect.gen(function* () {
         const fs = yield* FileSystem.FileSystem;
         const path = yield* Path.Path;
+        const commandRunner = yield* CommandRunner;
         const invocationContext = getRuntimeCliInvocationContext();
         const runId =
           invocationContext.currentRunId ?? invocationContext.parentRunId ?? crypto.randomUUID();
@@ -467,7 +469,7 @@ export const runCmd = Command.make('run', {
         const helperContext: RunHelperContext = {
           ...(yield* resolveRunHelperContext()),
           runId,
-          master: detectMaster(),
+          master: yield* detectMasterFromHost,
           perfDebug,
           toolDebug,
           debug,
@@ -514,19 +516,20 @@ export const runCmd = Command.make('run', {
           preloadDirectory: preload.directory,
         });
         const exitCode = yield* Effect.gen(function* () {
-          const child = Bun.spawn({
-            cmd: runCommand.cmd,
-            env: {
-              // eslint-disable-next-line eslint-js/no-restricted-syntax -- spreads the caller's full environment into the spawned script so user-provided variables reach the child process
-              ...process.env,
+          const [executable, ...commandArgs] = runCommand.cmd;
+          const child = PlatformCommand.make(executable, ...commandArgs).pipe(
+            PlatformCommand.env({
               BUN_BE_BUN: '1',
               COMPOSIO_CLI_PARENT_RUN_ID: runId,
-              ...(perfDebug ? { COMPOSIO_PERF_DEBUG: '1' } : {}),
-              ...(toolDebug ? { COMPOSIO_TOOL_DEBUG: '1' } : {}),
-            },
-            stdio: ['inherit', 'inherit', 'inherit'],
-          });
-          return yield* Effect.promise(() => child.exited);
+              COMPOSIO_PERF_DEBUG: perfDebug ? '1' : '0',
+              COMPOSIO_TOOL_DEBUG: toolDebug ? '1' : '0',
+              COMPOSIO_RUN_ACP_ONLY: acpOnly ? '1' : '0',
+            }),
+            PlatformCommand.stdin('inherit'),
+            PlatformCommand.stdout('inherit'),
+            PlatformCommand.stderr('inherit')
+          );
+          return Number(yield* commandRunner.run(child));
         }).pipe(
           Effect.ensuring(
             Effect.forEach(

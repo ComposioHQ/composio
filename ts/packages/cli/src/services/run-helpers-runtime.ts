@@ -2,14 +2,12 @@
 // runtime or @effect/platform layers are provided, so it uses sync Node builtins.
 // eslint-disable-next-line no-restricted-imports -- sync fs for run-log appends, run-file writes, and CLI config reads in the child process, outside the Effect runtime
 import * as fs from 'node:fs';
-// eslint-disable-next-line no-restricted-imports -- os.tmpdir() locates the fallback run-files directory in the child process, outside the Effect runtime
-import * as os from 'node:os';
-import process from 'node:process';
-import { Path } from '@effect/platform';
-import { Effect, Either, Predicate, Schema } from 'effect';
+import { Command, Path } from '@effect/platform';
+import { BunContext } from '@effect/platform-bun';
+import { Effect, Either, Predicate, Schema, Stream, String as EffectString } from 'effect';
 import { z } from 'zod';
 import { JsonRecordSchema } from 'src/effects/json';
-import { detectMaster, type MasterKind } from 'src/services/master-detector';
+import type { MasterKind } from 'src/services/master-detector';
 import {
   isAcpInvokeError,
   parseJson,
@@ -19,6 +17,7 @@ import {
 import { invokeAcpSubAgent } from 'src/services/run-subagent-acp';
 import { invokeLegacySubAgent } from 'src/services/run-subagent-legacy';
 import { TerminalUI, TerminalUILive } from 'src/services/terminal-ui';
+import { NodeOs } from 'src/services/node-os';
 
 export type RunHelperContext = {
   readonly apiKey?: string;
@@ -508,12 +507,13 @@ const createRunHelperLoggers = (params: {
 
 const createExecutePayloadMaterializer = (params: {
   readonly path: Path.Path;
+  readonly tmpdir: string;
   readonly sharedRunOutputDir: string | null;
 }): ((value: unknown) => Promise<unknown>) => {
-  const { path, sharedRunOutputDir } = params;
+  const { path, tmpdir, sharedRunOutputDir } = params;
 
   const writeTempExecuteFile = async (value: unknown): Promise<unknown> => {
-    const outputDir = sharedRunOutputDir || path.join(os.tmpdir(), 'composio-run-files');
+    const outputDir = sharedRunOutputDir || path.join(tmpdir, 'composio-run-files');
     fs.mkdirSync(outputDir, { recursive: true });
     if (typeof File !== 'undefined' && value instanceof File) {
       const safeName =
@@ -617,29 +617,55 @@ const createCliRunner = (params: {
   const runCliJson = async (args: ReadonlyArray<string>): Promise<RunCliResult> => {
     const requestId = `${args[0] ?? 'cli'}#${++perfDebugSeq}`;
     helperDebugLog('cli.start', { requestId, args });
-    const env: Record<string, string | undefined> = {
-      // eslint-disable-next-line eslint-js/no-restricted-syntax -- the spawned CLI child must inherit the caller's full environment before Composio-specific overrides are layered on top
-      ...process.env,
+    const env: Record<string, string> = {
+      // The platform command inherits the ambient environment by default. An
+      // empty BUN_BE_BUN masks the parent run process's Bun compatibility flag
+      // without copying or enumerating unrelated values.
+      BUN_BE_BUN: '',
       ...(helperContext.apiKey ? { COMPOSIO_USER_API_KEY: helperContext.apiKey } : {}),
       ...(helperContext.baseURL ? { COMPOSIO_BASE_URL: helperContext.baseURL } : {}),
       ...(helperContext.webURL ? { COMPOSIO_WEB_URL: helperContext.webURL } : {}),
       COMPOSIO_CLI_INVOCATION_ORIGIN: 'run',
       ...(helperContext.runId ? { COMPOSIO_CLI_PARENT_RUN_ID: helperContext.runId } : {}),
       ...(sharedRunOutputDir ? { COMPOSIO_RUN_OUTPUT_DIR: sharedRunOutputDir } : {}),
-      ...(perfDebugEnabled ? { COMPOSIO_PERF_DEBUG: '1' } : {}),
-      ...(toolDebugEnabled ? { COMPOSIO_TOOL_DEBUG: '1' } : {}),
+      COMPOSIO_PERF_DEBUG: perfDebugEnabled ? '1' : '0',
+      COMPOSIO_TOOL_DEBUG: toolDebugEnabled ? '1' : '0',
+      COMPOSIO_RUN_ACP_ONLY: helperContext.acpOnly === true ? '1' : '0',
     };
-    delete env.BUN_BE_BUN;
     perfDebugLog('start', requestId, { cmd: args });
-    const child = Bun.spawn({
-      cmd: [...cliPrefix, ...args],
-      env,
-      stdio: ['inherit', 'pipe', perfDebugEnabled || toolDebugEnabled ? 'inherit' : 'pipe'],
-    });
-    const stdout = child.stdout ? await new Response(child.stdout).text() : '';
-    const stderr = child.stderr ? await new Response(child.stderr).text() : '';
+    const [executable, ...commandArgs] = [...cliPrefix, ...args];
+    const inheritStderr = perfDebugEnabled || toolDebugEnabled;
+    const { exitCode, stderr, stdout } = await Effect.runPromise(
+      Effect.scoped(
+        Effect.gen(function* () {
+          const command = Command.make(executable, ...commandArgs).pipe(
+            Command.env(env),
+            Command.stdin('inherit'),
+            Command.stderr(inheritStderr ? 'inherit' : 'pipe')
+          );
+          const child = yield* Command.start(command);
+          const collectText = (stream: Stream.Stream<Uint8Array, unknown>) =>
+            stream.pipe(
+              Stream.decodeText(),
+              Stream.runFold(EffectString.empty, EffectString.concat)
+            );
+          const [childExitCode, childStdout, childStderr] = yield* Effect.all(
+            [
+              child.exitCode,
+              collectText(child.stdout),
+              inheritStderr ? Effect.succeed('') : collectText(child.stderr),
+            ],
+            { concurrency: 'unbounded' }
+          );
+          return {
+            exitCode: Number(childExitCode),
+            stdout: childStdout,
+            stderr: childStderr,
+          };
+        })
+      ).pipe(Effect.provide(BunContext.layer))
+    );
     const result = maybeLoadStoredCliResult(parseJson(stdout));
-    const exitCode = await child.exited;
     if (exitCode !== 0) {
       perfDebugLog('error', requestId, { exitCode, stderr: stderr.trim() || undefined });
       helperDebugLog('cli.error', {
@@ -772,7 +798,7 @@ const createExperimentalSubAgent = (params: {
     ) {
       return helperContext.master;
     }
-    return detectMaster();
+    return 'user';
   };
 
   const resolveInvokeAgentTarget = (requestedTarget?: string): 'claude' | 'codex' => {
@@ -963,6 +989,7 @@ export const installRunHelpers = async ({
   // Resolve the live services once at that boundary and keep all writes centralized.
   const terminal = Effect.runSync(TerminalUI.pipe(Effect.provide(TerminalUILive)));
   const path = Effect.runSync(Path.Path.pipe(Effect.provide(Path.layer)));
+  const nodeOs = Effect.runSync(NodeOs.pipe(Effect.provide(NodeOs.Default)));
   const writeError = (line: string) => Effect.runSync(terminal.error(line));
 
   Reflect.set(globalThis, 'z', z);
@@ -995,6 +1022,7 @@ export const installRunHelpers = async ({
 
   const materializeExecutePayload = createExecutePayloadMaterializer({
     path,
+    tmpdir: nodeOs.tmpdir,
     sharedRunOutputDir,
   });
   const runCliJson = createCliRunner({

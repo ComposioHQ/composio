@@ -23,14 +23,18 @@ import { APP_CONFIG } from 'src/effects/app-config';
 
 export const BaseConfigProviderLive = ConfigProvider.fromEnv();
 
+/** Load named host variables that intentionally bypass the `COMPOSIO_` prefix mapping. */
+export const loadHostConfig = <A>(config: Config.Config<A>): Effect.Effect<A> =>
+  BaseConfigProviderLive.load(config).pipe(Effect.orDie);
+
 type UnprefixedEnvironmentVariable = 'CACHE_DIR' | 'npm_config_user_agent';
-const unprefixedEnvironmentProvider = ConfigProvider.fromEnv();
 
 /** Read an external environment variable that does not use the CLI's COMPOSIO_ prefix. */
 export const readUnprefixedOptionalEnv = (name: UnprefixedEnvironmentVariable) =>
-  unprefixedEnvironmentProvider
-    .load(Config.option(Config.string(name)))
-    .pipe(Effect.orDie, Effect.map(Option.getOrUndefined));
+  BaseConfigProviderLive.load(Config.option(Config.string(name))).pipe(
+    Effect.orDie,
+    Effect.map(Option.getOrUndefined)
+  );
 
 export function extendConfigProvider(baseConfigProvider: ConfigProvider.ConfigProvider) {
   return baseConfigProvider.pipe(

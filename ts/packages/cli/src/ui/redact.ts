@@ -1,4 +1,8 @@
-import process from 'node:process';
+import { Effect } from 'effect';
+import { HOST_CONFIG } from 'src/effects/app-config';
+import { loadHostConfig } from 'src/services/config';
+
+const ciRedactionEnabled = loadHostConfig(HOST_CONFIG.CI_REDACTION_ENABLED);
 
 /**
  * Redact a value when running in CI (e.g., CLI recordings).
@@ -12,7 +16,6 @@ export function redact<const Prefix extends string = string>({
   value: string;
   prefix?: Prefix;
 }): `${Prefix}${string}` {
-  // eslint-disable-next-line eslint-js/no-restricted-syntax -- plain sync string helper called from formatting code; CI flag toggles redaction in recorded CLI output
-  if (process.env.CI !== 'true') return value as `${Prefix}${string}`;
+  if (!Effect.runSync(ciRedactionEnabled)) return value as `${Prefix}${string}`;
   return `${prefix ?? ''}<REDACTED>` as `${Prefix}${string}`;
 }

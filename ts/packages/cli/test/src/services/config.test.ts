@@ -1,8 +1,8 @@
-import { beforeEach, describe, it, vi } from '@effect/vitest';
+import { beforeEach, describe, expect, it, vi } from '@effect/vitest';
 import { assertEquals } from '@effect/vitest/utils';
 
 import { Config, ConfigProvider, Effect, Option, Data, LogLevel } from 'effect';
-import { APP_CONFIG } from 'src/effects/app-config';
+import { APP_CONFIG, HOST_CONFIG } from 'src/effects/app-config';
 import { extendConfigProvider } from 'src/services/config';
 import { DEBUG_OVERRIDE_CONFIG } from 'src/effects/debug-config';
 import * as constants from 'src/constants';
@@ -409,6 +409,56 @@ describe('Config', () => {
               VERSION: Option.some('x.x.x'),
             })
           );
+        })
+      );
+    });
+
+    describe('HOST_CONFIG', () => {
+      it.effect('[Then] it normalizes unprefixed host values into runtime facts', () =>
+        Effect.gen(function* () {
+          const provider = ConfigProvider.fromMap(
+            new Map([
+              ['CI', ' TRUE '],
+              ['NO_COLOR', '1'],
+              ['COMPOSIO_CLI_TELEMETRY_DEBUG', 'true'],
+              ['CODEX_FUTURE_MARKER', 'thread_test'],
+              ['CLAUDE_FUTURE_MARKER', 'cli'],
+              ['COMPOSIO_CALLER_AGENT', 'Open-Claw'],
+              ['VITEST', 'off'],
+            ]),
+            { pathDelim: '_' }
+          );
+
+          const actual = yield* provider.load(Config.all(HOST_CONFIG));
+
+          expect(actual).toEqual({
+            CI_REDACTION_ENABLED: true,
+            INTERACTIVE_PERMISSION_UI_DISABLED: true,
+            NO_COLOR: true,
+            TELEMETRY_DEBUG: true,
+            MASTER_SIGNALS: { codex: true, claude: true },
+            CALLER_AGENT_SIGNALS: {
+              explicit: 'Open-Claw',
+              openclaw: false,
+              claude: true,
+              codex: true,
+            },
+          });
+        })
+      );
+
+      it.effect('[Then] an explicit permission UI value overrides CI detection', () =>
+        Effect.gen(function* () {
+          const provider = ConfigProvider.fromMap(
+            new Map([
+              ['COMPOSIO_DISABLE_PERMISSION_UI', 'false'],
+              ['CI', 'true'],
+              ['VITEST', 'true'],
+            ]),
+            { pathDelim: '_' }
+          );
+
+          assertEquals(yield* provider.load(HOST_CONFIG.INTERACTIVE_PERMISSION_UI_DISABLED), false);
         })
       );
     });

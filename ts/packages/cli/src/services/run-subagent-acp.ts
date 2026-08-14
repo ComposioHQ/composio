@@ -741,10 +741,9 @@ const invokeAcpSubAgentEffect = ({
       args: resolved.cmd.slice(1),
     });
 
-    // The Claude Code CLI refuses to start when it inherits CLAUDECODE=1 (its
-    // nested-session guard checks `process.env.CLAUDECODE === "1"`). The
-    // platform Command executor always spreads process.env into the child, so
-    // the variable cannot be dropped; mask it with an empty string instead —
+    // The Claude Code CLI refuses to start when it inherits CLAUDECODE=1. The
+    // platform Command executor inherits the parent environment, so the
+    // variable cannot be dropped; mask it with an empty string instead —
     // falsy and distinct from the guarded "1" — only when the parent has it set.
     const claudeCode = yield* Config.option(Config.string('CLAUDECODE'));
     const childEnv: Record<string, string> = {

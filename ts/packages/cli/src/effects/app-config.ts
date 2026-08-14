@@ -1,4 +1,4 @@
-import { Config, LogLevel, Option } from 'effect';
+import { Config, HashMap, LogLevel, Option } from 'effect';
 import * as constants from 'src/constants';
 
 type APP_CONFIG = Config.Config.Wrap<{
@@ -23,6 +23,23 @@ type APP_CONFIG = Config.Config.Wrap<{
   DISABLE_CONNECTED_ACCOUNT_CACHE: boolean;
 }>;
 
+type HOST_CONFIG = Config.Config.Wrap<{
+  CI_REDACTION_ENABLED: boolean;
+  INTERACTIVE_PERMISSION_UI_DISABLED: boolean;
+  NO_COLOR: boolean;
+  TELEMETRY_DEBUG: boolean;
+  MASTER_SIGNALS: {
+    readonly codex: boolean;
+    readonly claude: boolean;
+  };
+  CALLER_AGENT_SIGNALS: {
+    readonly explicit: string | undefined;
+    readonly openclaw: boolean;
+    readonly claude: boolean;
+    readonly codex: boolean;
+  };
+}>;
+
 const optionalString = (name: string): Config.Config<string | undefined> =>
   Config.option(Config.string(name)).pipe(Config.map(Option.getOrUndefined));
 
@@ -37,6 +54,23 @@ const optionalTrimmedString = (name: string): Config.Config<string | undefined> 
 
 const booleanFlag = (name: string): Config.Config<boolean> =>
   Config.boolean(name).pipe(Config.withDefault(false));
+
+const FALSY_ENV_FLAG_VALUES: ReadonlyArray<string> = ['0', 'false', 'no', 'off'];
+
+const optionalEnvironmentFlag = (name: string): Config.Config<boolean | undefined> =>
+  optionalTrimmedString(name).pipe(
+    Config.map(value =>
+      value === undefined ? undefined : !FALSY_ENV_FLAG_VALUES.includes(value.toLowerCase())
+    )
+  );
+
+const agentPrefixSignals = Config.hashMap(Config.succeed(true)).pipe(
+  Config.map(environmentRoots => ({
+    codex: HashMap.has(environmentRoots, 'CODEX'),
+    claude: HashMap.has(environmentRoots, 'CLAUDE'),
+    openclaw: HashMap.has(environmentRoots, 'OPENCLAW'),
+  }))
+);
 
 /**
  * Derives a URL default based on the `COMPOSIO_ENVIRONMENT` config key.
@@ -119,3 +153,29 @@ export const APP_CONFIG = {
     Config.withDefault(true)
   ),
 } satisfies APP_CONFIG;
+
+/**
+ * Host environment values that intentionally do not use the CLI's standard
+ * `COMPOSIO_` config-provider prefix. Keep their string-to-domain
+ * normalization here so consumers never inspect raw environment strings.
+ */
+export const HOST_CONFIG = {
+  CI_REDACTION_ENABLED: optionalTrimmedString('CI').pipe(
+    Config.map(value => value?.toLowerCase() === 'true')
+  ),
+  INTERACTIVE_PERMISSION_UI_DISABLED: Config.all({
+    explicit: optionalEnvironmentFlag('COMPOSIO_DISABLE_PERMISSION_UI'),
+    ci: optionalEnvironmentFlag('CI'),
+    vitest: optionalEnvironmentFlag('VITEST'),
+  }).pipe(Config.map(({ explicit, ci, vitest }) => explicit ?? (ci === true || vitest === true))),
+  NO_COLOR: optionalString('NO_COLOR').pipe(Config.map(Boolean)),
+  TELEMETRY_DEBUG: booleanFlag('COMPOSIO_CLI_TELEMETRY_DEBUG'),
+  MASTER_SIGNALS: agentPrefixSignals.pipe(Config.map(({ codex, claude }) => ({ codex, claude }))),
+  CALLER_AGENT_SIGNALS: Config.all({
+    explicit: Config.all({
+      callerAgent: optionalTrimmedString('COMPOSIO_CALLER_AGENT'),
+      legacyAgent: optionalTrimmedString('COMPOSIO_AGENT'),
+    }).pipe(Config.map(({ callerAgent, legacyAgent }) => callerAgent ?? legacyAgent)),
+    prefixes: agentPrefixSignals,
+  }).pipe(Config.map(({ explicit, prefixes }) => ({ explicit, ...prefixes }))),
+} satisfies HOST_CONFIG;
