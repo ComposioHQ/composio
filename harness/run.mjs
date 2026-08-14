@@ -2,8 +2,8 @@
 // Examples runner: sweeps the entrypoints in examples-manifest.json against
 // the live backend, recording per-entry results and Composio traces.
 //
-//   node harness/run.mjs sweep    --client baseline|candidate [--lang ts|py] [--ids a,b] [--tiers 1,2,3] [--llm live|mock]
-//   node harness/run.mjs neg      [--lang ts|py] [--ids a,b] [--sample N] [--seed S]
+//   node harness/run.mjs sweep    --client baseline|candidate [--lang ts|py] [--ids a,b] [--tiers 1,2,3] [--exclude-toolkits a,b] [--llm live|mock]
+//   node harness/run.mjs neg      [--lang ts|py] [--ids a,b] [--exclude-toolkits a,b] [--sample N] [--seed S]
 //   node harness/run.mjs selftest
 //
 // Exit codes: 0 ok · 1 findings (red entries / failed expectations) · 2 usage/env error.
@@ -12,6 +12,13 @@ import { spawn } from 'node:child_process';
 import { mkdirSync, readFileSync, writeFileSync, appendFileSync, existsSync, rmSync } from 'node:fs';
 import { dirname, join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import {
+  entryToolkits,
+  loadManifest,
+  requiredBrowserGrantToolkits,
+  requiresDemoToolkit,
+  selectManifestEntries,
+} from './manifest.mjs';
 import { resolveBackendBaseUrl, STAGING_BASE_URL } from './backend-url.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
@@ -41,27 +48,21 @@ const fail = (msg, code = 2) => {
   throw new HarnessError(msg, code);
 };
 
-const loadManifest = () => {
-  const manifest = JSON.parse(readFileSync(join(ROOT, 'examples-manifest.json'), 'utf8'));
-  for (const e of manifest.entries) {
-    if (!e.id || !e.lang || !e.file || !e.tier) fail(`manifest entry missing required fields: ${JSON.stringify(e)}`);
-    if (e.lang === 'ts' && e.tier !== 'X' && !e.pkg) fail(`ts entry ${e.id} missing pkg`);
-    if (e.tier === '3' && !e.readiness) fail(`tier-3 entry ${e.id} missing readiness regex`);
-  }
-  return manifest.entries;
-};
+const selectionOptions = () => ({
+  lang: opt('lang'),
+  ids: opt('ids'),
+  tiers: opt('tiers', '1,2,3'),
+  excludeToolkits: opt('exclude-toolkits'),
+});
 
-const selectEntries = () => {
-  const lang = opt('lang');
-  const ids = opt('ids') ? opt('ids').split(',') : null;
-  const tiers = (opt('tiers', '1,2,3')).split(',');
-  return loadManifest().filter(
-    (e) =>
-      e.tier !== 'X' &&
-      tiers.includes(e.tier) &&
-      (!lang || e.lang === lang) &&
-      (!ids || ids.includes(e.id))
+const selectEntries = () => selectManifestEntries(loadManifest(), selectionOptions());
+
+const reportExclusions = selection => {
+  if (selection.excludedEntries.length === 0) return;
+  console.log(
+    `excluding ${selection.excludedEntries.length} entries requiring ${selection.excludedToolkits.join(', ')}:`
   );
+  for (const entry of selection.excludedEntries) console.log(`  - ${entry.id}`);
 };
 
 const baseUrl = () => {
@@ -389,9 +390,11 @@ const cmdSweep = async () => {
   const llm = opt('llm', 'live');
   if (!['live', 'mock'].includes(llm)) fail(`--llm must be live|mock`);
   LLM_MOCK = llm === 'mock';
-  const entries = selectEntries();
+  const selection = selectEntries();
+  const entries = selection.entries;
   if (entries.length === 0) fail('no entries selected');
   if (!process.env.COMPOSIO_API_KEY) fail('COMPOSIO_API_KEY is required for a sweep (disposable examples-project key)', 2);
+  reportExclusions(selection);
 
   const id = `${runId()}-${client}${LLM_MOCK ? '-mock' : ''}`;
   const runDir = join(ARTIFACTS, id);
@@ -431,7 +434,22 @@ const cmdSweep = async () => {
     };
     writeFileSync(
       join(runDir, 'summary.json'),
-      JSON.stringify({ runId: id, client, llm, baseUrl: baseUrl(), counts, startedAt: new Date().toISOString() }, null, 2)
+      JSON.stringify(
+        {
+          runId: id,
+          client,
+          llm,
+          baseUrl: baseUrl(),
+          counts,
+          selection: {
+            excludedToolkits: selection.excludedToolkits,
+            excludedEntries: selection.excludedEntries.map(entry => entry.id),
+          },
+          startedAt: new Date().toISOString(),
+        },
+        null,
+        2
+      )
     );
     console.log(`sweep ${id}: ${counts.green} green / ${counts.red} red / ${counts.skipped} skipped`);
     process.exitCode = counts.red > 0 ? 1 : 0;
@@ -443,7 +461,9 @@ const cmdSweep = async () => {
 };
 
 const cmdNeg = async () => {
-  let entries = selectEntries().filter((e) => e.backend !== false);
+  const selection = selectEntries();
+  reportExclusions(selection);
+  let entries = selection.entries.filter((e) => e.backend !== false);
   const sample = opt('sample');
   if (sample) {
     const rand = mulberry32(Number(opt('seed', '42')));
@@ -522,6 +542,41 @@ const cmdSelftest = async () => {
     noOpCandidateRejected = true;
   }
   check('candidate swap rejects the installed baseline version', noOpCandidateRejected);
+
+  const manifest = loadManifest();
+  const withoutGoogleDrive = selectManifestEntries(manifest, {
+    excludeToolkits: 'googledrive',
+  });
+  check(
+    'Google Drive exclusion removes every dependent entry and preserves the rest',
+    withoutGoogleDrive.excludedEntries.length > 0 &&
+      withoutGoogleDrive.excludedEntries.every(entry =>
+        entryToolkits(entry).includes('googledrive')
+      ) &&
+      withoutGoogleDrive.entries.every(entry => !entryToolkits(entry).includes('googledrive')) &&
+      withoutGoogleDrive.entries.length + withoutGoogleDrive.excludedEntries.length ===
+        selectManifestEntries(manifest).entries.length
+  );
+  check(
+    'Google Drive exclusion removes it from provisioning',
+    !requiredBrowserGrantToolkits(withoutGoogleDrive.entries).some(
+      toolkit => toolkit.slug === 'googledrive'
+    )
+  );
+  const apiKeyOnly = selectManifestEntries(manifest, {
+    ids: 'ts/connected-accounts/api-key',
+  }).entries;
+  check(
+    'selected API-key example provisions only its demo toolkit',
+    requiredBrowserGrantToolkits(apiKeyOnly).length === 0 && requiresDemoToolkit(apiKeyOnly)
+  );
+  const implicitGmail = selectManifestEntries(manifest, {
+    ids: 'py/fastapi_app',
+  }).entries;
+  check(
+    'resource identifiers contribute implicit toolkit requirements',
+    requiredBrowserGrantToolkits(implicitGmail).some(toolkit => toolkit.slug === 'gmail')
+  );
 
   const cleanupFixture = join(runDir, 'cleanup-fixture.txt');
   writeFileSync(cleanupFixture, 'user contents');

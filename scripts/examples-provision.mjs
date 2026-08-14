@@ -29,7 +29,20 @@
 // Auth config ids and connected account ids are not secrets; no credential
 // values are ever printed. The API-key demo value stored for serpapi is a
 // deliberately fake placeholder, not a real key.
+//
+// Selection flags match harness/run.mjs: [--lang ts|py] [--ids a,b]
+// [--tiers 1,2,3] [--exclude-toolkits a,b]. Only resources required by the
+// selected entries are provisioned; garbage collection remains project-wide
+// within the examples-* ownership boundary above.
 
+import {
+  BROWSER_GRANT_TOOLKITS,
+  DEMO_TOOLKIT,
+  loadManifest,
+  requiredBrowserGrantToolkits,
+  requiresDemoToolkit,
+  selectManifestEntries,
+} from '../harness/manifest.mjs';
 import { resolveBackendBaseUrl } from '../harness/backend-url.mjs';
 
 let BASE_URL;
@@ -44,6 +57,23 @@ const USER_ID = process.env.COMPOSIO_EXAMPLES_USER_ID ?? 'examples';
 const INITIATE_MISSING = process.argv.includes('--initiate-missing');
 const GC = process.argv.includes('--gc');
 const DRY_RUN = process.argv.includes('--dry-run');
+const option = name => {
+  const index = process.argv.indexOf(`--${name}`);
+  return index >= 0 ? process.argv[index + 1] : undefined;
+};
+
+const selection = selectManifestEntries(loadManifest(), {
+  lang: option('lang'),
+  ids: option('ids'),
+  tiers: option('tiers') ?? '1,2,3',
+  excludeToolkits: option('exclude-toolkits'),
+});
+if (selection.entries.length === 0) {
+  console.error('no example entries selected for provisioning');
+  process.exit(1);
+}
+const selectedBrowserGrantToolkits = requiredBrowserGrantToolkits(selection.entries);
+const needsDemoToolkit = requiresDemoToolkit(selection.entries);
 
 // COMPOSIO_BASE_URL selects the backend and defaults to staging;
 // resolveBackendBaseUrl refuses a structurally unusable one before the key is
@@ -54,19 +84,14 @@ if (!API_KEY) {
   process.exit(1);
 }
 
-// Toolkits the tier-2/3 entries depend on. OAuth toolkits need a one-time human
-// browser authorization. Only export ids that examples consume directly.
-const BROWSER_GRANT_TOOLKITS = [
-  { exportPrefix: 'GMAIL', slug: 'gmail' },
-  // googledrive exports nothing: examples reach Drive through the user's
-  // standing connection (COMPOSIO_EXAMPLES_USER_ID), never through ids.
-  { slug: 'googledrive' },
-  { exportPrefix: 'GITHUB', slug: 'github' },
-  { exportPrefix: 'SLACK', slug: 'slack' },
-];
-const DEMO_TOOLKIT = { exportPrefix: 'APIKEY', slug: 'serpapi', demoValue: 'examples-demo-key' };
-
 const report = line => console.error(line);
+
+if (selection.excludedEntries.length > 0) {
+  report(
+    `excluding ${selection.excludedEntries.length} entries requiring ${selection.excludedToolkits.join(', ')}:`
+  );
+  for (const entry of selection.excludedEntries) report(`  - ${entry.id}`);
+}
 
 async function api(method, path, body) {
   const res = await fetch(`${BASE_URL}${path}`, {
@@ -224,7 +249,7 @@ function findActiveAccount(slug, authConfigId) {
   );
 }
 
-for (const { exportPrefix, slug } of BROWSER_GRANT_TOOLKITS) {
+for (const { exportPrefix, slug } of selectedBrowserGrantToolkits) {
   let config = findAuthConfig(slug);
   if (!config) {
     const created = await api('POST', '/api/v3.1/auth_configs', {
@@ -266,7 +291,7 @@ for (const { exportPrefix, slug } of BROWSER_GRANT_TOOLKITS) {
 // their own connected accounts to demonstrate that API. The stored value is a
 // placeholder; serpapi only validates it at tool-execution time and no example
 // executes a serpapi tool.
-{
+if (needsDemoToolkit) {
   const { exportPrefix, slug, demoValue } = DEMO_TOOLKIT;
   let config = findAuthConfig(slug);
   if (!config) {
