@@ -2,6 +2,8 @@ import { getReferenceSource } from '@/lib/source';
 import { DocsLayout } from 'fumadocs-ui/layouts/docs';
 import type { ReactNode } from 'react';
 import { prepareTree } from '@/lib/filter-api-version';
+import { buildSidebarNavIndex } from '@/lib/sidebar-nav-index';
+import { SidebarAnalytics } from '@/components/sidebar-analytics';
 
 export default async function Layout({ children }: { children: ReactNode }) {
   const source = await getReferenceSource();
@@ -29,6 +31,7 @@ export default async function Layout({ children }: { children: ReactNode }) {
       sidebar={{ collapsible: false, footer: null, tabs: false }}
       themeSwitch={{ enabled: false }}
     >
+      <SidebarAnalytics index={buildSidebarNavIndex(pageTree)} />
       {children}
     </DocsLayout>
   );
