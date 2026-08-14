@@ -16,7 +16,6 @@ import { resolveBackendBaseUrl, STAGING_BASE_URL } from './backend-url.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const ARTIFACTS = join(ROOT, '.artifacts', 'examples-parity');
-const STAINLESS_TS_VERSION = '0.1.0-alpha.76';
 const AIMOCK_VERSION = '1.38.0';
 const AIMOCK_PORT = Number(process.env.AIMOCK_PORT ?? 4010);
 
@@ -273,8 +272,15 @@ const resolvedTsClientVersion = async () => {
   return out.trim().split('\n').pop();
 };
 
+const assertTsCandidateApplied = (baselineVersion, candidateVersion) => {
+  if (candidateVersion === baselineVersion) {
+    fail(`override did not take effect: @composio/client still resolves to ${candidateVersion}`);
+  }
+};
+
 const applyTsCandidate = async (tarball) => {
   if (!existsSync(tarball)) fail(`COMPOSIO_CLIENT_TARBALL not found: ${tarball}`);
+  const baselineVersion = await resolvedTsClientVersion();
   const yaml = readFileSync(WORKSPACE_YAML, 'utf8');
   if (/^overrides:$/m.test(yaml)) {
     // Merge into the repo's existing overrides block (e.g. security pins);
@@ -285,9 +291,7 @@ const applyTsCandidate = async (tarball) => {
   }
   await sh(['pnpm', 'install', '--no-frozen-lockfile']);
   const version = await resolvedTsClientVersion();
-  if (version === STAINLESS_TS_VERSION) {
-    fail(`override did not take effect: @composio/client still resolves to ${version}`);
-  }
+  assertTsCandidateApplied(baselineVersion, version);
   console.log(`candidate @composio/client resolved: ${version}`);
   await sh(['pnpm', 'run', 'build:packages']);
 };
@@ -510,6 +514,14 @@ const cmdSelftest = async () => {
     'usage failures unwind through cleanup',
     cleanupRan && cleanupError instanceof HarnessError
   );
+
+  let noOpCandidateRejected = false;
+  try {
+    assertTsCandidateApplied('baseline-version', 'baseline-version');
+  } catch {
+    noOpCandidateRejected = true;
+  }
+  check('candidate swap rejects the installed baseline version', noOpCandidateRejected);
 
   const cleanupFixture = join(runDir, 'cleanup-fixture.txt');
   writeFileSync(cleanupFixture, 'user contents');
