@@ -30,34 +30,23 @@
 // values are ever printed. The API-key demo value stored for serpapi is a
 // deliberately fake placeholder, not a real key.
 
-const BASE_URL = process.env.COMPOSIO_BASE_URL ?? 'https://backend.composio.dev';
+import { requireStagingBaseUrl } from '../harness/staging-backend.mjs';
+
+let BASE_URL;
+try {
+  BASE_URL = requireStagingBaseUrl();
+} catch (error) {
+  console.error(error instanceof Error ? error.message : String(error));
+  process.exit(1);
+}
 const API_KEY = process.env.COMPOSIO_API_KEY;
 const USER_ID = process.env.COMPOSIO_EXAMPLES_USER_ID ?? 'examples';
 const INITIATE_MISSING = process.argv.includes('--initiate-missing');
 const GC = process.argv.includes('--gc');
 const DRY_RUN = process.argv.includes('--dry-run');
 
-// The examples only ever run against the production backend with the
-// disposable project key. Allowlist the Composio hosts rather than denylisting
-// loopback spellings: the API key travels in every request, so anything that is
-// not a Composio backend must be refused, not just localhost.
-const { baseHost, baseProtocol } = (() => {
-  try {
-    const url = new URL(BASE_URL);
-    return { baseHost: url.hostname, baseProtocol: url.protocol };
-  } catch {
-    return { baseHost: null, baseProtocol: null };
-  }
-})();
-if (!baseHost || !(baseHost === 'composio.dev' || baseHost.endsWith('.composio.dev'))) {
-  console.error(`refusing non-Composio COMPOSIO_BASE_URL: ${BASE_URL}`);
-  process.exit(1);
-}
-if (baseProtocol !== 'https:') {
-  // The API key is sent on every request. Plain http would put it on the wire.
-  console.error(`refusing non-https COMPOSIO_BASE_URL: ${BASE_URL}`);
-  process.exit(1);
-}
+// The examples only ever run against staging with a disposable project key.
+// requireStagingBaseUrl refuses every other host before the key is read or sent.
 if (!API_KEY) {
   console.error('COMPOSIO_API_KEY is required (dedicated examples-project key)');
   process.exit(1);

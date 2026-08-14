@@ -1,0 +1,167 @@
+name: Examples Manifest Sweep (staging)
+
+# Runs the example entrypoints from examples-manifest.json against the
+# STAGING backend using a dedicated, disposable examples project — never
+# the org's main key. Non-blocking by design: scheduled + on demand, never a
+# required PR check. Local runs and CI share the same code path
+# (harness/run.mjs sweep).
+on:
+  schedule:
+    - cron: '0 7 * * *' # 07:00 UTC nightly
+  workflow_dispatch:
+    inputs:
+      lang:
+        description: 'Language to sweep'
+        type: choice
+        options: [all, ts, py]
+        default: all
+      client:
+        description: 'Client under test'
+        type: choice
+        options: [baseline, candidate]
+        default: baseline
+      ids:
+        description: 'Comma-separated entry ids (empty = full manifest)'
+        type: string
+        default: ''
+      client_tarball_url:
+        description: 'Candidate TypeScript client tarball URL (required for TS candidate entries)'
+        type: string
+        default: ''
+      client_wheel_url:
+        description: 'Candidate Python client wheel URL (required for Python candidate entries)'
+        type: string
+        default: ''
+      llm:
+        description: 'LLM traffic: mock (aimock, zero model spend) or live'
+        type: choice
+        options: [mock, live]
+        default: mock
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  # Staging URL is not a secret; the keys are. The key must belong to a
+  # project that holds no valuable connections or data — never the org's
+  # main project. Example runs create their own resources and only ever
+  # delete what they created.
+  COMPOSIO_BASE_URL: https://staging-backend.composio.dev
+  COMPOSIO_API_KEY: ${{ secrets.COMPOSIO_API_KEY }}
+  OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+  ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+  # mock unless explicitly dispatched live; the nightly adds a small live canary.
+  LLM_MODE: ${{ inputs.llm || 'mock' }}
+  # Entries mocks cannot cover (llmMock:false) plus one representative
+  # tool-calling example per language: the drift signal mocks can't see.
+  CANARY_IDS: ts/openai/agents-api,ts/openai/agents-api-tool-router,ts/openai/chat-completions,py/tool_router/langchain_agent
+
+jobs:
+  examples-live:
+    name: ${{ inputs.client || 'baseline' }} sweep (${{ inputs.lang || 'all' }})
+    environment: staging
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Setup Node.js, pnpm, Bun
+        uses: ./.github/actions/setup-node-pnpm-bun
+        with:
+          enable-turbo-cache: 'true'
+
+      - name: Setup Python and uv
+        uses: ./.github/actions/setup-python-uv
+
+      - name: Require credentials
+        run: |
+          if [ -z "$COMPOSIO_API_KEY" ]; then
+            echo "::error::COMPOSIO_API_KEY is required."
+            exit 1
+          fi
+          # LLM keys are only needed when live model traffic will run:
+          # an explicit live dispatch, or the nightly's live canary step.
+          if [ "$LLM_MODE" = "live" ] || [ "${{ github.event_name }}" = "schedule" ]; then
+            if [ -z "$OPENAI_API_KEY" ] || [ -z "$ANTHROPIC_API_KEY" ]; then
+              echo "::error::OPENAI_API_KEY and ANTHROPIC_API_KEY are required for live LLM runs."
+              exit 1
+            fi
+          fi
+
+      - name: Install Dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build SDK packages
+        run: pnpm run build:packages
+
+      - name: Fetch candidate client artifacts
+        if: ${{ inputs.client == 'candidate' }}
+        env:
+          CLIENT_TARBALL_URL: ${{ inputs.client_tarball_url }}
+          CLIENT_WHEEL_URL: ${{ inputs.client_wheel_url }}
+          LANG_INPUT: ${{ inputs.lang || 'all' }}
+        run: |
+          set -euo pipefail
+          mkdir -p .artifacts/candidate
+          if [ "$LANG_INPUT" = "all" ] || [ "$LANG_INPUT" = "ts" ]; then
+            if [[ "$CLIENT_TARBALL_URL" != https://* ]]; then
+              echo "::error::TS candidate entries require an HTTPS client_tarball_url"
+              exit 1
+            fi
+            curl -fsSL -o .artifacts/candidate/composio-client.tgz "$CLIENT_TARBALL_URL"
+            echo "COMPOSIO_CLIENT_TARBALL=$PWD/.artifacts/candidate/composio-client.tgz" >> "$GITHUB_ENV"
+          fi
+          if [ "$LANG_INPUT" = "all" ] || [ "$LANG_INPUT" = "py" ]; then
+            if [[ "$CLIENT_WHEEL_URL" != https://* ]]; then
+              echo "::error::Python candidate entries require an HTTPS client_wheel_url"
+              exit 1
+            fi
+            curl -fsSL -o .artifacts/candidate/composio-client.whl "$CLIENT_WHEEL_URL"
+            echo "COMPOSIO_CLIENT_WHEEL=$PWD/.artifacts/candidate/composio-client.whl" >> "$GITHUB_ENV"
+          fi
+
+      - name: Harness selftest
+        run: node harness/run.mjs selftest
+
+      - name: Verify provisioned project state
+        run: node scripts/examples-provision.mjs --gc > /tmp/examples-provision.env
+
+      - name: Sweep
+        env:
+          CLIENT_INPUT: ${{ inputs.client || 'baseline' }}
+          IDS_INPUT: ${{ inputs.ids }}
+          LANG_INPUT: ${{ inputs.lang || 'all' }}
+        run: |
+          set -euo pipefail
+          # Load the provisioned COMPOSIO_EXAMPLES_* ids emitted above.
+          source /tmp/examples-provision.env
+          ARGS=(--client "$CLIENT_INPUT" --llm "$LLM_MODE")
+          if [ "$LANG_INPUT" != "all" ]; then
+            ARGS+=(--lang "$LANG_INPUT")
+          fi
+          if [ -n "$IDS_INPUT" ]; then
+            ARGS+=(--ids "$IDS_INPUT")
+          fi
+          node harness/run.mjs sweep "${ARGS[@]}"
+
+      - name: Live LLM canary
+        if: ${{ github.event_name == 'schedule' }}
+        run: |
+          set -euo pipefail
+          source /tmp/examples-provision.env
+          node harness/run.mjs sweep --client baseline --llm live --ids "$CANARY_IDS"
+
+      - name: Upload sweep results and traces
+        if: ${{ always() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: examples-live-results
+          path: .artifacts/examples-parity/
+          retention-days: 14
+          if-no-files-found: ignore
