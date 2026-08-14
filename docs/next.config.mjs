@@ -298,27 +298,27 @@ const config = {
       },
       {
         source: '/tool-router/manually-authenticating-users',
-        destination: '/docs/manually-authenticating',
+        destination: '/docs/authentication/manually-authenticating',
         permanent: true,
       },
       {
         source: '/tool-router/using-custom-auth-configs',
-        destination: '/docs/custom-app-vs-managed-app',
+        destination: '/docs/authentication/custom-app-vs-managed-app',
         permanent: true,
       },
       {
         source: '/docs/authenticating-users/using-custom-auth-configs',
-        destination: '/docs/custom-app-vs-managed-app',
+        destination: '/docs/authentication/custom-app-vs-managed-app',
         permanent: true,
       },
       {
         source: '/tool-router/white-labeling-authentication',
-        destination: '/docs/white-labeling-authentication',
+        destination: '/docs/authentication/white-labeling-authentication',
         permanent: true,
       },
       {
         source: '/tool-router/managing-multiple-accounts',
-        destination: '/docs/managing-multiple-connected-accounts',
+        destination: '/docs/authentication/managing-multiple-connected-accounts',
         permanent: true,
       },
       // Provider redirects (old fern URLs -> new docs URLs)
@@ -439,23 +439,65 @@ const config = {
       // Programmatic auth configs consolidated into the Customizing auth section
       {
         source: '/docs/auth-configuration/programmatic-auth-configs',
-        destination: '/docs/programmatic-auth-configs',
+        destination: '/docs/authentication/programmatic-auth-configs',
         permanent: true,
       },
       // Authenticating users folder flattened into the Authenticate users section
       {
         source: '/docs/authenticating-users/manually-authenticating',
-        destination: '/docs/manually-authenticating',
+        destination: '/docs/authentication/manually-authenticating',
         permanent: true,
       },
       {
         source: '/docs/authenticating-users/managing-multiple-connected-accounts',
-        destination: '/docs/managing-multiple-connected-accounts',
+        destination: '/docs/authentication/managing-multiple-connected-accounts',
         permanent: true,
       },
       {
         source: '/docs/authenticating-users/shared-connections',
-        destination: '/docs/shared-connections',
+        destination: '/docs/extending-sessions/shared-connections',
+        permanent: true,
+      },
+      // Auth guides regrouped under the Authentication folder; shared connections
+      // moved to Extend sessions. These sources carry 36-42% Google entry traffic.
+      {
+        source: '/docs/manually-authenticating',
+        destination: '/docs/authentication/manually-authenticating',
+        permanent: true,
+      },
+      {
+        source: '/docs/managing-multiple-connected-accounts',
+        destination: '/docs/authentication/managing-multiple-connected-accounts',
+        permanent: true,
+      },
+      {
+        source: '/docs/importing-existing-connections',
+        destination: '/docs/authentication/importing-existing-connections',
+        permanent: true,
+      },
+      {
+        source: '/docs/custom-app-vs-managed-app',
+        destination: '/docs/authentication/custom-app-vs-managed-app',
+        permanent: true,
+      },
+      {
+        source: '/docs/programmatic-auth-configs',
+        destination: '/docs/authentication/programmatic-auth-configs',
+        permanent: true,
+      },
+      {
+        source: '/docs/controlling-scopes',
+        destination: '/docs/authentication/controlling-scopes',
+        permanent: true,
+      },
+      {
+        source: '/docs/white-labeling-authentication',
+        destination: '/docs/authentication/white-labeling-authentication',
+        permanent: true,
+      },
+      {
+        source: '/docs/shared-connections',
+        destination: '/docs/extending-sessions/shared-connections',
         permanent: true,
       },
       // Authentication reference renamed to "Authenticating to Composio"
@@ -948,22 +990,22 @@ const config = {
       },
       {
         source: '/docs/guides/managing-multiple-connected-accounts',
-        destination: '/docs/managing-multiple-connected-accounts',
+        destination: '/docs/authentication/managing-multiple-connected-accounts',
         permanent: true,
       },
       {
         source: '/docs/guides/white-labeling-authentication',
-        destination: '/docs/white-labeling-authentication',
+        destination: '/docs/authentication/white-labeling-authentication',
         permanent: true,
       },
       {
         source: '/docs/using-custom-auth-configuration',
-        destination: '/docs/custom-app-vs-managed-app',
+        destination: '/docs/authentication/custom-app-vs-managed-app',
         permanent: true,
       },
       {
         source: '/docs/guides/using-custom-auth-configuration',
-        destination: '/docs/custom-app-vs-managed-app',
+        destination: '/docs/authentication/custom-app-vs-managed-app',
         permanent: true,
       },
       {
@@ -1047,7 +1089,7 @@ const config = {
       // Legacy /docs/white-labeling → sessions white-labeling page
       {
         source: '/docs/white-labeling',
-        destination: '/docs/white-labeling-authentication',
+        destination: '/docs/authentication/white-labeling-authentication',
         permanent: true,
       },
     ];

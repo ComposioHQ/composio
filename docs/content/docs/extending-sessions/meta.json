@@ -4,6 +4,7 @@
   "pages": [
     "proxy-execute",
     "custom-tools-and-toolkits",
+    "shared-connections",
     "custom-mcp"
   ]
 }

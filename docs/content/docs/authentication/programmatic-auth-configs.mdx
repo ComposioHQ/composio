@@ -95,7 +95,7 @@ const authConfig = await composio.authConfigs.create('notion', {
 </Tabs>
 
 <Callout type="info">
-Omit `oauth_redirect_uri` to use Composio's default callback. Set it only when you [route the callback through your own domain](/docs/white-labeling-authentication#routing-the-callback-through-your-domain).
+Omit `oauth_redirect_uri` to use Composio's default callback. Set it only when you [route the callback through your own domain](/docs/authentication/white-labeling-authentication#routing-the-callback-through-your-domain).
 </Callout>
 
 ## Other auth types
@@ -211,4 +211,4 @@ console.log(fields);
 
 ## Next
 
-<Card icon={<Key />} title="Controlling scopes" href="/docs/controlling-scopes" description="Override the default OAuth scopes Composio requests for a toolkit" />
+<Card icon={<Key />} title="Controlling scopes" href="/docs/authentication/controlling-scopes" description="Override the default OAuth scopes Composio requests for a toolkit" />
