@@ -2,7 +2,7 @@ import { Command, Options } from '@effect/cli';
 import { FileSystem, Path } from '@effect/platform';
 import type { PlatformError } from '@effect/platform/Error';
 import { Array as Arr, Config, ConfigProvider, Data, Effect, Option } from 'effect';
-import { APP_CONFIG, loadOptionalAppConfig } from 'src/effects/app-config';
+import { APP_CONFIG } from 'src/effects/app-config';
 import { ComposioCliUserConfig } from 'src/services/cli-user-config';
 import { NodeOs } from 'src/services/node-os';
 import { NodeProcess } from 'src/services/node-process';
@@ -648,7 +648,7 @@ export const installShellIntegration = (params: {
 
     // Resolve the entry-point bin dir: explicit env, then a ~/.local/bin/composio
     // that is this executable, then the runtime executable's own directory.
-    const envBinDir = yield* loadOptionalAppConfig(APP_CONFIG.BIN_DIR);
+    const envBinDir = yield* APP_CONFIG.BIN_DIR.pipe(Effect.orDie);
     const localBinDir = path.join(os.homedir, '.local', 'bin');
     const execPath = nodeProcess.execPath;
     const localBinComposioIsCurrentExecutable = yield* resolvesToCurrentExecutable(
@@ -686,7 +686,7 @@ export const installShellIntegration = (params: {
     // prints the final action block itself. Keep the concise per-file status
     // lines but suppress the boxed restart hint so the CLI never prints a
     // competing instruction.
-    const invocationOrigin = yield* loadOptionalAppConfig(APP_CONFIG.CLI_INVOCATION_ORIGIN);
+    const invocationOrigin = yield* APP_CONFIG.CLI_INVOCATION_ORIGIN.pipe(Effect.orDie);
     const installerOwnsFinalMessaging = invocationOrigin === 'installer';
 
     const shellEnv = yield* readEnvWithDefault('SHELL', '');

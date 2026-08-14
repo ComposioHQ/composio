@@ -594,20 +594,12 @@ type CliInvocationContext = {
   readonly parentRunId?: string;
 };
 
-const getCliInvocationContext = environmentProvider
-  .pipe(extendConfigProvider)
-  .load(
-    Config.all({
-      origin: APP_CONFIG.CLI_INVOCATION_ORIGIN,
-      parentRunId: APP_CONFIG.CLI_PARENT_RUN_ID,
-    })
-  )
-  .pipe(
-    Effect.map(({ origin, parentRunId }) => ({
-      origin: configuredString(origin),
-      parentRunId: configuredString(parentRunId),
-    }))
-  );
+const getCliInvocationContext = environmentProvider.pipe(extendConfigProvider).load(
+  Config.all({
+    origin: APP_CONFIG.CLI_INVOCATION_ORIGIN,
+    parentRunId: APP_CONFIG.CLI_PARENT_RUN_ID,
+  })
+);
 
 export const createCliCodactFailureBody = (
   failure: CliCodactFailure,

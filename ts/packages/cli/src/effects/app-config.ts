@@ -1,4 +1,4 @@
-import { Config, Effect, LogLevel, Option } from 'effect';
+import { Config, LogLevel, Option } from 'effect';
 import * as constants from 'src/constants';
 
 type APP_CONFIG = Config.Config.Wrap<{
@@ -6,26 +6,37 @@ type APP_CONFIG = Config.Config.Wrap<{
   ENVIRONMENT: Option.Option<string>;
   BASE_URL: string;
   WEB_URL: string;
-  CACHE_DIR: Option.Option<string>;
-  SESSION_DIR: Option.Option<string>;
-  BIN_DIR: Option.Option<string>;
+  CACHE_DIR: string | undefined;
+  SESSION_DIR: string | undefined;
+  BIN_DIR: string | undefined;
   LOG_LEVEL: Option.Option<LogLevel.LogLevel>;
   ORG_ID: Option.Option<string>;
   PROJECT_ID: Option.Option<string>;
-  AGENTS_BASE_URL: Option.Option<string>;
-  WEBHOOK_SECRET: Option.Option<string>;
-  CLI_INVOCATION_ORIGIN: Option.Option<string>;
-  CLI_PARENT_RUN_ID: Option.Option<string>;
-  RUN_ACP_ONLY: Option.Option<string>;
-  RUN_OUTPUT_DIR: Option.Option<string>;
-  PERF_DEBUG: Option.Option<string>;
-  TOOL_DEBUG: Option.Option<string>;
+  AGENTS_BASE_URL: string | undefined;
+  WEBHOOK_SECRET: string | undefined;
+  CLI_INVOCATION_ORIGIN: string | undefined;
+  CLI_PARENT_RUN_ID: string | undefined;
+  RUN_ACP_ONLY: boolean;
+  RUN_OUTPUT_DIR: string | undefined;
+  PERF_DEBUG: boolean;
+  TOOL_DEBUG: boolean;
   DISABLE_CONNECTED_ACCOUNT_CACHE: boolean;
 }>;
 
-/** Load optional app config while exposing absence as `undefined` to callers. */
-export const loadOptionalAppConfig = <A>(config: Config.Config<Option.Option<A>>) =>
-  Effect.orDie(config).pipe(Effect.map(Option.getOrUndefined));
+const optionalString = (name: string): Config.Config<string | undefined> =>
+  Config.option(Config.string(name)).pipe(Config.map(Option.getOrUndefined));
+
+const optionalTrimmedString = (name: string): Config.Config<string | undefined> =>
+  optionalString(name).pipe(
+    Config.map(value => {
+      if (value === undefined) return undefined;
+      const trimmed = value.trim();
+      return trimmed.length > 0 ? trimmed : undefined;
+    })
+  );
+
+const booleanFlag = (name: string): Config.Config<boolean> =>
+  Config.boolean(name).pipe(Config.withDefault(false));
 
 /**
  * Derives a URL default based on the `COMPOSIO_ENVIRONMENT` config key.
@@ -70,13 +81,13 @@ export const APP_CONFIG = {
   ),
 
   // The cache directory for the Composio CLI
-  CACHE_DIR: Config.option(Config.string('CACHE_DIR')),
+  CACHE_DIR: optionalTrimmedString('CACHE_DIR'),
 
   // Override the root directory for CLI session artifacts
-  SESSION_DIR: Config.option(Config.string('SESSION_DIR')),
+  SESSION_DIR: optionalTrimmedString('SESSION_DIR'),
 
   // Override the directory added to PATH by `composio install`
-  BIN_DIR: Config.option(Config.string('BIN_DIR')),
+  BIN_DIR: optionalTrimmedString('BIN_DIR'),
 
   // The log level for the Composio CLI
   LOG_LEVEL: Config.option(Config.logLevel('LOG_LEVEL')),
@@ -88,20 +99,20 @@ export const APP_CONFIG = {
   PROJECT_ID: Config.option(Config.string('PROJECT_ID')),
 
   // Override the Composio agents service URL
-  AGENTS_BASE_URL: Config.option(Config.string('AGENTS_BASE_URL')),
+  AGENTS_BASE_URL: optionalString('AGENTS_BASE_URL'),
 
   // Sign forwarded trigger payloads with this secret
-  WEBHOOK_SECRET: Config.option(Config.string('WEBHOOK_SECRET')),
+  WEBHOOK_SECRET: optionalString('WEBHOOK_SECRET'),
 
   // Internal context propagated between CLI processes
-  CLI_INVOCATION_ORIGIN: Config.option(Config.string('CLI_INVOCATION_ORIGIN')),
-  CLI_PARENT_RUN_ID: Config.option(Config.string('CLI_PARENT_RUN_ID')),
-  RUN_ACP_ONLY: Config.option(Config.string('RUN_ACP_ONLY')),
-  RUN_OUTPUT_DIR: Config.option(Config.string('RUN_OUTPUT_DIR')),
+  CLI_INVOCATION_ORIGIN: optionalTrimmedString('CLI_INVOCATION_ORIGIN'),
+  CLI_PARENT_RUN_ID: optionalTrimmedString('CLI_PARENT_RUN_ID'),
+  RUN_ACP_ONLY: booleanFlag('RUN_ACP_ONLY'),
+  RUN_OUTPUT_DIR: optionalTrimmedString('RUN_OUTPUT_DIR'),
 
   // Runtime debug flags
-  PERF_DEBUG: Config.option(Config.string('PERF_DEBUG')),
-  TOOL_DEBUG: Config.option(Config.string('TOOL_DEBUG')),
+  PERF_DEBUG: booleanFlag('PERF_DEBUG'),
+  TOOL_DEBUG: booleanFlag('TOOL_DEBUG'),
 
   // Disable connected account cache (defaults to true — cache is off by default)
   DISABLE_CONNECTED_ACCOUNT_CACHE: Config.boolean('DISABLE_CONNECTED_ACCOUNT_CACHE').pipe(

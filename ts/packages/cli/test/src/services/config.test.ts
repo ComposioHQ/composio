@@ -7,17 +7,18 @@ import { extendConfigProvider } from 'src/services/config';
 import { DEBUG_OVERRIDE_CONFIG } from 'src/effects/debug-config';
 import * as constants from 'src/constants';
 
-const OPTIONAL_APP_CONFIG_DEFAULTS = {
-  SESSION_DIR: Option.none(),
-  BIN_DIR: Option.none(),
-  AGENTS_BASE_URL: Option.none(),
-  WEBHOOK_SECRET: Option.none(),
-  CLI_INVOCATION_ORIGIN: Option.none(),
-  CLI_PARENT_RUN_ID: Option.none(),
-  RUN_ACP_ONLY: Option.none(),
-  RUN_OUTPUT_DIR: Option.none(),
-  PERF_DEBUG: Option.none(),
-  TOOL_DEBUG: Option.none(),
+const NORMALIZED_APP_CONFIG_DEFAULTS = {
+  CACHE_DIR: undefined,
+  SESSION_DIR: undefined,
+  BIN_DIR: undefined,
+  AGENTS_BASE_URL: undefined,
+  WEBHOOK_SECRET: undefined,
+  CLI_INVOCATION_ORIGIN: undefined,
+  CLI_PARENT_RUN_ID: undefined,
+  RUN_ACP_ONLY: false,
+  RUN_OUTPUT_DIR: undefined,
+  PERF_DEBUG: false,
+  TOOL_DEBUG: false,
 };
 
 describe('Config', () => {
@@ -38,10 +39,9 @@ describe('Config', () => {
             actual,
             Data.struct({
               USER_API_KEY: Option.none(),
-              ...OPTIONAL_APP_CONFIG_DEFAULTS,
+              ...NORMALIZED_APP_CONFIG_DEFAULTS,
               ENVIRONMENT: Option.none(),
               BASE_URL: 'https://backend.composio.dev',
-              CACHE_DIR: Option.none(),
               LOG_LEVEL: Option.none(),
               ORG_ID: Option.none(),
               PROJECT_ID: Option.none(),
@@ -69,10 +69,9 @@ describe('Config', () => {
             actual,
             Data.struct({
               USER_API_KEY: Option.none(),
-              ...OPTIONAL_APP_CONFIG_DEFAULTS,
+              ...NORMALIZED_APP_CONFIG_DEFAULTS,
               ENVIRONMENT: Option.none(),
               BASE_URL: 'https://backend.composio.dev',
-              CACHE_DIR: Option.none(),
               LOG_LEVEL: Option.none(),
               ORG_ID: Option.none(),
               PROJECT_ID: Option.none(),
@@ -114,21 +113,51 @@ describe('Config', () => {
               ENVIRONMENT: Option.none(),
               BASE_URL: 'https://test.localhost',
               WEB_URL: 'https://test.localhost',
-              CACHE_DIR: Option.some('~/.composio'),
-              SESSION_DIR: Option.some('/tmp/composio-sessions'),
-              BIN_DIR: Option.some('/usr/local/bin'),
+              CACHE_DIR: '~/.composio',
+              SESSION_DIR: '/tmp/composio-sessions',
+              BIN_DIR: '/usr/local/bin',
               LOG_LEVEL: Option.some(LogLevel.Info),
               ORG_ID: Option.none(),
               PROJECT_ID: Option.none(),
-              AGENTS_BASE_URL: Option.some('https://agents.test.localhost'),
-              WEBHOOK_SECRET: Option.some('secret'),
-              CLI_INVOCATION_ORIGIN: Option.some('run'),
-              CLI_PARENT_RUN_ID: Option.some('run_parent'),
-              RUN_ACP_ONLY: Option.some('1'),
-              RUN_OUTPUT_DIR: Option.some('/tmp/composio-output'),
-              PERF_DEBUG: Option.some('1'),
-              TOOL_DEBUG: Option.some('1'),
+              AGENTS_BASE_URL: 'https://agents.test.localhost',
+              WEBHOOK_SECRET: 'secret',
+              CLI_INVOCATION_ORIGIN: 'run',
+              CLI_PARENT_RUN_ID: 'run_parent',
+              RUN_ACP_ONLY: true,
+              RUN_OUTPUT_DIR: '/tmp/composio-output',
+              PERF_DEBUG: true,
+              TOOL_DEBUG: true,
               DISABLE_CONNECTED_ACCOUNT_CACHE: true,
+            })
+          );
+        })
+      );
+
+      it.effect('[When] optional directory values contain whitespace', () =>
+        Effect.gen(function* () {
+          const map = new Map([
+            ['COMPOSIO_CACHE_DIR', '  /tmp/composio-cache  '],
+            ['COMPOSIO_SESSION_DIR', '   '],
+            ['COMPOSIO_BIN_DIR', '  /usr/local/bin  '],
+            ['COMPOSIO_RUN_OUTPUT_DIR', '\t/tmp/composio-output\n'],
+          ]) satisfies Map<string, string>;
+
+          const actual = yield* withMapConfigProvider(map)(
+            Config.all({
+              cacheDirectory: APP_CONFIG.CACHE_DIR,
+              sessionDirectory: APP_CONFIG.SESSION_DIR,
+              binDirectory: APP_CONFIG.BIN_DIR,
+              runOutputDirectory: APP_CONFIG.RUN_OUTPUT_DIR,
+            }).pipe(Effect.andThen(Data.struct))
+          );
+
+          assertEquals(
+            actual,
+            Data.struct({
+              cacheDirectory: '/tmp/composio-cache',
+              sessionDirectory: undefined,
+              binDirectory: '/usr/local/bin',
+              runOutputDirectory: '/tmp/composio-output',
             })
           );
         })
@@ -148,11 +177,10 @@ describe('Config', () => {
             actual,
             Data.struct({
               USER_API_KEY: Option.none(),
-              ...OPTIONAL_APP_CONFIG_DEFAULTS,
+              ...NORMALIZED_APP_CONFIG_DEFAULTS,
               ENVIRONMENT: Option.none(),
               BASE_URL: 'https://backend.composio.dev',
               WEB_URL: 'https://dashboard.composio.dev/',
-              CACHE_DIR: Option.none(),
               LOG_LEVEL: Option.none(),
               ORG_ID: Option.none(),
               PROJECT_ID: Option.none(),
@@ -177,11 +205,10 @@ describe('Config', () => {
             actual,
             Data.struct({
               USER_API_KEY: Option.none(),
-              ...OPTIONAL_APP_CONFIG_DEFAULTS,
+              ...NORMALIZED_APP_CONFIG_DEFAULTS,
               ENVIRONMENT: Option.some('production'),
               BASE_URL: constants.DEFAULT_BASE_URL,
               WEB_URL: constants.DEFAULT_WEB_URL,
-              CACHE_DIR: Option.none(),
               LOG_LEVEL: Option.none(),
               ORG_ID: Option.none(),
               PROJECT_ID: Option.none(),
@@ -203,11 +230,10 @@ describe('Config', () => {
             actual,
             Data.struct({
               USER_API_KEY: Option.none(),
-              ...OPTIONAL_APP_CONFIG_DEFAULTS,
+              ...NORMALIZED_APP_CONFIG_DEFAULTS,
               ENVIRONMENT: Option.some('staging'),
               BASE_URL: constants.STAGING_BASE_URL,
               WEB_URL: 'https://staging-dashboard.composio.dev/',
-              CACHE_DIR: Option.none(),
               LOG_LEVEL: Option.none(),
               ORG_ID: Option.none(),
               PROJECT_ID: Option.none(),
@@ -234,11 +260,10 @@ describe('Config', () => {
               actual,
               Data.struct({
                 USER_API_KEY: Option.none(),
-                ...OPTIONAL_APP_CONFIG_DEFAULTS,
+                ...NORMALIZED_APP_CONFIG_DEFAULTS,
                 ENVIRONMENT: Option.some('staging'),
                 BASE_URL: 'https://custom-backend.localhost',
                 WEB_URL: constants.STAGING_WEB_URL,
-                CACHE_DIR: Option.none(),
                 LOG_LEVEL: Option.none(),
                 ORG_ID: Option.none(),
                 PROJECT_ID: Option.none(),
@@ -265,11 +290,10 @@ describe('Config', () => {
               actual,
               Data.struct({
                 USER_API_KEY: Option.none(),
-                ...OPTIONAL_APP_CONFIG_DEFAULTS,
+                ...NORMALIZED_APP_CONFIG_DEFAULTS,
                 ENVIRONMENT: Option.some('staging'),
                 BASE_URL: constants.STAGING_BASE_URL,
                 WEB_URL: 'https://custom-web.localhost',
-                CACHE_DIR: Option.none(),
                 LOG_LEVEL: Option.none(),
                 ORG_ID: Option.none(),
                 PROJECT_ID: Option.none(),
@@ -291,11 +315,10 @@ describe('Config', () => {
             actual,
             Data.struct({
               USER_API_KEY: Option.none(),
-              ...OPTIONAL_APP_CONFIG_DEFAULTS,
+              ...NORMALIZED_APP_CONFIG_DEFAULTS,
               ENVIRONMENT: Option.some('unknown'),
               BASE_URL: constants.DEFAULT_BASE_URL,
               WEB_URL: constants.DEFAULT_WEB_URL,
-              CACHE_DIR: Option.none(),
               LOG_LEVEL: Option.none(),
               ORG_ID: Option.none(),
               PROJECT_ID: Option.none(),
@@ -432,11 +455,10 @@ describe('Config', () => {
             actual,
             Data.struct({
               USER_API_KEY: Option.none(),
-              ...OPTIONAL_APP_CONFIG_DEFAULTS,
+              ...NORMALIZED_APP_CONFIG_DEFAULTS,
               ENVIRONMENT: Option.none(),
               BASE_URL: 'https://backend.composio.dev',
               WEB_URL: 'https://dashboard.composio.dev/',
-              CACHE_DIR: Option.none(),
               LOG_LEVEL: Option.none(),
               ORG_ID: Option.none(),
               PROJECT_ID: Option.none(),
@@ -461,11 +483,10 @@ describe('Config', () => {
             actual,
             Data.struct({
               USER_API_KEY: Option.none(),
-              ...OPTIONAL_APP_CONFIG_DEFAULTS,
+              ...NORMALIZED_APP_CONFIG_DEFAULTS,
               ENVIRONMENT: Option.none(),
               BASE_URL: 'https://backend.composio.dev',
               WEB_URL: 'https://dashboard.composio.dev/',
-              CACHE_DIR: Option.none(),
               LOG_LEVEL: Option.none(),
               ORG_ID: Option.none(),
               PROJECT_ID: Option.none(),
@@ -504,20 +525,20 @@ describe('Config', () => {
               ENVIRONMENT: Option.none(),
               BASE_URL: 'https://test.localhost',
               WEB_URL: 'https://test.localhost',
-              CACHE_DIR: Option.some('~/.composio'),
-              SESSION_DIR: Option.some('/tmp/composio-sessions'),
-              BIN_DIR: Option.some('/usr/local/bin'),
+              CACHE_DIR: '~/.composio',
+              SESSION_DIR: '/tmp/composio-sessions',
+              BIN_DIR: '/usr/local/bin',
               LOG_LEVEL: Option.some(LogLevel.Info),
               ORG_ID: Option.none(),
               PROJECT_ID: Option.none(),
-              AGENTS_BASE_URL: Option.some('https://agents.test.localhost'),
-              WEBHOOK_SECRET: Option.some('secret'),
-              CLI_INVOCATION_ORIGIN: Option.some('run'),
-              CLI_PARENT_RUN_ID: Option.some('run_parent'),
-              RUN_ACP_ONLY: Option.some('1'),
-              RUN_OUTPUT_DIR: Option.some('/tmp/composio-output'),
-              PERF_DEBUG: Option.some('1'),
-              TOOL_DEBUG: Option.some('1'),
+              AGENTS_BASE_URL: 'https://agents.test.localhost',
+              WEBHOOK_SECRET: 'secret',
+              CLI_INVOCATION_ORIGIN: 'run',
+              CLI_PARENT_RUN_ID: 'run_parent',
+              RUN_ACP_ONLY: true,
+              RUN_OUTPUT_DIR: '/tmp/composio-output',
+              PERF_DEBUG: true,
+              TOOL_DEBUG: true,
               DISABLE_CONNECTED_ACCOUNT_CACHE: true,
             })
           );
@@ -536,11 +557,10 @@ describe('Config', () => {
             actual,
             Data.struct({
               USER_API_KEY: Option.none(),
-              ...OPTIONAL_APP_CONFIG_DEFAULTS,
+              ...NORMALIZED_APP_CONFIG_DEFAULTS,
               ENVIRONMENT: Option.none(),
               BASE_URL: 'https://backend.composio.dev',
               WEB_URL: 'https://dashboard.composio.dev/',
-              CACHE_DIR: Option.none(),
               LOG_LEVEL: Option.none(),
               ORG_ID: Option.none(),
               PROJECT_ID: Option.none(),
@@ -562,11 +582,10 @@ describe('Config', () => {
             actual,
             Data.struct({
               USER_API_KEY: Option.none(),
-              ...OPTIONAL_APP_CONFIG_DEFAULTS,
+              ...NORMALIZED_APP_CONFIG_DEFAULTS,
               ENVIRONMENT: Option.some('staging'),
               BASE_URL: constants.STAGING_BASE_URL,
               WEB_URL: 'https://staging-dashboard.composio.dev/',
-              CACHE_DIR: Option.none(),
               LOG_LEVEL: Option.none(),
               ORG_ID: Option.none(),
               PROJECT_ID: Option.none(),
@@ -590,11 +609,10 @@ describe('Config', () => {
             actual,
             Data.struct({
               USER_API_KEY: Option.none(),
-              ...OPTIONAL_APP_CONFIG_DEFAULTS,
+              ...NORMALIZED_APP_CONFIG_DEFAULTS,
               ENVIRONMENT: Option.some('staging'),
               BASE_URL: 'https://custom.localhost',
               WEB_URL: 'https://custom-web.localhost',
-              CACHE_DIR: Option.none(),
               LOG_LEVEL: Option.none(),
               ORG_ID: Option.none(),
               PROJECT_ID: Option.none(),

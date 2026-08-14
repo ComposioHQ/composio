@@ -1,5 +1,5 @@
 import { Effect } from 'effect';
-import { APP_CONFIG, loadOptionalAppConfig } from 'src/effects/app-config';
+import { APP_CONFIG } from 'src/effects/app-config';
 
 type RuntimeDebugFlags = {
   readonly perfDebug: boolean;
@@ -26,11 +26,13 @@ export const resetRuntimeDebugFlags = () => {
 };
 
 export const isPerfDebugEnabled = () =>
-  loadOptionalAppConfig(APP_CONFIG.PERF_DEBUG).pipe(
-    Effect.map(value => runtimeDebugFlags.perfDebug || value === '1')
+  APP_CONFIG.PERF_DEBUG.pipe(
+    Effect.orDie,
+    Effect.map(configured => runtimeDebugFlags.perfDebug || configured)
   );
 
 export const isToolDebugEnabled = () =>
-  loadOptionalAppConfig(APP_CONFIG.TOOL_DEBUG).pipe(
-    Effect.map(value => runtimeDebugFlags.toolDebug || value === '1')
+  APP_CONFIG.TOOL_DEBUG.pipe(
+    Effect.orDie,
+    Effect.map(configured => runtimeDebugFlags.toolDebug || configured)
   );

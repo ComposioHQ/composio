@@ -1,7 +1,7 @@
 import { FileSystem, Path } from '@effect/platform';
 import { BunFileSystem } from '@effect/platform-bun';
 import { Config, ConfigProvider, Effect, Layer, Option, Schema } from 'effect';
-import { APP_CONFIG, loadOptionalAppConfig } from 'src/effects/app-config';
+import { APP_CONFIG } from 'src/effects/app-config';
 import { setupCacheDir } from 'src/effects/setup-cache-dir';
 import { AGENT_HOST_LABELS, COMPOSIO_AGENT_PLUGIN_ID, type AgentHost } from './agent-host';
 import { NodeOs } from './node-os';
@@ -174,7 +174,7 @@ export const resolvePluginHintConfig = (argv: ReadonlyArray<string>) =>
     const path = yield* Path.Path;
     const os = yield* NodeOs;
     const cacheDir = yield* setupCacheDir;
-    const invocationOrigin = yield* loadOptionalAppConfig(APP_CONFIG.CLI_INVOCATION_ORIGIN);
+    const invocationOrigin = yield* APP_CONFIG.CLI_INVOCATION_ORIGIN;
     const env = yield* rawHostEnvironment;
     return {
       stateDirectory: path.join(cacheDir, 'plugin-hints'),

@@ -1,6 +1,6 @@
 import { FileSystem, Path } from '@effect/platform';
 import { Data, Effect, Either, Option, Predicate, Schema } from 'effect';
-import { APP_CONFIG, loadOptionalAppConfig } from 'src/effects/app-config';
+import { APP_CONFIG } from 'src/effects/app-config';
 import { JsonRecordSchema } from 'src/effects/json';
 import { setupCacheDir } from 'src/effects/setup-cache-dir';
 import { ComposioUserContext } from 'src/services/user-context';
@@ -82,7 +82,8 @@ export class AgentResponseDecodeError extends Data.TaggedError(
   readonly cause: unknown;
 }> {}
 
-const agentsBaseURL = loadOptionalAppConfig(APP_CONFIG.AGENTS_BASE_URL).pipe(
+const agentsBaseURL = APP_CONFIG.AGENTS_BASE_URL.pipe(
+  Effect.orDie,
   Effect.map(value => (value ?? DEFAULT_AGENTS_BASE_URL).replace(/\/+$/, ''))
 );
 

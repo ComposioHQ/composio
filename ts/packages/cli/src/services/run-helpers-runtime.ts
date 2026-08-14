@@ -8,10 +8,8 @@ import process from 'node:process';
 import { Path } from '@effect/platform';
 import { Effect, Either, Predicate, Schema } from 'effect';
 import { z } from 'zod';
-import { APP_CONFIG, loadOptionalAppConfig } from 'src/effects/app-config';
 import { JsonRecordSchema } from 'src/effects/json';
 import { resolveCliConfigPathSync } from 'src/services/cli-user-config';
-import { BaseConfigProviderLive, extendConfigProvider } from 'src/services/config';
 import { detectMaster, type MasterKind } from 'src/services/master-detector';
 import {
   isAcpInvokeError,
@@ -966,14 +964,8 @@ export const installRunHelpers = async ({
   Reflect.set(globalThis, 'z', z);
   Reflect.set(globalThis, 'zod', z);
 
-  const [perfDebugEnv, toolDebugEnv] = Effect.runSync(
-    Effect.all([
-      loadOptionalAppConfig(APP_CONFIG.PERF_DEBUG),
-      loadOptionalAppConfig(APP_CONFIG.TOOL_DEBUG),
-    ]).pipe(Effect.withConfigProvider(extendConfigProvider(BaseConfigProviderLive)))
-  );
-  const perfDebugEnabled = helperContext.perfDebug === true || perfDebugEnv === '1';
-  const toolDebugEnabled = helperContext.toolDebug === true || toolDebugEnv === '1';
+  const perfDebugEnabled = helperContext.perfDebug === true;
+  const toolDebugEnabled = helperContext.toolDebug === true;
   const perfDebugStart = Date.now();
   const composioBaseURL = (helperContext.baseURL || 'https://backend.composio.dev').replace(
     /\/$/,
