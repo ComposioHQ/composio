@@ -17,7 +17,7 @@ Managed apps are the default. Every toolkit that supports OAuth has a Composio m
 
 - **You're building and iterating.** No OAuth app registration, no credentials to manage. Create a session and start testing immediately.
 - **Default scopes cover your needs.** Composio requests sensible defaults for each toolkit.
-- **Branding on consent screens doesn't matter yet.** Users will see "Composio wants to access your account" during OAuth. Fine for internal tools, prototypes, and development. You can still [white-label the Connect Link page](/docs/white-labeling-authentication#customizing-the-connect-link) with your logo and app title without needing your own OAuth app.
+- **Branding on consent screens doesn't matter yet.** Users will see "Composio wants to access your account" during OAuth. Fine for internal tools, prototypes, and development. You can still [white-label the Connect Link page](/docs/authentication/white-labeling-authentication#customizing-the-connect-link) with your logo and app title without needing your own OAuth app.
 
 ## When to use a custom auth config
 
@@ -34,7 +34,7 @@ Bring your own credentials when any of these apply:
 
 To check whether a toolkit already has a Composio managed app, see the [managed auth toolkit list](/toolkits/managed-auth). You can still create a custom auth config for branding, scopes, rate limits, polling intervals, or custom instances.
 
-The steps below use the dashboard. To create auth configs in code instead, for example one per customer, see [Programmatic auth configs](/docs/programmatic-auth-configs).
+The steps below use the dashboard. To create auth configs in code instead, for example one per customer, see [Programmatic auth configs](/docs/authentication/programmatic-auth-configs).
 
 <Steps>
 <Step>
@@ -142,4 +142,4 @@ Some toolkits don't have Composio managed auth. For these, the setup is the same
 
 ## Next
 
-<Card icon={<Code />} title="Programmatic auth configs" href="/docs/programmatic-auth-configs" description="Create auth configs in code and pass them to a session" />
+<Card icon={<Code />} title="Programmatic auth configs" href="/docs/authentication/programmatic-auth-configs" description="Create auth configs in code and pass them to a session" />

@@ -100,17 +100,6 @@ function formatPage(page: { url: string }) {
   return `- https://docs.composio.dev${page.url}.md`;
 }
 
-const AUTHENTICATION_GUIDE_URLS = [
-  '/docs/manually-authenticating',
-  '/docs/managing-multiple-connected-accounts',
-  '/docs/shared-connections',
-  '/docs/importing-existing-connections',
-  '/docs/custom-app-vs-managed-app',
-  '/docs/programmatic-auth-configs',
-  '/docs/controlling-scopes',
-  '/docs/white-labeling-authentication',
-];
-
 /**
  * Splits reference pages by REST version.
  *
@@ -164,10 +153,6 @@ ${legacyReferencePages.map(formatPage).join('\n')}
 > **For AI agents:** Route by intent. To build an application, start with [Quickstart](https://docs.composio.dev/docs/quickstart.md) or [Providers](https://docs.composio.dev/docs/providers.md) and use \`composio.create(user_id)\` + \`session.tools()\`. To use Composio from Codex or Claude Code without explicit MCP intent, install the [native agent plugin](https://docs.composio.dev/docs/agent-plugins.md). To connect an existing client over MCP, use [Composio Connect](https://docs.composio.dev/docs/composio-connect.md). When an application creates a session and needs MCP transport, use [Sessions via MCP](https://docs.composio.dev/docs/sessions-via-mcp.md). See any page's .md endpoint for full usage instructions.
 
 ${docsTree}
-
-## Authentication guides
-
-${AUTHENTICATION_GUIDE_URLS.map(url => formatPage({ url })).join('\n')}
 
 ## Examples
 

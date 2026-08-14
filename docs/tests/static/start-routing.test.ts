@@ -32,25 +32,30 @@ describe('getting-started routing policy', () => {
     ]);
   });
 
-  test('keeps progressive authentication guides in the human and agent indexes', async () => {
-    const [authentication, llmsRoute] = await Promise.all([
-      read('content/docs/authentication.mdx'),
-      read('app/llms.txt/route.ts'),
+  test('keeps progressive authentication guides in the human hub and the sidebar', async () => {
+    const [authentication, authMeta, sessionsMeta] = await Promise.all([
+      read('content/docs/authentication/index.mdx'),
+      read('content/docs/authentication/meta.json'),
+      read('content/docs/extending-sessions/meta.json'),
     ]);
-    const guides = [
+    const authGuides = [
       'manually-authenticating',
       'managing-multiple-connected-accounts',
-      'shared-connections',
       'importing-existing-connections',
       'custom-app-vs-managed-app',
       'programmatic-auth-configs',
       'controlling-scopes',
       'white-labeling-authentication',
     ];
+    const authPages = JSON.parse(authMeta).pages as string[];
+    const sessionPages = JSON.parse(sessionsMeta).pages as string[];
 
-    for (const guide of guides) {
-      expect(authentication).toContain(`href="/docs/${guide}"`);
-      expect(llmsRoute).toContain(`'/docs/${guide}'`);
+    for (const guide of authGuides) {
+      expect(authentication).toContain(`href="/docs/authentication/${guide}"`);
+      expect(authPages).toContain(guide);
     }
+
+    expect(authentication).toContain('href="/docs/extending-sessions/shared-connections"');
+    expect(sessionPages).toContain('shared-connections');
   });
 });
