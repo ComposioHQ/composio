@@ -1,9 +1,9 @@
 import { Command, Options } from '@effect/cli';
 import { FileSystem, Path } from '@effect/platform';
 import { Deferred, Effect, Option, Runtime } from 'effect';
+import { APP_CONFIG, loadOptionalAppConfig } from 'src/effects/app-config';
 import { requireAuth } from 'src/effects/require-auth';
 import { TerminalUI } from 'src/services/terminal-ui';
-import { readRawOptionalEnv } from 'src/services/config';
 import { TriggersRealtime } from 'src/services/triggers-realtime';
 import { matchesTriggerListenFilters } from '../filter';
 import {
@@ -185,7 +185,7 @@ export const triggersCmd$Listen = Command.make(
       const runtime = yield* Effect.runtime<never>();
       const forwardUrl = Option.getOrUndefined(forward);
       const generatedWebhookSecret = `composio-forward-secret-${randomUUID()}`;
-      const configuredWebhookSecret = yield* readRawOptionalEnv('COMPOSIO_WEBHOOK_SECRET');
+      const configuredWebhookSecret = yield* loadOptionalAppConfig(APP_CONFIG.WEBHOOK_SECRET);
       const webhookSecret = configuredWebhookSecret ?? generatedWebhookSecret;
       const outputFilePathOption = Option.getOrUndefined(out);
       const outputFilePath = outputFilePathOption ? path.resolve(outputFilePathOption) : undefined;

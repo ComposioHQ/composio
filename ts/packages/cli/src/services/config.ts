@@ -23,17 +23,14 @@ import { APP_CONFIG } from 'src/effects/app-config';
 
 export const BaseConfigProviderLive = ConfigProvider.fromEnv();
 
-const rawEnvironmentProvider = ConfigProvider.fromEnv();
+type UnprefixedEnvironmentVariable = 'CACHE_DIR' | 'npm_config_user_agent';
+const unprefixedEnvironmentProvider = ConfigProvider.fromEnv();
 
-/** Read an exact environment variable name without the CLI's COMPOSIO_ prefix mapping. */
-export const readRawOptionalEnv = (name: string) =>
-  rawEnvironmentProvider
+/** Read an external environment variable that does not use the CLI's COMPOSIO_ prefix. */
+export const readUnprefixedOptionalEnv = (name: UnprefixedEnvironmentVariable) =>
+  unprefixedEnvironmentProvider
     .load(Config.option(Config.string(name)))
     .pipe(Effect.orDie, Effect.map(Option.getOrUndefined));
-
-/** Read and trim an exact environment variable, treating blank values as absent. */
-export const readRawOptionalTrimmedEnv = (name: string) =>
-  readRawOptionalEnv(name).pipe(Effect.map(value => value?.trim() || undefined));
 
 export function extendConfigProvider(baseConfigProvider: ConfigProvider.ConfigProvider) {
   return baseConfigProvider.pipe(

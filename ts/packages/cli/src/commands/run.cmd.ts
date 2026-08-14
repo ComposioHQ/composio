@@ -8,6 +8,7 @@ import { FileSystem, Path } from '@effect/platform';
 import { Effect, Option } from 'effect';
 import { ts } from 'ts-morph';
 import { APP_VERSION } from 'src/constants';
+import { APP_CONFIG, loadOptionalAppConfig } from 'src/effects/app-config';
 import { resolveCommandProject } from 'src/services/command-project';
 import { type RunHelperContext } from 'src/services/run-helpers-runtime';
 import { warmToolInputDefinitions } from 'src/services/tool-input-validation';
@@ -24,7 +25,7 @@ import {
 } from 'src/services/cli-session-artifacts';
 import { USER_COMPOSIO_DIR } from 'src/constants';
 import { TerminalUI } from 'src/services/terminal-ui';
-import { readRawOptionalEnv, readRawOptionalTrimmedEnv } from 'src/services/config';
+import { readUnprefixedOptionalEnv } from 'src/services/config';
 
 const file = Options.text('file').pipe(
   Options.withAlias('f'),
@@ -302,8 +303,8 @@ const resolveRunHelperContext = () =>
     const apiKey = Option.getOrUndefined(userContext.data.apiKey);
     const orgId = Option.getOrUndefined(userContext.data.orgId);
     const defaultComposioDir = path.join(os.homedir(), USER_COMPOSIO_DIR);
-    const composioCacheDir = yield* readRawOptionalTrimmedEnv('COMPOSIO_CACHE_DIR');
-    const cacheDir = yield* readRawOptionalTrimmedEnv('CACHE_DIR');
+    const composioCacheDir = (yield* loadOptionalAppConfig(APP_CONFIG.CACHE_DIR))?.trim();
+    const cacheDir = (yield* readUnprefixedOptionalEnv('CACHE_DIR'))?.trim();
     const configuredCacheDir = composioCacheDir || cacheDir || defaultComposioDir;
     const baseReadAccessRoots = [
       ...new Set([defaultComposioDir, configuredCacheDir].map(value => path.resolve(value))),
@@ -432,11 +433,11 @@ export const runCmd = Command.make('run', {
     }) =>
       Effect.gen(function* () {
         const path = yield* Path.Path;
-        const parentRunId = yield* readRawOptionalEnv('COMPOSIO_CLI_PARENT_RUN_ID');
+        const parentRunId = yield* loadOptionalAppConfig(APP_CONFIG.CLI_PARENT_RUN_ID);
         const runId = parentRunId ?? crypto.randomUUID();
         const perfDebug = yield* isPerfDebugEnabled();
         const toolDebug = yield* isToolDebugEnabled();
-        const acpOnly = (yield* readRawOptionalEnv('COMPOSIO_RUN_ACP_ONLY')) === '1';
+        const acpOnly = (yield* loadOptionalAppConfig(APP_CONFIG.RUN_ACP_ONLY)) === '1';
         if (Option.isNone(file)) {
           const [inlineCode] = args;
           const preloadSlugs = extractInlineExecuteToolSlugs(inlineCode ?? '');

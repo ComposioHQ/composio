@@ -8,9 +8,10 @@ import process from 'node:process';
 import { Path } from '@effect/platform';
 import { Effect, Either, Predicate, Schema } from 'effect';
 import { z } from 'zod';
+import { APP_CONFIG, loadOptionalAppConfig } from 'src/effects/app-config';
 import { JsonRecordSchema } from 'src/effects/json';
 import { resolveCliConfigPathSync } from 'src/services/cli-user-config';
-import { readRawOptionalEnv } from 'src/services/config';
+import { BaseConfigProviderLive, extendConfigProvider } from 'src/services/config';
 import { detectMaster, type MasterKind } from 'src/services/master-detector';
 import {
   isAcpInvokeError,
@@ -967,9 +968,9 @@ export const installRunHelpers = async ({
 
   const [perfDebugEnv, toolDebugEnv] = Effect.runSync(
     Effect.all([
-      readRawOptionalEnv('COMPOSIO_PERF_DEBUG'),
-      readRawOptionalEnv('COMPOSIO_TOOL_DEBUG'),
-    ])
+      loadOptionalAppConfig(APP_CONFIG.PERF_DEBUG),
+      loadOptionalAppConfig(APP_CONFIG.TOOL_DEBUG),
+    ]).pipe(Effect.withConfigProvider(extendConfigProvider(BaseConfigProviderLive)))
   );
   const perfDebugEnabled = helperContext.perfDebug === true || perfDebugEnv === '1';
   const toolDebugEnabled = helperContext.toolDebug === true || toolDebugEnv === '1';

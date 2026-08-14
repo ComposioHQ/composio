@@ -2,7 +2,7 @@ import { BunFileSystem } from '@effect/platform-bun';
 import { FileSystem, Path } from '@effect/platform';
 import { Data, Effect, Match } from 'effect';
 import { getAncestors } from 'src/utils/get-ancestors';
-import { readRawOptionalEnv } from 'src/services/config';
+import { readUnprefixedOptionalEnv } from 'src/services/config';
 
 const toError = (e: unknown): Error => (e instanceof Error ? e : new Error(String(e)));
 
@@ -498,7 +498,7 @@ const detectJsPackageManager = (fs: FileSystem.FileSystem, cwd: string) =>
       if (fileSet.has('pnpm-workspace.yaml')) return 'pnpm' as const;
     }
 
-    const userAgent = parseUserAgent(yield* readRawOptionalEnv('npm_config_user_agent'));
+    const userAgent = parseUserAgent(yield* readUnprefixedOptionalEnv('npm_config_user_agent'));
     if (userAgent) return userAgent;
 
     return 'npm' as const;

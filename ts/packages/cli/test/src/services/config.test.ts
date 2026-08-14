@@ -7,6 +7,19 @@ import { extendConfigProvider } from 'src/services/config';
 import { DEBUG_OVERRIDE_CONFIG } from 'src/effects/debug-config';
 import * as constants from 'src/constants';
 
+const OPTIONAL_APP_CONFIG_DEFAULTS = {
+  SESSION_DIR: Option.none(),
+  BIN_DIR: Option.none(),
+  AGENTS_BASE_URL: Option.none(),
+  WEBHOOK_SECRET: Option.none(),
+  CLI_INVOCATION_ORIGIN: Option.none(),
+  CLI_PARENT_RUN_ID: Option.none(),
+  RUN_ACP_ONLY: Option.none(),
+  RUN_OUTPUT_DIR: Option.none(),
+  PERF_DEBUG: Option.none(),
+  TOOL_DEBUG: Option.none(),
+};
+
 describe('Config', () => {
   describe('[When] using `ConfigProvider.fromMap`', () => {
     const withMapConfigProvider = (map: Map<string, string>) =>
@@ -25,6 +38,7 @@ describe('Config', () => {
             actual,
             Data.struct({
               USER_API_KEY: Option.none(),
+              ...OPTIONAL_APP_CONFIG_DEFAULTS,
               ENVIRONMENT: Option.none(),
               BASE_URL: 'https://backend.composio.dev',
               CACHE_DIR: Option.none(),
@@ -55,6 +69,7 @@ describe('Config', () => {
             actual,
             Data.struct({
               USER_API_KEY: Option.none(),
+              ...OPTIONAL_APP_CONFIG_DEFAULTS,
               ENVIRONMENT: Option.none(),
               BASE_URL: 'https://backend.composio.dev',
               CACHE_DIR: Option.none(),
@@ -75,7 +90,17 @@ describe('Config', () => {
             ['COMPOSIO_BASE_URL', 'https://test.localhost'],
             ['COMPOSIO_WEB_URL', 'https://test.localhost'],
             ['COMPOSIO_CACHE_DIR', '~/.composio'],
+            ['COMPOSIO_SESSION_DIR', '/tmp/composio-sessions'],
+            ['COMPOSIO_BIN_DIR', '/usr/local/bin'],
             ['COMPOSIO_LOG_LEVEL', 'info'],
+            ['COMPOSIO_AGENTS_BASE_URL', 'https://agents.test.localhost'],
+            ['COMPOSIO_WEBHOOK_SECRET', 'secret'],
+            ['COMPOSIO_CLI_INVOCATION_ORIGIN', 'run'],
+            ['COMPOSIO_CLI_PARENT_RUN_ID', 'run_parent'],
+            ['COMPOSIO_RUN_ACP_ONLY', '1'],
+            ['COMPOSIO_RUN_OUTPUT_DIR', '/tmp/composio-output'],
+            ['COMPOSIO_PERF_DEBUG', '1'],
+            ['COMPOSIO_TOOL_DEBUG', '1'],
           ]) satisfies Map<string, string>;
 
           const actual = yield* withMapConfigProvider(map)(
@@ -90,9 +115,19 @@ describe('Config', () => {
               BASE_URL: 'https://test.localhost',
               WEB_URL: 'https://test.localhost',
               CACHE_DIR: Option.some('~/.composio'),
+              SESSION_DIR: Option.some('/tmp/composio-sessions'),
+              BIN_DIR: Option.some('/usr/local/bin'),
               LOG_LEVEL: Option.some(LogLevel.Info),
               ORG_ID: Option.none(),
               PROJECT_ID: Option.none(),
+              AGENTS_BASE_URL: Option.some('https://agents.test.localhost'),
+              WEBHOOK_SECRET: Option.some('secret'),
+              CLI_INVOCATION_ORIGIN: Option.some('run'),
+              CLI_PARENT_RUN_ID: Option.some('run_parent'),
+              RUN_ACP_ONLY: Option.some('1'),
+              RUN_OUTPUT_DIR: Option.some('/tmp/composio-output'),
+              PERF_DEBUG: Option.some('1'),
+              TOOL_DEBUG: Option.some('1'),
               DISABLE_CONNECTED_ACCOUNT_CACHE: true,
             })
           );
@@ -113,6 +148,7 @@ describe('Config', () => {
             actual,
             Data.struct({
               USER_API_KEY: Option.none(),
+              ...OPTIONAL_APP_CONFIG_DEFAULTS,
               ENVIRONMENT: Option.none(),
               BASE_URL: 'https://backend.composio.dev',
               WEB_URL: 'https://dashboard.composio.dev/',
@@ -141,6 +177,7 @@ describe('Config', () => {
             actual,
             Data.struct({
               USER_API_KEY: Option.none(),
+              ...OPTIONAL_APP_CONFIG_DEFAULTS,
               ENVIRONMENT: Option.some('production'),
               BASE_URL: constants.DEFAULT_BASE_URL,
               WEB_URL: constants.DEFAULT_WEB_URL,
@@ -166,6 +203,7 @@ describe('Config', () => {
             actual,
             Data.struct({
               USER_API_KEY: Option.none(),
+              ...OPTIONAL_APP_CONFIG_DEFAULTS,
               ENVIRONMENT: Option.some('staging'),
               BASE_URL: constants.STAGING_BASE_URL,
               WEB_URL: 'https://staging-dashboard.composio.dev/',
@@ -196,6 +234,7 @@ describe('Config', () => {
               actual,
               Data.struct({
                 USER_API_KEY: Option.none(),
+                ...OPTIONAL_APP_CONFIG_DEFAULTS,
                 ENVIRONMENT: Option.some('staging'),
                 BASE_URL: 'https://custom-backend.localhost',
                 WEB_URL: constants.STAGING_WEB_URL,
@@ -226,6 +265,7 @@ describe('Config', () => {
               actual,
               Data.struct({
                 USER_API_KEY: Option.none(),
+                ...OPTIONAL_APP_CONFIG_DEFAULTS,
                 ENVIRONMENT: Option.some('staging'),
                 BASE_URL: constants.STAGING_BASE_URL,
                 WEB_URL: 'https://custom-web.localhost',
@@ -251,6 +291,7 @@ describe('Config', () => {
             actual,
             Data.struct({
               USER_API_KEY: Option.none(),
+              ...OPTIONAL_APP_CONFIG_DEFAULTS,
               ENVIRONMENT: Option.some('unknown'),
               BASE_URL: constants.DEFAULT_BASE_URL,
               WEB_URL: constants.DEFAULT_WEB_URL,
@@ -364,9 +405,19 @@ describe('Config', () => {
       vi.stubEnv('COMPOSIO_BASE_URL', undefined);
       vi.stubEnv('COMPOSIO_WEB_URL', undefined);
       vi.stubEnv('COMPOSIO_CACHE_DIR', undefined);
+      vi.stubEnv('COMPOSIO_SESSION_DIR', undefined);
+      vi.stubEnv('COMPOSIO_BIN_DIR', undefined);
       vi.stubEnv('COMPOSIO_LOG_LEVEL', undefined);
       vi.stubEnv('COMPOSIO_ORG_ID', undefined);
       vi.stubEnv('COMPOSIO_PROJECT_ID', undefined);
+      vi.stubEnv('COMPOSIO_AGENTS_BASE_URL', undefined);
+      vi.stubEnv('COMPOSIO_WEBHOOK_SECRET', undefined);
+      vi.stubEnv('COMPOSIO_CLI_INVOCATION_ORIGIN', undefined);
+      vi.stubEnv('COMPOSIO_CLI_PARENT_RUN_ID', undefined);
+      vi.stubEnv('COMPOSIO_RUN_ACP_ONLY', undefined);
+      vi.stubEnv('COMPOSIO_RUN_OUTPUT_DIR', undefined);
+      vi.stubEnv('COMPOSIO_PERF_DEBUG', undefined);
+      vi.stubEnv('COMPOSIO_TOOL_DEBUG', undefined);
       vi.stubEnv('COMPOSIO_DISABLE_CONNECTED_ACCOUNT_CACHE', undefined);
     });
 
@@ -381,6 +432,7 @@ describe('Config', () => {
             actual,
             Data.struct({
               USER_API_KEY: Option.none(),
+              ...OPTIONAL_APP_CONFIG_DEFAULTS,
               ENVIRONMENT: Option.none(),
               BASE_URL: 'https://backend.composio.dev',
               WEB_URL: 'https://dashboard.composio.dev/',
@@ -409,6 +461,7 @@ describe('Config', () => {
             actual,
             Data.struct({
               USER_API_KEY: Option.none(),
+              ...OPTIONAL_APP_CONFIG_DEFAULTS,
               ENVIRONMENT: Option.none(),
               BASE_URL: 'https://backend.composio.dev',
               WEB_URL: 'https://dashboard.composio.dev/',
@@ -428,7 +481,17 @@ describe('Config', () => {
           vi.stubEnv('COMPOSIO_BASE_URL', 'https://test.localhost');
           vi.stubEnv('COMPOSIO_WEB_URL', 'https://test.localhost');
           vi.stubEnv('COMPOSIO_CACHE_DIR', '~/.composio');
+          vi.stubEnv('COMPOSIO_SESSION_DIR', '/tmp/composio-sessions');
+          vi.stubEnv('COMPOSIO_BIN_DIR', '/usr/local/bin');
           vi.stubEnv('COMPOSIO_LOG_LEVEL', 'info');
+          vi.stubEnv('COMPOSIO_AGENTS_BASE_URL', 'https://agents.test.localhost');
+          vi.stubEnv('COMPOSIO_WEBHOOK_SECRET', 'secret');
+          vi.stubEnv('COMPOSIO_CLI_INVOCATION_ORIGIN', 'run');
+          vi.stubEnv('COMPOSIO_CLI_PARENT_RUN_ID', 'run_parent');
+          vi.stubEnv('COMPOSIO_RUN_ACP_ONLY', '1');
+          vi.stubEnv('COMPOSIO_RUN_OUTPUT_DIR', '/tmp/composio-output');
+          vi.stubEnv('COMPOSIO_PERF_DEBUG', '1');
+          vi.stubEnv('COMPOSIO_TOOL_DEBUG', '1');
 
           const actual = yield* withEnvConfigProvider(
             Config.all(APP_CONFIG).pipe(Effect.andThen(Data.struct))
@@ -442,9 +505,19 @@ describe('Config', () => {
               BASE_URL: 'https://test.localhost',
               WEB_URL: 'https://test.localhost',
               CACHE_DIR: Option.some('~/.composio'),
+              SESSION_DIR: Option.some('/tmp/composio-sessions'),
+              BIN_DIR: Option.some('/usr/local/bin'),
               LOG_LEVEL: Option.some(LogLevel.Info),
               ORG_ID: Option.none(),
               PROJECT_ID: Option.none(),
+              AGENTS_BASE_URL: Option.some('https://agents.test.localhost'),
+              WEBHOOK_SECRET: Option.some('secret'),
+              CLI_INVOCATION_ORIGIN: Option.some('run'),
+              CLI_PARENT_RUN_ID: Option.some('run_parent'),
+              RUN_ACP_ONLY: Option.some('1'),
+              RUN_OUTPUT_DIR: Option.some('/tmp/composio-output'),
+              PERF_DEBUG: Option.some('1'),
+              TOOL_DEBUG: Option.some('1'),
               DISABLE_CONNECTED_ACCOUNT_CACHE: true,
             })
           );
@@ -463,6 +536,7 @@ describe('Config', () => {
             actual,
             Data.struct({
               USER_API_KEY: Option.none(),
+              ...OPTIONAL_APP_CONFIG_DEFAULTS,
               ENVIRONMENT: Option.none(),
               BASE_URL: 'https://backend.composio.dev',
               WEB_URL: 'https://dashboard.composio.dev/',
@@ -488,6 +562,7 @@ describe('Config', () => {
             actual,
             Data.struct({
               USER_API_KEY: Option.none(),
+              ...OPTIONAL_APP_CONFIG_DEFAULTS,
               ENVIRONMENT: Option.some('staging'),
               BASE_URL: constants.STAGING_BASE_URL,
               WEB_URL: 'https://staging-dashboard.composio.dev/',
@@ -515,6 +590,7 @@ describe('Config', () => {
             actual,
             Data.struct({
               USER_API_KEY: Option.none(),
+              ...OPTIONAL_APP_CONFIG_DEFAULTS,
               ENVIRONMENT: Option.some('staging'),
               BASE_URL: 'https://custom.localhost',
               WEB_URL: 'https://custom-web.localhost',

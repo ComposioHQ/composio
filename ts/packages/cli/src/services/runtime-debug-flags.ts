@@ -1,5 +1,5 @@
 import { Effect } from 'effect';
-import { readRawOptionalEnv } from 'src/services/config';
+import { APP_CONFIG, loadOptionalAppConfig } from 'src/effects/app-config';
 
 type RuntimeDebugFlags = {
   readonly perfDebug: boolean;
@@ -26,11 +26,11 @@ export const resetRuntimeDebugFlags = () => {
 };
 
 export const isPerfDebugEnabled = () =>
-  readRawOptionalEnv('COMPOSIO_PERF_DEBUG').pipe(
+  loadOptionalAppConfig(APP_CONFIG.PERF_DEBUG).pipe(
     Effect.map(value => runtimeDebugFlags.perfDebug || value === '1')
   );
 
 export const isToolDebugEnabled = () =>
-  readRawOptionalEnv('COMPOSIO_TOOL_DEBUG').pipe(
+  loadOptionalAppConfig(APP_CONFIG.TOOL_DEBUG).pipe(
     Effect.map(value => runtimeDebugFlags.toolDebug || value === '1')
   );

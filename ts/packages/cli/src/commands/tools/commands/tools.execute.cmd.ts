@@ -63,7 +63,7 @@ import {
 import * as constants from 'src/constants';
 import { ComposioCliUserConfig } from 'src/services/cli-user-config';
 import { CLI_EXPERIMENTAL_FEATURES } from 'src/constants';
-import { readRawOptionalEnv, readRawOptionalTrimmedEnv } from 'src/services/config';
+import { APP_CONFIG, loadOptionalAppConfig } from 'src/effects/app-config';
 
 const slug = Args.text({ name: 'slug' }).pipe(
   Args.withDescription('Tool slug (e.g. "GITHUB_CREATE_ISSUE")')
@@ -316,7 +316,7 @@ const getExecuteOutputEncoder = () => {
   return executeOutputEncoder;
 };
 
-const shouldStoreLargeExecuteOutput = readRawOptionalEnv('COMPOSIO_CLI_INVOCATION_ORIGIN').pipe(
+const shouldStoreLargeExecuteOutput = loadOptionalAppConfig(APP_CONFIG.CLI_INVOCATION_ORIGIN).pipe(
   Effect.map(origin => origin !== 'run')
 );
 
@@ -364,7 +364,7 @@ const executionSuccessSuffix = (result: {
 
 const persistLargeExecuteOutput = (toolSlug: string, json: string, sharedDirectory?: string) =>
   Effect.gen(function* () {
-    const runOutputDirectory = yield* readRawOptionalTrimmedEnv('COMPOSIO_RUN_OUTPUT_DIR');
+    const runOutputDirectory = (yield* loadOptionalAppConfig(APP_CONFIG.RUN_OUTPUT_DIR))?.trim();
     const outputFilePath = yield* storeCliSessionArtifact({
       contents: json,
       name: `${toolSlug}_OUTPUT`,
@@ -983,7 +983,7 @@ const resolveExecuteContext = (params: RunToolsExecuteParams) =>
     const input = (yield* resolveInput(params.data)) ?? '{}';
     const parsedArgs = yield* parseArguments(input);
     const cliConfig = yield* ComposioCliUserConfig;
-    const runOutputDirectory = yield* readRawOptionalTrimmedEnv('COMPOSIO_RUN_OUTPUT_DIR');
+    const runOutputDirectory = (yield* loadOptionalAppConfig(APP_CONFIG.RUN_OUTPUT_DIR))?.trim();
 
     if (
       isLocalToolSlug(params.slug) &&

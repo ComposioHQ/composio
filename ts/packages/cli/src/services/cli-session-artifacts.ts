@@ -1,16 +1,16 @@
 import { FileSystem, Path } from '@effect/platform';
 import { Effect, Option } from 'effect';
+import { APP_CONFIG, loadOptionalAppConfig } from 'src/effects/app-config';
 import { getOrCreateProbablyMyCliSessionIdForCurrentCwd } from 'src/services/consumer-short-term-cache';
 import { ComposioCliUserConfig } from 'src/services/cli-user-config';
-import { readRawOptionalTrimmedEnv } from 'src/services/config';
 import { NodeOs } from 'src/services/node-os';
 
 export const resolveArtifactsRoot = Effect.gen(function* () {
   const path = yield* Path.Path;
   const os = yield* NodeOs;
   const cliUserConfig = yield* ComposioCliUserConfig;
-  const sessionDirectory = yield* readRawOptionalTrimmedEnv('COMPOSIO_SESSION_DIR');
-  const cacheDirectory = yield* readRawOptionalTrimmedEnv('COMPOSIO_CACHE_DIR');
+  const sessionDirectory = (yield* loadOptionalAppConfig(APP_CONFIG.SESSION_DIR))?.trim();
+  const cacheDirectory = (yield* loadOptionalAppConfig(APP_CONFIG.CACHE_DIR))?.trim();
 
   return (
     sessionDirectory ||

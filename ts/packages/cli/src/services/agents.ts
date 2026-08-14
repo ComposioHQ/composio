@@ -1,12 +1,12 @@
 import { FileSystem, Path } from '@effect/platform';
 import { Data, Effect, Either, Option, Predicate, Schema } from 'effect';
+import { APP_CONFIG, loadOptionalAppConfig } from 'src/effects/app-config';
 import { JsonRecordSchema } from 'src/effects/json';
 import { setupCacheDir } from 'src/effects/setup-cache-dir';
 import { ComposioUserContext } from 'src/services/user-context';
 import { getSessionInfoByUserApiKey } from 'src/services/composio-clients';
 import { primeConsumerConnectedToolkitsCacheInBackground } from 'src/services/consumer-short-term-cache';
 import { linkApolloIdentityForAnalytics } from 'src/analytics/dispatch';
-import { readRawOptionalEnv } from 'src/services/config';
 
 export const AGENT_CONFIG_FILE_NAME = 'agent.json';
 export const DEFAULT_AGENTS_BASE_URL = 'https://agents.composio.dev';
@@ -82,7 +82,7 @@ export class AgentResponseDecodeError extends Data.TaggedError(
   readonly cause: unknown;
 }> {}
 
-const agentsBaseURL = readRawOptionalEnv('COMPOSIO_AGENTS_BASE_URL').pipe(
+const agentsBaseURL = loadOptionalAppConfig(APP_CONFIG.AGENTS_BASE_URL).pipe(
   Effect.map(value => (value ?? DEFAULT_AGENTS_BASE_URL).replace(/\/+$/, ''))
 );
 

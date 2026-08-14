@@ -13,7 +13,9 @@ import {
   Schema,
 } from 'effect';
 import * as constants from 'src/constants';
+import { APP_CONFIG } from 'src/effects/app-config';
 import { getDetachedWorkerSpawnArgs, spawnDetached } from 'src/services/detached-process';
+import { extendConfigProvider } from 'src/services/config';
 import { atomicWriteFileString } from 'src/utils/atomic-write';
 import { sha256Hex } from 'src/utils/checksums';
 import { djb2Hash } from 'src/utils/djb2';
@@ -593,10 +595,11 @@ type CliInvocationContext = {
 };
 
 const getCliInvocationContext = environmentProvider
+  .pipe(extendConfigProvider)
   .load(
     Config.all({
-      origin: optionalString('COMPOSIO_CLI_INVOCATION_ORIGIN'),
-      parentRunId: optionalString('COMPOSIO_CLI_PARENT_RUN_ID'),
+      origin: APP_CONFIG.CLI_INVOCATION_ORIGIN,
+      parentRunId: APP_CONFIG.CLI_PARENT_RUN_ID,
     })
   )
   .pipe(
