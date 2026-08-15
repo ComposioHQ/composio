@@ -843,6 +843,10 @@ const createExperimentalSubAgent = (params: {
         : [],
       helperDebugLog,
     }).catch(error => {
+      // Only ACP protocol failures fall back to the legacy sub-agent. A damaged
+      // install (MissingAcpAdapterAssetsError) is not one of them: its message
+      // names the repair, and swapping in a different sub-agent implementation
+      // would hide the fact that the install needs fixing.
       if (!isAcpInvokeError(error)) throw error;
       if (helperContext.acpOnly === true) throw error;
       helperDebugLog('subAgent.acp.fallback', {
