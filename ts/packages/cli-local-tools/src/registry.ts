@@ -6,6 +6,7 @@ import {
 import { beeperImessageToolkit } from './toolkits/beeper-imessage';
 import { chromeDevtoolsToolkit } from './toolkits/chrome-devtools';
 import { peekabooToolkit } from './toolkits/peekaboo';
+import { taskmarketToolkit } from './toolkits/taskmarket';
 import { formatSupportedPlatforms, detectCliPlatform, supportsCliPlatform } from './platform';
 import { executeLocalTool } from './runtime';
 import type {
@@ -23,6 +24,7 @@ export const localToolkitDeclarations: ReadonlyArray<LocalToolkitDeclaration> = 
   beeperImessageToolkit,
   chromeDevtoolsToolkit,
   peekabooToolkit,
+  taskmarketToolkit,
 ];
 
 const normalizeSegment = (value: string): string =>
