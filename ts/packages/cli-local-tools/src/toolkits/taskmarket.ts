@@ -159,6 +159,9 @@ const compactTask = (task: Record<string, unknown>): Record<string, unknown> => 
   submissionCount: Number(task.submissionCount ?? 0),
   expiryTime: optionalString(task.expiryTime),
   tags: stringList(task.tags),
+  requester: optionalString(task.requester),
+  requesterAgentId: optionalString(task.requesterAgentId),
+  pendingActions: task.pendingActions ?? undefined,
 });
 
 const compactSubmission = (submission: Record<string, unknown>): Record<string, unknown> => ({
@@ -213,10 +216,6 @@ const createTaskSchema = z.object({
     .number()
     .positive()
     .describe('Task duration in hours before it expires.'),
-  deliverables: z
-    .string()
-    .optional()
-    .describe('Expected deliverables for the task, shown to workers.'),
   network: z
     .enum(['base'])
     .default('base')
@@ -226,7 +225,7 @@ const createTaskSchema = z.object({
     .positive()
     .optional()
     .describe(
-      'Hard cap on the reward for this call. Defaults to the TASKMARKET_MAX_SPEND_USDC environment variable, then 10 USDC.'
+      'Hard cap on the reward for this call. Cannot exceed the TASKMARKET_MAX_SPEND_USDC environment variable (default 10 USDC); the configured ceiling always wins.'
     ),
   confirmation: z
     .boolean()
@@ -271,8 +270,20 @@ export const taskmarketToolkit: LocalToolkitDeclaration = {
         kind: 'native',
         execute: async (input: Record<string, unknown>): Promise<LocalExecutionResult> => {
           const parsed = taskListSchema.parse(input);
-          const url = `${TASKMARKET_API}/tasks?status=open&sort=newest&limit=${Math.min(parsed.limit, 100)}`;
-          const payload = await fetchJson(url);
+          // Push supported filters to the API (minReward in micro-USDC, mode)
+          // and fetch a superset when any filter is active so the client-side
+          // post-filter never starves the results.
+          const filtering =
+            parsed.mode !== undefined ||
+            parsed.minRewardUsdc !== undefined ||
+            parsed.maxRewardUsdc !== undefined;
+          const params = new URLSearchParams({ status: 'open', sort: 'newest' });
+          params.set('limit', String(filtering ? 100 : Math.min(parsed.limit, 100)));
+          if (parsed.mode) params.set('mode', parsed.mode);
+          if (parsed.minRewardUsdc !== undefined) {
+            params.set('minReward', String(parsed.minRewardUsdc * USDC_DECIMALS));
+          }
+          const payload = await fetchJson(`${TASKMARKET_API}/tasks?${params.toString()}`);
           const tasks = toRecordArray(payload)
             .map(compactTask)
             .filter(task => {
@@ -324,14 +335,16 @@ export const taskmarketToolkit: LocalToolkitDeclaration = {
         execute: async (input: Record<string, unknown>): Promise<LocalExecutionResult> => {
           const parsed = createTaskSchema.parse(input);
           const envMax = Number(process.env.TASKMARKET_MAX_SPEND_USDC ?? '');
-          const maxSpendUsdc =
-            parsed.maxSpendUsdc ?? (Number.isFinite(envMax) && envMax > 0 ? envMax : DEFAULT_MAX_SPEND_USDC);
+          const envCeiling =
+            Number.isFinite(envMax) && envMax > 0 ? envMax : DEFAULT_MAX_SPEND_USDC;
+          // The configured ceiling always wins: the tool-call cap can only
+          // lower it, never raise it (hard spending gate).
+          const maxSpendUsdc = Math.min(parsed.maxSpendUsdc ?? envCeiling, envCeiling);
 
           const plan: Record<string, unknown> = {
             description: parsed.description,
             rewardUsdc: parsed.rewardUsdc,
             durationHours: parsed.durationHours,
-            ...(parsed.deliverables ? { deliverables: parsed.deliverables } : {}),
             network: TASKMARKET_NETWORK,
             maxSpendUsdc,
           };
