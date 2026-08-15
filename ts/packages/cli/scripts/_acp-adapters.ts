@@ -2,7 +2,10 @@ import { chmod, copyFile, mkdir, mkdtemp, readFile, rename, rm, writeFile } from
 import { createRequire } from 'node:module';
 import * as path from 'node:path';
 import { extract as extractTarball } from 'tar';
-import { RUN_CODEX_ACP_BINARY_TARGETS } from '../src/services/run-companion-modules';
+import {
+  RUN_CODEX_ACP_BINARY_TARGETS,
+  type RunCodexAcpBinaryTarget,
+} from '../src/services/run-companion-modules';
 
 const GENERATED_ROOT_DIR = path.resolve('./.generated');
 const ACP_ADAPTERS_CACHE_DIR = path.join(GENERATED_ROOT_DIR, 'acp-adapters');
@@ -82,12 +85,14 @@ const resolveClaudeAgentSdkPackageJsonPath = (): string => {
   return nestedRequire.resolve('@anthropic-ai/claude-agent-sdk/package.json');
 };
 
-const buildCacheManifest = async (): Promise<AcpAdaptersManifest> => {
+const buildCacheManifest = async (
+  codexBinaryTargets: ReadonlyArray<RunCodexAcpBinaryTarget>
+): Promise<AcpAdaptersManifest> => {
   const claudePackage = await readInstalledPackageJson('@zed-industries/claude-code-acp');
   const agentSdkPackage = await readJsonFile<PackageJson>(resolveClaudeAgentSdkPackageJsonPath());
   const codexLauncherPackage = await readInstalledPackageJson('@zed-industries/codex-acp');
 
-  const codexTargets = RUN_CODEX_ACP_BINARY_TARGETS.map(target => {
+  const codexTargets = codexBinaryTargets.map(target => {
     const version = codexLauncherPackage.optionalDependencies?.[target.packageName];
     if (!version) {
       throw new Error(
@@ -296,8 +301,18 @@ const materializeCodexAdapters = async (
   );
 };
 
-export const materializeAcpAdaptersCache = async (): Promise<string> => {
-  const manifest = await buildCacheManifest();
+/**
+ * Materializes the ACP adapter cache.
+ *
+ * `codexBinaryTargets` narrows which codex-acp binaries are downloaded; release
+ * builds keep the default (every supported platform), while a build that only
+ * has to run on the building machine — e.g. the CLI e2e image — passes just its
+ * own target to avoid downloading ~200MB per foreign platform.
+ */
+export const materializeAcpAdaptersCache = async (
+  codexBinaryTargets: ReadonlyArray<RunCodexAcpBinaryTarget> = RUN_CODEX_ACP_BINARY_TARGETS
+): Promise<string> => {
+  const manifest = await buildCacheManifest(codexBinaryTargets);
   const existingManifest = await readExistingManifest();
 
   if (
