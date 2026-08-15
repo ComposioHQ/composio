@@ -281,7 +281,10 @@ export const taskmarketToolkit: LocalToolkitDeclaration = {
           params.set('limit', String(filtering ? 100 : Math.min(parsed.limit, 100)));
           if (parsed.mode) params.set('mode', parsed.mode);
           if (parsed.minRewardUsdc !== undefined) {
-            params.set('minReward', String(parsed.minRewardUsdc * USDC_DECIMALS));
+            // Round to whole base units: fractional USDC (e.g. 0.3) multiplied
+            // by 1e6 loses integer precision in float and would not match the
+            // API's integer base-unit string format.
+            params.set('minReward', String(Math.round(parsed.minRewardUsdc * USDC_DECIMALS)));
           }
           const payload = await fetchJson(`${TASKMARKET_API}/tasks?${params.toString()}`);
           const tasks = toRecordArray(payload)
