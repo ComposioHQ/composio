@@ -1,10 +1,10 @@
 import process from 'node:process';
 import { Args, Command, Options } from '@effect/cli';
-import { Command as PlatformCommand, FileSystem, Path } from '@effect/platform';
-import { Effect, Option } from 'effect';
+import { Command as PlatformCommand, CommandExecutor, FileSystem, Path } from '@effect/platform';
+import { Data, Deferred, Duration, Effect, Either, MutableRef, Option } from 'effect';
 import { ts } from 'ts-morph';
 import { APP_VERSION } from 'src/constants';
-import { APP_CONFIG } from 'src/effects/app-config';
+import { APP_CONFIG, UNPREFIXED_CONFIG } from 'src/effects/app-config';
 import { resolveCommandProject } from 'src/services/command-project';
 import { type RunHelperContext } from 'src/services/run-helpers-runtime';
 import { warmToolInputDefinitions } from 'src/services/tool-input-validation';
@@ -15,7 +15,7 @@ import {
   isToolDebugEnabled,
 } from 'src/services/runtime-flags';
 import { detectMasterFromHost } from 'src/services/master-detector';
-import { getRuntimeCliInvocationContext } from 'src/services/runtime-cli-context';
+import { cliInvocationContext, CliRunId } from 'src/services/runtime-cli-context';
 import {
   repairMissingInstalledRunCompanionModules,
   resolveRunCompanionModulePath,
@@ -26,10 +26,9 @@ import {
 } from 'src/services/cli-session-artifacts';
 import { USER_COMPOSIO_DIR } from 'src/constants';
 import { TerminalUI } from 'src/services/terminal-ui';
-import { readUnprefixedOptionalEnv } from 'src/services/config';
+import { loadHostConfig } from 'src/services/config';
 import { resolveCliConfigPath } from 'src/services/cli-user-config';
 import { NodeOs } from 'src/services/node-os';
-import { CommandRunner } from 'src/services/command-runner';
 
 const file = Options.text('file').pipe(
   Options.withAlias('f'),
@@ -221,10 +220,13 @@ const createRunHelpersPreloadFile = (
       prefix: 'composio-run-',
     });
     const preloadPath = path.join(directory, 'globals.mjs');
+    // The preload directory is scoped and removed when the run ends, but the run log and any
+    // large tool outputs are advertised to the caller on stderr (`RUN_LOG_FILE=`) and must
+    // outlive the process that printed them, so they get their own unscoped directory.
     const runOutputDir =
       typeof context.runOutputDir === 'string' && context.runOutputDir.length > 0
         ? context.runOutputDir
-        : path.join(directory, 'artifacts');
+        : yield* fs.makeTempDirectory({ directory: os.tmpdir, prefix: 'composio-run-artifacts-' });
     const runLogFilePath = path.join(runOutputDir, 'run.log');
     const readAccessRoots = [
       ...new Set(
@@ -251,6 +253,22 @@ const createRunHelpersPreloadFile = (
     );
     return { directory, preloadPath, runOutputDir, runLogFilePath };
   });
+
+/**
+ * `composio run` was given neither inline code nor `--file`.
+ *
+ * An ordinary usage mistake rather than a broken invariant, so it is a typed failure with a
+ * one-line message instead of a defect: the caller sees the fix, not a stack trace.
+ */
+export class MissingRunSourceError extends Data.TaggedError('commands/MissingRunSourceError')<{
+  readonly message: string;
+}> {}
+
+const MISSING_RUN_SOURCE_MESSAGE = [
+  'Provide inline code or use --file to run a script file.',
+  `  composio run 'console.log(1)'`,
+  '  composio run --file ./script.ts',
+].join('\n');
 
 export const buildRunCommand = ({
   path,
@@ -305,7 +323,7 @@ export const buildRunCommand = ({
       };
     }
 
-    return yield* Effect.dieMessage('Provide inline code or use --file to run a script file.');
+    return yield* Effect.fail(new MissingRunSourceError({ message: MISSING_RUN_SOURCE_MESSAGE }));
   });
 
 const resolveRunHelperContext = () =>
@@ -317,7 +335,7 @@ const resolveRunHelperContext = () =>
     const orgId = Option.getOrUndefined(userContext.data.orgId);
     const defaultComposioDir = path.join(os.homedir, USER_COMPOSIO_DIR);
     const composioCacheDir = yield* APP_CONFIG.CACHE_DIR;
-    const cacheDir = (yield* readUnprefixedOptionalEnv('CACHE_DIR'))?.trim();
+    const cacheDir = yield* loadHostConfig(UNPREFIXED_CONFIG.CACHE_DIR);
     const configuredCacheDir = composioCacheDir || cacheDir || defaultComposioDir;
     const baseReadAccessRoots = [
       ...new Set([defaultComposioDir, configuredCacheDir].map(value => path.resolve(value))),
@@ -368,6 +386,102 @@ const resolveRunHelperContext = () =>
         ),
       ],
     } satisfies RunHelperContext;
+  });
+
+/**
+ * Signals the CLI forwards to the script it runs. Anything else (SIGHUP, SIGQUIT, …) keeps the
+ * platform default: the executor's finalizer still tears the child's process group down.
+ */
+const FORWARDED_SIGNALS = ['SIGINT', 'SIGTERM'] as const;
+
+type ForwardedSignal = (typeof FORWARDED_SIGNALS)[number];
+
+/**
+ * How long the CLI waits for the script to finish its own signal handling before the platform
+ * executor's finalizer sends SIGTERM to the process group.
+ */
+const CHILD_SIGNAL_GRACE_PERIOD = Duration.seconds(2);
+
+class ChildSignalError extends Data.TaggedError('ChildSignalError')<{
+  readonly pid: number;
+  readonly signal: ForwardedSignal;
+  readonly cause: unknown;
+}> {}
+
+/**
+ * Sends `signal` to the child's process group and reports whether it was delivered.
+ *
+ * The @effect/platform executor spawns with `detached: true` on POSIX, so the script leads its
+ * own process group and a negative pid is what reaches it (and anything it spawned). Delivery
+ * fails with ESRCH when the group is already gone, which is a normal race, not a run failure.
+ */
+const signalChildProcessGroup = (pid: number, signal: ForwardedSignal): boolean =>
+  Either.try({
+    try: () => process.kill(-pid, signal),
+    catch: cause => new ChildSignalError({ pid, signal, cause }),
+  }).pipe(Either.getOrElse(() => false));
+
+/**
+ * Waits for the script to exit, giving up after `duration`.
+ *
+ * `Effect.timeout` cannot express this here: the wait runs in a release, while the fiber is
+ * already interrupted, and the timer `Effect.timeout` forks as a child of that fiber is
+ * interrupted along with it — leaving the wait hanging until the script exits on its own.
+ * Daemon fibers are detached from the interrupted fiber, so their deadline still fires.
+ */
+const awaitChildExitWithin = (child: CommandExecutor.Process, duration: Duration.Duration) =>
+  Effect.gen(function* () {
+    const settled = yield* Deferred.make<void>();
+    const complete = Deferred.succeed(settled, undefined);
+    yield* Effect.forkDaemon(Effect.zipRight(Effect.ignore(child.exitCode), complete));
+    yield* Effect.forkDaemon(Effect.zipRight(Effect.sleep(duration), complete));
+    yield* Deferred.await(settled);
+  });
+
+/**
+ * Forwards terminal signals to the running script for as long as it is alive.
+ *
+ * A terminal Ctrl-C only reaches the CLI's process group, so without this the script never
+ * observes SIGINT and its `process.on('SIGINT')` cleanup never runs — it is reached later and
+ * only as the executor's SIGTERM. Handlers are registered and removed with the scope so they
+ * never leak into a later run.
+ */
+const forwardSignalsToChild = (child: CommandExecutor.Process) =>
+  Effect.gen(function* () {
+    const os = yield* NodeOs;
+    // Windows has no process groups and the executor does not detach there.
+    if (os.platform === 'win32') {
+      return;
+    }
+
+    const pid = Number(child.pid);
+    const forwarded = MutableRef.make(false);
+
+    yield* Effect.acquireRelease(
+      Effect.sync(() =>
+        FORWARDED_SIGNALS.map(signal => {
+          const listener = () => {
+            if (signalChildProcessGroup(pid, signal)) {
+              MutableRef.set(forwarded, true);
+            }
+          };
+          process.on(signal, listener);
+          return { signal, listener } as const;
+        })
+      ),
+      listeners =>
+        Effect.sync(() => {
+          for (const { signal, listener } of listeners) {
+            process.removeListener(signal, listener);
+          }
+        }).pipe(
+          Effect.zipRight(
+            MutableRef.get(forwarded)
+              ? awaitChildExitWithin(child, CHILD_SIGNAL_GRACE_PERIOD)
+              : Effect.void
+          )
+        )
+    );
   });
 
 export const runCmd = Command.make('run', {
@@ -446,15 +560,24 @@ export const runCmd = Command.make('run', {
       args,
     }) =>
       Effect.gen(function* () {
+        // Checked before any setup work so a bare `composio run` neither creates a run-artifacts
+        // directory nor advertises a log file for a script that will never start.
+        if (Option.isNone(file) && !args[0]) {
+          return yield* Effect.fail(
+            new MissingRunSourceError({ message: MISSING_RUN_SOURCE_MESSAGE })
+          );
+        }
+
         const fs = yield* FileSystem.FileSystem;
         const path = yield* Path.Path;
-        const commandRunner = yield* CommandRunner;
-        const invocationContext = getRuntimeCliInvocationContext();
-        const runId =
-          invocationContext.currentRunId ?? invocationContext.parentRunId ?? crypto.randomUUID();
-        const perfDebug = yield* isPerfDebugEnabled();
-        const toolDebug = yield* isToolDebugEnabled();
-        const acpOnly = yield* isAcpOnlyEnabled();
+        const invocation = yield* cliInvocationContext;
+        const runId = Option.getOrElse(
+          yield* CliRunId,
+          () => invocation.parentRunId ?? crypto.randomUUID()
+        );
+        const perfDebug = yield* isPerfDebugEnabled;
+        const toolDebug = yield* isToolDebugEnabled;
+        const acpOnly = yield* isAcpOnlyEnabled;
         if (Option.isNone(file)) {
           const [inlineCode] = args;
           const preloadSlugs = extractInlineExecuteToolSlugs(inlineCode ?? '');
@@ -517,7 +640,7 @@ export const runCmd = Command.make('run', {
         });
         const exitCode = yield* Effect.gen(function* () {
           const [executable, ...commandArgs] = runCommand.cmd;
-          const child = PlatformCommand.make(executable, ...commandArgs).pipe(
+          const command = PlatformCommand.make(executable, ...commandArgs).pipe(
             PlatformCommand.env({
               BUN_BE_BUN: '1',
               COMPOSIO_CLI_PARENT_RUN_ID: runId,
@@ -529,14 +652,32 @@ export const runCmd = Command.make('run', {
             PlatformCommand.stdout('inherit'),
             PlatformCommand.stderr('inherit')
           );
-          return Number(yield* commandRunner.run(child));
+          // Start the process instead of running it to completion: only a started process
+          // exposes the pid the signal forwarding below needs.
+          const child = yield* PlatformCommand.start(command);
+          yield* forwardSignalsToChild(child);
+          return Number(yield* child.exitCode);
         }).pipe(
+          Effect.scoped,
           Effect.ensuring(
             Effect.forEach(
               runCommand.cleanupPaths,
               cleanupPath => fs.remove(cleanupPath, { force: true }),
               { discard: true }
-            ).pipe(Effect.orDie)
+            ).pipe(
+              // The wrapper file sits next to the user's script, so removal can fail on a
+              // read-only or locked directory. That must not turn an already-successful run
+              // into a failure, which is what the previous `Effect.orDie` did.
+              Effect.ignore
+            )
+          ),
+          // Interruption (Ctrl-C) skips the assignment below, and the default teardown reports
+          // an interrupt-only exit as success. Report the conventional 128+SIGINT instead so
+          // wrappers and `set -e` scripts do not read a cancelled run as a passing one.
+          Effect.onInterrupt(() =>
+            Effect.sync(() => {
+              process.exitCode = 130;
+            })
           )
         );
         process.exitCode = exitCode;

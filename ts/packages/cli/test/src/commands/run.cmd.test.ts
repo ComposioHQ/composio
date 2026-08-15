@@ -5,18 +5,31 @@ import { pathToFileURL } from 'node:url';
 import { describe, expect, layer } from '@effect/vitest';
 import { Command as PlatformCommand, CommandExecutor, Path } from '@effect/platform';
 import { BunContext } from '@effect/platform-bun';
-import { ConfigProvider, Effect, Exit, HashMap } from 'effect';
+import {
+  Cause,
+  ConfigProvider,
+  Effect,
+  Exit,
+  HashMap,
+  Inspectable,
+  Layer,
+  Option,
+  Sink,
+  Stream,
+} from 'effect';
 import { afterEach, it, vi } from 'vitest';
 import { createCliCommandTelemetryContext } from 'src/analytics/events';
 import {
   buildRunHelpersSource,
   extractInlineExecuteToolSlugs,
   inferCliInvocationPrefix,
+  MissingRunSourceError,
   wrapInlineCodeForRun,
 } from 'src/commands/run.cmd';
 import {
   RUN_COMPANION_MODULE_FILENAMES,
-  RUN_COMPANION_STATIC_ASSET_RELATIVE_PATHS,
+  hasInstalledRunCompanionModules,
+  hostRunCompanionStaticAssetRelativePaths,
   listMissingInstalledRunCompanionModules,
   readInstalledReleaseTag,
   resolveRunCompanionModulePath,
@@ -31,10 +44,7 @@ import {
   finalizeInvokeAgentText,
 } from 'src/services/run-subagent-shared';
 import { extendConfigProvider } from 'src/services/config';
-import {
-  configureRuntimeCliInvocationContext,
-  setRuntimeCliRunId,
-} from 'src/services/runtime-cli-context';
+import { DEFAULT_CLI_INVOCATION_ORIGIN } from 'src/services/runtime-cli-context';
 import { cli, MockConsole, TestLive } from 'test/__utils__';
 import { CommandRunner } from 'src/services/command-runner';
 
@@ -62,14 +72,42 @@ const commandRuns = vi.fn((_: PlatformCommand.Command) =>
   Effect.succeed(CommandExecutor.ExitCode(0))
 );
 
+// `composio run` starts the child through the platform `CommandExecutor` so it owns the pid it
+// forwards signals to, so the stub has to replace the executor rather than `CommandRunner`.
+// `exitCode` stays suspended: the command only awaits it after the signal handlers are
+// registered, which is what makes the forwarding observable below.
+const STUB_CHILD_PID = 987_654;
+
+const stubProcess = (command: PlatformCommand.Command): CommandExecutor.Process => ({
+  [CommandExecutor.ProcessTypeId]: CommandExecutor.ProcessTypeId,
+  pid: CommandExecutor.ProcessId(STUB_CHILD_PID),
+  exitCode: Effect.suspend(() => commandRuns(command)),
+  isRunning: Effect.succeed(false),
+  kill: () => Effect.void,
+  stdin: Sink.drain,
+  stdout: Stream.empty,
+  stderr: Stream.empty,
+  toJSON: () => ({ _id: 'StubProcess' }),
+  toString: () => 'StubProcess',
+  [Inspectable.NodeInspectSymbol]: () => ({ _id: 'StubProcess' }),
+});
+
+const StubCommandExecutor = Layer.succeed(
+  CommandExecutor.CommandExecutor,
+  CommandExecutor.makeExecutor(command => Effect.succeed(stubProcess(command)))
+);
+
 const RunTestLive = (input: Parameters<typeof TestLive>[0] = {}) =>
-  TestLive({
-    ...input,
-    commandRunner: new CommandRunner({
-      run: command => commandRuns(command),
-      capture: () => Effect.succeed({ exitCode: 0, stdout: '', stderr: '' }),
+  Layer.merge(
+    TestLive({
+      ...input,
+      commandRunner: new CommandRunner({
+        run: command => commandRuns(command),
+        capture: () => Effect.succeed({ exitCode: 0, stdout: '', stderr: '' }),
+      }),
     }),
-  });
+    StubCommandExecutor
+  );
 
 const inspectRunCommand = (command: PlatformCommand.Command) => {
   const [standard] = PlatformCommand.flatten(command);
@@ -84,7 +122,6 @@ const inspectRunCommand = (command: PlatformCommand.Command) => {
 describe('CLI: composio run', () => {
   afterEach(() => {
     process.exitCode = undefined;
-    configureRuntimeCliInvocationContext({ invocationOrigin: undefined, parentRunId: undefined });
     commandRuns.mockReset().mockImplementation(() => Effect.succeed(CommandExecutor.ExitCode(0)));
     vi.unstubAllGlobals();
     vi.restoreAllMocks();
@@ -96,22 +133,65 @@ describe('CLI: composio run', () => {
         const telemetryContext = createCliCommandTelemetryContext(
           ['bun', 'composio', 'run', 'console.log("hi")'],
           '0.0.0-test',
-          { stdoutIsTTY: false, stderrIsTTY: false }
+          { stdoutIsTTY: false, stderrIsTTY: false },
+          { invocationOrigin: DEFAULT_CLI_INVOCATION_ORIGIN, parentRunId: undefined }
         );
         const runId = telemetryContext.runId;
         expect(runId).toBeDefined();
         if (runId === undefined) return;
-        setRuntimeCliRunId(runId);
 
         commandRuns.mockImplementation(command => {
           expect(inspectRunCommand(command).env.COMPOSIO_CLI_PARENT_RUN_ID).toBe(runId);
           return Effect.succeed(CommandExecutor.ExitCode(0));
         });
 
-        yield* cli(['run', 'console.log("hi")']);
+        // The bootstrap hands the run id it minted for telemetry to the command, the way
+        // `cli-main.ts` does, instead of publishing it through process-wide state.
+        yield* cli(['run', 'console.log("hi")'], { runId });
 
         expect(commandRuns).toHaveBeenCalledTimes(1);
       })
+    );
+  });
+
+  layer(RunTestLive())(it => {
+    it.scoped(
+      '[Given] a terminal interrupt [Then] it forwards the signal to the child process group and unregisters its handlers',
+      () =>
+        Effect.gen(function* () {
+          const signalled: Array<readonly [number, string]> = [];
+          vi.spyOn(process, 'kill').mockImplementation((pid, signal) => {
+            signalled.push([Number(pid), String(signal)]);
+            return true;
+          });
+
+          const sigintBaseline = process.listenerCount('SIGINT');
+          const sigtermBaseline = process.listenerCount('SIGTERM');
+          const registeredWhileRunning: Array<{ sigint: number; sigterm: number }> = [];
+
+          commandRuns.mockImplementation(() =>
+            Effect.sync(() => {
+              registeredWhileRunning.push({
+                sigint: process.listenerCount('SIGINT') - sigintBaseline,
+                sigterm: process.listenerCount('SIGTERM') - sigtermBaseline,
+              });
+              // Stand in for the terminal delivering Ctrl-C to the CLI only: the child is
+              // detached into its own process group and never sees it directly.
+              for (const listener of process.listeners('SIGINT').slice(sigintBaseline)) {
+                listener('SIGINT');
+              }
+              return CommandExecutor.ExitCode(0);
+            })
+          );
+
+          yield* cli(['run', 'console.log("hi")']);
+
+          expect(registeredWhileRunning[0]).toEqual({ sigint: 1, sigterm: 1 });
+          // Negative pid: the detached child leads its own process group.
+          expect(signalled).toEqual([[-STUB_CHILD_PID, 'SIGINT']]);
+          expect(process.listenerCount('SIGINT')).toBe(sigintBaseline);
+          expect(process.listenerCount('SIGTERM')).toBe(sigtermBaseline);
+        })
     );
   });
 
@@ -139,7 +219,16 @@ describe('CLI: composio run', () => {
           expect(spawnConfig.extendEnv).toBe(true);
           expect(spawnConfig.stdio).toEqual(['inherit', 'inherit', 'inherit']);
           expect(output).toContainEqual(expect.stringMatching(/^RUN_LOG_FILE=.*run\.log$/));
+          // The preload file lives in a scoped directory and is removed with it, ...
           expect(fs.existsSync(spawnConfig.cmd[2]!)).toBe(false);
+          // ... but the run log is advertised to the caller on stderr, so it has to outlive
+          // the run that printed it.
+          const runLogPath = output
+            .find(line => line.startsWith('RUN_LOG_FILE='))
+            ?.slice('RUN_LOG_FILE='.length);
+          expect(runLogPath).toBeDefined();
+          expect(fs.existsSync(runLogPath!)).toBe(true);
+          fs.rmSync(path.dirname(runLogPath!), { recursive: true, force: true });
           expect(process.exitCode).toBe(7);
         })
     );
@@ -331,11 +420,23 @@ describe('CLI: composio run', () => {
   });
 
   layer(RunTestLive())(it => {
-    it.scoped('[Given] no inline code and no --file [Then] it fails with a clear error', () =>
-      Effect.gen(function* () {
-        const exit = yield* cli(['run']).pipe(Effect.exit);
-        expect(Exit.isFailure(exit)).toBe(true);
-      })
+    it.scoped(
+      '[Given] no inline code and no --file [Then] it fails with a typed usage error, not a defect',
+      () =>
+        Effect.gen(function* () {
+          const exit = yield* cli(['run']).pipe(Effect.exit);
+          expect(Exit.isFailure(exit)).toBe(true);
+          if (!Exit.isFailure(exit)) return;
+
+          const failure = Cause.failureOption(exit.cause);
+          expect(Option.isSome(failure)).toBe(true);
+          expect(failure.pipe(Option.getOrThrow)).toBeInstanceOf(MissingRunSourceError);
+          expect(
+            String((failure.pipe(Option.getOrThrow) as MissingRunSourceError).message)
+          ).toContain('Provide inline code or use --file to run a script file.');
+          // Nothing was set up before the check, so no child process was started.
+          expect(commandRuns).not.toHaveBeenCalled();
+        })
     );
   });
 
@@ -594,13 +695,41 @@ describe('run companion install metadata', () => {
           fs.writeFileSync(path.join(tempDir, RUN_COMPANION_MODULE_FILENAMES[0]!), '', 'utf8');
 
           expect(yield* listMissingInstalledRunCompanionModules(execPath)).toEqual(
-            [
-              ...RUN_COMPANION_MODULE_FILENAMES.slice(1),
-              ...RUN_COMPANION_STATIC_ASSET_RELATIVE_PATHS,
-            ]
-              .slice()
-              .sort()
+            RUN_COMPANION_MODULE_FILENAMES.slice(1).slice().sort()
           );
+        })
+    );
+
+    it.effect(
+      '[Given] an install without ACP adapters [Then] the startup tier reports nothing missing',
+      () =>
+        Effect.gen(function* () {
+          const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'composio-run-no-acp-'));
+          const execPath = path.join(tempDir, 'composio');
+          for (const fileName of RUN_COMPANION_MODULE_FILENAMES) {
+            fs.writeFileSync(path.join(tempDir, fileName), '', 'utf8');
+          }
+
+          // The ACP adapters are the lazy tier: a plain `composio run` must not
+          // treat an install without them as broken.
+          const hostStaticAssets = yield* hostRunCompanionStaticAssetRelativePaths;
+          expect(hostStaticAssets.length).toBeGreaterThan(0);
+          for (const relativePath of hostStaticAssets) {
+            expect(fs.existsSync(path.join(tempDir, relativePath))).toBe(false);
+          }
+
+          expect(yield* listMissingInstalledRunCompanionModules(execPath)).toEqual([]);
+          expect(yield* hasInstalledRunCompanionModules(execPath)).toBe(true);
+        })
+    );
+
+    it.effect(
+      '[Given] a source checkout [Then] the executable has no companion modules next to it',
+      () =>
+        Effect.gen(function* () {
+          const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'composio-run-no-install-'));
+
+          expect(yield* hasInstalledRunCompanionModules(path.join(tempDir, 'bun'))).toBe(false);
         })
     );
 
