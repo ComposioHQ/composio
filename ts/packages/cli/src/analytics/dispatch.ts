@@ -139,7 +139,7 @@ const encodePrettyJson = Schema.encode(prettyJsonFromString);
 
 const telemetryDebugLog = (label: string, payload: Record<string, unknown>) =>
   Effect.gen(function* () {
-    if (!(yield* isTelemetryDebugEnabled())) {
+    if (!(yield* isTelemetryDebugEnabled)) {
       return;
     }
 
@@ -522,7 +522,7 @@ const getCliCodactFailuresEndpoint = Effect.map(readApiBaseUrl, baseUrl =>
 // Delivery is best effort: a failed spawn is swallowed, never surfaced.
 const spawnWorker = (command: string, args: ReadonlyArray<string>) =>
   Effect.gen(function* () {
-    const debugEnabled = yield* isTelemetryDebugEnabled();
+    const debugEnabled = yield* isTelemetryDebugEnabled;
     const workerArgs = debugEnabled ? [...args, TELEMETRY_DEBUG_FLAG] : args;
     return yield* spawnDetached(command, workerArgs, { inheritStderr: debugEnabled }).pipe(
       Effect.as(true),
@@ -563,7 +563,7 @@ const captureToPostHog = (envelope: AnalyticsEnvelope) =>
     );
     const response = yield* httpClient.execute(request);
     const responseOk = response.status >= 200 && response.status < 300;
-    const debugEnabled = yield* isTelemetryDebugEnabled();
+    const debugEnabled = yield* isTelemetryDebugEnabled;
     const responseBody = !responseOk && debugEnabled ? yield* response.text : undefined;
 
     yield* telemetryDebugLog(
@@ -651,7 +651,7 @@ const captureToComposioCodactFailures = (failure: CliCodactFailure) =>
     );
     const response = yield* httpClient.execute(request);
     const responseOk = response.status >= 200 && response.status < 300;
-    const debugEnabled = yield* isTelemetryDebugEnabled();
+    const debugEnabled = yield* isTelemetryDebugEnabled;
     const responseBody = !responseOk && debugEnabled ? yield* response.text : undefined;
 
     yield* telemetryDebugLog(responseOk ? 'codact_delivery_succeeded' : 'codact_delivery_failed', {

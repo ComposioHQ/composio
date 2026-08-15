@@ -29,6 +29,7 @@ import { ComposioToolkitsRepository } from 'src/services/composio-clients';
 import { ComposioUserContext } from 'src/services/user-context';
 import { ProjectContext } from 'src/services/project-context';
 import { trackCliCodactFailureEffect, trackCliEventEffect } from 'src/analytics/dispatch';
+import { cliInvocationContext } from 'src/services/runtime-cli-context';
 import {
   getToolExecuteFailedEvent,
   getToolExecuteToolNotFoundEvent,
@@ -424,6 +425,7 @@ const emitExecuteFailureTelemetry = (params: {
 }) =>
   Effect.gen(function* () {
     const toolkitSlug = yield* toolkitFromToolSlug(params.toolSlug);
+    const { invocationOrigin } = yield* cliInvocationContext;
     const normalized = params.mappedError?.normalized ?? normalizeCliError(params.error);
     const failureOrigin: 'fast_fail' | 'main_endpoint' =
       normalized instanceof ToolInputValidationError || params.stage !== 'execution'
@@ -437,6 +439,7 @@ const emitExecuteFailureTelemetry = (params: {
           toolkitSlug,
           args: params.args,
           error: normalized,
+          invocationOrigin,
           surface: params.surface,
           projectMode: params.projectMode,
           stage: params.stage === 'dry_run' ? 'dry_run' : 'validation',
@@ -495,6 +498,7 @@ const emitExecuteFailureTelemetry = (params: {
             schemaPath: 'server',
             issues: [message],
           }),
+          invocationOrigin,
           surface: params.surface,
           projectMode: params.projectMode,
           stage:
@@ -516,6 +520,7 @@ const emitExecuteFailureTelemetry = (params: {
             toolSlug: params.toolSlug,
             toolkitSlug,
             args: params.args,
+            invocationOrigin,
             surface: params.surface,
             projectMode: params.projectMode,
             stage: params.stage === 'validation' ? 'execution' : params.stage,
@@ -530,6 +535,7 @@ const emitExecuteFailureTelemetry = (params: {
             toolSlug: params.toolSlug,
             toolkitSlug,
             args: params.args,
+            invocationOrigin,
             surface: params.surface,
             projectMode: params.projectMode,
             stage: params.stage === 'validation' ? 'execution' : params.stage,

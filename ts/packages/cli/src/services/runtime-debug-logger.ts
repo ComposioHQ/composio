@@ -9,14 +9,14 @@ const writeJsonDebugLine = (channel: string, payload: Record<string, unknown>) =
   });
 
 export const logToolDebug = (label: string, details: Record<string, unknown> = {}) =>
-  Effect.flatMap(isToolDebugEnabled(), enabled =>
+  Effect.flatMap(isToolDebugEnabled, enabled =>
     enabled ? writeJsonDebugLine('tool-debug', { label, ...details }) : Effect.void
   );
 
 export const makePerfDebugLogger =
   (startedAt: number = Date.now()) =>
   (label: string, details: Record<string, unknown> = {}) =>
-    Effect.flatMap(isPerfDebugEnabled(), enabled =>
+    Effect.flatMap(isPerfDebugEnabled, enabled =>
       enabled
         ? writeJsonDebugLine('perf', {
             phase: 'event',

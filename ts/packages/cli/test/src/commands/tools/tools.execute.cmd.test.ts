@@ -22,6 +22,14 @@ import { ComposioCliUserConfig } from 'src/services/cli-user-config';
 import type { ToolkitDetailed } from 'src/models/toolkits';
 import { makeToolkitFixture } from 'test/__utils__/models/toolkits';
 
+// Disable CI redaction so tests see raw values. `src/ui/redact` reads `CI` once
+// at import time, so the variable has to be gone before the imports above run —
+// `vi.hoisted` executes ahead of them. The explicit CI-redaction test overrides
+// via `vi.spyOn` and is unaffected.
+vi.hoisted(() => {
+  delete process.env.CI;
+});
+
 const testConfigProvider = ConfigProvider.fromMap(
   new Map([['COMPOSIO_USER_API_KEY', 'test_api_key']])
 ).pipe(extendConfigProvider);
@@ -90,12 +98,7 @@ describe('CLI: composio execute', () => {
     })
   );
 
-  // Disable CI redaction so tests see raw values.
-  // The explicit CI-redaction test overrides via vi.spyOn and is unaffected.
-  let savedCI: string | undefined;
   beforeEach(() => {
-    savedCI = process.env.CI;
-    delete process.env.CI;
     vi.spyOn(composioClients, 'getLatestToolVersion').mockImplementation(() =>
       Effect.fail(new composioClients.HttpServerError({}))
     );
@@ -108,7 +111,6 @@ describe('CLI: composio execute', () => {
   });
   afterEach(() => {
     vi.restoreAllMocks();
-    if (savedCI !== undefined) process.env.CI = savedCI;
   });
 
   let recordedSessionCreateParams: Array<Record<string, unknown>> = [];

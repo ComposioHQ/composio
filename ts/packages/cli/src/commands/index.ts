@@ -1,4 +1,4 @@
-import { Array as Arr, Data, Effect, HashSet, Option } from 'effect';
+import { Array as Arr, Data, Effect, HashSet, Layer, Option } from 'effect';
 import { Command, HelpDoc, ValidationError } from '@effect/cli';
 import {
   hasCommandName,
@@ -44,7 +44,8 @@ import { configCmd } from './config/config.cmd';
 import { rootConnectionsCmd } from './connections/connections.cmd';
 import { agentCmd } from './agent/agent.cmd';
 import { renderCommandHintGraph } from 'src/services/command-hints';
-import { configureRuntimeFlags } from 'src/services/runtime-flags';
+import { cliDebugFlagsLayer, type CliDebugFlagOverrides } from 'src/services/runtime-flags';
+import { cliRunIdLayer } from 'src/services/runtime-cli-context';
 import { ComposioCliUserConfig } from 'src/services/cli-user-config';
 import { ComposioUserContext } from 'src/services/user-context';
 import { TerminalUI } from 'src/services/terminal-ui';
@@ -284,7 +285,16 @@ const parseBooleanFlag = (argument: string, name: string): Option.Option<boolean
   return argument === `${name}=false` ? Option.some(false) : Option.none();
 };
 
-const normalizeHiddenDebugFlags = (argv: ReadonlyArray<string>): ReadonlyArray<string> => {
+/**
+ * Splits the hidden debug flags off argv and returns their parsed values.
+ *
+ * The values are inputs to the command that follows — `src/commands/index.ts` provides them as
+ * `CliDebugFlags` — rather than process-wide state, so an explicit `--perf-debug=false` on one
+ * invocation cannot leak into the next.
+ */
+const normalizeHiddenDebugFlags = (
+  argv: ReadonlyArray<string>
+): { readonly argv: ReadonlyArray<string>; readonly overrides: CliDebugFlagOverrides } => {
   const retainedArgs: Array<string> = [];
   let perfDebug: boolean | undefined;
   let toolDebug: boolean | undefined;
@@ -309,13 +319,10 @@ const normalizeHiddenDebugFlags = (argv: ReadonlyArray<string>): ReadonlyArray<s
     retainedArgs.push(argument);
   }
 
-  configureRuntimeFlags({
-    perfDebug,
-    toolDebug,
-    acpOnly,
-  });
-
-  return Arr.appendAll(Arr.take(argv, 2), retainedArgs);
+  return {
+    argv: Arr.appendAll(Arr.take(argv, 2), retainedArgs),
+    overrides: { perfDebug, toolDebug, acpOnly },
+  };
 };
 
 const isRootHelp = (argv: ReadonlyArray<string>): boolean => {
@@ -437,6 +444,16 @@ const printDevModeDisabled = Effect.gen(function* () {
   yield* ui.log.step('Run `composio dev --mode on` in an interactive terminal to enable it.');
 });
 
+/**
+ * Values the CLI bootstrap resolved before the root command runs and that the command tree needs
+ * as an input. Empty for callers that drive the root command on their own (tests, `--install-skill`
+ * style entry points), which is why every field is optional.
+ */
+export type RootCommandBootstrap = {
+  /** Run id minted for a `composio run` invocation, shared with its telemetry events. */
+  readonly runId?: string;
+};
+
 export const runWithConfig = Effect.gen(function* () {
   const cliUserConfig = yield* ComposioCliUserConfig;
   const visibility: CommandVisibility = {
@@ -511,10 +528,10 @@ export const runWithConfig = Effect.gen(function* () {
     );
   };
 
-  return (argv: ReadonlyArray<string>) => {
+  return (argv: ReadonlyArray<string>, bootstrap: RootCommandBootstrap = {}) => {
     const { argv: argvWithoutDangerouslyAllow, dangerouslyAllow } =
       normalizeDangerouslyAllowFlag(argv);
-    const normalizedArgv = normalizeHiddenDebugFlags(
+    const { argv: normalizedArgv, overrides } = normalizeHiddenDebugFlags(
       normalizeListenStreamFlag(normalizeVersionShortFlag(argvWithoutDangerouslyAllow))
     );
 
@@ -524,7 +541,8 @@ export const runWithConfig = Effect.gen(function* () {
           onNone: () => routeRootCommand(normalizedArgv, dangerouslyAllow),
           onSome: installSkill,
         })
-      )
+      ),
+      Effect.provide(Layer.merge(cliDebugFlagsLayer(overrides), cliRunIdLayer(bootstrap.runId)))
     );
   };
 });

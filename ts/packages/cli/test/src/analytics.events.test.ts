@@ -29,16 +29,26 @@ import {
 import { APP_VERSION } from 'src/constants';
 import { inferSkillReleaseChannel } from 'src/effects/install-skill';
 import { CLI_RELEASE_CHANNELS } from 'src/experimental-features';
-import { configureRuntimeCliInvocationContext } from 'src/services/runtime-cli-context';
+import {
+  DEFAULT_CLI_INVOCATION_ORIGIN,
+  type CliInvocationContext,
+} from 'src/services/runtime-cli-context';
 import { ToolInputValidationError } from 'src/services/tool-input-validation';
 import { resolveInstalledCliVersion } from 'src/services/run-companion-modules';
 
+const CLI_INVOCATION = {
+  invocationOrigin: DEFAULT_CLI_INVOCATION_ORIGIN,
+  parentRunId: undefined,
+} as const;
+
 describe('CLI analytics execute failure events', () => {
   it('records terminal capabilities supplied by the terminal service', () => {
-    const context = createCliCommandTelemetryContext(['bun', 'composio'], '0.3.0', {
-      stdoutIsTTY: true,
-      stderrIsTTY: false,
-    });
+    const context = createCliCommandTelemetryContext(
+      ['bun', 'composio'],
+      '0.3.0',
+      { stdoutIsTTY: true, stderrIsTTY: false },
+      CLI_INVOCATION
+    );
 
     const event = getPrimaryLifecycleInvokedEvent(context);
 
@@ -59,6 +69,7 @@ describe('CLI analytics execute failure events', () => {
       toolSlug: 'GMAIL_SEND_EMAIL',
       args: { recipient: 'a@example.com' },
       error,
+      invocationOrigin: DEFAULT_CLI_INVOCATION_ORIGIN,
       surface: 'root',
       projectMode: 'consumer',
       stage: 'validation',
@@ -74,6 +85,7 @@ describe('CLI analytics execute failure events', () => {
     const event = getToolExecuteToolNotFoundEvent({
       toolSlug: 'FAKE_TOOL',
       args: {},
+      invocationOrigin: DEFAULT_CLI_INVOCATION_ORIGIN,
       surface: 'root',
       projectMode: 'consumer',
       stage: 'execution',
@@ -92,6 +104,7 @@ describe('CLI analytics execute failure events', () => {
     const event = getToolExecuteFailedEvent({
       toolSlug: 'GMAIL_SEND_EMAIL',
       args: { to: 'a@example.com' },
+      invocationOrigin: DEFAULT_CLI_INVOCATION_ORIGIN,
       surface: 'root',
       projectMode: 'consumer',
       stage: 'execution',
@@ -173,7 +186,8 @@ describe('CLI analytics setup and install lifecycle events', () => {
     const context = createCliCommandTelemetryContext(
       ['bun', 'composio', 'setup', '--target', 'codex', '--uninstall', '--yes'],
       APP_VERSION,
-      { stdoutIsTTY: false, stderrIsTTY: false }
+      { stdoutIsTTY: false, stderrIsTTY: false },
+      CLI_INVOCATION
     );
 
     const invoked = getPrimaryLifecycleInvokedEvent(context);
@@ -197,7 +211,8 @@ describe('CLI analytics setup and install lifecycle events', () => {
     const context = createCliCommandTelemetryContext(
       ['bun', 'composio', 'install', '--completions'],
       APP_VERSION,
-      { stdoutIsTTY: false, stderrIsTTY: false }
+      { stdoutIsTTY: false, stderrIsTTY: false },
+      CLI_INVOCATION
     );
 
     expect(getPrimaryLifecycleInvokedEvent(context)).toMatchObject({
@@ -216,14 +231,16 @@ describe('CLI analytics setup and install lifecycle events', () => {
       createCliCommandTelemetryContext(
         ['bun', 'composio', 'search', 'customer@example.com secret'],
         APP_VERSION,
-        terminal
+        terminal,
+        CLI_INVOCATION
       )
     );
     const proxy = getPrimaryLifecycleInvokedEvent(
       createCliCommandTelemetryContext(
         ['bun', 'composio', 'proxy', 'https://user:password@example.com/private?token=small'],
         APP_VERSION,
-        terminal
+        terminal,
+        CLI_INVOCATION
       )
     );
 
@@ -243,6 +260,7 @@ describe('CLI analytics setup and install lifecycle events', () => {
         operation: 'setup',
         target: 'claude',
         action: 'installed',
+        invocationOrigin: DEFAULT_CLI_INVOCATION_ORIGIN,
         cliVersion: APP_VERSION,
       })
     ).toMatchObject({
@@ -267,6 +285,7 @@ describe('CLI analytics setup runtime-context events', () => {
         available: true,
         supported: true,
         hostVersion: '2.1.0',
+        invocationOrigin: DEFAULT_CLI_INVOCATION_ORIGIN,
         cliVersion: APP_VERSION,
       })
     ).toMatchObject({
@@ -295,6 +314,7 @@ describe('CLI analytics setup runtime-context events', () => {
         supported: false,
         hostVersion: 'codex-cli 0.137.0',
         unsupportedReasonCode: 'codex_too_old',
+        invocationOrigin: DEFAULT_CLI_INVOCATION_ORIGIN,
         cliVersion: APP_VERSION,
       })
     ).toMatchObject({
@@ -316,6 +336,7 @@ describe('CLI analytics setup runtime-context events', () => {
       target: 'claude',
       phase: 'install',
       error,
+      invocationOrigin: DEFAULT_CLI_INVOCATION_ORIGIN,
       cliVersion: APP_VERSION,
     });
 
@@ -337,6 +358,7 @@ describe('CLI analytics setup runtime-context events', () => {
       getSetupCancelledEvent({
         operation: 'setup',
         requestedTarget: 'claude',
+        invocationOrigin: DEFAULT_CLI_INVOCATION_ORIGIN,
         cliVersion: APP_VERSION,
       })
     ).toMatchObject({
@@ -353,6 +375,7 @@ describe('CLI analytics setup runtime-context events', () => {
       getSetupSkippedEvent({
         operation: 'uninstall',
         requestedTarget: 'auto',
+        invocationOrigin: DEFAULT_CLI_INVOCATION_ORIGIN,
         cliVersion: APP_VERSION,
       })
     ).toMatchObject({
@@ -369,16 +392,20 @@ describe('CLI analytics setup runtime-context events', () => {
 
 describe('CLI analytics journey taxonomy', () => {
   afterEach(() => {
-    configureRuntimeCliInvocationContext({ invocationOrigin: undefined, parentRunId: undefined });
     configureCliAnalyticsReleaseVersion(APP_VERSION);
     vi.unstubAllEnvs();
   });
 
-  const contextFor = (argv: ReadonlyArray<string>) =>
-    createCliCommandTelemetryContext(['bun', 'composio', ...argv], APP_VERSION, {
-      stdoutIsTTY: false,
-      stderrIsTTY: false,
-    });
+  const contextFor = (
+    argv: ReadonlyArray<string>,
+    invocation: CliInvocationContext = CLI_INVOCATION
+  ) =>
+    createCliCommandTelemetryContext(
+      ['bun', 'composio', ...argv],
+      APP_VERSION,
+      { stdoutIsTTY: false, stderrIsTTY: false },
+      invocation
+    );
 
   const lifecycleCases: ReadonlyArray<[ReadonlyArray<string>, string]> = [
     [['execute', 'GMAIL_SEND_EMAIL'], 'execute'],
@@ -415,6 +442,7 @@ describe('CLI analytics journey taxonomy', () => {
         operation: 'setup',
         target: 'claude',
         action: 'installed',
+        invocationOrigin: DEFAULT_CLI_INVOCATION_ORIGIN,
         cliVersion: APP_VERSION,
       })?.properties?.journey_stage
     ).toBe('setup');
@@ -423,6 +451,7 @@ describe('CLI analytics journey taxonomy', () => {
       getSetupSkippedEvent({
         operation: 'setup',
         requestedTarget: 'auto',
+        invocationOrigin: DEFAULT_CLI_INVOCATION_ORIGIN,
         cliVersion: APP_VERSION,
       })?.properties?.journey_stage
     ).toBe('setup');
@@ -431,6 +460,7 @@ describe('CLI analytics journey taxonomy', () => {
       getToolExecuteFailedEvent({
         toolSlug: 'GMAIL_SEND_EMAIL',
         args: {},
+        invocationOrigin: DEFAULT_CLI_INVOCATION_ORIGIN,
         surface: 'root',
         projectMode: 'consumer',
         stage: 'execution',
@@ -459,13 +489,15 @@ describe('CLI analytics journey taxonomy', () => {
       const context = createCliCommandTelemetryContext(
         ['bun', 'composio', 'login'],
         resolvedVersion,
-        { stdoutIsTTY: false, stderrIsTTY: false }
+        { stdoutIsTTY: false, stderrIsTTY: false },
+        CLI_INVOCATION
       );
       const properties = getPrimaryLifecycleInvokedEvent(context)?.properties;
       const pluginProperties = getPluginLifecycleSucceededEvent({
         operation: 'setup',
         target: 'codex',
         action: 'installed',
+        invocationOrigin: DEFAULT_CLI_INVOCATION_ORIGIN,
         cliVersion: APP_VERSION,
       })?.properties;
       expect(inferSkillReleaseChannel(APP_VERSION)).toBe('stable');
@@ -475,24 +507,21 @@ describe('CLI analytics journey taxonomy', () => {
   });
 
   it('propagates the configured installer invocation origin', () => {
-    configureRuntimeCliInvocationContext({
-      invocationOrigin: 'installer',
-      parentRunId: undefined,
-    });
+    const installerInvocation = { invocationOrigin: 'installer', parentRunId: undefined };
 
-    expect(getPrimaryLifecycleInvokedEvent(contextFor(['install']))?.properties).toMatchObject({
+    expect(
+      getPrimaryLifecycleInvokedEvent(contextFor(['install'], installerInvocation))?.properties
+    ).toMatchObject({
       invocation_origin: 'installer',
       journey_stage: 'install',
     });
   });
 
   it('uses the configured parent run id for nested run telemetry', () => {
-    configureRuntimeCliInvocationContext({
+    const context = contextFor(['run', 'console.log("hi")'], {
       invocationOrigin: 'run',
       parentRunId: 'run_parent',
     });
-
-    const context = contextFor(['run', 'console.log("hi")']);
     expect(context.runId).toBe('run_parent');
     expect(getPrimaryLifecycleInvokedEvent(context)?.properties).toMatchObject({
       invocation_origin: 'run',

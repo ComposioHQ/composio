@@ -1,59 +1,120 @@
-import { Effect } from 'effect';
-import { APP_CONFIG, HOST_CONFIG } from 'src/effects/app-config';
+import { Context, Effect, Layer, Option } from 'effect';
+import { APP_CONFIG, UNPREFIXED_CONFIG } from 'src/effects/app-config';
 import { loadHostConfig } from 'src/services/config';
 
 export const TELEMETRY_DEBUG_FLAG = '--telemetry-debug';
 
-type RuntimeFlags = {
+export type StrippedTelemetryDebugArgv = {
+  readonly argv: ReadonlyArray<string>;
+  readonly telemetryDebug: boolean;
+};
+
+/**
+ * Removes `--telemetry-debug` from the CLI's own arguments and reports whether it was there.
+ *
+ * Only arguments before the first `--` are considered: everything after the delimiter belongs to
+ * the process `composio run` spawns, so `composio run -- my-agent --telemetry-debug` has to reach
+ * `my-agent` untouched.
+ *
+ * `src/bin.ts` runs this before the Effect runtime exists, which is why the answer travels into
+ * the runtime as the `TelemetryDebugMode` service instead of module state.
+ */
+export const stripTelemetryDebugFlag = (
+  argv: ReadonlyArray<string>
+): StrippedTelemetryDebugArgv => {
+  const delimiterIndex = argv.indexOf('--');
+  const searchEnd = delimiterIndex < 0 ? argv.length : delimiterIndex;
+  const flagIndex = argv.findIndex(
+    (token, index) => index < searchEnd && token === TELEMETRY_DEBUG_FLAG
+  );
+  if (flagIndex < 0) {
+    return { argv, telemetryDebug: false };
+  }
+
+  return {
+    argv: [...argv.slice(0, flagIndex), ...argv.slice(flagIndex + 1)],
+    telemetryDebug: true,
+  };
+};
+
+/**
+ * Values parsed from the hidden `--perf-debug` / `--tool-debug` / `--acp-only` flags.
+ *
+ * `undefined` means "the flag was absent", which is what lets the corresponding `COMPOSIO_*`
+ * config value through; an explicit `true`/`false` always wins over it.
+ */
+export type CliDebugFlagOverrides = {
   readonly perfDebug: boolean | undefined;
   readonly toolDebug: boolean | undefined;
   readonly acpOnly: boolean | undefined;
 };
 
-let runtimeFlags: RuntimeFlags = {
+export const NO_CLI_DEBUG_FLAG_OVERRIDES: CliDebugFlagOverrides = {
   perfDebug: undefined,
   toolDebug: undefined,
   acpOnly: undefined,
 };
 
-let telemetryDebugOverride: boolean | undefined;
+/**
+ * Hidden debug flags of the current invocation.
+ *
+ * `src/commands/index.ts` parses them out of argv in one place and provides this service for the
+ * command it then routes to, so every reader takes the values as an input instead of reaching for
+ * process-wide state.
+ */
+export class CliDebugFlags extends Context.Tag('services/CliDebugFlags')<
+  CliDebugFlags,
+  CliDebugFlagOverrides
+>() {}
 
-export const configureRuntimeFlags = (flags: RuntimeFlags): void => {
-  runtimeFlags = flags;
-};
+export const cliDebugFlagsLayer = (
+  overrides: CliDebugFlagOverrides = NO_CLI_DEBUG_FLAG_OVERRIDES
+): Layer.Layer<CliDebugFlags> => Layer.succeed(CliDebugFlags, overrides);
 
-export const resetRuntimeFlags = (): void => {
-  runtimeFlags = {
-    perfDebug: undefined,
-    toolDebug: undefined,
-    acpOnly: undefined,
-  };
-  telemetryDebugOverride = undefined;
-};
-
-export const enableRuntimeTelemetryDebug = (): void => {
-  telemetryDebugOverride = true;
-};
-
-export const isPerfDebugEnabled = () =>
-  APP_CONFIG.PERF_DEBUG.pipe(
-    Effect.orDie,
-    Effect.map(configured => runtimeFlags.perfDebug ?? configured)
+const debugFlagOr = (
+  select: (overrides: CliDebugFlagOverrides) => boolean | undefined,
+  configured: Effect.Effect<boolean, never, never>
+): Effect.Effect<boolean, never, CliDebugFlags> =>
+  Effect.map(
+    Effect.all([CliDebugFlags, configured]),
+    ([overrides, configuredValue]) => select(overrides) ?? configuredValue
   );
 
-export const isToolDebugEnabled = () =>
-  APP_CONFIG.TOOL_DEBUG.pipe(
-    Effect.orDie,
-    Effect.map(configured => runtimeFlags.toolDebug ?? configured)
-  );
+export const isPerfDebugEnabled = debugFlagOr(
+  overrides => overrides.perfDebug,
+  Effect.orDie(APP_CONFIG.PERF_DEBUG)
+);
 
-export const isAcpOnlyEnabled = () =>
-  APP_CONFIG.RUN_ACP_ONLY.pipe(
-    Effect.orDie,
-    Effect.map(configured => runtimeFlags.acpOnly ?? configured)
-  );
+export const isToolDebugEnabled = debugFlagOr(
+  overrides => overrides.toolDebug,
+  Effect.orDie(APP_CONFIG.TOOL_DEBUG)
+);
 
-export const isTelemetryDebugEnabled = () =>
-  loadHostConfig(HOST_CONFIG.TELEMETRY_DEBUG).pipe(
-    Effect.map(configured => telemetryDebugOverride ?? configured)
-  );
+export const isAcpOnlyEnabled = debugFlagOr(
+  overrides => overrides.acpOnly,
+  Effect.orDie(APP_CONFIG.RUN_ACP_ONLY)
+);
+
+/**
+ * Set when `--telemetry-debug` was found on the command line.
+ *
+ * The flag is stripped in `src/bin.ts` before the Effect runtime exists, so its value is handed to
+ * the runtime as this service. Telemetry dispatch runs from service constructors and from the
+ * detached worker process, where a hard requirement could not be satisfied, so readers resolve it
+ * with `Effect.serviceOption` and fall back to `COMPOSIO_CLI_TELEMETRY_DEBUG`.
+ */
+export class TelemetryDebugMode extends Context.Tag('services/TelemetryDebugMode')<
+  TelemetryDebugMode,
+  boolean
+>() {}
+
+export const telemetryDebugModeLayer = (enabled: boolean): Layer.Layer<TelemetryDebugMode> =>
+  Layer.succeed(TelemetryDebugMode, enabled);
+
+export const isTelemetryDebugEnabled: Effect.Effect<boolean> = Effect.flatMap(
+  Effect.serviceOption(TelemetryDebugMode),
+  Option.match({
+    onNone: () => loadHostConfig(UNPREFIXED_CONFIG.TELEMETRY_DEBUG),
+    onSome: Effect.succeed,
+  })
+);
