@@ -23,7 +23,9 @@ type APP_CONFIG = Config.Config.Wrap<{
   DISABLE_CONNECTED_ACCOUNT_CACHE: boolean;
 }>;
 
-type HOST_CONFIG = Config.Config.Wrap<{
+type UNPREFIXED_CONFIG = Config.Config.Wrap<{
+  CACHE_DIR: string | undefined;
+  NPM_CONFIG_USER_AGENT: string | undefined;
   CI_REDACTION_ENABLED: boolean;
   INTERACTIVE_PERMISSION_UI_DISABLED: boolean;
   NO_COLOR: boolean;
@@ -52,9 +54,6 @@ const optionalTrimmedString = (name: string): Config.Config<string | undefined> 
     })
   );
 
-const booleanFlag = (name: string): Config.Config<boolean> =>
-  Config.boolean(name).pipe(Config.withDefault(false));
-
 const FALSY_ENV_FLAG_VALUES: ReadonlyArray<string> = ['0', 'false', 'no', 'off'];
 
 const optionalEnvironmentFlag = (name: string): Config.Config<boolean | undefined> =>
@@ -64,6 +63,20 @@ const optionalEnvironmentFlag = (name: string): Config.Config<boolean | undefine
     )
   );
 
+// Deliberately tolerant rather than `Config.boolean`: these flags arrive from the ambient
+// environment, where a blank (`COMPOSIO_PERF_DEBUG=`) or unexpected value is routine.
+// `Config.boolean` rejects both with `InvalidData`, and `Config.withDefault` only recovers
+// `MissingData`, so a stray value would surface as an unrecoverable defect instead of `false`.
+const booleanFlag = (name: string, defaultValue = false): Config.Config<boolean> =>
+  optionalEnvironmentFlag(name).pipe(Config.map(value => value ?? defaultValue));
+
+// `Config.hashMap` enumerates the provider's root keys instead of reading one
+// named variable, so it depends on how `ConfigProvider.fromEnv` derives them:
+// every `process.env` key is uppercased and split on `_`, and the first segment
+// becomes a root. `CODEX_HOME`, `codex_home`, and a bare `CODEX` therefore all
+// surface as the root `CODEX`. Matching is consequently case-insensitive and no
+// longer requires a trailing underscore, unlike the
+// `Object.keys(env).some(key => key.startsWith('CODEX_'))` scan it replaced.
 const agentPrefixSignals = Config.hashMap(Config.succeed(true)).pipe(
   Config.map(environmentRoots => ({
     codex: HashMap.has(environmentRoots, 'CODEX'),
@@ -149,17 +162,25 @@ export const APP_CONFIG = {
   TOOL_DEBUG: booleanFlag('TOOL_DEBUG'),
 
   // Disable connected account cache (defaults to true — cache is off by default)
-  DISABLE_CONNECTED_ACCOUNT_CACHE: Config.boolean('DISABLE_CONNECTED_ACCOUNT_CACHE').pipe(
-    Config.withDefault(true)
-  ),
+  DISABLE_CONNECTED_ACCOUNT_CACHE: booleanFlag('DISABLE_CONNECTED_ACCOUNT_CACHE', true),
 } satisfies APP_CONFIG;
 
 /**
- * Host environment values that intentionally do not use the CLI's standard
- * `COMPOSIO_` config-provider prefix. Keep their string-to-domain
- * normalization here so consumers never inspect raw environment strings.
+ * Configuration whose keys are spelled out in full and are therefore loaded
+ * through the raw `ConfigProvider.fromEnv()` provider (`loadHostConfig` in
+ * `src/services/config.ts`) rather than the `COMPOSIO_`-prefixing provider that
+ * serves `APP_CONFIG`. Several keys do carry the `COMPOSIO_` prefix; what unites
+ * them is that the prefix is written here instead of being applied by the
+ * provider. Keep their string-to-domain normalization here so consumers never
+ * inspect raw environment strings.
  */
-export const HOST_CONFIG = {
+export const UNPREFIXED_CONFIG = {
+  // The cache directory of the host tool driving the CLI (not `COMPOSIO_CACHE_DIR`)
+  CACHE_DIR: optionalTrimmedString('CACHE_DIR'),
+
+  // The package manager that invoked the CLI, as reported by npm-compatible clients
+  NPM_CONFIG_USER_AGENT: optionalString('npm_config_user_agent'),
+
   CI_REDACTION_ENABLED: optionalTrimmedString('CI').pipe(
     Config.map(value => value?.toLowerCase() === 'true')
   ),
@@ -178,4 +199,4 @@ export const HOST_CONFIG = {
     }).pipe(Config.map(({ callerAgent, legacyAgent }) => callerAgent ?? legacyAgent)),
     prefixes: agentPrefixSignals,
   }).pipe(Config.map(({ explicit, prefixes }) => ({ explicit, ...prefixes }))),
-} satisfies HOST_CONFIG;
+} satisfies UNPREFIXED_CONFIG;

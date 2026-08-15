@@ -5,7 +5,7 @@ import {
   detectNativeUiCallerAgentEffect,
   interactivePermissionUiDisabledConfig,
 } from 'src/services/native-ui-sidecar';
-import { HOST_CONFIG } from 'src/effects/app-config';
+import { UNPREFIXED_CONFIG } from 'src/effects/app-config';
 
 const loadFlag = (entries: Record<string, string>) =>
   ConfigProvider.fromMap(new Map(Object.entries(entries))).load(
@@ -34,7 +34,7 @@ const detectAgent = (
   Effect.gen(function* () {
     const signals = yield* ConfigProvider.fromMap(new Map(Object.entries(env)), {
       pathDelim: '_',
-    }).load(HOST_CONFIG.CALLER_AGENT_SIGNALS);
+    }).load(UNPREFIXED_CONFIG.CALLER_AGENT_SIGNALS);
     return yield* detectNativeUiCallerAgentEffect(signals);
   }).pipe(Effect.provide(layer));
 

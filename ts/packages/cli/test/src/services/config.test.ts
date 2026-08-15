@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from '@effect/vitest';
 import { assertEquals } from '@effect/vitest/utils';
 
 import { Config, ConfigProvider, Effect, Option, Data, LogLevel } from 'effect';
-import { APP_CONFIG, HOST_CONFIG } from 'src/effects/app-config';
+import { APP_CONFIG, UNPREFIXED_CONFIG } from 'src/effects/app-config';
 import { extendConfigProvider } from 'src/services/config';
 import { DEBUG_OVERRIDE_CONFIG } from 'src/effects/debug-config';
 import * as constants from 'src/constants';
@@ -160,6 +160,62 @@ describe('Config', () => {
               runOutputDirectory: '/tmp/composio-output',
             })
           );
+        })
+      );
+
+      it.effect('[When] boolean flags carry blank or unrecognized values', () =>
+        Effect.gen(function* () {
+          // These arrive from the ambient environment, where `COMPOSIO_PERF_DEBUG=` and
+          // stray values are routine. They must resolve to a boolean rather than failing
+          // config decoding, which would surface as an unrecoverable defect at the call site.
+          const map = new Map([
+            ['COMPOSIO_PERF_DEBUG', ''],
+            ['COMPOSIO_TOOL_DEBUG', '   '],
+            ['COMPOSIO_RUN_ACP_ONLY', 'maybe'],
+            ['COMPOSIO_DISABLE_CONNECTED_ACCOUNT_CACHE', ''],
+          ]) satisfies Map<string, string>;
+
+          const actual = yield* withMapConfigProvider(map)(
+            Config.all({
+              perfDebug: APP_CONFIG.PERF_DEBUG,
+              toolDebug: APP_CONFIG.TOOL_DEBUG,
+              acpOnly: APP_CONFIG.RUN_ACP_ONLY,
+              disableConnectedAccountCache: APP_CONFIG.DISABLE_CONNECTED_ACCOUNT_CACHE,
+            }).pipe(Effect.andThen(Data.struct))
+          );
+
+          assertEquals(
+            actual,
+            Data.struct({
+              // Blank falls back to the flag's own default, ...
+              perfDebug: false,
+              toolDebug: false,
+              // ... which must hold for a default-true flag too, ...
+              disableConnectedAccountCache: true,
+              // ... while any other non-falsy value counts as set.
+              acpOnly: true,
+            })
+          );
+        })
+      );
+
+      it.effect('[When] boolean flags carry explicit falsy words', () =>
+        Effect.gen(function* () {
+          const map = new Map([
+            ['COMPOSIO_PERF_DEBUG', '0'],
+            ['COMPOSIO_TOOL_DEBUG', 'false'],
+            ['COMPOSIO_RUN_ACP_ONLY', 'OFF'],
+          ]) satisfies Map<string, string>;
+
+          const actual = yield* withMapConfigProvider(map)(
+            Config.all({
+              perfDebug: APP_CONFIG.PERF_DEBUG,
+              toolDebug: APP_CONFIG.TOOL_DEBUG,
+              acpOnly: APP_CONFIG.RUN_ACP_ONLY,
+            }).pipe(Effect.andThen(Data.struct))
+          );
+
+          assertEquals(actual, Data.struct({ perfDebug: false, toolDebug: false, acpOnly: false }));
         })
       );
 
@@ -413,11 +469,13 @@ describe('Config', () => {
       );
     });
 
-    describe('HOST_CONFIG', () => {
+    describe('UNPREFIXED_CONFIG', () => {
       it.effect('[Then] it normalizes unprefixed host values into runtime facts', () =>
         Effect.gen(function* () {
           const provider = ConfigProvider.fromMap(
             new Map([
+              ['CACHE_DIR', '  /host/cache  '],
+              ['npm_config_user_agent', 'pnpm/9.0.0 npm/? node/v22.0.0 darwin arm64'],
               ['CI', ' TRUE '],
               ['NO_COLOR', '1'],
               ['COMPOSIO_CLI_TELEMETRY_DEBUG', 'true'],
@@ -429,9 +487,11 @@ describe('Config', () => {
             { pathDelim: '_' }
           );
 
-          const actual = yield* provider.load(Config.all(HOST_CONFIG));
+          const actual = yield* provider.load(Config.all(UNPREFIXED_CONFIG));
 
           expect(actual).toEqual({
+            CACHE_DIR: '/host/cache',
+            NPM_CONFIG_USER_AGENT: 'pnpm/9.0.0 npm/? node/v22.0.0 darwin arm64',
             CI_REDACTION_ENABLED: true,
             INTERACTIVE_PERMISSION_UI_DISABLED: true,
             NO_COLOR: true,
@@ -458,7 +518,10 @@ describe('Config', () => {
             { pathDelim: '_' }
           );
 
-          assertEquals(yield* provider.load(HOST_CONFIG.INTERACTIVE_PERMISSION_UI_DISABLED), false);
+          assertEquals(
+            yield* provider.load(UNPREFIXED_CONFIG.INTERACTIVE_PERMISSION_UI_DISABLED),
+            false
+          );
         })
       );
     });

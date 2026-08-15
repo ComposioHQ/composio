@@ -17,7 +17,7 @@ import {
   ensureBundledBinaryExecutable,
   getLocalToolsBundleRootCandidates,
 } from '@composio/cli-local-tools';
-import { HOST_CONFIG } from 'src/effects/app-config';
+import { UNPREFIXED_CONFIG } from 'src/effects/app-config';
 import { loadHostConfig } from 'src/services/config';
 
 const NATIVE_UI_BINARY_NAME = 'composio-native-ui';
@@ -67,7 +67,8 @@ export class NativeUiDecisionMissingError extends Data.TaggedError(
  * COMPOSIO_DISABLE_PERMISSION_UI knob wins in both directions; without it,
  * CI and Vitest runs disable the UI.
  */
-export const interactivePermissionUiDisabledConfig = HOST_CONFIG.INTERACTIVE_PERMISSION_UI_DISABLED;
+export const interactivePermissionUiDisabledConfig =
+  UNPREFIXED_CONFIG.INTERACTIVE_PERMISSION_UI_DISABLED;
 
 export const isInteractivePermissionUiDisabled: Effect.Effect<boolean> = loadHostConfig(
   interactivePermissionUiDisabledConfig
@@ -124,7 +125,7 @@ const detectCallerAgentFromProcessTree: Effect.Effect<
 });
 
 export type NativeUiCallerAgentSignals = Config.Config.Success<
-  typeof HOST_CONFIG.CALLER_AGENT_SIGNALS
+  typeof UNPREFIXED_CONFIG.CALLER_AGENT_SIGNALS
 >;
 
 const detectCallerAgentFromSignals = (
@@ -144,7 +145,8 @@ export const detectNativeUiCallerAgentEffect = (
   providedSignals?: NativeUiCallerAgentSignals
 ): Effect.Effect<NativeUiCallerAgent, never, CommandExecutor.CommandExecutor> =>
   Effect.gen(function* () {
-    const signals = providedSignals ?? (yield* loadHostConfig(HOST_CONFIG.CALLER_AGENT_SIGNALS));
+    const signals =
+      providedSignals ?? (yield* loadHostConfig(UNPREFIXED_CONFIG.CALLER_AGENT_SIGNALS));
     const fromEnv = detectCallerAgentFromSignals(signals);
     if (fromEnv !== undefined) return fromEnv;
 

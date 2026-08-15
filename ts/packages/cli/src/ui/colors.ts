@@ -1,9 +1,9 @@
 import color from 'picocolors';
 import { Effect } from 'effect';
-import { HOST_CONFIG } from 'src/effects/app-config';
+import { UNPREFIXED_CONFIG } from 'src/effects/app-config';
 import { loadHostConfig } from 'src/services/config';
 
-const colorsEnabled = !Effect.runSync(loadHostConfig(HOST_CONFIG.NO_COLOR));
+const colorsEnabled = !Effect.runSync(loadHostConfig(UNPREFIXED_CONFIG.NO_COLOR));
 
 export const {
   bold,

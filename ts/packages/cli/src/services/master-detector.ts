@@ -1,5 +1,5 @@
 import { Effect } from 'effect';
-import { HOST_CONFIG } from 'src/effects/app-config';
+import { UNPREFIXED_CONFIG } from 'src/effects/app-config';
 import { loadHostConfig } from 'src/services/config';
 
 export type MasterKind = 'claude' | 'codex' | 'user';
@@ -20,5 +20,5 @@ export const detectMaster = (signals: MasterSignals): MasterKind => {
 };
 
 export const detectMasterFromHost: Effect.Effect<MasterKind> = loadHostConfig(
-  HOST_CONFIG.MASTER_SIGNALS
+  UNPREFIXED_CONFIG.MASTER_SIGNALS
 ).pipe(Effect.map(detectMaster));
