@@ -946,7 +946,7 @@ async function generateManagedAuthIndex(): Promise<string> {
     "  -H 'x-api-key: YOUR_API_KEY'",
     '```',
     '',
-    'See [When to use your own developer credentials](/docs/custom-app-vs-managed-app.md) for help deciding which approach fits your use case.',
+    'See [When to use your own developer credentials](/docs/authentication/custom-app-vs-managed-app.md) for help deciding which approach fits your use case.',
     '',
     `## Composio Managed App Available (${managed.length})`,
     '',
