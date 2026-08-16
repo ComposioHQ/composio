@@ -22,6 +22,7 @@ import { djb2Hash } from 'src/utils/djb2';
 import { NodeOs } from 'src/services/node-os';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { isTelemetryDebugEnabled, TELEMETRY_DEBUG_FLAG } from 'src/services/runtime-flags';
+import { CliRunId } from 'src/services/runtime-cli-context';
 import type { AnalyticsEnvelope, TrackEvent } from './types';
 
 const INTERNAL_ANALYTICS_WORKER_FLAG = '__analytics-worker';
@@ -592,12 +593,22 @@ type CliInvocationContext = {
   readonly parentRunId?: string;
 };
 
-const getCliInvocationContext = environmentProvider.pipe(extendConfigProvider).load(
-  Config.all({
-    origin: APP_CONFIG.CLI_INVOCATION_ORIGIN,
-    parentRunId: APP_CONFIG.CLI_PARENT_RUN_ID,
-  })
-);
+// The COMPOSIO_CLI_PARENT_RUN_ID handshake only exists in processes `composio run` spawned. The
+// root run process holds its freshly minted id in the CliRunId service instead, so failures it
+// reports carry the same run id its children stamp from the environment.
+const getCliInvocationContext = Effect.gen(function* () {
+  const environment = yield* environmentProvider.pipe(extendConfigProvider).load(
+    Config.all({
+      origin: APP_CONFIG.CLI_INVOCATION_ORIGIN,
+      parentRunId: APP_CONFIG.CLI_PARENT_RUN_ID,
+    })
+  );
+  const mintedRunId = Option.flatten(yield* Effect.serviceOption(CliRunId));
+  return {
+    origin: environment.origin,
+    parentRunId: environment.parentRunId ?? Option.getOrUndefined(mintedRunId),
+  };
+});
 
 export const createCliCodactFailureBody = (
   failure: CliCodactFailure,
