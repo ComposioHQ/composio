@@ -44,6 +44,7 @@ import {
   finalizeInvokeAgentText,
 } from 'src/services/run-subagent-shared';
 import { extendConfigProvider } from 'src/services/config';
+import { telemetryDebugModeLayer } from 'src/services/runtime-flags';
 import { DEFAULT_CLI_INVOCATION_ORIGIN } from 'src/services/runtime-cli-context';
 import { cli, MockConsole, TestLive } from 'test/__utils__';
 import { CommandRunner } from 'src/services/command-runner';
@@ -288,9 +289,30 @@ describe('CLI: composio run', () => {
           COMPOSIO_PERF_DEBUG: '0',
           COMPOSIO_TOOL_DEBUG: '0',
           COMPOSIO_RUN_ACP_ONLY: '0',
+          COMPOSIO_CLI_TELEMETRY_DEBUG: '0',
         });
         expect(preloadSource).toContain('"acpOnly":false');
       })
+    );
+  });
+
+  layer(Layer.merge(RunTestLive(), telemetryDebugModeLayer(true)))(it => {
+    it.scoped(
+      '[Given] --telemetry-debug [Then] the spawned script and its children observe it',
+      () =>
+        Effect.gen(function* () {
+          let preloadSource = '';
+          commandRuns.mockImplementation(command => {
+            preloadSource = readRunPreloadSource(inspectRunCommand(command).cmd);
+            return Effect.succeed(CommandExecutor.ExitCode(0));
+          });
+
+          yield* cli(['run', 'console.log("hi")']);
+
+          const command = inspectRunCommand(commandRuns.mock.calls[0]![0]);
+          expect(command.env.COMPOSIO_CLI_TELEMETRY_DEBUG).toBe('1');
+          expect(preloadSource).toContain('"telemetryDebug":true');
+        })
     );
   });
 

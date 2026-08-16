@@ -10,8 +10,10 @@ import { type RunHelperContext } from 'src/services/run-helpers-runtime';
 import { warmToolInputDefinitions } from 'src/services/tool-input-validation';
 import { ComposioUserContext } from 'src/services/user-context';
 import {
+  debugFlagsToChildEnv,
   isAcpOnlyEnabled,
   isPerfDebugEnabled,
+  isTelemetryDebugEnabled,
   isToolDebugEnabled,
 } from 'src/services/runtime-flags';
 import { detectMasterFromHost } from 'src/services/master-detector';
@@ -578,6 +580,7 @@ export const runCmd = Command.make('run', {
         const perfDebug = yield* isPerfDebugEnabled;
         const toolDebug = yield* isToolDebugEnabled;
         const acpOnly = yield* isAcpOnlyEnabled;
+        const telemetryDebug = yield* isTelemetryDebugEnabled;
         if (Option.isNone(file)) {
           const [inlineCode] = args;
           const preloadSlugs = extractInlineExecuteToolSlugs(inlineCode ?? '');
@@ -595,6 +598,7 @@ export const runCmd = Command.make('run', {
           master: yield* detectMasterFromHost,
           perfDebug,
           toolDebug,
+          telemetryDebug,
           debug,
           logsOff,
           acpOnly,
@@ -644,9 +648,7 @@ export const runCmd = Command.make('run', {
             PlatformCommand.env({
               BUN_BE_BUN: '1',
               COMPOSIO_CLI_PARENT_RUN_ID: runId,
-              COMPOSIO_PERF_DEBUG: perfDebug ? '1' : '0',
-              COMPOSIO_TOOL_DEBUG: toolDebug ? '1' : '0',
-              COMPOSIO_RUN_ACP_ONLY: acpOnly ? '1' : '0',
+              ...debugFlagsToChildEnv({ perfDebug, toolDebug, acpOnly, telemetryDebug }),
             }),
             PlatformCommand.stdin('inherit'),
             PlatformCommand.stdout('inherit'),

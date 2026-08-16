@@ -4,7 +4,7 @@
 import * as fs from 'node:fs';
 import { Command, Path } from '@effect/platform';
 import { BunContext } from '@effect/platform-bun';
-import { Effect, Either, Predicate, Schema, Stream, String as EffectString } from 'effect';
+import { Effect, Either, ManagedRuntime, Predicate, Schema } from 'effect';
 import { z } from 'zod';
 import { JsonRecordSchema } from 'src/effects/json';
 import type { MasterKind } from 'src/services/master-detector';
@@ -18,6 +18,13 @@ import { invokeAcpSubAgent } from 'src/services/run-subagent-acp';
 import { invokeLegacySubAgent } from 'src/services/run-subagent-legacy';
 import { TerminalUI, TerminalUILive } from 'src/services/terminal-ui';
 import { NodeOs } from 'src/services/node-os';
+import { collectText } from 'src/services/command-runner';
+import { debugFlagsToChildEnv } from 'src/services/runtime-flags';
+
+// One Bun platform runtime shared by every CLI child process this module spawns. ManagedRuntime
+// builds the layer lazily on first use, so importers that never spawn a child pay nothing, and a
+// run script that spawns many does not rebuild the platform services per call.
+const bunCommandRuntime = ManagedRuntime.make(BunContext.layer);
 
 export type RunHelperContext = {
   readonly apiKey?: string;
@@ -30,6 +37,7 @@ export type RunHelperContext = {
   readonly consumerProjectName?: string;
   readonly perfDebug?: boolean;
   readonly toolDebug?: boolean;
+  readonly telemetryDebug?: boolean;
   readonly dryRun?: boolean;
   readonly skipConnectionCheck?: boolean;
   readonly skipToolParamsCheck?: boolean;
@@ -628,14 +636,17 @@ const createCliRunner = (params: {
       COMPOSIO_CLI_INVOCATION_ORIGIN: 'run',
       ...(helperContext.runId ? { COMPOSIO_CLI_PARENT_RUN_ID: helperContext.runId } : {}),
       ...(sharedRunOutputDir ? { COMPOSIO_RUN_OUTPUT_DIR: sharedRunOutputDir } : {}),
-      COMPOSIO_PERF_DEBUG: perfDebugEnabled ? '1' : '0',
-      COMPOSIO_TOOL_DEBUG: toolDebugEnabled ? '1' : '0',
-      COMPOSIO_RUN_ACP_ONLY: helperContext.acpOnly === true ? '1' : '0',
+      ...debugFlagsToChildEnv({
+        perfDebug: perfDebugEnabled,
+        toolDebug: toolDebugEnabled,
+        acpOnly: helperContext.acpOnly === true,
+        telemetryDebug: helperContext.telemetryDebug === true,
+      }),
     };
     perfDebugLog('start', requestId, { cmd: args });
     const [executable, ...commandArgs] = [...cliPrefix, ...args];
     const inheritStderr = perfDebugEnabled || toolDebugEnabled;
-    const { exitCode, stderr, stdout } = await Effect.runPromise(
+    const { exitCode, stderr, stdout } = await bunCommandRuntime.runPromise(
       Effect.scoped(
         Effect.gen(function* () {
           const command = Command.make(executable, ...commandArgs).pipe(
@@ -644,11 +655,6 @@ const createCliRunner = (params: {
             Command.stderr(inheritStderr ? 'inherit' : 'pipe')
           );
           const child = yield* Command.start(command);
-          const collectText = (stream: Stream.Stream<Uint8Array, unknown>) =>
-            stream.pipe(
-              Stream.decodeText(),
-              Stream.runFold(EffectString.empty, EffectString.concat)
-            );
           const [childExitCode, childStdout, childStderr] = yield* Effect.all(
             [
               child.exitCode,
@@ -663,7 +669,7 @@ const createCliRunner = (params: {
             stderr: childStderr,
           };
         })
-      ).pipe(Effect.provide(BunContext.layer))
+      )
     );
     const result = maybeLoadStoredCliResult(parseJson(stdout));
     if (exitCode !== 0) {

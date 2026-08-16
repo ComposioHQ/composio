@@ -96,6 +96,28 @@ export const isAcpOnlyEnabled = debugFlagOr(
 );
 
 /**
+ * Debug state a parent CLI process resolved for the processes it spawns.
+ *
+ * Flags reach the parent as hidden CLI options or `COMPOSIO_*` variables, but a child only sees
+ * the environment, so every spawn site has to serialize the resolved values back into it. Keeping
+ * the mapping here means a flag added to this file cannot be forwarded from one spawn site and
+ * forgotten at another.
+ */
+export type ChildProcessDebugFlags = {
+  readonly perfDebug: boolean;
+  readonly toolDebug: boolean;
+  readonly acpOnly: boolean;
+  readonly telemetryDebug: boolean;
+};
+
+export const debugFlagsToChildEnv = (flags: ChildProcessDebugFlags): Record<string, string> => ({
+  COMPOSIO_PERF_DEBUG: flags.perfDebug ? '1' : '0',
+  COMPOSIO_TOOL_DEBUG: flags.toolDebug ? '1' : '0',
+  COMPOSIO_RUN_ACP_ONLY: flags.acpOnly ? '1' : '0',
+  COMPOSIO_CLI_TELEMETRY_DEBUG: flags.telemetryDebug ? '1' : '0',
+});
+
+/**
  * Set when `--telemetry-debug` was found on the command line.
  *
  * The flag is stripped in `src/bin.ts` before the Effect runtime exists, so its value is handed to

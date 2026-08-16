@@ -3,6 +3,7 @@ import { describe, expect, it, layer } from '@effect/vitest';
 import { ConfigProvider, Effect } from 'effect';
 import {
   cliDebugFlagsLayer,
+  debugFlagsToChildEnv,
   isAcpOnlyEnabled,
   isPerfDebugEnabled,
   isTelemetryDebugEnabled,
@@ -14,6 +15,24 @@ import {
 } from 'src/services/runtime-flags';
 import { extendConfigProvider } from 'src/services/config';
 import { TestLive } from 'test/__utils__';
+
+describe('debugFlagsToChildEnv', () => {
+  it('[Given] resolved debug flags [Then] every flag serializes into the child environment', () => {
+    expect(
+      debugFlagsToChildEnv({
+        perfDebug: true,
+        toolDebug: false,
+        acpOnly: true,
+        telemetryDebug: false,
+      })
+    ).toEqual({
+      COMPOSIO_PERF_DEBUG: '1',
+      COMPOSIO_TOOL_DEBUG: '0',
+      COMPOSIO_RUN_ACP_ONLY: '1',
+      COMPOSIO_CLI_TELEMETRY_DEBUG: '0',
+    });
+  });
+});
 
 describe('stripTelemetryDebugFlag', () => {
   it('[Given] the flag before the delimiter [Then] it is removed and reported', () => {
