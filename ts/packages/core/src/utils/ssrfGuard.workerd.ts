@@ -17,3 +17,19 @@ export const ssrfSafeFetch = async (rawUrl: string): Promise<Response> => {
     }
   );
 };
+
+/**
+ * Unguarded `fetch`, for the call sites that must keep working here.
+ *
+ * Failing closed is the right default for a URL the caller chose to upload, but
+ * applying it to Tool Router session file transfers would take a working
+ * feature away from Workers instead of closing a hole reachable there. The
+ * guard exists to stop a URL from reaching private address space the SDK's host
+ * can see; an edge worker has no such vantage point — it cannot resolve DNS to
+ * check, and its `fetch` does not originate inside the caller's network. The
+ * Node build applies the full guard.
+ */
+export const ssrfSafeFetchWhereSupported = async (
+  rawUrl: string,
+  init: RequestInit = {}
+): Promise<Response> => fetch(rawUrl, init);
