@@ -74,7 +74,7 @@ export interface LocalToolkitSlugs {
    * or undefined when nothing local matches — which is what a toolkit released
    * after this binary looks like.
    */
-  readonly match: (toolSlug: string) => string | undefined;
+  readonly longestPrefix: (toolSlug: string) => string | undefined;
 }
 
 const loadLocalToolkitSlugs = Effect.gen(function* () {
@@ -83,7 +83,7 @@ const loadLocalToolkitSlugs = Effect.gen(function* () {
 
   yield* refreshInBackgroundIfStale(learned);
 
-  return { slugs, match: makeLongestPrefixMatcher(slugs) } satisfies LocalToolkitSlugs;
+  return { slugs, longestPrefix: makeLongestPrefixMatcher(slugs) } satisfies LocalToolkitSlugs;
 });
 
 /**
