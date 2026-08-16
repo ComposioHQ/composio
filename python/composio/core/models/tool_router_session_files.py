@@ -6,7 +6,7 @@ in the session's virtual filesystem.
 from __future__ import annotations
 
 import typing as t
-from pathlib import Path
+from pathlib import Path, PureWindowsPath
 from urllib.parse import unquote, urlparse
 
 import requests
@@ -22,8 +22,13 @@ from composio_client.types.tool_router.session.file_list_response import (
 )
 
 from composio.client import HttpClient
-from composio.exceptions import RemoteFileDownloadError, ValidationError
+from composio.exceptions import (
+    RemoteFileDownloadError,
+    UnsafePathComponentError,
+    ValidationError,
+)
 from composio.utils.mimetypes import get_extension_from_mime_type
+from composio.utils.safe_path import secure_basename_join
 from composio.utils.url_safety import assert_safe_fetch_target
 from composio.utils.uuid import generate_short_id
 
@@ -115,8 +120,18 @@ class RemoteFile:
 
     @property
     def filename(self) -> str:
-        """Filename extracted from the mount path (e.g. 'report.pdf' from 'output/report.pdf')."""
-        return Path(self.mount_relative_path).name
+        """Filename extracted from the mount path (e.g. 'report.pdf' from 'output/report.pdf').
+
+        Deliberately non-raising: this is a display value, and ``buffer()``
+        reads it while constructing ``RemoteFileDownloadError``. A validator
+        here would replace a genuine download error with a validation error
+        raised from inside the error constructor. ``save()`` validates instead,
+        at the point the value actually becomes a path.
+
+        ``PureWindowsPath`` so a mount path crafted for a Windows target
+        (``..\\..\\evil``) is stripped on POSIX too.
+        """
+        return PureWindowsPath(self.mount_relative_path).name
 
     def buffer(self) -> bytes:
         """Fetch the file content as bytes."""
@@ -160,17 +175,21 @@ class RemoteFile:
         if path is not None:
             save_path = Path(path)
         else:
-            # SEC-316 defense-in-depth: `self.filename` is `Path(mount_relative_path).name`,
-            # so directory components are already stripped — but verify the resolved
-            # default-location path stays inside the cache dir to reject residual `..`
-            # cases (e.g. ``mount_relative_path == ".."`` keeps ``filename == ".."``).
+            # SEC-316 defense-in-depth. `safe_basename` collapses the
+            # server-controlled mount path and rejects what has no usable
+            # basename — `""` and `"."` previously made `save_path` equal
+            # `default_dir`, passed the containment check (a path contains
+            # itself), and failed as a raw `IsADirectoryError` after the
+            # directory had been created. The containment check stays as a
+            # second line of defence, anchored on the constant `default_dir`,
+            # which is what makes it meaningful; see `composio.utils.safe_path`.
             default_dir = Path.home() / COMPOSIO_DIR / TEMP_FILES_DIRECTORY_NAME
-            save_path = default_dir / self.filename
-            if not save_path.resolve().is_relative_to(default_dir.resolve()):
-                raise ValidationError(
-                    f"Path traversal detected: filename {self.filename!r} resolves "
-                    "outside the intended output directory."
+            try:
+                save_path = secure_basename_join(
+                    default_dir, self.mount_relative_path, label="mount path"
                 )
+            except UnsafePathComponentError as e:
+                raise ValidationError(str(e)) from e
 
         save_path.parent.mkdir(parents=True, exist_ok=True)
         save_path.write_bytes(content)
