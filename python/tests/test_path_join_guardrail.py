@@ -199,7 +199,7 @@ def _collect_joins(roots: t.Sequence[Path] = SCANNED_ROOTS) -> t.List[Join]:
                 # Synthetic roots used by the detector's own self-tests.
                 module = str(py.relative_to(root.parent))
 
-            def record(node: ast.AST, kind: str) -> None:
+            def record(node: t.Union[ast.expr, ast.stmt], kind: str) -> None:
                 text = ast.get_source_segment(source, node) or ""
                 found.append(Join(module, node.lineno, " ".join(text.split()), kind))
 
@@ -232,7 +232,7 @@ def _enclosing_function_calls(module: str, lineno: int) -> t.Set[str]:
     """Names called inside the function containing ``lineno``."""
     path = PYTHON_ROOT / module
     _, tree = _parse_cached(path)
-    best: t.Optional[ast.AST] = None
+    best: t.Optional[t.Union[ast.FunctionDef, ast.AsyncFunctionDef]] = None
     for node in ast.walk(tree):
         if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
             end = getattr(node, "end_lineno", None) or lineno
