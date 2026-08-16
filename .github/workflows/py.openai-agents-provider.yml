@@ -1,0 +1,90 @@
+name: Test Python OpenAI Agents Provider
+
+on:
+  push:
+    branches: [master, next]
+    paths:
+      - 'python/composio/**'
+      - 'python/providers/openai_agents/**'
+      - 'python/pyproject.toml'
+      - 'python/setup.py'
+      - '.github/workflows/py.openai-agents-provider.yml'
+      - '.github/actions/setup-python-uv/**'
+      - '.github/scripts/install-mise.sh'
+      - '.github/scripts/read-mise-lock-version.sh'
+      - 'mise.lock'
+  pull_request:
+    branches: [master, next]
+    paths:
+      - 'python/composio/**'
+      - 'python/providers/openai_agents/**'
+      - 'python/pyproject.toml'
+      - 'python/setup.py'
+      - '.github/workflows/py.openai-agents-provider.yml'
+      - '.github/actions/setup-python-uv/**'
+      - '.github/scripts/install-mise.sh'
+      - '.github/scripts/read-mise-lock-version.sh'
+      - 'mise.lock'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.ref || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  provider-contract:
+    name: OpenAI Agents ${{ matrix.openai-agents-version }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        openai-agents-version: ['0.20.0', '0.21.0', '0.22.0']
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up Python and uv
+        uses: ./.github/actions/setup-python-uv
+        with:
+          python-version: '3.12'
+
+      - name: Install provider contract dependencies
+        working-directory: python
+        env:
+          OPENAI_AGENTS_VERSION: ${{ matrix.openai-agents-version }}
+        run: |
+          uv venv
+          source .venv/bin/activate
+          uv pip install \
+            -e . \
+            -e providers/openai_agents \
+            "agentrunproof==0.3.0" \
+            "openai-agents==${OPENAI_AGENTS_VERSION}" \
+            pytest
+          uv pip check
+
+      - name: Verify installed versions
+        working-directory: python
+        env:
+          OPENAI_AGENTS_VERSION: ${{ matrix.openai-agents-version }}
+        run: |
+          source .venv/bin/activate
+          python - <<'PY'
+          import os
+          from importlib.metadata import version
+
+          assert version("agentrunproof") == "0.3.0"
+          assert version("openai-agents") == os.environ["OPENAI_AGENTS_VERSION"]
+          PY
+
+      - name: Run provider contract
+        working-directory: python
+        run: |
+          source .venv/bin/activate
+          python -m pytest \
+            providers/openai_agents/tests/test_runner_integration.py \
+            -v \
+            --tb=short
