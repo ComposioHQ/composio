@@ -38,7 +38,7 @@ export const toolkitFromToolSlug = (
     const catalog = yield* ToolkitSlugCatalog;
     const local = yield* catalog.local;
 
-    const match = local.match(toolSlug);
+    const match = local.longestPrefix(toolSlug);
     if (match !== undefined) {
       return toolkitFromMatchedPrefix(match);
     }
