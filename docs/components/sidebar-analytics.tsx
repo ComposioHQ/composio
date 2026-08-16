@@ -16,9 +16,17 @@ export function SidebarAnalytics({ index }: { index: SidebarNavIndex }) {
   const posthog = usePostHog();
 
   useEffect(() => {
-    if (!posthog) return;
+    // `usePostHog()` falls back to the module singleton when no provider is
+    // mounted, so it is truthy even with no key — capturing on it would only
+    // log "You must initialize PostHog before calling posthog.capture". Gate on
+    // the same env var `components/posthog-provider.tsx` gates on; Next inlines it.
+    if (!posthog || !process.env.NEXT_PUBLIC_POSTHOG_KEY) return;
 
     function handleClick(event: MouseEvent) {
+      // `click` skips middle-click, which would drop every sidebar link opened
+      // in a new tab while keeping the Cmd/Ctrl+click ones.
+      if (event.type === 'auxclick' && event.button !== 1) return;
+
       const target = event.target;
       if (!(target instanceof Element)) return;
 
@@ -54,7 +62,11 @@ export function SidebarAnalytics({ index }: { index: SidebarNavIndex }) {
     }
 
     document.addEventListener('click', handleClick, true);
-    return () => document.removeEventListener('click', handleClick, true);
+    document.addEventListener('auxclick', handleClick, true);
+    return () => {
+      document.removeEventListener('click', handleClick, true);
+      document.removeEventListener('auxclick', handleClick, true);
+    };
   }, [index, posthog]);
 
   return null;

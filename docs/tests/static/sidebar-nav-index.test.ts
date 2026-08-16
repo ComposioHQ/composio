@@ -21,14 +21,14 @@ describe('buildSidebarNavIndex', () => {
       group: 'Core concepts',
       folder: 'Authentication',
       depth: 2,
-      position: expect.any(Number),
+      position: 7,
     });
 
     expect(index['/docs/extending-sessions/shared-connections']).toEqual({
       group: 'Guides',
       folder: 'Extend sessions',
       depth: 2,
-      position: expect.any(Number),
+      position: 3,
     });
   });
 
@@ -37,7 +37,7 @@ describe('buildSidebarNavIndex', () => {
       group: 'Get Started',
       folder: null,
       depth: 1,
-      position: expect.any(Number),
+      position: 2,
     });
   });
 
@@ -46,13 +46,67 @@ describe('buildSidebarNavIndex', () => {
       group: 'Core concepts',
       folder: 'Authentication',
       depth: 1,
-      position: expect.any(Number),
+      position: 3,
     });
   });
 
-  test('position increases down a group and resets at the next separator', () => {
-    expect(index['/docs/quickstart'].position).toBeGreaterThan(index['/docs'].position);
+  test('position resets at the next separator', () => {
+    expect(index['/docs'].position).toBe(1);
+    expect(index['/docs/quickstart'].position).toBe(2);
     expect(index['/docs/how-composio-works'].position).toBe(1);
+  });
+
+  test("a folder's children start their own sequence", () => {
+    expect(index['/docs/authentication/manually-authenticating'].position).toBe(1);
+    expect(index['/docs/extending-sessions/proxy-execute'].position).toBe(1);
+  });
+
+  test('a folder counts as one row for its siblings', () => {
+    // Authentication is row 3 in Core concepts and holds 7 children. Counting
+    // through them would report Triggers as row 11 while it renders as row 4.
+    expect(index['/docs/triggers'].position).toBe(4);
+    expect(index['/docs/skills'].position).toBe(5);
+  });
+
+  test('nested folders restart the sequence at each level', () => {
+    expect(index['/docs/providers/custom-providers']).toEqual({
+      group: 'Get Started',
+      folder: 'Custom providers',
+      depth: 2,
+      position: 12,
+    });
+    expect(index['/docs/providers/custom-providers/typescript'].position).toBe(1);
+  });
+
+  test('a separator nested in a folder does not leak into the folder siblings', () => {
+    // No meta.json nests a separator today, but fumadocs allows it: the group
+    // and the counter are per-level, so "Inner" and its numbering stay inside
+    // the folder instead of resuming Outer's siblings mid-sequence.
+    const nested = buildSidebarNavIndex({
+      name: 'root',
+      children: [
+        { type: 'separator', name: 'Outer' },
+        { type: 'page', name: 'First', url: '/a' },
+        {
+          type: 'folder',
+          name: 'Folder',
+          children: [
+            { type: 'separator', name: 'Inner' },
+            { type: 'page', name: 'Child', url: '/a/child' },
+          ],
+        },
+        { type: 'page', name: 'Last', url: '/b' },
+      ],
+    });
+
+    expect(nested['/a']).toEqual({ group: 'Outer', folder: null, depth: 1, position: 1 });
+    expect(nested['/a/child']).toEqual({
+      group: 'Inner',
+      folder: 'Folder',
+      depth: 2,
+      position: 1,
+    });
+    expect(nested['/b']).toEqual({ group: 'Outer', folder: null, depth: 1, position: 3 });
   });
 
   test('every page in the sidebar tree resolves to a non-null group', () => {

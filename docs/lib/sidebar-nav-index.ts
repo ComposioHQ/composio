@@ -19,7 +19,12 @@ export interface SidebarNavEntry {
   folder: string | null;
   /** 1 = top-level row, 2 = folder child, 3 = nested. */
   depth: number;
-  /** 1-based position within the group, in top-to-bottom sidebar order. */
+  /**
+   * 1-based position among sibling rows, counting only this level: a folder
+   * occupies one row whether or not it is expanded, and its children get their
+   * own 1..n sequence. Counting through folders instead would report a
+   * collapsed folder's hidden children as rows the reader had to scroll past.
+   */
   position: number;
 }
 
@@ -32,53 +37,49 @@ function nodeText(name: ReactNode): string | null {
   return null;
 }
 
-interface WalkState {
-  group: string | null;
-  position: number;
-}
-
+/**
+ * `group` and `position` are per-level locals, so a separator nested inside a
+ * folder can only affect that folder's own children — it cannot reset the
+ * counter or the heading for the folder's siblings.
+ */
 function walkNodes(
   nodes: Node[],
   folder: string | null,
   depth: number,
-  state: WalkState,
+  parentGroup: string | null,
   index: SidebarNavIndex
 ): void {
+  let group = parentGroup;
+  let position = 0;
+
   for (const node of nodes) {
     if (node.type === 'separator') {
-      state.group = nodeText(node.name);
-      state.position = 0;
+      group = nodeText(node.name);
+      position = 0;
       continue;
     }
+
+    position += 1;
 
     if (node.type === 'page') {
-      state.position += 1;
-      index[node.url] = { group: state.group, folder, depth, position: state.position };
+      index[node.url] = { group, folder, depth, position };
       continue;
     }
 
-    const folderName = nodeText(node.name) ?? folder;
+    const folderName = nodeText(node.name);
 
-    // A folder's index page is the folder's own row, so it keeps the folder's depth.
+    // A folder's index page is reached by clicking the folder's own row, so it
+    // keeps the folder's depth and position rather than its children's.
     if (node.index) {
-      state.position += 1;
-      index[node.index.url] = {
-        group: state.group,
-        folder: folderName,
-        depth,
-        position: state.position,
-      };
+      index[node.index.url] = { group, folder: folderName, depth, position };
     }
 
-    // A separator nested in a folder must not leak into the folder's siblings.
-    const outerGroup = state.group;
-    walkNodes(node.children, folderName, depth + 1, state, index);
-    state.group = outerGroup;
+    walkNodes(node.children, folderName, depth + 1, group, index);
   }
 }
 
 export function buildSidebarNavIndex(tree: Root): SidebarNavIndex {
   const index: SidebarNavIndex = {};
-  walkNodes(tree.children, null, 1, { group: null, position: 0 }, index);
+  walkNodes(tree.children, null, 1, null, index);
   return index;
 }
