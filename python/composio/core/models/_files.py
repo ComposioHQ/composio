@@ -31,7 +31,7 @@ from composio.utils.safe_path import (
     secure_basename_join,
     secure_join,
 )
-from composio.utils.url_safety import assert_safe_fetch_target
+from composio.utils.url_safety import assert_safe_fetch_target, safe_request
 from composio.utils.sensitive_file_upload_paths import (
     assert_safe_local_file_upload_path,
 )
@@ -148,17 +148,26 @@ def get_md5(file: Path) -> str:
 def upload(url: str, file: Path) -> bool:
     """Upload file to presigned S3 URL.
 
+    ``url`` is ``new_presigned_url`` from the upload-request response, which is
+    untrusted input: a compromised or MITM'd backend that names an internal
+    address would otherwise have the file's bytes PUT to it. ``safe_request``
+    validates the target and re-validates every redirect hop.
+
     Args:
         url: Presigned S3 upload URL
         file: Path to file to upload
 
     Returns:
         True if upload succeeded (HTTP 200), False otherwise
+
+    Raises:
+        BlockedInternalUrlError: If the URL resolves to a non-public address.
     """
     with file.open("rb") as data:
         try:
-            response = requests.put(
-                url=url,
+            response = safe_request(
+                "PUT",
+                url,
                 data=data,
                 timeout=(_CONNECT_TIMEOUT, _READ_TIMEOUT),
             )
@@ -402,10 +411,13 @@ def _upload_bytes_to_s3(
         cast_to=_FileUploadResponse,
     )
 
-    # Upload the content directly to S3
+    # Upload the content directly to S3. `new_presigned_url` comes from the API
+    # response and is untrusted, so the target is validated on every hop before
+    # the bytes are sent. See `composio.utils.url_safety`.
     try:
-        upload_response = requests.put(
-            url=s3meta.new_presigned_url,
+        upload_response = safe_request(
+            "PUT",
+            s3meta.new_presigned_url,
             data=content,
             headers={"Content-Type": mimetype},
             timeout=(_CONNECT_TIMEOUT, _READ_TIMEOUT),
@@ -624,11 +636,26 @@ class FileDownloadable(BaseModel):
             outfile = secure_basename_join(outdir, self.name, root=root)
         except UnsafePathComponentError as e:
             raise ErrorDownloadingFile(str(e)) from e
+        # `self.s3url` is a field of the tool-execution response, so it is
+        # untrusted for the same reason `self.name` is. Unguarded, a response
+        # naming an internal address makes this a fetch proxy for it, and the
+        # bytes land on disk. `allow_redirects=False` keeps a URL that passes
+        # the check from bouncing into private space afterwards; the
+        # `status_code != 200` check below rejects the 3xx itself.
+        #
+        # Deliberately uncapped: the body streams straight to disk rather than
+        # into memory, so `_MAX_RESPONSE_SIZE` (a memory-exhaustion bound)
+        # does not apply, and tool attachments legitimately exceed it.
+        #
+        # Runs before `mkdir`, like the path check above it: a rejected
+        # download should leave no directories behind.
+        assert_safe_fetch_target(self.s3url)
         outdir.mkdir(exist_ok=True, parents=True)
         try:
             response = requests.get(
                 url=self.s3url,
                 stream=True,
+                allow_redirects=False,
                 timeout=(_CONNECT_TIMEOUT, _READ_TIMEOUT),
             )
         except requests.exceptions.RequestException as e:
