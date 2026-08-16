@@ -26,11 +26,7 @@ from composio.exceptions import (
 )
 from composio.utils import mimetypes
 from composio.utils.json_schema import dereference_json_schema
-from composio.utils.safe_path import (
-    safe_basename,
-    secure_basename_join,
-    secure_join,
-)
+from composio.utils.safe_path import secure_basename_join, secure_join
 from composio.utils.url_safety import assert_safe_fetch_target
 from composio.utils.sensitive_file_upload_paths import (
     assert_safe_local_file_upload_path,
@@ -577,19 +573,6 @@ class FileUploadable(BaseModel):
         if not upload(url=s3meta.new_presigned_url, file=file):
             raise ErrorUploadingFile(f"Error uploading file: {file}")
         return cls(name=file.name, mimetype=mimetype, s3key=s3meta.key)
-
-
-def _safe_download_filename(name: str) -> str:
-    """Collapse an untrusted filename to a bare, writable basename.
-
-    Delegates to :func:`safe_basename`, which both download sinks share, and
-    re-raises as ``ErrorDownloadingFile`` so this module keeps its documented
-    ``FileError`` contract for callers of ``download()``.
-    """
-    try:
-        return safe_basename(name)
-    except UnsafePathComponentError as e:
-        raise ErrorDownloadingFile(str(e)) from e
 
 
 class FileDownloadable(BaseModel):

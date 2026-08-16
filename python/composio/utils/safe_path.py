@@ -54,6 +54,8 @@ WINDOWS_RESERVED_NAMES = frozenset(
     {"CON", "PRN", "AUX", "NUL"}
     | {f"COM{i}" for i in range(1, 10)}
     | {f"LPT{i}" for i in range(1, 10)}
+    | {f"COM{i}" for i in "¹²³"}
+    | {f"LPT{i}" for i in "¹²³"}
 )
 """Reserved DOS device names. Writing to one on Windows targets the device
 rather than a file. Rejected on every platform so behaviour does not diverge
@@ -165,24 +167,43 @@ def safe_basename(name: str, *, label: str = "filename") -> str:
             f"Refusing to write a non-string {label}: {name!r}"
         )
 
-    basename = PureWindowsPath(name).name.strip()
-    if not basename or set(basename) == {"."}:
+    raw_basename = PureWindowsPath(name).name
+    if not raw_basename or not raw_basename.strip() or set(raw_basename) == {"."}:
         raise UnsafePathComponentError(
             f"Path traversal detected: {label} {name!r} leaves no usable "
             "basename to write to."
         )
-    if "\x00" in basename:
+    if "\x00" in raw_basename:
         raise UnsafePathComponentError(
             f"Refusing to write {label} containing a NUL byte: {name!r}"
         )
-    if len(basename) > MAX_COMPONENT_LENGTH:
+    if any(ord(char) < 32 or char in '<>:"|?*' for char in raw_basename):
         raise UnsafePathComponentError(
-            f"Refusing to write {label} longer than {MAX_COMPONENT_LENGTH} "
-            f"characters: {basename[:32]!r}... ({len(basename)} characters)"
+            f"Refusing to write {label} containing characters reserved by "
+            f"Windows: {name!r}"
         )
-    # Compare the stem: on Windows `NUL.txt` opens the null device just as `NUL`
-    # does, so an extension provides no protection.
-    if PureWindowsPath(basename).stem.upper() in WINDOWS_RESERVED_NAMES:
+    if raw_basename.endswith((" ", ".")):
+        raise UnsafePathComponentError(
+            f"Refusing to write {label} ending in a space or dot: {name!r}"
+        )
+
+    basename = raw_basename.strip()
+    try:
+        encoded_length = len(os.fsencode(basename))
+    except UnicodeEncodeError as e:
+        raise UnsafePathComponentError(
+            f"Refusing to write {label} containing invalid Unicode: {name!r}"
+        ) from e
+    if encoded_length > MAX_COMPONENT_LENGTH:
+        raise UnsafePathComponentError(
+            f"Refusing to write {label} longer than {MAX_COMPONENT_LENGTH} bytes: "
+            f"{basename[:32]!r}... ({encoded_length} bytes)"
+        )
+    # Compare everything before the first dot: on Windows `NUL.tar.gz` opens
+    # the null device just as `NUL` does, so any number of extensions provides
+    # no protection.
+    device_name = basename.split(".", 1)[0].rstrip(" ").upper()
+    if device_name in WINDOWS_RESERVED_NAMES:
         raise UnsafePathComponentError(
             f"Refusing to write {label} that is a reserved device name: {name!r}"
         )
@@ -225,8 +246,9 @@ def secure_basename_join(
     :raises UnsafePathComponentError: when ``name`` is unsafe, or when the
         result escapes ``root``.
     """
-    resolved_root = resolve_root(base if root is None else root)
-    candidate = Path(base) / safe_basename(name, label=label)
+    resolved_base = resolve_root(base)
+    resolved_root = resolved_base if root is None else resolve_root(root)
+    candidate = resolved_base / safe_basename(name, label=label)
     if not is_inside_dir(candidate.resolve(), resolved_root):
         raise UnsafePathComponentError(
             f"Path traversal detected: {label} {name!r} resolves to "

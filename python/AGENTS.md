@@ -47,9 +47,12 @@ make build
 filenames. The SDK's threat model assumes the backend may be compromised or the
 connection MITM'd, and that a third-party toolkit can return anything.
 
-When untrusted input becomes part of a filesystem path, use
-`composio.utils.safe_path.secure_join(root, *components)`. Two rules it exists to
-enforce:
+When untrusted directory components such as slugs or IDs become part of a
+filesystem path, use
+`composio.utils.safe_path.secure_join(root, *components)`. For an untrusted
+filename, use `secure_basename_join(base, filename, root=root)` so ordinary
+extensions remain valid while the write stays anchored to the trusted root.
+Both helpers enforce two rules:
 
 1. **Anchor containment on a constant.** Checking a derived path against a
    directory that untrusted input helped build compares tainted against tainted

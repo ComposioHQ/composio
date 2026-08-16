@@ -2745,8 +2745,11 @@ class TestFileDownloadablePathTraversal:
         [
             ("NUL", "reserved device name"),
             ("nul.txt", "reserved device name"),
+            ("NUL.tar.gz", "reserved device name"),
             ("COM1", "reserved device name"),
+            ("report.txt:payload", "reserved by Windows"),
             ("a\x00b", "NUL byte"),
+            ("😀" * 128, "longer than"),
             ("x" * 300, "longer than"),
         ],
     )

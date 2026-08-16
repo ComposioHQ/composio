@@ -15,6 +15,8 @@ from composio.utils.safe_path import (
     assert_safe_path_component,
     is_inside_dir,
     resolve_root,
+    safe_basename,
+    secure_basename_join,
     secure_join,
 )
 
@@ -134,6 +136,41 @@ class TestIsInsideDir:
     @pytest.mark.skipif(sys.platform != "win32", reason="Windows-only casing rule")
     def test_case_insensitive_on_windows(self):
         assert is_inside_dir(Path("C:\\Foo\\Bar"), Path("c:\\foo"))
+
+
+class TestSafeBasename:
+    @pytest.mark.parametrize(
+        "value",
+        ["NUL.tar.gz", "COM1.log.bak", "COM¹.txt", "LPT³.data"],
+    )
+    def test_rejects_windows_device_names_with_any_extension(self, value):
+        with pytest.raises(UnsafePathComponentError, match="reserved device name"):
+            safe_basename(value)
+
+    @pytest.mark.parametrize(
+        "value",
+        ["report?.txt", "report.txt:payload", "report.txt.", "report.txt "],
+    )
+    def test_rejects_windows_invalid_names_on_every_platform(self, value):
+        with pytest.raises(UnsafePathComponentError):
+            safe_basename(value)
+
+    def test_limits_encoded_filename_bytes(self):
+        with pytest.raises(UnsafePathComponentError, match="longer than"):
+            safe_basename("😀" * 128)
+
+    def test_rejects_unencodable_filename(self):
+        with pytest.raises(UnsafePathComponentError, match="invalid Unicode"):
+            safe_basename("report-\ud800.txt")
+
+
+class TestSecureBasenameJoin:
+    def test_tilde_base_is_expanded_before_containment(self, tmp_path, monkeypatch):
+        monkeypatch.setenv("HOME", str(tmp_path))
+        assert (
+            secure_basename_join("~/downloads", "report.pdf")
+            == (tmp_path / "downloads" / "report.pdf").resolve()
+        )
 
 
 class TestSecureJoin:
