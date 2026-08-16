@@ -4,6 +4,7 @@ import * as path from 'node:path';
 import process from 'node:process';
 import { Effect } from 'effect';
 import {
+  codexAcpBinaryTargetFor,
   RUN_CODEX_ACP_BINARY_TARGETS,
   RUN_COMPANION_MODULE_BASENAMES,
   type RunCodexAcpBinaryTarget,
@@ -59,10 +60,13 @@ const copyBundledAcpAdapters = async (
 
 // The codex-acp binary the building machine can actually execute. Unsupported
 // hosts get an empty list, matching the host requirement set the CLI checks.
-export const hostCodexAcpBinaryTargets = (): ReadonlyArray<RunCodexAcpBinaryTarget> =>
-  RUN_CODEX_ACP_BINARY_TARGETS.filter(
-    target => target.platform === process.platform && target.arch === process.arch
-  );
+export const hostCodexAcpBinaryTargets = (): ReadonlyArray<RunCodexAcpBinaryTarget> => {
+  const hostTarget = codexAcpBinaryTargetFor({
+    platform: process.platform,
+    arch: process.arch,
+  });
+  return hostTarget ? [hostTarget] : [];
+};
 
 export const LOCAL_TOOLS_BINARY_ASSET_DIRNAME = 'local-tools-binaries';
 

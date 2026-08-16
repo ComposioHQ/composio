@@ -336,9 +336,12 @@ const resolveRunHelperContext = () =>
     const apiKey = Option.getOrUndefined(userContext.data.apiKey);
     const orgId = Option.getOrUndefined(userContext.data.orgId);
     const defaultComposioDir = path.join(os.homedir, USER_COMPOSIO_DIR);
+    // Honors the same COMPOSIO_CACHE_DIR-then-CACHE_DIR precedence the spawned
+    // run-helpers child applies when locating its cache, so the sandbox read
+    // roots below always include the directory the child actually uses.
     const composioCacheDir = yield* APP_CONFIG.CACHE_DIR;
-    const cacheDir = yield* loadHostConfig(UNPREFIXED_CONFIG.CACHE_DIR);
-    const configuredCacheDir = composioCacheDir || cacheDir || defaultComposioDir;
+    const hostCacheDir = yield* loadHostConfig(UNPREFIXED_CONFIG.CACHE_DIR);
+    const configuredCacheDir = composioCacheDir || hostCacheDir || defaultComposioDir;
     const baseReadAccessRoots = [
       ...new Set([defaultComposioDir, configuredCacheDir].map(value => path.resolve(value))),
     ];
@@ -361,28 +364,22 @@ const resolveRunHelperContext = () =>
       return baseContext;
     }
 
+    const sessionArtifactsDir = Option.getOrUndefined(
+      yield* resolveCliSessionArtifacts({
+        orgId,
+        consumerUserId: consumerProject.value.consumerUserId,
+      }).pipe(Effect.map(Option.map(artifacts => artifacts.directoryPath)))
+    );
+
     return {
       ...baseContext,
       consumerUserId: consumerProject.value.consumerUserId,
       consumerProjectId: consumerProject.value.projectId,
       consumerProjectName: consumerProject.value.projectName,
-      runOutputDir: Option.getOrUndefined(
-        yield* resolveCliSessionArtifacts({
-          orgId,
-          consumerUserId: consumerProject.value.consumerUserId,
-        }).pipe(Effect.map(Option.map(artifacts => artifacts.directoryPath)))
-      ),
+      runOutputDir: sessionArtifactsDir,
       readAccessRoots: [
         ...new Set(
-          [
-            ...baseReadAccessRoots,
-            Option.getOrUndefined(
-              yield* resolveCliSessionArtifacts({
-                orgId,
-                consumerUserId: consumerProject.value.consumerUserId,
-              }).pipe(Effect.map(Option.map(artifacts => artifacts.directoryPath)))
-            ),
-          ]
+          [...baseReadAccessRoots, sessionArtifactsDir]
             .filter((value): value is string => typeof value === 'string' && value.length > 0)
             .map(value => path.resolve(value))
         ),

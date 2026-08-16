@@ -622,27 +622,30 @@ const createCliRunner = (params: {
     });
   };
 
+  // Invariant for the life of the run session, so built once rather than per
+  // spawned CLI call.
+  const env: Record<string, string> = {
+    // The platform command inherits the ambient environment by default. An
+    // empty BUN_BE_BUN masks the parent run process's Bun compatibility flag
+    // without copying or enumerating unrelated values.
+    BUN_BE_BUN: '',
+    ...(helperContext.apiKey ? { COMPOSIO_USER_API_KEY: helperContext.apiKey } : {}),
+    ...(helperContext.baseURL ? { COMPOSIO_BASE_URL: helperContext.baseURL } : {}),
+    ...(helperContext.webURL ? { COMPOSIO_WEB_URL: helperContext.webURL } : {}),
+    COMPOSIO_CLI_INVOCATION_ORIGIN: 'run',
+    ...(helperContext.runId ? { COMPOSIO_CLI_PARENT_RUN_ID: helperContext.runId } : {}),
+    ...(sharedRunOutputDir ? { COMPOSIO_RUN_OUTPUT_DIR: sharedRunOutputDir } : {}),
+    ...debugFlagsToChildEnv({
+      perfDebug: perfDebugEnabled,
+      toolDebug: toolDebugEnabled,
+      acpOnly: helperContext.acpOnly === true,
+      telemetryDebug: helperContext.telemetryDebug === true,
+    }),
+  };
+
   const runCliJson = async (args: ReadonlyArray<string>): Promise<RunCliResult> => {
     const requestId = `${args[0] ?? 'cli'}#${++perfDebugSeq}`;
     helperDebugLog('cli.start', { requestId, args });
-    const env: Record<string, string> = {
-      // The platform command inherits the ambient environment by default. An
-      // empty BUN_BE_BUN masks the parent run process's Bun compatibility flag
-      // without copying or enumerating unrelated values.
-      BUN_BE_BUN: '',
-      ...(helperContext.apiKey ? { COMPOSIO_USER_API_KEY: helperContext.apiKey } : {}),
-      ...(helperContext.baseURL ? { COMPOSIO_BASE_URL: helperContext.baseURL } : {}),
-      ...(helperContext.webURL ? { COMPOSIO_WEB_URL: helperContext.webURL } : {}),
-      COMPOSIO_CLI_INVOCATION_ORIGIN: 'run',
-      ...(helperContext.runId ? { COMPOSIO_CLI_PARENT_RUN_ID: helperContext.runId } : {}),
-      ...(sharedRunOutputDir ? { COMPOSIO_RUN_OUTPUT_DIR: sharedRunOutputDir } : {}),
-      ...debugFlagsToChildEnv({
-        perfDebug: perfDebugEnabled,
-        toolDebug: toolDebugEnabled,
-        acpOnly: helperContext.acpOnly === true,
-        telemetryDebug: helperContext.telemetryDebug === true,
-      }),
-    };
     perfDebugLog('start', requestId, { cmd: args });
     const [executable, ...commandArgs] = [...cliPrefix, ...args];
     const inheritStderr = perfDebugEnabled || toolDebugEnabled;
@@ -796,6 +799,10 @@ const createExperimentalSubAgent = (params: {
 }) => {
   const { helperContext, helperDebugLog } = params;
 
+  // The parent CLI resolves the master via `detectMasterFromHost` and serializes
+  // it into `helperContext` (see run.cmd.ts), so a missing or unrecognized value
+  // deliberately falls back to 'user' instead of re-detecting from this child
+  // process's environment.
   const detectInvokeAgentMaster = (): MasterKind | 'user' => {
     if (
       helperContext.master === 'claude' ||

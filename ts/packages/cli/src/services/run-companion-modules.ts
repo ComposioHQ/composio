@@ -65,6 +65,15 @@ export const RUN_CODEX_ACP_BINARY_TARGETS: ReadonlyArray<RunCodexAcpBinaryTarget
     relativePath: 'acp-adapters/codex/linux-x64/codex-acp',
   },
 ];
+export const codexAcpBinaryTargetFor = ({
+  platform,
+  arch,
+}: {
+  readonly platform: string;
+  readonly arch: string;
+}): RunCodexAcpBinaryTarget | undefined =>
+  RUN_CODEX_ACP_BINARY_TARGETS.find(target => target.platform === platform && target.arch === arch);
+
 // Portable ACP assets: any install that invokes an ACP sub-agent needs these
 // regardless of platform/arch. They belong to the lazy tier — see
 // `listMissingInstalledRunCompanionModules` for the two-tier split.
@@ -98,9 +107,7 @@ export const runCompanionStaticAssetRelativePathsFor = ({
   readonly platform: string;
   readonly arch: string;
 }): ReadonlyArray<string> => {
-  const hostTarget = RUN_CODEX_ACP_BINARY_TARGETS.find(
-    target => target.platform === platform && target.arch === arch
-  );
+  const hostTarget = codexAcpBinaryTargetFor({ platform, arch });
 
   return hostTarget
     ? [...RUN_COMPANION_SHARED_STATIC_ASSET_RELATIVE_PATHS, hostTarget.relativePath]

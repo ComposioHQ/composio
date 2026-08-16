@@ -181,6 +181,12 @@ export const UNPREFIXED_CONFIG = {
   // The package manager that invoked the CLI, as reported by npm-compatible clients
   NPM_CONFIG_USER_AGENT: optionalString('npm_config_user_agent'),
 
+  // Stricter than the `booleanFlag` family on purpose: output redaction is for
+  // recorded CI sessions and keys off the exact `CI=true` convention. A looser
+  // parse would also start redacting under `CI=1`-style environments, changing
+  // long-standing behavior. `INTERACTIVE_PERMISSION_UI_DISABLED` below reads
+  // the same variable tolerantly because failing closed there is the safe
+  // reading of any non-falsy `CI` value.
   CI_REDACTION_ENABLED: optionalTrimmedString('CI').pipe(
     Config.map(value => value?.toLowerCase() === 'true')
   ),

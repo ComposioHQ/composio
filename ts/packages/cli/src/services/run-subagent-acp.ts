@@ -7,10 +7,10 @@ import { Cause, Config, Data, Effect, Exit, Layer, Option, Predicate, Queue, Str
 import type { MasterKind } from 'src/services/master-detector';
 import { NodeOs } from 'src/services/node-os';
 import {
+  codexAcpBinaryTargetFor,
   hasInstalledRunCompanionModules,
   resolveRunCompanionAssetPath,
   resolveRunCompanionModulePath,
-  RUN_CODEX_ACP_BINARY_TARGETS,
   RUN_COMPANION_SHARED_STATIC_ASSET_RELATIVE_PATHS,
 } from 'src/services/run-companion-modules';
 import {
@@ -159,9 +159,10 @@ const resolveShippedAdapterAsset = ({
       };
     }
 
-    const binaryTarget = RUN_CODEX_ACP_BINARY_TARGETS.find(
-      candidate => candidate.platform === process.platform && candidate.arch === process.arch
-    );
+    const binaryTarget = codexAcpBinaryTargetFor({
+      platform: process.platform,
+      arch: process.arch,
+    });
     if (!binaryTarget) {
       return { resolvedPath: null, expectedRelativePaths: [] };
     }
