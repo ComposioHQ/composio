@@ -1,0 +1,32 @@
+{
+  "name": "local-sandbox-tenki-example",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Run Composio's local sandbox on Tenki disposable Linux microVMs",
+  "main": "src/index.ts",
+  "scripts": {
+    "start": "bun src/index.ts",
+    "dev": "bun --watch src/index.ts",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "composio",
+    "example",
+    "tenki",
+    "local-sandbox",
+    "sandbox",
+    "microvm"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@composio/core": "workspace:*",
+    "@composio/experimental": "workspace:*",
+    "@tenkicloud/sandbox": "^0.5.4",
+    "dotenv": "catalog:"
+  },
+  "devDependencies": {
+    "@types/bun": "catalog:",
+    "typescript": "catalog:"
+  }
+}
