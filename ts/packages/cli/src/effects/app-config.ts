@@ -54,13 +54,23 @@ const optionalTrimmedString = (name: string): Config.Config<string | undefined> 
     })
   );
 
-const FALSY_ENV_FLAG_VALUES: ReadonlyArray<string> = ['0', 'false', 'no', 'off'];
+const ENV_FLAG_OFF_SPELLINGS = new Set(['0', 'false', 'no', 'off']);
 
+// A flag that is set counts as enabled unless it spells out one of the usual
+// "off" values, compared case-insensitively (`OFF` disables like `off`).
+const isEnvFlagEnabled = (value: string): boolean =>
+  !ENV_FLAG_OFF_SPELLINGS.has(value.toLowerCase());
+
+/**
+ * Tri-state read of a boolean environment flag:
+ *
+ *   unset, or set to blank (`COMPOSIO_X=`)   → `undefined` — absent, caller picks the default
+ *   `0` / `false` / `no` / `off`, any casing → `false`
+ *   anything else (`1`, `true`, even a typo) → `true`
+ */
 const optionalEnvironmentFlag = (name: string): Config.Config<boolean | undefined> =>
   optionalTrimmedString(name).pipe(
-    Config.map(value =>
-      value === undefined ? undefined : !FALSY_ENV_FLAG_VALUES.includes(value.toLowerCase())
-    )
+    Config.map(value => (value === undefined ? undefined : isEnvFlagEnabled(value)))
   );
 
 // Deliberately tolerant rather than `Config.boolean`: these flags arrive from the ambient
