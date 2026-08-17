@@ -196,7 +196,7 @@ function ForYouVisual() {
 function PlatformVisual() {
   return (
     <div
-      className="absolute inset-x-5 -bottom-3 rounded-[12px] border border-fd-border bg-fd-card p-3 font-mono text-[11px] leading-[1.8] text-fd-foreground/75 sm:inset-x-6"
+      className="absolute inset-x-5 -bottom-3 rounded-[12px] border border-fd-border bg-fd-card p-3 font-mono text-[11.5px] leading-[1.75] text-fd-foreground/75 sm:inset-x-6"
       style={BOTTOM_FADE_STYLE}
     >
       <div className="mb-2 flex items-center gap-1.5">
@@ -211,6 +211,25 @@ function PlatformVisual() {
         <span className="text-fd-foreground/55">{" '@composio/core'"}</span>
       </div>
       <div className="truncate">
+        <span className="text-[var(--composio-brand)]">import</span>
+        {" { OpenAIAgentsProvider } "}
+        <span className="text-[var(--composio-brand)]">from</span>
+        <span className="text-fd-foreground/55">
+          {" '@composio/openai-agents'"}
+        </span>
+      </div>
+      <div className="truncate">
+        <span className="text-[var(--composio-brand)]">const</span>
+        {' composio = '}
+        <span className="text-[var(--composio-brand)]">new</span>
+        {' Composio'}
+        <span className="text-fd-foreground/45">
+          ({'{ provider: '}
+          <span className="text-[var(--composio-brand)]">new</span>
+          {' OpenAIAgentsProvider() }'})
+        </span>
+      </div>
+      <div className="truncate">
         <span className="text-[var(--composio-brand)]">const</span>
         {' session = '}
         <span className="text-[var(--composio-brand)]">await</span>
@@ -223,6 +242,13 @@ function PlatformVisual() {
         <span className="text-[var(--composio-brand)]">await</span>
         {' session.tools'}
         <span className="text-fd-foreground/45">()</span>
+      </div>
+      <div className="truncate">
+        <span className="text-[var(--composio-brand)]">const</span>
+        {' agent = '}
+        <span className="text-[var(--composio-brand)]">new</span>
+        {' Agent'}
+        <span className="text-fd-foreground/45">({'{ name, instructions, model, tools }'})</span>
       </div>
     </div>
   );
