@@ -139,21 +139,29 @@ def get_md5(file: Path) -> str:
     return obj.hexdigest()
 
 
-def upload(url: str, file: Path) -> bool:
+def upload(url: str, file: Path, mimetype: t.Optional[str] = None) -> bool:
     """Upload file to presigned S3 URL.
 
     Args:
         url: Presigned S3 upload URL
         file: Path to file to upload
+        mimetype: Content type to send with the upload. Defaults to the type
+            guessed from ``file``. This must match the ``mimetype`` the
+            presigned URL was requested with, otherwise S3 rejects the PUT
+            with ``403 SignatureDoesNotMatch`` when the signature covers the
+            content type.
 
     Returns:
         True if upload succeeded (HTTP 200), False otherwise
     """
+    if mimetype is None:
+        mimetype = mimetypes.guess(file=file)
     with file.open("rb") as data:
         try:
             response = requests.put(
                 url=url,
                 data=data,
+                headers={"Content-Type": mimetype},
                 timeout=(_CONNECT_TIMEOUT, _READ_TIMEOUT),
             )
         except requests.exceptions.RequestException as e:
@@ -260,6 +268,31 @@ def _sanitize_url_for_logging(url: str) -> str:
     return url
 
 
+def _parse_content_length(value: t.Optional[str]) -> t.Optional[int]:
+    """Parse a ``Content-Length`` header into a non-negative ``int``.
+
+    ``Content-Length`` is supplied by the remote server and is therefore
+    untrusted input: it may be absent, non-numeric (``"abc"``), fractional
+    (``"12.5"``), thousands-separated (``"1,024"``) or negative. Returning
+    ``None`` for anything unparseable lets the caller treat the size as
+    unknown and fall through to the streaming guard, instead of surfacing a
+    raw ``ValueError`` to the user.
+
+    Args:
+        value: Raw header value, or ``None`` when the header is absent
+
+    Returns:
+        The parsed size in bytes, or ``None`` if it cannot be trusted
+    """
+    if value is None:
+        return None
+    try:
+        size = int(value.strip())
+    except (AttributeError, ValueError):
+        return None
+    return size if size >= 0 else None
+
+
 def _fetch_file_from_url(
     url: str,
     max_size: int = _MAX_RESPONSE_SIZE,
@@ -318,12 +351,15 @@ def _fetch_file_from_url(
             f"Status: {response.status_code}"
         )
 
-    # Check Content-Length header first (early abort for oversized files)
-    content_length = response.headers.get("Content-Length")
-    if content_length and int(content_length) > max_size:
+    # Check Content-Length header first (early abort for oversized files).
+    # A malformed header must not crash the fetch: `_parse_content_length`
+    # returns None for anything untrustworthy, and the streaming guard below
+    # still enforces `max_size`.
+    content_length = _parse_content_length(response.headers.get("Content-Length"))
+    if content_length is not None and content_length > max_size:
         response.close()
         raise ResponseTooLargeError(
-            f"File size ({int(content_length)} bytes) exceeds maximum allowed "
+            f"File size ({content_length} bytes) exceeds maximum allowed "
             f"size ({max_size} bytes)"
         )
 
@@ -568,7 +604,7 @@ class FileUploadable(BaseModel):
             },
             cast_to=_FileUploadResponse,
         )
-        if not upload(url=s3meta.new_presigned_url, file=file):
+        if not upload(url=s3meta.new_presigned_url, file=file, mimetype=mimetype):
             raise ErrorUploadingFile(f"Error uploading file: {file}")
         return cls(name=file.name, mimetype=mimetype, s3key=s3meta.key)
 
