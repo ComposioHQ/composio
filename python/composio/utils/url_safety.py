@@ -1,4 +1,21 @@
-"""SSRF protections for user-supplied URL file inputs."""
+"""SSRF protections for user-supplied URL file inputs.
+
+Guarding a user-supplied URL takes two steps, because the hostname is resolved
+twice: once by this module when it validates the target, and once by the HTTP
+client when it opens the connection.
+
+``assert_safe_fetch_target`` covers the first resolution. It rejects non-HTTP(S)
+URLs and any hostname whose DNS answers include a non-publicly-routable address,
+which also defeats decimal/octal/hex IP obfuscation because the *resolved*
+address is what gets checked.
+
+``assert_safe_connected_peer`` covers the second. An attacker-controlled DNS
+server with a short TTL can answer with a public address for the validating
+lookup and an internal one for the connecting lookup -- a time-of-check /
+time-of-use window better known as DNS rebinding. Re-checking the address the
+socket actually landed on, before any response body is read, means an internal
+service never returns data to the caller.
+"""
 
 from __future__ import annotations
 
@@ -68,3 +85,54 @@ def assert_safe_fetch_target(url: str) -> None:
             raise BlockedInternalUrlError(
                 f'Refusing to fetch "{parsed.hostname}" because it resolves to a non-public address'
             )
+
+
+def _connected_peer_address(response: requests.Response) -> str | None:
+    """Best-effort address of the socket a response is connected to.
+
+    Returns ``None`` when there is no peer to inspect: the response may have
+    been produced by a transport adapter that is not backed by a socket, or
+    the connection may already have been released back to the pool.
+    """
+    raw = getattr(response, "raw", None)
+    connection = getattr(raw, "connection", None)
+    sock = getattr(connection, "sock", None)
+    if sock is None:
+        return None
+
+    try:
+        peer = sock.getpeername()
+    except (AttributeError, OSError):
+        return None
+
+    if isinstance(peer, tuple) and peer and isinstance(peer[0], str):
+        return peer[0]
+    return None
+
+
+def assert_safe_connected_peer(response: requests.Response, url: str) -> None:
+    """Refuse a response whose connection landed on an internal address.
+
+    ``assert_safe_fetch_target`` validates the addresses a hostname resolves
+    to, but the HTTP client resolves that hostname again when it connects, so
+    validation on its own leaves a DNS-rebinding window (see the module
+    docstring). This closes the exploitable half of that window by checking the
+    address the socket is genuinely connected to and dropping the response
+    before a single body byte is read.
+
+    A peer that cannot be determined is left alone rather than rejected: there
+    is nothing to check, and the pre-flight resolution check has already run.
+    Call this while the response is still streaming, before reading the body.
+    """
+    peer = _connected_peer_address(response)
+    if peer is None or not is_blocked_ip(peer):
+        return
+
+    response.close()
+    hostname = urlparse(url).hostname or "the requested host"
+    raise BlockedInternalUrlError(
+        f'Refusing to read from "{hostname}" because the connection was '
+        f"established to a non-public address ({peer}), even though the host "
+        "resolved to a public address during validation. This is the "
+        "signature of a DNS-rebinding attack."
+    )
