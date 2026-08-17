@@ -28,6 +28,29 @@ recordings:
       description: Show whoami subcommand help
       command: "composio whoami"
 
+  onboard:
+    - name: help
+      description: Show onboard subcommand help
+      command: "composio onboard --help"
+      # Explicit: the option list is ~90 lines, past what `dynamic` will grow to (it caps at
+      # twice the configured height).
+      height: 2250
+
+    # Only the non-interactive surfaces are recorded. The headline flow needs a browser OAuth round
+    # trip that vhs cannot drive headlessly, so these run against an already-onboarded account.
+    - name: status
+      description: Report where onboarding stands without advancing a gate
+      command: "composio onboard --status"
+      sleepAfterEnter: 8s
+      height: dynamic
+
+    - name: json
+      description: Emit the agent-facing onboarding state document
+      command: "composio onboard --json"
+      sleepAfterEnter: 8s
+      # Explicit for the same reason as `help`: the whole document has to be readable.
+      height: 1800
+
   install:
     - name: help
       description: Show install subcommand help

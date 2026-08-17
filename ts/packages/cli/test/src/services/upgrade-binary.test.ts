@@ -36,7 +36,9 @@ const TerminalUINoop = Layer.succeed(
     },
     note: () => Effect.void,
     select: (_message, options) => Effect.succeed(options[0].value),
+    selectOption: (_message, options) => Effect.succeed(Option.some(options[0].value)),
     confirm: () => Effect.succeed(true),
+    text: () => Effect.succeed(Option.none<string>()),
     withSpinner: (_message, effect) => effect,
     useMakeSpinner: (_message, use) =>
       use({

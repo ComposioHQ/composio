@@ -1,7 +1,7 @@
 import process from 'node:process';
 import type { Writable } from 'node:stream';
 import * as p from '@clack/prompts';
-import { Context, Effect, Exit, Layer } from 'effect';
+import { Context, Effect, Exit, Layer, Option } from 'effect';
 
 export type TtyLikeStream = {
   readonly isTTY?: boolean;
@@ -146,6 +146,9 @@ export interface TerminalUI {
   /**
    * Present a single-select list to the user.
    * When prompting is unavailable, returns the first option's value.
+   *
+   * The defaulting makes this unsuitable for a choice that authorizes a side effect: cancelling is
+   * indistinguishable from picking the first option. Use `selectOption` there.
    */
   readonly select: <Value>(
     message: string,
@@ -155,6 +158,37 @@ export interface TerminalUI {
       readonly hint?: string;
     }>
   ) => Effect.Effect<Value>;
+
+  /**
+   * Present a single-select list whose absence of an answer stays visible.
+   *
+   * Returns `None` when the user cancels and when prompting is unavailable, so a caller whose next
+   * step is a real API call cannot mistake "cancelled" for "chose the first entry". Same shape as
+   * `text`, and for the same reason.
+   */
+  readonly selectOption: <Value>(
+    message: string,
+    options: ReadonlyArray<{
+      readonly value: Value;
+      readonly label: string;
+      readonly hint?: string;
+    }>
+  ) => Effect.Effect<Option.Option<Value>>;
+
+  /**
+   * Ask the user for free text.
+   *
+   * Deliberately has no `defaultValue`. Every other prompt here defaults when prompting is
+   * unavailable — `select` returns the first option, `confirm` returns its default — and that
+   * defaulting is what would let a non-prompting path assemble a real write (a GitHub issue in
+   * someone else's repository) out of nothing. The result is an `Option` so the caller has to
+   * handle absence: `None` when prompting is unavailable, when the prompt is cancelled, and when
+   * the answer is blank.
+   */
+  readonly text: (
+    message: string,
+    options?: { readonly placeholder?: string }
+  ) => Effect.Effect<Option.Option<string>>;
 
   /**
    * Create a controllable spinner that is automatically stopped on error or interruption.
@@ -238,6 +272,11 @@ export const makeTerminalUI = (streams: TerminalUIStreams): TerminalUI => {
     return Effect.sync(render);
   };
 
+  const promptSelect = (
+    message: string,
+    options: ReadonlyArray<{ value: unknown; label: string; hint?: string }>
+  ) => p.select({ message, options: [...options], output: stderr });
+
   return {
     capabilities: Effect.succeed(capabilities),
 
@@ -265,6 +304,8 @@ export const makeTerminalUI = (streams: TerminalUIStreams): TerminalUI => {
     note: (message, title) =>
       decorate(() => p.note(message, title ?? '', { format: line => line, output: stderr })),
 
+    // `select` and `selectOption` differ only in what an unavailable prompt and a cancel mean: the
+    // former defaults to the first option, the latter reports the absence.
     select: ((
       message: string,
       options: ReadonlyArray<{ value: unknown; label: string; hint?: string }>
@@ -274,16 +315,44 @@ export const makeTerminalUI = (streams: TerminalUIStreams): TerminalUI => {
       }
 
       return Effect.promise(async () => {
-        const result = await p.select({
-          message,
-          options: [...options],
-          output: stderr,
-        });
+        const result = await promptSelect(message, options);
         // p.select returns Value | symbol (symbol on cancel)
         if (typeof result === 'symbol') return options[0].value;
         return result;
       });
     }) as TerminalUI['select'],
+
+    selectOption: ((
+      message: string,
+      options: ReadonlyArray<{ value: unknown; label: string; hint?: string }>
+    ) => {
+      if (!canPrompt) {
+        return Effect.succeed(Option.none());
+      }
+
+      return Effect.promise(async () => {
+        const result = await promptSelect(message, options);
+        if (p.isCancel(result)) return Option.none();
+        return Option.some(result);
+      });
+    }) as TerminalUI['selectOption'],
+
+    text: (message, options) => {
+      if (!canPrompt) {
+        return Effect.succeed(Option.none<string>());
+      }
+
+      return Effect.promise(async () => {
+        const result = await p.text({
+          message,
+          placeholder: options?.placeholder,
+          output: stderr,
+        });
+        if (p.isCancel(result)) return Option.none<string>();
+        const trimmed = result.trim();
+        return trimmed.length === 0 ? Option.none<string>() : Option.some(trimmed);
+      });
+    },
 
     confirm: (message, options) => {
       if (!canPrompt) {

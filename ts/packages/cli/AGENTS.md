@@ -31,6 +31,7 @@ Each command uses `@effect/cli`'s `Command.make()` pattern. Top-level command fi
 
 | Group / Command | Purpose |
 | -------------------- | -------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------- |
+| `onboard` | Front door: sequences login → connect → execute, resuming from durable facts (`--json` for agents) |
 | `version` | Display CLI version |
 | `whoami` | Show logged-in user info (writes raw API key to stdout when piped — see Output Conventions) |
 | `login` | Login with browser redirect or direct user/API key (`--no-browser`, `--no-wait`, `--key`, `--user-api-key`, `--org`) |

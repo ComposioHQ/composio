@@ -4,6 +4,8 @@ import { describe, expect, layer } from '@effect/vitest';
 import { Effect } from 'effect';
 import { ValidationError, HelpDoc } from '@effect/cli';
 import { cli, pkg, TestLive, MockConsole } from 'test/__utils__';
+import { makeTerminalUITestImpl } from 'test/__utils__/services/terminal-ui-test';
+import { TerminalUI } from 'src/services/terminal-ui';
 import { afterEach, vi } from 'vitest';
 
 const getCommandMismatch = (value: unknown): ValidationError.CommandMismatch => {
@@ -51,8 +53,19 @@ describe('CLI: composio', () => {
     );
   });
 
-  layer(TestLive())(it => {
-    it.scoped('[Given] no args [Then] prints help message', () =>
+  layer(
+    TestLive({
+      cliUserConfig: {
+        // Both halves: the flag alone is not evidence of an execution, and `executionRecorded`
+        // reads a config carrying only the flag as unfinished.
+        onboarding: {
+          hasExecuted: true,
+          lastExecution: { slug: 'GITHUB_GET_THE_AUTHENTICATED_USER', at: '2026-01-01T00:00:00Z' },
+        },
+      },
+    })
+  )(it => {
+    it.scoped('[Given] no args and a finished onboarding [Then] prints help message', () =>
       Effect.gen(function* () {
         yield* cli([]);
         const lines = yield* MockConsole.getLines({ stripAnsi: true });
@@ -60,8 +73,67 @@ describe('CLI: composio', () => {
         expect(output).toContain('Usage:');
         expect(output).toContain('composio');
         expect(output).not.toContain('composio connections list');
+        expect(output).not.toContain('composio onboard` to');
       })
     );
+  });
+
+  layer(TestLive())(it => {
+    it.scoped('[Given] no args and an unfinished onboarding [Then] nudges toward onboard', () =>
+      Effect.gen(function* () {
+        yield* cli([]);
+        const lines = yield* MockConsole.getLines({ stripAnsi: true });
+        const output = lines.join('\n');
+        expect(output).toContain('composio onboard');
+        // The nudge replaces root help; it does not print both.
+        expect(output).not.toContain('Usage:');
+      })
+    );
+  });
+
+  layer(TestLive({ cliUserConfig: { onboarding: { hasExecuted: true } } }))(it => {
+    it.scoped(
+      '[Given] the flag set with no recorded execution [Then] still nudges, matching the execute gate',
+      () =>
+        Effect.gen(function* () {
+          // A hand-edited config with `has_executed` and no `last_execution` is not evidence of an
+          // execution. Hiding the nudge here while `composio onboard` still reports the execute gate
+          // open would leave the two disagreeing about the same config.
+          yield* cli([]);
+          const output = (yield* MockConsole.getLines({ stripAnsi: true })).join('\n');
+          expect(output).toContain('composio onboard');
+          expect(output).not.toContain('Usage:');
+        })
+    );
+  });
+
+  describe('the nudge goes to stderr and survives redirection', () => {
+    const stdoutWrites: Array<string> = [];
+    const stderrWrites: Array<string> = [];
+
+    // Built with all three streams captured, so the double's own `canDecorate` gate is off: every
+    // `log.*`/`note` write is suppressed exactly as it would be in production. What is left is
+    // `ui.error`, which production writes unconditionally — so this pins that the nudge uses it.
+    const streamRecordingUI = TerminalUI.of({
+      ...makeTerminalUITestImpl({ tty: { stdin: false, stdout: false, stderr: false } }),
+      output: data => Effect.sync(() => void stdoutWrites.push(data)),
+      error: data => Effect.sync(() => void stderrWrites.push(data)),
+    });
+
+    layer(TestLive({ terminalUI: streamRecordingUI }))(it => {
+      it.scoped('[Given] captured stderr [Then] bare composio still says something', () =>
+        Effect.gen(function* () {
+          stdoutWrites.length = 0;
+          stderrWrites.length = 0;
+
+          yield* cli([]);
+
+          // Prose never lands on the data stream, and the command is never silent on every stream.
+          expect(stdoutWrites).toEqual([]);
+          expect(stderrWrites.join('\n')).toContain('composio onboard');
+        })
+      );
+    });
   });
 
   layer(TestLive())(it => {

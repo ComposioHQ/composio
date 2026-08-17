@@ -13,6 +13,7 @@ import { versionCmd } from './version.cmd';
 import { upgradeCmd } from './upgrade.cmd';
 import { whoamiCmd } from './whoami.cmd';
 import { loginCmd } from './login.cmd';
+import { onboardCmd } from './onboard.cmd';
 import { signupCmd } from './signup.cmd';
 import { setupCmd } from './setup.cmd';
 import { listenCmd } from './listen.cmd';
@@ -45,6 +46,8 @@ import { configCmd } from './config/config.cmd';
 import { rootConnectionsCmd } from './connections/connections.cmd';
 import { agentCmd } from './agent/agent.cmd';
 import { renderCommandHintGraph } from 'src/services/command-hints';
+import { getLocalOnboardNudge } from 'src/services/onboarding-nudge';
+import { executionRecorded } from 'src/services/onboarding-store';
 import { resetRuntimeDebugFlags, setRuntimeDebugFlags } from 'src/services/runtime-debug-flags';
 import { ComposioCliUserConfig } from 'src/services/cli-user-config';
 import { ComposioUserContext } from 'src/services/user-context';
@@ -61,6 +64,7 @@ import { withBackgroundUpdateCheck } from './background-update-check';
 import { configureCliAnalyticsReleaseVersion } from 'src/analytics/events';
 
 const ROOT_COMMANDS = [
+  tagged(onboardCmd),
   tagged(versionCmd),
   tagged(upgradeCmd),
   tagged(whoamiCmd),
@@ -449,6 +453,7 @@ const printDevModeDisabled = Effect.gen(function* () {
 
 export const runWithConfig = Effect.gen(function* () {
   const cliUserConfig = yield* ComposioCliUserConfig;
+  const userContext = yield* ComposioUserContext;
   const visibility: CommandVisibility = {
     isDevModeEnabled: cliUserConfig.isDevModeEnabled(),
     isExperimentalFeatureEnabled: feature => cliUserConfig.isExperimentalFeatureEnabled(feature),
@@ -465,6 +470,29 @@ export const runWithConfig = Effect.gen(function* () {
   const routeRootCommand = (normalizedArgv: ReadonlyArray<string>, dangerouslyAllow: boolean) => {
     const args = normalizedArgv.slice(2);
     if (isRootHelp(normalizedArgv)) {
+      // Zero args only. `--help` and `--help <level>` are untouched, so the nudge cannot change
+      // what someone gets when they explicitly asked for help.
+      const nudge =
+        args.length === 0
+          ? getLocalOnboardNudge({
+              loggedIn: Option.isSome(userContext.data.apiKey),
+              // The same derivation the execute gate uses, so the nudge and `composio onboard`
+              // cannot disagree about whether a first execution happened.
+              hasExecuted: Option.isSome(executionRecorded(cliUserConfig.data.onboarding)),
+            })
+          : undefined;
+
+      if (nudge !== undefined) {
+        // Prose, so it goes to stderr — `ui.output` would put it on the data stream of the
+        // most-piped command in the CLI. `ui.error` rather than `ui.log.info` because the latter
+        // renders only when stderr is a TTY, and the nudge replaces root help: suppressing it under
+        // `composio > out.txt 2> err.txt` would make bare `composio` produce nothing on any stream.
+        return Effect.gen(function* () {
+          const ui = yield* TerminalUI;
+          yield* ui.error(nudge);
+        });
+      }
+
       return printRootHelp(visibility, parseHelpLevel(normalizedArgv[3]) ?? 'default');
     }
     const subHelp = matchSubcommandHelp(normalizedArgv, visibility);

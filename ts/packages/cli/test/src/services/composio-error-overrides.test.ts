@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   ComposioNoActiveConnectionError,
+  ComposioRevokedConnectionError,
   mapComposioError,
   mapOnlyComposioOverrideError,
 } from 'src/services/composio-error-overrides';
@@ -40,6 +41,70 @@ describe('composio-error-overrides', () => {
     expect(result.message).toBe(
       'No active connection found for toolkit "slack". Run `composio link slack`, then retry.'
     );
+  });
+
+  // A revoked grant arrives as a successful call whose body carries the provider's own error
+  // string. There is no Composio code, slug, or status to key on, and the connected account still
+  // reads ACTIVE — the provider's wording is the only evidence there is.
+  describe('provider-side authorization failures', () => {
+    it('classifies a revoked token from the provider error string alone', () => {
+      const result = mapComposioError({
+        toolSlug: 'SLACK_LIST_ALL_CHANNELS',
+        error: 'Slack API error: token_revoked',
+      });
+
+      expect(result.normalized).toBeInstanceOf(ComposioRevokedConnectionError);
+      expect(result.override?.kind).toBe('revoked_connection');
+      expect(result.message).toBe(
+        'The slack connection is no longer authorized (Slack API error: token_revoked). Reconnect it, then retry.'
+      );
+    });
+
+    it.each([
+      ['invalid_auth', 'Slack API error: invalid_auth'],
+      ['invalid_grant', '{"error":"invalid_grant","error_description":"Token expired"}'],
+      ['GitHub prose', 'Bad credentials'],
+      ['Google prose', 'Token has been expired or revoked.'],
+    ])('classifies %s', (_label, message) => {
+      const result = mapComposioError({ toolkit: 'gmail', error: message });
+
+      expect(result.override?.kind).toBe('revoked_connection');
+    });
+
+    it.each([
+      ['a tool that talks about revoked records', 'Returned 3 revoked certificates'],
+      ['a field named like a code', 'Missing required parameter: invalid_tokens_filter'],
+      ['an unrelated failure', 'Rate limit exceeded'],
+    ])('leaves %s unclassified', (_label, message) => {
+      const result = mapComposioError({ toolkit: 'gmail', error: message });
+
+      expect(result.override).toBeNull();
+      expect(result.message).toBe(message);
+    });
+
+    it('lets Composio-side no-connection win over provider wording', () => {
+      const result = mapComposioError({
+        toolkit: 'slack',
+        error: {
+          details: {
+            code: 4302,
+            slug: 'ToolRouterV2_NoActiveConnection',
+            message: 'No active connection, previous token_revoked',
+          },
+        },
+      });
+
+      expect(result.normalized).toBeInstanceOf(ComposioNoActiveConnectionError);
+      expect(result.override?.kind).toBe('no_active_connection');
+    });
+
+    it('falls back to a toolkit-free message when the slug names no toolkit', () => {
+      const result = mapComposioError({ toolSlug: 'COMPOSIO_SEARCH_TOOLS', error: 'not_authed' });
+
+      expect(result.message).toBe(
+        'The connection for this tool call is no longer authorized (not_authed). Reconnect the toolkit, then retry.'
+      );
+    });
   });
 
   it('passes through unrelated errors', () => {

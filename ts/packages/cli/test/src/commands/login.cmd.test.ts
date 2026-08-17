@@ -1,6 +1,6 @@
 import { describe, expect, layer } from '@effect/vitest';
 import { vi, afterEach } from 'vitest';
-import { Console, DateTime, Effect, Exit, Option } from 'effect';
+import { Console, DateTime, Effect, Exit, Layer, Option } from 'effect';
 import { HelpDoc, ValidationError } from '@effect/cli';
 import path from 'node:path';
 import { FileSystem } from '@effect/platform';
@@ -12,6 +12,7 @@ import { getTerminalCapabilities, TerminalUI } from 'src/services/terminal-ui';
 import { writeStoredAgentIdentity } from 'src/services/agents';
 import { ComposioUserContext } from 'src/services/user-context';
 import { ComposioSessionRepository } from 'src/services/composio-clients';
+import { browserLogin } from 'src/commands/login.cmd';
 
 vi.mock('open', () => ({
   default: vi.fn(async () => undefined),
@@ -565,5 +566,336 @@ describe('CLI: composio login', () => {
           ]);
         })
     );
+  });
+
+  // ── browserLogin embedded mode ──────────────────────────────────────────────
+  //
+  // `composio onboard` drives login as one step of a longer flow and owns stdout for the whole
+  // invocation, so embedded mode suppresses every `ui.output` write, the next-step hints, and the
+  // outro — while leaving stderr decoration and the standalone contract untouched.
+
+  describe('browserLogin embedded mode', () => {
+    const SESSION_ID = 'te00st11-d0c4-4efa-8117-c638886063e0';
+    const LOGIN_URL = `https://dashboard.composio.dev/?cliKey=${SESSION_ID}`;
+
+    const spyOnOutput = (impl: TerminalUI) => {
+      const outputs: string[] = [];
+      const spied = TerminalUI.of({
+        ...impl,
+        output: (data, options) =>
+          Effect.gen(function* () {
+            outputs.push(data);
+            yield* impl.output(data, options);
+          }),
+      });
+      return { spied, outputs };
+    };
+
+    const linkedSessionRepository = Layer.succeed(
+      ComposioSessionRepository,
+      new ComposioSessionRepository({
+        createSession: () =>
+          Effect.gen(function* () {
+            const now = yield* DateTime.now;
+            return {
+              id: SESSION_ID,
+              code: '001122',
+              expiresAt: DateTime.add(now, { minutes: 10 }),
+              status: 'pending' as const,
+            };
+          }),
+        getSession: () =>
+          Effect.gen(function* () {
+            const now = yield* DateTime.now;
+            return {
+              id: SESSION_ID,
+              code: '001122',
+              expiresAt: DateTime.add(now, { minutes: 10 }),
+              status: 'linked' as const,
+              api_key: 'uak_embedded',
+              account: { name: 'test-name', id: 'test-id', email: 'test.name@gmail.com' },
+            };
+          }),
+        getRealtimeCredentials: () =>
+          Effect.succeed({
+            project_id: 'proj_test',
+            pusher_key: 'pusher_test_key',
+            pusher_cluster: 'mt1',
+          }),
+        authRealtimeChannel: () => Effect.succeed({ auth: 'mock:auth', channel_data: undefined }),
+      })
+    );
+
+    const mockSessionInfoFetch = () =>
+      vi.spyOn(globalThis, 'fetch').mockImplementation(async requestInput => {
+        const url = requestUrl(requestInput);
+        if (url.includes('/api/v3/auth/session/info')) {
+          return mockFetchResponse({
+            project: {
+              name: 'Default Project',
+              id: 'project_id_default',
+              org_id: 'org_embedded',
+              nano_id: 'project_default',
+              email: 'project@example.com',
+              created_at: '2026-01-01T00:00:00.000Z',
+              updated_at: '2026-01-01T00:00:00.000Z',
+              org: { id: 'org_embedded', name: 'Embedded Org', plan: 'enterprise' },
+            },
+            org_member: {
+              id: 'member_123',
+              user_id: 'user_123',
+              email: 'cli@example.com',
+              name: 'CLI User',
+              role: 'admin',
+            },
+            api_key: null,
+          });
+        }
+        return mockFetchResponse({});
+      });
+
+    describe('the pending branch', () => {
+      const pendingUI = spyOnOutput(
+        terminalUIWithTtyState({ stdin: true, stdout: false, stderr: true })
+      );
+
+      layer(TestLive({ terminalUI: pendingUI.spied }))(it => {
+        it.scoped(
+          '[Given] embedded and --no-wait [Then] returns pending and writes no stdout',
+          () =>
+            Effect.gen(function* () {
+              pendingUI.outputs.length = 0;
+
+              const outcome = yield* browserLogin({
+                scope: 'user',
+                noBrowser: false,
+                noWait: true,
+                embedded: true,
+              });
+
+              expect(outcome).toStrictEqual({
+                status: 'pending',
+                loginUrl: LOGIN_URL,
+                pollCommand: 'composio login --poll',
+              });
+              expect(pendingUI.outputs).toEqual([]);
+            })
+        );
+      });
+    });
+
+    describe('the standalone pending branch is unchanged', () => {
+      const standaloneUI = spyOnOutput(
+        terminalUIWithTtyState({ stdin: true, stdout: false, stderr: true })
+      );
+
+      layer(TestLive({ terminalUI: standaloneUI.spied }))(it => {
+        it.scoped(
+          '[Given] embedded is absent [Then] the login instructions still reach stdout',
+          () =>
+            Effect.gen(function* () {
+              standaloneUI.outputs.length = 0;
+
+              const outcome = yield* browserLogin({
+                scope: 'user',
+                noBrowser: false,
+                noWait: true,
+              });
+
+              expect(outcome).toMatchObject({ status: 'pending', loginUrl: LOGIN_URL });
+              expect(standaloneUI.outputs).toHaveLength(1);
+              expect(standaloneUI.outputs[0]).toContain('Open this URL in your browser to log in:');
+              expect(standaloneUI.outputs[0]).toContain('composio login --poll');
+            })
+        );
+      });
+    });
+
+    // A human authorizing the URL the first call printed must still be able to finish. The pending
+    // session file is the handoff `composio login --poll` reads, so overwriting it while an
+    // embedding command re-runs would strand the authorization the human already completed.
+    describe('a second embedded call while a login is outstanding', () => {
+      const countingSessions = (ids: Array<string>) =>
+        Layer.succeed(
+          ComposioSessionRepository,
+          new ComposioSessionRepository({
+            createSession: () =>
+              Effect.gen(function* () {
+                const now = yield* DateTime.now;
+                const id = `session-${ids.length + 1}`;
+                ids.push(id);
+                return {
+                  id,
+                  code: '001122',
+                  expiresAt: DateTime.add(now, { minutes: 10 }),
+                  status: 'pending' as const,
+                };
+              }),
+            getSession: () => Effect.die('the poll must not be reached'),
+            getRealtimeCredentials: () =>
+              Effect.succeed({
+                project_id: 'proj_test',
+                pusher_key: 'pusher_test_key',
+                pusher_cluster: 'mt1',
+              }),
+            authRealtimeChannel: () =>
+              Effect.succeed({ auth: 'mock:auth', channel_data: undefined }),
+          })
+        );
+
+      layer(TestLive({ terminalUI: headlessStdinUI }))(it => {
+        it.scoped('[Given] embedded [Then] resumes the outstanding session', () =>
+          Effect.gen(function* () {
+            const minted: Array<string> = [];
+            const sessions = countingSessions(minted);
+
+            const first = yield* browserLogin({
+              scope: 'user',
+              noBrowser: true,
+              noWait: true,
+              embedded: true,
+            }).pipe(Effect.provide(sessions));
+            const second = yield* browserLogin({
+              scope: 'user',
+              noBrowser: true,
+              noWait: true,
+              embedded: true,
+            }).pipe(Effect.provide(sessions));
+
+            expect(minted).toStrictEqual(['session-1']);
+            expect(second).toStrictEqual(first);
+          })
+        );
+      });
+
+      layer(TestLive({ terminalUI: headlessStdinUI }))(it => {
+        it.scoped('[Given] embedded is absent [Then] a fresh session is minted every time', () =>
+          Effect.gen(function* () {
+            const minted: Array<string> = [];
+            const sessions = countingSessions(minted);
+
+            yield* browserLogin({ scope: 'user', noBrowser: true, noWait: true }).pipe(
+              Effect.provide(sessions)
+            );
+            yield* browserLogin({ scope: 'user', noBrowser: true, noWait: true }).pipe(
+              Effect.provide(sessions)
+            );
+
+            expect(minted).toStrictEqual(['session-1', 'session-2']);
+          })
+        );
+      });
+
+      layer(TestLive({ terminalUI: headlessStdinUI }))(it => {
+        it.scoped(
+          '[Given] the outstanding session has another scope [Then] mints a fresh one',
+          () =>
+            Effect.gen(function* () {
+              const minted: Array<string> = [];
+              const sessions = countingSessions(minted);
+
+              // `composio init` mints `project` sessions into the same cache file. Resuming one of
+              // those for a `user` login would have the human authorize and poll against a session
+              // type the caller never asked for.
+              const project = yield* browserLogin({
+                scope: 'project',
+                noBrowser: true,
+                noWait: true,
+                embedded: true,
+              }).pipe(Effect.provide(sessions));
+              const user = yield* browserLogin({
+                scope: 'user',
+                noBrowser: true,
+                noWait: true,
+                embedded: true,
+              }).pipe(Effect.provide(sessions));
+
+              expect(minted).toStrictEqual(['session-1', 'session-2']);
+              expect(user).not.toStrictEqual(project);
+            })
+        );
+      });
+    });
+
+    describe('a non-prompting invocation still short-circuits', () => {
+      const headless = spyOnOutput(headlessStdinUI);
+
+      layer(TestLive({ terminalUI: headless.spied }))(it => {
+        it.scoped(
+          '[Given] embedded and no TTY [Then] returns pending without waiting for the browser',
+          () =>
+            Effect.gen(function* () {
+              headless.outputs.length = 0;
+
+              const outcome = yield* browserLogin({
+                scope: 'user',
+                noBrowser: false,
+                embedded: true,
+              });
+
+              expect(outcome).toMatchObject({ status: 'pending' });
+              expect(headless.outputs).toEqual([]);
+            })
+        );
+      });
+    });
+
+    describe('the linked branch', () => {
+      const linkedUI = spyOnOutput(
+        terminalUIWithTtyState({ stdin: true, stdout: false, stderr: true })
+      );
+
+      layer(TestLive({ terminalUI: linkedUI.spied }))(it => {
+        it.scoped('[Given] embedded and a linked session [Then] returns the org id quietly', () =>
+          Effect.gen(function* () {
+            linkedUI.outputs.length = 0;
+            mockSessionInfoFetch();
+
+            const outcome = yield* browserLogin({
+              scope: 'user',
+              noBrowser: true,
+              skipOrgProjectPicker: true,
+              embedded: true,
+            }).pipe(Effect.provide(linkedSessionRepository));
+
+            expect(outcome).toStrictEqual({
+              status: 'linked',
+              email: 'test.name@gmail.com',
+              orgId: 'org_embedded',
+            });
+            expect(linkedUI.outputs).toEqual([]);
+
+            const stderrText = (yield* MockConsole.getLines({ stripAnsi: true })).join('\n');
+            expect(stderrText).not.toContain('Login complete');
+            expect(stderrText).not.toContain('composio execute');
+            expect(stderrText).not.toContain('composio orgs switch');
+          })
+        );
+      });
+    });
+
+    describe('the standalone linked branch is unchanged', () => {
+      const standaloneLinkedUI = spyOnOutput(
+        terminalUIWithTtyState({ stdin: true, stdout: false, stderr: true })
+      );
+
+      layer(TestLive({ terminalUI: standaloneLinkedUI.spied }))(it => {
+        it.scoped('[Given] embedded is absent [Then] the login URL still reaches stdout', () =>
+          Effect.gen(function* () {
+            standaloneLinkedUI.outputs.length = 0;
+            mockSessionInfoFetch();
+
+            const outcome = yield* browserLogin({
+              scope: 'user',
+              noBrowser: true,
+              skipOrgProjectPicker: true,
+            }).pipe(Effect.provide(linkedSessionRepository));
+
+            expect(outcome).toMatchObject({ status: 'linked', orgId: 'org_embedded' });
+            expect(standaloneLinkedUI.outputs).toContain(LOGIN_URL);
+          })
+        );
+      });
+    });
   });
 });

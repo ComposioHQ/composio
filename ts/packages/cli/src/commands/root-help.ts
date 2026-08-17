@@ -31,6 +31,21 @@ type CompactCommand = {
 
 const CORE_COMMANDS: ReadonlyArray<TaggedValue<DetailedCommand>> = [
   simple({
+    name: 'onboard',
+    description: 'Get from a fresh install to a working tool call. Resumes wherever you left off.',
+    usage: 'onboard [--toolkit slug] [--json] [--status] [--yes] [--reset]',
+    options: [
+      { name: '--toolkit', description: 'Toolkit to connect and demo (e.g. "github")' },
+      {
+        name: '--json',
+        description: 'Emit the state document on stdout, suppress prompts, never write data',
+      },
+      { name: '--status', description: 'Report where you are without advancing any step' },
+      { name: '-y, --yes', description: 'Pre-answer the demo confirm and the org picker' },
+      { name: '--reset', description: 'Forget the recorded first execution and start over' },
+    ],
+  }),
+  simple({
     name: 'search',
     description: 'Find tools by use case across all toolkits/apps.',
     usage: 'search <query...> [--toolkits text] [--limit integer] [--human]',

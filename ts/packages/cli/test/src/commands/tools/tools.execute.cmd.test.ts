@@ -2,20 +2,22 @@ import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import { HelpDoc, ValidationError } from '@effect/cli';
+import { SystemError } from '@effect/platform/Error';
 import { describe, expect, it, layer } from '@effect/vitest';
 import { vi, beforeEach, afterEach } from 'vitest';
-import { Config, ConfigProvider, DateTime, Effect, Option, Predicate } from 'effect';
+import { Config, ConfigProvider, DateTime, Console, Effect, Option, Predicate } from 'effect';
 import { extendConfigProvider } from 'src/services/config';
 import { ComposioNoActiveConnectionError } from 'src/services/composio-error-overrides';
 import { setupCacheDir } from 'src/effects/setup-cache-dir';
 import { getOrFetchToolInputDefinition } from 'src/services/tool-input-validation';
 import * as consumerShortTermCache from 'src/services/consumer-short-term-cache';
 import * as composioClients from 'src/services/composio-clients';
-import * as redactModule from 'src/ui/redact';
+import * as onboardingStore from 'src/services/onboarding-store';
 import { cli, TestLive, MockConsole } from 'test/__utils__';
 import type { TestLiveInput } from 'test/__utils__/services/test-layer';
 import {
   parseParallelExecuteArgs,
+  runToolsExecute,
   showToolsExecuteInputHelp,
 } from 'src/commands/tools/commands/tools.execute.cmd';
 import { ComposioCliUserConfig } from 'src/services/cli-user-config';
@@ -68,12 +70,10 @@ describe('CLI: composio execute', () => {
     })
   );
 
-  // Disable CI redaction so tests see raw values.
-  // The explicit CI-redaction test overrides via vi.spyOn and is unaffected.
-  let savedCI: string | undefined;
+  // Disable CI redaction so tests see raw values. The explicit CI-redaction test stubs it back on,
+  // and `unstubEnvs` in vitest.config.ts restores the real value after each test.
   beforeEach(() => {
-    savedCI = process.env.CI;
-    delete process.env.CI;
+    vi.stubEnv('CI', undefined);
     vi.spyOn(composioClients, 'getLatestToolVersion').mockImplementation(() =>
       Effect.fail(new composioClients.HttpServerError({}))
     );
@@ -86,7 +86,6 @@ describe('CLI: composio execute', () => {
   });
   afterEach(() => {
     vi.restoreAllMocks();
-    if (savedCI !== undefined) process.env.CI = savedCI;
   });
 
   let recordedSessionCreateParams: Array<Record<string, unknown>> = [];
@@ -2353,6 +2352,49 @@ describe('CLI: composio execute', () => {
     );
   });
 
+  layer(
+    TestLive({
+      baseConfigProvider: testConfigProvider,
+      fixture: 'global-test-user-id',
+      stdin: { isTTY: true, data: '' },
+      toolsExecutor: {
+        respondWith: {
+          data: {},
+          // A revoked grant reaches the CLI exactly like any other soft failure: HTTP 200, no
+          // Composio error code, and the provider's own wording as the only evidence.
+          error: 'Slack API error: token_revoked',
+          successful: false,
+          logId: 'log_revoked',
+        },
+      },
+    })
+  )('[Given] the provider revoked the grant [Then] says how to reconnect', it => {
+    it.scoped('names `composio link` instead of printing the provider code alone', () =>
+      Effect.gen(function* () {
+        yield* cli([
+          'execute',
+          'GMAIL_CREATE_EMAIL_DRAFT',
+          '-d',
+          '{"recipient":"to@example.com"}',
+        ]).pipe(Effect.catchAll(() => Effect.void));
+        const output = (yield* MockConsole.getLines({ stripAnsi: true })).join('\n');
+
+        expect(output).toContain('no longer authorized');
+        // Without this, the next thing the user runs reports ACTIVE and contradicts the diagnosis.
+        expect(output).toContain('still reads ACTIVE');
+        // `composio link` on its own refuses while the dead account exists, so the removal step
+        // has to come first or the guidance sends the user at a command that errors.
+        expect(output).toContain('composio connections remove gmail');
+        expect(output).toContain('composio link gmail');
+        expect(output.indexOf('composio connections remove gmail')).toBeLessThan(
+          output.lastIndexOf('composio link gmail')
+        );
+        // The provider's own wording stays visible as the evidence for the diagnosis.
+        expect(output).toContain('token_revoked');
+      })
+    );
+  });
+
   // --- Meta tool error tests ---
 
   layer(
@@ -2505,31 +2547,674 @@ describe('CLI: composio execute', () => {
   )('[Given] CI redaction enabled [Then] redacts id-like fields and logId', it => {
     it.scoped('redacts id, threadId, logId but preserves labelIds', () =>
       Effect.gen(function* () {
-        const spy = vi
-          .spyOn(redactModule, 'redact')
-          .mockImplementation(
-            (({ prefix }: { value: string; prefix?: string }) =>
-              `${prefix ?? ''}<REDACTED>`) as typeof redactModule.redact
-          );
+        // The real `CI` flag rather than a stub of `redact`: the replacer and `redact` live in one
+        // module now, so a spy on the export no longer intercepts the internal call. `unstubEnvs`
+        // restores this after the test.
+        vi.stubEnv('CI', 'true');
 
-        try {
-          yield* cli(['execute', 'GMAIL_SEND_EMAIL', '-d', '{"recipient_email":"to@example.com"}']);
-          const lines = yield* MockConsole.getLines({ stripAnsi: true });
-          const output = parseLastJson(lines) as unknown as {
-            data: { id: string; labelIds: string[]; threadId: string };
-            logId: string;
-            successful: boolean;
-          };
+        yield* cli(['execute', 'GMAIL_SEND_EMAIL', '-d', '{"recipient_email":"to@example.com"}']);
+        const lines = yield* MockConsole.getLines({ stripAnsi: true });
+        const output = parseLastJson(lines) as unknown as {
+          data: { id: string; labelIds: string[]; threadId: string };
+          logId: string;
+          successful: boolean;
+        };
 
-          expect(output.data.id).toBe('<REDACTED>');
-          expect(output.data.threadId).toBe('<REDACTED>');
-          expect(output.data.labelIds).toEqual(['SENT']);
-          expect(output.logId).toBe('log_<REDACTED>');
-          expect(output.successful).toBe(true);
-        } finally {
-          spy.mockRestore();
-        }
+        expect(output.data.id).toBe('<REDACTED>');
+        expect(output.data.threadId).toBe('<REDACTED>');
+        expect(output.data.labelIds).toEqual(['SENT']);
+        expect(output.logId).toBe('log_<REDACTED>');
+        expect(output.successful).toBe(true);
       })
     );
+  });
+
+  // --- The onboarding has-executed flag ---
+  //
+  // `composio execute` on its own has to satisfy the execute gate of `composio onboard`, so the
+  // flag is written here rather than by the wizard. Both success sites are covered: the single
+  // execute in `runExecuteWithSpinner` and the parallel path, which does not go through it.
+
+  describe('onboarding has-executed flag', () => {
+    const recordSpy = () => vi.spyOn(onboardingStore, 'recordSuccessfulExecution');
+
+    layer(
+      TestLive({
+        baseConfigProvider: testConfigProvider,
+        fixture: 'global-test-user-id',
+        stdin: { isTTY: true, data: '' },
+      })
+    )('[Given] a successful execute [Then] the flag is written once', it => {
+      it.scoped('records the executed slug', () =>
+        Effect.gen(function* () {
+          const spy = recordSpy();
+
+          yield* cli([
+            'execute',
+            'GMAIL_SEND_EMAIL',
+            '--skip-connection-check',
+            '-d',
+            '{"recipient":"a"}',
+          ]);
+
+          expect(spy).toHaveBeenCalledTimes(1);
+          expect(spy).toHaveBeenCalledWith({ slug: 'GMAIL_SEND_EMAIL' });
+
+          const cliConfig = yield* ComposioCliUserConfig;
+          expect(cliConfig.data.onboarding.hasExecuted).toBe(true);
+          expect(cliConfig.data.onboarding.lastExecution?.slug).toBe('GMAIL_SEND_EMAIL');
+        })
+      );
+
+      it.scoped('does not write it for a dry run', () =>
+        Effect.gen(function* () {
+          const spy = recordSpy();
+
+          yield* cli([
+            'execute',
+            'GMAIL_SEND_EMAIL',
+            '--dry-run',
+            '--skip-checks',
+            '-d',
+            '{"recipient":"a"}',
+          ]);
+
+          expect(spy).not.toHaveBeenCalled();
+        })
+      );
+
+      it.scoped('does not write it when only the schema was requested', () =>
+        Effect.gen(function* () {
+          const spy = recordSpy();
+
+          yield* cli(['execute', 'GMAIL_SEND_EMAIL', '--get-schema']).pipe(
+            Effect.catchAll(() => Effect.void)
+          );
+
+          expect(spy).not.toHaveBeenCalled();
+        })
+      );
+    });
+
+    layer(
+      TestLive({
+        stdin: { isTTY: true, data: '' },
+        toolsExecutor: {
+          respondWith: {
+            successful: true,
+            data: { ok: true },
+            error: null,
+            logId: '',
+          },
+        },
+      })
+    )('[Given] a local tool slug [Then] the flag stays unwritten', it => {
+      it.scoped('excludes local tools from the execute gate', () =>
+        Effect.gen(function* () {
+          const spy = recordSpy();
+
+          yield* cli(['execute', 'LOCAL_BEEPER_IMESSAGE_VERSION', '-d', '{ value: 1 }']);
+
+          expect(spy).not.toHaveBeenCalled();
+        })
+      );
+    });
+
+    layer(
+      TestLive({
+        baseConfigProvider: testConfigProvider,
+        fixture: 'global-test-user-id',
+        stdin: { isTTY: true, data: '' },
+        toolsExecutor: {
+          respondWith: {
+            data: { content: 'token '.repeat(20_000) },
+            error: null,
+            successful: true,
+            logId: 'log_large_output',
+          },
+        },
+      })
+    )('[Given] a response spilled to a file [Then] the flag is still written once', it => {
+      it.scoped('covers both output shapes from one call site', () =>
+        Effect.gen(function* () {
+          const spy = recordSpy();
+
+          yield* cli([
+            'execute',
+            'GMAIL_SEND_EMAIL',
+            '--skip-connection-check',
+            '-d',
+            '{"recipient":"a"}',
+          ]);
+
+          const lines = yield* MockConsole.getLines({ stripAnsi: true });
+          expect(lines.join('\n')).toContain('Response stored in');
+          expect(spy).toHaveBeenCalledTimes(1);
+        })
+      );
+    });
+
+    layer(
+      TestLive({
+        baseConfigProvider: testConfigProvider,
+        fixture: 'global-test-user-id',
+        stdin: { isTTY: true, data: '' },
+        toolsExecutor: {
+          respondWith: {
+            successful: false,
+            data: {},
+            error: 'Execution failed.',
+            logId: 'log_failed',
+          },
+        },
+      })
+    )('[Given] a failed execution [Then] the flag stays unwritten', it => {
+      it.scoped('does not treat a reported failure as a satisfied gate', () =>
+        Effect.gen(function* () {
+          const spy = recordSpy();
+
+          yield* cli([
+            'execute',
+            'GMAIL_SEND_EMAIL',
+            '--skip-connection-check',
+            '-d',
+            '{"recipient":"a"}',
+          ]).pipe(Effect.catchAll(() => Effect.void));
+
+          expect(spy).not.toHaveBeenCalled();
+        })
+      );
+    });
+
+    layer(
+      TestLive({
+        baseConfigProvider: testConfigProvider,
+        fixture: 'global-test-user-id',
+        stdin: { isTTY: true, data: '' },
+      })
+    )('[Given] a successful parallel execute [Then] the flag is written once', it => {
+      it.scoped('writes once even with several successful results', () =>
+        Effect.gen(function* () {
+          const spy = recordSpy();
+
+          yield* cli([
+            'execute',
+            '--parallel',
+            '--skip-checks',
+            'GMAIL_SEND_EMAIL',
+            '-d',
+            '{"recipient":"a"}',
+            'GITHUB_CREATE_ISSUE',
+            '-d',
+            '{"title":"Bug"}',
+          ]);
+
+          expect(spy).toHaveBeenCalledTimes(1);
+          expect(spy).toHaveBeenCalledWith({ slug: 'GMAIL_SEND_EMAIL' });
+        })
+      );
+
+      it.scoped('does not write it for a parallel dry run', () =>
+        Effect.gen(function* () {
+          const spy = recordSpy();
+
+          yield* cli([
+            'execute',
+            '--parallel',
+            '--dry-run',
+            '--skip-checks',
+            'GMAIL_SEND_EMAIL',
+            '-d',
+            '{"recipient":"a"}',
+            'GITHUB_CREATE_ISSUE',
+            '-d',
+            '{"title":"Bug"}',
+          ]);
+
+          expect(spy).not.toHaveBeenCalled();
+        })
+      );
+    });
+
+    layer(
+      TestLive({
+        baseConfigProvider: testConfigProvider,
+        fixture: 'global-test-user-id',
+        stdin: { isTTY: true, data: '' },
+        toolRouter: {
+          execute: async () => {
+            throw new Error('every parallel execution failed');
+          },
+        },
+      })
+    )('[Given] every parallel result failed [Then] the flag stays unwritten', it => {
+      it.scoped('requires at least one successful result', () =>
+        Effect.gen(function* () {
+          const spy = recordSpy();
+
+          yield* cli([
+            'execute',
+            '--parallel',
+            '--skip-checks',
+            'GMAIL_SEND_EMAIL',
+            '-d',
+            '{"recipient":"a"}',
+            'GITHUB_CREATE_ISSUE',
+            '-d',
+            '{"title":"Bug"}',
+          ]).pipe(Effect.catchAll(() => Effect.void));
+
+          expect(spy).not.toHaveBeenCalled();
+        })
+      );
+    });
+
+    layer(
+      TestLive({
+        baseConfigProvider: testConfigProvider,
+        fixture: 'global-test-user-id',
+        stdin: { isTTY: true, data: '' },
+        toolRouter: {
+          execute: async (_sessionId, params) => {
+            if (params.tool_slug === 'GMAIL_SEND_EMAIL') {
+              throw new Error('gmail execution failed');
+            }
+            return {
+              data: { tool_slug: params.tool_slug, arguments: params.arguments },
+              error: null,
+              log_id: 'log_parallel_partial',
+            };
+          },
+        },
+      })
+    )('[Given] one parallel result succeeded [Then] the flag is written once', it => {
+      it.scoped('records the first successful slug', () =>
+        Effect.gen(function* () {
+          const spy = recordSpy();
+
+          yield* cli([
+            'execute',
+            '--parallel',
+            '--skip-checks',
+            'GMAIL_SEND_EMAIL',
+            '-d',
+            '{"recipient":"a"}',
+            'GITHUB_CREATE_ISSUE',
+            '-d',
+            '{"title":"Bug"}',
+          ]).pipe(Effect.catchAll(() => Effect.void));
+
+          expect(spy).toHaveBeenCalledTimes(1);
+          expect(spy).toHaveBeenCalledWith({ slug: 'GITHUB_CREATE_ISSUE' });
+        })
+      );
+    });
+
+    layer(
+      TestLive({
+        baseConfigProvider: testConfigProvider,
+        fixture: 'global-test-user-id',
+        stdin: { isTTY: true, data: '' },
+      })
+    )('[Given] the config write fails [Then] the execute still succeeds', it => {
+      it.scoped('never turns a successful execution into a failed command', () =>
+        Effect.gen(function* () {
+          const cliConfig = yield* ComposioCliUserConfig;
+          const updateSpy = vi.spyOn(cliConfig, 'update').mockReturnValue(
+            Effect.fail(
+              new SystemError({
+                reason: 'PermissionDenied',
+                module: 'FileSystem',
+                method: 'writeFileString',
+                pathOrDescriptor: '~/.composio/config.json',
+              })
+            )
+          );
+
+          try {
+            yield* cli([
+              'execute',
+              'GMAIL_SEND_EMAIL',
+              '--skip-connection-check',
+              '-d',
+              '{"recipient":"a"}',
+            ]);
+
+            const lines = yield* MockConsole.getLines({ stripAnsi: true });
+            expect(parseLastJson(lines).successful).toBe(true);
+          } finally {
+            updateSpy.mockRestore();
+          }
+        })
+      );
+    });
+  });
+
+  // --- The typed outcome, the payload discriminators, and quiet/inlineOnly ---
+  //
+  // `composio onboard` delegates the execute gate here. It needs to tell "the read succeeded" from
+  // "nothing ran" (the reversible-create gate depends on it), it needs every payload to name its own
+  // shape, and it needs the delegate to write nothing to a stdout stream the wizard owns.
+
+  describe('runToolsExecute outcome', () => {
+    const executeParams = (overrides: Partial<Parameters<typeof runToolsExecute>[0]> = {}) => ({
+      slug: 'GMAIL_SEND_EMAIL',
+      data: Option.some('{"recipient":"a"}'),
+      file: Option.none<string>(),
+      account: Option.none<string>(),
+      userId: Option.none<string>(),
+      projectName: Option.none<string>(),
+      surface: 'root' as const,
+      projectMode: 'consumer' as const,
+      getSchema: false,
+      dryRun: false,
+      skipConnectionCheck: true,
+      skipToolParamsCheck: true,
+      skipChecks: true,
+      ...overrides,
+    });
+
+    /** Every JSON value on stdout, so a leaked second write fails instead of being ignored. */
+    const stdoutPayloads = (lines: ReadonlyArray<string>): Array<Record<string, unknown>> => {
+      const payloads: Array<Record<string, unknown>> = [];
+      for (const line of lines) {
+        if (!line.trimStart().startsWith('{')) continue;
+        try {
+          payloads.push(JSON.parse(line) as Record<string, unknown>);
+        } catch {
+          // Not a complete JSON value on its own line — decoration, not data.
+        }
+      }
+      return payloads;
+    };
+
+    layer(
+      TestLive({
+        baseConfigProvider: testConfigProvider,
+        fixture: 'global-test-user-id',
+        stdin: { isTTY: true, data: '' },
+      })
+    )('[Given] a successful execute [Then] it returns tool_execution', it => {
+      it.scoped('matches the stdout payload kind', () =>
+        Effect.gen(function* () {
+          yield* Console.clear;
+          const result = yield* runToolsExecute(executeParams());
+
+          expect(result.kind).toBe('tool_execution');
+          const payloads = stdoutPayloads(yield* MockConsole.getLines({ stripAnsi: true }));
+          expect(payloads).toHaveLength(1);
+          expect(payloads[0]?.kind).toBe('tool_execution');
+        })
+      );
+
+      it.scoped('writes nothing to stdout with quiet and still returns the outcome', () =>
+        Effect.gen(function* () {
+          yield* Console.clear;
+          const result = yield* runToolsExecute(executeParams({ quiet: true }));
+
+          expect(result.kind).toBe('tool_execution');
+          expect(stdoutPayloads(yield* MockConsole.getLines({ stripAnsi: true }))).toEqual([]);
+        })
+      );
+
+      it.scoped('returns tool_dry_run for a dry run', () =>
+        Effect.gen(function* () {
+          yield* Console.clear;
+          const result = yield* runToolsExecute(executeParams({ dryRun: true }));
+
+          expect(result).toMatchObject({
+            kind: 'tool_dry_run',
+            successful: true,
+            dryRun: true,
+            slug: 'GMAIL_SEND_EMAIL',
+          });
+          const payloads = stdoutPayloads(yield* MockConsole.getLines({ stripAnsi: true }));
+          expect(payloads[0]?.kind).toBe('tool_dry_run');
+        })
+      );
+    });
+
+    layer(
+      TestLive({
+        baseConfigProvider: testConfigProvider,
+        fixture: 'global-test-user-id',
+        stdin: { isTTY: true, data: '' },
+        toolkitsData: {
+          tools: [
+            {
+              name: 'Send Email',
+              slug: 'GMAIL_SEND_EMAIL',
+              description: 'Send an email',
+              tags: ['email'],
+              available_versions: ['20260316_00'],
+              input_parameters: {
+                type: 'object',
+                properties: { recipient: { type: 'string' } },
+              },
+              output_parameters: { type: 'object', properties: {} },
+            },
+          ],
+        } satisfies TestLiveInput['toolkitsData'],
+      })
+    )('[Given] --get-schema [Then] it returns tool_schema', it => {
+      it.scoped('names the payload shape and does not flip the execute gate', () =>
+        Effect.gen(function* () {
+          yield* Console.clear;
+          const spy = vi.spyOn(onboardingStore, 'recordSuccessfulExecution');
+          const result = yield* runToolsExecute(executeParams({ getSchema: true }));
+
+          expect(result).toMatchObject({ kind: 'tool_schema', slug: 'GMAIL_SEND_EMAIL' });
+          expect(spy).not.toHaveBeenCalled();
+          const payloads = stdoutPayloads(yield* MockConsole.getLines({ stripAnsi: true }));
+          expect(payloads).toHaveLength(1);
+          expect(payloads[0]?.kind).toBe('tool_schema');
+        })
+      );
+
+      it.scoped('suppresses the schema payload with quiet', () =>
+        Effect.gen(function* () {
+          yield* Console.clear;
+          const result = yield* runToolsExecute(executeParams({ getSchema: true, quiet: true }));
+
+          expect(result.kind).toBe('tool_schema');
+          expect(stdoutPayloads(yield* MockConsole.getLines({ stripAnsi: true }))).toEqual([]);
+        })
+      );
+    });
+
+    layer(
+      TestLive({
+        stdin: { isTTY: true, data: '' },
+      })
+    )('[Given] no API key [Then] it reports that nothing ran', it => {
+      it.scoped('returns skipped rather than a success-shaped void', () =>
+        Effect.gen(function* () {
+          const result = yield* runToolsExecute(executeParams());
+
+          expect(result).toStrictEqual({ kind: 'skipped', reason: 'unauthenticated' });
+        })
+      );
+    });
+
+    layer(
+      TestLive({
+        baseConfigProvider: testConfigProvider,
+        fixture: 'global-test-user-id',
+        stdin: { isTTY: true, data: '' },
+        toolsExecutor: {
+          respondWith: {
+            data: { content: 'token '.repeat(20_000) },
+            error: null,
+            successful: true,
+            logId: 'log_large_output',
+          },
+        },
+      })
+    )('[Given] an over-threshold response [Then] inlineOnly keeps it inline', it => {
+      it.scoped('spills to a file without inlineOnly', () =>
+        Effect.gen(function* () {
+          yield* Console.clear;
+          const result = yield* runToolsExecute(executeParams());
+
+          expect(result).toMatchObject({ kind: 'tool_execution', successful: true });
+          if (result.kind !== 'tool_execution') return;
+          expect(result.outputFilePath).toBeDefined();
+        })
+      );
+
+      it.scoped('returns the response inline and writes no file with inlineOnly', () =>
+        Effect.gen(function* () {
+          yield* Console.clear;
+          const result = yield* runToolsExecute(executeParams({ inlineOnly: true }));
+
+          expect(result).toMatchObject({ kind: 'tool_execution', successful: true });
+          if (result.kind !== 'tool_execution') return;
+          expect(result.outputFilePath).toBeUndefined();
+          expect(result.data).toBeDefined();
+
+          const output = (yield* MockConsole.getLines({ stripAnsi: true })).join('\n');
+          expect(output).not.toContain('Response stored in');
+        })
+      );
+
+      it.scoped('honors quiet and inlineOnly together', () =>
+        Effect.gen(function* () {
+          yield* Console.clear;
+          const result = yield* runToolsExecute(executeParams({ inlineOnly: true, quiet: true }));
+
+          expect(result.kind).toBe('tool_execution');
+          expect(stdoutPayloads(yield* MockConsole.getLines({ stripAnsi: true }))).toEqual([]);
+        })
+      );
+    });
+
+    layer(
+      TestLive({
+        baseConfigProvider: testConfigProvider,
+        fixture: 'global-test-user-id',
+        stdin: { isTTY: true, data: '' },
+        toolsExecutor: {
+          respondWith: {
+            successful: false,
+            data: {},
+            error: 'Execution failed.',
+            logId: 'log_failed',
+          },
+        },
+      })
+    )('[Given] a reported failure [Then] the failure payload is discriminated too', it => {
+      it.scoped('keeps kind on the branch an agent switches on when things go wrong', () =>
+        Effect.gen(function* () {
+          yield* Console.clear;
+          yield* runToolsExecute(executeParams()).pipe(Effect.catchAll(() => Effect.void));
+
+          const payloads = stdoutPayloads(yield* MockConsole.getLines({ stripAnsi: true }));
+          expect(payloads).toHaveLength(1);
+          expect(payloads[0]).toMatchObject({ kind: 'tool_execution', successful: false });
+        })
+      );
+
+      it.scoped('suppresses the failure payload with quiet', () =>
+        Effect.gen(function* () {
+          yield* Console.clear;
+          yield* runToolsExecute(executeParams({ quiet: true })).pipe(
+            Effect.catchAll(() => Effect.void)
+          );
+
+          expect(stdoutPayloads(yield* MockConsole.getLines({ stripAnsi: true }))).toEqual([]);
+        })
+      );
+    });
+
+    layer(
+      TestLive({
+        baseConfigProvider: testConfigProvider,
+        fixture: 'global-test-user-id',
+        stdin: { isTTY: true, data: '' },
+      })
+    )('[Given] a connection-check failure [Then] its payload is discriminated', it => {
+      it.scoped('fails with connection_check and still names the payload shape', () =>
+        Effect.gen(function* () {
+          yield* Console.clear;
+          vi.mocked(
+            consumerShortTermCache.getFreshConsumerConnectedToolkitsFromCache
+          ).mockReturnValue(Effect.succeed(Option.some(['slack'])));
+
+          const error = yield* runToolsExecute(
+            executeParams({ skipConnectionCheck: false, skipChecks: false })
+          ).pipe(Effect.flip);
+
+          expect(Predicate.isTagged(error, 'ToolExecutionError')).toBe(true);
+          const payloads = stdoutPayloads(yield* MockConsole.getLines({ stripAnsi: true }));
+          expect(payloads).toHaveLength(1);
+          expect(payloads[0]).toMatchObject({
+            kind: 'tool_execution',
+            successful: false,
+            slug: 'GMAIL_SEND_EMAIL',
+          });
+        })
+      );
+    });
+
+    describe('every stdout-writing branch names its own shape', () => {
+      // Table-driven over the CLI surface, so a new payload without a `kind` fails here rather than
+      // slipping through unnoticed.
+      const BRANCHES = [
+        { name: 'execute', argv: ['execute', 'GMAIL_SEND_EMAIL', '--skip-checks', '-d', '{}'] },
+        {
+          name: 'dry run',
+          argv: ['execute', 'GMAIL_SEND_EMAIL', '--dry-run', '--skip-checks', '-d', '{}'],
+        },
+        { name: 'schema', argv: ['execute', 'GMAIL_SEND_EMAIL', '--get-schema'] },
+        { name: 'input help', argv: ['execute', 'GMAIL_SEND_EMAIL', '--help-input'] },
+        {
+          name: 'parallel execute',
+          argv: [
+            'execute',
+            '--parallel',
+            '--skip-checks',
+            'GMAIL_SEND_EMAIL',
+            '-d',
+            '{}',
+            'GITHUB_CREATE_ISSUE',
+            '-d',
+            '{}',
+          ],
+        },
+        {
+          name: 'parallel schema',
+          argv: [
+            'execute',
+            '--parallel',
+            '--get-schema',
+            'GMAIL_SEND_EMAIL',
+            'GITHUB_CREATE_ISSUE',
+          ],
+        },
+      ] as const;
+
+      for (const branch of BRANCHES) {
+        layer(
+          TestLive({
+            baseConfigProvider: testConfigProvider,
+            fixture: 'global-test-user-id',
+            stdin: { isTTY: true, data: '' },
+          })
+        )(`[Given] ${branch.name} [Then] each stdout payload carries a kind`, it => {
+          it.scoped('never emits an undiscriminated document', () =>
+            Effect.gen(function* () {
+              yield* Console.clear;
+              yield* cli([...branch.argv]).pipe(Effect.catchAll(() => Effect.void));
+
+              const payloads = stdoutPayloads(yield* MockConsole.getLines({ stripAnsi: true }));
+              for (const payload of payloads) {
+                expect(typeof payload.kind).toBe('string');
+                expect(String(payload.kind).startsWith('tool_')).toBe(true);
+              }
+            })
+          );
+        });
+      }
+    });
   });
 });

@@ -1,4 +1,4 @@
-import { Schema } from 'effect';
+import { Option, Schema } from 'effect';
 import { OptionFromNullishOr } from 'effect/Schema';
 import { JSONTransformSchema } from './utils/json-transform-schema';
 
@@ -47,6 +47,30 @@ export const DeveloperConfig = Schema.Struct({
 });
 export type DeveloperConfig = Schema.Schema.Type<typeof DeveloperConfig>;
 
+/**
+ * The one durable onboarding fact: whether a tool execution has ever succeeded on this machine.
+ *
+ * Everything else `composio onboard` needs — login state, live connections, the outstanding
+ * browser authorization — is derived from the API or the user context on every invocation, so
+ * there is no persisted copy that can disagree with reality. Deliberately absent: a pending
+ * link, a step pointer, and any org scoping on `last_execution`.
+ */
+export const OnboardingLastExecution = Schema.Struct({
+  slug: Schema.String,
+  at: Schema.String,
+});
+export type OnboardingLastExecution = Schema.Schema.Type<typeof OnboardingLastExecution>;
+
+export const OnboardingConfig = Schema.Struct({
+  hasExecuted: Schema.optionalWith(Schema.Boolean, {
+    default: () => false,
+  }).pipe(Schema.fromKey('has_executed')),
+  lastExecution: Schema.propertySignature(OptionFromNullishOr(OnboardingLastExecution, null)).pipe(
+    Schema.fromKey('last_execution')
+  ),
+});
+export type OnboardingConfig = Schema.Schema.Type<typeof OnboardingConfig>;
+
 export const CliUserConfig = Schema.Struct({
   developer: Schema.optionalWith(DeveloperConfig, {
     default: () =>
@@ -78,6 +102,13 @@ export const CliUserConfig = Schema.Struct({
   security: Schema.optionalWith(SecurityBackend, {
     default: (): SecurityBackend => 'auto',
   }),
+  onboarding: Schema.optionalWith(OnboardingConfig, {
+    default: () =>
+      OnboardingConfig.make({
+        hasExecuted: false,
+        lastExecution: Option.none(),
+      }),
+  }),
 }).annotations({
   identifier: 'CliUserConfig',
   description: 'Named user configuration storage for the Composio CLI',
@@ -91,4 +122,13 @@ export const cliUserConfigFromJSON = Schema.decode(CliUserConfigJSON, {
   onExcessProperty: 'preserve',
   exact: false,
 });
-export const cliUserConfigToJSON = Schema.encode(CliUserConfigJSON);
+/**
+ * `preserve` on both sides, so a key written by a newer CLI survives a read/write cycle through an
+ * older one. Encoding with the default `ignore` would drop it on the way out even though decoding
+ * kept it, and the round trip is what keeps `~/.composio/config.json` version-independent.
+ */
+export const cliUserConfigToJSON = Schema.encode(CliUserConfigJSON, {
+  propertyOrder: 'original',
+  onExcessProperty: 'preserve',
+  exact: false,
+});

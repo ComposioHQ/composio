@@ -200,11 +200,13 @@ function parseMaxContentY(svg: string): number {
   const nextFrame = svg.indexOf('<g transform="translate(', lastFrameIdx + 1);
   const frame = svg.slice(lastFrameIdx, nextFrame > lastFrameIdx ? nextFrame : undefined);
 
-  // Find the max y across all <text> elements in that frame.
-  const yRe = /<text y="(\d+)"/g;
+  // Find the max y across all <text> elements in that frame. vhs emits fractional offsets
+  // (`y="646.8"`), so an integer-only pattern matches nothing and every `dynamic` recording
+  // silently falls back to the configured default height.
+  const yRe = /<text y="([0-9.]+)"/g;
   let maxY = 0;
   while ((m = yRe.exec(frame)) !== null) {
-    maxY = Math.max(maxY, parseInt(m[1]!, 10));
+    maxY = Math.max(maxY, Math.ceil(parseFloat(m[1]!)));
   }
   return maxY;
 }
