@@ -36,7 +36,7 @@ jobs:
       contents: read
       pull-requests: write  # the result comment
     # Full-SHA pin required by org policy — bump on docs-agent-eval releases.
-    uses: ComposioHQ/docs-agent-eval/.github/workflows/eval-pr.yml@88dec5bf58d3f77b598c03eec0e6a0c587a57554
+    uses: ComposioHQ/docs-agent-eval-ci/.github/workflows/eval-pr.yml@2fe0ec46e0ed6b50953dfb0f4f7e7bb33bf0f403
     with:
       pr_number: ${{ github.event.pull_request.number }}
       mode: ${{ contains(github.event.pull_request.labels.*.name, 'run-docs-tests-deep') && 'Deep' || 'Auto' }}
