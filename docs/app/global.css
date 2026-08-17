@@ -1141,13 +1141,13 @@ html:not(.dark) .terminal-theme-claude {
 }
 
 @media (forced-colors: active) {
-  .audience-badge-platform {
+  .product-badge-platform {
     background: none !important;
     color: CanvasText !important;
     -webkit-text-fill-color: CanvasText !important;
   }
 
-  .audience-badge-platform-border {
+  .product-badge-platform-border {
     background: none !important;
     border: 1px solid CanvasText;
     mask: none !important;
