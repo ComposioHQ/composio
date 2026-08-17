@@ -18,13 +18,20 @@ on:
   pull_request:
     types: [labeled, synchronize, reopened]
 
-concurrency:
-  group: docs-agent-eval-pr-${{ github.event.pull_request.number }}
-  cancel-in-progress: true  # newest commit wins; stale evals are superseded
-
 jobs:
   eval:
-    if: contains(github.event.pull_request.labels.*.name, 'run-docs-tests')
+    # Run when the PR carries the label — but for `labeled` events, only when
+    # the label just added is one of ours (any other label addition would
+    # otherwise cancel-and-restart an in-flight eval; Cursor Bugbot finding).
+    if: |
+      contains(github.event.pull_request.labels.*.name, 'run-docs-tests') &&
+      (github.event.action != 'labeled' || startsWith(github.event.label.name, 'run-docs-tests'))
+    # Job-level on purpose: a skipped job never enters the concurrency group,
+    # so unrelated triggers cannot cancel a running eval. New commits still
+    # supersede stale runs.
+    concurrency:
+      group: docs-agent-eval-pr-${{ github.event.pull_request.number }}
+      cancel-in-progress: true
     permissions:
       contents: read
       pull-requests: write  # the result comment
