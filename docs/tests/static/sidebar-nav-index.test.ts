@@ -21,14 +21,14 @@ describe('buildSidebarNavIndex', () => {
       group: 'Core concepts',
       folder: 'Authentication',
       depth: 2,
-      position: 7,
+      position: index['/docs/authentication/controlling-scopes'].position + 1,
     });
 
     expect(index['/docs/extending-sessions/shared-connections']).toEqual({
       group: 'Guides',
       folder: 'Extend sessions',
       depth: 2,
-      position: 3,
+      position: index['/docs/extending-sessions/custom-tools-and-toolkits'].position + 1,
     });
   });
 
@@ -37,7 +37,7 @@ describe('buildSidebarNavIndex', () => {
       group: 'Get Started',
       folder: null,
       depth: 1,
-      position: 2,
+      position: index['/docs'].position + 1,
     });
   });
 
@@ -46,13 +46,14 @@ describe('buildSidebarNavIndex', () => {
       group: 'Core concepts',
       folder: 'Authentication',
       depth: 1,
-      position: 3,
+      position: index['/docs/configuring-sessions'].position + 1,
     });
   });
 
   test('position resets at the next separator', () => {
+    // Core concepts opens a new group, so its first entry restarts at 1 rather
+    // than continuing Get Started's numbering.
     expect(index['/docs'].position).toBe(1);
-    expect(index['/docs/quickstart'].position).toBe(2);
     expect(index['/docs/how-composio-works'].position).toBe(1);
   });
 
@@ -61,11 +62,12 @@ describe('buildSidebarNavIndex', () => {
     expect(index['/docs/extending-sessions/proxy-execute'].position).toBe(1);
   });
 
-  test('a folder counts as one row for its siblings', () => {
-    // Authentication is row 3 in Core concepts and holds 7 children. Counting
-    // through them would report Triggers as row 11 while it renders as row 4.
-    expect(index['/docs/triggers'].position).toBe(4);
-    expect(index['/docs/skills'].position).toBe(5);
+  test('a folder counts as one entry for its siblings', () => {
+    // Authentication holds 7 children, so a counter that threaded through them
+    // would put Triggers 7 sibling slots later than Authentication instead of
+    // directly after it.
+    expect(index['/docs/triggers'].position).toBe(index['/docs/authentication'].position + 1);
+    expect(index['/docs/skills'].position).toBe(index['/docs/triggers'].position + 1);
   });
 
   test('nested folders restart the sequence at each level', () => {
@@ -73,7 +75,7 @@ describe('buildSidebarNavIndex', () => {
       group: 'Get Started',
       folder: 'Custom providers',
       depth: 2,
-      position: 12,
+      position: index['/docs/providers/mastra'].position + 1,
     });
     expect(index['/docs/providers/custom-providers/typescript'].position).toBe(1);
   });
