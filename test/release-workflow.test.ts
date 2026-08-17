@@ -24,17 +24,13 @@ const tsCorePackageJson = JSON.parse(
 const changesetConfig = JSON.parse(
   readFileSync(new URL('../.changeset/config.json', import.meta.url), 'utf8')
 );
-const tsReleaseWorkflow = readFileSync(
-  new URL('../.github/workflows/ts.release.yml', import.meta.url),
+const sdkReleaseWorkflow = readFileSync(
+  new URL('../.github/workflows/sdk.release.yml', import.meta.url),
   'utf8'
 );
 const pythonPyproject = readFileSync(new URL('../python/pyproject.toml', import.meta.url), 'utf8');
 const pythonRuntimeVersionModule = readFileSync(
   new URL('../python/composio/__version__.py', import.meta.url),
-  'utf8'
-);
-const pythonReleaseWorkflow = readFileSync(
-  new URL('../.github/workflows/py.release.yml', import.meta.url),
   'utf8'
 );
 const pythonMakefilePath = new URL('../python/Makefile', import.meta.url).pathname;
@@ -128,6 +124,15 @@ function readDocumentedSdkVersions(sdkLabel) {
       'utf8'
     );
     rows.push(...(source.match(rowPattern) ?? []));
+  }
+
+  // The release PR bumps versions and writes the changelog entry as a draft; the
+  // publish job runs this gate BEFORE finalize promotes the draft into
+  // docs/content/changelog. Without reading the draft, the first release (and every
+  // open PR between the release PR merging and the changelog landing) fails here.
+  const draftPath = new URL('../.github/sdk-release/draft.mdx', import.meta.url);
+  if (existsSync(draftPath)) {
+    rows.push(...(readFileSync(draftPath, 'utf8').match(rowPattern) ?? []));
   }
 
   return readSdkVersions(rows);
@@ -258,8 +263,11 @@ touch "$target/dist/provider.whl"
   }
 }
 
-if (!tsReleaseWorkflow.includes('publish: pnpm changeset:release')) {
-  throw new Error('ts.release.yml must use the repository-controlled changeset:release script');
+if (!sdkReleaseWorkflow.includes('publish: pnpm changeset:release')) {
+  throw new Error(
+    'sdk.release.yml must publish through changesets/action with the repository-controlled ' +
+      'changeset:release script, so New tag: lines create GitHub Releases'
+  );
 }
 
 if (packageJson.scripts?.['changeset:release'] !== 'bash ts/scripts/changeset-release.sh') {
@@ -326,14 +334,14 @@ if (packageJson.scripts?.['validate:changesets'] !== 'node ts/scripts/validate-c
   }
 }
 
-const validateChangesetsIdx = tsReleaseWorkflow.indexOf('run: pnpm validate:changesets');
-const changesetsActionIdx = tsReleaseWorkflow.indexOf('uses: changesets/action@');
+const validateChangesetsIdx = sdkReleaseWorkflow.indexOf('run: pnpm validate:changesets');
+const changesetsActionIdx = sdkReleaseWorkflow.indexOf('uses: changesets/action@');
 if (
   validateChangesetsIdx === -1 ||
   changesetsActionIdx === -1 ||
   validateChangesetsIdx > changesetsActionIdx
 ) {
-  throw new Error('ts.release.yml must validate pending changesets before changesets/action');
+  throw new Error('sdk.release.yml must validate pending changesets before changesets/action');
 }
 
 if (changesetConfig.baseBranch !== 'next') {
@@ -351,8 +359,8 @@ if (
 
 // --- Python release metadata: package version, runtime version, and docs changelog must agree ---
 
-if (!pythonReleaseWorkflow.includes('run: pnpm test:release-workflow')) {
-  throw new Error('py.release.yml must validate release metadata before publishing');
+if (!sdkReleaseWorkflow.includes('run: pnpm test:release-workflow')) {
+  throw new Error('sdk.release.yml must validate release metadata before publishing');
 }
 
 {

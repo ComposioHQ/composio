@@ -1,4 +1,5 @@
 packages:
+  - .github/scripts/sdk-release
   - ts/e2e-tests/_utils
   - ts/e2e-tests/cli/*
   - ts/e2e-tests/cli/**/*

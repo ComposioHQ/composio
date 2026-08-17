@@ -536,7 +536,7 @@ function getChangelogIndexes(): SearchIndex[] {
       const title = getFrontmatterValue(frontmatter, 'title');
       if (!date || !title) return [];
 
-      const url = `/docs/changelog/${date.replace(/-/g, '/')}`;
+      const url = `/reference/changelog#${date}`;
 
       return [{
         id: `${url}#${title}`,
@@ -563,13 +563,13 @@ function getChangelogRecords(): AlgoliaDocsRecord[] {
       if (!date || !title) return [];
 
       return recordsFromMarkdownPage({
-        url: `/docs/changelog/${date.replace(/-/g, '/')}`,
+        url: `/reference/changelog#${date}`,
         type: 'changelog',
         title,
         description: getFrontmatterValue(frontmatter, 'description'),
         keywords: ['changelog', date],
         markdown: source,
-        breadcrumbs: breadcrumbsForUrl(`/docs/changelog/${date.replace(/-/g, '/')}`, 'changelog'),
+        breadcrumbs: breadcrumbsForUrl('/reference/changelog', 'changelog'),
       });
     });
 }

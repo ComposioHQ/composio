@@ -7,12 +7,14 @@ on:
       - '.changeset/**'
       - 'ts/**'
       - '.github/actions/setup-node-pnpm-bun/action.yml'
-      - '.github/workflows/ts.release.yml'
+      - '.github/scripts/sdk-release/**'
+      - '.github/workflows/sdk.release.yml'
       - '.github/workflows/ts.test.yml'
       - 'mise.toml'
       - 'mise.lock'
       - 'package.json'
       - 'test/release-workflow.test.ts'
+      - 'test/sdk-release-changelog.test.ts'
       - 'turbo.jsonc'
   pull_request:
     branches: [master, next]
@@ -20,12 +22,14 @@ on:
       - '.changeset/**'
       - 'ts/**'
       - '.github/actions/setup-node-pnpm-bun/action.yml'
-      - '.github/workflows/ts.release.yml'
+      - '.github/scripts/sdk-release/**'
+      - '.github/workflows/sdk.release.yml'
       - '.github/workflows/ts.test.yml'
       - 'mise.toml'
       - 'mise.lock'
       - 'package.json'
       - 'test/release-workflow.test.ts'
+      - 'test/sdk-release-changelog.test.ts'
       - 'turbo.jsonc'
 
 concurrency:

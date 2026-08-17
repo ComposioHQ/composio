@@ -224,13 +224,18 @@ const config = {
         destination: '/reference/changelog',
         permanent: true,
       },
+      // :day is digit-constrained so a `.md`/`.mdx` markdown-negotiation request
+      // (e.g. /reference/changelog/2026/01/07.md) does NOT match here — an
+      // unconstrained :day would greedily capture "07.md" and redirect into a
+      // broken `#2026-01-07.md` anchor instead of falling through to the
+      // per-date markdown route in app/llms.mdx/[[...slug]]/route.ts.
       {
-        source: '/docs/changelog/:year/:month/:day',
+        source: '/docs/changelog/:year(\\d{4})/:month(\\d{2})/:day(\\d{2})',
         destination: '/reference/changelog#:year-:month-:day',
         permanent: true,
       },
       {
-        source: '/reference/changelog/:year/:month/:day',
+        source: '/reference/changelog/:year(\\d{4})/:month(\\d{2})/:day(\\d{2})',
         destination: '/reference/changelog#:year-:month-:day',
         permanent: true,
       },

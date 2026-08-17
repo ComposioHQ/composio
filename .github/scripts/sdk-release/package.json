@@ -1,0 +1,22 @@
+{
+  "name": "@composio/sdk-release",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "SDK release coordinator: version preparation, GPT-5.5 changelog drafts, registry verification, changelog finalization.",
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@effect/ai": "^0.37.0",
+    "@effect/ai-openai": "^0.41.0",
+    "@effect/cli": "catalog:",
+    "@effect/platform": "catalog:",
+    "@effect/platform-bun": "catalog:",
+    "effect": "catalog:"
+  },
+  "devDependencies": {
+    "@types/bun": "catalog:",
+    "typescript": "catalog:"
+  }
+}

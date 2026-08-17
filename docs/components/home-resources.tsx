@@ -33,7 +33,7 @@ const RESOURCES = [
     icon: <History aria-hidden="true" className="size-4" />,
     title: 'Changelog',
     description: 'What shipped this week.',
-    href: '/docs/changelog',
+    href: '/reference/changelog',
   },
   {
     icon: <Blocks aria-hidden="true" className="size-4" />,

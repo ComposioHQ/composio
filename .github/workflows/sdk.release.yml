@@ -1,0 +1,226 @@
+name: SDK Release
+
+# Lean SDK release coordinator (TypeScript + Python).
+#
+#   push to next ──► `version` maintains the release PR: changeset bumps, the
+#                    Python version-file sync, and a GPT-5.5 changelog draft at
+#                    .github/sdk-release/draft.mdx — all human-reviewed in the PR.
+#   release PR merges ──► `plan` asks the registries which current versions are
+#                    missing ──► `publish` (gated by the `sdk-release`
+#                    environment) ships npm + PyPI via OIDC trusted publishing,
+#                    tags and creates a GitHub Release per npm package, posts a
+#                    Slack notification (npm releases only), verifies both
+#                    registries serve the exact versions, then opens an
+#                    auto-merge PR promoting the reviewed changelog entry into
+#                    docs/content/changelog/.
+#
+# Recovery: publishing is convergent — npm/PyPI publishes skip artifacts that
+# are already live and `plan` recomputes from the registries, so re-running the
+# workflow (workflow_dispatch) finishes a partial release safely.
+# Python-only releases (no pending TypeScript changesets): the `version` job
+# never runs, because changesets/action only invokes it when a changeset is
+# pending. Bump python/pyproject.toml *and* sync python/composio/__version__.py
+# by hand in a normal PR; `plan` then notices the version is not on PyPI and
+# `publish` ships it. Write its changelog entry manually too.
+#
+# One-time repo setup this workflow assumes:
+#   - a `sdk-release` GitHub environment with required reviewers (publish gate),
+#   - npm packages configured for OIDC trusted publishing from this workflow,
+#   - the PyPI `composio` project trusting this workflow as publisher,
+#   - an `OPENAI_API_KEY` repo/org secret for GPT-5.5 changelog drafts (`version`
+#     job fails clearly, not silently, if it's missing — see changelog.ts),
+#   - repo-level "Allow auto-merge" enabled, for open-changelog-pr.sh's
+#     `gh pr merge --auto`,
+#   - a `SLACK_RELEASE_WEBHOOK_URL` repo/org secret (incoming webhook) for the
+#     npm release notification; releases still succeed without it, they just
+#     post nothing.
+
+on:
+  push:
+    branches: [next]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  TURBO_TELEMETRY_DEBUG: 1
+
+jobs:
+  version:
+    name: Maintain release PR
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    # A newer push's release-PR update fully supersedes an older, still-running
+    # one (changesets/action force-pushes the same branch), so it's safe to
+    # cancel a stale run rather than let two races write the same PR.
+    concurrency:
+      group: sdk-release-version
+      cancel-in-progress: true
+    steps:
+      # App token (not GITHUB_TOKEN) so the release PR's eventual merge still
+      # triggers downstream push workflows (e.g. build-cli-binaries.yml).
+      - name: Generate GitHub App token
+        id: app-token
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        with:
+          client-id: ${{ vars.RELEASE_BOT_CLIENT_ID }}
+          private-key: ${{ secrets.RELEASE_BOT_APP_PRIVATE_KEY }}
+
+      - name: Checkout Code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          token: ${{ steps.app-token.outputs.token }}
+
+      - name: Setup Node.js, pnpm, Bun
+        uses: ./.github/actions/setup-node-pnpm-bun
+
+      - name: Install Dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Validate Changesets
+        run: pnpm validate:changesets
+
+      - name: Create or update release PR
+        uses: changesets/action@a45c4d594aa4e2c509dc14a9f2b3b67ba3780d0d # v1.9.0
+        with:
+          version: pnpm sdk-release prepare
+          commit: 'Release: prepare SDK release'
+          title: 'Release: prepare SDK release'
+        env:
+          GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+
+  plan:
+    name: Check registries
+    runs-on: ubuntu-latest
+    outputs:
+      publish_needed: ${{ steps.status.outputs.publish_needed }}
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Setup Node.js, pnpm, Bun
+        uses: ./.github/actions/setup-node-pnpm-bun
+
+      - name: Install Dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Compare workspace versions against npm and PyPI
+        id: status
+        run: pnpm sdk-release status
+
+  publish:
+    name: Publish and verify
+    needs: plan
+    if: needs.plan.outputs.publish_needed == 'true'
+    runs-on: ubuntu-latest
+    environment: sdk-release
+    # Serialize registry publishes only. A workflow-level group would park
+    # `version` runs behind a publish waiting on the environment's reviewers.
+    concurrency:
+      group: sdk-release-publish
+      cancel-in-progress: false
+    permissions:
+      contents: write # push release tags and create GitHub Releases
+      id-token: write # npm + PyPI OIDC trusted publishing
+      pull-requests: write # changelog finalization PR
+    steps:
+      - name: Generate GitHub App token
+        id: app-token
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        with:
+          client-id: ${{ vars.RELEASE_BOT_CLIENT_ID }}
+          private-key: ${{ secrets.RELEASE_BOT_APP_PRIVATE_KEY }}
+
+      - name: Checkout Code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          token: ${{ steps.app-token.outputs.token }}
+
+      # `changeset publish` creates an annotated tag per released package, which
+      # needs a committer identity. Configure it before anything tags or commits.
+      - name: Configure git identity
+        run: |
+          git config user.name "${{ steps.app-token.outputs.app-slug }}[bot]"
+          git config user.email "${{ steps.app-token.outputs.app-slug }}[bot]@users.noreply.github.com"
+
+      - name: Setup Node.js, pnpm, Bun
+        uses: ./.github/actions/setup-node-pnpm-bun
+        with:
+          # Keep the release runtime explicitly pinned because trusted publishing
+          # depends on the npm bundled with this Node.js release, even though the
+          # pin currently matches the repository toolchain.
+          node-version: '24.17.0'
+
+      - name: Install Dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Validate release metadata
+        run: pnpm test:release-workflow
+
+      # changesets/action (not a plain `run:` step) so it parses the `New tag:`
+      # lines our wrapper prints, pushes each new tag, and creates a GitHub
+      # Release per published package (body sourced from that package's
+      # CHANGELOG.md). ts/scripts/changeset-release.sh already filters out
+      # @composio/cli's tag line so this can't create an empty CLI release —
+      # the CLI binary workflow owns that package's GitHub Releases.
+      - name: Publish npm packages and create GitHub Releases
+        id: changesets
+        uses: changesets/action@a45c4d594aa4e2c509dc14a9f2b3b67ba3780d0d # v1.9.0
+        with:
+          publish: pnpm changeset:release
+        env:
+          GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
+
+      # npm-only, matching the notification the old ts.release.yml sent — no
+      # equivalent existed for Python releases before this train either.
+      - name: Format Slack notification
+        if: steps.changesets.outputs.published == 'true'
+        env:
+          PUBLISHED_PACKAGES: ${{ steps.changesets.outputs.publishedPackages }}
+        run: |
+          VERSIONS=$(jq -r '.[] | "⚡️ \(.name): `\(.version)`"' <<<"$PUBLISHED_PACKAGES")
+          PAYLOAD=$(jq -nc \
+            --arg repository "$GITHUB_REPOSITORY" \
+            --arg versions "$VERSIONS" \
+            --arg sha "$GITHUB_SHA" \
+            '{text: "🚀 New SDK version published!\n*Repository:* \($repository)\n*Versions:*\n\($versions)\n*Commit:* \($sha)"}')
+          echo "SLACK_PAYLOAD=$PAYLOAD" >> "$GITHUB_ENV"
+
+      # Best-effort: a missing/misconfigured SLACK_RELEASE_WEBHOOK_URL must not
+      # block Python publish, registry verification, or the changelog PR below.
+      - name: Send Slack notification
+        if: steps.changesets.outputs.published == 'true'
+        continue-on-error: true
+        uses: slackapi/slack-github-action@dcb1066f776dd043e64d0e8ba94ca15cc7e1875d # v4.0.0
+        with:
+          webhook: ${{ secrets.SLACK_RELEASE_WEBHOOK_URL }}
+          webhook-type: incoming-webhook
+          payload: ${{ env.SLACK_PAYLOAD }}
+
+      - name: Setup Python with UV
+        uses: ./.github/actions/setup-python-uv
+
+      - name: Build Python artifacts
+        working-directory: python
+        run: make env && make build
+
+      - name: Publish Python package
+        uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33 # v1.14.2
+        with:
+          packages-dir: python/dist
+          skip-existing: true
+
+      - name: Verify registries serve the released versions
+        run: pnpm sdk-release verify
+
+      - name: Finalize changelog draft
+        run: pnpm sdk-release finalize
+
+      - name: Open changelog PR
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: bash .github/scripts/sdk-release/open-changelog-pr.sh

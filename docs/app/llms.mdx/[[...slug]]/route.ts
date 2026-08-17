@@ -721,7 +721,10 @@ function generateChangelogIndex(): string {
   for (const date of sortedDates) {
     const entries = entriesByDate.get(date) || [];
     const [year, month, day] = date.split('-');
-    const mdUrl = `https://docs.composio.dev/docs/changelog/${year}/${month}/${day}.md`;
+    // Canonical /reference/changelog path (not the legacy /docs/changelog one)
+    // with digit-only date segments, so the request survives the redirect in
+    // next.config.mjs and actually reaches the per-date branch below.
+    const mdUrl = `https://docs.composio.dev/reference/changelog/${year}/${month}/${day}.md`;
     const formattedDate = formatDate(date);
     const titles = entries.map(e => e.title).join(', ');
     lines.push(`| [${formattedDate}](${mdUrl}) | ${titles} |`);
@@ -750,7 +753,7 @@ async function changelogToMarkdown(dateStr: string): Promise<string | null> {
   const lines: string[] = [
     `# Changelog - ${formattedDate}`,
     '',
-    `**Documentation:** https://docs.composio.dev/docs/changelog/${dateStr.replace(/-/g, '/')}`,
+    `**Documentation:** https://docs.composio.dev/reference/changelog#${dateStr}`,
     '',
   ];
 
@@ -1157,8 +1160,9 @@ export async function GET(_req: Request, { params }: { params: Promise<{ slug?: 
       });
     }
 
-    // Special handling for changelog index - /docs/changelog
-    if (prefix === 'docs' && rest[0] === 'changelog' && rest.length === 1) {
+    // Special handling for changelog index - /reference/changelog (canonical)
+    // and /docs/changelog (legacy, kept for redirect parity)
+    if ((prefix === 'docs' || prefix === 'reference') && rest[0] === 'changelog' && rest.length === 1) {
       const changelogIndex = generateChangelogIndex();
       return new Response(changelogIndex, {
         headers: {
@@ -1167,8 +1171,8 @@ export async function GET(_req: Request, { params }: { params: Promise<{ slug?: 
       });
     }
 
-    // Special handling for changelog pages - /docs/changelog/YYYY/MM/DD
-    if (prefix === 'docs' && rest[0] === 'changelog' && rest.length === 4) {
+    // Special handling for changelog pages - /{docs,reference}/changelog/YYYY/MM/DD
+    if ((prefix === 'docs' || prefix === 'reference') && rest[0] === 'changelog' && rest.length === 4) {
       // rest = ['changelog', '2026', '01', '07']
       const [, year, month, day] = rest;
       const dateStr = slugToDate([year, month, day]);
