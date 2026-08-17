@@ -5,7 +5,7 @@ import { prepareTree } from '@/lib/filter-api-version';
 import { buildSidebarNavIndex } from '@/lib/sidebar-nav-index';
 import { SidebarAnalytics } from '@/components/sidebar-analytics';
 
-async function buildReferenceTree() {
+export default async function Layout({ children }: { children: ReactNode }) {
   const source = await getReferenceSource();
   const tree = prepareTree(source.pageTree, '3.1');
   const changelogPage = { type: 'page' as const, name: 'Changelog', url: '/reference/changelog' };
@@ -14,8 +14,7 @@ async function buildReferenceTree() {
     child => child.type === 'page' && child.name === 'Overview'
   );
   const insertIdx = overviewIdx === -1 ? Math.min(1, tree.children.length) : overviewIdx + 1;
-
-  return {
+  const pageTree = {
     ...tree,
     children: [
       ...tree.children.slice(0, insertIdx),
@@ -23,10 +22,7 @@ async function buildReferenceTree() {
       ...tree.children.slice(insertIdx),
     ] as typeof tree.children,
   };
-}
-
-export default async function Layout({ children }: { children: ReactNode }) {
-  const pageTree = await buildReferenceTree();
+  const navIndex = buildSidebarNavIndex(pageTree);
 
   return (
     <DocsLayout
@@ -36,7 +32,7 @@ export default async function Layout({ children }: { children: ReactNode }) {
       sidebar={{ collapsible: false, footer: null, tabs: false }}
       themeSwitch={{ enabled: false }}
     >
-      <SidebarAnalytics index={buildSidebarNavIndex(pageTree)} />
+      <SidebarAnalytics index={navIndex} />
       {children}
     </DocsLayout>
   );

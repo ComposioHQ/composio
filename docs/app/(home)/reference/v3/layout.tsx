@@ -5,13 +5,10 @@ import { prepareTree } from '@/lib/filter-api-version';
 import { buildSidebarNavIndex } from '@/lib/sidebar-nav-index';
 import { SidebarAnalytics } from '@/components/sidebar-analytics';
 
-async function buildReferenceTree() {
-  const source = await getReferenceSource();
-  return prepareTree(source.pageTree, '3.0');
-}
-
 export default async function Layout({ children }: { children: ReactNode }) {
-  const tree = await buildReferenceTree();
+  const source = await getReferenceSource();
+  const tree = prepareTree(source.pageTree, '3.0');
+  const navIndex = buildSidebarNavIndex(tree);
 
   return (
     <DocsLayout
@@ -21,7 +18,7 @@ export default async function Layout({ children }: { children: ReactNode }) {
       sidebar={{ collapsible: false, footer: null, tabs: false }}
       themeSwitch={{ enabled: false }}
     >
-      <SidebarAnalytics index={buildSidebarNavIndex(tree)} />
+      <SidebarAnalytics index={navIndex} />
       {children}
     </DocsLayout>
   );
