@@ -1,0 +1,37 @@
+# Docs Agent Eval — label-triggered CI check (V1, informational)
+#
+# Add the `run-docs-tests` label to a docs PR to run an agent-buildability
+# eval against the PR's Vercel docs preview: a deterministic router picks
+# no-eval / Smoke (1 agent) / Deep (5 agents), fresh isolated agents follow
+# the proposed docs through a rewrite proxy, and the result is posted back
+# here as a PR comment. `run-docs-tests-deep` forces Deep.
+#
+# All eval logic lives in ComposioHQ/docs-agent-eval (reusable workflow) —
+# see its ARCHITECTURE.md. This check is informational and must NOT be made
+# a required status check in V1.
+#
+# Required repo/org secrets: COMPOSIO_ORG_API_KEY, DEEPSEEK_API_KEY,
+# VERCEL_TOKEN (see the PR description for provisioning notes).
+name: Docs Agent Eval
+
+on:
+  pull_request:
+    types: [labeled, synchronize, reopened]
+
+concurrency:
+  group: docs-agent-eval-pr-${{ github.event.pull_request.number }}
+  cancel-in-progress: true  # newest commit wins; stale evals are superseded
+
+jobs:
+  eval:
+    if: contains(github.event.pull_request.labels.*.name, 'run-docs-tests')
+    permissions:
+      contents: read
+      pull-requests: write  # the result comment
+    # Full-SHA pin required by org policy — bump on docs-agent-eval releases.
+    uses: ComposioHQ/docs-agent-eval/.github/workflows/eval-pr.yml@88dec5bf58d3f77b598c03eec0e6a0c587a57554
+    with:
+      pr_number: ${{ github.event.pull_request.number }}
+      mode: ${{ contains(github.event.pull_request.labels.*.name, 'run-docs-tests-deep') && 'Deep' || 'Auto' }}
+      post_comment: true
+    secrets: inherit
