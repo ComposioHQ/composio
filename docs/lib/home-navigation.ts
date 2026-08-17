@@ -61,8 +61,12 @@ export const HOME_INTENTS: HomeIntent[] = [
   },
 ];
 
-export function homeIntentAnchor(title: string): string {
-  return title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+/**
+ * Slugify an intent's heading label into an anchor id. Called with
+ * `intent.product`, so the ids are `#platform` / `#for-you`.
+ */
+export function homeIntentAnchor(label: string): string {
+  return label.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
 }
 
 export function homeIntentsToMarkdown(): string {

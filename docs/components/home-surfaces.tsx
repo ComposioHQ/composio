@@ -2,11 +2,7 @@ import Link from 'next/link';
 import { ArrowUp, ArrowUpRight, Mic, Plus } from 'lucide-react';
 import type { ComponentType } from 'react';
 import { HOME_INTENTS, homeIntentAnchor, type HomeIntent } from '@/lib/home-navigation';
-
-const BOTTOM_FADE_STYLE = {
-  maskImage: 'linear-gradient(to bottom, black 55%, transparent 100%)',
-  WebkitMaskImage: 'linear-gradient(to bottom, black 55%, transparent 100%)',
-};
+import { MOCK_FADE_STYLE } from './home-shared';
 
 /**
  * Each product is described by the same mock the dashboard onboarding
@@ -49,8 +45,7 @@ function IntentCard({ intent }: { intent: HomeIntent }) {
               src="/Composio Logo.svg"
             />
             <img
-              alt=""
-              aria-hidden="true"
+              alt="Composio"
               className="hidden h-[22px] w-auto dark:block"
               src="/Composio Logo Dark.svg"
             />
@@ -157,39 +152,32 @@ const FOR_YOU_CLIENT_LOGOS = [
 
 function ForYouVisual() {
   return (
-    <>
-      <div className="absolute inset-x-5 -bottom-3 flex items-end gap-4 sm:inset-x-6">
-        <div
-          className="grid shrink-0 grid-cols-2 gap-2.5"
-          style={BOTTOM_FADE_STYLE}
-        >
-          {FOR_YOU_CLIENT_LOGOS.map(logo => (
-            <img
-              alt=""
-              className="size-8 object-contain"
-              draggable={false}
-              key={logo.label}
-              src={logo.src}
-            />
-          ))}
-        </div>
-        <div
-          className="min-w-0 flex-1 rounded-[18px] border border-fd-border bg-fd-card p-3"
-          style={BOTTOM_FADE_STYLE}
-        >
-          <div className="text-[12px] text-fd-foreground/50">
-            How can I help?
-          </div>
-          <div className="mt-4 flex items-center gap-2 text-fd-foreground/50">
-            <Plus className="size-3.5 shrink-0" />
-            <Mic className="ml-auto size-3.5 shrink-0" />
-            <span className="flex size-6 shrink-0 items-center justify-center rounded-[8px] bg-[var(--composio-brand)] text-white">
-              <ArrowUp className="size-3.5" />
-            </span>
-          </div>
+    <div className="absolute inset-x-5 -bottom-3 flex items-end gap-4 sm:inset-x-6">
+      <div className="grid shrink-0 grid-cols-2 gap-2.5" style={MOCK_FADE_STYLE}>
+        {FOR_YOU_CLIENT_LOGOS.map(logo => (
+          <img
+            alt=""
+            className="size-8 object-contain"
+            draggable={false}
+            key={logo.label}
+            src={logo.src}
+          />
+        ))}
+      </div>
+      <div
+        className="min-w-0 flex-1 rounded-[18px] border border-fd-border bg-fd-card p-3"
+        style={MOCK_FADE_STYLE}
+      >
+        <div className="text-[12px] text-fd-foreground/50">How can I help?</div>
+        <div className="mt-4 flex items-center gap-2 text-fd-foreground/50">
+          <Plus className="size-3.5 shrink-0" />
+          <Mic className="ml-auto size-3.5 shrink-0" />
+          <span className="flex size-6 shrink-0 items-center justify-center rounded-[8px] bg-[var(--composio-brand)] text-white">
+            <ArrowUp className="size-3.5" />
+          </span>
         </div>
       </div>
-    </>
+    </div>
   );
 }
 
@@ -197,7 +185,7 @@ function PlatformVisual() {
   return (
     <div
       className="absolute inset-x-5 -bottom-3 rounded-[12px] border border-fd-border bg-fd-card p-3 font-mono text-[11.5px] leading-[1.75] text-fd-foreground/75 sm:inset-x-6"
-      style={BOTTOM_FADE_STYLE}
+      style={MOCK_FADE_STYLE}
     >
       <div className="mb-2 flex items-center gap-1.5">
         <span className="size-2 rounded-full bg-fd-foreground/15" />

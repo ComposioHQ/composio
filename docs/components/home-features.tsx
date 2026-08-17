@@ -2,11 +2,7 @@ import Link from 'next/link';
 import { ArrowUpRight } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { AuthDiagram } from './home-auth-diagram';
-
-const MOCK_FADE_STYLE = {
-  maskImage: 'linear-gradient(to bottom, black 55%, transparent 100%)',
-  WebkitMaskImage: 'linear-gradient(to bottom, black 55%, transparent 100%)',
-};
+import { MOCK_FADE_STYLE } from './home-shared';
 
 const LOGO_CDN = 'https://logos.composio.dev/api';
 // 10-col × 3-row grid: 29 recognizable toolkit logos plus a brand-tinted
@@ -18,7 +14,7 @@ const TOOLKIT_LOGOS = [
   'linear', 'jira', 'asana', 'trello', 'clickup',
   'github', 'gitlab', 'figma', 'canva', 'googledrive',
   'dropbox', 'airtable', 'confluence', 'salesforce', 'hubspot',
-  'stripe', 'shopify', 'twilio', 'sendgrid', 'mailchimp',
+  'stripe', 'shopify', 'zendesk', 'sendgrid', 'mailchimp',
   'calendly', 'youtube', 'twitter', 'linkedin',
 ];
 
@@ -28,11 +24,14 @@ const TRIGGER_FEED: { app: string; event: string }[] = [
   { app: 'linear', event: 'issue.opened' },
 ];
 
-const SANDBOX_CODE = `const result = await composio.sandbox.run(\`
-  const issues = await tools.LINEAR_LIST_ISSUES();
-  const summary = await ai.summarize(issues);
-  await tools.SLACK_POST({ text: summary });
-\`);`;
+// The sandbox is a persistent *Python* environment the agent drives through
+// the COMPOSIO_REMOTE_WORKBENCH meta tool, with `run_composio_tool` /
+// `invoke_llm` pre-initialized — see content/docs/sandbox/remote.mdx, which is
+// where this card links. Keep the mock on that real surface so a reader who
+// copies it lands on something that exists.
+const SANDBOX_CODE = `issues, err = run_composio_tool("LINEAR_LIST_ISSUES", {})
+summary = invoke_llm(f"Summarize: {issues}")
+run_composio_tool("SLACK_SEND_MESSAGE", {"text": summary})`;
 
 export function HomeFeatures() {
   return (
@@ -61,7 +60,7 @@ export function HomeFeatures() {
           title="Run arbitrary code, safely."
           description="A sandbox pre-wired with your user's connected accounts and 1000+ tools."
           href="/docs/sandbox"
-          visual={<WorkbenchVisual />}
+          visual={<SandboxVisual />}
         />
       </div>
     </section>
@@ -108,7 +107,7 @@ function FeatureCard({
 }
 
 function ToolkitsVisual() {
-  // 8×2 tile grid stretched to fill the visual pane. Tiles paint their own
+  // 10×3 tile grid stretched to fill the visual pane. Tiles paint their own
   // bg-fd-card so they read as elevated on the recessed pane; the container's
   // bg-fd-border bleeds through the 1px gaps to draw hairlines between them.
   return (
@@ -162,13 +161,13 @@ function TriggersVisual() {
   );
 }
 
-function WorkbenchVisual() {
+function SandboxVisual() {
   return (
     <div className="flex h-full w-full flex-col overflow-hidden rounded-[8px] border border-fd-border bg-fd-card">
       <div className="flex shrink-0 items-center gap-2 border-b border-fd-border px-3.5 py-2">
         <span className="size-1.5 rounded-full bg-fd-foreground/25" />
         <span className="font-mono text-[10.5px] tracking-[0.02em] text-fd-foreground/50">
-          sandbox.ts
+          sandbox.py
         </span>
       </div>
       <pre className="flex-1 overflow-hidden bg-fd-muted/30 px-3.5 py-2.5 font-mono text-[10.5px] leading-[1.7] text-fd-foreground/70">

@@ -47,6 +47,16 @@ function elbowPath(sx: number, sy: number, ex: number, ey: number, r = 8): strin
  * wires meet the hub and cards precisely at every breakpoint. All surfaces
  * use bg-fd-card so nothing reads as recessed against the mock's own card,
  * and logos render inline without a white swatch behind them.
+ *
+ * Widths are proportional (`w-[36%]` / `w-[52%]`, capped) rather than fixed,
+ * which reserves the remaining ~12% as horizontal run for the elbows at every
+ * size. Fixed widths do not work here: this pane is *not* monotonic in the
+ * viewport — it is ~404px at 1280px wide but only ~242px at 640px, where the
+ * feature grid goes two-column. A fixed pair that fits phones overflows at
+ * `sm`, and `ex === sx` collapses every wire into `elbowPath`'s straight-line
+ * fallback (the middle one to a zero-length, invisible path). The account
+ * label hides by container query for the same reason — viewport breakpoints
+ * would gate on the wrong axis.
  */
 export function AuthDiagram() {
   const rootRef = useRef<HTMLDivElement>(null);
@@ -88,8 +98,14 @@ export function AuthDiagram() {
     const root = rootRef.current;
     const ro = root ? new ResizeObserver(() => calc()) : null;
     if (root && ro) ro.observe(root);
+    // ResizeObserver covers layout changes, but keep the window listener too:
+    // RO delivery is throttled in backgrounded documents, so a tab resized
+    // while hidden can surface with stale paths. Matches
+    // `connection-refresh-visual.tsx`.
+    window.addEventListener('resize', calc);
     return () => {
       window.clearTimeout(t);
+      window.removeEventListener('resize', calc);
       ro?.disconnect();
     };
   }, [calc]);
@@ -97,7 +113,7 @@ export function AuthDiagram() {
   return (
     <div
       ref={rootRef}
-      className="relative flex h-full w-full items-center justify-between overflow-hidden"
+      className="@container relative flex h-full w-full items-center justify-between overflow-hidden"
     >
       <svg
         aria-hidden="true"
@@ -116,7 +132,7 @@ export function AuthDiagram() {
 
       <div
         ref={hubRef}
-        className="relative z-10 flex w-36 items-center gap-2 rounded-[6px] border border-fd-border bg-fd-card px-2.5 py-2"
+        className="relative z-10 flex w-[36%] max-w-36 shrink-0 items-center gap-2 rounded-[6px] border border-fd-border bg-fd-card px-2.5 py-2"
       >
         <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-fd-muted">
           <User aria-hidden="true" className="size-3.5 text-fd-foreground/60" />
@@ -131,10 +147,10 @@ export function AuthDiagram() {
         </div>
       </div>
 
-      <div className="relative z-10 flex flex-col gap-2">
+      <div className="relative z-10 flex w-[52%] max-w-56 shrink-0 flex-col gap-2">
         {ACCOUNTS.map((app, i) => (
           <div
-            className="flex w-44 items-center gap-2 rounded-[6px] border border-fd-border bg-fd-card px-2.5 py-2"
+            className="flex w-full items-center gap-2 rounded-[6px] border border-fd-border bg-fd-card px-2.5 py-2"
             key={app.slug}
             ref={el => {
               cardRefs.current[i] = el;
@@ -150,7 +166,7 @@ export function AuthDiagram() {
             <span className="truncate font-mono text-[11px] text-fd-foreground/85">
               {app.name}
             </span>
-            <span className="ml-auto truncate font-mono text-[9.5px] text-fd-foreground/45">
+            <span className="ml-auto hidden truncate font-mono text-[9.5px] text-fd-foreground/45 @[340px]:inline">
               {app.account}
             </span>
           </div>
