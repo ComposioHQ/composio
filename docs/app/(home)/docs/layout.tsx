@@ -1,6 +1,8 @@
 import { source } from '@/lib/source';
 import { DocsLayout } from 'fumadocs-ui/layouts/docs';
 import { decorateSidebarBadges } from '@/lib/decorate-sidebar-badges';
+import { buildSidebarNavIndex } from '@/lib/sidebar-nav-index';
+import { SidebarAnalytics } from '@/components/sidebar-analytics';
 
 interface BadgeFrontmatter {
   experimental?: boolean;
@@ -16,6 +18,7 @@ const newUrls = new Set(
 );
 
 const tree = decorateSidebarBadges(source.pageTree, experimentalUrls, newUrls);
+const navIndex = buildSidebarNavIndex(tree);
 
 export default function Layout({ children }: LayoutProps<'/docs'>) {
   return (
@@ -26,6 +29,7 @@ export default function Layout({ children }: LayoutProps<'/docs'>) {
       themeSwitch={{ enabled: false }}
       searchToggle={{ enabled: false }}
     >
+      <SidebarAnalytics index={navIndex} />
       {children}
     </DocsLayout>
   );
