@@ -6,7 +6,7 @@ export interface HomeIntentLink {
 
 export interface HomeIntent {
   id: 'build' | 'use';
-  audience: 'For you' | 'Platform';
+  product: 'Platform' | 'For You';
   title: string;
   description: string;
   links: HomeIntentLink[];
@@ -15,9 +15,9 @@ export interface HomeIntent {
 export const HOME_INTENTS: HomeIntent[] = [
   {
     id: 'build',
-    audience: 'Platform',
+    product: 'Platform',
     title: 'Build with Composio',
-    description: 'Add Composio tools and authentication to your own agent or application.',
+    description: 'Build Composio into your own agent or application — tools, auth, and triggers for every one of your users.',
     links: [
       {
         title: 'Quickstart',
@@ -38,9 +38,9 @@ export const HOME_INTENTS: HomeIntent[] = [
   },
   {
     id: 'use',
-    audience: 'For you',
+    product: 'For You',
     title: 'Use Composio',
-    description: 'Connect an existing coding agent or terminal to Composio.',
+    description: 'Use Composio from the agents you already have — Claude Code, Codex, Cursor, or your terminal.',
     links: [
       {
         title: 'Agent plugins',
@@ -71,7 +71,7 @@ export function homeIntentsToMarkdown(): string {
       .map(link => `- [${link.title}](${link.href}): ${link.description}`)
       .join('\n');
 
-    return `### ${intent.title}\n\n**${intent.audience}**\n\n${intent.description}\n\n${links}`;
+    return `### ${intent.title}\n\n**${intent.product}**\n\n${intent.description}\n\n${links}`;
   }).join('\n\n');
 
   return `## Two ways to start\n\n${sections}`;
