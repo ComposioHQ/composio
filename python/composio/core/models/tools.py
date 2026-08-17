@@ -647,12 +647,17 @@ class Tools(Resource, t.Generic[TTool, TToolCollection]):
             )
             self._tool_schemas[slug] = tool
 
+        # A tool schema may carry no toolkit, so resolve the slug once here and
+        # reuse it for the file-upload hook and both modifier hooks below. The
+        # ``unknown`` fallback matches the guard already used in
+        # ``_execute_tool``.
+        toolkit_slug = tool.toolkit.slug if tool.toolkit else "unknown"
+
         if self._auto_upload_download_files:
-            tk = tool.toolkit.slug if tool.toolkit else "unknown"
             bfu = merge_before_file_upload(
                 modifiers,
                 tool=slug,
-                toolkit=tk,
+                toolkit=toolkit_slug,
             )
             arguments = self._file_helper.substitute_file_uploads(
                 tool=tool,
@@ -683,7 +688,7 @@ class Tools(Resource, t.Generic[TTool, TToolCollection]):
                 )
             processed_params = apply_modifier_by_type(
                 modifiers=modifiers,
-                toolkit=tool.toolkit.slug,
+                toolkit=toolkit_slug,
                 tool=slug,
                 type=type_before_exec,
                 request=request_params,
@@ -723,7 +728,7 @@ class Tools(Resource, t.Generic[TTool, TToolCollection]):
         if modifiers is not None:
             response = apply_modifier_by_type(
                 modifiers=modifiers,
-                toolkit=tool.toolkit.slug,
+                toolkit=toolkit_slug,
                 tool=slug,
                 type="after_execute",
                 response=response,
