@@ -16,6 +16,7 @@ from composio.core.models._files import (
     FileDownloadable,
     FileHelper,
     FileUploadable,
+    upload,
     _is_url,
     _get_extension_from_mimetype,
     _generate_timestamped_filename,
@@ -27,10 +28,12 @@ from composio.core.models._files import (
 )
 from composio.core.models.base import allow_tracking
 from composio.exceptions import (
+    BlockedInternalUrlError,
     ErrorDownloadingFile,
     ErrorUploadingFile,
     ResponseTooLargeError,
     SensitiveFilePathBlockedError,
+    UnsafePathComponentError,
 )
 
 
@@ -49,8 +52,15 @@ def mock_client():
 
 
 @pytest.fixture
-def file_helper(mock_client):
-    """Create a FileHelper instance with a mock client."""
+def file_helper(mock_client, monkeypatch, tmp_path):
+    """Create a FileHelper instance with a mock client.
+
+    Sandboxes ``COMPOSIO_CACHE_DIR`` so the default-outdir download path
+    (``ensure_cache_directory()``) never touches the real home directory,
+    even though ``FileDownloadable.download`` itself is mocked in most of
+    these tests.
+    """
+    monkeypatch.setenv("COMPOSIO_CACHE_DIR", str(tmp_path / ".composio"))
     return FileHelper(client=mock_client)
 
 
@@ -1703,8 +1713,8 @@ class TestFetchFileFromUrl:
 class TestUploadBytesToS3:
     """Test cases for _upload_bytes_to_s3 function."""
 
-    @patch("composio.core.models._files.requests.put")
-    def test_upload_bytes_to_s3_success(self, mock_put):
+    @patch("composio.core.models._files.safe_request")
+    def test_upload_bytes_to_s3_success(self, mock_safe_request):
         """Test successful upload to S3."""
         mock_client = MagicMock()
         mock_s3_response = MagicMock()
@@ -1714,7 +1724,7 @@ class TestUploadBytesToS3:
 
         mock_put_response = MagicMock()
         mock_put_response.status_code = 200
-        mock_put.return_value = mock_put_response
+        mock_safe_request.return_value = mock_put_response
 
         result = _upload_bytes_to_s3(
             client=mock_client,
@@ -1727,15 +1737,16 @@ class TestUploadBytesToS3:
 
         assert result == "s3-key-123"
         mock_client.post.assert_called_once()
-        mock_put.assert_called_once_with(
-            url="https://s3.example.com/upload",
+        mock_safe_request.assert_called_once_with(
+            "PUT",
+            "https://s3.example.com/upload",
             data=b"file content",
             headers={"Content-Type": "image/jpeg"},
             timeout=(5, 60),
         )
 
-    @patch("composio.core.models._files.requests.put")
-    def test_upload_bytes_to_s3_failure(self, mock_put):
+    @patch("composio.core.models._files.safe_request")
+    def test_upload_bytes_to_s3_failure(self, mock_safe_request):
         """Test error handling when S3 upload fails."""
         mock_client = MagicMock()
         mock_s3_response = MagicMock()
@@ -1745,7 +1756,7 @@ class TestUploadBytesToS3:
 
         mock_put_response = MagicMock()
         mock_put_response.status_code = 500
-        mock_put.return_value = mock_put_response
+        mock_safe_request.return_value = mock_put_response
 
         with pytest.raises(ErrorUploadingFile) as exc_info:
             _upload_bytes_to_s3(
@@ -1759,8 +1770,8 @@ class TestUploadBytesToS3:
 
         assert "Failed to upload to S3" in str(exc_info.value)
 
-    @patch("composio.core.models._files.requests.put")
-    def test_upload_bytes_to_s3_timeout(self, mock_put):
+    @patch("composio.core.models._files.safe_request")
+    def test_upload_bytes_to_s3_timeout(self, mock_safe_request):
         """Test request timeouts are reported as upload errors."""
         mock_client = MagicMock()
         mock_s3_response = MagicMock()
@@ -1769,7 +1780,7 @@ class TestUploadBytesToS3:
         mock_client.post.return_value = mock_s3_response
         # The exception text itself carries the presigned URL (incl. token), as
         # real urllib3 errors do — the SDK must not surface it in the message.
-        mock_put.side_effect = requests.exceptions.Timeout(
+        mock_safe_request.side_effect = requests.exceptions.Timeout(
             "HTTPSConnectionPool(host='s3.example.com', port=443): "
             "Max retries exceeded with url: /upload?token=abc"
         )
@@ -2423,8 +2434,8 @@ class TestRedirectHandling:
 class TestS3UploadErrorHandling:
     """Test S3 upload error handling."""
 
-    @patch("composio.core.models._files.requests.put")
-    def test_403_is_treated_as_error(self, mock_put):
+    @patch("composio.core.models._files.safe_request")
+    def test_403_is_treated_as_error(self, mock_safe_request):
         """HTTP 403 should be treated as upload failure."""
         mock_client = MagicMock()
         mock_s3_response = MagicMock()
@@ -2434,7 +2445,7 @@ class TestS3UploadErrorHandling:
 
         mock_put_response = MagicMock()
         mock_put_response.status_code = 403
-        mock_put.return_value = mock_put_response
+        mock_safe_request.return_value = mock_put_response
 
         with pytest.raises(ErrorUploadingFile, match="403"):
             _upload_bytes_to_s3(
@@ -2446,8 +2457,8 @@ class TestS3UploadErrorHandling:
                 toolkit="test",
             )
 
-    @patch("composio.core.models._files.requests.put")
-    def test_200_is_success(self, mock_put):
+    @patch("composio.core.models._files.safe_request")
+    def test_200_is_success(self, mock_safe_request):
         """HTTP 200 should be treated as success."""
         mock_client = MagicMock()
         mock_s3_response = MagicMock()
@@ -2457,7 +2468,7 @@ class TestS3UploadErrorHandling:
 
         mock_put_response = MagicMock()
         mock_put_response.status_code = 200
-        mock_put.return_value = mock_put_response
+        mock_safe_request.return_value = mock_put_response
 
         result = _upload_bytes_to_s3(
             client=mock_client,
@@ -2469,8 +2480,8 @@ class TestS3UploadErrorHandling:
         )
         assert result == "s3-key"
 
-    @patch("composio.core.models._files.requests.put")
-    def test_500_is_treated_as_error(self, mock_put):
+    @patch("composio.core.models._files.safe_request")
+    def test_500_is_treated_as_error(self, mock_safe_request):
         """HTTP 500 should be treated as upload failure."""
         mock_client = MagicMock()
         mock_s3_response = MagicMock()
@@ -2480,7 +2491,7 @@ class TestS3UploadErrorHandling:
 
         mock_put_response = MagicMock()
         mock_put_response.status_code = 500
-        mock_put.return_value = mock_put_response
+        mock_safe_request.return_value = mock_put_response
 
         with pytest.raises(ErrorUploadingFile, match="500"):
             _upload_bytes_to_s3(
@@ -2527,6 +2538,11 @@ class TestUrlSanitization:
 class TestFileDownloadablePathTraversal:
     """SEC-316: server-controlled `name` must not escape the output dir."""
 
+    @pytest.fixture(autouse=True)
+    def _allow_fetch_target(self):
+        with patch("composio.core.models._files.assert_safe_fetch_target"):
+            yield
+
     def _mock_response(self, content: bytes = b"data") -> MagicMock:
         response = MagicMock()
         response.status_code = 200
@@ -2546,7 +2562,7 @@ class TestFileDownloadablePathTraversal:
             "composio.core.models._files.requests.get",
             return_value=self._mock_response(b"#!/bin/sh\n"),
         ):
-            written = f.download(outdir)
+            written = f.download(outdir, root=outdir)
 
         # Traversal sequence collapsed to basename and stayed inside outdir.
         assert written == outdir / "PWNED.sh"
@@ -2565,7 +2581,7 @@ class TestFileDownloadablePathTraversal:
             "composio.core.models._files.requests.get",
             return_value=self._mock_response(b"x"),
         ):
-            written = f.download(outdir)
+            written = f.download(outdir, root=outdir)
 
         # `Path('/etc/passwd').name == 'passwd'` — absolute path is stripped.
         assert written == outdir / "passwd"
@@ -2587,7 +2603,7 @@ class TestFileDownloadablePathTraversal:
             return_value=self._mock_response(),
         ):
             with pytest.raises(ErrorDownloadingFile, match="Path traversal detected"):
-                f.download(outdir)
+                f.download(outdir, root=outdir)
         # No file was written under the parent.
         assert not (tmp_path / "x").exists()
 
@@ -2602,7 +2618,7 @@ class TestFileDownloadablePathTraversal:
             "composio.core.models._files.requests.get",
             return_value=self._mock_response(b"%PDF-1.4"),
         ):
-            written = f.download(outdir)
+            written = f.download(outdir, root=outdir)
 
         assert written == outdir / "report.pdf"
         assert written.read_bytes() == b"%PDF-1.4"
@@ -2618,11 +2634,12 @@ class TestFileDownloadablePathTraversal:
             "composio.core.models._files.requests.get",
             return_value=self._mock_response(b"%PDF-1.4"),
         ) as mock_get:
-            f.download(outdir)
+            f.download(outdir, root=outdir)
 
         mock_get.assert_called_once_with(
             url="https://example.com/file",
             stream=True,
+            allow_redirects=False,
             timeout=(5, 60),
         )
 
@@ -2640,7 +2657,7 @@ class TestFileDownloadablePathTraversal:
             ),
         ):
             with pytest.raises(ErrorDownloadingFile) as exc_info:
-                f.download(outdir)
+                f.download(outdir, root=outdir)
 
         assert "Error downloading file" in str(exc_info.value)
         assert "token=abc" not in str(exc_info.value)
@@ -2663,7 +2680,7 @@ class TestFileDownloadablePathTraversal:
             return_value=response,
         ):
             with pytest.raises(ErrorDownloadingFile) as exc_info:
-                f.download(outdir)
+                f.download(outdir, root=outdir)
 
         assert "Error downloading file" in str(exc_info.value)
         assert "token=abc" not in str(exc_info.value)
@@ -2683,7 +2700,7 @@ class TestFileDownloadablePathTraversal:
             return_value=response,
         ):
             with pytest.raises(ErrorDownloadingFile) as exc_info:
-                f.download(outdir)
+                f.download(outdir, root=outdir)
 
         assert "token=abc" not in str(exc_info.value)
         response.close.assert_called_once()
@@ -2707,20 +2724,25 @@ class TestFileDownloadablePathTraversal:
             return_value=self._mock_response(),
         ):
             with pytest.raises(ErrorDownloadingFile, match="Path traversal detected"):
-                f.download(outdir)
+                f.download(outdir, root=outdir)
         # SEC-316 P3.1: check runs before mkdir, so outdir is not created
         # as a side effect of a rejected payload.
         assert not outdir.exists()
 
-    def test_empty_name_safe_fails_at_write_time(self, tmp_path):
-        """`Path('').name == ''` — `outdir / ''` resolves to `outdir` itself,
-        which passes the containment check (a path is relative to itself).
-        The write then fails with `IsADirectoryError` because the target is
-        the directory. Documents the safe-fail behavior so a future change
-        to the check cannot silently weaken it without breaking this test."""
+    @pytest.mark.parametrize("name", ["", "."])
+    def test_name_without_usable_basename_is_rejected(self, name, tmp_path):
+        """`Path('').name` and `Path('.').name` are both `''`, so `outdir / ''`
+        used to resolve to `outdir` itself, pass the containment check (a path
+        is relative to itself), and only fail at write time with a raw
+        `IsADirectoryError` after the directory had been created.
+
+        These are now refused up front. Documents the fail-closed behavior so a
+        future change cannot silently weaken it without breaking this test."""
+        from composio.exceptions import ErrorDownloadingFile
+
         outdir = tmp_path / "safe"
         f = FileDownloadable(
-            name="",
+            name=name,
             mimetype="application/octet-stream",
             s3url="https://example.com/file",
         )
@@ -2728,12 +2750,191 @@ class TestFileDownloadablePathTraversal:
             "composio.core.models._files.requests.get",
             return_value=self._mock_response(b"x"),
         ):
-            with pytest.raises(IsADirectoryError):
-                f.download(outdir)
-        # outdir got created (mkdir runs after the check, which passed),
-        # but no file was written inside it.
-        assert outdir.is_dir()
+            with pytest.raises(ErrorDownloadingFile, match="no usable basename"):
+                f.download(outdir, root=outdir)
+
+        # Rejected before `mkdir`, so nothing was created on disk at all.
+        assert not outdir.exists()
+
+    @pytest.mark.parametrize(
+        "name,reason",
+        [
+            ("NUL", "reserved device name"),
+            ("nul.txt", "reserved device name"),
+            ("NUL.tar.gz", "reserved device name"),
+            ("COM1", "reserved device name"),
+            ("report.txt:payload", "reserved by Windows"),
+            ("a\x00b", "NUL byte"),
+            ("😀" * 128, "longer than"),
+            ("x" * 300, "longer than"),
+        ],
+    )
+    def test_unsafe_filenames_are_rejected(self, name, reason, tmp_path):
+        """`self.name` is untrusted by the same rule as the slugs. Without these
+        checks a NUL byte escapes as a raw ValueError from `resolve()`, an
+        over-long name as a raw OSError mid-write, and `NUL` opens the Windows
+        null device — silently discarding the payload while returning a path."""
+        from composio.exceptions import ErrorDownloadingFile
+
+        outdir = tmp_path / "safe"
+        f = FileDownloadable(
+            name=name,
+            mimetype="application/octet-stream",
+            s3url="https://example.com/file",
+        )
+        with patch(
+            "composio.core.models._files.requests.get",
+            return_value=self._mock_response(b"x"),
+        ):
+            with pytest.raises(ErrorDownloadingFile, match=reason):
+                f.download(outdir, root=outdir)
+        assert not outdir.exists()
+
+
+class TestDownloadDirSlugTraversal:
+    """Server-controlled tool/toolkit slugs must not relocate the download
+    directory.
+
+    The directory is built from API response fields, so containment has to be
+    checked against the locally configured root rather than against the built
+    directory itself — the latter is a reference those fields can move. These
+    tests pin the anchor to the configured root.
+    """
+
+    TRAVERSALS = [
+        "../../../../../etc/escaped",
+        "..",
+        ".",
+        "",
+        "/etc",
+        "..\\..\\evil",
+        "a/b",
+        "CON",
+        "x" * 200,
+        "a\x00b",
+    ]
+
+    def _tool(self, tool_slug="GMAIL_GET_ATTACHMENT", toolkit_slug="GMAIL"):
+        tool = MagicMock()
+        tool.slug = tool_slug
+        tool.toolkit.slug = toolkit_slug
+        tool.output_parameters = {
+            "type": "object",
+            "properties": {"attachment": {"file_downloadable": True}},
+        }
+        return tool
+
+    def _response(self):
+        return {
+            "attachment": {
+                "name": "composio",
+                "mimetype": "text/plain",
+                "s3url": "https://example.com/file",
+            }
+        }
+
+    def _mock_get(self, content: bytes = b"payload"):
+        response = MagicMock()
+        response.status_code = 200
+        response.iter_content = lambda chunk_size: [content]
+        response.close = MagicMock()
+        return patch("composio.core.models._files.requests.get", return_value=response)
+
+    @pytest.mark.parametrize("slug", TRAVERSALS)
+    def test_hostile_tool_slug_is_rejected(self, slug, tmp_path):
+        outdir = tmp_path / "files"
+        outdir.mkdir()
+        helper = FileHelper(client=None, outdir=str(outdir))
+        with self._mock_get():
+            with pytest.raises(UnsafePathComponentError):
+                helper.substitute_file_downloads(
+                    tool=self._tool(tool_slug=slug), response=self._response()
+                )
+        # The write is refused before any directory is created.
         assert list(outdir.iterdir()) == []
+
+    @pytest.mark.parametrize("slug", TRAVERSALS)
+    def test_hostile_toolkit_slug_is_rejected(self, slug, tmp_path):
+        outdir = tmp_path / "files"
+        outdir.mkdir()
+        helper = FileHelper(client=None, outdir=str(outdir))
+        with self._mock_get():
+            with pytest.raises(UnsafePathComponentError):
+                helper.substitute_file_downloads(
+                    tool=self._tool(toolkit_slug=slug), response=self._response()
+                )
+        assert list(outdir.iterdir()) == []
+
+    def test_traversal_does_not_escape_the_configured_root(self, tmp_path):
+        """A deep `../` chain in `tool.slug` must not land the payload in a
+        sibling of the configured directory."""
+        outdir = tmp_path / "home" / "app" / ".composio" / "files"
+        outdir.mkdir(parents=True)
+        helper = FileHelper(client=None, outdir=str(outdir))
+        depth = len(outdir.resolve().parts) - len(tmp_path.resolve().parts) + 1
+        traversal = "/".join([".."] * depth) + "/etc/escaped"
+
+        with self._mock_get(b"payload-that-must-not-be-written"):
+            with pytest.raises(UnsafePathComponentError):
+                helper.substitute_file_downloads(
+                    tool=self._tool(tool_slug=traversal), response=self._response()
+                )
+
+        assert not (tmp_path / "etc").exists()
+        assert list(outdir.iterdir()) == []
+
+    def test_legitimate_slugs_still_nest_under_the_root(self, tmp_path):
+        outdir = tmp_path / "files"
+        outdir.mkdir()
+        helper = FileHelper(client=None, outdir=str(outdir))
+        with self._mock_get(b"payload"):
+            result = helper.substitute_file_downloads(
+                tool=self._tool(), response=self._response()
+            )
+
+        written = Path(result["attachment"])
+        assert (
+            written.resolve()
+            == (outdir / "GMAIL" / "GMAIL_GET_ATTACHMENT" / "composio").resolve()
+        )
+        assert written.read_bytes() == b"payload"
+
+    def test_tilde_download_dir_still_works(self, tmp_path, monkeypatch):
+        """`secure_join` expands `~` in the root; the containment check in
+        `download()` must expand it too. When only one side did, every download
+        under `file_download_dir='~/...'` failed as a path traversal."""
+        monkeypatch.setenv("HOME", str(tmp_path))
+        helper = FileHelper(client=None, outdir="~/downloads")
+        with self._mock_get(b"payload"):
+            result = helper.substitute_file_downloads(
+                tool=self._tool(), response=self._response()
+            )
+
+        written = Path(result["attachment"])
+        assert (
+            written.resolve()
+            == (
+                tmp_path / "downloads" / "GMAIL" / "GMAIL_GET_ATTACHMENT" / "composio"
+            ).resolve()
+        )
+        assert written.read_bytes() == b"payload"
+
+    def test_symlink_inside_root_cannot_be_used_to_escape(self, tmp_path):
+        """Per-component validation cannot see a symlink; the post-resolve
+        containment check in `secure_join` is what catches this."""
+        outdir = tmp_path / "files"
+        outdir.mkdir()
+        outside = tmp_path / "outside"
+        outside.mkdir()
+        (outdir / "GMAIL").symlink_to(outside, target_is_directory=True)
+
+        helper = FileHelper(client=None, outdir=str(outdir))
+        with self._mock_get():
+            with pytest.raises(UnsafePathComponentError, match="outside"):
+                helper.substitute_file_downloads(
+                    tool=self._tool(), response=self._response()
+                )
+        assert list(outside.iterdir()) == []
 
 
 class TestEnhanceSchemaDescriptionsEmptySchema:
@@ -2832,12 +3033,6 @@ class TestFromPathSensitiveGuard:
         mock_client.post.assert_not_called()
 
     def test_from_path_opt_out_disables_guard(self, mock_client):
-        """`sensitive_file_upload_protection=False` restores the legacy
-        (unguarded) behavior; the denylist no longer raises for that path."""
-        # A non-existent basename under `.ssh`: the `.ssh` segment still trips the
-        # denylist when protection is on, but the file never exists, so with
-        # protection off we deterministically hit the missing-file path (no real
-        # key read, no network) rather than the block error.
         p = Path.home() / ".ssh" / "composio-does-not-exist-guard-test"
         with pytest.raises(Exception) as exc_info:
             FileUploadable.from_path(
@@ -2848,6 +3043,135 @@ class TestFromPathSensitiveGuard:
                 sensitive_file_upload_protection=False,
             )
         assert not isinstance(exc_info.value, SensitiveFilePathBlockedError)
-        # Guard skipped, so the failure is downstream (missing file), before any
-        # presigned-URL request.
         mock_client.post.assert_not_called()
+
+
+class TestResponseDerivedUrlsAreGuarded:
+    def _download_response(self) -> MagicMock:
+        response = MagicMock()
+        response.status_code = 200
+        response.iter_content = lambda chunk_size: [b"%PDF-1.4"]
+        response.close = MagicMock()
+        return response
+
+    def _s3_client(self, presigned_url: str) -> MagicMock:
+        client = MagicMock()
+        s3meta = MagicMock()
+        s3meta.key = "s3-key"
+        s3meta.new_presigned_url = presigned_url
+        client.post.return_value = s3meta
+        return client
+
+    def test_download_validates_s3url(self, tmp_path):
+        f = FileDownloadable(
+            name="report.pdf",
+            mimetype="application/pdf",
+            s3url="https://s3.example.com/file",
+        )
+        with patch(
+            "composio.core.models._files.assert_safe_fetch_target"
+        ) as mock_assert:
+            with patch(
+                "composio.core.models._files.requests.get",
+                return_value=self._download_response(),
+            ):
+                f.download(tmp_path / "out", root=tmp_path / "out")
+
+        mock_assert.assert_called_once_with("https://s3.example.com/file")
+
+    def test_download_blocked_url_never_reaches_the_network(self, tmp_path):
+        outdir = tmp_path / "out"
+        f = FileDownloadable(
+            name="report.pdf",
+            mimetype="application/pdf",
+            s3url="http://169.254.169.254/latest/meta-data",
+        )
+        with patch(
+            "composio.core.models._files.assert_safe_fetch_target",
+            side_effect=BlockedInternalUrlError("blocked"),
+        ):
+            with patch("composio.core.models._files.requests.get") as mock_get:
+                with pytest.raises(BlockedInternalUrlError):
+                    f.download(outdir, root=outdir)
+
+        mock_get.assert_not_called()
+        assert not outdir.exists()
+
+    def test_download_refuses_to_follow_redirects(self, tmp_path):
+        f = FileDownloadable(
+            name="report.pdf",
+            mimetype="application/pdf",
+            s3url="https://s3.example.com/file",
+        )
+        with patch("composio.core.models._files.assert_safe_fetch_target"):
+            with patch(
+                "composio.core.models._files.requests.get",
+                return_value=self._download_response(),
+            ) as mock_get:
+                f.download(tmp_path / "out", root=tmp_path / "out")
+
+        assert mock_get.call_args.kwargs["allow_redirects"] is False
+
+    def test_upload_bytes_to_s3_goes_through_safe_request(self):
+        client = self._s3_client("https://s3.example.com/upload")
+        with patch("composio.core.models._files.safe_request") as mock_safe_request:
+            mock_safe_request.return_value.status_code = 200
+            _upload_bytes_to_s3(
+                client=client,
+                filename="test.jpg",
+                content=b"data",
+                mimetype="image/jpeg",
+                tool="TEST",
+                toolkit="test",
+            )
+
+        assert mock_safe_request.call_args.args == (
+            "PUT",
+            "https://s3.example.com/upload",
+        )
+
+    def test_upload_bytes_to_s3_blocked_url_sends_nothing(self):
+        client = self._s3_client("http://169.254.169.254/upload")
+        with patch(
+            "composio.utils.url_safety.assert_safe_fetch_target",
+            side_effect=BlockedInternalUrlError("blocked"),
+        ):
+            with patch("composio.utils.url_safety.requests.request") as mock_request:
+                with pytest.raises(BlockedInternalUrlError):
+                    _upload_bytes_to_s3(
+                        client=client,
+                        filename="test.jpg",
+                        content=b"data",
+                        mimetype="image/jpeg",
+                        tool="TEST",
+                        toolkit="test",
+                    )
+
+        mock_request.assert_not_called()
+
+    def test_file_upload_goes_through_safe_request(self, tmp_path):
+        source = tmp_path / "report.pdf"
+        source.write_bytes(b"%PDF-1.4")
+
+        with patch("composio.core.models._files.safe_request") as mock_safe_request:
+            mock_safe_request.return_value.status_code = 200
+            assert upload(url="https://s3.example.com/upload", file=source) is True
+
+        assert mock_safe_request.call_args.args == (
+            "PUT",
+            "https://s3.example.com/upload",
+        )
+
+    def test_file_upload_blocked_url_sends_nothing(self, tmp_path):
+        source = tmp_path / "report.pdf"
+        source.write_bytes(b"%PDF-1.4")
+
+        with patch(
+            "composio.utils.url_safety.assert_safe_fetch_target",
+            side_effect=BlockedInternalUrlError("blocked"),
+        ):
+            with patch("composio.utils.url_safety.requests.request") as mock_request:
+                with pytest.raises(BlockedInternalUrlError):
+                    upload(url="http://127.0.0.1:9000/upload", file=source)
+
+        mock_request.assert_not_called()
