@@ -1,5 +1,4 @@
-import process from 'node:process';
-import { Array as Arr, Data, Effect, HashSet, Option } from 'effect';
+import { Array as Arr, Data, Effect, HashSet, Layer, Option } from 'effect';
 import { Command, HelpDoc, ValidationError } from '@effect/cli';
 import {
   hasCommandName,
@@ -45,11 +44,12 @@ import { configCmd } from './config/config.cmd';
 import { rootConnectionsCmd } from './connections/connections.cmd';
 import { agentCmd } from './agent/agent.cmd';
 import { renderCommandHintGraph } from 'src/services/command-hints';
-import { resetRuntimeDebugFlags, setRuntimeDebugFlags } from 'src/services/runtime-debug-flags';
+import { cliDebugFlagsLayer, type CliDebugFlagOverrides } from 'src/services/runtime-flags';
+import { cliRunIdLayer } from 'src/services/runtime-cli-context';
 import { ComposioCliUserConfig } from 'src/services/cli-user-config';
 import { ComposioUserContext } from 'src/services/user-context';
 import { TerminalUI } from 'src/services/terminal-ui';
-import { detectMaster } from 'src/services/master-detector';
+import { detectMasterFromHost } from 'src/services/master-detector';
 import {
   formatResolveCommandProjectError,
   resolveCommandProject,
@@ -285,7 +285,16 @@ const parseBooleanFlag = (argument: string, name: string): Option.Option<boolean
   return argument === `${name}=false` ? Option.some(false) : Option.none();
 };
 
-const normalizeHiddenDebugFlags = (argv: ReadonlyArray<string>): ReadonlyArray<string> => {
+/**
+ * Splits the hidden debug flags off argv and returns their parsed values.
+ *
+ * The values are inputs to the command that follows — `src/commands/index.ts` provides them as
+ * `CliDebugFlags` — rather than process-wide state, so an explicit `--perf-debug=false` on one
+ * invocation cannot leak into the next.
+ */
+const normalizeHiddenDebugFlags = (
+  argv: ReadonlyArray<string>
+): { readonly argv: ReadonlyArray<string>; readonly overrides: CliDebugFlagOverrides } => {
   const retainedArgs: Array<string> = [];
   let perfDebug: boolean | undefined;
   let toolDebug: boolean | undefined;
@@ -310,22 +319,10 @@ const normalizeHiddenDebugFlags = (argv: ReadonlyArray<string>): ReadonlyArray<s
     retainedArgs.push(argument);
   }
 
-  resetRuntimeDebugFlags();
-  setRuntimeDebugFlags({
-    ...(perfDebug === undefined ? {} : { perfDebug }),
-    ...(toolDebug === undefined ? {} : { toolDebug }),
-  });
-  // The hidden --acp-only flag is stripped from argv before @effect/cli parses it, so its value
-  // travels to run.cmd.ts through the environment; effect/Config cannot write or delete env vars.
-  if (acpOnly === undefined) {
-    // eslint-disable-next-line eslint-js/no-restricted-syntax -- env delete clears a stale hidden-flag value
-    delete process.env.COMPOSIO_RUN_ACP_ONLY;
-  } else {
-    // eslint-disable-next-line eslint-js/no-restricted-syntax -- env write hands the stripped flag to run.cmd
-    process.env.COMPOSIO_RUN_ACP_ONLY = acpOnly ? '1' : '0';
-  }
-
-  return Arr.appendAll(Arr.take(argv, 2), retainedArgs);
+  return {
+    argv: Arr.appendAll(Arr.take(argv, 2), retainedArgs),
+    overrides: { perfDebug, toolDebug, acpOnly },
+  };
 };
 
 const isRootHelp = (argv: ReadonlyArray<string>): boolean => {
@@ -435,17 +432,27 @@ const printDebugApiInfo = Effect.gen(function* () {
   );
 });
 
-const printDetectedMaster = Effect.suspend(() =>
-  Effect.flatMap(TerminalUI, ui =>
-    ui.output(JSON.stringify({ master: detectMaster() }, null, 2), { force: true })
-  )
-);
+const printDetectedMaster = Effect.gen(function* () {
+  const ui = yield* TerminalUI;
+  const master = yield* detectMasterFromHost;
+  yield* ui.output(JSON.stringify({ master }, null, 2), { force: true });
+});
 
 const printDevModeDisabled = Effect.gen(function* () {
   const ui = yield* TerminalUI;
   yield* ui.log.error('Developer mode is off.');
   yield* ui.log.step('Run `composio dev --mode on` in an interactive terminal to enable it.');
 });
+
+/**
+ * Values the CLI bootstrap resolved before the root command runs and that the command tree needs
+ * as an input. Empty for callers that drive the root command on their own (tests, `--install-skill`
+ * style entry points), which is why every field is optional.
+ */
+export type RootCommandBootstrap = {
+  /** Run id minted for a `composio run` invocation, shared with its telemetry events. */
+  readonly runId?: string;
+};
 
 export const runWithConfig = Effect.gen(function* () {
   const cliUserConfig = yield* ComposioCliUserConfig;
@@ -521,10 +528,10 @@ export const runWithConfig = Effect.gen(function* () {
     );
   };
 
-  return (argv: ReadonlyArray<string>) => {
+  return (argv: ReadonlyArray<string>, bootstrap: RootCommandBootstrap = {}) => {
     const { argv: argvWithoutDangerouslyAllow, dangerouslyAllow } =
       normalizeDangerouslyAllowFlag(argv);
-    const normalizedArgv = normalizeHiddenDebugFlags(
+    const { argv: normalizedArgv, overrides } = normalizeHiddenDebugFlags(
       normalizeListenStreamFlag(normalizeVersionShortFlag(argvWithoutDangerouslyAllow))
     );
 
@@ -534,7 +541,8 @@ export const runWithConfig = Effect.gen(function* () {
           onNone: () => routeRootCommand(normalizedArgv, dangerouslyAllow),
           onSome: installSkill,
         })
-      )
+      ),
+      Effect.provide(Layer.merge(cliDebugFlagsLayer(overrides), cliRunIdLayer(bootstrap.runId)))
     );
   };
 });

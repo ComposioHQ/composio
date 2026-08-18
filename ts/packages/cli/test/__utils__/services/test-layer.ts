@@ -23,6 +23,7 @@ import * as MockTerminal from './mock-terminal';
 import { TerminalUITest } from './terminal-ui-test';
 import type { Toolkits, ToolkitDetailed } from 'src/models/toolkits';
 import { NodeProcess } from 'src/services/node-process';
+import { cliDebugFlagsLayer } from 'src/services/runtime-flags';
 import {
   ComposioClientSingleton,
   ComposioSessionRepository,
@@ -99,15 +100,15 @@ export interface TestLiveInput {
   execPath?: string;
 
   /**
- * Mock toolkit-related data to use in test.
- */
-toolkitsData?: {
-  toolkits?: Toolkits;
-  detailedToolkits?: ToolkitDetailed[];
-  tools?: Tools;
-  triggerTypesAsEnums?: TriggerTypesAsEnums;
-  triggerTypes?: TriggerTypes;
-};
+   * Mock toolkit-related data to use in test.
+   */
+  toolkitsData?: {
+    toolkits?: Toolkits;
+    detailedToolkits?: ToolkitDetailed[];
+    tools?: Tools;
+    triggerTypesAsEnums?: TriggerTypesAsEnums;
+    triggerTypes?: TriggerTypes;
+  };
 
   /**
    * Mock auth-config data to use in test.
@@ -1315,6 +1316,9 @@ export const TestLayer = (input?: TestLiveInput) =>
       ConsumerProjectResolveFetchMock,
       StdinTest,
       TerminalUILayer,
+      // `src/commands/index.ts` provides these for real invocations; direct-effect tests that
+      // never route through the root command still need the "no CLI flag override" default.
+      cliDebugFlagsLayer(),
       Layer.provide(
         ProjectContext.Default,
         Layer.mergeAll(BunFileSystem.layer, NodeOsTest, NodeProcessTest)

@@ -204,3 +204,14 @@ export const ssrfSafeFetch = async (
     { url: rawUrl }
   );
 };
+
+/**
+ * {@link ssrfSafeFetch} for call sites that must keep working on every runtime.
+ *
+ * `ssrfSafeFetch` fails closed in edge runtimes, which is right for a URL the
+ * caller chose to upload — the alternative is fetching it unvalidated — but not
+ * for Tool Router session file transfers, where refusing would remove a working
+ * feature from Workers rather than close a hole reachable there. On Node this
+ * is the full guard; only the edge build differs.
+ */
+export const ssrfSafeFetchWhereSupported = ssrfSafeFetch;

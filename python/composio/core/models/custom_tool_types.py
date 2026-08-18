@@ -5,7 +5,6 @@ Mirrors the TypeScript types in ts/packages/core/src/types/customTool.types.ts
 
 from __future__ import annotations
 
-import re
 import typing as t
 from dataclasses import dataclass, field
 
@@ -20,13 +19,23 @@ from composio_client.types.tool_router.session_proxy_execute_response import (
     SessionProxyExecuteResponse,
 )
 
+from composio.utils.safe_path import SAFE_COMPONENT_REGEX
+
 # ────────────────────────────────────────────────────────────────
 # Constants
 # ────────────────────────────────────────────────────────────────
 
 LOCAL_TOOL_PREFIX = "LOCAL_"
 MAX_SLUG_LENGTH = 60
-SLUG_REGEX = re.compile(r"^[A-Za-z0-9_-]+$")
+
+SLUG_REGEX = SAFE_COMPONENT_REGEX
+"""Alias of the canonical pattern in :mod:`composio.utils.safe_path`.
+
+One definition, not two kept in sync by hand: this pattern is what makes a slug
+safe to use as a filesystem path component, so client-created custom tools and
+backend-fetched tools must be held to exactly the same rule. Keeping two copies
+in sync by hand is how they drift apart.
+"""
 
 # ────────────────────────────────────────────────────────────────
 # Execute function type

@@ -49,6 +49,12 @@ vi.mock('node:dns/promises', () => ({
   lookup: vi.fn().mockResolvedValue([{ address: '93.184.216.34', family: 4 }]),
 }));
 
+// eslint-disable-next-line no-restricted-imports
+import { lookup } from 'node:dns/promises';
+import { ComposioBlockedInternalUrlError } from '../../src/errors';
+
+const mockLookup = vi.mocked(lookup);
+
 // Mock global fetch
 const mockFetch = vi.fn();
 global.fetch = mockFetch;
@@ -513,6 +519,45 @@ describe('fileUtils', () => {
           client: mockClient,
         })
       ).rejects.toThrow('Invalid file type');
+    });
+  });
+  describe('SSRF guard on response-supplied URLs', () => {
+    // The S3 URLs below are API response fields, not caller input. The SDK
+    // treats a response as untrusted, so both directions are validated: a
+    // download would otherwise fetch an internal address and write the bytes
+    // to disk, and an upload would PUT the user's file to one.
+    it('should block a download whose s3Url resolves internally', async () => {
+      mockLookup.mockResolvedValueOnce([{ address: '169.254.169.254', family: 4 }] as never);
+
+      await expect(
+        downloadFileFromS3({
+          toolSlug: 'github',
+          s3Url: 'http://metadata.example/latest/meta-data/',
+          mimeType: 'text/plain',
+        })
+      ).rejects.toBeInstanceOf(ComposioBlockedInternalUrlError);
+
+      expect(mockFetch).not.toHaveBeenCalled();
+    });
+
+    it('should block an upload whose presigned URL resolves internally', async () => {
+      vi.mocked(mockClient.files.createPresignedURL).mockResolvedValue({
+        key: 'test-key',
+        type: 'new',
+        new_presigned_url: 'http://127.0.0.1:9000/upload',
+      } as never);
+      // The file content is read first, then the presigned URL is validated.
+      mockLookup.mockResolvedValueOnce([{ address: '127.0.0.1', family: 4 }] as never);
+
+      await expect(
+        getFileDataAfterUploadingToS3(new File(['data'], 'report.txt', { type: 'text/plain' }), {
+          toolSlug: 'test-tool',
+          toolkitSlug: 'test-toolkit',
+          client: mockClient,
+        })
+      ).rejects.toBeInstanceOf(ComposioBlockedInternalUrlError);
+
+      expect(mockFetch).not.toHaveBeenCalled();
     });
   });
 });

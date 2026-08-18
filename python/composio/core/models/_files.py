@@ -22,10 +22,12 @@ from composio.exceptions import (
     FileUploadAbortedError,
     ResponseTooLargeError,
     SDKFileNotFoundError,
+    UnsafePathComponentError,
 )
 from composio.utils import mimetypes
 from composio.utils.json_schema import dereference_json_schema
-from composio.utils.url_safety import assert_safe_fetch_target
+from composio.utils.safe_path import secure_basename_join, secure_join
+from composio.utils.url_safety import assert_safe_fetch_target, safe_request
 from composio.utils.sensitive_file_upload_paths import (
     assert_safe_local_file_upload_path,
 )
@@ -80,35 +82,85 @@ ENV_LOCAL_CACHE_DIRECTORY = "COMPOSIO_CACHE_DIR"
 Environment to set the composio caching directory.
 """
 
-LOCAL_CACHE_DIRECTORY = Path(
-    os.environ.get(
-        ENV_LOCAL_CACHE_DIRECTORY,
-        Path.home() / LOCAL_CACHE_DIRECTORY_NAME,  # Fallback to user directory
-    )
-)
+LOCAL_OUTPUT_FILE_DIRECTORY_NAME = "files"
 """
-Path to local caching directory.
+Name of the cache sub-directory into which files downloaded during tool
+execution are written. Previously ``outputs``; now ``files`` for parity with
+the TypeScript SDK.
 """
 
-try:
-    LOCAL_CACHE_DIRECTORY.mkdir(parents=True, exist_ok=True)
-    if not os.access(LOCAL_CACHE_DIRECTORY, os.W_OK):
-        raise OSError
-except OSError as e:
-    raise RuntimeError(
-        f"Cache directory {LOCAL_CACHE_DIRECTORY} is not writable please "
-        f"provide a path that is writable using {ENV_LOCAL_CACHE_DIRECTORY} "
-        "environment variable."
-    ) from e
+
+def get_cache_directory() -> Path:
+    """Resolve the local caching directory without touching the filesystem.
+
+    ``COMPOSIO_CACHE_DIR`` is read on every call, so it can be set after
+    ``composio`` has already been imported. ``Path.home()`` is only consulted
+    when the variable is unset: it can raise ``RuntimeError`` when there is no
+    resolvable home directory, which is exactly the situation
+    ``COMPOSIO_CACHE_DIR`` exists to work around, so it must not be evaluated
+    eagerly as a fallback argument.
+    """
+    configured = os.environ.get(ENV_LOCAL_CACHE_DIRECTORY)
+    if configured:
+        return Path(configured)
+
+    try:
+        home = Path.home()
+    except RuntimeError as e:
+        raise RuntimeError(
+            "Could not determine a home directory to store the Composio cache "
+            f"in. Provide a writable path using the {ENV_LOCAL_CACHE_DIRECTORY} "
+            "environment variable."
+        ) from e
+    return home / LOCAL_CACHE_DIRECTORY_NAME
 
 
-LOCAL_OUTPUT_FILE_DIRECTORY = LOCAL_CACHE_DIRECTORY / "files"
-"""
-Default local directory into which files downloaded during tool execution are
-written. Previously ``<cache>/outputs``; now ``<cache>/files`` for parity with
-the TypeScript SDK. Override by passing ``file_download_dir=...`` to Composio,
-or by setting ``outdir`` on ``FileHelper`` directly.
-"""
+def get_output_file_directory() -> Path:
+    """Default local directory into which files downloaded during tool
+    execution are written. Override by passing ``file_download_dir=...`` to
+    Composio, or by setting ``outdir`` on ``FileHelper`` directly.
+    """
+    return get_cache_directory() / LOCAL_OUTPUT_FILE_DIRECTORY_NAME
+
+
+def ensure_cache_directory() -> Path:
+    """Create the cache directory on first use and check that it is writable.
+
+    This used to run at module import time, so a bare ``import composio``
+    raised ``RuntimeError`` on any read-only filesystem -- AWS Lambda,
+    distroless containers, ``ProtectHome=true`` systemd units -- even for
+    programs that never touched a file. Deferring it to first use keeps the
+    same check, and the same error message, for the callers that actually
+    need the directory.
+    """
+    directory = get_cache_directory()
+    try:
+        directory.mkdir(parents=True, exist_ok=True)
+        if not os.access(directory, os.W_OK):
+            raise OSError
+    except OSError as e:
+        raise RuntimeError(
+            f"Cache directory {directory} is not writable please "
+            f"provide a path that is writable using {ENV_LOCAL_CACHE_DIRECTORY} "
+            "environment variable."
+        ) from e
+    return directory
+
+
+def __getattr__(name: str) -> Path:
+    """Keep the historical module-level path constants working, but lazily.
+
+    ``LOCAL_CACHE_DIRECTORY`` and ``LOCAL_OUTPUT_FILE_DIRECTORY`` used to be
+    computed at import time. They are now resolved on attribute access
+    instead (PEP 562), so importing this module no longer touches the
+    filesystem or depends on the environment, and both constants observe a
+    ``COMPOSIO_CACHE_DIR`` that was set after import.
+    """
+    if name == "LOCAL_CACHE_DIRECTORY":
+        return get_cache_directory()
+    if name == "LOCAL_OUTPUT_FILE_DIRECTORY":
+        return get_output_file_directory()
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 
 
 def get_md5(file: Path) -> str:
@@ -158,8 +210,9 @@ def upload(url: str, file: Path, mimetype: t.Optional[str] = None) -> bool:
         mimetype = mimetypes.guess(file=file)
     with file.open("rb") as data:
         try:
-            response = requests.put(
-                url=url,
+            response = safe_request(
+                "PUT",
+                url,
                 data=data,
                 headers={"Content-Type": mimetype},
                 timeout=(_CONNECT_TIMEOUT, _READ_TIMEOUT),
@@ -434,8 +487,9 @@ def _upload_bytes_to_s3(
 
     # Upload the content directly to S3
     try:
-        upload_response = requests.put(
-            url=s3meta.new_presigned_url,
+        upload_response = safe_request(
+            "PUT",
+            s3meta.new_presigned_url,
             data=content,
             headers={"Content-Type": mimetype},
             timeout=(_CONNECT_TIMEOUT, _READ_TIMEOUT),
@@ -616,24 +670,38 @@ class FileDownloadable(BaseModel):
     mimetype: str = Field(..., description="Mime type of the file.")
     s3url: str = Field(..., description="URL of the file.")
 
-    def download(self, outdir: Path, chunk_size: int = _DEFAULT_CHUNK_SIZE) -> Path:
-        # SEC-316: `self.name` comes from the (potentially compromised or
-        # MITM'd) Composio API response. Strip directory components with
-        # `Path(...).name` so traversal sequences like `../../../foo` collapse
-        # to `foo`, then verify the resolved output stays under `outdir` so a
-        # name like `output_evil/foo` (sibling-prefix attack) is also rejected.
-        safe_name = Path(self.name).name
-        outfile = outdir / safe_name
-        if not outfile.resolve().is_relative_to(outdir.resolve()):
-            raise ErrorDownloadingFile(
-                f"Path traversal detected: filename '{self.name}' resolves "
-                "outside the intended output directory."
-            )
+    def download(
+        self,
+        outdir: Path,
+        chunk_size: int = _DEFAULT_CHUNK_SIZE,
+        *,
+        root: Path,
+    ) -> Path:
+        """Fetch the file into ``outdir``.
+
+        :param outdir: Directory to write into. May be derived from untrusted
+            input, provided it was produced by :func:`secure_join`.
+        :param root: Trusted containment anchor, configured locally and never
+            derived from an API response. Required rather than defaulted:
+            checking containment against a directory that untrusted input has
+            already relocated is not a check at all, and ``outdir`` may be
+            exactly such a directory. Callers must name the anchor explicitly.
+        """
+        # SEC-316: `self.name` also comes from the (potentially compromised or
+        # MITM'd) API response. Collapsed to a bare filename and checked against
+        # `root` — not `outdir` — so a name like `output_evil/foo`
+        # (sibling-prefix attack) is rejected too.
+        try:
+            outfile = secure_basename_join(outdir, self.name, root=root)
+        except UnsafePathComponentError as e:
+            raise ErrorDownloadingFile(str(e)) from e
+        assert_safe_fetch_target(self.s3url)
         outdir.mkdir(exist_ok=True, parents=True)
         try:
             response = requests.get(
                 url=self.s3url,
                 stream=True,
+                allow_redirects=False,
                 timeout=(_CONNECT_TIMEOUT, _READ_TIMEOUT),
             )
         except requests.exceptions.RequestException as e:
@@ -688,7 +756,11 @@ class FileHelper(WithLogger):
         """
         super().__init__()
         self._client = client
-        self._outdir = Path(outdir) if outdir else LOCAL_OUTPUT_FILE_DIRECTORY
+        # Falsy, not just `is None`: an empty string falls through to the
+        # same default directory below, and must be treated as such here too
+        # or `ensure_cache_directory()` silently stops firing for it.
+        self._outdir_is_default = not outdir
+        self._outdir = Path(outdir) if outdir else get_output_file_directory()
         self._sensitive_file_upload_protection = sensitive_file_upload_protection
         self._file_upload_path_deny_segments = file_upload_path_deny_segments
         self._file_upload_allowlist: t.Optional[t.Sequence[Path]] = (
@@ -1121,9 +1193,20 @@ class FileHelper(WithLogger):
 
     def _download_file_value(self, value: t.Any, tool: Tool) -> t.Any:
         if isinstance(value, dict) and "s3url" in value:
+            if self._outdir_is_default:
+                # First point at which the cache directory is genuinely
+                # needed. Raises the same RuntimeError that used to be raised
+                # at import time, pointing at COMPOSIO_CACHE_DIR.
+                ensure_cache_directory()
+            # `tool.toolkit.slug` and `tool.slug` come from the API response and
+            # are untrusted, so joining them directly would let the response pick
+            # the download directory. `secure_join` validates each component and
+            # anchors containment on `self._outdir`, which is configured locally
+            # and never derived from the response.
             return str(
                 FileDownloadable(**value).download(
-                    self._outdir / tool.toolkit.slug / tool.slug
+                    outdir=secure_join(self._outdir, tool.toolkit.slug, tool.slug),
+                    root=self._outdir,
                 )
             )
         return value
