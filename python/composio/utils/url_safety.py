@@ -15,6 +15,11 @@ pass this check and still connect to the private address. Closing that window
 requires pinning the validated address and connecting to it directly (a custom
 ``requests`` transport adapter), which is out of scope for this module; the
 TypeScript guard carries the same limitation.
+
+Also parses response headers that gate how much of a body the SDK reads:
+``parse_content_length`` treats ``Content-Length`` as the untrusted hint it
+is, so a malformed value degrades to an unknown size under a streamed byte
+count instead of crashing the fetch.
 """
 
 from __future__ import annotations
@@ -89,6 +94,27 @@ def assert_safe_fetch_target(url: str) -> None:
             raise BlockedInternalUrlError(
                 f'Refusing to fetch "{parsed.hostname}" because it resolves to a non-public address'
             )
+
+
+def parse_content_length(value: t.Optional[str]) -> t.Optional[int]:
+    """Parse a ``Content-Length`` header into a non-negative ``int``.
+
+    ``Content-Length`` is supplied by the remote server and is therefore
+    untrusted: it may be absent, non-numeric (``"abc"``), fractional
+    (``"12.5"``), thousands-separated (``"1,024"``) or negative. Anything
+    untrustworthy returns ``None`` so the caller treats the size as unknown
+    and falls through to a streamed byte count, which stays authoritative
+    because the header can also be absent or understated. Mirrors
+    ``readResponseBodyWithLimit`` in the TypeScript SDK, which only trusts
+    values matching ``/^\\d+$/``.
+    """
+    if value is None:
+        return None
+    try:
+        size = int(value.strip())
+    except ValueError:
+        return None
+    return size if size >= 0 else None
 
 
 def safe_request(
