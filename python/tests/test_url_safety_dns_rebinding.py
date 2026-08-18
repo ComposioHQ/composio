@@ -21,6 +21,38 @@ from composio.utils.url_safety import (
     assert_safe_connected_peer,
 )
 
+_PROXY_ENV_VARS = (
+    "HTTP_PROXY",
+    "HTTPS_PROXY",
+    "ALL_PROXY",
+    "NO_PROXY",
+    "http_proxy",
+    "https_proxy",
+    "all_proxy",
+    "no_proxy",
+)
+
+
+@pytest.fixture(autouse=True)
+def _no_ambient_proxy(monkeypatch):
+    # The guard deliberately stands down when the request is routed through an
+    # environment proxy (the socket's peer is then the proxy, not the target).
+    # Clear any proxy configuration inherited from the CI host so these tests
+    # exercise the direct-connection path deterministically.
+    for var in _PROXY_ENV_VARS:
+        monkeypatch.delenv(var, raising=False)
+
+
+class RawPeer:
+    """Marker: ``getpeername`` returns the wrapped value verbatim.
+
+    Used for peers that are not address tuples, such as the plain path
+    string an ``AF_UNIX`` socket reports.
+    """
+
+    def __init__(self, value):
+        self.value = value
+
 
 class FakeSocket:
     """Socket stand-in whose ``getpeername`` is scripted by the test."""
@@ -31,6 +63,8 @@ class FakeSocket:
     def getpeername(self):
         if isinstance(self._peer, BaseException):
             raise self._peer
+        if isinstance(self._peer, RawPeer):
+            return self._peer.value
         if isinstance(self._peer, str):
             return (self._peer, 443)
         return self._peer
@@ -130,7 +164,7 @@ def test_error_message_does_not_leak_the_url_query_string():
         FakeResponse(None),
         FakeResponse(OSError("socket already released")),
         FakeResponse(AttributeError("no getpeername")),
-        FakeResponse("/tmp/unix.sock"),  # AF_UNIX peername is not a tuple
+        FakeResponse(RawPeer("/tmp/unix.sock")),  # AF_UNIX peername is not a tuple
     ],
 )
 def test_undeterminable_peer_is_left_alone(response):
@@ -140,6 +174,35 @@ def test_undeterminable_peer_is_left_alone(response):
     assert_safe_connected_peer(response, "https://example.com/file.png")
 
     assert not response.closed
+
+
+@pytest.mark.parametrize(
+    "proxy_var", ["HTTPS_PROXY", "https_proxy", "ALL_PROXY", "all_proxy"]
+)
+def test_private_proxy_peer_is_not_mistaken_for_rebinding(monkeypatch, proxy_var):
+    # requests honors HTTP(S)_PROXY / ALL_PROXY by default (trust_env=True),
+    # so the client socket is connected to the *proxy* and getpeername()
+    # reports the proxy's address -- commonly loopback or RFC 1918. That is
+    # operator configuration, not a DNS rebind, and must not be rejected.
+    monkeypatch.setenv(proxy_var, "http://127.0.0.1:8080")
+    response = FakeResponse("127.0.0.1")
+
+    assert_safe_connected_peer(response, "https://example.com/file.png")
+
+    assert not response.closed
+
+
+def test_no_proxy_exemption_restores_the_peer_check(monkeypatch):
+    # A host exempted via NO_PROXY connects directly, so the peer really is
+    # the target and a rebound internal address must still be rejected.
+    monkeypatch.setenv("HTTPS_PROXY", "http://127.0.0.1:8080")
+    monkeypatch.setenv("NO_PROXY", "rebind.example.com")
+    response = FakeResponse("169.254.169.254")
+
+    with pytest.raises(BlockedInternalUrlError):
+        assert_safe_connected_peer(response, "https://rebind.example.com/file.png")
+
+    assert response.closed
 
 
 def test_connected_peer_address_returns_the_address():

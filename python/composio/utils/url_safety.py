@@ -24,6 +24,7 @@ import socket
 from urllib.parse import urlparse
 
 import requests
+import requests.utils
 
 from composio.exceptions import BlockedInternalUrlError
 
@@ -87,6 +88,27 @@ def assert_safe_fetch_target(url: str) -> None:
             )
 
 
+def _request_used_environment_proxy(url: str) -> bool:
+    """Whether Requests would route ``url`` through an environment proxy.
+
+    ``requests.get`` honors ``HTTP_PROXY`` / ``HTTPS_PROXY`` / ``ALL_PROXY``
+    (and the ``NO_PROXY`` exemptions) by default (``trust_env=True``). When a
+    proxy is in play, the client socket is connected to the *proxy*, so its
+    peer address says nothing about the target host. This mirrors the
+    client's own selection logic so this module and the connection agree on
+    whether a proxy sits in between.
+    """
+    try:
+        proxies = requests.utils.get_environ_proxies(url)
+        return requests.utils.select_proxy(url, proxies) is not None
+    except Exception:  # noqa: BLE001 - platform proxy discovery can fail
+        # If proxy discovery itself fails, whether the socket peer is the
+        # target is unknowable; treat it like an undeterminable peer rather
+        # than rejecting a legitimate fetch. assert_safe_fetch_target has
+        # already validated the resolved addresses.
+        return True
+
+
 def _connected_peer_address(response: requests.Response) -> str | None:
     """Best-effort address of the socket a response is connected to.
 
@@ -120,10 +142,23 @@ def assert_safe_connected_peer(response: requests.Response, url: str) -> None:
     address the socket is genuinely connected to and dropping the response
     before a single body byte is read.
 
-    A peer that cannot be determined is left alone rather than rejected: there
-    is nothing to check, and the pre-flight resolution check has already run.
+    Two situations are deliberately left alone rather than rejected:
+
+    - The request went through an environment-configured proxy. The socket's
+      peer is then the proxy -- commonly a loopback or RFC 1918 address that
+      the operator chose on purpose -- and tells us nothing about the target,
+      so treating it as a rebound host would break every fetch behind a
+      corporate proxy. The proxy performs its own DNS resolution, which is
+      outside this client's observable reach.
+    - The peer cannot be determined at all (mocked transport, non-socket
+      adapter, connection already released). There is nothing to check, and
+      the pre-flight resolution check has already run.
+
     Call this while the response is still streaming, before reading the body.
     """
+    if _request_used_environment_proxy(url):
+        return
+
     peer = _connected_peer_address(response)
     if peer is None or not is_blocked_ip(peer):
         return
