@@ -50,22 +50,39 @@ composio [--log-level all|trace|debug|info|warning|error|fatal|none]
 
 ## Configuration
 
-The Composio CLI supports configuration via environment variables.
-Additionally, for storing and retrieving user session context, a `user_data.json` JSON configuration file is used.
+The Composio CLI supports configuration via environment variables. It stores authenticated user context in `user_data.json` and general CLI settings in `config.json`.
 
-By default, this file is stored in `~/.composio`, but you can specify a custom location using the `COMPOSIO_CACHE_DIR` environment variable.
+By default, both files are stored in `~/.composio`, but you can specify a custom location using the `COMPOSIO_CACHE_DIR` environment variable.
 
-| Environment Variable   | User JSON config | Description                                                        | Default                          |
-| ---------------------- | ---------------- | ------------------------------------------------------------------ | -------------------------------- |
-| COMPOSIO_API_KEY       | `api_key`        | Composio backend API key                                           | None                             |
-| COMPOSIO_BASE_URL      | `base_url`       | The base URL of the Composio backend API                           | https://backend.composio.dev     |
-| COMPOSIO_WEB_URL       | `web_url`        | The base URL of the Composio web app                               | https://dashboard.composio.dev/  |
-| COMPOSIO_CACHE_DIR     | -                | The directory where the Composio CLI stores cache files            | ~/.composio                      |
-| COMPOSIO_BIN_DIR       | -                | The directory `composio install` adds to `PATH` (see below)        | Resolved from the running binary |
-| COMPOSIO_LOG_LEVEL     | -                | The log level for the Composio CLI                                 | None                             |
-| DEBUG_OVERRIDE_VERSION | -                | The version to use when upgrading the Composio CLI (for debugging) | None                             |
-| FORCE_USE_CACHE        | -                | Whether to force the use of previously cached HTTP responses       | None                             |
-| NO_COLOR               | -                | If set, disables color output in the CLI (https://no-color.org/)   | None                             |
+| Environment Variable                     | JSON config                         | Description                                                               | Default                                                                  |
+| ---------------------------------------- | ----------------------------------- | ------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
+| COMPOSIO_USER_API_KEY                    | `user_data.json`: `api_key`         | Composio user API key                                                     | None                                                                     |
+| COMPOSIO_ENVIRONMENT                     | -                                   | Selects the production or staging URL defaults                            | production                                                               |
+| COMPOSIO_BASE_URL                        | `user_data.json`: `base_url`        | The base URL of the Composio backend API                                  | https://backend.composio.dev                                             |
+| COMPOSIO_WEB_URL                         | `user_data.json`: `web_url`         | The base URL of the Composio web app                                      | https://dashboard.composio.dev/                                          |
+| COMPOSIO_CACHE_DIR                       | -                                   | The directory where the Composio CLI stores cache files                   | ~/.composio                                                              |
+| COMPOSIO_SESSION_DIR                     | `config.json`: `artifact_directory` | The root directory for CLI session artifacts                              | `COMPOSIO_CACHE_DIR`, then `artifact_directory`, then `$TMPDIR/composio` |
+| COMPOSIO_BIN_DIR                         | -                                   | The directory `composio install` adds to `PATH` (see below)               | Resolved from the running binary                                         |
+| COMPOSIO_LOG_LEVEL                       | -                                   | The log level for the Composio CLI                                        | None                                                                     |
+| COMPOSIO_ORG_ID                          | -                                   | The organization ID used for project-scoped commands                      | Active project                                                           |
+| COMPOSIO_PROJECT_ID                      | -                                   | The project ID used for project-scoped commands                           | Active project                                                           |
+| COMPOSIO_AGENTS_BASE_URL                 | -                                   | The base URL of the Composio agents service                               | https://agents.composio.dev                                              |
+| COMPOSIO_WEBHOOK_SECRET                  | -                                   | The signing secret for events forwarded by `composio dev triggers listen` | Generated for the current session                                        |
+| COMPOSIO_DISABLE_CONNECTED_ACCOUNT_CACHE | -                                   | Disables the connected-account cache                                      | true                                                                     |
+| COMPOSIO_PERF_DEBUG                      | -                                   | Set to `1` to write performance diagnostics                               | 0                                                                        |
+| COMPOSIO_TOOL_DEBUG                      | -                                   | Set to `1` to write tool diagnostics                                      | 0                                                                        |
+| DEBUG_OVERRIDE_VERSION                   | -                                   | The version to use when upgrading the Composio CLI (for debugging)        | None                                                                     |
+| FORCE_USE_CACHE                          | -                                   | Whether to force the use of previously cached HTTP responses              | None                                                                     |
+| NO_COLOR                                 | -                                   | If set, disables color output in the CLI (https://no-color.org/)          | None                                                                     |
+
+The CLI and its installer use these variables to coordinate nested commands. They aren't intended for manual configuration.
+
+| Environment Variable           | Description                                                                | Default |
+| ------------------------------ | -------------------------------------------------------------------------- | ------- |
+| COMPOSIO_CLI_INVOCATION_ORIGIN | Identifies whether another CLI surface, such as `composio run`, invoked it | cli     |
+| COMPOSIO_CLI_PARENT_RUN_ID     | Reuses the parent run ID for nested command telemetry                      | None    |
+| COMPOSIO_RUN_ACP_ONLY          | Set to `1` to disable the legacy sub-agent fallback                        | 0       |
+| COMPOSIO_RUN_OUTPUT_DIR        | Shares one artifact directory across nested `composio run` commands        | None    |
 
 Additionally, `composio upgrade` supports the following environment variables:
 

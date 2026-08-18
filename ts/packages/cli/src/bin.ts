@@ -5,35 +5,25 @@ import { BunFileSystem, BunPath, BunRuntime } from '@effect/platform-bun';
 import { isBackgroundWorkerInvocation, runBackgroundWorkerFromArgv } from 'src/analytics/dispatch';
 import { NodeOs } from 'src/services/node-os';
 import { TerminalUILive } from 'src/services/terminal-ui';
+import { stripTelemetryDebugFlag, telemetryDebugModeLayer } from 'src/services/runtime-flags';
 
-const TELEMETRY_DEBUG_FLAG = '--telemetry-debug';
-const CLI_TELEMETRY_DEBUG_ENV_VAR = 'COMPOSIO_CLI_TELEMETRY_DEBUG';
+const bootstrap = stripTelemetryDebugFlag(process.argv);
+process.argv = [...bootstrap.argv];
 
-const stripTelemetryDebugFlag = (argv: ReadonlyArray<string>): string[] => {
-  const normalizedArgv = [...argv];
-  const flagIndex = normalizedArgv.indexOf(TELEMETRY_DEBUG_FLAG);
-  if (flagIndex < 0) {
-    return normalizedArgv;
-  }
+const workerLayers = Layer.mergeAll(
+  BunFileSystem.layer,
+  BunPath.layer,
+  FetchHttpClient.layer,
+  NodeOs.Default,
+  TerminalUILive
+);
 
-  normalizedArgv.splice(flagIndex, 1);
-  // Bootstrap runs before the Effect runtime and ConfigProvider exist; the stripped flag is
-  // persisted as an env var so later effect/Config reads and child processes observe it.
-  // eslint-disable-next-line eslint-js/no-restricted-syntax -- pre-runtime env write during bootstrap
-  process.env[CLI_TELEMETRY_DEBUG_ENV_VAR] = 'true';
-  return normalizedArgv;
-};
-
-if (isBackgroundWorkerInvocation(process.argv)) {
-  runBackgroundWorkerFromArgv(process.argv).pipe(
+if (isBackgroundWorkerInvocation(bootstrap.argv)) {
+  runBackgroundWorkerFromArgv(bootstrap.argv).pipe(
     Effect.provide(
-      Layer.mergeAll(
-        BunFileSystem.layer,
-        BunPath.layer,
-        FetchHttpClient.layer,
-        NodeOs.Default,
-        TerminalUILive
-      )
+      bootstrap.telemetryDebug
+        ? Layer.merge(workerLayers, telemetryDebugModeLayer(true))
+        : workerLayers
     ),
     effect =>
       BunRuntime.runMain(effect, {
@@ -42,6 +32,7 @@ if (isBackgroundWorkerInvocation(process.argv)) {
       })
   );
 } else {
-  process.argv = stripTelemetryDebugFlag(process.argv);
-  void import('./cli-main');
+  void import('./cli-main').then(({ runCli }) =>
+    runCli({ telemetryDebug: bootstrap.telemetryDebug })
+  );
 }
