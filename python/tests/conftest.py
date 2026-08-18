@@ -4,6 +4,7 @@ import base64
 import hashlib
 import hmac
 import json
+import os
 from pathlib import Path
 from unittest.mock import Mock
 
@@ -120,3 +121,58 @@ def webhook_fixtures() -> list[dict]:
 def golden_signatures() -> dict:
     """Load golden signatures."""
     return load_golden_signatures()
+
+
+@pytest.fixture(scope="session")
+def _real_home_baseline():
+    """The real home directory and its top-level entries, captured once.
+
+    Session-scoped so it is read before any test can monkeypatch ``$HOME``.
+    Resolving it per-test would let a test that repoints ``$HOME`` also move
+    the guard's own reference point, which is exactly the class of mistake the
+    guard exists to catch.
+    """
+    real_home = Path(os.path.expanduser("~"))
+    try:
+        return {"path": real_home, "entries": set(os.listdir(real_home))}
+    except OSError:
+        return {"path": real_home, "entries": None}
+
+
+@pytest.fixture(autouse=True)
+def guard_real_home_directory(request, _real_home_baseline):
+    """Fail any test that creates entries directly in the real home directory.
+
+    A test that meant to sandbox `~` but patched the wrong thing
+    (`Path.home` does not affect `Path.expanduser`, which reads `$HOME`)
+    silently writes into the developer's actual home instead. That has already
+    destroyed real user data once. This turns the silent case into a failure.
+
+    Only top-level entries are compared, so a test writing under an existing
+    `~/.composio` is unaffected; creating `~/downloads` is not.
+    """
+    if _real_home_baseline["entries"] is None:
+        yield
+        return
+
+    yield
+
+    real_home = _real_home_baseline["path"]
+    try:
+        after = set(os.listdir(real_home))
+    except OSError:
+        return
+
+    created = after - _real_home_baseline["entries"]
+    # Roll the baseline forward before failing, so one offending test does not
+    # then fail every test that follows it.
+    _real_home_baseline["entries"] = after
+    if not created:
+        return
+
+    pytest.fail(
+        f"{request.node.nodeid} created {sorted(created)} in the real home "
+        f"directory ({real_home}). Sandbox `$HOME` with "
+        f"`monkeypatch.setenv('HOME', str(tmp_path))` — patching `Path.home` "
+        f"does not affect `Path.expanduser`."
+    )

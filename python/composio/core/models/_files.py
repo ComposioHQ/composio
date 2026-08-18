@@ -22,9 +22,11 @@ from composio.exceptions import (
     FileUploadAbortedError,
     ResponseTooLargeError,
     SDKFileNotFoundError,
+    UnsafePathComponentError,
 )
 from composio.utils import mimetypes
 from composio.utils.json_schema import dereference_json_schema
+from composio.utils.safe_path import secure_basename_join, secure_join
 from composio.utils.url_safety import assert_safe_fetch_target
 from composio.utils.sensitive_file_upload_paths import (
     assert_safe_local_file_upload_path,
@@ -580,19 +582,31 @@ class FileDownloadable(BaseModel):
     mimetype: str = Field(..., description="Mime type of the file.")
     s3url: str = Field(..., description="URL of the file.")
 
-    def download(self, outdir: Path, chunk_size: int = _DEFAULT_CHUNK_SIZE) -> Path:
-        # SEC-316: `self.name` comes from the (potentially compromised or
-        # MITM'd) Composio API response. Strip directory components with
-        # `Path(...).name` so traversal sequences like `../../../foo` collapse
-        # to `foo`, then verify the resolved output stays under `outdir` so a
-        # name like `output_evil/foo` (sibling-prefix attack) is also rejected.
-        safe_name = Path(self.name).name
-        outfile = outdir / safe_name
-        if not outfile.resolve().is_relative_to(outdir.resolve()):
-            raise ErrorDownloadingFile(
-                f"Path traversal detected: filename '{self.name}' resolves "
-                "outside the intended output directory."
-            )
+    def download(
+        self,
+        outdir: Path,
+        chunk_size: int = _DEFAULT_CHUNK_SIZE,
+        *,
+        root: Path,
+    ) -> Path:
+        """Fetch the file into ``outdir``.
+
+        :param outdir: Directory to write into. May be derived from untrusted
+            input, provided it was produced by :func:`secure_join`.
+        :param root: Trusted containment anchor, configured locally and never
+            derived from an API response. Required rather than defaulted:
+            checking containment against a directory that untrusted input has
+            already relocated is not a check at all, and ``outdir`` may be
+            exactly such a directory. Callers must name the anchor explicitly.
+        """
+        # SEC-316: `self.name` also comes from the (potentially compromised or
+        # MITM'd) API response. Collapsed to a bare filename and checked against
+        # `root` — not `outdir` — so a name like `output_evil/foo`
+        # (sibling-prefix attack) is rejected too.
+        try:
+            outfile = secure_basename_join(outdir, self.name, root=root)
+        except UnsafePathComponentError as e:
+            raise ErrorDownloadingFile(str(e)) from e
         outdir.mkdir(exist_ok=True, parents=True)
         try:
             response = requests.get(
@@ -1085,9 +1099,15 @@ class FileHelper(WithLogger):
 
     def _download_file_value(self, value: t.Any, tool: Tool) -> t.Any:
         if isinstance(value, dict) and "s3url" in value:
+            # `tool.toolkit.slug` and `tool.slug` come from the API response and
+            # are untrusted, so joining them directly would let the response pick
+            # the download directory. `secure_join` validates each component and
+            # anchors containment on `self._outdir`, which is configured locally
+            # and never derived from the response.
             return str(
                 FileDownloadable(**value).download(
-                    self._outdir / tool.toolkit.slug / tool.slug
+                    outdir=secure_join(self._outdir, tool.toolkit.slug, tool.slug),
+                    root=self._outdir,
                 )
             )
         return value

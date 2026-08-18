@@ -31,6 +31,7 @@ from composio.exceptions import (
     ErrorUploadingFile,
     ResponseTooLargeError,
     SensitiveFilePathBlockedError,
+    UnsafePathComponentError,
 )
 
 
@@ -2546,7 +2547,7 @@ class TestFileDownloadablePathTraversal:
             "composio.core.models._files.requests.get",
             return_value=self._mock_response(b"#!/bin/sh\n"),
         ):
-            written = f.download(outdir)
+            written = f.download(outdir, root=outdir)
 
         # Traversal sequence collapsed to basename and stayed inside outdir.
         assert written == outdir / "PWNED.sh"
@@ -2565,7 +2566,7 @@ class TestFileDownloadablePathTraversal:
             "composio.core.models._files.requests.get",
             return_value=self._mock_response(b"x"),
         ):
-            written = f.download(outdir)
+            written = f.download(outdir, root=outdir)
 
         # `Path('/etc/passwd').name == 'passwd'` — absolute path is stripped.
         assert written == outdir / "passwd"
@@ -2587,7 +2588,7 @@ class TestFileDownloadablePathTraversal:
             return_value=self._mock_response(),
         ):
             with pytest.raises(ErrorDownloadingFile, match="Path traversal detected"):
-                f.download(outdir)
+                f.download(outdir, root=outdir)
         # No file was written under the parent.
         assert not (tmp_path / "x").exists()
 
@@ -2602,7 +2603,7 @@ class TestFileDownloadablePathTraversal:
             "composio.core.models._files.requests.get",
             return_value=self._mock_response(b"%PDF-1.4"),
         ):
-            written = f.download(outdir)
+            written = f.download(outdir, root=outdir)
 
         assert written == outdir / "report.pdf"
         assert written.read_bytes() == b"%PDF-1.4"
@@ -2618,7 +2619,7 @@ class TestFileDownloadablePathTraversal:
             "composio.core.models._files.requests.get",
             return_value=self._mock_response(b"%PDF-1.4"),
         ) as mock_get:
-            f.download(outdir)
+            f.download(outdir, root=outdir)
 
         mock_get.assert_called_once_with(
             url="https://example.com/file",
@@ -2640,7 +2641,7 @@ class TestFileDownloadablePathTraversal:
             ),
         ):
             with pytest.raises(ErrorDownloadingFile) as exc_info:
-                f.download(outdir)
+                f.download(outdir, root=outdir)
 
         assert "Error downloading file" in str(exc_info.value)
         assert "token=abc" not in str(exc_info.value)
@@ -2663,7 +2664,7 @@ class TestFileDownloadablePathTraversal:
             return_value=response,
         ):
             with pytest.raises(ErrorDownloadingFile) as exc_info:
-                f.download(outdir)
+                f.download(outdir, root=outdir)
 
         assert "Error downloading file" in str(exc_info.value)
         assert "token=abc" not in str(exc_info.value)
@@ -2683,7 +2684,7 @@ class TestFileDownloadablePathTraversal:
             return_value=response,
         ):
             with pytest.raises(ErrorDownloadingFile) as exc_info:
-                f.download(outdir)
+                f.download(outdir, root=outdir)
 
         assert "token=abc" not in str(exc_info.value)
         response.close.assert_called_once()
@@ -2707,20 +2708,25 @@ class TestFileDownloadablePathTraversal:
             return_value=self._mock_response(),
         ):
             with pytest.raises(ErrorDownloadingFile, match="Path traversal detected"):
-                f.download(outdir)
+                f.download(outdir, root=outdir)
         # SEC-316 P3.1: check runs before mkdir, so outdir is not created
         # as a side effect of a rejected payload.
         assert not outdir.exists()
 
-    def test_empty_name_safe_fails_at_write_time(self, tmp_path):
-        """`Path('').name == ''` — `outdir / ''` resolves to `outdir` itself,
-        which passes the containment check (a path is relative to itself).
-        The write then fails with `IsADirectoryError` because the target is
-        the directory. Documents the safe-fail behavior so a future change
-        to the check cannot silently weaken it without breaking this test."""
+    @pytest.mark.parametrize("name", ["", "."])
+    def test_name_without_usable_basename_is_rejected(self, name, tmp_path):
+        """`Path('').name` and `Path('.').name` are both `''`, so `outdir / ''`
+        used to resolve to `outdir` itself, pass the containment check (a path
+        is relative to itself), and only fail at write time with a raw
+        `IsADirectoryError` after the directory had been created.
+
+        These are now refused up front. Documents the fail-closed behavior so a
+        future change cannot silently weaken it without breaking this test."""
+        from composio.exceptions import ErrorDownloadingFile
+
         outdir = tmp_path / "safe"
         f = FileDownloadable(
-            name="",
+            name=name,
             mimetype="application/octet-stream",
             s3url="https://example.com/file",
         )
@@ -2728,12 +2734,191 @@ class TestFileDownloadablePathTraversal:
             "composio.core.models._files.requests.get",
             return_value=self._mock_response(b"x"),
         ):
-            with pytest.raises(IsADirectoryError):
-                f.download(outdir)
-        # outdir got created (mkdir runs after the check, which passed),
-        # but no file was written inside it.
-        assert outdir.is_dir()
+            with pytest.raises(ErrorDownloadingFile, match="no usable basename"):
+                f.download(outdir, root=outdir)
+
+        # Rejected before `mkdir`, so nothing was created on disk at all.
+        assert not outdir.exists()
+
+    @pytest.mark.parametrize(
+        "name,reason",
+        [
+            ("NUL", "reserved device name"),
+            ("nul.txt", "reserved device name"),
+            ("NUL.tar.gz", "reserved device name"),
+            ("COM1", "reserved device name"),
+            ("report.txt:payload", "reserved by Windows"),
+            ("a\x00b", "NUL byte"),
+            ("😀" * 128, "longer than"),
+            ("x" * 300, "longer than"),
+        ],
+    )
+    def test_unsafe_filenames_are_rejected(self, name, reason, tmp_path):
+        """`self.name` is untrusted by the same rule as the slugs. Without these
+        checks a NUL byte escapes as a raw ValueError from `resolve()`, an
+        over-long name as a raw OSError mid-write, and `NUL` opens the Windows
+        null device — silently discarding the payload while returning a path."""
+        from composio.exceptions import ErrorDownloadingFile
+
+        outdir = tmp_path / "safe"
+        f = FileDownloadable(
+            name=name,
+            mimetype="application/octet-stream",
+            s3url="https://example.com/file",
+        )
+        with patch(
+            "composio.core.models._files.requests.get",
+            return_value=self._mock_response(b"x"),
+        ):
+            with pytest.raises(ErrorDownloadingFile, match=reason):
+                f.download(outdir, root=outdir)
+        assert not outdir.exists()
+
+
+class TestDownloadDirSlugTraversal:
+    """Server-controlled tool/toolkit slugs must not relocate the download
+    directory.
+
+    The directory is built from API response fields, so containment has to be
+    checked against the locally configured root rather than against the built
+    directory itself — the latter is a reference those fields can move. These
+    tests pin the anchor to the configured root.
+    """
+
+    TRAVERSALS = [
+        "../../../../../etc/escaped",
+        "..",
+        ".",
+        "",
+        "/etc",
+        "..\\..\\evil",
+        "a/b",
+        "CON",
+        "x" * 200,
+        "a\x00b",
+    ]
+
+    def _tool(self, tool_slug="GMAIL_GET_ATTACHMENT", toolkit_slug="GMAIL"):
+        tool = MagicMock()
+        tool.slug = tool_slug
+        tool.toolkit.slug = toolkit_slug
+        tool.output_parameters = {
+            "type": "object",
+            "properties": {"attachment": {"file_downloadable": True}},
+        }
+        return tool
+
+    def _response(self):
+        return {
+            "attachment": {
+                "name": "composio",
+                "mimetype": "text/plain",
+                "s3url": "https://example.com/file",
+            }
+        }
+
+    def _mock_get(self, content: bytes = b"payload"):
+        response = MagicMock()
+        response.status_code = 200
+        response.iter_content = lambda chunk_size: [content]
+        response.close = MagicMock()
+        return patch("composio.core.models._files.requests.get", return_value=response)
+
+    @pytest.mark.parametrize("slug", TRAVERSALS)
+    def test_hostile_tool_slug_is_rejected(self, slug, tmp_path):
+        outdir = tmp_path / "files"
+        outdir.mkdir()
+        helper = FileHelper(client=None, outdir=str(outdir))
+        with self._mock_get():
+            with pytest.raises(UnsafePathComponentError):
+                helper.substitute_file_downloads(
+                    tool=self._tool(tool_slug=slug), response=self._response()
+                )
+        # The write is refused before any directory is created.
         assert list(outdir.iterdir()) == []
+
+    @pytest.mark.parametrize("slug", TRAVERSALS)
+    def test_hostile_toolkit_slug_is_rejected(self, slug, tmp_path):
+        outdir = tmp_path / "files"
+        outdir.mkdir()
+        helper = FileHelper(client=None, outdir=str(outdir))
+        with self._mock_get():
+            with pytest.raises(UnsafePathComponentError):
+                helper.substitute_file_downloads(
+                    tool=self._tool(toolkit_slug=slug), response=self._response()
+                )
+        assert list(outdir.iterdir()) == []
+
+    def test_traversal_does_not_escape_the_configured_root(self, tmp_path):
+        """A deep `../` chain in `tool.slug` must not land the payload in a
+        sibling of the configured directory."""
+        outdir = tmp_path / "home" / "app" / ".composio" / "files"
+        outdir.mkdir(parents=True)
+        helper = FileHelper(client=None, outdir=str(outdir))
+        depth = len(outdir.resolve().parts) - len(tmp_path.resolve().parts) + 1
+        traversal = "/".join([".."] * depth) + "/etc/escaped"
+
+        with self._mock_get(b"payload-that-must-not-be-written"):
+            with pytest.raises(UnsafePathComponentError):
+                helper.substitute_file_downloads(
+                    tool=self._tool(tool_slug=traversal), response=self._response()
+                )
+
+        assert not (tmp_path / "etc").exists()
+        assert list(outdir.iterdir()) == []
+
+    def test_legitimate_slugs_still_nest_under_the_root(self, tmp_path):
+        outdir = tmp_path / "files"
+        outdir.mkdir()
+        helper = FileHelper(client=None, outdir=str(outdir))
+        with self._mock_get(b"payload"):
+            result = helper.substitute_file_downloads(
+                tool=self._tool(), response=self._response()
+            )
+
+        written = Path(result["attachment"])
+        assert (
+            written.resolve()
+            == (outdir / "GMAIL" / "GMAIL_GET_ATTACHMENT" / "composio").resolve()
+        )
+        assert written.read_bytes() == b"payload"
+
+    def test_tilde_download_dir_still_works(self, tmp_path, monkeypatch):
+        """`secure_join` expands `~` in the root; the containment check in
+        `download()` must expand it too. When only one side did, every download
+        under `file_download_dir='~/...'` failed as a path traversal."""
+        monkeypatch.setenv("HOME", str(tmp_path))
+        helper = FileHelper(client=None, outdir="~/downloads")
+        with self._mock_get(b"payload"):
+            result = helper.substitute_file_downloads(
+                tool=self._tool(), response=self._response()
+            )
+
+        written = Path(result["attachment"])
+        assert (
+            written.resolve()
+            == (
+                tmp_path / "downloads" / "GMAIL" / "GMAIL_GET_ATTACHMENT" / "composio"
+            ).resolve()
+        )
+        assert written.read_bytes() == b"payload"
+
+    def test_symlink_inside_root_cannot_be_used_to_escape(self, tmp_path):
+        """Per-component validation cannot see a symlink; the post-resolve
+        containment check in `secure_join` is what catches this."""
+        outdir = tmp_path / "files"
+        outdir.mkdir()
+        outside = tmp_path / "outside"
+        outside.mkdir()
+        (outdir / "GMAIL").symlink_to(outside, target_is_directory=True)
+
+        helper = FileHelper(client=None, outdir=str(outdir))
+        with self._mock_get():
+            with pytest.raises(UnsafePathComponentError, match="outside"):
+                helper.substitute_file_downloads(
+                    tool=self._tool(), response=self._response()
+                )
+        assert list(outside.iterdir()) == []
 
 
 class TestEnhanceSchemaDescriptionsEmptySchema:
