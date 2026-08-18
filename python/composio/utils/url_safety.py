@@ -8,13 +8,23 @@ SDK at loopback, RFC1918 space, or a link-local cloud-metadata endpoint
 (``169.254.169.254``) and turn it into a request proxy for internal
 infrastructure.
 
-Known residual — DNS rebinding: the host is resolved here with
-``getaddrinfo``, and the HTTP client resolves it again independently when it
-connects. A short-TTL record that alternates a public and a private answer can
-pass this check and still connect to the private address. Closing that window
-requires pinning the validated address and connecting to it directly (a custom
-``requests`` transport adapter), which is out of scope for this module; the
-TypeScript guard carries the same limitation.
+Guarding a URL takes two steps, because the hostname is resolved twice: once
+by this module when it validates the target, and once by the HTTP client when
+it opens the connection.
+
+``assert_safe_fetch_target`` covers the first resolution. It rejects non-HTTP(S)
+URLs and any hostname whose DNS answers include a non-publicly-routable address,
+which also defeats decimal/octal/hex IP obfuscation because the *resolved*
+address is what gets checked.
+
+``assert_safe_connected_peer`` covers the second. An attacker-controlled DNS
+server with a short TTL can answer with a public address for the validating
+lookup and an internal one for the connecting lookup -- a time-of-check /
+time-of-use window better known as DNS rebinding. Re-checking the address the
+socket actually landed on, before any response body is read, means an internal
+service never returns data to the caller. (Fully eliminating the window would
+require pinning the validated address with a custom transport adapter; the
+TypeScript guard carries the same limitation.)
 """
 
 from __future__ import annotations
@@ -25,6 +35,7 @@ import typing as t
 from urllib.parse import urljoin, urlparse
 
 import requests
+import requests.utils
 
 from composio.exceptions import BlockedInternalUrlError
 
@@ -138,4 +149,89 @@ def safe_request(
 
     raise BlockedInternalUrlError(
         f"Refusing to fetch: too many redirects (max {max_redirects})"
+    )
+
+
+def _request_used_environment_proxy(url: str) -> bool:
+    """Whether Requests would route ``url`` through an environment proxy.
+
+    ``requests.get`` honors ``HTTP_PROXY`` / ``HTTPS_PROXY`` / ``ALL_PROXY``
+    (and the ``NO_PROXY`` exemptions) by default (``trust_env=True``). When a
+    proxy is in play, the client socket is connected to the *proxy*, so its
+    peer address says nothing about the target host. This mirrors the
+    client's own selection logic so this module and the connection agree on
+    whether a proxy sits in between.
+    """
+    try:
+        proxies = requests.utils.get_environ_proxies(url)
+        return requests.utils.select_proxy(url, proxies) is not None
+    except Exception:  # noqa: BLE001 - platform proxy discovery can fail
+        # If proxy discovery itself fails, whether the socket peer is the
+        # target is unknowable; treat it like an undeterminable peer rather
+        # than rejecting a legitimate fetch. assert_safe_fetch_target has
+        # already validated the resolved addresses.
+        return True
+
+
+def _connected_peer_address(response: requests.Response) -> str | None:
+    """Best-effort address of the socket a response is connected to.
+
+    Returns ``None`` when there is no peer to inspect: the response may have
+    been produced by a transport adapter that is not backed by a socket, or
+    the connection may already have been released back to the pool.
+    """
+    raw = getattr(response, "raw", None)
+    connection = getattr(raw, "connection", None)
+    sock = getattr(connection, "sock", None)
+    if sock is None:
+        return None
+
+    try:
+        peer = sock.getpeername()
+    except (AttributeError, OSError):
+        return None
+
+    if isinstance(peer, tuple) and peer and isinstance(peer[0], str):
+        return peer[0]
+    return None
+
+
+def assert_safe_connected_peer(response: requests.Response, url: str) -> None:
+    """Refuse a response whose connection landed on an internal address.
+
+    ``assert_safe_fetch_target`` validates the addresses a hostname resolves
+    to, but the HTTP client resolves that hostname again when it connects, so
+    validation on its own leaves a DNS-rebinding window (see the module
+    docstring). This closes the exploitable half of that window by checking the
+    address the socket is genuinely connected to and dropping the response
+    before a single body byte is read.
+
+    Two situations are deliberately left alone rather than rejected:
+
+    - The request went through an environment-configured proxy. The socket's
+      peer is then the proxy -- commonly a loopback or RFC 1918 address that
+      the operator chose on purpose -- and tells us nothing about the target,
+      so treating it as a rebound host would break every fetch behind a
+      corporate proxy. The proxy performs its own DNS resolution, which is
+      outside this client's observable reach.
+    - The peer cannot be determined at all (mocked transport, non-socket
+      adapter, connection already released). There is nothing to check, and
+      the pre-flight resolution check has already run.
+
+    Call this while the response is still streaming, before reading the body.
+    """
+    if _request_used_environment_proxy(url):
+        return
+
+    peer = _connected_peer_address(response)
+    if peer is None or not is_blocked_ip(peer):
+        return
+
+    response.close()
+    hostname = urlparse(url).hostname or "the requested host"
+    raise BlockedInternalUrlError(
+        f'Refusing to read from "{hostname}" because the connection was '
+        f"established to a non-public address ({peer}), even though the host "
+        "resolved to a public address during validation. This is the "
+        "signature of a DNS-rebinding attack."
     )
