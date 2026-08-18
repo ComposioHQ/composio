@@ -24,8 +24,11 @@ jobs:
     # Run when the PR carries the label — but for `labeled` events, only when
     # the label just added is one of ours (any other label addition would
     # otherwise cancel-and-restart an in-flight eval; Cursor Bugbot finding).
+    # Either label triggers on its own (run-docs-tests-deep standalone forces
+    # Deep); labeled events still only count when the added label is ours.
     if: |
-      contains(github.event.pull_request.labels.*.name, 'run-docs-tests') &&
+      (contains(github.event.pull_request.labels.*.name, 'run-docs-tests') ||
+       contains(github.event.pull_request.labels.*.name, 'run-docs-tests-deep')) &&
       (github.event.action != 'labeled' || startsWith(github.event.label.name, 'run-docs-tests'))
     # Job-level on purpose: a skipped job never enters the concurrency group,
     # so unrelated triggers cannot cancel a running eval. New commits still
@@ -37,7 +40,7 @@ jobs:
       contents: read
       pull-requests: write  # the result comment
     # Full-SHA pin required by org policy — bump on docs-agent-eval releases.
-    uses: ComposioHQ/docs-agent-eval-ci/.github/workflows/eval-pr.yml@f8c0c11175dfac7371860d5d617ff402e0187dc0
+    uses: ComposioHQ/docs-agent-eval-ci/.github/workflows/eval-pr.yml@7d9833c18e0b6e18e822d3933af478261dd6541f
     with:
       pr_number: ${{ github.event.pull_request.number }}
       mode: ${{ contains(github.event.pull_request.labels.*.name, 'run-docs-tests-deep') && 'Deep' || 'Auto' }}
