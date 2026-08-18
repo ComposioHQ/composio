@@ -2,15 +2,12 @@
 // runtime or @effect/platform layers are provided, so it uses sync Node builtins.
 // eslint-disable-next-line no-restricted-imports -- sync fs for run-log appends, run-file writes, and CLI config reads in the child process, outside the Effect runtime
 import * as fs from 'node:fs';
-// eslint-disable-next-line no-restricted-imports -- os.tmpdir() locates the fallback run-files directory in the child process, outside the Effect runtime
-import * as os from 'node:os';
-import process from 'node:process';
-import { Path } from '@effect/platform';
-import { Effect, Predicate, Schema } from 'effect';
+import { Command, Path } from '@effect/platform';
+import { BunContext } from '@effect/platform-bun';
+import { Effect, Either, ManagedRuntime, Predicate, Schema } from 'effect';
 import { z } from 'zod';
 import { JsonRecordSchema } from 'src/effects/json';
-import { resolveCliConfigPathSync } from 'src/services/cli-user-config';
-import { detectMaster, type MasterKind } from 'src/services/master-detector';
+import type { MasterKind } from 'src/services/master-detector';
 import {
   isAcpInvokeError,
   parseJson,
@@ -20,6 +17,14 @@ import {
 import { invokeAcpSubAgent } from 'src/services/run-subagent-acp';
 import { invokeLegacySubAgent } from 'src/services/run-subagent-legacy';
 import { TerminalUI, TerminalUILive } from 'src/services/terminal-ui';
+import { NodeOs } from 'src/services/node-os';
+import { collectText } from 'src/services/command-runner';
+import { debugFlagsToChildEnv } from 'src/services/runtime-flags';
+
+// One Bun platform runtime shared by every CLI child process this module spawns. ManagedRuntime
+// builds the layer lazily on first use, so importers that never spawn a child pay nothing, and a
+// run script that spawns many does not rebuild the platform services per call.
+const bunCommandRuntime = ManagedRuntime.make(BunContext.layer);
 
 export type RunHelperContext = {
   readonly apiKey?: string;
@@ -32,6 +37,7 @@ export type RunHelperContext = {
   readonly consumerProjectName?: string;
   readonly perfDebug?: boolean;
   readonly toolDebug?: boolean;
+  readonly telemetryDebug?: boolean;
   readonly dryRun?: boolean;
   readonly skipConnectionCheck?: boolean;
   readonly skipToolParamsCheck?: boolean;
@@ -43,6 +49,7 @@ export type RunHelperContext = {
   readonly runOutputDir?: string;
   readonly runLogFilePath?: string;
   readonly readAccessRoots?: ReadonlyArray<string>;
+  readonly cliConfigPath?: string;
 };
 
 type RunHelpersInstallParams = {
@@ -262,12 +269,10 @@ const stringifyForPrompt = (value: unknown): string => {
   if (typeof value === 'number' || typeof value === 'boolean' || typeof value === 'bigint') {
     return String(value);
   }
-  // eslint-disable-next-line eslint-js/no-restricted-syntax -- JSON.stringify throws on circular user values in this sync formatter injected into user code; String() is the entire fallback
-  try {
-    return JSON.stringify(value, null, 2);
-  } catch {
-    return String(value);
-  }
+  return Either.getOrElse(
+    Either.try(() => JSON.stringify(value, null, 2)),
+    () => String(value)
+  );
 };
 
 const attachPromptMethod = <T>(value: T): T => {
@@ -318,16 +323,20 @@ const summarizeCliResultPreview = (result: RunCliResult): unknown => {
   return result;
 };
 
-const readConfiguredExperimentalSubagentTarget = (): 'auto' | 'claude' | 'codex' => {
-  // eslint-disable-next-line eslint-js/no-restricted-syntax -- sync config read at the child-process boundary; a missing or malformed CLI config file just means the 'auto' target
-  try {
-    const raw = fs.readFileSync(resolveCliConfigPathSync(), 'utf8');
-    const parsed = decodeExperimentalSubagentConfig(raw);
-    const target = parsed.experimental_subagent?.target;
-    return target === 'claude' || target === 'codex' || target === 'auto' ? target : 'auto';
-  } catch {
-    return 'auto';
-  }
+const readConfiguredExperimentalSubagentTarget = (
+  cliConfigPath: string | undefined
+): 'auto' | 'claude' | 'codex' => {
+  if (!cliConfigPath) return 'auto';
+
+  return Either.getOrElse(
+    Either.try(() => {
+      const raw = fs.readFileSync(cliConfigPath, 'utf8');
+      const parsed = decodeExperimentalSubagentConfig(raw);
+      const target = parsed.experimental_subagent?.target;
+      return target === 'claude' || target === 'codex' || target === 'auto' ? target : 'auto';
+    }),
+    () => 'auto' as const
+  );
 };
 
 const normalizeInvokeAgentOptions = (
@@ -506,12 +515,13 @@ const createRunHelperLoggers = (params: {
 
 const createExecutePayloadMaterializer = (params: {
   readonly path: Path.Path;
+  readonly tmpdir: string;
   readonly sharedRunOutputDir: string | null;
 }): ((value: unknown) => Promise<unknown>) => {
-  const { path, sharedRunOutputDir } = params;
+  const { path, tmpdir, sharedRunOutputDir } = params;
 
   const writeTempExecuteFile = async (value: unknown): Promise<unknown> => {
-    const outputDir = sharedRunOutputDir || path.join(os.tmpdir(), 'composio-run-files');
+    const outputDir = sharedRunOutputDir || path.join(tmpdir, 'composio-run-files');
     fs.mkdirSync(outputDir, { recursive: true });
     if (typeof File !== 'undefined' && value instanceof File) {
       const safeName =
@@ -612,32 +622,59 @@ const createCliRunner = (params: {
     });
   };
 
+  // Invariant for the life of the run session, so built once rather than per
+  // spawned CLI call.
+  const env: Record<string, string> = {
+    // The platform command inherits the ambient environment by default. An
+    // empty BUN_BE_BUN masks the parent run process's Bun compatibility flag
+    // without copying or enumerating unrelated values.
+    BUN_BE_BUN: '',
+    ...(helperContext.apiKey ? { COMPOSIO_USER_API_KEY: helperContext.apiKey } : {}),
+    ...(helperContext.baseURL ? { COMPOSIO_BASE_URL: helperContext.baseURL } : {}),
+    ...(helperContext.webURL ? { COMPOSIO_WEB_URL: helperContext.webURL } : {}),
+    COMPOSIO_CLI_INVOCATION_ORIGIN: 'run',
+    ...(helperContext.runId ? { COMPOSIO_CLI_PARENT_RUN_ID: helperContext.runId } : {}),
+    ...(sharedRunOutputDir ? { COMPOSIO_RUN_OUTPUT_DIR: sharedRunOutputDir } : {}),
+    ...debugFlagsToChildEnv({
+      perfDebug: perfDebugEnabled,
+      toolDebug: toolDebugEnabled,
+      acpOnly: helperContext.acpOnly === true,
+      telemetryDebug: helperContext.telemetryDebug === true,
+    }),
+  };
+
   const runCliJson = async (args: ReadonlyArray<string>): Promise<RunCliResult> => {
     const requestId = `${args[0] ?? 'cli'}#${++perfDebugSeq}`;
     helperDebugLog('cli.start', { requestId, args });
-    const env: Record<string, string | undefined> = {
-      // eslint-disable-next-line eslint-js/no-restricted-syntax -- the spawned CLI child must inherit the caller's full environment before Composio-specific overrides are layered on top
-      ...process.env,
-      ...(helperContext.apiKey ? { COMPOSIO_USER_API_KEY: helperContext.apiKey } : {}),
-      ...(helperContext.baseURL ? { COMPOSIO_BASE_URL: helperContext.baseURL } : {}),
-      ...(helperContext.webURL ? { COMPOSIO_WEB_URL: helperContext.webURL } : {}),
-      COMPOSIO_CLI_INVOCATION_ORIGIN: 'run',
-      ...(helperContext.runId ? { COMPOSIO_CLI_PARENT_RUN_ID: helperContext.runId } : {}),
-      ...(sharedRunOutputDir ? { COMPOSIO_RUN_OUTPUT_DIR: sharedRunOutputDir } : {}),
-      ...(perfDebugEnabled ? { COMPOSIO_PERF_DEBUG: '1' } : {}),
-      ...(toolDebugEnabled ? { COMPOSIO_TOOL_DEBUG: '1' } : {}),
-    };
-    delete env.BUN_BE_BUN;
     perfDebugLog('start', requestId, { cmd: args });
-    const child = Bun.spawn({
-      cmd: [...cliPrefix, ...args],
-      env,
-      stdio: ['inherit', 'pipe', perfDebugEnabled || toolDebugEnabled ? 'inherit' : 'pipe'],
-    });
-    const stdout = child.stdout ? await new Response(child.stdout).text() : '';
-    const stderr = child.stderr ? await new Response(child.stderr).text() : '';
+    const [executable, ...commandArgs] = [...cliPrefix, ...args];
+    const inheritStderr = perfDebugEnabled || toolDebugEnabled;
+    const { exitCode, stderr, stdout } = await bunCommandRuntime.runPromise(
+      Effect.scoped(
+        Effect.gen(function* () {
+          const command = Command.make(executable, ...commandArgs).pipe(
+            Command.env(env),
+            Command.stdin('inherit'),
+            Command.stderr(inheritStderr ? 'inherit' : 'pipe')
+          );
+          const child = yield* Command.start(command);
+          const [childExitCode, childStdout, childStderr] = yield* Effect.all(
+            [
+              child.exitCode,
+              collectText(child.stdout),
+              inheritStderr ? Effect.succeed('') : collectText(child.stderr),
+            ],
+            { concurrency: 'unbounded' }
+          );
+          return {
+            exitCode: Number(childExitCode),
+            stdout: childStdout,
+            stderr: childStderr,
+          };
+        })
+      )
+    );
     const result = maybeLoadStoredCliResult(parseJson(stdout));
-    const exitCode = await child.exited;
     if (exitCode !== 0) {
       perfDebugLog('error', requestId, { exitCode, stderr: stderr.trim() || undefined });
       helperDebugLog('cli.error', {
@@ -762,6 +799,10 @@ const createExperimentalSubAgent = (params: {
 }) => {
   const { helperContext, helperDebugLog } = params;
 
+  // The parent CLI resolves the master via `detectMasterFromHost` and serializes
+  // it into `helperContext` (see run.cmd.ts), so a missing or unrecognized value
+  // deliberately falls back to 'user' instead of re-detecting from this child
+  // process's environment.
   const detectInvokeAgentMaster = (): MasterKind | 'user' => {
     if (
       helperContext.master === 'claude' ||
@@ -770,12 +811,12 @@ const createExperimentalSubAgent = (params: {
     ) {
       return helperContext.master;
     }
-    return detectMaster();
+    return 'user';
   };
 
   const resolveInvokeAgentTarget = (requestedTarget?: string): 'claude' | 'codex' => {
     if (requestedTarget === 'claude' || requestedTarget === 'codex') return requestedTarget;
-    const configuredTarget = readConfiguredExperimentalSubagentTarget();
+    const configuredTarget = readConfiguredExperimentalSubagentTarget(helperContext.cliConfigPath);
     if (configuredTarget === 'claude' || configuredTarget === 'codex') return configuredTarget;
     const detected = requestedTarget === 'user' ? 'user' : detectInvokeAgentMaster();
     if (detected === 'codex' || detected === 'claude') return detected;
@@ -805,20 +846,20 @@ const createExperimentalSubAgent = (params: {
       resolvedTarget: target,
       master,
     });
-    // eslint-disable-next-line eslint-js/no-restricted-syntax -- async fallback chain in the user's child process: ACP invoke errors route to the legacy sub-agent path, everything else rethrows
-    try {
-      const response = await invokeAcpSubAgent({
-        prompt: prompt.trim(),
-        options: normalizedOptions,
-        master,
-        target,
-        allowedReadRoots: Array.isArray(helperContext.readAccessRoots)
-          ? helperContext.readAccessRoots
-          : [],
-        helperDebugLog,
-      });
-      return logFilePath ? { ...response, logFilePath } : response;
-    } catch (error) {
+    const response = await invokeAcpSubAgent({
+      prompt: prompt.trim(),
+      options: normalizedOptions,
+      master,
+      target,
+      allowedReadRoots: Array.isArray(helperContext.readAccessRoots)
+        ? helperContext.readAccessRoots
+        : [],
+      helperDebugLog,
+    }).catch(error => {
+      // Only ACP protocol failures fall back to the legacy sub-agent. A damaged
+      // install (MissingAcpAdapterAssetsError) is not one of them: its message
+      // names the repair, and swapping in a different sub-agent implementation
+      // would hide the fact that the install needs fixing.
       if (!isAcpInvokeError(error)) throw error;
       if (helperContext.acpOnly === true) throw error;
       helperDebugLog('subAgent.acp.fallback', {
@@ -826,15 +867,15 @@ const createExperimentalSubAgent = (params: {
         code: error.code,
         message: error.message,
       });
-      const response = await invokeLegacySubAgent({
+      return invokeLegacySubAgent({
         prompt: prompt.trim(),
         options: normalizedOptions,
         master,
         target,
         helperDebugLog,
       });
-      return logFilePath ? { ...response, logFilePath } : response;
-    }
+    });
+    return logFilePath ? { ...response, logFilePath } : response;
   };
 
   Object.defineProperty(experimentalSubAgentImpl, 'schema', { value: experimentalSubAgentSchema });
@@ -965,17 +1006,14 @@ export const installRunHelpers = async ({
   // Resolve the live services once at that boundary and keep all writes centralized.
   const terminal = Effect.runSync(TerminalUI.pipe(Effect.provide(TerminalUILive)));
   const path = Effect.runSync(Path.Path.pipe(Effect.provide(Path.layer)));
+  const nodeOs = Effect.runSync(NodeOs.pipe(Effect.provide(NodeOs.Default)));
   const writeError = (line: string) => Effect.runSync(terminal.error(line));
 
   Reflect.set(globalThis, 'z', z);
   Reflect.set(globalThis, 'zod', z);
 
-  const perfDebugEnabled =
-    // eslint-disable-next-line eslint-js/no-restricted-syntax -- debug flag reaches the child process via inherited environment; the CLI's Config provider is not available here
-    helperContext.perfDebug === true || process.env.COMPOSIO_PERF_DEBUG === '1';
-  const toolDebugEnabled =
-    // eslint-disable-next-line eslint-js/no-restricted-syntax -- debug flag reaches the child process via inherited environment; the CLI's Config provider is not available here
-    helperContext.toolDebug === true || process.env.COMPOSIO_TOOL_DEBUG === '1';
+  const perfDebugEnabled = helperContext.perfDebug === true;
+  const toolDebugEnabled = helperContext.toolDebug === true;
   const perfDebugStart = Date.now();
   const composioBaseURL = (helperContext.baseURL || 'https://backend.composio.dev').replace(
     /\/$/,
@@ -1001,6 +1039,7 @@ export const installRunHelpers = async ({
 
   const materializeExecutePayload = createExecutePayloadMaterializer({
     path,
+    tmpdir: nodeOs.tmpdir,
     sharedRunOutputDir,
   });
   const runCliJson = createCliRunner({

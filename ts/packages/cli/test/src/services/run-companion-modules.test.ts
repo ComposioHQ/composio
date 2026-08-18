@@ -2,14 +2,19 @@ import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import { BunContext } from '@effect/platform-bun';
-import { afterEach, describe, expect, layer } from '@effect/vitest';
+import { afterEach, describe, expect, it, layer } from '@effect/vitest';
 import { Effect } from 'effect';
 import { vi } from 'vitest';
 import {
+  hostRunCompanionStaticAssetRelativePaths,
+  listMissingInstalledRunCompanionModules,
   repairMissingInstalledRunCompanionModules,
+  RUN_CODEX_ACP_BINARY_TARGETS,
+  RUN_COMPANION_ALL_STATIC_ASSET_RELATIVE_PATHS,
   RUN_COMPANION_MODULE_FILENAMES,
   RUN_COMPANION_RELEASE_TAG_FILENAME,
-  RUN_COMPANION_STATIC_ASSET_RELATIVE_PATHS,
+  RUN_COMPANION_SHARED_STATIC_ASSET_RELATIVE_PATHS,
+  runCompanionStaticAssetRelativePathsFor,
 } from 'src/services/run-companion-modules';
 import { BaseConfigProviderLive, extendConfigProvider } from 'src/services/config';
 
@@ -23,9 +28,10 @@ const TEST_BINARY_ASSET_NAMES = [
   'composio-linux-aarch64.zip',
   'composio-linux-x64.zip',
 ];
+// A release archive ships every platform's codex-acp binary.
 const TEST_COMPANION_RELATIVE_PATHS = [
   ...RUN_COMPANION_MODULE_FILENAMES,
-  ...RUN_COMPANION_STATIC_ASSET_RELATIVE_PATHS,
+  ...RUN_COMPANION_ALL_STATIC_ASSET_RELATIVE_PATHS,
 ].sort();
 
 const stubRepairFetch = () => {
@@ -71,7 +77,126 @@ describe('run-companion-modules', () => {
     vi.unstubAllEnvs();
   });
 
+  describe('runCompanionStaticAssetRelativePathsFor', () => {
+    it('[Given] a supported host [Then] it requires only that host codex-acp binary', () => {
+      for (const target of RUN_CODEX_ACP_BINARY_TARGETS) {
+        expect(
+          runCompanionStaticAssetRelativePathsFor({
+            platform: target.platform,
+            arch: target.arch,
+          })
+        ).toEqual([...RUN_COMPANION_SHARED_STATIC_ASSET_RELATIVE_PATHS, target.relativePath]);
+      }
+    });
+
+    it('[Given] an unsupported host [Then] it requires only the portable assets', () => {
+      expect(runCompanionStaticAssetRelativePathsFor({ platform: 'win32', arch: 'x64' })).toEqual(
+        RUN_COMPANION_SHARED_STATIC_ASSET_RELATIVE_PATHS
+      );
+    });
+  });
+
   layer(BunContext.layer)(it => {
+    it.effect(
+      "[Given] an install lacking another platform's codex-acp binary [Then] nothing needs repair",
+      () =>
+        Effect.gen(function* () {
+          const hostStaticAssets = yield* hostRunCompanionStaticAssetRelativePaths;
+          const foreignRelativePaths = RUN_CODEX_ACP_BINARY_TARGETS.map(
+            target => target.relativePath
+          ).filter(relativePath => !hostStaticAssets.includes(relativePath));
+
+          expect(foreignRelativePaths.length).toBe(RUN_CODEX_ACP_BINARY_TARGETS.length - 1);
+
+          const installDirectory = fs.mkdtempSync(
+            path.join(os.tmpdir(), 'composio-run-host-scope-')
+          );
+          const execPath = path.join(installDirectory, 'composio');
+          for (const relativePath of [...RUN_COMPANION_MODULE_FILENAMES, ...hostStaticAssets]) {
+            const filePath = path.join(installDirectory, relativePath);
+            fs.mkdirSync(path.dirname(filePath), { recursive: true });
+            fs.writeFileSync(filePath, `installed:${relativePath}`);
+          }
+          const fetchMock = stubRepairFetch();
+
+          return yield* Effect.gen(function* () {
+            expect(yield* listMissingInstalledRunCompanionModules(execPath)).toEqual([]);
+            expect(
+              yield* repairMissingInstalledRunCompanionModules({
+                callerImportMetaUrl: 'file:///$bunfs/root/commands.mjs',
+                execPath,
+                appVersion: '0.0.0-test',
+              })
+            ).toEqual({ repaired: false });
+            expect(fetchMock).not.toHaveBeenCalled();
+          }).pipe(
+            Effect.ensuring(
+              Effect.sync(() => fs.rmSync(installDirectory, { recursive: true, force: true }))
+            )
+          );
+        })
+    );
+
+    it.effect(
+      '[Given] an install without ACP adapters [Then] a plain run neither reports nor repairs anything',
+      () =>
+        Effect.gen(function* () {
+          const installDirectory = fs.mkdtempSync(path.join(os.tmpdir(), 'composio-run-no-acp-'));
+          const execPath = path.join(installDirectory, 'composio');
+          for (const fileName of RUN_COMPANION_MODULE_FILENAMES) {
+            fs.writeFileSync(path.join(installDirectory, fileName), '', 'utf8');
+          }
+          const fetchMock = stubRepairFetch();
+
+          return yield* Effect.gen(function* () {
+            expect(yield* listMissingInstalledRunCompanionModules(execPath)).toEqual([]);
+            expect(
+              yield* repairMissingInstalledRunCompanionModules({
+                callerImportMetaUrl: 'file:///$bunfs/root/commands.mjs',
+                execPath,
+                appVersion: '0.0.0-test',
+              })
+            ).toEqual({ repaired: false });
+            // The self-repair download is what 404s on a dev build; the ACP tier
+            // must never reach it.
+            expect(fetchMock).not.toHaveBeenCalled();
+          }).pipe(
+            Effect.ensuring(
+              Effect.sync(() => fs.rmSync(installDirectory, { recursive: true, force: true }))
+            )
+          );
+        })
+    );
+
+    it.effect(
+      '[Given] a missing companion wrapper [Then] repair still restores the ACP tier too',
+      () => {
+        const installDirectory = fs.mkdtempSync(
+          path.join(os.tmpdir(), 'composio-run-tier-repair-')
+        );
+        const execPath = path.join(installDirectory, 'composio');
+        stubRepairFetch();
+        mockArchiveContents();
+
+        return Effect.gen(function* () {
+          const result = yield* repairMissingInstalledRunCompanionModules({
+            callerImportMetaUrl: 'file:///$bunfs/root/commands.mjs',
+            execPath,
+            appVersion: '0.0.0-test',
+          });
+
+          expect(result).toEqual({ repaired: true, releaseTag: TEST_RELEASE_TAG });
+          for (const relativePath of yield* hostRunCompanionStaticAssetRelativePaths) {
+            expect(fs.existsSync(path.join(installDirectory, relativePath))).toBe(true);
+          }
+        }).pipe(
+          Effect.ensuring(
+            Effect.sync(() => fs.rmSync(installDirectory, { recursive: true, force: true }))
+          )
+        );
+      }
+    );
+
     it.effect('[Given] a complete archive [Then] repair atomically replaces companions', () => {
       const installDirectory = fs.mkdtempSync(path.join(os.tmpdir(), 'composio-run-repair-test-'));
       const execPath = path.join(installDirectory, 'composio');

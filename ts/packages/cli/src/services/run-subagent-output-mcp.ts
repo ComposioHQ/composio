@@ -1,7 +1,7 @@
-// eslint-disable-next-line no-restricted-imports -- standalone MCP stdio sidecar entrypoint runs outside the CLI's Effect runtime; sync fs reads the schema file and writes the structured result file
-import * as fs from 'node:fs';
 import process from 'node:process';
 import { jsonSchemaToZod } from '@composio/json-schema-to-zod';
+import { FileSystem } from '@effect/platform';
+import { BunFileSystem } from '@effect/platform-bun';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { Effect } from 'effect';
@@ -22,9 +22,10 @@ const readFlag = (name: string): string => {
 };
 
 const main = async (): Promise<void> => {
+  const fs = Effect.runSync(FileSystem.FileSystem.pipe(Effect.provide(BunFileSystem.layer)));
   const schemaFilePath = readFlag('--schema-file');
   const resultFilePath = readFlag('--result-file');
-  const schemaText = fs.readFileSync(schemaFilePath, 'utf8');
+  const schemaText = await Effect.runPromise(fs.readFileString(schemaFilePath));
   const structuredSchema = decodeStructuredSchemaJson(schemaText);
   const toolInputSchema = jsonSchemaToZod(buildStructuredOutputToolSchema(structuredSchema));
 
@@ -42,7 +43,7 @@ const main = async (): Promise<void> => {
       inputSchema: toolInputSchema,
     },
     async (payload: unknown) => {
-      fs.writeFileSync(resultFilePath, JSON.stringify(payload), 'utf8');
+      await Effect.runPromise(fs.writeFileString(resultFilePath, JSON.stringify(payload)));
       return {
         content: [
           {

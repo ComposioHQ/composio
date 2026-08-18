@@ -15,7 +15,7 @@ const companionRelativePaths = [
   'run-subagent-acp.mjs',
   'run-subagent-legacy.mjs',
   'run-subagent-output-mcp.mjs',
-  // RUN_COMPANION_STATIC_ASSET_RELATIVE_PATHS
+  // RUN_COMPANION_ALL_STATIC_ASSET_RELATIVE_PATHS
   'acp-adapters/claude-code-acp.mjs',
   'acp-adapters/cli.js',
   'acp-adapters/codex/darwin-arm64/codex-acp',

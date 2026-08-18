@@ -22,9 +22,39 @@ import { ComposioCliUserConfig } from 'src/services/cli-user-config';
 import type { ToolkitDetailed } from 'src/models/toolkits';
 import { makeToolkitFixture } from 'test/__utils__/models/toolkits';
 
+// Disable CI redaction so tests see raw values. `src/ui/redact` reads `CI` once
+// at import time, so the variable has to be gone before the imports above run —
+// `vi.hoisted` executes ahead of them. The explicit CI-redaction test overrides
+// via `vi.spyOn` and is unaffected.
+vi.hoisted(() => {
+  delete process.env.CI;
+});
+
 const testConfigProvider = ConfigProvider.fromMap(
   new Map([['COMPOSIO_USER_API_KEY', 'test_api_key']])
 ).pipe(extendConfigProvider);
+
+const runInvocationConfigProvider = ConfigProvider.fromMap(
+  new Map([
+    ['COMPOSIO_USER_API_KEY', 'test_api_key'],
+    ['COMPOSIO_CLI_INVOCATION_ORIGIN', 'run'],
+  ])
+).pipe(extendConfigProvider);
+
+// Reuse the suite-managed cache directory for artifacts without exposing the
+// empty test cache as the CLI's authenticated config directory.
+const testArtifactConfigProvider = ConfigProvider.fromEnv().pipe(
+  ConfigProvider.mapInputPath(key =>
+    key === 'COMPOSIO_SESSION_DIR' ? 'COMPOSIO_CACHE_DIR' : `UNSET_${key}`
+  )
+);
+
+const largeOutputConfigProvider = ConfigProvider.fromMap(
+  new Map([['COMPOSIO_USER_API_KEY', 'test_api_key']])
+).pipe(
+  ConfigProvider.orElse(() => testArtifactConfigProvider),
+  extendConfigProvider
+);
 
 const expectInvalidValueMessage = (failure: unknown, message: string) => {
   expect(ValidationError.isValidationError(failure)).toBe(true);
@@ -68,12 +98,7 @@ describe('CLI: composio execute', () => {
     })
   );
 
-  // Disable CI redaction so tests see raw values.
-  // The explicit CI-redaction test overrides via vi.spyOn and is unaffected.
-  let savedCI: string | undefined;
   beforeEach(() => {
-    savedCI = process.env.CI;
-    delete process.env.CI;
     vi.spyOn(composioClients, 'getLatestToolVersion').mockImplementation(() =>
       Effect.fail(new composioClients.HttpServerError({}))
     );
@@ -86,7 +111,6 @@ describe('CLI: composio execute', () => {
   });
   afterEach(() => {
     vi.restoreAllMocks();
-    if (savedCI !== undefined) process.env.CI = savedCI;
   });
 
   let recordedSessionCreateParams: Array<Record<string, unknown>> = [];
@@ -191,7 +215,7 @@ describe('CLI: composio execute', () => {
 
   layer(
     TestLive({
-      baseConfigProvider: testConfigProvider,
+      baseConfigProvider: runInvocationConfigProvider,
       fixture: 'global-test-user-id',
       stdin: { isTTY: true, data: '' },
       toolsExecutor: {
@@ -210,8 +234,6 @@ describe('CLI: composio execute', () => {
     it => {
       it.scoped('returns the full JSON payload when invocation origin is run', () =>
         Effect.gen(function* () {
-          vi.stubEnv('COMPOSIO_CLI_INVOCATION_ORIGIN', 'run');
-
           yield* cli(['execute', 'GMAIL_SEND_EMAIL', '-d', '{"recipient":"a"}']);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
           const output = parseLastJson(lines) as unknown as {
@@ -1076,7 +1098,7 @@ describe('CLI: composio execute', () => {
 
   layer(
     TestLive({
-      baseConfigProvider: testConfigProvider,
+      baseConfigProvider: largeOutputConfigProvider,
       fixture: 'global-test-user-id',
       stdin: { isTTY: true, data: '' },
       toolsExecutor: {

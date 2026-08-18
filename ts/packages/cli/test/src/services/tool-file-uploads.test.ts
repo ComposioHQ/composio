@@ -154,6 +154,9 @@ describe('uploadToolInputFiles — sensitive-path guard (issue #3746)', () => {
       );
 
       expect(createPresignedURL).toHaveBeenCalledTimes(1);
+      expect(createPresignedURL).toHaveBeenCalledWith(
+        expect.objectContaining({ md5: '5d41402abc4b2a76b9719d911017c592' })
+      );
       expect(result.attachment).toMatchObject({ s3key: 's3key-123', name: 'document.pdf' });
     }).pipe(
       Effect.provide(Layer.mergeAll(BunFileSystem.layer, BunPath.layer)),

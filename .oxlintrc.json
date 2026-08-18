@@ -274,17 +274,6 @@
               }
             ]
           }
-        ],
-        "eslint-js/no-restricted-syntax": [
-          "error",
-          {
-            "selector": "MemberExpression[object.name='process'][property.name='stdout']",
-            "message": "Write output and read terminal capabilities through TerminalUI."
-          },
-          {
-            "selector": "MemberExpression[object.name='process'][property.name='stderr']",
-            "message": "Write errors and read terminal capabilities through TerminalUI."
-          }
         ]
       }
     },
@@ -329,6 +318,42 @@
         ],
         "eslint-js/no-restricted-syntax": [
           "error",
+          {
+            "selector": "TryStatement",
+            "message": "Use Effect.try, Effect.tryPromise, or typed Effect error recovery instead of try/catch."
+          },
+          {
+            "selector": "MemberExpression[object.name='process'][computed=false][property.name='env']",
+            "message": "Read environment variables through effect/Config instead of process.env."
+          },
+          {
+            "selector": "MemberExpression[object.name='process'][computed=true][property.value='env']",
+            "message": "Read environment variables through effect/Config instead of process.env."
+          },
+          {
+            "selector": "VariableDeclarator[init.name='process'] > ObjectPattern > Property[key.name='env']",
+            "message": "Read environment variables through effect/Config instead of process.env."
+          },
+          {
+            "selector": "VariableDeclarator[init.name='process'] > ObjectPattern > Property[key.value='env']",
+            "message": "Read environment variables through effect/Config instead of process.env."
+          },
+          {
+            "selector": "AssignmentExpression[right.name='process'] > ObjectPattern > Property[key.name='env']",
+            "message": "Read environment variables through effect/Config instead of process.env."
+          },
+          {
+            "selector": "AssignmentExpression[right.name='process'] > ObjectPattern > Property[key.value='env']",
+            "message": "Read environment variables through effect/Config instead of process.env."
+          },
+          {
+            "selector": "AssignmentPattern[right.name='process'] > ObjectPattern > Property[key.name='env']",
+            "message": "Read environment variables through effect/Config instead of process.env."
+          },
+          {
+            "selector": "AssignmentPattern[right.name='process'] > ObjectPattern > Property[key.value='env']",
+            "message": "Read environment variables through effect/Config instead of process.env."
+          },
           {
             "selector": "MemberExpression[object.name='process'][property.name='stdout']",
             "message": "Write output and read terminal capabilities through TerminalUI."

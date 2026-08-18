@@ -5,6 +5,7 @@ import {
   detectNativeUiCallerAgentEffect,
   interactivePermissionUiDisabledConfig,
 } from 'src/services/native-ui-sidecar';
+import { UNPREFIXED_CONFIG } from 'src/effects/app-config';
 
 const loadFlag = (entries: Record<string, string>) =>
   ConfigProvider.fromMap(new Map(Object.entries(entries))).load(
@@ -29,7 +30,13 @@ const processTreeUnavailable = executorLayer(() =>
 const detectAgent = (
   env: Record<string, string>,
   layer: Layer.Layer<CommandExecutor.CommandExecutor>
-) => detectNativeUiCallerAgentEffect(env).pipe(Effect.provide(layer));
+) =>
+  Effect.gen(function* () {
+    const signals = yield* ConfigProvider.fromMap(new Map(Object.entries(env)), {
+      pathDelim: '_',
+    }).load(UNPREFIXED_CONFIG.CALLER_AGENT_SIGNALS);
+    return yield* detectNativeUiCallerAgentEffect(signals);
+  }).pipe(Effect.provide(layer));
 
 describe('native UI sidecar', () => {
   it.effect('disables interactive permission UI in CI and Vitest environments', () =>
@@ -76,11 +83,13 @@ describe('native UI sidecar', () => {
 
   it.effect('detects the caller agent from environment prefixes', () =>
     Effect.gen(function* () {
-      expect(yield* detectAgent({ OPENCLAW_GATEWAY: '1' }, processTreeMustNotRun)).toBe('openclaw');
-      expect(yield* detectAgent({ CLAUDE_CODE_ENTRYPOINT: 'cli' }, processTreeMustNotRun)).toBe(
+      expect(yield* detectAgent({ OPENCLAW_FUTURE_MARKER: '1' }, processTreeMustNotRun)).toBe(
+        'openclaw'
+      );
+      expect(yield* detectAgent({ CLAUDE_FUTURE_MARKER: 'cli' }, processTreeMustNotRun)).toBe(
         'claude'
       );
-      expect(yield* detectAgent({ CODEX_HOME: '/tmp/codex' }, processTreeMustNotRun)).toBe('codex');
+      expect(yield* detectAgent({ CODEX_FUTURE_MARKER: '1' }, processTreeMustNotRun)).toBe('codex');
     })
   );
 
