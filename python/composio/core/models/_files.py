@@ -68,7 +68,7 @@ Read timeout is longer to allow for slower file transfers.
 _DELETE_VALUE: t.Final = object()
 """
 Sentinel returned by the upload walker to signal that a value should be dropped
-from its parent container. ``None`` and ``\"\"`` are both legal payload values, so
+from its parent container. ``None`` and ``""`` are both legal payload values, so
 the walker cannot use either to mean "remove this key/item".
 """
 
