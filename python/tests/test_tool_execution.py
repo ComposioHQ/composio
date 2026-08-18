@@ -825,6 +825,56 @@ class TestToolExecution:
             assert result["successful"] is True
             assert result["data"]["modified"] is True
 
+    def test_execute_with_modifiers_handles_tool_without_toolkit(self):
+        """Modifier dispatch uses the unknown fallback when toolkit metadata is absent."""
+        from composio.core.models._modifiers import after_execute, before_execute
+
+        mock_client = mock_http_client()
+        mock_provider = Mock()
+        mock_provider.name = "test_provider"
+
+        tools = Tools(client=mock_client, provider=mock_provider)
+
+        toolkitless_tool = self.create_mock_tool("TOOL_WITHOUT_TOOLKIT", "github")
+        toolkitless_tool.toolkit = None
+
+        seen_toolkits = []
+
+        def before_modifier(tool, toolkit, params):
+            seen_toolkits.append((tool, toolkit, "before"))
+            params["arguments"]["touched"] = True
+            return params
+
+        def after_modifier(tool, toolkit, response):
+            seen_toolkits.append((tool, toolkit, "after"))
+            response["data"]["after"] = True
+            return response
+
+        mock_client.tools.retrieve.return_value = toolkitless_tool
+        mock_execute_response = Mock()
+        mock_execute_response.model_dump.return_value = {
+            "data": {"result": "success"},
+            "error": None,
+            "successful": True,
+        }
+        mock_client.tools.execute.return_value = mock_execute_response
+
+        result = tools.execute(
+            slug="TOOL_WITHOUT_TOOLKIT",
+            arguments={"value": "test"},
+            dangerously_skip_version_check=True,
+            modifiers=[before_execute(before_modifier), after_execute(after_modifier)],
+        )
+
+        assert result["successful"] is True
+        assert result["data"]["after"] is True
+        assert seen_toolkits == [
+            ("TOOL_WITHOUT_TOOLKIT", "unknown", "before"),
+            ("TOOL_WITHOUT_TOOLKIT", "unknown", "after"),
+        ]
+        call_args = mock_client.tools.execute.call_args
+        assert call_args.kwargs["arguments"] == {"value": "test", "touched": True}
+
     def test_merge_before_file_upload_scopes_by_tool(self):
         from composio.core.models._modifiers import (
             before_file_upload,
