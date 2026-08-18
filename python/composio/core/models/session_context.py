@@ -24,6 +24,7 @@ from composio.core.models.custom_tool_execution import (
 from composio.core.models.custom_tool_types import (
     CustomToolsMap,
     InlineCustomToolsWirePayload,
+    NormalizedProxyExecuteResponse,
 )
 from composio.core.models.inline_custom_tools_payload import (
     inline_custom_tools_execute_experimental,
@@ -34,6 +35,36 @@ from composio.exceptions import ValidationError
 
 _VALID_METHODS = frozenset({"GET", "POST", "PUT", "DELETE", "PATCH"})
 _VALID_PARAM_TYPES = frozenset({"header", "query"})
+
+
+def normalize_proxy_execute_response(
+    response: SessionProxyExecuteResponse,
+) -> NormalizedProxyExecuteResponse:
+    """Normalize a raw proxy execute response into the SDK-facing shape.
+
+    Mirrors the TypeScript SDK's ``proxyExecute`` normalization:
+
+    - ``binary_data`` (snake_case) is projected to ``binaryData`` (camelCase)
+      with ``content_type`` -> ``contentType``, ``expires_at`` -> ``expiresAt``.
+    - ``data``, ``headers``, and ``status`` are passed through unchanged.
+
+    :param response: A ``SessionProxyExecuteResponse`` from the generated client.
+    :return: A normalized response dict matching the cross-SDK contract.
+    """
+    binary_data = getattr(response, "binary_data", None)
+    result: NormalizedProxyExecuteResponse = {
+        "status": response.status,
+        "data": response.data,
+        "headers": response.headers,
+    }
+    if binary_data is not None:
+        result["binaryData"] = {
+            "contentType": binary_data.content_type,
+            "size": binary_data.size,
+            "url": binary_data.url,
+            "expiresAt": binary_data.expires_at,
+        }
+    return result
 
 
 def proxy_execute_impl(
@@ -159,12 +190,12 @@ class SessionContextImpl:
         method: t.Literal["GET", "POST", "PUT", "DELETE", "PATCH"],
         body: t.Any = None,
         parameters: t.Optional[t.List[t.Dict[str, t.Any]]] = None,
-    ) -> SessionProxyExecuteResponse:
+    ) -> NormalizedProxyExecuteResponse:
         """Proxy API calls through Composio's auth layer.
 
-        Returns the same response model as ``session.proxy_execute()``.
+        Returns the same response shape as ``session.proxy_execute()``.
         """
-        return proxy_execute_impl(
+        response = proxy_execute_impl(
             self._client,
             self._session_id,
             toolkit=toolkit,
@@ -173,3 +204,4 @@ class SessionContextImpl:
             body=body,
             parameters=parameters,
         )
+        return normalize_proxy_execute_response(response)

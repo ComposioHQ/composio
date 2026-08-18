@@ -13,15 +13,13 @@ Covers:
 """
 
 from dataclasses import replace
+from types import SimpleNamespace
 from unittest.mock import MagicMock
 
 import pytest
 from composio_client import omit
 from composio_client.types.tool_router.session_execute_response import (
     SessionExecuteResponse,
-)
-from composio_client.types.tool_router.session_proxy_execute_response import (
-    SessionProxyExecuteResponse,
 )
 from pydantic import BaseModel, Field
 
@@ -603,17 +601,46 @@ class TestSessionContextImpl:
 
     def test_proxy_execute(self):
         mock_client = MagicMock()
-        mock_client.tool_router.session.proxy_execute.return_value = (
-            SessionProxyExecuteResponse(
-                status=200, data={"ok": True}, headers={}, binary_data=None
-            )
+        mock_client.tool_router.session.proxy_execute.return_value = SimpleNamespace(
+            status=200,
+            data={"ok": True},
+            headers={},
+            binary_data=None,
         )
         ctx = SessionContextImpl(client=mock_client, user_id="u", session_id="s")
         result = ctx.proxy_execute(
             toolkit="gmail", endpoint="https://example.com", method="GET"
         )
-        assert isinstance(result, SessionProxyExecuteResponse)
-        assert result.status == 200
+        assert result == {"status": 200, "data": {"ok": True}, "headers": {}}
+
+    def test_proxy_execute_projects_binary_data(self):
+        mock_client = MagicMock()
+        mock_client.tool_router.session.proxy_execute.return_value = SimpleNamespace(
+            status=200,
+            data={"ok": True},
+            headers={"content-type": "application/pdf"},
+            binary_data=SimpleNamespace(
+                content_type="application/pdf",
+                size=123,
+                url="https://example.com/file.pdf",
+                expires_at="2026-08-18T00:00:00Z",
+            ),
+        )
+        ctx = SessionContextImpl(client=mock_client, user_id="u", session_id="s")
+        result = ctx.proxy_execute(
+            toolkit="gmail", endpoint="https://example.com", method="GET"
+        )
+        assert result == {
+            "status": 200,
+            "data": {"ok": True},
+            "headers": {"content-type": "application/pdf"},
+            "binaryData": {
+                "contentType": "application/pdf",
+                "size": 123,
+                "url": "https://example.com/file.pdf",
+                "expiresAt": "2026-08-18T00:00:00Z",
+            },
+        }
 
 
 # ────────────────────────────────────────────────────────────────
@@ -702,17 +729,44 @@ class TestToolRouterSessionCustomTools:
         assert call_args.kwargs["experimental"] == inline_payload
 
     def test_proxy_execute(self, mock_session_deps):
-        mock_session_deps[
-            "client"
-        ].tool_router.session.proxy_execute.return_value = SessionProxyExecuteResponse(
-            status=200, data={"ok": True}, headers={}, binary_data=None
+        mock_session_deps["client"].tool_router.session.proxy_execute.return_value = (
+            SimpleNamespace(status=200, data={"ok": True}, headers={}, binary_data=None)
         )
         s = _session(mock_session_deps)
         result = s.proxy_execute(
             toolkit="gmail", endpoint="https://example.com", method="GET"
         )
-        assert isinstance(result, SessionProxyExecuteResponse)
-        assert result.status == 200
+        assert result == {"status": 200, "data": {"ok": True}, "headers": {}}
+
+    def test_proxy_execute_projects_binary_data(self, mock_session_deps):
+        mock_session_deps["client"].tool_router.session.proxy_execute.return_value = (
+            SimpleNamespace(
+                status=200,
+                data={"ok": True},
+                headers={"content-type": "application/pdf"},
+                binary_data=SimpleNamespace(
+                    content_type="application/pdf",
+                    size=123,
+                    url="https://example.com/file.pdf",
+                    expires_at="2026-08-18T00:00:00Z",
+                ),
+            )
+        )
+        s = _session(mock_session_deps)
+        result = s.proxy_execute(
+            toolkit="gmail", endpoint="https://example.com", method="GET"
+        )
+        assert result == {
+            "status": 200,
+            "data": {"ok": True},
+            "headers": {"content-type": "application/pdf"},
+            "binaryData": {
+                "contentType": "application/pdf",
+                "size": 123,
+                "url": "https://example.com/file.pdf",
+                "expiresAt": "2026-08-18T00:00:00Z",
+            },
+        }
 
     def test_custom_tools_list(self, mock_session_deps):
         s = _session(mock_session_deps)
