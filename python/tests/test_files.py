@@ -52,8 +52,15 @@ def mock_client():
 
 
 @pytest.fixture
-def file_helper(mock_client):
-    """Create a FileHelper instance with a mock client."""
+def file_helper(mock_client, monkeypatch, tmp_path):
+    """Create a FileHelper instance with a mock client.
+
+    Sandboxes ``COMPOSIO_CACHE_DIR`` so the default-outdir download path
+    (``ensure_cache_directory()``) never touches the real home directory,
+    even though ``FileDownloadable.download`` itself is mocked in most of
+    these tests.
+    """
+    monkeypatch.setenv("COMPOSIO_CACHE_DIR", str(tmp_path / ".composio"))
     return FileHelper(client=mock_client)
 
 
