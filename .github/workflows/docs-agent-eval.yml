@@ -40,9 +40,15 @@ jobs:
       contents: read
       pull-requests: write  # the result comment
     # Full-SHA pin required by org policy — bump on docs-agent-eval releases.
-    uses: ComposioHQ/docs-agent-eval-ci/.github/workflows/eval-pr.yml@7d9833c18e0b6e18e822d3933af478261dd6541f
+    uses: ComposioHQ/docs-agent-eval-ci/.github/workflows/eval-pr.yml@8917b53bd867d61aad24a1df42c6788f5987e2ff
     with:
       pr_number: ${{ github.event.pull_request.number }}
       mode: ${{ contains(github.event.pull_request.labels.*.name, 'run-docs-tests-deep') && 'Deep' || 'Auto' }}
       post_comment: true
-    secrets: inherit
+    # Explicit and minimal on purpose — inherit would hand the engine every
+    # secret this repo holds (review decision 2).
+    secrets:
+      COMPOSIO_ORG_API_KEY: ${{ secrets.COMPOSIO_ORG_API_KEY }}
+      DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
