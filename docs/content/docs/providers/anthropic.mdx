@@ -51,7 +51,7 @@ ANTHROPIC_API_KEY=xxxxxxxxx
 **Create session and run**
 
 <Callout type="info">
-Passing a session to `handle_tool_calls` / `handleToolCalls` requires `composio` newer than 0.18.2 (Python) or `@composio/core` ≥ 0.16.0 with `@composio/anthropic` ≥ 0.11.0 (TypeScript). On earlier versions, execute session tools with [`session.execute()`](/docs/how-composio-works#executing-session-tools).
+Passing a session to `handle_tool_calls` / `handleToolCalls` requires `composio` newer than 0.19.0 (Python) or `@composio/core` ≥ 0.17.0 with `@composio/anthropic` ≥ 0.11.0 (TypeScript). On earlier versions, execute session tools with [`session.execute()`](/docs/how-composio-works#executing-session-tools).
 </Callout>
 
 <Tabs groupId="language" items={["Python", "TypeScript"]} persist>
@@ -107,7 +107,7 @@ for block in response.content:
 ```
 </Tab>
 <Tab value="TypeScript">
-{/* TODO: remove the `@errors: 2345` twoslash marker below once docs/package.json resolves @composio/core >= 0.16.0 and @composio/anthropic >= 0.11.0 (session-aware handleToolCalls). Both pins need a manual range bump — ^0.15.0 / ^0.10.1 do not admit these minor releases. */}
+{/* TODO: remove the `@errors: 2345` twoslash marker below once docs/package.json resolves @composio/core >= 0.17.0 and @composio/anthropic >= 0.11.0 (session-aware handleToolCalls). Both pins need a manual range bump — ^0.15.0 / ^0.10.1 do not admit these minor releases. */}
 ```typescript
 // @errors: 2345
 import Anthropic from '@anthropic-ai/sdk';
