@@ -7,7 +7,8 @@ This test module verifies provider functionality including:
 - Both agentic and non-agentic provider behavior
 """
 
-from unittest.mock import Mock
+from types import SimpleNamespace
+from unittest.mock import Mock, call
 
 import pytest
 
@@ -502,6 +503,131 @@ class TestNonAgenticProviderHelperMethods:
         assert len(results) == 1
         assert results[0]["successful"] is True
         assert results[0]["data"]["starred"] is True
+
+    def test_openai_provider_routes_tool_calls_through_session(self):
+        """Session tools execute through their Tool Router session, not tools.execute."""
+        mock_client = mock_http_client()
+        from composio.core.provider._openai import OpenAIProvider
+
+        provider = OpenAIProvider()
+        Tools(client=mock_client, provider=provider)
+        session = Mock()
+        session.execute.return_value = SimpleNamespace(
+            data={"tools": ["GMAIL_SEND_EMAIL"]},
+            error=None,
+            log_id="log-session",
+        )
+        completion = SimpleNamespace(
+            choices=[
+                SimpleNamespace(
+                    message=SimpleNamespace(
+                        tool_calls=[
+                            SimpleNamespace(
+                                id="call-search",
+                                type="function",
+                                function=SimpleNamespace(
+                                    name="COMPOSIO_SEARCH_TOOLS",
+                                    arguments='{"queries":[{"use_case":"send email"}]}',
+                                ),
+                            )
+                        ],
+                    ),
+                )
+            ],
+        )
+
+        results = provider.handle_tool_calls(response=completion, session=session)
+
+        session.execute.assert_called_once_with(
+            tool_slug="COMPOSIO_SEARCH_TOOLS",
+            arguments={"queries": [{"use_case": "send email"}]},
+        )
+        mock_client.tools.execute.assert_not_called()
+        assert results == [
+            {
+                "data": {"tools": ["GMAIL_SEND_EMAIL"]},
+                "error": None,
+                "successful": True,
+            }
+        ]
+
+    def test_openai_responses_provider_preserves_session_result_order(self):
+        """Responses helpers keep provider order and result shape for session calls."""
+        from openai.types.responses.response import Response
+        from openai.types.responses.response_function_tool_call import (
+            ResponseFunctionToolCall,
+        )
+
+        from composio.core.provider._openai_responses import OpenAIResponsesProvider
+
+        mock_client = mock_http_client()
+        provider = OpenAIResponsesProvider()
+        Tools(client=mock_client, provider=provider)
+        session = Mock()
+        session.execute.side_effect = [
+            SimpleNamespace(data={"index": 1}, error=None, log_id="log-1"),
+            SimpleNamespace(data={"index": 2}, error="failed", log_id="log-2"),
+        ]
+        response = Response.model_construct(
+            output=[
+                ResponseFunctionToolCall(
+                    arguments='{"queries":[{"use_case":"first"}]}',
+                    call_id="call-1",
+                    name="COMPOSIO_SEARCH_TOOLS",
+                    type="function_call",
+                ),
+                ResponseFunctionToolCall(
+                    arguments='{"queries":[{"use_case":"second"}]}',
+                    call_id="call-2",
+                    name="COMPOSIO_SEARCH_TOOLS",
+                    type="function_call",
+                ),
+            ]
+        )
+
+        results = provider.handle_tool_calls(response=response, session=session)
+
+        assert session.execute.call_args_list == [
+            call(
+                tool_slug="COMPOSIO_SEARCH_TOOLS",
+                arguments={"queries": [{"use_case": "first"}]},
+            ),
+            call(
+                tool_slug="COMPOSIO_SEARCH_TOOLS",
+                arguments={"queries": [{"use_case": "second"}]},
+            ),
+        ]
+        mock_client.tools.execute.assert_not_called()
+        assert results == [
+            {"data": {"index": 1}, "error": None, "successful": True},
+            {"data": {"index": 2}, "error": "failed", "successful": False},
+        ]
+
+    def test_openai_responses_provider_propagates_session_exceptions(self):
+        """Responses helpers preserve their existing exception propagation behavior."""
+        from openai.types.responses.response import Response
+        from openai.types.responses.response_function_tool_call import (
+            ResponseFunctionToolCall,
+        )
+
+        from composio.core.provider._openai_responses import OpenAIResponsesProvider
+
+        provider = OpenAIResponsesProvider()
+        session = Mock()
+        session.execute.side_effect = RuntimeError("session execution failed")
+        response = Response.model_construct(
+            output=[
+                ResponseFunctionToolCall(
+                    arguments="{}",
+                    call_id="call-1",
+                    name="COMPOSIO_SEARCH_TOOLS",
+                    type="function_call",
+                )
+            ]
+        )
+
+        with pytest.raises(RuntimeError, match="session execution failed"):
+            provider.handle_tool_calls(response=response, session=session)
 
     def test_openai_provider_handle_tool_calls_only_first_choice(self):
         """Only the first choice runs; n > 1 alternatives would orphan tool_call_ids."""
