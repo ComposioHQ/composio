@@ -27,7 +27,11 @@ from composio.exceptions import (
 from composio.utils import mimetypes
 from composio.utils.json_schema import dereference_json_schema
 from composio.utils.safe_path import secure_basename_join, secure_join
-from composio.utils.url_safety import assert_safe_fetch_target, safe_request
+from composio.utils.url_safety import (
+    assert_safe_fetch_target,
+    parse_content_length,
+    safe_request,
+)
 from composio.utils.sensitive_file_upload_paths import (
     assert_safe_local_file_upload_path,
 )
@@ -371,12 +375,15 @@ def _fetch_file_from_url(
             f"Status: {response.status_code}"
         )
 
-    # Check Content-Length header first (early abort for oversized files)
-    content_length = response.headers.get("Content-Length")
-    if content_length and int(content_length) > max_size:
+    # Check Content-Length header first (early abort for oversized files).
+    # The header is a hint from the remote server: `parse_content_length`
+    # returns None for anything untrustworthy, and the streaming guard below
+    # is the authoritative limit.
+    content_length = parse_content_length(response.headers.get("Content-Length"))
+    if content_length is not None and content_length > max_size:
         response.close()
         raise ResponseTooLargeError(
-            f"File size ({int(content_length)} bytes) exceeds maximum allowed "
+            f"File size ({content_length} bytes) exceeds maximum allowed "
             f"size ({max_size} bytes)"
         )
 
