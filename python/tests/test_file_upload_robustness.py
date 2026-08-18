@@ -132,11 +132,18 @@ class TestContentLengthParsing:
 
 
 class TestUploadContentType:
-    """``upload()`` must PUT the content type the presigned URL was signed with."""
+    """``upload()`` must PUT the content type the presigned URL was signed with.
 
-    @patch("composio.core.models._files.requests.put")
-    def test_upload_sends_explicit_mimetype(self, mock_put, tmp_path):
-        mock_put.return_value = MagicMock(status_code=200)
+    The upload paths route through ``safe_request`` (the SSRF-safe wrapper),
+    not ``requests.put``, so these tests patch
+    ``composio.core.models._files.safe_request``. Its signature is
+    ``safe_request(method, url, *, max_redirects=5, **kwargs)`` -- method and
+    URL are positional, everything else is a keyword argument.
+    """
+
+    @patch("composio.core.models._files.safe_request")
+    def test_upload_sends_explicit_mimetype(self, mock_request, tmp_path):
+        mock_request.return_value = MagicMock(status_code=200)
         file = tmp_path / "test.jpg"
         file.write_bytes(b"file content")
 
@@ -144,25 +151,26 @@ class TestUploadContentType:
             url="https://s3.example.com/upload", file=file, mimetype="image/jpeg"
         )
 
-        _, kwargs = mock_put.call_args
-        assert kwargs["url"] == "https://s3.example.com/upload"
+        args, kwargs = mock_request.call_args
+        assert args == ("PUT", "https://s3.example.com/upload")
         assert kwargs["headers"] == {"Content-Type": "image/jpeg"}
         assert kwargs["timeout"] == (5, 60)
 
-    @patch("composio.core.models._files.requests.put")
-    def test_upload_guesses_mimetype_when_omitted(self, mock_put, tmp_path):
+    @patch("composio.core.models._files.safe_request")
+    def test_upload_guesses_mimetype_when_omitted(self, mock_request, tmp_path):
         """Back-compat: existing two-argument callers still send a Content-Type."""
-        mock_put.return_value = MagicMock(status_code=200)
+        mock_request.return_value = MagicMock(status_code=200)
         file = tmp_path / "test.txt"
         file.write_text("hello")
 
         assert upload(url="https://s3.example.com/upload", file=file)
 
-        _, kwargs = mock_put.call_args
+        args, kwargs = mock_request.call_args
+        assert args == ("PUT", "https://s3.example.com/upload")
         assert kwargs["headers"] == {"Content-Type": mimetypes.guess(file=file)}
 
-    @patch("composio.core.models._files.requests.put")
-    def test_from_path_put_matches_presigned_mimetype(self, mock_put, tmp_path):
+    @patch("composio.core.models._files.safe_request")
+    def test_from_path_put_matches_presigned_mimetype(self, mock_request, tmp_path):
         """The PUT content type must match the mimetype used to mint the URL.
 
         S3 answers ``403 SignatureDoesNotMatch`` when a presigned URL is signed
@@ -174,7 +182,7 @@ class TestUploadContentType:
         mock_s3_response.key = "s3-key-123"
         mock_s3_response.new_presigned_url = "https://s3.example.com/upload"
         mock_client.post.return_value = mock_s3_response
-        mock_put.return_value = MagicMock(status_code=200)
+        mock_request.return_value = MagicMock(status_code=200)
 
         file = tmp_path / "test.jpg"
         file.write_bytes(b"file content")
@@ -187,7 +195,8 @@ class TestUploadContentType:
         )
 
         presigned_mimetype = mock_client.post.call_args.kwargs["body"]["mimetype"]
-        _, put_kwargs = mock_put.call_args
+        args, put_kwargs = mock_request.call_args
+        assert args == ("PUT", "https://s3.example.com/upload")
         assert put_kwargs["headers"] == {"Content-Type": presigned_mimetype}
         assert result.mimetype == presigned_mimetype
         assert result.s3key == "s3-key-123"
