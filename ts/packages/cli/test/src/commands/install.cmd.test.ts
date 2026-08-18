@@ -2,7 +2,7 @@ import path from 'node:path';
 import { Writable } from 'node:stream';
 import { beforeEach, vi } from 'vitest';
 import { describe, expect, layer } from '@effect/vitest';
-import { Effect, Exit } from 'effect';
+import { ConfigProvider, Effect, Exit } from 'effect';
 import { FileSystem } from '@effect/platform';
 import { NodeOs } from 'src/services/node-os';
 import {
@@ -11,6 +11,7 @@ import {
   type Shell,
 } from 'src/commands/install.cmd';
 import { makeTerminalUI } from 'src/services/terminal-ui';
+import { extendConfigProvider } from 'src/services/config';
 import { cli, TestLive, MockConsole } from 'test/__utils__';
 
 const makeSink = (isTTY: boolean) => {
@@ -40,7 +41,11 @@ const SAFE_PATH = '/usr/bin:/bin';
 const TEST_EXEC_PATH = '/usr/local/bin/composio';
 const expectedRuntimeBinDir = (): string => path.dirname(TEST_EXEC_PATH);
 const InstallTestLive = (input: Parameters<typeof TestLive>[0] = {}) =>
-  TestLive({ execPath: TEST_EXEC_PATH, ...input });
+  TestLive({
+    baseConfigProvider: ConfigProvider.fromEnv().pipe(extendConfigProvider),
+    execPath: TEST_EXEC_PATH,
+    ...input,
+  });
 const install = (
   params: {
     readonly completions?: boolean;
@@ -76,6 +81,7 @@ describe('CLI: composio install', () => {
     // below is automatically reverted after each test — no manual save/restore.
     vi.stubEnv('PATH', SAFE_PATH);
     vi.stubEnv('COMPOSIO_BIN_DIR', '');
+    vi.stubEnv('COMPOSIO_CLI_INVOCATION_ORIGIN', undefined);
     capturedStdout.chunks.length = 0;
     capturedStderr.chunks.length = 0;
   });
@@ -1335,7 +1341,7 @@ describe('CLI: composio install', () => {
   });
 
   describe('[When] COMPOSIO_BIN_DIR is set and ~/.local/bin/composio is also the running executable', () => {
-    layer(TestLive({ execPath: '.local/bin/composio' }))(it => {
+    layer(InstallTestLive({ execPath: '.local/bin/composio' }))(it => {
       it.scoped('[Then] the env var wins over the ~/.local/bin fallback', () =>
         Effect.gen(function* () {
           const os = yield* NodeOs;

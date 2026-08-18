@@ -10,12 +10,21 @@ import {
   ToolPermissionDeniedError,
   type ConsumerPermissionSnapshot,
 } from 'src/services/tool-permissions';
+import { extendConfigProvider } from 'src/services/config';
+import { NodeOs } from 'src/services/node-os';
 
 // Pinned wall clock for deterministic fixtures. The SUT reads the real
 // `Date.now()` (snapshot TTL, allow-decision expiry), so every timestamp
 // below is expressed relative to this instant.
 const PINNED_TIME = new Date('2026-01-01T00:00:00.000Z');
 const PINNED_NOW = PINNED_TIME.getTime();
+
+const ToolPermissionsTest = Layer.mergeAll(
+  BunFileSystem.layer,
+  BunPath.layer,
+  NodeOs.Default,
+  Layer.setConfigProvider(extendConfigProvider(ConfigProvider.fromEnv()))
+);
 
 const snapshotFixture = (
   overrides: Partial<ConsumerPermissionSnapshot> = {}
@@ -133,7 +142,7 @@ describe('tool permissions', () => {
       const result = yield* gateToolExecution({ toolSlug: 'GMAIL_SEND_EMAIL' });
 
       expect(result).toBeUndefined();
-    }).pipe(Effect.provide(Layer.mergeAll(BunFileSystem.layer, BunPath.layer)))
+    }).pipe(Effect.provide(ToolPermissionsTest))
   );
 
   it.effect('preserves permission-policy denial identity', () =>
@@ -161,7 +170,7 @@ describe('tool permissions', () => {
         expect(failure.deniedBy).toBe('permissions');
         expect(failure.toolSlug).toBe('GMAIL_SEND_EMAIL');
       }
-    }).pipe(Effect.provide(Layer.mergeAll(BunFileSystem.layer, BunPath.layer)))
+    }).pipe(Effect.provide(ToolPermissionsTest))
   );
 
   it.effect('fails closed when interactive approval is needed but permission UI is disabled', () =>
@@ -178,7 +187,7 @@ describe('tool permissions', () => {
         expect(failure.deniedBy).toBe('permissions');
         expect(failure.message).toContain('permission prompts are disabled');
       }
-    }).pipe(Effect.provide(Layer.mergeAll(BunFileSystem.layer, BunPath.layer)))
+    }).pipe(Effect.provide(ToolPermissionsTest))
   );
 
   it.effect('honors cached allow decisions even when permission UI is disabled', () =>
@@ -209,6 +218,6 @@ describe('tool permissions', () => {
       });
 
       expect(result).toStrictEqual({ approvalStatus: 'cached_approved' });
-    }).pipe(Effect.provide(Layer.mergeAll(BunFileSystem.layer, BunPath.layer)))
+    }).pipe(Effect.provide(ToolPermissionsTest))
   );
 });

@@ -1,168 +1,9 @@
 {
-  "src/analytics/events.ts": [
-    {
-      "rule": "eslint-js/no-restricted-syntax",
-      "reason": "spawn-time env handoff from parent run",
-      "target": "(process.env.COMPOSIO_CLI_PARENT_RUN_ID ?? crypto.randomUUID())"
-    },
-    {
-      "rule": "eslint-js/no-restricted-syntax",
-      "reason": "spawn-time env handoff read outside Effect",
-      "target": "const getInvocationOrigin = (): string => process.env.COMPOSIO_CLI_INVOCATION_ORIGIN ?? 'cli';"
-    },
-    {
-      "rule": "eslint-js/no-restricted-syntax",
-      "reason": "spawn-time env handoff read outside Effect",
-      "target": "const getParentRunId = (): string | undefined => process.env.COMPOSIO_CLI_PARENT_RUN_ID;"
-    }
-  ],
-  "src/bin.ts": [
-    {
-      "rule": "eslint-js/no-restricted-syntax",
-      "reason": "pre-runtime env write during bootstrap",
-      "target": "process.env[CLI_TELEMETRY_DEBUG_ENV_VAR] = 'true';"
-    }
-  ],
-  "src/cli-main.ts": [
-    {
-      "rule": "eslint-js/no-restricted-syntax",
-      "reason": "env write propagates run id to children",
-      "target": "process.env.COMPOSIO_CLI_PARENT_RUN_ID = commandTelemetryContext.runId;"
-    }
-  ],
-  "src/commands/index.ts": [
-    {
-      "rule": "eslint-js/no-restricted-syntax",
-      "reason": "env delete clears a stale hidden-flag value",
-      "target": "delete process.env.COMPOSIO_RUN_ACP_ONLY;"
-    },
-    {
-      "rule": "eslint-js/no-restricted-syntax",
-      "reason": "env write hands the stripped flag to run.cmd",
-      "target": "process.env.COMPOSIO_RUN_ACP_ONLY = acpOnly ? '1' : '0';"
-    }
-  ],
-  "src/commands/run.cmd.ts": [
-    {
-      "rule": "eslint-js/no-restricted-syntax",
-      "reason": "honors the same COMPOSIO_CACHE_DIR/CACHE_DIR overrides the run-helpers child runtime reads, so the sandbox read roots match the child's cache location",
-      "target": "process.env.COMPOSIO_CACHE_DIR?.trim() || process.env.CACHE_DIR?.trim() || defaultComposioDir;"
-    },
-    {
-      "rule": "eslint-js/no-restricted-syntax",
-      "reason": "reads the COMPOSIO_RUN_ACP_ONLY flag a parent process sets to force the ACP-only subagent path in the child run",
-      "target": "const acpOnly = process.env.COMPOSIO_RUN_ACP_ONLY === '1';"
-    },
-    {
-      "rule": "eslint-js/no-restricted-syntax",
-      "reason": "reuses the run ID a parent `composio run` process passed via env so nested runs share one run identity",
-      "target": "const runId = process.env.COMPOSIO_CLI_PARENT_RUN_ID ?? crypto.randomUUID();"
-    },
-    {
-      "rule": "eslint-js/no-restricted-syntax",
-      "reason": "spreads the caller's full environment into the spawned script so user-provided variables reach the child process",
-      "target": "...process.env,"
-    },
-    {
-      "rule": "eslint-js/no-restricted-syntax",
-      "reason": "try/finally removes the temp preload and wrapper files around the imperative Bun.spawn block, whose success path ends in process.exit",
-      "target": "try {"
-    },
-    {
-      "rule": "no-restricted-imports",
-      "reason": "os.tmpdir and os.homedir locate the preload scratch directory and ~/.composio in the same synchronous helpers",
-      "target": "import * as os from 'node:os';"
-    },
-    {
-      "rule": "no-restricted-imports",
-      "reason": "synchronous fs (mkdtempSync/writeFileSync/rmSync/existsSync) builds and tears down the run preload files in plain helpers that execute outside the Effect runtime",
-      "target": "import * as fs from 'node:fs';"
-    }
-  ],
-  "src/commands/tools/commands/tools.execute.cmd.ts": [
-    {
-      "rule": "eslint-js/no-restricted-syntax",
-      "reason": "COMPOSIO_CLI_INVOCATION_ORIGIN is a spawn-time handshake the parent `composio run` process injects into nested CLI invocations, not user configuration, and it must be read fresh at call time",
-      "target": "const shouldStoreLargeExecuteOutput = () => process.env.COMPOSIO_CLI_INVOCATION_ORIGIN !== 'run';"
-    },
-    {
-      "rule": "eslint-js/no-restricted-syntax",
-      "reason": "COMPOSIO_RUN_OUTPUT_DIR is injected per-subprocess by the parent `composio run` and must take precedence over the session artifacts directory; inter-process plumbing, not user configuration",
-      "target": "process.env.COMPOSIO_RUN_OUTPUT_DIR?.trim() ||"
-    },
-    {
-      "rule": "eslint-js/no-restricted-syntax",
-      "reason": "COMPOSIO_RUN_OUTPUT_DIR is injected per-subprocess by the parent `composio run` so nested executions share one output directory; it is inter-process plumbing, not user configuration",
-      "target": "directoryPath: sharedDirectory?.trim() || process.env.COMPOSIO_RUN_OUTPUT_DIR?.trim(),"
-    },
-    {
-      "rule": "eslint-js/no-restricted-syntax",
-      "reason": "COMPOSIO_RUN_OUTPUT_DIR is injected per-subprocess by the parent `composio run` so nested local-tool executions write into its shared output directory; inter-process plumbing, not user configuration",
-      "target": "executeOutputDir: process.env.COMPOSIO_RUN_OUTPUT_DIR?.trim() || undefined,"
-    }
-  ],
-  "src/commands/triggers/commands/triggers.listen.cmd.ts": [
-    {
-      "rule": "eslint-js/no-restricted-syntax",
-      "reason": "re-checks the same raw env var to tell the user whether they supplied a secret or this session generated one",
-      "target": "if (process.env.COMPOSIO_WEBHOOK_SECRET) {"
-    },
-    {
-      "rule": "eslint-js/no-restricted-syntax",
-      "reason": "the forward signing secret is an optional raw passthrough from the user's shell; its literal presence/absence selects the generated-secret fallback",
-      "target": "const webhookSecret = process.env.COMPOSIO_WEBHOOK_SECRET ?? generatedWebhookSecret;"
-    }
-  ],
-  "src/services/agents.ts": [
-    {
-      "rule": "eslint-js/no-restricted-syntax",
-      "reason": "read lazily at request time inside a plain sync helper so tests can repoint agents.composio.dev per call without rebuilding a Config layer",
-      "target": "(process.env.COMPOSIO_AGENTS_BASE_URL ?? DEFAULT_AGENTS_BASE_URL).replace(/\\/+$/, '');"
-    }
-  ],
-  "src/services/cli-session-artifacts.ts": [
-    {
-      "rule": "eslint-js/no-restricted-syntax",
-      "reason": "COMPOSIO_CACHE_DIR is the second rung of the same fall-through chain: env overrides must beat the persisted artifactDirectory before the tmpdir default",
-      "target": "process.env.COMPOSIO_CACHE_DIR?.trim() ||"
-    },
-    {
-      "rule": "eslint-js/no-restricted-syntax",
-      "reason": "read inline so a blank/whitespace-only COMPOSIO_SESSION_DIR falls through the || precedence chain (session dir > cache dir > user config > tmpdir)",
-      "target": "process.env.COMPOSIO_SESSION_DIR?.trim() ||"
-    }
-  ],
-  "src/services/cli-user-config.ts": [
-    {
-      "rule": "eslint-js/no-restricted-syntax",
-      "reason": "this resolver is called from synchronous non-Effect code, so the COMPOSIO_CACHE_DIR override cannot come from effect/Config here",
-      "target": "process.env.COMPOSIO_CACHE_DIR?.trim() ||"
-    },
-    {
-      "rule": "no-restricted-imports",
-      "reason": "os.homedir feeds resolveCliConfigDirectorySync, which runs from synchronous non-Effect call sites (dev.cmd messages, run-helpers-runtime readFileSync) where the NodeOs service is unavailable",
-      "target": "import os from 'node:os';"
-    }
-  ],
   "src/services/detached-process.ts": [
     {
       "rule": "no-restricted-imports",
       "reason": "This Effect helper is the sole detached-spawn boundary for CLI source: @effect/platform Command processes are scope-bound and are killed when their scope closes, while these children must outlive the CLI process.",
       "target": "import { spawn } from 'node:child_process';"
-    }
-  ],
-  "src/services/master-detector.ts": [
-    {
-      "rule": "eslint-js/no-restricted-syntax",
-      "reason": "classifies the driving agent by scanning every env key for CODEX_/CLAUDE_ prefixes; effect/Config reads known keys and cannot enumerate the whole environment",
-      "target": "export const detectMaster = (env: Record<string, string | undefined> = process.env): MasterKind => {"
-    }
-  ],
-  "src/services/native-ui-sidecar.ts": [
-    {
-      "rule": "eslint-js/no-restricted-syntax",
-      "reason": "Sole raw-env boundary of this module: prefix scanning needs the full environment map, which effect/Config cannot enumerate.",
-      "target": "const rawProcessEnv: NodeJS.ProcessEnv = process.env;"
     }
   ],
   "src/services/node-os.ts": [
@@ -172,72 +13,11 @@
       "target": "import os from 'node:os';"
     }
   ],
-  "src/services/project-environment-detector.ts": [
-    {
-      "rule": "eslint-js/no-restricted-syntax",
-      "reason": "npm_config_user_agent is transient metadata injected by the package manager that spawned this process, not CLI configuration; read once as the last-resort heuristic when no lockfile or manifest evidence exists",
-      "target": "const userAgent = parseUserAgent(process.env.npm_config_user_agent);"
-    }
-  ],
   "src/services/run-helpers-runtime.ts": [
-    {
-      "rule": "eslint-js/no-restricted-syntax",
-      "reason": "JSON.stringify throws on circular user values in this sync formatter injected into user code; String() is the entire fallback",
-      "target": "try {"
-    },
-    {
-      "rule": "eslint-js/no-restricted-syntax",
-      "reason": "async fallback chain in the user's child process: ACP invoke errors route to the legacy sub-agent path, everything else rethrows",
-      "target": "try {"
-    },
-    {
-      "rule": "eslint-js/no-restricted-syntax",
-      "reason": "debug flag reaches the child process via inherited environment; the CLI's Config provider is not available here",
-      "target": "helperContext.perfDebug === true || process.env.COMPOSIO_PERF_DEBUG === '1';"
-    },
-    {
-      "rule": "eslint-js/no-restricted-syntax",
-      "reason": "debug flag reaches the child process via inherited environment; the CLI's Config provider is not available here",
-      "target": "helperContext.toolDebug === true || process.env.COMPOSIO_TOOL_DEBUG === '1';"
-    },
-    {
-      "rule": "eslint-js/no-restricted-syntax",
-      "reason": "sync config read at the child-process boundary; a missing or malformed CLI config file just means the 'auto' target",
-      "target": "try {"
-    },
-    {
-      "rule": "eslint-js/no-restricted-syntax",
-      "reason": "the spawned CLI child must inherit the caller's full environment before Composio-specific overrides are layered on top",
-      "target": "...process.env,"
-    },
-    {
-      "rule": "no-restricted-imports",
-      "reason": "os.tmpdir() locates the fallback run-files directory in the child process, outside the Effect runtime",
-      "target": "import * as os from 'node:os';"
-    },
     {
       "rule": "no-restricted-imports",
       "reason": "sync fs for run-log appends, run-file writes, and CLI config reads in the child process, outside the Effect runtime",
       "target": "import * as fs from 'node:fs';"
-    }
-  ],
-  "src/services/run-subagent-output-mcp.ts": [
-    {
-      "rule": "no-restricted-imports",
-      "reason": "standalone MCP stdio sidecar entrypoint runs outside the CLI's Effect runtime; sync fs reads the schema file and writes the structured result file",
-      "target": "import * as fs from 'node:fs';"
-    }
-  ],
-  "src/services/runtime-debug-flags.ts": [
-    {
-      "rule": "eslint-js/no-restricted-syntax",
-      "reason": "called from sync non-Effect helper code in spawned child processes, where the flag arrives via inherited environment rather than a Config provider",
-      "target": "runtimeDebugFlags.perfDebug || process.env.COMPOSIO_PERF_DEBUG === '1';"
-    },
-    {
-      "rule": "eslint-js/no-restricted-syntax",
-      "reason": "called from sync non-Effect helper code in spawned child processes, where the flag arrives via inherited environment rather than a Config provider",
-      "target": "runtimeDebugFlags.toolDebug || process.env.COMPOSIO_TOOL_DEBUG === '1';"
     }
   ],
   "src/services/tool-file-uploads.ts": [
@@ -245,27 +25,6 @@
       "rule": "no-restricted-imports",
       "reason": "MD5 for the presigned-upload checksum is not available in Web Crypto",
       "target": "const { createHash } = await import('node:crypto');"
-    }
-  ],
-  "src/services/tool-permissions.ts": [
-    {
-      "rule": "eslint-js/no-restricted-syntax",
-      "reason": "node:http listen callback inside a Promise executor: on failure to open the browser, close the server and reject the surrounding Promise; Effect's error channel is not available here",
-      "target": "try {"
-    }
-  ],
-  "src/ui/colors.ts": [
-    {
-      "rule": "eslint-js/no-restricted-syntax",
-      "reason": "palette is created eagerly at import time, before any Effect runtime; honors the NO_COLOR convention",
-      "target": "} = color.createColors(!Boolean(process.env.NO_COLOR));"
-    }
-  ],
-  "src/ui/redact.ts": [
-    {
-      "rule": "eslint-js/no-restricted-syntax",
-      "reason": "plain sync string helper called from formatting code; CI flag toggles redaction in recorded CLI output",
-      "target": "if (process.env.CI !== 'true') return value as `${Prefix}${string}`;"
     }
   ]
 }

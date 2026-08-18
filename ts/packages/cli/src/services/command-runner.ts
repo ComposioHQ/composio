@@ -7,7 +7,8 @@ export interface CommandResult {
   readonly stderr: string;
 }
 
-const collectText = (stream: Stream.Stream<Uint8Array, unknown>) =>
+/** Drains a child-process output stream into one string; shared with the run-helpers runtime. */
+export const collectText = (stream: Stream.Stream<Uint8Array, unknown>) =>
   stream.pipe(Stream.decodeText(), Stream.runFold(String.empty, String.concat));
 
 export class CommandRunner extends Effect.Service<CommandRunner>()('services/CommandRunner', {

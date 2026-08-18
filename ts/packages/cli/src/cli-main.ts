@@ -5,7 +5,7 @@ import { CliConfig, HelpDoc, ValidationError } from '@effect/cli';
 import { FetchHttpClient } from '@effect/platform';
 import { BunContext, BunRuntime, BunFileSystem, BunPath } from '@effect/platform-bun';
 import type { Teardown } from '@effect/platform/Runtime';
-import { buildRootCommand, runWithConfig } from 'src/commands';
+import { buildRootCommand, runWithConfig, type RootCommandBootstrap } from 'src/commands';
 import { collectValueOptionNames } from 'src/commands/command-introspection';
 import { matchCommandFromArgv, getCommandHelpText } from 'src/commands/root-help';
 import * as constants from 'src/constants';
@@ -48,6 +48,9 @@ import { mapOnlyComposioOverrideError } from 'src/services/composio-error-overri
 import { SetupSkillInstaller } from 'src/services/setup-skill-installer';
 import { SetupCommandError } from 'src/services/setup';
 import { ShellSetupAbortError } from 'src/commands/install.cmd';
+import { MissingRunSourceError } from 'src/commands/run.cmd';
+import { cliInvocationContext } from 'src/services/runtime-cli-context';
+import { telemetryDebugModeLayer } from 'src/services/runtime-flags';
 
 // Layer is contravariant in ROut and covariant in E, so `never`/`unknown` accept any
 // produced context and error type while still pinning the requirements (RIn) to `never`.
@@ -146,15 +149,19 @@ const layers = Layer.mergeAll(
 
 export const teardown: Teardown = <E, A>(exit: Exit.Exit<E, A>, onExit: (code: number) => void) => {
   const shouldFail = Exit.isFailure(exit) && !Cause.isInterruptedOnly(exit.cause);
-  const errorCode = Number(process.exitCode ?? 1);
-  onExit(shouldFail ? errorCode : 0);
+  // A command that proxies another process (`composio run`) reports its status by assigning
+  // `process.exitCode`, so honor that on every path. It matters most on interrupt: the runtime
+  // force-exits with whatever code teardown yields once a signal has been received, which would
+  // otherwise turn a cancelled run into a success.
+  onExit(Number(process.exitCode ?? (shouldFail ? 1 : 0)));
 };
 
-const runWithArgs = Effect.flatMap(runWithConfig, run => run(process.argv)) satisfies Effect.Effect<
-  void,
-  unknown,
-  unknown
->;
+const runWithArgs = (bootstrap: RootCommandBootstrap) =>
+  Effect.flatMap(runWithConfig, run => run(process.argv, bootstrap)) satisfies Effect.Effect<
+    void,
+    unknown,
+    unknown
+  >;
 
 const runWithTelemetry = Effect.gen(function* () {
   const ui = yield* TerminalUI;
@@ -162,21 +169,25 @@ const runWithTelemetry = Effect.gen(function* () {
 
   const version = yield* getVersion;
   configureCliAnalyticsReleaseVersion(version);
-  const baseTelemetryContext = createCliCommandTelemetryContext(process.argv, version, terminal);
+  const baseTelemetryContext = createCliCommandTelemetryContext(
+    process.argv,
+    version,
+    terminal,
+    yield* cliInvocationContext
+  );
   const executeToolSlug = getExecuteCommandToolSlug(baseTelemetryContext);
   const commandTelemetryContext =
     executeToolSlug === undefined
       ? baseTelemetryContext
       : { ...baseTelemetryContext, toolkitSlug: yield* toolkitFromToolSlug(executeToolSlug) };
-  if (commandTelemetryContext.commandPath === 'run' && commandTelemetryContext.runId) {
-    // effect/Config is read-only; the run id must be written into the environment so the run
-    // command and the child processes it spawns observe the same telemetry run id.
-    // eslint-disable-next-line eslint-js/no-restricted-syntax -- env write propagates run id to children
-    process.env.COMPOSIO_CLI_PARENT_RUN_ID = commandTelemetryContext.runId;
-  }
-
+  // `composio run` mints its run id here so the lifecycle events and the id the spawned script
+  // inherits are the same value; every other command leaves it unset.
+  const bootstrap: RootCommandBootstrap =
+    commandTelemetryContext.commandPath === 'run' && commandTelemetryContext.runId
+      ? { runId: commandTelemetryContext.runId }
+      : {};
   return yield* trackCliEventEffect(getPrimaryLifecycleInvokedEvent(commandTelemetryContext)).pipe(
-    Effect.andThen(runWithArgs),
+    Effect.andThen(runWithArgs(bootstrap)),
     Effect.scoped,
     Effect.mapError(error =>
       ValidationError.isValidationError(error) ? error : mapOnlyComposioOverrideError({ error })
@@ -192,7 +203,15 @@ const runWithTelemetry = Effect.gen(function* () {
   );
 });
 
-showUpdateNotice.pipe(
+/**
+ * Values `src/bin.ts` resolved before the Effect runtime existed and hands to it here.
+ */
+export type CliBootstrapOptions = {
+  /** `--telemetry-debug` was on the command line, and was stripped from argv before parsing. */
+  readonly telemetryDebug: boolean;
+};
+
+const cliProgram = showUpdateNotice.pipe(
   Effect.andThen(showPluginAcquisitionHint(process.argv)),
   Effect.andThen(runWithTelemetry),
   Effect.catchIf(ValidationError.isValidationError, error => {
@@ -239,6 +258,17 @@ showUpdateNotice.pipe(
         } else {
           yield* ui.error(`${summary} ${error.message}`);
         }
+        process.exitCode = 1;
+      })
+  ),
+  // A bare `composio run` is a usage mistake, not a broken invariant: print the one-line fix and
+  // exit non-zero instead of routing it through the defect reporter below.
+  Effect.catchIf(
+    (error): error is MissingRunSourceError => error instanceof MissingRunSourceError,
+    error =>
+      Effect.gen(function* () {
+        const ui = yield* TerminalUI;
+        yield* ui.error(error.message);
         process.exitCode = 1;
       })
   ),
@@ -296,6 +326,15 @@ showUpdateNotice.pipe(
     })
   ),
   Effect.provide(layers),
-  Effect.withConfigProvider(extendConfigProvider(BaseConfigProviderLive)),
-  BunRuntime.runMain({ teardown })
+  Effect.withConfigProvider(extendConfigProvider(BaseConfigProviderLive))
 );
+
+export const runCli = (options: CliBootstrapOptions): void => {
+  cliProgram.pipe(
+    // Only provided when the flag was actually present: without it telemetry debugging falls back
+    // to `COMPOSIO_CLI_TELEMETRY_DEBUG`.
+    effect =>
+      options.telemetryDebug ? Effect.provide(effect, telemetryDebugModeLayer(true)) : effect,
+    BunRuntime.runMain({ teardown })
+  );
+};

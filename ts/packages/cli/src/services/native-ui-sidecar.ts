@@ -3,7 +3,6 @@ import { BunContext } from '@effect/platform-bun';
 import {
   Cause,
   Config,
-  ConfigProvider,
   Data,
   Duration,
   Effect,
@@ -18,7 +17,8 @@ import {
   ensureBundledBinaryExecutable,
   getLocalToolsBundleRootCandidates,
 } from '@composio/cli-local-tools';
-import { hasEnvPrefix } from 'src/services/master-detector';
+import { UNPREFIXED_CONFIG } from 'src/effects/app-config';
+import { loadHostConfig } from 'src/services/config';
 
 const NATIVE_UI_BINARY_NAME = 'composio-native-ui';
 
@@ -61,64 +61,18 @@ export class NativeUiDecisionMissingError extends Data.TaggedError(
   }
 }
 
-// Caller-agent detection scans the whole environment for agent-specific
-// prefixes (OPENCLAW_*, CLAUDE_*, CODEX_*). effect/Config can only read named
-// keys, so this module keeps a single raw-env boundary, mirroring the
-// node-os.ts precedent.
-// eslint-disable-next-line eslint-js/no-restricted-syntax -- Sole raw-env boundary of this module: prefix scanning needs the full environment map, which effect/Config cannot enumerate.
-const rawProcessEnv: NodeJS.ProcessEnv = process.env;
-
-const FALSY_ENV_FLAG_VALUES: ReadonlyArray<string> = ['0', 'false', 'no', 'off'];
-
-// Any other non-empty value counts as set (`CI=woohoo` still disables the UI)
-// rather than failing config decoding the way `Config.boolean` would.
-const EnvFlagFromString = Schema.transform(
-  Schema.compose(Schema.Trim, Schema.Lowercase),
-  Schema.Boolean,
-  {
-    decode: value => !FALSY_ENV_FLAG_VALUES.includes(value),
-    encode: enabled => (enabled ? '1' : '0'),
-    strict: true,
-  }
-);
-const decodeEnvFlag = Schema.decodeOption(EnvFlagFromString);
-
-// None when the variable is unset or blank, so callers can distinguish
-// "not configured" from an explicit true/false.
-const envFlag = (name: string): Config.Config<Option.Option<boolean>> =>
-  Config.string(name).pipe(
-    Config.map(value => value.trim()),
-    Config.option,
-    Config.map(Option.filter(value => value.length > 0)),
-    Config.map(Option.flatMap(decodeEnvFlag))
-  );
-
 /**
  * Interactive permission UI (the native sidecar dialog and the browser
  * approval page) must never spawn from automated environments. The explicit
  * COMPOSIO_DISABLE_PERMISSION_UI knob wins in both directions; without it,
  * CI and Vitest runs disable the UI.
  */
-export const interactivePermissionUiDisabledConfig: Config.Config<boolean> = Config.all({
-  explicit: envFlag('COMPOSIO_DISABLE_PERMISSION_UI'),
-  ci: envFlag('CI'),
-  vitest: envFlag('VITEST'),
-}).pipe(
-  Config.map(({ explicit, ci, vitest }) =>
-    Option.getOrElse(
-      explicit,
-      () => Option.getOrElse(ci, () => false) || Option.getOrElse(vitest, () => false)
-    )
-  )
+export const interactivePermissionUiDisabledConfig =
+  UNPREFIXED_CONFIG.INTERACTIVE_PERMISSION_UI_DISABLED;
+
+export const isInteractivePermissionUiDisabled: Effect.Effect<boolean> = loadHostConfig(
+  interactivePermissionUiDisabledConfig
 );
-
-// CI / VITEST / COMPOSIO_DISABLE_PERMISSION_UI are read verbatim, so load them
-// through a raw env provider rather than the CLI's COMPOSIO_-prefixed one.
-const environmentProvider = ConfigProvider.fromEnv();
-
-export const isInteractivePermissionUiDisabled: Effect.Effect<boolean> = environmentProvider
-  .load(interactivePermissionUiDisabledConfig)
-  .pipe(Effect.orDie);
 
 const normalizeCallerAgent = (value?: string): NativeUiCallerAgent | undefined => {
   const normalized = value?.toLowerCase().replace(/[^a-z]/g, '');
@@ -170,31 +124,37 @@ const detectCallerAgentFromProcessTree: Effect.Effect<
   return undefined;
 });
 
-const detectCallerAgentFromEnv = (env: NodeJS.ProcessEnv): NativeUiCallerAgent | undefined => {
-  const explicit = normalizeCallerAgent(env.COMPOSIO_CALLER_AGENT ?? env.COMPOSIO_AGENT);
+export type NativeUiCallerAgentSignals = Config.Config.Success<
+  typeof UNPREFIXED_CONFIG.CALLER_AGENT_SIGNALS
+>;
+
+const detectCallerAgentFromSignals = (
+  signals: NativeUiCallerAgentSignals
+): NativeUiCallerAgent | undefined => {
+  const explicit = normalizeCallerAgent(signals.explicit);
   if (explicit) return explicit;
 
-  if (hasEnvPrefix(env, 'OPENCLAW_')) return 'openclaw';
-  if (hasEnvPrefix(env, 'CLAUDE_')) return 'claude';
-  if (hasEnvPrefix(env, 'CODEX_')) return 'codex';
+  if (signals.openclaw) return 'openclaw';
+  if (signals.claude) return 'claude';
+  if (signals.codex) return 'codex';
 
   return undefined;
 };
 
 export const detectNativeUiCallerAgentEffect = (
-  env: NodeJS.ProcessEnv = rawProcessEnv
+  providedSignals?: NativeUiCallerAgentSignals
 ): Effect.Effect<NativeUiCallerAgent, never, CommandExecutor.CommandExecutor> =>
   Effect.gen(function* () {
-    const fromEnv = detectCallerAgentFromEnv(env);
+    const signals =
+      providedSignals ?? (yield* loadHostConfig(UNPREFIXED_CONFIG.CALLER_AGENT_SIGNALS));
+    const fromEnv = detectCallerAgentFromSignals(signals);
     if (fromEnv !== undefined) return fromEnv;
 
     return (yield* detectCallerAgentFromProcessTree) ?? 'composio';
   });
 
-export const detectNativeUiCallerAgent = (
-  env: NodeJS.ProcessEnv = rawProcessEnv
-): Promise<NativeUiCallerAgent> =>
-  Effect.runPromise(Effect.provide(detectNativeUiCallerAgentEffect(env), BunContext.layer));
+export const detectNativeUiCallerAgent = (): Promise<NativeUiCallerAgent> =>
+  Effect.runPromise(Effect.provide(detectNativeUiCallerAgentEffect(), BunContext.layer));
 
 export const resolveNativeUiBinary: Effect.Effect<
   NativeUiBinaryResolution,
