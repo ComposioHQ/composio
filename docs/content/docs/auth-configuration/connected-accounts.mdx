@@ -245,7 +245,7 @@ If your use case requires calling a provider API directly, use [Proxy execute](/
 Users can connect multiple accounts for the same toolkit (e.g., personal and work Gmail).
 
 <Callout type="warn">
-**For Composio-managed OAuth, prefer `link()`.** The `initiate()` examples below will stop working for Composio-managed OAuth auth configs starting **2026-05-08** (new orgs) / **2026-07-03** (all orgs). `link()` provides hosted authentication, allows multiple accounts by default, and is unaffected by the rollout. See [Connect Link authentication](/docs/tools-direct/authenticating-tools#hosted-authentication-connect-link), the [migration guide](/docs/auth-configuration/migrating-initiate-to-link), or the [changelog entry](/docs/changelog/2026/04/24).
+**For Composio-managed OAuth, prefer `link()`.** The `initiate()` examples below will stop working for Composio-managed OAuth auth configs starting **2026-05-08** (new orgs) / **2026-07-03** (all orgs). `link()` provides hosted authentication and is unaffected by the rollout. Like `initiate()`, it refuses to create a second active connection for the same user and auth config unless you pass `allow_multiple=True` (Python) or `allowMultiple: true` (TypeScript). See [Connect Link authentication](/docs/tools-direct/authenticating-tools#hosted-authentication-connect-link), the [migration guide](/docs/auth-configuration/migrating-initiate-to-link), or the [changelog entry](/docs/changelog/2026/04/24).
 
 The `initiate()` examples remain accurate for **custom auth configs** (your own OAuth app) and **non-OAuth schemes** (API key, bearer, basic) — those are unaffected.
 </Callout>
