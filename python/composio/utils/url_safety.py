@@ -1,8 +1,16 @@
-"""SSRF protections for user-supplied URL file inputs.
+"""SSRF protections for URLs the SDK fetches.
 
-Guarding a user-supplied URL takes two steps, because the hostname is resolved
-twice: once by this module when it validates the target, and once by the HTTP
-client when it opens the connection.
+Applies to URLs the caller supplies *and* to URLs an API response supplies:
+under the trust boundary documented in ``python/AGENTS.md`` the backend may be
+compromised or the connection MITM'd, so a presigned URL in a response is no
+more trusted than one typed by a user. Without a guard, either can point the
+SDK at loopback, RFC1918 space, or a link-local cloud-metadata endpoint
+(``169.254.169.254``) and turn it into a request proxy for internal
+infrastructure.
+
+Guarding a URL takes two steps, because the hostname is resolved twice: once
+by this module when it validates the target, and once by the HTTP client when
+it opens the connection.
 
 ``assert_safe_fetch_target`` covers the first resolution. It rejects non-HTTP(S)
 URLs and any hostname whose DNS answers include a non-publicly-routable address,
@@ -14,19 +22,25 @@ server with a short TTL can answer with a public address for the validating
 lookup and an internal one for the connecting lookup -- a time-of-check /
 time-of-use window better known as DNS rebinding. Re-checking the address the
 socket actually landed on, before any response body is read, means an internal
-service never returns data to the caller.
+service never returns data to the caller. (Fully eliminating the window would
+require pinning the validated address with a custom transport adapter; the
+TypeScript guard carries the same limitation.)
 """
 
 from __future__ import annotations
 
 import ipaddress
 import socket
-from urllib.parse import urlparse
+import typing as t
+from urllib.parse import urljoin, urlparse
 
 import requests
 import requests.utils
 
 from composio.exceptions import BlockedInternalUrlError
+
+_REDIRECT_STATUS_CODES = frozenset({301, 302, 303, 307, 308})
+_MAX_REDIRECTS = 5
 
 
 def is_blocked_ip(value: str) -> bool:
@@ -86,6 +100,56 @@ def assert_safe_fetch_target(url: str) -> None:
             raise BlockedInternalUrlError(
                 f'Refusing to fetch "{parsed.hostname}" because it resolves to a non-public address'
             )
+
+
+def safe_request(
+    method: str,
+    url: str,
+    *,
+    max_redirects: int = _MAX_REDIRECTS,
+    **kwargs: t.Any,
+) -> requests.Response:
+    """Send a request, validating the target before *every* hop.
+
+    Redirects are followed manually so each new location is validated too.
+    Validating only the first URL is not enough: a target that passes the check
+    and then answers ``302 Location: http://169.254.169.254/`` would have the
+    redirect followed by ``requests`` with no further validation. Mirrors
+    ``ssrfSafeFetch`` in the TypeScript SDK.
+
+    Use this where redirects are legitimate (S3 can answer a PUT with a 307
+    region redirect). Call sites that require a direct URL should instead call
+    :func:`assert_safe_fetch_target` and pass ``allow_redirects=False``.
+
+    :param max_redirects: Hops to follow before giving up.
+    :raises BlockedInternalUrlError: If any hop fails validation, or the
+        redirect chain is longer than ``max_redirects``.
+    """
+    body = kwargs.get("data")
+    current_url = url
+
+    for _ in range(max_redirects + 1):
+        assert_safe_fetch_target(current_url)
+        response = requests.request(
+            method, current_url, allow_redirects=False, **kwargs
+        )
+
+        location = response.headers.get("Location")
+        if response.status_code not in _REDIRECT_STATUS_CODES or location is None:
+            return response
+
+        response.close()
+        current_url = urljoin(current_url, location)
+
+        # `requests` rewinds the body itself when it follows a redirect; doing
+        # it manually means doing that too, or a retried upload sends nothing.
+        seek = getattr(body, "seek", None)
+        if callable(seek):
+            seek(0)
+
+    raise BlockedInternalUrlError(
+        f"Refusing to fetch: too many redirects (max {max_redirects})"
+    )
 
 
 def _request_used_environment_proxy(url: str) -> bool:
