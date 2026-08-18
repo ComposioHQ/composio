@@ -15,9 +15,6 @@ from pydantic import BaseModel
 from composio_client.types.tool_router.session_execute_response import (
     SessionExecuteResponse,
 )
-from composio_client.types.tool_router.session_proxy_execute_response import (
-    SessionProxyExecuteResponse,
-)
 
 from composio.utils.safe_path import SAFE_COMPONENT_REGEX
 
@@ -27,6 +24,21 @@ from composio.utils.safe_path import SAFE_COMPONENT_REGEX
 
 LOCAL_TOOL_PREFIX = "LOCAL_"
 MAX_SLUG_LENGTH = 60
+
+
+class NormalizedProxyExecuteResponse(te.TypedDict):
+    """SDK-facing proxy execute response shape.
+
+    Mirrors the TypeScript SDK's ``ToolRouterSessionProxyExecuteResponse``:
+    ``binary_data`` (snake_case) is projected to ``binaryData`` (camelCase)
+    with ``content_type`` -> ``contentType`` and ``expires_at`` -> ``expiresAt``.
+    ``data``, ``headers``, and ``status`` are passed through unchanged.
+    """
+
+    status: int
+    data: t.Any
+    headers: t.Optional[t.Dict[str, str]]
+    binaryData: t.NotRequired[t.Dict[str, t.Any]]
 
 SLUG_REGEX = SAFE_COMPONENT_REGEX
 """Alias of the canonical pattern in :mod:`composio.utils.safe_path`.
@@ -87,10 +99,10 @@ class SessionContext(te.Protocol):
         method: t.Literal["GET", "POST", "PUT", "DELETE", "PATCH"],
         body: t.Any = None,
         parameters: t.Optional[t.List[t.Dict[str, t.Any]]] = None,
-    ) -> SessionProxyExecuteResponse:
+    ) -> NormalizedProxyExecuteResponse:
         """Proxy API calls through Composio's auth layer.
 
-        Returns the same response model as ``session.proxy_execute()``.
+        Returns the same normalized response shape as ``session.proxy_execute()``.
         """
         ...
 
