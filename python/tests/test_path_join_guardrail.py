@@ -58,13 +58,10 @@ def _reviewed_path(
 REVIEWED_JOINS: t.Dict[t.Tuple[str, str], t.Dict[str, t.Any]] = {
     (
         "composio/core/models/_files.py",
-        (
-            "Path( os.environ.get( ENV_LOCAL_CACHE_DIRECTORY, Path.home() / "
-            "LOCAL_CACHE_DIRECTORY_NAME, # Fallback to user directory ) )"
-        ),
+        "Path(configured)",
     ): _reviewed_path(
-        "The cache root comes from local configuration or the user's home, not an "
-        "API response."
+        "`configured` is read from the COMPOSIO_CACHE_DIR environment variable, "
+        "which is local configuration, not an API response."
     ),
     (
         "composio/core/models/_files.py",
