@@ -217,3 +217,32 @@ def test_file_helper_default_outdir_ensures_cache_directory_on_download(
             },
             tool,
         )
+
+
+def test_file_helper_empty_string_outdir_is_treated_as_default(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """``outdir=""`` falls through to the default directory (falsy, not just
+    ``None``), so the default-ness flag must agree or the writability check
+    silently stops firing for it."""
+    unusable = tmp_path / "blocker-file"
+    unusable.write_text("not a directory")
+    monkeypatch.setenv("COMPOSIO_CACHE_DIR", str(unusable / "cache"))
+
+    helper = FileHelper(client=Mock(), outdir="")
+    assert helper._outdir_is_default is True
+    assert helper._outdir == _files.get_output_file_directory()
+
+    tool = Mock()
+    tool.toolkit.slug = "gmail"
+    tool.slug = "GMAIL_FETCH"
+
+    with pytest.raises(RuntimeError, match="COMPOSIO_CACHE_DIR"):
+        helper._download_file_value(
+            {
+                "name": "irrelevant.txt",
+                "mimetype": "text/plain",
+                "s3url": "https://example.com/f",
+            },
+            tool,
+        )

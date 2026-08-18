@@ -720,7 +720,10 @@ class FileHelper(WithLogger):
         """
         super().__init__()
         self._client = client
-        self._outdir_is_default = outdir is None
+        # Falsy, not just `is None`: an empty string falls through to the
+        # same default directory below, and must be treated as such here too
+        # or `ensure_cache_directory()` silently stops firing for it.
+        self._outdir_is_default = not outdir
         self._outdir = Path(outdir) if outdir else get_output_file_directory()
         self._sensitive_file_upload_protection = sensitive_file_upload_protection
         self._file_upload_path_deny_segments = file_upload_path_deny_segments
