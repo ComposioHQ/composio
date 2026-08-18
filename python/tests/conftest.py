@@ -170,11 +170,6 @@ def guard_real_home_directory(request, _real_home_baseline):
     if not created:
         return
 
-    for entry in created:
-        path = real_home / entry
-        # Leave anything non-empty alone; report rather than delete.
-        if path.is_dir() and not any(path.iterdir()):
-            path.rmdir()
     pytest.fail(
         f"{request.node.nodeid} created {sorted(created)} in the real home "
         f"directory ({real_home}). Sandbox `$HOME` with "

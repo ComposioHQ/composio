@@ -26,11 +26,7 @@ from composio.exceptions import (
 )
 from composio.utils import mimetypes
 from composio.utils.json_schema import dereference_json_schema
-from composio.utils.safe_path import (
-    safe_basename,
-    secure_basename_join,
-    secure_join,
-)
+from composio.utils.safe_path import secure_basename_join, secure_join
 from composio.utils.url_safety import assert_safe_fetch_target, safe_request
 from composio.utils.sensitive_file_upload_paths import (
     assert_safe_local_file_upload_path,
@@ -148,20 +144,12 @@ def get_md5(file: Path) -> str:
 def upload(url: str, file: Path) -> bool:
     """Upload file to presigned S3 URL.
 
-    ``url`` is ``new_presigned_url`` from the upload-request response, which is
-    untrusted input: a compromised or MITM'd backend that names an internal
-    address would otherwise have the file's bytes PUT to it. ``safe_request``
-    validates the target and re-validates every redirect hop.
-
     Args:
         url: Presigned S3 upload URL
         file: Path to file to upload
 
     Returns:
         True if upload succeeded (HTTP 200), False otherwise
-
-    Raises:
-        BlockedInternalUrlError: If the URL resolves to a non-public address.
     """
     with file.open("rb") as data:
         try:
@@ -411,9 +399,7 @@ def _upload_bytes_to_s3(
         cast_to=_FileUploadResponse,
     )
 
-    # Upload the content directly to S3. `new_presigned_url` comes from the API
-    # response and is untrusted, so the target is validated on every hop before
-    # the bytes are sent. See `composio.utils.url_safety`.
+    # Upload the content directly to S3
     try:
         upload_response = safe_request(
             "PUT",
@@ -591,19 +577,6 @@ class FileUploadable(BaseModel):
         return cls(name=file.name, mimetype=mimetype, s3key=s3meta.key)
 
 
-def _safe_download_filename(name: str) -> str:
-    """Collapse an untrusted filename to a bare, writable basename.
-
-    Delegates to :func:`safe_basename`, which both download sinks share, and
-    re-raises as ``ErrorDownloadingFile`` so this module keeps its documented
-    ``FileError`` contract for callers of ``download()``.
-    """
-    try:
-        return safe_basename(name)
-    except UnsafePathComponentError as e:
-        raise ErrorDownloadingFile(str(e)) from e
-
-
 class FileDownloadable(BaseModel):
     model_config = ConfigDict(json_schema_extra={"file_downloadable": True})
 
@@ -636,19 +609,6 @@ class FileDownloadable(BaseModel):
             outfile = secure_basename_join(outdir, self.name, root=root)
         except UnsafePathComponentError as e:
             raise ErrorDownloadingFile(str(e)) from e
-        # `self.s3url` is a field of the tool-execution response, so it is
-        # untrusted for the same reason `self.name` is. Unguarded, a response
-        # naming an internal address makes this a fetch proxy for it, and the
-        # bytes land on disk. `allow_redirects=False` keeps a URL that passes
-        # the check from bouncing into private space afterwards; the
-        # `status_code != 200` check below rejects the 3xx itself.
-        #
-        # Deliberately uncapped: the body streams straight to disk rather than
-        # into memory, so `_MAX_RESPONSE_SIZE` (a memory-exhaustion bound)
-        # does not apply, and tool attachments legitimately exceed it.
-        #
-        # Runs before `mkdir`, like the path check above it: a rejected
-        # download should leave no directories behind.
         assert_safe_fetch_target(self.s3url)
         outdir.mkdir(exist_ok=True, parents=True)
         try:

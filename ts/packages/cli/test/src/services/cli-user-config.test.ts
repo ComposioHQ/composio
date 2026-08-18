@@ -8,11 +8,7 @@ import { BunFileSystem, BunPath } from '@effect/platform-bun';
 import { ConfigProvider, Effect, Layer } from 'effect';
 import { extendConfigProvider } from 'src/services/config';
 import { defaultNodeOs, NodeOs } from 'src/services/node-os';
-import {
-  ComposioCliUserConfig,
-  ComposioCliUserConfigLive,
-  resolveCliConfigPathSync,
-} from 'src/services/cli-user-config';
+import { ComposioCliUserConfig, ComposioCliUserConfigLive } from 'src/services/cli-user-config';
 
 describe('ComposioCliUserConfig', () => {
   const withMapConfigProvider = (map: Map<string, string>) =>
@@ -223,18 +219,5 @@ describe('ComposioCliUserConfig', () => {
       const persisted = fs.readFileSync(path.join(cwd, '.composio', 'config.json'), 'utf8');
       assertEquals(Array.isArray(JSON.parse(persisted)), false);
     }).pipe(Effect.provide(CliUserConfigTest));
-  });
-
-  it.effect('resolves sync config path from COMPOSIO_CACHE_DIR when provided', () => {
-    const cacheDir = tempy.temporaryDirectory();
-    process.env.COMPOSIO_CACHE_DIR = cacheDir;
-
-    return Effect.sync(() => {
-      try {
-        assertEquals(resolveCliConfigPathSync(), path.join(cacheDir, 'config.json'));
-      } finally {
-        delete process.env.COMPOSIO_CACHE_DIR;
-      }
-    });
   });
 });

@@ -22,6 +22,7 @@
     "clean": "git clean -xdf node_modules",
     "cli": "bun run src/bin.ts",
     "build:binary": "bun run ./scripts/build-binary.ts",
+    "build:companions": "bun run ./scripts/build-companion-modules.ts",
     "build:binary:cross": "bun run ./scripts/build-binary-cross.ts",
     "build:binary:all": "bun run ./scripts/build-all-binaries.ts",
     "build:binary:package": "bun run ./scripts/package-binaries.ts",

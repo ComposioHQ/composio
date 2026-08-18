@@ -13,12 +13,16 @@ import {
   Schema,
 } from 'effect';
 import * as constants from 'src/constants';
+import { APP_CONFIG } from 'src/effects/app-config';
 import { getDetachedWorkerSpawnArgs, spawnDetached } from 'src/services/detached-process';
+import { extendConfigProvider } from 'src/services/config';
 import { atomicWriteFileString } from 'src/utils/atomic-write';
 import { sha256Hex } from 'src/utils/checksums';
 import { djb2Hash } from 'src/utils/djb2';
 import { NodeOs } from 'src/services/node-os';
 import { TerminalUI } from 'src/services/terminal-ui';
+import { isTelemetryDebugEnabled, TELEMETRY_DEBUG_FLAG } from 'src/services/runtime-flags';
+import { CliRunId } from 'src/services/runtime-cli-context';
 import type { AnalyticsEnvelope, TrackEvent } from './types';
 
 const INTERNAL_ANALYTICS_WORKER_FLAG = '__analytics-worker';
@@ -79,10 +83,6 @@ const configuredString = (value: Option.Option<string>): string | undefined =>
     Option.getOrUndefined
   );
 
-const telemetryDebugEnabled = environmentProvider.load(
-  booleanWithDefault('COMPOSIO_CLI_TELEMETRY_DEBUG')
-);
-
 const analyticsDisabled = environmentProvider.load(
   Config.all({
     cliTelemetryDisabled: booleanWithDefault('COMPOSIO_CLI_TELEMETRY_DISABLED'),
@@ -140,7 +140,7 @@ const encodePrettyJson = Schema.encode(prettyJsonFromString);
 
 const telemetryDebugLog = (label: string, payload: Record<string, unknown>) =>
   Effect.gen(function* () {
-    if (!(yield* telemetryDebugEnabled)) {
+    if (!(yield* isTelemetryDebugEnabled)) {
       return;
     }
 
@@ -523,8 +523,9 @@ const getCliCodactFailuresEndpoint = Effect.map(readApiBaseUrl, baseUrl =>
 // Delivery is best effort: a failed spawn is swallowed, never surfaced.
 const spawnWorker = (command: string, args: ReadonlyArray<string>) =>
   Effect.gen(function* () {
-    const debugEnabled = yield* telemetryDebugEnabled;
-    return yield* spawnDetached(command, args, { inheritStderr: debugEnabled }).pipe(
+    const debugEnabled = yield* isTelemetryDebugEnabled;
+    const workerArgs = debugEnabled ? [...args, TELEMETRY_DEBUG_FLAG] : args;
+    return yield* spawnDetached(command, workerArgs, { inheritStderr: debugEnabled }).pipe(
       Effect.as(true),
       Effect.catchTag('services/DetachedProcessSpawnError', () => Effect.succeed(false))
     );
@@ -563,7 +564,7 @@ const captureToPostHog = (envelope: AnalyticsEnvelope) =>
     );
     const response = yield* httpClient.execute(request);
     const responseOk = response.status >= 200 && response.status < 300;
-    const debugEnabled = yield* telemetryDebugEnabled;
+    const debugEnabled = yield* isTelemetryDebugEnabled;
     const responseBody = !responseOk && debugEnabled ? yield* response.text : undefined;
 
     yield* telemetryDebugLog(
@@ -592,19 +593,22 @@ type CliInvocationContext = {
   readonly parentRunId?: string;
 };
 
-const getCliInvocationContext = environmentProvider
-  .load(
+// The COMPOSIO_CLI_PARENT_RUN_ID handshake only exists in processes `composio run` spawned. The
+// root run process holds its freshly minted id in the CliRunId service instead, so failures it
+// reports carry the same run id its children stamp from the environment.
+const getCliInvocationContext = Effect.gen(function* () {
+  const environment = yield* environmentProvider.pipe(extendConfigProvider).load(
     Config.all({
-      origin: optionalString('COMPOSIO_CLI_INVOCATION_ORIGIN'),
-      parentRunId: optionalString('COMPOSIO_CLI_PARENT_RUN_ID'),
+      origin: APP_CONFIG.CLI_INVOCATION_ORIGIN,
+      parentRunId: APP_CONFIG.CLI_PARENT_RUN_ID,
     })
-  )
-  .pipe(
-    Effect.map(({ origin, parentRunId }) => ({
-      origin: configuredString(origin),
-      parentRunId: configuredString(parentRunId),
-    }))
   );
+  const mintedRunId = Option.flatten(yield* Effect.serviceOption(CliRunId));
+  return {
+    origin: environment.origin,
+    parentRunId: environment.parentRunId ?? Option.getOrUndefined(mintedRunId),
+  };
+});
 
 export const createCliCodactFailureBody = (
   failure: CliCodactFailure,
@@ -658,7 +662,7 @@ const captureToComposioCodactFailures = (failure: CliCodactFailure) =>
     );
     const response = yield* httpClient.execute(request);
     const responseOk = response.status >= 200 && response.status < 300;
-    const debugEnabled = yield* telemetryDebugEnabled;
+    const debugEnabled = yield* isTelemetryDebugEnabled;
     const responseBody = !responseOk && debugEnabled ? yield* response.text : undefined;
 
     yield* telemetryDebugLog(responseOk ? 'codact_delivery_succeeded' : 'codact_delivery_failed', {

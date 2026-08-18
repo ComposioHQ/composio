@@ -1730,9 +1730,6 @@ class TestUploadBytesToS3:
 
         assert result == "s3-key-123"
         mock_client.post.assert_called_once()
-        # Routed through `safe_request`, not a bare `requests.put`: the
-        # presigned URL is a response field, so the target is validated (and
-        # re-validated on every redirect hop) before the bytes are sent.
         mock_safe_request.assert_called_once_with(
             "PUT",
             "https://s3.example.com/upload",
@@ -2536,12 +2533,6 @@ class TestFileDownloadablePathTraversal:
 
     @pytest.fixture(autouse=True)
     def _allow_fetch_target(self):
-        """Neutralize the SSRF guard so these tests stay about path handling.
-
-        Without it, `download()` resolves `example.com` for real, which makes
-        the suite depend on DNS. `TestFileDownloadableFetchGuard` covers the
-        guard itself.
-        """
         with patch("composio.core.models._files.assert_safe_fetch_target"):
             yield
 
@@ -2763,8 +2754,11 @@ class TestFileDownloadablePathTraversal:
         [
             ("NUL", "reserved device name"),
             ("nul.txt", "reserved device name"),
+            ("NUL.tar.gz", "reserved device name"),
             ("COM1", "reserved device name"),
+            ("report.txt:payload", "reserved by Windows"),
             ("a\x00b", "NUL byte"),
+            ("😀" * 128, "longer than"),
             ("x" * 300, "longer than"),
         ],
     )
@@ -3032,12 +3026,6 @@ class TestFromPathSensitiveGuard:
         mock_client.post.assert_not_called()
 
     def test_from_path_opt_out_disables_guard(self, mock_client):
-        """`sensitive_file_upload_protection=False` restores the legacy
-        (unguarded) behavior; the denylist no longer raises for that path."""
-        # A non-existent basename under `.ssh`: the `.ssh` segment still trips the
-        # denylist when protection is on, but the file never exists, so with
-        # protection off we deterministically hit the missing-file path (no real
-        # key read, no network) rather than the block error.
         p = Path.home() / ".ssh" / "composio-does-not-exist-guard-test"
         with pytest.raises(Exception) as exc_info:
             FileUploadable.from_path(
@@ -3048,20 +3036,10 @@ class TestFromPathSensitiveGuard:
                 sensitive_file_upload_protection=False,
             )
         assert not isinstance(exc_info.value, SensitiveFilePathBlockedError)
-        # Guard skipped, so the failure is downstream (missing file), before any
-        # presigned-URL request.
         mock_client.post.assert_not_called()
 
 
 class TestResponseDerivedUrlsAreGuarded:
-    """Every URL taken from an API response reaches the network through a guard.
-
-    These assert on the guard itself, not on a successful transfer. The sinks
-    below were unguarded while the suite was green, because each existing test
-    patched `requests.get`/`requests.put` wholesale — mocking the sink hides a
-    missing check in front of it.
-    """
-
     def _download_response(self) -> MagicMock:
         response = MagicMock()
         response.status_code = 200
@@ -3078,7 +3056,6 @@ class TestResponseDerivedUrlsAreGuarded:
         return client
 
     def test_download_validates_s3url(self, tmp_path):
-        """`s3url` is a tool-execution response field, so it is validated."""
         f = FileDownloadable(
             name="report.pdf",
             mimetype="application/pdf",
@@ -3096,7 +3073,6 @@ class TestResponseDerivedUrlsAreGuarded:
         mock_assert.assert_called_once_with("https://s3.example.com/file")
 
     def test_download_blocked_url_never_reaches_the_network(self, tmp_path):
-        """A response naming an internal address must not be fetched at all."""
         outdir = tmp_path / "out"
         f = FileDownloadable(
             name="report.pdf",
@@ -3112,12 +3088,9 @@ class TestResponseDerivedUrlsAreGuarded:
                     f.download(outdir, root=outdir)
 
         mock_get.assert_not_called()
-        # The check runs before `mkdir`, so a blocked download leaves neither a
-        # partial file nor the directory it would have been written into.
         assert not outdir.exists()
 
     def test_download_refuses_to_follow_redirects(self, tmp_path):
-        """A validated URL must not be able to bounce the fetch elsewhere."""
         f = FileDownloadable(
             name="report.pdf",
             mimetype="application/pdf",
@@ -3133,11 +3106,9 @@ class TestResponseDerivedUrlsAreGuarded:
         assert mock_get.call_args.kwargs["allow_redirects"] is False
 
     def test_upload_bytes_to_s3_goes_through_safe_request(self):
-        """`new_presigned_url` is a response field, so the PUT is guarded."""
         client = self._s3_client("https://s3.example.com/upload")
         with patch("composio.core.models._files.safe_request") as mock_safe_request:
             mock_safe_request.return_value.status_code = 200
-
             _upload_bytes_to_s3(
                 client=client,
                 filename="test.jpg",
@@ -3172,13 +3143,11 @@ class TestResponseDerivedUrlsAreGuarded:
         mock_request.assert_not_called()
 
     def test_file_upload_goes_through_safe_request(self, tmp_path):
-        """The file-handle upload path is guarded like the bytes path."""
         source = tmp_path / "report.pdf"
         source.write_bytes(b"%PDF-1.4")
 
         with patch("composio.core.models._files.safe_request") as mock_safe_request:
             mock_safe_request.return_value.status_code = 200
-
             assert upload(url="https://s3.example.com/upload", file=source) is True
 
         assert mock_safe_request.call_args.args == (

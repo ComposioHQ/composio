@@ -37,17 +37,113 @@ PYTHON_ROOT = Path(__file__).parent.parent
 SCANNED_ROOTS = (PYTHON_ROOT / "composio", PYTHON_ROOT / "providers")
 
 _PATH_CALLS = frozenset({"Path", "PurePath", "PurePosixPath", "PureWindowsPath"})
-"""Constructors whose result is a path; a computed string argument to one of
-these is a path join wearing a different hat."""
+"""Constructors whose result is a path."""
 
-_PATH_SINKS = _PATH_CALLS | frozenset({"open", "makedirs", "mkdir", "write_bytes"})
-"""Calls where a computed string argument becomes a filesystem path."""
+_DIRECT_PATH_SINKS = frozenset({"open", "makedirs", "mkdir"})
+"""Functions whose first argument becomes a filesystem path."""
+
+
+def _reviewed_path(
+    reason: str,
+    *requires: str,
+    occurrences: int = 1,
+) -> t.Dict[str, t.Any]:
+    return {
+        "reason": reason,
+        "requires": frozenset(requires),
+        "occurrences": occurrences,
+    }
 
 
 REVIEWED_JOINS: t.Dict[t.Tuple[str, str], t.Dict[str, t.Any]] = {
     (
+        "composio/core/models/_files.py",
+        (
+            "Path( os.environ.get( ENV_LOCAL_CACHE_DIRECTORY, Path.home() / "
+            "LOCAL_CACHE_DIRECTORY_NAME, # Fallback to user directory ) )"
+        ),
+    ): _reviewed_path(
+        "The cache root comes from local configuration or the user's home, not an "
+        "API response."
+    ),
+    (
+        "composio/core/models/_files.py",
+        "Path(path_in)",
+    ): _reviewed_path(
+        "`FileUploadable.from_path` converts the caller's local upload path after "
+        "the upload allowlist and sensitive-path checks have run.",
+        "assert_path_inside_upload_dirs",
+        "assert_safe_local_file_upload_path",
+    ),
+    (
+        "composio/core/models/_files.py",
+        "Path(outdir)",
+    ): _reviewed_path(
+        "`FileHelper` accepts this download root from local SDK configuration; API "
+        "response values are joined beneath it through the safe-path helpers."
+    ),
+    (
+        "composio/core/models/tool_router_session_files.py",
+        "PureWindowsPath(self.mount_relative_path)",
+    ): _reviewed_path(
+        "This property only extracts a display basename. `RemoteFile.save` validates "
+        "the same server value before using it as a filesystem path."
+    ),
+    (
+        "composio/core/models/tool_router_session_files.py",
+        "Path(path)",
+    ): _reviewed_path(
+        "A non-default `RemoteFile.save` destination is selected explicitly by the "
+        "caller and does not contain an API-derived path component."
+    ),
+    (
+        "composio/core/models/tool_router_session_files.py",
+        "Path(path_str)",
+    ): _reviewed_path(
+        "The upload input is a caller-selected local file and is checked before it is "
+        "read; it is not a path constructed from a remote response.",
+        "exists",
+        "is_file",
+    ),
+    (
+        "composio/integration_test/conftest.py",
+        "Path(__file__)",
+    ): _reviewed_path("`__file__` is the trusted location of this installed module."),
+    (
+        "composio/utils/mimetypes.py",
+        "Path(file)",
+    ): _reviewed_path(
+        "`mimetypes.guess` uses `Path` for suffix parsing only and never accesses the "
+        "filesystem."
+    ),
+    (
         "composio/utils/safe_path.py",
-        "Path(base) / safe_basename(name, label=label)",
+        "PureWindowsPath(value)",
+    ): _reviewed_path(
+        "The path parser detects cross-platform separators before the component is "
+        "accepted by the strict slug pattern.",
+        "fullmatch",
+    ),
+    (
+        "composio/utils/safe_path.py",
+        "PureWindowsPath(name)",
+    ): _reviewed_path(
+        "`safe_basename` collapses the value, rejects Windows-invalid forms, checks "
+        "its encoded length, and rejects reserved device names.",
+        "fsencode",
+    ),
+    (
+        "composio/utils/safe_path.py",
+        "Path(root)",
+    ): _reviewed_path(
+        "`resolve_root` normalizes a caller-supplied trusted anchor before any "
+        "containment comparison.",
+        "expanduser",
+        "resolve",
+    ),
+    (
+        "composio/utils/safe_path.py",
+        "resolved_base / safe_basename(name, label=label)",
     ): {
         "reason": (
             "`secure_basename_join`, the sanctioned single-filename join. The "
@@ -71,14 +167,50 @@ REVIEWED_JOINS: t.Dict[t.Tuple[str, str], t.Dict[str, t.Any]] = {
         ),
         "occurrences": 1,
     },
+    (
+        "composio/utils/sensitive_file_upload_paths.py",
+        "Path(file_path)",
+    ): _reviewed_path(
+        "This converts a caller-selected upload path so the sensitive-path denylist "
+        "can inspect its normalized components.",
+        "expanduser",
+        "resolve",
+    ),
+    (
+        "composio/utils/upload_dir_allowlist.py",
+        "Path(s)",
+    ): _reviewed_path(
+        "This converts a locally configured upload-allowlist entry and resolves it "
+        "before comparisons.",
+        "expanduser",
+        "resolve",
+    ),
 }
-"""Both remaining entries live inside `composio.utils.safe_path`.
+"""Reviewed dynamic path construction in the shipped Python packages.
 
-That is the property worth preserving: no module outside the security helper
-builds a path out of untrusted input any more, so a new entry here should be
-rare and should prompt the question "why can this not use `secure_join` or
-`secure_basename_join`?"
+Entries outside `safe_path` are limited to caller-selected local paths, local
+configuration, module locations, or lexical parsing. API-derived components
+must use `secure_join` or `secure_basename_join`.
 """
+
+for _provider_setup in (
+    "anthropic",
+    "autogen",
+    "claude_agent_sdk",
+    "crewai",
+    "gemini",
+    "google",
+    "google_adk",
+    "langchain",
+    "langgraph",
+    "llamaindex",
+    "openai",
+    "openai_agents",
+):
+    REVIEWED_JOINS[(f"providers/{_provider_setup}/setup.py", "Path(__file__)")] = (
+        _reviewed_path("`__file__` is the trusted location of this provider package.")
+    )
+del _provider_setup
 
 
 def _module_constants(tree: ast.Module) -> t.Set[str]:
@@ -124,21 +256,6 @@ def _is_trusted(node: ast.expr, consts: t.Set[str]) -> bool:
     return False
 
 
-def _computes_from_untrusted(node: ast.expr, consts: t.Set[str]) -> bool:
-    """True for an f-string or `+` concatenation containing a non-literal.
-
-    Catches `Path(f"{root}/{slug}")`, which no operator-based check sees.
-    """
-    if isinstance(node, ast.JoinedStr):
-        return any(
-            isinstance(v, ast.FormattedValue) and not _is_trusted(v.value, consts)
-            for v in node.values
-        )
-    if isinstance(node, ast.BinOp) and isinstance(node.op, ast.Add):
-        return not (_is_trusted(node.left, consts) and _is_trusted(node.right, consts))
-    return False
-
-
 def _call_name(func: ast.expr) -> str:
     if isinstance(func, ast.Attribute):
         return func.attr
@@ -157,6 +274,23 @@ def _is_os_path_join(func: ast.expr) -> bool:
     if isinstance(recv, ast.Name):
         return recv.id in {"posixpath", "ntpath", "path"}
     return False
+
+
+def _is_direct_path_sink(func: ast.expr) -> bool:
+    """Builtins or ``os`` functions whose first argument is the path.
+
+    Method calls such as ``Path.open(mode)`` and ``Path.write_bytes(data)``
+    carry the path in their receiver, not in the positional arguments. Their
+    receiver construction is reviewed separately by the ``_PATH_CALLS`` rule.
+    """
+    if isinstance(func, ast.Name):
+        return func.id in _DIRECT_PATH_SINKS
+    return (
+        isinstance(func, ast.Attribute)
+        and func.attr in _DIRECT_PATH_SINKS
+        and isinstance(func.value, ast.Name)
+        and func.value.id == "os"
+    )
 
 
 @functools.lru_cache(maxsize=None)
@@ -219,12 +353,12 @@ def _collect_joins(roots: t.Sequence[Path] = SCANNED_ROOTS) -> t.List[Join]:
                     elif _is_os_path_join(node.func):
                         if any(not _is_trusted(a, consts) for a in args):
                             record(node, "os.path.join")
-                    elif name in _PATH_CALLS and len(args) > 1:
-                        if any(not _is_trusted(a, consts) for a in args[1:]):
-                            record(node, "Path(a, b)")
-                    elif name in _PATH_SINKS:
-                        if any(_computes_from_untrusted(a, consts) for a in args):
-                            record(node, "computed-string")
+                    elif name in _PATH_CALLS:
+                        if any(not _is_trusted(a, consts) for a in args):
+                            record(node, "Path(...)")
+                    elif _is_direct_path_sink(node.func):
+                        if args and not _is_trusted(args[0], consts):
+                            record(node, name)
     return found
 
 
@@ -271,10 +405,7 @@ def test_reviewed_joins_all_still_exist():
 
 
 def test_reviewed_joins_still_have_their_validation():
-    """An allowlist keyed only on source text keeps passing after the validation
-    that justified it is deleted — the join itself is unchanged. Each entry
-    names the validators its reason depends on; this asserts they are still
-    called in the same function."""
+    """Entries that depend on validators still call them in the same function."""
     for join in _collect_joins():
         entry = REVIEWED_JOINS.get((join.module, join.text))
         if entry is None:
@@ -311,10 +442,15 @@ EVASIONS = {
     "joinpath": "return self._outdir.joinpath(tool.slug)",
     "os.path.join": "return os.path.join(self._outdir, tool.slug)",
     "Path(a, b)": "return Path(self._outdir, tool.slug)",
+    "Path(value)": "return Path(tool.slug)",
+    "Path(value, literal)": "return Path(tool.slug, 'payload')",
+    "Path(value).write": "Path(tool.slug).write_bytes(b'x')\n    return None",
     "f-string": "return Path(f'{self._outdir}/{tool.slug}')",
     "concat": "return Path(self._outdir + '/' + tool.slug)",
     "local-uppercase": "SLUG = tool.slug\n    return self._outdir / SLUG",
+    "open-direct": "return open(tool.slug, 'rb')",
     "open-fstring": "return open(f'{self._outdir}/{tool.slug}', 'rb')",
+    "mkdir-direct": "return os.mkdir(tool.slug)",
     "makedirs-concat": "return os.makedirs(self._outdir + tool.slug)",
 }
 
