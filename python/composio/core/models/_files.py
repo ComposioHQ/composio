@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import hashlib
-import logging
 import os
 import typing as t
 from pathlib import Path
@@ -58,8 +57,6 @@ _MAX_RESPONSE_SIZE = 100 * 1024 * 1024  # 100 MB default limit
 Maximum response size in bytes when fetching files from URLs.
 Prevents memory exhaustion attacks from malicious URLs pointing to large files.
 """
-
-_logger = logging.getLogger(__name__)
 
 _CONNECT_TIMEOUT = 5  # seconds
 _READ_TIMEOUT = 60  # seconds
@@ -195,32 +192,67 @@ def get_md5(file: Path) -> str:
     return obj.hexdigest()
 
 
-def upload(url: str, file: Path) -> bool:
+def _upload_to_presigned_url(
+    url: str, data: t.Union[bytes, t.IO[bytes]], mimetype: str
+) -> None:
+    """PUT ``data`` to a presigned S3 URL with the content type it was signed with.
+
+    The presign request carries ``mimetype``, so the PUT must send the same
+    value as ``Content-Type``: when the signature covers the content type, a
+    mismatched or missing header is rejected with ``403 SignatureDoesNotMatch``.
+    Routing every presigned PUT through one helper keeps the file and bytes
+    upload paths from drifting apart again, mirroring ``uploadFileToS3`` in
+    the TypeScript SDK, which funnels path, URL, and File inputs through a
+    single uploader.
+
+    Raises:
+        ErrorUploadingFile: On transport failure or a non-200 response,
+            including the HTTP status when one was received.
+    """
+    try:
+        response = safe_request(
+            "PUT",
+            url,
+            data=data,
+            headers={"Content-Type": mimetype},
+            timeout=(_CONNECT_TIMEOUT, _READ_TIMEOUT),
+        )
+    except requests.exceptions.RequestException as e:
+        raise ErrorUploadingFile(
+            "Failed to upload to S3: "
+            f"{_sanitize_url_for_logging(url)}. Error: {type(e).__name__}"
+        ) from e
+    if response.status_code != 200:
+        raise ErrorUploadingFile(
+            f"Failed to upload to S3. Status: {response.status_code}. "
+            "This may indicate an expired presigned URL or permission issue."
+        )
+
+
+def upload(url: str, file: Path, mimetype: t.Optional[str] = None) -> bool:
     """Upload file to presigned S3 URL.
 
     Args:
         url: Presigned S3 upload URL
         file: Path to file to upload
+        mimetype: Content type to send with the upload. Defaults to the type
+            guessed from ``file``. This must match the ``mimetype`` the
+            presigned URL was requested with, otherwise S3 rejects the PUT
+            with ``403 SignatureDoesNotMatch`` when the signature covers the
+            content type.
 
     Returns:
-        True if upload succeeded (HTTP 200), False otherwise
+        True if the upload succeeded.
+
+    Raises:
+        ErrorUploadingFile: If the upload fails; the message includes the
+            HTTP status when one was received.
     """
+    if mimetype is None:
+        mimetype = mimetypes.guess(file=file)
     with file.open("rb") as data:
-        try:
-            response = safe_request(
-                "PUT",
-                url,
-                data=data,
-                timeout=(_CONNECT_TIMEOUT, _READ_TIMEOUT),
-            )
-        except requests.exceptions.RequestException as e:
-            _logger.debug(
-                "Upload to %s failed: %s",
-                _sanitize_url_for_logging(url),
-                type(e).__name__,
-            )
-            return False
-        return response.status_code == 200
+        _upload_to_presigned_url(url=url, data=data, mimetype=mimetype)
+    return True
 
 
 class _FileUploadResponse(_ComposioBaseModel):
@@ -228,6 +260,33 @@ class _FileUploadResponse(_ComposioBaseModel):
     key: str
     type: str
     new_presigned_url: str
+
+
+def _request_presigned_upload(
+    client: HttpClient,
+    *,
+    filename: str,
+    md5: str,
+    mimetype: str,
+    tool: str,
+    toolkit: str,
+) -> _FileUploadResponse:
+    """Request a presigned S3 upload URL from the backend.
+
+    Single-sources the presign wire shape so the file and bytes upload paths
+    request the same fields they later send.
+    """
+    return client.post(
+        path=_FILE_UPLOAD,
+        body={
+            "md5": md5,
+            "filename": filename,
+            "mimetype": mimetype,
+            "tool_slug": tool,
+            "toolkit_slug": toolkit,
+        },
+        cast_to=_FileUploadResponse,
+    )
 
 
 def _is_url(value: str) -> bool:
@@ -442,42 +501,17 @@ def _upload_bytes_to_s3(
     toolkit: str,
 ) -> str:
     """Upload bytes content to S3 and return the S3 key."""
-    md5_hash = hashlib.md5(content, usedforsecurity=False).hexdigest()
-
-    s3meta = client.post(
-        path=_FILE_UPLOAD,
-        body={
-            "md5": md5_hash,
-            "filename": filename,
-            "mimetype": mimetype,
-            "tool_slug": tool,
-            "toolkit_slug": toolkit,
-        },
-        cast_to=_FileUploadResponse,
+    s3meta = _request_presigned_upload(
+        client,
+        filename=filename,
+        md5=hashlib.md5(content, usedforsecurity=False).hexdigest(),
+        mimetype=mimetype,
+        tool=tool,
+        toolkit=toolkit,
     )
-
-    # Upload the content directly to S3
-    try:
-        upload_response = safe_request(
-            "PUT",
-            s3meta.new_presigned_url,
-            data=content,
-            headers={"Content-Type": mimetype},
-            timeout=(_CONNECT_TIMEOUT, _READ_TIMEOUT),
-        )
-    except requests.exceptions.RequestException as e:
-        raise ErrorUploadingFile(
-            "Failed to upload to S3: "
-            f"{_sanitize_url_for_logging(s3meta.new_presigned_url)}. "
-            f"Error: {type(e).__name__}"
-        ) from e
-
-    if upload_response.status_code != 200:
-        raise ErrorUploadingFile(
-            f"Failed to upload to S3. Status: {upload_response.status_code}. "
-            f"This may indicate an expired presigned URL or permission issue."
-        )
-
+    _upload_to_presigned_url(
+        url=s3meta.new_presigned_url, data=content, mimetype=mimetype
+    )
     return s3meta.key
 
 
@@ -618,19 +652,15 @@ class FileUploadable(BaseModel):
             )
 
         mimetype = mimetypes.guess(file=file)
-        s3meta = client.post(
-            path=_FILE_UPLOAD,
-            body={
-                "md5": get_md5(file=file),
-                "filename": file.name,
-                "mimetype": mimetype,
-                "tool_slug": tool,
-                "toolkit_slug": toolkit,
-            },
-            cast_to=_FileUploadResponse,
+        s3meta = _request_presigned_upload(
+            client,
+            filename=file.name,
+            md5=get_md5(file=file),
+            mimetype=mimetype,
+            tool=tool,
+            toolkit=toolkit,
         )
-        if not upload(url=s3meta.new_presigned_url, file=file):
-            raise ErrorUploadingFile(f"Error uploading file: {file}")
+        upload(url=s3meta.new_presigned_url, file=file, mimetype=mimetype)
         return cls(name=file.name, mimetype=mimetype, s3key=s3meta.key)
 
 

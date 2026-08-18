@@ -8,13 +8,20 @@ fetch and upload paths from drifting apart again.
 """
 
 import typing as t
+from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
+import requests
 
-from composio.core.models._files import _fetch_file_from_url
+from composio.core.models._files import (
+    FileUploadable,
+    _fetch_file_from_url,
+    upload,
+)
 from composio.core.models.base import allow_tracking
-from composio.exceptions import ResponseTooLargeError
+from composio.exceptions import ErrorUploadingFile, ResponseTooLargeError
+from composio.utils import mimetypes
 from composio.utils.url_safety import parse_content_length
 
 
@@ -38,6 +45,117 @@ def _stream_response(
     response.iter_content.return_value = chunks if chunks is not None else [b"payload"]
     response.close = MagicMock()
     return response
+
+
+def _s3_client(presigned_url: str = "https://s3.example.com/upload") -> MagicMock:
+    """A mock HTTP client whose presign POST answers a fresh upload URL."""
+    client = MagicMock()
+    s3meta = MagicMock()
+    s3meta.key = "s3-key-123"
+    s3meta.new_presigned_url = presigned_url
+    client.post.return_value = s3meta
+    return client
+
+
+class TestPresignedUploadContentType:
+    """The PUT must send the content type the presigned URL was signed with."""
+
+    @patch("composio.core.models._files.safe_request")
+    def test_upload_sends_explicit_mimetype(
+        self, mock_safe_request: MagicMock, tmp_path: Path
+    ):
+        mock_safe_request.return_value = MagicMock(status_code=200)
+        source = tmp_path / "report.pdf"
+        source.write_bytes(b"%PDF-1.4")
+
+        assert upload(
+            url="https://s3.example.com/upload",
+            file=source,
+            mimetype="application/pdf",
+        )
+
+        assert mock_safe_request.call_args.args == (
+            "PUT",
+            "https://s3.example.com/upload",
+        )
+        assert mock_safe_request.call_args.kwargs["headers"] == {
+            "Content-Type": "application/pdf"
+        }
+        assert mock_safe_request.call_args.kwargs["timeout"] == (5, 60)
+
+    @patch("composio.core.models._files.safe_request")
+    def test_upload_guesses_mimetype_when_omitted(
+        self, mock_safe_request: MagicMock, tmp_path: Path
+    ):
+        """Back-compat: two-argument callers still send a Content-Type."""
+        mock_safe_request.return_value = MagicMock(status_code=200)
+        source = tmp_path / "notes.txt"
+        source.write_text("hello")
+
+        assert upload(url="https://s3.example.com/upload", file=source)
+
+        assert mock_safe_request.call_args.kwargs["headers"] == {
+            "Content-Type": mimetypes.guess(file=source)
+        }
+
+    @patch("composio.core.models._files.safe_request")
+    def test_from_path_put_matches_presigned_mimetype(
+        self, mock_safe_request: MagicMock, tmp_path: Path
+    ):
+        """The PUT content type must match the mimetype used to mint the URL.
+
+        S3 answers ``403 SignatureDoesNotMatch`` when a presigned URL is
+        signed over a content type the subsequent PUT does not send, which
+        made the local-file path fail where the bytes path succeeded.
+        """
+        mock_safe_request.return_value = MagicMock(status_code=200)
+        client = _s3_client()
+        source = tmp_path / "photo.jpg"
+        source.write_bytes(b"jpeg bytes")
+
+        result = FileUploadable.from_path(
+            client=client,
+            file=source,
+            tool="TEST_TOOL",
+            toolkit="test_toolkit",
+        )
+
+        presigned_mimetype = client.post.call_args.kwargs["body"]["mimetype"]
+        assert presigned_mimetype == mimetypes.guess(file=source)
+        assert mock_safe_request.call_args.kwargs["headers"] == {
+            "Content-Type": presigned_mimetype
+        }
+        assert result.mimetype == presigned_mimetype
+        assert result.s3key == "s3-key-123"
+
+    @patch("composio.core.models._files.safe_request")
+    def test_upload_surfaces_http_status(
+        self, mock_safe_request: MagicMock, tmp_path: Path
+    ):
+        """A rejected PUT raises with the status instead of returning False."""
+        mock_safe_request.return_value = MagicMock(status_code=403)
+        source = tmp_path / "report.pdf"
+        source.write_bytes(b"%PDF-1.4")
+
+        with pytest.raises(ErrorUploadingFile, match="403"):
+            upload(url="https://s3.example.com/upload", file=source)
+
+    @patch("composio.core.models._files.safe_request")
+    def test_upload_wraps_transport_errors_without_leaking_the_url(
+        self, mock_safe_request: MagicMock, tmp_path: Path
+    ):
+        mock_safe_request.side_effect = requests.exceptions.Timeout(
+            "HTTPSConnectionPool(host='s3.example.com', port=443): "
+            "Max retries exceeded with url: /upload?token=abc"
+        )
+        source = tmp_path / "report.pdf"
+        source.write_bytes(b"%PDF-1.4")
+
+        with pytest.raises(ErrorUploadingFile) as exc_info:
+            upload(url="https://s3.example.com/upload?token=abc", file=source)
+
+        assert "Failed to upload to S3" in str(exc_info.value)
+        assert "token=abc" not in str(exc_info.value)
 
 
 class TestParseContentLength:
