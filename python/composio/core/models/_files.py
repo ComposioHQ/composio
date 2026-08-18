@@ -27,7 +27,11 @@ from composio.exceptions import (
 from composio.utils import mimetypes
 from composio.utils.json_schema import dereference_json_schema
 from composio.utils.safe_path import secure_basename_join, secure_join
-from composio.utils.url_safety import assert_safe_fetch_target, safe_request
+from composio.utils.url_safety import (
+    assert_safe_connected_peer,
+    assert_safe_fetch_target,
+    safe_request,
+)
 from composio.utils.sensitive_file_upload_paths import (
     assert_safe_local_file_upload_path,
 )
@@ -68,7 +72,7 @@ Read timeout is longer to allow for slower file transfers.
 _DELETE_VALUE: t.Final = object()
 """
 Sentinel returned by the upload walker to signal that a value should be dropped
-from its parent container. ``None`` and ``""`` are both legal payload values, so
+from its parent container. ``None`` and ``\"\"`` are both legal payload values, so
 the walker cannot use either to mean "remove this key/item".
 """
 
@@ -323,6 +327,7 @@ def _fetch_file_from_url(
     - Response size limiting (prevents memory exhaustion)
     - Redirects disabled (prevents redirect-based attacks)
     - Separate connect/read timeouts
+    - Connected peer re-validated (prevents DNS-rebinding SSRF)
 
     Args:
         url: URL to fetch file from
@@ -353,6 +358,12 @@ def _fetch_file_from_url(
         raise ErrorUploadingFile(
             f"Failed to fetch file from URL: {_sanitize_url_for_logging(url)}. Error: {e}"
         )
+
+    # The hostname was resolved once by assert_safe_fetch_target and again
+    # by requests when it connected. Re-check the address we actually
+    # landed on, before any body byte is read, so a short-TTL DNS rebind
+    # cannot slip an internal target past the pre-flight check.
+    assert_safe_connected_peer(response, url)
 
     # Reject redirects - require direct URL to resource
     if response.status_code in (301, 302, 303, 307, 308):
