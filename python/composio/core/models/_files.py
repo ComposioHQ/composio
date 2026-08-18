@@ -27,7 +27,7 @@ from composio.exceptions import (
 from composio.utils import mimetypes
 from composio.utils.json_schema import dereference_json_schema
 from composio.utils.safe_path import secure_basename_join, secure_join
-from composio.utils.url_safety import assert_safe_fetch_target
+from composio.utils.url_safety import assert_safe_fetch_target, safe_request
 from composio.utils.sensitive_file_upload_paths import (
     assert_safe_local_file_upload_path,
 )
@@ -153,8 +153,9 @@ def upload(url: str, file: Path) -> bool:
     """
     with file.open("rb") as data:
         try:
-            response = requests.put(
-                url=url,
+            response = safe_request(
+                "PUT",
+                url,
                 data=data,
                 timeout=(_CONNECT_TIMEOUT, _READ_TIMEOUT),
             )
@@ -400,8 +401,9 @@ def _upload_bytes_to_s3(
 
     # Upload the content directly to S3
     try:
-        upload_response = requests.put(
-            url=s3meta.new_presigned_url,
+        upload_response = safe_request(
+            "PUT",
+            s3meta.new_presigned_url,
             data=content,
             headers={"Content-Type": mimetype},
             timeout=(_CONNECT_TIMEOUT, _READ_TIMEOUT),
@@ -607,11 +609,13 @@ class FileDownloadable(BaseModel):
             outfile = secure_basename_join(outdir, self.name, root=root)
         except UnsafePathComponentError as e:
             raise ErrorDownloadingFile(str(e)) from e
+        assert_safe_fetch_target(self.s3url)
         outdir.mkdir(exist_ok=True, parents=True)
         try:
             response = requests.get(
                 url=self.s3url,
                 stream=True,
+                allow_redirects=False,
                 timeout=(_CONNECT_TIMEOUT, _READ_TIMEOUT),
             )
         except requests.exceptions.RequestException as e:

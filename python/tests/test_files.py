@@ -16,6 +16,7 @@ from composio.core.models._files import (
     FileDownloadable,
     FileHelper,
     FileUploadable,
+    upload,
     _is_url,
     _get_extension_from_mimetype,
     _generate_timestamped_filename,
@@ -27,6 +28,7 @@ from composio.core.models._files import (
 )
 from composio.core.models.base import allow_tracking
 from composio.exceptions import (
+    BlockedInternalUrlError,
     ErrorDownloadingFile,
     ErrorUploadingFile,
     ResponseTooLargeError,
@@ -1704,8 +1706,8 @@ class TestFetchFileFromUrl:
 class TestUploadBytesToS3:
     """Test cases for _upload_bytes_to_s3 function."""
 
-    @patch("composio.core.models._files.requests.put")
-    def test_upload_bytes_to_s3_success(self, mock_put):
+    @patch("composio.core.models._files.safe_request")
+    def test_upload_bytes_to_s3_success(self, mock_safe_request):
         """Test successful upload to S3."""
         mock_client = MagicMock()
         mock_s3_response = MagicMock()
@@ -1715,7 +1717,7 @@ class TestUploadBytesToS3:
 
         mock_put_response = MagicMock()
         mock_put_response.status_code = 200
-        mock_put.return_value = mock_put_response
+        mock_safe_request.return_value = mock_put_response
 
         result = _upload_bytes_to_s3(
             client=mock_client,
@@ -1728,15 +1730,16 @@ class TestUploadBytesToS3:
 
         assert result == "s3-key-123"
         mock_client.post.assert_called_once()
-        mock_put.assert_called_once_with(
-            url="https://s3.example.com/upload",
+        mock_safe_request.assert_called_once_with(
+            "PUT",
+            "https://s3.example.com/upload",
             data=b"file content",
             headers={"Content-Type": "image/jpeg"},
             timeout=(5, 60),
         )
 
-    @patch("composio.core.models._files.requests.put")
-    def test_upload_bytes_to_s3_failure(self, mock_put):
+    @patch("composio.core.models._files.safe_request")
+    def test_upload_bytes_to_s3_failure(self, mock_safe_request):
         """Test error handling when S3 upload fails."""
         mock_client = MagicMock()
         mock_s3_response = MagicMock()
@@ -1746,7 +1749,7 @@ class TestUploadBytesToS3:
 
         mock_put_response = MagicMock()
         mock_put_response.status_code = 500
-        mock_put.return_value = mock_put_response
+        mock_safe_request.return_value = mock_put_response
 
         with pytest.raises(ErrorUploadingFile) as exc_info:
             _upload_bytes_to_s3(
@@ -1760,8 +1763,8 @@ class TestUploadBytesToS3:
 
         assert "Failed to upload to S3" in str(exc_info.value)
 
-    @patch("composio.core.models._files.requests.put")
-    def test_upload_bytes_to_s3_timeout(self, mock_put):
+    @patch("composio.core.models._files.safe_request")
+    def test_upload_bytes_to_s3_timeout(self, mock_safe_request):
         """Test request timeouts are reported as upload errors."""
         mock_client = MagicMock()
         mock_s3_response = MagicMock()
@@ -1770,7 +1773,7 @@ class TestUploadBytesToS3:
         mock_client.post.return_value = mock_s3_response
         # The exception text itself carries the presigned URL (incl. token), as
         # real urllib3 errors do — the SDK must not surface it in the message.
-        mock_put.side_effect = requests.exceptions.Timeout(
+        mock_safe_request.side_effect = requests.exceptions.Timeout(
             "HTTPSConnectionPool(host='s3.example.com', port=443): "
             "Max retries exceeded with url: /upload?token=abc"
         )
@@ -2424,8 +2427,8 @@ class TestRedirectHandling:
 class TestS3UploadErrorHandling:
     """Test S3 upload error handling."""
 
-    @patch("composio.core.models._files.requests.put")
-    def test_403_is_treated_as_error(self, mock_put):
+    @patch("composio.core.models._files.safe_request")
+    def test_403_is_treated_as_error(self, mock_safe_request):
         """HTTP 403 should be treated as upload failure."""
         mock_client = MagicMock()
         mock_s3_response = MagicMock()
@@ -2435,7 +2438,7 @@ class TestS3UploadErrorHandling:
 
         mock_put_response = MagicMock()
         mock_put_response.status_code = 403
-        mock_put.return_value = mock_put_response
+        mock_safe_request.return_value = mock_put_response
 
         with pytest.raises(ErrorUploadingFile, match="403"):
             _upload_bytes_to_s3(
@@ -2447,8 +2450,8 @@ class TestS3UploadErrorHandling:
                 toolkit="test",
             )
 
-    @patch("composio.core.models._files.requests.put")
-    def test_200_is_success(self, mock_put):
+    @patch("composio.core.models._files.safe_request")
+    def test_200_is_success(self, mock_safe_request):
         """HTTP 200 should be treated as success."""
         mock_client = MagicMock()
         mock_s3_response = MagicMock()
@@ -2458,7 +2461,7 @@ class TestS3UploadErrorHandling:
 
         mock_put_response = MagicMock()
         mock_put_response.status_code = 200
-        mock_put.return_value = mock_put_response
+        mock_safe_request.return_value = mock_put_response
 
         result = _upload_bytes_to_s3(
             client=mock_client,
@@ -2470,8 +2473,8 @@ class TestS3UploadErrorHandling:
         )
         assert result == "s3-key"
 
-    @patch("composio.core.models._files.requests.put")
-    def test_500_is_treated_as_error(self, mock_put):
+    @patch("composio.core.models._files.safe_request")
+    def test_500_is_treated_as_error(self, mock_safe_request):
         """HTTP 500 should be treated as upload failure."""
         mock_client = MagicMock()
         mock_s3_response = MagicMock()
@@ -2481,7 +2484,7 @@ class TestS3UploadErrorHandling:
 
         mock_put_response = MagicMock()
         mock_put_response.status_code = 500
-        mock_put.return_value = mock_put_response
+        mock_safe_request.return_value = mock_put_response
 
         with pytest.raises(ErrorUploadingFile, match="500"):
             _upload_bytes_to_s3(
@@ -2527,6 +2530,11 @@ class TestUrlSanitization:
 
 class TestFileDownloadablePathTraversal:
     """SEC-316: server-controlled `name` must not escape the output dir."""
+
+    @pytest.fixture(autouse=True)
+    def _allow_fetch_target(self):
+        with patch("composio.core.models._files.assert_safe_fetch_target"):
+            yield
 
     def _mock_response(self, content: bytes = b"data") -> MagicMock:
         response = MagicMock()
@@ -2624,6 +2632,7 @@ class TestFileDownloadablePathTraversal:
         mock_get.assert_called_once_with(
             url="https://example.com/file",
             stream=True,
+            allow_redirects=False,
             timeout=(5, 60),
         )
 
@@ -3017,12 +3026,6 @@ class TestFromPathSensitiveGuard:
         mock_client.post.assert_not_called()
 
     def test_from_path_opt_out_disables_guard(self, mock_client):
-        """`sensitive_file_upload_protection=False` restores the legacy
-        (unguarded) behavior; the denylist no longer raises for that path."""
-        # A non-existent basename under `.ssh`: the `.ssh` segment still trips the
-        # denylist when protection is on, but the file never exists, so with
-        # protection off we deterministically hit the missing-file path (no real
-        # key read, no network) rather than the block error.
         p = Path.home() / ".ssh" / "composio-does-not-exist-guard-test"
         with pytest.raises(Exception) as exc_info:
             FileUploadable.from_path(
@@ -3033,6 +3036,135 @@ class TestFromPathSensitiveGuard:
                 sensitive_file_upload_protection=False,
             )
         assert not isinstance(exc_info.value, SensitiveFilePathBlockedError)
-        # Guard skipped, so the failure is downstream (missing file), before any
-        # presigned-URL request.
         mock_client.post.assert_not_called()
+
+
+class TestResponseDerivedUrlsAreGuarded:
+    def _download_response(self) -> MagicMock:
+        response = MagicMock()
+        response.status_code = 200
+        response.iter_content = lambda chunk_size: [b"%PDF-1.4"]
+        response.close = MagicMock()
+        return response
+
+    def _s3_client(self, presigned_url: str) -> MagicMock:
+        client = MagicMock()
+        s3meta = MagicMock()
+        s3meta.key = "s3-key"
+        s3meta.new_presigned_url = presigned_url
+        client.post.return_value = s3meta
+        return client
+
+    def test_download_validates_s3url(self, tmp_path):
+        f = FileDownloadable(
+            name="report.pdf",
+            mimetype="application/pdf",
+            s3url="https://s3.example.com/file",
+        )
+        with patch(
+            "composio.core.models._files.assert_safe_fetch_target"
+        ) as mock_assert:
+            with patch(
+                "composio.core.models._files.requests.get",
+                return_value=self._download_response(),
+            ):
+                f.download(tmp_path / "out", root=tmp_path / "out")
+
+        mock_assert.assert_called_once_with("https://s3.example.com/file")
+
+    def test_download_blocked_url_never_reaches_the_network(self, tmp_path):
+        outdir = tmp_path / "out"
+        f = FileDownloadable(
+            name="report.pdf",
+            mimetype="application/pdf",
+            s3url="http://169.254.169.254/latest/meta-data",
+        )
+        with patch(
+            "composio.core.models._files.assert_safe_fetch_target",
+            side_effect=BlockedInternalUrlError("blocked"),
+        ):
+            with patch("composio.core.models._files.requests.get") as mock_get:
+                with pytest.raises(BlockedInternalUrlError):
+                    f.download(outdir, root=outdir)
+
+        mock_get.assert_not_called()
+        assert not outdir.exists()
+
+    def test_download_refuses_to_follow_redirects(self, tmp_path):
+        f = FileDownloadable(
+            name="report.pdf",
+            mimetype="application/pdf",
+            s3url="https://s3.example.com/file",
+        )
+        with patch("composio.core.models._files.assert_safe_fetch_target"):
+            with patch(
+                "composio.core.models._files.requests.get",
+                return_value=self._download_response(),
+            ) as mock_get:
+                f.download(tmp_path / "out", root=tmp_path / "out")
+
+        assert mock_get.call_args.kwargs["allow_redirects"] is False
+
+    def test_upload_bytes_to_s3_goes_through_safe_request(self):
+        client = self._s3_client("https://s3.example.com/upload")
+        with patch("composio.core.models._files.safe_request") as mock_safe_request:
+            mock_safe_request.return_value.status_code = 200
+            _upload_bytes_to_s3(
+                client=client,
+                filename="test.jpg",
+                content=b"data",
+                mimetype="image/jpeg",
+                tool="TEST",
+                toolkit="test",
+            )
+
+        assert mock_safe_request.call_args.args == (
+            "PUT",
+            "https://s3.example.com/upload",
+        )
+
+    def test_upload_bytes_to_s3_blocked_url_sends_nothing(self):
+        client = self._s3_client("http://169.254.169.254/upload")
+        with patch(
+            "composio.utils.url_safety.assert_safe_fetch_target",
+            side_effect=BlockedInternalUrlError("blocked"),
+        ):
+            with patch("composio.utils.url_safety.requests.request") as mock_request:
+                with pytest.raises(BlockedInternalUrlError):
+                    _upload_bytes_to_s3(
+                        client=client,
+                        filename="test.jpg",
+                        content=b"data",
+                        mimetype="image/jpeg",
+                        tool="TEST",
+                        toolkit="test",
+                    )
+
+        mock_request.assert_not_called()
+
+    def test_file_upload_goes_through_safe_request(self, tmp_path):
+        source = tmp_path / "report.pdf"
+        source.write_bytes(b"%PDF-1.4")
+
+        with patch("composio.core.models._files.safe_request") as mock_safe_request:
+            mock_safe_request.return_value.status_code = 200
+            assert upload(url="https://s3.example.com/upload", file=source) is True
+
+        assert mock_safe_request.call_args.args == (
+            "PUT",
+            "https://s3.example.com/upload",
+        )
+
+    def test_file_upload_blocked_url_sends_nothing(self, tmp_path):
+        source = tmp_path / "report.pdf"
+        source.write_bytes(b"%PDF-1.4")
+
+        with patch(
+            "composio.utils.url_safety.assert_safe_fetch_target",
+            side_effect=BlockedInternalUrlError("blocked"),
+        ):
+            with patch("composio.utils.url_safety.requests.request") as mock_request:
+                with pytest.raises(BlockedInternalUrlError):
+                    upload(url="http://127.0.0.1:9000/upload", file=source)
+
+        mock_request.assert_not_called()

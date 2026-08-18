@@ -29,7 +29,7 @@ from composio.exceptions import (
 )
 from composio.utils.mimetypes import get_extension_from_mime_type
 from composio.utils.safe_path import secure_basename_join
-from composio.utils.url_safety import assert_safe_fetch_target
+from composio.utils.url_safety import assert_safe_fetch_target, safe_request
 from composio.utils.uuid import generate_short_id
 
 DEFAULT_TOOL_ROUTER_SESSION_FILES_MOUNT_ID = "files"
@@ -50,8 +50,42 @@ def _is_url(value: str) -> bool:
         return False
 
 
-def _fetch_from_url(url: str) -> t.Tuple[bytes, str]:
-    """Fetch file content from URL. Returns (content, mimetype)."""
+class _UrlFetchError(Exception):
+    """Internal failure raised by :func:`_fetch_url_bytes`.
+
+    Carries the facts rather than a message, so the two callers can keep their
+    own public error type and wording while sharing one network body. Neither
+    the type nor the instance escapes this module.
+    """
+
+    def __init__(
+        self,
+        *,
+        cause: t.Optional[BaseException] = None,
+        status_code: t.Optional[int] = None,
+        status_text: t.Optional[str] = None,
+        redirected: bool = False,
+        size_detail: t.Optional[str] = None,
+    ) -> None:
+        super().__init__(size_detail or "Failed to fetch URL")
+        self.cause = cause
+        self.status_code = status_code
+        self.status_text = status_text
+        self.redirected = redirected
+        self.size_detail = size_detail
+
+
+def _fetch_url_bytes(url: str) -> t.Tuple[bytes, str]:
+    """Fetch a URL into memory under the SDK's fetch protections.
+
+    The protections are the point of sharing this: the target is validated
+    before connecting, redirects are refused rather than followed, and the body
+    is streamed with the size accounted against ``_MAX_RESPONSE_SIZE`` so a
+    dishonest ``Content-Length`` cannot exhaust memory. Every caller needs all
+    four, whether the URL came from the user or from an API response.
+
+    Returns (content, mimetype). Raises :class:`_UrlFetchError`.
+    """
     assert_safe_fetch_target(url)
     try:
         response = requests.get(
@@ -61,26 +95,26 @@ def _fetch_from_url(url: str) -> t.Tuple[bytes, str]:
             timeout=(_CONNECT_TIMEOUT, _READ_TIMEOUT),
         )
     except requests.exceptions.RequestException as e:
-        raise ValidationError(f"Failed to fetch file from URL: {e}") from e
+        raise _UrlFetchError(cause=e) from e
 
     if response.status_code in (301, 302, 303, 307, 308):
         response.close()
-        raise ValidationError(
-            "URL returned redirect. Please provide a direct URL to the file."
-        )
+        raise _UrlFetchError(redirected=True)
 
     if not response.ok:
         response.close()
-        raise ValidationError(
-            f"Failed to fetch file from URL: {response.status_code} {response.reason}"
+        raise _UrlFetchError(
+            status_code=response.status_code, status_text=response.reason
         )
 
     content_length = response.headers.get("Content-Length")
     if content_length and int(content_length) > _MAX_RESPONSE_SIZE:
         response.close()
-        raise ValidationError(
-            f"File size ({int(content_length)} bytes) exceeds maximum allowed "
-            f"size ({_MAX_RESPONSE_SIZE} bytes)"
+        raise _UrlFetchError(
+            size_detail=(
+                f"File size ({int(content_length)} bytes) exceeds maximum allowed "
+                f"size ({_MAX_RESPONSE_SIZE} bytes)"
+            )
         )
 
     chunks: t.List[bytes] = []
@@ -90,13 +124,33 @@ def _fetch_from_url(url: str) -> t.Tuple[bytes, str]:
             total_bytes += len(chunk)
             if total_bytes > _MAX_RESPONSE_SIZE:
                 response.close()
-                raise ValidationError("Response size exceeds maximum allowed size")
+                raise _UrlFetchError(
+                    size_detail="Response size exceeds maximum allowed size"
+                )
             chunks.append(chunk)
     response.close()
 
     mimetype = response.headers.get("content-type", "application/octet-stream")
     mimetype = mimetype.split(";")[0].strip()
     return b"".join(chunks), mimetype
+
+
+def _fetch_from_url(url: str) -> t.Tuple[bytes, str]:
+    """Fetch file content from a user-supplied URL. Returns (content, mimetype)."""
+    try:
+        return _fetch_url_bytes(url)
+    except _UrlFetchError as e:
+        if e.cause is not None:
+            raise ValidationError(f"Failed to fetch file from URL: {e.cause}") from e
+        if e.redirected:
+            raise ValidationError(
+                "URL returned redirect. Please provide a direct URL to the file."
+            ) from e
+        if e.status_code is not None:
+            raise ValidationError(
+                f"Failed to fetch file from URL: {e.status_code} {e.status_text}"
+            ) from e
+        raise ValidationError(str(e)) from e
 
 
 class RemoteFile:
@@ -134,30 +188,37 @@ class RemoteFile:
         return PureWindowsPath(self.mount_relative_path).name
 
     def buffer(self) -> bytes:
-        """Fetch the file content as bytes."""
-        try:
-            response = requests.get(
-                self.download_url,
-                timeout=(_CONNECT_TIMEOUT, _READ_TIMEOUT),
-            )
-        except requests.exceptions.RequestException as e:
-            raise RemoteFileDownloadError(
-                f"Failed to download file: {type(e).__name__}",
-                download_url=self.download_url,
-                mount_relative_path=self.mount_relative_path,
-                filename=self.filename,
-            ) from e
+        """Fetch the file content as bytes.
 
-        if not response.ok:
+        ``self.download_url`` is set by :meth:`from_api_response`, so it is
+        untrusted input like every other response field. It goes through
+        :func:`_fetch_url_bytes` — the same body that serves user-supplied
+        URLs — rather than a bare ``requests.get``: which side of the trust
+        boundary the URL arrived from does not change what the fetch needs to
+        defend against.
+        """
+        try:
+            content, _ = _fetch_url_bytes(self.download_url)
+        except _UrlFetchError as e:
+            if e.redirected:
+                message = (
+                    "Failed to download file: the download URL returned a redirect"
+                )
+            elif e.status_code is not None:
+                message = f"Failed to download file: {e.status_code} {e.status_text}"
+            elif e.cause is not None:
+                message = f"Failed to download file: {type(e.cause).__name__}"
+            else:
+                message = f"Failed to download file: {e}"
             raise RemoteFileDownloadError(
-                f"Failed to download file: {response.status_code} {response.reason}",
-                status_code=response.status_code,
-                status_text=response.reason,
+                message,
+                status_code=e.status_code,
+                status_text=e.status_text,
                 download_url=self.download_url,
                 mount_relative_path=self.mount_relative_path,
                 filename=self.filename,
-            )
-        return response.content
+            ) from (e.cause or e)
+        return content
 
     def text(self) -> str:
         """Fetch the file content as UTF-8 text."""
@@ -319,8 +380,12 @@ class ToolRouterSessionFilesMount:
             mimetype=mime,
         )
 
+        # `upload_url` comes from the API response, so it is validated before
+        # the file's bytes are sent to it, and re-validated on every redirect
+        # hop. See `composio.utils.url_safety`.
         try:
-            upload_resp = requests.put(
+            upload_resp = safe_request(
+                "PUT",
                 create_resp.upload_url,
                 data=content,
                 headers={"Content-Type": mime},

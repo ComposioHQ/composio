@@ -1,4 +1,5 @@
 import { platform } from '#platform';
+import { ssrfSafeFetchWhereSupported } from '#ssrf_guard';
 import { COMPOSIO_DIR, TEMP_FILES_DIRECTORY_NAME } from '../utils/constants';
 
 function getParentDir(filePath: string): string {
@@ -82,7 +83,10 @@ export class RemoteFile {
    * @throws RemoteFileDownloadError if the fetch fails
    */
   async buffer(): Promise<Uint8Array> {
-    const response = await fetch(this.downloadUrl);
+    // SSRF guard: `downloadUrl` is set from an API response, so it is untrusted
+    // input like every other response field, and its bytes are handed straight
+    // back to the caller. See ssrfGuard.node.ts.
+    const response = await ssrfSafeFetchWhereSupported(this.downloadUrl);
     if (!response.ok) {
       throw new RemoteFileDownloadError(
         `Failed to download file: ${response.status} ${response.statusText}`,
@@ -116,7 +120,8 @@ export class RemoteFile {
    * @throws RemoteFileDownloadError if the fetch fails
    */
   async blob(): Promise<Blob> {
-    const response = await fetch(this.downloadUrl);
+    // SSRF guard: see `buffer()`.
+    const response = await ssrfSafeFetchWhereSupported(this.downloadUrl);
     if (!response.ok) {
       throw new RemoteFileDownloadError(
         `Failed to download file: ${response.status} ${response.statusText}`,
