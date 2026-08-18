@@ -46,6 +46,10 @@ from ._modifiers import (
 TOOL_ROUTER_SESSION_TOOLS_PAGE_LIMIT = 500
 
 
+def _toolkit_slug(tool: Tool, fallback: str = "unknown") -> str:
+    return tool.toolkit.slug if tool.toolkit else fallback
+
+
 def _needs_serialization(obj: t.Any) -> bool:
     """Check if an object contains any Pydantic model instances."""
     if isinstance(obj, PydanticBaseModel):
@@ -285,7 +289,7 @@ class Tools(Resource, t.Generic[TTool, TToolCollection]):
                     Tool,
                     apply_modifier_by_type(
                         modifiers=modifiers,
-                        toolkit=tool.toolkit.slug,
+                        toolkit=_toolkit_slug(tool),
                         tool=tool.slug,
                         type="schema",
                         schema=tool,
@@ -322,7 +326,7 @@ class Tools(Resource, t.Generic[TTool, TToolCollection]):
             tools_list = [
                 apply_modifier_by_type(
                     modifiers=modifiers,
-                    toolkit=tool.toolkit.slug,
+                    toolkit=_toolkit_slug(tool),
                     tool=tool.slug,
                     type="schema",
                     schema=tool,
@@ -479,11 +483,10 @@ class Tools(Resource, t.Generic[TTool, TToolCollection]):
                 self._tool_schemas[slug] = tool
 
             if self._auto_upload_download_files:
-                meta_tk = tool.toolkit.slug if tool.toolkit else "composio"
                 bfu = merge_before_file_upload(
                     modifiers,
                     tool=slug,
-                    toolkit=meta_tk,
+                    toolkit=_toolkit_slug(tool, fallback="composio"),
                 )
                 arguments = self._file_helper.substitute_file_uploads(
                     tool=tool,
@@ -491,7 +494,7 @@ class Tools(Resource, t.Generic[TTool, TToolCollection]):
                     before_file_upload=bfu,
                 )
 
-            toolkit_slug = tool.toolkit.slug if tool.toolkit else "composio"
+            toolkit_slug = _toolkit_slug(tool, fallback="composio")
 
             # Apply before_execute modifiers
             processed_arguments = arguments
@@ -571,9 +574,10 @@ class Tools(Resource, t.Generic[TTool, TToolCollection]):
         # If version is not explicitly provided, resolve it from instance-level toolkit versions
         # This matches the TypeScript behavior - always resolve version when None
         if version is None:
-            toolkit_slug = tool.toolkit.slug if tool.toolkit else "unknown"
             # Use instance-level toolkit versions configuration
-            version = get_toolkit_version(toolkit_slug, self._toolkit_versions)
+            version = get_toolkit_version(
+                _toolkit_slug(tool), self._toolkit_versions
+            )
 
         # Check if the version is 'latest' and dangerously_skip_version_check is not True
         # If so, raise an error to prevent unexpected behavior
@@ -647,12 +651,13 @@ class Tools(Resource, t.Generic[TTool, TToolCollection]):
             )
             self._tool_schemas[slug] = tool
 
+        toolkit_slug = _toolkit_slug(tool)
+
         if self._auto_upload_download_files:
-            tk = tool.toolkit.slug if tool.toolkit else "unknown"
             bfu = merge_before_file_upload(
                 modifiers,
                 tool=slug,
-                toolkit=tk,
+                toolkit=toolkit_slug,
             )
             arguments = self._file_helper.substitute_file_uploads(
                 tool=tool,
@@ -683,7 +688,7 @@ class Tools(Resource, t.Generic[TTool, TToolCollection]):
                 )
             processed_params = apply_modifier_by_type(
                 modifiers=modifiers,
-                toolkit=tool.toolkit.slug,
+                toolkit=toolkit_slug,
                 tool=slug,
                 type=type_before_exec,
                 request=request_params,
@@ -723,7 +728,7 @@ class Tools(Resource, t.Generic[TTool, TToolCollection]):
         if modifiers is not None:
             response = apply_modifier_by_type(
                 modifiers=modifiers,
-                toolkit=tool.toolkit.slug,
+                toolkit=toolkit_slug,
                 tool=slug,
                 type="after_execute",
                 response=response,
