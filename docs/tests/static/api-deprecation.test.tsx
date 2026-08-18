@@ -6,6 +6,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 
 mock.module("next/navigation", () => ({
   usePathname: () => "/reference/api-reference/tasks",
+  useSearchParams: () => new URLSearchParams(),
 }));
 
 const { ApiEndpointsTable } = await import("../../components/api-endpoints-table");

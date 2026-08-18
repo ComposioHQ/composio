@@ -1,5 +1,15 @@
-import { source, examplesSource, referenceSource, toolkitsSource } from '@/lib/source';
+import {
+  source,
+  examplesSource,
+  referenceSource,
+  toolkitsSource,
+  knowledgeBaseSource,
+} from '@/lib/source';
 import { detectReferenceApiVersion } from '@/lib/api-version';
+import {
+  formatKnowledgeDiscoveryLinks,
+  getLocalKnowledgeDiscoveryPaths,
+} from '@/lib/knowledge/discovery';
 import type { ReactNode } from 'react';
 
 export const revalidate = false;
@@ -162,6 +172,12 @@ export async function GET() {
 ${legacyReferencePages.map(formatPage).join('\n')}
 `
         : '';
+    const knowledgeBasePages = knowledgeBaseSource.getPages();
+    const knowledgeDiscoveryLinks = formatKnowledgeDiscoveryLinks(
+      (await getLocalKnowledgeDiscoveryPaths()).filter(
+        (path) => !path.startsWith('/kb/guide/'),
+      ),
+    );
 
     const index = `# Composio Documentation
 
@@ -174,6 +190,12 @@ ${docsTree}
 ## Examples
 
 ${examplesPages.map(formatPage).join('\n')}
+
+## Knowledge Base
+
+${knowledgeDiscoveryLinks}
+
+${knowledgeBasePages.map(formatPage).join('\n')}
 
 ## API Reference (v3.1, current)
 

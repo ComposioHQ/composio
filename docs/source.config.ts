@@ -17,6 +17,30 @@ import { z } from 'zod';
 // Extended schema with keywords for search
 const docsSchema = frontmatterSchema.extend({
   keywords: z.array(z.string()).optional(),
+  productAreas: z
+    .array(
+      z.enum([
+        'authentication-and-connected-accounts',
+        'tools-actions-and-execution',
+        'triggers-and-workflows',
+        'sdk-api-and-mcp',
+        'account-billing-and-security',
+      ]),
+    )
+    .optional(),
+  toolkitSlugs: z.array(z.string()).optional(),
+  intents: z
+    .array(
+      z.enum([
+        'setup',
+        'how-to',
+        'troubleshooting',
+        'limits-policy',
+        'known-issue',
+        'reference',
+      ]),
+    )
+    .optional(),
   /** When true, the page shows an "Experimental" badge in the sidebar. */
   experimental: z.boolean().optional(),
   /** When true, the page shows a "New" badge in the sidebar. */
@@ -62,6 +86,23 @@ const docsSchema = frontmatterSchema.extend({
       order: z.number().optional(),
     })
     .optional(),
+});
+
+const knowledgeBaseSchema = docsSchema.extend({
+  sources: z
+    .array(
+      z.object({
+        sourcePath: z.string(),
+        sourceHeading: z.string().nullable(),
+      }),
+    )
+    .optional(),
+  sourceCommit: z.string().optional(),
+  lastVerifiedAt: z.string().optional(),
+  reviewAfter: z.string().optional(),
+  freshness: z.enum(['evergreen', 'time-sensitive']).optional(),
+  topics: z.array(z.string()).optional(),
+  aliases: z.array(z.string()).optional(),
 });
 
 export const docs = defineDocs({
@@ -122,6 +163,19 @@ export const toolkits = defineDocs({
   docs: {
     schema: docsSchema,
     files: ['**/*', '!faq/**'],
+    postprocess: {
+      includeProcessedMarkdown: true,
+    },
+  },
+  meta: {
+    schema: metaSchema,
+  },
+});
+
+export const knowledgeBase = defineDocs({
+  dir: 'content/kb',
+  docs: {
+    schema: knowledgeBaseSchema,
     postprocess: {
       includeProcessedMarkdown: true,
     },
