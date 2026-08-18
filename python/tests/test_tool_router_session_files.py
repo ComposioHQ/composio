@@ -376,6 +376,24 @@ class TestResponseDerivedUrlsAreGuarded:
 
         assert mock_get.call_args.kwargs["allow_redirects"] is False
 
+    def test_buffer_tolerates_malformed_content_length(self):
+        """A malformed `Content-Length` means unknown size, not a crash.
+
+        The header is remote-controlled; `_fetch_url_bytes` must fall through
+        to the streamed byte count instead of raising `ValueError` out of
+        `int()` (the crash class issue #4153 fixed for `_files.py`).
+        """
+        rf = self._remote_file("https://s3.example.com/download")
+        malformed = mock_stream_response()
+        malformed.headers = {
+            "content-type": "text/plain",
+            "Content-Length": "1,024",
+        }
+
+        with patch(ASSERT_SAFE_FETCH_TARGET):
+            with patch("requests.get", return_value=malformed):
+                assert rf.buffer() == b"file content"
+
     def test_buffer_caps_response_size(self):
         """The body is streamed against a cap rather than read whole."""
         rf = self._remote_file("https://s3.example.com/download")
