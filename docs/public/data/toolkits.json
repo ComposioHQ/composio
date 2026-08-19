@@ -5521,7 +5521,7 @@
     ],
     "toolCount": 56,
     "triggerCount": 8,
-    "version": "20260730_00",
+    "version": "20260819_00",
     "tools": [
       {
         "slug": "NOTION_ADD_MULTIPLE_PAGE_CONTENT",
@@ -5808,42 +5808,42 @@
       {
         "slug": "NOTION_COMMENT_CREATED",
         "name": "Comment Created",
-        "description": "Triggers when a new comment is created in Notion.\n\n    Optional `page_id` filter scopes to comments on a specific page. When\n    omitted, fires for any new comment in the workspace the integration\n    has access to.\n\n    Requires the 'Read comments' capability on the Notion integration. If\n    a connection was authorized before that capability was enabled, the\n    user must re-authorize the connection for comment events to flow."
+        "description": "Triggers when a new comment is created in Notion.\n\nOptional `page_id` filter scopes to comments on a specific page. When\nomitted, fires for any new comment in the workspace the integration\nhas access to.\n\nRequires the 'Read comments' capability on the Notion integration. If\na connection was authorized before that capability was enabled, the\nuser must re-authorize the connection for comment events to flow."
       },
       {
         "slug": "NOTION_DATABASE_CREATED",
         "name": "Database Created",
-        "description": "Triggers when a new Notion database (the container) is created.\n\n    A database is the post-2025-09-03 container that holds one or more data\n    sources. This trigger fires for the container's creation event\n    (`database.created`), distinct from `NOTION_DATASOURCE_CREATED` which\n    fires when a new data source is added to an existing database.\n\n    Most customers calling Notion's `POST /v1/databases` (the legacy API)\n    or creating a database via the Notion UI will see this event. Adding a\n    new data source to an existing database fires `data_source.created`\n    instead — use `NOTION_DATASOURCE_CREATED` for that.\n\n    Notion's payload puts `entity.type: \"block\"` (the container is a\n    `child_database` block in the content tree) and `entity.id` is the\n    database id."
+        "description": "Triggers when a new Notion database (the container) is created.\n\nA database is the post-2025-09-03 container that holds one or more data\nsources. This trigger fires for the container's creation event\n(`database.created`), distinct from `NOTION_DATASOURCE_CREATED` which\nfires when a new data source is added to an existing database.\n\nMost customers calling Notion's `POST /v1/databases` (the legacy API)\nor creating a database via the Notion UI will see this event. Adding a\nnew data source to an existing database fires `data_source.created`\ninstead — use `NOTION_DATASOURCE_CREATED` for that.\n\nNotion's payload puts `entity.type: \"block\"` (the container is a\n`child_database` block in the content tree) and `entity.id` is the\ndatabase id."
       },
       {
         "slug": "NOTION_DATASOURCE_CREATED",
         "name": "Data Source Created",
-        "description": "Triggers when a new Notion data source is created.\n\n    Fires workspace-wide. The payload's `data.parent` carries the data\n    source's tree parent (typically the teamspace) for downstream\n    filtering.\n\n    A single template-based database creation can fire multiple\n    `data_source.created` events at once — one per data source the\n    template instantiates."
+        "description": "Triggers when a new Notion data source is created.\n\nFires workspace-wide. The payload's `data.parent` carries the data\nsource's tree parent (typically the teamspace) for downstream\nfiltering.\n\nA single template-based database creation can fire multiple\n`data_source.created` events at once — one per data source the\ntemplate instantiates."
       },
       {
         "slug": "NOTION_DATASOURCE_SCHEMA_UPDATED",
         "name": "Data Source Schema Updated",
-        "description": "Triggers when a Notion data source's schema is updated.\n\n    Fires on column add / remove / rename. Payload includes\n    `data.updated_properties: [{id, name, action}]` so consumers can\n    discriminate the kind of change downstream.\n\n    Optional `data_source_id` filter scopes to schema changes on a single\n    data source. When omitted, fires for any schema change in the\n    workspace the integration has access to.\n\n    Note: adding a column also fires `page.properties_updated` once per\n    existing row in the data source. Customers wanting a single\n    structural-change signal should use this trigger."
+        "description": "Triggers when a Notion data source's schema is updated.\n\nFires on column add / remove / rename. Payload includes\n`data.updated_properties: [{id, name, action}]` so consumers can\ndiscriminate the kind of change downstream.\n\nOptional `data_source_id` filter scopes to schema changes on a single\ndata source. When omitted, fires for any schema change in the\nworkspace the integration has access to.\n\nNote: adding a column also fires `page.properties_updated` once per\nexisting row in the data source. Customers wanting a single\nstructural-change signal should use this trigger."
       },
       {
         "slug": "NOTION_PAGE_CONTENT_UPDATED",
         "name": "Page Content Updated",
-        "description": "Triggers when the body content of a Notion page is updated.\n\n    Customer optionally scopes with at most one of:\n      - data_source_id: any row in this data source\n      - page_id: this specific page\n      - parent_page_id: any page whose immediate parent is this page\n\n    With none set, fires for any page content edit in the workspace the\n    integration has access to. Notion aggregates content edits within a\n    short window (~60s typical)."
+        "description": "Triggers when the body content of a Notion page is updated.\n\nCustomer optionally scopes with at most one of:\n  - data_source_id: any row in this data source\n  - page_id: this specific page\n  - parent_page_id: any page whose immediate parent is this page\n\nWith none set, fires for any page content edit in the workspace the\nintegration has access to. Notion aggregates content edits within a\nshort window (~60s typical)."
       },
       {
         "slug": "NOTION_PAGE_CREATED",
         "name": "Page Created",
-        "description": "Triggers when a new Notion page is created.\n\n    Customer optionally scopes with at most one of:\n      - data_source_id: new row in this data source\n      - parent_page_id: new sub-page under this page (immediate parent only)\n\n    With neither set, fires for any new page in the workspace the\n    integration has access to. Notion sends ~60s aggregation latency on\n    most events."
+        "description": "Triggers when a new Notion page is created.\n\nCustomer optionally scopes with at most one of:\n  - data_source_id: new row in this data source\n  - parent_page_id: new sub-page under this page (immediate parent only)\n\nWith neither set, fires for any new page in the workspace the\nintegration has access to. Notion sends ~60s aggregation latency on\nmost events."
       },
       {
         "slug": "NOTION_PAGE_PROPERTIES_UPDATED",
         "name": "Page Properties Updated",
-        "description": "Triggers when properties of a Notion page are updated.\n\n    Customer optionally scopes with at most one of:\n      - data_source_id: any row in this data source\n      - page_id: this specific page\n      - parent_page_id: any page whose immediate parent is this page\n\n    With none set, fires for any property change in the workspace the\n    integration has access to. Adding a column to a data source fires this\n    trigger once per existing row. Customers can branch on\n    `data.updated_properties` (array of property IDs) to filter downstream."
+        "description": "Triggers when properties of a Notion page are updated.\n\nCustomer optionally scopes with at most one of:\n  - data_source_id: any row in this data source\n  - page_id: this specific page\n  - parent_page_id: any page whose immediate parent is this page\n\nWith none set, fires for any property change in the workspace the\nintegration has access to. Adding a column to a data source fires this\ntrigger once per existing row. Customers can branch on\n`data.updated_properties` (array of property IDs) to filter downstream."
       },
       {
         "slug": "NOTION_VIEW_CREATED",
         "name": "View Created",
-        "description": "Triggers when a new Notion view is created.\n\n    Fires workspace-wide. The payload includes `data.view_type`\n    (`table`, `board`, `gallery`, `calendar`, `list`, `timeline`, `gantt`)\n    and `data.parent` pointing at the view's tree parent (typically the\n    teamspace), so customers can filter downstream."
+        "description": "Triggers when a new Notion view is created.\n\nFires workspace-wide. The payload includes `data.view_type`\n(`table`, `board`, `gallery`, `calendar`, `list`, `timeline`, `gantt`)\nand `data.parent` pointing at the view's tree parent (typically the\nteamspace), so customers can filter downstream."
       }
     ],
     "authConfigDetails": [
@@ -6349,7 +6349,7 @@
     ],
     "toolCount": 167,
     "triggerCount": 9,
-    "version": "20260721_00",
+    "version": "20260819_00",
     "tools": [
       {
         "slug": "SLACK_ADD_CALL_PARTICIPANTS",
@@ -7196,42 +7196,42 @@
       {
         "slug": "SLACK_CHANNEL_MESSAGE_RECEIVED",
         "name": "Channel Message Received",
-        "description": "Triggered when a message is posted in a Slack channel\n    (public, private, or multi-party IM). Does NOT match direct messages."
+        "description": "Triggered when a message is posted in a Slack channel\n(public, private, or multi-party IM). Does NOT match direct messages."
       },
       {
         "slug": "SLACK_DIRECT_MESSAGE_RECEIVED",
         "name": "Direct Message Received",
-        "description": "Triggered when a new direct message (DM) is sent to a user in Slack.\n    Catches all DMs across all DM channels."
+        "description": "Triggered when a new direct message (DM) is sent to a user in Slack.\nCatches all DMs across all DM channels."
       },
       {
         "slug": "SLACK_MESSAGE_REACTION_ADDED",
         "name": "Message Reaction Added",
-        "description": "Triggered when a reaction is added to a message in Slack.\n    Supports optional filtering by channel and emoji name."
+        "description": "Triggered when a reaction is added to a message in Slack.\nSupports optional filtering by channel and emoji name."
       },
       {
         "slug": "SLACK_MESSAGE_REACTION_REMOVED",
         "name": "Message Reaction Removed",
-        "description": "Triggered when a reaction is removed from a message in Slack.\n    Supports optional filtering by channel and emoji name."
+        "description": "Triggered when a reaction is removed from a message in Slack.\nSupports optional filtering by channel and emoji name."
       },
       {
         "slug": "SLACK_REACTION_ADDED",
         "name": "Reaction Added Trigger",
-        "description": "DEPRECATED: use `SLACK_MESSAGE_REACTION_ADDED` instead.\n\n    Triggered when a reaction is added to a message in Slack."
+        "description": "DEPRECATED: use `SLACK_MESSAGE_REACTION_ADDED` instead.\n\nTriggered when a reaction is added to a message in Slack."
       },
       {
         "slug": "SLACK_REACTION_REMOVED",
         "name": "Reaction Removed Trigger",
-        "description": "DEPRECATED: use `SLACK_MESSAGE_REACTION_REMOVED` instead.\n\n    Triggered when a reaction is removed from a message."
+        "description": "DEPRECATED: use `SLACK_MESSAGE_REACTION_REMOVED` instead.\n\nTriggered when a reaction is removed from a message."
       },
       {
         "slug": "SLACK_RECEIVE_BOT_MESSAGE",
         "name": "New Bot Message Received Trigger",
-        "description": "DEPRECATED: use `SLACK_CHANNEL_MESSAGE_RECEIVED` with\n    `is_bot_message=true` instead.\n\n    Triggered when a new bot message is posted to a Slack channel."
+        "description": "DEPRECATED: use `SLACK_CHANNEL_MESSAGE_RECEIVED` with\n`is_bot_message=true` instead.\n\nTriggered when a new bot message is posted to a Slack channel."
       },
       {
         "slug": "SLACK_RECEIVE_MESSAGE",
         "name": "New Message Received Trigger",
-        "description": "DEPRECATED: use `SLACK_CHANNEL_MESSAGE_RECEIVED` instead.\n\n    Triggered when a new message is posted to a Slack channel."
+        "description": "DEPRECATED: use `SLACK_CHANNEL_MESSAGE_RECEIVED` instead.\n\nTriggered when a new message is posted to a Slack channel."
       }
     ],
     "authConfigDetails": [
@@ -12505,7 +12505,7 @@
     ],
     "toolCount": 47,
     "triggerCount": 12,
-    "version": "20260804_00",
+    "version": "20260819_00",
     "tools": [
       {
         "slug": "LINEAR_ARCHIVE_ISSUE",
@@ -13487,7 +13487,7 @@
     ],
     "toolCount": 102,
     "triggerCount": 3,
-    "version": "20260817_00",
+    "version": "20260819_00",
     "tools": [
       {
         "slug": "JIRA_ADD_ATTACHMENT",
@@ -14789,7 +14789,7 @@
     ],
     "toolCount": 101,
     "triggerCount": 9,
-    "version": "20260721_00",
+    "version": "20260819_00",
     "tools": [
       {
         "slug": "SLACKBOT_ADD_CALL_PARTICIPANTS",
@@ -15306,42 +15306,42 @@
       {
         "slug": "SLACKBOT_CHANNEL_MESSAGE_RECEIVED",
         "name": "Channel Message Received",
-        "description": "Triggered when a message is posted in a Slack channel\n    (public, private, or multi-party IM). Does NOT match direct messages."
+        "description": "Triggered when a message is posted in a Slack channel\n(public, private, or multi-party IM). Does NOT match direct messages."
       },
       {
         "slug": "SLACKBOT_DIRECT_MESSAGE_RECEIVED",
         "name": "Direct Message Received",
-        "description": "Triggered when a new direct message (DM) is sent to a user in Slack.\n    Catches all DMs across all DM channels."
+        "description": "Triggered when a new direct message (DM) is sent to a user in Slack.\nCatches all DMs across all DM channels."
       },
       {
         "slug": "SLACKBOT_MESSAGE_REACTION_ADDED",
         "name": "Message Reaction Added",
-        "description": "Triggered when a reaction is added to a message in Slack.\n    Supports optional filtering by channel and emoji name."
+        "description": "Triggered when a reaction is added to a message in Slack.\nSupports optional filtering by channel and emoji name."
       },
       {
         "slug": "SLACKBOT_MESSAGE_REACTION_REMOVED",
         "name": "Message Reaction Removed",
-        "description": "Triggered when a reaction is removed from a message in Slack.\n    Supports optional filtering by channel and emoji name."
+        "description": "Triggered when a reaction is removed from a message in Slack.\nSupports optional filtering by channel and emoji name."
       },
       {
         "slug": "SLACKBOT_REACTION_ADDED",
         "name": "Reaction Added Trigger",
-        "description": "DEPRECATED: use `SLACK_MESSAGE_REACTION_ADDED` instead.\n\n    Triggered when a reaction is added to a message in Slack."
+        "description": "DEPRECATED: use `SLACK_MESSAGE_REACTION_ADDED` instead.\n\nTriggered when a reaction is added to a message in Slack."
       },
       {
         "slug": "SLACKBOT_REACTION_REMOVED",
         "name": "Reaction Removed Trigger",
-        "description": "DEPRECATED: use `SLACK_MESSAGE_REACTION_REMOVED` instead.\n\n    Triggered when a reaction is removed from a message."
+        "description": "DEPRECATED: use `SLACK_MESSAGE_REACTION_REMOVED` instead.\n\nTriggered when a reaction is removed from a message."
       },
       {
         "slug": "SLACKBOT_RECEIVE_BOT_MESSAGE",
         "name": "New Bot Message Received Trigger",
-        "description": "DEPRECATED: use `SLACK_CHANNEL_MESSAGE_RECEIVED` with\n    `is_bot_message=true` instead.\n\n    Triggered when a new bot message is posted to a Slack channel."
+        "description": "DEPRECATED: use `SLACK_CHANNEL_MESSAGE_RECEIVED` with\n`is_bot_message=true` instead.\n\nTriggered when a new bot message is posted to a Slack channel."
       },
       {
         "slug": "SLACKBOT_RECEIVE_MESSAGE",
         "name": "New Message Received Trigger",
-        "description": "DEPRECATED: use `SLACK_CHANNEL_MESSAGE_RECEIVED` instead.\n\n    Triggered when a new message is posted to a Slack channel."
+        "description": "DEPRECATED: use `SLACK_CHANNEL_MESSAGE_RECEIVED` instead.\n\nTriggered when a new message is posted to a Slack channel."
       }
     ],
     "authConfigDetails": [
@@ -25212,7 +25212,7 @@
     ],
     "toolCount": 153,
     "triggerCount": 6,
-    "version": "20260721_00",
+    "version": "20260819_00",
     "tools": [
       {
         "slug": "ASANA_ADD_FOLLOWERS_TO_PROJECT",
@@ -26004,7 +26004,7 @@
       {
         "slug": "ASANA_TASK_TAG_ADDED",
         "name": "Tag Added to Task",
-        "description": "Triggers when a tag is added to a task.\n\n    Note: Asana's event structure is inverted for tag events — the resource\n    is the task and the parent is the tag. So parent.gid gives the tag GID."
+        "description": "Triggers when a tag is added to a task.\n\nNote: Asana's event structure is inverted for tag events — the resource\nis the task and the parent is the tag. So parent.gid gives the tag GID."
       },
       {
         "slug": "ASANA_TASK_UPDATED",
@@ -247448,7 +247448,7 @@
     ],
     "toolCount": 23,
     "triggerCount": 11,
-    "version": "20260810_00",
+    "version": "20260819_00",
     "tools": [
       {
         "slug": "PLAIN_ADD_CUSTOMER_TO_GROUP",
