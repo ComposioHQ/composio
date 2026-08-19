@@ -7,7 +7,7 @@ vi.mock('node:dns/promises', () => ({
 }));
 
 vi.mock('../../src/utils/pinnedDispatcher.node', () => ({
-  createPinnedDispatcher: vi.fn(() => ({ close: () => Promise.resolve() })),
+  createPinnedDispatcher: vi.fn(() => Promise.resolve({ close: () => Promise.resolve() })),
   hasCustomGlobalDispatcher: vi.fn(() => false),
 }));
 

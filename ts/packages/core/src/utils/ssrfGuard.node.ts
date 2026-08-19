@@ -240,7 +240,7 @@ export const ssrfSafeFetch = async (
       envProxyApplies(new URL(currentUrl)) ||
       hasCustomGlobalDispatcher();
 
-    const dispatcher = respectConfiguredRoute ? undefined : createPinnedDispatcher(addresses);
+    const dispatcher = respectConfiguredRoute ? undefined : await createPinnedDispatcher(addresses);
 
     let response: Response;
     try {

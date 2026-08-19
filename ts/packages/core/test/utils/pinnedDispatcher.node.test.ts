@@ -1,6 +1,6 @@
 import { describe, it, expect, afterEach } from 'vitest';
 import { createServer, type Server } from 'node:http';
-import { AddressInfo } from 'node:net';
+import { getDefaultAutoSelectFamily, setDefaultAutoSelectFamily, type AddressInfo } from 'node:net';
 import { Agent, ProxyAgent, getGlobalDispatcher, setGlobalDispatcher } from 'undici';
 import {
   createPinnedDispatcher,
@@ -42,7 +42,7 @@ describe('createPinnedDispatcher', () => {
 
   it('connects to the pinned address instead of resolving the hostname', async () => {
     const port = await startServer();
-    const dispatcher = createPinnedDispatcher(['127.0.0.1']);
+    const dispatcher = await createPinnedDispatcher(['127.0.0.1']);
 
     const response = await fetch(`http://pinned.invalid:${port}/payload`, {
       dispatcher,
@@ -55,7 +55,7 @@ describe('createPinnedDispatcher', () => {
 
   it('leaves the hostname on the wire, so Host and TLS SNI are unchanged', async () => {
     const port = await startServer();
-    const dispatcher = createPinnedDispatcher(['127.0.0.1']);
+    const dispatcher = await createPinnedDispatcher(['127.0.0.1']);
 
     await fetch(`http://pinned.invalid:${port}/payload`, { dispatcher } as RequestInit);
 
@@ -71,6 +71,29 @@ describe('createPinnedDispatcher', () => {
 
     await expect(fetch(`http://pinned.invalid:${port}/payload`)).rejects.toThrow();
     expect(hosts).toEqual([]);
+  });
+
+  it('pins just as well with Happy Eyeballs off, which asks for one address', async () => {
+    // Node calls the lookup with `all: false` here and expects a single
+    // address rather than a list. A host that disables auto-select-family —
+    // a common workaround for Happy Eyeballs stalls — would otherwise get
+    // `ERR_INVALID_IP_ADDRESS` on every SDK fetch.
+    const port = await startServer();
+    const previous = getDefaultAutoSelectFamily();
+    setDefaultAutoSelectFamily(false);
+
+    try {
+      const dispatcher = await createPinnedDispatcher(['127.0.0.1']);
+      const response = await fetch(`http://pinned.invalid:${port}/payload`, {
+        dispatcher,
+      } as RequestInit);
+
+      expect(response.status).toBe(200);
+      expect(await response.text()).toBe('pinned payload');
+      await dispatcher.close();
+    } finally {
+      setDefaultAutoSelectFamily(previous);
+    }
   });
 });
 
