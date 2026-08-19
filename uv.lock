@@ -725,6 +725,7 @@ dependencies = [
     { name = "pysher" },
     { name = "requests" },
     { name = "typing-extensions" },
+    { name = "urllib3" },
 ]
 
 [package.dev-dependencies]
@@ -754,6 +755,7 @@ requires-dist = [
     { name = "pysher", specifier = ">=1.0.8" },
     { name = "requests", specifier = ">=2.32.2" },
     { name = "typing-extensions", specifier = ">=4.16.0" },
+    { name = "urllib3", specifier = ">=2" },
 ]
 
 [package.metadata.requires-dev]
