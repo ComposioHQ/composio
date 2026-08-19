@@ -1,6 +1,7 @@
 import { lookup } from 'node:dns/promises'; // we're in a Node.js-specific module
 import { isIP } from 'node:net';
 import { ComposioBlockedInternalUrlError } from '../errors/SsrfErrors';
+import { createPinnedDispatcher } from './pinnedDispatcher.node';
 
 /**
  * SSRF guard for user-supplied URL file inputs.
@@ -16,10 +17,11 @@ import { ComposioBlockedInternalUrlError } from '../errors/SsrfErrors';
  * which defeats decimal/octal/hex IP obfuscation) before every fetch, and
  * follows redirects manually so each hop is re-validated.
  *
- * Known residual: a DNS name could resolve to a public address here and rebind
- * to an internal one before the underlying `fetch` connects (a TOCTOU / DNS
- * rebinding window). Closing that fully requires pinning the validated IP at
- * connect time (a custom dispatcher), which is out of scope for this guard.
+ * The address that was validated is also the address connected to: `fetch` gets
+ * a dispatcher pinned to it (see {@link createPinnedDispatcher}), so the
+ * hostname is never resolved a second time. Without that, a name could resolve
+ * to a public address during validation and rebind to an internal one before
+ * the connect — a TOCTOU window the Python guard closes the same way.
  */
 
 const MAX_REDIRECTS = 5;
@@ -133,8 +135,11 @@ export const isBlockedIp = (ip: string): boolean => {
  * Validate a single URL: it must be http(s), its host must resolve, and every
  * resolved address must be publicly routable. Throws
  * {@link ComposioBlockedInternalUrlError} otherwise.
+ *
+ * @returns the validated address to connect to. Callers must connect to *that*
+ * rather than let the client resolve the hostname again; see {@link ssrfSafeFetch}.
  */
-export const assertSafeFetchTarget = async (rawUrl: string): Promise<void> => {
+export const assertSafeFetchTarget = async (rawUrl: string): Promise<string> => {
   let url: URL;
   try {
     url = new URL(rawUrl);
@@ -158,6 +163,10 @@ export const assertSafeFetchTarget = async (rawUrl: string): Promise<void> => {
     throw new ComposioBlockedInternalUrlError(`Could not resolve host "${host}"`, { url: rawUrl });
   }
 
+  if (resolved.length === 0) {
+    throw new ComposioBlockedInternalUrlError(`Could not resolve host "${host}"`, { url: rawUrl });
+  }
+
   for (const { address } of resolved) {
     if (isBlockedIp(address)) {
       throw new ComposioBlockedInternalUrlError(
@@ -166,13 +175,18 @@ export const assertSafeFetchTarget = async (rawUrl: string): Promise<void> => {
       );
     }
   }
+
+  // Every answer was validated, so any of them is safe; the first is the one
+  // the resolver preferred.
+  return resolved[0].address;
 };
 
 /**
- * Drop-in replacement for `fetch` that blocks SSRF. Validates the target before
- * connecting and re-validates every redirect hop (redirects are followed
- * manually up to {@link MAX_REDIRECTS}). Intermediate redirect bodies are
- * cancelled; non-redirect responses are returned unchanged.
+ * Drop-in replacement for `fetch` that blocks SSRF. Validates the target, then
+ * connects to the address it validated, and re-validates and re-pins every
+ * redirect hop (redirects are followed manually up to {@link MAX_REDIRECTS}).
+ * Intermediate redirect bodies are cancelled; non-redirect responses are
+ * returned unchanged.
  */
 export const ssrfSafeFetch = async (
   rawUrl: string,
@@ -182,9 +196,25 @@ export const ssrfSafeFetch = async (
   let currentUrl = rawUrl;
 
   for (let hop = 0; hop <= maxRedirects; hop++) {
-    await assertSafeFetchTarget(currentUrl);
+    const address = await assertSafeFetchTarget(currentUrl);
+    const dispatcher = createPinnedDispatcher(address);
 
-    const response = await fetch(currentUrl, { ...init, redirect: 'manual' });
+    let response: Response;
+    try {
+      // `dispatcher` is a Node-only extension to `RequestInit`.
+      response = await fetch(currentUrl, {
+        ...init,
+        redirect: 'manual',
+        dispatcher,
+      } as RequestInit);
+    } catch (error) {
+      await dispatcher.close().catch(() => undefined);
+      throw error;
+    }
+
+    // `close()` is graceful: it waits for the in-flight request — including a
+    // body still being streamed to the caller — before releasing the socket.
+    void dispatcher.close().catch(() => undefined);
 
     const isRedirect =
       response.status >= 300 && response.status < 400 && response.headers.has('location');

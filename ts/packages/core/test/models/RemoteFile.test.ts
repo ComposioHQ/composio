@@ -98,10 +98,13 @@ describe('RemoteFile', () => {
       const result = await file.buffer();
 
       // `redirect: 'manual'` is the guard following redirects itself so it can
-      // re-validate each hop, rather than letting fetch follow them unchecked.
-      expect(globalThis.fetch).toHaveBeenCalledWith(validCamelCaseData.downloadUrl, {
-        redirect: 'manual',
-      });
+      // re-validate each hop, rather than letting fetch follow them unchecked;
+      // the `dispatcher` alongside it pins the connection to the address the
+      // guard validated.
+      expect(globalThis.fetch).toHaveBeenCalledWith(
+        validCamelCaseData.downloadUrl,
+        expect.objectContaining({ redirect: 'manual' })
+      );
       expect(result).toBeInstanceOf(Uint8Array);
       expect(result).toEqual(content);
     });

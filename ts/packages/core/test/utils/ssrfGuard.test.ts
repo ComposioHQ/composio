@@ -6,6 +6,14 @@ vi.mock('node:dns/promises', () => ({
   lookup: vi.fn(),
 }));
 
+vi.mock('../../src/utils/pinnedDispatcher.node', () => ({
+  createPinnedDispatcher: vi.fn(() => ({ close: () => Promise.resolve() })),
+}));
+
+import { createPinnedDispatcher } from '../../src/utils/pinnedDispatcher.node';
+
+const mockCreatePinnedDispatcher = vi.mocked(createPinnedDispatcher);
+
 // eslint-disable-next-line no-restricted-imports
 import { lookup } from 'node:dns/promises';
 
@@ -97,9 +105,11 @@ describe('assertSafeFetchTarget', () => {
     );
   });
 
-  it('allows a host that resolves only to public addresses', async () => {
+  it('allows a host that resolves only to public addresses, returning the address to connect to', async () => {
     resolvesTo('93.184.216.34');
-    await expect(assertSafeFetchTarget('https://example.com/file.pdf')).resolves.toBeUndefined();
+    await expect(assertSafeFetchTarget('https://example.com/file.pdf')).resolves.toBe(
+      '93.184.216.34'
+    );
   });
 
   it('blocks an IPv6 literal loopback host', async () => {
@@ -116,9 +126,38 @@ describe('ssrfSafeFetch', () => {
   beforeEach(() => {
     mockLookup.mockReset();
     mockFetch.mockReset();
+    mockCreatePinnedDispatcher.mockClear();
     vi.stubGlobal('fetch', mockFetch);
   });
   afterEach(() => vi.unstubAllGlobals());
+
+  it('connects to the address it validated, rather than resolving the host again', async () => {
+    resolvesTo('93.184.216.34');
+    mockFetch.mockResolvedValue(new Response('data', { status: 200 }));
+
+    await ssrfSafeFetch('https://example.com/file.pdf');
+
+    // Without this the host is resolved twice — once to validate, once to
+    // connect — and a short-TTL record can answer those two lookups
+    // differently (DNS rebinding, issue #4151).
+    expect(mockCreatePinnedDispatcher).toHaveBeenCalledWith('93.184.216.34');
+    expect(mockFetch.mock.calls[0][1].dispatcher).toBeDefined();
+  });
+
+  it("re-pins each redirect hop to that hop's own validated address", async () => {
+    mockLookup
+      .mockResolvedValueOnce([{ address: '93.184.216.34', family: 4 }] as never)
+      .mockResolvedValueOnce([{ address: '151.101.1.140', family: 4 }] as never);
+    mockFetch
+      .mockResolvedValueOnce(
+        new Response(null, { status: 302, headers: { location: 'https://cdn.example.com/f' } })
+      )
+      .mockResolvedValueOnce(new Response('data', { status: 200 }));
+
+    await ssrfSafeFetch('https://example.com/file.pdf');
+
+    expect(mockCreatePinnedDispatcher.mock.calls).toEqual([['93.184.216.34'], ['151.101.1.140']]);
+  });
 
   it('validates and fetches a public URL', async () => {
     resolvesTo('93.184.216.34');
