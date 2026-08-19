@@ -1560,7 +1560,7 @@ class TestUrlHelperFunctions:
 class TestFetchFileFromUrl:
     """Test cases for _fetch_file_from_url function."""
 
-    @patch("composio.core.models._files.requests.get")
+    @patch("composio.core.models._files.safe_get")
     def test_fetch_file_from_url_success(self, mock_get):
         """Test successful file fetch from URL."""
         mock_response = MagicMock()
@@ -1581,11 +1581,10 @@ class TestFetchFileFromUrl:
         mock_get.assert_called_once_with(
             "https://example.com/image.jpg",
             stream=True,
-            allow_redirects=False,
             timeout=(5, 60),
         )
 
-    @patch("composio.core.models._files.requests.get")
+    @patch("composio.core.models._files.safe_get")
     def test_fetch_file_from_url_with_charset_in_content_type(self, mock_get):
         """Test that charset is stripped from content-type."""
         mock_response = MagicMock()
@@ -1602,7 +1601,7 @@ class TestFetchFileFromUrl:
 
         assert mimetype == "text/html"
 
-    @patch("composio.core.models._files.requests.get")
+    @patch("composio.core.models._files.safe_get")
     def test_fetch_file_from_url_generates_filename_when_missing(self, mock_get):
         """Test filename generation when URL has no filename."""
         mock_response = MagicMock()
@@ -1618,7 +1617,7 @@ class TestFetchFileFromUrl:
         assert filename.startswith("file_")
         assert filename.endswith(".png")
 
-    @patch("composio.core.models._files.requests.get")
+    @patch("composio.core.models._files.safe_get")
     def test_fetch_file_from_url_generates_filename_when_no_extension(self, mock_get):
         """Test filename generation when URL filename has no extension."""
         mock_response = MagicMock()
@@ -1636,7 +1635,7 @@ class TestFetchFileFromUrl:
         assert filename.startswith("file_")
         assert filename.endswith(".pdf")
 
-    @patch("composio.core.models._files.requests.get")
+    @patch("composio.core.models._files.safe_get")
     def test_fetch_file_from_url_failure(self, mock_get):
         """Test error handling when URL fetch fails."""
         mock_response = MagicMock()
@@ -1651,7 +1650,7 @@ class TestFetchFileFromUrl:
         assert "Failed to fetch file from URL" in str(exc_info.value)
         assert "404" in str(exc_info.value)
 
-    @patch("composio.core.models._files.requests.get")
+    @patch("composio.core.models._files.safe_get")
     def test_fetch_file_from_url_decodes_percent_encoded_filename(self, mock_get):
         """Test that percent-encoded characters in URL filenames are decoded."""
         mock_response = MagicMock()
@@ -1672,7 +1671,7 @@ class TestFetchFileFromUrl:
         assert content == b"document content"
         assert mimetype == "application/pdf"
 
-    @patch("composio.core.models._files.requests.get")
+    @patch("composio.core.models._files.safe_get")
     def test_fetch_file_from_url_decodes_unicode_filename(self, mock_get):
         """Test that percent-encoded unicode characters in URL filenames are decoded."""
         mock_response = MagicMock()
@@ -1691,7 +1690,7 @@ class TestFetchFileFromUrl:
         # Filename should be decoded to unicode
         assert filename == "ファイル.jpg"
 
-    @patch("composio.core.models._files.requests.get")
+    @patch("composio.core.models._files.safe_get")
     def test_fetch_file_from_url_handles_plus_sign_in_filename(self, mock_get):
         """Test that plus signs in URL paths are preserved (not converted to spaces)."""
         mock_response = MagicMock()
@@ -2215,9 +2214,8 @@ class TestTruncateFilename:
 class TestFetchFileFromUrlWithTruncation:
     """Test cases for _fetch_file_from_url with filename truncation."""
 
-    @patch("composio.core.models._files.assert_safe_fetch_target")
-    @patch("composio.core.models._files.requests.get")
-    def test_fetch_truncates_long_filename(self, mock_get, _mock_safe_fetch_target):
+    @patch("composio.core.models._files.safe_get")
+    def test_fetch_truncates_long_filename(self, mock_get):
         """Long filenames from URLs should be truncated."""
         mock_response = MagicMock()
         mock_response.ok = True
@@ -2239,7 +2237,7 @@ class TestFetchFileFromUrlWithTruncation:
         assert filename.endswith(".pdf")
         assert content == b"test content"
 
-    @patch("composio.core.models._files.requests.get")
+    @patch("composio.core.models._files.safe_get")
     def test_fetch_preserves_short_filename(self, mock_get):
         """Short filenames should be preserved unchanged."""
         mock_response = MagicMock()
@@ -2256,11 +2254,8 @@ class TestFetchFileFromUrlWithTruncation:
 
         assert filename == "photo.jpg"
 
-    @patch("composio.core.models._files.assert_safe_fetch_target")
-    @patch("composio.core.models._files.requests.get")
-    def test_fetch_truncates_after_adding_extension(
-        self, mock_get, _mock_safe_fetch_target
-    ):
+    @patch("composio.core.models._files.safe_get")
+    def test_fetch_truncates_after_adding_extension(self, mock_get):
         """Truncation should happen after extension is appended."""
         mock_response = MagicMock()
         mock_response.ok = True
@@ -2280,7 +2275,7 @@ class TestFetchFileFromUrlWithTruncation:
         assert len(filename) <= _MAX_FILENAME_LENGTH
         assert filename.endswith(".pdf")
 
-    @patch("composio.core.models._files.requests.get")
+    @patch("composio.core.models._files.safe_get")
     def test_fetch_generated_filename_not_truncated(self, mock_get):
         """Generated timestamped filenames (when URL has no filename) should be short enough."""
         mock_response = MagicMock()
@@ -2299,7 +2294,7 @@ class TestFetchFileFromUrlWithTruncation:
         assert filename.endswith(".png")
         assert len(filename) < 50  # Timestamped names are short
 
-    @patch("composio.core.models._files.requests.get")
+    @patch("composio.core.models._files.safe_get")
     def test_fetch_long_real_world_url(self, mock_get):
         """Long real-world URLs should be handled correctly."""
         mock_response = MagicMock()
@@ -2326,7 +2321,7 @@ class TestFetchFileFromUrlWithTruncation:
 class TestResponseSizeLimit:
     """Test response size limiting."""
 
-    @patch("composio.core.models._files.requests.get")
+    @patch("composio.core.models._files.safe_get")
     def test_rejects_oversized_content_length(self, mock_get):
         """Files with Content-Length > max_size should be rejected early."""
         mock_response = MagicMock()
@@ -2341,7 +2336,7 @@ class TestResponseSizeLimit:
                 "https://example.com/large.zip", max_size=100 * 1024 * 1024
             )
 
-    @patch("composio.core.models._files.requests.get")
+    @patch("composio.core.models._files.safe_get")
     def test_rejects_oversized_during_streaming(self, mock_get):
         """Files that exceed max_size during download should be rejected."""
         mock_response = MagicMock()
@@ -2360,7 +2355,7 @@ class TestResponseSizeLimit:
                 "https://example.com/large.zip", max_size=10 * 1024 * 1024
             )
 
-    @patch("composio.core.models._files.requests.get")
+    @patch("composio.core.models._files.safe_get")
     def test_accepts_file_within_limit(self, mock_get):
         """Files within size limit should be accepted."""
         mock_response = MagicMock()
@@ -2382,7 +2377,7 @@ class TestResponseSizeLimit:
 class TestRedirectHandling:
     """Test redirect handling (redirects should be rejected)."""
 
-    @patch("composio.core.models._files.requests.get")
+    @patch("composio.core.models._files.safe_get")
     def test_rejects_redirect_302(self, mock_get):
         """302 redirects should be rejected with clear error message."""
         mock_response = MagicMock()
@@ -2394,7 +2389,7 @@ class TestRedirectHandling:
         with pytest.raises(ErrorUploadingFile, match="redirect"):
             _fetch_file_from_url("https://example.com/redirect")
 
-    @patch("composio.core.models._files.requests.get")
+    @patch("composio.core.models._files.safe_get")
     def test_rejects_redirect_301(self, mock_get):
         """301 redirects should be rejected."""
         mock_response = MagicMock()
@@ -2406,7 +2401,7 @@ class TestRedirectHandling:
         with pytest.raises(ErrorUploadingFile, match="redirect"):
             _fetch_file_from_url("https://example.com/test")
 
-    @patch("composio.core.models._files.requests.get")
+    @patch("composio.core.models._files.safe_get")
     def test_rejects_redirect_307(self, mock_get):
         """307 redirects should be rejected."""
         mock_response = MagicMock()
@@ -2418,7 +2413,7 @@ class TestRedirectHandling:
         with pytest.raises(ErrorUploadingFile, match="redirect"):
             _fetch_file_from_url("https://example.com/test")
 
-    @patch("composio.core.models._files.requests.get")
+    @patch("composio.core.models._files.safe_get")
     def test_rejects_redirect_308(self, mock_get):
         """308 redirects should be rejected."""
         mock_response = MagicMock()
@@ -2540,8 +2535,7 @@ class TestFileDownloadablePathTraversal:
 
     @pytest.fixture(autouse=True)
     def _allow_fetch_target(self):
-        with patch("composio.core.models._files.assert_safe_fetch_target"):
-            yield
+        yield
 
     def _mock_response(self, content: bytes = b"data") -> MagicMock:
         response = MagicMock()
@@ -2559,7 +2553,7 @@ class TestFileDownloadablePathTraversal:
             s3url="https://example.com/file",
         )
         with patch(
-            "composio.core.models._files.requests.get",
+            "composio.core.models._files.safe_get",
             return_value=self._mock_response(b"#!/bin/sh\n"),
         ):
             written = f.download(outdir, root=outdir)
@@ -2578,7 +2572,7 @@ class TestFileDownloadablePathTraversal:
             s3url="https://example.com/file",
         )
         with patch(
-            "composio.core.models._files.requests.get",
+            "composio.core.models._files.safe_get",
             return_value=self._mock_response(b"x"),
         ):
             written = f.download(outdir, root=outdir)
@@ -2599,7 +2593,7 @@ class TestFileDownloadablePathTraversal:
             s3url="https://example.com/file",
         )
         with patch(
-            "composio.core.models._files.requests.get",
+            "composio.core.models._files.safe_get",
             return_value=self._mock_response(),
         ):
             with pytest.raises(ErrorDownloadingFile, match="Path traversal detected"):
@@ -2615,7 +2609,7 @@ class TestFileDownloadablePathTraversal:
             s3url="https://example.com/file",
         )
         with patch(
-            "composio.core.models._files.requests.get",
+            "composio.core.models._files.safe_get",
             return_value=self._mock_response(b"%PDF-1.4"),
         ):
             written = f.download(outdir, root=outdir)
@@ -2631,15 +2625,14 @@ class TestFileDownloadablePathTraversal:
             s3url="https://example.com/file",
         )
         with patch(
-            "composio.core.models._files.requests.get",
+            "composio.core.models._files.safe_get",
             return_value=self._mock_response(b"%PDF-1.4"),
         ) as mock_get:
             f.download(outdir, root=outdir)
 
         mock_get.assert_called_once_with(
-            url="https://example.com/file",
+            "https://example.com/file",
             stream=True,
-            allow_redirects=False,
             timeout=(5, 60),
         )
 
@@ -2651,7 +2644,7 @@ class TestFileDownloadablePathTraversal:
             s3url="https://example.com/file?token=abc",
         )
         with patch(
-            "composio.core.models._files.requests.get",
+            "composio.core.models._files.safe_get",
             side_effect=requests.exceptions.Timeout(
                 "Max retries exceeded with url: /file?token=abc"
             ),
@@ -2676,7 +2669,7 @@ class TestFileDownloadablePathTraversal:
             s3url="https://example.com/file?token=abc",
         )
         with patch(
-            "composio.core.models._files.requests.get",
+            "composio.core.models._files.safe_get",
             return_value=response,
         ):
             with pytest.raises(ErrorDownloadingFile) as exc_info:
@@ -2696,7 +2689,7 @@ class TestFileDownloadablePathTraversal:
             s3url="https://example.com/file?token=abc",
         )
         with patch(
-            "composio.core.models._files.requests.get",
+            "composio.core.models._files.safe_get",
             return_value=response,
         ):
             with pytest.raises(ErrorDownloadingFile) as exc_info:
@@ -2720,7 +2713,7 @@ class TestFileDownloadablePathTraversal:
             s3url="https://example.com/file",
         )
         with patch(
-            "composio.core.models._files.requests.get",
+            "composio.core.models._files.safe_get",
             return_value=self._mock_response(),
         ):
             with pytest.raises(ErrorDownloadingFile, match="Path traversal detected"):
@@ -2747,7 +2740,7 @@ class TestFileDownloadablePathTraversal:
             s3url="https://example.com/file",
         )
         with patch(
-            "composio.core.models._files.requests.get",
+            "composio.core.models._files.safe_get",
             return_value=self._mock_response(b"x"),
         ):
             with pytest.raises(ErrorDownloadingFile, match="no usable basename"):
@@ -2783,7 +2776,7 @@ class TestFileDownloadablePathTraversal:
             s3url="https://example.com/file",
         )
         with patch(
-            "composio.core.models._files.requests.get",
+            "composio.core.models._files.safe_get",
             return_value=self._mock_response(b"x"),
         ):
             with pytest.raises(ErrorDownloadingFile, match=reason):
@@ -2838,7 +2831,7 @@ class TestDownloadDirSlugTraversal:
         response.status_code = 200
         response.iter_content = lambda chunk_size: [content]
         response.close = MagicMock()
-        return patch("composio.core.models._files.requests.get", return_value=response)
+        return patch("composio.core.models._files.safe_get", return_value=response)
 
     @pytest.mark.parametrize("slug", TRAVERSALS)
     def test_hostile_tool_slug_is_rejected(self, slug, tmp_path):
@@ -3069,15 +3062,14 @@ class TestResponseDerivedUrlsAreGuarded:
             s3url="https://s3.example.com/file",
         )
         with patch(
-            "composio.core.models._files.assert_safe_fetch_target"
-        ) as mock_assert:
-            with patch(
-                "composio.core.models._files.requests.get",
-                return_value=self._download_response(),
-            ):
-                f.download(tmp_path / "out", root=tmp_path / "out")
+            "composio.core.models._files.safe_get",
+            return_value=self._download_response(),
+        ) as mock_get:
+            f.download(tmp_path / "out", root=tmp_path / "out")
 
-        mock_assert.assert_called_once_with("https://s3.example.com/file")
+        # `safe_get` is the guard: it validates the target and connects to the
+        # address it validated, rather than re-resolving the hostname.
+        assert mock_get.call_args.args == ("https://s3.example.com/file",)
 
     def test_download_blocked_url_never_reaches_the_network(self, tmp_path):
         outdir = tmp_path / "out"
@@ -3087,14 +3079,16 @@ class TestResponseDerivedUrlsAreGuarded:
             s3url="http://169.254.169.254/latest/meta-data",
         )
         with patch(
-            "composio.core.models._files.assert_safe_fetch_target",
+            "composio.utils.url_safety.assert_safe_fetch_target",
             side_effect=BlockedInternalUrlError("blocked"),
         ):
-            with patch("composio.core.models._files.requests.get") as mock_get:
+            with patch(
+                "composio.utils.url_safety.requests.Session.request"
+            ) as mock_send:
                 with pytest.raises(BlockedInternalUrlError):
                     f.download(outdir, root=outdir)
 
-        mock_get.assert_not_called()
+        mock_send.assert_not_called()
         assert not outdir.exists()
 
     def test_download_refuses_to_follow_redirects(self, tmp_path):
@@ -3103,14 +3097,15 @@ class TestResponseDerivedUrlsAreGuarded:
             mimetype="application/pdf",
             s3url="https://s3.example.com/file",
         )
-        with patch("composio.core.models._files.assert_safe_fetch_target"):
-            with patch(
-                "composio.core.models._files.requests.get",
-                return_value=self._download_response(),
-            ) as mock_get:
-                f.download(tmp_path / "out", root=tmp_path / "out")
+        with patch(
+            "composio.core.models._files.safe_get",
+            return_value=self._download_response(),
+        ) as mock_get:
+            f.download(tmp_path / "out", root=tmp_path / "out")
 
-        assert mock_get.call_args.kwargs["allow_redirects"] is False
+        # `safe_get` never follows redirects, and passing `allow_redirects`
+        # through to it would be a way to turn that off.
+        assert "allow_redirects" not in mock_get.call_args.kwargs
 
     def test_upload_bytes_to_s3_goes_through_safe_request(self):
         client = self._s3_client("https://s3.example.com/upload")
@@ -3136,7 +3131,9 @@ class TestResponseDerivedUrlsAreGuarded:
             "composio.utils.url_safety.assert_safe_fetch_target",
             side_effect=BlockedInternalUrlError("blocked"),
         ):
-            with patch("composio.utils.url_safety.requests.request") as mock_request:
+            with patch(
+                "composio.utils.url_safety.requests.Session.request"
+            ) as mock_request:
                 with pytest.raises(BlockedInternalUrlError):
                     _upload_bytes_to_s3(
                         client=client,
@@ -3170,7 +3167,9 @@ class TestResponseDerivedUrlsAreGuarded:
             "composio.utils.url_safety.assert_safe_fetch_target",
             side_effect=BlockedInternalUrlError("blocked"),
         ):
-            with patch("composio.utils.url_safety.requests.request") as mock_request:
+            with patch(
+                "composio.utils.url_safety.requests.Session.request"
+            ) as mock_request:
                 with pytest.raises(BlockedInternalUrlError):
                     upload(url="http://127.0.0.1:9000/upload", file=source)
 

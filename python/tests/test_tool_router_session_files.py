@@ -18,7 +18,9 @@ from composio.exceptions import (
 
 MODULE = "composio.core.models.tool_router_session_files"
 SAFE_REQUEST = f"{MODULE}.safe_request"
-ASSERT_SAFE_FETCH_TARGET = f"{MODULE}.assert_safe_fetch_target"
+SAFE_GET = f"{MODULE}.safe_get"
+ASSERT_SAFE_FETCH_TARGET = "composio.utils.url_safety.assert_safe_fetch_target"
+SESSION_REQUEST = "composio.utils.url_safety.requests.Session.request"
 
 
 def mock_stream_response(
@@ -214,14 +216,13 @@ class TestRemoteFile:
             download_url="https://example.com/file",
         )
         with patch(ASSERT_SAFE_FETCH_TARGET):
-            with patch("requests.get", return_value=mock_stream_response()) as mock_get:
+            with patch(SAFE_GET, return_value=mock_stream_response()) as mock_get:
                 result = rf.buffer()
 
             assert result == b"file content"
             mock_get.assert_called_once_with(
                 "https://example.com/file",
                 stream=True,
-                allow_redirects=False,
                 timeout=(5, 60),
             )
 
@@ -234,9 +235,7 @@ class TestRemoteFile:
             download_url="https://example.com/file",
         )
         with patch(ASSERT_SAFE_FETCH_TARGET):
-            with patch(
-                "requests.get", return_value=mock_stream_response(status_code=404)
-            ):
+            with patch(SAFE_GET, return_value=mock_stream_response(status_code=404)):
                 with pytest.raises(RemoteFileDownloadError) as exc_info:
                     rf.buffer()
 
@@ -252,9 +251,7 @@ class TestRemoteFile:
             download_url="https://example.com/file",
         )
         with patch(ASSERT_SAFE_FETCH_TARGET):
-            with patch(
-                "requests.get", side_effect=requests.exceptions.Timeout("timeout")
-            ):
+            with patch(SAFE_GET, side_effect=requests.exceptions.Timeout("timeout")):
                 with pytest.raises(RemoteFileDownloadError) as exc_info:
                     rf.buffer()
 
@@ -344,11 +341,12 @@ class TestResponseDerivedUrlsAreGuarded:
     def test_buffer_validates_download_url(self):
         rf = self._remote_file("https://s3.example.com/download")
 
-        with patch(ASSERT_SAFE_FETCH_TARGET) as mock_assert:
-            with patch("requests.get", return_value=mock_stream_response()):
-                rf.buffer()
+        with patch(SAFE_GET, return_value=mock_stream_response()) as mock_get:
+            rf.buffer()
 
-        mock_assert.assert_called_once_with("https://s3.example.com/download")
+        # `safe_get` is the guard: it validates the target and then connects to
+        # the address it validated instead of re-resolving the hostname.
+        assert mock_get.call_args.args == ("https://s3.example.com/download",)
 
     def test_buffer_blocked_url_never_reaches_the_network(self):
         rf = self._remote_file("http://169.254.169.254/latest/meta-data")
@@ -357,11 +355,11 @@ class TestResponseDerivedUrlsAreGuarded:
             ASSERT_SAFE_FETCH_TARGET,
             side_effect=BlockedInternalUrlError("blocked"),
         ):
-            with patch("requests.get") as mock_get:
+            with patch(SESSION_REQUEST) as mock_send:
                 with pytest.raises(BlockedInternalUrlError):
                     rf.buffer()
 
-        mock_get.assert_not_called()
+        mock_send.assert_not_called()
 
     def test_buffer_rejects_redirects(self):
         """A validated URL must not be able to bounce the fetch elsewhere."""
@@ -369,12 +367,14 @@ class TestResponseDerivedUrlsAreGuarded:
 
         with patch(ASSERT_SAFE_FETCH_TARGET):
             with patch(
-                "requests.get", return_value=mock_stream_response(status_code=302)
+                SAFE_GET, return_value=mock_stream_response(status_code=302)
             ) as mock_get:
                 with pytest.raises(RemoteFileDownloadError, match="redirect"):
                     rf.buffer()
 
-        assert mock_get.call_args.kwargs["allow_redirects"] is False
+        # `safe_get` never follows redirects; passing `allow_redirects` through
+        # to it would be a way to turn that off.
+        assert "allow_redirects" not in mock_get.call_args.kwargs
 
     def test_buffer_tolerates_malformed_content_length(self):
         """A malformed `Content-Length` means unknown size, not a crash.
@@ -391,7 +391,7 @@ class TestResponseDerivedUrlsAreGuarded:
         }
 
         with patch(ASSERT_SAFE_FETCH_TARGET):
-            with patch("requests.get", return_value=malformed):
+            with patch(SAFE_GET, return_value=malformed):
                 assert rf.buffer() == b"file content"
 
     def test_buffer_caps_response_size(self):
@@ -404,7 +404,7 @@ class TestResponseDerivedUrlsAreGuarded:
         }
 
         with patch(ASSERT_SAFE_FETCH_TARGET):
-            with patch("requests.get", return_value=oversized):
+            with patch(SAFE_GET, return_value=oversized):
                 with pytest.raises(RemoteFileDownloadError, match="exceeds maximum"):
                     rf.buffer()
 
@@ -416,13 +416,13 @@ class TestResponseDerivedUrlsAreGuarded:
             ASSERT_SAFE_FETCH_TARGET,
             side_effect=BlockedInternalUrlError("blocked"),
         ):
-            with patch("requests.get") as mock_get:
+            with patch(SESSION_REQUEST) as mock_send:
                 with pytest.raises(BlockedInternalUrlError):
                     rf.text()
                 with pytest.raises(BlockedInternalUrlError):
                     rf.save(str(tmp_path / "out.txt"))
 
-        mock_get.assert_not_called()
+        mock_send.assert_not_called()
         assert not (tmp_path / "out.txt").exists()
 
     def test_upload_blocked_url_sends_nothing(self, files_mount):
@@ -430,7 +430,7 @@ class TestResponseDerivedUrlsAreGuarded:
             "composio.utils.url_safety.assert_safe_fetch_target",
             side_effect=BlockedInternalUrlError("blocked"),
         ):
-            with patch("composio.utils.url_safety.requests.request") as mock_request:
+            with patch(SESSION_REQUEST) as mock_request:
                 with pytest.raises(BlockedInternalUrlError):
                     files_mount.upload(
                         b"hello world",

@@ -186,11 +186,8 @@ class TestMalformedContentLength:
     @pytest.mark.parametrize(
         "header", ["abc", "12.5", "1,024", "1e3", "0x10", "100 200", ""]
     )
-    @patch("composio.core.models._files.assert_safe_fetch_target")
-    @patch("composio.core.models._files.requests.get")
-    def test_malformed_header_does_not_raise(
-        self, mock_get: MagicMock, _mock_assert: MagicMock, header: str
-    ):
+    @patch("composio.core.models._files.safe_get")
+    def test_malformed_header_does_not_raise(self, mock_get: MagicMock, header: str):
         """A malformed header must not surface a raw ValueError to the caller."""
         mock_get.return_value = _stream_response(
             {"content-type": "image/jpeg", "Content-Length": header}
@@ -204,11 +201,8 @@ class TestMalformedContentLength:
         assert content == b"payload"
         assert mimetype == "image/jpeg"
 
-    @patch("composio.core.models._files.assert_safe_fetch_target")
-    @patch("composio.core.models._files.requests.get")
-    def test_negative_header_still_enforced_while_streaming(
-        self, mock_get: MagicMock, _mock_assert: MagicMock
-    ):
+    @patch("composio.core.models._files.safe_get")
+    def test_negative_header_still_enforced_while_streaming(self, mock_get: MagicMock):
         """A negative header means unknown size, not a trusted "small" value."""
         mock_get.return_value = _stream_response(
             {"Content-Length": "-1"},
