@@ -15,6 +15,7 @@ another, which is exactly what a short-TTL rebinding record does.
 
 from __future__ import annotations
 
+import ipaddress
 import socket
 import threading
 import typing as t
@@ -28,6 +29,14 @@ from composio.exceptions import BlockedInternalUrlError
 from composio.utils.url_safety import _assert_pinned_peer, safe_get
 
 HOSTNAME = "rebind.test"
+
+
+def _is_ip_literal(host: str) -> bool:
+    try:
+        ipaddress.ip_address(host)
+    except ValueError:
+        return False
+    return True
 
 
 class _RecordingServer:
@@ -96,11 +105,7 @@ def rebinding_dns(
     def fake_getaddrinfo(host, port, *args, **kwargs):  # type: ignore[no-untyped-def]
         # A real resolver hands an IP literal straight back, which is what the
         # fix relies on when it connects to the address it already validated.
-        try:
-            socket.inet_aton(host)
-        except OSError:
-            pass
-        else:
+        if _is_ip_literal(host):
             return real_getaddrinfo(host, port, *args, **kwargs)
 
         lookups.append(host)
@@ -163,3 +168,46 @@ def test_peer_mismatch_fails_closed() -> None:
         _assert_pinned_peer(sock, "93.184.216.34", HOSTNAME)
 
     sock.close.assert_called_once()
+
+
+def test_connect_falls_back_to_the_next_validated_address(
+    validated_server: _RecordingServer,
+) -> None:
+    """A dual-stack host must not be stranded on its first answer.
+
+    ``::1`` is validated but nothing listens there, so the connect has to move
+    on to the second answer the way the HTTP client would have. urllib3 rewraps
+    connect failures into its own exception hierarchy, none of which inherits
+    from ``OSError``, so this also pins down which exceptions the fallback has
+    to catch.
+    """
+    real_getaddrinfo = socket.getaddrinfo
+
+    def fake_getaddrinfo(host, port, *args, **kwargs):  # type: ignore[no-untyped-def]
+        if _is_ip_literal(host):
+            return real_getaddrinfo(host, port, *args, **kwargs)
+        return [
+            (
+                socket.AF_INET6,
+                socket.SOCK_STREAM,
+                6,
+                "",
+                ("::1", validated_server.port, 0, 0),
+            ),
+            (
+                socket.AF_INET,
+                socket.SOCK_STREAM,
+                6,
+                "",
+                ("127.0.0.1", validated_server.port),
+            ),
+        ]
+
+    with patch("socket.getaddrinfo", side_effect=fake_getaddrinfo):
+        with patch("composio.utils.url_safety.is_blocked_ip", return_value=False):
+            response = safe_get(
+                f"http://{HOSTNAME}:{validated_server.port}/payload", timeout=(5, 5)
+            )
+
+    assert response.content == b"public payload"
+    assert len(validated_server.hits) == 1

@@ -33,8 +33,19 @@ import typing as t
 from urllib.parse import urljoin, urlparse
 
 import requests
+import urllib3.exceptions
 
 from composio.exceptions import BlockedInternalUrlError
+
+# urllib3 rewraps connect failures into its own hierarchy, none of which
+# inherits from OSError, so a bare `except OSError` would never see them and
+# the address fallback below would never run.
+_CONNECT_ERRORS = (
+    OSError,
+    urllib3.exceptions.NewConnectionError,
+    urllib3.exceptions.ConnectTimeoutError,
+    urllib3.exceptions.NameResolutionError,
+)
 
 _REDIRECT_STATUS_CODES = frozenset({301, 302, 303, 307, 308})
 _MAX_REDIRECTS = 5
@@ -234,7 +245,7 @@ class _PinnedAddressAdapter(requests.adapters.HTTPAdapter):
                     connection._dns_host = address
                     try:
                         sock = open_socket()
-                    except OSError as error:
+                    except _CONNECT_ERRORS as error:
                         last_error = error
                         continue
                     finally:
