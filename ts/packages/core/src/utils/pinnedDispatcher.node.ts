@@ -1,5 +1,5 @@
 import { isIP } from 'node:net';
-import { Agent } from 'undici';
+import { Agent, getGlobalDispatcher } from 'undici';
 
 /**
  * A `fetch` dispatcher that connects to `addresses` instead of resolving the
@@ -38,3 +38,24 @@ export const createPinnedDispatcher = (addresses: ReadonlyArray<string>): Agent 
       },
     },
   });
+
+/**
+ * Whether the process-wide dispatcher `fetch` falls back to (when a request
+ * carries no `dispatcher` of its own) is something other than a stock `Agent`.
+ *
+ * The global dispatcher lives on a `globalThis` symbol shared by every undici
+ * instance in the process — including the one inside the Node runtime — so
+ * this reads the same dispatcher the runtime's own `fetch` would use, and a
+ * `ProxyAgent`, `EnvHttpProxyAgent`, or custom dispatcher installed through
+ * `setGlobalDispatcher` is visible here.
+ *
+ * Stock-ness is compared by constructor *name*, deliberately not with
+ * `instanceof Agent`: an `Agent` created by the runtime's internal undici is a
+ * different class from this package's `Agent`, so once the runtime's own
+ * `fetch` has initialized its default dispatcher, an `instanceof` check would
+ * report a stock setup as custom and silently disable pinning.
+ */
+export const hasCustomGlobalDispatcher = (): boolean => {
+  const dispatcher = getGlobalDispatcher() as { constructor?: { name?: string } };
+  return dispatcher.constructor?.name !== 'Agent';
+};

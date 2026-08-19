@@ -16,6 +16,7 @@ another, which is exactly what a short-TTL rebinding record does.
 from __future__ import annotations
 
 import ipaddress
+import os
 import socket
 import threading
 import typing as t
@@ -23,6 +24,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from unittest.mock import MagicMock, patch
 
 import pytest
+import requests
 import urllib3.connection
 
 from composio.exceptions import BlockedInternalUrlError
@@ -87,8 +89,25 @@ def rebound_server() -> t.Iterator[_RecordingServer]:
 
 
 @pytest.fixture
+def no_inherited_proxy(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Make ``_proxy_applies`` deterministic: no proxy, from env or system.
+
+    An inherited ``HTTP_PROXY`` (or a macOS/Windows system proxy, which
+    ``getproxies`` also reads) would disable the pinning adapter, and the
+    request would dial the proxy's answer to the hostname instead of the
+    validated address — failing these tests on machines that carry one.
+    """
+    monkeypatch.setattr(
+        "requests.utils.get_environ_proxies",
+        lambda url: {},
+    )
+
+
+@pytest.fixture
 def rebinding_dns(
-    validated_server: _RecordingServer, rebound_server: _RecordingServer
+    no_inherited_proxy: None,
+    validated_server: _RecordingServer,
+    rebound_server: _RecordingServer,
 ) -> t.Iterator[None]:
     """Answer the first lookup of the hostname benignly, later ones with the victim.
 
@@ -115,6 +134,49 @@ def rebinding_dns(
     with patch("socket.getaddrinfo", side_effect=fake_getaddrinfo):
         with patch("composio.utils.url_safety.is_blocked_ip", return_value=False):
             yield
+
+
+def test_proxy_environment_keeps_only_the_pre_flight_check(
+    validated_server: _RecordingServer,
+) -> None:
+    """Behind a proxy the SDK cannot pin: the proxy resolves the hostname.
+
+    Documented residual — ``_proxy_applies`` disables the pinning adapter, so
+    the request dials the proxy. A proxy nothing can reach makes that
+    observable: the request must fail by trying the proxy, never by dialling
+    the validated address. (This test deliberately does not use
+    ``no_inherited_proxy`` — it needs ``HTTP_PROXY`` visible — so it patches
+    the resolver inline instead.)
+    """
+    real_getaddrinfo = socket.getaddrinfo
+
+    def fake_getaddrinfo(host, port, *args, **kwargs):  # type: ignore[no-untyped-def]
+        if _is_ip_literal(host):
+            return real_getaddrinfo(host, port, *args, **kwargs)
+        return [
+            (
+                socket.AF_INET,
+                socket.SOCK_STREAM,
+                6,
+                "",
+                ("127.0.0.1", validated_server.port),
+            )
+        ]
+
+    # Empty NO_PROXY so no machine-level bypass list can cover the hostname.
+    env = {"HTTP_PROXY": "http://127.0.0.1:9", "NO_PROXY": "", "no_proxy": ""}
+    with patch("socket.getaddrinfo", side_effect=fake_getaddrinfo):
+        with patch("composio.utils.url_safety.is_blocked_ip", return_value=False):
+            with patch("composio.utils.url_safety._PinnedAddressAdapter") as adapter:
+                with patch.dict(os.environ, env):
+                    with pytest.raises(requests.exceptions.RequestException):
+                        safe_get(
+                            f"http://{HOSTNAME}:{validated_server.port}/payload",
+                            timeout=(1, 1),
+                        )
+
+    adapter.assert_not_called()
+    assert validated_server.hits == []
 
 
 @pytest.mark.usefixtures("rebinding_dns")
@@ -171,6 +233,7 @@ def test_peer_mismatch_fails_closed() -> None:
 
 
 def test_connect_falls_back_to_the_next_validated_address(
+    no_inherited_proxy: None,
     validated_server: _RecordingServer,
 ) -> None:
     """A dual-stack host must not be stranded on its first answer.

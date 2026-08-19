@@ -202,9 +202,9 @@ class _PinnedAddressAdapter(requests.adapters.HTTPAdapter):
     against every real origin.
 
     This reaches into two urllib3 internals, ``HTTPConnection._new_conn`` and
-    ``HTTPConnection._dns_host``. ``test_url_safety.py`` asserts both exist so
-    a urllib3 upgrade that removes them fails loudly rather than silently
-    un-pinning the connection.
+    ``HTTPConnection._dns_host``. ``test_url_safety_pinning.py`` asserts both
+    exist so a urllib3 upgrade that removes them fails loudly rather than
+    silently un-pinning the connection.
     """
 
     def __init__(self, addresses: t.Sequence[str], **kwargs: t.Any) -> None:

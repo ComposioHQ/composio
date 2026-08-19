@@ -1,7 +1,11 @@
 import { describe, it, expect, afterEach } from 'vitest';
 import { createServer, type Server } from 'node:http';
 import { AddressInfo } from 'node:net';
-import { createPinnedDispatcher } from '../../src/utils/pinnedDispatcher.node';
+import { Agent, ProxyAgent, getGlobalDispatcher, setGlobalDispatcher } from 'undici';
+import {
+  createPinnedDispatcher,
+  hasCustomGlobalDispatcher,
+} from '../../src/utils/pinnedDispatcher.node';
 
 /**
  * The SSRF guard resolves a hostname to validate it. If `fetch` then resolves
@@ -67,5 +71,31 @@ describe('createPinnedDispatcher', () => {
 
     await expect(fetch(`http://pinned.invalid:${port}/payload`)).rejects.toThrow();
     expect(hosts).toEqual([]);
+  });
+});
+
+describe('hasCustomGlobalDispatcher', () => {
+  it('reports the stock dispatcher as not custom', () => {
+    expect(hasCustomGlobalDispatcher()).toBe(false);
+  });
+
+  it('reports a configured proxy dispatcher as custom', () => {
+    const previous = getGlobalDispatcher();
+    setGlobalDispatcher(new ProxyAgent({ uri: 'http://127.0.0.1:9' }));
+    try {
+      expect(hasCustomGlobalDispatcher()).toBe(true);
+    } finally {
+      setGlobalDispatcher(previous);
+    }
+  });
+
+  it('still calls a plain Agent stock, even when created by this package', () => {
+    const previous = getGlobalDispatcher();
+    setGlobalDispatcher(new Agent());
+    try {
+      expect(hasCustomGlobalDispatcher()).toBe(false);
+    } finally {
+      setGlobalDispatcher(previous);
+    }
   });
 });
