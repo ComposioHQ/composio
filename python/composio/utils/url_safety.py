@@ -203,7 +203,9 @@ class _PinnedAddressAdapter(requests.adapters.HTTPAdapter):
         proxies: t.Optional[t.Mapping[str, str]] = None,
         cert: t.Union[str, t.Tuple[str, str], None] = None,
     ) -> t.Any:
-        pool = super().get_connection_with_tls_context(
+        # `Any`, because the pinning below reaches for urllib3 internals that
+        # the typed `ConnectionPool` surface does not expose.
+        pool: t.Any = super().get_connection_with_tls_context(
             request, verify, proxies=proxies, cert=cert
         )
         address = self._address
