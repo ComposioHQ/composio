@@ -139,7 +139,7 @@ def test_safe_request_disables_automatic_redirects(mock_assert, mock_request) ->
 @patch("composio.utils.url_safety.assert_safe_fetch_target")
 def test_safe_request_revalidates_each_redirect_hop(mock_assert, mock_request) -> None:
     """A public URL that redirects into private space must be caught at the hop."""
-    mock_assert.side_effect = [None, BlockedInternalUrlError("blocked")]
+    mock_assert.side_effect = [["93.184.216.34"], BlockedInternalUrlError("blocked")]
     mock_request.return_value = _response(
         307, "http://169.254.169.254/latest/meta-data"
     )

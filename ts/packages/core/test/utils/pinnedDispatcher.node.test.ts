@@ -38,7 +38,7 @@ describe('createPinnedDispatcher', () => {
 
   it('connects to the pinned address instead of resolving the hostname', async () => {
     const port = await startServer();
-    const dispatcher = createPinnedDispatcher('127.0.0.1');
+    const dispatcher = createPinnedDispatcher(['127.0.0.1']);
 
     const response = await fetch(`http://pinned.invalid:${port}/payload`, {
       dispatcher,
@@ -51,7 +51,7 @@ describe('createPinnedDispatcher', () => {
 
   it('leaves the hostname on the wire, so Host and TLS SNI are unchanged', async () => {
     const port = await startServer();
-    const dispatcher = createPinnedDispatcher('127.0.0.1');
+    const dispatcher = createPinnedDispatcher(['127.0.0.1']);
 
     await fetch(`http://pinned.invalid:${port}/payload`, { dispatcher } as RequestInit);
 

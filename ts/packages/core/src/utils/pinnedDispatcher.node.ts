@@ -2,7 +2,7 @@ import { isIP } from 'node:net';
 import { Agent } from 'undici';
 
 /**
- * A `fetch` dispatcher that connects to `address` instead of resolving the
+ * A `fetch` dispatcher that connects to `addresses` instead of resolving the
  * hostname again.
  *
  * The SSRF guard resolves a hostname to decide whether a URL is safe to fetch.
@@ -24,11 +24,17 @@ import { Agent } from 'undici';
  * `^7`, and why `pinnedDispatcher.node.test.ts` exercises a real socket on
  * every Node version in CI rather than mocking the transport.
  */
-export const createPinnedDispatcher = (address: string): Agent =>
+export const createPinnedDispatcher = (addresses: ReadonlyArray<string>): Agent =>
   new Agent({
     connect: {
       lookup: (_hostname, _options, callback) => {
-        callback(null, [{ address, family: isIP(address) }]);
+        // All of them, in resolver order: handing over a single address of a
+        // dual-stack host would strand callers whose network cannot reach that
+        // family, where the runtime would otherwise have fallen back.
+        callback(
+          null,
+          addresses.map(address => ({ address, family: isIP(address) }))
+        );
       },
     },
   });

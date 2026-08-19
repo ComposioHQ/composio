@@ -136,10 +136,11 @@ export const isBlockedIp = (ip: string): boolean => {
  * resolved address must be publicly routable. Throws
  * {@link ComposioBlockedInternalUrlError} otherwise.
  *
- * @returns the validated address to connect to. Callers must connect to *that*
- * rather than let the client resolve the hostname again; see {@link ssrfSafeFetch}.
+ * @returns the validated addresses to connect to, in resolver order. Callers
+ * must connect to *those* rather than let the client resolve the hostname
+ * again; see {@link ssrfSafeFetch}.
  */
-export const assertSafeFetchTarget = async (rawUrl: string): Promise<string> => {
+export const assertSafeFetchTarget = async (rawUrl: string): Promise<string[]> => {
   let url: URL;
   try {
     url = new URL(rawUrl);
@@ -176,9 +177,9 @@ export const assertSafeFetchTarget = async (rawUrl: string): Promise<string> => 
     }
   }
 
-  // Every answer was validated, so any of them is safe; the first is the one
-  // the resolver preferred.
-  return resolved[0].address;
+  // Every answer was validated, so all of them are safe to connect to, and
+  // resolver order is the system's own address preference.
+  return resolved.map(({ address }) => address);
 };
 
 /**
@@ -196,8 +197,8 @@ export const ssrfSafeFetch = async (
   let currentUrl = rawUrl;
 
   for (let hop = 0; hop <= maxRedirects; hop++) {
-    const address = await assertSafeFetchTarget(currentUrl);
-    const dispatcher = createPinnedDispatcher(address);
+    const addresses = await assertSafeFetchTarget(currentUrl);
+    const dispatcher = createPinnedDispatcher(addresses);
 
     let response: Response;
     try {

@@ -107,9 +107,9 @@ describe('assertSafeFetchTarget', () => {
 
   it('allows a host that resolves only to public addresses, returning the address to connect to', async () => {
     resolvesTo('93.184.216.34');
-    await expect(assertSafeFetchTarget('https://example.com/file.pdf')).resolves.toBe(
-      '93.184.216.34'
-    );
+    await expect(assertSafeFetchTarget('https://example.com/file.pdf')).resolves.toEqual([
+      '93.184.216.34',
+    ]);
   });
 
   it('blocks an IPv6 literal loopback host', async () => {
@@ -140,7 +140,7 @@ describe('ssrfSafeFetch', () => {
     // Without this the host is resolved twice — once to validate, once to
     // connect — and a short-TTL record can answer those two lookups
     // differently (DNS rebinding, issue #4151).
-    expect(mockCreatePinnedDispatcher).toHaveBeenCalledWith('93.184.216.34');
+    expect(mockCreatePinnedDispatcher).toHaveBeenCalledWith(['93.184.216.34']);
     expect(mockFetch.mock.calls[0][1].dispatcher).toBeDefined();
   });
 
@@ -156,7 +156,10 @@ describe('ssrfSafeFetch', () => {
 
     await ssrfSafeFetch('https://example.com/file.pdf');
 
-    expect(mockCreatePinnedDispatcher.mock.calls).toEqual([['93.184.216.34'], ['151.101.1.140']]);
+    expect(mockCreatePinnedDispatcher.mock.calls).toEqual([
+      [['93.184.216.34']],
+      [['151.101.1.140']],
+    ]);
   });
 
   it('validates and fetches a public URL', async () => {

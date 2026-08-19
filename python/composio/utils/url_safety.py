@@ -60,15 +60,15 @@ def is_blocked_ip(value: str) -> bool:
     return not address.is_global
 
 
-def assert_safe_fetch_target(url: str) -> str:
+def assert_safe_fetch_target(url: str) -> t.List[str]:
     """Refuse non-HTTP(S) URLs and hosts that resolve to internal addresses.
 
     Parse the URL after Requests prepares it so validation uses the same
     canonical hostname that the eventual connection will use.
 
-    :returns: The validated address to connect to. Callers must connect to
-        *this* address rather than re-resolving the hostname; see
-        :func:`safe_get`.
+    :returns: The validated addresses to connect to, in resolver order.
+        Callers must connect to *these* rather than re-resolving the hostname;
+        see :func:`safe_get`.
     """
     try:
         prepared_url = requests.Request(method="GET", url=url).prepare().url
@@ -83,14 +83,17 @@ def assert_safe_fetch_target(url: str) -> str:
         ) from None
 
     try:
-        addresses: set[str] = set()
+        # Resolver order is kept: it encodes the system's address preference
+        # (RFC 6724), and connecting walks it the way urllib3 would.
+        addresses: t.List[str] = []
         for result in socket.getaddrinfo(parsed.hostname, None):
             address = result[4][0]
             if not isinstance(address, str):
                 raise BlockedInternalUrlError(
                     f'Could not resolve host "{parsed.hostname}"'
                 )
-            addresses.add(address)
+            if address not in addresses:
+                addresses.append(address)
     except socket.gaierror as error:
         raise BlockedInternalUrlError(
             f'Could not resolve host "{parsed.hostname}"'
@@ -102,9 +105,10 @@ def assert_safe_fetch_target(url: str) -> str:
                 f'Refusing to fetch "{parsed.hostname}" because it resolves to a non-public address'
             )
 
-    # Every answer was validated, so any of them is safe to connect to. Sorting
-    # keeps the choice deterministic, which makes failures reproducible.
-    return sorted(addresses)[0]
+    if not addresses:
+        raise BlockedInternalUrlError(f'Could not resolve host "{parsed.hostname}"')
+
+    return addresses
 
 
 def parse_content_length(value: t.Optional[str]) -> t.Optional[int]:
@@ -192,8 +196,8 @@ class _PinnedAddressAdapter(requests.adapters.HTTPAdapter):
     un-pinning the connection.
     """
 
-    def __init__(self, address: str, **kwargs: t.Any) -> None:
-        self._address = address
+    def __init__(self, addresses: t.Sequence[str], **kwargs: t.Any) -> None:
+        self._addresses = list(addresses)
         super().__init__(**kwargs)
 
     def get_connection_with_tls_context(
@@ -208,7 +212,7 @@ class _PinnedAddressAdapter(requests.adapters.HTTPAdapter):
         pool: t.Any = super().get_connection_with_tls_context(
             request, verify, proxies=proxies, cert=cert
         )
-        address = self._address
+        addresses = self._addresses
         build_connection = pool._new_conn
 
         def _new_conn() -> t.Any:
@@ -220,14 +224,26 @@ class _PinnedAddressAdapter(requests.adapters.HTTPAdapter):
                 # connect only. urllib3 reads `self.host` for SNI *after*
                 # `_new_conn()` returns, and `http.client` reads it later
                 # still for the `Host` header, so both see the hostname.
+                #
+                # Every validated address is tried in resolver order, the way
+                # urllib3 would have: pinning one address of a dual-stack host
+                # would strand callers whose network cannot reach that family.
                 hostname = connection._dns_host
-                connection._dns_host = address
-                try:
-                    sock = open_socket()
-                finally:
-                    connection._dns_host = hostname
-                _assert_pinned_peer(sock, address, hostname)
-                return sock
+                last_error: t.Optional[BaseException] = None
+                for address in addresses:
+                    connection._dns_host = address
+                    try:
+                        sock = open_socket()
+                    except OSError as error:
+                        last_error = error
+                        continue
+                    finally:
+                        connection._dns_host = hostname
+                    _assert_pinned_peer(sock, address, hostname)
+                    return sock
+
+                assert last_error is not None
+                raise last_error
 
             connection._new_conn = _pinned_new_conn
             return connection
@@ -300,13 +316,13 @@ def safe_get(url: str, **kwargs: t.Any) -> requests.Response:
 
 
 def _pinned_request(method: str, url: str, **kwargs: t.Any) -> requests.Response:
-    address = assert_safe_fetch_target(url)
+    addresses = assert_safe_fetch_target(url)
 
     session = requests.Session()
     if not _proxy_applies(url, kwargs.get("proxies")):
         # A fresh Session per request, so a connection pinned to one address is
         # never reused for a request validated against another.
-        adapter = _PinnedAddressAdapter(address)
+        adapter = _PinnedAddressAdapter(addresses)
         session.mount("http://", adapter)
         session.mount("https://", adapter)
 

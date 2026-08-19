@@ -711,10 +711,11 @@ class FileDownloadable(BaseModel):
                 f"Error downloading file: {_sanitize_url_for_logging(self.s3url)}"
             )
 
-        # Only once the fetch is validated and connected: a blocked URL must
-        # not leave a directory behind.
-        outdir.mkdir(exist_ok=True, parents=True)
         try:
+            # Only once the fetch is validated and connected, so a blocked URL
+            # leaves no directory behind — and inside the `try`, so a failure
+            # here still closes the response.
+            outdir.mkdir(exist_ok=True, parents=True)
             with outfile.open("wb") as fd:
                 for chunk in response.iter_content(chunk_size=chunk_size):
                     fd.write(chunk)
