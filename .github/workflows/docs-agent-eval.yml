@@ -6,49 +6,135 @@
 # the proposed docs through a rewrite proxy, and the result is posted back
 # here as a PR comment. `run-docs-tests-deep` forces Deep.
 #
-# All eval logic lives in ComposioHQ/docs-agent-eval (reusable workflow) —
+# Two entry paths, so label-then-push and push-then-label both work:
+#   - deployment_status (Vercel finished a docs preview): runs if the PR
+#     already carries a run-docs-tests label.
+#   - pull_request labeled/reopened: runs if the docs preview already
+#     succeeded; otherwise skips, and the deployment_status event re-enters
+#     when the preview lands. (`synchronize` removed: new pushes surface as
+#     new deployments, so deployment_status covers them.)
+#
+# All eval logic lives in ComposioHQ/docs-agent-eval-ci (reusable workflow) —
 # see its ARCHITECTURE.md. This check is informational and must NOT be made
 # a required status check in V1.
 #
-# Required repo/org secrets: COMPOSIO_ORG_API_KEY, DEEPSEEK_API_KEY,
-# VERCEL_PROJECT_ID,
-# VERCEL_TOKEN (see the PR description for provisioning notes).
+# Required repo/org secrets: COMPOSIO_ORG_API_KEY, DEEPSEEK_API_KEY.
+# No Vercel credentials (decision 2026-08-19): the engine resolves previews
+# from GitHub's deployment records with the per-run token.
 name: Docs Agent Eval
 
 on:
   pull_request:
-    types: [labeled, synchronize, reopened]
+    types: [labeled, reopened]
+  deployment_status:
 
 jobs:
-  eval:
-    # Run when the PR carries the label — but for `labeled` events, only when
-    # the label just added is one of ours (any other label addition would
-    # otherwise cancel-and-restart an in-flight eval; Cursor Bugbot finding).
-    # Either label triggers on its own (run-docs-tests-deep standalone forces
-    # Deep); labeled events still only count when the added label is ours.
+  # Decides IF an eval should start and FOR WHICH PR. deployment_status
+  # events know the commit but not the PR (deployments attach to commits),
+  # so this job maps SHA -> open PR before any label check is possible.
+  route:
     if: |
-      (contains(github.event.pull_request.labels.*.name, 'run-docs-tests') ||
-       contains(github.event.pull_request.labels.*.name, 'run-docs-tests-deep')) &&
-      (github.event.action != 'labeled' || startsWith(github.event.label.name, 'run-docs-tests'))
-    # Job-level on purpose: a skipped job never enters the concurrency group,
-    # so unrelated triggers cannot cancel a running eval. New commits still
-    # supersede stale runs.
+      (github.event_name == 'pull_request' &&
+       (contains(github.event.pull_request.labels.*.name, 'run-docs-tests') ||
+        contains(github.event.pull_request.labels.*.name, 'run-docs-tests-deep')) &&
+      (github.event.action != 'labeled' || startsWith(github.event.label.name, 'run-docs-tests'))) ||
+      (github.event_name == 'deployment_status' &&
+       github.event.deployment_status.state == 'success' &&
+       contains(github.event.deployment_status.environment_url, '.preview.composio.dev'))
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      deployments: read
+      pull-requests: read
+    outputs:
+      should_run: ${{ steps.decide.outputs.should_run }}
+      pr_number: ${{ steps.decide.outputs.pr_number }}
+      mode: ${{ steps.decide.outputs.mode }}
+    steps:
+      - name: Decide whether to run, and for which PR
+        id: decide
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          pr="" assoc="" labels="" preview_ok=false
+
+          if [ "$GITHUB_EVENT_NAME" = deployment_status ]; then
+            # Trap 2: the event payload has no PR number — map commit -> PR.
+            SHA=$(jq -r .deployment.sha "$GITHUB_EVENT_PATH")
+            PRJSON=$(gh api "repos/$REPO/commits/$SHA/pulls" \
+                       --jq '[.[] | select(.state=="open")][0] // empty')
+            if [ -n "$PRJSON" ]; then
+              pr=$(jq -r .number <<<"$PRJSON")
+              assoc=$(jq -r .author_association <<<"$PRJSON")
+              labels=$(jq -r '[.labels[].name] | join(",")' <<<"$PRJSON")
+            fi
+            preview_ok=true   # this event IS the successful preview
+          else
+            pr=$(jq -r .pull_request.number "$GITHUB_EVENT_PATH")
+            assoc=$(jq -r .pull_request.author_association "$GITHUB_EVENT_PATH")
+            labels=$(jq -r '[.pull_request.labels[].name] | join(",")' "$GITHUB_EVENT_PATH")
+            SHA=$(jq -r .pull_request.head.sha "$GITHUB_EVENT_PATH")
+            # Trap 1: label may predate the preview. Only run now if a docs
+            # preview already succeeded for this exact commit; otherwise skip
+            # — the deployment_status event re-enters when the preview lands.
+            for d in $(gh api "repos/$REPO/deployments?sha=$SHA&per_page=10" --jq '.[].id'); do
+              URL=$(gh api "repos/$REPO/deployments/$d/statuses" \
+                      --jq '[.[] | select(.state=="success")][0].environment_url // empty')
+              case "$URL" in
+                https://docs-*.preview.composio.dev*) preview_ok=true; break ;;
+              esac
+            done
+          fi
+
+          haslabel=false
+          case ",$labels," in
+            *,run-docs-tests,*|*,run-docs-tests-deep,*) haslabel=true ;;
+          esac
+
+          # Employee gate: PR author must be org-affiliated (public repo).
+          trusted=false
+          case "$assoc" in MEMBER|OWNER|COLLABORATOR) trusted=true ;; esac
+
+          mode=Auto
+          case ",$labels," in *,run-docs-tests-deep,*) mode=Deep ;; esac
+
+          should=false
+          if [ -n "$pr" ] && $haslabel && $trusted && $preview_ok; then
+            should=true
+          fi
+          echo "event=$GITHUB_EVENT_NAME pr=${pr:-none} labels=[$labels] assoc=${assoc:-none} preview_ok=$preview_ok -> should_run=$should"
+
+          {
+            echo "should_run=$should"
+            echo "pr_number=$pr"
+            echo "mode=$mode"
+          } >> "$GITHUB_OUTPUT"
+
+  eval:
+    needs: route
+    if: needs.route.outputs.should_run == 'true'
+    # Concurrency here, after routing: a skipped/filtered event never enters
+    # the group, so unrelated triggers cannot cancel a running eval. A newer
+    # run for the same PR (new preview, re-label) still supersedes the stale
+    # one.
     concurrency:
-      group: docs-agent-eval-pr-${{ github.event.pull_request.number }}
+      group: docs-agent-eval-pr-${{ needs.route.outputs.pr_number }}
       cancel-in-progress: true
     permissions:
       contents: read
       pull-requests: write  # the result comment
     # Full-SHA pin required by org policy — bump on docs-agent-eval releases.
-    uses: ComposioHQ/docs-agent-eval-ci/.github/workflows/eval-pr.yml@48e1a1d2f8baf12a7a073b8141afede3baee94f7
+    uses: ComposioHQ/docs-agent-eval-ci/.github/workflows/eval-pr.yml@2a831429ee6d8be6b9b4526f78bf5a451881cf8f
     with:
-      pr_number: ${{ github.event.pull_request.number }}
-      mode: ${{ contains(github.event.pull_request.labels.*.name, 'run-docs-tests-deep') && 'Deep' || 'Auto' }}
+      pr_number: ${{ needs.route.outputs.pr_number }}
+      mode: ${{ needs.route.outputs.mode }}
       post_comment: true
     # Explicit and minimal on purpose — inherit would hand the engine every
     # secret this repo holds (review decision 2).
     secrets:
       COMPOSIO_ORG_API_KEY: ${{ secrets.COMPOSIO_ORG_API_KEY }}
       DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
-      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
