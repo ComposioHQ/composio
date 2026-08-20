@@ -447,16 +447,14 @@ const runToolsSearch = (params: {
       });
 
     const runSearchRequestWithSpinner = (forceRefresh = false) =>
-      Effect.gen(function* () {
-        return yield* emitHuman
-          ? ui.withSpinner(
-              queries.length === 1
-                ? `Searching tools for "${queries[0]}"...`
-                : `Searching tools for ${queries.length} queries...`,
-              runSearchRequest(forceRefresh)
-            )
-          : runSearchRequest(forceRefresh);
-      });
+      emitHuman
+        ? ui.withSpinner(
+            queries.length === 1
+              ? `Searching tools for "${queries[0]}"...`
+              : `Searching tools for ${queries.length} queries...`,
+            runSearchRequest(forceRefresh)
+          )
+        : runSearchRequest(forceRefresh);
 
     const firstSearchResult = yield* runSearchRequestWithSpinner();
     const customToolkitFilters = (toolkitList ?? []).filter(isRemoteCustomToolSlug);
