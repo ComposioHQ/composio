@@ -396,13 +396,12 @@ const runToolsSearch = (params: {
               orgId: resolvedProject.orgId,
               consumerUserId: resolvedUserId.value,
             }).pipe(
+              Effect.tap(() =>
+                Effect.sync(() => {
+                  cacheRefreshSucceeded = true;
+                })
+              ),
               Effect.catchAll(() => invalidateConsumerConnectedToolkitsCache().pipe(Effect.ignore))
-            );
-            cacheRefreshSucceeded = Option.isSome(
-              yield* getFreshConsumerConnectedToolkitsFromCache({
-                orgId: resolvedProject.orgId,
-                consumerUserId: resolvedUserId.value,
-              })
             );
           }
         }
