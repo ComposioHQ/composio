@@ -89,4 +89,9 @@ updates:
         update-types: ["version-update:semver-major"]
     groups:
       github-actions:
+        applies-to: version-updates
+        patterns: ["*"]
+        update-types: ["minor", "patch"]
+      github-actions-security:
+        applies-to: security-updates
         patterns: ["*"]
