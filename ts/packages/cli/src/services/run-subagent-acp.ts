@@ -168,10 +168,13 @@ const resolveShippedAdapterAsset = ({
     }
 
     return {
+      // Reject a zero-byte placeholder: a foreign-platform slot in the archive
+      // can never execute, so treat it as absent and fall through.
       resolvedPath: yield* resolveRunCompanionAssetPath({
         callerImportMetaUrl: import.meta.url,
         execPath,
         relativePathFromRoot: binaryTarget.relativePath,
+        requireNonEmpty: true,
       }),
       expectedRelativePaths: [binaryTarget.relativePath],
     };

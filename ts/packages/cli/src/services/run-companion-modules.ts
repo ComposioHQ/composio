@@ -238,14 +238,28 @@ export const collectRunCompanionAssetRelativePaths = (
     return [...collected].sort();
   });
 
+/**
+ * A release archive names every codex-acp path but fills only the one its own
+ * platform can execute; the rest are empty placeholders that keep older clients'
+ * upgrade verification passing. `requireNonEmpty` makes a placeholder resolve as
+ * absent so the caller falls through to its next adapter source.
+ */
+const fileHasContent = (fs: FileSystem.FileSystem, filePath: string) =>
+  fs.stat(filePath).pipe(
+    Effect.map(info => Number(info.size) > 0),
+    Effect.orElseSucceed(() => false)
+  );
+
 export const resolveRunCompanionAssetPath = ({
   callerImportMetaUrl,
   execPath,
   relativePathFromRoot,
+  requireNonEmpty = false,
 }: {
   callerImportMetaUrl: string;
   execPath: string;
   relativePathFromRoot: string;
+  requireNonEmpty?: boolean;
 }): Effect.Effect<string | null, never, FileSystem.FileSystem | Path.Path> =>
   Effect.gen(function* () {
     const fs = yield* FileSystem.FileSystem;
@@ -260,7 +274,8 @@ export const resolveRunCompanionAssetPath = ({
       path.resolve(executableDirectory, relativePathFromRoot),
     ];
 
-    const found = yield* Effect.findFirst(candidates, candidate => fileExists(fs, candidate));
+    const isUsable = requireNonEmpty ? fileHasContent : fileExists;
+    const found = yield* Effect.findFirst(candidates, candidate => isUsable(fs, candidate));
     return Option.getOrNull(found);
   });
 
