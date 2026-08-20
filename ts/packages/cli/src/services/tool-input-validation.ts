@@ -40,28 +40,6 @@ const toolDefinitionPath = (path: Path.Path, cacheDir: string, slug: string) =>
 const ensureToolDefinitionsDir = (fs: FileSystem.FileSystem, path: Path.Path, cacheDir: string) =>
   fs.makeDirectory(path.join(cacheDir, TOOL_DEFINITIONS_DIR), { recursive: true });
 
-const writeCachedToolInputDefinition = (params: {
-  readonly fs: FileSystem.FileSystem;
-  readonly schemaPath: string;
-  readonly schema: Record<string, unknown>;
-  readonly version: string | null;
-}) =>
-  Effect.gen(function* () {
-    yield* params.fs.writeFileString(
-      params.schemaPath,
-      serializeCachedToolDefinition({
-        version: params.version,
-        inputSchema: params.schema,
-      })
-    );
-
-    return {
-      schemaPath: params.schemaPath,
-      schema: params.schema,
-      version: params.version,
-    };
-  });
-
 const parseSchemaFile = (raw: string, schemaPath: string) =>
   decodeJsonObject(raw).pipe(
     Effect.mapError(
@@ -176,12 +154,19 @@ export const cacheToolInputDefinition = (params: {
     const schemaPath = toolDefinitionPath(path, cacheDir, params.slug);
 
     yield* ensureToolDefinitionsDir(fs, path, cacheDir);
-    return yield* writeCachedToolInputDefinition({
-      fs,
+    yield* fs.writeFileString(
+      schemaPath,
+      serializeCachedToolDefinition({
+        version: params.version ?? null,
+        inputSchema: params.schema,
+      })
+    );
+
+    return {
       schemaPath,
       schema: params.schema,
       version: params.version ?? null,
-    });
+    };
   });
 
 export const invalidateToolInputDefinition = (slug: string) =>
@@ -240,12 +225,18 @@ const fetchAndCacheToolInputDefinition = (
     yield* ensureToolDefinitionsDir(fs, path, cacheDir);
 
     if (localDefinition) {
-      return yield* writeCachedToolInputDefinition({
-        fs,
+      yield* fs.writeFileString(
+        schemaPath,
+        serializeCachedToolDefinition({
+          version: localDefinition.version,
+          inputSchema: localDefinition.schema,
+        })
+      );
+      return {
         schemaPath,
         schema: localDefinition.schema,
         version: localDefinition.version,
-      });
+      };
     }
 
     const [tool, latestVersion] = yield* Effect.all(
@@ -273,7 +264,15 @@ const fetchAndCacheToolInputDefinition = (
       resolvedVersion: version,
       cachePath: schemaPath,
     });
-    return yield* writeCachedToolInputDefinition({ fs, schemaPath, schema, version });
+    yield* fs.writeFileString(
+      schemaPath,
+      serializeCachedToolDefinition({
+        version,
+        inputSchema: schema,
+      })
+    );
+
+    return { schemaPath, schema, version };
   });
 
 export const getOrFetchToolInputDefinition = (
