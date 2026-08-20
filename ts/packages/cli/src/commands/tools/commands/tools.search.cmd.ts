@@ -376,7 +376,7 @@ const runToolsSearch = (params: {
           orgId: resolvedProject.orgId,
           projectId: resolvedProject.projectId,
         });
-        let cacheRefreshAttempted = false;
+        let cacheRefreshSucceeded = false;
         if (resolvedProject.projectType === 'CONSUMER') {
           const cachedToolkits = yield* getFreshConsumerConnectedToolkitsFromCache({
             orgId: resolvedProject.orgId,
@@ -392,11 +392,15 @@ const runToolsSearch = (params: {
             forceRefresh || Option.isNone(cachedToolkits) || requestedCustomToolkitMissing;
 
           if (shouldRefresh) {
-            cacheRefreshAttempted = true;
             yield* refreshConsumerConnectedToolkitsCache({
               orgId: resolvedProject.orgId,
               consumerUserId: resolvedUserId.value,
             }).pipe(
+              Effect.tap(() =>
+                Effect.sync(() => {
+                  cacheRefreshSucceeded = true;
+                })
+              ),
               Effect.catchAll(() => invalidateConsumerConnectedToolkitsCache().pipe(Effect.ignore))
             );
           }
@@ -442,7 +446,7 @@ const runToolsSearch = (params: {
                   toolRouterSessionId: sessionId,
                 }
               : undefined,
-          cacheRefreshAttempted,
+          cacheRefreshSucceeded,
         };
       });
 
@@ -460,7 +464,7 @@ const runToolsSearch = (params: {
     const customToolkitFilters = (toolkitList ?? []).filter(isRemoteCustomToolSlug);
     const shouldRetryAfterCustomToolkitMiss =
       customToolkitFilters.length > 0 &&
-      !firstSearchResult.cacheRefreshAttempted &&
+      !firstSearchResult.cacheRefreshSucceeded &&
       customToolkitFilters.some(
         toolkit => !searchResponseIncludesToolkit(firstSearchResult.searchResponse, toolkit)
       );

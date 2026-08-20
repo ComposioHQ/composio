@@ -1,10 +1,13 @@
 import { describe, expect, layer } from '@effect/vitest';
-import { ConfigProvider, Effect } from 'effect';
 import type {
   SessionCreateParams,
   SessionSearchParams,
+  SessionSearchResponse,
 } from '@composio/client/resources/tool-router';
+import { ConfigProvider, Effect, Option } from 'effect';
+import { afterEach, vi } from 'vitest';
 import { extendConfigProvider } from 'src/services/config';
+import * as consumerShortTermCache from 'src/services/consumer-short-term-cache';
 import { cli, TestLive, MockConsole } from 'test/__utils__';
 import type { TestLiveInput } from 'test/__utils__/services/test-layer';
 import type { Tools } from 'src/models/tools';
@@ -98,6 +101,10 @@ const extractFirstJsonObject = (output: string): Record<string, unknown> | null 
 };
 
 describe('CLI: composio search', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   layer(TestLive(testLiveOptions))('[Given] a blank query [Then] typed validation fails', it => {
     it.scoped('returns the structured missing-query error', () =>
       Effect.gen(function* () {
@@ -194,6 +201,81 @@ describe('CLI: composio search', () => {
           expect(output).toContain(
             `~/.composio/tool_definitions/${customSlug}.json`
           );
+        })
+      );
+    }
+  );
+
+  layer(TestLive(testLiveOptions))(
+    '[Given] a fresh cache and a custom toolkit miss [Then] search refreshes and retries once',
+    it => {
+      it.scoped('refreshes only after the requested custom toolkit is absent', () =>
+        Effect.gen(function* () {
+          const customSlug = 'CUSTOM_DEEPWIKI_READ_WIKI_CONTENTS';
+          let searchCalls = 0;
+          const refreshSpy = vi
+            .spyOn(consumerShortTermCache, 'refreshConsumerConnectedToolkitsCache')
+            .mockReturnValue(Effect.void);
+          vi.spyOn(consumerShortTermCache, 'getFreshConsumerConnectedToolkitsFromCache').mockReturnValue(
+            Effect.succeed(Option.some(['CUSTOM_DEEPWIKI']))
+          );
+
+          const live = TestLive({
+            ...testLiveOptions,
+            toolRouter: {
+              search: async (_sessionId, params) => {
+                searchCalls += 1;
+                const found = searchCalls === 2;
+                const toolSchemas: SessionSearchResponse['tool_schemas'] = found
+                  ? {
+                      [customSlug]: {
+                        tool_slug: customSlug,
+                        toolkit: 'CUSTOM_DEEPWIKI',
+                        description: 'Read wiki contents',
+                        hasFullSchema: true,
+                        input_schema: { type: 'object', properties: {} },
+                        output_schema: { type: 'object', properties: {} },
+                      },
+                    }
+                  : {};
+                return {
+                  success: true,
+                  error: null,
+                  results: [
+                    {
+                      index: 1,
+                      use_case: params.queries[0]?.use_case ?? '',
+                      primary_tool_slugs: found ? [customSlug] : [],
+                      related_tool_slugs: [],
+                      toolkits: found ? ['CUSTOM_DEEPWIKI'] : [],
+                    },
+                  ],
+                  tool_schemas: toolSchemas,
+                  toolkit_connection_statuses: [],
+                  next_steps_guidance: [],
+                  session: {
+                    id: 'trs_test_session',
+                    generate_id: false,
+                    instructions: 'Reuse this session id for follow-up calls.',
+                  },
+                  time_info: {
+                    current_time_utc: '2026-01-01T00:00:00.000Z',
+                    current_time_utc_epoch_seconds: 1767225600,
+                    message: 'UTC time',
+                  },
+                };
+              },
+            },
+          });
+
+          yield* cli(['search', 'read wiki contents', '--toolkits', 'CUSTOM_DEEPWIKI']).pipe(
+            Effect.provide(live)
+          );
+
+          expect(searchCalls).toBe(2);
+          expect(refreshSpy).toHaveBeenCalledOnce();
+          const output = (yield* MockConsole.getLines({ stripAnsi: true })).join('\n');
+          expect(output).toContain(customSlug);
         })
       );
     }
