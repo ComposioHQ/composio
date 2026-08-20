@@ -9512,6 +9512,22 @@
     "triggerCount": 0
   },
   {
+    "slug": "supabase_mcp",
+    "name": "Supabase MCP",
+    "logo": "https://logos.composio.dev/api/supabase_mcp_readonly",
+    "category": "model context protocol",
+    "toolCount": 0,
+    "triggerCount": 0
+  },
+  {
+    "slug": "supabase2_mcp",
+    "name": "Supabase MCP",
+    "logo": "https://logos.composio.dev/api/supabase_mcp_readonly",
+    "category": "model context protocol",
+    "toolCount": 0,
+    "triggerCount": 0
+  },
+  {
     "slug": "supadata",
     "name": "Supadata",
     "logo": "https://logos.composio.dev/api/supadata",

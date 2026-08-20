@@ -284089,6 +284089,134 @@
     ]
   },
   {
+    "slug": "supabase_mcp",
+    "name": "Supabase MCP",
+    "logo": "https://logos.composio.dev/api/supabase_mcp_readonly",
+    "description": "Supabase MCP provides read-only access to authorized Supabase organizations and projects, including databases, logs, project configuration, Edge Functions, branches, storage configuration, and Supabase documentation.",
+    "category": "model context protocol",
+    "authSchemes": [
+      "DCR_OAUTH"
+    ],
+    "toolCount": 0,
+    "triggerCount": 0,
+    "version": "00000000_00",
+    "tools": [],
+    "triggers": [],
+    "authConfigDetails": [
+      {
+        "mode": "DCR_OAUTH",
+        "name": "supabase_mcp_DCR_OAuth",
+        "fields": {
+          "auth_config_creation": {
+            "required": [],
+            "optional": [
+              {
+                "name": "client_id",
+                "displayName": "Client id",
+                "type": "string",
+                "description": "Client id of the app",
+                "required": false,
+                "default": null
+              },
+              {
+                "name": "client_secret",
+                "displayName": "Client secret",
+                "type": "string",
+                "description": "Client secret of the app",
+                "required": false,
+                "default": null
+              },
+              {
+                "name": "oauth_redirect_uri",
+                "displayName": "Redirect URI",
+                "type": "string",
+                "description": "Add this Redirect URL to your app's OAuth allow list.",
+                "required": false,
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
+              },
+              {
+                "name": "scopes",
+                "displayName": "Scopes",
+                "type": "string",
+                "description": "Scopes to request from the user, comma separated",
+                "required": false,
+                "default": "organizations:read,projects:read,projects:write,database:write,database:read,analytics:read,secrets:read,edge_functions:read,edge_functions:write,environment:read,environment:write,storage:read,storage:write"
+              }
+            ]
+          },
+          "connected_account_initiation": {
+            "required": [],
+            "optional": []
+          }
+        }
+      }
+    ]
+  },
+  {
+    "slug": "supabase2_mcp",
+    "name": "Supabase MCP",
+    "logo": "https://logos.composio.dev/api/supabase_mcp_readonly",
+    "description": "Supabase MCP provides read-only access to authorized Supabase organizations and projects, including databases, logs, project configuration, Edge Functions, branches, storage configuration, and Supabase documentation.",
+    "category": "model context protocol",
+    "authSchemes": [
+      "DCR_OAUTH"
+    ],
+    "toolCount": 0,
+    "triggerCount": 0,
+    "version": "00000000_00",
+    "tools": [],
+    "triggers": [],
+    "authConfigDetails": [
+      {
+        "mode": "DCR_OAUTH",
+        "name": "supabase2_mcp_DCR_OAuth",
+        "fields": {
+          "auth_config_creation": {
+            "required": [],
+            "optional": [
+              {
+                "name": "client_id",
+                "displayName": "Client id",
+                "type": "string",
+                "description": "Client id of the app",
+                "required": false,
+                "default": null
+              },
+              {
+                "name": "client_secret",
+                "displayName": "Client secret",
+                "type": "string",
+                "description": "Client secret of the app",
+                "required": false,
+                "default": null
+              },
+              {
+                "name": "oauth_redirect_uri",
+                "displayName": "Redirect URI",
+                "type": "string",
+                "description": "Add this Redirect URL to your app's OAuth allow list.",
+                "required": false,
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
+              },
+              {
+                "name": "scopes",
+                "displayName": "Scopes",
+                "type": "string",
+                "description": "Scopes to request from the user, comma separated",
+                "required": false,
+                "default": "organizations:read,projects:read,projects:write,database:write,database:read,analytics:read,secrets:read,edge_functions:read,edge_functions:write,environment:read,environment:write,storage:read,storage:write"
+              }
+            ]
+          },
+          "connected_account_initiation": {
+            "required": [],
+            "optional": []
+          }
+        }
+      }
+    ]
+  },
+  {
     "slug": "supadata",
     "name": "Supadata",
     "logo": "https://logos.composio.dev/api/supadata",
