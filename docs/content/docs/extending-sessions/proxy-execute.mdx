@@ -106,6 +106,15 @@ if "binary_data" in response:
 </Tab>
 <Tab value="TypeScript">
 ```typescript
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+const session = await composio.create('user_123', { toolkits: ['github'] });
+const response = await session.proxyExecute({
+  toolkit: 'github',
+  endpoint: '/repos/composiohq/composio/issues/1',
+  method: 'GET',
+});
+// ---cut---
 if (response.binaryData) {
   console.log(response.binaryData.url);
 }
