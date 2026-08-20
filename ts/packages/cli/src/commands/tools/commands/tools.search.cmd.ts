@@ -18,6 +18,7 @@ import {
 } from 'src/services/command-project';
 import { commandHintExample, commandHintStep } from 'src/services/command-hints';
 import {
+  getFreshConsumerConnectedToolkitsFromCache,
   invalidateConsumerConnectedToolkitsCache,
   refreshConsumerConnectedToolkitsCache,
   writeConsumerConnectedToolkitsCache,
@@ -98,6 +99,24 @@ const TOOL_SCHEMA_PATH_FORMAT = '~/.composio/tool_definitions/<TOOL_SLUG>.json';
 
 const isRemoteCustomToolSlug = (slug: string): boolean =>
   slug.toUpperCase().startsWith('CUSTOM_');
+
+const includesToolkit = (toolkits: ReadonlyArray<string>, toolkit: string): boolean =>
+  toolkits.some(cachedToolkit => cachedToolkit.toLowerCase() === toolkit.toLowerCase());
+
+const searchResponseIncludesToolkit = (
+  searchResponse: SearchResponseRecord,
+  toolkit: string
+): boolean => {
+  const normalizedToolkit = toolkit.toLowerCase();
+  return (
+    searchResponse.results.some(result =>
+      result.toolkits.some(resultToolkit => resultToolkit.toLowerCase() === normalizedToolkit)
+    ) ||
+    Object.values(searchResponse.tool_schemas).some(
+      schema => schema.toolkit.toLowerCase() === normalizedToolkit
+    )
+  );
+};
 
 const toHomeRelativePath = (cacheDir: string, absolutePath: string) =>
   absolutePath.startsWith(cacheDir) ? absolutePath.replace(cacheDir, '~/.composio') : absolutePath;
@@ -332,90 +351,124 @@ const runToolsSearch = (params: {
             .filter(Boolean)
         : undefined;
 
-    const runSearchRequest = Effect.gen(function* () {
-      const resolvedProject = yield* resolveCommandProject({
-        mode: 'consumer',
-        projectName: params.rootOnly ? undefined : Option.getOrUndefined(params.projectName),
-      }).pipe(Effect.mapError(formatResolveCommandProjectError));
-      const resolvedUserId =
-        resolvedProject.projectType === 'CONSUMER'
-          ? Option.fromNullable(resolvedProject.consumerUserId)
-          : Option.match(params.userId, {
-              onSome: value => Option.some(value),
-              onNone: () => userContext.data.testUserId,
-            });
-      if (Option.isNone(resolvedUserId)) {
-        return yield* new ToolsSearchInputError({
-          reason: 'missing_user_id',
-          message:
-            'Missing user id. Provide --user-id or run composio login to set global test_user_id.',
-        });
-      }
-      const clientSingleton = yield* ComposioClientSingleton;
-      const client = yield* clientSingleton.getFor({
-        orgId: resolvedProject.orgId,
-        projectId: resolvedProject.projectId,
-      });
-      if (resolvedProject.projectType === 'CONSUMER') {
-        yield* refreshConsumerConnectedToolkitsCache({
-          orgId: resolvedProject.orgId,
-          consumerUserId: resolvedUserId.value,
-        }).pipe(
-          Effect.catchAll(() => invalidateConsumerConnectedToolkitsCache().pipe(Effect.ignore))
-        );
-      }
-      const { sessionId, localExperimentalPayload } = yield* resolveToolRouterSession(
-        client,
-        resolvedUserId.value,
-        {
-          toolkits: toolkitList,
-          cacheScope:
-            resolvedProject.projectType === 'CONSUMER' && resolvedProject.consumerUserId
-              ? {
-                  orgId: resolvedProject.orgId,
-                  projectId: resolvedProject.projectId,
-                  consumerUserId: resolvedProject.consumerUserId,
-                }
-              : undefined,
+    const runSearchRequest = (forceRefresh = false) =>
+      Effect.gen(function* () {
+        const resolvedProject = yield* resolveCommandProject({
+          mode: 'consumer',
+          projectName: params.rootOnly ? undefined : Option.getOrUndefined(params.projectName),
+        }).pipe(Effect.mapError(formatResolveCommandProjectError));
+        const resolvedUserId =
+          resolvedProject.projectType === 'CONSUMER'
+            ? Option.fromNullable(resolvedProject.consumerUserId)
+            : Option.match(params.userId, {
+                onSome: value => Option.some(value),
+                onNone: () => userContext.data.testUserId,
+              });
+        if (Option.isNone(resolvedUserId)) {
+          return yield* new ToolsSearchInputError({
+            reason: 'missing_user_id',
+            message:
+              'Missing user id. Provide --user-id or run composio login to set global test_user_id.',
+          });
         }
-      );
-      const searchPayload = {
-        queries: queries.map(query => ({ use_case: query })),
-        ...(localExperimentalPayload ? { experimental: localExperimentalPayload } : {}),
-      };
-      const searchResponse = yield* Effect.tryPromise({
-        try: () => client.toolRouter.session.search(sessionId, searchPayload),
-        catch: cause =>
-          new ToolsSearchRequestError({
-            message: 'Failed to search tools.',
-            cause,
-          }),
-      });
-      return {
-        searchResponse,
-        projectScope: {
+        const clientSingleton = yield* ComposioClientSingleton;
+        const client = yield* clientSingleton.getFor({
           orgId: resolvedProject.orgId,
           projectId: resolvedProject.projectId,
-        },
-        historyScope:
-          resolvedProject.projectType === 'CONSUMER'
-            ? {
-                orgId: resolvedProject.orgId,
-                consumerUserId: resolvedUserId.value,
-                toolRouterSessionId: sessionId,
-              }
-            : undefined,
-      };
-    });
+        });
+        let cacheRefreshAttempted = false;
+        if (resolvedProject.projectType === 'CONSUMER') {
+          const cachedToolkits = yield* getFreshConsumerConnectedToolkitsFromCache({
+            orgId: resolvedProject.orgId,
+            consumerUserId: resolvedUserId.value,
+          });
+          const requestedCustomToolkitMissing =
+            toolkitList?.some(
+              toolkit =>
+                isRemoteCustomToolSlug(toolkit) &&
+                (Option.isNone(cachedToolkits) || !includesToolkit(cachedToolkits.value, toolkit))
+            ) ?? false;
+          const shouldRefresh =
+            forceRefresh || Option.isNone(cachedToolkits) || requestedCustomToolkitMissing;
 
-    const searchResult = emitHuman
-      ? yield* ui.withSpinner(
-          queries.length === 1
-            ? `Searching tools for "${queries[0]}"...`
-            : `Searching tools for ${queries.length} queries...`,
-          runSearchRequest
-        )
-      : yield* runSearchRequest;
+          if (shouldRefresh) {
+            cacheRefreshAttempted = true;
+            yield* refreshConsumerConnectedToolkitsCache({
+              orgId: resolvedProject.orgId,
+              consumerUserId: resolvedUserId.value,
+            }).pipe(
+              Effect.catchAll(() => invalidateConsumerConnectedToolkitsCache().pipe(Effect.ignore))
+            );
+          }
+        }
+        const { sessionId, localExperimentalPayload } = yield* resolveToolRouterSession(
+          client,
+          resolvedUserId.value,
+          {
+            toolkits: toolkitList,
+            cacheScope:
+              resolvedProject.projectType === 'CONSUMER' && resolvedProject.consumerUserId
+                ? {
+                    orgId: resolvedProject.orgId,
+                    projectId: resolvedProject.projectId,
+                    consumerUserId: resolvedProject.consumerUserId,
+                  }
+                : undefined,
+          }
+        );
+        const searchPayload = {
+          queries: queries.map(query => ({ use_case: query })),
+          ...(localExperimentalPayload ? { experimental: localExperimentalPayload } : {}),
+        };
+        const searchResponse = yield* Effect.tryPromise({
+          try: () => client.toolRouter.session.search(sessionId, searchPayload),
+          catch: cause =>
+            new ToolsSearchRequestError({
+              message: 'Failed to search tools.',
+              cause,
+            }),
+        });
+        return {
+          searchResponse,
+          projectScope: {
+            orgId: resolvedProject.orgId,
+            projectId: resolvedProject.projectId,
+          },
+          historyScope:
+            resolvedProject.projectType === 'CONSUMER'
+              ? {
+                  orgId: resolvedProject.orgId,
+                  consumerUserId: resolvedUserId.value,
+                  toolRouterSessionId: sessionId,
+                }
+              : undefined,
+          cacheRefreshAttempted,
+        };
+      });
+
+    const runSearchRequestWithSpinner = (forceRefresh = false) =>
+      Effect.gen(function* () {
+        return yield* emitHuman
+          ? ui.withSpinner(
+              queries.length === 1
+                ? `Searching tools for "${queries[0]}"...`
+                : `Searching tools for ${queries.length} queries...`,
+              runSearchRequest(forceRefresh)
+            )
+          : runSearchRequest(forceRefresh);
+      });
+
+    const firstSearchResult = yield* runSearchRequestWithSpinner();
+    const customToolkitFilters = (toolkitList ?? []).filter(isRemoteCustomToolSlug);
+    const shouldRetryAfterCustomToolkitMiss =
+      customToolkitFilters.length > 0 &&
+      !firstSearchResult.cacheRefreshAttempted &&
+      customToolkitFilters.some(
+        toolkit => !searchResponseIncludesToolkit(firstSearchResult.searchResponse, toolkit)
+      );
+    const searchResult = shouldRetryAfterCustomToolkitMiss
+      ? yield* runSearchRequestWithSpinner(true)
+      : firstSearchResult;
     const searchResponse = searchResult.searchResponse;
 
     const toolkitSet = toolkitList && toolkitList.length > 0 ? new Set(toolkitList) : undefined;
