@@ -41,7 +41,7 @@ from composio.core.models.custom_tool_types import (
     CustomToolsMap,
     CustomToolsMapEntry,
     InlineCustomToolsWirePayload,
-    NormalizedProxyExecuteResponse,
+    ToolRouterSessionProxyExecuteResponse,
     RegisteredCustomTool,
     RegisteredCustomToolkit,
 )
@@ -52,7 +52,6 @@ from composio.core.models.inline_custom_tools_payload import (
 )
 from composio.core.models.session_context import (
     SessionContextImpl,
-    normalize_proxy_execute_response,
     proxy_execute_impl,
 )
 from composio.core.models.tool_router_session_delete import (
@@ -814,7 +813,7 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
         method: t.Literal["GET", "POST", "PUT", "DELETE", "PATCH"],
         body: t.Any = None,
         parameters: t.Optional[t.List[t.Dict[str, t.Any]]] = None,
-    ) -> NormalizedProxyExecuteResponse:
+    ) -> ToolRouterSessionProxyExecuteResponse:
         """Proxy an API call through Composio's auth layer.
 
         :param toolkit: Composio toolkit slug (e.g. 'gmail', 'github')
@@ -822,9 +821,9 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
         :param method: HTTP method
         :param body: Request body (for POST, PUT, PATCH)
         :param parameters: Query/header parameters
-        :returns: Normalized proxy API response
+        :returns: Proxied API response
         """
-        response = proxy_execute_impl(
+        return proxy_execute_impl(
             self._client,
             self.session_id,
             toolkit=toolkit,
@@ -833,7 +832,6 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
             body=body,
             parameters=parameters,
         )
-        return normalize_proxy_execute_response(response)
 
     def update(
         self,
