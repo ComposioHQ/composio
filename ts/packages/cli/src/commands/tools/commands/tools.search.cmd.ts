@@ -388,8 +388,46 @@ const runToolsSearch = (params: {
             cause,
           }),
       });
+      const customToolSlugsMissingSchemas = Object.entries(searchResponse.tool_schemas)
+        .filter(
+          ([slug, schema]) =>
+            isRemoteCustomToolSlug(slug) && !schema.input_schema
+        )
+        .map(([slug]) => slug);
+      const hydratedSearchResponse =
+        customToolSlugsMissingSchemas.length === 0
+          ? searchResponse
+          : yield* Effect.tryPromise({
+              try: async () => {
+                const schemaResponse = await client.toolRouter.session.executeMeta(sessionId, {
+                  slug: 'COMPOSIO_GET_TOOL_SCHEMAS',
+                  arguments: { tool_slugs: customToolSlugsMissingSchemas },
+                });
+                if (schemaResponse.error) {
+                  throw new Error(schemaResponse.error);
+                }
+
+                const resolvedSchemas = schemaResponse.data.tool_schemas;
+                if (!resolvedSchemas || typeof resolvedSchemas !== 'object') {
+                  throw new Error('Tool Router returned no tool schemas.');
+                }
+
+                return {
+                  ...searchResponse,
+                  tool_schemas: {
+                    ...searchResponse.tool_schemas,
+                    ...(resolvedSchemas as Record<string, SearchToolSchema>),
+                  },
+                };
+              },
+              catch: cause =>
+                new ToolsSearchRequestError({
+                  message: 'Failed to fetch custom tool schemas.',
+                  cause,
+                }),
+            });
       return {
-        searchResponse,
+        searchResponse: hydratedSearchResponse,
         projectScope: {
           orgId: resolvedProject.orgId,
           projectId: resolvedProject.projectId,

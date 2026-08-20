@@ -200,6 +200,91 @@ describe('CLI: composio search', () => {
   );
 
   layer(TestLive(testLiveOptions))(
+    '[Given] a remote custom tool schema reference [Then] search resolves it with the Tool Router meta-tool',
+    it => {
+      it.scoped('does not use the legacy tools endpoint for schema references', () =>
+        Effect.gen(function* () {
+          const customSlug = 'CUSTOM_DEEPWIKI_READ_WIKI_CONTENTS';
+          let schemaRequestSlugs: unknown;
+          const live = TestLive({
+            ...testLiveOptions,
+            toolRouter: {
+              search: async (_sessionId, params) => ({
+                success: true,
+                error: null,
+                results: [
+                  {
+                    index: 1,
+                    use_case: params.queries[0]?.use_case ?? '',
+                    primary_tool_slugs: [customSlug],
+                    related_tool_slugs: [],
+                    toolkits: ['CUSTOM_DEEPWIKI'],
+                  },
+                ],
+                tool_schemas: {
+                  [customSlug]: {
+                    tool_slug: customSlug,
+                    toolkit: 'CUSTOM_DEEPWIKI',
+                    description: 'Read wiki contents',
+                    hasFullSchema: false,
+                    schemaRef: {
+                      tool: 'COMPOSIO_GET_TOOL_SCHEMAS',
+                      args: { tool_slugs: [customSlug] },
+                    },
+                  },
+                },
+                toolkit_connection_statuses: [],
+                next_steps_guidance: [],
+                session: {
+                  id: 'trs_test_session',
+                  generate_id: false,
+                  instructions: 'Reuse this session id for follow-up calls.',
+                },
+                time_info: {
+                  current_time_utc: '2026-01-01T00:00:00.000Z',
+                  current_time_utc_epoch_seconds: 1767225600,
+                  message: 'UTC time',
+                },
+              }),
+              executeMeta: async (_sessionId, params) => {
+                schemaRequestSlugs = params.arguments?.tool_slugs;
+                return {
+                  data: {
+                    success: true,
+                    tool_schemas: {
+                      [customSlug]: {
+                        tool_slug: customSlug,
+                        toolkit: 'CUSTOM_DEEPWIKI',
+                        description: 'Read wiki contents',
+                        input_schema: {
+                          type: 'object',
+                          properties: { repo: { type: 'string' } },
+                          required: ['repo'],
+                        },
+                      },
+                    },
+                  },
+                  error: null,
+                  log_id: 'log_test',
+                };
+              },
+            },
+          });
+
+          yield* cli(['search', 'read wiki contents']).pipe(Effect.provide(live));
+          const output = (yield* MockConsole.getLines({ stripAnsi: true })).join('\n');
+
+          expect(output).toContain(customSlug);
+          expect(schemaRequestSlugs).toEqual([customSlug]);
+          expect(output).toContain(
+            `~/.composio/tool_definitions/${customSlug}.json`
+          );
+        })
+      );
+    }
+  );
+
+  layer(TestLive(testLiveOptions))(
     '[Given] multiple queries [Then] the CLI returns a batched JSON response',
     it => {
       it.scoped('returns batched results in JSON', () =>
