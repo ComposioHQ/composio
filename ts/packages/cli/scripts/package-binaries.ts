@@ -25,11 +25,7 @@ import {
   collectExpectedRunCompanionAssetRelativePaths,
   RUN_COMPANION_ALL_STATIC_ASSET_RELATIVE_PATHS,
 } from '../src/services/run-companion-modules';
-import {
-  archiveCompanionRelativePaths,
-  ARTIFACT_NAMES,
-  releaseArtifactTargetFor,
-} from './_release-artifacts';
+import { ARTIFACT_NAMES } from './_release-artifacts';
 
 const BINARIES_DIR = './dist/binaries';
 const COMPANIONS_DIR = path.join(BINARIES_DIR, 'companions');
@@ -49,8 +45,7 @@ export function packageBinaries() {
     }
 
     // One packaging host produces all four archives, so `COMPANIONS_DIR` must hold
-    // every platform's codex-acp binary before packaging starts. Validate that full
-    // set up front; each archive then receives only the slice it can execute.
+    // every platform's codex-acp binary before packaging starts.
     const allCompanionRelativePaths = yield* collectExpectedRunCompanionAssetRelativePaths(
       COMPANIONS_DIR,
       { staticAssetRelativePaths: RUN_COMPANION_ALL_STATIC_ASSET_RELATIVE_PATHS }
@@ -70,13 +65,16 @@ export function packageBinaries() {
     yield* Console.log(`Packaging ${binaries.length} binaries...`);
 
     for (const binary of binaries) {
-      // An archive's `composio` binary is already platform-specific, so a foreign
-      // codex-acp binary inside it could never run. Ship only this platform's.
-      const target = yield* releaseArtifactTargetFor(binary);
-      const companionRelativePaths = archiveCompanionRelativePaths({
-        allRelativePaths: allCompanionRelativePaths,
-        target,
-      });
+      // Every archive ships every platform's codex-acp, even though its own
+      // `composio` binary can only ever execute one of them.
+      //
+      // A CLI released before 2026-08-18 verifies a downloaded upgrade package
+      // against all four codex-acp paths and refuses to install one that is
+      // missing any of them, so an archive carrying only its own binary breaks
+      // `composio upgrade` for every client already in the field. Narrowing the
+      // set is worth roughly 651 MB per archive, but it can only ship once no
+      // supported client still performs that check.
+      const companionRelativePaths = allCompanionRelativePaths;
 
       const binaryPath = path.join(BINARIES_DIR, binary);
       const zipPath = path.join(BINARIES_DIR, `${binary}.zip`);
