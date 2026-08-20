@@ -65,7 +65,6 @@
     "@effect/workflow": "^0.19.1",
     "@types/bun": "catalog:",
     "@types/semver": "^7.8.0",
-    "tar": "^7.5.22",
     "tempy": "^3.2.0",
     "tsdown": "catalog:",
     "tsx": "catalog:",
