@@ -268,20 +268,28 @@ const sh = (cmdline, opts = {}) =>
     child.on('exit', (code) => (code === 0 ? resolveSh(out) : rejectSh(new Error(`${cmdline.join(' ')} → exit ${code}\n${out.slice(-2000)}`))));
   });
 
-const resolvedTsClientVersion = async () => {
-  const out = await sh(['node', '-e', "console.log(JSON.parse(require('fs').readFileSync(require.resolve('@composio/client/package.json', {paths:[require('path').join(process.cwd(),'ts/packages/core')]}), 'utf8')).version)"]);
-  return out.trim().split('\n').pop();
+/**
+ * Resolve @composio/client as @composio/core sees it. The realpath identifies
+ * the installed copy: a `file:` override lands in its own store directory even
+ * when the tarball reports the same version as the catalog pin, so comparing
+ * paths (not versions) is what tells a real swap from a no-op.
+ */
+const resolvedTsClient = async () => {
+  const out = await sh(['node', '-e', "const path=require('path');const fs=require('fs');const manifest=require.resolve('@composio/client/package.json', {paths:[path.join(process.cwd(),'ts/packages/core')]});console.log(JSON.stringify({path:fs.realpathSync(manifest),version:JSON.parse(fs.readFileSync(manifest,'utf8')).version}))"]);
+  return JSON.parse(out.trim().split('\n').pop());
 };
 
-const assertTsCandidateApplied = (baselineVersion, candidateVersion) => {
-  if (candidateVersion === baselineVersion) {
-    fail(`override did not take effect: @composio/client still resolves to ${candidateVersion}`);
+const assertTsCandidateApplied = (baseline, candidate) => {
+  if (candidate.path === baseline.path) {
+    fail(
+      `override did not take effect: @composio/client still resolves to the installed baseline at ${candidate.path} (${candidate.version})`
+    );
   }
 };
 
 const applyTsCandidate = async (tarball) => {
   if (!existsSync(tarball)) fail(`COMPOSIO_CLIENT_TARBALL not found: ${tarball}`);
-  const baselineVersion = await resolvedTsClientVersion();
+  const baseline = await resolvedTsClient();
   const yaml = readFileSync(WORKSPACE_YAML, 'utf8');
   if (/^overrides:$/m.test(yaml)) {
     // Merge into the repo's existing overrides block (e.g. security pins);
@@ -291,9 +299,9 @@ const applyTsCandidate = async (tarball) => {
     writeFileSync(WORKSPACE_YAML, `${yaml}\noverrides:\n  '@composio/client': file:${tarball}\n`);
   }
   await sh(['pnpm', 'install', '--no-frozen-lockfile']);
-  const version = await resolvedTsClientVersion();
-  assertTsCandidateApplied(baselineVersion, version);
-  console.log(`candidate @composio/client resolved: ${version}`);
+  const candidate = await resolvedTsClient();
+  assertTsCandidateApplied(baseline, candidate);
+  console.log(`candidate @composio/client resolved: ${candidate.version} (${candidate.path})`);
   await sh(['pnpm', 'run', 'build:packages']);
 };
 
@@ -535,13 +543,28 @@ const cmdSelftest = async () => {
     cleanupRan && cleanupError instanceof HarnessError
   );
 
+  const installedBaseline = {
+    path: '/repo/node_modules/.pnpm/@composio+client@2.0.0-rc.3/node_modules/@composio/client',
+    version: '2.0.0-rc.3',
+  };
   let noOpCandidateRejected = false;
   try {
-    assertTsCandidateApplied('baseline-version', 'baseline-version');
+    assertTsCandidateApplied(installedBaseline, { ...installedBaseline });
   } catch {
     noOpCandidateRejected = true;
   }
-  check('candidate swap rejects the installed baseline version', noOpCandidateRejected);
+  check('candidate swap rejects the installed baseline copy', noOpCandidateRejected);
+
+  let sameVersionCandidateAccepted = true;
+  try {
+    assertTsCandidateApplied(installedBaseline, {
+      path: '/repo/node_modules/.pnpm/file+client.tgz/node_modules/@composio/client',
+      version: installedBaseline.version,
+    });
+  } catch {
+    sameVersionCandidateAccepted = false;
+  }
+  check('candidate swap accepts a tarball reporting the pinned version', sameVersionCandidateAccepted);
 
   const manifest = loadManifest();
   const withoutGoogleDrive = selectManifestEntries(manifest, {
