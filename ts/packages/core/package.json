@@ -119,6 +119,7 @@
     "picocolors": "catalog:",
     "pusher-js": "^8.6.0",
     "semver": "^7.8.5",
+    "undici": "^7.29.0",
     "zod-to-json-schema": "catalog:"
   },
   "gitHead": "4fae6e54d5c150fba955cc5fa314281da5a1e064",

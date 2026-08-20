@@ -27,8 +27,8 @@ from composio.utils import mimetypes
 from composio.utils.json_schema import dereference_json_schema
 from composio.utils.safe_path import secure_basename_join, secure_join
 from composio.utils.url_safety import (
-    assert_safe_fetch_target,
     parse_content_length,
+    safe_get,
     safe_request,
 )
 from composio.utils.sensitive_file_upload_paths import (
@@ -398,14 +398,12 @@ def _fetch_file_from_url(
         ResponseTooLargeError: If response exceeds max_size
         ErrorUploadingFile: If fetch fails for other reasons
     """
-    assert_safe_fetch_target(url)
-
-    # Make request without following redirects
+    # `safe_get` validates the target, connects to the address it validated
+    # (so DNS cannot rebind between the two), and never follows redirects.
     try:
-        response = requests.get(
+        response = safe_get(
             url,
             stream=True,  # Enable streaming for size limiting
-            allow_redirects=False,  # Disable redirects for security
             timeout=(_CONNECT_TIMEOUT, _READ_TIMEOUT),
         )
     except requests.exceptions.Timeout:
@@ -696,13 +694,10 @@ class FileDownloadable(BaseModel):
             outfile = secure_basename_join(outdir, self.name, root=root)
         except UnsafePathComponentError as e:
             raise ErrorDownloadingFile(str(e)) from e
-        assert_safe_fetch_target(self.s3url)
-        outdir.mkdir(exist_ok=True, parents=True)
         try:
-            response = requests.get(
-                url=self.s3url,
+            response = safe_get(
+                self.s3url,
                 stream=True,
-                allow_redirects=False,
                 timeout=(_CONNECT_TIMEOUT, _READ_TIMEOUT),
             )
         except requests.exceptions.RequestException as e:
@@ -717,6 +712,10 @@ class FileDownloadable(BaseModel):
             )
 
         try:
+            # Only once the fetch is validated and connected, so a blocked URL
+            # leaves no directory behind — and inside the `try`, so a failure
+            # here still closes the response.
+            outdir.mkdir(exist_ok=True, parents=True)
             with outfile.open("wb") as fd:
                 for chunk in response.iter_content(chunk_size=chunk_size):
                     fd.write(chunk)

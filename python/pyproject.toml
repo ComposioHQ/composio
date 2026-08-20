@@ -12,6 +12,14 @@ dependencies = [
     "openai>=2.48.0",
     "json-schema-to-pydantic>=0.4.11",
     "jsonschema>=4.23.0",
+    # The pinning adapter mounts through `get_connection_with_tls_context`,
+    # which `HTTPAdapter.send` only calls on requests >= 2.32.2; older
+    # versions silently skip it and the pinning never engages.
+    "requests>=2.32.2",
+    # `url_safety` imports urllib3 directly: `NameResolutionError` only exists
+    # from 2.0, and the pinning adapter reaches into 2.x connection internals.
+    # requests alone allows 1.x, which would fail at import time.
+    "urllib3>=2",
 ]
 classifiers = [
     "Programming Language :: Python :: 3",

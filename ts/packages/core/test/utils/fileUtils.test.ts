@@ -118,10 +118,11 @@ describe('fileUtils', () => {
       });
 
       expect(result.name).toBe('document.pdf');
-      expect(mockFetch).toHaveBeenCalledWith(urlWithQuery, {
-        signal: undefined,
-        redirect: 'manual',
-      });
+      expect(mockFetch).toHaveBeenCalledWith(
+        urlWithQuery,
+        // Plus a `dispatcher` pinned to the address the guard validated.
+        expect.objectContaining({ signal: undefined, redirect: 'manual' })
+      );
     });
 
     it('should generate filename when URL has no filename', async () => {

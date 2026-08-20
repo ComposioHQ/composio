@@ -30,8 +30,8 @@ from composio.exceptions import (
 from composio.utils.mimetypes import get_extension_from_mime_type
 from composio.utils.safe_path import secure_basename_join
 from composio.utils.url_safety import (
-    assert_safe_fetch_target,
     parse_content_length,
+    safe_get,
     safe_request,
 )
 from composio.utils.uuid import generate_short_id
@@ -90,12 +90,10 @@ def _fetch_url_bytes(url: str) -> t.Tuple[bytes, str]:
 
     Returns (content, mimetype). Raises :class:`_UrlFetchError`.
     """
-    assert_safe_fetch_target(url)
     try:
-        response = requests.get(
+        response = safe_get(
             url,
             stream=True,
-            allow_redirects=False,
             timeout=(_CONNECT_TIMEOUT, _READ_TIMEOUT),
         )
     except requests.exceptions.RequestException as e:
