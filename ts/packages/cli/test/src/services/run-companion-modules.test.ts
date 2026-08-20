@@ -393,7 +393,11 @@ describe('resolveRunCompanionAssetPath', () => {
         const assetPath = path.join(installDirectory, 'acp-adapters', 'codex', 'darwin-arm64');
         fs.mkdirSync(assetPath, { recursive: true });
         fs.writeFileSync(path.join(assetPath, 'codex-acp'), Buffer.alloc(contents));
-        return yield* use(execPath);
+        return yield* use(execPath).pipe(
+          Effect.ensuring(
+            Effect.sync(() => fs.rmSync(installDirectory, { recursive: true, force: true }))
+          )
+        );
       });
 
     const relativePathFromRoot = 'acp-adapters/codex/darwin-arm64/codex-acp';
