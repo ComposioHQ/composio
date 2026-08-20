@@ -1,6 +1,6 @@
 {
   "name": "@composio/anthropic",
-  "version": "0.10.1",
+  "version": "0.11.0",
   "description": "Non-Agentic Provider for Anthropic in Composio SDK",
   "main": "src/index.ts",
   "type": "module",
@@ -46,11 +46,11 @@
     "@mastra/mcp": "^1.13.1"
   },
   "devDependencies": {
-    "@anthropic-ai/sdk": "^0.115.0",
+    "@anthropic-ai/sdk": "^0.117.1",
     "@composio/core": "workspace:*",
     "@mastra/core": "catalog:",
-    "@mastra/mcp": "^1.15.0",
-    "ai": "^6.0.241",
+    "@mastra/mcp": "^1.16.0",
+    "ai": "^6.0.256",
     "tsdown": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"

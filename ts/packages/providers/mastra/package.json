@@ -49,13 +49,13 @@
   "devDependencies": {
     "@composio/core": "workspace:*",
     "@mastra/core": "catalog:",
-    "ai": "^6.0.241",
+    "ai": "^6.0.256",
     "tsdown": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:",
     "zod": "catalog:"
   },
   "dependencies": {
-    "@mastra/schema-compat": "^1.3.4"
+    "@mastra/schema-compat": "^1.3.7"
   }
 }

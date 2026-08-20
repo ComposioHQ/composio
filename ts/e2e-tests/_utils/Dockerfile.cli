@@ -61,6 +61,20 @@ RUN bun build ./src/bin.ts \
     --production \
     --outfile /out/composio
 
+# Build the `composio run` companion modules next to the binary. Without the
+# run-*.mjs wrappers every `composio run` treats the install as broken and
+# enters the GitHub self-repair path. `--host-only` restricts the bundled
+# codex-acp binary to this image's own platform; shipping all four costs ~870MB
+# and ~2min of build time for binaries this image can never execute.
+#
+# The acp-adapters are dropped afterwards: they are only needed when a script
+# invokes an ACP sub-agent, which is checked lazily at the invocation site, and
+# no CLI e2e test does. Keeping them would add ~224MB to the image. The build
+# script still produces them (it asserts on its own output), so the removal
+# happens in the same layer to keep it out of the image entirely.
+RUN bun scripts/build-companion-modules.ts /out --host-only && \
+    rm -rf /out/acp-adapters
+
 # Copy CLI e2e tests last (changes frequently)
 WORKDIR /app
 COPY ts/e2e-tests/cli/ /app/ts/e2e-tests/cli/
@@ -75,8 +89,9 @@ ENV HOME="/tmp"
 
 WORKDIR /app
 
-# CLI binary
-COPY --from=builder /out/composio /usr/local/bin/composio
+# CLI binary plus the `composio run` companion modules, which must stay siblings
+# of the executable (they are resolved from dirname(process.execPath)).
+COPY --from=builder /out/ /usr/local/bin/
 
 # CLI e2e tests
 COPY --from=builder /app/ts/e2e-tests/cli/ /app/ts/e2e-tests/cli/

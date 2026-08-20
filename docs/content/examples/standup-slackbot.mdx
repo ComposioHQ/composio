@@ -27,8 +27,8 @@ This is a deliberately advanced, opinionated build. It's a strong reference for 
 
 - **Background-agent sessions**: the draft agent runs on a schedule, not in a conversation. It works from the tools a member already connected and never pauses to ask for auth.
 - **Manual execution for deterministic workflows**: outside the draft, the bot doesn't let an agent decide. It runs a fixed flow, calling tools directly with [manual execution](/docs/tools-direct/executing-tools), so a button always triggers the same exact steps.
-- **Manual, pre-connected auth**: members connect their tools ahead of time using [manual connections](/docs/manually-authenticating), and the agent just uses whatever is there.
-- **White-labelling** (advanced): your own Slack app and bot identity, via [white-labelling](/docs/white-labeling-authentication). This is *not* the easy path. We'd recommend Composio's managed apps, which require no additional configuration. Only do this if you specifically want your own branding.
+- **Manual, pre-connected auth**: members connect their tools ahead of time using [manual connections](/docs/authentication/manually-authenticating), and the agent just uses whatever is there.
+- **White-labelling** (advanced): your own Slack app and bot identity, via [white-labelling](/docs/authentication/white-labeling-authentication). This is *not* the easy path. We'd recommend Composio's managed apps, which require no additional configuration. Only do this if you specifically want your own branding.
 - **The proxy** (advanced): using [`proxyExecute`](/docs/extending-sessions/proxy-execute) to call Slack API endpoints Composio doesn't wrap as tools.
 
 It is **not** an example of [in-chat or dynamic auth](/docs/authentication) (asking a user to connect a tool mid-run), and it's more setup than many bots need. If you'd rather have a Slack bot with zero setup (Composio's managed app) or in-chat auth, start with the [general Slack bot](/examples/general-agent-with-pi) instead.
@@ -61,7 +61,7 @@ This bot doesn't post as "Composio". It posts as *my* app, with its own name, ic
 
 <Figure src="/images/standup-slackbot/bot-avatar.png" alt="The Daily Standup Bot avatar" size="sm" />
 
-That's [white-labelling](/docs/white-labeling-authentication): you bring your own Slack app's credentials instead of using Composio-managed ones. Composio-managed auth needs no setup at all; white-labelling is the trade-off, you register and configure your own Slack app first. It's more work, but the bot is fully yours.
+That's [white-labelling](/docs/authentication/white-labeling-authentication): you bring your own Slack app's credentials instead of using Composio-managed ones. Composio-managed auth needs no setup at all; white-labelling is the trade-off, you register and configure your own Slack app first. It's more work, but the bot is fully yours.
 
 Slack's app-creation UI changes from time to time, so the exact screens below may differ. First, the Slack app itself.
 
@@ -87,7 +87,7 @@ Slack's app-creation UI changes from time to time, so the exact screens below ma
 
 ## Auth the bot
 
-The Slack app exists; now connect it through Composio so your code can act as it. You create one `slackbot` auth config from your credentials, then a setup script does the OAuth once with Composio's [manual authentication](/docs/manually-authenticating) flow.
+The Slack app exists; now connect it through Composio so your code can act as it. You create one `slackbot` auth config from your credentials, then a setup script does the OAuth once with Composio's [manual authentication](/docs/authentication/manually-authenticating) flow.
 
 <Callout type="info" title="`slackbot` vs `slack`" className="[&_ul]:my-2 [&_ul]:list-disc [&_ul]:pl-5 [&_li]:my-1 [&_li]:pl-1">
 
@@ -224,7 +224,7 @@ The bot posts the result back as a draft the member can confirm or edit:
 Edit `standup.config.ts` with your team (each member's Slack email and timezone, plus your channel and GitHub org), set your four environment variables, run `npx tsx scripts/setup.ts` once to connect your bot, then `vercel deploy`.
 <Cards>
   <Card title="Configuring sessions" href="/docs/configuring-sessions" description="What a session can scope: toolkits, tools, connections, and connection management" />
-  <Card title="White-labeling authentication" href="/docs/white-labeling-authentication" description="Ship a bot under your own app's name, icon, and credentials" />
-  <Card title="Custom vs managed auth" href="/docs/custom-app-vs-managed-app" description="Bring-your-own Slack app versus a Composio-managed connection" />
+  <Card title="White-labeling authentication" href="/docs/authentication/white-labeling-authentication" description="Ship a bot under your own app's name, icon, and credentials" />
+  <Card title="Custom vs managed auth" href="/docs/authentication/custom-app-vs-managed-app" description="Bring-your-own Slack app versus a Composio-managed connection" />
   <Card title="Triggers" href="/docs/triggers" description="Run agents in response to events: schedules, webhooks, and app activity" />
 </Cards>

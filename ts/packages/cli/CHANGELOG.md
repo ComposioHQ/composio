@@ -2,7 +2,13 @@
 
 ## Unreleased
 
+### Patch Changes
+
 - `composio search` now uses schemas returned by Tool Router for dashboard-registered custom MCP tools instead of querying the legacy managed-tool endpoint, which returned 404 for `CUSTOM_*` tool slugs.
+- `COMPOSIO_ENVIRONMENT=staging` now opens the staging dashboard at
+  `https://staging-dashboard.composio.dev/`.
+- `composio dev auth-configs create` now sends custom OAuth credentials and scopes
+  in the API's expected shape instead of failing validation.
 
 ## 0.3.3
 

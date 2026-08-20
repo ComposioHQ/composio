@@ -1,5 +1,15 @@
 # @composio/core
 
+## 0.17.0
+
+### Minor Changes
+
+- 760f8d0: Allow OpenAI and Anthropic provider tool-call helpers to execute through a supplied Tool Router session. Session meta-tools now retain their session context while provider argument normalization remains intact; existing user-ID calls continue to use direct execution. Anthropic helper failures now preserve their error text in `{ error }` results without changing successful payloads. Custom provider subclasses overriding `executeToolCall` or `handleToolCalls` may require updates because these methods now accept session targets.
+
+### Patch Changes
+
+- 6ba9179: Validate the URLs that come from API responses before fetching them. Tool-execution downloads (`s3Url`), S3 presigned uploads (`new_presigned_url`), Tool Router session file downloads (`RemoteFile.buffer()` / `blob()` / `text()` / `save()`) and session file uploads (`upload_url`) now go through the same SSRF guard that already covered user-supplied URLs, so a response naming a private, loopback, or link-local address is refused instead of fetched. Redirect hops are re-validated. Edge runtimes keep their current behavior: session file transfers are not blocked there, since a Worker cannot resolve DNS to check and its `fetch` does not originate inside the caller's network.
+
 ## 0.16.0
 
 ### Minor Changes

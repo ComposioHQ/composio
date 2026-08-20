@@ -1,6 +1,6 @@
 [project]
 name = "composio"
-version = "0.19.0"
+version = "0.20.0"
 description = "SDK for integrating Composio with your applications."
 readme = "README.md"
 requires-python = ">=3.10,<4"
@@ -12,6 +12,14 @@ dependencies = [
     "openai>=2.48.0",
     "json-schema-to-pydantic>=0.4.11",
     "jsonschema>=4.23.0",
+    # The pinning adapter mounts through `get_connection_with_tls_context`,
+    # which `HTTPAdapter.send` only calls on requests >= 2.32.2; older
+    # versions silently skip it and the pinning never engages.
+    "requests>=2.32.2",
+    # `url_safety` imports urllib3 directly: `NameResolutionError` only exists
+    # from 2.0, and the pinning adapter reaches into 2.x connection internals.
+    # requests alone allows 1.x, which would fail at import time.
+    "urllib3>=2",
 ]
 classifiers = [
     "Programming Language :: Python :: 3",
@@ -29,7 +37,7 @@ dev = [
     "requests>=2.34.2",
     "ruff>=0.16.0",
     # Langchain provider demo
-    "langchain_openai==1.4.1",
+    "langchain_openai==1.4.3",
     "fastapi>=0.140.0",
     "twine>=6.2.0",
     "click>=8.4.2",

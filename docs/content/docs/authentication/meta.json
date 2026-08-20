@@ -1,0 +1,12 @@
+{
+  "title": "Authentication",
+  "pages": [
+    "manually-authenticating",
+    "managing-multiple-connected-accounts",
+    "importing-existing-connections",
+    "custom-app-vs-managed-app",
+    "programmatic-auth-configs",
+    "controlling-scopes",
+    "white-labeling-authentication"
+  ]
+}

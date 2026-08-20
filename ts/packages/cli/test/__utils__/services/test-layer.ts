@@ -1,6 +1,7 @@
 import path from 'node:path';
 import * as tempy from 'tempy';
 import { Composio as RawComposioClient } from '@composio/client';
+import type { AuthConfigCreateParams } from '@composio/client/resources/auth-configs';
 import { CliApp, CliConfig } from '@effect/cli';
 import { Command, FetchHttpClient, FileSystem, Path } from '@effect/platform';
 import { BunFileSystem, BunContext, BunPath } from '@effect/platform-bun';
@@ -22,6 +23,7 @@ import * as MockTerminal from './mock-terminal';
 import { TerminalUITest } from './terminal-ui-test';
 import type { Toolkits, ToolkitDetailed } from 'src/models/toolkits';
 import { NodeProcess } from 'src/services/node-process';
+import { cliDebugFlagsLayer } from 'src/services/runtime-flags';
 import {
   ComposioClientSingleton,
   ComposioSessionRepository,
@@ -98,15 +100,15 @@ export interface TestLiveInput {
   execPath?: string;
 
   /**
- * Mock toolkit-related data to use in test.
- */
-toolkitsData?: {
-  toolkits?: Toolkits;
-  detailedToolkits?: ToolkitDetailed[];
-  tools?: Tools;
-  triggerTypesAsEnums?: TriggerTypesAsEnums;
-  triggerTypes?: TriggerTypes;
-};
+   * Mock toolkit-related data to use in test.
+   */
+  toolkitsData?: {
+    toolkits?: Toolkits;
+    detailedToolkits?: ToolkitDetailed[];
+    tools?: Tools;
+    triggerTypesAsEnums?: TriggerTypesAsEnums;
+    triggerTypes?: TriggerTypes;
+  };
 
   /**
    * Mock auth-config data to use in test.
@@ -114,6 +116,7 @@ toolkitsData?: {
   authConfigsData?: {
     items?: AuthConfigItem[];
     createResponse?: AuthConfigCreateResponse;
+    onCreate?: (params: AuthConfigCreateParams) => void;
   };
 
   /**
@@ -611,13 +614,15 @@ export const TestLayer = (input?: TestLiveInput) =>
           }
           return Effect.succeed(found);
         },
-        createAuthConfig: () =>
-          Effect.succeed(
+        createAuthConfig: (params: AuthConfigCreateParams) => {
+          authConfigsData.onCreate?.(params);
+          return Effect.succeed(
             authConfigsData.createResponse ?? {
               auth_config: { id: 'ac_test', auth_scheme: 'OAUTH2', is_composio_managed: true },
               toolkit: { slug: 'test' },
             }
-          ),
+          );
+        },
         deleteAuthConfig: (nanoid: string) => {
           const found = authConfigsData.items.find(item => item.id === nanoid);
           if (!found) {
@@ -1311,6 +1316,9 @@ export const TestLayer = (input?: TestLiveInput) =>
       ConsumerProjectResolveFetchMock,
       StdinTest,
       TerminalUILayer,
+      // `src/commands/index.ts` provides these for real invocations; direct-effect tests that
+      // never route through the root command still need the "no CLI flag override" default.
+      cliDebugFlagsLayer(),
       Layer.provide(
         ProjectContext.Default,
         Layer.mergeAll(BunFileSystem.layer, NodeOsTest, NodeProcessTest)

@@ -2,6 +2,7 @@ import { Command, Options } from '@effect/cli';
 import { FileSystem, Path } from '@effect/platform';
 import type { PlatformError } from '@effect/platform/Error';
 import { Array as Arr, Config, ConfigProvider, Data, Effect, Option } from 'effect';
+import { APP_CONFIG } from 'src/effects/app-config';
 import { ComposioCliUserConfig } from 'src/services/cli-user-config';
 import { NodeOs } from 'src/services/node-os';
 import { NodeProcess } from 'src/services/node-process';
@@ -83,20 +84,9 @@ const COMPLETIONS_MARKER = '# Composio CLI completions';
 const UNSAFE_PATH_CHARS = /[`$"\\\n\r:]/;
 const isUnsafePath = (p: string): boolean => UNSAFE_PATH_CHARS.test(p);
 
-// SHELL, PATH, and COMPOSIO_BIN_DIR are read from the literal environment: SHELL
-// and PATH are POSIX-standard (no app prefix applies to them), and COMPOSIO_BIN_DIR
-// is already the full env var name, not a suffix the app's `COMPOSIO_`-prefixing
-// ambient config provider should prefix again. Read them from a raw provider
-// instead (precedent: `src/analytics/dispatch.ts`'s `environmentProvider`).
+// SHELL and PATH are POSIX-standard host variables, so the CLI's COMPOSIO_
+// prefix does not apply to them.
 const environmentProvider = ConfigProvider.fromEnv();
-
-/** Read an optional env var from the raw environment; provider errors die rather than fail the command. */
-const readOptionalEnv = (name: string): Effect.Effect<string | undefined> =>
-  Effect.orDie(
-    environmentProvider.load(
-      Config.option(Config.string(name)).pipe(Config.map(Option.getOrUndefined))
-    )
-  );
 
 /** Read an env var from the raw environment, falling back when unset. */
 const readEnvWithDefault = (name: string, fallback: string): Effect.Effect<string> =>
@@ -658,7 +648,7 @@ export const installShellIntegration = (params: {
 
     // Resolve the entry-point bin dir: explicit env, then a ~/.local/bin/composio
     // that is this executable, then the runtime executable's own directory.
-    const envBinDir = yield* readOptionalEnv('COMPOSIO_BIN_DIR');
+    const envBinDir = yield* APP_CONFIG.BIN_DIR.pipe(Effect.orDie);
     const localBinDir = path.join(os.homedir, '.local', 'bin');
     const execPath = nodeProcess.execPath;
     const localBinComposioIsCurrentExecutable = yield* resolvesToCurrentExecutable(
@@ -696,7 +686,7 @@ export const installShellIntegration = (params: {
     // prints the final action block itself. Keep the concise per-file status
     // lines but suppress the boxed restart hint so the CLI never prints a
     // competing instruction.
-    const invocationOrigin = yield* readOptionalEnv('COMPOSIO_CLI_INVOCATION_ORIGIN');
+    const invocationOrigin = yield* APP_CONFIG.CLI_INVOCATION_ORIGIN.pipe(Effect.orDie);
     const installerOwnsFinalMessaging = invocationOrigin === 'installer';
 
     const shellEnv = yield* readEnvWithDefault('SHELL', '');
