@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- `composio search` now uses schemas returned by Tool Router for dashboard-registered custom MCP tools instead of querying the legacy managed-tool endpoint, which returned 404 for `CUSTOM_*` tool slugs.
+
 ## 0.3.3
 
 ### Patch Changes

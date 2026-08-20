@@ -23,7 +23,10 @@ import {
   writeConsumerConnectedToolkitsCache,
 } from 'src/services/consumer-short-term-cache';
 import { appendCliSessionHistory } from 'src/services/cli-session-artifacts';
-import { getOrFetchToolInputDefinition } from 'src/services/tool-input-validation';
+import {
+  cacheToolInputDefinition,
+  getOrFetchToolInputDefinition,
+} from 'src/services/tool-input-validation';
 
 const query = Args.repeated(Args.text({ name: 'query' })).pipe(
   Args.withDescription(
@@ -92,6 +95,9 @@ const stripSearchResultMetadata = <
 };
 
 const TOOL_SCHEMA_PATH_FORMAT = '~/.composio/tool_definitions/<TOOL_SLUG>.json';
+
+const isRemoteCustomToolSlug = (slug: string): boolean =>
+  slug.toUpperCase().startsWith('CUSTOM_');
 
 const toHomeRelativePath = (cacheDir: string, absolutePath: string) =>
   absolutePath.startsWith(cacheDir) ? absolutePath.replace(cacheDir, '~/.composio') : absolutePath;
@@ -183,7 +189,14 @@ const buildSearchJsonPayload = (params: {
     const primaryToolSchemaPaths = Object.fromEntries(
       yield* Effect.forEach(primaryToolSlugs, slug =>
         Effect.gen(function* () {
-          const definition = yield* getOrFetchToolInputDefinition(slug, params.projectScope);
+          const searchSchema = params.searchResponse.tool_schemas[slug];
+          const definition =
+            isRemoteCustomToolSlug(slug) && searchSchema?.input_schema
+              ? yield* cacheToolInputDefinition({
+                  slug,
+                  schema: searchSchema.input_schema,
+                })
+              : yield* getOrFetchToolInputDefinition(slug, params.projectScope);
           return [slug, toHomeRelativePath(cacheDir, definition.schemaPath)] satisfies readonly [
             string,
             string,
