@@ -417,6 +417,26 @@ describe('Tools', () => {
         undefined
       );
     });
+
+    it('should pass unknown toolkit metadata to schema modifiers', async () => {
+      const toolWithoutToolkit = {
+        ...toolMocks.rawTool,
+        toolkit: undefined,
+      };
+      const modifySchema = vi.fn(({ schema }) => schema);
+      mockClient.toolRouter.session.tools.mockResolvedValueOnce({
+        items: [toolWithoutToolkit],
+        next_cursor: null,
+      });
+
+      await context.tools.getRawToolRouterSessionTools('session_123', { modifySchema });
+
+      expect(modifySchema).toHaveBeenCalledWith({
+        toolSlug: toolMocks.rawTool.slug,
+        toolkitSlug: 'unknown',
+        schema: expect.objectContaining({ slug: toolMocks.rawTool.slug }),
+      });
+    });
   });
 
   describe('getRawComposioToolBySlug', () => {
