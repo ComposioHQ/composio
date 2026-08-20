@@ -1488,11 +1488,12 @@ describe('Tools', () => {
         });
 
         const beforeExecute = vi.fn().mockImplementation(({ params }) => params);
+        const afterExecute = vi.fn().mockImplementation(({ result }) => result);
 
         await context.tools.executeSessionTool(
           toolSlug,
           body,
-          { beforeExecute },
+          { beforeExecute, afterExecute },
           toolWithoutToolkit as unknown as Tool
         );
 
@@ -1501,6 +1502,17 @@ describe('Tools', () => {
           toolkitSlug: 'composio',
           sessionId,
           params: { query: 'test' },
+        });
+        expect(afterExecute).toHaveBeenCalledWith({
+          toolSlug,
+          toolkitSlug: 'composio',
+          sessionId,
+          result: {
+            data: { results: true },
+            error: null,
+            successful: true,
+            logId: '123',
+          },
         });
       });
     });
@@ -2035,7 +2047,25 @@ describe('Tools', () => {
           dangerouslySkipVersionCheck: true, // Required when toolkit is undefined and version is 'latest'
         };
 
-        await tools.execute('SOME_CUSTOM_TOOL', executeParams);
+        const beforeExecute = vi.fn().mockImplementation(({ params }) => params);
+        const afterExecute = vi.fn().mockImplementation(({ result }) => result);
+
+        await tools.execute('SOME_CUSTOM_TOOL', executeParams, {
+          beforeExecute,
+          afterExecute,
+        });
+
+        expect(beforeExecute).toHaveBeenCalledWith({
+          toolSlug: 'SOME_CUSTOM_TOOL',
+          toolkitSlug: 'unknown',
+          params: executeParams,
+        });
+        expect(afterExecute).toHaveBeenCalledWith(
+          expect.objectContaining({
+            toolSlug: 'SOME_CUSTOM_TOOL',
+            toolkitSlug: 'unknown',
+          })
+        );
 
         expect(mockClient.tools.execute).toHaveBeenCalledWith(
           'COMPOSIO_TOOL',
