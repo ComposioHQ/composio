@@ -18,8 +18,7 @@ import {
 } from 'src/services/command-project';
 import { commandHintExample, commandHintStep } from 'src/services/command-hints';
 import {
-  invalidateConsumerConnectedToolkitsCache,
-  refreshConsumerConnectedToolkitsCache,
+  primeConsumerConnectedToolkitsCacheInBackground,
   writeConsumerConnectedToolkitsCache,
 } from 'src/services/consumer-short-term-cache';
 import { appendCliSessionHistory } from 'src/services/cli-session-artifacts';
@@ -357,12 +356,10 @@ const runToolsSearch = (params: {
         projectId: resolvedProject.projectId,
       });
       if (resolvedProject.projectType === 'CONSUMER') {
-        yield* refreshConsumerConnectedToolkitsCache({
+        yield* primeConsumerConnectedToolkitsCacheInBackground({
           orgId: resolvedProject.orgId,
           consumerUserId: resolvedUserId.value,
-        }).pipe(
-          Effect.catchAll(() => invalidateConsumerConnectedToolkitsCache().pipe(Effect.ignore))
-        );
+        });
       }
       const { sessionId, localExperimentalPayload } = yield* resolveToolRouterSession(
         client,
