@@ -9,6 +9,7 @@ import {
   hostRunCompanionStaticAssetRelativePaths,
   listMissingInstalledRunCompanionModules,
   repairMissingInstalledRunCompanionModules,
+  resolveRunCompanionAssetPath,
   RUN_CODEX_ACP_BINARY_TARGETS,
   RUN_COMPANION_ALL_STATIC_ASSET_RELATIVE_PATHS,
   RUN_COMPANION_MODULE_FILENAMES,
@@ -370,6 +371,75 @@ describe('run-companion-modules', () => {
           )
         );
       }
+    );
+  });
+});
+
+/**
+ * Release archives fill only the codex-acp binary their own platform can execute
+ * and leave the other three as empty placeholders, so that a CLI installed
+ * before 2026-08-18 still passes its upgrade verification. A placeholder must
+ * never be handed back as a runnable adapter.
+ */
+describe('resolveRunCompanionAssetPath', () => {
+  layer(BunContext.layer)(it => {
+    const withInstallDirectory = <A, E, R>(
+      contents: number,
+      use: (execPath: string) => Effect.Effect<A, E, R>
+    ) =>
+      Effect.gen(function* () {
+        const installDirectory = fs.mkdtempSync(path.join(os.tmpdir(), 'companion-asset-'));
+        const execPath = path.join(installDirectory, 'composio');
+        const assetPath = path.join(installDirectory, 'acp-adapters', 'codex', 'darwin-arm64');
+        fs.mkdirSync(assetPath, { recursive: true });
+        fs.writeFileSync(path.join(assetPath, 'codex-acp'), Buffer.alloc(contents));
+        return yield* use(execPath);
+      });
+
+    const relativePathFromRoot = 'acp-adapters/codex/darwin-arm64/codex-acp';
+
+    it.effect('resolves a populated binary', () =>
+      withInstallDirectory(64, execPath =>
+        Effect.gen(function* () {
+          const resolved = yield* resolveRunCompanionAssetPath({
+            callerImportMetaUrl: import.meta.url,
+            execPath,
+            relativePathFromRoot,
+            requireNonEmpty: true,
+          });
+
+          expect(resolved).toBe(path.join(path.dirname(execPath), relativePathFromRoot));
+        })
+      )
+    );
+
+    it.effect('reports an empty placeholder as absent under requireNonEmpty', () =>
+      withInstallDirectory(0, execPath =>
+        Effect.gen(function* () {
+          const resolved = yield* resolveRunCompanionAssetPath({
+            callerImportMetaUrl: import.meta.url,
+            execPath,
+            relativePathFromRoot,
+            requireNonEmpty: true,
+          });
+
+          expect(resolved).toBeNull();
+        })
+      )
+    );
+
+    it.effect('still resolves an empty file when only existence is required', () =>
+      withInstallDirectory(0, execPath =>
+        Effect.gen(function* () {
+          const resolved = yield* resolveRunCompanionAssetPath({
+            callerImportMetaUrl: import.meta.url,
+            execPath,
+            relativePathFromRoot,
+          });
+
+          expect(resolved).toBe(path.join(path.dirname(execPath), relativePathFromRoot));
+        })
+      )
     );
   });
 });
