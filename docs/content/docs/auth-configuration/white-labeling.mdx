@@ -14,32 +14,53 @@ There are four places where Composio branding shows up during authentication:
 
 | Where | What users see | How to fix |
 |-------|---------------|------------|
-| [**Connect Link page**](#customizing-the-connect-link) | Composio logo and name on the hosted auth page | Change logo + app title in dashboard |
+| [**Connect Link page**](#customizing-the-connect-link) | Composio logo, name, and styling on the hosted auth page | Set your logo, app title, and theme in the dashboard |
 | [**OAuth consent screen**](#using-your-own-oauth-apps) | "Composio wants to access your account" on Google, GitHub, etc. | Use your own OAuth app |
 | [**Outgoing redirect**](#sending-users-directly-to-the-oauth-provider) | `backend.composio.dev` in browser before reaching OAuth provider | Use `long_redirect_url` option |
 | [**Return redirect**](#routing-the-callback-through-your-domain) | `backend.composio.dev` flashes when OAuth provider redirects back | Proxy the redirect through your domain |
 
 ## Customizing the Connect Link
 
-The Connect Link is the hosted page your users see when connecting their accounts. By default it shows Composio branding.
+The Connect Link is the hosted page your users see when connecting their accounts. By default it shows Composio branding on a neutral light theme. You can swap in your logo and name, then restyle the whole page to match your product.
 
-<Video src="/videos/connect-link-branding.mp4" autoPlay />
+Everything here lives in **Project Settings** → [**White Labeling**](https://dashboard.composio.dev/~/project/settings/auth-screen?utm_source=docs&utm_medium=content&utm_campaign=docs-auth-configuration-white-labeling). Changes apply to every Connect Link flow across all toolkits. Each project has one branding and one theme, so if you need a different look per product, use separate projects.
 
-To replace it with your own branding:
+### Logo and name
 
-1. Go to **Project Settings** → [**Auth Screen**](https://dashboard.composio.dev/~/project/settings/auth-screen?utm_source=docs&utm_medium=content&utm_campaign=docs-auth-configuration-white-labeling)
-2. Upload your **Logo** and set your **App Title**
+1. Go to **Project Settings** → **White Labeling**, and open the **Branding** tab.
+2. Set your **App Title** and upload your **Logo** (a square JPEG or PNG, 256×256 to 1024×1024 pixels).
 
-This applies to all Connect Link flows across all toolkits. Each project has one logo and app title, so if you need different branding per product, use separate projects.
+The logo replaces the Composio mark at the top of the page, and the app title replaces "Composio" in the "...wants to connect to your account" heading.
 
 <Callout>
-Customizing the Connect Link only changes the Composio-hosted page. For OAuth toolkits like Gmail, Google Sheets, GitHub, and Slack, users still see a consent screen saying "Composio wants to access your account." To change that, and to remove the "Secured by Composio" badge, set up your own OAuth app as described [below](#using-your-own-oauth-apps).
+This only changes the Composio-hosted page. For OAuth toolkits like Gmail, Google Sheets, GitHub, and Slack, users still see a consent screen saying "Composio wants to access your account." To change that, and to remove the "Secured by Composio" badge, set up your own OAuth app as described [below](#using-your-own-oauth-apps).
 </Callout>
 
+### Colors, fonts, and per-element styling
+
+Open the **Styling** tab to restyle the entire Connect Link page. A live preview sits beside the controls and updates as you edit, and you can preview each state of the flow with the **Welcome**, **Form**, **Success**, and **Error** tabs.
+
+<Figure src="/images/auth-screen-theme-editor.png" alt="The White Labeling editor with a live preview on the left and styling controls on the right" caption="Editing colors, fonts, and per-element styling with a live preview of the Connect Link" />
+
+Set the page-wide defaults first:
+
+- **Seed colours** for the page background, card, foreground text, and primary accent, plus secondary and tertiary accents for decorative touches.
+- **Typefaces**: a display font for headings and a body font, each chosen from a curated set. The default is ABC Diatype.
+- **Geometry**: corner radius and border width, which set the roundness and outline weight of cards, buttons, and inputs.
+
+For finer control, select any element in the preview to style just that element. Editable elements cover the page and card surfaces, the heading, body, and field labels, the primary and secondary buttons, the input, the error notice, links, and the logo. Depending on the element you can set its colour, background, border, corner radius, shadow, and text size, weight, letter spacing, and case.
+
+<Callout type="info" title="Contrast is enforced">
+Text has to stay legible against its background. The editor shows the contrast ratio for each text element and disables **Save Changes** until every element passes, so you can't ship an unreadable page by accident.
+</Callout>
+
+Prefer to work in code? Flip the **JSON** toggle to edit the theme as a single object you can paste, review, or generate. Your logo and app title stay in the **Branding** tab, since the logo has no JSON representation.
+
 <Callout type="warn" title="Troubleshooting">
-- **"Secured by Composio" badge won't go away:** This badge is removed when you use your own OAuth app. See [Using your own OAuth apps](#using-your-own-oauth-apps).
-- **Logo doesn't appear after uploading:** Clear browser cache or try incognito.
-- **Upload fails with "failed to fetch":** Retry or use a smaller image.
+- **"Secured by Composio" badge won't go away:** this badge is removed when you use your own OAuth app. See [Using your own OAuth apps](#using-your-own-oauth-apps).
+- **Logo doesn't appear after uploading:** clear your browser cache or try incognito.
+- **Upload fails with "failed to fetch":** retry or use a smaller image.
+- **You see the Branding tab but no Styling tab:** theming is still rolling out. If it isn't enabled for your project yet, reach out. The logo and app title keep working in the meantime.
 </Callout>
 
 ## Using your own OAuth apps
