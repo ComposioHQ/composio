@@ -262,6 +262,31 @@ if (!tsReleaseWorkflow.includes('publish: pnpm changeset:release')) {
   throw new Error('ts.release.yml must use the repository-controlled changeset:release script');
 }
 
+// changesets/action v2 renamed `publish`/`commit`/`title` and `publishedPackages`,
+// stopped reading a custom token from GITHUB_TOKEN, requires Changesets CLI v3, and
+// reports published packages through a CHANGESETS_OUTPUT file instead of `changeset
+// publish` stdout. ts.release.yml and changeset-release.sh depend on all four v1
+// behaviors, so the action major and the CLI major have to move together.
+{
+  const actionMajor = requireMatch(
+    tsReleaseWorkflow,
+    /uses: changesets\/action@[0-9a-f]{40} # v(\d+)\./,
+    'changesets/action version pin comment in ts.release.yml'
+  );
+  const cliMajor = requireMatch(
+    packageJson.devDependencies?.['@changesets/cli'] ?? '',
+    /^\D*(\d+)\./,
+    '@changesets/cli version range in package.json'
+  );
+  if (actionMajor !== '1' || cliMajor !== '2') {
+    throw new Error(
+      `changesets/action v${actionMajor} and @changesets/cli v${cliMajor} must be upgraded together: ` +
+        'the v1 input/output names and stdout tag filtering this workflow relies on only exist on ' +
+        'changesets/action v1 with Changesets CLI v2'
+    );
+  }
+}
+
 if (packageJson.scripts?.['changeset:release'] !== 'bash ts/scripts/changeset-release.sh') {
   throw new Error('changeset:release must use the CLI-release filtering script');
 }

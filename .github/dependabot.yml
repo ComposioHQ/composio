@@ -77,6 +77,16 @@ updates:
       interval: "weekly"
       day: "friday"
       time: "06:30"
+    ignore:
+      # v2 renamed every input and output ts.release.yml passes, dropped the
+      # GITHUB_TOKEN environment variable in favor of a `github-token` input,
+      # and requires Changesets CLI v3 while this repository is on v2. It also
+      # reports published packages through a `CHANGESETS_OUTPUT` file instead of
+      # `changeset publish` stdout, which ts/scripts/changeset-release.sh parses
+      # to keep @composio/cli tags out of changesets-created GitHub Releases.
+      # Remove this once that migration lands as its own reviewed change.
+      - dependency-name: "changesets/action"
+        update-types: ["version-update:semver-major"]
     groups:
       github-actions:
         patterns: ["*"]
