@@ -80,9 +80,13 @@ class TestToolExecution:
             cursor="next_page",
         )
 
-    def test_tool_router_schema_modifier_handles_tool_without_toolkit(self):
-        """Tool Router metadata uses its established fallback for custom tools."""
-        from composio.core.models._modifiers import schema_modifier
+    def test_tool_router_modifiers_handle_tool_without_toolkit(self):
+        """Tool Router modifier fallbacks match TypeScript in each phase."""
+        from composio.core.models._modifiers import (
+            after_execute,
+            before_execute,
+            schema_modifier,
+        )
 
         mock_client = mock_http_client()
         tools = Tools(client=mock_client, provider=Mock())
@@ -95,15 +99,34 @@ class TestToolExecution:
 
         @schema_modifier
         def observe_toolkit(tool, toolkit, schema):
-            seen_toolkits.append(toolkit)
+            seen_toolkits.append(("schema", toolkit))
             return schema
+
+        @before_execute
+        def observe_before_execute(tool, toolkit, params):
+            seen_toolkits.append(("before_execute", toolkit))
+            return params
+
+        @after_execute
+        def observe_after_execute(tool, toolkit, response):
+            seen_toolkits.append(("after_execute", toolkit))
+            return response
 
         result = tools.get_raw_tool_router_meta_tools(
             "session_123", modifiers=[observe_toolkit]
         )
+        mock_client.tool_router.session.execute.return_value = Mock(data={}, error=None)
+        execute = tools._wrap_execute_tool_for_tool_router(
+            "session_123", modifiers=[observe_before_execute, observe_after_execute]
+        )
+        execute("CUSTOM_TOOL", {})
 
         assert [tool.slug for tool in result] == ["CUSTOM_TOOL"]
-        assert seen_toolkits == ["composio"]
+        assert seen_toolkits == [
+            ("schema", "unknown"),
+            ("before_execute", "composio"),
+            ("after_execute", "composio"),
+        ]
 
     def test_execute_without_toolkit_runs_modifiers_and_fetches_once(self):
         """Toolkit-less tools execute with the same fallback used by TypeScript."""

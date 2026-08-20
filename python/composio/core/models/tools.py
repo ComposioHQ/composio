@@ -319,7 +319,7 @@ class Tools(Resource, t.Generic[TTool, TToolCollection]):
                     Tool,
                     apply_modifier_by_type(
                         modifiers=modifiers,
-                        toolkit=_toolkit_slug(tool, "composio"),
+                        toolkit=_toolkit_slug(tool, "unknown"),
                         tool=tool.slug,
                         type="schema",
                         schema=tool,
