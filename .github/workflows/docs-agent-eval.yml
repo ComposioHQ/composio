@@ -128,7 +128,7 @@ jobs:
       contents: read
       pull-requests: write  # the result comment
     # Full-SHA pin required by org policy — bump on docs-agent-eval releases.
-    uses: ComposioHQ/docs-agent-eval-ci/.github/workflows/eval-pr.yml@da8e10f34bb24c67e150a19dbe013d718dc69902
+    uses: ComposioHQ/docs-agent-eval-ci/.github/workflows/eval-pr.yml@b1e84be08379820263bb6de3f3a207a67d4d2a65
     with:
       pr_number: ${{ needs.route.outputs.pr_number }}
       mode: ${{ needs.route.outputs.mode }}
