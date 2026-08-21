@@ -388,6 +388,29 @@ function resultFromCandidate(record: PublicKnowledgeCandidateRecord): KnowledgeS
   };
 }
 
+function keywordResults(
+  candidates: PublicKnowledgeCandidateRecord[],
+): KnowledgeSearchResult[] {
+  const bestByPage = new Map<string, PublicKnowledgeCandidateRecord>();
+  for (const candidate of candidates) {
+    const page = candidate.canonicalUrl.split('#', 1)[0] ?? candidate.canonicalUrl;
+    if (!bestByPage.has(page)) bestByPage.set(page, candidate);
+  }
+  return [...bestByPage.values()].slice(0, 20).map(resultFromCandidate);
+}
+
+function strongKeywordResults(
+  candidates: PublicKnowledgeCandidateRecord[],
+  query: string,
+): KnowledgeSearchResult[] {
+  const strongCandidates: PublicKnowledgeCandidateRecord[] = [];
+  const otherCandidates: PublicKnowledgeCandidateRecord[] = [];
+  for (const candidate of candidates) {
+    (isStrongLexicalCandidate(candidate, query) ? strongCandidates : otherCandidates).push(candidate);
+  }
+  return keywordResults([...strongCandidates, ...otherCandidates]);
+}
+
 async function defaultKeywordSearch(
   query: string,
   filter: KnowledgeFilter,
@@ -719,7 +742,7 @@ export async function searchPublicKnowledge(
   const hasStrongKeywordCandidate = keywordWindow?.some(candidate =>
     isStrongLexicalCandidate(candidate, query)) === true;
   if (keywordWindow && hasStrongKeywordCandidate) {
-    const results = keywordWindow.map(resultFromCandidate);
+    const results = strongKeywordResults(keywordCandidates ?? keywordWindow, query);
     return finish({
       query,
       filter: input.filter,
@@ -735,7 +758,7 @@ export async function searchPublicKnowledge(
       degradationCategory = 'all-retrievers-failed';
       return finish({ error: KNOWLEDGE_UNAVAILABLE_MESSAGE }, 503);
     }
-    const results = keywordWindow.map(resultFromCandidate);
+    const results = keywordResults(keywordCandidates ?? keywordWindow);
     return finish({
       query,
       filter: input.filter,

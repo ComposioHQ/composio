@@ -181,7 +181,10 @@ describe('knowledge hub', () => {
   test('uses customer-facing fallback copy in search results', () => {
     const getKnowledgeSearchDisplayExcerpt = (
       knowledgeSearchResultsModule as {
-        getKnowledgeSearchDisplayExcerpt?: (excerpt: string) => string;
+        getKnowledgeSearchDisplayExcerpt?: (
+          excerpt: string,
+          section?: string | null,
+        ) => string;
       }
     ).getKnowledgeSearchDisplayExcerpt;
 
@@ -190,6 +193,16 @@ describe('knowledge hub', () => {
       .toBe('Setup and troubleshooting guidance for Airtable in Composio.');
     expect(getKnowledgeSearchDisplayExcerpt?.('Current navigation for connecting apps.'))
       .toBe('Current navigation for connecting apps.');
+    expect(getKnowledgeSearchDisplayExcerpt?.('Heading; details', 'Heading'))
+      .toBe('details');
+    expect(getKnowledgeSearchDisplayExcerpt?.('Heading - details', 'Heading'))
+      .toBe('details');
+    expect(getKnowledgeSearchDisplayExcerpt?.('Heading,', 'Heading'))
+      .toBe('');
+    expect(getKnowledgeSearchDisplayExcerpt?.('Sending attachments', 'Send'))
+      .toBe('Sending attachments');
+    expect(getKnowledgeSearchDisplayExcerpt?.('API-key authentication', 'API'))
+      .toBe('API-key authentication');
   });
 
   test('omits the redundant guide label from search result cards', () => {
@@ -225,6 +238,110 @@ describe('knowledge hub', () => {
     expect(html).toContain('Support');
     expect(html).toContain('Notion');
     expect(html).not.toContain('Guide');
+  });
+
+  test('keeps the page title primary and renders the matched section as context', () => {
+    const html = renderToStaticMarkup(
+      <knowledgeSearchResultsModule.KnowledgeSearchResultCard
+        query="support"
+        result={{
+          objectID: 'gmail-attachments',
+          title: 'Gmail',
+          excerpt: 'Send attachments safely, Upload files before tool execution.',
+          canonicalUrl: '/kb/guide/toolkits-gmail',
+          sourceType: 'kb',
+          sourceLabel: 'Knowledge Base',
+          breadcrumbs: ['Guide'],
+          productAreas: [],
+          toolkitSlugs: ['gmail'],
+          lastVerifiedAt: '2026-08-17',
+          section: 'Send attachments safely,',
+        }}
+      />,
+    );
+
+    expect(html).toContain('Support');
+    expect(html).not.toContain('Support · Gmail');
+    expect(html).toContain('>Gmail</h3>');
+    expect(html.match(/Send attachments safely/g)?.length).toBe(1);
+    expect(html).not.toContain('Send attachments safely,');
+    expect(html).toContain('Upload files before tool execution.');
+    expect(html.indexOf('Support')).toBeLessThan(html.indexOf('>Gmail</h3>'));
+    expect(html.indexOf('>Gmail</h3>')).toBeLessThan(html.indexOf('Send '));
+    expect(html.indexOf('Send ')).toBeLessThan(html.indexOf('Upload files'));
+  });
+
+  test('does not repeat a section that only differs from the page title by punctuation', () => {
+    const html = renderToStaticMarkup(
+      <knowledgeSearchResultsModule.KnowledgeSearchResultCard
+        query="support"
+        result={{
+          objectID: 'gmail-overview',
+          title: 'Gmail',
+          excerpt: 'Gmail: Send and receive email.',
+          canonicalUrl: '/toolkits/gmail',
+          sourceType: 'toolkit',
+          sourceLabel: 'Toolkit',
+          breadcrumbs: [],
+          productAreas: [],
+          toolkitSlugs: ['gmail'],
+          lastVerifiedAt: null,
+          section: 'Gmail:',
+        }}
+      />,
+    );
+
+    expect(html.match(/Gmail/g)?.length).toBe(1);
+    expect(html).toContain('Send and receive email.');
+  });
+
+  test('does not repeat a section-only match as its own excerpt', () => {
+    const section = 'Create a SHARED Gmail connection that any userId can use,';
+    const html = renderToStaticMarkup(
+      <knowledgeSearchResultsModule.KnowledgeSearchResultCard
+        query="gmail"
+        result={{
+          objectID: 'shared-gmail',
+          title: 'Shared connections',
+          excerpt: section,
+          canonicalUrl: '/docs/shared-connections',
+          sourceType: 'docs',
+          sourceLabel: 'Docs',
+          breadcrumbs: [],
+          productAreas: [],
+          toolkitSlugs: [],
+          lastVerifiedAt: null,
+          section,
+        }}
+      />,
+    );
+
+    expect(html.match(/Create a SHARED/g)?.length).toBe(1);
+  });
+
+  test('renders Markdown-formatted section context as plain text without repeating it', () => {
+    const html = renderToStaticMarkup(
+      <knowledgeSearchResultsModule.KnowledgeSearchResultCard
+        query="context"
+        result={{
+          objectID: 'custom-tools-context',
+          title: 'Custom Tools and Toolkits',
+          excerpt: 'Context object (ctx) Every custom tool receives context.',
+          canonicalUrl: '/docs/custom-tools',
+          sourceType: 'docs',
+          sourceLabel: 'Docs',
+          breadcrumbs: [],
+          productAreas: [],
+          toolkitSlugs: [],
+          lastVerifiedAt: null,
+          section: 'Context object (`ctx`)',
+        }}
+      />,
+    );
+
+    expect(html).not.toContain('`');
+    expect(html.match(/object \(ctx\)/g)?.length).toBe(1);
+    expect(html).toContain('Every custom tool receives');
   });
 
   test('implements accessible result, empty, and failure states', () => {

@@ -7,6 +7,7 @@ import type {
   KnowledgeSearchResponse,
   KnowledgeSearchResult,
 } from '@/lib/knowledge/search';
+import { plainKnowledgeExcerpt } from '@/lib/knowledge/search';
 import type { KnowledgeSourceType } from '@/lib/knowledge/types';
 import { PRODUCT_AREAS } from '@/lib/knowledge/taxonomy';
 import { getKnowledgeDisplayDescription } from '@/lib/knowledge/display';
@@ -33,8 +34,40 @@ export function getHighlightedSegments(
   }));
 }
 
-export function getKnowledgeSearchDisplayExcerpt(excerpt: string): string {
-  return getKnowledgeDisplayDescription(excerpt);
+export function getKnowledgeSearchDisplayExcerpt(
+  excerpt: string,
+  section?: string | null,
+): string {
+  const displayExcerpt = plainKnowledgeExcerpt(getKnowledgeDisplayDescription(excerpt));
+  const sectionTitle = section ? plainKnowledgeExcerpt(section) : '';
+  if (!sectionTitle || !displayExcerpt.toLowerCase().startsWith(sectionTitle.toLowerCase())) {
+    return displayExcerpt;
+  }
+
+  const remainder = displayExcerpt.slice(sectionTitle.length);
+  if (!remainder) return '';
+  if (!/^[\s,:;–—-]/.test(remainder)) return displayExcerpt;
+
+  const hadLeadingWhitespace = /^\s/.test(remainder);
+  const trimmedRemainder = remainder.trimStart();
+  if (!hadLeadingWhitespace && /^-\S/.test(trimmedRemainder)) return displayExcerpt;
+
+  return trimmedRemainder
+    .replace(/^(?:[:,;]|[–—]|-\s*)/, '')
+    .trimStart();
+}
+
+function getKnowledgeSearchDisplaySection(
+  title: string,
+  section?: string | null,
+): string | null {
+  const sectionTitle = section ? plainKnowledgeExcerpt(section) : '';
+  const displaySection = sectionTitle.replace(/[,:;]+$/, '').trimEnd();
+  if (!displaySection || displaySection.toLowerCase() === title.trim().toLowerCase()) {
+    return null;
+  }
+
+  return displaySection;
 }
 
 export function getKnowledgeSearchSourceLabel(sourceType: KnowledgeSourceType): string {
@@ -67,6 +100,10 @@ export function KnowledgeSearchResultCard({
   query: string;
   onClick?: () => void;
 }) {
+  const sourceLabel = getKnowledgeSearchSourceLabel(result.sourceType);
+  const displaySection = getKnowledgeSearchDisplaySection(result.title, result.section);
+  const displayExcerpt = getKnowledgeSearchDisplayExcerpt(result.excerpt, result.section);
+
   return (
     <a
       href={result.canonicalUrl}
@@ -74,7 +111,7 @@ export function KnowledgeSearchResultCard({
       className="group block border border-fd-border bg-fd-background p-5 transition-colors hover:border-fd-primary/40 hover:bg-fd-accent/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fd-ring"
     >
       <span className="text-xs font-medium uppercase tracking-wide text-fd-muted-foreground">
-        {getKnowledgeSearchSourceLabel(result.sourceType)}
+        {sourceLabel}
       </span>
       <div className="flex items-start justify-between gap-4">
         <h3 className="text-base font-semibold group-hover:text-fd-primary sm:text-lg">
@@ -86,13 +123,24 @@ export function KnowledgeSearchResultCard({
         </h3>
         <ArrowUpRight className="mt-1 size-4 shrink-0 text-fd-muted-foreground" aria-hidden="true" />
       </div>
-      <p className="mt-2 max-w-3xl text-sm leading-6 text-fd-muted-foreground">
-        {getHighlightedSegments(getKnowledgeSearchDisplayExcerpt(result.excerpt), query).map((segment, segmentIndex) => (
-          segment.highlighted
-            ? <mark key={segmentIndex} className="bg-fd-primary/15 text-inherit">{segment.text}</mark>
-            : segment.text
-        ))}
-      </p>
+      {displaySection && (
+        <p className="mt-1 text-sm font-medium text-fd-foreground/80">
+          {getHighlightedSegments(displaySection, query).map((segment, segmentIndex) => (
+            segment.highlighted
+              ? <mark key={segmentIndex} className="bg-fd-primary/15 text-inherit">{segment.text}</mark>
+              : segment.text
+          ))}
+        </p>
+      )}
+      {displayExcerpt && (
+        <p className="mt-2 max-w-3xl text-sm leading-6 text-fd-muted-foreground">
+          {getHighlightedSegments(displayExcerpt, query).map((segment, segmentIndex) => (
+            segment.highlighted
+              ? <mark key={segmentIndex} className="bg-fd-primary/15 text-inherit">{segment.text}</mark>
+              : segment.text
+          ))}
+        </p>
+      )}
     </a>
   );
 }
