@@ -72,7 +72,7 @@
   },
   "devDependencies": {
     "@arethetypeswrong/cli": "catalog:",
-    "@changesets/cli": "^2.31.1",
+    "@changesets/cli": "^3.0.0",
     "@changesets/read": "^0.6.7",
     "@composio/anthropic": "workspace:*",
     "@composio/cli-local-tools": "workspace:*",
