@@ -4,6 +4,7 @@
 
 ### Patch Changes
 
+- `composio search` now uses schemas returned by Tool Router for dashboard-registered custom MCP tools instead of querying the legacy managed-tool endpoint, which returned 404 for `CUSTOM_*` tool slugs.
 - `composio upgrade` works again from any previously released CLI. Release
   archives had been narrowed to carry only the `codex-acp` binary their own
   platform can run, but a CLI installed before that change verifies a downloaded
