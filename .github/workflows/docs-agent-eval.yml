@@ -44,6 +44,7 @@ jobs:
       (github.event.action != 'labeled' || startsWith(github.event.label.name, 'run-docs-tests'))) ||
       (github.event_name == 'deployment_status' &&
        github.event.deployment_status.state == 'success' &&
+       startsWith(github.event.deployment_status.environment_url, 'https://docs-') &&
        contains(github.event.deployment_status.environment_url, '.preview.composio.dev'))
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -160,6 +161,10 @@ jobs:
           ref: ${{ env.ENGINE_REF }}
           token: ${{ steps.app-token.outputs.token }}
           path: engine
+          # Don't write the App token into engine/.git/config — the eval then
+          # runs untrusted agent code with filesystem access on this runner,
+          # which could read a persisted token. We only need it for this fetch.
+          persist-credentials: false
 
       - name: Setup Python
         uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
