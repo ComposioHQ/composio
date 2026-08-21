@@ -4,6 +4,12 @@
 
 ### Patch Changes
 
+- `composio upgrade` works again from any previously released CLI. Release
+  archives had been narrowed to carry only the `codex-acp` binary their own
+  platform can run, but a CLI installed before that change verifies a downloaded
+  package against all four platforms' binaries and rejects one that is missing
+  any of them, failing with `Downloaded binary package is incomplete`. Archives
+  ship the full set again.
 - `COMPOSIO_ENVIRONMENT=staging` now opens the staging dashboard at
   `https://staging-dashboard.composio.dev/`.
 - `composio dev auth-configs create` now sends custom OAuth credentials and scopes

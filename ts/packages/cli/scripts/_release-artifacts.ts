@@ -68,6 +68,12 @@ export const releaseArtifactTargetFor = (
  * An archive already carries a platform-specific `composio` binary, so a
  * darwin-arm64 archive is unusable on linux-x64 no matter which codex-acp
  * binaries travel with it. Shipping foreign ones only inflates the download.
+ *
+ * Packaging deliberately does not call this yet. A CLI released before
+ * 2026-08-18 verifies a downloaded upgrade package against all four codex-acp
+ * paths, so an archive narrowed this way breaks `composio upgrade` for every
+ * client already in the field. Wire it back into `package-binaries.ts` once no
+ * supported client still performs that check.
  */
 export const archiveCompanionRelativePaths = ({
   allRelativePaths,

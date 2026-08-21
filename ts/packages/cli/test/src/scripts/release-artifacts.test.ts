@@ -138,3 +138,30 @@ describe('archiveCompanionRelativePaths', () => {
     expect(archiveCompanionRelativePaths({ allRelativePaths: selected, target })).toEqual(selected);
   });
 });
+
+/**
+ * Packaging ships {@link RUN_COMPANION_ALL_STATIC_ASSET_RELATIVE_PATHS} into every
+ * archive rather than the narrowed slice, because a CLI released before
+ * 2026-08-18 verifies an upgrade package against all four codex-acp paths and
+ * refuses one that is missing any of them.
+ */
+describe('published archive companion coverage', () => {
+  it.each(RUN_CODEX_ACP_BINARY_TARGETS)(
+    'ships the $platform-$arch codex-acp binary in every archive',
+    codexTarget => {
+      expect(RUN_COMPANION_ALL_STATIC_ASSET_RELATIVE_PATHS).toContain(codexTarget.relativePath);
+    }
+  );
+
+  it('covers one codex-acp binary per release artifact', () => {
+    expect(codexAcpRelativePathsIn(RUN_COMPANION_ALL_STATIC_ASSET_RELATIVE_PATHS)).toHaveLength(
+      RELEASE_ARTIFACT_TARGETS.length
+    );
+  });
+
+  it('keeps the portable assets alongside them', () => {
+    expect(RUN_COMPANION_ALL_STATIC_ASSET_RELATIVE_PATHS).toEqual(
+      expect.arrayContaining([...RUN_COMPANION_SHARED_STATIC_ASSET_RELATIVE_PATHS])
+    );
+  });
+});
