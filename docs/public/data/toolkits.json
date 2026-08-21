@@ -289086,48 +289086,6 @@
     ]
   },
   {
-    "slug": "test_app",
-    "name": "Test app",
-    "logo": "https://cdn.jsdelivr.net/gh/ComposioHQ/open-logos@master/icons/testapp.png",
-    "description": "...",
-    "category": "tag1",
-    "authSchemes": [
-      "NO_AUTH"
-    ],
-    "toolCount": 2,
-    "triggerCount": 0,
-    "version": "00000000_00",
-    "tools": [
-      {
-        "slug": "TEST_APP_ACTION_ONE",
-        "name": "Action one",
-        "description": "This action one of testapp."
-      },
-      {
-        "slug": "TEST_APP_ACTION_TWO",
-        "name": "Action two",
-        "description": "This action two of testapp."
-      }
-    ],
-    "triggers": [],
-    "authConfigDetails": [
-      {
-        "mode": "NO_AUTH",
-        "name": "testapp No Auth",
-        "fields": {
-          "auth_config_creation": {
-            "required": [],
-            "optional": []
-          },
-          "connected_account_initiation": {
-            "required": [],
-            "optional": []
-          }
-        }
-      }
-    ]
-  },
-  {
     "slug": "textcortex",
     "name": "Textcortex",
     "logo": "https://logos.composio.dev/api/textcortex",

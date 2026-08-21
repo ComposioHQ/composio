@@ -6,6 +6,7 @@ import { createRelativeLink } from 'fumadocs-ui/mdx';
 import { PageActions } from '@/components/page-actions';
 import { EditOnGitHub } from '@/components/edit-on-github';
 import { getOgImageUrl } from '@/lib/source';
+import { getKnowledgeDisplayDescription } from '@/lib/knowledge/display';
 
 type Source = typeof import('./source').examplesSource;
 
@@ -55,11 +56,14 @@ export function createGenerateMetadata(source: Source, section: string = 'docs')
     const page = source.getPage(slug);
     if (!page) notFound();
 
-    const ogImage = getOgImageUrl(section, page.slugs, page.data.title, page.data.description);
+    const description = page.data.description
+      ? getKnowledgeDisplayDescription(page.data.description)
+      : page.data.description;
+    const ogImage = getOgImageUrl(section, page.slugs, page.data.title, description);
 
     return {
       title: page.data.title,
-      description: page.data.description,
+      description,
       alternates: { canonical: page.url },
       openGraph: {
         images: [ogImage],

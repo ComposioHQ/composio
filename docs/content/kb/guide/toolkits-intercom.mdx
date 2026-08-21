@@ -1,0 +1,24 @@
+---
+title: "Intercom"
+description: "Public support knowledge for Intercom."
+keywords: ["for-you","intercom","platform","errors-and-troubleshooting","sessions-and-execution","toolkits-and-providers","/kb/toolkits/intercom-troubleshooting","avoid-proxy-execute-for-slow-intercom-api-calls-that-can-hit-cloudflar","intercom-list-all-companies-per-page-limit-is-60","intercom-oauth-tokens-cannot-be-programmatically-revoked-by-composio","intercom-troubleshooting","update-python-sdk-packages-when-intercom-tool-schemas-fail-on-reserved","use-a-custom-intercom-developer-app-if-composio-s-hosted-oauth-app-is","use-external-pages-or-a-custom-agent-when-connecting-mcp-knowledge-to"]
+sources: [{"sourcePath":"toolkits/intercom/public.md","sourceHeading":"Use External Pages or a custom agent when connecting MCP knowledge to Intercom Fin"},{"sourcePath":"toolkits/intercom/public.md","sourceHeading":"INTERCOM_LIST_ALL_COMPANIES per_page limit is 60"},{"sourcePath":"toolkits/intercom/public.md","sourceHeading":"Update Python SDK packages when Intercom tool schemas fail on reserved parameter names"}]
+sourceCommit: "d57f3d69079ee3819f4136df54512cdf0416cec0"
+lastVerifiedAt: "2026-08-12"
+reviewAfter: "2026-11-10"
+freshness: "evergreen"
+topics: ["errors-and-troubleshooting","sessions-and-execution","toolkits-and-providers"]
+toolkitSlugs: ["intercom"]
+aliases: ["/kb/toolkits/intercom-troubleshooting","avoid-proxy-execute-for-slow-intercom-api-calls-that-can-hit-cloudflar","intercom-list-all-companies-per-page-limit-is-60","intercom-oauth-tokens-cannot-be-programmatically-revoked-by-composio","intercom-troubleshooting","update-python-sdk-packages-when-intercom-tool-schemas-fail-on-reserved","use-a-custom-intercom-developer-app-if-composio-s-hosted-oauth-app-is","use-external-pages-or-a-custom-agent-when-connecting-mcp-knowledge-to"]
+---
+## Use External Pages or a custom agent when connecting MCP knowledge to Intercom Fin
+
+Composio does not control how Intercom Fin retrieves knowledge inside Intercom. For this use case, either push MCP-derived content into Fin's Content Library by creating and managing Intercom External Pages, or build a custom AI agent with Composio SDKs that connects to both the MCP server and Intercom for support workflows such as replying to conversations, creating tickets, and managing contacts.
+
+## INTERCOM_LIST_ALL_COMPANIES per_page limit is 60
+
+For Intercom company listing through Composio, keep `per_page` at 60 or lower. The generic Intercom pagination page can be misleading for this endpoint; Composio verified the list companies endpoint limit as 60 and updated the field description accordingly.
+
+## Update Python SDK packages when Intercom tool schemas fail on reserved parameter names
+
+This reserved-keyword schema issue was fixed in the SDK. Ask the user to update both `composio` and `composio-langchain` to the latest available versions; the fix was available by SDK version `0.11.4`.

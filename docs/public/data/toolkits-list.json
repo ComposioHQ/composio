@@ -9736,14 +9736,6 @@
     "triggerCount": 0
   },
   {
-    "slug": "test_app",
-    "name": "Test app",
-    "logo": "https://cdn.jsdelivr.net/gh/ComposioHQ/open-logos@master/icons/testapp.png",
-    "category": "tag1",
-    "toolCount": 2,
-    "triggerCount": 0
-  },
-  {
     "slug": "textcortex",
     "name": "Textcortex",
     "logo": "https://logos.composio.dev/api/textcortex",

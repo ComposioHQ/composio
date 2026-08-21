@@ -1,0 +1,30 @@
+---
+title: "Google Slides"
+description: "Public support knowledge for Google Slides."
+keywords: ["for-you","googleslides","platform","auth-config","authentication","errors-and-troubleshooting","sessions-and-execution","toolkits-and-providers","/kb/toolkits/google-slides-troubleshooting","custom-google-slides-oauth-apps-must-be-verified-for-sensitive-scopes","google-slide-creation-tools-are-available-through-google-super","google-slides-may-require-a-custom-oauth-app-instead-of-default-compos","google-slides-troubleshooting","googledrive-create-file-from-text-cannot-create-native-google-slides-f","googleslides-presentations-get-needs-the-presentation-id-from-the-url","use-google-drive-search-to-list-or-discover-google-slides-presentation","use-the-same-google-account-when-pairing-drive-discovery-with-google-s"]
+sources: [{"sourcePath":"toolkits/googleslides/public.md","sourceHeading":"Use Google Drive search to list or discover Google Slides presentations"},{"sourcePath":"toolkits/googleslides/public.md","sourceHeading":"`GOOGLESLIDES_PRESENTATIONS_GET` needs the presentation ID from the URL or Drive payload"},{"sourcePath":"toolkits/googleslides/public.md","sourceHeading":"Use the same Google account when pairing Drive discovery with Google Slides reads"},{"sourcePath":"toolkits/googleslides/public.md","sourceHeading":"Google Slide creation tools are available through Google Super"},{"sourcePath":"toolkits/googleslides/public.md","sourceHeading":"Custom Google Slides OAuth apps must be verified for sensitive scopes"},{"sourcePath":"toolkits/googleslides/public.md","sourceHeading":"Google Slides supports one trigger in Composio"}]
+sourceCommit: "d57f3d69079ee3819f4136df54512cdf0416cec0"
+lastVerifiedAt: "2026-08-12"
+reviewAfter: "2026-11-10"
+freshness: "evergreen"
+topics: ["auth-config","authentication","errors-and-troubleshooting","sessions-and-execution","toolkits-and-providers"]
+toolkitSlugs: ["googleslides"]
+aliases: ["/kb/toolkits/google-slides-troubleshooting","custom-google-slides-oauth-apps-must-be-verified-for-sensitive-scopes","google-slide-creation-tools-are-available-through-google-super","google-slides-may-require-a-custom-oauth-app-instead-of-default-compos","google-slides-troubleshooting","googledrive-create-file-from-text-cannot-create-native-google-slides-f","googleslides-presentations-get-needs-the-presentation-id-from-the-url","use-google-drive-search-to-list-or-discover-google-slides-presentation","use-the-same-google-account-when-pairing-drive-discovery-with-google-s"]
+---
+Use this guide to discover, read, create, and connect Google Slides presentations in Composio.
+
+## Discover and read Google Slides presentations
+
+**Discover presentations through Google Drive.** Google Slides does not offer a dedicated endpoint to list all presentations through the Slides toolkit. Use `GOOGLEDRIVE_FIND_FILE` and filter Drive files with `q`, for example `mimeType = 'application/vnd.google-apps.presentation'`, then pass the returned presentation ID into the Google Slides tool.
+
+**Pass the presentation ID to `GOOGLESLIDES_PRESENTATIONS_GET`.** `GOOGLESLIDES_PRESENTATIONS_GET` should be called with the Google Slides presentation ID. Get that ID from the presentation URL, or use the ID returned by `GOOGLEDRIVE_FIND_FILE` when discovering presentations through Drive.
+
+**Use the same Google account for discovery and reading.** When a workflow discovers presentations with `GOOGLEDRIVE_FIND_FILE` and then reads them with `GOOGLESLIDES_PRESENTATIONS_GET`, make sure the connected Google Drive and Google Slides accounts are the same account. Otherwise the ID may be valid in Drive discovery but inaccessible to the Slides connection.
+
+## Create and connect Google Slides workflows
+
+**Create presentations through Google Super.** Google Slide creation tools were added to the Google Super toolkit. For slide creation workflows, use the relevant Google Super tools rather than trying to create a native Slides file through generic Drive text upload.
+
+**Verify custom OAuth apps for sensitive scopes.** When using a custom Google developer app for Google Slides, the app must be verified for the sensitive Google scopes it requests. Without verification, Google may block or warn on the OAuth consent flow.
+
+**Use the supported Google Slides trigger.** Google Slides is listed as a trigger-capable toolkit in Composio with one supported trigger.

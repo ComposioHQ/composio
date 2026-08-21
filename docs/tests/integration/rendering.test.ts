@@ -73,6 +73,51 @@ describe("Page rendering - content markers", () => {
     // Should contain at least one well-known toolkit
     expect(html.toLowerCase()).toContain("github");
   });
+
+  test("knowledge topic pages link back to the Knowledge Base home", async () => {
+    const res = await fetchPage("/kb/topic/authentication-and-connected-accounts");
+    const html = await res.text();
+    const topicNavigation = html.match(
+      /<nav[^>]*aria-label="Knowledge Base topic navigation"[^>]*>[\s\S]*?<\/nav>/,
+    )?.[0];
+
+    expect(res.status).toBe(200);
+    expect(topicNavigation).toContain('href="/kb"');
+    expect(topicNavigation).toContain('Knowledge Base');
+  });
+
+  test("toolkit knowledge pages omit duplicate search and page-count controls", async () => {
+    const res = await fetchPage("/kb/toolkit/hubspot");
+    const html = await res.text();
+
+    expect(res.status).toBe(200);
+    expect(html).not.toMatch(/Search for (?:<!-- -->)?HubSpot/);
+    expect(html).not.toMatch(
+      /\d+(?:<!-- -->)? public page(?:<!-- -->)?s?(?:<!-- -->)? across Composio sources\./,
+    );
+  });
+
+  test("toolkit knowledge pages open only external cards in a new tab", async () => {
+    const res = await fetchPage("/kb/toolkit/hubspot");
+    const html = await res.text();
+    const collection = html.match(
+      /<ul[^>]*aria-label="Toolkit knowledge sources"[^>]*>[\s\S]*?<\/ul>/,
+    )?.[0];
+
+    expect(res.status).toBe(200);
+    expect(collection).toBeDefined();
+    expect((collection?.match(/target="_blank"/g) ?? []).length).toBe(1);
+    expect(collection).toContain('href="/kb/guide/toolkits-hubspot"');
+  });
+
+  test("guide pages omit the redundant Knowledge Base home link", async () => {
+    const res = await fetchPage("/kb/guide/toolkits-airtable");
+    const html = await res.text();
+
+    expect(res.status).toBe(200);
+    expect(html).not.toContain("Knowledge Base home");
+    expect(html).toContain("Support topics");
+  });
 });
 
 describe("Page rendering - deprecated API endpoints", () => {

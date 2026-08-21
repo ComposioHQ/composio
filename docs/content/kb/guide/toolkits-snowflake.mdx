@@ -1,0 +1,36 @@
+---
+title: "Snowflake"
+description: "Public support knowledge for Snowflake."
+keywords: ["for-you","platform","snowflake","auth-config","authentication","errors-and-troubleshooting","sessions-and-execution","toolkits-and-providers","/kb/authentication/snowflake-troubleshooting","configure-snowflake-oauth-refresh-tokens-and-expect-periodic-reconnect","snowflake-account-id-uses-org-account-format","snowflake-basic-auth-was-deprecated-in-favor-of-oauth2","snowflake-troubleshooting"]
+sources: [{"sourcePath":"toolkits/snowflake/public.md","sourceHeading":"Use one Snowflake auth config per customer account for multi-tenant SaaS OAuth"},{"sourcePath":"toolkits/snowflake/public.md","sourceHeading":"Snowflake Basic auth was deprecated in favor of OAuth2"},{"sourcePath":"toolkits/snowflake/public.md","sourceHeading":"Configure Snowflake OAuth refresh tokens and expect periodic reconnects"},{"sourcePath":"toolkits/snowflake/public.md","sourceHeading":"Fetch connected-account fields or toolkit metadata to discover Snowflake account details"},{"sourcePath":"toolkits/snowflake/public.md","sourceHeading":"Snowflake statement results may require checking each partition"},{"sourcePath":"toolkits/snowflake/public.md","sourceHeading":"Use processors or tool description overrides to reduce Snowflake tool output/token load"}]
+sourceCommit: "d57f3d69079ee3819f4136df54512cdf0416cec0"
+lastVerifiedAt: "2026-08-12"
+reviewAfter: "2026-11-10"
+freshness: "evergreen"
+topics: ["auth-config","authentication","errors-and-troubleshooting","sessions-and-execution","toolkits-and-providers"]
+toolkitSlugs: ["snowflake"]
+aliases: ["/kb/authentication/snowflake-troubleshooting","configure-snowflake-oauth-refresh-tokens-and-expect-periodic-reconnect","snowflake-account-id-uses-org-account-format","snowflake-basic-auth-was-deprecated-in-favor-of-oauth2","snowflake-troubleshooting"]
+---
+## Use one Snowflake auth config per customer account for multi-tenant SaaS OAuth
+
+For Snowflake multi-tenant OAuth, create one Composio auth config per customer Snowflake account using that customer's Snowflake OAuth credentials from `CREATE SECURITY INTEGRATION`. Store the returned `auth_config_id` against the customer on your side. When connecting a user, pass the correct `auth_config_id`; Composio will collect the per-connection Account ID, such as `myorg-myaccount`, and use it to construct the Snowflake authorization/token URLs.
+
+## Snowflake Basic auth was deprecated in favor of OAuth2
+
+Snowflake Basic authentication was deprecated and replaced by OAuth2. Customers using old Basic-auth Snowflake auth configs or connected accounts should migrate to OAuth2 by creating the Snowflake OAuth security integration, creating a Composio auth config with those credentials, and reconnecting users. Basic-auth actions may differ from OAuth2 actions and should not be treated as the long-term path.
+
+## Configure Snowflake OAuth refresh tokens and expect periodic reconnects
+
+For longer-lived Snowflake OAuth connections, configure the Snowflake security integration with `OAUTH_ISSUE_REFRESH_TOKENS = TRUE` so refresh tokens are issued, and set `OAUTH_REFRESH_TOKEN_VALIDITY` as high as Snowflake allows, such as 7776000 seconds (about 90 days). Even with the max window, Snowflake can require users to reconnect after the refresh-token validity period, so design the product flow to handle periodic reconnects.
+
+## Fetch connected-account fields or toolkit metadata to discover Snowflake account details
+
+To discover fields collected during connection initiation, call the toolkit-by-slug endpoint and inspect the accepted initiation fields. After a connection exists, fetch the connected account by ID to retrieve the stored connection fields. Provider schemas are mostly static, but providers can change them, so the toolkit metadata endpoint is the safer source for current required/accepted fields.
+
+## Snowflake statement results may require checking each partition
+
+If a Snowflake query returns partial results, check whether the result set is split into partitions. Snowflake may not return all partitions in a single tool call. Use `SNOWFLAKE_CHECK_STATEMENT_STATUS` with the statement handle to poll an asynchronous query until it finishes and retrieve its result.
+
+## Use processors or tool description overrides to reduce Snowflake tool output/token load
+
+For Snowflake tools that return too much data or need LLM-facing schema or description changes, use processors to post-process tool output before returning it to the model. For a local agent setup, you can also modify a returned tool object's description before passing it to the model.

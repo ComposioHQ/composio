@@ -1,0 +1,19 @@
+---
+title: "Dashboard Log Storage"
+description: "Public behavior of the project Log storage setting."
+keywords: ["dashboard","data-retention","logs","platform","errors-and-troubleshooting","security-and-trust","sessions-and-execution","/kb/dashboard-and-projects/don-t-store-data-removes-new-payload-content-not-the-audit-row","don-t-store-data-removes-new-payload-content-not-the-audit-row"]
+sources: [{"sourcePath":"dashboard/log-storage/public.md","sourceHeading":"“Don't store data” removes new payload content, not the audit row"}]
+sourceCommit: "d57f3d69079ee3819f4136df54512cdf0416cec0"
+lastVerifiedAt: "2026-08-12"
+reviewAfter: "2026-11-10"
+freshness: "evergreen"
+topics: ["errors-and-troubleshooting","security-and-trust","sessions-and-execution"]
+aliases: ["/kb/dashboard-and-projects/don-t-store-data-removes-new-payload-content-not-the-audit-row","don-t-store-data-removes-new-payload-content-not-the-audit-row"]
+---
+## “Don't store data” removes new payload content, not the audit row
+
+New tool executions can still appear in Tool Logs with audit metadata such as tool, status, timestamp, duration, and related identifiers. With **Don't store data** enabled, their request arguments and response payload content are not stored in those rows.
+
+Changing the setting does not retroactively erase older payloads. Run a new test after changing it and inspect that new row. If new request or response content remains visible, contact support with the timestamp and log reference.
+
+This setting does not define every contractual retention or deletion window. Use Composio's approved security and privacy documentation for those questions.
