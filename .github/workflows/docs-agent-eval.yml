@@ -17,7 +17,7 @@
 # a GitHub App token checks that repo out and this job runs it inline. See its
 # ARCHITECTURE.md. Informational check — must NOT be a required status in V1.
 #
-# Required repo/org secrets: COMPOSIO_ORG_API_KEY, DEEPSEEK_API_KEY,
+# Required repo/org secrets: COMPOSIO_ORG_API_KEY_FOR_CODING_AGENT_EVAL, DEEPSEEK_API_KEY,
 # DOCS_EVAL_APP_ID, DOCS_EVAL_APP_PRIVATE_KEY (GitHub App that can read the
 # private engine repo).
 name: Docs Agent Eval
@@ -30,7 +30,7 @@ on:
 env:
   ENGINE_REPO: ComposioHQ/docs-agent-eval-ci
   # Full-SHA pin of the engine code — bump on docs-agent-eval-ci releases.
-  ENGINE_REF: 3d6bc4cad01b4d270599f297d6074bc04cf59d4a
+  ENGINE_REF: 19f6417fdc2c8d202f38ae02a7d9ec0823a42253
 
 jobs:
   # Decides IF an eval should start and FOR WHICH PR. deployment_status
@@ -138,7 +138,7 @@ jobs:
       SOURCE_REPO: ${{ github.repository }}
       PR_NUMBER: ${{ needs.route.outputs.pr_number }}
       MODE: ${{ needs.route.outputs.mode }}
-      COMPOSIO_ORG_API_KEY: ${{ secrets.COMPOSIO_ORG_API_KEY }}
+      COMPOSIO_ORG_API_KEY_FOR_CODING_AGENT_EVAL: ${{ secrets.COMPOSIO_ORG_API_KEY_FOR_CODING_AGENT_EVAL }}
       # Builder runs on DeepSeek V4 Flash via the Anthropic-compatible endpoint.
       ANTHROPIC_BASE_URL: https://api.deepseek.com/anthropic
       ANTHROPIC_AUTH_TOKEN: ${{ secrets.DEEPSEEK_API_KEY }}
@@ -191,7 +191,7 @@ jobs:
       - name: Validate required credentials
         shell: bash
         run: |
-          test -n "$COMPOSIO_ORG_API_KEY" || { echo "COMPOSIO_ORG_API_KEY is not configured"; exit 1; }
+          test -n "$COMPOSIO_ORG_API_KEY_FOR_CODING_AGENT_EVAL" || { echo "COMPOSIO_ORG_API_KEY_FOR_CODING_AGENT_EVAL is not configured"; exit 1; }
           test -n "$ANTHROPIC_AUTH_TOKEN" || { echo "DEEPSEEK_API_KEY is not configured"; exit 1; }
 
       - name: Route (deterministic no-eval / Smoke / Deep)
