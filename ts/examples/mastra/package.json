@@ -29,7 +29,7 @@
     "@composio/core": "workspace:*",
     "@composio/mastra": "workspace:*",
     "@mastra/core": "catalog:",
-    "ai": "^6.0.256",
+    "ai": "^6.0.257",
     "dotenv": "catalog:",
     "zod": "catalog:"
   },
