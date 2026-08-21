@@ -1,0 +1,20 @@
+---
+title: "Databricks"
+description: "Public support knowledge for Databricks."
+keywords: ["databricks","for-you","platform","authentication","sessions-and-execution","toolkits-and-providers","/kb/toolkits/databricks-troubleshooting","databricks-oauth-client-and-secret-setup-reference","databricks-requires-custom-credentials-when-managed-auth-is-unavailabl","databricks-toolkit-does-not-yet-support-oauth-m2m","databricks-troubleshooting","enter-databricks-api-key-credentials-during-connected-account-linking"]
+sources: [{"sourcePath":"toolkits/databricks/public.md","sourceHeading":"Databricks OAuth client and secret setup reference"},{"sourcePath":"toolkits/databricks/public.md","sourceHeading":"Enter Databricks API key credentials during connected account linking"}]
+sourceCommit: "d57f3d69079ee3819f4136df54512cdf0416cec0"
+lastVerifiedAt: "2026-08-12"
+reviewAfter: "2026-11-10"
+freshness: "evergreen"
+topics: ["authentication","sessions-and-execution","toolkits-and-providers"]
+toolkitSlugs: ["databricks"]
+aliases: ["/kb/toolkits/databricks-troubleshooting","databricks-oauth-client-and-secret-setup-reference","databricks-requires-custom-credentials-when-managed-auth-is-unavailabl","databricks-toolkit-does-not-yet-support-oauth-m2m","databricks-troubleshooting","enter-databricks-api-key-credentials-during-connected-account-linking"]
+---
+## Databricks OAuth client and secret setup reference
+
+For Databricks OAuth client and secret setup, follow the [official Databricks OAuth application guide](https://docs.databricks.com/aws/en/agents/mcp/connect-clients). An account administrator creates the OAuth application, configures its redirect URL and scopes, and securely records the generated client ID and client secret.
+
+## Enter Databricks API key credentials during connected account linking
+
+The Databricks API key credentials are entered during the connection flow. In code, point customers to `composio.connected_accounts.link()` for creating the connected account and entering the API key details.

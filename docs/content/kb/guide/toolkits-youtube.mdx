@@ -1,0 +1,32 @@
+---
+title: "YouTube"
+description: "Public support knowledge for YouTube."
+keywords: ["for-you","platform","youtube","auth-config","authentication","errors-and-troubleshooting","sessions-and-execution","toolkits-and-providers","/kb/toolkits/youtube-processing-abandoned-can-be-provider-side-but-upload-byte-tran","/kb/toolkits/youtube-troubleshooting","use-a-custom-youtube-oauth-app-in-production-to-avoid-shared-default-a","use-direct-file-paths-or-multipart-upload-for-youtube-videos-fileuploa","youtube-caption-download-requires-https-www-googleapis-com-auth-youtub","youtube-has-trigger-support-but-trigger-creation-errors-may-only-surfa","youtube-processing-abandoned-can-be-provider-side-but-upload-byte-tran","youtube-transcript-community-post-tools-may-need-feature-requests-or-c","youtube-troubleshooting","youtube-upload-video-with-videofilepath-is-sdk-oriented-and-expects-a"]
+sources: [{"sourcePath":"toolkits/youtube/public.md","sourceHeading":"`YOUTUBE_UPLOAD_VIDEO` with `videoFilePath` is SDK-oriented and expects a full file path"},{"sourcePath":"toolkits/youtube/public.md","sourceHeading":"Use direct file paths or the current multipart upload action for YouTube videos"},{"sourcePath":"toolkits/youtube/public.md","sourceHeading":"Diagnose YouTube `processing abandoned` from the current upload and provider state"},{"sourcePath":"toolkits/youtube/public.md","sourceHeading":"YouTube caption download requires `https://www.googleapis.com/auth/youtube.force-ssl`"},{"sourcePath":"toolkits/youtube/public.md","sourceHeading":"YouTube has trigger support, but trigger creation errors may only surface at trigger setup time"},{"sourcePath":"toolkits/youtube/public.md","sourceHeading":"`uploadLimitExceeded` is a YouTube channel limit, not an OAuth-app quota"}]
+sourceCommit: "d57f3d69079ee3819f4136df54512cdf0416cec0"
+lastVerifiedAt: "2026-08-17"
+reviewAfter: "2026-11-15"
+freshness: "evergreen"
+topics: ["auth-config","authentication","errors-and-troubleshooting","sessions-and-execution","toolkits-and-providers"]
+toolkitSlugs: ["youtube"]
+aliases: ["/kb/toolkits/youtube-processing-abandoned-can-be-provider-side-but-upload-byte-tran","/kb/toolkits/youtube-troubleshooting","use-a-custom-youtube-oauth-app-in-production-to-avoid-shared-default-a","use-direct-file-paths-or-multipart-upload-for-youtube-videos-fileuploa","youtube-caption-download-requires-https-www-googleapis-com-auth-youtub","youtube-has-trigger-support-but-trigger-creation-errors-may-only-surfa","youtube-processing-abandoned-can-be-provider-side-but-upload-byte-tran","youtube-transcript-community-post-tools-may-need-feature-requests-or-c","youtube-troubleshooting","youtube-upload-video-with-videofilepath-is-sdk-oriented-and-expects-a"]
+---
+Use this guide to upload YouTube videos, configure scopes and triggers, and distinguish upload failures from provider limits.
+
+## Upload videos through current YouTube actions
+
+**Use a full file path with `YOUTUBE_UPLOAD_VIDEO`.** `YOUTUBE_UPLOAD_VIDEO` is intended to be used through the SDK because it accepts `videoFilePath`. Pass a full local file path string such as `/path/to/video.mp4`, and use the latest toolkit version when debugging older upload failures.
+
+**Choose the current upload path for the file.** For YouTube video uploads, pass a local file path through SDK automatic file handling or use `YOUTUBE_MULTIPART_UPLOAD_VIDEO` when its single-request upload shape fits the file. Do not quote the old 50 MB staged-file limit without checking the current upload path and platform limit.
+
+## Troubleshoot YouTube processing and provider limits
+
+**Inspect current execution and provider state for `processing abandoned`.** If YouTube returns `processing abandoned`, first check YouTube Studio/provider status, the video format, and the current toolkit version. Use a fresh execution log to distinguish provider processing failure from an upload-transfer failure.
+
+**Treat `uploadLimitExceeded` as a channel limit.** YouTube limits how many videos a channel can upload in a 24-hour period across the website, mobile apps, and the YouTube API. If an upload returns `uploadLimitExceeded` or YouTube shows **Daily upload limit reached**, wait 24 hours before retrying. Switching to a different OAuth app does not bypass the channel limit. See YouTube's [common uploading errors](https://support.google.com/youtube/answer/10383400).
+
+## Configure YouTube scopes and triggers
+
+**Include the caption-download scope.** For YouTube caption download, verify the connected account includes `https://www.googleapis.com/auth/youtube.force-ssl`. The scope was described as part of the default YouTube scope set, but the actual connection should still be checked from connection details when a tool call fails.
+
+**Validate the channel ID when creating a trigger.** YouTube supports triggers. For `YOUTUBE_NEW_ACTIVITY_TRIGGER`, use the field descriptions to provide the correct channel ID; trigger creation may otherwise fail without a separate preflight warning.

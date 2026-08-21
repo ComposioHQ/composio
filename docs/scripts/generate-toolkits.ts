@@ -19,6 +19,7 @@ const API_BASE = requireProductionApiV3Url(process.env.COMPOSIO_API_BASE);
 const API_KEY = process.env.COMPOSIO_API_KEY;
 
 const OUTPUT_DIR = join(process.cwd(), 'public/data');
+const EXCLUDED_PUBLIC_TOOLKIT_SLUGS = new Set(['test_app']);
 
 interface Tool {
   slug: string;
@@ -373,6 +374,10 @@ export function transformToolkit(raw: unknown): Toolkit {
   };
 }
 
+export function shouldPublishToolkit(raw: unknown): boolean {
+  return !EXCLUDED_PUBLIC_TOOLKIT_SLUGS.has(transformToolkit(raw).slug);
+}
+
 async function main() {
   console.log('Starting toolkit generation...\n');
 
@@ -387,7 +392,7 @@ async function main() {
   console.log(`Found ${rawToolkits.length} toolkits\n`);
 
   // Transform toolkits
-  const toolkits: Toolkit[] = rawToolkits.map(transformToolkit);
+  const toolkits: Toolkit[] = rawToolkits.filter(shouldPublishToolkit).map(transformToolkit);
 
   // Add versions from changelog
   applyToolkitVersions(toolkits, versionMap);

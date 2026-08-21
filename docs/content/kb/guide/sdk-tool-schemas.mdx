@@ -1,0 +1,19 @@
+---
+title: "TypeScript Tool Schema Definitions"
+description: "Public guidance for dangling JSON Schema references in older TypeScript SDK versions."
+keywords: ["json-schema","platform","sdk","typescript","errors-and-troubleshooting","sessions-and-execution","/kb/sdk-and-api/upgrade-when-ref-is-present-but-root-defs-is-missing","upgrade-when-ref-is-present-but-root-defs-is-missing"]
+sources: [{"sourcePath":"sdk/tool-schemas/public.md","sourceHeading":"Upgrade when `$ref` is present but root `$defs` is missing"}]
+sourceCommit: "d57f3d69079ee3819f4136df54512cdf0416cec0"
+lastVerifiedAt: "2026-08-12"
+reviewAfter: "2026-11-10"
+freshness: "evergreen"
+topics: ["errors-and-troubleshooting","sessions-and-execution"]
+aliases: ["/kb/sdk-and-api/upgrade-when-ref-is-present-but-root-defs-is-missing","upgrade-when-ref-is-present-but-root-defs-is-missing"]
+---
+## Upgrade when `$ref` is present but root `$defs` is missing
+
+Older `@composio/core` releases through 0.11.0 could preserve a nested `$ref` while stripping the root `$defs` or `definitions` block from raw tool schemas. Downstream schema parsers then see a dangling reference.
+
+The shared fix shipped in `@composio/core` 0.12.0. Upgrade core to 0.12.0 or later and use a compatible provider-package version. That release line is ESM-only and requires Node.js 22.22.3 or later, so confirm runtime and provider compatibility before upgrading.
+
+After upgrading, fetch the exact tool again and verify every internal `$ref` has a matching root definition.

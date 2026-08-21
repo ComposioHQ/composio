@@ -1,0 +1,20 @@
+---
+title: "Discord"
+description: "Public support knowledge for Discord."
+keywords: ["discord","for-you","platform","auth-config","authentication","errors-and-troubleshooting","toolkits-and-providers","/kb/toolkits/discordbot-401s-on-managed-oauth-were-a-known-managed-app-configuratio","/kb/toolkits/multiple-accounts-for-the-same-discord-app-were-not-supported-in-that","discordbot-401s-on-managed-oauth-were-a-known-managed-app-configuratio","multiple-accounts-for-the-same-discord-app-were-not-supported-in-that"]
+sources: [{"sourcePath":"toolkits/discord/public.md","sourceHeading":"Discord OAuth credentials do not have a fixed expiration period"}]
+sourceCommit: "d57f3d69079ee3819f4136df54512cdf0416cec0"
+lastVerifiedAt: "2026-08-12"
+reviewAfter: "2026-11-10"
+freshness: "evergreen"
+topics: ["auth-config","authentication","errors-and-troubleshooting","toolkits-and-providers"]
+toolkitSlugs: ["discord"]
+aliases: ["/kb/toolkits/discordbot-401s-on-managed-oauth-were-a-known-managed-app-configuratio","/kb/toolkits/multiple-accounts-for-the-same-discord-app-were-not-supported-in-that","discordbot-401s-on-managed-oauth-were-a-known-managed-app-configuratio","multiple-accounts-for-the-same-discord-app-were-not-supported-in-that"]
+---
+## Discord OAuth credentials do not have a fixed expiration period
+
+Discord OAuth2 client credentials do not have a fixed expiration period. If a
+customer-owned credential suddenly fails, it may have been manually revoked,
+reset, or regenerated in Discord. Verify the current Discord developer-app
+credentials and create a fresh connection before treating the failure as a
+broader provider or Composio issue.

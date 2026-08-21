@@ -1,0 +1,52 @@
+---
+title: "WhatsApp"
+description: "Public support knowledge for WhatsApp."
+keywords: ["for-you","platform","whatsapp","auth-config","authentication","errors-and-troubleshooting","sessions-and-execution","toolkits-and-providers","/kb/toolkits/whatsapp-has-limited-beta-support-and-some-requested-apis-must-go-thro","/kb/toolkits/whatsapp-troubleshooting","meta-oauth-errors-can-require-adding-the-composio-redirect-uri-in-the","reading-whatsapp-replies-is-better-modeled-as-triggers-webhooks-than-a","use-proxy-execute-when-a-whatsapp-meta-workflow-needs-direct-provider","waba-id-is-required-for-whatsapp-connections","whatsapp-api-key-auth-needs-both-system-user-token-and-waba-id","whatsapp-business-app-coexistence-is-enabled-through-meta-embedded-sig","whatsapp-has-limited-beta-support-and-some-requested-apis-must-go-thro","whatsapp-oauth-requires-a-meta-developer-app-with-business-use-case-en","whatsapp-oauth2-initiation-still-requires-generic-id-as-the-waba-id","whatsapp-send-template-message-supports-components-in-newer-toolkit-ve","whatsapp-template-messages-require-an-existing-template-before-sending","whatsapp-toolkit-supports-whatsapp-business-api-accounts-not-personal","whatsapp-troubleshooting","when-sending-whatsapp-messages-pass-real-phone-number-id-and-to-number"]
+sources: [{"sourcePath":"toolkits/whatsapp/public.md","sourceHeading":"WhatsApp toolkit supports WhatsApp Business API accounts, not personal WhatsApp accounts"},{"sourcePath":"toolkits/whatsapp/public.md","sourceHeading":"WABA ID is required for WhatsApp connections"},{"sourcePath":"toolkits/whatsapp/public.md","sourceHeading":"WhatsApp API key auth needs both system user token and WABA ID"},{"sourcePath":"toolkits/whatsapp/public.md","sourceHeading":"WhatsApp OAuth2 initiation still requires `generic_id` as the WABA ID"},{"sourcePath":"toolkits/whatsapp/public.md","sourceHeading":"WhatsApp OAuth requires a Meta developer app with Business use case enabled and published"},{"sourcePath":"toolkits/whatsapp/public.md","sourceHeading":"Meta OAuth errors can require adding the Composio redirect URI in the Meta app"},{"sourcePath":"toolkits/whatsapp/public.md","sourceHeading":"WhatsApp template messages require an existing template before sending"},{"sourcePath":"toolkits/whatsapp/public.md","sourceHeading":"`WHATSAPP_SEND_TEMPLATE_MESSAGE` supports `components` in newer toolkit versions"},{"sourcePath":"toolkits/whatsapp/public.md","sourceHeading":"When sending WhatsApp messages, pass real `phone_number_id` and `to_number` values"},{"sourcePath":"toolkits/whatsapp/public.md","sourceHeading":"Reading WhatsApp replies is better modeled as triggers/webhooks than a normal read API"},{"sourcePath":"toolkits/whatsapp/public.md","sourceHeading":"Use Proxy Execute when a WhatsApp/Meta workflow needs direct provider API access with scoped credentials"},{"sourcePath":"toolkits/whatsapp/public.md","sourceHeading":"WhatsApp Business app coexistence is enabled through Meta Embedded Signup"}]
+sourceCommit: "d57f3d69079ee3819f4136df54512cdf0416cec0"
+lastVerifiedAt: "2026-08-12"
+reviewAfter: "2026-11-10"
+freshness: "evergreen"
+topics: ["auth-config","authentication","errors-and-troubleshooting","sessions-and-execution","toolkits-and-providers"]
+toolkitSlugs: ["whatsapp"]
+aliases: ["/kb/toolkits/whatsapp-has-limited-beta-support-and-some-requested-apis-must-go-thro","/kb/toolkits/whatsapp-troubleshooting","meta-oauth-errors-can-require-adding-the-composio-redirect-uri-in-the","reading-whatsapp-replies-is-better-modeled-as-triggers-webhooks-than-a","use-proxy-execute-when-a-whatsapp-meta-workflow-needs-direct-provider","waba-id-is-required-for-whatsapp-connections","whatsapp-api-key-auth-needs-both-system-user-token-and-waba-id","whatsapp-business-app-coexistence-is-enabled-through-meta-embedded-sig","whatsapp-has-limited-beta-support-and-some-requested-apis-must-go-thro","whatsapp-oauth-requires-a-meta-developer-app-with-business-use-case-en","whatsapp-oauth2-initiation-still-requires-generic-id-as-the-waba-id","whatsapp-send-template-message-supports-components-in-newer-toolkit-ve","whatsapp-template-messages-require-an-existing-template-before-sending","whatsapp-toolkit-supports-whatsapp-business-api-accounts-not-personal","whatsapp-troubleshooting","when-sending-whatsapp-messages-pass-real-phone-number-id-and-to-number"]
+---
+Use this guide to connect a WhatsApp Business account, configure Meta authentication, send messages, receive events, and handle coexistence onboarding.
+
+## Connect a WhatsApp Business account
+
+**Use a WABA-backed business account instead of a personal account.** WhatsApp API usage requires a WhatsApp Business Account. Personal WhatsApp accounts are for personal communication and are not supported by the WhatsApp Business API flows used by the toolkit. To send WhatsApp messages through Composio, use a WABA-backed business account.
+
+**Provide the WhatsApp Business Account ID.** The WABA ID, or WhatsApp Business Account ID, is required because the WhatsApp Business API needs it to identify the business account. Customers can find it in Meta Developers under the app's WhatsApp API Setup section, or fetch it programmatically by calling `GET /me/businesses` and then `GET /{business_id}/owned_whatsapp_business_accounts` with an access token.
+
+**Pass the system user token and WABA ID for API-key auth.** For WhatsApp API key auth, pass the system user token as the bearer token and pass the WABA ID as `generic_id`. The required connection fields depend on the auth scheme, so fetch the toolkit/auth-config initiation fields if unsure. Hosted auth links can also collect these values from the user instead of hardcoding them.
+
+**Pass the WABA ID as `generic_id` for OAuth2.** WhatsApp OAuth2 auth still requires `generic_id`, and that value is the WhatsApp Business Account ID. API key auth requires both `bearer_token` and `generic_id`, while OAuth2 only requires `generic_id` for initiation. Differences in required initiation fields usually come from the selected auth scheme.
+
+## Configure Meta OAuth and app access
+
+**Publish a Meta developer app with the Business use case.** For WhatsApp OAuth with a customer-owned Meta app, create a Meta developer app, enable the Business use case, configure the WhatsApp product, and publish the app so users can connect to it. The Meta app/account used during connection should match the account that owns or can access the WhatsApp Business setup.
+
+**Add the Composio redirect URI to the Meta app.** For Meta OAuth apps, add the Composio redirect URI to the correct redirect/callback URI field in the Meta developer app. OAuth failures during callback can happen when the app does not allow the redirect URI used by the Composio auth config.
+
+## Send WhatsApp messages and templates
+
+**Create and approve a template before sending it.** Sending a WhatsApp template message requires a template to already exist in WhatsApp/Meta. The send-template tool sends an existing template by name/language and parameters; it does not remove the need to create and approve the template first.
+
+**Use a current toolkit version for template `components`.** Support for `components` was added to the WhatsApp send-template flow in a newer toolkit version. If you cannot pass template variables/components to `WHATSAPP_SEND_TEMPLATE_MESSAGE`, upgrade to the latest WhatsApp toolkit version and verify the `components` field is available in the tool schema.
+
+**Pass real sender and recipient identifiers.** For WhatsApp send-message actions, make sure the action arguments contain the actual `phone_number_id` and recipient `to_number`. Placeholder values in the tool arguments will fail even if the connected account itself is active.
+
+## Receive events and extend WhatsApp workflows
+
+**Use triggers or webhooks for replies.** WhatsApp does not expose every reply-reading flow as a normal API action in the toolkit. The better product shape is a trigger/webhook for events such as message or reply received. Where a first-party WhatsApp trigger is not available for the exact use case, TimelinesAI may be an alternative because it includes WhatsApp-related trigger support.
+
+**Use Proxy Execute for direct provider operations.** For provider API operations that are not exposed as first-class WhatsApp tools, Proxy Execute can be used with a scoped Composio API key that allows proxy execution. Use this when you need to call a Meta/WhatsApp endpoint directly while still going through Composio-managed connection context.
+
+## Set up WhatsApp Business app coexistence
+
+Keeping an existing WhatsApp Business app number active while also using the Cloud API is a Meta-side coexistence onboarding flow, not a Composio activation toggle. Follow Meta's [Onboard WhatsApp Business app users](https://developers.facebook.com/documentation/business-messaging/whatsapp/embedded-signup/onboarding-business-app-users) flow through a Solution Partner or Tech Provider that supports it.
+
+After the number is active on Cloud API, connect its WABA in Composio through the normal WhatsApp setup. For API-key auth, use the system user token as `bearer_token` and the WABA ID as `generic_id`.
+
+If the number is shown as `ON_PREMISE`, it may need Meta's On-Premises API to Cloud API migration steps before normal registration or coexistence. Route that onboarding/migration step to Meta or the customer's BSP, then help with the Composio connection once Cloud API is active.

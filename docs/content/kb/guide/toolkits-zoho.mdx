@@ -1,0 +1,40 @@
+---
+title: "Zoho"
+description: "Public support knowledge for Zoho."
+keywords: ["for-you","platform","zoho","auth-config","authentication","errors-and-troubleshooting","sessions-and-execution","toolkits-and-providers","/kb/toolkits/zoho-troubleshooting","request-zoho-mail-attachment-download-if-the-current-toolkit-does-not","some-zoho-surfaces-may-be-auth-only-or-lack-formal-tools-use-custom-to","use-zoho-get-zoho-records-to-find-a-lead-id-before-converting-a-zoho-l","zoho-auth-config-and-connection-required-fields-can-be-fetched-from-to","zoho-books-bill-tools-exist-but-missing-purchase-order-bill-flows-may","zoho-books-create-estimate-moved-to-the-zoho-invoice-toolkit","zoho-books-list-items-has-no-default-rate-optional-fields-can-be-omitt","zoho-connections-require-the-correct-region-domain-extension","zoho-mail-account-ids-should-be-treated-as-strings-to-avoid-js-safe-in","zoho-mail-messages-send-email-supports-attachments-in-newer-versions","zoho-mail-uses-suffix-one-as-the-connection-initiation-domain-extensio","zoho-mcp-setup-uses-oauth2-and-should-initiate-a-new-connection-from-t","zoho-record-listing-can-require-page-tokens-and-is-subject-to-zoho-rat","zoho-troubleshooting"]
+sources: [{"sourcePath":"toolkits/zoho/public.md","sourceHeading":"`ZOHO_MAIL_MESSAGES_SEND_EMAIL` supports attachments in newer versions"},{"sourcePath":"toolkits/zoho/public.md","sourceHeading":"Zoho connections require the correct region/domain extension"},{"sourcePath":"toolkits/zoho/public.md","sourceHeading":"Zoho Mail uses `suffix.one` as the connection initiation domain-extension field"},{"sourcePath":"toolkits/zoho/public.md","sourceHeading":"Zoho auth config and connection required fields can be fetched from toolkit schema APIs/SDK"},{"sourcePath":"toolkits/zoho/public.md","sourceHeading":"Zoho Books create-estimate moved to the `zoho_invoice` toolkit"},{"sourcePath":"toolkits/zoho/public.md","sourceHeading":"`ZOHO_BOOKS_LIST_ITEMS` has no default `rate`; optional fields can be omitted"},{"sourcePath":"toolkits/zoho/public.md","sourceHeading":"Use `ZOHO_GET_ZOHO_RECORDS` to find a `lead_id` before converting a Zoho lead"},{"sourcePath":"toolkits/zoho/public.md","sourceHeading":"Zoho record listing can require page tokens and is subject to Zoho rate limits"},{"sourcePath":"toolkits/zoho/public.md","sourceHeading":"Zoho MCP setup uses OAuth2 and should initiate a new connection from the client/dashboard"},{"sourcePath":"toolkits/zoho/public.md","sourceHeading":"Zoho Mail account IDs should be treated as strings to avoid JS safe-integer precision loss"}]
+sourceCommit: "d57f3d69079ee3819f4136df54512cdf0416cec0"
+lastVerifiedAt: "2026-08-12"
+reviewAfter: "2026-11-10"
+freshness: "evergreen"
+topics: ["auth-config","authentication","errors-and-troubleshooting","sessions-and-execution","toolkits-and-providers"]
+toolkitSlugs: ["zoho"]
+aliases: ["/kb/toolkits/zoho-troubleshooting","request-zoho-mail-attachment-download-if-the-current-toolkit-does-not","some-zoho-surfaces-may-be-auth-only-or-lack-formal-tools-use-custom-to","use-zoho-get-zoho-records-to-find-a-lead-id-before-converting-a-zoho-l","zoho-auth-config-and-connection-required-fields-can-be-fetched-from-to","zoho-books-bill-tools-exist-but-missing-purchase-order-bill-flows-may","zoho-books-create-estimate-moved-to-the-zoho-invoice-toolkit","zoho-books-list-items-has-no-default-rate-optional-fields-can-be-omitt","zoho-connections-require-the-correct-region-domain-extension","zoho-mail-account-ids-should-be-treated-as-strings-to-avoid-js-safe-in","zoho-mail-messages-send-email-supports-attachments-in-newer-versions","zoho-mail-uses-suffix-one-as-the-connection-initiation-domain-extensio","zoho-mcp-setup-uses-oauth2-and-should-initiate-a-new-connection-from-t","zoho-record-listing-can-require-page-tokens-and-is-subject-to-zoho-rat","zoho-troubleshooting"]
+---
+Use this guide to connect Zoho in the correct region, choose current Zoho tools and fields, and handle pagination or large identifiers safely.
+
+## Connect Zoho in the correct region
+
+**Pass the account's region as the domain extension.** Zoho requires the correct region/domain extension during connection initiation. Accepted values include `com`, `eu`, `in`, `cn`, and `au`. Pass the customer's Zoho account region, not a full URL, so Composio can build the correct `accounts.zoho.<region>` URL.
+
+**Use `suffix.one` for the Zoho Mail domain extension.** For Zoho Mail, the expected connection initiation field can appear as `suffix.one`, displayed as Domain Extension. Pass values such as `com`, `eu`, or `in` in `config.val["suffix.one"]` when initiating the connection.
+
+**Inspect the toolkit schema for required auth and connection fields.** Use `toolkits.get("<toolkit-slug>")` or the toolkit-by-slug API to inspect the full Zoho toolkit schema, including auth config creation fields and connected account initiation fields. This is the reliable way to discover region/domain fields and other required inputs.
+
+**Initiate a new OAuth2 connection for MCP setups.** Zoho uses OAuth2. For MCP setups, create an MCP config for Zoho, then initiate/connect the Zoho account through the MCP client or dashboard. If the client does not automatically start the OAuth flow, prompting it to initiate a new Zoho connection can help.
+
+## Choose current Zoho tools and fields
+
+**Use a current Zoho Mail tool version for attachments.** Attachment support was added to `ZOHO_MAIL_MESSAGES_SEND_EMAIL`. If you cannot send attachments with Zoho Mail, use a current toolkit version and verify the send-email tool schema includes attachment fields.
+
+**Create estimates through Zoho Invoice.** For creating estimates, use the `zoho_invoice` toolkit action `ZOHO_INVOICE_CREATE_ESTIMATE`; the estimate action is not exposed through the Zoho Books toolkit.
+
+**Omit optional Zoho Books fields unless they are needed.** `rate` on `ZOHO_BOOKS_LIST_ITEMS` is optional and has no default value in the schema. If an agent sends `rate: 25.5` or another value, that is coming from the model/tool-call generation, not from a Composio schema default. Prompt the model not to pass optional fields unless needed, or call the tool directly with only required arguments.
+
+**Find the lead before converting it.** For Zoho lead conversion, verify the `lead_id` first. Use `ZOHO_GET_ZOHO_RECORDS` to retrieve the lead record and obtain the correct `lead_id`, then pass that value into the conversion tool.
+
+## Handle Zoho pagination and identifiers
+
+**Follow page tokens and provider rate limits.** Zoho list endpoints may return around 200 records per request and require pagination with `page_token` for larger result sets. Multiple tool calls may be needed, and Zoho's own API rate limits can still apply.
+
+**Treat Zoho Mail account IDs as strings.** Zoho Mail account IDs can exceed JavaScript's safe integer range, so they should be modeled and passed as strings. If a Zoho Mail tool truncates or changes a large account ID, contact Composio support with the redacted payload and log ID so `account_id` can be verified as a string throughout serialization.

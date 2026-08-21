@@ -1,0 +1,23 @@
+---
+title: "Tool Execution Retries"
+description: "Public support knowledge for Tool Execution Retries."
+keywords: ["platform","sdk","tool-execution-retries","errors-and-troubleshooting","sessions-and-execution","/kb/sdk-and-api/tool-execution-timeouts-can-retry-non-idempotent-actions","tool-execution-timeouts-can-retry-non-idempotent-actions"]
+sources: [{"sourcePath":"sdk/tool-execution-retries/public.md","sourceHeading":"Current SDKs do not automatically retry non-idempotent tool executions"}]
+sourceCommit: "d57f3d69079ee3819f4136df54512cdf0416cec0"
+lastVerifiedAt: "2026-08-12"
+reviewAfter: "2026-11-10"
+freshness: "evergreen"
+topics: ["errors-and-troubleshooting","sessions-and-execution"]
+aliases: ["/kb/sdk-and-api/tool-execution-timeouts-can-retry-non-idempotent-actions","tool-execution-timeouts-can-retry-non-idempotent-actions"]
+---
+## Current SDKs do not automatically retry non-idempotent tool executions
+
+Python SDK 0.16.0 and TypeScript SDK 0.14.0 changed tool execution and Proxy Execute so non-idempotent writes are not automatically retried after timeouts, rate limits, or server errors. Upgrade to at least those versions before diagnosing duplicate sends or writes as current SDK retry behavior.
+
+An ambiguous client timeout still does not prove that the provider-side action failed. Before manually retrying a send, create, update, or delete action, inspect the execution log or provider state to determine whether the first attempt completed. If duplicates persist on a current SDK, collect the SDK version, execution log IDs, and timestamps for support.
+
+Suggested guidance:
+
+```text
+Current Composio SDKs do not automatically retry non-idempotent tool executions. A timeout can still be ambiguous, so check the execution log or provider state before manually retrying an action that may have completed.
+```

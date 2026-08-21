@@ -44,6 +44,9 @@ jobs:
       - name: Run static tests
         run: bun run test
 
+      - name: Check KB semantic artifact
+        run: bun run check:kb-semantic
+
       - name: Build
         run: bun run build
 

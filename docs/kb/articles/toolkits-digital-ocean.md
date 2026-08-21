@@ -1,0 +1,11 @@
+## DigitalOcean supports customer-owned OAuth2 or a personal access token
+
+The current `digital_ocean` toolkit supports OAuth2 and API-key authentication.
+For OAuth2, create a DigitalOcean OAuth app and use its client ID and secret in
+a custom Composio auth config. Register the exact callback URI shown by the
+current Composio flow.
+
+For API-key authentication, provide a DigitalOcean Personal Access Token in the
+`bearer_token` connection field. If OAuth fails before consent, compare the
+authorization request with the customer-owned app registration and use the API
+key path only when it matches the customer's security requirements.

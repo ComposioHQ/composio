@@ -1,0 +1,32 @@
+---
+title: "Figma"
+description: "Public support knowledge for Figma."
+keywords: ["figma","for-you","platform","auth-config","authentication","errors-and-troubleshooting","sessions-and-execution","toolkits-and-providers","/kb/toolkits/figma-troubleshooting","figma-429s-can-come-from-figma-provider-limits-use-custom-credentials","figma-token-auth-is-handled-by-composio-customers-do-not-need-a-separa","figma-tools-are-available-across-auth-modes-fetch-available-tools-dyna","figma-troubleshooting","new-figma-scopes-may-require-custom-oauth-api-key-auth-because-default"]
+sources: [{"sourcePath":"toolkits/figma/public.md","sourceHeading":"Figma token auth is handled by Composio; customers do not need a separate Bearer-token auth scheme"},{"sourcePath":"toolkits/figma/public.md","sourceHeading":"`FIGMA_EXTRACT_DESIGN_TOKENS` variables may be limited by the customer's Figma plan"},{"sourcePath":"toolkits/figma/public.md","sourceHeading":"Figma 429s can come from Figma/provider limits; use custom credentials for production"},{"sourcePath":"toolkits/figma/public.md","sourceHeading":"Remove deprecated `file_read` from Figma auth configs and reconnect"},{"sourcePath":"toolkits/figma/public.md","sourceHeading":"Figma tools are available across auth modes; fetch available tools dynamically"},{"sourcePath":"toolkits/figma/public.md","sourceHeading":"Common Figma design-token tools include extract, Tailwind conversion, and node fetch"}]
+sourceCommit: "d57f3d69079ee3819f4136df54512cdf0416cec0"
+lastVerifiedAt: "2026-08-17"
+reviewAfter: "2026-11-15"
+freshness: "evergreen"
+topics: ["auth-config","authentication","errors-and-troubleshooting","sessions-and-execution","toolkits-and-providers"]
+toolkitSlugs: ["figma"]
+aliases: ["/kb/toolkits/figma-troubleshooting","figma-429s-can-come-from-figma-provider-limits-use-custom-credentials","figma-token-auth-is-handled-by-composio-customers-do-not-need-a-separa","figma-tools-are-available-across-auth-modes-fetch-available-tools-dyna","figma-troubleshooting","new-figma-scopes-may-require-custom-oauth-api-key-auth-because-default"]
+---
+Use this guide to configure Figma authentication, discover available tools, and work with design tokens and components.
+
+## Configure Figma authentication for production
+
+**Let Composio handle Bearer authorization.** For Figma, customers can provide the supported credentials/token through the toolkit's auth mode, and Composio handles the Bearer authorization header internally. They should not need to manually create a separate Bearer-token auth scheme for normal Figma tool use.
+
+**Use customer-owned credentials for production rate limits.** If Figma returns 429, verify the response is coming from Figma and review Figma's rate-limit docs. Composio's default Figma app is fine for testing, but production use should use the customer's own Figma credentials to avoid shared-app pressure and to control scopes/rate limits.
+
+**Remove deprecated scopes before reconnecting.** If a Figma auth config contains the deprecated `file_read` scope, remove it and initiate a new connection.
+
+## Discover and run Figma tools across auth modes
+
+Figma tools should be usable regardless of whether the connection uses Composio-managed OAuth, a custom OAuth app, or token/API-key auth. If you cannot find a tool, fetch available tools dynamically and check the auth scopes required by that tool.
+
+## Work with Figma design tokens and components
+
+**Check plan access when extracting variables.** Some Figma API features are plan-limited. If `FIGMA_EXTRACT_DESIGN_TOKENS` fails when `include_variables` is enabled, verify your Figma plan/API access. As a workaround, set `include_variables` to false.
+
+**Use current design-token and component actions.** For Figma design-token and component workflows, use `FIGMA_EXTRACT_DESIGN_TOKENS`, `FIGMA_DESIGN_TOKENS_TO_TAILWIND`, and `FIGMA_GET_FILE_NODES`. The older `FIGMA_GET_COMPONENT` action is deprecated. If a needed Figma tool is missing, submit it through the Composio request portal.

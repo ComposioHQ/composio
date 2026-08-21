@@ -1,0 +1,19 @@
+---
+title: "File Download Storage and Expiry"
+description: "Public guidance for staged files, signed download URLs, retention, and size questions."
+keywords: ["files","platform","signed-urls","storage","errors-and-troubleshooting","sessions-and-execution","/kb/sdk-and-api/composio-file-urls-are-short-lived-staged-downloads","composio-file-urls-are-short-lived-staged-downloads"]
+sources: [{"sourcePath":"platform/file-storage/public.md","sourceHeading":"Composio file URLs are short-lived staged downloads"}]
+sourceCommit: "d57f3d69079ee3819f4136df54512cdf0416cec0"
+lastVerifiedAt: "2026-08-12"
+reviewAfter: "2026-11-10"
+freshness: "evergreen"
+topics: ["errors-and-troubleshooting","sessions-and-execution"]
+aliases: ["/kb/sdk-and-api/composio-file-urls-are-short-lived-staged-downloads","composio-file-urls-are-short-lived-staged-downloads"]
+---
+## Composio file URLs are short-lived staged downloads
+
+When a hosted tool returns a file URL such as `data.file.s3url`, Composio normally stages the bytes in Composio-managed object storage and returns a signed download URL rather than the provider's original URL.
+
+The default signed-URL lifetime is one hour and can be configured for a project through its File TTL setting. Staged files are cleaned up after 24 hours. URL expiry and file cleanup are separate: rerun the tool or download the file again to obtain a fresh URL.
+
+There is no single customer-facing maximum that applies to every tool. Provider limits, the action implementation, runtime memory, and timeouts can impose lower limits, so check the exact action before quoting a hard cap.

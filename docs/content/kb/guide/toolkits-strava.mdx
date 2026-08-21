@@ -1,0 +1,20 @@
+---
+title: "Strava"
+description: "Public authentication and provider-capacity guidance for Strava."
+keywords: ["for-you","oauth","platform","strava","auth-config","authentication","errors-and-troubleshooting","sessions-and-execution","toolkits-and-providers","/kb/toolkits/strava-athlete-limits-belong-to-the-oauth-app","strava-athlete-limits-belong-to-the-oauth-app"]
+sources: [{"sourcePath":"toolkits/strava/public.md","sourceHeading":"Athlete-limit errors belong to the OAuth application"}]
+sourceCommit: "d57f3d69079ee3819f4136df54512cdf0416cec0"
+lastVerifiedAt: "2026-08-12"
+reviewAfter: "2026-11-10"
+freshness: "evergreen"
+topics: ["auth-config","authentication","errors-and-troubleshooting","sessions-and-execution","toolkits-and-providers"]
+toolkitSlugs: ["strava"]
+aliases: ["/kb/toolkits/strava-athlete-limits-belong-to-the-oauth-app","strava-athlete-limits-belong-to-the-oauth-app"]
+---
+## Athlete-limit errors belong to the OAuth application
+
+Strava applies connected-athlete capacity per developer application. If OAuth shows `Athlete limit exceeded`, first determine whether the auth config uses Composio-managed Strava credentials or a customer-owned app; do not assume the customer owns a managed app.
+
+For dedicated production capacity, create a customer-owned Strava developer app, configure it as a custom Composio auth config, and request any capacity increase from Strava for that app. The exact current capacity is visible to the app owner in Strava's API settings and can change, so do not quote a customer-specific number without checking it.
+
+See the [Strava custom OAuth setup guide](https://composio.dev/auth/strava) for credential setup.

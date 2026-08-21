@@ -1,0 +1,27 @@
+---
+title: "Delete a Composio organization"
+description: "Current self-service path and safety checks for organization deletion."
+keywords: ["account-deletion","dashboard","for-you","platform","account-and-billing"]
+sources: [{"sourcePath":"dashboard/account-deletion/public.md","sourceHeading":"Organization admins can use Delete this organization"}]
+sourceCommit: "d57f3d69079ee3819f4136df54512cdf0416cec0"
+lastVerifiedAt: "2026-08-17"
+reviewAfter: "2026-11-15"
+freshness: "evergreen"
+topics: ["account-and-billing"]
+aliases: []
+---
+## Organization admins can use Delete this organization
+
+In Platform, open **Settings → Organization Settings → General**. In For You,
+open **Settings → General**. Under **Delete this organization**, select **Delete
+organization** and complete the confirmation shown by the dashboard.
+
+The control is disabled for non-admins. A non-admin should contact an
+organization admin. The current warning states that deletion permanently
+removes the organization, its projects, connected accounts, API keys, and logs,
+so confirm the organization before proceeding.
+
+If upstream provider credentials also need to be invalidated, revoke the
+connected accounts where supported and remove the app or rotate the credential
+in the provider's own settings when necessary. Never send credentials to
+Composio support.

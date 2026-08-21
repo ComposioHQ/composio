@@ -1,0 +1,63 @@
+---
+title: "Consumer and Developer Project Boundaries"
+description: "Public support knowledge for Consumer and Developer Project Boundaries."
+keywords: ["consumer","for-you","project-boundaries-and-auth-selection","authentication","errors-and-troubleshooting","getting-started","sessions-and-execution","/kb/composio-for-you/workspace-members-do-not-automatically-share-for-you-connections","workspace-members-do-not-automatically-share-for-you-connections"]
+sources: [{"sourcePath":"consumer/project-boundaries-and-auth-selection/public.md","sourceHeading":"Rotate the Connect MCP consumer key"},{"sourcePath":"consumer/project-boundaries-and-auth-selection/public.md","sourceHeading":"Workspace members do not automatically share For You connections"},{"sourcePath":"consumer/project-boundaries-and-auth-selection/public.md","sourceHeading":"Shared connections must be explicitly allowed and pinned"}]
+sourceCommit: "d57f3d69079ee3819f4136df54512cdf0416cec0"
+lastVerifiedAt: "2026-08-17"
+reviewAfter: "2026-11-15"
+freshness: "evergreen"
+topics: ["authentication","errors-and-troubleshooting","getting-started","sessions-and-execution"]
+aliases: ["/kb/composio-for-you/workspace-members-do-not-automatically-share-for-you-connections","workspace-members-do-not-automatically-share-for-you-connections"]
+---
+Composio organizations have separate developer and consumer project surfaces. The developer dashboard/API shows developer projects. The consumer dashboard and consumer MCP / Composio MCP / Composio For You clients use a separate consumer project that customers usually do not see directly.
+
+Developer-project auth configs and connected accounts are not available in the consumer project. Consumer-project connections are not available in the developer project. If you created an auth config or connected an account in the developer dashboard but cannot use it in Claude, ChatGPT, Codex, Cursor, Composio For You, or another consumer MCP client, connect the account through the consumer flow instead.
+
+Consumer MCP auth has two common paths:
+
+1. Use the consumer MCP URL directly. If the MCP client supports auth, it can trigger the Composio auth flow, open a popup, let the customer authenticate, and let them select the organization.
+
+2. Use the consumer API key when the MCP client does not support auth and only supports API keys/headers. Copy the key from the consumer dashboard and pass it as the `x-consumer-api-key` header.
+
+Under the hood, a consumer-scoped MCP session is created for the specific user and allowed tools.
+
+The For You connection flow uses the auth config in the consumer project. Its current behavior is:
+
+1. When a Composio-managed auth app is available, the app uses that managed config and does not expose provider credentials for editing.
+
+2. When no managed app is available, **Manage Auth** appears for toolkits with editable customer-owned credentials or multiple auth schemes. Enter the provider client ID/secret or other required fields there and register the callback URI shown by the current form.
+
+3. Provider scopes are determined by the selected auth scheme and its current config. A managed app is limited to its approved scope set; customer-owned apps must configure and verify their scopes with the provider.
+
+## Rotate the Connect MCP consumer key
+
+These steps apply to a Connect consumer key with the `ck_*` prefix, sent as `x-consumer-api-key`. They do not apply to a Platform Project API key with the `ak_*` prefix. Reconnecting Gmail, Calendar, or another individual app does not rotate the consumer key.
+
+1. Open For You / Connect.
+2. Select **Settings** in the left sidebar.
+3. Open **Sessions & API Key**.
+4. Select **Regenerate** next to “Your API Key” and confirm.
+5. Update every MCP client that uses `https://connect.composio.dev/mcp` with the new `x-consumer-api-key` value.
+
+Regeneration immediately invalidates the old consumer key. If the button is missing even though you are in the correct workspace with write access, or you need help investigating suspicious usage, contact Composio support for account-level assistance.
+
+## Workspace members do not automatically share For You connections
+
+In the normal For You/Connect MCP flow, connected accounts belong to the member who authorized them. Another teammate using their own Connect MCP endpoint or `ck_*` consumer key resolves to their own connected accounts, not yours.
+
+- Admins can manage workspace settings and members, but their own Connect MCP session does not automatically use another member's accounts.
+- Members can connect and use their own accounts.
+- Viewers cannot connect or invoke tools from the For You surface.
+
+Raw `ak_*` Project API keys are different from `ck_*` consumer keys and must be treated as privileged project secrets. Explicitly shared or pinned connections are also a separate configuration from ordinary member-scoped connections.
+
+## Shared connections must be explicitly allowed and pinned
+
+A normal `PRIVATE` connection belongs to the user who created it. A `SHARED`
+connection can be used by other user IDs only when its ACL allows them and the
+connection is explicitly pinned into the session by connected-account ID.
+Shared connections are deny-by-default and are never selected implicitly.
+
+Follow the [Shared Connections guide](https://docs.composio.dev/docs/shared-connections#shared-vs-private)
+for the current ACL and session configuration.
