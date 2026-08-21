@@ -13,7 +13,7 @@ classifiers = [
     "Operating System :: OS Independent",
 ]
 dependencies = [
-    "ag2>=0.14,<1.0",
+    "ag2>=0.14,<2.0",
     "flaml==2.6.0",
     "autogen_core>=0.7.5",
     "composio",
