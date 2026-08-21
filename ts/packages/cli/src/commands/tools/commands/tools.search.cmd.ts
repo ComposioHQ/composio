@@ -22,7 +22,10 @@ import {
   writeConsumerConnectedToolkitsCache,
 } from 'src/services/consumer-short-term-cache';
 import { appendCliSessionHistory } from 'src/services/cli-session-artifacts';
-import { getOrFetchToolInputDefinition } from 'src/services/tool-input-validation';
+import {
+  cacheToolInputDefinition,
+  getOrFetchToolInputDefinition,
+} from 'src/services/tool-input-validation';
 
 const query = Args.repeated(Args.text({ name: 'query' })).pipe(
   Args.withDescription(
@@ -91,6 +94,9 @@ const stripSearchResultMetadata = <
 };
 
 const TOOL_SCHEMA_PATH_FORMAT = '~/.composio/tool_definitions/<TOOL_SLUG>.json';
+
+const isRemoteCustomToolSlug = (slug: string): boolean =>
+  slug.toUpperCase().startsWith('CUSTOM_');
 
 const toHomeRelativePath = (cacheDir: string, absolutePath: string) =>
   absolutePath.startsWith(cacheDir) ? absolutePath.replace(cacheDir, '~/.composio') : absolutePath;
@@ -182,7 +188,14 @@ const buildSearchJsonPayload = (params: {
     const primaryToolSchemaPaths = Object.fromEntries(
       yield* Effect.forEach(primaryToolSlugs, slug =>
         Effect.gen(function* () {
-          const definition = yield* getOrFetchToolInputDefinition(slug, params.projectScope);
+          const searchSchema = params.searchResponse.tool_schemas[slug];
+          const definition =
+            isRemoteCustomToolSlug(slug) && searchSchema?.input_schema
+              ? yield* cacheToolInputDefinition({
+                  slug,
+                  schema: searchSchema.input_schema,
+                })
+              : yield* getOrFetchToolInputDefinition(slug, params.projectScope);
           return [slug, toHomeRelativePath(cacheDir, definition.schemaPath)] satisfies readonly [
             string,
             string,
@@ -375,8 +388,46 @@ const runToolsSearch = (params: {
             cause,
           }),
       });
+      const customToolSlugsMissingSchemas = Object.entries(searchResponse.tool_schemas)
+        .filter(
+          ([slug, schema]) =>
+            isRemoteCustomToolSlug(slug) && !schema.input_schema
+        )
+        .map(([slug]) => slug);
+      const hydratedSearchResponse =
+        customToolSlugsMissingSchemas.length === 0
+          ? searchResponse
+          : yield* Effect.tryPromise({
+              try: async () => {
+                const schemaResponse = await client.toolRouter.session.executeMeta(sessionId, {
+                  slug: 'COMPOSIO_GET_TOOL_SCHEMAS',
+                  arguments: { tool_slugs: customToolSlugsMissingSchemas },
+                });
+                if (schemaResponse.error) {
+                  throw new Error(schemaResponse.error);
+                }
+
+                const resolvedSchemas = schemaResponse.data.tool_schemas;
+                if (!resolvedSchemas || typeof resolvedSchemas !== 'object') {
+                  throw new Error('Tool Router returned no tool schemas.');
+                }
+
+                return {
+                  ...searchResponse,
+                  tool_schemas: {
+                    ...searchResponse.tool_schemas,
+                    ...(resolvedSchemas as Record<string, SearchToolSchema>),
+                  },
+                };
+              },
+              catch: cause =>
+                new ToolsSearchRequestError({
+                  message: 'Failed to fetch custom tool schemas.',
+                  cause,
+                }),
+            });
       return {
-        searchResponse,
+        searchResponse: hydratedSearchResponse,
         projectScope: {
           orgId: resolvedProject.orgId,
           projectId: resolvedProject.projectId,

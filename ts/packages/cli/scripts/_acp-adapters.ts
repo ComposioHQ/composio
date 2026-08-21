@@ -1,7 +1,6 @@
 import { chmod, copyFile, mkdir, mkdtemp, readFile, rename, rm, writeFile } from 'node:fs/promises';
 import { createRequire } from 'node:module';
 import * as path from 'node:path';
-import { extract as extractTarball } from 'tar';
 import {
   RUN_CODEX_ACP_BINARY_TARGETS,
   type RunCodexAcpBinaryTarget,
@@ -264,7 +263,8 @@ const extractCodexBinaryFromTarball = async ({
 
   await downloadTarball(tarballUrl, tempArchivePath);
   await mkdir(tempExtractDir, { recursive: true });
-  await extractTarball({ file: tempArchivePath, cwd: tempExtractDir });
+  const archive = new Bun.Archive(await Bun.file(tempArchivePath).bytes());
+  await archive.extract(tempExtractDir);
 
   const extractedBinaryPath = path.join(tempExtractDir, 'package', 'bin', binaryFileName);
   if (!(await fileExists(extractedBinaryPath))) {
