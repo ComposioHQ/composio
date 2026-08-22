@@ -23,9 +23,6 @@ from composio_client.types.tool_router import session_link_params, session_patch
 from composio_client.types.tool_router.session_execute_response import (
     SessionExecuteResponse,
 )
-from composio_client.types.tool_router.session_proxy_execute_response import (
-    SessionProxyExecuteResponse,
-)
 from composio_client.types.tool_router.session_search_response import (
     SessionSearchResponse,
 )
@@ -44,6 +41,7 @@ from composio.core.models.custom_tool_types import (
     CustomToolsMap,
     CustomToolsMapEntry,
     InlineCustomToolsWirePayload,
+    ToolRouterSessionProxyExecuteResponse,
     RegisteredCustomTool,
     RegisteredCustomToolkit,
 )
@@ -52,7 +50,10 @@ from composio.core.models.inline_custom_tools_payload import (
     inline_custom_tools_execute_experimental,
     inline_custom_tools_search_experimental,
 )
-from composio.core.models.session_context import SessionContextImpl, proxy_execute_impl
+from composio.core.models.session_context import (
+    SessionContextImpl,
+    proxy_execute_impl,
+)
 from composio.core.models.tool_router_session_delete import (
     ToolRouterSessionDeleteResponse,
     delete_tool_router_session,
@@ -812,7 +813,7 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
         method: t.Literal["GET", "POST", "PUT", "DELETE", "PATCH"],
         body: t.Any = None,
         parameters: t.Optional[t.List[t.Dict[str, t.Any]]] = None,
-    ) -> SessionProxyExecuteResponse:
+    ) -> ToolRouterSessionProxyExecuteResponse:
         """Proxy an API call through Composio's auth layer.
 
         :param toolkit: Composio toolkit slug (e.g. 'gmail', 'github')
