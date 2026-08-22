@@ -4,6 +4,7 @@ import { join, relative } from 'node:path';
 import sitemap from '@/app/sitemap';
 import { GET as getLlmsIndex } from '@/app/llms.txt/route';
 import { getAlgoliaSearchDocuments, getDocsSearchIndexes } from '@/lib/search-index';
+import * as searchIndexModule from '@/lib/search-index';
 import { getLocalKnowledgeDiscoveryPaths } from '@/lib/knowledge/discovery';
 import { getPublishedKbGuides } from '@/lib/kb/repository';
 import type { KnowledgeSourceType } from '@/lib/knowledge/types';
@@ -37,6 +38,52 @@ function listFiles(root: string): string[] {
 }
 
 describe('unified public knowledge corpus', () => {
+  test('does not interpret fenced code comments as document headings', () => {
+    const recordsFromMarkdownPage = (
+      searchIndexModule as {
+        recordsFromMarkdownPage?: (input: {
+          url: string;
+          type: string;
+          title: string;
+          markdown: string;
+        }) => Array<{ section?: string; content: string }>;
+      }
+    ).recordsFromMarkdownPage;
+
+    expect(typeof recordsFromMarkdownPage).toBe('function');
+    if (!recordsFromMarkdownPage) return;
+
+    const records = recordsFromMarkdownPage({
+      url: '/docs/test-fenced-comments',
+      type: 'docs',
+      title: 'Fenced comments',
+      markdown: [
+        '# Fenced comments',
+        '',
+        '## Setup',
+        '',
+        'Before code.',
+        '',
+        '```python',
+        '# not a heading',
+        'value = 1',
+        '```',
+        '',
+        '## Next',
+        '',
+        'After code.',
+      ].join('\n'),
+    });
+
+    expect(records.map(record => record.section)).toEqual([
+      'Fenced comments',
+      'Setup',
+      'Next',
+    ]);
+    expect(records.find(record => record.section === 'Setup')?.content)
+      .toContain('# not a heading');
+  });
+
   test('excludes hidden API operations from local and Algolia search corpora', async () => {
     const hiddenOperationUrls = [
       '/reference/api-reference/invite-codes/postOrgClankerCreateClaim',

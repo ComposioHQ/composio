@@ -798,6 +798,147 @@ describe('public knowledge search service', () => {
     expect(execution.timings.semanticDurationMs).toBeNull();
   });
 
+  test('promotes exact page identities above incidental body matches', async () => {
+    const candidates = [
+      record({
+        id: 'gmail-toolkit',
+        title: 'Gmail',
+        sourceType: 'toolkit',
+        pageRank: 1_500,
+      }),
+      record({
+        id: 'configuring-sessions',
+        title: 'Configuring Sessions',
+        sourceType: 'docs',
+        pageRank: 2_000,
+        content: 'Use toolkits=["github", "gmail", "slack"] when creating a session.',
+      }),
+      record({
+        id: 'shared-connections',
+        title: 'Shared connections',
+        sourceType: 'docs',
+        pageRank: 2_000,
+        content: 'Create a shared Gmail connection that any user can use.',
+      }),
+      record({
+        id: 'gmail-kb',
+        title: 'Gmail',
+        sourceType: 'kb',
+        pageRank: 1_900,
+      }),
+    ].map(publicKnowledgeCandidateFromSearchRecord);
+    let semanticCalls = 0;
+
+    const execution = await searchPublicKnowledge({
+      query: 'gmail', filter: 'all', headers: new Headers(),
+    }, {
+      hybridEnabled: () => true,
+      searchKeywordCandidates: async () => ({ candidates }),
+      searchSemanticCandidates: async () => {
+        semanticCalls += 1;
+        return [];
+      },
+      previewOverlayEnabled: () => false,
+    });
+
+    const results = 'results' in execution.response ? execution.response.results : [];
+    expect(semanticCalls).toBe(0);
+    expect(results.map(result => result.objectID)).toEqual([
+      'gmail-toolkit',
+      'gmail-kb',
+      'configuring-sessions',
+      'shared-connections',
+    ]);
+  });
+
+  test('deduplicates exact keyword section chunks before returning results', async () => {
+    const gmailSections = Array.from({ length: 20 }, (_, index) => {
+      const section = record({
+        id: index === 0 ? 'gmail-attachments' : `gmail-section-${index}`,
+        title: 'Gmail',
+        sourceType: 'kb',
+        pageRank: 1_900,
+        content: index === 0
+          ? 'Send attachments safely with Gmail.'
+          : `Gmail support section ${index}.`,
+      });
+      section.url = '/kb/guide/toolkits-gmail';
+      section.page_id = '/kb/guide/toolkits-gmail';
+      section.canonical_url = '/kb/guide/toolkits-gmail';
+      section.section = index === 0 ? 'Send attachments safely' : `Gmail section ${index}`;
+      return publicKnowledgeCandidateFromSearchRecord(section);
+    });
+
+    const toolkit = publicKnowledgeCandidateFromSearchRecord(record({
+      id: 'gmail',
+      title: 'Gmail',
+      sourceType: 'toolkit',
+      pageRank: 1_500,
+    }));
+    let semanticCalls = 0;
+
+    const execution = await searchPublicKnowledge({
+      query: 'gmail', filter: 'all', headers: new Headers(),
+    }, {
+      hybridEnabled: () => true,
+      searchKeywordCandidates: async () => ({
+        candidates: gmailSections.concat(toolkit),
+      }),
+      searchSemanticCandidates: async () => {
+        semanticCalls += 1;
+        return [];
+      },
+      previewOverlayEnabled: () => false,
+    });
+
+    const results = 'results' in execution.response ? execution.response.results : [];
+    expect(semanticCalls).toBe(0);
+    expect(results.map(result => result.objectID)).toEqual(['gmail-attachments', 'gmail']);
+    expect(new Set(results.map(result => result.canonicalUrl)).size).toBe(results.length);
+  });
+
+  test('deduplicates section chunks when hybrid retrieval is disabled', async () => {
+    const attachmentsRecord = record({
+      id: 'gmail-attachments',
+      title: 'Gmail',
+      sourceType: 'kb',
+      pageRank: 1_900,
+      content: 'Use Gmail attachments safely.',
+    });
+    attachmentsRecord.url = '/kb/guide/toolkits-gmail';
+    attachmentsRecord.page_id = '/kb/guide/toolkits-gmail';
+    attachmentsRecord.canonical_url = '/kb/guide/toolkits-gmail';
+    attachmentsRecord.section = 'Send attachments safely';
+
+    const oauthRecord = record({
+      id: 'gmail-oauth',
+      title: 'Gmail',
+      sourceType: 'kb',
+      pageRank: 1_900,
+      content: 'Configure Gmail OAuth scopes.',
+    });
+    oauthRecord.url = '/kb/guide/toolkits-gmail';
+    oauthRecord.page_id = '/kb/guide/toolkits-gmail';
+    oauthRecord.canonical_url = '/kb/guide/toolkits-gmail';
+    oauthRecord.section = 'Configure Gmail OAuth';
+
+    const execution = await searchPublicKnowledge({
+      query: 'gmail attachments', filter: 'all', headers: new Headers(),
+    }, {
+      hybridEnabled: () => false,
+      searchKeywordCandidates: async () => ({
+        candidates: [attachmentsRecord, oauthRecord]
+          .map(publicKnowledgeCandidateFromSearchRecord),
+      }),
+      searchSemanticCandidates: async () => [],
+      previewOverlayEnabled: () => false,
+    });
+
+    const results = 'results' in execution.response ? execution.response.results : [];
+    expect(results.map(result => result.objectID)).toEqual(['gmail-attachments']);
+    expect(new Set(results.map(result => result.canonicalUrl)).size).toBe(results.length);
+  });
+
   test('fuses docs and KB semantics with toolkit and reference keyword candidates', async () => {
     const toolkit = publicKnowledgeCandidateFromSearchRecord(record({
       id: 'calendar-toolkit', title: 'Calendar tools', sourceType: 'toolkit', pageRank: 1_500,

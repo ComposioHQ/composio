@@ -357,7 +357,7 @@ function knowledgeSourceType(type: string, legacy: boolean): KnowledgeSourceType
   throw new Error(`Unsupported search source type: ${type}`);
 }
 
-function recordsFromMarkdownPage(input: {
+export function recordsFromMarkdownPage(input: {
   url: string;
   type: string;
   title: string;
@@ -399,6 +399,8 @@ function recordsFromMarkdownPage(input: {
   let currentDepth = 0;
   let currentLines: string[] = [];
   let sectionPosition = 0;
+  let fenceMarker: string | null = null;
+  let fenceLength = 0;
 
   const flush = () => {
     const text = currentLines.join('\n').trim();
@@ -414,11 +416,33 @@ function recordsFromMarkdownPage(input: {
   };
 
   for (const line of lines) {
-    const match = line.match(/^(#{1,6})\s+(.+)$/);
-    if (match) {
+    const fenceMatch = line.match(/^\s{0,3}(`{3,}|~{3,})(.*)$/);
+    if (fenceMatch) {
+      const marker = fenceMatch[1];
+      const markerCharacter = marker[0];
+      const suffix = fenceMatch[2];
+
+      if (!fenceMarker) {
+        fenceMarker = markerCharacter;
+        fenceLength = marker.length;
+      } else if (
+        markerCharacter === fenceMarker
+        && marker.length >= fenceLength
+        && suffix.trim() === ''
+      ) {
+        fenceMarker = null;
+        fenceLength = 0;
+      }
+
+      currentLines.push(line);
+      continue;
+    }
+
+    const headingMatch = fenceMarker ? null : line.match(/^(#{1,6})\s+(.+)$/);
+    if (headingMatch) {
       flush();
-      const depth = match[1].length;
-      const heading = match[2].trim();
+      const depth = headingMatch[1].length;
+      const heading = headingMatch[2].trim();
       currentHeading = heading;
       currentSectionId = uniqueSlug(heading, headingSlugs);
       currentDepth = depth;
