@@ -16,10 +16,12 @@ import {
   ToolExecuteParams,
   ExecuteToolModifiers,
   ExecuteToolFnOptions,
-  removeNonRequiredProperties,
   McpUrlResponse,
   normalizeToolArguments,
   deduplicateJsonSchemaRequiredArrays,
+  dereferenceJsonSchema,
+  toStrictJsonSchema,
+  logger,
 } from '@composio/core';
 
 export type OpenAiTool = OpenAI.Responses.FunctionTool;
@@ -120,23 +122,32 @@ export class OpenAIResponsesProvider extends BaseNonAgenticProvider<
    * ```
    */
   override wrapTool(tool: Tool): OpenAiTool {
-    const inputParams = deduplicateJsonSchemaRequiredArrays(tool.inputParameters);
+    const inputParams = tool.inputParameters;
 
-    const parameters =
-      this.strict && inputParams?.type === 'object'
-        ? removeNonRequiredProperties(
-            inputParams as {
-              type: 'object';
-              properties: Record<string, unknown>;
-              required?: string[];
-            }
-          )
-        : (inputParams ?? {});
+    let parameters: Record<string, unknown> = (inputParams ?? {}) as Record<string, unknown>;
+    if (this.strict && inputParams?.type === 'object') {
+      // Structured outputs reject schemas whose nested objects keep optional
+      // properties or their own additionalProperties, so the strict contract
+      // must be applied at every depth. Inline $ref/$defs first (lenient mode
+      // keeps upstream schemas with dangling refs usable), then normalize.
+      const dereferenced = dereferenceJsonSchema(parameters, {
+        onUnresolved: 'sentinel',
+        onReplace: ref =>
+          logger.debug(
+            `OpenAIResponsesProvider: unresolved $ref "${ref}" in tool "${tool.slug}" replaced with a permissive schema`
+          ),
+      });
+      parameters = toStrictJsonSchema<Record<string, unknown>>(dereferenced).schema;
+    }
+
+    // Canonicalize required arrays at the vendor-schema emission boundary,
+    // after any provider-specific schema transformations.
+    const wrappedParameters = deduplicateJsonSchemaRequiredArrays(parameters);
 
     return {
       name: tool.slug,
       description: tool.description,
-      parameters,
+      parameters: wrappedParameters,
       strict: this.strict,
       type: 'function',
     };

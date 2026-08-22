@@ -496,3 +496,246 @@ export function jsonSchemaToZodSchema<T extends z.ZodTypeAny>(
     });
   }
 }
+
+/**
+ * Reason recorded when strict normalization changes a schema node.
+ *
+ * - `nullable-type-converted` — a `type` array containing `'null'` became an
+ *   `anyOf` with an explicit `{ type: 'null' }` branch.
+ * - `multi-type-converted` — a `type` array without `'null'` (e.g.
+ *   `['string', 'number']`) became equivalent `anyOf` branches.
+ * - `annotation-keyword-stripped` — an annotation-only keyword (`examples`,
+ *   `default`) that strict mode rejects was removed.
+ * - `non-required-property-dropped` — a property not listed in `required`
+ *   was removed from its parent object.
+ */
+export type StrictSchemaChangeReason =
+  | 'nullable-type-converted'
+  | 'multi-type-converted'
+  | 'annotation-keyword-stripped'
+  | 'non-required-property-dropped';
+
+/** A single structural change applied by {@link toStrictJsonSchema}. */
+export interface StrictSchemaChange {
+  /** Path to the changed node relative to the root, e.g. `properties.cfg.items`. */
+  path: string;
+  reason: StrictSchemaChangeReason;
+  /** Human-readable detail about what specifically changed. */
+  detail?: string;
+}
+
+/** Result of {@link toStrictJsonSchema}: the normalized schema plus a change log. */
+export interface StrictJsonSchemaResult<T = unknown> {
+  schema: T;
+  changes: StrictSchemaChange[];
+}
+
+const MAX_STRICT_CHANGES = 50;
+
+/** Annotation-only keywords OpenAI structured outputs rejects; safe to strip. */
+const STRICT_STRIP_KEYWORDS = new Set(['examples', 'default']);
+
+/** Keywords whose values are literal data, not schemas — never recursed as schemas. */
+const STRICT_INSTANCE_VALUE_KEYWORDS = new Set(['const', 'enum']);
+
+const STRICT_SCHEMA_SINGLE_KEYS = new Set([
+  'additionalItems',
+  'additionalProperties',
+  'contains',
+  'contentSchema',
+  'else',
+  'if',
+  'not',
+  'propertyNames',
+  'then',
+  'unevaluatedItems',
+  'unevaluatedProperties',
+]);
+const STRICT_SCHEMA_ARRAY_KEYS = new Set(['allOf', 'anyOf', 'oneOf', 'prefixItems']);
+const STRICT_SCHEMA_MAP_KEYS = new Set([
+  '$defs',
+  'definitions',
+  'dependentSchemas',
+  'patternProperties',
+  'properties',
+]);
+
+type StrictWalkMode = 'schema' | 'schema-array' | 'schema-map' | 'value';
+
+/**
+ * Normalizes a JSON Schema for OpenAI structured outputs (`strict: true`),
+ * which requires every object node to declare all of its properties in
+ * `required`, set `additionalProperties: false`, use only supported keywords,
+ * and express nullable / multi-typed fields via `anyOf`.
+ *
+ * The top-level `removeNonRequiredProperties` only handled the root object,
+ * so nested objects, composition branches and array items passed through
+ * untouched and the API rejected the whole request. This function applies the
+ * same contract at every depth:
+ *
+ *  - Objects with a non-empty `required` keep only those properties
+ *    (matching the established top-level behavior); objects without one keep
+ *    every property but are forced to require them all — dropping everything
+ *    would gut the tool, and leaving optional properties would be rejected.
+ *  - `type` arrays become `anyOf` branches with an explicit `{type:'null'}`
+ *    variant where applicable.
+ *  - Annotation keywords (`examples`, `default`) are stripped.
+ *  - Composition keywords (`anyOf`/`oneOf`/`allOf`), array `items`/
+ *    `prefixItems` and property maps are normalized recursively.
+ *
+ * Every structural change is recorded so callers can surface diagnostics
+ * instead of failing silently. The input is never mutated. Dereference
+ * `$ref`s first (see {@link dereferenceJsonSchema}) so definitions referenced
+ * under `$defs` are normalized too, then run
+ * {@link deduplicateJsonSchemaRequiredArrays} on the result before emitting.
+ */
+export function toStrictJsonSchema<T = unknown>(schema: T): StrictJsonSchemaResult<T> {
+  const changes: StrictSchemaChange[] = [];
+  const recordChange = (change: StrictSchemaChange): void => {
+    if (changes.length < MAX_STRICT_CHANGES) {
+      changes.push(change);
+    }
+  };
+
+  const joinPath = (parent: string, key: string): string =>
+    parent ? `${parent}.${key}` : key;
+
+  const splitTypeArray = (node: Record<string, unknown>, path: string): Record<string, unknown> => {
+    const typeValues = node.type as unknown[];
+    const branches = typeValues.map(typeValue =>
+      typeValue === 'null' ? { type: 'null' } : { ...node, type: typeValue }
+    );
+    const { type: _droppedType, ...rest } = node;
+    recordChange({
+      path,
+      reason: typeValues.includes('null') ? 'nullable-type-converted' : 'multi-type-converted',
+      detail: `type [${typeValues.map(String).join(', ')}] converted to anyOf`,
+    });
+    return { ...rest, anyOf: branches };
+  };
+
+  function walkChildren(
+    node: Record<string, unknown>,
+    mode: StrictWalkMode,
+    depth: number,
+    path: string
+  ): Record<string, unknown> {
+    const clone: Record<string, unknown> = {};
+    for (const [key, child] of Object.entries(node)) {
+      let childMode: StrictWalkMode = 'value';
+      if (mode === 'schema-map') {
+        childMode = 'schema';
+      } else if (mode === 'schema') {
+        if (!STRICT_INSTANCE_VALUE_KEYWORDS.has(key)) {
+          if (STRICT_SCHEMA_MAP_KEYS.has(key)) {
+            childMode = 'schema-map';
+          } else if (STRICT_SCHEMA_ARRAY_KEYS.has(key) || (key === 'items' && Array.isArray(child))) {
+            childMode = 'schema-array';
+          } else if (STRICT_SCHEMA_SINGLE_KEYS.has(key) || key === 'items') {
+            childMode = 'schema';
+          }
+        }
+      }
+
+      if (childMode === 'schema-map' && isPlainObject(child)) {
+        const mapClone: Record<string, unknown> = {};
+        for (const [name, subSchema] of Object.entries(child)) {
+          mapClone[name] = walk(subSchema, 'schema', depth + 1, joinPath(joinPath(path, key), name));
+        }
+        clone[key] = mapClone;
+        continue;
+      }
+      clone[key] = walk(child, childMode, depth + 1, joinPath(path, key));
+    }
+    return clone;
+  }
+
+  function walk(value: unknown, mode: StrictWalkMode, depth: number, path: string): unknown {
+    if (depth > MAX_NODE_DEPTH) {
+      throw new RangeError(`JSON Schema exceeds maximum nesting depth of ${MAX_NODE_DEPTH}`);
+    }
+    if (Array.isArray(value)) {
+      const itemMode = mode === 'schema-array' ? 'schema' : 'value';
+      return value.map((item, index) => walk(item, itemMode, depth + 1, `${path}[${index}]`));
+    }
+    if (!isPlainObject(value)) return value;
+    if (mode === 'value') return value;
+
+    let node: Record<string, unknown> = value;
+
+    // Nullable / multi-type arrays must become anyOf before anything else so
+    // the generated branches flow through the normal recursion below.
+    if (Array.isArray(node.type)) {
+      node = splitTypeArray(node, path);
+    }
+
+    const strippedNode: Record<string, unknown> = {};
+    for (const [key, child] of Object.entries(node)) {
+      if (STRICT_STRIP_KEYWORDS.has(key)) {
+        recordChange({
+          path,
+          reason: 'annotation-keyword-stripped',
+          detail: `keyword "${key}" removed`,
+        });
+        continue;
+      }
+      strippedNode[key] = child;
+    }
+    node = strippedNode;
+
+    // Object strictening: complete required, closed additionalProperties.
+    const hasPropertiesKeyword = isPlainObject(node.properties);
+    const isObjectNode = hasPropertiesKeyword || node.type === 'object';
+    if (isObjectNode) {
+      const properties = hasPropertiesKeyword
+        ? (node.properties as Record<string, unknown>)
+        : {};
+      const declaredRequired = Array.isArray(node.required)
+        ? node.required.filter((entry): entry is string => typeof entry === 'string')
+        : [];
+      const keepOnlyRequired = declaredRequired.length > 0;
+      const keptKeys = new Set(
+        keepOnlyRequired ? declaredRequired.filter(key => key in properties) : Object.keys(properties)
+      );
+
+      const nextProperties: Record<string, unknown> = {};
+      for (const [name, propertySchema] of Object.entries(properties)) {
+        if (keptKeys.has(name)) {
+          nextProperties[name] = walk(
+            propertySchema,
+            'schema',
+            depth + 1,
+            joinPath(path, `properties.${name}`)
+          );
+        } else {
+          recordChange({
+            path: joinPath(path, `properties.${name}`),
+            reason: 'non-required-property-dropped',
+            detail: `property "${name}" is not listed in "required"`,
+          });
+        }
+      }
+
+      // Recurse into any remaining schema-bearing siblings (e.g. `allOf`,
+      // `description`) while keeping the four managed keywords authoritative.
+      const managedKeys = new Set(['type', 'properties', 'required', 'additionalProperties']);
+      const restNode: Record<string, unknown> = {};
+      for (const [key, child] of Object.entries(node)) {
+        if (!managedKeys.has(key)) restNode[key] = child;
+      }
+
+      return {
+        ...walkChildren(restNode, 'schema', depth, path),
+        type: 'object',
+        properties: nextProperties,
+        required: Object.keys(nextProperties),
+        additionalProperties: false,
+      };
+    }
+
+    return walkChildren(node, mode, depth, path);
+  }
+
+  const normalized = walk(schema, 'schema', 0, '');
+  return { schema: normalized as T, changes };
+}

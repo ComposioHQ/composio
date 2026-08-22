@@ -133,6 +133,38 @@ describe('VercelProvider', () => {
 
       expect(mockExecuteToolFn).toHaveBeenCalledWith(mockTool.slug, params);
     });
+
+    it('enforces the strict contract on complex schemas when strict mode is enabled', () => {
+      const strictProvider = new VercelProvider({ strict: true });
+      const wrapped = strictProvider.wrapTool(
+        {
+          ...mockTool,
+          inputParameters: {
+            type: 'object',
+            properties: {
+              cfg: {
+                type: 'object',
+                properties: { url: { type: 'string' }, note: { type: 'string' } },
+                required: ['url'],
+              },
+              id: { type: ['string', 'null'] },
+            },
+            required: ['cfg', 'id'],
+          },
+        },
+        mockExecuteToolFn
+      ) as unknown as MockedVercelTool;
+
+      const schema = wrapped.inputSchema as { safeParse: (value: unknown) => { success: boolean } };
+
+      // Nested required key present, nullable field null — valid.
+      expect(schema.safeParse({ cfg: { url: 'https://example.com' }, id: null }).success).toBe(
+        true
+      );
+      // Nested optional property was dropped under strict mode, so a value for
+      // it no longer parses.
+      expect(schema.safeParse({ cfg: { note: 'x' }, id: 'a' }).success).toBe(false);
+    });
   });
 
   describe('wrapTools', () => {

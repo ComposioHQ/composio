@@ -11,11 +11,13 @@ from openai.types.responses.response_output_item import ResponseFunctionToolCall
 
 from composio.core.provider import NonAgenticProvider
 from composio.types import Modifiers, Tool, ToolExecutionResponse
+from composio.utils.json_schema import dereference_json_schema
 from composio.utils.shared import normalize_tool_arguments
+from composio.utils.strict_schema import to_strict_json_schema
 
 # Responses API uses a flattened tool structure
-ResponsesTool = t.Dict[str, t.Any]
-ResponsesToolCollection = t.List[ResponsesTool]
+ResponsesTool = dict[str, t.Any]
+ResponsesToolCollection = list[ResponsesTool]
 
 
 class OpenAIResponsesProvider(
@@ -23,13 +25,36 @@ class OpenAIResponsesProvider(
 ):
     """OpenAI Responses API Provider class definition."""
 
+    def __init__(self, strict: bool = False) -> None:
+        """
+        :param strict: Normalize wrapped tool parameter schemas for OpenAI
+            structured outputs (every object fully required and closed,
+            nullable types via ``anyOf``, ``$ref``/``$defs`` inlined).
+            Mirrors the TypeScript ``OpenAIResponsesProvider({ strict })``
+            option. Defaults to ``False``.
+        """
+        self.strict = strict
+
     def wrap_tool(self, tool: Tool) -> ResponsesTool:
         """Wrap a tool for the Responses API format."""
+        parameters: t.Any = tool.input_parameters or {}
+        if (
+            self.strict
+            and isinstance(parameters, dict)
+            and parameters.get("type") == "object"
+        ):
+            # Structured outputs reject schemas whose nested objects keep
+            # optional properties or their own additionalProperties, so the
+            # strict contract must be applied at every depth. Inline $refs
+            # first; lenient mode keeps upstream schemas with dangling refs
+            # usable.
+            dereferenced = dereference_json_schema(parameters, on_unresolved="sentinel")
+            parameters = to_strict_json_schema(dereferenced).schema
         return {
             "type": "function",
             "name": tool.slug,
             "description": tool.description,
-            "parameters": tool.input_parameters,
+            "parameters": parameters,
         }
 
     def wrap_tools(self, tools: t.Sequence[Tool]) -> ResponsesToolCollection:
@@ -39,8 +64,8 @@ class OpenAIResponsesProvider(
     def execute_tool_call(
         self,
         user_id: str,
-        tool_call: t.Union[ResponseFunctionToolCall],
-        modifiers: t.Optional[Modifiers] = None,
+        tool_call: ResponseFunctionToolCall,
+        modifiers: Modifiers | None = None,
     ) -> ToolExecutionResponse:
         """Execute a tool call from the Responses API.
 
@@ -65,8 +90,8 @@ class OpenAIResponsesProvider(
         self,
         user_id: str,
         response: Response,
-        modifiers: t.Optional[Modifiers] = None,
-    ) -> t.List[ToolExecutionResponse]:
+        modifiers: Modifiers | None = None,
+    ) -> list[ToolExecutionResponse]:
         """
         Handle tool calls from OpenAI Responses API.
 

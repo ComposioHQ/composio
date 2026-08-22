@@ -129,6 +129,110 @@ describe('OpenAIResponsesProvider', () => {
 
       expect(wrapped.parameters.required).toEqual(['input']);
     });
+
+    it('normalizes nested objects, nullable types and anyOf under strict mode', () => {
+      const strictProvider = new OpenAIResponsesProvider({ strict: true });
+      const wrapped = strictProvider.wrapTool({
+        ...mockTool,
+        inputParameters: {
+          type: 'object',
+          properties: {
+            cfg: {
+              type: 'object',
+              properties: {
+                url: { type: 'string' },
+                note: { type: 'string' },
+              },
+              required: ['url'],
+            },
+            id: { type: ['string', 'null'] },
+            payload: {
+              anyOf: [
+                {
+                  type: 'object',
+                  properties: { inner: { type: 'string' }, extra: { type: 'string' } },
+                  required: ['inner'],
+                },
+                { type: 'null' },
+              ],
+            },
+          },
+          required: ['cfg', 'id', 'payload'],
+        },
+      }) as MockedOpenAITool;
+
+      expect(wrapped.parameters).toEqual({
+        type: 'object',
+        properties: {
+          cfg: {
+            type: 'object',
+            properties: { url: { type: 'string' } },
+            required: ['url'],
+            additionalProperties: false,
+          },
+          id: { anyOf: [{ type: 'string' }, { type: 'null' }] },
+          payload: {
+            anyOf: [
+              {
+                type: 'object',
+                properties: { inner: { type: 'string' } },
+                required: ['inner'],
+                additionalProperties: false,
+              },
+              { type: 'null' },
+            ],
+          },
+        },
+        required: ['cfg', 'id', 'payload'],
+        additionalProperties: false,
+      });
+    });
+
+    it('dereferences $defs before normalizing under strict mode', () => {
+      const strictProvider = new OpenAIResponsesProvider({ strict: true });
+      const wrapped = strictProvider.wrapTool({
+        ...mockTool,
+        inputParameters: {
+          type: 'object',
+          properties: {
+            cfg: { $ref: '#/$defs/Config' },
+          },
+          required: ['cfg'],
+          $defs: {
+            Config: {
+              type: 'object',
+              properties: { url: { type: 'string' }, opt: { type: 'string' } },
+              required: ['url'],
+            },
+          },
+        },
+      }) as MockedOpenAITool;
+
+      expect(JSON.stringify(wrapped.parameters)).not.toContain('$ref');
+      expect(wrapped.parameters).toEqual({
+        type: 'object',
+        properties: {
+          cfg: {
+            type: 'object',
+            properties: { url: { type: 'string' } },
+            required: ['url'],
+            additionalProperties: false,
+          },
+        },
+        required: ['cfg'],
+        additionalProperties: false,
+      });
+    });
+
+    it('leaves non-object schemas untouched in strict mode apart from required dedup', () => {
+      const strictProvider = new OpenAIResponsesProvider({ strict: true });
+      const wrapped = strictProvider.wrapTool({
+        ...mockTool,
+        inputParameters: undefined,
+      }) as MockedOpenAITool;
+
+      expect(wrapped.parameters).toEqual({});
+    });
   });
 
   describe('wrapTools', () => {
