@@ -6,8 +6,9 @@ import extractZip from 'extract-zip';
  * `extract-zip` writes a symlink entry without validating its target
  * (CVE-2026-56876 / GHSA-jmr9-qjv8-65gv), and the advisory has no fixed
  * version. Sidecar archives never contain symlinks, so rejecting the entry type
- * removes the vector. See the matching helper in `@composio/cli`; the two are
- * kept separate because this package must not be pulled into the CLI's
+ * removes the vector. See the matching helper in `@composio/cli` for why this
+ * is a local workaround rather than an upstream fix, and when it can go; the
+ * two are kept separate because this package must not be pulled into the CLI's
  * standalone companion bundles.
  */
 

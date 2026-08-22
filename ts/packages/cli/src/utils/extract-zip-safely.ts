@@ -15,6 +15,16 @@ import extractZip from 'extract-zip';
  * legitimately contains a symlink, so rejecting the entry type outright removes
  * the vector without narrowing what a valid archive may hold. The check runs
  * before the entry is written, so a rejected archive plants nothing.
+ *
+ * This is deliberately a local workaround rather than an upstream fix. Refusing
+ * every symlink suits an application whose archives never carry one, but it
+ * would break a general-purpose library, where the correct fix is to validate
+ * that a link's resolved target stays inside the extraction root. That fix is
+ * already proposed upstream several times over — max-mapper/extract-zip#158,
+ * #160 and #161 — and none of them has moved: the repository's last commit was
+ * August 2021, and the issue asking whether a patched release is planned
+ * (max-mapper/extract-zip#159) has drawn replies only from other stranded
+ * consumers. Drop this helper once a release actually carries the fix.
  */
 
 // Unix mode lives in the high 16 bits of a zip entry's external attributes.
