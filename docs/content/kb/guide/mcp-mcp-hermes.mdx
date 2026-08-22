@@ -1,0 +1,32 @@
+---
+title: "Hermes MCP"
+description: "Public support knowledge for Hermes MCP."
+keywords: ["for-you","mcp","mcp-hermes","platform","auth-config","authentication","errors-and-troubleshooting","getting-started","sessions-and-execution","/kb/tool-router-and-mcp/mcp-mcp-hermes","auth-configs-are-project-scoped","production-mcp-api-paths-and-direct-transport-tests"]
+sources: [{"sourcePath":"mcp/mcp-hermes/public.md","sourceHeading":"Production MCP API paths and direct transport tests"},{"sourcePath":"mcp/mcp-hermes/public.md","sourceHeading":"Auth configs are project-scoped"}]
+sourceCommit: "d57f3d69079ee3819f4136df54512cdf0416cec0"
+lastVerifiedAt: "2026-08-12"
+reviewAfter: "2026-11-10"
+freshness: "evergreen"
+topics: ["auth-config","authentication","errors-and-troubleshooting","getting-started","sessions-and-execution"]
+aliases: ["/kb/tool-router-and-mcp/mcp-mcp-hermes","auth-configs-are-project-scoped","production-mcp-api-paths-and-direct-transport-tests"]
+---
+Use these checks to troubleshoot Composio MCP connection failures in Hermes / Nous Hermes Agent.
+
+## Production MCP API paths and direct transport tests
+
+Use HTTPS and the full production API path:
+
+```text
+https://backend.composio.dev/api/v3.1/mcp/servers
+https://backend.composio.dev/api/v3.1/mcp/<mcp_server_id>
+```
+
+Pass the Project API key in `x-api-key`. Avoid an HTTP URL, staging hosts, or a trailing slash on `/servers`, which can produce redirects. For a no-auth server, still pass `auth_config_ids: []` explicitly with `no_auth_apps`.
+
+When testing the returned MCP transport directly, include the Project API key, either `user_id` or `connected_account_id`, and `Accept: application/json, text/event-stream`. A redirect from the returned URL to the current Streamable HTTP endpoint is expected when the client follows it.
+
+## Auth configs are project-scoped
+
+A hosted For You/consumer MCP session cannot reuse a custom auth config created in a separate Platform developer project. The session resolves configs only in its own project.
+
+For a customer-created Platform Tool Router session, bind a same-project config with its real `ac_*` ID. A display name is not the auth-config ID, and cross-project binding is unsupported.

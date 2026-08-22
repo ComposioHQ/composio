@@ -874,6 +874,421 @@
           "total_items"
         ]
       },
+      "ComposioManagedAuthConfigCreate": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "use_composio_managed_auth"
+            ]
+          },
+          "name": {
+            "type": "string",
+            "description": "The name of the integration"
+          },
+          "credentials": {
+            "type": "object",
+            "properties": {
+              "scopes": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                ],
+                "description": "OAuth scopes requested for the managed auth config."
+              },
+              "user_scopes": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                ],
+                "description": "OAuth user-token scopes requested for the managed auth config. This is primarily used by Slack OAuth v2."
+              }
+            },
+            "default": {}
+          },
+          "tool_access_config": {
+            "type": "object",
+            "properties": {
+              "tools_for_connected_account_creation": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "default": [],
+                "description": "Tools used to generate the minimum required scopes for the auth config (only valid for OAuth). If passed, this will update the scopes."
+              }
+            }
+          },
+          "restrict_to_following_tools": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "default": [],
+            "description": "Use tool_access_config instead. This field will be deprecated in the future.",
+            "deprecated": true
+          },
+          "shared_credentials": {
+            "type": "object",
+            "additionalProperties": {},
+            "description": "[EXPERIMENTAL] Shared credentials that will be inherited by all connected accounts using this auth config",
+            "x-experimental": true
+          },
+          "is_enabled_for_tool_router": {
+            "type": "boolean",
+            "description": "Whether this auth config is enabled for tool router"
+          }
+        },
+        "required": [
+          "type"
+        ]
+      },
+      "CustomAuthConfigCreate": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "use_custom_auth"
+            ]
+          },
+          "name": {
+            "type": "string",
+            "description": "The name of the integration"
+          },
+          "authScheme": {
+            "type": "string",
+            "enum": [
+              "OAUTH2",
+              "OAUTH1",
+              "API_KEY",
+              "BASIC",
+              "BILLCOM_AUTH",
+              "BEARER_TOKEN",
+              "GOOGLE_SERVICE_ACCOUNT",
+              "NO_AUTH",
+              "BASIC_WITH_JWT",
+              "CALCOM_AUTH",
+              "SERVICE_ACCOUNT",
+              "SAML",
+              "DCR_OAUTH",
+              "S2S_OAUTH2"
+            ]
+          },
+          "credentials": {
+            "type": "object",
+            "properties": {
+              "scopes": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                ],
+                "description": "OAuth scopes requested for the custom auth config."
+              },
+              "user_scopes": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                ],
+                "description": "OAuth user-token scopes requested for the custom auth config. This is primarily used by Slack OAuth v2."
+              }
+            },
+            "default": {}
+          },
+          "sealed_credentials": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 16384
+            },
+            "description": "[EXPERIMENTAL] Client-sealed secret fields to redeem through the organization keyring instance (GET /api/v3.1/keyring/transfer_keys). The plaintext must not also appear in credentials.",
+            "x-experimental": true
+          },
+          "proxy_config": {
+            "type": "object",
+            "nullable": true,
+            "properties": {
+              "proxy_url": {
+                "type": "string",
+                "format": "uri",
+                "description": "The url of the auth proxy"
+              },
+              "proxy_auth_key": {
+                "type": "string",
+                "description": "The auth key for the auth proxy"
+              }
+            },
+            "required": [
+              "proxy_url"
+            ]
+          },
+          "restrict_to_following_tools": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "default": [],
+            "description": "Use tool_access_config instead. This field will be deprecated in the future.",
+            "deprecated": true
+          },
+          "tool_access_config": {
+            "type": "object",
+            "properties": {
+              "tools_for_connected_account_creation": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "default": [],
+                "description": "Tools used to generate the minimum required scopes for the auth config (only valid for OAuth). If passed, this will update the scopes."
+              }
+            }
+          },
+          "shared_credentials": {
+            "type": "object",
+            "additionalProperties": {},
+            "description": "[EXPERIMENTAL] Shared credentials that will be inherited by all connected accounts using this auth config",
+            "x-experimental": true
+          },
+          "is_enabled_for_tool_router": {
+            "type": "boolean",
+            "description": "Whether this auth config is enabled for tool router"
+          }
+        },
+        "required": [
+          "type",
+          "authScheme"
+        ]
+      },
+      "CustomAuthConfigUpdate": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "custom"
+            ]
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "description": "The display name of the authentication configuration"
+          },
+          "credentials": {
+            "type": "object",
+            "properties": {
+              "scopes": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                ],
+                "description": "OAuth scopes requested for the auth config."
+              },
+              "user_scopes": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                ],
+                "description": "OAuth user-token scopes requested for the auth config. This is primarily used by Slack OAuth v2."
+              }
+            }
+          },
+          "sealed_credentials": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 16384
+            },
+            "description": "[EXPERIMENTAL] Client-sealed secret fields to redeem through the organization keyring instance (GET /api/v3.1/keyring/transfer_keys). The plaintext must not also appear in credentials. Rotates the stored client_secret without Apollo ever holding it.",
+            "x-experimental": true
+          },
+          "proxy_config": {
+            "type": "object",
+            "nullable": true,
+            "properties": {
+              "proxy_url": {
+                "type": "string",
+                "format": "uri",
+                "description": "The url of the auth proxy"
+              },
+              "proxy_auth_key": {
+                "type": "string",
+                "description": "The auth key for the auth proxy"
+              }
+            },
+            "required": [
+              "proxy_url"
+            ]
+          },
+          "restrict_to_following_tools": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Use tool_access_config instead. This field will be deprecated in the future.",
+            "deprecated": true
+          },
+          "tool_access_config": {
+            "type": "object",
+            "properties": {
+              "tools_for_connected_account_creation": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "Tools used to generate the minimum required scopes for the auth config (only valid for OAuth). If passed, this will update the scopes."
+              },
+              "tools_available_for_execution": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "The actions that the user can perform on the auth config. If passed, this will update the actions that the user can perform on the auth config."
+              }
+            }
+          },
+          "shared_credentials": {
+            "type": "object",
+            "additionalProperties": {},
+            "description": "Shared credentials inherited by all connected accounts using this auth config. Secret values are redacted in responses, so provide the real values when updating; omit this field to leave them unchanged."
+          },
+          "is_enabled_for_tool_router": {
+            "type": "boolean",
+            "description": "Whether this auth config is enabled for tool router"
+          }
+        },
+        "required": [
+          "type"
+        ]
+      },
+      "DefaultAuthConfigUpdate": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "default"
+            ]
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "description": "The display name of the authentication configuration"
+          },
+          "scopes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            ],
+            "description": "OAuth scopes requested for the auth config."
+          },
+          "user_scopes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            ],
+            "description": "OAuth user-token scopes requested for the auth config. This is primarily used by Slack OAuth v2."
+          },
+          "restrict_to_following_tools": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Use tool_access_config instead. This field will be deprecated in the future.",
+            "deprecated": true
+          },
+          "tool_access_config": {
+            "type": "object",
+            "properties": {
+              "tools_for_connected_account_creation": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "Tools used to generate the minimum required scopes for the auth config (only valid for OAuth). If passed, this will update the scopes."
+              },
+              "tools_available_for_execution": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "The actions that the user can perform on the auth config. If passed, this will update the actions that the user can perform on the auth config."
+              }
+            }
+          },
+          "shared_credentials": {
+            "type": "object",
+            "additionalProperties": {},
+            "description": "Shared credentials inherited by all connected accounts using this auth config. Secret values are redacted in responses, so provide the real values when updating; omit this field to leave them unchanged."
+          },
+          "is_enabled_for_tool_router": {
+            "type": "boolean",
+            "description": "Whether this auth config is enabled for tool router"
+          }
+        },
+        "required": [
+          "type"
+        ]
+      },
       "PatchConnectedAccountBody": {
         "type": "object",
         "properties": {
@@ -1184,6 +1599,166 @@
     "parameters": {}
   },
   "paths": {
+    "/api/v3.1/keyring/transfer_keys": {
+      "get": {
+        "summary": "Get the organization's active keyring transfer keys",
+        "description": "Returns the public encryption keys from the authenticated project API key's organization keyring instance. The organization must have an ACTIVE customer keyring instance.",
+        "tags": [
+          "Authentication"
+        ],
+        "operationId": "getKeyringTransferKeys",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Active keyring transfer keys.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "active_kid": {
+                      "type": "string",
+                      "minLength": 1,
+                      "description": "The `kid` of the key to seal new secrets to. Older keys stay in `keys` so previously sealed values remain openable, so always seal to this one."
+                    },
+                    "keys": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "kty": {
+                            "type": "string",
+                            "enum": [
+                              "RSA"
+                            ],
+                            "description": "Key type. Always `RSA`."
+                          },
+                          "n": {
+                            "type": "string",
+                            "minLength": 1,
+                            "description": "RSA modulus, base64url-encoded."
+                          },
+                          "e": {
+                            "type": "string",
+                            "minLength": 1,
+                            "description": "RSA public exponent, base64url-encoded."
+                          },
+                          "alg": {
+                            "type": "string",
+                            "enum": [
+                              "RSA-OAEP-256"
+                            ],
+                            "description": "Key-management algorithm for the JWE. Pair it with the `A256GCM` content algorithm."
+                          },
+                          "use": {
+                            "type": "string",
+                            "enum": [
+                              "enc"
+                            ],
+                            "description": "Key use. Always `enc`."
+                          },
+                          "kid": {
+                            "type": "string",
+                            "minLength": 1,
+                            "description": "Key identifier. Put it in the JWE protected header so keyring can select the unwrapping key."
+                          }
+                        },
+                        "required": [
+                          "kty",
+                          "n",
+                          "e",
+                          "alg",
+                          "use",
+                          "kid"
+                        ],
+                        "description": "A public JWK a secret can be sealed to."
+                      },
+                      "description": "Every currently accepted transfer key, newest first. Seal to `active_kid`."
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "active_kid",
+                    "keys"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The active keyring instance configuration is invalid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The API key organization has no ACTIVE keyring instance.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The customer keyring instance is unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal failure.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "The keyring instance returned an invalid response.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "x-api-version": "3.1"
+      }
+    },
     "/api/v3.1/api_key_revocation": {
       "post": {
         "summary": "Publicly revoke leaked Composio API keys",
@@ -1254,6 +1829,16 @@
           },
           "429": {
             "description": "Too many requests",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
             "content": {
               "application/json": {
                 "schema": {
@@ -1824,7 +2409,7 @@
               ]
             },
             "required": false,
-            "description": "Toolkit version specification. Use \"latest\" for latest versions or bracket notation for specific versions per toolkit.",
+            "description": "Toolkit version specification. Use \"latest\" for latest versions or bracket notation for specific versions per toolkit. Defaults to the latest published version (\"latest\") when omitted.",
             "in": "query",
             "name": "toolkit_versions",
             "examples": {
@@ -1837,7 +2422,7 @@
                 "value": "Use: toolkit_versions[gmail]=20250930_00&toolkit_versions[slack]=20250929_00"
               },
               "null_value": {
-                "summary": "No version specified (uses 00000000_00)",
+                "summary": "No version specified (uses latest)",
                 "value": null
               }
             }
@@ -2053,7 +2638,7 @@
               "type": "string"
             },
             "required": false,
-            "description": "Optional version of the tool to retrieve",
+            "description": "Optional version of the tool to retrieve. Takes precedence over toolkit_versions; when both are omitted the tool resolves to the latest published version (\"latest\").",
             "name": "version",
             "in": "query"
           },
@@ -2076,7 +2661,7 @@
               ]
             },
             "required": false,
-            "description": "Toolkit version specification. Use \"latest\" for latest versions or bracket notation for specific versions per toolkit.",
+            "description": "Toolkit version specification. Use \"latest\" for latest versions or bracket notation for specific versions per toolkit. Read only when version is omitted; when neither is supplied the tool resolves to the latest published version (\"latest\").",
             "in": "query",
             "name": "toolkit_versions",
             "examples": {
@@ -2089,7 +2674,7 @@
                 "value": "Use: toolkit_versions[gmail]=20250930_00&toolkit_versions[slack]=20250929_00"
               },
               "null_value": {
-                "summary": "No version specified (uses 00000000_00)",
+                "summary": "No version specified (uses latest)",
                 "value": null
               }
             }
@@ -2211,7 +2796,7 @@
                   },
                   "version": {
                     "type": "string",
-                    "description": "Tool version to execute (defaults to \"00000000_00\" if not specified)",
+                    "description": "Tool version to execute. Defaults to the latest published version (\"latest\") when omitted.",
                     "example": "latest"
                   },
                   "custom_auth_params": {
@@ -2792,7 +3377,7 @@
                   },
                   "version": {
                     "type": "string",
-                    "description": "Tool version to use when generating inputs (defaults to \"latest\" if not specified)",
+                    "description": "Tool version to use when generating inputs. Defaults to the latest published version (\"latest\") when omitted.",
                     "example": "latest"
                   }
                 },
@@ -2901,7 +3486,7 @@
     "/api/v3.1/tools/execute/proxy": {
       "post": {
         "summary": "Execute proxy request",
-        "description": "Proxy an HTTP request to a third-party API using connected account credentials. This endpoint allows making authenticated API calls to external services while abstracting away authentication details. v3.1 requires a proxy_execute scoped project API key; default project API keys are rejected.",
+        "description": "Proxy an HTTP request to a third-party API using connected account credentials. This endpoint allows making authenticated API calls to external services while abstracting away authentication details.",
         "tags": [
           "Tools"
         ],
@@ -3476,7 +4061,7 @@
                   },
                   "version": {
                     "type": "string",
-                    "description": "Toolkit version to resolve scopes against for the requested toolkit. Defaults to the pinned HTTP version when omitted.",
+                    "description": "Toolkit version to resolve scopes against for the requested toolkit. Defaults to the latest published version (\"latest\") when omitted.",
                     "example": "latest"
                   }
                 },
@@ -8413,6 +8998,15 @@
                     "description": "Optional model hint for search/planning behavior (e.g., \"gpt-4o\").",
                     "example": "gpt-4o"
                   },
+                  "search_strategy": {
+                    "type": "string",
+                    "enum": [
+                      "auto",
+                      "tool_search"
+                    ],
+                    "description": "Search path to use. Defaults to auto. Use tool_search to bypass cached plans and run direct tool search.",
+                    "example": "tool_search"
+                  },
                   "experimental": {
                     "type": "object",
                     "properties": {
@@ -11051,212 +11645,19 @@
                   "auth_config": {
                     "oneOf": [
                       {
-                        "type": "object",
-                        "properties": {
-                          "type": {
-                            "type": "string",
-                            "enum": [
-                              "use_composio_managed_auth"
-                            ]
-                          },
-                          "name": {
-                            "type": "string",
-                            "description": "The name of the integration"
-                          },
-                          "credentials": {
-                            "type": "object",
-                            "properties": {
-                              "scopes": {
-                                "anyOf": [
-                                  {
-                                    "type": "string"
-                                  },
-                                  {
-                                    "type": "array",
-                                    "items": {
-                                      "type": "string"
-                                    }
-                                  }
-                                ],
-                                "description": "OAuth scopes requested for the managed auth config."
-                              },
-                              "user_scopes": {
-                                "anyOf": [
-                                  {
-                                    "type": "string"
-                                  },
-                                  {
-                                    "type": "array",
-                                    "items": {
-                                      "type": "string"
-                                    }
-                                  }
-                                ],
-                                "description": "OAuth user-token scopes requested for the managed auth config. This is primarily used by Slack OAuth v2."
-                              }
-                            },
-                            "default": {}
-                          },
-                          "tool_access_config": {
-                            "type": "object",
-                            "properties": {
-                              "tools_for_connected_account_creation": {
-                                "type": "array",
-                                "items": {
-                                  "type": "string"
-                                },
-                                "default": [],
-                                "description": "Tools used to generate the minimum required scopes for the auth config (only valid for OAuth). If passed, this will update the scopes."
-                              }
-                            }
-                          },
-                          "restrict_to_following_tools": {
-                            "type": "array",
-                            "items": {
-                              "type": "string"
-                            },
-                            "default": [],
-                            "description": "Use tool_access_config instead. This field will be deprecated in the future.",
-                            "deprecated": true
-                          },
-                          "shared_credentials": {
-                            "type": "object",
-                            "additionalProperties": {},
-                            "description": "[EXPERIMENTAL] Shared credentials that will be inherited by all connected accounts using this auth config",
-                            "x-experimental": true
-                          },
-                          "is_enabled_for_tool_router": {
-                            "type": "boolean",
-                            "description": "Whether this auth config is enabled for tool router"
-                          }
-                        },
-                        "required": [
-                          "type"
-                        ]
+                        "$ref": "#/components/schemas/ComposioManagedAuthConfigCreate"
                       },
                       {
-                        "type": "object",
-                        "properties": {
-                          "type": {
-                            "type": "string",
-                            "enum": [
-                              "use_custom_auth"
-                            ]
-                          },
-                          "name": {
-                            "type": "string",
-                            "description": "The name of the integration"
-                          },
-                          "authScheme": {
-                            "type": "string",
-                            "enum": [
-                              "OAUTH2",
-                              "OAUTH1",
-                              "API_KEY",
-                              "BASIC",
-                              "BILLCOM_AUTH",
-                              "BEARER_TOKEN",
-                              "GOOGLE_SERVICE_ACCOUNT",
-                              "NO_AUTH",
-                              "BASIC_WITH_JWT",
-                              "CALCOM_AUTH",
-                              "SERVICE_ACCOUNT",
-                              "SAML",
-                              "DCR_OAUTH",
-                              "S2S_OAUTH2"
-                            ]
-                          },
-                          "credentials": {
-                            "type": "object",
-                            "properties": {
-                              "scopes": {
-                                "anyOf": [
-                                  {
-                                    "type": "string"
-                                  },
-                                  {
-                                    "type": "array",
-                                    "items": {
-                                      "type": "string"
-                                    }
-                                  }
-                                ],
-                                "description": "OAuth scopes requested for the custom auth config."
-                              },
-                              "user_scopes": {
-                                "anyOf": [
-                                  {
-                                    "type": "string"
-                                  },
-                                  {
-                                    "type": "array",
-                                    "items": {
-                                      "type": "string"
-                                    }
-                                  }
-                                ],
-                                "description": "OAuth user-token scopes requested for the custom auth config. This is primarily used by Slack OAuth v2."
-                              }
-                            },
-                            "default": {}
-                          },
-                          "proxy_config": {
-                            "type": "object",
-                            "nullable": true,
-                            "properties": {
-                              "proxy_url": {
-                                "type": "string",
-                                "format": "uri",
-                                "description": "The url of the auth proxy"
-                              },
-                              "proxy_auth_key": {
-                                "type": "string",
-                                "description": "The auth key for the auth proxy"
-                              }
-                            },
-                            "required": [
-                              "proxy_url"
-                            ]
-                          },
-                          "restrict_to_following_tools": {
-                            "type": "array",
-                            "items": {
-                              "type": "string"
-                            },
-                            "default": [],
-                            "description": "Use tool_access_config instead. This field will be deprecated in the future.",
-                            "deprecated": true
-                          },
-                          "tool_access_config": {
-                            "type": "object",
-                            "properties": {
-                              "tools_for_connected_account_creation": {
-                                "type": "array",
-                                "items": {
-                                  "type": "string"
-                                },
-                                "default": [],
-                                "description": "Tools used to generate the minimum required scopes for the auth config (only valid for OAuth). If passed, this will update the scopes."
-                              }
-                            }
-                          },
-                          "shared_credentials": {
-                            "type": "object",
-                            "additionalProperties": {},
-                            "description": "[EXPERIMENTAL] Shared credentials that will be inherited by all connected accounts using this auth config",
-                            "x-experimental": true
-                          },
-                          "is_enabled_for_tool_router": {
-                            "type": "boolean",
-                            "description": "Whether this auth config is enabled for tool router"
-                          }
-                        },
-                        "required": [
-                          "type",
-                          "authScheme"
-                        ]
+                        "$ref": "#/components/schemas/CustomAuthConfigCreate"
                       }
                     ],
+                    "discriminator": {
+                      "propertyName": "type",
+                      "mapping": {
+                        "use_composio_managed_auth": "#/components/schemas/ComposioManagedAuthConfigCreate",
+                        "use_custom_auth": "#/components/schemas/CustomAuthConfigCreate"
+                      }
+                    },
                     "default": {
                       "type": "use_composio_managed_auth",
                       "credentials": {},
@@ -11616,8 +12017,50 @@
                           "expected_input_fields": {
                             "type": "array",
                             "items": {
-                              "nullable": true,
-                              "type": "object"
+                              "type": "object",
+                              "properties": {
+                                "name": {
+                                  "type": "string"
+                                },
+                                "displayName": {
+                                  "type": "string"
+                                },
+                                "default": {
+                                  "type": "string",
+                                  "nullable": true
+                                },
+                                "type": {
+                                  "type": "string"
+                                },
+                                "description": {
+                                  "type": "string"
+                                },
+                                "required": {
+                                  "type": "boolean"
+                                },
+                                "is_secret": {
+                                  "type": "boolean",
+                                  "description": "Whether this field holds a secret/credential value. Clients use it to decide whether to mask the input."
+                                },
+                                "legacy_template_name": {
+                                  "type": "string"
+                                },
+                                "user_visible": {
+                                  "type": "boolean",
+                                  "description": "Whether this field is shown to the end user in the hosted connect flow. Fields with `false` are never required — the field's `default` applies unless the developer supplies a value on the auth config (e.g. as a shared credential)."
+                                },
+                                "is_available_as_shared_credentials": {
+                                  "type": "boolean"
+                                }
+                              },
+                              "required": [
+                                "name",
+                                "displayName",
+                                "type",
+                                "description",
+                                "required",
+                                "user_visible"
+                              ]
                             },
                             "description": "Fields expected during connection initialization"
                           },
@@ -11902,8 +12345,50 @@
                     "expected_input_fields": {
                       "type": "array",
                       "items": {
-                        "nullable": true,
-                        "type": "object"
+                        "type": "object",
+                        "properties": {
+                          "name": {
+                            "type": "string"
+                          },
+                          "displayName": {
+                            "type": "string"
+                          },
+                          "default": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "type": {
+                            "type": "string"
+                          },
+                          "description": {
+                            "type": "string"
+                          },
+                          "required": {
+                            "type": "boolean"
+                          },
+                          "is_secret": {
+                            "type": "boolean",
+                            "description": "Whether this field holds a secret/credential value. Clients use it to decide whether to mask the input."
+                          },
+                          "legacy_template_name": {
+                            "type": "string"
+                          },
+                          "user_visible": {
+                            "type": "boolean",
+                            "description": "Whether this field is shown to the end user in the hosted connect flow. Fields with `false` are never required — the field's `default` applies unless the developer supplies a value on the auth config (e.g. as a shared credential)."
+                          },
+                          "is_available_as_shared_credentials": {
+                            "type": "boolean"
+                          }
+                        },
+                        "required": [
+                          "name",
+                          "displayName",
+                          "type",
+                          "description",
+                          "required",
+                          "user_visible"
+                        ]
                       },
                       "description": "Fields expected during connection initialization"
                     },
@@ -12038,195 +12523,19 @@
               "schema": {
                 "oneOf": [
                   {
-                    "type": "object",
-                    "properties": {
-                      "type": {
-                        "type": "string",
-                        "enum": [
-                          "custom"
-                        ]
-                      },
-                      "name": {
-                        "type": "string",
-                        "minLength": 1,
-                        "description": "The display name of the authentication configuration"
-                      },
-                      "credentials": {
-                        "type": "object",
-                        "properties": {
-                          "scopes": {
-                            "anyOf": [
-                              {
-                                "type": "string"
-                              },
-                              {
-                                "type": "array",
-                                "items": {
-                                  "type": "string"
-                                }
-                              }
-                            ],
-                            "description": "OAuth scopes requested for the auth config."
-                          },
-                          "user_scopes": {
-                            "anyOf": [
-                              {
-                                "type": "string"
-                              },
-                              {
-                                "type": "array",
-                                "items": {
-                                  "type": "string"
-                                }
-                              }
-                            ],
-                            "description": "OAuth user-token scopes requested for the auth config. This is primarily used by Slack OAuth v2."
-                          }
-                        }
-                      },
-                      "proxy_config": {
-                        "type": "object",
-                        "nullable": true,
-                        "properties": {
-                          "proxy_url": {
-                            "type": "string",
-                            "format": "uri",
-                            "description": "The url of the auth proxy"
-                          },
-                          "proxy_auth_key": {
-                            "type": "string",
-                            "description": "The auth key for the auth proxy"
-                          }
-                        },
-                        "required": [
-                          "proxy_url"
-                        ]
-                      },
-                      "restrict_to_following_tools": {
-                        "type": "array",
-                        "items": {
-                          "type": "string"
-                        },
-                        "description": "Use tool_access_config instead. This field will be deprecated in the future.",
-                        "deprecated": true
-                      },
-                      "tool_access_config": {
-                        "type": "object",
-                        "properties": {
-                          "tools_for_connected_account_creation": {
-                            "type": "array",
-                            "items": {
-                              "type": "string"
-                            },
-                            "description": "Tools used to generate the minimum required scopes for the auth config (only valid for OAuth). If passed, this will update the scopes."
-                          },
-                          "tools_available_for_execution": {
-                            "type": "array",
-                            "items": {
-                              "type": "string"
-                            },
-                            "description": "The actions that the user can perform on the auth config. If passed, this will update the actions that the user can perform on the auth config."
-                          }
-                        }
-                      },
-                      "shared_credentials": {
-                        "type": "object",
-                        "additionalProperties": {},
-                        "description": "Shared credentials inherited by all connected accounts using this auth config. Secret values are redacted in responses, so provide the real values when updating; omit this field to leave them unchanged."
-                      },
-                      "is_enabled_for_tool_router": {
-                        "type": "boolean",
-                        "description": "Whether this auth config is enabled for tool router"
-                      }
-                    },
-                    "required": [
-                      "type"
-                    ]
+                    "$ref": "#/components/schemas/CustomAuthConfigUpdate"
                   },
                   {
-                    "type": "object",
-                    "properties": {
-                      "type": {
-                        "type": "string",
-                        "enum": [
-                          "default"
-                        ]
-                      },
-                      "name": {
-                        "type": "string",
-                        "minLength": 1,
-                        "description": "The display name of the authentication configuration"
-                      },
-                      "scopes": {
-                        "anyOf": [
-                          {
-                            "type": "string"
-                          },
-                          {
-                            "type": "array",
-                            "items": {
-                              "type": "string"
-                            }
-                          }
-                        ],
-                        "description": "OAuth scopes requested for the auth config."
-                      },
-                      "user_scopes": {
-                        "anyOf": [
-                          {
-                            "type": "string"
-                          },
-                          {
-                            "type": "array",
-                            "items": {
-                              "type": "string"
-                            }
-                          }
-                        ],
-                        "description": "OAuth user-token scopes requested for the auth config. This is primarily used by Slack OAuth v2."
-                      },
-                      "restrict_to_following_tools": {
-                        "type": "array",
-                        "items": {
-                          "type": "string"
-                        },
-                        "description": "Use tool_access_config instead. This field will be deprecated in the future.",
-                        "deprecated": true
-                      },
-                      "tool_access_config": {
-                        "type": "object",
-                        "properties": {
-                          "tools_for_connected_account_creation": {
-                            "type": "array",
-                            "items": {
-                              "type": "string"
-                            },
-                            "description": "Tools used to generate the minimum required scopes for the auth config (only valid for OAuth). If passed, this will update the scopes."
-                          },
-                          "tools_available_for_execution": {
-                            "type": "array",
-                            "items": {
-                              "type": "string"
-                            },
-                            "description": "The actions that the user can perform on the auth config. If passed, this will update the actions that the user can perform on the auth config."
-                          }
-                        }
-                      },
-                      "shared_credentials": {
-                        "type": "object",
-                        "additionalProperties": {},
-                        "description": "Shared credentials inherited by all connected accounts using this auth config. Secret values are redacted in responses, so provide the real values when updating; omit this field to leave them unchanged."
-                      },
-                      "is_enabled_for_tool_router": {
-                        "type": "boolean",
-                        "description": "Whether this auth config is enabled for tool router"
-                      }
-                    },
-                    "required": [
-                      "type"
-                    ]
+                    "$ref": "#/components/schemas/DefaultAuthConfigUpdate"
                   }
-                ]
+                ],
+                "discriminator": {
+                  "propertyName": "type",
+                  "mapping": {
+                    "custom": "#/components/schemas/CustomAuthConfigUpdate",
+                    "default": "#/components/schemas/DefaultAuthConfigUpdate"
+                  }
+                }
               },
               "examples": {
                 "standardUpdate": {
@@ -13149,7 +13458,7 @@
       },
       "post": {
         "summary": "Create a new connected account",
-        "description": "Initiates a new connection to an external service for a user. For OAuth-based toolkits, this returns a redirect URL to complete authentication. For API key-based toolkits, provide the credentials directly in the request body. Use the `user_id` field to associate the connection with a specific user in your system.\n\n**Deprecated for Composio-managed OAuth:** For Composio-managed auth configs on OAuth1, OAuth2, or DCR_OAUTH schemes, this endpoint is being retired and will start returning `400 BadRequest` on **2026-05-08** for new organizations and **2026-07-03** for all remaining organizations. Migrate those calls to `POST /api/v3/connected_accounts/link`. Custom auth configs and non-OAuth schemes (API key, bearer, basic) continue to be supported here. Responses on the retiring path carry a `Deprecation` header (RFC 9745) and a `Sunset` header (RFC 8594) for client-side detection.",
+        "description": "Initiates a new connection to an external service for a user. For OAuth-based toolkits, this returns a redirect URL to complete authentication. For API key-based toolkits, provide the credentials directly in the request body. Use the `user_id` field to associate the connection with a specific user in your system.\n\n**Deprecated for Composio-managed OAuth:** For Composio-managed auth configs on OAuth1, OAuth2, or DCR_OAUTH schemes, this endpoint is being retired and will start returning `400 BadRequest` on **2026-05-08** for new organizations and **2026-07-03** for all remaining organizations. Migrate those calls to `POST /api/v3/connected_accounts/link`. Custom auth configs and non-OAuth schemes (API key, bearer, basic) continue to be supported here. Responses on the retiring path carry a `Deprecation` header (RFC 9745) and a `Sunset` header (RFC 8594) for client-side detection.\n\n**Credential check:** where the toolkit supports it, submitted API key, basic, and bearer credentials are checked against the provider before the connection is stored — no opt-in required. For toolkits with the check enabled, credentials the provider rejects fail the request with `ConnectedAccount_CredentialValidationRejected`. If the provider is unreachable, times out, or returns an error of its own, the connection is created as normal.",
         "tags": [
           "Connected Accounts"
         ],
@@ -13410,12 +13719,6 @@
                         "x-experimental": true
                       }
                     }
-                  },
-                  "validate_credentials": {
-                    "type": "boolean",
-                    "default": false,
-                    "description": "[EXPERIMENTAL] Whether to validate the provided credentials, validates only for API Key Auth scheme",
-                    "x-experimental": true
                   }
                 },
                 "required": [
@@ -14657,12 +14960,6 @@
                   "redirect_url": {
                     "type": "string",
                     "format": "uri"
-                  },
-                  "validate_credentials": {
-                    "type": "boolean",
-                    "default": false,
-                    "description": "[EXPERIMENTAL] Whether to validate the provided credentials, validates only for API Key Auth scheme",
-                    "x-experimental": true
                   }
                 }
               }
@@ -15342,9 +15639,6 @@
                           },
                           "name": {
                             "type": "string",
-                            "minLength": 3,
-                            "maxLength": 32,
-                            "pattern": "^[a-zA-Z][a-zA-Z0-9_]*[a-zA-Z0-9]$",
                             "description": "Name of the organization"
                           },
                           "created_at": {
@@ -19111,10 +19405,15 @@
                                           "type": "boolean"
                                         },
                                         "is_secret": {
-                                          "type": "boolean"
+                                          "type": "boolean",
+                                          "description": "Whether this field holds a secret/credential value. Clients use it to decide whether to mask the input."
                                         },
                                         "legacy_template_name": {
                                           "type": "string"
+                                        },
+                                        "user_visible": {
+                                          "type": "boolean",
+                                          "description": "Whether this field is shown to the end user in the hosted connect flow. Fields with `false` are never required — the field's `default` applies unless the developer supplies a value on the auth config (e.g. as a shared credential)."
                                         }
                                       },
                                       "required": [
@@ -19122,7 +19421,8 @@
                                         "displayName",
                                         "type",
                                         "description",
-                                        "required"
+                                        "required",
+                                        "user_visible"
                                       ]
                                     }
                                   },
@@ -19151,10 +19451,15 @@
                                           "type": "boolean"
                                         },
                                         "is_secret": {
-                                          "type": "boolean"
+                                          "type": "boolean",
+                                          "description": "Whether this field holds a secret/credential value. Clients use it to decide whether to mask the input."
                                         },
                                         "legacy_template_name": {
                                           "type": "string"
+                                        },
+                                        "user_visible": {
+                                          "type": "boolean",
+                                          "description": "Whether this field is shown to the end user in the hosted connect flow. Fields with `false` are never required — the field's `default` applies unless the developer supplies a value on the auth config (e.g. as a shared credential)."
                                         }
                                       },
                                       "required": [
@@ -19162,7 +19467,8 @@
                                         "displayName",
                                         "type",
                                         "description",
-                                        "required"
+                                        "required",
+                                        "user_visible"
                                       ]
                                     }
                                   }
@@ -19201,10 +19507,15 @@
                                           "type": "boolean"
                                         },
                                         "is_secret": {
-                                          "type": "boolean"
+                                          "type": "boolean",
+                                          "description": "Whether this field holds a secret/credential value. Clients use it to decide whether to mask the input."
                                         },
                                         "legacy_template_name": {
                                           "type": "string"
+                                        },
+                                        "user_visible": {
+                                          "type": "boolean",
+                                          "description": "Whether this field is shown to the end user in the hosted connect flow. Fields with `false` are never required — the field's `default` applies unless the developer supplies a value on the auth config (e.g. as a shared credential)."
                                         }
                                       },
                                       "required": [
@@ -19212,7 +19523,8 @@
                                         "displayName",
                                         "type",
                                         "description",
-                                        "required"
+                                        "required",
+                                        "user_visible"
                                       ]
                                     }
                                   },
@@ -19241,10 +19553,15 @@
                                           "type": "boolean"
                                         },
                                         "is_secret": {
-                                          "type": "boolean"
+                                          "type": "boolean",
+                                          "description": "Whether this field holds a secret/credential value. Clients use it to decide whether to mask the input."
                                         },
                                         "legacy_template_name": {
                                           "type": "string"
+                                        },
+                                        "user_visible": {
+                                          "type": "boolean",
+                                          "description": "Whether this field is shown to the end user in the hosted connect flow. Fields with `false` are never required — the field's `default` applies unless the developer supplies a value on the auth config (e.g. as a shared credential)."
                                         }
                                       },
                                       "required": [
@@ -19252,7 +19569,8 @@
                                         "displayName",
                                         "type",
                                         "description",
-                                        "required"
+                                        "required",
+                                        "user_visible"
                                       ]
                                     }
                                   }

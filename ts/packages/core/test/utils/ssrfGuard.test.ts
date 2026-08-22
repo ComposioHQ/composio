@@ -6,6 +6,19 @@ vi.mock('node:dns/promises', () => ({
   lookup: vi.fn(),
 }));
 
+vi.mock('../../src/utils/pinnedDispatcher.node', () => ({
+  createPinnedDispatcher: vi.fn(() => Promise.resolve({ close: () => Promise.resolve() })),
+  hasCustomGlobalDispatcher: vi.fn(() => false),
+}));
+
+import {
+  createPinnedDispatcher,
+  hasCustomGlobalDispatcher,
+} from '../../src/utils/pinnedDispatcher.node';
+
+const mockCreatePinnedDispatcher = vi.mocked(createPinnedDispatcher);
+const mockHasCustomGlobalDispatcher = vi.mocked(hasCustomGlobalDispatcher);
+
 // eslint-disable-next-line no-restricted-imports
 import { lookup } from 'node:dns/promises';
 
@@ -97,9 +110,11 @@ describe('assertSafeFetchTarget', () => {
     );
   });
 
-  it('allows a host that resolves only to public addresses', async () => {
+  it('allows a host that resolves only to public addresses, returning the address to connect to', async () => {
     resolvesTo('93.184.216.34');
-    await expect(assertSafeFetchTarget('https://example.com/file.pdf')).resolves.toBeUndefined();
+    await expect(assertSafeFetchTarget('https://example.com/file.pdf')).resolves.toEqual([
+      '93.184.216.34',
+    ]);
   });
 
   it('blocks an IPv6 literal loopback host', async () => {
@@ -116,9 +131,96 @@ describe('ssrfSafeFetch', () => {
   beforeEach(() => {
     mockLookup.mockReset();
     mockFetch.mockReset();
+    mockCreatePinnedDispatcher.mockClear();
+    mockHasCustomGlobalDispatcher.mockReturnValue(false);
+    // Deterministic even on machines that carry the runtime env-proxy opt-in.
+    vi.stubEnv('NODE_USE_ENV_PROXY', '');
     vi.stubGlobal('fetch', mockFetch);
   });
   afterEach(() => vi.unstubAllGlobals());
+
+  it('connects to the address it validated, rather than resolving the host again', async () => {
+    resolvesTo('93.184.216.34');
+    mockFetch.mockResolvedValue(new Response('data', { status: 200 }));
+
+    await ssrfSafeFetch('https://example.com/file.pdf');
+
+    // Without this the host is resolved twice — once to validate, once to
+    // connect — and a short-TTL record can answer those two lookups
+    // differently (DNS rebinding, issue #4151).
+    expect(mockCreatePinnedDispatcher).toHaveBeenCalledWith(['93.184.216.34']);
+    expect(mockFetch.mock.calls[0][1].dispatcher).toBeDefined();
+  });
+
+  it("re-pins each redirect hop to that hop's own validated address", async () => {
+    mockLookup
+      .mockResolvedValueOnce([{ address: '93.184.216.34', family: 4 }] as never)
+      .mockResolvedValueOnce([{ address: '151.101.1.140', family: 4 }] as never);
+    mockFetch
+      .mockResolvedValueOnce(
+        new Response(null, { status: 302, headers: { location: 'https://cdn.example.com/f' } })
+      )
+      .mockResolvedValueOnce(new Response('data', { status: 200 }));
+
+    await ssrfSafeFetch('https://example.com/file.pdf');
+
+    expect(mockCreatePinnedDispatcher.mock.calls).toEqual([
+      [['93.184.216.34']],
+      [['151.101.1.140']],
+    ]);
+  });
+
+  it('respects a caller-supplied dispatcher instead of pinning', async () => {
+    resolvesTo('93.184.216.34');
+    mockFetch.mockResolvedValue(new Response('data', { status: 200 }));
+    const callerDispatcher = { close: () => Promise.resolve() };
+
+    await ssrfSafeFetch('https://example.com/file.pdf', {
+      dispatcher: callerDispatcher,
+    } as RequestInit);
+
+    // An explicit dispatcher is a routing choice by the caller (e.g. a proxy);
+    // overriding it would dial the validated origin instead of that route.
+    expect(mockCreatePinnedDispatcher).not.toHaveBeenCalled();
+    expect(mockFetch.mock.calls[0][1].dispatcher).toBe(callerDispatcher);
+  });
+
+  it('does not pin when a non-stock global dispatcher is configured', async () => {
+    resolvesTo('93.184.216.34');
+    mockFetch.mockResolvedValue(new Response('data', { status: 200 }));
+    mockHasCustomGlobalDispatcher.mockReturnValue(true);
+
+    await ssrfSafeFetch('https://example.com/file.pdf');
+
+    // The configured route (a ProxyAgent and friends) resolves the hostname
+    // itself; fetch falls back to it when no dispatcher is passed.
+    expect(mockCreatePinnedDispatcher).not.toHaveBeenCalled();
+    expect(mockFetch.mock.calls[0][1].dispatcher).toBeUndefined();
+  });
+
+  it('does not pin while the runtime env-proxy mode is active', async () => {
+    resolvesTo('93.184.216.34');
+    mockFetch.mockResolvedValue(new Response('data', { status: 200 }));
+    vi.stubEnv('NODE_USE_ENV_PROXY', '1');
+    vi.stubEnv('HTTPS_PROXY', 'http://proxy.example:3128');
+
+    await ssrfSafeFetch('https://example.com/file.pdf');
+
+    expect(mockCreatePinnedDispatcher).not.toHaveBeenCalled();
+    expect(mockFetch.mock.calls[0][1].dispatcher).toBeUndefined();
+  });
+
+  it('pins again when NO_PROXY=* bypasses every host', async () => {
+    resolvesTo('93.184.216.34');
+    mockFetch.mockResolvedValue(new Response('data', { status: 200 }));
+    vi.stubEnv('NODE_USE_ENV_PROXY', '1');
+    vi.stubEnv('HTTPS_PROXY', 'http://proxy.example:3128');
+    vi.stubEnv('NO_PROXY', '*');
+
+    await ssrfSafeFetch('https://example.com/file.pdf');
+
+    expect(mockCreatePinnedDispatcher).toHaveBeenCalledWith(['93.184.216.34']);
+  });
 
   it('validates and fetches a public URL', async () => {
     resolvesTo('93.184.216.34');

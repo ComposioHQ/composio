@@ -10,10 +10,14 @@
 import { OpenAI } from 'openai';
 import { Stream } from 'openai/streaming';
 import { BaseNonAgenticProvider } from './BaseProvider';
-import { Tool, ToolExecuteParams } from '../types/tool.types';
+import { Tool } from '../types/tool.types';
 import logger from '../utils/logger';
 import { ExecuteToolModifiers } from '../types/modifiers.types';
-import { ExecuteToolFnOptions } from '../types/provider.types';
+import {
+  ExecuteToolFnOptions,
+  ToolCallExecutionTarget,
+  ToolCallSession,
+} from '../types/provider.types';
 import { McpUrlResponse, McpServerGetResponse } from '../types/mcp.types';
 import { normalizeToolArguments } from '../utils/toolArguments';
 import { deduplicateJsonSchemaRequiredArrays } from '../utils/jsonSchema';
@@ -153,7 +157,7 @@ export class OpenAIProvider extends BaseNonAgenticProvider<
    * This method processes a tool call from OpenAI's chat completion API,
    * executes the corresponding Composio tool, and returns the result.
    *
-   * @param {string} userId - The user ID for authentication and tracking
+   * @param {string | ToolCallSession} executionTarget - A user ID for direct tools or the session that produced session tools
    * @param {OpenAI.ChatCompletionMessageToolCall} tool - The tool call from OpenAI
    * @param {ExecuteToolFnOptions} [options] - Optional execution options
    * @param {ExecuteToolModifiers} [modifiers] - Optional execution modifiers
@@ -180,21 +184,31 @@ export class OpenAIProvider extends BaseNonAgenticProvider<
    * ```
    */
   async executeToolCall(
+    session: ToolCallSession,
+    tool: OpenAI.ChatCompletionMessageFunctionToolCall
+  ): Promise<string>;
+  async executeToolCall(
     userId: string,
     tool: OpenAI.ChatCompletionMessageFunctionToolCall,
     options?: ExecuteToolFnOptions,
     modifiers?: ExecuteToolModifiers
+  ): Promise<string>;
+  async executeToolCall(
+    executionTarget: ToolCallExecutionTarget,
+    tool: OpenAI.ChatCompletionMessageFunctionToolCall,
+    options?: ExecuteToolFnOptions,
+    modifiers?: ExecuteToolModifiers
   ): Promise<string> {
-    const payload: ToolExecuteParams = {
-      // OpenAI always serializes tool arguments as a JSON string; normalize tolerates
-      // empty / object-shaped payloads too (issue #2406).
-      arguments: normalizeToolArguments(tool.function.arguments, tool.function.name),
-      connectedAccountId: options?.connectedAccountId,
-      customAuthParams: options?.customAuthParams,
-      customConnectionData: options?.customConnectionData,
-      userId: userId,
-    };
-    const result = await this.executeTool(tool.function.name, payload, modifiers);
+    // OpenAI always serializes tool arguments as a JSON string; normalize tolerates
+    // empty / object-shaped payloads too (issue #2406).
+    const arguments_ = normalizeToolArguments(tool.function.arguments, tool.function.name);
+    const result = await this.executeToolForTarget(
+      executionTarget,
+      tool.function.name,
+      arguments_,
+      options,
+      modifiers
+    );
     return JSON.stringify(result);
   }
 
@@ -204,7 +218,7 @@ export class OpenAIProvider extends BaseNonAgenticProvider<
    * This method processes tool calls from an OpenAI chat completion response,
    * executes each tool call, and returns the results.
    *
-   * @param {string} userId - The user ID for authentication and tracking
+   * @param {string | ToolCallSession} executionTarget - A user ID for direct tools or the session that produced session tools
    * @param {OpenAI.ChatCompletion} chatCompletion - The chat completion response from OpenAI
    * @param {ExecuteToolFnOptions} [options] - Optional execution options
    * @param {ExecuteToolModifiers} [modifiers] - Optional execution modifiers
@@ -241,11 +255,22 @@ export class OpenAIProvider extends BaseNonAgenticProvider<
    * ```
    */
   async handleToolCalls(
+    session: ToolCallSession,
+    chatCompletion: OpenAI.ChatCompletion
+  ): Promise<OpenAI.ChatCompletionToolMessageParam[]>;
+  async handleToolCalls(
     userId: string,
     chatCompletion: OpenAI.ChatCompletion,
     options?: ExecuteToolFnOptions,
     modifiers?: ExecuteToolModifiers
+  ): Promise<OpenAI.ChatCompletionToolMessageParam[]>;
+  async handleToolCalls(
+    executionTarget: ToolCallExecutionTarget,
+    chatCompletion: OpenAI.ChatCompletion,
+    options?: ExecuteToolFnOptions,
+    modifiers?: ExecuteToolModifiers
   ): Promise<OpenAI.ChatCompletionToolMessageParam[]> {
+    this.assertToolCallExecutionOptions(executionTarget, options, modifiers);
     const outputs: OpenAI.ChatCompletionToolMessageParam[] = [];
     // Only the first choice is actionable: its tool results feed back into a
     // single assistant turn. With n > 1, iterating every choice would run each
@@ -259,7 +284,10 @@ export class OpenAIProvider extends BaseNonAgenticProvider<
       if (toolCall.type !== 'function') {
         continue;
       }
-      const toolResult = await this.executeToolCall(userId, toolCall, options, modifiers);
+      const toolResult =
+        typeof executionTarget === 'string'
+          ? await this.executeToolCall(executionTarget, toolCall, options, modifiers)
+          : await this.executeToolCall(executionTarget, toolCall);
       outputs.push({
         role: 'tool',
         tool_call_id: toolCall.id,

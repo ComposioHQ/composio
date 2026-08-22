@@ -13,6 +13,7 @@ mock.module("next/navigation", () => ({
     throw new Error("not found");
   },
   usePathname: () => "/reference/api-reference/tasks",
+  useSearchParams: () => new URLSearchParams(),
 }));
 mock.module("@/lib/toolkit-data", () => ({
   getAllToolkits: async () => [],

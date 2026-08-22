@@ -42,7 +42,7 @@ let response = await client.responses.create({
 
 // Agentic loop: keep executing tool calls until the model responds with text
 while (response.output.some(o => o.type === 'function_call')) {
-  const results = await composio.provider.handleToolCalls('user_123', response.output);
+  const results = await composio.provider.handleToolCalls(session, response.output);
   response = await client.responses.create({
     model: 'gpt-5.2',
     tools,
@@ -63,8 +63,8 @@ for (const item of response.output) {
 
 The package exports one provider per API surface:
 
-- `OpenAIResponsesProvider` targets the Responses API. `handleToolCalls(userId, response.output)` returns `function_call_output` items keyed by `call_id`; pair it with `previous_response_id` so you only resend new outputs each turn. The constructor accepts `{ strict?: boolean }` to enforce strict function schemas (default `false`).
-- `OpenAIProvider` targets the Chat Completions API and is the Composio SDK default, so `new Composio()` with no provider uses it. `handleToolCalls(userId, chatCompletion)` returns ready-to-append `tool` messages; you keep the full message list yourself.
+- `OpenAIResponsesProvider` targets the Responses API. `handleToolCalls(session, response.output)` returns `function_call_output` items keyed by `call_id`; pair it with `previous_response_id` so you only resend new outputs each turn. Pass a user ID instead of a session for tools fetched with `tools.get()`. The constructor accepts `{ strict?: boolean }` to enforce strict function schemas (default `false`).
+- `OpenAIProvider` targets the Chat Completions API and is the Composio SDK default, so `new Composio()` with no provider uses it. `handleToolCalls(session, chatCompletion)` returns ready-to-append `tool` messages; you keep the full message list yourself.
 
 Use the Responses provider for new agentic flows; reach for Chat Completions when extending an existing Chat Completions codebase. See the [docs page](https://docs.composio.dev/docs/providers/openai) for the Chat Completions loop.
 

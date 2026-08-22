@@ -1,0 +1,20 @@
+---
+title: "Tool Router Workbench Retention"
+description: "Public support knowledge for Tool Router Workbench Retention."
+keywords: ["platform","tool-router-workbench","errors-and-troubleshooting","sessions-and-execution","/kb/sdk-and-api/a-fresh-client-label-can-still-reuse-the-same-sandbox","a-fresh-client-label-can-still-reuse-the-same-sandbox"]
+sources: [{"sourcePath":"platform/tool-router-workbench/public.md","sourceHeading":"A “fresh” client label can still reuse the same sandbox"}]
+sourceCommit: "d57f3d69079ee3819f4136df54512cdf0416cec0"
+lastVerifiedAt: "2026-08-17"
+reviewAfter: "2026-11-15"
+freshness: "evergreen"
+topics: ["errors-and-troubleshooting","sessions-and-execution"]
+aliases: ["/kb/sdk-and-api/a-fresh-client-label-can-still-reuse-the-same-sandbox","a-fresh-client-label-can-still-reuse-the-same-sandbox"]
+---
+Use this when customers ask whether Tool Router workbench state persists forever, or whether personal data used in the remote workbench is retained indefinitely.
+
+## A “fresh” client label can still reuse the same sandbox
+
+Workbench and sandbox reuse follows the actual Tool Router session, not an arbitrary client-side session label. Reusing the same `trs_*` session or MCP URL can reuse the same cached workbench and sandbox.
+
+Create a new Tool Router session and use its newly returned MCP URL when a
+workflow requires an independent sandbox rather than reused session state.

@@ -109,7 +109,7 @@ def _response(status_code: int, location: str | None = None) -> MagicMock:
     return response
 
 
-@patch("composio.utils.url_safety.requests.request")
+@patch("composio.utils.url_safety.requests.Session.request")
 @patch("composio.utils.url_safety.assert_safe_fetch_target")
 def test_safe_request_validates_before_sending(mock_assert, mock_request) -> None:
     mock_assert.side_effect = BlockedInternalUrlError("blocked")
@@ -121,7 +121,7 @@ def test_safe_request_validates_before_sending(mock_assert, mock_request) -> Non
     mock_request.assert_not_called()
 
 
-@patch("composio.utils.url_safety.requests.request")
+@patch("composio.utils.url_safety.requests.Session.request")
 @patch("composio.utils.url_safety.assert_safe_fetch_target")
 def test_safe_request_disables_automatic_redirects(mock_assert, mock_request) -> None:
     mock_request.return_value = _response(200)
@@ -135,11 +135,11 @@ def test_safe_request_disables_automatic_redirects(mock_assert, mock_request) ->
     assert mock_request.call_args.kwargs["allow_redirects"] is False
 
 
-@patch("composio.utils.url_safety.requests.request")
+@patch("composio.utils.url_safety.requests.Session.request")
 @patch("composio.utils.url_safety.assert_safe_fetch_target")
 def test_safe_request_revalidates_each_redirect_hop(mock_assert, mock_request) -> None:
     """A public URL that redirects into private space must be caught at the hop."""
-    mock_assert.side_effect = [None, BlockedInternalUrlError("blocked")]
+    mock_assert.side_effect = [["93.184.216.34"], BlockedInternalUrlError("blocked")]
     mock_request.return_value = _response(
         307, "http://169.254.169.254/latest/meta-data"
     )
@@ -155,7 +155,7 @@ def test_safe_request_revalidates_each_redirect_hop(mock_assert, mock_request) -
     assert mock_request.call_count == 1
 
 
-@patch("composio.utils.url_safety.requests.request")
+@patch("composio.utils.url_safety.requests.Session.request")
 @patch("composio.utils.url_safety.assert_safe_fetch_target")
 def test_safe_request_follows_validated_redirect(mock_assert, mock_request) -> None:
     """S3 can answer a PUT with a 307 region redirect; that must still work."""
@@ -177,7 +177,7 @@ def test_safe_request_follows_validated_redirect(mock_assert, mock_request) -> N
     assert body.read() == b"payload"
 
 
-@patch("composio.utils.url_safety.requests.request")
+@patch("composio.utils.url_safety.requests.Session.request")
 @patch("composio.utils.url_safety.assert_safe_fetch_target")
 def test_safe_request_relative_redirect_is_resolved(mock_assert, mock_request) -> None:
     mock_request.side_effect = [_response(302, "/elsewhere"), _response(200)]
@@ -187,7 +187,7 @@ def test_safe_request_relative_redirect_is_resolved(mock_assert, mock_request) -
     assert mock_assert.call_args_list[1] == call("https://files.example.com/elsewhere")
 
 
-@patch("composio.utils.url_safety.requests.request")
+@patch("composio.utils.url_safety.requests.Session.request")
 @patch("composio.utils.url_safety.assert_safe_fetch_target")
 def test_safe_request_rejects_endless_redirects(mock_assert, mock_request) -> None:
     mock_request.return_value = _response(302, "https://s3.example.com/upload")

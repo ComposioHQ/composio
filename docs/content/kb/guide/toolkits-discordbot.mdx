@@ -1,0 +1,20 @@
+---
+title: "Discord Bot"
+description: "Public support knowledge for Discord Bot."
+keywords: ["discordbot","for-you","platform","auth-config","authentication","errors-and-troubleshooting","sessions-and-execution","toolkits-and-providers","/kb/authentication/discord-bot-troubleshooting","/kb/toolkits/discord-message-triggers-need-bot-token-auth-which-is-not-available-th","/kb/toolkits/multiple-connected-accounts-for-the-same-app-are-not-supported","choose-discordbot-for-bot-token-operations","discord-bot-troubleshooting","discord-message-triggers-need-bot-token-auth-which-is-not-available-th","managed-discordbot-oauth-401s-can-be-worked-around-with-custom-credent","multiple-connected-accounts-for-the-same-app-are-not-supported","verify-discord-auth-config-scopes-when-bot-actions-do-not-respond"]
+sources: [{"sourcePath":"toolkits/discordbot/public.md","sourceHeading":"Discord and DiscordBot use different token types"},{"sourcePath":"toolkits/discordbot/public.md","sourceHeading":"Verify Discord auth config scopes when bot actions do not respond"}]
+sourceCommit: "d57f3d69079ee3819f4136df54512cdf0416cec0"
+lastVerifiedAt: "2026-08-12"
+reviewAfter: "2026-11-10"
+freshness: "evergreen"
+topics: ["auth-config","authentication","errors-and-troubleshooting","sessions-and-execution","toolkits-and-providers"]
+toolkitSlugs: ["discordbot"]
+aliases: ["/kb/authentication/discord-bot-troubleshooting","/kb/toolkits/discord-message-triggers-need-bot-token-auth-which-is-not-available-th","/kb/toolkits/multiple-connected-accounts-for-the-same-app-are-not-supported","choose-discordbot-for-bot-token-operations","discord-bot-troubleshooting","discord-message-triggers-need-bot-token-auth-which-is-not-available-th","managed-discordbot-oauth-401s-can-be-worked-around-with-custom-credent","multiple-connected-accounts-for-the-same-app-are-not-supported","verify-discord-auth-config-scopes-when-bot-actions-do-not-respond"]
+---
+## Discord and DiscordBot use different token types
+
+Discord has two different authorization models: a user token represents an individual Discord user, while a bot token represents a bot account inside Discord. Composio separates these into different toolkits because the credentials and API behavior are different. Use the Discord toolkit for user-authorized actions and DiscordBot when the workflow needs to act as a Discord bot.
+
+## Verify Discord auth config scopes when bot actions do not respond
+
+For DiscordBot behavior that does not respond as expected, verify that the Discord auth config includes the necessary scopes and permissions for the action being tested. Discord's OAuth2 documentation should be used as the source for the required scopes. If scopes look correct and the issue persists, collect the connected account ID or log ID for debugging.

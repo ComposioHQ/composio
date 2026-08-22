@@ -29,7 +29,11 @@ from composio.exceptions import (
 )
 from composio.utils.mimetypes import get_extension_from_mime_type
 from composio.utils.safe_path import secure_basename_join
-from composio.utils.url_safety import assert_safe_fetch_target, safe_request
+from composio.utils.url_safety import (
+    parse_content_length,
+    safe_get,
+    safe_request,
+)
 from composio.utils.uuid import generate_short_id
 
 DEFAULT_TOOL_ROUTER_SESSION_FILES_MOUNT_ID = "files"
@@ -86,12 +90,10 @@ def _fetch_url_bytes(url: str) -> t.Tuple[bytes, str]:
 
     Returns (content, mimetype). Raises :class:`_UrlFetchError`.
     """
-    assert_safe_fetch_target(url)
     try:
-        response = requests.get(
+        response = safe_get(
             url,
             stream=True,
-            allow_redirects=False,
             timeout=(_CONNECT_TIMEOUT, _READ_TIMEOUT),
         )
     except requests.exceptions.RequestException as e:
@@ -107,12 +109,12 @@ def _fetch_url_bytes(url: str) -> t.Tuple[bytes, str]:
             status_code=response.status_code, status_text=response.reason
         )
 
-    content_length = response.headers.get("Content-Length")
-    if content_length and int(content_length) > _MAX_RESPONSE_SIZE:
+    content_length = parse_content_length(response.headers.get("Content-Length"))
+    if content_length is not None and content_length > _MAX_RESPONSE_SIZE:
         response.close()
         raise _UrlFetchError(
             size_detail=(
-                f"File size ({int(content_length)} bytes) exceeds maximum allowed "
+                f"File size ({content_length} bytes) exceeds maximum allowed "
                 f"size ({_MAX_RESPONSE_SIZE} bytes)"
             )
         )

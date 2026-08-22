@@ -1,0 +1,162 @@
+name: Docs - Update Support Knowledge
+
+on:
+  schedule:
+    - cron: '17 */6 * * *'
+  repository_dispatch:
+    types: [support-knowledge-updated]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      changed: ${{ steps.source.outputs.changed }}
+      commit: ${{ steps.source.outputs.commit }}
+    defaults:
+      run:
+        working-directory: ./docs
+
+    steps:
+      - name: Generate read-only upstream token
+        id: upstream-token
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        with:
+          client-id: ${{ vars.RELEASE_BOT_CLIENT_ID }}
+          private-key: ${{ secrets.RELEASE_BOT_APP_PRIVATE_KEY }}
+          owner: ComposioHQ
+          repositories: support-knowledge
+          permission-contents: read
+
+      - name: Checkout docs repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Checkout support knowledge
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: ComposioHQ/support-knowledge
+          token: ${{ steps.upstream-token.outputs.token }}
+          path: .support-knowledge
+          persist-credentials: false
+
+      - name: Resolve upstream change
+        id: source
+        env:
+          SOURCE_ROOT: ${{ github.workspace }}/.support-knowledge
+        run: |
+          source_commit=$(git -C "$SOURCE_ROOT" rev-parse HEAD)
+          current_commit=$(jq -r '.source.commit' kb/manifest.json)
+          echo "commit=$source_commit" >> "$GITHUB_OUTPUT"
+          if [ "$source_commit" = "$current_commit" ]; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "Support knowledge is already current at $source_commit."
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+            echo "Refreshing support knowledge from $current_commit to $source_commit."
+          fi
+
+      - name: Setup Node.js, pnpm, Bun
+        if: steps.source.outputs.changed == 'true'
+        uses: ./.github/actions/setup-node-pnpm-bun
+
+      - name: Cache Bun dependencies
+        if: steps.source.outputs.changed == 'true'
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.bun/install/cache
+          key: ${{ runner.os }}-bun-${{ hashFiles('docs/bun.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-bun-
+
+      - name: Install dependencies
+        if: steps.source.outputs.changed == 'true'
+        run: bun install
+
+      - name: Import public support knowledge
+        if: steps.source.outputs.changed == 'true'
+        env:
+          SOURCE_ROOT: ${{ github.workspace }}/.support-knowledge
+          SOURCE_COMMIT: ${{ steps.source.outputs.commit }}
+        run: >-
+          bun run import:kb --
+          --source-root "$SOURCE_ROOT"
+          --source-commit "$SOURCE_COMMIT"
+
+      - name: Rebuild generated pages and semantic artifact
+        if: steps.source.outputs.changed == 'true'
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: bun run build:kb-semantic
+
+      - name: Verify refreshed knowledge base
+        if: steps.source.outputs.changed == 'true'
+        run: |
+          bun run verify:kb
+          bun run check:kb-semantic
+
+      - name: Upload verified KB artifacts
+        if: steps.source.outputs.changed == 'true'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: support-knowledge-refresh
+          path: |
+            docs/kb/
+            docs/content/kb/
+          if-no-files-found: error
+          retention-days: 1
+
+  propose:
+    needs: refresh
+    if: needs.refresh.outputs.changed == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout docs repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Download verified KB artifacts
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: support-knowledge-refresh
+          path: docs
+
+      - name: Generate composio PR token
+        id: write-token
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        with:
+          client-id: ${{ vars.RELEASE_BOT_CLIENT_ID }}
+          private-key: ${{ secrets.RELEASE_BOT_APP_PRIVATE_KEY }}
+          owner: ComposioHQ
+          repositories: composio
+          permission-contents: write
+          permission-pull-requests: write
+
+      - name: Create refresh pull request
+        uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8.1.1
+        with:
+          token: ${{ steps.write-token.outputs.token }}
+          commit-message: 'docs(kb): refresh public support knowledge'
+          title: 'docs(kb): refresh public support knowledge'
+          body: |
+            Automated public-only refresh from `ComposioHQ/support-knowledge`.
+
+            - Source commit: `${{ needs.refresh.outputs.commit }}`
+            - Regenerated public KB pages and search records
+            - Reused unchanged vectors and rebuilt the checked semantic artifact
+            - Ran KB freshness and semantic-artifact verification
+          branch: docs/auto-update-kb
+          base: next
+          add-paths: |
+            docs/kb/
+            docs/content/kb/

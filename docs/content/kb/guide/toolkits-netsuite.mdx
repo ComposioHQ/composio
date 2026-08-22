@@ -1,0 +1,16 @@
+---
+title: "NetSuite"
+description: "Public support knowledge for NetSuite."
+keywords: ["for-you","netsuite","platform","authentication","errors-and-troubleshooting","toolkits-and-providers","/kb/toolkits/netsuite-oauth-token-exchange-failures-can-be-caused-by-generic-oauth","netsuite-oauth-token-exchange-failures-can-be-caused-by-generic-oauth"]
+sources: [{"sourcePath":"toolkits/netsuite/public.md","sourceHeading":"NetSuite OAuth token exchange failures can be caused by generic OAuth endpoints"}]
+sourceCommit: "d57f3d69079ee3819f4136df54512cdf0416cec0"
+lastVerifiedAt: "2026-08-12"
+reviewAfter: "2026-11-10"
+freshness: "evergreen"
+topics: ["authentication","errors-and-troubleshooting","toolkits-and-providers"]
+toolkitSlugs: ["netsuite"]
+aliases: ["/kb/toolkits/netsuite-oauth-token-exchange-failures-can-be-caused-by-generic-oauth","netsuite-oauth-token-exchange-failures-can-be-caused-by-generic-oauth"]
+---
+## NetSuite OAuth token exchange failures can be caused by generic OAuth endpoints
+
+For NetSuite OAuth2 callback/token-exchange failures, verify whether the OAuth flow is using the customer's account-specific NetSuite authorize/token endpoint. NetSuite expects OAuth endpoints to be keyed to the NetSuite account subdomain; using a generic endpoint can produce a token-exchange failure that looks like a permissions or role problem. Check the decoded token-exchange response before advising the customer to change NetSuite roles.

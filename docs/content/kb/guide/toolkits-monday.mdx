@@ -1,0 +1,32 @@
+---
+title: "Monday"
+description: "Public support knowledge for Monday."
+keywords: ["for-you","monday","platform","auth-config","authentication","errors-and-troubleshooting","sessions-and-execution","toolkits-and-providers","/kb/toolkits/monday-troubleshooting","add-the-composio-redirect-url-to-the-monday-oauth-app","monday-requires-the-oauth-app-to-be-installed-in-the-workspace-before","monday-scopes-come-from-the-oauth-app-and-do-not-need-separate-composi","monday-troubleshooting","monday-update-item-body-must-be-passed-as-a-properly-escaped-string"]
+sources: [{"sourcePath":"toolkits/monday/public.md","sourceHeading":"Monday requires the OAuth app to be installed in the workspace before user connections"},{"sourcePath":"toolkits/monday/public.md","sourceHeading":"Add the Composio redirect URL to the Monday OAuth app"},{"sourcePath":"toolkits/monday/public.md","sourceHeading":"`MONDAY_UPDATE_ITEM` body must be passed as a properly escaped string"},{"sourcePath":"toolkits/monday/public.md","sourceHeading":"Monday scopes come from the OAuth app and do not need separate Composio-side setup in the common flow"},{"sourcePath":"toolkits/monday/public.md","sourceHeading":"Monday trigger management is not handled by the agent at runtime"}]
+sourceCommit: "d57f3d69079ee3819f4136df54512cdf0416cec0"
+lastVerifiedAt: "2026-08-12"
+reviewAfter: "2026-11-10"
+freshness: "evergreen"
+topics: ["auth-config","authentication","errors-and-troubleshooting","sessions-and-execution","toolkits-and-providers"]
+toolkitSlugs: ["monday"]
+aliases: ["/kb/toolkits/monday-troubleshooting","add-the-composio-redirect-url-to-the-monday-oauth-app","monday-requires-the-oauth-app-to-be-installed-in-the-workspace-before","monday-scopes-come-from-the-oauth-app-and-do-not-need-separate-composi","monday-troubleshooting","monday-update-item-body-must-be-passed-as-a-properly-escaped-string"]
+---
+## Monday requires the OAuth app to be installed in the workspace before user connections
+
+Monday is unusual among popular toolkits because the OAuth app must be installed in the Monday workspace before users initiate individual OAuth connections. An admin can install the app once for the workspace, then users can connect normally. For Composio's managed Monday app, use the official installation control or link exposed by the current connection flow. Do not construct or share a raw OAuth URL with a hard-coded client ID.
+
+## Add the Composio redirect URL to the Monday OAuth app
+
+For a custom Monday OAuth app, add the Composio redirect URL/callback URL to the Monday app settings. After the OAuth flow completes, the access token is populated by Composio automatically.
+
+## `MONDAY_UPDATE_ITEM` body must be passed as a properly escaped string
+
+`MONDAY_UPDATE_ITEM` expects the body in a format Monday's API accepts. If you pass JSON-like text or strings containing quotes/special characters, escape those characters and send a suitable string rather than unsupported raw structured content.
+
+## Monday scopes come from the OAuth app and do not need separate Composio-side setup in the common flow
+
+For Monday, the scopes configured on the Monday OAuth app are picked up during authorization. In the common flow, there is no separate Composio-side scope configuration required unless you intentionally request a subset.
+
+## Monday trigger management is not handled by the agent at runtime
+
+Trigger setup and management should be handled outside the agent runtime, for example through the CLI/API/dashboard flow. The agent should consume trigger payloads, not create or manage trigger instances as part of normal tool execution.

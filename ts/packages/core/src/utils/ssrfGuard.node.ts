@@ -1,6 +1,7 @@
 import { lookup } from 'node:dns/promises'; // we're in a Node.js-specific module
 import { isIP } from 'node:net';
 import { ComposioBlockedInternalUrlError } from '../errors/SsrfErrors';
+import { createPinnedDispatcher, hasCustomGlobalDispatcher } from './pinnedDispatcher.node';
 
 /**
  * SSRF guard for user-supplied URL file inputs.
@@ -16,13 +17,42 @@ import { ComposioBlockedInternalUrlError } from '../errors/SsrfErrors';
  * which defeats decimal/octal/hex IP obfuscation) before every fetch, and
  * follows redirects manually so each hop is re-validated.
  *
- * Known residual: a DNS name could resolve to a public address here and rebind
- * to an internal one before the underlying `fetch` connects (a TOCTOU / DNS
- * rebinding window). Closing that fully requires pinning the validated IP at
- * connect time (a custom dispatcher), which is out of scope for this guard.
+ * The address that was validated is also the address connected to: `fetch` gets
+ * a dispatcher pinned to it (see {@link createPinnedDispatcher}), so the
+ * hostname is never resolved a second time. Without that, a name could resolve
+ * to a public address during validation and rebind to an internal one before
+ * the connect — a TOCTOU window the Python guard closes the same way.
+ *
+ * Residual: a hop whose effective dispatcher is a configured route — a
+ * caller-supplied `init.dispatcher`, a non-stock global dispatcher (a
+ * `ProxyAgent` or `EnvHttpProxyAgent` installed via `setGlobalDispatcher`), or
+ * the runtime's env-proxy mode (`NODE_USE_ENV_PROXY`) — keeps only the
+ * pre-flight validation. Pinning would dial the validated address instead of
+ * the proxy, and the proxy resolves the hostname itself where the SDK cannot
+ * see or pin that resolution. The Python guard carries the same residual for
+ * the same reason (`_proxy_applies`).
  */
 
 const MAX_REDIRECTS = 5;
+
+/**
+ * Whether the runtime would route `url` through an env proxy the SDK cannot
+ * see into. Only meaningful when `NODE_USE_ENV_PROXY` opts the built-in
+ * `fetch` into env proxies (Node >= 24); without that flag the runtime's
+ * `fetch` ignores `HTTP_PROXY`/`HTTPS_PROXY` entirely, so mirroring Python's
+ * bare env-var check would drop pinning for users whose fetch never proxied.
+ *
+ * `NO_PROXY=*` is the one bypass honored precisely (nothing is proxied, so
+ * pinning is safe again); per-host `NO_PROXY` entries are treated
+ * conservatively as proxied rather than parsed.
+ */
+const envProxyApplies = (url: URL): boolean => {
+  const useEnvProxy = ['1', 'true'].includes((process.env.NODE_USE_ENV_PROXY ?? '').toLowerCase());
+  if (!useEnvProxy) return false;
+  if ((process.env.NO_PROXY ?? process.env.no_proxy ?? '') === '*') return false;
+  const schemeVar = url.protocol === 'https:' ? 'HTTPS_PROXY' : 'HTTP_PROXY';
+  return Boolean(process.env[schemeVar] ?? process.env[schemeVar.toLowerCase()]);
+};
 
 const ipv4ToLong = (ip: string): number => {
   const [a, b, c, d] = ip.split('.').map(Number);
@@ -133,8 +163,12 @@ export const isBlockedIp = (ip: string): boolean => {
  * Validate a single URL: it must be http(s), its host must resolve, and every
  * resolved address must be publicly routable. Throws
  * {@link ComposioBlockedInternalUrlError} otherwise.
+ *
+ * @returns the validated addresses to connect to, in resolver order. Callers
+ * must connect to *those* rather than let the client resolve the hostname
+ * again; see {@link ssrfSafeFetch}.
  */
-export const assertSafeFetchTarget = async (rawUrl: string): Promise<void> => {
+export const assertSafeFetchTarget = async (rawUrl: string): Promise<string[]> => {
   let url: URL;
   try {
     url = new URL(rawUrl);
@@ -158,6 +192,10 @@ export const assertSafeFetchTarget = async (rawUrl: string): Promise<void> => {
     throw new ComposioBlockedInternalUrlError(`Could not resolve host "${host}"`, { url: rawUrl });
   }
 
+  if (resolved.length === 0) {
+    throw new ComposioBlockedInternalUrlError(`Could not resolve host "${host}"`, { url: rawUrl });
+  }
+
   for (const { address } of resolved) {
     if (isBlockedIp(address)) {
       throw new ComposioBlockedInternalUrlError(
@@ -166,13 +204,22 @@ export const assertSafeFetchTarget = async (rawUrl: string): Promise<void> => {
       );
     }
   }
+
+  // Every answer was validated, so all of them are safe to connect to, and
+  // resolver order is the system's own address preference.
+  return resolved.map(({ address }) => address);
 };
 
 /**
- * Drop-in replacement for `fetch` that blocks SSRF. Validates the target before
- * connecting and re-validates every redirect hop (redirects are followed
- * manually up to {@link MAX_REDIRECTS}). Intermediate redirect bodies are
- * cancelled; non-redirect responses are returned unchanged.
+ * Drop-in replacement for `fetch` that blocks SSRF. Validates the target, then
+ * connects to the address it validated, and re-validates and re-pins every
+ * redirect hop (redirects are followed manually up to {@link MAX_REDIRECTS}).
+ * Intermediate redirect bodies are cancelled; non-redirect responses are
+ * returned unchanged.
+ *
+ * A hop whose effective dispatcher is a configured route (caller-supplied
+ * `init.dispatcher`, non-stock global dispatcher, env-proxy mode) is *not*
+ * pinned — see the module residual above.
  */
 export const ssrfSafeFetch = async (
   rawUrl: string,
@@ -182,9 +229,40 @@ export const ssrfSafeFetch = async (
   let currentUrl = rawUrl;
 
   for (let hop = 0; hop <= maxRedirects; hop++) {
-    await assertSafeFetchTarget(currentUrl);
+    const addresses = await assertSafeFetchTarget(currentUrl);
 
-    const response = await fetch(currentUrl, { ...init, redirect: 'manual' });
+    // Pinning replaces the connect target; through a configured route that
+    // would dial the validated origin instead of the route's next hop (the
+    // proxy), so those hops keep the pre-flight check only.
+    const callerDispatcher = (init as RequestInit & { dispatcher?: unknown }).dispatcher;
+    const respectConfiguredRoute =
+      callerDispatcher !== undefined ||
+      envProxyApplies(new URL(currentUrl)) ||
+      hasCustomGlobalDispatcher();
+
+    const dispatcher = respectConfiguredRoute ? undefined : await createPinnedDispatcher(addresses);
+
+    let response: Response;
+    try {
+      // `dispatcher` is a Node-only extension to `RequestInit`.
+      response = await fetch(
+        currentUrl,
+        (dispatcher === undefined
+          ? { ...init, redirect: 'manual' }
+          : { ...init, redirect: 'manual', dispatcher }) as RequestInit
+      );
+    } catch (error) {
+      if (dispatcher !== undefined) {
+        await dispatcher.close().catch(() => undefined);
+      }
+      throw error;
+    }
+
+    // `close()` is graceful: it waits for the in-flight request — including a
+    // body still being streamed to the caller — before releasing the socket.
+    if (dispatcher !== undefined) {
+      void dispatcher.close().catch(() => undefined);
+    }
 
     const isRedirect =
       response.status >= 300 && response.status < 400 && response.headers.has('location');
