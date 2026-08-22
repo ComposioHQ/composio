@@ -4,6 +4,11 @@
 
 ### Patch Changes
 
+- Archives are no longer extracted with symbolic links in them. `extract-zip`
+  creates a symlink entry without validating its target (CVE-2026-56876), which
+  has no fixed release, and anything that later reads the extracted tree can be
+  walked out of it. No archive this CLI extracts legitimately contains a
+  symlink, so such an entry is now refused before it is written.
 - `composio search` now uses schemas returned by Tool Router for dashboard-registered custom MCP tools instead of querying the legacy managed-tool endpoint, which returned 404 for `CUSTOM_*` tool slugs.
 - `composio upgrade` works again from any previously released CLI. Release
   archives had been narrowed to carry only the `codex-acp` binary their own

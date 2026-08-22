@@ -5,7 +5,7 @@
 import { FileSystem, Path } from '@effect/platform';
 import type { PlatformError } from '@effect/platform/Error';
 import { Config, ConfigProvider, Data, Effect, Option, Schema } from 'effect';
-import extractZip from 'extract-zip';
+import { extractZipSafely } from 'src/utils/extract-zip-safely';
 import { IS_RELEASE_BUILD } from 'src/constants';
 import { GitHubRelease } from 'src/effects/resolve-cli-release';
 import { BaseConfigProviderLive, extendConfigProvider } from 'src/services/config';
@@ -713,7 +713,7 @@ export const repairMissingInstalledRunCompanionModules = ({
         yield* fs.writeFile(archivePath, archiveData);
         yield* fs.makeDirectory(extractDirectory, { recursive: true });
         yield* Effect.tryPromise({
-          try: () => extractZip(archivePath, { dir: extractDirectory }),
+          try: () => extractZipSafely(archivePath, extractDirectory),
           catch: toRepairError,
         });
 
