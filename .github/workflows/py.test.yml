@@ -12,6 +12,7 @@ on:
       - 'mise.lock'
       - 'toolchain-versions.json'
       - 'python/pyproject.toml'
+      - 'uv.lock'
       - 'python/requirements*.txt'
   pull_request:
     branches: [master, next]
@@ -24,6 +25,7 @@ on:
       - 'mise.lock'
       - 'toolchain-versions.json'
       - 'python/pyproject.toml'
+      - 'uv.lock'
       - 'python/requirements*.txt'
 
 concurrency:

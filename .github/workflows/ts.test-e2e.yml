@@ -5,6 +5,11 @@ on:
     branches: [master, next]
     paths:
       - 'ts/**'
+      # A catalog pin or lockfile change swaps what every ts/** package
+      # resolves without touching one of their files -- @composio/client
+      # 0.1.0-alpha.76 -> 2.0.0-rc.5 skipped this suite entirely that way.
+      - 'pnpm-workspace.yaml'
+      - 'pnpm-lock.yaml'
       - '.github/actions/setup-node-pnpm-bun/action.yml'
       - '.github/workflows/ts.test-e2e.yml'
       - 'mise.toml'
@@ -13,6 +18,11 @@ on:
   pull_request:
     paths:
       - 'ts/**'
+      # A catalog pin or lockfile change swaps what every ts/** package
+      # resolves without touching one of their files -- @composio/client
+      # 0.1.0-alpha.76 -> 2.0.0-rc.5 skipped this suite entirely that way.
+      - 'pnpm-workspace.yaml'
+      - 'pnpm-lock.yaml'
       - '.github/actions/setup-node-pnpm-bun/action.yml'
       - '.github/workflows/ts.test-e2e.yml'
       - 'mise.toml'
