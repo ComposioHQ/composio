@@ -60,34 +60,47 @@ export const releaseArtifactTargetFor = (
     () => new UnknownReleaseArtifactError({ artifactName })
   );
 
+export type ArchiveCompanionEntryKind = 'copy' | 'placeholder';
+
+export type ArchiveCompanionEntry = {
+  readonly relativePath: string;
+  readonly kind: ArchiveCompanionEntryKind;
+};
+
 /**
- * Narrow the full multi-platform companion asset list down to the assets one
- * archive should ship: the portable ones plus the single codex-acp binary that
- * archive's platform can execute.
+ * Decide how each companion asset enters one archive.
  *
- * An archive already carries a platform-specific `composio` binary, so a
- * darwin-arm64 archive is unusable on linux-x64 no matter which codex-acp
- * binaries travel with it. Shipping foreign ones only inflates the download.
+ * An archive already carries a platform-specific `composio` binary, so only one
+ * of the four codex-acp binaries inside it can ever execute. The other three are
+ * ~651 MB that every machine unpacking this archive downloads, stores, and can
+ * never run.
  *
- * Packaging deliberately does not call this yet. A CLI released before
- * 2026-08-18 verifies a downloaded upgrade package against all four codex-acp
- * paths, so an archive narrowed this way breaks `composio upgrade` for every
- * client already in the field. Wire it back into `package-binaries.ts` once no
- * supported client still performs that check.
+ * They cannot simply be dropped. A CLI released before 2026-08-18 verifies a
+ * downloaded upgrade package against all four codex-acp paths and refuses to
+ * install one that is missing any of them, so omitting them breaks
+ * `composio upgrade` for every client already in the field. An empty placeholder
+ * satisfies that existence check at zero bytes, and no host ever executes a
+ * foreign codex-acp binary, so the placeholder is never read.
+ *
+ * Once no supported client performs that check, placeholders can become plain
+ * omissions.
  */
-export const archiveCompanionRelativePaths = ({
+export const archiveCompanionEntries = ({
   allRelativePaths,
   target,
 }: {
   readonly allRelativePaths: ReadonlyArray<string>;
   readonly target: ReleaseArtifactTarget;
-}): ReadonlyArray<string> => {
-  const included = new Set(runCompanionStaticAssetRelativePathsFor(target));
-  const excluded = new Set(
+}): ReadonlyArray<ArchiveCompanionEntry> => {
+  const executableHere = new Set(runCompanionStaticAssetRelativePathsFor(target));
+  const foreignCodexPaths = new Set(
     RUN_COMPANION_ALL_STATIC_ASSET_RELATIVE_PATHS.filter(
-      relativePath => !included.has(relativePath)
+      relativePath => !executableHere.has(relativePath)
     )
   );
 
-  return allRelativePaths.filter(relativePath => !excluded.has(relativePath));
+  return allRelativePaths.map(relativePath => ({
+    relativePath,
+    kind: foreignCodexPaths.has(relativePath) ? ('placeholder' as const) : ('copy' as const),
+  }));
 };

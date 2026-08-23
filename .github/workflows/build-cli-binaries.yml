@@ -103,18 +103,22 @@ jobs:
             artifact: composio-linux-x64
             runner: ubuntu-latest
             local_tools_target: ''
+            codex_target: linux-x64
           - target: bun-linux-arm64
             artifact: composio-linux-aarch64
             runner: ubuntu-latest
             local_tools_target: ''
+            codex_target: linux-arm64
           - target: bun-darwin-x64
             artifact: composio-darwin-x64
             runner: macos-15-intel
             local_tools_target: ''
+            codex_target: darwin-x64
           - target: bun-darwin-arm64
             artifact: composio-darwin-aarch64
             runner: macos-15
             local_tools_target: darwin-arm64
+            codex_target: darwin-arm64
 
     steps:
       - name: Checkout
@@ -190,6 +194,14 @@ jobs:
       - name: Verify release metadata in archive
         working-directory: ts/packages/cli
         run: unzip -p dist/binaries/${{ matrix.artifact }}.zip ${{ matrix.artifact }}/release-tag.txt | grep -Fx '${{ needs.prepare.outputs.release_tag }}'
+
+      - name: Verify companion adapters in archive
+        working-directory: ts/packages/cli
+        env:
+          ARCHIVE: dist/binaries/${{ matrix.artifact }}.zip
+          ARTIFACT: ${{ matrix.artifact }}
+          HOST_CODEX_TARGET: ${{ matrix.codex_target }}
+        run: bash "${{ github.workspace }}/.github/scripts/cli-release/verify-archive-companions.sh"
 
       - name: Verify local-tool sidecars in archive
         if: matrix.local_tools_target != ''

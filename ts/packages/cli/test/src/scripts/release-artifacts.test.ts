@@ -8,7 +8,7 @@ import {
   RUN_COMPANION_SHARED_STATIC_ASSET_RELATIVE_PATHS,
 } from '../../../src/services/run-companion-modules';
 import {
-  archiveCompanionRelativePaths,
+  archiveCompanionEntries,
   ARTIFACT_NAMES,
   RELEASE_ARTIFACT_TARGETS,
   releaseArtifactTargetFor,
@@ -74,28 +74,63 @@ describe('releaseArtifactTargetFor', () => {
   );
 });
 
-describe('archiveCompanionRelativePaths', () => {
+describe('archiveCompanionEntries', () => {
+  const pathsOfKind = (
+    entries: ReadonlyArray<{ relativePath: string; kind: string }>,
+    kind: string
+  ): ReadonlyArray<string> =>
+    entries.filter(entry => entry.kind === kind).map(entry => entry.relativePath);
+
   it.each(RELEASE_ARTIFACT_TARGETS)(
-    'ships only $platform-$arch codex-acp in $artifactName',
+    'names every codex-acp path in $artifactName so older clients still verify',
     target => {
-      const selected = archiveCompanionRelativePaths({
+      const entries = archiveCompanionEntries({
         allRelativePaths: ALL_COMPANION_RELATIVE_PATHS,
         target,
       });
 
-      expect(codexAcpRelativePathsIn(selected)).toEqual([
+      expect(entries.map(entry => entry.relativePath)).toEqual(ALL_COMPANION_RELATIVE_PATHS);
+    }
+  );
+
+  it.each(RELEASE_ARTIFACT_TARGETS)(
+    'carries real bytes only for the $platform-$arch codex-acp binary',
+    target => {
+      const entries = archiveCompanionEntries({
+        allRelativePaths: ALL_COMPANION_RELATIVE_PATHS,
+        target,
+      });
+
+      expect(codexAcpRelativePathsIn(pathsOfKind(entries, 'copy'))).toEqual([
         `acp-adapters/codex/${target.platform}-${target.arch}/codex-acp`,
       ]);
     }
   );
 
-  it.each(RELEASE_ARTIFACT_TARGETS)('keeps portable assets in $artifactName', target => {
-    const selected = archiveCompanionRelativePaths({
+  it.each(RELEASE_ARTIFACT_TARGETS)(
+    'placeholders exactly the foreign codex-acp binaries in $artifactName',
+    target => {
+      const entries = archiveCompanionEntries({
+        allRelativePaths: ALL_COMPANION_RELATIVE_PATHS,
+        target,
+      });
+
+      expect(pathsOfKind(entries, 'placeholder')).toEqual(
+        RUN_CODEX_ACP_BINARY_TARGETS.filter(
+          codexTarget =>
+            codexTarget.platform !== target.platform || codexTarget.arch !== target.arch
+        ).map(codexTarget => codexTarget.relativePath)
+      );
+    }
+  );
+
+  it.each(RELEASE_ARTIFACT_TARGETS)('copies the portable assets into $artifactName', target => {
+    const entries = archiveCompanionEntries({
       allRelativePaths: ALL_COMPANION_RELATIVE_PATHS,
       target,
     });
 
-    expect(selected).toEqual(
+    expect(pathsOfKind(entries, 'copy')).toEqual(
       expect.arrayContaining([
         ...RUN_COMPANION_SHARED_STATIC_ASSET_RELATIVE_PATHS,
         ...RUN_COMPANION_MODULE_FILENAMES,
@@ -103,51 +138,16 @@ describe('archiveCompanionRelativePaths', () => {
       ])
     );
   });
-
-  it.each(RELEASE_ARTIFACT_TARGETS)(
-    'drops exactly the foreign codex-acp binaries from $artifactName',
-    target => {
-      const selected = archiveCompanionRelativePaths({
-        allRelativePaths: ALL_COMPANION_RELATIVE_PATHS,
-        target,
-      });
-
-      const dropped = ALL_COMPANION_RELATIVE_PATHS.filter(
-        relativePath => !selected.includes(relativePath)
-      );
-
-      expect(dropped).toEqual(
-        RUN_CODEX_ACP_BINARY_TARGETS.filter(
-          codexTarget =>
-            codexTarget.platform !== target.platform || codexTarget.arch !== target.arch
-        )
-          .map(codexTarget => codexTarget.relativePath)
-          .sort()
-      );
-      expect(dropped).toHaveLength(RUN_CODEX_ACP_BINARY_TARGETS.length - 1);
-    }
-  );
-
-  it('leaves an already-narrowed list untouched', () => {
-    const target = RELEASE_ARTIFACT_TARGETS[0]!;
-    const selected = archiveCompanionRelativePaths({
-      allRelativePaths: ALL_COMPANION_RELATIVE_PATHS,
-      target,
-    });
-
-    expect(archiveCompanionRelativePaths({ allRelativePaths: selected, target })).toEqual(selected);
-  });
 });
 
 /**
- * Packaging ships {@link RUN_COMPANION_ALL_STATIC_ASSET_RELATIVE_PATHS} into every
- * archive rather than the narrowed slice, because a CLI released before
- * 2026-08-18 verifies an upgrade package against all four codex-acp paths and
- * refuses one that is missing any of them.
+ * Packaging names {@link RUN_COMPANION_ALL_STATIC_ASSET_RELATIVE_PATHS} in every
+ * archive, because a CLI released before 2026-08-18 verifies an upgrade package
+ * against all four codex-acp paths and refuses one that is missing any of them.
  */
 describe('published archive companion coverage', () => {
   it.each(RUN_CODEX_ACP_BINARY_TARGETS)(
-    'ships the $platform-$arch codex-acp binary in every archive',
+    'names the $platform-$arch codex-acp binary in every archive',
     codexTarget => {
       expect(RUN_COMPANION_ALL_STATIC_ASSET_RELATIVE_PATHS).toContain(codexTarget.relativePath);
     }

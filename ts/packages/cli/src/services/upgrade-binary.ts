@@ -7,6 +7,7 @@ import {
   Predicate,
   Record as EffectRecord,
   Scope,
+  Stream,
 } from 'effect';
 import { HttpClient, HttpClientResponse, FileSystem, Path } from '@effect/platform';
 import { APP_VERSION } from '../constants';
@@ -201,13 +202,54 @@ const isUpdateAvailable = (
     return isVersionOutdated(comparison);
   });
 
+type DownloadProgress = {
+  readonly receivedBytes: number;
+  readonly totalBytes: number | undefined;
+};
+
+type DownloadProgressReporter = (progress: DownloadProgress) => Effect.Effect<void>;
+
+// Fast enough to look live, slow enough not to thrash the spinner.
+const DOWNLOAD_PROGRESS_INTERVAL_MILLIS = 250;
+
+const MEGABYTE = 1_000_000;
+
+export const formatMegabytes = (bytes: number): string => `${(bytes / MEGABYTE).toFixed(1)} MB`;
+
+/**
+ * Human-readable transfer state. Falls back to a plain byte count when the
+ * server never told us how large the asset is.
+ */
+export const formatDownloadProgress = ({ receivedBytes, totalBytes }: DownloadProgress): string => {
+  if (totalBytes === undefined || totalBytes <= 0) {
+    return `Downloading... ${formatMegabytes(receivedBytes)}`;
+  }
+
+  const percent = Math.min(100, Math.floor((receivedBytes / totalBytes) * 100));
+  return `Downloading... ${percent}% (${formatMegabytes(receivedBytes)} / ${formatMegabytes(totalBytes)})`;
+};
+
+const resolveDownloadTotalBytes = (
+  asset: { readonly size?: number },
+  response: HttpClientResponse.HttpClientResponse
+): number | undefined => {
+  if (typeof asset.size === 'number' && asset.size > 0) {
+    return asset.size;
+  }
+
+  const header = response.headers['content-length'];
+  const parsed = header === undefined ? Number.NaN : Number.parseInt(header, 10);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : undefined;
+};
+
 /**
  * Download binary for current platform
  */
 const downloadBinary = (
   { httpClient }: UpgradeBinaryContext,
   release: GitHubRelease,
-  platformArch: PlatformArch
+  platformArch: PlatformArch,
+  onProgress: DownloadProgressReporter = () => Effect.void
 ): Effect.Effect<{ name: string; data: Uint8Array }, UpgradeBinaryError, never> =>
   Effect.gen(function* () {
     yield* Effect.logDebug(`Looking up binary for ${platformArch.platform}-${platformArch.arch}`);
@@ -247,9 +289,27 @@ const downloadBinary = (
       return resp;
     });
 
-    const arrayBuffer = yield* Effect.gen(function* () {
-      return yield* response.arrayBuffer;
-    }).pipe(
+    // Streamed rather than buffered so the transfer can be reported as it runs:
+    // these archives are hundreds of megabytes, and a silent multi-minute wait
+    // is indistinguishable from a hung command.
+    const totalBytes = resolveDownloadTotalBytes(asset, response);
+
+    const parts: Array<Uint8Array> = [];
+    let receivedBytes = 0;
+    let lastReportedAt = 0;
+
+    yield* response.stream.pipe(
+      Stream.runForEach(chunk => {
+        parts.push(chunk);
+        receivedBytes += chunk.length;
+
+        const now = Date.now();
+        if (now - lastReportedAt < DOWNLOAD_PROGRESS_INTERVAL_MILLIS) {
+          return Effect.void;
+        }
+        lastReportedAt = now;
+        return onProgress({ receivedBytes, totalBytes });
+      }),
       Effect.mapError(
         cause =>
           new UpgradeBinaryError({
@@ -259,9 +319,18 @@ const downloadBinary = (
       )
     );
 
+    yield* onProgress({ receivedBytes, totalBytes: totalBytes ?? receivedBytes });
+
+    const data = new Uint8Array(receivedBytes);
+    let offset = 0;
+    for (const part of parts) {
+      data.set(part, offset);
+      offset += part.length;
+    }
+
     return {
       name: binaryName,
-      data: new Uint8Array(arrayBuffer),
+      data,
     };
   });
 
@@ -607,7 +676,9 @@ const upgrade = (
             : `New version available: ${release.tag_name} (current: ${currentReleaseIdentifier}). Downloading...`
         );
 
-        const { name, data } = yield* downloadBinary(ctx, release, platformArch);
+        const { name, data } = yield* downloadBinary(ctx, release, platformArch, progress =>
+          spinner.message(formatDownloadProgress(progress))
+        );
 
         yield* spinner.message('Verifying checksum...');
 
