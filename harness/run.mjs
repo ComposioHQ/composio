@@ -318,14 +318,30 @@ const restoreTsBaseline = async (snapshot) => {
   await sh(['pnpm', 'install', '--frozen-lockfile']);
 };
 
+/**
+ * Resolve composio-client as the python project sees it. `uv run --with <wheel>`
+ * layers an ephemeral overlay on the project environment, so the realpath tells
+ * a real swap from a no-op even when the wheel matches the pinned version.
+ */
+const resolvedPyClient = async (extraArgs = []) => {
+  const out = await sh(['uv', 'run', '--project', 'python', ...extraArgs, 'python', '-c', 'import composio_client, importlib.metadata, json, os; print(json.dumps({"path": os.path.realpath(composio_client.__file__), "version": importlib.metadata.version("composio-client")}))']);
+  return JSON.parse(out.trim().split('\n').pop());
+};
+
+const assertPyCandidateApplied = (baseline, candidate) => {
+  if (candidate.path === baseline.path) {
+    fail(
+      `python candidate did not take effect: composio-client still resolves to the installed baseline at ${candidate.path} (${candidate.version})`
+    );
+  }
+};
+
 const verifyPyCandidate = async (wheel) => {
   if (!existsSync(wheel)) fail(`COMPOSIO_CLIENT_WHEEL not found: ${wheel}`);
-  const out = await sh(['uv', 'run', '--project', 'python', '--with', wheel, 'python', '-c', 'import composio_client, importlib.metadata; print(importlib.metadata.version("composio-client"))']);
-  const version = out.trim().split('\n').pop();
-  if (!version.startsWith('2.')) {
-    fail(`python candidate did not take effect (resolved ${version}); Stage B (SDK migration) must land first`);
-  }
-  return version;
+  const baseline = await resolvedPyClient();
+  const candidate = await resolvedPyClient(['--with', wheel]);
+  assertPyCandidateApplied(baseline, candidate);
+  return candidate.version;
 };
 
 const PY_PROJECT = join(ROOT, 'python', 'pyproject.toml');
@@ -565,6 +581,29 @@ const cmdSelftest = async () => {
     sameVersionCandidateAccepted = false;
   }
   check('candidate swap accepts a tarball reporting the pinned version', sameVersionCandidateAccepted);
+
+  const installedPyBaseline = {
+    path: '/repo/.venv/lib/python3.12/site-packages/composio_client/__init__.py',
+    version: '2.0.0rc5',
+  };
+  let noOpPyCandidateRejected = false;
+  try {
+    assertPyCandidateApplied(installedPyBaseline, { ...installedPyBaseline });
+  } catch {
+    noOpPyCandidateRejected = true;
+  }
+  check('python candidate swap rejects the installed baseline copy', noOpPyCandidateRejected);
+
+  let sameVersionPyCandidateAccepted = true;
+  try {
+    assertPyCandidateApplied(installedPyBaseline, {
+      path: '/cache/uv/archive-v0/abc123/lib/python3.12/site-packages/composio_client/__init__.py',
+      version: installedPyBaseline.version,
+    });
+  } catch {
+    sameVersionPyCandidateAccepted = false;
+  }
+  check('python candidate swap accepts a wheel reporting the pinned version', sameVersionPyCandidateAccepted);
 
   const manifest = loadManifest();
   const withoutGoogleDrive = selectManifestEntries(manifest, {
