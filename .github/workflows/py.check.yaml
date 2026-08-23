@@ -5,6 +5,8 @@ on:
       - next
     paths:
       - 'python/**/*.py'
+      - 'python/pyproject.toml'
+      - 'uv.lock'
       - '.github/actions/setup-python-uv/action.yml'
       - '.github/workflows/py.check.yaml'
       - 'mise.toml'
@@ -13,6 +15,8 @@ on:
     types: [opened, synchronize]
     paths:
       - 'python/**/*.py'
+      - 'python/pyproject.toml'
+      - 'uv.lock'
       - '.github/actions/setup-python-uv/action.yml'
       - '.github/workflows/py.check.yaml'
       - 'mise.toml'
