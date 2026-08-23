@@ -4,6 +4,9 @@
   "description": "Experimental Composio integrations and helpers",
   "main": "src/index.ts",
   "type": "module",
+  "engines": {
+    "node": ">=22.22.3"
+  },
   "repository": {
     "type": "git",
     "url": "https://github.com/ComposioHQ/composio.git",
