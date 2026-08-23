@@ -28,8 +28,8 @@ catalogs:
       specifier: ^5.20260821.1
       version: 5.20260821.1
     '@composio/client':
-      specifier: 2.0.0-rc.3
-      version: 2.0.0-rc.3
+      specifier: 2.0.0-rc.5
+      version: 2.0.0-rc.5
     '@effect/cli':
       specifier: ^0.77.0
       version: 0.77.0
@@ -1184,7 +1184,7 @@ importers:
         version: link:../cli-local-tools
       '@composio/client':
         specifier: 'catalog:'
-        version: 2.0.0-rc.3
+        version: 2.0.0-rc.5
       '@composio/core':
         specifier: workspace:*
         version: link:../core
@@ -1369,7 +1369,7 @@ importers:
     dependencies:
       '@composio/client':
         specifier: 'catalog:'
-        version: 2.0.0-rc.3
+        version: 2.0.0-rc.5
       '@composio/json-schema-to-zod':
         specifier: workspace:*
         version: link:../json-schema-to-zod
@@ -1716,7 +1716,7 @@ importers:
     dependencies:
       '@composio/client':
         specifier: 'catalog:'
-        version: 2.0.0-rc.3
+        version: 2.0.0-rc.5
       '@composio/json-schema-to-zod':
         specifier: workspace:*
         version: link:../json-schema-to-zod
@@ -2310,8 +2310,8 @@ packages:
     resolution: {integrity: sha512-ooWCrlZP11i8GImSjTHYHLkvFDP48nS4+204nGb1RiX/WXYHmJA2III9/e2DWVabCESdW7hBAEzHRqUn9OUVvQ==}
     engines: {node: '>=0.1.90'}
 
-  '@composio/client@2.0.0-rc.3':
-    resolution: {integrity: sha512-dCn5/9DRubIFSkImi4COqWIyhOUKyWveWWrh4e8l+RWvBoHAD/xy9zGm8r6khYSCHbLHxm5syYaHNjYjMTe9ow==}
+  '@composio/client@2.0.0-rc.5':
+    resolution: {integrity: sha512-goMJu+9ltEAckSEhV+zs52li9X4LyJLVMHrxX9M+qloMp4tIvMrjXKdXG+zOATSTMhcQEuDxD2fyHhhBe3Nlwg==}
     engines: {node: '>=22'}
 
   '@cspotcode/source-map-support@0.8.1':
@@ -8035,7 +8035,7 @@ snapshots:
   '@colors/colors@1.5.0':
     optional: true
 
-  '@composio/client@2.0.0-rc.3': {}
+  '@composio/client@2.0.0-rc.5': {}
 
   '@cspotcode/source-map-support@0.8.1':
     dependencies:
