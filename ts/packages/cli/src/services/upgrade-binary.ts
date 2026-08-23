@@ -23,7 +23,7 @@ import {
 } from 'src/utils/atomic-replace';
 
 // Note: `node:zlib` does not support Github's zip files
-import extractZip from 'extract-zip';
+import { extractZipSafely } from 'src/utils/extract-zip-safely';
 import { renderPrettyError } from './utils/pretty-error';
 import { TerminalUI } from './terminal-ui';
 import {
@@ -366,7 +366,7 @@ const extractBinary = (
 
     yield* Effect.tryPromise({
       try: async () => {
-        await extractZip(zipPath, { dir: extractDir });
+        await extractZipSafely(zipPath, extractDir);
       },
       catch: error =>
         new UpgradeBinaryError({
