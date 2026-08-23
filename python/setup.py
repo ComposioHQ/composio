@@ -25,7 +25,7 @@ setup(
     install_requires=[
         "pysher>=1.0.8",
         "pydantic>=2.11.9",
-        "composio-client==1.43.0",
+        "composio-client==2.0.0rc5",
         "typing-extensions>=4.16.0",
         "openai>=2.48.0",
         "json-schema-to-pydantic>=0.4.11",
