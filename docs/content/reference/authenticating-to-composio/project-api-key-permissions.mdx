@@ -117,14 +117,17 @@ View tool definitions, inputs, scopes, and versions.
 
 ## Tool execution
 
-Execute predefined Composio tools.
+Execute predefined Composio tools. This also covers executing and searching tools inside a Tool Router session (`execute`, `execute_meta`, `search`) — a key only needs **one** of `tool_execution: write` or `sessions: write` for those three, so a key can run tools in a session without being able to create, modify, or delete it. See [Sessions](#sessions) below.
 
-| Access | Method | Endpoint                              |
-| ------ | ------ | ------------------------------------- |
-| Write  | `POST` | `/api/v3.1/tools/execute/{tool_slug}` |
-| Write  | `POST` | `/api/v3/files/upload/request`        |
-| Write  | `POST` | `/api/v3/files/upload/response`       |
-| Write  | `GET`  | `/api/v3/files/list`                  |
+| Access | Method | Endpoint                                                |
+| ------ | ------ | -------------------------------------------------------- |
+| Write  | `POST` | `/api/v3.1/tools/execute/{tool_slug}`                     |
+| Write  | `POST` | `/api/v3/files/upload/request`                            |
+| Write  | `POST` | `/api/v3/files/upload/response`                           |
+| Write  | `GET`  | `/api/v3/files/list`                                      |
+| Write  | `POST` | `/api/v3.1/tool_router/session/{session_id}/execute`      |
+| Write  | `POST` | `/api/v3.1/tool_router/session/{session_id}/execute_meta` |
+| Write  | `POST` | `/api/v3.1/tool_router/session/{session_id}/search`       |
 
 ## Proxy execute
 
@@ -201,7 +204,9 @@ View execution logs and project usage summaries.
 
 ## Sessions
 
-Create and operate sessions and MCP servers. This permission area covers MCP server management, the MCP runtime transport, and the tool router MCP transport.
+Create, configure, and delete Tool Router sessions. Does not grant tool execution — use [Tool execution](#tool-execution) to run or search tools inside a session.
+
+This preset also grants the legacy MCP server routes below, for backward compatibility. Those same routes are additionally grantable through the narrower [MCP servers (legacy)](#mcp-servers-legacy) preset — a key needs only `sessions: write` OR `mcp_servers: write`, not both.
 
 | Access | Method   | Endpoint                                                                  |
 | ------ | -------- | ------------------------------------------------------------------------- |
@@ -227,15 +232,34 @@ Create and operate sessions and MCP servers. This permission area covers MCP ser
 | Write  | `POST`   | `/tool_router/{session_id}/mcp`                                           |
 | Write  | `DELETE` | `/tool_router/{session_id}/mcp`                                           |
 | Write  | `POST`   | `/api/v3.1/tool_router/session`                                           |
-| Write  | `POST`   | `/api/v3.1/tool_router/session/{session_id}/execute`                      |
-| Write  | `POST`   | `/api/v3.1/tool_router/session/{session_id}/execute_meta`                 |
 | Write  | `POST`   | `/api/v3/tool_router/session/{session_id}/link`                           |
-| Write  | `POST`   | `/api/v3.1/tool_router/session/{session_id}/search`                       |
 | Write  | `PATCH`  | `/api/v3.1/tool_router/session/{session_id}`                              |
 | Write  | `POST`   | `/api/v3/tool_router/session/{session_id}/mounts/{mount_id}/upload_url`   |
 | Write  | `POST`   | `/api/v3/tool_router/session/{session_id}/mounts/{mount_id}/download_url` |
 | Write  | `POST`   | `/api/v3/tool_router/session/{session_id}/mounts/{mount_id}/delete`       |
 | Write  | `POST`   | `/api/v3.1/tool_router/session/{session_id}/attach`                       |
+
+## MCP servers (legacy)
+
+Manage legacy MCP servers and instances — the mechanism that predates Tool Router sessions for exposing a fixed toolset over MCP. New integrations should use [Sessions](#sessions) instead.
+
+These routes are also grantable through `sessions: write`/`read`, for backward compatibility — a key needs only one of `mcp_servers` or `sessions`, not both. Prefer granting `mcp_servers` when a key should manage legacy MCP servers but shouldn't also be able to create, configure, or delete Tool Router sessions.
+
+| Access | Method   | Endpoint                                                   |
+| ------ | -------- | ----------------------------------------------------------- |
+| Read   | `GET`    | `/api/v3/mcp/servers`                                       |
+| Read   | `GET`    | `/api/v3/mcp/{id}`                                          |
+| Read   | `GET`    | `/api/v3/mcp/app/{app_key}`                                 |
+| Read   | `GET`    | `/api/v3/mcp/servers/{server_id}/instances`                 |
+| Write  | `POST`   | `/api/v3/mcp/servers`                                       |
+| Write  | `POST`   | `/api/v3/mcp/servers/generate`                               |
+| Write  | `POST`   | `/api/v3/mcp/servers/custom`                                 |
+| Write  | `PATCH`  | `/api/v3/mcp/{id}`                                           |
+| Write  | `DELETE` | `/api/v3/mcp/{id}`                                           |
+| Write  | `POST`   | `/api/v3/mcp/servers/{server_id}/instances`                  |
+| Write  | `DELETE` | `/api/v3/mcp/servers/{server_id}/instances/{instance_id}`    |
+| Write  | `POST`   | `/api/v3/mcp/{server_id}/{transport}`                        |
+| Write  | `DELETE` | `/api/v3/mcp/{server_id}/{transport}`                        |
 
 ## What to read next
 
