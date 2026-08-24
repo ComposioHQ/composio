@@ -311,6 +311,55 @@ describe('FileToolModifier', () => {
       availableVersions: ['20251201_01'],
     };
 
+    it('drops empty file values instead of uploading them (issue #4233)', async () => {
+      const fileUploadable = {
+        type: 'object' as const,
+        title: 'FileUploadable',
+        file_uploadable: true,
+        properties: {
+          name: { type: 'string' as const },
+          mimetype: { type: 'string' as const },
+          s3key: { type: 'string' as const },
+        },
+        required: ['name', 'mimetype', 's3key'],
+      };
+      const gmailLikeTool: Tool = {
+        ...mockTool,
+        inputParameters: {
+          type: 'object',
+          properties: {
+            subject: { type: 'string' },
+            attachment: { anyOf: [fileUploadable, { type: 'array', items: fileUploadable }] },
+            extra: { type: 'array', items: fileUploadable },
+            thread_id: { type: 'string' },
+          },
+        },
+      };
+      const staged = { name: 'a.txt', mimetype: 'text/plain', s3key: 'k' };
+
+      const result = await fileToolModifier.fileUploadModifier(gmailLikeTool, {
+        toolSlug: 'test-tool',
+        toolkitSlug: 'test-toolkit',
+        params: {
+          arguments: {
+            subject: 'Test',
+            attachment: '',
+            extra: ['', staged],
+            thread_id: '',
+          },
+          userId: 'test-user',
+        },
+      });
+
+      expect(fileUtils.getFileDataAfterUploadingToS3).not.toHaveBeenCalled();
+      expect(result.arguments).toEqual({
+        subject: 'Test',
+        extra: [staged],
+        // non-file empty strings are not the walker's business
+        thread_id: '',
+      });
+    });
+
     it('should upload file for file_uploadable parameters', async () => {
       const mockFileData = {
         name: 'file.txt',
@@ -2033,6 +2082,48 @@ describe('Tools with dangerouslyAllowAutoUploadDownloadFiles', () => {
         },
         undefined
       );
+    });
+
+    it('omits empty file values from the request when auto-upload is off (issue #4233)', async () => {
+      vi.spyOn(context.tools, 'getRawComposioToolBySlug').mockResolvedValue(mockToolWithFileUpload);
+
+      await context.tools.execute('COMPOSIO_TOOL', {
+        arguments: { file: '', text: 'keep' },
+        userId: 'test-user',
+        dangerouslySkipVersionCheck: true,
+      });
+
+      expect(fileUtils.getFileDataAfterUploadingToS3).not.toHaveBeenCalled();
+      expect(mockClient.tools.execute.mock.calls[0]?.[1]?.arguments).toEqual({ text: 'keep' });
+    });
+
+    it('omits empty file values reachable only through a $ref (issue #4233)', async () => {
+      // Composio toolkits express file flags through `$ref`/`$defs`, so the
+      // cheap "does this tool take a file?" gate has to see through the
+      // indirection or the fix never fires for a real tool.
+      vi.spyOn(context.tools, 'getRawComposioToolBySlug').mockResolvedValue({
+        ...mockToolWithFileUpload,
+        inputParameters: {
+          type: 'object',
+          properties: { file: { $ref: '#/$defs/Attachment' }, text: { type: 'string' } },
+          $defs: {
+            Attachment: {
+              type: 'object',
+              file_uploadable: true,
+              properties: { name: { type: 'string' }, s3key: { type: 'string' } },
+            },
+          },
+        },
+      });
+
+      await context.tools.execute('COMPOSIO_TOOL', {
+        arguments: { file: '', text: 'keep' },
+        userId: 'test-user',
+        dangerouslySkipVersionCheck: true,
+      });
+
+      expect(fileUtils.getFileDataAfterUploadingToS3).not.toHaveBeenCalled();
+      expect(mockClient.tools.execute.mock.calls[0]?.[1]?.arguments).toEqual({ text: 'keep' });
     });
 
     it('warns once per tool when auto-upload is off and the tool has a file-uploadable input', async () => {

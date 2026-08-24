@@ -515,6 +515,10 @@ class Tools(Resource, t.Generic[TTool, TToolCollection]):
                     request=arguments,
                     before_file_upload=bfu,
                 )
+            else:
+                arguments = self._file_helper.drop_empty_file_uploads(
+                    tool=tool, request=arguments
+                )
 
             toolkit_slug = _toolkit_slug(tool, "composio")
 
@@ -675,6 +679,12 @@ class Tools(Resource, t.Generic[TTool, TToolCollection]):
                 tool=tool,
                 request=arguments,
                 before_file_upload=bfu,
+            )
+        else:
+            # Auto-upload is opt-in, but "no file" must still be sent as an
+            # omitted key rather than ``""``/``None`` (issue #4233).
+            arguments = self._file_helper.drop_empty_file_uploads(
+                tool=tool, request=arguments
             )
 
         if modifiers is not None:

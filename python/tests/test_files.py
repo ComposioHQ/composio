@@ -779,6 +779,72 @@ class TestFileUploadSubstitutionWithUnionTypes:
         # None/empty values should be removed
         assert "fileInput" not in result
 
+    def test_drop_empty_file_uploads_omits_empty_leaves_without_uploading(
+        self, file_helper, mock_tool
+    ):
+        """Issue #4233: ``""``/``None`` at a file leaf mean "no file" even when
+        auto-upload is off, while any other value is forwarded untouched."""
+        file_uploadable = {
+            "type": "object",
+            "file_uploadable": True,
+            "title": "FileUploadable",
+            "properties": {
+                "name": {"type": "string"},
+                "mimetype": {"type": "string"},
+                "s3key": {"type": "string"},
+            },
+            "required": ["name", "mimetype", "s3key"],
+        }
+        mock_tool.input_parameters = {
+            "type": "object",
+            "properties": {
+                "subject": {"type": "string"},
+                "attachment": {
+                    "anyOf": [
+                        file_uploadable,
+                        {"type": "array", "items": file_uploadable},
+                        {"type": "null"},
+                    ],
+                    "default": None,
+                },
+                "extra": {
+                    "anyOf": [
+                        {"type": "array", "items": file_uploadable},
+                        {"type": "null"},
+                    ]
+                },
+                "nested": {
+                    "type": "object",
+                    "properties": {"file": {"$ref": "#/$defs/F"}},
+                },
+                "thread_id": {"type": "string"},
+            },
+            "$defs": {"F": file_uploadable},
+        }
+        staged = {"name": "a.txt", "mimetype": "text/plain", "s3key": "k"}
+        request = {
+            "subject": "Test",
+            "attachment": "",
+            "extra": [None, "", staged, "/tmp/keep.txt"],
+            "nested": {"file": None},
+            "thread_id": "",
+        }
+
+        with patch.object(FileUploadable, "from_path") as from_path:
+            result = file_helper.drop_empty_file_uploads(
+                tool=mock_tool, request=request
+            )
+
+        from_path.assert_not_called()
+        assert result is request
+        assert result == {
+            "subject": "Test",
+            "extra": [staged, "/tmp/keep.txt"],
+            "nested": {},
+            # non-file empty strings are not the walker's business
+            "thread_id": "",
+        }
+
     def test_substitute_upload_empty_string_in_anyof(self, file_helper, mock_tool):
         """Test that empty string values in anyOf with file_uploadable are handled."""
         mock_tool.input_parameters = {

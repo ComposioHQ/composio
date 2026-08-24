@@ -54,7 +54,11 @@ import { handleToolExecutionError } from '../errors/ToolErrors';
 import type { SessionExecuteParams } from '@composio/client/resources/tool-router/session/session.mjs';
 import { CONFIG_DEFAULTS } from '../utils/config-defaults';
 import { resolveEffectiveUploadAllowlist } from '../utils/fileDirs';
-import { schemaHasFileUploadable } from '../utils/modifiers/FileToolModifier.utils.neutral';
+import {
+  dropEmptyFileUploads,
+  schemaHasFileUploadable,
+} from '../utils/modifiers/FileToolModifier.utils.neutral';
+import { dereferenceJsonSchema } from '../utils/jsonSchema';
 import { ComposioRequestOptions } from '../types/requestOptions.types';
 import { withCancellation } from '../utils/cancellation';
 import { ComposioRequestCancelledError } from '../errors/SDKErrors';
@@ -284,26 +288,38 @@ export class Tools<
       if (requestOptions?.signal?.aborted) {
         throw new ComposioRequestCancelledError();
       }
-    } else if (
-      schemaHasFileUploadable(tool.inputParameters) &&
-      !this.warnedAutoUploadDisabledForTool.has(toolSlug)
-    ) {
-      // With auto-upload off, the raw `{ name, mimetype, s3key }` shape is
-      // what the LLM / caller sees on `tool.inputParameters`. LLMs can't
-      // produce a valid `s3key` and will hallucinate one, which then fails
-      // at the staging-lookup step on the backend. Nudge the caller toward
-      // manual staging or opting into auto-upload.
-      this.warnedAutoUploadDisabledForTool.add(toolSlug);
-      logger.warn(
-        `Tool "${toolSlug}" (toolkit "${toolkitSlug}") has a file-uploadable input, but ` +
-          `\`dangerouslyAllowAutoUploadDownloadFiles\` is disabled. The SDK will forward ` +
-          `the file argument as-is; if it isn't already a staged ` +
-          `{ name, mimetype, s3key } descriptor, the backend will reject the call. Either:\n` +
-          `  1) Stage the file yourself: \`const f = await composio.files.upload({ file, toolSlug, toolkitSlug }); ` +
-          `await composio.tools.execute('${toolSlug}', { userId, arguments: { <fileField>: f } })\`, or\n` +
-          `  2) Enable auto-upload with a scoped allowlist: ` +
-          `\`new Composio({ dangerouslyAllowAutoUploadDownloadFiles: true, fileUploadDirs: ['/safe/dir'] })\`.`
-      );
+    } else if (tool.inputParameters && schemaHasFileUploadable(tool.inputParameters)) {
+      // Auto-upload is opt-in, but "no file" must still be sent as an
+      // omitted key rather than `''`, which the backend rejects
+      // (https://github.com/ComposioHQ/composio/issues/4233).
+      if (modifiedParams.arguments) {
+        modifiedParams = {
+          ...modifiedParams,
+          arguments: (await dropEmptyFileUploads(
+            modifiedParams.arguments,
+            dereferenceJsonSchema(tool.inputParameters, { onUnresolved: 'sentinel' })
+          )) as ToolExecuteParams['arguments'],
+        };
+      }
+
+      if (!this.warnedAutoUploadDisabledForTool.has(toolSlug)) {
+        // With auto-upload off, the raw `{ name, mimetype, s3key }` shape is
+        // what the LLM / caller sees on `tool.inputParameters`. LLMs can't
+        // produce a valid `s3key` and will hallucinate one, which then fails
+        // at the staging-lookup step on the backend. Nudge the caller toward
+        // manual staging or opting into auto-upload.
+        this.warnedAutoUploadDisabledForTool.add(toolSlug);
+        logger.warn(
+          `Tool "${toolSlug}" (toolkit "${toolkitSlug}") has a file-uploadable input, but ` +
+            `\`dangerouslyAllowAutoUploadDownloadFiles\` is disabled. The SDK will forward ` +
+            `the file argument as-is; if it isn't already a staged ` +
+            `{ name, mimetype, s3key } descriptor, the backend will reject the call. Either:\n` +
+            `  1) Stage the file yourself: \`const f = await composio.files.upload({ file, toolSlug, toolkitSlug }); ` +
+            `await composio.tools.execute('${toolSlug}', { userId, arguments: { <fileField>: f } })\`, or\n` +
+            `  2) Enable auto-upload with a scoped allowlist: ` +
+            `\`new Composio({ dangerouslyAllowAutoUploadDownloadFiles: true, fileUploadDirs: ['/safe/dir'] })\`.`
+        );
+      }
     }
     // apply the before execute modifiers
     if (modifiers?.beforeExecute) {
@@ -1308,7 +1324,7 @@ export class Tools<
        * @deprecated The `customConnectionData` proxy param is deprecated and will be
        * removed in a future release. Use `customAuthParams` instead.
        */
-      // @ts-ignore
+      // @ts-expect-error
       custom_connection_data: toolProxyParams.data.customConnectionData,
     } as ComposioToolProxyParams;
     return withCancellation(

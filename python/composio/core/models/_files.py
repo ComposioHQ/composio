@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import functools
 import hashlib
 import os
 import typing as t
@@ -1039,13 +1040,23 @@ class FileHelper(WithLogger):
             value=value,
         )
 
+    @staticmethod
+    def _drop_empty_file_value(value: t.Any) -> t.Any:
+        """Leaf handler: ``None``/``""`` at a file leaf mean "no file".
+
+        Neither is a staged ``{name, mimetype, s3key}`` descriptor, so the
+        backend rejects them with a validation error while callers (and the
+        playground UI) mean "absent". The walker omits the key instead.
+        """
+        return _DELETE_VALUE if value is None or value == "" else value
+
     def _upload_file_value(
         self,
         value: t.Any,
         tool: Tool,
         before_file_upload: t.Optional[BeforeFileUpload],
     ) -> t.Any:
-        if value is None or value == "":
+        if self._drop_empty_file_value(value) is _DELETE_VALUE:
             return _DELETE_VALUE
 
         return FileUploadable.from_path(
@@ -1063,20 +1074,18 @@ class FileHelper(WithLogger):
         self,
         value: t.Any,
         schema: t.Optional[t.Dict],
-        tool: Tool,
-        *,
-        before_file_upload: t.Optional[BeforeFileUpload] = None,
+        leaf: t.Callable[[t.Any], t.Any],
     ) -> t.Any:
-        """Return ``value`` with file-uploadable leaves staged for execution."""
+        """Return ``value`` with every ``file_uploadable`` leaf passed through ``leaf``.
+
+        A leaf may return ``_DELETE_VALUE`` to omit the key/item from its
+        parent container.
+        """
         if not isinstance(schema, dict):
             return value
 
         if schema.get("file_uploadable", False):
-            return self._upload_file_value(
-                value=value,
-                tool=tool,
-                before_file_upload=before_file_upload,
-            )
+            return leaf(value)
 
         uploadable_variant = self._find_uploadable_schema_variant(
             schema=schema,
@@ -1086,8 +1095,7 @@ class FileHelper(WithLogger):
             return self._substitute_file_upload_value(
                 value=value,
                 schema=uploadable_variant,
-                tool=tool,
-                before_file_upload=before_file_upload,
+                leaf=leaf,
             )
 
         if isinstance(value, dict) and "properties" in schema:
@@ -1098,8 +1106,7 @@ class FileHelper(WithLogger):
                 processed_item = self._substitute_file_upload_value(
                     value=item,
                     schema=item_schema,
-                    tool=tool,
-                    before_file_upload=before_file_upload,
+                    leaf=leaf,
                 )
                 if processed_item is not _DELETE_VALUE:
                     processed[key] = processed_item
@@ -1115,8 +1122,7 @@ class FileHelper(WithLogger):
                 processed_item = self._substitute_file_upload_value(
                     value=item,
                     schema=items_schema,
-                    tool=tool,
-                    before_file_upload=before_file_upload,
+                    leaf=leaf,
                 )
                 if processed_item is not _DELETE_VALUE:
                     processed_items.append(processed_item)
@@ -1131,12 +1137,19 @@ class FileHelper(WithLogger):
         request: t.Dict,
         *,
         before_file_upload: t.Optional[BeforeFileUpload] = None,
+        leaf: t.Optional[t.Callable[[t.Any], t.Any]] = None,
     ) -> t.Dict:
+        if leaf is None:
+            leaf = functools.partial(
+                self._upload_file_value,
+                tool=tool,
+                before_file_upload=before_file_upload,
+            )
+
         processed = self._substitute_file_upload_value(
             value=request,
             schema=schema,
-            tool=tool,
-            before_file_upload=before_file_upload,
+            leaf=leaf,
         )
         if processed is request:
             return request
@@ -1175,6 +1188,32 @@ class FileHelper(WithLogger):
             ),
             request=request,
             before_file_upload=before_file_upload,
+        )
+
+    def drop_empty_file_uploads(self, tool: Tool, request: t.Dict) -> t.Dict:
+        """Omit ``None``/``""`` at ``file_uploadable`` leaves without uploading.
+
+        This is the half of :meth:`substitute_file_uploads` that needs no
+        filesystem access, so it runs even when automatic upload is disabled:
+        an empty file value is never a valid staged descriptor and the backend
+        would reject it (issue #4233). Any other value -- a local path, a
+        staged descriptor, a list -- is forwarded untouched. Same mutation
+        contract as :meth:`substitute_file_uploads`.
+        """
+        schema = dereference_json_schema(
+            tool.input_parameters, on_unresolved="sentinel"
+        )
+        # Every execution takes this path by default, so leave requests for
+        # tools without a file input completely alone (identity included)
+        # instead of rebuilding their nested dicts.
+        if not self._file_uploadable(schema):
+            return request
+
+        return self._substitute_file_uploads_recursively(
+            tool=tool,
+            schema=schema,
+            request=request,
+            leaf=self._drop_empty_file_value,
         )
 
     def _is_file_downloadable(self, schema: t.Dict) -> bool:
