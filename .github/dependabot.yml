@@ -24,6 +24,9 @@ updates:
         update-types: ["version-update:semver-major"]
       - dependency-name: "openai"
         update-types: ["version-update:semver-major"]
+      # Node 22/24/25 built-in fetch uses the legacy dispatcher handler API.
+      - dependency-name: "undici"
+        update-types: ["version-update:semver-major"]
       - dependency-name: "zod"
         update-types: ["version-update:semver-major"]
       # Version 1.0.0 is not compatible with the Effect package family in use.
