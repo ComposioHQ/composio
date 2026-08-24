@@ -315,6 +315,35 @@ const verifyPyCandidate = async (wheel) => {
   return version;
 };
 
+const PY_PROJECT = join(ROOT, 'python', 'pyproject.toml');
+const UV_LOCK = join(ROOT, 'uv.lock');
+const PY_CLIENT_PIN = /^(\s*)"composio-client==[^"]+",$/m;
+
+/**
+ * Drop the exact `composio-client==` pin from the python project.
+ *
+ * A candidate sweep layers the wheel onto every entry with `uv run --with`, but
+ * several entries also install the local `./python` project, whose exact pin the
+ * wheel contradicts — uv then refuses the whole overlay ("no solution found")
+ * and those entries go red for a packaging reason rather than a client one.
+ * Without the pin the wheel is the only `composio-client` in play. Baseline
+ * sweeps never call this, and restorePyBaseline() writes the pre-run files back
+ * either way.
+ */
+const relaxPyClientPin = (toml) => {
+  if (!PY_CLIENT_PIN.test(toml)) {
+    fail(`no exact composio-client pin found in ${relative(ROOT, PY_PROJECT)}`);
+  }
+  return toml.replace(PY_CLIENT_PIN, '$1"composio-client",');
+};
+
+const snapshotPyBaseline = () => snapshotFiles([PY_PROJECT, UV_LOCK]);
+
+const restorePyBaseline = async (snapshot) => {
+  restoreFiles(snapshot);
+  await sh(['uv', 'sync', '--project', 'python', '--frozen']);
+};
+
 // --- llm mock ---------------------------------------------------------------
 
 /** Start aimock serving harness/llm-mock/fixtures; resolve once it answers. */
@@ -365,6 +394,7 @@ const cmdSweep = async () => {
   mkdirSync(join(runDir, 'traces'), { recursive: true });
 
   let tsBaselineSnapshot;
+  let pyBaselineSnapshot;
   let stopLlmMock;
   const pyWheel = process.env.COMPOSIO_CLIENT_WHEEL;
   try {
@@ -381,6 +411,8 @@ const cmdSweep = async () => {
         if (!pyWheel) fail('candidate sweep with py entries needs COMPOSIO_CLIENT_WHEEL');
         const v = await verifyPyCandidate(pyWheel);
         console.log(`candidate composio-client (py) resolved: ${v}`);
+        pyBaselineSnapshot = snapshotPyBaseline();
+        writeFileSync(PY_PROJECT, relaxPyClientPin(readFileSync(PY_PROJECT, 'utf8')));
         for (const e of entries) if (e.lang === 'py') e.pyWith = [...(e.pyWith ?? []), pyWheel];
       }
     }
@@ -402,6 +434,7 @@ const cmdSweep = async () => {
   } finally {
     if (stopLlmMock) stopLlmMock();
     if (tsBaselineSnapshot) await restoreTsBaseline(tsBaselineSnapshot);
+    if (pyBaselineSnapshot) await restorePyBaseline(pyBaselineSnapshot);
   }
 };
 
@@ -484,6 +517,28 @@ const cmdSelftest = async () => {
   writeFileSync(cleanupFixture, 'candidate contents');
   restoreFiles(cleanupSnapshot);
   check('cleanup restores pre-run file contents', readFileSync(cleanupFixture, 'utf8') === 'user contents');
+
+  // The python candidate swap only resolves once the project's exact
+  // composio-client pin is out of the way; see relaxPyClientPin.
+  const pinnedProject = readFileSync(PY_PROJECT, 'utf8');
+  const relaxedProject = relaxPyClientPin(pinnedProject);
+  check('the python project pins composio-client exactly', /"composio-client==/.test(pinnedProject));
+  check(
+    'relaxing the pin keeps composio-client a dependency',
+    /^\s*"composio-client",$/m.test(relaxedProject) && !/"composio-client==/.test(relaxedProject)
+  );
+  check(
+    'relaxing the pin touches nothing else',
+    relaxedProject.replace(/^\s*"composio-client",$/m, '') ===
+      pinnedProject.replace(/^\s*"composio-client==[^"]+",$/m, '')
+  );
+  let unpinnedProjectRejected = false;
+  try {
+    relaxPyClientPin(relaxedProject);
+  } catch {
+    unpinnedProjectRejected = true;
+  }
+  check('relaxing an already-unpinned project is refused', unpinnedProjectRejected);
 
   // 1. known-good: error-handling-demo (no backend, no keys).
   const good = loadManifest().find((e) => e.id === 'ts/error-handling-demo/index');
