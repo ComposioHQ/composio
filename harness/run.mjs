@@ -12,7 +12,7 @@ import { spawn } from 'node:child_process';
 import { mkdirSync, readFileSync, writeFileSync, appendFileSync, existsSync, rmSync } from 'node:fs';
 import { dirname, join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { requireStagingBaseUrl, STAGING_BASE_URL } from './staging-backend.mjs';
+import { resolveBackendBaseUrl, STAGING_BASE_URL } from './backend-url.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const ARTIFACTS = join(ROOT, '.artifacts', 'examples-parity');
@@ -67,7 +67,7 @@ const selectEntries = () => {
 
 const baseUrl = () => {
   try {
-    return requireStagingBaseUrl();
+    return resolveBackendBaseUrl();
   } catch (error) {
     fail(error instanceof Error ? error.message : String(error));
   }
@@ -438,15 +438,29 @@ const cmdSelftest = async () => {
     if (!ok) failures += 1;
   };
 
-  // 0. backend safety: the harness accepts only the canonical staging root.
-  check('staging backend is accepted', requireStagingBaseUrl() === STAGING_BASE_URL);
-  let productionRejected = false;
-  try {
-    requireStagingBaseUrl('https://backend.composio.dev');
-  } catch {
-    productionRejected = true;
-  }
-  check('production backend is rejected', productionRejected);
+  // 0. backend URL: staging is the default, any other bare https root is
+  //    honoured as given, and anything structurally unusable is refused.
+  check('staging backend is the default', resolveBackendBaseUrl(undefined) === STAGING_BASE_URL);
+  check(
+    'a non-staging bare https root is honoured',
+    resolveBackendBaseUrl('https://backend.composio.dev') === 'https://backend.composio.dev'
+  );
+  const refuses = (value) => {
+    try {
+      resolveBackendBaseUrl(value);
+      return false;
+    } catch {
+      return true;
+    }
+  };
+  check('a base URL carrying a path is refused', refuses('https://backend.composio.dev/api/v3'));
+  check('a base URL carrying a query is refused', refuses('https://backend.composio.dev/?x=1'));
+  check(
+    'a base URL carrying credentials is refused',
+    refuses('https://user:pass@backend.composio.dev')
+  );
+  check('a plaintext base URL is refused', refuses('http://backend.composio.dev'));
+  check('an unparseable base URL is refused', refuses('not-a-url'));
 
   let cleanupRan = false;
   let cleanupError;
