@@ -72,7 +72,7 @@
     "vitest": "catalog:"
   },
   "dependencies": {
-    "@agentclientprotocol/sdk": "^1.3.0",
+    "@agentclientprotocol/sdk": "^1.4.0",
     "@clack/core": "catalog:",
     "@clack/prompts": "catalog:",
     "@composio/cli-keyring": "workspace:*",
