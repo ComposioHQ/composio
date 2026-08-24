@@ -11,11 +11,12 @@ tags:
 # ClickUp
 
 
-## ClickUp uses customer-owned OAuth or API-key credentials
+## ClickUp supports managed OAuth, custom OAuth, and API-key credentials
 
-Create the ClickUp auth config with the customer's OAuth app or API-key
-credentials. In newer SDK/API flows, use the v3 auth config nano ID (`ac_...`)
-rather than older v1/v2 integration assumptions.
+Use Composio-managed OAuth for the standard connection flow. Use a custom
+ClickUp OAuth app or API-key credentials when the customer needs greater control.
+In newer SDK/API flows, use the v3 auth config nano ID (`ac_...`) rather than
+older v1/v2 integration assumptions.
 
 ## ClickUp custom OAuth should use the Composio callback URL registered in the ClickUp app
 

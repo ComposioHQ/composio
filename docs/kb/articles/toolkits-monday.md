@@ -10,6 +10,10 @@ For a custom Monday OAuth app, add the Composio redirect URL/callback URL to the
 
 `MONDAY_UPDATE_ITEM` expects the body in a format Monday's API accepts. If you pass JSON-like text or strings containing quotes/special characters, escape those characters and send a suitable string rather than unsupported raw structured content.
 
+## Tool Router may prefer `MONDAY_MCP` over `MONDAY` when both are available
+
+If both `MONDAY` and `MONDAY_MCP` are enabled, Tool Router may choose `MONDAY_MCP` for search/execution. If you specifically need the regular Monday toolkit, disable `monday_mcp` in the session or narrow toolkit availability so `COMPOSIO_SEARCH_TOOLS` returns the intended tools.
+
 ## Monday scopes come from the OAuth app and do not need separate Composio-side setup in the common flow
 
 For Monday, the scopes configured on the Monday OAuth app are picked up during authorization. In the common flow, there is no separate Composio-side scope configuration required unless you intentionally request a subset.

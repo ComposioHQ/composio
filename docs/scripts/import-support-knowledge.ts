@@ -6,6 +6,7 @@ import {
   verifySupportKnowledgeCheckout,
   writeSupportKnowledgeSnapshot,
 } from '@/lib/kb/support-knowledge';
+import { createKbArticleReader, createKbSourceReader } from '@/lib/kb/repository';
 import type { KbManifest } from '@/lib/kb/types';
 
 const args = process.argv.slice(2);
@@ -29,12 +30,32 @@ const previousManifestPath = join(targetRoot, 'manifest.json');
 const previousManifest = existsSync(previousManifestPath)
   ? JSON.parse(readFileSync(previousManifestPath, 'utf8')) as KbManifest
   : undefined;
+const previousSourceFiles = new Map<string, string>();
+const previousArticleFiles = new Map<string, string>();
+const readPreviousSource = previousManifest
+  ? createKbSourceReader(join(targetRoot, 'source'))
+  : undefined;
+const readPreviousArticle = previousManifest
+  ? createKbArticleReader(join(targetRoot, 'articles'))
+  : undefined;
+for (const guide of previousManifest?.guides ?? []) {
+  for (const source of guide.sources) {
+    if (!previousSourceFiles.has(source.sourcePath)) {
+      previousSourceFiles.set(source.sourcePath, readPreviousSource!(source.sourcePath));
+    }
+  }
+  if (guide.articlePath) {
+    previousArticleFiles.set(guide.articlePath, readPreviousArticle!(guide.articlePath));
+  }
+}
 
 const now = new Date();
 const snapshot = buildSupportKnowledgeSnapshot({
   sourceRoot,
   sourceCommit: verifiedSourceCommit,
   previousManifest,
+  previousSourceFiles,
+  previousArticleFiles,
   now,
 });
 

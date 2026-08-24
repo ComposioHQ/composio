@@ -160,3 +160,69 @@ jobs:
           add-paths: |
             docs/kb/
             docs/content/kb/
+
+  # Import and PR creation are one publication pipeline. Report after both jobs
+  # so a successful import cannot hide a failed proposal, and close the issue
+  # only after every required stage has recovered.
+  report:
+    needs: [refresh, propose]
+    if: always()
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+
+    steps:
+      - name: Open KB refresh failure issue
+        if: needs.refresh.result == 'failure' || needs.propose.result == 'failure'
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          LABEL: docs-kb-refresh-failure
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          EVENT_NAME: ${{ github.event_name }}
+          REFRESH_RESULT: ${{ needs.refresh.result }}
+          PROPOSE_RESULT: ${{ needs.propose.result }}
+        run: |
+          gh label create "$LABEL" \
+            --color B60205 \
+            --description "Scheduled support knowledge refresh is failing" 2>/dev/null || true
+
+          existing=$(gh issue list --label "$LABEL" --state open --limit 1 \
+            --json number --jq '.[0].number // empty')
+          if [ -n "$existing" ]; then
+            echo "Issue #$existing is already open for this failure; not filing a duplicate."
+            exit 0
+          fi
+
+          gh issue create \
+            --title "Support knowledge refresh is failing" \
+            --label "$LABEL" \
+            --body "The automated support knowledge publication pipeline failed.
+
+          - Run: $RUN_URL
+          - Trigger: \`$EVENT_NAME\`
+          - Refresh job: \`$REFRESH_RESULT\`
+          - Proposal job: \`$PROPOSE_RESULT\`
+
+          **Impact:** docs.composio.dev/kb remains on its last successfully imported
+          support-knowledge commit until this workflow recovers.
+
+          **First checks:** verify that the Release Bot GitHub App can read
+          \`ComposioHQ/support-knowledge\` and write the refresh branch and PR in
+          \`ComposioHQ/composio\`."
+
+      - name: Close KB refresh failure issue
+        if: needs.refresh.result == 'success' && (needs.refresh.outputs.changed != 'true' || needs.propose.result == 'success')
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          LABEL: docs-kb-refresh-failure
+        run: |
+          existing=$(gh issue list --label "$LABEL" --state open --limit 1 \
+            --json number --jq '.[0].number // empty')
+          if [ -n "$existing" ]; then
+            gh issue close "$existing" \
+              --comment "The support knowledge publication pipeline recovered in run ${{ github.run_id }}: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}."
+          fi
