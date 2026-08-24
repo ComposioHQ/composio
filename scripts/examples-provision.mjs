@@ -272,12 +272,17 @@ for (const { exportPrefix, slug } of selectedBrowserGrantToolkits) {
   } else {
     ok = false;
     if (INITIATE_MISSING) {
-      const created = await api('POST', '/api/v3.1/connected_accounts', {
-        auth_config: { id: config.id },
-        connection: { user_id: USER_ID },
+      // POST /connected_accounts is retired for Composio-managed OAuth auth
+      // configs (it 400s with a migration message); every toolkit in this loop
+      // is exactly that, so the auth-link endpoint is the only way in. It
+      // returns the redirect URL directly rather than nesting it under
+      // connectionData.
+      const created = await api('POST', '/api/v3.1/connected_accounts/link', {
+        auth_config_id: config.id,
+        user_id: USER_ID,
       });
       pendingGrants.push(
-        `${slug}: authorize in a browser -> ${created.connectionData?.val?.redirectUrl ?? created.redirect_url ?? created.redirect_uri ?? '(no redirect url returned)'}`
+        `${slug}: authorize in a browser -> ${created.redirect_url ?? '(no redirect url returned)'}`
       );
     } else {
       pendingGrants.push(
