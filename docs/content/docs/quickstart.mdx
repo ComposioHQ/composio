@@ -25,6 +25,10 @@ The TypeScript SDK is ESM-only and requires Node.js 22.22.3 or newer. Use `impor
 The Composio Python SDK requires **Python 3.10 or newer**.
 
 <PackageInstall ecosystem="python" packages="python-dotenv composio composio-openai-agents openai-agents" />
+
+<Callout type="warn" title="Do not install composio-core or composio-openai">
+The current Python package is `composio`. The packages `composio-core` and `composio-openai` are the legacy v1 SDK — they call deprecated APIs and do not work with sessions. If an older tutorial or an AI coding assistant suggests them, install `composio` instead. See the [migration guide](/docs/migration-guide/new-sdk).
+</Callout>
 </Tab>
 <Tab value="TypeScript">
 <PackageInstall
