@@ -12,7 +12,7 @@ import { spawn } from 'node:child_process';
 import { mkdirSync, readFileSync, writeFileSync, appendFileSync, existsSync, rmSync } from 'node:fs';
 import { dirname, join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { requireStagingBaseUrl, STAGING_BASE_URL } from './staging-backend.mjs';
+import { resolveBackendBaseUrl, STAGING_BASE_URL } from './backend-url.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const ARTIFACTS = join(ROOT, '.artifacts', 'examples-parity');
@@ -67,7 +67,7 @@ const selectEntries = () => {
 
 const baseUrl = () => {
   try {
-    return requireStagingBaseUrl();
+    return resolveBackendBaseUrl();
   } catch (error) {
     fail(error instanceof Error ? error.message : String(error));
   }
@@ -315,6 +315,35 @@ const verifyPyCandidate = async (wheel) => {
   return version;
 };
 
+const PY_PROJECT = join(ROOT, 'python', 'pyproject.toml');
+const UV_LOCK = join(ROOT, 'uv.lock');
+const PY_CLIENT_PIN = /^(\s*)"composio-client==[^"]+",$/m;
+
+/**
+ * Drop the exact `composio-client==` pin from the python project.
+ *
+ * A candidate sweep layers the wheel onto every entry with `uv run --with`, but
+ * several entries also install the local `./python` project, whose exact pin the
+ * wheel contradicts — uv then refuses the whole overlay ("no solution found")
+ * and those entries go red for a packaging reason rather than a client one.
+ * Without the pin the wheel is the only `composio-client` in play. Baseline
+ * sweeps never call this, and restorePyBaseline() writes the pre-run files back
+ * either way.
+ */
+const relaxPyClientPin = (toml) => {
+  if (!PY_CLIENT_PIN.test(toml)) {
+    fail(`no exact composio-client pin found in ${relative(ROOT, PY_PROJECT)}`);
+  }
+  return toml.replace(PY_CLIENT_PIN, '$1"composio-client",');
+};
+
+const snapshotPyBaseline = () => snapshotFiles([PY_PROJECT, UV_LOCK]);
+
+const restorePyBaseline = async (snapshot) => {
+  restoreFiles(snapshot);
+  await sh(['uv', 'sync', '--project', 'python', '--frozen']);
+};
+
 // --- llm mock ---------------------------------------------------------------
 
 /** Start aimock serving harness/llm-mock/fixtures; resolve once it answers. */
@@ -365,6 +394,7 @@ const cmdSweep = async () => {
   mkdirSync(join(runDir, 'traces'), { recursive: true });
 
   let tsBaselineSnapshot;
+  let pyBaselineSnapshot;
   let stopLlmMock;
   const pyWheel = process.env.COMPOSIO_CLIENT_WHEEL;
   try {
@@ -381,6 +411,8 @@ const cmdSweep = async () => {
         if (!pyWheel) fail('candidate sweep with py entries needs COMPOSIO_CLIENT_WHEEL');
         const v = await verifyPyCandidate(pyWheel);
         console.log(`candidate composio-client (py) resolved: ${v}`);
+        pyBaselineSnapshot = snapshotPyBaseline();
+        writeFileSync(PY_PROJECT, relaxPyClientPin(readFileSync(PY_PROJECT, 'utf8')));
         for (const e of entries) if (e.lang === 'py') e.pyWith = [...(e.pyWith ?? []), pyWheel];
       }
     }
@@ -402,6 +434,7 @@ const cmdSweep = async () => {
   } finally {
     if (stopLlmMock) stopLlmMock();
     if (tsBaselineSnapshot) await restoreTsBaseline(tsBaselineSnapshot);
+    if (pyBaselineSnapshot) await restorePyBaseline(pyBaselineSnapshot);
   }
 };
 
@@ -438,15 +471,29 @@ const cmdSelftest = async () => {
     if (!ok) failures += 1;
   };
 
-  // 0. backend safety: the harness accepts only the canonical staging root.
-  check('staging backend is accepted', requireStagingBaseUrl() === STAGING_BASE_URL);
-  let productionRejected = false;
-  try {
-    requireStagingBaseUrl('https://backend.composio.dev');
-  } catch {
-    productionRejected = true;
-  }
-  check('production backend is rejected', productionRejected);
+  // 0. backend URL: staging is the default, any other bare https root is
+  //    honoured as given, and anything structurally unusable is refused.
+  check('staging backend is the default', resolveBackendBaseUrl(undefined) === STAGING_BASE_URL);
+  check(
+    'a non-staging bare https root is honoured',
+    resolveBackendBaseUrl('https://backend.composio.dev') === 'https://backend.composio.dev'
+  );
+  const refuses = (value) => {
+    try {
+      resolveBackendBaseUrl(value);
+      return false;
+    } catch {
+      return true;
+    }
+  };
+  check('a base URL carrying a path is refused', refuses('https://backend.composio.dev/api/v3'));
+  check('a base URL carrying a query is refused', refuses('https://backend.composio.dev/?x=1'));
+  check(
+    'a base URL carrying credentials is refused',
+    refuses('https://user:pass@backend.composio.dev')
+  );
+  check('a plaintext base URL is refused', refuses('http://backend.composio.dev'));
+  check('an unparseable base URL is refused', refuses('not-a-url'));
 
   let cleanupRan = false;
   let cleanupError;
@@ -470,6 +517,28 @@ const cmdSelftest = async () => {
   writeFileSync(cleanupFixture, 'candidate contents');
   restoreFiles(cleanupSnapshot);
   check('cleanup restores pre-run file contents', readFileSync(cleanupFixture, 'utf8') === 'user contents');
+
+  // The python candidate swap only resolves once the project's exact
+  // composio-client pin is out of the way; see relaxPyClientPin.
+  const pinnedProject = readFileSync(PY_PROJECT, 'utf8');
+  const relaxedProject = relaxPyClientPin(pinnedProject);
+  check('the python project pins composio-client exactly', /"composio-client==/.test(pinnedProject));
+  check(
+    'relaxing the pin keeps composio-client a dependency',
+    /^\s*"composio-client",$/m.test(relaxedProject) && !/"composio-client==/.test(relaxedProject)
+  );
+  check(
+    'relaxing the pin touches nothing else',
+    relaxedProject.replace(/^\s*"composio-client",$/m, '') ===
+      pinnedProject.replace(/^\s*"composio-client==[^"]+",$/m, '')
+  );
+  let unpinnedProjectRejected = false;
+  try {
+    relaxPyClientPin(relaxedProject);
+  } catch {
+    unpinnedProjectRejected = true;
+  }
+  check('relaxing an already-unpinned project is refused', unpinnedProjectRejected);
 
   // 1. known-good: error-handling-demo (no backend, no keys).
   const good = loadManifest().find((e) => e.id === 'ts/error-handling-demo/index');
