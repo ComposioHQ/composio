@@ -4,7 +4,7 @@ Google Super is a separate toolkit with its own tool slugs. If the connected acc
 
 ## Configure Meet scopes and enable the Google Meet API before creating Meet spaces
 
-For Meet space creation/settings through Google Super, include the Meet scopes https://www.googleapis.com/auth/meetings.space.created and https://www.googleapis.com/auth/meetings.space.settings in the auth config, then initiate a new connection so the new scopes are granted. Also enable the Google Meet API in the Google Cloud Console project backing the OAuth app.
+For Meet space creation/settings through Google Super, include the Meet scopes `https://www.googleapis.com/auth/meetings.space.created` and `https://www.googleapis.com/auth/meetings.space.settings` in the auth config, then initiate a new connection so the new scopes are granted. Also enable the Google Meet API in the Google Cloud Console project backing the OAuth app.
 
 ## Fetch transcript entries by first resolving the conference record
 
