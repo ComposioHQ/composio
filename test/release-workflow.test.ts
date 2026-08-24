@@ -853,6 +853,7 @@ esac
         2
       )
     );
+    writeFileSync(join(fixtureDir, 'pnpm-workspace.yaml'), "packages:\n  - 'packages/*'\n");
     writeFileSync(
       join(fixtureDir, '.changeset/config.json'),
       JSON.stringify(
