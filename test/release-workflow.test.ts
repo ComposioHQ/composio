@@ -258,7 +258,7 @@ touch "$target/dist/provider.whl"
   }
 }
 
-if (!tsReleaseWorkflow.includes('publish: pnpm changeset:release')) {
+if (!tsReleaseWorkflow.includes('publish-script: pnpm changeset:release')) {
   throw new Error('ts.release.yml must use the repository-controlled changeset:release script');
 }
 
@@ -334,6 +334,25 @@ if (
   validateChangesetsIdx > changesetsActionIdx
 ) {
   throw new Error('ts.release.yml must validate pending changesets before changesets/action');
+}
+
+if (!tsReleaseWorkflow.includes('changesets/action@8488615a623b1b9c987934bb89eae8af6a946ac1 # v2.1.1')) {
+  throw new Error('ts.release.yml must use changesets/action v2 with Changesets v3');
+}
+
+for (const input of [
+  'github-token: ${{ steps.app-token.outputs.token }}',
+  'publish-script: pnpm changeset:release',
+  "commit-message: 'Release: update version'",
+  "pr-title: 'Release: update version'",
+]) {
+  if (!tsReleaseWorkflow.includes(input)) {
+    throw new Error(`ts.release.yml must use the changesets/action v2 ${input} input`);
+  }
+}
+
+if (!tsReleaseWorkflow.includes('steps.changesets.outputs.published-packages')) {
+  throw new Error('ts.release.yml must read the changesets/action v2 published-packages output');
 }
 
 if (changesetConfig.baseBranch !== 'next') {
@@ -425,9 +444,9 @@ if (!releaseScript.includes('pnpm changeset publish')) {
   throw new Error('release script must still publish non-CLI changeset packages');
 }
 
-if (!releaseScript.includes('New tag:[[:space:]]*@composio\\/cli@')) {
+if (!releaseScript.includes('CHANGESETS_OUTPUT')) {
   throw new Error(
-    'release script must filter @composio/cli tag output before changesets/action creates GitHub releases'
+    'release script must filter @composio/cli Changesets v3 output before changesets/action creates GitHub releases'
   );
 }
 
@@ -781,6 +800,7 @@ for (const guide of mirroredUninstallGuides) {
 const fakeBin = mkdtempSync(join(tmpdir(), 'composio-release-test-'));
 try {
   const fakePnpmPath = join(fakeBin, 'pnpm');
+  const changesetsOutputPath = join(fakeBin, 'changesets-output.ndjson');
   writeFileSync(
     fakePnpmPath,
     `#!/usr/bin/env bash
@@ -790,8 +810,8 @@ case "$*" in
     exit 0
     ;;
   "changeset publish")
-    echo 'New tag: @composio/core@1.2.3'
-    echo 'New tag: @composio/cli@9.9.9'
+    printf '%s\\n' '{"type":"git-tag","tag":"@composio/core@1.2.3","packageName":"@composio/core"}' > "$CHANGESETS_OUTPUT"
+    printf '%s\\n' '{"type":"git-tag","tag":"@composio/cli@9.9.9","packageName":"@composio/cli"}' >> "$CHANGESETS_OUTPUT"
     echo 'release warning preserved' >&2
     exit 0
     ;;
@@ -806,7 +826,11 @@ esac
 
   const result = spawnSync('bash', [releaseScriptPath], {
     encoding: 'utf8',
-    env: { ...process.env, PATH: `${fakeBin}:${process.env.PATH}` },
+    env: {
+      ...process.env,
+      CHANGESETS_OUTPUT: changesetsOutputPath,
+      PATH: `${fakeBin}:${process.env.PATH}`,
+    },
   });
 
   if (result.status !== 0) {
@@ -815,12 +839,16 @@ esac
     );
   }
 
-  if (!result.stdout.includes('New tag: @composio/core@1.2.3')) {
-    throw new Error('release script must preserve non-CLI changeset tags');
-  }
-
-  if (result.stdout.includes('@composio/cli@9.9.9')) {
-    throw new Error('release script must hide @composio/cli tags from changesets/action');
+  const outputEvents = readFileSync(changesetsOutputPath, 'utf8')
+    .trim()
+    .split('\n')
+    .map(line => JSON.parse(line));
+  if (
+    outputEvents.length !== 1 ||
+    outputEvents[0].packageName !== '@composio/core' ||
+    outputEvents[0].tag !== '@composio/core@1.2.3'
+  ) {
+    throw new Error('release script must retain only non-CLI Changesets v3 git-tag events');
   }
 
   if (!result.stderr.includes('release warning preserved')) {
