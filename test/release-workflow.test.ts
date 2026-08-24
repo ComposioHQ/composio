@@ -133,6 +133,34 @@ function readDocumentedSdkVersions(sdkLabel) {
   return readSdkVersions(rows);
 }
 
+function readTypeScriptWorkspacePackages() {
+  const workspacePackages = [];
+
+  for (const workspacePattern of packageJson.workspaces ?? []) {
+    if (!workspacePattern.startsWith('ts/packages/')) continue;
+
+    const workspacePaths = workspacePattern.endsWith('/*')
+      ? readdirSync(new URL(`../${workspacePattern.slice(0, -2)}/`, import.meta.url), {
+          withFileTypes: true,
+        })
+          .filter(entry => entry.isDirectory())
+          .map(entry => `${workspacePattern.slice(0, -1)}${entry.name}`)
+      : [workspacePattern];
+
+    for (const workspacePath of workspacePaths) {
+      const manifestUrl = new URL(`../${workspacePath}/package.json`, import.meta.url);
+      if (!existsSync(manifestUrl)) continue;
+
+      workspacePackages.push({
+        manifest: JSON.parse(readFileSync(manifestUrl, 'utf8')),
+        path: `${workspacePath}/package.json`,
+      });
+    }
+  }
+
+  return workspacePackages;
+}
+
 function runPythonBuildFixture({ providers, providerFiles = [], failingProvider = '' }) {
   const fixtureDir = mkdtempSync(join(tmpdir(), 'composio-python-build-'));
   const buildLogPath = join(fixtureDir, 'build.log');
@@ -347,6 +375,28 @@ if (
   throw new Error(
     'changesets must only major-bump peer dependents when the new dependency version leaves their declared peer range'
   );
+}
+
+{
+  const MIN_NODE_VERSION = '>=22.22.3';
+  const publicTsReleaseWorkspaces = readTypeScriptWorkspacePackages().filter(
+    ({ manifest }) => manifest.private !== true
+  );
+  const invalidNodeEngines = publicTsReleaseWorkspaces.filter(
+    ({ manifest }) => manifest.engines?.node !== MIN_NODE_VERSION
+  );
+
+  if (publicTsReleaseWorkspaces.length === 0) {
+    throw new Error('Node.js engine validation must discover public TypeScript workspaces');
+  }
+  if (invalidNodeEngines.length > 0) {
+    const details = invalidNodeEngines
+      .map(({ manifest, path }) => `- ${path}: ${manifest.engines?.node ?? '<missing>'}`)
+      .join('\n');
+    throw new Error(
+      `Public TypeScript workspaces must declare engines.node as ${MIN_NODE_VERSION}:\n${details}`
+    );
+  }
 }
 
 // --- Python release metadata: package version, runtime version, and docs changelog must agree ---

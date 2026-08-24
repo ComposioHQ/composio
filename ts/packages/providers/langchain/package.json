@@ -4,6 +4,9 @@
   "description": "",
   "main": "dist/index.js",
   "type": "module",
+  "engines": {
+    "node": ">=22.22.3"
+  },
   "repository": {
     "type": "git",
     "url": "https://github.com/ComposioHQ/composio.git",
