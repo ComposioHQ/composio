@@ -1393,4 +1393,4 @@ export const BAKED_TOOLKIT_SLUGS: ReadonlyArray<string> = [
 ];
 
 /** When the list above was generated. */
-export const BAKED_TOOLKIT_SLUGS_REFRESHED_AT = '2026-08-23T13:47:27.991Z';
+export const BAKED_TOOLKIT_SLUGS_REFRESHED_AT = '2026-08-24T06:20:08.893Z';
