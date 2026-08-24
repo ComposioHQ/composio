@@ -378,12 +378,12 @@ if (
 }
 
 {
-  const requiredNodeEngine = '>=22.22.3';
+  const MIN_NODE_VERSION = '>=22.22.3';
   const publicTsReleaseWorkspaces = readTypeScriptWorkspacePackages().filter(
     ({ manifest }) => manifest.private !== true
   );
   const invalidNodeEngines = publicTsReleaseWorkspaces.filter(
-    ({ manifest }) => manifest.engines?.node !== requiredNodeEngine
+    ({ manifest }) => manifest.engines?.node !== MIN_NODE_VERSION
   );
 
   if (publicTsReleaseWorkspaces.length === 0) {
@@ -394,7 +394,7 @@ if (
       .map(({ manifest, path }) => `- ${path}: ${manifest.engines?.node ?? '<missing>'}`)
       .join('\n');
     throw new Error(
-      `Public TypeScript workspaces must declare engines.node as ${requiredNodeEngine}:\n${details}`
+      `Public TypeScript workspaces must declare engines.node as ${MIN_NODE_VERSION}:\n${details}`
     );
   }
 }
