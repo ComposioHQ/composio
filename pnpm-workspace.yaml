@@ -45,10 +45,10 @@ catalog:
   '@effect/vitest': ^0.30.0
   # 1.52.1 is the latest version that keeps Node-only execa code out of
   # Workers bundles.
-  '@mastra/core': 1.61.0
+  '@mastra/core': 1.52.1
   '@modelcontextprotocol/sdk': ^1.30.0
   '@types/bun': ^1.4.0
-  ai: ^7.0.66
+  ai: ^7.0.70
   dotenv: ^17.4.2
   effect: ^3.22.1
   hono: ^4.13.2
