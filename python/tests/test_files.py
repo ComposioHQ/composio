@@ -779,6 +779,36 @@ class TestFileUploadSubstitutionWithUnionTypes:
         # None/empty values should be removed
         assert "fileInput" not in result
 
+    def test_substitute_upload_preserves_null_optional_object_with_nested_file(
+        self, file_helper, mock_tool
+    ):
+        """A null container is not itself a file-uploadable leaf."""
+        mock_tool.input_parameters = {
+            "type": "object",
+            "properties": {
+                "options": {
+                    "type": "object",
+                    "properties": {
+                        "attachment": {
+                            "type": "object",
+                            "file_uploadable": True,
+                        }
+                    },
+                }
+            },
+        }
+        request = {"options": None}
+
+        with patch.object(FileUploadable, "from_path") as from_path:
+            result = file_helper.substitute_file_uploads(
+                tool=mock_tool,
+                request=request,
+            )
+
+        assert result is request
+        assert result == {"options": None}
+        from_path.assert_not_called()
+
     def test_drop_empty_file_uploads_omits_empty_strings_without_uploading(
         self, file_helper, mock_tool
     ):

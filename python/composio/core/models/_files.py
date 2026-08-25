@@ -1105,10 +1105,15 @@ class FileHelper(WithLogger):
         if schema.get("file_uploadable", False):
             return leaf(value)
 
-        # Upload-enabled execution historically omits null file values, while
-        # disabled execution preserves them for nullable schemas. The active
-        # leaf handler owns that distinction.
-        if value is None and self._file_uploadable(schema):
+        # Array-only file inputs historically omit null in upload mode even
+        # though null cannot be traversed as an array. Keep that behavior
+        # without treating an optional object that merely contains a nested
+        # file property as a file leaf itself.
+        if (
+            value is None
+            and self._is_array_shaped_schema(schema)
+            and self._file_uploadable(schema)
+        ):
             return leaf(value)
 
         uploadable_variant = self._find_uploadable_schema_variant(
