@@ -1324,7 +1324,7 @@ export class Tools<
        * @deprecated The `customConnectionData` proxy param is deprecated and will be
        * removed in a future release. Use `customAuthParams` instead.
        */
-      // @ts-expect-error
+      // @ts-ignore
       custom_connection_data: toolProxyParams.data.customConnectionData,
     } as ComposioToolProxyParams;
     return withCancellation(
