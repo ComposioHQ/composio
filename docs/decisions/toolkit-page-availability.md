@@ -36,7 +36,8 @@ block toolkit, OpenAPI, API index, or meta-tool generation.
 
 - A snapshot hit renders without a production catalog request.
 - A snapshot miss may issue one production lookup for the validated slug. An
-  invalid or unknown slug still returns 404.
+  invalid, excluded, disabled, custom, or unknown slug still returns 404. The
+  fallback only publishes enabled, Composio-managed toolkits.
 - Landing, sitemap, search, KB verification, and build behavior remain
   snapshot-backed.
 - `/llms.mdx/toolkits/<slug>` parity is deferred. A toolkit available only

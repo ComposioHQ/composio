@@ -1,12 +1,16 @@
 import { z } from 'zod';
+import { isPublicToolkitSlug, normalizeToolkitSlug } from '@/lib/public-toolkit-policy';
 import { PRODUCTION_API_V3_URL } from '@/scripts/production-api.mjs';
 import type { AuthConfigDetail, AuthConfigField, Toolkit } from '@/types/toolkit';
 
 const NEGATIVE_CACHE_TTL_MS = 60_000;
 const NEGATIVE_CACHE_MAX_ENTRIES = 1_024;
+const IN_FLIGHT_LOOKUP_MAX_ENTRIES = 1_024;
+const PRODUCTION_REQUEST_TIMEOUT_MS = 15_000;
 const TOOLKIT_SLUG_PATTERN = /^[a-z0-9][a-z0-9_-]{0,63}$/;
 
 const negativeCache = new Map<string, number>();
+const inFlightLookups = new Map<string, Promise<Toolkit | null>>();
 
 function filteredArray<T>(schema: z.ZodType<T>) {
   return z
@@ -69,6 +73,8 @@ const rawToolkitSchema = z
   .object({
     slug: z.string().catch(''),
     name: optionalString,
+    type: z.enum(['native', 'custom']).optional().catch(undefined),
+    enabled: z.boolean().optional().catch(undefined),
     composio_managed_auth_schemes: stringArray,
     auth_config_details: filteredArray(rawAuthConfigDetailSchema),
     meta: z
@@ -92,6 +98,8 @@ const rawToolkitSchema = z
   .catch({
     slug: '',
     name: undefined,
+    type: undefined,
+    enabled: undefined,
     composio_managed_auth_schemes: [],
     auth_config_details: [],
     meta: {
@@ -217,8 +225,9 @@ export async function fetchToolkitFromProduction(slug: string): Promise<Toolkit 
     return null;
   }
 
-  const normalizedSlug = slug.toLowerCase();
+  const normalizedSlug = normalizeToolkitSlug(slug);
   if (!TOOLKIT_SLUG_PATTERN.test(normalizedSlug)) return null;
+  if (!isPublicToolkitSlug(normalizedSlug)) return null;
 
   const negativeUntil = negativeCache.get(normalizedSlug);
   if (negativeUntil !== undefined) {
@@ -226,6 +235,27 @@ export async function fetchToolkitFromProduction(slug: string): Promise<Toolkit 
     negativeCache.delete(normalizedSlug);
   }
 
+  const inFlightLookup = inFlightLookups.get(normalizedSlug);
+  if (inFlightLookup) return inFlightLookup;
+
+  const request = fetchAndMapToolkit(normalizedSlug, apiKey);
+  let trackedRequest: Promise<Toolkit | null>;
+  trackedRequest = request.finally(() => {
+    if (inFlightLookups.get(normalizedSlug) === trackedRequest) {
+      inFlightLookups.delete(normalizedSlug);
+    }
+  });
+
+  if (inFlightLookups.size >= IN_FLIGHT_LOOKUP_MAX_ENTRIES) {
+    const oldestSlug = inFlightLookups.keys().next().value;
+    if (oldestSlug !== undefined) inFlightLookups.delete(oldestSlug);
+  }
+  inFlightLookups.set(normalizedSlug, trackedRequest);
+
+  return trackedRequest;
+}
+
+async function fetchAndMapToolkit(normalizedSlug: string, apiKey: string): Promise<Toolkit | null> {
   try {
     const response = await fetch(`${PRODUCTION_API_V3_URL}/toolkits/${normalizedSlug}`, {
       headers: {
@@ -233,6 +263,7 @@ export async function fetchToolkitFromProduction(slug: string): Promise<Toolkit 
         'x-api-key': apiKey,
       },
       next: { revalidate: 3600 },
+      signal: AbortSignal.timeout(PRODUCTION_REQUEST_TIMEOUT_MS),
     });
 
     if (!response.ok) {
@@ -244,6 +275,13 @@ export async function fetchToolkitFromProduction(slug: string): Promise<Toolkit 
     }
 
     const payload = rawToolkitSchema.parse(await response.json());
+    if (payload.type !== 'native' || payload.enabled !== true) {
+      recordNegative(normalizedSlug);
+      console.warn(
+        `[Toolkits] Production toolkit lookup rejected non-public toolkit "${normalizedSlug}"`
+      );
+      return null;
+    }
     return toolkitFromRaw(payload, normalizedSlug);
   } catch (error) {
     recordNegative(normalizedSlug);

@@ -12,6 +12,8 @@ const originalFetch = globalThis.fetch;
 const productionPayload = {
   slug: 'GitHub',
   name: 'GitHub',
+  type: 'native',
+  enabled: true,
   composio_managed_auth_schemes: ['oauth2', 'API_KEY'],
   auth_config_details: [
     {
@@ -118,6 +120,7 @@ describe('fetchToolkitFromProduction', () => {
     expect(fetcher.mock.calls[0]?.[1]).toEqual({
       headers: { 'Content-Type': 'application/json', 'x-api-key': 'test-key' },
       next: { revalidate: 3600 },
+      signal: expect.any(AbortSignal),
     });
   });
 
@@ -151,6 +154,8 @@ describe('fetchToolkitFromProduction', () => {
       Response.json({
         slug: snapshot.slug,
         name: snapshot.name,
+        type: 'native',
+        enabled: true,
         composio_managed_auth_schemes: snapshot.composioManagedAuthSchemes,
         auth_config_details: snapshot.authConfigDetails,
         meta: {
@@ -182,6 +187,8 @@ describe('fetchToolkitFromProduction', () => {
       Response.json({
         slug: 'LENIENT',
         name: 'Lenient',
+        type: 'native',
+        enabled: true,
         auth_config_details: [
           null,
           'junk',
@@ -233,6 +240,45 @@ describe('fetchToolkitFromProduction', () => {
     }
   );
 
+  test('rejects excluded public toolkit slugs before fetch', async () => {
+    useApiKey();
+    const fetcher = mock(async () => Response.json(productionPayload));
+    globalThis.fetch = fetcher;
+
+    expect(await fetchToolkitFromProduction('TEST_APP')).toBeNull();
+    expect(fetcher).not.toHaveBeenCalled();
+  });
+
+  test.each([
+    ['custom toolkit', { ...productionPayload, slug: 'custom-only', type: 'custom' }],
+    ['disabled toolkit', { ...productionPayload, slug: 'disabled-only', enabled: false }],
+    [
+      'toolkit without public flags',
+      { slug: 'missing-public-flags', name: 'Missing public flags' },
+    ],
+  ])('rejects a %s returned by the public endpoint', async (_label, payload) => {
+    useApiKey();
+    const fetcher = mock(async () => Response.json(payload));
+    globalThis.fetch = fetcher;
+    spyOn(console, 'warn').mockImplementation(() => {});
+
+    expect(await fetchToolkitFromProduction(payload.slug)).toBeNull();
+    expect(fetcher).toHaveBeenCalledTimes(1);
+  });
+
+  test('bounds the production request to 15 seconds', async () => {
+    useApiKey();
+    const controller = new AbortController();
+    const timeout = spyOn(AbortSignal, 'timeout').mockReturnValue(controller.signal);
+    const fetcher = mock(async () => Response.json(productionPayload));
+    globalThis.fetch = fetcher;
+
+    await fetchToolkitFromProduction('github');
+
+    expect(timeout).toHaveBeenCalledWith(15_000);
+    expect(fetcher.mock.calls[0]?.[1]?.signal).toBe(controller.signal);
+  });
+
   test('requires an API key and warns without fetching', async () => {
     delete process.env.COMPOSIO_API_KEY;
     delete process.env.COMPOSIO_TOOLKIT_LIVE_FALLBACK;
@@ -282,6 +328,51 @@ describe('fetchToolkitFromProduction', () => {
     expect(await fetchToolkitFromProduction('cache-miss')).toBeNull();
     expect(fetcher).toHaveBeenCalledTimes(2);
     expect(warning).toHaveBeenCalledTimes(2);
+  });
+
+  test('coalesces concurrent identical live misses into one request', async () => {
+    useApiKey();
+    let release: (() => void) | undefined;
+    const fetcher = mock(async () => {
+      await new Promise<void>(resolve => {
+        release = resolve;
+      });
+      return new Response(null, { status: 404 });
+    });
+    globalThis.fetch = fetcher;
+    spyOn(console, 'warn').mockImplementation(() => {});
+
+    const lookups = Array.from({ length: 20 }, () =>
+      fetchToolkitFromProduction('concurrent-miss')
+    );
+    expect(fetcher).toHaveBeenCalledTimes(1);
+
+    release?.();
+    expect(await Promise.all(lookups)).toEqual(Array.from({ length: 20 }, () => null));
+    expect(fetcher).toHaveBeenCalledTimes(1);
+  });
+
+  test('bounds concurrent lookup bookkeeping', async () => {
+    useApiKey();
+    let release: (() => void) | undefined;
+    const gate = new Promise<void>(resolve => {
+      release = resolve;
+    });
+    const fetcher = mock(async () => {
+      await gate;
+      return new Response(null, { status: 404 });
+    });
+    globalThis.fetch = fetcher;
+    spyOn(console, 'warn').mockImplementation(() => {});
+
+    const lookups = Array.from({ length: 1_025 }, (_, index) =>
+      fetchToolkitFromProduction(`bounded-flight-${index}`)
+    );
+    const evictedLookup = fetchToolkitFromProduction('bounded-flight-0');
+    expect(fetcher).toHaveBeenCalledTimes(1_026);
+
+    release?.();
+    await Promise.all([...lookups, evictedLookup]);
   });
 
   test('bounds negative-cache entries for unique missing slugs', async () => {

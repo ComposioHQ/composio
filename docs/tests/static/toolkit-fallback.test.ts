@@ -66,4 +66,10 @@ describe('resolveToolkit', () => {
 
     expect(await resolveToolkit('__definitely-not-a-toolkit__')).toBeNull();
   });
+
+  test('rejects test_app without reading the snapshot or production', async () => {
+    expect(await resolveToolkit('TEST_APP')).toBeNull();
+    expect(getToolkitBySlug).not.toHaveBeenCalled();
+    expect(fetchToolkitFromProduction).not.toHaveBeenCalled();
+  });
 });
