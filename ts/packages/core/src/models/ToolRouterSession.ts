@@ -41,7 +41,11 @@ import { ACL_ONLY_FOR_SHARED_ERROR_FRAGMENT, serializeExperimentalForWire } from
 import { z } from 'zod/v3';
 import { transform } from '../utils/transform';
 import { ToolkitConnectionStateSchema } from '../types/toolRouter.types';
-import { ComposioAclOnlyForSharedError, ValidationError } from '../errors';
+import {
+  ComposioAclOnlyForSharedError,
+  ComposioInvalidModifierError,
+  ValidationError,
+} from '../errors';
 import { Tools } from './Tools';
 import { ToolRouterSessionFilesMount } from './ToolRouterSessionFileMount';
 import type {
@@ -51,7 +55,7 @@ import type {
   RegisteredCustomTool,
   RegisteredCustomToolkit,
 } from '../types/customTool.types';
-import type { Tool, ToolExecuteResponse } from '../types/tool.types';
+import { ToolSchema, type Tool, type ToolExecuteResponse } from '../types/tool.types';
 import type { SessionProxyExecuteParams } from '../types/toolRouter.types';
 import type {
   SessionExecuteParams,
@@ -190,13 +194,14 @@ export class ToolRouterSession<
     requestOptions?: ComposioRequestOptions
   ): Promise<ReturnType<TProvider['wrapTools']>> {
     const ToolsModel = new Tools<TToolCollection, TTool, TProvider>(this.client, this.config);
-    const tools = await ToolsModel.getRawToolRouterSessionTools(
+    const rawTools = await ToolsModel.getRawToolRouterSessionTools(
       this.sessionId,
-      modifiers?.modifySchema ? { modifySchema: modifiers.modifySchema } : undefined,
+      undefined,
       requestOptions
     );
+    const tools = await this.applySchemaModifier(rawTools, modifiers?.modifySchema);
     const sessionTools = await this.addPreloadedCustomTools(tools, modifiers);
-    const toolBySlug = new Map(sessionTools.map(tool => [tool.slug.toUpperCase(), tool]));
+    const rawToolBySlug = new Map(rawTools.map(tool => [tool.slug.toUpperCase(), tool]));
 
     if (this.hasCustomTools()) {
       // Create an execute function that splits local/remote tools in COMPOSIO_MULTI_EXECUTE_TOOL
@@ -205,7 +210,7 @@ export class ToolRouterSession<
         input: Record<string, unknown>
       ): Promise<ToolExecuteResponse> => {
         if (toolSlug === COMPOSIO_MULTI_EXECUTE_TOOL) {
-          return this.routeMultiExecute(input, ToolsModel, sessionTools, modifiers);
+          return this.routeMultiExecute(input, ToolsModel, rawTools, modifiers);
         }
         const customTool = findCustomTool(this.customToolsMap, toolSlug);
         if (customTool) {
@@ -217,7 +222,7 @@ export class ToolRouterSession<
           toolSlug,
           input,
           modifiers,
-          toolBySlug.get(toolSlug.toUpperCase())
+          rawToolBySlug.get(toolSlug.toUpperCase())
         );
       };
 
@@ -233,8 +238,31 @@ export class ToolRouterSession<
     }
 
     // Standard path (no local tools)
-    const wrappedTools = ToolsModel.wrapToolsForToolRouter(this.sessionId, sessionTools, modifiers);
+    const wrappedTools = modifiers?.modifySchema
+      ? ToolsModel.wrapToolsForToolRouter(this.sessionId, sessionTools, modifiers, rawTools)
+      : ToolsModel.wrapToolsForToolRouter(this.sessionId, sessionTools, modifiers);
     return wrappedTools as ReturnType<TProvider['wrapTools']>;
+  }
+
+  private async applySchemaModifier(
+    tools: Tool[],
+    modifier?: SessionMetaToolOptions['modifySchema']
+  ): Promise<Tool[]> {
+    if (!modifier) {
+      return tools;
+    }
+    if (typeof modifier !== 'function') {
+      throw new ComposioInvalidModifierError('Invalid schema modifier. Not a function.');
+    }
+    return Promise.all(
+      tools.map(tool =>
+        modifier({
+          toolSlug: tool.slug,
+          toolkitSlug: tool.toolkit?.slug ?? 'unknown',
+          schema: ToolSchema.parse(tool),
+        })
+      )
+    );
   }
 
   private async addPreloadedCustomTools(
