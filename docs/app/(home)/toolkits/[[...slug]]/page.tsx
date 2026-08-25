@@ -8,7 +8,8 @@ import { PageActions } from '@/components/page-actions';
 import { EditOnGitHub } from '@/components/edit-on-github';
 import { readFile } from 'fs/promises';
 import { join } from 'path';
-import { getAllToolkits, getToolkitBySlug } from '@/lib/toolkit-data';
+import { getAllToolkits } from '@/lib/toolkit-data';
+import { resolveToolkit } from '@/lib/toolkit-resolution';
 import { unified } from 'unified';
 import remarkParse from 'remark-parse';
 import remarkRehype from 'remark-rehype';
@@ -20,6 +21,9 @@ import { apiToolListSchema, apiTriggerListSchema } from '@/lib/toolkit-schema';
 
 const API_BASE = process.env.COMPOSIO_API_BASE || 'https://backend.composio.dev/api/v3';
 const API_KEY = process.env.COMPOSIO_API_KEY;
+
+// Snapshot misses are resolved from production on demand.
+export const dynamicParams = true;
 
 // Fetch detailed tool info from Composio API (server-side only)
 // Returns null on failure, empty array if toolkit has no tools
@@ -177,7 +181,7 @@ export async function generateMetadata({
 
   // Check JSON toolkit
   if (slug.length === 1) {
-    const toolkit = await getToolkitBySlug(slug[0]);
+    const toolkit = await resolveToolkit(slug[0]);
     if (toolkit) {
       const title = `${toolkit.name?.trim() || toolkit.slug} - Composio Toolkit`;
       const description = `Build an AI agent that connects to ${toolkit.name?.trim() || toolkit.slug} using Composio. ${toolkit.description}`;
@@ -230,7 +234,7 @@ export default async function ToolkitsPage({ params }: { params: Promise<{ slug?
   // Check JSON toolkit
   if (slug.length === 1) {
     const toolkitSlug = slug[0];
-    const toolkit = await getToolkitBySlug(toolkitSlug);
+    const toolkit = await resolveToolkit(toolkitSlug);
 
     if (toolkit) {
       // Fetch detailed tool/trigger info and FAQ content in parallel
