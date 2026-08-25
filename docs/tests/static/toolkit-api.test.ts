@@ -284,6 +284,21 @@ describe('fetchToolkitFromProduction', () => {
     expect(warning).toHaveBeenCalledTimes(2);
   });
 
+  test('bounds negative-cache entries for unique missing slugs', async () => {
+    useApiKey();
+    const fetcher = mock(async () => new Response(null, { status: 404 }));
+    globalThis.fetch = fetcher;
+    spyOn(console, 'warn').mockImplementation(() => {});
+
+    for (let index = 0; index <= 1_024; index += 1) {
+      expect(await fetchToolkitFromProduction(`bounded-miss-${index}`)).toBeNull();
+    }
+    expect(fetcher).toHaveBeenCalledTimes(1_025);
+
+    expect(await fetchToolkitFromProduction('bounded-miss-0')).toBeNull();
+    expect(fetcher).toHaveBeenCalledTimes(1_026);
+  });
+
   test.each([
     ['500 response', async () => new Response(null, { status: 500 })],
     ['network error', async () => Promise.reject(new Error('offline'))],

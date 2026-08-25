@@ -3,6 +3,7 @@ import { PRODUCTION_API_V3_URL } from '@/scripts/production-api.mjs';
 import type { AuthConfigDetail, AuthConfigField, Toolkit } from '@/types/toolkit';
 
 const NEGATIVE_CACHE_TTL_MS = 60_000;
+const NEGATIVE_CACHE_MAX_ENTRIES = 1_024;
 const TOOLKIT_SLUG_PATTERN = /^[a-z0-9][a-z0-9_-]{0,63}$/;
 
 const negativeCache = new Map<string, number>();
@@ -192,7 +193,18 @@ function toolkitFromRaw(raw: RawToolkit, slug: string): Toolkit {
 }
 
 function recordNegative(slug: string) {
-  negativeCache.set(slug, Date.now() + NEGATIVE_CACHE_TTL_MS);
+  const now = Date.now();
+  for (const [cachedSlug, expiresAt] of negativeCache) {
+    if (expiresAt > now) break;
+    negativeCache.delete(cachedSlug);
+  }
+
+  negativeCache.delete(slug);
+  if (negativeCache.size >= NEGATIVE_CACHE_MAX_ENTRIES) {
+    const oldestSlug = negativeCache.keys().next().value;
+    if (oldestSlug !== undefined) negativeCache.delete(oldestSlug);
+  }
+  negativeCache.set(slug, now + NEGATIVE_CACHE_TTL_MS);
 }
 
 /** Fetch one toolkit's metadata from production after a checked-in snapshot miss. */
