@@ -1,0 +1,24 @@
+---
+title: "Snapchat authentication"
+description: "Current customer-owned OAuth setup for the Snapchat toolkit."
+keywords: ["for-you","platform","snapchat","auth-config","authentication","errors-and-troubleshooting","toolkits-and-providers"]
+sources: [{"sourcePath":"toolkits/snapchat/public.md","sourceHeading":"Snapchat uses customer-owned OAuth credentials"}]
+sourceCommit: "d57f3d69079ee3819f4136df54512cdf0416cec0"
+lastVerifiedAt: "2026-08-17"
+reviewAfter: "2026-11-15"
+freshness: "evergreen"
+topics: ["auth-config","authentication","errors-and-troubleshooting","toolkits-and-providers"]
+toolkitSlugs: ["snapchat"]
+aliases: []
+---
+## Snapchat uses customer-owned OAuth credentials
+
+The current `snapchat` toolkit supports OAuth2 and requires a Snapchat app's
+client ID and client secret. Register the exact redirect URI shown by the
+current Composio auth-config flow and request only the Snapchat permissions
+approved for that app.
+
+If Snapchat rejects the authorization request before the user signs in, verify
+the client ID, redirect URI, and approved scopes on the Snapchat app. A
+pre-login authorization error is not evidence that the user's Snapchat
+password is wrong.

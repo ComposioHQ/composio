@@ -4,6 +4,9 @@
   "description": "Agentic Provider for mastra in Composio SDK",
   "main": "src/index.ts",
   "type": "module",
+  "engines": {
+    "node": ">=22.22.3"
+  },
   "repository": {
     "type": "git",
     "url": "https://github.com/ComposioHQ/composio.git",
@@ -49,13 +52,13 @@
   "devDependencies": {
     "@composio/core": "workspace:*",
     "@mastra/core": "catalog:",
-    "ai": "^6.0.241",
+    "ai": "^6.0.263",
     "tsdown": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:",
     "zod": "catalog:"
   },
   "dependencies": {
-    "@mastra/schema-compat": "^1.3.4"
+    "@mastra/schema-compat": "^1.3.7"
   }
 }

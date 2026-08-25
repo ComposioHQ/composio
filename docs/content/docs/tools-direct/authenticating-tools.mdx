@@ -155,6 +155,8 @@ console.log(`Visit: ${redirectUrl} to authenticate your account`);
   </Tab>
 </Tabs>
 
+By default, `link()` refuses to create a second active connection for the same user and auth config. If your user intentionally needs another account on that auth config, pass `allow_multiple=True` in Python or `allowMultiple: true` in TypeScript. Enable [multi-account mode](/docs/authentication/managing-multiple-connected-accounts) when a session needs to use those accounts together.
+
 #### Customizing Connect Link
 
 You can customize the Connect Link with your logo and app title, or fully white-label OAuth consent screens with your own developer apps.

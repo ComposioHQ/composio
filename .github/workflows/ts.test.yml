@@ -12,6 +12,8 @@ on:
       - 'mise.toml'
       - 'mise.lock'
       - 'package.json'
+      - 'pnpm-workspace.yaml'
+      - 'pnpm-lock.yaml'
       - 'test/release-workflow.test.ts'
       - 'turbo.jsonc'
   pull_request:
@@ -25,6 +27,8 @@ on:
       - 'mise.toml'
       - 'mise.lock'
       - 'package.json'
+      - 'pnpm-workspace.yaml'
+      - 'pnpm-lock.yaml'
       - 'test/release-workflow.test.ts'
       - 'turbo.jsonc'
 

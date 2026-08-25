@@ -1,0 +1,30 @@
+---
+title: "ServiceNow authentication"
+description: "Current instance-specific authentication setup for ServiceNow."
+keywords: ["for-you","platform","servicenow","auth-config","authentication","toolkits-and-providers"]
+sources: [{"sourcePath":"toolkits/servicenow/public.md","sourceHeading":"ServiceNow credentials and instance subdomain are collected at different stages"}]
+sourceCommit: "d57f3d69079ee3819f4136df54512cdf0416cec0"
+lastVerifiedAt: "2026-08-17"
+reviewAfter: "2026-11-15"
+freshness: "evergreen"
+topics: ["auth-config","authentication","toolkits-and-providers"]
+toolkitSlugs: ["servicenow"]
+aliases: []
+---
+## ServiceNow credentials and instance subdomain are collected at different stages
+
+The current `servicenow` toolkit supports Basic, OAuth2, and S2S OAuth2. OAuth
+auth-config creation accepts the ServiceNow application's client ID and client
+secret. Connection initiation then requires the instance subdomain, such as
+`mycompany` for `mycompany.service-now.com`.
+
+ServiceNow registers an inbound OAuth client inside a ServiceNow instance. A
+client registered in one customer instance does not automatically authorize an
+unrelated instance. Use a separate customer-owned auth config when different
+customers supply different ServiceNow application registrations.
+
+Use delegated OAuth2 when a user should sign in and consent. Use S2S OAuth2 for
+a backend integration whose identity and permissions are configured by the
+ServiceNow administrator. Fetch the current toolkit metadata before building a
+form because the required fields are separated into
+`auth_config_creation` and `connected_account_initiation`.

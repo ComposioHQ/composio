@@ -4,6 +4,9 @@
   "description": "",
   "main": "src/index.ts",
   "type": "module",
+  "engines": {
+    "node": ">=22.22.3"
+  },
   "repository": {
     "type": "git",
     "url": "https://github.com/ComposioHQ/composio.git",
@@ -44,7 +47,7 @@
   "license": "ISC",
   "devDependencies": {
     "@types/json-schema": "^7.0.15",
-    "@types/node": "^26.1.2",
+    "@types/node": "^26.2.0",
     "tsdown": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:",

@@ -48,7 +48,7 @@ console.log(authConfig.id); // ac_xxxxxxxx
 Bring your own OAuth app to show your branding on consent screens, request custom scopes, or get a dedicated rate-limit quota. Register the app in the provider's developer portal, set its authorized redirect URI to Composio's callback, then pass the client ID and secret.
 
 ```
-https://backend.composio.dev/api/v3.1/toolkits/auth/callback
+https://backend.composio.dev/api/v1/auth-apps/add
 ```
 
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
@@ -68,7 +68,7 @@ auth_config = composio.auth_configs.create(
         "credentials": {
             "client_id": os.environ["NOTION_CLIENT_ID"],
             "client_secret": os.environ["NOTION_CLIENT_SECRET"],
-            "oauth_redirect_uri": "https://backend.composio.dev/api/v3.1/toolkits/auth/callback",
+            "oauth_redirect_uri": "https://backend.composio.dev/api/v1/auth-apps/add",
         },
     },
 )
@@ -87,7 +87,7 @@ const authConfig = await composio.authConfigs.create('notion', {
   credentials: {
     client_id: process.env.NOTION_CLIENT_ID!,
     client_secret: process.env.NOTION_CLIENT_SECRET!,
-    oauth_redirect_uri: 'https://backend.composio.dev/api/v3.1/toolkits/auth/callback',
+    oauth_redirect_uri: 'https://backend.composio.dev/api/v1/auth-apps/add',
   },
 });
 ```

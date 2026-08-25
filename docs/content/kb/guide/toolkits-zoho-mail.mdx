@@ -1,0 +1,28 @@
+---
+title: "Zoho Mail"
+description: "Public support knowledge for Zoho Mail."
+keywords: ["for-you","platform","zoho_mail","errors-and-troubleshooting","sessions-and-execution","toolkits-and-providers","/kb/toolkits/zoho-mail-troubleshooting","connect-mcp-is-agent-oriented-authenticate-zoho-mail-in-connect-dashbo","pass-the-correct-zoho-region-when-connecting-zoho-mail","zoho-mail-account-id-must-be-handled-as-a-string-to-avoid-javascript-p","zoho-mail-attachment-download-support-should-be-treated-as-a-feature-r","zoho-mail-messages-send-email-supports-sending-attachments","zoho-mail-troubleshooting"]
+sources: [{"sourcePath":"toolkits/zoho_mail/public.md","sourceHeading":"ZOHO_MAIL_MESSAGES_SEND_EMAIL supports sending attachments"},{"sourcePath":"toolkits/zoho_mail/public.md","sourceHeading":"Pass the correct Zoho region when connecting Zoho Mail"},{"sourcePath":"toolkits/zoho_mail/public.md","sourceHeading":"Zoho Mail account_id must be handled as a string to avoid JavaScript precision loss"},{"sourcePath":"toolkits/zoho_mail/public.md","sourceHeading":"Connect MCP is agent-oriented; authenticate Zoho Mail in Connect dashboard before tool use"}]
+sourceCommit: "d57f3d69079ee3819f4136df54512cdf0416cec0"
+lastVerifiedAt: "2026-08-12"
+reviewAfter: "2026-11-10"
+freshness: "evergreen"
+topics: ["errors-and-troubleshooting","sessions-and-execution","toolkits-and-providers"]
+toolkitSlugs: ["zoho_mail"]
+aliases: ["/kb/toolkits/zoho-mail-troubleshooting","connect-mcp-is-agent-oriented-authenticate-zoho-mail-in-connect-dashbo","pass-the-correct-zoho-region-when-connecting-zoho-mail","zoho-mail-account-id-must-be-handled-as-a-string-to-avoid-javascript-p","zoho-mail-attachment-download-support-should-be-treated-as-a-feature-r","zoho-mail-messages-send-email-supports-sending-attachments","zoho-mail-troubleshooting"]
+---
+## ZOHO_MAIL_MESSAGES_SEND_EMAIL supports sending attachments
+
+`ZOHO_MAIL_MESSAGES_SEND_EMAIL` supports sending attachments. If attachment support was previously missing, retry with the latest toolkit version. If attachment sending still fails, contact Composio support with the redacted tool-call details.
+
+## Pass the correct Zoho region when connecting Zoho Mail
+
+For Zoho Mail connection issues, verify the region passed during connection initiation. Zoho accounts can be region-specific, so an EU or other regional account may fail if the default/wrong region is used. Retry the connection with the correct Zoho region.
+
+## Zoho Mail account_id must be handled as a string to avoid JavaScript precision loss
+
+Treat Zoho Mail `account_id` values as strings, not integers. Zoho account IDs can exceed JavaScript's safe integer limit, and numeric coercion can silently truncate them before the tool call reaches Zoho. If you see unexpected account IDs or tool failures with long IDs, verify the schema and payload preserve `account_id` as a string.
+
+## Connect MCP is agent-oriented; authenticate Zoho Mail in Connect dashboard before tool use
+
+Connect MCP is intended for agent/client workflows through Tool Router, not as a raw direct API endpoint. For Zoho Mail, make sure the user has connected a Zoho Mail account in the Connect dashboard first, then use the supported MCP client flow. If the user wants direct API execution, route them to Tool Router/API or Proxy Execute patterns instead of treating Connect MCP as a raw REST proxy.

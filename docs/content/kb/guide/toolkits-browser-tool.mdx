@@ -1,0 +1,16 @@
+---
+title: "Browser Tool"
+description: "Public support knowledge for Browser Tool."
+keywords: ["browser_tool","for-you","platform","security-and-trust","sessions-and-execution","toolkits-and-providers","/kb/toolkits/browser-tool-profiles-do-not-work-in-zero-data-retention-projects","browser-tool-profiles-do-not-work-in-zero-data-retention-projects"]
+sources: [{"sourcePath":"toolkits/browser_tool/public.md","sourceHeading":"Browser Tool profiles do not work in Zero Data Retention projects"}]
+sourceCommit: "d57f3d69079ee3819f4136df54512cdf0416cec0"
+lastVerifiedAt: "2026-08-12"
+reviewAfter: "2026-11-10"
+freshness: "evergreen"
+topics: ["security-and-trust","sessions-and-execution","toolkits-and-providers"]
+toolkitSlugs: ["browser_tool"]
+aliases: ["/kb/toolkits/browser-tool-profiles-do-not-work-in-zero-data-retention-projects","browser-tool-profiles-do-not-work-in-zero-data-retention-projects"]
+---
+## Browser Tool profiles do not work in Zero Data Retention projects
+
+Browser Tool requires persistent browser profiles to maintain session state, so it is incompatible with projects configured for Zero Data Retention or removal of execution data. Move the Browser Tool usage to a project without ZDR enabled, or change the project's log/data visibility setting from removing execution data to storing/showing all logs where policy allows. The dashboard path is Project Settings / Log storage configuration, and the API setting is `log_visibility_setting: show_all`.

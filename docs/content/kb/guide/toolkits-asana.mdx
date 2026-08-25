@@ -1,0 +1,20 @@
+---
+title: "Asana"
+description: "Public support knowledge for Asana."
+keywords: ["asana","for-you","platform","authentication","sessions-and-execution","toolkits-and-providers","/kb/toolkits/asana-is-listed-among-supported-trigger-toolkits-but-exact-trigger-ava","/kb/toolkits/asana-troubleshooting","asana-is-listed-among-supported-trigger-toolkits-but-exact-trigger-ava","asana-troubleshooting","deleted-asana-auth-configs-can-block-mcp-config-edits-create-a-new-mcp","older-sdk-connection-initiation-may-require-appname-integrationid-enti","verify-current-production-availability-before-using-asana-triggers"]
+sources: [{"sourcePath":"toolkits/asana/public.md","sourceHeading":"Use `ASANA_GET_STORIES_FOR_TASK` and pass the task ID as a string"},{"sourcePath":"toolkits/asana/public.md","sourceHeading":"Use the current Asana task triggers"}]
+sourceCommit: "d57f3d69079ee3819f4136df54512cdf0416cec0"
+lastVerifiedAt: "2026-08-12"
+reviewAfter: "2026-11-10"
+freshness: "evergreen"
+topics: ["authentication","sessions-and-execution","toolkits-and-providers"]
+toolkitSlugs: ["asana"]
+aliases: ["/kb/toolkits/asana-is-listed-among-supported-trigger-toolkits-but-exact-trigger-ava","/kb/toolkits/asana-troubleshooting","asana-is-listed-among-supported-trigger-toolkits-but-exact-trigger-ava","asana-troubleshooting","deleted-asana-auth-configs-can-block-mcp-config-edits-create-a-new-mcp","older-sdk-connection-initiation-may-require-appname-integrationid-enti","verify-current-production-availability-before-using-asana-triggers"]
+---
+## Use `ASANA_GET_STORIES_FOR_TASK` and pass the task ID as a string
+
+Asana represents task comments as stories. Use `ASANA_GET_STORIES_FOR_TASK` to retrieve the comments and activity for a task, and pass the task ID as a string rather than an integer. For custom toolkit-based tools, set the Asana base URL to `https://app.asana.com/api/1.0` and include the required Authorization header.
+
+## Use the current Asana task triggers
+
+The current Asana toolkit exposes triggers for task creation, updates, comments, attachments, tags, and moves between sections. Fetch the trigger catalog before implementation and use the exact returned slug, such as `ASANA_TASK_COMMENT_ADDED` or `ASANA_TASK_UPDATED`.

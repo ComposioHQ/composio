@@ -1,0 +1,28 @@
+---
+title: "Zoho Books"
+description: "Public support knowledge for Zoho Books."
+keywords: ["for-you","platform","zoho_books","authentication","errors-and-troubleshooting","sessions-and-execution","toolkits-and-providers","/kb/toolkits/zoho-books-troubleshooting","optional-zoho-books-item-rate-filters-do-not-have-default-values","pin-zoho-books-toolkit-version-when-reproducing-list-items-behavior","use-existing-bill-read-tools-or-file-a-request-for-missing-bill-creati","zoho-books-troubleshooting","zoho-domain-suffix-parameter-expects-the-extension-value"]
+sources: [{"sourcePath":"toolkits/zoho_books/public.md","sourceHeading":"Use Zoho Invoice for create estimate"},{"sourcePath":"toolkits/zoho_books/public.md","sourceHeading":"Optional Zoho Books item rate filters do not have default values"},{"sourcePath":"toolkits/zoho_books/public.md","sourceHeading":"Pin Zoho Books toolkit version when reproducing list-items behavior"},{"sourcePath":"toolkits/zoho_books/public.md","sourceHeading":"Zoho domain suffix parameter expects the extension value"}]
+sourceCommit: "d57f3d69079ee3819f4136df54512cdf0416cec0"
+lastVerifiedAt: "2026-08-12"
+reviewAfter: "2026-11-10"
+freshness: "evergreen"
+topics: ["authentication","errors-and-troubleshooting","sessions-and-execution","toolkits-and-providers"]
+toolkitSlugs: ["zoho_books"]
+aliases: ["/kb/toolkits/zoho-books-troubleshooting","optional-zoho-books-item-rate-filters-do-not-have-default-values","pin-zoho-books-toolkit-version-when-reproducing-list-items-behavior","use-existing-bill-read-tools-or-file-a-request-for-missing-bill-creati","zoho-books-troubleshooting","zoho-domain-suffix-parameter-expects-the-extension-value"]
+---
+## Use Zoho Invoice for create estimate
+
+`ZOHO_BOOKS_CREATE_ESTIMATE` is no longer the Zoho Books tool to use for estimates. Use the Zoho Invoice toolkit and `ZOHO_INVOICE_CREATE_ESTIMATE` instead.
+
+## Optional Zoho Books item rate filters do not have default values
+
+The Zoho Books item `rate` field and related rate filters are optional. Composio does not set default values for those fields; if omitted, they default to null behavior. If an agent includes `0` or another value, treat that as model/tool-call behavior and inspect the tool schema with the get-tools-by-slug API reference or adjust the agent/tool-call layer so optional rate filters are not sent unless explicitly requested.
+
+## Pin Zoho Books toolkit version when reproducing list-items behavior
+
+When reproducing or sharing a controlled snippet for Zoho Books list-items behavior, use `toolkit_versions={"zoho_books": "latest"}`, then request `ZOHO_BOOKS_LIST_ITEMS` explicitly for the user's connected account context.
+
+## Zoho domain suffix parameter expects the extension value
+
+For Zoho Books auth, the Zoho domain parameter expects the extension value such as `com`, `eu`, or `in`; Composio appends it into the URL as the corresponding domain suffix like `.com`. Do not include the leading dot in the parameter value.

@@ -30,7 +30,7 @@ jobs:
       # If the first run 401s, that is the secret to swap in here: the sanity
       # gate in the generator aborts before writing anything, so a wrong-scoped
       # key fails loudly instead of baking a partial catalog.
-      COMPOSIO_API_KEY: ${{ secrets.COMPOSIO_API_KEY }}
+      COMPOSIO_API_KEY: ${{ secrets.COMPOSIO_DOCS_API_KEY }}
 
     steps:
       - name: Generate GitHub App token

@@ -1,5 +1,6 @@
 import { FileSystem, Path } from '@effect/platform';
 import { Data, Effect, Either, Option, Predicate, Schema } from 'effect';
+import { APP_CONFIG } from 'src/effects/app-config';
 import { JsonRecordSchema } from 'src/effects/json';
 import { setupCacheDir } from 'src/effects/setup-cache-dir';
 import { ComposioUserContext } from 'src/services/user-context';
@@ -81,9 +82,10 @@ export class AgentResponseDecodeError extends Data.TaggedError(
   readonly cause: unknown;
 }> {}
 
-const agentsBaseURL = (): string =>
-  // eslint-disable-next-line eslint-js/no-restricted-syntax -- read lazily at request time inside a plain sync helper so tests can repoint agents.composio.dev per call without rebuilding a Config layer
-  (process.env.COMPOSIO_AGENTS_BASE_URL ?? DEFAULT_AGENTS_BASE_URL).replace(/\/+$/, '');
+const agentsBaseURL = APP_CONFIG.AGENTS_BASE_URL.pipe(
+  Effect.orDie,
+  Effect.map(value => (value ?? DEFAULT_AGENTS_BASE_URL).replace(/\/+$/, ''))
+);
 
 const decodeAgentResponse =
   <A, I>(pathname: string, schema: Schema.Schema<A, I>) =>
@@ -197,9 +199,10 @@ export const removeStoredAgentIdentity = Effect.gen(function* () {
 
 const fetchAgentJson = (pathname: string, init: RequestInit = {}) =>
   Effect.gen(function* () {
+    const baseURL = yield* agentsBaseURL;
     const response = yield* Effect.tryPromise({
       try: () =>
-        fetch(`${agentsBaseURL()}${pathname}`, {
+        fetch(`${baseURL}${pathname}`, {
           redirect: 'error',
           ...init,
           headers: {

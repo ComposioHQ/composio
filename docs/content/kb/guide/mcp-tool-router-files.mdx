@@ -1,0 +1,25 @@
+---
+title: "Tool Router Files"
+description: "Public guidance for passing Tool Router session files to toolkit actions."
+keywords: ["files","for-you","mcp","platform","tool-router","uploads","errors-and-troubleshooting","sessions-and-execution","/kb/tool-router-and-mcp/use-tool-router-session-files-as-tool-inputs","use-tool-router-session-files-as-tool-inputs"]
+sources: [{"sourcePath":"mcp/tool-router-files/public.md","sourceHeading":"Session paths are not `FileUploadable` storage keys"}]
+sourceCommit: "d57f3d69079ee3819f4136df54512cdf0416cec0"
+lastVerifiedAt: "2026-08-12"
+reviewAfter: "2026-11-10"
+freshness: "evergreen"
+topics: ["errors-and-troubleshooting","sessions-and-execution"]
+aliases: ["/kb/tool-router-and-mcp/use-tool-router-session-files-as-tool-inputs","use-tool-router-session-files-as-tool-inputs"]
+---
+## Session paths are not `FileUploadable` storage keys
+
+Tool Router session files and toolkit `FileUploadable` inputs are different abstractions. Do not pass `/workspace/output/...`, `/mnt/files/...`, a local machine path, or an old/foreign `file_...` handle directly as `s3key`.
+
+When workbench/meta tools are available:
+
+- For a file already under `/mnt/files`, use `get_mount_file_s3_key("file.ext")`.
+- For another sandbox path, use `upload_local_file("/path/to/file.ext")`.
+- Pass the returned key to the toolkit action as `{ "name": "file.ext", "mimetype": "...", "s3key": "<returned key>" }`.
+
+In SDK/API flows, upload or stage the file first and pass the fresh returned file object.
+
+If an action reports `Failed to download file with s3key ... storage returned HTTP 404`, it failed while resolving the Composio-staged file, before the provider received it. Re-stage the file and retry with the fresh object.

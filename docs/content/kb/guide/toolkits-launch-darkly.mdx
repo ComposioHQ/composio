@@ -1,0 +1,27 @@
+---
+title: "LaunchDarkly"
+description: "Public support knowledge for LaunchDarkly."
+keywords: ["for-you","launch_darkly","platform","authentication","errors-and-troubleshooting","sessions-and-execution","toolkits-and-providers","/kb/toolkits/launchdarkly-troubleshooting","feasibility-notes","launchdarkly-troubleshooting","oauth-client-actions-are-not-oauth-connection-support"]
+sources: [{"sourcePath":"toolkits/launch_darkly/public.md","sourceHeading":"LaunchDarkly currently uses a REST API access token"},{"sourcePath":"toolkits/launch_darkly/public.md","sourceHeading":"OAuth client actions operate after toolkit authentication"}]
+sourceCommit: "d57f3d69079ee3819f4136df54512cdf0416cec0"
+lastVerifiedAt: "2026-08-17"
+reviewAfter: "2026-11-15"
+freshness: "evergreen"
+topics: ["authentication","errors-and-troubleshooting","sessions-and-execution","toolkits-and-providers"]
+toolkitSlugs: ["launch_darkly"]
+aliases: ["/kb/toolkits/launchdarkly-troubleshooting","feasibility-notes","launchdarkly-troubleshooting","oauth-client-actions-are-not-oauth-connection-support"]
+---
+## LaunchDarkly currently uses a REST API access token
+
+LaunchDarkly in Composio currently uses a LaunchDarkly REST API access token.
+
+## OAuth client actions operate after toolkit authentication
+
+The LaunchDarkly toolkit includes actions such as `Create OAuth 2.0 Client`. These call LaunchDarkly endpoints like `POST /oauth/clients` after the toolkit is already authenticated with an API access token.
+
+Use this distinction when replying to customers:
+
+- The action can create or manage a LaunchDarkly OAuth client inside LaunchDarkly.
+
+- The current toolkit connection still uses the LaunchDarkly REST API access
+  token described above.

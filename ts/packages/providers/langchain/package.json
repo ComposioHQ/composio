@@ -4,6 +4,9 @@
   "description": "",
   "main": "dist/index.js",
   "type": "module",
+  "engines": {
+    "node": ">=22.22.3"
+  },
   "repository": {
     "type": "git",
     "url": "https://github.com/ComposioHQ/composio.git",
@@ -42,7 +45,7 @@
   },
   "devDependencies": {
     "@composio/core": "workspace:*",
-    "@langchain/core": "^1.2.4",
+    "@langchain/core": "^1.2.9",
     "tsdown": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:",
