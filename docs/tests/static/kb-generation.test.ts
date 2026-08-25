@@ -38,6 +38,30 @@ describe('public KB content generation', () => {
     ].join('\n'));
   });
 
+  test('demotes bare identifier URLs to code spans so they never publish as dead links', () => {
+    expect(markdownForMdx([
+      'Ahrefs API calls should use the API host https://api.ahrefs.com/v3. If actions are hitting https://ahrefs.com/v3 and returning 404 HTML, treat it as a configuration problem.',
+      'Include the Meet scopes https://www.googleapis.com/auth/meetings.space.created and https://www.googleapis.com/auth/meetings.space.settings in the auth config.',
+      'Read https://developers.google.com/identity/protocols/oauth2 and [the policy](https://developers.google.com/identity/protocols/oauth2/policies) for details.',
+      'Explicit syntax keeps its form: <https://developers.google.com/identity/protocols/oauth2> stays a link, [scope](https://www.googleapis.com/auth/gmail.send) and <https://www.googleapis.com/auth/gmail.send> cite identifiers, so only the first remains a link.',
+      'Already code: `https://www.googleapis.com/auth/drive` and deep API paths such as https://backend.composio.dev/api/v3/tools/X remain links.',
+      '',
+      '```text',
+      'const scope = "https://www.googleapis.com/auth/drive";',
+      '```',
+    ].join('\n'))).toBe([
+      'Ahrefs API calls should use the API host `https://api.ahrefs.com/v3`. If actions are hitting `https://ahrefs.com/v3` and returning 404 HTML, treat it as a configuration problem.',
+      'Include the Meet scopes `https://www.googleapis.com/auth/meetings.space.created` and `https://www.googleapis.com/auth/meetings.space.settings` in the auth config.',
+      'Read https://developers.google.com/identity/protocols/oauth2 and [the policy](https://developers.google.com/identity/protocols/oauth2/policies) for details.',
+      'Explicit syntax keeps its form: [https://developers.google.com/identity/protocols/oauth2](https://developers.google.com/identity/protocols/oauth2) stays a link, [scope](https://www.googleapis.com/auth/gmail.send) and `https://www.googleapis.com/auth/gmail.send` cite identifiers, so only the first remains a link.',
+      'Already code: `https://www.googleapis.com/auth/drive` and deep API paths such as https://backend.composio.dev/api/v3/tools/X remain links.',
+      '',
+      '```text',
+      'const scope = "https://www.googleapis.com/auth/drive";',
+      '```',
+    ].join('\n'));
+  });
+
   test('defines multi-source provenance in the KB frontmatter schema', () => {
     const sourceConfig = readFileSync(join(process.cwd(), 'source.config.ts'), 'utf8');
 
