@@ -1,4 +1,5 @@
-import { beforeAll, beforeEach, describe, expect, mock, test } from 'bun:test';
+import { describe, expect, mock, test } from 'bun:test';
+import { createToolkitResolver } from '../../lib/toolkit-resolution';
 import type { Toolkit } from '../../types/toolkit';
 
 const snapshotToolkit: Toolkit = {
@@ -24,27 +25,22 @@ const liveToolkit: Toolkit = {
   version: null,
 };
 
-const getToolkitBySlug = mock(async (_slug: string): Promise<Toolkit | null> => null);
-const fetchToolkitFromProduction = mock(
-  async (_slug: string): Promise<Toolkit | null> => null
-);
+function createTestResolver() {
+  const getToolkitBySlug = mock(async (_slug: string): Promise<Toolkit | null> => null);
+  const fetchToolkitFromProduction = mock(
+    async (_slug: string): Promise<Toolkit | null> => null
+  );
+  const resolveToolkit = createToolkitResolver({
+    getToolkitBySlug,
+    fetchToolkitFromProduction,
+  });
 
-mock.module('@/lib/toolkit-data', () => ({ getToolkitBySlug }));
-mock.module('@/lib/toolkit-api', () => ({ fetchToolkitFromProduction }));
-
-let resolveToolkit: typeof import('../../lib/toolkit-resolution').resolveToolkit;
-
-beforeAll(async () => {
-  ({ resolveToolkit } = await import('../../lib/toolkit-resolution'));
-});
-
-beforeEach(() => {
-  getToolkitBySlug.mockReset();
-  fetchToolkitFromProduction.mockReset();
-});
+  return { resolveToolkit, getToolkitBySlug, fetchToolkitFromProduction };
+}
 
 describe('resolveToolkit', () => {
   test('returns a snapshot hit without calling production', async () => {
+    const { resolveToolkit, getToolkitBySlug, fetchToolkitFromProduction } = createTestResolver();
     getToolkitBySlug.mockResolvedValue(snapshotToolkit);
 
     expect(await resolveToolkit('github')).toEqual(snapshotToolkit);
@@ -53,6 +49,7 @@ describe('resolveToolkit', () => {
   });
 
   test('returns a production toolkit after a snapshot miss', async () => {
+    const { resolveToolkit, getToolkitBySlug, fetchToolkitFromProduction } = createTestResolver();
     getToolkitBySlug.mockResolvedValue(null);
     fetchToolkitFromProduction.mockResolvedValue(liveToolkit);
 
@@ -61,6 +58,7 @@ describe('resolveToolkit', () => {
   });
 
   test('returns null when both snapshot and production miss', async () => {
+    const { resolveToolkit, getToolkitBySlug, fetchToolkitFromProduction } = createTestResolver();
     getToolkitBySlug.mockResolvedValue(null);
     fetchToolkitFromProduction.mockResolvedValue(null);
 
@@ -68,6 +66,7 @@ describe('resolveToolkit', () => {
   });
 
   test('rejects test_app without reading the snapshot or production', async () => {
+    const { resolveToolkit, getToolkitBySlug, fetchToolkitFromProduction } = createTestResolver();
     expect(await resolveToolkit('TEST_APP')).toBeNull();
     expect(getToolkitBySlug).not.toHaveBeenCalled();
     expect(fetchToolkitFromProduction).not.toHaveBeenCalled();
