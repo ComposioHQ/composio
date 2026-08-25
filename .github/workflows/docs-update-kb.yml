@@ -6,12 +6,53 @@ on:
   repository_dispatch:
     types: [support-knowledge-updated]
   workflow_dispatch:
+    inputs:
+      rebuild_semantic:
+        description: Rebuild the semantic artifact from the checked-in docs corpus
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   contents: read
 
 jobs:
+  rebuild-semantic:
+    if: ${{ inputs.rebuild_semantic }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    defaults:
+      run:
+        working-directory: ./docs
+
+    steps:
+      - name: Checkout docs repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Setup Node.js, pnpm, Bun
+        uses: ./.github/actions/setup-node-pnpm-bun
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Rebuild semantic artifact
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: bun run build:kb-semantic
+
+      - name: Upload semantic artifact
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: kb-semantic-refresh
+          path: docs/kb/semantic-index.json
+          if-no-files-found: error
+          retention-days: 1
+
   refresh:
+    if: ${{ !inputs.rebuild_semantic }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
