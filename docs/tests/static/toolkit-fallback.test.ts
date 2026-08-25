@@ -48,6 +48,15 @@ describe('resolveToolkit', () => {
     expect(fetchToolkitFromProduction).not.toHaveBeenCalled();
   });
 
+  test('normalizes the slug before reading the snapshot', async () => {
+    const { resolveToolkit, getToolkitBySlug, fetchToolkitFromProduction } = createTestResolver();
+    getToolkitBySlug.mockResolvedValue(snapshotToolkit);
+
+    expect(await resolveToolkit('GitHub')).toEqual(snapshotToolkit);
+    expect(getToolkitBySlug).toHaveBeenCalledWith('github');
+    expect(fetchToolkitFromProduction).not.toHaveBeenCalled();
+  });
+
   test('returns a production toolkit after a snapshot miss', async () => {
     const { resolveToolkit, getToolkitBySlug, fetchToolkitFromProduction } = createTestResolver();
     getToolkitBySlug.mockResolvedValue(null);
