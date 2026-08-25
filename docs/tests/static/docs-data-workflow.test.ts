@@ -1,25 +1,43 @@
 import { describe, expect, test } from 'bun:test';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
+import { z } from 'zod';
 
 const workflowPath = resolve(process.cwd(), '..', '.github', 'workflows', 'docs-update-data.yml');
 
-interface WorkflowStep {
-  name?: string;
-  id?: string;
-  uses?: string;
-  if?: string;
-  'continue-on-error'?: boolean;
-  'working-directory'?: string;
-  env?: Record<string, unknown>;
-  with?: Record<string, unknown>;
-  run?: string;
-}
+const workflowStepSchema = z
+  .object({
+    name: z.string().optional(),
+    id: z.string().optional(),
+    uses: z.string().optional(),
+    if: z.string().optional(),
+    'continue-on-error': z.boolean().optional(),
+    'working-directory': z.string().optional(),
+    env: z.record(z.string(), z.unknown()).optional(),
+    with: z.record(z.string(), z.unknown()).optional(),
+    run: z.string().optional(),
+  })
+  .passthrough();
+
+const workflowSchema = z
+  .object({
+    jobs: z
+      .record(
+        z.string(),
+        z
+          .object({
+            steps: z.array(workflowStepSchema).optional(),
+          })
+          .passthrough()
+      )
+      .optional(),
+  })
+  .passthrough();
+
+type WorkflowStep = z.infer<typeof workflowStepSchema>;
 
 function workflowSteps(path: string, job: string): WorkflowStep[] {
-  const workflow = Bun.YAML.parse(readFileSync(path, 'utf8')) as {
-    jobs?: Record<string, { steps?: WorkflowStep[] }>;
-  };
+  const workflow = workflowSchema.parse(Bun.YAML.parse(readFileSync(path, 'utf8')));
   return workflow.jobs?.[job]?.steps ?? [];
 }
 
