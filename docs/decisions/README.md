@@ -9,5 +9,7 @@ Read these when a docs change touches an existing architecture, generated-data p
 - `llm-guardrails.md` - LLM guardrail injection for markdown endpoints.
 - `public-knowledge-base.md` - public support publication, unified search, and
   Composio For You snapshot rules.
+- `toolkit-page-availability.md` - docs-sync permissions, optional KB isolation,
+  and snapshot-miss toolkit page fallback.
 - `toolkits.md` - toolkit page data and rendering decisions.
 - `cookbooks-revamp-plan.md` - historical cookbook revamp tracker.
