@@ -30,7 +30,7 @@ on:
 env:
   ENGINE_REPO: ComposioHQ/docs-agent-eval-ci
   # Full-SHA pin of the engine code — bump on docs-agent-eval-ci releases.
-  ENGINE_REF: 19f6417fdc2c8d202f38ae02a7d9ec0823a42253
+  ENGINE_REF: 8c018d43675bbe8533162cfeac724607b967db4f
 
 jobs:
   # Decides IF an eval should start and FOR WHICH PR. deployment_status
