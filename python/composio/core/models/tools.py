@@ -682,7 +682,8 @@ class Tools(Resource, t.Generic[TTool, TToolCollection]):
             )
         else:
             # Auto-upload is opt-in, but "no file" must still be sent as an
-            # omitted key rather than ``""``/``None`` (issue #4233).
+            # omitted key rather than ``""`` (issue #4233). Explicit ``None``
+            # remains valid for nullable file inputs.
             arguments = self._file_helper.drop_empty_file_uploads(
                 tool=tool, request=arguments
             )

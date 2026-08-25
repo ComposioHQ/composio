@@ -492,6 +492,7 @@ class TestAutoUploadDownloadFilesDisabled:
                         ]
                     },
                 },
+                "required": ["attachment"],
             },
         )
         mock_execute_response = Mock()
@@ -507,20 +508,22 @@ class TestAutoUploadDownloadFilesDisabled:
         ):
             for value, expected in (
                 ("", {"subject": "Test"}),
-                (None, {"subject": "Test"}),
+                (None, {"subject": "Test", "attachment": None}),
                 (
                     "/path/to/file.txt",
                     {"subject": "Test", "attachment": "/path/to/file.txt"},
                 ),
             ):
                 mock_client.tools.execute.reset_mock()
+                arguments = {"subject": "Test", "attachment": value}
                 tools.execute(
                     slug="GMAIL_CREATE_DRAFT",
-                    arguments={"subject": "Test", "attachment": value},
+                    arguments=arguments,
                     dangerously_skip_version_check=True,
                 )
                 sent = mock_client.tools.execute.call_args.kwargs["arguments"]
                 assert sent == expected, value
+                assert arguments == {"subject": "Test", "attachment": value}
 
     def test_execute_skips_file_downloads_when_disabled(
         self, mock_client, mock_provider

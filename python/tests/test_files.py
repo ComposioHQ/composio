@@ -779,11 +779,10 @@ class TestFileUploadSubstitutionWithUnionTypes:
         # None/empty values should be removed
         assert "fileInput" not in result
 
-    def test_drop_empty_file_uploads_omits_empty_leaves_without_uploading(
+    def test_drop_empty_file_uploads_omits_empty_strings_without_uploading(
         self, file_helper, mock_tool
     ):
-        """Issue #4233: ``""``/``None`` at a file leaf mean "no file" even when
-        auto-upload is off, while any other value is forwarded untouched."""
+        """Disabled auto-upload omits empty strings but preserves explicit nulls."""
         file_uploadable = {
             "type": "object",
             "file_uploadable": True,
@@ -817,6 +816,7 @@ class TestFileUploadSubstitutionWithUnionTypes:
                     "type": "object",
                     "properties": {"file": {"$ref": "#/$defs/F"}},
                 },
+                "opaque": {"type": "object", "additionalProperties": True},
                 "thread_id": {"type": "string"},
             },
             "$defs": {"F": file_uploadable},
@@ -827,6 +827,15 @@ class TestFileUploadSubstitutionWithUnionTypes:
             "attachment": "",
             "extra": [None, "", staged, "/tmp/keep.txt"],
             "nested": {"file": None},
+            "opaque": {"preserve_identity": True},
+            "thread_id": "",
+        }
+        original_request = {
+            "subject": "Test",
+            "attachment": "",
+            "extra": [None, "", staged, "/tmp/keep.txt"],
+            "nested": {"file": None},
+            "opaque": {"preserve_identity": True},
             "thread_id": "",
         }
 
@@ -836,14 +845,165 @@ class TestFileUploadSubstitutionWithUnionTypes:
             )
 
         from_path.assert_not_called()
-        assert result is request
+        assert result is not request
         assert result == {
             "subject": "Test",
-            "extra": [staged, "/tmp/keep.txt"],
-            "nested": {},
+            "extra": [None, staged, "/tmp/keep.txt"],
+            "nested": {"file": None},
+            "opaque": {"preserve_identity": True},
             # non-file empty strings are not the walker's business
             "thread_id": "",
         }
+        assert result["extra"] is not request["extra"]
+        assert result["extra"][1] is request["extra"][2]
+        assert result["nested"] is not request["nested"]
+        assert result["opaque"] is request["opaque"]
+        assert request == original_request
+
+    def test_drop_empty_file_uploads_skips_dereference_for_non_file_schema(
+        self, file_helper, mock_tool
+    ):
+        """Default execution does not dereference schemas without file inputs."""
+        mock_tool.input_parameters = {
+            "type": "object",
+            "properties": {
+                "filters": {
+                    "type": "object",
+                    "properties": {"query": {"type": "string"}},
+                }
+            },
+        }
+        request = {"filters": {"query": "open"}}
+
+        with patch(
+            "composio.core.models._files.dereference_json_schema"
+        ) as dereference:
+            result = file_helper.drop_empty_file_uploads(
+                tool=mock_tool, request=request
+            )
+
+        assert result is request
+        dereference.assert_not_called()
+
+    @pytest.mark.parametrize(
+        ("definitions_key", "ref"),
+        [
+            ("$defs", "#/$defs/FileUploadable"),
+            ("definitions", "#/definitions/FileUploadable"),
+        ],
+    )
+    def test_drop_empty_file_uploads_resolves_referenced_file_schema(
+        self, file_helper, mock_tool, definitions_key, ref
+    ):
+        """The raw cheap gate still admits modern and legacy referenced schemas."""
+        mock_tool.input_parameters = {
+            "type": "object",
+            "properties": {"attachment": {"$ref": ref}},
+            definitions_key: {
+                "FileUploadable": {
+                    "type": "object",
+                    "file_uploadable": True,
+                }
+            },
+        }
+
+        result = file_helper.drop_empty_file_uploads(
+            tool=mock_tool, request={"attachment": ""}
+        )
+
+        assert result == {}
+
+    @pytest.mark.parametrize(
+        "attachment_schema",
+        [
+            {
+                "type": "array",
+                "items": {"type": "object", "file_uploadable": True},
+            },
+            {
+                "items": {"type": "object", "file_uploadable": True},
+            },
+            {
+                "anyOf": [
+                    {
+                        "type": "array",
+                        "items": {"type": "object", "file_uploadable": True},
+                    },
+                    {"type": "null"},
+                ]
+            },
+            {
+                "anyOf": [
+                    {
+                        "items": {"type": "object", "file_uploadable": True},
+                    },
+                    {"type": "null"},
+                ]
+            },
+        ],
+    )
+    @pytest.mark.parametrize(
+        ("value", "expected_without_upload"),
+        [("", {}), (None, {"attachment": None})],
+    )
+    def test_empty_values_follow_mode_for_array_only_file_schema(
+        self, file_helper, mock_tool, attachment_schema, value, expected_without_upload
+    ):
+        """Array-only file inputs omit empty strings and upload-mode nulls."""
+        mock_tool.input_parameters = {
+            "type": "object",
+            "properties": {"attachment": attachment_schema},
+        }
+
+        dropped = file_helper.drop_empty_file_uploads(
+            tool=mock_tool, request={"attachment": value}
+        )
+        with patch.object(FileUploadable, "from_path") as from_path:
+            uploaded = file_helper.substitute_file_uploads(
+                tool=mock_tool, request={"attachment": value}
+            )
+
+        assert dropped == expected_without_upload
+        assert uploaded == {}
+        from_path.assert_not_called()
+
+    @pytest.mark.parametrize("array_type", ["explicit", "inferred"])
+    def test_empty_string_is_preserved_when_non_file_string_variant_matches(
+        self, file_helper, mock_tool, array_type
+    ):
+        """A composed string branch takes precedence over array-file cleanup."""
+        array_file_schema = {
+            "items": {
+                "type": "object",
+                "file_uploadable": True,
+            },
+        }
+        if array_type == "explicit":
+            array_file_schema["type"] = "array"
+
+        mock_tool.input_parameters = {
+            "type": "object",
+            "properties": {
+                "attachment": {
+                    "anyOf": [
+                        array_file_schema,
+                        {"type": "string"},
+                    ]
+                }
+            },
+        }
+
+        dropped = file_helper.drop_empty_file_uploads(
+            tool=mock_tool, request={"attachment": ""}
+        )
+        with patch.object(FileUploadable, "from_path") as from_path:
+            uploaded = file_helper.substitute_file_uploads(
+                tool=mock_tool, request={"attachment": ""}
+            )
+
+        assert dropped == {"attachment": ""}
+        assert uploaded == {"attachment": ""}
+        from_path.assert_not_called()
 
     def test_substitute_upload_empty_string_in_anyof(self, file_helper, mock_tool):
         """Test that empty string values in anyOf with file_uploadable are handled."""
