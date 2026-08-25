@@ -239,9 +239,9 @@ export default async function ToolkitsPage({ params }: { params: Promise<{ slug?
     if (toolkit) {
       // Fetch detailed tool/trigger info and FAQ content in parallel
       const [detailedTools, detailedTriggers, faq] = await Promise.all([
-        fetchDetailedTools(toolkitSlug, toolkit.version),
-        fetchDetailedTriggers(toolkitSlug, toolkit.version),
-        readToolkitFaq(toolkitSlug),
+        fetchDetailedTools(toolkit.slug, toolkit.version),
+        fetchDetailedTriggers(toolkit.slug, toolkit.version),
+        readToolkitFaq(toolkit.slug),
       ]);
 
       // Use detailed data if fetch succeeded, otherwise fall back to static data

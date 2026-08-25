@@ -7,7 +7,8 @@ const NEGATIVE_CACHE_TTL_MS = 60_000;
 const NEGATIVE_CACHE_MAX_ENTRIES = 1_024;
 const IN_FLIGHT_LOOKUP_MAX_ENTRIES = 1_024;
 const PRODUCTION_REQUEST_TIMEOUT_MS = 15_000;
-const TOOLKIT_SLUG_PATTERN = /^[a-z0-9][a-z0-9_-]{0,63}$/;
+// Production includes public toolkit slugs such as `_1password`.
+const TOOLKIT_SLUG_PATTERN = /^[a-z0-9_][a-z0-9_-]{0,63}$/;
 
 const negativeCache = new Map<string, number>();
 const inFlightLookups = new Map<string, Promise<Toolkit | null>>();

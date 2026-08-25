@@ -240,6 +240,20 @@ describe('fetchToolkitFromProduction', () => {
     }
   );
 
+  test('accepts a leading underscore used by production toolkit slugs', async () => {
+    useApiKey();
+    const fetcher = mock(async () =>
+      Response.json({ ...productionPayload, slug: '_1password', name: '1Password' })
+    );
+    globalThis.fetch = fetcher;
+
+    expect(await fetchToolkitFromProduction('_1password')).toMatchObject({
+      slug: '_1password',
+      name: '1Password',
+    });
+    expect(fetcher).toHaveBeenCalledTimes(1);
+  });
+
   test('rejects excluded public toolkit slugs before fetch', async () => {
     useApiKey();
     const fetcher = mock(async () => Response.json(productionPayload));
