@@ -272,12 +272,56 @@ export class Tools<
     if (requestOptions?.signal?.aborted) {
       throw new ComposioRequestCancelledError();
     }
+    let modifiedParams = await this.applyFileUploadModifiers(
+      tool,
+      { toolSlug, toolkitSlug, params },
+      modifiers?.beforeFileUpload,
+      requestOptions
+    );
+
+    // apply the before execute modifiers
+    if (modifiers?.beforeExecute) {
+      if (typeof modifiers.beforeExecute === 'function') {
+        modifiedParams = await modifiers.beforeExecute({
+          toolSlug,
+          toolkitSlug,
+          params: modifiedParams,
+        });
+        if (requestOptions?.signal?.aborted) {
+          throw new ComposioRequestCancelledError();
+        }
+      } else {
+        throw new ComposioInvalidModifierError('Invalid beforeExecute modifier. Not a function.');
+      }
+    }
+    return modifiedParams;
+  }
+
+  /**
+   * Applies schema-aware file preprocessing shared by direct and Tool Router
+   * session execution. This always runs before the caller's `beforeExecute`
+   * hook so the hook observes the exact arguments sent to the backend.
+   */
+  private async applyFileUploadModifiers(
+    tool: Tool,
+    {
+      toolSlug,
+      toolkitSlug,
+      params,
+    }: {
+      toolSlug: string;
+      toolkitSlug: string;
+      params: ToolExecuteParams;
+    },
+    beforeFileUpload?: ExecuteToolModifiers['beforeFileUpload'],
+    requestOptions?: ComposioRequestOptions
+  ): Promise<ToolExecuteParams> {
     let modifiedParams = params;
     // if auto upload download files is enabled, upload the files to the Composio API
     if (this.autoUploadDownloadFiles) {
       const fileToolModifier = new FileToolModifier(this.client, {
         ...this.fileUploadPathOptions,
-        beforeFileUpload: modifiers?.beforeFileUpload,
+        beforeFileUpload,
       });
       modifiedParams = await fileToolModifier.fileUploadModifier(tool, {
         toolSlug,
@@ -319,21 +363,6 @@ export class Tools<
             `  2) Enable auto-upload with a scoped allowlist: ` +
             `\`new Composio({ dangerouslyAllowAutoUploadDownloadFiles: true, fileUploadDirs: ['/safe/dir'] })\`.`
         );
-      }
-    }
-    // apply the before execute modifiers
-    if (modifiers?.beforeExecute) {
-      if (typeof modifiers.beforeExecute === 'function') {
-        modifiedParams = await modifiers.beforeExecute({
-          toolSlug,
-          toolkitSlug,
-          params: modifiedParams,
-        });
-        if (requestOptions?.signal?.aborted) {
-          throw new ComposioRequestCancelledError();
-        }
-      } else {
-        throw new ComposioInvalidModifierError('Invalid beforeExecute modifier. Not a function.');
       }
     }
     return modifiedParams;
@@ -867,9 +896,10 @@ export class Tools<
   wrapToolsForToolRouter(
     sessionId: string,
     tools: Tool[],
-    modifiers?: SessionExecuteMetaModifiers
+    modifiers?: SessionExecuteMetaModifiers,
+    rawTools: Tool[] = tools.map(tool => ToolSchema.parse(tool))
   ): Tool[] {
-    const executeToolFn = this.createExecuteToolFnForToolRouter(sessionId, tools, modifiers);
+    const executeToolFn = this.createExecuteToolFnForToolRouter(sessionId, rawTools, modifiers);
     return this.provider.wrapTools(tools, executeToolFn) as Tool[];
   }
 
@@ -1166,9 +1196,25 @@ export class Tools<
       });
     }
 
-    // Apply beforeExecute modifier if provided
     let modifiedParams = body.arguments ?? {};
     const toolkitSlug = tool?.toolkit?.slug ?? 'composio';
+
+    if (tool) {
+      const fileModifiedParams = await this.applyFileUploadModifiers(
+        tool,
+        {
+          toolSlug,
+          toolkitSlug,
+          params: { arguments: modifiedParams },
+        },
+        undefined,
+        requestOptions
+      );
+      modifiedParams = fileModifiedParams.arguments ?? {};
+    }
+
+    // Apply beforeExecute modifier after file preprocessing so the hook sees
+    // the same arguments that will be sent to the Tool Router.
     if (modifiers?.beforeExecute) {
       modifiedParams = await modifiers.beforeExecute({
         toolSlug,
@@ -1324,7 +1370,7 @@ export class Tools<
        * @deprecated The `customConnectionData` proxy param is deprecated and will be
        * removed in a future release. Use `customAuthParams` instead.
        */
-      // @ts-ignore
+      // @ts-expect-error
       custom_connection_data: toolProxyParams.data.customConnectionData,
     } as ComposioToolProxyParams;
     return withCancellation(

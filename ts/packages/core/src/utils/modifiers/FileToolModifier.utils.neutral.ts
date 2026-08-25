@@ -203,6 +203,20 @@ export const jsonSchemaTypeMatchesValue = (schema: JSONSchemaProperty, value: un
   }
 };
 
+/** Mirrors the array-shape inference used by {@link jsonSchemaTypeMatchesValue}. */
+const isArrayShapedSchema = (schema: JSONSchemaProperty | undefined): boolean => {
+  if (!schema) return false;
+  if (Array.isArray(schema.type)) return schema.type.includes('array');
+  return schema.type === 'array' || (schema.type === undefined && schema.items !== undefined);
+};
+
+/** Mirrors the object-shape inference used by {@link jsonSchemaTypeMatchesValue}. */
+const isObjectShapedSchema = (schema: JSONSchemaProperty | undefined): boolean => {
+  if (!schema) return false;
+  if (Array.isArray(schema.type)) return schema.type.includes('object');
+  return schema.type === 'object' || (schema.type === undefined && schema.properties !== undefined);
+};
+
 /**
  * Picks the file-bearing `anyOf`/`oneOf`/`allOf` variant whose JSON Schema
  * shape matches the runtime value, falling back to the first file-bearing
@@ -243,19 +257,53 @@ export const walkFileUploadableLeaves = async (
 
   const uploadableVariant = findSchemaVariantWithFileProperty(schema, 'file_uploadable', value);
   if (uploadableVariant) {
+    // A scalar empty string cannot match an array-only file input, but callers
+    // use it to mean "no files". Route it through the leaf handler so it is
+    // omitted, unless another non-file variant explicitly accepts strings.
+    const matchingNonFileVariant = getSchemaVariants(schema).some(
+      variant =>
+        !schemaHasFileProperty(variant, 'file_uploadable') &&
+        jsonSchemaTypeMatchesValue(variant, value)
+    );
+    if (
+      isEmptyFileValue(value) &&
+      isArrayShapedSchema(uploadableVariant) &&
+      !matchingNonFileVariant
+    ) {
+      return leaf(value);
+    }
     return walkFileUploadableLeaves(value, uploadableVariant, leaf);
   }
 
-  if (schema?.type === 'object' && schema.properties && isPlainObject(value)) {
+  if (
+    isEmptyFileValue(value) &&
+    isArrayShapedSchema(schema) &&
+    schemaHasFileProperty(schema, 'file_uploadable')
+  ) {
+    return leaf(value);
+  }
+
+  if (isObjectShapedSchema(schema) && schema?.properties && isPlainObject(value)) {
     const transformed: Record<string, unknown> = {};
     for (const [k, v] of Object.entries(value)) {
-      const walked = await walkFileUploadableLeaves(v, schema.properties[k], leaf);
-      if (walked !== DELETE_VALUE) transformed[k] = walked;
+      const propertySchema = Object.hasOwn(schema.properties, k) ? schema.properties[k] : undefined;
+      const walked = await walkFileUploadableLeaves(v, propertySchema, leaf);
+      if (walked !== DELETE_VALUE) {
+        // Define every key as an own data property so reserved JSON keys such
+        // as `__proto__` remain enumerable without invoking its inherited
+        // setter and changing this ordinary object's prototype.
+        Object.defineProperty(transformed, k, {
+          configurable: true,
+          enumerable: true,
+          value: walked,
+          writable: true,
+        });
+      }
     }
     return transformed;
   }
 
-  if (schema?.type === 'array' && schema.items && Array.isArray(value)) {
+  if (isArrayShapedSchema(schema) && schema?.items && Array.isArray(value)) {
     // `items` can be a single schema or an array of schemas; we handle both.
     const itemSchema = Array.isArray(schema.items) ? schema.items[0] : schema.items;
     const walked = await Promise.all(
