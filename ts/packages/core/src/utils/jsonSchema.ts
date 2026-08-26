@@ -8,6 +8,33 @@ const MAX_REF_CHAIN_DEPTH = 100;
 const MAX_NODE_DEPTH = 512;
 const CYCLE_BREAK_SENTINEL = { type: 'object', additionalProperties: true } as const;
 
+/** Keywords whose value is a single subschema. */
+const SCHEMA_KEYWORDS = new Set([
+  'additionalItems',
+  'additionalProperties',
+  'contains',
+  'contentSchema',
+  'else',
+  'if',
+  'not',
+  'propertyNames',
+  'then',
+  'unevaluatedItems',
+  'unevaluatedProperties',
+]);
+/** Keywords whose value is an array of subschemas. */
+const SCHEMA_ARRAY_KEYWORDS = new Set(['allOf', 'anyOf', 'oneOf', 'prefixItems']);
+/** Keywords whose value is a map from name to subschema. */
+const SCHEMA_MAP_KEYWORDS = new Set([
+  '$defs',
+  'definitions',
+  'dependentSchemas',
+  'patternProperties',
+  'properties',
+]);
+/** Keywords whose values are instance data, never subschemas. */
+const INSTANCE_VALUE_KEYWORDS = new Set(['const', 'default', 'enum', 'examples']);
+
 /**
  * In-band hint attached to the cycle-break sentinel when lenient mode
  * substitutes it for a dangling `$ref`. Makes the degradation visible to
@@ -272,28 +299,6 @@ export function dereferenceJsonSchema<T = unknown>(
 export function ensureObjectTypeOnProperties<T = unknown>(schema: T): T {
   type WalkMode = 'schema' | 'schema-array' | 'schema-map' | 'dependencies-map' | 'value';
 
-  const schemaKeywords = new Set([
-    'additionalItems',
-    'additionalProperties',
-    'contains',
-    'contentSchema',
-    'else',
-    'if',
-    'not',
-    'propertyNames',
-    'then',
-    'unevaluatedItems',
-    'unevaluatedProperties',
-  ]);
-  const schemaArrayKeywords = new Set(['allOf', 'anyOf', 'oneOf', 'prefixItems']);
-  const schemaMapKeywords = new Set([
-    '$defs',
-    'definitions',
-    'dependentSchemas',
-    'patternProperties',
-    'properties',
-  ]);
-
   function walk(value: unknown, mode: WalkMode, depth = 0): unknown {
     if (depth > MAX_NODE_DEPTH) {
       throw new RangeError(`JSON Schema exceeds maximum nesting depth of ${MAX_NODE_DEPTH}`);
@@ -314,11 +319,11 @@ export function ensureObjectTypeOnProperties<T = unknown>(schema: T): T {
       } else if (mode === 'dependencies-map') {
         childMode = Array.isArray(child) ? 'value' : 'schema';
       } else if (mode === 'schema') {
-        if (schemaMapKeywords.has(key)) {
+        if (SCHEMA_MAP_KEYWORDS.has(key)) {
           childMode = 'schema-map';
-        } else if (schemaArrayKeywords.has(key) || (key === 'items' && Array.isArray(child))) {
+        } else if (SCHEMA_ARRAY_KEYWORDS.has(key) || (key === 'items' && Array.isArray(child))) {
           childMode = 'schema-array';
-        } else if (schemaKeywords.has(key) || key === 'items') {
+        } else if (SCHEMA_KEYWORDS.has(key) || key === 'items') {
           childMode = 'schema';
         } else if (key === 'dependencies') {
           childMode = 'dependencies-map';
@@ -356,7 +361,6 @@ export function ensureObjectTypeOnProperties<T = unknown>(schema: T): T {
 export function deduplicateJsonSchemaRequiredArrays<T = unknown>(schema: T): T {
   const seenSchemaValues = new WeakMap<object, unknown>();
   const seenInstanceValues = new WeakMap<object, unknown>();
-  const instanceValueKeywords = new Set(['const', 'default', 'enum', 'examples']);
 
   function walk(value: unknown, isSchema: boolean, depth = 0): unknown {
     if (depth > MAX_NODE_DEPTH) {
@@ -391,7 +395,7 @@ export function deduplicateJsonSchemaRequiredArrays<T = unknown>(schema: T): T {
         value:
           isSchema && key === 'required' && Array.isArray(child)
             ? [...new Set(walk(child, false, depth + 1) as unknown[])]
-            : walk(child, isSchema && !instanceValueKeywords.has(key), depth + 1),
+            : walk(child, isSchema && !INSTANCE_VALUE_KEYWORDS.has(key), depth + 1),
         writable: true,
       });
     }
@@ -498,24 +502,20 @@ export function jsonSchemaToZodSchema<T extends z.ZodTypeAny>(
 }
 
 /**
- * Reason recorded when strict normalization changes a schema node.
+ * Reason recorded when strict normalization rewrites a schema node. Every
+ * rewrite is lossless: the model can still express the same values.
  *
- * - `nullable-type-converted` — a `type` array containing `'null'` became an
- *   `anyOf` with an explicit `{ type: 'null' }` branch.
- * - `multi-type-converted` — a `type` array without `'null'` (e.g.
- *   `['string', 'number']`) became equivalent `anyOf` branches.
- * - `annotation-keyword-stripped` — an annotation-only keyword (`examples`,
- *   `default`) that strict mode rejects was removed.
- * - `non-required-property-dropped` — a property not listed in `required`
- *   was removed from its parent object.
+ * - `optional-property-nullable` — a property missing from `required` was
+ *   added to it and widened to accept `null`, the emulation of optional
+ *   fields that OpenAI structured outputs document.
+ * - `unsupported-keyword-stripped` — an annotation keyword the API rejects
+ *   (`default`, `examples`) was removed.
+ * - `one-of-converted` — `oneOf` (unsupported) became `anyOf`.
  */
 export type StrictSchemaChangeReason =
-  | 'nullable-type-converted'
-  | 'multi-type-converted'
-  | 'annotation-keyword-stripped'
-  | 'non-required-property-dropped';
+  'optional-property-nullable' | 'unsupported-keyword-stripped' | 'one-of-converted';
 
-/** A single structural change applied by {@link toStrictJsonSchema}. */
+/** A single lossless rewrite applied by {@link toStrictJsonSchema}. */
 export interface StrictSchemaChange {
   /** Path to the changed node relative to the root, e.g. `properties.cfg.items`. */
   path: string;
@@ -524,10 +524,36 @@ export interface StrictSchemaChange {
   detail?: string;
 }
 
-/** Result of {@link toStrictJsonSchema}: the normalized schema plus a change log. */
-export interface StrictJsonSchemaResult<T = unknown> {
-  schema: T;
+/**
+ * A schema construct strict structured outputs cannot express. Rewriting it
+ * would change what the tool accepts, so it is reported instead; providers
+ * send such a tool without strict mode.
+ */
+export interface StrictSchemaIncompatibility {
+  /** Path to the offending node relative to the root. */
+  path: string;
+  /** The keyword (or `$ref`) that has no strict-mode equivalent. */
+  keyword: string;
+  detail: string;
+}
+
+/** Result of {@link toStrictJsonSchema}. */
+export interface StrictJsonSchemaResult {
+  /**
+   * The strict schema. Only usable when `unsupported` is empty; otherwise it
+   * is best-effort and the original schema should be sent without strict mode.
+   */
+  schema: Record<string, unknown>;
+  /**
+   * The dereferenced input the rewrite was computed from. Optionality is
+   * decided against this schema, so it is what `omitNullToolArguments` needs.
+   */
+  source: Record<string, unknown>;
+  /** Lossless rewrites, capped at 50 entries; see `totalChanges`. */
   changes: StrictSchemaChange[];
+  totalChanges: number;
+  /** Constructs strict mode cannot express. Non-empty means "do not use `schema`". */
+  unsupported: StrictSchemaIncompatibility[];
 }
 
 const MAX_STRICT_CHANGES = 50;
@@ -535,84 +561,99 @@ const MAX_STRICT_CHANGES = 50;
 /** Annotation-only keywords OpenAI structured outputs rejects; safe to strip. */
 const STRICT_STRIP_KEYWORDS = new Set(['examples', 'default']);
 
-/** Keywords whose values are literal data, not schemas — never recursed as schemas. */
-const STRICT_INSTANCE_VALUE_KEYWORDS = new Set(['const', 'enum']);
-
-const STRICT_SCHEMA_SINGLE_KEYS = new Set([
-  'additionalItems',
-  'additionalProperties',
-  'contains',
-  'contentSchema',
-  'else',
-  'if',
-  'not',
-  'propertyNames',
-  'then',
-  'unevaluatedItems',
-  'unevaluatedProperties',
-]);
-const STRICT_SCHEMA_ARRAY_KEYS = new Set(['allOf', 'anyOf', 'oneOf', 'prefixItems']);
-const STRICT_SCHEMA_MAP_KEYS = new Set([
-  '$defs',
-  'definitions',
-  'dependentSchemas',
-  'patternProperties',
-  'properties',
-]);
+/** Keywords OpenAI structured outputs reject and that have no lossless rewrite. */
+const STRICT_UNSUPPORTED_KEYWORDS = ['allOf', 'prefixItems'];
 
 type StrictWalkMode = 'schema' | 'schema-array' | 'schema-map' | 'value';
 
+const joinPath = (parent: string, key: string): string => (parent ? `${parent}.${key}` : key);
+
 /**
- * Normalizes a JSON Schema for OpenAI structured outputs (`strict: true`),
- * which requires every object node to declare all of its properties in
- * `required`, set `additionalProperties: false`, use only supported keywords,
- * and express nullable / multi-typed fields via `anyOf`.
- *
- * The top-level `removeNonRequiredProperties` only handled the root object,
- * so nested objects, composition branches and array items passed through
- * untouched and the API rejected the whole request. This function applies the
- * same contract at every depth:
- *
- *  - Objects with a non-empty `required` keep only those properties
- *    (matching the established top-level behavior); objects without one keep
- *    every property but are forced to require them all — dropping everything
- *    would gut the tool, and leaving optional properties would be rejected.
- *  - `type` arrays become `anyOf` branches with an explicit `{type:'null'}`
- *    variant where applicable.
- *  - Annotation keywords (`examples`, `default`) are stripped.
- *  - Composition keywords (`anyOf`/`oneOf`/`allOf`), array `items`/
- *    `prefixItems` and property maps are normalized recursively.
- *
- * Every structural change is recorded so callers can surface diagnostics
- * instead of failing silently. The input is never mutated. Dereference
- * `$ref`s first (see {@link dereferenceJsonSchema}) so definitions referenced
- * under `$defs` are normalized too, then run
- * {@link deduplicateJsonSchemaRequiredArrays} on the result before emitting.
+ * Widens a property schema so that `null` is an accepted value, without
+ * placing `type` beside `anyOf` (the API rejects that combination).
  */
-export function toStrictJsonSchema<T = unknown>(schema: T): StrictJsonSchemaResult<T> {
-  const changes: StrictSchemaChange[] = [];
-  const recordChange = (change: StrictSchemaChange): void => {
-    if (changes.length < MAX_STRICT_CHANGES) {
-      changes.push(change);
-    }
-  };
-
-  const joinPath = (parent: string, key: string): string =>
-    parent ? `${parent}.${key}` : key;
-
-  const splitTypeArray = (node: Record<string, unknown>, path: string): Record<string, unknown> => {
-    const typeValues = node.type as unknown[];
-    const branches = typeValues.map(typeValue =>
-      typeValue === 'null' ? { type: 'null' } : { ...node, type: typeValue }
+function widenToNullable(node: Record<string, unknown>): Record<string, unknown> {
+  if (Array.isArray(node.anyOf)) {
+    const alreadyNullable = node.anyOf.some(
+      branch => isPlainObject(branch) && branch.type === 'null'
     );
-    const { type: _droppedType, ...rest } = node;
-    recordChange({
-      path,
-      reason: typeValues.includes('null') ? 'nullable-type-converted' : 'multi-type-converted',
-      detail: `type [${typeValues.map(String).join(', ')}] converted to anyOf`,
-    });
-    return { ...rest, anyOf: branches };
+    return alreadyNullable ? node : { ...node, anyOf: [...node.anyOf, { type: 'null' }] };
+  }
+  if (typeof node.type === 'string') {
+    return node.type === 'null' ? node : { ...node, type: [node.type, 'null'] };
+  }
+  if (Array.isArray(node.type)) {
+    return node.type.includes('null') ? node : { ...node, type: [...node.type, 'null'] };
+  }
+  // No `type` at all: an empty schema already accepts null; anything else
+  // (enum-only, const, composition) is wrapped so the annotation stays outside.
+  const { description, title, ...rest } = node;
+  if (Object.keys(rest).length === 0) return node;
+  return {
+    ...(description !== undefined ? { description } : {}),
+    ...(title !== undefined ? { title } : {}),
+    anyOf: [rest, { type: 'null' }],
   };
+}
+
+/** Whether a (dereferenced) schema node accepts `null` as an instance. */
+function schemaAcceptsNull(node: unknown): boolean {
+  if (!isPlainObject(node)) return true;
+  if (typeof node.type === 'string') return node.type === 'null';
+  if (Array.isArray(node.type)) return node.type.includes('null');
+  if (Array.isArray(node.enum)) return node.enum.includes(null);
+  if ('const' in node) return node.const === null;
+  for (const keyword of ['anyOf', 'oneOf']) {
+    const branches = node[keyword];
+    if (Array.isArray(branches)) return branches.some(schemaAcceptsNull);
+  }
+  return true;
+}
+
+/**
+ * Normalizes a tool parameter schema for OpenAI structured outputs
+ * (`strict: true`) at every depth, following the contract OpenAI documents:
+ *
+ *  - every object lists all of its properties in `required` and sets
+ *    `additionalProperties: false`;
+ *  - properties that were optional stay available and are widened to accept
+ *    `null` (`type: ['string', 'null']`, or an extra `anyOf` branch) — the
+ *    documented way to emulate optional fields. Nothing is dropped, so the
+ *    model keeps every parameter it could pass before. A `null` the model
+ *    sends for such a property means "omitted"; the strict providers drop it
+ *    before executing the tool (see {@link omitNullToolArguments});
+ *  - `type` arrays are kept as-is (the API accepts them); `oneOf` becomes
+ *    `anyOf`; `default` and `examples` are stripped;
+ *  - constructs strict mode cannot express — objects that accept arbitrary
+ *    keys (schema-valued or `true` `additionalProperties`, `patternProperties`,
+ *    property-less free-form objects), `allOf`, `prefixItems`, dangling or
+ *    cyclic `$ref`s, and a non-object root — are reported in `unsupported`
+ *    rather than rewritten into something narrower. Callers send such a tool
+ *    without strict mode.
+ *
+ * The pipeline is `dereferenceJsonSchema` (lenient) → strict rewrite →
+ * `deduplicateJsonSchemaRequiredArrays`, the same shape the Anthropic
+ * provider uses. The input is never mutated. Every rewrite is recorded in
+ * `changes` (capped at 50 entries; `totalChanges` carries the real count).
+ */
+export function toStrictJsonSchema(schema: unknown): StrictJsonSchemaResult {
+  const changes: StrictSchemaChange[] = [];
+  const unsupported: StrictSchemaIncompatibility[] = [];
+  let totalChanges = 0;
+  const recordChange = (change: StrictSchemaChange): void => {
+    totalChanges += 1;
+    if (changes.length < MAX_STRICT_CHANGES) changes.push(change);
+  };
+
+  const dereferenced = dereferenceJsonSchema(schema, {
+    onUnresolved: 'sentinel',
+    onReplace: ref =>
+      unsupported.push({
+        path: '',
+        keyword: '$ref',
+        detail: `unresolved $ref "${ref}"`,
+      }),
+  });
 
   function walkChildren(
     node: Record<string, unknown>,
@@ -625,22 +666,25 @@ export function toStrictJsonSchema<T = unknown>(schema: T): StrictJsonSchemaResu
       let childMode: StrictWalkMode = 'value';
       if (mode === 'schema-map') {
         childMode = 'schema';
-      } else if (mode === 'schema') {
-        if (!STRICT_INSTANCE_VALUE_KEYWORDS.has(key)) {
-          if (STRICT_SCHEMA_MAP_KEYS.has(key)) {
-            childMode = 'schema-map';
-          } else if (STRICT_SCHEMA_ARRAY_KEYS.has(key) || (key === 'items' && Array.isArray(child))) {
-            childMode = 'schema-array';
-          } else if (STRICT_SCHEMA_SINGLE_KEYS.has(key) || key === 'items') {
-            childMode = 'schema';
-          }
+      } else if (mode === 'schema' && !INSTANCE_VALUE_KEYWORDS.has(key)) {
+        if (SCHEMA_MAP_KEYWORDS.has(key)) {
+          childMode = 'schema-map';
+        } else if (SCHEMA_ARRAY_KEYWORDS.has(key) || (key === 'items' && Array.isArray(child))) {
+          childMode = 'schema-array';
+        } else if (SCHEMA_KEYWORDS.has(key) || key === 'items') {
+          childMode = 'schema';
         }
       }
 
       if (childMode === 'schema-map' && isPlainObject(child)) {
         const mapClone: Record<string, unknown> = {};
         for (const [name, subSchema] of Object.entries(child)) {
-          mapClone[name] = walk(subSchema, 'schema', depth + 1, joinPath(joinPath(path, key), name));
+          mapClone[name] = walk(
+            subSchema,
+            'schema',
+            depth + 1,
+            joinPath(joinPath(path, key), name)
+          );
         }
         clone[key] = mapClone;
         continue;
@@ -658,84 +702,146 @@ export function toStrictJsonSchema<T = unknown>(schema: T): StrictJsonSchemaResu
       const itemMode = mode === 'schema-array' ? 'schema' : 'value';
       return value.map((item, index) => walk(item, itemMode, depth + 1, `${path}[${index}]`));
     }
-    if (!isPlainObject(value)) return value;
-    if (mode === 'value') return value;
+    if (!isPlainObject(value) || mode === 'value') return value;
 
-    let node: Record<string, unknown> = value;
-
-    // Nullable / multi-type arrays must become anyOf before anything else so
-    // the generated branches flow through the normal recursion below.
-    if (Array.isArray(node.type)) {
-      node = splitTypeArray(node, path);
-    }
-
-    const strippedNode: Record<string, unknown> = {};
-    for (const [key, child] of Object.entries(node)) {
+    const node: Record<string, unknown> = {};
+    for (const [key, child] of Object.entries(value)) {
       if (STRICT_STRIP_KEYWORDS.has(key)) {
         recordChange({
           path,
-          reason: 'annotation-keyword-stripped',
+          reason: 'unsupported-keyword-stripped',
           detail: `keyword "${key}" removed`,
         });
         continue;
       }
-      strippedNode[key] = child;
+      node[key] = child;
     }
-    node = strippedNode;
-
-    // Object strictening: complete required, closed additionalProperties.
-    const hasPropertiesKeyword = isPlainObject(node.properties);
-    const isObjectNode = hasPropertiesKeyword || node.type === 'object';
-    if (isObjectNode) {
-      const properties = hasPropertiesKeyword
-        ? (node.properties as Record<string, unknown>)
-        : {};
-      const declaredRequired = Array.isArray(node.required)
-        ? node.required.filter((entry): entry is string => typeof entry === 'string')
-        : [];
-      const keepOnlyRequired = declaredRequired.length > 0;
-      const keptKeys = new Set(
-        keepOnlyRequired ? declaredRequired.filter(key => key in properties) : Object.keys(properties)
-      );
-
-      const nextProperties: Record<string, unknown> = {};
-      for (const [name, propertySchema] of Object.entries(properties)) {
-        if (keptKeys.has(name)) {
-          nextProperties[name] = walk(
-            propertySchema,
-            'schema',
-            depth + 1,
-            joinPath(path, `properties.${name}`)
-          );
-        } else {
-          recordChange({
-            path: joinPath(path, `properties.${name}`),
-            reason: 'non-required-property-dropped',
-            detail: `property "${name}" is not listed in "required"`,
-          });
-        }
+    if (Array.isArray(node.oneOf) && node.anyOf === undefined) {
+      node.anyOf = node.oneOf;
+      delete node.oneOf;
+      recordChange({ path, reason: 'one-of-converted', detail: 'oneOf became anyOf' });
+    }
+    for (const keyword of STRICT_UNSUPPORTED_KEYWORDS) {
+      if (node[keyword] !== undefined) {
+        unsupported.push({
+          path,
+          keyword,
+          detail: `"${keyword}" has no strict-mode equivalent`,
+        });
       }
-
-      // Recurse into any remaining schema-bearing siblings (e.g. `allOf`,
-      // `description`) while keeping the four managed keywords authoritative.
-      const managedKeys = new Set(['type', 'properties', 'required', 'additionalProperties']);
-      const restNode: Record<string, unknown> = {};
-      for (const [key, child] of Object.entries(node)) {
-        if (!managedKeys.has(key)) restNode[key] = child;
-      }
-
-      return {
-        ...walkChildren(restNode, 'schema', depth, path),
-        type: 'object',
-        properties: nextProperties,
-        required: Object.keys(nextProperties),
-        additionalProperties: false,
-      };
     }
 
-    return walkChildren(node, mode, depth, path);
+    const out = walkChildren(node, mode, depth, path);
+
+    const declaresObjectType =
+      out.type === 'object' || (Array.isArray(out.type) && out.type.includes('object'));
+    if (!declaresObjectType && !isPlainObject(out.properties)) return out;
+
+    const properties: Record<string, unknown> = isPlainObject(out.properties)
+      ? { ...out.properties }
+      : {};
+    const declaredRequired = new Set(
+      Array.isArray(out.required) ? out.required.filter(entry => typeof entry === 'string') : []
+    );
+    for (const [name, propertySchema] of Object.entries(properties)) {
+      if (declaredRequired.has(name) || !isPlainObject(propertySchema)) continue;
+      properties[name] = widenToNullable(propertySchema);
+      recordChange({
+        path: joinPath(path, `properties.${name}`),
+        reason: 'optional-property-nullable',
+        detail: `property "${name}" is now required and accepts null`,
+      });
+    }
+
+    const acceptsDynamicKeys =
+      out.additionalProperties === true || isPlainObject(out.additionalProperties);
+    if (acceptsDynamicKeys) {
+      unsupported.push({
+        path,
+        keyword: 'additionalProperties',
+        detail: 'object accepts arbitrary keys',
+      });
+    } else if (out.patternProperties !== undefined) {
+      unsupported.push({
+        path,
+        keyword: 'patternProperties',
+        detail: 'object accepts pattern-matched keys',
+      });
+    } else if (Object.keys(properties).length === 0 && out.additionalProperties === undefined) {
+      unsupported.push({
+        path,
+        keyword: 'properties',
+        detail: 'free-form object accepts arbitrary keys',
+      });
+    }
+
+    return {
+      ...out,
+      ...(out.type === undefined ? { type: 'object' } : {}),
+      properties,
+      required: Object.keys(properties),
+      ...(acceptsDynamicKeys ? {} : { additionalProperties: false }),
+    };
   }
 
-  const normalized = walk(schema, 'schema', 0, '');
-  return { schema: normalized as T, changes };
+  const normalized = walk(dereferenced, 'schema', 0, '');
+  if (!isPlainObject(normalized) || normalized.type !== 'object') {
+    unsupported.push({
+      path: '',
+      keyword: 'type',
+      detail: 'root must be a non-nullable object',
+    });
+  }
+
+  return {
+    schema: deduplicateJsonSchemaRequiredArrays(normalized) as Record<string, unknown>,
+    source: dereferenced as Record<string, unknown>,
+    changes,
+    totalChanges,
+    unsupported,
+  };
+}
+
+/**
+ * Drops `null`-valued arguments that the tool's own schema does not accept,
+ * recursively through nested objects and arrays.
+ *
+ * Strict structured outputs cannot express optional parameters, so
+ * {@link toStrictJsonSchema} makes every parameter required and nullable. The
+ * model then sends `null` for a parameter it would otherwise have omitted;
+ * forwarding that `null` to the tool would fail validation against the tool's
+ * real schema, so it is treated as "omitted". A `null` the original schema
+ * accepts (a nullable field, an explicit "clear this value") is kept.
+ *
+ * @param args - Normalized tool arguments.
+ * @param schema - The dereferenced tool parameter schema the arguments were
+ *   produced for (`StrictJsonSchemaResult.source`).
+ * @returns A new object; the input is not mutated.
+ */
+export function omitNullToolArguments(
+  args: Record<string, unknown>,
+  schema: unknown
+): Record<string, unknown> {
+  return omitNulls(args, schema) as Record<string, unknown>;
+}
+
+function omitNulls(value: unknown, schema: unknown): unknown {
+  const node = isPlainObject(schema) ? schema : undefined;
+  if (Array.isArray(value)) {
+    const items = node && isPlainObject(node.items) ? node.items : undefined;
+    return value.map(item => omitNulls(item, items));
+  }
+  if (!isPlainObject(value)) return value;
+
+  const properties = node && isPlainObject(node.properties) ? node.properties : {};
+  const clone: Record<string, unknown> = {};
+  for (const [key, child] of Object.entries(value)) {
+    const propertySchema = properties[key];
+    if (child === null) {
+      if (propertySchema === undefined || schemaAcceptsNull(propertySchema)) clone[key] = child;
+      continue;
+    }
+    clone[key] = omitNulls(child, propertySchema);
+  }
+  return clone;
 }
