@@ -562,7 +562,25 @@ const MAX_STRICT_CHANGES = 50;
 const STRICT_STRIP_KEYWORDS = new Set(['examples', 'default']);
 
 /** Keywords OpenAI structured outputs reject and that have no lossless rewrite. */
-const STRICT_UNSUPPORTED_KEYWORDS = ['allOf', 'prefixItems'];
+const STRICT_UNSUPPORTED_KEYWORDS = [
+  'allOf',
+  'prefixItems',
+  'additionalItems',
+  'contains',
+  'dependencies',
+  'dependentSchemas',
+  'else',
+  'if',
+  'not',
+  'propertyNames',
+  'then',
+  'unevaluatedItems',
+  'unevaluatedProperties',
+];
+
+/** Whether a `type` value declares exactly the object type. */
+const isObjectType = (type: unknown): boolean =>
+  type === 'object' || (Array.isArray(type) && type.length === 1 && type[0] === 'object');
 
 type StrictWalkMode = 'schema' | 'schema-array' | 'schema-map' | 'value';
 
@@ -598,6 +616,7 @@ function widenToNullable(node: Record<string, unknown>): Record<string, unknown>
   if (Array.isArray(node.type)) {
     return node.type.includes('null') ? node : { ...node, type: [...node.type, 'null'] };
   }
+  if ((Array.isArray(node.enum) && node.enum.includes(null)) || node.const === null) return node;
   // No `type` at all: an empty schema already accepts null; anything else
   // (enum-only, const, composition) is wrapped so the annotation stays outside.
   const { description, title, ...rest } = node;
@@ -659,10 +678,11 @@ function schemaAcceptsNull(schema: unknown, root: Record<string, unknown>): bool
  *    null branch;
  *  - constructs strict mode cannot express — objects that accept arbitrary
  *    keys (schema-valued or `true` `additionalProperties`, `patternProperties`,
- *    property-less free-form objects), `allOf`, `prefixItems`, external or
- *    dangling `$ref`s, and a non-object root — are reported in `unsupported`
- *    rather than rewritten into something narrower. Callers send such a tool
- *    without strict mode.
+ *    property-less free-form objects), boolean subschemas, `allOf`,
+ *    `prefixItems`, tuple-form `items`, conditional and dependency keywords,
+ *    external or dangling `$ref`s, and a non-object root — are reported in
+ *    `unsupported` rather than rewritten into something narrower. Callers send
+ *    such a tool without strict mode.
  *
  * The input is never mutated. Every rewrite is recorded in `changes` (capped
  * at 50 entries; `totalChanges` carries the real count), and `required`
@@ -753,6 +773,21 @@ export function toStrictJsonSchema(schema: unknown): StrictJsonSchemaResult {
         });
       }
     }
+    if (node.oneOf !== undefined) {
+      unsupported.push({ path, keyword: 'oneOf', detail: 'oneOf beside anyOf cannot be merged' });
+    }
+    if (Array.isArray(node.items)) {
+      unsupported.push({
+        path,
+        keyword: 'items',
+        detail: 'tuple-form items has no strict-mode equivalent',
+      });
+    } else if (typeof node.items === 'boolean') {
+      unsupported.push({ path, keyword: 'items', detail: 'boolean subschema' });
+    }
+    if (node.properties !== undefined && !isPlainObject(node.properties)) {
+      unsupported.push({ path, keyword: 'properties', detail: 'properties is not an object' });
+    }
 
     const out = walkChildren(node, mode, depth, path);
 
@@ -774,6 +809,7 @@ export function toStrictJsonSchema(schema: unknown): StrictJsonSchemaResult {
     const declaresObjectType =
       out.type === 'object' || (Array.isArray(out.type) && out.type.includes('object'));
     if (!declaresObjectType && !isPlainObject(out.properties)) return out;
+    if (out.properties !== undefined && !isPlainObject(out.properties)) return out;
 
     const properties: Record<string, unknown> = {};
     if (isPlainObject(out.properties)) {
@@ -785,6 +821,14 @@ export function toStrictJsonSchema(schema: unknown): StrictJsonSchemaResult {
       Array.isArray(out.required) ? out.required.filter(entry => typeof entry === 'string') : []
     );
     for (const [name, propertySchema] of Object.entries(properties)) {
+      if (typeof propertySchema === 'boolean') {
+        unsupported.push({
+          path: joinPath(path, `properties.${name}`),
+          keyword: 'properties',
+          detail: 'boolean subschema',
+        });
+        continue;
+      }
       if (declaredRequired.has(name) || !isPlainObject(propertySchema)) continue;
       setOwn(properties, name, widenToNullable(propertySchema));
       recordChange({
@@ -826,7 +870,7 @@ export function toStrictJsonSchema(schema: unknown): StrictJsonSchemaResult {
   }
 
   const normalized = walk(root, 'schema', 0, '');
-  if (!isPlainObject(normalized) || normalized.type !== 'object') {
+  if (!isPlainObject(normalized) || !isObjectType(normalized.type)) {
     unsupported.push({
       path: '',
       keyword: 'type',
@@ -867,6 +911,36 @@ export function omitNullToolArguments(
   return omitNulls(args, root, root, 0) as Record<string, unknown>;
 }
 
+/**
+ * Picks the composition branch that describes a value's shape: the first
+ * branch with `properties` for an object, the first with `items` for an
+ * array. Nodes without a composition are returned as they are.
+ */
+function selectBranchFor(
+  schema: unknown,
+  value: unknown,
+  root: Record<string, unknown>
+): Record<string, unknown> | undefined {
+  const resolved = resolveLocalRefs(schema, root);
+  if (!isPlainObject(resolved)) return undefined;
+  const wanted = Array.isArray(value) ? 'items' : 'properties';
+  const find = (node: unknown, depth: number): Record<string, unknown> | undefined => {
+    const candidate = resolveLocalRefs(node, root);
+    if (!isPlainObject(candidate) || depth > MAX_NODE_DEPTH) return undefined;
+    if (candidate[wanted] !== undefined) return candidate;
+    for (const keyword of ['anyOf', 'oneOf']) {
+      const branches = candidate[keyword];
+      if (!Array.isArray(branches)) continue;
+      for (const branch of branches) {
+        const found = find(branch, depth + 1);
+        if (found) return found;
+      }
+    }
+    return undefined;
+  };
+  return find(resolved, 0) ?? resolved;
+}
+
 function omitNulls(
   value: unknown,
   schema: unknown,
@@ -876,8 +950,7 @@ function omitNulls(
   if (depth > MAX_NODE_DEPTH) {
     throw new RangeError(`Tool arguments exceed maximum nesting depth of ${MAX_NODE_DEPTH}`);
   }
-  const resolved = resolveLocalRefs(schema, root);
-  const node = isPlainObject(resolved) ? resolved : undefined;
+  const node = selectBranchFor(schema, value, root);
   if (Array.isArray(value)) {
     const items = node && isPlainObject(node.items) ? node.items : undefined;
     return value.map(item => omitNulls(item, items, root, depth + 1));
