@@ -2,4 +2,4 @@
 '@composio/core': minor
 ---
 
-Replace the frozen Stainless `@composio/client` with the owned `2.0.0-rc.5` client.
+Replace the frozen Stainless `@composio/client` with the owned `2.0.0-rc.6` client.
