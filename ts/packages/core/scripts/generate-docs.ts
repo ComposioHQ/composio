@@ -1004,8 +1004,9 @@ function toKebabCase(str: string): string {
 
 // Escape text content for MDX (descriptions, etc. that appear outside backticks)
 // Handles both curly braces and angle brackets (which MDX interprets as JSX tags)
-function escapeTextForMdx(str: string): string {
+export function escapeTextForMdx(str: string): string {
   return str
+    .replace(/\\/g, '\\\\')
     .replace(/\{/g, '\\{')
     .replace(/\}/g, '\\}')
     .replace(/</g, '&lt;')
