@@ -107,7 +107,6 @@ def tst(session: Session):
     session.install("./providers/crewai")
     session.install("./providers/langchain")
     session.install("./providers/langgraph")
-    session.install("./providers/autogen")
     test_paths = session.posargs or ["tests/"]
     session.run("pytest", *test_paths, "-v", "--tb=short")
 
