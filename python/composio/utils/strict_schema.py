@@ -62,7 +62,29 @@ SCHEMA_MAP_KEYWORDS = frozenset(
 )
 
 # Keywords OpenAI structured outputs reject and that have no lossless rewrite.
-STRICT_UNSUPPORTED_KEYWORDS = ("allOf", "prefixItems")
+STRICT_UNSUPPORTED_KEYWORDS = (
+    "allOf",
+    "prefixItems",
+    "additionalItems",
+    "contains",
+    "dependencies",
+    "dependentSchemas",
+    "else",
+    "if",
+    "not",
+    "propertyNames",
+    "then",
+    "unevaluatedItems",
+    "unevaluatedProperties",
+)
+
+
+def _is_object_type(node_type: t.Any) -> bool:
+    """Whether a ``type`` value declares exactly the object type."""
+    return node_type == "object" or (
+        isinstance(node_type, list) and node_type == ["object"]
+    )
+
 
 StrictSchemaChangeReason = t.Literal[
     "optional-property-nullable",
@@ -115,6 +137,10 @@ def _widen_to_nullable(node: dict[str, t.Any]) -> dict[str, t.Any]:
         return node if node_type == "null" else {**node, "type": [node_type, "null"]}
     if isinstance(node_type, list):
         return node if "null" in node_type else {**node, "type": [*node_type, "null"]}
+    if (isinstance(node.get("enum"), list) and None in node["enum"]) or (
+        "const" in node and node["const"] is None
+    ):
+        return node
     annotations: dict[str, t.Any] = {
         k: node[k] for k in ("description", "title") if k in node
     }
@@ -253,6 +279,14 @@ class _Walker:
         for keyword in STRICT_UNSUPPORTED_KEYWORDS:
             if keyword in node:
                 self.reject(path, keyword, f'"{keyword}" has no strict-mode equivalent')
+        if "oneOf" in node:
+            self.reject(path, "oneOf", "oneOf beside anyOf cannot be merged")
+        if isinstance(node.get("items"), list):
+            self.reject(path, "items", "tuple-form items has no strict-mode equivalent")
+        elif isinstance(node.get("items"), bool):
+            self.reject(path, "items", "boolean subschema")
+        if "properties" in node and not isinstance(node["properties"], dict):
+            self.reject(path, "properties", "properties is not an object")
 
         out = self.walk_children(node, mode, depth, path)
 
@@ -270,6 +304,8 @@ class _Walker:
         )
         if not declares_object and not isinstance(out.get("properties"), dict):
             return out
+        if "properties" in out and not isinstance(out["properties"], dict):
+            return out
 
         properties: dict[str, t.Any] = dict(out.get("properties") or {})
         required = out.get("required")
@@ -279,6 +315,13 @@ class _Walker:
             if isinstance(entry, str)
         }
         for name, property_schema in properties.items():
+            if isinstance(property_schema, bool):
+                self.reject(
+                    _join_path(path, f"properties.{name}"),
+                    "properties",
+                    "boolean subschema",
+                )
+                continue
             if name in declared_required or not isinstance(property_schema, dict):
                 continue
             properties[name] = _widen_to_nullable(property_schema)
@@ -326,7 +369,7 @@ def to_strict_json_schema(schema: t.Any) -> StrictJsonSchemaResult:
     root: dict[str, t.Any] = schema if isinstance(schema, dict) else {}
     walker = _Walker(root)
     normalized = _dedupe_required(walker.walk(root, "schema", 0, ""))
-    if not isinstance(normalized, dict) or normalized.get("type") != "object":
+    if not isinstance(normalized, dict) or not _is_object_type(normalized.get("type")):
         walker.reject("", "type", "root must be a non-nullable object")
     return StrictJsonSchemaResult(
         schema=normalized,
@@ -355,6 +398,34 @@ def omit_null_tool_arguments(
     return t.cast(dict[str, t.Any], _omit_nulls(arguments, root, root, 0))
 
 
+def _select_branch_for(
+    schema: t.Any, value: t.Any, root: dict[str, t.Any]
+) -> dict[str, t.Any] | None:
+    """Pick the composition branch that describes a value's shape."""
+    resolved = _resolve_local_refs(schema, root)
+    if not isinstance(resolved, dict):
+        return None
+    wanted = "items" if isinstance(value, list) else "properties"
+
+    def find(node: t.Any, depth: int) -> dict[str, t.Any] | None:
+        candidate = _resolve_local_refs(node, root)
+        if not isinstance(candidate, dict) or depth > MAX_NODE_DEPTH:
+            return None
+        if wanted in candidate:
+            return candidate
+        for keyword in ("anyOf", "oneOf"):
+            branches = candidate.get(keyword)
+            if not isinstance(branches, list):
+                continue
+            for branch in branches:
+                found = find(branch, depth + 1)
+                if found is not None:
+                    return found
+        return None
+
+    return find(resolved, 0) or resolved
+
+
 def _omit_nulls(
     value: t.Any, schema: t.Any, root: dict[str, t.Any], depth: int
 ) -> t.Any:
@@ -362,8 +433,7 @@ def _omit_nulls(
         raise ValueError(
             f"Tool arguments exceed maximum nesting depth of {MAX_NODE_DEPTH}"
         )
-    resolved = _resolve_local_refs(schema, root)
-    node = resolved if isinstance(resolved, dict) else {}
+    node = _select_branch_for(schema, value, root) or {}
     if isinstance(value, list):
         items = node.get("items") if isinstance(node.get("items"), dict) else None
         return [_omit_nulls(item, items, root, depth + 1) for item in value]
