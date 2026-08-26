@@ -18,8 +18,10 @@ import {
   requiredBrowserGrantToolkits,
   requiresDemoToolkit,
   selectManifestEntries,
+  validateManifestEntries,
 } from './manifest.mjs';
 import { resolveBackendBaseUrl, STAGING_BASE_URL } from './backend-url.mjs';
+import { HarnessError } from './errors.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const ARTIFACTS = join(ROOT, '.artifacts', 'examples-parity');
@@ -36,13 +38,6 @@ const opt = (name, fallback) => {
   const i = args.indexOf(`--${name}`);
   return i >= 0 && args[i + 1] !== undefined ? args[i + 1] : fallback;
 };
-
-class HarnessError extends Error {
-  constructor(message, exitCode = 2) {
-    super(message);
-    this.exitCode = exitCode;
-  }
-}
 
 const fail = (msg, code = 2) => {
   throw new HarnessError(msg, code);
@@ -604,6 +599,14 @@ const cmdSelftest = async () => {
     sameVersionPyCandidateAccepted = false;
   }
   check('python candidate swap accepts a wheel reporting the pinned version', sameVersionPyCandidateAccepted);
+
+  let invalidManifestIsUsageError = false;
+  try {
+    validateManifestEntries([{ id: 'missing-required-fields' }]);
+  } catch (error) {
+    invalidManifestIsUsageError = error instanceof HarnessError && error.exitCode === 2;
+  }
+  check('invalid manifest entries are usage errors', invalidManifestIsUsageError);
 
   const manifest = loadManifest();
   const withoutGoogleDrive = selectManifestEntries(manifest, {

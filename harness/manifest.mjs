@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { HarnessError } from './errors.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -43,21 +44,25 @@ export const entryToolkits = entry => {
   return [...toolkits];
 };
 
-export const loadManifest = () => {
-  const manifest = JSON.parse(readFileSync(join(ROOT, 'examples-manifest.json'), 'utf8'));
-  for (const entry of manifest.entries) {
+export const validateManifestEntries = entries => {
+  for (const entry of entries) {
     if (!entry.id || !entry.lang || !entry.file || !entry.tier) {
-      throw new Error(`manifest entry missing required fields: ${JSON.stringify(entry)}`);
+      throw new HarnessError(`manifest entry missing required fields: ${JSON.stringify(entry)}`);
     }
     if (entry.lang === 'ts' && entry.tier !== 'X' && !entry.pkg) {
-      throw new Error(`ts entry ${entry.id} missing pkg`);
+      throw new HarnessError(`ts entry ${entry.id} missing pkg`);
     }
     if (entry.tier === '3' && !entry.readiness) {
-      throw new Error(`tier-3 entry ${entry.id} missing readiness regex`);
+      throw new HarnessError(`tier-3 entry ${entry.id} missing readiness regex`);
     }
   }
-  return manifest.entries;
+  return entries;
 };
+
+export const loadManifest = () =>
+  validateManifestEntries(
+    JSON.parse(readFileSync(join(ROOT, 'examples-manifest.json'), 'utf8')).entries
+  );
 
 export const selectManifestEntries = (
   entries,
