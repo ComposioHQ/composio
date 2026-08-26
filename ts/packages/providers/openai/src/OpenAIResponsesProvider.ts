@@ -20,12 +20,20 @@ import {
   McpUrlResponse,
   normalizeToolArguments,
   deduplicateJsonSchemaRequiredArrays,
-  dereferenceJsonSchema,
+  omitNullToolArguments,
   toStrictJsonSchema,
   logger,
 } from '@composio/core';
 
 export type OpenAiTool = OpenAI.Responses.FunctionTool;
+
+/** Parameters emitted for a tool without input parameters under strict mode. */
+const EMPTY_OBJECT_SCHEMA = {
+  type: 'object',
+  properties: {},
+  required: [],
+  additionalProperties: false,
+} as const;
 export type OpenAiMcpTool = OpenAI.Responses.Tool.Mcp;
 export type OpenAiToolCollection = Array<OpenAiTool>;
 export type OpenAIResponsesProviderOptions = {
@@ -46,6 +54,12 @@ export class OpenAIResponsesProvider extends BaseNonAgenticProvider<
 > {
   readonly name = 'openai';
   private strict: boolean | null;
+  /**
+   * Dereferenced parameter schemas of the tools wrapped under strict mode,
+   * keyed by slug, so tool-call arguments can be reconciled against the
+   * schema the model actually saw.
+   */
+  private readonly strictInputSchemas = new Map<string, Record<string, unknown>>();
 
   /**
    * Creates a new instance of the OpenAIProvider.
@@ -124,32 +138,56 @@ export class OpenAIResponsesProvider extends BaseNonAgenticProvider<
    */
   override wrapTool(tool: Tool): OpenAiTool {
     const inputParams = tool.inputParameters;
-
-    let parameters: Record<string, unknown> = (inputParams ?? {}) as Record<string, unknown>;
-    if (this.strict && inputParams?.type === 'object') {
-      // Structured outputs reject schemas whose nested objects keep optional
-      // properties or their own additionalProperties, so the strict contract
-      // must be applied at every depth. Inline $ref/$defs first (lenient mode
-      // keeps upstream schemas with dangling refs usable), then normalize.
-      const dereferenced = dereferenceJsonSchema(parameters, {
-        onUnresolved: 'sentinel',
-        onReplace: ref =>
-          logger.debug(
-            `OpenAIResponsesProvider: unresolved $ref "${ref}" in tool "${tool.slug}" replaced with a permissive schema`
-          ),
-      });
-      parameters = toStrictJsonSchema<Record<string, unknown>>(dereferenced).schema;
+    if (!this.strict) {
+      return {
+        name: tool.slug,
+        description: tool.description,
+        // Canonicalize required arrays at the vendor-schema emission boundary.
+        parameters: deduplicateJsonSchemaRequiredArrays(
+          (inputParams ?? {}) as Record<string, unknown>
+        ),
+        strict: this.strict,
+        type: 'function',
+      };
     }
 
-    // Canonicalize required arrays at the vendor-schema emission boundary,
-    // after any provider-specific schema transformations.
-    const wrappedParameters = deduplicateJsonSchemaRequiredArrays(parameters);
+    // Structured outputs enforce their contract at every depth: all
+    // properties required, closed objects, no annotation keywords. The strict
+    // rewrite keeps every parameter (optional ones become nullable) and
+    // reports constructs it cannot express; such a tool is sent without
+    // strict mode rather than with a narrower schema.
+    const source = (inputParams ?? EMPTY_OBJECT_SCHEMA) as Record<string, unknown>;
+    const strict = toStrictJsonSchema(source);
+    if (strict.unsupported.length > 0) {
+      const reasons = strict.unsupported
+        .map(entry => `${entry.path || '<root>'}: ${entry.keyword} (${entry.detail})`)
+        .join('; ');
+      logger.warn(
+        `OpenAIResponsesProvider: tool "${tool.slug}" is sent without strict mode because its schema cannot be expressed as strict structured outputs: ${reasons}`
+      );
+      this.strictInputSchemas.delete(tool.slug);
+      return {
+        name: tool.slug,
+        description: tool.description,
+        parameters: deduplicateJsonSchemaRequiredArrays(source),
+        strict: false,
+        type: 'function',
+      };
+    }
+    if (strict.totalChanges > 0) {
+      logger.debug(
+        `OpenAIResponsesProvider: strict mode rewrote ${strict.totalChanges} node(s) of tool "${tool.slug}": ${strict.changes
+          .map(change => `${change.path}: ${change.reason}`)
+          .join('; ')}`
+      );
+    }
+    this.strictInputSchemas.set(tool.slug, strict.source);
 
     return {
       name: tool.slug,
       description: tool.description,
-      parameters: wrappedParameters,
-      strict: this.strict,
+      parameters: strict.schema,
+      strict: true,
       type: 'function',
     };
   }
@@ -246,7 +284,13 @@ export class OpenAIResponsesProvider extends BaseNonAgenticProvider<
   ): Promise<string> {
     // OpenAI always serializes tool arguments as a JSON string; normalize tolerates
     // empty / object-shaped payloads too (issue #2406).
-    const arguments_ = normalizeToolArguments(tool.arguments, tool.name);
+    const normalizedArguments = normalizeToolArguments(tool.arguments, tool.name);
+    // Under strict mode optional parameters are emitted as required-nullable,
+    // so a `null` the tool's own schema does not accept means "omitted".
+    const strictSchema = this.strictInputSchemas.get(tool.name);
+    const arguments_ = strictSchema
+      ? omitNullToolArguments(normalizedArguments, strictSchema)
+      : normalizedArguments;
     const result = await this.executeToolForTarget(
       executionTarget,
       tool.name,
