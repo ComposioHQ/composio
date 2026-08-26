@@ -569,6 +569,19 @@ type StrictWalkMode = 'schema' | 'schema-array' | 'schema-map' | 'value';
 const joinPath = (parent: string, key: string): string => (parent ? `${parent}.${key}` : key);
 
 /**
+ * Sets an own property regardless of its name: a plain assignment to a key
+ * such as `__proto__` would set the prototype instead of storing the value.
+ */
+function setOwn(target: Record<string, unknown>, key: string, value: unknown): void {
+  Object.defineProperty(target, key, {
+    configurable: true,
+    enumerable: true,
+    value,
+    writable: true,
+  });
+}
+
+/**
  * Widens a property schema so that `null` is an accepted value, without
  * placing `type` beside `anyOf` (the API rejects that combination).
  */
@@ -690,17 +703,16 @@ export function toStrictJsonSchema(schema: unknown): StrictJsonSchemaResult {
       if (childMode === 'schema-map' && isPlainObject(child)) {
         const mapClone: Record<string, unknown> = {};
         for (const [name, subSchema] of Object.entries(child)) {
-          mapClone[name] = walk(
-            subSchema,
-            'schema',
-            depth + 1,
-            joinPath(joinPath(path, key), name)
+          setOwn(
+            mapClone,
+            name,
+            walk(subSchema, 'schema', depth + 1, joinPath(joinPath(path, key), name))
           );
         }
-        clone[key] = mapClone;
+        setOwn(clone, key, mapClone);
         continue;
       }
-      clone[key] = walk(child, childMode, depth + 1, joinPath(path, key));
+      setOwn(clone, key, walk(child, childMode, depth + 1, joinPath(path, key)));
     }
     return clone;
   }
@@ -725,7 +737,7 @@ export function toStrictJsonSchema(schema: unknown): StrictJsonSchemaResult {
         });
         continue;
       }
-      node[key] = child;
+      setOwn(node, key, child);
     }
     if (Array.isArray(node.oneOf) && node.anyOf === undefined) {
       node.anyOf = node.oneOf;
@@ -763,15 +775,18 @@ export function toStrictJsonSchema(schema: unknown): StrictJsonSchemaResult {
       out.type === 'object' || (Array.isArray(out.type) && out.type.includes('object'));
     if (!declaresObjectType && !isPlainObject(out.properties)) return out;
 
-    const properties: Record<string, unknown> = isPlainObject(out.properties)
-      ? { ...out.properties }
-      : {};
+    const properties: Record<string, unknown> = {};
+    if (isPlainObject(out.properties)) {
+      for (const [name, propertySchema] of Object.entries(out.properties)) {
+        setOwn(properties, name, propertySchema);
+      }
+    }
     const declaredRequired = new Set(
       Array.isArray(out.required) ? out.required.filter(entry => typeof entry === 'string') : []
     );
     for (const [name, propertySchema] of Object.entries(properties)) {
       if (declaredRequired.has(name) || !isPlainObject(propertySchema)) continue;
-      properties[name] = widenToNullable(propertySchema);
+      setOwn(properties, name, widenToNullable(propertySchema));
       recordChange({
         path: joinPath(path, `properties.${name}`),
         reason: 'optional-property-nullable',
@@ -877,11 +892,11 @@ function omitNulls(
       : undefined;
     if (child === null) {
       if (propertySchema === undefined || schemaAcceptsNull(propertySchema, root)) {
-        clone[key] = child;
+        setOwn(clone, key, child);
       }
       continue;
     }
-    clone[key] = omitNulls(child, propertySchema, root, depth + 1);
+    setOwn(clone, key, omitNulls(child, propertySchema, root, depth + 1));
   }
   return clone;
 }
