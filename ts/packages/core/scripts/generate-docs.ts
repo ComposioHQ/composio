@@ -1007,6 +1007,7 @@ function toKebabCase(str: string): string {
 export function escapeTextForMdx(str: string): string {
   return str
     .replace(/\\/g, '\\\\')
+    .replace(/\|/g, '\\|')
     .replace(/\{/g, '\\{')
     .replace(/\}/g, '\\}')
     .replace(/</g, '&lt;')

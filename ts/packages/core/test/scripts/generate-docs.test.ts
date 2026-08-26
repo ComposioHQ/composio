@@ -38,9 +38,9 @@ describe('generate-docs type rendering', () => {
     expect(escapeTypeForMdx(String.raw`{ pattern: '\|' }`)).toBe(String.raw`\{ pattern: '\\\|' \}`);
   });
 
-  it('escapes existing backslashes before MDX text metacharacters', () => {
-    expect(escapeTextForMdx(String.raw`Use \{value\} or <literal>`)).toBe(
-      String.raw`Use \\\{value\\\} or &lt;literal&gt;`
+  it('escapes existing backslashes before MDX text and table metacharacters', () => {
+    expect(escapeTextForMdx(String.raw`Use \{value\}, \|, or <literal>`)).toBe(
+      String.raw`Use \\\{value\\\}, \\\|, or &lt;literal&gt;`
     );
   });
 
