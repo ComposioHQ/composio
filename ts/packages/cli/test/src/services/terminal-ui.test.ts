@@ -3,7 +3,12 @@ import { describe, expect, it, layer } from '@effect/vitest';
 import { beforeEach, vi } from 'vitest';
 import * as p from '@clack/prompts';
 import { Array as Arr, Data, Effect, Exit, pipe } from 'effect';
-import { getTerminalCapabilities, makeTerminalUI, TerminalUI } from 'src/services/terminal-ui';
+import {
+  clampSpinnerMessage,
+  getTerminalCapabilities,
+  makeTerminalUI,
+  TerminalUI,
+} from 'src/services/terminal-ui';
 import { TestLive, MockConsole } from 'test/__utils__';
 
 vi.mock('@clack/prompts', async importOriginal => {
@@ -164,6 +169,72 @@ describe('TerminalUI', () => {
         expect(stderr.chunks).toEqual([]);
       })
     );
+  });
+
+  describe('clampSpinnerMessage keeps live spinner messages on one terminal row', () => {
+    const streamWithColumns = (columns?: number) =>
+      columns === undefined ? makeSink(true) : Object.assign(makeSink(true), { columns });
+
+    it('leaves a message that fits untouched', () => {
+      expect(clampSpinnerMessage(streamWithColumns(80), 'Checking for updates')).toBe(
+        'Checking for updates'
+      );
+    });
+
+    it('truncates a message longer than the row budget with an ellipsis', () => {
+      const clamped = clampSpinnerMessage(streamWithColumns(40), 'x'.repeat(100));
+      expect(clamped).toBe(`${'x'.repeat(32)}…`);
+      expect(clamped).toHaveLength(40 - 7);
+    });
+
+    it('collapses embedded newlines into spaces', () => {
+      expect(clampSpinnerMessage(streamWithColumns(80), 'line one\nline two')).toBe(
+        'line one line two'
+      );
+    });
+
+    it('never slices a message containing ANSI escape sequences', () => {
+      const colored = `\u001b[32m${'x'.repeat(100)}\u001b[0m`;
+      expect(clampSpinnerMessage(streamWithColumns(40), colored)).toBe(colored);
+    });
+
+    it('falls back to 80 columns when the stream reports no width', () => {
+      const clamped = clampSpinnerMessage(streamWithColumns(undefined), 'x'.repeat(100));
+      expect(clamped).toHaveLength(80 - 7);
+    });
+
+    it('keeps a minimum budget on absurdly narrow terminals', () => {
+      const clamped = clampSpinnerMessage(streamWithColumns(4), 'x'.repeat(100));
+      expect(clamped).toBe(`${'x'.repeat(7)}…`);
+    });
+
+    it('renders live spinner frames without wrapping in a narrow terminal', async () => {
+      vi.useFakeTimers();
+      try {
+        const stdout = makeSink(true);
+        const stderr = Object.assign(makeSink(true), { columns: 40 });
+        const ui = makeTerminalUI({ stdin: { isTTY: true }, stdout, stderr });
+
+        await Effect.runPromise(
+          ui.useMakeSpinner(
+            'New version available: @composio/cli@0.4.0 (current: @composio/cli@0.3.2). Downloading...',
+            spinner =>
+              Effect.gen(function* () {
+                yield* Effect.sync(() => vi.advanceTimersByTime(150));
+                yield* spinner.stop('Upgrade completed!');
+              })
+          )
+        );
+
+        const frame = stderr.chunks.find(chunk => chunk.includes('…'));
+        expect(frame).toBeDefined();
+        expect(frame).toContain('New version available: @composio');
+        // A wrapped frame is what leaks lines on every redraw tick.
+        expect(frame).not.toContain('\n');
+      } finally {
+        vi.useRealTimers();
+      }
+    });
   });
 
   layer(TestLive())(it => {

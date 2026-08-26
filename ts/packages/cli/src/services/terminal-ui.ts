@@ -1,5 +1,6 @@
 import process from 'node:process';
 import type { Writable } from 'node:stream';
+import { getColumns } from '@clack/core';
 import * as p from '@clack/prompts';
 import { Context, Effect, Exit, Layer } from 'effect';
 
@@ -187,14 +188,34 @@ type TerminalUIStreams = {
   readonly stderr: TerminalWritable;
 };
 
+// Clack's spinner erases the previous frame by re-wrapping the raw message,
+// but it renders `${frame}  ${message}${dots}` — three prefix columns plus up
+// to three animated dots the erase math never sees. Once those extras push the
+// rendered frame across a wrap boundary, the erase under-counts lines and
+// every tick leaks one: an endless scroll in terminals narrower than the
+// message. Keep live spinner messages to a single terminal row so the redraw
+// arithmetic cannot diverge.
+const SPINNER_RENDER_OVERHEAD = 7; // frame + two spaces (3) + animated dots (3) + last-column safety (1)
+const MIN_SPINNER_MESSAGE_COLUMNS = 8;
+
+export const clampSpinnerMessage = (output: Writable, message: string): string => {
+  const singleLine = message.replace(/\s*\r?\n\s*/g, ' ');
+  if (singleLine.includes('\u001b')) {
+    return singleLine; // truncating could split an ANSI escape sequence
+  }
+  const budget = Math.max(getColumns(output) - SPINNER_RENDER_OVERHEAD, MIN_SPINNER_MESSAGE_COLUMNS);
+  return singleLine.length > budget ? `${singleLine.slice(0, budget - 1)}…` : singleLine;
+};
+
 function createClackSpinnerHandle(
   s: p.SpinnerResult,
-  defaultMessage: string
+  defaultMessage: string,
+  clamp: (msg: string) => string
 ): { handle: SpinnerHandle; isStopped: () => boolean } {
   let stopped = false;
   return {
     handle: {
-      message: (msg: string) => Effect.sync(() => s.message(msg)),
+      message: (msg: string) => Effect.sync(() => s.message(clamp(msg))),
       stop: (msg?: string) =>
         Effect.sync(() => {
           stopped = true;
@@ -309,7 +330,7 @@ export const makeTerminalUI = (streams: TerminalUIStreams): TerminalUI => {
       return Effect.acquireUseRelease(
         Effect.sync(() => {
           const s = p.spinner({ output: stderr });
-          s.start(message);
+          s.start(clampSpinnerMessage(stderr, message));
           return s;
         }),
         () => effect,
@@ -339,8 +360,10 @@ export const makeTerminalUI = (streams: TerminalUIStreams): TerminalUI => {
       return Effect.acquireUseRelease(
         Effect.sync(() => {
           const s = p.spinner({ output: stderr });
-          s.start(message);
-          const { handle, isStopped } = createClackSpinnerHandle(s, message);
+          s.start(clampSpinnerMessage(stderr, message));
+          const { handle, isStopped } = createClackSpinnerHandle(s, message, msg =>
+            clampSpinnerMessage(stderr, msg)
+          );
           return { raw: s, handle, isStopped };
         }),
         ({ handle }) => use(handle),
