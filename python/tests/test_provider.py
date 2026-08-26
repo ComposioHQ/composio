@@ -1327,8 +1327,10 @@ class TestAgenticSkipDefaultsParity:
     mismatch, but its signature likewise ignored skip_defaults; it is aligned
     too and checked on the signature alone.
 
-    Provider packages are optional (the unit-test job installs langchain and
-    autogen), so each case skips via importorskip when its provider is absent.
+    Provider packages are optional. The shared unit-test job installs langchain
+    and langgraph, while Autogen runs separately because their protobuf
+    requirements conflict. Each case skips via importorskip when its provider
+    is absent.
     """
 
     def _make_tool_with_default(self):
