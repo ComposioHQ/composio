@@ -106,6 +106,10 @@ jobs:
           source autogen-env/bin/activate
           uv pip install -e . -e providers/autogen
           python -c "import composio_autogen; print('✓ Autogen provider import successful')"
+          python -m pytest \
+            tests/test_provider.py::TestAgenticSkipDefaultsParity::test_autogen_signature_honors_skip_defaults \
+            tests/test_provider.py::TestAgenticSkipDefaultsParity::test_autogen_signature_preserves_default \
+            -v --tb=short
 
       - name: Run Unit Tests
         run: |
