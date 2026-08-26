@@ -88,7 +88,6 @@ jobs:
           uv pip install -e providers/crewai
           uv pip install -e providers/langchain
           uv pip install -e providers/langgraph
-          uv pip install -e providers/autogen
           uv pip install pytest pytest-mock
 
       - name: Run Import Tests
@@ -96,9 +95,16 @@ jobs:
           cd python/
           source .venv/bin/activate
           python -c "from composio import Composio; print('✓ Basic import successful')"
-          # Guards against the autogen provider becoming un-importable on a fresh
-          # install (e.g. a broken framework dependency). A hard import here fails
-          # loudly, unlike the importorskip-guarded unit tests, which would skip.
+
+      - name: Test Autogen Provider Installation
+        run: |
+          cd python/
+          # autogen-core requires protobuf 5, while CrewAI's telemetry stack
+          # requires protobuf 6. Test the independently distributed provider in
+          # its own environment instead of constructing an invalid combination.
+          uv venv autogen-env --python ${{ matrix.python-version }}
+          source autogen-env/bin/activate
+          uv pip install -e . -e providers/autogen
           python -c "import composio_autogen; print('✓ Autogen provider import successful')"
 
       - name: Run Unit Tests
