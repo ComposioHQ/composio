@@ -24,6 +24,7 @@ import { readFile } from 'fs/promises';
 import { join } from 'path';
 import { getAllToolkits, getToolkitBySlug } from '@/lib/toolkit-data';
 import { getAllMetaTools, getMetaToolBySlug } from '@/lib/meta-tools-data';
+import { encodeMarkdownTableCell } from '@/lib/markdown-escaping';
 import type { MetaTool, MetaToolParameter } from '@/lib/meta-tools-data';
 import type { Toolkit, Tool, Trigger, ParameterSchema } from '@/types/toolkit';
 import { apiToolListSchema, apiTriggerListSchema } from '@/lib/toolkit-schema';
@@ -819,7 +820,7 @@ function renderParamsMarkdown(params: Record<string, ParameterSchema>): string[]
   for (const [name, param] of Object.entries(params)) {
     const typeStr = formatParamType(param);
     const required = param.required ? 'Yes' : 'No';
-    const desc = (param.description || '').replace(/\|/g, '\\|').replace(/\n/g, ' ');
+    const desc = encodeMarkdownTableCell(param.description || '');
     lines.push(`| \`${name}\` | ${typeStr} | ${required} | ${desc} |`);
   }
 
