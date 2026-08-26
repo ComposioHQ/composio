@@ -2,8 +2,8 @@
 title: "Monday"
 description: "Public support knowledge for Monday."
 keywords: ["for-you","monday","platform","auth-config","authentication","errors-and-troubleshooting","sessions-and-execution","toolkits-and-providers","/kb/toolkits/monday-troubleshooting","add-the-composio-redirect-url-to-the-monday-oauth-app","monday-requires-the-oauth-app-to-be-installed-in-the-workspace-before","monday-scopes-come-from-the-oauth-app-and-do-not-need-separate-composi","monday-troubleshooting","monday-update-item-body-must-be-passed-as-a-properly-escaped-string"]
-sources: [{"sourcePath":"toolkits/monday/public.md","sourceHeading":"Monday requires the OAuth app to be installed in the workspace before user connections"},{"sourcePath":"toolkits/monday/public.md","sourceHeading":"Add the Composio redirect URL to the Monday OAuth app"},{"sourcePath":"toolkits/monday/public.md","sourceHeading":"`MONDAY_UPDATE_ITEM` body must be passed as a properly escaped string"},{"sourcePath":"toolkits/monday/public.md","sourceHeading":"Monday scopes come from the OAuth app and do not need separate Composio-side setup in the common flow"},{"sourcePath":"toolkits/monday/public.md","sourceHeading":"Monday trigger management is not handled by the agent at runtime"}]
-sourceCommit: "d57f3d69079ee3819f4136df54512cdf0416cec0"
+sources: [{"sourcePath":"toolkits/monday/public.md","sourceHeading":"Monday requires the OAuth app to be installed in the workspace before user connections"},{"sourcePath":"toolkits/monday/public.md","sourceHeading":"Add the Composio redirect URL to the Monday OAuth app"},{"sourcePath":"toolkits/monday/public.md","sourceHeading":"`MONDAY_UPDATE_ITEM` body must be passed as a properly escaped string"},{"sourcePath":"toolkits/monday/public.md","sourceHeading":"Tool Router may prefer `MONDAY_MCP` over `MONDAY` when both are available"},{"sourcePath":"toolkits/monday/public.md","sourceHeading":"Monday scopes come from the OAuth app and do not need separate Composio-side setup in the common flow"},{"sourcePath":"toolkits/monday/public.md","sourceHeading":"Monday trigger management is not handled by the agent at runtime"}]
+sourceCommit: "5eac683455ff252a7a3b62f33ab6566445009b52"
 lastVerifiedAt: "2026-08-12"
 reviewAfter: "2026-11-10"
 freshness: "evergreen"
@@ -22,6 +22,10 @@ For a custom Monday OAuth app, add the Composio redirect URL/callback URL to the
 ## `MONDAY_UPDATE_ITEM` body must be passed as a properly escaped string
 
 `MONDAY_UPDATE_ITEM` expects the body in a format Monday's API accepts. If you pass JSON-like text or strings containing quotes/special characters, escape those characters and send a suitable string rather than unsupported raw structured content.
+
+## Tool Router may prefer `MONDAY_MCP` over `MONDAY` when both are available
+
+If both `MONDAY` and `MONDAY_MCP` are enabled, Tool Router may choose `MONDAY_MCP` for search/execution. If you specifically need the regular Monday toolkit, disable `monday_mcp` in the session or narrow toolkit availability so `COMPOSIO_SEARCH_TOOLS` returns the intended tools.
 
 ## Monday scopes come from the OAuth app and do not need separate Composio-side setup in the common flow
 

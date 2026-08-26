@@ -11,6 +11,7 @@ import {
   toolkitsSource,
   knowledgeBaseSource,
 } from '../lib/source';
+import { getKnowledgeToolkitSummaries } from '../lib/knowledge/catalog';
 import { getLocalKnowledgeDiscoveryPaths } from '../lib/knowledge/discovery';
 
 /**
@@ -117,6 +118,13 @@ async function getDynamicToolkitEntries() {
   return toolkits.map(t => ({ value: { slug: [t.slug] }, hashes: [] as string[] }));
 }
 
+export async function getKnowledgeToolkitRouteEntries() {
+  return (await getKnowledgeToolkitSummaries()).map(toolkit => ({
+    value: toolkit.slug,
+    hashes: [] as string[],
+  }));
+}
+
 const EXTERNAL_FETCH_HEADERS = {
   // Some hosts reject requests without a browser-like UA (bot filters).
   'user-agent':
@@ -184,9 +192,6 @@ async function checkLinks() {
   const knowledgeTopicEntries = knowledgeDiscoveryPaths
     .filter((path) => path.startsWith('/kb/topic/'))
     .map((path) => ({ value: path.slice('/kb/topic/'.length), hashes: [] as string[] }));
-  const knowledgeToolkitEntries = knowledgeDiscoveryPaths
-    .filter((path) => path.startsWith('/kb/toolkit/'))
-    .map((path) => ({ value: path.slice('/kb/toolkit/'.length), hashes: [] as string[] }));
   const [
     docsEntries,
     refEntries,
@@ -194,6 +199,7 @@ async function checkLinks() {
     toolkitEntries,
     knowledgeBaseEntries,
     dynamicToolkitEntries,
+    knowledgeToolkitEntries,
   ] = await Promise.all([
     buildPopulateEntries(source),
     buildPopulateEntries(referenceSource),
@@ -201,6 +207,7 @@ async function checkLinks() {
     buildPopulateEntries(toolkitsSource),
     buildPopulateEntries(knowledgeBaseSource),
     getDynamicToolkitEntries(),
+    getKnowledgeToolkitRouteEntries(),
   ]);
   const knowledgeGuideEntries = knowledgeBaseEntries.flatMap((entry) => {
     const value = entry.value;

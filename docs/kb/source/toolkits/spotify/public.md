@@ -10,11 +10,11 @@ tags:
 ---
 # Spotify
 
-## Spotify supports Composio-managed and customer-owned OAuth
+## Spotify requires a customer-owned OAuth app
 
-Use the managed OAuth flow for the standard connection. Configure a custom
-Spotify OAuth app when the customer needs control over scopes, provider app
-settings, or branding.
+Composio-managed OAuth is not currently available for Spotify. Create a custom
+auth config with the customer's Spotify client ID and client secret, then have
+each user complete the Spotify authorization flow.
 
 
 ## Spotify library scopes may need to be added to the auth config and then the user must reconnect

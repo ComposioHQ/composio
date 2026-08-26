@@ -2,24 +2,24 @@
 title: "Google Tasks"
 description: "Public OAuth, connection, and quota troubleshooting for Google Tasks."
 keywords: ["for-you","googletasks","oauth","platform","quotas","scopes","auth-config","authentication","errors-and-troubleshooting","sessions-and-execution","toolkits-and-providers","/kb/toolkits/google-tasks-troubleshooting","enable-the-google-tasks-api-for-custom-oauth","google-tasks-troubleshooting","handle-quota-or-rate-limit-exhaustion","resolve-error-400-invalid-scope-2","set-up-custom-google-oauth-credentials-2"]
-sources: [{"sourcePath":"toolkits/googletasks/public.md","sourceHeading":"Set up custom Google OAuth credentials"},{"sourcePath":"toolkits/googletasks/public.md","sourceHeading":"Resolve an \"App is blocked\" connection error"},{"sourcePath":"toolkits/googletasks/public.md","sourceHeading":"Enable the Google Tasks API for custom OAuth"},{"sourcePath":"toolkits/googletasks/public.md","sourceHeading":"Resolve `Error 400: invalid_scope`"},{"sourcePath":"toolkits/googletasks/public.md","sourceHeading":"Configure the consent-screen name on the customer-owned OAuth app"},{"sourcePath":"toolkits/googletasks/public.md","sourceHeading":"Resolve 401 errors on tool calls"}]
-sourceCommit: "d57f3d69079ee3819f4136df54512cdf0416cec0"
-lastVerifiedAt: "2026-08-17"
-reviewAfter: "2026-11-15"
+sources: [{"sourcePath":"toolkits/googletasks/public.md","sourceHeading":"Set up custom Google OAuth credentials"},{"sourcePath":"toolkits/googletasks/public.md","sourceHeading":"Resolve an \"App is blocked\" connection error"},{"sourcePath":"toolkits/googletasks/public.md","sourceHeading":"Enable the Google Tasks API for custom OAuth"},{"sourcePath":"toolkits/googletasks/public.md","sourceHeading":"Resolve `Error 400: invalid_scope`"},{"sourcePath":"toolkits/googletasks/public.md","sourceHeading":"Choose managed or customer-owned Google OAuth"},{"sourcePath":"toolkits/googletasks/public.md","sourceHeading":"Resolve 401 errors on tool calls"}]
+sourceCommit: "5eac683455ff252a7a3b62f33ab6566445009b52"
+lastVerifiedAt: "2026-08-24"
+reviewAfter: "2026-11-22"
 freshness: "evergreen"
 topics: ["auth-config","authentication","errors-and-troubleshooting","sessions-and-execution","toolkits-and-providers"]
 toolkitSlugs: ["googletasks"]
 aliases: ["/kb/toolkits/google-tasks-troubleshooting","enable-the-google-tasks-api-for-custom-oauth","google-tasks-troubleshooting","handle-quota-or-rate-limit-exhaustion","resolve-error-400-invalid-scope-2","set-up-custom-google-oauth-credentials-2"]
 ---
-Use this guide to configure customer-owned Google OAuth for Google Tasks and troubleshoot consent, scope, or token failures.
+Use this guide to choose managed or customer-owned Google OAuth for Google Tasks and troubleshoot consent, scope, or token failures.
 
-## Configure custom Google OAuth for Google Tasks
+## Configure Google OAuth for Google Tasks
 
-**Follow the Google Apps credential setup guide.** For a step-by-step guide to creating and configuring Google OAuth credentials with Composio, see [How to create OAuth2 credentials for Google Apps](https://composio.dev/auth/googleapps).
+**Follow the Google Apps credential setup guide for custom OAuth.** For a step-by-step guide to creating and configuring Google OAuth credentials with Composio, see [How to create OAuth2 credentials for Google Apps](https://composio.dev/auth/googleapps).
 
-**Enable the Google Tasks API in the credential's Cloud project.** When using custom credentials, enable the Google Tasks API in the Google Cloud project that owns the credentials. After enabling it under **APIs & Services**, wait a few minutes and retry.
+**Enable the Google Tasks API for custom OAuth.** Enable the Google Tasks API in the Google Cloud project that owns the credentials. After enabling it under **APIs & Services**, wait a few minutes and retry.
 
-**Set the consent-screen name and current redirect URL.** Google Tasks currently uses customer-owned OAuth credentials. Configure the app name and branding in the Google Cloud project that owns those credentials, and use the redirect URL shown by Composio's current auth-config flow.
+**Choose managed or customer-owned OAuth.** Use Composio-managed OAuth for the standard connection flow. Use a custom Google OAuth app when you need control over scopes, consent-screen branding, or Google Cloud project policy. For custom OAuth, configure the app name and branding in that project and use the redirect URL shown by Composio's current auth-config flow.
 
 ## Troubleshoot Google Tasks OAuth and tool calls
 
