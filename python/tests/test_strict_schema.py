@@ -270,15 +270,20 @@ class TestToStrictJsonSchema:
             ("properties.all", "allOf"),
         ]
 
-    def test_inlines_refs_dedupes_required_and_reports_dangling_refs(self):
+    def test_keeps_defs_and_refs_and_reports_dangling_refs(self):
         result = to_strict_json_schema(
             {
                 "type": "object",
                 "properties": {
                     "cfg": {"$ref": "#/$defs/Config"},
+                    "optionalCfg": {
+                        "$ref": "#/$defs/Config",
+                        "description": "optional",
+                    },
                     "missing": {"$ref": "#/$defs/Nope"},
+                    "external": {"$ref": "https://example.com/schema.json"},
                 },
-                "required": ["cfg", "cfg", "missing"],
+                "required": ["cfg", "cfg", "missing", "external"],
                 "$defs": {
                     "Config": {
                         "type": "object",
@@ -292,23 +297,33 @@ class TestToStrictJsonSchema:
             }
         )
 
-        assert "$ref" not in json.dumps(result.schema)
-        assert "$defs" not in result.schema
-        assert result.schema["properties"]["cfg"] == {
-            "type": "object",
-            "properties": {
-                "url": {"type": "string"},
-                "note": {"type": ["string", "null"]},
-            },
-            "required": ["url", "note"],
-            "additionalProperties": False,
+        assert result.schema["properties"]["cfg"] == {"$ref": "#/$defs/Config"}
+        assert result.schema["properties"]["optionalCfg"] == {
+            "description": "optional",
+            "anyOf": [{"$ref": "#/$defs/Config"}, {"type": "null"}],
         }
-        assert result.schema["required"] == ["cfg", "missing"]
-        assert [(e.path, e.keyword) for e in result.unsupported] == [
-            ("", "$ref"),
-            ("properties.missing", "additionalProperties"),
+        assert result.schema["$defs"] == {
+            "Config": {
+                "type": "object",
+                "properties": {
+                    "url": {"type": "string"},
+                    "note": {"type": ["string", "null"]},
+                },
+                "required": ["url", "note"],
+                "additionalProperties": False,
+            }
+        }
+        assert result.schema["required"] == [
+            "cfg",
+            "optionalCfg",
+            "missing",
+            "external",
         ]
-        assert ("properties.cfg.properties.note", "optional-property-nullable") in [
+        assert [(e.path, e.keyword) for e in result.unsupported] == [
+            ("properties.missing", "$ref"),
+            ("properties.external", "$ref"),
+        ]
+        assert ("$defs.Config.properties.note", "optional-property-nullable") in [
             (c.path, c.reason) for c in result.changes
         ]
 
@@ -367,7 +382,7 @@ class TestToStrictJsonSchema:
         assert twice.changes == []
         assert twice.unsupported == []
 
-    def test_reports_non_object_and_cyclic_roots_as_unsupported(self):
+    def test_reports_non_object_roots_as_unsupported_and_keeps_recursive_defs(self):
         assert [
             (e.path, e.keyword)
             for e in to_strict_json_schema({"type": "string"}).unsupported
@@ -385,14 +400,26 @@ class TestToStrictJsonSchema:
                 "$defs": {
                     "Node": {
                         "type": "object",
-                        "properties": {"child": {"$ref": "#/$defs/Node"}},
-                        "required": ["child"],
+                        "properties": {
+                            "child": {"$ref": "#/$defs/Node"},
+                            "label": {"type": "string"},
+                        },
+                        "required": ["label"],
                     }
                 },
             }
         )
-        # The cycle-break sentinel is a free-form object strict mode cannot express.
-        assert "additionalProperties" in {e.keyword for e in cyclic.unsupported}
+        # Recursion through $defs is representable in strict mode.
+        assert cyclic.unsupported == []
+        assert cyclic.schema["$defs"]["Node"] == {
+            "type": "object",
+            "properties": {
+                "child": {"anyOf": [{"$ref": "#/$defs/Node"}, {"type": "null"}]},
+                "label": {"type": "string"},
+            },
+            "required": ["child", "label"],
+            "additionalProperties": False,
+        }
 
     def test_raises_past_maximum_depth(self):
         deep = {"type": "string"}
@@ -425,7 +452,10 @@ _OMIT_SCHEMA = {
                 "properties": {"id": {"type": "string"}, "tag": {"type": "string"}},
             },
         },
+        "refd": {"$ref": "#/$defs/Str"},
+        "refdNullable": {"$ref": "#/$defs/NullableStr"},
     },
+    "$defs": {"Str": {"type": "string"}, "NullableStr": {"type": ["string", "null"]}},
 }
 
 
@@ -438,6 +468,8 @@ class TestOmitNullToolArguments:
             "choice": None,
             "unknown": None,
             "rows": [{"id": "1", "tag": None}, None],
+            "refd": None,
+            "refdNullable": None,
         }
         snapshot = copy.deepcopy(arguments)
 
@@ -447,6 +479,7 @@ class TestOmitNullToolArguments:
             "choice": None,
             "unknown": None,
             "rows": [{"id": "1"}, None],
+            "refdNullable": None,
         }
         assert arguments == snapshot
 
@@ -487,9 +520,7 @@ class TestOpenAIResponsesProviderStrict:
                 {
                     "type": "object",
                     "properties": {
-                        "cfg": {
-                            "$ref": "#/$defs/Config",
-                        },
+                        "cfg": {"$ref": "#/$defs/Config"},
                         "id": {"type": ["string", "null"]},
                         "label": {"type": "string"},
                     },
@@ -509,11 +540,17 @@ class TestOpenAIResponsesProviderStrict:
         )
 
         assert wrapped["strict"] is True
-        assert "$ref" not in json.dumps(wrapped)
         assert wrapped["parameters"] == {
             "type": "object",
             "properties": {
-                "cfg": {
+                "cfg": {"$ref": "#/$defs/Config"},
+                "id": {"type": ["string", "null"]},
+                "label": {"type": ["string", "null"]},
+            },
+            "required": ["cfg", "id", "label"],
+            "additionalProperties": False,
+            "$defs": {
+                "Config": {
                     "type": "object",
                     "properties": {
                         "url": {"type": "string"},
@@ -521,12 +558,8 @@ class TestOpenAIResponsesProviderStrict:
                     },
                     "required": ["url", "note"],
                     "additionalProperties": False,
-                },
-                "id": {"type": ["string", "null"]},
-                "label": {"type": ["string", "null"]},
+                }
             },
-            "required": ["cfg", "id", "label"],
-            "additionalProperties": False,
         }
 
     def test_wrap_tool_sends_unsupported_schemas_without_strict(self):

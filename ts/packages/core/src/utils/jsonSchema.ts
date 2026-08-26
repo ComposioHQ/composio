@@ -545,8 +545,8 @@ export interface StrictJsonSchemaResult {
    */
   schema: Record<string, unknown>;
   /**
-   * The dereferenced input the rewrite was computed from. Optionality is
-   * decided against this schema, so it is what `omitNullToolArguments` needs.
+   * The input schema the rewrite was computed from. Optionality is decided
+   * against this schema, so it is what `omitNullToolArguments` needs.
    */
   source: Record<string, unknown>;
   /** Lossless rewrites, capped at 50 entries; see `totalChanges`. */
@@ -596,8 +596,24 @@ function widenToNullable(node: Record<string, unknown>): Record<string, unknown>
   };
 }
 
-/** Whether a (dereferenced) schema node accepts `null` as an instance. */
-function schemaAcceptsNull(node: unknown): boolean {
+/**
+ * Follows local `$ref` pointers from `node` until a concrete schema node is
+ * reached. Unresolvable or over-long chains return the last node seen.
+ */
+function resolveLocalRefs(node: unknown, root: Record<string, unknown>): unknown {
+  let current = node;
+  for (let hops = 0; hops < MAX_REF_CHAIN_DEPTH; hops++) {
+    if (!isPlainObject(current) || typeof current.$ref !== 'string') return current;
+    const resolution = tryResolvePointer(root, current.$ref);
+    if (resolution.kind === 'unresolved') return current;
+    current = resolution.value;
+  }
+  return current;
+}
+
+/** Whether a schema node accepts `null` as an instance. */
+function schemaAcceptsNull(schema: unknown, root: Record<string, unknown>): boolean {
+  const node = resolveLocalRefs(schema, root);
   if (!isPlainObject(node)) return true;
   if (typeof node.type === 'string') return node.type === 'null';
   if (Array.isArray(node.type)) return node.type.includes('null');
@@ -605,7 +621,7 @@ function schemaAcceptsNull(node: unknown): boolean {
   if ('const' in node) return node.const === null;
   for (const keyword of ['anyOf', 'oneOf']) {
     const branches = node[keyword];
-    if (Array.isArray(branches)) return branches.some(schemaAcceptsNull);
+    if (Array.isArray(branches)) return branches.some(branch => schemaAcceptsNull(branch, root));
   }
   return true;
 }
@@ -624,17 +640,20 @@ function schemaAcceptsNull(node: unknown): boolean {
  *    before executing the tool (see {@link omitNullToolArguments});
  *  - `type` arrays are kept as-is (the API accepts them); `oneOf` becomes
  *    `anyOf`; `default` and `examples` are stripped;
+ *  - local `$ref`s into `$defs`/`definitions` are kept (the API supports
+ *    them, including recursion) and the definitions themselves are
+ *    normalized; an optional `$ref` property is widened with an `anyOf`
+ *    null branch;
  *  - constructs strict mode cannot express — objects that accept arbitrary
  *    keys (schema-valued or `true` `additionalProperties`, `patternProperties`,
- *    property-less free-form objects), `allOf`, `prefixItems`, dangling or
- *    cyclic `$ref`s, and a non-object root — are reported in `unsupported`
+ *    property-less free-form objects), `allOf`, `prefixItems`, external or
+ *    dangling `$ref`s, and a non-object root — are reported in `unsupported`
  *    rather than rewritten into something narrower. Callers send such a tool
  *    without strict mode.
  *
- * The pipeline is `dereferenceJsonSchema` (lenient) → strict rewrite →
- * `deduplicateJsonSchemaRequiredArrays`, the same shape the Anthropic
- * provider uses. The input is never mutated. Every rewrite is recorded in
- * `changes` (capped at 50 entries; `totalChanges` carries the real count).
+ * The input is never mutated. Every rewrite is recorded in `changes` (capped
+ * at 50 entries; `totalChanges` carries the real count), and `required`
+ * arrays are de-duplicated at the end.
  */
 export function toStrictJsonSchema(schema: unknown): StrictJsonSchemaResult {
   const changes: StrictSchemaChange[] = [];
@@ -645,15 +664,7 @@ export function toStrictJsonSchema(schema: unknown): StrictJsonSchemaResult {
     if (changes.length < MAX_STRICT_CHANGES) changes.push(change);
   };
 
-  const dereferenced = dereferenceJsonSchema(schema, {
-    onUnresolved: 'sentinel',
-    onReplace: ref =>
-      unsupported.push({
-        path: '',
-        keyword: '$ref',
-        detail: `unresolved $ref "${ref}"`,
-      }),
-  });
+  const root: Record<string, unknown> = isPlainObject(schema) ? schema : {};
 
   function walkChildren(
     node: Record<string, unknown>,
@@ -733,6 +744,21 @@ export function toStrictJsonSchema(schema: unknown): StrictJsonSchemaResult {
 
     const out = walkChildren(node, mode, depth, path);
 
+    if (typeof node.$ref === 'string') {
+      const resolution = node.$ref.startsWith('#/')
+        ? tryResolvePointer(root, node.$ref)
+        : ({ kind: 'unresolved', reason: 'malformed-pointer' } as const);
+      if (resolution.kind === 'unresolved') {
+        unsupported.push({
+          path,
+          keyword: '$ref',
+          detail: `unresolved $ref "${node.$ref}"`,
+        });
+      }
+      // The referenced definition is normalized where it is declared.
+      return out;
+    }
+
     const declaresObjectType =
       out.type === 'object' || (Array.isArray(out.type) && out.type.includes('object'));
     if (!declaresObjectType && !isPlainObject(out.properties)) return out;
@@ -784,7 +810,7 @@ export function toStrictJsonSchema(schema: unknown): StrictJsonSchemaResult {
     };
   }
 
-  const normalized = walk(dereferenced, 'schema', 0, '');
+  const normalized = walk(root, 'schema', 0, '');
   if (!isPlainObject(normalized) || normalized.type !== 'object') {
     unsupported.push({
       path: '',
@@ -795,7 +821,7 @@ export function toStrictJsonSchema(schema: unknown): StrictJsonSchemaResult {
 
   return {
     schema: deduplicateJsonSchemaRequiredArrays(normalized) as Record<string, unknown>,
-    source: dereferenced as Record<string, unknown>,
+    source: root,
     changes,
     totalChanges,
     unsupported,
@@ -822,26 +848,40 @@ export function omitNullToolArguments(
   args: Record<string, unknown>,
   schema: unknown
 ): Record<string, unknown> {
-  return omitNulls(args, schema) as Record<string, unknown>;
+  const root: Record<string, unknown> = isPlainObject(schema) ? schema : {};
+  return omitNulls(args, root, root, 0) as Record<string, unknown>;
 }
 
-function omitNulls(value: unknown, schema: unknown): unknown {
-  const node = isPlainObject(schema) ? schema : undefined;
+function omitNulls(
+  value: unknown,
+  schema: unknown,
+  root: Record<string, unknown>,
+  depth: number
+): unknown {
+  if (depth > MAX_NODE_DEPTH) {
+    throw new RangeError(`Tool arguments exceed maximum nesting depth of ${MAX_NODE_DEPTH}`);
+  }
+  const resolved = resolveLocalRefs(schema, root);
+  const node = isPlainObject(resolved) ? resolved : undefined;
   if (Array.isArray(value)) {
     const items = node && isPlainObject(node.items) ? node.items : undefined;
-    return value.map(item => omitNulls(item, items));
+    return value.map(item => omitNulls(item, items, root, depth + 1));
   }
   if (!isPlainObject(value)) return value;
 
   const properties = node && isPlainObject(node.properties) ? node.properties : {};
   const clone: Record<string, unknown> = {};
   for (const [key, child] of Object.entries(value)) {
-    const propertySchema = properties[key];
+    const propertySchema = Object.prototype.hasOwnProperty.call(properties, key)
+      ? properties[key]
+      : undefined;
     if (child === null) {
-      if (propertySchema === undefined || schemaAcceptsNull(propertySchema)) clone[key] = child;
+      if (propertySchema === undefined || schemaAcceptsNull(propertySchema, root)) {
+        clone[key] = child;
+      }
       continue;
     }
-    clone[key] = omitNulls(child, propertySchema);
+    clone[key] = omitNulls(child, propertySchema, root, depth + 1);
   }
   return clone;
 }

@@ -17,6 +17,7 @@ import {
   McpUrlResponse,
   McpServerGetResponse,
   deduplicateJsonSchemaRequiredArrays,
+  dereferenceJsonSchema,
   toStrictJsonSchema,
   jsonSchemaToZodSchema,
   logger,
@@ -146,7 +147,11 @@ export class VercelProvider extends BaseAgenticProvider<
       }
     }
 
-    const inputParametersSchema = jsonSchemaToZodSchema(parameters);
+    // The Zod converter does not follow $ref, so inline the definitions the
+    // strict rewrite keeps (cycles fall back to the permissive sentinel).
+    const inputParametersSchema = jsonSchemaToZodSchema(
+      strictSource ? dereferenceJsonSchema(parameters, { onUnresolved: 'sentinel' }) : parameters
+    );
 
     return tool({
       description: composioTool.description,

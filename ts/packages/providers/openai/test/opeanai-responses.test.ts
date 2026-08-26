@@ -191,7 +191,7 @@ describe('OpenAIResponsesProvider', () => {
       });
     });
 
-    it('keeps nullable nested objects nullable and inlines $defs under strict mode', () => {
+    it('keeps nullable nested objects nullable and $defs referenced under strict mode', () => {
       const strictProvider = new OpenAIResponsesProvider({ strict: true });
       const wrapped = strictProvider.wrapTool({
         ...mockTool,
@@ -211,20 +211,22 @@ describe('OpenAIResponsesProvider', () => {
         },
       }) as MockedOpenAITool;
 
-      expect(JSON.stringify(wrapped.parameters)).not.toContain('$ref');
       expect(wrapped.strict).toBe(true);
       expect(wrapped.parameters).toEqual({
         type: 'object',
         properties: {
-          cfg: {
+          cfg: { $ref: '#/$defs/Config' },
+        },
+        required: ['cfg'],
+        additionalProperties: false,
+        $defs: {
+          Config: {
             type: ['object', 'null'],
             properties: { url: { type: 'string' }, opt: { type: ['string', 'null'] } },
             required: ['url', 'opt'],
             additionalProperties: false,
           },
         },
-        required: ['cfg'],
-        additionalProperties: false,
       });
     });
 

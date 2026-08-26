@@ -11,23 +11,26 @@ is dropped, so the model keeps every parameter it could pass before; the strict
 provider drops a ``null`` the tool's own schema does not accept before
 executing the tool (see :func:`omit_null_tool_arguments`).
 
-Constructs strict mode cannot express — objects that accept arbitrary keys
-(schema-valued or ``True`` ``additionalProperties``, ``patternProperties``,
-property-less free-form objects), ``allOf``, ``prefixItems``, dangling or
-cyclic ``$ref`` pointers and a non-object root — are reported in
+Local ``$ref`` pointers into ``$defs``/``definitions`` are kept (the API
+supports them, including recursion) and the definitions themselves are
+normalized; an optional ``$ref`` property is widened with an ``anyOf`` null
+branch. Constructs strict mode cannot express — objects that accept arbitrary
+keys (schema-valued or ``True`` ``additionalProperties``, ``patternProperties``,
+property-less free-form objects), ``allOf``, ``prefixItems``, external or
+dangling ``$ref`` pointers and a non-object root — are reported in
 ``unsupported`` instead of being rewritten into something narrower; the
 provider sends such a tool without strict mode.
 
-The pipeline is ``dereference_json_schema`` (lenient) → strict rewrite →
-``required`` de-duplication. The input is never mutated and every rewrite is
-recorded (capped at 50 entries; ``total_changes`` carries the real count).
+The input is never mutated, every rewrite is recorded (capped at 50 entries;
+``total_changes`` carries the real count) and ``required`` arrays are
+de-duplicated at the end.
 """
 
 from __future__ import annotations
 
 import typing as t
 
-from composio.utils.json_schema import dereference_json_schema
+from composio.utils.json_schema import MAX_REF_CHAIN_DEPTH, _try_resolve_pointer
 
 MAX_NODE_DEPTH = 512
 MAX_CHANGES = 50
@@ -90,7 +93,7 @@ class StrictJsonSchemaResult(t.NamedTuple):
     schema: dict[str, t.Any]
     """The strict schema; only usable when ``unsupported`` is empty."""
     source: dict[str, t.Any]
-    """The dereferenced input optionality was decided against."""
+    """The input schema optionality was decided against."""
     changes: list[StrictSchemaChange]
     total_changes: int
     unsupported: list[StrictSchemaIncompatibility]
@@ -121,8 +124,22 @@ def _widen_to_nullable(node: dict[str, t.Any]) -> dict[str, t.Any]:
     return {**annotations, "anyOf": [rest, {"type": "null"}]}
 
 
-def _schema_accepts_null(node: t.Any) -> bool:
-    """Whether a (dereferenced) schema node accepts ``null`` as an instance."""
+def _resolve_local_refs(node: t.Any, root: dict[str, t.Any]) -> t.Any:
+    """Follow local ``$ref`` pointers until a concrete node is reached."""
+    current = node
+    for _ in range(MAX_REF_CHAIN_DEPTH):
+        if not isinstance(current, dict) or not isinstance(current.get("$ref"), str):
+            return current
+        resolution = _try_resolve_pointer(root, current["$ref"])
+        if not resolution.ok:
+            return current
+        current = resolution.value
+    return current
+
+
+def _schema_accepts_null(schema: t.Any, root: dict[str, t.Any]) -> bool:
+    """Whether a schema node accepts ``null`` as an instance."""
+    node = _resolve_local_refs(schema, root)
     if not isinstance(node, dict):
         return True
     node_type = node.get("type")
@@ -137,7 +154,7 @@ def _schema_accepts_null(node: t.Any) -> bool:
     for keyword in ("anyOf", "oneOf"):
         branches = node.get(keyword)
         if isinstance(branches, list):
-            return any(_schema_accepts_null(b) for b in branches)
+            return any(_schema_accepts_null(b, root) for b in branches)
     return True
 
 
@@ -162,7 +179,8 @@ def _dedupe_required(value: t.Any, is_schema: bool = True, depth: int = 0) -> t.
 
 
 class _Walker:
-    def __init__(self) -> None:
+    def __init__(self, root: dict[str, t.Any]) -> None:
+        self.root = root
         self.changes: list[StrictSchemaChange] = []
         self.total_changes = 0
         self.unsupported: list[StrictSchemaIncompatibility] = []
@@ -238,6 +256,14 @@ class _Walker:
 
         out = self.walk_children(node, mode, depth, path)
 
+        ref = node.get("$ref")
+        if isinstance(ref, str):
+            resolved = ref.startswith("#/") and _try_resolve_pointer(self.root, ref).ok
+            if not resolved:
+                self.reject(path, "$ref", f'unresolved $ref "{ref}"')
+            # The referenced definition is normalized where it is declared.
+            return out
+
         node_type = out.get("type")
         declares_object = node_type == "object" or (
             isinstance(node_type, list) and "object" in node_type
@@ -294,20 +320,14 @@ def to_strict_json_schema(schema: t.Any) -> StrictJsonSchemaResult:
     :param schema: The JSON schema to normalize; never mutated.
     :return: A :class:`StrictJsonSchemaResult`.
     """
-    walker = _Walker()
-    dereferenced = dereference_json_schema(
-        schema,
-        on_unresolved="sentinel",
-        on_replace=lambda ref, _reason: walker.reject(
-            "", "$ref", f'unresolved $ref "{ref}"'
-        ),
-    )
-    normalized = _dedupe_required(walker.walk(dereferenced, "schema", 0, ""))
+    root: dict[str, t.Any] = schema if isinstance(schema, dict) else {}
+    walker = _Walker(root)
+    normalized = _dedupe_required(walker.walk(root, "schema", 0, ""))
     if not isinstance(normalized, dict) or normalized.get("type") != "object":
         walker.reject("", "type", "root must be a non-nullable object")
     return StrictJsonSchemaResult(
         schema=normalized,
-        source=dereferenced,
+        source=root,
         changes=walker.changes,
         total_changes=walker.total_changes,
         unsupported=walker.unsupported,
@@ -324,17 +344,26 @@ def omit_null_tool_arguments(
     The model then sends ``null`` for a parameter it would otherwise have
     omitted; forwarding it to the tool would fail validation against the
     tool's real schema, so it is treated as "omitted". A ``null`` the original
-    schema accepts is kept. ``schema`` is the dereferenced tool schema
-    (``StrictJsonSchemaResult.source``). The input is not mutated.
+    schema accepts is kept. ``schema`` is the tool schema the strict rewrite
+    was computed from (``StrictJsonSchemaResult.source``). The input is not
+    mutated.
     """
-    return t.cast(dict[str, t.Any], _omit_nulls(arguments, schema))
+    root: dict[str, t.Any] = schema if isinstance(schema, dict) else {}
+    return t.cast(dict[str, t.Any], _omit_nulls(arguments, root, root, 0))
 
 
-def _omit_nulls(value: t.Any, schema: t.Any) -> t.Any:
-    node = schema if isinstance(schema, dict) else {}
+def _omit_nulls(
+    value: t.Any, schema: t.Any, root: dict[str, t.Any], depth: int
+) -> t.Any:
+    if depth > MAX_NODE_DEPTH:
+        raise ValueError(
+            f"Tool arguments exceed maximum nesting depth of {MAX_NODE_DEPTH}"
+        )
+    resolved = _resolve_local_refs(schema, root)
+    node = resolved if isinstance(resolved, dict) else {}
     if isinstance(value, list):
         items = node.get("items") if isinstance(node.get("items"), dict) else None
-        return [_omit_nulls(item, items) for item in value]
+        return [_omit_nulls(item, items, root, depth + 1) for item in value]
     if not isinstance(value, dict):
         return value
     declared = node.get("properties")
@@ -343,8 +372,8 @@ def _omit_nulls(value: t.Any, schema: t.Any) -> t.Any:
     for key, child in value.items():
         property_schema = properties.get(key)
         if child is None:
-            if property_schema is None or _schema_accepts_null(property_schema):
+            if property_schema is None or _schema_accepts_null(property_schema, root):
                 clone[key] = child
             continue
-        clone[key] = _omit_nulls(child, property_schema)
+        clone[key] = _omit_nulls(child, property_schema, root, depth + 1)
     return clone

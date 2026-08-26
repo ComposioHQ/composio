@@ -276,14 +276,16 @@ describe('toStrictJsonSchema', () => {
     ]);
   });
 
-  it('inlines $ref/$defs, dedupes required and reports dangling refs', () => {
+  it('keeps $defs and $ref, normalizes the definitions and reports dangling refs', () => {
     const { schema, changes, unsupported } = toStrictJsonSchema({
       type: 'object',
       properties: {
         cfg: { $ref: '#/$defs/Config' },
+        optionalCfg: { $ref: '#/$defs/Config', description: 'optional' },
         missing: { $ref: '#/$defs/Nope' },
+        external: { $ref: 'https://example.com/schema.json' },
       },
-      required: ['cfg', 'cfg', 'missing'],
+      required: ['cfg', 'cfg', 'missing', 'external'],
       $defs: {
         Config: {
           type: 'object',
@@ -293,26 +295,31 @@ describe('toStrictJsonSchema', () => {
       },
     });
 
-    expect(JSON.stringify(schema)).not.toContain('$ref');
-    expect(schema.$defs).toBeUndefined();
-    expect(propertyOf(schema, 'cfg')).toEqual({
-      type: 'object',
-      properties: { url: { type: 'string' }, note: { type: ['string', 'null'] } },
-      required: ['url', 'note'],
-      additionalProperties: false,
+    expect(propertyOf(schema, 'cfg')).toEqual({ $ref: '#/$defs/Config' });
+    expect(propertyOf(schema, 'optionalCfg')).toEqual({
+      description: 'optional',
+      anyOf: [{ $ref: '#/$defs/Config' }, { type: 'null' }],
     });
-    expect(schema.required).toEqual(['cfg', 'missing']);
+    expect(schema.$defs).toEqual({
+      Config: {
+        type: 'object',
+        properties: { url: { type: 'string' }, note: { type: ['string', 'null'] } },
+        required: ['url', 'note'],
+        additionalProperties: false,
+      },
+    });
+    expect(schema.required).toEqual(['cfg', 'optionalCfg', 'missing', 'external']);
     expect(unsupported).toEqual([
-      { path: '', keyword: '$ref', detail: 'unresolved $ref "#/$defs/Nope"' },
+      { path: 'properties.missing', keyword: '$ref', detail: 'unresolved $ref "#/$defs/Nope"' },
       {
-        path: 'properties.missing',
-        keyword: 'additionalProperties',
-        detail: 'object accepts arbitrary keys',
+        path: 'properties.external',
+        keyword: '$ref',
+        detail: 'unresolved $ref "https://example.com/schema.json"',
       },
     ]);
     expect(changes).toContainEqual(
       expect.objectContaining({
-        path: 'properties.cfg.properties.note',
+        path: '$defs.Config.properties.note',
         reason: 'optional-property-nullable',
       })
     );
@@ -373,7 +380,7 @@ describe('toStrictJsonSchema', () => {
     expect(twice.unsupported).toEqual([]);
   });
 
-  it('reports non-object and cyclic roots as unsupported', () => {
+  it('reports non-object roots as unsupported and keeps recursive $defs', () => {
     expect(toStrictJsonSchema({ type: 'string' }).unsupported).toEqual([
       { path: '', keyword: 'type', detail: 'root must be a non-nullable object' },
     ]);
@@ -389,15 +396,22 @@ describe('toStrictJsonSchema', () => {
       $defs: {
         Node: {
           type: 'object',
-          properties: { child: { $ref: '#/$defs/Node' } },
-          required: ['child'],
+          properties: { child: { $ref: '#/$defs/Node' }, label: { type: 'string' } },
+          required: ['label'],
         },
       },
     });
-    // The cycle-break sentinel is a free-form object, which strict mode cannot express.
-    expect(cyclic.unsupported).toContainEqual(
-      expect.objectContaining({ keyword: 'additionalProperties' })
-    );
+    // Recursion through $defs is representable in strict mode.
+    expect(cyclic.unsupported).toEqual([]);
+    expect((cyclic.schema.$defs as Record<string, unknown>).Node).toEqual({
+      type: 'object',
+      properties: {
+        child: { anyOf: [{ $ref: '#/$defs/Node' }, { type: 'null' }] },
+        label: { type: 'string' },
+      },
+      required: ['child', 'label'],
+      additionalProperties: false,
+    });
   });
 
   it('throws past the maximum nesting depth', () => {
@@ -426,7 +440,10 @@ describe('omitNullToolArguments', () => {
         type: 'array',
         items: { type: 'object', properties: { id: { type: 'string' }, tag: { type: 'string' } } },
       },
+      refd: { $ref: '#/$defs/Str' },
+      refdNullable: { $ref: '#/$defs/NullableStr' },
     },
+    $defs: { Str: { type: 'string' }, NullableStr: { type: ['string', 'null'] } },
   };
 
   it('drops nulls the schema does not accept and keeps the ones it does', () => {
@@ -437,6 +454,8 @@ describe('omitNullToolArguments', () => {
       choice: null,
       unknown: null,
       rows: [{ id: '1', tag: null }, null],
+      refd: null,
+      refdNullable: null,
     };
     const snapshot = JSON.parse(JSON.stringify(input));
 
@@ -446,6 +465,7 @@ describe('omitNullToolArguments', () => {
       choice: null,
       unknown: null,
       rows: [{ id: '1' }, null],
+      refdNullable: null,
     });
     expect(input).toEqual(snapshot);
   });
