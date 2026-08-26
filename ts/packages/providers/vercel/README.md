@@ -45,7 +45,7 @@ For multi-turn conversations, store `session.sessionId` and reuse it with `compo
 
 ## Strict mode
 
-Some models reject tool schemas that contain optional parameters. Pass `strict: true` to drop every non-required property from each tool's input schema before it reaches the AI SDK:
+Some models reject tool schemas that contain optional parameters. Pass `strict: true` to normalize each tool's input schema for OpenAI structured outputs before it reaches the AI SDK: every object lists all of its properties in `required` and is closed, and optional properties stay available but accept `null`. A `null` the model sends for an optional parameter is dropped before the tool runs. Tools whose schema cannot be expressed in strict mode (objects that accept arbitrary keys, `allOf`, `prefixItems`) keep their original schema and log a warning:
 
 ```typescript
 const composio = new Composio({ provider: new VercelProvider({ strict: true }) });

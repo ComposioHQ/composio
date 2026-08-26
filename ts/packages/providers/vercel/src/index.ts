@@ -17,11 +17,11 @@ import {
   McpUrlResponse,
   McpServerGetResponse,
   deduplicateJsonSchemaRequiredArrays,
-  dereferenceJsonSchema,
   toStrictJsonSchema,
   jsonSchemaToZodSchema,
   logger,
   normalizeToolArguments,
+  omitNullToolArguments,
 } from '@composio/core';
 import type { ToolSet as VercelToolSet, Tool as VercelTool } from 'ai';
 import { tool } from 'ai';
@@ -112,27 +112,41 @@ export class VercelProvider extends BaseAgenticProvider<
   wrapTool(composioTool: Tool, executeTool: ExecuteToolFn): VercelTool {
     const inputParams = composioTool.inputParameters;
 
-    let parameters: Record<string, unknown> = (inputParams ?? {}) as Record<string, unknown>;
-    if (this.strict && inputParams?.type === 'object') {
-      // Structured outputs reject schemas whose nested objects keep optional
-      // properties or their own additionalProperties, so the strict contract
-      // must be applied at every depth. Inline $ref/$defs first (lenient mode
-      // keeps upstream schemas with dangling refs usable), then normalize.
-      const dereferenced = dereferenceJsonSchema(parameters, {
-        onUnresolved: 'sentinel',
-        onReplace: ref =>
+    // Canonicalize required arrays at the vendor-schema emission boundary.
+    let parameters: Record<string, unknown> = deduplicateJsonSchemaRequiredArrays(
+      (inputParams ?? {}) as Record<string, unknown>
+    );
+    // Under strict mode optional parameters are emitted as required-nullable,
+    // so a `null` the tool's own schema does not accept means "omitted".
+    let strictSource: Record<string, unknown> | undefined;
+    if (this.strict && inputParams) {
+      // Structured outputs enforce their contract at every depth: all
+      // properties required, closed objects, no annotation keywords. The
+      // strict rewrite keeps every parameter (optional ones become nullable)
+      // and reports constructs it cannot express; such a tool keeps its
+      // original schema rather than a narrower one.
+      const strict = toStrictJsonSchema(inputParams);
+      if (strict.unsupported.length > 0) {
+        const reasons = strict.unsupported
+          .map(entry => `${entry.path || '<root>'}: ${entry.keyword} (${entry.detail})`)
+          .join('; ');
+        logger.warn(
+          `VercelProvider: tool "${composioTool.slug}" keeps its non-strict schema because it cannot be expressed as strict structured outputs: ${reasons}`
+        );
+      } else {
+        if (strict.totalChanges > 0) {
           logger.debug(
-            `VercelProvider: unresolved $ref "${ref}" in tool "${composioTool.slug}" replaced with a permissive schema`
-          ),
-      });
-      parameters = toStrictJsonSchema<Record<string, unknown>>(dereferenced).schema;
+            `VercelProvider: strict mode rewrote ${strict.totalChanges} node(s) of tool "${composioTool.slug}": ${strict.changes
+              .map(change => `${change.path}: ${change.reason}`)
+              .join('; ')}`
+          );
+        }
+        parameters = strict.schema;
+        strictSource = strict.source;
+      }
     }
 
-    // Canonicalize required arrays at the vendor-schema emission boundary,
-    // after any provider-specific schema transformations.
-    const inputParametersSchema = jsonSchemaToZodSchema(
-      deduplicateJsonSchemaRequiredArrays(parameters)
-    );
+    const inputParametersSchema = jsonSchemaToZodSchema(parameters);
 
     return tool({
       description: composioTool.description,
@@ -140,9 +154,10 @@ export class VercelProvider extends BaseAgenticProvider<
 
       execute: async params => {
         // Models occasionally emit tool input as a JSON string rather than an object (issue #2406).
+        const normalized = normalizeToolArguments(params, composioTool.slug);
         return await executeTool(
           composioTool.slug,
-          normalizeToolArguments(params, composioTool.slug)
+          strictSource ? omitNullToolArguments(normalized, strictSource) : normalized
         );
       },
     });
