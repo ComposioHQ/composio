@@ -272,8 +272,11 @@ class _Walker:
             return out
 
         properties: dict[str, t.Any] = dict(out.get("properties") or {})
+        required = out.get("required")
         declared_required = {
-            entry for entry in out.get("required") or [] if isinstance(entry, str)
+            entry
+            for entry in (required if isinstance(required, list) else [])
+            if isinstance(entry, str)
         }
         for name, property_schema in properties.items():
             if name in declared_required or not isinstance(property_schema, dict):
