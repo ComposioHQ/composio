@@ -2,24 +2,24 @@
 title: "Google BigQuery"
 description: "Current authentication guidance for the Google BigQuery toolkit."
 keywords: ["for-you","googlebigquery","oauth","platform","auth-config","authentication","errors-and-troubleshooting","toolkits-and-providers"]
-sources: [{"sourcePath":"toolkits/googlebigquery/public.md","sourceHeading":"BigQuery supports customer-owned OAuth2 and Google service-account auth"}]
-sourceCommit: "d57f3d69079ee3819f4136df54512cdf0416cec0"
-lastVerifiedAt: "2026-08-17"
-reviewAfter: "2026-11-15"
+sources: [{"sourcePath":"toolkits/googlebigquery/public.md","sourceHeading":"BigQuery supports managed OAuth2, custom OAuth2, and service-account auth"}]
+sourceCommit: "5eac683455ff252a7a3b62f33ab6566445009b52"
+lastVerifiedAt: "2026-08-24"
+reviewAfter: "2026-11-22"
 freshness: "evergreen"
 topics: ["auth-config","authentication","errors-and-troubleshooting","toolkits-and-providers"]
 toolkitSlugs: ["googlebigquery"]
 aliases: []
 ---
-## BigQuery supports customer-owned OAuth2 and Google service-account auth
+## BigQuery supports managed OAuth2, custom OAuth2, and service-account auth
 
-Create an auth config with the customer's Google OAuth app or service-account
-credentials. The current catalog does not advertise Composio-managed BigQuery
-OAuth. For OAuth, configure and verify the required Google scopes and use the
-redirect URL shown by Composio. For service-account auth, grant the service
-account only the BigQuery permissions required by the intended tools.
+Use Composio-managed OAuth for the standard connection flow. Use a custom Google
+OAuth app when you need control over scopes, consent-screen branding,
+or Google Cloud project policy. Service-account authentication is also available;
+grant the service account only the BigQuery permissions required by the intended
+tools.
 
 If Google blocks an OAuth consent flow, check the OAuth app's verification,
 test-user, organizational-policy, and requested-scope settings before treating
-the failure as a Composio-side problem. Generate a fresh auth link after correcting
+the failure as a Composio problem. Generate a fresh auth link after correcting
 the Google Cloud configuration.

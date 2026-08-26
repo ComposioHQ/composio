@@ -2,12 +2,12 @@
 
 For Claude Code Reddit MCP OAuth callback failures on the legacy MCP path, switch the MCP server URL to `https://connect.composio.dev/mcp`. Remove the old `x-api-key` header and configure the current `x-consumer-api-key` header from the AI Clients setup. Connect MCP can then start the Reddit authorization flow from the client.
 
-## Reddit supports OAuth 2.0 custom credentials in auth configs
+## Reddit supports managed and customer-owned OAuth 2.0
 
-Reddit uses customer-owned OAuth 2.0 credentials. Create the Reddit auth config
-with the customer's Reddit client ID and client secret after Reddit has approved
-the app for the intended access. This gives the customer control over provider
-app settings and credentials.
+Use Composio-managed OAuth for the standard connection flow. Create a custom
+auth config with the customer's Reddit client ID and client secret when they
+need control over provider app settings and credentials. Make sure Reddit has
+approved a custom app for its intended access before using it in production.
 
 ## Reddit toolkit behavior can change when Reddit changes its API or enforcement policies
 

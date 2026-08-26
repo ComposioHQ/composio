@@ -344,6 +344,8 @@ function previousAliasesBySource(
   previousManifest: KbManifest | undefined,
 ): Map<string, string[]> {
   const currentPaths = new Set(documents.map(document => document.relativePath));
+  const isInitialSupportImport =
+    previousManifest?.source.repository !== SOURCE_REPOSITORY;
   const aliases = new Map<string, string[]>();
   for (const guide of previousManifest?.guides ?? []) {
     const counts = new Map<string, number>();
@@ -367,7 +369,7 @@ function previousAliasesBySource(
     const primaryPath = primaryTopic ? `/kb/${primaryTopic}/${guide.slug}` : null;
     aliases.set(owner, [
       ...(aliases.get(owner) ?? []),
-      ...(primaryPath ? [primaryPath] : []),
+      ...(isInitialSupportImport && primaryPath ? [primaryPath] : []),
       guide.slug,
       ...guide.aliases,
     ]);
@@ -378,6 +380,7 @@ function previousAliasesBySource(
 function guideFor(
   document: SupportKnowledgeDocument,
   previousAliases: string[],
+  previousGuide?: KbGuideDefinition,
 ): KbGuideDefinition {
   const slug = slugify(document.relativePath.replace(/\/public\.md$/, ''));
   return {
@@ -392,21 +395,40 @@ function guideFor(
     topics: [...document.categories].sort(),
     tags: [...new Set([...document.tags, ...document.products])].sort(),
     aliases: previousAliases.filter(value => value !== slug),
-    relatedGuides: [],
-    externalResources: [],
+    relatedGuides: previousGuide?.relatedGuides ?? [],
+    externalResources: previousGuide?.externalResources ?? [],
     updatedAt: document.timestamp.slice(0, 10),
     lastVerifiedAt: document.lastReviewed,
     reviewAfter: document.reviewBy,
     freshness: importedFreshness(document),
     state: 'published',
-    featured: false,
+    featured: previousGuide?.featured ?? false,
+    ...(previousGuide?.verifyIgnoreToolSlugs?.length
+      ? { verifyIgnoreToolSlugs: previousGuide.verifyIgnoreToolSlugs }
+      : {}),
   };
+}
+
+function previousGuideForSource(
+  document: SupportKnowledgeDocument,
+  previousManifest: KbManifest | undefined,
+): KbGuideDefinition | undefined {
+  const expectedArticlePath = `${slugify(document.relativePath.replace(/\/public\.md$/, ''))}.md`;
+  return previousManifest?.guides
+    .filter((guide) => guide.sources.some((source) => source.sourcePath === document.relativePath))
+    .sort((left, right) => {
+      const leftExact = left.articlePath === expectedArticlePath ? 1 : 0;
+      const rightExact = right.articlePath === expectedArticlePath ? 1 : 0;
+      return rightExact - leftExact || left.slug.localeCompare(right.slug);
+    })[0];
 }
 
 export function buildSupportKnowledgeSnapshot(input: {
   sourceRoot: string;
   sourceCommit: string;
   previousManifest?: KbManifest;
+  previousSourceFiles?: Map<string, string>;
+  previousArticleFiles?: Map<string, string>;
   now: Date;
 }): SupportKnowledgeSnapshot {
   if (!input.sourceCommit.trim()) throw new Error('sourceCommit is required');
@@ -426,9 +448,31 @@ export function buildSupportKnowledgeSnapshot(input: {
   const articleFiles = new Map<string, string>();
   const previousAliases = previousAliasesBySource(publicDocuments, input.previousManifest);
   const guides = publicDocuments.map(document => {
-    const guide = guideFor(document, previousAliases.get(document.relativePath) ?? []);
-    sourceFiles.set(document.relativePath, normalizedSource(document));
-    articleFiles.set(guide.articlePath!, articleBody(document.body));
+    const previousGuide = previousGuideForSource(document, input.previousManifest);
+    const source = normalizedSource(document);
+    const sourceIsUnchanged = input.previousSourceFiles?.get(document.relativePath) === source;
+    const previousSourceHeadings = previousGuide?.sources
+      .filter(previousSource => previousSource.sourcePath === document.relativePath)
+      .map(previousSource => previousSource.sourceHeading);
+    const previousGuideMatchesSource = previousSourceHeadings !== undefined
+      && previousSourceHeadings.length === document.headings.length
+      && previousSourceHeadings.every((heading, index) => heading === document.headings[index]);
+    const canReusePreviousArticle = sourceIsUnchanged && previousGuideMatchesSource;
+    const guide = guideFor(
+      document,
+      previousAliases.get(document.relativePath) ?? [],
+      previousGuide,
+    );
+    sourceFiles.set(document.relativePath, source);
+    const previousArticle = previousGuide?.articlePath
+      ? input.previousArticleFiles?.get(previousGuide.articlePath)
+      : undefined;
+    articleFiles.set(
+      guide.articlePath!,
+      canReusePreviousArticle && previousArticle !== undefined
+        ? previousArticle
+        : articleBody(document.body),
+    );
     return guide;
   });
 

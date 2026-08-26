@@ -4,6 +4,7 @@ import { useDeferredValue, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { Search, Wrench } from 'lucide-react';
 import type { ToolkitKnowledgeSummary } from '@/lib/knowledge/catalog';
+import { getToolkitKnowledgeHref } from '@/lib/knowledge/toolkit-routing';
 
 const TOOLKIT_PAGE_SIZE = 60;
 
@@ -49,7 +50,7 @@ export function ToolkitGrid({ toolkits }: { toolkits: ToolkitKnowledgeSummary[] 
           {visible.map((toolkit) => (
             <Link
               key={toolkit.slug}
-              href={`/kb/toolkit/${toolkit.slug}`}
+              href={getToolkitKnowledgeHref(toolkit)}
               className="group flex items-center gap-4 border-b border-r border-fd-border bg-fd-background p-4 transition-colors hover:bg-fd-accent/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-fd-ring"
             >
               <span className="flex size-10 shrink-0 items-center justify-center border border-fd-border bg-fd-background">
