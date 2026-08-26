@@ -290,6 +290,7 @@
               "SERVICE_ACCOUNT",
               "SAML",
               "DCR_OAUTH",
+              "CIMD_OAUTH",
               "S2S_OAUTH2"
             ]
           },
@@ -1979,6 +1980,7 @@
                               "SERVICE_ACCOUNT",
                               "SAML",
                               "DCR_OAUTH",
+                              "CIMD_OAUTH",
                               "S2S_OAUTH2"
                             ],
                             "description": "The authentication scheme used (e.g., OAuth2, API Key, etc.)"
@@ -2307,6 +2309,7 @@
                         "SERVICE_ACCOUNT",
                         "SAML",
                         "DCR_OAUTH",
+                        "CIMD_OAUTH",
                         "S2S_OAUTH2"
                       ],
                       "description": "The authentication scheme used (e.g., OAuth2, API Key, etc.)"
@@ -3084,6 +3087,7 @@
                                   "SERVICE_ACCOUNT",
                                   "SAML",
                                   "DCR_OAUTH",
+                                  "CIMD_OAUTH",
                                   "S2S_OAUTH2"
                                 ],
                                 "description": "the authScheme is part of the connection state use it there",
@@ -3126,6 +3130,7 @@
                               "SERVICE_ACCOUNT",
                               "SAML",
                               "DCR_OAUTH",
+                              "CIMD_OAUTH",
                               "S2S_OAUTH2"
                             ],
                             "description": "Duplicates state.authScheme. Kept for backward compatibility with existing readers; use state.authScheme instead.",
@@ -3233,6 +3238,7 @@
                                   "SERVICE_ACCOUNT",
                                   "SAML",
                                   "DCR_OAUTH",
+                                  "CIMD_OAUTH",
                                   "S2S_OAUTH2"
                                 ]
                               },
@@ -3530,6 +3536,7 @@
                               "SERVICE_ACCOUNT",
                               "SAML",
                               "DCR_OAUTH",
+                              "CIMD_OAUTH",
                               "S2S_OAUTH2"
                             ]
                           },
@@ -3782,6 +3789,7 @@
                             "SERVICE_ACCOUNT",
                             "SAML",
                             "DCR_OAUTH",
+                            "CIMD_OAUTH",
                             "S2S_OAUTH2"
                           ]
                         },
@@ -4132,6 +4140,7 @@
                             "SERVICE_ACCOUNT",
                             "SAML",
                             "DCR_OAUTH",
+                            "CIMD_OAUTH",
                             "S2S_OAUTH2"
                           ],
                           "description": "the authScheme is part of the connection state use it there",
@@ -4174,6 +4183,7 @@
                         "SERVICE_ACCOUNT",
                         "SAML",
                         "DCR_OAUTH",
+                        "CIMD_OAUTH",
                         "S2S_OAUTH2"
                       ],
                       "description": "Duplicates state.authScheme. Kept for backward compatibility with existing readers; use state.authScheme instead.",
@@ -4281,6 +4291,7 @@
                             "SERVICE_ACCOUNT",
                             "SAML",
                             "DCR_OAUTH",
+                            "CIMD_OAUTH",
                             "S2S_OAUTH2"
                           ]
                         },
@@ -4913,6 +4924,16 @@
           },
           "404": {
             "description": "Connected account not found - The specified account does not exist or has been deleted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict - the connected account is currently leased by another operation, or the status transition is invalid for its current state",
             "content": {
               "application/json": {
                 "schema": {
