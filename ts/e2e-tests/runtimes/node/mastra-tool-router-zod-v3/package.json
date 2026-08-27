@@ -1,6 +1,6 @@
 {
   "name": "@e2e-tests/node-mastra-tool-router-zod-v3",
-  "version": "0.0.0",
+  "version": "0.0.1-beta.0",
   "private": true,
   "type": "module",
   "scripts": {
