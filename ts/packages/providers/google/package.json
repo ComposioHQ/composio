@@ -46,7 +46,7 @@
   "author": "",
   "license": "ISC",
   "peerDependencies": {
-    "@composio/core": ">=1.0.0-beta.0",
+    "@composio/core": ">=1.0.0-beta.0 <2.0.0",
     "@google/genai": "^1.1.0"
   },
   "devDependencies": {
