@@ -360,10 +360,11 @@ def to_strict_json_schema(schema: t.Any) -> StrictJsonSchemaResult:
     Applies the strict contract at every depth: every object lists all of its
     properties in ``required`` and is closed; optional properties are widened
     to accept ``null`` instead of being dropped; ``oneOf`` becomes ``anyOf``;
-    ``default`` and ``examples`` are stripped; internal ``$ref`` pointers are
-    inlined first and ``required`` arrays are de-duplicated last. Constructs
-    strict mode cannot express are listed in ``unsupported``; when that list
-    is non-empty the returned ``schema`` must not be sent as strict.
+    ``default`` and ``examples`` are stripped; local ``$ref`` pointers into
+    ``$defs`` or ``definitions`` are kept and the definitions are normalized
+    where they are declared; ``required`` arrays are de-duplicated last.
+    Constructs strict mode cannot express are listed in ``unsupported``; when
+    that list is non-empty the returned ``schema`` must not be sent as strict.
 
     :param schema: The JSON schema to normalize; never mutated.
     :return: A :class:`StrictJsonSchemaResult`.

@@ -55,9 +55,9 @@ export class OpenAIResponsesProvider extends BaseNonAgenticProvider<
   readonly name = 'openai';
   private strict: boolean | null;
   /**
-   * Dereferenced parameter schemas of the tools wrapped under strict mode,
-   * keyed by slug, so tool-call arguments can be reconciled against the
-   * schema the model actually saw.
+   * Parameter schemas of the tools wrapped under strict mode, keyed by slug,
+   * so tool-call arguments can be reconciled against the schema the model
+   * actually saw.
    */
   private readonly strictInputSchemas = new Map<string, Record<string, unknown>>();
 

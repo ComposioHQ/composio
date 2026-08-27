@@ -43,15 +43,15 @@ class OpenAIResponsesProvider(
         :param strict: Emit wrapped tools with ``strict: true`` and normalize
             their parameter schemas for OpenAI structured outputs (every object
             fully required and closed, optional properties widened to accept
-            ``null``, ``$ref``/``$defs`` inlined). Mirrors the TypeScript
+            ``null``, local ``$ref``/``$defs`` kept). Mirrors the TypeScript
             ``OpenAIResponsesProvider({ strict })`` option. Defaults to
             ``False``.
         """
         super().__init__(**kwargs)
         self.strict = strict
-        # Dereferenced parameter schemas of the tools wrapped under strict
-        # mode, keyed by slug, so tool-call arguments can be reconciled
-        # against the schema the model actually saw.
+        # Parameter schemas of the tools wrapped under strict mode, keyed by
+        # slug, so tool-call arguments can be reconciled against the schema
+        # the model actually saw.
         self._strict_input_schemas: dict[str, dict[str, t.Any]] = {}
 
     def wrap_tool(self, tool: Tool) -> ResponsesTool:
