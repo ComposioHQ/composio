@@ -8,12 +8,13 @@ import { PostHogProvider } from '@/components/posthog-provider';
 import CustomSearchDialog from '@/components/custom-search-dialog';
 import { ScrollReset } from '@/components/scroll-reset';
 import { source, referenceSource } from '@/lib/source';
+import { TOOLKIT_COUNT_LABEL } from '@/lib/toolkit-count';
 
 const defaultLinkSlugs: { slug: string[]; source: typeof source }[] = [
   { slug: ['quickstart'], source },
   { slug: ['authentication'], source },
   { slug: ['configuring-sessions'], source },
-  { slug: ['white-labeling-authentication'], source },
+  { slug: ['authentication', 'white-labeling-authentication'], source },
   { slug: ['glossary'], source: referenceSource },
   { slug: ['troubleshooting'], source },
 ];
@@ -24,16 +25,18 @@ const defaultLinks = defaultLinkSlugs.flatMap(({ slug, source: pageSource }) => 
   return [{ title: page.data.title, description: page.data.description ?? '', href: page.url }];
 });
 
+const SITE_DESCRIPTION = `Build AI agents with ${TOOLKIT_COUNT_LABEL} tools. Connect LLMs to external services like GitHub, Slack, Gmail, and more.`;
+
 export const metadata: Metadata = {
   title: {
     default: 'Composio Docs',
     template: '%s | Composio',
   },
-  description: 'Build AI agents with 1000+ tools. Connect LLMs to external services like GitHub, Slack, Gmail, and more.',
+  description: SITE_DESCRIPTION,
   metadataBase: new URL('https://docs.composio.dev'),
   openGraph: {
     title: 'Composio Docs',
-    description: 'Build AI agents with 1000+ tools. Connect LLMs to external services like GitHub, Slack, Gmail, and more.',
+    description: SITE_DESCRIPTION,
     siteName: 'Composio Docs',
     type: 'website',
     images: ['https://og.composio.dev/api/og?title=Composio%20Docs'],
@@ -41,7 +44,7 @@ export const metadata: Metadata = {
   twitter: {
     card: 'summary_large_image',
     title: 'Composio Docs',
-    description: 'Build AI agents with 1000+ tools. Connect LLMs to external services like GitHub, Slack, Gmail, and more.',
+    description: SITE_DESCRIPTION,
     images: ['https://og.composio.dev/api/og?title=Composio%20Docs'],
   },
 };
@@ -83,7 +86,7 @@ export default function Layout({ children }: LayoutProps<'/'>) {
                   '@id': 'https://docs.composio.dev/#website',
                   url: 'https://docs.composio.dev',
                   name: 'Composio Docs',
-                  description: 'Build AI agents with 1000+ tools. Connect LLMs to external services like GitHub, Slack, Gmail, and more.',
+                  description: SITE_DESCRIPTION,
                   publisher: { '@id': 'https://composio.dev/#organization' },
                 },
                 {

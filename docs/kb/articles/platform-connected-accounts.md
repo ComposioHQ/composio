@@ -1,0 +1,54 @@
+Use this for Composio connected-account status, refresh, and identity debugging.
+
+## Prefer a new auth link session when a user must reconnect
+
+Create a new auth link session when a user must authenticate again. Redirect the user to the returned hosted link and wait for the resulting connected account to become active. The older `POST /connected_accounts/{nanoid}/refresh` re-initiation endpoint is deprecated; it did not perform Composio's internal background token refresh.
+
+If the user completes that auth flow successfully, the connected account can return to `ACTIVE`.
+
+Example response:
+
+```text
+This starts a new authentication flow. For OAuth connections, the user must open the hosted link and complete provider consent. Once the OAuth flow succeeds, use the newly active connected account.
+```
+
+## Same user ID does not prove same upstream account
+
+Do not assume multiple connected accounts under the same `clientUniqueUserId` are duplicates of the same upstream account. A single Composio user ID can legitimately connect personal, work, and business accounts.
+
+If the root-cause hypothesis depends on repeated reconnects to the same upstream Google/Microsoft/etc. account, verify the upstream identity first. Use a safe profile/current-user action for each connected account, customer-provided labels, or another non-sensitive identity signal.
+
+## Hosted connect links expire after 10 minutes
+
+A hosted connect link/session is short-lived. If the initial authentication flow is not completed within 10 minutes, the link can show wording such as “We couldn't verify the session associated with the link” or “Validation error while processing request.” The dashboard may briefly continue to show the connection as initializing.
+
+Generate a fresh connect link for the same user and open it immediately. If the new link also fails immediately, contact Composio support with its generation timestamp and the exact error. Do not keep retrying an older link.
+
+## Connection status describes a lifecycle, not credential validity
+
+- `INITIALIZING`: the connection row and hosted flow were created.
+- `INITIATED`: the user opened or advanced the authentication flow.
+- `ACTIVE`: the connection flow completed and its credential data was stored.
+- `EXPIRED`: the flow timed out or the connection can no longer refresh/use its authorization. Read `statusReason` to distinguish those cases.
+
+`Connection initiation did not complete within 10 minutes` means the original flow timed out; it is not a background token-refresh failure. Generate a fresh link and wait for `ACTIVE` before treating its connected-account ID as usable.
+
+## OAuth refresh failures have multiple causes
+
+An OAuth connection may expire when the provider rejects its refresh token, the user or admin revokes the app, provider security policy invalidates the grant, a rotating-token chain is interrupted, or customer-owned OAuth credentials change. Reconnecting obtains a new grant. If connections repeatedly expire across users, contact Composio support with redacted connection IDs and timestamps instead of repeatedly reconnecting.
+
+## Provider tokens are redacted from connected-account responses
+
+Connected-account APIs do not return raw access or refresh tokens. Use Composio
+tool execution or [Proxy Execute](https://docs.composio.dev/docs/proxy-execute)
+when a workflow needs to call a provider API through an existing connection. Do
+not build a workflow that depends on reading provider tokens from connected-
+account data.
+
+## Revoke provider credentials before removing a connection when required
+
+Use the connected-account revoke operation when the toolkit supports
+programmatic provider revocation. When provider-side revocation is unavailable,
+remove Composio's access in the provider's connected-app settings or rotate the
+API key in the provider dashboard. Never send access tokens, refresh tokens, API
+keys, or private-key material to Composio support.

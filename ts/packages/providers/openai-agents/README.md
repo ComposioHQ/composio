@@ -43,7 +43,7 @@ For multi-turn conversations, store `session.sessionId` and reuse it with `compo
 
 ## Strict mode
 
-Pass `strict: true` to enable strict JSON schema validation for tool parameters (see the [Agents SDK options reference](https://openai.github.io/openai-agents-js/guides/tools/#options-reference)):
+Pass `strict: true` to register tools with strict JSON schema validation (see the [Agents SDK options reference](https://openai.github.io/openai-agents-js/guides/tools/#options-reference)). Each tool's input schema is normalized for OpenAI structured outputs: every object lists all of its properties in `required` and is closed, and optional properties stay available but accept `null`. A `null` is dropped before the tool runs unless the tool's own schema accepts `null` for that parameter, so nullable fields still receive an explicit `null`. Tools whose schema cannot be expressed in strict mode, such as objects that accept arbitrary keys, `allOf`, `prefixItems`, or unresolved `$ref`s, are registered without strict mode and log a warning:
 
 ```typescript
 const provider = new OpenAIAgentsProvider({ strict: true });

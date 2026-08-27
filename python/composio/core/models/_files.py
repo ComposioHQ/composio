@@ -1,7 +1,7 @@
 from __future__ import annotations
 
+import functools
 import hashlib
-import logging
 import os
 import typing as t
 from pathlib import Path
@@ -22,10 +22,16 @@ from composio.exceptions import (
     FileUploadAbortedError,
     ResponseTooLargeError,
     SDKFileNotFoundError,
+    UnsafePathComponentError,
 )
 from composio.utils import mimetypes
 from composio.utils.json_schema import dereference_json_schema
-from composio.utils.url_safety import assert_safe_fetch_target
+from composio.utils.safe_path import secure_basename_join, secure_join
+from composio.utils.url_safety import (
+    parse_content_length,
+    safe_get,
+    safe_request,
+)
 from composio.utils.sensitive_file_upload_paths import (
     assert_safe_local_file_upload_path,
 )
@@ -53,8 +59,6 @@ Maximum response size in bytes when fetching files from URLs.
 Prevents memory exhaustion attacks from malicious URLs pointing to large files.
 """
 
-_logger = logging.getLogger(__name__)
-
 _CONNECT_TIMEOUT = 5  # seconds
 _READ_TIMEOUT = 60  # seconds
 """
@@ -80,35 +84,85 @@ ENV_LOCAL_CACHE_DIRECTORY = "COMPOSIO_CACHE_DIR"
 Environment to set the composio caching directory.
 """
 
-LOCAL_CACHE_DIRECTORY = Path(
-    os.environ.get(
-        ENV_LOCAL_CACHE_DIRECTORY,
-        Path.home() / LOCAL_CACHE_DIRECTORY_NAME,  # Fallback to user directory
-    )
-)
+LOCAL_OUTPUT_FILE_DIRECTORY_NAME = "files"
 """
-Path to local caching directory.
+Name of the cache sub-directory into which files downloaded during tool
+execution are written. Previously ``outputs``; now ``files`` for parity with
+the TypeScript SDK.
 """
 
-try:
-    LOCAL_CACHE_DIRECTORY.mkdir(parents=True, exist_ok=True)
-    if not os.access(LOCAL_CACHE_DIRECTORY, os.W_OK):
-        raise OSError
-except OSError as e:
-    raise RuntimeError(
-        f"Cache directory {LOCAL_CACHE_DIRECTORY} is not writable please "
-        f"provide a path that is writable using {ENV_LOCAL_CACHE_DIRECTORY} "
-        "environment variable."
-    ) from e
+
+def get_cache_directory() -> Path:
+    """Resolve the local caching directory without touching the filesystem.
+
+    ``COMPOSIO_CACHE_DIR`` is read on every call, so it can be set after
+    ``composio`` has already been imported. ``Path.home()`` is only consulted
+    when the variable is unset: it can raise ``RuntimeError`` when there is no
+    resolvable home directory, which is exactly the situation
+    ``COMPOSIO_CACHE_DIR`` exists to work around, so it must not be evaluated
+    eagerly as a fallback argument.
+    """
+    configured = os.environ.get(ENV_LOCAL_CACHE_DIRECTORY)
+    if configured:
+        return Path(configured)
+
+    try:
+        home = Path.home()
+    except RuntimeError as e:
+        raise RuntimeError(
+            "Could not determine a home directory to store the Composio cache "
+            f"in. Provide a writable path using the {ENV_LOCAL_CACHE_DIRECTORY} "
+            "environment variable."
+        ) from e
+    return home / LOCAL_CACHE_DIRECTORY_NAME
 
 
-LOCAL_OUTPUT_FILE_DIRECTORY = LOCAL_CACHE_DIRECTORY / "files"
-"""
-Default local directory into which files downloaded during tool execution are
-written. Previously ``<cache>/outputs``; now ``<cache>/files`` for parity with
-the TypeScript SDK. Override by passing ``file_download_dir=...`` to Composio,
-or by setting ``outdir`` on ``FileHelper`` directly.
-"""
+def get_output_file_directory() -> Path:
+    """Default local directory into which files downloaded during tool
+    execution are written. Override by passing ``file_download_dir=...`` to
+    Composio, or by setting ``outdir`` on ``FileHelper`` directly.
+    """
+    return get_cache_directory() / LOCAL_OUTPUT_FILE_DIRECTORY_NAME
+
+
+def ensure_cache_directory() -> Path:
+    """Create the cache directory on first use and check that it is writable.
+
+    This used to run at module import time, so a bare ``import composio``
+    raised ``RuntimeError`` on any read-only filesystem -- AWS Lambda,
+    distroless containers, ``ProtectHome=true`` systemd units -- even for
+    programs that never touched a file. Deferring it to first use keeps the
+    same check, and the same error message, for the callers that actually
+    need the directory.
+    """
+    directory = get_cache_directory()
+    try:
+        directory.mkdir(parents=True, exist_ok=True)
+        if not os.access(directory, os.W_OK):
+            raise OSError
+    except OSError as e:
+        raise RuntimeError(
+            f"Cache directory {directory} is not writable please "
+            f"provide a path that is writable using {ENV_LOCAL_CACHE_DIRECTORY} "
+            "environment variable."
+        ) from e
+    return directory
+
+
+def __getattr__(name: str) -> Path:
+    """Keep the historical module-level path constants working, but lazily.
+
+    ``LOCAL_CACHE_DIRECTORY`` and ``LOCAL_OUTPUT_FILE_DIRECTORY`` used to be
+    computed at import time. They are now resolved on attribute access
+    instead (PEP 562), so importing this module no longer touches the
+    filesystem or depends on the environment, and both constants observe a
+    ``COMPOSIO_CACHE_DIR`` that was set after import.
+    """
+    if name == "LOCAL_CACHE_DIRECTORY":
+        return get_cache_directory()
+    if name == "LOCAL_OUTPUT_FILE_DIRECTORY":
+        return get_output_file_directory()
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 
 
 def get_md5(file: Path) -> str:
@@ -139,31 +193,67 @@ def get_md5(file: Path) -> str:
     return obj.hexdigest()
 
 
-def upload(url: str, file: Path) -> bool:
+def _upload_to_presigned_url(
+    url: str, data: t.Union[bytes, t.IO[bytes]], mimetype: str
+) -> None:
+    """PUT ``data`` to a presigned S3 URL with the content type it was signed with.
+
+    The presign request carries ``mimetype``, so the PUT must send the same
+    value as ``Content-Type``: when the signature covers the content type, a
+    mismatched or missing header is rejected with ``403 SignatureDoesNotMatch``.
+    Routing every presigned PUT through one helper keeps the file and bytes
+    upload paths from drifting apart again, mirroring ``uploadFileToS3`` in
+    the TypeScript SDK, which funnels path, URL, and File inputs through a
+    single uploader.
+
+    Raises:
+        ErrorUploadingFile: On transport failure or a non-200 response,
+            including the HTTP status when one was received.
+    """
+    try:
+        response = safe_request(
+            "PUT",
+            url,
+            data=data,
+            headers={"Content-Type": mimetype},
+            timeout=(_CONNECT_TIMEOUT, _READ_TIMEOUT),
+        )
+    except requests.exceptions.RequestException as e:
+        raise ErrorUploadingFile(
+            "Failed to upload to S3: "
+            f"{_sanitize_url_for_logging(url)}. Error: {type(e).__name__}"
+        ) from e
+    if response.status_code != 200:
+        raise ErrorUploadingFile(
+            f"Failed to upload to S3. Status: {response.status_code}. "
+            "This may indicate an expired presigned URL or permission issue."
+        )
+
+
+def upload(url: str, file: Path, mimetype: t.Optional[str] = None) -> bool:
     """Upload file to presigned S3 URL.
 
     Args:
         url: Presigned S3 upload URL
         file: Path to file to upload
+        mimetype: Content type to send with the upload. Defaults to the type
+            guessed from ``file``. This must match the ``mimetype`` the
+            presigned URL was requested with, otherwise S3 rejects the PUT
+            with ``403 SignatureDoesNotMatch`` when the signature covers the
+            content type.
 
     Returns:
-        True if upload succeeded (HTTP 200), False otherwise
+        True if the upload succeeded.
+
+    Raises:
+        ErrorUploadingFile: If the upload fails; the message includes the
+            HTTP status when one was received.
     """
+    if mimetype is None:
+        mimetype = mimetypes.guess(file=file)
     with file.open("rb") as data:
-        try:
-            response = requests.put(
-                url=url,
-                data=data,
-                timeout=(_CONNECT_TIMEOUT, _READ_TIMEOUT),
-            )
-        except requests.exceptions.RequestException as e:
-            _logger.debug(
-                "Upload to %s failed: %s",
-                _sanitize_url_for_logging(url),
-                type(e).__name__,
-            )
-            return False
-        return response.status_code == 200
+        _upload_to_presigned_url(url=url, data=data, mimetype=mimetype)
+    return True
 
 
 class _FileUploadResponse(_ComposioBaseModel):
@@ -171,6 +261,33 @@ class _FileUploadResponse(_ComposioBaseModel):
     key: str
     type: str
     new_presigned_url: str
+
+
+def _request_presigned_upload(
+    client: HttpClient,
+    *,
+    filename: str,
+    md5: str,
+    mimetype: str,
+    tool: str,
+    toolkit: str,
+) -> _FileUploadResponse:
+    """Request a presigned S3 upload URL from the backend.
+
+    Single-sources the presign wire shape so the file and bytes upload paths
+    request the same fields they later send.
+    """
+    return client.post(
+        path=_FILE_UPLOAD,
+        body={
+            "md5": md5,
+            "filename": filename,
+            "mimetype": mimetype,
+            "tool_slug": tool,
+            "toolkit_slug": toolkit,
+        },
+        cast_to=_FileUploadResponse,
+    )
 
 
 def _is_url(value: str) -> bool:
@@ -282,14 +399,12 @@ def _fetch_file_from_url(
         ResponseTooLargeError: If response exceeds max_size
         ErrorUploadingFile: If fetch fails for other reasons
     """
-    assert_safe_fetch_target(url)
-
-    # Make request without following redirects
+    # `safe_get` validates the target, connects to the address it validated
+    # (so DNS cannot rebind between the two), and never follows redirects.
     try:
-        response = requests.get(
+        response = safe_get(
             url,
             stream=True,  # Enable streaming for size limiting
-            allow_redirects=False,  # Disable redirects for security
             timeout=(_CONNECT_TIMEOUT, _READ_TIMEOUT),
         )
     except requests.exceptions.Timeout:
@@ -318,12 +433,15 @@ def _fetch_file_from_url(
             f"Status: {response.status_code}"
         )
 
-    # Check Content-Length header first (early abort for oversized files)
-    content_length = response.headers.get("Content-Length")
-    if content_length and int(content_length) > max_size:
+    # Check Content-Length header first (early abort for oversized files).
+    # The header is a hint from the remote server: `parse_content_length`
+    # returns None for anything untrustworthy, and the streaming guard below
+    # is the authoritative limit.
+    content_length = parse_content_length(response.headers.get("Content-Length"))
+    if content_length is not None and content_length > max_size:
         response.close()
         raise ResponseTooLargeError(
-            f"File size ({int(content_length)} bytes) exceeds maximum allowed "
+            f"File size ({content_length} bytes) exceeds maximum allowed "
             f"size ({max_size} bytes)"
         )
 
@@ -382,41 +500,17 @@ def _upload_bytes_to_s3(
     toolkit: str,
 ) -> str:
     """Upload bytes content to S3 and return the S3 key."""
-    md5_hash = hashlib.md5(content, usedforsecurity=False).hexdigest()
-
-    s3meta = client.post(
-        path=_FILE_UPLOAD,
-        body={
-            "md5": md5_hash,
-            "filename": filename,
-            "mimetype": mimetype,
-            "tool_slug": tool,
-            "toolkit_slug": toolkit,
-        },
-        cast_to=_FileUploadResponse,
+    s3meta = _request_presigned_upload(
+        client,
+        filename=filename,
+        md5=hashlib.md5(content, usedforsecurity=False).hexdigest(),
+        mimetype=mimetype,
+        tool=tool,
+        toolkit=toolkit,
     )
-
-    # Upload the content directly to S3
-    try:
-        upload_response = requests.put(
-            url=s3meta.new_presigned_url,
-            data=content,
-            headers={"Content-Type": mimetype},
-            timeout=(_CONNECT_TIMEOUT, _READ_TIMEOUT),
-        )
-    except requests.exceptions.RequestException as e:
-        raise ErrorUploadingFile(
-            "Failed to upload to S3: "
-            f"{_sanitize_url_for_logging(s3meta.new_presigned_url)}. "
-            f"Error: {type(e).__name__}"
-        ) from e
-
-    if upload_response.status_code != 200:
-        raise ErrorUploadingFile(
-            f"Failed to upload to S3. Status: {upload_response.status_code}. "
-            f"This may indicate an expired presigned URL or permission issue."
-        )
-
+    _upload_to_presigned_url(
+        url=s3meta.new_presigned_url, data=content, mimetype=mimetype
+    )
     return s3meta.key
 
 
@@ -557,19 +651,15 @@ class FileUploadable(BaseModel):
             )
 
         mimetype = mimetypes.guess(file=file)
-        s3meta = client.post(
-            path=_FILE_UPLOAD,
-            body={
-                "md5": get_md5(file=file),
-                "filename": file.name,
-                "mimetype": mimetype,
-                "tool_slug": tool,
-                "toolkit_slug": toolkit,
-            },
-            cast_to=_FileUploadResponse,
+        s3meta = _request_presigned_upload(
+            client,
+            filename=file.name,
+            md5=get_md5(file=file),
+            mimetype=mimetype,
+            tool=tool,
+            toolkit=toolkit,
         )
-        if not upload(url=s3meta.new_presigned_url, file=file):
-            raise ErrorUploadingFile(f"Error uploading file: {file}")
+        upload(url=s3meta.new_presigned_url, file=file, mimetype=mimetype)
         return cls(name=file.name, mimetype=mimetype, s3key=s3meta.key)
 
 
@@ -580,23 +670,34 @@ class FileDownloadable(BaseModel):
     mimetype: str = Field(..., description="Mime type of the file.")
     s3url: str = Field(..., description="URL of the file.")
 
-    def download(self, outdir: Path, chunk_size: int = _DEFAULT_CHUNK_SIZE) -> Path:
-        # SEC-316: `self.name` comes from the (potentially compromised or
-        # MITM'd) Composio API response. Strip directory components with
-        # `Path(...).name` so traversal sequences like `../../../foo` collapse
-        # to `foo`, then verify the resolved output stays under `outdir` so a
-        # name like `output_evil/foo` (sibling-prefix attack) is also rejected.
-        safe_name = Path(self.name).name
-        outfile = outdir / safe_name
-        if not outfile.resolve().is_relative_to(outdir.resolve()):
-            raise ErrorDownloadingFile(
-                f"Path traversal detected: filename '{self.name}' resolves "
-                "outside the intended output directory."
-            )
-        outdir.mkdir(exist_ok=True, parents=True)
+    def download(
+        self,
+        outdir: Path,
+        chunk_size: int = _DEFAULT_CHUNK_SIZE,
+        *,
+        root: Path,
+    ) -> Path:
+        """Fetch the file into ``outdir``.
+
+        :param outdir: Directory to write into. May be derived from untrusted
+            input, provided it was produced by :func:`secure_join`.
+        :param root: Trusted containment anchor, configured locally and never
+            derived from an API response. Required rather than defaulted:
+            checking containment against a directory that untrusted input has
+            already relocated is not a check at all, and ``outdir`` may be
+            exactly such a directory. Callers must name the anchor explicitly.
+        """
+        # SEC-316: `self.name` also comes from the (potentially compromised or
+        # MITM'd) API response. Collapsed to a bare filename and checked against
+        # `root` — not `outdir` — so a name like `output_evil/foo`
+        # (sibling-prefix attack) is rejected too.
         try:
-            response = requests.get(
-                url=self.s3url,
+            outfile = secure_basename_join(outdir, self.name, root=root)
+        except UnsafePathComponentError as e:
+            raise ErrorDownloadingFile(str(e)) from e
+        try:
+            response = safe_get(
+                self.s3url,
                 stream=True,
                 timeout=(_CONNECT_TIMEOUT, _READ_TIMEOUT),
             )
@@ -612,6 +713,10 @@ class FileDownloadable(BaseModel):
             )
 
         try:
+            # Only once the fetch is validated and connected, so a blocked URL
+            # leaves no directory behind — and inside the `try`, so a failure
+            # here still closes the response.
+            outdir.mkdir(exist_ok=True, parents=True)
             with outfile.open("wb") as fd:
                 for chunk in response.iter_content(chunk_size=chunk_size):
                     fd.write(chunk)
@@ -652,7 +757,11 @@ class FileHelper(WithLogger):
         """
         super().__init__()
         self._client = client
-        self._outdir = Path(outdir) if outdir else LOCAL_OUTPUT_FILE_DIRECTORY
+        # Falsy, not just `is None`: an empty string falls through to the
+        # same default directory below, and must be treated as such here too
+        # or `ensure_cache_directory()` silently stops firing for it.
+        self._outdir_is_default = not outdir
+        self._outdir = Path(outdir) if outdir else get_output_file_directory()
         self._sensitive_file_upload_protection = sensitive_file_upload_protection
         self._file_upload_path_deny_segments = file_upload_path_deny_segments
         self._file_upload_allowlist: t.Optional[t.Sequence[Path]] = (
@@ -672,6 +781,17 @@ class FileHelper(WithLogger):
         # Direct property check
         if schema.get(property_name, False):
             return True
+
+        # The default execution path uses this walker as a cheap gate before
+        # dereferencing. Inspect both modern and legacy definition containers
+        # so a file flag reachable only through ``$ref`` still passes the gate.
+        for definitions_key in ("$defs", "definitions"):
+            definitions = schema.get(definitions_key)
+            if not isinstance(definitions, dict):
+                continue
+            for definition in definitions.values():
+                if self._has_file_property(definition, property_name):
+                    return True
 
         # Check anyOf variants
         if "anyOf" in schema:
@@ -893,6 +1013,14 @@ class FileHelper(WithLogger):
 
         return False
 
+    @staticmethod
+    def _is_array_shaped_schema(schema: t.Dict) -> bool:
+        """Return whether JSON Schema declares or infers an array shape."""
+        schema_type = schema.get("type")
+        if isinstance(schema_type, list):
+            return "array" in schema_type
+        return schema_type == "array" or (schema_type is None and "items" in schema)
+
     def _find_schema_variant_with_file_property(
         self,
         schema: t.Dict,
@@ -931,13 +1059,22 @@ class FileHelper(WithLogger):
             value=value,
         )
 
+    @staticmethod
+    def _drop_empty_file_value(value: t.Any) -> t.Any:
+        """Omit an empty string from a file input when auto-upload is disabled.
+
+        An explicit ``None`` remains part of the payload so nullable file fields,
+        including required nullable fields, keep their JSON Schema semantics.
+        """
+        return _DELETE_VALUE if value == "" else value
+
     def _upload_file_value(
         self,
         value: t.Any,
         tool: Tool,
         before_file_upload: t.Optional[BeforeFileUpload],
     ) -> t.Any:
-        if value is None or value == "":
+        if value is None or self._drop_empty_file_value(value) is _DELETE_VALUE:
             return _DELETE_VALUE
 
         return FileUploadable.from_path(
@@ -955,32 +1092,58 @@ class FileHelper(WithLogger):
         self,
         value: t.Any,
         schema: t.Optional[t.Dict],
-        tool: Tool,
-        *,
-        before_file_upload: t.Optional[BeforeFileUpload] = None,
+        leaf: t.Callable[[t.Any], t.Any],
     ) -> t.Any:
-        """Return ``value`` with file-uploadable leaves staged for execution."""
+        """Return ``value`` with every ``file_uploadable`` leaf passed through ``leaf``.
+
+        A leaf may return ``_DELETE_VALUE`` to omit the key/item from its
+        parent container.
+        """
         if not isinstance(schema, dict):
             return value
 
         if schema.get("file_uploadable", False):
-            return self._upload_file_value(
-                value=value,
-                tool=tool,
-                before_file_upload=before_file_upload,
-            )
+            return leaf(value)
+
+        # Array-only file inputs historically omit null in upload mode even
+        # though null cannot be traversed as an array. Keep that behavior
+        # without treating an optional object that merely contains a nested
+        # file property as a file leaf itself.
+        if (
+            value is None
+            and self._is_array_shaped_schema(schema)
+            and self._file_uploadable(schema)
+        ):
+            return leaf(value)
 
         uploadable_variant = self._find_uploadable_schema_variant(
             schema=schema,
             value=value,
         )
         if uploadable_variant is not None:
+            # An empty string cannot match an array-only file input, but it may
+            # match another non-file string variant in the same composition.
+            if value == "" and self._is_array_shaped_schema(uploadable_variant):
+                matching_non_file_variant = any(
+                    not self._file_uploadable(variant)
+                    and self._json_schema_type_matches_value(variant, value)
+                    for variant in self._schema_variants(schema)
+                )
+                if matching_non_file_variant:
+                    return value
+                return leaf(value)
             return self._substitute_file_upload_value(
                 value=value,
                 schema=uploadable_variant,
-                tool=tool,
-                before_file_upload=before_file_upload,
+                leaf=leaf,
             )
+
+        if (
+            value == ""
+            and self._is_array_shaped_schema(schema)
+            and self._file_uploadable(schema)
+        ):
+            return leaf(value)
 
         if isinstance(value, dict) and "properties" in schema:
             processed: t.Dict[str, t.Any] = {}
@@ -990,8 +1153,7 @@ class FileHelper(WithLogger):
                 processed_item = self._substitute_file_upload_value(
                     value=item,
                     schema=item_schema,
-                    tool=tool,
-                    before_file_upload=before_file_upload,
+                    leaf=leaf,
                 )
                 if processed_item is not _DELETE_VALUE:
                     processed[key] = processed_item
@@ -1007,8 +1169,7 @@ class FileHelper(WithLogger):
                 processed_item = self._substitute_file_upload_value(
                     value=item,
                     schema=items_schema,
-                    tool=tool,
-                    before_file_upload=before_file_upload,
+                    leaf=leaf,
                 )
                 if processed_item is not _DELETE_VALUE:
                     processed_items.append(processed_item)
@@ -1023,12 +1184,19 @@ class FileHelper(WithLogger):
         request: t.Dict,
         *,
         before_file_upload: t.Optional[BeforeFileUpload] = None,
+        leaf: t.Optional[t.Callable[[t.Any], t.Any]] = None,
     ) -> t.Dict:
+        if leaf is None:
+            leaf = functools.partial(
+                self._upload_file_value,
+                tool=tool,
+                before_file_upload=before_file_upload,
+            )
+
         processed = self._substitute_file_upload_value(
             value=request,
             schema=schema,
-            tool=tool,
-            before_file_upload=before_file_upload,
+            leaf=leaf,
         )
         if processed is request:
             return request
@@ -1069,6 +1237,37 @@ class FileHelper(WithLogger):
             before_file_upload=before_file_upload,
         )
 
+    def drop_empty_file_uploads(self, tool: Tool, request: t.Dict) -> t.Dict:
+        """Omit ``""`` at ``file_uploadable`` leaves without uploading.
+
+        This is the half of :meth:`substitute_file_uploads` that needs no
+        filesystem access, so it runs even when automatic upload is disabled:
+        an empty file value is never a valid staged descriptor and the backend
+        would reject it (issue #4233). Explicit ``None`` and every non-empty
+        value are forwarded untouched. File-bearing request containers are
+        rebuilt; unlike :meth:`substitute_file_uploads`, this method never
+        mutates caller-owned arguments or copies arbitrary leaf objects.
+        """
+        # Every execution takes this path by default, so leave requests for
+        # tools without a file input completely alone. Check the raw schema
+        # first to avoid paying the dereference cost for non-file tools.
+        if not self._file_uploadable(tool.input_parameters):
+            return request
+
+        schema = dereference_json_schema(
+            tool.input_parameters, on_unresolved="sentinel"
+        )
+        processed = self._substitute_file_upload_value(
+            value=request,
+            schema=schema,
+            leaf=self._drop_empty_file_value,
+        )
+        assert isinstance(processed, dict), (
+            "expected dict from _substitute_file_upload_value at the root; "
+            f"got {type(processed).__name__}"
+        )
+        return processed
+
     def _is_file_downloadable(self, schema: t.Dict) -> bool:
         """Check if a schema has file_downloadable property."""
         return self._has_file_property(schema, "file_downloadable")
@@ -1085,9 +1284,20 @@ class FileHelper(WithLogger):
 
     def _download_file_value(self, value: t.Any, tool: Tool) -> t.Any:
         if isinstance(value, dict) and "s3url" in value:
+            if self._outdir_is_default:
+                # First point at which the cache directory is genuinely
+                # needed. Raises the same RuntimeError that used to be raised
+                # at import time, pointing at COMPOSIO_CACHE_DIR.
+                ensure_cache_directory()
+            # `tool.toolkit.slug` and `tool.slug` come from the API response and
+            # are untrusted, so joining them directly would let the response pick
+            # the download directory. `secure_join` validates each component and
+            # anchors containment on `self._outdir`, which is configured locally
+            # and never derived from the response.
             return str(
                 FileDownloadable(**value).download(
-                    self._outdir / tool.toolkit.slug / tool.slug
+                    outdir=secure_join(self._outdir, tool.toolkit.slug, tool.slug),
+                    root=self._outdir,
                 )
             )
         return value

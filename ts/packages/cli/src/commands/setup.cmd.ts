@@ -21,6 +21,7 @@ import {
 } from 'src/services/setup';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { SetupSkillInstaller } from 'src/services/setup-skill-installer';
+import { cliInvocationContext } from 'src/services/runtime-cli-context';
 
 const target = Options.choice('target', SETUP_TARGETS).pipe(
   Options.withDefault('auto'),
@@ -63,6 +64,7 @@ const setupBaseCmd = Command.make(
     Effect.gen(function* () {
       const ui = yield* TerminalUI;
       const terminal = yield* ui.capabilities;
+      const { invocationOrigin } = yield* cliInvocationContext;
       const operation = uninstall ? 'uninstall' : 'setup';
       yield* ui.intro(uninstall ? 'composio setup --uninstall' : 'composio setup');
 
@@ -80,6 +82,7 @@ const setupBaseCmd = Command.make(
               detection.available && !detection.supported
                 ? (detection.unsupportedReasonCode ?? 'unknown')
                 : undefined,
+            invocationOrigin,
             cliVersion: APP_VERSION,
           })
         )
@@ -117,7 +120,12 @@ const setupBaseCmd = Command.make(
         if (supported.length === 0) {
           if (ifPresent) {
             yield* trackCliEventEffect(
-              getSetupSkippedEvent({ operation, requestedTarget: target, cliVersion: APP_VERSION })
+              getSetupSkippedEvent({
+                operation,
+                requestedTarget: target,
+                invocationOrigin,
+                cliVersion: APP_VERSION,
+              })
             );
             yield* ui.outro(
               `No supported agent host detected; plugin ${uninstall ? 'uninstall' : 'setup'} skipped.`
@@ -141,7 +149,12 @@ const setupBaseCmd = Command.make(
           );
         }
         yield* trackCliEventEffect(
-          getSetupSkippedEvent({ operation, requestedTarget: target, cliVersion: APP_VERSION })
+          getSetupSkippedEvent({
+            operation,
+            requestedTarget: target,
+            invocationOrigin,
+            cliVersion: APP_VERSION,
+          })
         );
         yield* ui.outro(
           `No supported agent host detected; plugin ${uninstall ? 'uninstall' : 'setup'} skipped.`
@@ -191,6 +204,7 @@ const setupBaseCmd = Command.make(
               getSetupCancelledEvent({
                 operation,
                 requestedTarget: target,
+                invocationOrigin,
                 cliVersion: APP_VERSION,
               })
             );
@@ -241,6 +255,7 @@ const setupBaseCmd = Command.make(
             getSetupCancelledEvent({
               operation,
               requestedTarget: target,
+              invocationOrigin,
               cliVersion: APP_VERSION,
             })
           );

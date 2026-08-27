@@ -13,9 +13,6 @@ from composio_client.types.tool_router.session_proxy_execute_params import Param
 from composio_client.types.tool_router.session_execute_response import (
     SessionExecuteResponse,
 )
-from composio_client.types.tool_router.session_proxy_execute_response import (
-    SessionProxyExecuteResponse,
-)
 from composio.client import HttpClient
 from composio.core.models.custom_tool_execution import (
     execute_custom_tool,
@@ -24,6 +21,7 @@ from composio.core.models.custom_tool_execution import (
 from composio.core.models.custom_tool_types import (
     CustomToolsMap,
     InlineCustomToolsWirePayload,
+    ToolRouterSessionProxyExecuteResponse,
 )
 from composio.core.models.inline_custom_tools_payload import (
     inline_custom_tools_execute_experimental,
@@ -45,8 +43,12 @@ def proxy_execute_impl(
     method: t.Literal["GET", "POST", "PUT", "DELETE", "PATCH"],
     body: t.Any = None,
     parameters: t.Optional[t.List[t.Dict[str, t.Any]]] = None,
-) -> SessionProxyExecuteResponse:
-    """Shared proxy execute implementation used by SessionContextImpl and ToolRouterSession."""
+) -> ToolRouterSessionProxyExecuteResponse:
+    """Shared proxy execute implementation used by SessionContextImpl and ToolRouterSession.
+
+    Projects the generated client's response model onto the SDK's own shape so
+    the public return type does not move when the client is regenerated.
+    """
     # Client-side validation (matches TS SessionProxyExecuteParamsSchema)
     if not toolkit:
         raise ValidationError("proxy_execute: toolkit is required")
@@ -79,7 +81,7 @@ def proxy_execute_impl(
                 )
             )
 
-    return client.tool_router.session.proxy_execute(
+    response = client.tool_router.session.proxy_execute(
         session_id=session_id,
         toolkit_slug=toolkit,
         endpoint=endpoint,
@@ -87,6 +89,24 @@ def proxy_execute_impl(
         body=body if body is not None else omit,
         parameters=api_params if api_params else omit,
     )
+
+    # ``status`` and ``size`` are ``float`` on the generated model and pydantic
+    # coerces, so they arrive as ``200.0``/``123.0``. Narrow them here: an HTTP
+    # status and a byte count are integers, and TypeScript reports them as such.
+    result: ToolRouterSessionProxyExecuteResponse = {
+        "status": int(response.status),
+        "data": response.data,
+        "headers": response.headers,
+    }
+    binary_data = response.binary_data
+    if binary_data is not None:
+        result["binary_data"] = {
+            "content_type": binary_data.content_type,
+            "size": int(binary_data.size),
+            "url": binary_data.url,
+            "expires_at": binary_data.expires_at,
+        }
+    return result
 
 
 class SessionContextImpl:
@@ -159,10 +179,10 @@ class SessionContextImpl:
         method: t.Literal["GET", "POST", "PUT", "DELETE", "PATCH"],
         body: t.Any = None,
         parameters: t.Optional[t.List[t.Dict[str, t.Any]]] = None,
-    ) -> SessionProxyExecuteResponse:
+    ) -> ToolRouterSessionProxyExecuteResponse:
         """Proxy API calls through Composio's auth layer.
 
-        Returns the same response model as ``session.proxy_execute()``.
+        Returns the same response shape as ``session.proxy_execute()``.
         """
         return proxy_execute_impl(
             self._client,

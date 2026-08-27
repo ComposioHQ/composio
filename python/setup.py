@@ -30,6 +30,12 @@ setup(
         "openai>=2.48.0",
         "json-schema-to-pydantic>=0.4.11",
         "jsonschema>=4.23.0",
+        # `get_connection_with_tls_context` (the pinning adapter's mount
+        # point) is only called by `HTTPAdapter.send` on requests >= 2.32.2.
+        "requests>=2.32.2",
+        # `url_safety` imports urllib3 directly and needs 2.x: 1.x has no
+        # `NameResolutionError` and different connection internals.
+        "urllib3>=2",
     ],
     include_package_data=True,
 )

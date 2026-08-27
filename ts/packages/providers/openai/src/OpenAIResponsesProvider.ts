@@ -13,16 +13,27 @@ import { OpenAI } from 'openai';
 import {
   BaseNonAgenticProvider,
   Tool,
-  ToolExecuteParams,
   ExecuteToolModifiers,
   ExecuteToolFnOptions,
-  removeNonRequiredProperties,
+  ToolCallExecutionTarget,
+  ToolCallSession,
   McpUrlResponse,
   normalizeToolArguments,
   deduplicateJsonSchemaRequiredArrays,
+  omitNullToolArguments,
+  toStrictJsonSchema,
+  logger,
 } from '@composio/core';
 
 export type OpenAiTool = OpenAI.Responses.FunctionTool;
+
+/** Parameters emitted for a tool without input parameters under strict mode. */
+const EMPTY_OBJECT_SCHEMA = {
+  type: 'object',
+  properties: {},
+  required: [],
+  additionalProperties: false,
+} as const;
 export type OpenAiMcpTool = OpenAI.Responses.Tool.Mcp;
 export type OpenAiToolCollection = Array<OpenAiTool>;
 export type OpenAIResponsesProviderOptions = {
@@ -43,6 +54,12 @@ export class OpenAIResponsesProvider extends BaseNonAgenticProvider<
 > {
   readonly name = 'openai';
   private strict: boolean | null;
+  /**
+   * Parameter schemas of the tools wrapped under strict mode, keyed by slug,
+   * so tool-call arguments can be reconciled against the schema the model
+   * actually saw.
+   */
+  private readonly strictInputSchemas = new Map<string, Record<string, unknown>>();
 
   /**
    * Creates a new instance of the OpenAIProvider.
@@ -120,24 +137,57 @@ export class OpenAIResponsesProvider extends BaseNonAgenticProvider<
    * ```
    */
   override wrapTool(tool: Tool): OpenAiTool {
-    const inputParams = deduplicateJsonSchemaRequiredArrays(tool.inputParameters);
+    const inputParams = tool.inputParameters;
+    if (!this.strict) {
+      return {
+        name: tool.slug,
+        description: tool.description,
+        // Canonicalize required arrays at the vendor-schema emission boundary.
+        parameters: deduplicateJsonSchemaRequiredArrays(
+          (inputParams ?? {}) as Record<string, unknown>
+        ),
+        strict: this.strict,
+        type: 'function',
+      };
+    }
 
-    const parameters =
-      this.strict && inputParams?.type === 'object'
-        ? removeNonRequiredProperties(
-            inputParams as {
-              type: 'object';
-              properties: Record<string, unknown>;
-              required?: string[];
-            }
-          )
-        : (inputParams ?? {});
+    // Structured outputs enforce their contract at every depth: all
+    // properties required, closed objects, no annotation keywords. The strict
+    // rewrite keeps every parameter (optional ones become nullable) and
+    // reports constructs it cannot express; such a tool is sent without
+    // strict mode rather than with a narrower schema.
+    const source = (inputParams ?? EMPTY_OBJECT_SCHEMA) as Record<string, unknown>;
+    const strict = toStrictJsonSchema(source);
+    if (strict.unsupported.length > 0) {
+      const reasons = strict.unsupported
+        .map(entry => `${entry.path || '<root>'}: ${entry.keyword} (${entry.detail})`)
+        .join('; ');
+      logger.warn(
+        `OpenAIResponsesProvider: tool "${tool.slug}" is sent without strict mode because its schema cannot be expressed as strict structured outputs: ${reasons}`
+      );
+      this.strictInputSchemas.delete(tool.slug);
+      return {
+        name: tool.slug,
+        description: tool.description,
+        parameters: deduplicateJsonSchemaRequiredArrays(source),
+        strict: false,
+        type: 'function',
+      };
+    }
+    if (strict.totalChanges > 0) {
+      logger.debug(
+        `OpenAIResponsesProvider: strict mode rewrote ${strict.totalChanges} node(s) of tool "${tool.slug}": ${strict.changes
+          .map(change => `${change.path}: ${change.reason}`)
+          .join('; ')}`
+      );
+    }
+    this.strictInputSchemas.set(tool.slug, strict.source);
 
     return {
       name: tool.slug,
       description: tool.description,
-      parameters,
-      strict: this.strict,
+      parameters: strict.schema,
+      strict: true,
       type: 'function',
     };
   }
@@ -190,7 +240,7 @@ export class OpenAIResponsesProvider extends BaseNonAgenticProvider<
    * This method processes a tool call from OpenAI's chat completion API,
    * executes the corresponding Composio tool, and returns the result.
    *
-   * @param {string} userId - The user ID for authentication and tracking
+   * @param {string | ToolCallSession} executionTarget - A user ID for direct tools or the session that produced session tools
    * @param {OpenAI.ChatCompletionMessageToolCall} tool - The tool call from OpenAI
    * @param {ExecuteToolFnOptions} [options] - Optional execution options
    * @param {ExecuteToolModifiers} [modifiers] - Optional execution modifiers
@@ -217,21 +267,37 @@ export class OpenAIResponsesProvider extends BaseNonAgenticProvider<
    * ```
    */
   async executeToolCall(
+    session: ToolCallSession,
+    tool: OpenAI.Responses.ResponseFunctionToolCall
+  ): Promise<string>;
+  async executeToolCall(
     userId: string,
     tool: OpenAI.Responses.ResponseFunctionToolCall,
     options?: ExecuteToolFnOptions,
     modifiers?: ExecuteToolModifiers
+  ): Promise<string>;
+  async executeToolCall(
+    executionTarget: ToolCallExecutionTarget,
+    tool: OpenAI.Responses.ResponseFunctionToolCall,
+    options?: ExecuteToolFnOptions,
+    modifiers?: ExecuteToolModifiers
   ): Promise<string> {
-    const payload: ToolExecuteParams = {
-      // OpenAI always serializes tool arguments as a JSON string; normalize tolerates
-      // empty / object-shaped payloads too (issue #2406).
-      arguments: normalizeToolArguments(tool.arguments, tool.name),
-      connectedAccountId: options?.connectedAccountId,
-      customAuthParams: options?.customAuthParams,
-      customConnectionData: options?.customConnectionData,
-      userId: userId,
-    };
-    const result = await this.executeTool(tool.name, payload, modifiers);
+    // OpenAI always serializes tool arguments as a JSON string; normalize tolerates
+    // empty / object-shaped payloads too (issue #2406).
+    const normalizedArguments = normalizeToolArguments(tool.arguments, tool.name);
+    // Under strict mode optional parameters are emitted as required-nullable,
+    // so a `null` the tool's own schema does not accept means "omitted".
+    const strictSchema = this.strictInputSchemas.get(tool.name);
+    const arguments_ = strictSchema
+      ? omitNullToolArguments(normalizedArguments, strictSchema)
+      : normalizedArguments;
+    const result = await this.executeToolForTarget(
+      executionTarget,
+      tool.name,
+      arguments_,
+      options,
+      modifiers
+    );
     return JSON.stringify(result);
   }
 
@@ -241,7 +307,7 @@ export class OpenAIResponsesProvider extends BaseNonAgenticProvider<
    * This method processes tool calls from an OpenAI response,
    * executes each tool call, and returns the results.
    *
-   * @param {string} userId - The user ID for authentication and tracking
+   * @param {string | ToolCallSession} executionTarget - A user ID for direct tools or the session that produced session tools
    * @param {OpenAI.ChatCompletion} chatCompletion - The response from OpenAI
    * @param {ExecuteToolFnOptions} [options] - Optional execution options
    * @param {ExecuteToolModifiers} [modifiers] - Optional execution modifiers
@@ -272,11 +338,22 @@ export class OpenAIResponsesProvider extends BaseNonAgenticProvider<
    * ```
    */
   async handleToolCalls(
+    session: ToolCallSession,
+    toolCalls: OpenAI.Responses.ResponseOutputItem[]
+  ): Promise<OpenAI.Responses.ResponseInputItem.FunctionCallOutput[]>;
+  async handleToolCalls(
     userId: string,
     toolCalls: OpenAI.Responses.ResponseOutputItem[],
     options?: ExecuteToolFnOptions,
     modifiers?: ExecuteToolModifiers
+  ): Promise<OpenAI.Responses.ResponseInputItem.FunctionCallOutput[]>;
+  async handleToolCalls(
+    executionTarget: ToolCallExecutionTarget,
+    toolCalls: OpenAI.Responses.ResponseOutputItem[],
+    options?: ExecuteToolFnOptions,
+    modifiers?: ExecuteToolModifiers
   ): Promise<OpenAI.Responses.ResponseInputItem.FunctionCallOutput[]> {
+    this.assertToolCallExecutionOptions(executionTarget, options, modifiers);
     const toolOutputs: OpenAI.Responses.ResponseInputItem.FunctionCallOutput[] = [];
     for (const output of toolCalls) {
       if (output.type === 'function_call') {
@@ -286,7 +363,10 @@ export class OpenAIResponsesProvider extends BaseNonAgenticProvider<
           arguments: output.arguments,
         } as OpenAI.Responses.ResponseFunctionToolCall;
         try {
-          const toolOutput = await this.executeToolCall(userId, tool_call, options, modifiers);
+          const toolOutput =
+            typeof executionTarget === 'string'
+              ? await this.executeToolCall(executionTarget, tool_call, options, modifiers)
+              : await this.executeToolCall(executionTarget, tool_call);
           toolOutputs.push({
             call_id: output.call_id ?? '',
             type: 'function_call_output',

@@ -441,7 +441,7 @@ Requires `@composio/core` ≥ `0.9.0` (TypeScript) or `composio` ≥ `0.13.0`
 
 <Callout type="info">
 `preload.tools` is not supported when `multiAccount.enable` is true. See
-[Managing multiple connected accounts](/docs/managing-multiple-connected-accounts).
+[Managing multiple connected accounts](/docs/authentication/managing-multiple-connected-accounts).
 </Callout>
 
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
@@ -536,7 +536,7 @@ const session = await composio.create("user_123", {
 </Tab>
 </Tabs>
 
-See [White-labeling authentication](/docs/white-labeling-authentication) for branding, or [Managed vs custom auth](/docs/custom-app-vs-managed-app) for toolkits that require your own credentials.
+See [White-labeling authentication](/docs/authentication/white-labeling-authentication) for branding, or [Managed vs custom auth](/docs/authentication/custom-app-vs-managed-app) for toolkits that require your own credentials.
 
 ## Account selection
 
@@ -570,7 +570,7 @@ const session = await composio.create("user_123", {
 </Tabs>
 
 <Callout type="info">
-Arrays are the preferred format for `connectedAccounts`. A single string (e.g. `"ca_work_gmail"`) is still accepted for backwards compatibility and is automatically coerced to a single-element array. Only one account per toolkit is allowed when [multi-account mode](/docs/managing-multiple-connected-accounts) is disabled.
+Arrays are the preferred format for `connectedAccounts`. A single string (e.g. `"ca_work_gmail"`) is still accepted for backwards compatibility and is automatically coerced to a single-element array. Only one account per toolkit is allowed when [multi-account mode](/docs/authentication/managing-multiple-connected-accounts) is disabled.
 </Callout>
 
 ### Precedence
@@ -731,7 +731,7 @@ const connectedAccount = await connectionRequest.waitForConnection();
 </Tab>
 </Tabs>
 
-For more details, see [Manually authenticating users](/docs/manually-authenticating).
+For more details, see [Manually authenticating users](/docs/authentication/manually-authenticating).
 
 ### toolkits()
 

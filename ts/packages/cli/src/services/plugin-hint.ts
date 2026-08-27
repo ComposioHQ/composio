@@ -1,6 +1,7 @@
 import { FileSystem, Path } from '@effect/platform';
 import { BunFileSystem } from '@effect/platform-bun';
 import { Config, ConfigProvider, Effect, Layer, Option, Schema } from 'effect';
+import { APP_CONFIG } from 'src/effects/app-config';
 import { setupCacheDir } from 'src/effects/setup-cache-dir';
 import { AGENT_HOST_LABELS, COMPOSIO_AGENT_PLUGIN_ID, type AgentHost } from './agent-host';
 import { NodeOs } from './node-os';
@@ -153,18 +154,16 @@ export function findRootCommandName(argv: ReadonlyArray<string>): string | undef
 
 // Host-owned variables must bypass the CLI ConfigProvider, which prefixes
 // application keys with COMPOSIO_.
-const rawEnvironment = Effect.gen(function* () {
+const rawHostEnvironment = Effect.gen(function* () {
   const claudeCode = yield* readOptionalEnv('CLAUDECODE');
   const codexThreadId = yield* readOptionalEnv('CODEX_THREAD_ID');
   const codexSandbox = yield* readOptionalEnv('CODEX_SANDBOX');
-  const invocationOrigin = yield* readOptionalEnv('COMPOSIO_CLI_INVOCATION_ORIGIN');
   const claudeConfigDir = nonBlankOrUndefined(yield* readOptionalEnv('CLAUDE_CONFIG_DIR'));
   const codexHome = nonBlankOrUndefined(yield* readOptionalEnv('CODEX_HOME'));
   return {
     claudeCode,
     codexThreadId,
     codexSandbox,
-    invocationOrigin,
     claudeConfigDir,
     codexHome,
   };
@@ -175,11 +174,12 @@ export const resolvePluginHintConfig = (argv: ReadonlyArray<string>) =>
     const path = yield* Path.Path;
     const os = yield* NodeOs;
     const cacheDir = yield* setupCacheDir;
-    const env = yield* rawEnvironment;
+    const invocationOrigin = yield* APP_CONFIG.CLI_INVOCATION_ORIGIN;
+    const env = yield* rawHostEnvironment;
     return {
       stateDirectory: path.join(cacheDir, 'plugin-hints'),
       host: detectPluginHost(env),
-      invocationOrigin: env.invocationOrigin,
+      invocationOrigin,
       commandName: findRootCommandName(argv),
       claudeInstalledPluginsFile: path.join(
         env.claudeConfigDir ?? path.join(os.homedir, '.claude'),

@@ -1,0 +1,24 @@
+---
+title: "YNAB authentication"
+description: "Current OAuth setup for the YNAB toolkit."
+keywords: ["for-you","platform","ynab","auth-config","authentication","errors-and-troubleshooting","toolkits-and-providers"]
+sources: [{"sourcePath":"toolkits/ynab/public.md","sourceHeading":"YNAB supports managed and customer-owned OAuth"}]
+sourceCommit: "5eac683455ff252a7a3b62f33ab6566445009b52"
+lastVerifiedAt: "2026-08-24"
+reviewAfter: "2026-11-22"
+freshness: "evergreen"
+topics: ["auth-config","authentication","errors-and-troubleshooting","toolkits-and-providers"]
+toolkitSlugs: ["ynab"]
+aliases: []
+---
+## YNAB supports managed and customer-owned OAuth
+
+Use Composio-managed OAuth for the standard connection flow. Create a custom
+auth config with the customer's YNAB client ID and client secret when they need
+control over the provider app. For custom OAuth, register the exact redirect URI
+shown by the current Composio auth-config flow.
+
+If YNAB reports that an application is restricted, review the YNAB app's
+current review and access-token restrictions. An app intended only for its
+owner and an app distributed to unrelated users can have different provider
+review requirements. Do not promise a provider approval date.

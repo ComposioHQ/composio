@@ -3,7 +3,12 @@ import { chmod, copyFile, mkdir, readdir, rm, stat, writeFile } from 'node:fs/pr
 import * as path from 'node:path';
 import process from 'node:process';
 import { Effect } from 'effect';
-import { RUN_COMPANION_MODULE_BASENAMES } from '../src/services/run-companion-modules';
+import {
+  codexAcpBinaryTargetFor,
+  RUN_CODEX_ACP_BINARY_TARGETS,
+  RUN_COMPANION_MODULE_BASENAMES,
+  type RunCodexAcpBinaryTarget,
+} from '../src/services/run-companion-modules';
 import { materializeAcpAdaptersCache } from './_acp-adapters';
 
 export { teardown } from './_teardown';
@@ -43,11 +48,24 @@ const copyDirectoryRecursive = async (sourceDir: string, targetDir: string): Pro
   }
 };
 
-const copyBundledAcpAdapters = async (outputDir: string): Promise<void> => {
-  const acpAdaptersCacheDir = await materializeAcpAdaptersCache();
+const copyBundledAcpAdapters = async (
+  outputDir: string,
+  codexBinaryTargets: ReadonlyArray<RunCodexAcpBinaryTarget>
+): Promise<void> => {
+  const acpAdaptersCacheDir = await materializeAcpAdaptersCache(codexBinaryTargets);
   const acpOutputDir = path.join(outputDir, 'acp-adapters');
   await rm(acpOutputDir, { force: true, recursive: true });
   await copyDirectoryRecursive(acpAdaptersCacheDir, acpOutputDir);
+};
+
+// The codex-acp binary the building machine can actually execute. Unsupported
+// hosts get an empty list, matching the host requirement set the CLI checks.
+export const hostCodexAcpBinaryTargets = (): ReadonlyArray<RunCodexAcpBinaryTarget> => {
+  const hostTarget = codexAcpBinaryTargetFor({
+    platform: process.platform,
+    arch: process.arch,
+  });
+  return hostTarget ? [hostTarget] : [];
 };
 
 export const LOCAL_TOOLS_BINARY_ASSET_DIRNAME = 'local-tools-binaries';
@@ -302,7 +320,12 @@ const buildCompanionServiceBundles = async (outputDir: string): Promise<void> =>
   }
 };
 
-export const buildCompanionModules = (outputDir: string) =>
+export const buildCompanionModules = (
+  outputDir: string,
+  options: {
+    readonly codexBinaryTargets?: ReadonlyArray<RunCodexAcpBinaryTarget>;
+  } = {}
+) =>
   Effect.gen(function* () {
     yield* Effect.tryPromise(() => mkdir(outputDir, { recursive: true }));
 
@@ -314,6 +337,8 @@ export const buildCompanionModules = (outputDir: string) =>
       yield* Effect.tryPromise(() => writeFile(wrapperPath, wrapperSource, 'utf8'));
     }
 
-    yield* Effect.tryPromise(() => copyBundledAcpAdapters(outputDir));
+    yield* Effect.tryPromise(() =>
+      copyBundledAcpAdapters(outputDir, options.codexBinaryTargets ?? RUN_CODEX_ACP_BINARY_TARGETS)
+    );
     yield* Effect.tryPromise(() => assertBundledRuntimeFiles(outputDir));
   });

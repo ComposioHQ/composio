@@ -15,6 +15,7 @@ import {
 } from './agent-host';
 import { CommandRunner, type CommandResult } from './command-runner';
 import { SetupSkillInstaller } from './setup-skill-installer';
+import { cliInvocationContext } from './runtime-cli-context';
 
 export const SETUP_TARGETS = ['auto', ...AGENT_HOSTS, 'all'] as const;
 export type SetupTarget = (typeof SETUP_TARGETS)[number];
@@ -829,6 +830,7 @@ const runSetupTargets = <E, R>(
   Effect.gen(function* () {
     const operation = verb === 'Uninstall' ? 'uninstall' : 'setup';
     const phase = verb === 'Uninstall' ? 'uninstall' : 'install';
+    const { invocationOrigin } = yield* cliInvocationContext;
     const completed: SetupTargetResult[] = [];
     for (const status of inspected) {
       const result = yield* runAdapter(ADAPTERS[status.target], status).pipe(
@@ -839,6 +841,7 @@ const runSetupTargets = <E, R>(
               target: status.target,
               phase,
               error,
+              invocationOrigin,
               cliVersion: APP_VERSION,
             })
           )
@@ -868,6 +871,7 @@ const runSetupTargets = <E, R>(
             operation,
             target: result.target,
             action,
+            invocationOrigin,
             cliVersion: APP_VERSION,
           })
         );

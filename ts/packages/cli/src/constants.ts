@@ -17,7 +17,7 @@ export const STAGING_BASE_URL = 'https://staging-backend.composio.dev';
  * Staging base URL for the Composio web app (frontend).
  * Used when `COMPOSIO_ENVIRONMENT=staging`.
  */
-export const STAGING_WEB_URL = 'https://staging-platform.composio.dev';
+export const STAGING_WEB_URL = 'https://staging-dashboard.composio.dev/';
 
 /**
  * Prefix for user environment variable keys used by the Composio CLI.

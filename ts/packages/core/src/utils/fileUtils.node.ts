@@ -246,7 +246,10 @@ const uploadFileToS3 = async (
   // `InvalidArgumentError: invalid content-length header`, which surfaces as
   // `TypeError: fetch failed` and breaks every `file_uploadable` connector tool
   // on Node 22+.
-  const uploadResponse = await fetch(signedURL, {
+  // SSRF guard: `new_presigned_url` comes from the API response, which the SDK
+  // treats as untrusted — a response naming an internal address would otherwise
+  // have the file's bytes PUT to it. See ssrfGuard.node.ts.
+  const uploadResponse = await ssrfSafeFetch(signedURL, {
     method: 'PUT',
     body: uploadBuffer,
     signal,
@@ -348,7 +351,10 @@ export const downloadFileFromS3 = async ({
   fileDownloadDir?: string;
   signal?: AbortSignal;
 }): Promise<FileDownloadData> => {
-  const response = await fetch(s3Url, { signal });
+  // SSRF guard: `s3Url` is a field of the tool-execution response, so it is no
+  // more trusted than a user-supplied URL — and the bytes it returns are
+  // written to disk. See ssrfGuard.node.ts.
+  const response = await ssrfSafeFetch(s3Url, { signal });
   if (!response.ok) {
     throw new Error(`Failed to download file: ${response.statusText}`);
   }
