@@ -8,7 +8,7 @@ the `composio` import name and must not be installed together.
 
 ```bash
 python -m pip uninstall -y composio-core
-python -m pip install composio
+python -m pip install "composio>=0.20.0"
 ```
 
 See the [migration guide](https://docs.composio.dev/docs/migration-guide/new-sdk)
