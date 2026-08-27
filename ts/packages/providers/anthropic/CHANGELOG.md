@@ -1,5 +1,12 @@
 # @composio/anthropic
 
+## 0.11.1-beta.0
+
+### Patch Changes
+
+- Updated dependencies [fb1b530]
+  - @composio/core@1.0.0-beta.0
+
 ## 0.11.0
 
 ### Minor Changes

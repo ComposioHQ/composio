@@ -93,7 +93,7 @@ function readPyprojectVersion(text, label) {
 function readSdkVersions(rows) {
   const versions = new Set();
   const pythonVersionPattern =
-    /\bv?(\d+(?:\.\d+)+(?:[._-]?(?:a|b|c|rc|alpha|beta|pre|preview)\d*)?(?:[._-]?(?:post|rev|r)\d*)?(?:[._-]?dev\d*)?(?:\+[a-z0-9]+(?:[._-][a-z0-9]+)*)?)\b/gi;
+    /\bv?(\d+(?:\.\d+)+(?:[._-]?(?:a|b|c|rc|alpha|beta|pre|preview)(?:[._-]?\d+)?)?(?:[._-]?(?:post|rev|r)\d*)?(?:[._-]?dev\d*)?(?:\+[a-z0-9]+(?:[._-][a-z0-9]+)*)?)\b/gi;
 
   for (const row of rows) {
     const cells = row
@@ -268,6 +268,7 @@ touch "$target/dist/provider.whl"
     '| Python `composio` | `9.9.9.post1` |',
     '| Python `composio` | `9.9.9.dev1` |',
   ]);
+  const semverPrerelease = readSdkVersions(['| TypeScript `@composio/core` | `1.0.0-beta.0` |']);
 
   if (!directVersion.has('9.9.9') || !versionWithPrevious.has('9.9.9')) {
     throw new Error('Python SDK changelog version rows must recognize the released version');
@@ -283,6 +284,9 @@ touch "$target/dist/provider.whl"
         `Python SDK changelog version rows must recognize PEP 440 version ${version}`
       );
     }
+  }
+  if (!semverPrerelease.has('1.0.0-beta.0')) {
+    throw new Error('SDK changelog version rows must recognize SemVer prerelease versions');
   }
 }
 
@@ -364,7 +368,9 @@ if (
   throw new Error('ts.release.yml must validate pending changesets before changesets/action');
 }
 
-if (!tsReleaseWorkflow.includes('changesets/action@8488615a623b1b9c987934bb89eae8af6a946ac1 # v2.1.1')) {
+if (
+  !tsReleaseWorkflow.includes('changesets/action@8488615a623b1b9c987934bb89eae8af6a946ac1 # v2.1.1')
+) {
   throw new Error('ts.release.yml must use changesets/action v2 with Changesets v3');
 }
 

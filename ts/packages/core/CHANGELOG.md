@@ -1,5 +1,11 @@
 # @composio/core
 
+## 1.0.0-beta.0
+
+### Major Changes
+
+- fb1b530: Replace the frozen Stainless `@composio/client` with the owned `2.0.0-rc.6` client.
+
 ## 0.17.0
 
 ### Minor Changes

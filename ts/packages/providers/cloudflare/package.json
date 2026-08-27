@@ -1,6 +1,6 @@
 {
   "name": "@composio/cloudflare",
-  "version": "0.10.1",
+  "version": "0.10.2-beta.0",
   "description": "",
   "main": "src/index.ts",
   "type": "module",
@@ -41,7 +41,7 @@
   "license": "ISC",
   "peerDependencies": {
     "@cloudflare/workers-types": "catalog:",
-    "@composio/core": ">=0.10.0 <1.0.0"
+    "@composio/core": ">=1.0.0-beta.0"
   },
   "devDependencies": {
     "@composio/core": "workspace:*",
