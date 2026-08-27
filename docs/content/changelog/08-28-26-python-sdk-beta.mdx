@@ -1,0 +1,21 @@
+---
+title: 'Python SDK 2.0.0 beta uses the Composio-owned client'
+description: 'Python SDK 2.0.0b0 replaces the frozen client with the Composio-owned 2.0.0rc6 client while keeping provider packages on their stable release train.'
+date: '2026-08-28'
+---
+
+Python SDK `composio` `2.0.0b0` replaces the frozen `composio-client` dependency with the Composio-owned `2.0.0rc6` client.
+
+Install the beta with:
+
+```bash
+pip install composio==2.0.0b0
+```
+
+### SDK versions
+
+| SDK               | Version   |
+| ----------------- | --------- |
+| Python `composio` | `2.0.0b0` |
+
+The Python provider packages remain on their stable `0.x` release train. Their existing `composio` dependency lets an explicitly installed `composio==2.0.0b0` supply the shared SDK runtime.
