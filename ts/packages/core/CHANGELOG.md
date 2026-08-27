@@ -1,5 +1,22 @@
 # @composio/core
 
+## 0.18.0
+
+### Minor Changes
+
+- 04817cb: Fix strict-mode tool schemas for OpenAI structured outputs. Strict normalization now applies OpenAI's contract at every depth (nested objects, `anyOf` branches, array items, inlined `$ref`/`$defs`): every object lists all of its properties in `required` and sets `additionalProperties: false`, so tools with nested or optional parameters no longer produce schemas the API rejects with a 400. Optional parameters are no longer dropped: they stay available and are widened to accept `null`, the emulation of optional fields OpenAI documents, and the strict providers drop a `null` argument the tool's own schema does not accept before executing the tool. Tools whose schema strict mode cannot express (objects with arbitrary keys, `allOf`, `prefixItems`, unresolved `$ref`s) are sent without strict mode with a warning naming the tool and path, instead of being narrowed. `@composio/core` exports the new `toStrictJsonSchema()` and `omitNullToolArguments()` utilities; `removeNonRequiredProperties` is unchanged for other callers. The Python `OpenAIResponsesProvider` gains a matching opt-in `strict=True` constructor flag that also emits `strict: true` on the wrapped tool.
+
+### Patch Changes
+
+- 449f4e1: Block automatic uploads when a sensitive directory or file name is hidden by symlink resolution.
+- 9545806: Bound the best-effort telemetry requests with a timeout so a stalled telemetry endpoint cannot leave an SDK call pending indefinitely.
+- db7b576: Declare Node.js 22.22.3 as the minimum supported runtime for every published TypeScript package so package managers surface incompatible runtimes before users encounter ESM loading failures.
+- fe66cbe: Omit empty-string file-uploadable arguments from tool execution requests instead of forwarding them to the backend, which rejected them with "Input should be a valid dictionary or instance of FileUploadable". This now also applies when `dangerouslyAllowAutoUploadDownloadFiles` is off, and with it on an empty value is no longer attempted as an upload.
+- c0f1609: Fix three ComposioError subclasses (ComposioToolVersionRequiredError, JsonSchemaToZodError, JsonSchemaRefResolutionError) that omitted their `this.name` assignment and therefore reported `name` as 'ComposioError' instead of their own class name, mis-grouping distinct error types in error telemetry.
+- d544006: Close a DNS-rebinding window in the SSRF guard: the address validated by `assertSafeFetchTarget` is now the address `ssrfSafeFetch` connects to, so a hostname is no longer resolved a second time between the check and the connection. Each redirect hop is re-validated and re-pinned. The request still carries the original hostname in `Host` and TLS SNI, so certificate verification is unchanged. Hops whose effective dispatcher is a configured route — a caller-supplied `dispatcher`, a global `ProxyAgent`/`EnvHttpProxyAgent`, or `NODE_USE_ENV_PROXY` env-proxy mode — keep the pre-flight check only, mirroring the Python guard's documented proxy residual.
+- Updated dependencies [db7b576]
+  - @composio/json-schema-to-zod@0.3.1
+
 ## 0.17.0
 
 ### Minor Changes

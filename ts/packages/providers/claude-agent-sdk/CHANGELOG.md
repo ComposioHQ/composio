@@ -1,5 +1,11 @@
 # @composio/claude-code-agents
 
+## 0.11.1
+
+### Patch Changes
+
+- db7b576: Declare Node.js 22.22.3 as the minimum supported runtime for every published TypeScript package so package managers surface incompatible runtimes before users encounter ESM loading failures.
+
 ## 0.11.0
 
 ### Minor Changes
