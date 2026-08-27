@@ -110,6 +110,18 @@ gap that is not already answered by current docs or a published KB guide.
 Volatile pricing, entitlement, and security claims require an authoritative
 public source and are not copied from dashboard FAQ prose by default.
 
+### Identifier URLs
+
+KB prose cites machine identifiers that happen to look like URLs: OAuth
+scope URIs such as `https://www.googleapis.com/auth/…` and API surface roots
+such as `https://api.ahrefs.com/v3`. These are not documents; fetching them
+404s by design, so they can never survive the nightly external-link sweep as
+links. The generation layer therefore demotes bare citations and `<url>`
+autolinks of these two shapes to inline code spans. Explicit markdown links
+keep their authored form — if one points at an identifier URL, the nightly
+sweep flags it for an upstream fix instead of the pipeline silently rewriting
+navigation the author wrote.
+
 ## Routes and Navigation
 
 - `/kb` is the knowledge-base landing page.

@@ -10,14 +10,18 @@ tags:
 ---
 # Twitter
 
-## Twitter/X supports Composio-managed and customer-owned OAuth
+## Twitter/X requires a customer-owned OAuth app
 
-Use the current managed OAuth flow for the standard connection. A customer-
-owned X developer app remains appropriate when the customer needs control over
-app settings, provider plan, scopes, or branding.
+Composio managed credentials are not available for the Twitter toolkit. Create
+an app in the X Developer Portal, then create a custom Composio auth config with
+that app's credentials before connecting an account. This has been required
+since managed Twitter credentials were removed in February 2026.
+
+- [Twitter toolkit authentication details](https://docs.composio.dev/toolkits/twitter)
+- [Managed Twitter credentials removal](https://docs.composio.dev/docs/changelog/2026/02/12)
 
 
-## Use Composio's v1 auth-app redirect URI for Twitter OAuth callback mismatch errors
+## Use the current auth-config callback URI for Twitter OAuth callback mismatch errors
 
 For Twitter OAuth callback mismatch errors, configure the Twitter/X developer app with the exact callback shown by the current Composio auth-config flow. Do not use the legacy v1 callback from older support guidance.
 

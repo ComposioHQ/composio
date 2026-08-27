@@ -19,12 +19,13 @@ tags:
 
 Google Docs tab-level access is supported. For reading tabs, use `GOOGLEDOCS_GET_DOCUMENT_BY_ID` or `GOOGLEDOCS_GET_DOCUMENT_PLAINTEXT`. For editing specific tabs, use `GOOGLEDOCS_REPLACE_ALL_TEXT`, `GOOGLEDOCS_REPLACE_IMAGE`, or `GOOGLEDOCS_UPDATE_EXISTING_DOCUMENT`.
 
-## Google Docs currently uses customer-owned OAuth2
+## Google Docs supports managed and customer-owned OAuth2
 
-Create the Google Docs auth config with the customer's Google OAuth app and the
-required scopes. The current catalog does not advertise a separate bearer-token
-auth scheme for Google Docs. A Composio Project API key authenticates SDK/API
-calls to Composio; it is not a replacement for the user's Google OAuth grant.
+Use Composio-managed OAuth for the standard connection flow. Create a custom
+auth config with the customer's Google OAuth app when they need control over
+scopes, consent-screen branding, or Google Cloud project policy. A Composio
+Project API key authenticates SDK/API calls to Composio; it is not a replacement
+for the user's Google OAuth grant.
 
 ## Google sensitive scopes can cause app-blocked errors unless the OAuth app is verified
 

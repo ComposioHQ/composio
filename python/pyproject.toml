@@ -37,7 +37,7 @@ dev = [
     "requests>=2.34.2",
     "ruff>=0.16.0",
     # Langchain provider demo
-    "langchain_openai==1.4.3",
+    "langchain_openai==1.6.0",
     "fastapi>=0.140.0",
     "twine>=6.2.0",
     "click>=8.4.2",

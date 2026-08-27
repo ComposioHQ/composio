@@ -20,6 +20,7 @@ import { writeFile, mkdir, readdir, unlink } from 'fs/promises';
 import { join } from 'path';
 import { fetchWithRetry } from './fetch-with-retry';
 import { META_TOOL_OVERRIDES } from '../lib/meta-tool-overrides';
+import { encodeMarkdownTableCell, encodeYamlString } from '../lib/markdown-escaping';
 import { requireProductionApiV3Url, stripStagingHosts } from './production-api.mjs';
 import { z } from 'zod';
 
@@ -177,13 +178,13 @@ function indexLine(tool: GeneratedMetaTool): string {
   if (override) {
     // First sentence of the hand-written summary keeps the table tight.
     const firstSentence = override.summary.split(/\.(\s|$)/)[0].trim();
-    return firstSentence.replace(/\|/g, '\\|');
+    return encodeMarkdownTableCell(firstSentence);
   }
-  return briefDescription(tool.description).replace(/\|/g, '\\|');
+  return encodeMarkdownTableCell(briefDescription(tool.description));
 }
 
 /** Generate the index.mdx overview page — Modal-voice intro plus a one-line-per-tool table */
-function generateIndexMdx(tools: GeneratedMetaTool[]): string {
+export function generateIndexMdx(tools: GeneratedMetaTool[]): string {
   let content = `---
 title: Meta Tools
 description: The system tools every Composio session gives your agent to discover, authenticate, execute, and process tools at runtime.
@@ -218,12 +219,12 @@ These schemas are for reference only. We do not guarantee backward compatibility
 }
 
 /** Generate an individual tool MDX page */
-function generateToolMdx(tool: GeneratedMetaTool): string {
-  const desc = briefDescription(tool.description).replace(/"/g, '\\"');
+export function generateToolMdx(tool: GeneratedMetaTool): string {
+  const desc = encodeYamlString(briefDescription(tool.description));
 
   return `---
 title: ${tool.displayName}
-description: "${desc}"
+description: ${desc}
 keywords: [${tool.slug}, meta tool]
 ---
 

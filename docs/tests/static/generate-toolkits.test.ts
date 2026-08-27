@@ -23,7 +23,11 @@ import {
   transformAuthConfigDetail,
   transformToolkit,
 } from "../../scripts/generate-toolkits";
-import { transformTool } from "../../scripts/generate-meta-tools";
+import {
+  generateIndexMdx,
+  generateToolMdx,
+  transformTool,
+} from "../../scripts/generate-meta-tools";
 
 describe("transformToolkit", () => {
   test("excludes the synthetic test_app catalog residue from public docs", () => {
@@ -341,6 +345,26 @@ describe("transformTool (generate-meta-tools.ts)", () => {
     expect(tool.toolkit).toBeNull();
     expect(tool.inputParameters).toEqual({});
     expect(tool.responseSchema).toEqual({});
+  });
+
+  test("encodes table delimiters in generated index descriptions", () => {
+    const tool = transformTool({
+      slug: "COMPOSIO_X",
+      name: "composio_x",
+      description: String.raw`Compare \| and | values`,
+    });
+
+    expect(generateIndexMdx([tool])).toContain(String.raw`Compare \&#124; and &#124; values`);
+  });
+
+  test("serializes generated frontmatter descriptions as YAML strings", () => {
+    const tool = transformTool({
+      slug: "COMPOSIO_X",
+      name: "composio_x",
+      description: 'Use "quotes" at C:\\tools',
+    });
+
+    expect(generateToolMdx(tool)).toContain('description: "Use \\"quotes\\" at C:\\\\tools"');
   });
 });
 

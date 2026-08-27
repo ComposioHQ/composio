@@ -162,7 +162,7 @@ def custom_toolkits() -> List[RegisteredCustomToolkit]
 Proxy an API call through Composio's auth layer.
 
 ```python
-def proxy_execute(toolkit: str, endpoint: str, method: Literal['GET', 'POST', 'PUT', 'DELETE', 'PATCH'], body: Any = ..., parameters: List[Dict[str, Any | None]] = ...) -> SessionProxyExecuteResponse
+def proxy_execute(toolkit: str, endpoint: str, method: Literal['GET', 'POST', 'PUT', 'DELETE', 'PATCH'], body: Any = ..., parameters: List[Dict[str, Any | None]] = ...) -> ToolRouterSessionProxyExecuteResponse
 ```
 
 **Parameters**
@@ -177,7 +177,7 @@ def proxy_execute(toolkit: str, endpoint: str, method: Literal['GET', 'POST', 'P
 
 **Returns**
 
-`SessionProxyExecuteResponse` — Proxied API response
+`ToolRouterSessionProxyExecuteResponse` — Proxied API response
 
 ---
 
@@ -220,4 +220,4 @@ def delete() -> ToolRouterSessionDeleteResponse
 
 ---
 
-[View source](https://github.com/composiohq/composio/blob/next/python/composio/core/models/tool_router_session.py#L85)
+[View source](https://github.com/composiohq/composio/blob/next/python/composio/core/models/tool_router_session.py#L86)

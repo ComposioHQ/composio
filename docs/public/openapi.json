@@ -987,6 +987,7 @@
               "SERVICE_ACCOUNT",
               "SAML",
               "DCR_OAUTH",
+              "CIMD_OAUTH",
               "S2S_OAUTH2"
             ]
           },
@@ -4776,6 +4777,422 @@
           },
           "500": {
             "description": "Internal server error - Failed to delete toolkit",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "x-api-version": "3.1"
+      }
+    },
+    "/api/v3.1/toolkits/{toolkit_slug}/scopes/recommended": {
+      "post": {
+        "summary": "Get required scopes",
+        "description": "Experimental: this endpoint is in beta and its contract may change.\n\nRecommends the required scopes to use the given set of tools.",
+        "tags": [
+          "Toolkits"
+        ],
+        "operationId": "recommendToolkitScopes",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Toolkit to recommend scopes for."
+            },
+            "required": true,
+            "description": "Toolkit to recommend scopes for.",
+            "name": "toolkit_slug",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "tools": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "description": "Tool slugs to recommend scopes for; an empty list computes the recommendation across all of the toolkit’s tools."
+                  },
+                  "auth_scheme": {
+                    "type": "string",
+                    "enum": [
+                      "OAUTH2",
+                      "OAUTH1",
+                      "API_KEY",
+                      "BASIC",
+                      "BILLCOM_AUTH",
+                      "BEARER_TOKEN",
+                      "GOOGLE_SERVICE_ACCOUNT",
+                      "NO_AUTH",
+                      "BASIC_WITH_JWT",
+                      "CALCOM_AUTH",
+                      "SERVICE_ACCOUNT",
+                      "SAML",
+                      "DCR_OAUTH",
+                      "CIMD_OAUTH",
+                      "S2S_OAUTH2"
+                    ],
+                    "default": "OAUTH2",
+                    "description": "Auth scheme the connection will use. Defaults to OAUTH2."
+                  },
+                  "toolkit_version": {
+                    "type": "string",
+                    "minLength": 1,
+                    "default": "latest",
+                    "description": "Toolkit version to compute from; defaults to the latest published version. Pass a concrete version to pin."
+                  },
+                  "grant_context": {
+                    "type": "object",
+                    "additionalProperties": {
+                      "type": "string"
+                    },
+                    "description": "Optional context about your OAuth app or the account being connected that can change which scopes are required, e.g. {\"account_type\": \"Google Workspace\"}. Get accepted keys and values from the List grant_context options endpoint."
+                  },
+                  "include": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "description": "Scopes the recommendation must include, irrespective of usage."
+                  },
+                  "exclude": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "description": "Scopes the recommendation must not include; the solver picks documented alternatives and fails when none exist."
+                  }
+                },
+                "required": [
+                  "tools"
+                ],
+                "x-experimental": true
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successfully recommended scopes for the requested tools",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "auth_scheme": {
+                      "type": "string",
+                      "description": "Auth scheme the recommendation was computed under."
+                    },
+                    "toolkit_version": {
+                      "type": "string",
+                      "description": "Concrete toolkit version the answer was computed from; pass it back as toolkit_version to pin."
+                    },
+                    "grant_context": {
+                      "type": "object",
+                      "additionalProperties": {
+                        "type": "string"
+                      },
+                      "description": "The grant_context the recommendation was computed with; {} when none applies."
+                    },
+                    "scopes": {
+                      "type": "object",
+                      "properties": {
+                        "least_privilege": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          },
+                          "description": "Narrowest documented option per requirement."
+                        },
+                        "fewest": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          },
+                          "description": "Smallest scope set covering all requirements."
+                        },
+                        "conditional": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "scope": {
+                                "type": "string",
+                                "description": "The scope needed only under the `when` guard."
+                              },
+                              "when": {
+                                "type": "object",
+                                "additionalProperties": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string"
+                                  }
+                                },
+                                "description": "Condition for when this scope is needed: input field name to qualifying values (any value matches within a field; all fields must match)."
+                              },
+                              "for": {
+                                "type": "array",
+                                "items": {
+                                  "type": "string"
+                                },
+                                "description": "Tool slugs that need this scope under the guard."
+                              }
+                            },
+                            "required": [
+                              "scope",
+                              "when",
+                              "for"
+                            ]
+                          },
+                          "description": "Scopes needed only for particular call-time inputs; the lists above already include them worst-case, so a caller that knows its inputs may subtract the rest. Empty when none apply."
+                        }
+                      },
+                      "required": [
+                        "least_privilege",
+                        "fewest",
+                        "conditional"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "auth_scheme",
+                    "toolkit_version",
+                    "grant_context",
+                    "scopes"
+                  ],
+                  "x-experimental": true
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request (validation_error, action_not_available, grant_context_required, not_available_in_grant_context)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Toolkit or toolkit_version not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Exclusions conflict with the requested tools (exclude_conflict)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "501": {
+            "description": "Some requested tools are not supported by scope resolution yet (not_supported)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "x-api-version": "3.1"
+      }
+    },
+    "/api/v3.1/toolkits/{toolkit_slug}/scopes/grant_context": {
+      "get": {
+        "summary": "List grant_context options",
+        "description": "Experimental: this endpoint is in beta and its contract may change.\n\nLists the grant_context keys and values this toolkit accepts. Pass them in the Get required scopes request to tailor the recommendation to your OAuth app or account.",
+        "tags": [
+          "Toolkits"
+        ],
+        "operationId": "recommendToolkitScopesGrantContext",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Toolkit to list grant_context options for."
+            },
+            "required": true,
+            "description": "Toolkit to list grant_context options for.",
+            "name": "toolkit_slug",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "OAUTH2",
+                "OAUTH1",
+                "API_KEY",
+                "BASIC",
+                "BILLCOM_AUTH",
+                "BEARER_TOKEN",
+                "GOOGLE_SERVICE_ACCOUNT",
+                "NO_AUTH",
+                "BASIC_WITH_JWT",
+                "CALCOM_AUTH",
+                "SERVICE_ACCOUNT",
+                "SAML",
+                "DCR_OAUTH",
+                "CIMD_OAUTH",
+                "S2S_OAUTH2"
+              ],
+              "default": "OAUTH2",
+              "description": "Auth scheme the connection will use. Defaults to OAUTH2."
+            },
+            "required": false,
+            "description": "Auth scheme the connection will use. Defaults to OAUTH2.",
+            "name": "auth_scheme",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "default": "latest",
+              "description": "Toolkit version to read the catalog from; defaults to the latest published version. Pass a concrete version to pin."
+            },
+            "required": false,
+            "description": "Toolkit version to read the catalog from; defaults to the latest published version. Pass a concrete version to pin.",
+            "name": "toolkit_version",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully discovered the toolkit's grant-context keys",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "auth_scheme": {
+                      "type": "string",
+                      "description": "Auth scheme whose scope catalog the vocabulary was read from."
+                    },
+                    "toolkit_version": {
+                      "type": "string",
+                      "description": "Concrete toolkit version the answer was computed from; pass it back as toolkit_version to pin."
+                    },
+                    "grant_context_keys": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "key": {
+                            "type": "string",
+                            "description": "Key you can pass in grant_context when requesting scope recommendations, e.g. 'account_type'."
+                          },
+                          "allowed_values": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            },
+                            "description": "Values this key accepts."
+                          }
+                        },
+                        "required": [
+                          "key",
+                          "allowed_values"
+                        ]
+                      },
+                      "description": "Keys this toolkit accepts in grant_context under the auth scheme; [] when no scope depends on grant_context."
+                    }
+                  },
+                  "required": [
+                    "auth_scheme",
+                    "toolkit_version",
+                    "grant_context_keys"
+                  ],
+                  "x-experimental": true
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request (validation_error: auth_scheme outside the platform enum or not defined by the toolkit)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Toolkit or toolkit_version not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
             "content": {
               "application/json": {
                 "schema": {
@@ -11959,6 +12376,7 @@
                               "SERVICE_ACCOUNT",
                               "SAML",
                               "DCR_OAUTH",
+                              "CIMD_OAUTH",
                               "S2S_OAUTH2"
                             ],
                             "description": "The authentication scheme used (e.g., OAuth2, API Key, etc.)"
@@ -12287,6 +12705,7 @@
                         "SERVICE_ACCOUNT",
                         "SAML",
                         "DCR_OAUTH",
+                        "CIMD_OAUTH",
                         "S2S_OAUTH2"
                       ],
                       "description": "The authentication scheme used (e.g., OAuth2, API Key, etc.)"
@@ -13064,6 +13483,7 @@
                                   "SERVICE_ACCOUNT",
                                   "SAML",
                                   "DCR_OAUTH",
+                                  "CIMD_OAUTH",
                                   "S2S_OAUTH2"
                                 ],
                                 "description": "the authScheme is part of the connection state use it there",
@@ -13106,6 +13526,7 @@
                               "SERVICE_ACCOUNT",
                               "SAML",
                               "DCR_OAUTH",
+                              "CIMD_OAUTH",
                               "S2S_OAUTH2"
                             ],
                             "description": "Duplicates state.authScheme. Kept for backward compatibility with existing readers; use state.authScheme instead.",
@@ -13213,6 +13634,7 @@
                                   "SERVICE_ACCOUNT",
                                   "SAML",
                                   "DCR_OAUTH",
+                                  "CIMD_OAUTH",
                                   "S2S_OAUTH2"
                                 ]
                               },
@@ -13510,6 +13932,7 @@
                               "SERVICE_ACCOUNT",
                               "SAML",
                               "DCR_OAUTH",
+                              "CIMD_OAUTH",
                               "S2S_OAUTH2"
                             ]
                           },
@@ -13762,6 +14185,7 @@
                             "SERVICE_ACCOUNT",
                             "SAML",
                             "DCR_OAUTH",
+                            "CIMD_OAUTH",
                             "S2S_OAUTH2"
                           ]
                         },
@@ -14112,6 +14536,7 @@
                             "SERVICE_ACCOUNT",
                             "SAML",
                             "DCR_OAUTH",
+                            "CIMD_OAUTH",
                             "S2S_OAUTH2"
                           ],
                           "description": "the authScheme is part of the connection state use it there",
@@ -14154,6 +14579,7 @@
                         "SERVICE_ACCOUNT",
                         "SAML",
                         "DCR_OAUTH",
+                        "CIMD_OAUTH",
                         "S2S_OAUTH2"
                       ],
                       "description": "Duplicates state.authScheme. Kept for backward compatibility with existing readers; use state.authScheme instead.",
@@ -14261,6 +14687,7 @@
                             "SERVICE_ACCOUNT",
                             "SAML",
                             "DCR_OAUTH",
+                            "CIMD_OAUTH",
                             "S2S_OAUTH2"
                           ]
                         },
@@ -14893,6 +15320,16 @@
           },
           "404": {
             "description": "Connected account not found - The specified account does not exist or has been deleted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict - the connected account is currently leased by another operation, or the status transition is invalid for its current state",
             "content": {
               "application/json": {
                 "schema": {

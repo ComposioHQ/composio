@@ -46,12 +46,14 @@ jobs:
           private-key: ${{ secrets.RELEASE_BOT_APP_PRIVATE_KEY }}
           owner: ComposioHQ
           repositories: composio
+          # Same-repository issue tracking uses github.token under the job-level
+          # issues grant; do not widen this app token for issue operations.
           permission-contents: write
           permission-pull-requests: write
-          permission-issues: write
 
       - name: Generate read-only KB source token
         id: source-token
+        continue-on-error: true
         uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
         with:
           client-id: ${{ vars.RELEASE_BOT_CLIENT_ID }}
@@ -125,6 +127,9 @@ jobs:
           GH_TOKEN: ${{ steps.source-token.outputs.token }}
         run: |
           set +e
+          if [ -z "${GH_TOKEN:-}" ]; then
+            echo "KB source token unavailable; source-pin status will be unverifiable."
+          fi
           bun scripts/verify-kb.ts --check-links --check-source-pin \
             --markdown "$RUNNER_TEMP/kb-freshness.md"
           echo "exit_code=$?" >> "$GITHUB_OUTPUT"
@@ -187,7 +192,7 @@ jobs:
       # public/data/toolkits.json, the docs site keeps building from the last
       # good commit, and nothing 500s — new toolkits simply 404. That is how a
       # credential failure went unnoticed for 60 consecutive runs. File one
-      # tracking issue and leave it open until someone fixes the cause.
+      # tracking issue and close it after the next successful run proves recovery.
       - name: Open tracking issue on failure
         if: failure()
         continue-on-error: true
@@ -230,8 +235,23 @@ jobs:
           **production** read access against \`backend.composio.dev\`. Note this job does
           not use the shared \`COMPOSIO_API_KEY\`, which is staging-scoped.
 
-          This issue is filed once and left open until the cause is fixed; it will not be
-          re-filed on every run."
+          This issue is filed once, not re-filed on every run, and automatically closes
+          after the next successful sync proves recovery."
+
+      - name: Close tracking issue on recovery
+        if: success()
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          LABEL: docs-data-sync-failure
+        run: |
+          existing=$(gh issue list --label "$LABEL" --state open --limit 1 \
+            --json number --jq '.[0].number // empty')
+          if [ -n "$existing" ]; then
+            gh issue close "$existing" \
+              --comment "The docs data sync recovered in run ${{ github.run_id }}: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}."
+          fi
 
       # A verifier crash is a tooling failure, not evidence that published guides
       # contradict production. Track it separately and close it after the verifier
@@ -240,7 +260,7 @@ jobs:
         if: always() && steps.verify-kb.outputs.exit_code != ''
         continue-on-error: true
         env:
-          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           VERIFY_EXIT: ${{ steps.verify-kb.outputs.exit_code }}
           LABEL: kb-freshness-check-failure
           TITLE: 'KB freshness verifier is failing'
@@ -283,7 +303,7 @@ jobs:
         if: always() && (steps.verify-kb.outputs.exit_code == '0' || steps.verify-kb.outputs.exit_code == '1')
         continue-on-error: true
         env:
-          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           VERIFY_EXIT: ${{ steps.verify-kb.outputs.exit_code }}
           TITLE: 'KB freshness: published guides contradict production data'
         run: |

@@ -2,9 +2,9 @@
   "schemaVersion": 2,
   "source": {
     "repository": "ComposioHQ/support-knowledge",
-    "commit": "d57f3d69079ee3819f4136df54512cdf0416cec0",
-    "capturedAt": "2026-08-17",
-    "contentHash": "sha256:c56581ab59512cb1091e625272b37c9bd94587177f8fb6615a788ea818d36926"
+    "commit": "5eac683455ff252a7a3b62f33ab6566445009b52",
+    "capturedAt": "2026-08-25",
+    "contentHash": "sha256:491f469688b25190d96a01f233067b10c5027db25d1a4da5b754dfcb666ddcb4"
   },
   "topics": [
     {
@@ -973,6 +973,64 @@
       "featured": false
     },
     {
+      "slug": "platform-production-readiness",
+      "title": "Move a Composio Integration from Prototype to Production",
+      "description": "Public guidance for production user identity, environment isolation, authentication, sessions, and trigger delivery.",
+      "articlePath": "platform-production-readiness.md",
+      "sources": [
+        {
+          "sourcePath": "platform/production-readiness/public.md",
+          "sourceHeading": "Replace example user IDs with stable application user IDs"
+        },
+        {
+          "sourcePath": "platform/production-readiness/public.md",
+          "sourceHeading": "Isolate environments with separate Composio projects when needed"
+        },
+        {
+          "sourcePath": "platform/production-readiness/public.md",
+          "sourceHeading": "Switch from managed auth only when production requirements call for it"
+        },
+        {
+          "sourcePath": "platform/production-readiness/public.md",
+          "sourceHeading": "Restrict the production session to the capabilities the agent needs"
+        },
+        {
+          "sourcePath": "platform/production-readiness/public.md",
+          "sourceHeading": "Reuse a stored session until the user or configuration changes"
+        },
+        {
+          "sourcePath": "platform/production-readiness/public.md",
+          "sourceHeading": "Test production trigger handling through the real webhook path"
+        }
+      ],
+      "topics": [
+        "auth-config",
+        "authentication",
+        "getting-started",
+        "security-and-trust",
+        "sessions-and-execution",
+        "workflows"
+      ],
+      "tags": [
+        "authentication",
+        "deployment",
+        "platform",
+        "production",
+        "projects",
+        "sessions",
+        "users"
+      ],
+      "aliases": [],
+      "relatedGuides": [],
+      "externalResources": [],
+      "updatedAt": "2026-08-24",
+      "lastVerifiedAt": "2026-08-24",
+      "reviewAfter": "2026-11-22",
+      "freshness": "evergreen",
+      "state": "published",
+      "featured": false
+    },
+    {
       "slug": "platform-project-api-key-permissions",
       "title": "Project API Key Permissions",
       "description": "Public guidance for scoped Project API key permissions.",
@@ -1126,6 +1184,56 @@
       "updatedAt": "2026-06-24",
       "lastVerifiedAt": "2026-08-12",
       "reviewAfter": "2026-11-10",
+      "freshness": "evergreen",
+      "state": "published",
+      "featured": false
+    },
+    {
+      "slug": "platform-session-tool-policies",
+      "title": "Create Read-Only and Restricted Composio Sessions",
+      "description": "Public guidance for limiting session tool access with tags, exact tool allowlists, OAuth scopes, and sandbox controls.",
+      "articlePath": "platform-session-tool-policies.md",
+      "sources": [
+        {
+          "sourcePath": "platform/session-tool-policies/public.md",
+          "sourceHeading": "Filter a broad read-only session with behavior tags"
+        },
+        {
+          "sourcePath": "platform/session-tool-policies/public.md",
+          "sourceHeading": "Use exact tool allowlists for the narrowest policy"
+        },
+        {
+          "sourcePath": "platform/session-tool-policies/public.md",
+          "sourceHeading": "Combine provider scopes with session tool restrictions"
+        },
+        {
+          "sourcePath": "platform/session-tool-policies/public.md",
+          "sourceHeading": "Apply toolkit-specific exceptions without widening every toolkit"
+        },
+        {
+          "sourcePath": "platform/session-tool-policies/public.md",
+          "sourceHeading": "Disable the session sandbox when the workflow does not need code execution"
+        }
+      ],
+      "topics": [
+        "authentication",
+        "security-and-trust",
+        "sessions-and-execution"
+      ],
+      "tags": [
+        "least-privilege",
+        "oauth-scopes",
+        "platform",
+        "read-only",
+        "sessions",
+        "tool-policy"
+      ],
+      "aliases": [],
+      "relatedGuides": [],
+      "externalResources": [],
+      "updatedAt": "2026-08-24",
+      "lastVerifiedAt": "2026-08-24",
+      "reviewAfter": "2026-11-22",
       "freshness": "evergreen",
       "state": "published",
       "featured": false
@@ -1718,7 +1826,7 @@
       "sources": [
         {
           "sourcePath": "toolkits/clickup/public.md",
-          "sourceHeading": "ClickUp uses customer-owned OAuth or API-key credentials"
+          "sourceHeading": "ClickUp supports managed OAuth, custom OAuth, and API-key credentials"
         },
         {
           "sourcePath": "toolkits/clickup/public.md",
@@ -1753,8 +1861,8 @@
       "relatedGuides": [],
       "externalResources": [],
       "updatedAt": "2026-06-24",
-      "lastVerifiedAt": "2026-08-17",
-      "reviewAfter": "2026-11-15",
+      "lastVerifiedAt": "2026-08-24",
+      "reviewAfter": "2026-11-22",
       "freshness": "evergreen",
       "state": "published",
       "featured": false
@@ -1878,7 +1986,7 @@
       "sources": [
         {
           "sourcePath": "toolkits/digital_ocean/public.md",
-          "sourceHeading": "DigitalOcean supports customer-owned OAuth2 or a personal access token"
+          "sourceHeading": "DigitalOcean supports managed OAuth2, custom OAuth2, or a personal access token"
         }
       ],
       "topics": [
@@ -1898,8 +2006,8 @@
       "relatedGuides": [],
       "externalResources": [],
       "updatedAt": "2026-08-17",
-      "lastVerifiedAt": "2026-08-17",
-      "reviewAfter": "2026-11-15",
+      "lastVerifiedAt": "2026-08-24",
+      "reviewAfter": "2026-11-22",
       "freshness": "evergreen",
       "state": "published",
       "featured": false
@@ -2839,7 +2947,7 @@
         },
         {
           "sourcePath": "toolkits/google_classroom/public.md",
-          "sourceHeading": "Configure the consent-screen name on the customer-owned OAuth app"
+          "sourceHeading": "Choose managed or customer-owned Google OAuth"
         },
         {
           "sourcePath": "toolkits/google_classroom/public.md",
@@ -2875,8 +2983,8 @@
       "relatedGuides": [],
       "externalResources": [],
       "updatedAt": "2026-07-24",
-      "lastVerifiedAt": "2026-08-17",
-      "reviewAfter": "2026-11-15",
+      "lastVerifiedAt": "2026-08-24",
+      "reviewAfter": "2026-11-22",
       "freshness": "evergreen",
       "state": "published",
       "featured": false
@@ -3015,7 +3123,7 @@
       "sources": [
         {
           "sourcePath": "toolkits/googlebigquery/public.md",
-          "sourceHeading": "BigQuery supports customer-owned OAuth2 and Google service-account auth"
+          "sourceHeading": "BigQuery supports managed OAuth2, custom OAuth2, and service-account auth"
         }
       ],
       "topics": [
@@ -3034,8 +3142,8 @@
       "relatedGuides": [],
       "externalResources": [],
       "updatedAt": "2026-08-17",
-      "lastVerifiedAt": "2026-08-17",
-      "reviewAfter": "2026-11-15",
+      "lastVerifiedAt": "2026-08-24",
+      "reviewAfter": "2026-11-22",
       "freshness": "evergreen",
       "state": "published",
       "featured": false
@@ -3056,7 +3164,7 @@
         },
         {
           "sourcePath": "toolkits/googledocs/public.md",
-          "sourceHeading": "Google Docs currently uses customer-owned OAuth2"
+          "sourceHeading": "Google Docs supports managed and customer-owned OAuth2"
         },
         {
           "sourcePath": "toolkits/googledocs/public.md",
@@ -3110,8 +3218,8 @@
       "relatedGuides": [],
       "externalResources": [],
       "updatedAt": "2026-06-24",
-      "lastVerifiedAt": "2026-08-17",
-      "reviewAfter": "2026-11-15",
+      "lastVerifiedAt": "2026-08-24",
+      "reviewAfter": "2026-11-22",
       "freshness": "evergreen",
       "state": "published",
       "featured": false
@@ -3514,7 +3622,7 @@
         },
         {
           "sourcePath": "toolkits/googletasks/public.md",
-          "sourceHeading": "Configure the consent-screen name on the customer-owned OAuth app"
+          "sourceHeading": "Choose managed or customer-owned Google OAuth"
         },
         {
           "sourcePath": "toolkits/googletasks/public.md",
@@ -3547,8 +3655,8 @@
       "relatedGuides": [],
       "externalResources": [],
       "updatedAt": "2026-07-24",
-      "lastVerifiedAt": "2026-08-17",
-      "reviewAfter": "2026-11-15",
+      "lastVerifiedAt": "2026-08-24",
+      "reviewAfter": "2026-11-22",
       "freshness": "evergreen",
       "state": "published",
       "featured": false
@@ -3594,9 +3702,6 @@
       "title": "HubSpot",
       "description": "Public support knowledge for HubSpot.",
       "articlePath": "toolkits-hubspot.md",
-      "verifyIgnoreToolSlugs": [
-        "HUBSPOT_HUBSPOT_LIST_CONTACTS"
-      ],
       "sources": [
         {
           "sourcePath": "toolkits/hubspot/public.md",
@@ -3685,7 +3790,10 @@
       "reviewAfter": "2026-11-10",
       "freshness": "evergreen",
       "state": "published",
-      "featured": false
+      "featured": false,
+      "verifyIgnoreToolSlugs": [
+        "HUBSPOT_HUBSPOT_LIST_CONTACTS"
+      ]
     },
     {
       "slug": "toolkits-instagram",
@@ -4238,9 +4346,6 @@
       "title": "Microsoft Teams",
       "description": "Public support knowledge for Microsoft Teams.",
       "articlePath": "toolkits-microsoft-teams.md",
-      "verifyIgnoreToolSlugs": [
-        "MICROSOFT_TEAMS_TEAMS_GET_MESSAGE"
-      ],
       "sources": [
         {
           "sourcePath": "toolkits/microsoft_teams/public.md",
@@ -4315,7 +4420,10 @@
       "reviewAfter": "2026-11-15",
       "freshness": "evergreen",
       "state": "published",
-      "featured": false
+      "featured": false,
+      "verifyIgnoreToolSlugs": [
+        "MICROSOFT_TEAMS_TEAMS_GET_MESSAGE"
+      ]
     },
     {
       "slug": "toolkits-monday",
@@ -4334,6 +4442,10 @@
         {
           "sourcePath": "toolkits/monday/public.md",
           "sourceHeading": "`MONDAY_UPDATE_ITEM` body must be passed as a properly escaped string"
+        },
+        {
+          "sourcePath": "toolkits/monday/public.md",
+          "sourceHeading": "Tool Router may prefer `MONDAY_MCP` over `MONDAY` when both are available"
         },
         {
           "sourcePath": "toolkits/monday/public.md",
@@ -4371,7 +4483,10 @@
       "reviewAfter": "2026-11-10",
       "freshness": "evergreen",
       "state": "published",
-      "featured": false
+      "featured": false,
+      "verifyIgnoreToolSlugs": [
+        "MONDAY_MCP"
+      ]
     },
     {
       "slug": "toolkits-netsuite",
@@ -4412,10 +4527,6 @@
       "title": "Notion",
       "description": "Public support knowledge for Notion.",
       "articlePath": "toolkits-notion.md",
-      "verifyIgnoreToolSlugs": [
-        "NOTION_GET_PAGE",
-        "NOTION_FETCH_NOTION_DATA"
-      ],
       "sources": [
         {
           "sourcePath": "toolkits/notion/public.md",
@@ -4475,7 +4586,11 @@
       "reviewAfter": "2026-11-15",
       "freshness": "evergreen",
       "state": "published",
-      "featured": false
+      "featured": false,
+      "verifyIgnoreToolSlugs": [
+        "NOTION_GET_PAGE",
+        "NOTION_FETCH_NOTION_DATA"
+      ]
     },
     {
       "slug": "toolkits-odoo",
@@ -4781,7 +4896,7 @@
       "sources": [
         {
           "sourcePath": "toolkits/pipedrive/public.md",
-          "sourceHeading": "Pipedrive supports managed OAuth, custom OAuth, and API-key authentication"
+          "sourceHeading": "Pipedrive requires custom OAuth or API-key credentials"
         },
         {
           "sourcePath": "toolkits/pipedrive/public.md",
@@ -4828,8 +4943,8 @@
       "relatedGuides": [],
       "externalResources": [],
       "updatedAt": "2026-06-24",
-      "lastVerifiedAt": "2026-08-12",
-      "reviewAfter": "2026-11-10",
+      "lastVerifiedAt": "2026-08-24",
+      "reviewAfter": "2026-11-22",
       "freshness": "evergreen",
       "state": "published",
       "featured": false
@@ -4977,7 +5092,7 @@
         },
         {
           "sourcePath": "toolkits/reddit/public.md",
-          "sourceHeading": "Reddit supports OAuth 2.0 custom credentials in auth configs"
+          "sourceHeading": "Reddit supports managed and customer-owned OAuth 2.0"
         },
         {
           "sourcePath": "toolkits/reddit/public.md",
@@ -5010,8 +5125,8 @@
       "relatedGuides": [],
       "externalResources": [],
       "updatedAt": "2026-06-24",
-      "lastVerifiedAt": "2026-08-12",
-      "reviewAfter": "2026-11-10",
+      "lastVerifiedAt": "2026-08-24",
+      "reviewAfter": "2026-11-22",
       "freshness": "evergreen",
       "state": "published",
       "featured": false
@@ -5604,7 +5719,7 @@
       "sources": [
         {
           "sourcePath": "toolkits/spotify/public.md",
-          "sourceHeading": "Spotify supports Composio-managed and customer-owned OAuth"
+          "sourceHeading": "Spotify requires a customer-owned OAuth app"
         },
         {
           "sourcePath": "toolkits/spotify/public.md",
@@ -5652,8 +5767,8 @@
       "relatedGuides": [],
       "externalResources": [],
       "updatedAt": "2026-07-16",
-      "lastVerifiedAt": "2026-08-17",
-      "reviewAfter": "2026-11-15",
+      "lastVerifiedAt": "2026-08-24",
+      "reviewAfter": "2026-11-22",
       "freshness": "evergreen",
       "state": "published",
       "featured": false
@@ -5965,7 +6080,7 @@
       "sources": [
         {
           "sourcePath": "toolkits/trello/public.md",
-          "sourceHeading": "Trello currently uses OAuth1 authentication"
+          "sourceHeading": "Trello supports managed and customer-owned OAuth1"
         },
         {
           "sourcePath": "toolkits/trello/public.md",
@@ -6014,8 +6129,8 @@
       "relatedGuides": [],
       "externalResources": [],
       "updatedAt": "2026-06-24",
-      "lastVerifiedAt": "2026-08-17",
-      "reviewAfter": "2026-11-15",
+      "lastVerifiedAt": "2026-08-24",
+      "reviewAfter": "2026-11-22",
       "freshness": "evergreen",
       "state": "published",
       "featured": false
@@ -6028,11 +6143,11 @@
       "sources": [
         {
           "sourcePath": "toolkits/twitter/public.md",
-          "sourceHeading": "Twitter/X supports Composio-managed and customer-owned OAuth"
+          "sourceHeading": "Twitter/X requires a customer-owned OAuth app"
         },
         {
           "sourcePath": "toolkits/twitter/public.md",
-          "sourceHeading": "Use Composio's v1 auth-app redirect URI for Twitter OAuth callback mismatch errors"
+          "sourceHeading": "Use the current auth-config callback URI for Twitter OAuth callback mismatch errors"
         },
         {
           "sourcePath": "toolkits/twitter/public.md",
@@ -6075,8 +6190,8 @@
       "relatedGuides": [],
       "externalResources": [],
       "updatedAt": "2026-07-16",
-      "lastVerifiedAt": "2026-08-12",
-      "reviewAfter": "2026-11-10",
+      "lastVerifiedAt": "2026-08-24",
+      "reviewAfter": "2026-11-22",
       "freshness": "evergreen",
       "state": "published",
       "featured": false
@@ -6343,12 +6458,12 @@
     {
       "slug": "toolkits-ynab",
       "title": "YNAB authentication",
-      "description": "Current customer-owned OAuth setup for the YNAB toolkit.",
+      "description": "Current OAuth setup for the YNAB toolkit.",
       "articlePath": "toolkits-ynab.md",
       "sources": [
         {
           "sourcePath": "toolkits/ynab/public.md",
-          "sourceHeading": "YNAB uses a customer-owned OAuth app"
+          "sourceHeading": "YNAB supports managed and customer-owned OAuth"
         }
       ],
       "topics": [
@@ -6366,8 +6481,8 @@
       "relatedGuides": [],
       "externalResources": [],
       "updatedAt": "2026-08-17",
-      "lastVerifiedAt": "2026-08-17",
-      "reviewAfter": "2026-11-15",
+      "lastVerifiedAt": "2026-08-24",
+      "reviewAfter": "2026-11-22",
       "freshness": "evergreen",
       "state": "published",
       "featured": false
@@ -6518,9 +6633,6 @@
       "title": "Zoho Books",
       "description": "Public support knowledge for Zoho Books.",
       "articlePath": "toolkits-zoho-books.md",
-      "verifyIgnoreToolSlugs": [
-        "ZOHO_BOOKS_CREATE_ESTIMATE"
-      ],
       "sources": [
         {
           "sourcePath": "toolkits/zoho_books/public.md",
@@ -6565,7 +6677,10 @@
       "reviewAfter": "2026-11-10",
       "freshness": "evergreen",
       "state": "published",
-      "featured": false
+      "featured": false,
+      "verifyIgnoreToolSlugs": [
+        "ZOHO_BOOKS_CREATE_ESTIMATE"
+      ]
     },
     {
       "slug": "toolkits-zoho-mail",

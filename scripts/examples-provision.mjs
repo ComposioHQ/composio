@@ -30,11 +30,11 @@
 // values are ever printed. The API-key demo value stored for serpapi is a
 // deliberately fake placeholder, not a real key.
 
-import { requireStagingBaseUrl } from '../harness/staging-backend.mjs';
+import { resolveBackendBaseUrl } from '../harness/backend-url.mjs';
 
 let BASE_URL;
 try {
-  BASE_URL = requireStagingBaseUrl();
+  BASE_URL = resolveBackendBaseUrl();
 } catch (error) {
   console.error(error instanceof Error ? error.message : String(error));
   process.exit(1);
@@ -45,8 +45,10 @@ const INITIATE_MISSING = process.argv.includes('--initiate-missing');
 const GC = process.argv.includes('--gc');
 const DRY_RUN = process.argv.includes('--dry-run');
 
-// The examples only ever run against staging with a disposable project key.
-// requireStagingBaseUrl refuses every other host before the key is read or sent.
+// COMPOSIO_BASE_URL selects the backend and defaults to staging;
+// resolveBackendBaseUrl refuses a structurally unusable one before the key is
+// read or sent. Point this at a project whose resources you are willing to have
+// this script create — and, under --gc, delete.
 if (!API_KEY) {
   console.error('COMPOSIO_API_KEY is required (dedicated examples-project key)');
   process.exit(1);

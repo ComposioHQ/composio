@@ -456,6 +456,75 @@ class TestAutoUploadDownloadFilesDisabled:
 
                 mock_substitute.assert_not_called()
 
+    def test_execute_drops_empty_file_values_when_disabled(
+        self, mock_client, mock_provider
+    ):
+        """Issue #4233: with auto-upload off, ``attachment: ""`` must be
+        omitted from the request instead of forwarded to the backend, while a
+        real value is forwarded as-is (not uploaded)."""
+        tools = Tools(
+            client=mock_client,
+            provider=mock_provider,
+            toolkit_versions={"gmail": "20251201_01"},
+        )
+
+        file_uploadable = {
+            "type": "object",
+            "file_uploadable": True,
+            "properties": {
+                "name": {"type": "string"},
+                "mimetype": {"type": "string"},
+                "s3key": {"type": "string"},
+            },
+        }
+        mock_tool = create_mock_tool(
+            slug="GMAIL_CREATE_DRAFT",
+            toolkit_slug="gmail",
+            input_parameters={
+                "type": "object",
+                "properties": {
+                    "subject": {"type": "string"},
+                    "attachment": {
+                        "anyOf": [
+                            file_uploadable,
+                            {"type": "array", "items": file_uploadable},
+                            {"type": "null"},
+                        ]
+                    },
+                },
+                "required": ["attachment"],
+            },
+        )
+        mock_execute_response = Mock()
+        mock_execute_response.model_dump.return_value = {
+            "data": {},
+            "error": None,
+            "successful": True,
+        }
+        mock_client.tools.execute.return_value = mock_execute_response
+
+        with patch.object(
+            tools, "get_raw_composio_tool_by_slug", return_value=mock_tool
+        ):
+            for value, expected in (
+                ("", {"subject": "Test"}),
+                (None, {"subject": "Test", "attachment": None}),
+                (
+                    "/path/to/file.txt",
+                    {"subject": "Test", "attachment": "/path/to/file.txt"},
+                ),
+            ):
+                mock_client.tools.execute.reset_mock()
+                arguments = {"subject": "Test", "attachment": value}
+                tools.execute(
+                    slug="GMAIL_CREATE_DRAFT",
+                    arguments=arguments,
+                    dangerously_skip_version_check=True,
+                )
+                sent = mock_client.tools.execute.call_args.kwargs["arguments"]
+                assert sent == expected, value
+                assert arguments == {"subject": "Test", "attachment": value}
+
     def test_execute_skips_file_downloads_when_disabled(
         self, mock_client, mock_provider
     ):

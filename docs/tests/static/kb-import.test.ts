@@ -94,14 +94,15 @@ function previousManifest(): KbManifest {
         topics: ['authentication'],
         tags: ['github'],
         aliases: ['old-github-answer'],
-        relatedGuides: [],
-        externalResources: [],
+        relatedGuides: ['related-guide'],
+        externalResources: ['https://example.com/reference'],
         updatedAt: '2026-07-26',
         lastVerifiedAt: '2026-07-26',
         reviewAfter: '2026-12-31',
         freshness: 'evergreen',
         state: 'published',
-        featured: false,
+        featured: true,
+        verifyIgnoreToolSlugs: ['GITHUB_REMOVED_TOOL'],
       },
     ],
   };
@@ -186,6 +187,113 @@ describe('support-knowledge snapshot import', () => {
     );
   });
 
+  test('preserves curated articles and reviewed slug exceptions when the source is unchanged', () => {
+    const sourceRoot = mkdtempSync(join(tmpdir(), 'support-knowledge-import-'));
+    writeDocument(sourceRoot, 'toolkits/github/public.md', publicDocument);
+    const initial = buildSupportKnowledgeSnapshot({
+      sourceRoot,
+      sourceCommit: 'initial',
+      now: new Date('2026-08-17T00:00:00Z'),
+    });
+
+    const previous = previousManifest();
+    previous.guides[0]!.sources.push({
+      sourcePath: 'toolkits/github/public.md',
+      sourceHeading: 'Create triggers directly',
+    });
+    const snapshot = buildSupportKnowledgeSnapshot({
+      sourceRoot,
+      sourceCommit: 'next',
+      previousManifest: previous,
+      previousSourceFiles: initial.sourceFiles,
+      previousArticleFiles: new Map([
+        ['github-troubleshooting.md', 'Curated reader-facing guidance.\n'],
+      ]),
+      now: new Date('2026-08-18T00:00:00Z'),
+    });
+
+    expect(snapshot.articleFiles.get('toolkits-github.md')).toBe(
+      'Curated reader-facing guidance.\n',
+    );
+    expect(snapshot.manifest.guides[0]?.verifyIgnoreToolSlugs).toEqual([
+      'GITHUB_REMOVED_TOOL',
+    ]);
+    expect(snapshot.manifest.guides[0]?.relatedGuides).toEqual(['related-guide']);
+    expect(snapshot.manifest.guides[0]?.externalResources).toEqual([
+      'https://example.com/reference',
+    ]);
+    expect(snapshot.manifest.guides[0]?.featured).toBe(true);
+  });
+
+  test('regenerates an unchanged source when the previous guide recorded stale headings', () => {
+    const sourceRoot = mkdtempSync(join(tmpdir(), 'support-knowledge-import-'));
+    writeDocument(sourceRoot, 'toolkits/github/public.md', publicDocument);
+    const initial = buildSupportKnowledgeSnapshot({
+      sourceRoot,
+      sourceCommit: 'initial',
+      now: new Date('2026-08-17T00:00:00Z'),
+    });
+
+    const snapshot = buildSupportKnowledgeSnapshot({
+      sourceRoot,
+      sourceCommit: 'next',
+      previousManifest: previousManifest(),
+      previousSourceFiles: initial.sourceFiles,
+      previousArticleFiles: new Map([
+        ['github-troubleshooting.md', 'Stale curated guidance.\n'],
+      ]),
+      now: new Date('2026-08-18T00:00:00Z'),
+    });
+
+    expect(snapshot.articleFiles.get('toolkits-github.md')).toContain(
+      'Create the trigger instance directly',
+    );
+    expect(snapshot.articleFiles.get('toolkits-github.md')).not.toContain(
+      'Stale curated guidance',
+    );
+  });
+
+  test('regenerates an article when its public source changes', () => {
+    const sourceRoot = mkdtempSync(join(tmpdir(), 'support-knowledge-import-'));
+    writeDocument(sourceRoot, 'toolkits/github/public.md', publicDocument);
+    const initial = buildSupportKnowledgeSnapshot({
+      sourceRoot,
+      sourceCommit: 'initial',
+      now: new Date('2026-08-17T00:00:00Z'),
+    });
+    writeDocument(
+      sourceRoot,
+      'toolkits/github/public.md',
+      publicDocument.replace('Provider tokens are redacted', 'Provider tokens stay redacted'),
+    );
+
+    const snapshot = buildSupportKnowledgeSnapshot({
+      sourceRoot,
+      sourceCommit: 'next',
+      previousManifest: previousManifest(),
+      previousSourceFiles: initial.sourceFiles,
+      previousArticleFiles: new Map([
+        ['github-troubleshooting.md', 'Stale curated guidance.\n'],
+      ]),
+      now: new Date('2026-08-18T00:00:00Z'),
+    });
+
+    expect(snapshot.articleFiles.get('toolkits-github.md')).toContain(
+      'Provider tokens stay redacted',
+    );
+    expect(snapshot.articleFiles.get('toolkits-github.md')).not.toContain(
+      'Stale curated guidance',
+    );
+    expect(snapshot.manifest.guides[0]?.verifyIgnoreToolSlugs).toEqual([
+      'GITHUB_REMOVED_TOOL',
+    ]);
+    expect(snapshot.manifest.guides[0]?.relatedGuides).toEqual(['related-guide']);
+    expect(snapshot.manifest.guides[0]?.externalResources).toEqual([
+      'https://example.com/reference',
+    ]);
+    expect(snapshot.manifest.guides[0]?.featured).toBe(true);
+  });
+
   test('assigns a consolidated guide legacy URLs to exactly one successor leaf', () => {
     const sourceRoot = mkdtempSync(join(tmpdir(), 'support-knowledge-import-'));
     writeDocument(
@@ -225,6 +333,28 @@ describe('support-knowledge snapshot import', () => {
       'choose-discordbot-for-bot-token-operations',
       'discord-bot-troubleshooting',
     ]);
+  });
+
+  test('does not invent legacy category URLs after the support snapshot is established', () => {
+    const sourceRoot = mkdtempSync(join(tmpdir(), 'support-knowledge-import-'));
+    writeDocument(sourceRoot, 'toolkits/github/public.md', publicDocument);
+    const previous = previousManifest();
+    previous.source.repository = 'ComposioHQ/support-knowledge';
+
+    const snapshot = buildSupportKnowledgeSnapshot({
+      sourceRoot,
+      sourceCommit: 'next',
+      previousManifest: previous,
+      now: new Date('2026-08-18T00:00:00Z'),
+    });
+
+    expect(snapshot.manifest.guides[0]?.aliases).toEqual([
+      'github-troubleshooting',
+      'old-github-answer',
+    ]);
+    expect(snapshot.manifest.guides[0]?.aliases).not.toContain(
+      '/kb/authentication/github-troubleshooting',
+    );
   });
 
   test('rejects a classification that does not match the leaf filename', () => {

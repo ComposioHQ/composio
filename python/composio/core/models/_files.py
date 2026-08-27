@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import functools
 import hashlib
 import os
 import typing as t
@@ -781,6 +782,17 @@ class FileHelper(WithLogger):
         if schema.get(property_name, False):
             return True
 
+        # The default execution path uses this walker as a cheap gate before
+        # dereferencing. Inspect both modern and legacy definition containers
+        # so a file flag reachable only through ``$ref`` still passes the gate.
+        for definitions_key in ("$defs", "definitions"):
+            definitions = schema.get(definitions_key)
+            if not isinstance(definitions, dict):
+                continue
+            for definition in definitions.values():
+                if self._has_file_property(definition, property_name):
+                    return True
+
         # Check anyOf variants
         if "anyOf" in schema:
             for variant in schema["anyOf"]:
@@ -1001,6 +1013,14 @@ class FileHelper(WithLogger):
 
         return False
 
+    @staticmethod
+    def _is_array_shaped_schema(schema: t.Dict) -> bool:
+        """Return whether JSON Schema declares or infers an array shape."""
+        schema_type = schema.get("type")
+        if isinstance(schema_type, list):
+            return "array" in schema_type
+        return schema_type == "array" or (schema_type is None and "items" in schema)
+
     def _find_schema_variant_with_file_property(
         self,
         schema: t.Dict,
@@ -1039,13 +1059,22 @@ class FileHelper(WithLogger):
             value=value,
         )
 
+    @staticmethod
+    def _drop_empty_file_value(value: t.Any) -> t.Any:
+        """Omit an empty string from a file input when auto-upload is disabled.
+
+        An explicit ``None`` remains part of the payload so nullable file fields,
+        including required nullable fields, keep their JSON Schema semantics.
+        """
+        return _DELETE_VALUE if value == "" else value
+
     def _upload_file_value(
         self,
         value: t.Any,
         tool: Tool,
         before_file_upload: t.Optional[BeforeFileUpload],
     ) -> t.Any:
-        if value is None or value == "":
+        if value is None or self._drop_empty_file_value(value) is _DELETE_VALUE:
             return _DELETE_VALUE
 
         return FileUploadable.from_path(
@@ -1063,32 +1092,58 @@ class FileHelper(WithLogger):
         self,
         value: t.Any,
         schema: t.Optional[t.Dict],
-        tool: Tool,
-        *,
-        before_file_upload: t.Optional[BeforeFileUpload] = None,
+        leaf: t.Callable[[t.Any], t.Any],
     ) -> t.Any:
-        """Return ``value`` with file-uploadable leaves staged for execution."""
+        """Return ``value`` with every ``file_uploadable`` leaf passed through ``leaf``.
+
+        A leaf may return ``_DELETE_VALUE`` to omit the key/item from its
+        parent container.
+        """
         if not isinstance(schema, dict):
             return value
 
         if schema.get("file_uploadable", False):
-            return self._upload_file_value(
-                value=value,
-                tool=tool,
-                before_file_upload=before_file_upload,
-            )
+            return leaf(value)
+
+        # Array-only file inputs historically omit null in upload mode even
+        # though null cannot be traversed as an array. Keep that behavior
+        # without treating an optional object that merely contains a nested
+        # file property as a file leaf itself.
+        if (
+            value is None
+            and self._is_array_shaped_schema(schema)
+            and self._file_uploadable(schema)
+        ):
+            return leaf(value)
 
         uploadable_variant = self._find_uploadable_schema_variant(
             schema=schema,
             value=value,
         )
         if uploadable_variant is not None:
+            # An empty string cannot match an array-only file input, but it may
+            # match another non-file string variant in the same composition.
+            if value == "" and self._is_array_shaped_schema(uploadable_variant):
+                matching_non_file_variant = any(
+                    not self._file_uploadable(variant)
+                    and self._json_schema_type_matches_value(variant, value)
+                    for variant in self._schema_variants(schema)
+                )
+                if matching_non_file_variant:
+                    return value
+                return leaf(value)
             return self._substitute_file_upload_value(
                 value=value,
                 schema=uploadable_variant,
-                tool=tool,
-                before_file_upload=before_file_upload,
+                leaf=leaf,
             )
+
+        if (
+            value == ""
+            and self._is_array_shaped_schema(schema)
+            and self._file_uploadable(schema)
+        ):
+            return leaf(value)
 
         if isinstance(value, dict) and "properties" in schema:
             processed: t.Dict[str, t.Any] = {}
@@ -1098,8 +1153,7 @@ class FileHelper(WithLogger):
                 processed_item = self._substitute_file_upload_value(
                     value=item,
                     schema=item_schema,
-                    tool=tool,
-                    before_file_upload=before_file_upload,
+                    leaf=leaf,
                 )
                 if processed_item is not _DELETE_VALUE:
                     processed[key] = processed_item
@@ -1115,8 +1169,7 @@ class FileHelper(WithLogger):
                 processed_item = self._substitute_file_upload_value(
                     value=item,
                     schema=items_schema,
-                    tool=tool,
-                    before_file_upload=before_file_upload,
+                    leaf=leaf,
                 )
                 if processed_item is not _DELETE_VALUE:
                     processed_items.append(processed_item)
@@ -1131,12 +1184,19 @@ class FileHelper(WithLogger):
         request: t.Dict,
         *,
         before_file_upload: t.Optional[BeforeFileUpload] = None,
+        leaf: t.Optional[t.Callable[[t.Any], t.Any]] = None,
     ) -> t.Dict:
+        if leaf is None:
+            leaf = functools.partial(
+                self._upload_file_value,
+                tool=tool,
+                before_file_upload=before_file_upload,
+            )
+
         processed = self._substitute_file_upload_value(
             value=request,
             schema=schema,
-            tool=tool,
-            before_file_upload=before_file_upload,
+            leaf=leaf,
         )
         if processed is request:
             return request
@@ -1176,6 +1236,37 @@ class FileHelper(WithLogger):
             request=request,
             before_file_upload=before_file_upload,
         )
+
+    def drop_empty_file_uploads(self, tool: Tool, request: t.Dict) -> t.Dict:
+        """Omit ``""`` at ``file_uploadable`` leaves without uploading.
+
+        This is the half of :meth:`substitute_file_uploads` that needs no
+        filesystem access, so it runs even when automatic upload is disabled:
+        an empty file value is never a valid staged descriptor and the backend
+        would reject it (issue #4233). Explicit ``None`` and every non-empty
+        value are forwarded untouched. File-bearing request containers are
+        rebuilt; unlike :meth:`substitute_file_uploads`, this method never
+        mutates caller-owned arguments or copies arbitrary leaf objects.
+        """
+        # Every execution takes this path by default, so leave requests for
+        # tools without a file input completely alone. Check the raw schema
+        # first to avoid paying the dereference cost for non-file tools.
+        if not self._file_uploadable(tool.input_parameters):
+            return request
+
+        schema = dereference_json_schema(
+            tool.input_parameters, on_unresolved="sentinel"
+        )
+        processed = self._substitute_file_upload_value(
+            value=request,
+            schema=schema,
+            leaf=self._drop_empty_file_value,
+        )
+        assert isinstance(processed, dict), (
+            "expected dict from _substitute_file_upload_value at the root; "
+            f"got {type(processed).__name__}"
+        )
+        return processed
 
     def _is_file_downloadable(self, schema: t.Dict) -> bool:
         """Check if a schema has file_downloadable property."""

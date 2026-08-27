@@ -1,7 +1,16 @@
 import { afterEach, describe, expect, test } from 'bun:test';
-import { mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  readdirSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, relative } from 'node:path';
+import GithubSlugger from 'github-slugger';
 import { generateKbContent, markdownForMdx } from '@/lib/kb/generate';
 import { buildKbCatalog } from '@/lib/kb/catalog';
 import { createKbArticleReader, getKbCatalog } from '@/lib/kb/repository';
@@ -21,6 +30,62 @@ function listFiles(directory: string): string[] {
     .map(entry => relative(directory, join(entry.parentPath, entry.name)))
     .sort();
 }
+
+function exactRedirects(): Map<string, string> {
+  const config = readFileSync(join(process.cwd(), 'next.config.mjs'), 'utf8');
+  return new Map(
+    [...config.matchAll(/source:\s*(['"])([^'"]+)\1,\s*destination:\s*(['"])([^'"]+)\3,/g)]
+      .map(match => [match[2]!, match[4]!]),
+  );
+}
+
+function resolveDocsMarkdown(
+  pathname: string,
+  docsRoot: string,
+  redirects: Map<string, string>,
+): string | null {
+  const visited = new Set<string>();
+  let current = pathname;
+
+  while (!visited.has(current)) {
+    visited.add(current);
+    const relativePath = current.replace(/^\/docs\/?/, '');
+    const candidates = relativePath
+      ? [join(docsRoot, `${relativePath}.mdx`), join(docsRoot, relativePath, 'index.mdx')]
+      : [join(docsRoot, 'index.mdx')];
+    const target = candidates.find(candidate => existsSync(candidate));
+    if (target) return target;
+
+    const destination = redirects.get(current);
+    if (!destination?.startsWith('/docs')) return null;
+    current = destination;
+  }
+
+  return null;
+}
+
+function renderedHeadingFragments(markdown: string): string[] {
+  const slugger = new GithubSlugger();
+  const fragments: string[] = [];
+  let fence: { marker: string; length: number } | null = null;
+
+  for (const line of markdown.split('\n')) {
+    const fenceMatch = line.match(/^\s*(`{3,}|~{3,})/);
+    if (fenceMatch) {
+      const marker = fenceMatch[1]!;
+      if (!fence) fence = { marker: marker[0]!, length: marker.length };
+      else if (marker[0] === fence.marker && marker.length >= fence.length) fence = null;
+      continue;
+    }
+    if (fence) continue;
+
+    const heading = line.match(/^#{1,6}\s+(.+)$/)?.[1];
+    if (heading) fragments.push(slugger.slug(heading));
+  }
+
+  return fragments;
+}
+
 describe('public KB content generation', () => {
   test('makes authoritative Markdown safe for MDX without changing rendered prose', () => {
     expect(markdownForMdx([
@@ -38,6 +103,30 @@ describe('public KB content generation', () => {
     ].join('\n'));
   });
 
+  test('demotes bare identifier URLs to code spans so they never publish as dead links', () => {
+    expect(markdownForMdx([
+      'Ahrefs API calls should use the API host https://api.ahrefs.com/v3. If actions are hitting https://ahrefs.com/v3 and returning 404 HTML, treat it as a configuration problem.',
+      'Include the Meet scopes https://www.googleapis.com/auth/meetings.space.created and https://www.googleapis.com/auth/meetings.space.settings in the auth config.',
+      'Read https://developers.google.com/identity/protocols/oauth2 and [the policy](https://developers.google.com/identity/protocols/oauth2/policies) for details.',
+      'Explicit syntax keeps its form: <https://developers.google.com/identity/protocols/oauth2> stays a link, [scope](https://www.googleapis.com/auth/gmail.send) and <https://www.googleapis.com/auth/gmail.send> cite identifiers, so only the first remains a link.',
+      'Already code: `https://www.googleapis.com/auth/drive` and deep API paths such as https://backend.composio.dev/api/v3/tools/X remain links.',
+      '',
+      '```text',
+      'const scope = "https://www.googleapis.com/auth/drive";',
+      '```',
+    ].join('\n'))).toBe([
+      'Ahrefs API calls should use the API host `https://api.ahrefs.com/v3`. If actions are hitting `https://ahrefs.com/v3` and returning 404 HTML, treat it as a configuration problem.',
+      'Include the Meet scopes `https://www.googleapis.com/auth/meetings.space.created` and `https://www.googleapis.com/auth/meetings.space.settings` in the auth config.',
+      'Read https://developers.google.com/identity/protocols/oauth2 and [the policy](https://developers.google.com/identity/protocols/oauth2/policies) for details.',
+      'Explicit syntax keeps its form: [https://developers.google.com/identity/protocols/oauth2](https://developers.google.com/identity/protocols/oauth2) stays a link, [scope](https://www.googleapis.com/auth/gmail.send) and `https://www.googleapis.com/auth/gmail.send` cite identifiers, so only the first remains a link.',
+      'Already code: `https://www.googleapis.com/auth/drive` and deep API paths such as https://backend.composio.dev/api/v3/tools/X remain links.',
+      '',
+      '```text',
+      'const scope = "https://www.googleapis.com/auth/drive";',
+      '```',
+    ].join('\n'));
+  });
+
   test('defines multi-source provenance in the KB frontmatter schema', () => {
     const sourceConfig = readFileSync(join(process.cwd(), 'source.config.ts'), 'utf8');
 
@@ -46,6 +135,38 @@ describe('public KB content generation', () => {
     expect(sourceConfig).toContain('sourceHeading: z.string().nullable(),');
     expect(sourceConfig).not.toContain('sourcePath: z.string().optional()');
     expect(sourceConfig).not.toContain('sourceHeading: z.string().optional()');
+  });
+
+  test('keeps direct docs fragment links pointed at rendered Markdown headings', () => {
+    const articlesRoot = join(process.cwd(), 'kb/articles');
+    const docsRoot = join(process.cwd(), 'content/docs');
+    const redirects = exactRedirects();
+    const links: Array<{ article: string; href: string }> = [];
+
+    for (const article of readdirSync(articlesRoot).filter(name => name.endsWith('.md'))) {
+      const markdown = readFileSync(join(articlesRoot, article), 'utf8');
+      for (const match of markdown.matchAll(/https:\/\/docs\.composio\.dev(\/docs\/[^\s)#]+)#([^\s)]+)/g)) {
+        links.push({ article, href: `${match[1]}#${match[2]}` });
+      }
+    }
+
+    for (const { article, href } of links) {
+      const url = new URL(href, 'https://docs.composio.dev');
+      const target = resolveDocsMarkdown(url.pathname, docsRoot, redirects);
+      if (!target) throw new Error(`${article} links to unresolved docs path ${url.pathname}`);
+
+      const fragments = renderedHeadingFragments(readFileSync(target, 'utf8'));
+      expect(fragments, `${article} links to missing fragment ${href}`).toContain(url.hash.slice(1));
+    }
+  });
+
+  test('does not accept a docs fragment that appears only inside fenced code', () => {
+    expect(renderedHeadingFragments([
+      '## Real heading',
+      '```python',
+      '# Not a heading',
+      '```',
+    ].join('\n'))).toEqual(['real-heading']);
   });
 
   test('generates native Fumadocs pages for published guides only', () => {

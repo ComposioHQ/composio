@@ -1,29 +1,30 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { notFound } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 import { ArrowLeft, Wrench } from 'lucide-react';
 import { BrowseResults } from '@/components/kb/browse-results';
 import {
   getKnowledgeByToolkit,
   getKnowledgeToolkitSummaries,
 } from '@/lib/knowledge/catalog';
+import { getToolkitKnowledgeRedirect } from '@/lib/knowledge/toolkit-routing';
 
 interface ToolkitPageProps {
   params: Promise<{ slug: string }>;
 }
 
-async function getToolkitPageData(slug: string) {
+async function getToolkitSummary(slug: string) {
   const summaries = await getKnowledgeToolkitSummaries();
-  const toolkit = summaries.find((candidate) => candidate.slug === slug);
-  if (!toolkit) return null;
-  return { toolkit, links: await getKnowledgeByToolkit(slug) };
+  return summaries.find((candidate) => candidate.slug === slug) ?? null;
 }
 
 export default async function KnowledgeToolkitPage({ params }: ToolkitPageProps) {
   const { slug } = await params;
-  const data = await getToolkitPageData(slug);
-  if (!data) notFound();
-  const { toolkit, links } = data;
+  const toolkit = await getToolkitSummary(slug);
+  if (!toolkit) notFound();
+  const toolkitRedirect = getToolkitKnowledgeRedirect(toolkit);
+  if (toolkitRedirect) redirect(toolkitRedirect);
+  const links = await getKnowledgeByToolkit(slug);
 
   return (
     <main className="mx-auto w-full max-w-7xl px-4 py-10 sm:px-6 sm:py-14 lg:px-8">
@@ -50,11 +51,11 @@ export default async function KnowledgeToolkitPage({ params }: ToolkitPageProps)
 
 export async function generateMetadata({ params }: ToolkitPageProps): Promise<Metadata> {
   const { slug } = await params;
-  const data = await getToolkitPageData(slug);
-  if (!data) return { title: 'Toolkit knowledge not found' };
+  const toolkit = await getToolkitSummary(slug);
+  if (!toolkit) return { title: 'Toolkit knowledge not found' };
   return {
-    title: `${data.toolkit.name} knowledge`,
-    description: `Find public Composio docs, support answers, OAuth guides, examples, and reference pages for ${data.toolkit.name}.`,
-    alternates: { canonical: `/kb/toolkit/${data.toolkit.slug}` },
+    title: `${toolkit.name} knowledge`,
+    description: `Find public Composio docs, support answers, OAuth guides, examples, and reference pages for ${toolkit.name}.`,
+    alternates: { canonical: `/kb/toolkit/${toolkit.slug}` },
   };
 }

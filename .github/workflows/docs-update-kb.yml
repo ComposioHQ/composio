@@ -16,15 +16,20 @@ jobs:
     permissions:
       contents: read
     outputs:
-      changed: ${{ steps.source.outputs.changed }}
+      changed: ${{ steps.rebuild.outputs.changed }}
+      upstream_changed: ${{ steps.source.outputs.upstream_changed }}
       commit: ${{ steps.source.outputs.commit }}
     defaults:
       run:
         working-directory: ./docs
 
     steps:
+      # If the app has no installation on support-knowledge, this fails
+      # with 404. Degrade to an upstream-sync skip instead of killing the
+      # whole job: the stale-artifact rebuild below needs only this repo.
       - name: Generate read-only upstream token
         id: upstream-token
+        continue-on-error: true
         uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
         with:
           client-id: ${{ vars.RELEASE_BOT_CLIENT_ID }}
@@ -39,6 +44,7 @@ jobs:
           persist-credentials: false
 
       - name: Checkout support knowledge
+        if: steps.upstream-token.outcome == 'success'
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: ComposioHQ/support-knowledge
@@ -50,24 +56,29 @@ jobs:
         id: source
         env:
           SOURCE_ROOT: ${{ github.workspace }}/.support-knowledge
+          HAVE_UPSTREAM: ${{ steps.upstream-token.outcome == 'success' }}
         run: |
-          source_commit=$(git -C "$SOURCE_ROOT" rev-parse HEAD)
           current_commit=$(jq -r '.source.commit' kb/manifest.json)
+          echo "commit=$current_commit" >> "$GITHUB_OUTPUT"
+          if [ "$HAVE_UPSTREAM" != "true" ]; then
+            echo "upstream_changed=false" >> "$GITHUB_OUTPUT"
+            echo "No upstream token; skipping support-knowledge sync check and treating upstream as unchanged."
+            exit 0
+          fi
+          source_commit=$(git -C "$SOURCE_ROOT" rev-parse HEAD)
           echo "commit=$source_commit" >> "$GITHUB_OUTPUT"
           if [ "$source_commit" = "$current_commit" ]; then
-            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "upstream_changed=false" >> "$GITHUB_OUTPUT"
             echo "Support knowledge is already current at $source_commit."
           else
-            echo "changed=true" >> "$GITHUB_OUTPUT"
+            echo "upstream_changed=true" >> "$GITHUB_OUTPUT"
             echo "Refreshing support knowledge from $current_commit to $source_commit."
           fi
 
       - name: Setup Node.js, pnpm, Bun
-        if: steps.source.outputs.changed == 'true'
         uses: ./.github/actions/setup-node-pnpm-bun
 
       - name: Cache Bun dependencies
-        if: steps.source.outputs.changed == 'true'
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ~/.bun/install/cache
@@ -76,11 +87,34 @@ jobs:
             ${{ runner.os }}-bun-
 
       - name: Install dependencies
-        if: steps.source.outputs.changed == 'true'
         run: bun install
 
+      # Docs-side text changes (generator updates, guide edits) also invalidate
+      # the checked-in semantic artifact. Detect that here so CI rebuilds the
+      # artifact even when the upstream support-knowledge commit has not moved.
+      - name: Detect stale semantic artifact
+        id: semantic
+        if: steps.source.outputs.upstream_changed == 'false'
+        run: |
+          if bun scripts/build-kb-semantic-index.ts --check; then
+            echo "stale=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "stale=true" >> "$GITHUB_OUTPUT"
+            echo "Semantic artifact is stale against the checked-in docs corpus."
+          fi
+
+      - name: Resolve rebuild
+        id: rebuild
+        run: |
+          if [ "${{ steps.source.outputs.upstream_changed }}" = "true" ] || [ "${{ steps.semantic.outputs.stale }}" = "true" ]; then
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "Support knowledge and semantic artifact are both current."
+          fi
+
       - name: Import public support knowledge
-        if: steps.source.outputs.changed == 'true'
+        if: steps.source.outputs.upstream_changed == 'true'
         env:
           SOURCE_ROOT: ${{ github.workspace }}/.support-knowledge
           SOURCE_COMMIT: ${{ steps.source.outputs.commit }}
@@ -90,19 +124,19 @@ jobs:
           --source-commit "$SOURCE_COMMIT"
 
       - name: Rebuild generated pages and semantic artifact
-        if: steps.source.outputs.changed == 'true'
+        if: steps.rebuild.outputs.changed == 'true'
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         run: bun run build:kb-semantic
 
       - name: Verify refreshed knowledge base
-        if: steps.source.outputs.changed == 'true'
+        if: steps.rebuild.outputs.changed == 'true'
         run: |
           bun run verify:kb
           bun run check:kb-semantic
 
       - name: Upload verified KB artifacts
-        if: steps.source.outputs.changed == 'true'
+        if: steps.rebuild.outputs.changed == 'true'
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: support-knowledge-refresh
@@ -149,9 +183,9 @@ jobs:
           commit-message: 'docs(kb): refresh public support knowledge'
           title: 'docs(kb): refresh public support knowledge'
           body: |
-            Automated public-only refresh from `ComposioHQ/support-knowledge`.
+            Automated knowledge-base refresh for `ComposioHQ/support-knowledge`.
 
-            - Source commit: `${{ needs.refresh.outputs.commit }}`
+            - Source commit: `${{ needs.refresh.outputs.commit }}` (${{ needs.refresh.outputs.upstream_changed == 'true' && 'imported new support knowledge' || 'unchanged; rebuilt a stale semantic artifact' }})
             - Regenerated public KB pages and search records
             - Reused unchanged vectors and rebuilt the checked semantic artifact
             - Ran KB freshness and semantic-artifact verification
@@ -160,3 +194,69 @@ jobs:
           add-paths: |
             docs/kb/
             docs/content/kb/
+
+  # Import and PR creation are one publication pipeline. Report after both jobs
+  # so a successful import cannot hide a failed proposal, and close the issue
+  # only after every required stage has recovered.
+  report:
+    needs: [refresh, propose]
+    if: always()
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+
+    steps:
+      - name: Open KB refresh failure issue
+        if: needs.refresh.result == 'failure' || needs.propose.result == 'failure'
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          LABEL: docs-kb-refresh-failure
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          EVENT_NAME: ${{ github.event_name }}
+          REFRESH_RESULT: ${{ needs.refresh.result }}
+          PROPOSE_RESULT: ${{ needs.propose.result }}
+        run: |
+          gh label create "$LABEL" \
+            --color B60205 \
+            --description "Scheduled support knowledge refresh is failing" 2>/dev/null || true
+
+          existing=$(gh issue list --label "$LABEL" --state open --limit 1 \
+            --json number --jq '.[0].number // empty')
+          if [ -n "$existing" ]; then
+            echo "Issue #$existing is already open for this failure; not filing a duplicate."
+            exit 0
+          fi
+
+          gh issue create \
+            --title "Support knowledge refresh is failing" \
+            --label "$LABEL" \
+            --body "The automated support knowledge publication pipeline failed.
+
+          - Run: $RUN_URL
+          - Trigger: \`$EVENT_NAME\`
+          - Refresh job: \`$REFRESH_RESULT\`
+          - Proposal job: \`$PROPOSE_RESULT\`
+
+          **Impact:** docs.composio.dev/kb remains on its last successfully imported
+          support-knowledge commit until this workflow recovers.
+
+          **First checks:** verify that the Release Bot GitHub App can read
+          \`ComposioHQ/support-knowledge\` and write the refresh branch and PR in
+          \`ComposioHQ/composio\`."
+
+      - name: Close KB refresh failure issue
+        if: needs.refresh.result == 'success' && (needs.refresh.outputs.changed != 'true' || needs.propose.result == 'success')
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          LABEL: docs-kb-refresh-failure
+        run: |
+          existing=$(gh issue list --label "$LABEL" --state open --limit 1 \
+            --json number --jq '.[0].number // empty')
+          if [ -n "$existing" ]; then
+            gh issue close "$existing" \
+              --comment "The support knowledge publication pipeline recovered in run ${{ github.run_id }}: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}."
+          fi

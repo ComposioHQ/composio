@@ -4,6 +4,9 @@
   "description": "",
   "main": "src/index.ts",
   "type": "module",
+  "engines": {
+    "node": ">=22.22.3"
+  },
   "repository": {
     "type": "git",
     "url": "https://github.com/ComposioHQ/composio.git",
@@ -43,7 +46,7 @@
   },
   "devDependencies": {
     "@composio/core": "workspace:*",
-    "@openai/agents": "^0.16.0",
+    "@openai/agents": "^0.17.0",
     "tsdown": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:",

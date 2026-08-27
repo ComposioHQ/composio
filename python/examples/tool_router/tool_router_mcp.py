@@ -15,16 +15,18 @@ from composio_openai_agents import OpenAIAgentsProvider
 from composio import Composio
 
 
+def require_env(name: str) -> str:
+    value = os.environ.get(name)
+    if not value:
+        raise RuntimeError(f"Set {name} before running this example.")
+    return value
+
+
 async def main():
     # Initialize Composio with OpenAI Agents provider
-    # Set COMPOSIO_API_KEY environment variable or pass api_key parameter
-    api_key = os.environ.get("COMPOSIO_API_KEY")
-    if not api_key:
-        print("Error: COMPOSIO_API_KEY environment variable not set")
-        print("Please set it using: export COMPOSIO_API_KEY='your_api_key'")
-        return
-
-    composio = Composio(api_key=api_key, provider=OpenAIAgentsProvider())
+    composio = Composio(
+        api_key=require_env("COMPOSIO_API_KEY"), provider=OpenAIAgentsProvider()
+    )
 
     # Create a tool router session
     session = composio.create(

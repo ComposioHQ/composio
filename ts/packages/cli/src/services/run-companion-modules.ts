@@ -5,7 +5,7 @@
 import { FileSystem, Path } from '@effect/platform';
 import type { PlatformError } from '@effect/platform/Error';
 import { Config, ConfigProvider, Data, Effect, Option, Schema } from 'effect';
-import extractZip from 'extract-zip';
+import { extractZipSafely } from 'src/utils/extract-zip-safely';
 import { IS_RELEASE_BUILD } from 'src/constants';
 import { GitHubRelease } from 'src/effects/resolve-cli-release';
 import { BaseConfigProviderLive, extendConfigProvider } from 'src/services/config';
@@ -238,14 +238,28 @@ export const collectRunCompanionAssetRelativePaths = (
     return [...collected].sort();
   });
 
+/**
+ * A release archive names every codex-acp path but fills only the one its own
+ * platform can execute; the rest are empty placeholders that keep older clients'
+ * upgrade verification passing. `requireNonEmpty` makes a placeholder resolve as
+ * absent so the caller falls through to its next adapter source.
+ */
+const fileHasContent = (fs: FileSystem.FileSystem, filePath: string) =>
+  fs.stat(filePath).pipe(
+    Effect.map(info => Number(info.size) > 0),
+    Effect.orElseSucceed(() => false)
+  );
+
 export const resolveRunCompanionAssetPath = ({
   callerImportMetaUrl,
   execPath,
   relativePathFromRoot,
+  requireNonEmpty = false,
 }: {
   callerImportMetaUrl: string;
   execPath: string;
   relativePathFromRoot: string;
+  requireNonEmpty?: boolean;
 }): Effect.Effect<string | null, never, FileSystem.FileSystem | Path.Path> =>
   Effect.gen(function* () {
     const fs = yield* FileSystem.FileSystem;
@@ -260,7 +274,8 @@ export const resolveRunCompanionAssetPath = ({
       path.resolve(executableDirectory, relativePathFromRoot),
     ];
 
-    const found = yield* Effect.findFirst(candidates, candidate => fileExists(fs, candidate));
+    const isUsable = requireNonEmpty ? fileHasContent : fileExists;
+    const found = yield* Effect.findFirst(candidates, candidate => isUsable(fs, candidate));
     return Option.getOrNull(found);
   });
 
@@ -713,7 +728,7 @@ export const repairMissingInstalledRunCompanionModules = ({
         yield* fs.writeFile(archivePath, archiveData);
         yield* fs.makeDirectory(extractDirectory, { recursive: true });
         yield* Effect.tryPromise({
-          try: () => extractZip(archivePath, { dir: extractDirectory }),
+          try: () => extractZipSafely(archivePath, extractDirectory),
           catch: toRepairError,
         });
 

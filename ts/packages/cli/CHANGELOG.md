@@ -4,13 +4,27 @@
 
 ### Patch Changes
 
-- `composio search` now uses schemas returned by Tool Router for dashboard-registered custom MCP tools instead of querying the legacy managed-tool endpoint, which returned 404 for `CUSTOM_*` tool slugs.
+- `composio upgrade` shows download progress. The archive is a few hundred
+  megabytes, and the command previously printed `Downloading...` once and then
+  said nothing for minutes, which was indistinguishable from a hang. It now
+  reports percent and transferred size as the download runs.
+- `composio upgrade` downloads roughly half as much. Release archives carried
+  all four platforms' `codex-acp` binaries, about 651 MB that the machine
+  unpacking them can never execute. Only the binary for the archive's own
+  platform is shipped now; the other three remain as empty placeholders so that
+  a CLI installed before this change still passes its upgrade verification.
 - `composio upgrade` works again from any previously released CLI. Release
-  archives had been narrowed to carry only the `codex-acp` binary their own
-  platform can run, but a CLI installed before that change verifies a downloaded
-  package against all four platforms' binaries and rejects one that is missing
-  any of them, failing with `Downloaded binary package is incomplete`. Archives
-  ship the full set again.
+  archives had been narrowed to drop the `codex-acp` binaries a machine cannot
+  execute, but a CLI installed before that change verifies a downloaded package
+  against all four platforms' binaries and rejects one that is missing any of
+  them, failing with `Downloaded binary package is incomplete`. Every archive
+  names all four paths again.
+- Archives are no longer extracted with symbolic links in them. `extract-zip`
+  creates a symlink entry without validating its target (CVE-2026-56876), which
+  has no fixed release, and anything that later reads the extracted tree can be
+  walked out of it. No archive this CLI extracts legitimately contains a
+  symlink, so such an entry is now refused before it is written.
+- `composio search` now uses schemas returned by Tool Router for dashboard-registered custom MCP tools instead of querying the legacy managed-tool endpoint, which returned 404 for `CUSTOM_*` tool slugs.
 - `COMPOSIO_ENVIRONMENT=staging` now opens the staging dashboard at
   `https://staging-dashboard.composio.dev/`.
 - `composio dev auth-configs create` now sends custom OAuth credentials and scopes

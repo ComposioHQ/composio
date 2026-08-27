@@ -24,6 +24,7 @@ import { readFile } from 'fs/promises';
 import { join } from 'path';
 import { getAllToolkits, getToolkitBySlug } from '@/lib/toolkit-data';
 import { getAllMetaTools, getMetaToolBySlug } from '@/lib/meta-tools-data';
+import { encodeMarkdownTableCell } from '@/lib/markdown-escaping';
 import type { MetaTool, MetaToolParameter } from '@/lib/meta-tools-data';
 import type { Toolkit, Tool, Trigger, ParameterSchema } from '@/types/toolkit';
 import { apiToolListSchema, apiTriggerListSchema } from '@/lib/toolkit-schema';
@@ -35,6 +36,10 @@ import {
   type KnowledgeLink,
 } from '@/lib/knowledge/catalog';
 import { getProductArea, isProductAreaSlug, PRODUCT_AREAS } from '@/lib/knowledge/taxonomy';
+import {
+  getToolkitKnowledgeMarkdownHref,
+  getToolkitKnowledgeRedirect,
+} from '@/lib/knowledge/toolkit-routing';
 
 export const revalidate = false;
 
@@ -815,7 +820,7 @@ function renderParamsMarkdown(params: Record<string, ParameterSchema>): string[]
   for (const [name, param] of Object.entries(params)) {
     const typeStr = formatParamType(param);
     const required = param.required ? 'Yes' : 'No';
-    const desc = (param.description || '').replace(/\|/g, '\\|').replace(/\n/g, ' ');
+    const desc = encodeMarkdownTableCell(param.description || '');
     lines.push(`| \`${name}\` | ${typeStr} | ${required} | ${desc} |`);
   }
 
@@ -1053,7 +1058,7 @@ async function knowledgeBrowseToMarkdown(rest: string[]): Promise<string | null>
   if (rest.length === 1 && rest[0] === 'toolkits') {
     const toolkits = await getKnowledgeToolkitSummaries();
     const rows = toolkits
-      .map((toolkit) => `- [${toolkit.name}](https://docs.composio.dev/kb/toolkit/${toolkit.slug}) — ${toolkit.knowledgeCount} resource${toolkit.knowledgeCount === 1 ? '' : 's'}`)
+      .map((toolkit) => `- [${toolkit.name}](https://docs.composio.dev${getToolkitKnowledgeMarkdownHref(toolkit)}) — ${toolkit.knowledgeCount} resource${toolkit.knowledgeCount === 1 ? '' : 's'}`)
       .join('\n');
     return `# Toolkit knowledge\n\nBrowse canonical public knowledge by provider.\n\n${rows}${LLM_FOOTER}`;
   }
@@ -1191,6 +1196,17 @@ export async function GET(_req: Request, { params }: { params: Promise<{ slug?: 
     const [prefix, ...rest] = slug;
 
     if (prefix === 'kb') {
+      if (rest.length === 2 && rest[0] === 'toolkit') {
+        const toolkits = await getKnowledgeToolkitSummaries();
+        const toolkit = toolkits.find((candidate) => candidate.slug === rest[1]);
+        const redirectPath = toolkit ? getToolkitKnowledgeRedirect(toolkit) : null;
+        if (redirectPath) {
+          return new Response(null, {
+            status: 307,
+            headers: { Location: `${redirectPath}.md` },
+          });
+        }
+      }
       const browseMarkdown = await knowledgeBrowseToMarkdown(rest);
       if (browseMarkdown) {
         return new Response(browseMarkdown, {

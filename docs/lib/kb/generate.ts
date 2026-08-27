@@ -89,12 +89,56 @@ function relatedFrontmatter(
   ];
 }
 
+/**
+ * Identifier URLs cite machine identifiers — OAuth scope URIs and API
+ * surface roots such as `https://api.example.com/v3` — not documents. They
+ * respond 404 by design, so they must never publish as links the nightly
+ * external-link sweep would have to keep alive: they render as code spans.
+ */
+export function isIdentifierUrl(raw: string): boolean {
+  let url: URL;
+  try {
+    url = new URL(raw);
+  } catch {
+    return false;
+  }
+  if ((url.protocol !== 'https:' && url.protocol !== 'http:') || url.search || url.hash) {
+    return false;
+  }
+  // Google OAuth scope URIs (https://www.googleapis.com/auth/…) identify a
+  // permission; the namespace serves no pages.
+  if (url.hostname === 'www.googleapis.com' && url.pathname.startsWith('/auth/')) {
+    return true;
+  }
+  // An API surface root: a version-only path such as `/v3` or `/v1beta/`.
+  // Deep paths (`/v3/tools/X`) stay links because they name real resources.
+  return /^\/v\d[\w.-]*\/?$/.test(url.pathname);
+}
+
+/**
+ * Wraps bare identifier URLs in code spans. URLs already presented as links —
+ * markdown link labels `[url](…)`, link targets `](url)`, and anything
+ * adjacent to a code span — keep their form; only bare citations and
+ * `<url>` autolinks (normalized earlier) become code.
+ */
+function identifierUrlsToCodeSpans(segment: string): string {
+  return segment.replace(/(?<![`(\]\[])https?:\/\/[^\s`<>\[\]()]+/g, match => {
+    // GFM autolinks drop trailing punctuation; keep it outside the code span.
+    const url = match.replace(/[.,;:!?'"]+$/, '');
+    if (!isIdentifierUrl(url)) return match;
+    return `\`${url}\`${match.slice(url.length)}`;
+  });
+}
+
 function escapeMdxProse(line: string): string {
-  const escapeSegment = (segment: string): string => segment
-    .replace(/<(https?:\/\/[^>\s]+)>/g, '[$1]($1)')
-    .replace(/<([^>\n]+)>/g, '&lt;$1&gt;')
-    .replace(/\{/g, '&#123;')
-    .replace(/\}/g, '&#125;');
+  const escapeSegment = (segment: string): string => identifierUrlsToCodeSpans(
+    segment
+      .replace(/<(https?:\/\/[^>\s]+)>/g, (match, url: string) =>
+        isIdentifierUrl(url) ? `\`${url}\`` : `[${url}](${url})`)
+      .replace(/<([^>\n]+)>/g, '&lt;$1&gt;')
+      .replace(/\{/g, '&#123;')
+      .replace(/\}/g, '&#125;'),
+  );
 
   let result = '';
   let cursor = 0;
@@ -117,7 +161,8 @@ function escapeMdxProse(line: string): string {
 /**
  * Converts authoritative CommonMark into MDX-safe Markdown. The source and
  * article snapshots stay verbatim; only the generated presentation escapes MDX
- * expressions, normalizes autolinks, and opts support snippets out of Twoslash.
+ * expressions, normalizes autolinks, demotes identifier URLs to code spans,
+ * and opts support snippets out of Twoslash.
  */
 export function markdownForMdx(markdown: string): string {
   let fence: { marker: string; length: number } | null = null;
