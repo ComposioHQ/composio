@@ -13,6 +13,9 @@ from pathlib import Path
 from pydantic import BaseModel, ConfigDict, Field
 
 CORPUS_PATH = Path(__file__).parent / "json-schema-conversion" / "object-cases.json"
+STRICT_CORPUS_PATH = (
+    Path(__file__).parent / "json-schema-conversion" / "strict-cases.json"
+)
 
 Language = t.Literal["zod", "effect", "python"]
 LANGUAGES: t.Tuple[Language, ...] = ("zod", "effect", "python")
@@ -125,3 +128,73 @@ def find_case(case_id: str) -> CorpusCase:
         if case.id == case_id:
             return case
     raise LookupError(f"Corpus is missing the {case_id} case")
+
+
+class StrictIncompatibility(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    path: str
+    keyword: str = Field(min_length=1)
+
+
+class StrictChange(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    path: str
+    reason: str = Field(min_length=1)
+
+
+class StrictArguments(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    input: t.Dict[str, t.Any]
+    output: t.Dict[str, t.Any]
+
+
+class StrictExpectation(BaseModel):
+    """Either the exact strict schema, or the constructs reported as unsupported."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    schema_: t.Optional[t.Dict[str, t.Any]] = Field(default=None, alias="schema")
+    unsupported: t.Optional[t.List[StrictIncompatibility]] = Field(
+        default=None, min_length=1
+    )
+
+
+class StrictCase(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    id: str = Field(min_length=1)
+    description: t.Optional[str] = None
+    schema_: t.Dict[str, t.Any] = Field(alias="schema")
+    strict: StrictExpectation
+    changes: t.Optional[t.List[StrictChange]] = None
+    arguments: t.Optional[t.List[StrictArguments]] = None
+
+
+class StrictCorpus(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    cases: t.List[StrictCase] = Field(min_length=1)
+
+
+_cached_strict: t.Optional[t.List[StrictCase]] = None
+
+
+def load_strict_cases() -> t.List[StrictCase]:
+    """Decode the shared strict-mode corpus (byte-identical copy per language)."""
+    global _cached_strict
+    if _cached_strict is None:
+        cases = StrictCorpus.model_validate(
+            json.loads(STRICT_CORPUS_PATH.read_text())
+        ).cases
+        seen: t.Set[str] = set()
+        for case in cases:
+            if case.id in seen:
+                raise ValueError(f"Duplicate strict case id: {case.id}")
+            seen.add(case.id)
+            if (case.strict.schema_ is None) == (case.strict.unsupported is None):
+                raise ValueError(f"Strict case {case.id} must pin exactly one outcome")
+        _cached_strict = cases
+    return _cached_strict
