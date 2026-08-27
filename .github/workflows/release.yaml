@@ -18,8 +18,8 @@ jobs:
         working-directory: ./python
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
         with:
           python-version: "3.10"
       - name: Build
@@ -37,6 +37,8 @@ jobs:
           python -m build
           twine check dist/*
           python - <<'PY'
+          from email import policy
+          from email.parser import Parser
           from pathlib import Path
           from zipfile import ZipFile
 
@@ -47,11 +49,12 @@ jobs:
               )
               metadata = archive.read(metadata_path).decode()
 
-          assert "\n\n# DEPRECATED: use `composio`\n" in metadata
+          description = Parser(policy=policy.compat32).parsestr(metadata).get_payload()
+          assert description == Path("README.md").read_text()
           PY
       - name: Publish Core to PyPI
         if: github.event_name == 'release'
-        uses: pypa/gh-action-pypi-publish@release/v1
+        uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33 # v1.14.2
         with:
           user: ${{ secrets.PYPI_USERNAME }}
           password: ${{ secrets.PYPI_PASSWORD }}
@@ -65,9 +68,9 @@ jobs:
         working-directory: ./python
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
         with:
           python-version: "3.10"
       - name: Build plugins
@@ -84,7 +87,7 @@ jobs:
           done
       - name: Publish plugins to PyPI
         if: github.event_name == 'release'
-        uses: pypa/gh-action-pypi-publish@release/v1
+        uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33 # v1.14.2
         with:
           user: ${{ secrets.PYPI_USERNAME }}
           password: ${{ secrets.PYPI_PASSWORD }}
@@ -99,9 +102,9 @@ jobs:
         working-directory: ./python/swe
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
         with:
           python-version: "3.10"
       - name: Build
@@ -110,7 +113,7 @@ jobs:
           python -m build
       - name: Publish SWE Kit to PyPI
         if: github.event_name == 'release'
-        uses: pypa/gh-action-pypi-publish@release/v1
+        uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33 # v1.14.2
         with:
           user: ${{ secrets.PYPI_USERNAME }}
           password: ${{ secrets.PYPI_PASSWORD }}
@@ -127,8 +130,8 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
         with:
           python-version: "3.10"
       - name: Build for ${{ matrix.os }}
@@ -154,7 +157,7 @@ jobs:
           rm -rf bin/
       - if: matrix.os == 'ubuntu-latest' && github.event_name == 'release'
         name: Upload artifact
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@3bb12739c298aeb8a4eeaf626c5b8d85266b0e65 # v2
         with:
           files: python/dist/composio-linux-amd64.zip
 
@@ -170,7 +173,7 @@ jobs:
           rm -rf bin/
       - if: matrix.os == 'macos-13' && github.event_name == 'release'
         name: Upload artifact
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@3bb12739c298aeb8a4eeaf626c5b8d85266b0e65 # v2
         with:
           files: python/dist/composio-darwin-amd64.zip
 
@@ -186,7 +189,7 @@ jobs:
           rm -rf bin/
       - if: matrix.os == 'macos-14' && github.event_name == 'release'
         name: Upload artifact
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@3bb12739c298aeb8a4eeaf626c5b8d85266b0e65 # v2
         with:
           files: python/dist/composio-darwin-arm64.zip
 
@@ -213,7 +216,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       - name: Docker login
         env:
           DOCKER_USER: ${{secrets.DOCKER_USER}}
@@ -225,7 +228,7 @@ jobs:
           docker run --privileged --rm tonistiigi/binfmt --install all
           docker buildx create --use --name multibuild
           docker buildx inspect --bootstrap
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
         with:
           python-version: "3.10"
       - name: Publishing tool server images
@@ -243,8 +246,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
       - name: Install E2B
         run: |
           npm install -g @e2b/cli@latest
