@@ -32,9 +32,6 @@ jobs:
           python -m pip install .
           python -m composio.cli apps update
 
-          rm README.md
-          cp ../README.md .
-
           # Build dist
           pip install twine build
           python -m build
