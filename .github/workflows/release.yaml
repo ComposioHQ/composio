@@ -5,6 +5,9 @@ on:
     types: [published]
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   publish-core:
     name: Create composio-core release
@@ -58,12 +61,16 @@ jobs:
                   member for member in archive.getmembers() if member.name.endswith("/PKG-INFO")
               )
               metadata_file = archive.extractfile(metadata_member)
-              assert metadata_file is not None
+              assert metadata_file is not None, "sdist: PKG-INFO could not be read"
               sdist_metadata = parse_metadata(metadata_file.read())
 
-          for metadata in (wheel_metadata, sdist_metadata):
-              assert metadata["Version"] == expected_version
-              assert metadata.get_payload() == expected_description
+          for kind, metadata in (("wheel", wheel_metadata), ("sdist", sdist_metadata)):
+              assert metadata["Version"] == expected_version, (
+                  f"{kind}: {metadata['Version']} != {expected_version}"
+              )
+              assert metadata.get_payload() == expected_description, (
+                  f"{kind}: description does not match README.md"
+              )
           PY
       - name: Publish composio-core to PyPI
         if: github.event_name == 'release'
@@ -72,3 +79,4 @@ jobs:
           user: ${{ secrets.PYPI_USERNAME }}
           password: ${{ secrets.PYPI_PASSWORD }}
           packages-dir: python/dist/
+          attestations: false
