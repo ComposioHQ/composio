@@ -7,7 +7,7 @@ Remove the legacy package before installing the current SDK. Both packages use
 the `composio` import name and must not be installed together.
 
 ```bash
-python -m pip uninstall composio-core
+python -m pip uninstall -y composio-core
 python -m pip install composio
 ```
 

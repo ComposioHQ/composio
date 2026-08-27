@@ -1,38 +1,33 @@
 name: Build and Release
+
 on:
   release:
     types: [published]
   workflow_dispatch:
-    inputs:
-      skip_tests:
-        description: "Skip running tests"
-        required: false
-        type: boolean
-        default: false
 
 jobs:
   publish-core:
-    name: Create Framework & Plugin Releases
+    name: Create composio-core release
     defaults:
       run:
         working-directory: ./python
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
-      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
         with:
           python-version: "3.10"
-      - name: Build
-        env:
-          COMPOSIO_BASE_URL: https://backend.composio.dev/api
-          COMPOSIO_API_KEY: ${{secrets.COMPOSIO_API_KEY_RELEASE}}
+      - name: Assert release tag matches package version
+        if: github.event_name == 'release'
         run: |
-          # Setup release
+          package_version=$(python -c 'import runpy; print(runpy.run_path("composio/__version__.py")["__version__"])')
+          if [ "$GITHUB_REF" != "refs/tags/v$package_version" ]; then
+            echo "Release tag $GITHUB_REF does not match package version v$package_version"
+            exit 1
+          fi
+      - name: Build and verify
+        run: |
           python -m pip install --upgrade pip
-          python -m pip install .
-          python -m composio.cli apps update
-
-          # Build dist
           pip install twine build
           python -m build
           twine check dist/*
@@ -40,221 +35,40 @@ jobs:
           from email import policy
           from email.parser import Parser
           from pathlib import Path
+          import runpy
+          import tarfile
           from zipfile import ZipFile
+
+          def parse_metadata(raw: bytes):
+              return Parser(policy=policy.compat32).parsestr(raw.decode())
+
+          expected_description = Path("README.md").read_text(encoding="utf-8")
+          expected_version = runpy.run_path("composio/__version__.py")["__version__"]
 
           wheel = next(Path("dist").glob("composio_core-*.whl"))
           with ZipFile(wheel) as archive:
               metadata_path = next(
                   name for name in archive.namelist() if name.endswith(".dist-info/METADATA")
               )
-              metadata = archive.read(metadata_path).decode()
+              wheel_metadata = parse_metadata(archive.read(metadata_path))
 
-          description = Parser(policy=policy.compat32).parsestr(metadata).get_payload()
-          assert description == Path("README.md").read_text()
+          sdist = next(Path("dist").glob("composio_core-*.tar.gz"))
+          with tarfile.open(sdist, "r:gz") as archive:
+              metadata_member = next(
+                  member for member in archive.getmembers() if member.name.endswith("/PKG-INFO")
+              )
+              metadata_file = archive.extractfile(metadata_member)
+              assert metadata_file is not None
+              sdist_metadata = parse_metadata(metadata_file.read())
+
+          for metadata in (wheel_metadata, sdist_metadata):
+              assert metadata["Version"] == expected_version
+              assert metadata.get_payload() == expected_description
           PY
-      - name: Publish Core to PyPI
+      - name: Publish composio-core to PyPI
         if: github.event_name == 'release'
         uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33 # v1.14.2
         with:
           user: ${{ secrets.PYPI_USERNAME }}
           password: ${{ secrets.PYPI_PASSWORD }}
           packages-dir: python/dist/
-
-  publish-plugins:
-    name: Create Plugin Releases
-    if: github.event_name != 'release' || github.event.release.tag_name != 'v0.7.22'
-    defaults:
-      run:
-        working-directory: ./python
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
-      - name: Set up Python
-        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
-        with:
-          python-version: "3.10"
-      - name: Build plugins
-        run: |
-          pip install build twine
-
-          plugins="autogen camel claude crew_ai griptape julep langchain llamaindex lyzr openai praisonai langgraph phidata google gemini agno pydanticai openai_agents smolagent livekit"
-          mkdir plugins_dist
-          for plugin in $plugins; do
-            cd plugins/$plugin
-            python -m build
-            mv dist/* ../../plugins_dist/
-            cd ../..
-          done
-      - name: Publish plugins to PyPI
-        if: github.event_name == 'release'
-        uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33 # v1.14.2
-        with:
-          user: ${{ secrets.PYPI_USERNAME }}
-          password: ${{ secrets.PYPI_PASSWORD }}
-          skip-existing: true
-          packages-dir: python/plugins_dist/
-
-  publish-swe:
-    name: Create SWE Toolkit Release
-    if: github.event_name != 'release' || github.event.release.tag_name != 'v0.7.22'
-    defaults:
-      run:
-        working-directory: ./python/swe
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
-      - name: Set up Python
-        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
-        with:
-          python-version: "3.10"
-      - name: Build
-        run: |
-          pip install build twine
-          python -m build
-      - name: Publish SWE Kit to PyPI
-        if: github.event_name == 'release'
-        uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33 # v1.14.2
-        with:
-          user: ${{ secrets.PYPI_USERNAME }}
-          password: ${{ secrets.PYPI_PASSWORD }}
-          skip-existing: true
-          packages-dir: python/swe/dist/
-
-  publish-cli:
-    name: Build and upload CLI
-    if: github.event_name != 'release' || github.event.release.tag_name != 'v0.7.22'
-    permissions: write-all
-    strategy:
-      matrix:
-        os: [ubuntu-latest, macos-13, macos-14, windows-latest]
-    runs-on: ${{ matrix.os }}
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
-      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
-        with:
-          python-version: "3.10"
-      - name: Build for ${{ matrix.os }}
-        run: |
-          python -m pip install --upgrade pip
-          pip install pyinstaller
-
-          cd python/
-          pip3 install .
-
-          # Build CLI
-          pyinstaller composio/cli/__main__.py
-
-      # Ubuntu Release
-      - if: matrix.os == 'ubuntu-latest' && github.event_name == 'release'
-        run: |
-          cd python/
-          mv dist/__main__ dist/bin
-          mv dist/bin/__main__ dist/bin/composio
-
-          cd dist/
-          zip -r composio-linux-amd64.zip bin/*
-          rm -rf bin/
-      - if: matrix.os == 'ubuntu-latest' && github.event_name == 'release'
-        name: Upload artifact
-        uses: softprops/action-gh-release@3bb12739c298aeb8a4eeaf626c5b8d85266b0e65 # v2
-        with:
-          files: python/dist/composio-linux-amd64.zip
-
-      # Mac Intel Release
-      - if: matrix.os == 'macos-13' && github.event_name == 'release'
-        run: |
-          cd python/
-          mv dist/__main__ dist/bin
-          mv dist/bin/__main__ dist/bin/composio
-
-          cd dist/
-          zip -r composio-darwin-amd64.zip bin/*
-          rm -rf bin/
-      - if: matrix.os == 'macos-13' && github.event_name == 'release'
-        name: Upload artifact
-        uses: softprops/action-gh-release@3bb12739c298aeb8a4eeaf626c5b8d85266b0e65 # v2
-        with:
-          files: python/dist/composio-darwin-amd64.zip
-
-      # Mac ARM Release
-      - if: matrix.os == 'macos-14' && github.event_name == 'release'
-        run: |
-          cd python/
-          mv dist/__main__ dist/bin
-          mv dist/bin/__main__ dist/bin/composio
-
-          cd dist/
-          zip -r composio-darwin-arm64.zip bin/*
-          rm -rf bin/
-      - if: matrix.os == 'macos-14' && github.event_name == 'release'
-        name: Upload artifact
-        uses: softprops/action-gh-release@3bb12739c298aeb8a4eeaf626c5b8d85266b0e65 # v2
-        with:
-          files: python/dist/composio-darwin-arm64.zip
-
-      # # Windows release
-      # - if: matrix.os == 'windows-latest' && github.event_name == 'release'
-      #   run: |
-      #     cd python/
-      #     mv dist/__main__ dist/bin
-      #     mv dist/bin/__main__.exe dist/bin/composio.exe
-
-      #     cd dist/
-      #     zip -r composio-win.zip bin/*
-      #     rm -rf bin/
-      # - if: matrix.os == 'windows-latest' && github.event_name == 'release'
-      #   name: Upload artifact
-      #   uses: softprops/action-gh-release@v2
-      #   with:
-      #     files: python/dist/composio-win.zip
-
-  publish-images:
-    name: Build and publish docker images
-    if: github.event_name != 'release' || github.event.release.tag_name != 'v0.7.22'
-    needs: publish-core
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
-      - name: Docker login
-        env:
-          DOCKER_USER: ${{secrets.DOCKER_USER}}
-          DOCKER_PASSWORD: ${{secrets.DOCKER_PASSWORD}}
-        run: |
-          echo $DOCKER_PASSWORD | docker login --username $DOCKER_USER --password-stdin
-      - name: Set up support for multi platform build
-        run: |
-          docker run --privileged --rm tonistiigi/binfmt --install all
-          docker buildx create --use --name multibuild
-          docker buildx inspect --bootstrap
-      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
-        with:
-          python-version: "3.10"
-      - name: Publishing tool server images
-        if: github.event_name == 'release'
-        run: |
-          cd python/
-          pip3 install .
-          cd dockerfiles/
-          VERSION=$(python -c "from composio import __version__; print(__version__)") make publish
-
-  publish-e2b:
-    name: Publish E2B template
-    if: github.event_name != 'release' || github.event.release.tag_name != 'v0.7.22'
-    needs: publish-core
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
-      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
-      - name: Install E2B
-        run: |
-          npm install -g @e2b/cli@latest
-      - name: Publishing Template
-        if: github.event_name == 'release'
-        env:
-          E2B_ACCESS_TOKEN: ${{secrets.E2B_ACCESS_TOKEN}}
-        run: |
-          cd python/dockerfiles/
-          make e2b
