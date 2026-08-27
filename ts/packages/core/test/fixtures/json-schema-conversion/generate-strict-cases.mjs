@@ -232,6 +232,11 @@ const cases = [
     obj({ a: obj({ x: { type: 'string' } }, ['x']), b: { $ref: '#/properties/a' } }, ['a', 'b']),
   ],
   [
+    'root-ref-kept',
+    'A local $ref to the document root resolves and is kept.',
+    obj({ child: { $ref: '#' }, label: { type: 'string' } }, ['label']),
+  ],
+  [
     'dangling-ref-unsupported',
     'A $ref without a target is reported at its own path.',
     obj({ cfg: { $ref: '#/$defs/Nope' } }, ['cfg']),

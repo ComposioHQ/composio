@@ -792,9 +792,10 @@ export function toStrictJsonSchema(schema: unknown): StrictJsonSchemaResult {
     const out = walkChildren(node, mode, depth, path);
 
     if (typeof node.$ref === 'string') {
-      const resolution = node.$ref.startsWith('#/')
-        ? tryResolvePointer(root, node.$ref)
-        : ({ kind: 'unresolved', reason: 'malformed-pointer' } as const);
+      const resolution =
+        node.$ref === '#' || node.$ref.startsWith('#/')
+          ? tryResolvePointer(root, node.$ref)
+          : ({ kind: 'unresolved', reason: 'malformed-pointer' } as const);
       if (resolution.kind === 'unresolved') {
         unsupported.push({
           path,

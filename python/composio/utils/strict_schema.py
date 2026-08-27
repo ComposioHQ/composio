@@ -292,7 +292,9 @@ class _Walker:
 
         ref = node.get("$ref")
         if isinstance(ref, str):
-            resolved = ref.startswith("#/") and _try_resolve_pointer(self.root, ref).ok
+            resolved = (ref == "#" or ref.startswith("#/")) and _try_resolve_pointer(
+                self.root, ref
+            ).ok
             if not resolved:
                 self.reject(path, "$ref", f'unresolved $ref "{ref}"')
             # The referenced definition is normalized where it is declared.

@@ -1540,6 +1540,50 @@
       }
     },
     {
+      "id": "root-ref-kept",
+      "description": "A local $ref to the document root resolves and is kept.",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "child": {
+            "$ref": "#"
+          },
+          "label": {
+            "type": "string"
+          }
+        },
+        "required": ["label"]
+      },
+      "strict": {
+        "schema": {
+          "type": "object",
+          "properties": {
+            "child": {
+              "anyOf": [
+                {
+                  "$ref": "#"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "label": {
+              "type": "string"
+            }
+          },
+          "required": ["child", "label"],
+          "additionalProperties": false
+        }
+      },
+      "changes": [
+        {
+          "path": "properties.child",
+          "reason": "optional-property-nullable"
+        }
+      ]
+    },
+    {
       "id": "dangling-ref-unsupported",
       "description": "A $ref without a target is reported at its own path.",
       "schema": {
