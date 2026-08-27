@@ -35,17 +35,31 @@ jobs:
           # Build dist
           pip install twine build
           python -m build
+          twine check dist/*
+          python - <<'PY'
+          from pathlib import Path
+          from zipfile import ZipFile
+
+          wheel = next(Path("dist").glob("composio_core-*.whl"))
+          with ZipFile(wheel) as archive:
+              metadata_path = next(
+                  name for name in archive.namelist() if name.endswith(".dist-info/METADATA")
+              )
+              metadata = archive.read(metadata_path).decode()
+
+          assert "\n\n# DEPRECATED: use `composio`\n" in metadata
+          PY
       - name: Publish Core to PyPI
         if: github.event_name == 'release'
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           user: ${{ secrets.PYPI_USERNAME }}
           password: ${{ secrets.PYPI_PASSWORD }}
-          skip-existing: true
           packages-dir: python/dist/
 
   publish-plugins:
     name: Create Plugin Releases
+    if: github.event_name != 'release' || github.event.release.tag_name != 'v0.7.22'
     defaults:
       run:
         working-directory: ./python
@@ -79,6 +93,7 @@ jobs:
 
   publish-swe:
     name: Create SWE Toolkit Release
+    if: github.event_name != 'release' || github.event.release.tag_name != 'v0.7.22'
     defaults:
       run:
         working-directory: ./python/swe
@@ -104,6 +119,7 @@ jobs:
 
   publish-cli:
     name: Build and upload CLI
+    if: github.event_name != 'release' || github.event.release.tag_name != 'v0.7.22'
     permissions: write-all
     strategy:
       matrix:
@@ -192,6 +208,7 @@ jobs:
 
   publish-images:
     name: Build and publish docker images
+    if: github.event_name != 'release' || github.event.release.tag_name != 'v0.7.22'
     needs: publish-core
     runs-on: ubuntu-latest
     steps:
@@ -221,6 +238,7 @@ jobs:
 
   publish-e2b:
     name: Publish E2B template
+    if: github.event_name != 'release' || github.event.release.tag_name != 'v0.7.22'
     needs: publish-core
     runs-on: ubuntu-latest
     steps:

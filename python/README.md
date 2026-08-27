@@ -1,10 +1,14 @@
 # DEPRECATED: use `composio`
 
 `composio-core` is the legacy Composio Python SDK and no longer receives updates.
-Install the current SDK instead:
+The current SDK requires Python 3.10 or newer.
+
+Remove the legacy package before installing the current SDK. Both packages use
+the `composio` import name and must not be installed together.
 
 ```bash
-pip install composio
+python -m pip uninstall composio-core
+python -m pip install composio
 ```
 
 See the [migration guide](https://docs.composio.dev/docs/migration-guide/new-sdk)
