@@ -60,10 +60,14 @@
 
 ## Automated Publishing
 
-This branch is archived. Its GitHub workflow (`release.yaml`) publishes only
-`composio-core` to PyPI when a new GitHub release is created. Plugin, SWE, CLI,
-Docker image, and E2B publishing jobs were removed; use Git history if they need
-to be recovered.
+The GitHub workflow (`release.yaml`) automatically handles publishing when a new GitHub release is created, including:
+
+- Publishing core Python package to PyPI
+- Publishing plugin packages to PyPI
+- Publishing SWE toolkit to PyPI
+- Building CLI executables for multiple platforms
+- Publishing Docker images
+- Publishing E2B template
 
 ## Version Format
 
