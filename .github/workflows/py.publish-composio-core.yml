@@ -23,6 +23,9 @@ jobs:
     name: Build and optionally publish composio-core
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: python
     steps:
       - name: Checkout archive-v2
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -42,20 +45,17 @@ jobs:
           enable-cache: false
 
       - name: Build composio-core
-        working-directory: python
         run: |
           uv build
           uvx twine check dist/*
 
       - name: Verify artifacts
-        working-directory: python
         run: |
           test -f dist/composio_core-0.7.22-py3-none-any.whl
           test -f dist/composio_core-0.7.22.tar.gz
 
       - name: Publish composio-core to PyPI
         if: inputs.publish
-        working-directory: python
         env:
           UV_PUBLISH_USERNAME: ${{ secrets.PYPI_USERNAME }}
           UV_PUBLISH_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
