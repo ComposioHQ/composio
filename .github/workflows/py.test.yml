@@ -2,7 +2,7 @@ name: Test Python SDK
 
 on:
   push:
-    branches: [master, next]
+    branches: [master, next, main]
     paths:
       - 'python/**/*.py'
       - 'python/**/*.json'
@@ -15,7 +15,7 @@ on:
       - 'uv.lock'
       - 'python/requirements*.txt'
   pull_request:
-    branches: [master, next]
+    branches: [master, next, main]
     paths:
       - 'python/**/*.py'
       - 'python/**/*.json'

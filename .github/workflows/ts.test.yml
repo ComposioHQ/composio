@@ -2,7 +2,7 @@ name: Test Typescript SDK
 
 on:
   push:
-    branches: [master, next]
+    branches: [master, next, main]
     paths:
       - '.changeset/**'
       - 'ts/**'
@@ -17,7 +17,7 @@ on:
       - 'test/release-workflow.test.ts'
       - 'turbo.jsonc'
   pull_request:
-    branches: [master, next]
+    branches: [master, next, main]
     paths:
       - '.changeset/**'
       - 'ts/**'

@@ -3,7 +3,7 @@ name: TS SDK Release
 on:
   workflow_dispatch:
   push:
-    branches: [next]
+    branches: [next, main]
 
 permissions:
   contents: read
