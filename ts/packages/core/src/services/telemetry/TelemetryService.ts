@@ -14,17 +14,21 @@ export class TelemetryService {
    * workerd pins the request context open for the full timeout on every successful
    * send. Mirrors the bound applied to the npm version check.
    */
-  private static postWithTimeout(url: string, payload: unknown) {
+  private static async postWithTimeout(url: string, payload: unknown) {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), TELEMETRY_TIMEOUT_MS);
-    return fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(payload),
-      signal: controller.signal,
-    }).finally(() => clearTimeout(timer));
+    try {
+      return await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+        signal: controller.signal,
+      });
+    } finally {
+      clearTimeout(timer);
+    }
   }
 
   /**

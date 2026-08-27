@@ -460,6 +460,18 @@ describe('TelemetryService network bounding', () => {
     expect(vi.getTimerCount()).toBe(0);
   });
 
+  it('clears the timer when serializing the payload fails', async () => {
+    vi.useFakeTimers();
+    const fetchMock = vi.fn<typeof fetch>();
+    vi.stubGlobal('fetch', fetchMock);
+
+    const payload = createPayload({ props: { value: BigInt(1) } });
+
+    await expect(TelemetryService.sendMetric([payload])).resolves.toBeUndefined();
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
   it('swallows a sendMetric timeout when the endpoint never responds', async () => {
     vi.useFakeTimers();
     const fetchMock = vi.fn<typeof fetch>(
