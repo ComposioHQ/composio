@@ -179,6 +179,20 @@ def safe_request(
         response.close()
         current_url = urljoin(current_url, location)
 
+        if response.status_code == 303 and method.upper() != "HEAD":
+            method = "GET"
+            body = None
+            kwargs.pop("data", None)
+            kwargs.pop("json", None)
+            kwargs.pop("files", None)
+            if headers := kwargs.get("headers"):
+                kwargs["headers"] = {
+                    name: value
+                    for name, value in headers.items()
+                    if name.lower()
+                    not in {"content-length", "content-type", "transfer-encoding"}
+                }
+
         # `requests` rewinds the body itself when it follows a redirect; doing
         # it manually means doing that too, or a retried upload sends nothing.
         seek = getattr(body, "seek", None)
