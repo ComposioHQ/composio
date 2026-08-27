@@ -51,7 +51,7 @@ Each tool gets both an input and an output schema, so Mastra can validate tool r
 
 ## Strict mode
 
-Pass `strict: true` to normalize each tool's input schema for OpenAI structured outputs before Mastra compiles it: every object lists all of its properties in `required` and is closed, and optional properties stay available but accept `null`. A `null` the model sends for an optional parameter is dropped before the tool runs. Tools whose schema cannot be expressed in strict mode (objects that accept arbitrary keys, `allOf`, `prefixItems`) keep their original schema and log a warning:
+Pass `strict: true` to normalize each tool's input schema for OpenAI structured outputs before Mastra compiles it: every object lists all of its properties in `required` and is closed, and optional properties stay available but accept `null`. A `null` is dropped before the tool runs unless the tool's own schema accepts `null` for that parameter, so nullable fields still receive an explicit `null`. Tools whose schema cannot be expressed in strict mode, such as objects that accept arbitrary keys, `allOf`, `prefixItems`, or unresolved `$ref`s, keep their original schema and log a warning:
 
 ```typescript
 const composio = new Composio({

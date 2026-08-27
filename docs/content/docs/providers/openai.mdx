@@ -406,6 +406,30 @@ The OpenAI integration ships three providers, one per API surface:
 - **`OpenAIProvider`** for the Chat Completions API. This is the SDK default, so `new Composio()` with no provider uses it. You keep the full message list and append each assistant message plus its `tool` results yourself.
 - **`OpenAIAgentsProvider`** for the Agents SDK. Tools come with execution wired in, so the SDK runs the loop for you.
 
+**Strict mode.** Pass `strict: true` or `strict=True` to `OpenAIResponsesProvider`, or pass `strict: true` to `OpenAIAgentsProvider`, to normalize each tool's input schema for [structured outputs](https://platform.openai.com/docs/guides/structured-outputs). Every object lists all of its properties in `required` and is closed, while optional properties stay available but accept `null`. A `null` is dropped before the tool runs unless the tool's own schema accepts `null` for that parameter. Tools whose schema strict mode cannot express, such as objects that accept arbitrary keys, `allOf`, `prefixItems`, or unresolved `$ref`s, are sent without strict mode and log a warning.
+
+<Tabs items={["TypeScript", "Python"]}>
+<Tab value="TypeScript">
+```typescript
+// @noErrors
+import { Composio } from "@composio/core";
+import { OpenAIResponsesProvider } from "@composio/openai";
+
+const composio = new Composio({
+  provider: new OpenAIResponsesProvider({ strict: true }),
+});
+```
+</Tab>
+<Tab value="Python">
+```python
+from composio import Composio
+from composio_openai import OpenAIResponsesProvider
+
+composio = Composio(provider=OpenAIResponsesProvider(strict=True))
+```
+</Tab>
+</Tabs>
+
 <Callout type="info">
 Pass the session to `handleToolCalls` / `handle_tool_calls` when the model received tools from `session.tools()`. The helper preserves the provider's argument normalization and executes every call through that session. For tools fetched via [`tools.get`](/docs/tools-direct/executing-tools), pass the user ID instead.
 </Callout>
