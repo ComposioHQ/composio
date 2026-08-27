@@ -179,6 +179,31 @@ def test_safe_request_follows_validated_redirect(mock_assert, mock_request) -> N
 
 @patch("composio.utils.url_safety.requests.Session.request")
 @patch("composio.utils.url_safety.assert_safe_fetch_target")
+def test_safe_request_303_switches_to_get_without_body(
+    mock_assert, mock_request
+) -> None:
+    mock_request.side_effect = [
+        _response(303, "https://example.com/result"),
+        _response(200),
+    ]
+
+    safe_request(
+        "POST",
+        "https://example.com/create",
+        data=b"payload",
+        headers={"Content-Type": "application/octet-stream", "X-Test": "kept"},
+    )
+
+    assert mock_request.call_args_list[1] == call(
+        "GET",
+        "https://example.com/result",
+        allow_redirects=False,
+        headers={"X-Test": "kept"},
+    )
+
+
+@patch("composio.utils.url_safety.requests.Session.request")
+@patch("composio.utils.url_safety.assert_safe_fetch_target")
 def test_safe_request_relative_redirect_is_resolved(mock_assert, mock_request) -> None:
     mock_request.side_effect = [_response(302, "/elsewhere"), _response(200)]
 
