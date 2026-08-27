@@ -1,3 +1,5 @@
+import { TOOLKIT_COUNT_LABEL } from '@/lib/toolkit-count';
+
 export function DocsHeroV2() {
   return (
     <section className="py-10 sm:py-12">
@@ -8,7 +10,7 @@ export function DocsHeroV2() {
 
         <p className="max-w-[620px] text-base leading-[1.6] text-fd-foreground/70 sm:text-lg">
           Use Composio to discover tools, authenticate each user, and run
-          actions across 1,000+ apps.
+          actions across {TOOLKIT_COUNT_LABEL} apps.
         </p>
       </div>
     </section>

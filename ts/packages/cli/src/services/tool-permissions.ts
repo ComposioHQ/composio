@@ -4,7 +4,7 @@ import open from 'open';
 import { detectCliPlatform } from '@composio/cli-local-tools';
 import { Data, Effect, Option, Record as EffectRecord, Schema } from 'effect';
 import { JsonRecordSchema } from 'src/effects/json';
-import { resolveCliConfigDirectorySync } from 'src/services/cli-user-config';
+import { setupCacheDir } from 'src/effects/setup-cache-dir';
 import { atomicWriteFileString } from 'src/utils/atomic-write';
 import { collectDecodedEntries } from 'src/utils/collect-decoded-entries';
 import {
@@ -170,7 +170,8 @@ interface GateParams {
 
 const allowDecisionMemoryCache = new Map<string, number>();
 
-const cachePath = (path: Path.Path) => path.join(resolveCliConfigDirectorySync(), CACHE_FILE_NAME);
+const cachePath = (path: Path.Path, cacheDirectory: string) =>
+  path.join(cacheDirectory, CACHE_FILE_NAME);
 const cacheKey = (params: { orgId: string; projectId: string; consumerUserId: string }) =>
   [params.orgId, params.projectId, params.consumerUserId].join(':');
 const normalizeBaseUrl = (baseURL: string) => baseURL.replace(/\/$/, '');
@@ -189,8 +190,12 @@ const pruneAllowEntries = (
   );
 
 // A missing or unreadable cache file degrades to an empty cache.
-const readCacheFile = (fs: FileSystem.FileSystem, path: Path.Path): Effect.Effect<CacheFile> =>
-  fs.readFileString(cachePath(path)).pipe(
+const readCacheFile = (
+  fs: FileSystem.FileSystem,
+  path: Path.Path,
+  cacheDirectory: string
+): Effect.Effect<CacheFile> =>
+  fs.readFileString(cachePath(path, cacheDirectory)).pipe(
     Effect.map((raw): CacheFile => {
       const parsed = decodeCacheFileTolerant(raw);
       return {
@@ -201,9 +206,14 @@ const readCacheFile = (fs: FileSystem.FileSystem, path: Path.Path): Effect.Effec
     Effect.orElseSucceed((): CacheFile => ({ entries: {} }))
   );
 
-const writeCacheFile = (fs: FileSystem.FileSystem, path: Path.Path, cache: CacheFile) =>
+const writeCacheFile = (
+  fs: FileSystem.FileSystem,
+  path: Path.Path,
+  cacheDirectory: string,
+  cache: CacheFile
+) =>
   Effect.gen(function* () {
-    const targetPath = cachePath(path);
+    const targetPath = cachePath(path, cacheDirectory);
     yield* fs.makeDirectory(path.dirname(targetPath), { recursive: true });
 
     // Atomic write: on failure the temp file is dropped (best effort) and the
@@ -230,20 +240,22 @@ const cacheWriteSemaphore = Effect.unsafeMakeSemaphore(1);
 const updateCacheFile = (
   fs: FileSystem.FileSystem,
   path: Path.Path,
+  cacheDirectory: string,
   update: (current: CacheFile) => CacheFile
 ) =>
   cacheWriteSemaphore.withPermits(1)(
-    readCacheFile(fs, path).pipe(
-      Effect.flatMap(current => writeCacheFile(fs, path, update(current)))
+    readCacheFile(fs, path, cacheDirectory).pipe(
+      Effect.flatMap(current => writeCacheFile(fs, path, cacheDirectory, update(current)))
     )
   );
 
 const writeCacheEntry = (
   fs: FileSystem.FileSystem,
   path: Path.Path,
+  cacheDirectory: string,
   entry: ConsumerPermissionSnapshot
 ) =>
-  updateCacheFile(fs, path, current => ({
+  updateCacheFile(fs, path, cacheDirectory, current => ({
     entries: {
       ...current.entries,
       [cacheKey(entry)]: entry,
@@ -254,13 +266,16 @@ const writeCacheEntry = (
 const readCachedEntry = (
   fs: FileSystem.FileSystem,
   path: Path.Path,
+  cacheDirectory: string,
   params: {
     orgId: string;
     projectId: string;
     consumerUserId: string;
   }
 ): Effect.Effect<ConsumerPermissionSnapshot | undefined> =>
-  readCacheFile(fs, path).pipe(Effect.map(cache => cache.entries[cacheKey(params)]));
+  readCacheFile(fs, path, cacheDirectory).pipe(
+    Effect.map(cache => cache.entries[cacheKey(params)])
+  );
 
 const isFreshForAccounts = (
   entry: ConsumerPermissionSnapshot | undefined,
@@ -324,6 +339,7 @@ export const refreshConsumerPermissionSnapshot = (params: {
   Effect.gen(function* () {
     const fs = yield* FileSystem.FileSystem;
     const path = yield* Path.Path;
+    const cacheDirectory = yield* setupCacheDir;
     const userContext = yield* ComposioUserContext;
     const apiKey = Option.getOrUndefined(userContext.data.apiKey);
     if (!apiKey) return undefined;
@@ -410,7 +426,7 @@ export const refreshConsumerPermissionSnapshot = (params: {
     // A fail-closed snapshot is not persisted, so a healthy fetch replaces it
     // on the next command instead of pinning ask_every_call for the TTL.
     if (!resolved.resolveFailed) {
-      yield* writeCacheEntry(fs, path, snapshot).pipe(
+      yield* writeCacheEntry(fs, path, cacheDirectory, snapshot).pipe(
         Effect.catchAll(cause =>
           Effect.logDebug(
             'Failed to write the tool permissions cache',
@@ -442,10 +458,11 @@ export const getConsumerPermissionSnapshot = (params: {
   Effect.gen(function* () {
     const fs = yield* FileSystem.FileSystem;
     const path = yield* Path.Path;
+    const cacheDirectory = yield* setupCacheDir;
     const connectedAccountIds = uniq(params.connectedAccountIds ?? []);
     // Read failures are absorbed inside readCacheFile (empty cache), so an
     // unreadable cache file behaves exactly like a cache miss here.
-    const cached = yield* readCachedEntry(fs, path, params);
+    const cached = yield* readCachedEntry(fs, path, cacheDirectory, params);
 
     if (isFreshForAccounts(cached, connectedAccountIds)) {
       yield* refreshConsumerPermissionSnapshot({ ...params, connectedAccountIds }).pipe(
@@ -554,13 +571,14 @@ const isAllowCachedInMemory = (cacheKey: string, now = Date.now()): boolean => {
 const isAllowCached = (
   fs: FileSystem.FileSystem,
   path: Path.Path,
+  cacheDirectory: string,
   cacheKey: string,
   now = Date.now()
 ): Effect.Effect<boolean> =>
   Effect.suspend(() => {
     if (isAllowCachedInMemory(cacheKey, now)) return Effect.succeed(true);
 
-    return readCacheFile(fs, path).pipe(
+    return readCacheFile(fs, path, cacheDirectory).pipe(
       Effect.map(cache => {
         const expiresAt = cache.allowEntries?.[cacheKey]?.expiresAt;
         if (expiresAt === undefined || expiresAt <= now) return false;
@@ -574,6 +592,7 @@ const isAllowCached = (
 const cacheAllowDecision = (
   fs: FileSystem.FileSystem,
   path: Path.Path,
+  cacheDirectory: string,
   cacheKey: string,
   now = Date.now()
 ) =>
@@ -581,7 +600,7 @@ const cacheAllowDecision = (
     const expiresAt = now + ALLOW_FOR_DURATION_MS;
     allowDecisionMemoryCache.set(cacheKey, expiresAt);
 
-    return updateCacheFile(fs, path, current => ({
+    return updateCacheFile(fs, path, cacheDirectory, current => ({
       entries: current.entries,
       allowEntries: {
         ...current.allowEntries,
@@ -1002,19 +1021,21 @@ const requestPermissionInBrowser = (params: {
       clearTimeout(timeout);
       reject(error);
     });
-    server.listen(0, '127.0.0.1', async () => {
-      // eslint-disable-next-line eslint-js/no-restricted-syntax -- node:http listen callback inside a Promise executor: on failure to open the browser, close the server and reject the surrounding Promise; Effect's error channel is not available here
-      try {
-        const address = server.address();
-        const port = typeof address === 'object' && address ? address.port : undefined;
-        if (!port) throw new Error('Unable to allocate permission callback port.');
-        await open(`http://127.0.0.1:${port}/?token=${encodeURIComponent(token)}`, {
-          wait: false,
-        });
-      } catch (error) {
+    server.listen(0, '127.0.0.1', () => {
+      const address = server.address();
+      const port = typeof address === 'object' && address ? address.port : undefined;
+      if (!port) {
+        server.close();
+        reject(new Error('Unable to allocate permission callback port.'));
+        return;
+      }
+
+      void open(`http://127.0.0.1:${port}/?token=${encodeURIComponent(token)}`, {
+        wait: false,
+      }).catch(error => {
         server.close();
         reject(error);
-      }
+      });
     });
   });
 
@@ -1055,10 +1076,11 @@ export const gateToolExecution = (params: GateParams) =>
 
     const fs = yield* FileSystem.FileSystem;
     const path = yield* Path.Path;
+    const cacheDirectory = yield* setupCacheDir;
     const cacheKey = allowCacheKey(params);
     // Read failures are absorbed inside readCacheFile (empty cache), so an
     // unreadable allow cache behaves exactly like "no cached allow decision".
-    const hasCachedAllow = yield* isAllowCached(fs, path, cacheKey);
+    const hasCachedAllow = yield* isAllowCached(fs, path, cacheDirectory, cacheKey);
     if (hasCachedAllow) {
       return { approvalStatus: 'cached_approved' } satisfies PermissionGateResult;
     }
@@ -1096,7 +1118,7 @@ export const gateToolExecution = (params: GateParams) =>
     }
     const cachesAllowOnce = state === 'ask_once' || state === 'ask_once_per_session';
     if (decision === 'allow_session' || (cachesAllowOnce && decision === 'allow_once')) {
-      yield* cacheAllowDecision(fs, path, cacheKey).pipe(
+      yield* cacheAllowDecision(fs, path, cacheDirectory, cacheKey).pipe(
         Effect.catchAll(cause =>
           Effect.logDebug(
             'Failed to cache tool permission allow decision',

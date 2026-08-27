@@ -31,6 +31,7 @@ Current sessions include:
 - `fix`: Ruff automatic fixes.
 - `type_inference`: provider return-type inference checks.
 - `tst`: pytest test suite.
+- `tst_autogen`: Autogen regressions in an isolated protobuf-compatible environment.
 - `snt`: sanity tests.
 
 When adding or renaming provider packages, inspect the `type_inference` session's explicit provider install list and checked test-file list.

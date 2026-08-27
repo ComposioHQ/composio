@@ -17,6 +17,7 @@ import {
   trackCliEventEffect,
 } from 'src/analytics/dispatch';
 import { CLI_ANALYTICS_EVENTS } from 'src/analytics/events';
+import { cliRunIdLayer } from 'src/services/runtime-cli-context';
 import { APP_VERSION, USER_CONFIG_FILE_NAME } from 'src/constants';
 import { defaultNodeOs, NodeOs } from 'src/services/node-os';
 import { TerminalUITest } from 'test/__utils__/services/terminal-ui-test';
@@ -305,6 +306,30 @@ describe('CLI analytics dispatch', () => {
     }).pipe(Effect.provide(makePlatformLayer(home)));
   });
 
+  it.effect('propagates telemetry debug to the detached worker without an env write', () => {
+    const home = tempy.temporaryDirectory();
+    const scriptPath = `${home}/composio.ts`;
+    enableTelemetry();
+    vi.stubEnv('COMPOSIO_CLI_TELEMETRY_DEBUG', 'true');
+    process.argv[1] = scriptPath;
+
+    return Effect.gen(function* () {
+      const fs = yield* FileSystem.FileSystem;
+      yield* fs.writeFileString(scriptPath, '');
+      yield* trackCliEventEffect({ name: 'producer_event' });
+
+      const [, args, options] = childProcessMocks.spawn.mock.calls[0] as unknown as [
+        string,
+        string[],
+        { detached: boolean; stdio: unknown },
+      ];
+      expect(args).toHaveLength(4);
+      expect(args.at(-1)).toBe('--telemetry-debug');
+      expect(options.stdio).toEqual(['ignore', 'ignore', 'inherit']);
+      expect(options).not.toHaveProperty('env');
+    }).pipe(Effect.provide(makePlatformLayer(home)));
+  });
+
   it.effect('spawns a detached codact worker with a decodable failure body', () => {
     const home = tempy.temporaryDirectory();
     const scriptPath = `${home}/composio.ts`;
@@ -359,6 +384,34 @@ describe('CLI analytics dispatch', () => {
       expect(childProcessMocks.unref).toHaveBeenCalledTimes(1);
     }).pipe(Effect.provide(makePlatformLayer(home)));
   });
+
+  it.effect(
+    'stamps codact failures with the minted CliRunId when no parent run id is inherited',
+    () => {
+      const home = tempy.temporaryDirectory();
+      const scriptPath = `${home}/composio.ts`;
+      enableTelemetry();
+      process.argv[1] = scriptPath;
+
+      return Effect.gen(function* () {
+        const fs = yield* FileSystem.FileSystem;
+        yield* fs.writeFileString(scriptPath, '');
+        yield* trackCliCodactFailureEffect({
+          failureType: 'wrong_tool_slug',
+          ctx: { slug: 'MISSING_TOOL' },
+        });
+
+        expect(childProcessMocks.spawn).toHaveBeenCalledTimes(1);
+        const args = childProcessMocks.spawn.mock.calls[0]![1] as string[];
+        expect(decodeWorkerPayload(args[2]!)).toMatchObject({
+          failure_type: 'wrong_tool_slug',
+          session: {
+            parent_run_id: 'run_minted',
+          },
+        });
+      }).pipe(Effect.provide(cliRunIdLayer('run_minted')), Effect.provide(makePlatformLayer(home)));
+    }
+  );
 
   it.effect('keeps both producer effects non-fatal when spawn throws', () => {
     const home = tempy.temporaryDirectory();

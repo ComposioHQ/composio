@@ -5,10 +5,11 @@ import {
   Boxes,
   History,
   Blocks,
+  LayoutDashboard,
   Wrench,
 } from 'lucide-react';
 import type { ReactNode } from 'react';
-import { SectionHeading } from './home-features';
+import { TOOLKIT_COUNT_LABEL } from '@/lib/toolkit-count';
 
 const RESOURCES = [
   {
@@ -38,8 +39,14 @@ const RESOURCES = [
   {
     icon: <Blocks aria-hidden="true" className="size-4" />,
     title: 'Toolkits',
-    description: 'Browse the 1000+ apps your agent can act on.',
+    description: `Browse the ${TOOLKIT_COUNT_LABEL} apps your agent can act on.`,
     href: '/toolkits',
+  },
+  {
+    icon: <LayoutDashboard aria-hidden="true" className="size-4" />,
+    title: 'Platform Dashboard',
+    description: 'Auth configs, connected accounts, and logs.',
+    href: 'https://dashboard.composio.dev?utm_source=docs&utm_medium=content&utm_campaign=welcome',
   },
 ];
 
@@ -51,7 +58,6 @@ const RESOURCES = [
 export function HomeResources() {
   return (
     <section className="not-prose mb-12">
-      <SectionHeading eyebrow="Keep exploring" title="Reach for the rest." />
       <div className="grid grid-cols-1 gap-px border border-fd-border bg-fd-border sm:grid-cols-2 lg:grid-cols-3">
         {RESOURCES.map((resource) => (
           <ResourceCard key={resource.title} {...resource} />

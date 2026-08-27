@@ -617,6 +617,31 @@ describe('AnthropicProvider key sanitization', () => {
     expect(payload.arguments).toEqual({ $top: 25 });
   });
 
+  it('restores sanitized keys before executing through a tool router session', async () => {
+    const provider = new AnthropicProvider();
+    const directExecute = vi.fn();
+    const session = {
+      execute: vi.fn().mockResolvedValue({
+        data: { ok: true },
+        error: null,
+        logId: 'log-session',
+      }),
+    };
+    provider._setExecuteToolFn(directExecute);
+    provider.wrapTool(odataTool);
+
+    const result = await provider.executeToolCall(session, {
+      type: 'tool_use',
+      id: 'tu_session',
+      name: 'list_drive_item_activities',
+      input: '{"dollar_top": 25}' as unknown as Record<string, unknown>,
+    });
+
+    expect(session.execute).toHaveBeenCalledWith('list_drive_item_activities', { $top: 25 });
+    expect(directExecute).not.toHaveBeenCalled();
+    expect(result).toBe(JSON.stringify({ ok: true }));
+  });
+
   it('normalizes a JSON-string input for tools without sanitized keys (issue #2406)', async () => {
     const provider = new AnthropicProvider();
     const executeToolFn = vi

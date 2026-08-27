@@ -74,6 +74,7 @@ app.get('/test/mcp-client', async c => {
       url: mcp.url,
       headers: mcp.headers,
       redirect: 'follow',
+      fetch: (input, init) => fetch(input, init),
     },
   });
   // Intentionally do not close the HTTP MCP client here: in workerd, @ai-sdk/mcp
@@ -118,6 +119,7 @@ app.get('/test/agent', async c => {
       url: mcp.url,
       headers: mcp.headers,
       redirect: 'follow',
+      fetch: (input, init) => fetch(input, init),
     },
   });
   // Intentionally do not close the HTTP MCP client here: in workerd, @ai-sdk/mcp

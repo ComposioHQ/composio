@@ -3,6 +3,7 @@ import {
   getReferenceSource,
   examplesSource,
   toolkitsSource,
+  knowledgeBaseSource,
   changelogEntries,
   slugToDate,
   formatDate,
@@ -23,10 +24,22 @@ import { readFile } from 'fs/promises';
 import { join } from 'path';
 import { getAllToolkits, getToolkitBySlug } from '@/lib/toolkit-data';
 import { getAllMetaTools, getMetaToolBySlug } from '@/lib/meta-tools-data';
+import { encodeMarkdownTableCell } from '@/lib/markdown-escaping';
 import type { MetaTool, MetaToolParameter } from '@/lib/meta-tools-data';
 import type { Toolkit, Tool, Trigger, ParameterSchema } from '@/types/toolkit';
 import { apiToolListSchema, apiTriggerListSchema } from '@/lib/toolkit-schema';
 import { z } from 'zod';
+import {
+  getKnowledgeByProductArea,
+  getKnowledgeByToolkit,
+  getKnowledgeToolkitSummaries,
+  type KnowledgeLink,
+} from '@/lib/knowledge/catalog';
+import { getProductArea, isProductAreaSlug, PRODUCT_AREAS } from '@/lib/knowledge/taxonomy';
+import {
+  getToolkitKnowledgeMarkdownHref,
+  getToolkitKnowledgeRedirect,
+} from '@/lib/knowledge/toolkit-routing';
 
 export const revalidate = false;
 
@@ -691,6 +704,7 @@ interface PageSource {
 
 const sources: Array<{ prefix: string; source: PageSource }> = [
   { prefix: 'docs', source },
+  { prefix: 'kb', source: knowledgeBaseSource },
   { prefix: 'examples', source: examplesSource },
   { prefix: 'toolkits', source: toolkitsSource },
 ];
@@ -806,7 +820,7 @@ function renderParamsMarkdown(params: Record<string, ParameterSchema>): string[]
   for (const [name, param] of Object.entries(params)) {
     const typeStr = formatParamType(param);
     const required = param.required ? 'Yes' : 'No';
-    const desc = (param.description || '').replace(/\|/g, '\\|').replace(/\n/g, ' ');
+    const desc = encodeMarkdownTableCell(param.description || '');
     lines.push(`| \`${name}\` | ${typeStr} | ${required} | ${desc} |`);
   }
 
@@ -946,7 +960,7 @@ async function generateManagedAuthIndex(): Promise<string> {
     "  -H 'x-api-key: YOUR_API_KEY'",
     '```',
     '',
-    'See [When to use your own developer credentials](/docs/custom-app-vs-managed-app.md) for help deciding which approach fits your use case.',
+    'See [When to use your own developer credentials](/docs/authentication/custom-app-vs-managed-app.md) for help deciding which approach fits your use case.',
     '',
     `## Composio Managed App Available (${managed.length})`,
     '',
@@ -1022,6 +1036,50 @@ async function generateToolkitsIndex(): Promise<string> {
 
 const LLM_FOOTER =
   '\n\n---\n\n📚 **More documentation:** [View all docs](https://docs.composio.dev/llms.txt) | [Glossary](https://docs.composio.dev/llms.mdx/reference/glossary) | [Examples](https://docs.composio.dev/llms.mdx/examples) | [API Reference](https://docs.composio.dev/llms.mdx/reference)';
+
+function knowledgeLinksToMarkdown(links: KnowledgeLink[]): string {
+  return links
+    .map((link) => `- [${link.title}](${link.href}) — ${link.description} (${link.sourceLabel})`)
+    .join('\n');
+}
+
+async function knowledgeBrowseToMarkdown(rest: string[]): Promise<string | null> {
+  if (rest.length === 0) {
+    const areas = PRODUCT_AREAS.filter((area) => area.defaultBrowse)
+      .map((area) => `- [${area.title}](https://docs.composio.dev/kb/topic/${area.slug}) — ${area.description}`)
+      .join('\n');
+    return `# Composio Knowledge Base\n\nSearch and browse public Composio knowledge across docs, verified support answers, OAuth guides, toolkits, examples, reference, and changelog.\n\n- [Search support knowledge](https://docs.composio.dev/kb/search)\n- [Browse all toolkits](https://docs.composio.dev/kb/toolkits)\n\n## Support topics\n\n${areas}${LLM_FOOTER}`;
+  }
+
+  if (rest.length === 1 && rest[0] === 'search') {
+    return `# Search Composio support knowledge\n\nUse the [Knowledge Base search](https://docs.composio.dev/kb/search) to find canonical public support answers and toolkit-specific fixes.${LLM_FOOTER}`;
+  }
+
+  if (rest.length === 1 && rest[0] === 'toolkits') {
+    const toolkits = await getKnowledgeToolkitSummaries();
+    const rows = toolkits
+      .map((toolkit) => `- [${toolkit.name}](https://docs.composio.dev${getToolkitKnowledgeMarkdownHref(toolkit)}) — ${toolkit.knowledgeCount} resource${toolkit.knowledgeCount === 1 ? '' : 's'}`)
+      .join('\n');
+    return `# Toolkit knowledge\n\nBrowse canonical public knowledge by provider.\n\n${rows}${LLM_FOOTER}`;
+  }
+
+  if (rest.length === 2 && rest[0] === 'topic' && isProductAreaSlug(rest[1])) {
+    const area = getProductArea(rest[1]);
+    const links = await getKnowledgeByProductArea(rest[1]);
+    if (!area.defaultBrowse && links.length === 0) return null;
+    return `# ${area.title}\n\n${area.description}\n\n${knowledgeLinksToMarkdown(links)}${LLM_FOOTER}`;
+  }
+
+  if (rest.length === 2 && rest[0] === 'toolkit') {
+    const toolkits = await getKnowledgeToolkitSummaries();
+    const toolkit = toolkits.find((candidate) => candidate.slug === rest[1]);
+    if (!toolkit) return null;
+    const links = await getKnowledgeByToolkit(toolkit.slug);
+    return `# ${toolkit.name} knowledge\n\nCanonical public Composio information for ${toolkit.name}.\n\n${knowledgeLinksToMarkdown(links)}${LLM_FOOTER}`;
+  }
+
+  return null;
+}
 
 // Render meta tool parameters as markdown
 function renderMetaToolParams(
@@ -1136,6 +1194,26 @@ export async function GET(_req: Request, { params }: { params: Promise<{ slug?: 
   try {
     const { slug = [] } = await params;
     const [prefix, ...rest] = slug;
+
+    if (prefix === 'kb') {
+      if (rest.length === 2 && rest[0] === 'toolkit') {
+        const toolkits = await getKnowledgeToolkitSummaries();
+        const toolkit = toolkits.find((candidate) => candidate.slug === rest[1]);
+        const redirectPath = toolkit ? getToolkitKnowledgeRedirect(toolkit) : null;
+        if (redirectPath) {
+          return new Response(null, {
+            status: 307,
+            headers: { Location: `${redirectPath}.md` },
+          });
+        }
+      }
+      const browseMarkdown = await knowledgeBrowseToMarkdown(rest);
+      if (browseMarkdown) {
+        return new Response(browseMarkdown, {
+          headers: { 'Content-Type': 'text/markdown; charset=utf-8' },
+        });
+      }
+    }
 
     // Special handling for toolkits index - generate comprehensive list
     if (prefix === 'toolkits' && rest.length === 0) {

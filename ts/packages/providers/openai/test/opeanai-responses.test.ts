@@ -129,6 +129,138 @@ describe('OpenAIResponsesProvider', () => {
 
       expect(wrapped.parameters.required).toEqual(['input']);
     });
+
+    it('keeps optional parameters as required-nullable under strict mode', () => {
+      const strictProvider = new OpenAIResponsesProvider({ strict: true });
+      const wrapped = strictProvider.wrapTool({
+        ...mockTool,
+        inputParameters: {
+          type: 'object',
+          properties: {
+            cfg: {
+              type: 'object',
+              properties: {
+                url: { type: 'string' },
+                note: { type: 'string' },
+              },
+              required: ['url'],
+            },
+            id: { type: ['string', 'null'] },
+            payload: {
+              anyOf: [
+                {
+                  type: 'object',
+                  properties: { inner: { type: 'string' }, extra: { type: 'string' } },
+                  required: ['inner'],
+                },
+                { type: 'null' },
+              ],
+            },
+            label: { type: 'string', default: 'x' },
+          },
+          required: ['cfg', 'id', 'payload'],
+        },
+      }) as MockedOpenAITool;
+
+      expect(wrapped.strict).toBe(true);
+      expect(wrapped.parameters).toEqual({
+        type: 'object',
+        properties: {
+          cfg: {
+            type: 'object',
+            properties: { url: { type: 'string' }, note: { type: ['string', 'null'] } },
+            required: ['url', 'note'],
+            additionalProperties: false,
+          },
+          id: { type: ['string', 'null'] },
+          payload: {
+            anyOf: [
+              {
+                type: 'object',
+                properties: { inner: { type: 'string' }, extra: { type: ['string', 'null'] } },
+                required: ['inner', 'extra'],
+                additionalProperties: false,
+              },
+              { type: 'null' },
+            ],
+          },
+          label: { type: ['string', 'null'] },
+        },
+        required: ['cfg', 'id', 'payload', 'label'],
+        additionalProperties: false,
+      });
+    });
+
+    it('keeps nullable nested objects nullable and $defs referenced under strict mode', () => {
+      const strictProvider = new OpenAIResponsesProvider({ strict: true });
+      const wrapped = strictProvider.wrapTool({
+        ...mockTool,
+        inputParameters: {
+          type: 'object',
+          properties: {
+            cfg: { $ref: '#/$defs/Config' },
+          },
+          required: ['cfg'],
+          $defs: {
+            Config: {
+              type: ['object', 'null'],
+              properties: { url: { type: 'string' }, opt: { type: 'string' } },
+              required: ['url'],
+            },
+          },
+        },
+      }) as MockedOpenAITool;
+
+      expect(wrapped.strict).toBe(true);
+      expect(wrapped.parameters).toEqual({
+        type: 'object',
+        properties: {
+          cfg: { $ref: '#/$defs/Config' },
+        },
+        required: ['cfg'],
+        additionalProperties: false,
+        $defs: {
+          Config: {
+            type: ['object', 'null'],
+            properties: { url: { type: 'string' }, opt: { type: ['string', 'null'] } },
+            required: ['url', 'opt'],
+            additionalProperties: false,
+          },
+        },
+      });
+    });
+
+    it('sends tools strict mode cannot express without strict, keeping their schema', () => {
+      const strictProvider = new OpenAIResponsesProvider({ strict: true });
+      const inputParameters = {
+        type: 'object',
+        properties: {
+          headers: { type: 'object', additionalProperties: { type: 'string' } },
+          name: { type: 'string' },
+        },
+        required: ['headers', 'name', 'name'],
+      };
+      const wrapped = strictProvider.wrapTool({ ...mockTool, inputParameters }) as MockedOpenAITool;
+
+      expect(wrapped.strict).toBe(false);
+      expect(wrapped.parameters).toEqual({ ...inputParameters, required: ['headers', 'name'] });
+    });
+
+    it('emits an empty closed object for tools without parameters in strict mode', () => {
+      const strictProvider = new OpenAIResponsesProvider({ strict: true });
+      const wrapped = strictProvider.wrapTool({
+        ...mockTool,
+        inputParameters: undefined,
+      }) as MockedOpenAITool;
+
+      expect(wrapped.strict).toBe(true);
+      expect(wrapped.parameters).toEqual({
+        type: 'object',
+        properties: {},
+        required: [],
+        additionalProperties: false,
+      });
+    });
   });
 
   describe('wrapTools', () => {
@@ -197,6 +329,48 @@ describe('OpenAIResponsesProvider', () => {
       );
     });
 
+    it('omits nulls the tool schema does not accept before executing under strict mode', async () => {
+      const strictProvider = new OpenAIResponsesProvider({ strict: true });
+      strictProvider._setExecuteToolFn(mockExecuteToolFn);
+      strictProvider.wrapTool({
+        ...mockTool,
+        slug: 'test-tool',
+        inputParameters: {
+          type: 'object',
+          properties: {
+            cfg: {
+              type: 'object',
+              properties: { url: { type: 'string' }, note: { type: 'string' } },
+              required: ['url'],
+            },
+            label: { type: 'string' },
+            clearable: { type: ['string', 'null'] },
+          },
+          required: ['cfg'],
+        },
+      });
+      const toolCall = {
+        id: 'call-123',
+        type: 'function',
+        name: 'test-tool',
+        arguments: JSON.stringify({ cfg: { url: 'u', note: null }, label: null, clearable: null }),
+        call_id: 'call-123',
+      } as unknown as OpenAI.Responses.ResponseFunctionToolCall;
+
+      await strictProvider.executeToolCall('test-user', toolCall);
+
+      expect(mockExecuteToolFn).toHaveBeenCalledWith(
+        'test-tool',
+        {
+          arguments: { cfg: { url: 'u' }, clearable: null },
+          userId: 'test-user',
+          connectedAccountId: undefined,
+          customAuthParams: undefined,
+        },
+        undefined
+      );
+    });
+
     it('should coerce empty-string arguments to an empty object (issue #2406)', async () => {
       const toolCall = {
         id: 'call-123',
@@ -253,6 +427,60 @@ describe('OpenAIResponsesProvider', () => {
   });
 
   describe('handleToolCalls', () => {
+    it('preserves Responses output order and errors when executing through a session', async () => {
+      const session = {
+        execute: vi
+          .fn()
+          .mockResolvedValueOnce({ data: { index: 1 }, error: null, logId: 'log-1' })
+          .mockRejectedValueOnce(new Error('session execution failed')),
+      };
+      const toolCalls = [
+        {
+          id: 'item-1',
+          type: 'function_call',
+          name: 'COMPOSIO_SEARCH_TOOLS',
+          arguments: JSON.stringify({ queries: [{ use_case: 'first' }] }),
+          call_id: 'call-1',
+        },
+        {
+          id: 'item-2',
+          type: 'function_call',
+          name: 'COMPOSIO_SEARCH_TOOLS',
+          arguments: JSON.stringify({ queries: [{ use_case: 'second' }] }),
+          call_id: 'call-2',
+        },
+      ] as OpenAI.Responses.ResponseOutputItem[];
+
+      const results = await provider.handleToolCalls(session, toolCalls);
+
+      expect(session.execute).toHaveBeenNthCalledWith(1, 'COMPOSIO_SEARCH_TOOLS', {
+        queries: [{ use_case: 'first' }],
+      });
+      expect(session.execute).toHaveBeenNthCalledWith(2, 'COMPOSIO_SEARCH_TOOLS', {
+        queries: [{ use_case: 'second' }],
+      });
+      expect(mockExecuteToolFn).not.toHaveBeenCalled();
+      expect(results).toEqual([
+        {
+          call_id: 'call-1',
+          type: 'function_call_output',
+          output: JSON.stringify({
+            data: { index: 1 },
+            error: null,
+            logId: 'log-1',
+            successful: true,
+          }),
+          status: 'completed',
+        },
+        {
+          call_id: 'call-2',
+          type: 'function_call_output',
+          output: 'session execution failed',
+          status: 'incomplete',
+        },
+      ]);
+    });
+
     it('should handle tool calls from OpenAI response', async () => {
       const userId = 'test-user';
       const toolCalls = [
