@@ -1,11 +1,11 @@
 # @composio/mastra
 
-## 0.10.4-beta.0
+## 0.10.4
 
 ### Patch Changes
 
-- Updated dependencies [fb1b530]
-  - @composio/core@1.0.0-beta.0
+- db7b576: Declare Node.js 22.22.3 as the minimum supported runtime for every published TypeScript package so package managers surface incompatible runtimes before users encounter ESM loading failures.
+- 3c3b4da: `MastraProvider({ strict: true })` now keeps optional parameters instead of dropping them: every property becomes required and optional ones accept `null`, matching the OpenAI providers, and a `null` argument the tool's own schema does not accept is dropped before execution. Tools whose schema strict mode cannot express keep their original schema with a warning.
 
 ## 0.10.3
 

@@ -12,6 +12,7 @@ import {
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
+import semver from 'semver';
 import {
   findIgnoredChangesetReleases,
   validateChangesets,
@@ -421,6 +422,31 @@ if (
     throw new Error(
       `Public TypeScript workspaces must declare engines.node as ${MIN_NODE_VERSION}:\n${details}`
     );
+  }
+}
+
+{
+  const providerPackages = readTypeScriptWorkspacePackages().filter(({ path }) =>
+    path.startsWith('ts/packages/providers/')
+  );
+
+  for (const { manifest, path } of providerPackages) {
+    const coreRange = manifest.peerDependencies?.['@composio/core'];
+    if (!coreRange) {
+      throw new Error(`${path} must declare @composio/core as a peer dependency`);
+    }
+    if (semver.prerelease(manifest.version)) {
+      throw new Error(`${path} must remain on its stable release train, got ${manifest.version}`);
+    }
+    if (!semver.satisfies('0.18.0', coreRange)) {
+      throw new Error(`${path} must accept the stable @composio/core 0.18 release`);
+    }
+    if (!semver.satisfies('1.0.0-beta.0', coreRange)) {
+      throw new Error(`${path} must accept @composio/core 1.0 betas`);
+    }
+    if (semver.satisfies('1.0.0', coreRange)) {
+      throw new Error(`${path} must require an upgrade before @composio/core 1.0.0`);
+    }
   }
 }
 
@@ -1038,6 +1064,132 @@ esac
     if (providerFixturePackage.peerDependencies['@composio/core'] !== '>=0.10.0 <1.0.0') {
       throw new Error(
         `fixture provider peer range should still accept core 0.11.0 without widening, got ${providerFixturePackage.peerDependencies['@composio/core']}`
+      );
+    }
+  } finally {
+    rmSync(fixtureDir, { recursive: true, force: true });
+  }
+}
+
+// Entering the core 1.0 beta must leave stable providers unversioned when their
+// peer range explicitly accepts the prerelease. Providers should use the beta
+// only when consumers install it at the workspace root.
+{
+  const fixtureDir = mkdtempSync(join(tmpdir(), 'composio-changeset-beta-peer-'));
+  try {
+    mkdirSync(join(fixtureDir, '.changeset'), { recursive: true });
+    mkdirSync(join(fixtureDir, 'packages/core'), { recursive: true });
+    mkdirSync(join(fixtureDir, 'packages/openai'), { recursive: true });
+
+    writeFileSync(
+      join(fixtureDir, 'package.json'),
+      JSON.stringify(
+        {
+          name: 'changeset-beta-peer-fixture',
+          private: true,
+          workspaces: ['packages/*'],
+        },
+        null,
+        2
+      )
+    );
+    writeFileSync(join(fixtureDir, 'pnpm-workspace.yaml'), "packages:\n  - 'packages/*'\n");
+    writeFileSync(
+      join(fixtureDir, '.changeset/config.json'),
+      JSON.stringify(
+        {
+          changelog: false,
+          commit: false,
+          fixed: [],
+          linked: [],
+          access: 'restricted',
+          baseBranch: 'next',
+          updateInternalDependencies: 'patch',
+          ___experimentalUnsafeOptions_WILL_CHANGE_IN_PATCH: {
+            onlyUpdatePeerDependentsWhenOutOfRange: true,
+          },
+          ignore: [],
+        },
+        null,
+        2
+      )
+    );
+    writeFileSync(
+      join(fixtureDir, '.changeset/pre.json'),
+      JSON.stringify(
+        {
+          mode: 'pre',
+          tag: 'beta',
+          initialVersions: {
+            '@composio/core': '0.18.0',
+            '@composio/openai': '0.12.1',
+          },
+          changesets: [],
+        },
+        null,
+        2
+      )
+    );
+    writeFileSync(
+      join(fixtureDir, '.changeset/core-beta.md'),
+      ['---', '"@composio/core": major', '---', '', 'Release the core 1.0 beta.', ''].join('\n')
+    );
+    writeFileSync(
+      join(fixtureDir, 'packages/core/package.json'),
+      JSON.stringify(
+        {
+          name: '@composio/core',
+          version: '0.18.0',
+        },
+        null,
+        2
+      )
+    );
+    writeFileSync(
+      join(fixtureDir, 'packages/openai/package.json'),
+      JSON.stringify(
+        {
+          name: '@composio/openai',
+          version: '0.12.1',
+          peerDependencies: {
+            '@composio/core': '>=0.10.0 <1.0.0 || >=1.0.0-beta.0 <1.0.0',
+          },
+          devDependencies: {
+            '@composio/core': 'workspace:*',
+          },
+        },
+        null,
+        2
+      )
+    );
+
+    const result = spawnSync(changesetBinPath, ['version'], {
+      cwd: fixtureDir,
+      encoding: 'utf8',
+      env: process.env,
+    });
+
+    if (result.status !== 0) {
+      throw new Error(
+        `changeset beta peer fixture failed\nstdout:\n${result.stdout}\nstderr:\n${result.stderr}`
+      );
+    }
+
+    const coreFixturePackage = JSON.parse(
+      readFileSync(join(fixtureDir, 'packages/core/package.json'), 'utf8')
+    );
+    const providerFixturePackage = JSON.parse(
+      readFileSync(join(fixtureDir, 'packages/openai/package.json'), 'utf8')
+    );
+
+    if (coreFixturePackage.version !== '1.0.0-beta.0') {
+      throw new Error(
+        `fixture core version should be 1.0.0-beta.0, got ${coreFixturePackage.version}`
+      );
+    }
+    if (providerFixturePackage.version !== '0.12.1') {
+      throw new Error(
+        `fixture provider should stay at 0.12.1, got ${providerFixturePackage.version}`
       );
     }
   } finally {

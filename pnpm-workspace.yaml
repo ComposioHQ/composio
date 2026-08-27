@@ -140,3 +140,12 @@ overrides:
   'brace-expansion@<=5.0.8': '>=5.0.9 <6'
   'vite@<=7.3.4': 7.3.5
   'esbuild@>=0.27.3 <0.28.1': 0.28.1
+
+auditConfig:
+  ignoreGhsas:
+    # extract-zip has no patched release, but every call goes through the
+    # symlink-rejecting wrappers covered by the CLI and local-tools tests.
+    - GHSA-jmr9-qjv8-65gv
+    # Mastra exact-pins affected provider-utils versions with no patched
+    # release; these paths only exist in examples and runtime-test workspaces.
+    - GHSA-866g-f22w-33x8
