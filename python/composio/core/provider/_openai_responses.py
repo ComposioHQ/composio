@@ -56,7 +56,9 @@ class OpenAIResponsesProvider(
 
     def wrap_tool(self, tool: Tool) -> ResponsesTool:
         """Wrap a tool for the Responses API format."""
-        parameters: t.Any = tool.input_parameters or {}
+        parameters: t.Any = (
+            tool.input_parameters if tool.input_parameters is not None else {}
+        )
         wrapped: ResponsesTool = {
             "type": "function",
             "name": tool.slug,
@@ -72,7 +74,11 @@ class OpenAIResponsesProvider(
         # strict rewrite keeps every parameter (optional ones become nullable)
         # and reports constructs it cannot express; such a tool is sent
         # without strict mode rather than with a narrower schema.
-        source = parameters if tool.input_parameters else dict(_EMPTY_OBJECT_SCHEMA)
+        source = (
+            parameters
+            if tool.input_parameters is not None
+            else dict(_EMPTY_OBJECT_SCHEMA)
+        )
         strict = to_strict_json_schema(source)
         if strict.unsupported:
             reasons = "; ".join(

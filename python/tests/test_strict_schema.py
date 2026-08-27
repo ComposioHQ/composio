@@ -596,6 +596,15 @@ class TestOpenAIResponsesProviderStrict:
             "additionalProperties": False,
         }
 
+    def test_wrap_tool_keeps_explicit_empty_schema_without_strict(self):
+        from composio.core.provider._openai_responses import OpenAIResponsesProvider
+
+        provider = OpenAIResponsesProvider(strict=True)
+        wrapped = provider.wrap_tool(self._tool({}))
+
+        assert wrapped["strict"] is False
+        assert wrapped["parameters"] == {}
+
     def test_execute_tool_call_omits_null_arguments_in_strict_mode(self):
         from openai.types.responses.response_output_item import ResponseFunctionToolCall
 
