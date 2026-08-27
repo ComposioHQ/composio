@@ -63,7 +63,7 @@ for (const item of response.output) {
 
 The package exports one provider per API surface:
 
-- `OpenAIResponsesProvider` targets the Responses API. `handleToolCalls(session, response.output)` returns `function_call_output` items keyed by `call_id`; pair it with `previous_response_id` so you only resend new outputs each turn. Pass a user ID instead of a session for tools fetched with `tools.get()`. The constructor accepts `{ strict?: boolean }` to enforce strict function schemas (default `false`).
+- `OpenAIResponsesProvider` targets the Responses API. `handleToolCalls(session, response.output)` returns `function_call_output` items keyed by `call_id`; pair it with `previous_response_id` so you only resend new outputs each turn. Pass a user ID instead of a session for tools fetched with `tools.get()`. Pass `{ strict: true }` to normalize tool input schemas for OpenAI structured outputs: every object is closed and lists all properties in `required`, optional properties stay available by accepting `null`, and a model-supplied `null` is removed before execution only when the tool's own schema does not accept `null`. Schemas strict mode cannot express, such as free-form objects, `allOf`, `prefixItems`, or unresolved `$ref`s, are sent with `strict: false` and log a warning.
 - `OpenAIProvider` targets the Chat Completions API and is the Composio SDK default, so `new Composio()` with no provider uses it. `handleToolCalls(session, chatCompletion)` returns ready-to-append `tool` messages; you keep the full message list yourself.
 
 Use the Responses provider for new agentic flows; reach for Chat Completions when extending an existing Chat Completions codebase. See the [docs page](https://docs.composio.dev/docs/providers/openai) for the Chat Completions loop.

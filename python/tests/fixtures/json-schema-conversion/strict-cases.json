@@ -1,0 +1,2947 @@
+{
+  "cases": [
+    {
+      "id": "flat-all-required-unchanged",
+      "description": "An already-strict schema is returned unchanged with no changes.",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string"
+          }
+        },
+        "required": ["query"],
+        "additionalProperties": false
+      },
+      "strict": {
+        "schema": {
+          "type": "object",
+          "properties": {
+            "query": {
+              "type": "string"
+            }
+          },
+          "required": ["query"],
+          "additionalProperties": false
+        }
+      }
+    },
+    {
+      "id": "nested-optional-property-widened",
+      "description": "Optional properties stay, become required and accept null at every depth.",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "cfg": {
+            "type": "object",
+            "properties": {
+              "url": {
+                "type": "string"
+              },
+              "note": {
+                "type": "string",
+                "description": "optional note"
+              }
+            },
+            "required": ["url"]
+          }
+        },
+        "required": ["cfg"]
+      },
+      "strict": {
+        "schema": {
+          "type": "object",
+          "properties": {
+            "cfg": {
+              "type": "object",
+              "properties": {
+                "url": {
+                  "type": "string"
+                },
+                "note": {
+                  "type": ["string", "null"],
+                  "description": "optional note"
+                }
+              },
+              "required": ["url", "note"],
+              "additionalProperties": false
+            }
+          },
+          "required": ["cfg"],
+          "additionalProperties": false
+        }
+      },
+      "changes": [
+        {
+          "path": "properties.cfg.properties.note",
+          "reason": "optional-property-nullable"
+        }
+      ],
+      "arguments": [
+        {
+          "input": {
+            "cfg": {
+              "url": "u",
+              "note": null
+            }
+          },
+          "output": {
+            "cfg": {
+              "url": "u"
+            }
+          }
+        },
+        {
+          "input": {
+            "cfg": null
+          },
+          "output": {}
+        },
+        {
+          "input": {
+            "cfg": {
+              "url": "u",
+              "extra": null
+            }
+          },
+          "output": {
+            "cfg": {
+              "url": "u",
+              "extra": null
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "no-required-array-widens-every-property",
+      "description": "An object without `required` requires and widens every property.",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "a": {
+            "type": "string"
+          },
+          "b": {
+            "type": "number"
+          }
+        }
+      },
+      "strict": {
+        "schema": {
+          "type": "object",
+          "properties": {
+            "a": {
+              "type": ["string", "null"]
+            },
+            "b": {
+              "type": ["number", "null"]
+            }
+          },
+          "required": ["a", "b"],
+          "additionalProperties": false
+        }
+      },
+      "changes": [
+        {
+          "path": "properties.a",
+          "reason": "optional-property-nullable"
+        },
+        {
+          "path": "properties.b",
+          "reason": "optional-property-nullable"
+        }
+      ],
+      "arguments": [
+        {
+          "input": {
+            "a": null,
+            "b": 1,
+            "unknown": null
+          },
+          "output": {
+            "b": 1,
+            "unknown": null
+          }
+        }
+      ]
+    },
+    {
+      "id": "required-empty-array-widens-every-property",
+      "description": "An empty `required` array is the same as an absent one.",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "a": {
+            "type": "string"
+          }
+        },
+        "required": []
+      },
+      "strict": {
+        "schema": {
+          "type": "object",
+          "properties": {
+            "a": {
+              "type": ["string", "null"]
+            }
+          },
+          "required": ["a"],
+          "additionalProperties": false
+        }
+      },
+      "changes": [
+        {
+          "path": "properties.a",
+          "reason": "optional-property-nullable"
+        }
+      ]
+    },
+    {
+      "id": "nullable-type-array-kept",
+      "description": "A `type` array with null is accepted by the API and left alone.",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": ["string", "null"],
+            "description": "identifier"
+          }
+        },
+        "required": ["id"]
+      },
+      "strict": {
+        "schema": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": ["string", "null"],
+              "description": "identifier"
+            }
+          },
+          "required": ["id"],
+          "additionalProperties": false
+        }
+      },
+      "arguments": [
+        {
+          "input": {
+            "id": null
+          },
+          "output": {
+            "id": null
+          }
+        }
+      ]
+    },
+    {
+      "id": "nullable-object-stays-nullable",
+      "description": "A nullable object keeps its type array; only its own properties are closed.",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "cfg": {
+            "type": ["object", "null"],
+            "properties": {
+              "a": {
+                "type": "string"
+              }
+            },
+            "required": ["a"]
+          }
+        },
+        "required": ["cfg"]
+      },
+      "strict": {
+        "schema": {
+          "type": "object",
+          "properties": {
+            "cfg": {
+              "type": ["object", "null"],
+              "properties": {
+                "a": {
+                  "type": "string"
+                }
+              },
+              "required": ["a"],
+              "additionalProperties": false
+            }
+          },
+          "required": ["cfg"],
+          "additionalProperties": false
+        }
+      },
+      "arguments": [
+        {
+          "input": {
+            "cfg": null
+          },
+          "output": {
+            "cfg": null
+          }
+        },
+        {
+          "input": {
+            "cfg": {
+              "a": "x"
+            }
+          },
+          "output": {
+            "cfg": {
+              "a": "x"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "nullable-array-kept",
+      "description": "A nullable array keeps its type array and items.",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "xs": {
+            "type": ["array", "null"],
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": ["xs"]
+      },
+      "strict": {
+        "schema": {
+          "type": "object",
+          "properties": {
+            "xs": {
+              "type": ["array", "null"],
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          "required": ["xs"],
+          "additionalProperties": false
+        }
+      },
+      "arguments": [
+        {
+          "input": {
+            "xs": null
+          },
+          "output": {
+            "xs": null
+          }
+        },
+        {
+          "input": {
+            "xs": [null]
+          },
+          "output": {
+            "xs": [null]
+          }
+        }
+      ]
+    },
+    {
+      "id": "optional-any-of-gets-null-branch",
+      "description": "An optional composition gains a null branch instead of a sibling type.",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "value": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "number"
+              }
+            ]
+          }
+        }
+      },
+      "strict": {
+        "schema": {
+          "type": "object",
+          "properties": {
+            "value": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "required": ["value"],
+          "additionalProperties": false
+        }
+      },
+      "changes": [
+        {
+          "path": "properties.value",
+          "reason": "optional-property-nullable"
+        }
+      ]
+    },
+    {
+      "id": "any-of-already-nullable-unchanged",
+      "description": "A composition that already accepts null is not widened twice.",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "value": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      },
+      "strict": {
+        "schema": {
+          "type": "object",
+          "properties": {
+            "value": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "required": ["value"],
+          "additionalProperties": false
+        }
+      },
+      "changes": [
+        {
+          "path": "properties.value",
+          "reason": "optional-property-nullable"
+        }
+      ],
+      "arguments": [
+        {
+          "input": {
+            "value": null
+          },
+          "output": {
+            "value": null
+          }
+        }
+      ]
+    },
+    {
+      "id": "optional-enum-only-wrapped",
+      "description": "An enum-only property is wrapped so the annotation stays outside the anyOf.",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "choice": {
+            "enum": ["a", "b"],
+            "description": "pick one",
+            "title": "Choice"
+          }
+        }
+      },
+      "strict": {
+        "schema": {
+          "type": "object",
+          "properties": {
+            "choice": {
+              "description": "pick one",
+              "title": "Choice",
+              "anyOf": [
+                {
+                  "enum": ["a", "b"]
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "required": ["choice"],
+          "additionalProperties": false
+        }
+      },
+      "changes": [
+        {
+          "path": "properties.choice",
+          "reason": "optional-property-nullable"
+        }
+      ],
+      "arguments": [
+        {
+          "input": {
+            "choice": null
+          },
+          "output": {}
+        }
+      ]
+    },
+    {
+      "id": "optional-const-wrapped",
+      "description": "A const-only property is wrapped in an anyOf with a null branch.",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "const": "fixed"
+          }
+        }
+      },
+      "strict": {
+        "schema": {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "anyOf": [
+                {
+                  "const": "fixed"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "required": ["kind"],
+          "additionalProperties": false
+        }
+      },
+      "changes": [
+        {
+          "path": "properties.kind",
+          "reason": "optional-property-nullable"
+        }
+      ]
+    },
+    {
+      "id": "optional-empty-schema-unchanged",
+      "description": "An empty schema already accepts null and is left alone.",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "anything": {}
+        }
+      },
+      "strict": {
+        "schema": {
+          "type": "object",
+          "properties": {
+            "anything": {}
+          },
+          "required": ["anything"],
+          "additionalProperties": false
+        }
+      },
+      "changes": [
+        {
+          "path": "properties.anything",
+          "reason": "optional-property-nullable"
+        }
+      ]
+    },
+    {
+      "id": "multi-type-array-gains-null",
+      "description": "A multi-type array gains null instead of being converted to anyOf.",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": ["string", "number"]
+          }
+        }
+      },
+      "strict": {
+        "schema": {
+          "type": "object",
+          "properties": {
+            "value": {
+              "type": ["string", "number", "null"]
+            }
+          },
+          "required": ["value"],
+          "additionalProperties": false
+        }
+      },
+      "changes": [
+        {
+          "path": "properties.value",
+          "reason": "optional-property-nullable"
+        }
+      ]
+    },
+    {
+      "id": "one-of-converted-to-any-of",
+      "description": "oneOf is unsupported and becomes anyOf.",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "either": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "number"
+              }
+            ]
+          }
+        },
+        "required": ["either"]
+      },
+      "strict": {
+        "schema": {
+          "type": "object",
+          "properties": {
+            "either": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "number"
+                }
+              ]
+            }
+          },
+          "required": ["either"],
+          "additionalProperties": false
+        }
+      },
+      "changes": [
+        {
+          "path": "properties.either",
+          "reason": "one-of-converted"
+        }
+      ]
+    },
+    {
+      "id": "array-items-object-normalized",
+      "description": "Objects inside array items are closed and widened.",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "rows": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "tag": {
+                  "type": "string"
+                }
+              },
+              "required": ["id"]
+            }
+          }
+        },
+        "required": ["rows"]
+      },
+      "strict": {
+        "schema": {
+          "type": "object",
+          "properties": {
+            "rows": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string"
+                  },
+                  "tag": {
+                    "type": ["string", "null"]
+                  }
+                },
+                "required": ["id", "tag"],
+                "additionalProperties": false
+              }
+            }
+          },
+          "required": ["rows"],
+          "additionalProperties": false
+        }
+      },
+      "changes": [
+        {
+          "path": "properties.rows.items.properties.tag",
+          "reason": "optional-property-nullable"
+        }
+      ],
+      "arguments": [
+        {
+          "input": {
+            "rows": [
+              {
+                "id": "1",
+                "tag": null
+              },
+              null
+            ]
+          },
+          "output": {
+            "rows": [
+              {
+                "id": "1"
+              },
+              null
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "default-and-examples-stripped",
+      "description": "Annotation keywords the API rejects are stripped and reported.",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "examples": ["a"],
+            "default": "x"
+          }
+        },
+        "required": ["name"]
+      },
+      "strict": {
+        "schema": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string"
+            }
+          },
+          "required": ["name"],
+          "additionalProperties": false
+        }
+      },
+      "changes": [
+        {
+          "path": "properties.name",
+          "reason": "unsupported-keyword-stripped"
+        },
+        {
+          "path": "properties.name",
+          "reason": "unsupported-keyword-stripped"
+        }
+      ]
+    },
+    {
+      "id": "enum-values-are-data-not-keywords",
+      "description": "Keys inside enum/const values are data and must not be treated as keywords.",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "opts": {
+            "enum": [
+              {
+                "default": 1,
+                "properties": {}
+              },
+              null
+            ]
+          }
+        },
+        "required": ["opts"]
+      },
+      "strict": {
+        "schema": {
+          "type": "object",
+          "properties": {
+            "opts": {
+              "enum": [
+                {
+                  "default": 1,
+                  "properties": {}
+                },
+                null
+              ]
+            }
+          },
+          "required": ["opts"],
+          "additionalProperties": false
+        }
+      },
+      "arguments": [
+        {
+          "input": {
+            "opts": null
+          },
+          "output": {
+            "opts": null
+          }
+        }
+      ]
+    },
+    {
+      "id": "property-names-are-not-keywords",
+      "description": "Properties named like keywords are ordinary properties.",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "default": {
+            "type": "string"
+          },
+          "$ref": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          },
+          "properties": {
+            "type": "object",
+            "properties": {
+              "x": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      },
+      "strict": {
+        "schema": {
+          "type": "object",
+          "properties": {
+            "default": {
+              "type": ["string", "null"]
+            },
+            "$ref": {
+              "type": ["string", "null"]
+            },
+            "type": {
+              "type": ["string", "null"]
+            },
+            "properties": {
+              "type": ["object", "null"],
+              "properties": {
+                "x": {
+                  "type": ["string", "null"]
+                }
+              },
+              "required": ["x"],
+              "additionalProperties": false
+            }
+          },
+          "required": ["default", "$ref", "type", "properties"],
+          "additionalProperties": false
+        }
+      },
+      "changes": [
+        {
+          "path": "properties.properties.properties.x",
+          "reason": "optional-property-nullable"
+        },
+        {
+          "path": "properties.default",
+          "reason": "optional-property-nullable"
+        },
+        {
+          "path": "properties.$ref",
+          "reason": "optional-property-nullable"
+        },
+        {
+          "path": "properties.type",
+          "reason": "optional-property-nullable"
+        },
+        {
+          "path": "properties.properties",
+          "reason": "optional-property-nullable"
+        }
+      ],
+      "arguments": [
+        {
+          "input": {
+            "default": null,
+            "$ref": "x",
+            "type": null,
+            "properties": {
+              "x": null
+            }
+          },
+          "output": {
+            "$ref": "x",
+            "properties": {}
+          }
+        }
+      ]
+    },
+    {
+      "id": "prototype-key-property-name",
+      "description": "A property named __proto__ or constructor is handled as a plain name.",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "__proto__": {
+            "type": "string"
+          },
+          "constructor": {
+            "type": "number"
+          }
+        }
+      },
+      "strict": {
+        "schema": {
+          "type": "object",
+          "properties": {
+            "__proto__": {
+              "type": ["string", "null"]
+            },
+            "constructor": {
+              "type": ["number", "null"]
+            }
+          },
+          "required": ["__proto__", "constructor"],
+          "additionalProperties": false
+        }
+      },
+      "changes": [
+        {
+          "path": "properties.__proto__",
+          "reason": "optional-property-nullable"
+        },
+        {
+          "path": "properties.constructor",
+          "reason": "optional-property-nullable"
+        }
+      ]
+    },
+    {
+      "id": "schema-valued-additional-properties-unsupported",
+      "description": "A map-style object cannot be expressed and is reported, not closed.",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "headers": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            }
+          }
+        },
+        "required": ["headers"]
+      },
+      "strict": {
+        "unsupported": [
+          {
+            "path": "properties.headers",
+            "keyword": "additionalProperties"
+          }
+        ]
+      }
+    },
+    {
+      "id": "additional-properties-true-unsupported",
+      "description": "An explicitly open object is reported.",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "open": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        },
+        "required": ["open"]
+      },
+      "strict": {
+        "unsupported": [
+          {
+            "path": "properties.open",
+            "keyword": "additionalProperties"
+          }
+        ]
+      }
+    },
+    {
+      "id": "additional-properties-empty-schema-unsupported",
+      "description": "An empty-schema additionalProperties accepts anything and is reported.",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "open": {
+            "type": "object",
+            "additionalProperties": {}
+          }
+        },
+        "required": ["open"]
+      },
+      "strict": {
+        "unsupported": [
+          {
+            "path": "properties.open",
+            "keyword": "additionalProperties"
+          }
+        ]
+      }
+    },
+    {
+      "id": "free-form-object-unsupported",
+      "description": "A property-less object accepts arbitrary keys and is reported.",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "meta": {
+            "type": "object",
+            "description": "any json"
+          }
+        },
+        "required": ["meta"]
+      },
+      "strict": {
+        "unsupported": [
+          {
+            "path": "properties.meta",
+            "keyword": "properties"
+          }
+        ]
+      }
+    },
+    {
+      "id": "pattern-properties-unsupported",
+      "description": "patternProperties cannot be expressed and is reported.",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "tagged": {
+            "type": "object",
+            "patternProperties": {
+              "^x-": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "required": ["tagged"]
+      },
+      "strict": {
+        "unsupported": [
+          {
+            "path": "properties.tagged",
+            "keyword": "patternProperties"
+          }
+        ]
+      }
+    },
+    {
+      "id": "empty-closed-object-representable",
+      "description": "An object closed with no properties is representable.",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "empty": {
+            "type": "object",
+            "additionalProperties": false
+          }
+        },
+        "required": ["empty"]
+      },
+      "strict": {
+        "schema": {
+          "type": "object",
+          "properties": {
+            "empty": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {},
+              "required": []
+            }
+          },
+          "required": ["empty"],
+          "additionalProperties": false
+        }
+      }
+    },
+    {
+      "id": "all-of-unsupported",
+      "description": "allOf has no lossless rewrite and is reported.",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "all": {
+            "allOf": [
+              {
+                "type": "string"
+              }
+            ]
+          }
+        },
+        "required": ["all"]
+      },
+      "strict": {
+        "unsupported": [
+          {
+            "path": "properties.all",
+            "keyword": "allOf"
+          }
+        ]
+      }
+    },
+    {
+      "id": "prefix-items-unsupported",
+      "description": "prefixItems has no lossless rewrite and is reported.",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "pair": {
+            "type": "array",
+            "prefixItems": [
+              {
+                "type": "number"
+              }
+            ]
+          }
+        },
+        "required": ["pair"]
+      },
+      "strict": {
+        "unsupported": [
+          {
+            "path": "properties.pair",
+            "keyword": "prefixItems"
+          }
+        ]
+      }
+    },
+    {
+      "id": "defs-ref-kept-and-definition-normalized",
+      "description": "Local $refs are kept and the definition is normalized where it is declared.",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "cfg": {
+            "$ref": "#/$defs/Config"
+          }
+        },
+        "required": ["cfg"],
+        "$defs": {
+          "Config": {
+            "type": "object",
+            "properties": {
+              "url": {
+                "type": "string"
+              },
+              "note": {
+                "type": "string"
+              }
+            },
+            "required": ["url"]
+          }
+        }
+      },
+      "strict": {
+        "schema": {
+          "type": "object",
+          "properties": {
+            "cfg": {
+              "$ref": "#/$defs/Config"
+            }
+          },
+          "required": ["cfg"],
+          "$defs": {
+            "Config": {
+              "type": "object",
+              "properties": {
+                "url": {
+                  "type": "string"
+                },
+                "note": {
+                  "type": ["string", "null"]
+                }
+              },
+              "required": ["url", "note"],
+              "additionalProperties": false
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "changes": [
+        {
+          "path": "$defs.Config.properties.note",
+          "reason": "optional-property-nullable"
+        }
+      ],
+      "arguments": [
+        {
+          "input": {
+            "cfg": {
+              "url": "u",
+              "note": null
+            }
+          },
+          "output": {
+            "cfg": {
+              "url": "u"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "optional-ref-widened-with-null-branch",
+      "description": "An optional $ref property is widened with an anyOf null branch.",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "cfg": {
+            "$ref": "#/$defs/Config",
+            "description": "optional"
+          }
+        },
+        "$defs": {
+          "Config": {
+            "type": "object",
+            "properties": {
+              "url": {
+                "type": "string"
+              }
+            },
+            "required": ["url"]
+          }
+        }
+      },
+      "strict": {
+        "schema": {
+          "type": "object",
+          "properties": {
+            "cfg": {
+              "description": "optional",
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/Config"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "$defs": {
+            "Config": {
+              "type": "object",
+              "properties": {
+                "url": {
+                  "type": "string"
+                }
+              },
+              "required": ["url"],
+              "additionalProperties": false
+            }
+          },
+          "required": ["cfg"],
+          "additionalProperties": false
+        }
+      },
+      "changes": [
+        {
+          "path": "properties.cfg",
+          "reason": "optional-property-nullable"
+        }
+      ],
+      "arguments": [
+        {
+          "input": {
+            "cfg": null
+          },
+          "output": {}
+        }
+      ]
+    },
+    {
+      "id": "recursive-defs-kept",
+      "description": "Self-recursive definitions are representable.",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "node": {
+            "$ref": "#/$defs/Node"
+          }
+        },
+        "required": ["node"],
+        "$defs": {
+          "Node": {
+            "type": "object",
+            "properties": {
+              "child": {
+                "$ref": "#/$defs/Node"
+              },
+              "label": {
+                "type": "string"
+              }
+            },
+            "required": ["label"]
+          }
+        }
+      },
+      "strict": {
+        "schema": {
+          "type": "object",
+          "properties": {
+            "node": {
+              "$ref": "#/$defs/Node"
+            }
+          },
+          "required": ["node"],
+          "$defs": {
+            "Node": {
+              "type": "object",
+              "properties": {
+                "child": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/$defs/Node"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "label": {
+                  "type": "string"
+                }
+              },
+              "required": ["child", "label"],
+              "additionalProperties": false
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "changes": [
+        {
+          "path": "$defs.Node.properties.child",
+          "reason": "optional-property-nullable"
+        }
+      ],
+      "arguments": [
+        {
+          "input": {
+            "node": {
+              "label": "a",
+              "child": {
+                "label": "b",
+                "child": null
+              }
+            }
+          },
+          "output": {
+            "node": {
+              "label": "a",
+              "child": {
+                "label": "b"
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "mutually-recursive-defs-kept",
+      "description": "Mutually recursive definitions are representable.",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "a": {
+            "$ref": "#/$defs/A"
+          }
+        },
+        "required": ["a"],
+        "$defs": {
+          "A": {
+            "type": "object",
+            "properties": {
+              "b": {
+                "$ref": "#/$defs/B"
+              }
+            }
+          },
+          "B": {
+            "type": "object",
+            "properties": {
+              "a": {
+                "$ref": "#/$defs/A"
+              }
+            }
+          }
+        }
+      },
+      "strict": {
+        "schema": {
+          "type": "object",
+          "properties": {
+            "a": {
+              "$ref": "#/$defs/A"
+            }
+          },
+          "required": ["a"],
+          "$defs": {
+            "A": {
+              "type": "object",
+              "properties": {
+                "b": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/$defs/B"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              },
+              "required": ["b"],
+              "additionalProperties": false
+            },
+            "B": {
+              "type": "object",
+              "properties": {
+                "a": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/$defs/A"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              },
+              "required": ["a"],
+              "additionalProperties": false
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "changes": [
+        {
+          "path": "$defs.A.properties.b",
+          "reason": "optional-property-nullable"
+        },
+        {
+          "path": "$defs.B.properties.a",
+          "reason": "optional-property-nullable"
+        }
+      ]
+    },
+    {
+      "id": "legacy-definitions-ref-kept",
+      "description": "Legacy definitions are supported like $defs.",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "cfg": {
+            "$ref": "#/definitions/Config"
+          }
+        },
+        "required": ["cfg"],
+        "definitions": {
+          "Config": {
+            "type": "object",
+            "properties": {
+              "url": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      },
+      "strict": {
+        "schema": {
+          "type": "object",
+          "properties": {
+            "cfg": {
+              "$ref": "#/definitions/Config"
+            }
+          },
+          "required": ["cfg"],
+          "definitions": {
+            "Config": {
+              "type": "object",
+              "properties": {
+                "url": {
+                  "type": ["string", "null"]
+                }
+              },
+              "required": ["url"],
+              "additionalProperties": false
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "changes": [
+        {
+          "path": "definitions.Config.properties.url",
+          "reason": "optional-property-nullable"
+        }
+      ]
+    },
+    {
+      "id": "ref-into-properties-kept",
+      "description": "A local $ref outside $defs resolves and is kept.",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "a": {
+            "type": "object",
+            "properties": {
+              "x": {
+                "type": "string"
+              }
+            },
+            "required": ["x"]
+          },
+          "b": {
+            "$ref": "#/properties/a"
+          }
+        },
+        "required": ["a", "b"]
+      },
+      "strict": {
+        "schema": {
+          "type": "object",
+          "properties": {
+            "a": {
+              "type": "object",
+              "properties": {
+                "x": {
+                  "type": "string"
+                }
+              },
+              "required": ["x"],
+              "additionalProperties": false
+            },
+            "b": {
+              "$ref": "#/properties/a"
+            }
+          },
+          "required": ["a", "b"],
+          "additionalProperties": false
+        }
+      }
+    },
+    {
+      "id": "dangling-ref-unsupported",
+      "description": "A $ref without a target is reported at its own path.",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "cfg": {
+            "$ref": "#/$defs/Nope"
+          }
+        },
+        "required": ["cfg"]
+      },
+      "strict": {
+        "unsupported": [
+          {
+            "path": "properties.cfg",
+            "keyword": "$ref"
+          }
+        ]
+      }
+    },
+    {
+      "id": "external-ref-unsupported",
+      "description": "A $ref outside the document is reported.",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "cfg": {
+            "$ref": "https://example.com/schema.json"
+          }
+        },
+        "required": ["cfg"]
+      },
+      "strict": {
+        "unsupported": [
+          {
+            "path": "properties.cfg",
+            "keyword": "$ref"
+          }
+        ]
+      }
+    },
+    {
+      "id": "duplicate-required-deduped",
+      "description": "Duplicate required entries are removed.",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "a": {
+            "type": "string"
+          }
+        },
+        "required": ["a", "a"]
+      },
+      "strict": {
+        "schema": {
+          "type": "object",
+          "properties": {
+            "a": {
+              "type": "string"
+            }
+          },
+          "required": ["a"],
+          "additionalProperties": false
+        }
+      }
+    },
+    {
+      "id": "required-unknown-names-dropped",
+      "description": "Required names without a property are dropped from required.",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "a": {
+            "type": "string"
+          }
+        },
+        "required": ["a", "ghost"]
+      },
+      "strict": {
+        "schema": {
+          "type": "object",
+          "properties": {
+            "a": {
+              "type": "string"
+            }
+          },
+          "required": ["a"],
+          "additionalProperties": false
+        }
+      }
+    },
+    {
+      "id": "required-not-an-array-ignored",
+      "description": "A malformed required is treated as absent.",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "a": {
+            "type": "string"
+          }
+        },
+        "required": "a"
+      },
+      "strict": {
+        "schema": {
+          "type": "object",
+          "properties": {
+            "a": {
+              "type": ["string", "null"]
+            }
+          },
+          "required": ["a"],
+          "additionalProperties": false
+        }
+      },
+      "changes": [
+        {
+          "path": "properties.a",
+          "reason": "optional-property-nullable"
+        }
+      ]
+    },
+    {
+      "id": "description-kept-on-widened-node",
+      "description": "Annotations survive widening.",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "a": {
+            "type": "integer",
+            "description": "count",
+            "title": "Count",
+            "minimum": 0
+          }
+        }
+      },
+      "strict": {
+        "schema": {
+          "type": "object",
+          "properties": {
+            "a": {
+              "type": ["integer", "null"],
+              "description": "count",
+              "title": "Count",
+              "minimum": 0
+            }
+          },
+          "required": ["a"],
+          "additionalProperties": false
+        }
+      },
+      "changes": [
+        {
+          "path": "properties.a",
+          "reason": "optional-property-nullable"
+        }
+      ]
+    },
+    {
+      "id": "non-object-root-unsupported",
+      "description": "The root must be an object.",
+      "schema": {
+        "type": "string"
+      },
+      "strict": {
+        "unsupported": [
+          {
+            "path": "",
+            "keyword": "type"
+          }
+        ]
+      }
+    },
+    {
+      "id": "nullable-root-unsupported",
+      "description": "The root must not be nullable.",
+      "schema": {
+        "type": ["object", "null"],
+        "properties": {
+          "a": {
+            "type": "string"
+          }
+        }
+      },
+      "strict": {
+        "unsupported": [
+          {
+            "path": "",
+            "keyword": "type"
+          }
+        ]
+      },
+      "changes": [
+        {
+          "path": "properties.a",
+          "reason": "optional-property-nullable"
+        }
+      ]
+    },
+    {
+      "id": "properties-without-type-become-object",
+      "description": "A node with properties but no type is treated as an object.",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "cfg": {
+            "properties": {
+              "a": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "required": ["cfg"]
+      },
+      "strict": {
+        "schema": {
+          "type": "object",
+          "properties": {
+            "cfg": {
+              "properties": {
+                "a": {
+                  "type": ["string", "null"]
+                }
+              },
+              "type": "object",
+              "required": ["a"],
+              "additionalProperties": false
+            }
+          },
+          "required": ["cfg"],
+          "additionalProperties": false
+        }
+      },
+      "changes": [
+        {
+          "path": "properties.cfg.properties.a",
+          "reason": "optional-property-nullable"
+        }
+      ]
+    },
+    {
+      "id": "root-without-type-become-object",
+      "description": "A root with properties but no type is treated as an object.",
+      "schema": {
+        "properties": {
+          "a": {
+            "type": "string"
+          }
+        }
+      },
+      "strict": {
+        "schema": {
+          "properties": {
+            "a": {
+              "type": ["string", "null"]
+            }
+          },
+          "type": "object",
+          "required": ["a"],
+          "additionalProperties": false
+        }
+      },
+      "changes": [
+        {
+          "path": "properties.a",
+          "reason": "optional-property-nullable"
+        }
+      ]
+    },
+    {
+      "id": "root-single-element-type-array-accepted",
+      "description": "A root typed [\"object\"] is an object root.",
+      "schema": {
+        "type": ["object"],
+        "properties": {
+          "a": {
+            "type": "string"
+          }
+        },
+        "required": ["a"]
+      },
+      "strict": {
+        "schema": {
+          "type": ["object"],
+          "properties": {
+            "a": {
+              "type": "string"
+            }
+          },
+          "required": ["a"],
+          "additionalProperties": false
+        }
+      }
+    },
+    {
+      "id": "three-member-type-array-gains-null",
+      "description": "A three-member type array gains null once.",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "v": {
+            "type": ["string", "number", "boolean"]
+          }
+        }
+      },
+      "strict": {
+        "schema": {
+          "type": "object",
+          "properties": {
+            "v": {
+              "type": ["string", "number", "boolean", "null"]
+            }
+          },
+          "required": ["v"],
+          "additionalProperties": false
+        }
+      },
+      "changes": [
+        {
+          "path": "properties.v",
+          "reason": "optional-property-nullable"
+        }
+      ]
+    },
+    {
+      "id": "optional-null-only-property-unchanged",
+      "description": "A property typed null already accepts null.",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "nothing": {
+            "type": "null"
+          }
+        }
+      },
+      "strict": {
+        "schema": {
+          "type": "object",
+          "properties": {
+            "nothing": {
+              "type": "null"
+            }
+          },
+          "required": ["nothing"],
+          "additionalProperties": false
+        }
+      },
+      "changes": [
+        {
+          "path": "properties.nothing",
+          "reason": "optional-property-nullable"
+        }
+      ],
+      "arguments": [
+        {
+          "input": {
+            "nothing": null
+          },
+          "output": {
+            "nothing": null
+          }
+        }
+      ]
+    },
+    {
+      "id": "optional-enum-with-null-not-rewrapped",
+      "description": "An enum that already lists null is not wrapped again.",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "choice": {
+            "enum": ["a", null]
+          }
+        }
+      },
+      "strict": {
+        "schema": {
+          "type": "object",
+          "properties": {
+            "choice": {
+              "enum": ["a", null]
+            }
+          },
+          "required": ["choice"],
+          "additionalProperties": false
+        }
+      },
+      "changes": [
+        {
+          "path": "properties.choice",
+          "reason": "optional-property-nullable"
+        }
+      ],
+      "arguments": [
+        {
+          "input": {
+            "choice": null
+          },
+          "output": {
+            "choice": null
+          }
+        }
+      ]
+    },
+    {
+      "id": "optional-const-null-not-rewrapped",
+      "description": "A const null already accepts null.",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "nothing": {
+            "const": null
+          }
+        }
+      },
+      "strict": {
+        "schema": {
+          "type": "object",
+          "properties": {
+            "nothing": {
+              "const": null
+            }
+          },
+          "required": ["nothing"],
+          "additionalProperties": false
+        }
+      },
+      "changes": [
+        {
+          "path": "properties.nothing",
+          "reason": "optional-property-nullable"
+        }
+      ],
+      "arguments": [
+        {
+          "input": {
+            "nothing": null
+          },
+          "output": {
+            "nothing": null
+          }
+        }
+      ]
+    },
+    {
+      "id": "nested-any-of-branch-widened",
+      "description": "Optional properties inside anyOf branches are widened.",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "v": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "a": {
+                    "type": "string"
+                  }
+                }
+              },
+              {
+                "type": "string"
+              }
+            ]
+          }
+        },
+        "required": ["v"]
+      },
+      "strict": {
+        "schema": {
+          "type": "object",
+          "properties": {
+            "v": {
+              "anyOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "a": {
+                      "type": ["string", "null"]
+                    }
+                  },
+                  "required": ["a"],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "required": ["v"],
+          "additionalProperties": false
+        }
+      },
+      "changes": [
+        {
+          "path": "properties.v.anyOf[0].properties.a",
+          "reason": "optional-property-nullable"
+        }
+      ],
+      "arguments": [
+        {
+          "input": {
+            "v": {
+              "a": null
+            }
+          },
+          "output": {
+            "v": {}
+          }
+        },
+        {
+          "input": {
+            "v": null
+          },
+          "output": {}
+        }
+      ]
+    },
+    {
+      "id": "array-of-nullable-objects-closed",
+      "description": "Nullable objects inside array items are closed and stay nullable.",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "rows": {
+            "type": "array",
+            "items": {
+              "type": ["object", "null"],
+              "properties": {
+                "id": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "required": ["rows"]
+      },
+      "strict": {
+        "schema": {
+          "type": "object",
+          "properties": {
+            "rows": {
+              "type": "array",
+              "items": {
+                "type": ["object", "null"],
+                "properties": {
+                  "id": {
+                    "type": ["string", "null"]
+                  }
+                },
+                "required": ["id"],
+                "additionalProperties": false
+              }
+            }
+          },
+          "required": ["rows"],
+          "additionalProperties": false
+        }
+      },
+      "changes": [
+        {
+          "path": "properties.rows.items.properties.id",
+          "reason": "optional-property-nullable"
+        }
+      ],
+      "arguments": [
+        {
+          "input": {
+            "rows": [
+              null,
+              {
+                "id": null
+              }
+            ]
+          },
+          "output": {
+            "rows": [null, {}]
+          }
+        }
+      ]
+    },
+    {
+      "id": "tuple-form-items-unsupported",
+      "description": "Draft-4 tuple items have no strict-mode equivalent.",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "pair": {
+            "type": "array",
+            "items": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          }
+        },
+        "required": ["pair"]
+      },
+      "strict": {
+        "unsupported": [
+          {
+            "path": "properties.pair",
+            "keyword": "items"
+          }
+        ]
+      }
+    },
+    {
+      "id": "boolean-items-unsupported",
+      "description": "A boolean items subschema is reported.",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "xs": {
+            "type": "array",
+            "items": true
+          }
+        },
+        "required": ["xs"]
+      },
+      "strict": {
+        "unsupported": [
+          {
+            "path": "properties.xs",
+            "keyword": "items"
+          }
+        ]
+      }
+    },
+    {
+      "id": "not-keyword-unsupported",
+      "description": "not has no strict-mode equivalent.",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "v": {
+            "not": {
+              "type": "string"
+            }
+          }
+        },
+        "required": ["v"]
+      },
+      "strict": {
+        "unsupported": [
+          {
+            "path": "properties.v",
+            "keyword": "not"
+          }
+        ]
+      }
+    },
+    {
+      "id": "if-then-else-unsupported",
+      "description": "Conditional keywords have no strict-mode equivalent.",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "v": {
+            "type": "string",
+            "if": {
+              "minLength": 1
+            },
+            "then": {
+              "maxLength": 5
+            },
+            "else": {
+              "const": ""
+            }
+          }
+        },
+        "required": ["v"]
+      },
+      "strict": {
+        "unsupported": [
+          {
+            "path": "properties.v",
+            "keyword": "else"
+          },
+          {
+            "path": "properties.v",
+            "keyword": "if"
+          },
+          {
+            "path": "properties.v",
+            "keyword": "then"
+          }
+        ]
+      }
+    },
+    {
+      "id": "dependent-schemas-unsupported",
+      "description": "dependentSchemas has no strict-mode equivalent.",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "a": {
+            "type": "string"
+          }
+        },
+        "required": ["a"],
+        "dependentSchemas": {
+          "a": {
+            "type": "object",
+            "properties": {
+              "b": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      },
+      "strict": {
+        "unsupported": [
+          {
+            "path": "",
+            "keyword": "dependentSchemas"
+          }
+        ]
+      },
+      "changes": [
+        {
+          "path": "dependentSchemas.a.properties.b",
+          "reason": "optional-property-nullable"
+        }
+      ]
+    },
+    {
+      "id": "property-names-keyword-unsupported",
+      "description": "propertyNames has no strict-mode equivalent.",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "a": {
+            "type": "string"
+          }
+        },
+        "required": ["a"],
+        "propertyNames": {
+          "pattern": "^a"
+        }
+      },
+      "strict": {
+        "unsupported": [
+          {
+            "path": "",
+            "keyword": "propertyNames"
+          }
+        ]
+      }
+    },
+    {
+      "id": "one-of-beside-any-of-unsupported",
+      "description": "oneOf next to anyOf cannot be merged and is reported.",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "v": {
+            "anyOf": [
+              {
+                "type": "string"
+              }
+            ],
+            "oneOf": [
+              {
+                "type": "number"
+              }
+            ]
+          }
+        },
+        "required": ["v"]
+      },
+      "strict": {
+        "unsupported": [
+          {
+            "path": "properties.v",
+            "keyword": "oneOf"
+          }
+        ]
+      }
+    },
+    {
+      "id": "boolean-property-subschema-unsupported",
+      "description": "A boolean property subschema is reported.",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "anything": true,
+          "nothing": false
+        },
+        "required": ["anything", "nothing"]
+      },
+      "strict": {
+        "unsupported": [
+          {
+            "path": "properties.anything",
+            "keyword": "properties"
+          },
+          {
+            "path": "properties.nothing",
+            "keyword": "properties"
+          }
+        ]
+      }
+    },
+    {
+      "id": "properties-not-an-object-unsupported",
+      "description": "A malformed properties value is reported instead of emptied.",
+      "schema": {
+        "type": "object",
+        "properties": "not-a-map",
+        "required": ["a"]
+      },
+      "strict": {
+        "unsupported": [
+          {
+            "path": "",
+            "keyword": "properties"
+          }
+        ]
+      }
+    },
+    {
+      "id": "ref-with-siblings-kept",
+      "description": "Sibling keywords next to a $ref are kept.",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "cfg": {
+            "$ref": "#/$defs/Config",
+            "description": "cfg",
+            "title": "Config"
+          }
+        },
+        "required": ["cfg"],
+        "$defs": {
+          "Config": {
+            "type": "object",
+            "properties": {
+              "a": {
+                "type": "string"
+              }
+            },
+            "required": ["a"]
+          }
+        }
+      },
+      "strict": {
+        "schema": {
+          "type": "object",
+          "properties": {
+            "cfg": {
+              "$ref": "#/$defs/Config",
+              "description": "cfg",
+              "title": "Config"
+            }
+          },
+          "required": ["cfg"],
+          "$defs": {
+            "Config": {
+              "type": "object",
+              "properties": {
+                "a": {
+                  "type": "string"
+                }
+              },
+              "required": ["a"],
+              "additionalProperties": false
+            }
+          },
+          "additionalProperties": false
+        }
+      }
+    },
+    {
+      "id": "required-non-string-entries-ignored",
+      "description": "Non-string required entries are ignored.",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "a": {
+            "type": "string"
+          },
+          "b": {
+            "type": "string"
+          }
+        },
+        "required": ["a", 1, null]
+      },
+      "strict": {
+        "schema": {
+          "type": "object",
+          "properties": {
+            "a": {
+              "type": "string"
+            },
+            "b": {
+              "type": ["string", "null"]
+            }
+          },
+          "required": ["a", "b"],
+          "additionalProperties": false
+        }
+      },
+      "changes": [
+        {
+          "path": "properties.b",
+          "reason": "optional-property-nullable"
+        }
+      ]
+    },
+    {
+      "id": "dynamic-keys-reported-once-with-pattern-properties",
+      "description": "additionalProperties and patternProperties on one node report additionalProperties.",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "m": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "patternProperties": {
+              "^x": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "required": ["m"]
+      },
+      "strict": {
+        "unsupported": [
+          {
+            "path": "properties.m",
+            "keyword": "additionalProperties"
+          }
+        ]
+      }
+    },
+    {
+      "id": "empty-properties-open-object-unsupported",
+      "description": "An object with empty properties and no closing is free-form.",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "m": {
+            "type": "object",
+            "properties": {}
+          }
+        },
+        "required": ["m"]
+      },
+      "strict": {
+        "unsupported": [
+          {
+            "path": "properties.m",
+            "keyword": "properties"
+          }
+        ]
+      }
+    },
+    {
+      "id": "default-stripped-then-widened",
+      "description": "Stripping default and widening compose.",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "a": {
+            "type": "string",
+            "default": "x"
+          }
+        }
+      },
+      "strict": {
+        "schema": {
+          "type": "object",
+          "properties": {
+            "a": {
+              "type": ["string", "null"]
+            }
+          },
+          "required": ["a"],
+          "additionalProperties": false
+        }
+      },
+      "changes": [
+        {
+          "path": "properties.a",
+          "reason": "unsupported-keyword-stripped"
+        },
+        {
+          "path": "properties.a",
+          "reason": "optional-property-nullable"
+        }
+      ]
+    },
+    {
+      "id": "nested-any-of-in-any-of-kept",
+      "description": "A composition nested inside a composition is normalized branch by branch.",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "v": {
+            "anyOf": [
+              {
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "a": {
+                        "type": "string"
+                      }
+                    }
+                  },
+                  {
+                    "type": "number"
+                  }
+                ]
+              },
+              {
+                "type": "string"
+              }
+            ]
+          }
+        },
+        "required": ["v"]
+      },
+      "strict": {
+        "schema": {
+          "type": "object",
+          "properties": {
+            "v": {
+              "anyOf": [
+                {
+                  "anyOf": [
+                    {
+                      "type": "object",
+                      "properties": {
+                        "a": {
+                          "type": ["string", "null"]
+                        }
+                      },
+                      "required": ["a"],
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "number"
+                    }
+                  ]
+                },
+                {
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "required": ["v"],
+          "additionalProperties": false
+        }
+      },
+      "changes": [
+        {
+          "path": "properties.v.anyOf[0].anyOf[0].properties.a",
+          "reason": "optional-property-nullable"
+        }
+      ],
+      "arguments": [
+        {
+          "input": {
+            "v": {
+              "a": null
+            }
+          },
+          "output": {
+            "v": {}
+          }
+        }
+      ]
+    },
+    {
+      "id": "definitions-and-defs-both-normalized",
+      "description": "Legacy definitions and $defs coexist and both are normalized.",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "a": {
+            "$ref": "#/$defs/A"
+          },
+          "b": {
+            "$ref": "#/definitions/B"
+          }
+        },
+        "required": ["a", "b"],
+        "$defs": {
+          "A": {
+            "type": "object",
+            "properties": {
+              "x": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "definitions": {
+          "B": {
+            "type": "object",
+            "properties": {
+              "y": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      },
+      "strict": {
+        "schema": {
+          "type": "object",
+          "properties": {
+            "a": {
+              "$ref": "#/$defs/A"
+            },
+            "b": {
+              "$ref": "#/definitions/B"
+            }
+          },
+          "required": ["a", "b"],
+          "$defs": {
+            "A": {
+              "type": "object",
+              "properties": {
+                "x": {
+                  "type": ["string", "null"]
+                }
+              },
+              "required": ["x"],
+              "additionalProperties": false
+            }
+          },
+          "definitions": {
+            "B": {
+              "type": "object",
+              "properties": {
+                "y": {
+                  "type": ["string", "null"]
+                }
+              },
+              "required": ["y"],
+              "additionalProperties": false
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "changes": [
+        {
+          "path": "$defs.A.properties.x",
+          "reason": "optional-property-nullable"
+        },
+        {
+          "path": "definitions.B.properties.y",
+          "reason": "optional-property-nullable"
+        }
+      ]
+    },
+    {
+      "id": "deep-nesting-normalized-fully",
+      "description": "Ten levels of nested objects are normalized at every level.",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "child": {
+            "type": "object",
+            "properties": {
+              "child": {
+                "type": "object",
+                "properties": {
+                  "child": {
+                    "type": "object",
+                    "properties": {
+                      "child": {
+                        "type": "object",
+                        "properties": {
+                          "child": {
+                            "type": "object",
+                            "properties": {
+                              "child": {
+                                "type": "object",
+                                "properties": {
+                                  "child": {
+                                    "type": "object",
+                                    "properties": {
+                                      "child": {
+                                        "type": "object",
+                                        "properties": {
+                                          "child": {
+                                            "type": "object",
+                                            "properties": {
+                                              "child": {
+                                                "type": "object",
+                                                "properties": {
+                                                  "leaf": {
+                                                    "type": "string"
+                                                  }
+                                                }
+                                              }
+                                            },
+                                            "required": ["child"]
+                                          }
+                                        },
+                                        "required": ["child"]
+                                      }
+                                    },
+                                    "required": ["child"]
+                                  }
+                                },
+                                "required": ["child"]
+                              }
+                            },
+                            "required": ["child"]
+                          }
+                        },
+                        "required": ["child"]
+                      }
+                    },
+                    "required": ["child"]
+                  }
+                },
+                "required": ["child"]
+              }
+            },
+            "required": ["child"]
+          }
+        },
+        "required": ["child"]
+      },
+      "strict": {
+        "schema": {
+          "type": "object",
+          "properties": {
+            "child": {
+              "type": "object",
+              "properties": {
+                "child": {
+                  "type": "object",
+                  "properties": {
+                    "child": {
+                      "type": "object",
+                      "properties": {
+                        "child": {
+                          "type": "object",
+                          "properties": {
+                            "child": {
+                              "type": "object",
+                              "properties": {
+                                "child": {
+                                  "type": "object",
+                                  "properties": {
+                                    "child": {
+                                      "type": "object",
+                                      "properties": {
+                                        "child": {
+                                          "type": "object",
+                                          "properties": {
+                                            "child": {
+                                              "type": "object",
+                                              "properties": {
+                                                "child": {
+                                                  "type": "object",
+                                                  "properties": {
+                                                    "leaf": {
+                                                      "type": ["string", "null"]
+                                                    }
+                                                  },
+                                                  "required": ["leaf"],
+                                                  "additionalProperties": false
+                                                }
+                                              },
+                                              "required": ["child"],
+                                              "additionalProperties": false
+                                            }
+                                          },
+                                          "required": ["child"],
+                                          "additionalProperties": false
+                                        }
+                                      },
+                                      "required": ["child"],
+                                      "additionalProperties": false
+                                    }
+                                  },
+                                  "required": ["child"],
+                                  "additionalProperties": false
+                                }
+                              },
+                              "required": ["child"],
+                              "additionalProperties": false
+                            }
+                          },
+                          "required": ["child"],
+                          "additionalProperties": false
+                        }
+                      },
+                      "required": ["child"],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": ["child"],
+                  "additionalProperties": false
+                }
+              },
+              "required": ["child"],
+              "additionalProperties": false
+            }
+          },
+          "required": ["child"],
+          "additionalProperties": false
+        }
+      },
+      "changes": [
+        {
+          "path": "properties.child.properties.child.properties.child.properties.child.properties.child.properties.child.properties.child.properties.child.properties.child.properties.child.properties.leaf",
+          "reason": "optional-property-nullable"
+        }
+      ]
+    },
+    {
+      "id": "chained-refs-resolved",
+      "description": "A $ref to a $ref resolves to the final definition.",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "a": {
+            "$ref": "#/$defs/Alias"
+          }
+        },
+        "required": ["a"],
+        "$defs": {
+          "Alias": {
+            "$ref": "#/$defs/Real"
+          },
+          "Real": {
+            "type": "object",
+            "properties": {
+              "x": {
+                "type": "string"
+              }
+            },
+            "required": ["x"]
+          }
+        }
+      },
+      "strict": {
+        "schema": {
+          "type": "object",
+          "properties": {
+            "a": {
+              "$ref": "#/$defs/Alias"
+            }
+          },
+          "required": ["a"],
+          "$defs": {
+            "Alias": {
+              "$ref": "#/$defs/Real"
+            },
+            "Real": {
+              "type": "object",
+              "properties": {
+                "x": {
+                  "type": "string"
+                }
+              },
+              "required": ["x"],
+              "additionalProperties": false
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "arguments": [
+        {
+          "input": {
+            "a": {
+              "x": null
+            }
+          },
+          "output": {
+            "a": {}
+          }
+        },
+        {
+          "input": {
+            "a": null
+          },
+          "output": {}
+        }
+      ]
+    }
+  ]
+}
