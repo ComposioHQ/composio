@@ -1,7 +1,7 @@
 {
   "name": "versioning-example",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.1.1-beta.0",
   "description": "Example project for Versioning",
   "main": "src/index.ts",
   "scripts": {

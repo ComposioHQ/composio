@@ -1,6 +1,6 @@
 {
   "name": "@composio/experimental",
-  "version": "0.2.2",
+  "version": "0.2.3-beta.0",
   "description": "Experimental Composio integrations and helpers",
   "main": "src/index.ts",
   "type": "module",
@@ -67,7 +67,7 @@
     "typebox": "1.3.16"
   },
   "peerDependencies": {
-    "@composio/core": ">=0.10.0 <1.0.0",
+    "@composio/core": ">=1.0.0-beta.0 <2.0.0",
     "@earendil-works/pi-coding-agent": ">=0.79.0 <1.0.0",
     "eve": ">=0.12.0 <1.0.0"
   },

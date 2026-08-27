@@ -1,0 +1,26 @@
+---
+title: 'TypeScript SDK 1.0.0 beta uses the Composio-owned client'
+description: 'TypeScript SDK 1.0.0-beta.0 replaces the frozen Stainless client with the Composio-owned 2.0.0-rc.6 client while preserving the existing SDK contract.'
+date: '2026-08-27'
+---
+
+TypeScript SDK `@composio/core` `1.0.0-beta.0` replaces the frozen Stainless `@composio/client` dependency with the Composio-owned `2.0.0-rc.6` client.
+
+Install the beta with:
+
+```bash
+npm install @composio/core@beta
+```
+
+### SDK versions
+
+| SDK                         | Version        |
+| --------------------------- | -------------- |
+| TypeScript `@composio/core` | `1.0.0-beta.0` |
+| TypeScript `@composio/slim` | `1.0.0-beta.0` |
+
+### Owned client
+
+The owned client covers the released v3.1 operations while preserving the SDK's existing imports, types, retries, timeouts, error classes, raw responses, streaming responses, and `AbortSignal` support.
+
+This beta contains no additional SDK behavior changes beyond the client migration. Provider prereleases only update their dependency on `@composio/core`.
