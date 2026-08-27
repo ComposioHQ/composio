@@ -1,11 +1,10 @@
 # @composio/anthropic
 
-## 0.11.1-beta.0
+## 0.11.1
 
 ### Patch Changes
 
-- Updated dependencies [fb1b530]
-  - @composio/core@1.0.0-beta.0
+- db7b576: Declare Node.js 22.22.3 as the minimum supported runtime for every published TypeScript package so package managers surface incompatible runtimes before users encounter ESM loading failures.
 
 ## 0.11.0
 

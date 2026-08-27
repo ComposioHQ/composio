@@ -1,6 +1,6 @@
 {
   "name": "@composio/openai",
-  "version": "0.12.1-beta.0",
+  "version": "0.12.1",
   "description": "",
   "main": "src/index.ts",
   "type": "module",
@@ -40,7 +40,7 @@
   "author": "",
   "license": "ISC",
   "peerDependencies": {
-    "@composio/core": ">=1.0.0-beta.0 <2.0.0",
+    "@composio/core": ">=0.10.0 <1.0.0 || >=1.0.0-beta.0 <1.0.0",
     "openai": "^6.49.0 || ^7.0.0"
   },
   "devDependencies": {
