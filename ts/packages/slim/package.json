@@ -4,7 +4,7 @@
   "engines": {
     "node": ">=22.22.3"
   },
-  "version": "1.0.0-beta.0",
+  "version": "0.17.0",
   "description": "Slim Composio core package without packaged source or docs",
   "main": "dist/index.mjs",
   "publishConfig": {

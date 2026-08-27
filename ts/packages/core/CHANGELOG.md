@@ -1,20 +1,5 @@
 # @composio/core
 
-## 1.0.0-beta.0
-
-### Major Changes
-
-- fb1b530: Replace the frozen Stainless `@composio/client` with the owned `2.0.0-rc.6` client.
-
-### Patch Changes
-
-- 449f4e1: Block automatic uploads when a sensitive directory or file name is hidden by symlink resolution.
-- db7b576: Declare Node.js 22.22.3 as the minimum supported runtime for every published TypeScript package so package managers surface incompatible runtimes before users encounter ESM loading failures.
-- fe66cbe: Omit empty-string file-uploadable arguments from tool execution requests instead of forwarding them to the backend, which rejected them with "Input should be a valid dictionary or instance of FileUploadable". This now also applies when `dangerouslyAllowAutoUploadDownloadFiles` is off, and with it on an empty value is no longer attempted as an upload.
-- d544006: Close a DNS-rebinding window in the SSRF guard: the address validated by `assertSafeFetchTarget` is now the address `ssrfSafeFetch` connects to, so a hostname is no longer resolved a second time between the check and the connection. Each redirect hop is re-validated and re-pinned. The request still carries the original hostname in `Host` and TLS SNI, so certificate verification is unchanged. Hops whose effective dispatcher is a configured route — a caller-supplied `dispatcher`, a global `ProxyAgent`/`EnvHttpProxyAgent`, or `NODE_USE_ENV_PROXY` env-proxy mode — keep the pre-flight check only, mirroring the Python guard's documented proxy residual.
-- Updated dependencies [db7b576]
-  - @composio/json-schema-to-zod@0.3.1-beta.0
-
 ## 0.17.0
 
 ### Minor Changes

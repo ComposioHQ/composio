@@ -1,7 +1,7 @@
 {
   "name": "anthropic-example",
   "private": true,
-  "version": "0.1.1-beta.0",
+  "version": "0.1.0",
   "description": "Example for using Anthropic Agent SDK provider with Composio SDK",
   "main": "index.js",
   "scripts": {

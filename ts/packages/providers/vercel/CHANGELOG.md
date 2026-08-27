@@ -1,17 +1,5 @@
 # @composio/vercel
 
-## 0.11.2-beta.0
-
-### Patch Changes
-
-- db7b576: Declare Node.js 22.22.3 as the minimum supported runtime for every published TypeScript package so package managers surface incompatible runtimes before users encounter ESM loading failures.
-- Updated dependencies [449f4e1]
-- Updated dependencies [db7b576]
-- Updated dependencies [fe66cbe]
-- Updated dependencies [d544006]
-- Updated dependencies [fb1b530]
-  - @composio/core@1.0.0-beta.0
-
 ## 0.11.1
 
 ### Patch Changes
