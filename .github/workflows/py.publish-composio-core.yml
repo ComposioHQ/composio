@@ -1,0 +1,65 @@
+name: Publish composio-core 0.7.22
+
+run-name: Publish composio-core 0.7.22 (publish=${{ inputs.publish }})
+
+on:
+  workflow_dispatch:
+    inputs:
+      publish:
+        description: Upload the verified artifacts to PyPI
+        required: true
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: publish-composio-core-0.7.22
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    name: Build and optionally publish composio-core
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout archive-v2
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: archive-v2
+          persist-credentials: false
+
+      - name: Setup Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.10'
+
+      - name: Setup uv
+        uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+        with:
+          version: '0.8.19'
+          enable-cache: false
+
+      - name: Build composio-core
+        working-directory: python
+        run: |
+          uv build
+          uvx twine check dist/*
+
+      - name: Verify artifacts
+        working-directory: python
+        run: |
+          test -f dist/composio_core-0.7.22-py3-none-any.whl
+          test -f dist/composio_core-0.7.22.tar.gz
+
+      - name: Publish composio-core to PyPI
+        if: inputs.publish
+        working-directory: python
+        env:
+          UV_PUBLISH_USERNAME: ${{ secrets.PYPI_USERNAME }}
+          UV_PUBLISH_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
+        run: |
+          uv publish \
+            dist/composio_core-0.7.22-py3-none-any.whl \
+            dist/composio_core-0.7.22.tar.gz
