@@ -72,9 +72,20 @@ function generateDoc(rng: () => number, withInstanceValueRefs = false): Generate
   const escapePointer = (name: string) => name.replace(/~/g, '~0').replace(/\//g, '~1');
 
   const defsKey = chance(0.25) ? 'definitions' : '$defs';
-  const pointerTo = (name: string) => `#/${defsKey}/${escapePointer(name)}`;
 
   const state = { hasUnresolvable: false };
+
+  // Mirrors `POLLUTING_KEYS` in `jsonSchema.ts`. A definition under one of
+  // these names is never an own `$defs` entry (assigning `__proto__` sets the
+  // prototype; the clone step drops the rest), so any pointer to it is
+  // unresolvable exactly like a dangling one and must set the flag too —
+  // otherwise the throw-mode ratchet below could stay red for a reason
+  // unrelated to the instance-value bug it documents.
+  const POLLUTING_DEF_NAMES = new Set(['__proto__', 'constructor', 'prototype']);
+  const pointerTo = (name: string) => {
+    if (POLLUTING_DEF_NAMES.has(name)) state.hasUnresolvable = true;
+    return `#/${defsKey}/${escapePointer(name)}`;
+  };
 
   const leaf = (): Json => {
     const node: Json = { type: pick(rng, ['string', 'number', 'integer', 'boolean']) };

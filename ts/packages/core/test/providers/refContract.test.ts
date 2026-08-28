@@ -156,14 +156,19 @@ describe('cross-provider $ref handling contract', () => {
     expect(stale).toEqual([]);
   });
 
-  describe.each(Object.entries(PROVIDER_PACKAGES).filter(([, c]) => c.treatment === 'needs-deref'))(
-    '%s',
-    (provider, classification) => {
-      it(`dereferences before translation (${classification.reason})`, () => {
-        expect(packageText(provider)).toContain(DEREF_MARK);
-      });
-    }
-  );
+  const isPending = (c: Classification) => c.status?.startsWith('pending-plan') ?? false;
+
+  // Fixed needs-deref providers only: a `pending-plan-*` entry is asserted by
+  // the ratchet at the bottom instead, so the two blocks never both claim it.
+  describe.each(
+    Object.entries(PROVIDER_PACKAGES).filter(
+      ([, c]) => c.treatment === 'needs-deref' && !isPending(c)
+    )
+  )('%s', (provider, classification) => {
+    it(`dereferences before translation (${classification.reason})`, () => {
+      expect(packageText(provider)).toContain(DEREF_MARK);
+    });
+  });
 
   describe.each(Object.entries(PROVIDER_PACKAGES).filter(([, c]) => c.treatment === 'passthrough'))(
     '%s',
@@ -186,11 +191,12 @@ describe('cross-provider $ref handling contract', () => {
   // fix, give it `status: 'pending-plan-NNN'` and it is asserted NOT to
   // dereference here — so the fix cannot land and leave the taxonomy stale
   // (the assertion flips the moment the dereference call appears).
-  describe.each(
-    Object.entries(PROVIDER_PACKAGES).filter(([, c]) => c.status?.startsWith('pending-plan'))
-  )('%s', (provider, classification) => {
-    it(`is still pending (${classification.status})`, () => {
-      expect(packageText(provider)).not.toContain(DEREF_MARK);
-    });
-  });
+  describe.each(Object.entries(PROVIDER_PACKAGES).filter(([, c]) => isPending(c)))(
+    '%s',
+    (provider, classification) => {
+      it(`is still pending (${classification.status})`, () => {
+        expect(packageText(provider)).not.toContain(DEREF_MARK);
+      });
+    }
+  );
 });
