@@ -1,4 +1,5 @@
 import type { ExecuteToolFn, Tool, ToolExecuteResponse } from '@composio/core';
+import type { ApprovalContext } from 'eve/tools';
 import { describe, expect, it, vi } from 'vitest';
 import {
   EveProvider,
@@ -19,6 +20,23 @@ const ok = (data: Record<string, unknown> = {}): ToolExecuteResponse => ({
   data,
   error: null,
   successful: true,
+});
+
+const approvalContext = (
+  toolName: string,
+  toolInput: Record<string, unknown>
+): ApprovalContext<Record<string, unknown>> => ({
+  approvedTools: new Set<string>(),
+  callId: 'call-1',
+  getSandbox: vi.fn<ApprovalContext['getSandbox']>(),
+  getSkill: vi.fn<ApprovalContext['getSkill']>(),
+  session: {
+    id: 'eve-session',
+    auth: { current: null, initiator: null },
+    turn: { id: 'turn-1', sequence: 0 },
+  },
+  toolInput,
+  toolName,
 });
 
 describe('EveProvider', () => {
@@ -122,14 +140,20 @@ describe('EveProvider', () => {
       [tool('LOCAL_IMESSAGE_SEND'), tool('GITHUB_GET_REPOSITORY')],
       vi.fn(async () => ok())
     );
-    const context = {
-      approvedTools: new Set<string>(),
-      toolInput: { to: '+15551234567', text: 'test' },
-      toolName: 'LOCAL_IMESSAGE_SEND',
-    };
+    const context = approvalContext('LOCAL_IMESSAGE_SEND', {
+      to: '+15551234567',
+      text: 'test',
+    });
 
-    expect(wrapped.LOCAL_IMESSAGE_SEND.approval?.(context as never)).toBe(true);
-    expect(wrapped.GITHUB_GET_REPOSITORY.approval?.(context as never)).toBe(false);
+    const sendApproval = wrapped.LOCAL_IMESSAGE_SEND.approval;
+    const readApproval = wrapped.GITHUB_GET_REPOSITORY.approval;
+    expect(sendApproval).toBeTypeOf('function');
+    expect(readApproval).toBeTypeOf('function');
+    if (typeof sendApproval !== 'function' || typeof readApproval !== 'function') {
+      throw new TypeError('Expected Composio approval policies to be functions');
+    }
+    expect(sendApproval(context)).toBe(true);
+    expect(readApproval(context)).toBe(false);
     expect(needsApproval).toHaveBeenCalledWith(
       expect.objectContaining({ slug: 'LOCAL_IMESSAGE_SEND' }),
       context
@@ -145,19 +169,20 @@ describe('EveProvider', () => {
       vi.fn(async () => ok())
     );
 
+    const approval = wrapped.COMPOSIO_MULTI_EXECUTE_TOOL.approval;
+    expect(approval).toBeTypeOf('function');
+    if (typeof approval !== 'function') {
+      throw new TypeError('Expected the multi-execute approval policy to be a function');
+    }
     expect(
-      wrapped.COMPOSIO_MULTI_EXECUTE_TOOL.approval?.({
-        approvedTools: new Set<string>(),
-        callId: 'call-1',
-        session: {} as never,
-        toolInput: {
+      approval(
+        approvalContext('COMPOSIO_MULTI_EXECUTE_TOOL', {
           tools: [
             { tool_slug: 'GMAIL_FETCH_EMAILS', arguments: {} },
             { tool_slug: 'LOCAL_IMESSAGE_SEND', arguments: { text: 'test' } },
           ],
-        },
-        toolName: 'COMPOSIO_MULTI_EXECUTE_TOOL',
-      } as never)
+        })
+      )
     ).toBe(true);
   });
 
