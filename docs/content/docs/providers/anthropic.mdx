@@ -84,6 +84,8 @@ response = client.messages.create(
 # Agentic loop: keep executing tool calls until the model responds with text
 while response.stop_reason == "tool_use":
     tool_use_blocks = [block for block in response.content if block.type == "tool_use"]
+    # Run every tool call Claude requested through the session; the results
+    # come back in the same order the model called them.
     results = composio.provider.handle_tool_calls(response=response, session=session)
     messages.append({"role": "assistant", "content": response.content})
     messages.append({
