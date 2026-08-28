@@ -155,7 +155,7 @@ const tools = await composio.tools.get('default', {
 });
 
 let response = await openai.responses.create({
-  model: 'gpt-5.2',
+  model: 'gpt-4',
   tools,
   input: 'Find information about the Composio SDK repository',
 });
@@ -163,7 +163,7 @@ let response = await openai.responses.create({
 while (response.output.some(item => item.type === 'function_call')) {
   const toolOutputs = await composio.provider.handleToolCalls('default', response.output);
   response = await openai.responses.create({
-    model: 'gpt-5.2',
+    model: 'gpt-4',
     tools,
     previous_response_id: response.id,
     input: toolOutputs,
