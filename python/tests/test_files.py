@@ -2700,6 +2700,50 @@ class TestDownloadSizeLimit:
         assert outfile.exists()
         assert outfile.read_bytes() == b"x" * 256 + b"y" * 256
 
+    @patch("composio.core.models._files.safe_get")
+    def test_download_wraps_stream_failure_and_removes_partial_file(
+        self, mock_get, tmp_path
+    ):
+        """A transport failure mid-stream keeps the documented error contract."""
+
+        def failing_stream(chunk_size=None):
+            yield b"x" * 256
+            raise requests.exceptions.ConnectionError("connection reset")
+
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.headers = {}
+        mock_response.iter_content.side_effect = failing_stream
+        mock_response.close = MagicMock()
+        mock_get.return_value = mock_response
+
+        with pytest.raises(ErrorDownloadingFile):
+            self._downloadable().download(outdir=tmp_path, root=tmp_path, max_size=1024)
+
+        assert list(tmp_path.iterdir()) == []
+
+    @patch("composio.core.models._files.safe_get")
+    def test_download_wraps_write_failure_and_removes_partial_file(
+        self, mock_get, tmp_path
+    ):
+        """A disk failure while writing is an `ErrorDownloadingFile`, not a raw OSError."""
+
+        def failing_stream(chunk_size=None):
+            yield b"x" * 256
+            raise OSError(28, "No space left on device")
+
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.headers = {}
+        mock_response.iter_content.side_effect = failing_stream
+        mock_response.close = MagicMock()
+        mock_get.return_value = mock_response
+
+        with pytest.raises(ErrorDownloadingFile):
+            self._downloadable().download(outdir=tmp_path, root=tmp_path, max_size=1024)
+
+        assert list(tmp_path.iterdir()) == []
+
 
 class TestRedirectHandling:
     """Test redirect handling (redirects should be rejected)."""

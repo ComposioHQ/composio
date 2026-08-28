@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import contextlib
 import functools
 import hashlib
 import os
@@ -663,6 +664,17 @@ class FileUploadable(BaseModel):
         return cls(name=file.name, mimetype=mimetype, s3key=s3meta.key)
 
 
+def _discard_partial_download(outfile: Path) -> None:
+    """Remove a half-written download so it is never mistaken for the file.
+
+    Cleanup failures are swallowed on purpose: the error that triggered the
+    cleanup is what the caller needs to see, and an ``OSError`` raised from
+    here would replace it.
+    """
+    with contextlib.suppress(OSError):
+        outfile.unlink(missing_ok=True)
+
+
 class FileDownloadable(BaseModel):
     model_config = ConfigDict(json_schema_extra={"file_downloadable": True})
 
@@ -747,18 +759,14 @@ class FileDownloadable(BaseModel):
         except ResponseTooLargeError:
             # Propagates uncaught — callers must see the limit hit — but the
             # truncated file must not be left behind as if it were the download.
-            outfile.unlink(missing_ok=True)
+            _discard_partial_download(outfile)
             raise
-        except requests.exceptions.RequestException as e:
-            outfile.unlink(missing_ok=True)
-            raise ErrorDownloadingFile(
-                "Error downloading file: "
-                f"{_sanitize_url_for_logging(self.s3url)}. Error: {type(e).__name__}"
-            ) from e
         except OSError as e:
-            # A failing `fd.write` (disk full, permissions) would otherwise
-            # escape the `ErrorDownloadingFile` contract this method documents.
-            outfile.unlink(missing_ok=True)
+            # `requests.exceptions.RequestException` subclasses `OSError`, so a
+            # mid-stream transport failure and a failing `fd.write`/`mkdir`
+            # (disk full, permissions) both land here — and both owe the caller
+            # the `ErrorDownloadingFile` this method documents.
+            _discard_partial_download(outfile)
             raise ErrorDownloadingFile(
                 "Error downloading file: "
                 f"{_sanitize_url_for_logging(self.s3url)}. Error: {type(e).__name__}"
