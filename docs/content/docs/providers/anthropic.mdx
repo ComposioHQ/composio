@@ -57,53 +57,19 @@ Passing a session to `handle_tool_calls` / `handleToolCalls` requires `composio`
 <Tabs groupId="language" items={["Python", "TypeScript"]} persist>
 <Tab value="Python">
 ```python
-import json
+from composio_openai import ComposioToolSet, Action
 
-import anthropic
-from composio import Composio
-from composio_anthropic import AnthropicProvider
+# ComposioToolSet is the entry point for fetching and running tools.
+toolset = ComposioToolSet()
 
-composio = Composio(provider=AnthropicProvider())
-client = anthropic.Anthropic()
+# Fetch a tool by its action name, then run it directly. No session needed.
+tools = toolset.get_tools(actions=[Action.WEATHERMAP_WEATHER])
 
-# Create a session for your user
-session = composio.create(user_id="user_123")
-tools = session.tools()
-
-messages = [
-    {"role": "user", "content": "Send an email to john@example.com with the subject 'Hello' and body 'Hello from Composio!'"}
-]
-
-response = client.messages.create(
-    model="claude-opus-4-6",
-    max_tokens=4096,
-    tools=tools,
-    messages=messages,
+result = toolset.execute_action(
+    action=Action.WEATHERMAP_WEATHER,
+    params={"location": "San Francisco"},
 )
-
-# Agentic loop: keep executing tool calls until the model responds with text
-while response.stop_reason == "tool_use":
-    tool_use_blocks = [block for block in response.content if block.type == "tool_use"]
-    results = composio.provider.execute_tool_calls(response=response)
-    messages.append({"role": "assistant", "content": response.content})
-    messages.append({
-        "role": "user",
-        "content": [
-            {"type": "tool_result", "tool_use_id": tool_use_blocks[i].id, "content": json.dumps(result)}
-            for i, result in enumerate(results)
-        ],
-    })
-    response = client.messages.create(
-        model="claude-opus-4-6",
-        max_tokens=4096,
-        tools=tools,
-        messages=messages,
-    )
-
-# Print final response
-for block in response.content:
-    if block.type == "text":
-        print(block.text)
+print(result)
 ```
 </Tab>
 <Tab value="TypeScript">
