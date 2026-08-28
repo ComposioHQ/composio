@@ -128,8 +128,15 @@ describe('EveProvider', () => {
       toolName: 'LOCAL_IMESSAGE_SEND',
     };
 
-    expect(wrapped.LOCAL_IMESSAGE_SEND.approval?.(context as never)).toBe(true);
-    expect(wrapped.GITHUB_GET_REPOSITORY.approval?.(context as never)).toBe(false);
+    const sendApproval = wrapped.LOCAL_IMESSAGE_SEND.approval;
+    const readApproval = wrapped.GITHUB_GET_REPOSITORY.approval;
+    expect(sendApproval).toBeTypeOf('function');
+    expect(readApproval).toBeTypeOf('function');
+    if (typeof sendApproval !== 'function' || typeof readApproval !== 'function') {
+      throw new TypeError('Expected Composio approval policies to be functions');
+    }
+    expect(sendApproval(context as never)).toBe(true);
+    expect(readApproval(context as never)).toBe(false);
     expect(needsApproval).toHaveBeenCalledWith(
       expect.objectContaining({ slug: 'LOCAL_IMESSAGE_SEND' }),
       context
@@ -145,8 +152,13 @@ describe('EveProvider', () => {
       vi.fn(async () => ok())
     );
 
+    const approval = wrapped.COMPOSIO_MULTI_EXECUTE_TOOL.approval;
+    expect(approval).toBeTypeOf('function');
+    if (typeof approval !== 'function') {
+      throw new TypeError('Expected the multi-execute approval policy to be a function');
+    }
     expect(
-      wrapped.COMPOSIO_MULTI_EXECUTE_TOOL.approval?.({
+      approval({
         approvedTools: new Set<string>(),
         callId: 'call-1',
         session: {} as never,
