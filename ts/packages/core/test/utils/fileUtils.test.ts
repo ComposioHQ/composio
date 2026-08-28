@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach, Mock } from 'vitest';
 import * as path from 'node:path';
-import * as fs from 'fs';
+import * as fs from 'node:fs';
 import { getFileDataAfterUploadingToS3, downloadFileFromS3 } from '../../src/utils/fileUtils.node';
 import ComposioClient from '@composio/client';
 import { ComposioSensitiveFilePathBlockedError } from '../../src/errors/FileModifierErrors';
