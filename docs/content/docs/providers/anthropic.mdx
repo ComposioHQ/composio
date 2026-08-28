@@ -84,7 +84,7 @@ response = client.messages.create(
 # Agentic loop: keep executing tool calls until the model responds with text
 while response.stop_reason == "tool_use":
     tool_use_blocks = [block for block in response.content if block.type == "tool_use"]
-    results = composio.provider.handle_tool_calls(response=response, session=session)
+    results = composio.provider.execute_tool_calls(response=response)
     messages.append({"role": "assistant", "content": response.content})
     messages.append({
         "role": "user",
