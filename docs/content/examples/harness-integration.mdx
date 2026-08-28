@@ -10,9 +10,9 @@ gallery:
   order: 4
 ---
 
-Most Composio examples hand the agent a session and let Composio's [meta tools](/docs/how-composio-works#meta-tools) do the finding, the authenticating, and the running. That is the right default, and it is the wrong shape if you already shipped a harness. You have a planner. You have a retrieval index over your tools. You have a dispatcher, a permission layer, and traces you already know how to read. You don't want another agent inside your agent; you want the 1000+ apps and none of the opinions.
+Most Composio examples hand the agent a session and let Composio's [meta tools](/docs/how-composio-works#meta-tools) find, authenticate, and run tools. That default works well until you already have your own planner, retrieval index, dispatcher, and permission layer. Then you need the 1000+ apps and managed auth, not another agent inside yours.
 
-So use Composio as the layer under your harness. It comes down to four calls:
+Composio sits underneath your harness in four calls:
 
 1. **List toolkits.** [`session.toolkits()`](/docs/configuring-sessions#toolkits) returns the catalog with each toolkit's live connection state for this user. That's your integrations directory.
 2. **Connect what the user picks.** [`session.authorize(slug)`](/docs/authentication) returns a redirect URL. Composio owns the OAuth dance, the token storage, and the refresh.
@@ -99,7 +99,7 @@ const session = await composio.create('user_123', {
 </Tab>
 </Tabs>
 
-One session per user, created once and reused. Sessions persist on the server and don't expire, so store the session id on the user record and pick it back up with `composio.use(sessionId)` on later requests. Calling `create()` again just makes another session.
+Create one session per user and reuse it. Sessions persist on the server and don't expire, so store the session id on the user record and pick it back up with `composio.use(sessionId)` on later requests. Calling `create()` again just makes another session.
 
 ## 1. List the toolkits
 
@@ -254,7 +254,7 @@ for (const tool of tools) {
 </Tab>
 </Tabs>
 
-<Callout type="warn" title="`important: false`, or you get a curated subset">
+<Callout type="warn" title="Pass `important: false` to fetch every tool, not a curated subset">
 In TypeScript, `getRawComposioTools({ toolkits })` applies Composio's `important` flag on your behalf and returns a hand-picked subset of each toolkit rather than all of it. Nothing errors; the list is just shorter than the toolkit, which is a bad surprise to find in an index weeks later. The auto-apply is suppressed by `important: false` and by passing any of `tools`, `tags`, `search`, or `limit`, so a call that already sets a large `limit` is getting the full list. The Python method has no `important` parameter and always returns the unfiltered list.
 
 Which you want depends on your index. Curated is a reasonable default for semantic search over a few toolkits. Full is what you want when your planner needs to name an exact tool.
@@ -356,7 +356,7 @@ When the thing you need isn't wrapped as a tool, [`session.proxyExecute()`](/doc
 | Per-user isolation | one session per user id |
 | Audit trail | `result.logId` |
 
-Your planner, your context window, your approval gate, and your traces stay where they are. What moves to Composio is the OAuth app registration for every service you'd otherwise have registered yourself, the token refresh, the schema maintenance as those APIs change, and one execute call in place of a client per vendor.
+Your planner, context window, approval gate, and traces stay the same. Composio takes over OAuth registration, token refresh, schema maintenance, and the execute call that replaces a separate client for each vendor.
 
 <Callout type="info" title="If the tool set is fixed">
 A harness with a known, small tool set doesn't need step three at all. Create the session with the [direct tools preset](/docs/configuring-sessions#direct-tools-preset) and an explicit `tools` filter, and `session.tools()` hands back exactly those tools with search, multi-execute, connection management, and the sandbox all off. That's `sessionPreset: SessionPreset.DIRECT_TOOLS` in TypeScript and `session_preset=SESSION_PRESET_DIRECT_TOOLS` in Python. Worth it when the list is short and stable; the four calls above are for when the list is whatever the user connected this morning.
