@@ -135,13 +135,13 @@ for toolkit in page.items:
 import { Composio } from '@composio/core';
 const composio = new Composio();
 // ---cut---
-const page = await composio.toolkits.get({ limit: 50 });
+const toolkits = await composio.toolkits.get({ limit: 50 });
 
-for (const toolkit of page.items) {
+for (const toolkit of toolkits) {
   console.log(`${toolkit.slug.padEnd(20)} ${toolkit.name}`);
 }
 
-// page.cursor -> pass back as { cursor } for the next page
+// pass a cursor as { cursor } to request the next page
 ```
 </Tab>
 </Tabs>
@@ -244,13 +244,16 @@ session = composio.sessions.create(
 </Tab>
 <Tab value="TypeScript">
 ```typescript
+import { Composio } from '@composio/core';
+const composio = new Composio();
+// ---cut---
 const authConfig = await composio.authConfigs.create('github', {
   type: 'use_custom_auth',
   authScheme: 'OAUTH2',
   name: 'My GitHub App',
   credentials: {
-    client_id: process.env.GITHUB_CLIENT_ID,
-    client_secret: process.env.GITHUB_CLIENT_SECRET,
+    client_id: process.env.GITHUB_CLIENT_ID!,
+    client_secret: process.env.GITHUB_CLIENT_SECRET!,
     oauth_redirect_uri: 'https://backend.composio.dev/api/v1/auth-apps/add',
   },
 });
