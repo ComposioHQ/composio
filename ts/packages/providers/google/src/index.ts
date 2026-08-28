@@ -17,6 +17,7 @@ import {
   McpServerGetResponse,
   normalizeToolArguments,
   deduplicateJsonSchemaRequiredArrays,
+  dereferenceJsonSchema,
   ensureObjectTypeOnProperties,
 } from '@composio/core';
 import { FunctionDeclaration, Schema } from '@google/genai';
@@ -130,7 +131,11 @@ export class GoogleProvider extends BaseNonAgenticProvider<
    */
   wrapTool(tool: Tool): GoogleTool {
     const inputParameters = ensureObjectTypeOnProperties(
-      deduplicateJsonSchemaRequiredArrays(tool.inputParameters)
+      deduplicateJsonSchemaRequiredArrays(
+        dereferenceJsonSchema(tool.inputParameters ?? { type: 'object', properties: {} }, {
+          onUnresolved: 'sentinel',
+        })
+      )
     );
 
     return {
