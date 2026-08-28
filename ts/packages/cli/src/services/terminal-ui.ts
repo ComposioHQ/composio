@@ -2,6 +2,7 @@ import process from 'node:process';
 import type { Writable } from 'node:stream';
 import { getColumns } from '@clack/core';
 import * as p from '@clack/prompts';
+import stringWidth from 'fast-string-width';
 import { Context, Effect, Exit, Layer } from 'effect';
 
 export type TtyLikeStream = {
@@ -195,16 +196,38 @@ type TerminalUIStreams = {
 // every tick leaks one: an endless scroll in terminals narrower than the
 // message. Keep live spinner messages to a single terminal row so the redraw
 // arithmetic cannot diverge.
+//
+// The invariant holds for terminals of at least SPINNER_RENDER_OVERHEAD + 1
+// columns. Below that the frame prefix alone overflows the row and no message
+// length can keep it on one line, so the budget degrades to just the ellipsis.
 const SPINNER_RENDER_OVERHEAD = 7; // frame + two spaces (3) + animated dots (3) + last-column safety (1)
-const MIN_SPINNER_MESSAGE_COLUMNS = 8;
 
 export const clampSpinnerMessage = (output: Writable, message: string): string => {
   const singleLine = message.replace(/\s*\r?\n\s*/g, ' ');
   if (singleLine.includes('\u001b')) {
     return singleLine; // truncating could split an ANSI escape sequence
   }
-  const budget = Math.max(getColumns(output) - SPINNER_RENDER_OVERHEAD, MIN_SPINNER_MESSAGE_COLUMNS);
-  return singleLine.length > budget ? `${singleLine.slice(0, budget - 1)}…` : singleLine;
+
+  const budget = Math.max(getColumns(output) - SPINNER_RENDER_OVERHEAD, 1);
+  if (stringWidth(singleLine) <= budget) {
+    return singleLine;
+  }
+
+  // Measure in display columns, not UTF-16 code units: clack wraps the rendered
+  // frame by width, so a CJK character it counts as two columns would slip past
+  // a `.length` budget and wrap anyway. Accumulating whole code points also keeps
+  // the cut off a surrogate pair. One column is reserved for the ellipsis.
+  let clamped = '';
+  let width = 0;
+  for (const char of singleLine) {
+    const charWidth = stringWidth(char);
+    if (width + charWidth > budget - 1) {
+      break;
+    }
+    clamped += char;
+    width += charWidth;
+  }
+  return `${clamped}…`;
 };
 
 function createClackSpinnerHandle(
