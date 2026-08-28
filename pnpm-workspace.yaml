@@ -28,13 +28,13 @@ allowBuilds:
   workerd: true
 
 catalog:
-  '@ai-sdk/mcp': ^2.0.34
-  '@ai-sdk/openai': ^4.0.45
+  '@ai-sdk/mcp': ^2.0.37
+  '@ai-sdk/openai': ^4.0.47
   '@arethetypeswrong/cli': ^0.18.5
   '@clack/core': '^1.4.3'
   '@clack/prompts': '^1.7.0'
   '@cloudflare/vitest-pool-workers': 0.22.0
-  '@cloudflare/workers-types': ^5.20260821.1
+  '@cloudflare/workers-types': ^5.20260825.1
   '@composio/client': 0.1.0-alpha.76
   '@effect/cli': ^0.77.0
   '@effect/language-service': ^0.87.2
@@ -48,13 +48,13 @@ catalog:
   '@mastra/core': 1.52.1
   '@modelcontextprotocol/sdk': ^1.30.0
   '@types/bun': ^1.4.0
-  ai: ^7.0.70
+  ai: ^7.0.79
   dotenv: ^17.4.2
   effect: ^3.22.1
-  hono: ^4.13.2
+  hono: ^4.13.4
   openai: ^7.2.0
   picocolors: ^1.1.1
-  pnpm: ^11.22.0
+  pnpm: ^11.24.0
   publint: ^0.3.24
   tsdown: ^0.22.14
   tsx: ^4.23.12
