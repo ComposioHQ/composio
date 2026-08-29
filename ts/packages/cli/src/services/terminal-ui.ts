@@ -233,12 +233,12 @@ export const clampSpinnerMessage = (output: Writable, message: string): string =
 function createClackSpinnerHandle(
   s: p.SpinnerResult,
   defaultMessage: string,
-  clamp: (msg: string) => string
+  output: Writable
 ): { handle: SpinnerHandle; isStopped: () => boolean } {
   let stopped = false;
   return {
     handle: {
-      message: (msg: string) => Effect.sync(() => s.message(clamp(msg))),
+      message: (msg: string) => Effect.sync(() => s.message(clampSpinnerMessage(output, msg))),
       stop: (msg?: string) =>
         Effect.sync(() => {
           stopped = true;
@@ -280,6 +280,13 @@ export const makeTerminalUI = (streams: TerminalUIStreams): TerminalUI => {
       return Effect.void;
     }
     return Effect.sync(render);
+  };
+
+  /** Start a clack spinner on stderr, clamped to a single terminal row. */
+  const startSpinner = (message: string): p.SpinnerResult => {
+    const s = p.spinner({ output: stderr });
+    s.start(clampSpinnerMessage(stderr, message));
+    return s;
   };
 
   return {
@@ -351,11 +358,7 @@ export const makeTerminalUI = (streams: TerminalUIStreams): TerminalUI => {
       }
 
       return Effect.acquireUseRelease(
-        Effect.sync(() => {
-          const s = p.spinner({ output: stderr });
-          s.start(clampSpinnerMessage(stderr, message));
-          return s;
-        }),
+        Effect.sync(() => startSpinner(message)),
         () => effect,
         (s, exit) =>
           Effect.sync(() => {
@@ -382,11 +385,8 @@ export const makeTerminalUI = (streams: TerminalUIStreams): TerminalUI => {
 
       return Effect.acquireUseRelease(
         Effect.sync(() => {
-          const s = p.spinner({ output: stderr });
-          s.start(clampSpinnerMessage(stderr, message));
-          const { handle, isStopped } = createClackSpinnerHandle(s, message, msg =>
-            clampSpinnerMessage(stderr, msg)
-          );
+          const s = startSpinner(message);
+          const { handle, isStopped } = createClackSpinnerHandle(s, message, stderr);
           return { raw: s, handle, isStopped };
         }),
         ({ handle }) => use(handle),
