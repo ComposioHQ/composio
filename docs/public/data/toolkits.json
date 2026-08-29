@@ -13,7 +13,7 @@
     ],
     "toolCount": 63,
     "triggerCount": 2,
-    "version": "20260826_00",
+    "version": "20260828_00",
     "tools": [
       {
         "slug": "GMAIL_ADD_LABEL_TO_EMAIL",
@@ -8072,7 +8072,7 @@
     ],
     "toolCount": 305,
     "triggerCount": 5,
-    "version": "20260826_00",
+    "version": "20260828_00",
     "tools": [
       {
         "slug": "OUTLOOK_ACCEPT_EVENT",
@@ -12929,7 +12929,7 @@
     ],
     "toolCount": 26,
     "triggerCount": 6,
-    "version": "20260721_00",
+    "version": "20260828_00",
     "tools": [
       {
         "slug": "AIRTABLE_CREATE_BASE",
@@ -13522,7 +13522,7 @@
     ],
     "toolCount": 102,
     "triggerCount": 3,
-    "version": "20260821_00",
+    "version": "20260828_00",
     "tools": [
       {
         "slug": "JIRA_ADD_ATTACHMENT",
@@ -23221,7 +23221,7 @@
     ],
     "toolCount": 17,
     "triggerCount": 0,
-    "version": "20260826_00",
+    "version": "20260828_00",
     "tools": [
       {
         "slug": "SNOWFLAKE_CANCEL_STATEMENT_EXECUTION",
@@ -24301,9 +24301,9 @@
     "composioManagedAuthSchemes": [
       "OAUTH2"
     ],
-    "toolCount": 171,
+    "toolCount": 173,
     "triggerCount": 0,
-    "version": "20260826_00",
+    "version": "20260828_00",
     "tools": [
       {
         "slug": "MICROSOFT_TEAMS_ADD_CHAT_MEMBER",
@@ -24353,7 +24353,7 @@
       {
         "slug": "MICROSOFT_TEAMS_CHATS_GET_ALL_CHATS",
         "name": "Get all chats",
-        "description": "Lists a specified user's Microsoft Teams chats, supporting filtering and property selection. Returns one page per call (up to `top`, further bounded by `limit` if given) plus a `next_page_token`; pass that back as `page_token` to fetch the next page, until it is absent."
+        "description": "Lists a specified user's Microsoft Teams chats, supporting filtering and property selection. An unfiltered first page for `user_id='me'` includes the personal self-chat with `is_self_chat=true`; use SEND_MESSAGE_TO_SELF and LIST_MESSAGES_TO_SELF for it. Returns one provider page per call (up to `top`, further bounded by `limit` if given), potentially plus that one synthetic entry, and a `next_page_token`."
       },
       {
         "slug": "MICROSOFT_TEAMS_CHATS_GET_ALL_MESSAGES",
@@ -24801,6 +24801,11 @@
         "description": "Tool to list all replies to a specific message in a Microsoft Teams channel. Use when you need to retrieve the conversation thread for a particular message."
       },
       {
+        "slug": "MICROSOFT_TEAMS_LIST_MESSAGES_TO_SELF",
+        "name": "List messages to yourself",
+        "description": "List one page from your Microsoft Teams self-DM (the chat with yourself), so you can read personal notes without looking up any chat or user ID."
+      },
+      {
         "slug": "MICROSOFT_TEAMS_LIST_OFFER_SHIFT_REQUESTS",
         "name": "List offer shift requests",
         "description": "Tool to list offer shift requests in a Microsoft Teams schedule. Use when you need to retrieve all offer shift requests for a team's schedule."
@@ -24958,12 +24963,17 @@
       {
         "slug": "MICROSOFT_TEAMS_SEARCH_MESSAGES",
         "name": "Search Teams messages",
-        "description": "Search Microsoft Teams messages using powerful KQL syntax. Supports sender (from:), date filters (sent:), attachments, and boolean logic. Works across all Teams chats and channels the user has access to. Examples: 'from:user@example.com AND sent>=2024-10-01', 'punchlist OR termination', 'sent>today-30 AND hasattachment:yes' NOTE: This action requires an organizational Microsoft 365 account (Azure AD/Entra ID). It does NOT work with personal Microsoft accounts (MSA) such as @outlook.com, @hotmail.com, or @live.com. If using a personal Microsoft account, this search will fail."
+        "description": "Search Microsoft Teams messages using KQL syntax. Supports sender (from:), date filters (sent:), attachments, and boolean logic. Works across all Teams chats and channels the user has access to, including matching self-DM/personal-note messages whose resource chatId is `48:notes`. Examples: 'from:user@example.com AND sent>=2024-10-01', 'punchlist OR termination', 'sent>today-30 AND hasattachment:yes' NOTE: This action requires an organizational Microsoft 365 account (Azure AD/Entra ID). It does NOT work with personal Microsoft accounts (MSA) such as @outlook.com, @hotmail.com, or @live.com. If using a personal Microsoft account, this search will fail."
       },
       {
         "slug": "MICROSOFT_TEAMS_SEND_ACTIVITY_NOTIFICATION",
         "name": "Send Activity Notification to Recipients",
         "description": "Tool to send activity notifications to specified recipients in Microsoft Teams. Use when you need to send custom notifications to users, team members, or channel members."
+      },
+      {
+        "slug": "MICROSOFT_TEAMS_SEND_MESSAGE_TO_SELF",
+        "name": "Send a message to yourself",
+        "description": "Send a message to your Microsoft Teams self-DM (the chat with yourself), useful for saving a personal note without looking up any chat or user ID."
       },
       {
         "slug": "MICROSOFT_TEAMS_SET_ME_PREFERRED_PRESENCE",
@@ -26317,7 +26327,7 @@
     ],
     "toolCount": 407,
     "triggerCount": 0,
-    "version": "20260807_00",
+    "version": "20260828_00",
     "tools": [
       {
         "slug": "SHOPIFY_ACTIVATE_ONE_TIME_CHARGE",
@@ -28899,7 +28909,7 @@
     ],
     "toolCount": 83,
     "triggerCount": 9,
-    "version": "20260821_00",
+    "version": "20260828_00",
     "tools": [
       {
         "slug": "ONE_DRIVE_ADD_WORKBOOK_WORKSHEET",
@@ -36956,7 +36966,7 @@
     ],
     "toolCount": 507,
     "triggerCount": 0,
-    "version": "20260826_00",
+    "version": "20260828_00",
     "tools": [
       {
         "slug": "POSTHOG_ADD_DASHBOARD_COLLABORATORS_WITH_ACCESS_LEVEL",
@@ -48919,7 +48929,7 @@
     ],
     "toolCount": 69,
     "triggerCount": 20,
-    "version": "20260821_00",
+    "version": "20260828_00",
     "tools": [
       {
         "slug": "CONFLUENCE_ADD_CONTENT_LABEL",
@@ -49520,7 +49530,7 @@
     ],
     "toolCount": 178,
     "triggerCount": 0,
-    "version": "20260702_00",
+    "version": "20260828_00",
     "tools": [
       {
         "slug": "FRESHDESK_ADD_NOTE_TO_TICKET",
@@ -52336,11 +52346,12 @@
     "description": "Ahrefs is an SEO and marketing platform offering site audits, keyword research, content analysis, and competitive insights to improve search rankings and drive organic traffic",
     "category": "marketing automation",
     "authSchemes": [
-      "API_KEY"
+      "API_KEY",
+      "OAUTH2"
     ],
     "toolCount": 40,
     "triggerCount": 0,
-    "version": "20260826_00",
+    "version": "20260828_00",
     "tools": [
       {
         "slug": "AHREFS_BACKLINKS_STATS_RETRIEVAL",
@@ -52545,6 +52556,54 @@
     ],
     "triggers": [],
     "authConfigDetails": [
+      {
+        "mode": "OAUTH2",
+        "name": "ahrefs_oauth2",
+        "fields": {
+          "auth_config_creation": {
+            "required": [
+              {
+                "name": "client_id",
+                "displayName": "Client id",
+                "type": "string",
+                "description": "Client id of the app",
+                "required": true,
+                "default": null
+              },
+              {
+                "name": "client_secret",
+                "displayName": "Client secret",
+                "type": "string",
+                "description": "Client secret of the app",
+                "required": true,
+                "default": null
+              }
+            ],
+            "optional": [
+              {
+                "name": "oauth_redirect_uri",
+                "displayName": "Redirect URI",
+                "type": "string",
+                "description": "Add this Redirect URL to your app's OAuth allow list.",
+                "required": false,
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
+              },
+              {
+                "name": "scopes",
+                "displayName": "Scopes",
+                "type": "string",
+                "description": "Scopes to request from the user, comma separated",
+                "required": false,
+                "default": "apiv3-integration-apps"
+              }
+            ]
+          },
+          "connected_account_initiation": {
+            "required": [],
+            "optional": []
+          }
+        }
+      },
       {
         "mode": "API_KEY",
         "name": "ahrefs_apikey",
@@ -59561,7 +59620,7 @@
     ],
     "toolCount": 42,
     "triggerCount": 0,
-    "version": "20260721_00",
+    "version": "20260828_00",
     "tools": [
       {
         "slug": "BAMBOOHR_ATS_CREATE_CANDIDATE",
@@ -60456,7 +60515,7 @@
     ],
     "toolCount": 452,
     "triggerCount": 2,
-    "version": "20260819_00",
+    "version": "20260828_00",
     "tools": [
       {
         "slug": "ZENDESK_APPLY_ZENDESK_MACRO",
@@ -63492,7 +63551,7 @@
     ],
     "toolCount": 467,
     "triggerCount": 20,
-    "version": "20260826_00",
+    "version": "20260828_00",
     "tools": [
       {
         "slug": "GOOGLESUPER_ACL_DELETE",
@@ -72619,7 +72678,7 @@
     ],
     "toolCount": 98,
     "triggerCount": 0,
-    "version": "20260826_00",
+    "version": "20260828_00",
     "tools": [
       {
         "slug": "SHARE_POINT_ADD_ATTACHMENT_TO_LIST_ITEM",
@@ -76824,7 +76883,7 @@
     ],
     "toolCount": 86,
     "triggerCount": 0,
-    "version": "20260826_00",
+    "version": "20260828_00",
     "tools": [
       {
         "slug": "NETSUITE_ASYNC_GET_JOB_STATUS",
@@ -90280,7 +90339,7 @@
     ],
     "toolCount": 32,
     "triggerCount": 0,
-    "version": "20260721_00",
+    "version": "20260828_00",
     "tools": [
       {
         "slug": "GORGIAS_ADD_TICKET_TAGS",
@@ -99449,7 +99508,7 @@
     ],
     "toolCount": 53,
     "triggerCount": 0,
-    "version": "20260721_00",
+    "version": "20260828_00",
     "tools": [
       {
         "slug": "KOMMO_ADD_AI_SOURCE_FILE",
@@ -115265,6 +115324,113 @@
     ]
   },
   {
+    "slug": "agile_crm",
+    "name": "Agile CRM",
+    "logo": "https://logos.composio.dev/api/agilecrm",
+    "description": "Agile CRM combines contact management, sales pipelines, marketing automation, tasks, campaigns, and customer support in one platform.",
+    "category": "crm",
+    "authSchemes": [
+      "API_KEY"
+    ],
+    "toolCount": 10,
+    "triggerCount": 0,
+    "version": "00000000_00",
+    "tools": [
+      {
+        "slug": "AGILE_CRM_CREATE_CONTACT_OR_COMPANY",
+        "name": "Create Contact or Company",
+        "description": "Create a person contact with optional tags and scoring, or a company, with common and tenant custom properties."
+      },
+      {
+        "slug": "AGILE_CRM_CREATE_DEAL",
+        "name": "Create Deal",
+        "description": "Create a deal, optionally associate contacts, and validate or resolve a case-sensitive milestone from the selected or default pipeline."
+      },
+      {
+        "slug": "AGILE_CRM_DELETE_CONTACT_OR_COMPANY",
+        "name": "Delete Contact or Company",
+        "description": "Permanently delete one person contact or company by numeric ID."
+      },
+      {
+        "slug": "AGILE_CRM_DELETE_DEAL",
+        "name": "Delete Deal",
+        "description": "Permanently delete one deal by its numeric Agile CRM ID."
+      },
+      {
+        "slug": "AGILE_CRM_GET_CONTACT_OR_COMPANY",
+        "name": "Get Contact or Company",
+        "description": "Get one person contact or company by its numeric Agile CRM ID; return null when the resource does not exist."
+      },
+      {
+        "slug": "AGILE_CRM_GET_DEAL",
+        "name": "Get Deal",
+        "description": "Get one deal by its numeric Agile CRM ID; return null when the deal does not exist."
+      },
+      {
+        "slug": "AGILE_CRM_LIST_CONTACTS",
+        "name": "List Contacts",
+        "description": "Return one creation-ordered page of person contacts, with a cursor for the next page when more contacts exist."
+      },
+      {
+        "slug": "AGILE_CRM_LIST_DEALS",
+        "name": "List Deals",
+        "description": "Return one creation-ordered page of deals, with a cursor for the next page when more deals exist."
+      },
+      {
+        "slug": "AGILE_CRM_UPDATE_CONTACT_OR_COMPANY",
+        "name": "Update Contact or Company",
+        "description": "Add or replace selected properties on one person contact or company without replacing properties that are not included."
+      },
+      {
+        "slug": "AGILE_CRM_UPDATE_DEAL",
+        "name": "Update Deal",
+        "description": "Partially update selected fields of an existing deal without replacing fields that are not supplied."
+      }
+    ],
+    "triggers": [],
+    "authConfigDetails": [
+      {
+        "mode": "API_KEY",
+        "name": "agilecrm_api_key",
+        "fields": {
+          "auth_config_creation": {
+            "required": [],
+            "optional": []
+          },
+          "connected_account_initiation": {
+            "required": [
+              {
+                "name": "subdomain",
+                "displayName": "Domain",
+                "type": "string",
+                "description": "Your Agile CRM tenant subdomain only. For an account at https://example.agilecrm.com, enter example. You can confirm it from your Agile CRM account URL or from Admin Settings -> API & Analytics -> API Key.",
+                "required": true,
+                "default": null
+              },
+              {
+                "name": "generic_api_key",
+                "displayName": "REST API Key",
+                "type": "string",
+                "description": "In Agile CRM, open Admin Settings -> API & Analytics -> API Key and copy the first key, labelled API Key for REST client. Agile CRM uses this key as the HTTP Basic password.",
+                "required": true,
+                "default": null
+              },
+              {
+                "name": "generic_id",
+                "displayName": "Email",
+                "type": "string",
+                "description": "The email address of the Agile CRM user whose REST API key you are connecting. Agile CRM uses this email as the HTTP Basic username.",
+                "required": true,
+                "default": null
+              }
+            ],
+            "optional": []
+          }
+        }
+      }
+    ]
+  },
+  {
     "slug": "agiled",
     "name": "Agiled",
     "logo": "https://logos.composio.dev/api/agiled",
@@ -124839,7 +125005,7 @@
     ],
     "toolCount": 142,
     "triggerCount": 0,
-    "version": "20260721_00",
+    "version": "20260828_00",
     "tools": [
       {
         "slug": "BASECAMP_COMPLETE_TODO",
@@ -133699,7 +133865,7 @@
     ],
     "toolCount": 49,
     "triggerCount": 0,
-    "version": "20260615_00",
+    "version": "20260828_00",
     "tools": [
       {
         "slug": "BOOQABLE_CREATE_CUSTOMER",
@@ -137110,6 +137276,52 @@
           },
           "connected_account_initiation": {
             "required": [],
+            "optional": []
+          }
+        }
+      }
+    ]
+  },
+  {
+    "slug": "bug_recorder",
+    "name": "Bug Recorder",
+    "logo": "https://logos.composio.dev/api/bug_recorder",
+    "description": "Bug Recorder captures application errors to support server monitoring and diagnosis.",
+    "category": "server monitoring",
+    "authSchemes": [
+      "API_KEY"
+    ],
+    "toolCount": 1,
+    "triggerCount": 0,
+    "version": "00000000_00",
+    "tools": [
+      {
+        "slug": "BUG_RECORDER_SEND_ERROR",
+        "name": "Send Error",
+        "description": "Record one server-side application error in Bug Recorder and trigger any notifications configured for the connected account."
+      }
+    ],
+    "triggers": [],
+    "authConfigDetails": [
+      {
+        "mode": "API_KEY",
+        "name": "bug_recorder_api_key",
+        "fields": {
+          "auth_config_creation": {
+            "required": [],
+            "optional": []
+          },
+          "connected_account_initiation": {
+            "required": [
+              {
+                "name": "generic_api_key",
+                "displayName": "API Key",
+                "type": "string",
+                "description": "In the Bug Recorder dashboard, open Settings > API Key and select Generate New Key. Copy the key when it appears because Bug Recorder shows it only once.",
+                "required": true,
+                "default": null
+              }
+            ],
             "optional": []
           }
         }
@@ -143462,7 +143674,7 @@
     ],
     "toolCount": 186,
     "triggerCount": 0,
-    "version": "20260615_00",
+    "version": "20260828_00",
     "tools": [
       {
         "slug": "CENTRALSTATIONCRM_CHECK_CONNECTION",
@@ -144895,6 +145107,62 @@
                 "displayName": "API Key",
                 "type": "string",
                 "description": "The API key for the Charla property you want to connect. In Charla, open that property's settings, select the Integration tab, and copy its API key. Each property has a separate key, so connect each property separately.",
+                "required": true,
+                "default": null
+              }
+            ],
+            "optional": []
+          }
+        }
+      }
+    ]
+  },
+  {
+    "slug": "chartly",
+    "name": "Chartly",
+    "logo": "https://logos.composio.dev/api/chartly",
+    "description": "Chartly renders Chart.js configurations as PNG or SVG images and creates permanent chart URLs for sharing and embedding.",
+    "category": "images & design",
+    "authSchemes": [
+      "API_KEY"
+    ],
+    "toolCount": 3,
+    "triggerCount": 0,
+    "version": "00000000_00",
+    "tools": [
+      {
+        "slug": "CHARTLY_CREATE_PERMANENT_CHART",
+        "name": "Create Permanent Chart",
+        "description": "Create a permanent Chartly URL from a Chart.js configuration. This creates an undeletable resource because Chartly provides no delete endpoint."
+      },
+      {
+        "slug": "CHARTLY_GET_PERMANENT_CHART",
+        "name": "Get Permanent Chart",
+        "description": "Download the PNG or SVG image for an existing permanent Chartly chart ID."
+      },
+      {
+        "slug": "CHARTLY_RENDER_CHART",
+        "name": "Render Chart",
+        "description": "Render a Chart.js configuration as a PNG or SVG downloadable image without creating a permanent Chartly URL."
+      }
+    ],
+    "triggers": [],
+    "authConfigDetails": [
+      {
+        "mode": "API_KEY",
+        "name": "chartly_api_key",
+        "fields": {
+          "auth_config_creation": {
+            "required": [],
+            "optional": []
+          },
+          "connected_account_initiation": {
+            "required": [
+              {
+                "name": "generic_api_key",
+                "displayName": "API Key",
+                "type": "string",
+                "description": "Your Chartly trial or production API key. For a production key, sign in at https://chartly.dev, open the Dashboard, and create or copy a key from the API keys section. For testing, obtain a trial key from the Chartly homepage. Keep this value secret.",
                 "required": true,
                 "default": null
               }
@@ -149477,7 +149745,7 @@
     ],
     "toolCount": 57,
     "triggerCount": 0,
-    "version": "20260615_00",
+    "version": "20260828_00",
     "tools": [
       {
         "slug": "CLIENTARY_CREATE_CLIENT",
@@ -149812,7 +150080,7 @@
     ],
     "toolCount": 75,
     "triggerCount": 0,
-    "version": "20260721_00",
+    "version": "20260828_00",
     "tools": [
       {
         "slug": "CLOCKIFY_ADD_USER_TO_GROUP",
@@ -150376,7 +150644,7 @@
     ],
     "toolCount": 150,
     "triggerCount": 0,
-    "version": "20260615_00",
+    "version": "20260828_00",
     "tools": [
       {
         "slug": "CLOUDCART_ADD_CATEGORY_PROPERTIES",
@@ -151427,7 +151695,7 @@
     ],
     "toolCount": 4,
     "triggerCount": 0,
-    "version": "20260826_00",
+    "version": "20260828_00",
     "tools": [
       {
         "slug": "CLOUDFLARE_BROWSER_RENDERING_CAPTURE_SCREENSHOT",
@@ -151576,7 +151844,7 @@
     ],
     "toolCount": 109,
     "triggerCount": 0,
-    "version": "20260826_00",
+    "version": "20260828_00",
     "tools": [
       {
         "slug": "CLOUDINARY_ACTIVATE_LIVE_STREAM",
@@ -153144,6 +153412,137 @@
                 "displayName": "API Key",
                 "type": "string",
                 "description": "Visit the API Keys page at https://getcody.ai/settings/api to retrieve your API key.",
+                "required": true,
+                "default": null
+              }
+            ],
+            "optional": []
+          }
+        }
+      }
+    ]
+  },
+  {
+    "slug": "coingecko",
+    "name": "CoinGecko",
+    "logo": "https://logos.composio.dev/api/coingecko",
+    "description": "CoinGecko provides cryptocurrency prices, market data, metadata, exchange data, NFTs, and onchain data through its Demo REST API.",
+    "category": "analytics",
+    "authSchemes": [
+      "API_KEY"
+    ],
+    "toolCount": 18,
+    "triggerCount": 0,
+    "version": "00000000_00",
+    "tools": [
+      {
+        "slug": "COINGECKO_GET_COIN_DETAILS",
+        "name": "Get Coin Details",
+        "description": "Get metadata and optionally selected market, ticker, community, and developer sections for one CoinGecko coin ID."
+      },
+      {
+        "slug": "COINGECKO_GET_COIN_MARKET_CHART",
+        "name": "Get Coin Market Chart",
+        "description": "Get price, market-cap, and volume time series for a coin over either a relative day window or an exact Unix time range."
+      },
+      {
+        "slug": "COINGECKO_GET_COIN_OHLC",
+        "name": "Get Coin OHLC",
+        "description": "Get open, high, low, and close price candles for a CoinGecko coin over a supported day window."
+      },
+      {
+        "slug": "COINGECKO_GET_COIN_PRICES",
+        "name": "Get Coin Prices",
+        "description": "Get current prices for one or more CoinGecko coin IDs in one or more currencies, with optional market metrics."
+      },
+      {
+        "slug": "COINGECKO_GET_GLOBAL_MARKET_DATA",
+        "name": "Get Global Market Data",
+        "description": "Get an aggregate snapshot for either the overall crypto market or the decentralized-finance market."
+      },
+      {
+        "slug": "COINGECKO_GET_ONCHAIN_POOL_OHLCV",
+        "name": "Get Onchain Pool OHLCV",
+        "description": "Get bounded open, high, low, close, and volume candles for a DEX pool, with timeframe, aggregation, currency, and cutoff controls."
+      },
+      {
+        "slug": "COINGECKO_GET_ONCHAIN_POOLS_BY_ADDRESS",
+        "name": "Get Onchain Pools by Address",
+        "description": "Get data for one or more pool contract addresses on the same CoinGecko onchain network in a single call."
+      },
+      {
+        "slug": "COINGECKO_GET_ONCHAIN_TOKEN_PRICES",
+        "name": "Get Onchain Token Prices",
+        "description": "Get current USD prices for one or more token contracts on a CoinGecko onchain network, with optional market metrics."
+      },
+      {
+        "slug": "COINGECKO_GET_ONCHAIN_TOKENS_BY_ADDRESS",
+        "name": "Get Onchain Tokens by Address",
+        "description": "Get market data for one or more token contract addresses on the same CoinGecko onchain network in a single call."
+      },
+      {
+        "slug": "COINGECKO_GET_TRENDING_ASSETS",
+        "name": "Get Trending Assets",
+        "description": "Get CoinGecko's currently trending coins, NFT collections, and categories from search activity."
+      },
+      {
+        "slug": "COINGECKO_LIST_COIN_MARKETS",
+        "name": "List Coin Markets",
+        "description": "Return one ranked page of CoinGecko market data, optionally filtered by coin IDs, symbols, or category. Use next_cursor to continue."
+      },
+      {
+        "slug": "COINGECKO_LIST_NEW_ONCHAIN_POOLS",
+        "name": "List New Onchain Pools",
+        "description": "Return one page of newly created DEX pools across all networks or within one network. Use next_cursor to continue through numbered pages available on the CoinGecko Demo plan. This is a rapidly changing newest-first feed, so continuation pages can overlap or omit pools and are not a stable snapshot."
+      },
+      {
+        "slug": "COINGECKO_LIST_ONCHAIN_NETWORKS",
+        "name": "List Onchain Networks",
+        "description": "Return one page of supported onchain network IDs and their CoinGecko asset-platform mappings."
+      },
+      {
+        "slug": "COINGECKO_LIST_ONCHAIN_POOLS",
+        "name": "List Onchain Pools",
+        "description": "Return one ranked page of pools for a network, optionally restricted to one DEX or one token contract. Use next_cursor to continue through the pages available on the CoinGecko Demo plan."
+      },
+      {
+        "slug": "COINGECKO_LIST_ONCHAIN_POOL_TRADES",
+        "name": "List Onchain Pool Trades",
+        "description": "List up to 300 of a CoinGecko onchain pool's trades from the past 24 hours, optionally filtered by minimum USD volume or token side."
+      },
+      {
+        "slug": "COINGECKO_LIST_TRENDING_ONCHAIN_POOLS",
+        "name": "List Trending Onchain Pools",
+        "description": "Return one page of currently trending DEX pools across all networks or within one network and duration window. Use next_cursor to continue through the pages available on the CoinGecko Demo plan."
+      },
+      {
+        "slug": "COINGECKO_SEARCH_ASSETS",
+        "name": "Search Assets",
+        "description": "Search CoinGecko for matching coins, exchanges, categories, and NFT collections. Use returned coin IDs with coin detail and market tools, and category IDs with List Coin Markets."
+      },
+      {
+        "slug": "COINGECKO_SEARCH_ONCHAIN_POOLS",
+        "name": "Search Onchain Pools",
+        "description": "Search decentralized-exchange pools and tokens by name, symbol, or contract address, optionally within one network. Returns one page and related token or DEX resources; use next_cursor to continue."
+      }
+    ],
+    "triggers": [],
+    "authConfigDetails": [
+      {
+        "mode": "API_KEY",
+        "name": "coingecko_demo_api_key",
+        "fields": {
+          "auth_config_creation": {
+            "required": [],
+            "optional": []
+          },
+          "connected_account_initiation": {
+            "required": [
+              {
+                "name": "generic_api_key",
+                "displayName": "Demo API Key",
+                "type": "string",
+                "description": "Create or copy your free Demo API key from the CoinGecko Developer Dashboard at https://www.coingecko.com/en/developers/dashboard#api-keys. This toolkit sends it in the x-cg-demo-api-key header and does not accept Pro API keys.",
                 "required": true,
                 "default": null
               }
@@ -156853,7 +157252,7 @@
     ],
     "toolCount": 19,
     "triggerCount": 0,
-    "version": "20260615_00",
+    "version": "20260828_00",
     "tools": [
       {
         "slug": "CONVEX_CREATE_DEPLOY_KEY",
@@ -170851,7 +171250,7 @@
     ],
     "toolCount": 60,
     "triggerCount": 0,
-    "version": "20260615_00",
+    "version": "20260828_00",
     "tools": [
       {
         "slug": "DEPLOYHQ_DELETE_COMMAND",
@@ -172418,6 +172817,75 @@
     ]
   },
   {
+    "slug": "dify",
+    "name": "Dify",
+    "logo": "https://logos.composio.dev/api/dify",
+    "description": "Run and inspect a published Dify Workflow app through its Service API, including configuration and workflow run history.",
+    "category": "ai agents",
+    "authSchemes": [
+      "API_KEY"
+    ],
+    "toolCount": 4,
+    "triggerCount": 0,
+    "version": "00000000_00",
+    "tools": [
+      {
+        "slug": "DIFY_GET_WORKFLOW_APP_CONFIGURATION",
+        "name": "Get Workflow App Configuration",
+        "description": "Return the connected Workflow app's identity, declared input form and upload limits, tool icons, and hosted-site settings. If the app is unpublished, the response identifies the unavailable parameters section while preserving the other metadata."
+      },
+      {
+        "slug": "DIFY_GET_WORKFLOW_RUN",
+        "name": "Get Workflow Run",
+        "description": "Return one workflow run's status, inputs, arbitrary outputs, error, and execution metrics by run ID."
+      },
+      {
+        "slug": "DIFY_LIST_WORKFLOW_RUNS",
+        "name": "List Workflow Runs",
+        "description": "Return one page of run summaries for the connected Workflow app, with filters and a continuation cursor for older or additional runs."
+      },
+      {
+        "slug": "DIFY_RUN_WORKFLOW",
+        "name": "Run Workflow",
+        "description": "Run the connected app's latest published workflow in blocking mode and return its app-defined outputs. Inspect the app configuration first: the configured workflow may perform irreversible external side effects."
+      }
+    ],
+    "triggers": [],
+    "authConfigDetails": [
+      {
+        "mode": "API_KEY",
+        "name": "dify_api_key",
+        "fields": {
+          "auth_config_creation": {
+            "required": [],
+            "optional": []
+          },
+          "connected_account_initiation": {
+            "required": [
+              {
+                "name": "full",
+                "displayName": "Service API Base URL",
+                "type": "string",
+                "description": "The Service API base URL shown in your published Dify Workflow app's API access screen. Keep https://api.dify.ai/v1 for Dify Cloud, or enter your self-hosted instance's complete Service API base URL, normally ending in /v1.",
+                "required": true,
+                "default": "https://api.dify.ai/v1"
+              },
+              {
+                "name": "generic_api_key",
+                "displayName": "Workflow App API Key",
+                "type": "string",
+                "description": "Open the published Workflow app in Dify, go to its API access screen, and create or copy an API key. The key is scoped to that one app; do not use a Knowledge Service API key or a key from another app mode.",
+                "required": true,
+                "default": null
+              }
+            ],
+            "optional": []
+          }
+        }
+      }
+    ]
+  },
+  {
     "slug": "digital_humani",
     "name": "Digital Humani",
     "logo": "https://logos.composio.dev/api/digital_humani",
@@ -172813,6 +173281,52 @@
                 "displayName": "DigitalOcean Personal Access Token",
                 "type": "string",
                 "description": "The personal access token generated from the DigitalOcean control panel, used for authenticating API requests.",
+                "required": true,
+                "default": null
+              }
+            ],
+            "optional": []
+          }
+        }
+      }
+    ]
+  },
+  {
+    "slug": "directiq",
+    "name": "DirectIQ",
+    "logo": "https://logos.composio.dev/api/directiq",
+    "description": "DirectIQ sends transactional email through its dashboard API-key integration.",
+    "category": "transactional email",
+    "authSchemes": [
+      "API_KEY"
+    ],
+    "toolCount": 1,
+    "triggerCount": 0,
+    "version": "00000000_00",
+    "tools": [
+      {
+        "slug": "DIRECTIQ_SEND_TRANSACTIONAL_EMAIL",
+        "name": "Send Transactional Email",
+        "description": "Send one transactional email immediately from a DirectIQ-accepted sender to exactly one recipient. This externally visible, non-idempotent action may deliver email and can create duplicate sends if retried; DirectIQ does not support cc or bcc on this endpoint."
+      }
+    ],
+    "triggers": [],
+    "authConfigDetails": [
+      {
+        "mode": "API_KEY",
+        "name": "directiq_api_key",
+        "fields": {
+          "auth_config_creation": {
+            "required": [],
+            "optional": []
+          },
+          "connected_account_initiation": {
+            "required": [
+              {
+                "name": "generic_api_key",
+                "displayName": "Dashboard API Key",
+                "type": "string",
+                "description": "Your DirectIQ dashboard API key. In DirectIQ, open Integrations > API Keys at https://app.directiq.com/integrations/apikeys and copy the API key. It is sent directly in the x-api-key header; do not enter the dashboard client ID or secret.",
                 "required": true,
                 "default": null
               }
@@ -178847,7 +179361,7 @@
     ],
     "toolCount": 60,
     "triggerCount": 0,
-    "version": "20260721_00",
+    "version": "20260828_00",
     "tools": [
       {
         "slug": "EGNYTE_CREATE_AUDIT_PERMISSIONS",
@@ -185218,7 +185732,7 @@
     ],
     "toolCount": 54,
     "triggerCount": 0,
-    "version": "20260817_00",
+    "version": "20260828_00",
     "tools": [
       {
         "slug": "EXCEL_ADD_CHART",
@@ -187320,7 +187834,7 @@
     ],
     "toolCount": 26,
     "triggerCount": 0,
-    "version": "20260624_00",
+    "version": "20260828_00",
     "tools": [
       {
         "slug": "FIBERY_DELETE_CUSTOM_APP_ENDPOINT",
@@ -187735,7 +188249,7 @@
     ],
     "toolCount": 7,
     "triggerCount": 0,
-    "version": "20260615_00",
+    "version": "20260828_00",
     "tools": [
       {
         "slug": "FILES_COM_DELETE_API_KEY",
@@ -189961,7 +190475,7 @@
     ],
     "toolCount": 14,
     "triggerCount": 0,
-    "version": "20260821_00",
+    "version": "20260828_00",
     "tools": [
       {
         "slug": "FIRMAO_CREATE_INVOICE",
@@ -192691,7 +193205,7 @@
     ],
     "toolCount": 20,
     "triggerCount": 0,
-    "version": "20260813_00",
+    "version": "20260828_00",
     "tools": [
       {
         "slug": "FORMDESK_AUTOMATIC_LOGIN",
@@ -193379,7 +193893,7 @@
     ],
     "toolCount": 12,
     "triggerCount": 0,
-    "version": "20260615_00",
+    "version": "20260828_00",
     "tools": [
       {
         "slug": "FRESHSERVICE_BULK_UPDATE_TICKETS",
@@ -199539,6 +200053,77 @@
     ]
   },
   {
+    "slug": "goodapi_plant_trees",
+    "name": "GoodAPI: Plant Trees",
+    "logo": "https://logos.composio.dev/api/goodapi_plant_trees",
+    "description": "Plant and track trees through GoodAPI's standalone API, retrieve planting evidence, issue eligible tree refunds, and access the organization's impact dashboard.",
+    "category": "ecommerce",
+    "authSchemes": [
+      "API_KEY"
+    ],
+    "toolCount": 6,
+    "triggerCount": 0,
+    "version": "00000000_00",
+    "tools": [
+      {
+        "slug": "GOODAPI_PLANT_TREES_CREATE_TREE_PLANTING",
+        "name": "Create Tree Planting",
+        "description": "Create a metered tree-planting registration; live API keys can incur charges. Reuse the same idempotency key only when retrying the identical planting."
+      },
+      {
+        "slug": "GOODAPI_PLANT_TREES_GET_AGGREGATE_PLANTING_EVIDENCE",
+        "name": "Get Aggregate Planting Evidence",
+        "description": "Return global tree-planting verification totals and field evidence grouped by region. The data is cached for 30 days, can contain a large media list, and is not limited to the connected organization's contributions."
+      },
+      {
+        "slug": "GOODAPI_PLANT_TREES_GET_IMPACT_DASHBOARD_URL",
+        "name": "Get Impact Dashboard URL",
+        "description": "Return the connected organization's shareable public impact dashboard URL."
+      },
+      {
+        "slug": "GOODAPI_PLANT_TREES_GET_TREE_PLANTING_EVIDENCE",
+        "name": "Get Tree Planting Evidence",
+        "description": "Return the beta, 30-day-cached planting lifecycle and sanitized evidence for one registration. This timeline can remain after refund and does not prove that the registration is still active."
+      },
+      {
+        "slug": "GOODAPI_PLANT_TREES_LIST_TREE_PLANTINGS",
+        "name": "List Tree Plantings",
+        "description": "Return tree-planting registrations and totals, optionally filtered by registration, attribution, date, or metadata. The provider returns all matches without pagination, so use filters for large histories."
+      },
+      {
+        "slug": "GOODAPI_PLANT_TREES_REFUND_TREE_PLANTING",
+        "name": "Refund Tree Planting",
+        "description": "Irreversibly refund all or part of an eligible tree planting from the current billing cycle and reduce active totals. Omit count for a full refund; reuse the same idempotency key only for an identical retry."
+      }
+    ],
+    "triggers": [],
+    "authConfigDetails": [
+      {
+        "mode": "API_KEY",
+        "name": "goodapi_plant_trees_api_key",
+        "fields": {
+          "auth_config_creation": {
+            "required": [],
+            "optional": []
+          },
+          "connected_account_initiation": {
+            "required": [
+              {
+                "name": "generic_api_key",
+                "displayName": "Standalone API Key",
+                "type": "string",
+                "description": "Your GoodAPI standalone production or test key. Sign in at https://app.thegoodapi.com/fe/login and copy the api_key_prod (live_sk_) or api_key_test (test_sk_) value. Test keys behave identically without charges or real-world impact. The key is sent raw in the Authorization header, without a Bearer prefix.",
+                "required": true,
+                "default": null
+              }
+            ],
+            "optional": []
+          }
+        }
+      }
+    ]
+  },
+  {
     "slug": "goodbits",
     "name": "Goodbits",
     "logo": "https://goodbits.io/logo.png",
@@ -202431,7 +203016,7 @@
     ],
     "toolCount": 28,
     "triggerCount": 0,
-    "version": "20260615_00",
+    "version": "20260828_00",
     "tools": [
       {
         "slug": "GRAFBASE_ADD_ZITADEL_REDIRECT",
@@ -204421,7 +205006,7 @@
     ],
     "toolCount": 30,
     "triggerCount": 0,
-    "version": "20260624_00",
+    "version": "20260828_00",
     "tools": [
       {
         "slug": "GRIST_ADD_RECORDS",
@@ -222213,7 +222798,7 @@
     ],
     "toolCount": 24,
     "triggerCount": 0,
-    "version": "20260615_00",
+    "version": "20260828_00",
     "tools": [
       {
         "slug": "KANBANIZE_ADD_CARD_COMMENT",
@@ -224604,6 +225189,75 @@
                 "displayName": "NetLicensing API Key",
                 "type": "string",
                 "description": "The API key used for authenticating requests to the NetLicensing API.",
+                "required": true,
+                "default": null
+              }
+            ],
+            "optional": []
+          }
+        }
+      }
+    ]
+  },
+  {
+    "slug": "labsmobile",
+    "name": "LabsMobile",
+    "logo": "https://logos.composio.dev/api/labsmobile",
+    "description": "LabsMobile provides APIs for sending SMS messages and retrieving account balances and country pricing.",
+    "category": "phone & sms",
+    "authSchemes": [
+      "BASIC"
+    ],
+    "toolCount": 4,
+    "triggerCount": 0,
+    "version": "00000000_00",
+    "tools": [
+      {
+        "slug": "LABSMOBILE_GET_BALANCE",
+        "name": "Get Balance",
+        "description": "Return the connected LabsMobile account's available SMS credits."
+      },
+      {
+        "slug": "LABSMOBILE_GET_SMS_PRICES",
+        "name": "Get SMS Prices",
+        "description": "Return current SMS credit prices for selected ISO country codes, or for all countries when no codes are supplied."
+      },
+      {
+        "slug": "LABSMOBILE_SEND_SMS",
+        "name": "Send SMS",
+        "description": "Submit one or more real SMS messages for immediate processing, which may consume credits and trigger a configured delivery callback. A successful result confirms acceptance, not recipient delivery."
+      },
+      {
+        "slug": "LABSMOBILE_SIMULATE_SMS",
+        "name": "Simulate SMS",
+        "description": "Validate one or more SMS submissions without delivery or credit use. The simulation creates an entry in LabsMobile history."
+      }
+    ],
+    "triggers": [],
+    "authConfigDetails": [
+      {
+        "mode": "BASIC",
+        "name": "labsmobile_basic",
+        "fields": {
+          "auth_config_creation": {
+            "required": [],
+            "optional": []
+          },
+          "connected_account_initiation": {
+            "required": [
+              {
+                "name": "username",
+                "displayName": "Registration Email",
+                "type": "string",
+                "description": "Enter the email address used to register your LabsMobile account. LabsMobile uses this address as the HTTP Basic username.",
+                "required": true,
+                "default": null
+              },
+              {
+                "name": "password",
+                "displayName": "API Token",
+                "type": "string",
+                "description": "Generate and copy an API token from WebSMS > Account > API Settings at https://websms.labsmobile.com/SY0204/api. LabsMobile uses this token as the HTTP Basic password; do not enter your account login password.",
                 "required": true,
                 "default": null
               }
@@ -227186,6 +227840,77 @@
     ]
   },
   {
+    "slug": "linguin_ai",
+    "name": "Linguin AI",
+    "logo": "https://logos.composio.dev/api/linguin_ai",
+    "description": "Linguin AI detects languages and scores English text for profanity through its direct v2 API.",
+    "category": "artificial intelligence",
+    "authSchemes": [
+      "API_KEY"
+    ],
+    "toolCount": 6,
+    "triggerCount": 0,
+    "version": "00000000_00",
+    "tools": [
+      {
+        "slug": "LINGUIN_AI_CHECK_PROFANITY",
+        "name": "Check Profanity",
+        "description": "Score the likelihood of profanity in one English text. Linguin AI documents profanity detection as English-only, and each call consumes one daily detection."
+      },
+      {
+        "slug": "LINGUIN_AI_CHECK_PROFANITY_BATCH",
+        "name": "Check Profanity in Batch",
+        "description": "Score profanity likelihood for multiple English texts in one request and return scores in input order. Profanity detection is English-only. Each text consumes one daily detection, and the request fails atomically if the account has insufficient quota."
+      },
+      {
+        "slug": "LINGUIN_AI_DETECT_LANGUAGE",
+        "name": "Detect Language",
+        "description": "Identify probable languages for one text and return candidates with confidence scores. Consumes one daily detection."
+      },
+      {
+        "slug": "LINGUIN_AI_DETECT_LANGUAGES_BATCH",
+        "name": "Detect Languages in Batch",
+        "description": "Identify probable languages for multiple texts in one request and return results in input order. Consumes one daily detection per text and fails atomically if quota is insufficient."
+      },
+      {
+        "slug": "LINGUIN_AI_GET_ACCOUNT_STATUS",
+        "name": "Get Account Status",
+        "description": "Return today's detection usage, daily limit, and remaining detection quota for the connected account."
+      },
+      {
+        "slug": "LINGUIN_AI_LIST_SUPPORTED_LANGUAGES",
+        "name": "List Supported Languages",
+        "description": "Return the complete map of language codes supported by language detection, including English and native names or aliases."
+      }
+    ],
+    "triggers": [],
+    "authConfigDetails": [
+      {
+        "mode": "API_KEY",
+        "name": "linguin_ai_api_key",
+        "fields": {
+          "auth_config_creation": {
+            "required": [],
+            "optional": []
+          },
+          "connected_account_initiation": {
+            "required": [
+              {
+                "name": "generic_api_key",
+                "displayName": "API Key",
+                "type": "string",
+                "description": "Your Linguin AI API key. Create an account at https://linguin.ai/users/sign_up, then use the API key issued for your account. Keep this value secret.",
+                "required": true,
+                "default": null
+              }
+            ],
+            "optional": []
+          }
+        }
+      }
+    ]
+  },
+  {
     "slug": "linkedin_ads",
     "name": "Linkedin Ads",
     "logo": "https://logos.composio.dev/api/linkedin_ads",
@@ -227526,6 +228251,97 @@
     ]
   },
   {
+    "slug": "link_twin",
+    "name": "LinkTwin",
+    "logo": "https://logos.composio.dev/api/linktwin",
+    "description": "LinkTwin is a link management platform for creating shortened deep links, tracking analytics, and managing domains, pixels, QR codes, and collections.",
+    "category": "url shortener",
+    "authSchemes": [
+      "API_KEY"
+    ],
+    "toolCount": 10,
+    "triggerCount": 0,
+    "version": "00000000_00",
+    "tools": [
+      {
+        "slug": "LINK_TWIN_CREATE_LINK",
+        "name": "Create Link",
+        "description": "Create a shortened deep link with optional access limits, targeting, query parameters, and pixel or collection assignments. Free accounts can shorten only LinkTwin-approved destination domains and apps; arbitrary destination websites require a paid plan."
+      },
+      {
+        "slug": "LINK_TWIN_DELETE_LINK",
+        "name": "Delete Link",
+        "description": "Permanently delete one shortened link by numeric ID. This destructive action removes the link and its redirect and cannot be undone; use it only when the caller explicitly intends permanent deletion."
+      },
+      {
+        "slug": "LINK_TWIN_GET_ACCOUNT_INFO",
+        "name": "Get Account Info",
+        "description": "Return the connected LinkTwin account's plan, usage, timezone, and feature limits. Use this before creating or updating links when plan availability is uncertain."
+      },
+      {
+        "slug": "LINK_TWIN_GET_LINK",
+        "name": "Get Link",
+        "description": "Return one shortened link's destination, targeting rules, assignments, access controls, and summary click analytics."
+      },
+      {
+        "slug": "LINK_TWIN_GET_LINK_ANALYTICS",
+        "name": "Get Link Analytics",
+        "description": "Return detailed clicks, unique clicks, time series, and geography, referrer, browser, device, language, and city breakdowns for one link. Free accounts retain only 14 days of analytics."
+      },
+      {
+        "slug": "LINK_TWIN_LIST_COLLECTIONS",
+        "name": "List Collections",
+        "description": "Return one page of link collections available for organizing or assigning shortened links."
+      },
+      {
+        "slug": "LINK_TWIN_LIST_DOMAINS",
+        "name": "List Domains",
+        "description": "Return standard LinkTwin short domains and branded domains available to the connected account. Branded domains are disabled on Free accounts."
+      },
+      {
+        "slug": "LINK_TWIN_LIST_LINKS",
+        "name": "List Links",
+        "description": "Return one filtered page of shortened links owned by the connected account, including destination URLs, click totals, and assignments."
+      },
+      {
+        "slug": "LINK_TWIN_LIST_PIXELS",
+        "name": "List Pixels",
+        "description": "Return one page of tracking pixels available for assignment to shortened links."
+      },
+      {
+        "slug": "LINK_TWIN_UPDATE_LINK",
+        "name": "Update Link",
+        "description": "Partially update a shortened link's destination, access limits, targeting, query parameters, or assignments. Only explicitly supplied fields are changed; replacement arrays overwrite the complete existing value. Changing the destination URL requires a paid LinkTwin plan."
+      }
+    ],
+    "triggers": [],
+    "authConfigDetails": [
+      {
+        "mode": "API_KEY",
+        "name": "linktwin_api_key",
+        "fields": {
+          "auth_config_creation": {
+            "required": [],
+            "optional": []
+          },
+          "connected_account_initiation": {
+            "required": [
+              {
+                "name": "generic_api_key",
+                "displayName": "API Key",
+                "type": "string",
+                "description": "Your LinkTwin API key from Settings -> Developer API Key at https://linktw.in/user/settings. LinkTwin generates it automatically after registration and allows you to regenerate it; keep it secret because it grants access to your account API.",
+                "required": true,
+                "default": null
+              }
+            ],
+            "optional": []
+          }
+        }
+      }
+    ]
+  },
+  {
     "slug": "listclean",
     "name": "Listclean",
     "logo": "https://logos.composio.dev/api/listclean",
@@ -227703,7 +228519,7 @@
     ],
     "toolCount": 11,
     "triggerCount": 0,
-    "version": "20260615_00",
+    "version": "20260828_00",
     "tools": [
       {
         "slug": "LLMWHISPERER_CONVERT_DOCUMENT_TO_TEXT_V2",
@@ -229515,6 +230331,62 @@
                 "displayName": "API Access Key",
                 "type": "string",
                 "description": "Your personal API Access Key assigned upon signing up, used to authenticate API requests.",
+                "required": true,
+                "default": null
+              }
+            ],
+            "optional": []
+          }
+        }
+      }
+    ]
+  },
+  {
+    "slug": "mailboxvalidator",
+    "name": "MailboxValidator",
+    "logo": "https://logos.composio.dev/api/mailboxvalidator",
+    "description": "MailboxValidator checks email addresses for syntax, deliverability, mail-server availability, and free or disposable provider status.",
+    "category": "email",
+    "authSchemes": [
+      "API_KEY"
+    ],
+    "toolCount": 3,
+    "triggerCount": 0,
+    "version": "00000000_00",
+    "tools": [
+      {
+        "slug": "MAILBOXVALIDATOR_CHECK_DISPOSABLE_EMAIL",
+        "name": "Check Disposable Email",
+        "description": "Check whether one email address uses a disposable email provider. Consumes one API credit."
+      },
+      {
+        "slug": "MAILBOXVALIDATOR_CHECK_FREE_EMAIL",
+        "name": "Check Free Email",
+        "description": "Check whether one email address uses a free email provider. Consumes one API credit."
+      },
+      {
+        "slug": "MAILBOXVALIDATOR_VALIDATE_EMAIL",
+        "name": "Validate Email",
+        "description": "Run comprehensive syntax, domain, mail-server, reputation, and provider checks on one email address. The status field is the overall validation verdict; an HTTP success alone does not mean the mailbox was verified. Consumes one API credit."
+      }
+    ],
+    "triggers": [],
+    "authConfigDetails": [
+      {
+        "mode": "API_KEY",
+        "name": "mailboxvalidator_api_key",
+        "fields": {
+          "auth_config_creation": {
+            "required": [],
+            "optional": []
+          },
+          "connected_account_initiation": {
+            "required": [
+              {
+                "name": "generic_api_key",
+                "displayName": "API Key",
+                "type": "string",
+                "description": "Sign up for a MailboxValidator API plan, then sign in at https://www.mailboxvalidator.com/ and copy the API key from your dashboard. The key is sent as the required key query parameter; keep it secret. MailboxValidator has no identity endpoint, so connecting validates the key with one disposable-email check that consumes one API credit and requires available quota.",
                 "required": true,
                 "default": null
               }
@@ -232163,7 +233035,7 @@
     ],
     "toolCount": 177,
     "triggerCount": 0,
-    "version": "20260618_00",
+    "version": "20260828_00",
     "tools": [
       {
         "slug": "MAXIO_ALLOCATE_COMPONENT",
@@ -233436,7 +234308,7 @@
     ],
     "toolCount": 4,
     "triggerCount": 0,
-    "version": "20260615_00",
+    "version": "20260828_00",
     "tools": [
       {
         "slug": "MEMBERVAULT_ADD_USER",
@@ -235150,7 +236022,7 @@
     ],
     "toolCount": 83,
     "triggerCount": 0,
-    "version": "20260819_00",
+    "version": "20260828_00",
     "tools": [
       {
         "slug": "ONENOTE_COPY_ONENOTE_GROUP_NOTEBOOK",
@@ -238289,7 +239161,7 @@
     ],
     "toolCount": 218,
     "triggerCount": 0,
-    "version": "20260615_00",
+    "version": "20260828_00",
     "tools": [
       {
         "slug": "MOCO_ACTIVATE_OFFER_CUSTOMER_APPROVAL",
@@ -245664,7 +246536,7 @@
     ],
     "toolCount": 9,
     "triggerCount": 0,
-    "version": "20260615_00",
+    "version": "20260828_00",
     "tools": [
       {
         "slug": "NOCRM_IO_ADD_A_TAG_TO_A_LEAD",
@@ -247436,7 +248308,7 @@
     ],
     "toolCount": 3,
     "triggerCount": 0,
-    "version": "20260821_00",
+    "version": "20260828_00",
     "tools": [
       {
         "slug": "OCRSPACE_GET_CONVERSIONS",
@@ -247470,7 +248342,7 @@
                 "name": "subdomain",
                 "displayName": "API Subdomain",
                 "type": "string",
-                "description": "Choose your OCR.space API subdomain. Use \"api\" if you are on the free tier (default). PRO customers: use \"apipro1\" to call Datacenter #1 (apipro1.ocr.space) or \"apipro2\" to call Datacenter #2 (apipro2.ocr.space). Both PRO endpoints accept the same API key — OCR.space recommends using the one fastest from your location as primary and switching to the other if you experience issues.",
+                "description": "Choose your OCR.space API subdomain. Use \"api\" if you are on the free tier (default). PRO customers: use \"apipro1\" to call Datacenter #1 (apipro1.ocr.space) \"apipro2\" for Datacenter #2 (apipro2.ocr.space), or \"apipro3\" for Datacenter #3 in Asia (apipro3.ocr.space). The PRO endpoints accept the same API key — OCR.space recommends using the one fastest from your location as primary and switching to the other if you experience issues.",
                 "required": true,
                 "default": "api"
               },
@@ -247818,6 +248690,92 @@
                 "default": null
               }
             ]
+          }
+        }
+      }
+    ]
+  },
+  {
+    "slug": "olostep",
+    "name": "Olostep",
+    "logo": "https://logos.composio.dev/api/olostep",
+    "description": "Olostep provides APIs for web scraping, crawling, search, structured answers, monitoring, and data extraction.",
+    "category": "ai web scraping",
+    "authSchemes": [
+      "API_KEY"
+    ],
+    "toolCount": 9,
+    "triggerCount": 0,
+    "version": "00000000_00",
+    "tools": [
+      {
+        "slug": "OLOSTEP_ANSWER_QUESTION",
+        "name": "Answer Question",
+        "description": "Synchronously research a bounded task by searching and browsing the web, then return the completed answer and sources when available. This usage-metered operation usually takes 3-30 seconds and has no documented fixed dashboard-key credit price; check the account balance before expensive use."
+      },
+      {
+        "slug": "OLOSTEP_GET_CREDIT_BALANCE",
+        "name": "Get Credit Balance",
+        "description": "Return the connected team's remaining Olostep credits, credit lots, active subscription, and whether usage is enabled without consuming web-processing credits."
+      },
+      {
+        "slug": "OLOSTEP_GET_OPERATION_RESULT",
+        "name": "Get Operation Result",
+        "description": "Retrieve a stored scrape, search, map, answer, or crawl by its operation ID without repeating or rebilling the original work. Crawl results may still report in_progress."
+      },
+      {
+        "slug": "OLOSTEP_LIST_CRAWL_PAGES",
+        "name": "List Crawl Pages",
+        "description": "Return one page of URLs and retrieve IDs processed by an asynchronous crawl, with a continuation cursor for additional pages. Use Retrieve Content for page bodies."
+      },
+      {
+        "slug": "OLOSTEP_MAP_WEBSITE",
+        "name": "Map Website",
+        "description": "Synchronously discover and optionally rank URLs on a website, returning one response page and a continuation cursor. This usage-metered operation consumes Olostep credits."
+      },
+      {
+        "slug": "OLOSTEP_RETRIEVE_CONTENT",
+        "name": "Retrieve Content",
+        "description": "Retrieve stored page content by retrieve ID in selected live-supported formats, including hosted URLs for oversized output."
+      },
+      {
+        "slug": "OLOSTEP_SCRAPE_PAGE",
+        "name": "Scrape Page",
+        "description": "Synchronously scrape one web page and return requested content, links, metadata, a retrieve ID, and billing usage. This usage-metered operation can consume credits even when cached content is returned. Fresh scrapes, browser actions, extraction, and screenshots may cost more."
+      },
+      {
+        "slug": "OLOSTEP_SEARCH_WEB",
+        "name": "Search Web",
+        "description": "Synchronously search the web for relevant deduplicated links. This usage-metered operation costs 5 base credits per search; supplying scrape_formats also charges for scraping each returned page. The response reports credits_consumed when available."
+      },
+      {
+        "slug": "OLOSTEP_START_CRAWL",
+        "name": "Start Crawl",
+        "description": "Start an asynchronous, usage-metered website crawl and immediately return its crawl ID and initial status. This action does not poll: use Get Operation Result to monitor status and List Crawl Pages to consume output. Work may continue for 1-10 minutes and can consume credits for up to max_pages pages."
+      }
+    ],
+    "triggers": [],
+    "authConfigDetails": [
+      {
+        "mode": "API_KEY",
+        "name": "olostep_api_key",
+        "fields": {
+          "auth_config_creation": {
+            "required": [],
+            "optional": []
+          },
+          "connected_account_initiation": {
+            "required": [
+              {
+                "name": "generic_api_key",
+                "displayName": "API Key",
+                "type": "string",
+                "description": "Generate or copy your API token from the Olostep dashboard at https://www.olostep.com/dashboard/api-keys. The token authenticates requests for your Olostep team and must be kept secret.",
+                "required": true,
+                "default": null
+              }
+            ],
+            "optional": []
           }
         }
       }
@@ -253860,7 +254818,7 @@
     ],
     "toolCount": 13,
     "triggerCount": 0,
-    "version": "20260615_00",
+    "version": "20260828_00",
     "tools": [
       {
         "slug": "PAYHERE_CREATE_HOOK",
@@ -256989,6 +257947,105 @@
     ]
   },
   {
+    "slug": "personio",
+    "name": "Personio",
+    "logo": "https://logos.composio.dev/api/personio",
+    "description": "Read Personio people, employment, attendance, absence, project, document, and employee-attribute data.",
+    "category": "human resources",
+    "authSchemes": [
+      "S2S_OAUTH2"
+    ],
+    "toolCount": 10,
+    "triggerCount": 0,
+    "version": "00000000_00",
+    "tools": [
+      {
+        "slug": "PERSONIO_LIST_ABSENCE_PERIODS",
+        "name": "List Absence Periods",
+        "description": "Return v2 absence periods filtered by person, absence type, IDs, date-time bounds, or update time."
+      },
+      {
+        "slug": "PERSONIO_LIST_ABSENCE_TYPES",
+        "name": "List Absence Types",
+        "description": "Return the v2 absence types configured for the company, including IDs, names, categories, and units."
+      },
+      {
+        "slug": "PERSONIO_LIST_ATTENDANCE_PERIODS",
+        "name": "List Attendance Periods",
+        "description": "Return v2 attendance periods filtered by people, projects, status, attribution dates, time bounds, or update time."
+      },
+      {
+        "slug": "PERSONIO_LIST_DOCUMENT_CATEGORIES",
+        "name": "List Document Categories",
+        "description": "Return the legacy Personnel Data document categories and IDs used to classify or filter company documents."
+      },
+      {
+        "slug": "PERSONIO_LIST_DOCUMENTS",
+        "name": "List Documents",
+        "description": "Return v2 document metadata for one owner, optionally filtered by category and creation date; this does not download document contents."
+      },
+      {
+        "slug": "PERSONIO_LIST_EMPLOYEE_ATTRIBUTES",
+        "name": "List Employee Attributes",
+        "description": "Return the standard and custom employee attributes readable by the connected integration, including the keys accepted by list employee records."
+      },
+      {
+        "slug": "PERSONIO_LIST_EMPLOYEE_RECORDS",
+        "name": "List Employee Records",
+        "description": "Return legacy Personnel Data employee records with selectable standard or custom attributes and incremental-update filtering; use List Persons for ordinary v2 identity lookup."
+      },
+      {
+        "slug": "PERSONIO_LIST_PERSON_EMPLOYMENTS",
+        "name": "List Person Employments",
+        "description": "Return employment records for one v2 person, including status, type, and working-hours details."
+      },
+      {
+        "slug": "PERSONIO_LIST_PERSONS",
+        "name": "List Persons",
+        "description": "Return current v2 person summaries, optionally filtered by identity, status, or creation and update times; use employee records instead when custom Personnel Data attributes are needed."
+      },
+      {
+        "slug": "PERSONIO_LIST_PROJECTS",
+        "name": "List Projects",
+        "description": "Return v2 time-tracking projects filtered by IDs, names, codes, status, hierarchy, or top-level membership."
+      }
+    ],
+    "triggers": [],
+    "authConfigDetails": [
+      {
+        "mode": "S2S_OAUTH2",
+        "name": "personio_s2s_oauth2",
+        "fields": {
+          "auth_config_creation": {
+            "required": [
+              {
+                "name": "client_id",
+                "displayName": "Client ID",
+                "type": "string",
+                "description": "The Client ID from your Personio custom integration. Grant the five read permissions listed by this toolkit, including personio:persons:read for connection validation.",
+                "required": true,
+                "default": null
+              },
+              {
+                "name": "client_secret",
+                "displayName": "Client Secret",
+                "type": "string",
+                "description": "The API secret paired with the Client ID from Marketplace > Connected integrations in Personio. Keep this value secret. If it is no longer available, reset the custom integration credentials and use the newly issued pair.",
+                "required": true,
+                "default": null
+              }
+            ],
+            "optional": []
+          },
+          "connected_account_initiation": {
+            "required": [],
+            "optional": []
+          }
+        }
+      }
+    ]
+  },
+  {
     "slug": "pexels",
     "name": "Pexels",
     "logo": "https://logos.composio.dev/api/pexels",
@@ -257370,6 +258427,75 @@
                 "displayName": "PhantomBuster API Key",
                 "type": "string",
                 "description": "Your PhantomBuster API key, used for authenticating API requests.",
+                "required": true,
+                "default": null
+              }
+            ],
+            "optional": []
+          }
+        }
+      }
+    ]
+  },
+  {
+    "slug": "photoroom",
+    "name": "PhotoRoom",
+    "logo": "https://logos.composio.dev/api/photoroom",
+    "description": "PhotoRoom provides AI-powered APIs for removing backgrounds, editing and resizing product photos, generating images from prompts, and checking account credit usage.",
+    "category": "images & design",
+    "authSchemes": [
+      "API_KEY"
+    ],
+    "toolCount": 4,
+    "triggerCount": 0,
+    "version": "00000000_00",
+    "tools": [
+      {
+        "slug": "PHOTOROOM_EDIT_IMAGE",
+        "name": "Edit Image",
+        "description": "Apply one or more combined PhotoRoom v2 edits to an image URL or uploaded file; sandbox output is watermarked, while live calls consume plan credits."
+      },
+      {
+        "slug": "PHOTOROOM_GENERATE_IMAGE",
+        "name": "Generate Image",
+        "description": "Generate a new image from a text prompt with PhotoRoom v2; sandbox output is watermarked, while live calls consume plan credits."
+      },
+      {
+        "slug": "PHOTOROOM_GET_ACCOUNT_USAGE",
+        "name": "Get Account Usage",
+        "description": "Return the connected live PhotoRoom account's reported plan and remaining image credits."
+      },
+      {
+        "slug": "PHOTOROOM_REMOVE_BACKGROUND",
+        "name": "Remove Background",
+        "description": "Remove the background from one uploaded image with PhotoRoom's dedicated Basic API; sandbox output is watermarked, while live calls consume plan credits."
+      }
+    ],
+    "triggers": [],
+    "authConfigDetails": [
+      {
+        "mode": "API_KEY",
+        "name": "photoroom_api_key",
+        "fields": {
+          "auth_config_creation": {
+            "required": [],
+            "optional": []
+          },
+          "connected_account_initiation": {
+            "required": [
+              {
+                "name": "sandbox_key",
+                "displayName": "Sandbox API Key",
+                "type": "string",
+                "description": "Enter the complete sandbox-prefixed key (sandbox_<your live API key>). Copy the live key from the PhotoRoom API dashboard at https://app.photoroom.com/api-dashboard, add the literal sandbox_ prefix once, and keep the complete value secret. Sandbox calls are watermarked and subject to the sandbox quota.",
+                "required": true,
+                "default": null
+              },
+              {
+                "name": "live_key",
+                "displayName": "Live API Key",
+                "type": "string",
+                "description": "Enter the raw API key shown in the PhotoRoom API dashboard at https://app.photoroom.com/api-dashboard. Do not add the sandbox_ prefix. Live calls consume credits and are limited by your PhotoRoom plan.",
                 "required": true,
                 "default": null
               }
@@ -258532,6 +259658,105 @@
           },
           "connected_account_initiation": {
             "required": [],
+            "optional": []
+          }
+        }
+      }
+    ]
+  },
+  {
+    "slug": "pipeless",
+    "name": "Pipeless Recommendations",
+    "logo": "https://logos.composio.dev/api/pipeless",
+    "description": "Pipeless provides graph-based activity feeds and personalized recommendations from application event data.",
+    "category": "artificial intelligence",
+    "authSchemes": [
+      "API_KEY"
+    ],
+    "toolCount": 10,
+    "triggerCount": 0,
+    "version": "00000000_00",
+    "tools": [
+      {
+        "slug": "PIPELESS_CREATE_EVENT",
+        "name": "Create Event",
+        "description": "Record one typed relationship event for Pipeless activity and recommendation algorithms. Referenced object records may be created or retained and are not removed when the event is later deleted."
+      },
+      {
+        "slug": "PIPELESS_CREATE_EVENTS_BATCH",
+        "name": "Create Events Batch",
+        "description": "Record 1 to 10 relationship events in one Pipeless request. Referenced object records may be created or retained and are not removed when the events are later deleted."
+      },
+      {
+        "slug": "PIPELESS_DELETE_EVENT",
+        "name": "Delete Event",
+        "description": "Delete event records matching an exact start object, relationship type and timestamp, and end object. Wildcard deletion is not supported by this tool."
+      },
+      {
+        "slug": "PIPELESS_LIST_ACTIVITY_FEED",
+        "name": "List Activity Feed",
+        "description": "Return one cursor-controlled chronological page of actions by objects followed by a specified object."
+      },
+      {
+        "slug": "PIPELESS_LIST_OBJECT_ACTIVITY",
+        "name": "List Object Activity",
+        "description": "Return one cursor-controlled page of incoming or outgoing relationship activity involving a specific object."
+      },
+      {
+        "slug": "PIPELESS_LIST_RECENT_EVENTS",
+        "name": "List Recent Events",
+        "description": "Return the most recent events sent to the app, up to the requested limit; Pipeless provides no continuation cursor for this read."
+      },
+      {
+        "slug": "PIPELESS_LIST_RECOMMENDED_CONTENT",
+        "name": "List Recommended Content",
+        "description": "Return a bounded personalized list of content recommendations for an object using configurable positive, negative, tag, author, follow, and dismissal signals."
+      },
+      {
+        "slug": "PIPELESS_LIST_RELATED_CONTENT",
+        "name": "List Related Content",
+        "description": "Return content objects related to a target content object using optional tag and collaborative-interaction signals."
+      },
+      {
+        "slug": "PIPELESS_LIST_USERS_TO_FOLLOW",
+        "name": "List Users To Follow",
+        "description": "Return a bounded personalized list of user or account objects that the specified object may want to follow."
+      },
+      {
+        "slug": "PIPELESS_RANK_CONTENT",
+        "name": "Rank Content",
+        "description": "Rank a supplied set of content IDs for an object and report which IDs Pipeless could rank."
+      }
+    ],
+    "triggers": [],
+    "authConfigDetails": [
+      {
+        "mode": "API_KEY",
+        "name": "pipeless_api_key",
+        "fields": {
+          "auth_config_creation": {
+            "required": [],
+            "optional": []
+          },
+          "connected_account_initiation": {
+            "required": [
+              {
+                "name": "suffix.one",
+                "displayName": "App ID",
+                "type": "string",
+                "description": "Open the Pipeless dashboard, go to the Apps page, and copy the auto-generated App ID for the app you want to connect. Use the App ID that belongs to the API key entered below; Pipeless rejects mismatched pairs.",
+                "required": true,
+                "default": null
+              },
+              {
+                "name": "generic_api_key",
+                "displayName": "API Key",
+                "type": "string",
+                "description": "Open the Pipeless dashboard, go to the Apps page, and copy the API key for the app you want to connect. Each app has its own key; keep it secret and ensure it belongs to the App ID entered above.",
+                "required": true,
+                "default": null
+              }
+            ],
             "optional": []
           }
         }
@@ -261395,6 +262620,60 @@
     ]
   },
   {
+    "slug": "popupsmart",
+    "name": "Popupsmart",
+    "logo": "https://logos.composio.dev/api/popupsmart",
+    "description": "Popupsmart is a no-code popup builder for collecting website leads; this toolkit exports leads from one connected campaign.",
+    "category": "marketing automation",
+    "authSchemes": [
+      "API_KEY"
+    ],
+    "toolCount": 1,
+    "triggerCount": 0,
+    "version": "00000000_00",
+    "tools": [
+      {
+        "slug": "POPUPSMART_LIST_LEADS",
+        "name": "List Leads",
+        "description": "Return one page of leads collected by the connected Popupsmart campaign, optionally filtered by date, plus a cursor for the next page."
+      }
+    ],
+    "triggers": [],
+    "authConfigDetails": [
+      {
+        "mode": "API_KEY",
+        "name": "popupsmart_api_key",
+        "fields": {
+          "auth_config_creation": {
+            "required": [],
+            "optional": []
+          },
+          "connected_account_initiation": {
+            "required": [
+              {
+                "name": "generic_api_key",
+                "displayName": "API Key",
+                "type": "string",
+                "description": "Open the desired campaign in the Popupsmart dashboard, select a form input, add and connect an integration such as Make or Zapier, then copy the API key shown in the integration setup. Popupsmart sends this value in the x-token header. Keep it secret.",
+                "required": true,
+                "default": null
+              },
+              {
+                "name": "generic_id",
+                "displayName": "Campaign ID",
+                "type": "string",
+                "description": "Enter the ID of the Popupsmart campaign whose leads you want to export. Find the campaign in the Popupsmart dashboard or its integration setup. This connection is pinned to that campaign through the x-campaign-id header.",
+                "required": true,
+                "default": null
+              }
+            ],
+            "optional": []
+          }
+        }
+      }
+    ]
+  },
+  {
     "slug": "postal_data_api",
     "name": "Postal Data API",
     "logo": "https://logos.composio.dev/api/postal_data_api",
@@ -263989,7 +265268,7 @@
     ],
     "toolCount": 5,
     "triggerCount": 0,
-    "version": "20260615_00",
+    "version": "20260828_00",
     "tools": [
       {
         "slug": "PRISMIC_CONTENT_API_GET_DOCUMENTS_WITH_FULLTEXT_SEARCH",
@@ -265407,6 +266686,65 @@
     ]
   },
   {
+    "slug": "purechecker",
+    "name": "PureChecker",
+    "logo": "https://logos.composio.dev/api/purechecker",
+    "description": "PureChecker verifies individual or batched email addresses for syntax, domain, deliverability, disposability, and risk signals.",
+    "category": "email",
+    "authSchemes": [
+      "API_KEY"
+    ],
+    "toolCount": 2,
+    "triggerCount": 0,
+    "version": "00000000_00",
+    "tools": [
+      {
+        "slug": "PURECHECKER_CHECK_EMAIL",
+        "name": "Check Email",
+        "description": "Check one email address and return PureChecker's detailed syntax, domain, mailbox, disposability, and risk signals."
+      },
+      {
+        "slug": "PURECHECKER_CHECK_EMAILS",
+        "name": "Check Emails",
+        "description": "Check a batch of email addresses in one request and return PureChecker's verification signals for each address."
+      }
+    ],
+    "triggers": [],
+    "authConfigDetails": [
+      {
+        "mode": "API_KEY",
+        "name": "purechecker_api_key",
+        "fields": {
+          "auth_config_creation": {
+            "required": [],
+            "optional": []
+          },
+          "connected_account_initiation": {
+            "required": [
+              {
+                "name": "generic_api_key",
+                "displayName": "Secret Key",
+                "type": "string",
+                "description": "Log in to PureChecker, open the API page at https://purechecker.com/user/api, and copy the Secret Key shown in the API credentials section. Keep it private; this value is sent in the x-secret-key header. PureChecker provides no non-consuming credential-test endpoint, so connecting verifies the credentials with one email check and may consume one verification credit.",
+                "required": true,
+                "default": null
+              },
+              {
+                "name": "generic_id",
+                "displayName": "User ID",
+                "type": "string",
+                "description": "Log in to PureChecker, open the API page at https://purechecker.com/user/api, and copy the User ID shown in the API credentials section. This value is sent in the x-user-id header. PureChecker provides no non-consuming credential-test endpoint, so connecting verifies the credentials with one email check and may consume one verification credit.",
+                "required": true,
+                "default": null
+              }
+            ],
+            "optional": []
+          }
+        }
+      }
+    ]
+  },
+  {
     "slug": "push_by_techulus",
     "name": "Push by Techulus",
     "logo": "https://logos.composio.dev/api/push_by_techulus",
@@ -266137,7 +267475,7 @@
     ],
     "toolCount": 76,
     "triggerCount": 0,
-    "version": "20260615_00",
+    "version": "20260828_00",
     "tools": [
       {
         "slug": "QUADERNO_ADD_EXPENSE_PAYMENT",
@@ -267886,7 +269224,7 @@
     ],
     "toolCount": 7,
     "triggerCount": 0,
-    "version": "20260615_00",
+    "version": "20260828_00",
     "tools": [
       {
         "slug": "RAGIC_DELETE_ENTRY",
@@ -270195,7 +271533,7 @@
     ],
     "toolCount": 2,
     "triggerCount": 0,
-    "version": "20260615_00",
+    "version": "20260828_00",
     "tools": [
       {
         "slug": "RE_AMAZE_GET_REPORTS_TAGS",
@@ -270425,7 +271763,7 @@
     ],
     "toolCount": 23,
     "triggerCount": 0,
-    "version": "20260721_00",
+    "version": "20260828_00",
     "tools": [
       {
         "slug": "RECRUITEE_CREATE_CANDIDATE",
@@ -271945,7 +273283,7 @@
     ],
     "toolCount": 5,
     "triggerCount": 0,
-    "version": "20260615_00",
+    "version": "20260828_00",
     "tools": [
       {
         "slug": "REMARKETY_GET_CAMPAIGNS",
@@ -273434,7 +274772,7 @@
     ],
     "toolCount": 147,
     "triggerCount": 0,
-    "version": "20260615_00",
+    "version": "20260828_00",
     "tools": [
       {
         "slug": "REPAIRSHOPR_ADD_ESTIMATE_LINE_ITEM",
@@ -275744,6 +277082,127 @@
           },
           "connected_account_initiation": {
             "required": [],
+            "optional": []
+          }
+        }
+      }
+    ]
+  },
+  {
+    "slug": "resource_planner",
+    "name": "Resource Planner",
+    "logo": "https://logos.composio.dev/api/resource_planner",
+    "description": "Resource Planner helps teams schedule people, manage projects and assignments, and review workspace time entries.",
+    "category": "project management",
+    "authSchemes": [
+      "API_KEY"
+    ],
+    "toolCount": 16,
+    "triggerCount": 0,
+    "version": "00000000_00",
+    "tools": [
+      {
+        "slug": "RESOURCE_PLANNER_CREATE_ASSIGNMENT",
+        "name": "Create Assignment",
+        "description": "Assign one resource to one project for a date range and return the created assignment ID."
+      },
+      {
+        "slug": "RESOURCE_PLANNER_CREATE_PROJECT",
+        "name": "Create Project",
+        "description": "Create a project with a title and optional note, color, and visibility, then return its project ID."
+      },
+      {
+        "slug": "RESOURCE_PLANNER_CREATE_RESOURCE",
+        "name": "Create Resource",
+        "description": "Create a workspace resource with optional capacity, workdays, note, and visibility, then return its resource ID."
+      },
+      {
+        "slug": "RESOURCE_PLANNER_DELETE_ASSIGNMENT",
+        "name": "Delete Assignment",
+        "description": "Permanently delete one assignment by its assignment ID."
+      },
+      {
+        "slug": "RESOURCE_PLANNER_DELETE_ASSIGNMENTS",
+        "name": "Delete Assignments",
+        "description": "Permanently delete 1-25 assignments sequentially. The operation is not atomic: each ID has its own outcome, successful deletions are not rolled back, and processing stops after an unsafe or ambiguous failure."
+      },
+      {
+        "slug": "RESOURCE_PLANNER_DELETE_PROJECT",
+        "name": "Delete Project",
+        "description": "Permanently delete a project and all of its assignments. This cascading deletion cannot be undone."
+      },
+      {
+        "slug": "RESOURCE_PLANNER_DELETE_RESOURCE",
+        "name": "Delete Resource",
+        "description": "Permanently delete a resource and all of its assignments. This cascading deletion cannot be undone."
+      },
+      {
+        "slug": "RESOURCE_PLANNER_GET_PROJECT",
+        "name": "Get Project",
+        "description": "Retrieve one current workspace project by its project ID."
+      },
+      {
+        "slug": "RESOURCE_PLANNER_GET_RESOURCE",
+        "name": "Get Resource",
+        "description": "Retrieve one current workspace resource by its resource ID."
+      },
+      {
+        "slug": "RESOURCE_PLANNER_LIST_ASSIGNMENTS",
+        "name": "List Assignments",
+        "description": "Return all assignments, optionally narrowed to a project, a resource, or both."
+      },
+      {
+        "slug": "RESOURCE_PLANNER_LIST_PROJECTS",
+        "name": "List Projects",
+        "description": "Return every project in the connected Resource Planner workspace, including project IDs and editable planning fields."
+      },
+      {
+        "slug": "RESOURCE_PLANNER_LIST_RESOURCES",
+        "name": "List Resources",
+        "description": "Return every resource in the connected Resource Planner workspace, including resource IDs needed for assignment workflows."
+      },
+      {
+        "slug": "RESOURCE_PLANNER_LIST_TIME_ENTRIES",
+        "name": "List Time Entries",
+        "description": "Return one page of workspace time entries, with an optional total-duration summary and a cursor for the next page."
+      },
+      {
+        "slug": "RESOURCE_PLANNER_UPDATE_ASSIGNMENT",
+        "name": "Update Assignment",
+        "description": "Replace an assignment's internal note and return all affected assignment IDs."
+      },
+      {
+        "slug": "RESOURCE_PLANNER_UPDATE_PROJECT",
+        "name": "Update Project",
+        "description": "Update at least one of a project's title, note, color, or visibility. Omitted fields are preserved by reading the project before updating it."
+      },
+      {
+        "slug": "RESOURCE_PLANNER_UPDATE_RESOURCE",
+        "name": "Update Resource",
+        "description": "Replace a resource's internal note without changing its scheduling fields, then return the current resource."
+      }
+    ],
+    "triggers": [],
+    "authConfigDetails": [
+      {
+        "mode": "API_KEY",
+        "name": "resource_planner_api_key",
+        "fields": {
+          "auth_config_creation": {
+            "required": [],
+            "optional": []
+          },
+          "connected_account_initiation": {
+            "required": [
+              {
+                "name": "generic_api_key",
+                "displayName": "REST API Access Key",
+                "type": "string",
+                "description": "Sign in to Resource Planner, open Settings, then API access for REST clients, and select Generate new key. Copy the key when it is shown because the plaintext is displayed only once. This is the workspace REST API access key, not an MCP key, embedding key, webhook secret, or custom-backend integration key. Regenerating it immediately invalidates the previous key for the workspace.",
+                "required": true,
+                "default": null
+              }
+            ],
             "optional": []
           }
         }
@@ -280502,7 +281961,7 @@
     ],
     "toolCount": 6,
     "triggerCount": 0,
-    "version": "20260615_00",
+    "version": "20260828_00",
     "tools": [
       {
         "slug": "SALESMATE_ADD_PRODUCT",
@@ -280672,7 +282131,7 @@
     ],
     "toolCount": 21,
     "triggerCount": 0,
-    "version": "20260615_00",
+    "version": "20260828_00",
     "tools": [
       {
         "slug": "SANITY_ADD_DEFAULT_ROLE_TO_USERS",
@@ -283409,7 +284868,7 @@
     ],
     "toolCount": 37,
     "triggerCount": 0,
-    "version": "20260826_00",
+    "version": "20260828_00",
     "tools": [
       {
         "slug": "SENDBIRD_ADD_MEMBERS_GROUP_CHANNEL",
@@ -283643,7 +285102,7 @@
     ],
     "toolCount": 6,
     "triggerCount": 0,
-    "version": "20260826_00",
+    "version": "20260828_00",
     "tools": [
       {
         "slug": "SENDBIRD_AI_CHABOT_CREATE_BOT",
@@ -285639,7 +287098,7 @@
     ],
     "toolCount": 162,
     "triggerCount": 0,
-    "version": "20260826_00",
+    "version": "20260828_00",
     "tools": [
       {
         "slug": "SHAREPOINT_GRAPH_ADD_CONTENT_TYPE_COLUMN",
@@ -288691,7 +290150,7 @@
     ],
     "toolCount": 5,
     "triggerCount": 0,
-    "version": "20260615_00",
+    "version": "20260828_00",
     "tools": [
       {
         "slug": "SIGNPATH_GET_HEALTH_CHECK",
@@ -288922,7 +290381,7 @@
     ],
     "toolCount": 141,
     "triggerCount": 0,
-    "version": "20260615_00",
+    "version": "20260828_00",
     "tools": [
       {
         "slug": "SIMLA_COM_ADD_CUSTOMER_INTERACTION_FAVORITE",
@@ -289745,7 +291204,7 @@
     ],
     "toolCount": 51,
     "triggerCount": 0,
-    "version": "20260615_00",
+    "version": "20260828_00",
     "tools": [
       {
         "slug": "SIMPLEKPI_ADD_USER_GROUP_ITEM",
@@ -292509,7 +293968,7 @@
     ],
     "toolCount": 6,
     "triggerCount": 0,
-    "version": "20260826_00",
+    "version": "20260828_00",
     "tools": [
       {
         "slug": "SNOWFLAKE_BASIC_DESCRIBE_TABLE",
@@ -295791,7 +297250,7 @@
     ],
     "toolCount": 3,
     "triggerCount": 0,
-    "version": "20260615_00",
+    "version": "20260828_00",
     "tools": [
       {
         "slug": "STOREGANISE_GET_ADMIN_SITES_BY_ID",
@@ -296224,7 +297683,7 @@
     ],
     "toolCount": 10,
     "triggerCount": 0,
-    "version": "20260721_00",
+    "version": "20260828_00",
     "tools": [
       {
         "slug": "STORYBLOK_FETCH_CONTENT_TYPE_ITEMS_GRAPHQL",
@@ -298075,7 +299534,7 @@
     ],
     "toolCount": 41,
     "triggerCount": 0,
-    "version": "20260615_00",
+    "version": "20260828_00",
     "tools": [
       {
         "slug": "SUPPORTBEE_ADD_LABEL_TO_TICKET",
@@ -300147,7 +301606,7 @@
     ],
     "toolCount": 1,
     "triggerCount": 0,
-    "version": "20260615_00",
+    "version": "20260828_00",
     "tools": [
       {
         "slug": "TALENTHR_ASSIGN_PERMISSION",
@@ -308261,7 +309720,7 @@
     ],
     "toolCount": 32,
     "triggerCount": 0,
-    "version": "20260618_00",
+    "version": "20260828_00",
     "tools": [
       {
         "slug": "UNIONE_DELETE_EVENT_DUMP",
@@ -308449,6 +309908,60 @@
                 "displayName": "UniOne API Key",
                 "type": "string",
                 "description": "The API key for authenticating requests to the UniOne API.",
+                "required": true,
+                "default": null
+              }
+            ],
+            "optional": []
+          }
+        }
+      }
+    ]
+  },
+  {
+    "slug": "unipile",
+    "name": "Unipile",
+    "logo": "https://logos.composio.dev/api/unipile",
+    "description": "Unipile provides a unified API for messaging, email, calendar, and social platform accounts.",
+    "category": "communication",
+    "authSchemes": [
+      "API_KEY"
+    ],
+    "toolCount": 1,
+    "triggerCount": 0,
+    "version": "00000000_00",
+    "tools": [
+      {
+        "slug": "UNIPILE_LIST_ACCOUNTS",
+        "name": "List Accounts",
+        "description": "List provider accounts connected to the Unipile deployment, including their IDs and source health statuses."
+      }
+    ],
+    "triggers": [],
+    "authConfigDetails": [
+      {
+        "mode": "API_KEY",
+        "name": "unipile_api_key",
+        "fields": {
+          "auth_config_creation": {
+            "required": [],
+            "optional": []
+          },
+          "connected_account_initiation": {
+            "required": [
+              {
+                "name": "hostUrl",
+                "displayName": "DSN",
+                "type": "string",
+                "description": "Copy your DSN from the Unipile v1 dashboard. Enter only the customer API host and its custom port when shown, for example api1.unipile.com:13111. Do not include https://, a path, query parameters, or a trailing slash.",
+                "required": true,
+                "default": null
+              },
+              {
+                "name": "generic_api_key",
+                "displayName": "V1 Access Token",
+                "type": "string",
+                "description": "Generate or copy your v1 Access Token from https://dashboard.unipile.com/access-tokens. Unipile treats this token as an API key with broad privileges, so keep it secret and do not expose it in client-side code or public repositories.",
                 "required": true,
                 "default": null
               }
@@ -310600,7 +312113,7 @@
     ],
     "toolCount": 146,
     "triggerCount": 0,
-    "version": "20260826_00",
+    "version": "20260828_00",
     "tools": [
       {
         "slug": "VERCEL_ADD_ENVIRONMENT_VARIABLE",
@@ -316028,7 +317541,7 @@
     ],
     "toolCount": 37,
     "triggerCount": 0,
-    "version": "20260721_00",
+    "version": "20260828_00",
     "tools": [
       {
         "slug": "WORKABLE_CREATE_EMPLOYEE",
@@ -321607,7 +323120,7 @@
     ],
     "toolCount": 111,
     "triggerCount": 0,
-    "version": "20260615_00",
+    "version": "20260828_00",
     "tools": [
       {
         "slug": "ZULIP_ADD_ALERT_WORDS",
