@@ -318,7 +318,7 @@ response = openai_client.chat.completions.create(
     tools=tools,
 )
 
-result = composio.provider.handle_tool_calls(user_id="user@acme.com", response=response)
+result = composio.provider.execute_tool_calls(user_id="user@acme.com", response=response)
 print(result)
 ```
   </Tab>
@@ -351,7 +351,7 @@ const msg = await anthropic.messages.create({
   max_tokens: 1024,
 });
 
-const result = await composio.provider.handleToolCalls(userId, msg);
+const result = await composio.provider.executeToolCalls(userId, msg);
 console.log('Tool results:', result);
 ```
   </Tab>
