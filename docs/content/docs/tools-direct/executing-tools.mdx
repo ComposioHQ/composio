@@ -76,7 +76,7 @@ result = openai.chat.completions.create(
 )
 
 # Handle tool calls
-result = composio.provider.handle_tool_calls(user_id=user_id, response=result)
+result = composio.provider.execute_tool_calls(user_id=user_id, response=result)
 print(result)
 ```
   </Tab>
@@ -117,7 +117,7 @@ const msg = await anthropic.messages.create({
 });
 
 // Handle tool calls
-const result = await composio.provider.handleToolCalls(userId, msg);
+const result = await composio.provider.executeToolCalls(userId, msg);
 console.log('Results:', JSON.stringify(result, null, 2));
 ```
   </Tab>
