@@ -121,16 +121,23 @@ def _fetch_url_bytes(url: str) -> t.Tuple[bytes, str]:
 
     chunks: t.List[bytes] = []
     total_bytes = 0
-    for chunk in response.iter_content(chunk_size=8192):
-        if chunk:
-            total_bytes += len(chunk)
-            if total_bytes > _MAX_RESPONSE_SIZE:
-                response.close()
-                raise _UrlFetchError(
-                    size_detail="Response size exceeds maximum allowed size"
-                )
-            chunks.append(chunk)
-    response.close()
+    try:
+        for chunk in response.iter_content(chunk_size=8192):
+            if chunk:
+                total_bytes += len(chunk)
+                if total_bytes > _MAX_RESPONSE_SIZE:
+                    raise _UrlFetchError(
+                        size_detail="Response size exceeds maximum allowed size"
+                    )
+                chunks.append(chunk)
+    except requests.exceptions.RequestException as e:
+        # Mid-stream transport failures (connection reset, chunked-encoding
+        # breakage) must surface through the declared error contract, not leak
+        # as bare requests exceptions — _fetch_from_url's _UrlFetchError
+        # mapping carries the remediation context.
+        raise _UrlFetchError(cause=e) from e
+    finally:
+        response.close()
 
     mimetype = response.headers.get("content-type", "application/octet-stream")
     mimetype = mimetype.split(";")[0].strip()

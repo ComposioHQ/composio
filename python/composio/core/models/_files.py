@@ -456,11 +456,18 @@ def _fetch_file_from_url(
             if chunk:
                 total_bytes += len(chunk)
                 if total_bytes > max_size:
-                    response.close()
                     raise ResponseTooLargeError(
                         f"Response size exceeds maximum allowed size ({max_size} bytes)"
                     )
                 chunks.append(chunk)
+    except requests.exceptions.RequestException as e:
+        # Mid-stream transport failures (connection reset, chunked-encoding
+        # breakage) must surface through the declared error type — the sibling
+        # download path (FileDownloadable.download) already maps OSError-family
+        # failures to its own error; this fetch path leaked them bare.
+        raise ErrorUploadingFile(
+            message=f"Failed to download file from URL: {e}",
+        ) from e
     finally:
         response.close()
 
