@@ -605,11 +605,17 @@ class TestJsonSchemaToPydanticType:
         assert instance4.flexible_field == 3.14
 
     def test_fallback_to_string(self):
-        """Test that missing type defaults to string."""
+        """An empty schema `{}` accepts any value per JSON Schema — typing it to
+        `str` rejected every non-string input, so it now converts to `Any`
+        (matching the boolean `True` accept-anything schema)."""
         json_schema = {}  # No type specified
 
         result = json_schema_to_pydantic_type(json_schema)
-        assert result is str
+        assert result is t.Any
+
+        # A schema with keys but no type still degrades to string.
+        result2 = json_schema_to_pydantic_type({"description": "no type"})
+        assert result2 is str
 
     def test_unsupported_type_fallback(self):
         """Test that unsupported types fall back to string (graceful degradation)."""

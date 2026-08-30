@@ -83,6 +83,12 @@ PYDANTIC_TYPE_TO_PYTHON_TYPE = {
     "null": t.Optional[t.Any],
 }
 
+# An empty schema `{}` accepts any value in JSON Schema — it must not be
+# pre-typed to `str` (which then rejects every non-string input). The
+# permissive `Any` matches what `True` (the boolean accept-anything schema)
+# already converts to.
+EMPTY_SCHEMA_TYPE = t.Any
+
 CONTAINER_TYPE = ("array", "object")
 
 # Should be deprecated,
@@ -1050,7 +1056,14 @@ def _is_simple_primitive(schema: t.Dict[str, t.Any]) -> bool:
 
 def _convert_simple_type(schema: t.Dict[str, t.Any]) -> t.Type[t.Any]:
     """Convert simple primitive types directly."""
+    if not schema:
+        # `{}` accepts any value; typing it `str` rejected every non-string input.
+        return t.cast(t.Type[t.Any], EMPTY_SCHEMA_TYPE)
     type_ = schema.get("type", "string")
+    if type_ == "null":
+        # A pure null type accepts only None; the map's Optional[Any] would
+        # accept everything.
+        return type(None)
     return t.cast(t.Type[t.Any], PYDANTIC_TYPE_TO_PYTHON_TYPE.get(type_, str))
 
 
