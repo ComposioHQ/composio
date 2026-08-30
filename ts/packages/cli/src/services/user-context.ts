@@ -17,6 +17,17 @@ import type { KeyringServiceShape } from '@composio/cli-keyring/effect';
 import { KeyringError, type MacOSBackend } from '@composio/cli-keyring';
 import { ComposioCliUserConfig, ComposioCliUserConfigLive } from 'src/services/cli-user-config';
 
+/** Debug logs must never carry the API key: stderr is routinely captured by
+ * CI logs, terminal recorders, and agent-session transcripts. */
+export const redactApiKey = (json: string): string =>
+  json.replace(/("api_key"\s*:\s*)"[^"]*"/g, '$1"***redacted***"');
+
+const redactParsedUserData = (data: UserData): UserData => ({
+  ...data,
+  apiKey: Option.map(data.apiKey, () => '***redacted***'),
+});
+
+
 /**
  * Keyring specifier for the Composio API key. `service` is a reverse
  * DNS identifier shared by every composio CLI install; `user` is a
@@ -188,6 +199,17 @@ export const rawComposioUserContextLive = Layer.effect(
       testUserId: Option.none(),
     });
 
+    // The user-data file carries the plaintext API key in the default
+    // ('auto'/'json') storage mode, so it must never be world-readable.
+    // `writeFileString({ mode })` is masked by the process umask, and a
+    // pre-existing 0644 file (written by older CLI versions) keeps its mode
+    // across an overwrite — the follow-up chmod pins 0600 either way.
+    const writeCredentialsJson = (contents: string): Effect.Effect<void, PlatformError> =>
+      Effect.gen(function* () {
+        yield* fs.writeFileString(jsonUserConfigPath, contents, { mode: 0o600 });
+        yield* fs.chmod(jsonUserConfigPath, 0o600);
+      });
+
     const writeJson = (snapshot: UserData) =>
       Effect.gen(function* () {
         const onDisk: UserData = useLegacyStorage
@@ -195,8 +217,8 @@ export const rawComposioUserContextLive = Layer.effect(
           : { ...snapshot, apiKey: Option.none() };
         const encoded = yield* userDataToJSON(onDisk);
         const normalized = yield* normalizeEncodedUserData(encoded, !useLegacyStorage);
-        yield* Effect.logDebug('Saving user data:', normalized);
-        yield* fs.writeFileString(jsonUserConfigPath, normalized);
+        yield* Effect.logDebug('Saving user data:', redactApiKey(normalized));
+        yield* writeCredentialsJson(normalized);
       });
 
     const logout = Effect.gen(function* () {
@@ -238,8 +260,8 @@ export const rawComposioUserContextLive = Layer.effect(
           // temporarily writing with the legacy-storage codepath.
           const onDisk = yield* userDataToJSON(next);
           const normalized = yield* normalizeEncodedUserData(onDisk, false);
-          yield* Effect.logDebug('Saving user data (keyring fallback):', normalized);
-          yield* fs.writeFileString(jsonUserConfigPath, normalized);
+          yield* Effect.logDebug('Saving user data (keyring fallback):', redactApiKey(normalized));
+          yield* writeCredentialsJson(normalized);
         }
       });
 
@@ -248,15 +270,15 @@ export const rawComposioUserContextLive = Layer.effect(
         const nextUserData = { ...userData, ...data } satisfies UserData;
         userData = nextUserData;
         yield* writeJson(nextUserData);
-        yield* Effect.logDebug('User data updated:', userData);
+        yield* Effect.logDebug('User data updated:', redactParsedUserData(userData));
       });
 
     const load = Effect.gen(function* () {
       yield* Effect.logDebug('Loading user data from', jsonUserConfigPath);
       const userDataJson = yield* fs.readFileString(jsonUserConfigPath, 'utf8');
-      yield* Effect.logDebug('User data (raw):', userDataJson);
+      yield* Effect.logDebug('User data (raw):', redactApiKey(userDataJson));
       const parsedUserData = (yield* userDataFromJSON(userDataJson)) satisfies UserData;
-      yield* Effect.logDebug('User data (parsed):', parsedUserData);
+      yield* Effect.logDebug('User data (parsed):', redactParsedUserData(parsedUserData));
 
       const overriddenUserData = {
         ...userData,

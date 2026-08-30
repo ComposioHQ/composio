@@ -4,7 +4,7 @@ import { FileSystem } from '@effect/platform';
 import { BunFileSystem, BunPath } from '@effect/platform-bun';
 import { ConfigProvider, Effect, Layer, Option, Data } from 'effect';
 import * as tempy from 'tempy';
-import { ComposioUserContext, rawComposioUserContextLive } from 'src/services/user-context';
+import { ComposioUserContext, rawComposioUserContextLive, redactApiKey } from 'src/services/user-context';
 import { defaultNodeOs, NodeOs } from 'src/services/node-os';
 import { UserData, UserDataWithDefaults, userDataToJSON } from 'src/models/user-data';
 import { extendConfigProvider } from 'src/services/config';
@@ -381,5 +381,67 @@ describe('ComposioUserContext', () => {
         }).pipe(Effect.provide(ComposioUserContextTest));
       });
     });
+  });
+});
+
+
+describe('ComposioUserContext — credential file hygiene', () => {
+  const withMapConfigProvider = (map: Map<string, string>) =>
+    Layer.setConfigProvider(extendConfigProvider(ConfigProvider.fromMap(map)));
+
+  const makeLayer = (cwd: string, map: Map<string, string> = new Map()) =>
+    Layer.provideMerge(
+      ComposioUserContextLive,
+      Layer.mergeAll(
+        BunFileSystem.layer,
+        BunPath.layer,
+        Layer.succeed(NodeOs, defaultNodeOs({ homedir: cwd })),
+        withMapConfigProvider(map)
+      )
+    );
+
+  it.scoped('[Then] user_data.json is written mode 0600 (plaintext fallback path)', () => {
+    const cwd = tempy.temporaryDirectory();
+
+    return Effect.gen(function* () {
+      const ctx = yield* ComposioUserContext;
+      // Force the legacy plaintext path: a Config-provided key with a
+      // keyring that has no storage (headless) falls back to JSON storage.
+      yield* ctx.login('sk-live-test-key-123');
+      const fs = yield* FileSystem.FileSystem;
+      const stat = yield* fs.stat(path.join(cwd, '.composio', 'user_data.json'));
+      assertEquals(stat.mode & 0o777, 0o600);
+    }).pipe(Effect.provide(makeLayer(cwd, new Map([['COMPOSIO_API_KEY', 'sk-live-test-key-123']]))));
+  });
+
+  it.scoped('[Then] an existing world-readable user_data.json is tightened to 0600', () => {
+    const cwd = tempy.temporaryDirectory();
+
+    return Effect.gen(function* () {
+      const fs = yield* FileSystem.FileSystem;
+      // Simulate a file written by an older CLI version: default 0644.
+      const target = path.join(cwd, '.composio', 'user_data.json');
+      yield* fs.makeDirectory(path.join(cwd, '.composio'), { recursive: true });
+      yield* fs.writeFileString(target, '{"api_key":null}\n');
+      yield* fs.chmod(target, 0o644);
+
+      const ctx = yield* ComposioUserContext;
+      yield* ctx.login('sk-live-test-key-456');
+
+      const stat = yield* fs.stat(target);
+      assertEquals(stat.mode & 0o777, 0o600);
+    }).pipe(Effect.provide(makeLayer(cwd, new Map([['COMPOSIO_API_KEY', 'sk-live-test-key-456']]))));
+  });
+});
+
+describe('redactApiKey', () => {
+  it('masks the api_key value and leaves other fields intact', () => {
+    const input = '{"api_key":"sk-live-secret","base_url":"https://backend.composio.dev","org_id":null}';
+    const output = redactApiKey(input);
+    assertEquals(output, '{"api_key":"***redacted***","base_url":"https://backend.composio.dev","org_id":null}');
+  });
+
+  it('leaves a null api_key untouched', () => {
+    assertEquals(redactApiKey('{"api_key":null}'), '{"api_key":null}');
   });
 });

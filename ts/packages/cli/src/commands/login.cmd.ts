@@ -131,7 +131,10 @@ const writePendingLoginSession = (session: Omit<PendingLoginSession, 'cachedAt'>
       ...session,
       cachedAt: new Date().toISOString(),
     };
-    yield* fs.writeFileString(filePath, `${JSON.stringify(payload, null, 2)}\n`);
+    // The pending session file carries the login session key; keep it
+    // private (mode masked by umask, chmod pins it) like user_data.json.
+    yield* fs.writeFileString(filePath, `${JSON.stringify(payload, null, 2)}\n`, { mode: 0o600 });
+    yield* fs.chmod(filePath, 0o600);
   });
 
 const clearPendingLoginSession = Effect.gen(function* () {
