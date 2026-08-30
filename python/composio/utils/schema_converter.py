@@ -1034,11 +1034,31 @@ def _filtered_schema_to_pydantic_type(
     return _convert_with_library(schema, root_schema=root_schema)
 
 
+def _normalize_schema_type(schema: t.Dict[str, t.Any]) -> t.Tuple[t.Optional[str], bool]:
+    """Collapse a draft-06+ type array to ``(primary_type, is_type_array)``.
+
+    ``{"type": ["string", "null"]}`` means "string, nullable": the ``"null"`` entry
+    only marks nullability, never the payload type, so the primary type is the single
+    non-null entry. Lists are unhashable and used to crash the ``in dict`` lookups in
+    this module. Arrays with zero or multiple non-null entries have no single primary
+    type and return ``None`` so callers delegate to the combiner/library path.
+    """
+    schema_type = schema.get("type")
+    if not isinstance(schema_type, list):
+        return schema_type, False
+    non_null = [entry for entry in schema_type if entry != "null"]
+    if len(non_null) == 1:
+        return non_null[0], True
+    return None, True
+
+
 def _is_simple_primitive(schema: t.Dict[str, t.Any]) -> bool:
     """Check if schema is a simple primitive without combiners."""
     has_combiners = any(k in schema for k in ("anyOf", "allOf", "oneOf"))
     has_properties = "properties" in schema
-    schema_type = schema.get("type")
+    # A draft-06+ type array (e.g. ["string", "null"]) collapses to its primary type;
+    # lists are unhashable and would raise TypeError on the dict membership checks.
+    schema_type, _ = _normalize_schema_type(schema)
 
     return (
         not has_combiners
@@ -1050,7 +1070,9 @@ def _is_simple_primitive(schema: t.Dict[str, t.Any]) -> bool:
 
 def _convert_simple_type(schema: t.Dict[str, t.Any]) -> t.Type[t.Any]:
     """Convert simple primitive types directly."""
-    type_ = schema.get("type", "string")
+    type_, _ = _normalize_schema_type(schema)
+    if type_ is None:
+        type_ = "string"
     return t.cast(t.Type[t.Any], PYDANTIC_TYPE_TO_PYTHON_TYPE.get(type_, str))
 
 

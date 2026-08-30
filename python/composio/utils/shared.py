@@ -629,7 +629,14 @@ def pydantic_model_from_param_schema(param_schema: t.Dict) -> t.Type:
         return t.List
 
     for prop_name, prop_info in param_schema.get("properties", {}).items():
-        prop_type = prop_info.get("type")
+        raw_prop_type = prop_info.get("type")
+        # A draft-06+ type array (e.g. ["string", "null"]) collapses to its primary
+        # type; lists are unhashable and would raise TypeError on the dict lookups.
+        if isinstance(raw_prop_type, list):
+            non_null = [entry for entry in raw_prop_type if entry != "null"]
+            prop_type = non_null[0] if len(non_null) == 1 else None
+        else:
+            prop_type = raw_prop_type
         prop_title = prop_info.get("title", prop_name).replace(" ", "")
         prop_default = prop_info.get("default", FALLBACK_VALUES.get(prop_type))
         if (
