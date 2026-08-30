@@ -357,6 +357,21 @@ describe('fileUtils', () => {
       ).rejects.toThrow('Failed to download file: Not Found');
     });
 
+    it('rejects when the downloaded file cannot be saved', async () => {
+      mockFetch.mockResolvedValue(downloadedFileResponse());
+      vi.mocked(fs.writeFileSync).mockImplementationOnce(() => {
+        throw new Error('disk full');
+      });
+
+      await expect(
+        downloadFileFromS3({
+          toolSlug: 'github',
+          s3Url: 'https://s3.example.com/file.txt',
+          mimeType: 'text/plain',
+        })
+      ).rejects.toThrow('Failed to save downloaded file: github_1640995200000abc12345.txt');
+    });
+
     it('synthesizes the filename server-side and ignores the s3Url path', async () => {
       // Regression: lock the invariant that the saved filename comes from
       // (toolSlug, mimeType, timestamp, random id) — never from the s3Url.
