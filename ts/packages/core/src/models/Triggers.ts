@@ -558,6 +558,18 @@ export class Triggers<TProvider extends BaseComposioProvider<unknown, unknown, u
       return false;
     }
 
+    // Check if authConfigId filter matches
+    if (
+      filters.authConfigId &&
+      filters.authConfigId !== data.metadata.connectedAccount.authConfigId
+    ) {
+      logger.debug(
+        'Trigger does not match authConfigId filter',
+        JSON.stringify(filters.authConfigId, null, 2)
+      );
+      return false;
+    }
+
     // Check if triggerName filter matches
     if (
       filters.triggerSlug?.length &&
