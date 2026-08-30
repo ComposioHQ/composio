@@ -1237,22 +1237,35 @@ def _handle_toplevel_combiner(
         # If result is a type (like a Union or Optional), return it directly
         # If result is a model class, return it
         return result
-    except (SchemaError, CombinerError):
-        pass
-    except Exception:
-        pass
+    except (SchemaError, CombinerError) as e:
+        logger.warning(
+            "Top-level combiner conversion failed (%s: %s); falling back to a "
+            "permissive type. The original schema's constraints may be relaxed.",
+            type(e).__name__,
+            e,
+        )
+    except Exception as e:  # pragma: no cover
+        logger.warning(
+            "Unexpected error in top-level combiner conversion (%s: %s); falling "
+            "back to a permissive type. The original schema's constraints may be relaxed.",
+            type(e).__name__,
+            e,
+        )
+
+    # Fallbacks below are deliberately permissive: the library failed on this
+    # combiner, and silently narrowing to a subset of the schema (the historical
+    # allOf[0]-only fallback) validated payloads the real schema rejects and
+    # dropped fields the real schema requires.
 
     # Fallback: manually build union type for anyOf/oneOf
     if "anyOf" in schema or "oneOf" in schema:
         options = schema.get("anyOf", schema.get("oneOf", []))
         return _build_union_from_options(options, root_schema=root_schema)
 
-    # Fallback: use first option for allOf
+    # Fallback: accept anything for allOf — the intersection is unrepresentable
+    # when the library cannot merge the subschemas.
     if "allOf" in schema and schema["allOf"]:
-        return json_schema_to_pydantic_type(
-            schema["allOf"][0],
-            root_schema=root_schema,
-        )
+        return t.Any
 
     return t.Any
 
