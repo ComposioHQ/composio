@@ -1049,8 +1049,25 @@ def _is_simple_primitive(schema: t.Dict[str, t.Any]) -> bool:
 
 
 def _convert_simple_type(schema: t.Dict[str, t.Any]) -> t.Type[t.Any]:
-    """Convert simple primitive types directly."""
+    """Convert simple primitive types directly.
+
+    A non-empty ``enum`` becomes a ``Literal`` so the allowed values survive
+    conversion — without this, ``{"type": "string", "enum": [...]}`` silently
+    degraded to bare ``str`` and validated any value (and the schema exported
+    for the model lost the enumeration guidance). Unhashable members (lists or
+    dicts appearing in an enum) fall back to the bare type, matching what a
+    ``Literal`` cannot express.
+    """
     type_ = schema.get("type", "string")
+    if isinstance(type_, list):
+        non_null = [entry for entry in type_ if entry != "null"]
+        type_ = non_null[0] if len(non_null) == 1 else "string"
+    enum_values = schema.get("enum")
+    if isinstance(enum_values, list) and enum_values:
+        try:
+            return t.cast(t.Type[t.Any], t.Literal[tuple(enum_values)])
+        except TypeError:
+            pass
     return t.cast(t.Type[t.Any], PYDANTIC_TYPE_TO_PYTHON_TYPE.get(type_, str))
 
 

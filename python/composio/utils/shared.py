@@ -508,11 +508,25 @@ def json_schema_to_pydantic_field(
     else:
         alias = None
 
-    field = {
+    field: t.Dict[str, t.Any] = {
         "description": description,
         "examples": examples,
         "alias": alias,
     }
+    # Carry JSON Schema validation constraints onto the pydantic field — without
+    # this, minimum/maximum/minLength/maxLength silently disappeared for simple
+    # top-level parameters and any value validated.
+    for constraint, field_key in (
+        ("minimum", "ge"),
+        ("maximum", "le"),
+        ("exclusiveMinimum", "gt"),
+        ("exclusiveMaximum", "lt"),
+        ("minLength", "min_length"),
+        ("maxLength", "max_length"),
+    ):
+        value = json_schema.get(constraint)
+        if isinstance(value, (int, float)) and not isinstance(value, bool):
+            field[field_key] = value
     if not skip_default:
         field["default"] = ... if original_name in required else default
 
