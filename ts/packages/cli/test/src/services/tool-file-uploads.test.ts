@@ -6,7 +6,7 @@ import { FileSystem, Path } from '@effect/platform';
 import { BunFileSystem, BunPath } from '@effect/platform-bun';
 import { Effect, Layer } from 'effect';
 import { Composio as RawComposioClient } from '@composio/client';
-import { ComposioSensitiveFilePathBlockedError } from '@composio/core';
+import { ComposioBlockedInternalUrlError, ComposioSensitiveFilePathBlockedError } from '@composio/core';
 import { schemaHasFileUploadable, uploadToolInputFiles } from 'src/services/tool-file-uploads';
 
 // Schema with a single `file_uploadable` attachment field — mirrors tools like
@@ -163,4 +163,89 @@ describe('uploadToolInputFiles — sensitive-path guard (issue #3746)', () => {
       Effect.ensuring(Effect.sync(() => rmSync(root, { recursive: true, force: true })))
     );
   });
+});
+
+
+describe('uploadToolInputFiles — URL source SSRF guard', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.restoreAllMocks();
+  });
+
+  // URL tool inputs are attacker-influenced (the documented threat model is a
+  // prompt-injected agent supplying its own tool arguments): a loopback,
+  // link-local, or RFC1918 target — reached directly or through a redirect —
+  // must be refused before any upload happens.
+  it.each([
+    'http://127.0.0.1:8080/secret',
+    'http://169.254.169.254/latest/meta-data/iam/security-credentials/',
+    'http://10.1.2.3/internal',
+    'http://192.168.1.10/admin',
+  ])('refuses to fetch URL tool input from an internal address (%s)', (url) =>
+    Effect.gen(function* () {
+      const fsApi = yield* FileSystem.FileSystem;
+      const pathApi = yield* Path.Path;
+      const createPresignedURL = vi.fn();
+      const client = makeClient(createPresignedURL);
+
+      yield* Effect.promise(() =>
+        expect(
+          uploadToolInputFiles({
+            fs: fsApi,
+            path: pathApi,
+            toolSlug: 'GMAIL_SEND_EMAIL',
+            arguments_: { attachment: url },
+            inputSchema,
+            client,
+          })
+        ).rejects.toBeInstanceOf(ComposioBlockedInternalUrlError)
+      );
+
+      // The guard must fire BEFORE any presign round-trip or upload.
+      expect(createPresignedURL).not.toHaveBeenCalled();
+    }).pipe(Effect.provide(Layer.mergeAll(BunFileSystem.layer, BunPath.layer)))
+  );
+
+  it.effect(
+    'still uploads a public URL source (guard does not over-block)',
+    () =>
+      Effect.gen(function* () {
+        const fsApi = yield* FileSystem.FileSystem;
+        const pathApi = yield* Path.Path;
+        const createPresignedURL = vi.fn(async () => ({
+          new_presigned_url: 'https://s3.example.com/put',
+          key: 's3key-123',
+        }));
+        const client = makeClient(createPresignedURL);
+
+        // Public target: the ssrf guard lets it through and the (stubbed)
+        // fetch serves bytes; the pipeline completes with an @tmpfile.
+        vi.stubGlobal(
+          'fetch',
+          vi.fn(async () => ({
+            ok: true,
+            statusText: 'OK',
+            arrayBuffer: async () => new TextEncoder().encode('file-bytes').buffer,
+          }))
+        );
+
+        const result = yield* Effect.promise(() =>
+          uploadToolInputFiles({
+            fs: fsApi,
+            path: pathApi,
+            toolSlug: 'GMAIL_SEND_EMAIL',
+            arguments_: { attachment: 'https://example.com/report.pdf' },
+            inputSchema,
+            client,
+          })
+        );
+
+        expect(result).toEqual([
+          expect.objectContaining({
+            fieldName: 'attachment',
+            filename: 'report.pdf',
+          }),
+        ]);
+      }).pipe(Effect.provide(Layer.mergeAll(BunFileSystem.layer, BunPath.layer)))
+  );
 });

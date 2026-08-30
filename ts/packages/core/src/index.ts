@@ -23,6 +23,8 @@ export type {
   StrictJsonSchemaResult,
 } from './utils/jsonSchema';
 export { getExtensionFromMimeType } from './utils/mime';
+export { ssrfSafeFetch } from './utils/ssrfGuard.node';
+export { ComposioBlockedInternalUrlError } from './errors/SsrfErrors';
 export { normalizeToolArguments } from './utils/toolArguments';
 // Sensitive-file-upload denylist guard. This is the single canonical
 // implementation; downstream packages (e.g. `@composio/cli`) import it here so

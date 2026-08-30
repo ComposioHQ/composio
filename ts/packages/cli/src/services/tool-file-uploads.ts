@@ -5,7 +5,7 @@
 // is run to completion inside this promise pipeline.
 import type { FileSystem, Path } from '@effect/platform';
 import type { Composio as RawComposioClient } from '@composio/client';
-import { assertSafeFileUploadPath } from '@composio/core';
+import { assertSafeFileUploadPath, ssrfSafeFetch } from '@composio/core';
 import { Cause, Data, Effect, Exit, Predicate } from 'effect';
 import { guessToolkitFromToolSlug } from 'src/utils/toolkit-from-tool-slug';
 
@@ -143,7 +143,12 @@ export const findFileUploadablePaths = (
 };
 
 const readFileFromUrl = async (path: Path.Path, url: string) => {
-  const response = await fetch(url);
+  // ssrfSafeFetch: URL tool inputs are attacker-influenced (the documented
+  // threat model is a prompt-injected agent supplying its own tool
+  // arguments), so loopback/RFC1918/link-local targets and redirects to
+  // them must be refused — the core SDK applies the same guard to this
+  // exact pipeline (fileUtils.node.ts readFileContentFromURL).
+  const response = await ssrfSafeFetch(url);
   if (!response.ok) {
     throw new ToolFileUploadError({
       message: `Failed to fetch file: ${response.statusText}`,
@@ -249,7 +254,9 @@ const uploadFile = async (params: {
     toolkit_slug: params.toolkitSlug,
   });
 
-  const uploadResponse = await fetch(presigned.new_presigned_url, {
+  // Guarded like the core upload path: a compromised/intercepted presign
+  // response naming an internal address must not receive the file bytes.
+  const uploadResponse = await ssrfSafeFetch(presigned.new_presigned_url, {
     method: 'PUT',
     body: fileData.bytes,
     headers: {
