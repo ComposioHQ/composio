@@ -1194,6 +1194,25 @@ def _convert_with_library(
             items = schema.get("items")
             if _is_unsatisfiable_schema(items):
                 return t.List[_UnsatisfiableSchema]  # type: ignore[return-value]
+            if isinstance(items, list):
+                # Draft-04 tuple validation: positional per-index subschemas.
+                # Converting to positional args is out of scope, but degrading to
+                # bare `str` (the historical behavior — the list raises in the
+                # simple-type lookup and lands in the string fallback) rejected
+                # every legitimate array input. Treat it as a list of the union
+                # of the positional subschemas' types instead.
+                member_types = []
+                for member in _filter_boolean_schemas(items) or []:
+                    if not _is_unsatisfiable_schema(member):
+                        member_types.append(
+                            _filtered_schema_to_pydantic_type(member, root_schema=root_schema)
+                        )
+                if not member_types:
+                    return t.List[t.cast(t.Type, t.Any)]
+                unique_types = list(dict.fromkeys(member_types))
+                if len(unique_types) == 1:
+                    return t.List[t.cast(t.Type, unique_types[0])]
+                return t.List[t.Union[tuple(unique_types)]]  # type: ignore
             if items:
                 item_type = _filtered_schema_to_pydantic_type(
                     items,
