@@ -962,6 +962,12 @@ class FileHelper(WithLogger):
             return schema
         required = schema.get("required") or []
         for _param, _schema in schema["properties"].items():
+            if not isinstance(_schema, dict):
+                # Boolean sub-schemas (``True`` = accept anything, ``False`` = reject
+                # everything) are valid draft-06+ JSON Schema and carry no description
+                # to enhance — the converter pre-filters them on its path, but this
+                # helper runs unconditionally before that.
+                continue
             if _schema.get("type") in ["string", "integer", "number", "boolean"]:
                 ext = f"Please provide a value of type {_schema['type']}."
                 description = _schema.get("description", "").rstrip(".")
