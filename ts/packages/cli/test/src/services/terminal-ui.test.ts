@@ -173,35 +173,23 @@ describe('TerminalUI', () => {
   });
 
   describe('clampSpinnerMessage keeps live spinner messages on one terminal row', () => {
-    const streamWithColumns = (columns?: number) =>
-      columns === undefined ? makeSink(true) : Object.assign(makeSink(true), { columns });
-
     it('leaves a message that fits untouched', () => {
-      expect(clampSpinnerMessage(streamWithColumns(80), 'Checking for updates')).toBe(
-        'Checking for updates'
-      );
+      expect(clampSpinnerMessage(80, 'Checking for updates')).toBe('Checking for updates');
     });
 
     it('truncates a message longer than the row budget with an ellipsis', () => {
-      const clamped = clampSpinnerMessage(streamWithColumns(40), 'x'.repeat(100));
+      const clamped = clampSpinnerMessage(40, 'x'.repeat(100));
       expect(clamped).toBe(`${'x'.repeat(32)}…`);
       expect(clamped).toHaveLength(40 - 7);
     });
 
     it('collapses embedded newlines into spaces', () => {
-      expect(clampSpinnerMessage(streamWithColumns(80), 'line one\nline two')).toBe(
-        'line one line two'
-      );
+      expect(clampSpinnerMessage(80, 'line one\nline two')).toBe('line one line two');
     });
 
     it('never slices a message containing ANSI escape sequences', () => {
       const colored = `\u001b[32m${'x'.repeat(100)}\u001b[0m`;
-      expect(clampSpinnerMessage(streamWithColumns(40), colored)).toBe(colored);
-    });
-
-    it('falls back to 80 columns when the stream reports no width', () => {
-      const clamped = clampSpinnerMessage(streamWithColumns(undefined), 'x'.repeat(100));
-      expect(clamped).toHaveLength(80 - 7);
+      expect(clampSpinnerMessage(40, colored)).toBe(colored);
     });
 
     it('measures display columns, not UTF-16 code units', () => {
@@ -212,13 +200,23 @@ describe('TerminalUI', () => {
       expect(message).toHaveLength(20);
       expect(stringWidth(message)).toBe(40);
 
-      const clamped = clampSpinnerMessage(streamWithColumns(40), message);
+      const clamped = clampSpinnerMessage(40, message);
       expect(clamped.endsWith('…')).toBe(true);
       expect(stringWidth(clamped)).toBeLessThanOrEqual(40 - 7);
     });
 
+    it('measures and truncates whole grapheme clusters', () => {
+      const keycap = '1\uFE0F\u20E3';
+      expect(stringWidth(keycap)).toBe(2);
+      expect([...keycap].reduce((width, char) => width + stringWidth(char), 0)).toBe(1);
+
+      const clamped = clampSpinnerMessage(20, keycap.repeat(20));
+      expect(clamped).toMatch(/^(?:1\uFE0F\u20E3)*…$/u);
+      expect(stringWidth(clamped)).toBeLessThanOrEqual(20 - 7);
+    });
+
     it('never cuts a surrogate pair in half', () => {
-      const clamped = clampSpinnerMessage(streamWithColumns(20), '\u{1f600}'.repeat(40));
+      const clamped = clampSpinnerMessage(20, '\u{1f600}'.repeat(40));
       expect(clamped).not.toMatch(/[\uD800-\uDBFF](?![\uDC00-\uDFFF])/);
       expect(stringWidth(clamped)).toBeLessThanOrEqual(20 - 7);
     });
@@ -226,12 +224,12 @@ describe('TerminalUI', () => {
     it('degrades to the ellipsis on terminals narrower than the frame overhead', () => {
       // Below SPINNER_RENDER_OVERHEAD + 1 columns no message length fits, so the
       // budget bottoms out at one column rather than jumping back up to eight.
-      expect(clampSpinnerMessage(streamWithColumns(4), 'x'.repeat(100))).toBe('…');
+      expect(clampSpinnerMessage(4, 'x'.repeat(100))).toBe('…');
     });
 
     it('keeps the rendered frame within the row at the exact budget boundary', () => {
       const columns = 20;
-      const clamped = clampSpinnerMessage(streamWithColumns(columns), 'x'.repeat(100));
+      const clamped = clampSpinnerMessage(columns, 'x'.repeat(100));
       // frame (1) + two spaces (2) + message + three animated dots (3).
       expect(1 + 2 + stringWidth(clamped) + 3).toBeLessThanOrEqual(columns);
     });
@@ -306,6 +304,56 @@ describe('TerminalUI', () => {
           expect(frames[0]).toContain('New version available: @composio');
           for (const frame of frames) {
             expect(frame).not.toContain('\n');
+          }
+        })
+      )
+    );
+
+    it.live('does not grow updates beyond the width Clack captured at construction', () =>
+      withFakeTimers(
+        Effect.gen(function* () {
+          const { ui, stderr } = narrowUi(20);
+
+          yield* ui.useMakeSpinner('Checking for updates...', spinner =>
+            Effect.gen(function* () {
+              stderr.columns = 80;
+              yield* spinner.message(LONG_UPGRADE_MESSAGE);
+              yield* Effect.sync(() => vi.advanceTimersByTime(TICKS_PAST_THREE_DOTS));
+              yield* spinner.stop('Upgrade completed!');
+            })
+          );
+
+          const frames = clampedFrames(stderr);
+          expect(frames.length).toBeGreaterThan(0);
+          expect(frames[0]).toContain('New version');
+          for (const frame of frames) {
+            expect(frame).not.toContain('\n');
+            expect(stringWidth(frame)).toBeLessThanOrEqual(20);
+          }
+        })
+      )
+    );
+
+    it.live('respects a terminal that narrows after spinner construction', () =>
+      withFakeTimers(
+        Effect.gen(function* () {
+          const { ui, stderr } = narrowUi(80);
+
+          yield* ui.useMakeSpinner('Checking for updates...', spinner =>
+            Effect.gen(function* () {
+              stderr.columns = 20;
+              yield* spinner.message(LONG_UPGRADE_MESSAGE);
+              yield* Effect.sync(() => vi.advanceTimersByTime(TICKS_PAST_THREE_DOTS));
+              yield* spinner.stop('Upgrade completed!');
+            })
+          );
+
+          const frames = clampedFrames(stderr);
+          expect(frames.length).toBeGreaterThan(0);
+          expect(frames[0]).toContain('New version');
+          for (const frame of frames) {
+            expect(frame).not.toContain('\n');
+            expect(stringWidth(frame)).toBeLessThanOrEqual(20);
           }
         })
       )

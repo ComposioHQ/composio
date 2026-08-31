@@ -201,53 +201,58 @@ type TerminalUIStreams = {
 // columns. Below that the frame prefix alone overflows the row and no message
 // length can keep it on one line, so the budget degrades to just the ellipsis.
 const SPINNER_RENDER_OVERHEAD = 7; // frame + two spaces (3) + animated dots (3) + last-column safety (1)
+const graphemeSegmenter = new Intl.Segmenter(undefined, { granularity: 'grapheme' });
 
-export const clampSpinnerMessage = (output: Writable, message: string): string => {
+export const clampSpinnerMessage = (columns: number, message: string): string => {
   const singleLine = message.replace(/\s*\r?\n\s*/g, ' ');
   if (singleLine.includes('\u001b')) {
     return singleLine; // truncating could split an ANSI escape sequence
   }
 
-  const budget = Math.max(getColumns(output) - SPINNER_RENDER_OVERHEAD, 1);
+  const budget = Math.max(columns - SPINNER_RENDER_OVERHEAD, 1);
   if (stringWidth(singleLine) <= budget) {
     return singleLine;
   }
 
-  // Measure in display columns, not UTF-16 code units: clack wraps the rendered
-  // frame by width, so a CJK character it counts as two columns would slip past
-  // a `.length` budget and wrap anyway. Accumulating whole code points also keeps
-  // the cut off a surrogate pair. One column is reserved for the ellipsis.
+  // Measure whole grapheme clusters in display columns. Measuring individual
+  // code points under-counts sequences such as keycap emoji, while slicing by
+  // UTF-16 length can split surrogate pairs or joined emoji. One column is
+  // reserved for the ellipsis.
   let clamped = '';
   let width = 0;
-  for (const char of singleLine) {
-    const charWidth = stringWidth(char);
-    if (width + charWidth > budget - 1) {
+  for (const { segment } of graphemeSegmenter.segment(singleLine)) {
+    const segmentWidth = stringWidth(segment);
+    if (width + segmentWidth > budget - 1) {
       break;
     }
-    clamped += char;
-    width += charWidth;
+    clamped += segment;
+    width += segmentWidth;
   }
   return `${clamped}…`;
 };
 
+type StartedClackSpinner = {
+  readonly raw: p.SpinnerResult;
+  readonly updateMessage: (message: string) => void;
+};
+
 function createClackSpinnerHandle(
-  s: p.SpinnerResult,
-  defaultMessage: string,
-  output: Writable
+  spinner: StartedClackSpinner,
+  defaultMessage: string
 ): { handle: SpinnerHandle; isStopped: () => boolean } {
   let stopped = false;
   return {
     handle: {
-      message: (msg: string) => Effect.sync(() => s.message(clampSpinnerMessage(output, msg))),
+      message: (msg: string) => Effect.sync(() => spinner.updateMessage(msg)),
       stop: (msg?: string) =>
         Effect.sync(() => {
           stopped = true;
-          s.stop(msg ?? defaultMessage);
+          spinner.raw.stop(msg ?? defaultMessage);
         }),
       error: (msg?: string) =>
         Effect.sync(() => {
           stopped = true;
-          s.error(msg ?? defaultMessage);
+          spinner.raw.error(msg ?? defaultMessage);
         }),
     },
     isStopped: () => stopped,
@@ -283,10 +288,18 @@ export const makeTerminalUI = (streams: TerminalUIStreams): TerminalUI => {
   };
 
   /** Start a clack spinner on stderr, clamped to a single terminal row. */
-  const startSpinner = (message: string): p.SpinnerResult => {
-    const s = p.spinner({ output: stderr });
-    s.start(clampSpinnerMessage(stderr, message));
-    return s;
+  const startSpinner = (message: string): StartedClackSpinner => {
+    // Clack captures this width during construction and continues wrapping
+    // against it. Updates may respect a later narrower terminal, but must never
+    // grow beyond Clack's fixed width.
+    const initialColumns = getColumns(stderr);
+    const raw = p.spinner({ output: stderr });
+    raw.start(clampSpinnerMessage(initialColumns, message));
+    return {
+      raw,
+      updateMessage: msg =>
+        raw.message(clampSpinnerMessage(Math.min(initialColumns, getColumns(stderr)), msg)),
+    };
   };
 
   return {
@@ -360,7 +373,7 @@ export const makeTerminalUI = (streams: TerminalUIStreams): TerminalUI => {
       return Effect.acquireUseRelease(
         Effect.sync(() => startSpinner(message)),
         () => effect,
-        (s, exit) =>
+        (spinner, exit) =>
           Effect.sync(() => {
             if (Exit.isSuccess(exit)) {
               let successMessage = message;
@@ -370,9 +383,9 @@ export const makeTerminalUI = (streams: TerminalUIStreams): TerminalUI => {
               } else if (configuredSuccessMessage !== undefined) {
                 successMessage = configuredSuccessMessage;
               }
-              s.stop(successMessage);
+              spinner.raw.stop(successMessage);
             } else {
-              s.error(options?.errorMessage ?? message);
+              spinner.raw.error(options?.errorMessage ?? message);
             }
           })
       );
@@ -385,9 +398,9 @@ export const makeTerminalUI = (streams: TerminalUIStreams): TerminalUI => {
 
       return Effect.acquireUseRelease(
         Effect.sync(() => {
-          const s = startSpinner(message);
-          const { handle, isStopped } = createClackSpinnerHandle(s, message, stderr);
-          return { raw: s, handle, isStopped };
+          const spinner = startSpinner(message);
+          const { handle, isStopped } = createClackSpinnerHandle(spinner, message);
+          return { raw: spinner.raw, handle, isStopped };
         }),
         ({ handle }) => use(handle),
         ({ raw, isStopped }, exit) =>
