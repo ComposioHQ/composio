@@ -56,19 +56,20 @@ function getBunVersion(requiredVersion: string): string {
     return Bun.version.trim();
   }
 
-  try {
-    return execFileSync(process.execPath, ['--revision'], { encoding: 'utf-8' }).trim();
-  } catch (err) {
+  // `Bun.version_with_sha` ("v1.4.1-canary.1 (d9b769812)") carries the same revision that
+  // `bun --revision` prints ("1.4.1-canary.1+d9b769812") without spawning a second Bun process.
+  const match = Bun.version_with_sha.match(/^v(\S+) \(([0-9a-f]+)\)$/);
+  if (!match) {
     console.error(
-      `Failed to resolve the installed Bun revision.
+      `Failed to resolve the installed Bun revision from "${Bun.version_with_sha}".
 Install the repository toolchain by running:
 
 \`mise install\`
-
-Original error: ${(err as Error).message}`
+`
     );
     process.exit(1);
   }
+  return `${match[1]}+${match[2]}`;
 }
 
 function assertVersion(tool: CheckedTool, getActualVersion: (requiredVersion: string) => string) {
