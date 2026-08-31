@@ -133,6 +133,9 @@ describe('CLI: composio agent', () => {
     it.scoped('agent inbox prints only JSON', () =>
       Effect.gen(function* () {
         yield* writeStoredAgentIdentity(agentSignupResponse);
+        const fs = yield* FileSystem.FileSystem;
+        const cacheDir = yield* setupCacheDir;
+        expect((yield* fs.stat(path.join(cacheDir, 'agent.json'))).mode & 0o777).toBe(0o600);
         vi.spyOn(globalThis, 'fetch').mockImplementation(async (requestInput, init) => {
           const url =
             typeof requestInput === 'string'

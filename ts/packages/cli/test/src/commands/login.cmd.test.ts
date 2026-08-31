@@ -163,6 +163,9 @@ describe('CLI: composio login', () => {
         );
         const pendingLogin = JSON.parse(pendingLoginRaw) as Record<string, unknown>;
         expect(pendingLogin.key).toBe('te00st11-d0c4-4efa-8117-c638886063e0');
+        expect(
+          (yield* fs.stat(path.join(cacheDir, 'pending-login-session.json'))).mode & 0o777
+        ).toBe(0o600);
 
         expect(output).not.toContain('-- composio login --');
         expect(output).not.toContain('Please login using the following URL');
@@ -428,6 +431,7 @@ describe('CLI: composio login', () => {
         // `~/.composio/config.json`.
         expect(userConfig.api_key).toBe('uak_direct_key');
         expect(userConfig.org_id).toBe('org_selected');
+        expect((yield* fs.stat(userConfigPath)).mode & 0o777).toBe(0o600);
 
         // ComposioUserContext also exposes the resolved key in-memory
         // for subsequent API calls in this process.

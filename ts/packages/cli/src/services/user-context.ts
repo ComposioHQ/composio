@@ -16,6 +16,8 @@ import { KeyringService, KeyringLiveWithBackend } from '@composio/cli-keyring/ef
 import type { KeyringServiceShape } from '@composio/cli-keyring/effect';
 import { KeyringError, type MacOSBackend } from '@composio/cli-keyring';
 import { ComposioCliUserConfig, ComposioCliUserConfigLive } from 'src/services/cli-user-config';
+import { atomicWritePrivateFileString } from 'src/utils/atomic-write';
+import { redactSensitiveLogValue } from 'src/utils/redact-sensitive';
 
 /**
  * Keyring specifier for the Composio API key. `service` is a reverse
@@ -195,8 +197,12 @@ export const rawComposioUserContextLive = Layer.effect(
           : { ...snapshot, apiKey: Option.none() };
         const encoded = yield* userDataToJSON(onDisk);
         const normalized = yield* normalizeEncodedUserData(encoded, !useLegacyStorage);
-        yield* Effect.logDebug('Saving user data:', normalized);
-        yield* fs.writeFileString(jsonUserConfigPath, normalized);
+        yield* Effect.logDebug('Saving user data:', redactSensitiveLogValue(onDisk));
+        yield* atomicWritePrivateFileString({
+          fs,
+          target: jsonUserConfigPath,
+          contents: normalized,
+        });
       });
 
     const logout = Effect.gen(function* () {
@@ -238,8 +244,15 @@ export const rawComposioUserContextLive = Layer.effect(
           // temporarily writing with the legacy-storage codepath.
           const onDisk = yield* userDataToJSON(next);
           const normalized = yield* normalizeEncodedUserData(onDisk, false);
-          yield* Effect.logDebug('Saving user data (keyring fallback):', normalized);
-          yield* fs.writeFileString(jsonUserConfigPath, normalized);
+          yield* Effect.logDebug(
+            'Saving user data (keyring fallback):',
+            redactSensitiveLogValue(next)
+          );
+          yield* atomicWritePrivateFileString({
+            fs,
+            target: jsonUserConfigPath,
+            contents: normalized,
+          });
         }
       });
 
@@ -248,15 +261,14 @@ export const rawComposioUserContextLive = Layer.effect(
         const nextUserData = { ...userData, ...data } satisfies UserData;
         userData = nextUserData;
         yield* writeJson(nextUserData);
-        yield* Effect.logDebug('User data updated:', userData);
+        yield* Effect.logDebug('User data updated:', redactSensitiveLogValue(userData));
       });
 
     const load = Effect.gen(function* () {
       yield* Effect.logDebug('Loading user data from', jsonUserConfigPath);
       const userDataJson = yield* fs.readFileString(jsonUserConfigPath, 'utf8');
-      yield* Effect.logDebug('User data (raw):', userDataJson);
       const parsedUserData = (yield* userDataFromJSON(userDataJson)) satisfies UserData;
-      yield* Effect.logDebug('User data (parsed):', parsedUserData);
+      yield* Effect.logDebug('User data (parsed):', redactSensitiveLogValue(parsedUserData));
 
       const overriddenUserData = {
         ...userData,
@@ -269,7 +281,10 @@ export const rawComposioUserContextLive = Layer.effect(
         testUserId: parsedUserData.testUserId,
       } satisfies UserData;
 
-      yield* Effect.logDebug('User data (overridden from env vars):', overriddenUserData);
+      yield* Effect.logDebug(
+        'User data (overridden from env vars):',
+        redactSensitiveLogValue(overriddenUserData)
+      );
       userData = overriddenUserData;
       return userData;
     });

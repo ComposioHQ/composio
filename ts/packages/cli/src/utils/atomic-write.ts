@@ -21,6 +21,8 @@ export const atomicWriteFileString = (params: {
   readonly fs: FileSystem.FileSystem;
   readonly target: string;
   readonly contents: string;
+  /** Create the replacement with this exact mode, including over an existing target. */
+  readonly mode?: number;
   /**
    * Preserve an existing target's file mode across the replacement: the tmp
    * copy is created with the target's mode from the start so private contents
@@ -36,14 +38,15 @@ export const atomicWriteFileString = (params: {
     const preservedMode = params.preserveMode
       ? Option.map(yield* fs.stat(target).pipe(Effect.option), info => info.mode & 0o7777)
       : Option.none<number>();
+    const targetMode = Option.fromNullable(params.mode).pipe(Option.orElse(() => preservedMode));
     const tmpPath = atomicTmpPath(target);
 
     const writeAndPromote = Effect.gen(function* () {
-      yield* Option.match(preservedMode, {
+      yield* Option.match(targetMode, {
         onNone: () => fs.writeFileString(tmpPath, contents),
         onSome: mode => fs.writeFileString(tmpPath, contents, { mode }),
       });
-      yield* Option.match(preservedMode, {
+      yield* Option.match(targetMode, {
         onNone: () => Effect.void,
         onSome: mode => fs.chmod(tmpPath, mode),
       });
@@ -54,3 +57,9 @@ export const atomicWriteFileString = (params: {
       Effect.onError(() => fs.remove(tmpPath, { force: true }).pipe(Effect.ignore))
     );
   });
+
+export const atomicWritePrivateFileString = (params: {
+  readonly fs: FileSystem.FileSystem;
+  readonly target: string;
+  readonly contents: string;
+}): Effect.Effect<void, PlatformError> => atomicWriteFileString({ ...params, mode: 0o600 });

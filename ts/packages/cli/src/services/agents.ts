@@ -3,6 +3,7 @@ import { Data, Effect, Either, Option, Predicate, Schema } from 'effect';
 import { APP_CONFIG } from 'src/effects/app-config';
 import { JsonRecordSchema } from 'src/effects/json';
 import { setupCacheDir } from 'src/effects/setup-cache-dir';
+import { atomicWritePrivateFileString } from 'src/utils/atomic-write';
 import { ComposioUserContext } from 'src/services/user-context';
 import { getSessionInfoByUserApiKey } from 'src/services/composio-clients';
 import { primeConsumerConnectedToolkitsCacheInBackground } from 'src/services/consumer-short-term-cache';
@@ -187,7 +188,11 @@ export const writeStoredAgentIdentity = (identity: AgentIdentity) =>
     const fs = yield* FileSystem.FileSystem;
     const configPath = yield* agentConfigPath;
     const normalized = normalizeDecodedAgentIdentity(identity);
-    yield* fs.writeFileString(configPath, `${JSON.stringify(normalized, null, 2)}\n`);
+    yield* atomicWritePrivateFileString({
+      fs,
+      target: configPath,
+      contents: `${JSON.stringify(normalized, null, 2)}\n`,
+    });
     return normalized;
   });
 

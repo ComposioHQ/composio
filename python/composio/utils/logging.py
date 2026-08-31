@@ -7,6 +7,8 @@ import os
 import typing as t
 from enum import Enum
 
+from composio.utils.redaction import redact_sensitive_text
+
 ENV_COMPOSIO_LOGGING_LEVEL = "COMPOSIO_LOGGING_LEVEL"
 
 _DEFAULT_FORMAT = "[%(asctime)s][%(levelname)s] %(message)s"
@@ -71,7 +73,7 @@ class _VerbosityWrapper:
         self.size = _LOG_LINE_SIZE_BY_VERBOSITY[self.verbosity]
 
     def _trim(self, msg) -> str:
-        msg = str(msg)
+        msg = redact_sensitive_text(str(msg))
         if self.size == -1:
             return msg
 
@@ -80,17 +82,38 @@ class _VerbosityWrapper:
 
         return msg[: self.size] + "..."
 
+    def _prepare(
+        self,
+        msg,
+        args: t.Tuple[t.Any, ...],
+        *,
+        trim: bool = True,
+    ) -> str:
+        if args:
+            try:
+                format_args = (
+                    args[0] if len(args) == 1 and isinstance(args[0], dict) else args
+                )
+                msg = msg % format_args
+            except (KeyError, TypeError, ValueError):
+                msg = f"{msg} {args}"
+        return self._trim(msg) if trim else redact_sensitive_text(str(msg))
+
     def info(self, msg, *args, **kwargs):
-        self.logger.info(self._trim(msg), *args, **kwargs)
+        if self.logger.isEnabledFor(logging.INFO):
+            self.logger.info(self._prepare(msg, args), **kwargs)
 
     def debug(self, msg, *args, **kwargs):
-        self.logger.debug(self._trim(msg), *args, **kwargs)
+        if self.logger.isEnabledFor(logging.DEBUG):
+            self.logger.debug(self._prepare(msg, args), **kwargs)
 
     def warning(self, msg, *args, **kwargs):
-        self.logger.warning(self._trim(msg), *args, **kwargs)
+        if self.logger.isEnabledFor(logging.WARNING):
+            self.logger.warning(self._prepare(msg, args), **kwargs)
 
     def error(self, msg, *args, **kwargs):
-        self.logger.error(msg, *args, **kwargs)
+        if self.logger.isEnabledFor(logging.ERROR):
+            self.logger.error(self._prepare(msg, args, trim=False), **kwargs)
 
     def isEnabledFor(self, level: int):
         return self.logger.isEnabledFor(level=level)
