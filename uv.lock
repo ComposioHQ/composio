@@ -1,5 +1,5 @@
 version = 1
-revision = 2
+revision = 3
 requires-python = ">=3.10, <4"
 resolution-markers = [
     "python_full_version >= '3.14' and sys_platform == 'win32'",
@@ -25,7 +25,7 @@ members = [
 ]
 
 [manifest.dependency-groups]
-dev = [{ name = "composio", virtual = "python" }]
+dev = [{ name = "composio", editable = "python" }]
 
 [[package]]
 name = "aiofiles"
@@ -715,7 +715,7 @@ wheels = [
 [[package]]
 name = "composio"
 version = "2.0.0b0"
-source = { virtual = "python" }
+source = { editable = "python" }
 dependencies = [
     { name = "composio-client" },
     { name = "json-schema-to-pydantic" },
@@ -761,7 +761,7 @@ requires-dist = [
 [package.metadata.requires-dev]
 dev = [
     { name = "click", specifier = ">=8.4.2" },
-    { name = "composio", virtual = "python" },
+    { name = "composio", editable = "python" },
     { name = "fastapi", specifier = ">=0.140.0" },
     { name = "langchain-openai", specifier = "==1.4.3" },
     { name = "nox", specifier = ">=2026.7.11" },
@@ -778,7 +778,7 @@ dev = [
 [[package]]
 name = "composio-anthropic"
 version = "0.20.0"
-source = { virtual = "python/providers/anthropic" }
+source = { editable = "python/providers/anthropic" }
 dependencies = [
     { name = "anthropic" },
     { name = "composio" },
@@ -807,7 +807,7 @@ wheels = [
 [[package]]
 name = "composio-crewai"
 version = "0.20.0"
-source = { virtual = "python/providers/crewai" }
+source = { editable = "python/providers/crewai" }
 dependencies = [
     { name = "composio" },
     { name = "crewai" },
@@ -837,7 +837,7 @@ requires-dist = [
 [[package]]
 name = "composio-google"
 version = "0.20.0"
-source = { virtual = "python/providers/google" }
+source = { editable = "python/providers/google" }
 dependencies = [
     { name = "composio" },
     { name = "google-cloud-aiplatform" },
@@ -852,7 +852,7 @@ requires-dist = [
 [[package]]
 name = "composio-google-adk"
 version = "0.20.0"
-source = { virtual = "python/providers/google_adk" }
+source = { editable = "python/providers/google_adk" }
 dependencies = [
     { name = "composio" },
     { name = "google-adk" },
@@ -867,7 +867,7 @@ requires-dist = [
 [[package]]
 name = "composio-langchain"
 version = "0.20.0"
-source = { virtual = "python/providers/langchain" }
+source = { editable = "python/providers/langchain" }
 dependencies = [
     { name = "composio" },
     { name = "langchain" },
@@ -882,7 +882,7 @@ requires-dist = [
 [[package]]
 name = "composio-openai"
 version = "0.20.0"
-source = { virtual = "python/providers/openai" }
+source = { editable = "python/providers/openai" }
 dependencies = [
     { name = "composio" },
     { name = "openai" },
@@ -897,7 +897,7 @@ requires-dist = [
 [[package]]
 name = "composio-openai-agents"
 version = "0.20.0"
-source = { virtual = "python/providers/openai_agents" }
+source = { editable = "python/providers/openai_agents" }
 dependencies = [
     { name = "composio" },
     { name = "openai-agents" },
