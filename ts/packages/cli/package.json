@@ -90,6 +90,7 @@
     "@zed-industries/codex-acp": "^0.16.0",
     "effect": "catalog:",
     "extract-zip": "^2.0.1",
+    "fast-string-width": "^3.0.2",
     "indent-string": "^5.0.0",
     "js-tiktoken": "^1.0.21",
     "json5": "^2.2.3",

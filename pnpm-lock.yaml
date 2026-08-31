@@ -1221,6 +1221,9 @@ importers:
       extract-zip:
         specifier: ^2.0.1
         version: 2.0.1(supports-color@10.2.2)
+      fast-string-width:
+        specifier: ^3.0.2
+        version: 3.0.2
       indent-string:
         specifier: ^5.0.0
         version: 5.0.0
