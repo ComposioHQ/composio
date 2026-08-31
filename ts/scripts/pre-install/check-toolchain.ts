@@ -51,8 +51,29 @@ Original error: ${(err as Error).message}`
   }
 }
 
-function assertVersion(tool: CheckedTool, actualVersion: string) {
+function getBunVersion(requiredVersion: string): string {
+  if (!requiredVersion.includes('+')) {
+    return Bun.version.trim();
+  }
+
+  try {
+    return execFileSync(process.execPath, ['--revision'], { encoding: 'utf-8' }).trim();
+  } catch (err) {
+    console.error(
+      `Failed to resolve the installed Bun revision.
+Install the repository toolchain by running:
+
+\`mise install\`
+
+Original error: ${(err as Error).message}`
+    );
+    process.exit(1);
+  }
+}
+
+function assertVersion(tool: CheckedTool, getActualVersion: (requiredVersion: string) => string) {
   const requiredVersion = getRequiredVersion(tool);
+  const actualVersion = getActualVersion(requiredVersion);
 
   if (actualVersion !== requiredVersion) {
     console.error(
@@ -71,8 +92,8 @@ function main() {
     return;
   }
 
-  assertVersion('bun', Bun.version.trim());
-  assertVersion('pnpm', getPnpmVersion());
+  assertVersion('bun', getBunVersion);
+  assertVersion('pnpm', getPnpmVersion);
 }
 
 if (import.meta.path === Bun.main) {

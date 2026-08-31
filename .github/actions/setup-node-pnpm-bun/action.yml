@@ -6,10 +6,6 @@ inputs:
     description: 'Node.js version to use. Defaults to mise.lock'
     required: false
     default: ''
-  bun-version:
-    description: 'Bun version to use. Defaults to mise.lock'
-    required: false
-    default: ''
   enable-caching:
     description: 'Enable pnpm/tool cache'
     required: false
@@ -49,21 +45,15 @@ runs:
       shell: bash
       env:
         NODE_VERSION: ${{ inputs.node-version }}
-        BUN_VERSION: ${{ inputs.bun-version }}
       run: |
         resolver="$GITHUB_ACTION_PATH/../../scripts/read-mise-lock-version.sh"
         node_version="$NODE_VERSION"
-        bun_version="$BUN_VERSION"
 
         if [[ -z "$node_version" ]]; then
           node_version=$(bash "$resolver" node)
         fi
-        if [[ -z "$bun_version" ]]; then
-          bun_version=$(bash "$resolver" bun)
-        fi
 
         echo "node=$node_version" >> "$GITHUB_OUTPUT"
-        echo "bun=$bun_version" >> "$GITHUB_OUTPUT"
         echo "pnpm=$(bash "$resolver" pnpm)" >> "$GITHUB_OUTPUT"
 
     - name: Setup Node.js
@@ -72,9 +62,11 @@ runs:
         node-version: ${{ steps.tool-versions.outputs.node }}
 
     - name: Setup Bun
-      uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
-      with:
-        bun-version: ${{ steps.tool-versions.outputs.bun }}
+      shell: bash
+      run: |
+        mise link --force "node@${{ steps.tool-versions.outputs.node }}" "$(npm prefix --global)"
+        mise install bun
+        dirname "$(mise which bun)" >> "$GITHUB_PATH"
 
     - name: Setup pnpm
       uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6.0.9
@@ -136,5 +128,5 @@ runs:
       shell: bash
       run: |
         echo "node=$(node --version | sed 's/^v//')" >> "$GITHUB_OUTPUT"
-        echo "bun=$(bun --version)" >> "$GITHUB_OUTPUT"
+        echo "bun=$(bun --revision)" >> "$GITHUB_OUTPUT"
         echo "pnpm=$(pnpm --version)" >> "$GITHUB_OUTPUT"

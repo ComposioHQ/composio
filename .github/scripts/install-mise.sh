@@ -2,28 +2,28 @@
 
 set -euo pipefail
 
-if command -v mise >/dev/null 2>&1; then
+version='2026.8.15'
+
+if command -v mise >/dev/null 2>&1 && [[ "$(mise --version | awk '{print $1}')" == "$version" ]]; then
   exit 0
 fi
-
-version='2026.5.18'
 
 case "$(uname -s)-$(uname -m)" in
   Linux-x86_64)
     target='linux-x64'
-    checksum='cfac593469d028d7ae5fe36e37bd7c59118b5238e92d8a876209578464f24a84'
+    checksum='a6dea05e896f1e6090f821588f45397262270e0e0b456252f8d1da28a416f3f2'
     ;;
   Linux-aarch64|Linux-arm64)
     target='linux-arm64'
-    checksum='3c19d4861684e4ed5b8d020bcbdd99f478df43583fb767bd8a663983d4a4e209'
+    checksum='124ea8f7c8cb9a6a3c99c763cbf37ca48c9beaa816735f011d9fd99e6cd463e9'
     ;;
   Darwin-x86_64)
     target='macos-x64'
-    checksum='c3dd600be59c1ada5aa7b178da8324f5ad40bf6a10e98d4109728d727ac9ccb9'
+    checksum='6a1cef931e299d7392cd7008dd97fcef2d9b41fbdfe79df4fd9f7ab0cc33d9f7'
     ;;
   Darwin-arm64)
     target='macos-arm64'
-    checksum='998428f820e22301bab9273cba8b4e59d05a40f77a9a8411d75b2de85fbb0335'
+    checksum='17a6e37ac2aaeee78206abc601568e1fe5010e398bf3c7320e1683584124d3c7'
     ;;
   *)
     echo "Unsupported mise platform: $(uname -s)-$(uname -m)" >&2

@@ -2,21 +2,33 @@
 #
 # Local dev:  `mise install` (after `brew install mise` / `winget install jdx.mise` / `curl https://mise.run | sh`)
 # CI:         exact versions are read from `mise.lock` by the composite actions
-#             under `.github/actions/` and installed with allowlisted setup actions
+#             under `.github/actions/`; Bun is installed directly by mise
 #
 # pnpm is pinned through mise's npm backend so mise owns the full local and CI
 # toolchain. We do not rely on Corepack because Node.js no longer distributes it
 # starting with v25.
 
-min_version = "2026.1.0"
+min_version = "2026.8.15"
+
+[tool_alias]
+bun = "http:bun"
 
 [tools]
 "npm:pnpm" = "11.8.0"
 node = "24.17.0"
-bun = "1.4.0"
 deno = "2.6.7"
 python = "3.12"
 uv = "0.8.19"
+
+# Bun's exact canary revision is not a GitHub release tag. This immutable npm
+# package selects the matching OS, architecture, and libc binary at install time.
+[tools.bun]
+version = "1.4.1-canary.1+d9b769812"
+url = "https://registry.npmjs.org/bun/-/bun-1.4.0-canary.20260831.1.tgz"
+checksum = "sha512:f3487e0edae9deaf4a769388f7e31570b96b81a08473b02eeec64a4593b794566710a5015670dd4de28195f3c89a533b6fda0fe5ca5382f5eca22b98e53565d2"
+bin_path = "node_modules/.bin"
+depends = "node"
+postinstall = 'node "{{config_root}}/ts/scripts/install-bun.mjs"'
 
 [env]
 _.path = ["{{config_root}}/node_modules/.bin"]

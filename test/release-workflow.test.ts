@@ -77,6 +77,17 @@ const generateChecksumsScriptUrl = new URL(
 );
 const generateChecksumsScriptPath = generateChecksumsScriptUrl.pathname;
 const generateChecksumsScript = readFileSync(generateChecksumsScriptUrl, 'utf8');
+const miseConfig = readFileSync(new URL('../mise.toml', import.meta.url), 'utf8');
+const miseLock = readFileSync(new URL('../mise.lock', import.meta.url), 'utf8');
+const setupNodePnpmBunAction = readFileSync(
+  new URL('../.github/actions/setup-node-pnpm-bun/action.yml', import.meta.url),
+  'utf8'
+);
+const setupNodePnpmBunInputs = requireMatch(
+  setupNodePnpmBunAction,
+  /inputs:\n([\s\S]*?)(?=\noutputs:)/,
+  'setup-node-pnpm-bun inputs'
+);
 
 function requireMatch(text, pattern, label) {
   const match = text.match(pattern);
@@ -364,7 +375,9 @@ if (
   throw new Error('ts.release.yml must validate pending changesets before changesets/action');
 }
 
-if (!tsReleaseWorkflow.includes('changesets/action@8488615a623b1b9c987934bb89eae8af6a946ac1 # v2.1.1')) {
+if (
+  !tsReleaseWorkflow.includes('changesets/action@8488615a623b1b9c987934bb89eae8af6a946ac1 # v2.1.1')
+) {
   throw new Error('ts.release.yml must use changesets/action v2 with Changesets v3');
 }
 
@@ -535,6 +548,54 @@ if (generatedWindowsInstallGuidance !== canonicalWindowsInstallGuidance) {
 // job `success` only when every matrix leg passes, gating the release job.
 if (!buildCliWorkflow.includes('fail-fast: false')) {
   throw new Error('build-cli-binaries.yml build matrix must set fail-fast: false');
+}
+
+// mise.toml owns the requested Bun revision. CI must install that tool request directly instead
+// of accepting an independent version override that can drift from local development.
+const configuredBunSection = requireMatch(
+  miseConfig,
+  /\[tools\.bun\]\n([\s\S]*?)(?=\n\[|$)/,
+  'mise.toml Bun section'
+);
+const configuredBunVersion = requireMatch(
+  configuredBunSection,
+  /^version\s*=\s*"([^"]+)"/m,
+  'mise.toml Bun version'
+);
+const lockedBunSection = requireMatch(
+  miseLock,
+  /\[\[tools\.bun\]\]\n([\s\S]*?)(?=\n\[\[tools\.|$)/,
+  'mise.lock Bun section'
+);
+const lockedBunVersion = requireMatch(
+  lockedBunSection,
+  /^version\s*=\s*"([^"]+)"/m,
+  'mise.lock Bun version'
+);
+
+if (configuredBunVersion !== lockedBunVersion) {
+  throw new Error('mise.lock Bun version must match mise.toml');
+}
+if (!/^depends\s*=\s*"node"$/m.test(configuredBunSection)) {
+  throw new Error('mise.toml Bun installation must wait for the configured Node.js tool');
+}
+if (!/^postinstall\s*=.*install-bun\.mjs/m.test(configuredBunSection)) {
+  throw new Error('mise.toml must install the exact Bun runtime after extracting its package');
+}
+if (setupNodePnpmBunInputs.includes('bun-version:')) {
+  throw new Error('setup-node-pnpm-bun must not accept a Bun version outside mise.toml');
+}
+if (setupNodePnpmBunAction.includes('oven-sh/setup-bun')) {
+  throw new Error('setup-node-pnpm-bun must not install Bun outside mise');
+}
+if (!setupNodePnpmBunAction.includes('mise install bun')) {
+  throw new Error('setup-node-pnpm-bun must install Bun through mise');
+}
+if (!setupNodePnpmBunAction.includes('mise link --force "node@')) {
+  throw new Error('setup-node-pnpm-bun must expose the verified Node.js installation to mise');
+}
+if (!setupNodePnpmBunAction.includes('echo "bun=$(bun --revision)"')) {
+  throw new Error('setup-node-pnpm-bun must report the exact installed Bun revision');
 }
 
 // The release must be built as a draft and only flipped to published after verification, so no
