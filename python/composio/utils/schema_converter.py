@@ -27,6 +27,7 @@ from jsonschema.protocols import Validator
 from pydantic import (
     AfterValidator,
     BaseModel,
+    BeforeValidator,
     ConfigDict,
     Field,
     StrictBool,
@@ -1234,7 +1235,7 @@ def _with_exact_validation(
         t.cast(t.Any, classmethod(validate_source_schema))
     )
 
-    name = f"{model.__name__}Validated"
+    name = model.__name__
     return t.cast(
         t.Type[BaseModel],
         type(
@@ -1246,6 +1247,92 @@ def _with_exact_validation(
                 "_validate_source_schema": validator,
             },
         ),
+    )
+
+
+def _override_composed_model_fields(
+    schema: t.Dict[str, t.Any],
+    base_model: t.Type[BaseModel],
+) -> t.Type[BaseModel]:
+    """Replace library approximations for compositions with exact adapters."""
+    properties = schema.get("properties", {})
+    field_definitions = {}
+
+    for internal_name, model_field in base_model.model_fields.items():
+        alias = (
+            model_field.alias if isinstance(model_field.alias, str) else internal_name
+        )
+        property_schema = properties.get(alias)
+        if not isinstance(property_schema, dict):
+            continue
+        is_tuple = isinstance(property_schema.get("items"), list)
+        if not (is_tuple or "allOf" in property_schema):
+            continue
+
+        annotation = t.List[t.Any] if is_tuple else t.Any
+        default = ... if model_field.is_required() else model_field.default
+        field_definitions[internal_name] = (
+            annotation,
+            Field(
+                default,
+                alias=model_field.alias,
+                description=model_field.description,
+                examples=model_field.examples,
+                title=model_field.title,
+            ),
+        )
+
+    if not field_definitions:
+        return base_model
+
+    return create_pydantic_model(  # type: ignore[call-overload]
+        f"{base_model.__name__}Composed",
+        __base__=base_model,
+        **field_definitions,
+    )
+
+
+def _convert_object_with_composed_properties(
+    schema: t.Dict[str, t.Any],
+    *,
+    root_schema: t.Dict[str, t.Any],
+) -> t.Type[BaseModel]:
+    """Build an object when the conversion library rejects valid composition."""
+    required = set(schema.get("required", []))
+    field_definitions = {}
+
+    for name, property_schema in schema.get("properties", {}).items():
+        is_tuple = isinstance(property_schema.get("items"), list)
+        annotation = (
+            t.List[t.Any]
+            if is_tuple
+            else t.Any
+            if "allOf" in property_schema
+            else json_schema_to_pydantic_type(
+                property_schema,
+                root_schema=root_schema,
+            )
+        )
+        default = (
+            ...
+            if name in required
+            else property_schema.get("default")
+            if "default" in property_schema
+            else None
+        )
+        field_definitions[name] = (
+            annotation,
+            Field(
+                default,
+                description=property_schema.get("description"),
+                examples=property_schema.get("examples"),
+                title=property_schema.get("title"),
+            ),
+        )
+
+    return create_pydantic_model(  # type: ignore[call-overload]
+        schema.get("title", "GeneratedModel"),
+        **field_definitions,
     )
 
 
@@ -1357,12 +1444,23 @@ def _convert_with_library(
         if "title" not in schema:
             schema = {**schema, "title": "GeneratedModel"}
 
+        has_tuple_property = any(
+            isinstance(property_schema, dict)
+            and isinstance(property_schema.get("items"), list)
+            for property_schema in schema.get("properties", {}).values()
+        )
         try:
-            base_model = create_model_from_schema(
-                schema,
-                allow_undefined_array_items=True,
-                allow_undefined_type=True,
-            )
+            if has_tuple_property:
+                base_model = _convert_object_with_composed_properties(
+                    schema,
+                    root_schema=document_root,
+                )
+            else:
+                base_model = create_model_from_schema(
+                    schema,
+                    allow_undefined_array_items=True,
+                    allow_undefined_type=True,
+                )
         except (SchemaError, CombinerError) as e:
             logger.debug(
                 f"Library schema conversion failed: {e}, falling back to string"
@@ -1374,6 +1472,10 @@ def _convert_with_library(
             )
             return str
 
+        base_model = _override_composed_model_fields(
+            schema,
+            base_model,
+        )
         return _with_exact_validation(
             apply_object_policy(
                 schema,
@@ -1397,6 +1499,15 @@ def _convert_with_library(
             items = schema.get("items")
             if _is_unsatisfiable_schema(items):
                 return t.List[_UnsatisfiableSchema]  # type: ignore[return-value]
+            if isinstance(items, list):
+                document_root = root_schema if root_schema is not None else schema
+                return t.cast(
+                    t.Type,
+                    t.Annotated[
+                        t.List[t.Any],
+                        BeforeValidator(_validate_json_schema(schema, document_root)),
+                    ],
+                )
             if items:
                 item_type = _filtered_schema_to_pydantic_type(
                     items,
@@ -1437,20 +1548,16 @@ def _handle_toplevel_combiner(
         )
         if result is type(None):
             return type(None)
-        # If result is a type (like a Union or Optional), return it directly
-        # If result is a model class, return it
         return result
     except (SchemaError, CombinerError):
         pass
     except Exception:
         pass
 
-    # Fallback: manually build union type for anyOf/oneOf
     if "anyOf" in schema or "oneOf" in schema:
         options = schema.get("anyOf", schema.get("oneOf", []))
         return _build_union_from_options(options, root_schema=root_schema)
 
-    # Fallback: use first option for allOf
     if "allOf" in schema and schema["allOf"]:
         return json_schema_to_pydantic_type(
             schema["allOf"][0],

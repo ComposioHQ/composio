@@ -816,6 +816,141 @@
           "python": { "output": { "name": "a", "extra": { "enabled": false } } }
         }
       ]
+    },
+    {
+      "id": "composition-fixed-tuple-items",
+      "description": "Draft 7 tuple items preserve position, optional shorter arrays, and an additionalItems false bound.",
+      "schema": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "array",
+            "items": [{ "type": "string" }, { "type": "integer" }],
+            "additionalItems": false
+          }
+        },
+        "required": ["value"]
+      },
+      "instances": [
+        { "input": { "value": [] }, "accepted": true },
+        { "input": { "value": ["ready"] }, "accepted": true },
+        { "input": { "value": ["ready", 2] }, "accepted": true },
+        { "input": { "value": [2, "ready"] }, "accepted": false },
+        { "input": { "value": ["ready", 2, true] }, "accepted": false }
+      ]
+    },
+    {
+      "id": "composition-open-tuple-items",
+      "description": "Tuple items default to Draft 7 and allow unconstrained trailing values unless additionalItems closes them.",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "array",
+            "items": [{ "type": "string" }, { "type": "integer" }]
+          }
+        },
+        "required": ["value"]
+      },
+      "instances": [
+        { "input": { "value": ["ready", 2, { "extra": true }] }, "accepted": true },
+        { "input": { "value": ["ready", "wrong"] }, "accepted": false }
+      ]
+    },
+    {
+      "id": "composition-false-tuple-position",
+      "description": "A false positional schema rejects a value only when that position is present.",
+      "schema": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "array",
+            "items": [{ "type": "string" }, false],
+            "additionalItems": false
+          }
+        },
+        "required": ["value"]
+      },
+      "instances": [
+        { "input": { "value": ["ready"] }, "accepted": true },
+        { "input": { "value": ["ready", "forbidden"] }, "accepted": false }
+      ]
+    },
+    {
+      "id": "composition-allof-object-intersection",
+      "description": "Every allOf object branch remains required after conversion.",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "value": {
+            "allOf": [
+              {
+                "type": "object",
+                "properties": { "a": { "type": "string" } },
+                "required": ["a"],
+                "additionalProperties": true
+              },
+              {
+                "type": "object",
+                "properties": { "b": { "type": "integer" } },
+                "required": ["b"],
+                "additionalProperties": true
+              }
+            ]
+          }
+        },
+        "required": ["value"]
+      },
+      "instances": [
+        { "input": { "value": { "a": "ready", "b": 2 } }, "accepted": true },
+        { "input": { "value": { "a": "ready" } }, "accepted": false },
+        { "input": { "value": { "b": 2 } }, "accepted": false }
+      ]
+    },
+    {
+      "id": "composition-scalar-allof",
+      "description": "Scalar allOf branches combine rather than selecting the first branch.",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "value": {
+            "allOf": [
+              { "type": "string", "minLength": 2 },
+              { "type": "string", "pattern": "^[A-Z]+$" }
+            ]
+          }
+        },
+        "required": ["value"]
+      },
+      "instances": [
+        { "input": { "value": "OK" }, "accepted": true },
+        { "input": { "value": "O" }, "accepted": false },
+        { "input": { "value": "ok" }, "accepted": false }
+      ]
+    },
+    {
+      "id": "composition-oneof-exclusive-match",
+      "description": "oneOf accepts exactly one matching branch, not a plain union of branches.",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "value": {
+            "oneOf": [
+              { "type": "number", "minimum": 0 },
+              { "type": "number", "maximum": 0 }
+            ]
+          }
+        },
+        "required": ["value"]
+      },
+      "instances": [
+        { "input": { "value": 1 }, "accepted": true },
+        { "input": { "value": -1 }, "accepted": true },
+        { "input": { "value": 0 }, "accepted": false },
+        { "input": { "value": "0" }, "accepted": false }
+      ]
     }
   ]
 }

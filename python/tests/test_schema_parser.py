@@ -592,12 +592,13 @@ class TestJsonSchemaToPydanticType:
 
         # Test with different oneOf values
         instance1 = model_class(flexible_field="hello", normal_field="world")
-        instance2 = model_class(flexible_field=42, normal_field="world")
         instance3 = model_class(flexible_field=True, normal_field="world")
         instance4 = model_class(flexible_field=3.14, normal_field="world")
+        with pytest.raises(ValidationError):
+            # Integers also satisfy `number`, so this matches two branches.
+            model_class(flexible_field=42, normal_field="world")
 
         assert instance1.flexible_field == "hello"
-        assert instance2.flexible_field == 42
         assert instance3.flexible_field is True
         assert instance4.flexible_field == 3.14
 

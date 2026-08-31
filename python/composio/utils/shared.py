@@ -24,6 +24,7 @@ from composio.utils.schema_converter import (
     FALLBACK_VALUES,
     PYDANTIC_TYPE_TO_PYTHON_TYPE,
     _mark_explicit_default_fields,
+    _with_exact_validation,
     apply_object_policy,
     json_schema_to_pydantic_type,
 )
@@ -521,7 +522,9 @@ def json_schema_to_pydantic_field(
         name,
         t.cast(
             t.Type,
-            json_schema_to_pydantic_type(
+            t.Any
+            if "allOf" in schema_object and root_schema is not None
+            else json_schema_to_pydantic_type(
                 json_schema=json_schema,
                 root_schema=root_schema,
             ),
@@ -558,6 +561,18 @@ def json_schema_to_fields_dict(json_schema: t.Dict[str, t.Any]) -> t.Dict[str, t
     return field_definitions  # type: ignore
 
 
+def _contains_composition(schema: t.Any) -> bool:
+    if isinstance(schema, list):
+        return any(_contains_composition(item) for item in schema)
+    if not isinstance(schema, dict):
+        return False
+    if any(key in schema for key in ("allOf", "oneOf")):
+        return True
+    if isinstance(schema.get("items"), list):
+        return True
+    return any(_contains_composition(value) for value in schema.values())
+
+
 def json_schema_to_model(
     json_schema: t.Dict[str, t.Any],
     skip_default: bool = False,
@@ -589,11 +604,14 @@ def json_schema_to_model(
         setattr(base_model, _EXPLICIT_DEFAULT_FIELDS_ATTRIBUTE, frozenset())
     else:
         _mark_explicit_default_fields(base_model, json_schema, json_schema)
-    return apply_object_policy(
+    result = apply_object_policy(
         json_schema,
         base_model,
         model_name=model_name,
     )
+    if _contains_composition(json_schema):
+        return _with_exact_validation(result, json_schema, json_schema)
+    return result
 
 
 def pydantic_model_from_param_schema(param_schema: t.Dict) -> t.Type:
@@ -629,7 +647,9 @@ def pydantic_model_from_param_schema(param_schema: t.Dict) -> t.Type:
         prop_default = prop_object.get("default", fallback)
         signature_prop_type = t.cast(
             t.Type,
-            json_schema_to_pydantic_type(
+            t.Any
+            if "allOf" in prop_object
+            else json_schema_to_pydantic_type(
                 json_schema=prop_info,
                 root_schema=param_schema,
             ),
@@ -662,11 +682,14 @@ def pydantic_model_from_param_schema(param_schema: t.Dict) -> t.Type:
     if not required_fields and not optional_fields:
         return t.Dict
 
-    return create_model(  # type: ignore
+    base_model = create_model(  # type: ignore
         param_title,
         **required_fields,
         **optional_fields,
     )
+    if _contains_composition(param_schema):
+        return _with_exact_validation(base_model, param_schema, param_schema)
+    return base_model
 
 
 def get_signature_format_from_schema_params(
