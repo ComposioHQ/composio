@@ -50,7 +50,8 @@ export const parseNumber = (jsonSchema: JsonSchemaObject & { type: 'number' | 'i
         (zs, minimum, errorMsg) => zs.gte(minimum, errorMsg)
       );
     }
-  } else if (typeof jsonSchema.exclusiveMinimum === 'number') {
+  }
+  if (typeof jsonSchema.exclusiveMinimum === 'number') {
     zodSchema = extendSchemaWithMessage(
       zodSchema,
       jsonSchema,
@@ -75,7 +76,8 @@ export const parseNumber = (jsonSchema: JsonSchemaObject & { type: 'number' | 'i
         (zs, maximum, errorMsg) => zs.lte(maximum, errorMsg)
       );
     }
-  } else if (typeof jsonSchema.exclusiveMaximum === 'number') {
+  }
+  if (typeof jsonSchema.exclusiveMaximum === 'number') {
     zodSchema = extendSchemaWithMessage(
       zodSchema,
       jsonSchema,

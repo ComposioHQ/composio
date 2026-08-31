@@ -25,9 +25,14 @@ from json_schema_to_pydantic import (
 from jsonschema import validators as jsonschema_validators
 from jsonschema.protocols import Validator
 from pydantic import (
+    AfterValidator,
     BaseModel,
     ConfigDict,
     Field,
+    StrictBool,
+    StrictFloat,
+    StrictInt,
+    StrictStr,
     TypeAdapter,
     model_validator,
 )
@@ -80,7 +85,7 @@ PYDANTIC_TYPE_TO_PYTHON_TYPE = {
     "boolean": bool,
     "array": t.List,
     "object": t.Dict,
-    "null": t.Optional[t.Any],
+    "null": type(None),
 }
 
 CONTAINER_TYPE = ("array", "object")
@@ -1003,8 +1008,7 @@ def json_schema_to_pydantic_type(
     if isinstance(json_schema, bool):
         if json_schema:
             return t.Any  # true schema accepts any value
-        else:
-            return None  # false schema - will be filtered out in union processing
+        return _UnsatisfiableSchema
 
     # Pre-filter boolean schemas from combiners
     filtered_schema = _filter_boolean_schemas(json_schema)
@@ -1025,6 +1029,24 @@ def _filtered_schema_to_pydantic_type(
     """Convert a schema after boolean-schema normalization."""
     if schema is None or _is_unsatisfiable_schema(schema):
         return _UnsatisfiableSchema
+
+    if schema == {}:
+        return t.Any
+
+    schema_type = schema.get("type")
+    if isinstance(schema_type, list):
+        if not schema_type:
+            return _UnsatisfiableSchema
+        return _build_union_from_options(
+            [
+                {**schema, "type": member, "x-composio-strict-type": True}
+                for member in schema_type
+            ],
+            root_schema=root_schema,
+        )
+
+    if schema_type is None and ("enum" in schema or "const" in schema):
+        return _apply_scalar_constraints(t.Any, schema)
 
     # Handle simple primitive types without complex combiners
     if _is_simple_primitive(schema):
@@ -1051,7 +1073,180 @@ def _is_simple_primitive(schema: t.Dict[str, t.Any]) -> bool:
 def _convert_simple_type(schema: t.Dict[str, t.Any]) -> t.Type[t.Any]:
     """Convert simple primitive types directly."""
     type_ = schema.get("type", "string")
-    return t.cast(t.Type[t.Any], PYDANTIC_TYPE_TO_PYTHON_TYPE.get(type_, str))
+    strict_types: t.Dict[str, t.Type[t.Any]] = {
+        "string": StrictStr,
+        "integer": StrictInt,
+        "number": StrictFloat,
+        "boolean": StrictBool,
+        "null": type(None),
+    }
+    use_strict_type = (
+        schema.get("x-composio-strict-type") is True
+        or "enum" in schema
+        or "const" in schema
+    )
+    base_type = (
+        strict_types.get(type_, str)
+        if use_strict_type
+        else t.cast(t.Type[t.Any], PYDANTIC_TYPE_TO_PYTHON_TYPE.get(type_, str))
+    )
+    return _apply_scalar_constraints(base_type, schema)
+
+
+def _json_values_equal(left: t.Any, right: t.Any) -> bool:
+    """Compare JSON values without treating booleans as numbers."""
+    if isinstance(left, bool) or isinstance(right, bool):
+        return type(left) is type(right) and left == right
+
+    if isinstance(left, list) and isinstance(right, list):
+        return len(left) == len(right) and all(
+            _json_values_equal(left_item, right_item)
+            for left_item, right_item in zip(left, right)
+        )
+
+    if isinstance(left, dict) and isinstance(right, dict):
+        return left.keys() == right.keys() and all(
+            _json_values_equal(left[key], right[key]) for key in left
+        )
+
+    return bool(left == right)
+
+
+def _allowed_values_validator(
+    allowed: t.Tuple[t.Any, ...],
+) -> t.Callable[[t.Any], t.Any]:
+    """Create a Pydantic validator for JSON Schema enum/const values."""
+
+    def validate(value: t.Any) -> t.Any:
+        if not any(_json_values_equal(value, candidate) for candidate in allowed):
+            raise ValueError(f"value must be one of {allowed!r}")
+        return value
+
+    return validate
+
+
+def _apply_scalar_constraints(
+    base_type: t.Type[t.Any],
+    schema: t.Dict[str, t.Any],
+) -> t.Type[t.Any]:
+    """Apply scalar JSON Schema validation keywords to a Python annotation."""
+    field_constraints: t.Dict[str, t.Any] = {}
+    type_ = schema.get("type")
+
+    if type_ == "string":
+        for keyword, field_name in (
+            ("minLength", "min_length"),
+            ("maxLength", "max_length"),
+            ("pattern", "pattern"),
+        ):
+            if keyword in schema:
+                field_constraints[field_name] = schema[keyword]
+
+    if type_ in ("integer", "number"):
+        if "minimum" in schema:
+            field_constraints[
+                "gt" if schema.get("exclusiveMinimum") is True else "ge"
+            ] = schema["minimum"]
+        if isinstance(schema.get("exclusiveMinimum"), (int, float)) and not isinstance(
+            schema["exclusiveMinimum"], bool
+        ):
+            field_constraints["gt"] = schema["exclusiveMinimum"]
+
+        if "maximum" in schema:
+            field_constraints[
+                "lt" if schema.get("exclusiveMaximum") is True else "le"
+            ] = schema["maximum"]
+        if isinstance(schema.get("exclusiveMaximum"), (int, float)) and not isinstance(
+            schema["exclusiveMaximum"], bool
+        ):
+            field_constraints["lt"] = schema["exclusiveMaximum"]
+
+        if "multipleOf" in schema:
+            field_constraints["multiple_of"] = schema["multipleOf"]
+
+    annotation: t.Any = base_type
+    if field_constraints:
+        annotation = t.Annotated[annotation, Field(**field_constraints)]
+
+    allowed: t.Optional[t.Tuple[t.Any, ...]] = None
+    if "const" in schema:
+        allowed = (schema["const"],)
+    elif "enum" in schema:
+        allowed = tuple(schema["enum"])
+
+    if allowed is not None:
+        if not allowed:
+            return _UnsatisfiableSchema
+        annotation = t.Annotated[
+            annotation,
+            AfterValidator(_allowed_values_validator(allowed)),
+        ]
+
+    return t.cast(t.Type[t.Any], annotation)
+
+
+def _schema_for_exact_validation(value: t.Any) -> t.Any:
+    """Turn internal boolean-schema markers back into JSON Schema values."""
+    if _is_unsatisfiable_schema(value):
+        return False
+    if isinstance(value, dict):
+        return {key: _schema_for_exact_validation(item) for key, item in value.items()}
+    if isinstance(value, list):
+        return [_schema_for_exact_validation(item) for item in value]
+    return value
+
+
+def _validate_json_schema(
+    schema: t.Dict[str, t.Any],
+    root_schema: t.Dict[str, t.Any],
+) -> t.Callable[[t.Any], t.Any]:
+    """Compile an exact JSON Schema acceptance check for a Pydantic model."""
+    validation_schema = _schema_for_exact_validation(schema)
+    validation_root = _schema_for_exact_validation(root_schema)
+    validator_class = jsonschema_validators.validator_for(
+        validation_root,
+        default=jsonschema_validators.Draft7Validator,
+    )
+    validator_class.check_schema(validation_root)
+    validator = validator_class(validation_root).evolve(schema=validation_schema)
+
+    def validate(value: t.Any) -> t.Any:
+        error = next(validator.iter_errors(value), None)
+        if error is not None:
+            raise ValueError(error.message)
+        return value
+
+    return validate
+
+
+def _with_exact_validation(
+    model: t.Type[BaseModel],
+    schema: t.Dict[str, t.Any],
+    root_schema: t.Dict[str, t.Any],
+) -> t.Type[t.Any]:
+    """Keep model materialization while enforcing the source schema first."""
+    validate_schema = _validate_json_schema(schema, root_schema)
+
+    def validate_source_schema(cls, value: t.Any) -> t.Any:
+        return validate_schema(value)
+
+    validator = model_validator(mode="before")(
+        t.cast(t.Any, classmethod(validate_source_schema))
+    )
+
+    name = f"{model.__name__}Validated"
+    return t.cast(
+        t.Type[BaseModel],
+        type(
+            name,
+            (model,),
+            {
+                "__module__": __name__,
+                "__qualname__": name,
+                "_validate_source_schema": validator,
+            },
+        ),
+    )
 
 
 def _convert_object_with_unsatisfiable_properties(
@@ -1145,10 +1340,14 @@ def _convert_with_library(
                     f"Unexpected error in schema conversion: {e}, falling back to string"
                 )
                 return str
-            return apply_object_policy(
+            return _with_exact_validation(
+                apply_object_policy(
+                    schema,
+                    _apply_nested_object_policies(schema, base_model, document_root),
+                    root_schema=document_root,
+                ),
                 schema,
-                _apply_nested_object_policies(schema, base_model, document_root),
-                root_schema=document_root,
+                document_root,
             )
         # A property-less object with no dynamic-key constraints accepts and
         # preserves arbitrary content. Modelling it as an empty Pydantic
@@ -1175,10 +1374,14 @@ def _convert_with_library(
             )
             return str
 
-        return apply_object_policy(
+        return _with_exact_validation(
+            apply_object_policy(
+                schema,
+                _apply_nested_object_policies(schema, base_model, document_root),
+                root_schema=document_root,
+            ),
             schema,
-            _apply_nested_object_policies(schema, base_model, document_root),
-            root_schema=document_root,
+            document_root,
         )
 
     try:
@@ -1233,7 +1436,7 @@ def _handle_toplevel_combiner(
             allow_undefined_type=True,
         )
         if result is type(None):
-            return t.Optional[t.Any]
+            return type(None)
         # If result is a type (like a Union or Optional), return it directly
         # If result is a model class, return it
         return result
@@ -1277,7 +1480,7 @@ def _build_union_from_options(
         pydantic_types.append(ptype)
 
     if len(pydantic_types) == 0:
-        return t.Optional[t.Any] if has_null else _UnsatisfiableSchema  # type: ignore
+        return type(None) if has_null else _UnsatisfiableSchema
 
     if len(pydantic_types) == 1:
         base_type = pydantic_types[0]

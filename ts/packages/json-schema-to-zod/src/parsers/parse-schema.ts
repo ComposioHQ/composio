@@ -103,9 +103,9 @@ const selectParser: ParserSelector = (schema, refs) => {
   } else if (its.a.not(schema)) {
     return parseNot(schema, refs);
   } else if (its.an.enum(schema)) {
-    return parseEnum(schema); //<-- needs to come before primitives
+    return parseEnum(schema, refs); //<-- needs to come before primitives
   } else if (its.a.const(schema)) {
-    return parseConst(schema);
+    return parseConst(schema, refs);
   } else if (its.a.multipleType(schema)) {
     return parseMultipleType(schema, refs);
   } else if (its.a.primitive(schema, 'string')) {

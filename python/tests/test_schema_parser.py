@@ -11,8 +11,6 @@ import pytest
 from pydantic import BaseModel, TypeAdapter, ValidationError
 from pydantic.fields import PydanticUndefined
 
-from tests.fixtures.json_schema_conversion_corpus import find_case, load_object_cases
-
 from composio.utils.shared import (
     get_signature_format_from_schema_params,
     json_schema_to_fields_dict,
@@ -21,6 +19,7 @@ from composio.utils.shared import (
     json_schema_to_pydantic_type,
     pydantic_model_from_param_schema,
 )
+from tests.fixtures.json_schema_conversion_corpus import find_case, load_object_cases
 
 
 class TestJsonSchemaToPydanticField:
@@ -446,12 +445,10 @@ class TestJsonSchemaToPydanticType:
             assert result == expected_type
 
     def test_anyof_null_only_preserves_nullability(self):
-        """Test that anyOf with only null maps to Optional[Any] instead of str."""
+        """Test that anyOf with only null accepts no non-null value."""
         result = json_schema_to_pydantic_type({"anyOf": [{"type": "null"}]})
 
-        assert t.get_origin(result) is t.Union
-        assert t.Any in t.get_args(result)
-        assert type(None) in t.get_args(result)
+        assert result is type(None)
 
     def test_array_type(self):
         """Test array type conversion."""
@@ -604,12 +601,12 @@ class TestJsonSchemaToPydanticType:
         assert instance3.flexible_field is True
         assert instance4.flexible_field == 3.14
 
-    def test_fallback_to_string(self):
-        """Test that missing type defaults to string."""
+    def test_empty_schema_accepts_any_value(self):
+        """An empty JSON Schema accepts every value."""
         json_schema = {}  # No type specified
 
         result = json_schema_to_pydantic_type(json_schema)
-        assert result is str
+        assert result is t.Any
 
     def test_unsupported_type_fallback(self):
         """Test that unsupported types fall back to string (graceful degradation)."""
@@ -1122,9 +1119,11 @@ class TestBooleanSchemas:
     @pytest.mark.unit
     @pytest.mark.schema
     def test_standalone_false_schema(self):
-        """Test that standalone false schema returns None (to be filtered out)."""
-        result = json_schema_to_pydantic_type(False)
-        assert result is None
+        """Test that standalone false schema rejects every value."""
+        adapter = TypeAdapter(json_schema_to_pydantic_type(False))
+        for value in (None, "value", 1, {}, []):
+            with pytest.raises(ValidationError):
+                adapter.validate_python(value)
 
     @pytest.mark.unit
     @pytest.mark.schema
