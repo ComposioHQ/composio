@@ -5,7 +5,11 @@ import { ComposioBlockedInternalUrlError } from '../errors/SsrfErrors';
  * hostname is publicly routable before connecting. Fail closed instead of
  * falling back to an unguarded fetch.
  */
-export const ssrfSafeFetch = async (rawUrl: string): Promise<Response> => {
+export const ssrfSafeFetch = async (
+  rawUrl: string,
+  _init: RequestInit = {},
+  _maxRedirects?: number
+): Promise<Response> => {
   throw new ComposioBlockedInternalUrlError(
     'URL file uploads are not supported in edge runtimes because the destination cannot be safely validated',
     {
