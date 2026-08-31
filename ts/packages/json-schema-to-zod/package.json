@@ -1,6 +1,6 @@
 {
   "name": "@composio/json-schema-to-zod",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "",
   "main": "src/index.ts",
   "type": "module",
@@ -47,7 +47,7 @@
   "license": "ISC",
   "devDependencies": {
     "@types/json-schema": "^7.0.15",
-    "@types/node": "^26.2.0",
+    "@types/node": "^26.3.0",
     "tsdown": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:",

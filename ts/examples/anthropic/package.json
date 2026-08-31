@@ -1,7 +1,7 @@
 {
   "name": "anthropic-example",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Example for using Anthropic Agent SDK provider with Composio SDK",
   "main": "index.js",
   "scripts": {
@@ -15,14 +15,14 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@anthropic-ai/claude-agent-sdk": "^0.3.239",
+    "@anthropic-ai/claude-agent-sdk": "^0.3.245",
     "@anthropic-ai/sdk": "^0.120.0",
     "@composio/anthropic": "workspace:*",
     "@composio/claude-agent-sdk": "workspace:*",
     "@composio/core": "workspace:*",
     "@mastra/core": "catalog:",
     "@mastra/mcp": "^1.17.1",
-    "ai": "^6.0.263",
+    "ai": "^6.0.266",
     "dotenv": "catalog:",
     "zod": "catalog:",
     "zod-to-json-schema": "catalog:"

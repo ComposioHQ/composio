@@ -12,6 +12,7 @@ import {
   ExecuteToolFn,
   McpServerGetResponse,
   McpUrlResponse,
+  dereferenceJsonSchema,
   jsonSchemaToZodSchema,
   normalizeToolArguments,
 } from '@composio/core';
@@ -34,7 +35,9 @@ export class LlamaindexProvider extends BaseAgenticProvider<
    */
   wrapTool(tool: Tool, executeTool: ExecuteToolFn): LlamaindexTool {
     const inputParams = tool.inputParameters;
-    const inputParametersSchema = jsonSchemaToZodSchema(inputParams ?? {});
+    const inputParametersSchema = jsonSchemaToZodSchema(
+      dereferenceJsonSchema(inputParams ?? {}, { onUnresolved: 'sentinel' })
+    );
     return createLlamaindexTool({
       name: tool.slug,
       description: tool.description ?? tool.name ?? '',

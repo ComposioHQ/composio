@@ -1,6 +1,6 @@
 {
   "name": "@composio/mastra",
-  "version": "0.10.3",
+  "version": "0.10.4",
   "description": "Agentic Provider for mastra in Composio SDK",
   "main": "src/index.ts",
   "type": "module",
@@ -52,7 +52,7 @@
   "devDependencies": {
     "@composio/core": "workspace:*",
     "@mastra/core": "catalog:",
-    "ai": "^6.0.263",
+    "ai": "^6.0.266",
     "tsdown": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:",

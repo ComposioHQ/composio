@@ -14,6 +14,7 @@ import {
   ExecuteToolFn,
   McpUrlResponse,
   McpServerGetResponse,
+  dereferenceJsonSchema,
   normalizeToolArguments,
   jsonSchemaToZodSchema,
 } from '@composio/core';
@@ -111,11 +112,14 @@ export class ClaudeAgentSDKProvider extends BaseAgenticProvider<
     // A tool with no input parameters stays closed: the fallback spells out
     // `additionalProperties: false`, because a bare `properties: {}` is now an open object.
     const inputZodSchema = jsonSchemaToZodSchema(
-      composioTool.inputParameters ?? {
-        type: 'object',
-        properties: {},
-        additionalProperties: false,
-      }
+      dereferenceJsonSchema(
+        composioTool.inputParameters ?? {
+          type: 'object',
+          properties: {},
+          additionalProperties: false,
+        },
+        { onUnresolved: 'sentinel' }
+      )
     );
 
     // The SDK runtime accepts a complete schema, but `tool()` only exposes the raw-shape type, and

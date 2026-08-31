@@ -66,6 +66,10 @@
       "description": "Team member management"
     },
     {
+      "name": "Consumer Skills",
+      "description": "Organization-authored Skill management"
+    },
+    {
       "name": "Toolkits",
       "description": "Toolkit and tool management"
     },
@@ -987,6 +991,7 @@
               "SERVICE_ACCOUNT",
               "SAML",
               "DCR_OAUTH",
+              "CIMD_OAUTH",
               "S2S_OAUTH2"
             ]
           },
@@ -4776,6 +4781,422 @@
           },
           "500": {
             "description": "Internal server error - Failed to delete toolkit",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "x-api-version": "3.1"
+      }
+    },
+    "/api/v3.1/toolkits/{toolkit_slug}/scopes/recommended": {
+      "post": {
+        "summary": "Get required scopes",
+        "description": "Experimental: this endpoint is in beta and its contract may change.\n\nRecommends the required scopes to use the given set of tools.",
+        "tags": [
+          "Toolkits"
+        ],
+        "operationId": "recommendToolkitScopes",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Toolkit to recommend scopes for."
+            },
+            "required": true,
+            "description": "Toolkit to recommend scopes for.",
+            "name": "toolkit_slug",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "tools": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "description": "Tool slugs to recommend scopes for; an empty list computes the recommendation across all of the toolkit’s tools."
+                  },
+                  "auth_scheme": {
+                    "type": "string",
+                    "enum": [
+                      "OAUTH2",
+                      "OAUTH1",
+                      "API_KEY",
+                      "BASIC",
+                      "BILLCOM_AUTH",
+                      "BEARER_TOKEN",
+                      "GOOGLE_SERVICE_ACCOUNT",
+                      "NO_AUTH",
+                      "BASIC_WITH_JWT",
+                      "CALCOM_AUTH",
+                      "SERVICE_ACCOUNT",
+                      "SAML",
+                      "DCR_OAUTH",
+                      "CIMD_OAUTH",
+                      "S2S_OAUTH2"
+                    ],
+                    "default": "OAUTH2",
+                    "description": "Auth scheme the connection will use. Defaults to OAUTH2."
+                  },
+                  "toolkit_version": {
+                    "type": "string",
+                    "minLength": 1,
+                    "default": "latest",
+                    "description": "Toolkit version to compute from; defaults to the latest published version. Pass a concrete version to pin."
+                  },
+                  "grant_context": {
+                    "type": "object",
+                    "additionalProperties": {
+                      "type": "string"
+                    },
+                    "description": "Optional context about your OAuth app or the account being connected that can change which scopes are required, e.g. {\"account_type\": \"Google Workspace\"}. Get accepted keys and values from the List grant_context options endpoint."
+                  },
+                  "include": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "description": "Scopes the recommendation must include, irrespective of usage."
+                  },
+                  "exclude": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "description": "Scopes the recommendation must not include; the solver picks documented alternatives and fails when none exist."
+                  }
+                },
+                "required": [
+                  "tools"
+                ],
+                "x-experimental": true
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successfully recommended scopes for the requested tools",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "auth_scheme": {
+                      "type": "string",
+                      "description": "Auth scheme the recommendation was computed under."
+                    },
+                    "toolkit_version": {
+                      "type": "string",
+                      "description": "Concrete toolkit version the answer was computed from; pass it back as toolkit_version to pin."
+                    },
+                    "grant_context": {
+                      "type": "object",
+                      "additionalProperties": {
+                        "type": "string"
+                      },
+                      "description": "The grant_context the recommendation was computed with; {} when none applies."
+                    },
+                    "scopes": {
+                      "type": "object",
+                      "properties": {
+                        "least_privilege": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          },
+                          "description": "Narrowest documented option per requirement."
+                        },
+                        "fewest": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          },
+                          "description": "Smallest scope set covering all requirements."
+                        },
+                        "conditional": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "scope": {
+                                "type": "string",
+                                "description": "The scope needed only under the `when` guard."
+                              },
+                              "when": {
+                                "type": "object",
+                                "additionalProperties": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string"
+                                  }
+                                },
+                                "description": "Condition for when this scope is needed: input field name to qualifying values (any value matches within a field; all fields must match)."
+                              },
+                              "for": {
+                                "type": "array",
+                                "items": {
+                                  "type": "string"
+                                },
+                                "description": "Tool slugs that need this scope under the guard."
+                              }
+                            },
+                            "required": [
+                              "scope",
+                              "when",
+                              "for"
+                            ]
+                          },
+                          "description": "Scopes needed only for particular call-time inputs; the lists above already include them worst-case, so a caller that knows its inputs may subtract the rest. Empty when none apply."
+                        }
+                      },
+                      "required": [
+                        "least_privilege",
+                        "fewest",
+                        "conditional"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "auth_scheme",
+                    "toolkit_version",
+                    "grant_context",
+                    "scopes"
+                  ],
+                  "x-experimental": true
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request (validation_error, action_not_available, grant_context_required, not_available_in_grant_context)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Toolkit or toolkit_version not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Exclusions conflict with the requested tools (exclude_conflict)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "501": {
+            "description": "Some requested tools are not supported by scope resolution yet (not_supported)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "x-api-version": "3.1"
+      }
+    },
+    "/api/v3.1/toolkits/{toolkit_slug}/scopes/grant_context": {
+      "get": {
+        "summary": "List grant_context options",
+        "description": "Experimental: this endpoint is in beta and its contract may change.\n\nLists the grant_context keys and values this toolkit accepts. Pass them in the Get required scopes request to tailor the recommendation to your OAuth app or account.",
+        "tags": [
+          "Toolkits"
+        ],
+        "operationId": "recommendToolkitScopesGrantContext",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Toolkit to list grant_context options for."
+            },
+            "required": true,
+            "description": "Toolkit to list grant_context options for.",
+            "name": "toolkit_slug",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "OAUTH2",
+                "OAUTH1",
+                "API_KEY",
+                "BASIC",
+                "BILLCOM_AUTH",
+                "BEARER_TOKEN",
+                "GOOGLE_SERVICE_ACCOUNT",
+                "NO_AUTH",
+                "BASIC_WITH_JWT",
+                "CALCOM_AUTH",
+                "SERVICE_ACCOUNT",
+                "SAML",
+                "DCR_OAUTH",
+                "CIMD_OAUTH",
+                "S2S_OAUTH2"
+              ],
+              "default": "OAUTH2",
+              "description": "Auth scheme the connection will use. Defaults to OAUTH2."
+            },
+            "required": false,
+            "description": "Auth scheme the connection will use. Defaults to OAUTH2.",
+            "name": "auth_scheme",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "default": "latest",
+              "description": "Toolkit version to read the catalog from; defaults to the latest published version. Pass a concrete version to pin."
+            },
+            "required": false,
+            "description": "Toolkit version to read the catalog from; defaults to the latest published version. Pass a concrete version to pin.",
+            "name": "toolkit_version",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully discovered the toolkit's grant-context keys",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "auth_scheme": {
+                      "type": "string",
+                      "description": "Auth scheme whose scope catalog the vocabulary was read from."
+                    },
+                    "toolkit_version": {
+                      "type": "string",
+                      "description": "Concrete toolkit version the answer was computed from; pass it back as toolkit_version to pin."
+                    },
+                    "grant_context_keys": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "key": {
+                            "type": "string",
+                            "description": "Key you can pass in grant_context when requesting scope recommendations, e.g. 'account_type'."
+                          },
+                          "allowed_values": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            },
+                            "description": "Values this key accepts."
+                          }
+                        },
+                        "required": [
+                          "key",
+                          "allowed_values"
+                        ]
+                      },
+                      "description": "Keys this toolkit accepts in grant_context under the auth scheme; [] when no scope depends on grant_context."
+                    }
+                  },
+                  "required": [
+                    "auth_scheme",
+                    "toolkit_version",
+                    "grant_context_keys"
+                  ],
+                  "x-experimental": true
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request (validation_error: auth_scheme outside the platform enum or not defined by the toolkit)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Toolkit or toolkit_version not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
             "content": {
               "application/json": {
                 "schema": {
@@ -11959,6 +12380,7 @@
                               "SERVICE_ACCOUNT",
                               "SAML",
                               "DCR_OAUTH",
+                              "CIMD_OAUTH",
                               "S2S_OAUTH2"
                             ],
                             "description": "The authentication scheme used (e.g., OAuth2, API Key, etc.)"
@@ -12287,6 +12709,7 @@
                         "SERVICE_ACCOUNT",
                         "SAML",
                         "DCR_OAUTH",
+                        "CIMD_OAUTH",
                         "S2S_OAUTH2"
                       ],
                       "description": "The authentication scheme used (e.g., OAuth2, API Key, etc.)"
@@ -13064,6 +13487,7 @@
                                   "SERVICE_ACCOUNT",
                                   "SAML",
                                   "DCR_OAUTH",
+                                  "CIMD_OAUTH",
                                   "S2S_OAUTH2"
                                 ],
                                 "description": "the authScheme is part of the connection state use it there",
@@ -13106,6 +13530,7 @@
                               "SERVICE_ACCOUNT",
                               "SAML",
                               "DCR_OAUTH",
+                              "CIMD_OAUTH",
                               "S2S_OAUTH2"
                             ],
                             "description": "Duplicates state.authScheme. Kept for backward compatibility with existing readers; use state.authScheme instead.",
@@ -13213,6 +13638,7 @@
                                   "SERVICE_ACCOUNT",
                                   "SAML",
                                   "DCR_OAUTH",
+                                  "CIMD_OAUTH",
                                   "S2S_OAUTH2"
                                 ]
                               },
@@ -13510,6 +13936,7 @@
                               "SERVICE_ACCOUNT",
                               "SAML",
                               "DCR_OAUTH",
+                              "CIMD_OAUTH",
                               "S2S_OAUTH2"
                             ]
                           },
@@ -13762,6 +14189,7 @@
                             "SERVICE_ACCOUNT",
                             "SAML",
                             "DCR_OAUTH",
+                            "CIMD_OAUTH",
                             "S2S_OAUTH2"
                           ]
                         },
@@ -14112,6 +14540,7 @@
                             "SERVICE_ACCOUNT",
                             "SAML",
                             "DCR_OAUTH",
+                            "CIMD_OAUTH",
                             "S2S_OAUTH2"
                           ],
                           "description": "the authScheme is part of the connection state use it there",
@@ -14154,6 +14583,7 @@
                         "SERVICE_ACCOUNT",
                         "SAML",
                         "DCR_OAUTH",
+                        "CIMD_OAUTH",
                         "S2S_OAUTH2"
                       ],
                       "description": "Duplicates state.authScheme. Kept for backward compatibility with existing readers; use state.authScheme instead.",
@@ -14261,6 +14691,7 @@
                             "SERVICE_ACCOUNT",
                             "SAML",
                             "DCR_OAUTH",
+                            "CIMD_OAUTH",
                             "S2S_OAUTH2"
                           ]
                         },
@@ -14893,6 +15324,16 @@
           },
           "404": {
             "description": "Connected account not found - The specified account does not exist or has been deleted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict - the connected account is currently leased by another operation, or the status transition is invalid for its current state",
             "content": {
               "application/json": {
                 "schema": {
@@ -21690,6 +22131,7 @@
       "get": {
         "summary": "List MCP servers with optional filters and pagination",
         "description": "Retrieves a paginated list of MCP servers associated with the authenticated project. Results can be filtered by name, toolkit, or authentication configuration ID. MCP servers are used to provide Model Control Protocol integration points for connecting AI assistants to your applications and services.",
+        "deprecated": true,
         "tags": [
           "MCP"
         ],
@@ -22046,6 +22488,7 @@
       "post": {
         "summary": "Create a new MCP server",
         "description": "Creates a new Model Control Protocol (MCP) server instance for the authenticated project. An MCP server provides a connection point for AI assistants to access your applications and services. The server is configured with specific authentication and tool permissions that determine what actions the connected assistants can perform.",
+        "deprecated": true,
         "tags": [
           "MCP"
         ],
@@ -22358,6 +22801,7 @@
       "post": {
         "summary": "Create a new custom MCP server with multiple apps",
         "description": "Creates a new Model Control Protocol (MCP) server instance that can integrate with multiple applications or toolkits simultaneously. This endpoint allows you to create a server that can access tools from different applications, making it suitable for complex workflows that span multiple services.",
+        "deprecated": true,
         "tags": [
           "MCP"
         ],
@@ -22618,6 +23062,7 @@
       "post": {
         "summary": "Generate MCP URL with custom parameters",
         "description": "Generates a Model Control Protocol (MCP) URL for an existing server with custom query parameters. The URL includes user-specific parameters and configuration flags that control the behavior of the MCP connection.",
+        "deprecated": true,
         "tags": [
           "MCP"
         ],
@@ -22808,6 +23253,7 @@
       "get": {
         "summary": "Get MCP server details by ID",
         "description": "Retrieves detailed configuration information for a specific Model Control Protocol (MCP) server. The returned data includes connection details, associated applications, enabled tools, and authentication configuration.",
+        "deprecated": true,
         "tags": [
           "MCP"
         ],
@@ -23032,6 +23478,7 @@
       "patch": {
         "summary": "Update MCP server configuration",
         "description": "Updates the configuration of an existing Model Control Protocol (MCP) server. You can modify the server name, associated applications, and enabled tools. Only the fields included in the request will be updated.",
+        "deprecated": true,
         "tags": [
           "MCP"
         ],
@@ -23371,6 +23818,7 @@
       "delete": {
         "summary": "Delete an MCP server",
         "description": "Performs a soft delete on a Model Control Protocol (MCP) server, making it unavailable for future use. This operation is reversible in the database but cannot be undone through the API. Any applications or services connected to this server will lose access after deletion.",
+        "deprecated": true,
         "tags": [
           "MCP"
         ],
@@ -23479,6 +23927,7 @@
       "get": {
         "summary": "List MCP servers for a specific app",
         "description": "Retrieves a paginated list of Model Control Protocol (MCP) servers that are configured for a specific application or toolkit. This endpoint allows you to find all MCP server instances that have access to a particular application, such as GitHub, Slack, or Jira.",
+        "deprecated": true,
         "tags": [
           "MCP"
         ],
@@ -23848,6 +24297,7 @@
       "get": {
         "summary": "List all instances for an MCP server",
         "description": "Retrieves a paginated list of user instances (user IDs) associated with a specific Model Control Protocol (MCP) server. This endpoint supports pagination to handle servers with many instances.",
+        "deprecated": true,
         "tags": [
           "MCP"
         ],
@@ -24077,6 +24527,7 @@
       "post": {
         "summary": "Create a new MCP server instance",
         "description": "Creates a new instance for a Model Control Protocol (MCP) server. This endpoint validates that the user has connected accounts for all auth configurations associated with the MCP server before creating the instance.",
+        "deprecated": true,
         "tags": [
           "MCP"
         ],
@@ -24241,6 +24692,7 @@
       "delete": {
         "summary": "Delete an MCP server instance and associated connected accounts",
         "description": "Removes a user instance from the MCP server and deletes all connected accounts for that user that are associated with the auth configurations of this specific MCP server. Connected accounts for other auth configurations are not affected.",
+        "deprecated": true,
         "tags": [
           "MCP"
         ],
