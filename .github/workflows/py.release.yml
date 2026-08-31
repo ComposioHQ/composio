@@ -49,7 +49,7 @@ jobs:
           with open("pyproject.toml", "rb") as pyproject:
               version = tomllib.load(pyproject)["project"]["version"]
 
-          is_prerelease = re.search(r"(?:a|b|rc|dev)\d", version) is not None
+          is_prerelease = re.search(r"(?:a|b|rc|dev)\d", version, re.IGNORECASE) is not None
           print(f"core_only={'true' if is_prerelease else 'false'}")
           PY
 
