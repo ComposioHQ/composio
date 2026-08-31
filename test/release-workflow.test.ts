@@ -162,7 +162,12 @@ function readTypeScriptWorkspacePackages() {
   return workspacePackages;
 }
 
-function runPythonBuildFixture({ providers, providerFiles = [], failingProvider = '' }) {
+function runPythonBuildFixture({
+  providers,
+  providerFiles = [],
+  failingProvider = '',
+  target = 'build',
+}) {
   const fixtureDir = mkdtempSync(join(tmpdir(), 'composio-python-build-'));
   const buildLogPath = join(fixtureDir, 'build.log');
 
@@ -205,7 +210,7 @@ touch "$target/dist/provider.whl"
       writeFileSync(join(fixtureDir, 'providers', providerFile), 'not a provider package\n');
     }
 
-    const result = spawnSync('make', ['-f', pythonMakefilePath, 'build'], {
+    const result = spawnSync('make', ['-f', pythonMakefilePath, target], {
       cwd: fixtureDir,
       encoding: 'utf8',
       env: {
@@ -221,6 +226,25 @@ touch "$target/dist/provider.whl"
     };
   } finally {
     rmSync(fixtureDir, { recursive: true, force: true });
+  }
+}
+
+{
+  const result = runPythonBuildFixture({
+    providers: ['provider-must-not-build'],
+    target: 'build-core',
+  });
+
+  if (result.status !== 0) {
+    throw new Error(
+      `Python core-only build fixture failed unexpectedly\nstdout:\n${result.stdout}\nstderr:\n${result.stderr}`
+    );
+  }
+  if (!result.invocations.includes('<root>')) {
+    throw new Error('Python core-only build must build the root SDK package');
+  }
+  if (result.invocations.includes('providers/provider-must-not-build')) {
+    throw new Error('Python core-only build must not build provider packages');
   }
 }
 
@@ -455,6 +479,20 @@ if (
 if (!pythonReleaseWorkflow.includes('run: pnpm test:release-workflow')) {
   throw new Error('py.release.yml must validate release metadata before publishing');
 }
+for (const input of ['id: release_mode', 'core_only=']) {
+  if (!pythonReleaseWorkflow.includes(input)) {
+    throw new Error(`py.release.yml must select the core-only build for prereleases: ${input}`);
+  }
+}
+if (
+  !/if \[\[ "\$\{\{ steps\.release_mode\.outputs\.core_only \}\}" == "true" \]\]; then\s+make build-core\s+else\s+make build\s+fi/.test(
+    pythonReleaseWorkflow
+  )
+) {
+  throw new Error(
+    'py.release.yml must build only the core package for prereleases and all Python packages for stable releases'
+  );
+}
 
 {
   const pythonVersion = readPyprojectVersion(pythonPyproject, 'python/pyproject.toml version');
@@ -478,6 +516,8 @@ if (!pythonReleaseWorkflow.includes('run: pnpm test:release-workflow')) {
   }
 
   const providerDir = new URL('../python/providers/', import.meta.url);
+  const pythonIsPrerelease = /(?:a|b|rc|dev)\d/i.test(pythonVersion);
+  const providerVersions = new Map<string, string>();
   for (const entry of readdirSync(providerDir, { withFileTypes: true })) {
     if (!entry.isDirectory()) continue;
 
@@ -492,7 +532,14 @@ if (!pythonReleaseWorkflow.includes('run: pnpm test:release-workflow')) {
       readFileSync(pyprojectPath, 'utf8'),
       `python/providers/${entry.name}/pyproject.toml version`
     );
-    if (providerPyprojectVersion !== pythonVersion) {
+    providerVersions.set(entry.name, providerPyprojectVersion);
+    const providerIsPrerelease = /(?:a|b|rc|dev)\d/i.test(providerPyprojectVersion);
+    if (pythonIsPrerelease && providerIsPrerelease) {
+      throw new Error(
+        `python/providers/${entry.name}/pyproject.toml must remain stable during a composio prerelease (${providerPyprojectVersion})`
+      );
+    }
+    if (!pythonIsPrerelease && providerPyprojectVersion !== pythonVersion) {
       throw new Error(
         `python/providers/${entry.name}/pyproject.toml must match python/pyproject.toml (${providerPyprojectVersion} !== ${pythonVersion})`
       );
@@ -505,11 +552,30 @@ if (!pythonReleaseWorkflow.includes('run: pnpm test:release-workflow')) {
       /version\s*=\s*"([^"]+)"/,
       `python/providers/${entry.name}/setup.py version`
     );
-    if (providerSetupVersion !== pythonVersion) {
+    if (providerSetupVersion !== providerPyprojectVersion) {
+      throw new Error(
+        `python/providers/${entry.name}/setup.py must match its pyproject.toml (${providerSetupVersion} !== ${providerPyprojectVersion})`
+      );
+    }
+    const providerSetupIsPrerelease = /(?:a|b|rc|dev)\d/i.test(providerSetupVersion);
+    if (pythonIsPrerelease && providerSetupIsPrerelease) {
+      throw new Error(
+        `python/providers/${entry.name}/setup.py must remain stable during a composio prerelease (${providerSetupVersion})`
+      );
+    }
+    if (!pythonIsPrerelease && providerSetupVersion !== pythonVersion) {
       throw new Error(
         `python/providers/${entry.name}/setup.py must match python/pyproject.toml (${providerSetupVersion} !== ${pythonVersion})`
       );
     }
+  }
+
+  const distinctProviderVersions = new Set(providerVersions.values());
+  if (distinctProviderVersions.size > 1) {
+    const details = [...providerVersions]
+      .map(([provider, version]) => `- ${provider}: ${version}`)
+      .join('\n');
+    throw new Error(`Python providers must share one stable version:\n${details}`);
   }
 }
 

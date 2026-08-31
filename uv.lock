@@ -714,7 +714,7 @@ wheels = [
 
 [[package]]
 name = "composio"
-version = "0.20.0"
+version = "2.0.0b0"
 source = { editable = "python" }
 dependencies = [
     { name = "composio-client" },
