@@ -479,10 +479,19 @@ if (
 if (!pythonReleaseWorkflow.includes('run: pnpm test:release-workflow')) {
   throw new Error('py.release.yml must validate release metadata before publishing');
 }
-for (const input of ['id: release_mode', 'core_only=', 'make build-core', 'make build']) {
+for (const input of ['id: release_mode', 'core_only=']) {
   if (!pythonReleaseWorkflow.includes(input)) {
     throw new Error(`py.release.yml must select the core-only build for prereleases: ${input}`);
   }
+}
+if (
+  !/if \[\[ "\$\{\{ steps\.release_mode\.outputs\.core_only \}\}" == "true" \]\]; then\s+make build-core\s+else\s+make build\s+fi/.test(
+    pythonReleaseWorkflow
+  )
+) {
+  throw new Error(
+    'py.release.yml must build only the core package for prereleases and all Python packages for stable releases'
+  );
 }
 
 {
@@ -508,6 +517,7 @@ for (const input of ['id: release_mode', 'core_only=', 'make build-core', 'make 
 
   const providerDir = new URL('../python/providers/', import.meta.url);
   const pythonIsPrerelease = /(?:a|b|rc|dev)\d/i.test(pythonVersion);
+  const providerVersions = new Map<string, string>();
   for (const entry of readdirSync(providerDir, { withFileTypes: true })) {
     if (!entry.isDirectory()) continue;
 
@@ -522,6 +532,7 @@ for (const input of ['id: release_mode', 'core_only=', 'make build-core', 'make 
       readFileSync(pyprojectPath, 'utf8'),
       `python/providers/${entry.name}/pyproject.toml version`
     );
+    providerVersions.set(entry.name, providerPyprojectVersion);
     const providerIsPrerelease = /(?:a|b|rc|dev)\d/i.test(providerPyprojectVersion);
     if (pythonIsPrerelease && providerIsPrerelease) {
       throw new Error(
@@ -541,6 +552,11 @@ for (const input of ['id: release_mode', 'core_only=', 'make build-core', 'make 
       /version\s*=\s*"([^"]+)"/,
       `python/providers/${entry.name}/setup.py version`
     );
+    if (providerSetupVersion !== providerPyprojectVersion) {
+      throw new Error(
+        `python/providers/${entry.name}/setup.py must match its pyproject.toml (${providerSetupVersion} !== ${providerPyprojectVersion})`
+      );
+    }
     const providerSetupIsPrerelease = /(?:a|b|rc|dev)\d/i.test(providerSetupVersion);
     if (pythonIsPrerelease && providerSetupIsPrerelease) {
       throw new Error(
@@ -552,6 +568,14 @@ for (const input of ['id: release_mode', 'core_only=', 'make build-core', 'make 
         `python/providers/${entry.name}/setup.py must match python/pyproject.toml (${providerSetupVersion} !== ${pythonVersion})`
       );
     }
+  }
+
+  const distinctProviderVersions = new Set(providerVersions.values());
+  if (distinctProviderVersions.size > 1) {
+    const details = [...providerVersions]
+      .map(([provider, version]) => `- ${provider}: ${version}`)
+      .join('\n');
+    throw new Error(`Python providers must share one stable version:\n${details}`);
   }
 }
 
