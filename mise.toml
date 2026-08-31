@@ -20,15 +20,28 @@ deno = "2.6.7"
 python = "3.12"
 uv = "0.8.19"
 
-# Bun's exact canary revision is not a GitHub release tag. This immutable npm
-# package selects the matching OS, architecture, and libc binary at install time.
+# Bun's exact canary revision is not a GitHub release tag. These immutable npm
+# platform packages contain the binaries with valid macOS signatures; mise
+# extracts the matching one directly, with no npm lifecycle involved.
 [tools.bun]
 version = "1.4.1-canary.1+d9b769812"
-url = "https://registry.npmjs.org/bun/-/bun-1.4.0-canary.20260831.1.tgz"
-checksum = "sha512:f3487e0edae9deaf4a769388f7e31570b96b81a08473b02eeec64a4593b794566710a5015670dd4de28195f3c89a533b6fda0fe5ca5382f5eca22b98e53565d2"
-bin_path = "node_modules/.bin"
-depends = "node"
-postinstall = 'node "{{config_root}}/ts/scripts/install-bun.mjs"'
+bin_path = "package/bin"
+
+[tools.bun.platforms.macos-arm64]
+url = "https://registry.npmjs.org/@oven/bun-darwin-aarch64/-/bun-darwin-aarch64-1.4.0-canary.20260831.1.tgz"
+checksum = "sha512:2cba511e3cc074290676eea0cf2a16c7086bae4504edc5db58c93ddf4999c424386cf1c53ae2fdfd4ffca0eb93e80a51abfb58806ad7cc32aaa31f724d36b290"
+
+[tools.bun.platforms.macos-x64]
+url = "https://registry.npmjs.org/@oven/bun-darwin-x64/-/bun-darwin-x64-1.4.0-canary.20260831.1.tgz"
+checksum = "sha512:2cce674fb3a605ce1e33e4079afc418157001116767d1cfdc3bd640149ab51289bf87fb5f518fe840bcf82712db1b53e765b074f96386704136f7f8d4e8c70ea"
+
+[tools.bun.platforms.linux-arm64]
+url = "https://registry.npmjs.org/@oven/bun-linux-aarch64/-/bun-linux-aarch64-1.4.0-canary.20260831.1.tgz"
+checksum = "sha512:c9136e10a2ea707d36978fa3713fba2930764068636dfd95a06264823c892532d69d3926e3a304084d704a2be301635d5af21faf06efed1b8aaa58ac591a8acb"
+
+[tools.bun.platforms.linux-x64]
+url = "https://registry.npmjs.org/@oven/bun-linux-x64/-/bun-linux-x64-1.4.0-canary.20260831.1.tgz"
+checksum = "sha512:d5d0db11b22ad51ea66ebe96de83790109d753b678998d30b22b10cc8e3553e324d59581401ce07b5053282fb5e206c882fc96ae06b774b6162b3620fee5cf59"
 
 [env]
 _.path = ["{{config_root}}/node_modules/.bin"]

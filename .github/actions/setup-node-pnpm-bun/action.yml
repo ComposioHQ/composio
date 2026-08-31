@@ -64,7 +64,6 @@ runs:
     - name: Setup Bun
       shell: bash
       run: |
-        mise link --force "node@${{ steps.tool-versions.outputs.node }}" "$(npm prefix --global)"
         mise install bun
         dirname "$(mise which bun)" >> "$GITHUB_PATH"
 

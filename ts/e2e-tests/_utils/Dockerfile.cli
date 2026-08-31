@@ -26,7 +26,6 @@ ENV XDG_CACHE_HOME="/mise/cache"
 COPY .github/scripts/install-mise.sh ./.github/scripts/install-mise.sh
 RUN MISE_INSTALL_PATH=/usr/local/bin/mise bash .github/scripts/install-mise.sh
 COPY mise.toml mise.lock ./
-COPY ts/scripts/install-bun.mjs ./ts/scripts/install-bun.mjs
 RUN mise install && \
     pnpm --version && \
     bun --version
