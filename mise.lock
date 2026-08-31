@@ -113,14 +113,14 @@ version = "0.8.19"
 backend = "aqua:astral-sh/uv"
 
 [tools.uv."platforms.linux-arm64"]
-checksum = "sha256:87925376fa1e59de23582e1cbd81d6aabd16611e871ad085e09be2c2fa12689d"
-url = "https://github.com/astral-sh/uv/releases/download/0.8.19/uv-aarch64-unknown-linux-musl.tar.gz"
-url_api = "https://api.github.com/repos/astral-sh/uv/releases/assets/295160192"
+checksum = "sha256:ffd29feed13cdd30b27def8e80e64223325fbe4f7cfc4d4c906ec2531f746bde"
+url = "https://github.com/astral-sh/uv/releases/download/0.8.19/uv-aarch64-unknown-linux-gnu.tar.gz"
+url_api = "https://api.github.com/repos/astral-sh/uv/releases/assets/295160191"
 
 [tools.uv."platforms.linux-x64"]
-checksum = "sha256:6a37f712ae90c7b8cf364fe751144d7acc2479d6b336378111e74cc7fb14fa7b"
-url = "https://github.com/astral-sh/uv/releases/download/0.8.19/uv-x86_64-unknown-linux-musl.tar.gz"
-url_api = "https://api.github.com/repos/astral-sh/uv/releases/assets/295160235"
+checksum = "sha256:cfc674e9b83d1becfca4d70386e5f7ace4c1fa8c47c518abeebb8ef2b30da4b8"
+url = "https://github.com/astral-sh/uv/releases/download/0.8.19/uv-x86_64-unknown-linux-gnu.tar.gz"
+url_api = "https://api.github.com/repos/astral-sh/uv/releases/assets/295160233"
 
 [tools.uv."platforms.macos-arm64"]
 checksum = "sha256:bb63d43c40a301d889a985223ee8ce540be199e98b3f27ed8477823869a0a605"

@@ -4,7 +4,13 @@ set -euo pipefail
 
 version='2026.8.15'
 
-if command -v mise >/dev/null 2>&1 && [[ "$(mise --version | awk '{print $1}')" == "$version" ]]; then
+if [[ -n "${MISE_INSTALL_PATH:-}" ]]; then
+  existing_binary="$MISE_INSTALL_PATH"
+else
+  existing_binary=$(command -v mise 2>/dev/null || true)
+fi
+
+if [[ -x "$existing_binary" ]] && [[ "$("$existing_binary" --version | awk '{print $1}')" == "$version" ]]; then
   exit 0
 fi
 
@@ -31,15 +37,24 @@ case "$(uname -s)-$(uname -m)" in
     ;;
 esac
 
-install_dir="${RUNNER_TEMP:-${TMPDIR:-/tmp}}/mise-bin"
-binary="$install_dir/mise"
+default_install_dir="${RUNNER_TEMP:-${TMPDIR:-/tmp}}/mise-bin"
+binary="${MISE_INSTALL_PATH:-$default_install_dir/mise}"
+install_dir=$(dirname "$binary")
 asset="mise-v${version}-${target}"
 url="https://github.com/jdx/mise/releases/download/v${version}/${asset}"
 
 mkdir -p "$install_dir"
 curl --fail --location --retry 3 --silent --show-error --output "$binary" "$url"
 
-actual_checksum=$(shasum -a 256 "$binary" | awk '{print $1}')
+if command -v shasum >/dev/null 2>&1; then
+  actual_checksum=$(shasum -a 256 "$binary" | awk '{print $1}')
+elif command -v sha256sum >/dev/null 2>&1; then
+  actual_checksum=$(sha256sum "$binary" | awk '{print $1}')
+else
+  echo 'Neither shasum nor sha256sum is available to verify mise' >&2
+  rm -f "$binary"
+  exit 1
+fi
 if [[ "$actual_checksum" != "$checksum" ]]; then
   echo "Checksum mismatch for $asset" >&2
   rm -f "$binary"
@@ -47,4 +62,6 @@ if [[ "$actual_checksum" != "$checksum" ]]; then
 fi
 
 chmod +x "$binary"
-echo "$install_dir" >> "$GITHUB_PATH"
+if [[ -n "${GITHUB_PATH:-}" ]]; then
+  echo "$install_dir" >> "$GITHUB_PATH"
+fi
