@@ -1,0 +1,494 @@
+---
+title: Integrate Composio into an existing harness
+description: "You already have a planner and tool search. This wires Composio in underneath them: list toolkits, connect the ones a user picks, load raw schemas into your own index, and execute by slug. Four calls your code makes, with no agent inside your agent."
+keywords: [agent harness, own planner, own tool search, raw tools, tool schemas, session toolkits, authorize, session execute, manage connections, direct tools, connected accounts]
+full: true
+gallery:
+  categories: [Coding agents]
+  logos: [github, slack]
+  featured: true
+  order: 4
+---
+
+Most Composio examples hand the agent a session and let Composio's [meta tools](/docs/how-composio-works#meta-tools) find, authenticate, and run tools. That default works well until you already have your own planner, retrieval index, dispatcher, and permission layer. Then you need the 1000+ apps and managed auth, not another agent inside yours.
+
+Composio sits underneath your harness in four calls:
+
+1. **List toolkits.** [`composio.toolkits.get()`](/reference/sdk-reference/typescript/toolkits) returns the catalog independent of any user. That's your integrations directory.
+2. **Connect what the user picks.** [`session.authorize(slug)`](/docs/authentication) starts the OAuth flow for this user. Bring your own OAuth credentials via [auth configs](/docs/authentication/programmatic-auth-configs) for a white-label flow, or [import existing tokens](/docs/authentication/importing-existing-connections) to migrate from another store.
+3. **Fetch tools.** Load raw JSON Schema with [`composio.tools.getRawComposioTools({ toolkits })`](/docs/configuring-sessions#browsing-the-catalog), or serve the same tools over [MCP](/docs/sessions-via-mcp) and let your harness call them through the protocol.
+4. **Execute by slug.** [`session.execute(slug, args)`](/docs/how-composio-works#executing-session-tools) runs one tool as the connected user and hands back data.
+
+Nothing here asks a model to make a decision. Every call is one your code makes, at a moment you choose, because your planner decided.
+
+<Mermaid chart={`flowchart LR
+  subgraph yours["Your harness"]
+    planner[Planner]
+    index[Tool index]
+    mcpClient[MCP client]
+    dispatch[Dispatcher]
+  end
+  subgraph composio["Composio"]
+    toolkits["composio.toolkits.get()"]
+    authorize["session.authorize()"]
+    schemas["tools.getRawComposioTools()"]
+    mcp["session.mcp"]
+    execute["session.execute()"]
+  end
+  ui([Your settings UI]) --> toolkits
+  toolkits --> authorize
+  toolkits --> schemas
+  toolkits --> mcp
+  schemas --> index
+  index --> planner
+  mcp --> mcpClient
+  mcpClient --> planner
+  planner --> dispatch
+  dispatch --> execute
+  execute --> planner
+`} />
+
+<Callout type="info" title="Is this the right example for you?">
+
+Read this one if you already own the loop: your own planner, your own tool search or retrieval, your own execution and approval path. You get the app catalog, managed auth, and a single execute call, and Composio stays out of the reasoning.
+
+Read [What is a session?](/docs/how-composio-works) instead if you'd rather Composio did the discovery. Runtime search returns guidance and recommended steps alongside schemas, keeps a shared context across calls, and costs you far less context than loading hundreds of schemas upfront. That's a real advantage to give up knowingly.
+</Callout>
+
+## Setup
+
+You need a [Composio API key](https://dashboard.composio.dev/~/project/settings/api-keys?utm_source=docs&utm_medium=content&utm_campaign=examples-agent-harness) to list the catalog and drive sessions. Listing apps does not need a user id; creating a session and connecting accounts does. There's no model provider in this example: your harness already has one.
+
+<Tabs groupId="language" items={['Python', 'TypeScript', 'Go']} persist>
+<Tab value="Python">
+<PackageInstall packages="composio" ecosystem="python" />
+</Tab>
+<Tab value="TypeScript">
+<PackageInstall packages="@composio/core" />
+</Tab>
+<Tab value="Go">
+```bash
+go get github.com/ComposioHQ/composio-go
+```
+
+See the [Go SDK usage example](https://github.com/ComposioHQ/composio-go#usage-example).
+</Tab>
+</Tabs>
+
+## Create a session your code drives
+
+A [session](/docs/how-composio-works) is the per-user context: which toolkits are in play, which accounts are connected, what may run. You still want one. What changes is that nothing on it ever reaches a model. Your harness never calls `session.tools()`, so the search and execute meta tools sit on the session unused.
+
+Two settings are still worth passing at creation. `manageConnections: false` drops the connection meta-tools, because your settings page is doing that job. [Disabling the sandbox](/docs/configuring-sessions#disabling-the-sandbox) drops the code-execution tools, because your harness runs its own code. Leave the toolkit filter open and the session can execute any tool your planner names.
+
+If you want a white-label flow, pass `authConfigs` at creation to pin the session to your own OAuth app. `session.authorize()` then sends the user through your consent screen instead of Composio's managed app. You can update those configs later, so migrating from a default app to your own app is a session patch, not a rebuild.
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tab value="Python">
+```python
+from composio import Composio
+
+composio = Composio()
+
+# user_id is your own identifier, stable for the life of the account
+session = composio.sessions.create(
+    user_id="user_123",
+    manage_connections=False,
+    sandbox={"enable": False},
+)
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import { Composio } from '@composio/core';
+
+const composio = new Composio();
+
+// userId is your own identifier, stable for the life of the account
+const session = await composio.create('user_123', {
+  manageConnections: false,
+  sandbox: { enable: false },
+});
+```
+</Tab>
+</Tabs>
+
+Create one session per user and reuse it. Sessions persist on the server and don't expire, so store the session id on the user record and pick it back up with `composio.use(sessionId)` on later requests. Calling `create()` again just makes another session.
+
+## 1. List the toolkits
+
+The catalog does not belong to a user. `composio.toolkits.list()` in Python or `composio.toolkits.get()` in TypeScript returns the app list independent of any session, so your integrations page can render before anyone signs in.
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tab value="Python">
+```python
+page = composio.toolkits.list(limit=50)
+
+for toolkit in page.items:
+    print(f"{toolkit.slug:<20} {toolkit.name}")
+
+# page.next_cursor -> pass back as next_cursor= for the next page
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import { Composio } from '@composio/core';
+const composio = new Composio();
+// ---cut---
+const toolkits = await composio.toolkits.get({ limit: 50 });
+
+for (const toolkit of toolkits) {
+  console.log(`${toolkit.slug.padEnd(20)} ${toolkit.name}`);
+}
+
+// pass a cursor as { cursor } to request the next page
+```
+</Tab>
+</Tabs>
+
+Filter by category or sort alphabetically. If you also need to know whether this user has a live connection, call `session.toolkits()` with the same toolkit list; it merges the global catalog with per-user connection state.
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tab value="Python">
+```python
+developer = composio.toolkits.list(category="developer-tools", limit=50)
+connected = session.toolkits(is_connected=True, limit=100)
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import { Composio } from '@composio/core';
+const composio = new Composio();
+const session = await composio.create('user_123');
+// ---cut---
+const developer = await composio.toolkits.get({ category: 'developer-tools', limit: 50 });
+const connected = await session.toolkits({ isConnected: true, limit: 100 });
+```
+</Tab>
+</Tabs>
+
+<Callout type="info" title="Toolkits with no auth">
+Toolkits where `isNoAuth` is true (search, scrapers, and similar) need no connection. They show up in the global catalog and, if you use `session.toolkits()`, come back with no `connection` object. Treat them as always available.
+</Callout>
+
+## 2. Connect what the user picks
+
+`session.authorize(slug)` starts the flow and returns a connection request with a redirect URL. Send the user there. Composio holds the credentials and refreshes them; no token ever lands in your code.
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tab value="Python">
+```python
+request = session.authorize(
+    "github",
+    callback_url="https://your-app.com/composio/callback",
+)
+
+# Redirect the user here
+print(request.redirect_url)
+
+# Scripts and CLIs can block; a web server should not
+account = request.wait_for_connection()
+print(f"Connected account: {account.id}")
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import { Composio } from '@composio/core';
+const composio = new Composio();
+const session = await composio.create('user_123');
+// ---cut---
+const request = await session.authorize('github', {
+  callbackUrl: 'https://your-app.com/composio/callback',
+});
+
+// Redirect the user here
+console.log(request.redirectUrl);
+
+// Scripts and CLIs can block; a web server should not
+const account = await request.waitForConnection();
+console.log(`Connected account: ${account.id}`);
+```
+</Tab>
+</Tabs>
+
+In a web app, don't hold a request open on `waitForConnection`. Point `callbackUrl` at your own route and, when the user lands back on it, confirm with `session.toolkits({ toolkits: ['github'], isConnected: true })`. That check is authoritative and costs one call.
+
+<Callout type="info" title="White-label OAuth and migrating apps">
+By default, `session.authorize()` uses Composio's managed OAuth app. To brand the consent screen or control the OAuth client, create an auth config with your own credentials and pass it at session creation.
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tab value="Python">
+```python
+auth_config = composio.auth_configs.create(
+    toolkit="github",
+    options={
+        "type": "use_custom_auth",
+        "auth_scheme": "OAUTH2",
+        "name": "My GitHub App",
+        "credentials": {
+            "client_id": os.environ["GITHUB_CLIENT_ID"],
+            "client_secret": os.environ["GITHUB_CLIENT_SECRET"],
+            "oauth_redirect_uri": "https://backend.composio.dev/api/v1/auth-apps/add",
+        },
+    },
+)
+
+session = composio.sessions.create(
+    user_id="user_123",
+    toolkits=["github"],
+    auth_configs={"github": auth_config.id},
+    manage_connections=False,
+    sandbox={"enable": False},
+)
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import { Composio } from '@composio/core';
+const composio = new Composio();
+// ---cut---
+const authConfig = await composio.authConfigs.create('github', {
+  type: 'use_custom_auth',
+  authScheme: 'OAUTH2',
+  name: 'My GitHub App',
+  credentials: {
+    client_id: process.env.GITHUB_CLIENT_ID!,
+    client_secret: process.env.GITHUB_CLIENT_SECRET!,
+    oauth_redirect_uri: 'https://backend.composio.dev/api/v1/auth-apps/add',
+  },
+});
+
+const session = await composio.sessions.create('user_123', {
+  toolkits: ['github'],
+  authConfigs: { github: authConfig.id },
+  manageConnections: false,
+  sandbox: { enable: false },
+});
+```
+</Tab>
+</Tabs>
+
+To migrate users from an existing token store, create a connected account directly with `composio.connectedAccounts.initiate()` (TypeScript) or `composio.connected_accounts.initiate()` (Python). You can update `authConfigs` on the session later, so moving from the default app to your own app is a patch rather than a rebuild.
+</Callout>
+
+## 3. Fetch tools
+
+Your harness can consume tools in two shapes. Load raw JSON Schema and call them yourself, or expose them through an MCP server and let your harness call them over the protocol.
+
+### Option A: Raw JSON Schema
+
+`getRawComposioTools` returns tool definitions with no user context and no provider wrapping: a slug, a name, a description, and input parameters as plain JSON Schema. Take the toolkits you want to expose, pull their tools, and write them into whatever corpus your planner already searches.
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tab value="Python">
+```python
+connected = session.toolkits(is_connected=True, limit=100)
+slugs = [toolkit.slug for toolkit in connected.items]
+
+tools = composio.tools.get_raw_composio_tools(toolkits=slugs)
+
+for tool in tools:
+    index.add(
+        name=tool.slug,                    # "GITHUB_CREATE_AN_ISSUE"
+        description=tool.description,
+        parameters=tool.input_parameters,  # JSON Schema
+    )
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import { Composio } from '@composio/core';
+const composio = new Composio();
+const session = await composio.create('user_123');
+declare const index: {
+  add(entry: { name: string; description?: string; parameters?: unknown }): void;
+};
+// ---cut---
+const connected = await session.toolkits({ isConnected: true, limit: 100 });
+const slugs = connected.items.map(toolkit => toolkit.slug);
+
+const tools = await composio.tools.getRawComposioTools({
+  toolkits: slugs,
+  important: false,
+});
+
+for (const tool of tools) {
+  index.add({
+    name: tool.slug,                  // "GITHUB_CREATE_AN_ISSUE"
+    description: tool.description,
+    parameters: tool.inputParameters, // JSON Schema
+  });
+}
+```
+</Tab>
+</Tabs>
+
+<Callout type="warn" title="Pass `important: false` to fetch every tool, not a curated subset">
+In TypeScript, `getRawComposioTools({ toolkits })` applies Composio's `important` flag on your behalf and returns a hand-picked subset of each toolkit rather than all of it. Nothing errors; the list is just shorter than the toolkit, which is a bad surprise to find in an index weeks later. The auto-apply is suppressed by `important: false` and by passing any of `tools`, `tags`, `search`, or `limit`, so a call that already sets a large `limit` is getting the full list. The Python method has no `important` parameter and always returns the unfiltered list.
+
+Which you want depends on your index. Curated is a reasonable default for semantic search over a few toolkits. Full is what you want when your planner needs to name an exact tool.
+</Callout>
+
+Fetch per toolkit rather than in one shot once a user has a lot connected. Thirty toolkits at full breadth is several thousand schemas, and you almost certainly want them cached, keyed by toolkit and refreshed on your own schedule, rather than pulled on every turn.
+
+### Option B: MCP server
+
+Create a session with `mcp: true` and hand `session.mcp.url` (and `session.mcp.headers` if required) to any MCP client. The server exposes the same tools and executes them under the session's connected accounts, so your harness talks the protocol instead of calling `session.execute()` directly.
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tab value="Python">
+```python
+from composio import Composio, SESSION_PRESET_DIRECT_TOOLS
+
+composio = Composio()
+
+session = composio.sessions.create(
+    user_id="user_123",
+    toolkits=["gmail"],
+    tools={
+        "gmail": {
+            "enable": ["GMAIL_FETCH_EMAILS", "GMAIL_CREATE_EMAIL_DRAFT"],
+        },
+    },
+    session_preset=SESSION_PRESET_DIRECT_TOOLS,
+    mcp=True,
+)
+
+print(session.mcp.url)
+print(session.mcp.headers)
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import { Composio, SessionPreset } from '@composio/core';
+
+const composio = new Composio();
+
+const session = await composio.sessions.create('user_123', {
+  toolkits: ['gmail'],
+  tools: {
+    gmail: {
+      enable: ['GMAIL_FETCH_EMAILS', 'GMAIL_CREATE_EMAIL_DRAFT'],
+    },
+  },
+  sessionPreset: SessionPreset.DIRECT_TOOLS,
+  mcp: true,
+});
+
+console.log(session.mcp.url);
+console.log(session.mcp.headers);
+```
+</Tab>
+</Tabs>
+
+Wire the URL into any MCP client. Examples for OpenAI Agents, Claude Agent SDK, and Vercel AI SDK are in the [sessions via MCP guide](/docs/sessions-via-mcp).
+
+<Accordions>
+  <Accordion title="Alternative: let the session decide which tools exist">
+    `getRawComposioTools` reads the catalog and ignores your session's filters. If you'd rather have one source of truth, scope the session and read its tool list back instead: set `preload: { tools: 'all' }` alongside a toolkit filter, then fetch with `composio.tools.getRawToolRouterSessionTools(session.sessionId)` in TypeScript or `composio.tools.get_raw_tool_router_meta_tools(session.session_id)` in Python. You get exactly the tools the session allows, so the set you index and the set that can execute can't drift apart.
+
+    The trade-off is that every change to the exposed set becomes a session update rather than a local filter, and the returned list includes any meta tools the session still has enabled.
+  </Accordion>
+</Accordions>
+
+### Keep the session in step with what you indexed
+
+If you scoped the session to specific toolkits, that filter is what gates execution later. When a user connects something new, widen the session rather than creating another one. `session.update()` is a patch: fields you omit are left alone.
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tab value="Python">
+```python
+session.update(toolkits={"enable": [*slugs, "linear"]})
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import { Composio } from '@composio/core';
+const composio = new Composio();
+const session = await composio.create('user_123');
+declare const slugs: string[];
+// ---cut---
+await session.update({ toolkits: { enable: [...slugs, 'linear'] } });
+```
+</Tab>
+</Tabs>
+
+A session created with no toolkit filter, as in the setup above, already allows everything and needs no update.
+
+## 4. Execute by slug
+
+Your planner picked a tool and produced arguments. `session.execute` runs it as this user's connected account and returns the result. No model, no retry loop, no interpretation.
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tab value="Python">
+```python
+result = session.execute(
+    "GITHUB_CREATE_AN_ISSUE",
+    arguments={
+        "owner": "ComposioHQ",
+        "repo": "composio",
+        "title": "Tool schemas drift between staging and prod",
+        "body": "Filed by the harness.",
+    },
+)
+
+if result.error:
+    raise RuntimeError(result.error)
+
+print(result.data)
+print(result.log_id)  # look this up in the dashboard
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import { Composio } from '@composio/core';
+const composio = new Composio();
+const session = await composio.create('user_123');
+// ---cut---
+const result = await session.execute('GITHUB_CREATE_AN_ISSUE', {
+  owner: 'ComposioHQ',
+  repo: 'composio',
+  title: 'Tool schemas drift between staging and prod',
+  body: 'Filed by the harness.',
+});
+
+if (result.error) {
+  throw new Error(result.error);
+}
+
+console.log(result.data);
+console.log(result.logId); // look this up in the dashboard
+```
+</Tab>
+</Tabs>
+
+Arguments go through untouched: neither SDK validates them locally, so a wrong field reaches the upstream API and comes back as a populated `error` your planner can read and correct on the next turn, not as an exception. Exceptions are for transport failures and cancellation. `logId` ties the call to its entry in the dashboard, which is the fastest way to see what Composio actually sent upstream when a response surprises you.
+
+When the thing you need isn't wrapped as a tool, [`session.proxyExecute()`](/docs/extending-sessions/proxy-execute) calls the raw API endpoint under the same connected account.
+
+## What maps to what
+
+| Your harness | Composio |
+| --- | --- |
+| Integrations directory | `composio.toolkits.get()` / `composio.toolkits.list()` |
+| Per-user connection state | `session.toolkits()` |
+| "Connect" button | `session.authorize(slug)` |
+| White-label OAuth app | `authConfigs` at session creation |
+| Tool index or retrieval corpus | `composio.tools.getRawComposioTools({ toolkits, important: false })` |
+| MCP tool server | `session.mcp` |
+| Tool dispatch | `session.execute(slug, args)` |
+| Per-user isolation | one session per user id |
+| Audit trail | `result.logId` |
+
+Your planner, context window, approval gate, and traces stay the same. Composio takes over the global app catalog, OAuth registration, token refresh, schema maintenance, and the execute path, whether you call `session.execute()` directly or through the MCP server.
+
+<Callout type="info" title="If the tool set is fixed">
+A harness with a known, small tool set doesn't need step three at all. Create the session with the [direct tools preset](/docs/configuring-sessions#direct-tools-preset) and an explicit `tools` filter, and `session.tools()` hands back exactly those tools with search, multi-execute, connection management, and the sandbox all off. That's `sessionPreset: SessionPreset.DIRECT_TOOLS` in TypeScript and `session_preset=SESSION_PRESET_DIRECT_TOOLS` in Python. Worth it when the list is short and stable; the four calls above are for when the list is whatever the user connected this morning.
+</Callout>
+
+<Cards>
+  <Card title="Configuring sessions" href="/docs/configuring-sessions" description="Every filter a session takes: toolkits, tools, tags, auth configs, connected accounts" />
+  <Card title="What is a session?" href="/docs/how-composio-works" description="The runtime context behind all four calls, and what the meta tools do when you leave them on" />
+  <Card title="Authentication" href="/docs/authentication" description="Managed auth, your own OAuth credentials, and pre-connecting accounts" />
+  <Card title="Proxy execute" href="/docs/extending-sessions/proxy-execute" description="Call an API endpoint Composio doesn't wrap, as the connected account" />
+</Cards>
