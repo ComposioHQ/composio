@@ -277,9 +277,8 @@ class TestWrapTool:
         converted to plain dicts before reaching execute_tool so the Composio
         API can JSON-serialize them.
         """
-        from pydantic import BaseModel
-
         from composio_gemini import GeminiProvider
+        from pydantic import BaseModel
 
         class FakeQuery(BaseModel):
             use_case: str = ""
@@ -318,6 +317,61 @@ class TestWrapTool:
         assert isinstance(call_args["queries"], list)
         assert isinstance(call_args["queries"][0], dict)
         assert call_args["queries"][0]["use_case"] == "summarize email"
+
+    @pytest.mark.parametrize(
+        ("property_schema", "invalid", "valid"),
+        [
+            (
+                {"minLength": 2, "required": ["x"]},
+                {},
+                {"x": 1},
+            ),
+            (
+                {"type": "array", "contains": {"const": 1}},
+                [2],
+                [1, 2],
+            ),
+            (
+                {
+                    "type": "number",
+                    "if": {"minimum": 0},
+                    "then": {"maximum": 10},
+                },
+                20,
+                5,
+            ),
+        ],
+        ids=["typeless-object", "contains", "conditional"],
+    )
+    def test_callable_validates_assertions_missing_from_function_declaration(
+        self,
+        property_schema,
+        invalid,
+        valid,
+    ):
+        """AFC type generation is lossy, so the callable validates the source schema."""
+        from composio_gemini import GeminiProvider
+        from pydantic import ValidationError
+
+        provider = GeminiProvider()
+        tool = create_mock_tool(
+            "VALIDATE_SOURCE_SCHEMA",
+            "test",
+            input_parameters={
+                "type": "object",
+                "properties": {"value": property_schema},
+                "required": ["value"],
+            },
+        )
+        execute_tool = create_mock_execute_tool()
+        func = provider.wrap_tool(tool, execute_tool)
+
+        with pytest.raises(ValidationError):
+            func(value=invalid)
+        execute_tool.assert_not_called()
+
+        func(value=valid)
+        assert execute_tool.call_args.args[1] == {"value": valid}
 
     def test_array_param_has_parameterized_type(self):
         """Array parameters must produce List[X], not bare List.

@@ -16,7 +16,9 @@ from composio.utils.shared import (
     ToolSchemaAliases,
     alias_tool_input_schema,
     get_pydantic_signature_format_from_schema_params,
+    json_schema_to_model,
     normalize_tool_arguments,
+    validate_and_serialize_tool_arguments,
 )
 
 # google-genai is only needed for handle_response (backward compat)
@@ -100,14 +102,21 @@ class GeminiProvider(AgenticProvider[t.Callable, list[t.Callable]], name="gemini
         2. Store it in the AFC ``function_map`` for automatic execution
         """
         aliases = alias_tool_input_schema(schema=tool.input_parameters)
+        args_schema = json_schema_to_model(
+            aliases.schema,
+            skip_default=self.skip_default,
+        )
         self._executors[tool.slug] = (execute_tool, aliases)
 
         def function(**kwargs: t.Any) -> t.Dict:
             """Composio tool execution wrapper."""
             kwargs = _to_serializable(kwargs)
+            kwargs = validate_and_serialize_tool_arguments(
+                args_schema,
+                normalize_tool_arguments(kwargs),
+            )
             kwargs = aliases.restore_arguments(kwargs)
-            # Normalize defensively so a stringified payload is coerced to a dict (issue #2406).
-            result = execute_tool(tool.slug, normalize_tool_arguments(kwargs))
+            result = execute_tool(tool.slug, kwargs)
             return _process_execution_result(result)
 
         # Create a real function object (passes inspect.isfunction)
