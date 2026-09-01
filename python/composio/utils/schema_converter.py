@@ -147,6 +147,25 @@ _STRUCTURAL_KEYWORDS = frozenset(
     {"anyOf", "allOf", "oneOf", "not", "if", "$ref", "properties", "items"}
 )
 
+_TYPELESS_TYPE_SCOPED_KEYWORDS = frozenset(
+    {
+        "properties",
+        "patternProperties",
+        "additionalProperties",
+        "propertyNames",
+        "required",
+        "dependencies",
+        "minProperties",
+        "maxProperties",
+        "items",
+        "additionalItems",
+        "contains",
+        "minItems",
+        "maxItems",
+        "uniqueItems",
+    }
+)
+
 # Keywords each type-array member keeps when the array is rewritten to anyOf.
 _TYPE_SCOPED_KEYWORDS: t.Dict[str, frozenset] = {
     "string": frozenset({"minLength", "maxLength", "pattern"}),
@@ -1126,7 +1145,7 @@ def json_schema_to_pydantic_type(
         isinstance(annotation, type) and issubclass(annotation, BaseModel)
     ):
         return _with_exact_validation_annotation(
-            annotation,
+            t.Any if _needs_permissive_materialization(json_schema) else annotation,
             json_schema,
             document_root,
         )
@@ -1580,7 +1599,10 @@ def _requires_whole_schema_validation(schema: t.Any) -> bool:
     if (
         _REQUIRES_WHOLE_SCHEMA_VALIDATION.intersection(schema)
         or "allOf" in schema
-        or ("allOf" in schema and _combiner_has_assertion_siblings(schema, "allOf"))
+        or (
+            schema.get("type") is None
+            and _TYPELESS_TYPE_SCOPED_KEYWORDS.intersection(schema)
+        )
         or ("anyOf" in schema and _combiner_has_assertion_siblings(schema, "anyOf"))
         or _one_of_needs_exact_validation(schema.get("oneOf"))
         or ("oneOf" in schema and _combiner_has_assertion_siblings(schema, "oneOf"))
@@ -1605,8 +1627,11 @@ def _requires_whole_schema_validation(schema: t.Any) -> bool:
     return False
 
 
-def _contains_all_of(schema: t.Any, visited: t.Optional[t.Set[int]] = None) -> bool:
-    """Detect allOf only in schema-valued positions, never in instance data."""
+def _needs_permissive_materialization(
+    schema: t.Any,
+    visited: t.Optional[t.Set[int]] = None,
+) -> bool:
+    """Detect schemas whose exact validator must not pipe into a narrower type."""
     if isinstance(schema, bool) or not isinstance(schema, dict):
         return False
     if visited is None:
@@ -1615,27 +1640,39 @@ def _contains_all_of(schema: t.Any, visited: t.Optional[t.Set[int]] = None) -> b
         return False
     visited.add(id(schema))
 
-    if "allOf" in schema:
+    if "$ref" in schema or "allOf" in schema:
+        return True
+    if schema.get("type") is None and (
+        _TYPELESS_TYPE_SCOPED_KEYWORDS.intersection(schema)
+        or {"if", "then", "else", "not"}.intersection(schema)
+    ):
         return True
     for key, child in schema.items():
         if key in _EXACT_SCHEMA_MAP_KEYWORDS and isinstance(child, dict):
-            if any(_contains_all_of(value, visited) for value in child.values()):
+            if any(
+                _needs_permissive_materialization(value, visited)
+                for value in child.values()
+            ):
                 return True
         elif key in _EXACT_SCHEMA_ARRAY_KEYWORDS and isinstance(child, list):
-            if any(_contains_all_of(value, visited) for value in child):
+            if any(
+                _needs_permissive_materialization(value, visited) for value in child
+            ):
                 return True
         elif key in _EXACT_SCHEMA_VALUE_KEYWORDS:
             values = child if isinstance(child, list) else [child]
-            if any(_contains_all_of(value, visited) for value in values):
+            if any(
+                _needs_permissive_materialization(value, visited) for value in values
+            ):
                 return True
     return False
 
 
-def _relax_all_of_model_fields(
+def _relax_exact_model_fields(
     schema: t.Dict[str, t.Any],
     base_model: t.Type[BaseModel],
 ) -> t.Type[BaseModel]:
-    """Let exact source validation own allOf acceptance without library narrowing."""
+    """Let exact source validation own fields the library would over-narrow."""
     properties = schema.get("properties")
     if not isinstance(properties, dict):
         return base_model
@@ -1646,7 +1683,7 @@ def _relax_all_of_model_fields(
             model_field.alias if isinstance(model_field.alias, str) else internal_name
         )
         property_schema = properties.get(external_name)
-        if not _contains_all_of(property_schema):
+        if not _needs_permissive_materialization(property_schema):
             continue
 
         default = ... if model_field.is_required() else model_field.default
@@ -2069,7 +2106,7 @@ def _convert_with_library(
                 document_root,
             )
 
-        base_model = _relax_all_of_model_fields(schema, base_model)
+        base_model = _relax_exact_model_fields(schema, base_model)
         return _with_exact_validation(
             apply_object_policy(
                 schema,

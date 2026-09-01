@@ -22,6 +22,23 @@ const REQUIRES_WHOLE_SCHEMA_VALIDATION = new Set([
   'uniqueItems',
 ]);
 
+const TYPELESS_TYPE_SCOPED_KEYWORDS = new Set([
+  'properties',
+  'patternProperties',
+  'additionalProperties',
+  'propertyNames',
+  'required',
+  'dependencies',
+  'minProperties',
+  'maxProperties',
+  'items',
+  'additionalItems',
+  'contains',
+  'minItems',
+  'maxItems',
+  'uniqueItems',
+]);
+
 const SCHEMA_MAP_KEYWORDS = new Set([
   '$defs',
   'definitions',
@@ -82,6 +99,8 @@ export const requiresWholeSchemaValidation = (
 
   if (
     Object.keys(schema).some(key => REQUIRES_WHOLE_SCHEMA_VALIDATION.has(key)) ||
+    (schema.type === undefined &&
+      Object.keys(schema).some(key => TYPELESS_TYPE_SCOPED_KEYWORDS.has(key))) ||
     hasUnparsedRequiredProperty(schema) ||
     hasRequiredDefault(schema)
   ) {
@@ -102,6 +121,53 @@ export const requiresWholeSchemaValidation = (
     } else if (SCHEMA_VALUE_KEYWORDS.has(key)) {
       const values = Array.isArray(child) ? child : [child];
       if (values.some(value => requiresWholeSchemaValidation(value as JsonSchema, seen))) {
+        return true;
+      }
+    }
+  }
+
+  return false;
+};
+
+/**
+ * Some schemas are valid for JSON instance types that the native parser does
+ * not materialize. In those cases the Draft 7 validator must not pipe into a
+ * narrower Zod schema after it has already accepted the source value.
+ */
+export const requiresPermissiveMaterialization = (
+  schema: JsonSchema,
+  seen: WeakSet<object> = new WeakSet()
+): boolean => {
+  if (!isObject(schema) || seen.has(schema)) {
+    return false;
+  }
+  seen.add(schema);
+
+  if (
+    '$ref' in schema ||
+    (schema.type === undefined &&
+      (Object.keys(schema).some(key => TYPELESS_TYPE_SCOPED_KEYWORDS.has(key)) ||
+        ['if', 'then', 'else', 'not'].some(key => key in schema)))
+  ) {
+    return true;
+  }
+
+  for (const [key, child] of Object.entries(schema)) {
+    if (SCHEMA_MAP_KEYWORDS.has(key) && isObject(child)) {
+      if (
+        Object.values(child).some(value =>
+          requiresPermissiveMaterialization(value as JsonSchema, seen)
+        )
+      ) {
+        return true;
+      }
+    } else if (SCHEMA_ARRAY_KEYWORDS.has(key) && Array.isArray(child)) {
+      if (child.some(value => requiresPermissiveMaterialization(value as JsonSchema, seen))) {
+        return true;
+      }
+    } else if (SCHEMA_VALUE_KEYWORDS.has(key)) {
+      const values = Array.isArray(child) ? child : [child];
+      if (values.some(value => requiresPermissiveMaterialization(value as JsonSchema, seen))) {
         return true;
       }
     }

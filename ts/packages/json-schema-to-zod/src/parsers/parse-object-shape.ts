@@ -3,6 +3,7 @@ import * as z from 'zod/v3';
 import { parseSchema } from './parse-schema';
 import type { JsonSchemaObject, Refs, JsonSchema } from '../types';
 import {
+  requiresPermissiveMaterialization,
   requiresWholeSchemaValidation,
   withWholeSchemaValidation,
 } from '../whole-schema-validation';
@@ -35,7 +36,10 @@ export function parseObjectShape(objectSchema: JsonSchemaObject, refs: Refs): z.
       path: [...refs.path, 'properties', key],
     });
     const propZodSchema = requiresWholeSchemaValidation(propJsonSchema)
-      ? withWholeSchemaValidation(propJsonSchema, parsedProperty)
+      ? withWholeSchemaValidation(
+          propJsonSchema,
+          requiresPermissiveMaterialization(propJsonSchema) ? z.any() : parsedProperty
+        )
       : parsedProperty;
 
     const required = Array.isArray(objectSchema.required)

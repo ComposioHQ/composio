@@ -1,9 +1,10 @@
-import type { z, ZodTypeAny } from 'zod/v3';
+import { z, type ZodTypeAny } from 'zod/v3';
 
 import { parseSchema } from './parsers/parse-schema';
 import { parseObjectShape } from './parsers/parse-object-shape';
 import type { JsonSchemaToZodOptions, JsonSchema, JsonSchemaObject } from './types';
 import {
+  requiresPermissiveMaterialization,
   requiresWholeSchemaValidation,
   withWholeSchemaValidation,
 } from './whole-schema-validation';
@@ -19,7 +20,10 @@ export const jsonSchemaToZod = (
   });
 
   return requiresWholeSchemaValidation(schema)
-    ? withWholeSchemaValidation(schema, parsedSchema)
+    ? withWholeSchemaValidation(
+        schema,
+        requiresPermissiveMaterialization(schema) ? z.any() : parsedSchema
+      )
     : parsedSchema;
 };
 

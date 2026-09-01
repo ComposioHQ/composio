@@ -208,3 +208,63 @@ def test_scalar_allof_acceptance_survives_pydantic_materialization() -> None:
     )
     for annotation in annotations:
         TypeAdapter(annotation).validate_python({"value": "OK"})
+
+
+@pytest.mark.unit
+@pytest.mark.schema
+@pytest.mark.parametrize(
+    ("schema", "value"),
+    [
+        ({"properties": {"x": {"type": "string"}}}, 42),
+        ({"required": ["x"]}, 42),
+        ({"items": {"type": "string"}}, 42),
+        ({"minItems": 2}, {"not": "an array"}),
+        ({"propertyNames": {"pattern": "^x"}}, 42),
+        ({"dependencies": {"a": ["b"]}}, 42),
+        ({"not": {"type": "string"}}, 42),
+        ({"if": {"type": "string"}, "then": {"minLength": 2}}, 42),
+    ],
+)
+def test_typeless_assertions_accept_nonmatching_instance_types(
+    schema: dict[str, t.Any],
+    value: t.Any,
+) -> None:
+    Draft7Validator.check_schema(schema)
+    assert Draft7Validator(schema).is_valid(value)
+    TypeAdapter(json_schema_to_pydantic_type(schema)).validate_python(value)
+
+
+@pytest.mark.unit
+@pytest.mark.schema
+def test_direct_local_ref_accepts_a_valid_referenced_value() -> None:
+    schema = {
+        "$defs": {"positive": {"type": "number", "minimum": 1}},
+        "$ref": "#/$defs/positive",
+    }
+    Draft7Validator.check_schema(schema)
+    assert Draft7Validator(schema).is_valid(2)
+    TypeAdapter(json_schema_to_pydantic_type(schema)).validate_python(2)
+
+
+@pytest.mark.unit
+@pytest.mark.schema
+def test_nested_typeless_object_assertion_accepts_a_non_object_property() -> None:
+    schema = {
+        "title": "NestedTypelessObject",
+        "type": "object",
+        "properties": {
+            "value": {"properties": {"x": {"type": "string"}}},
+        },
+        "required": ["value"],
+    }
+    value = {"value": 42}
+    Draft7Validator.check_schema(schema)
+    assert Draft7Validator(schema).is_valid(value)
+
+    annotations = (
+        json_schema_to_pydantic_type(schema),
+        json_schema_to_model(schema),
+        pydantic_model_from_param_schema(schema),
+    )
+    for annotation in annotations:
+        TypeAdapter(annotation).validate_python(value)

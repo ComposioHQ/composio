@@ -3,6 +3,41 @@ import { z } from 'zod/v3';
 import type { JsonSchemaObject } from '../types';
 import { extendSchemaWithMessage } from '../utils/extend-schema';
 
+type DecimalInteger = {
+  readonly integer: bigint;
+  readonly scale: number;
+};
+
+const toDecimalInteger = (value: number): DecimalInteger | undefined => {
+  if (!Number.isFinite(value)) return undefined;
+
+  const negative = value < 0;
+  const [coefficient, exponentText] = Math.abs(value).toString().toLowerCase().split('e');
+  const exponent = exponentText === undefined ? 0 : Number(exponentText);
+  const [whole, fraction = ''] = coefficient.split('.');
+  let digits = `${whole}${fraction}`.replace(/^0+(?=\d)/, '');
+  let scale = fraction.length - exponent;
+
+  if (scale < 0) {
+    digits += '0'.repeat(-scale);
+    scale = 0;
+  }
+
+  const integer = BigInt(`${negative ? '-' : ''}${digits}`);
+  return { integer, scale };
+};
+
+const isJsonMultipleOf = (value: number, multiple: number): boolean => {
+  const dividend = toDecimalInteger(value);
+  const divisor = toDecimalInteger(multiple);
+  if (!dividend || !divisor || divisor.integer === 0n) return false;
+
+  const scale = Math.max(dividend.scale, divisor.scale);
+  const scaledDividend = dividend.integer * 10n ** BigInt(scale - dividend.scale);
+  const scaledDivisor = divisor.integer * 10n ** BigInt(scale - divisor.scale);
+  return scaledDividend % scaledDivisor === 0n;
+};
+
 export const parseNumber = (jsonSchema: JsonSchemaObject & { type: 'number' | 'integer' }) => {
   let zodSchema = z.number();
 
@@ -18,21 +53,6 @@ export const parseNumber = (jsonSchema: JsonSchemaObject & { type: 'number' | 'i
       zs.int(errorMsg)
     );
   }
-
-  zodSchema = extendSchemaWithMessage(
-    zodSchema,
-    jsonSchema,
-    'multipleOf',
-    (zs, multipleOf, errorMsg) => {
-      if (multipleOf === 1) {
-        if (isInteger) return zs;
-
-        return zs.int(errorMsg);
-      }
-
-      return zs.multipleOf(multipleOf, errorMsg);
-    }
-  );
 
   if (typeof jsonSchema.minimum === 'number') {
     if ((jsonSchema as unknown as { exclusiveMinimum?: boolean }).exclusiveMinimum === true) {
@@ -104,6 +124,18 @@ export const parseNumber = (jsonSchema: JsonSchemaObject & { type: 'number' | 'i
       'maximum',
       (zs, maximum, errorMsg) => zs.lte(maximum, errorMsg)
     );
+  }
+
+  if (typeof jsonSchema.multipleOf === 'number') {
+    const errorMessage = (
+      jsonSchema as JsonSchemaObject & { errorMessage?: Record<string, string> }
+    ).errorMessage?.multipleOf;
+    if (jsonSchema.multipleOf === 1) {
+      return isInteger ? zodSchema : zodSchema.int(errorMessage);
+    }
+    return zodSchema.refine(value => isJsonMultipleOf(value, jsonSchema.multipleOf!), {
+      message: errorMessage ?? `Number must be a multiple of ${jsonSchema.multipleOf}`,
+    });
   }
 
   return zodSchema;

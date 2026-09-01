@@ -10,6 +10,8 @@ type RejectionCase = {
   readonly value: unknown;
 };
 
+type AcceptanceCase = RejectionCase;
+
 const ajv = new Ajv({ strict: false });
 
 const rejectionCases: ReadonlyArray<RejectionCase> = [
@@ -104,10 +106,75 @@ const rejectionCases: ReadonlyArray<RejectionCase> = [
   },
 ];
 
+const acceptanceCases: ReadonlyArray<AcceptanceCase> = [
+  {
+    name: 'typeless properties must accept non-object instances',
+    schema: { properties: { x: { type: 'string' } } },
+    value: 42,
+  },
+  {
+    name: 'typeless required must accept non-object instances',
+    schema: { required: ['x'] },
+    value: 42,
+  },
+  {
+    name: 'typeless items must accept non-array instances',
+    schema: { items: { type: 'string' } },
+    value: 42,
+  },
+  {
+    name: 'typeless array bounds must accept non-array instances',
+    schema: { minItems: 2 },
+    value: { not: 'an array' },
+  },
+  {
+    name: 'typeless propertyNames must accept non-object instances',
+    schema: { propertyNames: { pattern: '^x' } },
+    value: 42,
+  },
+  {
+    name: 'typeless dependencies must accept non-object instances',
+    schema: { dependencies: { a: ['b'] } },
+    value: 42,
+  },
+  {
+    name: 'typeless not can accept a different instance type',
+    schema: { not: { type: 'string' } },
+    value: 42,
+  },
+  {
+    name: 'typeless conditionals leave nonmatching instance types untouched',
+    schema: { if: { type: 'string' }, then: { minLength: 2 } },
+    value: 42,
+  },
+  {
+    name: 'a direct local ref accepts values admitted by its target',
+    schema: {
+      $defs: { positive: { type: 'number', minimum: 1 } },
+      $ref: '#/$defs/positive',
+    },
+    value: 2,
+  },
+  {
+    name: 'nested typeless object assertions accept non-object property values',
+    schema: {
+      type: 'object',
+      properties: { value: { properties: { x: { type: 'string' } } } },
+      required: ['value'],
+    },
+    value: { value: 42 },
+  },
+];
+
 describe('whole-schema semantic regressions', () => {
   it.each(rejectionCases)('$name', ({ schema, value }) => {
     expect(ajv.compile(schema)(value), 'Draft 7 oracle must reject the fixture').toBe(false);
     expect(jsonSchemaToZod(schema).safeParse(value).success).toBe(false);
+  });
+
+  it.each(acceptanceCases)('$name', ({ schema, value }) => {
+    expect(ajv.compile(schema)(value), 'Draft 7 oracle must accept the fixture').toBe(true);
+    expect(jsonSchemaToZod(schema).safeParse(value).success).toBe(true);
   });
 
   it('keeps Draft 4 exclusive flags and adjacent Draft 7 keywords active together', () => {
@@ -166,5 +233,18 @@ describe('whole-schema semantic regressions', () => {
 
     expect(parsed.safeParse(['ready', 1, 2]).success).toBe(true);
     expect(parsed.safeParse(['ready', 'wrong']).success).toBe(false);
+  });
+
+  it('does not round tiny nonzero numbers into integer multiples', () => {
+    const schema: JsonSchema = { type: 'number', multipleOf: 3 };
+    const value = 2 ** -1022;
+
+    expect(ajv.compile(schema)(value), 'Draft 7 oracle must reject the fixture').toBe(false);
+    expect(jsonSchemaToZod(schema).safeParse(value).success).toBe(false);
+  });
+
+  it('compares decimal multiples by their JSON number spelling', () => {
+    const schema: JsonSchema = { type: 'number', multipleOf: 0.1 };
+    expect(jsonSchemaToZod(schema).safeParse(0.3).success).toBe(true);
   });
 });
