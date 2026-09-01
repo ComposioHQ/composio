@@ -785,6 +785,194 @@
       ]
     },
     {
+      "id": "primitive-const-null-and-false",
+      "description": "Falsy consts keep their identity: null and false accept only themselves.",
+      "schema": {
+        "type": "object",
+        "properties": { "maybe": { "const": null }, "flag": { "const": false } },
+        "required": ["maybe", "flag"]
+      },
+      "instances": [
+        { "input": { "maybe": null, "flag": false }, "accepted": true },
+        { "input": { "maybe": null, "flag": 0 }, "accepted": false },
+        { "input": { "maybe": "null", "flag": false }, "accepted": false }
+      ]
+    },
+    {
+      "id": "primitive-enum-boolean-number-identity",
+      "description": "Enum membership distinguishes booleans from the numbers they equal in most host languages.",
+      "schema": {
+        "type": "object",
+        "properties": { "bits": { "enum": [0, 1] }, "toggle": { "enum": [true] } },
+        "required": ["bits", "toggle"]
+      },
+      "instances": [
+        { "input": { "bits": 1, "toggle": true }, "accepted": true },
+        { "input": { "bits": 0, "toggle": true }, "accepted": true },
+        { "input": { "bits": true, "toggle": true }, "accepted": false },
+        { "input": { "bits": 1, "toggle": 1 }, "accepted": false },
+        { "input": { "bits": false, "toggle": true }, "accepted": false }
+      ]
+    },
+    {
+      "id": "primitive-enum-with-null-member",
+      "description": "A null enum member is accepted alongside other literal values.",
+      "schema": {
+        "type": "object",
+        "properties": { "value": { "enum": ["a", null] } },
+        "required": ["value"]
+      },
+      "instances": [
+        { "input": { "value": "a" }, "accepted": true },
+        { "input": { "value": null }, "accepted": true },
+        { "input": { "value": "b" }, "accepted": false }
+      ]
+    },
+    {
+      "id": "primitive-const-constraint-conjunction",
+      "description": "A const must still satisfy sibling constraints; a conflict rejects everything.",
+      "schema": {
+        "type": "object",
+        "properties": { "code": { "type": "string", "const": "a", "minLength": 2 } },
+        "required": ["code"]
+      },
+      "instances": [
+        { "input": { "code": "a" }, "accepted": false },
+        { "input": { "code": "ab" }, "accepted": false }
+      ]
+    },
+    {
+      "id": "primitive-inclusive-numeric-boundaries",
+      "description": "Draft 7 minimum and maximum are inclusive bounds.",
+      "schema": {
+        "type": "object",
+        "properties": { "count": { "type": "integer", "minimum": 5, "maximum": 10 } },
+        "required": ["count"]
+      },
+      "instances": [
+        { "input": { "count": 5 }, "accepted": true },
+        { "input": { "count": 10 }, "accepted": true },
+        { "input": { "count": 4 }, "accepted": false },
+        { "input": { "count": 11 }, "accepted": false }
+      ]
+    },
+    {
+      "id": "primitive-const-narrows-enum",
+      "description": "When const and enum are both present, only their intersection is accepted.",
+      "schema": {
+        "type": "object",
+        "properties": { "value": { "enum": ["a", "b"], "const": "b" } },
+        "required": ["value"]
+      },
+      "instances": [
+        { "input": { "value": "b" }, "accepted": true },
+        { "input": { "value": "a" }, "accepted": false }
+      ]
+    },
+    {
+      "id": "primitive-compound-const-deep-equality",
+      "description": "A compound const compares by deep JSON equality, including boolean identity inside containers.",
+      "schema": {
+        "type": "object",
+        "properties": { "value": { "const": { "a": [1, "x", null] } } },
+        "required": ["value"]
+      },
+      "instances": [
+        { "input": { "value": { "a": [1, "x", null] } }, "accepted": true },
+        { "input": { "value": { "a": [1, "x", null], "b": 1 } }, "accepted": false },
+        { "input": { "value": { "a": [true, "x", null] } }, "accepted": false },
+        { "input": { "value": { "a": [1, "x"] } }, "accepted": false }
+      ]
+    },
+    {
+      "id": "primitive-unicode-code-point-length",
+      "description": "String length constraints count Unicode code points, not UTF-16 code units.",
+      "schema": {
+        "type": "object",
+        "properties": { "glyph": { "type": "string", "maxLength": 1 } },
+        "required": ["glyph"]
+      },
+      "instances": [
+        { "input": { "glyph": "𝄞" }, "accepted": true },
+        { "input": { "glyph": "ab" }, "accepted": false }
+      ]
+    },
+    {
+      "id": "primitive-typeless-constraint-scoping",
+      "description": "Draft 7 applies string constraints to string instances even without a declared type.",
+      "schema": {
+        "type": "object",
+        "properties": { "value": { "enum": ["a", "abc"], "minLength": 2 } },
+        "required": ["value"]
+      },
+      "instances": [
+        { "input": { "value": "abc" }, "accepted": true },
+        { "input": { "value": "a" }, "accepted": false }
+      ]
+    },
+    {
+      "id": "primitive-float-multiple-of",
+      "description": "Decimal multipleOf checks tolerate binary floating-point representation error.",
+      "divergesFromJsonSchema": "A literal Draft 7 multipleOf uses raw float arithmetic and rejects 0.3 for 0.1; every Composio converter scales decimals before comparing.",
+      "schema": {
+        "type": "object",
+        "properties": { "step": { "type": "number", "multipleOf": 0.1 } },
+        "required": ["step"]
+      },
+      "instances": [
+        { "input": { "step": 0.3 }, "accepted": true },
+        { "input": { "step": 0.35 }, "accepted": false }
+      ]
+    },
+    {
+      "id": "primitive-draft4-boolean-exclusive-bounds",
+      "description": "OpenAPI 3.0 style boolean exclusiveMinimum/exclusiveMaximum flags turn the paired bound exclusive.",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "lower": { "type": "number", "minimum": 5, "exclusiveMinimum": true },
+          "upper": { "type": "number", "maximum": 5, "exclusiveMaximum": true }
+        },
+        "required": ["lower", "upper"]
+      },
+      "instances": [
+        { "input": { "lower": 6, "upper": 4 }, "accepted": true },
+        { "input": { "lower": 5, "upper": 4 }, "accepted": false },
+        { "input": { "lower": 6, "upper": 5 }, "accepted": false }
+      ]
+    },
+    {
+      "id": "primitive-type-array-constraint-scoping",
+      "description": "Constraints on a type array apply only to instances of their matching type.",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "value": { "type": ["string", "number"], "minLength": 2, "minimum": 10 }
+        },
+        "required": ["value"]
+      },
+      "instances": [
+        { "input": { "value": "ab" }, "accepted": true },
+        { "input": { "value": 15 }, "accepted": true },
+        { "input": { "value": "a" }, "accepted": false },
+        { "input": { "value": 5 }, "accepted": false },
+        { "input": { "value": true }, "accepted": false }
+      ]
+    },
+    {
+      "id": "primitive-empty-enum-optional-property",
+      "description": "An optional property with an empty enum rejects every supplied value but tolerates absence.",
+      "schema": {
+        "type": "object",
+        "properties": { "value": { "enum": [] } },
+        "required": []
+      },
+      "instances": [
+        { "input": {}, "accepted": true },
+        { "input": { "value": null }, "accepted": false }
+      ]
+    },
+    {
       "id": "additional-property-default-materialization",
       "description": "Composio divergence: a schema-valued `additionalProperties` also materializes defaults in Zod and Pydantic while Effect leaves the input unchanged.",
       "divergesFromJsonSchema": "`default` is annotation-only in JSON Schema; the Zod and Pydantic converters materialize it.",

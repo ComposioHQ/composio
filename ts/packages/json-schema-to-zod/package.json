@@ -48,6 +48,8 @@
   "devDependencies": {
     "@types/json-schema": "^7.0.15",
     "@types/node": "^26.3.0",
+    "ajv": "^8.20.0",
+    "fast-check": "^4.9.0",
     "tsdown": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:",

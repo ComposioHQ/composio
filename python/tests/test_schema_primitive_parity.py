@@ -16,6 +16,19 @@ PRIMITIVE_CASE_IDS = (
     "primitive-independent-numeric-bounds",
     "primitive-const-intersects-declared-type",
     "primitive-compound-enum-values",
+    "primitive-const-null-and-false",
+    "primitive-enum-boolean-number-identity",
+    "primitive-enum-with-null-member",
+    "primitive-const-constraint-conjunction",
+    "primitive-inclusive-numeric-boundaries",
+    "primitive-const-narrows-enum",
+    "primitive-compound-const-deep-equality",
+    "primitive-unicode-code-point-length",
+    "primitive-typeless-constraint-scoping",
+    "primitive-float-multiple-of",
+    "primitive-draft4-boolean-exclusive-bounds",
+    "primitive-type-array-constraint-scoping",
+    "primitive-empty-enum-optional-property",
 )
 
 
