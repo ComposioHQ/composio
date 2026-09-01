@@ -42,17 +42,13 @@ COPY package.json \
      toolchain-versions.json \
      ./
 
-# Copy pre-install scripts (rarely change)
-COPY ts/scripts/pre-install.sh ./ts/scripts/pre-install.sh
-COPY ts/scripts/pre-install/ ./ts/scripts/pre-install/
-
 # Copy all ts/packages (pre-built)
 COPY ts/packages/ ./ts/packages/
 
 # Install dependencies using pnpm
 # Note: We intentionally don't use --mount=type=cache for the pnpm store here
 # because it causes native binding issues across builds
-RUN BYPASS_TOOLCHAIN_CHECK=1 pnpm install --frozen-lockfile
+RUN pnpm install --frozen-lockfile
 
 # Build composio CLI binary
 WORKDIR /app/ts/packages/cli

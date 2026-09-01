@@ -23,6 +23,18 @@ uv = "0.8.19"
 # Bun's exact canary revision is not a GitHub release tag. These immutable npm
 # platform packages contain the binaries with valid macOS signatures; mise
 # extracts the matching one directly, with no npm lifecycle involved.
+#
+# `version` below is only a label: the http backend downloads whatever the
+# platform URLs point at, and the checksums prove a tarball is the one we named,
+# not that it holds the revision we claimed. The two are deliberately allowed to
+# read differently -- the tarballs are published under Bun's canary date scheme
+# (1.4.0-canary.20260831.1) while the binaries inside report their own revision
+# (1.4.1-canary.1+d9b769812), which is what `bun --revision` prints.
+#
+# So when bumping Bun, change the URLs *and* `version` together, then run
+# `mise install`. `pnpm run test:toolchain` (test/mise-bun-pin.test.ts) compares
+# the label against the installed binary and is the only thing that catches a
+# half-finished bump.
 [tools.bun]
 version = "1.4.1-canary.1+d9b769812"
 bin_path = "package/bin"
