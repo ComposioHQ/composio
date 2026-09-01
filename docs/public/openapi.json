@@ -90,6 +90,10 @@
       "description": "Dashboard billing state — usage, subscription, contract (cookie-auth only)"
     },
     {
+      "name": "Compliance",
+      "description": "Organization compliance agreements and acceptance state"
+    },
+    {
       "name": "Files",
       "description": "File management"
     },
@@ -1767,7 +1771,7 @@
     "/api/v3.1/api_key_revocation": {
       "post": {
         "summary": "Publicly revoke leaked Composio API keys",
-        "description": "Public endpoint for reporting and revoking Composio API keys that have been leaked (e.g. via the GitHub Secret Scanning Partner Program, third-party scanners, or self-reported leaks). Accepts project (ak_*), user (uak_*), and org (oak_*) keys in a single batch. Matched keys are revoked or soft-deleted. The response shape is constant regardless of whether any submitted key matched, so callers cannot use this endpoint to probe key existence. IP-rate-limited via the shared `ipRateLimitMiddleware` (same Redis-backed pattern used by the public install endpoint): per-IP and global tiers, fail-closed on Redis errors, returns 429 on hit.",
+        "description": "Public endpoint for reporting and revoking Composio API keys that have been leaked (e.g. via the GitHub Secret Scanning Partner Program, third-party scanners, or self-reported leaks). Accepts project (ak_*), user (uak_*), and org (oak_*) keys in a single batch. Matched keys are revoked and stop working immediately. The response shape is constant regardless of whether any submitted key matched, so callers cannot use this endpoint to probe key existence. The endpoint is rate limited; requests over the limit receive a 429.",
         "tags": [
           "API Keys"
         ],
@@ -4643,7 +4647,7 @@
     "/api/v3.1/custom/toolkits/{slug}": {
       "delete": {
         "summary": "Delete a custom toolkit",
-        "description": "Experimental: custom toolkits are in pilot and this contract may change. Deletes a custom toolkit owned by the project. Hard-deletes the toolkit and its tools from the registry, soft-deletes and revokes the toolkit auth configs and connected accounts. Composio-managed toolkits cannot be deleted and return 403.",
+        "description": "Experimental: custom toolkits are in pilot and this contract may change. Deletes a custom toolkit owned by the project, along with its tools, auth configs, and connected accounts; the credentials behind those connected accounts are revoked. Composio-managed toolkits cannot be deleted and return 403.",
         "tags": [
           "Toolkits"
         ],
@@ -4699,21 +4703,21 @@
                       },
                       "description": "Background revoke jobs started for the toolkit connected accounts"
                     },
-                    "auth_configs_soft_deleted": {
+                    "auth_configs_deleted": {
                       "type": "number",
-                      "description": "Number of auth configs soft deleted"
+                      "description": "Number of auth configs deleted"
                     },
-                    "connected_accounts_soft_deleted": {
+                    "connected_accounts_deleted": {
                       "type": "number",
-                      "description": "Number of connected accounts soft deleted"
+                      "description": "Number of connected accounts deleted"
                     }
                   },
                   "required": [
                     "slug",
                     "deleted",
                     "revoke_job_ids",
-                    "auth_configs_soft_deleted",
-                    "connected_accounts_soft_deleted"
+                    "auth_configs_deleted",
+                    "connected_accounts_deleted"
                   ]
                 }
               }
@@ -5816,6 +5820,11 @@
                         "type": "string",
                         "format": "uri",
                         "description": "Experimental base URL override for connection link redirects created from this tool-router session. When set, link creation returns `${link_url_overwrite}/link/{link_token}` instead of the default Composio Connect base URL. Use only when your integration needs links to open through a custom Connect host.",
+                        "x-experimental": true
+                      },
+                      "fast_mode": {
+                        "type": "boolean",
+                        "description": "Experimental flag to skip the LLM reranker in tool search and serve embeddings/BM25-only results.",
                         "x-experimental": true
                       }
                     },
@@ -7738,6 +7747,11 @@
                         "format": "uri",
                         "description": "Experimental base URL override for connection link redirects created from this tool-router session. When set, link creation returns `${link_url_overwrite}/link/{link_token}` instead of the default Composio Connect base URL. Use only when your integration needs links to open through a custom Connect host.",
                         "x-experimental": true
+                      },
+                      "fast_mode": {
+                        "type": "boolean",
+                        "description": "Experimental flag to skip the LLM reranker in tool search and serve embeddings/BM25-only results.",
+                        "x-experimental": true
                       }
                     },
                     "additionalProperties": false
@@ -8351,7 +8365,7 @@
       },
       "delete": {
         "summary": "Delete a tool router session",
-        "description": "Deletes a tool router session. The session immediately stops being retrievable and executable — subsequent requests against it (including its MCP URL) return 404 — and any compute sandboxes attached to the session are shut down. The record is retained internally for audit purposes. Deleting an already-deleted session returns 404.",
+        "description": "Deletes a tool router session. The session immediately stops being retrievable and executable — subsequent requests against it (including its MCP URL) return 404 — and any compute sandboxes attached to the session are shut down. Deleting an already-deleted session returns 404.",
         "tags": [
           "Tool Router"
         ],
@@ -13050,7 +13064,7 @@
       },
       "delete": {
         "summary": "Delete an authentication configuration",
-        "description": "Soft-deletes an authentication configuration by marking it as deleted in the database. This operation cannot be undone. Pass `?revoke_on_delete=true` to also revoke the upstream credentials of every connection using this auth config via a background job.",
+        "description": "Deletes an authentication configuration. This operation cannot be undone. Pass `?revoke_on_delete=true` to also revoke the upstream credentials of every connection using this auth config.",
         "tags": [
           "Auth Configs"
         ],
@@ -14946,7 +14960,7 @@
       },
       "delete": {
         "summary": "Delete a connected account",
-        "description": "Soft-deletes a connected account by marking it as deleted in the database. This prevents the account from being used for API calls but preserves the record for audit purposes. Pass `?revoke_on_delete=true` to also revoke the account's upstream credentials via a background job.",
+        "description": "Deletes a connected account. The account immediately stops working for API calls and cannot be restored through the API. Pass `?revoke_on_delete=true` to also revoke the account's upstream credentials.",
         "tags": [
           "Connected Accounts"
         ],
@@ -14986,7 +15000,7 @@
         ],
         "responses": {
           "200": {
-            "description": "Successfully deleted the connected account. The account is marked as deleted but retained in the database for historical purposes.",
+            "description": "Successfully deleted the connected account.",
             "content": {
               "application/json": {
                 "schema": {
@@ -16312,7 +16326,7 @@
                           },
                           "deleted": {
                             "type": "boolean",
-                            "description": "Whether this project has been soft-deleted",
+                            "description": "Whether this project has been deleted",
                             "example": false
                           }
                         },
@@ -16700,7 +16714,7 @@
                           },
                           "deleted": {
                             "type": "boolean",
-                            "description": "Whether this project has been soft-deleted",
+                            "description": "Whether this project has been deleted",
                             "example": false
                           }
                         },
@@ -16897,7 +16911,7 @@
                     },
                     "deleted": {
                       "type": "boolean",
-                      "description": "Whether this project has been soft-deleted",
+                      "description": "Whether this project has been deleted",
                       "example": false
                     },
                     "api_keys": {
@@ -17000,7 +17014,7 @@
       },
       "delete": {
         "summary": "Delete a project",
-        "description": "Soft-deletes a project within the organization by its unique identifier. When a project is deleted, it is marked as deleted but not immediately removed from the database. This operation affects all resources associated with the project including API keys, webhook configurations, and connected services. This action cannot be undone through the API. Pass `?revoke_on_delete=true` to also revoke the upstream credentials of every connection in the project via a background job.",
+        "description": "Deletes a project within the organization by its unique identifier. This affects every resource belonging to the project, including its API keys, webhook configurations, and connected services. The action cannot be undone. Pass `?revoke_on_delete=true` to also revoke the upstream credentials of every connection in the project.",
         "tags": [
           "Projects"
         ],
@@ -17038,7 +17052,7 @@
         ],
         "responses": {
           "200": {
-            "description": "Project successfully deleted. The project has been marked as deleted in the system.",
+            "description": "Project successfully deleted.",
             "content": {
               "application/json": {
                 "schema": {
@@ -17123,7 +17137,7 @@
     "/api/v3.1/org/owner/project/{nano_id}/regenerate_api_key": {
       "post": {
         "summary": "Delete and generate new API key for project",
-        "description": "Generates a new API key for the specified project, invalidating any existing API keys for that project. This operation creates a fresh API key with a new random name and key value. All existing API keys for this project will be marked as deleted.",
+        "description": "Generates a new API key for the specified project, invalidating any existing API keys for that project. This operation creates a fresh API key with a new random name and key value. Every existing API key for the project stops working immediately.",
         "tags": [
           "Projects"
         ],
@@ -23817,7 +23831,7 @@
       },
       "delete": {
         "summary": "Delete an MCP server",
-        "description": "Performs a soft delete on a Model Control Protocol (MCP) server, making it unavailable for future use. This operation is reversible in the database but cannot be undone through the API. Any applications or services connected to this server will lose access after deletion.",
+        "description": "Deletes a Model Control Protocol (MCP) server, making it unavailable for future use. This cannot be undone. Any applications or services connected to this server will lose access after deletion.",
         "deprecated": true,
         "tags": [
           "MCP"
@@ -23843,7 +23857,7 @@
         ],
         "responses": {
           "200": {
-            "description": "Successfully deleted MCP server. The server has been soft-deleted and is no longer available for use.",
+            "description": "Successfully deleted MCP server. The server is no longer available for use.",
             "content": {
               "application/json": {
                 "schema": {
