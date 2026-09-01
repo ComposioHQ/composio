@@ -1141,8 +1141,10 @@ def json_schema_to_pydantic_type(
         filtered_schema,
         root_schema=document_root,
     )
-    if _requires_whole_schema_validation(json_schema) and not (
-        isinstance(annotation, type) and issubclass(annotation, BaseModel)
+    if (
+        _requires_whole_schema_validation(json_schema)
+        and not _is_unsatisfiable_schema(annotation)
+        and not (isinstance(annotation, type) and issubclass(annotation, BaseModel))
     ):
         return _with_exact_validation_annotation(
             t.Any if _needs_permissive_materialization(json_schema) else annotation,
@@ -2165,11 +2167,6 @@ def _handle_toplevel_combiner(
 
     The library can handle these directly - it returns the appropriate type.
     """
-    if "allOf" in schema:
-        # The library models scalar intersections as object models. Preserve
-        # the JSON value and let the exact Draft 7 validator own acceptance.
-        return t.Any
-
     try:
         # Try direct conversion - library handles anyOf/oneOf/allOf at top level
         result = create_model_from_schema(
@@ -2179,6 +2176,23 @@ def _handle_toplevel_combiner(
         )
         if result is type(None):
             return type(None)
+        if "allOf" in schema:
+            options = schema.get("allOf")
+            requires_object = isinstance(options, list) and any(
+                isinstance(option, dict) and option.get("type") == "object"
+                for option in options
+            )
+            if (
+                requires_object
+                and isinstance(result, type)
+                and issubclass(result, BaseModel)
+            ):
+                document_root = root_schema if root_schema is not None else schema
+                return _with_exact_validation(result, schema, document_root)
+
+            # The library models scalar intersections as object models.
+            # Preserve the JSON value and let exact validation own acceptance.
+            return t.Any
         # If result is a type (like a Union or Optional), return it directly
         # If result is a model class, return it
         return result

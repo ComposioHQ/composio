@@ -691,7 +691,8 @@ class TestJsonSchemaToPydanticType:
             ]
         }
         adapter = TypeAdapter(json_schema_to_pydantic_type(json_schema))
-        assert adapter.validate_python({"name": "Ada"}) == {"name": "Ada"}
+        result = adapter.validate_python({"name": "Ada"})
+        assert adapter.dump_python(result, mode="json") == {"name": "Ada"}
         with pytest.raises(ValidationError):
             adapter.validate_python({"name": 42})
 
