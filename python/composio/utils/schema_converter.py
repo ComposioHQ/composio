@@ -1118,10 +1118,19 @@ def json_schema_to_pydantic_type(
     filtered_schema = _resolve_unsatisfiable_references(filtered_schema)
     document_root = root_schema if root_schema is not None else json_schema
     _validate_dynamic_object_policies(json_schema, document_root)
-    return _filtered_schema_to_pydantic_type(
+    annotation = _filtered_schema_to_pydantic_type(
         filtered_schema,
         root_schema=document_root,
     )
+    if _requires_whole_schema_validation(json_schema) and not (
+        isinstance(annotation, type) and issubclass(annotation, BaseModel)
+    ):
+        return _with_exact_validation_annotation(
+            annotation,
+            json_schema,
+            document_root,
+        )
+    return annotation
 
 
 def _filtered_schema_to_pydantic_type(
@@ -1478,6 +1487,169 @@ def _schema_for_exact_validation(value: t.Any) -> t.Any:
     return value
 
 
+_EXACT_SCHEMA_MAP_KEYWORDS = frozenset(
+    {
+        "$defs",
+        "definitions",
+        "dependencies",
+        "patternProperties",
+        "properties",
+    }
+)
+_EXACT_SCHEMA_ARRAY_KEYWORDS = frozenset({"allOf", "anyOf", "oneOf"})
+_EXACT_SCHEMA_VALUE_KEYWORDS = frozenset(
+    {
+        "additionalItems",
+        "additionalProperties",
+        "contains",
+        "else",
+        "if",
+        "items",
+        "not",
+        "propertyNames",
+        "then",
+    }
+)
+
+_REQUIRES_WHOLE_SCHEMA_VALIDATION = frozenset(
+    {
+        "$ref",
+        "additionalItems",
+        "contains",
+        "dependencies",
+        "else",
+        "if",
+        "maxItems",
+        "maxProperties",
+        "minItems",
+        "minProperties",
+        "not",
+        "propertyNames",
+        "required",
+        "then",
+        "uniqueItems",
+    }
+)
+
+
+def _contains_compound_literal(schema: t.Dict[str, t.Any]) -> bool:
+    values: t.List[t.Any] = []
+    if "const" in schema:
+        values.append(schema["const"])
+    enum = schema.get("enum")
+    if isinstance(enum, list):
+        values.extend(enum)
+    return any(isinstance(value, (dict, list)) for value in values)
+
+
+def _one_of_needs_exact_validation(options: t.Any) -> bool:
+    """Return whether two oneOf branches can accept the same JSON type."""
+    if not isinstance(options, list) or len(options) < 2:
+        return False
+
+    branch_types: t.List[t.Set[str]] = []
+    all_types = {"array", "boolean", "integer", "null", "number", "object", "string"}
+    for option in options:
+        if option is True or not isinstance(option, dict) or "type" not in option:
+            branch_types.append(set(all_types))
+            continue
+        if option is False:
+            branch_types.append(set())
+            continue
+        declared = option["type"]
+        types = {declared} if isinstance(declared, str) else set(declared)
+        if "number" in types:
+            types.add("integer")
+        branch_types.append(types)
+
+    return any(
+        left.intersection(right)
+        for index, left in enumerate(branch_types)
+        for right in branch_types[index + 1 :]
+    )
+
+
+def _combiner_has_assertion_siblings(schema: t.Dict[str, t.Any], keyword: str) -> bool:
+    return bool(_ASSERTION_KEYWORDS.intersection(schema) - {keyword})
+
+
+def _requires_whole_schema_validation(schema: t.Any) -> bool:
+    """Whether the materializing converter needs an authoritative final guard."""
+    if isinstance(schema, bool) or not isinstance(schema, dict):
+        return False
+    if (
+        _REQUIRES_WHOLE_SCHEMA_VALIDATION.intersection(schema)
+        or (isinstance(schema.get("allOf"), list) and len(schema["allOf"]) > 1)
+        or ("allOf" in schema and _combiner_has_assertion_siblings(schema, "allOf"))
+        or ("anyOf" in schema and _combiner_has_assertion_siblings(schema, "anyOf"))
+        or _one_of_needs_exact_validation(schema.get("oneOf"))
+        or ("oneOf" in schema and _combiner_has_assertion_siblings(schema, "oneOf"))
+        or _contains_compound_literal(schema)
+    ):
+        return True
+
+    for key, child in schema.items():
+        if key in _EXACT_SCHEMA_MAP_KEYWORDS and isinstance(child, dict):
+            if any(
+                _requires_whole_schema_validation(value) for value in child.values()
+            ):
+                return True
+        elif key in _EXACT_SCHEMA_ARRAY_KEYWORDS and isinstance(child, list):
+            if any(_requires_whole_schema_validation(value) for value in child):
+                return True
+        elif key in _EXACT_SCHEMA_VALUE_KEYWORDS:
+            values = child if isinstance(child, list) else [child]
+            if any(_requires_whole_schema_validation(value) for value in values):
+                return True
+
+    return False
+
+
+def _normalize_draft4_exclusive_bounds(value: t.Any) -> t.Any:
+    """Translate OpenAPI 3.0 boolean bounds without changing nearby keywords."""
+    if isinstance(value, bool) or not isinstance(value, dict):
+        return value
+
+    normalized: t.Dict[str, t.Any] = {}
+    for key, child in value.items():
+        if key in _EXACT_SCHEMA_MAP_KEYWORDS and isinstance(child, dict):
+            normalized[key] = {
+                name: _normalize_draft4_exclusive_bounds(schema)
+                for name, schema in child.items()
+            }
+        elif key in _EXACT_SCHEMA_ARRAY_KEYWORDS and isinstance(child, list):
+            normalized[key] = [
+                _normalize_draft4_exclusive_bounds(schema) for schema in child
+            ]
+        elif key in _EXACT_SCHEMA_VALUE_KEYWORDS:
+            if isinstance(child, list):
+                normalized[key] = [
+                    _normalize_draft4_exclusive_bounds(schema) for schema in child
+                ]
+            else:
+                normalized[key] = _normalize_draft4_exclusive_bounds(child)
+        else:
+            # Values under enum/const/default/examples are instance data, not
+            # schemas, and must remain byte-for-byte equivalent.
+            normalized[key] = child
+
+    if normalized.get("exclusiveMinimum") is True and _is_numeric(
+        normalized.get("minimum")
+    ):
+        normalized["exclusiveMinimum"] = normalized.pop("minimum")
+    elif isinstance(normalized.get("exclusiveMinimum"), bool):
+        normalized.pop("exclusiveMinimum")
+
+    if normalized.get("exclusiveMaximum") is True and _is_numeric(
+        normalized.get("maximum")
+    ):
+        normalized["exclusiveMaximum"] = normalized.pop("maximum")
+    elif isinstance(normalized.get("exclusiveMaximum"), bool):
+        normalized.pop("exclusiveMaximum")
+
+    return normalized
+
+
 def _exact_validation_multiple_of(
     _validator: t.Any,
     multiple: t.Any,
@@ -1495,20 +1667,16 @@ def _validate_json_schema(
     root_schema: t.Dict[str, t.Any],
 ) -> t.Callable[[t.Any], t.Any]:
     """Compile an exact JSON Schema acceptance check for a Pydantic model."""
-    validation_schema = _schema_for_exact_validation(schema)
-    validation_root = _schema_for_exact_validation(root_schema)
-    validator_class = jsonschema_validators.validator_for(
-        validation_root,
-        default=jsonschema_validators.Draft7Validator,
+    validation_schema = _normalize_draft4_exclusive_bounds(
+        _schema_for_exact_validation(schema)
     )
-    try:
-        validator_class.check_schema(validation_root)
-    except jsonschema_exceptions.SchemaError:
-        # Draft-4 style schemas (boolean exclusiveMinimum/Maximum, as emitted
-        # by OpenAPI 3.0 exporters) are not valid Draft 7 documents. Draft 4
-        # both tolerates and correctly enforces those keywords.
-        validator_class = jsonschema_validators.Draft4Validator
-        validator_class.check_schema(validation_root)
+    validation_root = _normalize_draft4_exclusive_bounds(
+        _schema_for_exact_validation(root_schema)
+    )
+    # The SDK contract is Draft 7 plus the OpenAPI 3.0 boolean spelling for
+    # exclusive bounds. Falling the entire document back to Draft 4 would make
+    # `contains`, `const`, `if`/`then`/`else`, and `propertyNames` disappear.
+    validator_class = jsonschema_validators.Draft7Validator
     # Align multipleOf with the decimal-scaled checks in the Zod and Effect
     # converters instead of raw float modulo.
     validator_class = jsonschema_validators.extend(
@@ -1520,10 +1688,25 @@ def _validate_json_schema(
     def validate(value: t.Any) -> t.Any:
         error = next(validator.iter_errors(value), None)
         if error is not None:
-            raise ValueError(error.message)
+            location = ".".join(str(part) for part in error.path)
+            message = f"{location}: {error.message}" if location else error.message
+            raise ValueError(message)
         return value
 
     return validate
+
+
+def _with_exact_validation_annotation(
+    annotation: t.Any,
+    schema: t.Dict[str, t.Any],
+    root_schema: t.Dict[str, t.Any],
+) -> t.Type[t.Any]:
+    """Validate the raw value before Pydantic coercion or default handling."""
+    validate_schema = _validate_json_schema(schema, root_schema)
+    return t.cast(
+        t.Type[t.Any],
+        t.Annotated[annotation, BeforeValidator(validate_schema)],
+    )
 
 
 def _with_exact_validation(
@@ -1532,15 +1715,7 @@ def _with_exact_validation(
     root_schema: t.Dict[str, t.Any],
 ) -> t.Type[t.Any]:
     """Keep model materialization while enforcing the source schema first."""
-    try:
-        validate_schema = _validate_json_schema(schema, root_schema)
-    except Exception:  # noqa: BLE001 - malformed schemas keep the lax model
-        logger.warning(
-            "Skipping exact JSON Schema validation for a schema that failed "
-            "to compile under Drafts 7 and 4",
-            exc_info=True,
-        )
-        return model
+    validate_schema = _validate_json_schema(schema, root_schema)
 
     def validate_source_schema(cls, value: t.Any) -> t.Any:
         return validate_schema(value)
@@ -1771,14 +1946,22 @@ def _convert_with_library(
                 )
             except (SchemaError, CombinerError) as e:
                 logger.debug(
-                    f"Library schema conversion failed: {e}, falling back to string"
+                    f"Library schema conversion failed: {e}, preserving exact validation"
                 )
-                return str
+                return _with_exact_validation_annotation(
+                    t.Any,
+                    schema,
+                    document_root,
+                )
             except Exception as e:
                 logger.debug(
-                    f"Unexpected error in schema conversion: {e}, falling back to string"
+                    f"Unexpected error in schema conversion: {e}, preserving exact validation"
                 )
-                return str
+                return _with_exact_validation_annotation(
+                    t.Any,
+                    schema,
+                    document_root,
+                )
             return _with_exact_validation(
                 apply_object_policy(
                     schema,
@@ -1804,14 +1987,22 @@ def _convert_with_library(
             )
         except (SchemaError, CombinerError) as e:
             logger.debug(
-                f"Library schema conversion failed: {e}, falling back to string"
+                f"Library schema conversion failed: {e}, preserving exact validation"
             )
-            return str
+            return _with_exact_validation_annotation(
+                t.Any,
+                schema,
+                document_root,
+            )
         except Exception as e:
             logger.debug(
-                f"Unexpected error in schema conversion: {e}, falling back to string"
+                f"Unexpected error in schema conversion: {e}, preserving exact validation"
             )
-            return str
+            return _with_exact_validation_annotation(
+                t.Any,
+                schema,
+                document_root,
+            )
 
         return _with_exact_validation(
             apply_object_policy(
@@ -1848,13 +2039,17 @@ def _convert_with_library(
         return _convert_simple_type(schema)
 
     except (SchemaError, CombinerError) as e:
-        logger.debug(f"Library schema conversion failed: {e}, falling back to string")
-        return str
+        logger.debug(
+            f"Library schema conversion failed: {e}, preserving exact validation"
+        )
+        document_root = root_schema if root_schema is not None else schema
+        return _with_exact_validation_annotation(t.Any, schema, document_root)
     except Exception as e:
         logger.debug(
-            f"Unexpected error in schema conversion: {e}, falling back to string"
+            f"Unexpected error in schema conversion: {e}, preserving exact validation"
         )
-        return str
+        document_root = root_schema if root_schema is not None else schema
+        return _with_exact_validation_annotation(t.Any, schema, document_root)
 
 
 def _handle_toplevel_combiner(

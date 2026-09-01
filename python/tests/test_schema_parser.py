@@ -490,13 +490,17 @@ class TestJsonSchemaToPydanticType:
             ]
         }
         result_4 = json_schema_to_pydantic_type(json_schema_4)
-        assert hasattr(result_4, "__origin__")
-        assert result_4.__origin__ is t.Union
-        assert len(result_4.__args__) == 4
-        assert str in result_4.__args__
-        assert int in result_4.__args__
-        assert bool in result_4.__args__
-        assert float in result_4.__args__
+        union_4 = t.get_args(result_4)[0]
+        assert t.get_origin(union_4) is t.Union
+        assert len(t.get_args(union_4)) == 4
+        assert str in t.get_args(union_4)
+        assert int in t.get_args(union_4)
+        assert bool in t.get_args(union_4)
+        assert float in t.get_args(union_4)
+        # `integer` is a subset of `number`, so 42 matches two branches and
+        # must be rejected by oneOf's exactly-one rule.
+        with pytest.raises(ValidationError):
+            TypeAdapter(result_4).validate_python(42)
 
         # Test 5 types
         json_schema_5 = {
@@ -509,9 +513,9 @@ class TestJsonSchemaToPydanticType:
             ]
         }
         result_5 = json_schema_to_pydantic_type(json_schema_5)
-        assert hasattr(result_5, "__origin__")
-        assert result_5.__origin__ is t.Union
-        assert len(result_5.__args__) == 5
+        union_5 = t.get_args(result_5)[0]
+        assert t.get_origin(union_5) is t.Union
+        assert len(t.get_args(union_5)) == 5
 
         # Test 6 types (stress test, avoiding null which expands to Optional[Any])
         json_schema_6 = {
@@ -525,9 +529,9 @@ class TestJsonSchemaToPydanticType:
             ]
         }
         result_6 = json_schema_to_pydantic_type(json_schema_6)
-        assert hasattr(result_6, "__origin__")
-        assert result_6.__origin__ is t.Union
-        assert len(result_6.__args__) == 6
+        union_6 = t.get_args(result_6)[0]
+        assert t.get_origin(union_6) is t.Union
+        assert len(t.get_args(union_6)) == 6
 
     def test_oneof_single_type(self):
         """Test oneOf with single type returns the type directly."""
@@ -1100,7 +1104,7 @@ class TestBooleanSchemas:
     @pytest.mark.unit
     @pytest.mark.schema
     def test_boolean_schema_in_oneof(self):
-        """Test that boolean schemas in oneOf don't crash."""
+        """A true branch still participates in oneOf's exactly-one rule."""
         json_schema = {
             "oneOf": [
                 {"type": "string"},
@@ -1108,10 +1112,10 @@ class TestBooleanSchemas:
             ]
         }
         result = json_schema_to_pydantic_type(json_schema)
-        # Should handle gracefully
-        assert result is not None
-        assert hasattr(result, "__origin__")
-        assert result.__origin__ is t.Union
+        adapter = TypeAdapter(result)
+        assert adapter.validate_python(42) == 42
+        with pytest.raises(ValidationError):
+            adapter.validate_python("matches both branches")
 
     @pytest.mark.unit
     @pytest.mark.schema
