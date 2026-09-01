@@ -123,4 +123,48 @@ describe('whole-schema semantic regressions', () => {
     // even when an OpenAPI 3.0 exporter emits the older bound spelling nearby.
     expect(jsonSchemaToZod(schema).safeParse([2]).success).toBe(false);
   });
+
+  it('accepts every valid prefix of a closed Draft 7 tuple', () => {
+    const schema: JsonSchema = {
+      type: 'array',
+      items: [{ type: 'string' }, { type: 'integer' }],
+      additionalItems: false,
+    };
+    const parsed = jsonSchemaToZod(schema);
+
+    for (const value of [[], ['ready'], ['ready', 2]]) {
+      expect(ajv.compile(schema)(value), 'Draft 7 oracle must accept the fixture').toBe(true);
+      expect(parsed.safeParse(value).success).toBe(true);
+    }
+    for (const value of [
+      [2, 'ready'],
+      ['ready', 2, true],
+    ]) {
+      expect(ajv.compile(schema)(value), 'Draft 7 oracle must reject the fixture').toBe(false);
+      expect(parsed.safeParse(value).success).toBe(false);
+    }
+  });
+
+  it('allows unconstrained trailing values when additionalItems is omitted', () => {
+    const schema: JsonSchema = {
+      type: 'array',
+      items: [{ type: 'string' }, { type: 'integer' }],
+    };
+    const value = ['ready', 2, { extra: true }];
+
+    expect(ajv.compile(schema)(value), 'Draft 7 oracle must accept the fixture').toBe(true);
+    expect(jsonSchemaToZod(schema).safeParse(value).success).toBe(true);
+  });
+
+  it('validates trailing tuple values against schema-valued additionalItems', () => {
+    const schema: JsonSchema = {
+      type: 'array',
+      items: [{ type: 'string' }],
+      additionalItems: { type: 'integer' },
+    };
+    const parsed = jsonSchemaToZod(schema);
+
+    expect(parsed.safeParse(['ready', 1, 2]).success).toBe(true);
+    expect(parsed.safeParse(['ready', 'wrong']).success).toBe(false);
+  });
 });
