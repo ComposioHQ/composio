@@ -24,6 +24,7 @@ from composio.utils.schema_converter import (
     FALLBACK_VALUES,
     PYDANTIC_TYPE_TO_PYTHON_TYPE,
     _mark_explicit_default_fields,
+    _with_exact_validation,
     apply_object_policy,
     json_schema_to_pydantic_type,
 )
@@ -589,10 +590,17 @@ def json_schema_to_model(
         setattr(base_model, _EXPLICIT_DEFAULT_FIELDS_ATTRIBUTE, frozenset())
     else:
         _mark_explicit_default_fields(base_model, json_schema, json_schema)
-    return apply_object_policy(
+    # Exact acceptance is shared with `json_schema_to_pydantic_type` so every
+    # Python entry point agrees with the Zod and Effect converters about which
+    # inputs a schema admits.
+    return _with_exact_validation(
+        apply_object_policy(
+            json_schema,
+            base_model,
+            model_name=model_name,
+        ),
         json_schema,
-        base_model,
-        model_name=model_name,
+        json_schema,
     )
 
 
@@ -662,11 +670,12 @@ def pydantic_model_from_param_schema(param_schema: t.Dict) -> t.Type:
     if not required_fields and not optional_fields:
         return t.Dict
 
-    return create_model(  # type: ignore
+    model = create_model(  # type: ignore
         param_title,
         **required_fields,
         **optional_fields,
     )
+    return _with_exact_validation(model, param_schema, param_schema)
 
 
 def get_signature_format_from_schema_params(

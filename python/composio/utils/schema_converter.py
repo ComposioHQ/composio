@@ -9,6 +9,7 @@ boolean schemas (true/false values that are valid in JSON Schema draft-06+).
 We handle those by pre-filtering them before passing to the library.
 """
 
+import decimal
 import re
 import types
 import typing as t
@@ -22,17 +23,15 @@ from json_schema_to_pydantic import (
 from json_schema_to_pydantic import (
     create_model as create_model_from_schema,
 )
+from jsonschema import exceptions as jsonschema_exceptions
 from jsonschema import validators as jsonschema_validators
 from jsonschema.protocols import Validator
 from pydantic import (
     AfterValidator,
     BaseModel,
+    BeforeValidator,
     ConfigDict,
     Field,
-    StrictBool,
-    StrictFloat,
-    StrictInt,
-    StrictStr,
     TypeAdapter,
     model_validator,
 )
@@ -90,6 +89,104 @@ PYDANTIC_TYPE_TO_PYTHON_TYPE = {
 
 CONTAINER_TYPE = ("array", "object")
 
+# Keywords that constrain which instances a schema accepts. A schema whose keys
+# are all outside this set (title, description, default, examples, ...) is pure
+# annotation and accepts every value, exactly like the empty schema.
+_ASSERTION_KEYWORDS = frozenset(
+    {
+        "type",
+        "enum",
+        "const",
+        "anyOf",
+        "allOf",
+        "oneOf",
+        "not",
+        "if",
+        "then",
+        "else",
+        "$ref",
+        "properties",
+        "patternProperties",
+        "additionalProperties",
+        "propertyNames",
+        "required",
+        "dependencies",
+        "minProperties",
+        "maxProperties",
+        "items",
+        "additionalItems",
+        "contains",
+        "minItems",
+        "maxItems",
+        "uniqueItems",
+        "minLength",
+        "maxLength",
+        "pattern",
+        "minimum",
+        "maximum",
+        "exclusiveMinimum",
+        "exclusiveMaximum",
+        "multipleOf",
+    }
+)
+
+_SCALAR_CONSTRAINT_KEYWORDS = frozenset(
+    {
+        "minLength",
+        "maxLength",
+        "pattern",
+        "minimum",
+        "maximum",
+        "exclusiveMinimum",
+        "exclusiveMaximum",
+        "multipleOf",
+    }
+)
+
+_STRUCTURAL_KEYWORDS = frozenset(
+    {"anyOf", "allOf", "oneOf", "not", "if", "$ref", "properties", "items"}
+)
+
+# Keywords each type-array member keeps when the array is rewritten to anyOf.
+_TYPE_SCOPED_KEYWORDS: t.Dict[str, frozenset] = {
+    "string": frozenset({"minLength", "maxLength", "pattern"}),
+    "integer": frozenset(
+        {"minimum", "maximum", "exclusiveMinimum", "exclusiveMaximum", "multipleOf"}
+    ),
+    "number": frozenset(
+        {"minimum", "maximum", "exclusiveMinimum", "exclusiveMaximum", "multipleOf"}
+    ),
+    "array": frozenset(
+        {
+            "items",
+            "additionalItems",
+            "contains",
+            "minItems",
+            "maxItems",
+            "uniqueItems",
+        }
+    ),
+    "object": frozenset(
+        {
+            "properties",
+            "patternProperties",
+            "additionalProperties",
+            "propertyNames",
+            "required",
+            "dependencies",
+            "minProperties",
+            "maxProperties",
+        }
+    ),
+    "boolean": frozenset(),
+    "null": frozenset(),
+}
+
+_TYPE_ARRAY_SHARED_KEYWORDS = frozenset({"enum", "const", "format"})
+_TYPE_ARRAY_WRAPPER_KEYWORDS = frozenset(
+    {"title", "description", "default", "examples"}
+)
+
 # Should be deprecated,
 # required values will always be provided by users
 # Non-required values are nullable(None) if default value not provided.
@@ -142,6 +239,12 @@ def _filter_boolean_schemas(
 
     if not isinstance(schema, dict):
         return schema
+
+    # A schema that enumerates no acceptable values rejects everything, exactly
+    # like `false`. Normalizing here routes both spellings through the same
+    # unsatisfiable-property handling (which tolerates the property's absence).
+    if schema.get("enum") == [] or schema.get("type") == []:
+        return _UnsatisfiableSchema
 
     # Make a copy to avoid mutating the original
     result = {}
@@ -1030,7 +1133,9 @@ def _filtered_schema_to_pydantic_type(
     if schema is None or _is_unsatisfiable_schema(schema):
         return _UnsatisfiableSchema
 
-    if schema == {}:
+    if not _ASSERTION_KEYWORDS.intersection(schema):
+        # Pure-annotation schemas (only title/description/default/...) accept
+        # every value, exactly like the empty schema.
         return t.Any
 
     schema_type = schema.get("type")
@@ -1045,7 +1150,14 @@ def _filtered_schema_to_pydantic_type(
             root_schema=root_schema,
         )
 
-    if schema_type is None and ("enum" in schema or "const" in schema):
+    if schema_type is None and (
+        "enum" in schema
+        or "const" in schema
+        or (
+            _SCALAR_CONSTRAINT_KEYWORDS.intersection(schema)
+            and not _STRUCTURAL_KEYWORDS.intersection(schema)
+        )
+    ):
         return _apply_scalar_constraints(t.Any, schema)
 
     # Handle simple primitive types without complex combiners
@@ -1070,23 +1182,56 @@ def _is_simple_primitive(schema: t.Dict[str, t.Any]) -> bool:
     )
 
 
+def _matches_json_type(type_: str, value: t.Any) -> bool:
+    """JSON type membership per Draft 7 (booleans are not numbers, 2.0 is an integer)."""
+    if type_ == "string":
+        return isinstance(value, str)
+    if type_ == "boolean":
+        return isinstance(value, bool)
+    if type_ == "null":
+        return value is None
+    if type_ == "integer":
+        if isinstance(value, bool):
+            return False
+        return isinstance(value, int) or (
+            isinstance(value, float) and value.is_integer()
+        )
+    if type_ == "number":
+        return isinstance(value, (int, float)) and not isinstance(value, bool)
+    if type_ == "array":
+        return isinstance(value, list)
+    if type_ == "object":
+        return isinstance(value, dict)
+    return True
+
+
+def _json_type_guard(type_: str) -> t.Callable[[t.Any], t.Any]:
+    def validate(value: t.Any) -> t.Any:
+        if not _matches_json_type(type_, value):
+            raise ValueError(f"value is not of JSON type {type_!r}")
+        return value
+
+    return validate
+
+
+def _strict_json_type_annotation(type_: str) -> t.Any:
+    """A type-checked annotation that still coerces integral floats for `integer`."""
+    if type_ == "null":
+        return type(None)
+    base = PYDANTIC_TYPE_TO_PYTHON_TYPE.get(type_, str)
+    return t.Annotated[base, BeforeValidator(_json_type_guard(type_))]
+
+
 def _convert_simple_type(schema: t.Dict[str, t.Any]) -> t.Type[t.Any]:
     """Convert simple primitive types directly."""
     type_ = schema.get("type", "string")
-    strict_types: t.Dict[str, t.Type[t.Any]] = {
-        "string": StrictStr,
-        "integer": StrictInt,
-        "number": StrictFloat,
-        "boolean": StrictBool,
-        "null": type(None),
-    }
     use_strict_type = (
         schema.get("x-composio-strict-type") is True
         or "enum" in schema
         or "const" in schema
     )
     base_type = (
-        strict_types.get(type_, str)
+        _strict_json_type_annotation(type_)
         if use_strict_type
         else t.cast(t.Type[t.Any], PYDANTIC_TYPE_TO_PYTHON_TYPE.get(type_, str))
     )
@@ -1125,51 +1270,188 @@ def _allowed_values_validator(
     return validate
 
 
+def _is_numeric(value: t.Any) -> bool:
+    return isinstance(value, (int, float)) and not isinstance(value, bool)
+
+
+def _is_json_multiple_of(value: t.Any, multiple: t.Any) -> bool:
+    """Decimal-scaled multipleOf, matching the Zod and Effect converters.
+
+    Raw float modulo misreports common decimal steps (0.3 % 0.1 != 0 in
+    binary floating point); comparing through `Decimal(str(...))` recovers the
+    author's decimal intent.
+    """
+    try:
+        return (decimal.Decimal(str(value)) % decimal.Decimal(str(multiple))) == 0
+    except (decimal.InvalidOperation, decimal.DivisionByZero):
+        return False
+
+
+def _multiple_of_validator(multiple: t.Any) -> t.Callable[[t.Any], t.Any]:
+    def validate(value: t.Any) -> t.Any:
+        if _is_numeric(value) and not _is_json_multiple_of(value, multiple):
+            raise ValueError(f"value is not a multiple of {multiple!r}")
+        return value
+
+    return validate
+
+
+def _compile_pattern(pattern: str) -> t.Optional[t.Pattern[str]]:
+    try:
+        return re.compile(pattern)
+    except re.error:
+        logger.warning(
+            "Ignoring JSON Schema pattern %r: not a valid Python regular expression",
+            pattern,
+        )
+        return None
+
+
+def _with_string_constraints(annotation: t.Any, schema: t.Dict[str, t.Any]) -> t.Any:
+    field_constraints: t.Dict[str, t.Any] = {}
+    if "minLength" in schema:
+        field_constraints["min_length"] = schema["minLength"]
+    if "maxLength" in schema:
+        field_constraints["max_length"] = schema["maxLength"]
+    if field_constraints:
+        annotation = t.Annotated[annotation, Field(**field_constraints)]
+    if "pattern" in schema:
+        annotation = _with_pattern_constraint(annotation, schema["pattern"])
+    return annotation
+
+
+def _with_pattern_constraint(annotation: t.Any, pattern: str) -> t.Any:
+    """Prefer pydantic's native pattern; fall back to Python `re` when the Rust
+    regex crate rejects an ECMA construct such as look-around (legal in
+    Draft 7, whose regex dialect is ECMA-262)."""
+    candidate = t.Annotated[annotation, Field(pattern=pattern)]
+    try:
+        TypeAdapter(candidate)
+        return candidate
+    except Exception:  # noqa: BLE001 - pydantic raises SchemaError subclasses
+        pass
+
+    compiled = _compile_pattern(pattern)
+    if compiled is None:
+        return annotation
+
+    def validate(value: t.Any) -> t.Any:
+        if isinstance(value, str) and compiled.search(value) is None:
+            raise ValueError(f"string does not match pattern {pattern!r}")
+        return value
+
+    return t.Annotated[annotation, AfterValidator(validate)]
+
+
+def _with_numeric_constraints(annotation: t.Any, schema: t.Dict[str, t.Any]) -> t.Any:
+    field_constraints: t.Dict[str, t.Any] = {}
+    if "minimum" in schema:
+        field_constraints["gt" if schema.get("exclusiveMinimum") is True else "ge"] = (
+            schema["minimum"]
+        )
+    if _is_numeric(schema.get("exclusiveMinimum")):
+        field_constraints["gt"] = schema["exclusiveMinimum"]
+
+    if "maximum" in schema:
+        field_constraints["lt" if schema.get("exclusiveMaximum") is True else "le"] = (
+            schema["maximum"]
+        )
+    if _is_numeric(schema.get("exclusiveMaximum")):
+        field_constraints["lt"] = schema["exclusiveMaximum"]
+
+    if field_constraints:
+        annotation = t.Annotated[annotation, Field(**field_constraints)]
+    if "multipleOf" in schema:
+        annotation = t.Annotated[
+            annotation, AfterValidator(_multiple_of_validator(schema["multipleOf"]))
+        ]
+    return annotation
+
+
+def _check_numeric_keywords(schema: t.Dict[str, t.Any], value: t.Any) -> None:
+    minimum = schema.get("minimum")
+    if _is_numeric(minimum):
+        if schema.get("exclusiveMinimum") is True:
+            if value <= minimum:
+                raise ValueError(f"value must be greater than {minimum!r}")
+        elif value < minimum:
+            raise ValueError(f"value must be at least {minimum!r}")
+    exclusive_minimum = schema.get("exclusiveMinimum")
+    if _is_numeric(exclusive_minimum) and value <= exclusive_minimum:
+        raise ValueError(f"value must be greater than {exclusive_minimum!r}")
+
+    maximum = schema.get("maximum")
+    if _is_numeric(maximum):
+        if schema.get("exclusiveMaximum") is True:
+            if value >= maximum:
+                raise ValueError(f"value must be less than {maximum!r}")
+        elif value > maximum:
+            raise ValueError(f"value must be at most {maximum!r}")
+    exclusive_maximum = schema.get("exclusiveMaximum")
+    if _is_numeric(exclusive_maximum) and value >= exclusive_maximum:
+        raise ValueError(f"value must be less than {exclusive_maximum!r}")
+
+    if "multipleOf" in schema and not _is_json_multiple_of(value, schema["multipleOf"]):
+        raise ValueError(f"value is not a multiple of {schema['multipleOf']!r}")
+
+
+def _typeless_constraint_validator(
+    schema: t.Dict[str, t.Any],
+) -> t.Optional[t.Callable[[t.Any], t.Any]]:
+    """Draft 7 applies scalar constraints per instance type even without `type`."""
+    if not _SCALAR_CONSTRAINT_KEYWORDS.intersection(schema):
+        return None
+
+    compiled_pattern = (
+        _compile_pattern(schema["pattern"]) if "pattern" in schema else None
+    )
+
+    def validate(value: t.Any) -> t.Any:
+        if isinstance(value, str):
+            if "minLength" in schema and len(value) < schema["minLength"]:
+                raise ValueError(
+                    f"string must contain at least {schema['minLength']} characters"
+                )
+            if "maxLength" in schema and len(value) > schema["maxLength"]:
+                raise ValueError(
+                    f"string must contain at most {schema['maxLength']} characters"
+                )
+            if compiled_pattern is not None and compiled_pattern.search(value) is None:
+                raise ValueError(f"string does not match pattern {schema['pattern']!r}")
+        if _is_numeric(value):
+            _check_numeric_keywords(schema, value)
+        return value
+
+    return validate
+
+
 def _apply_scalar_constraints(
     base_type: t.Type[t.Any],
     schema: t.Dict[str, t.Any],
 ) -> t.Type[t.Any]:
     """Apply scalar JSON Schema validation keywords to a Python annotation."""
-    field_constraints: t.Dict[str, t.Any] = {}
     type_ = schema.get("type")
+    annotation: t.Any = base_type
 
     if type_ == "string":
-        for keyword, field_name in (
-            ("minLength", "min_length"),
-            ("maxLength", "max_length"),
-            ("pattern", "pattern"),
-        ):
-            if keyword in schema:
-                field_constraints[field_name] = schema[keyword]
-
-    if type_ in ("integer", "number"):
-        if "minimum" in schema:
-            field_constraints[
-                "gt" if schema.get("exclusiveMinimum") is True else "ge"
-            ] = schema["minimum"]
-        if isinstance(schema.get("exclusiveMinimum"), (int, float)) and not isinstance(
-            schema["exclusiveMinimum"], bool
-        ):
-            field_constraints["gt"] = schema["exclusiveMinimum"]
-
-        if "maximum" in schema:
-            field_constraints[
-                "lt" if schema.get("exclusiveMaximum") is True else "le"
-            ] = schema["maximum"]
-        if isinstance(schema.get("exclusiveMaximum"), (int, float)) and not isinstance(
-            schema["exclusiveMaximum"], bool
-        ):
-            field_constraints["lt"] = schema["exclusiveMaximum"]
-
-        if "multipleOf" in schema:
-            field_constraints["multiple_of"] = schema["multipleOf"]
-
-    annotation: t.Any = base_type
-    if field_constraints:
-        annotation = t.Annotated[annotation, Field(**field_constraints)]
+        annotation = _with_string_constraints(annotation, schema)
+    elif type_ in ("integer", "number"):
+        annotation = _with_numeric_constraints(annotation, schema)
+    elif type_ is None:
+        validator = _typeless_constraint_validator(schema)
+        if validator is not None:
+            annotation = t.Annotated[annotation, AfterValidator(validator)]
 
     allowed: t.Optional[t.Tuple[t.Any, ...]] = None
-    if "const" in schema:
+    if "const" in schema and "enum" in schema:
+        # Both keywords assert independently, so only their intersection is
+        # acceptable; a const outside the enum makes the schema unsatisfiable.
+        allowed = tuple(
+            candidate
+            for candidate in (schema["const"],)
+            if any(_json_values_equal(candidate, member) for member in schema["enum"])
+        )
+    elif "const" in schema:
         allowed = (schema["const"],)
     elif "enum" in schema:
         allowed = tuple(schema["enum"])
@@ -1196,6 +1478,18 @@ def _schema_for_exact_validation(value: t.Any) -> t.Any:
     return value
 
 
+def _exact_validation_multiple_of(
+    _validator: t.Any,
+    multiple: t.Any,
+    instance: t.Any,
+    _schema: t.Any,
+) -> t.Iterator[t.Any]:
+    if _is_numeric(instance) and not _is_json_multiple_of(instance, multiple):
+        yield jsonschema_exceptions.ValidationError(
+            f"{instance!r} is not a multiple of {multiple!r}"
+        )
+
+
 def _validate_json_schema(
     schema: t.Dict[str, t.Any],
     root_schema: t.Dict[str, t.Any],
@@ -1207,7 +1501,20 @@ def _validate_json_schema(
         validation_root,
         default=jsonschema_validators.Draft7Validator,
     )
-    validator_class.check_schema(validation_root)
+    try:
+        validator_class.check_schema(validation_root)
+    except jsonschema_exceptions.SchemaError:
+        # Draft-4 style schemas (boolean exclusiveMinimum/Maximum, as emitted
+        # by OpenAPI 3.0 exporters) are not valid Draft 7 documents. Draft 4
+        # both tolerates and correctly enforces those keywords.
+        validator_class = jsonschema_validators.Draft4Validator
+        validator_class.check_schema(validation_root)
+    # Align multipleOf with the decimal-scaled checks in the Zod and Effect
+    # converters instead of raw float modulo.
+    validator_class = jsonschema_validators.extend(
+        validator_class,
+        {"multipleOf": _exact_validation_multiple_of},
+    )
     validator = validator_class(validation_root).evolve(schema=validation_schema)
 
     def validate(value: t.Any) -> t.Any:
@@ -1225,7 +1532,15 @@ def _with_exact_validation(
     root_schema: t.Dict[str, t.Any],
 ) -> t.Type[t.Any]:
     """Keep model materialization while enforcing the source schema first."""
-    validate_schema = _validate_json_schema(schema, root_schema)
+    try:
+        validate_schema = _validate_json_schema(schema, root_schema)
+    except Exception:  # noqa: BLE001 - malformed schemas keep the lax model
+        logger.warning(
+            "Skipping exact JSON Schema validation for a schema that failed "
+            "to compile under Drafts 7 and 4",
+            exc_info=True,
+        )
+        return model
 
     def validate_source_schema(cls, value: t.Any) -> t.Any:
         return validate_schema(value)
@@ -1234,7 +1549,7 @@ def _with_exact_validation(
         t.cast(t.Any, classmethod(validate_source_schema))
     )
 
-    name = f"{model.__name__}Validated"
+    name = model.__name__
     return t.cast(
         t.Type[BaseModel],
         type(
@@ -1278,7 +1593,7 @@ def _convert_object_with_unsatisfiable_properties(
         ],
     }
     base_model = create_model_from_schema(
-        base_schema,
+        _normalize_schema_for_library(base_schema),
         allow_undefined_array_items=True,
         allow_undefined_type=True,
     )
@@ -1311,6 +1626,130 @@ def _convert_object_with_unsatisfiable_properties(
         __base__=base_model,
         **field_definitions,
     )
+
+
+_TYPE_ARRAY_CHILD_KEYWORDS_MAPS = (
+    "properties",
+    "patternProperties",
+    "$defs",
+    "definitions",
+)
+_TYPE_ARRAY_CHILD_KEYWORDS_LISTS = ("anyOf", "allOf", "oneOf")
+_TYPE_ARRAY_CHILD_KEYWORDS_SCHEMAS = (
+    "items",
+    "additionalItems",
+    "additionalProperties",
+    "contains",
+    "propertyNames",
+    "not",
+    "if",
+    "then",
+    "else",
+)
+
+
+_PYDANTIC_PATTERN_SUPPORT_CACHE: t.Dict[str, bool] = {}
+
+
+def _pattern_supported_by_pydantic(pattern: str) -> bool:
+    cached = _PYDANTIC_PATTERN_SUPPORT_CACHE.get(pattern)
+    if cached is not None:
+        return cached
+    try:
+        TypeAdapter(t.Annotated[str, Field(pattern=pattern)])
+        supported = True
+    except Exception:  # noqa: BLE001 - pydantic raises SchemaError subclasses
+        supported = False
+    _PYDANTIC_PATTERN_SUPPORT_CACHE[pattern] = supported
+    return supported
+
+
+def _normalize_schema_for_library(schema: t.Any) -> t.Any:
+    """Rewrite constructs the json-schema-to-pydantic library mishandles.
+
+    - `type: [...]` becomes an equivalent `anyOf` of single-type schemas: the
+      library applies every sibling constraint to every union member, so
+      `{"type": ["string", "number"], "minLength": 2, "minimum": 10}` raises
+      `TypeError` at validation time when a valid string hits the numeric
+      constraint. Scoping constraints per member is semantically identical
+      under Draft 7 (mismatched-type keywords are ignored).
+    - `pattern` values the Rust regex crate rejects (ECMA look-around) are
+      dropped from the library input; the exact-validation layer still
+      enforces them through Python `re`.
+    """
+    if not isinstance(schema, dict):
+        return schema
+
+    result: t.Dict[str, t.Any] = {}
+    for key, value in schema.items():
+        if key in _TYPE_ARRAY_CHILD_KEYWORDS_MAPS and isinstance(value, dict):
+            result[key] = {
+                name: _normalize_schema_for_library(child)
+                for name, child in value.items()
+            }
+        elif key in _TYPE_ARRAY_CHILD_KEYWORDS_LISTS and isinstance(value, list):
+            result[key] = [_normalize_schema_for_library(child) for child in value]
+        elif key in _TYPE_ARRAY_CHILD_KEYWORDS_SCHEMAS:
+            result[key] = _normalize_schema_for_library(value)
+        else:
+            result[key] = value
+
+    pattern = result.get("pattern")
+    if isinstance(pattern, str) and not _pattern_supported_by_pydantic(pattern):
+        del result["pattern"]
+
+    # Draft-4 boolean exclusive flags: the library reads the boolean itself as
+    # the numeric bound (lt=True becomes "less than 1"). Translate them to the
+    # Draft 7 numeric spelling before the library sees them.
+    if result.get("exclusiveMinimum") is True and _is_numeric(result.get("minimum")):
+        result["exclusiveMinimum"] = result.pop("minimum")
+    elif isinstance(result.get("exclusiveMinimum"), bool):
+        del result["exclusiveMinimum"]
+    if result.get("exclusiveMaximum") is True and _is_numeric(result.get("maximum")):
+        result["exclusiveMaximum"] = result.pop("maximum")
+    elif isinstance(result.get("exclusiveMaximum"), bool):
+        del result["exclusiveMaximum"]
+
+    # A one-member type array is the same as the bare type, and collapsing it
+    # lets the constraint scoping below apply.
+    if isinstance(result.get("type"), list) and len(result["type"]) == 1:
+        result["type"] = result["type"][0]
+
+    # The library applies scalar keywords unconditionally, so a keyword that
+    # does not scope to the declared type (or any keyword on a typeless
+    # schema) raises TypeError at validation time on mismatched instances.
+    # Drop them from the library input; the exact-validation layer that wraps
+    # every object conversion still enforces them per Draft 7.
+    declared_type = result.get("type")
+    if isinstance(declared_type, str):
+        scoped_keywords = _TYPE_SCOPED_KEYWORDS.get(declared_type)
+        if scoped_keywords is not None:
+            for keyword in _SCALAR_CONSTRAINT_KEYWORDS - scoped_keywords:
+                result.pop(keyword, None)
+    elif declared_type is None:
+        for keyword in _SCALAR_CONSTRAINT_KEYWORDS:
+            result.pop(keyword, None)
+
+    type_ = result.get("type")
+    if not isinstance(type_, list) or len(type_) < 2:
+        return result
+
+    members = []
+    for member in type_:
+        member_schema: t.Dict[str, t.Any] = {"type": member}
+        scoped = _TYPE_SCOPED_KEYWORDS.get(member, frozenset())
+        for keyword in scoped | _TYPE_ARRAY_SHARED_KEYWORDS:
+            if keyword in result:
+                member_schema[keyword] = result[keyword]
+        members.append(member_schema)
+
+    wrapper: t.Dict[str, t.Any] = {
+        key: value
+        for key, value in result.items()
+        if key in _TYPE_ARRAY_WRAPPER_KEYWORDS
+    }
+    wrapper["anyOf"] = members
+    return wrapper
 
 
 def _convert_with_library(
@@ -1359,7 +1798,7 @@ def _convert_with_library(
 
         try:
             base_model = create_model_from_schema(
-                schema,
+                _normalize_schema_for_library(schema),
                 allow_undefined_array_items=True,
                 allow_undefined_type=True,
             )
@@ -1431,7 +1870,7 @@ def _handle_toplevel_combiner(
     try:
         # Try direct conversion - library handles anyOf/oneOf/allOf at top level
         result = create_model_from_schema(
-            schema,
+            _normalize_schema_for_library(schema),
             allow_undefined_array_items=True,
             allow_undefined_type=True,
         )

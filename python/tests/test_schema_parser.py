@@ -592,14 +592,18 @@ class TestJsonSchemaToPydanticType:
 
         # Test with different oneOf values
         instance1 = model_class(flexible_field="hello", normal_field="world")
-        instance2 = model_class(flexible_field=42, normal_field="world")
         instance3 = model_class(flexible_field=True, normal_field="world")
         instance4 = model_class(flexible_field=3.14, normal_field="world")
 
         assert instance1.flexible_field == "hello"
-        assert instance2.flexible_field == 42
         assert instance3.flexible_field is True
         assert instance4.flexible_field == 3.14
+
+        # Draft 7 `oneOf` requires exactly one branch to match. An integer
+        # satisfies both {"type": "integer"} and {"type": "number"}, so it is
+        # rejected — the Zod and Effect converters agree.
+        with pytest.raises(ValidationError):
+            model_class(flexible_field=42, normal_field="world")
 
     def test_empty_schema_accepts_any_value(self):
         """An empty JSON Schema accepts every value."""
