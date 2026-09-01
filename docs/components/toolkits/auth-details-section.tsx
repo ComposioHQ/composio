@@ -87,12 +87,12 @@ export function AuthDetailsSection({ authConfigDetails, authSchemes, composioMan
               className="inline-flex items-center gap-1.5 border border-fd-border bg-fd-card px-2 py-0.5 font-mono text-[10px] uppercase tracking-[0.06em] text-fd-foreground transition-colors hover:border-fd-foreground/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fd-ring"
             >
               <span className="size-1.5 rounded-full bg-green-500" aria-hidden="true" />
-              Composio Managed App available
+              Composio-managed OAuth available
               <ArrowUpRight className="size-3" aria-hidden="true" />
             </Link>
           ) : (
             <span className="rounded bg-amber-500/10 px-2 py-0.5 text-xs font-medium text-amber-600 dark:text-amber-400">
-              Composio Managed App not available
+              Composio-managed OAuth not available
             </span>
           )
         )}
