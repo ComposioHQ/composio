@@ -55,5 +55,8 @@
   },
   "peerDependencies": {
     "zod": ">=3.25.76 <5"
+  },
+  "dependencies": {
+    "dequal": "^2.0.3"
   }
 }
