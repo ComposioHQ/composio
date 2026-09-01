@@ -16,6 +16,10 @@ import { parseNumber } from './parse-number';
 import { parseObject } from './parse-object';
 import { parseOneOf } from './parse-one-of';
 import { parseString } from './parse-string';
+import {
+  hasTypelessScalarConstraints,
+  parseTypelessConstraints,
+} from './parse-typeless-constraints';
 import type { ParserSelector, Refs, JsonSchemaObject, JsonSchema } from '../types';
 import { its } from '../utils/its';
 
@@ -106,6 +110,8 @@ const selectParser: ParserSelector = (schema, refs) => {
     return parseEnum(schema, refs); //<-- needs to come before primitives
   } else if (its.a.const(schema)) {
     return parseConst(schema, refs);
+  } else if (hasTypelessScalarConstraints(schema)) {
+    return parseTypelessConstraints(schema);
   } else if (its.a.multipleType(schema)) {
     return parseMultipleType(schema, refs);
   } else if (its.a.primitive(schema, 'string')) {

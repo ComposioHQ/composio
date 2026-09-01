@@ -41,38 +41,37 @@ export const parseString = (jsonSchema: JsonSchemaObject & { type: 'string' }) =
   zodSchema = extendSchemaWithMessage(zodSchema, jsonSchema, 'pattern', (zs, pattern, errorMsg) =>
     zs.regex(new RegExp(pattern), errorMsg)
   );
-  zodSchema = extendSchemaWithMessage(
-    zodSchema,
-    jsonSchema,
-    'minLength',
-    (zs, minLength, errorMsg) => zs.min(minLength, errorMsg)
-  );
-  zodSchema = extendSchemaWithMessage(
-    zodSchema,
-    jsonSchema,
-    'maxLength',
-    (zs, maxLength, errorMsg) => zs.max(maxLength, errorMsg)
-  );
+  // JSON Schema length constraints count Unicode code points, while Zod's
+  // built-in `.min()`/`.max()` count UTF-16 code units and overcount astral
+  // glyphs, so both bounds are applied as code-point refinements.
+  const errorMessages = (jsonSchema as { errorMessage?: Record<string, string> }).errorMessage;
+  // 'min'/'max' are generic aliases for 'minLength'/'maxLength'
+  const minLength =
+    typeof jsonSchema.minLength === 'number'
+      ? jsonSchema.minLength
+      : typeof jsonSchema.min === 'number'
+        ? jsonSchema.min
+        : undefined;
+  const maxLength =
+    typeof jsonSchema.maxLength === 'number'
+      ? jsonSchema.maxLength
+      : typeof jsonSchema.max === 'number'
+        ? jsonSchema.max
+        : undefined;
 
-  // Handle generic 'min' property as alias for 'minLength'
-  if (typeof jsonSchema.min === 'number' && typeof jsonSchema.minLength !== 'number') {
-    zodSchema = extendSchemaWithMessage(
-      zodSchema,
-      { ...jsonSchema, minLength: jsonSchema.min },
-      'minLength',
-      (zs, minLength, errorMsg) => zs.min(minLength, errorMsg)
-    );
+  let result: z.ZodTypeAny = zodSchema;
+  if (minLength !== undefined) {
+    result = result.refine(value => codePointLength(value) >= minLength, {
+      message: errorMessages?.minLength ?? `String must contain at least ${minLength} character(s)`,
+    });
+  }
+  if (maxLength !== undefined) {
+    result = result.refine(value => codePointLength(value) <= maxLength, {
+      message: errorMessages?.maxLength ?? `String must contain at most ${maxLength} character(s)`,
+    });
   }
 
-  // Handle generic 'max' property as alias for 'maxLength'
-  if (typeof jsonSchema.max === 'number' && typeof jsonSchema.maxLength !== 'number') {
-    zodSchema = extendSchemaWithMessage(
-      zodSchema,
-      { ...jsonSchema, maxLength: jsonSchema.max },
-      'maxLength',
-      (zs, maxLength, errorMsg) => zs.max(maxLength, errorMsg)
-    );
-  }
-
-  return zodSchema;
+  return result;
 };
+
+const codePointLength = (value: string): number => [...value].length;
