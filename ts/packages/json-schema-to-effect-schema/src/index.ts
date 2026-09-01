@@ -87,6 +87,26 @@ const normalizeBounds = (schema: JsonObject): void => {
   }
 };
 
+// OpenAPI 3.0 / JSON Schema draft-4 express exclusive bounds as a boolean flag
+// on `minimum`/`maximum`. The Draft 7 interpreter expects numeric
+// `exclusiveMinimum`/`exclusiveMaximum` and would silently ignore the flag,
+// turning an exclusive bound into an inclusive one.
+const normalizeExclusiveBounds = (schema: JsonObject): void => {
+  if (schema.exclusiveMinimum === true && typeof schema.minimum === 'number') {
+    schema.exclusiveMinimum = schema.minimum;
+    delete schema.minimum;
+  } else if (typeof schema.exclusiveMinimum === 'boolean') {
+    delete schema.exclusiveMinimum;
+  }
+
+  if (schema.exclusiveMaximum === true && typeof schema.maximum === 'number') {
+    schema.exclusiveMaximum = schema.maximum;
+    delete schema.maximum;
+  } else if (typeof schema.exclusiveMaximum === 'boolean') {
+    delete schema.exclusiveMaximum;
+  }
+};
+
 const normalizeFormats = (schema: JsonObject): void => {
   if (schema.type === 'number' && schema.format === 'int64') {
     schema.type = 'integer';
@@ -179,6 +199,7 @@ const normalizeSchemaNode = (
   }
 
   normalizeBounds(normalized);
+  normalizeExclusiveBounds(normalized);
   normalizeFormats(normalized);
   const withNullable = normalizeNullable(normalized);
   seen.set(value, withNullable as InterpreterSchema);
