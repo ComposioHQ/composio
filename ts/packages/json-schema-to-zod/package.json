@@ -59,6 +59,7 @@
     "zod": ">=3.25.76 <5"
   },
   "dependencies": {
+    "@cfworker/json-schema": "^4.1.1",
     "dequal": "^2.0.3"
   }
 }

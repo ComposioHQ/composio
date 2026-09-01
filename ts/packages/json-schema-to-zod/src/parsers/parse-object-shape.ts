@@ -2,6 +2,10 @@ import * as z from 'zod/v3';
 
 import { parseSchema } from './parse-schema';
 import type { JsonSchemaObject, Refs, JsonSchema } from '../types';
+import {
+  requiresWholeSchemaValidation,
+  withWholeSchemaValidation,
+} from '../whole-schema-validation';
 
 /**
  * Parses a JSON Schema object and returns the raw shape (property keys mapped to Zod types).
@@ -26,10 +30,13 @@ export function parseObjectShape(objectSchema: JsonSchemaObject, refs: Refs): z.
   for (const key of propertyKeys) {
     const propJsonSchema = objectSchema.properties[key];
 
-    const propZodSchema = parseSchema(propJsonSchema, {
+    const parsedProperty = parseSchema(propJsonSchema, {
       ...refs,
       path: [...refs.path, 'properties', key],
     });
+    const propZodSchema = requiresWholeSchemaValidation(propJsonSchema)
+      ? withWholeSchemaValidation(propJsonSchema, parsedProperty)
+      : parsedProperty;
 
     const required = Array.isArray(objectSchema.required)
       ? objectSchema.required.includes(key)

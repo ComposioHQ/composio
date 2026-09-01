@@ -593,8 +593,9 @@ describe('jsonSchemaToZod', () => {
       // Should accept number arrays
       expect(zodSchema.parse([1, 2, 3])).toEqual([1, 2, 3]);
 
-      // Should accept mixed arrays (union of item types)
-      expect(zodSchema.parse(['hello', 123])).toEqual(['hello', 123]);
+      // Each anyOf branch constrains the entire array, so a mixed array
+      // satisfies neither the all-string nor the all-number branch.
+      expect(() => zodSchema.parse(['hello', 123])).toThrow();
     });
 
     it('should handle arrays with anyOf at top level without explicit types', () => {

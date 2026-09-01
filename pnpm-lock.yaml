@@ -1484,6 +1484,9 @@ importers:
 
   ts/packages/json-schema-to-zod:
     dependencies:
+      '@cfworker/json-schema':
+        specifier: ^4.1.1
+        version: 4.1.1
       dequal:
         specifier: ^2.0.3
         version: 2.0.3
