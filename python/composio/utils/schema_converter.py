@@ -1579,7 +1579,7 @@ def _requires_whole_schema_validation(schema: t.Any) -> bool:
         return False
     if (
         _REQUIRES_WHOLE_SCHEMA_VALIDATION.intersection(schema)
-        or (isinstance(schema.get("allOf"), list) and len(schema["allOf"]) > 1)
+        or "allOf" in schema
         or ("allOf" in schema and _combiner_has_assertion_siblings(schema, "allOf"))
         or ("anyOf" in schema and _combiner_has_assertion_siblings(schema, "anyOf"))
         or _one_of_needs_exact_validation(schema.get("oneOf"))
@@ -1603,6 +1603,71 @@ def _requires_whole_schema_validation(schema: t.Any) -> bool:
                 return True
 
     return False
+
+
+def _contains_all_of(schema: t.Any, visited: t.Optional[t.Set[int]] = None) -> bool:
+    """Detect allOf only in schema-valued positions, never in instance data."""
+    if isinstance(schema, bool) or not isinstance(schema, dict):
+        return False
+    if visited is None:
+        visited = set()
+    if id(schema) in visited:
+        return False
+    visited.add(id(schema))
+
+    if "allOf" in schema:
+        return True
+    for key, child in schema.items():
+        if key in _EXACT_SCHEMA_MAP_KEYWORDS and isinstance(child, dict):
+            if any(_contains_all_of(value, visited) for value in child.values()):
+                return True
+        elif key in _EXACT_SCHEMA_ARRAY_KEYWORDS and isinstance(child, list):
+            if any(_contains_all_of(value, visited) for value in child):
+                return True
+        elif key in _EXACT_SCHEMA_VALUE_KEYWORDS:
+            values = child if isinstance(child, list) else [child]
+            if any(_contains_all_of(value, visited) for value in values):
+                return True
+    return False
+
+
+def _relax_all_of_model_fields(
+    schema: t.Dict[str, t.Any],
+    base_model: t.Type[BaseModel],
+) -> t.Type[BaseModel]:
+    """Let exact source validation own allOf acceptance without library narrowing."""
+    properties = schema.get("properties")
+    if not isinstance(properties, dict):
+        return base_model
+
+    field_definitions = {}
+    for internal_name, model_field in base_model.model_fields.items():
+        external_name = (
+            model_field.alias if isinstance(model_field.alias, str) else internal_name
+        )
+        property_schema = properties.get(external_name)
+        if not _contains_all_of(property_schema):
+            continue
+
+        default = ... if model_field.is_required() else model_field.default
+        field_definitions[internal_name] = (
+            t.Any,
+            Field(
+                default,
+                alias=model_field.alias,
+                description=model_field.description,
+                examples=model_field.examples,
+                title=model_field.title,
+            ),
+        )
+
+    if not field_definitions:
+        return base_model
+    return create_pydantic_model(  # type: ignore[call-overload]
+        base_model.__name__,
+        __base__=base_model,
+        **field_definitions,
+    )
 
 
 def _normalize_draft4_exclusive_bounds(value: t.Any) -> t.Any:
@@ -2004,6 +2069,7 @@ def _convert_with_library(
                 document_root,
             )
 
+        base_model = _relax_all_of_model_fields(schema, base_model)
         return _with_exact_validation(
             apply_object_policy(
                 schema,
@@ -2062,6 +2128,11 @@ def _handle_toplevel_combiner(
 
     The library can handle these directly - it returns the appropriate type.
     """
+    if "allOf" in schema:
+        # The library models scalar intersections as object models. Preserve
+        # the JSON value and let the exact Draft 7 validator own acceptance.
+        return t.Any
+
     try:
         # Try direct conversion - library handles anyOf/oneOf/allOf at top level
         result = create_model_from_schema(

@@ -680,7 +680,7 @@ class TestJsonSchemaToPydanticType:
         assert not hasattr(result, "__origin__")
 
     def test_allof_single_option(self):
-        """Test allOf with single option."""
+        """A single allOf option preserves its acceptance behavior."""
         json_schema = {
             "allOf": [
                 {
@@ -690,29 +690,27 @@ class TestJsonSchemaToPydanticType:
                 }
             ]
         }
-        result = json_schema_to_pydantic_type(json_schema)
-        assert isinstance(result, type)
-        assert issubclass(result, BaseModel)
+        adapter = TypeAdapter(json_schema_to_pydantic_type(json_schema))
+        assert adapter.validate_python({"name": "Ada"}) == {"name": "Ada"}
+        with pytest.raises(ValidationError):
+            adapter.validate_python({"name": 42})
 
     def test_allof_multiple_options_with_type(self):
         """Test allOf with multiple options where one has type."""
         json_schema = {
             "allOf": [{"description": "Some description"}, {"type": "string"}]
         }
-        result = json_schema_to_pydantic_type(json_schema)
-        # The library creates an AllOfModel class that combines the schemas
-        # or returns str depending on the schema structure
-        assert result is not None
-        # Either it's str or a model class (both are valid)
-        assert result is str or (
-            isinstance(result, type) and issubclass(result, BaseModel)
-        )
+        adapter = TypeAdapter(json_schema_to_pydantic_type(json_schema))
+        assert adapter.validate_python("value") == "value"
+        with pytest.raises(ValidationError):
+            adapter.validate_python(42)
 
     def test_allof_empty_options(self):
         """Test allOf with empty options accepts any value."""
         json_schema = {"allOf": []}
-        result = json_schema_to_pydantic_type(json_schema)
-        assert result is t.Any
+        adapter = TypeAdapter(json_schema_to_pydantic_type(json_schema))
+        assert adapter.validate_python(42) == 42
+        assert adapter.validate_python({"anything": True}) == {"anything": True}
 
 
 class TestJsonSchemaToFieldsDict:
@@ -1073,33 +1071,26 @@ class TestBooleanSchemas:
     @pytest.mark.unit
     @pytest.mark.schema
     def test_boolean_schema_in_allof_with_type(self):
-        """Test that boolean schemas in allOf don't crash when combined with typed schema."""
+        """A true allOf branch leaves the typed branch unchanged."""
         json_schema = {
             "allOf": [
                 {"type": "string"},
                 True,
             ]
         }
-        result = json_schema_to_pydantic_type(json_schema)
-        # Should not crash - may return str or an AllOf model
-        assert result is not None
-        # Either it's str or a model class (library creates AllOfModel)
-        assert result is str or (
-            isinstance(result, type) and issubclass(result, BaseModel)
-        )
+        adapter = TypeAdapter(json_schema_to_pydantic_type(json_schema))
+        assert adapter.validate_python("value") == "value"
+        with pytest.raises(ValidationError):
+            adapter.validate_python(42)
 
     @pytest.mark.unit
     @pytest.mark.schema
     def test_boolean_schema_in_allof_single(self):
-        """Test that single boolean schema in allOf returns appropriate type."""
+        """A single true allOf branch accepts every value."""
         json_schema = {"allOf": [True]}
-        result = json_schema_to_pydantic_type(json_schema)
-        # Single true schema filtered to {} - library may return Any or a model
-        assert result is not None
-        # Could be Any, or a generated model (both are valid)
-        assert result is t.Any or (
-            isinstance(result, type) and issubclass(result, BaseModel)
-        )
+        adapter = TypeAdapter(json_schema_to_pydantic_type(json_schema))
+        assert adapter.validate_python(42) == 42
+        assert adapter.validate_python({"anything": True}) == {"anything": True}
 
     @pytest.mark.unit
     @pytest.mark.schema

@@ -12,6 +12,10 @@ from jsonschema import Draft7Validator
 from pydantic import TypeAdapter, ValidationError
 
 from composio.utils.schema_converter import json_schema_to_pydantic_type
+from composio.utils.shared import (
+    json_schema_to_model,
+    pydantic_model_from_param_schema,
+)
 
 REJECTION_CASES: tuple[tuple[str, dict[str, t.Any], t.Any], ...] = (
     (
@@ -176,3 +180,31 @@ def test_draft4_bounds_do_not_disable_draft7_siblings(
     adapter = TypeAdapter(json_schema_to_pydantic_type(schema))
     with pytest.raises(ValidationError):
         adapter.validate_python(value)
+
+
+@pytest.mark.unit
+@pytest.mark.schema
+def test_scalar_allof_acceptance_survives_pydantic_materialization() -> None:
+    schema = {
+        "title": "ScalarAllOf",
+        "type": "object",
+        "properties": {
+            "value": {
+                "allOf": [
+                    {"type": "string", "minLength": 2},
+                    {"type": "string", "pattern": "^[A-Z]+$"},
+                ]
+            }
+        },
+        "required": ["value"],
+    }
+    Draft7Validator.check_schema(schema)
+    assert Draft7Validator(schema).is_valid({"value": "OK"})
+
+    annotations = (
+        json_schema_to_pydantic_type(schema),
+        json_schema_to_model(schema),
+        pydantic_model_from_param_schema(schema),
+    )
+    for annotation in annotations:
+        TypeAdapter(annotation).validate_python({"value": "OK"})
