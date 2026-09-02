@@ -9,6 +9,7 @@ import CustomSearchDialog from '@/components/custom-search-dialog';
 import { ScrollReset } from '@/components/scroll-reset';
 import { source, referenceSource } from '@/lib/source';
 import { TOOLKIT_COUNT_LABEL } from '@/lib/toolkit-count';
+import { ProductTransitionLoader } from '@/components/product-transition-loader';
 
 const defaultLinkSlugs: { slug: string[]; source: typeof source }[] = [
   { slug: ['quickstart'], source },
@@ -111,6 +112,7 @@ export default function Layout({ children }: LayoutProps<'/'>) {
       </head>
       <body className="flex flex-col min-h-dvh font-sans">
         <ScrollReset />
+        <ProductTransitionLoader />
         <Analytics />
         <PostHogProvider>
           <RootProvider

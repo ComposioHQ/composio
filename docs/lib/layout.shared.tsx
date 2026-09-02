@@ -3,6 +3,7 @@ import Image from 'next/image';
 import { Play } from 'lucide-react';
 import { SearchAndAskAI, SearchAndAskAIMobile } from '@/components/ask-ai-button';
 import { NavVersionSelector } from '@/components/version-selector';
+import { ProductNavTitle } from '@/components/product-switcher';
 
 // Composio Logo Component with light/dark mode switching
 function ComposioLogo() {
@@ -36,6 +37,7 @@ export function baseOptions(): BaseLayoutProps {
       title: <ComposioLogo />,
       transparentMode: 'top',
     },
+    slots: { navTitle: ProductNavTitle },
     themeSwitch: { enabled: true, mode: 'light-dark-system' },
     searchToggle: {
       components: {
