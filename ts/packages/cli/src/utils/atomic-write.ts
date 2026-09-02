@@ -63,3 +63,13 @@ export const atomicWritePrivateFileString = (params: {
   readonly target: string;
   readonly contents: string;
 }): Effect.Effect<void, PlatformError> => atomicWriteFileString({ ...params, mode: 0o600 });
+
+/**
+ * Tighten a credential-bearing file written by an older CLI before reading it.
+ * This repairs existing files because a write mode only applies when creating
+ * a new file and cannot remove permissions from an existing one.
+ */
+export const ensurePrivateFileMode = (params: {
+  readonly fs: FileSystem.FileSystem;
+  readonly target: string;
+}): Effect.Effect<void, PlatformError> => params.fs.chmod(params.target, 0o600);

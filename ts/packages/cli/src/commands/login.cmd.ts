@@ -16,7 +16,7 @@ import { commandHintStep } from 'src/services/command-hints';
 import { runOrgSelection } from 'src/effects/select-org-project';
 import { linkAnalyticsIdentityForOrg } from 'src/effects/link-analytics-identity';
 import { setupCacheDir } from 'src/effects/setup-cache-dir';
-import { atomicWritePrivateFileString } from 'src/utils/atomic-write';
+import { atomicWritePrivateFileString, ensurePrivateFileMode } from 'src/utils/atomic-write';
 import { primeConsumerConnectedToolkitsCacheInBackground } from 'src/services/consumer-short-term-cache';
 import { inferSkillReleaseChannel, installSkillSafe } from 'src/effects/install-skill';
 import { handleAgentAuthError } from 'src/effects/handle-agent-auth-error';
@@ -156,7 +156,8 @@ const readPendingLoginSession = Effect.gen(function* () {
     });
   }
 
-  const rawSession = yield* fs.readFileString(filePath, 'utf8').pipe(
+  const rawSession = yield* ensurePrivateFileMode({ fs, target: filePath }).pipe(
+    Effect.andThen(fs.readFileString(filePath, 'utf8')),
     Effect.mapError(
       cause =>
         new PendingLoginError({

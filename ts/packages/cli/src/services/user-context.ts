@@ -16,7 +16,7 @@ import { KeyringService, KeyringLiveWithBackend } from '@composio/cli-keyring/ef
 import type { KeyringServiceShape } from '@composio/cli-keyring/effect';
 import { KeyringError, type MacOSBackend } from '@composio/cli-keyring';
 import { ComposioCliUserConfig, ComposioCliUserConfigLive } from 'src/services/cli-user-config';
-import { atomicWritePrivateFileString } from 'src/utils/atomic-write';
+import { atomicWritePrivateFileString, ensurePrivateFileMode } from 'src/utils/atomic-write';
 import { redactSensitiveLogValue } from 'src/utils/redact-sensitive';
 
 /**
@@ -266,6 +266,7 @@ export const rawComposioUserContextLive = Layer.effect(
 
     const load = Effect.gen(function* () {
       yield* Effect.logDebug('Loading user data from', jsonUserConfigPath);
+      yield* ensurePrivateFileMode({ fs, target: jsonUserConfigPath });
       const userDataJson = yield* fs.readFileString(jsonUserConfigPath, 'utf8');
       const parsedUserData = (yield* userDataFromJSON(userDataJson)) satisfies UserData;
       yield* Effect.logDebug('User data (parsed):', redactSensitiveLogValue(parsedUserData));
