@@ -487,6 +487,9 @@ def json_schema_to_pydantic_field(
     :param root_schema: Full schema document used to resolve local references.
     :return: A Pydantic field definition.
     """
+    # A property schema may be the literal `true`/`false` (JSON Schema
+    # draft-06+); those carry no metadata, so read annotations from an empty
+    # object and let `json_schema_to_pydantic_type` decide the type.
     schema_object = json_schema if isinstance(json_schema, dict) else {}
     description = schema_object.get("description")
     if "oneOf" in schema_object:

@@ -51,7 +51,14 @@ _EXPLICIT_DEFAULT_FIELDS_ATTRIBUTE = "__composio_explicit_default_fields__"
 
 
 class _UnsatisfiableSchema:
-    """Pydantic type for JSON schemas that reject every value."""
+    """Pydantic type for JSON schemas that reject every value.
+
+    JSON Schema (draft-06+) allows the literal ``false`` anywhere a schema is
+    expected, meaning "no value is valid". This marker stands in for it during
+    conversion so combiners can tell an always-rejecting member apart from an
+    absent one, and so the exact validator can turn it back into ``false``.
+    The literal ``true`` ("any value is valid") simply becomes ``t.Any``.
+    """
 
     @staticmethod
     def _reject(_value: t.Any) -> t.NoReturn:
@@ -1132,10 +1139,12 @@ def json_schema_to_pydantic_type(
     :param root_schema: Full schema document used to resolve nested local references.
     :return: A Pydantic type.
     """
-    # Handle boolean schemas (JSON Schema draft-06+)
+    # A schema may be the literal `true` or `false` instead of an object
+    # (JSON Schema draft-06+), e.g. `additionalProperties: false` or a member
+    # of `anyOf`. `true` accepts every value; `false` rejects every value.
     if isinstance(json_schema, bool):
         if json_schema:
-            return t.Any  # true schema accepts any value
+            return t.Any
         return _UnsatisfiableSchema
 
     # Pre-filter boolean schemas from combiners
@@ -1147,6 +1156,12 @@ def json_schema_to_pydantic_type(
         filtered_schema,
         root_schema=document_root,
     )
+    # Two layers: Pydantic materializes the value (defaults, aliases, models),
+    # while the source schema decides acceptance. Keywords Pydantic cannot
+    # express get a Draft 7 "exact" check that runs before Pydantic coercion.
+    # Generated models already carry that check (see `_with_exact_validation`),
+    # so only non-model annotations are wrapped here. When Pydantic would
+    # narrow a valid value (e.g. `$ref`, `allOf`), the value is kept as-is.
     if (
         _requires_whole_schema_validation(json_schema)
         and not _is_unsatisfiable_schema(annotation)
@@ -1504,7 +1519,11 @@ def _apply_scalar_constraints(
 
 
 def _schema_for_exact_validation(value: t.Any) -> t.Any:
-    """Turn internal boolean-schema markers back into JSON Schema values."""
+    """Turn internal boolean-schema markers back into JSON Schema values.
+
+    Conversion replaces the literal ``false`` with `_UnsatisfiableSchema`; the
+    `jsonschema` validator needs the original ``false`` back.
+    """
     if _is_unsatisfiable_schema(value):
         return False
     if isinstance(value, dict):
@@ -1601,7 +1620,13 @@ def _combiner_has_assertion_siblings(schema: t.Dict[str, t.Any], keyword: str) -
 
 
 def _requires_whole_schema_validation(schema: t.Any) -> bool:
-    """Whether the materializing converter needs an authoritative final guard."""
+    """Whether the materializing converter needs an authoritative final guard.
+
+    True when the schema (or any nested schema) uses a keyword that Pydantic
+    field constraints cannot express faithfully: `required`, `contains`,
+    `if`/`then`/`else`, `not`, `$ref`, unions (which Pydantic coerces across),
+    and so on. Those schemas get a Draft 7 check on the raw value first.
+    """
     if isinstance(schema, bool) or not isinstance(schema, dict):
         return False
     if (
@@ -1641,7 +1666,13 @@ def _needs_permissive_materialization(
     schema: t.Any,
     visited: t.Optional[t.Set[int]] = None,
 ) -> bool:
-    """Detect schemas whose exact validator must not pipe into a narrower type."""
+    """Detect schemas whose exact validator must not pipe into a narrower type.
+
+    For `$ref`, `allOf`, and typeless assertions the Pydantic type the library
+    builds can be narrower than what the schema accepts. Once the Draft 7 check
+    has accepted the raw value, it is passed through as `t.Any` rather than
+    risk a second, stricter rejection or a lossy coercion.
+    """
     if isinstance(schema, bool) or not isinstance(schema, dict):
         return False
     if visited is None:
