@@ -11,7 +11,7 @@ export function baseOptions(): BaseLayoutProps {
       transparentMode: 'top',
     },
     slots: { navTitle: ProductNavTitle },
-    themeSwitch: { enabled: true, mode: 'light-dark-system' },
+    themeSwitch: { enabled: false },
     searchToggle: {
       components: {
         lg: <SearchAndAskAI />,

@@ -14,17 +14,19 @@ import { buildProductPageTree, pageTreeUrls } from '../../lib/product-page-tree'
 import { source } from '../../lib/source';
 
 describe('Docs product navigation', () => {
-  test('defines the product labels, descriptions, and landings once', () => {
+  test('defines the product labels, descriptions, landings, and themes once', () => {
     expect(DEFAULT_DOCS_PRODUCT).toBe('platform');
     expect(DOCS_PRODUCTS['for-you']).toMatchObject({
       product: 'For You',
       switcherDescription: 'Connect your apps to AI clients.',
       landingRoute: '/docs/agent-plugins',
+      theme: 'light',
     });
     expect(DOCS_PRODUCTS.platform).toMatchObject({
       product: 'Platform',
       switcherDescription: 'Build agents with the Composio SDK.',
       landingRoute: '/docs/quickstart',
+      theme: 'dark',
     });
   });
 
@@ -142,6 +144,9 @@ describe('Docs product navigation', () => {
     const sharedLayoutSource = await Bun.file(
       new URL('../../lib/layout.shared.tsx', import.meta.url),
     ).text();
+    const contextSource = await Bun.file(
+      new URL('../../components/docs-product-context.tsx', import.meta.url),
+    ).text();
 
     expect(switcherSource).toContain('aria-label={`Switch Composio product. Current product:');
     expect(switcherSource).toContain('ProductSelectionLink');
@@ -153,5 +158,7 @@ describe('Docs product navigation', () => {
     expect(switcherSource).toContain('aria-label="Composio home"');
     expect(switcherSource).toContain('href="/"');
     expect(sharedLayoutSource).toContain('slots: { navTitle: ProductNavTitle }');
+    expect(sharedLayoutSource).toContain('themeSwitch: { enabled: false }');
+    expect(contextSource).toContain('setTheme(DOCS_PRODUCTS[product].theme)');
   });
 });

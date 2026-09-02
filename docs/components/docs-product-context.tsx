@@ -12,8 +12,10 @@ import {
 } from 'react';
 import { flushSync } from 'react-dom';
 import { usePathname, useRouter } from 'next/navigation';
+import { useTheme } from 'fumadocs-ui/provider/base';
 import {
   classifyDocsProduct,
+  DOCS_PRODUCTS,
   serializeDocsProductCookie,
   shouldAnimateDocsProductSwitch,
   type DocsProduct,
@@ -54,6 +56,7 @@ export function DocsProductProvider({
 }) {
   const pathname = usePathname();
   const router = useRouter();
+  const { setTheme } = useTheme();
   const [persistedProduct, setPersistedProduct] = useState(initialProduct);
   const [pendingProduct, setPendingProduct] = useState<DocsProduct | null>(null);
   const pendingNavigation = useRef<{
@@ -63,6 +66,10 @@ export function DocsProductProvider({
 
   const inferredProduct = classifyDocsProduct(pathname);
   const product = pendingProduct ?? inferredProduct ?? persistedProduct;
+
+  useEffect(() => {
+    setTheme(DOCS_PRODUCTS[product].theme);
+  }, [product, setTheme]);
 
   const persistProduct = useCallback((nextProduct: DocsProduct) => {
     writeProductCookie(nextProduct);
@@ -101,6 +108,7 @@ export function DocsProductProvider({
         flushSync(() => {
           setPersistedProduct(nextProduct);
           setPendingProduct(nextProduct);
+          setTheme(DOCS_PRODUCTS[nextProduct].theme);
         });
         if (href !== pathname) router.push(href);
       };
@@ -165,7 +173,7 @@ export function DocsProductProvider({
         commitNavigation();
       }
     },
-    [pathname, router],
+    [pathname, router, setTheme],
   );
 
   const value = useMemo(
