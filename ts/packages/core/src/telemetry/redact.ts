@@ -38,14 +38,14 @@ const REDACTION_RULES: ReadonlyArray<readonly [RegExp, string]> = [
   ],
   [
     new RegExp(
-      String.raw`${BARE_SECRET_KEY_PREFIX}"(?:\\.|[^"\\\r\n])*"(?=\s*(?:,|}|\]|\)|$))`,
+      String.raw`${BARE_SECRET_KEY_PREFIX}"(?!\s*(?:,|}|\]|\)|$))(?:\\.|[^"\\\r\n])*"`,
       'gi'
     ),
     `$1$2"${REDACTED}"`,
   ],
   [
     new RegExp(
-      String.raw`${BARE_SECRET_KEY_PREFIX}'(?:\\.|[^'\\\r\n])*'(?=\s*(?:,|}|\]|\)|$))`,
+      String.raw`${BARE_SECRET_KEY_PREFIX}'(?!\s*(?:,|}|\]|\)|$))(?:\\.|[^'\\\r\n])*'`,
       'gi'
     ),
     `$1$2'${REDACTED}'`,

@@ -116,4 +116,17 @@ describe('redactSensitiveText', () => {
       expect(redactSensitiveText(benign), benign).toBe(benign);
     }
   });
+
+  it('redacts bare quoted values before punctuation or prose', () => {
+    for (const [sample, secret] of [
+      ['password: "punctuated secret";', 'punctuated secret'],
+      ["client_secret='period secret'.", 'period secret'],
+      ['api_key = "prose secret" followed by context', 'prose secret'],
+      ['password: "escaped \\"secret\\" value"', 'escaped \\"secret\\" value'],
+    ] as const) {
+      const out = redactSensitiveText(sample)!;
+      expect(out, sample).toContain('[REDACTED]');
+      expect(out, sample).not.toContain(secret);
+    }
+  });
 });

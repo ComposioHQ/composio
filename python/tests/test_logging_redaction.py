@@ -72,6 +72,21 @@ def test_sdk_logger_redacts_extra_metadata_before_formatting() -> None:
     assert "visible" in logged
 
 
+def test_sdk_logger_keeps_wide_extra_metadata_mapping_compatible() -> None:
+    output = io.StringIO()
+    logger = logging.getLogger("composio-test-wide-extra-redaction")
+    logger.handlers = [logging.StreamHandler(output)]
+    logger.propagate = False
+    logger.setLevel(logging.INFO)
+    wrapped = _VerbosityWrapper(logger, verbosity_level=3)
+
+    wrapped.info(
+        "wide metadata", extra={f"field_{index}": index for index in range(10_001)}
+    )
+
+    assert "wide metadata" in output.getvalue()
+
+
 def test_sdk_logger_redacts_errors_without_truncating_them() -> None:
     output = io.StringIO()
     logger = logging.getLogger("composio-test-error-redaction")

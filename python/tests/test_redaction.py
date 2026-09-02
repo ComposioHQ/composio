@@ -125,6 +125,24 @@ def test_does_not_consume_adjacent_fields_after_key_like_text(text: str) -> None
     assert redact_sensitive_text(text) == text
 
 
+@pytest.mark.parametrize(
+    ("text", "secret"),
+    [
+        ('password: "punctuated secret";', "punctuated secret"),
+        ("client_secret='period secret'.", "period secret"),
+        ('api_key = "prose secret" followed by context', "prose secret"),
+        ('password: "escaped \\"secret\\" value"', 'escaped \\"secret\\" value'),
+    ],
+)
+def test_redacts_bare_quoted_values_before_punctuation_or_prose(
+    text: str, secret: str
+) -> None:
+    redacted = redact_sensitive_text(text)
+
+    assert secret not in redacted
+    assert "[REDACTED]" in redacted
+
+
 def test_structured_redaction_bounds_recursive_metadata() -> None:
     cyclic: dict[str, object] = {}
     cyclic["self"] = cyclic
@@ -164,3 +182,8 @@ def test_structured_redaction_handles_sequences_and_rendered_objects() -> None:
 
 def test_structured_redaction_stops_at_the_node_budget() -> None:
     assert redact_sensitive_value(list(range(10_001))) == "[REDACTED]"
+    wide_mapping = redact_sensitive_value(
+        {f"field_{index}": index for index in range(10_001)}
+    )
+    assert isinstance(wide_mapping, dict)
+    assert len(wide_mapping) < 10_001

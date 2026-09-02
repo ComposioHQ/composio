@@ -75,6 +75,34 @@ const delayAfterTmpWrite = (
     },
   });
 
+const failAfterTmpWrite = (fs: FileSystem.FileSystem): FileSystem.FileSystem =>
+  new Proxy(fs, {
+    get(target, property, receiver) {
+      if (property !== 'writeFileString') {
+        return Reflect.get(target, property, receiver);
+      }
+
+      return (path: string, contents: string, options?: FileSystem.WriteFileOptions) => {
+        if (!path.includes('.composio-tmp.')) {
+          return target.writeFileString(path, contents, options);
+        }
+
+        return target.writeFileString(path, contents, options).pipe(
+          Effect.andThen(
+            Effect.fail(
+              new PlatformError.SystemError({
+                reason: 'PermissionDenied',
+                module: 'FileSystem',
+                method: 'writeFileString',
+                pathOrDescriptor: path,
+              })
+            )
+          )
+        );
+      };
+    },
+  });
+
 describe('atomicWritePrivateFileString', () => {
   layer(TestPlatform)(it => {
     it.scoped('retries an exclusive random staging path without touching a collision', () =>
@@ -157,6 +185,29 @@ describe('atomicWritePrivateFileString', () => {
 
         expect(yield* fs.readFileString(target, 'utf8')).toBe('{"api_key":"old"}\n');
         expect((yield* fs.stat(target)).mode & 0o777).toBe(0o600);
+        expect(
+          (yield* fs.readDirectory(directory)).filter(name => name.includes('.composio-tmp.'))
+        ).toEqual([]);
+      })
+    );
+
+    it.scoped('cleans a partially written staging file on non-collision failure', () =>
+      Effect.gen(function* () {
+        const fs = yield* FileSystem.FileSystem;
+        const path = yield* Path.Path;
+        const directory = yield* fs.makeTempDirectoryScoped();
+        const target = path.join(directory, 'credentials.json');
+        yield* fs.writeFileString(target, '{"api_key":"old"}\n');
+        yield* fs.chmod(target, 0o600);
+
+        const error = yield* atomicWritePrivateFileString({
+          fs: failAfterTmpWrite(fs),
+          target,
+          contents: '{"api_key":"new"}\n',
+        }).pipe(Effect.flip);
+
+        expect(error).toMatchObject({ _tag: 'SystemError', reason: 'PermissionDenied' });
+        expect(yield* fs.readFileString(target, 'utf8')).toBe('{"api_key":"old"}\n');
         expect(
           (yield* fs.readDirectory(directory)).filter(name => name.includes('.composio-tmp.'))
         ).toEqual([]);
