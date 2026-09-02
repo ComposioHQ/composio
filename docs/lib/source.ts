@@ -343,7 +343,7 @@ export function mdxToCleanMarkdown(content: string, url?: string): string {
   result = result.replace(/<FrameworkOption[\s\S]*?name="([^"]*)"[\s\S]*?>/g, '\n## $1\n');
   result = result.replace(/<\/FrameworkOption>/g, '');
 
-  const tabLabelMap: Record<string, string> = { native: 'Native Tools', mcp: 'MCP' };
+  const tabLabelMap: Record<string, string> = { native: 'Direct tools', mcp: 'MCP' };
   result = result.replace(
     /<IntegrationTabs[\s\S]*?tabs=\{\[([\s\S]*?)\]\}[\s\S]*?>/g,
     (_, tabsContent: string) => {

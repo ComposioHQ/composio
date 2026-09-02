@@ -13,3 +13,4 @@ Read these when a docs change touches an existing architecture, generated-data p
   and snapshot-miss toolkit page fallback.
 - `toolkits.md` - toolkit page data and rendering decisions.
 - `cookbooks-revamp-plan.md` - historical cookbook revamp tracker.
+- `apps-and-toolkits.md` - Apps, Composio Built toolkits, and Provider MCP toolkits: vocabulary, sibling rendering, and search-contract wording.

@@ -89,6 +89,44 @@ const session = await composio.create("user_123", {
 </Tab>
 </Tabs>
 
+## Sibling toolkits
+
+When a product has more than one toolkit, each has its own slug, and enabling one never enables the other. Enable `["notion_mcp"]` to use only Notion's Provider MCP toolkit, or disable one sibling to pin the session to the other. You can't pass an App: the `toolkits` lists take exact toolkit slugs only. See [Apps vs toolkits](/docs/apps-and-toolkits) for what the siblings are, and [Composio Built vs Provider MCPs](/docs/apps-and-toolkits/composio-built-vs-provider-mcp) for picking one.
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tab value="Python">
+```python
+# Only the Provider MCP toolkit
+session = composio.sessions.create(
+    user_id="user_123",
+    toolkits=["notion_mcp"]
+)
+
+# Everything stays discoverable, but Notion is pinned to the Composio Built toolkit
+session = composio.sessions.create(
+    user_id="user_123",
+    toolkits={"disable": ["notion_mcp"]}
+)
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+// ---cut---
+// Only the Provider MCP toolkit
+const session = await composio.create("user_123", {
+  toolkits: ["notion_mcp"],
+});
+
+// Everything stays discoverable, but Notion is pinned to the Composio Built toolkit
+const session2 = await composio.create("user_123", {
+  toolkits: { disable: ["notion_mcp"] },
+});
+```
+</Tab>
+</Tabs>
+
 ## Direct tools preset
 
 The direct tools preset preloads every tool allowed by session filters into the session's tool list and disables session meta tools by default. Use it for specialized agents with a narrow tool set that don't need dynamic tool discovery, in-chat auth, or workbench helpers.

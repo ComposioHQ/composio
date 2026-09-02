@@ -28,9 +28,9 @@ export const SESSION_GUARDRAILS = `
 
 ## 1. Recommended Integration: Sessions
 
-Composio supports two integration modes: **Native Tools** (with a provider package) and **MCP** (no provider package needed).
+Composio supports two integration modes: **direct tools** (called through a provider package; previously called native tools) and **MCP** (no provider package needed).
 
-### Native Tools
+### Direct tools (provider package)
 
 \`\`\`python
 # ✅ CORRECT — Python (defaults to OpenAI)
@@ -65,6 +65,7 @@ Use \`session.mcp.url\` and \`session.mcp.headers\` with any MCP-compatible clie
 - \`composio.create(user_id)\` is the standard entry point for agent integrations. Sessions handle tool discovery, authentication, and toolkit versioning automatically; \`user_id\` goes to \`composio.create()\` — individual tool calls in session mode don't take one.
 - Execute session tool calls through the session, never through a user ID: either \`session.execute(tool_slug, arguments=...)\` / \`session.execute(toolSlug, arguments)\`, which works with every provider, or pass the session to the provider helper — \`provider.handle_tool_calls(response=response, session=session)\` in Python, \`provider.handleToolCalls(session, response)\` in TypeScript. Only the OpenAI and Anthropic helpers accept a session; with other providers, use \`session.execute()\`. Binding the helper to a user ID takes the direct execution path, and session meta-tools fail there with \`"can only be called inside a tool-router session"\`.
 - Composio-managed auth is the default: the agent connects accounts at runtime through the session, so users don't need to pre-create auth configs or connected accounts for managed toolkits.
+- Some products have more than one toolkit grouped as one App in the catalog, for example a Composio Built toolkit (e.g. \`notion\`) and a Provider MCP toolkit that connects to the product's own MCP server (e.g. \`notion_mcp\`). An App can hold more than two, and they are not always one of each kind. They are separate toolkits with separate connections; session config, search, and execution use the exact toolkit slug.
 - Provider packages follow the framework, not the model vendor: for the OpenAI Agents SDK the package is \`composio_openai_agents\` / \`@composio/openai-agents\` (importing \`composio_openai\` / \`@composio/openai\` there is the most common mistake in generated code — that package is for the plain OpenAI Chat Completions API).
 - **Direct execution** (\`composio.tools.get()\`, \`composio.tools.execute()\`, \`provider.handle_tool_calls()\` with a user ID) is a fully supported lower-level interface: your code picks the tool, no runtime discovery. It fits deterministic workflows and scripts; sessions fit agents that decide at runtime. The tradeoffs are documented at https://docs.composio.dev/docs/sessions-vs-direct-execution. Note that direct execution requires a toolkit version (https://docs.composio.dev/docs/tools-direct/toolkit-versioning).
 
