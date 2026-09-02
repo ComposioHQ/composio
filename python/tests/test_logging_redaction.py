@@ -155,7 +155,8 @@ def test_sdk_logger_omits_exception_metadata_and_original_state() -> None:
     logger.setLevel(logging.ERROR)
     wrapped = _VerbosityWrapper(logger, verbosity_level=3)
     error = _TokenError("api_key=message_test_secret", "attribute_test_secret")
-    error.add_note("password=note_test_secret")
+    # ``BaseException.add_note`` is 3.11+; ``__notes__`` is what traceback reads.
+    error.__notes__ = ["password=note_test_secret"]
 
     wrapped.error("request failed", exc_info=error)
 
