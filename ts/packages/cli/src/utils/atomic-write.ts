@@ -72,4 +72,26 @@ export const atomicWritePrivateFileString = (params: {
 export const ensurePrivateFileMode = (params: {
   readonly fs: FileSystem.FileSystem;
   readonly target: string;
-}): Effect.Effect<void, PlatformError> => params.fs.chmod(params.target, 0o600);
+}): Effect.Effect<void> =>
+  Effect.gen(function* () {
+    const fileInfo = yield* params.fs.stat(params.target).pipe(
+      Effect.tapError(error =>
+        Effect.logWarning(
+          `Could not inspect permissions for credential file at ${params.target}; continuing with the read: ${String(error)}`
+        )
+      ),
+      Effect.option
+    );
+
+    if (Option.isNone(fileInfo) || (fileInfo.value.mode & 0o077) === 0) return;
+
+    yield* params.fs
+      .chmod(params.target, 0o600)
+      .pipe(
+        Effect.catchAll(error =>
+          Effect.logWarning(
+            `Could not tighten permissions for credential file at ${params.target}; continuing with the read: ${String(error)}`
+          )
+        )
+      );
+  });
