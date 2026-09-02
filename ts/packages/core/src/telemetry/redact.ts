@@ -38,11 +38,17 @@ const REDACTION_RULES: ReadonlyArray<readonly [RegExp, string]> = [
     `$1$2$1$3'${REDACTED}'`,
   ],
   [
-    new RegExp(String.raw`${BARE_SECRET_KEY_PREFIX}"(?:\\.|[^"\\\r\n])*"(?![A-Za-z0-9_])`, 'gi'),
+    new RegExp(
+      String.raw`${BARE_SECRET_KEY_PREFIX}"(?:\\.|[^"\\\r\n])*"(?=\s|[,;.!?:)}\]]|$)`,
+      'gi'
+    ),
     `$1$2"${REDACTED}"`,
   ],
   [
-    new RegExp(String.raw`${BARE_SECRET_KEY_PREFIX}'(?:\\.|[^'\\\r\n])*'(?![A-Za-z0-9_])`, 'gi'),
+    new RegExp(
+      String.raw`${BARE_SECRET_KEY_PREFIX}'(?:\\.|[^'\\\r\n])*'(?=\s|[,;.!?:)}\]]|$)`,
+      'gi'
+    ),
     `$1$2'${REDACTED}'`,
   ],
   [new RegExp(String.raw`${SECRET_PAIR_PREFIX}([^\s"',}&]+)`, 'gi'), `$1$2${REDACTED}`],

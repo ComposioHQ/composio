@@ -117,6 +117,9 @@ describe('redactSensitiveText', () => {
     for (const benign of [
       '{"error": "unknown field auth:", "user": "bob"}',
       `{'note': 'unknown field auth:', "user": 'bob'}`,
+      '{"error": "unknown field auth:", "$schema": "safe"}',
+      '{"error": "unknown field auth:", "@type": "safe"}',
+      '{"error": "unknown field auth:", "üser": "safe"}',
     ]) {
       expect(redactSensitiveText(benign), benign).toBe(benign);
     }

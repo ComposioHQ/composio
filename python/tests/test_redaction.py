@@ -128,6 +128,9 @@ def test_does_not_match_secret_name_embedded_in_letters() -> None:
     [
         '{"error": "unknown field auth:", "user": "bob"}',
         "{'note': 'unknown field auth:', \"user\": 'bob'}",
+        '{"error": "unknown field auth:", "$schema": "safe"}',
+        '{"error": "unknown field auth:", "@type": "safe"}',
+        '{"error": "unknown field auth:", "üser": "safe"}',
     ],
 )
 def test_does_not_consume_adjacent_fields_after_key_like_text(text: str) -> None:
