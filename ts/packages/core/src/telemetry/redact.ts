@@ -13,6 +13,8 @@
  */
 
 const REDACTED = '[REDACTED]';
+const SECRET_KEY_PATTERN = String.raw`authorization|auth|api[-_]?key|apikey|x-api-key|access[-_]?token|refresh[-_]?token|client[-_]?secret|secret|password|passwd|pwd`;
+const SECRET_PAIR_PREFIX = String.raw`(?<![A-Za-z0-9])(${SECRET_KEY_PATTERN})\b(["']?\s*[:=]+\s*)`;
 
 const REDACTION_RULES: ReadonlyArray<readonly [RegExp, string]> = [
   // URL query strings — tokens, presigned signatures, one-time codes.
@@ -22,13 +24,13 @@ const REDACTION_RULES: ReadonlyArray<readonly [RegExp, string]> = [
   // Secret-ish `key: value` / `key=value` / `key: "value"` / `key: 'value'` pairs.
   // The separator group allows a quote directly after the key name so JSON is
   // covered: in `{"api_key": "secret"}` the key's own closing quote sits
-  // between the name and the colon.
+  // between the name and the colon. Quoted rules run first so whitespace is
+  // part of the redacted value instead of preventing a match.
   // Leading lookbehind (not \b) so env-style names like COMPOSIO_API_KEY still
   // match: underscore is a word char, so \b can't fire between COMPOSIO_ and API.
-  [
-    /(?<![A-Za-z0-9])(authorization|auth|api[-_]?key|apikey|x-api-key|access[-_]?token|refresh[-_]?token|client[-_]?secret|secret|password|passwd|pwd)\b(["']?\s*[:=]+\s*)(["']?)([^\s"',}&]+)\3/gi,
-    `$1$2$3${REDACTED}$3`,
-  ],
+  [new RegExp(String.raw`${SECRET_PAIR_PREFIX}"(?:\\.|[^"\\\r\n])*"`, 'gi'), `$1$2"${REDACTED}"`],
+  [new RegExp(String.raw`${SECRET_PAIR_PREFIX}'(?:\\.|[^'\\\r\n])*'`, 'gi'), `$1$2'${REDACTED}'`],
+  [new RegExp(String.raw`${SECRET_PAIR_PREFIX}([^\s"',}&]+)`, 'gi'), `$1$2${REDACTED}`],
 ];
 
 /**

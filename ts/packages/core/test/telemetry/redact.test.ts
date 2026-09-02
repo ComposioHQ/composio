@@ -55,6 +55,8 @@ describe('redactSensitiveText', () => {
       ['{"x-api-key":"ck_hdr","user":"bob"}', 'ck_hdr'],
       [`{'client_secret': 'cs_live_abc123'}`, 'cs_live_abc123'],
       ['{"password": "hunter2"}', 'hunter2'],
+      ['{"password": "correct horse battery staple"}', 'correct horse battery staple'],
+      [`{'client_secret': 'multi word secret'}`, 'multi word secret'],
     ] as const) {
       const out = redactSensitiveText(sample)!;
       expect(out, sample).toContain('[REDACTED]');

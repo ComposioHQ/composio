@@ -2,13 +2,14 @@
 Logging utilities.
 """
 
+import copy
 import logging
 import os
 import sys
 import typing as t
 from enum import Enum
 
-from composio.utils.redaction import redact_sensitive_text
+from composio.utils.redaction import redact_sensitive_text, redact_sensitive_value
 
 ENV_COMPOSIO_LOGGING_LEVEL = "COMPOSIO_LOGGING_LEVEL"
 
@@ -101,9 +102,15 @@ class _VerbosityWrapper:
         return self._trim(msg) if trim else redact_sensitive_text(str(msg))
 
     def _prepare_exception(self, msg: str, kwargs):
-        exc_info = kwargs.get("exc_info")
+        sanitized_kwargs = dict(kwargs)
+        if "extra" in sanitized_kwargs:
+            sanitized_kwargs["extra"] = redact_sensitive_value(
+                sanitized_kwargs["extra"]
+            )
+
+        exc_info = sanitized_kwargs.get("exc_info")
         if not exc_info:
-            return msg, kwargs
+            return msg, sanitized_kwargs
 
         if isinstance(exc_info, BaseException):
             exc_info = (type(exc_info), exc_info, exc_info.__traceback__)
@@ -111,9 +118,34 @@ class _VerbosityWrapper:
             exc_info = sys.exc_info()
 
         exception_text = logging.Formatter().formatException(exc_info)
-        sanitized_kwargs = dict(kwargs)
-        sanitized_kwargs["exc_info"] = None
+        exception = exc_info[1]
+        if exception is not None:
+            sanitized_exception = self._sanitize_exception(exception)
+            sanitized_kwargs["exc_info"] = (
+                type(sanitized_exception),
+                sanitized_exception,
+                None,
+            )
         return f"{msg}\n{redact_sensitive_text(exception_text)}", sanitized_kwargs
+
+    @staticmethod
+    def _sanitize_exception(exception: BaseException) -> BaseException:
+        """Keep structured exception type metadata without re-rendering raw details."""
+        try:
+            if hasattr(exception, "exceptions"):
+                raise TypeError("exception groups require a generic sanitized wrapper")
+            sanitized = copy.copy(exception)
+            sanitized.args = ("[details redacted]",)
+            sanitized.__cause__ = None
+            sanitized.__context__ = None
+            sanitized.__traceback__ = None
+            if redact_sensitive_text(str(sanitized)) != str(sanitized):
+                raise ValueError(
+                    "custom exception string still contains sensitive data"
+                )
+            return sanitized
+        except (AttributeError, TypeError, ValueError):
+            return RuntimeError(f"{type(exception).__name__}: [details redacted]")
 
     def info(self, msg, *args, **kwargs):
         if self.logger.isEnabledFor(logging.INFO):

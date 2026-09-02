@@ -4,6 +4,16 @@ import logging
 from composio.utils.logging import _VerbosityWrapper
 
 
+class _CaptureHandler(logging.StreamHandler):
+    def __init__(self, stream: io.StringIO) -> None:
+        super().__init__(stream)
+        self.records: list[logging.LogRecord] = []
+
+    def emit(self, record: logging.LogRecord) -> None:
+        self.records.append(record)
+        super().emit(record)
+
+
 def test_sdk_logger_redacts_structured_and_interpolated_credentials() -> None:
     output = io.StringIO()
     logger = logging.getLogger("composio-test-credential-redaction")
@@ -19,6 +29,31 @@ def test_sdk_logger_redacts_structured_and_interpolated_credentials() -> None:
     assert "uak_test_secret" not in logged
     assert "oauth_test_secret" not in logged
     assert "[REDACTED]" in logged
+    assert "visible" in logged
+
+
+def test_sdk_logger_redacts_extra_metadata_before_formatting() -> None:
+    output = io.StringIO()
+    logger = logging.getLogger("composio-test-extra-redaction")
+    handler = logging.StreamHandler(output)
+    handler.setFormatter(logging.Formatter("%(message)s %(api_key)s %(context)s"))
+    logger.handlers = [handler]
+    logger.propagate = False
+    logger.setLevel(logging.INFO)
+    wrapped = _VerbosityWrapper(logger, verbosity_level=3)
+
+    wrapped.info(
+        "request metadata",
+        extra={
+            "api_key": "uak_test_secret",
+            "context": {"access_token": "oauth_test_secret", "safe": "visible"},
+        },
+    )
+
+    logged = output.getvalue()
+    assert "uak_test_secret" not in logged
+    assert "oauth_test_secret" not in logged
+    assert logged.count("[REDACTED]") == 2
     assert "visible" in logged
 
 
@@ -41,7 +76,8 @@ def test_sdk_logger_redacts_errors_without_truncating_them() -> None:
 def test_sdk_logger_redacts_exception_tracebacks() -> None:
     output = io.StringIO()
     logger = logging.getLogger("composio-test-exception-redaction")
-    logger.handlers = [logging.StreamHandler(output)]
+    handler = _CaptureHandler(output)
+    logger.handlers = [handler]
     logger.propagate = False
     logger.setLevel(logging.ERROR)
     wrapped = _VerbosityWrapper(logger, verbosity_level=3)
@@ -56,6 +92,9 @@ def test_sdk_logger_redacts_exception_tracebacks() -> None:
     assert "Traceback (most recent call last)" in logged
     assert "RuntimeError" in logged
     assert "[REDACTED]" in logged
+    assert handler.records[0].exc_info is not None
+    assert isinstance(handler.records[0].exc_info[1], RuntimeError)
+    assert "oauth_test_secret" not in str(handler.records[0].exc_info[1])
 
 
 def test_sdk_logger_omits_arguments_when_placeholder_formatting_fails() -> None:

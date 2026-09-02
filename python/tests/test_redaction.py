@@ -1,7 +1,6 @@
 """Tests for telemetry secret redaction."""
 
 import pytest
-
 from composio.utils.redaction import redact_sensitive_text
 
 
@@ -24,9 +23,15 @@ def test_redacts_url_queries_authorization_and_secret_pairs() -> None:
         ('{"api_key":"sk-live-abc123"}', "sk-live-abc123"),
         ('{"api_key" : "sk-live-abc123"}', "sk-live-abc123"),
         ('{"refresh_token":"rt-abc.def-123"}', "rt-abc.def-123"),
+        ('{"auth":"app-key:pusher-secret"}', "app-key:pusher-secret"),
         ('{"x-api-key":"sk-hdr","user":"bob"}', "sk-hdr"),
         ("{'client_secret': 'cs-live-abc123'}", "cs-live-abc123"),
         ('{"password": "hunter2"}', "hunter2"),
+        (
+            '{"password": "correct horse battery staple"}',
+            "correct horse battery staple",
+        ),
+        ("{'client_secret': 'multi word secret'}", "multi word secret"),
     ],
 )
 def test_redacts_secrets_in_json_and_dict_reprs(text: str, secret: str) -> None:
