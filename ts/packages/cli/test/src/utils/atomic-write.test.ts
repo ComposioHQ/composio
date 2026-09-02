@@ -3,7 +3,7 @@ import * as PlatformError from '@effect/platform/Error';
 import { BunFileSystem, BunPath } from '@effect/platform-bun';
 import { describe, expect, layer } from '@effect/vitest';
 import { Effect, Layer } from 'effect';
-import { ensurePrivateFileMode } from 'src/utils/atomic-write';
+import { atomicWritePrivateFileString, ensurePrivateFileMode } from 'src/utils/atomic-write';
 
 const TestPlatform = Layer.mergeAll(BunFileSystem.layer, BunPath.layer);
 
@@ -27,6 +27,61 @@ const failChmod = (fs: FileSystem.FileSystem, onAttempt: () => void): FileSystem
       };
     },
   });
+
+const collideWithFirstTmpWrite = (
+  fs: FileSystem.FileSystem,
+  onCollision: (path: string) => void
+): FileSystem.FileSystem => {
+  let collided = false;
+
+  return new Proxy(fs, {
+    get(target, property, receiver) {
+      if (property !== 'writeFileString') {
+        return Reflect.get(target, property, receiver);
+      }
+
+      return (path: string, contents: string, options?: FileSystem.WriteFileOptions) => {
+        if (collided || !path.includes('.composio-tmp.')) {
+          return target.writeFileString(path, contents, options);
+        }
+
+        collided = true;
+        onCollision(path);
+        return target
+          .writeFileString(path, 'pre-existing contents')
+          .pipe(Effect.andThen(target.writeFileString(path, contents, options)));
+      };
+    },
+  });
+};
+
+describe('atomicWritePrivateFileString', () => {
+  layer(TestPlatform)(it => {
+    it.scoped('retries an exclusive random staging path without touching a collision', () =>
+      Effect.gen(function* () {
+        const fs = yield* FileSystem.FileSystem;
+        const path = yield* Path.Path;
+        const directory = yield* fs.makeTempDirectoryScoped();
+        const target = path.join(directory, 'credentials.json');
+        let collisionPath: string | undefined;
+        const collidingFs = collideWithFirstTmpWrite(fs, collidedPath => {
+          collisionPath = collidedPath;
+        });
+
+        yield* atomicWritePrivateFileString({
+          fs: collidingFs,
+          target,
+          contents: '{"api_key":"valid"}\n',
+        });
+
+        expect(collisionPath).toBeDefined();
+        expect(yield* fs.readFileString(collisionPath!, 'utf8')).toBe('pre-existing contents');
+        expect(yield* fs.readFileString(target, 'utf8')).toBe('{"api_key":"valid"}\n');
+        expect((yield* fs.stat(target)).mode & 0o777).toBe(0o600);
+      })
+    );
+  });
+});
 
 describe('ensurePrivateFileMode', () => {
   layer(TestPlatform)(it => {

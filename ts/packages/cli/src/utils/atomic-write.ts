@@ -4,18 +4,21 @@
  *
  * The tmp file lives next to the target so the final rename(2) stays on one
  * filesystem and is atomic: readers observe either the old or the new
- * contents, never a partial write. The tmp name embeds the pid so concurrent
- * CLI processes writing the same target never share (and clobber) one tmp
- * file. On any failure — including a failure of the initial write itself,
+ * contents, never a partial write. The tmp name contains a random UUID and is
+ * created exclusively so concurrent or hostile processes cannot share,
+ * replace, or redirect it. On any failure — including a failure of the initial write itself,
  * e.g. ENOSPC mid-write — the tmp file is removed best-effort before the
  * original error propagates, so no tmp litter is left next to the target.
  */
 
 import type { FileSystem } from '@effect/platform';
 import type { PlatformError } from '@effect/platform/Error';
-import { Effect, Option } from 'effect';
+import { Effect, Either, Option, Predicate } from 'effect';
 
-export const atomicTmpPath = (target: string): string => `${target}.composio-tmp.${process.pid}`;
+const MAX_ATOMIC_WRITE_ATTEMPTS = 5;
+
+export const atomicTmpPath = (target: string): string =>
+  `${target}.composio-tmp.${crypto.randomUUID()}`;
 
 export const atomicWriteFileString = (params: {
   readonly fs: FileSystem.FileSystem;
@@ -39,23 +42,37 @@ export const atomicWriteFileString = (params: {
       ? Option.map(yield* fs.stat(target).pipe(Effect.option), info => info.mode & 0o7777)
       : Option.none<number>();
     const targetMode = Option.fromNullable(params.mode).pipe(Option.orElse(() => preservedMode));
-    const tmpPath = atomicTmpPath(target);
+    const writeAndPromote = (attempt: number): Effect.Effect<void, PlatformError> =>
+      Effect.gen(function* () {
+        const tmpPath = atomicTmpPath(target);
+        const created = yield* Option.match(targetMode, {
+          onNone: () => fs.writeFileString(tmpPath, contents, { flag: 'wx' }),
+          onSome: mode => fs.writeFileString(tmpPath, contents, { flag: 'wx', mode }),
+        }).pipe(Effect.either);
 
-    const writeAndPromote = Effect.gen(function* () {
-      yield* Option.match(targetMode, {
-        onNone: () => fs.writeFileString(tmpPath, contents),
-        onSome: mode => fs.writeFileString(tmpPath, contents, { mode }),
-      });
-      yield* Option.match(targetMode, {
-        onNone: () => Effect.void,
-        onSome: mode => fs.chmod(tmpPath, mode),
-      });
-      yield* fs.rename(tmpPath, target);
-    });
+        if (Either.isLeft(created)) {
+          const isCollision =
+            Predicate.isTagged('SystemError')(created.left) &&
+            created.left.reason === 'AlreadyExists';
+          if (isCollision && attempt < MAX_ATOMIC_WRITE_ATTEMPTS) {
+            return yield* writeAndPromote(attempt + 1);
+          }
+          if (!isCollision) {
+            yield* fs.remove(tmpPath, { force: true }).pipe(Effect.ignore);
+          }
+          return yield* Effect.fail(created.left);
+        }
 
-    yield* writeAndPromote.pipe(
-      Effect.onError(() => fs.remove(tmpPath, { force: true }).pipe(Effect.ignore))
-    );
+        yield* Effect.gen(function* () {
+          yield* Option.match(targetMode, {
+            onNone: () => Effect.void,
+            onSome: mode => fs.chmod(tmpPath, mode),
+          });
+          yield* fs.rename(tmpPath, target);
+        }).pipe(Effect.onError(() => fs.remove(tmpPath, { force: true }).pipe(Effect.ignore)));
+      });
+
+    yield* writeAndPromote(1);
   });
 
 export const atomicWritePrivateFileString = (params: {
