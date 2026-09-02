@@ -10,12 +10,14 @@ describe('Logger credential redaction', () => {
 
     logger.debug('credentials', {
       apiKey: 'uak_test_secret',
+      auth: 'app_key:pusher_signature',
       nested: { access_token: 'oauth_test_secret' },
       safe: 'visible',
     });
 
     const output = String(debug.mock.calls[0]?.[0]);
     expect(output).not.toContain('uak_test_secret');
+    expect(output).not.toContain('pusher_signature');
     expect(output).not.toContain('oauth_test_secret');
     expect(output).toContain('[REDACTED]');
     expect(output).toContain('visible');

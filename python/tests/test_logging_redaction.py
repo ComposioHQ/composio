@@ -38,6 +38,41 @@ def test_sdk_logger_redacts_errors_without_truncating_them() -> None:
     assert logged.rstrip().endswith("tail")
 
 
+def test_sdk_logger_redacts_exception_tracebacks() -> None:
+    output = io.StringIO()
+    logger = logging.getLogger("composio-test-exception-redaction")
+    logger.handlers = [logging.StreamHandler(output)]
+    logger.propagate = False
+    logger.setLevel(logging.ERROR)
+    wrapped = _VerbosityWrapper(logger, verbosity_level=3)
+
+    try:
+        raise RuntimeError("Authorization: Bearer oauth_test_secret")
+    except RuntimeError:
+        wrapped.error("request failed", exc_info=True)
+
+    logged = output.getvalue()
+    assert "oauth_test_secret" not in logged
+    assert "Traceback (most recent call last)" in logged
+    assert "RuntimeError" in logged
+    assert "[REDACTED]" in logged
+
+
+def test_sdk_logger_omits_arguments_when_placeholder_formatting_fails() -> None:
+    output = io.StringIO()
+    logger = logging.getLogger("composio-test-placeholder-redaction")
+    logger.handlers = [logging.StreamHandler(output)]
+    logger.propagate = False
+    logger.setLevel(logging.INFO)
+    wrapped = _VerbosityWrapper(logger, verbosity_level=3)
+
+    wrapped.info("api_key=%d", "uak_test_secret")
+
+    logged = output.getvalue()
+    assert "uak_test_secret" not in logged
+    assert "logging arguments omitted" in logged
+
+
 def test_sdk_logger_tolerates_bad_placeholders_and_skips_disabled_levels() -> None:
     class RaisesOnString:
         def __str__(self) -> str:

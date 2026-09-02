@@ -4,6 +4,7 @@ Logging utilities.
 
 import logging
 import os
+import sys
 import typing as t
 from enum import Enum
 
@@ -96,24 +97,45 @@ class _VerbosityWrapper:
                 )
                 msg = msg % format_args
             except (KeyError, TypeError, ValueError):
-                msg = f"{msg} {args}"
+                msg = f"{msg} [logging arguments omitted: formatting failed]"
         return self._trim(msg) if trim else redact_sensitive_text(str(msg))
+
+    def _prepare_exception(self, msg: str, kwargs):
+        exc_info = kwargs.get("exc_info")
+        if not exc_info:
+            return msg, kwargs
+
+        if isinstance(exc_info, BaseException):
+            exc_info = (type(exc_info), exc_info, exc_info.__traceback__)
+        elif not isinstance(exc_info, tuple):
+            exc_info = sys.exc_info()
+
+        exception_text = logging.Formatter().formatException(exc_info)
+        sanitized_kwargs = dict(kwargs)
+        sanitized_kwargs["exc_info"] = None
+        return f"{msg}\n{redact_sensitive_text(exception_text)}", sanitized_kwargs
 
     def info(self, msg, *args, **kwargs):
         if self.logger.isEnabledFor(logging.INFO):
-            self.logger.info(self._prepare(msg, args), **kwargs)
+            msg, kwargs = self._prepare_exception(self._prepare(msg, args), kwargs)
+            self.logger.info(msg, **kwargs)
 
     def debug(self, msg, *args, **kwargs):
         if self.logger.isEnabledFor(logging.DEBUG):
-            self.logger.debug(self._prepare(msg, args), **kwargs)
+            msg, kwargs = self._prepare_exception(self._prepare(msg, args), kwargs)
+            self.logger.debug(msg, **kwargs)
 
     def warning(self, msg, *args, **kwargs):
         if self.logger.isEnabledFor(logging.WARNING):
-            self.logger.warning(self._prepare(msg, args), **kwargs)
+            msg, kwargs = self._prepare_exception(self._prepare(msg, args), kwargs)
+            self.logger.warning(msg, **kwargs)
 
     def error(self, msg, *args, **kwargs):
         if self.logger.isEnabledFor(logging.ERROR):
-            self.logger.error(self._prepare(msg, args, trim=False), **kwargs)
+            msg, kwargs = self._prepare_exception(
+                self._prepare(msg, args, trim=False), kwargs
+            )
+            self.logger.error(msg, **kwargs)
 
     def isEnabledFor(self, level: int):
         return self.logger.isEnabledFor(level=level)

@@ -30,6 +30,7 @@ describe('redactSensitiveText', () => {
       "client_secret: 'topsecret'",
       'password=hunter2',
       'access_token=ya29.a0Afoobar',
+      'auth=app_key:pusher_signature',
     ]) {
       const out = redactSensitiveText(sample)!;
       expect(out, sample).toContain('[REDACTED]');
@@ -50,6 +51,7 @@ describe('redactSensitiveText', () => {
       ['{"api_key":"ck_live_abc123"}', 'ck_live_abc123'],
       ['{"api_key" : "ck_live_abc123"}', 'ck_live_abc123'],
       ['{"refresh_token":"rt-abc.def-123"}', 'rt-abc.def-123'],
+      ['{"auth":"app_key:pusher_signature"}', 'app_key:pusher_signature'],
       ['{"x-api-key":"ck_hdr","user":"bob"}', 'ck_hdr'],
       [`{'client_secret': 'cs_live_abc123'}`, 'cs_live_abc123'],
       ['{"password": "hunter2"}', 'hunter2'],

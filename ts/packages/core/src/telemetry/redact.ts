@@ -26,7 +26,7 @@ const REDACTION_RULES: ReadonlyArray<readonly [RegExp, string]> = [
   // Leading lookbehind (not \b) so env-style names like COMPOSIO_API_KEY still
   // match: underscore is a word char, so \b can't fire between COMPOSIO_ and API.
   [
-    /(?<![A-Za-z0-9])(authorization|api[-_]?key|apikey|x-api-key|access[-_]?token|refresh[-_]?token|client[-_]?secret|secret|password|passwd|pwd)\b(["']?\s*[:=]+\s*)(["']?)([^\s"',}&]+)\3/gi,
+    /(?<![A-Za-z0-9])(authorization|auth|api[-_]?key|apikey|x-api-key|access[-_]?token|refresh[-_]?token|client[-_]?secret|secret|password|passwd|pwd)\b(["']?\s*[:=]+\s*)(["']?)([^\s"',}&]+)\3/gi,
     `$1$2$3${REDACTED}$3`,
   ],
 ];
