@@ -1098,6 +1098,35 @@
       ]
     },
     {
+      "id": "composition-allof-closed-object-branches",
+      "description": "Closed allOf object branches merge instead of rejecting each other's keys; the union of declared keys stays strict.",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "value": {
+            "allOf": [
+              {
+                "type": "object",
+                "properties": { "a": { "type": "string" } },
+                "required": ["a"]
+              },
+              {
+                "type": "object",
+                "properties": { "b": { "type": "string" } },
+                "required": ["b"]
+              }
+            ]
+          }
+        },
+        "required": ["value"]
+      },
+      "instances": [
+        { "input": { "value": { "a": "ready", "b": "set" } }, "accepted": true },
+        { "input": { "value": { "a": "ready" } }, "accepted": false },
+        { "input": { "value": { "a": "ready", "b": "set", "c": 1 } }, "accepted": false }
+      ]
+    },
+    {
       "id": "composition-scalar-allof",
       "description": "Scalar allOf branches combine rather than selecting the first branch.",
       "schema": {
