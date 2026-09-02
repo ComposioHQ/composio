@@ -24,9 +24,7 @@ from composio.utils.schema_converter import (
     FALLBACK_VALUES,
     PYDANTIC_TYPE_TO_PYTHON_TYPE,
     _mark_explicit_default_fields,
-    _requires_whole_schema_validation,
     _with_exact_validation,
-    _with_exact_validation_annotation,
     apply_object_policy,
     json_schema_to_pydantic_type,
 )
@@ -670,9 +668,10 @@ def pydantic_model_from_param_schema(param_schema: t.Dict) -> t.Type:
             )
 
     if not required_fields and not optional_fields:
-        if _requires_whole_schema_validation(param_schema):
-            return _with_exact_validation_annotation(t.Dict, param_schema, param_schema)
-        return t.Dict
+        # Nothing to materialize: let the shared converter pick the annotation
+        # so `allOf`/`anyOf`/`$ref` and typeless assertions keep the same exact
+        # validation and permissive materialization as the other entry points.
+        return t.cast(t.Type, json_schema_to_pydantic_type(param_schema))
 
     model = create_model(  # type: ignore
         param_title,

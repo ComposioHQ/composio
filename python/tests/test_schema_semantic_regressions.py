@@ -409,3 +409,16 @@ def test_exact_validated_array_items_keep_materialized_defaults() -> None:
     assert adapter.dump_python(
         adapter.validate_python({"items_a": [{}]}), mode="json"
     ) == {"items_a": [{"null_default": None}]}
+
+
+@pytest.mark.unit
+@pytest.mark.schema
+def test_property_less_param_schema_admits_non_objects() -> None:
+    schema = {"title": "Either", "anyOf": [{"type": "string"}, {"type": "object"}]}
+    assert Draft7Validator(schema).is_valid("x")
+
+    adapter = TypeAdapter(pydantic_model_from_param_schema(schema))
+    assert adapter.validate_python("x") == "x"
+    assert adapter.validate_python({"k": 1}) == {"k": 1}
+    with pytest.raises(ValidationError):
+        adapter.validate_python(1)
