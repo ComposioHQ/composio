@@ -4,7 +4,6 @@ import { parseSchema } from './parsers/parse-schema';
 import { parseObjectShape } from './parsers/parse-object-shape';
 import type { JsonSchemaToZodOptions, JsonSchema, JsonSchemaObject } from './types';
 import {
-  requiresPermissiveMaterialization,
   requiresWholeSchemaValidation,
   withWholeSchemaValidation,
 } from './whole-schema-validation';
@@ -16,14 +15,12 @@ export const jsonSchemaToZod = (
   const parsedSchema = parseSchema(schema, {
     path: [],
     seen: new Map(),
+    root: schema,
     ...options,
   });
 
   return requiresWholeSchemaValidation(schema)
-    ? withWholeSchemaValidation(
-        schema,
-        requiresPermissiveMaterialization(schema) ? z.any() : parsedSchema
-      )
+    ? withWholeSchemaValidation(schema, parsedSchema)
     : parsedSchema;
 };
 
@@ -58,6 +55,7 @@ export const jsonSchemaToZodShape = (
   return parseObjectShape(objectSchema, {
     path: [],
     seen: new Map(),
+    root: objectSchema,
     ...options,
   });
 };

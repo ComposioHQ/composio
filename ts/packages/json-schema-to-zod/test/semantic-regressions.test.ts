@@ -1,7 +1,9 @@
 import Ajv from 'ajv';
 import { describe, expect, it } from 'vitest';
 
-import { jsonSchemaToZod } from '../src/index';
+import { z } from 'zod/v3';
+
+import { jsonSchemaToZod, jsonSchemaToZodShape } from '../src/index';
 import type { JsonSchema } from '../src/types';
 
 type RejectionCase = {
@@ -97,6 +99,16 @@ const rejectionCases: ReadonlyArray<RejectionCase> = [
     value: {},
   },
   {
+    name: 'const must be enforced for typed objects',
+    schema: { type: 'object', const: { x: 1 } },
+    value: { x: 2 },
+  },
+  {
+    name: 'enum must be enforced for typed arrays',
+    schema: { type: 'array', enum: [[1, 2]] },
+    value: [2],
+  },
+  {
     name: 'local references must constrain direct converter callers',
     schema: {
       $defs: { positive: { type: 'number', minimum: 1 } },
@@ -156,6 +168,21 @@ const acceptanceCases: ReadonlyArray<AcceptanceCase> = [
     value: 2,
   },
   {
+    name: 'const accepts the matching typed object',
+    schema: { type: 'object', const: { x: 1 } },
+    value: { x: 1 },
+  },
+  {
+    name: 'sibling allOf object branches accept each other declared keys',
+    schema: {
+      allOf: [
+        { type: 'object', properties: { a: { type: 'string' } }, required: ['a'] },
+        { type: 'object', properties: { b: { type: 'string' } }, required: ['b'] },
+      ],
+    },
+    value: { a: 'ready', b: 'set' },
+  },
+  {
     name: 'nested typeless object assertions accept non-object property values',
     schema: {
       type: 'object',
@@ -175,6 +202,59 @@ describe('whole-schema semantic regressions', () => {
   it.each(acceptanceCases)('$name', ({ schema, value }) => {
     expect(ajv.compile(schema)(value), 'Draft 7 oracle must accept the fixture').toBe(true);
     expect(jsonSchemaToZod(schema).safeParse(value).success).toBe(true);
+  });
+
+  it('resolves local references from a raw shape against the enclosing document', () => {
+    const schema: JsonSchema = {
+      type: 'object',
+      properties: { name: { $ref: '#/$defs/name' } },
+      required: ['name'],
+      $defs: { name: { type: 'string' } },
+    };
+    const shape = z.object(jsonSchemaToZodShape(schema));
+
+    expect(shape.safeParse({ name: 'Ada' }).success).toBe(true);
+    expect(shape.safeParse({ name: 1 }).success).toBe(false);
+  });
+
+  it('keeps sibling defaults when a nested reference widens only its own property', () => {
+    const schema: JsonSchema = {
+      type: 'object',
+      properties: {
+        name: { $ref: '#/$defs/n' },
+        enabled: { type: 'boolean', default: true },
+      },
+      $defs: { n: { type: 'string' } },
+    };
+    const parsed = jsonSchemaToZod(schema);
+
+    expect(parsed.parse({ name: 'Ada' })).toEqual({ name: 'Ada', enabled: true });
+    expect(parsed.safeParse({ name: 1 }).success).toBe(false);
+  });
+
+  it('keeps allOf branch defaults and stays strict over the union of declared keys', () => {
+    const schema: JsonSchema = {
+      allOf: [
+        { type: 'object', properties: { a: { type: 'string' } }, required: ['a'] },
+        { type: 'object', properties: { b: { type: 'string', default: 'set' } } },
+      ],
+    };
+    const parsed = jsonSchemaToZod(schema);
+
+    expect(parsed.parse({ a: 'ready' })).toEqual({ a: 'ready', b: 'set' });
+    expect(parsed.safeParse({ a: 'ready', c: 1 }).success).toBe(false);
+  });
+
+  it('normalizes Draft 4 exclusive bounds before the whole-schema guard runs', () => {
+    const schema = {
+      type: 'object',
+      propertyNames: { pattern: '^[a-z]+$' },
+      properties: { v: { type: 'number', minimum: 0, exclusiveMinimum: true } },
+    } as unknown as JsonSchema;
+    const parsed = jsonSchemaToZod(schema);
+
+    expect(parsed.safeParse({ v: 0.5 }).success).toBe(true);
+    expect(parsed.safeParse({ v: 0 }).success).toBe(false);
   });
 
   it('keeps Draft 4 exclusive flags and adjacent Draft 7 keywords active together', () => {
