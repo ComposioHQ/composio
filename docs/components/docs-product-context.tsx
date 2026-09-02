@@ -153,13 +153,7 @@ export function DocsProductProvider({
           return new Promise<void>(resolve => {
             pendingNavigation.current?.resolve();
             const finish = () => resolve();
-            window.setTimeout(() => {
-              if (pendingNavigation.current?.resolve === finish) {
-                pendingNavigation.current = null;
-                setPendingProduct(null);
-              }
-              finish();
-            }, 1500);
+            window.setTimeout(finish, 1500);
             pendingNavigation.current = {
               from: pathname,
               resolve: finish,

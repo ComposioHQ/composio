@@ -1,5 +1,6 @@
 import { RootProvider } from 'fumadocs-ui/provider/next';
 import type { Metadata } from 'next';
+import { headers } from 'next/headers';
 import { Analytics } from '@vercel/analytics/next';
 import './global.css';
 import { JetBrains_Mono } from 'next/font/google';
@@ -10,6 +11,13 @@ import { ScrollReset } from '@/components/scroll-reset';
 import { source, referenceSource } from '@/lib/source';
 import { TOOLKIT_COUNT_LABEL } from '@/lib/toolkit-count';
 import { ProductTransitionLoader } from '@/components/product-transition-loader';
+import { DocsProductProvider } from '@/components/docs-product-context';
+import {
+  DEFAULT_DOCS_PRODUCT,
+  DOCS_PRODUCTS,
+  DOCS_PRODUCT_HEADER,
+  parseDocsProduct,
+} from '@/lib/home-navigation';
 
 const defaultLinkSlugs: { slug: string[]; source: typeof source }[] = [
   { slug: ['quickstart'], source },
@@ -66,7 +74,11 @@ const jetbrainsMono = JetBrains_Mono({
   display: 'swap',
 });
 
-export default function Layout({ children }: LayoutProps<'/'>) {
+export default async function Layout({ children }: LayoutProps<'/'>) {
+  const initialProduct =
+    parseDocsProduct((await headers()).get(DOCS_PRODUCT_HEADER)) ?? DEFAULT_DOCS_PRODUCT;
+  const initialTheme = DOCS_PRODUCTS[initialProduct].theme;
+
   return (
     <html
       lang="en"
@@ -74,6 +86,11 @@ export default function Layout({ children }: LayoutProps<'/'>) {
       suppressHydrationWarning
     >
       <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `try{localStorage.setItem('theme','${initialTheme}')}catch{}document.documentElement.classList.remove('light','dark');document.documentElement.classList.add('${initialTheme}');document.documentElement.style.colorScheme='${initialTheme}'`,
+          }}
+        />
         <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
         <meta name="theme-color" content="#131211" media="(prefers-color-scheme: dark)" />
         <script
@@ -120,6 +137,7 @@ export default function Layout({ children }: LayoutProps<'/'>) {
               defaultTheme: 'system',
               attribute: 'class',
               enableSystem: true,
+              hotKey: false,
             }}
             search={{
               SearchDialog: CustomSearchDialog,
@@ -129,7 +147,7 @@ export default function Layout({ children }: LayoutProps<'/'>) {
               } as Record<string, unknown>,
             }}
           >
-            {children}
+            <DocsProductProvider initialProduct={initialProduct}>{children}</DocsProductProvider>
           </RootProvider>
         </PostHogProvider>
       </body>

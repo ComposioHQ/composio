@@ -147,6 +147,9 @@ describe('Docs product navigation', () => {
     const contextSource = await Bun.file(
       new URL('../../components/docs-product-context.tsx', import.meta.url),
     ).text();
+    const rootLayoutSource = await Bun.file(
+      new URL('../../app/layout.tsx', import.meta.url),
+    ).text();
 
     expect(switcherSource).toContain('aria-label={`Switch Composio product. Current product:');
     expect(switcherSource).toContain('ProductSelectionLink');
@@ -160,5 +163,8 @@ describe('Docs product navigation', () => {
     expect(sharedLayoutSource).toContain('slots: { navTitle: ProductNavTitle }');
     expect(sharedLayoutSource).toContain('themeSwitch: { enabled: false }');
     expect(contextSource).toContain('setTheme(DOCS_PRODUCTS[product].theme)');
+    expect(contextSource).toContain('window.setTimeout(finish, 1500)');
+    expect(rootLayoutSource).toContain("localStorage.setItem('theme','${initialTheme}')");
+    expect(rootLayoutSource).toContain('hotKey: false');
   });
 });
