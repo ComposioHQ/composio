@@ -37,6 +37,8 @@ def test_redacts_url_queries_authorization_and_secret_pairs() -> None:
         ('{"api_key" : "sk-live-abc123"}', "sk-live-abc123"),
         ('{"refresh_token":"rt-abc.def-123"}', "rt-abc.def-123"),
         ('{"auth":"app-key:pusher-secret"}', "app-key:pusher-secret"),
+        ('{"COMPOSIO_API_KEY":"prefixed-double-secret"}', "prefixed-double-secret"),
+        ("{'OPENAI_API_KEY': 'prefixed single secret'}", "prefixed single secret"),
         ('{"x-api-key":"sk-hdr","user":"bob"}', "sk-hdr"),
         ("{'client_secret': 'cs-live-abc123'}", "cs-live-abc123"),
         ('{"password": "hunter2"}', "hunter2"),

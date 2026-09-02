@@ -15,10 +15,13 @@ _SECRET_KEY_PATTERN = (
     r"authorization|auth|api[-_]?key|apikey|x-api-key|access[-_]?token|"
     r"refresh[-_]?token|client[-_]?secret|secret|password|passwd|pwd"
 )
-_SECRET_KEY = re.compile(rf"(?:[A-Za-z0-9]+_)*(?:{_SECRET_KEY_PATTERN})", re.IGNORECASE)
+_SECRET_KEY_WITH_PREFIX_PATTERN = rf"(?:[A-Za-z0-9]+_)*(?:{_SECRET_KEY_PATTERN})"
+_SECRET_KEY = re.compile(_SECRET_KEY_WITH_PREFIX_PATTERN, re.IGNORECASE)
 # Quoted keys are matched as a unit so a key-like word at the end of an error
 # string cannot treat the string's closing quote as the start of a secret value.
-_QUOTED_SECRET_KEY_PREFIX = rf"([\"'])({_SECRET_KEY_PATTERN})\1(\s*[:=]+\s*)"
+_QUOTED_SECRET_KEY_PREFIX = (
+    rf"([\"'])({_SECRET_KEY_WITH_PREFIX_PATTERN})\1(\s*[:=]+\s*)"
+)
 _BARE_SECRET_KEY_PREFIX = rf"(?<![A-Za-z0-9\"'])({_SECRET_KEY_PATTERN})\b(\s*[:=]+\s*)"
 _QUOTED_KEY_DOUBLE_QUOTED_VALUE = re.compile(
     rf'{_QUOTED_SECRET_KEY_PREFIX}"(?:\\.|[^"\\\r\n])*"', re.IGNORECASE
@@ -73,11 +76,17 @@ def redact_sensitive_value(value: t.Any) -> t.Any:
                     for key, nested in item.items():
                         if remaining_nodes <= 0:
                             break
+                        if isinstance(key, str):
+                            redacted_key: t.Any = redact_sensitive_text(key)
+                        elif isinstance(key, (int, float, bool, type(None))):
+                            redacted_key = key
+                        else:
+                            redacted_key = _REDACTED
                         if isinstance(key, str) and _SECRET_KEY.fullmatch(key):
                             remaining_nodes -= 1
-                            redacted_mapping[key] = _REDACTED
+                            redacted_mapping[redacted_key] = _REDACTED
                         else:
-                            redacted_mapping[key] = redact(nested, depth + 1)
+                            redacted_mapping[redacted_key] = redact(nested, depth + 1)
                     return redacted_mapping
 
                 redacted_items: list[t.Any] = []

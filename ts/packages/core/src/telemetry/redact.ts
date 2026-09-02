@@ -14,7 +14,8 @@
 
 const REDACTED = '[REDACTED]';
 const SECRET_KEY_PATTERN = String.raw`authorization|auth|api[-_]?key|apikey|x-api-key|access[-_]?token|refresh[-_]?token|client[-_]?secret|secret|password|passwd|pwd`;
-const QUOTED_SECRET_KEY_PREFIX = String.raw`(["'])(${SECRET_KEY_PATTERN})\1(\s*[:=]+\s*)`;
+const SECRET_KEY_WITH_PREFIX_PATTERN = String.raw`(?:[A-Za-z0-9]+_)*(?:${SECRET_KEY_PATTERN})`;
+const QUOTED_SECRET_KEY_PREFIX = String.raw`(["'])(${SECRET_KEY_WITH_PREFIX_PATTERN})\1(\s*[:=]+\s*)`;
 const BARE_SECRET_KEY_PREFIX = String.raw`(?<![A-Za-z0-9"'])(${SECRET_KEY_PATTERN})\b(\s*[:=]+\s*)`;
 const SECRET_PAIR_PREFIX = String.raw`(?<![A-Za-z0-9])(${SECRET_KEY_PATTERN})\b(["']?\s*[:=]+\s*)`;
 

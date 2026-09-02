@@ -59,7 +59,11 @@ def test_sdk_logger_redacts_extra_metadata_before_formatting() -> None:
         "request metadata",
         extra={
             "api_key": "uak_test_secret",
-            "context": {"access_token": "oauth_test_secret", "safe": "visible"},
+            "context": {
+                "access_token": "oauth_test_secret",
+                "api_key=nested_key_test_secret": "hidden key",
+                "safe": "visible",
+            },
             "binary": b"api_key=binary_test_secret",
         },
     )
@@ -67,8 +71,9 @@ def test_sdk_logger_redacts_extra_metadata_before_formatting() -> None:
     logged = output.getvalue()
     assert "uak_test_secret" not in logged
     assert "oauth_test_secret" not in logged
+    assert "nested_key_test_secret" not in logged
     assert "binary_test_secret" not in logged
-    assert logged.count("[REDACTED]") == 3
+    assert logged.count("[REDACTED]") == 4
     assert "visible" in logged
 
 
