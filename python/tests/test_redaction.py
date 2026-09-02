@@ -1,5 +1,6 @@
 """Tests for telemetry secret redaction."""
 
+import json
 from typing import NamedTuple
 
 import pytest
@@ -89,6 +90,42 @@ def test_redacts_secret_without_consuming_the_adjacent_field() -> None:
     )
 
 
+def test_redacts_escaped_quoted_secret_in_serialized_message() -> None:
+    source = json.dumps({"error": 'password: "secret"'})
+    expected = json.dumps({"error": 'password: "[REDACTED]"'})
+
+    assert redact_sensitive_text(source) == expected
+    assert redact_sensitive_text("password: \\'secret\\'") == (
+        "password: \\'[REDACTED]\\'"
+    )
+
+    double_encoded = json.dumps({"body": json.dumps({"api_key": "secret"})})
+    double_encoded_expected = json.dumps(
+        {"body": json.dumps({"api_key": "[REDACTED]"})}
+    )
+    assert redact_sensitive_text(double_encoded) == double_encoded_expected
+
+
+def test_preserves_serialized_adjacent_keys_with_escapes() -> None:
+    source = json.dumps(
+        {"error": "unknown field auth:", 'quoted"key': "safe", "path\\key": "safe"}
+    )
+
+    assert redact_sensitive_text(source) == source
+
+
+def test_redacts_unquoted_secrets_containing_backslashes() -> None:
+    assert redact_sensitive_text("password=abc\\def") == "password=[REDACTED]"
+    assert redact_sensitive_text("password=\\leading") == "password=[REDACTED]"
+
+
+def test_redacts_many_quoted_secrets_in_one_pass() -> None:
+    source = " ".join(f'password: "secret-{index}"' for index in range(1_000))
+    expected = " ".join('password: "[REDACTED]"' for _ in range(1_000))
+
+    assert redact_sensitive_text(source) == expected
+
+
 @pytest.mark.parametrize(
     "text",
     [
@@ -131,6 +168,9 @@ def test_does_not_match_secret_name_embedded_in_letters() -> None:
         '{"error": "unknown field auth:", "$schema": "safe"}',
         '{"error": "unknown field auth:", "@type": "safe"}',
         '{"error": "unknown field auth:", "üser": "safe"}',
+        '{"error": "unknown field auth:", ".well-known": "safe"}',
+        '{"error": "unknown field auth:", ":type": "safe"}',
+        '{"error": "unknown field auth:", "?field": "safe"}',
     ],
 )
 def test_does_not_consume_adjacent_fields_after_key_like_text(text: str) -> None:
@@ -144,6 +184,14 @@ def test_does_not_consume_adjacent_fields_after_key_like_text(text: str) -> None
         ("client_secret='period secret'.", "period secret"),
         ('api_key = "prose secret" followed by context', "prose secret"),
         ('password: "escaped \\"secret\\" value"', 'escaped \\"secret\\" value'),
+        ('can\'t connect password: "secret"', "secret"),
+        ('users\' password: "secret"', "secret"),
+        ('Chris\' password: "secret"', "secret"),
+        ('Andrés\' password: "secret"', "secret"),
+        ('{"error":"request failed password: \'secret\'"}', "secret"),
+        ('5" from target password: "secret"', "secret"),
+        ('unmatched " before password: "secret"', "secret"),
+        ("unmatched ' before password: 'secret'", "secret"),
         ('password: "}abc"', "}abc"),
         ('api_key: ",abc"', ",abc"),
     ],

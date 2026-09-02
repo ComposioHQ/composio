@@ -127,9 +127,8 @@ def test_sdk_logger_redacts_exception_tracebacks() -> None:
     assert "Traceback (most recent call last)" in logged
     assert "RuntimeError" in logged
     assert "[REDACTED]" in logged
-    assert handler.records[0].exc_info is not None
-    assert isinstance(handler.records[0].exc_info[1], RuntimeError)
-    assert "oauth_test_secret" not in str(handler.records[0].exc_info[1])
+    assert logged.count("Traceback (most recent call last)") == 1
+    assert handler.records[0].exc_info is None
 
 
 def test_sdk_logger_ignores_empty_implicit_exception_metadata() -> None:
@@ -147,7 +146,7 @@ def test_sdk_logger_ignores_empty_implicit_exception_metadata() -> None:
     assert handler.records[0].exc_info is None
 
 
-def test_sdk_logger_rebuilds_exception_metadata_without_original_state() -> None:
+def test_sdk_logger_omits_exception_metadata_and_original_state() -> None:
     output = io.StringIO()
     logger = logging.getLogger("composio-test-exception-state-redaction")
     handler = _CaptureHandler(output)
@@ -161,21 +160,16 @@ def test_sdk_logger_rebuilds_exception_metadata_without_original_state() -> None
     wrapped.error("request failed", exc_info=error)
 
     logged = output.getvalue()
-    sanitized = handler.records[0].exc_info
-    assert sanitized is not None
-    assert sanitized[0] is _TokenError
-    assert type(sanitized[1]) is _TokenError
-    assert vars(sanitized[1]) == {}
+    assert handler.records[0].exc_info is None
     for secret in (
         "message_test_secret",
         "attribute_test_secret",
         "note_test_secret",
     ):
         assert secret not in logged
-        assert secret not in str(sanitized[1])
 
 
-def test_sdk_logger_falls_back_when_exception_type_cannot_be_rebuilt() -> None:
+def test_sdk_logger_does_not_rebuild_custom_exception_types() -> None:
     output = io.StringIO()
     logger = logging.getLogger("composio-test-exception-constructor-fallback")
     handler = _CaptureHandler(output)
@@ -187,12 +181,8 @@ def test_sdk_logger_falls_back_when_exception_type_cannot_be_rebuilt() -> None:
     wrapped.error("request failed", exc_info=_ConstructorSensitiveError("known"))
 
     logged = output.getvalue()
-    sanitized = handler.records[0].exc_info
-    assert sanitized is not None
-    assert sanitized[0] is RuntimeError
-    assert isinstance(sanitized[1], RuntimeError)
+    assert handler.records[0].exc_info is None
     assert "constructor-secret" not in logged
-    assert "constructor-secret" not in str(sanitized[1])
 
 
 def test_sdk_logger_omits_arguments_when_placeholder_formatting_fails() -> None:

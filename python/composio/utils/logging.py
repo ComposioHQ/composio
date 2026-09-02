@@ -122,35 +122,8 @@ class _VerbosityWrapper:
             return msg, sanitized_kwargs
 
         exception_text = logging.Formatter().formatException(exc_info)
-        sanitized_exception = self._sanitize_exception(exception)
-        sanitized_kwargs["exc_info"] = (
-            type(sanitized_exception),
-            sanitized_exception,
-            None,
-        )
+        sanitized_kwargs["exc_info"] = None
         return f"{msg}\n{redact_sensitive_text(exception_text)}", sanitized_kwargs
-
-    @staticmethod
-    def _sanitize_exception(exception: BaseException) -> BaseException:
-        """Keep structured exception type metadata without re-rendering raw details."""
-        try:
-            if hasattr(exception, "exceptions"):
-                raise TypeError("exception groups require a generic sanitized wrapper")
-            sanitized = type(exception)("[details redacted]")
-            if hasattr(sanitized, "__dict__"):
-                sanitized.__dict__.clear()
-            sanitized.args = ("[details redacted]",)
-            sanitized.__cause__ = None
-            sanitized.__context__ = None
-            sanitized.__traceback__ = None
-            sanitized_text = str(sanitized)
-            if redact_sensitive_text(sanitized_text) != sanitized_text:
-                raise ValueError(
-                    "custom exception string still contains sensitive data"
-                )
-            return sanitized
-        except Exception:
-            return RuntimeError(f"{type(exception).__name__}: [details redacted]")
 
     def info(self, msg, *args, **kwargs):
         if self.logger.isEnabledFor(logging.INFO):

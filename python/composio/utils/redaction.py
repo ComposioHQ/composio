@@ -23,6 +23,9 @@ _QUOTED_SECRET_KEY_PREFIX = (
     rf"([\"'])({_SECRET_KEY_WITH_PREFIX_PATTERN})\1(\s*[:=]+\s*)"
 )
 _BARE_SECRET_KEY_PREFIX = rf"(?<![A-Za-z0-9\"'])({_SECRET_KEY_PATTERN})\b(\s*[:=]+\s*)"
+_ESCAPED_SECRET_KEY_PREFIX = (
+    rf"(?<![A-Za-z0-9])({_SECRET_KEY_PATTERN})\b((?:\\[\"'])?\s*[:=]+\s*)"
+)
 _QUOTED_KEY_DOUBLE_QUOTED_VALUE = re.compile(
     rf'{_QUOTED_SECRET_KEY_PREFIX}"(?:\\.|[^"\\\r\n])*"', re.IGNORECASE
 )
@@ -30,17 +33,97 @@ _QUOTED_KEY_SINGLE_QUOTED_VALUE = re.compile(
     rf"{_QUOTED_SECRET_KEY_PREFIX}'(?:\\.|[^'\\\r\n])*'", re.IGNORECASE
 )
 _BARE_KEY_DOUBLE_QUOTED_VALUE = re.compile(
-    rf'{_BARE_SECRET_KEY_PREFIX}"(?:\\.|[^"\\\r\n])*"(?=\s|[,;.!?:)}}\]]|$)',
+    rf'{_BARE_SECRET_KEY_PREFIX}"((?:\\.|[^"\\\r\n])*)"',
     re.IGNORECASE,
 )
 _BARE_KEY_SINGLE_QUOTED_VALUE = re.compile(
-    rf"{_BARE_SECRET_KEY_PREFIX}'(?:\\.|[^'\\\r\n])*'(?=\s|[,;.!?:)}}\]]|$)",
+    rf"{_BARE_SECRET_KEY_PREFIX}'((?:\\.|[^'\\\r\n])*)'",
+    re.IGNORECASE,
+)
+_BARE_KEY_ESCAPED_DOUBLE_QUOTED_VALUE = re.compile(
+    rf'{_ESCAPED_SECRET_KEY_PREFIX}\\"((?:\\.|[^"\\\r\n])*)\\"',
+    re.IGNORECASE,
+)
+_BARE_KEY_ESCAPED_SINGLE_QUOTED_VALUE = re.compile(
+    rf"{_ESCAPED_SECRET_KEY_PREFIX}\\'((?:\\.|[^'\\\r\n])*)\\'",
     re.IGNORECASE,
 )
 _SECRET_PAIR_PREFIX = rf"(?<![A-Za-z0-9])({_SECRET_KEY_PATTERN})\b([\"']?\s*[:=]+\s*)"
 _SECRET_PAIR_UNQUOTED = re.compile(
-    rf"{_SECRET_PAIR_PREFIX}([^\s\"',}}&]+)", re.IGNORECASE
+    rf"{_SECRET_PAIR_PREFIX}(?!\\[\"'])([^\s\"',}}&]+)", re.IGNORECASE
 )
+_COMPLETES_DOUBLE_QUOTED_FIELD = re.compile(r'(?:\\.|[^"\\\r\n])*"\s*[:=]')
+_COMPLETES_SINGLE_QUOTED_FIELD = re.compile(r"(?:\\.|[^'\\\r\n])*'\s*[:=]")
+_CONTAINS_QUOTED_FIELD = re.compile(r"(?:^|[,{\s])([\"'])[^\"'\\\r\n]+\1\s*[:=]\s*$")
+
+
+def _active_quotes_at(value: str, offsets: set[int]) -> dict[int, str | None]:
+    active_quotes: dict[int, str | None] = {}
+    quote: str | None = None
+    escaped = False
+    last_offset = max(offsets)
+
+    for position, character in enumerate(value):
+        if position in offsets:
+            active_quotes[position] = quote
+            if position == last_offset:
+                break
+        if character in "\r\n":
+            quote = None
+            escaped = False
+            continue
+        previous = value[position - 1] if position > 0 else ""
+        if previous in "\r\n":
+            previous = ""
+        following = value[position + 1] if position + 1 < len(value) else ""
+        if quote is None:
+            if character == '"' or (
+                character == "'" and not (previous.isalnum() or previous == "_")
+            ):
+                quote = character
+            continue
+        if escaped:
+            escaped = False
+        elif character == "\\":
+            escaped = True
+        elif character == quote:
+            if (
+                quote == "'"
+                and (previous.isalnum() or previous == "_")
+                and (following.isalnum() or following == "_")
+            ):
+                continue
+            quote = None
+
+    return active_quotes
+
+
+def _redact_bare_quoted_value(value: str, pattern: re.Pattern[str], quote: str) -> str:
+    matches = list(pattern.finditer(value))
+    if not matches:
+        return value
+
+    active_quotes = _active_quotes_at(value, {match.start() for match in matches})
+    completes_field = (
+        _COMPLETES_DOUBLE_QUOTED_FIELD
+        if quote == '"'
+        else _COMPLETES_SINGLE_QUOTED_FIELD
+    )
+    parts: list[str] = []
+    cursor = 0
+    for match in matches:
+        parts.append(value[cursor : match.start()])
+        if active_quotes[match.start()] == quote and (
+            completes_field.match(value, match.end())
+            or _CONTAINS_QUOTED_FIELD.search(match.group(3))
+        ):
+            parts.append(match.group(0))
+        else:
+            parts.append(f"{match.group(1)}{match.group(2)}{quote}{_REDACTED}{quote}")
+        cursor = match.end()
+
+    parts.append(value[cursor:])
+    return "".join(parts)
 
 
 def redact_sensitive_text(value: str) -> str:
@@ -49,8 +132,10 @@ def redact_sensitive_text(value: str) -> str:
     value = _AUTHORIZATION.sub(rf"\1 {_REDACTED}", value)
     value = _QUOTED_KEY_DOUBLE_QUOTED_VALUE.sub(rf'\1\2\1\3"{_REDACTED}"', value)
     value = _QUOTED_KEY_SINGLE_QUOTED_VALUE.sub(rf"\1\2\1\3'{_REDACTED}'", value)
-    value = _BARE_KEY_DOUBLE_QUOTED_VALUE.sub(rf'\1\2"{_REDACTED}"', value)
-    value = _BARE_KEY_SINGLE_QUOTED_VALUE.sub(rf"\1\2'{_REDACTED}'", value)
+    value = _BARE_KEY_ESCAPED_DOUBLE_QUOTED_VALUE.sub(rf'\1\2\\"{_REDACTED}\\"', value)
+    value = _BARE_KEY_ESCAPED_SINGLE_QUOTED_VALUE.sub(rf"\1\2\\'{_REDACTED}\\'", value)
+    value = _redact_bare_quoted_value(value, _BARE_KEY_DOUBLE_QUOTED_VALUE, '"')
+    value = _redact_bare_quoted_value(value, _BARE_KEY_SINGLE_QUOTED_VALUE, "'")
     return _SECRET_PAIR_UNQUOTED.sub(rf"\1\2{_REDACTED}", value)
 
 

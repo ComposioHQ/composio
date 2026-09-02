@@ -82,6 +82,41 @@ describe('redactSensitiveText', () => {
     );
   });
 
+  it('redacts escaped quoted secrets in serialized messages', () => {
+    const source = JSON.stringify({ error: 'password: "secret"' });
+    const expected = JSON.stringify({ error: 'password: "[REDACTED]"' });
+    expect(redactSensitiveText(source)).toBe(expected);
+    expect(redactSensitiveText("password: \\'secret\\'")).toBe("password: \\'[REDACTED]\\'");
+
+    const doubleEncoded = JSON.stringify({ body: JSON.stringify({ api_key: 'secret' }) });
+    const doubleEncodedExpected = JSON.stringify({
+      body: JSON.stringify({ api_key: '[REDACTED]' }),
+    });
+    expect(redactSensitiveText(doubleEncoded)).toBe(doubleEncodedExpected);
+  });
+
+  it('preserves serialized adjacent keys with escapes', () => {
+    const source = JSON.stringify({
+      error: 'unknown field auth:',
+      'quoted"key': 'safe',
+      'path\\key': 'safe',
+    });
+    expect(redactSensitiveText(source)).toBe(source);
+  });
+
+  it('redacts unquoted secrets containing backslashes', () => {
+    expect(redactSensitiveText('password=abc\\def')).toBe('password=[REDACTED]');
+    expect(redactSensitiveText('password=\\leading')).toBe('password=[REDACTED]');
+  });
+
+  it('redacts many quoted secrets in one pass', () => {
+    const source = Array.from({ length: 1_000 }, (_, index) => `password: "secret-${index}"`).join(
+      ' '
+    );
+    const expected = Array.from({ length: 1_000 }, () => 'password: "[REDACTED]"').join(' ');
+    expect(redactSensitiveText(source)).toBe(expected);
+  });
+
   it('leaves a key name with no attached value untouched', () => {
     for (const benign of [
       'the password field is required',
@@ -120,6 +155,9 @@ describe('redactSensitiveText', () => {
       '{"error": "unknown field auth:", "$schema": "safe"}',
       '{"error": "unknown field auth:", "@type": "safe"}',
       '{"error": "unknown field auth:", "üser": "safe"}',
+      '{"error": "unknown field auth:", ".well-known": "safe"}',
+      '{"error": "unknown field auth:", ":type": "safe"}',
+      '{"error": "unknown field auth:", "?field": "safe"}',
     ]) {
       expect(redactSensitiveText(benign), benign).toBe(benign);
     }
@@ -131,6 +169,14 @@ describe('redactSensitiveText', () => {
       ["client_secret='period secret'.", 'period secret'],
       ['api_key = "prose secret" followed by context', 'prose secret'],
       ['password: "escaped \\"secret\\" value"', 'escaped \\"secret\\" value'],
+      [`can't connect password: "secret"`, 'secret'],
+      [`users' password: "secret"`, 'secret'],
+      [`Chris' password: "secret"`, 'secret'],
+      [`Andrés' password: "secret"`, 'secret'],
+      [`{"error":"request failed password: 'secret'"}`, 'secret'],
+      ['5" from target password: "secret"', 'secret'],
+      ['unmatched " before password: "secret"', 'secret'],
+      ["unmatched ' before password: 'secret'", 'secret'],
       ['password: "}abc"', '}abc'],
       ['api_key: ",abc"', ',abc'],
     ] as const) {
