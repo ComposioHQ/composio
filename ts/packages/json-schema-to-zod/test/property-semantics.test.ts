@@ -145,5 +145,6 @@ describe('scalar conversion matches the Draft 7 oracle', () => {
       }),
       { numRuns: 300 }
     );
-  });
+    // 300 Ajv-compiled runs sit close to vitest's 5s default on CI runners.
+  }, 30_000);
 });
