@@ -398,6 +398,11 @@ describe('support-knowledge snapshot import', () => {
       '{"preserve":true}\n',
       'utf8',
     );
+    writeFileSync(
+      join(targetRoot, 'semantic-index.json'),
+      '{"records":[{"id":"existing-vector"}]}\n',
+      'utf8',
+    );
 
     expect(() => writeSupportKnowledgeSnapshot({
       snapshot,
@@ -421,5 +426,8 @@ describe('support-knowledge snapshot import', () => {
       join(targetRoot, 'external-sources/auth-guides.json'),
       'utf8',
     )).toBe('{"preserve":true}\n');
+    expect(readFileSync(join(targetRoot, 'semantic-index.json'), 'utf8')).toBe(
+      '{"records":[{"id":"existing-vector"}]}\n',
+    );
   });
 });

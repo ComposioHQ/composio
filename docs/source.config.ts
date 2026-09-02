@@ -97,7 +97,6 @@ const knowledgeBaseSchema = docsSchema.extend({
       }),
     )
     .optional(),
-  sourceCommit: z.string().optional(),
   lastVerifiedAt: z.string().optional(),
   reviewAfter: z.string().optional(),
   freshness: z.enum(['evergreen', 'time-sensitive']).optional(),
