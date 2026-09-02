@@ -5,7 +5,11 @@ Every fixture is checked against the Draft 7 oracle before the public Pydantic
 entry point, so a passing test cannot merely preserve two matching mistakes.
 """
 
+import json
+import threading
+import time
 import typing as t
+from http.server import BaseHTTPRequestHandler, HTTPServer
 
 import pytest
 from jsonschema import Draft7Validator
@@ -268,3 +272,81 @@ def test_nested_typeless_object_assertion_accepts_a_non_object_property() -> Non
     )
     for annotation in annotations:
         TypeAdapter(annotation).validate_python(value)
+
+
+@pytest.mark.unit
+@pytest.mark.schema
+@pytest.mark.parametrize("entry_point", ("pydantic_type", "model", "param_schema"))
+def test_external_ref_is_refused_without_network_io(entry_point: str) -> None:
+    """A remote `$ref` must never make the validator fetch over the network."""
+    requests: list[str] = []
+
+    class Handler(BaseHTTPRequestHandler):
+        def do_GET(self) -> None:  # noqa: N802 - http.server API
+            requests.append(self.path)
+            body = json.dumps({"type": "string"}).encode()
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json")
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+
+        def log_message(self, *args: t.Any) -> None:
+            pass
+
+    server = HTTPServer(("127.0.0.1", 0), Handler)
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    try:
+        url = f"http://127.0.0.1:{server.server_address[1]}/schema"
+        schema = {
+            "title": "ExternalRef",
+            "type": "object",
+            "properties": {"value": {"$ref": url}},
+            "required": ["value"],
+        }
+        convert = {
+            "pydantic_type": json_schema_to_pydantic_type,
+            "model": json_schema_to_model,
+            "param_schema": pydantic_model_from_param_schema,
+        }[entry_point]
+        with pytest.raises(ValueError, match="External schema reference"):
+            annotation = convert(schema)
+            TypeAdapter(annotation).validate_python({"value": "x"})
+    finally:
+        server.shutdown()
+        server.server_close()
+    assert requests == []
+
+
+@pytest.mark.unit
+@pytest.mark.schema
+def test_backtracking_pattern_rejects_in_linear_time() -> None:
+    schema = {
+        "type": "object",
+        "properties": {"value": {"type": "string", "pattern": "(a+)+$"}},
+    }
+    value = {"value": "a" * 24 + "!"}
+    assert not Draft7Validator(schema).is_valid(value)
+    model = json_schema_to_model(schema)
+
+    started = time.perf_counter()
+    with pytest.raises(ValidationError):
+        model.model_validate(value)
+    assert time.perf_counter() - started < 0.2
+
+    model.model_validate({"value": "aaa"})
+
+
+@pytest.mark.unit
+@pytest.mark.schema
+@pytest.mark.parametrize("combiner", ("anyOf", "oneOf"))
+def test_simple_union_rejects_bool_for_integer_or_null(combiner: str) -> None:
+    schema = {combiner: [{"type": "integer"}, {"type": "null"}]}
+    assert not Draft7Validator(schema).is_valid(True)
+
+    adapter = TypeAdapter(json_schema_to_pydantic_type(schema))
+    with pytest.raises(ValidationError):
+        adapter.validate_python(True)
+    assert adapter.validate_python(1) == 1
+    assert adapter.validate_python(None) is None

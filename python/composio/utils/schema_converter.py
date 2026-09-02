@@ -33,12 +33,14 @@ from pydantic import (
     ConfigDict,
     Field,
     TypeAdapter,
+    ValidationError,
     model_validator,
 )
 from pydantic import (
     create_model as create_pydantic_model,
 )
 from pydantic_core import core_schema
+from referencing import Registry
 
 from composio.utils.logging import get as get_logger
 
@@ -1605,9 +1607,11 @@ def _requires_whole_schema_validation(schema: t.Any) -> bool:
             schema.get("type") is None
             and _TYPELESS_TYPE_SCOPED_KEYWORDS.intersection(schema)
         )
-        or ("anyOf" in schema and _combiner_has_assertion_siblings(schema, "anyOf"))
-        or _one_of_needs_exact_validation(schema.get("oneOf"))
-        or ("oneOf" in schema and _combiner_has_assertion_siblings(schema, "oneOf"))
+        # Pydantic unions coerce across members (`True` satisfies `integer |
+        # null`), so every combiner needs the exact check, not only those with
+        # sibling assertions or overlapping branches.
+        or "anyOf" in schema
+        or "oneOf" in schema
         or _contains_compound_literal(schema)
     ):
         return True
@@ -1766,28 +1770,176 @@ def _exact_validation_multiple_of(
         )
 
 
+_PATTERN_MATCHER_CACHE: t.Dict[str, t.Optional[t.Callable[[str], bool]]] = {}
+
+
+def _pattern_matcher(pattern: str) -> t.Optional[t.Callable[[str], bool]]:
+    """Match `pattern` with pydantic's linear-time Rust regex when it can
+    compile it, falling back to Python `re` only for ECMA-only constructs."""
+    if pattern in _PATTERN_MATCHER_CACHE:
+        return _PATTERN_MATCHER_CACHE[pattern]
+    matcher: t.Optional[t.Callable[[str], bool]] = None
+    if _pattern_supported_by_pydantic(pattern):
+        adapter = TypeAdapter(t.Annotated[str, Field(pattern=pattern)])
+
+        def match_with_pydantic(value: str) -> bool:
+            try:
+                adapter.validate_python(value, strict=True)
+            except ValidationError:
+                return False
+            return True
+
+        matcher = match_with_pydantic
+    else:
+        compiled = _compile_pattern(pattern)
+        if compiled is not None:
+
+            def match_with_re(value: str) -> bool:
+                return compiled.search(value) is not None
+
+            matcher = match_with_re
+    _PATTERN_MATCHER_CACHE[pattern] = matcher
+    return matcher
+
+
+def _exact_validation_pattern(
+    _validator: Validator,
+    pattern: t.Any,
+    instance: t.Any,
+    _schema: t.Any,
+) -> t.Iterator[t.Any]:
+    if not isinstance(instance, str) or not isinstance(pattern, str):
+        return
+    matcher = _pattern_matcher(pattern)
+    if matcher is not None and not matcher(instance):
+        yield jsonschema_exceptions.ValidationError(
+            f"{instance!r} does not match {pattern!r}"
+        )
+
+
+# A bare registry resolves only references inside the schema document and
+# raises on anything else; jsonschema's default registry falls back to
+# fetching unknown URIs over the network.
+_LOCAL_ONLY_REGISTRY: Registry[t.Any] = Registry()
+
+
+def _reject_external_references(schema: t.Any) -> None:
+    """Fail at conversion time on any `$ref` that is not a local JSON Pointer.
+
+    Only schema positions are walked; `const`, `default`, `enum`, and
+    `examples` hold instance data.
+    """
+    if isinstance(schema, list):
+        for item in schema:
+            _reject_external_references(item)
+        return
+    if not isinstance(schema, dict):
+        return
+    reference = schema.get("$ref")
+    if isinstance(reference, str) and not reference.startswith("#"):
+        raise ValueError(
+            f"External schema reference {reference!r} is not supported; "
+            "only local references (#/...) are resolved"
+        )
+    for keyword, value in schema.items():
+        if keyword in _SCHEMA_VALUED_KEYWORDS or keyword in _SCHEMA_LIST_KEYWORDS:
+            _reject_external_references(value)
+        elif keyword in _SCHEMA_MAP_KEYWORDS:
+            if isinstance(value, dict):
+                for entry in value.values():
+                    _reject_external_references(entry)
+        elif keyword == "items":
+            _reject_external_references(value)
+        elif keyword == "dependencies" and isinstance(value, dict):
+            for entry in value.values():
+                if isinstance(entry, (dict, bool)):
+                    _reject_external_references(entry)
+
+
+def _is_closed_object_branch(branch: t.Any) -> bool:
+    return (
+        isinstance(branch, dict)
+        and isinstance(branch.get("properties"), dict)
+        and len(branch["properties"]) > 0
+        and "additionalProperties" not in branch
+        and "patternProperties" not in branch
+        and "$ref" not in branch
+    )
+
+
+def _close_all_of_branches(schema: t.Any) -> t.Any:
+    """Apply the omitted-`additionalProperties` strictness rule once per `allOf`.
+
+    Draft 7 already lets sibling object branches accept each other's keys, so
+    the exact validator only needs the strictness a lone named-property object
+    would have had: the union of every branch's declared keys, applied at the
+    `allOf` node. Mirrors `parseAllOf` in @composio/json-schema-to-zod and
+    `openAllOfBranches` in @composio/json-schema-to-effect-schema.
+    """
+    if isinstance(schema, list):
+        return [_close_all_of_branches(item) for item in schema]
+    if not isinstance(schema, dict):
+        return schema
+
+    result: t.Dict[str, t.Any] = {}
+    for key, value in schema.items():
+        if key in _EXACT_SCHEMA_MAP_KEYWORDS and isinstance(value, dict):
+            result[key] = {
+                name: _close_all_of_branches(child) for name, child in value.items()
+            }
+        elif key in _EXACT_SCHEMA_ARRAY_KEYWORDS or key in _EXACT_SCHEMA_VALUE_KEYWORDS:
+            result[key] = _close_all_of_branches(value)
+        else:
+            result[key] = value
+
+    branches = schema.get("allOf")
+    if (
+        isinstance(branches, list)
+        and len(branches) >= 2
+        and all(_is_closed_object_branch(branch) for branch in branches)
+        and not {"properties", "patternProperties", "additionalProperties"}
+        & set(schema)
+    ):
+        result["properties"] = {
+            name: True for branch in branches for name in branch["properties"]
+        }
+        result["additionalProperties"] = False
+    return result
+
+
 def _validate_json_schema(
     schema: t.Dict[str, t.Any],
     root_schema: t.Dict[str, t.Any],
 ) -> t.Callable[[t.Any], t.Any]:
     """Compile an exact JSON Schema acceptance check for a Pydantic model."""
-    validation_schema = _normalize_draft4_exclusive_bounds(
-        _schema_for_exact_validation(schema)
+    validation_schema = _close_all_of_branches(
+        _normalize_draft4_exclusive_bounds(_schema_for_exact_validation(schema))
     )
-    validation_root = _normalize_draft4_exclusive_bounds(
-        _schema_for_exact_validation(root_schema)
+    validation_root = _close_all_of_branches(
+        _normalize_draft4_exclusive_bounds(_schema_for_exact_validation(root_schema))
     )
+    _reject_external_references(validation_root)
+    _reject_external_references(validation_schema)
     # The SDK contract is Draft 7 plus the OpenAPI 3.0 boolean spelling for
     # exclusive bounds. Falling the entire document back to Draft 4 would make
     # `contains`, `const`, `if`/`then`/`else`, and `propertyNames` disappear.
     validator_class = jsonschema_validators.Draft7Validator
     # Align multipleOf with the decimal-scaled checks in the Zod and Effect
     # converters instead of raw float modulo.
+    # `pattern` goes through pydantic's Rust regex where possible so a
+    # backtracking pattern cannot stall validation (Python `re` is exponential
+    # on inputs such as `(a+)+$`).
     validator_class = jsonschema_validators.extend(
         validator_class,
-        {"multipleOf": _exact_validation_multiple_of},
+        {
+            "multipleOf": _exact_validation_multiple_of,
+            "pattern": _exact_validation_pattern,
+        },
     )
-    validator = validator_class(validation_root).evolve(schema=validation_schema)
+    validator = validator_class(
+        validation_root,
+        registry=_LOCAL_ONLY_REGISTRY,
+    ).evolve(schema=validation_schema)
 
     def validate(value: t.Any) -> t.Any:
         error = next(validator.iter_errors(value), None)

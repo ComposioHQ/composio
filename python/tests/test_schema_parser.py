@@ -428,6 +428,13 @@ class TestPydanticModelFromParamSchema:
             pydantic_model_from_param_schema(param_schema)
 
 
+def _materialized(annotation: t.Any) -> t.Any:
+    """Strip the exact-validation `Annotated` wrapper to reach the Pydantic type."""
+    while t.get_origin(annotation) is t.Annotated:
+        annotation = t.get_args(annotation)[0]
+    return annotation
+
+
 class TestJsonSchemaToPydanticType:
     """Test cases for json_schema_to_pydantic_type function."""
 
@@ -446,7 +453,9 @@ class TestJsonSchemaToPydanticType:
 
     def test_anyof_null_only_preserves_nullability(self):
         """Test that anyOf with only null accepts no non-null value."""
-        result = json_schema_to_pydantic_type({"anyOf": [{"type": "null"}]})
+        result = _materialized(
+            json_schema_to_pydantic_type({"anyOf": [{"type": "null"}]})
+        )
 
         assert result is type(None)
 
@@ -536,7 +545,7 @@ class TestJsonSchemaToPydanticType:
     def test_oneof_single_type(self):
         """Test oneOf with single type returns the type directly."""
         json_schema = {"oneOf": [{"type": "string"}]}
-        result = json_schema_to_pydantic_type(json_schema)
+        result = _materialized(json_schema_to_pydantic_type(json_schema))
         assert result is str
         # Single type should not create a Union
         assert not hasattr(result, "__origin__")
@@ -554,7 +563,7 @@ class TestJsonSchemaToPydanticType:
                 },
             ]
         }
-        result = json_schema_to_pydantic_type(json_schema)
+        result = _materialized(json_schema_to_pydantic_type(json_schema))
         assert hasattr(result, "__origin__")
         assert result.__origin__ is t.Union
         assert len(result.__args__) == 3
@@ -629,7 +638,7 @@ class TestJsonSchemaToPydanticType:
         json_schema = {
             "anyOf": [{"type": "object", "additionalProperties": {}}, {"type": "null"}]
         }
-        result = json_schema_to_pydantic_type(json_schema)
+        result = _materialized(json_schema_to_pydantic_type(json_schema))
         # Should return Optional[dict], not str (to allow both dict and None)
         assert hasattr(result, "__origin__")
         assert result.__origin__ is t.Union
@@ -649,7 +658,7 @@ class TestJsonSchemaToPydanticType:
                 {"type": "null"},
             ]
         }
-        result = json_schema_to_pydantic_type(json_schema)
+        result = _materialized(json_schema_to_pydantic_type(json_schema))
         # Should return Optional[BaseModel subclass] (Union with None)
         assert hasattr(result, "__origin__")
         assert result.__origin__ is t.Union
@@ -668,14 +677,14 @@ class TestJsonSchemaToPydanticType:
         json_schema = {
             "anyOf": [{"type": "string"}, {"type": "integer"}, {"type": "object"}]
         }
-        result = json_schema_to_pydantic_type(json_schema)
+        result = _materialized(json_schema_to_pydantic_type(json_schema))
         assert hasattr(result, "__origin__")
         assert result.__origin__ is t.Union
 
     def test_anyof_single_type(self):
         """Test anyOf with single type returns the type directly."""
         json_schema = {"anyOf": [{"type": "string"}]}
-        result = json_schema_to_pydantic_type(json_schema)
+        result = _materialized(json_schema_to_pydantic_type(json_schema))
         assert result is str
         assert not hasattr(result, "__origin__")
 
@@ -1048,7 +1057,7 @@ class TestBooleanSchemas:
                 True,  # Boolean schema
             ]
         }
-        result = json_schema_to_pydantic_type(json_schema)
+        result = _materialized(json_schema_to_pydantic_type(json_schema))
         # Should handle gracefully, creating a union including Any
         assert result is not None
         # The result should include Any type from the true schema
@@ -1065,7 +1074,7 @@ class TestBooleanSchemas:
                 False,  # Boolean schema - should be filtered out
             ]
         }
-        result = json_schema_to_pydantic_type(json_schema)
+        result = _materialized(json_schema_to_pydantic_type(json_schema))
         # Should handle gracefully, false schema filtered out leaving just string
         assert result is str
 
@@ -1152,7 +1161,7 @@ class TestBooleanSchemas:
                 {"type": "integer"},
             ]
         }
-        result = json_schema_to_pydantic_type(json_schema)
+        result = _materialized(json_schema_to_pydantic_type(json_schema))
         # Should create union of Any and int (false filtered out)
         assert result is not None
         assert hasattr(result, "__origin__")
