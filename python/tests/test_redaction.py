@@ -82,6 +82,13 @@ def test_json_keys_are_preserved() -> None:
     )
 
 
+def test_redacts_secret_without_consuming_the_adjacent_field() -> None:
+    assert (
+        redact_sensitive_text('{"api_key":"secret","user":"bob"}')
+        == '{"api_key":"[REDACTED]","user":"bob"}'
+    )
+
+
 @pytest.mark.parametrize(
     "text",
     [
@@ -134,6 +141,8 @@ def test_does_not_consume_adjacent_fields_after_key_like_text(text: str) -> None
         ("client_secret='period secret'.", "period secret"),
         ('api_key = "prose secret" followed by context', "prose secret"),
         ('password: "escaped \\"secret\\" value"', 'escaped \\"secret\\" value'),
+        ('password: "}abc"', "}abc"),
+        ('api_key: ",abc"', ",abc"),
     ],
 )
 def test_redacts_bare_quoted_values_before_punctuation_or_prose(

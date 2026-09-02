@@ -116,15 +116,18 @@ class _VerbosityWrapper:
         elif not isinstance(exc_info, tuple):
             exc_info = sys.exc_info()
 
-        exception_text = logging.Formatter().formatException(exc_info)
         exception = exc_info[1]
-        if exception is not None:
-            sanitized_exception = self._sanitize_exception(exception)
-            sanitized_kwargs["exc_info"] = (
-                type(sanitized_exception),
-                sanitized_exception,
-                None,
-            )
+        if exception is None:
+            sanitized_kwargs["exc_info"] = None
+            return msg, sanitized_kwargs
+
+        exception_text = logging.Formatter().formatException(exc_info)
+        sanitized_exception = self._sanitize_exception(exception)
+        sanitized_kwargs["exc_info"] = (
+            type(sanitized_exception),
+            sanitized_exception,
+            None,
+        )
         return f"{msg}\n{redact_sensitive_text(exception_text)}", sanitized_kwargs
 
     @staticmethod

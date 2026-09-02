@@ -77,6 +77,9 @@ describe('redactSensitiveText', () => {
 
   it('preserves JSON keys and quoting, replacing only the value', () => {
     expect(redactSensitiveText('{"api_key": "ck_live_abc123"}')).toBe('{"api_key": "[REDACTED]"}');
+    expect(redactSensitiveText('{"api_key":"secret","user":"bob"}')).toBe(
+      '{"api_key":"[REDACTED]","user":"bob"}'
+    );
   });
 
   it('leaves a key name with no attached value untouched', () => {
@@ -125,6 +128,8 @@ describe('redactSensitiveText', () => {
       ["client_secret='period secret'.", 'period secret'],
       ['api_key = "prose secret" followed by context', 'prose secret'],
       ['password: "escaped \\"secret\\" value"', 'escaped \\"secret\\" value'],
+      ['password: "}abc"', '}abc'],
+      ['api_key: ",abc"', ',abc'],
     ] as const) {
       const out = redactSensitiveText(sample)!;
       expect(out, sample).toContain('[REDACTED]');

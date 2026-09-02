@@ -30,11 +30,11 @@ _QUOTED_KEY_SINGLE_QUOTED_VALUE = re.compile(
     rf"{_QUOTED_SECRET_KEY_PREFIX}'(?:\\.|[^'\\\r\n])*'", re.IGNORECASE
 )
 _BARE_KEY_DOUBLE_QUOTED_VALUE = re.compile(
-    rf'{_BARE_SECRET_KEY_PREFIX}"(?!\s*(?:,|}}|\]|\)|$))(?:\\.|[^"\\\r\n])*"',
+    rf'{_BARE_SECRET_KEY_PREFIX}"(?:\\.|[^"\\\r\n])*"(?![A-Za-z0-9_])',
     re.IGNORECASE,
 )
 _BARE_KEY_SINGLE_QUOTED_VALUE = re.compile(
-    rf"{_BARE_SECRET_KEY_PREFIX}'(?!\s*(?:,|}}|\]|\)|$))(?:\\.|[^'\\\r\n])*'",
+    rf"{_BARE_SECRET_KEY_PREFIX}'(?:\\.|[^'\\\r\n])*'(?![A-Za-z0-9_])",
     re.IGNORECASE,
 )
 _SECRET_PAIR_PREFIX = rf"(?<![A-Za-z0-9])({_SECRET_KEY_PATTERN})\b([\"']?\s*[:=]+\s*)"

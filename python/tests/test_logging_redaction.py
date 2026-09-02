@@ -132,6 +132,21 @@ def test_sdk_logger_redacts_exception_tracebacks() -> None:
     assert "oauth_test_secret" not in str(handler.records[0].exc_info[1])
 
 
+def test_sdk_logger_ignores_empty_implicit_exception_metadata() -> None:
+    output = io.StringIO()
+    logger = logging.getLogger("composio-test-empty-exception-metadata")
+    handler = _CaptureHandler(output)
+    logger.handlers = [handler]
+    logger.propagate = False
+    logger.setLevel(logging.ERROR)
+    wrapped = _VerbosityWrapper(logger, verbosity_level=3)
+
+    wrapped.error("request failed", exc_info=True)
+
+    assert output.getvalue() == "request failed\n"
+    assert handler.records[0].exc_info is None
+
+
 def test_sdk_logger_rebuilds_exception_metadata_without_original_state() -> None:
     output = io.StringIO()
     logger = logging.getLogger("composio-test-exception-state-redaction")
