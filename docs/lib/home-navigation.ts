@@ -36,7 +36,6 @@ interface DocsProductConfig {
 }
 
 const SHARED_SIDEBAR_ITEMS = [
-  { type: 'page', url: '/docs', label: 'Choose a product' },
   { type: 'folder', path: 'security', label: 'Security and data' },
 ] as const satisfies readonly ProductSidebarItem[];
 

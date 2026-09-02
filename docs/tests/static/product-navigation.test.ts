@@ -90,7 +90,7 @@ describe('Docs product navigation', () => {
     expect(globalCss).toContain('@keyframes docs-product-fade-out');
   });
 
-  test('builds audience-specific trees and keeps shared pages in both', () => {
+  test('builds audience-specific trees and keeps shared resources in both', () => {
     const forYouTree = buildProductPageTree(source.pageTree, 'for-you');
     const platformTree = buildProductPageTree(source.pageTree, 'platform');
     const forYouUrls = pageTreeUrls(forYouTree);
@@ -115,7 +115,10 @@ describe('Docs product navigation', () => {
     }
     expect(platformUrls).not.toContain('/docs/agent-plugins');
 
-    for (const sharedUrl of ['/docs', '/docs/security/overview', '/docs/security/data-retention']) {
+    expect(forYouUrls).not.toContain('/docs');
+    expect(platformUrls).not.toContain('/docs');
+
+    for (const sharedUrl of ['/docs/security/overview', '/docs/security/data-retention']) {
       expect(forYouUrls).toContain(sharedUrl);
       expect(platformUrls).toContain(sharedUrl);
     }
