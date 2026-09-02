@@ -305,11 +305,12 @@ def test_external_ref_is_refused_without_network_io(entry_point: str) -> None:
             "properties": {"value": {"$ref": url}},
             "required": ["value"],
         }
-        convert = {
+        converters: t.Dict[str, t.Callable[..., t.Any]] = {
             "pydantic_type": json_schema_to_pydantic_type,
             "model": json_schema_to_model,
             "param_schema": pydantic_model_from_param_schema,
-        }[entry_point]
+        }
+        convert = converters[entry_point]
         with pytest.raises(ValueError, match="External schema reference"):
             annotation = convert(schema)
             TypeAdapter(annotation).validate_python({"value": "x"})
@@ -350,3 +351,61 @@ def test_simple_union_rejects_bool_for_integer_or_null(combiner: str) -> None:
         adapter.validate_python(True)
     assert adapter.validate_python(1) == 1
     assert adapter.validate_python(None) is None
+
+
+@pytest.mark.unit
+@pytest.mark.schema
+@pytest.mark.parametrize("combiner", ("anyOf", "oneOf"))
+def test_toplevel_combiner_model_keeps_sibling_assertions(combiner: str) -> None:
+    schema = {
+        combiner: [{"type": "object", "properties": {"a": {"type": "string"}}}],
+        "required": ["a"],
+    }
+    assert not Draft7Validator(schema).is_valid({})
+
+    adapter = TypeAdapter(json_schema_to_pydantic_type(schema))
+    with pytest.raises(ValidationError):
+        adapter.validate_python({})
+    assert adapter.dump_python(adapter.validate_python({"a": "x"}), mode="json") == {
+        "a": "x"
+    }
+
+
+@pytest.mark.unit
+@pytest.mark.schema
+def test_property_less_param_schema_keeps_assertions() -> None:
+    schema = {"title": "NonEmpty", "type": "object", "minProperties": 1}
+    assert not Draft7Validator(schema).is_valid({})
+
+    adapter = TypeAdapter(pydantic_model_from_param_schema(schema))
+    with pytest.raises(ValidationError):
+        adapter.validate_python({})
+    assert adapter.validate_python({"k": 1}) == {"k": 1}
+
+
+@pytest.mark.unit
+@pytest.mark.schema
+def test_exact_validated_array_items_keep_materialized_defaults() -> None:
+    schema = {
+        "type": "object",
+        "title": "DynamicArrayArguments",
+        "patternProperties": {
+            "^items_": {
+                "type": "array",
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "null_default": {
+                            "anyOf": [{"type": "string"}, {"type": "null"}],
+                            "default": None,
+                        }
+                    },
+                },
+            }
+        },
+        "additionalProperties": False,
+    }
+    adapter = TypeAdapter(json_schema_to_pydantic_type(schema))
+    assert adapter.dump_python(
+        adapter.validate_python({"items_a": [{}]}), mode="json"
+    ) == {"items_a": [{"null_default": None}]}

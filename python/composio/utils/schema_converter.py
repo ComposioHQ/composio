@@ -571,6 +571,10 @@ def _mark_explicit_default_fields(
     """Attach recursive default-presence metadata to generated model classes."""
     origin = t.get_origin(annotation)
     arguments = t.get_args(annotation)
+    if origin is t.Annotated:
+        # Exact-validation wrappers must not hide the materialized type below.
+        _mark_explicit_default_fields(arguments[0], schema, root_schema, visiting)
+        return
     if origin in (t.Union, types.UnionType):
         options: t.List[t.Dict[str, t.Any]] = []
         resolved_schema = _resolve_default_metadata_schema(schema, root_schema)
@@ -2345,8 +2349,11 @@ def _handle_toplevel_combiner(
             # The library models scalar intersections as object models.
             # Preserve the JSON value and let exact validation own acceptance.
             return t.Any
-        # If result is a type (like a Union or Optional), return it directly
-        # If result is a model class, return it
+        # A library model for anyOf/oneOf drops sibling assertions such as
+        # `required` and exclusive oneOf matching; let the source schema own it.
+        if isinstance(result, type) and issubclass(result, BaseModel):
+            document_root = root_schema if root_schema is not None else schema
+            return _with_exact_validation(result, schema, document_root)
         return result
     except (SchemaError, CombinerError):
         pass
