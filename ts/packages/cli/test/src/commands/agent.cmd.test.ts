@@ -5,7 +5,7 @@ import path from 'node:path';
 import { afterEach, vi } from 'vitest';
 import * as constants from 'src/constants';
 import { setupCacheDir } from 'src/effects/setup-cache-dir';
-import { writeStoredAgentIdentity } from 'src/services/agents';
+import { readStoredAgentIdentity, writeStoredAgentIdentity } from 'src/services/agents';
 import { ComposioUserContext } from 'src/services/user-context';
 import { cli, MockConsole, TestLive } from 'test/__utils__';
 
@@ -29,6 +29,24 @@ describe('CLI: composio agent', () => {
   });
 
   layer(TestLive())(it => {
+    it.scoped('repairs permissions on an existing agent identity before reading it', () =>
+      Effect.gen(function* () {
+        const fs = yield* FileSystem.FileSystem;
+        const cacheDir = yield* setupCacheDir;
+        const agentConfigPath = path.join(cacheDir, 'agent.json');
+        const encodedIdentity = `${JSON.stringify(agentSignupResponse, null, 2)}\n`;
+        yield* fs.writeFileString(agentConfigPath, encodedIdentity);
+        yield* fs.chmod(agentConfigPath, 0o644);
+        expect((yield* fs.stat(agentConfigPath)).mode & 0o777).toBe(0o644);
+
+        const identity = yield* readStoredAgentIdentity;
+
+        expect(Option.getOrUndefined(identity)?.composio_agent_key).toBe('cak_test_agent');
+        expect(yield* fs.readFileString(agentConfigPath, 'utf8')).toBe(encodedIdentity);
+        expect((yield* fs.stat(agentConfigPath)).mode & 0o777).toBe(0o600);
+      })
+    );
+
     it.scoped('exposes agent signup as a subcommand', () =>
       Effect.gen(function* () {
         yield* cli(['agent', '--help']);
@@ -133,6 +151,9 @@ describe('CLI: composio agent', () => {
     it.scoped('agent inbox prints only JSON', () =>
       Effect.gen(function* () {
         yield* writeStoredAgentIdentity(agentSignupResponse);
+        const fs = yield* FileSystem.FileSystem;
+        const cacheDir = yield* setupCacheDir;
+        expect((yield* fs.stat(path.join(cacheDir, 'agent.json'))).mode & 0o777).toBe(0o600);
         vi.spyOn(globalThis, 'fetch').mockImplementation(async (requestInput, init) => {
           const url =
             typeof requestInput === 'string'

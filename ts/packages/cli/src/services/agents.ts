@@ -3,6 +3,7 @@ import { Data, Effect, Either, Option, Predicate, Schema } from 'effect';
 import { APP_CONFIG } from 'src/effects/app-config';
 import { JsonRecordSchema } from 'src/effects/json';
 import { setupCacheDir } from 'src/effects/setup-cache-dir';
+import { atomicWritePrivateFileString, ensurePrivateFileMode } from 'src/utils/atomic-write';
 import { ComposioUserContext } from 'src/services/user-context';
 import { getSessionInfoByUserApiKey } from 'src/services/composio-clients';
 import { primeConsumerConnectedToolkitsCacheInBackground } from 'src/services/consumer-short-term-cache';
@@ -174,7 +175,8 @@ export const readStoredAgentIdentity = Effect.gen(function* () {
   const exists = yield* fs.exists(configPath);
   if (!exists) return Option.none<AgentIdentity>();
 
-  return yield* fs.readFileString(configPath, 'utf8').pipe(
+  return yield* ensurePrivateFileMode({ fs, target: configPath }).pipe(
+    Effect.andThen(fs.readFileString(configPath, 'utf8')),
     Effect.flatMap(Schema.decodeUnknown(Schema.parseJson(AgentIdentity))),
     Effect.map(normalizeDecodedAgentIdentity),
     Effect.tapError(error => Effect.logDebug('Failed to read agent identity:', error)),
@@ -187,7 +189,11 @@ export const writeStoredAgentIdentity = (identity: AgentIdentity) =>
     const fs = yield* FileSystem.FileSystem;
     const configPath = yield* agentConfigPath;
     const normalized = normalizeDecodedAgentIdentity(identity);
-    yield* fs.writeFileString(configPath, `${JSON.stringify(normalized, null, 2)}\n`);
+    yield* atomicWritePrivateFileString({
+      fs,
+      target: configPath,
+      contents: `${JSON.stringify(normalized, null, 2)}\n`,
+    });
     return normalized;
   });
 
