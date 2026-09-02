@@ -1,7 +1,7 @@
 """Tests for telemetry secret redaction."""
 
 import pytest
-from composio.utils.redaction import redact_sensitive_text
+from composio.utils.redaction import redact_sensitive_text, redact_sensitive_value
 
 
 def test_redacts_url_queries_authorization_and_secret_pairs() -> None:
@@ -99,3 +99,15 @@ def test_redacts_env_style_prefixed_api_keys(text: str, secret: str) -> None:
 def test_does_not_match_secret_name_embedded_in_letters() -> None:
     """Lookbehind still refuses letter-prefixed collisions like myapikey=x."""
     assert redact_sensitive_text("myapikey=sk_live_9f3c") == "myapikey=sk_live_9f3c"
+
+
+def test_structured_redaction_bounds_recursive_metadata() -> None:
+    cyclic: dict[str, object] = {}
+    cyclic["self"] = cyclic
+
+    deeply_nested: object = "safe"
+    for _ in range(40):
+        deeply_nested = {"next": deeply_nested}
+
+    assert redact_sensitive_value(cyclic) == {"self": "[REDACTED]"}
+    assert "[REDACTED]" in str(redact_sensitive_value(deeply_nested))
