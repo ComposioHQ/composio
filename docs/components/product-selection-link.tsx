@@ -1,13 +1,14 @@
 'use client';
 
-import Link, { type LinkProps } from 'next/link';
+import Link from 'next/link';
 import type { AnchorHTMLAttributes, MouseEvent, ReactNode } from 'react';
 import type { DocsProduct } from '@/lib/home-navigation';
 import { useDocsProduct } from './docs-product-context';
 
-type ProductSelectionLinkProps = LinkProps &
-  Omit<AnchorHTMLAttributes<HTMLAnchorElement>, keyof LinkProps> & {
+type ProductSelectionLinkProps =
+  Omit<AnchorHTMLAttributes<HTMLAnchorElement>, 'href'> & {
     children: ReactNode;
+    href: string;
     product: DocsProduct;
   };
 
@@ -32,7 +33,7 @@ export function ProductSelectionLink({
     }
 
     event.preventDefault();
-    navigateToProduct(product, String(href), event.currentTarget);
+    navigateToProduct(product, href, event.currentTarget);
   };
 
   return (

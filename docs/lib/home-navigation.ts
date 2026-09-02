@@ -29,15 +29,18 @@ interface DocsProductConfig {
   product: HomeIntent['product'];
   switcherDescription: string;
   landingRoute: string;
-  defaultTheme: 'light' | 'dark';
   routePrefixes: readonly string[];
   sidebar: readonly ProductSidebarGroup[];
   home: Omit<HomeIntent, 'productId' | 'product'>;
 }
 
-const SHARED_SIDEBAR_ITEMS = [
+const SHARED_SIDEBAR_ITEMS: readonly ProductSidebarItem[] = [
   { type: 'folder', path: 'security', label: 'Security and data' },
-] as const satisfies readonly ProductSidebarItem[];
+];
+
+const SHARED_ROUTE_PREFIXES = SHARED_SIDEBAR_ITEMS.map(item =>
+  item.type === 'page' ? item.url : `/docs/${item.path}`,
+);
 
 /**
  * Canonical product model for the docs shell and homepage.
@@ -56,7 +59,6 @@ export const DOCS_PRODUCTS = {
     product: 'For You',
     switcherDescription: 'Connect your apps to AI clients.',
     landingRoute: '/docs/agent-plugins',
-    defaultTheme: 'light',
     routePrefixes: [
       '/docs/agent-plugins',
       '/docs/claude-code-plugin',
@@ -102,7 +104,6 @@ export const DOCS_PRODUCTS = {
     product: 'Platform',
     switcherDescription: 'Build agents with the Composio SDK.',
     landingRoute: '/docs/quickstart',
-    defaultTheme: 'dark',
     routePrefixes: [
       '/docs/quickstart',
       '/docs/providers',
@@ -228,7 +229,9 @@ export function resolveDocsProduct(
 export function docsProductDestination(pathname: string, target: DocsProduct): string {
   const sourceProduct = target === 'platform' ? 'for-you' : 'platform';
   const counterpart = PRODUCT_COUNTERPARTS.find(pair => matchesRoute(pathname, pair[sourceProduct]));
-  return counterpart?.[target] ?? DOCS_PRODUCTS[target].landingRoute;
+  if (counterpart) return counterpart[target];
+  if (SHARED_ROUTE_PREFIXES.some(prefix => matchesRoute(pathname, prefix))) return pathname;
+  return DOCS_PRODUCTS[target].landingRoute;
 }
 
 export function serializeDocsProductCookie(product: DocsProduct): string {

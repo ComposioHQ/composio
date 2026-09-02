@@ -53,6 +53,27 @@ export function ProductBadge({ product }: { product: DocsProduct }) {
   );
 }
 
+export function ComposioWordmark({ compactOnMobile = false }: { compactOnMobile?: boolean }) {
+  return (
+    <span className={compactOnMobile ? 'max-[420px]:hidden' : undefined}>
+      <Image
+        alt="Composio"
+        className="h-[22px] w-auto dark:hidden"
+        height={20}
+        src="/Composio Logo.svg"
+        width={110}
+      />
+      <Image
+        alt="Composio"
+        className="hidden h-[22px] w-auto dark:block"
+        height={20}
+        src="/Composio Logo Dark.svg"
+        width={110}
+      />
+    </span>
+  );
+}
+
 export function ProductLockup({
   product,
   compactOnMobile = false,
@@ -62,24 +83,7 @@ export function ProductLockup({
 }) {
   return (
     <span className="inline-flex min-w-0 items-center gap-2">
-      <span className={compactOnMobile ? 'max-[420px]:hidden' : undefined}>
-        <Image
-          alt="Composio"
-          className="h-[22px] w-auto dark:hidden"
-          height={20}
-          priority
-          src="/Composio Logo.svg"
-          width={110}
-        />
-        <Image
-          alt="Composio"
-          className="hidden h-[22px] w-auto dark:block"
-          height={20}
-          priority
-          src="/Composio Logo Dark.svg"
-          width={110}
-        />
-      </span>
+      <ComposioWordmark compactOnMobile={compactOnMobile} />
       <ProductBadge product={product} />
     </span>
   );

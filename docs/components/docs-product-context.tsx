@@ -12,10 +12,8 @@ import {
 } from 'react';
 import { flushSync } from 'react-dom';
 import { usePathname, useRouter } from 'next/navigation';
-import { useTheme } from 'fumadocs-ui/provider/base';
 import {
   classifyDocsProduct,
-  DOCS_PRODUCTS,
   serializeDocsProductCookie,
   shouldAnimateDocsProductSwitch,
   type DocsProduct,
@@ -56,7 +54,6 @@ export function DocsProductProvider({
 }) {
   const pathname = usePathname();
   const router = useRouter();
-  const { setTheme } = useTheme();
   const [persistedProduct, setPersistedProduct] = useState(initialProduct);
   const [pendingProduct, setPendingProduct] = useState<DocsProduct | null>(null);
   const pendingNavigation = useRef<{
@@ -104,9 +101,8 @@ export function DocsProductProvider({
         flushSync(() => {
           setPersistedProduct(nextProduct);
           setPendingProduct(nextProduct);
-          setTheme(DOCS_PRODUCTS[nextProduct].defaultTheme);
         });
-        router.push(href);
+        if (href !== pathname) router.push(href);
       };
 
       const viewTransitionDocument = document as ViewTransitionDocument;
@@ -137,19 +133,28 @@ export function DocsProductProvider({
         root.style.removeProperty('--docs-reveal-x');
         root.style.removeProperty('--docs-reveal-y');
       };
-      window.setTimeout(cleanup, 6000);
+      window.setTimeout(cleanup, 2500);
 
       try {
         const transition = startViewTransition(() => {
+          if (href === pathname) {
+            commitNavigation();
+            return;
+          }
+
           return new Promise<void>(resolve => {
             pendingNavigation.current?.resolve();
-            const timeout = window.setTimeout(resolve, 5000);
+            const finish = () => resolve();
+            window.setTimeout(() => {
+              if (pendingNavigation.current?.resolve === finish) {
+                pendingNavigation.current = null;
+                setPendingProduct(null);
+              }
+              finish();
+            }, 1500);
             pendingNavigation.current = {
               from: pathname,
-              resolve: () => {
-                window.clearTimeout(timeout);
-                resolve();
-              },
+              resolve: finish,
             };
             commitNavigation();
           });
@@ -160,7 +165,7 @@ export function DocsProductProvider({
         commitNavigation();
       }
     },
-    [pathname, router, setTheme],
+    [pathname, router],
   );
 
   const value = useMemo(

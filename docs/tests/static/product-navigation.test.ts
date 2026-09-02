@@ -14,19 +14,17 @@ import { buildProductPageTree, pageTreeUrls } from '../../lib/product-page-tree'
 import { source } from '../../lib/source';
 
 describe('Docs product navigation', () => {
-  test('defines the product labels, descriptions, landings, and theme defaults once', () => {
+  test('defines the product labels, descriptions, and landings once', () => {
     expect(DEFAULT_DOCS_PRODUCT).toBe('platform');
     expect(DOCS_PRODUCTS['for-you']).toMatchObject({
       product: 'For You',
       switcherDescription: 'Connect your apps to AI clients.',
       landingRoute: '/docs/agent-plugins',
-      defaultTheme: 'light',
     });
     expect(DOCS_PRODUCTS.platform).toMatchObject({
       product: 'Platform',
       switcherDescription: 'Build agents with the Composio SDK.',
       landingRoute: '/docs/quickstart',
-      defaultTheme: 'dark',
     });
   });
 
@@ -69,6 +67,12 @@ describe('Docs product navigation', () => {
       '/docs/agent-plugins',
     );
     expect(docsProductDestination('/docs/cli', 'platform')).toBe('/docs/quickstart');
+    expect(docsProductDestination('/docs/security/overview', 'for-you')).toBe(
+      '/docs/security/overview',
+    );
+    expect(docsProductDestination('/docs/security/data-retention', 'platform')).toBe(
+      '/docs/security/data-retention',
+    );
   });
 
   test('animates only when view transitions are available and motion is allowed', () => {
@@ -122,6 +126,13 @@ describe('Docs product navigation', () => {
       expect(forYouUrls).toContain(sharedUrl);
       expect(platformUrls).toContain(sharedUrl);
     }
+
+    const coveredUrls = new Set([...forYouUrls, ...platformUrls]);
+    const excludedUrls = new Set(['/docs']);
+    const omittedUrls = pageTreeUrls(source.pageTree).filter(
+      url => !coveredUrls.has(url) && !excludedUrls.has(url),
+    );
+    expect(omittedUrls).toEqual([]);
   });
 
   test('keeps accessibility-critical switcher semantics and visible focus styles', async () => {
@@ -133,11 +144,14 @@ describe('Docs product navigation', () => {
     ).text();
 
     expect(switcherSource).toContain('aria-label={`Switch Composio product. Current product:');
-    expect(switcherSource).toContain('role="radiogroup"');
-    expect(switcherSource).toContain('role="radio"');
-    expect(switcherSource).toContain('aria-checked={isCurrent}');
+    expect(switcherSource).toContain('ProductSelectionLink');
+    expect(switcherSource).not.toContain('role="radiogroup"');
+    expect(switcherSource).not.toContain('role="radio"');
+    expect(switcherSource).not.toContain('aria-checked={isCurrent}');
     expect(switcherSource).toContain("aria-current={isCurrent ? 'page' : undefined}");
     expect(switcherSource).toContain('focus-visible:outline-2');
+    expect(switcherSource).toContain('aria-label="Composio home"');
+    expect(switcherSource).toContain('href="/"');
     expect(sharedLayoutSource).toContain('slots: { navTitle: ProductNavTitle }');
   });
 });
