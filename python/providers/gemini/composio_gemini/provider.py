@@ -9,6 +9,8 @@ import types as pytypes
 import typing as t
 from inspect import Parameter, Signature
 
+from pydantic import BaseModel
+
 from composio.client.types import Tool
 from composio.core.provider import AgenticProvider
 from composio.core.provider.agentic import AgenticProviderExecuteFn
@@ -85,7 +87,8 @@ class GeminiProvider(AgenticProvider[t.Callable, list[t.Callable]], name="gemini
     def __init__(self, **kwargs: t.Any):
         super().__init__(**kwargs)
         self._executors: t.Dict[
-            str, t.Tuple[AgenticProviderExecuteFn, ToolSchemaAliases]
+            str,
+            t.Tuple[AgenticProviderExecuteFn, ToolSchemaAliases, t.Type[BaseModel]],
         ] = {}
 
     def wrap_tool(
@@ -106,7 +109,7 @@ class GeminiProvider(AgenticProvider[t.Callable, list[t.Callable]], name="gemini
             aliases.schema,
             skip_default=self.skip_default,
         )
-        self._executors[tool.slug] = (execute_tool, aliases)
+        self._executors[tool.slug] = (execute_tool, aliases, args_schema)
 
         def function(**kwargs: t.Any) -> t.Dict:
             """Composio tool execution wrapper."""
@@ -195,11 +198,14 @@ class GeminiProvider(AgenticProvider[t.Callable, list[t.Callable]], name="gemini
             if fc.name not in self._executors:
                 continue
 
-            execute_tool, aliases = self._executors[fc.name]
-            arguments = aliases.restore_arguments(dict(fc.args))
-            result = execute_tool(
-                slug=fc.name, arguments=normalize_tool_arguments(arguments)
+            # Same validate -> serialize -> alias sequence as the AFC callable.
+            execute_tool, aliases, args_schema = self._executors[fc.name]
+            arguments = validate_and_serialize_tool_arguments(
+                args_schema,
+                normalize_tool_arguments(_to_serializable(dict(fc.args))),
             )
+            arguments = aliases.restore_arguments(arguments)
+            result = execute_tool(slug=fc.name, arguments=arguments)
             processed = _process_execution_result(result)
 
             function_responses.append(

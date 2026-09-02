@@ -225,7 +225,9 @@ class TestWrapTool:
         provider.wrap_tool(tool, execute_tool)
 
         assert "GITHUB_STAR_REPO" in provider._executors
-        stored_execute_tool, _aliases = provider._executors["GITHUB_STAR_REPO"]
+        stored_execute_tool, _aliases, _args_schema = provider._executors[
+            "GITHUB_STAR_REPO"
+        ]
         assert stored_execute_tool is execute_tool
 
     def test_callable_executes_correctly(self):
@@ -650,6 +652,40 @@ class TestHandleResponse:
         execute_tool.assert_called_once_with(
             slug="GITHUB_STAR_REPO",
             arguments={"repo": "composio/composio"},
+        )
+
+    def test_rejects_invalid_arguments_like_afc(self):
+        """Manual function calling validates the source schema like the AFC callable."""
+        from composio_gemini import GeminiProvider
+        from pydantic import ValidationError
+
+        provider = GeminiProvider()
+        tool = create_mock_tool(
+            "VALIDATE_SOURCE_SCHEMA",
+            "test",
+            input_parameters={
+                "type": "object",
+                "properties": {"value": {"type": "integer", "minimum": 1}},
+                "required": ["value"],
+            },
+        )
+        execute_tool = create_mock_execute_tool()
+        provider.wrap_tools([tool], execute_tool)
+
+        response = self._create_mock_response(
+            [("VALIDATE_SOURCE_SCHEMA", {"value": 0})]
+        )
+        with pytest.raises(ValidationError):
+            provider.handle_response(response)
+        execute_tool.assert_not_called()
+
+        response = self._create_mock_response(
+            [("VALIDATE_SOURCE_SCHEMA", {"value": 3})]
+        )
+        _responses, executed = provider.handle_response(response)
+        assert executed is True
+        execute_tool.assert_called_once_with(
+            slug="VALIDATE_SOURCE_SCHEMA", arguments={"value": 3}
         )
 
     def test_no_function_calls(self):
