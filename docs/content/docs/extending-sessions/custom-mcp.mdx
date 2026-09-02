@@ -13,6 +13,10 @@ Custom MCP is experimental. The APIs may change.
 
 This is different from [Local Tools and Toolkits](/docs/extending-sessions/local-tools-and-toolkits), which run inside your app. A Custom MCP server runs on its own public HTTPS URL.
 
+<Callout type="info" title="Custom MCP vs Provider MCP">
+A Custom MCP toolkit registers a remote server for your project or one user and has a `CUSTOM_*` slug. A Provider MCP toolkit, such as `notion_mcp`, connects to a product's hosted MCP server and is part of the catalog. See [Apps and toolkits](/docs/apps-and-toolkits).
+</Callout>
+
 ## How it works
 
 1. **Get** a remote MCP server at a public HTTPS URL: your own, or an existing one.

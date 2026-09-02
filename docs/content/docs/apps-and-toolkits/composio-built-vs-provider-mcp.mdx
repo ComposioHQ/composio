@@ -1,0 +1,64 @@
+---
+title: Composio Built vs Provider MCPs
+description: Which toolkit to use when a product ships more than one, such as notion or notion_mcp, decided from auth, triggers, and tool coverage
+keywords: [composio built vs provider mcp, which toolkit, notion vs notion_mcp, choose a toolkit, provider mcp, sibling toolkits, dcr oauth, triggers]
+isNew: true
+---
+
+export const ComposioBuiltIcon = (<svg width="14" height="14" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" style={{display:'inline-block',verticalAlign:'-2px',marginRight:'6px'}} aria-hidden="true"><path d="M58.2101 18.0354L22.1511 10.6607C19.7868 10.1753 17.5635 11.9916 17.5635 14.4028V31.4851V32.3933V49.4754C17.5635 51.8867 19.7868 53.7032 22.1511 53.2177L58.2101 45.843" stroke="currentColor" strokeWidth="1.82758" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round"/><path d="M30.3675 4.7266C30.3676 1.33903 33.8302 -0.926498 36.9309 0.370393L37.0785 0.434773L37.0817 0.436653L56.3717 9.34549C58.0646 10.1086 59.1257 11.7994 59.1261 13.6354V21.1824C59.1261 23.9356 56.7812 26.1101 54.0417 25.8981L32.195 24.2675V39.6105L54.0384 37.9799L54.2944 37.9667C56.9179 37.9028 59.1252 40.0214 59.1098 42.6801V50.227C59.1098 52.0772 58.0208 53.7432 56.3587 54.516L56.3559 54.5169L37.0822 63.4096L37.0827 63.41C33.9397 64.8647 30.3675 62.5737 30.3675 59.1206V51.9285C30.2259 51.9844 30.0742 52.0214 29.9149 52.033L19.2542 52.8005C18.3634 52.8645 17.6054 52.1586 17.6052 51.2654V43.3507C17.6053 43.0438 17.6969 42.756 17.8543 42.5137L9.0841 43.1688H9.08083C6.34886 43.3625 4.00001 41.1949 4 38.4526V25.4254C4.0002 22.6713 6.34695 20.4959 9.08742 20.7097H9.08694L17.6631 21.3497C17.6259 21.2173 17.6053 21.0781 17.6052 20.9343V12.5969C17.6052 11.3796 18.6942 10.4511 19.8962 10.6434L30.0475 12.2675C30.1591 12.2854 30.2658 12.3159 30.3675 12.3558V4.7266ZM54.1808 39.8023H54.1774L32.195 41.4432V50.9825L57.2826 45.7388V42.6735L57.2798 42.5184C57.2047 40.9241 55.8073 39.6754 54.1808 39.8023ZM17.2528 23.1519C17.4061 23.3917 17.4952 23.6759 17.4953 23.9794V40.1801C17.4953 40.3679 17.4601 40.5478 17.398 40.7148L30.3675 39.7468V24.1307L17.2528 23.1519ZM32.195 22.4348L54.1774 24.0757L54.1808 24.0762L54.3367 24.0842C55.9444 24.1234 57.2985 22.8221 57.2985 21.1824V18.0099L32.195 12.7623V22.4348Z" fill="currentColor"/></svg>);
+
+export const ProviderMcpIcon = (<svg width="14" height="14" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style={{display:'inline-block',verticalAlign:'-2px',marginRight:'6px'}} aria-hidden="true"><path fill="currentColor" d="M5.52 1.12a3.578 3.578 0 0 1 6.078 2.98a3.578 3.578 0 0 1 2.982 6.08l-3.292 3.293a.25.25 0 0 0 0 .354l.843.843a.749.749 0 1 1-1.06 1.06l-.844-.843a1.75 1.75 0 0 1 0-2.474L13.52 9.12a2.08 2.08 0 0 0 0-2.94a2.08 2.08 0 0 0-2.94 0L7.731 9.03A.75.75 0 0 1 6.67 7.97l2.85-2.85a2.08 2.08 0 0 0 0-2.94a2.08 2.08 0 0 0-2.94 0l-4.799 4.8A.75.75 0 0 1 .72 5.92Z"/><path fill="currentColor" d="M7.52 3.12a.749.749 0 1 1 1.06 1.06L5.731 7.03A2.079 2.079 0 0 0 8.67 9.97l2.85-2.85a.749.749 0 1 1 1.06 1.06l-2.849 2.85A3.578 3.578 0 0 1 4.67 5.97Z"/></svg>);
+
+When a product ships more than one toolkit, you pick one slug and pass it. This page is how to pick.
+
+A **Composio Built** toolkit is one Composio builds and maintains against the product's public API. A [**Provider MCP**](/docs/apps-and-toolkits/provider-mcps) toolkit connects to the product's own hosted MCP server. Both are catalog toolkits, available to every project, and both behave the same way inside a session. The catalog's Type filter carries these two labels, plus Custom for servers your own project registered. They differ in who maintains the tools, and that has consequences.
+
+## How they compare
+
+| | {ComposioBuiltIcon} Composio Built | {ProviderMcpIcon} Provider MCP |
+| --- | --- | --- |
+| Who maintains the tools | Composio | The product's team |
+| What it connects to | The product's public API | The product's own hosted MCP server |
+| Slug | Anything that doesn't end in `_mcp`, like `notion` | Ends in `_mcp`, like `notion_mcp` |
+| Tool naming | `NOTION_CREATE_PAGE` | `NOTION_MCP_NOTION_CREATE_PAGES` |
+| Auth | OAuth2, API Key, Bearer Token, or Basic, often with [Composio managed auth](/docs/authentication/custom-app-vs-managed-app) | Whatever the product's server declares: usually DCR OAuth, often none at all |
+| [Triggers](/docs/triggers) | Available on many toolkits | None |
+| Staying current | Composio regenerates and versions the toolkit | A sync produces a new dated version |
+
+Neither is a subset of the other. Tool lists differ in both directions, and there's no general rule that one supersedes the other.
+
+## Decide in this order
+
+Open the app drawer, or the comparison strip on either toolkit's detail page, and read these facts.
+
+<Figure width={1456} height={839} src="/images/docs/toolkit-apps/toolkit-detail-notion-mcp.jpg" alt="The notion_mcp toolkit page with a DCR OAuth pill, the Notion toolkits comparison strip, and a tools table of NOTION_MCP_ slugs" caption="The Notion toolkits strip on either sibling's detail page compares tools, authentication, and ownership side by side." />
+
+1. **Auth your users can complete.** The usual decider, read per toolkit rather than per label. A Composio Built toolkit often offers [Composio managed](/docs/authentication/custom-app-vs-managed-app) OAuth2 or an API key. A Provider MCP toolkit most often uses DCR OAuth, and a good number need no auth at all, which can make it the shortest path rather than the longest.
+2. **Triggers.** [Triggers](/docs/triggers) exist only on Composio Built toolkits. If your agent has to react to events, that settles it.
+3. **Tool coverage, checked in both directions.** A Provider MCP toolkit can expose capabilities only the product's own server offers, and it can also cover less of the product's API. Compare both tool lists before assuming the `_mcp` one is bigger or newer.
+4. **Which account your users already have.** [Siblings never share a connection](/docs/apps-and-toolkits#sibling-toolkits-never-share-a-connection), so prefer the toolkit your user is already connected to.
+
+Then pick one sibling per session or task, so your users authenticate once. [Configuring sessions](/docs/configuring-sessions#sibling-toolkits) has the enable and disable recipes.
+
+<Callout type="info" title="Sometimes the labels tell you nothing">
+Not every App splits one of each kind. The Slack app holds `slack` and `slackbot`, both Composio Built, differing by the identity the tools act as. When both siblings carry the same label, decide from the tool list and the auth instead.
+</Callout>
+
+## If neither fits
+
+The catalog is what Composio already runs. If no toolkit covers the product, or you need tools only your team can provide, register your own remote MCP server as a [Custom MCP](/docs/extending-sessions/custom-mcp) and you get a project-private `CUSTOM_*` toolkit that works like a catalog toolkit inside your project.
+
+## If an agent picks at runtime
+
+- **Use the slug you were given.** If the request or the session config names `notion` or `notion_mcp`, use exactly that toolkit.
+- **Decide from facts you can already read.** Auth schemes, whether the user already has a connected account, each tool list, and trigger counts are all observable. Prefer the toolkit the user is already connected to, then the one whose auth they can complete.
+- **Don't read `_mcp` as newer, bigger, or already connected.** It only means the tools come from the product's own server.
+- **State which slug you chose** when the toolkit was ambiguous, so the user can redirect you.
+
+## Related guides
+
+<Cards>
+  <Card icon={<Blocks />} title="Apps vs toolkits" href="/docs/apps-and-toolkits" description="How an App groups the toolkits that exist for one product" />
+  <Card icon={<Plug />} title="What are Provider MCPs" href="/docs/apps-and-toolkits/provider-mcps" description="Toolkits backed by a product's own hosted MCP server" />
+  <Card icon={<Wrench />} title="Configuring sessions" href="/docs/configuring-sessions" description="Enable, disable, and pin toolkits for a session" />
+</Cards>

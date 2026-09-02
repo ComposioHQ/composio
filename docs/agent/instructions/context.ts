@@ -15,6 +15,8 @@ This is your always-on map of Composio's concepts and the canonical page for eac
 
 ## Tools and toolkits
 
+- **Apps and toolkits**: an App groups catalog toolkits for comparison. Composio Built toolkits use a product API; Provider MCP toolkits use its hosted MCP server. Each keeps separate tools and connections. Use exact toolkit slugs in session configuration. See [Apps and toolkits](/docs/apps-and-toolkits).
+
 - **Toolkit** — a collection of related tools for a service (e.g. \`github\`, \`gmail\`). A **tool** is one action, named \`{TOOLKIT}_{ACTION}\` (e.g. \`GITHUB_CREATE_ISSUE\`). Every toolkit is discoverable by default; restrict with the \`toolkits\` config. → [Configuring sessions](/docs/configuring-sessions)
 - **Meta tools** — the fixed set every session exposes (\`COMPOSIO_SEARCH_TOOLS\`, \`COMPOSIO_GET_TOOL_SCHEMAS\`, \`COMPOSIO_MANAGE_CONNECTIONS\`, \`COMPOSIO_MULTI_EXECUTE_TOOL\`, \`COMPOSIO_REMOTE_WORKBENCH\`, \`COMPOSIO_REMOTE_BASH_TOOL\`). → [Meta tools reference](/toolkits/meta-tools)
 - **Providers** — adapter packages that format Composio tools for a framework (OpenAI, Anthropic, Vercel AI SDK, LangChain, Mastra, Pi, …). → [Providers](/docs/providers)

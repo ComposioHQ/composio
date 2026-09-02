@@ -64,6 +64,8 @@ Do not turn an explanation, documentation lookup, or narrow bug fix into onboard
 11. Do not invent repository facts. Never claim that a file, framework, environment loader, identity field, agent path, or dependency exists until it was provided or inspected. If codebase context is unavailable, state the unknown and ask for access or one necessary detail.
 12. In SDK or API examples, use exact identifiers and call shapes from a current public page or schema. Copy the documented shape for the requested language instead of translating names between TypeScript and Python; if a required detail is not documented, explain the behavior without inventing code.
 
+13. A product may ship both a Composio Built toolkit (`notion`) and a Provider MCP toolkit (`notion_mcp`) grouped as one App in the catalog. They are separate toolkits with separate connections. Use the slug the user or the code names; when the slug is unspecified, compare auth schemes, connected state, tool lists, and triggers, prefer the toolkit the user can authenticate, and state which one you chose. Never assume the `_mcp` toolkit is newer, larger, or shares a connection with its sibling.
+
 ## Canonical information
 
 Use bundled references for stable decisions. A user-facing source list contains only public `https://docs.composio.dev/...` pages actually consulted; bundled reference names, local paths, and `file://` URLs are omitted. For versions, provider adapters, client-specific setup, toolkit behavior, or APIs that may have changed, use the current canonical documentation and current CLI or tool schemas as the primary sources before answering or editing code:
