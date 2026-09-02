@@ -77,6 +77,19 @@ describe('Docs product navigation', () => {
     expect(shouldAnimateDocsProductSwitch(true, true)).toBe(false);
   });
 
+  test('fades the outgoing product snapshot while revealing the incoming product', async () => {
+    const globalCss = await Bun.file(
+      new URL('../../app/global.css', import.meta.url),
+    ).text();
+    const outgoingSnapshotRule = globalCss.match(
+      /::view-transition-old\(docs-product-shell\)\s*\{(?<rule>[^}]*)\}/,
+    );
+
+    expect(outgoingSnapshotRule?.groups?.rule).toContain('docs-product-fade-out');
+    expect(outgoingSnapshotRule?.groups?.rule).not.toContain('animation: none');
+    expect(globalCss).toContain('@keyframes docs-product-fade-out');
+  });
+
   test('builds audience-specific trees and keeps shared pages in both', () => {
     const forYouTree = buildProductPageTree(source.pageTree, 'for-you');
     const platformTree = buildProductPageTree(source.pageTree, 'platform');

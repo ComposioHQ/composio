@@ -1187,7 +1187,7 @@ html.docs-product-transition .docs-product-shell {
 }
 
 ::view-transition-old(docs-product-shell) {
-  animation: none;
+  animation: 350ms cubic-bezier(0, 0, 0.2, 1) both docs-product-fade-out;
   z-index: 1;
 }
 
@@ -1231,6 +1231,12 @@ html.docs-product-transition .docs-product-shell {
   }
   to {
     --docs-reveal-radius: 150%;
+  }
+}
+
+@keyframes docs-product-fade-out {
+  to {
+    opacity: 0;
   }
 }
 
