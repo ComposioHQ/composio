@@ -42,7 +42,7 @@ export const atomicWriteFileString = (params: {
       ? Option.map(yield* fs.stat(target).pipe(Effect.option), info => info.mode & 0o7777)
       : Option.none<number>();
     const targetMode = Option.fromNullable(params.mode).pipe(Option.orElse(() => preservedMode));
-    const writeAndPromote = (attempt: number): Effect.Effect<void, PlatformError> =>
+    const stage = (attempt: number): Effect.Effect<string, PlatformError> =>
       Effect.gen(function* () {
         const tmpPath = atomicTmpPath(target);
         const created = yield* Option.match(targetMode, {
@@ -55,7 +55,7 @@ export const atomicWriteFileString = (params: {
             Predicate.isTagged('SystemError')(created.left) &&
             created.left.reason === 'AlreadyExists';
           if (isCollision && attempt < MAX_ATOMIC_WRITE_ATTEMPTS) {
-            return yield* writeAndPromote(attempt + 1);
+            return yield* stage(attempt + 1);
           }
           if (!isCollision) {
             yield* fs.remove(tmpPath, { force: true }).pipe(Effect.ignore);
@@ -63,16 +63,24 @@ export const atomicWriteFileString = (params: {
           return yield* Effect.fail(created.left);
         }
 
-        yield* Effect.gen(function* () {
+        return tmpPath;
+      });
+
+    // Effect keeps acquisition and release uninterruptible. The promotion stays
+    // interruptible, but cancellation cannot occur between staging and the
+    // cleanup responsibility being registered.
+    yield* Effect.acquireUseRelease(
+      stage(1),
+      tmpPath =>
+        Effect.gen(function* () {
           yield* Option.match(targetMode, {
             onNone: () => Effect.void,
             onSome: mode => fs.chmod(tmpPath, mode),
           });
           yield* fs.rename(tmpPath, target);
-        }).pipe(Effect.onError(() => fs.remove(tmpPath, { force: true }).pipe(Effect.ignore)));
-      });
-
-    yield* writeAndPromote(1);
+        }),
+      tmpPath => fs.remove(tmpPath, { force: true }).pipe(Effect.ignore)
+    );
   });
 
 export const atomicWritePrivateFileString = (params: {

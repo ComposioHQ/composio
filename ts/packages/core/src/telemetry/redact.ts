@@ -14,6 +14,8 @@
 
 const REDACTED = '[REDACTED]';
 const SECRET_KEY_PATTERN = String.raw`authorization|auth|api[-_]?key|apikey|x-api-key|access[-_]?token|refresh[-_]?token|client[-_]?secret|secret|password|passwd|pwd`;
+const QUOTED_SECRET_KEY_PREFIX = String.raw`(["'])(${SECRET_KEY_PATTERN})\1(\s*[:=]+\s*)`;
+const BARE_SECRET_KEY_PREFIX = String.raw`(?<![A-Za-z0-9"'])(${SECRET_KEY_PATTERN})\b(\s*[:=]+\s*)`;
 const SECRET_PAIR_PREFIX = String.raw`(?<![A-Za-z0-9])(${SECRET_KEY_PATTERN})\b(["']?\s*[:=]+\s*)`;
 
 const REDACTION_RULES: ReadonlyArray<readonly [RegExp, string]> = [
@@ -22,14 +24,32 @@ const REDACTION_RULES: ReadonlyArray<readonly [RegExp, string]> = [
   // Authorization scheme + credential: `Bearer <token>`, `Basic <token>`.
   [/\b(bearer|basic)\s+[A-Za-z0-9._~+/=-]+/gi, `$1 ${REDACTED}`],
   // Secret-ish `key: value` / `key=value` / `key: "value"` / `key: 'value'` pairs.
-  // The separator group allows a quote directly after the key name so JSON is
-  // covered: in `{"api_key": "secret"}` the key's own closing quote sits
-  // between the name and the colon. Quoted rules run first so whitespace is
-  // part of the redacted value instead of preventing a match.
+  // Match quoted keys separately so key-like prose cannot treat an enclosing
+  // string's closing quote as the start of a secret value.
   // Leading lookbehind (not \b) so env-style names like COMPOSIO_API_KEY still
   // match: underscore is a word char, so \b can't fire between COMPOSIO_ and API.
-  [new RegExp(String.raw`${SECRET_PAIR_PREFIX}"(?:\\.|[^"\\\r\n])*"`, 'gi'), `$1$2"${REDACTED}"`],
-  [new RegExp(String.raw`${SECRET_PAIR_PREFIX}'(?:\\.|[^'\\\r\n])*'`, 'gi'), `$1$2'${REDACTED}'`],
+  [
+    new RegExp(String.raw`${QUOTED_SECRET_KEY_PREFIX}"(?:\\.|[^"\\\r\n])*"`, 'gi'),
+    `$1$2$1$3"${REDACTED}"`,
+  ],
+  [
+    new RegExp(String.raw`${QUOTED_SECRET_KEY_PREFIX}'(?:\\.|[^'\\\r\n])*'`, 'gi'),
+    `$1$2$1$3'${REDACTED}'`,
+  ],
+  [
+    new RegExp(
+      String.raw`${BARE_SECRET_KEY_PREFIX}"(?:\\.|[^"\\\r\n])*"(?=\s*(?:,|}|\]|\)|$))`,
+      'gi'
+    ),
+    `$1$2"${REDACTED}"`,
+  ],
+  [
+    new RegExp(
+      String.raw`${BARE_SECRET_KEY_PREFIX}'(?:\\.|[^'\\\r\n])*'(?=\s*(?:,|}|\]|\)|$))`,
+      'gi'
+    ),
+    `$1$2'${REDACTED}'`,
+  ],
   [new RegExp(String.raw`${SECRET_PAIR_PREFIX}([^\s"',}&]+)`, 'gi'), `$1$2${REDACTED}`],
 ];
 

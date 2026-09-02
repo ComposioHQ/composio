@@ -107,4 +107,13 @@ describe('redactSensitiveText', () => {
   it('does not match a secret name embedded in letters', () => {
     expect(redactSensitiveText('myapikey=sk_live_9f3c')).toBe('myapikey=sk_live_9f3c');
   });
+
+  it('does not consume adjacent fields after key-like text', () => {
+    for (const benign of [
+      '{"error": "unknown field auth:", "user": "bob"}',
+      `{'note': 'unknown field auth:', "user": 'bob'}`,
+    ]) {
+      expect(redactSensitiveText(benign), benign).toBe(benign);
+    }
+  });
 });

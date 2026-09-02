@@ -16,17 +16,25 @@ _SECRET_KEY_PATTERN = (
     r"refresh[-_]?token|client[-_]?secret|secret|password|passwd|pwd"
 )
 _SECRET_KEY = re.compile(rf"(?:[A-Za-z0-9]+_)*(?:{_SECRET_KEY_PATTERN})", re.IGNORECASE)
-# The separator group allows a quote directly after the key name so JSON and
-# dict reprs are covered: in `{"api_key": "secret"}` the key's own closing quote
-# sits between the name and the colon. Quoted rules run first so whitespace is
-# part of the redacted value instead of preventing a match.
+# Quoted keys are matched as a unit so a key-like word at the end of an error
+# string cannot treat the string's closing quote as the start of a secret value.
+_QUOTED_SECRET_KEY_PREFIX = rf"([\"'])({_SECRET_KEY_PATTERN})\1(\s*[:=]+\s*)"
+_BARE_SECRET_KEY_PREFIX = rf"(?<![A-Za-z0-9\"'])({_SECRET_KEY_PATTERN})\b(\s*[:=]+\s*)"
+_QUOTED_KEY_DOUBLE_QUOTED_VALUE = re.compile(
+    rf'{_QUOTED_SECRET_KEY_PREFIX}"(?:\\.|[^"\\\r\n])*"', re.IGNORECASE
+)
+_QUOTED_KEY_SINGLE_QUOTED_VALUE = re.compile(
+    rf"{_QUOTED_SECRET_KEY_PREFIX}'(?:\\.|[^'\\\r\n])*'", re.IGNORECASE
+)
+_BARE_KEY_DOUBLE_QUOTED_VALUE = re.compile(
+    rf'{_BARE_SECRET_KEY_PREFIX}"(?:\\.|[^"\\\r\n])*"(?=\s*(?:,|}}|\]|\)|$))',
+    re.IGNORECASE,
+)
+_BARE_KEY_SINGLE_QUOTED_VALUE = re.compile(
+    rf"{_BARE_SECRET_KEY_PREFIX}'(?:\\.|[^'\\\r\n])*'(?=\s*(?:,|}}|\]|\)|$))",
+    re.IGNORECASE,
+)
 _SECRET_PAIR_PREFIX = rf"(?<![A-Za-z0-9])({_SECRET_KEY_PATTERN})\b([\"']?\s*[:=]+\s*)"
-_SECRET_PAIR_DOUBLE_QUOTED = re.compile(
-    rf'{_SECRET_PAIR_PREFIX}"(?:\\.|[^"\\\r\n])*"', re.IGNORECASE
-)
-_SECRET_PAIR_SINGLE_QUOTED = re.compile(
-    rf"{_SECRET_PAIR_PREFIX}'(?:\\.|[^'\\\r\n])*'", re.IGNORECASE
-)
 _SECRET_PAIR_UNQUOTED = re.compile(
     rf"{_SECRET_PAIR_PREFIX}([^\s\"',}}&]+)", re.IGNORECASE
 )
@@ -36,8 +44,10 @@ def redact_sensitive_text(value: str) -> str:
     """Remove common URL, authorization, and key-value secret shapes."""
     value = _URL_QUERY.sub(rf"\1?{_REDACTED}", value)
     value = _AUTHORIZATION.sub(rf"\1 {_REDACTED}", value)
-    value = _SECRET_PAIR_DOUBLE_QUOTED.sub(rf'\1\2"{_REDACTED}"', value)
-    value = _SECRET_PAIR_SINGLE_QUOTED.sub(rf"\1\2'{_REDACTED}'", value)
+    value = _QUOTED_KEY_DOUBLE_QUOTED_VALUE.sub(rf'\1\2\1\3"{_REDACTED}"', value)
+    value = _QUOTED_KEY_SINGLE_QUOTED_VALUE.sub(rf"\1\2\1\3'{_REDACTED}'", value)
+    value = _BARE_KEY_DOUBLE_QUOTED_VALUE.sub(rf'\1\2"{_REDACTED}"', value)
+    value = _BARE_KEY_SINGLE_QUOTED_VALUE.sub(rf"\1\2'{_REDACTED}'", value)
     return _SECRET_PAIR_UNQUOTED.sub(rf"\1\2{_REDACTED}", value)
 
 
@@ -59,20 +69,53 @@ def redact_sensitive_value(value: t.Any) -> t.Any:
             active_containers.add(identity)
             try:
                 if isinstance(item, Mapping):
-                    return {
-                        key: _REDACTED
-                        if isinstance(key, str) and _SECRET_KEY.fullmatch(key)
-                        else redact(nested, depth + 1)
-                        for key, nested in item.items()
-                    }
+                    redacted_mapping: dict[t.Any, t.Any] = {}
+                    for key, nested in item.items():
+                        if remaining_nodes <= 0:
+                            return _REDACTED
+                        if isinstance(key, str) and _SECRET_KEY.fullmatch(key):
+                            remaining_nodes -= 1
+                            redacted_mapping[key] = _REDACTED
+                        else:
+                            redacted_mapping[key] = redact(nested, depth + 1)
+                    return redacted_mapping
+
+                redacted_items: list[t.Any] = []
+                fields = getattr(item, "_fields", ()) if isinstance(item, tuple) else ()
+                for index, nested in enumerate(item):
+                    if remaining_nodes <= 0:
+                        return _REDACTED
+                    if (
+                        index < len(fields)
+                        and isinstance(fields[index], str)
+                        and _SECRET_KEY.fullmatch(fields[index])
+                    ):
+                        remaining_nodes -= 1
+                        redacted_items.append(_REDACTED)
+                    else:
+                        redacted_items.append(redact(nested, depth + 1))
                 if isinstance(item, list):
-                    return [redact(nested, depth + 1) for nested in item]
-                return tuple(redact(nested, depth + 1) for nested in item)
+                    if type(item) is list:
+                        return redacted_items
+                    try:
+                        return type(item)(redacted_items)
+                    except Exception:
+                        return redacted_items
+                if hasattr(item, "_fields"):
+                    try:
+                        return type(item)(*redacted_items)
+                    except Exception:
+                        pass
+                return tuple(redacted_items)
             finally:
                 active_containers.remove(identity)
 
         if isinstance(item, str):
             return redact_sensitive_text(item)
-        return item
+        if isinstance(item, (int, float, bool, type(None))):
+            return item
+        if isinstance(item, (bytes, bytearray, memoryview)):
+            return _REDACTED
+        return _REDACTED
 
     return redact(value, 0)

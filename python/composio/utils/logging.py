@@ -2,7 +2,6 @@
 Logging utilities.
 """
 
-import copy
 import logging
 import os
 import sys
@@ -134,17 +133,20 @@ class _VerbosityWrapper:
         try:
             if hasattr(exception, "exceptions"):
                 raise TypeError("exception groups require a generic sanitized wrapper")
-            sanitized = copy.copy(exception)
+            sanitized = type(exception)("[details redacted]")
+            if hasattr(sanitized, "__dict__"):
+                sanitized.__dict__.clear()
             sanitized.args = ("[details redacted]",)
             sanitized.__cause__ = None
             sanitized.__context__ = None
             sanitized.__traceback__ = None
-            if redact_sensitive_text(str(sanitized)) != str(sanitized):
+            sanitized_text = str(sanitized)
+            if redact_sensitive_text(sanitized_text) != sanitized_text:
                 raise ValueError(
                     "custom exception string still contains sensitive data"
                 )
             return sanitized
-        except (AttributeError, TypeError, ValueError):
+        except Exception:
             return RuntimeError(f"{type(exception).__name__}: [details redacted]")
 
     def info(self, msg, *args, **kwargs):

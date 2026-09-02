@@ -1,7 +1,20 @@
 """Tests for telemetry secret redaction."""
 
+from typing import NamedTuple
+
 import pytest
+
 from composio.utils.redaction import redact_sensitive_text, redact_sensitive_value
+
+
+class _RequestContext(NamedTuple):
+    request_id: str
+    api_key: str
+
+
+class _RenderedContext:
+    def __repr__(self) -> str:
+        return "RenderedContext(api_key='object_test_secret')"
 
 
 def test_redacts_url_queries_authorization_and_secret_pairs() -> None:
@@ -101,6 +114,17 @@ def test_does_not_match_secret_name_embedded_in_letters() -> None:
     assert redact_sensitive_text("myapikey=sk_live_9f3c") == "myapikey=sk_live_9f3c"
 
 
+@pytest.mark.parametrize(
+    "text",
+    [
+        '{"error": "unknown field auth:", "user": "bob"}',
+        "{'note': 'unknown field auth:', \"user\": 'bob'}",
+    ],
+)
+def test_does_not_consume_adjacent_fields_after_key_like_text(text: str) -> None:
+    assert redact_sensitive_text(text) == text
+
+
 def test_structured_redaction_bounds_recursive_metadata() -> None:
     cyclic: dict[str, object] = {}
     cyclic["self"] = cyclic
@@ -111,3 +135,32 @@ def test_structured_redaction_bounds_recursive_metadata() -> None:
 
     assert redact_sensitive_value(cyclic) == {"self": "[REDACTED]"}
     assert "[REDACTED]" in str(redact_sensitive_value(deeply_nested))
+
+
+def test_structured_redaction_handles_sequences_and_rendered_objects() -> None:
+    context = _RequestContext("request-1", "namedtuple_test_secret")
+    redacted = redact_sensitive_value(
+        {
+            "items": [{"access_token": "list_test_secret"}],
+            "tuple": ("Authorization: Bearer bearer_value_secret",),
+            "context": context,
+            "rendered": _RenderedContext(),
+            "binary": b"api_key=binary_test_secret",
+        }
+    )
+
+    assert isinstance(redacted["context"], _RequestContext)
+    assert redacted["context"].request_id == "request-1"
+    rendered = str(redacted)
+    for secret in (
+        "list_test_secret",
+        "bearer_value_secret",
+        "namedtuple_test_secret",
+        "object_test_secret",
+        "binary_test_secret",
+    ):
+        assert secret not in rendered
+
+
+def test_structured_redaction_stops_at_the_node_budget() -> None:
+    assert redact_sensitive_value(list(range(10_001))) == "[REDACTED]"
