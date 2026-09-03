@@ -99,38 +99,39 @@ def _fetch_url_bytes(url: str) -> t.Tuple[bytes, str]:
     except requests.exceptions.RequestException as e:
         raise _UrlFetchError(cause=e) from e
 
-    if response.status_code in (301, 302, 303, 307, 308):
-        response.close()
-        raise _UrlFetchError(redirected=True)
+    try:
+        if response.status_code in (301, 302, 303, 307, 308):
+            raise _UrlFetchError(redirected=True)
 
-    if not response.ok:
-        response.close()
-        raise _UrlFetchError(
-            status_code=response.status_code, status_text=response.reason
-        )
-
-    content_length = parse_content_length(response.headers.get("Content-Length"))
-    if content_length is not None and content_length > _MAX_RESPONSE_SIZE:
-        response.close()
-        raise _UrlFetchError(
-            size_detail=(
-                f"File size ({content_length} bytes) exceeds maximum allowed "
-                f"size ({_MAX_RESPONSE_SIZE} bytes)"
+        if not response.ok:
+            raise _UrlFetchError(
+                status_code=response.status_code, status_text=response.reason
             )
-        )
 
-    chunks: t.List[bytes] = []
-    total_bytes = 0
-    for chunk in response.iter_content(chunk_size=8192):
-        if chunk:
-            total_bytes += len(chunk)
-            if total_bytes > _MAX_RESPONSE_SIZE:
-                response.close()
-                raise _UrlFetchError(
-                    size_detail="Response size exceeds maximum allowed size"
+        content_length = parse_content_length(response.headers.get("Content-Length"))
+        if content_length is not None and content_length > _MAX_RESPONSE_SIZE:
+            raise _UrlFetchError(
+                size_detail=(
+                    f"File size ({content_length} bytes) exceeds maximum allowed "
+                    f"size ({_MAX_RESPONSE_SIZE} bytes)"
                 )
-            chunks.append(chunk)
-    response.close()
+            )
+
+        chunks: t.List[bytes] = []
+        total_bytes = 0
+        try:
+            for chunk in response.iter_content(chunk_size=8192):
+                if chunk:
+                    total_bytes += len(chunk)
+                    if total_bytes > _MAX_RESPONSE_SIZE:
+                        raise _UrlFetchError(
+                            size_detail="Response size exceeds maximum allowed size"
+                        )
+                    chunks.append(chunk)
+        except requests.exceptions.RequestException as e:
+            raise _UrlFetchError(cause=e) from e
+    finally:
+        response.close()
 
     mimetype = response.headers.get("content-type", "application/octet-stream")
     mimetype = mimetype.split(";")[0].strip()
