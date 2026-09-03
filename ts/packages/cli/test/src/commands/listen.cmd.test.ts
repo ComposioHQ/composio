@@ -59,6 +59,45 @@ describe('CLI: composio listen', () => {
           expect(output).not.toContain('Temporary trigger disabled');
         })
     );
+
+    it.scoped('[Then] a bare --stream flag prints the whole event payload inline', () =>
+      Effect.gen(function* () {
+        yield* enableListen;
+        yield* cli([
+          'listen',
+          'composio.connected_account.expired',
+          '--max-events',
+          '1',
+          '--stream',
+        ]);
+
+        const lines = yield* MockConsole.getLines({ stripAnsi: true });
+        const output = lines.join('\n');
+
+        expect(output).not.toContain('Received unknown argument');
+        expect(output).toContain('stream: ');
+        expect(output).toContain('"data":{"id":"con_expired_1"}');
+      })
+    );
+
+    it.scoped('[Then] a bare --stream flag followed by another option is not swallowed', () =>
+      Effect.gen(function* () {
+        yield* enableListen;
+        yield* cli([
+          'listen',
+          'composio.connected_account.expired',
+          '--stream',
+          '--max-events',
+          '1',
+        ]);
+
+        const lines = yield* MockConsole.getLines({ stripAnsi: true });
+        const output = lines.join('\n');
+
+        expect(output).toContain('stream: ');
+        expect(output).toContain('Stopped after receiving 1 event.');
+      })
+    );
   });
 
   layer(
@@ -129,6 +168,20 @@ describe('CLI: composio listen', () => {
     TestLive({
       baseConfigProvider: testConfigProvider,
       fixture: 'global-test-user-id',
+      toolkitsData: {
+        triggerTypes: [
+          {
+            slug: 'GMAIL_NEW_GMAIL_MESSAGE',
+            name: 'New Gmail Message',
+            description: 'Fires when a new email arrives.',
+            instructions: '',
+            type: 'poll',
+            config: {},
+            payload: {},
+            toolkit: { name: 'Gmail', slug: 'gmail' },
+          },
+        ],
+      },
     })
   )('listen validation and domain failures', it => {
     it.scoped('reports malformed trigger params as CLI input validation', () =>
@@ -179,6 +232,29 @@ describe('CLI: composio listen', () => {
               reason: 'connected_account_not_found',
               toolkitSlug: 'gmail',
             });
+          }
+        }
+      })
+    );
+
+    it.scoped('reports an unknown trigger slug instead of a missing connection', () =>
+      Effect.gen(function* () {
+        yield* enableListen;
+        const exit = yield* Effect.exit(cli(['listen', 'BOGUS_SLUG_XYZ']));
+
+        expect(Exit.isFailure(exit)).toBe(true);
+        if (Exit.isFailure(exit)) {
+          const failure = Cause.squash(exit.cause);
+          expect(failure).toBeInstanceOf(ListenCommandError);
+          if (failure instanceof ListenCommandError) {
+            expect(failure).toMatchObject({
+              reason: 'unknown_trigger',
+              slug: 'BOGUS_SLUG_XYZ',
+              toolkitSlug: 'bogus',
+            });
+            expect(failure.message).toContain('Unknown trigger slug "BOGUS_SLUG_XYZ"');
+            expect(failure.message).toContain('composio triggers list <toolkit>');
+            expect(failure.message).not.toContain('composio link');
           }
         }
       })

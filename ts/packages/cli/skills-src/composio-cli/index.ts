@@ -147,7 +147,7 @@ const commands: SkillCommand[] = [
       'Use `listen` for temporary trigger subscriptions in consumer projects, especially when background agents should consume new event payloads from artifact files.',
     examples: [
       {
-        code: "composio listen GMAIL_NEW_GMAIL_MESSAGE\ncomposio listen SLACK_RECEIVE_MESSAGE -p '{ trigger_config: { channel: \"C123\" } }'\ncomposio listen GMAIL_NEW_GMAIL_MESSAGE --stream\ncomposio listen GMAIL_NEW_GMAIL_MESSAGE --stream '.data.threadId'\ncomposio listen GMAIL_NEW_GMAIL_MESSAGE --timeout 5m\ncomposio listen GMAIL_NEW_GMAIL_MESSAGE -p @trigger.json --max-events 5",
+        code: "composio listen GMAIL_NEW_GMAIL_MESSAGE\ncomposio listen SLACK_CHANNEL_MESSAGE_RECEIVED -p '{ trigger_config: { channel_id: \"C123\" } }'\ncomposio listen GMAIL_NEW_GMAIL_MESSAGE --stream\ncomposio listen GMAIL_NEW_GMAIL_MESSAGE --stream '.data.threadId'\ncomposio listen GMAIL_NEW_GMAIL_MESSAGE --timeout 5m\ncomposio listen GMAIL_NEW_GMAIL_MESSAGE -p @trigger.json --max-events 5",
       },
     ],
     flags: [

@@ -1,4 +1,4 @@
-import { describe, expect, layer } from '@effect/vitest';
+import { afterEach, describe, expect, layer } from '@effect/vitest';
 import { ConfigProvider, Effect } from 'effect';
 import { extendConfigProvider } from 'src/services/config';
 import { cli, TestLive, MockConsole } from 'test/__utils__';
@@ -89,6 +89,10 @@ const testConfigProvider = ConfigProvider.fromMap(
 ).pipe(extendConfigProvider);
 
 describe('CLI: composio tools info', () => {
+  afterEach(() => {
+    process.exitCode = undefined;
+  });
+
   layer(TestLive({ baseConfigProvider: testConfigProvider, toolkitsData }))(
     '[Given] valid slug [Then] displays tool info',
     it => {
@@ -166,6 +170,24 @@ describe('CLI: composio tools info', () => {
           const output = lines.join('\n');
 
           expect(output).toContain('not found');
+        })
+      );
+
+      it.scoped('exits non-zero and reports the missing tool', () =>
+        Effect.gen(function* () {
+          yield* cli(['tools', 'info', 'NONEXISTENT_TOOL']);
+          const lines = yield* MockConsole.getLines({ stripAnsi: true });
+
+          expect(lines.join('\n')).toContain('Tool "NONEXISTENT_TOOL" not found.');
+          expect(process.exitCode).toBe(1);
+        })
+      );
+
+      it.scoped('keeps a zero exit code for a valid slug', () =>
+        Effect.gen(function* () {
+          yield* cli(['tools', 'info', 'GMAIL_SEND_EMAIL']);
+
+          expect(process.exitCode).toBeUndefined();
         })
       );
     }

@@ -1092,6 +1092,19 @@ export const TestLayer = (input?: TestLiveInput) =>
           return {};
         },
       },
+      triggersTypes: {
+        retrieve: async (slug: string) => {
+          const found = toolkitsData.triggerTypes.find(
+            trigger => trigger.slug.toUpperCase() === slug.toUpperCase()
+          );
+          if (!found) {
+            throw Object.assign(new Error(`404 Trigger type "${slug}" not found`), {
+              status: 404,
+            });
+          }
+          return found;
+        },
+      },
       triggerInstances: {
         upsert: async (
           triggerSlug: string,
