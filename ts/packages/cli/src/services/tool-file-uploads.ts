@@ -6,6 +6,7 @@
 import type { FileSystem, Path } from '@effect/platform';
 import type { Composio as RawComposioClient } from '@composio/client';
 import { assertSafeFileUploadPath } from '@composio/core';
+import { ssrfSafeFetch } from '@composio/core/utils/ssrf-guard';
 import { Cause, Data, Effect, Exit, Predicate } from 'effect';
 import { guessToolkitFromToolSlug } from 'src/utils/toolkit-from-tool-slug';
 
@@ -143,8 +144,9 @@ export const findFileUploadablePaths = (
 };
 
 const readFileFromUrl = async (path: Path.Path, url: string) => {
-  const response = await fetch(url);
+  const response = await ssrfSafeFetch(url);
   if (!response.ok) {
+    await response.body?.cancel().catch(() => undefined);
     throw new ToolFileUploadError({
       message: `Failed to fetch file: ${response.statusText}`,
       reason: 'source-fetch',
@@ -249,7 +251,7 @@ const uploadFile = async (params: {
     toolkit_slug: params.toolkitSlug,
   });
 
-  const uploadResponse = await fetch(presigned.new_presigned_url, {
+  const uploadResponse = await ssrfSafeFetch(presigned.new_presigned_url, {
     method: 'PUT',
     body: fileData.bytes,
     headers: {
@@ -259,12 +261,14 @@ const uploadFile = async (params: {
   });
 
   if (!uploadResponse.ok) {
+    await uploadResponse.body?.cancel().catch(() => undefined);
     throw new ToolFileUploadError({
       message: `Failed to upload file to S3: ${uploadResponse.statusText}`,
       reason: 'upload',
       status: uploadResponse.status,
     });
   }
+  await uploadResponse.body?.cancel().catch(() => undefined);
 
   return {
     name: fileData.fileName,

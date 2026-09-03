@@ -180,8 +180,11 @@ describe('ComposioUserContext', () => {
           const userDataAsJson = yield* userDataToJSON(expectedUserData);
 
           const fs = yield* FileSystem.FileSystem;
+          const userDataPath = path.join(cwd, '.composio', 'user_data.json');
           yield* fs.makeDirectory(path.join(cwd, '.composio'), { recursive: true });
-          yield* fs.writeFileString(path.join(cwd, '.composio', 'user_data.json'), userDataAsJson);
+          yield* fs.writeFileString(userDataPath, userDataAsJson);
+          yield* fs.chmod(userDataPath, 0o644);
+          assertEquals((yield* fs.stat(userDataPath)).mode & 0o777, 0o644);
 
           const ctx = yield* ComposioUserContext;
           assertEquals(
@@ -193,6 +196,8 @@ describe('ComposioUserContext', () => {
             })
           );
           assertEquals(ctx.isLoggedIn(), true);
+          assertEquals(yield* fs.readFileString(userDataPath, 'utf8'), userDataAsJson);
+          assertEquals((yield* fs.stat(userDataPath)).mode & 0o777, 0o600);
         }).pipe(Effect.provide(ComposioUserContextTest));
       });
     });

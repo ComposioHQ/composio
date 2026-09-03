@@ -1,6 +1,6 @@
 import pc from 'picocolors';
-import { getEnvVariable } from './env';
 import { COMPOSIO_LOG_LEVEL } from './constants';
+import { redactSensitiveText } from '../telemetry/redact';
 
 // Define log levels with corresponding priorities
 export const LOG_LEVELS = {
@@ -28,7 +28,7 @@ interface LoggerOptions {
   includeTimestamp?: boolean;
 }
 
-class Logger {
+export class Logger {
   private readonly level: LogLevel;
   private readonly includeTimestamp: boolean;
   private readonly console: Console;
@@ -57,12 +57,12 @@ class Logger {
       })
       .join('\n');
 
-    if (!this.includeTimestamp) {
-      return formattedArgs;
-    }
+    const redactedArgs = redactSensitiveText(formattedArgs) ?? formattedArgs;
+
+    if (!this.includeTimestamp) return redactedArgs;
 
     const timestamp = new Date().toISOString();
-    return `${pc.gray(timestamp)} - ${formattedArgs}`;
+    return `${pc.gray(timestamp)} - ${redactedArgs}`;
   }
 
   private shouldLog(level: LogLevel): boolean {
