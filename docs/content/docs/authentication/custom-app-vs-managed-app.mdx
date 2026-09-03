@@ -6,14 +6,14 @@ keywords: [custom auth config, managed auth, oauth, auth config, white label, ow
 
 Composio supports two ways to authenticate users with toolkits.
 
-- **[Composio managed apps](/toolkits/managed-auth)**: Composio registers and maintains OAuth apps for popular toolkits (GitHub, Gmail, Slack, etc.). Zero setup, works out of the box.
+- **[Composio managed apps](/toolkits/managed-auth)**: Composio registers and maintains OAuth apps for popular toolkits such as GitHub, Gmail, and Slack. You do not need to register your own OAuth app.
 - **Custom auth configs**: You provide your own OAuth app, API key, bearer token, or other credentials and tell Composio to use them for a toolkit.
 
 This page covers when to use each, how to create a custom auth config, and how to wire it into a session.
 
 ## When to use Composio managed apps
 
-Managed apps are the default. Every toolkit that supports OAuth has a Composio managed app ready to go. Use them when:
+Managed apps are the default when they are available. Use them when:
 
 - **You're building and iterating.** No OAuth app registration, no credentials to manage. Create a session and start testing immediately.
 - **Default scopes cover your needs.** Composio requests sensible defaults for each toolkit.
@@ -32,7 +32,7 @@ Bring your own credentials when any of these apply:
 
 ## Create a custom auth config
 
-To check whether a toolkit already has a Composio managed app, see the [managed auth toolkit list](/toolkits/managed-auth). You can still create a custom auth config for branding, scopes, rate limits, polling intervals, or custom instances.
+To check whether Composio provides the OAuth app for a toolkit, see [Managed OAuth apps](/toolkits/managed-auth). You can still create a custom auth config for branding, scopes, rate limits, polling intervals, or custom instances.
 
 The steps below use the dashboard. To create auth configs in code instead, for example one per customer, see [Programmatic auth configs](/docs/authentication/programmatic-auth-configs).
 
@@ -138,7 +138,7 @@ const session = await composio.create("user_123", {
 
 ### Toolkits without managed auth
 
-Some toolkits don't have Composio managed auth. For these, the setup is the same as above, except the provider may ask for API keys or instance details instead of OAuth credentials. Browse the full list on the [managed auth page](/toolkits/managed-auth) or check individual toolkit pages on the [toolkits page](/toolkits).
+Some OAuth toolkits do not have a Composio-managed OAuth app. Check [Managed OAuth apps](/toolkits/managed-auth) to find them. For API keys, instance details, and other authentication methods, check the individual pages in the [toolkit catalog](/toolkits).
 
 ## Next
 

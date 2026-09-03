@@ -854,7 +854,7 @@ function toolkitToMarkdown(
     '',
     `- **Category:** ${toolkit.category || 'Uncategorized'}`,
     `- **Auth:** ${toolkit.authSchemes.join(', ') || 'None'}`,
-    `- **Composio Managed App Available?** ${
+    `- **Composio-managed OAuth available?** ${
       toolkit.authSchemes?.some(s => s.toUpperCase().includes('OAUTH'))
         ? toolkit.composioManagedAuthSchemes && toolkit.composioManagedAuthSchemes.length > 0
           ? 'Yes'
@@ -949,20 +949,26 @@ async function generateManagedAuthIndex(): Promise<string> {
     .sort((a, b) => (a.name?.trim() || '').localeCompare(b.name?.trim() || ''));
 
   const lines: string[] = [
-    '# Composio Managed Auth',
+    '# Managed OAuth apps',
     '',
-    'Toolkits with managed auth work out of the box with no OAuth setup. For toolkits without managed auth, you need to provide your own credentials.',
+    'Composio can provide the OAuth app that your users authorize when they connect a toolkit. You do not need to register an OAuth app or supply its client ID and client secret.',
     '',
-    'You can also check programmatically whether a toolkit has managed auth:',
+    'This list covers only toolkits that support OAuth. It does not include toolkits that use only API keys, bearer tokens, Basic auth, or no authentication.',
+    '',
+    'Call the toolkit endpoint and read `composio_managed_auth_schemes`:',
     '',
     '```bash',
-    "curl 'https://backend.composio.dev/api/v3/toolkits/posthog' \\",
+    "curl 'https://backend.composio.dev/api/v3.1/toolkits/gmail' \\",
     "  -H 'x-api-key: YOUR_API_KEY'",
     '```',
     '',
-    'See [When to use your own developer credentials](/docs/authentication/custom-app-vs-managed-app.md) for help deciding which approach fits your use case.',
+    'If `composio_managed_auth_schemes` contains the toolkit\'s OAuth method, Composio provides the OAuth app. If the field does not contain that method, register your own OAuth app and supply its client ID and client secret.',
     '',
-    `## Composio Managed App Available (${managed.length})`,
+    'Some toolkits support more than one authentication method. A toolkit appears under **Composio-managed OAuth available** when Composio manages at least one OAuth method. Open the toolkit page to check each method.',
+    '',
+    'See [Managed vs custom auth](/docs/authentication/custom-app-vs-managed-app.md) for setup steps and trade-offs.',
+    '',
+    `## Composio-managed OAuth available (${managed.length})`,
     '',
     '| Toolkit | Slug |',
     '|---------|------|',
@@ -975,7 +981,7 @@ async function generateManagedAuthIndex(): Promise<string> {
   }
 
   lines.push('');
-  lines.push(`## Requires Your Own Credentials (${unmanaged.length})`);
+  lines.push(`## Bring your own OAuth app (${unmanaged.length})`);
   lines.push('');
   lines.push('| Toolkit | Slug |');
   lines.push('|---------|------|');
@@ -1004,7 +1010,7 @@ async function generateToolkitsIndex(): Promise<string> {
     `Composio supports ${toolkits.length} toolkits for building AI agents.`,
     '',
     '- [Premium Tools](/toolkits/pro-tools.md) - Which tools cost extra, how they are priced, and what the limits are',
-    '- [Composio Managed Auth](/toolkits/managed-auth.md) - Full list of OAuth toolkits that work out of the box vs ones that need your own credentials',
+    '- [Managed OAuth apps](/toolkits/managed-auth.md) - Check whether Composio provides the OAuth app for a toolkit',
     '',
     '## All Toolkits',
     '',
