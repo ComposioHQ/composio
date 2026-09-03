@@ -1907,6 +1907,24 @@ class TestFetchFileFromUrl:
         assert "404" in str(exc_info.value)
 
     @patch("composio.core.models._files.safe_get")
+    def test_fetch_file_from_url_maps_midstream_failure(self, mock_get):
+        def failing_stream(chunk_size=None):
+            yield b"partial"
+            raise requests.exceptions.ConnectionError("peer reset mid-stream")
+
+        mock_response = MagicMock()
+        mock_response.ok = True
+        mock_response.status_code = 200
+        mock_response.headers = {"content-type": "text/plain"}
+        mock_response.iter_content.side_effect = failing_stream
+        mock_get.return_value = mock_response
+
+        with pytest.raises(ErrorUploadingFile, match="peer reset mid-stream"):
+            _fetch_file_from_url("https://example.com/file.txt")
+
+        mock_response.close.assert_called_once()
+
+    @patch("composio.core.models._files.safe_get")
     def test_fetch_file_from_url_decodes_percent_encoded_filename(self, mock_get):
         """Test that percent-encoded characters in URL filenames are decoded."""
         mock_response = MagicMock()

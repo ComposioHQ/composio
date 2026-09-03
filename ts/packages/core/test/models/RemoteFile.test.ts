@@ -124,6 +124,57 @@ describe('RemoteFile', () => {
         message: expect.stringContaining('404'),
       });
     });
+
+    it('should map a mid-stream transport failure and retain its cause', async () => {
+      const cause = new TypeError('peer reset mid-stream');
+      let pulls = 0;
+      globalThis.fetch = vi.fn().mockResolvedValue(
+        new Response(
+          new ReadableStream({
+            pull(controller) {
+              if (pulls++ === 0) {
+                controller.enqueue(new Uint8Array([1, 2, 3]));
+              } else {
+                controller.error(cause);
+              }
+            },
+          })
+        )
+      );
+
+      const file = new RemoteFile(validCamelCaseData);
+      await expect(file.buffer()).rejects.toMatchObject({
+        name: 'RemoteFileDownloadError',
+        cause,
+      });
+    });
+
+    it('should map a transport failure before response headers arrive', async () => {
+      const cause = new TypeError('connection refused');
+      globalThis.fetch = vi.fn().mockRejectedValue(cause);
+
+      const file = new RemoteFile(validCamelCaseData);
+      await expect(file.buffer()).rejects.toMatchObject({
+        name: 'RemoteFileDownloadError',
+        cause,
+      });
+    });
+
+    it('should reject a declared body larger than the shared download limit', async () => {
+      globalThis.fetch = vi.fn().mockResolvedValue(
+        new Response('ignored', {
+          headers: { 'content-length': String(101 * 1024 * 1024) },
+        })
+      );
+
+      const file = new RemoteFile(validCamelCaseData);
+      await expect(file.buffer()).rejects.toMatchObject({
+        name: 'RemoteFileDownloadError',
+        cause: expect.objectContaining({
+          message: expect.stringContaining('exceeds maximum allowed size'),
+        }),
+      });
+    });
   });
 
   describe('text', () => {
@@ -143,16 +194,20 @@ describe('RemoteFile', () => {
 
   describe('blob', () => {
     it('should fetch and return file content as Blob', async () => {
-      const blob = new Blob(['data']);
+      const blob = new Blob(['data'], { type: 'text/plain' });
       globalThis.fetch = vi.fn().mockResolvedValue({
         ok: true,
-        blob: () => Promise.resolve(blob),
+        status: 200,
+        statusText: 'OK',
+        headers: new Headers({ 'content-type': blob.type }),
+        body: blob.stream(),
       });
 
       const file = new RemoteFile(validCamelCaseData);
       const result = await file.blob();
 
-      expect(result).toBe(blob);
+      expect(result.type).toBe(blob.type);
+      expect(await result.text()).toBe(await blob.text());
     });
 
     it('should throw RemoteFileDownloadError when fetch fails', async () => {
