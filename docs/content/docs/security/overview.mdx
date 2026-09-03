@@ -1,7 +1,7 @@
 ---
 title: Security
 description: How Composio secures your data, credentials, and tool execution, and where to find our compliance reports.
-keywords: [security, compliance, SOC 2, trust center, encryption, isolation]
+keywords: [security, compliance, SOC 2, trust center, encryption, isolation, egress IPs, IP allowlist, firewall]
 ---
 
 Composio is built with security at its core. We use least-privilege defaults, isolate every organization and project, encrypt credentials, and give you controls over what we store.
@@ -21,6 +21,21 @@ Composio is SOC 2 Type II compliant. For our latest reports and certifications (
 - Connected-account credentials, auth configs, and API keys are encrypted at rest using AES-256-GCM, and all traffic is encrypted in transit using TLS.
 - Connected-account tokens are redacted by default in API responses, for both Composio-managed and custom auth configs. To act on a provider directly, use [Proxy Execute](/docs/extending-sessions/proxy-execute).
 - Webhook deliveries are signed; verify the `webhook-signature` header when handling trigger events. For custom OAuth webhook setup, see [Custom OAuth webhooks](/docs/setting-up-triggers/custom-oauth-webhooks).
+
+## Network access
+
+If Composio connects to a service you host, allow inbound traffic on TCP 443 from these addresses:
+
+```
+34.233.50.61/32
+54.224.131.195/32
+54.243.138.89/32
+52.72.72.59/32
+```
+
+This list is verified for Composio-initiated connections to services you host. It is not a guarantee that every Composio outbound call path uses only these addresses, and the addresses can change, so confirm with your Composio support contact that the list covers your integration before you change a production firewall.
+
+This list does not apply to trigger webhook delivery. Your webhook endpoint must be publicly reachable, and you authenticate deliveries with [signature verification](/docs/setting-up-triggers/subscribing-to-events#verifying-signatures) rather than an IP allowlist.
 
 ## Your responsibilities
 
