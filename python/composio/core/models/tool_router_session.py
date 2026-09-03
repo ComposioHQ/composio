@@ -714,9 +714,10 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
         """
         Execute a tool within the session.
 
-        For custom tools, accepts the original slug (e.g. "GREP") or the
-        full slug (e.g. "LOCAL_GREP"). Custom tools are executed in-process;
-        remote tools are sent to the Composio backend.
+        For custom tools, accepts the full slug (e.g. "LOCAL_GREP") or the
+        original slug (e.g. "GREP") when that original slug is unique across
+        the session's custom tools and toolkits. Custom tools are executed
+        in-process; remote tools are sent to the Composio backend.
 
         :param account: Account ID or alias for direct app tool execution in
             multi-account sessions. Helper/meta tools either ignore this
@@ -796,7 +797,18 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
             for tool in tk.tools:
                 entry = find_custom_tool_map_entry_by_toolkit_and_original_slug(
                     self._custom_tools_map, tk.slug, tool.slug
-                ) or self._custom_tools_map.by_original_slug.get(tool.slug.upper())
+                )
+                if entry is None:
+                    # Only trust a bare alias that belongs to this toolkit.
+                    bare = self._custom_tools_map.by_original_slug.get(
+                        tool.slug.upper()
+                    )
+                    if (
+                        bare is not None
+                        and bare.toolkit is not None
+                        and bare.toolkit.lower() == tk.slug.lower()
+                    ):
+                        entry = bare
                 tools.append(
                     RegisteredCustomTool(
                         slug=entry.final_slug if entry else tool.slug,

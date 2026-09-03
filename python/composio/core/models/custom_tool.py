@@ -726,7 +726,7 @@ def build_custom_tools_map_from_response(
                 register_handle(handle, tk.slug)
 
     def find_handle(
-        original_slug: str, toolkit: t.Optional[str]
+        final_slug: str, original_slug: str, toolkit: t.Optional[str]
     ) -> t.Optional[t.Tuple[CustomTool, t.Optional[str]]]:
         original_slug_key = original_slug.upper()
         qualified_match = handles_by_qualified_original.get(
@@ -736,13 +736,29 @@ def build_custom_tools_map_from_response(
             return qualified_match
 
         bare_matches = handles_by_original.get(original_slug_key, [])
-        return bare_matches[0] if len(bare_matches) == 1 else None
+        if not bare_matches:
+            # Response tool not defined locally; nothing to route in-process.
+            return None
+        # A bare match may only stand in when the response carries no toolkit
+        # identity. Binding a toolkit child to another toolkit's handler would
+        # silently execute the wrong implementation.
+        if toolkit is None and len(bare_matches) == 1:
+            return bare_matches[0]
+
+        registered = sorted(
+            {(match_toolkit or "custom").upper() for _, match_toolkit in bare_matches}
+        )
+        raise ValidationError(
+            f'Cannot map custom tool "{final_slug}": original slug '
+            f'"{original_slug}" for toolkit "{toolkit or "custom"}" has no exact '
+            f"local match. Registered for toolkits: {', '.join(registered)}."
+        )
 
     def add_entry(
         final_slug: str, original_slug: str, toolkit: t.Optional[str]
     ) -> None:
         resolved_toolkit = toolkit
-        match = find_handle(original_slug, resolved_toolkit)
+        match = find_handle(final_slug, original_slug, resolved_toolkit)
         if not match:
             return
         handle, default_toolkit = match
@@ -782,6 +798,14 @@ def build_custom_tools_map_from_response(
         for ctk in experimental.custom_toolkits:
             for ctk_tool in ctk.tools:
                 add_entry(ctk_tool.slug, ctk_tool.original_slug, ctk.slug)
+
+    # Ambiguity follows the local definitions, not whichever subset the
+    # response happened to include: a shared child slug must never become
+    # callable by its bare name just because a sibling was omitted.
+    for original_slug_key, matches in handles_by_original.items():
+        if len(matches) > 1:
+            by_original_slug.pop(original_slug_key, None)
+            ambiguous_original_slugs.add(original_slug_key)
 
     return CustomToolsMap(
         by_final_slug=by_final_slug,

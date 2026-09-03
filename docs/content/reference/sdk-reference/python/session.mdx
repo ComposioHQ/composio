@@ -103,7 +103,7 @@ def search(query: str, model: str | None = ...) -> SessionSearchResponse
 
 ### execute()
 
-Execute a tool within the session.  For custom tools, accepts the original slug (e.g. "GREP") or the full slug (e.g. "LOCAL_GREP"). Custom tools are executed in-process; remote tools are sent to the Composio backend.
+Execute a tool within the session.  For custom tools, accepts the full slug (e.g. "LOCAL_GREP") or the original slug (e.g. "GREP") when that original slug is unique across the session's custom tools and toolkits. Custom tools are executed in-process; remote tools are sent to the Composio backend.
 
 ```python
 def execute(tool_slug: str, arguments: Dict[str, Any | None] = ..., account: str | None = ...) -> SessionExecuteResponse

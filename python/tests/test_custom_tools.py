@@ -28,6 +28,7 @@ from pydantic import BaseModel, Field
 
 from composio.core.models.custom_tool import (
     ExperimentalToolkit,
+    assert_no_custom_tool_slugs_in_preload,
     build_custom_tools_map,
     build_custom_tools_map_from_response,
     serialize_custom_toolkits,
@@ -506,6 +507,19 @@ class TestCustomToolsMap:
         with pytest.raises(ValidationError, match="Ambiguous custom tool slug"):
             assert_unambiguous_custom_tool_slug(m, "GREP")
 
+    def test_preload_rejects_ambiguous_original_slug(self, duplicate_slug_tools):
+        alpha_tool, beta_tool = duplicate_slug_tools
+        alpha = ExperimentalToolkit(
+            slug="ALPHA", name="Alpha", description="Alpha tools"
+        )
+        alpha._tools.append(alpha_tool)
+        beta = ExperimentalToolkit(slug="BETA", name="Beta", description="Beta tools")
+        beta._tools.append(beta_tool)
+        m = build_custom_tools_map([], [alpha, beta])
+
+        with pytest.raises(ValidationError, match="not supported in preload.tools"):
+            assert_no_custom_tool_slugs_in_preload(["grep"], m)
+
     def test_collision_detection(self, grep_tool):
         with pytest.raises(ValidationError, match="collision"):
             build_custom_tools_map([grep_tool, grep_tool])
@@ -589,6 +603,110 @@ class TestBuildMapFromResponse:
         assert m.by_final_slug["LOCAL_BETA_GREP"].toolkit == "BETA"
         assert m.ambiguous_original_slugs == {"GREP"}
 
+    def _duplicate_toolkits(self, duplicate_slug_tools):
+        alpha_tool, beta_tool = duplicate_slug_tools
+        alpha = ExperimentalToolkit(
+            slug="ALPHA", name="Alpha", description="Alpha tools"
+        )
+        alpha._tools.append(alpha_tool)
+        beta = ExperimentalToolkit(slug="BETA", name="Beta", description="Beta tools")
+        beta._tools.append(beta_tool)
+        return alpha, beta
+
+    def test_rejects_toolkit_child_without_exact_match(self, duplicate_slug_tools):
+        alpha, beta = self._duplicate_toolkits(duplicate_slug_tools)
+        mock_exp = MagicMock()
+        mock_exp.custom_tools = []
+        mock_exp.custom_toolkits = [
+            MagicMock(
+                slug="GAMMA",
+                tools=[MagicMock(slug="LOCAL_GAMMA_GREP", original_slug="GREP")],
+            ),
+        ]
+
+        with pytest.raises(ValidationError, match="no exact local match"):
+            build_custom_tools_map_from_response([], [alpha, beta], mock_exp)
+
+    def test_never_binds_toolkit_child_to_another_toolkit(self, duplicate_slug_tools):
+        alpha_tool, _ = duplicate_slug_tools
+        alpha = ExperimentalToolkit(
+            slug="ALPHA", name="Alpha", description="Alpha tools"
+        )
+        alpha._tools.append(alpha_tool)
+        mock_exp = MagicMock()
+        mock_exp.custom_tools = []
+        mock_exp.custom_toolkits = [
+            MagicMock(
+                slug="BETA",
+                tools=[MagicMock(slug="LOCAL_BETA_GREP", original_slug="GREP")],
+            ),
+        ]
+
+        with pytest.raises(ValidationError, match='for toolkit "BETA"'):
+            build_custom_tools_map_from_response([], [alpha], mock_exp)
+
+    def test_standalone_falls_back_to_unique_bare_match(self, email_tool):
+        mock_exp = MagicMock()
+        mock_exp.custom_tools = [
+            MagicMock(
+                slug="LOCAL_GMAIL_GET_EMAILS",
+                original_slug="GET_EMAILS",
+                extends_toolkit=None,
+            )
+        ]
+        mock_exp.custom_toolkits = []
+
+        m = build_custom_tools_map_from_response([email_tool], None, mock_exp)
+
+        assert m.by_final_slug["LOCAL_GMAIL_GET_EMAILS"].toolkit == "gmail"
+
+    def test_skips_response_tools_not_defined_locally(self, grep_tool):
+        mock_exp = MagicMock()
+        mock_exp.custom_tools = [
+            MagicMock(slug="LOCAL_GREP", original_slug="GREP", extends_toolkit=None),
+            MagicMock(slug="LOCAL_STALE", original_slug="STALE", extends_toolkit=None),
+        ]
+        mock_exp.custom_toolkits = []
+
+        m = build_custom_tools_map_from_response([grep_tool], None, mock_exp)
+
+        assert set(m.by_final_slug) == {"LOCAL_GREP"}
+
+    def test_ambiguity_follows_local_definitions(self, duplicate_slug_tools):
+        alpha, beta = self._duplicate_toolkits(duplicate_slug_tools)
+        mock_exp = MagicMock()
+        mock_exp.custom_tools = []
+        mock_exp.custom_toolkits = [
+            MagicMock(
+                slug="ALPHA",
+                tools=[MagicMock(slug="LOCAL_ALPHA_GREP", original_slug="GREP")],
+            ),
+        ]
+
+        m = build_custom_tools_map_from_response([], [alpha, beta], mock_exp)
+
+        assert set(m.by_final_slug) == {"LOCAL_ALPHA_GREP"}
+        assert "GREP" not in m.by_original_slug
+        assert m.ambiguous_original_slugs == {"GREP"}
+        assert find_custom_tool(m, "GREP") is None
+
+    def test_rejects_duplicate_qualified_response_entries(self, duplicate_slug_tools):
+        alpha, beta = self._duplicate_toolkits(duplicate_slug_tools)
+        mock_exp = MagicMock()
+        mock_exp.custom_tools = []
+        mock_exp.custom_toolkits = [
+            MagicMock(
+                slug="ALPHA",
+                tools=[
+                    MagicMock(slug="LOCAL_ALPHA_GREP", original_slug="GREP"),
+                    MagicMock(slug="LOCAL_ALPHA_GREP_2", original_slug="GREP"),
+                ],
+            ),
+        ]
+
+        with pytest.raises(ValidationError, match="already registered for toolkit"):
+            build_custom_tools_map_from_response([], [alpha, beta], mock_exp)
+
 
 # ────────────────────────────────────────────────────────────────
 # Execution tests
@@ -638,6 +756,27 @@ class TestSessionContextImpl:
         assert result.error is None
         assert result.log_id == ""
         assert result.data["matches"] == ["test"]
+
+    def test_sibling_routing_rejects_ambiguous_slug(self, duplicate_slug_tools):
+        alpha_tool, beta_tool = duplicate_slug_tools
+        alpha = ExperimentalToolkit(
+            slug="ALPHA", name="Alpha", description="Alpha tools"
+        )
+        alpha._tools.append(alpha_tool)
+        beta = ExperimentalToolkit(slug="BETA", name="Beta", description="Beta tools")
+        beta._tools.append(beta_tool)
+        m = build_custom_tools_map([], [alpha, beta])
+        mock_client = MagicMock()
+        ctx = SessionContextImpl(
+            client=mock_client, user_id="u", session_id="s", custom_tools_map=m
+        )
+
+        with pytest.raises(ValidationError, match="Ambiguous custom tool slug"):
+            ctx.execute("GREP", {"pattern": "x"})
+        mock_client.tool_router.session.execute.assert_not_called()
+
+        result = ctx.execute("LOCAL_BETA_GREP", {"pattern": "x"})
+        assert result.data["toolkit"] == "beta"
 
     def test_remote_fallback(self, grep_tool):
         m = build_custom_tools_map([grep_tool])
@@ -948,6 +1087,43 @@ class TestToolRouterSessionCustomTools:
             "LOCAL_BETA_GREP",
         ]
 
+    def test_custom_toolkits_list_never_borrows_other_toolkit_slug(
+        self, duplicate_slug_tools
+    ):
+        alpha_tool, beta_tool = duplicate_slug_tools
+        alpha = ExperimentalToolkit(
+            slug="ALPHA", name="Alpha", description="Alpha tools"
+        )
+        alpha._tools.append(alpha_tool)
+        beta = ExperimentalToolkit(slug="BETA", name="Beta", description="Beta tools")
+        beta._tools.append(beta_tool)
+        mock_exp = MagicMock()
+        mock_exp.custom_tools = []
+        mock_exp.custom_toolkits = [
+            MagicMock(
+                slug="ALPHA",
+                tools=[MagicMock(slug="LOCAL_ALPHA_GREP", original_slug="GREP")],
+            ),
+        ]
+        custom_tools_map = build_custom_tools_map_from_response(
+            [], [alpha, beta], mock_exp
+        )
+        s = ToolRouterSession(
+            client=MagicMock(),
+            provider=MagicMock(),
+            dangerously_allow_auto_upload_download_files=True,
+            session_id="s",
+            mcp=MagicMock(),
+            experimental=MagicMock(),
+            custom_tools_map=custom_tools_map,
+            user_id="u",
+        )
+
+        assert [tk.tools[0].slug for tk in s.custom_toolkits()] == [
+            "LOCAL_ALPHA_GREP",
+            "GREP",
+        ]
+
     def test_execute_rejects_ambiguous_original_slug(self, duplicate_slug_tools):
         alpha_tool, beta_tool = duplicate_slug_tools
         alpha = ExperimentalToolkit(
@@ -1018,6 +1194,43 @@ class TestMultiExecuteRouting:
         )
         assert result["successful"] is True
         assert result["data"]["matches"] == ["x"]
+
+    def test_rejects_ambiguous_original_slug(self, duplicate_slug_tools):
+        alpha_tool, beta_tool = duplicate_slug_tools
+        alpha = ExperimentalToolkit(
+            slug="ALPHA", name="Alpha", description="Alpha tools"
+        )
+        alpha._tools.append(alpha_tool)
+        beta = ExperimentalToolkit(slug="BETA", name="Beta", description="Beta tools")
+        beta._tools.append(beta_tool)
+        s = ToolRouterSession(
+            client=MagicMock(),
+            provider=MagicMock(),
+            dangerously_allow_auto_upload_download_files=True,
+            session_id="s",
+            mcp=MagicMock(),
+            experimental=MagicMock(),
+            custom_tools_map=build_custom_tools_map([], [alpha, beta]),
+            user_id="u",
+        )
+        tm = MagicMock()
+        backend = MagicMock()
+        tm._wrap_execute_tool_for_tool_router.return_value = backend
+
+        with pytest.raises(ValidationError, match="Ambiguous custom tool slug"):
+            s._route_multi_execute(
+                {
+                    "tools": [
+                        {
+                            "tool_slug": "LOCAL_ALPHA_GREP",
+                            "arguments": {"pattern": "x"},
+                        },
+                        {"tool_slug": "GREP", "arguments": {"pattern": "x"}},
+                    ]
+                },
+                tm,
+            )
+        backend.assert_not_called()
 
     def test_all_remote(self, grep_tool):
         s = self._make_session(grep_tool)
