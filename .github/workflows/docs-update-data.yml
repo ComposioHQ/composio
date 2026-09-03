@@ -4,7 +4,7 @@ on:
   schedule:
     - cron: '0 */5 * * *'
   repository_dispatch:
-    types: [apollo-production-deploy]
+    types: [apollo-production-deploy, mercury-production-deploy]
   workflow_dispatch:
 
 permissions:
@@ -71,13 +71,21 @@ jobs:
       - name: Log trigger source
         env:
           EVENT_NAME: ${{ github.event_name }}
-          HERMES_COMMIT: ${{ github.event.client_payload.hermes_commit }}
+          DISPATCH_ACTION: ${{ github.event.action }}
+          APOLLO_COMMIT: ${{ github.event.client_payload.apollo_commit || github.event.client_payload.hermes_commit }}
+          MERCURY_COMMIT: ${{ github.event.client_payload.mercury_commit }}
           DEPLOY_TIMESTAMP: ${{ github.event.client_payload.timestamp }}
         run: |
           echo "Workflow triggered by: $EVENT_NAME"
           if [ "$EVENT_NAME" = "repository_dispatch" ]; then
-            echo "Triggered by Apollo production deployment"
-            echo "Hermes commit: $HERMES_COMMIT"
+            echo "Repository dispatch action: $DISPATCH_ACTION"
+            if [ "$DISPATCH_ACTION" = "mercury-production-deploy" ]; then
+              echo "Triggered by Mercury production registry sync"
+              echo "Mercury commit: $MERCURY_COMMIT"
+            else
+              echo "Triggered by Apollo production deployment"
+              echo "Apollo commit: $APOLLO_COMMIT"
+            fi
             echo "Timestamp: $DEPLOY_TIMESTAMP"
           fi
 
@@ -159,7 +167,11 @@ jobs:
           title: 'docs: update toolkits, API spec, and meta tools data'
           body: |
             ## Summary
-            Automated sync of backend data into the docs site. Triggered by: `${{ github.event_name }}`${{ github.event_name == 'repository_dispatch' && format(' (Hermes commit: {0})', github.event.client_payload.hermes_commit) || '' }}.
+            Automated sync of backend data into the docs site.
+
+            - Trigger: `${{ github.event_name }}`
+            - Dispatch action: `${{ github.event.action || 'n/a' }}`
+            - Source commit: `${{ github.event.client_payload.mercury_commit || github.event.client_payload.apollo_commit || github.event.client_payload.hermes_commit || 'n/a' }}`
 
             ## What changed
             - **Toolkit catalog** (`docs/public/data/toolkits.json`, `toolkits-list.json`) — refreshed list of available toolkits, auth schemes, and tools from the backend API
