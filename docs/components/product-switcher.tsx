@@ -78,7 +78,9 @@ export function ProductSwitcher({ placement = 'sidebar' }: { placement?: 'nav' |
           {DOCS_PRODUCT_ORDER.map((productId, index) => {
             const option = DOCS_PRODUCTS[productId];
             const isCurrent = productId === product;
-            const destination = docsProductDestination(pathname, productId);
+            const destination = isCurrent
+              ? pathname
+              : docsProductDestination(pathname, productId);
             return (
               <div key={productId}>
                 {index > 0 && <div aria-hidden="true" className="mx-2 my-1 h-px bg-fd-border" />}

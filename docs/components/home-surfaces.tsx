@@ -40,7 +40,6 @@ function IntentCard({ intent }: { intent: HomeIntent }) {
   return (
     <article className="grid overflow-hidden border border-fd-border bg-fd-card shadow-[0_1px_0_rgba(15,15,15,0.04)] md:grid-cols-[minmax(0,1fr)_calc(50%-0.75rem)]">
       <ProductSelectionLink
-        aria-label={`Explore ${intent.product} docs`}
         className="relative overflow-hidden border-b border-fd-border bg-fd-background p-5 pb-40 no-underline transition-colors hover:bg-fd-accent/20 focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-fd-ring sm:p-6 sm:pb-44 md:min-h-72 md:border-b-0 md:border-r md:pb-6"
         href={DOCS_PRODUCTS[intent.productId].landingRoute}
         product={intent.productId}

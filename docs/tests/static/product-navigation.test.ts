@@ -162,9 +162,10 @@ describe('Docs product navigation', () => {
     expect(switcherSource).toContain('href="/"');
     expect(sharedLayoutSource).toContain('slots: { navTitle: ProductNavTitle }');
     expect(sharedLayoutSource).toContain('themeSwitch: { enabled: false }');
-    expect(contextSource).toContain('setTheme(DOCS_PRODUCTS[product].theme)');
+    expect(contextSource).toContain('applyProductTheme(product)');
     expect(contextSource).toContain('window.setTimeout(finish, 1500)');
-    expect(rootLayoutSource).toContain("localStorage.setItem('theme','${initialTheme}')");
+    expect(rootLayoutSource).toContain('forcedTheme: initialTheme');
+    expect(rootLayoutSource).not.toContain("localStorage.setItem('theme'");
     expect(rootLayoutSource).toContain('hotKey: false');
   });
 });

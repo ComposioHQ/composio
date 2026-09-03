@@ -88,11 +88,10 @@ export default async function Layout({ children }: LayoutProps<'/'>) {
       <head>
         <script
           dangerouslySetInnerHTML={{
-            __html: `try{localStorage.setItem('theme','${initialTheme}')}catch{}document.documentElement.classList.remove('light','dark');document.documentElement.classList.add('${initialTheme}');document.documentElement.style.colorScheme='${initialTheme}'`,
+            __html: `try{document.documentElement.classList.remove('light','dark');document.documentElement.classList.add('${initialTheme}');document.documentElement.style.colorScheme='${initialTheme}'}catch{}`,
           }}
         />
-        <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
-        <meta name="theme-color" content="#131211" media="(prefers-color-scheme: dark)" />
+        <meta name="theme-color" content={initialTheme === 'dark' ? '#131211' : '#ffffff'} />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
@@ -135,6 +134,7 @@ export default async function Layout({ children }: LayoutProps<'/'>) {
           <RootProvider
             theme={{
               defaultTheme: 'system',
+              forcedTheme: initialTheme,
               attribute: 'class',
               enableSystem: true,
               hotKey: false,
