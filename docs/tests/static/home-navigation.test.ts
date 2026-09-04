@@ -190,7 +190,7 @@ describe('Welcome navigation', () => {
     expect(firstPrompt).toContain("'claude-code': 'Use the /composio skill");
     expect(firstPrompt).toContain("codex: 'Use the $composio skill");
     expect(firstPrompt).toContain("'github-copilot': 'Use /composio");
-    expect(firstPrompt).toContain("cursor: 'Use the composio Agent Skill");
+    expect(firstPrompt).toContain("cursor: 'Use the composio agent skill");
     expect(firstPrompt).toContain('Help me connect an integration and make my first real tool call.');
     expect(firstPrompt).toContain('When it works, show me what changed and what I can try next.');
   });
