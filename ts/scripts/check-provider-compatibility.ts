@@ -78,8 +78,10 @@ const PackageManifestSchema = z
     name: z.string().min(1),
     version: z.string().min(1),
     peerDependencies: StringRecordSchema.default({}),
+    dependencies: StringRecordSchema.default({}),
   })
   .passthrough();
+const JSON_SCHEMA_TO_ZOD = '@composio/json-schema-to-zod';
 const InstalledPackageManifestSchema = z.object({ version: z.string().min(1) }).passthrough();
 
 export type ProviderCompatibilityCase = {
@@ -100,6 +102,9 @@ export type CompatibilityLane = {
     | { kind: 'workspace-prerelease'; version: string }
     | { kind: 'registry'; specifier: string };
   providerNames: string[];
+  // The release-blocking workspace lane installs exactly as a consumer does so install-time
+  // lifecycle failures cannot pass the gate; the other lanes skip that cost.
+  lifecycleScripts: 'run' | 'skip';
 };
 
 export type CliOptions = {
@@ -203,6 +208,7 @@ export function buildCompatibilityPlan(
       id: 'workspace-current',
       core: { kind: 'workspace' },
       providerNames,
+      lifecycleScripts: 'run',
     },
   ];
 
@@ -211,6 +217,7 @@ export function buildCompatibilityPlan(
       id: `verified-minimum-core-${provider.verifiedMinimumCoreVersion}-${provider.name.replace('@', '').replace('/', '-')}`,
       core: { kind: 'registry', specifier: provider.verifiedMinimumCoreVersion },
       providerNames: [provider.name],
+      lifecycleScripts: 'skip',
     });
   }
 
@@ -218,6 +225,7 @@ export function buildCompatibilityPlan(
     id: 'workspace-major-prerelease',
     core: { kind: 'workspace-prerelease', version: prereleaseVersion },
     providerNames,
+    lifecycleScripts: 'skip',
   });
 
   return lanes;
@@ -344,25 +352,33 @@ async function packWorkspaceArtifacts(
   );
   const tarballs = new Map<string, string>();
 
-  tarballs.set(
+  const jsonSchemaTarball = await packPackage(
+    jsonSchemaToZodDir,
     jsonSchemaManifest.name,
-    await packPackage(
-      jsonSchemaToZodDir,
-      jsonSchemaManifest.name,
-      jsonSchemaManifest.version,
-      artifactDirectory
-    )
+    jsonSchemaManifest.version,
+    artifactDirectory
   );
-  const coreTarball = await packPackage(
+  const packedCore = await packPackage(
     coreDir,
     coreManifest.name,
     coreManifest.version,
     artifactDirectory
   );
-  tarballs.set(coreManifest.name, coreTarball);
+  tarballs.set(
+    coreManifest.name,
+    await repackCoreTarball(packedCore, coreManifest.name, {
+      version: coreManifest.version,
+      jsonSchemaTarball,
+      artifactDirectory: path.join(artifactDirectory, 'core-workspace'),
+    })
+  );
   tarballs.set(
     `${coreManifest.name}@prerelease`,
-    await repackWithVersion(coreTarball, coreManifest.name, prereleaseVersion, artifactDirectory)
+    await repackCoreTarball(packedCore, coreManifest.name, {
+      version: prereleaseVersion,
+      jsonSchemaTarball,
+      artifactDirectory: path.join(artifactDirectory, 'core-prerelease'),
+    })
   );
 
   for (const provider of providers) {
@@ -375,29 +391,36 @@ async function packWorkspaceArtifacts(
   return tarballs;
 }
 
-async function repackWithVersion(
+export async function repackCoreTarball(
   tarballPath: string,
   packageName: string,
-  version: string,
-  artifactDirectory: string
+  options: { version: string; jsonSchemaTarball: string; artifactDirectory: string }
 ): Promise<string> {
-  // A release gate cannot depend on a prerelease that has not been published yet. Re-version
-  // the exact workspace tarball so npm also validates the future prerelease peer contract.
-  const stagingDirectory = path.join(artifactDirectory, 'core-prerelease');
+  // Consumers install core and providers only, so the unpublished workspace helper must reach
+  // them through core's own dependency declaration. A release gate also cannot depend on a
+  // prerelease that has not been published yet, so the same repack re-versions the exact
+  // workspace tarball for the prerelease peer lane.
+  const stagingDirectory = path.join(options.artifactDirectory, 'staging');
   await mkdir(stagingDirectory, { recursive: true });
   run('tar', ['-xzf', tarballPath, '-C', stagingDirectory]);
 
   const manifestPath = path.join(stagingDirectory, 'package/package.json');
-  const manifest: unknown = JSON.parse(await readFile(manifestPath, 'utf8'));
-  if (!manifest || typeof manifest !== 'object') {
-    throw new Error(`Invalid package manifest in ${tarballPath}`);
+  const manifest = await readJsonFile(manifestPath, PackageManifestSchema);
+  if (!manifest.dependencies[JSON_SCHEMA_TO_ZOD]) {
+    throw new Error(
+      `${packageName} packed manifest must declare ${JSON_SCHEMA_TO_ZOD} as a dependency`
+    );
   }
-  Object.assign(manifest, { version });
+  manifest.version = options.version;
+  manifest.dependencies[JSON_SCHEMA_TO_ZOD] = `file:${options.jsonSchemaTarball}`;
   await writeFile(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`);
 
-  const prereleaseTarball = path.join(artifactDirectory, packageTarballName(packageName, version));
-  run('tar', ['-czf', prereleaseTarball, '-C', stagingDirectory, 'package']);
-  return prereleaseTarball;
+  const repackedTarball = path.join(
+    options.artifactDirectory,
+    packageTarballName(packageName, options.version)
+  );
+  run('tar', ['-czf', repackedTarball, '-C', stagingDirectory, 'package']);
+  return repackedTarball;
 }
 
 function mergeExternalPeers(providers: ProviderCompatibilityCase[]): Record<string, string> {
@@ -442,12 +465,10 @@ async function writeConsumerFixture(
     const coreTarball = tarballs.get(
       lane.core.kind === 'workspace' ? '@composio/core' : '@composio/core@prerelease'
     );
-    const jsonSchemaTarball = tarballs.get('@composio/json-schema-to-zod');
-    if (!coreTarball || !jsonSchemaTarball) {
-      throw new Error('Missing packed core workspace artifacts');
+    if (!coreTarball) {
+      throw new Error('Missing packed core workspace artifact');
     }
     dependencies['@composio/core'] = `file:${coreTarball}`;
-    dependencies['@composio/json-schema-to-zod'] = `file:${jsonSchemaTarball}`;
   } else {
     dependencies['@composio/core'] = lane.core.specifier;
   }
@@ -520,12 +541,14 @@ async function runLane(
 
   const installArgs = [
     'install',
-    '--ignore-scripts',
+    ...(lane.lifecycleScripts === 'skip' ? ['--ignore-scripts'] : []),
     '--package-lock=false',
     '--no-audit',
     '--no-fund',
   ];
-  console.log(`${lane.id}: installing ${providers.length} packed provider package(s)`);
+  console.log(
+    `${lane.id}: installing ${providers.length} packed provider package(s), lifecycle scripts: ${lane.lifecycleScripts}`
+  );
   run(npmBin, installArgs, fixtureDirectory);
   run(path.join(fixtureDirectory, 'node_modules/.bin/tsc'), ['--noEmit'], fixtureDirectory);
   const result = run(process.execPath, ['index.mjs'], fixtureDirectory);
