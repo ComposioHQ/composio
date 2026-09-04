@@ -28,6 +28,10 @@ const tsReleaseWorkflow = readFileSync(
   new URL('../.github/workflows/ts.release.yml', import.meta.url),
   'utf8'
 );
+const tsTestWorkflow = readFileSync(
+  new URL('../.github/workflows/ts.test.yml', import.meta.url),
+  'utf8'
+);
 const pythonPyproject = readFileSync(new URL('../python/pyproject.toml', import.meta.url), 'utf8');
 const pythonRuntimeVersionModule = readFileSync(
   new URL('../python/composio/__version__.py', import.meta.url),
@@ -298,6 +302,25 @@ if (packageJson.scripts?.['validate:changesets'] !== 'node ts/scripts/validate-c
   throw new Error('validate:changesets must use the ignored-package guard');
 }
 
+if (
+  packageJson.scripts?.['check:provider-compatibility'] !==
+  'tsx ts/scripts/check-provider-compatibility.ts'
+) {
+  throw new Error('check:provider-compatibility must use the packed consumer harness');
+}
+
+const tsTestBuildIdx = tsTestWorkflow.indexOf('run: pnpm run build:packages');
+const tsTestProviderCompatibilityIdx = tsTestWorkflow.indexOf(
+  'run: pnpm run check:provider-compatibility'
+);
+if (
+  tsTestBuildIdx === -1 ||
+  tsTestProviderCompatibilityIdx === -1 ||
+  tsTestBuildIdx > tsTestProviderCompatibilityIdx
+) {
+  throw new Error('ts.test.yml must build packages before checking packed provider compatibility');
+}
+
 {
   const violations = findIgnoredChangesetReleases(
     {
@@ -364,7 +387,9 @@ if (
   throw new Error('ts.release.yml must validate pending changesets before changesets/action');
 }
 
-if (!tsReleaseWorkflow.includes('changesets/action@8488615a623b1b9c987934bb89eae8af6a946ac1 # v2.1.1')) {
+if (
+  !tsReleaseWorkflow.includes('changesets/action@8488615a623b1b9c987934bb89eae8af6a946ac1 # v2.1.1')
+) {
   throw new Error('ts.release.yml must use changesets/action v2 with Changesets v3');
 }
 
@@ -860,12 +885,21 @@ const fakeBin = mkdtempSync(join(tmpdir(), 'composio-release-test-'));
 try {
   const fakePnpmPath = join(fakeBin, 'pnpm');
   const changesetsOutputPath = join(fakeBin, 'changesets-output.ndjson');
+  const commandLogPath = join(fakeBin, 'commands.log');
+  writeFileSync(commandLogPath, '');
   writeFileSync(
     fakePnpmPath,
     `#!/usr/bin/env bash
 set -euo pipefail
+printf '%s\n' "$*" >> "$COMMAND_LOG"
 case "$*" in
   "run build:packages")
+    exit 0
+    ;;
+  "run check:provider-compatibility")
+    if [[ "\${FAIL_PROVIDER_COMPATIBILITY:-}" == "1" ]]; then
+      exit 42
+    fi
     exit 0
     ;;
   "changeset publish")
@@ -888,6 +922,7 @@ esac
     env: {
       ...process.env,
       CHANGESETS_OUTPUT: changesetsOutputPath,
+      COMMAND_LOG: commandLogPath,
       PATH: `${fakeBin}:${process.env.PATH}`,
     },
   });
@@ -912,6 +947,35 @@ esac
 
   if (!result.stderr.includes('release warning preserved')) {
     throw new Error('release script must preserve changeset publish stderr');
+  }
+
+  const commands = readFileSync(commandLogPath, 'utf8').trim().split('\n');
+  if (
+    JSON.stringify(commands) !==
+    JSON.stringify(['run build:packages', 'run check:provider-compatibility', 'changeset publish'])
+  ) {
+    throw new Error(
+      `release script must run build → provider compatibility → publish: ${commands}`
+    );
+  }
+
+  writeFileSync(commandLogPath, '');
+  const failedCompatibility = spawnSync('bash', [releaseScriptPath], {
+    encoding: 'utf8',
+    env: {
+      ...process.env,
+      CHANGESETS_OUTPUT: changesetsOutputPath,
+      COMMAND_LOG: commandLogPath,
+      FAIL_PROVIDER_COMPATIBILITY: '1',
+      PATH: `${fakeBin}:${process.env.PATH}`,
+    },
+  });
+  const failedCommands = readFileSync(commandLogPath, 'utf8').trim().split('\n');
+  if (failedCompatibility.status !== 42) {
+    throw new Error('release script must preserve a provider compatibility gate failure');
+  }
+  if (failedCommands.includes('changeset publish')) {
+    throw new Error('release script must not publish after provider compatibility fails');
   }
 } finally {
   rmSync(fakeBin, { recursive: true, force: true });
