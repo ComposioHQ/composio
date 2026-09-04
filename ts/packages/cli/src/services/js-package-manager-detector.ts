@@ -1,5 +1,5 @@
 import { BunFileSystem } from '@effect/platform-bun';
-import { Data, Effect, Option, Schema, pipe } from 'effect';
+import { Data, Effect, Option, Schema, pipe, Context, Layer } from 'effect';
 import { FileSystem, Path } from '@effect/platform';
 
 const toError = (e: unknown): Error => (e instanceof Error ? e : new Error(String(e)));
@@ -27,130 +27,135 @@ const LOCK_FILES: Record<PackageManager, string> = {
 const PM_PREFERENCE: PackageManager[] = ['pnpm', 'bun', 'yarn', 'npm'];
 
 // Service that attempts to detect the package manager of the project in the current working directory.
-export class JsPackageManagerDetector extends Effect.Service<JsPackageManagerDetector>()(
-  'services/JsPackageManagerDetector',
-  {
-    accessors: true,
-    effect: Effect.gen(function* () {
-      yield* Effect.logDebug('[JsPackageManagerDetector] Identifying JS package manager...');
+const makeJsPackageManagerDetector = Effect.gen(function* () {
+  yield* Effect.logDebug('[JsPackageManagerDetector] Identifying JS package manager...');
 
-      const fs = yield* FileSystem.FileSystem;
-      const path = yield* Path.Path;
+  const fs = yield* FileSystem.FileSystem;
+  const path = yield* Path.Path;
 
-      const parsePackageManager = (pm: string): Option.Option<PackageManager> => {
-        if (pm.startsWith('pnpm@')) return Option.some('pnpm');
-        if (pm.startsWith('bun@')) return Option.some('bun');
-        if (pm.startsWith('yarn@')) return Option.some('yarn');
-        if (pm.startsWith('npm@')) return Option.some('npm');
+  const parsePackageManager = (pm: string): Option.Option<PackageManager> => {
+    if (pm.startsWith('pnpm@')) return Option.some('pnpm');
+    if (pm.startsWith('bun@')) return Option.some('bun');
+    if (pm.startsWith('yarn@')) return Option.some('yarn');
+    if (pm.startsWith('npm@')) return Option.some('npm');
+    return Option.none();
+  };
+
+  const PackageJsonSchema = Schema.Struct({
+    packageManager: Schema.optional(Schema.String),
+  }).annotations({ identifier: 'package.json' });
+
+  const detectFromPackageJson = (
+    cwd: string
+  ): Effect.Effect<Option.Option<PackageManager>, JsPackageManagerError> =>
+    Effect.gen(function* () {
+      const contentEffect = pipe(
+        fs.readFileString(path.join(cwd, 'package.json')),
+        Effect.catchTag('SystemError', e =>
+          Effect.fail(
+            new JsPackageManagerError({ cause: e, message: 'Failed to read package.json' })
+          )
+        )
+      );
+
+      const content = yield* Effect.option(contentEffect);
+
+      if (Option.isNone(content)) {
         return Option.none();
-      };
+      }
 
-      const PackageJsonSchema = Schema.Struct({
-        packageManager: Schema.optional(Schema.String),
-      }).annotations({ identifier: 'package.json' });
+      const json = yield* Effect.try({
+        try: () => JSON.parse(content.value) as unknown,
+        catch: e =>
+          new JsPackageManagerError({
+            cause: toError(e),
+            message: 'Failed to parse package.json',
+          }),
+      });
 
-      const detectFromPackageJson = (
-        cwd: string
-      ): Effect.Effect<Option.Option<PackageManager>, JsPackageManagerError> =>
-        Effect.gen(function* () {
-          const contentEffect = pipe(
-            fs.readFileString(path.join(cwd, 'package.json')),
-            Effect.catchTag('SystemError', e =>
-              Effect.fail(
-                new JsPackageManagerError({ cause: e, message: 'Failed to read package.json' })
-              )
-            )
-          );
-
-          const content = yield* Effect.option(contentEffect);
-
-          if (Option.isNone(content)) {
-            return Option.none();
-          }
-
-          const json = yield* Effect.try({
-            try: () => JSON.parse(content.value) as unknown,
-            catch: e =>
-              new JsPackageManagerError({
-                cause: toError(e),
-                message: 'Failed to parse package.json',
-              }),
-          });
-
-          const decoded = yield* pipe(
-            Schema.decodeUnknown(PackageJsonSchema)(json),
-            Effect.mapError(
-              e =>
-                new JsPackageManagerError({
-                  cause: toError(e),
-                  message: 'Failed to decode package.json',
-                })
-            )
-          );
-
-          return Option.fromNullable(decoded.packageManager).pipe(
-            Option.flatMap(parsePackageManager)
-          );
-        });
-
-      const detectRecursive = (
-        cwd: string
-      ): Effect.Effect<Option.Option<PackageManager>, JsPackageManagerError> =>
-        Effect.gen(function* () {
-          const fromPackageJson = yield* detectFromPackageJson(cwd);
-          if (Option.isSome(fromPackageJson)) {
-            return fromPackageJson;
-          }
-
-          const parentDir = path.dirname(cwd);
-          if (parentDir === cwd) {
-            return Option.none();
-          }
-
-          return yield* detectRecursive(parentDir);
-        });
-
-      const detectJsPackageManager = (
-        cwd: string
-      ): Effect.Effect<PackageManager, JsPackageManagerError> =>
-        Effect.gen(function* () {
-          const files = yield* pipe(
-            fs.readDirectory(cwd),
-            Effect.mapError(
-              e =>
-                new JsPackageManagerError({
-                  cause: toError(e),
-                  message: `Failed to read directory ${cwd}`,
-                })
-            )
-          );
-
-          const fileNames = files.map(f => f.toLowerCase());
-
-          for (const pm of PM_PREFERENCE) {
-            if (fileNames.includes(LOCK_FILES[pm])) {
-              return pm;
-            }
-          }
-
-          const result = yield* detectRecursive(cwd);
-
-          if (Option.isSome(result)) {
-            return result.value;
-          }
-
-          return yield* Effect.fail(
+      const decoded = yield* pipe(
+        Schema.decodeUnknown(PackageJsonSchema)(json),
+        Effect.mapError(
+          e =>
             new JsPackageManagerError({
-              cause: new Error('Recursive lookup exhausted'),
-              message: 'Failed to detect package manager',
+              cause: toError(e),
+              message: 'Failed to decode package.json',
             })
-          );
-        });
+        )
+      );
 
-      return {
-        detectJsPackageManager,
-      };
-    }),
-    dependencies: [BunFileSystem.layer, Path.layer],
-  }
-) {}
+      return Option.fromNullable(decoded.packageManager).pipe(Option.flatMap(parsePackageManager));
+    });
+
+  const detectRecursive = (
+    cwd: string
+  ): Effect.Effect<Option.Option<PackageManager>, JsPackageManagerError> =>
+    Effect.gen(function* () {
+      const fromPackageJson = yield* detectFromPackageJson(cwd);
+      if (Option.isSome(fromPackageJson)) {
+        return fromPackageJson;
+      }
+
+      const parentDir = path.dirname(cwd);
+      if (parentDir === cwd) {
+        return Option.none();
+      }
+
+      return yield* detectRecursive(parentDir);
+    });
+
+  const detectJsPackageManager = (
+    cwd: string
+  ): Effect.Effect<PackageManager, JsPackageManagerError> =>
+    Effect.gen(function* () {
+      const files = yield* pipe(
+        fs.readDirectory(cwd),
+        Effect.mapError(
+          e =>
+            new JsPackageManagerError({
+              cause: toError(e),
+              message: `Failed to read directory ${cwd}`,
+            })
+        )
+      );
+
+      const fileNames = files.map(f => f.toLowerCase());
+
+      for (const pm of PM_PREFERENCE) {
+        if (fileNames.includes(LOCK_FILES[pm])) {
+          return pm;
+        }
+      }
+
+      const result = yield* detectRecursive(cwd);
+
+      if (Option.isSome(result)) {
+        return result.value;
+      }
+
+      return yield* Effect.fail(
+        new JsPackageManagerError({
+          cause: new Error('Recursive lookup exhausted'),
+          message: 'Failed to detect package manager',
+        })
+      );
+    });
+
+  return {
+    detectJsPackageManager,
+  };
+});
+
+export type JsPackageManagerDetectorShape = Effect.Effect.Success<
+  typeof makeJsPackageManagerDetector
+>;
+
+export class JsPackageManagerDetector extends Context.Tag('services/JsPackageManagerDetector')<
+  JsPackageManagerDetector,
+  JsPackageManagerDetectorShape
+>() {
+  static readonly Default = Layer.effect(
+    JsPackageManagerDetector,
+    makeJsPackageManagerDetector
+  ).pipe(Layer.provide(Layer.mergeAll(BunFileSystem.layer, Path.layer)));
+}

@@ -102,7 +102,7 @@ const RunTestLive = (input: Parameters<typeof TestLive>[0] = {}) =>
   Layer.merge(
     TestLive({
       ...input,
-      commandRunner: new CommandRunner({
+      commandRunner: CommandRunner.of({
         run: command => commandRuns(command),
         capture: () => Effect.succeed({ exitCode: 0, stdout: '', stderr: '' }),
       }),
