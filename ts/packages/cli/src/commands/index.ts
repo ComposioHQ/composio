@@ -267,13 +267,18 @@ const normalizeListenStreamFlag = (argv: ReadonlyArray<string>): ReadonlyArray<s
     return argv;
   }
 
+  // `--stream` is documented as taking an optional value, but @effect/cli text options always
+  // require one. A bare `--stream` therefore has to be rewritten. `--stream=` cannot be used for
+  // that: @effect/cli only recognizes `--flag=value` when the value is non-empty, so `--stream=`
+  // surfaces as "Received unknown argument". Passing an explicit empty string as the next token
+  // parses cleanly and the listen command treats an empty path as "stream the whole payload".
   return Arr.appendAll(
     head,
-    Arr.map(args, (token, index) => {
+    Arr.flatMap(args, (token, index) => {
       const next = args[index + 1];
       return token === '--stream' && (next === undefined || next.startsWith('-'))
-        ? '--stream='
-        : token;
+        ? ['--stream', '']
+        : [token];
     })
   );
 };

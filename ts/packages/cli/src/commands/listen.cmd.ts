@@ -34,6 +34,7 @@ export class ListenCommandError extends Data.TaggedError('commands/ListenCommand
     | 'project_context'
     | 'connected_accounts'
     | 'connected_account_not_found'
+    | 'unknown_trigger'
     | 'create_trigger'
     | 'disable_trigger';
   readonly message: string;
@@ -144,6 +145,39 @@ const assertSupportedListenParams = (params: {
       )
     : Effect.void;
 
+const isNotFoundError = (cause: unknown): boolean =>
+  Predicate.hasProperty(cause, 'status') && cause.status === 404;
+
+/**
+ * Fails with an `unknown_trigger` error when `slug` is not a known trigger type.
+ *
+ * Only called once no active connected account matched, so a mistyped slug is reported as such
+ * instead of as a missing connection for the toolkit inferred from its prefix.
+ */
+const assertTriggerTypeExists = (params: {
+  client: RawComposioClient;
+  slug: string;
+  toolkitSlug: string;
+}) =>
+  Effect.tryPromise({
+    try: () => params.client.triggersTypes.retrieve(params.slug),
+    catch: cause => cause,
+  }).pipe(
+    Effect.asVoid,
+    Effect.catchAll(cause =>
+      isNotFoundError(cause)
+        ? new ListenCommandError({
+            reason: 'unknown_trigger',
+            message: `Unknown trigger slug "${params.slug}". List available slugs with \`composio triggers list <toolkit>\`.`,
+            slug: params.slug,
+            toolkitSlug: params.toolkitSlug,
+            cause,
+          })
+        : // Any other failure is inconclusive; fall through to the connected-account error.
+          Effect.void
+    )
+  );
+
 const resolveConnectedAccountIdForTrigger = (params: {
   client: RawComposioClient;
   slug: string;
@@ -196,6 +230,8 @@ const resolveConnectedAccountIdForTrigger = (params: {
     if (selectedAccount?.id) {
       return selectedAccount.id;
     }
+
+    yield* assertTriggerTypeExists({ client: params.client, slug: params.slug, toolkitSlug });
 
     const choices = formatConnectedAccountChoices(selectableAccounts);
     const suffix =
