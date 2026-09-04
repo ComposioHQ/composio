@@ -1,6 +1,7 @@
 import { Command, HelpDoc, Options, ValidationError } from '@effect/cli';
 import { Array, Data, Effect, Option, pipe, String } from 'effect';
-import { FileSystem, Path } from '@effect/platform';
+import * as FileSystem from '@effect/platform/FileSystem';
+import * as Path from '@effect/platform/Path';
 import { ComposioToolkitsRepository } from 'src/services/composio-clients';
 import { logMetrics } from 'src/effects/log-metrics';
 import type { GetCmdParams } from 'src/type-utils';

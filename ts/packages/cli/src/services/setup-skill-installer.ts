@@ -1,4 +1,6 @@
-import { FileSystem, HttpClient, Path } from '@effect/platform';
+import * as FileSystem from '@effect/platform/FileSystem';
+import * as HttpClient from '@effect/platform/HttpClient';
+import * as Path from '@effect/platform/Path';
 import { Config, Effect, Context, Layer } from 'effect';
 import {
   inferSkillReleaseChannel,

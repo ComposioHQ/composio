@@ -1,5 +1,6 @@
 import { Effect, Option, Context, Layer } from 'effect';
-import { FileSystem, Path } from '@effect/platform';
+import * as FileSystem from '@effect/platform/FileSystem';
+import * as Path from '@effect/platform/Path';
 import { NodeOs } from 'src/services/node-os';
 import { NodeProcess } from 'src/services/node-process';
 import { APP_CONFIG } from 'src/effects/app-config';

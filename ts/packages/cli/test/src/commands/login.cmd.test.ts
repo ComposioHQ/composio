@@ -3,7 +3,7 @@ import { vi, afterEach } from 'vitest';
 import { Console, DateTime, Effect, Exit, Option } from 'effect';
 import { HelpDoc, ValidationError } from '@effect/cli';
 import path from 'node:path';
-import { FileSystem } from '@effect/platform';
+import * as FileSystem from '@effect/platform/FileSystem';
 import { cli, MockConsole, TestLive } from 'test/__utils__';
 import { terminalUITestImpl } from 'test/__utils__/services/terminal-ui-test';
 import * as constants from 'src/constants';

@@ -171,14 +171,16 @@ Each `Arr.bind` adds one independent axis to the generated cases.
 
 All platform access goes through Effect services. `node:path`, `node:fs`, `node:os`, `node:child_process`, `process.env`, and `try`/`catch` are lint-banned (oxlint) in `src/`. Use the sanctioned equivalents:
 
-| Need                                                          | Use                                                                                                                                    |
-| ------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
-| Path arithmetic (join/resolve/dirname/…)                      | `Path` service from `@effect/platform` (`const path = yield* Path.Path`)                                                               |
-| Filesystem I/O                                                | `FileSystem` service from `@effect/platform`                                                                                           |
-| homedir / tmpdir / platform / arch                            | `NodeOs` service (`src/services/node-os.ts`, the sole `node:os` boundary)                                                              |
-| Subprocesses                                                  | `Command` from `@effect/platform`; children that outlive the CLI via `src/services/detached-process.ts` (sole detached-spawn boundary) |
-| Environment reads                                             | `effect/Config`                                                                                                                        |
-| Sync fallible ops (`JSON.parse`, `new URL`, `JSON.stringify`) | `Either.try` with a `Data.TaggedError`; JSON records via `parseJsonRecord` (`src/utils/parse-json.ts`)                                 |
+| Need                                                          | Use                                                                                                                                            |
+| ------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| Path arithmetic (join/resolve/dirname/…)                      | `Path` service from `@effect/platform/Path` (`const path = yield* Path.Path`)                                                                  |
+| Filesystem I/O                                                | `FileSystem` service from `@effect/platform/FileSystem`                                                                                        |
+| homedir / tmpdir / platform / arch                            | `NodeOs` service (`src/services/node-os.ts`, the sole `node:os` boundary)                                                                      |
+| Subprocesses                                                  | `Command` from `@effect/platform/Command`; children that outlive the CLI via `src/services/detached-process.ts` (sole detached-spawn boundary) |
+| Environment reads                                             | `effect/Config`                                                                                                                                |
+| Sync fallible ops (`JSON.parse`, `new URL`, `JSON.stringify`) | `Either.try` with a `Data.TaggedError`; JSON records via `parseJsonRecord` (`src/utils/parse-json.ts`)                                         |
+
+Import `@effect/platform` and `@effect/platform-bun` modules by subpath (`import * as FileSystem from '@effect/platform/FileSystem'`), never from the package barrel; oxlint rejects the barrel in `src/`. Effect v4 relocates each of these modules separately, so per-module imports keep that move a path rewrite.
 
 Conversion patterns, in order of preference:
 
