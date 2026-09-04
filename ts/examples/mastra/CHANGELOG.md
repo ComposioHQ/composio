@@ -1,5 +1,18 @@
 # mastra-example
 
+## 0.1.2
+
+### Patch Changes
+
+- Updated dependencies [8a56383]
+- Updated dependencies [7420927]
+- Updated dependencies [1d31c80]
+- Updated dependencies [95f9d32]
+- Updated dependencies [0d28bef]
+- Updated dependencies [52efb5b]
+  - @composio/core@0.18.1
+  - @composio/mastra@0.10.4
+
 ## 0.1.1
 
 ### Patch Changes
