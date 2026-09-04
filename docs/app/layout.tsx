@@ -91,7 +91,7 @@ export default async function Layout({ children }: LayoutProps<'/'>) {
             __html: `try{document.documentElement.classList.remove('light','dark');document.documentElement.classList.add('${initialTheme}');document.documentElement.style.colorScheme='${initialTheme}'}catch{}`,
           }}
         />
-        <meta name="theme-color" content={initialTheme === 'dark' ? '#131211' : '#ffffff'} />
+        <meta name="theme-color" content={DOCS_PRODUCTS[initialProduct].themeColor} />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
@@ -131,10 +131,12 @@ export default async function Layout({ children }: LayoutProps<'/'>) {
         <ProductTransitionLoader />
         <Analytics />
         <PostHogProvider>
+          {/* DocsProductProvider owns the rendered theme; useTheme().resolvedTheme is not a product-theme signal. */}
           <RootProvider
             theme={{
               defaultTheme: 'system',
               forcedTheme: initialTheme,
+              storageKey: 'composio-docs-theme',
               attribute: 'class',
               enableSystem: true,
               hotKey: false,

@@ -21,12 +21,14 @@ describe('Docs product navigation', () => {
       switcherDescription: 'Connect your apps to AI clients.',
       landingRoute: '/docs/agent-plugins',
       theme: 'light',
+      themeColor: '#ffffff',
     });
     expect(DOCS_PRODUCTS.platform).toMatchObject({
       product: 'Platform',
       switcherDescription: 'Build agents with the Composio SDK.',
       landingRoute: '/docs/quickstart',
       theme: 'dark',
+      themeColor: '#131211',
     });
   });
 
@@ -163,8 +165,15 @@ describe('Docs product navigation', () => {
     expect(sharedLayoutSource).toContain('slots: { navTitle: ProductNavTitle }');
     expect(sharedLayoutSource).toContain('themeSwitch: { enabled: false }');
     expect(contextSource).toContain('applyProductTheme(product)');
+    expect(contextSource).toContain('.querySelector(\'meta[name="theme-color"]\')');
+    expect(contextSource).toContain("?.setAttribute('content', themeColor)");
     expect(contextSource).toContain('window.setTimeout(finish, 1500)');
     expect(rootLayoutSource).toContain('forcedTheme: initialTheme');
+    expect(rootLayoutSource).toContain("storageKey: 'composio-docs-theme'");
+    expect(rootLayoutSource).toContain(
+      'content={DOCS_PRODUCTS[initialProduct].themeColor}',
+    );
+    expect(contextSource).not.toContain("localStorage.setItem('theme'");
     expect(rootLayoutSource).not.toContain("localStorage.setItem('theme'");
     expect(rootLayoutSource).toContain('hotKey: false');
   });
