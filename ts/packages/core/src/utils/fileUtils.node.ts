@@ -374,15 +374,15 @@ export const downloadFileFromS3 = async ({
     isTempFile: fileDownloadDir === undefined,
     outputDir: fileDownloadDir,
   });
+  if (!filePath) {
+    throw new Error(`Failed to save downloaded file: ${fileName}`);
+  }
+
   return {
     name: fileName,
     mimeType: mimeType,
     s3Url: s3Url,
-
-    /**
-     * @todo: fix in follow-up PR.
-     */
-    filePath: filePath as string,
+    filePath,
   };
 };
 
