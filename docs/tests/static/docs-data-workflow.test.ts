@@ -21,6 +21,16 @@ const workflowStepSchema = z
 
 const workflowSchema = z
   .object({
+    on: z
+      .object({
+        repository_dispatch: z
+          .object({
+            types: z.array(z.string()),
+          })
+          .optional(),
+      })
+      .passthrough()
+      .optional(),
     jobs: z
       .record(
         z.string(),
@@ -36,11 +46,6 @@ const workflowSchema = z
 
 type WorkflowStep = z.infer<typeof workflowStepSchema>;
 
-function workflowSteps(path: string, job: string): WorkflowStep[] {
-  const workflow = workflowSchema.parse(Bun.YAML.parse(readFileSync(path, 'utf8')));
-  return workflow.jobs?.[job]?.steps ?? [];
-}
-
 function stepNamed(steps: WorkflowStep[], name: string): WorkflowStep {
   const step = steps.find(candidate => candidate.name === name);
   expect(step, `Expected workflow step "${name}"`).toBeDefined();
@@ -48,7 +53,22 @@ function stepNamed(steps: WorkflowStep[], name: string): WorkflowStep {
 }
 
 describe('docs data update workflow', () => {
-  const steps = workflowSteps(workflowPath, 'update-data');
+  const workflow = workflowSchema.parse(Bun.YAML.parse(readFileSync(workflowPath, 'utf8')));
+  const steps = workflow.jobs?.['update-data']?.steps ?? [];
+
+  test('refreshes data after Apollo and Mercury production changes', () => {
+    expect(workflow.on?.repository_dispatch?.types).toEqual([
+      'apollo-production-deploy',
+      'mercury-production-deploy',
+    ]);
+
+    const logTrigger = stepNamed(steps, 'Log trigger source');
+    expect(logTrigger.env?.APOLLO_COMMIT).toContain('client_payload.hermes_commit');
+    expect(logTrigger.env?.MERCURY_COMMIT).toBe(
+      '${{ github.event.client_payload.mercury_commit }}'
+    );
+    expect(logTrigger.run).toContain('Triggered by Mercury production registry sync');
+  });
 
   test('keeps the release-bot token scoped to data sync and PR creation', () => {
     const appToken = stepNamed(steps, 'Generate GitHub App token');
