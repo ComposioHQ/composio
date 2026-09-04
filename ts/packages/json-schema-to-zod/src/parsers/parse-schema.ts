@@ -16,8 +16,17 @@ import { parseNumber } from './parse-number';
 import { parseObject } from './parse-object';
 import { parseOneOf } from './parse-one-of';
 import { parseString } from './parse-string';
+import {
+  hasTypelessScalarConstraints,
+  parseTypelessConstraints,
+} from './parse-typeless-constraints';
 import type { ParserSelector, Refs, JsonSchemaObject, JsonSchema } from '../types';
 import { its } from '../utils/its';
+import {
+  guardSchemaAt,
+  requiresPermissiveMaterialization,
+  withWholeSchemaValidation,
+} from '../whole-schema-validation';
 
 const addDescribes = (jsonSchema: JsonSchemaObject, zodSchema: z.ZodTypeAny): z.ZodTypeAny => {
   let description = '';
@@ -88,8 +97,18 @@ const addAnnotations = (jsonSchema: JsonSchemaObject, zodSchema: z.ZodTypeAny): 
 };
 
 const selectParser: ParserSelector = (schema, refs) => {
-  if (its.a.nullable(schema)) {
+  if (requiresPermissiveMaterialization(schema)) {
+    // Widen only this node, and let it guard itself so combinators such as
+    // `oneOf` still discriminate between branches that were widened.
+    return withWholeSchemaValidation(guardSchemaAt(schema, refs), z.any());
+  } else if (its.a.nullable(schema)) {
     return parseNullable(schema, refs);
+  } else if (its.an.enum(schema)) {
+    // `enum`/`const` intersect the declared type, so they must win over the
+    // object and array parsers or a literal object/array value is never checked.
+    return parseEnum(schema, refs);
+  } else if (its.a.const(schema)) {
+    return parseConst(schema, refs);
   } else if (its.an.object(schema)) {
     return parseObject(schema, refs);
   } else if (its.an.array(schema)) {
@@ -102,10 +121,8 @@ const selectParser: ParserSelector = (schema, refs) => {
     return parseOneOf(schema, refs);
   } else if (its.a.not(schema)) {
     return parseNot(schema, refs);
-  } else if (its.an.enum(schema)) {
-    return parseEnum(schema); //<-- needs to come before primitives
-  } else if (its.a.const(schema)) {
-    return parseConst(schema);
+  } else if (hasTypelessScalarConstraints(schema)) {
+    return parseTypelessConstraints(schema);
   } else if (its.a.multipleType(schema)) {
     return parseMultipleType(schema, refs);
   } else if (its.a.primitive(schema, 'string')) {

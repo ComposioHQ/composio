@@ -187,7 +187,7 @@ importers:
         version: 7.8.5
       tsdown:
         specifier: 'catalog:'
-        version: 0.22.14(@arethetypeswrong/core@0.18.5)(publint@0.3.24)(tsx@4.23.12)(typescript@7.0.2)(unrun@0.2.27(@emnapi/core@1.11.2)(@emnapi/runtime@1.11.2))
+        version: 0.22.14(@arethetypeswrong/core@0.18.5)(publint@0.3.24)(tsx@4.23.12)(typescript@7.0.2)(unrun@0.2.27)
       tsx:
         specifier: 'catalog:'
         version: 4.23.12
@@ -719,7 +719,7 @@ importers:
         version: 2.18.0(@modelcontextprotocol/sdk@1.30.0(@cfworker/json-schema@4.1.1)(zod@4.4.3))
       '@modelcontextprotocol/sdk':
         specifier: 'catalog:'
-        version: 1.30.0(@cfworker/json-schema@4.1.1)(zod@4.4.3)
+        version: 1.30.0(@cfworker/json-schema@4.1.1)(supports-color@10.2.2)(zod@4.4.3)
       dotenv:
         specifier: 'catalog:'
         version: 17.4.2
@@ -871,7 +871,7 @@ importers:
         version: link:../../packages/providers/vercel
       '@modelcontextprotocol/sdk':
         specifier: 'catalog:'
-        version: 1.30.0(@cfworker/json-schema@4.1.1)(zod@4.4.3)
+        version: 1.30.0(@cfworker/json-schema@4.1.1)(supports-color@10.2.2)(zod@4.4.3)
       ai:
         specifier: 'catalog:'
         version: 7.0.79(zod@4.4.3)
@@ -924,7 +924,7 @@ importers:
         version: link:../../packages/providers/openai-agents
       '@modelcontextprotocol/sdk':
         specifier: 'catalog:'
-        version: 1.30.0(@cfworker/json-schema@4.1.1)(zod@4.4.3)
+        version: 1.30.0(@cfworker/json-schema@4.1.1)(supports-color@10.2.2)(zod@4.4.3)
       '@openai/agents':
         specifier: ^0.17.0
         version: 0.17.0(@aws-sdk/credential-provider-node@3.972.78)(@smithy/signature-v4@5.6.12)(supports-color@10.2.2)(ws@8.21.3)(zod@4.4.3)
@@ -1125,7 +1125,7 @@ importers:
         version: link:../../packages/providers/vercel
       '@modelcontextprotocol/sdk':
         specifier: 'catalog:'
-        version: 1.30.0(@cfworker/json-schema@4.1.1)(zod@4.4.3)
+        version: 1.30.0(@cfworker/json-schema@4.1.1)(supports-color@10.2.2)(zod@4.4.3)
       ai:
         specifier: 'catalog:'
         version: 7.0.79(zod@4.4.3)
@@ -1208,7 +1208,7 @@ importers:
         version: 0.61.1(@effect/cluster@0.60.2(@effect/platform@0.97.1(effect@3.22.1))(@effect/rpc@0.76.2(@effect/platform@0.97.1(effect@3.22.1))(effect@3.22.1))(@effect/sql@0.52.1(@effect/experimental@0.61.1(@effect/platform@0.97.1(effect@3.22.1))(effect@3.22.1))(@effect/platform@0.97.1(effect@3.22.1))(effect@3.22.1))(@effect/workflow@0.19.1(@effect/experimental@0.61.1(@effect/platform@0.97.1(effect@3.22.1))(effect@3.22.1))(@effect/platform@0.97.1(effect@3.22.1))(@effect/rpc@0.76.2(@effect/platform@0.97.1(effect@3.22.1))(effect@3.22.1))(effect@3.22.1))(effect@3.22.1))(@effect/platform@0.97.1(effect@3.22.1))(@effect/rpc@0.76.2(@effect/platform@0.97.1(effect@3.22.1))(effect@3.22.1))(@effect/sql@0.52.1(@effect/experimental@0.61.1(@effect/platform@0.97.1(effect@3.22.1))(effect@3.22.1))(@effect/platform@0.97.1(effect@3.22.1))(effect@3.22.1))(effect@3.22.1)
       '@modelcontextprotocol/sdk':
         specifier: 'catalog:'
-        version: 1.30.0(@cfworker/json-schema@4.1.1)(zod@4.4.3)
+        version: 1.30.0(@cfworker/json-schema@4.1.1)(supports-color@10.2.2)(zod@4.4.3)
       '@zed-industries/claude-code-acp':
         specifier: ^0.16.2
         version: 0.16.2(@cfworker/json-schema@4.1.1)(supports-color@10.2.2)(zod@4.4.3)
@@ -1305,7 +1305,7 @@ importers:
         version: 3.2.0
       tsdown:
         specifier: 'catalog:'
-        version: 0.22.14(@arethetypeswrong/core@0.18.5)(@typescript/typescript6@6.0.2)(publint@0.3.24)(tsx@4.23.12)(unrun@0.2.27(@emnapi/core@1.11.2)(@emnapi/runtime@1.11.2))
+        version: 0.22.14(@arethetypeswrong/core@0.18.5)(@typescript/typescript6@6.0.2)(publint@0.3.24)(tsx@4.23.12)(unrun@0.2.27)
       tsx:
         specifier: 'catalog:'
         version: 4.23.12
@@ -1329,7 +1329,7 @@ importers:
         version: 3.22.1
       tsdown:
         specifier: 'catalog:'
-        version: 0.22.14(@arethetypeswrong/core@0.18.5)(publint@0.3.24)(tsx@4.23.12)(typescript@7.0.2)(unrun@0.2.27(@emnapi/core@1.11.2)(@emnapi/runtime@1.11.2))
+        version: 0.22.14(@arethetypeswrong/core@0.18.5)(publint@0.3.24)(tsx@4.23.12)(typescript@7.0.2)(unrun@0.2.27)
       typescript:
         specifier: 'catalog:'
         version: 7.0.2
@@ -1344,7 +1344,7 @@ importers:
         version: link:../core
       '@modelcontextprotocol/sdk':
         specifier: 'catalog:'
-        version: 1.30.0(@cfworker/json-schema@4.1.1)(zod@4.4.3)
+        version: 1.30.0(@cfworker/json-schema@4.1.1)(supports-color@10.2.2)(zod@4.4.3)
       extract-zip:
         specifier: ^2.0.1
         version: 2.0.1(supports-color@10.2.2)
@@ -1360,7 +1360,7 @@ importers:
         version: 1.7.0
       tsdown:
         specifier: 'catalog:'
-        version: 0.22.14(@arethetypeswrong/core@0.18.5)(publint@0.3.24)(tsx@4.23.12)(typescript@7.0.2)(unrun@0.2.27(@emnapi/core@1.11.2)(@emnapi/runtime@1.11.2))
+        version: 0.22.14(@arethetypeswrong/core@0.18.5)(publint@0.3.24)(tsx@4.23.12)(typescript@7.0.2)(unrun@0.2.27)
       typescript:
         specifier: 'catalog:'
         version: 7.0.2
@@ -1409,7 +1409,7 @@ importers:
         version: 7.8.0
       tsdown:
         specifier: 'catalog:'
-        version: 0.22.14(@arethetypeswrong/core@0.18.5)(@typescript/typescript6@6.0.2)(publint@0.3.24)(tsx@4.23.12)(unrun@0.2.27(@emnapi/core@1.11.2)(@emnapi/runtime@1.11.2))
+        version: 0.22.14(@arethetypeswrong/core@0.18.5)(@typescript/typescript6@6.0.2)(publint@0.3.24)(tsx@4.23.12)(unrun@0.2.27)
       tsx:
         specifier: 'catalog:'
         version: 4.23.12
@@ -1440,13 +1440,13 @@ importers:
         version: link:../core
       '@earendil-works/pi-coding-agent':
         specifier: ^0.84.3
-        version: 0.84.3(@modelcontextprotocol/sdk@1.30.0(@cfworker/json-schema@4.1.1)(zod@4.4.3))(ws@8.21.3)(zod@4.4.3)
+        version: 0.84.3(@modelcontextprotocol/sdk@1.30.0(@cfworker/json-schema@4.1.1)(zod@4.4.3))(supports-color@10.2.2)(ws@8.21.3)(zod@4.4.3)
       eve:
         specifier: ^0.44.4
         version: 0.44.4(@opentelemetry/api@1.9.1)(ai@7.0.79(zod@4.4.3))(dotenv@17.4.2)(jiti@2.7.0)(lru-cache@11.5.2)(miniflare@4.20260722.0)(rollup@4.62.5)(vite@7.3.5(@types/node@26.3.0)(jiti@2.7.0)(tsx@4.23.12)(yaml@2.9.0))(wrangler@4.125.0(@cloudflare/workers-types@5.20260825.1))
       tsdown:
         specifier: 'catalog:'
-        version: 0.22.14(@arethetypeswrong/core@0.18.5)(publint@0.3.24)(tsx@4.23.12)(typescript@7.0.2)(unrun@0.2.27(@emnapi/core@1.11.2)(@emnapi/runtime@1.11.2))
+        version: 0.22.14(@arethetypeswrong/core@0.18.5)(publint@0.3.24)(tsx@4.23.12)(typescript@7.0.2)(unrun@0.2.27)
       tsx:
         specifier: 'catalog:'
         version: 4.23.12
@@ -1471,7 +1471,7 @@ importers:
         version: link:../json-schema-to-zod
       tsdown:
         specifier: 'catalog:'
-        version: 0.22.14(@arethetypeswrong/core@0.18.5)(publint@0.3.24)(tsx@4.23.12)(typescript@7.0.2)(unrun@0.2.27(@emnapi/core@1.11.2)(@emnapi/runtime@1.11.2))
+        version: 0.22.14(@arethetypeswrong/core@0.18.5)(publint@0.3.24)(tsx@4.23.12)(typescript@7.0.2)(unrun@0.2.27)
       typescript:
         specifier: 'catalog:'
         version: 7.0.2
@@ -1483,6 +1483,13 @@ importers:
         version: 4.4.3
 
   ts/packages/json-schema-to-zod:
+    dependencies:
+      '@cfworker/json-schema':
+        specifier: ^4.1.1
+        version: 4.1.1
+      dequal:
+        specifier: ^2.0.3
+        version: 2.0.3
     devDependencies:
       '@types/json-schema':
         specifier: ^7.0.15
@@ -1490,9 +1497,15 @@ importers:
       '@types/node':
         specifier: ^26.3.0
         version: 26.3.0
+      ajv:
+        specifier: ^8.20.0
+        version: 8.20.0
+      fast-check:
+        specifier: ^4.9.0
+        version: 4.9.0
       tsdown:
         specifier: 'catalog:'
-        version: 0.22.14(@arethetypeswrong/core@0.18.5)(publint@0.3.24)(tsx@4.23.12)(typescript@7.0.2)(unrun@0.2.27(@emnapi/core@1.11.2)(@emnapi/runtime@1.11.2))
+        version: 0.22.14(@arethetypeswrong/core@0.18.5)(publint@0.3.24)(tsx@4.23.12)(typescript@7.0.2)(unrun@0.2.27)
       typescript:
         specifier: 'catalog:'
         version: 7.0.2
@@ -1522,7 +1535,7 @@ importers:
         version: 6.0.266(zod@4.4.3)
       tsdown:
         specifier: 'catalog:'
-        version: 0.22.14(@arethetypeswrong/core@0.18.5)(publint@0.3.24)(tsx@4.23.12)(typescript@7.0.2)(unrun@0.2.27(@emnapi/core@1.11.2)(@emnapi/runtime@1.11.2))
+        version: 0.22.14(@arethetypeswrong/core@0.18.5)(publint@0.3.24)(tsx@4.23.12)(typescript@7.0.2)(unrun@0.2.27)
       typescript:
         specifier: 'catalog:'
         version: 7.0.2
@@ -1544,10 +1557,10 @@ importers:
         version: link:../../core
       '@modelcontextprotocol/sdk':
         specifier: 'catalog:'
-        version: 1.30.0(@cfworker/json-schema@4.1.1)(zod@4.4.3)
+        version: 1.30.0(@cfworker/json-schema@4.1.1)(supports-color@10.2.2)(zod@4.4.3)
       tsdown:
         specifier: 'catalog:'
-        version: 0.22.14(@arethetypeswrong/core@0.18.5)(publint@0.3.24)(tsx@4.23.12)(typescript@7.0.2)(unrun@0.2.27(@emnapi/core@1.11.2)(@emnapi/runtime@1.11.2))
+        version: 0.22.14(@arethetypeswrong/core@0.18.5)(publint@0.3.24)(tsx@4.23.12)(typescript@7.0.2)(unrun@0.2.27)
       typescript:
         specifier: 'catalog:'
         version: 7.0.2
@@ -1566,7 +1579,7 @@ importers:
         version: link:../../core
       tsdown:
         specifier: 'catalog:'
-        version: 0.22.14(@arethetypeswrong/core@0.18.5)(publint@0.3.24)(tsx@4.23.12)(typescript@7.0.2)(unrun@0.2.27(@emnapi/core@1.11.2)(@emnapi/runtime@1.11.2))
+        version: 0.22.14(@arethetypeswrong/core@0.18.5)(publint@0.3.24)(tsx@4.23.12)(typescript@7.0.2)(unrun@0.2.27)
       typescript:
         specifier: 'catalog:'
         version: 7.0.2
@@ -1585,7 +1598,7 @@ importers:
         version: link:../../core
       tsdown:
         specifier: 'catalog:'
-        version: 0.22.14(@arethetypeswrong/core@0.18.5)(publint@0.3.24)(tsx@4.23.12)(typescript@7.0.2)(unrun@0.2.27(@emnapi/core@1.11.2)(@emnapi/runtime@1.11.2))
+        version: 0.22.14(@arethetypeswrong/core@0.18.5)(publint@0.3.24)(tsx@4.23.12)(typescript@7.0.2)(unrun@0.2.27)
       typescript:
         specifier: 'catalog:'
         version: 7.0.2
@@ -1600,7 +1613,7 @@ importers:
         version: 1.2.9(@opentelemetry/api@1.9.1)(openai@7.5.0(@aws-sdk/credential-provider-node@3.972.78)(@smithy/signature-v4@5.6.12)(ws@8.21.3)(zod@4.4.3))(ws@8.21.3)
       tsdown:
         specifier: 'catalog:'
-        version: 0.22.14(@arethetypeswrong/core@0.18.5)(publint@0.3.24)(tsx@4.23.12)(typescript@7.0.2)(unrun@0.2.27(@emnapi/core@1.11.2)(@emnapi/runtime@1.11.2))
+        version: 0.22.14(@arethetypeswrong/core@0.18.5)(publint@0.3.24)(tsx@4.23.12)(typescript@7.0.2)(unrun@0.2.27)
       typescript:
         specifier: 'catalog:'
         version: 7.0.2
@@ -1622,7 +1635,7 @@ importers:
         version: link:../../core
       tsdown:
         specifier: 'catalog:'
-        version: 0.22.14(@arethetypeswrong/core@0.18.5)(publint@0.3.24)(tsx@4.23.12)(typescript@7.0.2)(unrun@0.2.27(@emnapi/core@1.11.2)(@emnapi/runtime@1.11.2))
+        version: 0.22.14(@arethetypeswrong/core@0.18.5)(publint@0.3.24)(tsx@4.23.12)(typescript@7.0.2)(unrun@0.2.27)
       typescript:
         specifier: 'catalog:'
         version: 7.0.2
@@ -1644,7 +1657,7 @@ importers:
         version: 6.0.266(zod@4.4.3)
       tsdown:
         specifier: 'catalog:'
-        version: 0.22.14(@arethetypeswrong/core@0.18.5)(publint@0.3.24)(tsx@4.23.12)(typescript@7.0.2)(unrun@0.2.27(@emnapi/core@1.11.2)(@emnapi/runtime@1.11.2))
+        version: 0.22.14(@arethetypeswrong/core@0.18.5)(publint@0.3.24)(tsx@4.23.12)(typescript@7.0.2)(unrun@0.2.27)
       typescript:
         specifier: 'catalog:'
         version: 7.0.2
@@ -1665,7 +1678,7 @@ importers:
         version: 7.3.0(@aws-sdk/credential-provider-node@3.972.78)(@smithy/signature-v4@5.6.12)(ws@8.21.3)(zod@4.4.3)
       tsdown:
         specifier: 'catalog:'
-        version: 0.22.14(@arethetypeswrong/core@0.18.5)(publint@0.3.24)(tsx@4.23.12)(typescript@7.0.2)(unrun@0.2.27(@emnapi/core@1.11.2)(@emnapi/runtime@1.11.2))
+        version: 0.22.14(@arethetypeswrong/core@0.18.5)(publint@0.3.24)(tsx@4.23.12)(typescript@7.0.2)(unrun@0.2.27)
       typescript:
         specifier: 'catalog:'
         version: 7.0.2
@@ -1683,7 +1696,7 @@ importers:
         version: 0.17.0(@aws-sdk/credential-provider-node@3.972.78)(@smithy/signature-v4@5.6.12)(supports-color@10.2.2)(ws@8.21.3)(zod@4.4.3)
       tsdown:
         specifier: 'catalog:'
-        version: 0.22.14(@arethetypeswrong/core@0.18.5)(publint@0.3.24)(tsx@4.23.12)(typescript@7.0.2)(unrun@0.2.27(@emnapi/core@1.11.2)(@emnapi/runtime@1.11.2))
+        version: 0.22.14(@arethetypeswrong/core@0.18.5)(publint@0.3.24)(tsx@4.23.12)(typescript@7.0.2)(unrun@0.2.27)
       typescript:
         specifier: 'catalog:'
         version: 7.0.2
@@ -1704,7 +1717,7 @@ importers:
         version: 7.0.79(zod@4.4.3)
       tsdown:
         specifier: 'catalog:'
-        version: 0.22.14(@arethetypeswrong/core@0.18.5)(publint@0.3.24)(tsx@4.23.12)(typescript@7.0.2)(unrun@0.2.27(@emnapi/core@1.11.2)(@emnapi/runtime@1.11.2))
+        version: 0.22.14(@arethetypeswrong/core@0.18.5)(publint@0.3.24)(tsx@4.23.12)(typescript@7.0.2)(unrun@0.2.27)
       typescript:
         specifier: 'catalog:'
         version: 7.0.2
@@ -1769,7 +1782,7 @@ importers:
         version: link:@types/@babel/helper-validator-identifier
       tsdown:
         specifier: 'catalog:'
-        version: 0.22.14(@arethetypeswrong/core@0.18.5)(publint@0.3.24)(tsx@4.23.12)(typescript@7.0.2)(unrun@0.2.27(@emnapi/core@1.11.2)(@emnapi/runtime@1.11.2))
+        version: 0.22.14(@arethetypeswrong/core@0.18.5)(publint@0.3.24)(tsx@4.23.12)(typescript@7.0.2)(unrun@0.2.27)
       vitest:
         specifier: 'catalog:'
         version: 4.1.11(@opentelemetry/api@1.9.1)(@types/node@26.2.0)(@vitest/ui@4.1.11)(vite@7.3.5(@types/node@26.3.0)(jiti@2.7.0)(tsx@4.23.12)(yaml@2.9.0))
@@ -5100,6 +5113,10 @@ packages:
     resolution: {integrity: sha512-h5+1OzzfCC3Ef7VbtKdcv7zsstUQwUDlYpUTvjeUsJAssPgLn7QzbboPtL5ro04Mq0rPOsMzl7q5hIbRs2wD1A==}
     engines: {node: '>=8.0.0'}
 
+  fast-check@4.9.0:
+    resolution: {integrity: sha512-7ms6T7SybUev/PQITciI0yLM2pOSFy5zpG8Ty7tQofcVaQUvrMXp6CBwqF6fThLCLOrfBtuHAtwq6Yu4XPCllg==}
+    engines: {node: '>=12.17.0'}
+
   fast-deep-equal@3.1.3:
     resolution: {integrity: sha512-f3qQ9oQy9j2AhBe/H9VC91wLmKBCCU/gDOnKNAYG5hswO7BLKj09Hc5HYNz9cGI++xlpDCIgDaitVs03ATR84Q==}
 
@@ -6158,6 +6175,9 @@ packages:
 
   pure-rand@6.1.0:
     resolution: {integrity: sha512-bVWawvoZoBYpp6yIoQtQXHZjmz35RSVHnUOTefl8Vcjr8snTPY1wnpSPMWekcFwbxI6gtmT7rSYPFvz71ldiOA==}
+
+  pure-rand@8.4.2:
+    resolution: {integrity: sha512-vvuOGgcuPJAirlHvuQw1TrOiw7ptaIXXmIbNuiNOY6lNGJJH49PQ1Kj4nd783nPdQhQdicgOjVI2yI/9BD6/Ng==}
 
   pusher-js@8.6.0:
     resolution: {integrity: sha512-wShJPfCS/kYkCBVzVW67wa9cnQIgHTszEK2XHNrFkOgGruuGw081aERAxfRjfdFU+WcIt8x6dvbwkTW4iZuQ8Q==}
@@ -7239,7 +7259,7 @@ snapshots:
   '@anthropic-ai/claude-agent-sdk@0.3.245(@anthropic-ai/sdk@0.120.0(zod@4.4.3))(@modelcontextprotocol/sdk@1.30.0(@cfworker/json-schema@4.1.1)(zod@4.4.3))(zod@4.4.3)':
     dependencies:
       '@anthropic-ai/sdk': 0.120.0(zod@4.4.3)
-      '@modelcontextprotocol/sdk': 1.30.0(@cfworker/json-schema@4.1.1)(zod@4.4.3)
+      '@modelcontextprotocol/sdk': 1.30.0(@cfworker/json-schema@4.1.1)(supports-color@10.2.2)(zod@4.4.3)
       zod: 4.4.3
     optionalDependencies:
       '@anthropic-ai/claude-agent-sdk-darwin-arm64': 0.3.245
@@ -7725,7 +7745,7 @@ snapshots:
 
   '@earendil-works/pi-agent-core@0.84.3(@modelcontextprotocol/sdk@1.30.0(@cfworker/json-schema@4.1.1)(zod@4.4.3))(ws@8.21.3)(zod@4.4.3)':
     dependencies:
-      '@earendil-works/pi-ai': 0.84.3(@modelcontextprotocol/sdk@1.30.0(@cfworker/json-schema@4.1.1)(zod@4.4.3))(ws@8.21.3)(zod@4.4.3)
+      '@earendil-works/pi-ai': 0.84.3(@modelcontextprotocol/sdk@1.30.0(@cfworker/json-schema@4.1.1)(zod@4.4.3))(supports-color@10.2.2)(ws@8.21.3)(zod@4.4.3)
       '@earendil-works/pi-telemetry': 0.84.3
       diff: 8.0.4
       ignore: 7.0.5
@@ -7739,14 +7759,14 @@ snapshots:
       - ws
       - zod
 
-  '@earendil-works/pi-ai@0.84.3(@modelcontextprotocol/sdk@1.30.0(@cfworker/json-schema@4.1.1)(zod@4.4.3))(ws@8.21.3)(zod@4.4.3)':
+  '@earendil-works/pi-ai@0.84.3(@modelcontextprotocol/sdk@1.30.0(@cfworker/json-schema@4.1.1)(zod@4.4.3))(supports-color@10.2.2)(ws@8.21.3)(zod@4.4.3)':
     dependencies:
       '@anthropic-ai/sdk': 0.91.1(zod@4.4.3)
       '@aws-sdk/client-bedrock-runtime': 3.1048.0
       '@earendil-works/pi-telemetry': 0.84.3
       '@google/genai': 1.52.0(@modelcontextprotocol/sdk@1.30.0(@cfworker/json-schema@4.1.1)(zod@4.4.3))
       '@smithy/node-http-handler': 4.7.3
-      http-proxy-agent: 7.0.2
+      http-proxy-agent: 7.0.2(supports-color@10.2.2)
       https-proxy-agent: 7.0.6(supports-color@10.2.2)
       openai: 6.40.0(ws@8.21.3)(zod@4.4.3)
       partial-json: 0.1.7
@@ -7763,10 +7783,10 @@ snapshots:
     dependencies:
       '@earendil-works/pi-protocol': 0.84.3
 
-  '@earendil-works/pi-coding-agent@0.84.3(@modelcontextprotocol/sdk@1.30.0(@cfworker/json-schema@4.1.1)(zod@4.4.3))(ws@8.21.3)(zod@4.4.3)':
+  '@earendil-works/pi-coding-agent@0.84.3(@modelcontextprotocol/sdk@1.30.0(@cfworker/json-schema@4.1.1)(zod@4.4.3))(supports-color@10.2.2)(ws@8.21.3)(zod@4.4.3)':
     dependencies:
       '@earendil-works/pi-agent-core': 0.84.3(@modelcontextprotocol/sdk@1.30.0(@cfworker/json-schema@4.1.1)(zod@4.4.3))(ws@8.21.3)(zod@4.4.3)
-      '@earendil-works/pi-ai': 0.84.3(@modelcontextprotocol/sdk@1.30.0(@cfworker/json-schema@4.1.1)(zod@4.4.3))(ws@8.21.3)(zod@4.4.3)
+      '@earendil-works/pi-ai': 0.84.3(@modelcontextprotocol/sdk@1.30.0(@cfworker/json-schema@4.1.1)(zod@4.4.3))(supports-color@10.2.2)(ws@8.21.3)(zod@4.4.3)
       '@earendil-works/pi-client': 0.84.3
       '@earendil-works/pi-protocol': 0.84.3
       '@earendil-works/pi-tui': 0.84.3
@@ -8025,7 +8045,7 @@ snapshots:
       protobufjs: 7.6.5
       ws: 8.21.3
     optionalDependencies:
-      '@modelcontextprotocol/sdk': 1.30.0(@cfworker/json-schema@4.1.1)(zod@4.4.3)
+      '@modelcontextprotocol/sdk': 1.30.0(@cfworker/json-schema@4.1.1)(supports-color@10.2.2)(zod@4.4.3)
     transitivePeerDependencies:
       - bufferutil
       - supports-color
@@ -8038,7 +8058,7 @@ snapshots:
       protobufjs: 7.6.5
       ws: 8.21.3
     optionalDependencies:
-      '@modelcontextprotocol/sdk': 1.30.0(@cfworker/json-schema@4.1.1)(zod@4.4.3)
+      '@modelcontextprotocol/sdk': 1.30.0(@cfworker/json-schema@4.1.1)(supports-color@10.2.2)(zod@4.4.3)
     transitivePeerDependencies:
       - bufferutil
       - supports-color
@@ -8296,7 +8316,7 @@ snapshots:
     dependencies:
       '@langchain/core': 1.2.9(@opentelemetry/api@1.9.1)(openai@7.3.0(@aws-sdk/credential-provider-node@3.972.78)(@smithy/signature-v4@5.6.12)(ws@8.21.3)(zod@4.4.3))(ws@8.21.3)
       '@langchain/langgraph': 1.4.12(@langchain/core@1.2.9(@opentelemetry/api@1.9.1)(openai@7.3.0(@aws-sdk/credential-provider-node@3.972.78)(@smithy/signature-v4@5.6.12)(ws@8.21.3)(zod@4.4.3))(ws@8.21.3))(zod@4.4.3)
-      '@modelcontextprotocol/sdk': 1.30.0(@cfworker/json-schema@4.1.1)(zod@4.4.3)
+      '@modelcontextprotocol/sdk': 1.30.0(@cfworker/json-schema@4.1.1)(supports-color@10.2.2)(zod@4.4.3)
       debug: 4.4.3(supports-color@10.2.2)
       zod: 4.4.3
     optionalDependencies:
@@ -8372,7 +8392,7 @@ snapshots:
 
   '@llamaindex/workflow-core@1.3.4(@modelcontextprotocol/sdk@1.30.0(@cfworker/json-schema@4.1.1)(zod@4.4.3))(hono@4.13.4)(zod@4.4.3)':
     optionalDependencies:
-      '@modelcontextprotocol/sdk': 1.30.0(@cfworker/json-schema@4.1.1)(zod@4.4.3)
+      '@modelcontextprotocol/sdk': 1.30.0(@cfworker/json-schema@4.1.1)(supports-color@10.2.2)(zod@4.4.3)
       hono: 4.13.4
       zod: 4.4.3
 
@@ -8530,7 +8550,7 @@ snapshots:
       '@isaacs/ttlcache': 2.1.5
       '@lukeed/uuid': 2.0.1
       '@mastra/schema-compat': 1.3.4(zod@4.4.3)
-      '@modelcontextprotocol/sdk': 1.30.0(@cfworker/json-schema@4.1.1)(zod@4.4.3)
+      '@modelcontextprotocol/sdk': 1.30.0(@cfworker/json-schema@4.1.1)(supports-color@10.2.2)(zod@4.4.3)
       '@sindresorhus/slugify': 2.2.1
       '@standard-schema/spec': 1.1.0
       ajv: 8.20.0
@@ -8591,7 +8611,7 @@ snapshots:
       '@modelcontextprotocol/core': 2.0.0
       '@modelcontextprotocol/ext-apps': 1.7.5(@modelcontextprotocol/sdk@1.30.0(@cfworker/json-schema@4.1.1)(zod@4.4.3))(zod@4.4.3)
       '@modelcontextprotocol/node': 2.0.0(@modelcontextprotocol/server@2.0.0)(hono@4.13.4)
-      '@modelcontextprotocol/sdk': 1.30.0(@cfworker/json-schema@4.1.1)(zod@4.4.3)
+      '@modelcontextprotocol/sdk': 1.30.0(@cfworker/json-schema@4.1.1)(supports-color@10.2.2)(zod@4.4.3)
       '@modelcontextprotocol/server': 2.0.0
       '@modelcontextprotocol/server-legacy': 2.0.0(express@5.2.1)
       exit-hook: 5.1.0
@@ -8649,7 +8669,7 @@ snapshots:
 
   '@modelcontextprotocol/ext-apps@1.7.5(@modelcontextprotocol/sdk@1.30.0(@cfworker/json-schema@4.1.1)(zod@4.4.3))(zod@4.4.3)':
     dependencies:
-      '@modelcontextprotocol/sdk': 1.30.0(@cfworker/json-schema@4.1.1)(zod@4.4.3)
+      '@modelcontextprotocol/sdk': 1.30.0(@cfworker/json-schema@4.1.1)(supports-color@10.2.2)(zod@4.4.3)
       '@standard-schema/spec': 1.1.0
       zod: 4.4.3
 
@@ -8684,7 +8704,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  '@modelcontextprotocol/sdk@1.30.0(@cfworker/json-schema@4.1.1)(zod@3.25.76)':
+  '@modelcontextprotocol/sdk@1.30.0(@cfworker/json-schema@4.1.1)(supports-color@10.2.2)(zod@4.4.3)':
     dependencies:
       '@hono/node-server': 2.1.1(hono@4.13.4)
       ajv: 8.20.0
@@ -8695,31 +8715,7 @@ snapshots:
       eventsource: 3.0.7
       eventsource-parser: 3.1.1
       express: 5.2.1
-      express-rate-limit: 8.6.2(express@5.2.1)
-      hono: 4.13.4
-      jose: 6.2.9
-      json-schema-typed: 8.0.2
-      pkce-challenge: 5.0.1
-      raw-body: 3.0.2
-      zod: 3.25.76
-      zod-to-json-schema: 3.25.2(zod@3.25.76)
-    optionalDependencies:
-      '@cfworker/json-schema': 4.1.1
-    transitivePeerDependencies:
-      - supports-color
-
-  '@modelcontextprotocol/sdk@1.30.0(@cfworker/json-schema@4.1.1)(zod@4.4.3)':
-    dependencies:
-      '@hono/node-server': 2.1.1(hono@4.13.4)
-      ajv: 8.20.0
-      ajv-formats: 3.0.1(ajv@8.20.0)
-      content-type: 1.0.5
-      cors: 2.8.6
-      cross-spawn: 7.0.6
-      eventsource: 3.0.7
-      eventsource-parser: 3.1.1
-      express: 5.2.1
-      express-rate-limit: 8.6.2(express@5.2.1)
+      express-rate-limit: 8.6.2(express@5.2.1)(supports-color@10.2.2)
       hono: 4.13.4
       jose: 6.2.9
       json-schema-typed: 8.0.2
@@ -8732,12 +8728,36 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
+  '@modelcontextprotocol/sdk@1.30.0(@cfworker/json-schema@4.1.1)(zod@3.25.76)':
+    dependencies:
+      '@hono/node-server': 2.1.1(hono@4.13.4)
+      ajv: 8.20.0
+      ajv-formats: 3.0.1(ajv@8.20.0)
+      content-type: 1.0.5
+      cors: 2.8.6
+      cross-spawn: 7.0.6
+      eventsource: 3.0.7
+      eventsource-parser: 3.1.1
+      express: 5.2.1
+      express-rate-limit: 8.6.2(express@5.2.1)(supports-color@10.2.2)
+      hono: 4.13.4
+      jose: 6.2.9
+      json-schema-typed: 8.0.2
+      pkce-challenge: 5.0.1
+      raw-body: 3.0.2
+      zod: 3.25.76
+      zod-to-json-schema: 3.25.2(zod@3.25.76)
+    optionalDependencies:
+      '@cfworker/json-schema': 4.1.1
+    transitivePeerDependencies:
+      - supports-color
+
   '@modelcontextprotocol/server-legacy@2.0.0(express@5.2.1)':
     dependencies:
       '@modelcontextprotocol/core': 2.0.0
       content-type: 1.0.5
       cors: 2.8.6
-      express-rate-limit: 8.6.2(express@5.2.1)
+      express-rate-limit: 8.6.2(express@5.2.1)(supports-color@10.2.2)
       pkce-challenge: 5.0.1
       raw-body: 3.0.2
       zod: 4.4.3
@@ -10182,7 +10202,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  express-rate-limit@8.6.2(express@5.2.1):
+  express-rate-limit@8.6.2(express@5.2.1)(supports-color@10.2.2):
     dependencies:
       debug: 4.4.3(supports-color@10.2.2)
       express: 5.2.1
@@ -10247,6 +10267,10 @@ snapshots:
   fast-check@3.23.2:
     dependencies:
       pure-rand: 6.1.0
+
+  fast-check@4.9.0:
+    dependencies:
+      pure-rand: 8.4.2
 
   fast-deep-equal@3.1.3: {}
 
@@ -10440,7 +10464,7 @@ snapshots:
       statuses: 2.0.2
       toidentifier: 1.0.1
 
-  http-proxy-agent@7.0.2:
+  http-proxy-agent@7.0.2(supports-color@10.2.2):
     dependencies:
       agent-base: 7.1.4
       debug: 4.4.3(supports-color@10.2.2)
@@ -11446,6 +11470,8 @@ snapshots:
 
   pure-rand@6.1.0: {}
 
+  pure-rand@8.4.2: {}
+
   pusher-js@8.6.0:
     dependencies:
       tweetnacl: 1.0.3
@@ -11900,7 +11926,7 @@ snapshots:
       '@ts-morph/common': 0.29.0
       code-block-writer: 13.0.3
 
-  tsdown@0.22.14(@arethetypeswrong/core@0.18.5)(@typescript/typescript6@6.0.2)(publint@0.3.24)(tsx@4.23.12)(unrun@0.2.27(@emnapi/core@1.11.2)(@emnapi/runtime@1.11.2)):
+  tsdown@0.22.14(@arethetypeswrong/core@0.18.5)(@typescript/typescript6@6.0.2)(publint@0.3.24)(tsx@4.23.12)(unrun@0.2.27):
     dependencies:
       ansis: 4.3.1
       cac: 7.0.0
@@ -11929,7 +11955,7 @@ snapshots:
       - oxc-resolver
       - vue-tsc
 
-  tsdown@0.22.14(@arethetypeswrong/core@0.18.5)(publint@0.3.24)(tsx@4.23.12)(typescript@7.0.2)(unrun@0.2.27(@emnapi/core@1.11.2)(@emnapi/runtime@1.11.2)):
+  tsdown@0.22.14(@arethetypeswrong/core@0.18.5)(publint@0.3.24)(tsx@4.23.12)(typescript@7.0.2)(unrun@0.2.27):
     dependencies:
       ansis: 4.3.1
       cac: 7.0.0

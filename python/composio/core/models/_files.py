@@ -966,6 +966,11 @@ class FileHelper(WithLogger):
             return schema
         required = schema.get("required") or []
         for _param, _schema in schema["properties"].items():
+            if not isinstance(_schema, dict):
+                # Boolean schemas have no description to enhance. They are
+                # valid property schemas and reach this unconditional helper
+                # before schema conversion.
+                continue
             if _schema.get("type") in ["string", "integer", "number", "boolean"]:
                 ext = f"Please provide a value of type {_schema['type']}."
                 description = _schema.get("description", "").rstrip(".")
