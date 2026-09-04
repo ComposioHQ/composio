@@ -44,8 +44,8 @@
   "author": "",
   "license": "ISC",
   "peerDependencies": {
-    "@anthropic-ai/sdk": "^0.110.0",
-    "@composio/core": ">=0.10.0 <1.0.0",
+    "@anthropic-ai/sdk": "^0.110.0 || ^0.120.0",
+    "@composio/core": ">=0.10.0 <1.0.0 || >=1.0.0-beta.0 <1.0.0",
     "@mastra/mcp": "^1.13.1"
   },
   "devDependencies": {
