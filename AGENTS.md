@@ -26,6 +26,7 @@ Use the smallest relevant skill:
 - `good-docs-writing`: drafting or revising docs prose in the house writing voice.
 - `good-docs-audit`: reviewing existing docs or prose against that voice and reporting violations.
 - `eve`: durable backend AI agents built with the eve framework.
+- `effect-v4`: Effect v3-to-v4 beta migration work for the CLI, including package consolidation, `effect/unstable/cli`, and v4 test APIs.
 - `typescript-sdk`, `typescript-testing`, `typescript-providers`: TypeScript SDK/core/provider work.
 - `cli-command`, `cli-e2e`: CLI design/implementation or CLI end-to-end tests.
 - `cli-release`: first-party CLI beta builds, stable promotion, release verification, or recovery.

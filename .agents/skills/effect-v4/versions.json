@@ -1,0 +1,9 @@
+{
+  "effect": "4.0.0-beta.98",
+  "@effect/platform-bun": "4.0.0-beta.98",
+  "@effect/platform-node-shared": "4.0.0-beta.98",
+  "@effect/vitest": "4.0.0-beta.98",
+  "@types/node": "26.1.1",
+  "typescript": "6.0.3",
+  "vitest": "4.1.10"
+}

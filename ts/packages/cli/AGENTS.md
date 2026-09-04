@@ -10,7 +10,7 @@ This package pins its `typescript` dependency to TypeScript 6 (`catalog:ts6` in 
 
 ## Architecture
 
-The CLI is built on the **Effect.ts ecosystem** and runs on **Bun**. Service-oriented architecture with dependency injection via Effect layers, generator-based control flow (`Effect.gen`), and structured error handling.
+The CLI currently runs on **Effect v3** and **Bun**. Service-oriented architecture with dependency injection via Effect layers, generator-based control flow (`Effect.gen`), and structured error handling. For the Effect v4 beta port, read the repo-local `effect-v4` skill before changing dependencies, imports, services, commands, or tests.
 
 ### Entry Point — `src/bin.ts`
 
@@ -191,13 +191,16 @@ The only code allowed to bypass services sits at declared runtime boundaries: th
 
 ## Vendor Reference Sources
 
-Read-only submodules under `ts/vendor/` (do NOT modify — actual deps come from npm):
+Read-only submodules under `ts/vendor/` (do NOT edit or import from them — actual deps come from npm):
 
-- `ts/vendor/effect/packages/effect/src/` — core Effect runtime
-- `ts/vendor/effect/packages/cli/src/` — `@effect/cli` (Command, Options, Args)
-- `ts/vendor/effect/packages/platform/src/` — `@effect/platform`
+- `ts/vendor/effect/packages/effect/src/` — Effect v4 core source
+- `ts/vendor/effect/packages/effect/src/unstable/cli/` — v4 `Command`, `Flag`, `Argument`, help, and parsing
+- `ts/vendor/effect/packages/vitest/src/` — v4 `@effect/vitest`
+- `ts/vendor/effect/migration/` — v3-to-v4 import, API, service, Schema, runtime, and behavior guides
 - `ts/vendor/clack/packages/prompts/src/` — `@clack/prompts` (text, select, confirm, spinner, note, task, etc.)
 - `ts/vendor/clack/packages/core/src/` — `@clack/core` primitives
+
+The vendor gitlink may be ahead of the beta installed by the CLI. Record source and package versions separately, exact-pin beta packages, and let the installed compiler decide compatibility.
 
 ## CLI Design Guidelines
 
