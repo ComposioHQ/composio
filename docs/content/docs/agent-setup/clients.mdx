@@ -1,0 +1,187 @@
+---
+title: Clients
+description: Install the Composio Agent Skill in popular coding agents
+keywords: [clients, agent skill, claude code, codex, cursor, copilot, gemini, openclaw, opencode, cline, grok]
+---
+
+Install the Composio Agent Skill in the coding agent you use to build your application. A project install keeps the skill with one codebase. A global install makes it available in every project you open with that agent.
+
+## Claude Code
+
+Claude Code loads project skills from `.claude/skills/` and global skills from `~/.claude/skills/`. Run one of these commands from your project directory:
+
+**Global install**
+
+```bash
+npx skills add ComposioHQ/composio --skill composio --agent claude-code --global
+```
+
+**Project install**
+
+```bash
+npx skills add ComposioHQ/composio --skill composio --agent claude-code
+```
+
+The Skills CLI installs the skill in Claude Code's skill directory. Start a new Claude Code session if the current session does not discover it, then ask Claude to add Composio to your project.
+
+<AgentFirstPrompt agent="claude-code" />
+
+## OpenCode
+
+OpenCode loads project skills from `.agents/skills/` and global skills from `~/.config/opencode/skills/`. Run one of these commands from your project directory:
+
+**Global install**
+
+```bash
+npx skills add ComposioHQ/composio --skill composio --agent opencode --global
+```
+
+**Project install**
+
+```bash
+npx skills add ComposioHQ/composio --skill composio --agent opencode
+```
+
+Start a new OpenCode session after installation so it can discover the skill, then ask OpenCode to add Composio to your project.
+
+<AgentFirstPrompt agent="opencode" />
+
+## Cline
+
+Cline loads project skills from `.agents/skills/` and global skills from `~/.agents/skills/`. Run one of these commands from your project directory:
+
+**Global install**
+
+```bash
+npx skills add ComposioHQ/composio --skill composio --agent cline --global
+```
+
+**Project install**
+
+```bash
+npx skills add ComposioHQ/composio --skill composio --agent cline
+```
+
+Open the project in Cline after installation. Start a new task if the skill is not available in an existing one, then ask Cline to add Composio to the application.
+
+<AgentFirstPrompt agent="cline" />
+
+## Grok Build
+
+Grok Build loads project skills from `.grok/skills/` and global skills from `~/.grok/skills/`. Run one of these commands from your project directory:
+
+**Global install**
+
+```bash
+npx skills add ComposioHQ/composio --skill composio --agent grok --global
+```
+
+**Project install**
+
+```bash
+npx skills add ComposioHQ/composio --skill composio --agent grok
+```
+
+Start a new Grok Build session after installation so it can discover the skill, then ask it to add Composio and make your first tool call.
+
+<AgentFirstPrompt agent="grok" />
+
+## OpenAI Codex
+
+Codex loads project skills from `.agents/skills/` and global skills from `~/.codex/skills/`. Run one of these commands from your project directory:
+
+**Global install**
+
+```bash
+npx skills add ComposioHQ/composio --skill composio --agent codex --global
+```
+
+**Project install**
+
+```bash
+npx skills add ComposioHQ/composio --skill composio --agent codex
+```
+
+The project install uses the shared Agent Skills directory, so the skill can travel with the repository. Start a new Codex session after installation, then ask Codex to add Composio to your project.
+
+<AgentFirstPrompt agent="codex" />
+
+## Cursor
+
+Cursor loads project skills from `.agents/skills/` and global skills from `~/.cursor/skills/`. Run one of these commands from your project directory:
+
+**Global install**
+
+```bash
+npx skills add ComposioHQ/composio --skill composio --agent cursor --global
+```
+
+**Project install**
+
+```bash
+npx skills add ComposioHQ/composio --skill composio --agent cursor
+```
+
+Open the project in Cursor after installation. Start a new agent conversation if the skill is not available in an existing one, then ask Cursor to add Composio to the application.
+
+<AgentFirstPrompt agent="cursor" />
+
+## GitHub Copilot
+
+GitHub Copilot loads project skills from `.agents/skills/` and global skills from `~/.copilot/skills/`. Run one of these commands from your repository root:
+
+**Global install**
+
+```bash
+npx skills add ComposioHQ/composio --skill composio --agent github-copilot --global
+```
+
+**Project install**
+
+```bash
+npx skills add ComposioHQ/composio --skill composio --agent github-copilot
+```
+
+Reopen the repository in VS Code if Copilot does not discover the skill immediately. Use Copilot agent mode and ask it to add Composio to the application.
+
+<AgentFirstPrompt agent="github-copilot" />
+
+## Gemini CLI
+
+Gemini CLI loads project skills from `.agents/skills/` and global skills from `~/.gemini/skills/`. Run one of these commands from your project directory:
+
+**Global install**
+
+```bash
+npx skills add ComposioHQ/composio --skill composio --agent gemini-cli --global
+```
+
+**Project install**
+
+```bash
+npx skills add ComposioHQ/composio --skill composio --agent gemini-cli
+```
+
+Start a new Gemini CLI session in the project after installation. Mention Composio in your request so Gemini can load the skill and apply its setup guidance.
+
+<AgentFirstPrompt agent="gemini-cli" />
+
+## OpenClaw
+
+OpenClaw loads project skills from `skills/` and global skills from `~/.openclaw/skills/`. Run one of these commands from your project directory:
+
+**Global install**
+
+```bash
+npx skills add ComposioHQ/composio --skill composio --agent openclaw --global
+```
+
+**Project install**
+
+```bash
+npx skills add ComposioHQ/composio --skill composio --agent openclaw
+```
+
+Start a new OpenClaw session after installation so it can discover the skill. OpenClaw loads the relevant skill when your request calls for Composio guidance.
+
+<AgentFirstPrompt agent="openclaw" />

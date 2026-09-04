@@ -86,6 +86,13 @@ describe('getting-started routing policy', () => {
     }
   });
 
+  test('does not turn external sidebar links into documentation URLs', async () => {
+    const { GET } = await import('../../app/llms.txt/route');
+    const llms = await (await GET()).text();
+
+    expect(llms).not.toContain('- https://docs.composio.dev/llms.txt.md');
+  });
+
   /**
    * `nearest` is the closest preceding heading of any level. Markdown headings
    * do not close, so it is what an agent reads a URL as belonging to: a page
@@ -140,6 +147,11 @@ describe('getting-started routing policy', () => {
         nearest: '## Get Started',
       });
     }
+
+    expect(sectionOf('/docs/agent-setup')).toEqual({
+      section: '## Get Started',
+      nearest: '### Agent setup',
+    });
 
     expect(lines).not.toContain('## Authentication guides');
   });
