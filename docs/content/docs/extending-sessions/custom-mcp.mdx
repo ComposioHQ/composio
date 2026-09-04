@@ -13,6 +13,10 @@ Custom MCP is experimental. Its setup flow, authentication options, and API cont
 
 This is different from [Custom Tools and Toolkits](/docs/extending-sessions/custom-tools-and-toolkits). Custom tools run inside your application. A custom MCP server runs outside Composio and exposes its tools over a public HTTPS endpoint.
 
+<Callout type="info" title="Custom MCP vs Provider MCP">
+A Custom MCP is your own server, registered privately into your project with a `CUSTOM_*` slug. A Provider MCP toolkit, such as `notion_mcp`, connects to a product's own hosted MCP server, is available to every project from the catalog, and is grouped into an App with any sibling toolkits the product has. See [Apps and toolkits](/docs/apps-and-toolkits).
+</Callout>
+
 ## Custom MCP lifecycle
 
 A Custom MCP moves through this lifecycle:
@@ -383,7 +387,7 @@ See [Toolkit Versioning](/docs/tools-direct/toolkit-versioning) for more example
 <Accordion title="Setup and lifecycle">
 
 - **API-only setup:** The SDKs don't expose registration, sync, update, or deletion methods yet. Use the lifecycle endpoints on this page, then use the toolkit slug through the SDK.
-- **Dashboard coming soon:** Custom MCP management isn't available in the dashboard yet.
+- **SDK support:** the SDKs don't expose the Custom MCP lifecycle yet. Register, sync, and delete from the dashboard or the API.
 - **Remote servers only:** Composio doesn't host your server. Deploy it at a public HTTPS endpoint; local and STDIO-only servers aren't supported.
 - **Immutable `app_url` and `auth_schemes`:** Re-registering an existing slug updates other fields in place, but changing `app_url` or `auth_schemes` returns `409 Conflict`. Delete the toolkit, then register it again. Deletion also removes its auth configurations and connected accounts.
 - **500-tool limit:** Split larger servers into smaller MCP servers. If a later sync exceeds the limit, the last successful version stays available.
