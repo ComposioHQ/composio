@@ -4,6 +4,7 @@
 
 # Vendored, read-only reference snapshots (git submodules)
 ts/vendor/** linguist-vendored=true
+python/vendor/** linguist-vendored=true
 ts/packages/cli-local-tools/vendor/** linguist-vendored=true
 
 # Generated SDK surfaces (produced by `composio generate` / the build pipeline)

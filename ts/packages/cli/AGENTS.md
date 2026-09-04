@@ -193,6 +193,8 @@ The only code allowed to bypass services sits at declared runtime boundaries: th
 
 Read-only submodules under `ts/vendor/` (do NOT modify — actual deps come from npm):
 
+If a relevant checkout is absent, initialize only that source with `git submodule update --init -- <path>` before inferring its API behavior.
+
 - `ts/vendor/effect/packages/effect/src/` — core Effect runtime
 - `ts/vendor/effect/packages/cli/src/` — `@effect/cli` (Command, Options, Args)
 - `ts/vendor/effect/packages/platform/src/` — `@effect/platform`
