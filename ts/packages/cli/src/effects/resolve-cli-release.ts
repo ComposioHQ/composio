@@ -1,5 +1,6 @@
 import { Data, Effect, Option, Schema } from 'effect';
-import { HttpClient, HttpClientResponse } from '@effect/platform';
+import * as HttpClient from '@effect/platform/HttpClient';
+import * as HttpClientResponse from '@effect/platform/HttpClientResponse';
 import { semverComparator } from 'src/effects/compare-semver';
 import type { CliReleaseChannel } from 'src/constants';
 

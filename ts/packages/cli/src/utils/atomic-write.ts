@@ -11,7 +11,7 @@
  * original error propagates, so no tmp litter is left next to the target.
  */
 
-import type { FileSystem } from '@effect/platform';
+import type * as FileSystem from '@effect/platform/FileSystem';
 import type { PlatformError } from '@effect/platform/Error';
 import { Effect, Either, Option, Predicate } from 'effect';
 

@@ -1,5 +1,6 @@
 import http from 'node:http';
-import { FileSystem, Path } from '@effect/platform';
+import * as FileSystem from '@effect/platform/FileSystem';
+import * as Path from '@effect/platform/Path';
 import open from 'open';
 import { detectCliPlatform } from '@composio/cli-local-tools';
 import { Data, Effect, Option, Record as EffectRecord, Schema } from 'effect';

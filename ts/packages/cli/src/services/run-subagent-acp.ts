@@ -1,8 +1,10 @@
 import { createRequire } from 'node:module';
 import type { Readable } from 'node:stream';
 import * as acp from '@agentclientprotocol/sdk';
-import { Command, FileSystem, Path } from '@effect/platform';
-import { BunContext } from '@effect/platform-bun';
+import * as Command from '@effect/platform/Command';
+import * as FileSystem from '@effect/platform/FileSystem';
+import * as Path from '@effect/platform/Path';
+import * as BunContext from '@effect/platform-bun/BunContext';
 import { Cause, Config, Data, Effect, Exit, Layer, Option, Predicate, Queue, Stream } from 'effect';
 import type { MasterKind } from 'src/services/master-detector';
 import { NodeOs } from 'src/services/node-os';

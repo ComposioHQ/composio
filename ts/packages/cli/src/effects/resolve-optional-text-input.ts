@@ -1,5 +1,5 @@
 import { HelpDoc, ValidationError } from '@effect/cli';
-import { FileSystem } from '@effect/platform';
+import * as FileSystem from '@effect/platform/FileSystem';
 import { Effect, Option } from 'effect';
 
 import { readStdin, readStdinIfPiped } from 'src/effects/read-stdin';

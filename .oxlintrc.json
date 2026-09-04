@@ -129,13 +129,22 @@
               { "name": "node:crypto", "message": "Use Web Crypto API instead." },
               { "name": "buffer", "message": "Use Uint8Array instead." },
               { "name": "node:buffer", "message": "Use Uint8Array instead." },
-              { "name": "child_process", "message": "Use Command from @effect/platform instead." },
+              {
+                "name": "child_process",
+                "message": "Use Command from @effect/platform/Command instead."
+              },
               {
                 "name": "node:child_process",
-                "message": "Use Command from @effect/platform instead."
+                "message": "Use Command from @effect/platform/Command instead."
               },
-              { "name": "fs", "message": "Use FileSystem from @effect/platform instead." },
-              { "name": "node:fs", "message": "Use FileSystem from @effect/platform instead." },
+              {
+                "name": "fs",
+                "message": "Use FileSystem from @effect/platform/FileSystem instead."
+              },
+              {
+                "name": "node:fs",
+                "message": "Use FileSystem from @effect/platform/FileSystem instead."
+              },
               {
                 "name": "os",
                 "message": "Use an Effect service instead of importing node:os directly."
@@ -144,8 +153,16 @@
                 "name": "node:os",
                 "message": "Use an Effect service instead of importing node:os directly."
               },
-              { "name": "path", "message": "Use Path from @effect/platform instead." },
-              { "name": "node:path", "message": "Use Path from @effect/platform instead." },
+              { "name": "path", "message": "Use Path from @effect/platform/Path instead." },
+              { "name": "node:path", "message": "Use Path from @effect/platform/Path instead." },
+              {
+                "name": "@effect/platform",
+                "message": "Import the module by subpath, e.g. @effect/platform/FileSystem; the package barrel is not part of the Effect v4 layout."
+              },
+              {
+                "name": "@effect/platform-bun",
+                "message": "Import the module by subpath, e.g. @effect/platform-bun/BunFileSystem; the package barrel is not part of the Effect v4 layout."
+              },
               {
                 "name": "@effect/cli",
                 "importNames": ["CommandDescriptor", "Usage"],
@@ -155,7 +172,7 @@
             "patterns": [
               {
                 "group": ["fs/*", "node:fs/*"],
-                "message": "Use FileSystem from @effect/platform instead."
+                "message": "Use FileSystem from @effect/platform/FileSystem instead."
               },
               {
                 "group": ["@effect/cli/CommandDescriptor", "@effect/cli/Usage"],
@@ -249,13 +266,22 @@
               { "name": "node:crypto", "message": "Use Web Crypto API instead." },
               { "name": "buffer", "message": "Use Uint8Array instead." },
               { "name": "node:buffer", "message": "Use Uint8Array instead." },
-              { "name": "child_process", "message": "Use Command from @effect/platform instead." },
+              {
+                "name": "child_process",
+                "message": "Use Command from @effect/platform/Command instead."
+              },
               {
                 "name": "node:child_process",
-                "message": "Use Command from @effect/platform instead."
+                "message": "Use Command from @effect/platform/Command instead."
               },
-              { "name": "fs", "message": "Use FileSystem from @effect/platform instead." },
-              { "name": "node:fs", "message": "Use FileSystem from @effect/platform instead." },
+              {
+                "name": "fs",
+                "message": "Use FileSystem from @effect/platform/FileSystem instead."
+              },
+              {
+                "name": "node:fs",
+                "message": "Use FileSystem from @effect/platform/FileSystem instead."
+              },
               {
                 "name": "os",
                 "message": "Use an Effect service instead of importing node:os directly."
@@ -264,13 +290,21 @@
                 "name": "node:os",
                 "message": "Use an Effect service instead of importing node:os directly."
               },
-              { "name": "path", "message": "Use Path from @effect/platform instead." },
-              { "name": "node:path", "message": "Use Path from @effect/platform instead." }
+              { "name": "path", "message": "Use Path from @effect/platform/Path instead." },
+              { "name": "node:path", "message": "Use Path from @effect/platform/Path instead." },
+              {
+                "name": "@effect/platform",
+                "message": "Import the module by subpath, e.g. @effect/platform/FileSystem; the package barrel is not part of the Effect v4 layout."
+              },
+              {
+                "name": "@effect/platform-bun",
+                "message": "Import the module by subpath, e.g. @effect/platform-bun/BunFileSystem; the package barrel is not part of the Effect v4 layout."
+              }
             ],
             "patterns": [
               {
                 "group": ["fs/*", "node:fs/*"],
-                "message": "Use FileSystem from @effect/platform instead."
+                "message": "Use FileSystem from @effect/platform/FileSystem instead."
               }
             ]
           }
@@ -288,13 +322,22 @@
               { "name": "node:crypto", "message": "Use Web Crypto API instead." },
               { "name": "buffer", "message": "Use Uint8Array instead." },
               { "name": "node:buffer", "message": "Use Uint8Array instead." },
-              { "name": "child_process", "message": "Use Command from @effect/platform instead." },
+              {
+                "name": "child_process",
+                "message": "Use Command from @effect/platform/Command instead."
+              },
               {
                 "name": "node:child_process",
-                "message": "Use Command from @effect/platform instead."
+                "message": "Use Command from @effect/platform/Command instead."
               },
-              { "name": "fs", "message": "Use FileSystem from @effect/platform instead." },
-              { "name": "node:fs", "message": "Use FileSystem from @effect/platform instead." },
+              {
+                "name": "fs",
+                "message": "Use FileSystem from @effect/platform/FileSystem instead."
+              },
+              {
+                "name": "node:fs",
+                "message": "Use FileSystem from @effect/platform/FileSystem instead."
+              },
               {
                 "name": "os",
                 "message": "Use an Effect service instead of importing node:os directly."
@@ -303,14 +346,22 @@
                 "name": "node:os",
                 "message": "Use an Effect service instead of importing node:os directly."
               },
-              { "name": "path", "message": "Use Path from @effect/platform instead." },
-              { "name": "node:path", "message": "Use Path from @effect/platform instead." },
+              { "name": "path", "message": "Use Path from @effect/platform/Path instead." },
+              { "name": "node:path", "message": "Use Path from @effect/platform/Path instead." },
+              {
+                "name": "@effect/platform",
+                "message": "Import the module by subpath, e.g. @effect/platform/FileSystem; the package barrel is not part of the Effect v4 layout."
+              },
+              {
+                "name": "@effect/platform-bun",
+                "message": "Import the module by subpath, e.g. @effect/platform-bun/BunFileSystem; the package barrel is not part of the Effect v4 layout."
+              },
               { "name": "zod", "message": "Use Schema from effect for tool input validation." }
             ],
             "patterns": [
               {
                 "group": ["fs/*", "node:fs/*"],
-                "message": "Use FileSystem from @effect/platform instead."
+                "message": "Use FileSystem from @effect/platform/FileSystem instead."
               },
               { "group": ["zod/*"], "message": "Use Schema from effect for tool input validation." }
             ]

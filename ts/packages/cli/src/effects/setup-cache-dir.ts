@@ -1,5 +1,6 @@
 import { Effect } from 'effect';
-import { FileSystem, Path } from '@effect/platform';
+import * as FileSystem from '@effect/platform/FileSystem';
+import * as Path from '@effect/platform/Path';
 import * as constants from 'src/constants';
 import { APP_CONFIG } from 'src/effects/app-config';
 import { NodeOs } from 'src/services/node-os';

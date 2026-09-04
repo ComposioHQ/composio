@@ -1,6 +1,8 @@
-import { FileSystem, Path } from '@effect/platform';
+import * as FileSystem from '@effect/platform/FileSystem';
+import * as Path from '@effect/platform/Path';
 import * as PlatformError from '@effect/platform/Error';
-import { BunFileSystem, BunPath } from '@effect/platform-bun';
+import * as BunFileSystem from '@effect/platform-bun/BunFileSystem';
+import * as BunPath from '@effect/platform-bun/BunPath';
 import { describe, expect, layer } from '@effect/vitest';
 import { Effect, Layer, Option } from 'effect';
 import {

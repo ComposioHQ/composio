@@ -1,6 +1,6 @@
 import { describe, expect, it } from '@effect/vitest';
-import { FileSystem } from '@effect/platform';
-import { BunFileSystem } from '@effect/platform-bun';
+import * as FileSystem from '@effect/platform/FileSystem';
+import * as BunFileSystem from '@effect/platform-bun/BunFileSystem';
 import { ConfigProvider, DateTime, Effect, Layer, Schedule } from 'effect';
 import * as tempy from 'tempy';
 import { toolkitFromToolSlug } from 'src/effects/toolkit-from-tool-slug';

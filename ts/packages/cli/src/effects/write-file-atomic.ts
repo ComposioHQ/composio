@@ -1,4 +1,4 @@
-import { FileSystem } from '@effect/platform';
+import * as FileSystem from '@effect/platform/FileSystem';
 import { Effect, Random } from 'effect';
 
 /**

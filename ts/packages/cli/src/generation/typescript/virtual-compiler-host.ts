@@ -1,4 +1,4 @@
-import type { Path } from '@effect/platform';
+import type * as Path from '@effect/platform/Path';
 import ts from 'typescript';
 
 /**

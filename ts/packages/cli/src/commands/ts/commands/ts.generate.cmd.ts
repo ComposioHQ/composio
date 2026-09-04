@@ -18,7 +18,8 @@
 import { Command, HelpDoc, Options, ValidationError } from '@effect/cli';
 import { Array, Data, Effect, Option, pipe } from 'effect';
 import { Match } from 'effect';
-import { FileSystem, Path } from '@effect/platform';
+import * as FileSystem from '@effect/platform/FileSystem';
+import * as Path from '@effect/platform/Path';
 import {
   ComposioToolkitsRepository,
   type ComposioToolkitsRepositoryShape,

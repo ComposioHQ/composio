@@ -3,8 +3,8 @@ import * as tempy from 'tempy';
 import { describe, expect, layer, assert } from '@effect/vitest';
 import { beforeAll, afterAll } from 'vitest';
 import { Effect, Layer, Either } from 'effect';
-import { FileSystem } from '@effect/platform';
-import { BunFileSystem } from '@effect/platform-bun';
+import * as FileSystem from '@effect/platform/FileSystem';
+import * as BunFileSystem from '@effect/platform-bun/BunFileSystem';
 import {
   ProjectEnvironmentDetector,
   ProjectEnvironmentDetectorError,

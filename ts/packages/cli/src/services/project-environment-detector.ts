@@ -1,5 +1,6 @@
-import { BunFileSystem } from '@effect/platform-bun';
-import { FileSystem, Path } from '@effect/platform';
+import * as BunFileSystem from '@effect/platform-bun/BunFileSystem';
+import * as FileSystem from '@effect/platform/FileSystem';
+import * as Path from '@effect/platform/Path';
 import { Data, Effect, Match, Context, Layer } from 'effect';
 import { getAncestors } from 'src/utils/get-ancestors';
 import { UNPREFIXED_CONFIG } from 'src/effects/app-config';

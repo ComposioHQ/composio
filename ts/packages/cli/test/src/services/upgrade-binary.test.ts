@@ -1,8 +1,11 @@
 import { describe, expect, it, vi } from '@effect/vitest';
 import { ConfigProvider, Effect, Layer, Option } from 'effect';
-import { FetchHttpClient, FileSystem, Path } from '@effect/platform';
+import * as FetchHttpClient from '@effect/platform/FetchHttpClient';
+import * as FileSystem from '@effect/platform/FileSystem';
+import * as Path from '@effect/platform/Path';
 import * as PlatformError from '@effect/platform/Error';
-import { BunFileSystem, BunPath } from '@effect/platform-bun';
+import * as BunFileSystem from '@effect/platform-bun/BunFileSystem';
+import * as BunPath from '@effect/platform-bun/BunPath';
 import { withHttpServer } from 'test/__utils__/http-server';
 import { getTerminalCapabilities, TerminalUI } from 'src/services/terminal-ui';
 import {

@@ -1,7 +1,8 @@
 import { describe, it, expect, vi } from 'vitest';
 import { Effect, Stream, String } from 'effect';
-import { Command, Path } from '@effect/platform';
-import { BunPath } from '@effect/platform-bun';
+import * as Command from '@effect/platform/Command';
+import * as Path from '@effect/platform/Path';
+import * as BunPath from '@effect/platform-bun/BunPath';
 import ts from 'typescript';
 import {
   buildVirtualFileMap,

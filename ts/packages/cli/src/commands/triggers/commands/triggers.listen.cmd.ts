@@ -1,5 +1,6 @@
 import { Command, Options } from '@effect/cli';
-import { FileSystem, Path } from '@effect/platform';
+import * as FileSystem from '@effect/platform/FileSystem';
+import * as Path from '@effect/platform/Path';
 import { Deferred, Effect, Option, Runtime } from 'effect';
 import { APP_CONFIG } from 'src/effects/app-config';
 import { requireAuth } from 'src/effects/require-auth';

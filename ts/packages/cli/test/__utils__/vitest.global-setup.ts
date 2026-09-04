@@ -1,5 +1,7 @@
-import { BunFileSystem, BunContext } from '@effect/platform-bun';
-import { Command, FileSystem } from '@effect/platform';
+import * as BunFileSystem from '@effect/platform-bun/BunFileSystem';
+import * as BunContext from '@effect/platform-bun/BunContext';
+import * as Command from '@effect/platform/Command';
+import * as FileSystem from '@effect/platform/FileSystem';
 import { Effect, Option, Logger, LogLevel } from 'effect';
 import path from 'node:path';
 

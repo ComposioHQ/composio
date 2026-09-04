@@ -1,4 +1,5 @@
-import { FileSystem, Error as PlatformError } from '@effect/platform';
+import * as FileSystem from '@effect/platform/FileSystem';
+import * as PlatformError from '@effect/platform/Error';
 import {
   pipe,
   Array,

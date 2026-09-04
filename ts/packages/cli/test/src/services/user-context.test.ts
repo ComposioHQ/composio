@@ -1,7 +1,8 @@
 import { describe, it } from '@effect/vitest';
 import { assertEquals } from '@effect/vitest/utils';
-import { FileSystem } from '@effect/platform';
-import { BunFileSystem, BunPath } from '@effect/platform-bun';
+import * as FileSystem from '@effect/platform/FileSystem';
+import * as BunFileSystem from '@effect/platform-bun/BunFileSystem';
+import * as BunPath from '@effect/platform-bun/BunPath';
 import { ConfigProvider, Effect, Layer, Option, Data } from 'effect';
 import * as tempy from 'tempy';
 import { ComposioUserContext, rawComposioUserContextLive } from 'src/services/user-context';
