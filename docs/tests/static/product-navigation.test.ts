@@ -33,6 +33,7 @@ describe('Docs product navigation', () => {
   });
 
   test('classifies audience routes while leaving shared routes unclassified', () => {
+    expect(classifyDocsProduct('/docs/agent-setup')).toBe('platform');
     expect(classifyDocsProduct('/docs/agent-plugins')).toBe('for-you');
     expect(classifyDocsProduct('/docs/composio-connect')).toBe('for-you');
     expect(classifyDocsProduct('/docs/providers/openai')).toBe('platform');
@@ -122,6 +123,21 @@ describe('Docs product navigation', () => {
       expect(platformUrls).toContain(url);
     }
     expect(platformUrls).not.toContain('/docs/agent-plugins');
+    expect(platformUrls).toContain('/docs/agent-setup');
+
+    const agentSetup = platformTree.children.find(
+      node => node.type === 'folder' && node.$ref?.folder === 'agent-setup',
+    );
+    expect(agentSetup?.type).toBe('folder');
+    if (agentSetup?.type !== 'folder') throw new Error('Agent setup folder is missing');
+    expect(agentSetup.children).toContainEqual(
+      expect.objectContaining({
+        type: 'page',
+        name: 'llms.txt',
+        url: '/llms.txt',
+        external: true,
+      }),
+    );
 
     expect(forYouUrls).not.toContain('/docs');
     expect(platformUrls).not.toContain('/docs');

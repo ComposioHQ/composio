@@ -58,13 +58,11 @@ describe('Welcome navigation', () => {
       expect(homeIntentAnchor(intent.product)).toMatch(/^[a-z0-9-]+$/);
     }
     expect(source).toContain('id={homeIntentAnchor(intent.product)}');
-    // Each card is headed by the canonical product lockup — Composio logo
-    // plus the dashboard's ComposioProductBadge port — and leads with the
-    // same mock the dashboard onboarding path step uses for that product: an
-    // agent chat composer plus client logos for For You, the SDK in a code
-    // window for Platform.
+    // Each compact card is headed by the canonical product lockup: Composio
+    // logo plus the dashboard's ComposioProductBadge port.
     expect(source).toContain('ProductLockup');
     expect(source).toContain('ProductSelectionLink');
+    expect(source).toContain('md:grid-cols-2');
     expect(lockupSource).toContain('ProductBadge');
     expect(lockupSource).toContain('background: PLATFORM_BADGE_GRADIENT');
     expect(lockupSource).toContain("backgroundClip: 'text'");
@@ -77,13 +75,109 @@ describe('Welcome navigation', () => {
     // swap them in CSS, so an aria-hidden dark variant would drop "Composio"
     // from the heading's accessible name in dark mode only.
     expect(lockupSource.match(/alt="Composio"/g) ?? []).toHaveLength(2);
-    expect(source).toContain('INTENT_VISUALS');
-    expect(source).toContain('How can I help?');
-    expect(source).toContain('composio.create');
-    for (const logo of ['claude.svg', 'codex.png', 'cursor.svg', 'openclaw.svg']) {
+  });
+
+  test('offers reusable agent setup actions on the homepage and quickstart', async () => {
+    const source = await Bun.file(
+      new URL('../../components/agent-setup-actions.tsx', import.meta.url)
+    ).text();
+    const heroSource = await Bun.file(
+      new URL('../../components/docs-hero-v2.tsx', import.meta.url)
+    ).text();
+    const quickstartSource = await Bun.file(
+      new URL('../../content/docs/quickstart.mdx', import.meta.url)
+    ).text();
+
+    expect(source).toContain('export function AgentSetupActions');
+    expect(source).toContain('Agent setup');
+    expect(source).toContain('/docs/agent-setup');
+    expect(source).not.toContain('ProductSelectionLink');
+    expect(source).toContain('navigator.clipboard.writeText(SETUP_PROMPT)');
+    expect(source).toContain('npx skills add ComposioHQ/composio --skill composio');
+    expect(source).toContain('https://docs.composio.dev');
+    expect(heroSource).toContain('<AgentSetupActions />');
+    expect(quickstartSource).toContain('<AgentSetupActions');
+    for (const logo of ['claude.svg', 'codex.png', 'cursor.svg']) {
       expect(source).toContain(`/images/clients/${logo}`);
       expect(await Bun.file(new URL(`../../public/images/clients/${logo}`, import.meta.url)).exists()).toBe(true);
     }
+  });
+
+  test('links every agent setup card to instructions on the Clients page', async () => {
+    const grid = await Bun.file(
+      new URL('../../components/agent-setup-grid.tsx', import.meta.url)
+    ).text();
+    const clients = await Bun.file(
+      new URL('../../content/docs/agent-setup/clients.mdx', import.meta.url)
+    ).text();
+    const agents = [
+      'claude-code',
+      'openai-codex',
+      'cursor',
+      'github-copilot',
+      'gemini-cli',
+      'openclaw',
+      'opencode',
+      'cline',
+      'grok-build',
+    ];
+
+    for (const agent of agents) {
+      expect(grid).toContain(`href: '/docs/agent-setup/clients#${agent}'`);
+    }
+    const overview = await Bun.file(
+      new URL('../../content/docs/agent-setup/index.mdx', import.meta.url)
+    ).text();
+    expect(overview).toContain('<AgentSetupGrid />');
+    expect(clients).not.toContain('<AgentSetupGrid');
+    expect(clients).toContain('title: Clients');
+    expect(clients.match(/\*\*Global install\*\*/g) ?? []).toHaveLength(9);
+    expect(clients.match(/\*\*Project install\*\*/g) ?? []).toHaveLength(9);
+    expect(clients.match(/```bash/g) ?? []).toHaveLength(18);
+    expect(clients.match(/<AgentFirstPrompt \/>/g) ?? []).toHaveLength(9);
+    for (const agent of [
+      'claude-code',
+      'codex',
+      'cursor',
+      'github-copilot',
+      'gemini-cli',
+      'openclaw',
+      'opencode',
+      'cline',
+      'grok',
+    ]) {
+      expect(clients).toContain(`--agent ${agent} --global`);
+      expect(clients).toContain(`--agent ${agent}\n`);
+    }
+    for (const path of [
+      '.claude/skills/',
+      '~/.claude/skills/',
+      '~/.codex/skills/',
+      '~/.cursor/skills/',
+      '~/.copilot/skills/',
+      '~/.gemini/skills/',
+      '~/.openclaw/skills/',
+      '~/.config/opencode/skills/',
+      '~/.agents/skills/',
+      '.grok/skills/',
+      '~/.grok/skills/',
+    ]) {
+      expect(clients).toContain(path);
+    }
+    for (const logo of ['opencode.svg', 'cline.svg', 'grok.svg']) {
+      expect(grid).toContain(`/images/clients/${logo}`);
+      expect(await Bun.file(new URL(`../../public/images/clients/${logo}`, import.meta.url)).exists()).toBe(true);
+    }
+    expect(clients).not.toContain('Use Composio with your own apps');
+    expect(clients).not.toContain('personal apps');
+
+    const firstPrompt = await Bun.file(
+      new URL('../../components/agent-first-prompt.tsx', import.meta.url)
+    ).text();
+    expect(firstPrompt).toContain('navigator.clipboard.writeText(FIRST_PROMPT)');
+    expect(firstPrompt).toContain('Use the $composio skill to get Composio working in this codebase.');
+    expect(firstPrompt).toContain('Help me connect an integration and make my first real tool call.');
+    expect(firstPrompt).toContain('When it works, show me what changed and what I can try next.');
   });
 
   test('advertises only toolkits that exist in the catalog', async () => {

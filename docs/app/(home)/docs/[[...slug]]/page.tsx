@@ -25,9 +25,10 @@ export default async function Page(props: PageProps<'/docs/[[...slug]]'>) {
       full={isLanding ? true : data.full}
       footer={{ enabled: false }}
       tableOfContentPopover={{ enabled: false }}
-      tableOfContent={
-        data.related?.length ? { footer: <RelatedLinks items={data.related} /> } : undefined
-      }
+      tableOfContent={{
+        single: true,
+        ...(data.related?.length ? { footer: <RelatedLinks items={data.related} /> } : {}),
+      }}
     >
       {!isLanding && (
         <>

@@ -20,6 +20,7 @@ interface PageNode {
   type: 'page';
   name: ReactNode;
   url: string;
+  external?: boolean;
 }
 
 interface SeparatorNode {
@@ -94,7 +95,9 @@ function walkPageTree(nodes: TreeNode[], depth = 2): string {
 
     switch (node.type) {
       case 'page':
-        sectionPages.push(`- https://docs.composio.dev${node.url}.md`);
+        if (!node.external) {
+          sectionPages.push(`- https://docs.composio.dev${node.url}.md`);
+        }
         break;
 
       case 'folder': {
