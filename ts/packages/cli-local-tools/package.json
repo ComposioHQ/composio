@@ -41,8 +41,8 @@
     "zod": "catalog:"
   },
   "devDependencies": {
-    "@types/node": "^26.3.0",
-    "chrome-devtools-mcp": "1.7.0",
+    "@types/node": "^26.4.0",
+    "chrome-devtools-mcp": "1.8.0",
     "tsdown": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"
