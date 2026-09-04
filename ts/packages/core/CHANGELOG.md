@@ -1,5 +1,18 @@
 # @composio/core
 
+## 0.18.1
+
+### Patch Changes
+
+- 8a56383: Fix: automatic S3 file downloads are now capped at 100 MiB (configurable per call) to prevent memory exhaustion from oversized or streaming responses.
+- 7420927: Fix custom toolkit child slug mapping: reject response tools that have local handles but no exact toolkit match instead of silently dropping them or binding another toolkit's handler, derive bare-slug ambiguity from local definitions, and only reuse a same-toolkit bare alias in customToolkits().
+- 1d31c80: Redact credential-shaped values at the SDK log boundary.
+- 95f9d32: Expose the runtime-conditional SSRF-safe fetch helper for protected URL upload consumers.
+- 0d28bef: Map file-download transport failures to the SDK error contract and bound streamed response bodies.
+- 52efb5b: Fix trigger subscriptions ignoring the `authConfigId` filter.
+- Updated dependencies [ab289d6]
+  - @composio/json-schema-to-zod@0.3.2
+
 ## 0.18.0
 
 ### Minor Changes
