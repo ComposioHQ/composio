@@ -30,6 +30,7 @@ interface DocsProductConfig {
   switcherDescription: string;
   landingRoute: string;
   theme: 'light' | 'dark';
+  themeColor: '#131211' | '#ffffff';
   routePrefixes: readonly string[];
   sidebar: readonly ProductSidebarGroup[];
   home: Omit<HomeIntent, 'productId' | 'product'>;
@@ -61,6 +62,7 @@ export const DOCS_PRODUCTS = {
     switcherDescription: 'Connect your apps to AI clients.',
     landingRoute: '/docs/agent-plugins',
     theme: 'light',
+    themeColor: '#ffffff',
     routePrefixes: [
       '/docs/agent-plugins',
       '/docs/claude-code-plugin',
@@ -107,6 +109,7 @@ export const DOCS_PRODUCTS = {
     switcherDescription: 'Build agents with the Composio SDK.',
     landingRoute: '/docs/quickstart',
     theme: 'dark',
+    themeColor: '#131211',
     routePrefixes: [
       '/docs/quickstart',
       '/docs/providers',
