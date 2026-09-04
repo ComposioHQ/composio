@@ -85,7 +85,7 @@
     "indent-string": "^5.0.0",
     "js-tiktoken": "^1.0.21",
     "json5": "^2.2.3",
-    "open": "^11.0.1",
+    "open": "^11.0.2",
     "openapi-typescript": "^7.13.0",
     "picocolors": "catalog:",
     "pusher-js": "^8.6.0",

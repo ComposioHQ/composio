@@ -17,8 +17,8 @@
     "@composio/core": "workspace:*",
     "@composio/langchain": "workspace:*",
     "@langchain/core": "^1.2.9",
-    "@langchain/langgraph": "^1.4.12",
-    "@langchain/openai": "^1.5.10",
+    "@langchain/langgraph": "^1.4.13",
+    "@langchain/openai": "^1.5.11",
     "dotenv": "catalog:",
     "langchain": "^1.5.10",
     "openai": "catalog:"
