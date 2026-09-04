@@ -49,6 +49,9 @@ describe('Welcome navigation', () => {
     const source = await Bun.file(
       new URL('../../components/home-surfaces.tsx', import.meta.url)
     ).text();
+    const lockupSource = await Bun.file(
+      new URL('../../components/product-lockup.tsx', import.meta.url)
+    ).text();
 
     expect(source).toContain('id="two-ways-to-start"');
     for (const intent of HOME_INTENTS) {
@@ -60,18 +63,20 @@ describe('Welcome navigation', () => {
     // same mock the dashboard onboarding path step uses for that product: an
     // agent chat composer plus client logos for For You, the SDK in a code
     // window for Platform.
-    expect(source).toContain('ProductBadge');
-    expect(source).toContain('background: PLATFORM_BADGE_GRADIENT');
-    expect(source).toContain("backgroundClip: 'text'");
-    expect(source).toContain("WebkitTextFillColor: 'transparent'");
-    expect(source).toContain("mask: 'linear-gradient(#fff 0 0) content-box");
-    expect(source).toContain('text-[#0007cd] dark:text-[#4d6fff]');
-    expect(source).toContain('product-badge-platform-border');
-    expect(source).toContain('/Composio Logo.svg');
+    expect(source).toContain('ProductLockup');
+    expect(source).toContain('ProductSelectionLink');
+    expect(lockupSource).toContain('ProductBadge');
+    expect(lockupSource).toContain('background: PLATFORM_BADGE_GRADIENT');
+    expect(lockupSource).toContain("backgroundClip: 'text'");
+    expect(lockupSource).toContain("WebkitTextFillColor: 'transparent'");
+    expect(lockupSource).toContain("mask: 'linear-gradient(#fff 0 0) content-box");
+    expect(lockupSource).toContain('text-[#0007cd] dark:text-[#4d6fff]');
+    expect(lockupSource).toContain('product-badge-platform-border');
+    expect(lockupSource).toContain('/Composio Logo.svg');
     // Both logo variants carry the same alt: `dark:hidden` / `hidden dark:block`
     // swap them in CSS, so an aria-hidden dark variant would drop "Composio"
     // from the heading's accessible name in dark mode only.
-    expect(source.match(/alt="Composio"/g) ?? []).toHaveLength(2);
+    expect(lockupSource.match(/alt="Composio"/g) ?? []).toHaveLength(2);
     expect(source).toContain('INTENT_VISUALS');
     expect(source).toContain('How can I help?');
     expect(source).toContain('composio.create');

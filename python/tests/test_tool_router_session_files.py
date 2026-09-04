@@ -408,6 +408,38 @@ class TestResponseDerivedUrlsAreGuarded:
                 with pytest.raises(RemoteFileDownloadError, match="exceeds maximum"):
                     rf.buffer()
 
+    def test_buffer_maps_midstream_failure_and_closes_response(self):
+        rf = self._remote_file("https://s3.example.com/download")
+        response = mock_stream_response()
+
+        def failing_stream(chunk_size=None):
+            yield b"partial"
+            raise requests.exceptions.ConnectionError("peer reset mid-stream")
+
+        response.iter_content = failing_stream
+
+        with patch(SAFE_GET, return_value=response):
+            with pytest.raises(RemoteFileDownloadError) as exc_info:
+                rf.buffer()
+
+        assert isinstance(exc_info.value.__cause__, requests.exceptions.ConnectionError)
+        response.close.assert_called_once()
+
+    def test_url_upload_maps_midstream_failure_and_closes_response(self, files_mount):
+        response = mock_stream_response()
+
+        def failing_stream(chunk_size=None):
+            yield b"partial"
+            raise requests.exceptions.ConnectionError("peer reset mid-stream")
+
+        response.iter_content = failing_stream
+
+        with patch(SAFE_GET, return_value=response):
+            with pytest.raises(ValidationError, match="peer reset mid-stream"):
+                files_mount.upload("https://files.example/input.txt")
+
+        response.close.assert_called_once()
+
     def test_text_and_save_inherit_the_guard(self, tmp_path):
         """`text()` and `save()` read through `buffer()`, so they are covered."""
         rf = self._remote_file("http://127.0.0.1:9000/download")

@@ -1,8 +1,14 @@
-import Link from 'next/link';
 import { ArrowUp, ArrowUpRight, Mic, Plus } from 'lucide-react';
 import type { ComponentType } from 'react';
-import { HOME_INTENTS, homeIntentAnchor, type HomeIntent } from '@/lib/home-navigation';
+import {
+  DOCS_PRODUCTS,
+  HOME_INTENTS,
+  homeIntentAnchor,
+  type HomeIntent,
+} from '@/lib/home-navigation';
 import { MOCK_FADE_STYLE } from './home-shared';
+import { ProductLockup } from './product-lockup';
+import { ProductSelectionLink } from './product-selection-link';
 
 /**
  * Each product is described by the same mock the dashboard onboarding
@@ -33,23 +39,18 @@ function IntentCard({ intent }: { intent: HomeIntent }) {
 
   return (
     <article className="grid overflow-hidden border border-fd-border bg-fd-card shadow-[0_1px_0_rgba(15,15,15,0.04)] md:grid-cols-[minmax(0,1fr)_calc(50%-0.75rem)]">
-      <div className="relative overflow-hidden border-b border-fd-border bg-fd-background p-5 pb-40 sm:p-6 sm:pb-44 md:min-h-72 md:border-b-0 md:border-r md:pb-6">
+      <ProductSelectionLink
+        aria-label={`Explore ${intent.product} docs`}
+        className="relative overflow-hidden border-b border-fd-border bg-fd-background p-5 pb-40 no-underline transition-colors hover:bg-fd-accent/20 focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-fd-ring sm:p-6 sm:pb-44 md:min-h-72 md:border-b-0 md:border-r md:pb-6"
+        href={DOCS_PRODUCTS[intent.productId].landingRoute}
+        product={intent.productId}
+      >
         <div className="relative z-[1] flex flex-col gap-2.5">
           <h3
             className="flex items-center gap-2"
             id={homeIntentAnchor(intent.product)}
           >
-            <img
-              alt="Composio"
-              className="h-[22px] w-auto dark:hidden"
-              src="/Composio Logo.svg"
-            />
-            <img
-              alt="Composio"
-              className="hidden h-[22px] w-auto dark:block"
-              src="/Composio Logo Dark.svg"
-            />
-            <ProductBadge product={intent.product} />
+            <ProductLockup product={intent.productId} />
           </h3>
           <p className="max-w-[42ch] text-pretty text-[14px] leading-[1.55] text-fd-foreground/70">
             {intent.description}
@@ -58,13 +59,14 @@ function IntentCard({ intent }: { intent: HomeIntent }) {
         <div aria-hidden="true" className="pointer-events-none select-none">
           <Visual />
         </div>
-      </div>
+      </ProductSelectionLink>
       <ul className="flex flex-col divide-y divide-fd-border">
         {intent.links.map(link => (
           <li className="flex flex-1" key={link.href}>
-            <Link
+            <ProductSelectionLink
               className="group flex flex-1 items-center justify-between gap-4 px-4 py-5 no-underline transition-colors hover:bg-fd-accent/40 sm:px-5 sm:py-6"
               href={link.href}
+              product={intent.productId}
             >
               <span className="flex min-w-0 flex-col gap-0.5">
                 <span className="text-[14px] font-medium text-fd-foreground">
@@ -78,68 +80,11 @@ function IntentCard({ intent }: { intent: HomeIntent }) {
                 aria-hidden="true"
                 className="size-3.5 shrink-0 text-fd-foreground/50 transition-transform group-hover:-translate-y-px group-hover:translate-x-px"
               />
-            </Link>
+            </ProductSelectionLink>
           </li>
         ))}
       </ul>
     </article>
-  );
-}
-
-const PLATFORM_BADGE_GRADIENT =
-  'linear-gradient(135deg, #00e68a, #00b4d8, #0077ff)';
-
-/**
- * Port of the dashboard's `ComposioProductBadge` (composio_dashboard
- * `composio-product-badge.tsx`) so the docs fork and the dashboard product
- * switcher name the two products with the same mark.
- */
-function ProductBadge({ product }: { product: HomeIntent['product'] }) {
-  const isPlatform = product === 'Platform';
-
-  return (
-    <span
-      className={
-        'relative flex items-center rounded-[5px] px-[9px] py-[7px] font-mono text-[14px] font-semibold uppercase leading-none tracking-wide ' +
-        (isPlatform
-          ? 'product-badge-platform'
-          : 'text-[#0007cd] dark:text-[#4d6fff]')
-      }
-      style={
-        isPlatform
-          ? {
-              background: PLATFORM_BADGE_GRADIENT,
-              backgroundClip: 'text',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-            }
-          : undefined
-      }
-    >
-      <span
-        aria-hidden="true"
-        className={
-          'pointer-events-none absolute inset-0 rounded-[5px] ' +
-          (isPlatform
-            ? 'product-badge-platform-border'
-            : 'border border-[#0007cd] dark:border-[#4d6fff]')
-        }
-        style={
-          isPlatform
-            ? {
-                padding: '1px',
-                background: PLATFORM_BADGE_GRADIENT,
-                WebkitMask:
-                  'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
-                WebkitMaskComposite: 'xor',
-                mask: 'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
-                maskComposite: 'exclude',
-              }
-            : undefined
-        }
-      />
-      {product}
-    </span>
   );
 }
 

@@ -163,6 +163,9 @@ describe('CLI: composio login', () => {
         );
         const pendingLogin = JSON.parse(pendingLoginRaw) as Record<string, unknown>;
         expect(pendingLogin.key).toBe('te00st11-d0c4-4efa-8117-c638886063e0');
+        expect(
+          (yield* fs.stat(path.join(cacheDir, 'pending-login-session.json'))).mode & 0o777
+        ).toBe(0o600);
 
         expect(output).not.toContain('-- composio login --');
         expect(output).not.toContain('Please login using the following URL');
@@ -357,6 +360,41 @@ describe('CLI: composio login', () => {
     );
   });
 
+  const stopBeforeSessionPollUI = TerminalUI.of({
+    ...headlessStdinUI,
+    useMakeSpinner: () => Effect.die(new Error('test: stop before session poll')),
+  });
+
+  layer(TestLive({ terminalUI: stopBeforeSessionPollUI }))(it => {
+    it.scoped('repairs permissions on an existing pending login session before reading it', () =>
+      Effect.gen(function* () {
+        const fs = yield* FileSystem.FileSystem;
+        const cacheDir = yield* setupCacheDir;
+        const pendingPath = path.join(cacheDir, 'pending-login-session.json');
+        const cachedAt = new Date().toISOString();
+        const pendingLogin = `${JSON.stringify(
+          {
+            key: 'legacy-session-id',
+            loginUrl: 'https://dashboard.composio.dev/?cliKey=legacy-session-id',
+            expiresAt: cachedAt,
+            cachedAt,
+          },
+          null,
+          2
+        )}\n`;
+        yield* fs.writeFileString(pendingPath, pendingLogin);
+        yield* fs.chmod(pendingPath, 0o644);
+        expect((yield* fs.stat(pendingPath)).mode & 0o777).toBe(0o644);
+
+        const exit = yield* Effect.exit(cli(['login', '--poll']));
+
+        expect(Exit.isFailure(exit)).toBe(true);
+        expect(yield* fs.readFileString(pendingPath, 'utf8')).toBe(pendingLogin);
+        expect((yield* fs.stat(pendingPath)).mode & 0o777).toBe(0o600);
+      })
+    );
+  });
+
   layer(TestLive())(it => {
     it.scoped('[When] logging in with --user-api-key --org [Then] stores the chosen org', () =>
       Effect.gen(function* () {
@@ -428,6 +466,7 @@ describe('CLI: composio login', () => {
         // `~/.composio/config.json`.
         expect(userConfig.api_key).toBe('uak_direct_key');
         expect(userConfig.org_id).toBe('org_selected');
+        expect((yield* fs.stat(userConfigPath)).mode & 0o777).toBe(0o600);
 
         // ComposioUserContext also exposes the resolved key in-memory
         // for subsequent API calls in this process.

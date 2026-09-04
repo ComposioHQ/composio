@@ -456,11 +456,15 @@ def _fetch_file_from_url(
             if chunk:
                 total_bytes += len(chunk)
                 if total_bytes > max_size:
-                    response.close()
                     raise ResponseTooLargeError(
                         f"Response size exceeds maximum allowed size ({max_size} bytes)"
                     )
                 chunks.append(chunk)
+    except requests.exceptions.RequestException as e:
+        raise ErrorUploadingFile(
+            f"Failed to fetch file from URL: {_sanitize_url_for_logging(url)}. "
+            f"Error: {e}"
+        ) from e
     finally:
         response.close()
 

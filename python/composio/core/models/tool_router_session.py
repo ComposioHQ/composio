@@ -32,8 +32,12 @@ from composio.client import HttpClient
 from composio.client.types import Tool
 from composio.core.models._modifiers import Modifiers, apply_modifier_by_type
 from composio.core.models.connected_accounts import ConnectionRequest
-from composio.core.models.custom_tool import find_custom_tool_map_entry_by_final_slug
+from composio.core.models.custom_tool import (
+    find_custom_tool_map_entry_by_final_slug,
+    find_custom_tool_map_entry_by_toolkit_and_original_slug,
+)
 from composio.core.models.custom_tool_execution import (
+    assert_unambiguous_custom_tool_slug,
     execute_custom_tool,
     find_custom_tool,
 )
@@ -388,6 +392,7 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
                         t.cast(SessionContextImpl, self._session_context),
                     ),
                 )
+            assert_unambiguous_custom_tool_slug(self._custom_tools_map, slug)
             # Non-multi-execute meta tools always go to backend
             return backend_execute(slug, arguments)
 
@@ -434,6 +439,9 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
             if entry:
                 local_items.append((i, entry))
             else:
+                assert_unambiguous_custom_tool_slug(
+                    self._custom_tools_map, p["tool_slug"]
+                )
                 remote_indices.append(i)
 
         # All remote — just forward entire payload (no modifiers — caller handles them)
@@ -706,9 +714,10 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
         """
         Execute a tool within the session.
 
-        For custom tools, accepts the original slug (e.g. "GREP") or the
-        full slug (e.g. "LOCAL_GREP"). Custom tools are executed in-process;
-        remote tools are sent to the Composio backend.
+        For custom tools, accepts the full slug (e.g. "LOCAL_GREP") or the
+        original slug (e.g. "GREP") when that original slug is unique across
+        the session's custom tools and toolkits. Custom tools are executed
+        in-process; remote tools are sent to the Composio backend.
 
         :param account: Account ID or alias for direct app tool execution in
             multi-account sessions. Helper/meta tools either ignore this
@@ -730,6 +739,8 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
                 error=result["error"],
                 log_id="",
             )
+
+        assert_unambiguous_custom_tool_slug(self._custom_tools_map, tool_slug)
 
         return self._client.tool_router.session.execute(
             session_id=self.session_id,
@@ -784,7 +795,20 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
         for tk in self._custom_tools_map.toolkits:
             tools = []
             for tool in tk.tools:
-                entry = self._custom_tools_map.by_original_slug.get(tool.slug.upper())
+                entry = find_custom_tool_map_entry_by_toolkit_and_original_slug(
+                    self._custom_tools_map, tk.slug, tool.slug
+                )
+                if entry is None:
+                    # Only trust a bare alias that belongs to this toolkit.
+                    bare = self._custom_tools_map.by_original_slug.get(
+                        tool.slug.upper()
+                    )
+                    if (
+                        bare is not None
+                        and bare.toolkit is not None
+                        and bare.toolkit.lower() == tk.slug.lower()
+                    ):
+                        entry = bare
                 tools.append(
                     RegisteredCustomTool(
                         slug=entry.final_slug if entry else tool.slug,
