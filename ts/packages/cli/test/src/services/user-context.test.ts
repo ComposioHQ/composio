@@ -52,6 +52,7 @@ const MockCliUserConfigLayer = Layer.succeed(
       artifactDirectory: undefined,
       experimentalSubagentTarget: 'auto',
       security: 'auto',
+      onboarding: { hasExecuted: false },
     },
     raw: CliUserConfig.make({
       developer: { enabled: true, destructiveActions: false },

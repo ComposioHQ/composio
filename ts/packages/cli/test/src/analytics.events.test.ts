@@ -14,6 +14,7 @@ import {
   createCliCommandTelemetryContext,
   getPluginLifecycleFailedEvent,
   getPluginLifecycleSucceededEvent,
+  getCliOnboardingEvent,
   getPrimaryLifecycleFailedEvent,
   getPrimaryLifecycleInvokedEvent,
   getPrimaryLifecycleSucceededEvent,
@@ -272,6 +273,52 @@ describe('CLI analytics setup and install lifecycle events', () => {
         action: 'installed',
       },
     });
+  });
+});
+
+describe('CLI onboarding analytics events', () => {
+  const allowedProperties = new Set([
+    'release_channel',
+    'mode',
+    'toolkit',
+    'gate',
+    'cli_version',
+    'os',
+    'connection_source',
+    'duration_ms',
+    'error_code',
+  ]);
+
+  it('uses the five lowercase names and only approved properties', () => {
+    const samples = [
+      ['cli_onboarding_started', 'existing'],
+      ['cli_onboarding_gate_viewed', 'resumed'],
+      ['cli_onboarding_gate_completed', 'new'],
+      ['cli_onboarding_failed', 'existing'],
+      ['cli_onboarding_completed', 'new'],
+    ] as const;
+
+    for (const [name, connectionSource] of samples) {
+      const event = getCliOnboardingEvent(name, {
+        release_channel: 'beta',
+        mode: 'json',
+        toolkit: 'gmail',
+        gate: 'connect',
+        cli_version: '0.3.1-beta.1',
+        os: 'darwin',
+        connection_source: connectionSource,
+        duration_ms: 42,
+        error_code: 'connect_failed',
+      });
+
+      expect(event?.name).toBe(name);
+      expect(Object.keys(event?.properties ?? {}).every(key => allowedProperties.has(key))).toBe(
+        true
+      );
+      expect(event?.properties).not.toHaveProperty('journey_stage');
+      expect(event?.properties).not.toHaveProperty('cli_channel');
+      expect(event?.properties).not.toHaveProperty('first_install');
+    }
   });
 });
 

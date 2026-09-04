@@ -9,6 +9,7 @@ import {
   CliUserConfig,
   cliUserConfigFromJSON,
   cliUserConfigToJSON,
+  OnboardingConfig,
 } from 'src/models/cli-user-config';
 import { isExperimentalFeatureEnabledByDefault } from 'src/experimental-features';
 import * as constants from 'src/constants';
@@ -28,6 +29,9 @@ export type CliUserConfigResolved = {
    * with every prior CLI release).
    */
   readonly security: 'auto' | 'json' | 'keychain-subprocess' | 'keychain';
+  readonly onboarding: {
+    readonly hasExecuted: boolean;
+  };
 };
 
 const detectReleaseChannel = (version: string): CliReleaseChannel =>
@@ -42,6 +46,7 @@ const DEFAULT_CLI_USER_CONFIG = CliUserConfig.make({
   artifactDirectory: Option.none(),
   experimentalSubagent: Option.none(),
   security: 'auto',
+  onboarding: OnboardingConfig.make({ hasExecuted: false }),
 });
 
 const decodeConfigJson = Schema.decodeUnknown(Schema.parseJson(JsonRecordSchema));
@@ -78,6 +83,9 @@ const resolveConfig = (raw: CliUserConfig, channel: CliReleaseChannel): CliUserC
     onSome: value => value.target,
   }),
   security: raw.security,
+  onboarding: {
+    hasExecuted: raw.onboarding.hasExecuted,
+  },
 });
 
 export const ComposioCliUserConfigLive = Layer.effect(

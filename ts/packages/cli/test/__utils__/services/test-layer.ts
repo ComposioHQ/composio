@@ -856,6 +856,9 @@ export const TestLayer = (input?: TestLiveInput) =>
             artifactDirectory: Option.getOrUndefined(rawCliUserConfig.artifactDirectory),
             experimentalSubagentTarget: 'auto' as const,
             security: 'auto' as const,
+            onboarding: {
+              hasExecuted: rawCliUserConfig.onboarding.hasExecuted,
+            },
           };
         },
         get raw() {

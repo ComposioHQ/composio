@@ -35,6 +35,8 @@ export interface ToolExecuteParams {
   readonly arguments: Record<string, unknown>;
   readonly client?: Composio;
   readonly connectedAccounts?: Record<string, string>;
+  readonly toolkits?: ReadonlyArray<string>;
+  readonly localTools?: { readonly enable?: boolean };
   readonly cacheScope?: {
     readonly orgId: string;
     readonly projectId: string;
@@ -171,8 +173,7 @@ export const ToolsExecutorLive = Layer.effect(
             }
           }
 
-          const client = yield* clientSingleton.get();
-          const resolvedClient = params.client ?? client;
+          const resolvedClient = params.client ?? (yield* clientSingleton.get());
           // One session per invocation — CLI runs one tool per process.
           const {
             sessionId,
@@ -183,6 +184,8 @@ export const ToolsExecutorLive = Layer.effect(
           } = yield* createToolRouterSessionContext(resolvedClient, params.userId, {
             manageConnections: true,
             connectedAccounts: params.connectedAccounts,
+            toolkits: params.toolkits,
+            localTools: params.localTools,
             cacheScope: params.cacheScope,
           });
           const toolkitSlug = yield* toolkitFromToolSlug(slug);

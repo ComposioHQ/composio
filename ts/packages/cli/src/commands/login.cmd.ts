@@ -678,6 +678,8 @@ export const browserLogin = (params: {
   noWait?: boolean;
   /** When true (login only), skip org/project picker and use session defaults. When false, prompt for org/project. */
   skipOrgProjectPicker?: boolean;
+  /** Embedded callers can keep stdout for their own output contract. */
+  suppressOutput?: boolean;
 }) =>
   Effect.gen(function* () {
     const ui = yield* TerminalUI;
@@ -715,8 +717,10 @@ export const browserLogin = (params: {
         yield* ui.note(loginInstructions, 'Login instructions');
       }
 
-      yield* ui.output(loginInstructions);
-      return;
+      if (!params.suppressOutput) {
+        yield* ui.output(loginInstructions);
+      }
+      return { status: 'pending' as const, url };
     }
 
     if (effectiveNoBrowser) {
@@ -727,7 +731,9 @@ export const browserLogin = (params: {
 
     yield* ui.note(url, 'Login URL');
 
-    yield* ui.output(url);
+    if (!params.suppressOutput) {
+      yield* ui.output(url);
+    }
 
     if (!effectiveNoBrowser) {
       yield* Effect.tryPromise({
@@ -795,7 +801,7 @@ export const browserLogin = (params: {
       initialProjectId: xProjectId,
       fallbackEmail: linkedSession.account.email,
       skipHints: willRunPicker,
-      skipOutput: willRunPicker,
+      skipOutput: willRunPicker || params.suppressOutput,
       deferAnalyticsIdentity: willRunPicker,
     });
 
@@ -839,8 +845,10 @@ export const browserLogin = (params: {
         email: linkedSession.account.email ?? undefined,
         orgId: finalOrgId,
         orgName: finalOrgName,
-      });
+      }).pipe(Effect.unless(() => params.suppressOutput === true));
     }
+
+    return { status: 'linked' as const, url };
   });
 
 /**
