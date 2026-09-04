@@ -14,6 +14,7 @@ from vertexai.generative_models import (
 
 from composio.core.provider import NonAgenticProvider
 from composio.types import Modifiers, Tool, ToolExecutionResponse
+from composio.utils.json_schema import dereference_json_schema
 from composio.utils.shared import normalize_tool_arguments
 
 
@@ -35,10 +36,14 @@ class GoogleProvider(
 
     def wrap_tool(self, tool: Tool) -> FunctionDeclaration:
         """Wraps composio tool as Google AI Python Gemini FunctionDeclaration object."""
+        input_parameters = dereference_json_schema(
+            tool.input_parameters,
+            on_unresolved="sentinel",
+        )
         # Clean up properties by removing 'examples' field
         properties = t.cast(
             dict[str, dict],
-            tool.input_parameters.get("properties", {}),
+            input_parameters.get("properties", {}),
         )
         cleaned_properties = {
             prop_name: {k: v for k, v in prop_schema.items() if k != "examples"}
@@ -50,7 +55,7 @@ class GoogleProvider(
             parameters={
                 "type": "object",
                 "properties": cleaned_properties,
-                "required": tool.input_parameters.get("required", []),
+                "required": input_parameters.get("required", []),
             },
         )
 
