@@ -134,7 +134,19 @@ describe('Welcome navigation', () => {
     expect(clients.match(/\*\*Global install\*\*/g) ?? []).toHaveLength(9);
     expect(clients.match(/\*\*Project install\*\*/g) ?? []).toHaveLength(9);
     expect(clients.match(/```bash/g) ?? []).toHaveLength(18);
-    expect(clients.match(/<AgentFirstPrompt \/>/g) ?? []).toHaveLength(9);
+    for (const agent of [
+      'claude-code',
+      'opencode',
+      'cline',
+      'grok',
+      'codex',
+      'cursor',
+      'github-copilot',
+      'gemini-cli',
+      'openclaw',
+    ]) {
+      expect(clients).toContain(`<AgentFirstPrompt agent="${agent}" />`);
+    }
     for (const agent of [
       'claude-code',
       'codex',
@@ -174,8 +186,11 @@ describe('Welcome navigation', () => {
     const firstPrompt = await Bun.file(
       new URL('../../components/agent-first-prompt.tsx', import.meta.url)
     ).text();
-    expect(firstPrompt).toContain('navigator.clipboard.writeText(FIRST_PROMPT)');
-    expect(firstPrompt).toContain('Use the $composio skill to get Composio working in this codebase.');
+    expect(firstPrompt).toContain('navigator.clipboard.writeText(prompt)');
+    expect(firstPrompt).toContain("'claude-code': 'Use the /composio skill");
+    expect(firstPrompt).toContain("codex: 'Use the $composio skill");
+    expect(firstPrompt).toContain("'github-copilot': 'Use /composio");
+    expect(firstPrompt).toContain("cursor: 'Use the composio Agent Skill");
     expect(firstPrompt).toContain('Help me connect an integration and make my first real tool call.');
     expect(firstPrompt).toContain('When it works, show me what changed and what I can try next.');
   });

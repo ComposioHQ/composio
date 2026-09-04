@@ -24,7 +24,7 @@ npx skills add ComposioHQ/composio --skill composio --agent claude-code
 
 The Skills CLI installs the skill in Claude Code's skill directory. Start a new Claude Code session if the current session does not discover it, then ask Claude to add Composio to your project.
 
-<AgentFirstPrompt />
+<AgentFirstPrompt agent="claude-code" />
 
 ## OpenCode
 
@@ -44,7 +44,7 @@ npx skills add ComposioHQ/composio --skill composio --agent opencode
 
 Start a new OpenCode session after installation so it can discover the skill, then ask OpenCode to add Composio to your project.
 
-<AgentFirstPrompt />
+<AgentFirstPrompt agent="opencode" />
 
 ## Cline
 
@@ -64,7 +64,7 @@ npx skills add ComposioHQ/composio --skill composio --agent cline
 
 Open the project in Cline after installation. Start a new task if the skill is not available in an existing one, then ask Cline to add Composio to the application.
 
-<AgentFirstPrompt />
+<AgentFirstPrompt agent="cline" />
 
 ## Grok Build
 
@@ -84,7 +84,7 @@ npx skills add ComposioHQ/composio --skill composio --agent grok
 
 Start a new Grok Build session after installation so it can discover the skill, then ask it to add Composio and make your first tool call.
 
-<AgentFirstPrompt />
+<AgentFirstPrompt agent="grok" />
 
 ## OpenAI Codex
 
@@ -104,7 +104,7 @@ npx skills add ComposioHQ/composio --skill composio --agent codex
 
 The project install uses the shared Agent Skills directory, so the skill can travel with the repository. Start a new Codex session after installation, then ask Codex to add Composio to your project.
 
-<AgentFirstPrompt />
+<AgentFirstPrompt agent="codex" />
 
 ## Cursor
 
@@ -124,7 +124,7 @@ npx skills add ComposioHQ/composio --skill composio --agent cursor
 
 Open the project in Cursor after installation. Start a new agent conversation if the skill is not available in an existing one, then ask Cursor to add Composio to the application.
 
-<AgentFirstPrompt />
+<AgentFirstPrompt agent="cursor" />
 
 ## GitHub Copilot
 
@@ -144,7 +144,7 @@ npx skills add ComposioHQ/composio --skill composio --agent github-copilot
 
 Reopen the repository in VS Code if Copilot does not discover the skill immediately. Use Copilot agent mode and ask it to add Composio to the application.
 
-<AgentFirstPrompt />
+<AgentFirstPrompt agent="github-copilot" />
 
 ## Gemini CLI
 
@@ -164,7 +164,7 @@ npx skills add ComposioHQ/composio --skill composio --agent gemini-cli
 
 Start a new Gemini CLI session in the project after installation. Mention Composio in your request so Gemini can load the skill and apply its setup guidance.
 
-<AgentFirstPrompt />
+<AgentFirstPrompt agent="gemini-cli" />
 
 ## OpenClaw
 
@@ -184,4 +184,4 @@ npx skills add ComposioHQ/composio --skill composio --agent openclaw
 
 Start a new OpenClaw session after installation so it can discover the skill. OpenClaw loads the relevant skill when your request calls for Composio guidance.
 
-<AgentFirstPrompt />
+<AgentFirstPrompt agent="openclaw" />

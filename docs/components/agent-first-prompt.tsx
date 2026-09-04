@@ -3,20 +3,46 @@
 import { Check, Copy } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 
-const FIRST_PROMPT = `Use the $composio skill to get Composio working in this codebase.
+type AgentFirstPromptProps = {
+  agent:
+  | 'claude-code'
+  | 'cline'
+  | 'codex'
+  | 'cursor'
+  | 'gemini-cli'
+  | 'github-copilot'
+  | 'grok'
+  | 'openclaw'
+  | 'opencode';
+};
+
+const SKILL_INSTRUCTION: Record<AgentFirstPromptProps['agent'], string> = {
+  'claude-code': 'Use the /composio skill to get Composio working in this codebase.',
+  cline: 'Use the composio agent skill to get Composio working in this codebase.',
+  codex: 'Use the $composio skill to get Composio working in this codebase.',
+  cursor: 'Use the composio agent skill to get Composio working in this codebase.',
+  'gemini-cli': 'Use the composio agent skill to get Composio working in this codebase.',
+  'github-copilot': 'Use /composio to get Composio working in this codebase.',
+  grok: 'Use the composio agent skill to get Composio working in this codebase.',
+  openclaw: 'Use the composio agent skill to get Composio working in this codebase.',
+  opencode: 'Use the composio agent skill to get Composio working in this codebase.',
+};
+
+const promptFor = (agent: AgentFirstPromptProps['agent']) => `${SKILL_INSTRUCTION[agent]}
 
 Help me connect an integration and make my first real tool call.
 When it works, show me what changed and what I can try next.`;
 
-export function AgentFirstPrompt() {
+export function AgentFirstPrompt({ agent }: AgentFirstPromptProps) {
   const [copied, setCopied] = useState(false);
   const timerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const prompt = promptFor(agent);
 
   useEffect(() => () => clearTimeout(timerRef.current), []);
 
   const copyPrompt = async () => {
     try {
-      await navigator.clipboard.writeText(FIRST_PROMPT);
+      await navigator.clipboard.writeText(prompt);
       clearTimeout(timerRef.current);
       setCopied(true);
       timerRef.current = setTimeout(() => setCopied(false), 2000);
@@ -39,7 +65,7 @@ export function AgentFirstPrompt() {
           <span aria-live="polite">{copied ? 'Copied' : 'Copy prompt'}</span>
         </button>
       </div>
-      <p className="whitespace-pre-line text-[13px] leading-[1.6] text-fd-foreground/70">{FIRST_PROMPT}</p>
+      <p className="whitespace-pre-line text-[13px] leading-[1.6] text-fd-foreground/70">{prompt}</p>
     </aside>
   );
 }
