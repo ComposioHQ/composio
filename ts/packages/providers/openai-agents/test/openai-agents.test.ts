@@ -1,13 +1,13 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { OpenAIAgentsProvider } from '../src';
-import { Tool } from '@composio/core';
+import { Tool, ExecuteToolFn } from '@composio/core';
 import { tool as createOpenAIAgentTool } from '@openai/agents';
 
 // Define an interface for our mocked OpenAI Agent tool
 interface MockedOpenAIAgentTool {
   name: string;
   description: string;
-  parameters: any;
+  parameters: unknown;
   execute: Function;
   _isMockedOpenAIAgentTool: boolean;
 }
@@ -27,7 +27,7 @@ vi.mock('@openai/agents', () => {
 describe('OpenAIAgentsProvider', () => {
   let provider: OpenAIAgentsProvider;
   let mockTool: Tool;
-  let mockExecuteToolFn: any;
+  let mockExecuteToolFn: unknown;
 
   beforeEach(() => {
     provider = new OpenAIAgentsProvider();
@@ -113,6 +113,25 @@ describe('OpenAIAgentsProvider', () => {
       expect(wrapped._isMockedOpenAIAgentTool).toBe(true);
     });
 
+    it('deduplicates required entries for directly wrapped tools', () => {
+      provider.wrapTool(
+        {
+          ...mockTool,
+          inputParameters: {
+            ...mockTool.inputParameters!,
+            required: ['input', 'input'],
+          },
+        },
+        mockExecuteToolFn
+      );
+
+      expect(createOpenAIAgentTool).toHaveBeenCalledWith(
+        expect.objectContaining({
+          parameters: expect.objectContaining({ required: ['input'] }),
+        })
+      );
+    });
+
     it('should normalize a stringified-JSON input to an object before executing (issue #2406)', async () => {
       const wrapped = provider.wrapTool(
         mockTool,
@@ -135,6 +154,96 @@ describe('OpenAIAgentsProvider', () => {
       ) as unknown as MockedOpenAIAgentTool;
 
       await expect(wrapped.execute('{"input":')).rejects.toThrow(/not valid JSON/);
+    });
+  });
+
+  describe('strict mode', () => {
+    it('registers a strict schema with optional parameters kept as required-nullable', () => {
+      const strictProvider = new OpenAIAgentsProvider({ strict: true });
+      strictProvider._setExecuteToolFn(mockExecuteToolFn);
+      const wrapped = strictProvider.wrapTool(
+        {
+          ...mockTool,
+          inputParameters: {
+            type: 'object',
+            properties: {
+              input: { type: 'string' },
+              cfg: {
+                type: 'object',
+                properties: { url: { type: 'string' }, note: { type: 'string' } },
+                required: ['url'],
+              },
+            },
+            required: ['input'],
+          },
+        },
+        mockExecuteToolFn as ExecuteToolFn
+      ) as unknown as MockedOpenAIAgentTool;
+
+      expect(wrapped.strict).toBe(true);
+      expect(wrapped.parameters).toEqual({
+        type: 'object',
+        properties: {
+          input: { type: 'string' },
+          cfg: {
+            type: ['object', 'null'],
+            properties: { url: { type: 'string' }, note: { type: ['string', 'null'] } },
+            required: ['url', 'note'],
+            additionalProperties: false,
+          },
+        },
+        required: ['input', 'cfg'],
+        additionalProperties: false,
+      });
+    });
+
+    it('registers tools strict mode cannot express without strict', () => {
+      const strictProvider = new OpenAIAgentsProvider({ strict: true });
+      const wrapped = strictProvider.wrapTool(
+        {
+          ...mockTool,
+          inputParameters: {
+            type: 'object',
+            properties: { headers: { type: 'object', additionalProperties: { type: 'string' } } },
+            required: ['headers'],
+          },
+        },
+        mockExecuteToolFn as ExecuteToolFn
+      ) as unknown as MockedOpenAIAgentTool;
+
+      expect(wrapped.strict).toBe(false);
+      expect(wrapped.parameters).toEqual({
+        type: 'object',
+        properties: { headers: { type: 'object', additionalProperties: { type: 'string' } } },
+        required: ['headers'],
+        additionalProperties: true,
+      });
+    });
+
+    it('omits null arguments the tool schema rejects before executing under strict mode', async () => {
+      const strictProvider = new OpenAIAgentsProvider({ strict: true });
+      const wrapped = strictProvider.wrapTool(
+        {
+          ...mockTool,
+          inputParameters: {
+            type: 'object',
+            properties: {
+              input: { type: 'string' },
+              label: { type: 'string' },
+              clearable: { type: ['string', 'null'] },
+            },
+            required: ['input'],
+          },
+        },
+        mockExecuteToolFn as ExecuteToolFn
+      ) as unknown as MockedOpenAIAgentTool;
+
+      await wrapped.execute({ input: 'x', label: null, clearable: null });
+
+      expect(mockExecuteToolFn).toHaveBeenCalledWith(mockTool.slug, {
+        input: 'x',
+        clearable: null,
+      });
     });
   });
 

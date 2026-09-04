@@ -13,20 +13,25 @@ const composio = new Composio({
 
 const externalUserId = 'default';
 
-// 2. Create an tool router session
-const mcpSession = await composio.experimental.toolRouter.createSession(externalUserId, {
-  toolkits: ["gmail", "github"],
+// 2. Create a tool router session.
+// HACKERNEWS is unauthenticated, so it works with the repository's shared
+// staging key without requiring a connected Gmail or GitHub account.
+const session = await composio.sessions.create(externalUserId, {
+  toolkits: ['hackernews'],
+  mcp: true,
 });
 
 // 3. Retrieve the MCP server instance for the tool router
 
 const tools: HostedMCPTool[] = [
   hostedMcpTool({
-    serverLabel: 'composio tool router',
-    serverUrl: mcpSession.url,
+    serverLabel: 'composio-tool-router',
+    serverUrl: session.mcp.url,
+    // The MCP endpoint authenticates with your Composio API key
+    headers: { 'x-api-key': process.env.COMPOSIO_API_KEY! },
     requireApproval: {
       never: {
-        toolNames: ['GMAIL_FETCH_EMAILS'],
+        toolNames: ['HACKERNEWS_GET_USER_BY_USERNAME'],
       },
     },
   }),
@@ -34,26 +39,25 @@ const tools: HostedMCPTool[] = [
 
 // 4. Pass tools to OpenAI-specific Agent.
 const agent = new OpenAIAgent({
-  name: 'Gmail Assistant',
+  name: 'HackerNews Assistant',
   instructions: `
-    You are a helpful Gmail assistant that fetches and summarizes emails.
-    When fetching emails, provide a clear summary of the results including sender, subject, and date.
-    Be concise and provide actionable information based on the email content.
+    You are a helpful HackerNews assistant that looks up user profiles.
+    Be concise and summarize the user's HackerNews profile clearly.
   `,
   model: 'gpt-4o-mini',
   tools: tools,
 });
 
 // 5. Execute the OpenAI-specific agent.
-// Fetch and summarize recent emails
-console.log('\n=== Fetching and Summarizing Recent Emails ===');
-const emailResponse = await run(
+// Fetch a HackerNews user profile.
+console.log('\n=== Fetching HackerNews User Profile ===');
+const response = await run(
   agent,
-  'Fetch the latest 2 emails and provide a detailed summary with sender, subject, date, and brief content overview for each email'
+  'Look up the HackerNews user `pg` and summarize their profile.'
 );
-console.log('\n📬 Email Summary:');
+console.log('\n📰 HackerNews Profile:');
 
-const output = emailResponse.output.filter(({ type }) => type === 'message').at(0);
+const output = response.output.filter(({ type }) => type === 'message').at(0);
 
-// @ts-ignore
+// @ts-expect-error: the agents SDK types `output` as a union whose message variant is not narrowed by the `type` filter above
 console.log(output?.content[0].text);

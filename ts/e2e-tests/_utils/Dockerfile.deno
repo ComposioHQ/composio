@@ -14,7 +14,9 @@ FROM denoland/deno:${DENO_VERSION}
 ARG NODE_MAJOR
 
 ENV MISE_DATA_DIR="/mise"
+ENV MISE_CACHE_DIR="/mise/cache"
 ENV MISE_DISABLE_TOOLS="node,deno,python,uv"
+ENV MISE_TRUSTED_CONFIG_PATHS="/app"
 ENV PATH="/mise/shims:$PATH"
 
 # Switch to root for installation
@@ -33,14 +35,13 @@ RUN curl -fsSL "https://deb.nodesource.com/setup_${NODE_MAJOR}.x" | bash - && \
     rm -rf /var/lib/apt/lists/*
 
 # Install bun + pnpm via mise (versions pinned in mise.toml/mise.lock).
-# mise is installed to /usr/local/bin and the tool binaries are symlinked there too so
-# they stay on PATH for the non-root runtime user (login shells reset PATH).
-RUN curl -fsSL https://mise.run | MISE_INSTALL_PATH=/usr/local/bin/mise sh
+# mise is installed to /usr/local/bin; its shared cache and shims keep the tools
+# available to the non-root runtime user.
+ENV XDG_CACHE_HOME="/mise/cache"
+COPY .github/scripts/install-mise.sh ./.github/scripts/install-mise.sh
+RUN MISE_INSTALL_PATH=/usr/local/bin/mise bash .github/scripts/install-mise.sh
 COPY mise.toml mise.lock ./
-RUN mise trust /app/mise.toml && \
-    mise install && \
-    ln -sf "$(mise which bun)" /usr/local/bin/bun && \
-    ln -sf "$(mise which pnpm)" /usr/local/bin/pnpm && \
+RUN mise install && \
     pnpm --version && \
     bun --version
 
@@ -56,17 +57,13 @@ COPY package.json \
      toolchain-versions.json \
      ./
 
-# Copy pre-install scripts (rarely change)
-COPY ts/scripts/pre-install.sh ./ts/scripts/pre-install.sh
-COPY ts/scripts/pre-install/ ./ts/scripts/pre-install/
-
 # Copy all ts/packages (pre-built)
 COPY ts/packages/ ./ts/packages/
 
 # Install dependencies using pnpm
 # Note: We intentionally don't use --mount=type=cache for the pnpm store here
 # because it causes native binding issues (e.g., rolldown-binding) across builds
-RUN BYPASS_TOOLCHAIN_CHECK=1 pnpm install --frozen-lockfile
+RUN pnpm install --frozen-lockfile
 
 # Copy e2e tests last (changes frequently)
 COPY ts/e2e-tests/ ./ts/e2e-tests/
@@ -81,5 +78,8 @@ ENV DENO_DIR="/home/deno/.cache/deno"
 RUN mkdir -p $DENO_DIR && chown -R deno:deno /home/deno
 
 USER deno
+
+RUN pnpm --version && \
+    bun --version
 
 CMD ["sh"]

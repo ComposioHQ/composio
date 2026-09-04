@@ -1,309 +1,78 @@
 # @composio/anthropic
 
-Non-Agentic Provider for Anthropic in Composio SDK.
-
-## Features
-
-- **Tool Integration**: Seamless integration with Anthropic's tool calling capabilities
-- **Type Safety**: Full TypeScript support with proper type definitions
-- **Tool Execution**: Execute tools with proper parameter handling and response formatting
-- **Caching Support**: Optional tool caching for improved performance
-- **Modifier Support**: Support for execution modifiers to transform tool inputs and outputs
-- **Streaming Support**: First-class support for streaming responses
+Adapts Composio tools to the Claude Messages API and executes the tool calls Claude returns.
 
 ## Installation
 
 ```bash
-npm install @composio/anthropic
-# or
-yarn add @composio/anthropic
-# or
-pnpm add @composio/anthropic
+npm install @composio/core @composio/anthropic @anthropic-ai/sdk
 ```
 
-## Environment Variables
+Set `COMPOSIO_API_KEY` (create one at https://dashboard.composio.dev/settings) and `ANTHROPIC_API_KEY` (from https://console.anthropic.com/settings/keys) in your environment.
 
-Required environment variables:
+## Quickstart
 
-- `COMPOSIO_API_KEY`: Your Composio API key
-- `ANTHROPIC_API_KEY`: Your Anthropic API key
-
-Optional environment variables:
-
-- `ANTHROPIC_API_URL`: Custom API base URL (defaults to Anthropic's API)
-
-## Quick Start
+Create a session for your user, pass its tools to the Messages API, and run the tool-call loop until Claude replies with text. `handleToolCalls` executes every `tool_use` block and returns a ready-to-append `user` message of `tool_result` blocks.
 
 ```typescript
-import { Composio } from '@composio/core';
-import { AnthropicProvider } from '@composio/anthropic';
-
-// Initialize Composio with Anthropic provider
-const composio = new Composio({
-  apiKey: 'your-composio-api-key',
-  // Initialize with optional caching
-  provider: new AnthropicProvider({ cacheTools: true }),
-});
-
-// Get available tools
-const tools = await composio.tools.get('user123', {
-  toolkits: ['gmail', 'googlecalendar'],
-  limit: 10,
-});
-```
-
-## Examples
-
-Check out our complete example implementations:
-
-- [Basic Anthropic Integration](../../examples/anthropic/src/index.ts)
-- [Streaming Example](../../examples/anthropic/src/streaming.ts)
-
-### Basic Example
-
-```typescript
-import { Composio } from '@composio/core';
-import { AnthropicProvider } from '@composio/anthropic';
 import Anthropic from '@anthropic-ai/sdk';
+import { Composio } from '@composio/core';
+import { AnthropicProvider } from '@composio/anthropic';
 
-// Initialize Anthropic
-const anthropic = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY,
-});
-
-// Initialize Composio
 const composio = new Composio({
-  apiKey: process.env.COMPOSIO_API_KEY,
   provider: new AnthropicProvider(),
 });
+const client = new Anthropic();
 
-// Get tools
-const tools = await composio.tools.get('user123', {
-  toolkits: ['gmail'],
+// Create a session for your user
+const session = await composio.create('user_123');
+const tools = await session.tools();
+
+const messages: Anthropic.MessageParam[] = [
+  {
+    role: 'user',
+    content:
+      "Send an email to john@example.com with the subject 'Hello' and body 'Hello from Composio!'",
+  },
+];
+
+let response = await client.messages.create({
+  model: 'claude-opus-4-6',
+  max_tokens: 4096,
+  tools,
+  messages,
 });
 
-// Create a message with tools
-const message = await anthropic.messages.create({
-  model: 'claude-3-sonnet-20240229',
-  max_tokens: 1024,
-  tools: tools,
-  messages: [
-    {
-      role: 'user',
-      content: 'Send an email to support@example.com',
-    },
-  ],
-});
+// Agentic loop: keep executing tool calls until the model responds with text
+while (response.stop_reason === 'tool_use') {
+  const toolResults = await composio.provider.handleToolCalls(session, response);
+  messages.push({ role: 'assistant', content: response.content });
+  messages.push(...toolResults);
+  response = await client.messages.create({
+    model: 'claude-opus-4-6',
+    max_tokens: 4096,
+    tools,
+    messages,
+  });
+}
 
-// Handle tool calls
-// Anthropic returns tool calls as `tool_use` content blocks.
-for (const block of message.content) {
-  if (block.type === 'tool_use') {
-    const result = await composio.provider.executeToolCall('user123', block, {
-      connectedAccountId: 'account123',
-    });
-    console.log('Tool execution result:', result);
+// Print final response
+for (const block of response.content) {
+  if (block.type === 'text') {
+    console.log(block.text);
   }
 }
 ```
 
-### Streaming Example
+Building on the Claude Agent SDK instead? Use [`@composio/claude-agent-sdk`](../claude-agent-sdk), which exposes Composio tools as an in-process MCP server and lets the SDK run the loop.
 
-```typescript
-import { Composio } from '@composio/core';
-import { AnthropicProvider } from '@composio/anthropic';
-import Anthropic from '@anthropic-ai/sdk';
+## Provider options
 
-const anthropic = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY,
-});
+- `cacheTools`: pass `new AnthropicProvider({ cacheTools: true })` to attach Anthropic's ephemeral `cache_control` to every tool definition and tool-result block. This lets Claude reuse cached tool schemas across requests and can cut prompt cost when you send the same large tool set on every turn. It is the only constructor option.
+- `handleToolCalls(session, message)` returns `Anthropic.Messages.MessageParam[]`, not raw strings, so you append the result directly to your message list. Pass a user ID instead of a session for tools fetched with `tools.get()`. For finer control, `executeToolCall(session, toolUseBlock)` runs a single `tool_use` block and returns the result as a JSON string.
+- Claude occasionally emits a tool's `input` as a JSON string instead of an object; the provider normalizes this before execution.
 
-const composio = new Composio({
-  apiKey: process.env.COMPOSIO_API_KEY,
-  provider: new AnthropicProvider(),
-});
+## Links
 
-const tools = await composio.tools.get('user123', {
-  toolkits: ['gmail'],
-});
-
-const stream = await anthropic.messages.stream({
-  model: 'claude-3-sonnet-20240229',
-  max_tokens: 1024,
-  tools: tools,
-  messages: [
-    {
-      role: 'user',
-      content: 'Send an email to support@example.com',
-    },
-  ],
-});
-
-for await (const messageChunk of stream) {
-  // Anthropic streams tool calls as `tool_use` content blocks, emitted via a
-  // `content_block_start` event whose `content_block` is the `tool_use` block.
-  if (
-    messageChunk.type === 'content_block_start' &&
-    messageChunk.content_block.type === 'tool_use'
-  ) {
-    const result = await composio.provider.executeToolCall('user123', messageChunk.content_block, {
-      connectedAccountId: 'account123',
-    });
-    console.log('Tool execution result:', result);
-  } else {
-    console.log('Message chunk:', messageChunk);
-  }
-}
-```
-
-## Provider Configuration
-
-The Anthropic provider can be configured with various options:
-
-```typescript
-const provider = new AnthropicProvider({
-  // Enable tool caching
-  cacheTools: true,
-  // Custom execution modifiers
-  modifiers: {
-    beforeExecute: params => {
-      // Transform parameters before execution
-      return params;
-    },
-    afterExecute: response => {
-      // Transform response after execution
-      return response;
-    },
-  },
-});
-```
-
-## API Reference
-
-### AnthropicProvider Class
-
-The `AnthropicProvider` class extends `BaseNonAgenticProvider` and provides Anthropic-specific functionality.
-
-#### Constructor
-
-```typescript
-new AnthropicProvider(options?: { cacheTools?: boolean })
-```
-
-- `options.cacheTools`: Optional boolean to enable tool caching (default: false)
-
-#### Methods
-
-##### `wrapTool(tool: Tool): AnthropicTool`
-
-Wraps a Composio tool in the Anthropic format.
-
-```typescript
-const tool = provider.wrapTool(composioTool);
-```
-
-##### `wrapTools(tools: Tool[]): AnthropicToolCollection`
-
-Wraps multiple Composio tools in the Anthropic format.
-
-```typescript
-const tools = provider.wrapTools(composioTools);
-```
-
-##### `executeToolCall(userId: string, toolUse: AnthropicToolUseBlock, options?: ExecuteToolFnOptions, modifiers?: ExecuteToolModifiers): Promise<string>`
-
-Executes a tool call from Anthropic and returns the result as a string.
-
-```typescript
-const result = await composio.provider.executeToolCall(
-  'user123',
-  {
-    type: 'tool_use',
-    id: 'tu_123',
-    name: 'tool-name',
-    input: { param: 'value' },
-  },
-  {
-    connectedAccountId: 'account123',
-    customAuthParams: {
-      /* ... */
-    },
-  },
-  {
-    beforeExecute: params => params,
-    afterExecute: response => response,
-  }
-);
-```
-
-##### `handleToolCalls(userId: string, message: Message, options?: ExecuteToolFnOptions, modifiers?: ExecuteToolModifiers): Promise<Anthropic.Messages.MessageParam[]>`
-
-Processes and executes all tool calls found in an Anthropic message response. This method automatically extracts tool calls from the message content, executes them, and returns their results.
-
-**Parameters:**
-
-- `userId` (string): The ID of the user making the tool calls
-- `message` (Message): The Anthropic message response containing tool calls
-- `options` (optional): Additional options for tool execution
-  - `connectedAccountId`: ID of the connected account
-  - `customAuthParams`: Custom authentication parameters
-- `modifiers` (optional): Functions to modify tool execution
-  - `beforeExecute`: Transform parameters before execution
-  - `afterExecute`: Transform response after execution
-
-**Returns:**
-Promise<Anthropic.Messages.MessageParam[]>: Tool execution results for the assistant message
-
-**Example:**
-
-```typescript
-const message = {
-  id: 'msg_123',
-  content: [
-    { type: 'text', text: 'Hello' },
-    {
-      type: 'tool_use',
-      id: 'tu_123',
-      name: 'test-tool',
-      input: { param: 'value' },
-    },
-    {
-      type: 'tool_use',
-      id: 'tu_456',
-      name: 'another-tool',
-      input: { param: 'value2' },
-    },
-  ],
-};
-
-const results = await provider.handleToolCalls(
-  'user123',
-  message,
-  {
-    connectedAccountId: 'account123',
-    customAuthParams: {
-      parameters: [{ name: 'token', value: 'abc123', in: 'header' }],
-    },
-  },
-  {
-    beforeExecute: params => params,
-    afterExecute: response => response,
-  }
-);
-
-// results will be an array of tool execution responses
-// from each tool execution in the order they appeared
-// this can be passed directly to LLM
-```
-
-## Contributing
-
-We welcome contributions! Please see our [Contributing Guide](../../CONTRIBUTING.md) for more details.
-
-## License
-
-ISC License
-
-## Support
-
-For support, please visit our [Documentation](https://docs.composio.dev) or join our [Discord Community](https://discord.gg/composio).
+- [Anthropic provider docs](https://docs.composio.dev/docs/providers/anthropic)
+- [Composio documentation](https://docs.composio.dev)

@@ -1,0 +1,30 @@
+{
+  "src/services/detached-process.ts": [
+    {
+      "rule": "no-restricted-imports",
+      "reason": "This Effect helper is the sole detached-spawn boundary for CLI source: @effect/platform Command processes are scope-bound and are killed when their scope closes, while these children must outlive the CLI process.",
+      "target": "import { spawn } from 'node:child_process';"
+    }
+  ],
+  "src/services/node-os.ts": [
+    {
+      "rule": "no-restricted-imports",
+      "reason": "This Effect service is the sole node:os boundary for CLI source.",
+      "target": "import os from 'node:os';"
+    }
+  ],
+  "src/services/run-helpers-runtime.ts": [
+    {
+      "rule": "no-restricted-imports",
+      "reason": "sync fs for run-log appends, run-file writes, and CLI config reads in the child process, outside the Effect runtime",
+      "target": "import * as fs from 'node:fs';"
+    }
+  ],
+  "src/services/tool-file-uploads.ts": [
+    {
+      "rule": "no-restricted-imports",
+      "reason": "MD5 for the presigned-upload checksum is not available in Web Crypto",
+      "target": "const { createHash } = await import('node:crypto');"
+    }
+  ]
+}

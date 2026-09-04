@@ -50,6 +50,8 @@ export default function GlobalError({
             >
               Try again
             </button>
+            {/* Client-side nav may be broken inside the global error boundary; a full reload is intentional. */}
+            {/* eslint-disable-next-line nextjs/no-html-link-for-pages */}
             <a
               className="ge-btn-secondary"
               href="/"

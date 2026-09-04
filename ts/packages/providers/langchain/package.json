@@ -1,10 +1,13 @@
 {
   "name": "@composio/langchain",
-  "version": "0.10.0",
+  "version": "0.10.2",
   "description": "",
   "main": "dist/index.mjs",
   "types": "dist/index.d.mts",
   "type": "module",
+  "engines": {
+    "node": ">=22.22.3"
+  },
   "repository": {
     "type": "git",
     "url": "https://github.com/ComposioHQ/composio.git",
@@ -13,7 +16,7 @@
   "bugs": {
     "url": "https://github.com/ComposioHQ/composio/issues"
   },
-  "homepage": "https://github.com/ComposioHQ/composio/tree/main/ts/packages/providers/langchain#readme",
+  "homepage": "https://github.com/ComposioHQ/composio/tree/next/ts/packages/providers/langchain#readme",
   "publishConfig": {
     "access": "public",
     "main": "dist/index.mjs",
@@ -45,7 +48,7 @@
   },
   "devDependencies": {
     "@composio/core": "workspace:*",
-    "@langchain/core": "^1.1.4",
+    "@langchain/core": "^1.2.9",
     "tsdown": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:",

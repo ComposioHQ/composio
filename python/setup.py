@@ -24,11 +24,18 @@ setup(
     packages=find_packages(include=["composio*"]),
     install_requires=[
         "pysher>=1.0.8",
-        "pydantic>=2.13.4",
-        "composio-client==1.41.0",
-        "typing-extensions>=4.15.0",
-        "openai>=2.42.0",
+        "pydantic>=2.11.9",
+        "composio-client==1.43.0",
+        "typing-extensions>=4.16.0",
+        "openai>=2.48.0",
         "json-schema-to-pydantic>=0.4.11",
+        "jsonschema>=4.23.0",
+        # `get_connection_with_tls_context` (the pinning adapter's mount
+        # point) is only called by `HTTPAdapter.send` on requests >= 2.32.2.
+        "requests>=2.32.2",
+        # `url_safety` imports urllib3 directly and needs 2.x: 1.x has no
+        # `NameResolutionError` and different connection internals.
+        "urllib3>=2",
     ],
     include_package_data=True,
 )

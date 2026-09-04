@@ -9,7 +9,8 @@
     "strict": true,
     "esModuleInterop": true,
     "moduleResolution": "bundler",
-    "skipLibCheck": true
+    "skipLibCheck": true,
+    "types": ["bun"]
   },
   "include": ["src"]
 }

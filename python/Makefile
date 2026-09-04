@@ -1,8 +1,10 @@
-.PHONY: clean-build sync provider create-provider env fmt chk snt tst type_inference examples bump build format check sanity test test-examples
+.PHONY: clean-build sync provider create-provider env fmt chk snt tst type_inference examples dead-code bump build format check sanity test test-examples
+
+PROVIDER_DIRS := $(patsubst %/,%,$(sort $(dir $(wildcard providers/*/pyproject.toml))))
 
 clean-build:
 	@rm -rf dist/ build/
-	@for provider in $(shell ls -d providers/*); do\
+	@set -e; for provider in $(PROVIDER_DIRS); do\
 		rm -rf build $$provider/dist $$provider/build;\
 	done
 
@@ -11,7 +13,7 @@ sync:
 	@uv pip install -e .
 
 provider:
-	@for provider in $(shell ls -d providers/*); do\
+	@set -e; for provider in $(PROVIDER_DIRS); do\
 		uv pip install $$provider;\
 	done
 
@@ -53,6 +55,9 @@ fmt:
 chk:
 	@nox -s chk
 
+dead-code:
+	@nox -s dead_code
+
 snt:
 	@nox -s snt
 
@@ -77,7 +82,7 @@ bump: clean-build
 
 build: clean-build
 	@./.venv/bin/python -m build
-	@for provider in $(shell ls -d providers/*); do\
+	@set -e; for provider in $(PROVIDER_DIRS); do\
 		./.venv/bin/python -m build $$provider;\
 		cp $$provider/dist/* dist/;\
 	done

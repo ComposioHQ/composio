@@ -17,11 +17,30 @@ import {
   McpUrlResponse,
   McpServerGetResponse,
   normalizeToolArguments,
+  deduplicateJsonSchemaRequiredArrays,
+  dereferenceJsonSchema,
+  logger,
+  omitNullToolArguments,
+  toStrictJsonSchema,
 } from '@composio/core';
 import type { Tool as OpenAIAgentTool } from '@openai/agents';
 import { tool as createOpenAIAgentTool } from '@openai/agents';
 
 type OpenAIAgentsToolCollection = Array<OpenAIAgentTool>;
+
+/** The strict JSON Schema parameter shape the Agents SDK accepts. */
+type StrictToolParameters = Extract<
+  Parameters<typeof createOpenAIAgentTool>[0]['parameters'],
+  { additionalProperties: false }
+>;
+
+/** Parameters registered for a tool without input parameters under strict mode. */
+const EMPTY_OBJECT_SCHEMA = {
+  type: 'object',
+  properties: {},
+  required: [],
+  additionalProperties: false,
+} as const;
 export class OpenAIAgentsProvider extends BaseAgenticProvider<
   OpenAIAgentsToolCollection,
   OpenAIAgentTool,
@@ -122,23 +141,55 @@ export class OpenAIAgentsProvider extends BaseAgenticProvider<
    * ```
    */
   wrapTool(composioTool: ComposioTool, executeTool: ExecuteToolFn): OpenAIAgentTool {
+    const inputParameters = deduplicateJsonSchemaRequiredArrays(
+      dereferenceJsonSchema(composioTool.inputParameters ?? {}, { onUnresolved: 'sentinel' })
+    );
+
+    // Strict mode applies OpenAI's structured-output contract at every
+    // depth: all properties required, closed objects, optional properties
+    // widened to accept null instead of being dropped. Tools whose schema
+    // strict mode cannot express are registered without strict mode.
+    const execute = async (params: unknown, strictSource?: Record<string, unknown>) => {
+      // Models occasionally emit tool input as a JSON string rather than an object (issue #2406).
+      const normalized = normalizeToolArguments(params, composioTool.slug);
+      // Under strict mode optional parameters are emitted as required-nullable,
+      // so a null the tool's own schema does not accept means "omitted".
+      return await executeTool(
+        composioTool.slug,
+        strictSource ? omitNullToolArguments(normalized, strictSource) : normalized
+      );
+    };
+
+    if (this.strict) {
+      const strict = toStrictJsonSchema(composioTool.inputParameters ?? EMPTY_OBJECT_SCHEMA);
+      if (strict.unsupported.length === 0) {
+        return createOpenAIAgentTool({
+          name: composioTool.slug,
+          description: composioTool.description ?? '',
+          parameters: strict.schema as StrictToolParameters,
+          strict: true,
+          execute: params => execute(params, strict.source),
+        });
+      }
+      const reasons = strict.unsupported
+        .map(entry => `${entry.path || '<root>'}: ${entry.keyword} (${entry.detail})`)
+        .join('; ');
+      logger.warn(
+        `OpenAIAgentsProvider: tool "${composioTool.slug}" is registered without strict mode because its schema cannot be expressed as strict structured outputs: ${reasons}`
+      );
+    }
+
     return createOpenAIAgentTool({
       name: composioTool.slug,
       description: composioTool.description ?? '',
       parameters: {
         type: 'object',
-        properties: composioTool.inputParameters?.properties || {},
-        required: composioTool.inputParameters?.required || [],
+        properties: inputParameters?.properties || {},
+        required: inputParameters?.required || [],
         additionalProperties: true,
       },
       strict: false,
-      execute: async params => {
-        // Models occasionally emit tool input as a JSON string rather than an object (issue #2406).
-        return await executeTool(
-          composioTool.slug,
-          normalizeToolArguments(params, composioTool.slug)
-        );
-      },
+      execute: params => execute(params),
     });
   }
 

@@ -1,6 +1,7 @@
 import { z } from 'zod/v3';
 import { CustomConnectionDataSchema } from './connectedAccountAuthStates.types';
 import { TransformToolSchemaModifier } from './modifiers.types';
+import { deduplicateJsonSchemaRequiredArrays } from '../utils/jsonSchema';
 
 /**
  * Toolkit is the collection of tools,
@@ -25,10 +26,55 @@ const JSONSchemaType = z.enum([
   'array',
   'null',
 ]);
+type JSONSchemaTypeName = z.infer<typeof JSONSchemaType>;
 
 // JSON Schema property definition
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const JSONSchemaPropertySchema: z.ZodType<any> = z.object({
+export interface JSONSchemaProperty {
+  [key: string]: unknown;
+  type?: JSONSchemaTypeName | JSONSchemaTypeName[];
+  description?: string;
+  anyOf?: JSONSchemaProperty[];
+  oneOf?: JSONSchemaProperty[];
+  allOf?: JSONSchemaProperty[];
+  not?: JSONSchemaProperty;
+  title?: string;
+  default?: unknown;
+  nullable?: boolean;
+  properties?: Record<string, JSONSchemaProperty>;
+  required?: string[];
+  file_uploadable?: boolean;
+  file_downloadable?: boolean;
+  items?: JSONSchemaProperty | JSONSchemaProperty[];
+  enum?: unknown[];
+  const?: unknown;
+  minimum?: number;
+  maximum?: number;
+  exclusiveMinimum?: number;
+  exclusiveMaximum?: number;
+  multipleOf?: number;
+  minLength?: number;
+  maxLength?: number;
+  pattern?: string;
+  format?: string;
+  minItems?: number;
+  maxItems?: number;
+  uniqueItems?: boolean;
+  minProperties?: number;
+  maxProperties?: number;
+  patternProperties?: Record<string, JSONSchemaProperty>;
+  additionalProperties?: boolean | JSONSchemaProperty;
+  examples?: unknown[];
+  readOnly?: boolean;
+  writeOnly?: boolean;
+  if?: JSONSchemaProperty;
+  then?: JSONSchemaProperty;
+  else?: JSONSchemaProperty;
+  $ref?: string;
+  definitions?: Record<string, JSONSchemaProperty>;
+  $defs?: Record<string, JSONSchemaProperty>;
+}
+
+export const JSONSchemaPropertySchema: z.ZodType<JSONSchemaProperty> = z.object({
   type: z.union([JSONSchemaType, z.array(JSONSchemaType)]).optional(),
   description: z.string().optional(),
   anyOf: z.lazy(() => z.array(JSONSchemaPropertySchema)).optional(),
@@ -36,7 +82,7 @@ export const JSONSchemaPropertySchema: z.ZodType<any> = z.object({
   allOf: z.lazy(() => z.array(JSONSchemaPropertySchema)).optional(),
   not: z.lazy(() => JSONSchemaPropertySchema).optional(),
   title: z.string().optional(),
-  default: z.any().optional(),
+  default: z.unknown().optional(),
   nullable: z.boolean().optional(),
   properties: z.lazy(() => z.record(z.string(), JSONSchemaPropertySchema)).optional(),
   required: z.array(z.string()).optional(),
@@ -45,8 +91,8 @@ export const JSONSchemaPropertySchema: z.ZodType<any> = z.object({
   items: z
     .lazy(() => z.union([JSONSchemaPropertySchema, z.array(JSONSchemaPropertySchema)]))
     .optional(),
-  enum: z.array(z.any()).optional(),
-  const: z.any().optional(),
+  enum: z.array(z.unknown()).optional(),
+  const: z.unknown().optional(),
   minimum: z.number().optional(),
   maximum: z.number().optional(),
   exclusiveMinimum: z.number().optional(),
@@ -63,7 +109,7 @@ export const JSONSchemaPropertySchema: z.ZodType<any> = z.object({
   maxProperties: z.number().optional(),
   patternProperties: z.lazy(() => z.record(z.string(), JSONSchemaPropertySchema)).optional(),
   additionalProperties: z.union([z.boolean(), z.lazy(() => JSONSchemaPropertySchema)]).optional(),
-  examples: z.array(z.any()).optional(),
+  examples: z.array(z.unknown()).optional(),
   readOnly: z.boolean().optional(),
   writeOnly: z.boolean().optional(),
   if: z.lazy(() => JSONSchemaPropertySchema).optional(),
@@ -83,41 +129,49 @@ export const JSONSchemaPropertySchema: z.ZodType<any> = z.object({
     )
     .optional(),
 });
-export type JSONSchemaProperty = z.infer<typeof JSONSchemaPropertySchema>;
 
 // Schema for parameters (input/output)
-const ParametersSchema = z.object({
-  type: z.literal('object'),
-  anyOf: z.array(JSONSchemaPropertySchema).optional(),
-  oneOf: z.array(JSONSchemaPropertySchema).optional(),
-  allOf: z.array(JSONSchemaPropertySchema).optional(),
-  not: JSONSchemaPropertySchema.optional(),
-  properties: z.record(z.string(), JSONSchemaPropertySchema),
-  required: z.array(z.string()).optional(),
-  title: z.string().optional(),
-  default: z.any().optional(),
-  nullable: z.boolean().optional(),
-  description: z.string().optional(),
-  additionalProperties: z.boolean().default(false).optional(),
-  // Definition blocks targeted by `$ref` pointers. The Composio API ships
-  // these at the parameters root (e.g. `data` → `$ref` → `#/$defs/...`), but
-  // because `z.object` strips unknown keys they were being dropped on parse —
-  // leaving every nested `$ref` dangling and unresolvable downstream
-  // (providers, file modifiers). `JSONSchemaPropertySchema` already accepts
-  // both keywords; the parameters root must too.
-  $defs: z
-    .record(
-      z.string(),
-      z.lazy(() => JSONSchemaPropertySchema)
-    )
-    .optional(),
-  definitions: z
-    .record(
-      z.string(),
-      z.lazy(() => JSONSchemaPropertySchema)
-    )
-    .optional(),
-});
+const ParametersSchema = z.preprocess(
+  deduplicateJsonSchemaRequiredArrays,
+  z.object({
+    type: z.literal('object'),
+    anyOf: z.array(JSONSchemaPropertySchema).optional(),
+    oneOf: z.array(JSONSchemaPropertySchema).optional(),
+    allOf: z.array(JSONSchemaPropertySchema).optional(),
+    not: JSONSchemaPropertySchema.optional(),
+    properties: z.record(z.string(), JSONSchemaPropertySchema).optional(),
+    required: z.array(z.string()).optional(),
+    title: z.string().optional(),
+    default: z.unknown().optional(),
+    nullable: z.boolean().optional(),
+    description: z.string().optional(),
+    // Dynamic-key constraints the Composio API ships at the parameters root.
+    // Both were previously lost on parse: `patternProperties` was stripped as an
+    // unknown key, and a schema-valued `additionalProperties` was rejected
+    // outright by the boolean-only schema. Omission still stays omission —
+    // downstream converters, not the parser, decide the implicit policy.
+    patternProperties: z.record(z.string(), JSONSchemaPropertySchema).optional(),
+    additionalProperties: z.union([z.boolean(), JSONSchemaPropertySchema]).optional(),
+    // Definition blocks targeted by `$ref` pointers. The Composio API ships
+    // these at the parameters root (e.g. `data` → `$ref` → `#/$defs/...`), but
+    // because `z.object` strips unknown keys they were being dropped on parse —
+    // leaving every nested `$ref` dangling and unresolvable downstream
+    // (providers, file modifiers). `JSONSchemaPropertySchema` already accepts
+    // both keywords; the parameters root must too.
+    $defs: z
+      .record(
+        z.string(),
+        z.lazy(() => JSONSchemaPropertySchema)
+      )
+      .optional(),
+    definitions: z
+      .record(
+        z.string(),
+        z.lazy(() => JSONSchemaPropertySchema)
+      )
+      .optional(),
+  })
+);
 
 /**
  * Tool is a single action that can be performed by a toolkit.

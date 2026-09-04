@@ -8,7 +8,7 @@ from setuptools import setup
 
 setup(
     name="composio_llamaindex",
-    version="0.17.1",
+    version="0.21.0",
     author="composio",
     author_email="tech@composio.dev",
     description="Use Composio to get array of tools with LlamaIndex Agent Workflows",
@@ -21,6 +21,6 @@ setup(
         "Operating System :: OS Independent",
     ],
     python_requires=">=3.10,<4",
-    install_requires=["llama-index>=0.14.22", "composio>=0.17.1,<2"],
+    install_requires=["llama-index>=0.14.23", "composio>=0.17.1,<2"],
     include_package_data=True,
 )

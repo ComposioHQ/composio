@@ -160,7 +160,7 @@ _types = {
     ".jfif-bnl": "image/jpeg",
     ".jpe": "image/jpeg",
     ".jpeg": "image/jpeg",
-    ".jpg": "image/jpg",
+    ".jpg": "image/jpeg",
     ".jps": "image/x-jps",
     ".js": "application/javascript",
     ".json": "application/json",
@@ -507,7 +507,7 @@ _types = {
 
 
 def guess(file: t.Union[str, Path]) -> str:
-    return _types.get(Path(file).suffix, _default)
+    return _types.get(Path(file).suffix.lower(), _default)
 
 
 # MIME type -> extension (no leading dot). Used when deriving filenames from

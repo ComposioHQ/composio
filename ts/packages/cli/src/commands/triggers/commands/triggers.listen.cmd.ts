@@ -1,7 +1,7 @@
 import { Command, Options } from '@effect/cli';
-import { FileSystem } from '@effect/platform';
+import { FileSystem, Path } from '@effect/platform';
 import { Deferred, Effect, Option, Runtime } from 'effect';
-import path from 'node:path';
+import { APP_CONFIG } from 'src/effects/app-config';
 import { requireAuth } from 'src/effects/require-auth';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { TriggersRealtime } from 'src/services/triggers-realtime';
@@ -180,11 +180,13 @@ export const triggersCmd$Listen = Command.make(
         Effect.mapError(formatResolveCommandProjectError)
       );
       const fs = yield* FileSystem.FileSystem;
+      const path = yield* Path.Path;
       const realtime = yield* TriggersRealtime;
       const runtime = yield* Effect.runtime<never>();
       const forwardUrl = Option.getOrUndefined(forward);
       const generatedWebhookSecret = `composio-forward-secret-${randomUUID()}`;
-      const webhookSecret = process.env.COMPOSIO_WEBHOOK_SECRET ?? generatedWebhookSecret;
+      const configuredWebhookSecret = yield* APP_CONFIG.WEBHOOK_SECRET;
+      const webhookSecret = configuredWebhookSecret ?? generatedWebhookSecret;
       const outputFilePathOption = Option.getOrUndefined(out);
       const outputFilePath = outputFilePathOption ? path.resolve(outputFilePathOption) : undefined;
 
@@ -210,7 +212,7 @@ export const triggersCmd$Listen = Command.make(
 
       yield* ui.intro('composio dev triggers listen');
       if (forwardUrl) {
-        if (process.env.COMPOSIO_WEBHOOK_SECRET) {
+        if (configuredWebhookSecret) {
           yield* ui.note(
             `Forward URL: ${forwardUrl}\nSigning secret: ${webhookSecret}`,
             'Forwarding'
@@ -332,13 +334,24 @@ export const triggersCmd$Listen = Command.make(
           Effect.onInterrupt(() => ui.log.info('Stopped listening for realtime trigger events.'))
         );
 
-      if (maxEventsLimit === undefined) {
-        yield* listenEffect;
-        return;
-      }
+      yield* Effect.gen(function* () {
+        if (maxEventsLimit === undefined) {
+          yield* listenEffect;
+          return;
+        }
 
-      yield* Effect.raceFirst(listenEffect, Deferred.await(stopWhenDone));
-      yield* ui.outro(`Stopped after receiving ${matchingEvents} matching events.`);
+        yield* Effect.raceFirst(listenEffect, Deferred.await(stopWhenDone));
+        yield* ui.outro(`Stopped after receiving ${matchingEvents} matching events.`);
+      }).pipe(
+        Effect.catchTag('services/TriggerRealtimeSubscriptionError', error =>
+          Effect.gen(function* () {
+            yield* ui.log.error(
+              `Could not subscribe to realtime trigger events: ${error.message}. Check your network connection or run \`composio login\`.`
+            );
+            process.exitCode = 1;
+          })
+        )
+      );
     })
 ).pipe(
   Command.withDescription(

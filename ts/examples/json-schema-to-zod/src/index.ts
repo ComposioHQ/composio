@@ -38,8 +38,12 @@ async function main() {
     console.log('📝 Implement your json-schema-to-zod logic here!');
   } catch (error) {
     console.error('❌ Error running example:', error);
+    process.exitCode = 1;
   }
 }
 
 // Run the example
-main().catch(console.error);
+main().catch(error => {
+  console.error(error);
+  process.exitCode = 1;
+});

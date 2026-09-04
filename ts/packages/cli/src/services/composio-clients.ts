@@ -13,6 +13,7 @@ import {
   SynchronizedRef,
 } from 'effect';
 import { Composio as _RawComposioClient, APIPromise } from '@composio/client';
+import { FileSystem, Path } from '@effect/platform';
 import type { AuthConfigCreateParams } from '@composio/client/resources/auth-configs';
 import type { ConnectedAccountListParams } from '@composio/client/resources/connected-accounts';
 import {
@@ -31,6 +32,7 @@ import {
   type ToolkitVersionSpec,
   type ToolkitVersionOverrides,
 } from 'src/effects/toolkit-version-overrides';
+import { JsonRecordSchema } from 'src/effects/json';
 import { Session, RetrievedSession } from 'src/models/session';
 import { TriggerType, TriggerTypes, TriggerTypesAsEnums } from 'src/models/trigger-types';
 import * as constants from 'src/constants';
@@ -39,6 +41,7 @@ import { ComposioUserContext, ComposioUserContextLive } from './user-context';
 import { ProjectContext } from './project-context';
 import type { NoSuchElementException } from 'effect/Cause';
 import { renderPrettyError } from './utils/pretty-error';
+import { NodeOs } from './node-os';
 
 /**
  * Error types
@@ -96,6 +99,16 @@ export class HttpDecodingError extends Data.TaggedError('services/HttpDecodingEr
 }> {}
 
 export type HttpError = HttpServerError | HttpDecodingError;
+
+// Sort items by slug.
+// TODO: make sure this happens on the server-side.
+const sortBySlug = <T extends { readonly slug: string }>(
+  items: ReadonlyArray<T>
+): ReadonlyArray<T> =>
+  Array.sort(
+    items,
+    Order.mapInput(Order.string, (item: T) => item.slug)
+  );
 
 const validateToolkitVersionsImpl = (
   client: {
@@ -291,8 +304,8 @@ export const ToolDetailedResponse = Schema.Struct({
   description: Schema.String,
   tags: Schema.Array(Schema.String),
   available_versions: Schema.Array(Schema.String),
-  input_parameters: Schema.Record({ key: Schema.String, value: Schema.Unknown }),
-  output_parameters: Schema.Record({ key: Schema.String, value: Schema.Unknown }),
+  input_parameters: JsonRecordSchema,
+  output_parameters: JsonRecordSchema,
   no_auth: Schema.optionalWith(Schema.Boolean, { default: () => false }),
   toolkit: Schema.optionalWith(
     Schema.Struct({
@@ -1000,15 +1013,21 @@ export const getSessionInfo = (params: {
   });
 
 /**
- * Calls GET /api/v3/auth/session/info using only the x-user-api-key header.
- * Unlike getSessionInfo which requires org/project IDs, this variant resolves
- * session metadata from the UAK alone — useful during login before org/project
- * context is known.
+ * Calls GET /api/v3/auth/session/info using the x-user-api-key header.
+ * Unlike getSessionInfo which requires both org AND project IDs, this variant
+ * resolves session metadata from the UAK alone — useful during login before
+ * org/project context is known.
+ *
+ * When `orgId` is provided, it is forwarded as `x-org-id` so the backend
+ * resolves the session against the caller's currently-selected global org
+ * (set via `composio orgs switch`). Without it, the backend falls back to the
+ * API key's home org, which makes the response ignore any org switch.
  * Uses plain fetch since this endpoint is not available in @composio/client.
  */
 export const getSessionInfoByUserApiKey = (params: {
   baseURL: string;
   userApiKey: string;
+  orgId?: string;
 }): Effect.Effect<SessionInfoResponse, HttpServerError | HttpDecodingError> =>
   Effect.gen(function* () {
     const response = yield* Effect.tryPromise({
@@ -1018,6 +1037,7 @@ export const getSessionInfoByUserApiKey = (params: {
           redirect: 'error',
           headers: {
             'x-user-api-key': params.userApiKey,
+            ...(params.orgId ? { 'x-org-id': params.orgId } : {}),
             'User-Agent': '@composio/cli',
             Accept: '*/*',
             'Content-Type': 'application/json',
@@ -1331,8 +1351,8 @@ const buildDefaultHeaders = (params: {
   userApiKey?: string;
   orgId?: string;
   projectId?: string;
+  cliSessionId?: string;
 }): Record<string, string> | undefined => {
-  const cliSessionId = getCurrentCwdSessionId();
   const defaultHeaders = {
     'x-framework': 'cli',
     'x-source': 'CLI',
@@ -1347,8 +1367,8 @@ const buildDefaultHeaders = (params: {
           'x-project-id': params.projectId,
         } satisfies Record<string, string>)
       : {}),
-    ...(cliSessionId
-      ? ({ 'x-cli-session-id': cliSessionId } satisfies Record<string, string>)
+    ...(params.cliSessionId
+      ? ({ 'x-cli-session-id': params.cliSessionId } satisfies Record<string, string>)
       : {}),
   };
 
@@ -1356,8 +1376,7 @@ const buildDefaultHeaders = (params: {
 };
 
 // Utility function for calling the Composio API and decoding its response.
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const callClient = <T, S extends Schema.Schema<any, any>>(
+const callClient = <T, S extends Schema.Schema.AnyNoContext>(
   clientSingleton: ComposioClientSingleton,
   apiCall: (client: _RawComposioClient) => APIPromise<T>,
   responseSchema: S
@@ -1398,17 +1417,16 @@ const callClient = <T, S extends Schema.Schema<any, any>>(
     return { metrics, data: typedJson };
   });
 
-// Schema constraint for paginated responses
-type PaginatedSchema = Schema.Schema<
-  {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    items: ReadonlyArray<any>;
-    next_cursor: string | null;
-    total_pages: number;
-  },
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  any
->;
+// Schema constraint for paginated responses: the decoded page must expose the
+// pagination envelope, expressed through the schema's `Type` phantom property so
+// concrete item types stay free of `any`.
+type PaginatedSchema = Schema.Schema.AnyNoContext & {
+  readonly Type: {
+    readonly items: ReadonlyArray<unknown>;
+    readonly next_cursor: string | null;
+    readonly total_pages: number;
+  };
+};
 
 // Maximum items per page allowed by the server
 const MAX_PAGE_SIZE = 1000;
@@ -1513,6 +1531,9 @@ export class ComposioClientSingleton extends Effect.Service<ComposioClientSingle
     effect: Effect.gen(function* () {
       const ctx = yield* ComposioUserContext;
       const projectContextOpt = yield* Effect.serviceOption(ProjectContext);
+      const fs = yield* FileSystem.FileSystem;
+      const path = yield* Path.Path;
+      const os = yield* NodeOs;
       const cache = new Map<string, _RawComposioClient>();
 
       const getFor = (params?: { userApiKey?: string; orgId?: string; projectId?: string }) =>
@@ -1530,6 +1551,12 @@ export class ComposioClientSingleton extends Effect.Service<ComposioClientSingle
             return cached;
           }
 
+          const cliSessionId = yield* getCurrentCwdSessionId().pipe(
+            Effect.provideService(FileSystem.FileSystem, fs),
+            Effect.provideService(Path.Path, path),
+            Effect.provideService(NodeOs, os)
+          );
+
           const client = new _RawComposioClient({
             apiKey: null,
             baseURL: ctx.data.baseURL,
@@ -1537,6 +1564,7 @@ export class ComposioClientSingleton extends Effect.Service<ComposioClientSingle
               userApiKey: apiKey,
               orgId: params?.orgId,
               projectId: params?.projectId,
+              cliSessionId,
             }),
           });
 
@@ -2052,14 +2080,7 @@ export class ComposioToolkitsRepository extends Effect.Service<ComposioToolkitsR
       const getToolkits = () =>
         client.toolkits.list().pipe(
           Effect.map(response => response.items),
-          Effect.flatMap(
-            Effect.fn(function* (toolkits) {
-              // Sort apps by slug.
-              // TODO: make sure this happens on the server-side.
-              const orderBySlug = Order.mapInput(Order.string, (app: Toolkit) => app.slug);
-              return Array.sort(toolkits, orderBySlug) as ReadonlyArray<Toolkit>;
-            })
-          )
+          Effect.map(items => sortBySlug(items) as ReadonlyArray<Toolkit>)
         );
 
       /**
@@ -2088,16 +2109,7 @@ export class ComposioToolkitsRepository extends Effect.Service<ComposioToolkitsR
             )
           ),
           { concurrency: MAX_CONCURRENT_REQUESTS_PER_ENDPOINT }
-        ).pipe(
-          Effect.flatMap(
-            Effect.fn(function* (toolkits) {
-              // Sort apps by slug.
-              // TODO: make sure this happens on the server-side.
-              const orderBySlug = Order.mapInput(Order.string, (app: Toolkit) => app.slug);
-              return Array.sort(toolkits, orderBySlug) as ReadonlyArray<Toolkit>;
-            })
-          )
-        );
+        ).pipe(Effect.map(items => sortBySlug(items) as ReadonlyArray<Toolkit>));
 
       return {
         getToolkits,
@@ -2112,14 +2124,7 @@ export class ComposioToolkitsRepository extends Effect.Service<ComposioToolkitsR
         getTools: (toolkitSlugs?: ReadonlyArray<string>) =>
           client.tools.list(toolkitSlugs ?? []).pipe(
             Effect.map(response => response.items),
-            Effect.flatMap(
-              Effect.fn(function* (tools) {
-                // Sort apps by slug.
-                // TODO: make sure this happens on the server-side.
-                const orderBySlug = Order.mapInput(Order.string, (app: Tool) => app.slug);
-                return Array.sort(tools, orderBySlug) as ReadonlyArray<Tool>;
-              })
-            )
+            Effect.map(items => sortBySlug(items) as ReadonlyArray<Tool>)
           ),
         /**
          * Fetches tools with per-toolkit version support.
@@ -2129,14 +2134,7 @@ export class ComposioToolkitsRepository extends Effect.Service<ComposioToolkitsR
         getToolsByVersionSpecs: (specs: ReadonlyArray<ToolkitVersionSpec>) =>
           client.tools.listByVersionSpecs(specs).pipe(
             Effect.map(response => response.items),
-            Effect.flatMap(
-              Effect.fn(function* (tools) {
-                // Sort apps by slug.
-                // TODO: make sure this happens on the server-side.
-                const orderBySlug = Order.mapInput(Order.string, (app: Tool) => app.slug);
-                return Array.sort(tools, orderBySlug) as ReadonlyArray<Tool>;
-              })
-            )
+            Effect.map(items => sortBySlug(items) as ReadonlyArray<Tool>)
           ),
         getTriggerTypesAsEnums: () => client.triggersTypes.retrieveEnum(),
         /**
@@ -2152,14 +2150,7 @@ export class ComposioToolkitsRepository extends Effect.Service<ComposioToolkitsR
         getTriggerTypes: (toolkitSlugs?: ReadonlyArray<string>) =>
           client.triggersTypes.list(toolkitSlugs).pipe(
             Effect.map(response => response.items),
-            Effect.flatMap(
-              Effect.fn(function* (triggerTypes) {
-                // Sort apps by slug.
-                // TODO: make sure this happens on the server-side.
-                const orderBySlug = Order.mapInput(Order.string, (app: TriggerType) => app.slug);
-                return Array.sort(triggerTypes, orderBySlug) as ReadonlyArray<TriggerType>;
-              })
-            )
+            Effect.map(items => sortBySlug(items) as ReadonlyArray<TriggerType>)
           ),
         /**
          * Validates that the given toolkit slugs are valid by comparing them against the list

@@ -43,6 +43,25 @@ export interface Platform {
   existsSync(filePath: string): boolean;
 
   /**
+   * Resolves symlinks in a path, returning the canonical absolute path. On Node
+   * this is `fs.realpathSync`; on edge runtimes without a filesystem it returns
+   * the input path unchanged (best-effort). Used to prevent a symlink from
+   * smuggling an upload past the sensitive-path denylist.
+   * @param filePath - The path to canonicalize.
+   * @returns The resolved path, or the input path if it cannot be resolved.
+   */
+  realpathSync(filePath: string): string;
+
+  /**
+   * Returns whether paths on the filesystem containing `filePath` are
+   * case-sensitive. Node checks the nearest existing directory so the result
+   * follows the target mount rather than the operating-system default.
+   * Runtimes without a filesystem return true to preserve exact path matching.
+   * @param filePath - A file or directory on the filesystem to inspect.
+   */
+  isFileSystemCaseSensitive?(filePath: string): boolean;
+
+  /**
    * Creates a directory at the given path, including parent directories if needed.
    * @param dirPath - The directory path to create.
    */

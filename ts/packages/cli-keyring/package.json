@@ -1,6 +1,6 @@
 {
   "name": "@composio/cli-keyring",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Cross-platform OS credential store access for the Composio CLI (macOS Keychain, Linux Secret Service).",
   "main": "src/index.ts",
   "private": true,
@@ -33,12 +33,9 @@
     "clean": "git clean -xdf node_modules",
     "build": "tsdown",
     "test": "vitest run",
-    "typecheck:src": "pnpm exec tsgo --noEmit -p ./tsconfig.src.json",
-    "typecheck:test": "pnpm exec tsgo --noEmit -p ./tsconfig.test.json",
-    "typecheck": "pnpm run typecheck:src && pnpm run typecheck:test",
-    "typecheck:src:tsc": "tsc --noEmit -p ./tsconfig.src.json",
-    "typecheck:test:tsc": "tsc --noEmit -p ./tsconfig.test.json",
-    "typecheck:tsc": "pnpm run typecheck:src:tsc && pnpm run typecheck:test:tsc"
+    "typecheck:src": "tsc --noEmit -p ./tsconfig.src.json",
+    "typecheck:test": "tsc --noEmit -p ./tsconfig.test.json",
+    "typecheck": "pnpm run typecheck:src && pnpm run typecheck:test"
   },
   "keywords": [
     "composio",
@@ -51,8 +48,8 @@
   "author": "Composio",
   "license": "ISC",
   "devDependencies": {
-    "@types/node": "^24.0.1",
-    "bun-types": "^1.3.11",
+    "@types/node": "^26.3.0",
+    "bun-types": "^1.4.0",
     "effect": "catalog:",
     "tsdown": "catalog:",
     "typescript": "catalog:",

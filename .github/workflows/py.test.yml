@@ -5,24 +5,35 @@ on:
     branches: [master, next]
     paths:
       - 'python/**/*.py'
+      - 'python/**/*.json'
       - '.github/workflows/py.test.yml'
       - '.github/actions/setup-python-uv/action.yml'
       - 'mise.toml'
       - 'mise.lock'
       - 'toolchain-versions.json'
       - 'python/pyproject.toml'
+      - 'uv.lock'
       - 'python/requirements*.txt'
   pull_request:
     branches: [master, next]
     paths:
       - 'python/**/*.py'
+      - 'python/**/*.json'
       - '.github/workflows/py.test.yml'
       - '.github/actions/setup-python-uv/action.yml'
       - 'mise.toml'
       - 'mise.lock'
       - 'toolchain-versions.json'
       - 'python/pyproject.toml'
+      - 'uv.lock'
       - 'python/requirements*.txt'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.ref || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
 
 jobs:
   toolchain-versions:
@@ -32,7 +43,7 @@ jobs:
       python: ${{ steps.versions.outputs.python }}
     steps:
       - name: Checkout Code
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Read versions
         id: versions
@@ -48,20 +59,20 @@ jobs:
 
     steps:
       - name: Checkout Code
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: ${{ matrix.python-version }}
 
-      - name: Cache pip dependencies
+      - name: Cache uv dependencies
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
-          path: ~/.cache/pip
-          key: pip-${{ matrix.python-version }}-${{ hashFiles('python/pyproject.toml') }}
+          path: ~/.cache/uv
+          key: uv-${{ matrix.python-version }}-${{ hashFiles('python/pyproject.toml', 'mise.toml') }}
           restore-keys: |
-            pip-${{ matrix.python-version }}-
+            uv-${{ matrix.python-version }}-
 
       - name: Install UV
         run: |
@@ -74,14 +85,31 @@ jobs:
           uv venv --python ${{ matrix.python-version }}
           source .venv/bin/activate
           uv pip install -e .
+          uv pip install -e providers/crewai
           uv pip install -e providers/langchain
-          uv pip install pytest pytest-mock
+          uv pip install -e providers/langgraph
+          uv pip install hypothesis pytest pytest-mock
 
       - name: Run Import Tests
         run: |
           cd python/
           source .venv/bin/activate
           python -c "from composio import Composio; print('✓ Basic import successful')"
+
+      - name: Test Autogen Provider Installation
+        run: |
+          cd python/
+          # autogen-core requires protobuf 5, while CrewAI's telemetry stack
+          # requires protobuf 6. Test the independently distributed provider in
+          # its own environment instead of constructing an invalid combination.
+          uv venv autogen-env --python ${{ matrix.python-version }}
+          source autogen-env/bin/activate
+          uv pip install -e . -e providers/autogen pytest pytest-mock
+          python -c "import composio_autogen; print('✓ Autogen provider import successful')"
+          python -m pytest \
+            tests/test_provider.py::TestAgenticSkipDefaultsParity::test_autogen_signature_honors_skip_defaults \
+            tests/test_provider.py::TestAgenticSkipDefaultsParity::test_autogen_signature_preserves_default \
+            -v --tb=short
 
       - name: Run Unit Tests
         run: |
@@ -109,7 +137,7 @@ jobs:
 
     steps:
       - name: Checkout Code
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Setup Python with UV
         uses: ./.github/actions/setup-python-uv
@@ -161,7 +189,7 @@ jobs:
 
     steps:
       - name: Checkout Code
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Setup Python with UV
         uses: ./.github/actions/setup-python-uv
@@ -196,7 +224,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Install UV
         id: setup-python

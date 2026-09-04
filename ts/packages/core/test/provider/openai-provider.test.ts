@@ -22,7 +22,7 @@ vi.mock('openai/streaming', () => {
 describe('OpenAIProvider', () => {
   let provider: OpenAIProvider;
   let mockTool: Tool;
-  let mockExecuteToolFn: any;
+  let mockExecuteToolFn: unknown;
 
   // Sample tool data
   beforeEach(() => {
@@ -62,6 +62,35 @@ describe('OpenAIProvider', () => {
           description: mockTool.description,
           parameters: mockTool.inputParameters,
         },
+      });
+    });
+
+    it('deduplicates required entries without mutating the input schema', () => {
+      const tool = {
+        ...mockTool,
+        inputParameters: {
+          type: 'object',
+          properties: {
+            query: { type: 'string' },
+            filters: {
+              type: 'object',
+              properties: { status: { type: 'string' } },
+              required: ['status', 'status'],
+            },
+          },
+          required: ['query', 'query'],
+        },
+      } as Tool;
+
+      const wrapped = provider.wrapTool(tool);
+
+      expect(wrapped.function.parameters).toMatchObject({
+        required: ['query'],
+        properties: { filters: { required: ['status'] } },
+      });
+      expect(tool.inputParameters).toMatchObject({
+        required: ['query', 'query'],
+        properties: { filters: { required: ['status', 'status'] } },
       });
     });
   });
@@ -171,6 +200,74 @@ describe('OpenAIProvider', () => {
   });
 
   describe('handleToolCalls', () => {
+    it('routes session tool calls through the session executor', async () => {
+      const session = {
+        execute: vi.fn().mockResolvedValue({
+          data: { tools: ['GMAIL_SEND_EMAIL'] },
+          error: null,
+          logId: 'log-session',
+        }),
+      };
+      const chatCompletion = {
+        choices: [
+          {
+            message: {
+              tool_calls: [
+                {
+                  id: 'call-search',
+                  type: 'function',
+                  function: {
+                    name: 'COMPOSIO_SEARCH_TOOLS',
+                    arguments: JSON.stringify({ queries: [{ use_case: 'send email' }] }),
+                  },
+                },
+              ],
+            },
+          },
+        ],
+      } as OpenAI.ChatCompletion;
+
+      const results = await provider.handleToolCalls(session, chatCompletion);
+
+      expect(session.execute).toHaveBeenCalledWith('COMPOSIO_SEARCH_TOOLS', {
+        queries: [{ use_case: 'send email' }],
+      });
+      expect(mockExecuteToolFn).not.toHaveBeenCalled();
+      expect(results).toEqual([
+        {
+          role: 'tool',
+          tool_call_id: 'call-search',
+          content: JSON.stringify({
+            data: { tools: ['GMAIL_SEND_EMAIL'] },
+            error: null,
+            logId: 'log-session',
+            successful: true,
+          }),
+        },
+      ]);
+    });
+
+    it('rejects direct execution options for session tool calls', async () => {
+      const session = {
+        execute: vi.fn(),
+      };
+      const chatCompletion = { choices: [] } as unknown as OpenAI.ChatCompletion;
+      const handleToolCallsWithOptions = provider.handleToolCalls as unknown as (
+        executionTarget: typeof session,
+        response: OpenAI.ChatCompletion,
+        options: { connectedAccountId: string }
+      ) => ReturnType<OpenAIProvider['handleToolCalls']>;
+
+      await expect(
+        handleToolCallsWithOptions.call(provider, session, chatCompletion, {
+          connectedAccountId: 'conn-123',
+        })
+      ).rejects.toThrow(
+        'Direct execution options and modifiers cannot be used with a Tool Router session'
+      );
+      expect(session.execute).not.toHaveBeenCalled();
+    });
+
     it('should handle tool calls from chat completion', async () => {
       const userId = 'test-user';
       const chatCompletion = {
@@ -222,9 +319,8 @@ describe('OpenAIProvider', () => {
       ]);
     });
 
-    it('should handle multiple tool calls', async () => {
+    it('should handle multiple parallel tool calls in a single message', async () => {
       const userId = 'test-user';
-      // Create a mock with correct TypeScript type but using casting to avoid property errors
       const chatCompletion = {
         id: 'chat-123',
         model: 'gpt-4',
@@ -241,7 +337,15 @@ describe('OpenAIProvider', () => {
                   type: 'function',
                   function: {
                     name: 'test-tool',
-                    arguments: JSON.stringify({ input: 'test-value' }),
+                    arguments: JSON.stringify({ input: 'first' }),
+                  },
+                } as const,
+                {
+                  id: 'call-456',
+                  type: 'function',
+                  function: {
+                    name: 'other-tool',
+                    arguments: JSON.stringify({ input: 'second' }),
                   },
                 } as const,
               ],
@@ -263,9 +367,63 @@ describe('OpenAIProvider', () => {
 
       const results = await provider.handleToolCalls(userId, chatCompletion);
 
-      expect(executeToolCallSpy).toHaveBeenCalledTimes(1);
+      // Every parallel tool call must be executed and answered, one tool message
+      // per tool_call_id — otherwise the follow-up request errors on the unanswered ids.
+      expect(executeToolCallSpy).toHaveBeenCalledTimes(2);
       expect(results).toEqual([
         { role: 'tool', tool_call_id: 'call-123', content: JSON.stringify({ result: 'success' }) },
+        { role: 'tool', tool_call_id: 'call-456', content: JSON.stringify({ result: 'success' }) },
+      ]);
+    });
+
+    it('should only handle tool calls from the first choice when n > 1', async () => {
+      const userId = 'test-user';
+      const makeChoice = (index: number, callId: string) => ({
+        message: {
+          role: 'assistant',
+          content: null,
+          tool_calls: [
+            {
+              id: callId,
+              type: 'function',
+              function: {
+                name: 'test-tool',
+                arguments: JSON.stringify({ input: 'value' }),
+              },
+            } as const,
+          ],
+          refusal: null,
+        },
+        index,
+        finish_reason: 'tool_calls',
+      });
+      const chatCompletion = {
+        id: 'chat-123',
+        model: 'gpt-4',
+        created: 123456789,
+        object: 'chat.completion',
+        // n > 1: alternative completions the caller never continues. Only the
+        // first choice's tool calls should run; the rest would orphan their ids.
+        choices: [makeChoice(0, 'call-first'), makeChoice(1, 'call-second')],
+        usage: {
+          prompt_tokens: 10,
+          completion_tokens: 20,
+          total_tokens: 30,
+        },
+      } as OpenAI.ChatCompletion;
+
+      const executeToolCallSpy = vi.spyOn(provider, 'executeToolCall');
+      executeToolCallSpy.mockResolvedValue(JSON.stringify({ result: 'success' }));
+
+      const results = await provider.handleToolCalls(userId, chatCompletion);
+
+      expect(executeToolCallSpy).toHaveBeenCalledTimes(1);
+      expect(results).toEqual([
+        {
+          role: 'tool',
+          tool_call_id: 'call-first',
+          content: JSON.stringify({ result: 'success' }),
+        },
       ]);
     });
   });
@@ -542,7 +700,7 @@ describe('OpenAIProvider', () => {
       client.beta.threads.runs.retrieve = vi.fn().mockResolvedValue(finalRun);
 
       // Collect the yielded events
-      const collectedEvents: any[] = [];
+      const collectedEvents: unknown[] = [];
       for await (const event of provider.waitAndHandleAssistantStreamToolCalls(
         userId,
         client,

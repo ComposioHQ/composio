@@ -1,0 +1,458 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  // Ported from eslint.config.mjs (see git history). Native oxlint rules cover
+  // everything except no-restricted-syntax, which runs through the
+  // oxlint-plugin-eslint JS plugin as eslint-js/no-restricted-syntax.
+  "plugins": ["typescript", "unicorn", "oxc"],
+  "jsPlugins": [{ "name": "eslint-js", "specifier": "oxlint-plugin-eslint" }],
+  "categories": {
+    "correctness": "error"
+  },
+  "env": {
+    "browser": true
+  },
+  "ignorePatterns": [
+    "**/.venv/**",
+    "**/.next/**",
+    "**/dist/**",
+    "**/site-packages/**",
+    // The docs site has its own Bun dependency tree and nested oxlint config.
+    "docs/**",
+    "ts/vendor/**",
+    "ts/packages/cli-local-tools/vendor/**",
+    "ts/packages/core/generated/**",
+    "ts/packages/core/pack/generated/**",
+    "ts/packages/slim/generated/**",
+    "ts/packages/**/.generated/**",
+    "ts/packages/**/acp-adapters/**",
+    "node_modules/**",
+    "ts/examples/**/dist-worker/**",
+    "ts/examples/cloudflare-wrangler/worker-configuration.d.ts",
+    // ESLint only linted .ts/.tsx (--ext .ts,.tsx); keep that scope.
+    "**/*.js",
+    "**/*.mjs",
+    "**/*.cjs",
+    "**/*.jsx"
+  ],
+  "rules": {
+    // tseslint.configs.recommended rules that oxlint's correctness category
+    // does not enable by default; re-enabled explicitly to keep the migration
+    // behavior-preserving in this direction too.
+    "typescript/no-namespace": "error",
+    "no-array-constructor": "error",
+    "typescript/no-unnecessary-type-constraint": "error",
+    // Rules oxlint enables by default that the previous ESLint setup did not
+    // enforce. Turned off to keep the migration behavior-preserving; each is a
+    // candidate to enable (and burn down) in a follow-up.
+    "no-useless-escape": "off",
+    "no-control-regex": "off",
+    "no-useless-catch": "off",
+    "typescript/no-unnecessary-parameter-property-assignment": "off",
+    "unicorn/no-useless-spread": "off",
+    "unicorn/no-useless-fallback-in-spread": "off",
+    "unicorn/no-thenable": "off",
+    "unicorn/no-empty-file": "off",
+    "no-restricted-globals": ["error", "Buffer"],
+    "no-restricted-imports": [
+      "error",
+      {
+        "paths": [
+          { "name": "crypto", "message": "Use Web Crypto API instead." },
+          { "name": "node:crypto", "message": "Use Web Crypto API instead." },
+          { "name": "buffer", "message": "Use Uint8Array instead." },
+          { "name": "node:buffer", "message": "Use Uint8Array instead." }
+        ]
+      }
+    ],
+    "typescript/no-require-imports": "warn",
+    "typescript/no-unsafe-function-type": "off",
+    "no-prototype-builtins": "off",
+    "max-lines-per-function": ["error", 250],
+    "typescript/ban-ts-comment": "warn",
+    "no-constant-condition": "off",
+    "no-ex-assign": "off",
+    "no-constant-binary-expression": "off",
+    "typescript/no-empty-object-type": "warn",
+    "typescript/no-non-null-asserted-optional-chain": "off",
+    "no-unsafe-optional-chaining": "off",
+    "no-extra-boolean-cast": "off",
+    "no-var": "warn",
+    "prefer-const": "warn",
+    "no-console": "warn",
+    "typescript/no-explicit-any": "error",
+    "no-unused-vars": [
+      "warn",
+      {
+        "argsIgnorePattern": "^_",
+        "varsIgnorePattern": "^_",
+        "caughtErrorsIgnorePattern": "^_"
+      }
+    ]
+  },
+  "overrides": [
+    {
+      // These files still enforce the repository-wide no-any rule, but are
+      // exempt from source-only policies that do not fit test helpers, large
+      // suites, scripts, fixtures, or ambient declarations.
+      "files": [
+        "**/__fixtures__/**/*.{ts,tsx,mts,cts}",
+        "**/__mocks__/**/*.{ts,tsx,mts,cts}",
+        "**/fixtures/**/*.{ts,tsx,mts,cts}",
+        "scripts/**/*.{ts,tsx,mts,cts}",
+        "test/**/*.{ts,tsx,mts,cts}",
+        "ts/e2e-tests/**/*.{ts,tsx,mts,cts}",
+        "ts/packages/**/test/**/*.{ts,tsx,mts,cts}",
+        "ts/packages/**/*.d.ts",
+        "ts/scripts/**/*.{ts,tsx,mts,cts}"
+      ],
+      "rules": {
+        "max-lines-per-function": "off",
+        "no-console": "off",
+        "no-restricted-globals": "off",
+        "no-restricted-imports": "off",
+        "no-unused-vars": "off",
+        "prefer-const": "off",
+        "require-yield": "off",
+        "typescript/ban-ts-comment": "off",
+        "typescript/no-empty-object-type": "off",
+        "typescript/no-namespace": "off"
+      }
+    },
+    {
+      "files": ["ts/packages/cli/src/**/*.{ts,tsx}"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "paths": [
+              { "name": "crypto", "message": "Use Web Crypto API instead." },
+              { "name": "node:crypto", "message": "Use Web Crypto API instead." },
+              { "name": "buffer", "message": "Use Uint8Array instead." },
+              { "name": "node:buffer", "message": "Use Uint8Array instead." },
+              { "name": "child_process", "message": "Use Command from @effect/platform instead." },
+              {
+                "name": "node:child_process",
+                "message": "Use Command from @effect/platform instead."
+              },
+              { "name": "fs", "message": "Use FileSystem from @effect/platform instead." },
+              { "name": "node:fs", "message": "Use FileSystem from @effect/platform instead." },
+              {
+                "name": "os",
+                "message": "Use an Effect service instead of importing node:os directly."
+              },
+              {
+                "name": "node:os",
+                "message": "Use an Effect service instead of importing node:os directly."
+              },
+              { "name": "path", "message": "Use Path from @effect/platform instead." },
+              { "name": "node:path", "message": "Use Path from @effect/platform instead." },
+              {
+                "name": "@effect/cli",
+                "importNames": ["CommandDescriptor", "Usage"],
+                "message": "CommandDescriptor/Usage introspection is the @effect/cli v4 seam. Use the helpers in ts/packages/cli/src/commands/command-introspection.ts instead."
+              }
+            ],
+            "patterns": [
+              {
+                "group": ["fs/*", "node:fs/*"],
+                "message": "Use FileSystem from @effect/platform instead."
+              },
+              {
+                "group": ["@effect/cli/CommandDescriptor", "@effect/cli/Usage"],
+                "message": "CommandDescriptor/Usage introspection is the @effect/cli v4 seam. Use the helpers in ts/packages/cli/src/commands/command-introspection.ts instead."
+              }
+            ]
+          }
+        ],
+        "eslint-js/no-restricted-syntax": [
+          "error",
+          {
+            "selector": "TryStatement",
+            "message": "Use Effect.try, Effect.tryPromise, or typed Effect error recovery instead of try/catch."
+          },
+          {
+            "selector": "MemberExpression[object.name='process'][computed=false][property.name='env']",
+            "message": "Read environment variables through effect/Config instead of process.env."
+          },
+          {
+            "selector": "MemberExpression[object.name='process'][computed=true][property.value='env']",
+            "message": "Read environment variables through effect/Config instead of process.env."
+          },
+          {
+            "selector": "VariableDeclarator[init.name='process'] > ObjectPattern > Property[key.name='env']",
+            "message": "Read environment variables through effect/Config instead of process.env."
+          },
+          {
+            "selector": "VariableDeclarator[init.name='process'] > ObjectPattern > Property[key.value='env']",
+            "message": "Read environment variables through effect/Config instead of process.env."
+          },
+          {
+            "selector": "AssignmentExpression[right.name='process'] > ObjectPattern > Property[key.name='env']",
+            "message": "Read environment variables through effect/Config instead of process.env."
+          },
+          {
+            "selector": "AssignmentExpression[right.name='process'] > ObjectPattern > Property[key.value='env']",
+            "message": "Read environment variables through effect/Config instead of process.env."
+          },
+          {
+            "selector": "AssignmentPattern[right.name='process'] > ObjectPattern > Property[key.name='env']",
+            "message": "Read environment variables through effect/Config instead of process.env."
+          },
+          {
+            "selector": "AssignmentPattern[right.name='process'] > ObjectPattern > Property[key.value='env']",
+            "message": "Read environment variables through effect/Config instead of process.env."
+          },
+          {
+            "selector": "MemberExpression[object.name='process'][property.name='stdout']",
+            "message": "Write output and read terminal capabilities through TerminalUI."
+          },
+          {
+            "selector": "MemberExpression[object.name='process'][property.name='stderr']",
+            "message": "Write errors and read terminal capabilities through TerminalUI."
+          },
+          {
+            "selector": "ImportExpression[source.value=/^@effect\\/cli(?:\\/(?:CommandDescriptor|Usage))?$/]",
+            "message": "CommandDescriptor/Usage introspection is the @effect/cli v4 seam. Use the helpers in ts/packages/cli/src/commands/command-introspection.ts instead."
+          },
+          {
+            "selector": "CallExpression[callee.name='require'][arguments.0.value=/^@effect\\/cli(?:\\/(?:CommandDescriptor|Usage))?$/]",
+            "message": "CommandDescriptor/Usage introspection is the @effect/cli v4 seam. Use the helpers in ts/packages/cli/src/commands/command-introspection.ts instead."
+          }
+        ]
+      }
+    },
+    {
+      "files": ["ts/packages/cli/test/src/**/*.{ts,tsx}"],
+      "rules": {
+        "max-lines-per-function": "off",
+        "eslint-js/no-restricted-syntax": [
+          "error",
+          {
+            "selector": "MemberExpression[object.name='Effect'][property.name=/^run/]",
+            "message": "Run Effects through @effect/vitest (it.effect, it.scoped, it.live) instead of Effect.run* in tests."
+          },
+          {
+            "selector": "CallExpression[callee.object.name='Date'][callee.property.name='now']",
+            "message": "Tests must be deterministic: pin time with vi.setSystemTime / TestClock-relative fixtures, use crypto.randomUUID() for unique names."
+          }
+        ]
+      }
+    },
+    {
+      "files": ["ts/packages/cli/src/commands/command-introspection.ts"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "paths": [
+              { "name": "crypto", "message": "Use Web Crypto API instead." },
+              { "name": "node:crypto", "message": "Use Web Crypto API instead." },
+              { "name": "buffer", "message": "Use Uint8Array instead." },
+              { "name": "node:buffer", "message": "Use Uint8Array instead." },
+              { "name": "child_process", "message": "Use Command from @effect/platform instead." },
+              {
+                "name": "node:child_process",
+                "message": "Use Command from @effect/platform instead."
+              },
+              { "name": "fs", "message": "Use FileSystem from @effect/platform instead." },
+              { "name": "node:fs", "message": "Use FileSystem from @effect/platform instead." },
+              {
+                "name": "os",
+                "message": "Use an Effect service instead of importing node:os directly."
+              },
+              {
+                "name": "node:os",
+                "message": "Use an Effect service instead of importing node:os directly."
+              },
+              { "name": "path", "message": "Use Path from @effect/platform instead." },
+              { "name": "node:path", "message": "Use Path from @effect/platform instead." }
+            ],
+            "patterns": [
+              {
+                "group": ["fs/*", "node:fs/*"],
+                "message": "Use FileSystem from @effect/platform instead."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": ["ts/packages/cli/src/services/tool-input-validation.ts"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "paths": [
+              { "name": "crypto", "message": "Use Web Crypto API instead." },
+              { "name": "node:crypto", "message": "Use Web Crypto API instead." },
+              { "name": "buffer", "message": "Use Uint8Array instead." },
+              { "name": "node:buffer", "message": "Use Uint8Array instead." },
+              { "name": "child_process", "message": "Use Command from @effect/platform instead." },
+              {
+                "name": "node:child_process",
+                "message": "Use Command from @effect/platform instead."
+              },
+              { "name": "fs", "message": "Use FileSystem from @effect/platform instead." },
+              { "name": "node:fs", "message": "Use FileSystem from @effect/platform instead." },
+              {
+                "name": "os",
+                "message": "Use an Effect service instead of importing node:os directly."
+              },
+              {
+                "name": "node:os",
+                "message": "Use an Effect service instead of importing node:os directly."
+              },
+              { "name": "path", "message": "Use Path from @effect/platform instead." },
+              { "name": "node:path", "message": "Use Path from @effect/platform instead." },
+              { "name": "zod", "message": "Use Schema from effect for tool input validation." }
+            ],
+            "patterns": [
+              {
+                "group": ["fs/*", "node:fs/*"],
+                "message": "Use FileSystem from @effect/platform instead."
+              },
+              { "group": ["zod/*"], "message": "Use Schema from effect for tool input validation." }
+            ]
+          }
+        ],
+        "eslint-js/no-restricted-syntax": [
+          "error",
+          {
+            "selector": "TryStatement",
+            "message": "Use Effect.try, Effect.tryPromise, or typed Effect error recovery instead of try/catch."
+          },
+          {
+            "selector": "MemberExpression[object.name='process'][computed=false][property.name='env']",
+            "message": "Read environment variables through effect/Config instead of process.env."
+          },
+          {
+            "selector": "MemberExpression[object.name='process'][computed=true][property.value='env']",
+            "message": "Read environment variables through effect/Config instead of process.env."
+          },
+          {
+            "selector": "VariableDeclarator[init.name='process'] > ObjectPattern > Property[key.name='env']",
+            "message": "Read environment variables through effect/Config instead of process.env."
+          },
+          {
+            "selector": "VariableDeclarator[init.name='process'] > ObjectPattern > Property[key.value='env']",
+            "message": "Read environment variables through effect/Config instead of process.env."
+          },
+          {
+            "selector": "AssignmentExpression[right.name='process'] > ObjectPattern > Property[key.name='env']",
+            "message": "Read environment variables through effect/Config instead of process.env."
+          },
+          {
+            "selector": "AssignmentExpression[right.name='process'] > ObjectPattern > Property[key.value='env']",
+            "message": "Read environment variables through effect/Config instead of process.env."
+          },
+          {
+            "selector": "AssignmentPattern[right.name='process'] > ObjectPattern > Property[key.name='env']",
+            "message": "Read environment variables through effect/Config instead of process.env."
+          },
+          {
+            "selector": "AssignmentPattern[right.name='process'] > ObjectPattern > Property[key.value='env']",
+            "message": "Read environment variables through effect/Config instead of process.env."
+          },
+          {
+            "selector": "MemberExpression[object.name='process'][property.name='stdout']",
+            "message": "Write output and read terminal capabilities through TerminalUI."
+          },
+          {
+            "selector": "MemberExpression[object.name='process'][property.name='stderr']",
+            "message": "Write errors and read terminal capabilities through TerminalUI."
+          },
+          {
+            "selector": "ImportExpression[source.value=/^@effect\\/cli(?:\\/(?:CommandDescriptor|Usage))?$/]",
+            "message": "CommandDescriptor/Usage introspection is the @effect/cli v4 seam. Use the helpers in ts/packages/cli/src/commands/command-introspection.ts instead."
+          },
+          {
+            "selector": "CallExpression[callee.name='require'][arguments.0.value=/^@effect\\/cli(?:\\/(?:CommandDescriptor|Usage))?$/]",
+            "message": "CommandDescriptor/Usage introspection is the @effect/cli v4 seam. Use the helpers in ts/packages/cli/src/commands/command-introspection.ts instead."
+          },
+          {
+            "selector": "ImportExpression[source.value=/^zod(?:\\/|$)/]",
+            "message": "Use Schema from effect for tool input validation."
+          },
+          {
+            "selector": "CallExpression[callee.name='require'][arguments.0.value=/^zod(?:\\/|$)/]",
+            "message": "Use Schema from effect for tool input validation."
+          }
+        ]
+      }
+    },
+    {
+      "files": ["ts/packages/cli/src/services/terminal-ui.ts"],
+      "rules": {
+        // TerminalUI is the sole CLI boundary for Node's stdout and stderr streams.
+        "eslint-js/no-restricted-syntax": [
+          "error",
+          {
+            "selector": "TryStatement",
+            "message": "Use Effect.try, Effect.tryPromise, or typed Effect error recovery instead of try/catch."
+          },
+          {
+            "selector": "MemberExpression[object.name='process'][computed=false][property.name='env']",
+            "message": "Read environment variables through effect/Config instead of process.env."
+          },
+          {
+            "selector": "MemberExpression[object.name='process'][computed=true][property.value='env']",
+            "message": "Read environment variables through effect/Config instead of process.env."
+          },
+          {
+            "selector": "VariableDeclarator[init.name='process'] > ObjectPattern > Property[key.name='env']",
+            "message": "Read environment variables through effect/Config instead of process.env."
+          },
+          {
+            "selector": "VariableDeclarator[init.name='process'] > ObjectPattern > Property[key.value='env']",
+            "message": "Read environment variables through effect/Config instead of process.env."
+          },
+          {
+            "selector": "AssignmentExpression[right.name='process'] > ObjectPattern > Property[key.name='env']",
+            "message": "Read environment variables through effect/Config instead of process.env."
+          },
+          {
+            "selector": "AssignmentExpression[right.name='process'] > ObjectPattern > Property[key.value='env']",
+            "message": "Read environment variables through effect/Config instead of process.env."
+          },
+          {
+            "selector": "AssignmentPattern[right.name='process'] > ObjectPattern > Property[key.name='env']",
+            "message": "Read environment variables through effect/Config instead of process.env."
+          },
+          {
+            "selector": "AssignmentPattern[right.name='process'] > ObjectPattern > Property[key.value='env']",
+            "message": "Read environment variables through effect/Config instead of process.env."
+          }
+        ]
+      }
+    },
+    {
+      // Examples are console-driven references. Keep type-safety rules
+      // (no-explicit-any, unused-vars) but drop console noise. The Buffer/crypto
+      // restrictions above target SDK/Workers source; Node example scripts may
+      // legitimately use Node built-ins, so relax them here (see KTD6).
+      "files": ["ts/examples/**/*.ts"],
+      "rules": {
+        "no-console": "off",
+        "no-restricted-globals": "off",
+        "no-restricted-imports": "off"
+      }
+    },
+    {
+      // This factory intentionally assembles the complete pi session-tool surface
+      // in one closure so every hook shares the same normalized capabilities.
+      "files": ["ts/packages/experimental/src/pi/session-tools.ts"],
+      "rules": {
+        "max-lines-per-function": "off"
+      }
+    },
+    {
+      // The Cloudflare Workers entry stays portable: no Node globals even though
+      // nodejs_compat is enabled. Re-apply the restriction dropped just above.
+      "files": ["ts/examples/**/cloudflare.ts"],
+      "rules": {
+        "no-restricted-globals": ["error", "Buffer"]
+      }
+    }
+  ]
+}

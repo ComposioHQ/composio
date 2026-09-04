@@ -1,14 +1,24 @@
+import { Effect } from 'effect';
+import { UNPREFIXED_CONFIG } from 'src/effects/app-config';
+import { loadHostConfig } from 'src/services/config';
+
 export type MasterKind = 'claude' | 'codex' | 'user';
 
-const hasEnvPrefix = (env: Record<string, string | undefined>, prefix: string): boolean =>
-  Object.keys(env).some(key => key.startsWith(prefix));
+export type MasterSignals = {
+  readonly codex: boolean;
+  readonly claude: boolean;
+};
 
-export const detectMaster = (env: Record<string, string | undefined> = process.env): MasterKind => {
-  if (hasEnvPrefix(env, 'CODEX_')) {
+export const detectMaster = (signals: MasterSignals): MasterKind => {
+  if (signals.codex) {
     return 'codex';
   }
-  if (hasEnvPrefix(env, 'CLAUDE_')) {
+  if (signals.claude) {
     return 'claude';
   }
   return 'user';
 };
+
+export const detectMasterFromHost: Effect.Effect<MasterKind> = loadHostConfig(
+  UNPREFIXED_CONFIG.MASTER_SIGNALS
+).pipe(Effect.map(detectMaster));

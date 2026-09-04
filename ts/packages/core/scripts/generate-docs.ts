@@ -1004,8 +1004,10 @@ function toKebabCase(str: string): string {
 
 // Escape text content for MDX (descriptions, etc. that appear outside backticks)
 // Handles both curly braces and angle brackets (which MDX interprets as JSX tags)
-function escapeTextForMdx(str: string): string {
+export function escapeTextForMdx(str: string): string {
   return str
+    .replace(/\\/g, '\\\\')
+    .replace(/\|/g, '\\|')
     .replace(/\{/g, '\\{')
     .replace(/\}/g, '\\}')
     .replace(/</g, '&lt;')
@@ -1220,28 +1222,7 @@ description: ${formatYamlFrontmatterString('Complete API reference for the Compo
 
 ## Installation
 
-<Tabs groupId="package-manager" items={['npm', 'pnpm', 'yarn', 'bun']} persist>
-<Tab value="npm">
-\`\`\`bash
-npm install @composio/core
-\`\`\`
-</Tab>
-<Tab value="pnpm">
-\`\`\`bash
-pnpm add @composio/core
-\`\`\`
-</Tab>
-<Tab value="yarn">
-\`\`\`bash
-yarn add @composio/core
-\`\`\`
-</Tab>
-<Tab value="bun">
-\`\`\`bash
-bun add @composio/core
-\`\`\`
-</Tab>
-</Tabs>
+<PackageInstall packages="@composio/core" />
 
 ## Classes
 

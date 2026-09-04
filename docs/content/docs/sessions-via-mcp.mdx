@@ -1,12 +1,20 @@
 ---
 title: Using sessions via MCP
-description: Connect any MCP-compatible client to a Composio session
+description: Build an application that exposes a Composio session to an MCP-compatible client
 keywords: [mcp, model context protocol, sessions, remote server, hosted mcp]
 ---
 
-By default Composio gives your agent **tools it can call directly**. Composio formats them as function schemas for your framework through a [provider package](/docs/providers). That's what the [Quickstart](/docs/quickstart) uses, and it's the right choice for most agents.
+Use this guide when you are building an application with Composio and want to expose one user's session over MCP. The application creates and configures the session, then passes its hosted MCP endpoint to a compatible client.
 
-If you'd rather connect over the [Model Context Protocol](https://modelcontextprotocol.io), every session also exposes a hosted MCP endpoint. This is useful when you want to plug a session into an MCP-native client like Claude Desktop, Cursor, or any framework's MCP transport. No provider package required.
+By default, Composio gives your agent tools it can call directly through a [provider package](/docs/providers). That is what the [Quickstart](/docs/quickstart) uses. Set `mcp: true` when an MCP transport fits your application better. No provider package is required for this route.
+
+<Callout type="info" title="Connecting an existing agent instead?">
+If you use Codex or Claude Code and did not explicitly choose MCP, install the native [Composio agent plugin](/docs/agent-plugins). If you explicitly want MCP in an existing client, use [Composio Connect](/docs/composio-connect).
+</Callout>
+
+<Callout type="info">
+Want to bring tools from your own remote MCP server into Composio instead? See [Custom MCP](/docs/extending-sessions/custom-mcp).
+</Callout>
 
 ## The MCP endpoint
 
@@ -18,7 +26,7 @@ Opt into MCP by passing `mcp: true` when you create the session. The session the
 from composio import Composio
 
 composio = Composio()
-session = composio.create(user_id="user_123", mcp=True)
+session = composio.sessions.create(user_id="user_123", mcp=True)
 
 mcp_url = session.mcp.url
 mcp_headers = session.mcp.headers
@@ -59,7 +67,7 @@ from composio import Composio, SESSION_PRESET_DIRECT_TOOLS
 
 composio = Composio()
 
-session = composio.create(
+session = composio.sessions.create(
     user_id="user_123",
     toolkits=["gmail"],
     tools={"gmail": {"enable": ["GMAIL_FETCH_EMAILS", "GMAIL_CREATE_EMAIL_DRAFT"]}},
@@ -161,7 +169,7 @@ MCP is the more portable option. Any MCP-compatible client connects with just a 
 The trade-off is that the MCP client talks to Composio's server directly, so anything the SDK does *around* tool execution doesn't apply:
 
 - **Tool-call modifiers don't run.** `beforeExecute` / `afterExecute` hooks and `modifySchema` transforms live in the SDK's execution path. Over MCP the client executes tools against the server and bypasses them, so you can't intercept, reshape, log, or gate calls the way you can with tools your agent calls directly.
-- **Session-bound custom tools and toolkits don't work.** Tools created with `createCustomTool` / `createCustomToolkit` run in your process. The MCP server only exposes Composio's hosted tools, so your local custom tools aren't available over the endpoint.
+- **Session-bound custom tools and toolkits don't work.** Tools created with `experimental_createTool` / `experimental_createToolkit` in TypeScript, or `composio.experimental.tool` / `composio.experimental.Toolkit` in Python, run in your process. The MCP server only exposes Composio's hosted tools, so your local custom tools aren't available over the endpoint.
 
 If you need any of those, call tools directly through a [provider](/docs/providers) instead of over MCP.
 

@@ -1,6 +1,6 @@
 {
   "name": "@e2e-tests/node-json-schema-to-zod-v4",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "private": true,
   "type": "module",
   "scripts": {
@@ -10,7 +10,7 @@
   },
   "dependencies": {
     "@composio/json-schema-to-zod": "workspace:*",
-    "zod": "^4.1.0"
+    "zod": "catalog:"
   },
   "devDependencies": {
     "@e2e-tests/utils": "workspace:*"

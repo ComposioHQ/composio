@@ -3,7 +3,7 @@ import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import decompress from 'decompress';
+import { extractZipSafely } from './extract-zip-safely';
 import { detectCliPlatform, supportsCliPlatform } from './platform';
 import type {
   LocalBundledBinaryDeclaration,
@@ -233,7 +233,7 @@ const repairInstalledLocalToolsBundle = async (): Promise<boolean> => {
     const zipPath = path.join(tempDir, asset.name);
     const extractDir = path.join(tempDir, 'extract');
     await fs.writeFile(zipPath, archiveData);
-    await decompress(zipPath, extractDir);
+    await extractZipSafely(zipPath, extractDir);
 
     const archiveBundleRoot = path.join(
       extractDir,

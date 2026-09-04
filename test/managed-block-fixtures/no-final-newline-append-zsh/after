@@ -1,0 +1,4 @@
+alias ll="ls -la"
+
+# Composio CLI
+export PATH="$HOME/.local/bin:$PATH"

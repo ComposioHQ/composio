@@ -1,10 +1,13 @@
 {
   "name": "@composio/json-schema-to-zod",
-  "version": "0.2.0",
+  "version": "0.3.1",
   "description": "",
   "main": "dist/index.mjs",
   "types": "dist/index.d.mts",
   "type": "module",
+  "engines": {
+    "node": ">=22.22.3"
+  },
   "repository": {
     "type": "git",
     "url": "https://github.com/ComposioHQ/composio.git",
@@ -13,7 +16,7 @@
   "bugs": {
     "url": "https://github.com/ComposioHQ/composio/issues"
   },
-  "homepage": "https://github.com/ComposioHQ/composio/tree/main/ts/packages/json-schema-to-zod#readme",
+  "homepage": "https://github.com/ComposioHQ/composio/tree/next/ts/packages/json-schema-to-zod#readme",
   "publishConfig": {
     "access": "public",
     "main": "dist/index.mjs",
@@ -33,12 +36,9 @@
     "clean": "git clean -xdf node_modules",
     "build": "tsdown",
     "test": "vitest run",
-    "typecheck:src": "pnpm exec tsgo --noEmit -p ./tsconfig.src.json",
-    "typecheck:test": "pnpm exec tsgo --noEmit -p ./tsconfig.test.json",
-    "typecheck": "pnpm run typecheck:src && pnpm run typecheck:test",
-    "typecheck:src:tsc": "tsc --noEmit -p ./tsconfig.src.json",
-    "typecheck:test:tsc": "tsc --noEmit -p ./tsconfig.test.json",
-    "typecheck:tsc": "pnpm run typecheck:src:tsc && pnpm run typecheck:test:tsc"
+    "typecheck:src": "tsc --noEmit -p ./tsconfig.src.json",
+    "typecheck:test": "tsc --noEmit -p ./tsconfig.test.json",
+    "typecheck": "pnpm run typecheck:src && pnpm run typecheck:test"
   },
   "keywords": [],
   "author": "",
@@ -48,13 +48,19 @@
   "license": "ISC",
   "devDependencies": {
     "@types/json-schema": "^7.0.15",
-    "@types/node": "^24.0.1",
+    "@types/node": "^26.3.0",
+    "ajv": "^8.20.0",
+    "fast-check": "^4.9.0",
     "tsdown": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:",
-    "zod": "catalog:"
+    "zod": "^4.4.3"
   },
   "peerDependencies": {
     "zod": ">=3.25.76 <5"
+  },
+  "dependencies": {
+    "@cfworker/json-schema": "^4.1.1",
+    "dequal": "^2.0.3"
   }
 }

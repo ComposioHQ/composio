@@ -1,276 +1,74 @@
 # @composio/openai
 
-The OpenAI provider for Composio SDK, providing seamless integration with OpenAI's models and function calling capabilities.
-
-## Features
-
-- **OpenAI Integration**: Seamless integration with OpenAI's models
-- **Streaming Support**: First-class support for streaming responses
-- **Function Calling**: Support for OpenAI's function calling feature
-- **Tool Execution**: Execute tools with proper parameter handling
-- **Type Safety**: Full TypeScript support with proper type definitions
-- **Model Support**: Support for all OpenAI models (GPT-4, GPT-3.5-turbo, etc.)
-- **Responses API Support**: First-class support for OpenAI's Responses API
+Adapts Composio tools to OpenAI function calling, for both the Responses API and the Chat Completions API.
 
 ## Installation
 
 ```bash
-npm install @composio/openai
-# or
-yarn add @composio/openai
-# or
-pnpm add @composio/openai
+npm install @composio/core @composio/openai openai
 ```
 
-## Environment Variables
+Set `COMPOSIO_API_KEY` (create one at https://dashboard.composio.dev/settings) and `OPENAI_API_KEY` (from https://platform.openai.com/api-keys) in your environment.
 
-Required environment variables:
+## Quickstart
 
-- `COMPOSIO_API_KEY`: Your Composio API key
-- `OPENAI_API_KEY`: Your OpenAI API key
-
-Optional environment variables:
-
-- `OPENAI_API_BASE`: Custom API base URL (for Azure OpenAI)
-- `OPENAI_ORGANIZATION`: OpenAI organization ID
-
-## Quick Start
+Create a session for your user, pass its tools to the Responses API, and run the tool-call loop until the model replies with text. `handleToolCalls` executes the tool calls and returns ready-to-send `function_call_output` items.
 
 ```typescript
-import { Composio } from '@composio/core';
-import { OpenAIProvider, OpenAIResponsesProvider } from '@composio/openai';
-
-// Initialize Composio with OpenAI provider
-const composio = new Composio({
-  apiKey: 'your-composio-api-key',
-  provider: new OpenAIProvider(), // For Chat Completions API
-  // OR
-  provider: new OpenAIResponsesProvider(), // For Responses API
-});
-
-// Get available tools
-const tools = await composio.tools.get('user123', {
-  toolkits: ['gmail', 'googlecalendar'],
-  limit: 10,
-});
-
-// Get a specific tool
-const sendEmailTool = await composio.tools.get('user123', 'GMAIL_SEND_EMAIL');
-```
-
-## Examples
-
-Check out our complete example implementations:
-
-- [Basic OpenAI Integration](../../examples/openai/src/index.ts)
-- [Chat Completions Example](../../examples/openai/src/chat-completions.ts)
-- [Assistants Example](../../examples/openai/src/assistants.ts)
-- [Tools Example](../../examples/openai/src/tools.ts)
-- [Responses API Example](../../examples/openai/src/responses-api/index.ts)
-
-### Basic Chat Completion with Streaming
-
-```typescript
-import { Composio } from '@composio/core';
-import { OpenAIProvider } from '@composio/openai';
 import OpenAI from 'openai';
-
-const composio = new Composio({
-  apiKey: process.env.COMPOSIO_API_KEY,
-  provider: new OpenAIProvider(),
-});
-
-// Example API route
-export async function POST(req: Request) {
-  const { messages } = await req.json();
-  const tools = await composio.tools.get('user123', {
-    toolkits: ['gmail'],
-  });
-
-  const stream = await openai.chat.completions.create({
-    model: 'gpt-4',
-    messages,
-    tools,
-    stream: true,
-  });
-
-  return new Response(stream, {
-    headers: {
-      'content-type': 'text/event-stream',
-    },
-  });
-}
-```
-
-### Using the Responses API
-
-```typescript
 import { Composio } from '@composio/core';
 import { OpenAIResponsesProvider } from '@composio/openai';
-import OpenAI from 'openai';
 
-const openai = new OpenAI();
 const composio = new Composio({
   provider: new OpenAIResponsesProvider(),
 });
+const client = new OpenAI();
 
-// Get tools from Composio
-const tools = await composio.tools.get('default', 'HACKERNEWS_GET_USER');
+// Create a session for your user
+const session = await composio.create('user_123');
+const tools = await session.tools();
 
-// Generate initial response from OpenAI
-const initialResponse = await openai.responses.create({
-  model: 'gpt-4.1',
-  input: 'Tell me about the user `pg` in hackernews',
+let response = await client.responses.create({
+  model: 'gpt-5.2',
   tools,
-});
-
-// Handle tool calls from response
-const modelInputs = await composio.provider.handleResponse(
-  'default',
-  initialResponse,
-  {},
-  {
-    beforeExecute: async (toolSlug, toolkitSlug, params) => {
-      console.log(`🔄 Executing tool ${toolSlug} from toolkit ${toolkitSlug}...`);
-      return params;
+  input: [
+    {
+      role: 'user',
+      content:
+        "Send an email to john@example.com with the subject 'Hello' and body 'Hello from Composio!'",
     },
-    afterExecute: async (toolSlug, toolkitSlug, result) => {
-      console.log(`✅ Tool ${toolSlug} executed`);
-      return result;
-    },
-  }
-);
-
-// Submit tool outputs back to OpenAI
-const finalResponse = await openai.responses.create({
-  model: 'gpt-4.1',
-  input: [...initialResponse.output, ...modelInputs],
-  tools,
+  ],
 });
 
-// Process the final response
-const finalContent = finalResponse.output[0];
-if (finalContent.type === 'message' && finalContent.content[0].type === 'output_text') {
-  console.log(finalContent.content[0].text);
-}
-```
-
-### Tool Execution with Streaming
-
-```typescript
-import { Composio } from '@composio/core';
-import { OpenAIProvider } from '@composio/openai';
-import OpenAI from 'openai';
-
-const composio = new Composio({
-  apiKey: process.env.COMPOSIO_API_KEY,
-  provider: new OpenAIProvider(),
-});
-
-// Example API route that handles tool execution
-export async function POST(req: Request) {
-  const { messages } = await req.json();
-  const tools = await composio.tools.get('user123', {
-    toolkits: ['gmail', 'googlecalendar'],
-  });
-
-  const stream = await openai.chat.completions.create({
-    model: 'gpt-4',
-    messages,
+// Agentic loop: keep executing tool calls until the model responds with text
+while (response.output.some(o => o.type === 'function_call')) {
+  const results = await composio.provider.handleToolCalls(session, response.output);
+  response = await client.responses.create({
+    model: 'gpt-5.2',
     tools,
-    tool_choice: 'auto',
-    stream: true,
+    previous_response_id: response.id,
+    input: results,
   });
+}
 
-  const chunks = [];
-  for await (const chunk of stream) {
-    if (chunk.choices[0]?.delta?.tool_calls) {
-      const toolCall = chunk.choices[0].delta.tool_calls[0];
-      const result = await composio.provider.executeToolCall(toolCall);
-      // Handle tool execution result
-      chunks.push(result);
-    } else {
-      chunks.push(chunk.choices[0]?.delta?.content || '');
-    }
+// Print final response
+for (const item of response.output) {
+  if (item.type === 'message' && item.content[0].type === 'output_text') {
+    console.log(item.content[0].text);
   }
-
-  return new Response(chunks.join(''), {
-    headers: {
-      'content-type': 'text/plain',
-    },
-  });
 }
 ```
 
-## Provider Configuration
+## Providers in this package
 
-The OpenAI providers can be configured with various options:
+The package exports one provider per API surface:
 
-```typescript
-// For Chat Completions API
-const provider = new OpenAIProvider();
+- `OpenAIResponsesProvider` targets the Responses API. `handleToolCalls(session, response.output)` returns `function_call_output` items keyed by `call_id`; pair it with `previous_response_id` so you only resend new outputs each turn. Pass a user ID instead of a session for tools fetched with `tools.get()`. Set `{ strict: true }` to normalize tool schemas for OpenAI structured outputs: every object becomes closed and lists every property in `required`, while optional properties stay available but accept `null`. A `null` is dropped before the tool runs unless the source schema accepts it. Tools whose schema strict mode cannot express, such as objects that accept arbitrary keys, `allOf`, `prefixItems`, or unresolved `$ref`s, are sent without strict mode and log a warning.
+- `OpenAIProvider` targets the Chat Completions API and is the Composio SDK default, so `new Composio()` with no provider uses it. `handleToolCalls(session, chatCompletion)` returns ready-to-append `tool` messages; you keep the full message list yourself.
 
-// For Responses API
-const responsesProvider = new OpenAIResponsesProvider({
-  // Whether to enforce strict parameter validation
-  strict: true, // Default: false
-});
-```
+Use the Responses provider for new agentic flows; reach for Chat Completions when extending an existing Chat Completions codebase. See the [docs page](https://docs.composio.dev/docs/providers/openai) for the Chat Completions loop.
 
-## API Reference
+## Links
 
-### OpenAIProvider Class
-
-The `OpenAIProvider` class extends `BaseComposioProvider` and provides OpenAI-specific functionality for the Chat Completions API.
-
-#### Methods
-
-##### `executeToolCall(tool: ToolCall): Promise<string>`
-
-Executes a tool call and returns the result.
-
-```typescript
-const result = await provider.executeToolCall(toolCall);
-```
-
-### OpenAIResponsesProvider Class
-
-The `OpenAIResponsesProvider` class extends `BaseNonAgenticProvider` and provides OpenAI-specific functionality for the Responses API.
-
-#### Methods
-
-##### `handleResponse(userId: string, response: OpenAI.Responses.Response, options?: ExecuteToolFnOptions, modifiers?: ExecuteToolModifiers): Promise<OpenAI.Responses.ResponseInputItem.FunctionCallOutput[]>`
-
-Handles tool calls from an OpenAI response and returns the tool outputs.
-
-```typescript
-const outputs = await provider.handleResponse('user123', response);
-```
-
-##### `handleToolCalls(userId: string, toolCalls: OpenAI.Responses.ResponseOutputItem[], options?: ExecuteToolFnOptions, modifiers?: ExecuteToolModifiers): Promise<OpenAI.Responses.ResponseInputItem.FunctionCallOutput[]>`
-
-Handles specific tool calls from an OpenAI response.
-
-```typescript
-const outputs = await provider.handleToolCalls('user123', toolCalls);
-```
-
-##### `executeToolCall(userId: string, tool: OpenAI.Responses.ResponseFunctionToolCall, options?: ExecuteToolFnOptions, modifiers?: ExecuteToolModifiers): Promise<string>`
-
-Executes a single tool call and returns the result.
-
-```typescript
-const result = await provider.executeToolCall('user123', toolCall);
-```
-
-## Contributing
-
-We welcome contributions! Please see our [Contributing Guide](../../CONTRIBUTING.md) for more details.
-
-## License
-
-ISC License
-
-## Support
-
-For support, please visit our [Documentation](https://docs.composio.dev) or join our [Discord Community](https://discord.gg/composio).
+- [OpenAI provider docs](https://docs.composio.dev/docs/providers/openai)
+- [Composio documentation](https://docs.composio.dev)

@@ -4,9 +4,9 @@ For a step-by-step guide on creating and configuring your own Google OAuth crede
 
 ## Why am I seeing "App is blocked" when connecting Google Super?
 
-The OAuth client is requesting scopes that Google hasn't verified for that client. This usually happens when you add extra scopes beyond the defaults.
+Google Super requires broad Google Workspace scopes for some cross-product workflows, and some of those scopes are not available on Composio-managed Google Super auth today. If users see Google's "App is blocked" or unverified-app screen with managed Google Super auth, use your own verified Google OAuth app and reconnect through a custom auth config.
 
-Remove the additional scopes from your auth config, or create your own OAuth app and submit the scopes for verification. See [How to create OAuth2 credentials for Google Apps](https://composio.dev/auth/googleapps).
+Composio is working on getting the managed Google Super app approved for the needed scopes, but until that is complete, custom Google OAuth is the workaround for production usage. See [How to create OAuth2 credentials for Google Apps](https://composio.dev/auth/googleapps).
 
 ## Why am I getting the "API has not been used in project" error?
 
@@ -14,10 +14,8 @@ When using custom OAuth credentials, the required Google API must be enabled in 
 
 ## Why am I getting "Error 400: invalid_scope"?
 
-The requested scopes are invalid or incorrectly formatted in the authorization URL. Verify your scope values against the [Google OAuth scopes docs](https://developers.google.com/identity/protocols/oauth2). If you're creating auth configs programmatically, see the [programmatic auth config guide](/docs/programmatic-auth-configs).
+The requested scopes are invalid or incorrectly formatted in the authorization URL. Verify your scope values against the [Google OAuth scopes docs](https://developers.google.com/identity/protocols/oauth2). If you're creating auth configs programmatically, see the [programmatic auth config guide](/docs/authentication/programmatic-auth-configs).
 
 ## Why does the OAuth consent screen show "Composio" instead of my app?
 
-By default, the consent screen uses Composio's OAuth app. To show your own app name and logo, create your own OAuth app and set a custom redirect URL. See [White-labeling authentication](/docs/white-labeling-authentication#using-your-own-oauth-apps).
-
----
+By default, the consent screen uses Composio's OAuth app. To show your own app name and logo, create your own OAuth app and set a custom redirect URL. See [White-labeling authentication](/docs/authentication/white-labeling-authentication#using-your-own-oauth-apps).

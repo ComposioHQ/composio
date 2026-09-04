@@ -1,13 +1,24 @@
-import { execFileSync, spawn } from 'node:child_process';
-import fsSync from 'node:fs';
-import fs from 'node:fs/promises';
-import os from 'node:os';
-import path from 'node:path';
+import { Command, CommandExecutor, FileSystem, Path } from '@effect/platform';
+import { BunContext } from '@effect/platform-bun';
+import {
+  Cause,
+  Config,
+  Data,
+  Duration,
+  Effect,
+  Exit,
+  Option,
+  Predicate,
+  Schema,
+  Stream,
+} from 'effect';
 import {
   detectCliPlatform,
   ensureBundledBinaryExecutable,
   getLocalToolsBundleRootCandidates,
 } from '@composio/cli-local-tools';
+import { UNPREFIXED_CONFIG } from 'src/effects/app-config';
+import { loadHostConfig } from 'src/services/config';
 
 const NATIVE_UI_BINARY_NAME = 'composio-native-ui';
 
@@ -29,12 +40,39 @@ export type NativeUiBinaryResolution =
       readonly platform: string;
     };
 
-interface NativeUiDecisionPayload {
-  readonly decision?: NativeUiPermissionDecision;
+export class NativeUiBinarySetupError extends Data.TaggedError(
+  'services/NativeUiBinarySetupError'
+)<{
+  readonly binaryPath: string;
+  readonly cause: unknown;
+}> {
+  override get message(): string {
+    return `Failed to make the native UI sidecar binary executable: ${this.binaryPath}`;
+  }
 }
 
-const hasEnvPrefix = (env: NodeJS.ProcessEnv, prefix: string): boolean =>
-  Object.keys(env).some(key => key.startsWith(prefix));
+export class NativeUiDecisionMissingError extends Data.TaggedError(
+  'services/NativeUiDecisionMissingError'
+)<{
+  readonly binaryPath: string;
+}> {
+  override get message(): string {
+    return 'Native permission prompt exited without a decision.';
+  }
+}
+
+/**
+ * Interactive permission UI (the native sidecar dialog and the browser
+ * approval page) must never spawn from automated environments. The explicit
+ * COMPOSIO_DISABLE_PERMISSION_UI knob wins in both directions; without it,
+ * CI and Vitest runs disable the UI.
+ */
+export const interactivePermissionUiDisabledConfig =
+  UNPREFIXED_CONFIG.INTERACTIVE_PERMISSION_UI_DISABLED;
+
+export const isInteractivePermissionUiDisabled: Effect.Effect<boolean> = loadHostConfig(
+  interactivePermissionUiDisabledConfig
+);
 
 const normalizeCallerAgent = (value?: string): NativeUiCallerAgent | undefined => {
   const normalized = value?.toLowerCase().replace(/[^a-z]/g, '');
@@ -44,49 +82,85 @@ const normalizeCallerAgent = (value?: string): NativeUiCallerAgent | undefined =
   return undefined;
 };
 
-const detectCallerAgentFromProcessTree = (): NativeUiCallerAgent | undefined => {
+const PS_TREE_MAX_DEPTH = 8;
+
+// Mirrors the former execFileSync('ps', ...) lookup: any spawn failure (or a
+// non-zero exit, which leaves stdout empty) resolves to undefined.
+const psParentEntry = (
+  pid: number
+): Effect.Effect<string | undefined, never, CommandExecutor.CommandExecutor> =>
+  Command.make('ps', '-o', 'ppid=', '-o', 'comm=', '-p', String(pid)).pipe(
+    // The child never reads interactive input: hand it an immediately-closed
+    // stdin pipe (EOF), matching the previous `stdio: ['ignore', ...]` spawn.
+    Command.stdin(Stream.empty),
+    Command.string,
+    Effect.map(output => output.trim()),
+    Effect.orElseSucceed(() => undefined)
+  );
+
+const detectCallerAgentFromProcessTree: Effect.Effect<
+  NativeUiCallerAgent | undefined,
+  never,
+  CommandExecutor.CommandExecutor
+> = Effect.gen(function* () {
   if (process.platform === 'win32') return undefined;
 
   let pid = process.ppid;
-  for (let depth = 0; depth < 8 && pid > 1; depth += 1) {
-    try {
-      const output = execFileSync('ps', ['-o', 'ppid=', '-o', 'comm=', '-p', String(pid)], {
-        encoding: 'utf8',
-        stdio: ['ignore', 'pipe', 'ignore'],
-      }).trim();
-      if (!output) return undefined;
+  for (let depth = 0; depth < PS_TREE_MAX_DEPTH && pid > 1; depth += 1) {
+    const output = yield* psParentEntry(pid);
+    if (output === undefined || output === '') return undefined;
 
-      const match = output.match(/^(\d+)\s+(.+)$/);
-      if (!match) return undefined;
+    const match = output.match(/^(\d+)\s+(.+)$/);
+    if (!match) return undefined;
 
-      const command = match[2]?.toLowerCase() ?? '';
-      if (command.includes('openclaw') || command.includes('open-claw')) return 'openclaw';
-      if (command.includes('claude')) return 'claude';
-      if (command.includes('codex')) return 'codex';
+    const command = match[2]?.toLowerCase() ?? '';
+    if (command.includes('openclaw') || command.includes('open-claw')) return 'openclaw';
+    if (command.includes('claude')) return 'claude';
+    if (command.includes('codex')) return 'codex';
 
-      pid = Number(match[1]);
-    } catch {
-      return undefined;
-    }
+    pid = Number(match[1]);
   }
+
+  return undefined;
+});
+
+export type NativeUiCallerAgentSignals = Config.Config.Success<
+  typeof UNPREFIXED_CONFIG.CALLER_AGENT_SIGNALS
+>;
+
+const detectCallerAgentFromSignals = (
+  signals: NativeUiCallerAgentSignals
+): NativeUiCallerAgent | undefined => {
+  const explicit = normalizeCallerAgent(signals.explicit);
+  if (explicit) return explicit;
+
+  if (signals.openclaw) return 'openclaw';
+  if (signals.claude) return 'claude';
+  if (signals.codex) return 'codex';
 
   return undefined;
 };
 
-export const detectNativeUiCallerAgent = (
-  env: NodeJS.ProcessEnv = process.env
-): NativeUiCallerAgent => {
-  const explicit = normalizeCallerAgent(env.COMPOSIO_CALLER_AGENT ?? env.COMPOSIO_AGENT);
-  if (explicit) return explicit;
+export const detectNativeUiCallerAgentEffect = (
+  providedSignals?: NativeUiCallerAgentSignals
+): Effect.Effect<NativeUiCallerAgent, never, CommandExecutor.CommandExecutor> =>
+  Effect.gen(function* () {
+    const signals =
+      providedSignals ?? (yield* loadHostConfig(UNPREFIXED_CONFIG.CALLER_AGENT_SIGNALS));
+    const fromEnv = detectCallerAgentFromSignals(signals);
+    if (fromEnv !== undefined) return fromEnv;
 
-  if (hasEnvPrefix(env, 'OPENCLAW_')) return 'openclaw';
-  if (hasEnvPrefix(env, 'CLAUDE_')) return 'claude';
-  if (hasEnvPrefix(env, 'CODEX_')) return 'codex';
+    return (yield* detectCallerAgentFromProcessTree) ?? 'composio';
+  });
 
-  return detectCallerAgentFromProcessTree() ?? 'composio';
-};
+export const detectNativeUiCallerAgent = (): Promise<NativeUiCallerAgent> =>
+  Effect.runPromise(Effect.provide(detectNativeUiCallerAgentEffect(), BunContext.layer));
 
-export const resolveNativeUiBinary = (): NativeUiBinaryResolution => {
+export const resolveNativeUiBinary: Effect.Effect<
+  NativeUiBinaryResolution,
+  never,
+  FileSystem.FileSystem | Path.Path
+> = Effect.gen(function* () {
   const platform = detectCliPlatform();
   if (!platform.startsWith('darwin-')) {
     return {
@@ -95,26 +169,35 @@ export const resolveNativeUiBinary = (): NativeUiBinaryResolution => {
     };
   }
 
+  const fs = yield* FileSystem.FileSystem;
+  const path = yield* Path.Path;
+
   const candidates = getLocalToolsBundleRootCandidates().map(root =>
     path.join(root, NATIVE_UI_BINARY_NAME, platform, NATIVE_UI_BINARY_NAME)
   );
-  const binaryPath = candidates.find(candidate => fsSync.existsSync(candidate));
+  const binaryPath = yield* Effect.findFirst(candidates, candidate =>
+    fs.exists(candidate).pipe(Effect.orElseSucceed(() => false))
+  );
 
-  return binaryPath
-    ? {
-        _tag: 'found',
-        binaryPath,
-      }
-    : {
-        _tag: 'missing',
-        platform,
-        candidates,
-      };
-};
+  return Option.match(binaryPath, {
+    onNone: (): NativeUiBinaryResolution => ({
+      _tag: 'missing',
+      platform,
+      candidates,
+    }),
+    onSome: (binaryPath): NativeUiBinaryResolution => ({
+      _tag: 'found',
+      binaryPath,
+    }),
+  });
+});
+
+const NativeUiDecisionPayloadSchema = Schema.parseJson(Schema.Struct({ decision: Schema.String }));
 
 const parseDecisionPayload = (raw: string): NativeUiPermissionDecision | undefined => {
-  const payload = JSON.parse(raw) as NativeUiDecisionPayload;
-  const decision = payload.decision;
+  const decision = Option.getOrUndefined(
+    Schema.decodeUnknownOption(NativeUiDecisionPayloadSchema)(raw)
+  )?.decision;
   return decision === 'allow_once' ||
     decision === 'allow_session' ||
     decision === 'deny' ||
@@ -123,79 +206,117 @@ const parseDecisionPayload = (raw: string): NativeUiPermissionDecision | undefin
     : undefined;
 };
 
+type DialogExit =
+  | {
+      readonly _tag: 'exited';
+      // undefined when the dialog was terminated by a signal, which the
+      // previous 'exit' handler saw as `code === null` (treated as non-zero).
+      readonly exitCode: number | undefined;
+    }
+  | {
+      readonly _tag: 'timedOut';
+    };
+
+const requestNativeUiPermissionDecisionEffect = (params: {
+  readonly toolSlug: string;
+  readonly accountLabel?: string;
+  readonly timeoutSeconds?: number;
+}) =>
+  Effect.gen(function* () {
+    if (yield* isInteractivePermissionUiDisabled) return undefined;
+
+    const resolved = yield* resolveNativeUiBinary;
+    if (!Predicate.isTagged(resolved, 'found')) return undefined;
+
+    yield* Effect.tryPromise({
+      try: () => ensureBundledBinaryExecutable(resolved.binaryPath),
+      catch: cause => new NativeUiBinarySetupError({ binaryPath: resolved.binaryPath, cause }),
+    });
+
+    const fs = yield* FileSystem.FileSystem;
+    const path = yield* Path.Path;
+
+    // Removed when the surrounding scope closes, replacing the try/finally rm.
+    const tempDir = yield* fs.makeTempDirectoryScoped({
+      prefix: 'composio-native-ui-decision-',
+    });
+    const callbackFile = path.join(tempDir, 'decision.json');
+    const timeoutSeconds = params.timeoutSeconds ?? 30;
+    const callerAgent = yield* detectNativeUiCallerAgentEffect();
+
+    const args = [
+      '--tool',
+      params.toolSlug,
+      '--account',
+      params.accountLabel ?? 'default connection',
+      '--caller-agent',
+      callerAgent,
+      '--subtitle',
+      'Approve once, allow for 1 hour, or deny.',
+      '--allow-session-label',
+      'Allow for 1 hr',
+      '--callback-file',
+      callbackFile,
+      '--timeout',
+      String(timeoutSeconds),
+    ];
+
+    const child = yield* Command.start(
+      // The dialog never reads interactive input: hand it an immediately-closed
+      // stdin pipe (EOF), matching the previous `stdio: 'ignore'` spawn.
+      Command.make(resolved.binaryPath, ...args).pipe(Command.stdin(Stream.empty))
+    );
+
+    // The previous spawn ignored the dialog's output entirely; drain the pipes
+    // so the dialog can never block on a full pipe buffer.
+    yield* Effect.fork(Effect.ignore(Stream.runDrain(child.stdout)));
+    yield* Effect.fork(Effect.ignore(Stream.runDrain(child.stderr)));
+
+    const dialogExit = yield* child.exitCode.pipe(
+      Effect.map((exitCode): DialogExit => ({ _tag: 'exited', exitCode })),
+      // exitCode fails when the dialog was terminated by a signal; fold it into
+      // the signal-termination shape instead of surfacing a PlatformError.
+      Effect.orElseSucceed((): DialogExit => ({ _tag: 'exited', exitCode: undefined })),
+      Effect.timeoutTo({
+        duration: Duration.seconds(timeoutSeconds + 5),
+        onSuccess: (exit: DialogExit) => exit,
+        onTimeout: (): DialogExit => ({ _tag: 'timedOut' }),
+      })
+    );
+
+    // SIGKILL rather than leaving the scope finalizer's SIGTERM to clean up:
+    // the finalizer awaits the child's exit, so a dialog that ignored SIGTERM
+    // would stall this permission gate instead of resolving as dismissed.
+    if (dialogExit._tag === 'timedOut') {
+      yield* Effect.ignore(child.kill('SIGKILL'));
+      return 'dismissed';
+    }
+
+    // If the sidecar exits without writing a callback file, treat a non-zero
+    // exit as a dismissal. A zero exit without a callback is unexpected.
+    const decision = yield* fs.readFileString(callbackFile).pipe(
+      Effect.map(parseDecisionPayload),
+      Effect.orElseSucceed(() => undefined)
+    );
+    if (decision !== undefined) return decision;
+
+    if (dialogExit.exitCode === 0) {
+      return yield* new NativeUiDecisionMissingError({ binaryPath: resolved.binaryPath });
+    }
+    return 'dismissed';
+  }).pipe(Effect.scoped);
+
 export const requestNativeUiPermissionDecision = async (params: {
   readonly toolSlug: string;
   readonly accountLabel?: string;
   readonly timeoutSeconds?: number;
 }): Promise<NativeUiPermissionDecision | undefined> => {
-  const resolved = resolveNativeUiBinary();
-  if (resolved._tag !== 'found') return undefined;
+  const exit = await Effect.runPromiseExit(
+    Effect.provide(requestNativeUiPermissionDecisionEffect(params), BunContext.layer)
+  );
+  if (Exit.isSuccess(exit)) return exit.value;
 
-  await ensureBundledBinaryExecutable(resolved.binaryPath);
-
-  const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'composio-native-ui-decision-'));
-  const callbackFile = path.join(tempDir, 'decision.json');
-  const timeoutSeconds = params.timeoutSeconds ?? 30;
-
-  try {
-    return await new Promise<NativeUiPermissionDecision>((resolve, reject) => {
-      const args = [
-        '--tool',
-        params.toolSlug,
-        '--account',
-        params.accountLabel ?? 'default connection',
-        '--caller-agent',
-        detectNativeUiCallerAgent(),
-        '--subtitle',
-        'Approve once, allow for 1 hour, or deny.',
-        '--allow-session-label',
-        'Allow for 1 hr',
-        '--callback-file',
-        callbackFile,
-        '--timeout',
-        String(timeoutSeconds),
-      ];
-
-      const child = spawn(resolved.binaryPath, args, {
-        detached: false,
-        stdio: 'ignore',
-      });
-
-      const timeout = setTimeout(
-        () => {
-          child.kill();
-          resolve('dismissed');
-        },
-        (timeoutSeconds + 5) * 1000
-      );
-
-      child.on('error', error => {
-        clearTimeout(timeout);
-        reject(error);
-      });
-
-      child.on('exit', async code => {
-        clearTimeout(timeout);
-        try {
-          const raw = await fs.readFile(callbackFile, 'utf8');
-          const decision = parseDecisionPayload(raw);
-          if (decision) {
-            resolve(decision);
-            return;
-          }
-        } catch {
-          // If the sidecar exits without writing a callback file, treat a non-zero
-          // exit as a dismissal. A zero exit without a callback is unexpected.
-        }
-
-        if (code === 0) {
-          reject(new Error('Native permission prompt exited without a decision.'));
-        } else {
-          resolve('dismissed');
-        }
-      });
-    });
-  } finally {
-    await fs.rm(tempDir, { recursive: true, force: true });
-  }
+  // Surface the original error instance (callers recover from any rejection),
+  // not a FiberFailure wrapper.
+  throw Cause.squash(exit.cause);
 };

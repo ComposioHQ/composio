@@ -21,22 +21,20 @@ import { LOCAL_TOOLS_BINARY_ASSET_DIRNAME, teardown } from './_shared';
 import { $ } from 'bun';
 import { readdir, stat, writeFile } from 'node:fs/promises';
 import path from 'node:path';
-import { collectExpectedRunCompanionAssetRelativePaths } from '../src/services/run-companion-modules';
+import {
+  collectExpectedRunCompanionAssetRelativePaths,
+  RUN_COMPANION_ALL_STATIC_ASSET_RELATIVE_PATHS,
+} from '../src/services/run-companion-modules';
+import {
+  archiveCompanionEntries,
+  ARTIFACT_NAMES,
+  releaseArtifactTargetFor,
+} from './_release-artifacts';
 
 const BINARIES_DIR = './dist/binaries';
 const COMPANIONS_DIR = path.join(BINARIES_DIR, 'companions');
 const LOCAL_TOOLS_BINARY_ASSETS_DIR = path.join(BINARIES_DIR, LOCAL_TOOLS_BINARY_ASSET_DIRNAME);
 const RELEASE_TAG = process.env.RELEASE_TAG?.trim();
-
-/**
- * Known binary artifact names (without extension).
- */
-const ARTIFACT_NAMES = [
-  'composio-darwin-aarch64',
-  'composio-darwin-x64',
-  'composio-linux-x64',
-  'composio-linux-aarch64',
-];
 
 export function packageBinaries() {
   return Effect.gen(function* () {
@@ -50,8 +48,13 @@ export function packageBinaries() {
       return;
     }
 
-    const companionRelativePaths = collectExpectedRunCompanionAssetRelativePaths(COMPANIONS_DIR);
-    for (const relativePath of companionRelativePaths) {
+    // One packaging host produces all four archives, so `COMPANIONS_DIR` must hold
+    // every platform's codex-acp binary before packaging starts.
+    const allCompanionRelativePaths = yield* collectExpectedRunCompanionAssetRelativePaths(
+      COMPANIONS_DIR,
+      { staticAssetRelativePaths: RUN_COMPANION_ALL_STATIC_ASSET_RELATIVE_PATHS }
+    );
+    for (const relativePath of allCompanionRelativePaths) {
       const companionPath = path.join(COMPANIONS_DIR, relativePath);
       const exists = yield* Effect.tryPromise(() => Bun.file(companionPath).exists());
       if (!exists) {
@@ -66,6 +69,15 @@ export function packageBinaries() {
     yield* Console.log(`Packaging ${binaries.length} binaries...`);
 
     for (const binary of binaries) {
+      // Every archive names all four codex-acp paths, but carries real bytes
+      // only for the one its own `composio` binary can execute. See
+      // `archiveCompanionEntries` for why the other three are present but empty.
+      const target = yield* releaseArtifactTargetFor(binary);
+      const companionEntries = archiveCompanionEntries({
+        allRelativePaths: allCompanionRelativePaths,
+        target,
+      });
+
       const binaryPath = path.join(BINARIES_DIR, binary);
       const zipPath = path.join(BINARIES_DIR, `${binary}.zip`);
       const absoluteZipPath = path.resolve(zipPath);
@@ -77,10 +89,14 @@ export function packageBinaries() {
       yield* Effect.tryPromise(async () => {
         await $`mkdir -p ${nestedDir}`.quiet();
         await $`cp ${binaryPath} ${nestedDir}/composio`.quiet();
-        for (const relativePath of companionRelativePaths) {
-          const targetDirectory = path.dirname(path.join(nestedDir, relativePath));
-          await $`mkdir -p ${targetDirectory}`.quiet();
-          await $`cp ${path.join(COMPANIONS_DIR, relativePath)} ${path.join(nestedDir, relativePath)}`.quiet();
+        for (const { relativePath, kind } of companionEntries) {
+          const destinationPath = path.join(nestedDir, relativePath);
+          await $`mkdir -p ${path.dirname(destinationPath)}`.quiet();
+          if (kind === 'placeholder') {
+            await writeFile(destinationPath, '');
+            continue;
+          }
+          await $`cp ${path.join(COMPANIONS_DIR, relativePath)} ${destinationPath}`.quiet();
         }
         const hasLocalToolsBinaryAssets = await stat(LOCAL_TOOLS_BINARY_ASSETS_DIR)
           .then(stats => stats.isDirectory())

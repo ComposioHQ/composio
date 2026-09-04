@@ -1,7 +1,7 @@
 {
   "name": "vercel-example",
   "private": true,
-  "version": "0.1.10-alpha.0",
+  "version": "0.1.10",
   "description": "",
   "main": "src/ai.ts",
   "scripts": {
@@ -15,8 +15,8 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@ai-sdk/mcp": "^1.0.1",
-    "@ai-sdk/openai": "^3.0.11",
+    "@ai-sdk/mcp": "catalog:",
+    "@ai-sdk/openai": "catalog:",
     "@composio/core": "workspace:*",
     "@composio/vercel": "workspace:*",
     "@modelcontextprotocol/sdk": "catalog:",
@@ -27,6 +27,8 @@
   },
   "devDependencies": {
     "@types/bun": "catalog:",
+    "@types/node": "^26.3.0",
     "typescript": "catalog:"
-  }
+  },
+  "type": "module"
 }

@@ -17,12 +17,41 @@ import { z } from 'zod';
 // Extended schema with keywords for search
 const docsSchema = frontmatterSchema.extend({
   keywords: z.array(z.string()).optional(),
+  productAreas: z
+    .array(
+      z.enum([
+        'authentication-and-connected-accounts',
+        'tools-actions-and-execution',
+        'triggers-and-workflows',
+        'sdk-api-and-mcp',
+        'account-billing-and-security',
+      ]),
+    )
+    .optional(),
+  toolkitSlugs: z.array(z.string()).optional(),
+  intents: z
+    .array(
+      z.enum([
+        'setup',
+        'how-to',
+        'troubleshooting',
+        'limits-policy',
+        'known-issue',
+        'reference',
+      ]),
+    )
+    .optional(),
   /** When true, the page shows an "Experimental" badge in the sidebar. */
   experimental: z.boolean().optional(),
   /** When true, the page shows a "New" badge in the sidebar. */
   isNew: z.boolean().optional(),
   /** When true, the page shows a "Legacy" badge at the top of the page. */
   legacy: z.boolean().optional(),
+  /** Human-readable date the page/guide was written (e.g. "December 2025").
+   *  Renders a "Written <date>" stamp at the top of the page, independent of the
+   *  `legacy` flag, so time-sensitive guides carry their own date whether or not
+   *  they're legacy. */
+  written: z.string().optional(),
   /** Controls which LLM guardrail set is appended to the .md output.
    *  - undefined / omitted → default session-based guardrails
    *  - "direct-execution" → softer guardrails acknowledging this is the low-level API
@@ -57,6 +86,22 @@ const docsSchema = frontmatterSchema.extend({
       order: z.number().optional(),
     })
     .optional(),
+});
+
+const knowledgeBaseSchema = docsSchema.extend({
+  sources: z
+    .array(
+      z.object({
+        sourcePath: z.string(),
+        sourceHeading: z.string().nullable(),
+      }),
+    )
+    .optional(),
+  lastVerifiedAt: z.string().optional(),
+  reviewAfter: z.string().optional(),
+  freshness: z.enum(['evergreen', 'time-sensitive']).optional(),
+  topics: z.array(z.string()).optional(),
+  aliases: z.array(z.string()).optional(),
 });
 
 export const docs = defineDocs({
@@ -117,6 +162,19 @@ export const toolkits = defineDocs({
   docs: {
     schema: docsSchema,
     files: ['**/*', '!faq/**'],
+    postprocess: {
+      includeProcessedMarkdown: true,
+    },
+  },
+  meta: {
+    schema: metaSchema,
+  },
+});
+
+export const knowledgeBase = defineDocs({
+  dir: 'content/kb',
+  docs: {
+    schema: knowledgeBaseSchema,
     postprocess: {
       includeProcessedMarkdown: true,
     },

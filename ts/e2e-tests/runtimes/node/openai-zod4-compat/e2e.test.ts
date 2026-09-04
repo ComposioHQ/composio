@@ -1,25 +1,16 @@
 /**
- * OpenAI v6 + Zod v4 compatibility e2e test
+ * OpenAI v7 + Zod v4 compatibility e2e test
  *
- * Verifies that @composio/core works correctly with openai@6 and zod@4,
- * specifically testing the fix for https://github.com/ComposioHQ/composio/issues/2336
+ * Verifies that packed @composio/core and @composio/openai packages install,
+ * typecheck, and run with openai@7 and zod@4.
  */
 
 import { e2e, type E2ETestResultWithSetup } from '@e2e-tests/utils';
 import { describe, it, expect, beforeAll } from 'bun:test';
 
-declare module 'bun' {
-  interface Env {
-    COMPOSIO_API_KEY: string;
-  }
-}
-
 e2e(import.meta.url, {
   versions: { node: ['22.22.3', '24.17.0', '25.9.0'] },
   usesFixtures: true,
-  env: {
-    COMPOSIO_API_KEY: Bun.env.COMPOSIO_API_KEY,
-  },
   defineTests: ({ runFixture }) => {
     let result: E2ETestResultWithSetup;
 
@@ -27,18 +18,18 @@ e2e(import.meta.url, {
     beforeAll(async () => {
       result = await runFixture({
         filename: 'index.mjs',
-        setup: 'npm install --legacy-peer-deps',
+        setup: 'npm run install:composio && npm run typecheck',
       });
     }, 300_000);
 
     describe('setup', () => {
-      it('npm install completes successfully', () => {
-        expect(result.setup.stdout).toMatch(/added \d+ packages/);
+      it('installs and typechecks successfully', () => {
         expect(result.setup.exitCode).toBe(0);
+        expect(result.setup.stdout).toContain('openai v7 compatibility typecheck passed');
       });
     });
 
-    describe('OpenAI v6 + Zod v4 compatibility', () => {
+    describe('OpenAI v7 + Zod v4 compatibility', () => {
       it('exits successfully', () => {
         expect(result.exitCode).toBe(0);
       });
@@ -47,8 +38,8 @@ e2e(import.meta.url, {
         expect(result.stdout).toContain('zod@4 works');
       });
 
-      it('openai@5 works', () => {
-        expect(result.stdout).toContain('openai@5 works');
+      it('openai@7 works', () => {
+        expect(result.stdout).toContain('openai@7 works');
       });
 
       it('@composio/core works', () => {
@@ -56,7 +47,8 @@ e2e(import.meta.url, {
       });
 
       it('wrapTool works', () => {
-        expect(result.stdout).toContain('wrapTool works');
+        expect(result.stdout).toContain('core wrapTool works');
+        expect(result.stdout).toContain('responses wrapTool works');
       });
 
       it('all packages work together', () => {

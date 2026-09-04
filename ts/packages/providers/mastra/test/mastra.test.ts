@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, type Mock } from 'vitest';
 import { MastraProvider } from '../src';
 import { Tool } from '@composio/core';
 import { createTool } from '@mastra/core/tools';
@@ -7,11 +7,20 @@ import { createTool } from '@mastra/core/tools';
 interface MockedMastraTool {
   id: string;
   description: string;
-  inputSchema?: any;
-  outputSchema?: any;
+  inputSchema?: unknown;
+  outputSchema?: unknown;
   execute: Function;
   _isMockedMastraTool: boolean;
 }
+
+// Minimal shape of the config object the wrapped tool's `execute` closure is
+// pulled off of, i.e. the argument the mocked `createTool` factory (below) was
+// called with. Only `execute` is dereferenced at the `.mock.calls[...][0]`
+// call sites in this file, so that's all this type declares.
+type CreateToolMockConfig = { execute: (...args: unknown[]) => unknown };
+type CreateToolMock = Mock<(config: CreateToolMockConfig) => unknown>;
+const getCreatedToolExecute = () =>
+  (createTool as unknown as CreateToolMock).mock.calls[0][0].execute;
 
 // Mock the @mastra/core/tools module
 vi.mock('@mastra/core/tools', () => {
@@ -61,7 +70,7 @@ const RELAXED_MOCK_OUTPUT_SCHEMA = {
 describe('MastraProvider', () => {
   let provider: MastraProvider;
   let mockTool: Tool;
-  let mockExecuteToolFn: any;
+  let mockExecuteToolFn: Mock;
 
   beforeEach(() => {
     provider = new MastraProvider();
@@ -226,7 +235,7 @@ describe('MastraProvider', () => {
       provider.wrapTool(mockTool, mockExecuteToolFn) as unknown as MockedMastraTool;
 
       // Extract the execute function from the call to createTool()
-      const executeFunction = (createTool as any).mock.calls[0][0].execute;
+      const executeFunction = getCreatedToolExecute();
 
       // Test the execute function
       const inputData = { input: 'test-value' };
@@ -245,7 +254,7 @@ describe('MastraProvider', () => {
       provider.wrapTool(toolWithVersion, mockExecuteToolFn) as unknown as MockedMastraTool;
 
       // Extract the execute function from the call to createTool()
-      const executeFunction = (createTool as any).mock.calls[0][0].execute;
+      const executeFunction = getCreatedToolExecute();
 
       // Test that the version is passed correctly
       const inputData = { input: 'version-test' };
@@ -259,7 +268,7 @@ describe('MastraProvider', () => {
       provider.wrapTool(toolWithoutVersion, mockExecuteToolFn) as unknown as MockedMastraTool;
 
       // Extract the execute function from the call to createTool()
-      const executeFunction = (createTool as any).mock.calls[0][0].execute;
+      const executeFunction = getCreatedToolExecute();
 
       // Test that undefined version is passed correctly
       const inputData = { input: 'no-version-test' };
@@ -272,7 +281,7 @@ describe('MastraProvider', () => {
       provider.wrapTool(mockTool, mockExecuteToolFn) as unknown as MockedMastraTool;
 
       // Extract the execute function from the call to createTool()
-      const executeFunction = (createTool as any).mock.calls[0][0].execute;
+      const executeFunction = getCreatedToolExecute();
 
       // Test the execute function with empty input
       const result = await executeFunction({});
@@ -289,7 +298,7 @@ describe('MastraProvider', () => {
       provider.wrapTool(mockTool, mockExecuteToolFn) as unknown as MockedMastraTool;
 
       // Extract the execute function from the call to createTool()
-      const executeFunction = (createTool as any).mock.calls[0][0].execute;
+      const executeFunction = getCreatedToolExecute();
 
       // Test the execute function without any parameters: a missing payload is
       // normalized to an empty object rather than forwarded as undefined (issue #2406).
@@ -487,7 +496,7 @@ describe('MastraProvider', () => {
         mockTool,
         errorExecuteToolFn
       ) as unknown as MockedMastraTool;
-      const executeFunction = (createTool as any).mock.calls[0][0].execute;
+      const executeFunction = getCreatedToolExecute();
 
       await expect(executeFunction({ input: 'test' })).rejects.toThrow('Execution failed');
     });
@@ -495,7 +504,7 @@ describe('MastraProvider', () => {
     it('should handle tools with malformed schemas', () => {
       const toolWithMalformedSchema: Tool = {
         ...mockTool,
-        inputParameters: null as any,
+        inputParameters: null as unknown,
         outputParameters: undefined,
       };
 
@@ -535,7 +544,7 @@ describe('MastraProvider', () => {
       expect(strictProvider['strict']).toBe(true);
     });
 
-    it('should use removeNonRequiredProperties when strict mode is enabled', () => {
+    it('should keep optional properties as required-nullable when strict mode is enabled', () => {
       const strictProvider = new MastraProvider({ strict: true });
 
       const toolWithOptionalProps: Tool = {
@@ -558,8 +567,8 @@ describe('MastraProvider', () => {
 
       strictProvider.wrapTool(toolWithOptionalProps, mockExecuteToolFn);
 
-      // In strict mode, only required properties should be passed to jsonSchemaToZodSchema
-      // The removeNonRequiredProperties function should have been called and filtered the schema
+      // In strict mode every property is required and closed; optional ones
+      // stay available and accept null instead of being dropped.
       expect(createTool).toHaveBeenCalledWith({
         id: toolWithOptionalProps.slug,
         description: toolWithOptionalProps.description,
@@ -572,13 +581,69 @@ describe('MastraProvider', () => {
                 type: 'string',
                 description: 'Required field',
               },
+              optional_field: {
+                type: ['string', 'null'],
+                description: 'Optional field',
+              },
             },
-            required: ['required_field'],
+            required: ['required_field', 'optional_field'],
             additionalProperties: false,
           },
         },
         outputSchema: RELAXED_MOCK_OUTPUT_SCHEMA,
         execute: expect.any(Function),
+      });
+    });
+
+    it('keeps the original schema for tools strict mode cannot express', () => {
+      const strictProvider = new MastraProvider({ strict: true });
+      const toolWithMap: Tool = {
+        ...mockTool,
+        inputParameters: {
+          type: 'object',
+          properties: {
+            headers: { type: 'object', additionalProperties: { type: 'string' } },
+            name: { type: 'string' },
+          },
+          required: ['headers'],
+        },
+      };
+
+      strictProvider.wrapTool(toolWithMap, mockExecuteToolFn);
+
+      expect(createTool).toHaveBeenCalledWith(
+        expect.objectContaining({
+          inputSchema: { type: 'mock-zod-schema', originalSchema: toolWithMap.inputParameters },
+        })
+      );
+    });
+
+    it('omits null arguments the tool schema rejects before executing under strict mode', async () => {
+      const strictProvider = new MastraProvider({ strict: true });
+      const wrapped = strictProvider.wrapTool(
+        {
+          ...mockTool,
+          inputParameters: {
+            type: 'object',
+            properties: {
+              cfg: {
+                type: 'object',
+                properties: { url: { type: 'string' }, note: { type: 'string' } },
+                required: ['url'],
+              },
+              clearable: { type: ['string', 'null'] },
+            },
+            required: ['cfg'],
+          },
+        },
+        mockExecuteToolFn
+      ) as unknown as { execute: (input: unknown, context: unknown) => Promise<unknown> };
+
+      await wrapped.execute({ cfg: { url: 'u', note: null }, clearable: null }, {});
+
+      expect(mockExecuteToolFn).toHaveBeenCalledWith(mockTool.slug, {
+        cfg: { url: 'u' },
+        clearable: null,
       });
     });
 
@@ -639,7 +704,7 @@ describe('MastraProvider', () => {
         inputParameters: {
           type: 'string',
           description: 'A string parameter',
-        } as any,
+        } as unknown,
       };
 
       strictProvider.wrapTool(toolWithNonObjectParams, mockExecuteToolFn);

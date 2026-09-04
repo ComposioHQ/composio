@@ -1,26 +1,38 @@
 import process from 'node:process';
+import { Effect, Layer } from 'effect';
+import { FetchHttpClient } from '@effect/platform';
+import { BunFileSystem, BunPath, BunRuntime } from '@effect/platform-bun';
 import { isBackgroundWorkerInvocation, runBackgroundWorkerFromArgv } from 'src/analytics/dispatch';
+import { NodeOs } from 'src/services/node-os';
+import { TerminalUILive } from 'src/services/terminal-ui';
+import { stripTelemetryDebugFlag, telemetryDebugModeLayer } from 'src/services/runtime-flags';
 
-const TELEMETRY_DEBUG_FLAG = '--telemetry-debug';
-const CLI_TELEMETRY_DEBUG_ENV_VAR = 'COMPOSIO_CLI_TELEMETRY_DEBUG';
+const bootstrap = stripTelemetryDebugFlag(process.argv);
+process.argv = [...bootstrap.argv];
 
-const stripTelemetryDebugFlag = (argv: ReadonlyArray<string>): string[] => {
-  const normalizedArgv = [...argv];
-  const flagIndex = normalizedArgv.indexOf(TELEMETRY_DEBUG_FLAG);
-  if (flagIndex < 0) {
-    return normalizedArgv;
-  }
+const workerLayers = Layer.mergeAll(
+  BunFileSystem.layer,
+  BunPath.layer,
+  FetchHttpClient.layer,
+  NodeOs.Default,
+  TerminalUILive
+);
 
-  normalizedArgv.splice(flagIndex, 1);
-  process.env[CLI_TELEMETRY_DEBUG_ENV_VAR] = 'true';
-  return normalizedArgv;
-};
-
-if (isBackgroundWorkerInvocation(process.argv)) {
-  void runBackgroundWorkerFromArgv(process.argv).finally(() => {
-    process.exit(0);
-  });
+if (isBackgroundWorkerInvocation(bootstrap.argv)) {
+  runBackgroundWorkerFromArgv(bootstrap.argv).pipe(
+    Effect.provide(
+      bootstrap.telemetryDebug
+        ? Layer.merge(workerLayers, telemetryDebugModeLayer(true))
+        : workerLayers
+    ),
+    effect =>
+      BunRuntime.runMain(effect, {
+        disableErrorReporting: true,
+        teardown: (_exit, onExit) => onExit(0),
+      })
+  );
 } else {
-  process.argv = stripTelemetryDebugFlag(process.argv);
-  void import('./cli-main');
+  void import('./cli-main').then(({ runCli }) =>
+    runCli({ telemetryDebug: bootstrap.telemetryDebug })
+  );
 }

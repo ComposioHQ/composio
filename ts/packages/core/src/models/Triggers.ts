@@ -558,6 +558,21 @@ export class Triggers<TProvider extends BaseComposioProvider<unknown, unknown, u
       return false;
     }
 
+    // Check if authConfigId filter matches.
+    // Only V3 trigger payloads (and the legacy TriggerData shape) carry an auth config id;
+    // V1/V2 payloads and non-trigger V3 events normalize it to '', so this filter drops
+    // those events entirely. This mirrors the Python SDK's `auth_config_id` filter.
+    if (
+      filters.authConfigId &&
+      filters.authConfigId !== data.metadata.connectedAccount.authConfigId
+    ) {
+      logger.debug(
+        'Trigger does not match authConfigId filter',
+        JSON.stringify(filters.authConfigId, null, 2)
+      );
+      return false;
+    }
+
     // Check if triggerName filter matches
     if (
       filters.triggerSlug?.length &&

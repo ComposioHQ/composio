@@ -9,13 +9,23 @@ import {
 import { ComposioRequestCancelledError } from '../../src/errors/SDKErrors';
 import * as fileUtils from '../../src/utils/fileUtils.node';
 import { Tools } from '../../src/models/Tools';
+import { ToolRouterSession } from '../../src/models/ToolRouterSession';
 import { createTestContext, setupTest, mockToolExecution } from '../utils/toolExecuteUtils';
 import { mockClient } from '../utils/mocks/client.mock';
+import { MockProvider } from '../utils/mocks/provider.mock';
 
 // Mock the fileUtils module
 vi.mock('../../src/utils/fileUtils.node', () => ({
   downloadFileFromS3: vi.fn(),
   getFileDataAfterUploadingToS3: vi.fn(),
+  isHttpUrl: (value: string): boolean => {
+    try {
+      const url = new URL(value);
+      return url.protocol === 'http:' || url.protocol === 'https:';
+    } catch {
+      return false;
+    }
+  },
 }));
 
 describe('FileToolModifier', () => {
@@ -302,6 +312,133 @@ describe('FileToolModifier', () => {
       version: '20251201_01',
       availableVersions: ['20251201_01'],
     };
+
+    it('drops empty file values instead of uploading them (issue #4233)', async () => {
+      const fileUploadable = {
+        type: 'object' as const,
+        title: 'FileUploadable',
+        file_uploadable: true,
+        properties: {
+          name: { type: 'string' as const },
+          mimetype: { type: 'string' as const },
+          s3key: { type: 'string' as const },
+        },
+        required: ['name', 'mimetype', 's3key'],
+      };
+      const gmailLikeTool: Tool = {
+        ...mockTool,
+        inputParameters: {
+          type: 'object',
+          properties: {
+            subject: { type: 'string' },
+            attachment: { anyOf: [fileUploadable, { type: 'array', items: fileUploadable }] },
+            extra: { type: 'array', items: fileUploadable },
+            thread_id: { type: 'string' },
+          },
+        },
+      };
+      const staged = { name: 'a.txt', mimetype: 'text/plain', s3key: 'k' };
+
+      const result = await fileToolModifier.fileUploadModifier(gmailLikeTool, {
+        toolSlug: 'test-tool',
+        toolkitSlug: 'test-toolkit',
+        params: {
+          arguments: {
+            subject: 'Test',
+            attachment: '',
+            extra: ['', staged],
+            thread_id: '',
+          },
+          userId: 'test-user',
+        },
+      });
+
+      expect(fileUtils.getFileDataAfterUploadingToS3).not.toHaveBeenCalled();
+      expect(result.arguments).toEqual({
+        subject: 'Test',
+        extra: [staged],
+        // non-file empty strings are not the walker's business
+        thread_id: '',
+      });
+    });
+
+    it('drops scalar empty values for array-only file inputs and preserves null and staged files', async () => {
+      const fileUploadable = {
+        type: 'object' as const,
+        file_uploadable: true,
+        properties: {
+          name: { type: 'string' as const },
+          mimetype: { type: 'string' as const },
+          s3key: { type: 'string' as const },
+        },
+      };
+      const staged = { name: 'a.txt', mimetype: 'text/plain', s3key: 'staged/a.txt' };
+      const arrayFileTool: Tool = {
+        ...mockTool,
+        inputParameters: {
+          type: 'object',
+          properties: {
+            files: {
+              anyOf: [{ type: 'array', items: fileUploadable }, { type: 'null' }],
+            },
+            directFiles: { type: 'array', items: fileUploadable },
+            nullableFile: { anyOf: [fileUploadable, { type: 'null' }] },
+            stagedFiles: { type: 'array', items: fileUploadable },
+          },
+        },
+      };
+
+      const result = await fileToolModifier.fileUploadModifier(arrayFileTool, {
+        toolSlug: 'test-tool',
+        toolkitSlug: 'test-toolkit',
+        params: {
+          arguments: {
+            files: '',
+            directFiles: '',
+            nullableFile: null,
+            stagedFiles: [staged],
+          },
+          userId: 'test-user',
+        },
+      });
+
+      expect(fileUtils.getFileDataAfterUploadingToS3).not.toHaveBeenCalled();
+      expect(result.arguments).toEqual({
+        nullableFile: null,
+        stagedFiles: [staged],
+      });
+    });
+
+    it('drops scalar empty values for composed file arrays inferred from items', async () => {
+      const typelessArrayFileTool: Tool = {
+        ...mockTool,
+        inputParameters: {
+          type: 'object',
+          properties: {
+            files: {
+              anyOf: [
+                {
+                  items: { type: 'object', file_uploadable: true },
+                },
+                { type: 'null' },
+              ],
+            },
+          },
+        },
+      };
+
+      const result = await fileToolModifier.fileUploadModifier(typelessArrayFileTool, {
+        toolSlug: 'test-tool',
+        toolkitSlug: 'test-toolkit',
+        params: {
+          arguments: { files: '' },
+          userId: 'test-user',
+        },
+      });
+
+      expect(fileUtils.getFileDataAfterUploadingToS3).not.toHaveBeenCalled();
+      expect(result.arguments).toEqual({});
+    });
 
     it('should upload file for file_uploadable parameters', async () => {
       const mockFileData = {
@@ -1946,6 +2083,63 @@ describe('Tools with dangerouslyAllowAutoUploadDownloadFiles', () => {
     availableVersions: ['20251201_01'],
   };
 
+  describe('when dangerouslyAllowAutoUploadDownloadFiles is true', () => {
+    beforeEach(() => {
+      context.tools = new Tools(mockClient as unknown as ComposioClient, {
+        provider: context.mockProvider,
+        dangerouslyAllowAutoUploadDownloadFiles: true,
+      });
+      vi.mocked(fileUtils.getFileDataAfterUploadingToS3).mockResolvedValue({
+        name: 'file.txt',
+        mimetype: 'text/plain',
+        s3key: 'uploads/file.txt',
+      });
+      mockClient.toolRouter.session.execute.mockResolvedValue({
+        data: { uploaded: true },
+        error: null,
+        log_id: 'session-log',
+      });
+    });
+
+    it('stages session file arguments before beforeExecute and the request', async () => {
+      const beforeExecute = vi.fn(({ params }) => params);
+
+      await context.tools.executeSessionTool(
+        'COMPOSIO_TOOL',
+        {
+          sessionId: 'session-123',
+          arguments: { file: '/path/to/file.txt' },
+        },
+        { beforeExecute },
+        mockToolWithFileUpload
+      );
+
+      const staged = { name: 'file.txt', mimetype: 'text/plain', s3key: 'uploads/file.txt' };
+      expect(fileUtils.getFileDataAfterUploadingToS3).toHaveBeenCalledWith(
+        '/path/to/file.txt',
+        expect.objectContaining({
+          toolSlug: 'COMPOSIO_TOOL',
+          toolkitSlug: 'test-toolkit',
+        })
+      );
+      expect(beforeExecute).toHaveBeenCalledWith({
+        toolSlug: 'COMPOSIO_TOOL',
+        toolkitSlug: 'test-toolkit',
+        sessionId: 'session-123',
+        params: { file: staged },
+      });
+      expect(mockClient.toolRouter.session.execute).toHaveBeenCalledWith(
+        'session-123',
+        {
+          tool_slug: 'COMPOSIO_TOOL',
+          arguments: { file: staged },
+          enable_auto_workbench_offload: true,
+        },
+        undefined
+      );
+    });
+  });
+
   describe('when dangerouslyAllowAutoUploadDownloadFiles is false', () => {
     beforeEach(async () => {
       context.tools = new Tools(mockClient as unknown as ComposioClient, {
@@ -2027,6 +2221,183 @@ describe('Tools with dangerouslyAllowAutoUploadDownloadFiles', () => {
       );
     });
 
+    it('omits empty file values from the request when auto-upload is off (issue #4233)', async () => {
+      vi.spyOn(context.tools, 'getRawComposioToolBySlug').mockResolvedValue(mockToolWithFileUpload);
+
+      await context.tools.execute('COMPOSIO_TOOL', {
+        arguments: { file: '', text: 'keep' },
+        userId: 'test-user',
+        dangerouslySkipVersionCheck: true,
+      });
+
+      expect(fileUtils.getFileDataAfterUploadingToS3).not.toHaveBeenCalled();
+      expect(mockClient.tools.execute.mock.calls[0]?.[1]?.arguments).toEqual({ text: 'keep' });
+    });
+
+    it('omits empty file values reachable only through a $ref (issue #4233)', async () => {
+      // Composio toolkits express file flags through `$ref`/`$defs`, so the
+      // cheap "does this tool take a file?" gate has to see through the
+      // indirection or the fix never fires for a real tool.
+      vi.spyOn(context.tools, 'getRawComposioToolBySlug').mockResolvedValue({
+        ...mockToolWithFileUpload,
+        inputParameters: {
+          type: 'object',
+          properties: { file: { $ref: '#/$defs/Attachment' }, text: { type: 'string' } },
+          $defs: {
+            Attachment: {
+              type: 'object',
+              file_uploadable: true,
+              properties: { name: { type: 'string' }, s3key: { type: 'string' } },
+            },
+          },
+        },
+      });
+
+      await context.tools.execute('COMPOSIO_TOOL', {
+        arguments: { file: '', text: 'keep' },
+        userId: 'test-user',
+        dangerouslySkipVersionCheck: true,
+      });
+
+      expect(fileUtils.getFileDataAfterUploadingToS3).not.toHaveBeenCalled();
+      expect(mockClient.tools.execute.mock.calls[0]?.[1]?.arguments).toEqual({ text: 'keep' });
+    });
+
+    it('cleans typeless session file schemas without allowing prototype-key injection', async () => {
+      const staged = { name: 'a.txt', mimetype: 'text/plain', s3key: 'staged/a.txt' };
+      const argumentsWithPrototypeKey: Record<string, unknown> = JSON.parse(
+        '{"file":"","__proto__":{"polluted":true},"staged":{"name":"a.txt","mimetype":"text/plain","s3key":"staged/a.txt"},"nullable":null,"nested":{"file":"","__proto__":{"nestedPolluted":true},"text":"nested keep"},"text":"keep"}'
+      );
+      const tool: Tool = {
+        ...mockToolWithFileUpload,
+        inputParameters: {
+          properties: {
+            file: { type: 'string', file_uploadable: true },
+            staged: { type: 'object', file_uploadable: true },
+            nullable: {
+              anyOf: [{ type: 'object', file_uploadable: true }, { type: 'null' }],
+            },
+            nested: {
+              properties: {
+                file: { type: 'string', file_uploadable: true },
+                text: { type: 'string' },
+              },
+            },
+            text: { type: 'string' },
+          },
+        },
+      };
+      const beforeExecute = vi.fn(({ params }) => params);
+      mockClient.toolRouter.session.execute.mockResolvedValueOnce({
+        data: { ok: true },
+        error: null,
+        log_id: 'session-log',
+      });
+
+      await context.tools.executeSessionTool(
+        'COMPOSIO_TOOL',
+        { sessionId: 'session-123', arguments: argumentsWithPrototypeKey },
+        { beforeExecute },
+        tool
+      );
+
+      const hookArguments = beforeExecute.mock.calls[0]?.[0].params as Record<string, unknown>;
+      expect(Object.getPrototypeOf(hookArguments)).toBe(Object.prototype);
+      expect(Object.hasOwn(hookArguments, '__proto__')).toBe(true);
+      expect(Object.keys(hookArguments)).toContain('__proto__');
+      expect(hookArguments).not.toHaveProperty('file');
+      expect(hookArguments.__proto__).toEqual({ polluted: true });
+      expect(hookArguments.polluted).toBeUndefined();
+      expect(hookArguments.staged).toEqual(staged);
+      expect(hookArguments.nullable).toBeNull();
+      expect(hookArguments.text).toBe('keep');
+      const hookNested = hookArguments.nested as Record<string, unknown>;
+      expect(Object.getPrototypeOf(hookNested)).toBe(Object.prototype);
+      expect(Object.hasOwn(hookNested, '__proto__')).toBe(true);
+      expect(Object.keys(hookNested)).toContain('__proto__');
+      expect(hookNested).not.toHaveProperty('file');
+      expect(hookNested.__proto__).toEqual({ nestedPolluted: true });
+      expect(hookNested.nestedPolluted).toBeUndefined();
+      expect(hookNested.text).toBe('nested keep');
+
+      const requestArguments = mockClient.toolRouter.session.execute.mock.calls[0]?.[1]
+        ?.arguments as Record<string, unknown>;
+      expect(Object.getPrototypeOf(requestArguments)).toBe(Object.prototype);
+      expect(Object.hasOwn(requestArguments, '__proto__')).toBe(true);
+      expect(Object.keys(requestArguments)).toContain('__proto__');
+      expect(requestArguments.__proto__).toEqual({ polluted: true });
+      expect(requestArguments.polluted).toBeUndefined();
+      expect(requestArguments.staged).toEqual(staged);
+      expect(requestArguments.nullable).toBeNull();
+      const requestNested = requestArguments.nested as Record<string, unknown>;
+      expect(Object.getPrototypeOf(requestNested)).toBe(Object.prototype);
+      expect(Object.hasOwn(requestNested, '__proto__')).toBe(true);
+      expect(Object.keys(requestNested)).toContain('__proto__');
+      expect(requestNested).not.toHaveProperty('file');
+      expect(requestNested.__proto__).toEqual({ nestedPolluted: true });
+      expect(requestNested.nestedPolluted).toBeUndefined();
+      expect(fileUtils.getFileDataAfterUploadingToS3).not.toHaveBeenCalled();
+    });
+
+    it('uses raw session schemas for cleanup when modifySchema removes file flags', async () => {
+      const provider = new MockProvider();
+      const session = new ToolRouterSession(
+        mockClient as unknown as ComposioClient,
+        {
+          apiKey: 'test-api-key',
+          provider,
+          dangerouslyAllowAutoUploadDownloadFiles: false,
+        },
+        'session-123',
+        { type: 'http', url: 'https://mcp.example.com/session-123' }
+      );
+      mockClient.toolRouter.session.tools.mockResolvedValueOnce({
+        items: [mockRawToolWithFileUpload],
+        next_cursor: null,
+      });
+      mockClient.toolRouter.session.execute.mockResolvedValueOnce({
+        data: { ok: true },
+        error: null,
+        log_id: 'session-log',
+      });
+      provider.wrapTools.mockImplementation(tools => tools);
+
+      await session.tools({
+        modifySchema: ({ schema }) => ({
+          ...schema,
+          inputParameters: {
+            type: 'object',
+            properties: {
+              file: { type: 'string' },
+              text: { type: 'string' },
+            },
+          },
+        }),
+      });
+
+      const displayTools = provider.wrapTools.mock.calls[0]?.[0] as Tool[];
+      expect(displayTools[0]?.inputParameters?.properties?.file).not.toHaveProperty(
+        'file_uploadable'
+      );
+
+      const executeTool = provider.wrapTools.mock.calls[0]?.[1] as (
+        toolSlug: string,
+        input: Record<string, unknown>
+      ) => Promise<unknown>;
+      await executeTool('COMPOSIO_TOOL', { file: '', text: 'keep' });
+
+      expect(fileUtils.getFileDataAfterUploadingToS3).not.toHaveBeenCalled();
+      expect(mockClient.toolRouter.session.execute).toHaveBeenCalledWith(
+        'session-123',
+        {
+          tool_slug: 'COMPOSIO_TOOL',
+          arguments: { text: 'keep' },
+          enable_auto_workbench_offload: true,
+        },
+        undefined
+      );
+    });
+
     it('warns once per tool when auto-upload is off and the tool has a file-uploadable input', async () => {
       const warnSpy = vi.spyOn((await import('../../src/utils/logger')).default, 'warn');
       warnSpy.mockImplementation(() => {}); // silence the log in test output
@@ -2080,7 +2451,7 @@ describe('Tools with dangerouslyAllowAutoUploadDownloadFiles', () => {
       mockClient.tools.execute.mockResolvedValueOnce(mockResponse);
 
       // Mock transformToolExecuteResponse to return the same data structure
-      vi.spyOn(context.tools as any, 'transformToolExecuteResponse').mockReturnValue({
+      vi.spyOn(context.tools as unknown, 'transformToolExecuteResponse').mockReturnValue({
         data: mockResponse.data,
         error: mockResponse.error,
         successful: mockResponse.successful,

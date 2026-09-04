@@ -1,26 +1,26 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# changesets/action infers which GitHub tags/releases to push from `New tag:`
-# lines printed by `changeset publish`. The CLI binary workflow owns
-# @composio/cli GitHub Releases because those releases must include platform
-# binary assets. Let changesets publish/tag every other package, but hide the
-# private CLI tag from changesets/action so ts.release.yml cannot create an
-# empty @composio/cli GitHub Release.
+# changesets/action v2 reads Changesets v3's NDJSON events from
+# CHANGESETS_OUTPUT. The CLI binary workflow owns @composio/cli GitHub Releases
+# because those releases must include platform binary assets. Remove only that
+# package's git-tag event so changesets/action publishes and releases every
+# other package without creating an empty @composio/cli GitHub Release.
 
-stdout_file=$(mktemp)
-stderr_file=$(mktemp)
-trap 'rm -f "$stdout_file" "$stderr_file"' EXIT
+filtered_output_file=$(mktemp)
+trap 'rm -f "$filtered_output_file"' EXIT
 
 pnpm run build:packages
 pnpm run check:package-exports
 
 set +e
-pnpm changeset publish >"$stdout_file" 2>"$stderr_file"
+pnpm changeset publish
 status=$?
 set -e
 
-sed '/New tag:[[:space:]]*@composio\/cli@/d' "$stdout_file"
-cat "$stderr_file" >&2
+if [ -n "${CHANGESETS_OUTPUT:-}" ] && [ -f "$CHANGESETS_OUTPUT" ]; then
+  jq -c 'select(.packageName != "@composio/cli")' "$CHANGESETS_OUTPUT" >"$filtered_output_file"
+  mv "$filtered_output_file" "$CHANGESETS_OUTPUT"
+fi
 
 exit "$status"

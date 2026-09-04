@@ -9,6 +9,9 @@ on:
       - '.github/workflows/ts.audit.yml'
       - 'mise.toml'
       - 'mise.lock'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - 'pnpm-workspace.yaml'
   pull_request:
     branches: [master, next]
     paths:
@@ -17,17 +20,28 @@ on:
       - '.github/workflows/ts.audit.yml'
       - 'mise.toml'
       - 'mise.lock'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - 'pnpm-workspace.yaml'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.ref || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
 
 jobs:
   audit:
     name: Audit
     runs-on: ubuntu-latest
     permissions:
+      contents: read
       pull-requests: write
 
     steps:
       - name: Checkout Code
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Setup Node.js, pnpm, Bun
         uses: ./.github/actions/setup-node-pnpm-bun
@@ -73,3 +87,7 @@ jobs:
         with:
           file-path: audit-comment.txt
           comment-tag: pnpm-audit-security-warning
+
+      - name: Fail on high/critical advisories
+        # Mastra's pinned provider-utils release has no patched version for this low advisory.
+        run: pnpm audit --prod --audit-level=high --ignore=GHSA-866g-f22w-33x8

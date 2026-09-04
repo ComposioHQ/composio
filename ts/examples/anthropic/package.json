@@ -1,11 +1,12 @@
 {
   "name": "anthropic-example",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Example for using Anthropic Agent SDK provider with Composio SDK",
   "main": "index.js",
   "scripts": {
     "clean": "git clean -xdf node_modules",
+    "typecheck": "tsc --noEmit -p ./tsconfig.json",
     "start": "bun src/index.ts",
     "start:claude-agents-sdk": "bun src/claude-agents-sdk.ts",
     "test": "echo \"Error: no test specified\" && exit 1"
@@ -14,18 +15,21 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.71.0",
-    "@anthropic-ai/claude-agent-sdk": "^0.1.9",
+    "@anthropic-ai/claude-agent-sdk": "^0.3.245",
+    "@anthropic-ai/sdk": "^0.120.0",
     "@composio/anthropic": "workspace:*",
     "@composio/claude-agent-sdk": "workspace:*",
     "@composio/core": "workspace:*",
-    "@mastra/mcp": "^0.14.4",
+    "@mastra/core": "catalog:",
+    "@mastra/mcp": "^1.17.1",
+    "ai": "^6.0.266",
     "dotenv": "catalog:",
-    "zod": "^3.25.76",
+    "zod": "catalog:",
     "zod-to-json-schema": "catalog:"
   },
   "devDependencies": {
     "@types/bun": "catalog:",
     "typescript": "catalog:"
-  }
+  },
+  "type": "module"
 }

@@ -41,7 +41,11 @@ import { ACL_ONLY_FOR_SHARED_ERROR_FRAGMENT, serializeExperimentalForWire } from
 import { z } from 'zod/v3';
 import { transform } from '../utils/transform';
 import { ToolkitConnectionStateSchema } from '../types/toolRouter.types';
-import { ComposioAclOnlyForSharedError, ValidationError } from '../errors';
+import {
+  ComposioAclOnlyForSharedError,
+  ComposioInvalidModifierError,
+  ValidationError,
+} from '../errors';
 import { Tools } from './Tools';
 import { ToolRouterSessionFilesMount } from './ToolRouterSessionFileMount';
 import type {
@@ -51,7 +55,7 @@ import type {
   RegisteredCustomTool,
   RegisteredCustomToolkit,
 } from '../types/customTool.types';
-import type { Tool, ToolExecuteResponse } from '../types/tool.types';
+import { ToolSchema, type Tool, type ToolExecuteResponse } from '../types/tool.types';
 import type { SessionProxyExecuteParams } from '../types/toolRouter.types';
 import type {
   SessionExecuteParams,
@@ -190,13 +194,14 @@ export class ToolRouterSession<
     requestOptions?: ComposioRequestOptions
   ): Promise<ReturnType<TProvider['wrapTools']>> {
     const ToolsModel = new Tools<TToolCollection, TTool, TProvider>(this.client, this.config);
-    const tools = await ToolsModel.getRawToolRouterSessionTools(
+    const rawTools = await ToolsModel.getRawToolRouterSessionTools(
       this.sessionId,
-      modifiers?.modifySchema ? { modifySchema: modifiers.modifySchema } : undefined,
+      undefined,
       requestOptions
     );
+    const tools = await this.applySchemaModifier(rawTools, modifiers?.modifySchema);
     const sessionTools = await this.addPreloadedCustomTools(tools, modifiers);
-    const toolBySlug = new Map(sessionTools.map(tool => [tool.slug.toUpperCase(), tool]));
+    const rawToolBySlug = new Map(rawTools.map(tool => [tool.slug.toUpperCase(), tool]));
 
     if (this.hasCustomTools()) {
       // Create an execute function that splits local/remote tools in COMPOSIO_MULTI_EXECUTE_TOOL
@@ -205,7 +210,7 @@ export class ToolRouterSession<
         input: Record<string, unknown>
       ): Promise<ToolExecuteResponse> => {
         if (toolSlug === COMPOSIO_MULTI_EXECUTE_TOOL) {
-          return this.routeMultiExecute(input, ToolsModel, sessionTools, modifiers);
+          return this.routeMultiExecute(input, ToolsModel, rawTools, modifiers);
         }
         const customTool = findCustomTool(this.customToolsMap, toolSlug);
         if (customTool) {
@@ -217,7 +222,7 @@ export class ToolRouterSession<
           toolSlug,
           input,
           modifiers,
-          toolBySlug.get(toolSlug.toUpperCase())
+          rawToolBySlug.get(toolSlug.toUpperCase())
         );
       };
 
@@ -233,8 +238,31 @@ export class ToolRouterSession<
     }
 
     // Standard path (no local tools)
-    const wrappedTools = ToolsModel.wrapToolsForToolRouter(this.sessionId, sessionTools, modifiers);
+    const wrappedTools = modifiers?.modifySchema
+      ? ToolsModel.wrapToolsForToolRouter(this.sessionId, sessionTools, modifiers, rawTools)
+      : ToolsModel.wrapToolsForToolRouter(this.sessionId, sessionTools, modifiers);
     return wrappedTools as ReturnType<TProvider['wrapTools']>;
+  }
+
+  private async applySchemaModifier(
+    tools: Tool[],
+    modifier?: SessionMetaToolOptions['modifySchema']
+  ): Promise<Tool[]> {
+    if (!modifier) {
+      return tools;
+    }
+    if (typeof modifier !== 'function') {
+      throw new ComposioInvalidModifierError('Invalid schema modifier. Not a function.');
+    }
+    return Promise.all(
+      tools.map(tool =>
+        modifier({
+          toolSlug: tool.slug,
+          toolkitSlug: tool.toolkit?.slug ?? 'unknown',
+          schema: ToolSchema.parse(tool),
+        })
+      )
+    );
   }
 
   private async addPreloadedCustomTools(
@@ -347,9 +375,13 @@ export class ToolRouterSession<
       tools: tk.tools.map(tool => {
         // Look up by toolkit + original slug so toolkits can safely reuse common names
         // like VERSION, CLICK, or SEARCH without losing the backend-assigned final slug.
+        // Only trust a bare alias that belongs to this toolkit.
+        const bare = this.customToolsMap!.byOriginalSlug.get(tool.slug.toUpperCase());
         const entry =
           findCustomToolMapEntryByToolkitAndOriginalSlug(this.customToolsMap, tk.slug, tool.slug) ??
-          this.customToolsMap!.byOriginalSlug.get(tool.slug.toUpperCase());
+          (bare?.toolkit && bare.toolkit.toLowerCase() === tk.slug.toLowerCase()
+            ? bare
+            : undefined);
         return {
           slug: entry?.finalSlug ?? tool.slug,
           name: tool.name,
@@ -527,9 +559,10 @@ export class ToolRouterSession<
   /**
    * Execute a tool within the session.
    *
-   * For custom tools, accepts the original slug (e.g. "GREP") or the
-   * full slug (e.g. "LOCAL_GREP"). Custom tools are executed in-process;
-   * remote tools are sent to the Composio backend.
+   * For custom tools, accepts the full slug (e.g. "LOCAL_GREP") or the
+   * original slug (e.g. "GREP") when that original slug is unique across
+   * the session's custom tools and toolkits. Custom tools are executed
+   * in-process; remote tools are sent to the Composio backend.
    *
    * @param toolSlug - The tool slug to execute
    * @param arguments_ - Optional tool arguments
@@ -766,10 +799,22 @@ export class ToolRouterSession<
       );
     }
 
-    const [localResults, remoteResult] = await Promise.all([
+    const [localResults, remoteOutcome] = await Promise.all([
       Promise.all(localPromises),
-      remotePromise,
+      remotePromise
+        ? remotePromise.then(result => ({ result })).catch(error => ({ error }))
+        : undefined,
     ]);
+
+    const remoteTransportFailed = !!remoteOutcome && 'error' in remoteOutcome;
+    const remoteTransportError = remoteTransportFailed ? remoteOutcome.error : null;
+    const remoteErrorMessage = remoteTransportFailed
+      ? (remoteTransportError instanceof Error
+          ? remoteTransportError.message
+          : String(remoteTransportError)) || 'Remote tool execution failed'
+      : null;
+    const remoteResult =
+      remoteOutcome && 'result' in remoteOutcome ? remoteOutcome.result : undefined;
 
     // If only local tools, return the single/first result unwrapped
     if (remoteIndices.length === 0 && localResults.length === 1) {
@@ -784,9 +829,15 @@ export class ToolRouterSession<
         ? remoteResult.data
         : {}
     ) as Record<string, unknown>;
-    const remoteResults = (
-      Array.isArray(remoteData.results) ? remoteData.results : []
-    ) as unknown[];
+    const remoteResults = remoteErrorMessage
+      ? remoteIndices.map(index => ({
+          response: { successful: false, data: {}, error: remoteErrorMessage },
+          tool_slug: parsed[index].tool_slug,
+          error: remoteErrorMessage,
+        }))
+      : ((Array.isArray(remoteData.results) ? remoteData.results : []) as Array<
+          Record<string, unknown>
+        >);
 
     // Build local result entries matching backend format
     const localEntries = localResults.map(({ index, result }) => ({
@@ -796,20 +847,22 @@ export class ToolRouterSession<
         ...(result.error ? { error: result.error } : {}),
       },
       tool_slug: parsed[index].tool_slug,
+      index,
       ...(result.error ? { error: result.error } : {}),
     }));
 
-    // Merge and re-index sequentially so there are no collisions
+    // Restore original request order, then re-index sequentially so there are no collisions.
     const merged: Array<Record<string, unknown>> = [
-      ...(remoteResults as Array<Record<string, unknown>>),
-      ...localEntries,
-    ];
-    const allResults = merged.map(
-      (entry, i): Record<string, unknown> => ({
+      ...remoteResults.map((entry, remotePosition) => ({
         ...entry,
-        index: i,
-      })
-    );
+        index: remoteIndices[remotePosition] ?? remotePosition,
+      })),
+      ...localEntries,
+    ].sort((a, b) => Number(a.index) - Number(b.index));
+    const allResults = merged.map((entry, i): Record<string, unknown> => ({
+      ...entry,
+      index: i,
+    }));
     const failedCount = allResults.filter(r => r.error).length;
     const mergedData: Record<string, unknown> = {
       ...remoteData,
@@ -817,13 +870,15 @@ export class ToolRouterSession<
     };
     if (
       localEntries.length > 0 &&
-      ['total_count', 'success_count', 'error_count'].some(key => key in remoteData)
+      (remoteErrorMessage ||
+        ['total_count', 'success_count', 'error_count'].some(key => key in remoteData))
     ) {
       mergedData.total_count = allResults.length;
       mergedData.success_count = allResults.length - failedCount;
       mergedData.error_count = failedCount;
     }
-    const remoteError = typeof remoteResult?.error === 'string' ? remoteResult.error : null;
+    const remoteError =
+      remoteErrorMessage ?? (typeof remoteResult?.error === 'string' ? remoteResult.error : null);
     const hasAnyError = localResults.some(r => r.result.error) || !!remoteError;
 
     return {

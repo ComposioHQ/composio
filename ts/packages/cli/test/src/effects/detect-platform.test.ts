@@ -1,5 +1,5 @@
 import { describe, expect, it } from '@effect/vitest';
-import { Effect, Layer } from 'effect';
+import { Effect, Layer, Predicate } from 'effect';
 import {
   detectPlatform,
   UnsupportedPlatformError,
@@ -15,8 +15,9 @@ const createMockNodeOs = <P extends NodeJS.Platform>(platform: P, arch: string) 
     NodeOs,
     NodeOs.make({
       homedir: '/mock/home',
+      tmpdir: '/tmp',
       platform: platform as NodeJS.Platform,
-      arch,
+      arch: arch as NodeJS.Architecture,
     })
   );
 
@@ -347,7 +348,7 @@ describe('detect-platform.ts', () => {
       const error = new UnsupportedPlatformError({ platform: 'test', arch: 'test' });
       expect(error).toBeInstanceOf(Error);
       expect(error).toBeInstanceOf(UnsupportedPlatformError);
-      expect(error._tag).toBe('UnsupportedPlatformError');
+      expect(Predicate.isTagged(error, 'UnsupportedPlatformError')).toBe(true);
     });
 
     it('should contain platform and arch information', () => {
@@ -364,24 +365,26 @@ describe('detect-platform.ts', () => {
   });
 
   describe('Type Tests', () => {
-    it('should return correct PlatformArch type for supported combinations', async () => {
-      // This test verifies TypeScript types at runtime
-      const testType = async (platform: string, arch: string): Promise<PlatformArch> => {
-        return await Effect.runPromise(
-          detectPlatform.pipe(Effect.provide(createMockNodeOs(platform as NodeJS.Platform, arch)))
-        );
-      };
+    it.effect('should return correct PlatformArch type for supported combinations', () =>
+      Effect.gen(function* () {
+        // This test verifies TypeScript types at runtime
+        const testType = (
+          platform: string,
+          arch: string
+        ): Effect.Effect<PlatformArch, UnsupportedPlatformError> =>
+          detectPlatform.pipe(Effect.provide(createMockNodeOs(platform as NodeJS.Platform, arch)));
 
-      // These calls should compile without TypeScript errors
-      await expect(testType('darwin', 'x64')).resolves.toEqual({ platform: 'darwin', arch: 'x64' });
-      await expect(testType('darwin', 'arm64')).resolves.toEqual({
-        platform: 'darwin',
-        arch: 'aarch64',
-      });
-      await expect(testType('linux', 'aarch64')).resolves.toEqual({
-        platform: 'linux',
-        arch: 'aarch64',
-      });
-    });
+        // These calls should compile without TypeScript errors
+        expect(yield* testType('darwin', 'x64')).toEqual({ platform: 'darwin', arch: 'x64' });
+        expect(yield* testType('darwin', 'arm64')).toEqual({
+          platform: 'darwin',
+          arch: 'aarch64',
+        });
+        expect(yield* testType('linux', 'aarch64')).toEqual({
+          platform: 'linux',
+          arch: 'aarch64',
+        });
+      })
+    );
   });
 });

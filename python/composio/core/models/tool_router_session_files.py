@@ -6,7 +6,7 @@ in the session's virtual filesystem.
 from __future__ import annotations
 
 import typing as t
-from pathlib import Path
+from pathlib import Path, PureWindowsPath
 from urllib.parse import unquote, urlparse
 
 import requests
@@ -22,8 +22,18 @@ from composio_client.types.tool_router.session.file_list_response import (
 )
 
 from composio.client import HttpClient
-from composio.exceptions import RemoteFileDownloadError, ValidationError
+from composio.exceptions import (
+    RemoteFileDownloadError,
+    UnsafePathComponentError,
+    ValidationError,
+)
 from composio.utils.mimetypes import get_extension_from_mime_type
+from composio.utils.safe_path import secure_basename_join
+from composio.utils.url_safety import (
+    parse_content_length,
+    safe_get,
+    safe_request,
+)
 from composio.utils.uuid import generate_short_id
 
 DEFAULT_TOOL_ROUTER_SESSION_FILES_MOUNT_ID = "files"
@@ -44,52 +54,106 @@ def _is_url(value: str) -> bool:
         return False
 
 
-def _fetch_from_url(url: str) -> t.Tuple[bytes, str]:
-    """Fetch file content from URL. Returns (content, mimetype)."""
+class _UrlFetchError(Exception):
+    """Internal failure raised by :func:`_fetch_url_bytes`.
+
+    Carries the facts rather than a message, so the two callers can keep their
+    own public error type and wording while sharing one network body. Neither
+    the type nor the instance escapes this module.
+    """
+
+    def __init__(
+        self,
+        *,
+        cause: t.Optional[BaseException] = None,
+        status_code: t.Optional[int] = None,
+        status_text: t.Optional[str] = None,
+        redirected: bool = False,
+        size_detail: t.Optional[str] = None,
+    ) -> None:
+        super().__init__(size_detail or "Failed to fetch URL")
+        self.cause = cause
+        self.status_code = status_code
+        self.status_text = status_text
+        self.redirected = redirected
+        self.size_detail = size_detail
+
+
+def _fetch_url_bytes(url: str) -> t.Tuple[bytes, str]:
+    """Fetch a URL into memory under the SDK's fetch protections.
+
+    The protections are the point of sharing this: the target is validated
+    before connecting, redirects are refused rather than followed, and the body
+    is streamed with the size accounted against ``_MAX_RESPONSE_SIZE`` so a
+    dishonest ``Content-Length`` cannot exhaust memory. Every caller needs all
+    four, whether the URL came from the user or from an API response.
+
+    Returns (content, mimetype). Raises :class:`_UrlFetchError`.
+    """
     try:
-        response = requests.get(
+        response = safe_get(
             url,
             stream=True,
-            allow_redirects=False,
             timeout=(_CONNECT_TIMEOUT, _READ_TIMEOUT),
         )
     except requests.exceptions.RequestException as e:
-        raise ValidationError(f"Failed to fetch file from URL: {e}") from e
+        raise _UrlFetchError(cause=e) from e
 
-    if response.status_code in (301, 302, 303, 307, 308):
+    try:
+        if response.status_code in (301, 302, 303, 307, 308):
+            raise _UrlFetchError(redirected=True)
+
+        if not response.ok:
+            raise _UrlFetchError(
+                status_code=response.status_code, status_text=response.reason
+            )
+
+        content_length = parse_content_length(response.headers.get("Content-Length"))
+        if content_length is not None and content_length > _MAX_RESPONSE_SIZE:
+            raise _UrlFetchError(
+                size_detail=(
+                    f"File size ({content_length} bytes) exceeds maximum allowed "
+                    f"size ({_MAX_RESPONSE_SIZE} bytes)"
+                )
+            )
+
+        chunks: t.List[bytes] = []
+        total_bytes = 0
+        try:
+            for chunk in response.iter_content(chunk_size=8192):
+                if chunk:
+                    total_bytes += len(chunk)
+                    if total_bytes > _MAX_RESPONSE_SIZE:
+                        raise _UrlFetchError(
+                            size_detail="Response size exceeds maximum allowed size"
+                        )
+                    chunks.append(chunk)
+        except requests.exceptions.RequestException as e:
+            raise _UrlFetchError(cause=e) from e
+    finally:
         response.close()
-        raise ValidationError(
-            "URL returned redirect. Please provide a direct URL to the file."
-        )
-
-    if not response.ok:
-        response.close()
-        raise ValidationError(
-            f"Failed to fetch file from URL: {response.status_code} {response.reason}"
-        )
-
-    content_length = response.headers.get("Content-Length")
-    if content_length and int(content_length) > _MAX_RESPONSE_SIZE:
-        response.close()
-        raise ValidationError(
-            f"File size ({int(content_length)} bytes) exceeds maximum allowed "
-            f"size ({_MAX_RESPONSE_SIZE} bytes)"
-        )
-
-    chunks: t.List[bytes] = []
-    total_bytes = 0
-    for chunk in response.iter_content(chunk_size=8192):
-        if chunk:
-            total_bytes += len(chunk)
-            if total_bytes > _MAX_RESPONSE_SIZE:
-                response.close()
-                raise ValidationError("Response size exceeds maximum allowed size")
-            chunks.append(chunk)
-    response.close()
 
     mimetype = response.headers.get("content-type", "application/octet-stream")
     mimetype = mimetype.split(";")[0].strip()
     return b"".join(chunks), mimetype
+
+
+def _fetch_from_url(url: str) -> t.Tuple[bytes, str]:
+    """Fetch file content from a user-supplied URL. Returns (content, mimetype)."""
+    try:
+        return _fetch_url_bytes(url)
+    except _UrlFetchError as e:
+        if e.cause is not None:
+            raise ValidationError(f"Failed to fetch file from URL: {e.cause}") from e
+        if e.redirected:
+            raise ValidationError(
+                "URL returned redirect. Please provide a direct URL to the file."
+            ) from e
+        if e.status_code is not None:
+            raise ValidationError(
+                f"Failed to fetch file from URL: {e.status_code} {e.status_text}"
+            ) from e
+        raise ValidationError(str(e)) from e
 
 
 class RemoteFile:
@@ -113,34 +177,51 @@ class RemoteFile:
 
     @property
     def filename(self) -> str:
-        """Filename extracted from the mount path (e.g. 'report.pdf' from 'output/report.pdf')."""
-        return Path(self.mount_relative_path).name
+        """Filename extracted from the mount path (e.g. 'report.pdf' from 'output/report.pdf').
+
+        Deliberately non-raising: this is a display value, and ``buffer()``
+        reads it while constructing ``RemoteFileDownloadError``. A validator
+        here would replace a genuine download error with a validation error
+        raised from inside the error constructor. ``save()`` validates instead,
+        at the point the value actually becomes a path.
+
+        ``PureWindowsPath`` so a mount path crafted for a Windows target
+        (``..\\..\\evil``) is stripped on POSIX too.
+        """
+        return PureWindowsPath(self.mount_relative_path).name
 
     def buffer(self) -> bytes:
-        """Fetch the file content as bytes."""
-        try:
-            response = requests.get(
-                self.download_url,
-                timeout=(_CONNECT_TIMEOUT, _READ_TIMEOUT),
-            )
-        except requests.exceptions.RequestException as e:
-            raise RemoteFileDownloadError(
-                f"Failed to download file: {type(e).__name__}",
-                download_url=self.download_url,
-                mount_relative_path=self.mount_relative_path,
-                filename=self.filename,
-            ) from e
+        """Fetch the file content as bytes.
 
-        if not response.ok:
+        ``self.download_url`` is set by :meth:`from_api_response`, so it is
+        untrusted input like every other response field. It goes through
+        :func:`_fetch_url_bytes` — the same body that serves user-supplied
+        URLs — rather than a bare ``requests.get``: which side of the trust
+        boundary the URL arrived from does not change what the fetch needs to
+        defend against.
+        """
+        try:
+            content, _ = _fetch_url_bytes(self.download_url)
+        except _UrlFetchError as e:
+            if e.redirected:
+                message = (
+                    "Failed to download file: the download URL returned a redirect"
+                )
+            elif e.status_code is not None:
+                message = f"Failed to download file: {e.status_code} {e.status_text}"
+            elif e.cause is not None:
+                message = f"Failed to download file: {type(e.cause).__name__}"
+            else:
+                message = f"Failed to download file: {e}"
             raise RemoteFileDownloadError(
-                f"Failed to download file: {response.status_code} {response.reason}",
-                status_code=response.status_code,
-                status_text=response.reason,
+                message,
+                status_code=e.status_code,
+                status_text=e.status_text,
                 download_url=self.download_url,
                 mount_relative_path=self.mount_relative_path,
                 filename=self.filename,
-            )
-        return response.content
+            ) from (e.cause or e)
+        return content
 
     def text(self) -> str:
         """Fetch the file content as UTF-8 text."""
@@ -158,17 +239,21 @@ class RemoteFile:
         if path is not None:
             save_path = Path(path)
         else:
-            # SEC-316 defense-in-depth: `self.filename` is `Path(mount_relative_path).name`,
-            # so directory components are already stripped — but verify the resolved
-            # default-location path stays inside the cache dir to reject residual `..`
-            # cases (e.g. ``mount_relative_path == ".."`` keeps ``filename == ".."``).
+            # SEC-316 defense-in-depth. `safe_basename` collapses the
+            # server-controlled mount path and rejects what has no usable
+            # basename — `""` and `"."` previously made `save_path` equal
+            # `default_dir`, passed the containment check (a path contains
+            # itself), and failed as a raw `IsADirectoryError` after the
+            # directory had been created. The containment check stays as a
+            # second line of defence, anchored on the constant `default_dir`,
+            # which is what makes it meaningful; see `composio.utils.safe_path`.
             default_dir = Path.home() / COMPOSIO_DIR / TEMP_FILES_DIRECTORY_NAME
-            save_path = default_dir / self.filename
-            if not save_path.resolve().is_relative_to(default_dir.resolve()):
-                raise ValidationError(
-                    f"Path traversal detected: filename {self.filename!r} resolves "
-                    "outside the intended output directory."
+            try:
+                save_path = secure_basename_join(
+                    default_dir, self.mount_relative_path, label="mount path"
                 )
+            except UnsafePathComponentError as e:
+                raise ValidationError(str(e)) from e
 
         save_path.parent.mkdir(parents=True, exist_ok=True)
         save_path.write_bytes(content)
@@ -298,8 +383,12 @@ class ToolRouterSessionFilesMount:
             mimetype=mime,
         )
 
+        # `upload_url` comes from the API response, so it is validated before
+        # the file's bytes are sent to it, and re-validated on every redirect
+        # hop. See `composio.utils.url_safety`.
         try:
-            upload_resp = requests.put(
+            upload_resp = safe_request(
+                "PUT",
                 create_resp.upload_url,
                 data=content,
                 headers={"Content-Type": mime},

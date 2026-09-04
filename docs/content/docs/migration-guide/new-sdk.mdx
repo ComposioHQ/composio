@@ -1,10 +1,12 @@
 ---
 title: Our next generation SDKs
 description: Learn more about Composio's next generation SDKs and how to migrate
+legacy: true
+written: "December 2025"
 ---
 
 <Callout type="info">
-This guide covers migrating from the legacy SDK (v1) to the current SDK (v3). The recommended way to use Composio is now through **sessions** — see [Migrating from Direct Tools to Sessions](/docs/migration-guide/direct-to-sessions) or [Configuring Sessions](/docs/configuring-sessions) if you're starting fresh.
+This guide covers migrating from the legacy SDK (v1) — `composio-core` on PyPI and npm — to the current SDK (v3): `composio` on PyPI, `@composio/core` on npm. Provider packages such as `composio-openai` kept their names across the rewrite: current releases work with v3, v1-era releases don't. The recommended way to use Composio is now through **sessions** — see [Migrating from Direct Tools to Sessions](/docs/migration-guide/direct-to-sessions) or [Configuring Sessions](/docs/configuring-sessions) if you're starting fresh.
 </Callout>
 
 In the last few months, we have experienced very rapid growth in usage of our platform. As such, our team has been working hard to radically improve the performance and developer experience of our platform.
@@ -74,9 +76,7 @@ pip install -U composio
 ```
   </Tab>
   <Tab value="TypeScript">
-```bash
-npm install @composio/core
-```
+<PackageInstall packages="@composio/core" />
   </Tab>
 </Tabs>
 
@@ -582,7 +582,7 @@ def get_issue_info(input: GetIssueInfoInput, ctx) -> dict:
         endpoint=f"/repos/composiohq/composio/issues/{input.issue_number}",
         method="GET",
     )
-    return {"data": result.data}
+    return {"data": result["data"]}
 
 session = composio.create(
     user_id="default",
@@ -736,7 +736,7 @@ console.log(authConfig);
   </Tab>
 </Tabs>
 
-For using custom authentication credentials, refer to the [Programmatic Auth Configs](/docs/programmatic-auth-configs) documentation.
+For using custom authentication credentials, refer to the [Programmatic Auth Configs](/docs/authentication/programmatic-auth-configs) documentation.
 
 <Callout type="info">
 The callback URL for creating custom OAuth configs is now `https://backend.composio.dev/api/v3/toolkits/auth/callback`. The previous URL was `https://backend.composio.dev/api/v1/auth-apps/add`.
@@ -1124,7 +1124,7 @@ export default async function webhookHandler(req: NextApiRequest, res: NextApiRe
 
 ### Local tools
 
-Previously, the Python SDK included *[local tools](https://github.com/ComposioHQ/composio/tree/master/python/composio/tools/local)*. These were tools defined within the SDK and consisted of local shell and code-related tools such as "clipboard", "sqltool", and "shelltool".
+Previously, the Python SDK included *[local tools](https://github.com/ComposioHQ/composio/tree/0.5.0%2Bpost.1/python/composio/tools/local)*. These were tools defined within the SDK and consisted of local shell and code-related tools such as "clipboard", "sqltool", and "shelltool".
 
 This feature is currently in development for both Python and TypeScript SDKs, with newly created tools built for improved agent accuracy.
 

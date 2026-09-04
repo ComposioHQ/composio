@@ -861,7 +861,7 @@ describe('ConnectedAccounts', () => {
       const nanoid = 'conn_123';
       const invalidOptions = { redirectUrl: 123 };
 
-      await expect(connectedAccounts.refresh(nanoid, invalidOptions as any)).rejects.toThrow(
+      await expect(connectedAccounts.refresh(nanoid, invalidOptions as unknown)).rejects.toThrow(
         'Failed to parse connected account refresh options'
       );
 
@@ -1171,7 +1171,7 @@ describe('ConnectedAccounts', () => {
 
     it('should throw ValidationError for invalid params', async () => {
       await expect(
-        connectedAccounts.update('conn_abc123', { enabled: 'yes' } as any)
+        connectedAccounts.update('conn_abc123', { enabled: 'yes' } as unknown)
       ).rejects.toThrow('Failed to parse connected account update params');
     });
   });
@@ -1265,7 +1265,7 @@ describe('ConnectedAccounts', () => {
       };
 
       await expect(
-        connectedAccounts.link(userId, authConfigId, invalidOptions as any)
+        connectedAccounts.link(userId, authConfigId, invalidOptions as unknown)
       ).rejects.toThrow('Failed to parse create connected account link options');
 
       // Ensure API was not called with invalid options

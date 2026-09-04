@@ -11,6 +11,7 @@ import { join, relative } from "path";
 const DOCS_DIR = join(import.meta.dir, "../../content/docs");
 const EXAMPLES_DIR = join(import.meta.dir, "../../content/examples");
 const CHANGELOG_DIR = join(import.meta.dir, "../../content/changelog");
+const GOOGLE_PROVIDER_DOC = join(DOCS_DIR, "providers/google.mdx");
 
 /** Recursively find all .mdx files */
 async function findMdxFiles(dir: string): Promise<string[]> {
@@ -97,6 +98,40 @@ describe("Content - no empty pages", () => {
     }
 
     expect(empty).toEqual([]);
+  });
+});
+
+describe("Content - provider compatibility", () => {
+  test("Gemini Python docs use the google-genai-compatible provider", async () => {
+    const content = await readFile(GOOGLE_PROVIDER_DOC, "utf-8");
+
+    expect(content).toContain(
+      '<PackageInstall ecosystem="python" packages="composio composio_gemini google-genai" />',
+    );
+    expect(content).toContain("from composio_gemini import GeminiProvider");
+    expect(content).toContain("Composio(provider=GeminiProvider())");
+    expect(content).not.toContain("composio_google google-genai");
+  });
+});
+
+describe("Content - Context7 ingest rules", () => {
+  test("context7.json states the current REST version without claiming route parity", async () => {
+    // Context7 ingests this repo for coding agents. Without a rule, nothing in
+    // the ingested corpus says which REST version is current.
+    const raw = await readFile(join(import.meta.dir, "../../../context7.json"), "utf-8");
+    const rules: unknown = JSON.parse(raw).rules;
+
+    expect(Array.isArray(rules)).toBe(true);
+    expect((rules as unknown[]).length).toBeGreaterThan(0);
+    expect(
+      (rules as string[]).some(rule => rule.includes("https://backend.composio.dev/api/v3.1")),
+    ).toBe(true);
+    expect(
+      (rules as string[]).some(rule =>
+        rule.includes("This version-default change is limited to these five endpoints."),
+      ),
+    ).toBe(true);
+    expect((rules as string[]).join("\n")).not.toMatch(/every non-tool endpoint.*unchanged/i);
   });
 });
 

@@ -1,5 +1,36 @@
 # @composio/experimental
 
+## 0.2.3
+
+### Patch Changes
+
+- db7b576: Declare Node.js 22.22.3 as the minimum supported runtime for every published TypeScript package so package managers surface incompatible runtimes before users encounter ESM loading failures.
+
+## 0.2.2
+
+### Patch Changes
+
+- 4ceaede: Refresh the TypeBox runtime dependency.
+
+## 0.2.1
+
+### Patch Changes
+
+- 503b50a: Refresh runtime dependencies across the TypeScript SDK packages.
+
+## 0.2.0
+
+### Minor Changes
+
+- b07fcad: Add an eve provider: `EveProvider` makes `session.tools()` return eve-native `defineTool`s, `defineComposioTools` is the replay-safe `step.started` resolver, and `(ctx, next)` hooks can rewrite, deny, or transform Tool Router meta-tool calls.
+
+  Preserve successful local-tool results when the remote half of a mixed `COMPOSIO_MULTI_EXECUTE_TOOL` batch fails at the transport layer, so callers can see which side effects already completed before retrying.
+
+### Patch Changes
+
+- 58bc93b: Refresh dependency ranges and lockfiles across the workspace.
+- fa933a6: Fix the `homepage` links in these packages' `package.json`. They pointed at `github.com/ComposioHQ/composio/tree/main/...`, but the default branch is `next` and no `main` branch exists, so every link 404'd on npm and in editor tooltips. They now point at `tree/next/...`.
+
 ## 0.1.0
 
 ### Minor Changes

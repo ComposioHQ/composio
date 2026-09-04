@@ -1,7 +1,9 @@
 import path from 'node:path';
 import * as tempy from 'tempy';
+import { Composio as RawComposioClient } from '@composio/client';
+import type { AuthConfigCreateParams } from '@composio/client/resources/auth-configs';
 import { CliApp, CliConfig } from '@effect/cli';
-import { Command, FetchHttpClient, FileSystem } from '@effect/platform';
+import { Command, FetchHttpClient, FileSystem, Path } from '@effect/platform';
 import { BunFileSystem, BunContext, BunPath } from '@effect/platform-bun';
 import {
   ConfigProvider,
@@ -21,6 +23,7 @@ import * as MockTerminal from './mock-terminal';
 import { TerminalUITest } from './terminal-ui-test';
 import type { Toolkits, ToolkitDetailed } from 'src/models/toolkits';
 import { NodeProcess } from 'src/services/node-process';
+import { cliDebugFlagsLayer } from 'src/services/runtime-flags';
 import {
   ComposioClientSingleton,
   ComposioSessionRepository,
@@ -46,6 +49,7 @@ import { UpgradeBinary } from 'src/services/upgrade-binary';
 import { NodeOs } from 'src/services/node-os';
 import { TriggersRealtime } from 'src/services/triggers-realtime';
 import { ToolsExecutor, ToolsExecutorLive } from 'src/services/tools-executor';
+import { ToolkitSlugCatalog } from 'src/services/toolkit-slug-catalog';
 import type { ToolExecuteResponse } from 'src/services/tools-executor';
 import type {
   SessionCreateResponse,
@@ -69,6 +73,7 @@ import { ProjectEnvironmentDetector } from 'src/services/project-environment-det
 import { CommandRunner } from 'src/services/command-runner';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { CommandExecutor } from '@effect/platform';
+import { SetupSkillInstaller } from 'src/services/setup-skill-installer';
 
 export interface TestLiveInput {
   /**
@@ -82,6 +87,17 @@ export interface TestLiveInput {
    * TODO: consider extracting `fixture` into another `Effect`.
    */
   fixture?: string;
+
+  /**
+   * Override the running-executable path reported by `NodeProcess`.
+   *
+   * A relative value resolves against the per-test home directory, which is a
+   * fresh temp dir created while the layer is being built — so a scenario that
+   * needs an exec path underneath it (e.g. `.local/bin/composio`) can stay
+   * relative instead of spelling out a path it cannot know up front.
+   * Defaults to `<homedir>/composio`.
+   */
+  execPath?: string;
 
   /**
    * Mock toolkit-related data to use in test.
@@ -100,6 +116,7 @@ export interface TestLiveInput {
   authConfigsData?: {
     items?: AuthConfigItem[];
     createResponse?: AuthConfigCreateResponse;
+    onCreate?: (params: AuthConfigCreateParams) => void;
   };
 
   /**
@@ -198,6 +215,9 @@ export interface TestLiveInput {
    */
   commandRunner?: CommandRunner;
 
+  /** Override setup's Claude skill installer. Defaults to an idempotent no-op. */
+  setupSkillInstaller?: SetupSkillInstaller;
+
   /**
    * Override TerminalUI behavior for tests.
    * When set, replaces the default TerminalUITest (which auto-selects first option).
@@ -215,7 +235,7 @@ export interface TestLiveInput {
  * Layer<RequirementsOut, Error, RequirementsIn>
  */
 
-type RequiredLayer = Layer.Layer<any, any, never>;
+type RequiredLayer = Layer.Layer<CliApp.CliApp.Environment, unknown, never>;
 
 const ConsumerProjectResolveFetchMock = Layer.scopedDiscard(
   Effect.acquireRelease(
@@ -594,13 +614,15 @@ export const TestLayer = (input?: TestLiveInput) =>
           }
           return Effect.succeed(found);
         },
-        createAuthConfig: () =>
-          Effect.succeed(
+        createAuthConfig: (params: AuthConfigCreateParams) => {
+          authConfigsData.onCreate?.(params);
+          return Effect.succeed(
             authConfigsData.createResponse ?? {
               auth_config: { id: 'ac_test', auth_scheme: 'OAUTH2', is_composio_managed: true },
               toolkit: { slug: 'test' },
             }
-          ),
+          );
+        },
         deleteAuthConfig: (nanoid: string) => {
           const found = authConfigsData.items.find(item => item.id === nanoid);
           if (!found) {
@@ -784,11 +806,12 @@ export const TestLayer = (input?: TestLiveInput) =>
       })
     );
 
-    // Mock `node:os`
+    // Mock operating-system details
     const NodeOsTest = Layer.succeed(
       NodeOs,
       new NodeOs({
         homedir: cwd,
+        tmpdir: tempy.rootTemporaryDirectory,
         arch: 'arm64',
         platform: 'darwin',
       })
@@ -799,6 +822,7 @@ export const TestLayer = (input?: TestLiveInput) =>
       NodeProcess,
       new NodeProcess({
         cwd,
+        execPath: input?.execPath ? path.resolve(cwd, input.execPath) : path.join(cwd, 'composio'),
         platform: 'darwin',
         arch: 'arm64',
       })
@@ -806,7 +830,7 @@ export const TestLayer = (input?: TestLiveInput) =>
 
     const ComposioUserContextTest = Layer.provideMerge(
       ComposioUserContextLive,
-      Layer.merge(BunFileSystem.layer, NodeOsTest)
+      Layer.mergeAll(BunFileSystem.layer, BunPath.layer, NodeOsTest)
     );
 
     let rawCliUserConfig = CliUserConfig.make({
@@ -829,7 +853,7 @@ export const TestLayer = (input?: TestLiveInput) =>
             developerModeEnabled: rawCliUserConfig.developer.enabled,
             developerDangerousCommandsEnabled: rawCliUserConfig.developer.destructiveActions,
             experimentalFeatures: rawCliUserConfig.experimentalFeatures,
-            artifactDirectory: undefined,
+            artifactDirectory: Option.getOrUndefined(rawCliUserConfig.artifactDirectory),
             experimentalSubagentTarget: 'auto' as const,
             security: 'auto' as const,
           };
@@ -985,7 +1009,7 @@ export const TestLayer = (input?: TestLiveInput) =>
       };
     };
 
-    const mockComposioClient = {
+    const mockComposioClient = Object.assign(new RawComposioClient({ apiKey: 'test' }), {
       link: {
         create: async (params: { auth_config_id: string; user_id: string }) => {
           const response = connectedAccountsData.linkResponse ?? {
@@ -1182,23 +1206,25 @@ export const TestLayer = (input?: TestLiveInput) =>
           }),
         },
       },
-    };
+    });
 
     const ComposioClientSingletonTest = Layer.succeed(
       ComposioClientSingleton,
       new ComposioClientSingleton({
         get: Effect.fn(function* () {
-          // Partial mock: only implements `toolRouter.session.*` methods used by
-          // CLI commands under test. The full Composio client interface is too
-          // large to mock completely for unit tests.
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          return mockComposioClient as any;
+          return mockComposioClient;
         }),
         getFor: Effect.fn(function* () {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          return mockComposioClient as any;
+          return mockComposioClient;
         }),
       })
+    );
+
+    // Built per test layer, so each test resolves toolkit slugs against its own
+    // cache directory rather than inheriting a memo from an earlier test.
+    const ToolkitSlugCatalogTest = Layer.provide(
+      ToolkitSlugCatalog.Default,
+      ComposioToolkitsRepositoryTest
     );
 
     // --- ToolsExecutor ---
@@ -1224,7 +1250,10 @@ export const TestLayer = (input?: TestLiveInput) =>
             },
           })
         )
-      : Layer.provide(ToolsExecutorLive, ComposioClientSingletonTest);
+      : Layer.provide(
+          ToolsExecutorLive,
+          Layer.mergeAll(ComposioClientSingletonTest, ToolkitSlugCatalogTest)
+        );
 
     const CliConfigLive = CliConfig.layer(ComposioCliConfig);
 
@@ -1235,6 +1264,12 @@ export const TestLayer = (input?: TestLiveInput) =>
           CommandRunner,
           new CommandRunner({
             run: () => Effect.succeed(CommandExecutor.ExitCode(0)),
+            capture: () =>
+              Effect.succeed({
+                exitCode: 0,
+                stdout: '',
+                stderr: '',
+              }),
           })
         );
 
@@ -1242,6 +1277,17 @@ export const TestLayer = (input?: TestLiveInput) =>
     const TerminalUILayer = input?.terminalUI
       ? Layer.succeed(TerminalUI, input.terminalUI)
       : TerminalUITest;
+
+    const SetupSkillInstallerTest = Layer.succeed(
+      SetupSkillInstaller,
+      input?.setupSkillInstaller ??
+        new SetupSkillInstaller({
+          isClaudeSkillReady: Effect.succeed(false),
+          hasManagedClaudeSkill: Effect.succeed(false),
+          ensureClaudeSkill: Effect.succeed(false),
+          removeClaudeSkill: Effect.succeed(false),
+        })
+    );
 
     const _console = yield* MockConsole.make;
 
@@ -1256,9 +1302,11 @@ export const TestLayer = (input?: TestLiveInput) =>
       ComposioSessionRepositoryTest,
       TriggersRealtimeTest,
       ComposioToolkitsRepositoryTest,
+      ToolkitSlugCatalogTest,
       JsPackageManagerDetector.Default,
       ProjectEnvironmentDetector.Default,
       CommandRunnerTest,
+      SetupSkillInstallerTest,
       ToolsExecutorTest,
       BunFileSystem.layer,
       BunContext.layer,
@@ -1268,6 +1316,9 @@ export const TestLayer = (input?: TestLiveInput) =>
       ConsumerProjectResolveFetchMock,
       StdinTest,
       TerminalUILayer,
+      // `src/commands/index.ts` provides these for real invocations; direct-effect tests that
+      // never route through the root command still need the "no CLI flag override" default.
+      cliDebugFlagsLayer(),
       Layer.provide(
         ProjectContext.Default,
         Layer.mergeAll(BunFileSystem.layer, NodeOsTest, NodeProcessTest)
@@ -1297,14 +1348,10 @@ function setupFixtureFolder({ fixture, tempDir }: { fixture?: string; tempDir: s
     }
 
     const fs = yield* FileSystem.FileSystem;
+    const path = yield* Path.Path;
 
-    const realFixturePath = path.resolve(
-      new URL('.', import.meta.url).pathname,
-      '..',
-      '..',
-      '__fixtures__',
-      fixture
-    );
+    const fixtureRoot = yield* path.fromFileUrl(new URL('.', import.meta.url));
+    const realFixturePath = path.resolve(fixtureRoot, '..', '..', '__fixtures__', fixture);
     const tmpFixturesPath = path.join(tempDir, 'test', '__fixtures__', fixture);
 
     yield* Effect.logDebug(`Using fixture at: ${tmpFixturesPath}`);
@@ -1340,10 +1387,10 @@ function setupFixtureFolder({ fixture, tempDir }: { fixture?: string; tempDir: s
 
     // Break symlinks in node_modules to isolate test from real packages
     const nodeModulesPath = path.join(tmpFixturesPath, 'node_modules');
-    yield* breakSymlinksInNodeModules(fs, nodeModulesPath);
+    yield* breakSymlinksInNodeModules(fs, path, nodeModulesPath);
 
     return tmpFixturesPath;
-  }).pipe(Effect.provide(BunFileSystem.layer));
+  }).pipe(Effect.provide(Layer.mergeAll(BunFileSystem.layer, BunPath.layer)));
 }
 
 /**
@@ -1353,6 +1400,7 @@ function setupFixtureFolder({ fixture, tempDir }: { fixture?: string; tempDir: s
  */
 function breakSymlinksInNodeModules(
   fs: FileSystem.FileSystem,
+  path: Path.Path,
   nodeModulesPath: string
 ): Effect.Effect<void, never, never> {
   // Helper: break a symlink by replacing it with a copy of its target

@@ -1,12 +1,16 @@
-import * as fs from 'node:fs';
 import process from 'node:process';
 import { jsonSchemaToZod } from '@composio/json-schema-to-zod';
+import { FileSystem } from '@effect/platform';
+import { BunFileSystem } from '@effect/platform-bun';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
+import { Effect } from 'effect';
 import {
   ACP_STRUCTURED_OUTPUT_TOOL_NAME,
   buildStructuredOutputToolSchema,
+  decodeStructuredSchemaJson,
 } from 'src/services/run-subagent-shared';
+import { TerminalUI, TerminalUILive } from 'src/services/terminal-ui';
 
 const readFlag = (name: string): string => {
   const index = process.argv.indexOf(name);
@@ -18,10 +22,11 @@ const readFlag = (name: string): string => {
 };
 
 const main = async (): Promise<void> => {
+  const fs = Effect.runSync(FileSystem.FileSystem.pipe(Effect.provide(BunFileSystem.layer)));
   const schemaFilePath = readFlag('--schema-file');
   const resultFilePath = readFlag('--result-file');
-  const schemaText = fs.readFileSync(schemaFilePath, 'utf8');
-  const structuredSchema = JSON.parse(schemaText) as Record<string, unknown>;
+  const schemaText = await Effect.runPromise(fs.readFileString(schemaFilePath));
+  const structuredSchema = decodeStructuredSchemaJson(schemaText);
   const toolInputSchema = jsonSchemaToZod(buildStructuredOutputToolSchema(structuredSchema));
 
   const server = new McpServer({
@@ -38,7 +43,7 @@ const main = async (): Promise<void> => {
       inputSchema: toolInputSchema,
     },
     async (payload: unknown) => {
-      fs.writeFileSync(resultFilePath, JSON.stringify(payload), 'utf8');
+      await Effect.runPromise(fs.writeFileString(resultFilePath, JSON.stringify(payload)));
       return {
         content: [
           {
@@ -56,6 +61,9 @@ const main = async (): Promise<void> => {
 
 void main().catch(error => {
   const message = error instanceof Error ? (error.stack ?? error.message) : String(error);
-  process.stderr.write(`${message}\n`);
+  Effect.gen(function* () {
+    const ui = yield* TerminalUI;
+    yield* ui.error(message);
+  }).pipe(Effect.provide(TerminalUILive), Effect.runSync);
   process.exit(1);
 });

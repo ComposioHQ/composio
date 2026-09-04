@@ -1,18 +1,20 @@
 {
   "name": "mastra-example",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.1.1",
   "type": "module",
   "description": "Example project for Mastra",
   "main": "src/index.ts",
   "scripts": {
     "clean": "git clean -xdf node_modules",
     "start": "bun src/index.ts",
-    "start:node": "tsx src/index.ts",
+    "tool-router": "bun src/tool-router.ts",
+    "smoke": "bun src/smoke.ts",
     "dev": "bun --watch src/index.ts",
-    "start:mcp": "bun --watch src/mcp.ts",
-    "start:node:mcp": "tsx src/mcp.ts",
-    "dev:mcp": "tsx watch src/mcp.ts",
+    "cf:dev": "wrangler dev",
+    "cf:dry-run": "wrangler deploy --dry-run --outdir dist-worker",
+    "typecheck": "tsc --noEmit -p ./tsconfig.json && tsc --noEmit -p ./tsconfig.worker.json",
+    "lint": "oxlint -c ../../../.oxlintrc.json src",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [
@@ -23,15 +25,19 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@ai-sdk/openai": "^3.0.13",
+    "@ai-sdk/openai": "catalog:",
     "@composio/core": "workspace:*",
     "@composio/mastra": "workspace:*",
-    "@mastra/core": "^1.46.0",
+    "@mastra/core": "catalog:",
+    "ai": "^6.0.266",
     "dotenv": "catalog:",
     "zod": "catalog:"
   },
   "devDependencies": {
+    "@cloudflare/workers-types": "catalog:",
     "@types/bun": "catalog:",
-    "typescript": "catalog:"
+    "@types/node": "^26.3.0",
+    "typescript": "catalog:",
+    "wrangler": "catalog:"
   }
 }

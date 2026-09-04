@@ -1,77 +1,108 @@
-import { FileSystem } from '@effect/platform';
-import { Data, Effect, Option } from 'effect';
-import path from 'node:path';
+import { FileSystem, Path } from '@effect/platform';
+import { Data, Effect, Either, Option, Predicate, Schema } from 'effect';
+import { APP_CONFIG } from 'src/effects/app-config';
+import { JsonRecordSchema } from 'src/effects/json';
 import { setupCacheDir } from 'src/effects/setup-cache-dir';
+import { atomicWritePrivateFileString, ensurePrivateFileMode } from 'src/utils/atomic-write';
 import { ComposioUserContext } from 'src/services/user-context';
+import { getSessionInfoByUserApiKey } from 'src/services/composio-clients';
 import { primeConsumerConnectedToolkitsCacheInBackground } from 'src/services/consumer-short-term-cache';
+import { linkApolloIdentityForAnalytics } from 'src/analytics/dispatch';
 
 export const AGENT_CONFIG_FILE_NAME = 'agent.json';
 export const DEFAULT_AGENTS_BASE_URL = 'https://agents.composio.dev';
 
 export type AgentStatus = 'READY' | 'PENDING' | 'UNKNOWN';
 
-export interface AgentComposioCredentials {
-  readonly member_id?: string;
-  readonly org_id?: string;
-  readonly project_id?: string;
-  readonly api_key?: string;
-  readonly user_api_key?: string;
-}
+const UnknownFields = JsonRecordSchema;
 
-export interface AgentIdentity {
-  readonly status?: string;
-  readonly request_id?: string;
-  readonly slug?: string;
-  readonly email?: string;
-  readonly agent_key?: string;
-  readonly composio_agent_key?: string;
-  readonly claimed_by?: string | null;
-  readonly claimed_at?: string | null;
-  readonly composio?: AgentComposioCredentials;
-  readonly [key: string]: unknown;
-}
+const AgentComposioCredentials = Schema.Struct({
+  member_id: Schema.optional(Schema.NullOr(Schema.String)),
+  org_id: Schema.optional(Schema.NullOr(Schema.String)),
+  project_id: Schema.optional(Schema.NullOr(Schema.String)),
+  api_key: Schema.optional(Schema.NullOr(Schema.String)),
+  user_api_key: Schema.optional(Schema.NullOr(Schema.String)),
+}).pipe(Schema.extend(UnknownFields));
+export type AgentComposioCredentials = Schema.Schema.Type<typeof AgentComposioCredentials>;
 
-export interface AgentMailMessage {
-  readonly id?: string;
-  readonly thread_id?: string;
-  readonly from?: string;
-  readonly to?: string;
-  readonly subject?: string;
-  readonly preview?: string;
-  readonly received_at?: string;
-  readonly [key: string]: unknown;
-}
+const AgentIdentity = Schema.Struct({
+  status: Schema.optional(Schema.NullOr(Schema.String)),
+  request_id: Schema.optional(Schema.NullOr(Schema.String)),
+  slug: Schema.optional(Schema.NullOr(Schema.String)),
+  email: Schema.optional(Schema.NullOr(Schema.String)),
+  agent_key: Schema.optional(Schema.NullOr(Schema.String)),
+  composio_agent_key: Schema.optional(Schema.NullOr(Schema.String)),
+  claimed_by: Schema.optional(Schema.NullOr(Schema.String)),
+  claimed_at: Schema.optional(Schema.NullOr(Schema.String)),
+  composio: Schema.optional(AgentComposioCredentials),
+}).pipe(Schema.extend(UnknownFields));
+export type AgentIdentity = Schema.Schema.Type<typeof AgentIdentity>;
 
-export interface AgentMailResponse {
-  readonly count?: number;
-  readonly messages?: ReadonlyArray<AgentMailMessage>;
-  readonly [key: string]: unknown;
-}
+const AgentMailMessage = Schema.Struct({
+  id: Schema.optional(Schema.NullOr(Schema.String)),
+  thread_id: Schema.optional(Schema.NullOr(Schema.String)),
+  from: Schema.optional(Schema.NullOr(Schema.String)),
+  to: Schema.optional(Schema.NullOr(Schema.String)),
+  subject: Schema.optional(Schema.NullOr(Schema.String)),
+  preview: Schema.optional(Schema.NullOr(Schema.String)),
+  received_at: Schema.optional(Schema.NullOr(Schema.String)),
+}).pipe(Schema.extend(UnknownFields));
+export type AgentMailMessage = Schema.Schema.Type<typeof AgentMailMessage>;
 
-export interface AgentClaimResponse {
-  readonly status?: string;
-  readonly email?: string;
-  readonly org_id?: string;
-  readonly invite_code?: string;
-  readonly [key: string]: unknown;
-}
+const AgentMailResponse = Schema.Struct({
+  count: Schema.optional(Schema.Number),
+  messages: Schema.optional(Schema.Array(AgentMailMessage)),
+}).pipe(Schema.extend(UnknownFields));
+export type AgentMailResponse = Schema.Schema.Type<typeof AgentMailResponse>;
+
+const AgentClaimResponse = Schema.Struct({
+  status: Schema.optional(Schema.NullOr(Schema.String)),
+  email: Schema.optional(Schema.NullOr(Schema.String)),
+  org_id: Schema.optional(Schema.NullOr(Schema.String)),
+  invite_code: Schema.optional(Schema.NullOr(Schema.String)),
+}).pipe(Schema.extend(UnknownFields));
+export type AgentClaimResponse = Schema.Schema.Type<typeof AgentClaimResponse>;
 
 export class AgentAuthError extends Data.TaggedError('services/AgentAuthError')<{
   readonly message: string;
   readonly nextSteps: ReadonlyArray<string>;
 }> {}
 
-const agentsBaseURL = (): string =>
-  (process.env.COMPOSIO_AGENTS_BASE_URL ?? DEFAULT_AGENTS_BASE_URL).replace(/\/+$/, '');
+export class AgentRequestError extends Data.TaggedError('services/AgentRequestError')<{
+  readonly message: string;
+  readonly pathname: string;
+  readonly status?: number;
+  readonly cause?: unknown;
+}> {}
 
-const asRecord = (value: unknown): Record<string, unknown> =>
-  value && typeof value === 'object' && !Array.isArray(value)
-    ? (value as Record<string, unknown>)
-    : {};
+export class AgentResponseDecodeError extends Data.TaggedError(
+  'services/AgentResponseDecodeError'
+)<{
+  readonly message: string;
+  readonly pathname: string;
+  readonly cause: unknown;
+}> {}
 
-const readJson = (value: string): unknown => JSON.parse(value) as unknown;
+const agentsBaseURL = APP_CONFIG.AGENTS_BASE_URL.pipe(
+  Effect.orDie,
+  Effect.map(value => (value ?? DEFAULT_AGENTS_BASE_URL).replace(/\/+$/, ''))
+);
 
-export const normalizeAgentStatus = (status: string | undefined): AgentStatus => {
+const decodeAgentResponse =
+  <A, I>(pathname: string, schema: Schema.Schema<A, I>) =>
+  (payload: unknown) =>
+    Schema.decodeUnknown(schema)(payload).pipe(
+      Effect.mapError(
+        cause =>
+          new AgentResponseDecodeError({
+            message: `agents.composio.dev returned an invalid response for ${pathname}`,
+            pathname,
+            cause,
+          })
+      )
+    );
+
+export const normalizeAgentStatus = (status: string | null | undefined): AgentStatus => {
   const normalized = status?.trim().toUpperCase();
   if (normalized === 'READY') return 'READY';
   if (normalized === 'PENDING') return 'PENDING';
@@ -87,27 +118,40 @@ export const getAgentKey = (identity: AgentIdentity): string | undefined => {
 export const isAgentIdentityForApiKey = (identity: AgentIdentity, apiKey: string): boolean =>
   Boolean(getAgentKey(identity) && identity.composio?.user_api_key === apiKey);
 
+const normalizeDecodedAgentIdentity = (
+  identity: AgentIdentity,
+  fallbackAgentKey?: string
+): AgentIdentity => {
+  const agentKey = identity.composio_agent_key ?? identity.agent_key ?? fallbackAgentKey;
+
+  return agentKey ? { ...identity, agent_key: agentKey, composio_agent_key: agentKey } : identity;
+};
+
 export const normalizeAgentIdentity = (
   payload: unknown,
   fallbackAgentKey?: string
-): AgentIdentity => {
-  const record = asRecord(payload);
-  const agentKey =
-    (typeof record.composio_agent_key === 'string' ? record.composio_agent_key : undefined) ??
-    (typeof record.agent_key === 'string' ? record.agent_key : undefined) ??
-    fallbackAgentKey;
+): AgentIdentity =>
+  normalizeDecodedAgentIdentity(
+    Schema.decodeUnknownOption(AgentIdentity)(payload).pipe(
+      Option.getOrElse((): AgentIdentity => ({}))
+    ),
+    fallbackAgentKey
+  );
 
-  const normalized: Record<string, unknown> = { ...record };
-  if (agentKey) {
-    normalized.agent_key = agentKey;
-    normalized.composio_agent_key = agentKey;
-  }
-
-  return normalized as AgentIdentity;
+type SafeAgentSummary = {
+  readonly account_type: 'agent';
+  readonly status: AgentStatus;
+  readonly slug: string | null;
+  readonly email: string | null;
+  readonly org_id: string | null;
+  readonly project_id: string | null;
+  readonly member_id: string | null;
+  readonly claimed_by: string | null;
+  readonly claimed_at: string | null;
 };
 
-export const safeAgentSummary = (identity: AgentIdentity) => ({
-  account_type: 'agent' as const,
+export const safeAgentSummary = (identity: AgentIdentity): SafeAgentSummary => ({
+  account_type: 'agent',
   status: normalizeAgentStatus(identity.status),
   slug: identity.slug ?? null,
   email: identity.email ?? null,
@@ -119,6 +163,7 @@ export const safeAgentSummary = (identity: AgentIdentity) => ({
 });
 
 export const agentConfigPath = Effect.gen(function* () {
+  const path = yield* Path.Path;
   const cacheDir = yield* setupCacheDir;
   return path.join(cacheDir, AGENT_CONFIG_FILE_NAME);
 });
@@ -130,14 +175,12 @@ export const readStoredAgentIdentity = Effect.gen(function* () {
   const exists = yield* fs.exists(configPath);
   if (!exists) return Option.none<AgentIdentity>();
 
-  return yield* fs.readFileString(configPath, 'utf8').pipe(
-    Effect.map(raw => Option.some(normalizeAgentIdentity(readJson(raw)))),
-    Effect.catchAll(error =>
-      Effect.gen(function* () {
-        yield* Effect.logDebug('Failed to read agent identity:', error);
-        return Option.none<AgentIdentity>();
-      })
-    )
+  return yield* ensurePrivateFileMode({ fs, target: configPath }).pipe(
+    Effect.andThen(fs.readFileString(configPath, 'utf8')),
+    Effect.flatMap(Schema.decodeUnknown(Schema.parseJson(AgentIdentity))),
+    Effect.map(normalizeDecodedAgentIdentity),
+    Effect.tapError(error => Effect.logDebug('Failed to read agent identity:', error)),
+    Effect.option
   );
 });
 
@@ -145,42 +188,79 @@ export const writeStoredAgentIdentity = (identity: AgentIdentity) =>
   Effect.gen(function* () {
     const fs = yield* FileSystem.FileSystem;
     const configPath = yield* agentConfigPath;
-    const normalized = normalizeAgentIdentity(identity);
-    yield* fs.writeFileString(configPath, `${JSON.stringify(normalized, null, 2)}\n`);
+    const normalized = normalizeDecodedAgentIdentity(identity);
+    yield* atomicWritePrivateFileString({
+      fs,
+      target: configPath,
+      contents: `${JSON.stringify(normalized, null, 2)}\n`,
+    });
     return normalized;
   });
 
 export const removeStoredAgentIdentity = Effect.gen(function* () {
   const fs = yield* FileSystem.FileSystem;
   const configPath = yield* agentConfigPath;
-  yield* fs.remove(configPath).pipe(Effect.catchAll(() => Effect.void));
+  yield* fs.remove(configPath).pipe(Effect.ignore);
 });
 
 const fetchAgentJson = (pathname: string, init: RequestInit = {}) =>
-  Effect.tryPromise({
-    try: async () => {
-      const response = await fetch(`${agentsBaseURL()}${pathname}`, {
-        redirect: 'error',
-        ...init,
-        headers: {
-          Accept: 'application/json',
-          ...(init.body ? { 'Content-Type': 'application/json' } : {}),
-          ...(init.headers ?? {}),
-        },
-      });
+  Effect.gen(function* () {
+    const baseURL = yield* agentsBaseURL;
+    const response = yield* Effect.tryPromise({
+      try: () =>
+        fetch(`${baseURL}${pathname}`, {
+          redirect: 'error',
+          ...init,
+          headers: {
+            Accept: 'application/json',
+            ...(init.body ? { 'Content-Type': 'application/json' } : {}),
+            ...(init.headers ?? {}),
+          },
+        }),
+      catch: cause =>
+        new AgentRequestError({
+          message: `agents.composio.dev request failed for ${pathname}`,
+          pathname,
+          cause,
+        }),
+    });
 
-      const text = await response.text();
-      const payload = text ? (JSON.parse(text) as unknown) : {};
-      if (!response.ok) {
-        const message =
-          typeof asRecord(payload).message === 'string'
-            ? (asRecord(payload).message as string)
-            : `agents.composio.dev request failed with HTTP ${response.status}`;
-        throw new Error(message);
-      }
-      return payload;
-    },
-    catch: error => (error instanceof Error ? error : new Error(String(error))),
+    const text = yield* Effect.tryPromise({
+      try: () => response.text(),
+      catch: cause =>
+        new AgentRequestError({
+          message: `Failed to read agents.composio.dev response for ${pathname}`,
+          pathname,
+          status: response.status,
+          cause,
+        }),
+    });
+    const payload = text
+      ? yield* Schema.decodeUnknown(Schema.parseJson(Schema.Unknown))(text).pipe(
+          Effect.mapError(
+            cause =>
+              new AgentResponseDecodeError({
+                message: `agents.composio.dev returned invalid JSON for ${pathname}`,
+                pathname,
+                cause,
+              })
+          )
+        )
+      : {};
+
+    if (!response.ok) {
+      const message =
+        Predicate.isRecord(payload) && typeof payload.message === 'string'
+          ? payload.message
+          : `agents.composio.dev request failed with HTTP ${response.status}`;
+      return yield* new AgentRequestError({
+        message,
+        pathname,
+        status: response.status,
+      });
+    }
+
+    return payload;
   });
 
 export const signupAgent = (params: { wait?: boolean } = {}) =>
@@ -190,7 +270,8 @@ export const signupAgent = (params: { wait?: boolean } = {}) =>
       method: 'POST',
       body: JSON.stringify({}),
     });
-    return yield* writeStoredAgentIdentity(normalizeAgentIdentity(payload));
+    const identity = yield* decodeAgentResponse('/api/signup', AgentIdentity)(payload);
+    return yield* writeStoredAgentIdentity(identity);
   });
 
 export const fetchAgentWhoami = (agentKey: string) =>
@@ -199,21 +280,30 @@ export const fetchAgentWhoami = (agentKey: string) =>
       method: 'GET',
       headers: { Authorization: `Bearer ${agentKey}` },
     });
-    return normalizeAgentIdentity(payload, agentKey);
+    const identity = yield* decodeAgentResponse('/api/whoami', AgentIdentity)(payload);
+    return normalizeDecodedAgentIdentity(identity, agentKey);
   });
 
 export const fetchAgentInbox = (params: { agentKey: string; limit?: number }) =>
-  fetchAgentJson(`/api/mail?limit=${encodeURIComponent(String(params.limit ?? 50))}`, {
-    method: 'GET',
-    headers: { Authorization: `Bearer ${params.agentKey}` },
-  }).pipe(Effect.map(payload => payload as AgentMailResponse));
+  Effect.gen(function* () {
+    const pathname = `/api/mail?limit=${encodeURIComponent(String(params.limit ?? 50))}`;
+    const payload = yield* fetchAgentJson(pathname, {
+      method: 'GET',
+      headers: { Authorization: `Bearer ${params.agentKey}` },
+    });
+    return yield* decodeAgentResponse(pathname, AgentMailResponse)(payload);
+  });
 
 export const claimAgent = (params: { agentKey: string; email: string }) =>
-  fetchAgentJson('/api/claim', {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${params.agentKey}` },
-    body: JSON.stringify({ email: params.email }),
-  }).pipe(Effect.map(payload => payload as AgentClaimResponse));
+  Effect.gen(function* () {
+    const pathname = '/api/claim';
+    const payload = yield* fetchAgentJson(pathname, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${params.agentKey}` },
+      body: JSON.stringify({ email: params.email }),
+    });
+    return yield* decodeAgentResponse(pathname, AgentClaimResponse)(payload);
+  });
 
 const humanLoginError = () =>
   new AgentAuthError({
@@ -232,7 +322,7 @@ export const ensureAgentSignupAllowed = Effect.gen(function* () {
   const stored = yield* readStoredAgentIdentity;
   if (Option.isSome(stored) && isAgentIdentityForApiKey(stored.value, apiKey.value)) return;
 
-  return yield* Effect.fail(humanLoginError());
+  return yield* humanLoginError();
 });
 
 export const getCurrentLoggedInAgent = Effect.gen(function* () {
@@ -255,38 +345,69 @@ export const resolveStoredAgentKey = Effect.gen(function* () {
 
   if (Option.isSome(currentApiKey)) {
     if (Option.isSome(stored) && isAgentIdentityForApiKey(stored.value, currentApiKey.value)) {
-      return getAgentKey(stored.value) as string;
+      const agentKey = getAgentKey(stored.value);
+      if (agentKey) return agentKey;
     }
 
-    return yield* Effect.fail(humanLoginError());
+    return yield* humanLoginError();
   }
 
   if (Option.isNone(stored)) {
-    return yield* Effect.fail(
-      new AgentAuthError({
-        message: 'No Composio agent identity is saved on this machine.',
-        nextSteps: [
-          'To create a new agent: run `composio signup` or `composio agent signup`.',
-          'To restore an existing agent: run `composio agent login <composio_agent_key>`.',
-        ],
-      })
-    );
+    return yield* new AgentAuthError({
+      message: 'No Composio agent identity is saved on this machine.',
+      nextSteps: [
+        'To create a new agent: run `composio signup` or `composio agent signup`.',
+        'To restore an existing agent: run `composio agent login <composio_agent_key>`.',
+      ],
+    });
   }
 
   const agentKey = getAgentKey(stored.value);
   if (!agentKey) {
-    return yield* Effect.fail(
-      new AgentAuthError({
-        message: 'The saved Composio agent identity is missing its composio_agent_key.',
-        nextSteps: [
-          'If you saved the key, run `composio agent login <composio_agent_key>`.',
-          'Otherwise create a new agent with `composio signup`.',
-        ],
-      })
-    );
+    return yield* new AgentAuthError({
+      message: 'The saved Composio agent identity is missing its composio_agent_key.',
+      nextSteps: [
+        'If you saved the key, run `composio agent login <composio_agent_key>`.',
+        'Otherwise create a new agent with `composio signup`.',
+      ],
+    });
   }
 
   return agentKey;
+});
+
+const isAgentKeyRejection = (error: AgentRequestError | AgentResponseDecodeError): boolean =>
+  error instanceof AgentRequestError && (error.status === 401 || error.status === 403);
+
+/**
+ * Reuse-only counterpart of {@link getOrSignupReadyAgent}: refreshes and
+ * returns a stored READY identity but never signs up a new agent.
+ */
+export const getStoredReadyAgent = Effect.gen(function* () {
+  const stored = yield* readStoredAgentIdentity;
+  if (Option.isNone(stored)) return Option.none<AgentIdentity>();
+
+  const agentKey = getAgentKey(stored.value);
+  if (!agentKey) return Option.none<AgentIdentity>();
+
+  const remote = yield* fetchAgentWhoami(agentKey).pipe(Effect.either);
+  // An auth rejection means the API examined and refused this key — the stored
+  // identity is revoked, not unreachable. Only transport-shaped failures may
+  // fall back to the on-disk identity.
+  if (Either.isLeft(remote) && isAgentKeyRejection(remote.left)) {
+    return Option.none<AgentIdentity>();
+  }
+
+  const identity = Either.isRight(remote)
+    ? yield* writeStoredAgentIdentity(remote.right)
+    : stored.value;
+
+  const ready =
+    normalizeAgentStatus(identity.status) === 'READY' &&
+    Boolean(identity.composio?.user_api_key) &&
+    Boolean(identity.composio?.org_id);
+
+  return ready ? Option.some(identity) : Option.none<AgentIdentity>();
 });
 
 export const getOrSignupReadyAgent = (params: { force?: boolean } = {}) =>
@@ -315,13 +436,17 @@ export const loginWithAgentIdentity = (identity: AgentIdentity) =>
     const orgId = identity.composio?.org_id;
 
     if (!userApiKey || !orgId) {
-      return yield* Effect.fail(
-        new Error(
-          'Agent identity is not ready yet. Run `composio agent whoami` and try again once status is READY.'
-        )
-      );
+      return yield* new AgentAuthError({
+        message: 'Agent identity is not ready yet.',
+        nextSteps: ['Run `composio agent whoami` and try again once status is READY.'],
+      });
     }
 
     yield* ctx.login(userApiKey, orgId);
+    // Best-effort analytics stitch after the credential persists; must never break login.
+    yield* getSessionInfoByUserApiKey({ baseURL: ctx.data.baseURL, userApiKey, orgId }).pipe(
+      Effect.flatMap(info => linkApolloIdentityForAnalytics(info.org_member.id, userApiKey)),
+      Effect.catchAllCause(() => Effect.void)
+    );
     yield* primeConsumerConnectedToolkitsCacheInBackground({ orgId });
   });

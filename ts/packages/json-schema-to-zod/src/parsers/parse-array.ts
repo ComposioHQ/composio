@@ -7,8 +7,7 @@ import { its } from '../utils/its';
 import type { JSONSchema7TypeName } from 'json-schema';
 
 type MetadataFields =
-  | keyof Pick<JsonSchemaObject, 'default' | 'description' | 'title'>
-  | 'examples';
+  keyof Pick<JsonSchemaObject, 'default' | 'description' | 'title'> | 'examples';
 
 export const parseArray = (jsonSchema: JsonSchemaObject & { type: 'array' }, refs: Refs) => {
   // Handle anyOf pattern first
@@ -59,11 +58,46 @@ export const parseArray = (jsonSchema: JsonSchemaObject & { type: 'array' }, ref
 
   // Handle regular array schema
   if (Array.isArray(jsonSchema.items)) {
-    return z.tuple(
-      jsonSchema.items.map((v, i) =>
-        parseSchema(v, { ...refs, path: [...refs.path, 'items', i] })
-      ) as [z.ZodTypeAny]
+    const parsedItems = jsonSchema.items.map((item, index) =>
+      parseSchema(item, { ...refs, path: [...refs.path, 'items', index] })
     );
+    const prefixSchemas = parsedItems.map((_, length) =>
+      z.tuple(parsedItems.slice(0, length) as unknown as [z.ZodTypeAny])
+    );
+    const fullTuple = z.tuple(parsedItems as unknown as [z.ZodTypeAny]);
+
+    let fullLengthSchema: z.ZodTypeAny;
+    if (jsonSchema.additionalItems === false) {
+      fullLengthSchema = fullTuple;
+    } else if (jsonSchema.additionalItems && jsonSchema.additionalItems !== true) {
+      fullLengthSchema = fullTuple.rest(
+        parseSchema(jsonSchema.additionalItems, {
+          ...refs,
+          path: [...refs.path, 'additionalItems'],
+        })
+      );
+    } else {
+      fullLengthSchema = fullTuple.rest(z.any());
+    }
+
+    const variants = [...prefixSchemas, fullLengthSchema];
+    let tupleSchema: z.ZodTypeAny =
+      variants.length === 1
+        ? variants[0]
+        : z.union(variants as unknown as [z.ZodTypeAny, z.ZodTypeAny, ...z.ZodTypeAny[]]);
+
+    if (typeof jsonSchema.minItems === 'number') {
+      tupleSchema = tupleSchema.refine(value => value.length >= jsonSchema.minItems!, {
+        message: `Array must contain at least ${jsonSchema.minItems} element(s)`,
+      });
+    }
+    if (typeof jsonSchema.maxItems === 'number') {
+      tupleSchema = tupleSchema.refine(value => value.length <= jsonSchema.maxItems!, {
+        message: `Array must contain at most ${jsonSchema.maxItems} element(s)`,
+      });
+    }
+
+    return tupleSchema;
   }
 
   let zodSchema = !jsonSchema.items
@@ -84,26 +118,20 @@ export const parseArray = (jsonSchema: JsonSchemaObject & { type: 'array' }, ref
   );
 
   // Handle generic 'min' property as alias for 'minItems'
-  if (
-    typeof (jsonSchema as unknown as { min?: number }).min === 'number' &&
-    typeof jsonSchema.minItems !== 'number'
-  ) {
+  if (typeof jsonSchema.min === 'number' && typeof jsonSchema.minItems !== 'number') {
     zodSchema = extendSchemaWithMessage(
       zodSchema,
-      { ...jsonSchema, minItems: (jsonSchema as unknown as { min?: number }).min },
+      { ...jsonSchema, minItems: jsonSchema.min },
       'minItems',
       (zs, minItems, errorMessage) => zs.min(minItems, errorMessage)
     );
   }
 
   // Handle generic 'max' property as alias for 'maxItems'
-  if (
-    typeof (jsonSchema as unknown as { max?: number }).max === 'number' &&
-    typeof jsonSchema.maxItems !== 'number'
-  ) {
+  if (typeof jsonSchema.max === 'number' && typeof jsonSchema.maxItems !== 'number') {
     zodSchema = extendSchemaWithMessage(
       zodSchema,
-      { ...jsonSchema, maxItems: (jsonSchema as unknown as { max?: number }).max },
+      { ...jsonSchema, maxItems: jsonSchema.max },
       'maxItems',
       (zs, maxItems, errorMessage) => zs.max(maxItems, errorMessage)
     );

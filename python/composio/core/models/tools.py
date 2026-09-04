@@ -2,15 +2,17 @@ from __future__ import annotations
 
 import functools
 import typing as t
+from collections.abc import Mapping
 from pathlib import Path
 
 import typing_extensions as te
-from pydantic import BaseModel as PydanticBaseModel
 from composio_client import omit
+from pydantic import BaseModel as PydanticBaseModel
 
 from composio.client import HttpClient
 from composio.client.types import (
     Tool,
+    ToolkitMinimal,
     tool_execute_params,
     tool_proxy_params,
     tool_proxy_response,
@@ -23,8 +25,7 @@ from composio.core.models.inline_custom_tools_payload import (
 )
 from composio.core.provider import TTool, TToolCollection
 from composio.core.provider.agentic import AgenticProvider, AgenticProviderExecuteFn
-from composio.core.provider.base import ExecuteToolFn
-from composio.core.provider.base import BaseProvider
+from composio.core.provider.base import BaseProvider, ExecuteToolFn
 from composio.core.provider.none_agentic import NonAgenticProvider
 from composio.core.types import ToolkitVersionParam
 from composio.exceptions import InvalidParams, ToolVersionRequiredError
@@ -44,6 +45,35 @@ from ._modifiers import (
 )
 
 TOOL_ROUTER_SESSION_TOOLS_PAGE_LIMIT = 500
+
+
+def _normalize_tool(tool: PydanticBaseModel | Mapping[str, object]) -> Tool:
+    """Normalize generated-client responses to the SDK's tool model shape."""
+    normalized: PydanticBaseModel
+    if isinstance(tool, Mapping):
+        normalized = Tool.model_construct(_fields_set=set(tool), **dict(tool))
+    else:
+        normalized = tool
+
+    toolkit = getattr(normalized, "toolkit", None)
+    if isinstance(toolkit, Mapping):
+        normalized_toolkit = ToolkitMinimal.model_construct(
+            _fields_set=set(toolkit), **dict(toolkit)
+        )
+        normalized = normalized.model_copy(update={"toolkit": normalized_toolkit})
+
+    return t.cast(Tool, normalized)
+
+
+def _toolkit_slug(tool: Tool, fallback: str) -> str:
+    """Resolve untrusted toolkit metadata without assuming a generated shape."""
+    toolkit = getattr(tool, "toolkit", None)
+    slug = (
+        toolkit.get("slug")
+        if isinstance(toolkit, Mapping)
+        else getattr(toolkit, "slug", None)
+    )
+    return slug if isinstance(slug, str) and slug else fallback
 
 
 def _needs_serialization(obj: t.Any) -> bool:
@@ -170,8 +200,7 @@ class Tools(Resource, t.Generic[TTool, TToolCollection]):
         """
         Returns schema for the given tool slug.
         """
-        return t.cast(
-            Tool,
+        return _normalize_tool(
             self._client.tools.retrieve(
                 tool_slug=slug,
                 toolkit_versions=none_to_omit(self._toolkit_versions),
@@ -215,7 +244,7 @@ class Tools(Resource, t.Generic[TTool, TToolCollection]):
                     toolkit_versions=none_to_omit(self._toolkit_versions),
                 ).items
             )
-        return tools_list
+        return [_normalize_tool(tool) for tool in tools_list]
 
     def get_raw_tool_router_meta_tools(
         self,
@@ -269,12 +298,17 @@ class Tools(Resource, t.Generic[TTool, TToolCollection]):
                 cursor=none_to_omit(cursor),
                 limit=TOOL_ROUTER_SESSION_TOOLS_PAGE_LIMIT,
             )
-            # Cast to Tool type - session.tools returns compatible Item type from different response schema
-            tools_list.extend(t.cast(Tool, item) for item in tools_response.items)
+            tools_list.extend(_normalize_tool(item) for item in tools_response.items)
 
             cursor = getattr(tools_response, "next_cursor", None)
             if not cursor:
                 break
+
+        self._tool_schemas.update(
+            {tool.slug: tool.model_copy(deep=True) for tool in tools_list}
+        )
+
+        tools_list = [tool.model_copy(deep=True) for tool in tools_list]
 
         # Apply schema modifiers if provided
         if modifiers is not None:
@@ -285,7 +319,7 @@ class Tools(Resource, t.Generic[TTool, TToolCollection]):
                     Tool,
                     apply_modifier_by_type(
                         modifiers=modifiers,
-                        toolkit=tool.toolkit.slug,
+                        toolkit=_toolkit_slug(tool, "unknown"),
                         tool=tool.slug,
                         type="schema",
                         schema=tool,
@@ -293,10 +327,6 @@ class Tools(Resource, t.Generic[TTool, TToolCollection]):
                 )
                 for tool in tools_list
             ]
-
-        self._tool_schemas.update(
-            {tool.slug: tool.model_copy(deep=True) for tool in tools_list}
-        )
 
         return tools_list
 
@@ -311,28 +341,29 @@ class Tools(Resource, t.Generic[TTool, TToolCollection]):
         limit: t.Optional[int] = None,
     ) -> TToolCollection:
         """Get a list of tools based on the provided filters."""
-        tools_list = self.get_raw_composio_tools(
+        raw_tools = self.get_raw_composio_tools(
             tools=tools,
             search=search,
             toolkits=toolkits,
             scopes=scopes,
             limit=limit,
         )
+        self._tool_schemas.update(
+            {tool.slug: tool.model_copy(deep=True) for tool in raw_tools}
+        )
+
+        tools_list = [tool.model_copy(deep=True) for tool in raw_tools]
         if modifiers is not None:
             tools_list = [
                 apply_modifier_by_type(
                     modifiers=modifiers,
-                    toolkit=tool.toolkit.slug,
+                    toolkit=_toolkit_slug(tool, "unknown"),
                     tool=tool.slug,
                     type="schema",
                     schema=tool,
                 )
                 for tool in tools_list
             ]
-
-        self._tool_schemas.update(
-            {tool.slug: tool.model_copy(deep=True) for tool in tools_list}
-        )
 
         # Always enhance schema descriptions (type hints and required notes)
         # regardless of dangerously_allow_auto_upload_download_files
@@ -469,17 +500,11 @@ class Tools(Resource, t.Generic[TTool, TToolCollection]):
             tool = self._tool_schemas.get(slug)
 
             if tool is None:
-                tool = t.cast(
-                    Tool,
-                    self._client.tools.retrieve(
-                        tool_slug=slug,
-                        toolkit_versions=none_to_omit(self._toolkit_versions),
-                    ),
-                )
+                tool = self.get_raw_composio_tool_by_slug(slug)
                 self._tool_schemas[slug] = tool
 
             if self._auto_upload_download_files:
-                meta_tk = tool.toolkit.slug if tool.toolkit else "composio"
+                meta_tk = _toolkit_slug(tool, "composio")
                 bfu = merge_before_file_upload(
                     modifiers,
                     tool=slug,
@@ -490,8 +515,12 @@ class Tools(Resource, t.Generic[TTool, TToolCollection]):
                     request=arguments,
                     before_file_upload=bfu,
                 )
+            else:
+                arguments = self._file_helper.drop_empty_file_uploads(
+                    tool=tool, request=arguments
+                )
 
-            toolkit_slug = tool.toolkit.slug if tool.toolkit else "composio"
+            toolkit_slug = _toolkit_slug(tool, "composio")
 
             # Apply before_execute modifiers
             processed_arguments = arguments
@@ -550,6 +579,7 @@ class Tools(Resource, t.Generic[TTool, TToolCollection]):
         self,
         slug: str,
         arguments: t.Dict,
+        tool: Tool,
         connected_account_id: t.Optional[str] = None,
         custom_auth_params: t.Optional[tool_execute_params.CustomAuthParams] = None,
         custom_connection_data: t.Optional[
@@ -565,13 +595,10 @@ class Tools(Resource, t.Generic[TTool, TToolCollection]):
         # before sending to the API (fixes PLEN-1514: RootModel not JSON serializable)
         arguments = _serialize_arguments(arguments)
 
-        # Get the tool to determine its toolkit
-        tool = self.get_raw_composio_tool_by_slug(slug)
-
         # If version is not explicitly provided, resolve it from instance-level toolkit versions
         # This matches the TypeScript behavior - always resolve version when None
         if version is None:
-            toolkit_slug = tool.toolkit.slug if tool.toolkit else "unknown"
+            toolkit_slug = _toolkit_slug(tool, "unknown")
             # Use instance-level toolkit versions configuration
             version = get_toolkit_version(toolkit_slug, self._toolkit_versions)
 
@@ -638,17 +665,11 @@ class Tools(Resource, t.Generic[TTool, TToolCollection]):
         tool = self._tool_schemas.get(slug)
 
         if tool is None:
-            tool = t.cast(
-                Tool,
-                self._client.tools.retrieve(
-                    tool_slug=slug,
-                    toolkit_versions=none_to_omit(self._toolkit_versions),
-                ),
-            )
+            tool = self.get_raw_composio_tool_by_slug(slug)
             self._tool_schemas[slug] = tool
 
         if self._auto_upload_download_files:
-            tk = tool.toolkit.slug if tool.toolkit else "unknown"
+            tk = _toolkit_slug(tool, "unknown")
             bfu = merge_before_file_upload(
                 modifiers,
                 tool=slug,
@@ -658,6 +679,13 @@ class Tools(Resource, t.Generic[TTool, TToolCollection]):
                 tool=tool,
                 request=arguments,
                 before_file_upload=bfu,
+            )
+        else:
+            # Auto-upload is opt-in, but "no file" must still be sent as an
+            # omitted key rather than ``""`` (issue #4233). Explicit ``None``
+            # remains valid for nullable file inputs.
+            arguments = self._file_helper.drop_empty_file_uploads(
+                tool=tool, request=arguments
             )
 
         if modifiers is not None:
@@ -683,7 +711,7 @@ class Tools(Resource, t.Generic[TTool, TToolCollection]):
                 )
             processed_params = apply_modifier_by_type(
                 modifiers=modifiers,
-                toolkit=tool.toolkit.slug,
+                toolkit=_toolkit_slug(tool, "unknown"),
                 tool=slug,
                 type=type_before_exec,
                 request=request_params,
@@ -707,6 +735,7 @@ class Tools(Resource, t.Generic[TTool, TToolCollection]):
         response = self._execute_tool(
             slug=slug,
             arguments=arguments,
+            tool=tool,
             connected_account_id=connected_account_id,
             custom_auth_params=custom_auth_params,
             custom_connection_data=custom_connection_data,
@@ -723,7 +752,7 @@ class Tools(Resource, t.Generic[TTool, TToolCollection]):
         if modifiers is not None:
             response = apply_modifier_by_type(
                 modifiers=modifiers,
-                toolkit=tool.toolkit.slug,
+                toolkit=_toolkit_slug(tool, "unknown"),
                 tool=slug,
                 type="after_execute",
                 response=response,

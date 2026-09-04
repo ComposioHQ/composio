@@ -11,6 +11,7 @@
  */
 import {
   BaseAgenticProvider,
+  dereferenceJsonSchema,
   jsonSchemaToZodSchema,
   Tool,
   ExecuteToolFn,
@@ -136,10 +137,12 @@ export class LangchainProvider extends BaseAgenticProvider<
     if (!tool.inputParameters) {
       throw new Error('Tool input parameters are not defined');
     }
-    const parameters = jsonSchemaToZodSchema(tool.inputParameters);
+    const parameters = jsonSchemaToZodSchema(
+      dereferenceJsonSchema(tool.inputParameters, { onUnresolved: 'sentinel' })
+    );
 
     // See https://github.com/langchain-ai/langchainjs/issues/8468 and pnpm-workspace.yaml.
-    // @ts-ignore: error TS2589: Type instantiation is excessively deep and possibly infinite.
+    // @ts-expect-error: error TS2589: Type instantiation is excessively deep and possibly infinite.
     return new DynamicStructuredTool({
       name: toolName,
       description: description || '',

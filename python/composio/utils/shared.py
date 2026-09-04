@@ -19,9 +19,13 @@ from composio.exceptions import InvalidParams, InvalidSchemaError
 from composio.utils.json_schema import dereference_json_schema
 from composio.utils.logging import get as get_logger
 from composio.utils.schema_converter import (
+    _EXPLICIT_DEFAULT_FIELDS_ATTRIBUTE,
     CONTAINER_TYPE,
     FALLBACK_VALUES,
     PYDANTIC_TYPE_TO_PYTHON_TYPE,
+    _mark_explicit_default_fields,
+    _with_exact_validation,
+    apply_object_policy,
     json_schema_to_pydantic_type,
 )
 
@@ -46,6 +50,7 @@ __all__ = [
     "substitute_reserved_python_keywords",
     "reinstate_reserved_python_keywords",
     "normalize_tool_arguments",
+    "validate_and_serialize_tool_arguments",
 ]
 
 reserved_names = ["validate"]
@@ -53,6 +58,7 @@ reserved_names = ["validate"]
 _OBJ_MARKER = "-_object_-"
 _ARR_MARKER = "-_array_-"
 _MAX_PROVIDER_ALIAS_LENGTH = 64
+_MISSING_ARGUMENT = object()
 
 
 def normalize_tool_arguments(arguments: t.Any) -> t.Dict[str, t.Any]:
@@ -99,6 +105,117 @@ def _as_dict(value: t.Any) -> t.Dict[str, t.Any]:
     raise InvalidParams(
         f"Tool arguments must resolve to an object, received {type(value).__name__}"
     )
+
+
+def validate_and_serialize_tool_arguments(
+    args_schema: t.Type[BaseModel],
+    arguments: t.Dict[str, t.Any],
+) -> t.Dict[str, t.Any]:
+    """Validate provider arguments and serialize only values the backend should see.
+
+    Pydantic models use ``None`` for optional fields that were not supplied, so a
+    plain ``model_dump()`` changes omission into an explicit null. Conversely,
+    ``exclude_unset=True`` also drops defaults declared by the source JSON Schema.
+    Generated models track fields with declared defaults. Combining that metadata
+    recursively with each selected model's ``model_fields_set`` preserves aliases,
+    explicit nulls, defaults, and validated dynamic extras without replaying the
+    source schema during execution.
+    """
+    validated = args_schema.model_validate(arguments)
+    return t.cast(
+        t.Dict[str, t.Any],
+        _serialize_present_arguments(
+            validated,
+            validated.model_dump(mode="python", by_alias=True),
+            arguments,
+        ),
+    )
+
+
+def _model_field_aliases(
+    model: t.Type[BaseModel],
+) -> t.Dict[str, t.Tuple[str, FieldInfo]]:
+    fields = {}
+    for name, field in model.model_fields.items():
+        alias = field.serialization_alias or field.alias
+        fields[alias if isinstance(alias, str) else name] = (name, field)
+    return fields
+
+
+def _serialize_present_arguments(
+    validated: t.Any,
+    serialized: t.Any,
+    supplied: t.Any,
+) -> t.Any:
+    """Recursively remove values Pydantic added for omitted optional fields."""
+    if supplied is _MISSING_ARGUMENT:
+        return serialized
+
+    if isinstance(validated, BaseModel) and isinstance(serialized, dict):
+        fields = _model_field_aliases(type(validated))
+        included_fields = set(validated.model_fields_set)
+        included_fields.update(
+            getattr(type(validated), _EXPLICIT_DEFAULT_FIELDS_ATTRIBUTE, ())
+        )
+        supplied_values = supplied if isinstance(supplied, dict) else {}
+        result: t.Dict[str, t.Any] = {}
+        for key, value in serialized.items():
+            field = fields.get(key)
+            if field is not None:
+                name, _ = field
+                if name not in included_fields:
+                    continue
+                child_validated = getattr(validated, name)
+                if key in supplied_values:
+                    child_supplied = supplied_values[key]
+                elif name in supplied_values:
+                    child_supplied = supplied_values[name]
+                else:
+                    child_supplied = _MISSING_ARGUMENT
+            else:
+                extra = validated.model_extra
+                if extra is None or key not in extra:
+                    continue
+                child_validated = extra[key]
+                child_supplied = supplied_values.get(key, _MISSING_ARGUMENT)
+            result[key] = _serialize_present_arguments(
+                child_validated,
+                value,
+                child_supplied,
+            )
+        return result
+
+    if isinstance(serialized, dict):
+        supplied_values = supplied if isinstance(supplied, dict) else {}
+        validated_values = validated if isinstance(validated, dict) else {}
+        return {
+            key: _serialize_present_arguments(
+                validated_values.get(key, _MISSING_ARGUMENT),
+                value,
+                supplied_values.get(key, _MISSING_ARGUMENT),
+            )
+            for key, value in serialized.items()
+            if key in supplied_values or key in validated_values
+        }
+
+    if isinstance(serialized, (list, tuple)):
+        supplied_items = supplied if isinstance(supplied, (list, tuple)) else ()
+        validated_items = validated if isinstance(validated, (list, tuple)) else ()
+        items = [
+            _serialize_present_arguments(
+                validated_items[index]
+                if index < len(validated_items)
+                else _MISSING_ARGUMENT,
+                value,
+                supplied_items[index]
+                if index < len(supplied_items)
+                else _MISSING_ARGUMENT,
+            )
+            for index, value in enumerate(serialized)
+        ]
+        return tuple(items) if isinstance(serialized, tuple) else items
+
+    return serialized
 
 
 def _make_safe_name(name: str) -> str:
@@ -355,9 +472,11 @@ def _coerce_default_value(
 
 def json_schema_to_pydantic_field(
     name: str,
-    json_schema: t.Dict[str, t.Any],
+    json_schema: t.Union[t.Dict[str, t.Any], bool],
     required: t.List[str],
     skip_default: bool = False,
+    *,
+    root_schema: t.Optional[t.Dict[str, t.Any]] = None,
 ) -> t.Tuple[str, t.Type, FieldInfo]:
     """
     Converts a JSON schema property to a Pydantic field definition.
@@ -365,21 +484,26 @@ def json_schema_to_pydantic_field(
     :param name: The field name.
     :param json_schema: The JSON schema property.
     :param required: List of required properties.
+    :param root_schema: Full schema document used to resolve local references.
     :return: A Pydantic field definition.
     """
-    description = json_schema.get("description")
-    if "oneOf" in json_schema:
+    # A property schema may be the literal `true`/`false` (JSON Schema
+    # draft-06+); those carry no metadata, so read annotations from an empty
+    # object and let `json_schema_to_pydantic_type` decide the type.
+    schema_object = json_schema if isinstance(json_schema, dict) else {}
+    description = schema_object.get("description")
+    if "oneOf" in schema_object:
         description = " | ".join(
-            [option.get("description", "") for option in json_schema["oneOf"]]
+            [option.get("description", "") for option in schema_object["oneOf"]]
         )
         description = f"Any of the following options(separated by |): {description}"
 
-    examples = json_schema.get("examples", [])
-    default = json_schema.get("default")
+    examples = schema_object.get("examples", [])
+    default = schema_object.get("default")
 
     # Coerce default value to match expected type from schema
     if default is not None:
-        default = _coerce_default_value(default, json_schema)
+        default = _coerce_default_value(default, schema_object)
 
     # Check if the field name is a reserved Pydantic name
     original_name = name
@@ -403,6 +527,7 @@ def json_schema_to_pydantic_field(
             t.Type,
             json_schema_to_pydantic_type(
                 json_schema=json_schema,
+                root_schema=root_schema,
             ),
         ),
         Field(**field),  # type: ignore
@@ -428,7 +553,10 @@ def json_schema_to_fields_dict(json_schema: t.Dict[str, t.Any]) -> t.Dict[str, t
     field_definitions = {}
     for name, prop in json_schema.get("properties", {}).items():
         updated_name, pydantic_type, pydantic_field = json_schema_to_pydantic_field(
-            name, prop, json_schema.get("required", [])
+            name,
+            prop,
+            json_schema.get("required", []),
+            root_schema=json_schema,
         )
         field_definitions[updated_name] = (pydantic_type, pydantic_field)
     return field_definitions  # type: ignore
@@ -446,6 +574,8 @@ def json_schema_to_model(
     :return: Pydantic `BaseModel` type
     """
     model_name = json_schema.get("title")
+    if model_name is None:
+        model_name = "GeneratedModel"
     field_definitions = {}
     for name, prop in json_schema.get("properties", {}).items():
         updated_name, pydantic_type, pydantic_field = json_schema_to_pydantic_field(
@@ -453,9 +583,28 @@ def json_schema_to_model(
             prop,
             json_schema.get("required", []),
             skip_default=skip_default,
+            root_schema=json_schema,
         )
         field_definitions[updated_name] = (pydantic_type, pydantic_field)
-    return create_model(model_name, **field_definitions)  # type: ignore
+    # The dynamic-key policy is shared with `json_schema_to_pydantic_type` so the
+    # two entry points cannot disagree about which arguments survive conversion.
+    base_model = create_model(model_name, **field_definitions)  # type: ignore
+    if skip_default:
+        setattr(base_model, _EXPLICIT_DEFAULT_FIELDS_ATTRIBUTE, frozenset())
+    else:
+        _mark_explicit_default_fields(base_model, json_schema, json_schema)
+    # Exact acceptance is shared with `json_schema_to_pydantic_type` so every
+    # Python entry point agrees with the Zod and Effect converters about which
+    # inputs a schema admits.
+    return _with_exact_validation(
+        apply_object_policy(
+            json_schema,
+            base_model,
+            model_name=model_name,
+        ),
+        json_schema,
+        json_schema,
+    )
 
 
 def pydantic_model_from_param_schema(param_schema: t.Dict) -> t.Type:
@@ -479,41 +628,27 @@ def pydantic_model_from_param_schema(param_schema: t.Dict) -> t.Type:
     required_props = param_schema.get("required", [])
 
     if param_schema.get("type") == "array":
-        # print("param_schema inside array - ", param_schema)
-        item_schema = param_schema.get("items")
-        if item_schema:
-            ItemType = t.cast(
-                t.Type,
-                json_schema_to_pydantic_type(
-                    json_schema=item_schema,
-                ),
-            )
-            return t.List[ItemType]  # type: ignore
-        return t.List
+        return t.cast(t.Type, json_schema_to_pydantic_type(param_schema))
 
     for prop_name, prop_info in param_schema.get("properties", {}).items():
-        prop_type = prop_info.get("type")
-        prop_title = prop_info.get("title", prop_name).replace(" ", "")
-        prop_default = prop_info.get("default", FALLBACK_VALUES.get(prop_type))
-        if (
-            prop_type is not None
-            and prop_type in PYDANTIC_TYPE_TO_PYTHON_TYPE
-            and prop_type not in CONTAINER_TYPE
-        ):
-            signature_prop_type = PYDANTIC_TYPE_TO_PYTHON_TYPE[prop_type]
-        elif prop_type is None:
-            # Schema uses anyOf/allOf/oneOf/$ref instead of a top-level "type" key.
-            # Delegate to json_schema_to_pydantic_type which handles all combiners.
-            signature_prop_type = t.cast(
-                t.Type,
-                json_schema_to_pydantic_type(json_schema=prop_info),
-            )
-        else:
-            signature_prop_type = pydantic_model_from_param_schema(prop_info)
+        prop_object = prop_info if isinstance(prop_info, dict) else {}
+        prop_type = prop_object.get("type")
+        prop_title = prop_object.get("title", prop_name).replace(" ", "")
+        fallback = (
+            FALLBACK_VALUES.get(prop_type) if isinstance(prop_type, str) else None
+        )
+        prop_default = prop_object.get("default", fallback)
+        signature_prop_type = t.cast(
+            t.Type,
+            json_schema_to_pydantic_type(
+                json_schema=prop_info,
+                root_schema=param_schema,
+            ),
+        )
 
         field_kwargs = {
-            "description": prop_info.get(
-                "description", prop_info.get("desc", prop_title)
+            "description": prop_object.get(
+                "description", prop_object.get("desc", prop_title)
             ),
         }
 
@@ -536,13 +671,17 @@ def pydantic_model_from_param_schema(param_schema: t.Dict) -> t.Type:
             )
 
     if not required_fields and not optional_fields:
-        return t.Dict
+        # Nothing to materialize: let the shared converter pick the annotation
+        # so `allOf`/`anyOf`/`$ref` and typeless assertions keep the same exact
+        # validation and permissive materialization as the other entry points.
+        return t.cast(t.Type, json_schema_to_pydantic_type(param_schema))
 
-    return create_model(  # type: ignore
+    model = create_model(  # type: ignore
         param_title,
         **required_fields,
         **optional_fields,
     )
+    return _with_exact_validation(model, param_schema, param_schema)
 
 
 def get_signature_format_from_schema_params(
@@ -585,13 +724,22 @@ def get_signature_format_from_schema_params(
             # that are missing a "type" key or use an unrecognized type, then build
             # a Union for any count of members (no 1/2/3-member cap).
             mapped_types: t.List[t.Any] = [
-                PYDANTIC_TYPE_TO_PYTHON_TYPE.get(ptype, t.Any) for ptype in param_types
+                _annotation_from_json_schema_type(ptype) for ptype in param_types
             ]
             if len(mapped_types) == 1:
                 annotation = mapped_types[0]
             else:
                 annotation = reduce(lambda a, b: t.Union[a, b], mapped_types)
             param_default = param_schema.get("default", "")
+        elif isinstance(param_type, list):
+            annotation = _annotation_from_json_schema_type(param_type)
+            scalar_type = param_type[0] if len(param_type) == 1 else None
+            if isinstance(scalar_type, str) and scalar_type in FALLBACK_VALUES:
+                param_default = param_schema.get(
+                    "default", FALLBACK_VALUES[scalar_type]
+                )
+            else:
+                param_default = param_schema.get("default", "")
         elif param_type in PYDANTIC_TYPE_TO_PYTHON_TYPE:
             annotation = PYDANTIC_TYPE_TO_PYTHON_TYPE[param_type]
             param_default = param_schema.get("default", FALLBACK_VALUES[param_type])
@@ -621,6 +769,27 @@ def get_signature_format_from_schema_params(
             continue
         none_default_parameters.append(parameter)
     return default_parameters + none_default_parameters
+
+
+def _annotation_from_json_schema_type(schema_type: t.Any) -> t.Any:
+    """Convert a JSON Schema ``type`` value to a Python annotation.
+
+    JSON Schema Draft 2020-12 and OpenAPI 3.1 allow ``type`` to be an array,
+    including inside ``anyOf`` and ``oneOf`` branches.  Keep that form from
+    reaching the scalar dictionary lookup, where a list would be unhashable.
+    """
+    if isinstance(schema_type, list):
+        mapped_types = [_annotation_from_json_schema_type(item) for item in schema_type]
+        if not mapped_types:
+            return t.Any
+        if len(mapped_types) == 1:
+            return mapped_types[0]
+        return reduce(lambda left, right: t.Union[left, right], mapped_types)
+
+    if isinstance(schema_type, str):
+        return PYDANTIC_TYPE_TO_PYTHON_TYPE.get(schema_type, t.Any)
+
+    return t.Any
 
 
 def get_pydantic_signature_format_from_schema_params(

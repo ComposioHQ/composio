@@ -4,15 +4,11 @@ import fs from 'node:fs';
 import { describe, it, vi } from '@effect/vitest';
 import { assertEquals } from '@effect/vitest/utils';
 import { FileSystem } from '@effect/platform';
-import { BunFileSystem } from '@effect/platform-bun';
+import { BunFileSystem, BunPath } from '@effect/platform-bun';
 import { ConfigProvider, Effect, Layer } from 'effect';
 import { extendConfigProvider } from 'src/services/config';
 import { defaultNodeOs, NodeOs } from 'src/services/node-os';
-import {
-  ComposioCliUserConfig,
-  ComposioCliUserConfigLive,
-  resolveCliConfigPathSync,
-} from 'src/services/cli-user-config';
+import { ComposioCliUserConfig, ComposioCliUserConfigLive } from 'src/services/cli-user-config';
 
 describe('ComposioCliUserConfig', () => {
   const withMapConfigProvider = (map: Map<string, string>) =>
@@ -24,7 +20,7 @@ describe('ComposioCliUserConfig', () => {
     const NodeOsTest = Layer.succeed(NodeOs, defaultNodeOs({ homedir: cwd }));
     const CliUserConfigTest = Layer.provideMerge(
       ComposioCliUserConfigLive,
-      Layer.mergeAll(BunFileSystem.layer, NodeOsTest, withMapConfigProvider(map))
+      Layer.mergeAll(BunFileSystem.layer, BunPath.layer, NodeOsTest, withMapConfigProvider(map))
     );
 
     return Effect.gen(function* () {
@@ -34,8 +30,6 @@ describe('ComposioCliUserConfig', () => {
       assertEquals(config.data.developerDangerousCommandsEnabled, false);
       assertEquals(config.data.experimentalFeatures.listen, undefined);
       assertEquals(config.isExperimentalFeatureEnabled('listen'), false);
-      assertEquals(config.data.experimentalFeatures.multi_account, undefined);
-      assertEquals(config.isExperimentalFeatureEnabled('multi_account'), true);
       assertEquals(config.data.experimentalSubagentTarget, 'auto');
       assertEquals(config.data.artifactDirectory, undefined);
 
@@ -55,7 +49,7 @@ describe('ComposioCliUserConfig', () => {
     const NodeOsTest = Layer.succeed(NodeOs, defaultNodeOs({ homedir: cwd }));
     const CliUserConfigTest = Layer.provideMerge(
       ComposioCliUserConfigLive,
-      Layer.mergeAll(BunFileSystem.layer, NodeOsTest, withMapConfigProvider(map))
+      Layer.mergeAll(BunFileSystem.layer, BunPath.layer, NodeOsTest, withMapConfigProvider(map))
     );
 
     return Effect.gen(function* () {
@@ -76,7 +70,7 @@ describe('ComposioCliUserConfig', () => {
     const NodeOsTest = Layer.succeed(NodeOs, defaultNodeOs({ homedir: cwd }));
     const CliUserConfigTest = Layer.provideMerge(
       ComposioCliUserConfigLive,
-      Layer.mergeAll(BunFileSystem.layer, NodeOsTest, withMapConfigProvider(map))
+      Layer.mergeAll(BunFileSystem.layer, BunPath.layer, NodeOsTest, withMapConfigProvider(map))
     );
 
     return Effect.gen(function* () {
@@ -86,8 +80,6 @@ describe('ComposioCliUserConfig', () => {
       assertEquals(config.data.developerDangerousCommandsEnabled, false);
       assertEquals(config.data.experimentalFeatures.listen, undefined);
       assertEquals(config.isExperimentalFeatureEnabled('listen'), true);
-      assertEquals(config.data.experimentalFeatures.multi_account, undefined);
-      assertEquals(config.isExperimentalFeatureEnabled('multi_account'), true);
       assertEquals(config.data.experimentalSubagentTarget, 'auto');
     }).pipe(Effect.provide(CliUserConfigTest));
   });
@@ -117,7 +109,7 @@ describe('ComposioCliUserConfig', () => {
     const NodeOsTest = Layer.succeed(NodeOs, defaultNodeOs({ homedir: cwd }));
     const CliUserConfigTest = Layer.provideMerge(
       ComposioCliUserConfigLive,
-      Layer.mergeAll(BunFileSystem.layer, NodeOsTest, withMapConfigProvider(map))
+      Layer.mergeAll(BunFileSystem.layer, BunPath.layer, NodeOsTest, withMapConfigProvider(map))
     );
 
     return Effect.gen(function* () {
@@ -170,7 +162,7 @@ describe('ComposioCliUserConfig', () => {
     const NodeOsTest = Layer.succeed(NodeOs, defaultNodeOs({ homedir: cwd }));
     const CliUserConfigTest = Layer.provideMerge(
       ComposioCliUserConfigLive,
-      Layer.mergeAll(BunFileSystem.layer, NodeOsTest, withMapConfigProvider(map))
+      Layer.mergeAll(BunFileSystem.layer, BunPath.layer, NodeOsTest, withMapConfigProvider(map))
     );
 
     return Effect.gen(function* () {
@@ -205,16 +197,27 @@ describe('ComposioCliUserConfig', () => {
       assertEquals(parsed.developer_dangerous_commands_enabled, undefined);
     }).pipe(Effect.provide(CliUserConfigTest));
   });
-  it.effect('resolves sync config path from COMPOSIO_CACHE_DIR when provided', () => {
-    const cacheDir = tempy.temporaryDirectory();
-    process.env.COMPOSIO_CACHE_DIR = cacheDir;
 
-    return Effect.sync(() => {
-      try {
-        assertEquals(resolveCliConfigPathSync(), path.join(cacheDir, 'config.json'));
-      } finally {
-        delete process.env.COMPOSIO_CACHE_DIR;
-      }
-    });
+  it.scoped('replaces malformed persisted config with safe defaults', () => {
+    const cwd = tempy.temporaryDirectory();
+    const map = new Map([['DEBUG_OVERRIDE_VERSION', '1.2.3']]) satisfies Map<string, string>;
+    fs.mkdirSync(path.join(cwd, '.composio'), { recursive: true });
+    fs.writeFileSync(path.join(cwd, '.composio', 'config.json'), JSON.stringify(['not-an-object']));
+
+    const NodeOsTest = Layer.succeed(NodeOs, defaultNodeOs({ homedir: cwd }));
+    const CliUserConfigTest = Layer.provideMerge(
+      ComposioCliUserConfigLive,
+      Layer.mergeAll(BunFileSystem.layer, BunPath.layer, NodeOsTest, withMapConfigProvider(map))
+    );
+
+    return Effect.gen(function* () {
+      const config = yield* ComposioCliUserConfig;
+      assertEquals(config.data.developerModeEnabled, true);
+      assertEquals(config.data.developerDangerousCommandsEnabled, false);
+      assertEquals(config.data.security, 'auto');
+
+      const persisted = fs.readFileSync(path.join(cwd, '.composio', 'config.json'), 'utf8');
+      assertEquals(Array.isArray(JSON.parse(persisted)), false);
+    }).pipe(Effect.provide(CliUserConfigTest));
   });
 });

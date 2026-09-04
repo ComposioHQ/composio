@@ -2,13 +2,15 @@ name: Build Typescript SDK
 
 on:
   push:
-    branches: [master]
+    branches: [next]
     paths:
       - 'ts/**'
+      - '.oxlintrc.json'
       - '.github/actions/setup-node-pnpm-bun/action.yml'
       - '.github/workflows/ts.build.yml'
       - 'mise.toml'
       - 'mise.lock'
+      - 'turbo.jsonc'
       - 'package.json'
       - 'pnpm-lock.yaml'
       - 'pnpm-workspace.yaml'
@@ -16,14 +18,23 @@ on:
   pull_request:
     paths:
       - 'ts/**'
+      - '.oxlintrc.json'
       - '.github/actions/setup-node-pnpm-bun/action.yml'
       - '.github/workflows/ts.build.yml'
       - 'mise.toml'
       - 'mise.lock'
+      - 'turbo.jsonc'
       - 'package.json'
       - 'pnpm-lock.yaml'
       - 'pnpm-workspace.yaml'
       - 'tsdown.config.base.ts'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.ref || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
 
 # Print Turborepo telemetry events to the logs instead of sending them.
 env:
@@ -36,10 +47,16 @@ jobs:
 
     steps:
       - name: Checkout Code
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Setup Node.js, pnpm, Bun
         uses: ./.github/actions/setup-node-pnpm-bun
+        with:
+          enable-turbo-cache: 'true'
+          # Only push runs on next save caches: PR-scoped caches are invisible
+          # to other branches, so saving them costs post-job time and evicts
+          # reusable default-branch caches from the 10 GB repo quota.
+          cache-save: ${{ github.event_name == 'push' && github.ref == 'refs/heads/next' }}
 
       - name: Install Dependencies
         run: pnpm install --frozen-lockfile

@@ -7,8 +7,10 @@ import logger from './logger';
 import { getRandomShortId } from './uuid';
 import { base64ToUint8Array, uint8ArrayToBase64 } from './buffer';
 import type { FileDownloadData, FileUploadData } from '../types/files.types';
-import { assertSafeFileUploadPath } from './sensitiveFileUploadPaths.node';
+import { assertSafeFileUploadPath } from './sensitiveFileUploadPaths';
 import { assertPathInsideUploadDirs } from './uploadDirAllowlist.node';
+import { ssrfSafeFetch } from './ssrfGuard.node';
+import { readResponseBodyWithLimit } from './readResponseBody';
 
 /**
  * Options for {@link getFileDataAfterUploadingToS3} (S3 presigned upload from local path, URL, or File).
@@ -37,6 +39,25 @@ export type GetFileDataAfterUploadingToS3Options = {
    */
   fileUploadAllowlist?: string[];
   signal?: AbortSignal;
+};
+
+/**
+ * Checks whether `value` is an absolute http(s) URL rather than a local path.
+ *
+ * A bare `startsWith('http')` check also matches local paths like
+ * `http_export/report.csv` or `httpdocs/.env`, which routes them into the URL
+ * fetch branch and skips the allowlist/denylist checks in
+ * {@link getFileDataAfterUploadingToS3}. `new URL()` requires a real scheme
+ * (`http:` or `https:`) followed by `//`, so relative-looking paths correctly
+ * fail to parse and are treated as local.
+ */
+export const isHttpUrl = (value: string): boolean => {
+  try {
+    const url = new URL(value);
+    return url.protocol === 'http:' || url.protocol === 'https:';
+  } catch {
+    return false;
+  }
 };
 
 // Helper function to get file extension from MIME type
@@ -150,12 +171,17 @@ const readFileContentFromURL = async (
   path: string,
   signal?: AbortSignal
 ): Promise<{ fileName: string; content: string; mimeType: string }> => {
-  const response = await fetch(path, { signal });
+  // SSRF guard: `path` is user-supplied (and can come from an LLM-produced tool
+  // argument), so it must not be allowed to reach internal/private addresses or
+  // redirect into them. See ssrfGuard.node.ts.
+  const response = await ssrfSafeFetch(path, { signal });
   if (!response.ok) {
+    // The error path never reads the body, so release it explicitly (mirrors
+    // `readResponseBodyWithLimit`) instead of leaving it to the garbage collector.
+    await response.body?.cancel().catch(() => undefined);
     throw new Error(`Failed to fetch file: ${response.statusText}`);
   }
-  const arrayBuffer = await response.arrayBuffer();
-  const content = new Uint8Array(arrayBuffer);
+  const content = await readResponseBodyWithLimit(response);
   const mimeType = response.headers.get('content-type') || 'application/octet-stream';
 
   // Extract clean filename from URL, removing query parameters
@@ -220,7 +246,10 @@ const uploadFileToS3 = async (
   // `InvalidArgumentError: invalid content-length header`, which surfaces as
   // `TypeError: fetch failed` and breaks every `file_uploadable` connector tool
   // on Node 22+.
-  const uploadResponse = await fetch(signedURL, {
+  // SSRF guard: `new_presigned_url` comes from the API response, which the SDK
+  // treats as untrusted — a response naming an internal address would otherwise
+  // have the file's bytes PUT to it. See ssrfGuard.node.ts.
+  const uploadResponse = await ssrfSafeFetch(signedURL, {
     method: 'PUT',
     body: uploadBuffer,
     signal,
@@ -248,7 +277,7 @@ const readFile = async (
       mimeType: file.type,
     };
   } else if (typeof file === 'string') {
-    if (file.startsWith('http')) {
+    if (isHttpUrl(file)) {
       return await readFileContentFromURL(file, signal);
     } else {
       return await readFileContent(file);
@@ -273,7 +302,7 @@ export const getFileDataAfterUploadingToS3 = async (
     throw new Error('Either path or blob must be provided');
   }
 
-  const isLocalPath = typeof file === 'string' && !file.startsWith('http');
+  const isLocalPath = typeof file === 'string' && !isHttpUrl(file);
 
   if (isLocalPath && fileUploadAllowlist !== undefined) {
     assertPathInsideUploadDirs(file as string, fileUploadAllowlist);
@@ -311,6 +340,7 @@ export const downloadFileFromS3 = async ({
   mimeType,
   fileDownloadDir,
   signal,
+  maxDownloadBytes,
 }: {
   toolSlug: string;
   s3Url: string;
@@ -321,16 +351,26 @@ export const downloadFileFromS3 = async ({
    */
   fileDownloadDir?: string;
   signal?: AbortSignal;
+  /**
+   * Maximum number of bytes to read from the response before rejecting.
+   * Defaults to {@link MAX_URL_UPLOAD_SIZE_BYTES} (100 MiB).
+   */
+  maxDownloadBytes?: number;
 }): Promise<FileDownloadData> => {
-  const response = await fetch(s3Url, { signal });
+  // SSRF guard: `s3Url` is a field of the tool-execution response, so it is no
+  // more trusted than a user-supplied URL — and the bytes it returns are
+  // written to disk. See ssrfGuard.node.ts.
+  const response = await ssrfSafeFetch(s3Url, { signal });
   if (!response.ok) {
     throw new Error(`Failed to download file: ${response.statusText}`);
   }
-  const data = await response.arrayBuffer();
+  // The response is attacker-influencable and streamed to disk, so the body is
+  // read through the shared size guard rather than buffered wholesale.
+  const data = await readResponseBodyWithLimit(response, maxDownloadBytes);
 
   const extension = getExtensionFromMimeType(mimeType);
   const fileName = generateTimestampedFilename(extension, `${toolSlug}_`);
-  const filePath = saveFile(fileName, new Uint8Array(data), {
+  const filePath = saveFile(fileName, data, {
     isTempFile: fileDownloadDir === undefined,
     outputDir: fileDownloadDir,
   });

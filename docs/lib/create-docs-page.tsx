@@ -1,8 +1,4 @@
-import {
-  DocsBody,
-  DocsPage,
-  DocsTitle,
-} from 'fumadocs-ui/layouts/docs/page';
+import { DocsBody, DocsPage, DocsTitle } from 'fumadocs-ui/layouts/docs/page';
 import { notFound } from 'next/navigation';
 import { getMDXComponents } from '@/mdx-components';
 import type { Metadata } from 'next';
@@ -10,9 +6,9 @@ import { createRelativeLink } from 'fumadocs-ui/mdx';
 import { PageActions } from '@/components/page-actions';
 import { EditOnGitHub } from '@/components/edit-on-github';
 import { getOgImageUrl } from '@/lib/source';
+import { getKnowledgeDisplayDescription } from '@/lib/knowledge/display';
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type Source = any;
+type Source = typeof import('./source').examplesSource;
 
 export function createDocsPage(source: Source, contentDir: string = 'content/docs') {
   return async function Page({ params }: { params: Promise<{ slug?: string[] }> }) {
@@ -23,7 +19,12 @@ export function createDocsPage(source: Source, contentDir: string = 'content/doc
     const MDX = page.data.body;
 
     return (
-      <DocsPage toc={page.data.toc} full={page.data.full} footer={{ enabled: false }} tableOfContentPopover={{ enabled: false }}>
+      <DocsPage
+        toc={page.data.toc}
+        full={page.data.full}
+        footer={{ enabled: false }}
+        tableOfContentPopover={{ enabled: false }}
+      >
         <DocsTitle>{page.data.title}</DocsTitle>
         <PageActions path={page.url} />
         <DocsBody>
@@ -55,11 +56,14 @@ export function createGenerateMetadata(source: Source, section: string = 'docs')
     const page = source.getPage(slug);
     if (!page) notFound();
 
-    const ogImage = getOgImageUrl(section, page.slugs, page.data.title, page.data.description);
+    const description = page.data.description
+      ? getKnowledgeDisplayDescription(page.data.description)
+      : page.data.description;
+    const ogImage = getOgImageUrl(section, page.slugs, page.data.title, description);
 
     return {
       title: page.data.title,
-      description: page.data.description,
+      description,
       alternates: { canonical: page.url },
       openGraph: {
         images: [ogImage],

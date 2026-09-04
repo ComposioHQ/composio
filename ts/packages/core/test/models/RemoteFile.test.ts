@@ -1,6 +1,22 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { RemoteFile } from '../../src/models/RemoteFile';
-import { RemoteFileDownloadError, ValidationError } from '../../src/errors';
+import {
+  ComposioBlockedInternalUrlError,
+  RemoteFileDownloadError,
+  ValidationError,
+} from '../../src/errors';
+
+// `downloadUrl` comes from an API response, so downloads run through the SSRF
+// guard, which resolves the host before connecting. Resolve as public by
+// default; the guard's own tests cover the blocking behavior.
+vi.mock('node:dns/promises', () => ({
+  lookup: vi.fn(),
+}));
+
+// eslint-disable-next-line no-restricted-imports
+import { lookup } from 'node:dns/promises';
+
+const mockLookup = vi.mocked(lookup);
 
 describe('RemoteFile', () => {
   const validCamelCaseData = {
@@ -21,6 +37,8 @@ describe('RemoteFile', () => {
 
   beforeEach(() => {
     originalFetch = globalThis.fetch;
+    mockLookup.mockReset();
+    mockLookup.mockResolvedValue([{ address: '93.184.216.34', family: 4 }] as never);
   });
 
   afterEach(() => {
@@ -79,7 +97,14 @@ describe('RemoteFile', () => {
       const file = new RemoteFile(validCamelCaseData);
       const result = await file.buffer();
 
-      expect(globalThis.fetch).toHaveBeenCalledWith(validCamelCaseData.downloadUrl);
+      // `redirect: 'manual'` is the guard following redirects itself so it can
+      // re-validate each hop, rather than letting fetch follow them unchecked;
+      // the `dispatcher` alongside it pins the connection to the address the
+      // guard validated.
+      expect(globalThis.fetch).toHaveBeenCalledWith(
+        validCamelCaseData.downloadUrl,
+        expect.objectContaining({ redirect: 'manual' })
+      );
       expect(result).toBeInstanceOf(Uint8Array);
       expect(result).toEqual(content);
     });
@@ -97,6 +122,57 @@ describe('RemoteFile', () => {
       await expect(file.buffer()).rejects.toMatchObject({
         name: 'RemoteFileDownloadError',
         message: expect.stringContaining('404'),
+      });
+    });
+
+    it('should map a mid-stream transport failure and retain its cause', async () => {
+      const cause = new TypeError('peer reset mid-stream');
+      let pulls = 0;
+      globalThis.fetch = vi.fn().mockResolvedValue(
+        new Response(
+          new ReadableStream({
+            pull(controller) {
+              if (pulls++ === 0) {
+                controller.enqueue(new Uint8Array([1, 2, 3]));
+              } else {
+                controller.error(cause);
+              }
+            },
+          })
+        )
+      );
+
+      const file = new RemoteFile(validCamelCaseData);
+      await expect(file.buffer()).rejects.toMatchObject({
+        name: 'RemoteFileDownloadError',
+        cause,
+      });
+    });
+
+    it('should map a transport failure before response headers arrive', async () => {
+      const cause = new TypeError('connection refused');
+      globalThis.fetch = vi.fn().mockRejectedValue(cause);
+
+      const file = new RemoteFile(validCamelCaseData);
+      await expect(file.buffer()).rejects.toMatchObject({
+        name: 'RemoteFileDownloadError',
+        cause,
+      });
+    });
+
+    it('should reject a declared body larger than the shared download limit', async () => {
+      globalThis.fetch = vi.fn().mockResolvedValue(
+        new Response('ignored', {
+          headers: { 'content-length': String(101 * 1024 * 1024) },
+        })
+      );
+
+      const file = new RemoteFile(validCamelCaseData);
+      await expect(file.buffer()).rejects.toMatchObject({
+        name: 'RemoteFileDownloadError',
+        cause: expect.objectContaining({
+          message: expect.stringContaining('exceeds maximum allowed size'),
+        }),
       });
     });
   });
@@ -118,16 +194,20 @@ describe('RemoteFile', () => {
 
   describe('blob', () => {
     it('should fetch and return file content as Blob', async () => {
-      const blob = new Blob(['data']);
+      const blob = new Blob(['data'], { type: 'text/plain' });
       globalThis.fetch = vi.fn().mockResolvedValue({
         ok: true,
-        blob: () => Promise.resolve(blob),
+        status: 200,
+        statusText: 'OK',
+        headers: new Headers({ 'content-type': blob.type }),
+        body: blob.stream(),
       });
 
       const file = new RemoteFile(validCamelCaseData);
       const result = await file.blob();
 
-      expect(result).toBe(blob);
+      expect(result.type).toBe(blob.type);
+      expect(await result.text()).toBe(await blob.text());
     });
 
     it('should throw RemoteFileDownloadError when fetch fails', async () => {
@@ -140,6 +220,45 @@ describe('RemoteFile', () => {
       const file = new RemoteFile(validCamelCaseData);
 
       await expect(file.blob()).rejects.toThrow(RemoteFileDownloadError);
+    });
+  });
+
+  describe('SSRF guard', () => {
+    // `downloadUrl` is set from an API response. Under the SDK's trust boundary
+    // that is untrusted input, so a response naming an internal address must
+    // not be fetched — the bytes go straight back to the caller, typically into
+    // an LLM context.
+    it.each([
+      ['loopback', 'http://127.0.0.1/secret', '127.0.0.1'],
+      ['cloud metadata', 'http://169.254.169.254/latest/meta-data/', '169.254.169.254'],
+    ])('should block a %s downloadUrl before fetching', async (_label, downloadUrl, address) => {
+      mockLookup.mockResolvedValue([{ address, family: 4 }] as never);
+      globalThis.fetch = vi.fn();
+
+      const file = new RemoteFile({ ...validCamelCaseData, downloadUrl });
+
+      await expect(file.buffer()).rejects.toBeInstanceOf(ComposioBlockedInternalUrlError);
+      await expect(file.blob()).rejects.toBeInstanceOf(ComposioBlockedInternalUrlError);
+      await expect(file.text()).rejects.toBeInstanceOf(ComposioBlockedInternalUrlError);
+      expect(globalThis.fetch).not.toHaveBeenCalled();
+    });
+
+    it('should block a downloadUrl that redirects into private space', async () => {
+      mockLookup
+        .mockResolvedValueOnce([{ address: '93.184.216.34', family: 4 }] as never)
+        .mockResolvedValueOnce([{ address: '169.254.169.254', family: 4 }] as never);
+      globalThis.fetch = vi.fn().mockResolvedValue(
+        new Response(null, {
+          status: 302,
+          headers: { location: 'http://169.254.169.254/latest/meta-data/' },
+        })
+      );
+
+      const file = new RemoteFile(validCamelCaseData);
+
+      await expect(file.buffer()).rejects.toBeInstanceOf(ComposioBlockedInternalUrlError);
+      // The first hop was fetched; the redirect target never was.
+      expect(globalThis.fetch).toHaveBeenCalledTimes(1);
     });
   });
 

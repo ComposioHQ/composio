@@ -2,10 +2,16 @@ import { builtinModules } from 'node:module';
 import { chmod, copyFile, mkdir, readdir, rm, stat, writeFile } from 'node:fs/promises';
 import * as path from 'node:path';
 import process from 'node:process';
-import { Cause, Effect, Exit } from 'effect';
-import type { Teardown } from '@effect/platform/Runtime';
-import { RUN_COMPANION_MODULE_BASENAMES } from '../src/services/run-companion-modules';
+import { Effect } from 'effect';
+import {
+  codexAcpBinaryTargetFor,
+  RUN_CODEX_ACP_BINARY_TARGETS,
+  RUN_COMPANION_MODULE_BASENAMES,
+  type RunCodexAcpBinaryTarget,
+} from '../src/services/run-companion-modules';
 import { materializeAcpAdaptersCache } from './_acp-adapters';
+
+export { teardown } from './_teardown';
 
 const RUN_COMPANION_SERVICE_ENTRY_MAP = Object.fromEntries(
   RUN_COMPANION_MODULE_BASENAMES.map(name => [`services/${name}`, `src/services/${name}.ts`])
@@ -42,14 +48,33 @@ const copyDirectoryRecursive = async (sourceDir: string, targetDir: string): Pro
   }
 };
 
-const copyBundledAcpAdapters = async (outputDir: string): Promise<void> => {
-  const acpAdaptersCacheDir = await materializeAcpAdaptersCache();
+const copyBundledAcpAdapters = async (
+  outputDir: string,
+  codexBinaryTargets: ReadonlyArray<RunCodexAcpBinaryTarget>
+): Promise<void> => {
+  const acpAdaptersCacheDir = await materializeAcpAdaptersCache(codexBinaryTargets);
   const acpOutputDir = path.join(outputDir, 'acp-adapters');
   await rm(acpOutputDir, { force: true, recursive: true });
   await copyDirectoryRecursive(acpAdaptersCacheDir, acpOutputDir);
 };
 
+// The codex-acp binary the building machine can actually execute. Unsupported
+// hosts get an empty list, matching the host requirement set the CLI checks.
+export const hostCodexAcpBinaryTargets = (): ReadonlyArray<RunCodexAcpBinaryTarget> => {
+  const hostTarget = codexAcpBinaryTargetFor({
+    platform: process.platform,
+    arch: process.arch,
+  });
+  return hostTarget ? [hostTarget] : [];
+};
+
 export const LOCAL_TOOLS_BINARY_ASSET_DIRNAME = 'local-tools-binaries';
+
+// Kept out of --env: Bun honors only the last --env, which would clobber DEBUG_OVERRIDE_*.
+export const posthogBakeArgs = (): ReadonlyArray<string> => {
+  const key = process.env.COMPOSIO_POSTHOG_PROJECT_API_KEY?.trim();
+  return key ? ['--define', `COMPOSIO_POSTHOG_PROJECT_API_KEY_BAKED=${JSON.stringify(key)}`] : [];
+};
 
 const localToolsBinaryAssetsSourceDir = (): string =>
   path.resolve(process.cwd(), '../cli-local-tools', LOCAL_TOOLS_BINARY_ASSET_DIRNAME);
@@ -295,19 +320,12 @@ const buildCompanionServiceBundles = async (outputDir: string): Promise<void> =>
   }
 };
 
-/**
- * Shared teardown for all CLI scripts.
- *
- * Exits with a non-zero code when the Effect program fails
- * (unless the failure is an interrupt-only cause).
- */
-export const teardown: Teardown = <E, A>(exit: Exit.Exit<E, A>, onExit: (code: number) => void) => {
-  const shouldFail = Exit.isFailure(exit) && !Cause.isInterruptedOnly(exit.cause);
-  const errorCode = Number(process.exitCode ?? 1);
-  onExit(shouldFail ? errorCode : 0);
-};
-
-export const buildCompanionModules = (outputDir: string) =>
+export const buildCompanionModules = (
+  outputDir: string,
+  options: {
+    readonly codexBinaryTargets?: ReadonlyArray<RunCodexAcpBinaryTarget>;
+  } = {}
+) =>
   Effect.gen(function* () {
     yield* Effect.tryPromise(() => mkdir(outputDir, { recursive: true }));
 
@@ -319,6 +337,8 @@ export const buildCompanionModules = (outputDir: string) =>
       yield* Effect.tryPromise(() => writeFile(wrapperPath, wrapperSource, 'utf8'));
     }
 
-    yield* Effect.tryPromise(() => copyBundledAcpAdapters(outputDir));
+    yield* Effect.tryPromise(() =>
+      copyBundledAcpAdapters(outputDir, options.codexBinaryTargets ?? RUN_CODEX_ACP_BINARY_TARGETS)
+    );
     yield* Effect.tryPromise(() => assertBundledRuntimeFiles(outputDir));
   });

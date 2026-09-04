@@ -1,6 +1,6 @@
 import process from 'node:process';
 import { Args, Command, Options } from '@effect/cli';
-import { Effect, Option } from 'effect';
+import { Effect } from 'effect';
 import { ComposioToolkitsRepository } from 'src/services/composio-clients';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { requireAuth } from 'src/effects/require-auth';

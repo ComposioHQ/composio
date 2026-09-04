@@ -1,21 +1,21 @@
-import process from 'node:process';
 import { Command } from '@effect/cli';
 import { Effect, Option } from 'effect';
 import {
   resolveArtifactsRoot,
   resolveCliSessionArtifacts,
 } from 'src/services/cli-session-artifacts';
+import { TerminalUI } from 'src/services/terminal-ui';
 
 const cwdCmd = Command.make('cwd').pipe(
   Command.withDescription('Print the cwd-scoped session artifact directory.'),
   Command.withHandler(() =>
     Effect.gen(function* () {
+      const ui = yield* TerminalUI;
       const artifacts = yield* resolveCliSessionArtifacts();
-      const directoryPath = Option.match(artifacts, {
-        onNone: () => resolveArtifactsRoot(),
-        onSome: value => value.directoryPath,
-      });
-      process.stdout.write(`${directoryPath}\n`);
+      const directoryPath = Option.isSome(artifacts)
+        ? artifacts.value.directoryPath
+        : yield* resolveArtifactsRoot;
+      yield* ui.output(directoryPath, { force: true });
     })
   )
 );

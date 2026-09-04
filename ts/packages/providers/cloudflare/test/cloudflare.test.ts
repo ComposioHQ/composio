@@ -6,7 +6,7 @@ import { Tool } from '@composio/core';
 interface AiTextGenerationFunction {
   name: string;
   description: string;
-  parameters: any;
+  parameters: unknown;
 }
 
 interface MockedCloudflareToolInput {
@@ -14,7 +14,7 @@ interface MockedCloudflareToolInput {
   function: {
     name: string;
     description?: string;
-    parameters?: any;
+    parameters?: unknown;
   };
 }
 
@@ -26,7 +26,7 @@ vi.mock('@cloudflare/workers-types', () => {
 describe('CloudflareProvider', () => {
   let provider: CloudflareProvider;
   let mockTool: Tool;
-  let mockExecuteToolFn: any;
+  let mockExecuteToolFn: unknown;
 
   beforeEach(() => {
     provider = new CloudflareProvider();
@@ -123,6 +123,18 @@ describe('CloudflareProvider', () => {
           parameters: toolWithoutDescription.inputParameters,
         },
       });
+    });
+
+    it('deduplicates required entries for directly wrapped tools', () => {
+      const wrapped = provider.wrapTool({
+        ...mockTool,
+        inputParameters: {
+          ...mockTool.inputParameters!,
+          required: ['input', 'input'],
+        },
+      }) as MockedCloudflareToolInput;
+
+      expect(wrapped.function.parameters.required).toEqual(['input']);
     });
   });
 

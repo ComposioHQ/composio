@@ -1,7 +1,36 @@
 import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
+import { isFsCaseSensitive } from 'is-fs-case-sensitive';
 import type { Platform, Uint8ArrayEncoding } from './types';
+
+const findNearestExistingDirectory = (filePath: string): string => {
+  let candidate = path.resolve(filePath);
+
+  try {
+    if (!fs.statSync(candidate).isDirectory()) {
+      candidate = path.dirname(candidate);
+    }
+  } catch {
+    candidate = path.dirname(candidate);
+  }
+
+  while (true) {
+    try {
+      if (fs.statSync(candidate).isDirectory()) {
+        return candidate;
+      }
+    } catch {
+      // Walk toward the filesystem root until an existing directory is found.
+    }
+
+    const parent = path.dirname(candidate);
+    if (parent === candidate) {
+      return candidate;
+    }
+    candidate = parent;
+  }
+};
 
 /**
  * Node.js platform implementation.
@@ -36,6 +65,21 @@ export const platform = {
 
   existsSync(filePath: string): boolean {
     return fs.existsSync(filePath);
+  },
+
+  realpathSync(filePath: string): string {
+    return fs.realpathSync(filePath);
+  },
+
+  isFileSystemCaseSensitive(filePath: string): boolean {
+    try {
+      return isFsCaseSensitive(findNearestExistingDirectory(filePath));
+    } catch {
+      // Detection must not weaken this security guard. If the target mount
+      // cannot be inspected, compare case-insensitively and accept possible
+      // false positives instead of allowing a casing bypass.
+      return false;
+    }
   },
 
   mkdirSync(dirPath: string): void {

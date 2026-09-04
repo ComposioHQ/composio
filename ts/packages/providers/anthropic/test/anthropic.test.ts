@@ -28,7 +28,7 @@ vi.mock('@anthropic-ai/sdk', () => {
 describe('AnthropicProvider', () => {
   let provider: AnthropicProvider;
   let mockTool: Tool;
-  let mockExecuteToolFn: any;
+  let mockExecuteToolFn: unknown;
 
   beforeEach(() => {
     provider = new AnthropicProvider();
@@ -105,6 +105,37 @@ describe('AnthropicProvider', () => {
         },
       });
     });
+
+    it('deduplicates required entries at every object-schema level', () => {
+      const toolWithDuplicateRequired: Tool = {
+        ...mockTool,
+        inputParameters: {
+          type: 'object',
+          properties: {
+            owner: { type: 'string' },
+            options: {
+              type: 'object',
+              properties: {
+                name: { type: 'string' },
+              },
+              required: ['name', 'name'],
+            },
+          },
+          required: ['owner', 'options', 'owner'],
+        },
+      };
+
+      const wrapped = provider.wrapTool(toolWithDuplicateRequired) as AnthropicTool;
+      const properties = wrapped.input_schema.properties as Record<
+        string,
+        {
+          required?: string[];
+        }
+      >;
+
+      expect(wrapped.input_schema.required).toEqual(['owner', 'options']);
+      expect(properties.options?.required).toEqual(['name']);
+    });
   });
 
   describe('wrapTools', () => {
@@ -170,6 +201,35 @@ describe('AnthropicProvider', () => {
         undefined
       );
       expect(result).toBe(JSON.stringify({ result: 'success' }));
+    });
+
+    it('should expose session execution errors without changing successful results', async () => {
+      const toolUse: AnthropicToolUseBlock = {
+        type: 'tool_use',
+        id: 'tu_123',
+        name: 'test-tool',
+        input: { input: 'test-value' },
+      };
+      const session = {
+        execute: vi
+          .fn()
+          .mockResolvedValueOnce({
+            data: { result: 'success' },
+            error: null,
+            logId: 'log-success',
+          })
+          .mockResolvedValueOnce({
+            data: {},
+            error: 'Tool execution failed',
+            logId: 'log-failure',
+          }),
+      };
+
+      const successfulResult = await provider.executeToolCall(session, toolUse);
+      const failedResult = await provider.executeToolCall(session, toolUse);
+
+      expect(successfulResult).toBe(JSON.stringify({ result: 'success' }));
+      expect(failedResult).toBe(JSON.stringify({ error: 'Tool execution failed' }));
     });
 
     it('should normalize a stringified-JSON input to an object before executing (issue #2406)', async () => {

@@ -6,7 +6,7 @@ from setuptools import setup
 
 setup(
     name="composio_crewai",
-    version="0.17.1",
+    version="0.21.0",
     author="Composio",
     author_email="tech@composio.dev",
     description="Use Composio to get an array of tools with your CrewAI agent.",
@@ -19,6 +19,6 @@ setup(
         "Operating System :: OS Independent",
     ],
     python_requires=">=3.10,<4",
-    install_requires=["crewai>=0.134.0,<1.16.0", "composio>=0.17.1,<2"],
+    install_requires=["crewai>=1.15.7,<2.0.0", "composio>=0.17.1,<2"],
     include_package_data=True,
 )

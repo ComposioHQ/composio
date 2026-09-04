@@ -13,7 +13,9 @@ The Google provider formats Composio tools for [Gemini](https://ai.google.dev/) 
 
 <IntegrationContent value="gemini">
 
-The Google Generative AI provider transforms Composio tools into Gemini function declarations. Gemini is non-agentic, so the model returns function calls and you run the loop: execute each call with `composio.provider.executeToolCall`, feed the result back, and repeat until the model replies with text.
+In Python, the Gemini provider (`composio_gemini`) wraps Composio tools as typed callables, and the `google-genai` SDK's Automatic Function Calling executes tool calls inside the chat loop for you. In TypeScript, the Google provider transforms Composio tools into Gemini function declarations, and you run the loop: execute each call with `session.execute`, feed the result back, and repeat until the model replies with text.
+
+Object arguments that declare no properties preserve arbitrary nested keys in both providers. The TypeScript provider also adds `type: "object"` to schema nodes that declare `properties` without a type, which is the shape Gemini expects for object schemas.
 
 <Steps>
 <Step>
@@ -21,14 +23,10 @@ The Google Generative AI provider transforms Composio tools into Gemini function
 
 <Tabs groupId="language" items={["Python", "TypeScript"]} persist>
 <Tab value="Python">
-```bash
-pip install composio composio_google google-genai
-```
+<PackageInstall ecosystem="python" packages="composio composio_gemini google-genai" />
 </Tab>
 <Tab value="TypeScript">
-```bash
-npm install @composio/core @composio/google @google/genai
-```
+<PackageInstall packages="@composio/core @composio/google @google/genai" />
 </Tab>
 </Tabs>
 </Step>
@@ -37,7 +35,7 @@ npm install @composio/core @composio/google @google/genai
 **Configure API Keys**
 
 <Callout type="info">
-Set `COMPOSIO_API_KEY` with your API key from [Settings](https://dashboard.composio.dev/~/project/settings/api-keys) and `GOOGLE_API_KEY` with your [Google API key](https://aistudio.google.com/apikey).
+Set `COMPOSIO_API_KEY` with your API key from [Settings](https://dashboard.composio.dev/~/project/settings/api-keys?utm_source=docs&utm_medium=content&utm_campaign=docs-providers-google) and `GOOGLE_API_KEY` with your [Google API key](https://aistudio.google.com/apikey).
 </Callout>
 
 ```txt title=".env"
@@ -53,11 +51,11 @@ GOOGLE_API_KEY=xxxxxxxxx
 <Tab value="Python">
 ```python
 from composio import Composio
-from composio_google import GoogleProvider
+from composio_gemini import GeminiProvider
 from google import genai
 from google.genai import types
 
-composio = Composio(provider=GoogleProvider())
+composio = Composio(provider=GeminiProvider())
 client = genai.Client()
 
 # Create a session for your user
@@ -66,16 +64,11 @@ tools = session.tools()
 
 config = types.GenerateContentConfig(tools=tools)
 chat = client.chats.create(model="gemini-3-pro-preview", config=config)
-response = chat.send_message("Send an email to john@example.com with the subject 'Hello' and body 'Hello from Composio!'")
 
-# Agentic loop: keep executing tool calls until the model responds with text
-while response.function_calls:
-    parts = []
-    for fc in response.function_calls:
-        result = composio.provider.execute_tool_call(user_id="user_123", function_call=fc)
-        parts.append(types.Part.from_function_response(name=fc.name, response=result))
-    response = chat.send_message(parts)
-
+# Automatic Function Calling executes tool calls inside the chat loop
+response = chat.send_message(
+    "Send an email to john@example.com with the subject 'Hello' and body 'Hello from Composio!'"
+)
 print(response.text)
 ```
 </Tab>
@@ -105,19 +98,16 @@ let response = await chat.sendMessage({
     message: "Send an email to john@example.com with the subject 'Hello' and body 'Hello from Composio!'",
 });
 
-// Agentic loop: keep executing tool calls until the model responds with text
+// Agentic loop: run each tool call with session.execute() until the model responds with text
 while (response.functionCalls && response.functionCalls.length > 0) {
     const parts: Part[] = [];
     for (const fc of response.functionCalls) {
-        const result = await composio.provider.executeToolCall("user_123", {
-            name: fc.name || '',
-            args: (fc.args || {}) as Record<string, unknown>,
-        });
+        const result = await session.execute(fc.name || '', (fc.args || {}) as Record<string, unknown>);
         parts.push({
             functionResponse: {
                 id: fc.id,
                 name: fc.name,
-                response: JSON.parse(result),
+                response: result.error ? { error: result.error } : result.data,
             },
         });
     }
@@ -131,6 +121,10 @@ console.log(response.text);
 </Step>
 </Steps>
 
+<Callout type="warn">
+In TypeScript, execute session tools with `session.execute(toolSlug, arguments)`, as shown above. The provider's `executeToolCall` helper executes tools through the direct path, which does not carry your session — session meta-tools (`COMPOSIO_SEARCH_TOOLS`, `COMPOSIO_MANAGE_CONNECTIONS`, …) are rejected there with `"can only be called inside a tool-router session"`. Use `executeToolCall` only with tools fetched via [`tools.get`](/docs/tools-direct/executing-tools), not with `session.tools()`. Unlike the [OpenAI](/docs/providers/openai) and [Anthropic](/docs/providers/anthropic) helpers, the Google provider's `executeToolCall` does not yet accept a session. (The Python Gemini tab is unaffected: Automatic Function Calling runs provider-wrapped callables, which carry the session.)
+</Callout>
+
 </IntegrationContent>
 
 <IntegrationContent value="adk">
@@ -141,16 +135,14 @@ The Google ADK provider transforms Composio tools into ADK's `FunctionTool` form
 <Step>
 **Install**
 
-```bash
-pip install composio composio_google_adk google-adk
-```
+<PackageInstall ecosystem="python" packages="composio composio_google_adk google-adk" />
 </Step>
 
 <Step>
 **Configure API Keys**
 
 <Callout type="info">
-Set `COMPOSIO_API_KEY` with your API key from [Settings](https://dashboard.composio.dev/~/project/settings/api-keys) and `GOOGLE_API_KEY` with your [Google API key](https://aistudio.google.com/apikey).
+Set `COMPOSIO_API_KEY` with your API key from [Settings](https://dashboard.composio.dev/~/project/settings/api-keys?utm_source=docs&utm_medium=content&utm_campaign=docs-providers-google) and `GOOGLE_API_KEY` with your [Google API key](https://aistudio.google.com/apikey).
 </Callout>
 
 ```txt title=".env"

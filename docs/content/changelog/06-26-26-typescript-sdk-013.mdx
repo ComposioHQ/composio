@@ -1,0 +1,36 @@
+---
+title: "TypeScript SDK 0.13.0 adds sessions and 0.13.1 adds deletion"
+description: "TypeScript SDK 0.13.0 makes sessions first-class and MCP opt-in. Version 0.13.1 adds session deletion."
+date: "2026-06-26"
+---
+
+TypeScript SDK `@composio/core` `0.13.0` makes the sessions API the primary way to work with Tool Router. Version `0.13.1` completes the lifecycle with session deletion.
+
+### SDK versions
+
+| SDK | Version |
+| --- | --- |
+| TypeScript `@composio/core` | `0.13.0` |
+| TypeScript `@composio/core` | `0.13.1` |
+
+### Sessions are first-class
+
+Use `composio.sessions.create()` as the canonical entry point. `composio.create()` remains an alias. The shared-connection ACL helper also graduates to `connectedAccounts.updateAcl()`, while `experimental.updateAcl()` remains as a compatibility alias.
+
+MCP is now opt-in at the type level. Sessions return native tools by default. Create a session with `{ mcp: true }` before reading `session.mcp` in TypeScript.
+
+```typescript
+import { Composio } from '@composio/core';
+
+const composio = new Composio({ apiKey: 'your-api-key' });
+const session = await composio.sessions.create('user_123', { mcp: true });
+
+const mcp = session.mcp;
+```
+
+### Other session and trigger updates
+
+- Session responses expose the resolved workbench configuration. Prefer `sandbox` for code-execution configuration; `workbench` remains an accepted alias.
+- `triggers.parse()` parses incoming webhook requests and can verify their signatures.
+- `triggers.setWebhookSubscription()` creates or updates a project webhook subscription.
+- `composio.sessions.delete(sessionId)` and `session.delete()` remove a Tool Router session in `0.13.1`.

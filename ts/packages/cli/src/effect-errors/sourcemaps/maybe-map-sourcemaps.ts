@@ -1,49 +1,32 @@
-import type { PlatformError } from '@effect/platform/Error';
 import type { FileSystem } from '@effect/platform/FileSystem';
-import { Effect, pipe } from 'effect';
+import type { Path } from '@effect/platform/Path';
+import { Effect } from 'effect';
 
-import type { JsonParsingError } from 'effect-errors/dependencies/fs';
 import { stackAtRegex } from 'effect-errors/logic/stack';
 
 import { getErrorRelatedSources } from './get-error-related-sources';
-import type { ErrorRelatedSources, RawErrorLocation } from './get-sources-from-map-file';
-
-export type StackEntry = {
-  _tag: 'stack-entry';
-  runPath: string;
-};
-
-export type MaybeMappedSources = ErrorRelatedSources | RawErrorLocation | StackEntry;
+import { MappedSources, type MaybeMappedSources } from './mapped-sources';
 
 export const maybeMapSourcemaps = (
   name: string,
   stacktrace: string[]
-): Effect.Effect<MaybeMappedSources[], PlatformError | JsonParsingError, FileSystem> =>
-  pipe(
-    Effect.forEach(stacktrace, stackLine =>
-      Effect.gen(function* () {
-        const chunks = stackLine.trimStart().split(' ');
-        const mapFileReportedPath =
-          chunks.length === 2 ? chunks[1] : chunks[chunks.length - 1].slice(1, -1);
+): Effect.Effect<MaybeMappedSources[], never, FileSystem | Path> =>
+  Effect.forEach(stacktrace, stackLine =>
+    Effect.gen(function* () {
+      const chunks = stackLine.trimStart().split(' ');
+      const mapFileReportedPath =
+        chunks.length === 2 ? chunks[1] : chunks[chunks.length - 1].slice(1, -1);
 
-        const details = yield* getErrorRelatedSources(name, mapFileReportedPath);
-        if (details === undefined) {
-          return {
-            _tag: 'stack-entry' as const,
-            runPath: stackLine.replaceAll(stackAtRegex, 'at '),
-          };
-        }
-        if (details._tag === 'location') {
-          return details;
-        }
+      const details = yield* getErrorRelatedSources(name, mapFileReportedPath);
+      if (details === undefined) {
+        return MappedSources['stack-entry']({
+          runPath: stackLine.replaceAll(stackAtRegex, 'at '),
+        });
+      }
 
-        const regex = new RegExp(`${process.cwd()}/node_modules/`);
-        if (details.sourcesPath?.match(regex)) {
-          return undefined;
-        }
-
-        return details;
-      })
-    ),
-    Effect.map(array => array.filter(maybeSources => maybeSources !== undefined))
+      // `node_modules` frames are already dropped by `getSourcesFromMapFile`,
+      // which compares resolved paths through the `Path` service instead of
+      // interpolating the working directory into an unescaped `RegExp`.
+      return details;
+    })
   );

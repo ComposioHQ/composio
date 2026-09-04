@@ -1,5 +1,5 @@
 import { describe, expect, layer } from '@effect/vitest';
-import { ConfigProvider, Effect } from 'effect';
+import { ConfigProvider, DateTime, Effect } from 'effect';
 import { extendConfigProvider } from 'src/services/config';
 import { cli, TestLive, MockConsole } from 'test/__utils__';
 import type { TestLiveInput } from 'test/__utils__/services/test-layer';
@@ -16,8 +16,8 @@ const testToolkits: Toolkits = [
     meta: {
       description: 'Email service to send and receive emails',
       categories: [],
-      created_at: new Date('2024-05-03T11:44:32.061Z') as any,
-      updated_at: new Date('2024-05-03T11:44:32.061Z') as any,
+      created_at: DateTime.unsafeMake('2024-05-03T11:44:32.061Z'),
+      updated_at: DateTime.unsafeMake('2024-05-03T11:44:32.061Z'),
       available_versions: ['20250909'],
       tools_count: 36,
       triggers_count: 2,
@@ -33,8 +33,8 @@ const testToolkits: Toolkits = [
     meta: {
       description: 'Microsoft email service',
       categories: [],
-      created_at: new Date('2024-05-03T11:44:32.061Z') as any,
-      updated_at: new Date('2024-05-03T11:44:32.061Z') as any,
+      created_at: DateTime.unsafeMake('2024-05-03T11:44:32.061Z'),
+      updated_at: DateTime.unsafeMake('2024-05-03T11:44:32.061Z'),
       available_versions: [],
       tools_count: 28,
       triggers_count: 1,
@@ -50,8 +50,8 @@ const testToolkits: Toolkits = [
     meta: {
       description: 'Messaging platform for teams',
       categories: [],
-      created_at: new Date('2024-05-03T11:44:32.061Z') as any,
-      updated_at: new Date('2024-05-03T11:44:32.061Z') as any,
+      created_at: DateTime.unsafeMake('2024-05-03T11:44:32.061Z'),
+      updated_at: DateTime.unsafeMake('2024-05-03T11:44:32.061Z'),
       available_versions: ['20250101', '20260101'],
       tools_count: 42,
       triggers_count: 5,

@@ -1,5 +1,19 @@
-import { getLLMText, source, examplesSource, referenceSource, toolkitsSource } from '@/lib/source';
+import {
+  getLLMText,
+  source,
+  examplesSource,
+  referenceSource,
+  toolkitsSource,
+  knowledgeBaseSource,
+  type LLMPage,
+} from '@/lib/source';
 import { SESSION_GUARDRAILS } from '@/lib/llm-guardrails';
+import { detectReferenceApiVersion } from '@/lib/api-version';
+import { TOOLKIT_COUNT_LABEL } from '@/lib/toolkit-count';
+import {
+  formatKnowledgeDiscoveryLinks,
+  getLocalKnowledgeDiscoveryPaths,
+} from '@/lib/knowledge/discovery';
 import type { ReactNode } from 'react';
 
 export const revalidate = false;
@@ -26,14 +40,7 @@ interface FolderNode {
 type TreeNode = PageNode | SeparatorNode | FolderNode;
 
 // Generic page type that works for all sources
-interface PageLike {
-  url: string;
-  slugs: string[];
-  data: {
-    title: string;
-    description?: string;
-  };
-}
+type PageLike = LLMPage & { slugs: string[] };
 
 /**
  * Collect page URLs from the page tree in sidebar order.
@@ -113,15 +120,15 @@ function orderDocPages(pages: PageLike[], treeNodes: TreeNode[]): PageLike[] {
   });
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function getTextForPages(pages: PageLike[]) {
   return Promise.all(
-    pages.map(async (page) => {
+    pages.map(async page => {
       try {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        return await getLLMText(page as any, { includeFooter: false, includeGuardrails: false });
+        return await getLLMText(page, {
+          includeFooter: false,
+          includeGuardrails: false,
+        });
       } catch {
-        // Graceful fallback if getText fails
         return `# ${page.data.title} (${page.url})\n\n${page.data.description || ''}`;
       }
     })
@@ -133,20 +140,38 @@ export async function GET() {
     const treeChildren = source.pageTree.children as TreeNode[];
     const legacyUrls = collectLegacyUrls(treeChildren);
     const orderedDocsPages = orderDocPages(
-      (source.getPages() as PageLike[]).filter((page) => !legacyUrls.has(page.url)),
+      source.getPages().filter(page => !legacyUrls.has(page.url)),
       treeChildren
     );
+    const knowledgeDiscoveryLinks = formatKnowledgeDiscoveryLinks(
+      (await getLocalKnowledgeDiscoveryPaths()).filter(
+        (path) => !path.startsWith('/kb/guide/'),
+      ),
+    );
 
-    const [docsResults, examplesResults, referenceResults, toolkitsResults] = await Promise.all([
+    const [
+      docsResults,
+      knowledgeBaseResults,
+      examplesResults,
+      referenceResults,
+      toolkitsResults,
+    ] = await Promise.all([
       getTextForPages(orderedDocsPages),
-      getTextForPages(examplesSource.getPages() as PageLike[]),
-      getTextForPages(referenceSource.getPages() as PageLike[]),
-      getTextForPages(toolkitsSource.getPages() as PageLike[]),
+      getTextForPages(knowledgeBaseSource.getPages()),
+      getTextForPages(examplesSource.getPages()),
+      getTextForPages(
+        referenceSource.getPages().filter(page => detectReferenceApiVersion(page.url) !== '3.0')
+      ),
+      getTextForPages(toolkitsSource.getPages()),
     ]);
 
     const results = [
-      `# Composio Documentation\n\n> Composio powers 1000+ toolkits, tool search, context management, authentication, and a sandboxed workbench to help you build AI agents that turn intent into action.${SESSION_GUARDRAILS}\n# Documentation\n`,
+      `# Composio Documentation\n\n> Composio powers ${TOOLKIT_COUNT_LABEL} toolkits, tool search, context management, authentication, and a sandboxed workbench to help you build AI agents that turn intent into action.${SESSION_GUARDRAILS}\n# Documentation\n`,
       ...docsResults,
+      '\n# Knowledge Hub navigation\n',
+      knowledgeDiscoveryLinks,
+      '\n# Knowledge Base\n',
+      ...knowledgeBaseResults,
       '\n# Examples\n',
       ...examplesResults,
       '\n# API Reference\n',

@@ -1,0 +1,56 @@
+---
+title: "TypeScript SDK 0.11.0 moves custom tools to Tool Router"
+description: "TypeScript SDK 0.11.0 removes the legacy custom-tool registry and improves trigger ownership, schemas, file handling, and provider tool arguments."
+date: "2026-06-19"
+---
+
+TypeScript SDK `@composio/core` `0.11.0` removes the old in-memory custom-tool registry. Custom tools now have one home: Tool Router sessions.
+
+### SDK versions
+
+| SDK | Version |
+| --- | --- |
+| TypeScript `@composio/core` | `0.11.0` |
+
+### Breaking change
+
+<Callout type="warn">
+**Breaking change**
+
+`composio.tools.createCustomTool(...)` was removed. Because the SDK is still pre-1.0, this shipped as a minor release. Existing `^0.10.0` ranges do not upgrade to `0.11.0` automatically.
+</Callout>
+
+**Before:**
+
+```typescript
+// @noErrors
+const tool = composio.tools.createCustomTool({ /* ... */ });
+```
+
+**After:**
+
+```typescript
+// @noErrors
+import { experimental_createTool } from '@composio/core';
+
+const tool = experimental_createTool('GREP', {
+  name: 'Grep Search',
+  description: 'Search local files',
+  inputParams: /* zod schema */,
+  execute: async (input) => ({ input }),
+});
+
+await composio.create('user_123', {
+  experimental: { customTools: [tool] },
+});
+```
+
+Use `experimental_createToolkit(...)` when several local tools belong together. The `experimental_*` names are intentional: this API is still evolving.
+
+### Improvements and fixes
+
+- `triggers.create()` now forwards `userId`, enabling trigger 2FA ownership checks.
+- Telemetry sends no longer delay SDK results or rethrown errors.
+- Automatic file handling now selects the correct branch for schemas that accept either one file or a list of files.
+- Providers normalize model-produced JSON-string tool arguments and raise `ComposioInvalidToolArgumentsError` for invalid values instead of leaking raw parser errors.
+- MCP-backed toolkits with empty or missing output schemas no longer fail validation. Mastra also tolerates unresolved backend `$ref` values without making the whole tool list unusable.

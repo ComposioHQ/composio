@@ -1,6 +1,7 @@
 import { Args, Command, Options } from '@effect/cli';
 import { isLocalToolkitSlug } from '@composio/cli-local-tools';
-import { Effect, Option } from 'effect';
+import type { SessionSearchResponse } from '@composio/client/resources/tool-router';
+import { Data, Effect, Option } from 'effect';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { requireAuth } from 'src/effects/require-auth';
 import { setupCacheDir } from 'src/effects/setup-cache-dir';
@@ -21,7 +22,10 @@ import {
   writeConsumerConnectedToolkitsCache,
 } from 'src/services/consumer-short-term-cache';
 import { appendCliSessionHistory } from 'src/services/cli-session-artifacts';
-import { getOrFetchToolInputDefinition } from 'src/services/tool-input-validation';
+import {
+  cacheToolInputDefinition,
+  getOrFetchToolInputDefinition,
+} from 'src/services/tool-input-validation';
 
 const query = Args.repeated(Args.text({ name: 'query' })).pipe(
   Args.withDescription(
@@ -59,35 +63,22 @@ const human = Options.boolean('human').pipe(
   Options.withDescription('Show formatted human-readable search output')
 );
 
-type SearchToolSchema = {
-  tool_slug: string;
-  toolkit: string;
-  description?: string;
-  input_schema?: Record<string, unknown>;
-  output_schema?: Record<string, unknown>;
-};
+type SearchToolSchema = SessionSearchResponse.ToolSchemas;
+type SearchResultRecord = SessionSearchResponse.Result;
+type SearchResponseRecord = Pick<
+  SessionSearchResponse,
+  'results' | 'toolkit_connection_statuses' | 'tool_schemas' | 'next_steps_guidance' | 'error'
+>;
 
-type SearchResultRecord = {
-  use_case: string;
-  primary_tool_slugs: string[];
-  related_tool_slugs: string[];
-  recommended_plan_steps?: string[];
-  reference_workbench_snippets?: unknown;
-  plan_id?: string;
-};
+export class ToolsSearchInputError extends Data.TaggedError('commands/ToolsSearchInputError')<{
+  readonly reason: 'missing_query' | 'missing_user_id';
+  readonly message: string;
+}> {}
 
-type ToolkitConnectionStatusRecord = {
-  toolkit: string;
-  has_active_connection: boolean;
-};
-
-type SearchResponseRecord = {
-  results: SearchResultRecord[];
-  toolkit_connection_statuses: ToolkitConnectionStatusRecord[];
-  tool_schemas: Record<string, SearchToolSchema>;
-  next_steps_guidance: string[];
-  error: string | null;
-};
+class ToolsSearchRequestError extends Data.TaggedError('commands/ToolsSearchRequestError')<{
+  readonly message: string;
+  readonly cause: unknown;
+}> {}
 
 const stripSearchResultMetadata = <
   T extends { reference_workbench_snippets?: unknown; plan_id?: unknown },
@@ -103,6 +94,9 @@ const stripSearchResultMetadata = <
 };
 
 const TOOL_SCHEMA_PATH_FORMAT = '~/.composio/tool_definitions/<TOOL_SLUG>.json';
+
+const isRemoteCustomToolSlug = (slug: string): boolean =>
+  slug.toUpperCase().startsWith('CUSTOM_');
 
 const toHomeRelativePath = (cacheDir: string, absolutePath: string) =>
   absolutePath.startsWith(cacheDir) ? absolutePath.replace(cacheDir, '~/.composio') : absolutePath;
@@ -137,9 +131,9 @@ const collectToolsForResult = (params: {
       description: schema.description ?? '',
       tags: [],
       available_versions: [],
-      input_parameters: (schema.input_schema ?? {}) as Record<string, unknown>,
-      output_parameters: (schema.output_schema ?? {}) as Record<string, unknown>,
-    } as Tool);
+      input_parameters: schema.input_schema ?? {},
+      output_parameters: schema.output_schema ?? {},
+    });
 
     if (toolsList.length >= params.limit) break;
   }
@@ -194,8 +188,18 @@ const buildSearchJsonPayload = (params: {
     const primaryToolSchemaPaths = Object.fromEntries(
       yield* Effect.forEach(primaryToolSlugs, slug =>
         Effect.gen(function* () {
-          const definition = yield* getOrFetchToolInputDefinition(slug, params.projectScope);
-          return [slug, toHomeRelativePath(cacheDir, definition.schemaPath)] as const;
+          const searchSchema = params.searchResponse.tool_schemas[slug];
+          const definition =
+            isRemoteCustomToolSlug(slug) && searchSchema?.input_schema
+              ? yield* cacheToolInputDefinition({
+                  slug,
+                  schema: searchSchema.input_schema,
+                })
+              : yield* getOrFetchToolInputDefinition(slug, params.projectScope);
+          return [slug, toHomeRelativePath(cacheDir, definition.schemaPath)] satisfies readonly [
+            string,
+            string,
+          ];
         })
       )
     );
@@ -228,7 +232,7 @@ const buildSearchJsonPayload = (params: {
           'You can directly proceed with these steps without waiting for the user to ask. Link accounts first if needed, then execute tools.',
         steps: params.nextSteps,
       },
-    } as const;
+    };
   });
 
 const emitHumanSearchOutput = (params: {
@@ -313,7 +317,10 @@ const runToolsSearch = (params: {
     const emitJson = params.json || !emitHuman;
     const queries = params.query.map(q => q.trim()).filter(Boolean);
     if (queries.length === 0) {
-      return yield* Effect.fail(new Error('At least one query is required.'));
+      return yield* new ToolsSearchInputError({
+        reason: 'missing_query',
+        message: 'At least one query is required.',
+      });
     }
     const toolkitFilter = Option.getOrUndefined(params.toolkits);
     const toolkitList =
@@ -337,11 +344,11 @@ const runToolsSearch = (params: {
               onNone: () => userContext.data.testUserId,
             });
       if (Option.isNone(resolvedUserId)) {
-        return yield* Effect.fail(
-          new Error(
-            'Missing user id. Provide --user-id or run composio login to set global test_user_id.'
-          )
-        );
+        return yield* new ToolsSearchInputError({
+          reason: 'missing_user_id',
+          message:
+            'Missing user id. Provide --user-id or run composio login to set global test_user_id.',
+        });
       }
       const clientSingleton = yield* ComposioClientSingleton;
       const client = yield* clientSingleton.getFor({
@@ -373,11 +380,54 @@ const runToolsSearch = (params: {
         queries: queries.map(query => ({ use_case: query })),
         ...(localExperimentalPayload ? { experimental: localExperimentalPayload } : {}),
       };
-      const searchResponse = yield* Effect.tryPromise(() =>
-        client.toolRouter.session.search(sessionId, searchPayload)
-      );
+      const searchResponse = yield* Effect.tryPromise({
+        try: () => client.toolRouter.session.search(sessionId, searchPayload),
+        catch: cause =>
+          new ToolsSearchRequestError({
+            message: 'Failed to search tools.',
+            cause,
+          }),
+      });
+      const customToolSlugsMissingSchemas = Object.entries(searchResponse.tool_schemas)
+        .filter(
+          ([slug, schema]) =>
+            isRemoteCustomToolSlug(slug) && !schema.input_schema
+        )
+        .map(([slug]) => slug);
+      const hydratedSearchResponse =
+        customToolSlugsMissingSchemas.length === 0
+          ? searchResponse
+          : yield* Effect.tryPromise({
+              try: async () => {
+                const schemaResponse = await client.toolRouter.session.executeMeta(sessionId, {
+                  slug: 'COMPOSIO_GET_TOOL_SCHEMAS',
+                  arguments: { tool_slugs: customToolSlugsMissingSchemas },
+                });
+                if (schemaResponse.error) {
+                  throw new Error(schemaResponse.error);
+                }
+
+                const resolvedSchemas = schemaResponse.data.tool_schemas;
+                if (!resolvedSchemas || typeof resolvedSchemas !== 'object') {
+                  throw new Error('Tool Router returned no tool schemas.');
+                }
+
+                return {
+                  ...searchResponse,
+                  tool_schemas: {
+                    ...searchResponse.tool_schemas,
+                    ...(resolvedSchemas as Record<string, SearchToolSchema>),
+                  },
+                };
+              },
+              catch: cause =>
+                new ToolsSearchRequestError({
+                  message: 'Failed to fetch custom tool schemas.',
+                  cause,
+                }),
+            });
       return {
-        searchResponse,
+        searchResponse: hydratedSearchResponse,
         projectScope: {
           orgId: resolvedProject.orgId,
           projectId: resolvedProject.projectId,
@@ -435,9 +485,7 @@ const runToolsSearch = (params: {
         ? searchResponse.tool_schemas[firstSlug]
         : undefined;
     const firstToolkit = firstSchema?.toolkit;
-    const firstPayload = buildMinimalPayloadFromSchema(
-      (firstSchema?.input_schema ?? {}) as Record<string, unknown>
-    );
+    const firstPayload = buildMinimalPayloadFromSchema(firstSchema?.input_schema ?? {});
     const firstPayloadJson = JSON.stringify(firstPayload);
     const firstDataArg =
       Object.keys(firstPayload).length === 0 ? '-d "{}"' : `-d '${firstPayloadJson}'`;

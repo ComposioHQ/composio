@@ -1,6 +1,9 @@
 import type { CliCommandTelemetryContext, TrackEvent } from './types';
+import { APP_VERSION } from 'src/constants';
+import { inferSkillReleaseChannel } from 'src/effects/install-skill';
+import type { CliInvocationContext } from 'src/services/runtime-cli-context';
 import { ToolInputValidationError } from 'src/services/tool-input-validation';
-import { toolkitFromToolSlug } from 'src/utils/toolkit-from-tool-slug';
+import { guessToolkitFromToolSlug } from 'src/utils/toolkit-from-tool-slug';
 
 export const CLI_ANALYTICS_EVENTS = {
   CLI_COMMAND_INVOKED: 'CLI_COMMAND_INVOKED',
@@ -27,10 +30,99 @@ export const CLI_ANALYTICS_EVENTS = {
   CLI_RUN_INVOKED: 'CLI_RUN_INVOKED',
   CLI_RUN_SUCCEEDED: 'CLI_RUN_SUCCEEDED',
   CLI_RUN_FAILED: 'CLI_RUN_FAILED',
+  CLI_INSTALL_INVOKED: 'CLI_INSTALL_INVOKED',
+  CLI_INSTALL_SUCCEEDED: 'CLI_INSTALL_SUCCEEDED',
+  CLI_INSTALL_FAILED: 'CLI_INSTALL_FAILED',
+  CLI_SETUP_INVOKED: 'CLI_SETUP_INVOKED',
+  CLI_SETUP_SUCCEEDED: 'CLI_SETUP_SUCCEEDED',
+  CLI_SETUP_FAILED: 'CLI_SETUP_FAILED',
+  CLI_SETUP_HOST_DETECTED: 'CLI_SETUP_HOST_DETECTED',
+  CLI_SETUP_CANCELLED: 'CLI_SETUP_CANCELLED',
+  CLI_SETUP_SKIPPED: 'CLI_SETUP_SKIPPED',
+  CLI_PLUGIN_SETUP_SUCCEEDED: 'CLI_PLUGIN_SETUP_SUCCEEDED',
+  CLI_PLUGIN_SETUP_FAILED: 'CLI_PLUGIN_SETUP_FAILED',
+  CLI_PLUGIN_UNINSTALL_SUCCEEDED: 'CLI_PLUGIN_UNINSTALL_SUCCEEDED',
   CLI_TOOL_INVOCATION_VALIDATION_FAILED: 'CLI_TOOL_INVOCATION_VALIDATION_FAILED',
   CLI_TOOL_INVOCATION_TOOL_NOT_FOUND: 'CLI_TOOL_INVOCATION_TOOL_NOT_FOUND',
   CLI_TOOL_INVOCATION_FAILED: 'CLI_TOOL_INVOCATION_FAILED',
 } as const;
+
+type CliAnalyticsEventName = (typeof CLI_ANALYTICS_EVENTS)[keyof typeof CLI_ANALYTICS_EVENTS];
+
+export const CLI_JOURNEY_STAGES = [
+  'install',
+  'setup',
+  'login',
+  'connect',
+  'execute',
+  'other',
+] as const;
+
+export type CliJourneyStage = (typeof CLI_JOURNEY_STAGES)[number];
+
+export const CLI_EVENT_JOURNEY_STAGES = {
+  CLI_COMMAND_INVOKED: 'other',
+  CLI_COMMAND_SUCCEEDED: 'other',
+  CLI_COMMAND_FAILED: 'other',
+  CLI_EXECUTE_INVOKED: 'execute',
+  CLI_EXECUTE_SUCCEEDED: 'execute',
+  CLI_EXECUTE_FAILED: 'execute',
+  CLI_SEARCH_INVOKED: 'other',
+  CLI_SEARCH_SUCCEEDED: 'other',
+  CLI_SEARCH_FAILED: 'other',
+  CLI_LINK_INVOKED: 'connect',
+  CLI_LINK_SUCCEEDED: 'connect',
+  CLI_LINK_FAILED: 'connect',
+  CLI_LOGIN_INVOKED: 'login',
+  CLI_LOGIN_SUCCEEDED: 'login',
+  CLI_LOGIN_FAILED: 'login',
+  CLI_LOGOUT_INVOKED: 'other',
+  CLI_LOGOUT_SUCCEEDED: 'other',
+  CLI_LOGOUT_FAILED: 'other',
+  CLI_PROXY_INVOKED: 'other',
+  CLI_PROXY_SUCCEEDED: 'other',
+  CLI_PROXY_FAILED: 'other',
+  CLI_RUN_INVOKED: 'other',
+  CLI_RUN_SUCCEEDED: 'other',
+  CLI_RUN_FAILED: 'other',
+  CLI_INSTALL_INVOKED: 'install',
+  CLI_INSTALL_SUCCEEDED: 'install',
+  CLI_INSTALL_FAILED: 'install',
+  CLI_SETUP_INVOKED: 'setup',
+  CLI_SETUP_SUCCEEDED: 'setup',
+  CLI_SETUP_FAILED: 'setup',
+  CLI_SETUP_HOST_DETECTED: 'setup',
+  CLI_SETUP_CANCELLED: 'setup',
+  CLI_SETUP_SKIPPED: 'setup',
+  CLI_PLUGIN_SETUP_SUCCEEDED: 'setup',
+  CLI_PLUGIN_SETUP_FAILED: 'setup',
+  CLI_PLUGIN_UNINSTALL_SUCCEEDED: 'setup',
+  CLI_TOOL_INVOCATION_VALIDATION_FAILED: 'execute',
+  CLI_TOOL_INVOCATION_TOOL_NOT_FOUND: 'execute',
+  CLI_TOOL_INVOCATION_FAILED: 'execute',
+} as const satisfies Record<CliAnalyticsEventName, CliJourneyStage>;
+
+let cliChannel = inferSkillReleaseChannel(APP_VERSION);
+
+/**
+ * Event builders are synchronous, so the CLI bootstrap injects the version
+ * resolved from release-tag.txt before any command can emit telemetry.
+ */
+export const configureCliAnalyticsReleaseVersion = (version: string): void => {
+  cliChannel = inferSkillReleaseChannel(version);
+};
+
+const buildEvent = (
+  name: CliAnalyticsEventName,
+  properties: Record<string, unknown>
+): TrackEvent => ({
+  name,
+  properties: {
+    ...properties,
+    journey_stage: CLI_EVENT_JOURNEY_STAGES[name],
+    cli_channel: cliChannel,
+  },
+});
 
 const KNOWN_COMMAND_TOKENS = new Set([
   'version',
@@ -40,6 +132,7 @@ const KNOWN_COMMAND_TOKENS = new Set([
   'logout',
   'run',
   'install',
+  'setup',
   'dev',
   'generate',
   'tools',
@@ -87,8 +180,6 @@ const TOOL_VALIDATION_CODES: ReadonlySet<number> = new Set([
   1607, // Upstream_ValidationError
   3702, // ComposioTools_ValidationError
 ]);
-const getInvocationOrigin = (): string => process.env.COMPOSIO_CLI_INVOCATION_ORIGIN ?? 'cli';
-const getParentRunId = (): string | undefined => process.env.COMPOSIO_CLI_PARENT_RUN_ID;
 
 const extractCommandPath = (argv: ReadonlyArray<string>): string => {
   const commandTokens: string[] = [];
@@ -141,12 +232,6 @@ const extractUnknownKeys = (issues: ReadonlyArray<string>): ReadonlyArray<string
 
 const errorNameOf = (error: unknown): string =>
   error instanceof Error && error.name ? error.name : 'UnknownError';
-
-const errorMessageOf = (error: unknown): string => {
-  if (error instanceof Error && error.message) return error.message.slice(0, 500);
-  if (typeof error === 'string') return error.slice(0, 500);
-  return 'Unknown error';
-};
 
 const isFlagPresent = (argv: ReadonlyArray<string>, ...flags: string[]): boolean =>
   argv.slice(2).some(token => {
@@ -215,16 +300,18 @@ const getExecuteCommandProperties = (context: CliCommandTelemetryContext) => {
   const slug = getTrailingPositionals(context)[0];
   return {
     source: 'cli',
-    invocation_origin: getInvocationOrigin(),
-    parent_run_id: getParentRunId(),
-    parent_command: getParentRunId() ? 'run' : undefined,
+    invocation_origin: context.invocationOrigin,
+    parent_run_id: context.parentRunId,
+    parent_command: context.parentRunId ? 'run' : undefined,
     cli_version: context.cliVersion,
     command_path: context.commandPath,
     duration_ms: Date.now() - context.startedAt,
     surface: context.commandPath === 'execute' ? 'root' : 'dev',
     tool_slug: slug,
     tool_name: slug,
-    toolkit_slug: typeof slug === 'string' ? toolkitFromToolSlug(slug) : undefined,
+    toolkit_slug:
+      context.toolkitSlug ??
+      (typeof slug === 'string' ? guessToolkitFromToolSlug(slug) : undefined),
     dry_run: isFlagPresent(context.argv, '--dry-run'),
     get_schema: isFlagPresent(context.argv, '--get-schema'),
     has_data: isFlagPresent(context.argv, '--data', '-d'),
@@ -234,27 +321,31 @@ const getExecuteCommandProperties = (context: CliCommandTelemetryContext) => {
   };
 };
 
-const getSearchCommandProperties = (context: CliCommandTelemetryContext) => ({
-  source: 'cli',
-  invocation_origin: getInvocationOrigin(),
-  parent_run_id: getParentRunId(),
-  parent_command: getParentRunId() ? 'run' : undefined,
-  cli_version: context.cliVersion,
-  command_path: context.commandPath,
-  duration_ms: Date.now() - context.startedAt,
-  query: getTrailingPositionals(context)[0],
-  search_query: getTrailingPositionals(context)[0],
-  toolkits: getFlagValue(context.argv, '--toolkits'),
-  limit: getFlagValue(context.argv, '--limit'),
-});
+// Search queries are user-authored free text, so only their shape is recorded.
+const getSearchCommandProperties = (context: CliCommandTelemetryContext) => {
+  const query = getTrailingPositionals(context)[0] ?? '';
+  return {
+    source: 'cli',
+    invocation_origin: context.invocationOrigin,
+    parent_run_id: context.parentRunId,
+    parent_command: context.parentRunId ? 'run' : undefined,
+    cli_version: context.cliVersion,
+    command_path: context.commandPath,
+    duration_ms: Date.now() - context.startedAt,
+    query_length: query.length,
+    query_term_count: query.split(/\s+/u).filter(Boolean).length,
+    toolkits: getFlagValue(context.argv, '--toolkits'),
+    limit: getFlagValue(context.argv, '--limit'),
+  };
+};
 
 const getLinkCommandProperties = (context: CliCommandTelemetryContext) => {
   const firstPositional = getTrailingPositionals(context)[0];
   return {
     source: 'cli',
-    invocation_origin: getInvocationOrigin(),
-    parent_run_id: getParentRunId(),
-    parent_command: getParentRunId() ? 'run' : undefined,
+    invocation_origin: context.invocationOrigin,
+    parent_run_id: context.parentRunId,
+    parent_command: context.parentRunId ? 'run' : undefined,
     cli_version: context.cliVersion,
     command_path: context.commandPath,
     duration_ms: Date.now() - context.startedAt,
@@ -267,7 +358,7 @@ const getLinkCommandProperties = (context: CliCommandTelemetryContext) => {
 
 const getRunCommandProperties = (context: CliCommandTelemetryContext) => ({
   source: 'cli',
-  invocation_origin: getInvocationOrigin(),
+  invocation_origin: context.invocationOrigin,
   run_id: context.runId,
   cli_version: context.cliVersion,
   command_path: context.commandPath,
@@ -281,9 +372,32 @@ const getRunCommandProperties = (context: CliCommandTelemetryContext) => ({
   arg_count: Math.max(0, context.argv.length - 3),
 });
 
+const getInstallCommandProperties = (context: CliCommandTelemetryContext) => ({
+  source: 'cli',
+  invocation_origin: context.invocationOrigin,
+  cli_version: context.cliVersion,
+  command_path: context.commandPath,
+  duration_ms: Date.now() - context.startedAt,
+  completions: isFlagPresent(context.argv, '--completions'),
+  no_completions: isFlagPresent(context.argv, '--no-completions'),
+});
+
+const getSetupCommandProperties = (context: CliCommandTelemetryContext) => ({
+  source: 'cli',
+  invocation_origin: context.invocationOrigin,
+  cli_version: context.cliVersion,
+  command_path: context.commandPath,
+  duration_ms: Date.now() - context.startedAt,
+  operation: isFlagPresent(context.argv, '--uninstall') ? 'uninstall' : 'setup',
+  target: getFlagValue(context.argv, '--target') ?? 'auto',
+  yes: isFlagPresent(context.argv, '--yes', '-y'),
+  if_present: isFlagPresent(context.argv, '--if-present'),
+  stdout_is_tty: context.stdoutIsTTY,
+});
+
 const getLoginCommandProperties = (context: CliCommandTelemetryContext) => ({
   source: 'cli',
-  invocation_origin: getInvocationOrigin(),
+  invocation_origin: context.invocationOrigin,
   cli_version: context.cliVersion,
   command_path: context.commandPath,
   duration_ms: Date.now() - context.startedAt,
@@ -295,7 +409,7 @@ const getLoginCommandProperties = (context: CliCommandTelemetryContext) => ({
 
 const getLogoutCommandProperties = (context: CliCommandTelemetryContext) => ({
   source: 'cli',
-  invocation_origin: getInvocationOrigin(),
+  invocation_origin: context.invocationOrigin,
   cli_version: context.cliVersion,
   command_path: context.commandPath,
   duration_ms: Date.now() - context.startedAt,
@@ -303,11 +417,11 @@ const getLogoutCommandProperties = (context: CliCommandTelemetryContext) => ({
 
 const getProxyCommandProperties = (context: CliCommandTelemetryContext) => ({
   source: 'cli',
-  invocation_origin: getInvocationOrigin(),
+  invocation_origin: context.invocationOrigin,
   cli_version: context.cliVersion,
   command_path: context.commandPath,
   duration_ms: Date.now() - context.startedAt,
-  endpoint: getTrailingPositionals(context)[0],
+  has_endpoint: typeof getTrailingPositionals(context)[0] === 'string',
   toolkit: getFlagValue(context.argv, '--toolkit', '-t'),
   method: getFlagValue(context.argv, '--method', '-X') ?? 'GET',
   has_data: isFlagPresent(context.argv, '--data', '-d'),
@@ -333,72 +447,91 @@ const isProxyCommand = (commandPath: string): boolean => commandPath === 'proxy'
 
 const isRunCommand = (commandPath: string): boolean => commandPath === 'run';
 
+const isInstallCommand = (commandPath: string): boolean => commandPath === 'install';
+
+const isSetupCommand = (commandPath: string): boolean => commandPath === 'setup';
+
 const isGenericOnlyCommand = (commandPath: string): boolean =>
   commandPath === 'composio' || commandPath.startsWith('dev');
 
+/**
+ * Tool slug positional of an execute-family invocation, so the CLI bootstrap
+ * can resolve the toolkit slug once and stamp it on the telemetry context for
+ * the synchronous lifecycle event builders.
+ */
+export const getExecuteCommandToolSlug = (
+  context: CliCommandTelemetryContext
+): string | undefined =>
+  isExecuteCommand(context.commandPath) ? getTrailingPositionals(context)[0] : undefined;
+
+/**
+ * Builds the telemetry context of the running command.
+ *
+ * `invocation` is read from config by the caller and stamped here so every synchronous event
+ * builder below takes the origin as an input rather than consulting process-wide state.
+ */
 export const createCliCommandTelemetryContext = (
   argv: ReadonlyArray<string>,
-  cliVersion: string
+  cliVersion: string,
+  terminal: { readonly stdoutIsTTY: boolean; readonly stderrIsTTY: boolean },
+  invocation: CliInvocationContext
 ): CliCommandTelemetryContext => ({
   argv,
   cliVersion,
+  invocationOrigin: invocation.invocationOrigin,
+  parentRunId: invocation.parentRunId,
   commandPath: extractCommandPath(argv),
   flagNames: extractFlagNames(argv),
+  stdoutIsTTY: terminal.stdoutIsTTY,
+  stderrIsTTY: terminal.stderrIsTTY,
   startedAt: Date.now(),
   runId:
     extractCommandPath(argv) === 'run'
-      ? (process.env.COMPOSIO_CLI_PARENT_RUN_ID ?? crypto.randomUUID())
+      ? (invocation.parentRunId ?? crypto.randomUUID())
       : undefined,
 });
 
-const getCliCommandInvokedEvent = (context: CliCommandTelemetryContext): TrackEvent => ({
-  name: CLI_ANALYTICS_EVENTS.CLI_COMMAND_INVOKED,
-  properties: {
+const getCliCommandInvokedEvent = (context: CliCommandTelemetryContext): TrackEvent =>
+  buildEvent(CLI_ANALYTICS_EVENTS.CLI_COMMAND_INVOKED, {
     source: 'cli',
-    invocation_origin: getInvocationOrigin(),
+    invocation_origin: context.invocationOrigin,
     cli_version: context.cliVersion,
     command_path: context.commandPath,
     flag_names: context.flagNames,
     arg_count: Math.max(0, context.argv.length - 2),
-    stdout_is_tty: Boolean(process.stdout.isTTY),
-    stderr_is_tty: Boolean(process.stderr.isTTY),
-  },
-});
+    stdout_is_tty: context.stdoutIsTTY,
+    stderr_is_tty: context.stderrIsTTY,
+  });
 
-const getCliCommandSucceededEvent = (context: CliCommandTelemetryContext): TrackEvent => ({
-  name: CLI_ANALYTICS_EVENTS.CLI_COMMAND_SUCCEEDED,
-  properties: {
+const getCliCommandSucceededEvent = (context: CliCommandTelemetryContext): TrackEvent =>
+  buildEvent(CLI_ANALYTICS_EVENTS.CLI_COMMAND_SUCCEEDED, {
     source: 'cli',
-    invocation_origin: getInvocationOrigin(),
+    invocation_origin: context.invocationOrigin,
     cli_version: context.cliVersion,
     command_path: context.commandPath,
     duration_ms: Date.now() - context.startedAt,
     flag_names: context.flagNames,
-  },
-});
+  });
 
 const getCliCommandFailedEvent = (
   context: CliCommandTelemetryContext,
   error: unknown
-): TrackEvent => ({
-  name: CLI_ANALYTICS_EVENTS.CLI_COMMAND_FAILED,
-  properties: {
+): TrackEvent =>
+  buildEvent(CLI_ANALYTICS_EVENTS.CLI_COMMAND_FAILED, {
     source: 'cli',
-    invocation_origin: getInvocationOrigin(),
+    invocation_origin: context.invocationOrigin,
     cli_version: context.cliVersion,
     command_path: context.commandPath,
     duration_ms: Date.now() - context.startedAt,
     flag_names: context.flagNames,
     error_name: errorNameOf(error),
-    error_message: errorMessageOf(error),
-  },
-});
+  });
 
 type SpecialLifecycleFamily = {
   readonly match: (commandPath: string) => boolean;
-  readonly invokedEventName: string;
-  readonly succeededEventName: string;
-  readonly failedEventName: string;
+  readonly invokedEventName: CliAnalyticsEventName;
+  readonly succeededEventName: CliAnalyticsEventName;
+  readonly failedEventName: CliAnalyticsEventName;
   readonly getProperties: (context: CliCommandTelemetryContext) => Record<string, unknown>;
 };
 
@@ -452,6 +585,20 @@ const SPECIAL_LIFECYCLE_FAMILIES: ReadonlyArray<SpecialLifecycleFamily> = [
     failedEventName: CLI_ANALYTICS_EVENTS.CLI_RUN_FAILED,
     getProperties: getRunCommandProperties,
   },
+  {
+    match: isInstallCommand,
+    invokedEventName: CLI_ANALYTICS_EVENTS.CLI_INSTALL_INVOKED,
+    succeededEventName: CLI_ANALYTICS_EVENTS.CLI_INSTALL_SUCCEEDED,
+    failedEventName: CLI_ANALYTICS_EVENTS.CLI_INSTALL_FAILED,
+    getProperties: getInstallCommandProperties,
+  },
+  {
+    match: isSetupCommand,
+    invokedEventName: CLI_ANALYTICS_EVENTS.CLI_SETUP_INVOKED,
+    succeededEventName: CLI_ANALYTICS_EVENTS.CLI_SETUP_SUCCEEDED,
+    failedEventName: CLI_ANALYTICS_EVENTS.CLI_SETUP_FAILED,
+    getProperties: getSetupCommandProperties,
+  },
 ];
 
 const getSpecialLifecycleFamily = (commandPath: string): SpecialLifecycleFamily | undefined =>
@@ -464,10 +611,7 @@ export const getPrimaryLifecycleInvokedEvent = (
   if (!family || isGenericOnlyCommand(context.commandPath)) {
     return getCliCommandInvokedEvent(context);
   }
-  return {
-    name: family.invokedEventName,
-    properties: family.getProperties(context),
-  };
+  return buildEvent(family.invokedEventName, family.getProperties(context));
 };
 
 export const getPrimaryLifecycleSucceededEvent = (
@@ -477,10 +621,7 @@ export const getPrimaryLifecycleSucceededEvent = (
   if (!family || isGenericOnlyCommand(context.commandPath)) {
     return getCliCommandSucceededEvent(context);
   }
-  return {
-    name: family.succeededEventName,
-    properties: family.getProperties(context),
-  };
+  return buildEvent(family.succeededEventName, family.getProperties(context));
 };
 
 export const getPrimaryLifecycleFailedEvent = (
@@ -491,32 +632,128 @@ export const getPrimaryLifecycleFailedEvent = (
   if (!family || isGenericOnlyCommand(context.commandPath)) {
     return getCliCommandFailedEvent(context, error);
   }
-  return {
-    name: family.failedEventName,
-    properties: {
-      ...family.getProperties(context),
-      error_name: errorNameOf(error),
-      error_message: errorMessageOf(error),
-    },
-  };
+  return buildEvent(family.failedEventName, {
+    ...family.getProperties(context),
+    error_name: errorNameOf(error),
+  });
 };
+
+export const getPluginLifecycleSucceededEvent = (params: {
+  readonly operation: 'setup' | 'uninstall';
+  readonly target: 'claude' | 'codex';
+  readonly action: 'installed' | 'enabled' | 'configured' | 'uninstalled';
+  readonly invocationOrigin: string;
+  readonly cliVersion: string;
+}): TrackEvent =>
+  buildEvent(
+    params.operation === 'uninstall'
+      ? CLI_ANALYTICS_EVENTS.CLI_PLUGIN_UNINSTALL_SUCCEEDED
+      : CLI_ANALYTICS_EVENTS.CLI_PLUGIN_SETUP_SUCCEEDED,
+    {
+      source: 'cli',
+      invocation_origin: params.invocationOrigin,
+      cli_version: params.cliVersion,
+      command_path: 'setup',
+      operation: params.operation,
+      agent_host: params.target,
+      action: params.action,
+    }
+  );
+
+export const getPluginLifecycleFailedEvent = (params: {
+  readonly operation: 'setup' | 'uninstall';
+  readonly target: 'claude' | 'codex';
+  readonly phase: 'install' | 'uninstall';
+  readonly error: unknown;
+  readonly invocationOrigin: string;
+  readonly cliVersion: string;
+}): TrackEvent =>
+  buildEvent(CLI_ANALYTICS_EVENTS.CLI_PLUGIN_SETUP_FAILED, {
+    source: 'cli',
+    invocation_origin: params.invocationOrigin,
+    cli_version: params.cliVersion,
+    command_path: 'setup',
+    operation: params.operation,
+    agent_host: params.target,
+    phase: params.phase,
+    error_name: errorNameOf(params.error),
+  });
+
+export const getSetupHostDetectedEvent = (params: {
+  readonly operation: 'setup' | 'uninstall';
+  readonly requestedTarget: 'auto' | 'claude' | 'codex' | 'all';
+  readonly target: 'claude' | 'codex';
+  readonly available: boolean;
+  readonly supported: boolean;
+  readonly hostVersion?: string;
+  readonly unsupportedReasonCode?:
+    'codex_too_old' | 'no_json_inspection' | 'host_command_failed' | 'unknown';
+  readonly invocationOrigin: string;
+  readonly cliVersion: string;
+}): TrackEvent =>
+  buildEvent(CLI_ANALYTICS_EVENTS.CLI_SETUP_HOST_DETECTED, {
+    source: 'cli',
+    invocation_origin: params.invocationOrigin,
+    cli_version: params.cliVersion,
+    command_path: 'setup',
+    operation: params.operation,
+    requested_target: params.requestedTarget,
+    agent_host: params.target,
+    available: params.available,
+    supported: params.supported,
+    host_version: params.hostVersion,
+    unsupported_reason_code: params.unsupportedReasonCode,
+  });
+
+export const getSetupCancelledEvent = (params: {
+  readonly operation: 'setup' | 'uninstall';
+  readonly requestedTarget: 'auto' | 'claude' | 'codex' | 'all';
+  readonly invocationOrigin: string;
+  readonly cliVersion: string;
+}): TrackEvent =>
+  buildEvent(CLI_ANALYTICS_EVENTS.CLI_SETUP_CANCELLED, {
+    source: 'cli',
+    invocation_origin: params.invocationOrigin,
+    cli_version: params.cliVersion,
+    command_path: 'setup',
+    operation: params.operation,
+    requested_target: params.requestedTarget,
+    reason: 'user_declined',
+  });
+
+export const getSetupSkippedEvent = (params: {
+  readonly operation: 'setup' | 'uninstall';
+  readonly requestedTarget: 'auto' | 'claude' | 'codex' | 'all';
+  readonly invocationOrigin: string;
+  readonly cliVersion: string;
+}): TrackEvent =>
+  buildEvent(CLI_ANALYTICS_EVENTS.CLI_SETUP_SKIPPED, {
+    source: 'cli',
+    invocation_origin: params.invocationOrigin,
+    cli_version: params.cliVersion,
+    command_path: 'setup',
+    operation: params.operation,
+    requested_target: params.requestedTarget,
+    reason: 'no_host_detected',
+  });
 
 export const getToolExecuteValidationFailedEvent = (params: {
   readonly toolSlug: string;
+  readonly toolkitSlug?: string;
   readonly args: Record<string, unknown>;
   readonly error: ToolInputValidationError;
+  readonly invocationOrigin: string;
   readonly surface: 'root' | 'dev';
   readonly projectMode: 'consumer' | 'developer';
   readonly stage: 'dry_run' | 'validation' | 'execution';
   readonly failureOrigin: 'fast_fail' | 'main_endpoint';
   readonly logId?: string;
-}): TrackEvent => ({
-  name: CLI_ANALYTICS_EVENTS.CLI_TOOL_INVOCATION_VALIDATION_FAILED,
-  properties: {
+}): TrackEvent =>
+  buildEvent(CLI_ANALYTICS_EVENTS.CLI_TOOL_INVOCATION_VALIDATION_FAILED, {
     source: 'cli',
-    invocation_origin: getInvocationOrigin(),
+    invocation_origin: params.invocationOrigin,
     tool_slug: params.toolSlug,
-    toolkit_slug: toolkitFromToolSlug(params.toolSlug),
+    toolkit_slug: params.toolkitSlug ?? guessToolkitFromToolSlug(params.toolSlug),
     surface: params.surface,
     project_mode: params.projectMode,
     stage: params.stage,
@@ -527,8 +764,7 @@ export const getToolExecuteValidationFailedEvent = (params: {
     unknown_keys: extractUnknownKeys(params.error.issues),
     schema_path: params.error.schemaPath,
     ...argumentShape(params.args),
-  },
-});
+  });
 
 export const isMaybeToolNotFoundError = (params: {
   readonly message?: string;
@@ -555,7 +791,9 @@ export const isMaybeToolValidationError = (params: {
 
 export const getToolExecuteToolNotFoundEvent = (params: {
   readonly toolSlug: string;
+  readonly toolkitSlug?: string;
   readonly args: Record<string, unknown>;
+  readonly invocationOrigin: string;
   readonly surface: 'root' | 'dev';
   readonly projectMode: 'consumer' | 'developer';
   readonly stage: 'schema_fetch' | 'dry_run' | 'execution';
@@ -565,13 +803,12 @@ export const getToolExecuteToolNotFoundEvent = (params: {
   readonly status?: number;
   readonly apiCode?: number;
   readonly message?: string;
-}): TrackEvent => ({
-  name: CLI_ANALYTICS_EVENTS.CLI_TOOL_INVOCATION_TOOL_NOT_FOUND,
-  properties: {
+}): TrackEvent =>
+  buildEvent(CLI_ANALYTICS_EVENTS.CLI_TOOL_INVOCATION_TOOL_NOT_FOUND, {
     source: 'cli',
-    invocation_origin: getInvocationOrigin(),
+    invocation_origin: params.invocationOrigin,
     tool_slug: params.toolSlug,
-    toolkit_slug: toolkitFromToolSlug(params.toolSlug),
+    toolkit_slug: params.toolkitSlug ?? guessToolkitFromToolSlug(params.toolSlug),
     surface: params.surface,
     project_mode: params.projectMode,
     stage: params.stage,
@@ -580,14 +817,14 @@ export const getToolExecuteToolNotFoundEvent = (params: {
     error_slug: params.errorSlug,
     http_status: params.status,
     api_error_code: params.apiCode,
-    error_message: params.message?.slice(0, 500),
     ...argumentShape(params.args),
-  },
-});
+  });
 
 export const getToolExecuteFailedEvent = (params: {
   readonly toolSlug: string;
+  readonly toolkitSlug?: string;
   readonly args: Record<string, unknown>;
+  readonly invocationOrigin: string;
   readonly surface: 'root' | 'dev';
   readonly projectMode: 'consumer' | 'developer';
   readonly stage: 'schema_fetch' | 'dry_run' | 'execution';
@@ -599,13 +836,12 @@ export const getToolExecuteFailedEvent = (params: {
   readonly message?: string;
   readonly errorName?: string;
   readonly isNoConnectionError?: boolean;
-}): TrackEvent => ({
-  name: CLI_ANALYTICS_EVENTS.CLI_TOOL_INVOCATION_FAILED,
-  properties: {
+}): TrackEvent =>
+  buildEvent(CLI_ANALYTICS_EVENTS.CLI_TOOL_INVOCATION_FAILED, {
     source: 'cli',
-    invocation_origin: getInvocationOrigin(),
+    invocation_origin: params.invocationOrigin,
     tool_slug: params.toolSlug,
-    toolkit_slug: toolkitFromToolSlug(params.toolSlug),
+    toolkit_slug: params.toolkitSlug ?? guessToolkitFromToolSlug(params.toolSlug),
     surface: params.surface,
     project_mode: params.projectMode,
     stage: params.stage,
@@ -615,8 +851,6 @@ export const getToolExecuteFailedEvent = (params: {
     http_status: params.status,
     api_error_code: params.apiCode,
     error_name: params.errorName,
-    error_message: params.message?.slice(0, 500),
     is_no_connection_error: Boolean(params.isNoConnectionError),
     ...argumentShape(params.args),
-  },
-});
+  });

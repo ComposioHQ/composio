@@ -1,6 +1,6 @@
 {
   "name": "@e2e-tests/node-custom-tools",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "private": true,
   "type": "module",
   "scripts": {
@@ -10,7 +10,7 @@
   },
   "dependencies": {
     "@composio/core": "workspace:*",
-    "zod": "^3.25.0"
+    "zod": "catalog:"
   },
   "devDependencies": {
     "@e2e-tests/utils": "workspace:*"

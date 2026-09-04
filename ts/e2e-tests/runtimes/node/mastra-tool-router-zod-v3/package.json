@@ -1,6 +1,6 @@
 {
   "name": "@e2e-tests/node-mastra-tool-router-zod-v3",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "private": true,
   "type": "module",
   "scripts": {
@@ -13,8 +13,8 @@
     "@composio/core": "workspace:*",
     "@composio/mastra": "workspace:*",
     "@mastra/core": "catalog:",
-    "@mastra/mcp": "^1.0.0",
-    "ai": "catalog:",
+    "@mastra/mcp": "^1.17.1",
+    "ai": "^6.0.266",
     "zod": "3.25.76"
   },
   "devDependencies": {

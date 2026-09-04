@@ -1,7 +1,6 @@
-import path from 'node:path';
 import { Command as CliCommand, Options } from '@effect/cli';
 import { Effect, Option } from 'effect';
-import { FileSystem } from '@effect/platform';
+import { FileSystem, Path } from '@effect/platform';
 import { ComposioUserContext } from 'src/services/user-context';
 import { NodeProcess } from 'src/services/node-process';
 import { projectKeysToJSON, type ProjectKeys } from 'src/models/project-keys';
@@ -12,6 +11,7 @@ import {
   listOrgProjects,
   type OrgProject,
 } from 'src/services/composio-clients';
+import { linkApolloIdentityForAnalytics } from 'src/analytics/dispatch';
 import * as constants from 'src/constants';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { browserLogin, noBrowser as noBrowserOpt } from 'src/commands/login.cmd';
@@ -43,6 +43,7 @@ const yesOpt = Options.boolean('yes').pipe(
 const writeProjectConfig = (composioDir: string, selected: ProjectKeys) =>
   Effect.gen(function* () {
     const fs = yield* FileSystem.FileSystem;
+    const path = yield* Path.Path;
 
     yield* fs
       .makeDirectory(composioDir, { recursive: true })
@@ -76,6 +77,7 @@ const makeOutputJson = (selected: ProjectKeys, composioDir: string) =>
 const getGlobalUserApiKey = () =>
   Effect.gen(function* () {
     const fs = yield* FileSystem.FileSystem;
+    const path = yield* Path.Path;
     const cacheDir = yield* setupCacheDir;
     const userConfigPath = path.join(cacheDir, constants.USER_CONFIG_FILE_NAME);
     const exists = yield* fs.exists(userConfigPath);
@@ -103,6 +105,7 @@ const ensureProjectApiKeyInEnv = (params: { cwd: string; selected: ProjectKeys }
     const { cwd, selected } = params;
     const ui = yield* TerminalUI;
     const fs = yield* FileSystem.FileSystem;
+    const path = yield* Path.Path;
     const ctx = yield* ComposioUserContext;
 
     const envPath = path.join(cwd, '.env.local');
@@ -123,6 +126,7 @@ const ensureProjectApiKeyInEnv = (params: { cwd: string; selected: ProjectKeys }
       orgId: selected.orgId,
       projectId: selected.projectId,
     });
+    yield* linkApolloIdentityForAnalytics(sessionInfo.org_member.id, uakApiKey);
 
     let projectApiKey = sessionInfo.api_key?.api_key ?? sessionInfo.api_key?.key ?? null;
     if (!projectApiKey && !hasProjectApiKey) {
@@ -229,6 +233,7 @@ export const initCmd = CliCommand.make(
     Effect.gen(function* () {
       const ui = yield* TerminalUI;
       const proc = yield* NodeProcess;
+      const path = yield* Path.Path;
 
       yield* ui.intro('composio dev init');
 

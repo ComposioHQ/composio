@@ -12,11 +12,13 @@ import {
   Tool as ComposioTool,
   ExecuteToolModifiers,
   ExecuteToolFnOptions,
-  ToolExecuteParams,
+  ToolCallExecutionTarget,
+  ToolCallSession,
   logger,
   McpUrlResponse,
   normalizeToolArguments,
   dereferenceJsonSchema,
+  deduplicateJsonSchemaRequiredArrays,
 } from '@composio/core';
 import Anthropic from '@anthropic-ai/sdk';
 import { AnthropicTool, InputSchema } from './types';
@@ -32,6 +34,8 @@ export type AnthropicMcpServerGetResponse = {
   url: string;
   name: string;
 }[];
+
+export type { AnthropicTool, InputSchema, CacheControlEphemeral } from './types';
 
 /**
  * Collection of Anthropic tools
@@ -65,7 +69,7 @@ export class AnthropicProvider extends BaseNonAgenticProvider<
   AnthropicMcpServerGetResponse
 > {
   readonly name = 'anthropic';
-  private chacheTools: boolean = false;
+  private cacheTools: boolean = false;
 
   /**
    * Per-tool reverse key mappings (`sanitized -> original`, shaped like the
@@ -117,8 +121,8 @@ export class AnthropicProvider extends BaseNonAgenticProvider<
    */
   constructor(options?: { cacheTools?: boolean }) {
     super();
-    this.chacheTools = options?.cacheTools ?? false;
-    logger.debug(`AnthropicProvider initialized [cacheTools: ${this.chacheTools}]`);
+    this.cacheTools = options?.cacheTools ?? false;
+    logger.debug(`AnthropicProvider initialized [cacheTools: ${this.cacheTools}]`);
   }
 
   /**
@@ -171,7 +175,8 @@ export class AnthropicProvider extends BaseNonAgenticProvider<
     // Anthropic rejects the whole `tools` array if any property key falls outside
     // `^[a-zA-Z0-9_.-]{1,64}$` (e.g. OData params like `$top`, `@odata.type`, or
     // over-long flattened keys). Rewrite offending keys and remember how to undo it.
-    const { schema, mapping } = sanitizeSchemaPropertyKeys(dereferenced);
+    const { schema: sanitizedSchema, mapping } = sanitizeSchemaPropertyKeys(dereferenced);
+    const schema = deduplicateJsonSchemaRequiredArrays(sanitizedSchema) as InputSchema;
 
     if (mappingHasRenames(mapping)) {
       this.toolKeyMappings.set(tool.slug, mapping);
@@ -189,7 +194,7 @@ export class AnthropicProvider extends BaseNonAgenticProvider<
       name: tool.slug,
       description: tool.description || '',
       input_schema: schema,
-      cache_control: this.chacheTools ? { type: 'ephemeral' } : undefined,
+      cache_control: this.cacheTools ? { type: 'ephemeral' } : undefined,
     };
   }
 
@@ -241,7 +246,7 @@ export class AnthropicProvider extends BaseNonAgenticProvider<
    * This method processes a tool call from Anthropic's Claude API,
    * executes the corresponding Composio tool, and returns the result.
    *
-   * @param userId - The user ID for authentication and tracking
+   * @param executionTarget - A user ID for direct tools or the session that produced session tools
    * @param toolUse - The tool use object from Anthropic
    * @param options - Additional options for tool execution
    * @param modifiers - Modifiers for tool execution
@@ -267,8 +272,15 @@ export class AnthropicProvider extends BaseNonAgenticProvider<
    * console.log(JSON.parse(result));
    * ```
    */
+  async executeToolCall(session: ToolCallSession, toolUse: AnthropicToolUseBlock): Promise<string>;
   async executeToolCall(
     userId: string,
+    toolUse: AnthropicToolUseBlock,
+    options?: ExecuteToolFnOptions,
+    modifiers?: ExecuteToolModifiers
+  ): Promise<string>;
+  async executeToolCall(
+    executionTarget: ToolCallExecutionTarget,
     toolUse: AnthropicToolUseBlock,
     options?: ExecuteToolFnOptions,
     modifiers?: ExecuteToolModifiers
@@ -289,15 +301,14 @@ export class AnthropicProvider extends BaseNonAgenticProvider<
       logger.debug(`AnthropicProvider restored original argument keys for tool "${toolUse.name}"`);
     }
 
-    const payload: ToolExecuteParams = {
-      arguments: toolArguments,
-      connectedAccountId: options?.connectedAccountId,
-      customAuthParams: options?.customAuthParams,
-      customConnectionData: options?.customConnectionData,
-      userId: userId,
-    };
-    const result = await this.executeTool(toolUse.name, payload, modifiers);
-    return JSON.stringify(result.data);
+    const result = await this.executeToolForTarget(
+      executionTarget,
+      toolUse.name,
+      toolArguments,
+      options,
+      modifiers
+    );
+    return JSON.stringify(result.error === null ? result.data : { error: result.error });
   }
 
   /**
@@ -306,7 +317,7 @@ export class AnthropicProvider extends BaseNonAgenticProvider<
    * This method processes tool calls from an Anthropic message response,
    * extracts the tool use blocks, executes each tool call, and returns the results.
    *
-   * @param userId - The user ID for authentication and tracking
+   * @param executionTarget - A user ID for direct tools or the session that produced session tools
    * @param message - The message response from Anthropic
    * @param options - Additional options for tool execution
    * @param modifiers - Modifiers for tool execution
@@ -341,11 +352,22 @@ export class AnthropicProvider extends BaseNonAgenticProvider<
    * ```
    */
   async handleToolCalls(
+    session: ToolCallSession,
+    message: Anthropic.Message
+  ): Promise<Anthropic.Messages.MessageParam[]>;
+  async handleToolCalls(
     userId: string,
     message: Anthropic.Message,
     options?: ExecuteToolFnOptions,
     modifiers?: ExecuteToolModifiers
+  ): Promise<Anthropic.Messages.MessageParam[]>;
+  async handleToolCalls(
+    executionTarget: ToolCallExecutionTarget,
+    message: Anthropic.Message,
+    options?: ExecuteToolFnOptions,
+    modifiers?: ExecuteToolModifiers
   ): Promise<Anthropic.Messages.MessageParam[]> {
+    this.assertToolCallExecutionOptions(executionTarget, options, modifiers);
     const outputs: Anthropic.Messages.ToolResultBlockParam[] = [];
 
     // Filter and map tool use blocks from message content
@@ -372,12 +394,15 @@ export class AnthropicProvider extends BaseNonAgenticProvider<
     }
 
     for (const toolUse of toolUseBlocks) {
-      const toolResult = await this.executeToolCall(userId, toolUse, options, modifiers);
+      const toolResult =
+        typeof executionTarget === 'string'
+          ? await this.executeToolCall(executionTarget, toolUse, options, modifiers)
+          : await this.executeToolCall(executionTarget, toolUse);
       outputs.push({
         type: 'tool_result',
         tool_use_id: toolUse.id,
         content: toolResult,
-        cache_control: this.chacheTools ? { type: 'ephemeral' } : undefined,
+        cache_control: this.cacheTools ? { type: 'ephemeral' } : undefined,
       });
     }
 

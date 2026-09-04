@@ -33,6 +33,7 @@ import { LocalSandboxBoundary } from '@/components/local-sandbox-boundary';
 import { FileBuildup } from '@/components/file-buildup';
 import { RepoBrowser } from '@/components/repo-browser';
 import { AppLogo } from '@/components/standup-example';
+import { ImessageFlow } from '@/components/imessage-flow';
 import { WorkbenchFlow } from '@/components/workbench-flow';
 import { AuthConfigFlow } from '@/components/auth-config-flow';
 import { WhiteLabelFlow } from '@/components/white-label-flow';
@@ -45,6 +46,7 @@ import { ApiEndpointsTable } from '@/components/api-endpoints-table';
 import { ClaudeMockUI } from '@/components/claude-mock-ui';
 import { InChatAuthTerminal } from '@/components/in-chat-auth-terminal';
 import { MediaSplit } from '@/components/media-split';
+import { PackageInstall } from '@/components/package-install';
 import { ManageConnectionsVisual } from '@/components/manage-connections-visual';
 import { ConnectionRefreshVisual } from '@/components/connection-refresh-visual';
 import {
@@ -69,11 +71,20 @@ import {
 } from 'lucide-react';
 
 function slugify(text: string): string {
-  return text.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+  return text
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/(^-|-$)/g, '');
 }
 
 export function Accordion({ id, title, ...props }: ComponentProps<typeof BaseAccordion>) {
-  return <BaseAccordion id={id ?? (typeof title === 'string' ? slugify(title) : undefined)} title={title} {...props} />;
+  return (
+    <BaseAccordion
+      id={id ?? (typeof title === 'string' ? slugify(title) : undefined)}
+      title={title}
+      {...props}
+    />
+  );
 }
 
 export { Accordions };
@@ -81,10 +92,10 @@ export { Accordions };
 export function getMDXComponents(components?: MDXComponents): MDXComponents {
   return {
     ...defaultMdxComponents,
-    h2: (props) => <Heading as="h2" {...props} />,
-    h3: (props) => <Heading as="h3" {...props} />,
-    h4: (props) => <Heading as="h4" {...props} />,
-    img: (props) => <ImageZoom {...(props as any)} />,
+    h2: props => <Heading as="h2" {...props} />,
+    h3: props => <Heading as="h3" {...props} />,
+    h4: props => <Heading as="h4" {...props} />,
+    img: props => <ImageZoom {...(props as ComponentProps<typeof ImageZoom>)} />,
     YouTube,
     Tabs,
     Tab,
@@ -129,6 +140,7 @@ export function getMDXComponents(components?: MDXComponents): MDXComponents {
     FileBuildup,
     RepoBrowser,
     AppLogo,
+    ImessageFlow,
     WorkbenchFlow,
     AuthConfigFlow,
     WhiteLabelFlow,
@@ -143,6 +155,7 @@ export function getMDXComponents(components?: MDXComponents): MDXComponents {
     ClaudeMockUI,
     InChatAuthTerminal,
     MediaSplit,
+    PackageInstall,
     ManageConnectionsVisual,
     ConnectionRefreshVisual,
     // Lucide icons

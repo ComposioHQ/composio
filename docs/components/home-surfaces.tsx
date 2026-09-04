@@ -1,260 +1,188 @@
-'use client';
-
-import Link from 'next/link';
-import Image from 'next/image';
+import { ArrowUp, ArrowUpRight, Mic, Plus } from 'lucide-react';
+import type { ComponentType } from 'react';
 import {
-  ArrowUpRight,
-  Code2,
-  Heart,
-  Terminal,
-  Copy,
-  Check,
-} from 'lucide-react';
-import { useState, type ReactNode, type MouseEvent } from 'react';
-import { SectionHeading } from './home-features';
-
-// Some provider logos ship a dedicated `-dark` variant (white-on-dark
-// or stroke-inverted). Use those in dark mode instead of inverting the
-// light SVG via CSS — `dark:invert` mangles full-colour logos
-// (Google's primary palette, LlamaIndex's gradient, CrewAI's brand).
-const PROVIDERS: { name: string; logo: string; logoDark?: string }[] = [
-  {
-    name: 'Anthropic',
-    logo: '/images/providers/anthropic-logo.svg',
-    logoDark: '/images/providers/anthropic-logo-dark.svg',
-  },
-  {
-    name: 'OpenAI',
-    logo: '/images/providers/openai-logo.svg',
-    logoDark: '/images/providers/openai-logo-dark.svg',
-  },
-  {
-    name: 'Vercel AI',
-    logo: '/images/providers/vercel-logo.svg',
-    logoDark: '/images/providers/vercel-logo-dark.svg',
-  },
-  { name: 'Google', logo: '/images/providers/google-logo.svg' },
-  {
-    name: 'LangChain',
-    logo: '/images/providers/langchain-logo.svg',
-    logoDark: '/images/providers/langchain-logo-dark.svg',
-  },
-  { name: 'CrewAI', logo: '/images/providers/crewai-logo.svg' },
-  { name: 'LlamaIndex', logo: '/images/providers/llamaIndex-logo.svg' },
-  {
-    name: 'Mastra',
-    logo: '/images/providers/mastra-logo.svg',
-    logoDark: '/images/providers/mastra-logo-dark.svg',
-  },
-];
-
-const CLIENTS: { name: string; logo: string; h: number }[] = [
-  { name: 'Claude', logo: '/images/clients/claude.svg', h: 20 },
-  { name: 'Codex', logo: '/images/clients/codex.png', h: 20 },
-  { name: 'Cursor', logo: '/images/clients/cursor.svg', h: 20 },
-  { name: 'Windsurf', logo: '/images/clients/windsurf.svg', h: 20 },
-  { name: 'OpenClaw', logo: '/images/clients/openclaw.svg', h: 20 },
-];
+  DOCS_PRODUCTS,
+  HOME_INTENTS,
+  homeIntentAnchor,
+  type HomeIntent,
+} from '@/lib/home-navigation';
+import { MOCK_FADE_STYLE } from './home-shared';
+import { ProductLockup } from './product-lockup';
+import { ProductSelectionLink } from './product-selection-link';
 
 /**
- * Welcome-page audience selector — surfaces the three ways into Composio.
- * "Build with the SDK" gets the full width of the top row and a strip of
- * provider logos showing which frameworks ship first-class support; the
- * two non-developer surfaces (For You + CLI) sit below in a 2-col row.
+ * Each product is described by the same mock the dashboard onboarding
+ * path step uses for it (composio_dashboard `path-step.tsx`): For You is
+ * an agent chat composer next to the clients it plugs into, Platform is
+ * the SDK in a code window — rebuilt here on docs theme tokens so they
+ * hold up in both color schemes.
  */
+const INTENT_VISUALS: Record<HomeIntent['id'], ComponentType> = {
+  build: PlatformVisual,
+  use: ForYouVisual,
+};
+
 export function HomeSurfaces() {
   return (
-    <section className="not-prose mb-14">
-      <SectionHeading
-        eyebrow="For everyone"
-        title="Three ways to use Composio."
-      />
-      <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
-        {/* Full-width Developers card */}
-        <SurfaceCard
-          eyebrow="Developers"
-          eyebrowIcon={<Code2 aria-hidden="true" className="size-4" />}
-          title="Build with the SDK"
-          description="You're here. TypeScript or Python, with first-class providers for the frameworks you already use."
-          href="/docs/quickstart"
-          external={false}
-          spanFull
-          extra={<ProviderStrip />}
-        />
-        {/* Bottom row: For You + CLI */}
-        <SurfaceCard
-          eyebrow="For You"
-          eyebrowIcon={<Heart aria-hidden="true" className="size-4" />}
-          title="Use Composio yourself"
-          description="Plug 1000+ pre-authenticated apps into Claude Code, Cursor, or any MCP client. No build required. Connect once and go."
-          href="https://composio.dev/for-you"
-          external
-          extra={<ClientStrip />}
-        />
-        <SurfaceCard
-          eyebrow="CLI"
-          eyebrowIcon={<Terminal aria-hidden="true" className="size-4" />}
-          title="Run Composio from your shell"
-          description="Connect accounts, search tools, and execute them right from your terminal."
-          href="/docs/cli"
-          external={false}
-          extra={<CliInstall />}
-        />
+    <section className="not-prose mb-20" id="two-ways-to-start">
+      <div className="flex flex-col gap-8">
+        {HOME_INTENTS.map(intent => (
+          <IntentCard key={intent.id} intent={intent} />
+        ))}
       </div>
     </section>
   );
 }
 
-function SurfaceCard({
-  eyebrowIcon,
-  eyebrow,
-  title,
-  description,
-  href,
-  external,
-  spanFull,
-  extra,
-}: {
-  eyebrowIcon: ReactNode;
-  eyebrow: string;
-  title: string;
-  description: string;
-  href: string;
-  external: boolean;
-  spanFull?: boolean;
-  extra?: ReactNode;
-}) {
-  const externalProps = external
-    ? { target: '_blank' as const, rel: 'noopener noreferrer' }
-    : {};
-  return (
-    <Link
-      href={href}
-      {...externalProps}
-      className={
-        'group relative flex flex-col gap-3 overflow-hidden border border-fd-border bg-fd-card p-6 no-underline shadow-[0_1px_0_rgba(15,15,15,0.04)] transition-[box-shadow,transform,border-color] duration-200 hover:-translate-y-px hover:border-fd-foreground/15 hover:shadow-[0_10px_24px_-12px_rgba(15,15,15,0.18)] sm:p-7' +
-        (spanFull ? ' md:col-span-2' : '')
-      }
-    >
-      <div className="flex items-center justify-between">
-        <span className="inline-flex items-center gap-1.5 font-mono text-[11px] uppercase tracking-[0.08em] text-[var(--composio-brand)]">
-          {eyebrowIcon}
-          {eyebrow}
-        </span>
-        <ArrowUpRight
-          aria-hidden="true"
-          className="size-3.5 text-fd-foreground/60 transition-transform group-hover:-translate-y-px group-hover:translate-x-px"
-        />
-      </div>
-      <h3 className="text-[17px] font-medium leading-snug tracking-[-0.01em] text-fd-foreground sm:text-lg">
-        {title}
-      </h3>
-      <p className="text-[14px] leading-[1.55] text-fd-foreground/70">
-        {description}
-      </p>
-      {extra}
-    </Link>
-  );
-}
-
-const CLI_INSTALL_COMMAND = 'curl -fsSL https://composio.dev/install | bash';
-
-function CliInstall() {
-  const [copied, setCopied] = useState(false);
-
-  function handleCopy(e: MouseEvent<HTMLButtonElement>) {
-    // The whole card is wrapped in a <Link> — keep this click from
-    // navigating to /docs/cli.
-    e.preventDefault();
-    e.stopPropagation();
-    navigator.clipboard.writeText(CLI_INSTALL_COMMAND).then(() => {
-      setCopied(true);
-      window.setTimeout(() => setCopied(false), 1500);
-    });
-  }
+function IntentCard({ intent }: { intent: HomeIntent }) {
+  const Visual = INTENT_VISUALS[intent.id];
 
   return (
-    <div className="mt-2 flex items-center gap-2 border border-fd-border bg-fd-background px-3 py-2 font-mono text-[12px]">
-      <span className="shrink-0 text-fd-foreground/40">$</span>
-      <code className="flex-1 truncate text-fd-foreground/85">
-        {CLI_INSTALL_COMMAND}
-      </code>
-      <button
-        aria-label={copied ? 'Copied' : 'Copy install command'}
-        className="-mr-1 inline-flex size-6 shrink-0 items-center justify-center text-fd-foreground/55 transition-colors hover:text-fd-foreground"
-        onClick={handleCopy}
-        type="button"
+    <article className="grid overflow-hidden border border-fd-border bg-fd-card shadow-[0_1px_0_rgba(15,15,15,0.04)] md:grid-cols-[minmax(0,1fr)_calc(50%-0.75rem)]">
+      <ProductSelectionLink
+        aria-label={`Explore ${intent.product} docs`}
+        className="relative overflow-hidden border-b border-fd-border bg-fd-background p-5 pb-40 no-underline transition-colors hover:bg-fd-accent/20 focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-fd-ring sm:p-6 sm:pb-44 md:min-h-72 md:border-b-0 md:border-r md:pb-6"
+        href={DOCS_PRODUCTS[intent.productId].landingRoute}
+        product={intent.productId}
       >
-        {copied ? (
-          <Check
-            aria-hidden="true"
-            className="size-3.5 text-[var(--composio-brand)]"
-          />
-        ) : (
-          <Copy aria-hidden="true" className="size-3.5" />
-        )}
-      </button>
-    </div>
-  );
-}
-
-function ClientStrip() {
-  return (
-    <div className="mt-2 flex flex-wrap items-center gap-x-5 gap-y-3">
-      {CLIENTS.map((c) => (
-        <Image
-          key={c.name}
-          alt={c.name}
-          className="object-contain"
-          height={c.h}
-          src={c.logo}
-          style={{ height: c.h, width: 'auto' }}
-          width={Math.ceil(c.h * 3.5)}
-        />
-      ))}
-    </div>
-  );
-}
-
-function ProviderStrip() {
-  return (
-    <div className="mt-2 flex flex-wrap items-center gap-3">
-      {PROVIDERS.map((p) => (
-        <div
-          key={p.name}
-          className="flex h-10 items-center justify-center gap-2 rounded-md border border-fd-border bg-fd-card px-3"
-          title={p.name}
-        >
-          {p.logoDark ? (
-            <>
-              <Image
-                alt={p.name}
-                className="h-4 w-auto object-contain dark:hidden"
-                height={16}
-                src={p.logo}
-                width={64}
-              />
-              <Image
-                alt=""
-                aria-hidden="true"
-                className="hidden h-4 w-auto object-contain dark:block"
-                height={16}
-                src={p.logoDark}
-                width={64}
-              />
-            </>
-          ) : (
-            <Image
-              alt={p.name}
-              className="h-4 w-auto object-contain"
-              height={16}
-              src={p.logo}
-              width={64}
-            />
-          )}
-          <span className="text-[12px] text-fd-foreground/75">{p.name}</span>
+        <div className="relative z-[1] flex flex-col gap-2.5">
+          <h3
+            className="flex items-center gap-2"
+            id={homeIntentAnchor(intent.product)}
+          >
+            <ProductLockup product={intent.productId} />
+          </h3>
+          <p className="max-w-[42ch] text-pretty text-[14px] leading-[1.55] text-fd-foreground/70">
+            {intent.description}
+          </p>
         </div>
-      ))}
+        <div aria-hidden="true" className="pointer-events-none select-none">
+          <Visual />
+        </div>
+      </ProductSelectionLink>
+      <ul className="flex flex-col divide-y divide-fd-border">
+        {intent.links.map(link => (
+          <li className="flex flex-1" key={link.href}>
+            <ProductSelectionLink
+              className="group flex flex-1 items-center justify-between gap-4 px-4 py-5 no-underline transition-colors hover:bg-fd-accent/40 sm:px-5 sm:py-6"
+              href={link.href}
+              product={intent.productId}
+            >
+              <span className="flex min-w-0 flex-col gap-0.5">
+                <span className="text-[14px] font-medium text-fd-foreground">
+                  {link.title}
+                </span>
+                <span className="text-[12.5px] leading-[1.45] text-fd-foreground/65">
+                  {link.description}
+                </span>
+              </span>
+              <ArrowUpRight
+                aria-hidden="true"
+                className="size-3.5 shrink-0 text-fd-foreground/50 transition-transform group-hover:-translate-y-px group-hover:translate-x-px"
+              />
+            </ProductSelectionLink>
+          </li>
+        ))}
+      </ul>
+    </article>
+  );
+}
+
+const FOR_YOU_CLIENT_LOGOS = [
+  { src: '/images/clients/claude.svg', label: 'Claude' },
+  { src: '/images/clients/codex.png', label: 'Codex' },
+  { src: '/images/clients/cursor.svg', label: 'Cursor' },
+  { src: '/images/clients/openclaw.svg', label: 'OpenClaw' },
+];
+
+function ForYouVisual() {
+  return (
+    <div className="absolute inset-x-5 -bottom-3 flex items-end gap-4 sm:inset-x-6">
+      <div className="grid shrink-0 grid-cols-2 gap-2.5" style={MOCK_FADE_STYLE}>
+        {FOR_YOU_CLIENT_LOGOS.map(logo => (
+          <img
+            alt=""
+            className="size-8 object-contain"
+            draggable={false}
+            key={logo.label}
+            src={logo.src}
+          />
+        ))}
+      </div>
+      <div
+        className="min-w-0 flex-1 rounded-[18px] border border-fd-border bg-fd-card p-3"
+        style={MOCK_FADE_STYLE}
+      >
+        <div className="text-[12px] text-fd-foreground/50">How can I help?</div>
+        <div className="mt-4 flex items-center gap-2 text-fd-foreground/50">
+          <Plus className="size-3.5 shrink-0" />
+          <Mic className="ml-auto size-3.5 shrink-0" />
+          <span className="flex size-6 shrink-0 items-center justify-center rounded-[8px] bg-[var(--composio-brand)] text-white">
+            <ArrowUp className="size-3.5" />
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function PlatformVisual() {
+  return (
+    <div
+      className="absolute inset-x-5 -bottom-3 rounded-[12px] border border-fd-border bg-fd-card p-3 font-mono text-[11.5px] leading-[1.75] text-fd-foreground/75 sm:inset-x-6"
+      style={MOCK_FADE_STYLE}
+    >
+      <div className="mb-2 flex items-center gap-1.5">
+        <span className="size-2 rounded-full bg-fd-foreground/15" />
+        <span className="size-2 rounded-full bg-fd-foreground/15" />
+        <span className="size-2 rounded-full bg-fd-foreground/15" />
+      </div>
+      <div className="truncate">
+        <span className="text-[var(--composio-brand)]">import</span>
+        {" { Composio } "}
+        <span className="text-[var(--composio-brand)]">from</span>
+        <span className="text-fd-foreground/55">{" '@composio/core'"}</span>
+      </div>
+      <div className="truncate">
+        <span className="text-[var(--composio-brand)]">import</span>
+        {" { OpenAIAgentsProvider } "}
+        <span className="text-[var(--composio-brand)]">from</span>
+        <span className="text-fd-foreground/55">
+          {" '@composio/openai-agents'"}
+        </span>
+      </div>
+      <div className="truncate">
+        <span className="text-[var(--composio-brand)]">const</span>
+        {' composio = '}
+        <span className="text-[var(--composio-brand)]">new</span>
+        {' Composio'}
+        <span className="text-fd-foreground/45">
+          ({'{ provider: '}
+          <span className="text-[var(--composio-brand)]">new</span>
+          {' OpenAIAgentsProvider() }'})
+        </span>
+      </div>
+      <div className="truncate">
+        <span className="text-[var(--composio-brand)]">const</span>
+        {' session = '}
+        <span className="text-[var(--composio-brand)]">await</span>
+        {' composio.create'}
+        <span className="text-fd-foreground/45">(userId)</span>
+      </div>
+      <div className="truncate">
+        <span className="text-[var(--composio-brand)]">const</span>
+        {' tools = '}
+        <span className="text-[var(--composio-brand)]">await</span>
+        {' session.tools'}
+        <span className="text-fd-foreground/45">()</span>
+      </div>
+      <div className="truncate">
+        <span className="text-[var(--composio-brand)]">const</span>
+        {' agent = '}
+        <span className="text-[var(--composio-brand)]">new</span>
+        {' Agent'}
+        <span className="text-fd-foreground/45">({'{ name, instructions, model, tools }'})</span>
+      </div>
     </div>
   );
 }

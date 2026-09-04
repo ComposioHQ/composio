@@ -16,7 +16,13 @@ export interface RepoFile {
  * the selected file's code on the right (@pierre/diffs). Code is prerendered on
  * the server so the first paint is correct; selection swaps which file shows.
  */
-export function RepoBrowserClient({ files }: { files: RepoFile[] }) {
+export function RepoBrowserClient({
+  files,
+  heightClass = 'max-h-[640px]',
+}: {
+  files: RepoFile[];
+  heightClass?: string;
+}) {
   const paths = files.map((f) => f.path);
   const { model } = useFileTree({ paths, initialSelectedPaths: [paths[0]], initialExpansion: 'open' });
   const selected = useFileTreeSelection(model);
@@ -26,10 +32,10 @@ export function RepoBrowserClient({ files }: { files: RepoFile[] }) {
 
   return (
     <div className="grid grid-cols-1 overflow-hidden rounded-sm border border-fd-border bg-fd-card md:grid-cols-[minmax(0,260px)_minmax(0,1fr)]">
-      <div className="max-h-[640px] overflow-auto border-b border-fd-border p-2 md:border-b-0 md:border-r">
+      <div className={`${heightClass} overflow-auto border-b border-fd-border p-2 md:border-b-0 md:border-r`}>
         <FileTree model={model} />
       </div>
-      <div className="relative max-h-[640px] overflow-auto">
+      <div className={`relative ${heightClass} overflow-auto`}>
         <CopyButton text={file.contents} className="absolute right-2 top-2 z-10" />
         <File
           key={file.path}

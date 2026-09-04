@@ -2,7 +2,6 @@ name: Checks
 on:
   push:
     branches:
-      - master
       - next
     paths:
       - 'python/**/*.py'
@@ -20,6 +19,8 @@ on:
       - 'package.json'
       - 'pnpm-workspace.yaml'
       - '.github/actions/setup-node-pnpm-bun/action.yml'
+      - 'python/pyproject.toml'
+      - 'uv.lock'
       - '.github/actions/setup-python-uv/action.yml'
       - '.github/workflows/py.check.yaml'
       - 'mise.toml'
@@ -42,17 +43,26 @@ on:
       - 'package.json'
       - 'pnpm-workspace.yaml'
       - '.github/actions/setup-node-pnpm-bun/action.yml'
+      - 'python/pyproject.toml'
+      - 'uv.lock'
       - '.github/actions/setup-python-uv/action.yml'
       - '.github/workflows/py.check.yaml'
       - 'mise.toml'
       - 'mise.lock'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.ref || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
 
 jobs:
   common-checks:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 50
 
@@ -106,6 +116,12 @@ jobs:
         run: |
           cd python/
           uv run nox -s chk
+
+      - name: Example type checks
+        shell: bash
+        run: |
+          cd python/
+          uv run nox -s chk_examples
 
       - name: Validate Python examples
         shell: bash

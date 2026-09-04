@@ -1,10 +1,13 @@
 {
   "$schema": "https://turbo.build/schema.json",
-  // pnpm is pinned solely by mise (`npm:pnpm` in mise.toml). We intentionally
-  // omit the root `packageManager` field rather than duplicate that version, so
-  // mise stays the single source of truth. Turbo then infers pnpm from
-  // pnpm-lock.yaml for workspace resolution.
+  // pnpm is installed and enforced by mise (`npm:pnpm` in mise.toml). The root
+  // `packageManager` field exists for tools like Turbo that need explicit
+  // workspace package-manager metadata; keep it aligned with mise.toml.
   "dangerouslyDisablePackageManagerCheck": true,
+  // The toolchain (node, bun, pnpm, tsgo host) is pinned by mise, not by
+  // package.json/lockfile, so toolchain bumps must invalidate every task hash
+  // or restored CI caches would skip the very runs meant to validate them.
+  "globalDependencies": ["mise.toml", "mise.lock"],
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
@@ -13,14 +16,19 @@
         "tsdown.config.ts",
         // for core
         "../../../tsdown.config.base.ts",
+        "../../../tsconfig.base.json",
         // for providers
-        "../../../../tsdown.config.base.ts"
+        "../../../../tsdown.config.base.ts",
+        "../../../../tsconfig.base.json"
       ],
       "outputs": ["dist/"]
     },
     "test": {
       "dependsOn": ["^build"],
-      "outputs": ["dist/"]
+      // the shared cross-SDK JSON Schema conversion corpus and its loader are
+      // owned by `@composio/core` but imported by the Zod, Effect, and CLI test
+      // suites, whose $TURBO_DEFAULT$ inputs stop at their own package directory
+      "inputs": ["$TURBO_DEFAULT$", "../core/test/fixtures/json-schema-conversion/*"]
     },
     "test:e2e": {
       "dependsOn": ["^build"],
@@ -42,6 +50,10 @@
       "env": ["COMPOSIO_API_KEY", "COMPOSIO_BASE_URL", "COMPOSIO_USER_API_KEY", "COMPOSIO_E2E_CLI_VERSION", "OPENAI_API_KEY"],
       "cache": false
     },
+    "test:e2e:install": {
+      "env": ["COMPOSIO_INSTALL_E2E_MODE", "COMPOSIO_INSTALL_E2E_SHELL", "COMPOSIO_INSTALL_E2E_VERSION", "COMPOSIO_INSTALL_E2E_RELEASE_DIR"],
+      "cache": false
+    },
     "test:e2e:cloudflare": {
       "dependsOn": ["^build"],
       "env": ["COMPOSIO_API_KEY", "COMPOSIO_BASE_URL", "COMPOSIO_USER_API_KEY", "OPENAI_API_KEY"],
@@ -56,11 +68,21 @@
     },
     "typecheck": {
       "dependsOn": ["^build"],
-      "cache": false
+      // package tsconfigs extend the root base config, which lives outside the
+      // package dirs and is therefore not part of $TURBO_DEFAULT$
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        // for core
+        "../../../tsconfig.base.json",
+        // for providers
+        "../../../../tsconfig.base.json"
+      ]
     },
-    "typecheck:tsc": {
-      "dependsOn": ["^build"],
-      "cache": false
+    "lint": {
+      "inputs": ["$TURBO_DEFAULT$", "../../../.oxlintrc.json"]
+    },
+    "cf:dry-run": {
+      "dependsOn": ["^build"]
     },
     "//#clean": {
       "cache": false

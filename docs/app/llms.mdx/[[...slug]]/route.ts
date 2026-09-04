@@ -3,21 +3,43 @@ import {
   getReferenceSource,
   examplesSource,
   toolkitsSource,
+  knowledgeBaseSource,
   changelogEntries,
   slugToDate,
   formatDate,
   getLLMText,
   mdxToCleanMarkdown,
+  type LLMPage,
 } from '@/lib/source';
-import { openapi } from '@/lib/openapi';
+import { dereferenceDocument } from '@/lib/openapi-deref';
+import {
+  REST_VERSION_GUIDANCE,
+  TOOL_VERSION_GUIDANCE,
+  apiVersionPointer,
+  isToolVersionPath,
+  toolVersionParameterDescription,
+} from '@/lib/api-version-guidance';
 import { notFound } from 'next/navigation';
 import { readFile } from 'fs/promises';
 import { join } from 'path';
 import { getAllToolkits, getToolkitBySlug } from '@/lib/toolkit-data';
 import { getAllMetaTools, getMetaToolBySlug } from '@/lib/meta-tools-data';
+import { encodeMarkdownTableCell } from '@/lib/markdown-escaping';
 import type { MetaTool, MetaToolParameter } from '@/lib/meta-tools-data';
 import type { Toolkit, Tool, Trigger, ParameterSchema } from '@/types/toolkit';
-import { processSchema, toolFromApi } from '@/lib/toolkit-schema';
+import { apiToolListSchema, apiTriggerListSchema } from '@/lib/toolkit-schema';
+import { z } from 'zod';
+import {
+  getKnowledgeByProductArea,
+  getKnowledgeByToolkit,
+  getKnowledgeToolkitSummaries,
+  type KnowledgeLink,
+} from '@/lib/knowledge/catalog';
+import { getProductArea, isProductAreaSlug, PRODUCT_AREAS } from '@/lib/knowledge/taxonomy';
+import {
+  getToolkitKnowledgeMarkdownHref,
+  getToolkitKnowledgeRedirect,
+} from '@/lib/knowledge/toolkit-routing';
 
 export const revalidate = false;
 
@@ -48,21 +70,19 @@ async function fetchDetailedTools(toolkitSlug: string): Promise<Tool[] | null> {
       return null;
     }
 
-    const data = await response.json();
-    if (!data || typeof data !== 'object') {
+    const parsed = apiToolListSchema.safeParse(await response.json());
+    if (!parsed.success) {
       console.warn(`[LLM Markdown] Invalid API response format for toolkit ${toolkitSlug}`);
       return null;
     }
 
-    const rawItems = data.items || data;
-    const items = Array.isArray(rawItems) ? rawItems : [];
-
-    if (items.length >= API_FETCH_LIMIT) {
-      console.warn(`[LLM Markdown] Toolkit ${toolkitSlug} has ${items.length}+ tools, results may be truncated`);
+    if (parsed.data.length >= API_FETCH_LIMIT) {
+      console.warn(
+        `[LLM Markdown] Toolkit ${toolkitSlug} has ${parsed.data.length}+ tools, results may be truncated`
+      );
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    return items.filter((tool: any) => tool && typeof tool === 'object').map(toolFromApi);
+    return parsed.data;
   } catch {
     return null;
   }
@@ -87,33 +107,25 @@ async function fetchDetailedTriggers(toolkitSlug: string): Promise<Trigger[] | n
     );
 
     if (!response.ok) {
-      console.warn(`[LLM Markdown] Failed to fetch triggers for ${toolkitSlug}: ${response.status}`);
+      console.warn(
+        `[LLM Markdown] Failed to fetch triggers for ${toolkitSlug}: ${response.status}`
+      );
       return null;
     }
 
-    const data = await response.json();
-    if (!data || typeof data !== 'object') {
+    const parsed = apiTriggerListSchema.safeParse(await response.json());
+    if (!parsed.success) {
       console.warn(`[LLM Markdown] Invalid API response format for triggers ${toolkitSlug}`);
       return null;
     }
 
-    const rawItems = data.items || data;
-    const items = Array.isArray(rawItems) ? rawItems : [];
-
-    if (items.length >= API_FETCH_LIMIT) {
-      console.warn(`[LLM Markdown] Toolkit ${toolkitSlug} has ${items.length}+ triggers, results may be truncated`);
+    if (parsed.data.length >= API_FETCH_LIMIT) {
+      console.warn(
+        `[LLM Markdown] Toolkit ${toolkitSlug} has ${parsed.data.length}+ triggers, results may be truncated`
+      );
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    return items.filter((trigger: any) => trigger && typeof trigger === 'object').map((trigger: any) => ({
-      slug: trigger.slug || '',
-      name: trigger.name || trigger.display_name || trigger.slug || '',
-      description: trigger.description || '',
-      type: trigger.type,
-      config: processSchema(trigger.config),
-      payload: processSchema(trigger.payload),
-      instructions: trigger.instructions,
-    }));
+    return parsed.data;
   } catch {
     return null;
   }
@@ -183,11 +195,59 @@ interface OpenAPIOperation {
 interface OpenAPIPageData {
   title: string;
   description?: string;
-  getAPIPageProps: () => {
-    document: string;
+  getOpenAPIPageProps: () => {
+    payload: { bundled: Record<string, unknown> };
     operations?: Array<{ method: string; path: string; tags?: string[] }>;
     webhooks?: Array<{ name: string; method: string }>;
   };
+}
+
+// Fumadocs page data is untyped across the mixed sources this route serves, so
+// each candidate page is parsed once against the shape its renderer needs.
+const openAPIPageSchema = z.object({
+  url: z.string(),
+  data: z.object({
+    title: z.string(),
+    description: z.string().optional().catch(undefined),
+    getOpenAPIPageProps: z.custom<OpenAPIPageData['getOpenAPIPageProps']>(
+      value => typeof value === 'function'
+    ),
+  }),
+});
+
+const llmPageSchema: z.ZodType<LLMPage> = z.object({
+  url: z.string(),
+  data: z.object({
+    title: z.string(),
+    description: z.string().optional().catch(undefined),
+    getText: z
+      .custom<NonNullable<LLMPage['data']['getText']>>(value => typeof value === 'function')
+      .optional()
+      .catch(undefined),
+    legacy: z.boolean().optional().catch(undefined),
+    written: z.string().optional().catch(undefined),
+    llmGuardrails: z.enum(['direct-execution', 'none']).optional().catch(undefined),
+  }),
+});
+
+const degradedPageSchema = z.object({
+  url: z.unknown().optional(),
+  data: z
+    .object({
+      title: z.unknown().optional(),
+      description: z.unknown().optional(),
+    })
+    .catch({}),
+});
+
+export function degradedPageToMarkdown(value: unknown): string | null {
+  const parsed = degradedPageSchema.safeParse(value);
+  if (!parsed.success) return null;
+
+  const title = parsed.data.data.title || 'Documentation';
+  const description = parsed.data.data.description || '';
+  const url = parsed.data.url || '';
+  return `# ${String(title)} (${String(url)})\n\n${String(description)}`;
 }
 
 // Generate sample value for a schema
@@ -236,15 +296,28 @@ function generateSampleValue(schema: OpenAPISchema, depth = 0): unknown {
   }
 }
 
-// Render schema as markdown with proper nesting
-function renderSchema(schema: OpenAPISchema, indent = 0, maxDepth = 4): string[] {
-  if (indent > maxDepth) return ['  '.repeat(indent) + '- ...'];
+/**
+ * Renders object properties, dictionaries, and composed schemas as nested
+ * Markdown list items.
+ *
+ * `indent` controls the emitted list indentation, while `depth` independently
+ * tracks recursion because `allOf` expands without increasing indentation. An
+ * ellipsis is emitted when either value exceeds `maxDepth`.
+ */
+function renderSchema(schema: OpenAPISchema, indent = 0, maxDepth = 4, depth = 0): string[] {
+  if (indent > maxDepth || depth > maxDepth) {
+    return ['  '.repeat(indent) + '- ...'];
+  }
 
   const lines: string[] = [];
   const prefix = '  '.repeat(indent);
   const required = schema.required || [];
 
-  if (schema.type === 'object' && (schema.properties || (schema.additionalProperties && typeof schema.additionalProperties === 'object'))) {
+  if (
+    schema.type === 'object' &&
+    (schema.properties ||
+      (schema.additionalProperties && typeof schema.additionalProperties === 'object'))
+  ) {
     if (schema.properties) {
       for (const [name, prop] of Object.entries(schema.properties)) {
         const isRequired = required.includes(name);
@@ -255,11 +328,21 @@ function renderSchema(schema: OpenAPISchema, indent = 0, maxDepth = 4): string[]
         lines.push(`${prefix}- \`${name}\` (${typeStr})${reqMark}${desc}`);
 
         // Recurse for nested objects/arrays
-        if (prop.type === 'object' && (prop.properties || (prop.additionalProperties && typeof prop.additionalProperties === 'object'))) {
-          lines.push(...renderSchema(prop, indent + 1, maxDepth));
-        } else if (prop.type === 'array' && prop.items?.type === 'object' && (prop.items.properties || (prop.items.additionalProperties && typeof prop.items.additionalProperties === 'object'))) {
+        if (
+          prop.type === 'object' &&
+          (prop.properties ||
+            (prop.additionalProperties && typeof prop.additionalProperties === 'object'))
+        ) {
+          lines.push(...renderSchema(prop, indent + 1, maxDepth, depth + 1));
+        } else if (
+          prop.type === 'array' &&
+          prop.items?.type === 'object' &&
+          (prop.items.properties ||
+            (prop.items.additionalProperties &&
+              typeof prop.items.additionalProperties === 'object'))
+        ) {
           lines.push(`${prefix}  - Array items:`);
-          lines.push(...renderSchema(prop.items, indent + 2, maxDepth));
+          lines.push(...renderSchema(prop.items, indent + 2, maxDepth, depth + 1));
         }
       }
     }
@@ -270,11 +353,19 @@ function renderSchema(schema: OpenAPISchema, indent = 0, maxDepth = 4): string[]
       const typeStr = getTypeString(ap);
       const desc = ap.description ? `: ${ap.description}` : '';
       lines.push(`${prefix}- \`[key: string]\` (${typeStr})${desc}`);
-      if (ap.type === 'object' && (ap.properties || (ap.additionalProperties && typeof ap.additionalProperties === 'object'))) {
-        lines.push(...renderSchema(ap, indent + 1, maxDepth));
-      } else if (ap.type === 'array' && ap.items?.type === 'object' && (ap.items.properties || (ap.items.additionalProperties && typeof ap.items.additionalProperties === 'object'))) {
+      if (
+        ap.type === 'object' &&
+        (ap.properties || (ap.additionalProperties && typeof ap.additionalProperties === 'object'))
+      ) {
+        lines.push(...renderSchema(ap, indent + 1, maxDepth, depth + 1));
+      } else if (
+        ap.type === 'array' &&
+        ap.items?.type === 'object' &&
+        (ap.items.properties ||
+          (ap.items.additionalProperties && typeof ap.items.additionalProperties === 'object'))
+      ) {
         lines.push(`${prefix}  - Array items:`);
-        lines.push(...renderSchema(ap.items, indent + 2, maxDepth));
+        lines.push(...renderSchema(ap.items, indent + 2, maxDepth, depth + 1));
       }
     }
   } else if (schema.oneOf || schema.anyOf) {
@@ -282,7 +373,7 @@ function renderSchema(schema: OpenAPISchema, indent = 0, maxDepth = 4): string[]
     lines.push(`${prefix}*One of:*`);
     for (const variant of variants.slice(0, 3)) {
       if (variant.type === 'object' && variant.properties) {
-        lines.push(...renderSchema(variant, indent + 1, maxDepth));
+        lines.push(...renderSchema(variant, indent + 1, maxDepth, depth + 1));
       } else {
         lines.push(`${prefix}  - ${getTypeString(variant)}`);
       }
@@ -293,7 +384,7 @@ function renderSchema(schema: OpenAPISchema, indent = 0, maxDepth = 4): string[]
   } else if (schema.allOf) {
     for (const part of schema.allOf) {
       if (part.type === 'object' && part.properties) {
-        lines.push(...renderSchema(part, indent, maxDepth));
+        lines.push(...renderSchema(part, indent, maxDepth, depth + 1));
       }
     }
   }
@@ -301,13 +392,35 @@ function renderSchema(schema: OpenAPISchema, indent = 0, maxDepth = 4): string[]
   return lines;
 }
 
+/** Overrides only the top-level request-body version field for affected tool operations. */
+function withToolVersionDescription(rawSpecPath: string, schema: OpenAPISchema): OpenAPISchema {
+  const versionProperty = schema.properties?.version;
+  if (!versionProperty || !isToolVersionPath(rawSpecPath)) return schema;
+
+  return {
+    ...schema,
+    properties: {
+      ...schema.properties,
+      version: {
+        ...versionProperty,
+        description: toolVersionParameterDescription(rawSpecPath, versionProperty.description),
+      },
+    },
+  };
+}
+
 // Get a readable type string
-function getTypeString(schema: OpenAPISchema): string {
+function getTypeString(schema: OpenAPISchema, depth = 0, maxDepth = 4): string {
+  if (depth > maxDepth) return '...';
+
   if (schema.enum) {
-    return `enum: ${schema.enum.slice(0, 3).map(e => `"${e}"`).join(' | ')}${schema.enum.length > 3 ? ' | ...' : ''}`;
+    return `enum: ${schema.enum
+      .slice(0, 3)
+      .map(e => `"${e}"`)
+      .join(' | ')}${schema.enum.length > 3 ? ' | ...' : ''}`;
   }
   if (schema.type === 'array' && schema.items) {
-    return `array<${getTypeString(schema.items)}>`;
+    return `array<${getTypeString(schema.items, depth + 1, maxDepth)}>`;
   }
   if (schema.format) {
     return `${schema.type} (${schema.format})`;
@@ -356,146 +469,227 @@ function generateCurl(
 }
 
 // Convert OpenAPI page to comprehensive markdown
-async function openapiPageToMarkdown(
-  page: { url: string; data: OpenAPIPageData }
-): Promise<string> {
+export async function openapiPageToMarkdown(page: {
+  url: string;
+  data: OpenAPIPageData;
+}): Promise<string> {
   const { title, description } = page.data;
-  const props = page.data.getAPIPageProps();
+  const props = page.data.getOpenAPIPageProps();
 
-  // Get fully dereferenced document from fumadocs-openapi
-  const processed = await openapi.getSchema(props.document);
-  const spec = processed.dereferenced;
+  // The renderers read schema fields directly, so inline local references first.
+  const spec = dereferenceDocument(props.payload.bundled);
   const paths = spec.paths as Record<string, Record<string, OpenAPIOperation>> | undefined;
-  const securitySchemes = (spec.components as Record<string, unknown>)?.securitySchemes as Record<string, OpenAPISecurityScheme> | undefined;
+  const webhooks = spec.webhooks as Record<string, Record<string, OpenAPIOperation>> | undefined;
+  const securitySchemes = (spec.components as Record<string, unknown>)?.securitySchemes as
+    Record<string, OpenAPISecurityScheme> | undefined;
   const servers = spec.servers as Array<{ url: string; description?: string }> | undefined;
   const baseUrl = servers?.[0]?.url || 'https://backend.composio.dev';
 
   const lines: string[] = [`# ${title}`, ''];
   lines.push(`**Documentation:** ${page.url}`, '');
 
+  // Which REST version this page documents, emitted above the `**Endpoint:**`
+  // line below so a truncating reader still sees it. These pages publish a
+  // complete working curl example and never touch mdxToCleanMarkdown, so
+  // without this the strongest v3 signal in the corpus stays unlabelled.
+  const versionPointer = apiVersionPointer(page.url);
+  if (versionPointer) {
+    lines.push(versionPointer.trim(), '');
+  }
+
   if (description) {
     lines.push(description, '');
   }
 
-  // Process operations
-  if (props.operations && paths) {
-    for (const op of props.operations) {
-      const pathData = paths[op.path];
-      if (!pathData) continue;
+  const selectedOperations: Array<{
+    method: string;
+    name: string;
+    operation: OpenAPIOperation;
+    isWebhook: boolean;
+  }> = [];
 
-      const operation = pathData[op.method];
-      if (!operation) continue;
+  for (const op of props.operations ?? []) {
+    const operation = paths?.[op.path]?.[op.method.toLowerCase()];
+    if (operation) {
+      selectedOperations.push({
+        method: op.method,
+        name: op.path,
+        operation,
+        isWebhook: false,
+      });
+    }
+  }
 
-      lines.push('---', '');
-      lines.push(`## ${op.method.toUpperCase()} \`${op.path}\``, '');
-      lines.push(`**Endpoint:** \`${baseUrl}${op.path}\``, '');
+  for (const webhook of props.webhooks ?? []) {
+    const operation = webhooks?.[webhook.name]?.[webhook.method.toLowerCase()];
+    if (operation) {
+      selectedOperations.push({
+        method: webhook.method,
+        name: webhook.name,
+        operation,
+        isWebhook: true,
+      });
+    }
+  }
 
-      if (operation.summary) {
-        lines.push(`**Summary:** ${operation.summary}`, '');
-      }
+  // Process API operations and webhook deliveries through the same schema
+  // renderer. Fumadocs exposes them as separate page-prop collections.
+  for (const selected of selectedOperations) {
+    const { method, name, operation, isWebhook } = selected;
+    lines.push('---', '');
+    lines.push(`## ${method.toUpperCase()} \`${name}\``, '');
+    if (isWebhook) {
+      lines.push(`**Event type:** \`${name}\``, '');
+    } else {
+      lines.push(`**Endpoint:** \`${baseUrl}${name}\``, '');
+    }
 
-      if (operation.description) {
-        lines.push(operation.description, '');
-      }
+    if (operation.summary) {
+      lines.push(`**Summary:** ${operation.summary}`, '');
+    }
 
-      // Authentication
-      const security = operation.security;
-      if (security && security.length > 0 && securitySchemes) {
-        lines.push('### Authentication', '');
-        const authMethods: string[] = [];
-        for (const secReq of security) {
-          for (const schemeName of Object.keys(secReq)) {
-            const scheme = securitySchemes[schemeName];
-            if (scheme) {
-              if (scheme.type === 'apiKey') {
-                authMethods.push(`**${schemeName}** - API Key in \`${scheme.in}\` header \`${scheme.name}\``);
-              } else if (scheme.type === 'http' && scheme.scheme === 'bearer') {
-                authMethods.push(`**${schemeName}** - Bearer token in Authorization header`);
-              } else {
-                authMethods.push(`**${schemeName}** - ${scheme.type}`);
-              }
+    if (operation.description) {
+      lines.push(operation.description, '');
+    }
+
+    // Authentication
+    const security = operation.security;
+    if (security && security.length > 0 && securitySchemes) {
+      lines.push('### Authentication', '');
+      const authMethods: string[] = [];
+      for (const secReq of security) {
+        for (const schemeName of Object.keys(secReq)) {
+          const scheme = securitySchemes[schemeName];
+          if (scheme) {
+            if (scheme.type === 'apiKey') {
+              authMethods.push(
+                `**${schemeName}** - API Key in \`${scheme.in}\` header \`${scheme.name}\``
+              );
+            } else if (scheme.type === 'http' && scheme.scheme === 'bearer') {
+              authMethods.push(`**${schemeName}** - Bearer token in Authorization header`);
+            } else {
+              authMethods.push(`**${schemeName}** - ${scheme.type}`);
             }
           }
         }
-        lines.push(authMethods.join(' OR '), '');
       }
+      lines.push(authMethods.join(' OR '), '');
+    }
 
-      // Path Parameters
-      const pathParams = operation.parameters?.filter(p => p.in === 'path') || [];
-      if (pathParams.length > 0) {
-        lines.push('### Path Parameters', '');
-        for (const param of pathParams) {
-          const typeStr = getTypeString(param.schema || { type: 'string' });
-          lines.push(`- \`${param.name}\` (${typeStr}) *(required)*: ${param.description || ''}`);
-        }
+    // Path Parameters
+    const pathParams = operation.parameters?.filter(p => p.in === 'path') || [];
+    if (pathParams.length > 0) {
+      lines.push('### Path Parameters', '');
+      for (const param of pathParams) {
+        const typeStr = getTypeString(param.schema || { type: 'string' });
+        lines.push(`- \`${param.name}\` (${typeStr}) *(required)*: ${param.description || ''}`);
+      }
+      lines.push('');
+    }
+
+    // Query Parameters
+    const queryParams = operation.parameters?.filter(p => p.in === 'query') || [];
+    if (queryParams.length > 0) {
+      lines.push('### Query Parameters', '');
+      for (const param of queryParams) {
+        const typeStr = getTypeString(param.schema || { type: 'string' });
+        const reqMark = param.required ? ' *(required)*' : '';
+        const description =
+          (param.name === 'version' || param.name === 'toolkit_versions') &&
+          isToolVersionPath(name)
+            ? toolVersionParameterDescription(name, param.description)
+            : param.description || '';
+        lines.push(`- \`${param.name}\` (${typeStr})${reqMark}: ${description}`);
+      }
+      lines.push('');
+    }
+
+    // Webhook delivery headers
+    const headerParams = operation.parameters?.filter(p => p.in === 'header') || [];
+    if (isWebhook && headerParams.length > 0) {
+      lines.push('### Delivery Headers', '');
+      for (const param of headerParams) {
+        const typeStr = getTypeString(param.schema || { type: 'string' });
+        const reqMark = param.required ? ' *(required)*' : '';
+        lines.push(`- \`${param.name}\` (${typeStr})${reqMark}: ${param.description || ''}`);
+      }
+      lines.push('');
+    }
+
+    // Request Body
+    if (operation.requestBody?.content?.['application/json']) {
+      lines.push('### Request Body', '');
+      if (operation.requestBody.description) {
+        lines.push(operation.requestBody.description, '');
+      }
+      const schema = operation.requestBody.content['application/json'].schema;
+      if (schema) {
+        const renderedSchema = withToolVersionDescription(name, schema);
+        lines.push('**Schema:**', '');
+        lines.push(...renderSchema(renderedSchema));
         lines.push('');
-      }
 
-      // Query Parameters
-      const queryParams = operation.parameters?.filter(p => p.in === 'query') || [];
-      if (queryParams.length > 0) {
-        lines.push('### Query Parameters', '');
-        for (const param of queryParams) {
-          const typeStr = getTypeString(param.schema || { type: 'string' });
-          const reqMark = param.required ? ' *(required)*' : '';
-          lines.push(`- \`${param.name}\` (${typeStr})${reqMark}: ${param.description || ''}`);
-        }
-        lines.push('');
+        // Example
+        const example =
+          operation.requestBody.content['application/json'].example ?? generateSampleValue(schema);
+        lines.push('**Example:**', '');
+        lines.push('```json');
+        lines.push(JSON.stringify(example, null, 2));
+        lines.push('```', '');
       }
+    }
 
-      // Request Body
-      if (operation.requestBody?.content?.['application/json']) {
-        lines.push('### Request Body', '');
-        if (operation.requestBody.description) {
-          lines.push(operation.requestBody.description, '');
-        }
-        const schema = operation.requestBody.content['application/json'].schema;
-        if (schema) {
-          lines.push('**Schema:**', '');
-          lines.push(...renderSchema(schema));
+    // Responses
+    if (operation.responses) {
+      lines.push('### Responses', '');
+
+      for (const [status, response] of Object.entries(operation.responses)) {
+        lines.push(`#### ${status} - ${response.description || ''}`, '');
+
+        const jsonContent = response.content?.['application/json'];
+        if (jsonContent?.schema) {
+          lines.push('**Response Schema:**', '');
+          lines.push(...renderSchema(jsonContent.schema));
           lines.push('');
 
-          // Example
-          const example = operation.requestBody.content['application/json'].example ?? generateSampleValue(schema);
-          lines.push('**Example:**', '');
-          lines.push('```json');
-          lines.push(JSON.stringify(example, null, 2));
-          lines.push('```', '');
-        }
-      }
-
-      // Responses
-      if (operation.responses) {
-        lines.push('### Responses', '');
-
-        for (const [status, response] of Object.entries(operation.responses)) {
-          lines.push(`#### ${status} - ${response.description || ''}`, '');
-
-          const jsonContent = response.content?.['application/json'];
-          if (jsonContent?.schema) {
-            lines.push('**Response Schema:**', '');
-            lines.push(...renderSchema(jsonContent.schema));
-            lines.push('');
-
-            // Only show example for success responses
-            if (status.startsWith('2')) {
-              const example = jsonContent.example ?? generateSampleValue(jsonContent.schema);
-              if (example && Object.keys(example as object).length > 0) {
-                lines.push('**Example Response:**', '');
-                lines.push('```json');
-                lines.push(JSON.stringify(example, null, 2));
-                lines.push('```', '');
-              }
+          // Only show example for success responses
+          if (status.startsWith('2')) {
+            const example = jsonContent.example ?? generateSampleValue(jsonContent.schema);
+            if (example && Object.keys(example as object).length > 0) {
+              lines.push('**Example Response:**', '');
+              lines.push('```json');
+              lines.push(JSON.stringify(example, null, 2));
+              lines.push('```', '');
             }
           }
         }
       }
+    }
 
-      // cURL Example
+    // Webhook operations describe inbound deliveries rather than API calls.
+    if (!isWebhook) {
       lines.push('### Example cURL Request', '');
       lines.push('```bash');
-      lines.push(generateCurl(op.method, op.path, baseUrl, operation.parameters, operation.requestBody));
+      lines.push(generateCurl(method, name, baseUrl, operation.parameters, operation.requestBody));
       lines.push('```', '');
+    }
+  }
+
+  // Guidance goes after the operation body. Operation pages deliberately do
+  // NOT receive SESSION_GUARDRAILS: that block is about SDK code generation,
+  // it would be noise on a REST operation page, and — because it composes
+  // TOOL_VERSION_GUIDANCE — it would force the tool-version text onto every
+  // operation regardless of scope.
+  //
+  // The baseline applies to every operation. The tool-version note applies to
+  // exactly the five endpoints whose version default changes, decided by
+  // isToolVersionPath on the RAW spec path key (`/api/v3.1/tools/{tool_slug}`)
+  // — normalization belongs to the predicate, so nothing is stripped here and
+  // nothing keys off the page URL.
+  if (selectedOperations.length > 0) {
+    lines.push('---', '', REST_VERSION_GUIDANCE);
+    if (selectedOperations.some(selected => isToolVersionPath(selected.name))) {
+      lines.push('', TOOL_VERSION_GUIDANCE);
     }
   }
 
@@ -504,8 +698,13 @@ async function openapiPageToMarkdown(
 
 // Map URL prefixes to their sources
 // Note: 'reference' is handled specially below with async getReferenceSource()
-const sources = [
+interface PageSource {
+  getPage(slugs: string[] | undefined): unknown;
+}
+
+const sources: Array<{ prefix: string; source: PageSource }> = [
   { prefix: 'docs', source },
+  { prefix: 'kb', source: knowledgeBaseSource },
   { prefix: 'examples', source: examplesSource },
   { prefix: 'toolkits', source: toolkitsSource },
 ];
@@ -555,9 +754,7 @@ function generateChangelogIndex(): string {
  * Multiple entries on the same date are combined into one document.
  */
 async function changelogToMarkdown(dateStr: string): Promise<string | null> {
-  const matchingEntries = changelogEntries.filter(
-    (entry) => entry.date === dateStr
-  );
+  const matchingEntries = changelogEntries.filter(entry => entry.date === dateStr);
 
   if (matchingEntries.length === 0) {
     return null;
@@ -623,7 +820,7 @@ function renderParamsMarkdown(params: Record<string, ParameterSchema>): string[]
   for (const [name, param] of Object.entries(params)) {
     const typeStr = formatParamType(param);
     const required = param.required ? 'Yes' : 'No';
-    const desc = (param.description || '').replace(/\|/g, '\\|').replace(/\n/g, ' ');
+    const desc = encodeMarkdownTableCell(param.description || '');
     lines.push(`| \`${name}\` | ${typeStr} | ${required} | ${desc} |`);
   }
 
@@ -641,7 +838,12 @@ async function readToolkitFaqMarkdown(slug: string): Promise<string | null> {
 }
 
 // Generate markdown from toolkit with detailed tools and triggers
-function toolkitToMarkdown(toolkit: Toolkit, detailedTools?: Tool[], detailedTriggers?: Trigger[], faqMarkdown?: string | null): string {
+function toolkitToMarkdown(
+  toolkit: Toolkit,
+  detailedTools?: Tool[],
+  detailedTriggers?: Trigger[],
+  faqMarkdown?: string | null
+): string {
   const tools = detailedTools || toolkit.tools;
   const triggers = detailedTriggers || toolkit.triggers;
 
@@ -652,11 +854,11 @@ function toolkitToMarkdown(toolkit: Toolkit, detailedTools?: Tool[], detailedTri
     '',
     `- **Category:** ${toolkit.category || 'Uncategorized'}`,
     `- **Auth:** ${toolkit.authSchemes.join(', ') || 'None'}`,
-    `- **Composio Managed App Available?** ${
-      toolkit.authSchemes?.some((s) => s.toUpperCase().includes('OAUTH'))
-        ? (toolkit.composioManagedAuthSchemes && toolkit.composioManagedAuthSchemes.length > 0
-            ? 'Yes'
-            : 'No')
+    `- **Composio-managed OAuth available?** ${
+      toolkit.authSchemes?.some(s => s.toUpperCase().includes('OAUTH'))
+        ? toolkit.composioManagedAuthSchemes && toolkit.composioManagedAuthSchemes.length > 0
+          ? 'Yes'
+          : 'No'
         : 'N/A'
     }`,
     `- **Tools:** ${toolkit.toolCount}`,
@@ -734,50 +936,60 @@ async function generateManagedAuthIndex(): Promise<string> {
   const toolkits = await getAllToolkits();
 
   // Only include OAuth toolkits
-  const oauthToolkits = toolkits.filter((t) =>
-    t.authSchemes?.some((s) => s.toUpperCase().includes('OAUTH'))
+  const oauthToolkits = toolkits.filter(t =>
+    t.authSchemes?.some(s => s.toUpperCase().includes('OAUTH'))
   );
 
   const managed = oauthToolkits
-    .filter((t) => t.composioManagedAuthSchemes && t.composioManagedAuthSchemes.length > 0)
+    .filter(t => t.composioManagedAuthSchemes && t.composioManagedAuthSchemes.length > 0)
     .sort((a, b) => (a.name?.trim() || '').localeCompare(b.name?.trim() || ''));
 
   const unmanaged = oauthToolkits
-    .filter((t) => !t.composioManagedAuthSchemes || t.composioManagedAuthSchemes.length === 0)
+    .filter(t => !t.composioManagedAuthSchemes || t.composioManagedAuthSchemes.length === 0)
     .sort((a, b) => (a.name?.trim() || '').localeCompare(b.name?.trim() || ''));
 
   const lines: string[] = [
-    '# Composio Managed Auth',
+    '# Managed OAuth apps',
     '',
-    'Toolkits with managed auth work out of the box with no OAuth setup. For toolkits without managed auth, you need to provide your own credentials.',
+    'Composio can provide the OAuth app that your users authorize when they connect a toolkit. You do not need to register an OAuth app or supply its client ID and client secret.',
     '',
-    'You can also check programmatically whether a toolkit has managed auth:',
+    'This list covers only toolkits that support OAuth. It does not include toolkits that use only API keys, bearer tokens, Basic auth, or no authentication.',
+    '',
+    'Call the toolkit endpoint and read `composio_managed_auth_schemes`:',
     '',
     '```bash',
-    "curl 'https://backend.composio.dev/api/v3/toolkits/posthog' \\",
+    "curl 'https://backend.composio.dev/api/v3.1/toolkits/gmail' \\",
     "  -H 'x-api-key: YOUR_API_KEY'",
     '```',
     '',
-    'See [When to use your own developer credentials](/docs/custom-app-vs-managed-app.md) for help deciding which approach fits your use case.',
+    'If `composio_managed_auth_schemes` contains the toolkit\'s OAuth method, Composio provides the OAuth app. If the field does not contain that method, register your own OAuth app and supply its client ID and client secret.',
     '',
-    `## Composio Managed App Available (${managed.length})`,
+    'Some toolkits support more than one authentication method. A toolkit appears under **Composio-managed OAuth available** when Composio manages at least one OAuth method. Open the toolkit page to check each method.',
+    '',
+    'See [Managed vs custom auth](/docs/authentication/custom-app-vs-managed-app.md) for setup steps and trade-offs.',
+    '',
+    `## Composio-managed OAuth available (${managed.length})`,
     '',
     '| Toolkit | Slug |',
     '|---------|------|',
   ];
 
   for (const t of managed) {
-    lines.push(`| [${t.name?.trim() || t.slug}](/toolkits/${t.slug}.md) | \`${t.slug.toUpperCase()}\` |`);
+    lines.push(
+      `| [${t.name?.trim() || t.slug}](/toolkits/${t.slug}.md) | \`${t.slug.toUpperCase()}\` |`
+    );
   }
 
   lines.push('');
-  lines.push(`## Requires Your Own Credentials (${unmanaged.length})`);
+  lines.push(`## Bring your own OAuth app (${unmanaged.length})`);
   lines.push('');
   lines.push('| Toolkit | Slug |');
   lines.push('|---------|------|');
 
   for (const t of unmanaged) {
-    lines.push(`| [${t.name?.trim() || t.slug}](/toolkits/${t.slug}.md) | \`${t.slug.toUpperCase()}\` |`);
+    lines.push(
+      `| [${t.name?.trim() || t.slug}](/toolkits/${t.slug}.md) | \`${t.slug.toUpperCase()}\` |`
+    );
   }
 
   return lines.join('\n');
@@ -797,8 +1009,8 @@ async function generateToolkitsIndex(): Promise<string> {
     '',
     `Composio supports ${toolkits.length} toolkits for building AI agents.`,
     '',
-    '- [Pro Tools](/toolkits/pro-tools.md) - Which tools cost extra, how they are priced, and what the limits are',
-    '- [Composio Managed Auth](/toolkits/managed-auth.md) - Full list of OAuth toolkits that work out of the box vs ones that need your own credentials',
+    '- [Premium Tools](/toolkits/pro-tools.md) - Which tools cost extra, how they are priced, and what the limits are',
+    '- [Managed OAuth apps](/toolkits/managed-auth.md) - Check whether Composio provides the OAuth app for a toolkit',
     '',
     '## All Toolkits',
     '',
@@ -809,9 +1021,11 @@ async function generateToolkitsIndex(): Promise<string> {
   for (const toolkit of sorted) {
     const name = toolkit.name?.trim() || toolkit.slug;
     const auth = toolkit.authSchemes?.join(', ') || 'None';
-    const hasOAuth = toolkit.authSchemes?.some((s) => s.toUpperCase().includes('OAUTH'));
+    const hasOAuth = toolkit.authSchemes?.some(s => s.toUpperCase().includes('OAUTH'));
     const managedApp = hasOAuth
-      ? (toolkit.composioManagedAuthSchemes && toolkit.composioManagedAuthSchemes.length > 0 ? 'Yes' : 'No')
+      ? toolkit.composioManagedAuthSchemes && toolkit.composioManagedAuthSchemes.length > 0
+        ? 'Yes'
+        : 'No'
       : '—';
     lines.push(
       `| [${name}](/toolkits/${toolkit.slug}.md) | \`${toolkit.slug.toUpperCase()}\` | ${toolkit.toolCount} | ${toolkit.triggerCount} | ${auth} | ${managedApp} |`
@@ -819,32 +1033,89 @@ async function generateToolkitsIndex(): Promise<string> {
   }
 
   lines.push('', '## Toolkit Details', '');
-  lines.push('For detailed information about each toolkit including all tools and triggers, visit the individual toolkit pages listed above.');
+  lines.push(
+    'For detailed information about each toolkit including all tools and triggers, visit the individual toolkit pages listed above.'
+  );
 
   return lines.join('\n');
 }
 
-const LLM_FOOTER = '\n\n---\n\n📚 **More documentation:** [View all docs](https://docs.composio.dev/llms.txt) | [Glossary](https://docs.composio.dev/llms.mdx/reference/glossary) | [Examples](https://docs.composio.dev/llms.mdx/examples) | [API Reference](https://docs.composio.dev/llms.mdx/reference)';
+const LLM_FOOTER =
+  '\n\n---\n\n📚 **More documentation:** [View all docs](https://docs.composio.dev/llms.txt) | [Glossary](https://docs.composio.dev/llms.mdx/reference/glossary) | [Examples](https://docs.composio.dev/llms.mdx/examples) | [API Reference](https://docs.composio.dev/llms.mdx/reference)';
+
+function knowledgeLinksToMarkdown(links: KnowledgeLink[]): string {
+  return links
+    .map((link) => `- [${link.title}](${link.href}) — ${link.description} (${link.sourceLabel})`)
+    .join('\n');
+}
+
+async function knowledgeBrowseToMarkdown(rest: string[]): Promise<string | null> {
+  if (rest.length === 0) {
+    const areas = PRODUCT_AREAS.filter((area) => area.defaultBrowse)
+      .map((area) => `- [${area.title}](https://docs.composio.dev/kb/topic/${area.slug}) — ${area.description}`)
+      .join('\n');
+    return `# Composio Knowledge Base\n\nSearch and browse public Composio knowledge across docs, verified support answers, OAuth guides, toolkits, examples, reference, and changelog.\n\n- [Search support knowledge](https://docs.composio.dev/kb/search)\n- [Browse all toolkits](https://docs.composio.dev/kb/toolkits)\n\n## Support topics\n\n${areas}${LLM_FOOTER}`;
+  }
+
+  if (rest.length === 1 && rest[0] === 'search') {
+    return `# Search Composio support knowledge\n\nUse the [Knowledge Base search](https://docs.composio.dev/kb/search) to find canonical public support answers and toolkit-specific fixes.${LLM_FOOTER}`;
+  }
+
+  if (rest.length === 1 && rest[0] === 'toolkits') {
+    const toolkits = await getKnowledgeToolkitSummaries();
+    const rows = toolkits
+      .map((toolkit) => `- [${toolkit.name}](https://docs.composio.dev${getToolkitKnowledgeMarkdownHref(toolkit)}) — ${toolkit.knowledgeCount} resource${toolkit.knowledgeCount === 1 ? '' : 's'}`)
+      .join('\n');
+    return `# Toolkit knowledge\n\nBrowse canonical public knowledge by provider.\n\n${rows}${LLM_FOOTER}`;
+  }
+
+  if (rest.length === 2 && rest[0] === 'topic' && isProductAreaSlug(rest[1])) {
+    const area = getProductArea(rest[1]);
+    const links = await getKnowledgeByProductArea(rest[1]);
+    if (!area.defaultBrowse && links.length === 0) return null;
+    return `# ${area.title}\n\n${area.description}\n\n${knowledgeLinksToMarkdown(links)}${LLM_FOOTER}`;
+  }
+
+  if (rest.length === 2 && rest[0] === 'toolkit') {
+    const toolkits = await getKnowledgeToolkitSummaries();
+    const toolkit = toolkits.find((candidate) => candidate.slug === rest[1]);
+    if (!toolkit) return null;
+    const links = await getKnowledgeByToolkit(toolkit.slug);
+    return `# ${toolkit.name} knowledge\n\nCanonical public Composio information for ${toolkit.name}.\n\n${knowledgeLinksToMarkdown(links)}${LLM_FOOTER}`;
+  }
+
+  return null;
+}
 
 // Render meta tool parameters as markdown
-function renderMetaToolParams(properties: Record<string, MetaToolParameter>, requiredFields: string[] = [], indent = 0): string[] {
+function renderMetaToolParams(
+  properties: Record<string, MetaToolParameter>,
+  requiredFields: string[] = [],
+  indent = 0
+): string[] {
   const lines: string[] = [];
   const prefix = '  '.repeat(indent);
 
   for (const [name, param] of Object.entries(properties)) {
-    const typeStr = param.type === 'array' && param.items && typeof param.items === 'object' && (param.items as Record<string, unknown>).type
-      ? `array<${(param.items as Record<string, unknown>).type}>`
-      : param.type;
+    const typeStr =
+      param.type === 'array' &&
+      param.items &&
+      typeof param.items === 'object' &&
+      (param.items as Record<string, unknown>).type
+        ? `array<${(param.items as Record<string, unknown>).type}>`
+        : param.type;
     const reqMark = requiredFields.includes(name) ? ' *(required)*' : '';
     const desc = param.description
       ? `: ${param.description.replace(/\*\*/g, '').replace(/__/g, '').replace(/\n+/g, ' ').trim()}`
       : '';
-    const defaultStr = param.default !== undefined && param.default !== null && param.default !== ''
-      ? ` (default: \`${String(param.default)}\`)`
-      : '';
-    const enumStr = param.enum && param.enum.length > 0
-      ? ` — values: ${param.enum.map(v => `\`${v}\``).join(', ')}`
-      : '';
+    const defaultStr =
+      param.default !== undefined && param.default !== null && param.default !== ''
+        ? ` (default: \`${String(param.default)}\`)`
+        : '';
+    const enumStr =
+      param.enum && param.enum.length > 0
+        ? ` — values: ${param.enum.map(v => `\`${v}\``).join(', ')}`
+        : '';
 
     lines.push(`${prefix}- \`${name}\` (${typeStr})${reqMark}${desc}${defaultStr}${enumStr}`);
 
@@ -853,11 +1124,24 @@ function renderMetaToolParams(properties: Record<string, MetaToolParameter>, req
       lines.push(...renderMetaToolParams(param.properties, nestedRequired, indent + 1));
     }
 
-    const items = param.items && typeof param.items === 'object' ? param.items as Record<string, unknown> : null;
-    if (items?.properties && typeof items.properties === 'object' && Object.keys(items.properties as object).length > 0) {
-      const itemsRequired = Array.isArray(items.required) ? items.required as string[] : [];
+    const items =
+      param.items && typeof param.items === 'object'
+        ? (param.items as Record<string, unknown>)
+        : null;
+    if (
+      items?.properties &&
+      typeof items.properties === 'object' &&
+      Object.keys(items.properties as object).length > 0
+    ) {
+      const itemsRequired = Array.isArray(items.required) ? (items.required as string[]) : [];
       lines.push(`${prefix}  - Array items:`);
-      lines.push(...renderMetaToolParams(items.properties as Record<string, MetaToolParameter>, itemsRequired, indent + 2));
+      lines.push(
+        ...renderMetaToolParams(
+          items.properties as Record<string, MetaToolParameter>,
+          itemsRequired,
+          indent + 2
+        )
+      );
     }
   }
 
@@ -866,11 +1150,7 @@ function renderMetaToolParams(properties: Record<string, MetaToolParameter>, req
 
 // Generate markdown for a single meta tool
 function metaToolToMarkdown(tool: MetaTool): string {
-  const lines: string[] = [
-    `# ${tool.displayName}`,
-    '',
-    `**Slug:** \`${tool.slug}\``,
-  ];
+  const lines: string[] = [`# ${tool.displayName}`, '', `**Slug:** \`${tool.slug}\``];
 
   if (tool.tags.length > 0) {
     lines.push(`**Tags:** ${tool.tags.join(', ')}`);
@@ -908,19 +1188,38 @@ function metaToolsIndexToMarkdown(tools: MetaTool[]): string {
 
   for (const tool of tools) {
     const tags = tool.tags.length > 0 ? tool.tags.join(', ') : '—';
-    lines.push(`| [\`${tool.slug}\`](/toolkits/meta-tools/${tool.slug.toLowerCase().replace('composio_', '')}.md) | ${tags} |`);
+    lines.push(
+      `| [\`${tool.slug}\`](/toolkits/meta-tools/${tool.slug.toLowerCase().replace('composio_', '')}.md) | ${tags} |`
+    );
   }
 
   return lines.join('\n') + LLM_FOOTER;
 }
 
-export async function GET(
-  _req: Request,
-  { params }: { params: Promise<{ slug?: string[] }> }
-) {
+export async function GET(_req: Request, { params }: { params: Promise<{ slug?: string[] }> }) {
   try {
     const { slug = [] } = await params;
     const [prefix, ...rest] = slug;
+
+    if (prefix === 'kb') {
+      if (rest.length === 2 && rest[0] === 'toolkit') {
+        const toolkits = await getKnowledgeToolkitSummaries();
+        const toolkit = toolkits.find((candidate) => candidate.slug === rest[1]);
+        const redirectPath = toolkit ? getToolkitKnowledgeRedirect(toolkit) : null;
+        if (redirectPath) {
+          return new Response(null, {
+            status: 307,
+            headers: { Location: `${redirectPath}.md` },
+          });
+        }
+      }
+      const browseMarkdown = await knowledgeBrowseToMarkdown(rest);
+      if (browseMarkdown) {
+        return new Response(browseMarkdown, {
+          headers: { 'Content-Type': 'text/markdown; charset=utf-8' },
+        });
+      }
+    }
 
     // Special handling for toolkits index - generate comprehensive list
     if (prefix === 'toolkits' && rest.length === 0) {
@@ -998,8 +1297,7 @@ export async function GET(
     }
 
     // Handle 'reference' specially - uses async getReferenceSource() for OpenAPI pages
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let pageSource: any;
+    let pageSource: PageSource;
     if (prefix === 'reference') {
       try {
         pageSource = await getReferenceSource();
@@ -1010,7 +1308,7 @@ export async function GET(
         pageSource = referenceSource;
       }
     } else {
-      const match = sources.find((s) => s.prefix === prefix);
+      const match = sources.find(s => s.prefix === prefix);
       if (!match) notFound();
       pageSource = match.source;
     }
@@ -1026,11 +1324,10 @@ export async function GET(
 
     if (page) {
       // Check if this is an OpenAPI page
-      if ('getAPIPageProps' in page.data) {
+      const openapiPage = openAPIPageSchema.safeParse(page);
+      if (openapiPage.success) {
         try {
-          const markdown = await openapiPageToMarkdown(
-            page as unknown as { url: string; data: OpenAPIPageData }
-          );
+          const markdown = await openapiPageToMarkdown(openapiPage.data);
           return new Response(markdown, {
             headers: {
               'Content-Type': 'text/markdown; charset=utf-8',
@@ -1038,39 +1335,44 @@ export async function GET(
           });
         } catch (e) {
           console.error('Error generating OpenAPI markdown:', e);
-          const title = page.data?.title || 'API Reference';
-          const description = page.data?.description || '';
-          return new Response(
-            `# ${title}\n\n${description}`,
-            {
-              headers: {
-                'Content-Type': 'text/markdown; charset=utf-8',
-              },
-            }
-          );
+          const title = openapiPage.data.data.title || 'API Reference';
+          const description = openapiPage.data.data.description || '';
+          return new Response(`# ${title}\n\n${description}`, {
+            headers: {
+              'Content-Type': 'text/markdown; charset=utf-8',
+            },
+          });
         }
       }
 
       // Regular MDX page
-      try {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        return new Response(await getLLMText(page as any), {
+      const llmPage = llmPageSchema.safeParse(page);
+      if (llmPage.success) {
+        try {
+          return new Response(await getLLMText(llmPage.data), {
+            headers: {
+              'Content-Type': 'text/markdown; charset=utf-8',
+            },
+          });
+        } catch (e) {
+          console.error('Error generating LLM text:', e);
+          const title = llmPage.data.data.title || 'Documentation';
+          const description = llmPage.data.data.description || '';
+          return new Response(`# ${title} (${llmPage.data.url})\n\n${description}`, {
+            headers: {
+              'Content-Type': 'text/markdown; charset=utf-8',
+            },
+          });
+        }
+      }
+
+      const degradedMarkdown = degradedPageToMarkdown(page);
+      if (degradedMarkdown !== null) {
+        return new Response(degradedMarkdown, {
           headers: {
             'Content-Type': 'text/markdown; charset=utf-8',
           },
         });
-      } catch (e) {
-        console.error('Error generating LLM text:', e);
-        const title = page.data?.title || 'Documentation';
-        const description = page.data?.description || '';
-        return new Response(
-          `# ${title} (${page.url || ''})\n\n${description}`,
-          {
-            headers: {
-              'Content-Type': 'text/markdown; charset=utf-8',
-            },
-          }
-        );
       }
     }
 
@@ -1108,14 +1410,11 @@ export async function GET(
       throw e;
     }
     console.error('Unexpected error in llms.mdx route:', e);
-    return new Response(
-      `# Error\n\nAn error occurred while generating the markdown content.`,
-      {
-        status: 500,
-        headers: {
-          'Content-Type': 'text/markdown; charset=utf-8',
-        },
-      }
-    );
+    return new Response(`# Error\n\nAn error occurred while generating the markdown content.`, {
+      status: 500,
+      headers: {
+        'Content-Type': 'text/markdown; charset=utf-8',
+      },
+    });
   }
 }

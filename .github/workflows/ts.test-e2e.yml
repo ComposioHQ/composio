@@ -5,6 +5,11 @@ on:
     branches: [master, next]
     paths:
       - 'ts/**'
+      # A catalog pin or lockfile change swaps what every ts/** package
+      # resolves without touching one of their files -- @composio/client
+      # 0.1.0-alpha.76 -> 2.0.0-rc.5 skipped this suite entirely that way.
+      - 'pnpm-workspace.yaml'
+      - 'pnpm-lock.yaml'
       - '.github/actions/setup-node-pnpm-bun/action.yml'
       - '.github/workflows/ts.test-e2e.yml'
       - 'mise.toml'
@@ -13,12 +18,24 @@ on:
   pull_request:
     paths:
       - 'ts/**'
+      # A catalog pin or lockfile change swaps what every ts/** package
+      # resolves without touching one of their files -- @composio/client
+      # 0.1.0-alpha.76 -> 2.0.0-rc.5 skipped this suite entirely that way.
+      - 'pnpm-workspace.yaml'
+      - 'pnpm-lock.yaml'
       - '.github/actions/setup-node-pnpm-bun/action.yml'
       - '.github/workflows/ts.test-e2e.yml'
       - 'mise.toml'
       - 'mise.lock'
       - 'toolchain-versions.json'
   workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.ref || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
 
 # Print Turborepo telemetry events to the logs instead of sending them.
 env:
@@ -34,7 +51,7 @@ jobs:
       deno: ${{ steps.versions.outputs.deno }}
     steps:
       - name: Checkout Code
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Read versions
         id: versions
@@ -65,7 +82,7 @@ jobs:
 
     steps:
       - name: Checkout Code
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Normalize Composio API keys
         run: |
@@ -78,6 +95,8 @@ jobs:
       - name: Setup Node.js, pnpm, Bun
         id: setup-toolchain
         uses: ./.github/actions/setup-node-pnpm-bun
+        with:
+          enable-turbo-cache: 'true'
 
       - name: Install Dependencies
         run: pnpm install --frozen-lockfile
@@ -87,6 +106,8 @@ jobs:
 
       - name: Check API keys
         id: api-keys
+        env:
+          IS_FORK_PR: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork }}
         run: |
           missing=()
           for name in COMPOSIO_API_KEY OPENAI_API_KEY ANTHROPIC_API_KEY; do
@@ -97,8 +118,8 @@ jobs:
 
           if [ "${#missing[@]}" -gt 0 ]; then
             echo "available=false" >> "$GITHUB_OUTPUT"
-            if [ "$GITHUB_ACTOR" = "dependabot[bot]" ]; then
-              echo "::notice::Skipping secret-backed Node.js E2E tests for Dependabot; missing ${missing[*]}."
+            if [ "$GITHUB_ACTOR" = "dependabot[bot]" ] || [ "$IS_FORK_PR" = "true" ]; then
+              echo "::notice::Skipping secret-backed E2E tests; missing ${missing[*]}."
               exit 0
             fi
 
@@ -146,7 +167,7 @@ jobs:
 
     steps:
       - name: Checkout Code
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Normalize Composio API keys
         run: |
@@ -157,13 +178,15 @@ jobs:
           } >> "$GITHUB_ENV"
 
       - name: Setup Deno
-        uses: denoland/setup-deno@667a34cdef165d8d2b2e98dde39547c9daac7282 # v2.0.4
+        uses: denoland/setup-deno@22d081ff2d3a40755e97629de92e3bcbfa7cf2ed # v2.0.5
         with:
           deno-version: ${{ matrix.deno-version }}
 
       - name: Setup Node.js, pnpm, Bun
         id: setup-toolchain
         uses: ./.github/actions/setup-node-pnpm-bun
+        with:
+          enable-turbo-cache: 'true'
 
       - name: Install Dependencies
         run: pnpm install --frozen-lockfile
@@ -171,7 +194,34 @@ jobs:
       - name: Build
         run: pnpm run build:packages
 
+      - name: Check API keys
+        id: api-keys
+        env:
+          IS_FORK_PR: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork }}
+        run: |
+          missing=()
+          for name in COMPOSIO_API_KEY OPENAI_API_KEY; do
+            if [ -z "${!name}" ]; then
+              missing+=("$name")
+            fi
+          done
+
+          if [ "${#missing[@]}" -gt 0 ]; then
+            echo "available=false" >> "$GITHUB_OUTPUT"
+            if [ "$GITHUB_ACTOR" = "dependabot[bot]" ] || [ "$IS_FORK_PR" = "true" ]; then
+              echo "::notice::Skipping secret-backed E2E tests; missing ${missing[*]}."
+              exit 0
+            fi
+
+            printf '::error::%s is not set\n' "${missing[@]}"
+            exit 1
+          fi
+
+          echo "available=true" >> "$GITHUB_OUTPUT"
+          echo "✅ API keys are configured"
+
       - name: Run Deno E2E Tests
+        if: steps.api-keys.outputs.available == 'true'
         run: pnpm run test:e2e:deno
 
   # CLI E2E tests, running in scratch Docker to isolate environment
@@ -188,7 +238,7 @@ jobs:
 
     steps:
       - name: Checkout Code
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Normalize Composio API keys
         run: |
@@ -201,12 +251,40 @@ jobs:
       - name: Setup Node.js, pnpm, Bun
         id: setup-toolchain
         uses: ./.github/actions/setup-node-pnpm-bun
+        with:
+          enable-turbo-cache: 'true'
 
       - name: Install Dependencies
         run: pnpm install --frozen-lockfile
 
       - name: Build
         run: pnpm run build:packages
+
+      - name: Check API keys
+        id: api-keys
+        env:
+          IS_FORK_PR: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork }}
+        run: |
+          missing=()
+          for name in COMPOSIO_API_KEY OPENAI_API_KEY COMPOSIO_USER_API_KEY; do
+            if [ -z "${!name}" ]; then
+              missing+=("$name")
+            fi
+          done
+
+          if [ "${#missing[@]}" -gt 0 ]; then
+            echo "available=false" >> "$GITHUB_OUTPUT"
+            if [ "$GITHUB_ACTOR" = "dependabot[bot]" ] || [ "$IS_FORK_PR" = "true" ]; then
+              echo "::notice::Skipping secret-backed E2E tests; missing ${missing[*]}."
+              exit 0
+            fi
+
+            printf '::error::%s is not set\n' "${missing[@]}"
+            exit 1
+          fi
+
+          echo "available=true" >> "$GITHUB_OUTPUT"
+          echo "✅ API keys are configured"
 
       - name: Pre-build Docker image for CLI e2e tests
         run: |
@@ -222,6 +300,7 @@ jobs:
             .
 
       - name: Run CLI E2E Tests
+        if: steps.api-keys.outputs.available == 'true'
         run: pnpm run test:e2e:cli
 
   # Cloudflare Workerd E2E tests
@@ -237,7 +316,7 @@ jobs:
 
     steps:
       - name: Checkout Code
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Normalize Composio API keys
         run: |
@@ -250,7 +329,7 @@ jobs:
       - name: Setup Node.js, pnpm, Bun
         uses: ./.github/actions/setup-node-pnpm-bun
         with:
-          node-version: '22.22.3'
+          enable-turbo-cache: 'true'
 
       - name: Install Dependencies
         run: pnpm install --frozen-lockfile
@@ -260,6 +339,8 @@ jobs:
 
       - name: Check API keys
         id: api-keys
+        env:
+          IS_FORK_PR: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork }}
         run: |
           missing=()
           for name in COMPOSIO_API_KEY OPENAI_API_KEY; do
@@ -270,8 +351,8 @@ jobs:
 
           if [ "${#missing[@]}" -gt 0 ]; then
             echo "available=false" >> "$GITHUB_OUTPUT"
-            if [ "$GITHUB_ACTOR" = "dependabot[bot]" ]; then
-              echo "::notice::Skipping secret-backed Cloudflare E2E tests for Dependabot; missing ${missing[*]}."
+            if [ "$GITHUB_ACTOR" = "dependabot[bot]" ] || [ "$IS_FORK_PR" = "true" ]; then
+              echo "::notice::Skipping secret-backed E2E tests; missing ${missing[*]}."
               exit 0
             fi
 

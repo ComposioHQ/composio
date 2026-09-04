@@ -1,0 +1,41 @@
+---
+title: 'Python SDK 0.18.0 hardens file uploads and provider schemas'
+description: 'Python SDK 0.18.0 blocks unsafe URL file inputs, redacts secrets from telemetry, aligns trigger connection resolution, and improves provider schema compatibility.'
+date: '2026-07-16'
+---
+
+Python SDK `composio` `0.18.0` closes URL-upload and telemetry exposure paths, aligns trigger creation with the current backend contract, and improves provider compatibility with modern tool schemas. All Python provider packages are also aligned at `0.18.0`.
+
+### SDK versions
+
+| SDK               | Version  |
+| ----------------- | -------- |
+| Python `composio` | `0.18.0` |
+
+### File and telemetry security
+
+- `FileUploadable.from_url()` and Tool Router session-file imports now accept only HTTP(S) hosts whose resolved addresses are public. Redirects are rejected, and blocked inputs raise `BlockedInternalUrlError`.
+- Error telemetry now applies best-effort redaction to error messages and stack traces before transport, covering URL queries, bearer and basic credentials, and recognized secret-like key-value pairs.
+
+### Trigger creation
+
+`triggers.create()` now sends `user_id` to the backend rather than listing connected accounts in the SDK. When no `connected_account_id` is supplied, the backend selects the most recently created active connection for the user and toolkit. Self-hosted deployments need the backend version that supports this resolution.
+
+Invalid trigger slugs now raise `TriggerTypeNotFound`. Omitting both `user_id` and `connected_account_id`, or passing blank values for both, raises `InvalidParams`. When the supplied user has no matching active connection, the backend upsert error now surfaces instead of the SDK raising `NoItemsFound` locally.
+
+### Provider and schema compatibility
+
+- OpenAI provider tool-call handling now executes every call from the first assistant choice, including multiple calls returned in one response.
+- Tool signature generation accepts list-valued JSON Schema types, unbounded `anyOf` and `oneOf` options, and title-less top-level schemas.
+- LangChain, LangGraph, and AutoGen provider signatures now honor the configured `skip_default` value.
+- The OpenAI Agents provider preserves valid array-item schemas instead of coercing type-less items to strings.
+- Toolkit version pins are case-insensitive in both environment variables and user-provided mappings.
+
+### AutoGen dependency
+
+<Callout type="warn">
+**Compatibility change**
+
+`composio-autogen` now depends on `ag2` instead of the abandoned `pyautogen` package. Update dependency constraints or lockfiles that explicitly require `pyautogen` before upgrading.
+
+</Callout>

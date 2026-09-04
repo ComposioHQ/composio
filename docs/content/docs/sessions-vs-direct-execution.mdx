@@ -17,7 +17,7 @@ Use sessions unless you need full control over which tools are available and whe
 | **Context cost** | Only meta tools in context, app tools loaded on demand | Every tool schema you select is loaded upfront |
 | **Guidance** | Search returns recommended steps and common pitfalls alongside schemas | You get tool schemas only |
 | **Memory** | Meta tools share context across calls, storing discovered IDs and relationships | You manage state between calls |
-| **Auth** | [In-chat](/docs/authentication#in-chat-authentication): agent prompts the user to connect when needed. Also supports [manual](/docs/manually-authenticating) | You build the auth flow with [connect links](/docs/tools-direct/authenticating-tools) |
+| **Auth** | [In-chat](/docs/authentication#in-chat-authentication): agent prompts the user to connect when needed. Also supports [manual](/docs/authentication/manually-authenticating) | You build the auth flow with [connect links](/docs/tools-direct/authenticating-tools) |
 | **[Sandbox](/docs/sandbox/remote)** | Built in, large responses offloaded automatically | Not available |
 | **Human approval** | You configure approval rules on the session. Harder to intercept individual calls since tools are discovered dynamically | You intercept before each call in your code |
 | **Latency** | Multiple LLM turns (search, then execute) | Single call |
@@ -122,7 +122,10 @@ Fetch tools by slug or toolkit. Pass them to your LLM or call `tools.execute()` 
 from composio import Composio
 from composio_openai import OpenAIProvider
 
-composio = Composio(provider=OpenAIProvider())
+composio = Composio(
+    provider=OpenAIProvider(),
+    toolkit_versions={"github": "latest"},  # required for direct execution
+)
 
 # Fetch specific tools
 tools = composio.tools.get(
@@ -141,7 +144,8 @@ tools = composio.tools.get(
 result = composio.tools.execute(
     "GITHUB_CREATE_ISSUE",
     user_id="user_123",
-    arguments={"owner": "my-org", "repo": "my-repo", "title": "Fix login bug"}
+    arguments={"owner": "my-org", "repo": "my-repo", "title": "Fix login bug"},
+    dangerously_skip_version_check=True,  # required when running "latest"; or pin via version=...
 )
 ```
 </Tab>
@@ -153,6 +157,7 @@ import { OpenAIProvider } from '@composio/openai';
 const composio = new Composio({
   apiKey: process.env.COMPOSIO_API_KEY,
   provider: new OpenAIProvider(),
+  toolkitVersions: { github: 'latest' },  // required for direct execution
 });
 
 // Fetch specific tools
@@ -170,6 +175,7 @@ const allTools = await composio.tools.get("user_123", {
 const result = await composio.tools.execute("GITHUB_CREATE_ISSUE", {
   userId: "user_123",
   arguments: { owner: "my-org", repo: "my-repo", title: "Fix login bug" },
+  dangerouslySkipVersionCheck: true, // required when running "latest"; or pin via version
 });
 ```
 </Tab>

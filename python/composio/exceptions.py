@@ -187,6 +187,10 @@ class ErrorUploadingFile(FileError):
     pass
 
 
+class BlockedInternalUrlError(FileError):
+    """Raised when a URL file input resolves to a non-public network address."""
+
+
 class SensitiveFilePathBlockedError(FileError):
     """Raised when a local file path is refused before upload (sensitive directory or credential-like name)."""
 
@@ -204,6 +208,16 @@ class FileUploadPathNotAllowedError(FileError):
 
 class FileUploadAbortedError(FileError):
     """Raised when a ``before_file_upload`` hook returns ``False``."""
+
+
+class UnsafePathComponentError(FileError):
+    """
+    Raised when untrusted input (a tool slug, toolkit slug, or server-supplied
+    filename) cannot be safely used as part of a filesystem path.
+
+    Fails closed: the SDK refuses the write rather than sanitizing the value
+    into something that merely looks safe.
+    """
 
 
 class ErrorDownloadingFile(FileError):

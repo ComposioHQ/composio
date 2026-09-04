@@ -1,21 +1,59 @@
 # Single source of truth for Node, Bun, Deno, Python, uv, and pnpm versions.
 #
 # Local dev:  `mise install` (after `brew install mise` / `winget install jdx.mise` / `curl https://mise.run | sh`)
-# CI:         driven by `jdx/mise-action` in the composite actions under `.github/actions/`
+# CI:         exact versions are read from `mise.lock` by the composite actions
+#             under `.github/actions/`; Bun is installed directly by mise
 #
 # pnpm is pinned through mise's npm backend so mise owns the full local and CI
 # toolchain. We do not rely on Corepack because Node.js no longer distributes it
 # starting with v25.
 
-min_version = "2026.1.0"
+min_version = "2026.8.15"
+
+[tool_alias]
+bun = "http:bun"
 
 [tools]
 "npm:pnpm" = "11.8.0"
 node = "24.17.0"
-bun = "1.3.10"
 deno = "2.6.7"
 python = "3.12"
 uv = "0.8.19"
+
+# Bun's exact canary revision is not a GitHub release tag. These immutable npm
+# platform packages contain the binaries with valid macOS signatures; mise
+# extracts the matching one directly, with no npm lifecycle involved.
+#
+# `version` below is only a label: the http backend downloads whatever the
+# platform URLs point at, and the checksums prove a tarball is the one we named,
+# not that it holds the revision we claimed. The two are deliberately allowed to
+# read differently -- the tarballs are published under Bun's canary date scheme
+# (1.4.0-canary.20260831.1) while the binaries inside report their own revision
+# (1.4.1-canary.1+d9b769812), which is what `bun --revision` prints.
+#
+# So when bumping Bun, change the URLs *and* `version` together, then run
+# `mise install`. `pnpm run test:toolchain` (test/mise-bun-pin.test.ts) compares
+# the label against the installed binary and is the only thing that catches a
+# half-finished bump.
+[tools.bun]
+version = "1.4.1-canary.1+d9b769812"
+bin_path = "package/bin"
+
+[tools.bun.platforms.macos-arm64]
+url = "https://registry.npmjs.org/@oven/bun-darwin-aarch64/-/bun-darwin-aarch64-1.4.0-canary.20260831.1.tgz"
+checksum = "sha512:2cba511e3cc074290676eea0cf2a16c7086bae4504edc5db58c93ddf4999c424386cf1c53ae2fdfd4ffca0eb93e80a51abfb58806ad7cc32aaa31f724d36b290"
+
+[tools.bun.platforms.macos-x64]
+url = "https://registry.npmjs.org/@oven/bun-darwin-x64/-/bun-darwin-x64-1.4.0-canary.20260831.1.tgz"
+checksum = "sha512:2cce674fb3a605ce1e33e4079afc418157001116767d1cfdc3bd640149ab51289bf87fb5f518fe840bcf82712db1b53e765b074f96386704136f7f8d4e8c70ea"
+
+[tools.bun.platforms.linux-arm64]
+url = "https://registry.npmjs.org/@oven/bun-linux-aarch64/-/bun-linux-aarch64-1.4.0-canary.20260831.1.tgz"
+checksum = "sha512:c9136e10a2ea707d36978fa3713fba2930764068636dfd95a06264823c892532d69d3926e3a304084d704a2be301635d5af21faf06efed1b8aaa58ac591a8acb"
+
+[tools.bun.platforms.linux-x64]
+url = "https://registry.npmjs.org/@oven/bun-linux-x64/-/bun-linux-x64-1.4.0-canary.20260831.1.tgz"
+checksum = "sha512:d5d0db11b22ad51ea66ebe96de83790109d753b678998d30b22b10cc8e3553e324d59581401ce07b5053282fb5e206c882fc96ae06b774b6162b3620fee5cf59"
 
 [env]
 _.path = ["{{config_root}}/node_modules/.bin"]

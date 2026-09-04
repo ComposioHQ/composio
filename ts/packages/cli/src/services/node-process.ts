@@ -5,6 +5,7 @@ import { Effect } from 'effect';
 export class NodeProcess extends Effect.Service<NodeProcess>()('services/NodeProcess', {
   sync: () => ({
     cwd: process.cwd(),
+    execPath: process.execPath,
     platform: process.platform,
     arch: process.arch,
   }),

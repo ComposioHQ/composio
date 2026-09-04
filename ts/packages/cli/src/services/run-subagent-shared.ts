@@ -1,3 +1,5 @@
+import { Either, Predicate, Schema } from 'effect';
+import { JsonRecordSchema } from 'src/effects/json';
 import type { MasterKind } from 'src/services/master-detector';
 
 export type InvokeAgentTarget = 'claude' | 'codex';
@@ -46,12 +48,19 @@ export class AcpInvokeError extends Error {
   }
 }
 
+const isAcpInvokeFailure = (value: unknown): value is AcpInvokeFailure =>
+  value === 'adapter_not_found' ||
+  value === 'spawn_failed' ||
+  value === 'initialize_failed' ||
+  value === 'session_failed' ||
+  value === 'prompt_failed' ||
+  value === 'connection_closed';
+
 export const isAcpInvokeError = (value: unknown): value is AcpInvokeError =>
-  !!value &&
-  typeof value === 'object' &&
-  (value as { name?: unknown }).name === 'AcpInvokeError' &&
-  typeof (value as { message?: unknown }).message === 'string' &&
-  typeof (value as { code?: unknown }).code === 'string';
+  Predicate.isRecord(value) &&
+  value.name === 'AcpInvokeError' &&
+  typeof value.message === 'string' &&
+  isAcpInvokeFailure(value.code);
 
 export const toInvokeAgentResponse = (
   master: MasterKind,
@@ -69,26 +78,29 @@ export const toInvokeAgentResponse = (
     : {}),
 });
 
+/**
+ * Sync JSON probe shared with the non-Effect child-process runtime; `Either`
+ * is pure data from the already-bundled `effect` package, so it is safe there.
+ */
+const parseJsonEither = (text: string): Either.Either<unknown, unknown> =>
+  Either.try((): unknown => JSON.parse(text));
+
 export const parseJson = (text: string): unknown => {
   const value = text.trim();
   if (!value) {
     return undefined;
   }
-  try {
-    return JSON.parse(value);
-  } catch {
-    return value;
-  }
+  // Non-JSON sub-agent stdout is returned verbatim by design.
+  return Either.getOrElse(parseJsonEither(value), (): unknown => value);
 };
 
+const decodeStructuredSchema = Schema.decodeUnknownSync(Schema.parseJson(JsonRecordSchema));
+
+export const decodeStructuredSchemaJson = (text: string): Record<string, unknown> =>
+  decodeStructuredSchema(text);
+
 const summarizeValidationError = (error: unknown): string => {
-  const issues =
-    error &&
-    typeof error === 'object' &&
-    'issues' in error &&
-    Array.isArray((error as { issues?: unknown[] }).issues)
-      ? (error as { issues: Array<{ path?: unknown[]; message?: unknown }> }).issues
-      : [];
+  const issues = Predicate.isRecord(error) && Array.isArray(error.issues) ? error.issues : [];
 
   if (issues.length === 0) {
     return 'Invalid structured output.';
@@ -97,6 +109,9 @@ const summarizeValidationError = (error: unknown): string => {
   return issues
     .slice(0, 5)
     .map(issue => {
+      if (!Predicate.isRecord(issue)) {
+        return '<root>: Invalid value';
+      }
       const path =
         Array.isArray(issue.path) && issue.path.length > 0 ? issue.path.join('.') : '<root>';
       const message = typeof issue.message === 'string' ? issue.message : 'Invalid value';
@@ -165,13 +180,8 @@ export const unwrapStructuredOutputToolPayload = (
     return payload;
   }
 
-  if (
-    payload &&
-    typeof payload === 'object' &&
-    !Array.isArray(payload) &&
-    ACP_STRUCTURED_OUTPUT_WRAPPER_KEY in payload
-  ) {
-    return (payload as Record<string, unknown>)[ACP_STRUCTURED_OUTPUT_WRAPPER_KEY];
+  if (Predicate.isRecord(payload) && ACP_STRUCTURED_OUTPUT_WRAPPER_KEY in payload) {
+    return payload[ACP_STRUCTURED_OUTPUT_WRAPPER_KEY];
   }
 
   return payload;
@@ -239,11 +249,12 @@ const tryParseStructuredJson = (text: string): unknown | undefined => {
     return undefined;
   }
 
-  try {
-    return JSON.parse(trimmed);
-  } catch {
-    // Fall through to more permissive extraction for agents that emit a short
-    // status line before the final JSON payload.
+  // A parse failure here is the signal to fall through to more permissive
+  // extraction for agents that emit a short status line before the final JSON
+  // payload, not an error to surface.
+  const direct = parseJsonEither(trimmed);
+  if (Either.isRight(direct)) {
+    return direct.right;
   }
 
   const fencedMatches = [...trimmed.matchAll(/```(?:json)?\s*([\s\S]*?)```/gi)];
@@ -253,10 +264,11 @@ const tryParseStructuredJson = (text: string): unknown | undefined => {
       continue;
     }
 
-    try {
-      return JSON.parse(candidate);
-    } catch {
-      // Keep scanning for a valid fenced block.
+    // Probes each fenced block for valid JSON; an invalid block just advances
+    // the scan to the next one.
+    const fenced = parseJsonEither(candidate);
+    if (Either.isRight(fenced)) {
+      return fenced.right;
     }
   }
 
@@ -333,29 +345,33 @@ const tryParseStructuredJson = (text: string): unknown | undefined => {
     }
 
     const candidate = trimmed.slice(start, end + 1);
-    try {
-      const parsed = JSON.parse(candidate);
-      const nextCandidate = {
-        length: candidate.length,
-        start,
-        isObject: !Array.isArray(parsed) && parsed !== null && typeof parsed === 'object',
-        value: parsed,
-      };
+    // Probes each balanced {...}/[...] substring for valid JSON inside a
+    // tight scanning loop; a failure just skips the candidate so the scan can
+    // keep looking for a larger valid JSON payload.
+    const parsedCandidate = parseJsonEither(candidate);
+    if (Either.isLeft(parsedCandidate)) {
+      continue;
+    }
 
-      if (
-        !bestCandidate ||
-        nextCandidate.length > bestCandidate.length ||
-        (nextCandidate.length === bestCandidate.length &&
-          nextCandidate.isObject &&
-          !bestCandidate.isObject) ||
-        (nextCandidate.length === bestCandidate.length &&
-          nextCandidate.isObject === bestCandidate.isObject &&
-          nextCandidate.start < bestCandidate.start)
-      ) {
-        bestCandidate = nextCandidate;
-      }
-    } catch {
-      // Keep scanning for a larger valid JSON payload.
+    const parsed = parsedCandidate.right;
+    const nextCandidate = {
+      length: candidate.length,
+      start,
+      isObject: !Array.isArray(parsed) && parsed !== null && typeof parsed === 'object',
+      value: parsed,
+    };
+
+    if (
+      !bestCandidate ||
+      nextCandidate.length > bestCandidate.length ||
+      (nextCandidate.length === bestCandidate.length &&
+        nextCandidate.isObject &&
+        !bestCandidate.isObject) ||
+      (nextCandidate.length === bestCandidate.length &&
+        nextCandidate.isObject === bestCandidate.isObject &&
+        nextCandidate.start < bestCandidate.start)
+    ) {
+      bestCandidate = nextCandidate;
     }
   }
 

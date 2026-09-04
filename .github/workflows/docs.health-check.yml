@@ -5,6 +5,9 @@ on:
     - cron: '0 * * * *' # Every hour
   workflow_dispatch: # Manual trigger
 
+permissions:
+  contents: read
+
 jobs:
   health-check:
     name: Check docs accessibility
@@ -15,6 +18,7 @@ jobs:
         run: |
           BASE_URL="https://docs.composio.dev"
           FAIL_FILE=$(mktemp)
+          BODY_FILE=$(mktemp)
           CHECKED=0
           FAIL_COUNT=0
 
@@ -22,6 +26,11 @@ jobs:
             local label="$1"
             local url="$2"
             shift 2
+            local expected_status=""
+            if [[ "${1:-}" =~ ^[0-9]{3}$ ]]; then
+              expected_status="$1"
+              shift
+            fi
             CHECKED=$((CHECKED + 1))
             local attempt=0
             local STATUS="000"
@@ -31,14 +40,23 @@ jobs:
               else
                 STATUS="000"
               fi
-              if [ "$STATUS" -ge 400 2>/dev/null ] || [ "$STATUS" = "000" ]; then
-                attempt=$((attempt + 1))
-                [ "$attempt" -lt 2 ] && sleep 3
-              else
+              if [ -n "$expected_status" ]; then
+                [ "$STATUS" = "$expected_status" ] && break
+              elif [ "$STATUS" != "000" ] && [ "$STATUS" -lt 400 ]; then
                 break
               fi
+              attempt=$((attempt + 1))
+              [ "$attempt" -lt 2 ] && sleep 3
             done
-            if [ "$STATUS" -ge 400 2>/dev/null ] || [ "$STATUS" = "000" ]; then
+            if [ -n "$expected_status" ]; then
+              if [ "$STATUS" != "$expected_status" ]; then
+                echo "FAIL: ${label} → ${STATUS} (expected ${expected_status})"
+                echo "${label} → ${STATUS} (expected ${expected_status})" >> "$FAIL_FILE"
+                FAIL_COUNT=$((FAIL_COUNT + 1))
+              else
+                echo "  OK: ${label} → ${STATUS}"
+              fi
+            elif [ "$STATUS" = "000" ] || [ "$STATUS" -ge 400 ]; then
               echo "FAIL: ${label} → ${STATUS}"
               echo "${label} → ${STATUS}" >> "$FAIL_FILE"
               FAIL_COUNT=$((FAIL_COUNT + 1))
@@ -47,11 +65,42 @@ jobs:
             fi
           }
 
+          check_json_url() {
+            local label="$1"
+            local url="$2"
+            local expression="$3"
+            shift 3
+            CHECKED=$((CHECKED + 1))
+            local attempt=0
+            local STATUS="000"
+            local HEALTHY="false"
+            while [ "$attempt" -lt 2 ]; do
+              if STATUS=$(curl -sL -o "$BODY_FILE" -w "%{http_code}" --max-time 15 "$@" "$url" 2>/dev/null); then
+                :
+              else
+                STATUS="000"
+              fi
+              if [ "$STATUS" -lt 400 ] 2>/dev/null && jq -e "$expression" "$BODY_FILE" > /dev/null 2>&1; then
+                HEALTHY="true"
+                break
+              fi
+              attempt=$((attempt + 1))
+              [ "$attempt" -lt 2 ] && sleep 3
+            done
+            if [ "$HEALTHY" = "true" ]; then
+              echo "  OK: ${label} → ${STATUS} (valid JSON)"
+            else
+              echo "FAIL: ${label} → ${STATUS} (invalid response)"
+              echo "${label} → ${STATUS} (invalid response)" >> "$FAIL_FILE"
+              FAIL_COUNT=$((FAIL_COUNT + 1))
+            fi
+          }
+
           # LLM/AI agent entry points
           check_url "/llms.txt" "${BASE_URL}/llms.txt"
           check_url "/llms-full.txt" "${BASE_URL}/llms-full.txt"
           check_url "/docs/quickstart.md" "${BASE_URL}/docs/quickstart.md"
-          check_url "/docs/tools-and-toolkits.md" "${BASE_URL}/docs/tools-and-toolkits.md"
+          check_url "/docs/how-composio-works.md" "${BASE_URL}/docs/how-composio-works.md"
 
           # Main pages
           check_url "/docs" "${BASE_URL}/docs"
@@ -62,7 +111,18 @@ jobs:
           check_url "/docs/configuring-sessions" "${BASE_URL}/docs/configuring-sessions"
           check_url "/cookbooks" "${BASE_URL}/cookbooks"
           check_url "/toolkits" "${BASE_URL}/toolkits"
+          check_url "/toolkits/github" "${BASE_URL}/toolkits/github" 200
+          check_url "/toolkits/__definitely-not-a-toolkit__" \
+            "${BASE_URL}/toolkits/__definitely-not-a-toolkit__" 404
           check_url "/reference" "${BASE_URL}/reference"
+
+          # Public support knowledge
+          check_url "/kb" "${BASE_URL}/kb"
+          check_url "/kb/search" "${BASE_URL}/kb/search?q=github%20oauth"
+          check_json_url "/api/knowledge-search" \
+            "${BASE_URL}/api/knowledge-search?q=github%20oauth&filter=kb" \
+            '.query == "github oauth" and .filter == "kb" and (.results | type == "array") and .mode == "hybrid"' \
+            -H "Cache-Control: no-cache"
 
           # Provider pages
           check_url "/docs/providers/openai" "${BASE_URL}/docs/providers/openai"
@@ -104,11 +164,11 @@ jobs:
             echo "All $CHECKED endpoints healthy"
           fi
 
-          rm -f "$FAIL_FILE"
+          rm -f "$FAIL_FILE" "$BODY_FILE"
 
       - name: Notify Slack
         if: steps.check.outputs.has_failures == 'true'
-        uses: slackapi/slack-github-action@45a88b9581bfab2566dc881e2cd66d334e621e2c # v3.0.3
+        uses: slackapi/slack-github-action@dcb1066f776dd043e64d0e8ba94ca15cc7e1875d # v4.0.0
         with:
           webhook: ${{ secrets.SLACK_POD_DX_WEBHOOK_URL }}
           webhook-type: incoming-webhook

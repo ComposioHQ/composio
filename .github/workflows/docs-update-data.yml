@@ -7,6 +7,9 @@ on:
     types: [apollo-production-deploy]
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   update-data:
     runs-on: ubuntu-latest
@@ -16,8 +19,23 @@ jobs:
     permissions:
       contents: write
       pull-requests: write
+      issues: write
     env:
-      COMPOSIO_API_KEY: ${{ secrets.COMPOSIO_API_KEY }}
+      # Git 2.54 moved automatic cleanup from gc.auto to maintenance.auto, but
+      # actions/checkout@v7.0.1 only disables the former. Disable maintenance
+      # for every Git process in this job so its background task cannot race the
+      # shallow fetch used to update docs/auto-update-data.
+      # https://github.com/actions/checkout/issues/2437
+      GIT_CONFIG_COUNT: '1'
+      GIT_CONFIG_KEY_0: maintenance.auto
+      GIT_CONFIG_VALUE_0: 'false'
+      # Deliberately NOT secrets.COMPOSIO_API_KEY. That secret is shared with
+      # ts.test-e2e, py.test, py.check and ts.examples-nightly, all of which run
+      # against staging — it is a staging-scoped credential. This job is the only
+      # consumer that must reach production (scripts/production-api.mjs rejects any
+      # non-production base URL), so it needs its own production key. Pointing the
+      # shared secret at production instead would break the staging suites.
+      COMPOSIO_API_KEY: ${{ secrets.COMPOSIO_DOCS_API_KEY }}
 
     steps:
       - name: Generate GitHub App token
@@ -26,11 +44,29 @@ jobs:
         with:
           client-id: ${{ vars.RELEASE_BOT_CLIENT_ID }}
           private-key: ${{ secrets.RELEASE_BOT_APP_PRIVATE_KEY }}
+          owner: ComposioHQ
+          repositories: composio
+          # Same-repository issue tracking uses github.token under the job-level
+          # issues grant; do not widen this app token for issue operations.
+          permission-contents: write
+          permission-pull-requests: write
+
+      - name: Generate read-only KB source token
+        id: source-token
+        continue-on-error: true
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        with:
+          client-id: ${{ vars.RELEASE_BOT_CLIENT_ID }}
+          private-key: ${{ secrets.RELEASE_BOT_APP_PRIVATE_KEY }}
+          owner: ComposioHQ
+          repositories: support-knowledge
+          permission-contents: read
 
       - name: Checkout repository
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           token: ${{ steps.app-token.outputs.token }}
+          persist-credentials: false
 
       - name: Log trigger source
         env:
@@ -48,34 +84,19 @@ jobs:
       - name: Setup Node.js, pnpm, Bun
         uses: ./.github/actions/setup-node-pnpm-bun
 
-      - name: Configure staging API endpoints
-        env:
-          COMPOSIO_BASE_URL_STAGING: ${{ secrets.COMPOSIO_BASE_URL_STAGING }}
-        run: |
-          staging_base="${COMPOSIO_BASE_URL_STAGING%/}"
+      # Docs must reflect PRODUCTION. No base-URL override is set here: the
+      # generators default to the production API (docs/scripts/production-api.mjs).
+      # Previously this step pointed the fetch at STAGING, which published staging
+      # hosts (and unreleased content) into the committed docs.
+      # NOTE: requires COMPOSIO_DOCS_API_KEY to have PRODUCTION read access.
 
-          if [ -z "$staging_base" ]; then
-            echo "::error::COMPOSIO_BASE_URL_STAGING is not set"
-            exit 1
-          fi
-
-          if [[ "$staging_base" == "https://backend.composio.dev" || "$staging_base" == "https://backend.composio.dev/"* ]]; then
-            echo "::error::COMPOSIO_BASE_URL_STAGING points at production"
-            exit 1
-          fi
-
-          staging_origin="${staging_base%/api/v3.1}"
-          staging_origin="${staging_origin%/api/v3}"
-          staging_v3_base="$staging_origin/api/v3"
-          staging_v31_base="$staging_origin/api/v3.1"
-
-          {
-            echo "COMPOSIO_API_BASE=$staging_v3_base"
-            echo "OPENAPI_SPEC_URL=$staging_v3_base/openapi.json"
-            echo "OPENAPI_V31_SPEC_URL=$staging_v31_base/openapi.json"
-          } >> "$GITHUB_ENV"
-
-          echo "Configured staging API endpoints"
+      - name: Cache bun dependencies
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.bun/install/cache
+          key: ${{ runner.os }}-bun-${{ hashFiles('docs/bun.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-bun-
 
       - name: Install dependencies
         run: bun install
@@ -92,18 +113,40 @@ jobs:
       - name: Generate meta tools reference
         run: bun run generate:meta-tools
 
+      # The published KB makes claims about tool slugs, toolkits, and provider docs.
+      # Those claims are checkable against the catalog this job just refreshed, so
+      # freshness is verified on every production deploy rather than on a review
+      # calendar. Findings never block the data sync — they are reported instead.
+      - name: Verify KB freshness against refreshed data
+        id: verify-kb
+        continue-on-error: true
+        env:
+          # Resolves manifest.source.commit on the upstream KB repository. Without
+          # read access there the check reports "unverifiable" and stays silent,
+          # so an unset or narrow token degrades quietly rather than crying wolf.
+          GH_TOKEN: ${{ steps.source-token.outputs.token }}
+        run: |
+          set +e
+          if [ -z "${GH_TOKEN:-}" ]; then
+            echo "KB source token unavailable; source-pin status will be unverifiable."
+          fi
+          bun scripts/verify-kb.ts --check-links --check-source-pin \
+            --markdown "$RUNNER_TEMP/kb-freshness.md"
+          echo "exit_code=$?" >> "$GITHUB_OUTPUT"
+          cat "$RUNNER_TEMP/kb-freshness.md" >> "$GITHUB_STEP_SUMMARY"
+
       - name: Check for changes
         id: changes
         run: |
           cd ..
-          git add -N docs/public/data/ docs/public/openapi.json docs/public/openapi-v3.json docs/content/reference/api-reference/ docs/content/reference/v3/api-reference/ docs/content/reference/meta-tools/ 2>/dev/null || true
-          if git diff --quiet docs/public/data/ docs/public/openapi.json docs/public/openapi-v3.json docs/content/reference/api-reference/ docs/content/reference/v3/api-reference/ docs/content/reference/meta-tools/ 2>/dev/null; then
+          git add -N docs/public/data/ docs/public/openapi.json docs/public/openapi-v3.json docs/public/openapi-webhooks.json docs/content/reference/api-reference/ docs/content/reference/v3/api-reference/ docs/content/toolkits/meta-tools/ 2>/dev/null || true
+          if git diff --quiet docs/public/data/ docs/public/openapi.json docs/public/openapi-v3.json docs/public/openapi-webhooks.json docs/content/reference/api-reference/ docs/content/reference/v3/api-reference/ docs/content/toolkits/meta-tools/ 2>/dev/null; then
             echo "has_changes=false" >> "$GITHUB_OUTPUT"
             echo "No changes detected"
           else
             echo "has_changes=true" >> "$GITHUB_OUTPUT"
             echo "Changes detected:"
-            git diff --stat docs/public/data/ docs/public/openapi.json docs/public/openapi-v3.json docs/content/reference/api-reference/ docs/content/reference/v3/api-reference/ docs/content/reference/meta-tools/ 2>/dev/null || true
+            git diff --stat docs/public/data/ docs/public/openapi.json docs/public/openapi-v3.json docs/public/openapi-webhooks.json docs/content/reference/api-reference/ docs/content/reference/v3/api-reference/ docs/content/toolkits/meta-tools/ 2>/dev/null || true
           fi
 
       - name: Create Pull Request
@@ -120,18 +163,19 @@ jobs:
 
             ## What changed
             - **Toolkit catalog** (`docs/public/data/toolkits.json`, `toolkits-list.json`) — refreshed list of available toolkits, auth schemes, and tools from the backend API
-            - **OpenAPI specs** (`docs/public/openapi.json`, `docs/public/openapi-v3.json`) — latest v3.1 and v3.0 API specifications fetched from staging
+            - **OpenAPI specs** (`docs/public/openapi.json`, `docs/public/openapi-v3.json`, `docs/public/openapi-webhooks.json`) — latest v3.1 and v3.0 API specifications plus the webhook-events spec, fetched from production
             - **API reference pages** (`docs/content/reference/api-reference/`, `docs/content/reference/v3/api-reference/`) — regenerated index pages for both API versions
-            - **Meta tools reference** (`docs/public/data/meta-tools.json`, `docs/content/reference/meta-tools/*.mdx`) — updated meta tool schemas and reference docs
+            - **Meta tools reference** (`docs/public/data/meta-tools.json`, `docs/content/toolkits/meta-tools/*.mdx`) — updated meta tool schemas and reference docs
           branch: docs/auto-update-data
           base: next
           add-paths: |
             docs/public/data/
             docs/public/openapi.json
             docs/public/openapi-v3.json
+            docs/public/openapi-webhooks.json
             docs/content/reference/api-reference/
             docs/content/reference/v3/api-reference/
-            docs/content/reference/meta-tools/
+            docs/content/toolkits/meta-tools/
 
       - name: Request review from trigger actor
         if: steps.create-pr.outputs.pull-request-number
@@ -143,3 +187,157 @@ jobs:
         run: |
           gh pr edit "$PR_NUMBER" --add-reviewer "$AUTHOR" || \
           gh pr edit "$PR_NUMBER" --add-reviewer "Sushmithamallesh"
+
+      # A silent failure here is invisible: the workflow stops refreshing
+      # public/data/toolkits.json, the docs site keeps building from the last
+      # good commit, and nothing 500s — new toolkits simply 404. That is how a
+      # credential failure went unnoticed for 60 consecutive runs. File one
+      # tracking issue and close it after the next successful run proves recovery.
+      - name: Open tracking issue on failure
+        if: failure()
+        continue-on-error: true
+        # Override the job-level `./docs` default. That path only exists after
+        # checkout, so a failure before it (e.g. the app-token step) would leave
+        # the runner unable to start this shell — and continue-on-error would
+        # swallow that, losing the alert for precisely the earliest failures.
+        working-directory: ${{ github.workspace }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          LABEL: docs-data-sync-failure
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          EVENT_NAME: ${{ github.event_name }}
+        run: |
+          gh label create "$LABEL" \
+            --color B60205 \
+            --description "Scheduled docs data sync is failing" 2>/dev/null || true
+
+          existing=$(gh issue list --label "$LABEL" --state open --limit 1 --json number --jq '.[0].number // empty')
+          if [ -n "$existing" ]; then
+            echo "Issue #$existing is already open for this failure; not filing a duplicate."
+            exit 0
+          fi
+
+          gh issue create \
+            --title "Docs data sync is failing" \
+            --label "$LABEL" \
+            --body "The scheduled \`Docs - Update Data\` workflow failed.
+
+          - Run: $RUN_URL
+          - Trigger: \`$EVENT_NAME\`
+
+          **Impact:** while this is red, \`docs/public/data/toolkits.json\` stops being
+          refreshed. docs.composio.dev/toolkits is statically generated from that file, so
+          toolkits added to production after the last successful run have no page and
+          return 404. The site stays up, which is why this fails silently.
+
+          **First thing to check:** the \`COMPOSIO_DOCS_API_KEY\` secret must have
+          **production** read access against \`backend.composio.dev\`. Note this job does
+          not use the shared \`COMPOSIO_API_KEY\`, which is staging-scoped.
+
+          This issue is filed once, not re-filed on every run, and automatically closes
+          after the next successful sync proves recovery."
+
+      - name: Close tracking issue on recovery
+        if: success()
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          LABEL: docs-data-sync-failure
+        run: |
+          existing=$(gh issue list --label "$LABEL" --state open --limit 1 \
+            --json number --jq '.[0].number // empty')
+          if [ -n "$existing" ]; then
+            gh issue close "$existing" \
+              --comment "The docs data sync recovered in run ${{ github.run_id }}: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}."
+          fi
+
+      # A verifier crash is a tooling failure, not evidence that published guides
+      # contradict production. Track it separately and close it after the verifier
+      # returns either of its expected outcomes: clean (0) or findings (1).
+      - name: Track KB freshness verifier health
+        if: always() && steps.verify-kb.outputs.exit_code != ''
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERIFY_EXIT: ${{ steps.verify-kb.outputs.exit_code }}
+          LABEL: kb-freshness-check-failure
+          TITLE: 'KB freshness verifier is failing'
+        run: |
+          set -euo pipefail
+          existing=$(gh issue list --state open --label "$LABEL" \
+            --json number --jq '.[0].number // empty' 2>/dev/null || true)
+
+          if [ "$VERIFY_EXIT" = "0" ] || [ "$VERIFY_EXIT" = "1" ]; then
+            if [ -n "$existing" ]; then
+              gh issue close "$existing" \
+                --comment "The verifier recovered in run ${{ github.run_id }} (exit $VERIFY_EXIT)."
+            fi
+            exit 0
+          fi
+
+          gh label create "$LABEL" --color B60205 \
+            --description "KB freshness verifier is failing" 2>/dev/null || true
+
+          {
+            echo "The KB freshness verifier exited $VERIFY_EXIT before it could classify published content."
+            echo
+            echo "This is a verifier or workflow failure, not evidence that published guides contradict production."
+            echo
+            echo "_Observed in [run ${{ github.run_id }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})._"
+          } > "$RUNNER_TEMP/kb-verifier-issue.md"
+
+          if [ -n "$existing" ]; then
+            gh issue edit "$existing" --body-file "$RUNNER_TEMP/kb-verifier-issue.md"
+          else
+            gh issue create --title "$TITLE" --label "$LABEL" \
+              --body-file "$RUNNER_TEMP/kb-verifier-issue.md"
+          fi
+
+      # One long-lived issue, rewritten each run. A new issue per sweep would train
+      # everyone to ignore the label; a single issue that closes itself when the KB
+      # is clean stays worth reading. Runs regardless of whether data changed —
+      # a guide can rot while the catalog is unchanged.
+      - name: Track KB freshness findings
+        if: always() && (steps.verify-kb.outputs.exit_code == '0' || steps.verify-kb.outputs.exit_code == '1')
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERIFY_EXIT: ${{ steps.verify-kb.outputs.exit_code }}
+          TITLE: 'KB freshness: published guides contradict production data'
+        run: |
+          set -euo pipefail
+          # Exactly one issue carries this label, so listing by label is the lookup.
+          existing=$(gh issue list --state open --label kb-freshness \
+            --json number --jq '.[0].number // empty' 2>/dev/null || true)
+
+          if [ "$VERIFY_EXIT" = "0" ]; then
+            if [ -n "$existing" ]; then
+              gh issue close "$existing" \
+                --comment "Verified clean against the current production catalog by run ${{ github.run_id }}."
+            fi
+            exit 0
+          fi
+
+          {
+            echo "\`verify:kb\` found published KB guides whose claims no longer match production."
+            echo
+            echo "Fix the guide, or demote it to \`state: needs-review\` in \`docs/kb/manifest.json\`"
+            echo "so it stops serving readers while it is wrong."
+            echo
+            cat "$RUNNER_TEMP/kb-freshness.md" 2>/dev/null \
+              || echo "Report unavailable — \`verify:kb\` exited $VERIFY_EXIT before writing it."
+            echo
+            echo "_Regenerated by [run ${{ github.run_id }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})._"
+          } > "$RUNNER_TEMP/kb-issue.md"
+
+          gh label create kb-freshness --color FBCA04 \
+            --description "Published KB guides contradicting production data" 2>/dev/null || true
+
+          if [ -n "$existing" ]; then
+            gh issue edit "$existing" --body-file "$RUNNER_TEMP/kb-issue.md"
+          else
+            gh issue create --title "$TITLE" --label kb-freshness \
+              --body-file "$RUNNER_TEMP/kb-issue.md"
+          fi

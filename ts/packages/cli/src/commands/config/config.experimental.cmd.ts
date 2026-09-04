@@ -1,15 +1,14 @@
-import * as fs from 'node:fs';
-import * as path from 'node:path';
-import { Command, Args } from '@effect/cli';
+import { Args, Command, HelpDoc, ValidationError } from '@effect/cli';
 import { Effect, Option } from 'effect';
 import { ComposioCliUserConfig } from 'src/services/cli-user-config';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { NodeOs } from 'src/services/node-os';
 import { CLI_EXPERIMENTAL_FEATURES } from 'src/constants';
+import { discoverSkillRoots } from 'src/effects/discover-skill-roots';
 import { buildComposioCliSkill } from '../../../skills-src/composio-cli/index';
 import type { SkillFeatureFlag } from '../../../skills-src/composio-cli/reference-schema';
 
-const knownFeatures: readonly string[] = Object.values(CLI_EXPERIMENTAL_FEATURES);
+const knownFeatures: ReadonlyArray<SkillFeatureFlag> = Object.values(CLI_EXPERIMENTAL_FEATURES);
 
 const featureArg = Args.text({ name: 'feature' }).pipe(
   Args.withDescription(`Experimental feature name. Known features: ${knownFeatures.join(', ')}`),
@@ -21,55 +20,6 @@ const stateArg = Args.text({ name: 'state' }).pipe(
   Args.optional
 );
 
-const SKILL_NAME = 'composio-cli';
-
-/**
- * Find every directory where the composio-cli skill is currently installed.
- * Known locations:
- *   ~/.agents/skills/composio-cli   (canonical install target)
- *   ~/.claude/skills/composio-cli   (Claude Code — may be a symlink or a real dir)
- *
- * We resolve symlinks so we don't rebuild the same physical directory twice,
- * but we also rebuild any real (non-symlink) copies so everything stays in sync.
- */
-const discoverSkillRoots = (home: string): string[] => {
-  const candidates = [path.join(home, '.agents', 'skills'), path.join(home, '.claude', 'skills')];
-
-  const seen = new Set<string>();
-  const roots: string[] = [];
-
-  for (const parent of candidates) {
-    const skillDir = path.join(parent, SKILL_NAME);
-    try {
-      const stat = fs.lstatSync(skillDir);
-      if (stat.isSymbolicLink()) {
-        // Resolve the symlink target — we'll rebuild the real directory it points to
-        const realDir = fs.realpathSync(skillDir);
-        const realParent = path.dirname(realDir);
-        if (!seen.has(realParent)) {
-          seen.add(realParent);
-          roots.push(realParent);
-        }
-      } else if (stat.isDirectory()) {
-        if (!seen.has(parent)) {
-          seen.add(parent);
-          roots.push(parent);
-        }
-      }
-    } catch {
-      // Directory doesn't exist — skip
-    }
-  }
-
-  // Always include ~/.agents/skills as a fallback so there's at least one target
-  const agentSkillsRoot = path.join(home, '.agents', 'skills');
-  if (!seen.has(agentSkillsRoot)) {
-    roots.push(agentSkillsRoot);
-  }
-
-  return roots;
-};
-
 const rebuildSkill = Effect.gen(function* () {
   const ui = yield* TerminalUI;
   const os = yield* NodeOs;
@@ -79,16 +29,18 @@ const rebuildSkill = Effect.gen(function* () {
   // Build the feature overrides from the current config
   const featureOverrides: Partial<Record<SkillFeatureFlag, boolean>> = {};
   for (const name of knownFeatures) {
-    featureOverrides[name as SkillFeatureFlag] = cliConfig.isExperimentalFeatureEnabled(name);
+    featureOverrides[name] = cliConfig.isExperimentalFeatureEnabled(name);
   }
 
-  const roots = discoverSkillRoots(home);
+  const roots = yield* discoverSkillRoots(home);
   for (const root of roots) {
-    buildComposioCliSkill({
-      channel: cliConfig.channel,
-      outputRoot: root,
-      featureOverrides,
-    });
+    yield* Effect.try(() =>
+      buildComposioCliSkill({
+        channel: cliConfig.channel,
+        outputRoot: root,
+        featureOverrides,
+      })
+    );
   }
 
   yield* ui.log.step(
@@ -119,7 +71,7 @@ export const configExperimentalCmd = Command.make(
 
         // Show any custom features not in the known list
         for (const [name, value] of Object.entries(features)) {
-          if (!knownFeatures.includes(name)) {
+          if (!knownFeatures.some(feature => feature === name)) {
             lines.push(`  ${name}: ${value ? 'on' : 'off'}`);
           }
         }
@@ -146,7 +98,9 @@ export const configExperimentalCmd = Command.make(
       const stateValue = state.value.toLowerCase();
       if (stateValue !== 'on' && stateValue !== 'off') {
         yield* ui.log.error(`Invalid state "${state.value}". Use "on" or "off".`);
-        return yield* Effect.fail(new Error(`Invalid state: ${state.value}`));
+        return yield* Effect.fail(
+          ValidationError.invalidValue(HelpDoc.p(`Invalid state: ${state.value}`))
+        );
       }
 
       const enabled = stateValue === 'on';
@@ -161,12 +115,13 @@ export const configExperimentalCmd = Command.make(
 
       // Rebuild the skill so Claude Code picks up the new feature flags
       yield* rebuildSkill.pipe(
-        Effect.catchAll(error =>
-          Effect.gen(function* () {
-            yield* Effect.logDebug('Skill rebuild failed:', error);
-            yield* ui.log.warn('Could not rebuild skill (non-fatal)');
-          })
-        )
+        Effect.tapError(error =>
+          Effect.all([
+            Effect.logDebug('Skill rebuild failed:', error),
+            ui.log.warn('Could not rebuild skill (non-fatal)'),
+          ])
+        ),
+        Effect.ignore
       );
 
       yield* ui.output(stateValue);

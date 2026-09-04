@@ -5,7 +5,6 @@ Mirrors the TypeScript types in ts/packages/core/src/types/customTool.types.ts
 
 from __future__ import annotations
 
-import re
 import typing as t
 from dataclasses import dataclass, field
 
@@ -16,9 +15,8 @@ from pydantic import BaseModel
 from composio_client.types.tool_router.session_execute_response import (
     SessionExecuteResponse,
 )
-from composio_client.types.tool_router.session_proxy_execute_response import (
-    SessionProxyExecuteResponse,
-)
+
+from composio.utils.safe_path import SAFE_COMPONENT_REGEX
 
 # ────────────────────────────────────────────────────────────────
 # Constants
@@ -26,7 +24,46 @@ from composio_client.types.tool_router.session_proxy_execute_response import (
 
 LOCAL_TOOL_PREFIX = "LOCAL_"
 MAX_SLUG_LENGTH = 60
-SLUG_REGEX = re.compile(r"^[A-Za-z0-9_-]+$")
+
+
+class ProxyExecuteBinaryData(te.TypedDict):
+    """Binary payload metadata, present when the proxied API returned a file."""
+
+    content_type: str
+    size: int
+    url: str
+    expires_at: t.Optional[str]
+
+
+class ToolRouterSessionProxyExecuteResponse(te.TypedDict):
+    """SDK-facing shape returned by ``proxy_execute()``.
+
+    Field-for-field equivalent to the TypeScript SDK's
+    ``ToolRouterSessionProxyExecuteResponse``, spelled in snake_case: the same
+    fields carry the same meaning in both SDKs, each in its own language's
+    convention. The generated client's model is deliberately not exposed --
+    it is regenerated from the upstream spec, so returning it directly would
+    let a regeneration reshape a public SDK return type.
+
+    ``status`` and ``size`` are narrowed to ``int``. The generated model types
+    both as ``float`` and pydantic coerces, so a response read straight off it
+    renders ``200.0`` where TypeScript renders ``200``.
+    """
+
+    status: int
+    data: t.Any
+    headers: t.Optional[t.Dict[str, str]]
+    binary_data: te.NotRequired[ProxyExecuteBinaryData]
+
+
+SLUG_REGEX = SAFE_COMPONENT_REGEX
+"""Alias of the canonical pattern in :mod:`composio.utils.safe_path`.
+
+One definition, not two kept in sync by hand: this pattern is what makes a slug
+safe to use as a filesystem path component, so client-created custom tools and
+backend-fetched tools must be held to exactly the same rule. Keeping two copies
+in sync by hand is how they drift apart.
+"""
 
 # ────────────────────────────────────────────────────────────────
 # Execute function type
@@ -78,10 +115,10 @@ class SessionContext(te.Protocol):
         method: t.Literal["GET", "POST", "PUT", "DELETE", "PATCH"],
         body: t.Any = None,
         parameters: t.Optional[t.List[t.Dict[str, t.Any]]] = None,
-    ) -> SessionProxyExecuteResponse:
+    ) -> ToolRouterSessionProxyExecuteResponse:
         """Proxy API calls through Composio's auth layer.
 
-        Returns the same response model as ``session.proxy_execute()``.
+        Returns the same response shape as ``session.proxy_execute()``.
         """
         ...
 
@@ -138,9 +175,16 @@ class CustomToolsMap:
     """Lookup maps used by ToolRouterSession for routing custom tools."""
 
     by_final_slug: t.Dict[str, CustomToolsMapEntry] = field(default_factory=dict)
+    # Bare original slugs are only stored here when they resolve uniquely.
     by_original_slug: t.Dict[str, CustomToolsMapEntry] = field(default_factory=dict)
     toolkits: t.Optional[t.List[t.Any]] = None
     tools: t.Optional[t.List["CustomTool"]] = None
+    # Toolkit-qualified lookup allows different custom toolkits to reuse a child slug.
+    by_toolkit_and_original_slug: t.Dict[str, CustomToolsMapEntry] = field(
+        default_factory=dict
+    )
+    # Bare original slugs in this set must be addressed by their final slug.
+    ambiguous_original_slugs: t.Set[str] = field(default_factory=set)
 
 
 # ────────────────────────────────────────────────────────────────

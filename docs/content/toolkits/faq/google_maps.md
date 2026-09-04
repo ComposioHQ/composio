@@ -14,14 +14,18 @@ When using custom OAuth credentials, the Google Maps API must be enabled in the 
 
 ## Why am I getting "Error 400: invalid_scope"?
 
-The requested scopes are invalid or incorrectly formatted in the authorization URL. Verify your scope values against the [Google OAuth scopes docs](https://developers.google.com/identity/protocols/oauth2). If you're creating auth configs programmatically, see the [programmatic auth config guide](/docs/programmatic-auth-configs).
+The requested scopes are invalid or incorrectly formatted in the authorization URL. Verify your scope values against the [Google OAuth scopes docs](https://developers.google.com/identity/protocols/oauth2). If you're creating auth configs programmatically, see the [programmatic auth config guide](/docs/authentication/programmatic-auth-configs).
 
 ## Why does the OAuth consent screen show "Composio" instead of my app?
 
-By default, the consent screen uses Composio's OAuth app. To show your own app name and logo, create your own OAuth app and set a custom redirect URL. See [White-labeling authentication](/docs/white-labeling-authentication#using-your-own-oauth-apps).
+By default, the consent screen uses Composio's OAuth app. To show your own app name and logo, create your own OAuth app and set a custom redirect URL. See [White-labeling authentication](/docs/authentication/white-labeling-authentication#using-your-own-oauth-apps).
 
 ## Why am I getting 401 errors on tool calls?
 
 The user's access token is no longer valid. Common causes: the user revoked access, changed their password or 2FA, a Workspace admin policy changed, or Google's refresh token limit (~50 per account) was exceeded. Re-authenticating the user typically resolves this.
 
----
+## What is required for the Maps Embed API?
+
+`GOOGLE_MAPS_MAPS_EMBED_API` is API-key based. Google's Maps Embed API requires an API key on each request; OAuth2 is not the auth path for this tool.
+
+You must use an API-key connection to use this tool.

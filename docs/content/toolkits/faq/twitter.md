@@ -19,4 +19,10 @@ Twitter enforces plan-based access tiers. Check your project's product and plan 
 
 Your developer account or project may not have the required access level for the endpoint. Check your enrollment and access tier in the Twitter Developer Portal.
 
----
+## What length limits apply to Twitter/X posts?
+
+Twitter/X enforces strict post length limits. For normal posts, keep the content under 280 characters and follow X's official character-counting behavior, since URLs, Unicode, and special characters may be counted by provider-specific rules.
+
+## `client-not-enrolled` and `App not linked to project` usually point to Twitter developer app/project setup issues
+
+These errors usually mean the Twitter/X developer app is not correctly connected to a Twitter developer project, or the OAuth app configuration is stale after X's API model changes. Verify the app is linked to a project, configured according to the Twitter setup guide, and aligned with the current X API requirements. If the connected account is already `EXPIRED`, recreate the connection after fixing the app configuration.

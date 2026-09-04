@@ -9,6 +9,8 @@ import { readdir, readFile, stat } from "fs/promises";
 import { join, basename, dirname, relative } from "path";
 
 const CONTENT_DIR = join(import.meta.dir, "../../content/docs");
+const LAYOUT_OPTIONS = join(import.meta.dir, "../../lib/layout.shared.tsx");
+const GLOBAL_SEARCH = join(import.meta.dir, "../../components/custom-search-dialog.tsx");
 
 /** Separator entries in meta.json start with --- */
 function isSeparator(entry: string): boolean {
@@ -42,6 +44,60 @@ async function exists(path: string): Promise<boolean> {
 }
 
 describe("Navigation - meta.json validity", () => {
+  test("root navigation separates current and legacy paths", async () => {
+    const metaPath = join(CONTENT_DIR, "meta.json");
+    const meta = JSON.parse(await readFile(metaPath, "utf-8"));
+    const pages = meta.pages as string[];
+    const separators = pages.filter(isSeparator);
+
+    expect(separators).toEqual([
+      "---Get Started---",
+      "---Core concepts---",
+      "---Guides---",
+      "---Direct execution (legacy)---",
+      "---Migration and security---",
+    ]);
+
+    expect(pages.slice(1, pages.indexOf("---Core concepts---"))).toEqual([
+      "index",
+      "quickstart",
+      "providers",
+      "agent-plugins",
+      "cli",
+      "composio-connect",
+    ]);
+
+    expect(
+      pages.slice(
+        pages.indexOf("---Direct execution (legacy)---") + 1,
+        pages.indexOf("---Migration and security---")
+      )
+    ).toEqual([
+      "sessions-vs-direct-execution",
+      "tools-direct",
+      "auth-configuration",
+    ]);
+  });
+
+  test("Knowledge Base appears between Docs and Examples", async () => {
+    const source = await readFile(LAYOUT_OPTIONS, "utf-8");
+    const docsIndex = source.indexOf("text: 'Docs'");
+    const kbIndex = source.indexOf("text: 'Knowledge Base'");
+    const examplesIndex = source.indexOf("text: 'Examples'");
+
+    expect(docsIndex).toBeGreaterThan(-1);
+    expect(kbIndex).toBeGreaterThan(docsIndex);
+    expect(examplesIndex).toBeGreaterThan(kbIndex);
+  });
+
+  test("global search uses canonical knowledge URLs and shared source labels", async () => {
+    const source = await readFile(GLOBAL_SEARCH, "utf-8");
+    expect(source).toContain("KNOWLEDGE_SOURCE_LABELS");
+    expect(source).toContain("canonical_url");
+    expect(source).toContain("source_type");
+    expect(source).toContain("algoliaHitMetaRef.current.get(href)");
+  });
+
   test("root meta.json entries all resolve to files or directories", async () => {
     const metaPath = join(CONTENT_DIR, "meta.json");
     const meta = JSON.parse(await readFile(metaPath, "utf-8"));

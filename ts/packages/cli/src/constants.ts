@@ -1,6 +1,8 @@
 import { constants } from '@composio/core';
 import pkg from '../package.json' with { type: 'json' };
 
+declare const __COMPOSIO_CLI_RELEASE_VERSION__: string | undefined;
+
 const { DEFAULT_BASE_URL, DEFAULT_WEB_URL } = constants;
 
 export { DEFAULT_BASE_URL, DEFAULT_WEB_URL };
@@ -15,7 +17,7 @@ export const STAGING_BASE_URL = 'https://staging-backend.composio.dev';
  * Staging base URL for the Composio web app (frontend).
  * Used when `COMPOSIO_ENVIRONMENT=staging`.
  */
-export const STAGING_WEB_URL = 'https://staging-platform.composio.dev';
+export const STAGING_WEB_URL = 'https://staging-dashboard.composio.dev/';
 
 /**
  * Prefix for user environment variable keys used by the Composio CLI.
@@ -52,10 +54,20 @@ export const CACHE_FILENAMES = {
   TRIGGER_TYPES: 'trigger-types.json',
 };
 
+/** Whether the CLI has an exact release version compiled into it. */
+export const IS_RELEASE_BUILD = typeof __COMPOSIO_CLI_RELEASE_VERSION__ !== 'undefined';
+
 /**
- * Version of the Composio CLI, read from `package.json` at build time.
+ * Version of the running Composio CLI.
+ *
+ * Release builds replace `__COMPOSIO_CLI_RELEASE_VERSION__` with the exact
+ * GitHub release version. The private package version is only a source/dev
+ * fallback and must never drive binary release selection.
  */
-export const APP_VERSION = pkg.version;
+export const APP_VERSION =
+  typeof __COMPOSIO_CLI_RELEASE_VERSION__ === 'undefined'
+    ? pkg.version
+    : __COMPOSIO_CLI_RELEASE_VERSION__;
 
 /**
  * Name of the Composio CLI application, read from `package.json` at build time.
@@ -76,6 +88,22 @@ export const PROJECT_ENV_FILE_NAME = '.env';
  * Name of the per-directory Composio config directory.
  */
 export const PROJECT_COMPOSIO_DIR = '.composio';
+
+/**
+ * PostHog capture endpoint for CLI telemetry.
+ */
+export const COMPOSIO_POSTHOG_INGEST_URL = 'https://us.i.posthog.com/i/v0/e/';
+
+declare const COMPOSIO_POSTHOG_PROJECT_API_KEY_BAKED: string | undefined;
+
+/**
+ * Public write-only PostHog *project API key* (`phc_...`), baked at build from
+ * `COMPOSIO_POSTHOG_PROJECT_API_KEY`. Never a private/personal PostHog key.
+ */
+export const COMPOSIO_POSTHOG_PROJECT_API_KEY =
+  typeof COMPOSIO_POSTHOG_PROJECT_API_KEY_BAKED === 'string'
+    ? COMPOSIO_POSTHOG_PROJECT_API_KEY_BAKED
+    : '';
 
 /**
  * GitHub repository information for release fetching

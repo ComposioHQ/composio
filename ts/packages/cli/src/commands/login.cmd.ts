@@ -1,7 +1,6 @@
-import path from 'node:path';
-import { Command, Options } from '@effect/cli';
-import { FileSystem } from '@effect/platform';
-import { DateTime, Effect, Option, Schedule } from 'effect';
+import { Command, HelpDoc, Options, ValidationError } from '@effect/cli';
+import { FileSystem, Path } from '@effect/platform';
+import { Data, DateTime, Effect, Option, Schedule, Schema } from 'effect';
 import open from 'open';
 import {
   ComposioSessionRepository,
@@ -15,17 +14,21 @@ import { ComposioUserContext } from 'src/services/user-context';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { commandHintStep } from 'src/services/command-hints';
 import { runOrgSelection } from 'src/effects/select-org-project';
+import { linkAnalyticsIdentityForOrg } from 'src/effects/link-analytics-identity';
 import { setupCacheDir } from 'src/effects/setup-cache-dir';
+import { atomicWritePrivateFileString, ensurePrivateFileMode } from 'src/utils/atomic-write';
 import { primeConsumerConnectedToolkitsCacheInBackground } from 'src/services/consumer-short-term-cache';
 import { inferSkillReleaseChannel, installSkillSafe } from 'src/effects/install-skill';
 import { handleAgentAuthError } from 'src/effects/handle-agent-auth-error';
 import { APP_VERSION } from 'src/constants';
-import { isInteractiveTerminal } from 'src/utils/stdio';
 import {
   ensureAgentSignupAllowed,
   getOrSignupReadyAgent,
+  getStoredReadyAgent,
+  isAgentIdentityForApiKey,
   loginWithAgentIdentity,
   safeAgentSummary,
+  type AgentIdentity,
 } from 'src/services/agents';
 
 export const noBrowser = Options.boolean('no-browser').pipe(
@@ -82,39 +85,44 @@ const LOGIN_POLL_INTERVAL_SECONDS = 5;
 const LOGIN_POLL_TIMEOUT_SECONDS = 10 * 60;
 const LOGIN_POLL_RETRIES = Math.ceil(LOGIN_POLL_TIMEOUT_SECONDS / LOGIN_POLL_INTERVAL_SECONDS);
 
-type PendingLoginSession = {
-  readonly key: string;
-  readonly loginUrl: string;
-  readonly expiresAt: string;
-  readonly cachedAt: string;
-};
+const PendingLoginSession = Schema.Struct({
+  key: Schema.String,
+  loginUrl: Schema.String,
+  expiresAt: Schema.String,
+  cachedAt: Schema.String,
+});
+type PendingLoginSession = Schema.Schema.Type<typeof PendingLoginSession>;
+
+class PendingLoginError extends Data.TaggedError('commands/PendingLoginError')<{
+  readonly message: string;
+  readonly reason: 'invalid' | 'io' | 'missing' | 'expired';
+  readonly cause?: unknown;
+}> {}
+
+class LoginSessionError extends Data.TaggedError('commands/LoginSessionError')<{
+  readonly message: string;
+  readonly operation: 'load' | 'poll';
+  readonly status?: string;
+  readonly cause?: unknown;
+}> {}
+
+class LoginBrowserOpenError extends Data.TaggedError('commands/LoginBrowserOpenError')<{
+  readonly message: string;
+  readonly cause: unknown;
+}> {}
+
+class InvalidOrganizationError extends Data.TaggedError('commands/InvalidOrganizationError')<{
+  readonly message: string;
+  readonly requestedOrg: string;
+}> {}
+
+const invalidOptionValue = (message: string) => ValidationError.invalidValue(HelpDoc.p(message));
 
 const pendingLoginPath = Effect.gen(function* () {
+  const path = yield* Path.Path;
   const cacheDir = yield* setupCacheDir;
   return path.join(cacheDir, PENDING_LOGIN_FILE_NAME);
 });
-
-const isRecord = (value: unknown): value is Record<string, unknown> =>
-  typeof value === 'object' && value !== null;
-
-const parsePendingLoginSession = (raw: string): PendingLoginSession => {
-  const parsed: unknown = JSON.parse(raw);
-  if (
-    !isRecord(parsed) ||
-    typeof parsed.key !== 'string' ||
-    typeof parsed.loginUrl !== 'string' ||
-    typeof parsed.expiresAt !== 'string' ||
-    typeof parsed.cachedAt !== 'string'
-  ) {
-    throw new Error('Pending login cache is invalid');
-  }
-  return {
-    key: parsed.key,
-    loginUrl: parsed.loginUrl,
-    expiresAt: parsed.expiresAt,
-    cachedAt: parsed.cachedAt,
-  };
-};
 
 const writePendingLoginSession = (session: Omit<PendingLoginSession, 'cachedAt'>) =>
   Effect.gen(function* () {
@@ -124,13 +132,17 @@ const writePendingLoginSession = (session: Omit<PendingLoginSession, 'cachedAt'>
       ...session,
       cachedAt: new Date().toISOString(),
     };
-    yield* fs.writeFileString(filePath, `${JSON.stringify(payload, null, 2)}\n`);
+    yield* atomicWritePrivateFileString({
+      fs,
+      target: filePath,
+      contents: `${JSON.stringify(payload, null, 2)}\n`,
+    });
   });
 
 const clearPendingLoginSession = Effect.gen(function* () {
   const fs = yield* FileSystem.FileSystem;
   const filePath = yield* pendingLoginPath;
-  yield* fs.remove(filePath).pipe(Effect.catchAll(() => Effect.void));
+  yield* fs.remove(filePath).pipe(Effect.ignore);
 });
 
 const readPendingLoginSession = Effect.gen(function* () {
@@ -138,20 +150,42 @@ const readPendingLoginSession = Effect.gen(function* () {
   const filePath = yield* pendingLoginPath;
   const exists = yield* fs.exists(filePath);
   if (!exists) {
-    return yield* Effect.fail(
-      new Error('No pending login found. Run `composio login < /dev/null` first.')
-    );
+    return yield* new PendingLoginError({
+      message: 'No pending login found. Run `composio login < /dev/null` first.',
+      reason: 'missing',
+    });
   }
 
-  const session = yield* fs
-    .readFileString(filePath, 'utf8')
-    .pipe(Effect.map(parsePendingLoginSession));
+  const rawSession = yield* ensurePrivateFileMode({ fs, target: filePath }).pipe(
+    Effect.andThen(fs.readFileString(filePath, 'utf8')),
+    Effect.mapError(
+      cause =>
+        new PendingLoginError({
+          message: 'Failed to read pending login cache',
+          reason: 'io',
+          cause,
+        })
+    )
+  );
+  const session = yield* Schema.decodeUnknown(Schema.parseJson(PendingLoginSession))(
+    rawSession
+  ).pipe(
+    Effect.mapError(
+      cause =>
+        new PendingLoginError({
+          message: 'Pending login cache is invalid',
+          reason: 'invalid',
+          cause,
+        })
+    )
+  );
   const cachedAt = Date.parse(session.cachedAt);
   if (!Number.isFinite(cachedAt) || Date.now() - cachedAt > PENDING_LOGIN_TTL_MS) {
     yield* clearPendingLoginSession;
-    return yield* Effect.fail(
-      new Error('Pending login expired. Run `composio login < /dev/null` again.')
-    );
+    return yield* new PendingLoginError({
+      message: 'Pending login expired. Run `composio login < /dev/null` again.',
+      reason: 'expired',
+    });
   }
 
   return session;
@@ -168,7 +202,9 @@ Then run this command to complete login:
 
   ${params.pollCommand}
 
-hint: For agents: Show the URL above to the user to click, then run the command above. The command uses the cached login key, polls for up to 10 minutes, and exits once credentials are saved. Do not ask the user whether to poll — they already requested login.`;
+hint: For agents: Show the URL above to the user to click, then run the command above. The command uses the cached login key, polls for up to 10 minutes, and exits once credentials are saved. Do not ask the user whether to poll — they already requested login.
+
+hint: For unattended agents: If no human is available to open the URL, run \`composio login --agent\` instead — it signs the CLI in with a Composio agent account (creating one if needed) without a browser. Never use it when a human is present to log in with their own account.`;
 
 const formatPollLoginComplete = (params: {
   readonly email?: string;
@@ -265,6 +301,15 @@ const emitLoginComplete = (params: {
     }
   });
 
+const completeAgentLogin = (identity: AgentIdentity) =>
+  Effect.gen(function* () {
+    const ui = yield* TerminalUI;
+    yield* loginWithAgentIdentity(identity);
+    const summary = safeAgentSummary(identity);
+    yield* ui.log.success(`Logged in as Composio agent ${summary.email ?? summary.slug ?? ''}`);
+    yield* ui.output(JSON.stringify({ ...summary, logged_in: true }));
+  });
+
 const resolveDirectLoginOrganization = (params: {
   apiKey: string;
   baseURL: string;
@@ -293,9 +338,10 @@ const resolveDirectLoginOrganization = (params: {
 
     if (!match) {
       yield* ui.log.error(`Organization "${requestedOrg}" was not found for this API key.`);
-      return yield* Effect.fail(
-        new Error('Invalid organization. Run `composio orgs list` to inspect available orgs.')
-      );
+      return yield* new InvalidOrganizationError({
+        message: 'Invalid organization. Run `composio orgs list` to inspect available orgs.',
+        requestedOrg,
+      });
     }
 
     return match;
@@ -323,6 +369,15 @@ const directLogin = (params: { userApiKey: string; org?: string }) =>
       : Option.getOrUndefined(ctx.data.testUserId);
 
     yield* ctx.login(params.userApiKey, selectedOrg.id, testUserId);
+    yield* linkAnalyticsIdentityForOrg({
+      apiKey: params.userApiKey,
+      baseURL: ctx.data.baseURL,
+      orgId: selectedOrg.id,
+      knownIdentity: {
+        orgId: sessionInfo.project.org.id,
+        orgMemberId: sessionInfo.org_member.id,
+      },
+    });
     yield* primeConsumerConnectedToolkitsCacheInBackground({
       orgId: selectedOrg.id,
     });
@@ -350,6 +405,8 @@ const storeCredentials = (params: {
   skipHints?: boolean;
   /** When true, skip JSON output (emitted later after org picker with final selection). */
   skipOutput?: boolean;
+  /** When true, wait to link analytics until the org picker has made its final selection. */
+  deferAnalyticsIdentity?: boolean;
 }) =>
   Effect.gen(function* () {
     const ctx = yield* ComposioUserContext;
@@ -362,6 +419,7 @@ const storeCredentials = (params: {
       fallbackEmail,
       skipHints = false,
       skipOutput = false,
+      deferAnalyticsIdentity = false,
     } = params;
 
     // Call session/info to enrich the login with org/project metadata.
@@ -402,6 +460,20 @@ const storeCredentials = (params: {
     }
 
     yield* ctx.login(uakApiKey, orgId, testUserId);
+    // Linked only after the credential persists, so stitching cannot outlive a failed login.
+    if (!deferAnalyticsIdentity) {
+      yield* linkAnalyticsIdentityForOrg({
+        apiKey: uakApiKey,
+        baseURL,
+        orgId,
+        knownIdentity: sessionInfo
+          ? {
+              orgId: sessionInfo.project.org.id,
+              orgMemberId: sessionInfo.org_member.id,
+            }
+          : undefined,
+      });
+    }
     yield* primeConsumerConnectedToolkitsCacheInBackground({
       orgId,
     });
@@ -436,17 +508,17 @@ const loginWithKey = (params: {
     const ctx = yield* ComposioUserContext;
     const client = yield* ComposioSessionRepository;
 
-    const getSessionEffect = client
-      .getSession({ id: params.key })
-      .pipe(
-        Effect.catchAll(() =>
-          Effect.fail(
-            new Error(
-              'Session not found or expired. Run `composio login --no-wait` to get a new session.'
-            )
-          )
-        )
-      );
+    const getSessionEffect = client.getSession({ id: params.key }).pipe(
+      Effect.mapError(
+        cause =>
+          new LoginSessionError({
+            message:
+              'Session not found or expired. Run `composio login --no-wait` to get a new session.',
+            operation: 'load',
+            cause,
+          })
+      )
+    );
 
     let linkedSession;
     if (params.noWait) {
@@ -454,7 +526,11 @@ const loginWithKey = (params: {
       if (session.status !== 'linked') {
         yield* ui.log.error('Login not complete. Open the URL and finish authentication.');
         yield* ui.log.info('Then run `composio login --key <key>` again.');
-        return yield* Effect.fail(new Error('Session not yet linked'));
+        return yield* new LoginSessionError({
+          message: 'Session not yet linked',
+          operation: 'poll',
+          status: session.status,
+        });
       }
       linkedSession = session;
     } else {
@@ -465,9 +541,11 @@ const loginWithKey = (params: {
             if (currentSession.status === 'linked') {
               return currentSession;
             }
-            return yield* Effect.fail(
-              new Error(`Session status is still '${currentSession.status}', waiting for 'linked'`)
-            );
+            return yield* new LoginSessionError({
+              message: `Session status is still '${currentSession.status}', waiting for 'linked'`,
+              operation: 'poll',
+              status: currentSession.status,
+            });
           }),
           Schedule.exponential('0.3 seconds').pipe(
             Schedule.intersect(Schedule.recurs(params.pollRetries ?? 15)),
@@ -495,7 +573,7 @@ const loginWithKey = (params: {
           Effect.catchAll(error =>
             Effect.gen(function* () {
               yield* Effect.logDebug('Failed to list organizations after login:', error);
-              return [] as ReadonlyArray<OrganizationSummary>;
+              return [];
             })
           )
         )
@@ -514,6 +592,7 @@ const loginWithKey = (params: {
       fallbackEmail: linkedSession.account.email,
       skipHints: willRunPicker,
       skipOutput: true,
+      deferAnalyticsIdentity: willRunPicker,
     });
 
     if (willRunPicker) {
@@ -543,6 +622,15 @@ const loginWithKey = (params: {
       }
       const finalOrgId = result?.id ?? xOrgId;
       const finalOrgName = result?.name ?? uakSessionInfo.project.org.name ?? '';
+      yield* linkAnalyticsIdentityForOrg({
+        apiKey: uakApiKey,
+        baseURL: ctx.data.baseURL,
+        orgId: finalOrgId,
+        knownIdentity: {
+          orgId: uakSessionInfo.project.org.id,
+          orgMemberId: uakSessionInfo.org_member.id,
+        },
+      });
       yield* emitLoginComplete({
         email: linkedSession.account.email ?? undefined,
         orgId: finalOrgId,
@@ -611,7 +699,7 @@ export const browserLogin = (params: {
       expiresAt,
     });
 
-    const canPrompt = isInteractiveTerminal();
+    const { canPrompt, canDecorate } = yield* ui.capabilities;
     const effectiveNoWait = params.noWait || !canPrompt;
     const effectiveNoBrowser = params.noBrowser || effectiveNoWait;
 
@@ -621,7 +709,7 @@ export const browserLogin = (params: {
         pollCommand,
       });
 
-      if (canPrompt) {
+      if (canDecorate) {
         yield* ui.log.info('Please login using the following URL:');
         yield* ui.note(url, 'Login URL');
         yield* ui.note(loginInstructions, 'Login instructions');
@@ -642,8 +730,12 @@ export const browserLogin = (params: {
     yield* ui.output(url);
 
     if (!effectiveNoBrowser) {
-      yield* Effect.tryPromise(() => open(url, { wait: false })).pipe(
-        Effect.catchAll(error =>
+      yield* Effect.tryPromise({
+        try: () => open(url, { wait: false }),
+        catch: cause =>
+          new LoginBrowserOpenError({ message: 'Failed to open the browser.', cause }),
+      }).pipe(
+        Effect.catchTag('commands/LoginBrowserOpenError', error =>
           Effect.gen(function* () {
             yield* Effect.logDebug('Failed to open browser:', error);
             yield* ui.log.warn('Could not open the browser automatically.');
@@ -662,9 +754,11 @@ export const browserLogin = (params: {
           if (currentSession.status === 'linked') {
             return currentSession;
           }
-          return yield* Effect.fail(
-            new Error(`Session status is still '${currentSession.status}', waiting for 'linked'`)
-          );
+          return yield* new LoginSessionError({
+            message: `Session status is still '${currentSession.status}', waiting for 'linked'`,
+            operation: 'poll',
+            status: currentSession.status,
+          });
         }),
         Schedule.exponential('0.3 seconds').pipe(
           Schedule.intersect(Schedule.recurs(15)),
@@ -702,6 +796,7 @@ export const browserLogin = (params: {
       fallbackEmail: linkedSession.account.email,
       skipHints: willRunPicker,
       skipOutput: willRunPicker,
+      deferAnalyticsIdentity: willRunPicker,
     });
 
     if (willRunPicker) {
@@ -731,6 +826,15 @@ export const browserLogin = (params: {
       }
       const finalOrgId = result?.id ?? xOrgId;
       const finalOrgName = result?.name ?? uakSessionInfo.project.org.name ?? '';
+      yield* linkAnalyticsIdentityForOrg({
+        apiKey: uakApiKey,
+        baseURL: ctx.data.baseURL,
+        orgId: finalOrgId,
+        knownIdentity: {
+          orgId: uakSessionInfo.project.org.id,
+          orgMemberId: uakSessionInfo.org_member.id,
+        },
+      });
       yield* emitLoginComplete({
         email: linkedSession.account.email ?? undefined,
         orgId: finalOrgId,
@@ -750,6 +854,9 @@ export const browserLogin = (params: {
  * Use --user-api-key to log in directly without a browser flow, and --org to override the current org.
  * Use --agent to sign up or log in using a Composio agent identity.
  * Use -y to skip org picker and use current org.
+ *
+ * Non-interactive default flow: prints URL + poll instructions, or logs in
+ * unattended when a READY agent identity is already stored.
  *
  * @example
  * ```bash
@@ -781,14 +888,16 @@ export const loginCmd = Command.make(
     Effect.gen(function* () {
       const ui = yield* TerminalUI;
       const ctx = yield* ComposioUserContext;
-      const canPrompt = isInteractiveTerminal();
+      const { canPrompt, canDecorate } = yield* ui.capabilities;
 
-      if (canPrompt) {
+      if (canDecorate) {
         yield* ui.intro('composio login');
       }
 
       if (Option.isSome(key) && Option.isSome(userApiKey)) {
-        return yield* Effect.fail(new Error('Use either `--key` or `--user-api-key`, not both.'));
+        return yield* Effect.fail(
+          invalidOptionValue('Use either `--key` or `--user-api-key`, not both.')
+        );
       }
 
       if (
@@ -796,7 +905,7 @@ export const loginCmd = Command.make(
         (noBrowser || noWait || Option.isSome(key) || Option.isSome(userApiKey) || agent)
       ) {
         return yield* Effect.fail(
-          new Error(
+          invalidOptionValue(
             '`--poll` cannot be combined with browser, session, direct-login, or agent flags.'
           )
         );
@@ -804,17 +913,19 @@ export const loginCmd = Command.make(
 
       if (agent && (noBrowser || noWait || Option.isSome(key) || Option.isSome(userApiKey))) {
         return yield* Effect.fail(
-          new Error('`--agent` cannot be combined with browser, session, or direct-login flags.')
+          invalidOptionValue(
+            '`--agent` cannot be combined with browser, session, or direct-login flags.'
+          )
         );
       }
 
       if (Option.isSome(org) && Option.isNone(userApiKey)) {
-        return yield* Effect.fail(new Error('`--org` requires `--user-api-key`.'));
+        return yield* Effect.fail(invalidOptionValue('`--org` requires `--user-api-key`.'));
       }
 
       if (Option.isSome(userApiKey) && (noBrowser || noWait || Option.isSome(key))) {
         return yield* Effect.fail(
-          new Error(
+          invalidOptionValue(
             '`--user-api-key` is a direct login path and cannot be combined with browser or session flags.'
           )
         );
@@ -838,7 +949,7 @@ export const loginCmd = Command.make(
           organizations: loginResult.organizations,
         };
         const pollSummary = formatPollLoginComplete(pollSummaryParams);
-        if (canPrompt) {
+        if (canDecorate) {
           yield* ui.note(pollSummary, 'Login complete');
         }
         yield* ui.output(serializePollLoginResult(pollSummaryParams), { force: true });
@@ -853,12 +964,7 @@ export const loginCmd = Command.make(
           Effect.gen(function* () {
             yield* ensureAgentSignupAllowed;
             const identity = yield* getOrSignupReadyAgent();
-            yield* loginWithAgentIdentity(identity);
-            const summary = safeAgentSummary(identity);
-            yield* ui.log.success(
-              `Logged in as Composio agent ${summary.email ?? summary.slug ?? ''}`
-            );
-            yield* ui.output(JSON.stringify({ ...summary, logged_in: true }));
+            yield* completeAgentLogin(identity);
             if (!noSkillInstall && canPrompt) {
               yield* installSkillSafe({ channel: inferSkillReleaseChannel(APP_VERSION) });
             }
@@ -898,6 +1004,25 @@ export const loginCmd = Command.make(
           return;
         }
         yield* ui.log.step('Re-authenticating for multi-project support...');
+      }
+
+      // Reuse-only by design: headless login may complete with an existing
+      // agent identity but must never auto-create one for a human in a pipe.
+      // `--no-browser` and `--no-wait` opt out: both promise a specific output
+      // contract (printed URL, session JSON) that silent agent reuse would replace.
+      const requestedExplicitLoginFlow = noBrowser || noWait;
+      if (!canPrompt && !requestedExplicitLoginFlow) {
+        const storedAgent = yield* getStoredReadyAgent;
+        if (Option.isSome(storedAgent)) {
+          const identity = storedAgent.value;
+          const activeApiKey = ctx.data.apiKey;
+          if (
+            Option.isNone(activeApiKey) ||
+            isAgentIdentityForApiKey(identity, activeApiKey.value)
+          ) {
+            return yield* handleAgentAuthError(completeAgentLogin(identity));
+          }
+        }
       }
 
       yield* browserLogin({

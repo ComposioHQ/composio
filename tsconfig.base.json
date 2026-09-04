@@ -1,9 +1,12 @@
 {
   "$schema": "https://json.schemastore.org/tsconfig",
   "compilerOptions": {
-    "paths": {
-      "@composio/core": ["./ts/packages/core/src"] // or wherever your core is
-    },
+    // No `paths` mapping for @composio/core: the bare specifier resolves to the
+    // built dist types via the workspace link, same as the deep-path exports
+    // (`@composio/core/*`) always have. Mapping it to core/src makes TS7's tsgo
+    // dts step (tsdown → rolldown-plugin-dts) emit stray .d.ts files next to
+    // core sources when building dependent packages, because those files fall
+    // outside the per-package --rootDir it emits with.
     "lib": ["es2022", "DOM"],
     "types": ["node"],
     "target": "es2022",

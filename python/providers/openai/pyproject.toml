@@ -1,6 +1,6 @@
 [project]
 name = "composio-openai"
-version = "0.17.1"
+version = "0.21.0"
 description = "Use Composio to get an array of tools with your OpenAI Function Call."
 readme = "README.md"
 requires-python = ">=3.10,<4"
@@ -13,7 +13,7 @@ classifiers = [
     "Operating System :: OS Independent",
 ]
 dependencies = [
-    "openai>=2.42.0",
+    "openai>=2.48.0",
     "composio>=0.17.1,<2",
 ]
 

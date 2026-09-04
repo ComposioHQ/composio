@@ -7,7 +7,8 @@ This test module verifies provider functionality including:
 - Both agentic and non-agentic provider behavior
 """
 
-from unittest.mock import Mock
+from types import SimpleNamespace
+from unittest.mock import Mock, call
 
 import pytest
 
@@ -15,7 +16,10 @@ from composio.client.types import Tool, tool_list_response
 from composio.core.models.base import allow_tracking
 from composio.core.models.tools import Tools
 from composio.core.provider import AgenticProvider, NonAgenticProvider
+from pydantic import ValidationError
+
 from tests.conftest import mock_http_client
+from tests.fixtures.json_schema_conversion_corpus import find_case
 
 
 @pytest.fixture(autouse=True)
@@ -500,6 +504,199 @@ class TestNonAgenticProviderHelperMethods:
         assert results[0]["successful"] is True
         assert results[0]["data"]["starred"] is True
 
+    def test_openai_provider_routes_tool_calls_through_session(self):
+        """Session tools execute through their Tool Router session, not tools.execute."""
+        mock_client = mock_http_client()
+        from composio.core.provider._openai import OpenAIProvider
+
+        provider = OpenAIProvider()
+        Tools(client=mock_client, provider=provider)
+        session = Mock()
+        session.execute.return_value = SimpleNamespace(
+            data={"tools": ["GMAIL_SEND_EMAIL"]},
+            error=None,
+            log_id="log-session",
+        )
+        completion = SimpleNamespace(
+            choices=[
+                SimpleNamespace(
+                    message=SimpleNamespace(
+                        tool_calls=[
+                            SimpleNamespace(
+                                id="call-search",
+                                type="function",
+                                function=SimpleNamespace(
+                                    name="COMPOSIO_SEARCH_TOOLS",
+                                    arguments='{"queries":[{"use_case":"send email"}]}',
+                                ),
+                            )
+                        ],
+                    ),
+                )
+            ],
+        )
+
+        results = provider.handle_tool_calls(response=completion, session=session)
+
+        session.execute.assert_called_once_with(
+            tool_slug="COMPOSIO_SEARCH_TOOLS",
+            arguments={"queries": [{"use_case": "send email"}]},
+        )
+        mock_client.tools.execute.assert_not_called()
+        assert results == [
+            {
+                "data": {"tools": ["GMAIL_SEND_EMAIL"]},
+                "error": None,
+                "successful": True,
+            }
+        ]
+
+    def test_openai_responses_provider_preserves_session_result_order(self):
+        """Responses helpers keep provider order and result shape for session calls."""
+        from openai.types.responses.response import Response
+        from openai.types.responses.response_function_tool_call import (
+            ResponseFunctionToolCall,
+        )
+
+        from composio.core.provider._openai_responses import OpenAIResponsesProvider
+
+        mock_client = mock_http_client()
+        provider = OpenAIResponsesProvider()
+        Tools(client=mock_client, provider=provider)
+        session = Mock()
+        session.execute.side_effect = [
+            SimpleNamespace(data={"index": 1}, error=None, log_id="log-1"),
+            SimpleNamespace(data={"index": 2}, error="failed", log_id="log-2"),
+        ]
+        response = Response.model_construct(
+            output=[
+                ResponseFunctionToolCall(
+                    arguments='{"queries":[{"use_case":"first"}]}',
+                    call_id="call-1",
+                    name="COMPOSIO_SEARCH_TOOLS",
+                    type="function_call",
+                ),
+                ResponseFunctionToolCall(
+                    arguments='{"queries":[{"use_case":"second"}]}',
+                    call_id="call-2",
+                    name="COMPOSIO_SEARCH_TOOLS",
+                    type="function_call",
+                ),
+            ]
+        )
+
+        results = provider.handle_tool_calls(response=response, session=session)
+
+        assert session.execute.call_args_list == [
+            call(
+                tool_slug="COMPOSIO_SEARCH_TOOLS",
+                arguments={"queries": [{"use_case": "first"}]},
+            ),
+            call(
+                tool_slug="COMPOSIO_SEARCH_TOOLS",
+                arguments={"queries": [{"use_case": "second"}]},
+            ),
+        ]
+        mock_client.tools.execute.assert_not_called()
+        assert results == [
+            {"data": {"index": 1}, "error": None, "successful": True},
+            {"data": {"index": 2}, "error": "failed", "successful": False},
+        ]
+
+    def test_openai_responses_provider_propagates_session_exceptions(self):
+        """Responses helpers preserve their existing exception propagation behavior."""
+        from openai.types.responses.response import Response
+        from openai.types.responses.response_function_tool_call import (
+            ResponseFunctionToolCall,
+        )
+
+        from composio.core.provider._openai_responses import OpenAIResponsesProvider
+
+        provider = OpenAIResponsesProvider()
+        session = Mock()
+        session.execute.side_effect = RuntimeError("session execution failed")
+        response = Response.model_construct(
+            output=[
+                ResponseFunctionToolCall(
+                    arguments="{}",
+                    call_id="call-1",
+                    name="COMPOSIO_SEARCH_TOOLS",
+                    type="function_call",
+                )
+            ]
+        )
+
+        with pytest.raises(RuntimeError, match="session execution failed"):
+            provider.handle_tool_calls(response=response, session=session)
+
+    def test_openai_provider_handle_tool_calls_only_first_choice(self):
+        """Only the first choice runs; n > 1 alternatives would orphan tool_call_ids."""
+        from openai.types.chat import ChatCompletion
+        from openai.types.chat.chat_completion import Choice
+        from openai.types.chat.chat_completion_message import ChatCompletionMessage
+        from openai.types.chat.chat_completion_message_tool_call import (
+            ChatCompletionMessageToolCall,
+            Function,
+        )
+
+        mock_client = mock_http_client()
+        from composio.core.provider._openai import OpenAIProvider
+
+        provider = OpenAIProvider()
+
+        Tools(
+            client=mock_client,
+            provider=provider,
+            toolkit_versions={"github": "12012025_00"},
+        )
+
+        github_tool = create_mock_tool("GITHUB_STAR_REPO", "github", "12012025_00")
+        mock_client.tools.retrieve.return_value = github_tool
+
+        mock_execute_response = Mock()
+        mock_execute_response.model_dump.return_value = {
+            "data": {"starred": True},
+            "error": None,
+            "successful": True,
+        }
+        mock_client.tools.execute.return_value = mock_execute_response
+
+        def make_choice(index: int, call_id: str) -> Choice:
+            return Choice(
+                finish_reason="tool_calls",
+                index=index,
+                message=ChatCompletionMessage(
+                    role="assistant",
+                    content=None,
+                    tool_calls=[
+                        ChatCompletionMessageToolCall(
+                            id=call_id,
+                            function=Function(
+                                name="GITHUB_STAR_REPO",
+                                arguments='{"repo": "composio/composio"}',
+                            ),
+                            type="function",
+                        )
+                    ],
+                ),
+            )
+
+        completion = ChatCompletion(
+            id="chatcmpl-123",
+            choices=[make_choice(0, "call_first"), make_choice(1, "call_second")],
+            created=1234567890,
+            model="gpt-4",
+            object="chat.completion",
+        )
+
+        results = provider.handle_tool_calls(
+            user_id="test-user",
+            response=completion,
+        )
+
+        assert len(results) == 1
+        assert mock_client.tools.execute.call_count == 1
+
     def test_openai_provider_wrap_tools(self):
         """Test that OpenAIProvider.wrap_tools creates proper tool definitions."""
         from composio.core.provider._openai import OpenAIProvider
@@ -834,6 +1031,82 @@ class TestLangchainReservedKeywords:
         assert captured == {"from": "2024-01-01"}
 
 
+class TestLangchainFreeFormObjectArguments:
+    """Regression for issue #4064 at the Python provider boundary.
+
+    `LangchainProvider.wrap_tool` builds its `args_schema` from
+    `json_schema_to_model` and re-reads each argument with `getattr`, so a
+    property-less object that validates but drops its content never reaches
+    execution.
+    """
+
+    def _make_tool(self, properties: dict):
+        return Tool(
+            name="Metabase Create Card",
+            slug="METABASE_POST_API_CARD",
+            description="A tool with a free-form object argument",
+            input_parameters={
+                "type": "object",
+                "title": "MetabaseCreateCardRequest",
+                "properties": properties,
+                "required": list(properties),
+            },
+            output_parameters={},
+            available_versions=["12012025_00"],
+            version="12012025_00",
+            scopes=[],
+            toolkit=tool_list_response.ItemToolkit(
+                name="Metabase", slug="metabase", logo=""
+            ),
+            deprecated=tool_list_response.ItemDeprecated(
+                available_versions=["12012025_00"],
+                displayName="Metabase Create Card",
+                version="12012025_00",
+                toolkit=tool_list_response.ItemDeprecatedToolkit(logo=""),
+                is_deprecated=False,
+            ),
+            is_deprecated=False,
+            no_auth=False,
+            tags=[],
+        )
+
+    def test_free_form_object_reaches_execution_intact(self):
+        from composio_langchain import LangchainProvider
+
+        case = find_case("nested-free-form-object")
+        payload = case.instances[0].input
+
+        captured = {}
+
+        def mock_execute(slug, arguments):
+            captured.update(arguments)
+            return {"data": {}, "error": None, "successful": True}
+
+        wrapped = LangchainProvider().wrap_tool(
+            self._make_tool(case.schema_["properties"]), mock_execute
+        )
+        wrapped.run(payload)
+
+        assert captured == payload
+
+    def test_unknown_keys_are_still_rejected_before_execution(self):
+        from composio_langchain import LangchainProvider
+
+        executed = []
+
+        def mock_execute(slug, arguments):
+            executed.append(arguments)
+            return {"data": {}, "error": None, "successful": True}
+
+        wrapped = LangchainProvider().wrap_tool(
+            self._make_tool({"name": {"type": "string"}}), mock_execute
+        )
+
+        with pytest.raises(ValidationError):
+            wrapped.args_schema.model_validate({"name": "a", "typo": 1})
+        assert executed == []
+
+
 class TestProviderEdgeCases:
     """Test edge cases and error handling for providers."""
 
@@ -1039,3 +1312,103 @@ class TestProviderIntegration:
 
         assert result2["successful"] is True
         assert result2["data"]["starred"] is True
+
+
+class TestAgenticSkipDefaultsParity:
+    """Regression: agentic providers must honor skip_defaults in __signature__.
+
+    The langchain and langgraph providers strip schema defaults from
+    args_schema when schema_config={"skip_defaults": True}, but kept the
+    defaults in the function __signature__, so the signature and args_schema
+    disagreed about which optional params were required. They now pass the
+    same skip_default to both, matching the sibling llamaindex provider.
+
+    autogen only builds __signature__ (no args_schema), so it never had the
+    mismatch, but its signature likewise ignored skip_defaults; it is aligned
+    too and checked on the signature alone.
+
+    Provider packages are optional. The shared unit-test job installs langchain
+    and langgraph, while Autogen runs separately because their protobuf
+    requirements conflict. Each case skips via importorskip when its provider
+    is absent.
+    """
+
+    def _make_tool_with_default(self):
+        return Tool(
+            name="Test Tool",
+            slug="TEST_TOOL",
+            description="A tool with a defaulted optional param",
+            input_parameters={
+                "type": "object",
+                "title": "TestToolRequest",
+                "properties": {
+                    "limit": {
+                        "type": "integer",
+                        "description": "Max results",
+                        "default": 5,
+                    },
+                },
+                "required": [],
+            },
+            output_parameters={},
+            available_versions=["12012025_00"],
+            version="12012025_00",
+            scopes=[],
+            toolkit=tool_list_response.ItemToolkit(name="Test", slug="test", logo=""),
+            deprecated=tool_list_response.ItemDeprecated(
+                available_versions=["12012025_00"],
+                displayName="Test Tool",
+                version="12012025_00",
+                toolkit=tool_list_response.ItemDeprecatedToolkit(logo=""),
+                is_deprecated=False,
+            ),
+            is_deprecated=False,
+            no_auth=False,
+            tags=[],
+        )
+
+    def _provider(self, name, schema_config=None):
+        module = pytest.importorskip(f"composio_{name}")
+        provider_cls = getattr(module, f"{name.capitalize()}Provider")
+        return (
+            provider_cls(schema_config=schema_config)
+            if schema_config
+            else provider_cls()
+        )
+
+    @pytest.mark.parametrize("name", ["langchain", "langgraph"])
+    def test_skip_defaults_signature_matches_args_schema(self, name):
+        from inspect import Parameter
+
+        provider = self._provider(name, {"skip_defaults": True})
+        wrapped = provider.wrap_tool(self._make_tool_with_default(), Mock())
+
+        limit = wrapped.func.__signature__.parameters["limit"]
+        assert limit.default is Parameter.empty
+        assert wrapped.args_schema.model_fields["limit"].is_required()
+
+    @pytest.mark.parametrize("name", ["langchain", "langgraph"])
+    def test_default_preserved_without_skip_defaults(self, name):
+        provider = self._provider(name)
+        wrapped = provider.wrap_tool(self._make_tool_with_default(), Mock())
+
+        limit = wrapped.func.__signature__.parameters["limit"]
+        assert limit.default == 5
+        assert not wrapped.args_schema.model_fields["limit"].is_required()
+
+    def test_autogen_signature_honors_skip_defaults(self):
+        from inspect import Parameter
+
+        provider = self._provider("autogen", {"skip_defaults": True})
+        wrapped = provider.wrap_tool(self._make_tool_with_default(), Mock())
+
+        # autogen exposes the wrapped function as `_func` and has no args_schema.
+        limit = wrapped._func.__signature__.parameters["limit"]
+        assert limit.default is Parameter.empty
+
+    def test_autogen_signature_preserves_default(self):
+        provider = self._provider("autogen")
+        wrapped = provider.wrap_tool(self._make_tool_with_default(), Mock())
+
+        limit = wrapped._func.__signature__.parameters["limit"]
+        assert limit.default == 5

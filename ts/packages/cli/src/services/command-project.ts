@@ -1,4 +1,4 @@
-import { Data, Effect, Option } from 'effect';
+import { Data, Effect, Option, Predicate } from 'effect';
 import { ProjectContext } from './project-context';
 import { ComposioUserContext } from './user-context';
 import {
@@ -6,8 +6,6 @@ import {
   findDeveloperProjectByName,
   DeveloperProjectNotFoundError,
   AmbiguousDeveloperProjectNameError,
-  type HttpDecodingError,
-  type HttpServerError,
 } from './composio-clients';
 
 export type ProjectMode = 'consumer' | 'developer';
@@ -15,10 +13,7 @@ export type ProjectMode = 'consumer' | 'developer';
 export type CliProjectType = 'CONSUMER' | 'DEVELOPER';
 
 export type CliProjectResolutionSource =
-  | 'consumer-default'
-  | 'developer-project-name'
-  | 'developer-local-config'
-  | 'developer-explicit';
+  'consumer-default' | 'developer-project-name' | 'developer-local-config' | 'developer-explicit';
 
 export interface ResolvedCommandProject {
   readonly orgId: string;
@@ -29,13 +24,11 @@ export interface ResolvedCommandProject {
   readonly source: CliProjectResolutionSource;
 }
 
-export class MissingDefaultOrgError extends Data.TaggedError(
-  'services/MissingDefaultOrgError'
-)<{}> {}
+export class MissingDefaultOrgError extends Data.TaggedError('services/MissingDefaultOrgError') {}
 
 export class MissingDeveloperProjectError extends Data.TaggedError(
   'services/MissingDeveloperProjectError'
-)<{}> {}
+) {}
 
 const requireDefaultOrg = (orgId: Option.Option<string>) =>
   Option.match(orgId, {
@@ -117,15 +110,7 @@ export const resolveCommandProject = (params: { mode: ProjectMode; projectName?:
       projectType: 'DEVELOPER',
       source: 'developer-local-config',
     } satisfies ResolvedCommandProject;
-  }) as Effect.Effect<
-    ResolvedCommandProject,
-    | MissingDefaultOrgError
-    | MissingDeveloperProjectError
-    | DeveloperProjectNotFoundError
-    | AmbiguousDeveloperProjectNameError
-    | HttpServerError
-    | HttpDecodingError
-  >;
+  });
 
 export const formatResolveCommandProjectError = (error: unknown): Error => {
   if (error instanceof MissingDefaultOrgError) {
@@ -148,11 +133,12 @@ export const formatResolveCommandProjectError = (error: unknown): Error => {
       `Developer project name "${error.projectName}" is ambiguous in org "${error.orgId}". Use an exact unique project name.`
     );
   }
-  if (typeof error === 'object' && error && 'details' in error) {
-    const details = (error as { details?: { message?: string } }).details;
-    if (details?.message) {
-      return new Error(details.message);
-    }
+  if (
+    Predicate.hasProperty(error, 'details') &&
+    Predicate.hasProperty(error.details, 'message') &&
+    Predicate.isString(error.details.message)
+  ) {
+    return new Error(error.details.message);
   }
   if (error instanceof Error) {
     return error;

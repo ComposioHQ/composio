@@ -158,7 +158,7 @@ export function ToolkitsLanding() {
         <div className="flex flex-wrap items-center gap-2">
           <PageActions path="/toolkits" variant="inline" />
           <a
-            href="https://dashboard.composio.dev/~/project/playground"
+            href="https://dashboard.composio.dev/~/project/playground?utm_source=docs&utm_medium=toolkits&utm_campaign=playground"
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center gap-1.5 rounded-md border border-fd-border bg-fd-background px-3 py-1.5 text-sm font-medium text-fd-foreground transition-colors hover:bg-fd-accent"
@@ -181,8 +181,8 @@ export function ToolkitsLanding() {
 
       {/* Cards */}
       <Cards>
-        <Card icon={<ShieldCheck />} title="Composio Managed Auth" href="/toolkits/managed-auth" description="Check which toolkits have managed auth" />
-        <Card icon={<Sparkles />} title="Pro Tools" href="/toolkits/pro-tools" description="Learn about pricing and limits" />
+        <Card icon={<ShieldCheck />} title="Managed OAuth apps" href="/toolkits/managed-auth" description="Check which toolkits have managed OAuth" />
+        <Card icon={<Sparkles />} title="Premium Tools" href="/toolkits/pro-tools" description="Learn about pricing and limits" />
         <Card icon={<Wrench />} title="Meta Tools" href="/toolkits/meta-tools" description="The system tools every session gives your agent" />
       </Cards>
 

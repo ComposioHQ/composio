@@ -1,22 +1,32 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import ComposioClient from '@composio/client';
 import { ToolRouterSessionFilesMount } from '../../src/models/ToolRouterSessionFileMount';
-import { ValidationError } from '../../src/errors';
+import { ComposioBlockedInternalUrlError, ValidationError } from '../../src/errors';
 import { DEFAULT_TOOL_ROUTER_SESSION_FILES_MOUNT_ID } from '../../src/utils/constants';
+
+vi.mock('node:dns/promises', () => ({
+  lookup: vi.fn(),
+}));
+
+// eslint-disable-next-line no-restricted-imports
+import { lookup } from 'node:dns/promises';
+
+const mockLookup = vi.mocked(lookup);
 
 const sessionId = 'trs_session_123';
 
-const createMockClient = () => ({
-  toolRouter: {
-    session: {
-      files: {
-        list: vi.fn(),
-        createUploadURL: vi.fn(),
-        createDownloadURL: vi.fn(),
-        delete: vi.fn(),
-      },
-    },
-  },
-});
+const createMockClient = () => {
+  const client = new ComposioClient({ apiKey: 'test-api-key' });
+  const files = Object.assign(client.toolRouter.session.files, {
+    list: vi.fn<typeof client.toolRouter.session.files.list>(),
+    createUploadURL: vi.fn<typeof client.toolRouter.session.files.createUploadURL>(),
+    createDownloadURL: vi.fn<typeof client.toolRouter.session.files.createDownloadURL>(),
+    delete: vi.fn<typeof client.toolRouter.session.files.delete>(),
+  });
+  const session = Object.assign(client.toolRouter.session, { files });
+  const toolRouter = Object.assign(client.toolRouter, { session });
+  return Object.assign(client, { toolRouter });
+};
 
 describe('ToolRouterSessionFilesMount', () => {
   let mockClient: ReturnType<typeof createMockClient>;
@@ -24,8 +34,13 @@ describe('ToolRouterSessionFilesMount', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    mockLookup.mockReset();
+    // Uploads PUT to a response-supplied `upload_url`, which is now validated
+    // like any other fetch target; resolve test hosts as public by default so
+    // only the tests that care about the guard have to say anything about DNS.
+    mockLookup.mockResolvedValue([{ address: '93.184.216.34', family: 4 }] as never);
     mockClient = createMockClient();
-    filesMount = new ToolRouterSessionFilesMount(mockClient as any, sessionId);
+    filesMount = new ToolRouterSessionFilesMount(mockClient, sessionId);
   });
 
   describe('list', () => {
@@ -209,12 +224,115 @@ describe('ToolRouterSessionFilesMount', () => {
     };
 
     beforeEach(() => {
-      globalThis.fetch = vi.fn().mockImplementation((url: string, init?: RequestInit) => {
-        if (init?.method === 'PUT') {
-          return Promise.resolve({ ok: true });
-        }
-        return Promise.reject(new Error('Unexpected fetch'));
-      }) as unknown as typeof fetch;
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockImplementation((_url: string, init?: RequestInit) => {
+          if (init?.method === 'PUT') {
+            return Promise.resolve({ ok: true });
+          }
+          return Promise.reject(new Error('Unexpected fetch'));
+        })
+      );
+    });
+
+    afterEach(() => vi.unstubAllGlobals());
+
+    it.each([
+      ['loopback', 'http://127.0.0.1/private', '127.0.0.1'],
+      ['cloud metadata', 'http://169.254.169.254/latest/meta-data/', '169.254.169.254'],
+    ])('should block %s URL uploads before fetching', async (_label, url, address) => {
+      mockLookup.mockResolvedValueOnce([{ address, family: 4 }] as never);
+
+      await expect(filesMount.upload(url)).rejects.toBeInstanceOf(ComposioBlockedInternalUrlError);
+
+      expect(fetch).not.toHaveBeenCalled();
+      expect(mockClient.toolRouter.session.files.createUploadURL).not.toHaveBeenCalled();
+      expect(mockClient.toolRouter.session.files.createDownloadURL).not.toHaveBeenCalled();
+    });
+
+    it('should block a public URL that redirects to cloud metadata', async () => {
+      mockLookup
+        .mockResolvedValueOnce([{ address: '93.184.216.34', family: 4 }] as never)
+        .mockResolvedValueOnce([{ address: '169.254.169.254', family: 4 }] as never);
+      vi.mocked(fetch).mockResolvedValueOnce(
+        new Response(null, {
+          status: 302,
+          headers: { location: 'http://169.254.169.254/latest/meta-data/' },
+        })
+      );
+
+      await expect(filesMount.upload('https://public.example/redirect')).rejects.toBeInstanceOf(
+        ComposioBlockedInternalUrlError
+      );
+
+      expect(fetch).toHaveBeenCalledTimes(1);
+      expect(mockClient.toolRouter.session.files.createUploadURL).not.toHaveBeenCalled();
+    });
+
+    it('should release a failed URL response body before throwing', async () => {
+      mockLookup.mockResolvedValue([{ address: '93.184.216.34', family: 4 }] as never);
+      const cancel = vi.fn();
+      const response = new Response(new ReadableStream({ cancel }), {
+        status: 500,
+        statusText: 'Internal Server Error',
+      });
+      vi.mocked(fetch).mockResolvedValueOnce(response);
+
+      await expect(filesMount.upload('https://files.example/failed.txt')).rejects.toThrow(
+        'Failed to fetch file from URL: Internal Server Error'
+      );
+
+      expect(cancel).toHaveBeenCalledOnce();
+      expect(response.bodyUsed).toBe(true);
+      expect(mockClient.toolRouter.session.files.createUploadURL).not.toHaveBeenCalled();
+    });
+
+    it('should fetch and upload a public URL through the SSRF-safe path', async () => {
+      mockLookup.mockResolvedValue([{ address: '93.184.216.34', family: 4 }] as never);
+      vi.mocked(fetch)
+        .mockResolvedValueOnce(
+          new Response('hello', {
+            status: 200,
+            headers: { 'content-type': 'text/plain; charset=utf-8' },
+          })
+        )
+        .mockResolvedValueOnce(new Response(null, { status: 200 }));
+      mockClient.toolRouter.session.files.createUploadURL.mockResolvedValueOnce({
+        ...createUploadURLResponse,
+        mount_relative_path: 'hello.txt',
+      });
+      mockClient.toolRouter.session.files.createDownloadURL.mockResolvedValueOnce({
+        ...createDownloadURLResponse,
+        mount_relative_path: 'hello.txt',
+      });
+
+      const result = await filesMount.upload('https://files.example/hello.txt');
+
+      expect(fetch).toHaveBeenNthCalledWith(
+        1,
+        'https://files.example/hello.txt',
+        expect.objectContaining({ redirect: 'manual' })
+      );
+      expect(result.mountRelativePath).toBe('hello.txt');
+    });
+
+    it('should reject a URL response whose declared size exceeds 100 MiB', async () => {
+      mockLookup.mockResolvedValue([{ address: '93.184.216.34', family: 4 }] as never);
+      vi.mocked(fetch).mockResolvedValueOnce(
+        new Response('small body', {
+          status: 200,
+          headers: {
+            'content-type': 'text/plain',
+            'content-length': String(100 * 1024 * 1024 + 1),
+          },
+        })
+      );
+
+      await expect(filesMount.upload('https://files.example/oversized.txt')).rejects.toThrow(
+        'exceeds maximum allowed size'
+      );
+
+      expect(mockClient.toolRouter.session.files.createUploadURL).not.toHaveBeenCalled();
     });
 
     it('should upload local file and return RemoteFile', async () => {
@@ -250,6 +368,24 @@ describe('ToolRouterSessionFilesMount', () => {
       );
       expect(result.mountRelativePath).toBe(mountRelativePath);
       expect(result.downloadUrl).toBe('https://s3.example.com/presigned');
+    });
+
+    it('should block a response-supplied upload_url that resolves internally', async () => {
+      // The user-supplied URL branch above was already guarded; `upload_url`
+      // comes back from the API and was not. Both are untrusted here, and this
+      // one receives the file's bytes.
+      mockClient.toolRouter.session.files.createUploadURL.mockResolvedValueOnce({
+        ...createUploadURLResponse,
+        upload_url: 'http://metadata.example/upload',
+      });
+      mockLookup.mockResolvedValue([{ address: '169.254.169.254', family: 4 }] as never);
+
+      await expect(
+        filesMount.upload(new File(['data'], 'report.txt', { type: 'text/plain' }))
+      ).rejects.toBeInstanceOf(ComposioBlockedInternalUrlError);
+
+      expect(fetch).not.toHaveBeenCalled();
+      expect(mockClient.toolRouter.session.files.createDownloadURL).not.toHaveBeenCalled();
     });
 
     it('should handle upload response body wrapper', async () => {

@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, type Mock } from 'vitest';
 import { VercelProvider } from '../src';
 import { Tool } from '@composio/core';
 import { tool } from 'ai';
@@ -6,7 +6,7 @@ import { tool } from 'ai';
 // Define an interface for our mocked Vercel tool
 interface MockedVercelTool {
   description: string;
-  inputSchema: any;
+  inputSchema: unknown;
   execute: Function;
   _isMockedVercelTool: boolean;
 }
@@ -27,7 +27,7 @@ vi.mock('ai', () => {
 describe('VercelProvider', () => {
   let provider: VercelProvider;
   let mockTool: Tool;
-  let mockExecuteToolFn: any;
+  let mockExecuteToolFn: Mock;
 
   beforeEach(() => {
     provider = new VercelProvider();
@@ -114,7 +114,11 @@ describe('VercelProvider', () => {
       provider.wrapTool(mockTool, mockExecuteToolFn) as unknown as MockedVercelTool;
 
       // Extract the execute function from the call to tool()
-      const executeFunction = (tool as any).mock.calls[0][0].execute;
+      const executeFunction = (
+        tool as unknown as Mock<
+          (config: { execute: (input: unknown) => Promise<unknown> }) => unknown
+        >
+      ).mock.calls[0][0].execute;
 
       // Test the execute function with an object parameter
       const params = { input: 'test-value' };
@@ -128,6 +132,103 @@ describe('VercelProvider', () => {
       await executeFunction(stringParams);
 
       expect(mockExecuteToolFn).toHaveBeenCalledWith(mockTool.slug, params);
+    });
+
+    it('keeps optional and nested parameters available under strict mode', () => {
+      const strictProvider = new VercelProvider({ strict: true });
+      const wrapped = strictProvider.wrapTool(
+        {
+          ...mockTool,
+          inputParameters: {
+            type: 'object',
+            properties: {
+              cfg: {
+                type: 'object',
+                properties: { url: { type: 'string' }, note: { type: 'string' } },
+                required: ['url'],
+              },
+              id: { type: ['string', 'null'] },
+              label: { type: 'string' },
+            },
+            required: ['cfg', 'id'],
+          },
+        },
+        mockExecuteToolFn
+      ) as unknown as MockedVercelTool;
+
+      const schema = wrapped.inputSchema as { safeParse: (value: unknown) => { success: boolean } };
+
+      // Optional parameters are still accepted, and may be null.
+      expect(
+        schema.safeParse({ cfg: { url: 'https://example.com', note: 'x' }, id: null, label: null })
+          .success
+      ).toBe(true);
+      // Every property is required under strict mode, so omitting one fails.
+      expect(schema.safeParse({ cfg: { url: 'https://example.com' }, id: 'a' }).success).toBe(
+        false
+      );
+      // Objects are closed, so unknown keys fail.
+      expect(
+        schema.safeParse({
+          cfg: { url: 'https://example.com', note: null, extra: 1 },
+          id: 'a',
+          label: null,
+        }).success
+      ).toBe(false);
+    });
+
+    it('omits null arguments before executing under strict mode', async () => {
+      const strictProvider = new VercelProvider({ strict: true });
+      const wrapped = strictProvider.wrapTool(
+        {
+          ...mockTool,
+          inputParameters: {
+            type: 'object',
+            properties: {
+              cfg: {
+                type: 'object',
+                properties: { url: { type: 'string' }, note: { type: 'string' } },
+                required: ['url'],
+              },
+              label: { type: 'string' },
+            },
+            required: ['cfg'],
+          },
+        },
+        mockExecuteToolFn
+      ) as unknown as MockedVercelTool;
+
+      await wrapped.execute(
+        { cfg: { url: 'https://example.com', note: null }, label: null },
+        { toolCallId: 'call_1', messages: [] }
+      );
+
+      expect(mockExecuteToolFn).toHaveBeenCalledWith(mockTool.slug, {
+        cfg: { url: 'https://example.com' },
+      });
+    });
+
+    it('keeps the original schema for tools strict mode cannot express', () => {
+      const strictProvider = new VercelProvider({ strict: true });
+      const wrapped = strictProvider.wrapTool(
+        {
+          ...mockTool,
+          inputParameters: {
+            type: 'object',
+            properties: {
+              headers: { type: 'object', additionalProperties: { type: 'string' } },
+              name: { type: 'string' },
+            },
+            required: ['headers'],
+          },
+        },
+        mockExecuteToolFn
+      ) as unknown as MockedVercelTool;
+
+      const schema = wrapped.inputSchema as { safeParse: (value: unknown) => { success: boolean } };
+
+      // `name` stays optional and `headers` still accepts arbitrary keys.
+      expect(schema.safeParse({ headers: { 'x-a': '1' } }).success).toBe(true);
     });
   });
 

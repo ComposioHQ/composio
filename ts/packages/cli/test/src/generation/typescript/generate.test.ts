@@ -1,4 +1,5 @@
 import { describe, expect, it } from '@effect/vitest';
+import { BunPath } from '@effect/platform-bun';
 import { createToolkitIndex } from 'src/generation/create-toolkit-index';
 import { generateTypeScriptSources } from 'src/generation/typescript/generate';
 import { makeTestToolkits } from 'test/__utils__/models/toolkits';
@@ -67,7 +68,7 @@ describe('generateTypeScriptSources', () => {
         `);
 
           assertTypeScriptIsValid({ files: { './index.ts': source } });
-        })
+        }, Effect.provide(BunPath.layer))
       );
 
       it.effect(
@@ -156,7 +157,7 @@ describe('generateTypeScriptSources', () => {
           assertTypeScriptIsValid({
             files: { './index.ts': sources[1][1], './slack.ts': sources[0][1] },
           });
-        })
+        }, Effect.provide(BunPath.layer))
       );
 
       it.effect(
@@ -247,7 +248,7 @@ describe('generateTypeScriptSources', () => {
           assertTypeScriptIsValid({
             files: { './index.ts': sources[1][1], './slack.ts': sources[0][1] },
           });
-        })
+        }, Effect.provide(BunPath.layer))
       );
     });
   });

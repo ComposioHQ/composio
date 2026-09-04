@@ -13,12 +13,11 @@ interface PageTreeNode {
   url?: string;
   children?: PageTreeNode[];
   index?: PageTreeNode;
-  [key: string]: unknown;
 }
 
 interface PageTreeRoot {
+  name: unknown;
   children: PageTreeNode[];
-  [key: string]: unknown;
 }
 
 /**
@@ -39,7 +38,7 @@ export const HIDDEN_API_TAGS: ReadonlySet<string> = new Set([
 ]);
 
 /** True if a URL points at a hidden tag's pages (v3.1 or v3.0). */
-function isHiddenTagUrl(url: string): boolean {
+export function isHiddenApiTagUrl(url: string): boolean {
   for (const tag of HIDDEN_API_TAGS) {
     if (
       url.startsWith(`/reference/api-reference/${tag}/`) ||
@@ -56,7 +55,7 @@ function isHiddenTagUrl(url: string): boolean {
 /** True if a node (page or folder) belongs entirely to a hidden tag. */
 function isHiddenTagNode(node: PageTreeNode): boolean {
   if (node.type === 'page' && typeof node.url === 'string') {
-    return isHiddenTagUrl(node.url);
+    return isHiddenApiTagUrl(node.url);
   }
   if (node.type === 'folder') {
     if (node.index && isHiddenTagNode(node.index)) return true;
@@ -70,11 +69,11 @@ function isHiddenTagNode(node: PageTreeNode): boolean {
 /** Recursively drops folders/pages whose tag slug is in HIDDEN_API_TAGS. */
 function filterHiddenTags(nodes: PageTreeNode[]): PageTreeNode[] {
   return nodes
-    .filter((node) => !isHiddenTagNode(node))
-    .map((node) =>
+    .filter(node => !isHiddenTagNode(node))
+    .map(node =>
       node.type === 'folder' && node.children
         ? { ...node, children: filterHiddenTags(node.children) }
-        : node,
+        : node
     );
 }
 
@@ -115,19 +114,17 @@ export function prepareTree<T extends PageTreeRoot>(tree: T, version: string): T
     // Just hide the V3 folder
     return {
       ...tree,
-      children: children.filter((node) => !isV3Node(node)),
+      children: children.filter(node => !isV3Node(node)),
     };
   }
 
   // v3.0: lift V3 folder contents, keep version-independent folders (SDK Reference, Meta Tools)
-  const v3Folder = children.find(
-    (node) => node.type === 'folder' && isV3Node(node),
-  );
+  const v3Folder = children.find(node => node.type === 'folder' && isV3Node(node));
 
   // Nodes that should appear in both versions (exclude v3 nodes, v3.1 API Reference folder,
   // and top-level pages which are version-specific — both versions have their own copies)
   const sharedNodes = children.filter(
-    (node) => node.type !== 'page' && !isV3Node(node) && !isV31ApiFolder(node),
+    node => node.type !== 'page' && !isV3Node(node) && !isV31ApiFolder(node)
   );
 
   if (v3Folder?.children) {

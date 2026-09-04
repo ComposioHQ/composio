@@ -1,10 +1,11 @@
 {
   "name": "llamaindex-example",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Example project for Llamaindex",
   "main": "src/index.ts",
   "scripts": {
+    "typecheck": "tsc --noEmit -p ./tsconfig.json",
     "start": "bun src/index.ts",
     "dev": "bun --watch src/index.ts",
     "test": "echo \"Error: no test specified\" && exit 1"
@@ -19,13 +20,14 @@
   "dependencies": {
     "@composio/core": "workspace:*",
     "@composio/llamaindex": "workspace:*",
-    "@llamaindex/openai": "^0.4.20",
-    "@llamaindex/workflow": "^1.1.24",
+    "@llamaindex/openai": "^0.4.23",
+    "@llamaindex/workflow": "^1.1.25",
     "dotenv": "catalog:",
-    "llamaindex": "^0.12.0"
+    "llamaindex": "^0.12.1"
   },
   "devDependencies": {
     "@types/bun": "catalog:",
     "typescript": "catalog:"
-  }
+  },
+  "type": "module"
 }

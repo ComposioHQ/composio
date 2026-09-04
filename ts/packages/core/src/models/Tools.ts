@@ -54,7 +54,11 @@ import { handleToolExecutionError } from '../errors/ToolErrors';
 import type { SessionExecuteParams } from '@composio/client/resources/tool-router/session/session.mjs';
 import { CONFIG_DEFAULTS } from '../utils/config-defaults';
 import { resolveEffectiveUploadAllowlist } from '../utils/fileDirs';
-import { schemaHasFileUploadable } from '../utils/modifiers/FileToolModifier.utils.neutral';
+import {
+  dropEmptyFileUploads,
+  schemaHasFileUploadable,
+} from '../utils/modifiers/FileToolModifier.utils.neutral';
+import { dereferenceJsonSchema } from '../utils/jsonSchema';
 import { ComposioRequestOptions } from '../types/requestOptions.types';
 import { withCancellation } from '../utils/cancellation';
 import { ComposioRequestCancelledError } from '../errors/SDKErrors';
@@ -268,43 +272,13 @@ export class Tools<
     if (requestOptions?.signal?.aborted) {
       throw new ComposioRequestCancelledError();
     }
-    let modifiedParams = params;
-    // if auto upload download files is enabled, upload the files to the Composio API
-    if (this.autoUploadDownloadFiles) {
-      const fileToolModifier = new FileToolModifier(this.client, {
-        ...this.fileUploadPathOptions,
-        beforeFileUpload: modifiers?.beforeFileUpload,
-      });
-      modifiedParams = await fileToolModifier.fileUploadModifier(tool, {
-        toolSlug,
-        toolkitSlug,
-        params: modifiedParams,
-        signal: requestOptions?.signal,
-      });
-      if (requestOptions?.signal?.aborted) {
-        throw new ComposioRequestCancelledError();
-      }
-    } else if (
-      schemaHasFileUploadable(tool.inputParameters) &&
-      !this.warnedAutoUploadDisabledForTool.has(toolSlug)
-    ) {
-      // With auto-upload off, the raw `{ name, mimetype, s3key }` shape is
-      // what the LLM / caller sees on `tool.inputParameters`. LLMs can't
-      // produce a valid `s3key` and will hallucinate one, which then fails
-      // at the staging-lookup step on the backend. Nudge the caller toward
-      // manual staging or opting into auto-upload.
-      this.warnedAutoUploadDisabledForTool.add(toolSlug);
-      logger.warn(
-        `Tool "${toolSlug}" (toolkit "${toolkitSlug}") has a file-uploadable input, but ` +
-          `\`dangerouslyAllowAutoUploadDownloadFiles\` is disabled. The SDK will forward ` +
-          `the file argument as-is; if it isn't already a staged ` +
-          `{ name, mimetype, s3key } descriptor, the backend will reject the call. Either:\n` +
-          `  1) Stage the file yourself: \`const f = await composio.files.upload({ file, toolSlug, toolkitSlug }); ` +
-          `await composio.tools.execute('${toolSlug}', { userId, arguments: { <fileField>: f } })\`, or\n` +
-          `  2) Enable auto-upload with a scoped allowlist: ` +
-          `\`new Composio({ dangerouslyAllowAutoUploadDownloadFiles: true, fileUploadDirs: ['/safe/dir'] })\`.`
-      );
-    }
+    let modifiedParams = await this.applyFileUploadModifiers(
+      tool,
+      { toolSlug, toolkitSlug, params },
+      modifiers?.beforeFileUpload,
+      requestOptions
+    );
+
     // apply the before execute modifiers
     if (modifiers?.beforeExecute) {
       if (typeof modifiers.beforeExecute === 'function') {
@@ -318,6 +292,77 @@ export class Tools<
         }
       } else {
         throw new ComposioInvalidModifierError('Invalid beforeExecute modifier. Not a function.');
+      }
+    }
+    return modifiedParams;
+  }
+
+  /**
+   * Applies schema-aware file preprocessing shared by direct and Tool Router
+   * session execution. This always runs before the caller's `beforeExecute`
+   * hook so the hook observes the exact arguments sent to the backend.
+   */
+  private async applyFileUploadModifiers(
+    tool: Tool,
+    {
+      toolSlug,
+      toolkitSlug,
+      params,
+    }: {
+      toolSlug: string;
+      toolkitSlug: string;
+      params: ToolExecuteParams;
+    },
+    beforeFileUpload?: ExecuteToolModifiers['beforeFileUpload'],
+    requestOptions?: ComposioRequestOptions
+  ): Promise<ToolExecuteParams> {
+    let modifiedParams = params;
+    // if auto upload download files is enabled, upload the files to the Composio API
+    if (this.autoUploadDownloadFiles) {
+      const fileToolModifier = new FileToolModifier(this.client, {
+        ...this.fileUploadPathOptions,
+        beforeFileUpload,
+      });
+      modifiedParams = await fileToolModifier.fileUploadModifier(tool, {
+        toolSlug,
+        toolkitSlug,
+        params: modifiedParams,
+        signal: requestOptions?.signal,
+      });
+      if (requestOptions?.signal?.aborted) {
+        throw new ComposioRequestCancelledError();
+      }
+    } else if (tool.inputParameters && schemaHasFileUploadable(tool.inputParameters)) {
+      // Auto-upload is opt-in, but "no file" must still be sent as an
+      // omitted key rather than `''`, which the backend rejects
+      // (https://github.com/ComposioHQ/composio/issues/4233).
+      if (modifiedParams.arguments) {
+        modifiedParams = {
+          ...modifiedParams,
+          arguments: (await dropEmptyFileUploads(
+            modifiedParams.arguments,
+            dereferenceJsonSchema(tool.inputParameters, { onUnresolved: 'sentinel' })
+          )) as ToolExecuteParams['arguments'],
+        };
+      }
+
+      if (!this.warnedAutoUploadDisabledForTool.has(toolSlug)) {
+        // With auto-upload off, the raw `{ name, mimetype, s3key }` shape is
+        // what the LLM / caller sees on `tool.inputParameters`. LLMs can't
+        // produce a valid `s3key` and will hallucinate one, which then fails
+        // at the staging-lookup step on the backend. Nudge the caller toward
+        // manual staging or opting into auto-upload.
+        this.warnedAutoUploadDisabledForTool.add(toolSlug);
+        logger.warn(
+          `Tool "${toolSlug}" (toolkit "${toolkitSlug}") has a file-uploadable input, but ` +
+            `\`dangerouslyAllowAutoUploadDownloadFiles\` is disabled. The SDK will forward ` +
+            `the file argument as-is; if it isn't already a staged ` +
+            `{ name, mimetype, s3key } descriptor, the backend will reject the call. Either:\n` +
+            `  1) Stage the file yourself: \`const f = await composio.files.upload({ file, toolSlug, toolkitSlug }); ` +
+            `await composio.tools.execute('${toolSlug}', { userId, arguments: { <fileField>: f } })\`, or\n` +
+            `  2) Enable auto-upload with a scoped allowlist: ` +
+            `\`new Composio({ dangerouslyAllowAutoUploadDownloadFiles: true, fileUploadDirs: ['/safe/dir'] })\`.`
+        );
       }
     }
     return modifiedParams;
@@ -470,14 +515,12 @@ export class Tools<
       'important' in queryParams.data ? queryParams.data.important : shouldAutoApplyImportant;
 
     // check if the query params contains atleast one of the following: tools, toolkits, search, authConfigIds
-    if (
-      !(
-        'tools' in queryParams.data ||
-        'toolkits' in queryParams.data ||
-        'search' in queryParams.data ||
-        'authConfigIds' in queryParams.data
-      )
-    ) {
+    if (!(
+      'tools' in queryParams.data ||
+      'toolkits' in queryParams.data ||
+      'search' in queryParams.data ||
+      'authConfigIds' in queryParams.data
+    )) {
       throw new ValidationError(
         'Invalid tool list parameters, atleast one of the following parameters is required: tools, toolkits, search, authConfigIds'
       );
@@ -766,33 +809,44 @@ export class Tools<
     const { signal: _, ...modifiers } = options ?? {};
 
     if (typeof arg2 === 'string') {
-      const tool = await this.getRawComposioToolBySlug(
-        arg2,
-        {
-          modifySchema: options?.modifySchema as TransformToolSchemaModifier,
-        },
-        requestOptions
-      );
-      return this.wrapToolsForProvider(
-        userId,
-        [tool],
-        modifiers as ExecuteToolModifiers
-      ) as TToolCollection;
+      const rawTool = await this.getRawComposioToolBySlug(arg2, undefined, requestOptions);
+      const [tool] = await this.applySchemaModifiers([rawTool], options?.modifySchema);
+      return this.wrapToolsForProvider(userId, [tool], modifiers as ExecuteToolModifiers, [
+        rawTool,
+      ]) as TToolCollection;
     } else {
-      const tools = await this.getRawComposioTools(
-        arg2,
-        {
-          modifySchema: options?.modifySchema as TransformToolSchemaModifier,
-        },
-        requestOptions
-      );
+      const rawTools = await this.getRawComposioTools(arg2, undefined, requestOptions);
+      const tools = await this.applySchemaModifiers(rawTools, options?.modifySchema);
       return this.wrapToolsForProvider(
         userId,
         tools,
-        modifiers as ExecuteToolModifiers
+        modifiers as ExecuteToolModifiers,
+        rawTools
       ) as TToolCollection;
     }
   }
+
+  private async applySchemaModifiers(
+    tools: Tool[],
+    modifier?: TransformToolSchemaModifier
+  ): Promise<Tool[]> {
+    if (modifier && typeof modifier !== 'function') {
+      throw new ComposioInvalidModifierError('Invalid schema modifier. Not a function.');
+    }
+    return Promise.all(
+      tools.map(tool => {
+        const schema = ToolSchema.parse(tool);
+        return modifier
+          ? modifier({
+              toolSlug: tool.slug,
+              toolkitSlug: tool.toolkit?.slug ?? 'unknown',
+              schema,
+            })
+          : schema;
+      })
+    );
+  }
+
   /**
    * @internal
    * Creates a global execute tool function.
@@ -817,14 +871,16 @@ export class Tools<
    * @param userId - The user id to get the tools for
    * @param tools - The tools to wrap
    * @param modifiers - The modifiers to be applied to the tools
+   * @param rawTools - The fetched schemas used during execution
    * @returns The wrapped tools
    */
   wrapToolsForProvider<T extends TProvider>(
     userId: string,
     tools: Tool[],
-    modifiers?: ExecuteToolModifiers
+    modifiers?: ExecuteToolModifiers,
+    rawTools: Tool[] = tools.map(tool => ToolSchema.parse(tool))
   ): ReturnType<T['wrapTools']> {
-    const executeToolFn = this.createExecuteToolFn(userId, modifiers);
+    const executeToolFn = this.createExecuteToolFn(userId, modifiers, rawTools);
     return this.provider.wrapTools(tools, executeToolFn) as ReturnType<T['wrapTools']>;
   }
 
@@ -840,9 +896,10 @@ export class Tools<
   wrapToolsForToolRouter(
     sessionId: string,
     tools: Tool[],
-    modifiers?: SessionExecuteMetaModifiers
+    modifiers?: SessionExecuteMetaModifiers,
+    rawTools: Tool[] = tools.map(tool => ToolSchema.parse(tool))
   ): Tool[] {
-    const executeToolFn = this.createExecuteToolFnForToolRouter(sessionId, tools, modifiers);
+    const executeToolFn = this.createExecuteToolFnForToolRouter(sessionId, rawTools, modifiers);
     return this.provider.wrapTools(tools, executeToolFn) as Tool[];
   }
 
@@ -854,21 +911,27 @@ export class Tools<
    *
    * @param {string} userId - The user id
    * @param {ExecuteToolModifiers} modifiers - The modifiers to be applied to the tool
+   * @param {Tool[]} tools - The fetched tools available to the provider
    * @returns {ExecuteToolFn} The execute tool function
    */
-  private createExecuteToolFn(userId: string, modifiers?: ExecuteToolModifiers): ExecuteToolFn {
+  private createExecuteToolFn(
+    userId: string,
+    modifiers: ExecuteToolModifiers | undefined,
+    tools: Tool[]
+  ): ExecuteToolFn {
+    const toolBySlug = new Map(tools.map(tool => [tool.slug.toUpperCase(), tool]));
     const executeToolFn = async (toolSlug: string, input: Record<string, unknown>) => {
-      return await this.execute(
-        toolSlug,
-        {
-          userId,
-          arguments: input,
-          // dangerously skip version check for agentic tool execution via providers
-          // this can be safe because most agentic flows users fetch latest version and then execute the tool
-          dangerouslySkipVersionCheck: true,
-        },
-        modifiers
-      );
+      const body: ToolExecuteParams = {
+        userId,
+        arguments: input,
+        // dangerously skip version check for agentic tool execution via providers
+        // this can be safe because most agentic flows users fetch latest version and then execute the tool
+        dangerouslySkipVersionCheck: true,
+      };
+      const tool = toolBySlug.get(toolSlug.toUpperCase());
+      return tool
+        ? this.executeWithTool(toolSlug, this.parseToolExecuteParams(body), modifiers, tool)
+        : this.execute(toolSlug, body, modifiers);
     };
     return executeToolFn;
   }
@@ -961,6 +1024,52 @@ export class Tools<
     }
   }
 
+  private async executeWithTool(
+    slug: string,
+    body: ToolExecuteParams,
+    options: (ExecuteToolModifiers & ComposioRequestOptions) | undefined,
+    tool: Tool
+  ): Promise<ToolExecuteResponse> {
+    const requestOptions: ComposioRequestOptions | undefined =
+      options?.signal != null ? { signal: options.signal } : undefined;
+    const { signal: _, ...modifiers } = options ?? {};
+    const toolkitSlug = tool.toolkit?.slug ?? 'unknown';
+
+    const params = await this.applyBeforeExecuteModifiers(
+      tool,
+      {
+        toolSlug: slug,
+        toolkitSlug,
+        params: body,
+      },
+      modifiers as ExecuteToolModifiers,
+      requestOptions
+    );
+
+    let result = await this.executeComposioTool(tool, params, requestOptions);
+
+    result = await this.applyAfterExecuteModifiers(
+      tool,
+      {
+        toolSlug: slug,
+        toolkitSlug,
+        result,
+      },
+      (modifiers as ExecuteToolModifiers).afterExecute,
+      requestOptions
+    );
+
+    return result;
+  }
+
+  private parseToolExecuteParams(body: ToolExecuteParams): ToolExecuteParams {
+    const executeParams = ToolExecuteParamsSchema.safeParse(body);
+    if (!executeParams.success) {
+      throw new ValidationError('Invalid tool execute parameters', { cause: executeParams.error });
+    }
+    return executeParams.data;
+  }
+
   /**
    * Executes a given tool with the provided parameters.
    *
@@ -1046,51 +1155,19 @@ export class Tools<
     body: ToolExecuteParams,
     options?: ExecuteToolModifiers & ComposioRequestOptions
   ): Promise<ToolExecuteResponse> {
-    const executeParams = ToolExecuteParamsSchema.safeParse(body);
-    if (!executeParams.success) {
-      throw new ValidationError('Invalid tool execute parameters', { cause: executeParams.error });
-    }
+    const executeParams = this.parseToolExecuteParams(body);
 
     const requestOptions: ComposioRequestOptions | undefined =
       options?.signal != null ? { signal: options.signal } : undefined;
-    const { signal: _, ...modifiers } = options ?? {};
 
     const tool = await this.getRawComposioToolBySlug(
       slug,
       {
-        version: body.version,
+        version: executeParams.version,
       },
       requestOptions
     );
-    const toolkitSlug = tool.toolkit?.slug ?? 'unknown';
-
-    // Apply before execute modifiers
-    const params = await this.applyBeforeExecuteModifiers(
-      tool,
-      {
-        toolSlug: slug,
-        toolkitSlug,
-        params: executeParams.data,
-      },
-      modifiers as ExecuteToolModifiers,
-      requestOptions
-    );
-
-    let result = await this.executeComposioTool(tool, params, requestOptions);
-
-    // Apply after execute modifiers
-    result = await this.applyAfterExecuteModifiers(
-      tool,
-      {
-        toolSlug: slug,
-        toolkitSlug,
-        result,
-      },
-      (modifiers as ExecuteToolModifiers).afterExecute,
-      requestOptions
-    );
-
-    return result;
+    return this.executeWithTool(slug, executeParams, options, tool);
   }
 
   /**
@@ -1119,9 +1196,25 @@ export class Tools<
       });
     }
 
-    // Apply beforeExecute modifier if provided
     let modifiedParams = body.arguments ?? {};
     const toolkitSlug = tool?.toolkit?.slug ?? 'composio';
+
+    if (tool) {
+      const fileModifiedParams = await this.applyFileUploadModifiers(
+        tool,
+        {
+          toolSlug,
+          toolkitSlug,
+          params: { arguments: modifiedParams },
+        },
+        undefined,
+        requestOptions
+      );
+      modifiedParams = fileModifiedParams.arguments ?? {};
+    }
+
+    // Apply beforeExecute modifier after file preprocessing so the hook sees
+    // the same arguments that will be sent to the Tool Router.
     if (modifiers?.beforeExecute) {
       modifiedParams = await modifiers.beforeExecute({
         toolSlug,
@@ -1277,6 +1370,7 @@ export class Tools<
        * @deprecated The `customConnectionData` proxy param is deprecated and will be
        * removed in a future release. Use `customAuthParams` instead.
        */
+      // oxlint-disable-next-line typescript/ban-ts-comment -- generated client versions disagree about this deprecated field
       // @ts-ignore
       custom_connection_data: toolProxyParams.data.customConnectionData,
     } as ComposioToolProxyParams;

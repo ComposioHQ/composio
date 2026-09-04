@@ -1,13 +1,19 @@
-import { describe, it, expect } from 'vitest';
+import { afterEach, describe, it, expect, vi } from 'vitest';
 import * as path from 'node:path';
 import * as os from 'node:os';
 import { mkdtempSync, writeFileSync, symlinkSync, rmSync, mkdirSync } from 'node:fs';
 import {
   assertSafeFileUploadPath,
   isBlockedSensitiveFileUploadPath,
-} from '../../src/utils/sensitiveFileUploadPaths.node';
+} from '../../src/utils/sensitiveFileUploadPaths';
+import { platform } from '../../src/platform/node';
+import * as publicApi from '../../src';
 
 describe('sensitiveFileUploadPaths', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   it('allows normal project files', () => {
     const p = path.join('/tmp', 'composio-test', 'document.pdf');
     expect(isBlockedSensitiveFileUploadPath(p)).toBe(false);
@@ -48,6 +54,31 @@ describe('sensitiveFileUploadPaths', () => {
     );
   });
 
+  it('matches deny segments without case on a case-insensitive filesystem', () => {
+    vi.spyOn(platform, 'isFileSystemCaseSensitive').mockReturnValue(false);
+
+    expect(isBlockedSensitiveFileUploadPath('/Users/me/.Kube/config')).toBe(true);
+    expect(isBlockedSensitiveFileUploadPath('/data/Secrets/x.txt', ['secrets'])).toBe(true);
+  });
+
+  it('preserves distinct segment casing on a case-sensitive filesystem', () => {
+    vi.spyOn(platform, 'isFileSystemCaseSensitive').mockReturnValue(true);
+
+    expect(isBlockedSensitiveFileUploadPath('/home/me/.kube/config')).toBe(true);
+    expect(isBlockedSensitiveFileUploadPath('/home/me/.Kube/config')).toBe(false);
+    expect(isBlockedSensitiveFileUploadPath('/data/secrets/x.txt', ['secrets'])).toBe(true);
+    expect(isBlockedSensitiveFileUploadPath('/data/Secrets/x.txt', ['secrets'])).toBe(false);
+  });
+
+  it('is re-exported from the package root for downstream consumers (e.g. @composio/cli)', () => {
+    // The CLI imports the guard from `@composio/core` to share this one denylist
+    // (issue #3746). Lock the public surface so a refactor cannot silently drop it.
+    expect(typeof publicApi.assertSafeFileUploadPath).toBe('function');
+    expect(typeof publicApi.isBlockedSensitiveFileUploadPath).toBe('function');
+    expect(Array.isArray(publicApi.BUILTIN_FILE_UPLOAD_PATH_DENY_SEGMENTS)).toBe(true);
+    expect(publicApi.BUILTIN_FILE_UPLOAD_PATH_DENY_SEGMENTS).toContain('.ssh');
+  });
+
   it('blocks after realpath resolves a symlink into a sensitive directory', () => {
     const root = mkdtempSync(path.join(os.tmpdir(), 'composio-symlink-'));
     try {
@@ -58,6 +89,64 @@ describe('sensitiveFileUploadPaths', () => {
       const link = path.join(root, 'innocent-name');
       symlinkSync(target, link);
       expect(isBlockedSensitiveFileUploadPath(link)).toBe(true);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  // The inverse of the case above: realpath moves the denied segment *out* of
+  // the path instead of into it. Dotfile managers (chezmoi, stow, yadm) and
+  // containerised home directories lay `~/.claude -> /state/claude` out exactly
+  // this way, so matching only the resolved path turned the denylist off for
+  // them.
+  it('blocks a sensitive directory that is itself a symlink to a plain path', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'composio-symlink-dir-'));
+    try {
+      const store = path.join(root, 'state', 'claude');
+      mkdirSync(store, { recursive: true });
+      writeFileSync(path.join(store, 'settings.json'), '{}');
+      const home = path.join(root, 'home');
+      mkdirSync(home, { recursive: true });
+      const link = path.join(home, '.claude');
+      symlinkSync(store, link);
+
+      expect(isBlockedSensitiveFileUploadPath(path.join(link, 'settings.json'))).toBe(true);
+      expect(() => assertSafeFileUploadPath(path.join(link, 'settings.json'))).toThrow();
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  // Same hiding trick applied to the basename rather than a directory segment:
+  // the written name is `.env`, the resolved one is not.
+  it('blocks a denied basename whose symlink target is named innocuously', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'composio-symlink-base-'));
+    try {
+      const store = path.join(root, 'store');
+      mkdirSync(store, { recursive: true });
+      const target = path.join(store, 'plain-config');
+      writeFileSync(target, 'SECRET=1');
+      const project = path.join(root, 'project');
+      mkdirSync(project, { recursive: true });
+      const link = path.join(project, '.env');
+      symlinkSync(target, link);
+
+      expect(isBlockedSensitiveFileUploadPath(link)).toBe(true);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('still allows an ordinary file reached through a symlinked directory', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'composio-symlink-ok-'));
+    try {
+      const store = path.join(root, 'store');
+      mkdirSync(store, { recursive: true });
+      writeFileSync(path.join(store, 'document.pdf'), 'x');
+      const link = path.join(root, 'docs');
+      symlinkSync(store, link);
+
+      expect(isBlockedSensitiveFileUploadPath(path.join(link, 'document.pdf'))).toBe(false);
     } finally {
       rmSync(root, { recursive: true, force: true });
     }

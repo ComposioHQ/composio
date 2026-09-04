@@ -1,0 +1,188 @@
+import { describe, it, expect } from 'vitest';
+import { redactSensitiveText } from '../../src/telemetry/redact';
+
+describe('redactSensitiveText', () => {
+  it('returns empty/undefined input unchanged', () => {
+    expect(redactSensitiveText(undefined)).toBeUndefined();
+    expect(redactSensitiveText('')).toBe('');
+  });
+
+  it('redacts URL query strings while keeping the path', () => {
+    const out = redactSensitiveText(
+      'Failed to PUT https://s3.amazonaws.com/bucket/key?X-Amz-Signature=deadbeef&token=abc'
+    );
+    expect(out).toContain('https://s3.amazonaws.com/bucket/key?[REDACTED]');
+    expect(out).not.toContain('deadbeef');
+    expect(out).not.toContain('token=abc');
+  });
+
+  it('redacts Authorization bearer/basic credentials', () => {
+    const auth = redactSensitiveText('Authorization: Bearer sk-live-1234567890')!;
+    expect(auth).toContain('[REDACTED]');
+    expect(auth).not.toContain('sk-live-1234567890');
+    expect(redactSensitiveText('used Basic dXNlcjpwYXNz here')).toBe('used Basic [REDACTED] here');
+  });
+
+  it('redacts secret-like key/value pairs', () => {
+    for (const sample of [
+      'api_key=ck_abcdef123456',
+      'x-api-key: "ck_secretvalue"',
+      "client_secret: 'topsecret'",
+      'password=hunter2',
+      'access_token=ya29.a0Afoobar',
+      'auth=app_key:pusher_signature',
+    ]) {
+      const out = redactSensitiveText(sample)!;
+      expect(out, sample).toContain('[REDACTED]');
+      expect(out, sample).not.toMatch(/ck_abcdef123456|ck_secretvalue|topsecret|hunter2|ya29/);
+    }
+  });
+
+  it('preserves quotes around redacted values', () => {
+    expect(redactSensitiveText('x-api-key: "ck_secretvalue"')).toContain('"[REDACTED]"');
+  });
+
+  // Serialized payloads are the common shape in error text: the key's own
+  // closing quote sits between the name and the colon, so a pattern anchored on
+  // `name` followed directly by `:` never matches.
+  it('redacts secrets inside JSON payloads', () => {
+    for (const [sample, secret] of [
+      ['{"api_key": "ck_live_abc123"}', 'ck_live_abc123'],
+      ['{"api_key":"ck_live_abc123"}', 'ck_live_abc123'],
+      ['{"api_key" : "ck_live_abc123"}', 'ck_live_abc123'],
+      ['{"refresh_token":"rt-abc.def-123"}', 'rt-abc.def-123'],
+      ['{"auth":"app_key:pusher_signature"}', 'app_key:pusher_signature'],
+      ['{"COMPOSIO_API_KEY":"prefixed-double-secret"}', 'prefixed-double-secret'],
+      [`{'OPENAI_API_KEY': 'prefixed single secret'}`, 'prefixed single secret'],
+      ['{"x-api-key":"ck_hdr","user":"bob"}', 'ck_hdr'],
+      [`{'client_secret': 'cs_live_abc123'}`, 'cs_live_abc123'],
+      ['{"password": "hunter2"}', 'hunter2'],
+      ['{"password": "correct horse battery staple"}', 'correct horse battery staple'],
+      [`{'client_secret': 'multi word secret'}`, 'multi word secret'],
+    ] as const) {
+      const out = redactSensitiveText(sample)!;
+      expect(out, sample).toContain('[REDACTED]');
+      expect(out, sample).not.toContain(secret);
+    }
+  });
+
+  it('redacts a secret in a serialized error payload while keeping context', () => {
+    const out = redactSensitiveText(
+      'Error executing tool: request body was rejected: ' +
+        '{"toolkit": "GMAIL", "arguments": {"api_key": "ck_live_CUSTOMER", "to": "x@y.z"}}'
+    )!;
+    expect(out).not.toContain('ck_live_CUSTOMER');
+    expect(out).toContain('GMAIL');
+  });
+
+  it('preserves JSON keys and quoting, replacing only the value', () => {
+    expect(redactSensitiveText('{"api_key": "ck_live_abc123"}')).toBe('{"api_key": "[REDACTED]"}');
+    expect(redactSensitiveText('{"api_key":"secret","user":"bob"}')).toBe(
+      '{"api_key":"[REDACTED]","user":"bob"}'
+    );
+  });
+
+  it('redacts escaped quoted secrets in serialized messages', () => {
+    const source = JSON.stringify({ error: 'password: "secret"' });
+    const expected = JSON.stringify({ error: 'password: "[REDACTED]"' });
+    expect(redactSensitiveText(source)).toBe(expected);
+    expect(redactSensitiveText("password: \\'secret\\'")).toBe("password: \\'[REDACTED]\\'");
+
+    const doubleEncoded = JSON.stringify({ body: JSON.stringify({ api_key: 'secret' }) });
+    const doubleEncodedExpected = JSON.stringify({
+      body: JSON.stringify({ api_key: '[REDACTED]' }),
+    });
+    expect(redactSensitiveText(doubleEncoded)).toBe(doubleEncodedExpected);
+  });
+
+  it('preserves serialized adjacent keys with escapes', () => {
+    const source = JSON.stringify({
+      error: 'unknown field auth:',
+      'quoted"key': 'safe',
+      'path\\key': 'safe',
+    });
+    expect(redactSensitiveText(source)).toBe(source);
+  });
+
+  it('redacts unquoted secrets containing backslashes', () => {
+    expect(redactSensitiveText('password=abc\\def')).toBe('password=[REDACTED]');
+    expect(redactSensitiveText('password=\\leading')).toBe('password=[REDACTED]');
+  });
+
+  it('redacts many quoted secrets in one pass', () => {
+    const source = Array.from({ length: 1_000 }, (_, index) => `password: "secret-${index}"`).join(
+      ' '
+    );
+    const expected = Array.from({ length: 1_000 }, () => 'password: "[REDACTED]"').join(' ');
+    expect(redactSensitiveText(source)).toBe(expected);
+  });
+
+  it('leaves a key name with no attached value untouched', () => {
+    for (const benign of [
+      'the password field is required',
+      'no separator here "api_key" and nothing else',
+    ]) {
+      expect(redactSensitiveText(benign), benign).toBe(benign);
+    }
+  });
+
+  it('leaves benign error text untouched', () => {
+    const benign = 'TypeError: cannot read property foo of undefined at Object.<anonymous>';
+    expect(redactSensitiveText(benign)).toBe(benign);
+  });
+
+  // Underscore before api_key is a word char, so a leading \b would miss these.
+  it('redacts env-style prefixed API keys', () => {
+    for (const [sample, secret] of [
+      ['COMPOSIO_API_KEY=sk_live_9f3c', 'sk_live_9f3c'],
+      ['OPENAI_API_KEY=sk_live_9f3c', 'sk_live_9f3c'],
+      ['export COMPOSIO_API_KEY="sk_live_9f3c"', 'sk_live_9f3c'],
+    ] as const) {
+      const out = redactSensitiveText(sample)!;
+      expect(out, sample).toContain('[REDACTED]');
+      expect(out, sample).not.toContain(secret);
+    }
+  });
+
+  it('does not match a secret name embedded in letters', () => {
+    expect(redactSensitiveText('myapikey=sk_live_9f3c')).toBe('myapikey=sk_live_9f3c');
+  });
+
+  it('does not consume adjacent fields after key-like text', () => {
+    for (const benign of [
+      '{"error": "unknown field auth:", "user": "bob"}',
+      `{'note': 'unknown field auth:', "user": 'bob'}`,
+      '{"error": "unknown field auth:", "$schema": "safe"}',
+      '{"error": "unknown field auth:", "@type": "safe"}',
+      '{"error": "unknown field auth:", "üser": "safe"}',
+      '{"error": "unknown field auth:", ".well-known": "safe"}',
+      '{"error": "unknown field auth:", ":type": "safe"}',
+      '{"error": "unknown field auth:", "?field": "safe"}',
+    ]) {
+      expect(redactSensitiveText(benign), benign).toBe(benign);
+    }
+  });
+
+  it('redacts bare quoted values before punctuation or prose', () => {
+    for (const [sample, secret] of [
+      ['password: "punctuated secret";', 'punctuated secret'],
+      ["client_secret='period secret'.", 'period secret'],
+      ['api_key = "prose secret" followed by context', 'prose secret'],
+      ['password: "escaped \\"secret\\" value"', 'escaped \\"secret\\" value'],
+      [`can't connect password: "secret"`, 'secret'],
+      [`users' password: "secret"`, 'secret'],
+      [`Chris' password: "secret"`, 'secret'],
+      [`Andrés' password: "secret"`, 'secret'],
+      [`{"error":"request failed password: 'secret'"}`, 'secret'],
+      ['5" from target password: "secret"', 'secret'],
+      ['unmatched " before password: "secret"', 'secret'],
+      ["unmatched ' before password: 'secret'", 'secret'],
+      ['password: "}abc"', '}abc'],
+      ['api_key: ",abc"', ',abc'],
+    ] as const) {
+      const out = redactSensitiveText(sample)!;
+      expect(out, sample).toContain('[REDACTED]');
+      expect(out, sample).not.toContain(secret);
+    }
+  });
+});

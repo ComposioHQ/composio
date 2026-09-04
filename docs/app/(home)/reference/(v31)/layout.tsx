@@ -2,6 +2,8 @@ import { getReferenceSource } from '@/lib/source';
 import { DocsLayout } from 'fumadocs-ui/layouts/docs';
 import type { ReactNode } from 'react';
 import { prepareTree } from '@/lib/filter-api-version';
+import { buildSidebarNavIndex } from '@/lib/sidebar-nav-index';
+import { SidebarAnalytics } from '@/components/sidebar-analytics';
 
 export default async function Layout({ children }: { children: ReactNode }) {
   const source = await getReferenceSource();
@@ -9,7 +11,7 @@ export default async function Layout({ children }: { children: ReactNode }) {
   const changelogPage = { type: 'page' as const, name: 'Changelog', url: '/reference/changelog' };
   // Pin Changelog directly beneath Overview (the first/top entry) in the sidebar.
   const overviewIdx = tree.children.findIndex(
-    (child: { type: string; name?: string }) => child.type === 'page' && child.name === 'Overview'
+    child => child.type === 'page' && child.name === 'Overview'
   );
   const insertIdx = overviewIdx === -1 ? Math.min(1, tree.children.length) : overviewIdx + 1;
   const pageTree = {
@@ -20,6 +22,7 @@ export default async function Layout({ children }: { children: ReactNode }) {
       ...tree.children.slice(insertIdx),
     ] as typeof tree.children,
   };
+  const navIndex = buildSidebarNavIndex(pageTree);
 
   return (
     <DocsLayout
@@ -29,6 +32,7 @@ export default async function Layout({ children }: { children: ReactNode }) {
       sidebar={{ collapsible: false, footer: null, tabs: false }}
       themeSwitch={{ enabled: false }}
     >
+      <SidebarAnalytics index={navIndex} />
       {children}
     </DocsLayout>
   );

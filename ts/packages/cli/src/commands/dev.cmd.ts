@@ -10,7 +10,7 @@ import { connectedAccountsCmd } from './connected-accounts/connected-accounts.cm
 import { triggersCmd } from './triggers/triggers.cmd';
 import { projectsCmd } from './projects/projects.cmd';
 import { devNativeUiCmd } from './dev/dev.native-ui.cmd';
-import { ComposioCliUserConfig, resolveCliConfigPathSync } from 'src/services/cli-user-config';
+import { ComposioCliUserConfig, resolveCliConfigPath } from 'src/services/cli-user-config';
 import { Stdin } from 'src/services/stdin';
 import { TerminalUI } from 'src/services/terminal-ui';
 import type { CommandVisibility } from './feature-tags';
@@ -20,7 +20,7 @@ const devMode = Options.choice('mode', ['on', 'off'] as const).pipe(
   Options.optional
 );
 
-const devSubcommands = [
+export const devSubcommands = [
   initCmd,
   devToolsCmd$Execute,
   triggersCmd$Listen,
@@ -51,9 +51,10 @@ const applyDeveloperModeChange = (enabled: boolean) =>
 
     if (enabled) {
       if (!stdin.isTTY()) {
+        const configPath = yield* resolveCliConfigPath;
         yield* ui.log.error('Enabling developer mode requires an interactive terminal.');
         yield* ui.log.step(
-          `Set "developer.enabled": true manually in ${resolveCliConfigPathSync()} if you really want to enable it outside an interactive session.`
+          `Set "developer.enabled": true manually in ${configPath} if you really want to enable it outside an interactive session.`
         );
         return;
       }
@@ -85,7 +86,8 @@ const applyDeveloperModeChange = (enabled: boolean) =>
         ? 'Developer mode enabled.'
         : 'Developer mode disabled. Only `composio dev --mode on|off` remains available.'
     );
-    yield* ui.log.step(`Config updated: ${resolveCliConfigPathSync()}`);
+    const configPath = yield* resolveCliConfigPath;
+    yield* ui.log.step(`Config updated: ${configPath}`);
   });
 
 const promptForDeveloperMode = () =>

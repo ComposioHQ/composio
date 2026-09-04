@@ -7,7 +7,7 @@ legacy: true
 ---
 
 <Callout type="info">
-If you're building an agent, we recommend using [sessions](/docs/configuring-sessions) instead. See [Managing multiple connected accounts](/docs/managing-multiple-connected-accounts) for how sessions handle account selection automatically.
+If you're building an agent, we recommend using [sessions](/docs/configuring-sessions) instead. See [Managing multiple connected accounts](/docs/authentication/managing-multiple-connected-accounts) for how sessions handle account selection automatically.
 </Callout>
 
 Connected accounts are authenticated connections between your users and toolkits. After users authenticate (see [Authenticating tools](/docs/tools-direct/authenticating-tools)), you can manage these accounts throughout their lifecycle.
@@ -238,30 +238,14 @@ Values shorter than 4 characters are replaced with `REDACTED`.
 
 This applies to the Get Connected Account and List Connected Accounts endpoints.
 
-### Disabling masking
-
-If you need full credential values (e.g., to use tokens in your own API calls), disable masking via either:
-
-1. **Dashboard**: Go to **Settings → Project Settings → Project Configuration** and turn off "Mask Connected Account Secrets"
-2. **API**:
-
-```bash
-curl -X PATCH https://backend.composio.dev/api/v3.1/org/project/config \
-  -H "x-api-key: YOUR_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{"mask_secret_keys_in_connected_account": false}'
-```
-
-<Callout type="warn">
-Disabling masking exposes full credentials in API responses. Only disable this if your application needs direct access to tokens and you have appropriate security measures in place.
-</Callout>
+If your use case requires calling a provider API directly, use [Proxy execute](/docs/extending-sessions/proxy-execute). Composio injects the connected account's credentials server-side.
 
 ## Multiple accounts
 
 Users can connect multiple accounts for the same toolkit (e.g., personal and work Gmail).
 
 <Callout type="warn">
-**For Composio-managed OAuth, use `link()`.** The `initiate()` examples below no longer work for Composio-managed OAuth auth configs after the **2026-05-08** (new orgs) / **2026-07-03** (all orgs) cutover. `link()` provides hosted authentication, allows multiple accounts by default, and is unaffected by the retirement. See [Connect Link authentication](/docs/tools-direct/authenticating-tools#hosted-authentication-connect-link), the [migration guide](/docs/auth-configuration/migrating-initiate-to-link), or the [changelog entry](/docs/changelog/2026/04/24).
+**For Composio-managed OAuth, use `link()`.** The `initiate()` examples below no longer work for Composio-managed OAuth auth configs after the **2026-05-08** (new orgs) / **2026-07-03** (all orgs) cutover. `link()` provides hosted authentication and is unaffected by the retirement. Like `initiate()`, it refuses to create a second active connection for the same user and auth config unless you pass `allow_multiple=True` (Python) or `allowMultiple: true` (TypeScript). See [Connect Link authentication](/docs/tools-direct/authenticating-tools#hosted-authentication-connect-link), the [migration guide](/docs/auth-configuration/migrating-initiate-to-link), or the [changelog entry](/docs/changelog/2026/04/24).
 
 The `initiate()` examples remain accurate for **custom auth configs** (your own OAuth app) and **non-OAuth schemes** (API key, bearer, basic) — those are unaffected.
 </Callout>
@@ -335,7 +319,7 @@ try {
 </Tabs>
 
 <Callout type="info">
-For session-based apps, see [Managing multiple connected accounts](/docs/managing-multiple-connected-accounts) for how to pass a specific account to a session.
+For session-based apps, see [Managing multiple connected accounts](/docs/authentication/managing-multiple-connected-accounts) for how to pass a specific account to a session.
 </Callout>
 
 ### Execute with a specific account

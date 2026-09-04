@@ -4,6 +4,7 @@ import base64
 import hashlib
 import hmac
 import json
+import threading
 import time
 from datetime import datetime, timezone
 from unittest.mock import Mock, patch
@@ -15,9 +16,11 @@ from composio_client import NotFoundError, omit
 from composio import exceptions
 from composio.core.models.triggers import (
     _MAX_LOGGED_FRAME_CHARS,
+    ComposioSDKTimeoutError,
     Triggers,
     TriggerSubscription,
     WebhookVersion,
+    _SubcriptionBuilder,
     _truncate_frame,
 )
 
@@ -1584,3 +1587,205 @@ class TestTriggerSubscriptionParsing:
         assert len(truncated) < len(long)
         assert truncated.startswith("y" * _MAX_LOGGED_FRAME_CHARS)
         assert str(len(long)) in truncated
+
+
+class TestChunkedEventResilience:
+    """A malformed chunked frame must never tear down the subscription.
+
+    ``_handle_chunked_events`` is bound directly as a pysher channel callback,
+    and pysher invokes bound callbacks without a try/except. Before the fix,
+    any malformed frame (bad JSON, missing key, wrong type) propagated up and
+    killed the subscription — the same failure mode already guarded against in
+    ``_parse_payload``.
+    """
+
+    @pytest.fixture
+    def subscription(self):
+        """Create a TriggerSubscription with a mock client."""
+        return TriggerSubscription(client=Mock())
+
+    def test_malformed_json_does_not_raise(self, subscription):
+        """A non-JSON frame is logged and skipped, not raised."""
+        # Must not raise — pysher's dispatch loop has no try/except.
+        subscription._handle_chunked_events("not valid json {")
+        # No chunks were buffered for the bad frame.
+        assert subscription._chunks == {}
+
+    @pytest.mark.parametrize(
+        "event",
+        [
+            [],
+            {"id": "evt-1", "index": 0},
+            {"id": [], "index": 0, "chunk": "x", "final": True},
+            {"id": "evt-1", "index": "zero", "chunk": "x", "final": True},
+            {"id": "evt-1", "index": True, "chunk": "x", "final": True},
+            {"id": "evt-1", "index": 0, "chunk": 1, "final": True},
+            {"id": "evt-1", "index": 0, "chunk": "x", "final": "true"},
+        ],
+    )
+    def test_invalid_frame_is_skipped(self, subscription, event):
+        """Missing or wrongly typed fields are skipped without dispatching."""
+        with patch.object(subscription, "_handle_event") as mock_handle:
+            subscription._handle_chunked_events(json.dumps(event))
+
+        mock_handle.assert_not_called()
+        assert subscription._chunks == {}
+
+    def test_decoder_failure_does_not_raise(self, subscription):
+        """Unexpected decoder failures are contained at the callback boundary."""
+        with patch(
+            "composio.core.models.triggers.json.loads", side_effect=RecursionError
+        ):
+            subscription._handle_chunked_events("[]")
+
+        assert subscription._chunks == {}
+
+    def test_valid_chunks_reassemble_after_bad_frame_for_same_id(self, subscription):
+        """A bad frame clears partial state so the same id can be reused."""
+        with patch.object(subscription, "_handle_event") as mock_handle:
+            subscription._handle_chunked_events(
+                json.dumps(
+                    {"id": "evt-1", "index": 0, "chunk": "stale", "final": False}
+                )
+            )
+            subscription._handle_chunked_events(
+                json.dumps(
+                    {"id": "evt-1", "index": "bad", "chunk": "x", "final": False}
+                )
+            )
+            subscription._handle_chunked_events(
+                json.dumps({"id": "evt-1", "index": 0, "chunk": "hel", "final": False})
+            )
+            subscription._handle_chunked_events(
+                json.dumps({"id": "evt-1", "index": 1, "chunk": "lo", "final": True})
+            )
+
+        mock_handle.assert_called_once_with(event="hello")
+        assert subscription._chunks == {}
+
+
+class TestTriggerSubscriptionStop:
+    """Tests for TriggerSubscription.stop lifecycle handling."""
+
+    @pytest.fixture
+    def subscription(self):
+        """Create a TriggerSubscription with a mock client."""
+        sub = TriggerSubscription(client=Mock())
+        sub._alive = True
+        return sub
+
+    def test_stop_clears_alive_synchronously(self, subscription):
+        """``_alive`` is cleared before ``stop`` returns, not after disconnect.
+
+        A main thread parked in ``wait_forever`` checks ``_alive`` every
+        second; clearing it synchronously (rather than after a potentially
+        blocking ``disconnect``) lets that loop exit promptly.
+        """
+        disconnect_started = threading.Event()
+
+        def blocking_disconnect():
+            disconnect_started.set()
+            # Block so we can prove _alive was cleared without waiting on
+            # the disconnect.
+            threading.Event().wait(timeout=5)
+
+        subscription._connection = Mock()
+        subscription._connection.disconnect = blocking_disconnect
+
+        subscription.stop()
+
+        # _alive is False the moment stop() returns, even though disconnect
+        # is still running in the background.
+        assert subscription.is_alive() is False
+        assert disconnect_started.wait(timeout=2)
+
+    def test_stop_does_not_block_on_slow_disconnect(self, subscription):
+        """``stop()`` returns even if ``disconnect`` would block forever.
+
+        pysher's ``Connection.disconnect`` joins the websocket thread. When
+        ``stop()`` is called from a callback that pysher dispatches on that
+        same thread, the join deadlocks. Running the disconnect on a daemon
+        thread breaks the reentrancy: ``stop`` returns immediately even when
+        ``disconnect`` never completes.
+        """
+        started = threading.Event()
+        never_set = threading.Event()
+
+        def blocking_disconnect():
+            started.set()
+            # Simulate pysher joining a thread that never finishes (the
+            # deadlock state from the bug report).
+            never_set.wait(timeout=5)
+
+        subscription._connection = Mock()
+        subscription._connection.disconnect = blocking_disconnect
+
+        # If stop() were to call disconnect() inline it would block here.
+        subscription.stop()
+
+        # stop() returned control and the disconnect is running in the
+        # background.
+        assert subscription.is_alive() is False
+        assert started.wait(timeout=2)
+
+
+class TestSubscriptionBuilderConnectTimeout:
+    """Tests for _SubcriptionBuilder.connect timeout teardown."""
+
+    def _make_builder(self, pusher: Mock) -> _SubcriptionBuilder:
+        """Build a _SubcriptionBuilder with a patched pusher factory."""
+        client = Mock()
+        client.base_url = "https://api.example.com"
+        with patch.object(
+            _SubcriptionBuilder, "_get_pusher_instance", return_value=pusher
+        ):
+            b = _SubcriptionBuilder(client=client)
+        b.subscription = Mock()
+        b.subscription.is_alive.return_value = False
+        b.internal = Mock()
+        b.internal.get_sdk_realtime_credentials.return_value = Mock(
+            project_id="p", pusher_key="k", pusher_cluster="c"
+        )
+        b._get_connection_handler = Mock(  # type: ignore[method-assign]
+            return_value=lambda *a, **k: None
+        )
+        return b
+
+    def test_connect_disconnects_pusher_on_timeout(self):
+        """On timeout, the partially-connected pusher is torn down.
+
+        pysher's connection loop redials every ``reconnect_interval`` until
+        ``disconnect`` is called. If ``connect`` raises without disconnecting,
+        each timed-out attempt leaks a websocket thread for the life of the
+        process. The fix wraps the wait loop in try/except so the timeout
+        path disconnects before re-raising.
+        """
+        pusher = Mock()
+        builder = self._make_builder(pusher)
+        # subscription.is_alive() returns False, so the wait loop never
+        # returns early -> the deadline elapses -> timeout path runs.
+        builder.subscription.is_alive.return_value = False
+
+        with (
+            patch.object(
+                _SubcriptionBuilder, "_get_pusher_instance", return_value=pusher
+            ),
+            pytest.raises(ComposioSDKTimeoutError),
+        ):
+            builder.connect(timeout=0.1)
+
+        pusher.disconnect.assert_called_once()
+
+    def test_connect_returns_subscription_without_disconnecting(self):
+        """On success, the pusher stays connected and is attached to the sub."""
+        pusher = Mock()
+        builder = self._make_builder(pusher)
+        builder.subscription.is_alive.return_value = True
+
+        with patch.object(
+            _SubcriptionBuilder, "_get_pusher_instance", return_value=pusher
+        ):
+            result = builder.connect(timeout=2.0)
+
+        assert result is builder.subscription
+        pusher.disconnect.assert_not_called()

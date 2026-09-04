@@ -1,4 +1,5 @@
 import { toolkitsSource, getOgImageUrl } from '@/lib/source';
+import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { getMDXComponents } from '@/mdx-components';
 import { ToolkitDetail } from '@/components/toolkits/toolkit-detail';
@@ -7,7 +8,8 @@ import { PageActions } from '@/components/page-actions';
 import { EditOnGitHub } from '@/components/edit-on-github';
 import { readFile } from 'fs/promises';
 import { join } from 'path';
-import { getAllToolkits, getToolkitBySlug } from '@/lib/toolkit-data';
+import { getAllToolkits } from '@/lib/toolkit-data';
+import { resolveToolkit } from '@/lib/toolkit-resolution';
 import { unified } from 'unified';
 import remarkParse from 'remark-parse';
 import remarkRehype from 'remark-rehype';
@@ -15,14 +17,20 @@ import { toHtml } from 'hast-util-to-html';
 import type { Metadata } from 'next';
 import type { Tool, Trigger } from '@/types/toolkit';
 import type { FaqItem } from '@/components/toolkits/faq-section';
-import { processSchema, toolFromApi } from '@/lib/toolkit-schema';
+import { apiToolListSchema, apiTriggerListSchema } from '@/lib/toolkit-schema';
 
 const API_BASE = process.env.COMPOSIO_API_BASE || 'https://backend.composio.dev/api/v3';
 const API_KEY = process.env.COMPOSIO_API_KEY;
 
+// Snapshot misses are resolved from production on demand.
+export const dynamicParams = true;
+
 // Fetch detailed tool info from Composio API (server-side only)
 // Returns null on failure, empty array if toolkit has no tools
-async function fetchDetailedTools(toolkitSlug: string, version?: string | null): Promise<Tool[] | null> {
+async function fetchDetailedTools(
+  toolkitSlug: string,
+  version?: string | null
+): Promise<Tool[] | null> {
   if (!API_KEY) {
     console.warn('[Toolkits] COMPOSIO_API_KEY not set, skipping detailed tool fetch');
     return null;
@@ -45,11 +53,8 @@ async function fetchDetailedTools(toolkitSlug: string, version?: string | null):
       return null;
     }
 
-    const data = await response.json();
-    const rawItems = data.items || data;
-    const items = Array.isArray(rawItems) ? rawItems : [];
-
-    return items.filter((tool: any) => tool && typeof tool === 'object').map(toolFromApi);
+    const parsed = apiToolListSchema.safeParse(await response.json());
+    return parsed.success ? parsed.data : [];
   } catch (error) {
     console.error(`[Toolkits] Error fetching detailed tools for ${toolkitSlug}:`, error);
     return null;
@@ -58,7 +63,10 @@ async function fetchDetailedTools(toolkitSlug: string, version?: string | null):
 
 // Fetch detailed trigger info from Composio API (server-side only)
 // Returns null on failure, empty array if toolkit has no triggers
-async function fetchDetailedTriggers(toolkitSlug: string, version?: string | null): Promise<Trigger[] | null> {
+async function fetchDetailedTriggers(
+  toolkitSlug: string,
+  version?: string | null
+): Promise<Trigger[] | null> {
   if (!API_KEY) {
     console.warn('[Toolkits] COMPOSIO_API_KEY not set, skipping detailed trigger fetch');
     return null;
@@ -81,21 +89,8 @@ async function fetchDetailedTriggers(toolkitSlug: string, version?: string | nul
       return null;
     }
 
-    const data = await response.json();
-    const rawItems = data.items || data;
-    const items = Array.isArray(rawItems) ? rawItems : [];
-
-    return items.filter((trigger: any) => trigger && typeof trigger === 'object').map((trigger: any) => {
-      return {
-        slug: trigger.slug || '',
-        name: trigger.name || trigger.display_name || trigger.slug || '',
-        description: trigger.description || '',
-        type: trigger.type || undefined,
-        config: processSchema(trigger.config),
-        payload: processSchema(trigger.payload),
-        instructions: trigger.instructions || undefined,
-      };
-    });
+    const parsed = apiTriggerListSchema.safeParse(await response.json());
+    return parsed.success ? parsed.data : [];
   } catch (error) {
     console.error(`[Toolkits] Error fetching detailed triggers for ${toolkitSlug}:`, error);
     return null;
@@ -140,19 +135,28 @@ export async function generateStaticParams() {
 
   // JSON toolkit pages
   const toolkits = await getAllToolkits();
-  const jsonParams = toolkits.map((toolkit) => ({
+  const jsonParams = toolkits.map(toolkit => ({
     slug: [toolkit.slug],
   }));
 
   return [indexParam, ...mdxParams, ...jsonParams];
 }
 
-export async function generateMetadata({ params }: { params: Promise<{ slug?: string[] }> }): Promise<Metadata> {
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug?: string[] }>;
+}): Promise<Metadata> {
   const { slug } = await params;
 
   // Index page
   if (!slug || slug.length === 0) {
-    const ogImage = getOgImageUrl('toolkits', [], 'Toolkits', 'Browse all toolkits supported by Composio');
+    const ogImage = getOgImageUrl(
+      'toolkits',
+      [],
+      'Toolkits',
+      'Browse all toolkits supported by Composio'
+    );
     return {
       title: 'Toolkits',
       description: 'Browse all toolkits supported by Composio',
@@ -177,7 +181,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug?: st
 
   // Check JSON toolkit
   if (slug.length === 1) {
-    const toolkit = await getToolkitBySlug(slug[0]);
+    const toolkit = await resolveToolkit(slug[0]);
     if (toolkit) {
       const title = `${toolkit.name?.trim() || toolkit.slug} - Composio Toolkit`;
       const description = `Build an AI agent that connects to ${toolkit.name?.trim() || toolkit.slug} using Composio. ${toolkit.description}`;
@@ -209,7 +213,12 @@ export default async function ToolkitsPage({ params }: { params: Promise<{ slug?
     const MDXContent = page.data.body;
     return (
       <div>
-        <a href="/toolkits" className="text-sm text-fd-muted-foreground no-underline hover:text-fd-foreground hover:underline">← All Toolkits</a>
+        <Link
+          href="/toolkits"
+          className="text-sm text-fd-muted-foreground no-underline hover:text-fd-foreground hover:underline"
+        >
+          ← All Toolkits
+        </Link>
         <div className="mt-2 flex items-start justify-between gap-4">
           <h1 className="text-3xl font-bold text-fd-foreground">{page.data.title}</h1>
           <PageActions path={page.url} variant="inline" />
@@ -225,14 +234,14 @@ export default async function ToolkitsPage({ params }: { params: Promise<{ slug?
   // Check JSON toolkit
   if (slug.length === 1) {
     const toolkitSlug = slug[0];
-    const toolkit = await getToolkitBySlug(toolkitSlug);
+    const toolkit = await resolveToolkit(toolkitSlug);
 
     if (toolkit) {
       // Fetch detailed tool/trigger info and FAQ content in parallel
       const [detailedTools, detailedTriggers, faq] = await Promise.all([
-        fetchDetailedTools(toolkitSlug, toolkit.version),
-        fetchDetailedTriggers(toolkitSlug, toolkit.version),
-        readToolkitFaq(toolkitSlug),
+        fetchDetailedTools(toolkit.slug, toolkit.version),
+        fetchDetailedTriggers(toolkit.slug, toolkit.version),
+        readToolkitFaq(toolkit.slug),
       ]);
 
       // Use detailed data if fetch succeeded, otherwise fall back to static data
