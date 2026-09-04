@@ -3,7 +3,7 @@ import { Writable } from 'node:stream';
 import { beforeEach, vi } from 'vitest';
 import { describe, expect, layer } from '@effect/vitest';
 import { ConfigProvider, Effect, Exit } from 'effect';
-import { FileSystem } from '@effect/platform';
+import * as FileSystem from '@effect/platform/FileSystem';
 import { NodeOs } from 'src/services/node-os';
 import {
   installShellIntegration,

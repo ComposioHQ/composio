@@ -1,4 +1,4 @@
-import { Path } from '@effect/platform';
+import * as Path from '@effect/platform/Path';
 import { Data, Effect } from 'effect';
 
 export class SafeOutputPathError extends Data.TaggedError('generation/SafeOutputPathError')<{

@@ -1,5 +1,7 @@
-import { FileSystem, Path } from '@effect/platform';
-import { BunFileSystem, BunPath } from '@effect/platform-bun';
+import * as FileSystem from '@effect/platform/FileSystem';
+import * as Path from '@effect/platform/Path';
+import * as BunFileSystem from '@effect/platform-bun/BunFileSystem';
+import * as BunPath from '@effect/platform-bun/BunPath';
 import { describe, expect, it } from '@effect/vitest';
 import { Cause, Effect, Layer, Scope } from 'effect';
 import { type RawSourceMap, SourceMapConsumer } from 'source-map-js';

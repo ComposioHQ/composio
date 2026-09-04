@@ -1,6 +1,7 @@
 import { Command as CliCommand, Options } from '@effect/cli';
 import { Effect, Option } from 'effect';
-import { FileSystem, Path } from '@effect/platform';
+import * as FileSystem from '@effect/platform/FileSystem';
+import * as Path from '@effect/platform/Path';
 import { ComposioUserContext } from 'src/services/user-context';
 import { NodeProcess } from 'src/services/node-process';
 import { projectKeysToJSON, type ProjectKeys } from 'src/models/project-keys';

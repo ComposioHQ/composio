@@ -1,6 +1,7 @@
 import { Effect, Option, ParseResult, Layer, Array as Arr } from 'effect';
-import { FileSystem, Path } from '@effect/platform';
-import { BunFileSystem } from '@effect/platform-bun';
+import * as FileSystem from '@effect/platform/FileSystem';
+import * as Path from '@effect/platform/Path';
+import * as BunFileSystem from '@effect/platform-bun/BunFileSystem';
 import { setupCacheDir } from 'src/effects/setup-cache-dir';
 import { FORCE_CONFIG } from 'src/effects/force-config';
 import { writeFileAtomic } from 'src/effects/write-file-atomic';

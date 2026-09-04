@@ -2,8 +2,10 @@ import { afterEach, describe, expect, it, vi } from '@effect/vitest';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
-import { FileSystem, Path } from '@effect/platform';
-import { BunFileSystem, BunPath } from '@effect/platform-bun';
+import * as FileSystem from '@effect/platform/FileSystem';
+import * as Path from '@effect/platform/Path';
+import * as BunFileSystem from '@effect/platform-bun/BunFileSystem';
+import * as BunPath from '@effect/platform-bun/BunPath';
 import { Effect, Layer } from 'effect';
 import { Composio as RawComposioClient } from '@composio/client';
 import {

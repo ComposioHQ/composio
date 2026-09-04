@@ -1,4 +1,5 @@
-import { FileSystem, Path } from '@effect/platform';
+import * as FileSystem from '@effect/platform/FileSystem';
+import * as Path from '@effect/platform/Path';
 import { Context, Data, Effect, Layer } from 'effect';
 import type { Composio } from '@composio/client';
 import { executeLocalToolBySlug, resolveLocalTool } from '@composio/cli-local-tools';

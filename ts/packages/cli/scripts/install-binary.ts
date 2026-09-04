@@ -1,6 +1,7 @@
 import process from 'node:process';
 import { Config, ConfigProvider, Console, Effect, Logger, Layer, LogLevel } from 'effect';
-import { BunContext, BunRuntime } from '@effect/platform-bun';
+import * as BunContext from '@effect/platform-bun/BunContext';
+import * as BunRuntime from '@effect/platform-bun/BunRuntime';
 import { teardown } from './_shared';
 import path from 'node:path';
 import os from 'node:os';

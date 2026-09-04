@@ -1,7 +1,7 @@
 // eslint-disable-next-line no-restricted-imports -- This Effect helper is the sole detached-spawn boundary for CLI source: @effect/platform Command processes are scope-bound and are killed when their scope closes, while these children must outlive the CLI process.
 import { spawn } from 'node:child_process';
 import process from 'node:process';
-import { FileSystem } from '@effect/platform';
+import * as FileSystem from '@effect/platform/FileSystem';
 import { Data, Effect } from 'effect';
 
 export class DetachedProcessSpawnError extends Data.TaggedError(

@@ -1,5 +1,7 @@
-import { Command, FileSystem, Path } from '@effect/platform';
-import { BunContext } from '@effect/platform-bun';
+import * as Command from '@effect/platform/Command';
+import * as FileSystem from '@effect/platform/FileSystem';
+import * as Path from '@effect/platform/Path';
+import * as BunContext from '@effect/platform-bun/BunContext';
 import { Cause, Data, Effect, Exit, Predicate, Stream } from 'effect';
 import type { MasterKind } from 'src/services/master-detector';
 import {

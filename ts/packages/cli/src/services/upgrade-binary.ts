@@ -11,7 +11,10 @@ import {
   Context,
   Layer,
 } from 'effect';
-import { HttpClient, HttpClientResponse, FileSystem, Path } from '@effect/platform';
+import * as HttpClient from '@effect/platform/HttpClient';
+import * as HttpClientResponse from '@effect/platform/HttpClientResponse';
+import * as FileSystem from '@effect/platform/FileSystem';
+import * as Path from '@effect/platform/Path';
 import { APP_VERSION } from '../constants';
 import { DEBUG_OVERRIDE_CONFIG } from 'src/effects/debug-config';
 import { GITHUB_CONFIG } from 'src/effects/github-config';

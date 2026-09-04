@@ -2,7 +2,7 @@ import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import { Readable } from 'node:stream';
-import { BunContext } from '@effect/platform-bun';
+import * as BunContext from '@effect/platform-bun/BunContext';
 import { Effect } from 'effect';
 import { afterEach, describe, expect, it, vi } from '@effect/vitest';
 import {

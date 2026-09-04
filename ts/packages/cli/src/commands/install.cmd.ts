@@ -1,5 +1,6 @@
 import { Command, Options } from '@effect/cli';
-import { FileSystem, Path } from '@effect/platform';
+import * as FileSystem from '@effect/platform/FileSystem';
+import * as Path from '@effect/platform/Path';
 import type { PlatformError } from '@effect/platform/Error';
 import { Array as Arr, Config, ConfigProvider, Data, Effect, Option } from 'effect';
 import { APP_CONFIG } from 'src/effects/app-config';

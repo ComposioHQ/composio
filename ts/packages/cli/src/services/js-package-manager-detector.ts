@@ -1,6 +1,7 @@
-import { BunFileSystem } from '@effect/platform-bun';
+import * as BunFileSystem from '@effect/platform-bun/BunFileSystem';
 import { Data, Effect, Option, Schema, pipe, Context, Layer } from 'effect';
-import { FileSystem, Path } from '@effect/platform';
+import * as FileSystem from '@effect/platform/FileSystem';
+import * as Path from '@effect/platform/Path';
 
 const toError = (e: unknown): Error => (e instanceof Error ? e : new Error(String(e)));
 

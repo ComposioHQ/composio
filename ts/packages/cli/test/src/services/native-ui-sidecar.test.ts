@@ -1,5 +1,6 @@
 import { describe, expect, it } from '@effect/vitest';
-import { CommandExecutor, Error as PlatformError } from '@effect/platform';
+import * as CommandExecutor from '@effect/platform/CommandExecutor';
+import * as PlatformError from '@effect/platform/Error';
 import { ConfigProvider, Effect, Layer } from 'effect';
 import {
   detectNativeUiCallerAgentEffect,

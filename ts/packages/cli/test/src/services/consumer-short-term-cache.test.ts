@@ -1,6 +1,6 @@
 import { describe, expect, layer } from '@effect/vitest';
 import { vi, beforeEach, afterEach } from 'vitest';
-import { FileSystem } from '@effect/platform';
+import * as FileSystem from '@effect/platform/FileSystem';
 import { ConfigProvider, DateTime, Effect, Option } from 'effect';
 import path from 'node:path';
 import { setupCacheDir } from 'src/effects/setup-cache-dir';

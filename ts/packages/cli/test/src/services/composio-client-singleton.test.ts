@@ -1,6 +1,8 @@
 import { afterEach, beforeAll, describe, expect, it, vi } from '@effect/vitest';
-import { FileSystem, Path } from '@effect/platform';
-import { BunFileSystem, BunPath } from '@effect/platform-bun';
+import * as FileSystem from '@effect/platform/FileSystem';
+import * as Path from '@effect/platform/Path';
+import * as BunFileSystem from '@effect/platform-bun/BunFileSystem';
+import * as BunPath from '@effect/platform-bun/BunPath';
 import { ConfigProvider, Effect, Layer } from 'effect';
 import { execSync } from 'node:child_process';
 import * as tempy from 'tempy';

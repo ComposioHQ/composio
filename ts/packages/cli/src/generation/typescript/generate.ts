@@ -1,5 +1,5 @@
 import * as ts from '@composio/ts-builders';
-import { Path } from '@effect/platform';
+import * as Path from '@effect/platform/Path';
 import { safeOutputPath, type SafeOutputPathError } from 'src/generation/safe-output-path';
 import type { ToolkitIndex } from 'src/generation/create-toolkit-index';
 import type { SourceFile } from 'src/generation/types';

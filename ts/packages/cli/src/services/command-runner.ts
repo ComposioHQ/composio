@@ -1,4 +1,4 @@
-import { Command } from '@effect/platform';
+import * as Command from '@effect/platform/Command';
 import { Effect, Stream, String, Context, Layer } from 'effect';
 
 export interface CommandResult {

@@ -2,7 +2,8 @@
 // the bundled `composio run` companion modules, and the binary build scripts. Every
 // helper is an Effect over the @effect/platform FileSystem/Path services; consumers
 // outside the CLI runtime (companion runtimes, scripts) provide their own platform layers.
-import { FileSystem, Path } from '@effect/platform';
+import * as FileSystem from '@effect/platform/FileSystem';
+import * as Path from '@effect/platform/Path';
 import type { PlatformError } from '@effect/platform/Error';
 import { Config, ConfigProvider, Data, Effect, Option, Schema } from 'effect';
 import { extractZipSafely } from 'src/utils/extract-zip-safely';
