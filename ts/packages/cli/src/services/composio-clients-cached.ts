@@ -180,7 +180,7 @@ export const ComposioToolkitsRepositoryCached = Layer.effect(
     );
 
     // Create the cached implementation that wraps the original implementation
-    return ComposioToolkitsRepository.make({
+    return ComposioToolkitsRepository.of({
       // Memoized per layer instance; `getToolkitsBySlugs` stays unmemoized
       // because its result depends on the requested slugs.
       getToolkits: () => cachedGetToolkits,

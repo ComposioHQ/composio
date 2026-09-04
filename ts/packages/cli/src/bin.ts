@@ -7,8 +7,8 @@ import { NodeOs } from 'src/services/node-os';
 import { TerminalUILive } from 'src/services/terminal-ui';
 import { stripTelemetryDebugFlag, telemetryDebugModeLayer } from 'src/services/runtime-flags';
 
+// The one `process.argv` read: every later consumer receives this normalized argv explicitly.
 const bootstrap = stripTelemetryDebugFlag(process.argv);
-process.argv = [...bootstrap.argv];
 
 const workerLayers = Layer.mergeAll(
   BunFileSystem.layer,
@@ -33,6 +33,6 @@ if (isBackgroundWorkerInvocation(bootstrap.argv)) {
   );
 } else {
   void import('./cli-main').then(({ runCli }) =>
-    runCli({ telemetryDebug: bootstrap.telemetryDebug })
+    runCli({ argv: bootstrap.argv, telemetryDebug: bootstrap.telemetryDebug })
   );
 }

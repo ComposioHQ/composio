@@ -11,6 +11,8 @@ import {
   Stream,
   Sink,
   SynchronizedRef,
+  Context,
+  Layer,
 } from 'effect';
 import { Composio as _RawComposioClient, APIPromise } from '@composio/client';
 import { FileSystem, Path } from '@effect/platform';
@@ -419,7 +421,7 @@ export interface TriggerInstanceUpsertParams {
 }
 
 function buildTriggerInstancesNamespace(
-  clientSingleton: ComposioClientSingleton,
+  clientSingleton: ComposioClientSingletonShape,
   withMetrics: <A, E, R>(
     effect: Effect.Effect<{ data: A; metrics: Metrics }, E, R>
   ) => Effect.Effect<A, E, R>
@@ -473,7 +475,7 @@ function buildTriggerInstancesNamespace(
   };
 }
 
-function buildTriggerInstanceRepositoryOperations(client: ComposioClientLive) {
+function buildTriggerInstanceRepositoryOperations(client: ComposioClientLiveShape) {
   return {
     listActiveTriggers: (params: TriggerInstancesListActiveParams) =>
       client.triggerInstances.listActive(params),
@@ -1377,7 +1379,7 @@ const buildDefaultHeaders = (params: {
 
 // Utility function for calling the Composio API and decoding its response.
 const callClient = <T, S extends Schema.Schema.AnyNoContext>(
-  clientSingleton: ComposioClientSingleton,
+  clientSingleton: ComposioClientSingletonShape,
   apiCall: (client: _RawComposioClient) => APIPromise<T>,
   responseSchema: S
 ): Effect.Effect<
@@ -1437,7 +1439,7 @@ const MAX_CONCURRENT_REQUESTS_PER_ENDPOINT = 4;
 // Utility function for calling paginated Composio API endpoints.
 // Automatically fetches all pages, using MAX_PAGE_SIZE per request.
 const callClientWithPagination = <T, S extends PaginatedSchema>(
-  clientSingleton: ComposioClientSingleton,
+  clientSingleton: ComposioClientSingletonShape,
   apiCall: (client: _RawComposioClient, cursor?: string, limit?: number) => APIPromise<T>,
   responseSchema: S
 ): Effect.Effect<
@@ -1524,93 +1526,97 @@ const callClientWithPagination = <T, S extends PaginatedSchema>(
  * Singleton service that lazily accesses `Config` only when needed, which is used to build and provide
  * a raw (uneffectful, Promise-based) Composio client instance.
  */
-export class ComposioClientSingleton extends Effect.Service<ComposioClientSingleton>()(
-  'services/ComposioClientSingleton',
-  {
-    accessors: true,
-    effect: Effect.gen(function* () {
-      const ctx = yield* ComposioUserContext;
-      const projectContextOpt = yield* Effect.serviceOption(ProjectContext);
-      const fs = yield* FileSystem.FileSystem;
-      const path = yield* Path.Path;
-      const os = yield* NodeOs;
-      const cache = new Map<string, _RawComposioClient>();
+const makeComposioClientSingleton = Effect.gen(function* () {
+  const ctx = yield* ComposioUserContext;
+  const projectContextOpt = yield* Effect.serviceOption(ProjectContext);
+  const fs = yield* FileSystem.FileSystem;
+  const path = yield* Path.Path;
+  const os = yield* NodeOs;
+  const cache = new Map<string, _RawComposioClient>();
 
-      const getFor = (params?: { userApiKey?: string; orgId?: string; projectId?: string }) =>
-        Effect.gen(function* () {
-          const apiKey = normalizeApiKey(
-            params?.userApiKey ?? Option.getOrUndefined(ctx.data.apiKey)
-          );
-          const cacheKey = JSON.stringify({
-            apiKey: apiKey ?? null,
-            orgId: params?.orgId ?? null,
-            projectId: params?.projectId ?? null,
-          });
-          const cached = cache.get(cacheKey);
-          if (cached) {
-            return cached;
-          }
+  const getFor = (params?: { userApiKey?: string; orgId?: string; projectId?: string }) =>
+    Effect.gen(function* () {
+      const apiKey = normalizeApiKey(params?.userApiKey ?? Option.getOrUndefined(ctx.data.apiKey));
+      const cacheKey = JSON.stringify({
+        apiKey: apiKey ?? null,
+        orgId: params?.orgId ?? null,
+        projectId: params?.projectId ?? null,
+      });
+      const cached = cache.get(cacheKey);
+      if (cached) {
+        return cached;
+      }
 
-          const cliSessionId = yield* getCurrentCwdSessionId().pipe(
-            Effect.provideService(FileSystem.FileSystem, fs),
-            Effect.provideService(Path.Path, path),
-            Effect.provideService(NodeOs, os)
-          );
+      const cliSessionId = yield* getCurrentCwdSessionId().pipe(
+        Effect.provideService(FileSystem.FileSystem, fs),
+        Effect.provideService(Path.Path, path),
+        Effect.provideService(NodeOs, os)
+      );
 
-          const client = new _RawComposioClient({
-            apiKey: null,
-            baseURL: ctx.data.baseURL,
-            defaultHeaders: buildDefaultHeaders({
-              userApiKey: apiKey,
-              orgId: params?.orgId,
-              projectId: params?.projectId,
-              cliSessionId,
-            }),
-          });
+      const client = new _RawComposioClient({
+        apiKey: null,
+        baseURL: ctx.data.baseURL,
+        defaultHeaders: buildDefaultHeaders({
+          userApiKey: apiKey,
+          orgId: params?.orgId,
+          projectId: params?.projectId,
+          cliSessionId,
+        }),
+      });
 
-          cache.set(cacheKey, client);
-          return client;
-        });
+      cache.set(cacheKey, client);
+      return client;
+    });
 
-      return {
-        get: Effect.fn(function* () {
-          const resolvedProjectContext = yield* Option.match(projectContextOpt, {
-            onNone: () => Effect.succeed(Option.none()),
-            onSome: projectContext =>
-              projectContext.resolve.pipe(Effect.catchAll(() => Effect.succeed(Option.none()))),
-          });
-          return yield* Option.match(resolvedProjectContext, {
-            onNone: () => getFor(),
-            onSome: keys =>
-              getFor({
-                orgId: keys.orgId,
-                projectId: keys.projectId,
-              }),
-          });
-        }) satisfies () => Effect.Effect<_RawComposioClient, NoSuchElementException, never>,
-        getFor: Effect.fn(function* (params: {
-          userApiKey?: string;
-          orgId?: string;
-          projectId?: string;
-        }) {
-          return yield* getFor(params);
-        }) satisfies (params: {
-          userApiKey?: string;
-          orgId?: string;
-          projectId?: string;
-        }) => Effect.Effect<_RawComposioClient, NoSuchElementException, never>,
-      };
-    }),
-    dependencies: [ComposioUserContextLive],
-  }
-) {}
+  return {
+    get: Effect.fn(function* () {
+      const resolvedProjectContext = yield* Option.match(projectContextOpt, {
+        onNone: () => Effect.succeed(Option.none()),
+        onSome: projectContext =>
+          projectContext.resolve.pipe(Effect.catchAll(() => Effect.succeed(Option.none()))),
+      });
+      return yield* Option.match(resolvedProjectContext, {
+        onNone: () => getFor(),
+        onSome: keys =>
+          getFor({
+            orgId: keys.orgId,
+            projectId: keys.projectId,
+          }),
+      });
+    }) satisfies () => Effect.Effect<_RawComposioClient, NoSuchElementException, never>,
+    getFor: Effect.fn(function* (params: {
+      userApiKey?: string;
+      orgId?: string;
+      projectId?: string;
+    }) {
+      return yield* getFor(params);
+    }) satisfies (params: {
+      userApiKey?: string;
+      orgId?: string;
+      projectId?: string;
+    }) => Effect.Effect<_RawComposioClient, NoSuchElementException, never>,
+  };
+});
+
+export type ComposioClientSingletonShape = Effect.Effect.Success<
+  typeof makeComposioClientSingleton
+>;
+
+export class ComposioClientSingleton extends Context.Tag('services/ComposioClientSingleton')<
+  ComposioClientSingleton,
+  ComposioClientSingletonShape
+>() {
+  static readonly Default = Layer.effect(ComposioClientSingleton, makeComposioClientSingleton).pipe(
+    Layer.provide(ComposioUserContextLive)
+  );
+}
 
 /**
  * Build the `tools` namespace for ComposioClientLive.
  * Extracted to keep the main generator under the max-lines-per-function limit.
  */
 function buildToolsNamespace(
-  clientSingleton: ComposioClientSingleton,
+  clientSingleton: ComposioClientSingletonShape,
   withMetrics: <A, E, R>(
     effect: Effect.Effect<{ data: A; metrics: Metrics }, E, R>
   ) => Effect.Effect<A, E, R>
@@ -1723,7 +1729,7 @@ function buildToolsNamespace(
  * Extracted to keep the main generator under the max-lines-per-function limit.
  */
 function buildAuthConfigsNamespace(
-  clientSingleton: ComposioClientSingleton,
+  clientSingleton: ComposioClientSingletonShape,
   withMetrics: <A, E, R>(
     effect: Effect.Effect<{ data: A; metrics: Metrics }, E, R>
   ) => Effect.Effect<A, E, R>
@@ -1792,7 +1798,7 @@ function buildAuthConfigsNamespace(
  * Extracted to keep the main generator under the max-lines-per-function limit.
  */
 function buildConnectedAccountsNamespace(
-  clientSingleton: ComposioClientSingleton,
+  clientSingleton: ComposioClientSingletonShape,
   withMetrics: <A, E, R>(
     effect: Effect.Effect<{ data: A; metrics: Metrics }, E, R>
   ) => Effect.Effect<A, E, R>
@@ -1859,449 +1865,458 @@ function buildConnectedAccountsNamespace(
 }
 
 // Service that wraps the raw Composio client, which is shared by all client services.
-export class ComposioClientLive extends Effect.Service<ComposioClientLive>()(
-  'services/ComposioClientLive',
-  {
-    effect: Effect.gen(function* () {
-      const clientSingleton = yield* ComposioClientSingleton;
+const makeComposioClientLive = Effect.gen(function* () {
+  const clientSingleton = yield* ComposioClientSingleton;
 
-      // Initialize metrics tracking via SynchronizedRef
-      const metricsRef = yield* SynchronizedRef.make<Metrics>({ byteSize: 0, requests: 0 });
+  // Initialize metrics tracking via SynchronizedRef
+  const metricsRef = yield* SynchronizedRef.make<Metrics>({ byteSize: 0, requests: 0 });
 
-      // Helper to update metrics and return just the data
-      const withMetrics = <A, E, R>(
-        effect: Effect.Effect<{ data: A; metrics: Metrics }, E, R>
-      ): Effect.Effect<A, E, R> =>
-        Effect.gen(function* () {
-          const { data, metrics } = yield* effect;
-          yield* SynchronizedRef.update(metricsRef, current => ({
-            byteSize: current.byteSize + metrics.byteSize,
-            requests: current.requests + metrics.requests,
-          }));
-          return data;
-        });
+  // Helper to update metrics and return just the data
+  const withMetrics = <A, E, R>(
+    effect: Effect.Effect<{ data: A; metrics: Metrics }, E, R>
+  ): Effect.Effect<A, E, R> =>
+    Effect.gen(function* () {
+      const { data, metrics } = yield* effect;
+      yield* SynchronizedRef.update(metricsRef, current => ({
+        byteSize: current.byteSize + metrics.byteSize,
+        requests: current.requests + metrics.requests,
+      }));
+      return data;
+    });
 
-      return {
-        /**
-         * Returns a snapshot of the current accumulated metrics (total bytes received and request count).
-         */
-        getMetrics: () => SynchronizedRef.get(metricsRef),
-        toolkits: {
-          /**
-           * Retrieves a comprehensive list of toolkits that are available to the authenticated project.
-           * Automatically handles pagination to fetch all items.
-           */
-          list: () =>
-            withMetrics(
-              callClientWithPagination(
-                clientSingleton,
-                (client, cursor, limit) => client.toolkits.list({ cursor, limit }),
-                ToolkitsResponse
-              )
-            ),
-          /**
-           * Retrieves a single toolkit by its slug.
-           * Transforms the response to match the Toolkit schema.
-           */
-          retrieve: (slug: string) =>
-            withMetrics(
-              callClient(
-                clientSingleton,
-                client => client.toolkits.retrieve(slug),
-                ToolkitRetrieveResponse
-              )
-            ).pipe(
-              // Transform to Toolkit format by adding missing fields
-              Effect.map(
-                retrieved =>
-                  ({
-                    name: retrieved.name,
-                    slug: retrieved.slug,
-                    auth_schemes: [], // retrieve endpoint doesn't return auth_schemes
-                    composio_managed_auth_schemes: retrieved.composio_managed_auth_schemes,
-                    is_local_toolkit: retrieved.is_local_toolkit,
-                    no_auth: retrieved.no_auth,
-                    meta: retrieved.meta,
-                  }) satisfies Toolkit
-              )
-            ),
-          /**
-           * Searches toolkits with optional filters. Returns a single page of results (no auto-pagination).
-           * @param params - Search/filter parameters
-           */
-          search: (params: {
-            search?: string;
-            category?: string;
-            limit?: number;
-            cursor?: string;
-          }) =>
-            withMetrics(
-              callClient(
-                clientSingleton,
-                client =>
-                  client.toolkits.list({
-                    search: params.search,
-                    category: params.category,
-                    limit: params.limit,
-                    cursor: params.cursor,
-                  }),
-                ToolkitSearchResponse
-              )
-            ).pipe(
-              Effect.map(
-                response =>
-                  ({
-                    items: response.items,
-                    total_items: response.total_items,
-                    total_pages: response.total_pages,
-                    next_cursor: response.next_cursor,
-                  }) satisfies ToolkitSearchResult
-              )
-            ),
-          /**
-           * Retrieves detailed toolkit info including auth_config_details.
-           * @param slug - Toolkit slug
-           */
-          retrieveDetailed: (slug: string) =>
-            withMetrics(
-              callClient(
-                clientSingleton,
-                client => client.toolkits.retrieve(slug),
-                ToolkitDetailedResponse
-              )
-            ),
-        },
-        tools: buildToolsNamespace(clientSingleton, withMetrics),
-        triggersTypes: {
-          /**
-           * Retrieves a list of all available trigger type enum values that can be used across the API.
-           */
-          retrieveEnum: () =>
-            withMetrics(
-              callClient(
-                clientSingleton,
-                client => client.triggersTypes.retrieveEnum(),
-                TriggerTypesAsEnumsResponse
-              )
-            ),
-          /**
-           * Retrieves detailed info about a single trigger type by slug.
-           * @param slug - Trigger type slug (e.g. "GMAIL_NEW_GMAIL_MESSAGE")
-           */
-          retrieve: (slug: string) =>
-            withMetrics(
-              callClient(
-                clientSingleton,
-                client => client.triggersTypes.retrieve(slug),
-                TriggerType
-              )
-            ),
-          /**
-           * Retrieve a list of trigger types, automatically handling pagination.
-           * @param toolkitSlugs - Optional array of toolkit slugs to filter by
-           */
-          list: (toolkitSlugs?: ReadonlyArray<string>) =>
-            withMetrics(
-              callClientWithPagination(
-                clientSingleton,
-                (client, cursor, limit) =>
-                  client.triggersTypes.list({
-                    cursor,
-                    limit,
-                    toolkit_slugs: toolkitSlugs ? [...toolkitSlugs] : undefined,
-                  }),
-                TriggerTypesResponse
-              )
-            ),
-        },
-        triggerInstances: buildTriggerInstancesNamespace(clientSingleton, withMetrics),
-        cli: {
-          /**
-           * Generates a new CLI session with a random 6-character code.
-           * @param params.scope - 'user' for login, 'project' for init (future)
-           *
-           * TODO: don't use `@composio/client`, wrap `fetch` directly.
-           */
-          createSession: (params?: { scope?: 'user' | 'project' }) =>
-            withMetrics(
-              callClient(
-                clientSingleton,
-                client =>
-                  client.cli.createSession(
-                    { scope: params?.scope ?? 'user' },
-                    { headers: { 'Content-Type': 'application/json' } }
-                  ),
-                CliCreateSessionResponse
-              )
-            ),
-
-          /**
-           * Retrieves the current state of a CLI session using either the session ID (UUID) or the 6-character code.
-           */
-          getSession: (session: { id: string }) =>
-            withMetrics(
-              callClient(
-                clientSingleton,
-                client => client.cli.getSession(session),
-                CliGetSessionResponse
-              )
-            ),
-          getRealtimeCredentials: () =>
-            withMetrics(
-              callClient(
-                clientSingleton,
-                client => client.cli.realtime.credentials(),
-                CliRealtimeCredentialsResponse
-              )
-            ),
-          authRealtimeChannel: (params: { channel_name: string; socket_id: string }) =>
-            withMetrics(
-              callClient(
-                clientSingleton,
-                client => client.cli.realtime.auth(params),
-                CliRealtimeAuthResponse
-              )
-            ),
-        },
-        authConfigs: buildAuthConfigsNamespace(clientSingleton, withMetrics),
-        connectedAccounts: buildConnectedAccountsNamespace(clientSingleton, withMetrics),
-      };
-    }),
-    dependencies: [ComposioClientSingleton.Default],
-  }
-) {}
-
-export class ComposioToolkitsRepository extends Effect.Service<ComposioToolkitsRepository>()(
-  'services/ComposioToolkitsRepository',
-  {
-    effect: Effect.gen(function* () {
-      const client = yield* ComposioClientLive;
-
-      const getToolkits = () =>
-        client.toolkits.list().pipe(
-          Effect.map(response => response.items),
-          Effect.map(items => sortBySlug(items) as ReadonlyArray<Toolkit>)
-        );
+  return {
+    /**
+     * Returns a snapshot of the current accumulated metrics (total bytes received and request count).
+     */
+    getMetrics: () => SynchronizedRef.get(metricsRef),
+    toolkits: {
+      /**
+       * Retrieves a comprehensive list of toolkits that are available to the authenticated project.
+       * Automatically handles pagination to fetch all items.
+       */
+      list: () =>
+        withMetrics(
+          callClientWithPagination(
+            clientSingleton,
+            (client, cursor, limit) => client.toolkits.list({ cursor, limit }),
+            ToolkitsResponse
+          )
+        ),
+      /**
+       * Retrieves a single toolkit by its slug.
+       * Transforms the response to match the Toolkit schema.
+       */
+      retrieve: (slug: string) =>
+        withMetrics(
+          callClient(
+            clientSingleton,
+            client => client.toolkits.retrieve(slug),
+            ToolkitRetrieveResponse
+          )
+        ).pipe(
+          // Transform to Toolkit format by adding missing fields
+          Effect.map(
+            retrieved =>
+              ({
+                name: retrieved.name,
+                slug: retrieved.slug,
+                auth_schemes: [], // retrieve endpoint doesn't return auth_schemes
+                composio_managed_auth_schemes: retrieved.composio_managed_auth_schemes,
+                is_local_toolkit: retrieved.is_local_toolkit,
+                no_auth: retrieved.no_auth,
+                meta: retrieved.meta,
+              }) satisfies Toolkit
+          )
+        ),
+      /**
+       * Searches toolkits with optional filters. Returns a single page of results (no auto-pagination).
+       * @param params - Search/filter parameters
+       */
+      search: (params: { search?: string; category?: string; limit?: number; cursor?: string }) =>
+        withMetrics(
+          callClient(
+            clientSingleton,
+            client =>
+              client.toolkits.list({
+                search: params.search,
+                category: params.category,
+                limit: params.limit,
+                cursor: params.cursor,
+              }),
+            ToolkitSearchResponse
+          )
+        ).pipe(
+          Effect.map(
+            response =>
+              ({
+                items: response.items,
+                total_items: response.total_items,
+                total_pages: response.total_pages,
+                next_cursor: response.next_cursor,
+              }) satisfies ToolkitSearchResult
+          )
+        ),
+      /**
+       * Retrieves detailed toolkit info including auth_config_details.
+       * @param slug - Toolkit slug
+       */
+      retrieveDetailed: (slug: string) =>
+        withMetrics(
+          callClient(
+            clientSingleton,
+            client => client.toolkits.retrieve(slug),
+            ToolkitDetailedResponse
+          )
+        ),
+    },
+    tools: buildToolsNamespace(clientSingleton, withMetrics),
+    triggersTypes: {
+      /**
+       * Retrieves a list of all available trigger type enum values that can be used across the API.
+       */
+      retrieveEnum: () =>
+        withMetrics(
+          callClient(
+            clientSingleton,
+            client => client.triggersTypes.retrieveEnum(),
+            TriggerTypesAsEnumsResponse
+          )
+        ),
+      /**
+       * Retrieves detailed info about a single trigger type by slug.
+       * @param slug - Trigger type slug (e.g. "GMAIL_NEW_GMAIL_MESSAGE")
+       */
+      retrieve: (slug: string) =>
+        withMetrics(
+          callClient(clientSingleton, client => client.triggersTypes.retrieve(slug), TriggerType)
+        ),
+      /**
+       * Retrieve a list of trigger types, automatically handling pagination.
+       * @param toolkitSlugs - Optional array of toolkit slugs to filter by
+       */
+      list: (toolkitSlugs?: ReadonlyArray<string>) =>
+        withMetrics(
+          callClientWithPagination(
+            clientSingleton,
+            (client, cursor, limit) =>
+              client.triggersTypes.list({
+                cursor,
+                limit,
+                toolkit_slugs: toolkitSlugs ? [...toolkitSlugs] : undefined,
+              }),
+            TriggerTypesResponse
+          )
+        ),
+    },
+    triggerInstances: buildTriggerInstancesNamespace(clientSingleton, withMetrics),
+    cli: {
+      /**
+       * Generates a new CLI session with a random 6-character code.
+       * @param params.scope - 'user' for login, 'project' for init (future)
+       *
+       * TODO: don't use `@composio/client`, wrap `fetch` directly.
+       */
+      createSession: (params?: { scope?: 'user' | 'project' }) =>
+        withMetrics(
+          callClient(
+            clientSingleton,
+            client =>
+              client.cli.createSession(
+                { scope: params?.scope ?? 'user' },
+                { headers: { 'Content-Type': 'application/json' } }
+              ),
+            CliCreateSessionResponse
+          )
+        ),
 
       /**
-       * Fetches specific toolkits by their slugs.
-       * Makes parallel API calls to retrieve each toolkit.
-       * @param slugs - Array of toolkit slugs to fetch
+       * Retrieves the current state of a CLI session using either the session ID (UUID) or the 6-character code.
        */
-      const getToolkitsBySlugs = (slugs: ReadonlyArray<string>) =>
-        Effect.all(
-          slugs.map(slug =>
-            client.toolkits.retrieve(slug).pipe(
-              // Only convert 404 errors to InvalidToolkitsError.
-              // Other HTTP errors (500, 401, network failures, etc.) should propagate as-is.
-              Effect.catchTag('services/HttpServerError', e =>
-                Effect.if(e.status === 404, {
-                  onTrue: () =>
-                    Effect.fail(
-                      new InvalidToolkitsError({
-                        invalidToolkits: [slug],
-                        availableToolkits: [],
-                      })
-                    ),
-                  onFalse: () => Effect.fail(e),
-                })
-              )
-            )
-          ),
-          { concurrency: MAX_CONCURRENT_REQUESTS_PER_ENDPOINT }
-        ).pipe(Effect.map(items => sortBySlug(items) as ReadonlyArray<Toolkit>));
+      getSession: (session: { id: string }) =>
+        withMetrics(
+          callClient(
+            clientSingleton,
+            client => client.cli.getSession(session),
+            CliGetSessionResponse
+          )
+        ),
+      getRealtimeCredentials: () =>
+        withMetrics(
+          callClient(
+            clientSingleton,
+            client => client.cli.realtime.credentials(),
+            CliRealtimeCredentialsResponse
+          )
+        ),
+      authRealtimeChannel: (params: { channel_name: string; socket_id: string }) =>
+        withMetrics(
+          callClient(
+            clientSingleton,
+            client => client.cli.realtime.auth(params),
+            CliRealtimeAuthResponse
+          )
+        ),
+    },
+    authConfigs: buildAuthConfigsNamespace(clientSingleton, withMetrics),
+    connectedAccounts: buildConnectedAccountsNamespace(clientSingleton, withMetrics),
+  };
+});
 
-      return {
-        getToolkits,
-        getToolkitsBySlugs,
-        getMetrics: () => client.getMetrics(),
-        getToolsAsEnums: () => client.tools.retrieveEnum(),
-        /**
-         * Fetches tools with optional toolkit filtering.
-         * When toolkitSlugs is provided, fetches all matching tools.
-         * @param toolkitSlugs - Optional array of toolkit slugs to filter by
-         */
-        getTools: (toolkitSlugs?: ReadonlyArray<string>) =>
-          client.tools.list(toolkitSlugs ?? []).pipe(
-            Effect.map(response => response.items),
-            Effect.map(items => sortBySlug(items) as ReadonlyArray<Tool>)
-          ),
-        /**
-         * Fetches tools with per-toolkit version support.
-         * Groups toolkits by version and makes separate API calls for each group.
-         * @param specs - Array of { toolkitSlug, toolkitVersion } specifications
-         */
-        getToolsByVersionSpecs: (specs: ReadonlyArray<ToolkitVersionSpec>) =>
-          client.tools.listByVersionSpecs(specs).pipe(
-            Effect.map(response => response.items),
-            Effect.map(items => sortBySlug(items) as ReadonlyArray<Tool>)
-          ),
-        getTriggerTypesAsEnums: () => client.triggersTypes.retrieveEnum(),
-        /**
-         * Retrieves detailed info about a single trigger type by slug.
-         * @param slug - Trigger type slug (e.g. "GMAIL_NEW_GMAIL_MESSAGE")
-         */
-        getTriggerTypeDetailed: (slug: string) => client.triggersTypes.retrieve(slug),
-        /**
-         * Fetches trigger types with optional toolkit filtering.
-         * When toolkitSlugs is provided, fetches all matching trigger types.
-         * @param toolkitSlugs - Optional array of toolkit slugs to filter by
-         */
-        getTriggerTypes: (toolkitSlugs?: ReadonlyArray<string>) =>
-          client.triggersTypes.list(toolkitSlugs).pipe(
-            Effect.map(response => response.items),
-            Effect.map(items => sortBySlug(items) as ReadonlyArray<TriggerType>)
-          ),
-        /**
-         * Validates that the given toolkit slugs are valid by comparing them against the list
-         * of available toolkits. Returns the list of valid toolkit slugs (normalized to lowercase).
-         * @param toolkitSlugs - Array of toolkit slugs to validate (case-insensitive)
-         */
-        validateToolkits: (
-          toolkitSlugs: ReadonlyArray<string>
-        ): Effect.Effect<
-          ReadonlyArray<string>,
-          InvalidToolkitsError | HttpError | NoSuchElementException
-        > =>
-          Effect.gen(function* () {
-            // Normalize input slugs to lowercase for comparison
-            const normalizedInputSlugs = toolkitSlugs.map(slug => String.toLowerCase(slug));
+export type ComposioClientLiveShape = Effect.Effect.Success<typeof makeComposioClientLive>;
 
-            // Fetch all available toolkits
-            const allToolkits = yield* getToolkits();
-            const availableSlugs = allToolkits.map(toolkit => String.toLowerCase(toolkit.slug));
+export class ComposioClientLive extends Context.Tag('services/ComposioClientLive')<
+  ComposioClientLive,
+  ComposioClientLiveShape
+>() {
+  static readonly Default = Layer.effect(ComposioClientLive, makeComposioClientLive).pipe(
+    Layer.provide(ComposioClientSingleton.Default)
+  );
+}
 
-            // Find invalid slugs
-            const invalidSlugs = normalizedInputSlugs.filter(
-              slug => !availableSlugs.includes(slug)
-            );
+const makeComposioToolkitsRepository = Effect.gen(function* () {
+  const client = yield* ComposioClientLive;
 
-            if (invalidSlugs.length > 0) {
-              return yield* Effect.fail(
-                new InvalidToolkitsError({
-                  invalidToolkits: invalidSlugs,
-                  availableToolkits: availableSlugs,
-                })
-              );
-            }
+  const getToolkits = () =>
+    client.toolkits.list().pipe(
+      Effect.map(response => response.items),
+      Effect.map(items => sortBySlug(items) as ReadonlyArray<Toolkit>)
+    );
 
-            return normalizedInputSlugs;
-          }),
-        /**
-         * Filters the given list of toolkits to only include those with the specified slugs.
-         * @param toolkits - Array of toolkits to filter
-         * @param toolkitSlugs - Array of toolkit slugs to filter by (case-insensitive)
-         */
-        filterToolkitsBySlugs: (
-          toolkits: ReadonlyArray<Toolkit>,
-          toolkitSlugs: ReadonlyArray<string>
-        ): ReadonlyArray<Toolkit> => {
-          const normalizedSlugs = new Set(toolkitSlugs.map(slug => String.toLowerCase(slug)));
-          return toolkits.filter(toolkit => normalizedSlugs.has(String.toLowerCase(toolkit.slug)));
-        },
-        /**
-         * Validates that the requested toolkit versions exist in the API's available_versions.
-         * Makes parallel API calls to fetch toolkit metadata for validation.
-         *
-         * @param overrides - Map of toolkit slug to requested version
-         * @param relevantToolkits - Optional array of toolkit slugs to validate (if --toolkits filter is used)
-         * @returns Effect that succeeds with the validated overrides and warnings, or fails with InvalidToolkitVersionsError
-         */
-        validateToolkitVersions: (
-          overrides: ToolkitVersionOverrides,
-          relevantToolkits?: ReadonlyArray<string>
-        ): Effect.Effect<
-          {
-            validatedOverrides: ToolkitVersionOverrides;
-            warnings: ReadonlyArray<string>;
-          },
-          InvalidToolkitVersionsError | InvalidToolkitsError | HttpError | NoSuchElementException
-        > => validateToolkitVersionsImpl(client, overrides, relevantToolkits),
-        /**
-         * Searches toolkits with optional filters. Returns a single page of results.
-         * @param params - Search/filter parameters
-         */
-        searchToolkits: (params: {
-          search?: string;
-          category?: string;
-          limit?: number;
-          cursor?: string;
-        }) => client.toolkits.search(params),
-        /**
-         * Retrieves detailed toolkit info including auth_config_details.
-         * @param slug - Toolkit slug
-         */
-        getToolkitDetailed: (slug: string) => client.toolkits.retrieveDetailed(slug),
-        /**
-         * Searches tools with optional filters. Returns a single page of results.
-         * @param params - Search/filter parameters
-         */
-        searchTools: (params: {
-          search?: string;
-          toolkit_slug?: string;
-          tags?: string;
-          limit?: number;
-          cursor?: string;
-        }) => client.tools.search(params),
-        /**
-         * Retrieves detailed info about a single tool by slug.
-         * @param slug - Tool slug (e.g. "GMAIL_SEND_EMAIL")
-         */
-        getToolDetailed: (slug: string) => client.tools.retrieve(slug),
-        /**
-         * Lists auth configs with optional filters. Returns a single page of results.
-         * @param params - Search/filter parameters
-         */
-        listAuthConfigs: (params: {
-          search?: string;
-          toolkit_slug?: string;
-          limit?: number;
-          show_disabled?: boolean;
-        }) => client.authConfigs.list(params),
-        /**
-         * Retrieves detailed info about a single auth config by its nanoid.
-         * @param nanoid - Auth config ID
-         */
-        getAuthConfig: (nanoid: string) => client.authConfigs.retrieve(nanoid),
-        /**
-         * Creates a new auth config for a toolkit.
-         * @param params - Create parameters (discriminated union: use_composio_managed_auth | use_custom_auth)
-         */
-        createAuthConfig: (params: AuthConfigCreateParams) => client.authConfigs.create(params),
-        deleteAuthConfig: (nanoid: string) => client.authConfigs.delete(nanoid),
-        // Connected account operations (thin wrappers — see buildConnectedAccountsNamespace)
-        listConnectedAccounts: (params: {
-          toolkit_slugs?: string[];
-          user_ids?: string[];
-          statuses?: string[];
-          limit?: number;
-        }) => client.connectedAccounts.list(params),
-        getConnectedAccount: (nanoid: string) => client.connectedAccounts.retrieve(nanoid),
-        deleteConnectedAccount: (nanoid: string) => client.connectedAccounts.delete(nanoid),
-        createConnectedAccountLink: (params: { auth_config_id: string; user_id: string }) =>
-          client.connectedAccounts.createLink(params),
-        ...buildTriggerInstanceRepositoryOperations(client),
-      };
-    }),
-    dependencies: [ComposioClientLive.Default],
-  }
-) {}
+  /**
+   * Fetches specific toolkits by their slugs.
+   * Makes parallel API calls to retrieve each toolkit.
+   * @param slugs - Array of toolkit slugs to fetch
+   */
+  const getToolkitsBySlugs = (slugs: ReadonlyArray<string>) =>
+    Effect.all(
+      slugs.map(slug =>
+        client.toolkits.retrieve(slug).pipe(
+          // Only convert 404 errors to InvalidToolkitsError.
+          // Other HTTP errors (500, 401, network failures, etc.) should propagate as-is.
+          Effect.catchTag('services/HttpServerError', e =>
+            Effect.if(e.status === 404, {
+              onTrue: () =>
+                Effect.fail(
+                  new InvalidToolkitsError({
+                    invalidToolkits: [slug],
+                    availableToolkits: [],
+                  })
+                ),
+              onFalse: () => Effect.fail(e),
+            })
+          )
+        )
+      ),
+      { concurrency: MAX_CONCURRENT_REQUESTS_PER_ENDPOINT }
+    ).pipe(Effect.map(items => sortBySlug(items) as ReadonlyArray<Toolkit>));
 
-export class ComposioSessionRepository extends Effect.Service<ComposioSessionRepository>()(
-  'services/ComposioSessionRepository',
-  {
-    effect: Effect.gen(function* () {
-      const client = yield* ComposioClientLive;
+  return {
+    getToolkits,
+    getToolkitsBySlugs,
+    getMetrics: () => client.getMetrics(),
+    getToolsAsEnums: () => client.tools.retrieveEnum(),
+    /**
+     * Fetches tools with optional toolkit filtering.
+     * When toolkitSlugs is provided, fetches all matching tools.
+     * @param toolkitSlugs - Optional array of toolkit slugs to filter by
+     */
+    getTools: (toolkitSlugs?: ReadonlyArray<string>) =>
+      client.tools.list(toolkitSlugs ?? []).pipe(
+        Effect.map(response => response.items),
+        Effect.map(items => sortBySlug(items) as ReadonlyArray<Tool>)
+      ),
+    /**
+     * Fetches tools with per-toolkit version support.
+     * Groups toolkits by version and makes separate API calls for each group.
+     * @param specs - Array of { toolkitSlug, toolkitVersion } specifications
+     */
+    getToolsByVersionSpecs: (specs: ReadonlyArray<ToolkitVersionSpec>) =>
+      client.tools.listByVersionSpecs(specs).pipe(
+        Effect.map(response => response.items),
+        Effect.map(items => sortBySlug(items) as ReadonlyArray<Tool>)
+      ),
+    getTriggerTypesAsEnums: () => client.triggersTypes.retrieveEnum(),
+    /**
+     * Retrieves detailed info about a single trigger type by slug.
+     * @param slug - Trigger type slug (e.g. "GMAIL_NEW_GMAIL_MESSAGE")
+     */
+    getTriggerTypeDetailed: (slug: string) => client.triggersTypes.retrieve(slug),
+    /**
+     * Fetches trigger types with optional toolkit filtering.
+     * When toolkitSlugs is provided, fetches all matching trigger types.
+     * @param toolkitSlugs - Optional array of toolkit slugs to filter by
+     */
+    getTriggerTypes: (toolkitSlugs?: ReadonlyArray<string>) =>
+      client.triggersTypes.list(toolkitSlugs).pipe(
+        Effect.map(response => response.items),
+        Effect.map(items => sortBySlug(items) as ReadonlyArray<TriggerType>)
+      ),
+    /**
+     * Validates that the given toolkit slugs are valid by comparing them against the list
+     * of available toolkits. Returns the list of valid toolkit slugs (normalized to lowercase).
+     * @param toolkitSlugs - Array of toolkit slugs to validate (case-insensitive)
+     */
+    validateToolkits: (
+      toolkitSlugs: ReadonlyArray<string>
+    ): Effect.Effect<
+      ReadonlyArray<string>,
+      InvalidToolkitsError | HttpError | NoSuchElementException
+    > =>
+      Effect.gen(function* () {
+        // Normalize input slugs to lowercase for comparison
+        const normalizedInputSlugs = toolkitSlugs.map(slug => String.toLowerCase(slug));
 
-      return {
-        createSession: (params?: { scope?: 'user' | 'project' }) =>
-          client.cli.createSession(params),
-        getSession: (session: { id: string }) => client.cli.getSession({ id: session.id }),
-        getRealtimeCredentials: () => client.cli.getRealtimeCredentials(),
-        authRealtimeChannel: (params: { channel_name: string; socket_id: string }) =>
-          client.cli.authRealtimeChannel(params),
-      };
-    }),
-    dependencies: [ComposioClientLive.Default],
-  }
-) {}
+        // Fetch all available toolkits
+        const allToolkits = yield* getToolkits();
+        const availableSlugs = allToolkits.map(toolkit => String.toLowerCase(toolkit.slug));
+
+        // Find invalid slugs
+        const invalidSlugs = normalizedInputSlugs.filter(slug => !availableSlugs.includes(slug));
+
+        if (invalidSlugs.length > 0) {
+          return yield* Effect.fail(
+            new InvalidToolkitsError({
+              invalidToolkits: invalidSlugs,
+              availableToolkits: availableSlugs,
+            })
+          );
+        }
+
+        return normalizedInputSlugs;
+      }),
+    /**
+     * Filters the given list of toolkits to only include those with the specified slugs.
+     * @param toolkits - Array of toolkits to filter
+     * @param toolkitSlugs - Array of toolkit slugs to filter by (case-insensitive)
+     */
+    filterToolkitsBySlugs: (
+      toolkits: ReadonlyArray<Toolkit>,
+      toolkitSlugs: ReadonlyArray<string>
+    ): ReadonlyArray<Toolkit> => {
+      const normalizedSlugs = new Set(toolkitSlugs.map(slug => String.toLowerCase(slug)));
+      return toolkits.filter(toolkit => normalizedSlugs.has(String.toLowerCase(toolkit.slug)));
+    },
+    /**
+     * Validates that the requested toolkit versions exist in the API's available_versions.
+     * Makes parallel API calls to fetch toolkit metadata for validation.
+     *
+     * @param overrides - Map of toolkit slug to requested version
+     * @param relevantToolkits - Optional array of toolkit slugs to validate (if --toolkits filter is used)
+     * @returns Effect that succeeds with the validated overrides and warnings, or fails with InvalidToolkitVersionsError
+     */
+    validateToolkitVersions: (
+      overrides: ToolkitVersionOverrides,
+      relevantToolkits?: ReadonlyArray<string>
+    ): Effect.Effect<
+      {
+        validatedOverrides: ToolkitVersionOverrides;
+        warnings: ReadonlyArray<string>;
+      },
+      InvalidToolkitVersionsError | InvalidToolkitsError | HttpError | NoSuchElementException
+    > => validateToolkitVersionsImpl(client, overrides, relevantToolkits),
+    /**
+     * Searches toolkits with optional filters. Returns a single page of results.
+     * @param params - Search/filter parameters
+     */
+    searchToolkits: (params: {
+      search?: string;
+      category?: string;
+      limit?: number;
+      cursor?: string;
+    }) => client.toolkits.search(params),
+    /**
+     * Retrieves detailed toolkit info including auth_config_details.
+     * @param slug - Toolkit slug
+     */
+    getToolkitDetailed: (slug: string) => client.toolkits.retrieveDetailed(slug),
+    /**
+     * Searches tools with optional filters. Returns a single page of results.
+     * @param params - Search/filter parameters
+     */
+    searchTools: (params: {
+      search?: string;
+      toolkit_slug?: string;
+      tags?: string;
+      limit?: number;
+      cursor?: string;
+    }) => client.tools.search(params),
+    /**
+     * Retrieves detailed info about a single tool by slug.
+     * @param slug - Tool slug (e.g. "GMAIL_SEND_EMAIL")
+     */
+    getToolDetailed: (slug: string) => client.tools.retrieve(slug),
+    /**
+     * Lists auth configs with optional filters. Returns a single page of results.
+     * @param params - Search/filter parameters
+     */
+    listAuthConfigs: (params: {
+      search?: string;
+      toolkit_slug?: string;
+      limit?: number;
+      show_disabled?: boolean;
+    }) => client.authConfigs.list(params),
+    /**
+     * Retrieves detailed info about a single auth config by its nanoid.
+     * @param nanoid - Auth config ID
+     */
+    getAuthConfig: (nanoid: string) => client.authConfigs.retrieve(nanoid),
+    /**
+     * Creates a new auth config for a toolkit.
+     * @param params - Create parameters (discriminated union: use_composio_managed_auth | use_custom_auth)
+     */
+    createAuthConfig: (params: AuthConfigCreateParams) => client.authConfigs.create(params),
+    deleteAuthConfig: (nanoid: string) => client.authConfigs.delete(nanoid),
+    // Connected account operations (thin wrappers — see buildConnectedAccountsNamespace)
+    listConnectedAccounts: (params: {
+      toolkit_slugs?: string[];
+      user_ids?: string[];
+      statuses?: string[];
+      limit?: number;
+    }) => client.connectedAccounts.list(params),
+    getConnectedAccount: (nanoid: string) => client.connectedAccounts.retrieve(nanoid),
+    deleteConnectedAccount: (nanoid: string) => client.connectedAccounts.delete(nanoid),
+    createConnectedAccountLink: (params: { auth_config_id: string; user_id: string }) =>
+      client.connectedAccounts.createLink(params),
+    ...buildTriggerInstanceRepositoryOperations(client),
+  };
+});
+
+export type ComposioToolkitsRepositoryShape = Effect.Effect.Success<
+  typeof makeComposioToolkitsRepository
+>;
+
+export class ComposioToolkitsRepository extends Context.Tag('services/ComposioToolkitsRepository')<
+  ComposioToolkitsRepository,
+  ComposioToolkitsRepositoryShape
+>() {
+  static readonly Default = Layer.effect(
+    ComposioToolkitsRepository,
+    makeComposioToolkitsRepository
+  ).pipe(Layer.provide(ComposioClientLive.Default));
+}
+
+const makeComposioSessionRepository = Effect.gen(function* () {
+  const client = yield* ComposioClientLive;
+
+  return {
+    createSession: (params?: { scope?: 'user' | 'project' }) => client.cli.createSession(params),
+    getSession: (session: { id: string }) => client.cli.getSession({ id: session.id }),
+    getRealtimeCredentials: () => client.cli.getRealtimeCredentials(),
+    authRealtimeChannel: (params: { channel_name: string; socket_id: string }) =>
+      client.cli.authRealtimeChannel(params),
+  };
+});
+
+export type ComposioSessionRepositoryShape = Effect.Effect.Success<
+  typeof makeComposioSessionRepository
+>;
+
+export class ComposioSessionRepository extends Context.Tag('services/ComposioSessionRepository')<
+  ComposioSessionRepository,
+  ComposioSessionRepositoryShape
+>() {
+  static readonly Default = Layer.effect(
+    ComposioSessionRepository,
+    makeComposioSessionRepository
+  ).pipe(Layer.provide(ComposioClientLive.Default));
+}

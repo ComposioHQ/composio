@@ -1,13 +1,22 @@
 import process from 'node:process';
-import { Effect } from 'effect';
+import { Context, Layer } from 'effect';
 
-// Service to that wraps `node:process`, for testing purposes.
-export class NodeProcess extends Effect.Service<NodeProcess>()('services/NodeProcess', {
-  sync: () => ({
+export interface NodeProcessShape {
+  readonly cwd: string;
+  readonly execPath: string;
+  readonly platform: NodeJS.Platform;
+  readonly arch: string;
+}
+
+// Service that wraps `node:process`, for testing purposes.
+export class NodeProcess extends Context.Tag('services/NodeProcess')<
+  NodeProcess,
+  NodeProcessShape
+>() {
+  static readonly Default: Layer.Layer<NodeProcess> = Layer.sync(NodeProcess, () => ({
     cwd: process.cwd(),
     execPath: process.execPath,
     platform: process.platform,
     arch: process.arch,
-  }),
-  dependencies: [],
-}) {}
+  }));
+}

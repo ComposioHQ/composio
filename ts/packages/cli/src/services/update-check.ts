@@ -4,7 +4,7 @@ import { Config, Data, Effect, Layer, Option, Predicate, Schema } from 'effect';
 import semver from 'semver';
 import { bold, cyanBright, dim } from 'src/ui/colors';
 import { APP_VERSION, GITHUB_REPO } from '../constants';
-import { NodeOs } from './node-os';
+import { NodeOs, type NodeOsShape } from './node-os';
 import { resolveRunningCliVersion } from './run-companion-modules';
 import { TerminalUI } from './terminal-ui';
 
@@ -84,7 +84,7 @@ const defaultStateFile = Effect.gen(function* () {
   return path.join(os.homedir, '.composio', 'update-check.json');
 });
 
-function getCurrentBinaryAssetName(os: Pick<NodeOs, 'platform' | 'arch'>): string | undefined {
+function getCurrentBinaryAssetName(os: Pick<NodeOsShape, 'platform' | 'arch'>): string | undefined {
   const { platform } = os;
   const rawArch: string = os.arch;
   if (platform !== 'darwin' && platform !== 'linux') return undefined;

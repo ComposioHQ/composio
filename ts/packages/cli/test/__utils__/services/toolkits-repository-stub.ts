@@ -1,9 +1,12 @@
 import { Effect, Layer } from 'effect';
-import { ComposioToolkitsRepository } from 'src/services/composio-clients';
+import {
+  ComposioToolkitsRepository,
+  type ComposioToolkitsRepositoryShape,
+} from 'src/services/composio-clients';
 import type { Toolkits } from 'src/models/toolkits';
 
 export type GetToolkitsError = Effect.Effect.Error<
-  ReturnType<ComposioToolkitsRepository['getToolkits']>
+  ReturnType<ComposioToolkitsRepositoryShape['getToolkits']>
 >;
 
 const notUsed = (method: string) => () => Effect.die(`${method} is not used in this test`);
@@ -57,7 +60,7 @@ export const countingToolkitsRepository = (
 
   const layer = Layer.succeed(
     ComposioToolkitsRepository,
-    new ComposioToolkitsRepository({
+    ComposioToolkitsRepository.of({
       ...unusedRepositoryMethods,
       getToolkits: () =>
         Effect.suspend(() => {

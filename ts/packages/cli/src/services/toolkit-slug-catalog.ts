@@ -1,4 +1,4 @@
-import { DateTime, Duration, Effect, Option, Ref } from 'effect';
+import { DateTime, Duration, Effect, Option, Ref, Context, Layer } from 'effect';
 import { BAKED_TOOLKIT_SLUGS } from 'src/generated/toolkit-slugs';
 import { ComposioToolkitsRepository } from 'src/services/composio-clients';
 import {
@@ -100,28 +100,32 @@ const loadLocalToolkitSlugs = Effect.gen(function* () {
  * Memoizing also gates the staleness refresh to one fork per run, where an
  * unmemoized read forked — and rewrote the file — once per resolution.
  */
-export class ToolkitSlugCatalog extends Effect.Service<ToolkitSlugCatalog>()(
-  'services/ToolkitSlugCatalog',
-  {
-    effect: Effect.gen(function* () {
-      const local = yield* Effect.cached(loadLocalToolkitSlugs);
-      const hasRecorded = yield* Ref.make(false);
+const makeToolkitSlugCatalog = Effect.gen(function* () {
+  const local = yield* Effect.cached(loadLocalToolkitSlugs);
+  const hasRecorded = yield* Ref.make(false);
 
-      /**
-       * Records slugs learned from a catalog fetch, in the background, at most
-       * once per run. Every miss in a run merges the same memoized fetch into
-       * the same local list, so later calls would fork a daemon fiber only to
-       * rewrite an identical file — and each pending fiber holds the finished
-       * command open a little longer.
-       */
-      const remember = (slugs: ReadonlyArray<string>): Effect.Effect<void> =>
-        Effect.gen(function* () {
-          const alreadyRecorded = yield* Ref.getAndSet(hasRecorded, true);
-          if (alreadyRecorded) return;
-          yield* Effect.forkDaemon(writeKnownToolkitSlugs(slugs));
-        });
+  /**
+   * Records slugs learned from a catalog fetch, in the background, at most
+   * once per run. Every miss in a run merges the same memoized fetch into
+   * the same local list, so later calls would fork a daemon fiber only to
+   * rewrite an identical file — and each pending fiber holds the finished
+   * command open a little longer.
+   */
+  const remember = (slugs: ReadonlyArray<string>): Effect.Effect<void> =>
+    Effect.gen(function* () {
+      const alreadyRecorded = yield* Ref.getAndSet(hasRecorded, true);
+      if (alreadyRecorded) return;
+      yield* Effect.forkDaemon(writeKnownToolkitSlugs(slugs));
+    });
 
-      return { local, remember };
-    }),
-  }
-) {}
+  return { local, remember };
+});
+
+export type ToolkitSlugCatalogShape = Effect.Effect.Success<typeof makeToolkitSlugCatalog>;
+
+export class ToolkitSlugCatalog extends Context.Tag('services/ToolkitSlugCatalog')<
+  ToolkitSlugCatalog,
+  ToolkitSlugCatalogShape
+>() {
+  static readonly Default = Layer.effect(ToolkitSlugCatalog, makeToolkitSlugCatalog);
+}

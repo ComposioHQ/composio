@@ -54,7 +54,7 @@ const TerminalUINoop = Layer.succeed(
 
 const NodeOsTest = Layer.succeed(
   NodeOs,
-  new NodeOs({
+  NodeOs.of({
     homedir: '/tmp',
     tmpdir: '/tmp',
     platform: 'darwin',
