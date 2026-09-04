@@ -131,8 +131,8 @@ export class ComposioSharedConnectionNotAccessibleError extends ComposioError {
  * `POST /api/v3/connected_accounts` endpoint rejects a Composio-managed
  * OAuth (OAuth1, OAuth2, DCR_OAUTH) auth-config request.
  *
- * The retiring path is being phased out — new orgs from 2026-05-08 and
- * all remaining orgs from 2026-07-03. Migrate the call to
+ * The retiring path has been phased out — new orgs were cut over on
+ * 2026-05-08 and all remaining orgs on 2026-07-03. Migrate the call to
  * `composio.connectedAccounts.link()`, which works for every redirectable
  * scheme regardless of whether the auth config is Composio-managed or
  * custom.

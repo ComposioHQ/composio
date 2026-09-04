@@ -2,7 +2,8 @@
   "name": "@composio/google",
   "version": "0.10.3",
   "description": "Google GenAI Provider for Composio SDK",
-  "main": "src/index.ts",
+  "main": "dist/index.mjs",
+  "types": "dist/index.d.mts",
   "type": "module",
   "engines": {
     "node": ">=22.22.3"
@@ -34,7 +35,9 @@
   "scripts": {
     "clean": "git clean -xdf node_modules",
     "build": "tsdown",
-    "test": "vitest run"
+    "test": "vitest run",
+    "typecheck": "pnpm exec tsgo --noEmit --skipLibCheck",
+    "typecheck:tsc": "tsc --noEmit --skipLibCheck"
   },
   "keywords": [
     "composio",
@@ -46,7 +49,7 @@
   "author": "",
   "license": "ISC",
   "peerDependencies": {
-    "@composio/core": ">=0.16.0 <1.0.0",
+    "@composio/core": ">=0.16.0 <2.0.0",
     "@google/genai": "^1.1.0"
   },
   "devDependencies": {

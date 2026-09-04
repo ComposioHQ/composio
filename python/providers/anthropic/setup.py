@@ -21,6 +21,6 @@ setup(
         "Operating System :: OS Independent",
     ],
     python_requires=">=3.10,<4",
-    install_requires=["anthropic>=0.120.0", "composio"],
+    install_requires=["anthropic>=0.120.0", "composio>=0.17.1,<2"],
     include_package_data=True,
 )

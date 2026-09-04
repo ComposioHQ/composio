@@ -26,7 +26,7 @@ setup(
         "ag2>=0.14,<1.0",
         "flaml==2.6.0",
         "autogen_core>=0.7.5",
-        "composio",
+        "composio>=0.17.1,<2",
     ],
     include_package_data=True,
 )

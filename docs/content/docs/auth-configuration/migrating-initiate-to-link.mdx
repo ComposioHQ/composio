@@ -1,15 +1,15 @@
 ---
 title: Migrating from initiate() to link()
-description: Move Composio-managed OAuth flows off the legacy POST /api/v3/connected_accounts endpoint and onto link() before the 2026-05-08 / 2026-07-03 cutover.
+description: Move Composio-managed OAuth flows off the retired POST /api/v3/connected_accounts endpoint and onto link() after the 2026-05-08 / 2026-07-03 cutover.
 legacy: true
 ---
 
-`composio.connected_accounts.initiate()` (Python) and `composio.connectedAccounts.initiate()` (TypeScript) wrap `POST /api/v3/connected_accounts`. That endpoint is being retired for **Composio-managed auth configs on redirectable OAuth schemes** (OAuth1, OAuth2, DCR_OAUTH):
+`composio.connected_accounts.initiate()` (Python) and `composio.connectedAccounts.initiate()` (TypeScript) wrap `POST /api/v3/connected_accounts`. That endpoint is retired for **Composio-managed auth configs on redirectable OAuth schemes** (OAuth1, OAuth2, DCR_OAUTH):
 
 - **2026-05-08, 00:00 UTC** — organizations created on or after this date are blocked.
 - **2026-07-03, 00:00 UTC** — all remaining organizations are blocked.
 
-After your org's cutover, calling `initiate()` for the affected combination raises `ComposioLegacyConnectedAccountsEndpointRetiredError` (TS) / `composio.exceptions.ComposioLegacyConnectedAccountsEndpointRetiredError` (Python). The replacement is `link()` — same return shape, same `redirectUrl` / `redirect_url`, same `waitForConnection()` / `wait_for_connection()` helper.
+Calling `initiate()` for the affected combination now raises `ComposioLegacyConnectedAccountsEndpointRetiredError` (TS) / `composio.exceptions.ComposioLegacyConnectedAccountsEndpointRetiredError` (Python). The replacement is `link()` — same return shape, same `redirectUrl` / `redirect_url`, same `waitForConnection()` / `wait_for_connection()` helper.
 
 <Callout type="info">
 **Who this affects:** developers using a Composio-managed (default) auth config on OAuth1, OAuth2, or DCR_OAUTH. If you brought your own OAuth client credentials (custom auth config) or use a non-OAuth scheme (API key, bearer, basic), your `initiate()` calls keep working — no migration needed.

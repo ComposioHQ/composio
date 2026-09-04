@@ -14,7 +14,7 @@ classifiers = [
 ]
 dependencies = [
     "langgraph>=1.2.9",
-    "composio",
+    "composio>=0.17.1,<2",
 ]
 
 [project.urls]

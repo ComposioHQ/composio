@@ -6,7 +6,8 @@
   },
   "version": "0.18.0",
   "description": "",
-  "main": "src/index.ts",
+  "main": "dist/index.mjs",
+  "types": "dist/index.d.mts",
   "publishConfig": {
     "access": "public",
     "main": "dist/index.mjs",

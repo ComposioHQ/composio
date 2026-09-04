@@ -11,6 +11,7 @@ filtered_output_file=$(mktemp)
 trap 'rm -f "$filtered_output_file"' EXIT
 
 pnpm run build:packages
+pnpm run check:package-exports
 
 set +e
 pnpm changeset publish
