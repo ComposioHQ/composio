@@ -26,7 +26,7 @@ composio [--log-level all|trace|debug|info|warning|error|fatal|none]
 
 ## 🧭 Commands
 
-- `composio version`: Display the current CLI version.
+- `composio version` (also `composio --version` or `-v`): Display the current CLI version.
 - `composio whoami`: Show the currently logged-in user/account.
 - `composio login [--no-browser] [--no-wait] [--key text] [--user-api-key text] [--org text] [-y, --yes] [--no-skill-install]`: Log in to the Composio CLI session.
 - `composio logout`: Log out from the Composio CLI session.
