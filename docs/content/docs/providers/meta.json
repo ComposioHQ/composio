@@ -9,9 +9,12 @@
     "google",
     "langchain",
     "autogen",
+    "ag2",
     "crewai",
     "llamaindex",
     "mastra",
+    "aimlapi",
+    "community-integrations",
     "custom-providers",
     "..."
   ]

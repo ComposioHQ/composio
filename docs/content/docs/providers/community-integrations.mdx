@@ -1,0 +1,44 @@
+---
+title: Community Integrations
+description: Discover community-maintained integrations that use Composio's provider, modifier, or API surfaces.
+keywords: [community integrations, corsair, tealtiger, modifiers, governance]
+---
+
+Community integrations extend Composio without requiring a first-party provider package in this monorepo. They usually build on one of these stable surfaces:
+
+- Provider adapters that wrap Composio tools for another agent framework.
+- Modifier hooks such as `beforeExecute` and `afterExecute`.
+- Direct REST or SDK calls for tool discovery, execution, connection management, and triggers.
+
+Use this page to find community-maintained integrations and to understand where a new integration should live.
+
+## Current community integrations
+
+| Integration | Maintainer | What it adds | Where it lives |
+| --- | --- | --- | --- |
+| Corsair Composio plugin | Corsair community | Tool discovery, action execution, connection management, and webhook helpers for Corsair-based agents | [`@corsair-dev/composio`](https://github.com/adityalowanshi/corsair/tree/feat/composio-plugin/packages/composio) |
+| TealTiger governance middleware | AgentGuard AI | Deterministic policy checks for tool allowlists, PII blocking, cost budgets, kill switches, and audit records before and after tool calls | [`packages/composio-tealtiger`](https://github.com/agentguard-ai/tealtiger/tree/main/packages/composio-tealtiger) |
+
+## Choosing an integration shape
+
+Create a community package when the integration depends on another framework's release cycle, ownership model, or plugin registry. Link to it from docs instead of copying the package into the Composio monorepo.
+
+Use Composio modifiers when the integration needs to inspect or govern tool calls without changing the provider itself. `beforeExecute` can block or rewrite a tool call before it reaches the external service, and `afterExecute` can record audit data from the result.
+
+Build a first-party provider only when Composio maintainers intend to own the package, publish it with Composio's release process, and keep it compatible with the target framework.
+
+## Listing a community integration
+
+Open a docs PR with:
+
+- Package or repository link.
+- Maintainer or owning organization.
+- Supported language and framework.
+- Minimal install snippet.
+- Security model, especially if the integration can execute tools, manage auth, or inspect arguments.
+- Test or example links in the integration repository.
+
+## Next
+
+<Card icon={<BookOpen />} title="Custom providers" href="/docs/providers/custom-providers" description="Build a provider when your framework needs a first-class tool shape." />
+<Card icon={<BookOpen />} title="Before execution modifiers" href="/docs/tools-direct/modify-tool-behavior/before-execution-modifiers" description="Inspect, rewrite, or block tool calls before execution." />
