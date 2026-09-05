@@ -17,6 +17,10 @@
  *   generated: they are not part of Draft 7, so the oracle cannot express
  *   them (the `primitive-draft4-boolean-exclusive-bounds` corpus case covers
  *   them)
+ * - non-zero doubles closer to zero than `Number.EPSILON` are never generated:
+ *   the oracle divides by `multipleOf` in floating point, so `-5e-324 / 4`
+ *   underflows to `-0` and Ajv accepts a value that is not a multiple, while
+ *   the converter's decimal scaling rejects it
  */
 import Ajv from 'ajv';
 import fc from 'fast-check';
@@ -33,7 +37,11 @@ const scalarValue: fc.Arbitrary<Serializable> = fc.oneof(
   fc.constant(null),
   fc.boolean(),
   fc.integer({ min: -100, max: 100 }),
-  fc.double({ min: -100, max: 100, noNaN: true, noDefaultInfinity: true }),
+  fc
+    .double({ min: -100, max: 100, noNaN: true, noDefaultInfinity: true })
+    .filter(value => value === 0 || Math.abs(value) >= Number.EPSILON),
+  // Raw doubles cluster near zero, so also generate ordinary two-decimal values.
+  fc.integer({ min: -10_000, max: 10_000 }).map(hundredths => hundredths / 100),
   fc.string({
     unit: fc.constantFrom(...'abcdefghijklmnopqrstuvwxyz', '\u{1D11E}'),
     maxLength: 6,
