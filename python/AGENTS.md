@@ -38,6 +38,7 @@ make build
 
 - Use Ruff for formatting/linting and mypy for type checks.
 - Add pytest coverage for behavior changes.
+- Treat `python/vendor/` as read-only reference source and use `VENDORED_SOURCES.md` to initialize only the providers needed for the task.
 - Keep provider-specific changes under the relevant `python/providers/<provider>/` package.
 - When bumping `composio-client`, update `python/pyproject.toml`, `python/setup.py`, and root `uv.lock` together.
 

@@ -25,6 +25,7 @@ make type_inference
 ## Rules
 
 - Keep provider dependencies in the provider package metadata unless shared tooling needs them.
+- Initialize and inspect the mapped read-only upstream source in `python/vendor/providers/` before changing provider behavior; see `VENDORED_SOURCES.md`.
 - Preserve Python naming conventions and public import paths.
 - Add provider tests and type-inference coverage when public return types change.
 - New providers or renamed provider packages usually need explicit entries in `python/noxfile.py`'s `type_inference` install list and checked-file list.

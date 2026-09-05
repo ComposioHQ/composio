@@ -32,6 +32,7 @@ pnpm test:e2e:cli
 ## Rules
 
 - Do not edit `ts/vendor/`; those submodules are read-only references.
+- Before changing a provider integration, initialize and inspect its upstream source using the mapping in `VENDORED_SOURCES.md`.
 - Keep generated outputs owned by their generator.
 - Add changesets only for changes to published TypeScript packages.
 - Never add changesets for `@composio/cli` or `@composio/cli-local-tools` while `.changeset/config.json` ignores them; record CLI notes in `ts/packages/cli/CHANGELOG.md` instead.

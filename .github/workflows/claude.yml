@@ -31,7 +31,8 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 1
-          submodules: true
+          # Reference sources are initialized on demand; see VENDORED_SOURCES.md.
+          submodules: false
 
       - name: Run Claude Code
         id: claude
