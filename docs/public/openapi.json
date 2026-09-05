@@ -114,6 +114,10 @@
       "description": "(Labs) Tool router endpoints"
     },
     {
+      "name": "Playground",
+      "description": "Dashboard playground chat"
+    },
+    {
       "name": "Invite Codes"
     },
     {
@@ -5824,11 +5828,16 @@
                       },
                       "fast_mode": {
                         "type": "boolean",
-                        "description": "Experimental flag to skip the LLM reranker in tool search and serve embeddings/BM25-only results.",
+                        "description": "Experimental flag to skip the LLM reranker in tool search and serve embeddings/BM25-only results. Also skips plan search entirely, so responses will not include cached-plan fields (recommended_plan_steps, known_pitfalls, reference_workbench_snippets) or plan-derived execution guidance.",
+                        "x-experimental": true
+                      },
+                      "session_config_id": {
+                        "type": "string",
+                        "format": "sessionConfigId",
+                        "description": "Experimental reusable Session config to resolve for this new Session. Mutually exclusive with inline toolkit and tool access fields; authentication and runtime fields remain per Session.",
                         "x-experimental": true
                       }
                     },
-                    "description": "Experimental features - not stable, may be modified or removed in future versions.",
                     "x-experimental": true
                   },
                   "preload": {
@@ -6562,9 +6571,23 @@
                             ]
                           },
                           "description": "Custom tools — standalone or extending Composio toolkits"
+                        },
+                        "source_session_config": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "format": "sessionConfigId"
+                            }
+                          },
+                          "required": [
+                            "id"
+                          ],
+                          "description": "Experimental provenance for the reusable Session config resolved at creation.",
+                          "x-experimental": true
                         }
                       },
-                      "description": "Experimental features including the generated system prompt. Only returned on session creation, not on GET.",
+                      "description": "Experimental v3.1 features - may change without notice",
                       "x-experimental": true
                     },
                     "warnings": {
@@ -6634,6 +6657,16 @@
           },
           "403": {
             "description": "Forbidden. The user is not authorized to create a tool router session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found. The referenced Session config or another requested resource does not exist in this project.",
             "content": {
               "application/json": {
                 "schema": {
@@ -7191,9 +7224,23 @@
                             ]
                           },
                           "description": "Custom tools — standalone or extending Composio toolkits"
+                        },
+                        "source_session_config": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "format": "sessionConfigId"
+                            }
+                          },
+                          "required": [
+                            "id"
+                          ],
+                          "description": "Experimental provenance for the reusable Session config resolved at creation.",
+                          "x-experimental": true
                         }
                       },
-                      "description": "Experimental features",
+                      "description": "Experimental v3.1 features",
                       "x-experimental": true
                     },
                     "warnings": {
@@ -7750,7 +7797,7 @@
                       },
                       "fast_mode": {
                         "type": "boolean",
-                        "description": "Experimental flag to skip the LLM reranker in tool search and serve embeddings/BM25-only results.",
+                        "description": "Experimental flag to skip the LLM reranker in tool search and serve embeddings/BM25-only results. Also skips plan search entirely, so responses will not include cached-plan fields (recommended_plan_steps, known_pitfalls, reference_workbench_snippets) or plan-derived execution guidance.",
                         "x-experimental": true
                       }
                     },
@@ -8250,9 +8297,23 @@
                             ]
                           },
                           "description": "Custom tools — standalone or extending Composio toolkits"
+                        },
+                        "source_session_config": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "format": "sessionConfigId"
+                            }
+                          },
+                          "required": [
+                            "id"
+                          ],
+                          "description": "Experimental provenance for the reusable Session config resolved at creation.",
+                          "x-experimental": true
                         }
                       },
-                      "description": "Experimental features",
+                      "description": "Experimental v3.1 features",
                       "x-experimental": true
                     },
                     "warnings": {
@@ -9167,9 +9228,23 @@
                             ]
                           },
                           "description": "Custom tools — standalone or extending Composio toolkits"
+                        },
+                        "source_session_config": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "format": "sessionConfigId"
+                            }
+                          },
+                          "required": [
+                            "id"
+                          ],
+                          "description": "Experimental provenance for the reusable Session config resolved at creation.",
+                          "x-experimental": true
                         }
                       },
-                      "description": "Experimental features",
+                      "description": "Experimental v3.1 features",
                       "x-experimental": true
                     },
                     "warnings": {
