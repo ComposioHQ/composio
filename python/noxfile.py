@@ -69,6 +69,12 @@ def chk(session: Session):
 
 
 @nox.session
+def examples(session: Session):
+    """Validate Python example files without executing live API calls."""
+    session.run("python", "scripts/validate_examples.py")
+
+
+@nox.session
 def fix(session: Session):
     """Fix linter issues"""
     session.install("--group", "dev")
@@ -173,6 +179,7 @@ def type_inference(session: Session):
         "tests/test_type_inference_autogen.py",
         "tests/test_type_inference_claude_agent_sdk.py",
         "tests/test_type_inference_crewai.py",
+        "tests/test_type_inference_custom_provider.py",
         "tests/test_type_inference_gemini.py",
         "tests/test_type_inference_google.py",
         "tests/test_type_inference_google_adk.py",

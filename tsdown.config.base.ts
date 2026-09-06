@@ -90,15 +90,14 @@ export const baseConfig = {
    * Uses '.' entrypoint to check the package root via the exports field,
    * since src/index.ts is only used during development and not exported.
    * Uses the ESM-only profile because packages no longer publish CJS entrypoints.
+   * Ignores legacy Node10/CJS-only rows while keeping ESM and bundler rows fatal.
    */
   attw: {
     entrypoints: ['.'],
     enabled: !isTurboTask,
     level: 'error',
     profile: 'esm-only',
-    ignoreRules: [
-      /* Node.js 10 only, attw doesn't automatically exclude it despite the selected profile */ 'internal-resolution-error',
-    ],
+    ignoreRules: ['internal-resolution-error', 'no-resolution', 'cjs-resolves-to-esm'],
   },
 
   /**

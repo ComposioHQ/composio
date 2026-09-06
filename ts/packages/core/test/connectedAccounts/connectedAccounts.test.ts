@@ -590,7 +590,7 @@ describe('ConnectedAccounts', () => {
       expect(req).toHaveProperty('id', 'conn_dep');
       expect(warnSpy).toHaveBeenCalledTimes(1);
       expect(warnSpy.mock.calls[0]![0]).toMatch(/composio\.connectedAccounts\.link\(\)/);
-      expect(warnSpy.mock.calls[0]![0]).toMatch(/2026-07-03/);
+      expect(warnSpy.mock.calls[0]![0]).toMatch(/has been retired/);
     });
 
     it('does NOT warn when response has no Deprecation header (custom auth config)', async () => {

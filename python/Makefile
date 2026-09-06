@@ -1,4 +1,4 @@
-.PHONY: clean-build sync provider create-provider env fmt chk snt tst type_inference dead-code bump build format check sanity test
+.PHONY: clean-build sync provider create-provider env fmt chk snt tst type_inference examples dead-code bump build format check sanity test test-examples
 
 PROVIDER_DIRS := $(patsubst %/,%,$(sort $(dir $(wildcard providers/*/pyproject.toml))))
 
@@ -67,11 +67,15 @@ tst:
 type_inference:
 	@nox -s type_inference
 
+examples:
+	@uv run nox -s examples
+
 # Friendly aliases for the short session names above (e.g. `make test` == `make tst`).
 format: fmt
 check: chk
 sanity: snt
 test: tst
+test-examples: examples
 
 bump: clean-build
 	@uv run python scripts/bump.py

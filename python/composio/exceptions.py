@@ -362,7 +362,7 @@ class ComposioLegacyConnectedAccountsEndpointRetiredError(ConnectedAccountError)
     ``POST /api/v3/connected_accounts`` endpoint rejects a Composio-managed
     OAuth (OAuth1, OAuth2, DCR_OAUTH) auth-config request.
 
-    Cutover dates: 2026-05-08 (new orgs), 2026-07-03 (all remaining orgs).
+    Cutover dates were 2026-05-08 (new orgs) and 2026-07-03 (all remaining orgs).
     Migrate to ``composio.connected_accounts.link()`` — same return shape,
     works for every redirectable scheme regardless of whether the auth
     config is Composio-managed or custom.

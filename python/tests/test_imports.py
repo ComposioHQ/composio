@@ -1,5 +1,8 @@
 """Test imports to ensure no circular import issues."""
 
+import re
+from pathlib import Path
+
 import pytest
 
 
@@ -33,6 +36,17 @@ def test_import_all_public_exports():
     assert ToolkitVersionParam is not None
     assert ToolkitVersions is not None
     assert __version__ is not None
+
+
+def test_version_matches_pyproject():
+    """Runtime version follows the package release metadata."""
+    from composio import __version__
+
+    pyproject = Path(__file__).resolve().parents[1] / "pyproject.toml"
+    match = re.search(r'^version\s*=\s*"([^"]+)"', pyproject.read_text(), re.MULTILINE)
+
+    assert match is not None
+    assert __version__ == match.group(1)
 
 
 def test_import_types():

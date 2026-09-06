@@ -14,7 +14,7 @@ classifiers = [
 ]
 dependencies = [
     "google-cloud-aiplatform>=1.162.0",
-    "composio",
+    "composio>=0.17.1,<2",
 ]
 
 [project.urls]

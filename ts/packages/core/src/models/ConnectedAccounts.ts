@@ -145,11 +145,11 @@ export class ConnectedAccounts {
    *
    * **Deprecated for Composio-managed OAuth (OAuth1, OAuth2, DCR_OAUTH).**
    * The legacy `POST /api/v3/connected_accounts` endpoint that this method
-   * wraps is being retired for Composio-managed auth configs on redirectable
-   * schemes. The cutover is **2026-05-08** for new organizations and
-   * **2026-07-03** for all remaining organizations. After your org's cutover,
-   * this method will throw {@link ComposioLegacyConnectedAccountsEndpointRetiredError}
-   * for that specific combination.
+   * wraps has been retired for Composio-managed auth configs on redirectable
+   * schemes. The cutover was **2026-05-08** for new organizations and
+   * **2026-07-03** for all remaining organizations. For that specific
+   * combination, the server rejects the request and this method throws
+   * {@link ComposioLegacyConnectedAccountsEndpointRetiredError}.
    *
    * Use {@link ConnectedAccounts.link} for Composio-managed OAuth — it works for
    * every redirectable scheme regardless of whether the auth config is
@@ -315,9 +315,9 @@ export class ConnectedAccounts {
     if (!_legacyInitiateWarningEmitted && httpResponse?.headers.get('Deprecation')) {
       _legacyInitiateWarningEmitted = true;
       logger.warn(
-        '[Deprecation] composio.connectedAccounts.initiate() will stop ' +
-          'working for this auth config on or before 2026-07-03 (see Sunset ' +
-          'header on the response). Switch to composio.connectedAccounts.link() — ' +
+        '[Deprecation] composio.connectedAccounts.initiate() has been retired ' +
+          'for this auth config; see the Deprecation/Sunset headers on the response. ' +
+          'Switch to composio.connectedAccounts.link() — ' +
           'same return shape, same allowMultiple semantics. ' +
           'https://docs.composio.dev/docs/changelog/2026/04/24'
       );

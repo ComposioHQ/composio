@@ -58,10 +58,13 @@ jobs:
       - name: Run Build
         run: pnpm run build:packages
 
+      - name: Check Package Exports
+        run: pnpm run check:package-exports
+
       - name: Create Release Pull Request & Publish packages
         id: changesets
         uses: changesets/action@8488615a623b1b9c987934bb89eae8af6a946ac1 # v2.1.1
-        if: github.event_name != 'workflow_dispatch' # only run on master merges
+        if: github.event_name != 'workflow_dispatch' # only run on next merges
         with:
           github-token: ${{ steps.app-token.outputs.token }}
           publish-script: pnpm changeset:release

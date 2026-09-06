@@ -5,6 +5,20 @@ on:
       - next
     paths:
       - 'python/**/*.py'
+      - 'python/**/*.toml'
+      - 'python/Makefile'
+      - 'python/setup.py'
+      - 'ts/packages/core/src/**'
+      - 'ts/packages/providers/**'
+      - 'ts/scripts/validate-sdk-parity.mjs'
+      - 'ts/scripts/validate-agent-skills.mjs'
+      - 'ts/scripts/test-skill-routing.mjs'
+      - '.agents/**'
+      - 'AGENTS.md'
+      - 'docs/decisions/**'
+      - 'package.json'
+      - 'pnpm-workspace.yaml'
+      - '.github/actions/setup-node-pnpm-bun/action.yml'
       - 'python/pyproject.toml'
       - 'uv.lock'
       - '.github/actions/setup-python-uv/action.yml'
@@ -15,6 +29,20 @@ on:
     types: [opened, synchronize]
     paths:
       - 'python/**/*.py'
+      - 'python/**/*.toml'
+      - 'python/Makefile'
+      - 'python/setup.py'
+      - 'ts/packages/core/src/**'
+      - 'ts/packages/providers/**'
+      - 'ts/scripts/validate-sdk-parity.mjs'
+      - 'ts/scripts/validate-agent-skills.mjs'
+      - 'ts/scripts/test-skill-routing.mjs'
+      - '.agents/**'
+      - 'AGENTS.md'
+      - 'docs/decisions/**'
+      - 'package.json'
+      - 'pnpm-workspace.yaml'
+      - '.github/actions/setup-node-pnpm-bun/action.yml'
       - 'python/pyproject.toml'
       - 'uv.lock'
       - '.github/actions/setup-python-uv/action.yml'
@@ -37,6 +65,15 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 50
+
+      - name: Setup Node.js, pnpm, Bun
+        uses: ./.github/actions/setup-node-pnpm-bun
+
+      - name: Validate SDK parity and agent routing
+        run: |
+          pnpm run validate:sdk-parity
+          pnpm run validate:agent-skills
+          pnpm run validate:skill-routing
 
       - name: Setup Python with UV
         id: setup-python
@@ -85,6 +122,12 @@ jobs:
         run: |
           cd python/
           uv run nox -s chk_examples
+
+      - name: Validate Python examples
+        shell: bash
+        run: |
+          cd python/
+          uv run nox -s examples
 
       - name: Type inference tests
         shell: bash

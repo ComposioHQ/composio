@@ -14,7 +14,7 @@ classifiers = [
 ]
 dependencies = [
     "crewai>=1.15.7,<2.0.0",
-    "composio",
+    "composio>=0.17.1,<2",
 ]
 
 [project.urls]

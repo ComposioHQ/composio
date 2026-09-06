@@ -8,6 +8,7 @@ from composio_client import NotGiven
 from composio_client.types import (
     auth_config_create_params,
     auth_config_create_response,
+    auth_config_delete_response,
     auth_config_list_params,
     auth_config_list_response,
     auth_config_retrieve_response,
@@ -21,6 +22,8 @@ from composio_client.types import (
     connected_account_retrieve_response,
     connected_account_update_status_response,
     link_create_params,
+    mcp_retrieve_response,
+    mcp_update_response,
     tool_execute_params,
     tool_execute_response,
     tool_list_response,
@@ -67,6 +70,7 @@ AuthSchemeL: t.TypeAlias = t.Literal[
 __all__ = (
     "auth_config_create_params",
     "auth_config_create_response",
+    "auth_config_delete_response",
     "auth_config_list_params",
     "auth_config_list_response",
     "auth_config_retrieve_response",
@@ -80,6 +84,8 @@ __all__ = (
     "connected_account_retrieve_response",
     "connected_account_update_status_response",
     "link_create_params",
+    "mcp_retrieve_response",
+    "mcp_update_response",
     "trigger_instance_upsert_response",
     "tool_execute_params",
     "tool_execute_response",

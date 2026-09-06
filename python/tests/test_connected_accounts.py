@@ -814,7 +814,7 @@ class TestInitiateDeprecationHeaderGate:
         assert len(deprecations) == 1
         message = str(deprecations[0].message)
         assert "composio.connected_accounts.link()" in message
-        assert "2026-07-03" in message
+        assert "has been retired" in message
 
     def test_does_not_warn_when_response_has_no_deprecation_header(self, mock_client):
         """Custom auth config / non-OAuth scheme: apollo returns a clean
