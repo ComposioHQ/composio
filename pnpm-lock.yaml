@@ -158,6 +158,9 @@ importers:
       '@types/node':
         specifier: ^26.3.0
         version: 26.3.0
+      '@types/semver':
+        specifier: ^7.8.0
+        version: 7.8.0
       '@vitest/ui':
         specifier: 'catalog:'
         version: 4.1.11(vitest@4.1.11)
