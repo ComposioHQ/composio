@@ -1,5 +1,5 @@
-import { FileSystem } from '@effect/platform';
-import { BunFileSystem } from '@effect/platform-bun';
+import * as FileSystem from '@effect/platform/FileSystem';
+import * as BunFileSystem from '@effect/platform-bun/BunFileSystem';
 import { Effect } from 'effect';
 import { afterEach, beforeEach, vi } from 'vitest';
 

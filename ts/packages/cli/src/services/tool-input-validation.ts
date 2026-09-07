@@ -1,5 +1,6 @@
 import { AutoCorrect, CliConfig } from '@effect/cli';
-import { FileSystem, Path } from '@effect/platform';
+import * as FileSystem from '@effect/platform/FileSystem';
+import * as Path from '@effect/platform/Path';
 import { Data, Effect, Option, ParseResult, Schema } from 'effect';
 import { getLocalToolInputDefinition } from '@composio/cli-local-tools';
 import {

@@ -1,4 +1,5 @@
-import { FileSystem, Path } from '@effect/platform';
+import * as FileSystem from '@effect/platform/FileSystem';
+import * as Path from '@effect/platform/Path';
 import type { PlatformError } from '@effect/platform/Error';
 import { Context, Effect, Layer, Option, Predicate, Schema } from 'effect';
 import type { ParseError } from 'effect/ParseResult';

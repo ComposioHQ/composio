@@ -1,7 +1,7 @@
 import path from 'node:path';
 import { describe, expect, layer } from '@effect/vitest';
 import { Effect } from 'effect';
-import { FileSystem } from '@effect/platform';
+import * as FileSystem from '@effect/platform/FileSystem';
 import { NodeProcess } from 'src/services/node-process';
 import { cli, TestLive, MockConsole } from 'test/__utils__';
 import { makeTestToolkits } from 'test/__utils__/models/toolkits';

@@ -3,7 +3,8 @@
 // FileSystem and Path services and passes the instances in as parameters;
 // `readLocalFileBytes` below is the single point where a FileSystem effect
 // is run to completion inside this promise pipeline.
-import type { FileSystem, Path } from '@effect/platform';
+import type * as FileSystem from '@effect/platform/FileSystem';
+import type * as Path from '@effect/platform/Path';
 import type { Composio as RawComposioClient } from '@composio/client';
 import { assertSafeFileUploadPath } from '@composio/core';
 import { ssrfSafeFetch } from '@composio/core/utils/ssrf-guard';
