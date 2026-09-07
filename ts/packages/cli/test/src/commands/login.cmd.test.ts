@@ -496,7 +496,7 @@ describe('CLI: composio login', () => {
           const now = yield* DateTime.now;
           const expiresAt = DateTime.add(now, { minutes: 10 });
           const sessionId = 'poll-session-id';
-          const sessionRepository = new ComposioSessionRepository({
+          const sessionRepository = ComposioSessionRepository.of({
             createSession: () =>
               Effect.succeed({
                 id: sessionId,

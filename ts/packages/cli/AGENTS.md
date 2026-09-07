@@ -72,6 +72,8 @@ Options use `Options.text()`, `Options.boolean()`, `Options.choice()`, `Options.
 | `JsPackageManagerDetector`         | Detects npm/pnpm/yarn/bun for install instructions                           |
 | `UpgradeBinary`                    | Fetches latest release from GitHub, downloads and replaces binary            |
 
+Services are `Context.Tag` classes that export a `<Name>Shape` type and an explicit `static readonly Default` layer (`Layer.effect` / `Layer.sync`, dependencies provided with `Layer.provide`). Build a test double with `Service.of({ ... })`; there are no generated accessors or constructors.
+
 OS credential storage uses the sibling package `@composio/cli-keyring` (macOS Keychain / Linux Secret Service).
 
 ### Effects — `src/effects/`

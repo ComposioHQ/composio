@@ -87,7 +87,7 @@ describe('ComposioClientSingleton headers', () => {
     ]);
 
     return Effect.gen(function* () {
-      const client = yield* ComposioClientSingleton.get();
+      const client = yield* Effect.flatMap(ComposioClientSingleton, singleton => singleton.get());
       yield* Effect.promise(() =>
         client.tools
           .list({ limit: 1, toolkit_versions: 'latest' })
@@ -134,7 +134,7 @@ describe('ComposioClientSingleton headers', () => {
         id: 'cli_s_current',
         expiresAt: '1970-01-01T00:01:00.000Z',
       });
-      const client = yield* ComposioClientSingleton.get();
+      const client = yield* Effect.flatMap(ComposioClientSingleton, singleton => singleton.get());
       yield* Effect.promise(() =>
         client.tools
           .list({ limit: 1, toolkit_versions: 'latest' })
@@ -167,7 +167,7 @@ describe('ComposioClientSingleton headers', () => {
         id: 'cli_s_expired',
         expiresAt: '1969-12-31T23:59:00.000Z',
       });
-      const client = yield* ComposioClientSingleton.get();
+      const client = yield* Effect.flatMap(ComposioClientSingleton, singleton => singleton.get());
       yield* Effect.promise(() =>
         client.tools
           .list({ limit: 1, toolkit_versions: 'latest' })
@@ -194,7 +194,7 @@ describe('ComposioClientSingleton headers', () => {
     ]);
 
     return Effect.gen(function* () {
-      const client = yield* ComposioClientSingleton.get();
+      const client = yield* Effect.flatMap(ComposioClientSingleton, singleton => singleton.get());
       yield* Effect.promise(() =>
         client.tools
           .list({ limit: 1, toolkit_versions: 'latest' })

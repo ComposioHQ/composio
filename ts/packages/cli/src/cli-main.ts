@@ -156,181 +156,187 @@ export const teardown: Teardown = <E, A>(exit: Exit.Exit<E, A>, onExit: (code: n
   onExit(Number(process.exitCode ?? (shouldFail ? 1 : 0)));
 };
 
-const runWithArgs = (bootstrap: RootCommandBootstrap) =>
-  Effect.flatMap(runWithConfig, run => run(process.argv, bootstrap)) satisfies Effect.Effect<
+const runWithArgs = (argv: ReadonlyArray<string>, bootstrap: RootCommandBootstrap) =>
+  Effect.flatMap(runWithConfig, run => run(argv, bootstrap)) satisfies Effect.Effect<
     void,
     unknown,
     unknown
   >;
 
-const runWithTelemetry = Effect.gen(function* () {
-  const ui = yield* TerminalUI;
-  const terminal = yield* ui.capabilities;
+const runWithTelemetry = (argv: ReadonlyArray<string>) =>
+  Effect.gen(function* () {
+    const ui = yield* TerminalUI;
+    const terminal = yield* ui.capabilities;
 
-  const version = yield* getVersion;
-  configureCliAnalyticsReleaseVersion(version);
-  const baseTelemetryContext = createCliCommandTelemetryContext(
-    process.argv,
-    version,
-    terminal,
-    yield* cliInvocationContext
-  );
-  const executeToolSlug = getExecuteCommandToolSlug(baseTelemetryContext);
-  const commandTelemetryContext =
-    executeToolSlug === undefined
-      ? baseTelemetryContext
-      : { ...baseTelemetryContext, toolkitSlug: yield* toolkitFromToolSlug(executeToolSlug) };
-  // `composio run` mints its run id here so the lifecycle events and the id the spawned script
-  // inherits are the same value; every other command leaves it unset.
-  const bootstrap: RootCommandBootstrap =
-    commandTelemetryContext.commandPath === 'run' && commandTelemetryContext.runId
-      ? { runId: commandTelemetryContext.runId }
-      : {};
-  return yield* trackCliEventEffect(getPrimaryLifecycleInvokedEvent(commandTelemetryContext)).pipe(
-    Effect.andThen(runWithArgs(bootstrap)),
-    Effect.scoped,
-    Effect.mapError(error =>
-      ValidationError.isValidationError(error) ? error : mapOnlyComposioOverrideError({ error })
-    ),
-    Effect.tap(() =>
-      trackCliEventEffect(getPrimaryLifecycleSucceededEvent(commandTelemetryContext))
-    ),
-    Effect.tapErrorCause(cause =>
-      trackCliEventEffect(
-        getPrimaryLifecycleFailedEvent(commandTelemetryContext, Cause.squash(cause))
+    const version = yield* getVersion;
+    configureCliAnalyticsReleaseVersion(version);
+    const baseTelemetryContext = createCliCommandTelemetryContext(
+      argv,
+      version,
+      terminal,
+      yield* cliInvocationContext
+    );
+    const executeToolSlug = getExecuteCommandToolSlug(baseTelemetryContext);
+    const commandTelemetryContext =
+      executeToolSlug === undefined
+        ? baseTelemetryContext
+        : { ...baseTelemetryContext, toolkitSlug: yield* toolkitFromToolSlug(executeToolSlug) };
+    // `composio run` mints its run id here so the lifecycle events and the id the spawned script
+    // inherits are the same value; every other command leaves it unset.
+    const bootstrap: RootCommandBootstrap =
+      commandTelemetryContext.commandPath === 'run' && commandTelemetryContext.runId
+        ? { runId: commandTelemetryContext.runId }
+        : {};
+    return yield* trackCliEventEffect(
+      getPrimaryLifecycleInvokedEvent(commandTelemetryContext)
+    ).pipe(
+      Effect.andThen(runWithArgs(argv, bootstrap)),
+      Effect.scoped,
+      Effect.mapError(error =>
+        ValidationError.isValidationError(error) ? error : mapOnlyComposioOverrideError({ error })
+      ),
+      Effect.tap(() =>
+        trackCliEventEffect(getPrimaryLifecycleSucceededEvent(commandTelemetryContext))
+      ),
+      Effect.tapErrorCause(cause =>
+        trackCliEventEffect(
+          getPrimaryLifecycleFailedEvent(commandTelemetryContext, Cause.squash(cause))
+        )
       )
-    )
-  );
-});
+    );
+  });
 
 /**
  * Values `src/bin.ts` resolved before the Effect runtime existed and hands to it here.
  */
 export type CliBootstrapOptions = {
+  /** The full process argv (executable and script included) with `--telemetry-debug` stripped. */
+  readonly argv: ReadonlyArray<string>;
   /** `--telemetry-debug` was on the command line, and was stripped from argv before parsing. */
   readonly telemetryDebug: boolean;
 };
 
-const cliProgram = showUpdateNotice.pipe(
-  Effect.andThen(showPluginAcquisitionHint(process.argv)),
-  Effect.andThen(runWithTelemetry),
-  Effect.catchIf(ValidationError.isValidationError, error => {
-    return Effect.gen(function* () {
-      const ui = yield* TerminalUI;
-      const cliUserConfig = yield* ComposioCliUserConfig;
-      const visibility = {
-        isDevModeEnabled: cliUserConfig.isDevModeEnabled(),
-        isExperimentalFeatureEnabled: (feature: string) =>
-          cliUserConfig.isExperimentalFeatureEnabled(feature),
-      };
-      const valueOptionNames = collectValueOptionNames(buildRootCommand(visibility));
-      const text = HelpDoc.toAnsiText(error.error).trim();
-      const errorEffect = text.length > 0 ? ui.error(text) : Effect.void;
-      const flagMatch = text.match(/Received unknown argument: '(-{1,2}[\w-]+)'/);
-      const tipEffect =
-        flagMatch && valueOptionNames.has(flagMatch[1])
-          ? ui.error(`Tip: ${flagMatch[1]} requires a value, e.g. ${flagMatch[1]} "value"`)
-          : Effect.void;
-      const cmdName = matchCommandFromArgv(process.argv, visibility);
-      const helpText = cmdName ? getCommandHelpText(cmdName, visibility) : undefined;
-      const helpEffect = helpText ? ui.error(helpText) : Effect.void;
-      return yield* Effect.all([errorEffect, tipEffect, helpEffect], { discard: true }).pipe(
-        Effect.tap(() =>
-          Effect.sync(() => {
-            process.exitCode = 1;
-          })
-        )
-      );
-    });
-  }),
-  Effect.catchIf(
-    (error): error is SetupCommandError => error instanceof SetupCommandError,
-    error =>
-      Effect.gen(function* () {
+const cliProgram = (argv: ReadonlyArray<string>) =>
+  showUpdateNotice.pipe(
+    Effect.andThen(showPluginAcquisitionHint(argv)),
+    Effect.andThen(runWithTelemetry(argv)),
+    Effect.catchIf(ValidationError.isValidationError, error => {
+      return Effect.gen(function* () {
         const ui = yield* TerminalUI;
-        const summary =
-          error.operation === 'uninstall'
-            ? 'Composio plugin uninstall was unsuccessful.'
-            : 'Composio setup was unsuccessful.';
-        if ((yield* ui.capabilities).canDecorate) {
-          yield* ui.log.error(error.message);
-          yield* ui.outro(summary);
-        } else {
-          yield* ui.error(`${summary} ${error.message}`);
-        }
-        process.exitCode = 1;
-      })
-  ),
-  // A bare `composio run` is a usage mistake, not a broken invariant: print the one-line fix and
-  // exit non-zero instead of routing it through the defect reporter below.
-  Effect.catchIf(
-    (error): error is MissingRunSourceError => error instanceof MissingRunSourceError,
-    error =>
-      Effect.gen(function* () {
-        const ui = yield* TerminalUI;
-        yield* ui.error(error.message);
-        process.exitCode = 1;
-      })
-  ),
-  Effect.catchIf(
-    (error): error is ShellSetupAbortError => error instanceof ShellSetupAbortError,
-    // `composio install` already printed the abort reason; the typed failure
-    // only exists so the process exits non-zero and install.sh runs its
-    // guarded inline PATH fallback instead of reporting a green install.
-    () =>
-      Effect.sync(() => {
-        process.exitCode = 1;
-      })
-  ),
-  Effect.withSpan('composio-cli', {
-    attributes: {
-      name: constants.APP_NAME,
-      filename: 'src/bin.ts',
-    },
-  }),
-  Effect.sandbox,
-  Effect.catchAll(
-    Effect.fn(function* (cause) {
-      const captured = yield* captureErrors(cause, {
-        stripCwd: true,
+        const cliUserConfig = yield* ComposioCliUserConfig;
+        const visibility = {
+          isDevModeEnabled: cliUserConfig.isDevModeEnabled(),
+          isExperimentalFeatureEnabled: (feature: string) =>
+            cliUserConfig.isExperimentalFeatureEnabled(feature),
+        };
+        const valueOptionNames = collectValueOptionNames(buildRootCommand(visibility));
+        const text = HelpDoc.toAnsiText(error.error).trim();
+        const errorEffect = text.length > 0 ? ui.error(text) : Effect.void;
+        const flagMatch = text.match(/Received unknown argument: '(-{1,2}[\w-]+)'/);
+        const tipEffect =
+          flagMatch && valueOptionNames.has(flagMatch[1])
+            ? ui.error(`Tip: ${flagMatch[1]} requires a value, e.g. ${flagMatch[1]} "value"`)
+            : Effect.void;
+        const cmdName = matchCommandFromArgv(argv, visibility);
+        const helpText = cmdName ? getCommandHelpText(cmdName, visibility) : undefined;
+        const helpEffect = helpText ? ui.error(helpText) : Effect.void;
+        return yield* Effect.all([errorEffect, tipEffect, helpEffect], { discard: true }).pipe(
+          Effect.tap(() =>
+            Effect.sync(() => {
+              process.exitCode = 1;
+            })
+          )
+        );
       });
-      const filteredErrors = captured.errors.filter(
-        error => error.errorType !== 'ReportedToolExecutionError'
-      );
-      if (captured.interrupted || filteredErrors.length > 0) {
-        const message = prettyPrintFromCapturedErrors(
-          { ...captured, errors: filteredErrors },
-          {
-            hideStackTrace: true,
-            stripCwd: true,
-            enabled: true,
-          }
-        ).trim();
-        if (message.length > 0) {
+    }),
+    Effect.catchIf(
+      (error): error is SetupCommandError => error instanceof SetupCommandError,
+      error =>
+        Effect.gen(function* () {
           const ui = yield* TerminalUI;
-          yield* ui.error(message);
-          const cliUserConfig = yield* ComposioCliUserConfig;
-          const visibility = {
-            isDevModeEnabled: cliUserConfig.isDevModeEnabled(),
-            isExperimentalFeatureEnabled: (feature: string) =>
-              cliUserConfig.isExperimentalFeatureEnabled(feature),
-          };
-          const cmdName = matchCommandFromArgv(process.argv, visibility);
-          const helpText = cmdName ? getCommandHelpText(cmdName, visibility) : undefined;
-          if (helpText) {
-            yield* ui.error(helpText);
+          const summary =
+            error.operation === 'uninstall'
+              ? 'Composio plugin uninstall was unsuccessful.'
+              : 'Composio setup was unsuccessful.';
+          if ((yield* ui.capabilities).canDecorate) {
+            yield* ui.log.error(error.message);
+            yield* ui.outro(summary);
+          } else {
+            yield* ui.error(`${summary} ${error.message}`);
           }
           process.exitCode = 1;
+        })
+    ),
+    // A bare `composio run` is a usage mistake, not a broken invariant: print the one-line fix and
+    // exit non-zero instead of routing it through the defect reporter below.
+    Effect.catchIf(
+      (error): error is MissingRunSourceError => error instanceof MissingRunSourceError,
+      error =>
+        Effect.gen(function* () {
+          const ui = yield* TerminalUI;
+          yield* ui.error(error.message);
+          process.exitCode = 1;
+        })
+    ),
+    Effect.catchIf(
+      (error): error is ShellSetupAbortError => error instanceof ShellSetupAbortError,
+      // `composio install` already printed the abort reason; the typed failure
+      // only exists so the process exits non-zero and install.sh runs its
+      // guarded inline PATH fallback instead of reporting a green install.
+      () =>
+        Effect.sync(() => {
+          process.exitCode = 1;
+        })
+    ),
+    Effect.withSpan('composio-cli', {
+      attributes: {
+        name: constants.APP_NAME,
+        filename: 'src/bin.ts',
+      },
+    }),
+    Effect.sandbox,
+    Effect.catchAll(
+      Effect.fn(function* (cause) {
+        const captured = yield* captureErrors(cause, {
+          stripCwd: true,
+        });
+        const filteredErrors = captured.errors.filter(
+          error => error.errorType !== 'ReportedToolExecutionError'
+        );
+        if (captured.interrupted || filteredErrors.length > 0) {
+          const message = prettyPrintFromCapturedErrors(
+            { ...captured, errors: filteredErrors },
+            {
+              hideStackTrace: true,
+              stripCwd: true,
+              enabled: true,
+            }
+          ).trim();
+          if (message.length > 0) {
+            const ui = yield* TerminalUI;
+            yield* ui.error(message);
+            const cliUserConfig = yield* ComposioCliUserConfig;
+            const visibility = {
+              isDevModeEnabled: cliUserConfig.isDevModeEnabled(),
+              isExperimentalFeatureEnabled: (feature: string) =>
+                cliUserConfig.isExperimentalFeatureEnabled(feature),
+            };
+            const cmdName = matchCommandFromArgv(argv, visibility);
+            const helpText = cmdName ? getCommandHelpText(cmdName, visibility) : undefined;
+            if (helpText) {
+              yield* ui.error(helpText);
+            }
+            process.exitCode = 1;
+          }
         }
-      }
-    })
-  ),
-  Effect.provide(layers),
-  Effect.withConfigProvider(extendConfigProvider(BaseConfigProviderLive))
-);
+      })
+    ),
+    Effect.provide(layers),
+    Effect.withConfigProvider(extendConfigProvider(BaseConfigProviderLive))
+  );
 
 export const runCli = (options: CliBootstrapOptions): void => {
-  cliProgram.pipe(
+  cliProgram(options.argv).pipe(
     // Only provided when the flag was actually present: without it telemetry debugging falls back
     // to `COMPOSIO_CLI_TELEMETRY_DEBUG`.
     effect =>

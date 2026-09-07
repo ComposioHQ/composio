@@ -1,4 +1,4 @@
-import { Effect, Option } from 'effect';
+import { Effect, Option, Context, Layer } from 'effect';
 import { FileSystem, Path } from '@effect/platform';
 import { NodeOs } from 'src/services/node-os';
 import { NodeProcess } from 'src/services/node-process';
@@ -50,103 +50,111 @@ const parseEnvFile = (content: string): Map<string, string> => {
  * 2. Per-directory .composio/.env (only allowed keys)
  * 3. Per-directory .composio/project.json (walk up from CWD, stop at homedir)
  */
-export class ProjectContext extends Effect.Service<ProjectContext>()('services/ProjectContext', {
-  effect: Effect.gen(function* () {
-    const fs = yield* FileSystem.FileSystem;
-    const path = yield* Path.Path;
-    const proc = yield* NodeProcess;
-    const os = yield* NodeOs;
+const makeProjectContext = Effect.gen(function* () {
+  const fs = yield* FileSystem.FileSystem;
+  const path = yield* Path.Path;
+  const proc = yield* NodeProcess;
+  const os = yield* NodeOs;
 
-    return {
-      /**
-       * Resolves the current org+project context.
-       * Returns Option.none() if no context is configured.
-       */
-      resolve: Effect.gen(function* () {
-        // 1. Check env vars (highest priority)
-        const envOrgId = yield* APP_CONFIG.ORG_ID;
-        const envProjectId = yield* APP_CONFIG.PROJECT_ID;
-        if (Option.isSome(envOrgId) && Option.isSome(envProjectId)) {
-          yield* Effect.logDebug('ProjectContext: resolved from env vars');
-          return Option.some<ProjectKeys>({
-            orgId: envOrgId.value,
-            projectId: envProjectId.value,
-            projectName: Option.none(),
-            orgName: Option.none(),
-            email: Option.none(),
-            testUserId: Option.none(),
-          });
+  return {
+    /**
+     * Resolves the current org+project context.
+     * Returns Option.none() if no context is configured.
+     */
+    resolve: Effect.gen(function* () {
+      // 1. Check env vars (highest priority)
+      const envOrgId = yield* APP_CONFIG.ORG_ID;
+      const envProjectId = yield* APP_CONFIG.PROJECT_ID;
+      if (Option.isSome(envOrgId) && Option.isSome(envProjectId)) {
+        yield* Effect.logDebug('ProjectContext: resolved from env vars');
+        return Option.some<ProjectKeys>({
+          orgId: envOrgId.value,
+          projectId: envProjectId.value,
+          projectName: Option.none(),
+          orgName: Option.none(),
+          email: Option.none(),
+          testUserId: Option.none(),
+        });
+      }
+
+      // 2. Walk up from CWD, stop at homedir (not filesystem root)
+      const stopAt = os.homedir;
+
+      for (const dir of yield* getAncestors(proc.cwd)) {
+        const composioDir = path.join(dir, constants.PROJECT_COMPOSIO_DIR);
+
+        // 2a. Check .composio/.env
+        const envFilePath = path.join(composioDir, constants.PROJECT_ENV_FILE_NAME);
+        const envExists = yield* fs
+          .exists(envFilePath)
+          .pipe(Effect.catchAll(() => Effect.succeed(false)));
+        if (envExists) {
+          const envContent = yield* fs
+            .readFileString(envFilePath)
+            .pipe(Effect.catchAll(() => Effect.succeed('')));
+          const envMap = parseEnvFile(envContent);
+          const envFileOrgId = envMap.get('COMPOSIO_ORG_ID');
+          const envFileProjectId = envMap.get('COMPOSIO_PROJECT_ID');
+          if (envFileOrgId && envFileProjectId) {
+            yield* Effect.logDebug(`ProjectContext: resolved from ${envFilePath}`);
+            return Option.some<ProjectKeys>({
+              orgId: envFileOrgId,
+              projectId: envFileProjectId,
+              projectName: Option.none(),
+              orgName: Option.none(),
+              email: Option.none(),
+              testUserId: Option.none(),
+            });
+          }
         }
 
-        // 2. Walk up from CWD, stop at homedir (not filesystem root)
-        const stopAt = os.homedir;
-
-        for (const dir of yield* getAncestors(proc.cwd)) {
-          const composioDir = path.join(dir, constants.PROJECT_COMPOSIO_DIR);
-
-          // 2a. Check .composio/.env
-          const envFilePath = path.join(composioDir, constants.PROJECT_ENV_FILE_NAME);
-          const envExists = yield* fs
-            .exists(envFilePath)
-            .pipe(Effect.catchAll(() => Effect.succeed(false)));
-          if (envExists) {
-            const envContent = yield* fs
-              .readFileString(envFilePath)
-              .pipe(Effect.catchAll(() => Effect.succeed('')));
-            const envMap = parseEnvFile(envContent);
-            const envFileOrgId = envMap.get('COMPOSIO_ORG_ID');
-            const envFileProjectId = envMap.get('COMPOSIO_PROJECT_ID');
-            if (envFileOrgId && envFileProjectId) {
-              yield* Effect.logDebug(`ProjectContext: resolved from ${envFilePath}`);
-              return Option.some<ProjectKeys>({
-                orgId: envFileOrgId,
-                projectId: envFileProjectId,
-                projectName: Option.none(),
-                orgName: Option.none(),
-                email: Option.none(),
-                testUserId: Option.none(),
-              });
+        // 2b. Check .composio/project.json
+        const projectJsonPath = path.join(composioDir, constants.PROJECT_CONFIG_FILE_NAME);
+        const jsonExists = yield* fs
+          .exists(projectJsonPath)
+          .pipe(Effect.catchAll(() => Effect.succeed(false)));
+        if (jsonExists) {
+          const content = yield* fs
+            .readFileString(projectJsonPath)
+            .pipe(Effect.catchAll(() => Effect.succeed('')));
+          if (content) {
+            const keysOpt = yield* projectKeysFromJSON(content).pipe(
+              Effect.map(Option.some),
+              Effect.catchAll(error =>
+                Effect.gen(function* () {
+                  yield* Effect.logDebug(
+                    `ProjectContext: corrupt project.json at ${projectJsonPath}, skipping:`,
+                    error
+                  );
+                  return Option.none();
+                })
+              )
+            );
+            if (Option.isSome(keysOpt)) {
+              yield* Effect.logDebug(`ProjectContext: resolved from ${projectJsonPath}`);
+              return keysOpt;
             }
           }
-
-          // 2b. Check .composio/project.json
-          const projectJsonPath = path.join(composioDir, constants.PROJECT_CONFIG_FILE_NAME);
-          const jsonExists = yield* fs
-            .exists(projectJsonPath)
-            .pipe(Effect.catchAll(() => Effect.succeed(false)));
-          if (jsonExists) {
-            const content = yield* fs
-              .readFileString(projectJsonPath)
-              .pipe(Effect.catchAll(() => Effect.succeed('')));
-            if (content) {
-              const keysOpt = yield* projectKeysFromJSON(content).pipe(
-                Effect.map(Option.some),
-                Effect.catchAll(error =>
-                  Effect.gen(function* () {
-                    yield* Effect.logDebug(
-                      `ProjectContext: corrupt project.json at ${projectJsonPath}, skipping:`,
-                      error
-                    );
-                    return Option.none();
-                  })
-                )
-              );
-              if (Option.isSome(keysOpt)) {
-                yield* Effect.logDebug(`ProjectContext: resolved from ${projectJsonPath}`);
-                return keysOpt;
-              }
-            }
-          }
-
-          // Stop at homedir to avoid reading from system directories
-          if (dir === stopAt) break;
         }
 
-        // 3. Nothing found
-        yield* Effect.logDebug('ProjectContext: no context found');
-        return Option.none<ProjectKeys>();
-      }).pipe(Effect.provideService(Path.Path, path)),
-    };
-  }),
-  dependencies: [Path.layer],
-}) {}
+        // Stop at homedir to avoid reading from system directories
+        if (dir === stopAt) break;
+      }
+
+      // 3. Nothing found
+      yield* Effect.logDebug('ProjectContext: no context found');
+      return Option.none<ProjectKeys>();
+    }).pipe(Effect.provideService(Path.Path, path)),
+  };
+});
+
+export type ProjectContextShape = Effect.Effect.Success<typeof makeProjectContext>;
+
+export class ProjectContext extends Context.Tag('services/ProjectContext')<
+  ProjectContext,
+  ProjectContextShape
+>() {
+  static readonly Default = Layer.effect(ProjectContext, makeProjectContext).pipe(
+    Layer.provide(Path.layer)
+  );
+}

@@ -19,7 +19,10 @@ import { Command, HelpDoc, Options, ValidationError } from '@effect/cli';
 import { Array, Data, Effect, Option, pipe } from 'effect';
 import { Match } from 'effect';
 import { FileSystem, Path } from '@effect/platform';
-import { ComposioToolkitsRepository } from 'src/services/composio-clients';
+import {
+  ComposioToolkitsRepository,
+  type ComposioToolkitsRepositoryShape,
+} from 'src/services/composio-clients';
 import { logMetrics } from 'src/effects/log-metrics';
 import { NodeProcess } from 'src/services/node-process';
 import { createToolkitIndex } from 'src/generation/create-toolkit-index';
@@ -115,7 +118,7 @@ type FetchResult = {
  * Makes targeted API calls for only the requested toolkits.
  */
 function fetchFilteredData(
-  client: ComposioToolkitsRepository,
+  client: ComposioToolkitsRepositoryShape,
   slugs: ReadonlyArray<string>,
   typeTools: boolean,
   versionOverrides: ToolkitVersionOverrides,
@@ -195,7 +198,7 @@ function fetchFilteredData(
  * Fetches everything in parallel without version-specific handling.
  */
 function fetchAllDataFastPath(
-  client: ComposioToolkitsRepository,
+  client: ComposioToolkitsRepositoryShape,
   typeTools: boolean,
   spinner: SpinnerHandle
 ): Effect.Effect<FetchResult, Error, never> {
@@ -245,7 +248,7 @@ function fetchAllDataFastPath(
  * First fetches toolkit metadata, then fetches tools with version-specific handling.
  */
 function fetchAllDataWithOverrides(
-  client: ComposioToolkitsRepository,
+  client: ComposioToolkitsRepositoryShape,
   typeTools: boolean,
   versionOverrides: ToolkitVersionOverrides,
   spinner: SpinnerHandle
@@ -305,7 +308,7 @@ function fetchAllDataWithOverrides(
  * Delegates to fast path or override-aware path based on version overrides.
  */
 function fetchAllData(
-  client: ComposioToolkitsRepository,
+  client: ComposioToolkitsRepositoryShape,
   typeTools: boolean,
   versionOverrides: ToolkitVersionOverrides,
   spinner: SpinnerHandle
