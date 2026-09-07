@@ -1,5 +1,6 @@
 import { Command, HelpDoc, Options, ValidationError } from '@effect/cli';
-import { FileSystem, Path } from '@effect/platform';
+import * as FileSystem from '@effect/platform/FileSystem';
+import * as Path from '@effect/platform/Path';
 import { Data, DateTime, Effect, Option, Schedule, Schema } from 'effect';
 import open from 'open';
 import {

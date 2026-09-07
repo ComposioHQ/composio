@@ -1,6 +1,9 @@
 import process from 'node:process';
 import { Args, Command, Options } from '@effect/cli';
-import { Command as PlatformCommand, CommandExecutor, FileSystem, Path } from '@effect/platform';
+import * as PlatformCommand from '@effect/platform/Command';
+import * as CommandExecutor from '@effect/platform/CommandExecutor';
+import * as FileSystem from '@effect/platform/FileSystem';
+import * as Path from '@effect/platform/Path';
 import { Data, Deferred, Duration, Effect, Either, MutableRef, Option } from 'effect';
 import { ts } from 'ts-morph';
 import { APP_VERSION } from 'src/constants';

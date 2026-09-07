@@ -1,4 +1,5 @@
-import { FileSystem, Path } from '@effect/platform';
+import * as FileSystem from '@effect/platform/FileSystem';
+import * as Path from '@effect/platform/Path';
 import { Data, Effect, Either, Option, Predicate, Schema } from 'effect';
 import { APP_CONFIG } from 'src/effects/app-config';
 import { JsonRecordSchema } from 'src/effects/json';

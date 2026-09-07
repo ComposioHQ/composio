@@ -1,5 +1,6 @@
-import { FileSystem, Path } from '@effect/platform';
-import { BunFileSystem } from '@effect/platform-bun';
+import * as FileSystem from '@effect/platform/FileSystem';
+import * as Path from '@effect/platform/Path';
+import * as BunFileSystem from '@effect/platform-bun/BunFileSystem';
 import { Config, Data, Effect, Layer, Option, Predicate, Schema } from 'effect';
 import semver from 'semver';
 import { bold, cyanBright, dim } from 'src/ui/colors';

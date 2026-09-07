@@ -1,4 +1,5 @@
-import { Command, CommandExecutor } from '@effect/platform';
+import * as Command from '@effect/platform/Command';
+import * as CommandExecutor from '@effect/platform/CommandExecutor';
 import { describe, expect, layer } from '@effect/vitest';
 import { Effect, Exit } from 'effect';
 import { afterEach, beforeEach, vi } from 'vitest';

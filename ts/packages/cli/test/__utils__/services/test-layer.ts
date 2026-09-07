@@ -3,8 +3,13 @@ import * as tempy from 'tempy';
 import { Composio as RawComposioClient } from '@composio/client';
 import type { AuthConfigCreateParams } from '@composio/client/resources/auth-configs';
 import { CliApp, CliConfig } from '@effect/cli';
-import { Command, FetchHttpClient, FileSystem, Path } from '@effect/platform';
-import { BunFileSystem, BunContext, BunPath } from '@effect/platform-bun';
+import * as Command from '@effect/platform/Command';
+import * as FetchHttpClient from '@effect/platform/FetchHttpClient';
+import * as FileSystem from '@effect/platform/FileSystem';
+import * as Path from '@effect/platform/Path';
+import * as BunFileSystem from '@effect/platform-bun/BunFileSystem';
+import * as BunContext from '@effect/platform-bun/BunContext';
+import * as BunPath from '@effect/platform-bun/BunPath';
 import {
   ConfigProvider,
   Console,
@@ -72,7 +77,7 @@ import { ProjectContext } from 'src/services/project-context';
 import { ProjectEnvironmentDetector } from 'src/services/project-environment-detector';
 import { CommandRunner, type CommandRunnerShape } from 'src/services/command-runner';
 import { TerminalUI } from 'src/services/terminal-ui';
-import { CommandExecutor } from '@effect/platform';
+import * as CommandExecutor from '@effect/platform/CommandExecutor';
 import {
   SetupSkillInstaller,
   type SetupSkillInstallerShape,

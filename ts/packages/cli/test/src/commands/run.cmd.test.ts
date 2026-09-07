@@ -3,8 +3,10 @@ import * as os from 'node:os';
 import * as path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { describe, expect, layer } from '@effect/vitest';
-import { Command as PlatformCommand, CommandExecutor, Path } from '@effect/platform';
-import { BunContext } from '@effect/platform-bun';
+import * as PlatformCommand from '@effect/platform/Command';
+import * as CommandExecutor from '@effect/platform/CommandExecutor';
+import * as Path from '@effect/platform/Path';
+import * as BunContext from '@effect/platform-bun/BunContext';
 import {
   Cause,
   ConfigProvider,

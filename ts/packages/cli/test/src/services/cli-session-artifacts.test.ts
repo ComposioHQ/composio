@@ -1,4 +1,5 @@
-import { FileSystem, Path } from '@effect/platform';
+import * as FileSystem from '@effect/platform/FileSystem';
+import * as Path from '@effect/platform/Path';
 import { describe, expect, layer } from '@effect/vitest';
 import { afterEach, beforeEach, vi } from 'vitest';
 import { ConfigProvider, Effect, Option } from 'effect';

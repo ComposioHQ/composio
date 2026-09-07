@@ -15,7 +15,8 @@ import {
   Layer,
 } from 'effect';
 import { Composio as _RawComposioClient, APIPromise } from '@composio/client';
-import { FileSystem, Path } from '@effect/platform';
+import * as FileSystem from '@effect/platform/FileSystem';
+import * as Path from '@effect/platform/Path';
 import type { AuthConfigCreateParams } from '@composio/client/resources/auth-configs';
 import type { ConnectedAccountListParams } from '@composio/client/resources/connected-accounts';
 import {
