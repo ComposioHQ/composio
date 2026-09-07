@@ -9,15 +9,18 @@ vi.mock('node:dns/promises', () => ({
 vi.mock('../../src/utils/pinnedDispatcher.node', () => ({
   createPinnedDispatcher: vi.fn(() => Promise.resolve({ close: () => Promise.resolve() })),
   hasCustomGlobalDispatcher: vi.fn(() => false),
+  pinnedHttpFetch: vi.fn(),
 }));
 
 import {
   createPinnedDispatcher,
   hasCustomGlobalDispatcher,
+  pinnedHttpFetch,
 } from '../../src/utils/pinnedDispatcher.node';
 
 const mockCreatePinnedDispatcher = vi.mocked(createPinnedDispatcher);
 const mockHasCustomGlobalDispatcher = vi.mocked(hasCustomGlobalDispatcher);
+const mockPinnedHttpFetch = vi.mocked(pinnedHttpFetch);
 
 // eslint-disable-next-line no-restricted-imports
 import { lookup } from 'node:dns/promises';
@@ -133,6 +136,7 @@ describe('ssrfSafeFetch', () => {
     mockFetch.mockReset();
     mockCreatePinnedDispatcher.mockClear();
     mockHasCustomGlobalDispatcher.mockReturnValue(false);
+    mockPinnedHttpFetch.mockReset();
     // Deterministic even on machines that carry the runtime env-proxy opt-in.
     vi.stubEnv('NODE_USE_ENV_PROXY', '');
     vi.stubGlobal('fetch', mockFetch);
@@ -220,6 +224,34 @@ describe('ssrfSafeFetch', () => {
     await ssrfSafeFetch('https://example.com/file.pdf');
 
     expect(mockCreatePinnedDispatcher).toHaveBeenCalledWith(['93.184.216.34']);
+  });
+
+  it('keeps Bun fetch on an explicitly configured environment proxy', async () => {
+    resolvesTo('93.184.216.34');
+    mockFetch.mockResolvedValue(new Response('data', { status: 200 }));
+    vi.stubEnv('HTTPS_PROXY', 'http://proxy.example:3128');
+    vi.stubEnv('NO_PROXY', '');
+    const bunDescriptor = Object.getOwnPropertyDescriptor(process.versions, 'bun');
+    Object.defineProperty(process.versions, 'bun', {
+      configurable: true,
+      value: '1.4.0',
+    });
+
+    try {
+      await ssrfSafeFetch('https://example.com/file.pdf');
+    } finally {
+      if (bunDescriptor) {
+        Object.defineProperty(process.versions, 'bun', bunDescriptor);
+      } else {
+        delete (process.versions as NodeJS.ProcessVersions & { bun?: string }).bun;
+      }
+    }
+
+    expect(mockPinnedHttpFetch).not.toHaveBeenCalled();
+    expect(mockFetch).toHaveBeenCalledWith(
+      'https://example.com/file.pdf',
+      expect.objectContaining({ redirect: 'manual' })
+    );
   });
 
   it('validates and fetches a public URL', async () => {

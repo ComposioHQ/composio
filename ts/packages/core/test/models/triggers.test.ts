@@ -1251,6 +1251,16 @@ describe('Triggers', () => {
       expect(logger.debug).toHaveBeenCalledWith('Parsed Pusher payload as V3 format');
     });
 
+    it('should not call callback when V3 auth config does not match', async () => {
+      await triggers.subscribe(mockCallback, { authConfigId: 'auth-other' });
+      const subscribeCall = vi.mocked(mockPusherService.subscribe).mock.calls[0];
+      const filterCallback = subscribeCall[0];
+
+      filterCallback(mockV3Payload);
+
+      expect(mockCallback).not.toHaveBeenCalled();
+    });
+
     it('should parse V2 Pusher payload', async () => {
       await triggers.subscribe(mockCallback);
       const subscribeCall = vi.mocked(mockPusherService.subscribe).mock.calls[0];

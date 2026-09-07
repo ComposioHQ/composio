@@ -56,6 +56,53 @@ const isObjectSchema = (schema: JsonObject): boolean =>
 const hasNamedProperties = (schema: JsonObject): boolean =>
   isJsonObject(schema.properties) && Object.keys(schema.properties).length > 0;
 
+const isClosedObjectBranch = (branch: unknown): branch is JsonObject =>
+  isJsonObject(branch) &&
+  isObjectSchema(branch) &&
+  hasNamedProperties(branch) &&
+  branch.additionalProperties === undefined &&
+  branch.patternProperties === undefined &&
+  branch.$ref === undefined;
+
+// Sibling `allOf` object branches must not reject each other's keys, so each
+// closed branch is materialized open and the strictness a lone named-property
+// object would have had is re-applied once, over the union of every branch's
+// properties. Mirrors `parseAllOf` in @composio/json-schema-to-zod.
+const openAllOfBranches = (source: JsonObject, normalized: JsonObject): void => {
+  const sourceBranches = source.allOf;
+  const branches = normalized.allOf;
+  if (!Array.isArray(sourceBranches) || !Array.isArray(branches) || branches.length < 2) {
+    return;
+  }
+
+  const closed = sourceBranches.map(isClosedObjectBranch);
+  if (!closed.some(Boolean)) {
+    return;
+  }
+
+  branches.forEach((branch, index) => {
+    if (closed[index] && isJsonObject(branch)) {
+      branch.additionalProperties = true;
+    }
+  });
+
+  if (
+    !closed.every(Boolean) ||
+    normalized.properties !== undefined ||
+    normalized.patternProperties !== undefined ||
+    normalized.additionalProperties !== undefined
+  ) {
+    return;
+  }
+
+  normalized.properties = Object.fromEntries(
+    sourceBranches.flatMap(branch =>
+      Object.keys((branch as JsonObject).properties as JsonObject).map(key => [key, true])
+    )
+  );
+  normalized.additionalProperties = false;
+};
+
 const appendAllOf = (schema: JsonObject, constraint: JsonObject): void => {
   const current = schema.allOf;
   schema.allOf = Array.isArray(current) ? [...current, constraint] : [constraint];
@@ -84,6 +131,26 @@ const normalizeBounds = (schema: JsonObject): void => {
     } else if (type === 'array' && schema.maxItems === undefined) {
       schema.maxItems = maximum;
     }
+  }
+};
+
+// OpenAPI 3.0 / JSON Schema draft-4 express exclusive bounds as a boolean flag
+// on `minimum`/`maximum`. The Draft 7 interpreter expects numeric
+// `exclusiveMinimum`/`exclusiveMaximum` and would silently ignore the flag,
+// turning an exclusive bound into an inclusive one.
+const normalizeExclusiveBounds = (schema: JsonObject): void => {
+  if (schema.exclusiveMinimum === true && typeof schema.minimum === 'number') {
+    schema.exclusiveMinimum = schema.minimum;
+    delete schema.minimum;
+  } else if (typeof schema.exclusiveMinimum === 'boolean') {
+    delete schema.exclusiveMinimum;
+  }
+
+  if (schema.exclusiveMaximum === true && typeof schema.maximum === 'number') {
+    schema.exclusiveMaximum = schema.maximum;
+    delete schema.maximum;
+  } else if (typeof schema.exclusiveMaximum === 'boolean') {
+    delete schema.exclusiveMaximum;
   }
 };
 
@@ -132,6 +199,7 @@ const normalizeNullable = (schema: JsonObject): JsonObject => {
 
 const normalizeSchemaNode = (
   value: unknown,
+  draft: SchemaDraft,
   seen: WeakMap<object, InterpreterSchema | boolean>
 ): InterpreterSchema | boolean => {
   if (typeof value === 'boolean') {
@@ -152,14 +220,17 @@ const normalizeSchemaNode = (
   for (const [key, child] of Object.entries(value)) {
     if (schemaMapKeywords.has(key) && isJsonObject(child)) {
       normalized[key] = Object.fromEntries(
-        Object.entries(child).map(([name, nested]) => [name, normalizeSchemaNode(nested, seen)])
+        Object.entries(child).map(([name, nested]) => [
+          name,
+          normalizeSchemaNode(nested, draft, seen),
+        ])
       );
     } else if (schemaArrayKeywords.has(key) && Array.isArray(child)) {
-      normalized[key] = child.map(nested => normalizeSchemaNode(nested, seen));
+      normalized[key] = child.map(nested => normalizeSchemaNode(nested, draft, seen));
     } else if (schemaValueKeywords.has(key)) {
       normalized[key] = Array.isArray(child)
-        ? child.map(nested => normalizeSchemaNode(nested, seen))
-        : normalizeSchemaNode(child, seen);
+        ? child.map(nested => normalizeSchemaNode(nested, draft, seen))
+        : normalizeSchemaNode(child, draft, seen);
     } else {
       normalized[key] = child;
     }
@@ -178,15 +249,23 @@ const normalizeSchemaNode = (
     normalized.additionalProperties = false;
   }
 
+  openAllOfBranches(value, normalized);
+
   normalizeBounds(normalized);
+  // Draft 4 is the dialect that defines the boolean spelling, and the
+  // interpreter honors it there; rewriting would hand it a numeric bound it
+  // ignores under that draft.
+  if (draft !== '4') {
+    normalizeExclusiveBounds(normalized);
+  }
   normalizeFormats(normalized);
   const withNullable = normalizeNullable(normalized);
   seen.set(value, withNullable as InterpreterSchema);
   return withNullable as InterpreterSchema;
 };
 
-const normalizeJsonSchema = (schema: JsonObject): InterpreterSchema =>
-  normalizeSchemaNode(schema, new WeakMap()) as InterpreterSchema;
+const normalizeJsonSchema = (schema: JsonObject, draft: SchemaDraft): InterpreterSchema =>
+  normalizeSchemaNode(schema, draft, new WeakMap()) as InterpreterSchema;
 
 // Walks the same child positions `normalizeSchemaNode` does, so a node is
 // visited exactly where the interpreter would descend into it.
@@ -450,8 +529,9 @@ export const jsonSchemaToEffectSchema = (
   jsonSchema: JsonObject,
   options: JsonSchemaToEffectSchemaOptions = {}
 ): Schema.Schema<unknown> => {
-  const normalizedSchema = normalizeJsonSchema(jsonSchema);
-  const validator = new Validator(normalizedSchema, options.draft ?? '7', false);
+  const draft = options.draft ?? '7';
+  const normalizedSchema = normalizeJsonSchema(jsonSchema, draft);
+  const validator = new Validator(normalizedSchema, draft, false);
   assertSchemaIsInterpretable(normalizedSchema);
   const formatIssues = options.formatIssues ?? defaultFormatIssues;
 

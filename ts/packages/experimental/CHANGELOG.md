@@ -1,5 +1,11 @@
 # @composio/experimental
 
+## 0.2.4
+
+### Patch Changes
+
+- 4e633d1: Update TypeBox to 1.3.18.
+
 ## 0.2.3
 
 ### Patch Changes

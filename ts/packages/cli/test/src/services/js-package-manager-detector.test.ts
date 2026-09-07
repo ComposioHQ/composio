@@ -1,6 +1,6 @@
 import { describe, expect, layer } from '@effect/vitest';
-import { BunFileSystem } from '@effect/platform-bun';
-import { FileSystem } from '@effect/platform';
+import * as BunFileSystem from '@effect/platform-bun/BunFileSystem';
+import * as FileSystem from '@effect/platform/FileSystem';
 import { Effect, Layer } from 'effect';
 import * as tempy from 'tempy';
 import { JsPackageManagerDetector } from 'src/services/js-package-manager-detector';

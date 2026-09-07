@@ -41,7 +41,6 @@ catalog:
   '@effect/platform': ^0.97.1
   '@effect/platform-bun': ^0.91.2
   '@effect/platform-node': ^0.108.0
-  '@effect/platform-node-shared': ^0.61.1
   '@effect/vitest': ^0.30.0
   # 1.52.1 is the latest version that keeps Node-only execa code out of
   # Workers bundles.

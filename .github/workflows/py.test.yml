@@ -88,7 +88,7 @@ jobs:
           uv pip install -e providers/crewai
           uv pip install -e providers/langchain
           uv pip install -e providers/langgraph
-          uv pip install pytest pytest-mock
+          uv pip install hypothesis pytest pytest-mock
 
       - name: Run Import Tests
         run: |
