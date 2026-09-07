@@ -3,7 +3,10 @@ import * as path from 'node:path';
 import * as fs from 'node:fs';
 import { getFileDataAfterUploadingToS3, downloadFileFromS3 } from '../../src/utils/fileUtils.node';
 import ComposioClient from '@composio/client';
-import { ComposioSensitiveFilePathBlockedError } from '../../src/errors/FileModifierErrors';
+import {
+  ComposioFileDownloadError,
+  ComposioSensitiveFilePathBlockedError,
+} from '../../src/errors/FileModifierErrors';
 
 // Mock the uuid module
 vi.mock('../../src/utils/uuid', () => ({
@@ -357,19 +360,49 @@ describe('fileUtils', () => {
       ).rejects.toThrow('Failed to download file: Not Found');
     });
 
+    it('throws a typed ComposioFileDownloadError on fetch failure', async () => {
+      mockFetch.mockResolvedValue({ ok: false, status: 403, statusText: 'Forbidden' });
+
+      const error = await downloadFileFromS3({
+        toolSlug: 'test-tool',
+        s3Url: 'https://s3.example.com/forbidden.txt',
+        mimeType: 'text/plain',
+      }).catch((e: unknown) => e);
+
+      expect(error).toBeInstanceOf(ComposioFileDownloadError);
+      const typed = error as ComposioFileDownloadError;
+      expect(typed.code).toBe('TS-SDK::FILE_DOWNLOAD_FAILED');
+      expect(typed.statusCode).toBe(403);
+      expect(typed.meta).toMatchObject({
+        s3Url: 'https://s3.example.com/forbidden.txt',
+        statusText: 'Forbidden',
+      });
+    });
+
     it('rejects when the downloaded file cannot be saved', async () => {
       mockFetch.mockResolvedValue(downloadedFileResponse());
+      const diskFull = new Error('disk full');
       vi.mocked(fs.writeFileSync).mockImplementationOnce(() => {
-        throw new Error('disk full');
+        throw diskFull;
       });
 
-      await expect(
-        downloadFileFromS3({
-          toolSlug: 'github',
-          s3Url: 'https://s3.example.com/file.txt',
-          mimeType: 'text/plain',
-        })
-      ).rejects.toThrow('Failed to save downloaded file: github_1640995200000abc12345.txt');
+      const error = await downloadFileFromS3({
+        toolSlug: 'github',
+        s3Url: 'https://s3.example.com/file.txt',
+        mimeType: 'text/plain',
+      }).catch((e: unknown) => e);
+
+      expect(error).toBeInstanceOf(ComposioFileDownloadError);
+      const typed = error as ComposioFileDownloadError;
+      expect(typed.message).toBe(
+        'Failed to save downloaded file: github_1640995200000abc12345.txt'
+      );
+      expect(typed.code).toBe('TS-SDK::FILE_DOWNLOAD_FAILED');
+      expect(typed.cause).toBe(diskFull);
+      expect(typed.meta).toMatchObject({
+        s3Url: 'https://s3.example.com/file.txt',
+        fileName: 'github_1640995200000abc12345.txt',
+      });
     });
 
     it('synthesizes the filename server-side and ignores the s3Url path', async () => {

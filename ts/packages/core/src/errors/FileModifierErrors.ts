@@ -6,7 +6,50 @@ export const FileModifierErrorCodes = {
   FILE_UPLOAD_ABORTED: 'FILE_UPLOAD_ABORTED',
   FILE_UPLOAD_PATH_NOT_ALLOWED: 'FILE_UPLOAD_PATH_NOT_ALLOWED',
   FILE_NOT_FOUND: 'FILE_NOT_FOUND',
+  FILE_DOWNLOAD_FAILED: 'FILE_DOWNLOAD_FAILED',
 } as const;
+
+export interface ComposioFileDownloadErrorOptions extends Omit<ComposioErrorOptions, 'code'> {
+  /** The URL the file was fetched from. */
+  s3Url?: string;
+  /** The file name the download was going to be saved under. */
+  fileName?: string;
+  /** HTTP status text of the failed fetch, when the failure was remote. */
+  statusText?: string;
+}
+
+/**
+ * Thrown when automatic file download during tool execution fails, either
+ * because the remote fetch was rejected or because the downloaded bytes could
+ * not be written to disk. The underlying failure is preserved in `cause`.
+ */
+export class ComposioFileDownloadError extends ComposioError {
+  constructor(
+    message: string = 'Failed to download file',
+    options: ComposioFileDownloadErrorOptions = {}
+  ) {
+    const { s3Url, fileName, statusText, meta: optionsMeta, ...rest } = options;
+
+    const meta: Record<string, unknown> = {
+      ...optionsMeta,
+      ...(s3Url && { s3Url }),
+      ...(fileName && { fileName }),
+      ...(statusText && { statusText }),
+    };
+
+    super(message, {
+      ...rest,
+      code: FileModifierErrorCodes.FILE_DOWNLOAD_FAILED,
+      meta: Object.keys(meta).length > 0 ? meta : undefined,
+      possibleFixes: options.possibleFixes ?? [
+        'Check that the download directory (`fileDownloadDir` or `~/.composio/files`) exists and is writable',
+        'Verify the download URL has not expired and is reachable',
+        'Automatic download requires a runtime with filesystem access; call `composio.files.download()` manually elsewhere',
+      ],
+    });
+    this.name = 'ComposioFileDownloadError';
+  }
+}
 
 export class ComposioFileUploadError extends ComposioError {
   constructor(message: string = 'Failed to upload file', options: ComposioErrorOptions = {}) {
