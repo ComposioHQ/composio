@@ -27,13 +27,12 @@ PROVIDERS_DIR = REPO_ROOT / "python" / "providers"
 
 # Helpers that inline internal references before schema translation.
 # ``alias_tool_input_schema`` and ``substitute_reserved_python_keywords``
-# call ``dereference_json_schema`` internally; ``json_schema_to_model``
-# resolves local pointers through ``root_schema`` while building the model.
+# call ``dereference_json_schema`` internally. ``json_schema_to_model`` is
+# not one of them: it types a referenced property as ``Any``.
 RESOLVER_HELPERS: t.Final = (
     "dereference_json_schema",
     "alias_tool_input_schema",
     "substitute_reserved_python_keywords",
-    "json_schema_to_model",
 )
 
 
@@ -65,8 +64,8 @@ PROVIDER_PACKAGES: t.Final[dict[str, Classification]] = {
     ),
     "crewai": Classification(
         "resolves-refs",
-        "converts to a Pydantic model; the converter resolves local pointers",
-        via="json_schema_to_model",
+        "converts to a Pydantic model; the converter types a $ref property as Any",
+        via="dereference_json_schema",
     ),
     "gemini": Classification(
         "resolves-refs",
