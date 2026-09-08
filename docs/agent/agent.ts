@@ -1,6 +1,7 @@
 import { createOpenAI } from '@ai-sdk/openai';
 import { defineAgent } from 'eve';
 import type { AgentModelDefinition, AgentModelOptionsDefinition } from 'eve';
+import { z } from 'zod';
 
 const INCEPTION_BASE_URL = process.env.INCEPTION_BASE_URL ?? 'https://api.inceptionlabs.ai/v1';
 const INCEPTION_MODEL = process.env.INCEPTION_MODEL ?? 'mercury-2';
@@ -24,21 +25,60 @@ const resolveInceptionApiKey = () => {
 };
 
 const INCEPTION_SAFE_ERROR_MESSAGE = 'Docs agent model request failed.';
+const INCEPTION_ERROR_RESPONSE_SCHEMA = z
+  .object({
+    error: z.object({}).passthrough(),
+  })
+  .passthrough();
 
-async function safeInceptionFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
+const ABORT_LIKE_ERROR_SCHEMA = z
+  .object({
+    name: z.enum(['AbortError', 'TimeoutError']),
+  })
+  .passthrough();
+
+const isAbortLikeError = (error: unknown) => ABORT_LIKE_ERROR_SCHEMA.safeParse(error).success;
+
+async function throwIfInceptionErrorPayload(response: Response): Promise<void> {
+  const contentType = response.headers.get('content-type')?.toLowerCase() ?? '';
+
+  if (!contentType.includes('application/json')) {
+    return;
+  }
+
+  const body = await response
+    .clone()
+    .json()
+    .catch(() => null);
+
+  if (INCEPTION_ERROR_RESPONSE_SCHEMA.safeParse(body).success) {
+    throw new Error(`${INCEPTION_SAFE_ERROR_MESSAGE} Upstream returned an error payload.`);
+  }
+}
+
+export async function safeInceptionFetch(
+  input: RequestInfo | URL,
+  init?: RequestInit
+): Promise<Response> {
   const headers = new Headers(init?.headers);
   headers.set('Authorization', `Bearer ${resolveInceptionApiKey()}`);
 
   let response: Response;
   try {
     response = await fetch(input, { ...init, headers });
-  } catch {
+  } catch (error) {
+    if (isAbortLikeError(error)) {
+      throw error;
+    }
+
     throw new Error(INCEPTION_SAFE_ERROR_MESSAGE);
   }
 
   if (!response.ok) {
     throw new Error(`${INCEPTION_SAFE_ERROR_MESSAGE} Upstream status: ${response.status}.`);
   }
+
+  await throwIfInceptionErrorPayload(response);
 
   return response;
 }
