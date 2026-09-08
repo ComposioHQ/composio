@@ -105,7 +105,7 @@ overrides:
   '@mastra/mcp@>=1.17.3': 1.17.2
   # GHSA-x5fp-wj9c-mxmx and GHSA-4mjr-xmp4-gh2g; express pulls the 6.15.x line.
   # Drop when its lockfile resolution is >=6.16.0 without an override.
-  'qs@<6.16.0': '>=6.16.0'
+  'qs@<6.16.0': '>=6.16.0 <7'
   # temporary: GHSA-82x6-q7mm-w9cf (uncontrolled recursion) and
   # GHSA-v5mp-jgw5-2x6j (prototype pollution) are patched only in the 4.x line,
   # but @effect/cli still depends on toml ^3.0.0. It calls nothing but

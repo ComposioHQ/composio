@@ -1,12 +1,14 @@
 /**
  * API reference route guards.
  *
- * fumadocs-openapi's tag grouping silently drops any operation whose tag is
- * not declared in the document's top-level `tags` array (preset-auto:
- * `builder.fromTagName(tag)` returns undefined -> `continue`, no warning).
- * The v10 -> v11 upgrade shipped exactly that: 16 operation pages vanished
- * from the site, sitemap, and search while the checked-in tag landing pages
- * kept rendering quick links that 404ed. Nothing else can catch this class:
+ * Up to 11.3, fumadocs-openapi's tag grouping silently dropped any operation
+ * whose tag was not declared in the document's top-level `tags` array
+ * (preset-auto: `builder.fromTagName(tag)` returned undefined -> `continue`,
+ * no warning). The v10 -> v11 upgrade shipped exactly that: 16 operation pages
+ * vanished from the site, sitemap, and search while the checked-in tag landing
+ * pages kept rendering quick links that 404ed. 11.4 fixed the drop, so these
+ * guards now stand as regression tripwires — the loss has already reappeared
+ * once, on a routine upgrade. Nothing else can catch this class:
  * validate-links only sees markdown links (ApiEndpointsTable hrefs live in a
  * JSX prop), and the integration suite samples fixed routes.
  *
