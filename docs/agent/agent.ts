@@ -23,6 +23,26 @@ const resolveInceptionApiKey = () => {
   return apiKey;
 };
 
+const INCEPTION_SAFE_ERROR_MESSAGE = 'Docs agent model request failed.';
+
+async function safeInceptionFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
+  const headers = new Headers(init?.headers);
+  headers.set('Authorization', `Bearer ${resolveInceptionApiKey()}`);
+
+  let response: Response;
+  try {
+    response = await fetch(input, { ...init, headers });
+  } catch {
+    throw new Error(INCEPTION_SAFE_ERROR_MESSAGE);
+  }
+
+  if (!response.ok) {
+    throw new Error(`${INCEPTION_SAFE_ERROR_MESSAGE} Upstream status: ${response.status}.`);
+  }
+
+  return response;
+}
+
 const inception = createOpenAI({
   name: 'inception',
   baseURL: INCEPTION_BASE_URL,
@@ -30,12 +50,7 @@ const inception = createOpenAI({
   // when apiKey is undefined. Keep the actual Mercury key runtime-resolved so we
   // never accidentally send an OpenAI key to Inception's endpoint.
   apiKey: 'runtime-resolved-by-inception-fetch',
-  fetch: async (input, init) => {
-    const headers = new Headers(init?.headers);
-    headers.set('Authorization', `Bearer ${resolveInceptionApiKey()}`);
-
-    return fetch(input, { ...init, headers });
-  },
+  fetch: safeInceptionFetch,
 });
 
 const gatewayModel = (model: string): AgentModelDefinition => {
