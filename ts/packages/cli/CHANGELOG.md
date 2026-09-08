@@ -4,6 +4,9 @@
 
 ### Patch Changes
 
+- `composio generate` now keeps tool and trigger metadata as inert data in
+  generated Python and TypeScript sources. Crafted slugs and descriptions can
+  no longer inject code into generated modules.
 - `composio upgrade` (and any other command with a long spinner message) no
   longer scrolls endlessly in terminals narrower than that message. The spinner
   printed its line hundreds of times instead of animating in place; live spinner
