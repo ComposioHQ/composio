@@ -47,7 +47,31 @@ _CONNECT_ERRORS = (
     urllib3.exceptions.NameResolutionError,
 )
 
+# Ranges that must not be reachable from a user-supplied URL but that
+# ``ipaddress.is_global`` does not reject on its own, because it only asks
+# whether an address is private. The TypeScript guard blocks the same ones from
+# its explicit CIDR list.
+_ALSO_BLOCKED_NETWORKS = (
+    ipaddress.ip_network("224.0.0.0/4"),  # IPv4 multicast
+    ipaddress.ip_network("192.88.99.0/24"),  # 6to4 relay anycast (RFC 7526)
+    ipaddress.ip_network("ff00::/8"),  # IPv6 multicast
+    ipaddress.ip_network("fec0::/10"),  # IPv6 site-local (deprecated)
+)
+
 _REDIRECT_STATUS_CODES = frozenset({301, 302, 303, 307, 308})
+# Headers that describe a request body, so they have to go when the body does.
+# The Fetch standard's "request-body-header name" set, plus the two `requests`
+# purges for the same reason (it recomputes both from the body it sends).
+_BODY_HEADERS = frozenset(
+    {
+        "content-encoding",
+        "content-language",
+        "content-length",
+        "content-location",
+        "content-type",
+        "transfer-encoding",
+    }
+)
 _MAX_REDIRECTS = 5
 
 
@@ -67,6 +91,9 @@ def is_blocked_ip(value: str) -> bool:
             embedded_ipv4 = ipaddress.IPv4Address(address.packed[-4:])
         if embedded_ipv4 is not None:
             return is_blocked_ip(str(embedded_ipv4))
+
+    if any(address in network for network in _ALSO_BLOCKED_NETWORKS):
+        return True
 
     return not address.is_global
 
@@ -143,6 +170,28 @@ def parse_content_length(value: t.Optional[str]) -> t.Optional[int]:
     return size if size >= 0 else None
 
 
+def _redirect_rewrite(status_code: int, method: str) -> t.Optional[str]:
+    """The method the hop after a redirect uses, or ``None`` to replay as-is.
+
+    A returned method also means the request body goes: these are the Fetch
+    standard's redirect rules, which the TypeScript guard applies too and which
+    following redirects by hand means applying by hand. ``303`` points at a
+    result URL that has no use for the original body, so every method loses it
+    and everything but ``HEAD`` becomes a ``GET``; ``301``/``302`` do the same
+    to a ``POST`` only; ``307``/``308`` replay both.
+
+    ``requests`` would have applied its own rules in ``resolve_redirects``, and
+    they are not quite these: it downgrades ``302`` for every non-``HEAD``
+    method, matching what browsers did before ``307`` existed. The two SDKs
+    agreeing is worth more than matching that legacy, so the Fetch rules win.
+    """
+    if status_code == 303:
+        return "HEAD" if method == "HEAD" else "GET"
+    if status_code in {301, 302} and method == "POST":
+        return "GET"
+    return None
+
+
 def safe_request(
     method: str,
     url: str,
@@ -162,10 +211,17 @@ def safe_request(
     region redirect). Call sites that require a direct URL should use
     :func:`safe_get`, which rejects nothing but simply does not follow them.
 
+    Following a redirect by hand also means rewriting the method and body by
+    hand; see :func:`_redirect_rewrite` for the rules and why they are the
+    Fetch standard's rather than the ones ``requests`` would apply.
+
     :param max_redirects: Hops to follow before giving up.
     :raises BlockedInternalUrlError: If any hop fails validation, or the
         redirect chain is longer than ``max_redirects``.
     """
+    # `requests` normalizes the method on the prepared request, and the
+    # redirect rules below compare against it, so normalize once up front.
+    method = method.upper()
     body = kwargs.get("data")
     current_url = url
 
@@ -178,6 +234,26 @@ def safe_request(
 
         response.close()
         current_url = urljoin(current_url, location)
+
+        # The next hop is whatever `Location` says, query string included, so
+        # `params` must not be appended to it a second time — that is how
+        # `requests` builds a redirected request, and it keeps a query-string
+        # credential from being handed to a target that never asked for one.
+        kwargs.pop("params", None)
+
+        rewritten_method = _redirect_rewrite(response.status_code, method)
+        if rewritten_method is not None:
+            method = rewritten_method
+            body = None
+            for key in ("data", "json", "files"):
+                kwargs.pop(key, None)
+            if headers := kwargs.get("headers"):
+                kwargs["headers"] = {
+                    name: value
+                    for name, value in headers.items()
+                    if name.lower() not in _BODY_HEADERS
+                }
+            continue
 
         # `requests` rewinds the body itself when it follows a redirect; doing
         # it manually means doing that too, or a retried upload sends nothing.
