@@ -41,6 +41,56 @@ import {
 const MAX_REDIRECTS = 5;
 
 /**
+ * The Fetch standard's "redirect status" set. A 3xx outside it is not a
+ * redirect to follow even when it carries a `location` — `304 Not Modified`
+ * and `305 Use Proxy` most of all, and following those would replay the
+ * request against a target the caller never asked for. The Python guard
+ * follows the same set (`_REDIRECT_STATUS_CODES`).
+ */
+const REDIRECT_STATUS_CODES = new Set([301, 302, 303, 307, 308]);
+
+/**
+ * Headers that describe a request body, so they have to go when the body does:
+ * the Fetch standard's "request-body-header name" set, plus the two the Python
+ * guard also drops because `requests` recomputes them from the body it sends.
+ */
+const BODY_HEADERS = [
+  'content-encoding',
+  'content-language',
+  'content-length',
+  'content-location',
+  'content-type',
+  'transfer-encoding',
+];
+
+/**
+ * The method the hop after a redirect uses, or `null` to replay as-is. A
+ * returned method also means the request body goes.
+ *
+ * These are the Fetch standard's redirect rules, which following redirects by
+ * hand (`redirect: 'manual'`) means `fetch` never applies for us: `303` points
+ * at a result URL that has no use for the original body, so every method loses
+ * it and everything but `HEAD` becomes a `GET`; `301`/`302` do the same to a
+ * `POST` only; `307`/`308` replay both. Without this, a `303` answering an
+ * upload would PUT the payload again at a URL that expects a GET. The Python
+ * guard applies the same rules in `safe_request`.
+ */
+const redirectRewrite = (status: number, method: string): string | null => {
+  if (status === 303) return method === 'HEAD' ? 'HEAD' : 'GET';
+  if ((status === 301 || status === 302) && method === 'POST') return 'GET';
+  return null;
+};
+
+const applyRedirectSemantics = (init: RequestInit, status: number): RequestInit => {
+  const method = redirectRewrite(status, (init.method ?? 'GET').toUpperCase());
+  if (method === null) return init;
+
+  const headers = new Headers(init.headers);
+  for (const name of BODY_HEADERS) headers.delete(name);
+  return { ...init, method, body: undefined, headers };
+};
+
+/**
  * Whether the runtime would route `url` through an env proxy the SDK cannot
  * see into. Bun honors proxy environment variables automatically. Node's
  * built-in `fetch` requires the `NODE_USE_ENV_PROXY` opt-in (Node >= 24), so
@@ -221,7 +271,8 @@ export const assertSafeFetchTarget = async (rawUrl: string): Promise<string[]> =
  * connects to the address it validated, and re-validates and re-pins every
  * redirect hop (redirects are followed manually up to {@link MAX_REDIRECTS}).
  * Intermediate redirect bodies are cancelled; non-redirect responses are
- * returned unchanged.
+ * returned unchanged. Each hop carries the method and body the Fetch standard
+ * says it should — see {@link applyRedirectSemantics}.
  *
  * A hop whose effective dispatcher is a configured route (caller-supplied
  * `init.dispatcher`, non-stock global dispatcher, env-proxy mode) is *not*
@@ -233,6 +284,9 @@ export const ssrfSafeFetch = async (
   maxRedirects: number = MAX_REDIRECTS
 ): Promise<Response> => {
   let currentUrl = rawUrl;
+  // Rebound per hop: a redirect can drop the method and body (see
+  // `applyRedirectSemantics`), and the following hops must send what is left.
+  let currentInit = init;
 
   for (let hop = 0; hop <= maxRedirects; hop++) {
     const addresses = await assertSafeFetchTarget(currentUrl);
@@ -241,7 +295,7 @@ export const ssrfSafeFetch = async (
     // Pinning replaces the connect target; through a configured route that
     // would dial the validated origin instead of the route's next hop (the
     // proxy), so those hops keep the pre-flight check only.
-    const callerDispatcher = (init as RequestInit & { dispatcher?: unknown }).dispatcher;
+    const callerDispatcher = (currentInit as RequestInit & { dispatcher?: unknown }).dispatcher;
     const respectConfiguredRoute =
       callerDispatcher !== undefined ||
       envProxyApplies(new URL(currentUrl), isBun) ||
@@ -253,14 +307,18 @@ export const ssrfSafeFetch = async (
     let response: Response;
     try {
       if (isBun && !respectConfiguredRoute) {
-        response = await pinnedHttpFetch(currentUrl, { ...init, redirect: 'manual' }, addresses);
+        response = await pinnedHttpFetch(
+          currentUrl,
+          { ...currentInit, redirect: 'manual' },
+          addresses
+        );
       } else {
         // `dispatcher` is a Node-only extension to `RequestInit`.
         response = await fetch(
           currentUrl,
           (dispatcher === undefined
-            ? { ...init, redirect: 'manual' }
-            : { ...init, redirect: 'manual', dispatcher }) as RequestInit
+            ? { ...currentInit, redirect: 'manual' }
+            : { ...currentInit, redirect: 'manual', dispatcher }) as RequestInit
         );
       }
     } catch (error) {
@@ -277,7 +335,7 @@ export const ssrfSafeFetch = async (
     }
 
     const isRedirect =
-      response.status >= 300 && response.status < 400 && response.headers.has('location');
+      REDIRECT_STATUS_CODES.has(response.status) && response.headers.has('location');
     if (!isRedirect) {
       return response;
     }
@@ -287,6 +345,7 @@ export const ssrfSafeFetch = async (
     await response.body?.cancel().catch(() => undefined);
 
     currentUrl = new URL(response.headers.get('location')!, currentUrl).toString();
+    currentInit = applyRedirectSemantics(currentInit, response.status);
   }
 
   throw new ComposioBlockedInternalUrlError(

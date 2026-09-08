@@ -338,4 +338,81 @@ describe('ssrfSafeFetch', () => {
     // maxRedirects = 2 => hops 0, 1, 2 are fetched before the budget throws.
     expect(cancel).toHaveBeenCalledTimes(3);
   });
+
+  // `redirect: 'manual'` means `fetch` never applies its own redirect rules, so
+  // the guard applies them: a 303 sends every method to a bodiless result
+  // request, 301/302 do that to a POST only, and 307/308 replay both. The
+  // Python guard follows the same table in `safe_request`.
+  it.each([
+    { status: 301, method: 'POST', expected: 'GET', replays: false },
+    { status: 301, method: 'PUT', expected: 'PUT', replays: true },
+    { status: 302, method: 'POST', expected: 'GET', replays: false },
+    { status: 302, method: 'PUT', expected: 'PUT', replays: true },
+    { status: 303, method: 'POST', expected: 'GET', replays: false },
+    { status: 303, method: 'PUT', expected: 'GET', replays: false },
+    { status: 303, method: 'HEAD', expected: 'HEAD', replays: false },
+    { status: 307, method: 'POST', expected: 'POST', replays: true },
+    { status: 308, method: 'PUT', expected: 'PUT', replays: true },
+  ])(
+    'sends $method as $expected after a $status',
+    async ({ status, method, expected, replays }) => {
+      resolvesTo('93.184.216.34');
+      mockFetch
+        .mockResolvedValueOnce(
+          new Response(null, { status, headers: { location: 'https://example.com/result' } })
+        )
+        .mockResolvedValueOnce(new Response('data', { status: 200 }));
+
+      await ssrfSafeFetch('https://example.com/create', {
+        method,
+        body: 'payload',
+        headers: { 'Content-Type': 'application/octet-stream', 'X-Test': 'kept' },
+      });
+
+      const [url, init] = mockFetch.mock.calls[1];
+      expect(url).toBe('https://example.com/result');
+      expect(init.method).toBe(expected);
+      expect(init.body).toBe(replays ? 'payload' : undefined);
+      expect(new Headers(init.headers).get('content-type')).toBe(
+        replays ? 'application/octet-stream' : null
+      );
+      // Only the headers that describe the body go with it.
+      expect(new Headers(init.headers).get('x-test')).toBe('kept');
+    }
+  );
+
+  it('keeps the downgrade across later hops', async () => {
+    resolvesTo('93.184.216.34');
+    mockFetch
+      .mockResolvedValueOnce(
+        new Response(null, { status: 303, headers: { location: 'https://example.com/result' } })
+      )
+      .mockResolvedValueOnce(
+        new Response(null, { status: 307, headers: { location: 'https://example.com/final' } })
+      )
+      .mockResolvedValueOnce(new Response('data', { status: 200 }));
+
+    await ssrfSafeFetch('https://example.com/create', { method: 'POST', body: 'payload' });
+
+    // A 307 replays whatever the request is *now*, not what it started as.
+    expect(mockFetch.mock.calls[2][1].method).toBe('GET');
+    expect(mockFetch.mock.calls[2][1].body).toBeUndefined();
+  });
+
+  it.each([300, 304, 305, 306])(
+    'returns a %i without following its location',
+    async (status: number) => {
+      resolvesTo('93.184.216.34');
+      // Only 301/302/303/307/308 are redirects to follow; a `location` on any
+      // other 3xx does not make it one.
+      mockFetch.mockResolvedValue(
+        new Response(null, { status, headers: { location: 'https://example.com/elsewhere' } })
+      );
+
+      const res = await ssrfSafeFetch('https://example.com/file.pdf');
+
+      expect(res.status).toBe(status);
+      expect(mockFetch).toHaveBeenCalledTimes(1);
+    }
+  );
 });

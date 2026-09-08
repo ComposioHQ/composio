@@ -177,28 +177,99 @@ def test_safe_request_follows_validated_redirect(mock_assert, mock_request) -> N
     assert body.read() == b"payload"
 
 
+# What the hop after a redirect is expected to carry: either the original body
+# and the headers describing it, or neither.
+_REPLAYED = {
+    "data": b"payload",
+    "headers": {"Content-Type": "application/octet-stream", "X-Test": "kept"},
+}
+_BODILESS = {"headers": {"X-Test": "kept"}}
+
+
+@pytest.mark.parametrize(
+    ("status_code", "method", "expected_method", "expected_kwargs"),
+    [
+        (301, "POST", "GET", _BODILESS),
+        (301, "PUT", "PUT", _REPLAYED),
+        (302, "POST", "GET", _BODILESS),
+        (302, "PUT", "PUT", _REPLAYED),
+        (303, "POST", "GET", _BODILESS),
+        (303, "PUT", "GET", _BODILESS),
+        (303, "HEAD", "HEAD", _BODILESS),
+        (307, "POST", "POST", _REPLAYED),
+        (308, "PUT", "PUT", _REPLAYED),
+    ],
+)
 @patch("composio.utils.url_safety.requests.Session.request")
 @patch("composio.utils.url_safety.assert_safe_fetch_target")
-def test_safe_request_303_switches_to_get_without_body(
-    mock_assert, mock_request
+def test_safe_request_applies_fetch_redirect_semantics(
+    mock_assert,
+    mock_request,
+    status_code: int,
+    method: str,
+    expected_method: str,
+    expected_kwargs: dict,
 ) -> None:
+    """The same rules `ssrfSafeFetch` gets from `fetch` in the TypeScript SDK.
+
+    A 303 sends every method to a bodiless result request, 301/302 do that to a
+    POST only, and 307/308 replay the original method and body.
+    """
     mock_request.side_effect = [
-        _response(303, "https://example.com/result"),
+        _response(status_code, "https://example.com/result"),
         _response(200),
     ]
 
-    safe_request(
-        "POST",
-        "https://example.com/create",
-        data=b"payload",
-        headers={"Content-Type": "application/octet-stream", "X-Test": "kept"},
+    safe_request(method, "https://example.com/create", **_REPLAYED)
+
+    assert mock_request.call_args_list[1] == call(
+        expected_method,
+        "https://example.com/result",
+        allow_redirects=False,
+        **expected_kwargs,
     )
+    assert mock_assert.call_args_list[1] == call("https://example.com/result")
+
+
+@patch("composio.utils.url_safety.requests.Session.request")
+@patch("composio.utils.url_safety.assert_safe_fetch_target")
+def test_safe_request_keeps_the_downgrade_across_later_hops(
+    mock_assert, mock_request
+) -> None:
+    """A hop after the 303 must not resurrect the method or the body."""
+    mock_request.side_effect = [
+        _response(303, "https://example.com/result"),
+        _response(307, "https://example.com/final"),
+        _response(200),
+    ]
+
+    safe_request("POST", "https://example.com/create", **_REPLAYED)
+
+    assert mock_request.call_args_list[2] == call(
+        "GET",
+        "https://example.com/final",
+        allow_redirects=False,
+        **_BODILESS,
+    )
+
+
+@patch("composio.utils.url_safety.requests.Session.request")
+@patch("composio.utils.url_safety.assert_safe_fetch_target")
+def test_safe_request_does_not_reapply_params_to_the_redirect_target(
+    mock_assert, mock_request
+) -> None:
+    """`Location` carries its own query; re-appending would leak the original."""
+    mock_request.side_effect = [
+        _response(307, "https://other.example.com/elsewhere"),
+        _response(200),
+    ]
+
+    safe_request("GET", "https://example.com/download", params={"token": "secret"})
 
     assert mock_request.call_args_list[1] == call(
         "GET",
-        "https://example.com/result",
+        "https://other.example.com/elsewhere",
         allow_redirects=False,
-        headers={"X-Test": "kept"},
     )
 
 
