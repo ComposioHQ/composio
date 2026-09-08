@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import io
 import socket
+import typing as t
 from unittest.mock import MagicMock, call, patch
 
 import pytest
@@ -197,11 +198,11 @@ def test_safe_request_follows_validated_redirect(mock_assert, mock_request) -> N
 
 # What the hop after a redirect is expected to carry: either the original body
 # and the headers describing it, or neither.
-_REPLAYED = {
+_REPLAYED: t.Dict[str, t.Any] = {
     "data": b"payload",
     "headers": {"Content-Type": "application/octet-stream", "X-Test": "kept"},
 }
-_BODILESS = {"headers": {"X-Test": "kept"}}
+_BODILESS: t.Dict[str, t.Any] = {"headers": {"X-Test": "kept"}}
 
 
 @pytest.mark.parametrize(
@@ -226,7 +227,7 @@ def test_safe_request_applies_fetch_redirect_semantics(
     status_code: int,
     method: str,
     expected_method: str,
-    expected_kwargs: dict,
+    expected_kwargs: t.Dict[str, t.Any],
 ) -> None:
     """The same rules `ssrfSafeFetch` gets from `fetch` in the TypeScript SDK.
 
