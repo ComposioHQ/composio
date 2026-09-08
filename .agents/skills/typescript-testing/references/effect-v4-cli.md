@@ -1,10 +1,10 @@
 # Effect v4 CLI testing
 
-Use this reference only for the Effect v4 migration. The current CLI suite runs on Effect v3 until the owning migration slice changes its exact package pins.
+Use this reference only for the Effect v4 migration, and load the repo-local `effect-v4` skill first: it owns the package pins in `effect-v4/versions.json`, the vendored source oracle, and the production API map. The current CLI suite runs on Effect v3 until the owning migration slice changes its exact package pins.
 
 ## Version and runner boundary
 
-- Pin `effect` and `@effect/vitest` to the same exact v4 beta.
+- Pin `effect` and `@effect/vitest` to the same exact v4 beta recorded in `effect-v4/versions.json`.
 - Keep the CLI on the workspace Vitest 4 catalog entry; do not install a second runner version inside the package.
 - Compile examples and migrated tests against installed packages. `ts/vendor/effect` may be ahead and is only a source oracle.
 - Do not mix v3 and v4 Effect values, layers, or test helpers in one test graph.
@@ -16,6 +16,7 @@ Use this reference only for the Effect v4 migration. The current CLI suite runs 
 - Keep reusable fixtures under `layer(TestLayer)(it => { ... })` or `it.layer(...)`.
 - Import `TestClock` and `FastCheck` from `effect/testing`, not the v3 core barrel.
 - Prefer assertion functions from `@effect/vitest/utils`, such as `assertTrue`, `assertDefined`, and `assertInstanceOf`, when the assertion must narrow a value.
+- Define expected failures with `Schema.TaggedError` classes (earlier v4 betas spelled this `Schema.TaggedErrorClass`).
 - Never guard assertions with `if`. A failed discriminant or instance check must fail the test, not skip its body.
 
 ```ts
@@ -23,7 +24,7 @@ import { assert, describe, it } from '@effect/vitest';
 import { assertInstanceOf } from '@effect/vitest/utils';
 import { Effect, Schema } from 'effect';
 
-class MissingTool extends Schema.TaggedErrorClass<MissingTool>()('MissingTool', {
+class MissingTool extends Schema.TaggedError<MissingTool>()('MissingTool', {
   slug: Schema.String,
 }) {}
 

@@ -18,7 +18,7 @@ Inspect the owning package's manifest and test configuration before choosing com
 ## Reference map
 
 - Read [test-commands.md](references/test-commands.md) before running broad checks or adding coverage.
-- Read [effect-v4-cli.md](references/effect-v4-cli.md) when porting `@effect/vitest`, test services, shared layers, `TestClock`, or typed failure assertions to Effect v4.
+- Read [effect-v4-cli.md](references/effect-v4-cli.md) when porting `@effect/vitest`, test services, shared layers, `TestClock`, or typed failure assertions to Effect v4. Load the repo-local `effect-v4` skill first; it owns the exact beta pins, the vendored source oracle, and the production API map those tests must match.
 
 ## Handoff
 
