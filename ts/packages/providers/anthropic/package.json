@@ -52,7 +52,7 @@
     "@anthropic-ai/sdk": "^0.124.0",
     "@composio/core": "workspace:*",
     "@mastra/core": "catalog:",
-    "@mastra/mcp": "^1.17.3",
+    "@mastra/mcp": "^1.17.2",
     "ai": "^6.0.266",
     "tsdown": "catalog:",
     "typescript": "catalog:",

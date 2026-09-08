@@ -42,7 +42,11 @@ catalog:
   '@effect/platform-bun': ^0.91.2
   '@effect/platform-node': ^0.108.0
   '@effect/vitest': ^0.30.0
-  '@mastra/core': 1.64.0
+  # Bisected against ts/examples/mastra's `cf:dry-run`: 1.54.0 moved the
+  # workspace/sandbox subsystem behind `@mastra/core/agent`, which drags execa
+  # (-> npm-run-path -> unicorn-magic) into the Workers bundle and fails to
+  # link. 1.53.0 is the newest release that still bundles for workerd.
+  '@mastra/core': 1.53.0
   '@modelcontextprotocol/sdk': ^1.30.0
   '@types/bun': ^1.4.1
   ai: ^7.0.93
@@ -95,6 +99,10 @@ peerDependencyRules:
     zod: ^4.0.0
 
 overrides:
+  # temporary: @mastra/mcp 1.17.3 raised its @mastra/core peer floor to 1.64,
+  # above the Workers-compatible ceiling pinned in the catalog above. Drop this
+  # once @mastra/core can move.
+  '@mastra/mcp@>=1.17.3': 1.17.2
   # GHSA-x5fp-wj9c-mxmx and GHSA-4mjr-xmp4-gh2g; express pulls the 6.15.x line.
   # Drop when its lockfile resolution is >=6.16.0 without an override.
   'qs@<6.16.0': '>=6.16.0'

@@ -95,7 +95,7 @@
     "@langchain/openai": "^1.5.11",
     "@llamaindex/openai": "^0.4.23",
     "@llamaindex/workflow": "^1.1.25",
-    "@mastra/core": "1.64.0",
+    "@mastra/core": "1.53.0",
     "@openai/agents": "^0.13.5",
     "@shikijs/vitepress-twoslash": "^4.4.3",
     "@tailwindcss/postcss": "^4.3.3",
