@@ -377,6 +377,23 @@ describe('durable callbacks', () => {
       (callback as ExecuteCallback)({ ...closure, binding: 'from-another-process' }, {}, {})
     ).rejects.toThrow('GITHUB_CREATE_ISSUE');
   });
+
+  it('never mints the same binding id in two processes', async () => {
+    const bindingFromFreshModule = async (): Promise<string> => {
+      vi.resetModules();
+      const { EveProvider: FreshProvider } = await import('../src/eve');
+      const wrapped = new FreshProvider().wrapTools(
+        [tool('GITHUB_CREATE_ISSUE')],
+        vi.fn(async () => ok())
+      );
+      return requireDurableCallback(wrapped.GITHUB_CREATE_ISSUE, 'execute').closure
+        .binding as string;
+    };
+
+    const [first, second] = [await bindingFromFreshModule(), await bindingFromFreshModule()];
+
+    expect(first).not.toBe(second);
+  });
 });
 
 describe('eve replay', () => {

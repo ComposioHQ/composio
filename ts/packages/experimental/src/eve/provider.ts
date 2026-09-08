@@ -82,14 +82,16 @@ type ComposioToolClosure = { slug: string; binding: string };
  * map is module-level because eve's callback registry is keyed by tool name
  * only, so a second `EveProvider` in the process replays through the same
  * callbacks. Entries live as long as the process; eve can resume a parked
- * call at any time, and a closure survives a restart only through a fresh
- * resolve that mints a new binding.
+ * call at any time. Ids carry a per-process token so a closure persisted by
+ * an earlier process fails the lookup instead of matching whichever resolve
+ * reused its counter value.
  */
 const bindings = new Map<string, ToolBinding>();
+const processToken = globalThis.crypto.randomUUID();
 let nextBindingId = 0;
 
 const bind = (binding: ToolBinding): string => {
-  const id = String(++nextBindingId);
+  const id = `${processToken}:${++nextBindingId}`;
   bindings.set(id, binding);
   return id;
 };
