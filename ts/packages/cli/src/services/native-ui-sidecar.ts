@@ -1,5 +1,8 @@
-import { Command, CommandExecutor, FileSystem, Path } from '@effect/platform';
-import { BunContext } from '@effect/platform-bun';
+import * as Command from '@effect/platform/Command';
+import * as CommandExecutor from '@effect/platform/CommandExecutor';
+import * as FileSystem from '@effect/platform/FileSystem';
+import * as Path from '@effect/platform/Path';
+import * as BunContext from '@effect/platform-bun/BunContext';
 import {
   Cause,
   Config,

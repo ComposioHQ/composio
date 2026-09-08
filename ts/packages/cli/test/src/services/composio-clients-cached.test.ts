@@ -2,8 +2,8 @@ import { describe, expect, it } from '@effect/vitest';
 import { ConfigProvider, DateTime, Effect, Layer } from 'effect';
 import * as tempy from 'tempy';
 import { ComposioToolkitsRepository, HttpServerError } from 'src/services/composio-clients';
-import { FileSystem } from '@effect/platform';
-import { BunFileSystem } from '@effect/platform-bun';
+import * as FileSystem from '@effect/platform/FileSystem';
+import * as BunFileSystem from '@effect/platform-bun/BunFileSystem';
 import {
   CACHE_FILES,
   ComposioToolkitsRepositoryCached,

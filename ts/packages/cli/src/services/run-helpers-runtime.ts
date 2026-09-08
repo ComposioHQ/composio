@@ -2,8 +2,9 @@
 // runtime or @effect/platform layers are provided, so it uses sync Node builtins.
 // eslint-disable-next-line no-restricted-imports -- sync fs for run-log appends, run-file writes, and CLI config reads in the child process, outside the Effect runtime
 import * as fs from 'node:fs';
-import { Command, Path } from '@effect/platform';
-import { BunContext } from '@effect/platform-bun';
+import * as Command from '@effect/platform/Command';
+import * as Path from '@effect/platform/Path';
+import * as BunContext from '@effect/platform-bun/BunContext';
 import { Effect, Either, ManagedRuntime, Predicate, Schema } from 'effect';
 import { z } from 'zod';
 import { JsonRecordSchema } from 'src/effects/json';

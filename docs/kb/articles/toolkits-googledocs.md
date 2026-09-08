@@ -8,12 +8,9 @@ Use this guide to create and edit Google Docs content, configure Google OAuth, m
 
 ## Configure Google OAuth
 
-**Use a customer-owned OAuth2 app.** Create the Google Docs auth config with the customer's Google OAuth app and the
-required scopes. The current catalog does not advertise a separate bearer-token
-auth scheme for Google Docs. A Composio Project API key authenticates SDK/API
-calls to Composio; it is not a replacement for the user's Google OAuth grant.
+**Choose managed or customer-owned OAuth2.** Use Composio-managed OAuth for the standard connection flow. Create a custom auth config with your Google OAuth app when you need control over scopes, consent-screen branding, or Google Cloud project policy. A Composio Project API key authenticates SDK/API calls to Composio; it is not a replacement for the user's Google OAuth grant.
 
-**Verify sensitive scopes for production use.** Google may block OAuth consent when an app requests unverified sensitive scopes. For production Google Docs/Workspace usage with sensitive scopes, use a verified OAuth app and complete the required Google verification/CASA process where applicable. Without verification, users may see warnings or app-blocked errors.
+**Verify sensitive scopes for production use.** Google may block OAuth consent when an app requests unverified sensitive scopes. For production Google Docs or Workspace usage with sensitive scopes, use a verified OAuth app and complete the required Google verification or CASA process where applicable. Without verification, users may see warnings or app-blocked errors.
 
 **Execute through Composio instead of reading provider tokens.** Provider tokens are redacted from connected-account API responses. Use Composio tool execution or Proxy Execute instead of reading access or refresh tokens from connected-account data.
 
@@ -27,4 +24,4 @@ calls to Composio; it is not a replacement for the user's Google OAuth grant.
 
 ## Connect through Platform or Connect MCP
 
-**Connect the app separately on each surface.** Connections created on Platform (`dashboard.composio.dev`) are isolated from For You / Connect MCP and do not carry over. To use Google Docs/Sheets/Workspace through Connect MCP, ask the MCP server to connect the app from the client flow and complete that OAuth flow.
+**Connect the app separately on each surface.** Connections created on Platform (`dashboard.composio.dev`) are isolated from For You / Connect MCP and do not carry over. To use Google Docs, Sheets, or Workspace through Connect MCP, ask the MCP server to connect the app from the client flow and complete that OAuth flow.

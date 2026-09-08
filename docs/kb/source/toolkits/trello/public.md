@@ -11,11 +11,11 @@ tags:
 # Trello
 
 
-## Trello currently uses OAuth1 authentication
+## Trello supports managed and customer-owned OAuth1
 
-Create a customer-owned Trello OAuth1 auth config and have each user complete
-the provider authorization flow. The current catalog does not advertise a
-separate bearer-token auth scheme for Trello.
+Use Composio-managed OAuth1 for the standard connection flow. Create a custom
+OAuth1 auth config when the customer needs control over the Trello provider app,
+and have each user complete the authorization flow.
 
 ## Route Trello MCP calls by appending user_id or connected_account_id
 

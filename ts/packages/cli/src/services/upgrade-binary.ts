@@ -8,8 +8,13 @@ import {
   Record as EffectRecord,
   Scope,
   Stream,
+  Context,
+  Layer,
 } from 'effect';
-import { HttpClient, HttpClientResponse, FileSystem, Path } from '@effect/platform';
+import * as HttpClient from '@effect/platform/HttpClient';
+import * as HttpClientResponse from '@effect/platform/HttpClientResponse';
+import * as FileSystem from '@effect/platform/FileSystem';
+import * as Path from '@effect/platform/Path';
 import { APP_VERSION } from '../constants';
 import { DEBUG_OVERRIDE_CONFIG } from 'src/effects/debug-config';
 import { GITHUB_CONFIG } from 'src/effects/github-config';
@@ -725,19 +730,26 @@ const upgrade = (
   });
 
 // Service to manage CLI binary upgrades
-export class UpgradeBinary extends Effect.Service<UpgradeBinary>()('services/UpgradeBinary', {
-  accessors: true,
-  effect: Effect.gen(function* () {
-    const ctx: UpgradeBinaryContext = {
-      httpClient: yield* HttpClient.HttpClient,
-      fs: yield* FileSystem.FileSystem,
-      path: yield* Path.Path,
-      githubConfig: yield* GITHUB_CONFIG_ALL,
-    };
+const makeUpgradeBinary = Effect.gen(function* () {
+  const ctx: UpgradeBinaryContext = {
+    httpClient: yield* HttpClient.HttpClient,
+    fs: yield* FileSystem.FileSystem,
+    path: yield* Path.Path,
+    githubConfig: yield* GITHUB_CONFIG_ALL,
+  };
 
-    return {
-      upgrade: (options: { prerelease?: boolean; tag?: string } = {}) => upgrade(ctx, options),
-    } as const;
-  }),
-  dependencies: [Path.layer],
-}) {}
+  return {
+    upgrade: (options: { prerelease?: boolean; tag?: string } = {}) => upgrade(ctx, options),
+  } as const;
+});
+
+export type UpgradeBinaryShape = Effect.Effect.Success<typeof makeUpgradeBinary>;
+
+export class UpgradeBinary extends Context.Tag('services/UpgradeBinary')<
+  UpgradeBinary,
+  UpgradeBinaryShape
+>() {
+  static readonly Default = Layer.effect(UpgradeBinary, makeUpgradeBinary).pipe(
+    Layer.provide(Path.layer)
+  );
+}

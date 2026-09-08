@@ -1,4 +1,5 @@
-import { Command, CommandExecutor } from '@effect/platform';
+import * as Command from '@effect/platform/Command';
+import * as CommandExecutor from '@effect/platform/CommandExecutor';
 import { describe, expect, layer } from '@effect/vitest';
 import { Cause, Effect, Exit, Fiber, TestClock } from 'effect';
 import { afterEach, vi } from 'vitest';
@@ -77,7 +78,7 @@ const makeRunner = (
     readonly stderr?: string;
   }
 ) =>
-  new CommandRunner({
+  CommandRunner.of({
     run: () => Effect.succeed(CommandExecutor.ExitCode(0)),
     capture: command => {
       const result = respond(commandParts(command));
@@ -106,7 +107,7 @@ const makeSkillInstaller = (initiallyReady = false, failInstall = false) => {
       return changed;
     });
   };
-  return new SetupSkillInstaller({
+  return SetupSkillInstaller.of({
     isClaudeSkillReady: Effect.sync(() => ready),
     hasManagedClaudeSkill: Effect.sync(() => ready),
     ensureClaudeSkill: ensureClaudeSkill(),
@@ -294,7 +295,7 @@ describe('CLI: composio setup', () => {
   });
   let staleSkillRepaired = false;
   let staleSkillReady = false;
-  const staleSkillInstaller = new SetupSkillInstaller({
+  const staleSkillInstaller = SetupSkillInstaller.of({
     isClaudeSkillReady: Effect.sync(() => staleSkillReady),
     hasManagedClaudeSkill: Effect.succeed(true),
     ensureClaudeSkill: Effect.sync(() => {
@@ -694,7 +695,7 @@ describe('CLI: composio setup', () => {
   layer(
     TestLive({
       commandRunner: orphanedClaudeSkill.runner,
-      setupSkillInstaller: new SetupSkillInstaller({
+      setupSkillInstaller: SetupSkillInstaller.of({
         isClaudeSkillReady: Effect.sync(() => managedClaudeSkill),
         hasManagedClaudeSkill: Effect.sync(() => managedClaudeSkill),
         ensureClaudeSkill: Effect.succeed(false),
@@ -726,7 +727,7 @@ describe('CLI: composio setup', () => {
   layer(
     TestLive({
       commandRunner: uninstallWithUnmanagedClaudeSkill.runner,
-      setupSkillInstaller: new SetupSkillInstaller({
+      setupSkillInstaller: SetupSkillInstaller.of({
         isClaudeSkillReady: Effect.succeed(true),
         hasManagedClaudeSkill: Effect.succeed(false),
         ensureClaudeSkill: Effect.succeed(false),
@@ -1133,7 +1134,7 @@ describe('CLI: composio setup', () => {
     );
   });
 
-  const hangingRunner = new CommandRunner({
+  const hangingRunner = CommandRunner.of({
     run: () => Effect.succeed(CommandExecutor.ExitCode(0)),
     capture: () => Effect.never,
   });

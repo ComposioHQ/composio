@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import contextlib
 import functools
 import hashlib
 import os
@@ -455,11 +456,15 @@ def _fetch_file_from_url(
             if chunk:
                 total_bytes += len(chunk)
                 if total_bytes > max_size:
-                    response.close()
                     raise ResponseTooLargeError(
                         f"Response size exceeds maximum allowed size ({max_size} bytes)"
                     )
                 chunks.append(chunk)
+    except requests.exceptions.RequestException as e:
+        raise ErrorUploadingFile(
+            f"Failed to fetch file from URL: {_sanitize_url_for_logging(url)}. "
+            f"Error: {e}"
+        ) from e
     finally:
         response.close()
 
@@ -663,6 +668,17 @@ class FileUploadable(BaseModel):
         return cls(name=file.name, mimetype=mimetype, s3key=s3meta.key)
 
 
+def _discard_partial_download(outfile: Path) -> None:
+    """Remove a half-written download so it is never mistaken for the file.
+
+    Cleanup failures are swallowed on purpose: the error that triggered the
+    cleanup is what the caller needs to see, and an ``OSError`` raised from
+    here would replace it.
+    """
+    with contextlib.suppress(OSError):
+        outfile.unlink(missing_ok=True)
+
+
 class FileDownloadable(BaseModel):
     model_config = ConfigDict(json_schema_extra={"file_downloadable": True})
 
@@ -676,6 +692,7 @@ class FileDownloadable(BaseModel):
         chunk_size: int = _DEFAULT_CHUNK_SIZE,
         *,
         root: Path,
+        max_size: int = _MAX_RESPONSE_SIZE,
     ) -> Path:
         """Fetch the file into ``outdir``.
 
@@ -686,6 +703,10 @@ class FileDownloadable(BaseModel):
             checking containment against a directory that untrusted input has
             already relocated is not a check at all, and ``outdir`` may be
             exactly such a directory. Callers must name the anchor explicitly.
+        :param max_size: Maximum number of bytes to write to disk. ``s3url`` is
+            an API-response field, so the body behind it is untrusted: the
+            streamed byte count is authoritative because ``Content-Length`` can
+            be absent or dishonest.
         """
         # SEC-316: `self.name` also comes from the (potentially compromised or
         # MITM'd) API response. Collapsed to a bare filename and checked against
@@ -712,6 +733,18 @@ class FileDownloadable(BaseModel):
                 f"Error downloading file: {_sanitize_url_for_logging(self.s3url)}"
             )
 
+        # Early abort for a self-declared oversized body. The header is only a
+        # hint — `parse_content_length` returns None for anything untrustworthy
+        # and the streaming counter below is the authoritative limit.
+        content_length = parse_content_length(response.headers.get("Content-Length"))
+        if content_length is not None and content_length > max_size:
+            response.close()
+            raise ResponseTooLargeError(
+                f"File size ({content_length} bytes) exceeds maximum allowed "
+                f"size ({max_size} bytes)"
+            )
+
+        total_bytes = 0
         try:
             # Only once the fetch is validated and connected, so a blocked URL
             # leaves no directory behind — and inside the `try`, so a failure
@@ -719,8 +752,25 @@ class FileDownloadable(BaseModel):
             outdir.mkdir(exist_ok=True, parents=True)
             with outfile.open("wb") as fd:
                 for chunk in response.iter_content(chunk_size=chunk_size):
-                    fd.write(chunk)
-        except requests.exceptions.RequestException as e:
+                    if chunk:
+                        total_bytes += len(chunk)
+                        if total_bytes > max_size:
+                            raise ResponseTooLargeError(
+                                "Response size exceeds maximum allowed size "
+                                f"({max_size} bytes)"
+                            )
+                        fd.write(chunk)
+        except ResponseTooLargeError:
+            # Propagates uncaught — callers must see the limit hit — but the
+            # truncated file must not be left behind as if it were the download.
+            _discard_partial_download(outfile)
+            raise
+        except OSError as e:
+            # `requests.exceptions.RequestException` subclasses `OSError`, so a
+            # mid-stream transport failure and a failing `fd.write`/`mkdir`
+            # (disk full, permissions) both land here — and both owe the caller
+            # the `ErrorDownloadingFile` this method documents.
+            _discard_partial_download(outfile)
             raise ErrorDownloadingFile(
                 "Error downloading file: "
                 f"{_sanitize_url_for_logging(self.s3url)}. Error: {type(e).__name__}"
@@ -916,6 +966,11 @@ class FileHelper(WithLogger):
             return schema
         required = schema.get("required") or []
         for _param, _schema in schema["properties"].items():
+            if not isinstance(_schema, dict):
+                # Boolean schemas have no description to enhance. They are
+                # valid property schemas and reach this unconditional helper
+                # before schema conversion.
+                continue
             if _schema.get("type") in ["string", "integer", "number", "boolean"]:
                 ext = f"Please provide a value of type {_schema['type']}."
                 description = _schema.get("description", "").rstrip(".")

@@ -1,4 +1,5 @@
-import { Command, Error as PlatformError } from '@effect/platform';
+import * as Command from '@effect/platform/Command';
+import * as PlatformError from '@effect/platform/Error';
 import { Data, Effect, Either, Option, Predicate, Schema } from 'effect';
 import semver from 'semver';
 import { trackCliEventEffect } from 'src/analytics/dispatch';

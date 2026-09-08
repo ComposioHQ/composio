@@ -48,8 +48,8 @@
   "author": "Composio",
   "license": "ISC",
   "devDependencies": {
-    "@types/node": "^26.2.0",
-    "bun-types": "^1.3.14",
+    "@types/node": "^26.3.0",
+    "bun-types": "^1.4.0",
     "effect": "catalog:",
     "tsdown": "catalog:",
     "typescript": "catalog:",

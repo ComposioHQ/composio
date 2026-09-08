@@ -16,15 +16,12 @@ on:
   workflow_dispatch:
     inputs:
       action:
-        description: 'What to do'
+        description: 'What to do (select the beta tag as the workflow ref for promote-stable)'
         type: choice
         options:
           - build-beta
           - promote-stable
         default: build-beta
-      beta_tag:
-        description: 'Existing beta release tag to promote (only for promote-stable, e.g. @composio/cli@0.2.20-beta.42)'
-        required: false
       version:
         description: 'Optional semver base for a manual beta (e.g. 0.3.0); omit for the next patch after latest stable'
         required: false
@@ -44,7 +41,6 @@ jobs:
     name: Resolve Release Metadata
     runs-on: ubuntu-latest
     outputs:
-      checkout_ref: ${{ steps.resolve.outputs.checkout_ref }}
       release_name: ${{ steps.resolve.outputs.release_name }}
       release_tag: ${{ steps.resolve.outputs.release_tag }}
       release_version: ${{ steps.resolve.outputs.release_version }}
@@ -62,8 +58,9 @@ jobs:
         env:
           EVENT_NAME: ${{ github.event_name }}
           ACTION_INPUT: ${{ inputs.action }}
-          BETA_TAG_INPUT: ${{ inputs.beta_tag }}
           VERSION_INPUT: ${{ inputs.version }}
+          REF_NAME: ${{ github.ref_name }}
+          REF_TYPE: ${{ github.ref_type }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           REPOSITORY: ${{ github.repository }}
           RUN_NUMBER: ${{ github.run_number }}
@@ -124,7 +121,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ needs.prepare.outputs.checkout_ref }}
+          ref: ${{ github.sha }}
 
       - name: Setup Node.js, pnpm, Bun
         uses: ./.github/actions/setup-node-pnpm-bun
@@ -241,14 +238,14 @@ jobs:
       RELEASE_NAME: ${{ needs.prepare.outputs.release_name }}
       PRERELEASE: ${{ needs.prepare.outputs.prerelease }}
       MAKE_LATEST: ${{ needs.prepare.outputs.make_latest }}
-      CHECKOUT_REF: ${{ needs.prepare.outputs.checkout_ref }}
+      CHECKOUT_REF: ${{ github.sha }}
       RELEASE_HELPERS_DIR: ${{ github.workspace }}/.release-workflow/.github/scripts/cli-release
 
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ needs.prepare.outputs.checkout_ref }}
+          ref: ${{ github.sha }}
 
       - name: Setup Node.js, pnpm, Bun
         uses: ./.github/actions/setup-node-pnpm-bun

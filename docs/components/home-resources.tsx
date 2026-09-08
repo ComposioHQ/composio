@@ -9,6 +9,7 @@ import {
   Wrench,
 } from 'lucide-react';
 import type { ReactNode } from 'react';
+import { TOOLKIT_COUNT_LABEL } from '@/lib/toolkit-count';
 
 const RESOURCES = [
   {
@@ -38,7 +39,7 @@ const RESOURCES = [
   {
     icon: <Blocks aria-hidden="true" className="size-4" />,
     title: 'Toolkits',
-    description: 'Browse the 1000+ apps your agent can act on.',
+    description: `Browse the ${TOOLKIT_COUNT_LABEL} apps your agent can act on.`,
     href: '/toolkits',
   },
   {

@@ -24,6 +24,7 @@ import { readFile } from 'fs/promises';
 import { join } from 'path';
 import { getAllToolkits, getToolkitBySlug } from '@/lib/toolkit-data';
 import { getAllMetaTools, getMetaToolBySlug } from '@/lib/meta-tools-data';
+import { encodeMarkdownTableCell } from '@/lib/markdown-escaping';
 import type { MetaTool, MetaToolParameter } from '@/lib/meta-tools-data';
 import type { Toolkit, Tool, Trigger, ParameterSchema } from '@/types/toolkit';
 import { apiToolListSchema, apiTriggerListSchema } from '@/lib/toolkit-schema';
@@ -35,6 +36,10 @@ import {
   type KnowledgeLink,
 } from '@/lib/knowledge/catalog';
 import { getProductArea, isProductAreaSlug, PRODUCT_AREAS } from '@/lib/knowledge/taxonomy';
+import {
+  getToolkitKnowledgeMarkdownHref,
+  getToolkitKnowledgeRedirect,
+} from '@/lib/knowledge/toolkit-routing';
 
 export const revalidate = false;
 
@@ -815,7 +820,7 @@ function renderParamsMarkdown(params: Record<string, ParameterSchema>): string[]
   for (const [name, param] of Object.entries(params)) {
     const typeStr = formatParamType(param);
     const required = param.required ? 'Yes' : 'No';
-    const desc = (param.description || '').replace(/\|/g, '\\|').replace(/\n/g, ' ');
+    const desc = encodeMarkdownTableCell(param.description || '');
     lines.push(`| \`${name}\` | ${typeStr} | ${required} | ${desc} |`);
   }
 
@@ -849,7 +854,7 @@ function toolkitToMarkdown(
     '',
     `- **Category:** ${toolkit.category || 'Uncategorized'}`,
     `- **Auth:** ${toolkit.authSchemes.join(', ') || 'None'}`,
-    `- **Composio Managed App Available?** ${
+    `- **Composio-managed OAuth available?** ${
       toolkit.authSchemes?.some(s => s.toUpperCase().includes('OAUTH'))
         ? toolkit.composioManagedAuthSchemes && toolkit.composioManagedAuthSchemes.length > 0
           ? 'Yes'
@@ -944,20 +949,26 @@ async function generateManagedAuthIndex(): Promise<string> {
     .sort((a, b) => (a.name?.trim() || '').localeCompare(b.name?.trim() || ''));
 
   const lines: string[] = [
-    '# Composio Managed Auth',
+    '# Managed OAuth apps',
     '',
-    'Toolkits with managed auth work out of the box with no OAuth setup. For toolkits without managed auth, you need to provide your own credentials.',
+    'Composio can provide the OAuth app that your users authorize when they connect a toolkit. You do not need to register an OAuth app or supply its client ID and client secret.',
     '',
-    'You can also check programmatically whether a toolkit has managed auth:',
+    'This list covers only toolkits that support OAuth. It does not include toolkits that use only API keys, bearer tokens, Basic auth, or no authentication.',
+    '',
+    'Call the toolkit endpoint and read `composio_managed_auth_schemes`:',
     '',
     '```bash',
-    "curl 'https://backend.composio.dev/api/v3/toolkits/posthog' \\",
+    "curl 'https://backend.composio.dev/api/v3.1/toolkits/gmail' \\",
     "  -H 'x-api-key: YOUR_API_KEY'",
     '```',
     '',
-    'See [When to use your own developer credentials](/docs/authentication/custom-app-vs-managed-app.md) for help deciding which approach fits your use case.',
+    'If `composio_managed_auth_schemes` contains the toolkit\'s OAuth method, Composio provides the OAuth app. If the field does not contain that method, register your own OAuth app and supply its client ID and client secret.',
     '',
-    `## Composio Managed App Available (${managed.length})`,
+    'Some toolkits support more than one authentication method. A toolkit appears under **Composio-managed OAuth available** when Composio manages at least one OAuth method. Open the toolkit page to check each method.',
+    '',
+    'See [Managed vs custom auth](/docs/authentication/custom-app-vs-managed-app.md) for setup steps and trade-offs.',
+    '',
+    `## Composio-managed OAuth available (${managed.length})`,
     '',
     '| Toolkit | Slug |',
     '|---------|------|',
@@ -970,7 +981,7 @@ async function generateManagedAuthIndex(): Promise<string> {
   }
 
   lines.push('');
-  lines.push(`## Requires Your Own Credentials (${unmanaged.length})`);
+  lines.push(`## Bring your own OAuth app (${unmanaged.length})`);
   lines.push('');
   lines.push('| Toolkit | Slug |');
   lines.push('|---------|------|');
@@ -998,8 +1009,8 @@ async function generateToolkitsIndex(): Promise<string> {
     '',
     `Composio supports ${toolkits.length} toolkits for building AI agents.`,
     '',
-    '- [Pro Tools](/toolkits/pro-tools.md) - Which tools cost extra, how they are priced, and what the limits are',
-    '- [Composio Managed Auth](/toolkits/managed-auth.md) - Full list of OAuth toolkits that work out of the box vs ones that need your own credentials',
+    '- [Premium Tools](/toolkits/pro-tools.md) - Which tools cost extra, how they are priced, and what the limits are',
+    '- [Managed OAuth apps](/toolkits/managed-auth.md) - Check whether Composio provides the OAuth app for a toolkit',
     '',
     '## All Toolkits',
     '',
@@ -1053,7 +1064,7 @@ async function knowledgeBrowseToMarkdown(rest: string[]): Promise<string | null>
   if (rest.length === 1 && rest[0] === 'toolkits') {
     const toolkits = await getKnowledgeToolkitSummaries();
     const rows = toolkits
-      .map((toolkit) => `- [${toolkit.name}](https://docs.composio.dev/kb/toolkit/${toolkit.slug}) — ${toolkit.knowledgeCount} resource${toolkit.knowledgeCount === 1 ? '' : 's'}`)
+      .map((toolkit) => `- [${toolkit.name}](https://docs.composio.dev${getToolkitKnowledgeMarkdownHref(toolkit)}) — ${toolkit.knowledgeCount} resource${toolkit.knowledgeCount === 1 ? '' : 's'}`)
       .join('\n');
     return `# Toolkit knowledge\n\nBrowse canonical public knowledge by provider.\n\n${rows}${LLM_FOOTER}`;
   }
@@ -1191,6 +1202,17 @@ export async function GET(_req: Request, { params }: { params: Promise<{ slug?: 
     const [prefix, ...rest] = slug;
 
     if (prefix === 'kb') {
+      if (rest.length === 2 && rest[0] === 'toolkit') {
+        const toolkits = await getKnowledgeToolkitSummaries();
+        const toolkit = toolkits.find((candidate) => candidate.slug === rest[1]);
+        const redirectPath = toolkit ? getToolkitKnowledgeRedirect(toolkit) : null;
+        if (redirectPath) {
+          return new Response(null, {
+            status: 307,
+            headers: { Location: `${redirectPath}.md` },
+          });
+        }
+      }
       const browseMarkdown = await knowledgeBrowseToMarkdown(rest);
       if (browseMarkdown) {
         return new Response(browseMarkdown, {

@@ -9,6 +9,7 @@ import {
 } from '@/lib/source';
 import { SESSION_GUARDRAILS } from '@/lib/llm-guardrails';
 import { detectReferenceApiVersion } from '@/lib/api-version';
+import { TOOLKIT_COUNT_LABEL } from '@/lib/toolkit-count';
 import {
   formatKnowledgeDiscoveryLinks,
   getLocalKnowledgeDiscoveryPaths,
@@ -165,7 +166,7 @@ export async function GET() {
     ]);
 
     const results = [
-      `# Composio Documentation\n\n> Composio powers 1000+ toolkits, tool search, context management, authentication, and a sandboxed workbench to help you build AI agents that turn intent into action.${SESSION_GUARDRAILS}\n# Documentation\n`,
+      `# Composio Documentation\n\n> Composio powers ${TOOLKIT_COUNT_LABEL} toolkits, tool search, context management, authentication, and a sandboxed workbench to help you build AI agents that turn intent into action.${SESSION_GUARDRAILS}\n# Documentation\n`,
       ...docsResults,
       '\n# Knowledge Hub navigation\n',
       knowledgeDiscoveryLinks,

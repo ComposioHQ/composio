@@ -1,7 +1,11 @@
 import { lookup } from 'node:dns/promises'; // we're in a Node.js-specific module
 import { isIP } from 'node:net';
 import { ComposioBlockedInternalUrlError } from '../errors/SsrfErrors';
-import { createPinnedDispatcher, hasCustomGlobalDispatcher } from './pinnedDispatcher.node';
+import {
+  createPinnedDispatcher,
+  hasCustomGlobalDispatcher,
+  pinnedHttpFetch,
+} from './pinnedDispatcher.node';
 
 /**
  * SSRF guard for user-supplied URL file inputs.
@@ -26,7 +30,8 @@ import { createPinnedDispatcher, hasCustomGlobalDispatcher } from './pinnedDispa
  * Residual: a hop whose effective dispatcher is a configured route — a
  * caller-supplied `init.dispatcher`, a non-stock global dispatcher (a
  * `ProxyAgent` or `EnvHttpProxyAgent` installed via `setGlobalDispatcher`), or
- * the runtime's env-proxy mode (`NODE_USE_ENV_PROXY`) — keeps only the
+ * the runtime's env-proxy mode (automatic on Bun, opt-in via
+ * `NODE_USE_ENV_PROXY` on Node) — keeps only the
  * pre-flight validation. Pinning would dial the validated address instead of
  * the proxy, and the proxy resolves the hostname itself where the SDK cannot
  * see or pin that resolution. The Python guard carries the same residual for
@@ -37,17 +42,18 @@ const MAX_REDIRECTS = 5;
 
 /**
  * Whether the runtime would route `url` through an env proxy the SDK cannot
- * see into. Only meaningful when `NODE_USE_ENV_PROXY` opts the built-in
- * `fetch` into env proxies (Node >= 24); without that flag the runtime's
- * `fetch` ignores `HTTP_PROXY`/`HTTPS_PROXY` entirely, so mirroring Python's
- * bare env-var check would drop pinning for users whose fetch never proxied.
+ * see into. Bun honors proxy environment variables automatically. Node's
+ * built-in `fetch` requires the `NODE_USE_ENV_PROXY` opt-in (Node >= 24), so
+ * a bare env-var check on Node would drop pinning for users whose fetch never
+ * proxied.
  *
  * `NO_PROXY=*` is the one bypass honored precisely (nothing is proxied, so
  * pinning is safe again); per-host `NO_PROXY` entries are treated
  * conservatively as proxied rather than parsed.
  */
-const envProxyApplies = (url: URL): boolean => {
-  const useEnvProxy = ['1', 'true'].includes((process.env.NODE_USE_ENV_PROXY ?? '').toLowerCase());
+const envProxyApplies = (url: URL, isBun: boolean): boolean => {
+  const useEnvProxy =
+    isBun || ['1', 'true'].includes((process.env.NODE_USE_ENV_PROXY ?? '').toLowerCase());
   if (!useEnvProxy) return false;
   if ((process.env.NO_PROXY ?? process.env.no_proxy ?? '') === '*') return false;
   const schemeVar = url.protocol === 'https:' ? 'HTTPS_PROXY' : 'HTTP_PROXY';
@@ -230,6 +236,7 @@ export const ssrfSafeFetch = async (
 
   for (let hop = 0; hop <= maxRedirects; hop++) {
     const addresses = await assertSafeFetchTarget(currentUrl);
+    const isBun = typeof process.versions.bun === 'string';
 
     // Pinning replaces the connect target; through a configured route that
     // would dial the validated origin instead of the route's next hop (the
@@ -237,20 +244,25 @@ export const ssrfSafeFetch = async (
     const callerDispatcher = (init as RequestInit & { dispatcher?: unknown }).dispatcher;
     const respectConfiguredRoute =
       callerDispatcher !== undefined ||
-      envProxyApplies(new URL(currentUrl)) ||
+      envProxyApplies(new URL(currentUrl), isBun) ||
       hasCustomGlobalDispatcher();
 
-    const dispatcher = respectConfiguredRoute ? undefined : await createPinnedDispatcher(addresses);
+    const dispatcher =
+      respectConfiguredRoute || isBun ? undefined : await createPinnedDispatcher(addresses);
 
     let response: Response;
     try {
-      // `dispatcher` is a Node-only extension to `RequestInit`.
-      response = await fetch(
-        currentUrl,
-        (dispatcher === undefined
-          ? { ...init, redirect: 'manual' }
-          : { ...init, redirect: 'manual', dispatcher }) as RequestInit
-      );
+      if (isBun && !respectConfiguredRoute) {
+        response = await pinnedHttpFetch(currentUrl, { ...init, redirect: 'manual' }, addresses);
+      } else {
+        // `dispatcher` is a Node-only extension to `RequestInit`.
+        response = await fetch(
+          currentUrl,
+          (dispatcher === undefined
+            ? { ...init, redirect: 'manual' }
+            : { ...init, redirect: 'manual', dispatcher }) as RequestInit
+        );
+      }
     } catch (error) {
       if (dispatcher !== undefined) {
         await dispatcher.close().catch(() => undefined);

@@ -29,11 +29,13 @@ When using custom credentials, enable the Google Tasks API in the Google Cloud p
 
 Verify the requested scopes and their formatting against the [Google OAuth scopes documentation](https://developers.google.com/identity/protocols/oauth2).
 
-## Configure the consent-screen name on the customer-owned OAuth app
+## Choose managed or customer-owned Google OAuth
 
-Google Tasks currently uses customer-owned OAuth credentials. Configure the app
-name and branding in the Google Cloud project that owns those credentials, and
-use the redirect URL shown by Composio's current auth-config flow.
+Use Composio-managed OAuth for the standard connection flow. Use a custom Google
+OAuth app when the customer needs control over scopes, consent-screen branding,
+or Google Cloud project policy. For custom OAuth, configure the app name and
+branding in that project and use the redirect URL shown by Composio's current
+auth-config flow.
 
 ## Resolve 401 errors on tool calls
 

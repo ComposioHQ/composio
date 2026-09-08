@@ -204,6 +204,7 @@ export class ComposioToolVersionRequiredError extends ComposioError {
         'Set dangerouslySkipVersionCheck to true (this might cause unexpected behavior when new versions of the tools are released)',
       ],
     });
+    this.name = 'ComposioToolVersionRequiredError';
   }
 }
 export interface ComposioAPIServerErrorBody {

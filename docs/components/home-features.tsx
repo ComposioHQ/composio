@@ -3,6 +3,7 @@ import { ArrowUpRight } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { AuthDiagram } from './home-auth-diagram';
 import { MOCK_FADE_STYLE } from './home-shared';
+import { TOOLKIT_COUNT_LABEL } from '@/lib/toolkit-count';
 
 const LOGO_CDN = 'https://logos.composio.dev/api';
 // 10-col × 3-row grid: 29 recognizable toolkit logos plus a brand-tinted
@@ -40,7 +41,7 @@ export function HomeFeatures() {
       <div className="grid grid-cols-1 gap-6 sm:auto-rows-fr sm:grid-cols-2">
         <FeatureCard
           title="Tools that resolve by intent."
-          description="Smart tool search over 1000+ apps, surfaced just in time with the right scope."
+          description={`Smart tool search over ${TOOLKIT_COUNT_LABEL} apps, surfaced just in time with the right scope.`}
           href="/docs/how-composio-works"
           visual={<ToolkitsVisual />}
         />
@@ -58,7 +59,7 @@ export function HomeFeatures() {
         />
         <FeatureCard
           title="Run arbitrary code, safely."
-          description="A sandbox pre-wired with your user's connected accounts and 1000+ tools."
+          description={`A sandbox pre-wired with your user's connected accounts and ${TOOLKIT_COUNT_LABEL} tools.`}
           href="/docs/sandbox"
           visual={<SandboxVisual />}
         />

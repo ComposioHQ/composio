@@ -114,9 +114,10 @@ async delete(requestOptions?: ComposioRequestOptions): Promise<ToolRouterSession
 
 Execute a tool within the session.
 
-For custom tools, accepts the original slug (e.g. "GREP") or the
-full slug (e.g. "LOCAL_GREP"). Custom tools are executed in-process;
-remote tools are sent to the Composio backend.
+For custom tools, accepts the full slug (e.g. "LOCAL_GREP") or the
+original slug (e.g. "GREP") when that original slug is unique across
+the session's custom tools and toolkits. Custom tools are executed
+in-process; remote tools are sent to the Composio backend.
 
 ```typescript
 async execute(toolSlug: string, arguments_?: Record<string, unknown>, options?: ToolRouterSessionExecuteOptions, requestOptions?: ComposioRequestOptions): Promise<ToolRouterSessionExecuteResponse>

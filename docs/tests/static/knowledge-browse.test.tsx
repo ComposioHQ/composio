@@ -18,6 +18,7 @@ import { KnowledgeHub } from '@/components/kb/knowledge-hub';
 import { KbArticleShell } from '@/components/kb/kb-article-shell';
 import type { KnowledgeLink } from '@/lib/knowledge/catalog';
 import KnowledgeToolkitsPage from '@/app/(home)/kb/toolkits/page';
+import { getToolkitKnowledgeHref } from '@/lib/knowledge/toolkit-routing';
 
 function source(path: string): string {
   return readFileSync(join(import.meta.dir, '../..', path), 'utf8');
@@ -309,8 +310,8 @@ describe('knowledge browse pages', () => {
     expect(html).toContain('Search toolkits');
     expect(html).toContain('name="toolkit-search"');
     expect(html).toContain('/kb/toolkit/');
-    expect(html).toContain(`/kb/toolkit/${summaries[59]!.slug}`);
-    expect(html).not.toContain(`/kb/toolkit/${summaries[60]!.slug}`);
+    expect(html).toContain(getToolkitKnowledgeHref(summaries[59]!));
+    expect(html).not.toContain(getToolkitKnowledgeHref(summaries[60]!));
     expect(html).toContain('Show 5 more');
   });
 
@@ -337,6 +338,8 @@ describe('knowledge browse pages', () => {
     expect(html).not.toContain('public page');
     expect(html).toContain('width="28"');
     expect(html).toContain('height="28"');
+    expect(html).toContain('href="/toolkits/single"');
+    expect(html).toContain('href="/kb/toolkit/multiple"');
   });
 
   test('keeps agent-readable KB browse copy aligned with the public UI', () => {

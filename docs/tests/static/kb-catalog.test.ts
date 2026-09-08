@@ -5,6 +5,7 @@ import { join } from 'node:path';
 import { buildKbCatalog } from '@/lib/kb/catalog';
 import {
   createKbArticleReader,
+  createKbSourceReader,
   getKbCatalog,
   getPublishedKbGuides,
   resolveKbAlias,
@@ -242,6 +243,38 @@ This is the second safe answer.`);
     expect(() => createKbArticleReader(symlinkedArticlesRoot)('stable-answer.md')).toThrow(
       'KB articles root must not be a symbolic link'
     );
+  });
+
+  test('reads nested source files only from inside the source root', () => {
+    const root = mkdtempSync(join(tmpdir(), 'composio-kb-source-'));
+    temporaryDirectories.push(root);
+    const sourceRoot = join(root, 'source');
+    mkdirSync(join(sourceRoot, 'toolkits', 'github'), { recursive: true });
+    writeFileSync(
+      join(sourceRoot, 'toolkits', 'github', 'public.md'),
+      'Safe source fixture.',
+      'utf8',
+    );
+
+    const readSource = createKbSourceReader(sourceRoot);
+    expect(readSource('toolkits/github/public.md')).toBe('Safe source fixture.');
+    expect(() => readSource('../outside.md')).toThrow(
+      'KB source path escapes source directory',
+    );
+  });
+
+  test('rejects a symlinked source file that escapes the source root', () => {
+    const root = mkdtempSync(join(tmpdir(), 'composio-kb-source-'));
+    temporaryDirectories.push(root);
+    const sourceRoot = join(root, 'source');
+    const outsideFile = join(root, 'outside.md');
+    mkdirSync(join(sourceRoot, 'toolkits', 'github'), { recursive: true });
+    writeFileSync(outsideFile, 'Outside fixture.', 'utf8');
+    symlinkSync(outsideFile, join(sourceRoot, 'toolkits', 'github', 'public.md'));
+
+    expect(() =>
+      createKbSourceReader(sourceRoot)('toolkits/github/public.md'),
+    ).toThrow('KB source must not be a symbolic link');
   });
 
   test('rejects private markers in authored articles', () => {

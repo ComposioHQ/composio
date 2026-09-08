@@ -13,8 +13,10 @@ import {
   Option,
   Schema,
 } from 'effect';
-import { FileSystem } from '@effect/platform';
-import { BunContext, BunFileSystem, BunRuntime } from '@effect/platform-bun';
+import * as FileSystem from '@effect/platform/FileSystem';
+import * as BunContext from '@effect/platform-bun/BunContext';
+import * as BunFileSystem from '@effect/platform-bun/BunFileSystem';
+import * as BunRuntime from '@effect/platform-bun/BunRuntime';
 import { TOOLKIT_SLUG_PATTERN } from 'src/models/toolkits';
 import { teardown } from './_teardown';
 

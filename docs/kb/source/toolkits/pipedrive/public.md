@@ -10,11 +10,11 @@ tags:
 ---
 # Pipedrive
 
-## Pipedrive supports managed OAuth, custom OAuth, and API-key authentication
+## Pipedrive requires custom OAuth or API-key credentials
 
-Use Composio-managed OAuth for the standard connection flow. Use a customer-
-owned Pipedrive OAuth app or API key when the customer needs control over app
-settings, scopes, branding, or provider policy.
+Composio-managed OAuth is not currently available for Pipedrive. Create a
+custom auth config with the customer's Pipedrive OAuth app, or use API-key
+authentication when that better fits the customer's security requirements.
 
 
 ## Pipedrive OAuth initiation requires the workspace subdomain
