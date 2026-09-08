@@ -35,6 +35,10 @@ describe('ToolRouterSessionFilesMount', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockLookup.mockReset();
+    // Uploads PUT to a response-supplied `upload_url`, which is now validated
+    // like any other fetch target; resolve test hosts as public by default so
+    // only the tests that care about the guard have to say anything about DNS.
+    mockLookup.mockResolvedValue([{ address: '93.184.216.34', family: 4 }] as never);
     mockClient = createMockClient();
     filesMount = new ToolRouterSessionFilesMount(mockClient, sessionId);
   });
@@ -364,6 +368,24 @@ describe('ToolRouterSessionFilesMount', () => {
       );
       expect(result.mountRelativePath).toBe(mountRelativePath);
       expect(result.downloadUrl).toBe('https://s3.example.com/presigned');
+    });
+
+    it('should block a response-supplied upload_url that resolves internally', async () => {
+      // The user-supplied URL branch above was already guarded; `upload_url`
+      // comes back from the API and was not. Both are untrusted here, and this
+      // one receives the file's bytes.
+      mockClient.toolRouter.session.files.createUploadURL.mockResolvedValueOnce({
+        ...createUploadURLResponse,
+        upload_url: 'http://metadata.example/upload',
+      });
+      mockLookup.mockResolvedValue([{ address: '169.254.169.254', family: 4 }] as never);
+
+      await expect(
+        filesMount.upload(new File(['data'], 'report.txt', { type: 'text/plain' }))
+      ).rejects.toBeInstanceOf(ComposioBlockedInternalUrlError);
+
+      expect(fetch).not.toHaveBeenCalled();
+      expect(mockClient.toolRouter.session.files.createDownloadURL).not.toHaveBeenCalled();
     });
 
     it('should handle upload response body wrapper', async () => {

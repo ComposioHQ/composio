@@ -1,7 +1,12 @@
 import { ComposioGlobalExecuteToolFnNotSetError } from '../errors/ToolErrors';
 import { ExecuteToolModifiers } from '../types/modifiers.types';
 import type { Tool, ToolExecuteParams, ToolExecuteResponse } from '../types/tool.types';
-import { ExecuteToolFn, GlobalExecuteToolFn } from '../types/provider.types';
+import {
+  ExecuteToolFn,
+  ExecuteToolFnOptions,
+  GlobalExecuteToolFn,
+  ToolCallExecutionTarget,
+} from '../types/provider.types';
 import { McpUrlResponse, McpServerGetResponse } from '../types/mcp.types';
 
 /**
@@ -58,6 +63,53 @@ abstract class BaseProvider<TMcpResponse> {
 
     // For provider controlled execution, always skip version check.
     return this._globalExecuteToolFn(toolSlug, body, modifers);
+  }
+
+  /** Reject direct-only configuration when execution is bound to a session. */
+  protected assertToolCallExecutionOptions(
+    target: ToolCallExecutionTarget,
+    options?: ExecuteToolFnOptions,
+    modifiers?: ExecuteToolModifiers
+  ): void {
+    if (typeof target !== 'string' && (options !== undefined || modifiers !== undefined)) {
+      throw new TypeError(
+        'Direct execution options and modifiers cannot be used with a Tool Router session'
+      );
+    }
+  }
+
+  /**
+   * Execute normalized provider arguments against either the direct tools API or
+   * the Tool Router session that produced the model-visible tools.
+   */
+  protected async executeToolForTarget(
+    target: ToolCallExecutionTarget,
+    toolSlug: string,
+    arguments_: Record<string, unknown>,
+    options?: ExecuteToolFnOptions,
+    modifiers?: ExecuteToolModifiers
+  ): Promise<ToolExecuteResponse> {
+    this.assertToolCallExecutionOptions(target, options, modifiers);
+
+    if (typeof target === 'string') {
+      return this.executeTool(
+        toolSlug,
+        {
+          arguments: arguments_,
+          connectedAccountId: options?.connectedAccountId,
+          customAuthParams: options?.customAuthParams,
+          customConnectionData: options?.customConnectionData,
+          userId: target,
+        },
+        modifiers
+      );
+    }
+
+    const result = await target.execute(toolSlug, arguments_);
+    return {
+      ...result,
+      successful: result.error === null,
+    };
   }
 
   /**

@@ -1,4 +1,5 @@
 import { describe, expect, layer } from '@effect/vitest';
+import type { AuthConfigCreateParams } from '@composio/client/resources/auth-configs';
 import { ConfigProvider, Effect } from 'effect';
 import { extendConfigProvider } from 'src/services/config';
 import { cli, TestLive, MockConsole } from 'test/__utils__';
@@ -177,6 +178,62 @@ describe('CLI: composio dev auth-configs create', () => {
           const output = lines.join('\n');
 
           expect(output).toContain('composio dev auth-configs info');
+        })
+      );
+    }
+  );
+
+  let capturedCreateAuthConfig: AuthConfigCreateParams | undefined;
+
+  layer(
+    TestLive({
+      baseConfigProvider: testConfigProvider,
+      ...dangerousDevConfig,
+      authConfigsData: {
+        createResponse: {
+          auth_config: { id: 'ac_oauth', auth_scheme: 'OAUTH2', is_composio_managed: false },
+          toolkit: { slug: 'shopify' },
+        },
+        onCreate: params => {
+          capturedCreateAuthConfig = params;
+        },
+      },
+    })
+  )(
+    '[Given] custom OAuth credentials and scopes [Then] nests them under auth_config.credentials',
+    it => {
+      it.scoped('sends custom OAuth settings inside credentials', () =>
+        Effect.gen(function* () {
+          capturedCreateAuthConfig = undefined;
+
+          yield* cli([
+            'dev',
+            'auth-configs',
+            'create',
+            '--toolkit',
+            'shopify',
+            '--auth-scheme',
+            'OAUTH2',
+            '--custom-credentials',
+            '{"client_id":"my_client_id","client_secret":"my_client_secret"}',
+            '--scopes',
+            'read_products, write_products',
+            '--dangerously-allow',
+          ]);
+
+          expect(capturedCreateAuthConfig).toStrictEqual({
+            toolkit: { slug: 'shopify' },
+            auth_config: {
+              type: 'use_custom_auth',
+              authScheme: 'OAUTH2',
+              name: undefined,
+              credentials: {
+                client_id: 'my_client_id',
+                client_secret: 'my_client_secret',
+                scopes: ['read_products', 'write_products'],
+              },
+            },
+          });
         })
       );
     }

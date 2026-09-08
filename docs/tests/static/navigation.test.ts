@@ -9,6 +9,8 @@ import { readdir, readFile, stat } from "fs/promises";
 import { join, basename, dirname, relative } from "path";
 
 const CONTENT_DIR = join(import.meta.dir, "../../content/docs");
+const LAYOUT_OPTIONS = join(import.meta.dir, "../../lib/layout.shared.tsx");
+const GLOBAL_SEARCH = join(import.meta.dir, "../../components/custom-search-dialog.tsx");
 
 /** Separator entries in meta.json start with --- */
 function isSeparator(entry: string): boolean {
@@ -75,6 +77,25 @@ describe("Navigation - meta.json validity", () => {
       "tools-direct",
       "auth-configuration",
     ]);
+  });
+
+  test("Knowledge Base appears between Docs and Examples", async () => {
+    const source = await readFile(LAYOUT_OPTIONS, "utf-8");
+    const docsIndex = source.indexOf("text: 'Docs'");
+    const kbIndex = source.indexOf("text: 'Knowledge Base'");
+    const examplesIndex = source.indexOf("text: 'Examples'");
+
+    expect(docsIndex).toBeGreaterThan(-1);
+    expect(kbIndex).toBeGreaterThan(docsIndex);
+    expect(examplesIndex).toBeGreaterThan(kbIndex);
+  });
+
+  test("global search uses canonical knowledge URLs and shared source labels", async () => {
+    const source = await readFile(GLOBAL_SEARCH, "utf-8");
+    expect(source).toContain("KNOWLEDGE_SOURCE_LABELS");
+    expect(source).toContain("canonical_url");
+    expect(source).toContain("source_type");
+    expect(source).toContain("algoliaHitMetaRef.current.get(href)");
   });
 
   test("root meta.json entries all resolve to files or directories", async () => {

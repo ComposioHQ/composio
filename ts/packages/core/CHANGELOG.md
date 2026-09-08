@@ -1,5 +1,45 @@
 # @composio/core
 
+## 0.18.1
+
+### Patch Changes
+
+- 8a56383: Fix: automatic S3 file downloads are now capped at 100 MiB (configurable per call) to prevent memory exhaustion from oversized or streaming responses.
+- 7420927: Fix custom toolkit child slug mapping: reject response tools that have local handles but no exact toolkit match instead of silently dropping them or binding another toolkit's handler, derive bare-slug ambiguity from local definitions, and only reuse a same-toolkit bare alias in customToolkits().
+- 1d31c80: Redact credential-shaped values at the SDK log boundary.
+- 95f9d32: Expose the runtime-conditional SSRF-safe fetch helper for protected URL upload consumers.
+- 0d28bef: Map file-download transport failures to the SDK error contract and bound streamed response bodies.
+- 52efb5b: Fix trigger subscriptions ignoring the `authConfigId` filter.
+- Updated dependencies [ab289d6]
+  - @composio/json-schema-to-zod@0.3.2
+
+## 0.18.0
+
+### Minor Changes
+
+- 04817cb: Fix strict-mode tool schemas for OpenAI structured outputs. Strict normalization now applies OpenAI's contract at every depth (nested objects, `anyOf` branches, array items, inlined `$ref`/`$defs`): every object lists all of its properties in `required` and sets `additionalProperties: false`, so tools with nested or optional parameters no longer produce schemas the API rejects with a 400. Optional parameters are no longer dropped: they stay available and are widened to accept `null`, the emulation of optional fields OpenAI documents, and the strict providers drop a `null` argument the tool's own schema does not accept before executing the tool. Tools whose schema strict mode cannot express (objects with arbitrary keys, `allOf`, `prefixItems`, unresolved `$ref`s) are sent without strict mode with a warning naming the tool and path, instead of being narrowed. `@composio/core` exports the new `toStrictJsonSchema()` and `omitNullToolArguments()` utilities; `removeNonRequiredProperties` is unchanged for other callers. The Python `OpenAIResponsesProvider` gains a matching opt-in `strict=True` constructor flag that also emits `strict: true` on the wrapped tool.
+
+### Patch Changes
+
+- 449f4e1: Block automatic uploads when a sensitive directory or file name is hidden by symlink resolution.
+- 9545806: Bound the best-effort telemetry requests with a timeout so a stalled telemetry endpoint cannot leave an SDK call pending indefinitely.
+- db7b576: Declare Node.js 22.22.3 as the minimum supported runtime for every published TypeScript package so package managers surface incompatible runtimes before users encounter ESM loading failures.
+- fe66cbe: Omit empty-string file-uploadable arguments from tool execution requests instead of forwarding them to the backend, which rejected them with "Input should be a valid dictionary or instance of FileUploadable". This now also applies when `dangerouslyAllowAutoUploadDownloadFiles` is off, and with it on an empty value is no longer attempted as an upload.
+- c0f1609: Fix three ComposioError subclasses (ComposioToolVersionRequiredError, JsonSchemaToZodError, JsonSchemaRefResolutionError) that omitted their `this.name` assignment and therefore reported `name` as 'ComposioError' instead of their own class name, mis-grouping distinct error types in error telemetry.
+- d544006: Close a DNS-rebinding window in the SSRF guard: the address validated by `assertSafeFetchTarget` is now the address `ssrfSafeFetch` connects to, so a hostname is no longer resolved a second time between the check and the connection. Each redirect hop is re-validated and re-pinned. The request still carries the original hostname in `Host` and TLS SNI, so certificate verification is unchanged. Hops whose effective dispatcher is a configured route — a caller-supplied `dispatcher`, a global `ProxyAgent`/`EnvHttpProxyAgent`, or `NODE_USE_ENV_PROXY` env-proxy mode — keep the pre-flight check only, mirroring the Python guard's documented proxy residual.
+- Updated dependencies [db7b576]
+  - @composio/json-schema-to-zod@0.3.1
+
+## 0.17.0
+
+### Minor Changes
+
+- 760f8d0: Allow OpenAI and Anthropic provider tool-call helpers to execute through a supplied Tool Router session. Session meta-tools now retain their session context while provider argument normalization remains intact; existing user-ID calls continue to use direct execution. Anthropic helper failures now preserve their error text in `{ error }` results without changing successful payloads. Custom provider subclasses overriding `executeToolCall` or `handleToolCalls` may require updates because these methods now accept session targets.
+
+### Patch Changes
+
+- 6ba9179: Validate the URLs that come from API responses before fetching them. Tool-execution downloads (`s3Url`), S3 presigned uploads (`new_presigned_url`), Tool Router session file downloads (`RemoteFile.buffer()` / `blob()` / `text()` / `save()`) and session file uploads (`upload_url`) now go through the same SSRF guard that already covered user-supplied URLs, so a response naming a private, loopback, or link-local address is refused instead of fetched. Redirect hops are re-validated. Edge runtimes keep their current behavior: session file transfers are not blocked there, since a Worker cannot resolve DNS to check and its `fetch` does not originate inside the caller's network.
+
 ## 0.16.0
 
 ### Minor Changes

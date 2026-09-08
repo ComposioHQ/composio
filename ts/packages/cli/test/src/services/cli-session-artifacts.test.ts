@@ -1,6 +1,7 @@
-import { FileSystem, Path } from '@effect/platform';
+import * as FileSystem from '@effect/platform/FileSystem';
+import * as Path from '@effect/platform/Path';
 import { describe, expect, layer } from '@effect/vitest';
-import { afterEach, vi } from 'vitest';
+import { afterEach, beforeEach, vi } from 'vitest';
 import { ConfigProvider, Effect, Option } from 'effect';
 import * as tempy from 'tempy';
 import {
@@ -16,14 +17,24 @@ import { TestLive } from 'test/__utils__';
 
 const cacheEnabledTestConfigProvider = ConfigProvider.fromMap(
   new Map([['COMPOSIO_DISABLE_CONNECTED_ACCOUNT_CACHE', 'false']])
-).pipe(extendConfigProvider);
+).pipe(
+  ConfigProvider.orElse(() => ConfigProvider.fromEnv()),
+  extendConfigProvider
+);
+
+const environmentTestConfigProvider = ConfigProvider.fromEnv().pipe(extendConfigProvider);
 
 describe('CLI session artifacts', () => {
+  beforeEach(() => {
+    vi.stubEnv('COMPOSIO_SESSION_DIR', undefined);
+    vi.stubEnv('COMPOSIO_CACHE_DIR', undefined);
+  });
+
   afterEach(() => {
     vi.unstubAllEnvs();
   });
 
-  layer(TestLive())(it => {
+  layer(TestLive({ baseConfigProvider: environmentTestConfigProvider }))(it => {
     it.scoped('resolves artifact roots in documented precedence order', () =>
       Effect.gen(function* () {
         const path = yield* Path.Path;

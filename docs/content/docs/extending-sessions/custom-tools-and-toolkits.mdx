@@ -273,7 +273,7 @@ def send_promo_email(input: PromoEmailInput, ctx):
         method="POST",
         body={"raw": raw},
     )
-    return {"status": res.status, "to": input.to}
+    return {"status": res["status"], "to": input.to}
 ```
 </Tab>
 </Tabs>

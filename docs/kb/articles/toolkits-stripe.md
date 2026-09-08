@@ -1,0 +1,19 @@
+## Stripe is supported and offers OAuth2 and API-key auth modes
+
+Composio supports the Stripe toolkit with OAuth2 and API-key auth modes; the marketplace entry is available on the Stripe toolkit page.
+
+## For Stripe API-key auth, use the Stripe secret key from Developers -> API Keys -> Standard keys
+
+For Stripe API-key auth, use the Stripe secret key from Stripe Dashboard -> Developers -> API Keys -> Standard keys -> Secret key. In API/SDK connection payloads, the auth config field may need to be passed as `api_key`.
+
+## One Stripe MCP/API-key connection maps to one Stripe account unless the customer uses Stripe Connect
+
+Stripe usually uses different API keys for separate accounts, so one connected account/MCP server has access to one Stripe account. If the customer uses Stripe Connect, the platform can consolidate connected accounts under one platform API key and may better fit multi-account workflows.
+
+## MRR can be calculated from `STRIPE_LIST_SUBSCRIPTIONS`
+
+Use `STRIPE_LIST_SUBSCRIPTIONS` to retrieve subscription data, then calculate MRR from the returned subscriptions in the agent/application layer.
+
+## Stripe payment-success triggers are available
+
+Use `STRIPE_INVOICE_PAYMENT_SUCCEEDED_TRIGGER` for successful invoice payments and `STRIPE_CHECKOUT_SESSION_COMPLETED_TRIGGER` for completed Checkout sessions. Fetch the current trigger catalog before implementation rather than assuming every Stripe event has a corresponding trigger.

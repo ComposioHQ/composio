@@ -46,7 +46,7 @@ bun add @composio/core @composio/experimental @earendil-works/pi-coding-agent
 
 ## Install the bot
 
-A Slack bot needs a Slack app to authenticate as and a stream of events. Composio gives you both, so you never register a webhook with Slack or hold a bot token. The `slackbot` toolkit ships with Composio-managed OAuth, and you install it as one **[shared connection](/docs/shared-connections)** for the whole workspace.
+A Slack bot needs a Slack app to authenticate as and a stream of events. Composio gives you both, so you never register a webhook with Slack or hold a bot token. The `slackbot` toolkit ships with Composio-managed OAuth, and you install it as one **[shared connection](/docs/extending-sessions/shared-connections)** for the whole workspace.
 
 This is `install.ts`, run once, built up three steps at a time:
 
@@ -106,5 +106,5 @@ Run `bun install.ts` once to set up the bot, start the server with `bun bot.ts`,
 
 <Cards>
   <Card title="Configuring sessions" href="/docs/configuring-sessions" description="Everything a session can scope: toolkits, tools, connections, and limits" />
-  <Card title="Shared connections" href="/docs/shared-connections" description="SHARED vs PRIVATE accounts and the per-user ACL" />
+  <Card title="Shared connections" href="/docs/extending-sessions/shared-connections" description="SHARED vs PRIVATE accounts and the per-user ACL" />
 </Cards>

@@ -14,7 +14,6 @@ Connected accounts in Composio enable your application to interact with third-pa
 ## Example Files
 
 - **toolkit-authorize.ts**: Demonstrates authorizing a toolkit and waiting for the connection
-- **magic-flow-demo.ts**: Shows how to use the magic flow for a streamlined connection experience
 - **index.ts**: Basic entry point that imports the examples
 
 ## Using the waitForConnection Method

@@ -87,15 +87,20 @@ export const authConfigsCmd$Create = Command.make(
       let params: AuthConfigCreateParams;
 
       if (Option.isSome(authScheme)) {
-        // Custom auth mode — spread user-provided credentials FIRST so explicit fields always win
+        // Custom credentials must be nested under `credentials` for the API to accept them.
         params = {
           toolkit: { slug: toolkit },
           auth_config: {
-            ...parsedCustomCredentials,
             type: 'use_custom_auth' as const,
             authScheme: authScheme.value as AuthConfigCreateParams.UnionMember1['authScheme'],
             name: nameValue,
-            credentials: scopesList ? { scopes: scopesList } : undefined,
+            credentials:
+              parsedCustomCredentials || scopesList
+                ? {
+                    ...(parsedCustomCredentials ?? {}),
+                    ...(scopesList ? { scopes: scopesList } : {}),
+                  }
+                : undefined,
           },
         };
       } else {

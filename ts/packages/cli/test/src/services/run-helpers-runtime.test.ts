@@ -61,4 +61,50 @@ describe('run-helpers-runtime', () => {
     await expect(installedGlobals.proxy('github')).rejects.toThrow(/session_id/);
     expect(fetchMock).toHaveBeenCalledOnce();
   });
+
+  it('[Given] normalized false flags [Then] nested CLI children receive false explicitly', async () => {
+    vi.stubEnv('COMPOSIO_RUN_ENV_SENTINEL', 'forwarded');
+    vi.stubEnv('COMPOSIO_PERF_DEBUG', '1');
+    vi.stubEnv('COMPOSIO_TOOL_DEBUG', '1');
+    vi.stubEnv('COMPOSIO_RUN_ACP_ONLY', '1');
+    vi.stubEnv('BUN_BE_BUN', '1');
+
+    const childScript = [
+      'console.log(JSON.stringify({',
+      '  successful: true,',
+      '  data: {',
+      '    sentinel: process.env.COMPOSIO_RUN_ENV_SENTINEL,',
+      '    perfDebug: process.env.COMPOSIO_PERF_DEBUG,',
+      '    toolDebug: process.env.COMPOSIO_TOOL_DEBUG,',
+      '    acpOnly: process.env.COMPOSIO_RUN_ACP_ONLY,',
+      '    bunBeBun: process.env.BUN_BE_BUN,',
+      '  },',
+      '}));',
+    ].join('\n');
+
+    await installRunHelpers({
+      cliPrefix: [process.execPath, '-e', childScript],
+      helperContext: { perfDebug: false, toolDebug: false, acpOnly: false },
+    });
+
+    const installedGlobals: unknown = globalThis;
+    expect(Predicate.hasProperty(installedGlobals, 'search')).toBe(true);
+    if (
+      !Predicate.hasProperty(installedGlobals, 'search') ||
+      typeof installedGlobals.search !== 'function'
+    ) {
+      throw new Error('installRunHelpers() did not install search().');
+    }
+
+    await expect(installedGlobals.search('test')).resolves.toMatchObject({
+      successful: true,
+      data: {
+        sentinel: 'forwarded',
+        perfDebug: '0',
+        toolDebug: '0',
+        acpOnly: '0',
+        bunBeBun: '',
+      },
+    });
+  });
 });

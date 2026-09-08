@@ -15,6 +15,10 @@ export type AnalyticsEnvelope = {
 export type CliCommandTelemetryContext = {
   readonly argv: ReadonlyArray<string>;
   readonly cliVersion: string;
+  /** Who invoked this CLI process (`cli`, `run`, `installer`, …). */
+  readonly invocationOrigin: string;
+  /** Run id of the `composio run` that spawned this process, when there is one. */
+  readonly parentRunId: string | undefined;
   readonly commandPath: string;
   readonly flagNames: ReadonlyArray<string>;
   readonly stdoutIsTTY: boolean;

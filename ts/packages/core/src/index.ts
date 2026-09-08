@@ -9,12 +9,18 @@ export {
   deduplicateJsonSchemaRequiredArrays,
   ensureObjectTypeOnProperties,
   jsonSchemaToZodSchema,
+  omitNullToolArguments,
   removeNonRequiredProperties,
+  toStrictJsonSchema,
 } from './utils/jsonSchema';
 export type {
   DereferenceJsonSchemaOptions,
   UnresolvedRefReason,
   UnresolvedRefStrategy,
+  StrictSchemaChange,
+  StrictSchemaChangeReason,
+  StrictSchemaIncompatibility,
+  StrictJsonSchemaResult,
 } from './utils/jsonSchema';
 export { getExtensionFromMimeType } from './utils/mime';
 export { normalizeToolArguments } from './utils/toolArguments';

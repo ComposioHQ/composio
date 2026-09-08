@@ -1,4 +1,4 @@
-import { Option, Effect, ConfigProvider, Layer, Logger } from 'effect';
+import { Config, Option, Effect, ConfigProvider, Layer, Logger } from 'effect';
 import * as constants from 'src/constants';
 import { DEBUG_OVERRIDE_CONFIG } from 'src/effects/debug-config';
 import { APP_CONFIG } from 'src/effects/app-config';
@@ -22,6 +22,13 @@ import { APP_CONFIG } from 'src/effects/app-config';
  */
 
 export const BaseConfigProviderLive = ConfigProvider.fromEnv();
+
+/**
+ * Load a config whose keys are spelled out in full, through the raw provider
+ * that applies no `COMPOSIO_` prefix mapping. Pair it with `UNPREFIXED_CONFIG`.
+ */
+export const loadHostConfig = <A>(config: Config.Config<A>): Effect.Effect<A> =>
+  BaseConfigProviderLive.load(config).pipe(Effect.orDie);
 
 export function extendConfigProvider(baseConfigProvider: ConfigProvider.ConfigProvider) {
   return baseConfigProvider.pipe(

@@ -1,4 +1,4 @@
-import type { Path } from '@effect/platform';
+import type * as Path from '@effect/platform/Path';
 import type { ToolkitIndex } from 'src/generation/create-toolkit-index';
 import type { SourceFile } from 'src/generation/types';
 import { Effect } from 'effect';

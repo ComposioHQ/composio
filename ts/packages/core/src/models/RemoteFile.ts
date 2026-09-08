@@ -1,4 +1,5 @@
 import { platform } from '#platform';
+import { ssrfSafeFetchWhereSupported } from '#ssrf_guard';
 import { COMPOSIO_DIR, TEMP_FILES_DIRECTORY_NAME } from '../utils/constants';
 
 function getParentDir(filePath: string): string {
@@ -7,7 +8,12 @@ function getParentDir(filePath: string): string {
   return filePath.slice(0, lastSep);
 }
 import { RemoteFileData, RemoteFileDataSchema } from '../types/ToolRouterSessionFilesMount.types';
-import { RemoteFileDownloadError, ValidationError } from '../errors';
+import {
+  ComposioBlockedInternalUrlError,
+  RemoteFileDownloadError,
+  ValidationError,
+} from '../errors';
+import { readResponseBodyWithLimit } from '../utils/readResponseBody';
 
 /**
  * Represents a file stored in a tool router session's file mount.
@@ -76,28 +82,58 @@ export class RemoteFile {
     return platform.basename(this.mountRelativePath);
   }
 
+  private downloadError(message: string, cause: unknown, response?: Response) {
+    return new RemoteFileDownloadError(message, {
+      statusCode: response?.status,
+      statusText: response?.statusText,
+      downloadUrl: this.downloadUrl,
+      mountRelativePath: this.mountRelativePath,
+      filename: this.filename,
+      cause,
+    });
+  }
+
+  private async downloadBytes(): Promise<{ content: Uint8Array; contentType: string }> {
+    let response: Response;
+    try {
+      response = await ssrfSafeFetchWhereSupported(this.downloadUrl);
+    } catch (error) {
+      if (error instanceof ComposioBlockedInternalUrlError) {
+        throw error;
+      }
+      throw this.downloadError('Failed to download file', error);
+    }
+
+    if (!response.ok) {
+      await response.body?.cancel().catch(() => undefined);
+      throw this.downloadError(
+        `Failed to download file: ${response.status} ${response.statusText}`,
+        new Error(`HTTP ${response.status}: ${response.statusText}`),
+        response
+      );
+    }
+
+    try {
+      const content = response.body
+        ? await readResponseBodyWithLimit(response)
+        : new Uint8Array(await response.arrayBuffer());
+      return {
+        content,
+        contentType: response.headers?.get?.('content-type') ?? '',
+      };
+    } catch (error) {
+      await response.body?.cancel().catch(() => undefined);
+      throw this.downloadError('Failed to read downloaded file', error, response);
+    }
+  }
+
   /**
    * Fetches the file content as a buffer.
    * @returns The file content as a Uint8Array
    * @throws RemoteFileDownloadError if the fetch fails
    */
   async buffer(): Promise<Uint8Array> {
-    const response = await fetch(this.downloadUrl);
-    if (!response.ok) {
-      throw new RemoteFileDownloadError(
-        `Failed to download file: ${response.status} ${response.statusText}`,
-        {
-          statusCode: response.status,
-          statusText: response.statusText,
-          downloadUrl: this.downloadUrl,
-          mountRelativePath: this.mountRelativePath,
-          filename: this.filename,
-          cause: new Error(`HTTP ${response.status}: ${response.statusText}`),
-        }
-      );
-    }
-    const arrayBuffer = await response.arrayBuffer();
-    return new Uint8Array(arrayBuffer);
+    return (await this.downloadBytes()).content;
   }
 
   /**
@@ -116,21 +152,8 @@ export class RemoteFile {
    * @throws RemoteFileDownloadError if the fetch fails
    */
   async blob(): Promise<Blob> {
-    const response = await fetch(this.downloadUrl);
-    if (!response.ok) {
-      throw new RemoteFileDownloadError(
-        `Failed to download file: ${response.status} ${response.statusText}`,
-        {
-          statusCode: response.status,
-          statusText: response.statusText,
-          downloadUrl: this.downloadUrl,
-          mountRelativePath: this.mountRelativePath,
-          filename: this.filename,
-          cause: new Error(`HTTP ${response.status}: ${response.statusText}`),
-        }
-      );
-    }
-    return response.blob();
+    const { content, contentType } = await this.downloadBytes();
+    return new Blob([content as BlobPart], { type: contentType });
   }
 
   /**

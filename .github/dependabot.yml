@@ -24,6 +24,9 @@ updates:
         update-types: ["version-update:semver-major"]
       - dependency-name: "openai"
         update-types: ["version-update:semver-major"]
+      # Node 22/24/25 built-in fetch uses the legacy dispatcher handler API.
+      - dependency-name: "undici"
+        update-types: ["version-update:semver-major"]
       - dependency-name: "zod"
         update-types: ["version-update:semver-major"]
       # Version 1.0.0 is not compatible with the Effect package family in use.
@@ -60,6 +63,14 @@ updates:
       - dependency-name: "tomli"
         update-types:
           - "version-update:semver-minor"
+          - "version-update:semver-major"
+      # ag2 1.0 dropped the top-level `autogen` package that
+      # composio-autogen imports (`autogen.agentchat.register_function`,
+      # `ConversableAgent`); the 1.x wheel ships only `ag2`. Adopting it is a
+      # provider rewrite, not a requirement widening. Remove this once
+      # composio-autogen targets the `ag2` namespace.
+      - dependency-name: "ag2"
+        update-types:
           - "version-update:semver-major"
     groups:
       pip-version:

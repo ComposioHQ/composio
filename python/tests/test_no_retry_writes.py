@@ -145,6 +145,7 @@ class TestWritePathDoesNotRetry:
                 tools._execute_tool(
                     slug="GMAIL_SEND_EMAIL",
                     arguments={},
+                    tool=mock_tool,
                     version="1.0.0",
                 )
 

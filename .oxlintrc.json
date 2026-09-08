@@ -129,13 +129,22 @@
               { "name": "node:crypto", "message": "Use Web Crypto API instead." },
               { "name": "buffer", "message": "Use Uint8Array instead." },
               { "name": "node:buffer", "message": "Use Uint8Array instead." },
-              { "name": "child_process", "message": "Use Command from @effect/platform instead." },
+              {
+                "name": "child_process",
+                "message": "Use Command from @effect/platform/Command instead."
+              },
               {
                 "name": "node:child_process",
-                "message": "Use Command from @effect/platform instead."
+                "message": "Use Command from @effect/platform/Command instead."
               },
-              { "name": "fs", "message": "Use FileSystem from @effect/platform instead." },
-              { "name": "node:fs", "message": "Use FileSystem from @effect/platform instead." },
+              {
+                "name": "fs",
+                "message": "Use FileSystem from @effect/platform/FileSystem instead."
+              },
+              {
+                "name": "node:fs",
+                "message": "Use FileSystem from @effect/platform/FileSystem instead."
+              },
               {
                 "name": "os",
                 "message": "Use an Effect service instead of importing node:os directly."
@@ -144,8 +153,16 @@
                 "name": "node:os",
                 "message": "Use an Effect service instead of importing node:os directly."
               },
-              { "name": "path", "message": "Use Path from @effect/platform instead." },
-              { "name": "node:path", "message": "Use Path from @effect/platform instead." },
+              { "name": "path", "message": "Use Path from @effect/platform/Path instead." },
+              { "name": "node:path", "message": "Use Path from @effect/platform/Path instead." },
+              {
+                "name": "@effect/platform",
+                "message": "Import the module by subpath, e.g. @effect/platform/FileSystem; the package barrel is not part of the Effect v4 layout."
+              },
+              {
+                "name": "@effect/platform-bun",
+                "message": "Import the module by subpath, e.g. @effect/platform-bun/BunFileSystem; the package barrel is not part of the Effect v4 layout."
+              },
               {
                 "name": "@effect/cli",
                 "importNames": ["CommandDescriptor", "Usage"],
@@ -155,7 +172,7 @@
             "patterns": [
               {
                 "group": ["fs/*", "node:fs/*"],
-                "message": "Use FileSystem from @effect/platform instead."
+                "message": "Use FileSystem from @effect/platform/FileSystem instead."
               },
               {
                 "group": ["@effect/cli/CommandDescriptor", "@effect/cli/Usage"],
@@ -249,13 +266,22 @@
               { "name": "node:crypto", "message": "Use Web Crypto API instead." },
               { "name": "buffer", "message": "Use Uint8Array instead." },
               { "name": "node:buffer", "message": "Use Uint8Array instead." },
-              { "name": "child_process", "message": "Use Command from @effect/platform instead." },
+              {
+                "name": "child_process",
+                "message": "Use Command from @effect/platform/Command instead."
+              },
               {
                 "name": "node:child_process",
-                "message": "Use Command from @effect/platform instead."
+                "message": "Use Command from @effect/platform/Command instead."
               },
-              { "name": "fs", "message": "Use FileSystem from @effect/platform instead." },
-              { "name": "node:fs", "message": "Use FileSystem from @effect/platform instead." },
+              {
+                "name": "fs",
+                "message": "Use FileSystem from @effect/platform/FileSystem instead."
+              },
+              {
+                "name": "node:fs",
+                "message": "Use FileSystem from @effect/platform/FileSystem instead."
+              },
               {
                 "name": "os",
                 "message": "Use an Effect service instead of importing node:os directly."
@@ -264,26 +290,23 @@
                 "name": "node:os",
                 "message": "Use an Effect service instead of importing node:os directly."
               },
-              { "name": "path", "message": "Use Path from @effect/platform instead." },
-              { "name": "node:path", "message": "Use Path from @effect/platform instead." }
+              { "name": "path", "message": "Use Path from @effect/platform/Path instead." },
+              { "name": "node:path", "message": "Use Path from @effect/platform/Path instead." },
+              {
+                "name": "@effect/platform",
+                "message": "Import the module by subpath, e.g. @effect/platform/FileSystem; the package barrel is not part of the Effect v4 layout."
+              },
+              {
+                "name": "@effect/platform-bun",
+                "message": "Import the module by subpath, e.g. @effect/platform-bun/BunFileSystem; the package barrel is not part of the Effect v4 layout."
+              }
             ],
             "patterns": [
               {
                 "group": ["fs/*", "node:fs/*"],
-                "message": "Use FileSystem from @effect/platform instead."
+                "message": "Use FileSystem from @effect/platform/FileSystem instead."
               }
             ]
-          }
-        ],
-        "eslint-js/no-restricted-syntax": [
-          "error",
-          {
-            "selector": "MemberExpression[object.name='process'][property.name='stdout']",
-            "message": "Write output and read terminal capabilities through TerminalUI."
-          },
-          {
-            "selector": "MemberExpression[object.name='process'][property.name='stderr']",
-            "message": "Write errors and read terminal capabilities through TerminalUI."
           }
         ]
       }
@@ -299,13 +322,22 @@
               { "name": "node:crypto", "message": "Use Web Crypto API instead." },
               { "name": "buffer", "message": "Use Uint8Array instead." },
               { "name": "node:buffer", "message": "Use Uint8Array instead." },
-              { "name": "child_process", "message": "Use Command from @effect/platform instead." },
+              {
+                "name": "child_process",
+                "message": "Use Command from @effect/platform/Command instead."
+              },
               {
                 "name": "node:child_process",
-                "message": "Use Command from @effect/platform instead."
+                "message": "Use Command from @effect/platform/Command instead."
               },
-              { "name": "fs", "message": "Use FileSystem from @effect/platform instead." },
-              { "name": "node:fs", "message": "Use FileSystem from @effect/platform instead." },
+              {
+                "name": "fs",
+                "message": "Use FileSystem from @effect/platform/FileSystem instead."
+              },
+              {
+                "name": "node:fs",
+                "message": "Use FileSystem from @effect/platform/FileSystem instead."
+              },
               {
                 "name": "os",
                 "message": "Use an Effect service instead of importing node:os directly."
@@ -314,14 +346,22 @@
                 "name": "node:os",
                 "message": "Use an Effect service instead of importing node:os directly."
               },
-              { "name": "path", "message": "Use Path from @effect/platform instead." },
-              { "name": "node:path", "message": "Use Path from @effect/platform instead." },
+              { "name": "path", "message": "Use Path from @effect/platform/Path instead." },
+              { "name": "node:path", "message": "Use Path from @effect/platform/Path instead." },
+              {
+                "name": "@effect/platform",
+                "message": "Import the module by subpath, e.g. @effect/platform/FileSystem; the package barrel is not part of the Effect v4 layout."
+              },
+              {
+                "name": "@effect/platform-bun",
+                "message": "Import the module by subpath, e.g. @effect/platform-bun/BunFileSystem; the package barrel is not part of the Effect v4 layout."
+              },
               { "name": "zod", "message": "Use Schema from effect for tool input validation." }
             ],
             "patterns": [
               {
                 "group": ["fs/*", "node:fs/*"],
-                "message": "Use FileSystem from @effect/platform instead."
+                "message": "Use FileSystem from @effect/platform/FileSystem instead."
               },
               { "group": ["zod/*"], "message": "Use Schema from effect for tool input validation." }
             ]
@@ -329,6 +369,42 @@
         ],
         "eslint-js/no-restricted-syntax": [
           "error",
+          {
+            "selector": "TryStatement",
+            "message": "Use Effect.try, Effect.tryPromise, or typed Effect error recovery instead of try/catch."
+          },
+          {
+            "selector": "MemberExpression[object.name='process'][computed=false][property.name='env']",
+            "message": "Read environment variables through effect/Config instead of process.env."
+          },
+          {
+            "selector": "MemberExpression[object.name='process'][computed=true][property.value='env']",
+            "message": "Read environment variables through effect/Config instead of process.env."
+          },
+          {
+            "selector": "VariableDeclarator[init.name='process'] > ObjectPattern > Property[key.name='env']",
+            "message": "Read environment variables through effect/Config instead of process.env."
+          },
+          {
+            "selector": "VariableDeclarator[init.name='process'] > ObjectPattern > Property[key.value='env']",
+            "message": "Read environment variables through effect/Config instead of process.env."
+          },
+          {
+            "selector": "AssignmentExpression[right.name='process'] > ObjectPattern > Property[key.name='env']",
+            "message": "Read environment variables through effect/Config instead of process.env."
+          },
+          {
+            "selector": "AssignmentExpression[right.name='process'] > ObjectPattern > Property[key.value='env']",
+            "message": "Read environment variables through effect/Config instead of process.env."
+          },
+          {
+            "selector": "AssignmentPattern[right.name='process'] > ObjectPattern > Property[key.name='env']",
+            "message": "Read environment variables through effect/Config instead of process.env."
+          },
+          {
+            "selector": "AssignmentPattern[right.name='process'] > ObjectPattern > Property[key.value='env']",
+            "message": "Read environment variables through effect/Config instead of process.env."
+          },
           {
             "selector": "MemberExpression[object.name='process'][property.name='stdout']",
             "message": "Write output and read terminal capabilities through TerminalUI."

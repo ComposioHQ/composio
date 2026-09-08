@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { getKnowledgeDisplayDescription } from '@/lib/knowledge/display';
 
 export interface RelatedLink {
   title: string;
@@ -27,7 +28,9 @@ export function RelatedLinks({ items }: { items: RelatedLink[] }) {
                 {item.title}
               </span>
               {item.description && (
-                <span className="text-xs leading-snug text-fd-muted-foreground">{item.description}</span>
+                <span className="text-xs leading-snug text-fd-muted-foreground">
+                  {getKnowledgeDisplayDescription(item.description)}
+                </span>
               )}
             </Link>
           </li>

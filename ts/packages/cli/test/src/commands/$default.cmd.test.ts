@@ -110,25 +110,19 @@ describe('CLI: composio', () => {
   });
 
   layer(TestLive())(it => {
-    it.scoped("[Given] --version flag [Then] prints composio's version from package.json", () =>
+    it.scoped('[Given] --version or -v [Then] prints exactly what `composio version` prints', () =>
       Effect.gen(function* () {
-        const args = ['--version'];
-        yield* cli(args);
-        const lines = yield* MockConsole.getLines();
-        const output = lines.join('\n');
-        expect(output).toContain(pkg.version);
-      })
-    );
-  });
+        // Each spelling runs against a fresh console so the captured lines are comparable.
+        const linesFor = (args: ReadonlyArray<string>) =>
+          Effect.gen(function* () {
+            yield* cli(args);
+            return yield* MockConsole.getLines();
+          }).pipe(Effect.provide(TestLive()));
 
-  layer(TestLive())(it => {
-    it.scoped("[Given] -v flag [Then] prints composio's version from package.json", () =>
-      Effect.gen(function* () {
-        const args = ['-v'];
-        yield* cli(args);
-        const lines = yield* MockConsole.getLines();
-        const output = lines.join('\n');
-        expect(output).toContain(pkg.version);
+        const expected = yield* linesFor(['version']);
+        expect(expected.join('\n')).toContain(pkg.version);
+        expect(yield* linesFor(['--version'])).toEqual(expected);
+        expect(yield* linesFor(['-v'])).toEqual(expected);
       })
     );
   });

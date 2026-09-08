@@ -13,7 +13,7 @@ import { NodeOs } from 'src/services/node-os';
 const createMockNodeOs = <P extends NodeJS.Platform>(platform: P, arch: string) =>
   Layer.succeed(
     NodeOs,
-    NodeOs.make({
+    NodeOs.of({
       homedir: '/mock/home',
       tmpdir: '/tmp',
       platform: platform as NodeJS.Platform,

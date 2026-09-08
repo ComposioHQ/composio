@@ -29,6 +29,7 @@ import { ComposioToolkitsRepository } from 'src/services/composio-clients';
 import { ComposioUserContext } from 'src/services/user-context';
 import { ProjectContext } from 'src/services/project-context';
 import { trackCliCodactFailureEffect, trackCliEventEffect } from 'src/analytics/dispatch';
+import { cliInvocationContext } from 'src/services/runtime-cli-context';
 import {
   getToolExecuteFailedEvent,
   getToolExecuteToolNotFoundEvent,
@@ -63,6 +64,7 @@ import {
 import * as constants from 'src/constants';
 import { ComposioCliUserConfig } from 'src/services/cli-user-config';
 import { CLI_EXPERIMENTAL_FEATURES } from 'src/constants';
+import { APP_CONFIG } from 'src/effects/app-config';
 
 const slug = Args.text({ name: 'slug' }).pipe(
   Args.withDescription('Tool slug (e.g. "GITHUB_CREATE_ISSUE")')
@@ -315,8 +317,10 @@ const getExecuteOutputEncoder = () => {
   return executeOutputEncoder;
 };
 
-// eslint-disable-next-line eslint-js/no-restricted-syntax -- COMPOSIO_CLI_INVOCATION_ORIGIN is a spawn-time handshake the parent `composio run` process injects into nested CLI invocations, not user configuration, and it must be read fresh at call time
-const shouldStoreLargeExecuteOutput = () => process.env.COMPOSIO_CLI_INVOCATION_ORIGIN !== 'run';
+const shouldStoreLargeExecuteOutput = APP_CONFIG.CLI_INVOCATION_ORIGIN.pipe(
+  Effect.orDie,
+  Effect.map(origin => origin !== 'run')
+);
 
 type StoredExecuteOutputSummary = {
   readonly successful: true;
@@ -362,12 +366,12 @@ const executionSuccessSuffix = (result: {
 
 const persistLargeExecuteOutput = (toolSlug: string, json: string, sharedDirectory?: string) =>
   Effect.gen(function* () {
+    const runOutputDirectory = yield* APP_CONFIG.RUN_OUTPUT_DIR;
     const outputFilePath = yield* storeCliSessionArtifact({
       contents: json,
       name: `${toolSlug}_OUTPUT`,
       extension: 'json',
-      // eslint-disable-next-line eslint-js/no-restricted-syntax -- COMPOSIO_RUN_OUTPUT_DIR is injected per-subprocess by the parent `composio run` so nested executions share one output directory; it is inter-process plumbing, not user configuration
-      directoryPath: sharedDirectory?.trim() || process.env.COMPOSIO_RUN_OUTPUT_DIR?.trim(),
+      directoryPath: sharedDirectory?.trim() || runOutputDirectory,
     });
 
     return {
@@ -390,7 +394,10 @@ const prepareExecuteOutput = (
   Effect.gen(function* () {
     const json = serializeExecuteOutput(result);
     const tokenCount = getExecuteOutputEncoder().encode(json).length;
-    if (tokenCount <= EXECUTE_INLINE_OUTPUT_TOKEN_THRESHOLD || !shouldStoreLargeExecuteOutput()) {
+    if (
+      tokenCount <= EXECUTE_INLINE_OUTPUT_TOKEN_THRESHOLD ||
+      !(yield* shouldStoreLargeExecuteOutput)
+    ) {
       return {
         kind: 'inline',
         json,
@@ -418,6 +425,7 @@ const emitExecuteFailureTelemetry = (params: {
 }) =>
   Effect.gen(function* () {
     const toolkitSlug = yield* toolkitFromToolSlug(params.toolSlug);
+    const { invocationOrigin } = yield* cliInvocationContext;
     const normalized = params.mappedError?.normalized ?? normalizeCliError(params.error);
     const failureOrigin: 'fast_fail' | 'main_endpoint' =
       normalized instanceof ToolInputValidationError || params.stage !== 'execution'
@@ -431,6 +439,7 @@ const emitExecuteFailureTelemetry = (params: {
           toolkitSlug,
           args: params.args,
           error: normalized,
+          invocationOrigin,
           surface: params.surface,
           projectMode: params.projectMode,
           stage: params.stage === 'dry_run' ? 'dry_run' : 'validation',
@@ -489,6 +498,7 @@ const emitExecuteFailureTelemetry = (params: {
             schemaPath: 'server',
             issues: [message],
           }),
+          invocationOrigin,
           surface: params.surface,
           projectMode: params.projectMode,
           stage:
@@ -510,6 +520,7 @@ const emitExecuteFailureTelemetry = (params: {
             toolSlug: params.toolSlug,
             toolkitSlug,
             args: params.args,
+            invocationOrigin,
             surface: params.surface,
             projectMode: params.projectMode,
             stage: params.stage === 'validation' ? 'execution' : params.stage,
@@ -524,6 +535,7 @@ const emitExecuteFailureTelemetry = (params: {
             toolSlug: params.toolSlug,
             toolkitSlug,
             args: params.args,
+            invocationOrigin,
             surface: params.surface,
             projectMode: params.projectMode,
             stage: params.stage === 'validation' ? 'execution' : params.stage,
@@ -978,6 +990,7 @@ const resolveExecuteContext = (params: RunToolsExecuteParams) =>
     const input = (yield* resolveInput(params.data)) ?? '{}';
     const parsedArgs = yield* parseArguments(input);
     const cliConfig = yield* ComposioCliUserConfig;
+    const runOutputDirectory = yield* APP_CONFIG.RUN_OUTPUT_DIR;
 
     if (
       isLocalToolSlug(params.slug) &&
@@ -1009,8 +1022,7 @@ const resolveExecuteContext = (params: RunToolsExecuteParams) =>
         args: parsedArgs,
         resolvedUserId: 'local',
         selectedConnectedAccountId: undefined,
-        // eslint-disable-next-line eslint-js/no-restricted-syntax -- COMPOSIO_RUN_OUTPUT_DIR is injected per-subprocess by the parent `composio run` so nested local-tool executions write into its shared output directory; inter-process plumbing, not user configuration
-        executeOutputDir: process.env.COMPOSIO_RUN_OUTPUT_DIR?.trim() || undefined,
+        executeOutputDir: runOutputDirectory,
         executeParams: {
           userId: 'local',
           arguments: parsedArgs,
@@ -1079,8 +1091,7 @@ const resolveExecuteContext = (params: RunToolsExecuteParams) =>
         )
       : parsedArgs;
     const executeOutputDir =
-      // eslint-disable-next-line eslint-js/no-restricted-syntax -- COMPOSIO_RUN_OUTPUT_DIR is injected per-subprocess by the parent `composio run` and must take precedence over the session artifacts directory; inter-process plumbing, not user configuration
-      process.env.COMPOSIO_RUN_OUTPUT_DIR?.trim() ||
+      runOutputDirectory ||
       Option.getOrUndefined(
         yield* resolveCliSessionArtifacts({
           orgId: resolvedProject.projectType === 'CONSUMER' ? resolvedProject.orgId : undefined,

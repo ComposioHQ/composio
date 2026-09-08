@@ -1,7 +1,10 @@
-import { FileSystem, Path } from '@effect/platform';
+import * as FileSystem from '@effect/platform/FileSystem';
+import * as Path from '@effect/platform/Path';
 import { Data, Effect, Either, Option, Predicate, Schema } from 'effect';
+import { APP_CONFIG } from 'src/effects/app-config';
 import { JsonRecordSchema } from 'src/effects/json';
 import { setupCacheDir } from 'src/effects/setup-cache-dir';
+import { atomicWritePrivateFileString, ensurePrivateFileMode } from 'src/utils/atomic-write';
 import { ComposioUserContext } from 'src/services/user-context';
 import { getSessionInfoByUserApiKey } from 'src/services/composio-clients';
 import { primeConsumerConnectedToolkitsCacheInBackground } from 'src/services/consumer-short-term-cache';
@@ -81,9 +84,10 @@ export class AgentResponseDecodeError extends Data.TaggedError(
   readonly cause: unknown;
 }> {}
 
-const agentsBaseURL = (): string =>
-  // eslint-disable-next-line eslint-js/no-restricted-syntax -- read lazily at request time inside a plain sync helper so tests can repoint agents.composio.dev per call without rebuilding a Config layer
-  (process.env.COMPOSIO_AGENTS_BASE_URL ?? DEFAULT_AGENTS_BASE_URL).replace(/\/+$/, '');
+const agentsBaseURL = APP_CONFIG.AGENTS_BASE_URL.pipe(
+  Effect.orDie,
+  Effect.map(value => (value ?? DEFAULT_AGENTS_BASE_URL).replace(/\/+$/, ''))
+);
 
 const decodeAgentResponse =
   <A, I>(pathname: string, schema: Schema.Schema<A, I>) =>
@@ -172,7 +176,8 @@ export const readStoredAgentIdentity = Effect.gen(function* () {
   const exists = yield* fs.exists(configPath);
   if (!exists) return Option.none<AgentIdentity>();
 
-  return yield* fs.readFileString(configPath, 'utf8').pipe(
+  return yield* ensurePrivateFileMode({ fs, target: configPath }).pipe(
+    Effect.andThen(fs.readFileString(configPath, 'utf8')),
     Effect.flatMap(Schema.decodeUnknown(Schema.parseJson(AgentIdentity))),
     Effect.map(normalizeDecodedAgentIdentity),
     Effect.tapError(error => Effect.logDebug('Failed to read agent identity:', error)),
@@ -185,7 +190,11 @@ export const writeStoredAgentIdentity = (identity: AgentIdentity) =>
     const fs = yield* FileSystem.FileSystem;
     const configPath = yield* agentConfigPath;
     const normalized = normalizeDecodedAgentIdentity(identity);
-    yield* fs.writeFileString(configPath, `${JSON.stringify(normalized, null, 2)}\n`);
+    yield* atomicWritePrivateFileString({
+      fs,
+      target: configPath,
+      contents: `${JSON.stringify(normalized, null, 2)}\n`,
+    });
     return normalized;
   });
 
@@ -197,9 +206,10 @@ export const removeStoredAgentIdentity = Effect.gen(function* () {
 
 const fetchAgentJson = (pathname: string, init: RequestInit = {}) =>
   Effect.gen(function* () {
+    const baseURL = yield* agentsBaseURL;
     const response = yield* Effect.tryPromise({
       try: () =>
-        fetch(`${agentsBaseURL()}${pathname}`, {
+        fetch(`${baseURL}${pathname}`, {
           redirect: 'error',
           ...init,
           headers: {

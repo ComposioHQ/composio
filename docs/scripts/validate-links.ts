@@ -4,7 +4,15 @@ import { resolve } from 'node:path';
 import { type FileObject, printErrors, scanURLs, validateFiles } from 'next-validate-link';
 import GithubSlugger from 'github-slugger';
 import { z } from 'zod';
-import { source, getReferenceSource, examplesSource, toolkitsSource } from '../lib/source';
+import {
+  source,
+  getReferenceSource,
+  examplesSource,
+  toolkitsSource,
+  knowledgeBaseSource,
+} from '../lib/source';
+import { getKnowledgeToolkitSummaries } from '../lib/knowledge/catalog';
+import { getLocalKnowledgeDiscoveryPaths } from '../lib/knowledge/discovery';
 
 /**
  * `--external` additionally HEAD/GET-checks every external URL. Slow and
@@ -17,9 +25,14 @@ type AnySource =
   | typeof source
   | Awaited<ReturnType<typeof getReferenceSource>>
   | typeof examplesSource
-  | typeof toolkitsSource;
+  | typeof toolkitsSource
+  | typeof knowledgeBaseSource;
 
 type PageOf = ReturnType<AnySource['getPages']>[number];
+
+export function withoutFrontmatter(content: string): string {
+  return content.replace(/^(?:\uFEFF)?---\r?\n[\s\S]*?\r?\n---\r?\n?/, '');
+}
 
 /**
  * Extract heading anchors from raw MDX/markdown content.
@@ -105,6 +118,13 @@ async function getDynamicToolkitEntries() {
   return toolkits.map(t => ({ value: { slug: [t.slug] }, hashes: [] as string[] }));
 }
 
+export async function getKnowledgeToolkitRouteEntries() {
+  return (await getKnowledgeToolkitSummaries()).map(toolkit => ({
+    value: toolkit.slug,
+    hashes: [] as string[],
+  }));
+}
+
 const EXTERNAL_FETCH_HEADERS = {
   // Some hosts reject requests without a browser-like UA (bot filters).
   'user-agent':
@@ -168,14 +188,36 @@ function validateExternalUrl(url: URL) {
 
 async function checkLinks() {
   const referenceSource = await getReferenceSource();
-  const [docsEntries, refEntries, exampleEntries, toolkitEntries, dynamicToolkitEntries] =
-    await Promise.all([
-      buildPopulateEntries(source),
-      buildPopulateEntries(referenceSource),
-      buildPopulateEntries(examplesSource),
-      buildPopulateEntries(toolkitsSource),
-      getDynamicToolkitEntries(),
-    ]);
+  const knowledgeDiscoveryPaths = await getLocalKnowledgeDiscoveryPaths();
+  const knowledgeTopicEntries = knowledgeDiscoveryPaths
+    .filter((path) => path.startsWith('/kb/topic/'))
+    .map((path) => ({ value: path.slice('/kb/topic/'.length), hashes: [] as string[] }));
+  const [
+    docsEntries,
+    refEntries,
+    exampleEntries,
+    toolkitEntries,
+    knowledgeBaseEntries,
+    dynamicToolkitEntries,
+    knowledgeToolkitEntries,
+  ] = await Promise.all([
+    buildPopulateEntries(source),
+    buildPopulateEntries(referenceSource),
+    buildPopulateEntries(examplesSource),
+    buildPopulateEntries(toolkitsSource),
+    buildPopulateEntries(knowledgeBaseSource),
+    getDynamicToolkitEntries(),
+    getKnowledgeToolkitRouteEntries(),
+  ]);
+  const knowledgeGuideEntries = knowledgeBaseEntries.flatMap((entry) => {
+    const value = entry.value;
+    if (!value || Array.isArray(value) || typeof value === 'string' || !('slug' in value)) return [];
+    const slug = value.slug;
+    const segments = Array.isArray(slug) ? slug : [slug];
+    return segments.length === 2 && segments[0] === 'guide'
+      ? [{ ...entry, value: segments[1] }]
+      : [];
+  });
 
   const scanned = await scanURLs({
     preset: 'next',
@@ -185,6 +227,9 @@ async function checkLinks() {
       '(home)/reference/[[...slug]]': refEntries,
       '(home)/examples/[[...slug]]': exampleEntries,
       '(home)/toolkits/[[...slug]]': [...toolkitEntries, ...dynamicToolkitEntries],
+      '(home)/kb/guide/[slug]': knowledgeGuideEntries,
+      '(home)/kb/topic/[slug]': knowledgeTopicEntries,
+      '(home)/kb/toolkit/[slug]': knowledgeToolkitEntries,
     },
   });
 
@@ -217,7 +262,7 @@ async function checkLinks() {
 
 async function getFiles(): Promise<FileObject[]> {
   const referenceSource = await getReferenceSource();
-  const sources = [source, referenceSource, examplesSource, toolkitsSource];
+  const sources = [source, referenceSource, examplesSource, toolkitsSource, knowledgeBaseSource];
   const allFiles: FileObject[] = [];
 
   for (const src of sources) {
@@ -231,7 +276,7 @@ async function getFiles(): Promise<FileObject[]> {
 
       allFiles.push({
         path: page.absolutePath,
-        content: await textData.data.getText('raw'),
+        content: withoutFrontmatter(await textData.data.getText('raw')),
         url: page.url,
         data: page.data,
       });
@@ -243,11 +288,11 @@ async function getFiles(): Promise<FileObject[]> {
   const extraMdFiles = await Array.fromAsync(glob('content/**/*.md'));
   for (const filePath of extraMdFiles) {
     if (coveredPaths.has(resolve(filePath))) continue;
-    const content = await readFile(filePath, 'utf-8');
+    const content = withoutFrontmatter(await readFile(filePath, 'utf-8'));
     allFiles.push({ path: filePath, content });
   }
 
   return allFiles;
 }
 
-void checkLinks();
+if (import.meta.main) void checkLinks();

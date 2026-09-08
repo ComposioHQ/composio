@@ -1,0 +1,184 @@
+name: Docs - Rebuild KB Semantic Artifact
+
+on:
+  workflow_run:
+    workflows: ['Docs - Tests']
+    types: [completed]
+
+permissions:
+  contents: read
+
+jobs:
+  authorize:
+    name: Authorize originating pull request
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      actions: read
+      contents: read
+      pull-requests: read
+    outputs:
+      trusted: ${{ steps.trust.outputs.trusted }}
+      head_sha: ${{ steps.trust.outputs.head_sha }}
+      head_ref: ${{ steps.trust.outputs.head_ref }}
+
+    steps:
+      - name: Authorize originating pull request
+        id: trust
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+          RUN_ID: ${{ github.event.workflow_run.id }}
+        run: |
+          echo "trusted=false" >> "$GITHUB_OUTPUT"
+
+          run_json=$(gh api "repos/$REPOSITORY/actions/runs/$RUN_ID")
+          event_name=$(jq -r '.event' <<< "$run_json")
+          repository_id=$(jq -r '.repository.id' <<< "$run_json")
+          head_repository_id=$(jq -r '.head_repository.id // empty' <<< "$run_json")
+          head_branch=$(jq -r '.head_branch // empty' <<< "$run_json")
+          head_sha=$(jq -r '.head_sha // empty' <<< "$run_json")
+
+          if [ "$event_name" != "pull_request" ] ||
+             [ -z "$head_repository_id" ] ||
+             [ "$head_repository_id" != "$repository_id" ] ||
+             [ -z "$head_branch" ] ||
+             [ -z "$head_sha" ]; then
+            echo "Skipping a non-pull-request or fork workflow run."
+            exit 0
+          fi
+
+          pull_matches=$(jq -c \
+            --arg head_repository_id "$head_repository_id" \
+            --arg head_branch "$head_branch" \
+            --arg head_sha "$head_sha" \
+            '[
+              (.pull_requests // [])[]
+              | select(
+                  (.head.repo.id | tostring) == $head_repository_id and
+                  .head.ref == $head_branch and
+                  .head.sha == $head_sha
+                )
+            ]' <<< "$run_json")
+
+          if [ "$(jq 'length' <<< "$pull_matches")" != "1" ]; then
+            echo "Skipping a workflow run without exactly one matching pull request."
+            exit 0
+          fi
+
+          pull_number=$(jq -r '.[0].number' <<< "$pull_matches")
+          pull_json=$(gh api "repos/$REPOSITORY/pulls/$pull_number")
+          association=$(jq -r '.author_association' <<< "$pull_json")
+          live_head_repository_id=$(jq -r '.head.repo.id // empty' <<< "$pull_json")
+          live_head_sha=$(jq -r '.head.sha // empty' <<< "$pull_json")
+          live_head_ref=$(jq -r '.head.ref // empty' <<< "$pull_json")
+          state=$(jq -r '.state' <<< "$pull_json")
+
+          if [ "$state" != "open" ] ||
+             [ "$live_head_repository_id" != "$repository_id" ] ||
+             [ "$live_head_sha" != "$head_sha" ] ||
+             [ "$live_head_ref" != "$head_branch" ]; then
+            echo "Skipping a closed or stale pull request."
+            exit 0
+          fi
+
+          case "$association" in
+            MEMBER|OWNER) ;;
+            *)
+              echo "Skipping a pull request whose author is not a repository member or owner."
+              exit 0
+              ;;
+          esac
+
+          echo "trusted=true" >> "$GITHUB_OUTPUT"
+          echo "head_sha=$live_head_sha" >> "$GITHUB_OUTPUT"
+          echo "head_ref=$live_head_ref" >> "$GITHUB_OUTPUT"
+
+  rebuild:
+    name: Rebuild stale artifact for trusted PRs
+    needs: authorize
+    if: needs.authorize.outputs.trusted == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    defaults:
+      run:
+        working-directory: ./docs
+
+    steps:
+      - name: Checkout pull request
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.authorize.outputs.head_sha }}
+          persist-credentials: false
+
+      - name: Setup Node.js, pnpm, Bun
+        uses: ./.github/actions/setup-node-pnpm-bun
+
+      - name: Cache Bun dependencies
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.bun/install/cache
+          key: ${{ runner.os }}-bun-${{ hashFiles('docs/bun.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-bun-
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Check semantic artifact freshness
+        id: freshness
+        continue-on-error: true
+        run: bun run check:kb-semantic
+
+      - name: Rebuild semantic artifact
+        if: steps.freshness.outcome == 'failure'
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: bun run build:kb-semantic
+
+      - name: Verify rebuilt artifact
+        if: steps.freshness.outcome == 'failure'
+        run: bun run check:kb-semantic
+
+      - name: Generate write token
+        id: write-token
+        if: steps.freshness.outcome == 'failure'
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        with:
+          client-id: ${{ vars.RELEASE_BOT_CLIENT_ID }}
+          private-key: ${{ secrets.RELEASE_BOT_APP_PRIVATE_KEY }}
+          owner: ComposioHQ
+          repositories: composio
+          permission-contents: write
+
+      - name: Resolve bot identity
+        id: bot-user
+        if: steps.freshness.outcome == 'failure'
+        env:
+          APP_SLUG: ${{ steps.write-token.outputs.app-slug }}
+          GH_TOKEN: ${{ steps.write-token.outputs.token }}
+        run: |
+          user_id=$(gh api "/users/${APP_SLUG}[bot]" --jq '.id')
+          echo "user-id=$user_id" >> "$GITHUB_OUTPUT"
+
+      - name: Commit rebuilt artifact
+        if: steps.freshness.outcome == 'failure'
+        env:
+          APP_SLUG: ${{ steps.write-token.outputs.app-slug }}
+          BOT_USER_ID: ${{ steps.bot-user.outputs.user-id }}
+          GH_TOKEN: ${{ steps.write-token.outputs.token }}
+          HEAD_REF: ${{ needs.authorize.outputs.head_ref }}
+        run: |
+          git add kb/semantic-index.json content/kb/
+          if git diff --cached --quiet; then
+            echo "::error::Semantic freshness failed, but rebuilding produced no tracked artifact changes."
+            exit 1
+          fi
+
+          git config user.name "${APP_SLUG}[bot]"
+          git config user.email "${BOT_USER_ID}+${APP_SLUG}[bot]@users.noreply.github.com"
+          git commit -m "chore(docs): rebuild KB semantic artifact"
+          gh auth setup-git
+          git push origin "HEAD:$HEAD_REF"

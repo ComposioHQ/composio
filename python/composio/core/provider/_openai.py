@@ -19,7 +19,7 @@ from openai.types.chat.chat_completion_tool_param import ChatCompletionToolParam
 from openai.types.shared_params.function_definition import FunctionDefinition
 from openai.types.shared_params.function_parameters import FunctionParameters
 
-from composio.core.provider import NonAgenticProvider
+from composio.core.provider import NonAgenticProvider, ToolCallSession
 from composio.types import Modifiers, Tool, ToolExecutionResponse
 from composio.utils.shared import normalize_tool_arguments
 
@@ -46,41 +46,92 @@ class OpenAIProvider(
     def wrap_tools(self, tools: t.Sequence[Tool]) -> OpenAIToolCollection:
         return [self.wrap_tool(tool) for tool in tools]
 
+    @t.overload
     def execute_tool_call(
         self,
         user_id: str,
         tool_call: ChatCompletionMessageToolCall,
         modifiers: t.Optional[Modifiers] = None,
+    ) -> ToolExecutionResponse: ...
+
+    @t.overload
+    def execute_tool_call(
+        self,
+        *,
+        session: ToolCallSession,
+        tool_call: ChatCompletionMessageToolCall,
+    ) -> ToolExecutionResponse: ...
+
+    def execute_tool_call(
+        self,
+        user_id: t.Optional[str] = None,
+        tool_call: t.Optional[ChatCompletionMessageToolCall] = None,
+        modifiers: t.Optional[Modifiers] = None,
+        *,
+        session: t.Optional[ToolCallSession] = None,
     ) -> ToolExecutionResponse:
         """Execute a tool call.
 
         :param tool_call: Tool call metadata.
-        :param user_id: User ID to use for executing the function call.
+        :param user_id: User ID for direct tool execution.
+        :param session: Tool Router session that produced session tools.
         :return: Object containing output data from the tool call.
         """
+        if tool_call is None:
+            raise TypeError("tool_call is required")
+        target = self.resolve_tool_call_execution_target(
+            user_id=user_id, session=session
+        )
+
         # OpenAI always serializes tool arguments as a JSON string; normalize
         # tolerates empty / object-shaped payloads too (issue #2406).
-        return self.execute_tool(
+        return self.execute_tool_for_target(
+            target=target,
             slug=tool_call.function.name,
             arguments=normalize_tool_arguments(tool_call.function.arguments),
             modifiers=modifiers,
-            user_id=user_id,
         )
 
+    @t.overload
     def handle_tool_calls(
         self,
         user_id: str,
         response: ChatCompletion,
         modifiers: t.Optional[Modifiers] = None,
+    ) -> t.List[ToolExecutionResponse]: ...
+
+    @t.overload
+    def handle_tool_calls(
+        self,
+        *,
+        session: ToolCallSession,
+        response: ChatCompletion,
+    ) -> t.List[ToolExecutionResponse]: ...
+
+    def handle_tool_calls(
+        self,
+        user_id: t.Optional[str] = None,
+        response: t.Optional[ChatCompletion] = None,
+        modifiers: t.Optional[Modifiers] = None,
+        *,
+        session: t.Optional[ToolCallSession] = None,
     ) -> t.List[ToolExecutionResponse]:
         """
         Handle tool calls from OpenAI chat completion object.
 
         :param response: Chat completion object from
                         openai.OpenAI.chat.completions.create function call
-        :param user_id: User ID to use for executing the function call.
+        :param user_id: User ID for direct tool execution.
+        :param session: Tool Router session that produced session tools.
         :return: A list of output objects from the function calls.
         """
+        if response is None:
+            raise TypeError("response is required")
+        self.resolve_tool_call_execution_target(user_id=user_id, session=session)
+        if session is not None and modifiers is not None:
+            raise ValueError(
+                "Direct execution modifiers cannot be used with a Tool Router session"
+            )
         outputs = []
         # Only the first choice is actionable: its tool results feed back into a
         # single assistant turn. With n > 1, iterating every choice would run each
@@ -91,13 +142,20 @@ class OpenAIProvider(
         # calls, on by default); each one needs its own tool result.
         if choice is not None and choice.message.tool_calls is not None:
             for tool_call in choice.message.tool_calls:
-                outputs.append(
+                call = t.cast(ChatCompletionMessageToolCall, tool_call)
+                result = (
                     self.execute_tool_call(
-                        user_id=user_id,
-                        tool_call=t.cast(ChatCompletionMessageToolCall, tool_call),
+                        session=session,
+                        tool_call=call,
+                    )
+                    if session is not None
+                    else self.execute_tool_call(
+                        user_id=t.cast(str, user_id),
+                        tool_call=call,
                         modifiers=modifiers,
                     )
                 )
+                outputs.append(result)
         return outputs
 
     def handle_assistant_tool_calls(

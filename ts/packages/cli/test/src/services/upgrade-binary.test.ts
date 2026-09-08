@@ -1,11 +1,19 @@
 import { describe, expect, it, vi } from '@effect/vitest';
 import { ConfigProvider, Effect, Layer, Option } from 'effect';
-import { FetchHttpClient, FileSystem, Path } from '@effect/platform';
+import * as FetchHttpClient from '@effect/platform/FetchHttpClient';
+import * as FileSystem from '@effect/platform/FileSystem';
+import * as Path from '@effect/platform/Path';
 import * as PlatformError from '@effect/platform/Error';
-import { BunFileSystem, BunPath } from '@effect/platform-bun';
+import * as BunFileSystem from '@effect/platform-bun/BunFileSystem';
+import * as BunPath from '@effect/platform-bun/BunPath';
 import { withHttpServer } from 'test/__utils__/http-server';
 import { getTerminalCapabilities, TerminalUI } from 'src/services/terminal-ui';
-import { UpgradeBinary, UpgradeBinaryError } from 'src/services/upgrade-binary';
+import {
+  formatDownloadProgress,
+  formatMegabytes,
+  UpgradeBinary,
+  UpgradeBinaryError,
+} from 'src/services/upgrade-binary';
 import { NodeOs } from 'src/services/node-os';
 import {
   collectExpectedRunCompanionAssetRelativePaths,
@@ -49,7 +57,7 @@ const TerminalUINoop = Layer.succeed(
 
 const NodeOsTest = Layer.succeed(
   NodeOs,
-  new NodeOs({
+  NodeOs.of({
     homedir: '/tmp',
     tmpdir: '/tmp',
     platform: 'darwin',
@@ -716,5 +724,36 @@ describe('UpgradeBinary', () => {
       expect(error.message).toBe('Failed to download binary: composio-darwin-aarch64.zip');
       expect(String(error.cause)).toContain('beta-3.zip');
     }).pipe(Effect.provide(TestPlatform), Effect.ensuring(restoreStubsAndMocks));
+  });
+});
+
+describe('formatDownloadProgress', () => {
+  it('reports percent and both sizes when the total is known', () => {
+    expect(formatDownloadProgress({ receivedBytes: 142_000_000, totalBytes: 338_000_000 })).toBe(
+      'Downloading... 42% (142.0 MB / 338.0 MB)'
+    );
+  });
+
+  it('reports bytes alone when the server never sent a size', () => {
+    expect(formatDownloadProgress({ receivedBytes: 12_500_000, totalBytes: undefined })).toBe(
+      'Downloading... 12.5 MB'
+    );
+  });
+
+  it('treats a zero total as unknown rather than dividing by it', () => {
+    expect(formatDownloadProgress({ receivedBytes: 1_000_000, totalBytes: 0 })).toBe(
+      'Downloading... 1.0 MB'
+    );
+  });
+
+  it('never exceeds 100% when more bytes arrive than announced', () => {
+    expect(formatDownloadProgress({ receivedBytes: 400_000_000, totalBytes: 338_000_000 })).toBe(
+      'Downloading... 100% (400.0 MB / 338.0 MB)'
+    );
+  });
+
+  it('formats megabytes to one decimal place', () => {
+    expect(formatMegabytes(0)).toBe('0.0 MB');
+    expect(formatMegabytes(338_027_339)).toBe('338.0 MB');
   });
 });

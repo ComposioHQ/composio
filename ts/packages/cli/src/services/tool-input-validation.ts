@@ -1,5 +1,6 @@
 import { AutoCorrect, CliConfig } from '@effect/cli';
-import { FileSystem, Path } from '@effect/platform';
+import * as FileSystem from '@effect/platform/FileSystem';
+import * as Path from '@effect/platform/Path';
 import { Data, Effect, Option, ParseResult, Schema } from 'effect';
 import { getLocalToolInputDefinition } from '@composio/cli-local-tools';
 import {
@@ -140,6 +141,33 @@ export const getToolDefinitionCachePath = (slug: string) =>
     const path = yield* Path.Path;
     const cacheDir = yield* setupCacheDir;
     return toolDefinitionPath(path, cacheDir, slug);
+  });
+
+export const cacheToolInputDefinition = (params: {
+  readonly slug: string;
+  readonly schema: Record<string, unknown>;
+  readonly version?: string | null;
+}) =>
+  Effect.gen(function* () {
+    const fs = yield* FileSystem.FileSystem;
+    const path = yield* Path.Path;
+    const cacheDir = yield* setupCacheDir;
+    const schemaPath = toolDefinitionPath(path, cacheDir, params.slug);
+
+    yield* ensureToolDefinitionsDir(fs, path, cacheDir);
+    yield* fs.writeFileString(
+      schemaPath,
+      serializeCachedToolDefinition({
+        version: params.version ?? null,
+        inputSchema: params.schema,
+      })
+    );
+
+    return {
+      schemaPath,
+      schema: params.schema,
+      version: params.version ?? null,
+    };
   });
 
 export const invalidateToolInputDefinition = (slug: string) =>

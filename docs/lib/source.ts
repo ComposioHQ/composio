@@ -1,10 +1,18 @@
-import { docs, reference, examples, toolkits, changelog } from 'fumadocs-mdx:collections/server';
+import {
+  docs,
+  reference,
+  examples,
+  toolkits,
+  knowledgeBase,
+  changelog,
+} from 'fumadocs-mdx:collections/server';
+import type { DocCollectionEntry } from 'fumadocs-mdx/runtime/server';
 import { type InferPageType, loader, multiple } from 'fumadocs-core/source';
 import { lucideIconsPlugin } from 'fumadocs-core/source/lucide-icons';
 import { openapi, openapiV3 } from './openapi';
 import { openapiSource, openapiPlugin } from 'fumadocs-openapi/server';
 import { getGuardrails } from './llm-guardrails';
-import { HIDDEN_API_TAGS } from './filter-api-version';
+import { isHiddenApiTagUrl } from './filter-api-version';
 import { FILE_BUILDS } from './file-builds';
 import { replaceRepoBrowserMarkdown } from './repo-browser-markdown';
 import { transformDeprecatedApiSidebarNode } from './deprecated-api-sidebar';
@@ -20,20 +28,6 @@ import { replaceHomeNavigationMarkdown } from './home-navigation';
  * via `prepareTree` (lib/filter-api-version.ts); this mirror keeps the flat
  * `getPages()` list (consumed by validate-links, llms.mdx, sitemap) in sync.
  */
-function isHiddenReferenceUrl(url: string): boolean {
-  for (const tag of HIDDEN_API_TAGS) {
-    if (
-      url.startsWith(`/reference/api-reference/${tag}/`) ||
-      url === `/reference/api-reference/${tag}` ||
-      url.startsWith(`/reference/v3/api-reference/${tag}/`) ||
-      url === `/reference/v3/api-reference/${tag}`
-    ) {
-      return true;
-    }
-  }
-  return false;
-}
-
 export const source = loader({
   baseUrl: '/docs',
   source: docs.toFumadocsSource(),
@@ -104,7 +98,7 @@ function createReferenceSource(openapiLatest: OpenapiPages[0], openapiV3Pages: O
   // separately via prepareTree (lib/filter-api-version.ts).
   const originalGetPages = loaded.getPages.bind(loaded);
   loaded.getPages = (...args: Parameters<typeof originalGetPages>) =>
-    originalGetPages(...args).filter((page: { url: string }) => !isHiddenReferenceUrl(page.url));
+    originalGetPages(...args).filter((page: { url: string }) => !isHiddenApiTagUrl(page.url));
 
   return loaded;
 }
@@ -141,7 +135,26 @@ export const toolkitsSource = loader({
   plugins: [lucideIconsPlugin()],
 });
 
-export const changelogEntries = changelog;
+export const knowledgeBaseSource = loader({
+  baseUrl: '/kb',
+  source: knowledgeBase.toFumadocsSource(),
+  plugins: [lucideIconsPlugin()],
+});
+
+export type ChangelogEntry = DocCollectionEntry<
+  'changelog',
+  {
+    date: string;
+    title: string;
+    description?: string;
+    icon?: string;
+    full?: boolean;
+  }
+>;
+
+// The generated Fumadocs virtual module is untyped in Next's production
+// checker. Preserve the collection's public shape for all route consumers.
+export const changelogEntries = changelog as ChangelogEntry[];
 
 export function getOgImageUrl(
   _section: string,
@@ -388,8 +401,8 @@ export function mdxToCleanMarkdown(content: string, url?: string): string {
     /<AIToolsBanner\s*\/>/g,
     '### For AI tools\n\n' +
       '**Skills:**\n' +
-      '```bash\nnpx skills add composiohq/skills\n```\n' +
-      '[Skills.sh](https://skills.sh/composiohq/skills/composio) · [GitHub](https://github.com/composiohq/skills)\n\n' +
+      '```bash\nnpx skills add ComposioHQ/composio --skill composio -y\n```\n' +
+      '[GitHub](https://github.com/ComposioHQ/composio/tree/next/skills/composio)\n\n' +
       '**CLI:**\n' +
       '```bash\ncurl -fsSL https://composio.dev/install | sh\n```\n' +
       '[CLI Reference](/docs/cli)\n\n' +

@@ -1,5 +1,6 @@
-import { FileSystem, Path } from '@effect/platform';
-import { BunFileSystem } from '@effect/platform-bun';
+import * as FileSystem from '@effect/platform/FileSystem';
+import * as Path from '@effect/platform/Path';
+import * as BunFileSystem from '@effect/platform-bun/BunFileSystem';
 import { DateTime, Effect, Layer, Option, Schema } from 'effect';
 import { setupCacheDir } from 'src/effects/setup-cache-dir';
 import { writeFileAtomic } from 'src/effects/write-file-atomic';

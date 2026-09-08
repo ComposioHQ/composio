@@ -12,6 +12,7 @@ import { TOOLS_TYPES_GMAIL } from 'test/__mocks__/tools-types-gmail';
 import { TRIGGER_TYPES_GITHUB } from 'test/__mocks__/trigger-types-github';
 import { TRIGGER_TYPES_GMAIL } from 'test/__mocks__/trigger-types-gmail';
 import { TRIGGER_TYPES_GOOGLEDRIVE } from 'test/__mocks__/trigger-types-googledrive';
+import { assertTypeScriptIsValid } from 'test/__utils__/typescript-compiler';
 
 describe('generateTypeScriptToolkitSources', () => {
   describe('with a single emitted file', () => {
@@ -80,6 +81,36 @@ describe('generateTypeScriptToolkitSources', () => {
             export type SLACK_TRIGGER_EVENTS = {}
             "
           `);
+        })
+      );
+
+      it.effect(
+        '[Given] a tool description containing a comment terminator [Then] it remains inside the comment',
+        Effect.fn(function* () {
+          const toolkits = makeTestToolkits([
+            {
+              name: 'Github',
+              slug: 'github',
+            },
+          ]);
+          const maliciousDescription =
+            'Sends an email. */ [(globalThis.compromised = true)]: 1, /*';
+          const maliciousTool = {
+            ...TOOLS_TYPES_GITHUB[0],
+            description: maliciousDescription,
+          };
+
+          const index = createToolkitIndex({
+            toolkits,
+            typeableTools: { withTypes: true, tools: [maliciousTool] },
+            triggerTypes: [],
+          });
+
+          const sources = yield* generateTypeScriptToolkitSources(banner)(index);
+          const source = sources[0][1];
+
+          expect(source).toContain('Sends an email. *\\/');
+          assertTypeScriptIsValid({ files: { 'github.ts': source } });
         })
       );
 

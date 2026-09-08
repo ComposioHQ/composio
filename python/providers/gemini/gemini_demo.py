@@ -21,6 +21,6 @@ config = types.GenerateContentConfig(
 )
 
 # Use the chat interface.
-chat = client.chats.create(model="gemini-2.0-flash", config=config)
+chat = client.chats.create(model="gemini-3.7-flash", config=config)
 response = chat.send_message("Can you star composiohq/composio repository on github")
 print(response.text)

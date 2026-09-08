@@ -1,5 +1,6 @@
 import { describe, expect, it } from '@effect/vitest';
-import { BunFileSystem, BunPath } from '@effect/platform-bun';
+import * as BunFileSystem from '@effect/platform-bun/BunFileSystem';
+import * as BunPath from '@effect/platform-bun/BunPath';
 import { Cause, Data, Effect, FiberId } from 'effect';
 
 import { captureErrors } from 'src/effect-errors/capture-errors';

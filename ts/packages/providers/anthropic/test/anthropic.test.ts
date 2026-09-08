@@ -203,6 +203,35 @@ describe('AnthropicProvider', () => {
       expect(result).toBe(JSON.stringify({ result: 'success' }));
     });
 
+    it('should expose session execution errors without changing successful results', async () => {
+      const toolUse: AnthropicToolUseBlock = {
+        type: 'tool_use',
+        id: 'tu_123',
+        name: 'test-tool',
+        input: { input: 'test-value' },
+      };
+      const session = {
+        execute: vi
+          .fn()
+          .mockResolvedValueOnce({
+            data: { result: 'success' },
+            error: null,
+            logId: 'log-success',
+          })
+          .mockResolvedValueOnce({
+            data: {},
+            error: 'Tool execution failed',
+            logId: 'log-failure',
+          }),
+      };
+
+      const successfulResult = await provider.executeToolCall(session, toolUse);
+      const failedResult = await provider.executeToolCall(session, toolUse);
+
+      expect(successfulResult).toBe(JSON.stringify({ result: 'success' }));
+      expect(failedResult).toBe(JSON.stringify({ error: 'Tool execution failed' }));
+    });
+
     it('should normalize a stringified-JSON input to an object before executing (issue #2406)', async () => {
       const params = { input: 'test-value' };
       const toolUse: AnthropicToolUseBlock = {

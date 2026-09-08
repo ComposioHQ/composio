@@ -4,14 +4,13 @@ import typing as t
 from unittest.mock import Mock, patch
 
 import pytest
-from pydantic import BaseModel, RootModel
 from composio_client import omit
+from pydantic import BaseModel, RootModel
 
 from composio.client.types import Tool, tool_list_response
 from composio.core.models.base import allow_tracking
-from composio.core.models.tools import Tools, _serialize_arguments, _needs_serialization
+from composio.core.models.tools import Tools, _needs_serialization, _serialize_arguments
 from composio.exceptions import ToolVersionRequiredError
-
 from tests.conftest import mock_http_client
 
 
@@ -81,6 +80,210 @@ class TestToolExecution:
             cursor="next_page",
         )
 
+    def test_tool_router_modifiers_handle_tool_without_toolkit(self):
+        """Tool Router modifier fallbacks match TypeScript in each phase."""
+        from composio.core.models._modifiers import (
+            after_execute,
+            before_execute,
+            schema_modifier,
+        )
+
+        mock_client = mock_http_client()
+        tools = Tools(client=mock_client, provider=Mock())
+        raw_tool = self.create_mock_tool("CUSTOM_TOOL", "custom").model_dump()
+        raw_tool.pop("toolkit")
+        mock_client.tool_router.session.tools.return_value = Mock(
+            items=[raw_tool], next_cursor=None
+        )
+        seen_toolkits = []
+
+        @schema_modifier
+        def observe_toolkit(tool, toolkit, schema):
+            seen_toolkits.append(("schema", toolkit))
+            return schema
+
+        @before_execute
+        def observe_before_execute(tool, toolkit, params):
+            seen_toolkits.append(("before_execute", toolkit))
+            return params
+
+        @after_execute
+        def observe_after_execute(tool, toolkit, response):
+            seen_toolkits.append(("after_execute", toolkit))
+            return response
+
+        result = tools.get_raw_tool_router_meta_tools(
+            "session_123", modifiers=[observe_toolkit]
+        )
+        mock_client.tool_router.session.execute.return_value = Mock(data={}, error=None)
+        execute = tools._wrap_execute_tool_for_tool_router(
+            "session_123", modifiers=[observe_before_execute, observe_after_execute]
+        )
+        execute("CUSTOM_TOOL", {})
+
+        assert [tool.slug for tool in result] == ["CUSTOM_TOOL"]
+        assert seen_toolkits == [
+            ("schema", "unknown"),
+            ("before_execute", "composio"),
+            ("after_execute", "composio"),
+        ]
+
+    @pytest.mark.parametrize(
+        ("value", "expected"),
+        [
+            ("", {"metadata": {"source": "user"}}),
+            (
+                None,
+                {"attachment": None, "metadata": {"source": "user"}},
+            ),
+        ],
+    )
+    def test_tool_router_drops_only_empty_file_strings_without_mutating_arguments(
+        self, value, expected
+    ):
+        """Session execution matches direct execution for disabled auto-upload."""
+        mock_client = mock_http_client()
+        tools = Tools(client=mock_client, provider=Mock())
+        tool = self.create_mock_tool("GMAIL_CREATE_DRAFT", "gmail")
+        tool.input_parameters = {
+            "type": "object",
+            "properties": {
+                "attachment": {
+                    "anyOf": [
+                        {"type": "object", "file_uploadable": True},
+                        {"type": "null"},
+                    ]
+                },
+                "metadata": {
+                    "type": "object",
+                    "properties": {"source": {"type": "string"}},
+                },
+            },
+            "required": ["attachment"],
+        }
+        tools._tool_schemas[tool.slug] = tool
+        mock_client.tool_router.session.execute.return_value = Mock(data={}, error=None)
+        execute = tools._wrap_execute_tool_for_tool_router("session_123")
+        arguments = {
+            "attachment": value,
+            "metadata": {"source": "user"},
+        }
+
+        execute(tool.slug, arguments)
+
+        sent = mock_client.tool_router.session.execute.call_args.kwargs["arguments"]
+        assert sent == expected
+        assert arguments == {
+            "attachment": value,
+            "metadata": {"source": "user"},
+        }
+        assert sent["metadata"] is not arguments["metadata"]
+
+    def test_execute_without_toolkit_runs_modifiers_and_fetches_once(self):
+        """Toolkit-less tools execute with the same fallback used by TypeScript."""
+        from composio.core.models._modifiers import after_execute, before_execute
+
+        mock_client = mock_http_client()
+        tools = Tools(
+            client=mock_client,
+            provider=Mock(),
+            toolkit_versions={"unknown": "20250101_00"},
+        )
+        raw_tool = self.create_mock_tool("CUSTOM_TOOL", "custom").model_dump()
+        raw_tool.pop("toolkit")
+        mock_client.tools.retrieve.return_value = raw_tool
+
+        execute_response = Mock()
+        execute_response.model_dump.return_value = {
+            "data": {"value": "original"},
+            "error": None,
+            "successful": True,
+        }
+        mock_client.tools.execute.return_value = execute_response
+        seen_toolkits = []
+
+        @before_execute
+        def modify_request(tool, toolkit, params):
+            seen_toolkits.append(toolkit)
+            params["arguments"]["value"] = "modified"
+            return params
+
+        @after_execute
+        def modify_response(tool, toolkit, response):
+            seen_toolkits.append(toolkit)
+            response["data"]["modified"] = True
+            return response
+
+        result = tools.execute(
+            slug="CUSTOM_TOOL",
+            arguments={"value": "original"},
+            modifiers=[modify_request, modify_response],
+        )
+
+        assert result["data"] == {"value": "original", "modified": True}
+        assert seen_toolkits == ["unknown", "unknown"]
+        mock_client.tools.retrieve.assert_called_once()
+        mock_client.tools.execute.assert_called_once_with(
+            tool_slug="CUSTOM_TOOL",
+            arguments={"value": "modified"},
+            connected_account_id=omit,
+            custom_auth_params=omit,
+            custom_connection_data=omit,
+            user_id=omit,
+            text=omit,
+            version="20250101_00",
+        )
+
+    def test_provider_execution_uses_raw_metadata_after_schema_modifier(self):
+        """Schema presentation changes must not alter execution versioning."""
+        from composio.core.models._modifiers import schema_modifier
+
+        mock_client = mock_http_client()
+        mock_provider = Mock()
+        tools = Tools(
+            client=mock_client,
+            provider=mock_provider,
+            toolkit_versions={
+                "github": "20250101_00",
+                "renamed": "20250102_00",
+            },
+        )
+        raw_tool = self.create_mock_tool("GITHUB_GET_REPOS", "github").model_dump()
+        mock_client.tools.list.return_value = Mock(items=[raw_tool])
+        execute_response = Mock()
+        execute_response.model_dump.return_value = {
+            "data": {"result": "success"},
+            "error": None,
+            "successful": True,
+        }
+        mock_client.tools.execute.return_value = execute_response
+        wrapped = {}
+
+        def capture_tools(tools, execute_tool):
+            wrapped["tools"] = tools
+            wrapped["execute_tool"] = execute_tool
+            return tools
+
+        mock_provider.wrap_tools.side_effect = capture_tools
+
+        @schema_modifier
+        def rename_toolkit(tool, toolkit, schema):
+            schema.toolkit = tool_list_response.ItemToolkit(
+                name="Renamed", slug="renamed", logo=""
+            )
+            return schema
+
+        tools.get(
+            user_id="user_123",
+            tools=["GITHUB_GET_REPOS"],
+            modifiers=[rename_toolkit],
+        )
+        wrapped["execute_tool"]("GITHUB_GET_REPOS", {})
+
+        assert wrapped["tools"][0].toolkit.slug == "renamed"
+        mock_client.tools.retrieve.assert_not_called()
+        assert mock_client.tools.execute.call_args.kwargs["version"] == "20250101_00"
+
     def test_tool_execution_uses_toolkit_version(self):
         """Test that tool execution resolves toolkit version correctly."""
         # Mock client and provider
@@ -118,6 +321,7 @@ class TestToolExecution:
             tools._execute_tool(
                 slug="GITHUB_GET_REPOS",
                 arguments={"owner": "test", "repo": "test"},
+                tool=github_tool,
             )
 
             # Verify that the client was called with the resolved version
@@ -166,6 +370,7 @@ class TestToolExecution:
             tools._execute_tool(
                 slug="GITHUB_GET_REPOS",
                 arguments={"owner": "test", "repo": "test"},
+                tool=github_tool,
                 version="20251201_03",  # Explicit version should take precedence
             )
 
@@ -215,6 +420,7 @@ class TestToolExecution:
             tools._execute_tool(
                 slug="GITHUB_GET_REPOS",
                 arguments={"owner": "test", "repo": "test"},
+                tool=github_tool,
                 dangerously_skip_version_check=True,
             )
 
@@ -262,6 +468,7 @@ class TestToolExecution:
             tools._execute_tool(
                 slug="GITHUB_GET_REPOS",
                 arguments={"owner": "test", "repo": "test"},
+                tool=github_tool,
             )
 
             # Verify that the client was called with the global version
@@ -335,12 +542,14 @@ class TestToolExecution:
                     tools._execute_tool(
                         slug=tool_slug,
                         arguments={"test": "data"},
+                        tool=mock_tool,
                         dangerously_skip_version_check=True,
                     )
                 else:
                     tools._execute_tool(
                         slug=tool_slug,
                         arguments={"test": "data"},
+                        tool=mock_tool,
                     )
 
                 # Verify the version matches expected
@@ -1272,6 +1481,7 @@ class TestSerializeArguments:
                         Block(type="paragraph", content="Hello from composio"),
                     ],
                 },
+                tool=notion_tool,
                 dangerously_skip_version_check=True,
             )
 

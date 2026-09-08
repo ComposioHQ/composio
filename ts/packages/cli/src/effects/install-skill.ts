@@ -1,5 +1,7 @@
 import { Config, Data, Effect, Option } from 'effect';
-import { FileSystem, HttpClient, Path } from '@effect/platform';
+import * as FileSystem from '@effect/platform/FileSystem';
+import * as HttpClient from '@effect/platform/HttpClient';
+import * as Path from '@effect/platform/Path';
 import { NodeOs } from 'src/services/node-os';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { GITHUB_CONFIG } from 'src/effects/github-config';
@@ -11,7 +13,7 @@ import {
   type GitHubRelease,
   type GitHubRepoConfig,
 } from 'src/effects/resolve-cli-release';
-import extractZip from 'extract-zip';
+import { extractZipSafely } from 'src/utils/extract-zip-safely';
 
 const SKILL_NAME = 'composio-cli';
 const SKILL_ASSET_NAME = 'composio-skill.zip';
@@ -218,7 +220,7 @@ export const installSkill = (options?: {
       yield* fs.writeFile(zipPath, new Uint8Array(zipData));
 
       yield* Effect.tryPromise({
-        try: () => extractZip(zipPath, { dir: tmpDir }),
+        try: () => extractZipSafely(zipPath, tmpDir),
         catch: cause =>
           new SkillInstallError({
             cause,

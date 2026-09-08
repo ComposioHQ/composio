@@ -1,9 +1,15 @@
 import path from 'node:path';
 import * as tempy from 'tempy';
 import { Composio as RawComposioClient } from '@composio/client';
+import type { AuthConfigCreateParams } from '@composio/client/resources/auth-configs';
 import { CliApp, CliConfig } from '@effect/cli';
-import { Command, FetchHttpClient, FileSystem, Path } from '@effect/platform';
-import { BunFileSystem, BunContext, BunPath } from '@effect/platform-bun';
+import * as Command from '@effect/platform/Command';
+import * as FetchHttpClient from '@effect/platform/FetchHttpClient';
+import * as FileSystem from '@effect/platform/FileSystem';
+import * as Path from '@effect/platform/Path';
+import * as BunFileSystem from '@effect/platform-bun/BunFileSystem';
+import * as BunContext from '@effect/platform-bun/BunContext';
+import * as BunPath from '@effect/platform-bun/BunPath';
 import {
   ConfigProvider,
   Console,
@@ -22,6 +28,7 @@ import * as MockTerminal from './mock-terminal';
 import { TerminalUITest } from './terminal-ui-test';
 import type { Toolkits, ToolkitDetailed } from 'src/models/toolkits';
 import { NodeProcess } from 'src/services/node-process';
+import { cliDebugFlagsLayer } from 'src/services/runtime-flags';
 import {
   ComposioClientSingleton,
   ComposioSessionRepository,
@@ -68,10 +75,13 @@ import type {
 import { Stdin } from 'src/services/stdin';
 import { ProjectContext } from 'src/services/project-context';
 import { ProjectEnvironmentDetector } from 'src/services/project-environment-detector';
-import { CommandRunner } from 'src/services/command-runner';
+import { CommandRunner, type CommandRunnerShape } from 'src/services/command-runner';
 import { TerminalUI } from 'src/services/terminal-ui';
-import { CommandExecutor } from '@effect/platform';
-import { SetupSkillInstaller } from 'src/services/setup-skill-installer';
+import * as CommandExecutor from '@effect/platform/CommandExecutor';
+import {
+  SetupSkillInstaller,
+  type SetupSkillInstallerShape,
+} from 'src/services/setup-skill-installer';
 
 export interface TestLiveInput {
   /**
@@ -98,15 +108,15 @@ export interface TestLiveInput {
   execPath?: string;
 
   /**
- * Mock toolkit-related data to use in test.
- */
-toolkitsData?: {
-  toolkits?: Toolkits;
-  detailedToolkits?: ToolkitDetailed[];
-  tools?: Tools;
-  triggerTypesAsEnums?: TriggerTypesAsEnums;
-  triggerTypes?: TriggerTypes;
-};
+   * Mock toolkit-related data to use in test.
+   */
+  toolkitsData?: {
+    toolkits?: Toolkits;
+    detailedToolkits?: ToolkitDetailed[];
+    tools?: Tools;
+    triggerTypesAsEnums?: TriggerTypesAsEnums;
+    triggerTypes?: TriggerTypes;
+  };
 
   /**
    * Mock auth-config data to use in test.
@@ -114,6 +124,7 @@ toolkitsData?: {
   authConfigsData?: {
     items?: AuthConfigItem[];
     createResponse?: AuthConfigCreateResponse;
+    onCreate?: (params: AuthConfigCreateParams) => void;
   };
 
   /**
@@ -210,10 +221,10 @@ toolkitsData?: {
    * When set, the `CommandRunner` service uses the provided mock instance.
    * When NOT set, uses a default mock that always returns exit code 0.
    */
-  commandRunner?: CommandRunner;
+  commandRunner?: CommandRunnerShape;
 
   /** Override setup's Claude skill installer. Defaults to an idempotent no-op. */
-  setupSkillInstaller?: SetupSkillInstaller;
+  setupSkillInstaller?: SetupSkillInstallerShape;
 
   /**
    * Override TerminalUI behavior for tests.
@@ -342,7 +353,7 @@ export const TestLayer = (input?: TestLiveInput) =>
 
     const ComposioToolkitsRepositoryTest = Layer.succeed(
       ComposioToolkitsRepository,
-      new ComposioToolkitsRepository({
+      ComposioToolkitsRepository.of({
         getToolkits: () => Effect.succeed(toolkitsData.toolkits),
         getToolkitsBySlugs: (slugs: ReadonlyArray<string>) => {
           const normalizedSlugs = new Set(slugs.map(s => String.toLowerCase(s)));
@@ -611,13 +622,15 @@ export const TestLayer = (input?: TestLiveInput) =>
           }
           return Effect.succeed(found);
         },
-        createAuthConfig: () =>
-          Effect.succeed(
+        createAuthConfig: (params: AuthConfigCreateParams) => {
+          authConfigsData.onCreate?.(params);
+          return Effect.succeed(
             authConfigsData.createResponse ?? {
               auth_config: { id: 'ac_test', auth_scheme: 'OAUTH2', is_composio_managed: true },
               toolkit: { slug: 'test' },
             }
-          ),
+          );
+        },
         deleteAuthConfig: (nanoid: string) => {
           const found = authConfigsData.items.find(item => item.id === nanoid);
           if (!found) {
@@ -787,7 +800,7 @@ export const TestLayer = (input?: TestLiveInput) =>
     const ComposioSessionRepositoryTest = yield* setupComposioSessionRepository();
     const TriggersRealtimeTest = Layer.succeed(
       TriggersRealtime,
-      new TriggersRealtime({
+      TriggersRealtime.of({
         listen: onEvent =>
           Effect.gen(function* () {
             yield* Effect.forEach(realtimeData.events, event => Effect.sync(() => onEvent(event)));
@@ -804,7 +817,7 @@ export const TestLayer = (input?: TestLiveInput) =>
     // Mock operating-system details
     const NodeOsTest = Layer.succeed(
       NodeOs,
-      new NodeOs({
+      NodeOs.of({
         homedir: cwd,
         tmpdir: tempy.rootTemporaryDirectory,
         arch: 'arm64',
@@ -815,7 +828,7 @@ export const TestLayer = (input?: TestLiveInput) =>
     // Mock `node:process`
     const NodeProcessTest = Layer.succeed(
       NodeProcess,
-      new NodeProcess({
+      NodeProcess.of({
         cwd,
         execPath: input?.execPath ? path.resolve(cwd, input.execPath) : path.join(cwd, 'composio'),
         platform: 'darwin',
@@ -1205,7 +1218,7 @@ export const TestLayer = (input?: TestLiveInput) =>
 
     const ComposioClientSingletonTest = Layer.succeed(
       ComposioClientSingleton,
-      new ComposioClientSingleton({
+      ComposioClientSingleton.of({
         get: Effect.fn(function* () {
           return mockComposioClient;
         }),
@@ -1257,7 +1270,7 @@ export const TestLayer = (input?: TestLiveInput) =>
       ? Layer.succeed(CommandRunner, input.commandRunner)
       : Layer.succeed(
           CommandRunner,
-          new CommandRunner({
+          CommandRunner.of({
             run: () => Effect.succeed(CommandExecutor.ExitCode(0)),
             capture: () =>
               Effect.succeed({
@@ -1276,7 +1289,7 @@ export const TestLayer = (input?: TestLiveInput) =>
     const SetupSkillInstallerTest = Layer.succeed(
       SetupSkillInstaller,
       input?.setupSkillInstaller ??
-        new SetupSkillInstaller({
+        SetupSkillInstaller.of({
           isClaudeSkillReady: Effect.succeed(false),
           hasManagedClaudeSkill: Effect.succeed(false),
           ensureClaudeSkill: Effect.succeed(false),
@@ -1311,6 +1324,9 @@ export const TestLayer = (input?: TestLiveInput) =>
       ConsumerProjectResolveFetchMock,
       StdinTest,
       TerminalUILayer,
+      // `src/commands/index.ts` provides these for real invocations; direct-effect tests that
+      // never route through the root command still need the "no CLI flag override" default.
+      cliDebugFlagsLayer(),
       Layer.provide(
         ProjectContext.Default,
         Layer.mergeAll(BunFileSystem.layer, NodeOsTest, NodeProcessTest)
@@ -1520,7 +1536,7 @@ function setupComposioSessionRepository() {
       email: accountEmail,
     };
 
-    const composioSessionRepositoryTest = new ComposioSessionRepository({
+    const composioSessionRepositoryTest = ComposioSessionRepository.of({
       createSession: () =>
         Effect.succeed({
           id: sessionId,

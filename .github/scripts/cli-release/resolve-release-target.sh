@@ -5,9 +5,9 @@
 #
 #   - push to `next`                                      → rolling beta
 #   - workflow_dispatch build-beta [version]              → rolling or explicitly versioned beta
-#   - workflow_dispatch promote-stable <beta tag>         → stable promotion
+#   - workflow_dispatch promote-stable at <beta tag>      → stable promotion
 #
-# Inputs (env): EVENT_NAME, ACTION_INPUT, BETA_TAG_INPUT, VERSION_INPUT,
+# Inputs (env): EVENT_NAME, ACTION_INPUT, VERSION_INPUT, REF_NAME, REF_TYPE,
 #               GITHUB_TOKEN, REPOSITORY, RUN_NUMBER, COMMIT_SHA
 # Output: key=value lines appended to $GITHUB_OUTPUT
 set -euo pipefail
@@ -83,7 +83,6 @@ emit_beta_target() {
   fi
   release_tag="@composio/cli@${next_version}-beta.${RUN_NUMBER}"
   {
-    echo "checkout_ref=${COMMIT_SHA}"
     echo "release_name=CLI Beta ${release_tag}"
     echo "release_tag=${release_tag}"
     echo "release_version=${next_version}"
@@ -93,9 +92,8 @@ emit_beta_target() {
 }
 
 emit_stable_target() {
-  local release_tag=$1 release_version=$2 checkout_ref=$3
+  local release_tag=$1 release_version=$2
   {
-    echo "checkout_ref=${checkout_ref}"
     echo "release_name=CLI ${release_tag}"
     echo "release_tag=${release_tag}"
     echo "release_version=${release_version}"
@@ -123,12 +121,22 @@ if [[ "$ACTION_INPUT" != "promote-stable" ]]; then
   exit 1
 fi
 
-if [[ -z "$BETA_TAG_INPUT" ]]; then
-  echo "beta_tag input is required for promote-stable" >&2
+if [[ "${REF_TYPE:-}" != "tag" ]]; then
+  echo "promote-stable must be dispatched at the beta tag with --ref <beta-tag>" >&2
   exit 1
 fi
 
-encoded_beta_tag=$(python3 -c 'import os, urllib.parse; print(urllib.parse.quote(os.environ["BETA_TAG_INPUT"], safe=""))')
+beta_tag=${REF_NAME:-}
+
+if [[ ! "$beta_tag" =~ ^@composio/cli@([0-9]+\.[0-9]+\.[0-9]+)-beta\.[0-9]+$ ]]; then
+  echo "Selected ref must match @composio/cli@<version>-beta.<number>" >&2
+  exit 1
+fi
+
+stable_version="${BASH_REMATCH[1]}"
+stable_tag="@composio/cli@${stable_version}"
+
+encoded_beta_tag=$(python3 -c 'import os, urllib.parse; print(urllib.parse.quote(os.environ["REF_NAME"], safe=""))')
 
 release_json=$(curl -fsSL \
   -H "Authorization: Bearer ${GITHUB_TOKEN}" \
@@ -137,17 +145,9 @@ release_json=$(curl -fsSL \
 
 is_prerelease=$(jq -r '.prerelease' <<<"$release_json")
 if [[ "$is_prerelease" != "true" ]]; then
-  echo "Release ${BETA_TAG_INPUT} is not a beta prerelease" >&2
+  echo "Release ${beta_tag} is not a beta prerelease" >&2
   exit 1
 fi
-
-if [[ ! "$BETA_TAG_INPUT" =~ ^@composio/cli@([0-9]+\.[0-9]+\.[0-9]+)-beta\.[0-9]+$ ]]; then
-  echo "Beta tag must match @composio/cli@<version>-beta.<number>" >&2
-  exit 1
-fi
-
-stable_version="${BASH_REMATCH[1]}"
-stable_tag="@composio/cli@${stable_version}"
 
 # Refuse to re-promote an already-PUBLISHED stable release, but allow resuming an
 # existing DRAFT (a prior promote run that built assets but did not publish). The
@@ -164,8 +164,13 @@ fi
 
 target_commitish=$(jq -r '.target_commitish' <<<"$release_json")
 if [[ -z "$target_commitish" || "$target_commitish" == "null" ]]; then
-  echo "Beta release ${BETA_TAG_INPUT} does not expose target_commitish" >&2
+  echo "Beta release ${beta_tag} does not expose target_commitish" >&2
   exit 1
 fi
 
-emit_stable_target "$stable_tag" "$stable_version" "$target_commitish"
+if [[ "$target_commitish" != "$COMMIT_SHA" ]]; then
+  echo "Selected beta tag resolves to ${COMMIT_SHA}, but its release targets ${target_commitish}" >&2
+  exit 1
+fi
+
+emit_stable_target "$stable_tag" "$stable_version"

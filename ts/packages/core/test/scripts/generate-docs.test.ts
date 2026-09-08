@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  escapeTextForMdx,
   escapeTypeForMdx,
   parseSourceSignatureTypesAtLine,
   simplifyTypeForSignature,
@@ -35,6 +36,12 @@ describe('generate-docs type rendering', () => {
 
   it('escapes existing backslashes before adding MDX table escapes', () => {
     expect(escapeTypeForMdx(String.raw`{ pattern: '\|' }`)).toBe(String.raw`\{ pattern: '\\\|' \}`);
+  });
+
+  it('escapes existing backslashes before MDX text and table metacharacters', () => {
+    expect(escapeTextForMdx(String.raw`Use \{value\}, \|, or <literal>`)).toBe(
+      String.raw`Use \\\{value\\\}, \\\|, or &lt;literal&gt;`
+    );
   });
 
   it('reads named parameter and return types from source signatures', () => {

@@ -14,6 +14,12 @@ from composio.utils.shared import (
 PROVIDERS = ("crewai", "langchain", "langgraph")
 
 
+@pytest.fixture(autouse=True)
+def _sandbox_provider_home(tmp_path, monkeypatch):
+    """Keep provider initialization from writing caches into the real home."""
+    monkeypatch.setenv("HOME", str(tmp_path))
+
+
 def _make_tool(input_parameters: t.Dict[str, t.Any]) -> Tool:
     return Tool(
         name="Test tool",

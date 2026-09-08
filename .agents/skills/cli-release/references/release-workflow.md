@@ -27,7 +27,7 @@
 | --------------------------- | -------------------------------------------------------------- | ----------------------------------------------------------------------- |
 | Ship an ordinary CLI change | Merge the reviewed PR to `next`                                | The push builds a rolling beta automatically.                           |
 | Build a beta from a branch  | Dispatch `build-beta` at that branch                           | A prerelease is built from the branch commit.                           |
-| Publish a stable CLI        | Promote an existing tested beta                                | The beta's source commit is rebuilt and published under the stable tag. |
+| Publish a stable CLI        | Dispatch promotion at an existing tested beta tag              | The beta's source commit is rebuilt and published under the stable tag. |
 | Resume a failed promotion   | Re-run or re-dispatch the same beta after inspecting the draft | An unpublished draft can be resumed and its assets replaced.            |
 
 The private CLI `package.json` uses a development sentinel and never selects a
@@ -136,14 +136,13 @@ gh release view "$STABLE_TAG" --repo "$REPOSITORY" --json tagName,isDraft,isPrer
 - If it is a draft, the promotion can resume it.
 - If it is already published, stop. Never overwrite a published release.
 
-Dispatch the current workflow from `next`; `promote-stable` resolves the source commit from the beta release itself:
+Dispatch the workflow at the beta tag. The selected ref supplies the immutable source commit, and the workflow verifies that it matches the beta release before rebuilding:
 
 ```bash
 gh workflow run build-cli-binaries.yml \
   --repo "$REPOSITORY" \
-  --ref next \
-  --raw-field action=promote-stable \
-  --raw-field beta_tag="$BETA_TAG"
+  --ref "$BETA_TAG" \
+  --raw-field action=promote-stable
 ```
 
 Use the returned URL when available. Otherwise identify the new dispatch, verify its creation time and actor, then watch it:
@@ -153,7 +152,7 @@ gh run list \
   --repo "$REPOSITORY" \
   --workflow build-cli-binaries.yml \
   --event workflow_dispatch \
-  --branch next \
+  --commit "$TARGET_COMMIT" \
   --limit 5
 
 gh run watch RUN_ID --repo "$REPOSITORY" --compact --exit-status

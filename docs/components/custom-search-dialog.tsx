@@ -19,6 +19,11 @@ import { useI18n } from 'fumadocs-ui/contexts/i18n';
 import { useDocsSearch } from 'fumadocs-core/search/client';
 import type { BaseIndex } from 'fumadocs-core/search/algolia';
 import { BotMessageSquare } from 'lucide-react';
+import {
+  KNOWLEDGE_SOURCE_LABELS,
+  type KnowledgeSourceType,
+} from '@/lib/knowledge/types';
+import { getKnowledgeDisplayDescription } from '@/lib/knowledge/display';
 import { detectMac } from './ask-ai-button';
 import { toggleEveChat } from './eve-chat-store';
 
@@ -46,9 +51,9 @@ interface CustomSearchDialogProps extends SharedProps {
   api?: string;
 }
 
-type AlgoliaHit = {
-  objectID: string;
-  url?: string;
+type AlgoliaHit = BaseIndex & {
+  canonical_url?: string;
+  source_type?: KnowledgeSourceType;
 };
 
 type AlgoliaSearchResponse = {
@@ -62,6 +67,22 @@ type AlgoliaHitMeta = {
   queryID?: string;
 };
 
+export function buildAlgoliaHitMetadata(
+  hits: Array<{ objectID: string; url?: string }>,
+  queryID?: string,
+): Map<string, AlgoliaHitMeta> {
+  const metadata = new Map<string, AlgoliaHitMeta>();
+  hits.forEach((hit, index) => {
+    if (!hit.url || metadata.has(hit.url)) return;
+    metadata.set(hit.url, {
+      objectID: hit.objectID,
+      position: index + 1,
+      queryID,
+    });
+  });
+  return metadata;
+}
+
 type SearchResultItem = {
   content: unknown;
   breadcrumbs?: unknown[];
@@ -73,6 +94,11 @@ const SEARCH_BREADCRUMB_LABELS: Record<string, string> = {
   examples: 'Example',
   example: 'Example',
   docs: 'Docs',
+  kb: 'Knowledge Base',
+  guide: 'Knowledge Base',
+  auth: 'OAuth',
+  oauth: 'OAuth',
+  'oauth-guide': 'OAuth',
   reference: 'Reference',
   'api-reference': 'API Reference',
   changelog: 'Changelog',
@@ -83,23 +109,27 @@ function normalizeSearchBreadcrumb(value: string): string {
 }
 
 function normalizeSearchResult<T extends SearchResultItem>(result: T): T {
-  if (!result.breadcrumbs) return result;
+  const content = typeof result.content === 'string'
+    ? getKnowledgeDisplayDescription(result.content)
+    : result.content;
+  if (!result.breadcrumbs) return { ...result, content };
 
   const breadcrumbs = result.breadcrumbs.map((breadcrumb) =>
     typeof breadcrumb === 'string' ? normalizeSearchBreadcrumb(breadcrumb) : breadcrumb,
   );
 
-  const content = typeof result.content === 'string' ? result.content.toLowerCase() : null;
+  const normalizedContent = typeof content === 'string' ? content.toLowerCase() : null;
   const dedupedBreadcrumbs = breadcrumbs.filter((breadcrumb, index) => {
-    if (index !== breadcrumbs.length - 1 || content === null || typeof breadcrumb !== 'string') {
+    if (index !== breadcrumbs.length - 1 || normalizedContent === null || typeof breadcrumb !== 'string') {
       return true;
     }
 
-    return breadcrumb.toLowerCase() !== content;
+    return breadcrumb.toLowerCase() !== normalizedContent;
   });
 
   return {
     ...result,
+    content,
     breadcrumbs: dedupedBreadcrumbs,
   };
 }
@@ -140,7 +170,7 @@ export default function CustomSearchDialog({
         onSearch: async (query: string, tag?: string) => {
           ensureAlgoliaInsights(appId, searchApiKey);
 
-          const result = await client.searchForHits<BaseIndex>({
+          const result = await client.searchForHits<AlgoliaHit>({
             requests: [
               {
                 type: 'default',
@@ -154,16 +184,23 @@ export default function CustomSearchDialog({
             ],
           });
           const response = result.results[0] as AlgoliaSearchResponse;
-          const metadata = new Map<string, AlgoliaHitMeta>();
-
-          response.hits.forEach((hit, index) => {
-            if (!hit.url || metadata.has(hit.url)) return;
-            metadata.set(hit.url, {
-              objectID: hit.objectID,
-              position: index + 1,
-              queryID: response.queryID,
-            });
+          response.hits = response.hits.map((hit) => {
+            const canonicalUrl = hit.canonical_url || hit.url;
+            const sourceLabel = hit.source_type
+              ? KNOWLEDGE_SOURCE_LABELS[hit.source_type]
+              : null;
+            const breadcrumbs = sourceLabel
+              ? [
+                  sourceLabel,
+                  ...(hit.breadcrumbs ?? []).filter(
+                    (breadcrumb) => breadcrumb.toLowerCase() !== sourceLabel.toLowerCase(),
+                  ),
+                ]
+              : hit.breadcrumbs;
+            return { ...hit, url: canonicalUrl, breadcrumbs };
           });
+
+          const metadata = buildAlgoliaHitMetadata(response.hits, response.queryID);
 
           algoliaHitMetaRef.current = metadata;
 
@@ -200,7 +237,10 @@ export default function CustomSearchDialog({
   const trackAlgoliaClick = useCallback((href: string) => {
     const url = new URL(href, window.location.origin);
     const path = `${url.pathname}${url.hash}`;
-    const hit = algoliaHitMetaRef.current.get(path) ?? algoliaHitMetaRef.current.get(url.pathname);
+    const hit = algoliaHitMetaRef.current.get(href) ??
+      algoliaHitMetaRef.current.get(url.href) ??
+      algoliaHitMetaRef.current.get(path) ??
+      algoliaHitMetaRef.current.get(url.pathname);
     const indexName = process.env.NEXT_PUBLIC_ALGOLIA_INDEX_NAME ?? 'docs_composio';
 
     if (!hit) return;
@@ -261,7 +301,7 @@ export default function CustomSearchDialog({
                 >
                   <p className="font-medium">{link.title}</p>
                   <p className="text-xs text-fd-muted-foreground">
-                    {link.description}
+                    {getKnowledgeDisplayDescription(link.description)}
                   </p>
                 </Link>
               ))}

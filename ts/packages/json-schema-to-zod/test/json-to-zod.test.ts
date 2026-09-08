@@ -593,8 +593,9 @@ describe('jsonSchemaToZod', () => {
       // Should accept number arrays
       expect(zodSchema.parse([1, 2, 3])).toEqual([1, 2, 3]);
 
-      // Should accept mixed arrays (union of item types)
-      expect(zodSchema.parse(['hello', 123])).toEqual(['hello', 123]);
+      // Each anyOf branch constrains the entire array, so a mixed array
+      // satisfies neither the all-string nor the all-number branch.
+      expect(() => zodSchema.parse(['hello', 123])).toThrow();
     });
 
     it('should handle arrays with anyOf at top level without explicit types', () => {
@@ -1132,8 +1133,8 @@ describe('jsonSchemaToZod', () => {
     });
   });
 
-  describe('Object Detection Without Explicit Type', () => {
-    it('should detect object schema with only properties defined', () => {
+  describe('Object Assertions Without Explicit Type', () => {
+    it('should apply properties only to object instances', () => {
       const schema: JsonSchema = {
         properties: {
           name: { type: 'string' },
@@ -1143,11 +1144,10 @@ describe('jsonSchemaToZod', () => {
       };
       const zodSchema = jsonSchemaToZod(schema);
 
-      // Should parse as an object
       expect(zodSchema.parse({ name: 'John', age: 30 })).toEqual({ name: 'John', age: 30 });
       expect(zodSchema.parse({ name: 'Jane' })).toEqual({ name: 'Jane' });
       expect(() => zodSchema.parse({ age: 30 })).toThrow(); // Missing required field
-      expect(() => zodSchema.parse('not an object')).toThrow();
+      expect(zodSchema.parse('not an object')).toBe('not an object');
     });
 
     it('should detect object schema with only additionalProperties defined', () => {
@@ -1156,14 +1156,13 @@ describe('jsonSchemaToZod', () => {
       };
       const zodSchema = jsonSchemaToZod(schema);
 
-      // Should parse as an object with string additional properties
       expect(zodSchema.parse({})).toEqual({});
       expect(zodSchema.parse({ key1: 'value1', key2: 'value2' })).toEqual({
         key1: 'value1',
         key2: 'value2',
       });
       expect(() => zodSchema.parse({ key1: 123 })).toThrow(); // Wrong type
-      expect(() => zodSchema.parse('not an object')).toThrow();
+      expect(zodSchema.parse('not an object')).toBe('not an object');
     });
 
     it('should detect object schema with only patternProperties defined', () => {
@@ -1175,14 +1174,13 @@ describe('jsonSchemaToZod', () => {
       };
       const zodSchema = jsonSchemaToZod(schema);
 
-      // Should parse as an object
       expect(zodSchema.parse({})).toEqual({});
       expect(zodSchema.parse({ prefix_one: 'value', num_one: 123 })).toEqual({
         prefix_one: 'value',
         num_one: 123,
       });
       expect(() => zodSchema.parse({ prefix_one: 123 })).toThrow(); // Wrong type for pattern
-      expect(() => zodSchema.parse('not an object')).toThrow();
+      expect(zodSchema.parse('not an object')).toBe('not an object');
     });
 
     it('should detect object schema with properties and additionalProperties but no type', () => {
@@ -1493,9 +1491,8 @@ describe('jsonSchemaToZod', () => {
       };
       const zodSchema = jsonSchemaToZod(schema);
 
-      // Should be treated as an object
       expect(zodSchema.parse({})).toEqual({});
-      expect(() => zodSchema.parse('not an object')).toThrow();
+      expect(zodSchema.parse('not an object')).toBe('not an object');
     });
 
     it('should handle objects with only required field but no type', () => {

@@ -5,6 +5,8 @@ on:
     paths:
       - 'docs/**'
       - '.github/actions/setup-node-pnpm-bun/action.yml'
+      - '.github/workflows/docs-update-data.yml'
+      - '.github/workflows/docs-rebuild-kb-semantic.yml'
       - '.github/workflows/docs-tests.yml'
       - 'mise.toml'
       - 'mise.lock'
@@ -43,6 +45,9 @@ jobs:
 
       - name: Run static tests
         run: bun run test
+
+      - name: Check KB semantic artifact
+        run: bun run check:kb-semantic
 
       - name: Build
         run: bun run build

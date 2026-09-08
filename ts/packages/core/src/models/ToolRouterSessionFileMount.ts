@@ -18,7 +18,7 @@ import {
 import { RemoteFile } from './RemoteFile';
 import { ValidationError } from '../errors';
 import { platform } from '#platform';
-import { ssrfSafeFetch } from '#ssrf_guard';
+import { ssrfSafeFetch, ssrfSafeFetchWhereSupported } from '#ssrf_guard';
 import { getExtensionFromMimeType } from '../utils/mime';
 import { readResponseBodyWithLimit } from '../utils/readResponseBody';
 import { getRandomShortId } from '../utils/uuid';
@@ -240,13 +240,19 @@ export class ToolRouterSessionFilesMount {
         ? (createUploadURLResponse as { body: unknown }).body
         : createUploadURLResponse;
 
-    const uploadResponse = await fetch((uploadURLData as { upload_url: string }).upload_url, {
-      method: 'PUT',
-      body: await fileToUpload.arrayBuffer(),
-      headers: {
-        'Content-Type': mimetype,
-      },
-    });
+    // SSRF guard: `upload_url` comes from the API response, so the target is
+    // validated before the file's bytes are sent to it — the same treatment the
+    // user-supplied URL above already gets. See ssrfGuard.node.ts.
+    const uploadResponse = await ssrfSafeFetchWhereSupported(
+      (uploadURLData as { upload_url: string }).upload_url,
+      {
+        method: 'PUT',
+        body: await fileToUpload.arrayBuffer(),
+        headers: {
+          'Content-Type': mimetype,
+        },
+      }
+    );
 
     if (!uploadResponse.ok) {
       throw new Error(`Failed to upload file: ${uploadResponse.statusText}`);

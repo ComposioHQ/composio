@@ -1,5 +1,5 @@
 import ts from 'typescript';
-import { Path } from '@effect/platform';
+import * as Path from '@effect/platform/Path';
 import { Effect, Data } from 'effect';
 import {
   buildVirtualFileMap,

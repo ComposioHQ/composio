@@ -1,0 +1,1296 @@
+{
+  "$comment": "Inventory of runnable example entrypoints, consumed by harness/run.mjs. Tiers: 1=unattended, 2=needs provisioned state (scripts/examples-provision.mjs), 3=bounded (pass at readiness match, then terminate), X=excluded. Readiness regexes must anchor on a labeled output line the example prints on success (e.g. 'Visit this URL to authorize: https?://'), never a bare 'https?://' — a URL inside an error message must not count as ready. llmMock:false marks entries whose LLM traffic cannot run against the mock server (live canary only).",
+  "entries": [
+    {
+      "id": "ts/anthropic/index",
+      "lang": "ts",
+      "pkg": "anthropic-example",
+      "file": "ts/examples/anthropic/src/index.ts",
+      "tier": "1",
+      "env": [
+        "ANTHROPIC_API_KEY"
+      ],
+      "toolkits": [
+        "hackernews"
+      ],
+      "timeoutSec": 180
+    },
+    {
+      "id": "ts/anthropic/streaming",
+      "lang": "ts",
+      "pkg": "anthropic-example",
+      "file": "ts/examples/anthropic/src/streaming.ts",
+      "tier": "1",
+      "env": [
+        "ANTHROPIC_API_KEY"
+      ],
+      "toolkits": [
+        "hackernews"
+      ],
+      "timeoutSec": 180
+    },
+    {
+      "id": "ts/anthropic/mcp",
+      "lang": "ts",
+      "pkg": "anthropic-example",
+      "file": "ts/examples/anthropic/src/mcp.ts",
+      "tier": "2",
+      "env": [
+        "ANTHROPIC_API_KEY"
+      ],
+      "ids": [
+        "COMPOSIO_EXAMPLES_USER_ID"
+      ],
+      "toolkits": [
+        "gmail"
+      ],
+      "timeoutSec": 180
+    },
+    {
+      "id": "ts/anthropic/experimental.mcp",
+      "lang": "ts",
+      "pkg": "anthropic-example",
+      "file": "ts/examples/anthropic/src/experimental.mcp.ts",
+      "tier": "2",
+      "env": [
+        "ANTHROPIC_API_KEY"
+      ],
+      "ids": [
+        "COMPOSIO_EXAMPLES_USER_ID"
+      ],
+      "toolkits": [
+        "gmail"
+      ],
+      "timeoutSec": 180
+    },
+    {
+      "id": "ts/anthropic/claude-agents-sdk",
+      "lang": "ts",
+      "pkg": "anthropic-example",
+      "file": "ts/examples/anthropic/src/claude-agents-sdk.ts",
+      "tier": "2",
+      "env": [
+        "ANTHROPIC_API_KEY"
+      ],
+      "toolkits": [
+        "gmail"
+      ],
+      "timeoutSec": 300,
+      "notes": "needs @anthropic-ai/claude-code CLI on PATH"
+    },
+    {
+      "id": "ts/cloudflare-wrangler/dev",
+      "lang": "ts",
+      "pkg": "cloudflare-wrangler-example",
+      "file": "ts/examples/cloudflare-wrangler/src/index.ts",
+      "tier": "3",
+      "script": "dev",
+      "readiness": "Ready on|Listening",
+      "toolkits": [
+        "googledrive"
+      ],
+      "timeoutSec": 120,
+      "notes": "wrangler dev; env must reach .dev.vars"
+    },
+    {
+      "id": "ts/connected-accounts/index",
+      "lang": "ts",
+      "pkg": "connected-accounts-example",
+      "file": "ts/examples/connected-accounts/src/index.ts",
+      "tier": "3",
+      "readiness": "authorize the user: https?://",
+      "toolkits": [
+        "github"
+      ],
+      "timeoutSec": 90
+    },
+    {
+      "id": "ts/connected-accounts/api-key",
+      "lang": "ts",
+      "pkg": "connected-accounts-example",
+      "file": "ts/examples/connected-accounts/src/api-key.ts",
+      "tier": "2",
+      "ids": [
+        "COMPOSIO_EXAMPLES_APIKEY_AUTH_CONFIG_ID",
+        "COMPOSIO_EXAMPLES_APIKEY_PLACEHOLDER",
+        "COMPOSIO_EXAMPLES_USER_ID"
+      ],
+      "toolkits": [],
+      "timeoutSec": 90
+    },
+    {
+      "id": "ts/connected-accounts/multiple-connected-accounts",
+      "lang": "ts",
+      "pkg": "connected-accounts-example",
+      "file": "ts/examples/connected-accounts/src/multiple-connected-accounts.ts",
+      "tier": "2",
+      "ids": [
+        "COMPOSIO_EXAMPLES_GMAIL_AUTH_CONFIG_ID"
+      ],
+      "toolkits": [
+        "gmail"
+      ],
+      "timeoutSec": 90
+    },
+    {
+      "id": "ts/connected-accounts/scopes",
+      "lang": "ts",
+      "pkg": "connected-accounts-example",
+      "file": "ts/examples/connected-accounts/src/scopes.ts",
+      "tier": "2",
+      "ids": [
+        "COMPOSIO_EXAMPLES_GMAIL_AUTH_CONFIG_ID"
+      ],
+      "toolkits": [
+        "gmail"
+      ],
+      "timeoutSec": 90
+    },
+    {
+      "id": "ts/connected-accounts/toolkit-authorize",
+      "lang": "ts",
+      "pkg": "connected-accounts-example",
+      "file": "ts/examples/connected-accounts/src/toolkit-authorize.ts",
+      "tier": "3",
+      "readiness": "authorize the toolkit: https?://",
+      "toolkits": [
+        "github"
+      ],
+      "timeoutSec": 90
+    },
+    {
+      "id": "ts/error-handling-demo/index",
+      "lang": "ts",
+      "pkg": "error-handling-example",
+      "file": "ts/examples/error-handling-demo/src/index.ts",
+      "tier": "1",
+      "backend": false,
+      "timeoutSec": 60
+    },
+    {
+      "id": "ts/file-handling/index",
+      "lang": "ts",
+      "pkg": "file-handling-example",
+      "file": "ts/examples/file-handling/src/index.ts",
+      "tier": "X",
+      "toolkits": [
+        "gmail"
+      ],
+      "notes": "sends real email by design; excluded until a non-send variant is decided by the human",
+      "reason": "outbound-email"
+    },
+    {
+      "id": "ts/file-handling/url",
+      "lang": "ts",
+      "pkg": "file-handling-example",
+      "file": "ts/examples/file-handling/src/url.ts",
+      "tier": "X",
+      "toolkits": [
+        "gmail"
+      ],
+      "reason": "outbound-email",
+      "notes": "sends real email by design; excluded until a non-send variant is decided by the human"
+    },
+    {
+      "id": "ts/google/index",
+      "lang": "ts",
+      "pkg": "google-example",
+      "file": "ts/examples/google/src/index.ts",
+      "tier": "X",
+      "env": [
+        "GEMINI_API_KEY"
+      ],
+      "toolkits": [
+        "hackernews"
+      ],
+      "reason": "dropped-provider",
+      "notes": "gemini/notion are out of scope for this goal by decision (2026-08-10)"
+    },
+    {
+      "id": "ts/google/experimental.mcp",
+      "lang": "ts",
+      "pkg": "google-example",
+      "file": "ts/examples/google/src/experimental.mcp.ts",
+      "tier": "X",
+      "env": [
+        "GEMINI_API_KEY"
+      ],
+      "ids": [
+        "COMPOSIO_EXAMPLES_GMAIL_AUTH_CONFIG_ID",
+        "COMPOSIO_EXAMPLES_USER_ID"
+      ],
+      "toolkits": [
+        "gmail"
+      ],
+      "reason": "dropped-provider",
+      "notes": "gemini/notion are out of scope for this goal by decision (2026-08-10)"
+    },
+    {
+      "id": "ts/json-schema-to-zod/index",
+      "lang": "ts",
+      "pkg": "json-schema-to-zod-example",
+      "file": "ts/examples/json-schema-to-zod/src/index.ts",
+      "tier": "1",
+      "timeoutSec": 90
+    },
+    {
+      "id": "ts/langchain/index",
+      "lang": "ts",
+      "pkg": "langchain-example",
+      "file": "ts/examples/langchain/src/index.ts",
+      "tier": "1",
+      "env": [
+        "OPENAI_API_KEY"
+      ],
+      "toolkits": [
+        "hackernews"
+      ],
+      "timeoutSec": 180
+    },
+    {
+      "id": "ts/langchain/openai",
+      "lang": "ts",
+      "pkg": "langchain-example",
+      "file": "ts/examples/langchain/src/openai.ts",
+      "tier": "2",
+      "env": [
+        "OPENAI_API_KEY"
+      ],
+      "ids": [
+        "COMPOSIO_EXAMPLES_USER_ID"
+      ],
+      "toolkits": [
+        "gmail"
+      ],
+      "timeoutSec": 300
+    },
+    {
+      "id": "ts/llamaindex/index",
+      "lang": "ts",
+      "pkg": "llamaindex-example",
+      "file": "ts/examples/llamaindex/src/index.ts",
+      "tier": "1",
+      "env": [
+        "OPENAI_API_KEY"
+      ],
+      "toolkits": [
+        "hackernews"
+      ],
+      "timeoutSec": 180
+    },
+    {
+      "id": "ts/mastra/index",
+      "lang": "ts",
+      "pkg": "mastra-example",
+      "file": "ts/examples/mastra/src/index.ts",
+      "tier": "1",
+      "env": [
+        "OPENAI_API_KEY"
+      ],
+      "toolkits": [
+        "hackernews"
+      ],
+      "timeoutSec": 180
+    },
+    {
+      "id": "ts/mastra/tool-router",
+      "lang": "ts",
+      "pkg": "mastra-example",
+      "file": "ts/examples/mastra/src/tool-router.ts",
+      "tier": "1",
+      "env": [
+        "OPENAI_API_KEY"
+      ],
+      "toolkits": [
+        "hackernews"
+      ],
+      "timeoutSec": 180
+    },
+    {
+      "id": "ts/mastra/smoke",
+      "lang": "ts",
+      "pkg": "mastra-example",
+      "file": "ts/examples/mastra/src/smoke.ts",
+      "tier": "1",
+      "toolkits": [
+        "hackernews"
+      ],
+      "timeoutSec": 90
+    },
+    {
+      "id": "ts/mastra/cloudflare",
+      "lang": "ts",
+      "pkg": "mastra-example",
+      "file": "ts/examples/mastra/src/cloudflare.ts",
+      "tier": "X",
+      "reason": "worker-module",
+      "notes": "covered by cf:dry-run in ts.examples.yml"
+    },
+    {
+      "id": "ts/mcp/index",
+      "lang": "ts",
+      "pkg": "mcp-example",
+      "file": "ts/examples/mcp/src/index.ts",
+      "tier": "2",
+      "env": [
+        "OPENAI_API_KEY"
+      ],
+      "ids": [
+        "COMPOSIO_EXAMPLES_GMAIL_AUTH_CONFIG_ID",
+        "COMPOSIO_EXAMPLES_USER_ID"
+      ],
+      "toolkits": [
+        "gmail"
+      ],
+      "timeoutSec": 180
+    },
+    {
+      "id": "ts/modifiers/index",
+      "lang": "ts",
+      "pkg": "modifiers-example",
+      "file": "ts/examples/modifiers/src/index.ts",
+      "tier": "1",
+      "env": [
+        "OPENAI_API_KEY"
+      ],
+      "toolkits": [
+        "hackernews"
+      ],
+      "timeoutSec": 180
+    },
+    {
+      "id": "ts/openai/index",
+      "lang": "ts",
+      "pkg": "openai-example",
+      "file": "ts/examples/openai/src/index.ts",
+      "tier": "1",
+      "env": [
+        "OPENAI_API_KEY"
+      ],
+      "toolkits": [
+        "hackernews"
+      ],
+      "timeoutSec": 180
+    },
+    {
+      "id": "ts/openai/tool-router",
+      "lang": "ts",
+      "pkg": "openai-example",
+      "file": "ts/examples/openai/src/tool-router.ts",
+      "tier": "1",
+      "env": [
+        "OPENAI_API_KEY"
+      ],
+      "toolkits": [
+        "hackernews"
+      ],
+      "timeoutSec": 180
+    },
+    {
+      "id": "ts/openai/smoke",
+      "lang": "ts",
+      "pkg": "openai-example",
+      "file": "ts/examples/openai/src/smoke.ts",
+      "tier": "1",
+      "toolkits": [
+        "hackernews"
+      ],
+      "timeoutSec": 90
+    },
+    {
+      "id": "ts/openai/chat-completions",
+      "lang": "ts",
+      "pkg": "openai-example",
+      "file": "ts/examples/openai/src/chat-completions.ts",
+      "tier": "1",
+      "env": [
+        "OPENAI_API_KEY"
+      ],
+      "toolkits": [
+        "hackernews"
+      ],
+      "timeoutSec": 180
+    },
+    {
+      "id": "ts/openai/tools",
+      "lang": "ts",
+      "pkg": "openai-example",
+      "file": "ts/examples/openai/src/tools.ts",
+      "tier": "2",
+      "env": [
+        "OPENAI_API_KEY"
+      ],
+      "toolkits": [
+        "googledrive"
+      ],
+      "timeoutSec": 180
+    },
+    {
+      "id": "ts/openai/cloudflare",
+      "lang": "ts",
+      "pkg": "openai-example",
+      "file": "ts/examples/openai/src/cloudflare.ts",
+      "tier": "X",
+      "reason": "worker-module",
+      "notes": "covered by cf:dry-run in ts.examples.yml"
+    },
+    {
+      "id": "ts/openai/agents-api",
+      "lang": "ts",
+      "pkg": "openai-example",
+      "file": "ts/examples/openai/src/agents-api/index.ts",
+      "tier": "1",
+      "env": [
+        "OPENAI_API_KEY"
+      ],
+      "toolkits": [
+        "hackernews"
+      ],
+      "timeoutSec": 180,
+      "llmMock": false,
+      "notes": "@openai/agents rejects aimock responses-api output; live canary only."
+    },
+    {
+      "id": "ts/openai/agents-api-mcp",
+      "lang": "ts",
+      "pkg": "openai-example",
+      "file": "ts/examples/openai/src/agents-api/experiment.mcp.ts",
+      "tier": "2",
+      "env": [
+        "OPENAI_API_KEY"
+      ],
+      "ids": [
+        "COMPOSIO_EXAMPLES_GMAIL_AUTH_CONFIG_ID",
+        "COMPOSIO_EXAMPLES_USER_ID"
+      ],
+      "toolkits": [
+        "gmail"
+      ],
+      "timeoutSec": 180
+    },
+    {
+      "id": "ts/openai/agents-api-tool-router",
+      "lang": "ts",
+      "pkg": "openai-example",
+      "file": "ts/examples/openai/src/agents-api/experiment.tool-router.ts",
+      "tier": "1",
+      "env": [
+        "OPENAI_API_KEY"
+      ],
+      "toolkits": [
+        "hackernews"
+      ],
+      "timeoutSec": 180,
+      "llmMock": false,
+      "notes": "@openai/agents rejects aimock responses-api output; live canary only."
+    },
+    {
+      "id": "ts/openai/responses-api",
+      "lang": "ts",
+      "pkg": "openai-example",
+      "file": "ts/examples/openai/src/responses-api/index.ts",
+      "tier": "1",
+      "env": [
+        "OPENAI_API_KEY"
+      ],
+      "toolkits": [
+        "hackernews"
+      ],
+      "timeoutSec": 180
+    },
+    {
+      "id": "ts/openai/responses-api-mcp",
+      "lang": "ts",
+      "pkg": "openai-example",
+      "file": "ts/examples/openai/src/responses-api/experiment.mcp.ts",
+      "tier": "2",
+      "env": [
+        "OPENAI_API_KEY"
+      ],
+      "ids": [
+        "COMPOSIO_EXAMPLES_GMAIL_AUTH_CONFIG_ID",
+        "COMPOSIO_EXAMPLES_USER_ID"
+      ],
+      "toolkits": [
+        "gmail"
+      ],
+      "timeoutSec": 180
+    },
+    {
+      "id": "ts/session-management/index",
+      "lang": "ts",
+      "pkg": "session-management-example",
+      "file": "ts/examples/session-management/src/index.ts",
+      "tier": "1",
+      "toolkits": [
+        "hackernews"
+      ],
+      "timeoutSec": 120
+    },
+    {
+      "id": "ts/tool-router/index",
+      "lang": "ts",
+      "pkg": "tool-router-example",
+      "file": "ts/examples/tool-router/src/index.ts",
+      "tier": "2",
+      "env": [
+        "OPENAI_API_KEY"
+      ],
+      "toolkits": [
+        "gmail"
+      ],
+      "timeoutSec": 180
+    },
+    {
+      "id": "ts/tool-router/authorize",
+      "lang": "ts",
+      "pkg": "tool-router-example",
+      "file": "ts/examples/tool-router/src/authorize.ts",
+      "tier": "3",
+      "readiness": "Visit this URL to authorize: https?://",
+      "toolkits": [
+        "gmail"
+      ],
+      "timeoutSec": 90
+    },
+    {
+      "id": "ts/tool-router/claude-agent-sdk",
+      "lang": "ts",
+      "pkg": "tool-router-example",
+      "file": "ts/examples/tool-router/src/claude-agent-sdk.ts",
+      "tier": "2",
+      "env": [
+        "ANTHROPIC_API_KEY"
+      ],
+      "toolkits": [
+        "gmail"
+      ],
+      "timeoutSec": 300,
+      "notes": "needs @anthropic-ai/claude-code CLI on PATH"
+    },
+    {
+      "id": "ts/tool-router/custom-tools",
+      "lang": "ts",
+      "pkg": "tool-router-example",
+      "file": "ts/examples/tool-router/src/custom-tools.ts",
+      "tier": "2",
+      "toolkits": [
+        "gmail"
+      ],
+      "timeoutSec": 120
+    },
+    {
+      "id": "ts/tool-router/custom-tools-agent",
+      "lang": "ts",
+      "pkg": "tool-router-example",
+      "file": "ts/examples/tool-router/src/custom-tools-agent.ts",
+      "tier": "2",
+      "env": [
+        "OPENAI_API_KEY"
+      ],
+      "toolkits": [
+        "gmail"
+      ],
+      "timeoutSec": 180
+    },
+    {
+      "id": "ts/tool-router/custom-tools-e2e",
+      "lang": "ts",
+      "pkg": "tool-router-example",
+      "file": "ts/examples/tool-router/src/custom-tools-e2e.ts",
+      "tier": "2",
+      "env": [
+        "OPENAI_API_KEY"
+      ],
+      "toolkits": [
+        "weathermap",
+        "gmail"
+      ],
+      "timeoutSec": 240
+    },
+    {
+      "id": "ts/tool-router/direct-tools-preset",
+      "lang": "ts",
+      "pkg": "tool-router-example",
+      "file": "ts/examples/tool-router/src/direct-tools-preset.ts",
+      "tier": "1",
+      "env": [
+        "OPENAI_API_KEY"
+      ],
+      "toolkits": [
+        "hackernews"
+      ],
+      "timeoutSec": 180
+    },
+    {
+      "id": "ts/tool-router/langchain",
+      "lang": "ts",
+      "pkg": "tool-router-example",
+      "file": "ts/examples/tool-router/src/langchain.ts",
+      "tier": "2",
+      "env": [
+        "OPENAI_API_KEY"
+      ],
+      "toolkits": [
+        "gmail"
+      ],
+      "timeoutSec": 180,
+      "ids": [
+        "COMPOSIO_EXAMPLES_USER_ID"
+      ]
+    },
+    {
+      "id": "ts/tool-router/mcp",
+      "lang": "ts",
+      "pkg": "tool-router-example",
+      "file": "ts/examples/tool-router/src/mcp.ts",
+      "tier": "2",
+      "env": [
+        "OPENAI_API_KEY"
+      ],
+      "toolkits": [
+        "gmail"
+      ],
+      "timeoutSec": 180
+    },
+    {
+      "id": "ts/tool-router/multi-account",
+      "lang": "ts",
+      "pkg": "tool-router-example",
+      "file": "ts/examples/tool-router/src/multi-account.ts",
+      "tier": "3",
+      "env": [
+        "OPENAI_API_KEY"
+      ],
+      "readiness": "Visit this URL to authorize: https?://",
+      "toolkits": [
+        "gmail"
+      ],
+      "timeoutSec": 120,
+      "ids": [
+        "COMPOSIO_EXAMPLES_USER_ID"
+      ]
+    },
+    {
+      "id": "ts/tool-router/openai-agents",
+      "lang": "ts",
+      "pkg": "tool-router-example",
+      "file": "ts/examples/tool-router/src/openai-agents.ts",
+      "tier": "X",
+      "reason": "stdin-repl"
+    },
+    {
+      "id": "ts/tool-router/preload",
+      "lang": "ts",
+      "pkg": "tool-router-example",
+      "file": "ts/examples/tool-router/src/preload.ts",
+      "tier": "1",
+      "env": [
+        "OPENAI_API_KEY"
+      ],
+      "toolkits": [
+        "hackernews"
+      ],
+      "timeoutSec": 180
+    },
+    {
+      "id": "ts/tool-router/session-update",
+      "lang": "ts",
+      "pkg": "tool-router-example",
+      "file": "ts/examples/tool-router/src/session-update.ts",
+      "tier": "1",
+      "toolkits": [
+        "hackernews"
+      ],
+      "timeoutSec": 120
+    },
+    {
+      "id": "ts/tool-router/toolkits",
+      "lang": "ts",
+      "pkg": "tool-router-example",
+      "file": "ts/examples/tool-router/src/toolkits.ts",
+      "tier": "1",
+      "toolkits": [],
+      "timeoutSec": 120
+    },
+    {
+      "id": "ts/toolkits/index",
+      "lang": "ts",
+      "pkg": "toolkits-example",
+      "file": "ts/examples/toolkits/src/index.ts",
+      "tier": "3",
+      "env": [
+        "OPENAI_API_KEY"
+      ],
+      "readiness": "authorize the toolkit: https?://",
+      "toolkits": [
+        "github"
+      ],
+      "timeoutSec": 120
+    },
+    {
+      "id": "ts/toolkits/toolkits",
+      "lang": "ts",
+      "pkg": "toolkits-example",
+      "file": "ts/examples/toolkits/src/toolkits.ts",
+      "tier": "1",
+      "toolkits": [],
+      "timeoutSec": 120
+    },
+    {
+      "id": "ts/toolkits/auth-fields",
+      "lang": "ts",
+      "pkg": "toolkits-example",
+      "file": "ts/examples/toolkits/src/auth-fields.ts",
+      "tier": "1",
+      "toolkits": [],
+      "timeoutSec": 120
+    },
+    {
+      "id": "ts/tools/index",
+      "lang": "ts",
+      "pkg": "tools-example",
+      "file": "ts/examples/tools/src/index.ts",
+      "tier": "2",
+      "toolkits": [
+        "googledrive"
+      ],
+      "timeoutSec": 180,
+      "ids": [
+        "COMPOSIO_EXAMPLES_USER_ID"
+      ]
+    },
+    {
+      "id": "ts/tools/ai",
+      "lang": "ts",
+      "pkg": "tools-example",
+      "file": "ts/examples/tools/src/ai.ts",
+      "tier": "2",
+      "env": [
+        "OPENAI_API_KEY"
+      ],
+      "toolkits": [
+        "googledrive"
+      ],
+      "timeoutSec": 180,
+      "ids": [
+        "COMPOSIO_EXAMPLES_USER_ID"
+      ]
+    },
+    {
+      "id": "ts/tools/tool-conversion",
+      "lang": "ts",
+      "pkg": "tools-example",
+      "file": "ts/examples/tools/src/tool-conversion.ts",
+      "tier": "1",
+      "toolkits": [],
+      "timeoutSec": 120
+    },
+    {
+      "id": "ts/triggers/index",
+      "lang": "ts",
+      "pkg": "triggers-example",
+      "file": "ts/examples/triggers/src/index.ts",
+      "tier": "3",
+      "readiness": "Subscribed to trigger events",
+      "toolkits": [
+        "gmail"
+      ],
+      "timeoutSec": 120
+    },
+    {
+      "id": "ts/triggers/create",
+      "lang": "ts",
+      "pkg": "triggers-example",
+      "file": "ts/examples/triggers/src/create.ts",
+      "tier": "2",
+      "ids": [
+        "COMPOSIO_EXAMPLES_GMAIL_CONNECTED_ACCOUNT_ID",
+        "COMPOSIO_EXAMPLES_USER_ID"
+      ],
+      "toolkits": [
+        "gmail"
+      ],
+      "serial": true,
+      "timeoutSec": 120
+    },
+    {
+      "id": "ts/triggers/subscribe",
+      "lang": "ts",
+      "pkg": "triggers-example",
+      "file": "ts/examples/triggers/src/subscribe.ts",
+      "tier": "3",
+      "ids": [
+        "COMPOSIO_EXAMPLES_GMAIL_CONNECTED_ACCOUNT_ID",
+        "COMPOSIO_EXAMPLES_USER_ID"
+      ],
+      "readiness": "Subscribed to triggers",
+      "toolkits": [
+        "gmail"
+      ],
+      "timeoutSec": 120
+    },
+    {
+      "id": "ts/triggers/test",
+      "lang": "ts",
+      "pkg": "triggers-example",
+      "file": "ts/examples/triggers/src/test.ts",
+      "tier": "2",
+      "toolkits": [
+        "gmail"
+      ],
+      "timeoutSec": 120,
+      "notes": "triage: entry not yet characterized"
+    },
+    {
+      "id": "ts/triggers/trigger-types",
+      "lang": "ts",
+      "pkg": "triggers-example",
+      "file": "ts/examples/triggers/src/trigger-types.ts",
+      "tier": "1",
+      "toolkits": [],
+      "timeoutSec": 120
+    },
+    {
+      "id": "ts/triggers/webhook-server",
+      "lang": "ts",
+      "pkg": "triggers-example",
+      "file": "ts/examples/triggers/src/webhook-server.ts",
+      "tier": "X",
+      "reason": "external-tunnel"
+    },
+    {
+      "id": "ts/vercel/ai",
+      "lang": "ts",
+      "pkg": "vercel-example",
+      "file": "ts/examples/vercel/src/ai.ts",
+      "tier": "1",
+      "env": [
+        "OPENAI_API_KEY"
+      ],
+      "toolkits": [
+        "hackernews"
+      ],
+      "timeoutSec": 180
+    },
+    {
+      "id": "ts/vercel/stream",
+      "lang": "ts",
+      "pkg": "vercel-example",
+      "file": "ts/examples/vercel/src/stream.ts",
+      "tier": "1",
+      "env": [
+        "OPENAI_API_KEY"
+      ],
+      "toolkits": [
+        "hackernews"
+      ],
+      "timeoutSec": 180
+    },
+    {
+      "id": "ts/vercel/tool-loop-agent",
+      "lang": "ts",
+      "pkg": "vercel-example",
+      "file": "ts/examples/vercel/src/tool-loop-agent.ts",
+      "tier": "1",
+      "env": [
+        "OPENAI_API_KEY"
+      ],
+      "toolkits": [
+        "hackernews"
+      ],
+      "timeoutSec": 240
+    },
+    {
+      "id": "ts/vercel/tool-router-ai",
+      "lang": "ts",
+      "pkg": "vercel-example",
+      "file": "ts/examples/vercel/src/tool-router-ai.ts",
+      "tier": "2",
+      "env": [
+        "OPENAI_API_KEY"
+      ],
+      "toolkits": [
+        "gmail"
+      ],
+      "timeoutSec": 180
+    },
+    {
+      "id": "ts/versioning/index",
+      "lang": "ts",
+      "pkg": "versioning-example",
+      "file": "ts/examples/versioning/src/index.ts",
+      "tier": "1",
+      "toolkits": [
+        "gmail",
+        "googlecalendar"
+      ],
+      "timeoutSec": 120
+    },
+    {
+      "id": "py/tools",
+      "lang": "py",
+      "file": "python/examples/tools.py",
+      "tier": "2",
+      "ids": [
+        "COMPOSIO_EXAMPLES_GITHUB_CONNECTED_ACCOUNT_ID"
+      ],
+      "toolkits": [
+        "github"
+      ],
+      "timeoutSec": 120
+    },
+    {
+      "id": "py/toolkits",
+      "lang": "py",
+      "file": "python/examples/toolkits.py",
+      "tier": "2",
+      "toolkits": [
+        "github"
+      ],
+      "serial": true,
+      "timeoutSec": 120,
+      "notes": "authorize() initiates OAuth state"
+    },
+    {
+      "id": "py/auth_configs",
+      "lang": "py",
+      "file": "python/examples/auth_configs.py",
+      "tier": "2",
+      "toolkits": [],
+      "serial": true,
+      "timeoutSec": 120,
+      "notes": "creates/updates/deletes org auth configs"
+    },
+    {
+      "id": "py/connected_accounts",
+      "lang": "py",
+      "file": "python/examples/connected_accounts.py",
+      "tier": "3",
+      "readiness": "Visit this URL to authorize: https?://",
+      "ids": [
+        "COMPOSIO_EXAMPLES_GMAIL_AUTH_CONFIG_ID",
+        "COMPOSIO_EXAMPLES_APIKEY_AUTH_CONFIG_ID",
+        "COMPOSIO_EXAMPLES_APIKEY_PLACEHOLDER",
+        "COMPOSIO_EXAMPLES_USER_ID"
+      ],
+      "toolkits": [
+        "gmail"
+      ],
+      "timeoutSec": 90
+    },
+    {
+      "id": "py/triggers",
+      "lang": "py",
+      "file": "python/examples/triggers.py",
+      "tier": "3",
+      "ids": [
+        "COMPOSIO_EXAMPLES_GMAIL_CONNECTED_ACCOUNT_ID",
+        "COMPOSIO_EXAMPLES_USER_ID"
+      ],
+      "readiness": "Subscribed|[Ll]istening for events",
+      "toolkits": [
+        "gmail"
+      ],
+      "timeoutSec": 300
+    },
+    {
+      "id": "py/modifiers",
+      "lang": "py",
+      "file": "python/examples/modifiers.py",
+      "tier": "X",
+      "env": [
+        "NOTION_API_KEY"
+      ],
+      "toolkits": [
+        "hackernews",
+        "notion"
+      ],
+      "reason": "dropped-provider",
+      "notes": "gemini/notion are out of scope for this goal by decision (2026-08-10)"
+    },
+    {
+      "id": "py/mcp",
+      "lang": "py",
+      "file": "python/examples/mcp_example.py",
+      "tier": "2",
+      "env": [
+        "OPENAI_API_KEY"
+      ],
+      "ids": [
+        "COMPOSIO_EXAMPLES_SLACK_AUTH_CONFIG_ID",
+        "COMPOSIO_EXAMPLES_USER_ID"
+      ],
+      "toolkits": [
+        "slack"
+      ],
+      "timeoutSec": 180,
+      "pyWith": [
+        "langchain-mcp-adapters",
+        "langgraph",
+        "langchain",
+        "langchain-openai"
+      ]
+    },
+    {
+      "id": "py/fastapi_app",
+      "lang": "py",
+      "file": "python/examples/fastapi_app.py",
+      "tier": "3",
+      "readiness": "Uvicorn running|Application startup",
+      "ids": [
+        "COMPOSIO_EXAMPLES_GMAIL_AUTH_CONFIG_ID",
+        "COMPOSIO_EXAMPLES_USER_ID"
+      ],
+      "pyWith": [
+        "fastapi",
+        "uvicorn"
+      ],
+      "timeoutSec": 120
+    },
+    {
+      "id": "py/custom_tools_agent_test",
+      "lang": "py",
+      "file": "python/examples/custom_tools_agent_test.py",
+      "tier": "2",
+      "env": [
+        "OPENAI_API_KEY"
+      ],
+      "toolkits": [
+        "gmail"
+      ],
+      "timeoutSec": 240,
+      "pyWith": [
+        "openai-agents>=0.19",
+        "./python/providers/openai_agents",
+        "./python"
+      ]
+    },
+    {
+      "id": "py/experimental_tool_router",
+      "lang": "py",
+      "file": "python/examples/experimental_tool_router_example.py",
+      "tier": "3",
+      "readiness": "Redirect URL: https?://",
+      "toolkits": [
+        "github"
+      ],
+      "timeoutSec": 120
+    },
+    {
+      "id": "py/experimental_tool_router_advanced",
+      "lang": "py",
+      "file": "python/examples/experimental_tool_router_advanced_example.py",
+      "tier": "1",
+      "toolkits": [
+        "github",
+        "slack",
+        "linear",
+        "jira"
+      ],
+      "timeoutSec": 120,
+      "ids": [
+        "COMPOSIO_EXAMPLES_USER_ID",
+        "COMPOSIO_EXAMPLES_GITHUB_AUTH_CONFIG_ID",
+        "COMPOSIO_EXAMPLES_SLACK_AUTH_CONFIG_ID",
+        "COMPOSIO_EXAMPLES_GITHUB_CONNECTED_ACCOUNT_ID",
+        "COMPOSIO_EXAMPLES_SLACK_CONNECTED_ACCOUNT_ID"
+      ]
+    },
+    {
+      "id": "py/tool_router/authorize",
+      "lang": "py",
+      "file": "python/examples/tool_router/authorize.py",
+      "tier": "3",
+      "readiness": "Redirect URL: https?://",
+      "toolkits": [
+        "gmail"
+      ],
+      "timeoutSec": 90
+    },
+    {
+      "id": "py/tool_router/claude_agent",
+      "lang": "py",
+      "file": "python/examples/tool_router/claude_agent.py",
+      "tier": "2",
+      "env": [
+        "ANTHROPIC_API_KEY"
+      ],
+      "toolkits": [
+        "gmail"
+      ],
+      "pyWith": [
+        "claude-agent-sdk",
+        "./python/providers/claude_agent_sdk",
+        "./python"
+      ],
+      "timeoutSec": 300,
+      "ids": [
+        "COMPOSIO_EXAMPLES_USER_ID"
+      ]
+    },
+    {
+      "id": "py/tool_router/crewai_agent",
+      "lang": "py",
+      "file": "python/examples/tool_router/crewai_agent.py",
+      "tier": "2",
+      "env": [
+        "OPENAI_API_KEY"
+      ],
+      "toolkits": [
+        "gmail"
+      ],
+      "pyWith": [
+        "crewai>=1.15"
+      ],
+      "timeoutSec": 300,
+      "ids": [
+        "COMPOSIO_EXAMPLES_USER_ID"
+      ]
+    },
+    {
+      "id": "py/tool_router/direct_tools_preset",
+      "lang": "py",
+      "file": "python/examples/tool_router/direct_tools_preset.py",
+      "tier": "1",
+      "env": [
+        "OPENAI_API_KEY"
+      ],
+      "toolkits": [
+        "hackernews"
+      ],
+      "timeoutSec": 180,
+      "pyWith": [
+        "openai-agents>=0.19",
+        "./python/providers/openai_agents",
+        "./python"
+      ]
+    },
+    {
+      "id": "py/tool_router/preload",
+      "lang": "py",
+      "file": "python/examples/tool_router/preload.py",
+      "tier": "1",
+      "env": [
+        "OPENAI_API_KEY"
+      ],
+      "toolkits": [
+        "hackernews"
+      ],
+      "timeoutSec": 180,
+      "pyWith": [
+        "openai-agents>=0.19",
+        "./python/providers/openai_agents",
+        "./python"
+      ]
+    },
+    {
+      "id": "py/tool_router/files",
+      "lang": "py",
+      "file": "python/examples/tool_router/files.py",
+      "tier": "1",
+      "env": [
+        "OPENAI_API_KEY"
+      ],
+      "toolkits": [],
+      "timeoutSec": 180,
+      "pyWith": [
+        "./python/providers/openai",
+        "./python"
+      ]
+    },
+    {
+      "id": "py/tool_router/langchain_agent",
+      "lang": "py",
+      "file": "python/examples/tool_router/langchain_agent.py",
+      "tier": "2",
+      "env": [
+        "OPENAI_API_KEY"
+      ],
+      "toolkits": [
+        "gmail"
+      ],
+      "pyWith": [
+        "langchain",
+        "langchain-openai",
+        "langchain-mcp-adapters"
+      ],
+      "timeoutSec": 240,
+      "ids": [
+        "COMPOSIO_EXAMPLES_USER_ID"
+      ]
+    },
+    {
+      "id": "py/tool_router/openai_agents",
+      "lang": "py",
+      "file": "python/examples/tool_router/openai_agents.py",
+      "tier": "2",
+      "env": [
+        "OPENAI_API_KEY"
+      ],
+      "toolkits": [
+        "gmail"
+      ],
+      "pyWith": [
+        "openai-agents>=0.19"
+      ],
+      "timeoutSec": 240
+    },
+    {
+      "id": "py/tool_router/tool_router_mcp",
+      "lang": "py",
+      "file": "python/examples/tool_router/tool_router_mcp.py",
+      "tier": "2",
+      "env": [
+        "OPENAI_API_KEY"
+      ],
+      "toolkits": [
+        "github",
+        "gmail"
+      ],
+      "timeoutSec": 240,
+      "pyWith": [
+        "openai-agents>=0.19",
+        "./python/providers/openai_agents",
+        "./python"
+      ]
+    },
+    {
+      "id": "py/tool_router/session_update",
+      "lang": "py",
+      "file": "python/examples/tool_router/session_update.py",
+      "tier": "1",
+      "toolkits": [
+        "gmail",
+        "github"
+      ],
+      "timeoutSec": 120
+    },
+    {
+      "id": "py/tool_router/toolkits",
+      "lang": "py",
+      "file": "python/examples/tool_router/toolkits.py",
+      "tier": "1",
+      "toolkits": [],
+      "timeoutSec": 120
+    },
+    {
+      "id": "py/tool_router/tools",
+      "lang": "py",
+      "file": "python/examples/tool_router/tools.py",
+      "tier": "2",
+      "env": [
+        "OPENAI_API_KEY"
+      ],
+      "toolkits": [
+        "gmail"
+      ],
+      "timeoutSec": 180,
+      "pyWith": [
+        "openai-agents>=0.19",
+        "./python/providers/openai_agents",
+        "./python"
+      ]
+    }
+  ]
+}

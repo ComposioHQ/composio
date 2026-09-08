@@ -1,4 +1,5 @@
-import { FileSystem, Path } from '@effect/platform';
+import * as FileSystem from '@effect/platform/FileSystem';
+import * as Path from '@effect/platform/Path';
 import { Context, Data, Effect, Layer } from 'effect';
 import type { Composio } from '@composio/client';
 import { executeLocalToolBySlug, resolveLocalTool } from '@composio/cli-local-tools';
@@ -14,6 +15,7 @@ import {
   mapComposioError,
 } from 'src/services/composio-error-overrides';
 import { getOrFetchToolInputDefinition } from 'src/services/tool-input-validation';
+import type { CliDebugFlags } from 'src/services/runtime-flags';
 import { ToolFileUploadError, uploadToolInputFiles } from 'src/services/tool-file-uploads';
 import { toolkitFromToolSlug } from 'src/effects/toolkit-from-tool-slug';
 import { ToolkitSlugCatalog } from 'src/services/toolkit-slug-catalog';
@@ -67,6 +69,8 @@ export interface ToolsExecutor {
     | ComposioToolkitsRepository
     | ComposioCliUserConfig
     | TerminalUI
+    // Tool-schema resolution emits `--tool-debug` diagnostics, whose flag values the caller owns.
+    | CliDebugFlags
   >;
 }
 
