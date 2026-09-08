@@ -28,41 +28,42 @@ allowBuilds:
   workerd: true
 
 catalog:
-  '@ai-sdk/mcp': ^2.0.37
-  '@ai-sdk/openai': ^4.0.47
+  '@ai-sdk/mcp': ^2.0.45
+  '@ai-sdk/openai': ^4.0.59
   '@arethetypeswrong/cli': ^0.18.5
   '@clack/core': '^1.4.3'
   '@clack/prompts': '^1.7.0'
   '@cloudflare/vitest-pool-workers': 0.22.0
-  '@cloudflare/workers-types': ^5.20260825.1
+  '@cloudflare/workers-types': ^5.20260905.1
   '@composio/client': 0.1.0-alpha.76
   '@effect/cli': ^0.77.0
   '@effect/language-service': ^0.87.2
   '@effect/platform': ^0.97.1
   '@effect/platform-bun': ^0.91.2
   '@effect/platform-node': ^0.108.0
-  '@effect/platform-node-shared': ^0.61.1
   '@effect/vitest': ^0.30.0
-  # 1.52.1 is the latest version that keeps Node-only execa code out of
-  # Workers bundles.
-  '@mastra/core': 1.52.1
+  # Bisected against ts/examples/mastra's `cf:dry-run`: 1.54.0 moved the
+  # workspace/sandbox subsystem behind `@mastra/core/agent`, which drags execa
+  # (-> npm-run-path -> unicorn-magic) into the Workers bundle and fails to
+  # link. 1.53.0 is the newest release that still bundles for workerd.
+  '@mastra/core': 1.53.0
   '@modelcontextprotocol/sdk': ^1.30.0
-  '@types/bun': ^1.4.0
-  ai: ^7.0.79
+  '@types/bun': ^1.4.1
+  ai: ^7.0.93
   dotenv: ^17.4.2
   effect: ^3.22.1
-  hono: ^4.13.4
-  openai: ^7.2.0
+  hono: ^4.13.7
+  openai: ^7.10.0
   picocolors: ^1.1.1
   pnpm: ^11.24.0
   publint: ^0.3.24
-  tsdown: ^0.22.14
-  tsx: ^4.23.12
+  tsdown: ^0.23.0
+  tsx: ^4.23.13
   typescript: ^7.0.2
   '@vitest/ui': ^4.1.11
   vitest: ^4.1.11
-  wrangler: ^4.125.0
-  zod: ^4.4.3
+  wrangler: ^4.129.0
+  zod: ^4.5.4
   zod-to-json-schema: ^3.25.2
 
 catalogs:
@@ -84,25 +85,32 @@ minimumReleaseAgeExclude:
   - '@mastra/core'
   - '@composio/client'
   - chrome-devtools-mcp
-  # temporary: hono >=4.12.34 carries the CORS ReDoS fix
-  # (GHSA-hp3h-89pf-5q58 class, Access-Control-Request-Headers), but both
-  # 4.12.34 and 4.13.0 were published within the 4320-minute floor, so
-  # --frozen-lockfile rejects the lockfile on every branch. The last version
-  # old enough to pass the gate is 4.12.33, which is the vulnerable one.
-  # hono is only pulled in by ts/e2e-tests/runtimes/cloudflare/* and
-  # ts/examples/cloudflare-wrangler -- it ships in no published package --
-  # so taking the fix ahead of the floor is the safer trade. Drop this entry
-  # once the resolved version is older than the floor (after 2026-08-06).
-  - hono
 
 peerDependencyRules:
   allowedVersions:
     typescript: '^6.0.0 || ^7.0.0'
+    # openai >=7.4 declares an optional `undici` peer of '>=5 <9'. The
+    # `undici@>=5.0.0 <6.28.0` override below narrows that range to '<7', which
+    # @composio/core's own `undici@^7` dependency then reports as unmet. The
+    # 7.x line is what openai actually supports; core is pinned to it on purpose
+    # (see pinnedDispatcher.node.ts -- Node's fetch rejects undici 8 dispatchers).
+    undici: ^7.29.0
     vitest: ^4.0.0
     zod: ^4.0.0
 
 overrides:
-  qs@<6.14.1: '>=6.14.1'
+  # temporary: @mastra/mcp 1.17.3 raised its @mastra/core peer floor to 1.64,
+  # above the Workers-compatible ceiling pinned in the catalog above. Drop this
+  # once @mastra/core can move.
+  '@mastra/mcp@>=1.17.3 <2': 1.17.2
+  # GHSA-x5fp-wj9c-mxmx and GHSA-4mjr-xmp4-gh2g; express pulls the 6.15.x line.
+  # Drop when its lockfile resolution is >=6.16.0 without an override.
+  'qs@<6.16.0': '>=6.16.0 <7'
+  # temporary: GHSA-82x6-q7mm-w9cf (uncontrolled recursion) and
+  # GHSA-v5mp-jgw5-2x6j (prototype pollution) are patched only in the 4.x line,
+  # but @effect/cli still depends on toml ^3.0.0. It calls nothing but
+  # `Toml.parse`, which 4.x keeps. Drop when @effect/cli depends on >=4.2.0.
+  'toml@<4.2.0': '>=4.2.0 <5'
   protobufjs: 7.6.5
   # temporary: @zed-industries/claude-code-acp@0.16.2 (latest) exact-pins vulnerable 10.2.1; drop when it ships >=10.2.3
   'minimatch@>=10.0.0 <10.2.3': '>=10.2.3 <11'
@@ -117,9 +125,11 @@ overrides:
   # The floor also clears GHSA-9mqv-5hh9-4cgg (WebSocket handshake DoS, fixed
   # in 2.0.10); drop when the SDK depends on >=2.0.10 itself.
   '@hono/node-server@<2.0.10': '>=2.0.10 <3'
-  # temporary: GHSA-7p8r-x3mc-p8w7; ajv accepts the patched 3.x line. Drop when
-  # its lockfile resolution is >=3.1.5 without an override.
-  'fast-uri@>=3.0.0 <3.1.5': '>=3.1.5 <4'
+  # temporary: GHSA-7p8r-x3mc-p8w7, then GHSA-f65p-4m7j-42xc /
+  # GHSA-jqff-g426-hqxp / GHSA-fph4-wmhf-6fwf / GHSA-5jgf-p345-68v8 raised the
+  # patched floor to 3.1.6. ajv accepts the patched 3.x line. Drop when its
+  # lockfile resolution is >=3.1.6 without an override.
+  'fast-uri@>=3.0.0 <3.1.6': '>=3.1.6 <4'
   # temporary: GHSA-mwp4-54f8-5fhr; express-rate-limit accepts the patched 10.x
   # line. Drop when its lockfile resolution is >=10.3.1 without an override.
   'ip-address@>=10.0.0 <=10.3.0': '>=10.3.1 <11'
@@ -140,3 +150,22 @@ overrides:
   'brace-expansion@<=5.0.8': '>=5.0.9 <6'
   'vite@<=7.3.4': 7.3.5
   'esbuild@>=0.27.3 <0.28.1': 0.28.1
+
+auditConfig:
+  ignoreGhsas:
+    # extract-zip symlink path traversal. GitHub records no fixed version --
+    # 2.0.1 is the newest release and the repository has been dormant since
+    # 2021 -- so there is nothing to upgrade to. Both consumers extract through
+    # `extractZipSafely`, which rejects symlink entries before they are written
+    # (ts/packages/cli/src/utils/extract-zip-safely.ts and the cli-local-tools
+    # copy, both covered by tests). Drop once a patched release exists.
+    - GHSA-jmr9-qjv8-65gv
+    # @ai-sdk/provider-utils 3.x uncontrolled resource consumption (low). The
+    # advisory names >=3.0.98 as patched, but the highest published 3.x is
+    # 3.0.36 (@mastra/core exact-pins 3.0.30) and GitHub records no fixed
+    # version, so no bump reaches it. It reaches the
+    # audit only through @mastra/core (capped at 1.53.0 above), which is a peer
+    # or dev dependency of every published package -- all flagged paths are
+    # private examples and e2e fixtures. Drop once @mastra/core can move past
+    # the 3.x provider-utils line.
+    - GHSA-866g-f22w-33x8

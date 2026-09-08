@@ -251,12 +251,18 @@ export const parseExecuteInputHelpSlug = (argv: ReadonlyArray<string>): string |
   return findSlug(Arr.drop(args, isRootExecute ? 1 : 2));
 };
 
-const normalizeVersionShortFlag = (argv: ReadonlyArray<string>): ReadonlyArray<string> => {
-  const args = argv.slice(2);
-  if (args.length === 1 && args[0] === '-v') {
-    return [...argv.slice(0, 2), '--version'];
-  }
-  return argv;
+const VERSION_FLAGS: ReadonlySet<string> = new Set(['--version', '-v']);
+
+/**
+ * `composio --version` and `composio -v` are spellings of the `version` command: the flag is
+ * rewritten before parsing so all three share one handler and print byte-identical output,
+ * independent of how the CLI framework renders its own built-in version flag.
+ */
+const normalizeVersionFlag = (argv: ReadonlyArray<string>): ReadonlyArray<string> => {
+  const [first, ...rest] = argv.slice(2);
+  return first !== undefined && VERSION_FLAGS.has(first)
+    ? [...argv.slice(0, 2), 'version', ...rest]
+    : argv;
 };
 
 const normalizeListenStreamFlag = (argv: ReadonlyArray<string>): ReadonlyArray<string> => {
@@ -532,7 +538,7 @@ export const runWithConfig = Effect.gen(function* () {
     const { argv: argvWithoutDangerouslyAllow, dangerouslyAllow } =
       normalizeDangerouslyAllowFlag(argv);
     const { argv: normalizedArgv, overrides } = normalizeHiddenDebugFlags(
-      normalizeListenStreamFlag(normalizeVersionShortFlag(argvWithoutDangerouslyAllow))
+      normalizeListenStreamFlag(normalizeVersionFlag(argvWithoutDangerouslyAllow))
     );
 
     return parseRootInstallSkillRequest(normalizedArgv).pipe(

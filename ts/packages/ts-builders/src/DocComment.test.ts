@@ -42,6 +42,16 @@ test('multiple addText calls', () => {
   `);
 });
 
+test('closing comment delimiters remain inside the comment', () => {
+  expect(stringify(docComment('Safe text */ globalThis.compromised = true')))
+    .toMatchInlineSnapshot(`
+    "/**
+     * Safe text *\\/ globalThis.compromised = true
+     */
+    "
+  `);
+});
+
 test('tagged template - empty', () => {
   expect(stringify(docComment``)).toMatchInlineSnapshot(`
     "/**

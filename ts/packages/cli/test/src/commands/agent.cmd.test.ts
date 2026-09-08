@@ -1,5 +1,5 @@
 import { describe, expect, layer } from '@effect/vitest';
-import { FileSystem } from '@effect/platform';
+import * as FileSystem from '@effect/platform/FileSystem';
 import { Effect, Option } from 'effect';
 import path from 'node:path';
 import { afterEach, vi } from 'vitest';

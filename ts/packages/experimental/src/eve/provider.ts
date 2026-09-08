@@ -9,7 +9,8 @@ import {
   type ToolExecuteResponse,
 } from '@composio/core';
 import type { JsonValue } from 'eve/connections';
-import { type ApprovalContext, type ToolContext, type ToolDefinition, defineTool } from 'eve/tools';
+import { type ToolContext, type ToolDefinition, defineTool } from 'eve/tools';
+import type { ApprovalContext } from 'eve/tools/approval';
 import { applyHooks, type EveProviderHooks } from './hooks';
 
 export type EveTool = ToolDefinition<Record<string, unknown>, ToolExecuteResponse>;

@@ -1,5 +1,12 @@
 # @composio/slim
 
+## 0.18.1
+
+### Patch Changes
+
+- Updated dependencies [ab289d6]
+  - @composio/json-schema-to-zod@0.3.2
+
 ## 0.18.0
 
 ### Patch Changes

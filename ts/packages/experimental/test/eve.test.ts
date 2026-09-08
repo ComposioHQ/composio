@@ -1,5 +1,5 @@
 import type { ExecuteToolFn, Tool, ToolExecuteResponse } from '@composio/core';
-import type { ApprovalContext } from 'eve/tools';
+import type { ApprovalContext } from 'eve/tools/approval';
 import { describe, expect, it, vi } from 'vitest';
 import {
   EveProvider,

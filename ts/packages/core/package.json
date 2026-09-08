@@ -4,7 +4,7 @@
   "engines": {
     "node": ">=22.22.3"
   },
-  "version": "0.18.0",
+  "version": "0.18.1",
   "description": "",
   "main": "src/index.ts",
   "publishConfig": {
