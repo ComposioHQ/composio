@@ -160,3 +160,11 @@ auditConfig:
     # (ts/packages/cli/src/utils/extract-zip-safely.ts and the cli-local-tools
     # copy, both covered by tests). Drop once a patched release exists.
     - GHSA-jmr9-qjv8-65gv
+    # @ai-sdk/provider-utils 3.x uncontrolled resource consumption (low). The
+    # advisory names >=3.0.98 as patched, but the 3.x line stopped at 3.0.30 and
+    # GitHub records no fixed version, so no bump clears it. It reaches the
+    # audit only through @mastra/core (capped at 1.53.0 above), which is a peer
+    # or dev dependency of every published package -- all flagged paths are
+    # private examples and e2e fixtures. Drop once @mastra/core can move past
+    # the 3.x provider-utils line.
+    - GHSA-866g-f22w-33x8

@@ -223,7 +223,10 @@ describe('API reference route completeness', () => {
     // Upstream fixed the silent drop, so the undeclared-tag operation now gets
     // a page without help from declareOperationTags. That normalization is kept
     // as a safety net for older fumadocs-openapi behaviour; if this ever fails
-    // with `missing` non-empty again, the drop has regressed upstream.
+    // with `missing` non-empty again, the drop has regressed upstream. The
+    // positive check guards against `missing` being vacuously empty because
+    // expectedReferenceUrls stopped yielding the projects URL.
+    expect(generated.has('/reference/api-reference/projects/postProjectUsageSummary')).toBe(true);
     expect(missing).toEqual([]);
   });
 });
