@@ -26,6 +26,8 @@ The Skills CLI installs the skill in Claude Code's skill directory. Start a new 
 
 <AgentFirstPrompt agent="claude-code" />
 
+To run app actions from your current conversation, install the [Composio plugin for Claude Code](/docs/agent-plugins#claude-code).
+
 ## OpenCode
 
 OpenCode loads project skills from `.agents/skills/` and global skills from `~/.config/opencode/skills/`. Run one of these commands from your project directory:
@@ -106,6 +108,8 @@ The project install uses the shared Agent Skills directory, so the skill can tra
 
 <AgentFirstPrompt agent="codex" />
 
+To run app actions from your current conversation, install the [Composio plugin for Codex](/docs/agent-plugins#codex).
+
 ## Cursor
 
 Cursor loads project skills from `.agents/skills/` and global skills from `~/.cursor/skills/`. Run one of these commands from your project directory:
@@ -168,15 +172,19 @@ Start a new Gemini CLI session in the project after installation. Mention Compos
 
 ## OpenClaw
 
-OpenClaw loads project skills from `skills/` and global skills from `~/.openclaw/skills/`. Run one of these commands from your project directory:
+OpenClaw loads workspace skills from `skills/` inside its configured or selected execution workspace, and global skills from `~/.openclaw/skills/`. An application repository must be selected as an OpenClaw workspace for OpenClaw to discover skills installed there.
 
 **Global install**
+
+Run this command from any directory to make the skill available across workspaces:
 
 ```bash
 npx skills add ComposioHQ/composio --skill composio --agent openclaw --global
 ```
 
 **Project install**
+
+Run this command from your OpenClaw workspace directory (by default, `~/.openclaw/workspace`):
 
 ```bash
 npx skills add ComposioHQ/composio --skill composio --agent openclaw
@@ -185,3 +193,5 @@ npx skills add ComposioHQ/composio --skill composio --agent openclaw
 Start a new OpenClaw session after installation so it can discover the skill. OpenClaw loads the relevant skill when your request calls for Composio guidance.
 
 <AgentFirstPrompt agent="openclaw" />
+
+To connect your own accounts for app actions, follow the [Composio Connect instructions for OpenClaw](/docs/composio-connect#openclaw).
