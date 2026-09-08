@@ -1344,6 +1344,66 @@ class TestMultiExecuteRouting:
         assert result["successful"] is True
         assert result["data"]["results"][0]["tool_slug"] == "GREP"
 
+    def test_remote_transport_failure_keeps_local_results(self, grep_tool):
+        """A raised backend error becomes per-tool failures (matches TS)."""
+        s = self._make_session(grep_tool)
+        tm = MagicMock()
+
+        def failing_backend(slug, args):
+            raise RuntimeError("remote unavailable")
+
+        tm._wrap_execute_tool_for_tool_router.return_value = failing_backend
+        result = s._route_multi_execute(
+            {
+                "tools": [
+                    {"tool_slug": "GREP", "arguments": {"pattern": "x"}},
+                    {"tool_slug": "REMOTE", "arguments": {}},
+                    {"tool_slug": "OTHER_REMOTE", "arguments": {}},
+                ]
+            },
+            tm,
+        )
+        assert result["successful"] is False
+        assert result["error"] == "2 out of 3 tools failed"
+        results = result["data"]["results"]
+        assert [r["tool_slug"] for r in results] == ["GREP", "REMOTE", "OTHER_REMOTE"]
+        assert [r["index"] for r in results] == [0, 1, 2]
+        assert results[0]["response"] == {
+            "successful": True,
+            "data": {"matches": ["x"], "path": "."},
+        }
+        assert "error" not in results[0]
+        for entry in results[1:]:
+            assert entry["error"] == "remote unavailable"
+            assert entry["response"] == {
+                "successful": False,
+                "data": {},
+                "error": "remote unavailable",
+            }
+        assert result["data"]["total_count"] == 3
+        assert result["data"]["success_count"] == 1
+        assert result["data"]["error_count"] == 2
+
+    def test_remote_transport_failure_uses_fallback_message(self, grep_tool):
+        s = self._make_session(grep_tool)
+        tm = MagicMock()
+
+        def failing_backend(slug, args):
+            raise RuntimeError()
+
+        tm._wrap_execute_tool_for_tool_router.return_value = failing_backend
+        result = s._route_multi_execute(
+            {
+                "tools": [
+                    {"tool_slug": "GREP", "arguments": {"pattern": "x"}},
+                    {"tool_slug": "REMOTE", "arguments": {}},
+                ]
+            },
+            tm,
+        )
+        assert result["successful"] is False
+        assert result["data"]["results"][1]["error"] == "Remote tool execution failed"
+
     def test_remote_batch_error_without_item_errors_uses_batch_message(self, grep_tool):
         s = self._make_session(grep_tool)
         tm = MagicMock()
