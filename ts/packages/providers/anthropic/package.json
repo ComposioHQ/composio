@@ -49,10 +49,10 @@
     "@mastra/mcp": "^1.13.1"
   },
   "devDependencies": {
-    "@anthropic-ai/sdk": "^0.120.0",
+    "@anthropic-ai/sdk": "^0.124.0",
     "@composio/core": "workspace:*",
     "@mastra/core": "catalog:",
-    "@mastra/mcp": "^1.17.1",
+    "@mastra/mcp": "^1.17.3",
     "ai": "^6.0.266",
     "tsdown": "catalog:",
     "typescript": "catalog:",

@@ -388,7 +388,7 @@ if (
 }
 
 if (
-  !tsReleaseWorkflow.includes('changesets/action@8488615a623b1b9c987934bb89eae8af6a946ac1 # v2.1.1')
+  !tsReleaseWorkflow.includes('changesets/action@ae32849d5ba541f9ae29e40e22a623bc13562f51 # v2.1.2')
 ) {
   throw new Error('ts.release.yml must use changesets/action v2 with Changesets v3');
 }
