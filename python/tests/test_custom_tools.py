@@ -1294,9 +1294,11 @@ class TestMultiExecuteRouting:
         )
         results = result["data"]["results"]
         assert len(results) == 2
-        # Remotes first, locals appended (matches TS)
-        assert results[0]["tool_slug"] == "R"
-        assert results[1]["tool_slug"] == "GREP"
+        # Results preserve the original request order.
+        assert results[0]["tool_slug"] == "GREP"
+        assert results[1]["tool_slug"] == "R"
+        assert results[0]["index"] == 0
+        assert results[1]["index"] == 1
         assert result["data"]["total_count"] == 2
         assert result["data"]["success_count"] == 2
         assert result["data"]["error_count"] == 0

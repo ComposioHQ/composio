@@ -415,8 +415,7 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
         """Route a COMPOSIO_MULTI_EXECUTE_TOOL call.
 
         Splits the tools[] array into local and remote, executes each
-        appropriately, and merges results: remotes first, locals appended
-        (matches TS — remote results may have workbench index references).
+        appropriately, and merges results in the original request order.
 
         Modifiers are NOT applied here — the caller (routing_execute)
         handles before_execute/after_execute to avoid double application.
@@ -506,14 +505,14 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
                     "data": result["data"],
                 },
                 "tool_slug": parsed[idx]["tool_slug"],
+                "index": idx,
             }
             if result.get("error"):
                 local_entry["response"]["error"] = result["error"]
                 local_entry["error"] = result["error"]
             local_entries.append(local_entry)
 
-        # Merge: remotes first, locals appended (matches TS behavior —
-        # remote results may have workbench index references)
+        # Restore original request order, then re-index sequentially.
         remote_data_raw = (remote_result or {}).get("data")
         remote_data = remote_data_raw if isinstance(remote_data_raw, dict) else {}
         remote_results_list = (
@@ -521,10 +520,18 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
             if isinstance(remote_data.get("results"), list)
             else []
         )
-        all_results = [
-            {**entry, "index": i}
-            for i, entry in enumerate([*remote_results_list, *local_entries])
+        merged_results = [
+            {
+                **entry,
+                "index": remote_indices[position]
+                if position < len(remote_indices)
+                else position,
+            }
+            for position, entry in enumerate(remote_results_list)
         ]
+        merged_results.extend(local_entries)
+        merged_results.sort(key=lambda entry: int(entry["index"]))
+        all_results = [{**entry, "index": i} for i, entry in enumerate(merged_results)]
         failed = sum(1 for r in all_results if r.get("error"))
         merged_data = {**remote_data, "results": all_results}
         if local_entries and any(
