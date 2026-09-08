@@ -74,6 +74,12 @@ const session = await composio.create("user_123", {
 
 - [Enable and disable specific tools](https://docs.composio.dev/docs/configuring-sessions#enabling-or-disabling-specific-tools)
 
+An Auth Config's tool access allowlist applies when tools are listed through
+that Auth Config's tools API and on the older MCP path. It does not restrict
+tool discovery or execution in a Tool Router session. To restrict a session,
+configure its session-level tools or toolkit settings when creating the
+session; those restrictions apply to both discovery and execution.
+
 ## Combine provider scopes with session tool restrictions
 
 OAuth scopes control what the provider grants to a connected account. Session
