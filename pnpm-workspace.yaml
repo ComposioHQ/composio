@@ -102,7 +102,7 @@ overrides:
   # temporary: @mastra/mcp 1.17.3 raised its @mastra/core peer floor to 1.64,
   # above the Workers-compatible ceiling pinned in the catalog above. Drop this
   # once @mastra/core can move.
-  '@mastra/mcp@>=1.17.3': 1.17.2
+  '@mastra/mcp@>=1.17.3 <2': 1.17.2
   # GHSA-x5fp-wj9c-mxmx and GHSA-4mjr-xmp4-gh2g; express pulls the 6.15.x line.
   # Drop when its lockfile resolution is >=6.16.0 without an override.
   'qs@<6.16.0': '>=6.16.0 <7'
@@ -161,8 +161,9 @@ auditConfig:
     # copy, both covered by tests). Drop once a patched release exists.
     - GHSA-jmr9-qjv8-65gv
     # @ai-sdk/provider-utils 3.x uncontrolled resource consumption (low). The
-    # advisory names >=3.0.98 as patched, but the 3.x line stopped at 3.0.30 and
-    # GitHub records no fixed version, so no bump clears it. It reaches the
+    # advisory names >=3.0.98 as patched, but the highest published 3.x is
+    # 3.0.36 (@mastra/core exact-pins 3.0.30) and GitHub records no fixed
+    # version, so no bump reaches it. It reaches the
     # audit only through @mastra/core (capped at 1.53.0 above), which is a peer
     # or dev dependency of every published package -- all flagged paths are
     # private examples and e2e fixtures. Drop once @mastra/core can move past

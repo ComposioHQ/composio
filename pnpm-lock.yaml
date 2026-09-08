@@ -111,7 +111,7 @@ catalogs:
       version: 6.0.2
 
 overrides:
-  '@mastra/mcp@>=1.17.3': 1.17.2
+  '@mastra/mcp@>=1.17.3 <2': 1.17.2
   qs@<6.16.0: '>=6.16.0 <7'
   toml@<4.2.0: '>=4.2.0 <5'
   protobufjs: 7.6.5
