@@ -5,9 +5,11 @@ type EveSession = { tools: () => Promise<EveToolCollection> };
 type EveSessionSource<S extends EveSession> =
   S | Promise<S> | ((context: DynamicResolveContext) => S | Promise<S>);
 
-// step.started keeps the provider's live execute closures (session.started
-// snapshots them away); cached per resolved session since session.tools() is a
-// network call. Rejected requests are evicted so transient failures can retry.
+// step.started keeps the tool set current as the model narrows its search;
+// cached per resolved session since session.tools() is a network call. Rejected
+// requests are evicted so transient failures can retry. Wrapped tools carry
+// eve's durable callback descriptors, so a parked call still replays after the
+// resolving process is gone.
 export function defineComposioTools<S extends EveSession>(source: EveSessionSource<S>) {
   const cache = new WeakMap<S, Promise<EveToolCollection>>();
 

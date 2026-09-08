@@ -90,7 +90,7 @@ import { session } from '../session';
 export default defineComposioTools(session);
 ```
 
-`defineComposioTools(session)` returns a `step.started` dynamic resolver and memoizes `session.tools()`. It resolves per step because the wrapped `execute` holds a live function eve keeps only for step-scoped tools. The fetch is cached per resolved Composio session, and transient failures are retried on the next step. For a multi-user channel, pass a resolver instead: `defineComposioTools((ctx) => sessionFor(ctx.session.auth.current?.principalId))`.
+`defineComposioTools(session)` returns a `step.started` dynamic resolver and memoizes `session.tools()`. It resolves per step so the tool set follows what the model has discovered. The fetch is cached per resolved Composio session, and transient failures are retried on the next step. For a multi-user channel, pass a resolver instead: `defineComposioTools((ctx) => sessionFor(ctx.session.auth.current?.principalId))`.
 
 </Step>
 </Steps>
@@ -102,6 +102,8 @@ Your agent now has the Tool Router meta-tools (`COMPOSIO_SEARCH_TOOLS`, `COMPOSI
   straight through. It does not convert to a zod schema, which would trip eve's dynamic-tool
   normalizer.
 </Callout>
+
+eve requires every dynamic tool to carry a durable descriptor for its callbacks, and its build transform only stamps one on tools authored in your own source. `EveProvider` stamps its own, so its tools are accepted as they are: each callback persists just the tool slug, and eve re-attaches it to the live Composio executor when a parked or replayed call resumes.
 
 ## Hooks
 

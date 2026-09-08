@@ -11,6 +11,7 @@ import {
 import type { JsonValue } from 'eve/connections';
 import { type ToolContext, type ToolDefinition, defineTool } from 'eve/tools';
 import type { ApprovalContext } from 'eve/tools/approval';
+import { withDurableClosure } from './durable';
 import { applyHooks, type EveProviderHooks } from './hooks';
 
 export type EveTool = ToolDefinition<Record<string, unknown>, ToolExecuteResponse>;
@@ -31,14 +32,6 @@ const toEveInputSchema = (tool: Tool, strict?: boolean): Record<string, JsonValu
     ...params,
     properties: { ...params.properties },
   }) as Record<string, JsonValue>;
-};
-
-const toEveApprovalPolicy = (
-  tool: Tool,
-  approvalPolicy?: EveNeedsApproval
-): EveTool['approval'] => {
-  if (!approvalPolicy) return undefined;
-  return context => approvalPolicy(tool, context);
 };
 
 const isProtectedToolItem = (item: unknown, protectedSlugs: ReadonlySet<string>): boolean => {
@@ -65,6 +58,15 @@ export const requireApprovalForTools = (...toolSlugs: string[]): EveNeedsApprova
   };
 };
 
+/** Live state a durable callback re-attaches to, keyed by the closure's slug. */
+interface ToolBinding {
+  readonly tool: Tool;
+  readonly executeTool: ExecuteToolFn;
+}
+
+/** The JSON snapshot eve persists for each wrapped tool's callbacks. */
+type ComposioToolClosure = { slug: string };
+
 export interface EveProviderOptions {
   strict?: boolean;
   hooks?: EveProviderHooks;
@@ -78,26 +80,26 @@ export class EveProvider extends BaseAgenticProvider<
 > {
   readonly name = 'eve';
 
+  /**
+   * Live executors keyed by slug. A durable callback receives only its JSON
+   * closure, so it looks the executor up here; bindings accumulate across
+   * resolves so a call parked against an earlier tool set still finds one.
+   */
+  private readonly bindings = new Map<string, ToolBinding>();
+
   constructor(private readonly options: EveProviderOptions = {}) {
     super();
   }
 
   wrapTool(tool: Tool, executeTool: ExecuteToolFn): EveTool {
-    const inputSchema = toEveInputSchema(tool, this.options.strict);
-    const approval = toEveApprovalPolicy(tool, this.options.needsApproval);
+    this.bindings.set(tool.slug, { tool, executeTool });
+    const closure: ComposioToolClosure = { slug: tool.slug };
 
     return defineTool<Record<string, unknown>, ToolExecuteResponse>({
       description: tool.description ?? tool.name,
-      inputSchema,
-      approval,
-      execute: (input, context: ToolContext) =>
-        applyHooks(
-          this.options.hooks ?? {},
-          tool.slug,
-          normalizeToolArguments(input, tool.slug),
-          executeTool,
-          context
-        ),
+      inputSchema: toEveInputSchema(tool, this.options.strict),
+      approval: this.options.needsApproval ? withDurableClosure(closure, this.approve) : undefined,
+      execute: withDurableClosure(closure, this.execute),
     });
   }
 
@@ -107,5 +109,36 @@ export class EveProvider extends BaseAgenticProvider<
 
   wrapMcpServerResponse(data: McpUrlResponse): McpServerGetResponse {
     return data.map(item => ({ url: new URL(item.url), name: item.name })) as McpServerGetResponse;
+  }
+
+  private readonly execute = async (
+    closure: ComposioToolClosure,
+    input: Record<string, unknown>,
+    context: ToolContext
+  ): Promise<ToolExecuteResponse> => {
+    const { slug } = closure;
+    return applyHooks(
+      this.options.hooks ?? {},
+      slug,
+      normalizeToolArguments(input, slug),
+      this.requireBinding(slug).executeTool,
+      context
+    );
+  };
+
+  private readonly approve = (
+    closure: ComposioToolClosure,
+    context: ApprovalContext<Record<string, unknown>>
+  ): boolean =>
+    this.options.needsApproval?.(this.requireBinding(closure.slug).tool, context) ?? false;
+
+  private requireBinding(slug: string): ToolBinding {
+    const binding = this.bindings.get(slug);
+    if (!binding) {
+      throw new Error(
+        `Composio tool "${slug}" has no executor on this provider. Resolve the session's tools again before calling it.`
+      );
+    }
+    return binding;
   }
 }
