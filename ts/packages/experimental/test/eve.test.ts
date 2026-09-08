@@ -258,6 +258,18 @@ describe('EveProvider', () => {
 });
 
 describe('durable callbacks', () => {
+  type ExecuteCallback = (
+    closure: Record<string, unknown>,
+    input: Record<string, unknown>,
+    context: unknown
+  ) => Promise<ToolExecuteResponse>;
+  type ApproveCallback = (
+    closure: Record<string, unknown>,
+    context: ApprovalContext<Record<string, unknown>>
+  ) => boolean;
+  const persisted = (closure: Record<string, unknown>): Record<string, unknown> =>
+    JSON.parse(JSON.stringify(closure));
+
   it('stamps a JSON-serializable execute descriptor on every wrapped tool', () => {
     const wrapped = new EveProvider().wrapTools(
       [tool('GITHUB_CREATE_ISSUE')],
@@ -267,8 +279,8 @@ describe('durable callbacks', () => {
     const { callback, closure } = requireDurableCallback(wrapped.GITHUB_CREATE_ISSUE, 'execute');
 
     expect(callback).toBeTypeOf('function');
-    expect(closure).toEqual({ slug: 'GITHUB_CREATE_ISSUE' });
-    expect(JSON.parse(JSON.stringify(closure))).toEqual(closure);
+    expect(closure).toEqual({ slug: 'GITHUB_CREATE_ISSUE', binding: expect.any(String) });
+    expect(persisted(closure)).toEqual(closure);
   });
 
   it('stamps an approval descriptor only when a policy is configured', () => {
@@ -279,9 +291,9 @@ describe('durable callbacks', () => {
     }).wrapTools([tool('LOCAL_IMESSAGE_SEND')], execute);
 
     expect(durableCallbacks(unguarded.LOCAL_IMESSAGE_SEND).approvalRequest).toBeUndefined();
-    expect(requireDurableCallback(guarded.LOCAL_IMESSAGE_SEND, 'approvalRequest').closure).toEqual({
-      slug: 'LOCAL_IMESSAGE_SEND',
-    });
+    expect(requireDurableCallback(guarded.LOCAL_IMESSAGE_SEND, 'approvalRequest').closure).toEqual(
+      requireDurableCallback(guarded.LOCAL_IMESSAGE_SEND, 'execute').closure
+    );
   });
 
   it('replays an execute call from its closure alone', async () => {
@@ -291,23 +303,16 @@ describe('durable callbacks', () => {
     }).wrapTools([tool('COMPOSIO_EXECUTE_TOOL')], execute);
     const { callback, closure } = requireDurableCallback(wrapped.COMPOSIO_EXECUTE_TOOL, 'execute');
 
-    const replayed = await (
-      callback as (
-        closure: Record<string, unknown>,
-        input: Record<string, unknown>,
-        context: unknown
-      ) => Promise<ToolExecuteResponse>
-    )(JSON.parse(JSON.stringify(closure)), { q: 'hi' }, {});
+    const replayed = await (callback as ExecuteCallback)(persisted(closure), { q: 'hi' }, {});
 
     expect(execute).toHaveBeenCalledWith('COMPOSIO_EXECUTE_TOOL', { q: 'hi' });
     expect(replayed).toEqual(ok({ url: 'x' }));
   });
 
   it('replays an approval decision from its closure alone', () => {
-    const provider = new EveProvider({
+    const wrapped = new EveProvider({
       needsApproval: requireApprovalForTools('LOCAL_IMESSAGE_SEND'),
-    });
-    const wrapped = provider.wrapTools(
+    }).wrapTools(
       [tool('LOCAL_IMESSAGE_SEND')],
       vi.fn(async () => ok())
     );
@@ -316,43 +321,48 @@ describe('durable callbacks', () => {
       'approvalRequest'
     );
 
-    const decision = (
-      callback as (
-        closure: Record<string, unknown>,
-        context: ApprovalContext<Record<string, unknown>>
-      ) => boolean
-    )(
-      JSON.parse(JSON.stringify(closure)),
+    const decision = (callback as ApproveCallback)(
+      persisted(closure),
       approvalContext('LOCAL_IMESSAGE_SEND', { text: 'test' })
     );
 
     expect(decision).toBe(true);
   });
 
-  it('routes a replayed call to the executor from the latest resolve', async () => {
+  it('keeps each resolve bound to its own executor when sessions share a provider', async () => {
     const provider = new EveProvider();
-    const stale: ExecuteToolFn = vi.fn(async () => ok({ from: 'stale' }));
-    const fresh: ExecuteToolFn = vi.fn(async () => ok({ from: 'fresh' }));
+    const userA: ExecuteToolFn = vi.fn(async () => ok({ from: 'a' }));
+    const userB: ExecuteToolFn = vi.fn(async () => ok({ from: 'b' }));
     const { callback, closure } = requireDurableCallback(
-      provider.wrapTools([tool('GMAIL_SEND_EMAIL')], stale).GMAIL_SEND_EMAIL,
+      provider.wrapTools([tool('GMAIL_SEND_EMAIL')], userA).GMAIL_SEND_EMAIL,
       'execute'
     );
 
-    provider.wrapTools([tool('GMAIL_SEND_EMAIL')], fresh);
-    const replayed = await (
-      callback as (
-        closure: Record<string, unknown>,
-        input: Record<string, unknown>,
-        context: unknown
-      ) => Promise<ToolExecuteResponse>
-    )(closure, {}, {});
+    provider.wrapTools([tool('GMAIL_SEND_EMAIL')], userB);
+    const replayed = await (callback as ExecuteCallback)(persisted(closure), {}, {});
 
-    expect(stale).not.toHaveBeenCalled();
-    expect(replayed).toEqual(ok({ from: 'fresh' }));
+    expect(userB).not.toHaveBeenCalled();
+    expect(replayed).toEqual(ok({ from: 'a' }));
   });
 
-  it('reports a slug the provider can no longer execute', async () => {
-    const { callback } = requireDurableCallback(
+  it('applies the hooks of the provider that produced the closure', async () => {
+    const execute: ExecuteToolFn = vi.fn(async () => ok());
+    const denying = new EveProvider({
+      hooks: { execute: ctx => ctx.deny('blocked by provider A') },
+    }).wrapTools([tool('COMPOSIO_EXECUTE_TOOL')], execute);
+    const permissive = new EveProvider().wrapTools([tool('COMPOSIO_EXECUTE_TOOL')], execute);
+
+    // eve keeps one callback per tool name; whichever provider registered last replays both.
+    const { callback } = requireDurableCallback(permissive.COMPOSIO_EXECUTE_TOOL, 'execute');
+    const { closure } = requireDurableCallback(denying.COMPOSIO_EXECUTE_TOOL, 'execute');
+    const replayed = await (callback as ExecuteCallback)(persisted(closure), {}, {});
+
+    expect(execute).not.toHaveBeenCalled();
+    expect(replayed).toMatchObject({ successful: false, error: 'blocked by provider A' });
+  });
+
+  it('reports a closure this process can no longer execute', async () => {
+    const { callback, closure } = requireDurableCallback(
       new EveProvider().wrapTools(
         [tool('GITHUB_CREATE_ISSUE')],
         vi.fn(async () => ok())
@@ -361,14 +371,63 @@ describe('durable callbacks', () => {
     );
 
     await expect(
-      (
-        callback as (
-          closure: Record<string, unknown>,
-          input: Record<string, unknown>,
-          context: unknown
-        ) => Promise<ToolExecuteResponse>
-      )({ slug: 'GITHUB_REMOVED_TOOL' }, {}, {})
+      (callback as ExecuteCallback)({ ...closure, slug: 'GITHUB_REMOVED_TOOL' }, {}, {})
     ).rejects.toThrow('GITHUB_REMOVED_TOOL');
+    await expect(
+      (callback as ExecuteCallback)({ ...closure, binding: 'from-another-process' }, {}, {})
+    ).rejects.toThrow('GITHUB_CREATE_ISSUE');
+  });
+});
+
+describe('eve replay', () => {
+  // eve's durable-callback validation and replay are not on a public export, so
+  // load them from the installed package by path. If eve moves them, this suite
+  // fails loudly instead of the provider silently drifting from the contract.
+  const eveInternal = (file: string) =>
+    import(new URL(`../node_modules/eve/dist/src/${file}`, import.meta.url).href);
+
+  it('validates and replays a wrapped tool through eve itself', async () => {
+    const [
+      { validateDurableDynamicToolCallbacks },
+      { replayDynamicTools },
+      { callDurableDynamicCallback, lookupDurableDynamicCallback },
+    ] = await Promise.all([
+      eveInternal('context/dynamic-tool-lifecycle.js'),
+      eveInternal('context/build-dynamic-tools.js'),
+      eveInternal('tools/durable-callbacks.js'),
+    ]);
+    const execute: ExecuteToolFn = vi.fn(async () => ok({ replayed: true }));
+    const name = 'COMPOSIO_SEARCH_TOOLS';
+    const wrapped = new EveProvider({
+      needsApproval: requireApprovalForTools(name),
+    }).wrapTools([tool(name)], execute)[name];
+
+    const callbacks = validateDurableDynamicToolCallbacks(name, wrapped);
+    expect(callbacks).toEqual({
+      execute: { closure: { slug: name, binding: expect.any(String) } },
+      approvalRequest: { closure: { slug: name, binding: expect.any(String) } },
+    });
+
+    const [replayed] = replayDynamicTools([
+      {
+        callbacks: JSON.parse(JSON.stringify(callbacks)),
+        description: wrapped.description,
+        entryKey: name,
+        inputSchema: wrapped.inputSchema,
+        name,
+        resolverSlug: 'composio',
+      },
+    ]);
+    await expect(replayed.approval(approvalContext(name, { q: 'hi' }))).resolves.toBe(true);
+
+    // The harness execute wrapper needs a live eve context, so call the registry
+    // the way replayDynamicTools does: the registered callback plus the JSON closure.
+    const registered = lookupDurableDynamicCallback(name, 'execute');
+    const persistedClosure = JSON.parse(JSON.stringify(callbacks.execute.closure));
+    await expect(
+      callDurableDynamicCallback(registered, persistedClosure, { q: 'hi' }, {})
+    ).resolves.toEqual(ok({ replayed: true }));
+    expect(execute).toHaveBeenCalledWith(name, { q: 'hi' });
   });
 });
 

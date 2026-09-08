@@ -7,9 +7,7 @@ type EveSessionSource<S extends EveSession> =
 
 // step.started keeps the tool set current as the model narrows its search;
 // cached per resolved session since session.tools() is a network call. Rejected
-// requests are evicted so transient failures can retry. Wrapped tools carry
-// eve's durable callback descriptors, so a parked call still replays after the
-// resolving process is gone.
+// requests are evicted so transient failures can retry.
 export function defineComposioTools<S extends EveSession>(source: EveSessionSource<S>) {
   const cache = new WeakMap<S, Promise<EveToolCollection>>();
 

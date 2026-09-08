@@ -11,8 +11,6 @@ import type { JsonValue } from 'eve/connections';
  *
  * The descriptor key is a global-registry symbol, the same identity eve's
  * runtime reads, so no eve internal has to be imported.
- *
- * @module experimental/eve/durable
  */
 const DURABLE_CALLBACK = Symbol.for('eve:durable-dynamic-callback');
 

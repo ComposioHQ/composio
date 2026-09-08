@@ -58,20 +58,76 @@ export const requireApprovalForTools = (...toolSlugs: string[]): EveNeedsApprova
   };
 };
 
-/** Live state a durable callback re-attaches to, keyed by the closure's slug. */
-interface ToolBinding {
-  readonly tool: Tool;
-  readonly executeTool: ExecuteToolFn;
-}
-
-/** The JSON snapshot eve persists for each wrapped tool's callbacks. */
-type ComposioToolClosure = { slug: string };
-
 export interface EveProviderOptions {
   strict?: boolean;
   hooks?: EveProviderHooks;
   needsApproval?: EveNeedsApproval;
 }
+
+/** Live state one `wrapTools` call produced, which its durable callbacks re-attach to. */
+interface ToolBinding {
+  readonly tools: ReadonlyMap<string, Tool>;
+  readonly executeTool: ExecuteToolFn;
+  readonly options: EveProviderOptions;
+}
+
+/** The JSON snapshot eve persists for each wrapped tool's callbacks. */
+type ComposioToolClosure = { slug: string; binding: string };
+
+/**
+ * Bindings for every resolve in this process, keyed by the id stamped into the
+ * closure. `executeTool` is bound to one Composio session, so a closure must
+ * name the resolve that produced it rather than just the slug: sessions for
+ * different users share one provider and would otherwise cross-execute. The
+ * map is module-level because eve's callback registry is keyed by tool name
+ * only, so a second `EveProvider` in the process replays through the same
+ * callbacks. Entries live as long as the process; eve can resume a parked
+ * call at any time, and a closure survives a restart only through a fresh
+ * resolve that mints a new binding.
+ */
+const bindings = new Map<string, ToolBinding>();
+let nextBindingId = 0;
+
+const bind = (binding: ToolBinding): string => {
+  const id = String(++nextBindingId);
+  bindings.set(id, binding);
+  return id;
+};
+
+const requireBinding = ({ slug, binding }: ComposioToolClosure): ToolBinding & { tool: Tool } => {
+  const bound = bindings.get(binding);
+  const tool = bound?.tools.get(slug);
+  if (!bound || !tool) {
+    throw new Error(
+      `Composio tool "${slug}" has no executor in this process. Resolve the session's tools again before calling it.`
+    );
+  }
+  return { ...bound, tool };
+};
+
+const execute = async (
+  closure: ComposioToolClosure,
+  input: Record<string, unknown>,
+  context: ToolContext
+): Promise<ToolExecuteResponse> => {
+  const { executeTool, options } = requireBinding(closure);
+  return applyHooks(
+    options.hooks ?? {},
+    closure.slug,
+    normalizeToolArguments(input, closure.slug),
+    executeTool,
+    context
+  );
+};
+
+// Only stamped on tools whose binding carries a policy, so the policy is set here.
+const approve = (
+  closure: ComposioToolClosure,
+  context: ApprovalContext<Record<string, unknown>>
+): boolean => {
+  const { tool, options } = requireBinding(closure);
+  return options.needsApproval!(tool, context);
+};
 
 export class EveProvider extends BaseAgenticProvider<
   EveToolCollection,
@@ -80,65 +136,34 @@ export class EveProvider extends BaseAgenticProvider<
 > {
   readonly name = 'eve';
 
-  /**
-   * Live executors keyed by slug. A durable callback receives only its JSON
-   * closure, so it looks the executor up here; bindings accumulate across
-   * resolves so a call parked against an earlier tool set still finds one.
-   */
-  private readonly bindings = new Map<string, ToolBinding>();
-
   constructor(private readonly options: EveProviderOptions = {}) {
     super();
   }
 
   wrapTool(tool: Tool, executeTool: ExecuteToolFn): EveTool {
-    this.bindings.set(tool.slug, { tool, executeTool });
-    const closure: ComposioToolClosure = { slug: tool.slug };
-
-    return defineTool<Record<string, unknown>, ToolExecuteResponse>({
-      description: tool.description ?? tool.name,
-      inputSchema: toEveInputSchema(tool, this.options.strict),
-      approval: this.options.needsApproval ? withDurableClosure(closure, this.approve) : undefined,
-      execute: withDurableClosure(closure, this.execute),
-    });
+    return this.wrapTools([tool], executeTool)[tool.slug];
   }
 
   wrapTools(tools: Tool[], executeTool: ExecuteToolFn): EveToolCollection {
-    return Object.fromEntries(tools.map(tool => [tool.slug, this.wrapTool(tool, executeTool)]));
+    const binding = bind({
+      tools: new Map(tools.map(tool => [tool.slug, tool])),
+      executeTool,
+      options: this.options,
+    });
+    return Object.fromEntries(tools.map(tool => [tool.slug, this.defineBoundTool(tool, binding)]));
   }
 
   wrapMcpServerResponse(data: McpUrlResponse): McpServerGetResponse {
     return data.map(item => ({ url: new URL(item.url), name: item.name })) as McpServerGetResponse;
   }
 
-  private readonly execute = async (
-    closure: ComposioToolClosure,
-    input: Record<string, unknown>,
-    context: ToolContext
-  ): Promise<ToolExecuteResponse> => {
-    const { slug } = closure;
-    return applyHooks(
-      this.options.hooks ?? {},
-      slug,
-      normalizeToolArguments(input, slug),
-      this.requireBinding(slug).executeTool,
-      context
-    );
-  };
-
-  private readonly approve = (
-    closure: ComposioToolClosure,
-    context: ApprovalContext<Record<string, unknown>>
-  ): boolean =>
-    this.options.needsApproval?.(this.requireBinding(closure.slug).tool, context) ?? false;
-
-  private requireBinding(slug: string): ToolBinding {
-    const binding = this.bindings.get(slug);
-    if (!binding) {
-      throw new Error(
-        `Composio tool "${slug}" has no executor on this provider. Resolve the session's tools again before calling it.`
-      );
-    }
-    return binding;
+  private defineBoundTool(tool: Tool, binding: string): EveTool {
+    const closure: ComposioToolClosure = { slug: tool.slug, binding };
+    return defineTool<Record<string, unknown>, ToolExecuteResponse>({
+      description: tool.description ?? tool.name,
+      inputSchema: toEveInputSchema(tool, this.options.strict),
+      approval: this.options.needsApproval ? withDurableClosure(closure, approve) : undefined,
+      execute: withDurableClosure(closure, execute),
+    });
   }
 }

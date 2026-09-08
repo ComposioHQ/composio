@@ -103,7 +103,7 @@ Your agent now has the Tool Router meta-tools (`COMPOSIO_SEARCH_TOOLS`, `COMPOSI
   normalizer.
 </Callout>
 
-eve requires every dynamic tool to carry a durable descriptor for its callbacks, and its build transform only stamps one on tools authored in your own source. `EveProvider` stamps its own, so its tools are accepted as they are: each callback persists just the tool slug, and eve re-attaches it to the live Composio executor when a parked or replayed call resumes.
+eve requires every dynamic tool to carry a durable descriptor for its callbacks, and its build transform only stamps one on tools authored in your own source. `EveProvider` stamps its own, so its tools are accepted as they are: each callback persists only the tool slug and an id for the resolve that produced it, and `EveProvider` re-attaches it to that resolve's Composio executor when a parked or replayed call resumes. A call parked across a restart replays after eve resolves the tools again.
 
 ## Hooks
 
