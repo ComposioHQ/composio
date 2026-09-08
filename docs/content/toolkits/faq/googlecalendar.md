@@ -12,6 +12,17 @@ Remove the additional scopes from your auth config, or create your own OAuth app
 
 When using custom OAuth credentials, the Google Calendar API must be enabled in the Google Cloud project that owns those credentials. Enable it in Google Cloud Console under APIs & Services, wait a few minutes, and retry.
 
+## Why was my Google Calendar event created at the wrong time?
+
+When creating or fully updating an event, do not send both an offset-bearing datetime and a separate `timezone` value for the same start or end time. A current Composio timezone-normalization issue can consume the datetime offset and then apply the supplied timezone again, storing the event earlier than requested.
+
+Use one of these input patterns instead:
+
+- For a non-recurring event, use an offset-bearing datetime without `timezone`, for example `2026-08-20T15:00:00+02:00`.
+- For a recurring event, or when using an IANA timezone, use a local datetime with `timezone`, for example `2026-08-20T15:00:00` and `Europe/Berlin`.
+
+Read the event back after creating or updating it when the exact stored instant matters. See Google's [event time zone guidance](https://developers.google.com/workspace/calendar/api/concepts/events-calendars#event_time_zone).
+
 ## Why am I getting "Error 400: invalid_scope"?
 
 The requested scopes are invalid or incorrectly formatted in the authorization URL. Verify your scope values against the [Google OAuth scopes docs](https://developers.google.com/identity/protocols/oauth2). If you're creating auth configs programmatically, see the [programmatic auth config guide](/docs/authentication/programmatic-auth-configs).
