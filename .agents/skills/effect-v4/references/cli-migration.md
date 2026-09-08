@@ -11,17 +11,19 @@ Read this before translating `@effect/cli` commands. The v4 CLI lives under `eff
 | `@effect/cli/Args`            | `effect/unstable/cli/Argument`                                           |
 | `@effect/cli/ValidationError` | `effect/unstable/cli/CliError`                                           |
 | `@effect/cli/BuiltInOptions`  | `effect/unstable/cli/GlobalFlag`                                         |
-| `Command.run` assumptions     | Verify `Command.run` / `Command.runWith` and provided services in source |
+| `Command.run(command, cfg)`   | `Command.runWith(command, cfg)`; `Command.run` now reads argv from Stdio |
 
-`CommandDescriptor` has no like-for-like replacement: the upstream map points toward completions APIs, while Composio currently inspects descriptors for help and usage. Treat that code as a redesign seam, not a rename.
+The runner config also changes shape: v4 `run` and `runWith` take `{ version, renderErrors? }`, so the v3 `{ name, version }` literal no longer type-checks. Earlier v4 betas exposed `Command.withHidden` and a `hidden` property; the pinned beta renamed them to `Command.unlisted` and `unlisted`. V3 `@effect/cli` has no per-command hidden flag, so Composio's `visibility` map in `src/commands/index.ts` is what ports to `Command.unlisted`.
 
-## Composio configuration and rendering seams
+`CommandDescriptor` and `Usage` have no like-for-like replacement: the upstream map points toward completions APIs, and help and usage generation are internal. The descriptor accessors collapse to public fields on `Command.Command` (`name`, `alias`, `subcommands`, `description`, `shortDescription`, `examples`, `annotations`, `unlisted`). Composio inspects descriptors in `src/commands/command-introspection.ts`; treat that module as a redesign boundary, not a rename.
 
-- V3 config sets `showBuiltIns: false`, `autoCorrectLimit: 0`, and `isCaseSensitive: true`. The current v4 `CliConfig` exposes only `builtIns`; it has no corresponding suggestion-limit or case-sensitivity fields.
-- V4 parser suggestions are currently produced internally with edit distance 2. Preserve Composio's no-suggestion contract with explicit tests and a deliberate output/parser adaptation; do not assume config parity.
-- `builtIns: []` disables built-in parsing as well as hiding built-ins from help. Preserving `--help`, `-h`, `--version`, and root `-v` while omitting other built-ins requires a reviewed built-in list or custom global actions.
-- `Command.runWith` catches `CliError.ShowHelp`, prints help to stdout and parse errors to stderr, then re-fails. Composio's outer error renderer must not print the same error/help again.
-- `Command.runWith` accepts user arguments without executable prefixes. Audit the current full-`process.argv` preprocessing and background-worker bypass before changing the runner.
+## Composio configuration and rendering boundaries
+
+- V3 config sets `showBuiltIns: false`, `autoCorrectLimit: 0`, and `isCaseSensitive: true`. The current v4 `CliConfig` is a `Context.Reference` that exposes only `builtIns`; it has no corresponding suggestion-limit or case-sensitivity fields.
+- V4 parser suggestions are produced internally with edit distance 2 (`internal/auto-suggest.ts`). Preserve Composio's no-suggestion contract with explicit tests and a deliberate output/parser adaptation; do not assume config parity.
+- `builtIns` feeds both parsing and help. `GlobalFlag.BuiltIns` is `[Help, Version, Wizard, Completions, LogLevel]`; `builtIns: []` disables built-in parsing as well as hiding built-ins from help. Preserving `--help`, `-h`, `--version`, and root `-v` while omitting other built-ins requires a reviewed built-in list or custom `GlobalFlag.action` entries.
+- `Command.runWith` catches `CliError.ShowHelp`, always prints the help document to stdout (including for `--help`), prints parse errors to stderr, then re-fails. `renderErrors: false` suppresses only the stderr parse-error lines and the `CliError.UserError` rendering; it never suppresses help. Composio's outer renderer must therefore not print help again on `ShowHelp`, or the runner must be adapted so one owner renders help.
+- `Command.runWith` accepts user arguments without executable prefixes. The current `bin.ts` reads `process.argv` once and threads the full argv (executable and script included) through `cli-main.ts` and the background-worker branch; strip the prefix at the runner boundary and keep the worker bypass ahead of parsing.
 
 Inspect `CliConfig.ts`, `GlobalFlag.ts`, `CliOutput.ts`, `CliError.ts`, and the `runWith` implementation together before choosing the runner design.
 

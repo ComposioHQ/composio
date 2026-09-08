@@ -1,6 +1,6 @@
 ---
 name: effect-v4
-description: Port the Composio CLI from Effect v3 to Effect v4 beta using the vendored upstream source oracle, exact package pins, and behavior-preserving migration checks. Use for v3-to-v4 API translation, effect/unstable/cli, Context.Service, Schema.TaggedErrorClass, Effect v4 package consolidation, or @effect/vitest v4 work under ts/packages/cli. Do not use for unrelated TypeScript SDK work or routine Effect v3 maintenance.
+description: Port the Composio CLI from Effect v3 to Effect v4 beta using the vendored upstream source oracle, exact package pins, and behavior-preserving migration checks. Use for v3-to-v4 API translation, effect/unstable/cli, Context.Service, Schema.TaggedError class errors, Effect v4 package consolidation, or @effect/vitest v4 work under ts/packages/cli. Do not use for unrelated TypeScript SDK work or routine Effect v3 maintenance.
 ---
 
 # Effect v4
@@ -18,15 +18,15 @@ The CLI still runs on Effect v3. Treat every v4 change as migration work until t
 ## Source and package boundary
 
 - Use `ts/vendor/effect` as a read-only source oracle. Initialize it with `git submodule update --init ts/vendor/effect` when needed; never edit or import from it.
-- Record the gitlink SHA separately from npm versions. A source-oracle bump does not authorize a dependency bump.
-- Pin every v4 beta exactly. Keep `effect`, `@effect/vitest`, and remaining Effect packages on the same beta; never use `^`, `@beta`, or an arbitrary snapshot for the migration baseline.
+- The gitlink tracks the upstream `effect@<beta>` tag commit for the beta pinned in `versions.json`. Record the gitlink SHA separately from npm versions; a source-oracle bump does not authorize a dependency bump.
+- Pin every v4 beta exactly. Keep `effect`, `@effect/vitest`, and remaining Effect packages on the same beta; never use `^`, `@beta`, `@rc`, or an arbitrary snapshot for the migration baseline.
 - Verify an unfamiliar API against the vendored source, then compile it against the exact package versions in `versions.json`. Source may be ahead of published packages; the compiler is the compatibility gate.
 
 ## Non-negotiables
 
 - Preserve CLI stdout/stderr, help, parsing, exit-code, and cross-platform binary contracts.
 - Use `Effect.gen` with `yield*`; use `Effect.fn` for named Effect-returning functions.
-- Model expected failures with `Schema.TaggedErrorClass` and recover with typed combinators or `Match`, not manual `_tag` branching.
+- Model expected failures with `Schema.TaggedError` classes and recover with typed combinators or `Match`, not manual `_tag` branching.
 - Define services with `Context.Service` and explicit layers. V4 does not generate `.Default` layers.
 - Wrap fallible Promises with `Effect.tryPromise`; do not use `async`/`await` or `try`/`catch` inside Effect workflows.
 - Assume v3 package names and remembered APIs are wrong until the local source and checker confirm them.

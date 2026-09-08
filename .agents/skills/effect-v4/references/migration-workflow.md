@@ -21,9 +21,9 @@ pnpm test:e2e:cli
 V4 consolidates many v3 packages into `effect` or `effect/unstable/*`. Inventory every direct CLI dependency before editing the catalog:
 
 - `@effect/cli` moves to `effect/unstable/cli`.
-- `@effect/platform` services move into `effect` or `effect/unstable/*`.
+- `@effect/platform` services move into `effect` or `effect/unstable/*`. The CLI already imports them by subpath, so each move is a path rewrite. The subpaths the CLI imports today map to: `FileSystem` → `effect/FileSystem`, `Path` → `effect/Path`, `Error` → `effect/PlatformError`, `Command` → `effect/unstable/process/ChildProcess`, `CommandExecutor` → `effect/unstable/process/ChildProcessSpawner`, `HttpClient`, `HttpClientRequest`, `HttpClientResponse`, and `FetchHttpClient` → the same names under `effect/unstable/http/`. `@effect/platform/Runtime` has no single replacement; derive the runner type from `effect/Runtime.makeRunMain`. Re-run the import inventory before porting; this list is the current snapshot, not a contract.
 - `@effect/cluster`, `@effect/rpc`, `@effect/sql`, and `@effect/workflow` mostly move under matching unstable modules; driver packages that remain separate must match the exact core beta.
-- `@effect/platform-bun` and `@effect/vitest` remain separate packages and must match the exact `effect` beta.
+- `@effect/platform-bun` and `@effect/vitest` remain separate packages and must match the exact `effect` beta. `BunContext` becomes `BunServices` (no worker services); `BunFileSystem`, `BunPath`, and `BunRuntime` keep their module names.
 - Do not remove a v3 satellite until searches prove its imports have moved and the replacement compiles.
 
 Use `ts/vendor/effect/MIGRATION.md` and `ts/vendor/effect/migration/v3-to-v4.md` as the primary rename map. Search the actual source for gaps; the map is not exhaustive.
@@ -43,11 +43,11 @@ Keep commits reviewable by subsystem. A green typecheck is necessary but not suf
 
 The submodule is a source reference; the CLI runs npm packages. For every upgrade:
 
-1. Verify the intended upstream gitlink is reachable from canonical `Effect-TS/effect`.
-2. Record the submodule SHA and source manifest version.
-3. Verify the exact beta exists for `effect` and every remaining Effect package.
+1. Resolve the target beta from the npm `effect@beta` dist-tag, never from `rc`, `snapshot`, or a range.
+2. Point the gitlink at the upstream `effect@<beta>` tag commit and verify the tag resolves on canonical `Effect-TS/effect`.
+3. Verify the exact beta exists for `effect` and every remaining Effect package, then record all of them in `versions.json`.
 4. Update package pins deliberately and regenerate `pnpm-lock.yaml` with pnpm.
-5. Compile against installed packages. Never infer package compatibility from a newer source checkout alone.
+5. Compile against installed packages with `scripts/check-examples.mjs`. Never infer package compatibility from a newer source checkout alone.
 
 ## Stop conditions
 
