@@ -487,10 +487,17 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
             for idx, future in local_futures:
                 local_results.append((idx, future.result()))
 
-            # Gather remote result
+            # Gather remote result. A transport failure (exception from the
+            # backend call) must not discard completed local results, so it
+            # is captured here and surfaced as per-tool failures below
+            # (matches TS).
             remote_result: t.Optional[t.Dict[str, t.Any]] = None
+            remote_error_message: t.Optional[str] = None
             if remote_future:
-                remote_result = remote_future.result()
+                try:
+                    remote_result = remote_future.result()
+                except Exception as error:
+                    remote_error_message = str(error) or "Remote tool execution failed"
 
         # If only one local tool and no remote, return unwrapped
         if not remote_indices and len(local_results) == 1:
@@ -515,11 +522,26 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
         # Restore original request order, then re-index sequentially.
         remote_data_raw = (remote_result or {}).get("data")
         remote_data = remote_data_raw if isinstance(remote_data_raw, dict) else {}
-        remote_results_list = (
-            remote_data.get("results", [])
-            if isinstance(remote_data.get("results"), list)
-            else []
-        )
+        remote_results_list: t.List[t.Dict[str, t.Any]]
+        if remote_error_message is not None:
+            remote_results_list = [
+                {
+                    "response": {
+                        "successful": False,
+                        "data": {},
+                        "error": remote_error_message,
+                    },
+                    "tool_slug": parsed[index]["tool_slug"],
+                    "error": remote_error_message,
+                }
+                for index in remote_indices
+            ]
+        else:
+            remote_results_list = (
+                remote_data.get("results", [])
+                if isinstance(remote_data.get("results"), list)
+                else []
+            )
         merged_results = [
             {
                 **entry,
@@ -534,19 +556,23 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
         all_results = [{**entry, "index": i} for i, entry in enumerate(merged_results)]
         failed = sum(1 for r in all_results if r.get("error"))
         merged_data = {**remote_data, "results": all_results}
-        if local_entries and any(
-            key in remote_data
-            for key in ("total_count", "success_count", "error_count")
+        if local_entries and (
+            remote_error_message is not None
+            or any(
+                key in remote_data
+                for key in ("total_count", "success_count", "error_count")
+            )
         ):
             merged_data["total_count"] = len(all_results)
             merged_data["success_count"] = len(all_results) - failed
             merged_data["error_count"] = failed
 
-        remote_error = (
-            str(remote_result.get("error"))
-            if remote_result and remote_result.get("error") is not None
-            else None
-        )
+        remote_error = remote_error_message
+        if remote_error is None and remote_result:
+            raw_remote_error = remote_result.get("error")
+            remote_error = (
+                str(raw_remote_error) if raw_remote_error is not None else None
+            )
         has_any_error = any(r.get("error") for _, r in local_results) or bool(
             remote_error
         )
