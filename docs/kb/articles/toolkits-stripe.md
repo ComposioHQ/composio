@@ -16,4 +16,4 @@ Use `STRIPE_LIST_SUBSCRIPTIONS` to retrieve subscription data, then calculate MR
 
 ## Stripe payment-success triggers are available
 
-Use `STRIPE_INVOICE_PAYMENT_SUCCEEDED_TRIGGER` for successful invoice payments and `STRIPE_CHECKOUT_SESSION_COMPLETED_TRIGGER` for completed Checkout sessions. Fetch the current trigger catalog before implementation rather than assuming every Stripe event has a corresponding trigger.
+Use `STRIPE_CHECKOUT_SESSION_COMPLETED` for completed Checkout sessions. Fetch the current trigger catalog for invoice payment events before implementation rather than assuming every Stripe event has a corresponding trigger.
