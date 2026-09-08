@@ -127,6 +127,7 @@ const IPV4_BLOCKED_CIDRS: ReadonlyArray<readonly [string, number]> = [
   ['172.16.0.0', 12], // private
   ['192.0.0.0', 24], // IETF protocol assignments
   ['192.0.2.0', 24], // TEST-NET-1
+  ['192.88.99.0', 24], // 6to4 relay anycast (deprecated, RFC 7526)
   ['192.168.0.0', 16], // private
   ['198.18.0.0', 15], // benchmarking
   ['198.51.100.0', 24], // TEST-NET-2
@@ -196,8 +197,20 @@ const isBlockedIpv6 = (ip: string): boolean => {
     return isBlockedIpv4Long((((h[6] << 16) >>> 0) | h[7]) >>> 0);
   }
 
+  // Transition and tunnel ranges. Each one either carries an arbitrary IPv4
+  // address in its low bits or is reserved, so a public-looking literal here
+  // can still name internal space: `2002:7f00:1::` is 6to4 for `127.0.0.1`.
+  // Blocking the whole range rather than decoding it matches the Python guard,
+  // where `ipaddress.is_global` already rejects all of them.
+  if (h[0] === 0x2001 && (h[1] & 0xfe00) === 0) return true; // IETF protocol assignments 2001::/23 (incl. Teredo)
+  if (h[0] === 0x2001 && h[1] === 0x0db8) return true; // documentation 2001:db8::/32
+  if (h[0] === 0x2002) return true; // 6to4 2002::/16
+  if (h[0] === 0x0064 && h[1] === 0xff9b && h[2] === 0x0001) return true; // local-use NAT64 64:ff9b:1::/48
+  if (h[0] === 0x0100 && h[1] === 0 && h[2] === 0 && h[3] === 0) return true; // discard-only 100::/64
+
   if ((h[0] & 0xfe00) === 0xfc00) return true; // unique local fc00::/7
   if ((h[0] & 0xffc0) === 0xfe80) return true; // link-local fe80::/10
+  if ((h[0] & 0xffc0) === 0xfec0) return true; // site-local fec0::/10 (deprecated)
   if ((h[0] & 0xff00) === 0xff00) return true; // multicast ff00::/8
 
   return false;

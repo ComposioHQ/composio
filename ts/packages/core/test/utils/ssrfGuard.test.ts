@@ -43,13 +43,24 @@ describe('isBlockedIp', () => {
       '169.254.169.254', // cloud metadata
       '100.64.0.1', // CGNAT
       '0.0.0.0',
+      '224.0.0.1', // multicast
+      '233.252.0.1', // MCAST-TEST-NET
+      '192.88.99.1', // 6to4 relay anycast (deprecated)
     ]) {
       expect(isBlockedIp(ip), ip).toBe(true);
     }
   });
 
   it('allows public IPv4 addresses', () => {
-    for (const ip of ['8.8.8.8', '1.1.1.1', '93.184.216.34', '172.15.0.1', '172.32.0.1']) {
+    for (const ip of [
+      '8.8.8.8',
+      '1.1.1.1',
+      '93.184.216.34',
+      '172.15.0.1',
+      '172.32.0.1',
+      '223.255.255.255',
+      '192.88.100.1',
+    ]) {
       expect(isBlockedIp(ip), ip).toBe(false);
     }
   });
@@ -75,8 +86,35 @@ describe('isBlockedIp', () => {
     }
   });
 
+  it('blocks the transition ranges that carry an arbitrary IPv4 address', () => {
+    // A public-looking literal that still names internal space. The Python
+    // guard rejects all of these through `ipaddress.is_global`.
+    for (const ip of [
+      '2002:7f00:1::', // 6to4 for 127.0.0.1
+      '2002:c0a8:1::', // 6to4 for 192.168.0.1
+      '2002:8080:8080::', // 6to4 for a public address — the range goes as a whole
+      '2001::7f00:1', // Teredo 2001::/32
+      '2001:2::1', // benchmarking
+      '2001:10::1', // ORCHID
+      '2001:db8::1', // documentation
+      '64:ff9b:1::7f00:1', // local-use NAT64 for 127.0.0.1
+      '100::1', // discard-only
+      'fec0::1', // site-local (deprecated)
+    ]) {
+      expect(isBlockedIp(ip), ip).toBe(true);
+    }
+  });
+
   it('allows public IPv6 and public IPv4-mapped/compat addresses', () => {
-    for (const ip of ['2606:4700:4700::1111', '::ffff:8.8.8.8', '::8.8.8.8', '::808:808']) {
+    for (const ip of [
+      '2606:4700:4700::1111',
+      '::ffff:8.8.8.8',
+      '::8.8.8.8',
+      '::808:808',
+      // Neighbours of the ranges above, so the list does not overreach.
+      '2001:4860:4860::8888',
+      '2a00:1450:4001:80f::200e',
+    ]) {
       expect(isBlockedIp(ip), ip).toBe(false);
     }
   });

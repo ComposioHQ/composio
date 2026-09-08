@@ -31,6 +31,19 @@ from composio.utils.url_safety import (
         "::169.254.169.254",
         "64:ff9b::7f00:1",
         "64:ff9b::a9fe:a9fe",
+        # Ranges the TypeScript guard's CIDR list blocks, so this one does too.
+        "224.0.0.1",
+        "233.252.0.1",
+        "192.88.99.1",
+        "ff02::1",
+        "fec0::1",
+        # Blocked here already; asserted so the two lists stay comparable.
+        "2001::7f00:1",
+        "2002:7f00:1::",
+        "2002:c0a8:1::",
+        "64:ff9b:1::7f00:1",
+        "100::1",
+        "2001:db8::1",
     ],
 )
 def test_blocks_non_public_addresses(address: str) -> None:
@@ -45,6 +58,11 @@ def test_blocks_non_public_addresses(address: str) -> None:
         "2606:4700:4700::1111",
         "::8.8.8.8",
         "64:ff9b::8.8.8.8",
+        # Neighbours of the blocked ranges above, so neither list overreaches.
+        "2001:4860:4860::8888",
+        "2a00:1450:4001:80f::200e",
+        "223.255.255.255",
+        "192.88.100.1",
     ],
 )
 def test_allows_public_addresses(address: str) -> None:

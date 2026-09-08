@@ -47,6 +47,17 @@ _CONNECT_ERRORS = (
     urllib3.exceptions.NameResolutionError,
 )
 
+# Ranges that must not be reachable from a user-supplied URL but that
+# ``ipaddress.is_global`` does not reject on its own, because it only asks
+# whether an address is private. The TypeScript guard blocks the same ones from
+# its explicit CIDR list.
+_ALSO_BLOCKED_NETWORKS = (
+    ipaddress.ip_network("224.0.0.0/4"),  # IPv4 multicast
+    ipaddress.ip_network("192.88.99.0/24"),  # 6to4 relay anycast (RFC 7526)
+    ipaddress.ip_network("ff00::/8"),  # IPv6 multicast
+    ipaddress.ip_network("fec0::/10"),  # IPv6 site-local (deprecated)
+)
+
 _REDIRECT_STATUS_CODES = frozenset({301, 302, 303, 307, 308})
 # Headers that describe a request body, so they have to go when the body does.
 # The Fetch standard's "request-body-header name" set, plus the two `requests`
@@ -80,6 +91,9 @@ def is_blocked_ip(value: str) -> bool:
             embedded_ipv4 = ipaddress.IPv4Address(address.packed[-4:])
         if embedded_ipv4 is not None:
             return is_blocked_ip(str(embedded_ipv4))
+
+    if any(address in network for network in _ALSO_BLOCKED_NETWORKS):
+        return True
 
     return not address.is_global
 
