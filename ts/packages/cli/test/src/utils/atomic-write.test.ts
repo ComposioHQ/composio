@@ -1,10 +1,9 @@
-import * as FileSystem from '@effect/platform/FileSystem';
-import * as Path from '@effect/platform/Path';
-import * as PlatformError from '@effect/platform/Error';
 import * as BunFileSystem from '@effect/platform-bun/BunFileSystem';
 import * as BunPath from '@effect/platform-bun/BunPath';
 import { describe, expect, layer } from '@effect/vitest';
-import { Deferred, Effect, Fiber, Layer } from 'effect';
+import { Deferred, Effect, Fiber, FileSystem, Layer, Path, PlatformError } from 'effect';
+
+type WriteFileOptions = Parameters<FileSystem.FileSystem['writeFileString']>[2];
 import { atomicWritePrivateFileString, ensurePrivateFileMode } from 'src/utils/atomic-write';
 
 const TestPlatform = Layer.mergeAll(BunFileSystem.layer, BunPath.layer);
@@ -19,8 +18,8 @@ const failChmod = (fs: FileSystem.FileSystem, onAttempt: () => void): FileSystem
       return (path: string) => {
         onAttempt();
         return Effect.fail(
-          new PlatformError.SystemError({
-            reason: 'PermissionDenied',
+          PlatformError.systemError({
+            _tag: 'PermissionDenied',
             module: 'FileSystem',
             method: 'chmod',
             pathOrDescriptor: path,
@@ -43,7 +42,7 @@ const collideWithTmpWrites = (
         return Reflect.get(target, property, receiver);
       }
 
-      return (path: string, contents: string, options?: FileSystem.WriteFileOptions) => {
+      return (path: string, contents: string, options?: WriteFileOptions) => {
         if (collisions >= maxCollisions || !path.includes('.composio-tmp.')) {
           return target.writeFileString(path, contents, options);
         }
@@ -69,7 +68,7 @@ const delayAfterTmpWrite = (
         return Reflect.get(target, property, receiver);
       }
 
-      return (path: string, contents: string, options?: FileSystem.WriteFileOptions) =>
+      return (path: string, contents: string, options?: WriteFileOptions) =>
         target.writeFileString(path, contents, options).pipe(
           Effect.tap(() => onStaged),
           Effect.andThen(release)
@@ -84,7 +83,7 @@ const failAfterTmpWrite = (fs: FileSystem.FileSystem): FileSystem.FileSystem =>
         return Reflect.get(target, property, receiver);
       }
 
-      return (path: string, contents: string, options?: FileSystem.WriteFileOptions) => {
+      return (path: string, contents: string, options?: WriteFileOptions) => {
         if (!path.includes('.composio-tmp.')) {
           return target.writeFileString(path, contents, options);
         }
@@ -92,8 +91,8 @@ const failAfterTmpWrite = (fs: FileSystem.FileSystem): FileSystem.FileSystem =>
         return target.writeFileString(path, contents, options).pipe(
           Effect.andThen(
             Effect.fail(
-              new PlatformError.SystemError({
-                reason: 'PermissionDenied',
+              PlatformError.systemError({
+                _tag: 'PermissionDenied',
                 module: 'FileSystem',
                 method: 'writeFileString',
                 pathOrDescriptor: path,
@@ -107,7 +106,7 @@ const failAfterTmpWrite = (fs: FileSystem.FileSystem): FileSystem.FileSystem =>
 
 describe('atomicWritePrivateFileString', () => {
   layer(TestPlatform)(it => {
-    it.scoped('retries an exclusive random staging path without touching a collision', () =>
+    it.effect('retries an exclusive random staging path without touching a collision', () =>
       Effect.gen(function* () {
         const fs = yield* FileSystem.FileSystem;
         const path = yield* Path.Path;
@@ -131,7 +130,7 @@ describe('atomicWritePrivateFileString', () => {
       })
     );
 
-    it.scoped('stops after bounded collisions without deleting foreign files', () =>
+    it.effect('stops after bounded collisions without deleting foreign files', () =>
       Effect.gen(function* () {
         const fs = yield* FileSystem.FileSystem;
         const path = yield* Path.Path;
@@ -148,7 +147,7 @@ describe('atomicWritePrivateFileString', () => {
           contents: '{"api_key":"valid"}\n',
         }).pipe(Effect.flip);
 
-        expect(error).toMatchObject({ _tag: 'SystemError', reason: 'AlreadyExists' });
+        expect(error).toMatchObject({ _tag: 'PlatformError', reason: { _tag: 'AlreadyExists' } });
         expect(collisionPaths).toHaveLength(5);
         expect(new Set(collisionPaths)).toHaveLength(5);
         expect(yield* fs.exists(target)).toBe(false);
@@ -158,7 +157,7 @@ describe('atomicWritePrivateFileString', () => {
       })
     );
 
-    it.scoped('cleans staging before honoring interruption', () =>
+    it.effect('cleans staging before honoring interruption', () =>
       Effect.gen(function* () {
         const fs = yield* FileSystem.FileSystem;
         const path = yield* Path.Path;
@@ -177,11 +176,11 @@ describe('atomicWritePrivateFileString', () => {
           fs: delayedFs,
           target,
           contents: '{"api_key":"valid"}\n',
-        }).pipe(Effect.fork);
+        }).pipe(Effect.forkChild);
 
         yield* Deferred.await(staged);
-        const interruptFiber = yield* Fiber.interrupt(fiber).pipe(Effect.fork);
-        yield* Effect.yieldNow();
+        const interruptFiber = yield* Fiber.interrupt(fiber).pipe(Effect.forkChild);
+        yield* Effect.yieldNow;
         yield* Deferred.succeed(release, undefined);
         yield* Fiber.join(interruptFiber);
 
@@ -193,7 +192,7 @@ describe('atomicWritePrivateFileString', () => {
       })
     );
 
-    it.scoped('cleans a partially written staging file on non-collision failure', () =>
+    it.effect('cleans a partially written staging file on non-collision failure', () =>
       Effect.gen(function* () {
         const fs = yield* FileSystem.FileSystem;
         const path = yield* Path.Path;
@@ -208,7 +207,10 @@ describe('atomicWritePrivateFileString', () => {
           contents: '{"api_key":"new"}\n',
         }).pipe(Effect.flip);
 
-        expect(error).toMatchObject({ _tag: 'SystemError', reason: 'PermissionDenied' });
+        expect(error).toMatchObject({
+          _tag: 'PlatformError',
+          reason: { _tag: 'PermissionDenied' },
+        });
         expect(yield* fs.readFileString(target, 'utf8')).toBe('{"api_key":"old"}\n');
         expect(
           (yield* fs.readDirectory(directory)).filter(name => name.includes('.composio-tmp.'))
@@ -220,7 +222,7 @@ describe('atomicWritePrivateFileString', () => {
 
 describe('ensurePrivateFileMode', () => {
   layer(TestPlatform)(it => {
-    it.scoped('keeps valid contents readable when chmod fails', () =>
+    it.effect('keeps valid contents readable when chmod fails', () =>
       Effect.gen(function* () {
         const fs = yield* FileSystem.FileSystem;
         const path = yield* Path.Path;
@@ -244,7 +246,7 @@ describe('ensurePrivateFileMode', () => {
       })
     );
 
-    it.scoped('does not call chmod for an already-private file', () =>
+    it.effect('does not call chmod for an already-private file', () =>
       Effect.gen(function* () {
         const fs = yield* FileSystem.FileSystem;
         const path = yield* Path.Path;

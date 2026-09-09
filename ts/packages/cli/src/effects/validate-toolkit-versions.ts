@@ -207,7 +207,7 @@ export const validateToolkitVersionOverrides = ({
             })
           )
         ),
-        Effect.catchTag('NoSuchElementException', () =>
+        Effect.catchTag('NoSuchElementError', () =>
           Effect.fail(
             new ToolkitVersionValidationError({
               message: 'API client not initialized',

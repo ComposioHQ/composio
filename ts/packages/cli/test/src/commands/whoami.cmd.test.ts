@@ -9,12 +9,12 @@ describe('CLI: composio whoami', () => {
     vi.restoreAllMocks();
   });
 
-  const testConfigProvider = ConfigProvider.fromMap(
-    new Map([['COMPOSIO_USER_API_KEY', 'api_key_from_test_config_provider']])
-  ).pipe(extendConfigProvider);
+  const testConfigProvider = ConfigProvider.fromEnv({
+    env: { COMPOSIO_USER_API_KEY: 'api_key_from_test_config_provider' },
+  }).pipe(extendConfigProvider);
 
   layer(TestLive({ baseConfigProvider: testConfigProvider }))('with config override', it => {
-    it.scoped('[Given] `COMPOSIO_USER_API_KEY` [Then] prints global user context JSON', () =>
+    it.effect('[Given] `COMPOSIO_USER_API_KEY` [Then] prints global user context JSON', () =>
       Effect.gen(function* () {
         const args = ['whoami'];
         yield* cli(args);
@@ -31,7 +31,7 @@ describe('CLI: composio whoami', () => {
   });
 
   layer(TestLive({ fixture: 'user-config-example' }))('with fixture', it => {
-    it.scoped('[Given] user_data.json in fixture [Then] prints global user context JSON', () =>
+    it.effect('[Given] user_data.json in fixture [Then] prints global user context JSON', () =>
       Effect.gen(function* () {
         const args = ['whoami'];
         yield* cli(args);
@@ -48,7 +48,7 @@ describe('CLI: composio whoami', () => {
   });
 
   layer(TestLive({ baseConfigProvider: testConfigProvider }))('with session info', it => {
-    it.scoped('[Given] session info is available [Then] prints email and org name', () =>
+    it.effect('[Given] session info is available [Then] prints email and org name', () =>
       Effect.gen(function* () {
         vi.spyOn(globalThis, 'fetch').mockResolvedValue(
           new Response(

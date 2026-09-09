@@ -1,7 +1,7 @@
-import { Config, HashMap, LogLevel, Option } from 'effect';
+import { Config, Effect, LogLevel, Option, Schema } from 'effect';
 import * as constants from 'src/constants';
 
-type APP_CONFIG = Config.Config.Wrap<{
+type APP_CONFIG = Config.Wrap<{
   USER_API_KEY: Option.Option<string>;
   ENVIRONMENT: Option.Option<string>;
   BASE_URL: string;
@@ -23,7 +23,7 @@ type APP_CONFIG = Config.Config.Wrap<{
   DISABLE_CONNECTED_ACCOUNT_CACHE: boolean;
 }>;
 
-type UNPREFIXED_CONFIG = Config.Config.Wrap<{
+type UNPREFIXED_CONFIG = Config.Wrap<{
   CACHE_DIR: string | undefined;
   NPM_CONFIG_USER_AGENT: string | undefined;
   CI_REDACTION_ENABLED: boolean;
@@ -80,20 +80,42 @@ const optionalEnvironmentFlag = (name: string): Config.Config<boolean | undefine
 const booleanFlag = (name: string, defaultValue = false): Config.Config<boolean> =>
   optionalEnvironmentFlag(name).pipe(Config.map(value => value ?? defaultValue));
 
-// `Config.hashMap` enumerates the provider's root keys instead of reading one
-// named variable, so it depends on how `ConfigProvider.fromEnv` derives them:
-// every `process.env` key is uppercased and split on `_`, and the first segment
-// becomes a root. `CODEX_HOME`, `codex_home`, and a bare `CODEX` therefore all
-// surface as the root `CODEX`. Matching is consequently case-insensitive and no
-// longer requires a trailing underscore, unlike the
-// `Object.keys(env).some(key => key.startsWith('CODEX_'))` scan it replaced.
-const agentPrefixSignals = Config.hashMap(Config.succeed(true)).pipe(
-  Config.map(environmentRoots => ({
-    codex: HashMap.has(environmentRoots, 'CODEX'),
-    claude: HashMap.has(environmentRoots, 'CLAUDE'),
-    openclaw: HashMap.has(environmentRoots, 'OPENCLAW'),
-  }))
-);
+// Effect v4 exposes no root-key enumeration, so each agent prefix is probed as
+// its own subtree. `ConfigProvider.fromEnv` splits every variable name on `_`
+// to build a trie, so `CODEX_HOME`, `CODEX_0_X`, and a bare `CODEX` all surface
+// under the root `CODEX`, which the permissive tree schema below accepts
+// whatever its shape. Names are matched as written: the provider no longer
+// uppercases keys, so `codex_home` does not count.
+const environmentTree: Schema.Codec<unknown> = Schema.Union([
+  Schema.String,
+  Schema.Record(
+    Schema.String,
+    Schema.suspend(() => environmentTree)
+  ),
+  Schema.Array(Schema.suspend(() => environmentTree)),
+]);
+
+const hasEnvironmentRoot = (root: string): Config.Config<boolean> =>
+  Config.schema(environmentTree, root).pipe(Config.option, Config.map(Option.isSome));
+
+const agentPrefixSignals = Config.all({
+  codex: hasEnvironmentRoot('CODEX'),
+  claude: hasEnvironmentRoot('CLAUDE'),
+  openclaw: hasEnvironmentRoot('OPENCLAW'),
+});
+
+// `Config.logLevel` matches the level names exactly; `COMPOSIO_LOG_LEVEL=error` has always
+// been accepted, so the raw value is canonicalized before the codec sees it.
+const logLevelIgnoringCase = (name: string): Config.Config<LogLevel.LogLevel> =>
+  Config.string(name).pipe(
+    Config.mapOrFail(value => {
+      const canonical =
+        LogLevel.values.find(level => level.toLowerCase() === value.toLowerCase()) ?? value;
+      return Schema.decodeUnknownEffect(Config.LogLevel)(canonical).pipe(
+        Effect.mapError(error => new Config.ConfigError(error))
+      );
+    })
+  );
 
 /**
  * Derives a URL default based on the `COMPOSIO_ENVIRONMENT` config key.
@@ -147,7 +169,7 @@ export const APP_CONFIG = {
   BIN_DIR: optionalTrimmedString('BIN_DIR'),
 
   // The log level for the Composio CLI
-  LOG_LEVEL: Config.option(Config.logLevel('LOG_LEVEL')),
+  LOG_LEVEL: Config.option(logLevelIgnoringCase('LOG_LEVEL')),
 
   // The organization ID for multi-project auth (overrides file-based config)
   ORG_ID: Config.option(Config.string('ORG_ID')),

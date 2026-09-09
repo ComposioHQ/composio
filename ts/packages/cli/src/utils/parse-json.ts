@@ -1,4 +1,4 @@
-import { Data, Either, Predicate } from 'effect';
+import { Data, Predicate, Result } from 'effect';
 import JSON5 from 'json5';
 
 export class JsonParsingError extends Data.TaggedError('JsonParsingError')<{
@@ -10,6 +10,11 @@ export class JsonParsingError extends Data.TaggedError('JsonParsingError')<{
   cause: unknown;
 }> {}
 
+// Predicate.isRecord was removed in v4; Predicate.isObject also matches
+// arrays, so exclude those explicitly.
+export const isPlainRecord = (value: unknown): value is Record<string, unknown> =>
+  Predicate.isObject(value) && !Array.isArray(value);
+
 /**
  * Parses JSON or a JS-style object literal (unquoted keys, single quotes,
  * trailing commas, comments) into a record. JSON5 covers the documented
@@ -17,19 +22,19 @@ export class JsonParsingError extends Data.TaggedError('JsonParsingError')<{
  * Inputs that parse to anything other than an object (arrays, scalars,
  * `null`) fail with `JsonParsingError`.
  *
- * Returns an `Either` because parsing is synchronous; `Either` is a subtype
+ * Returns a `Result` because parsing is synchronous; `Result` is a subtype
  * of `Effect`, so call sites can `yield*` it or pipe it into Effect
  * combinators directly.
  */
 export const parseJsonRecord = (
   raw: string
-): Either.Either<Record<string, unknown>, JsonParsingError> =>
-  Either.try({
+): Result.Result<Record<string, unknown>, JsonParsingError> =>
+  Result.try({
     try: (): unknown => JSON5.parse(raw),
     catch: cause => new JsonParsingError({ reason: 'syntax', cause }),
   }).pipe(
-    Either.filterOrLeft(
-      Predicate.isRecord,
+    Result.filterOrFail(
+      isPlainRecord,
       parsed =>
         new JsonParsingError({
           reason: 'not-a-record',

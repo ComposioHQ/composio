@@ -1,5 +1,5 @@
-import { Args, Command } from '@effect/cli';
 import { Data, Effect } from 'effect';
+import { Argument, Command } from 'effect/unstable/cli';
 import { decodeConnectedAccountListWithFallback } from 'src/effects/decode-connected-account-list';
 import { requireAuth } from 'src/effects/require-auth';
 import type { ConnectedAccountItem } from 'src/models/connected-accounts';
@@ -25,8 +25,10 @@ class ConnectionsRemovalRequestError extends Data.TaggedError(
   readonly cause: unknown;
 }> {}
 
-const account = Args.text({ name: 'account' }).pipe(
-  Args.withDescription('Connection selector: toolkit slug, alias, word_id, or connected account ID')
+const account = Argument.string('account').pipe(
+  Argument.withDescription(
+    'Connection selector: toolkit slug, alias, word_id, or connected account ID'
+  )
 );
 
 const normalizeSelector = (value: string): string => value.trim().toLowerCase();

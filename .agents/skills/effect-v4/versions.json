@@ -1,0 +1,8 @@
+{
+  "effect": "4.0.0-rc.112",
+  "@effect/platform-bun": "4.0.0-rc.112",
+  "@effect/vitest": "4.0.0-rc.112",
+  "typescript": "6.0.2",
+  "vitest": "4.1.11",
+  "vendor_submodule_gitlink": "ts/vendor/effect (pinned at the effect@4.0.0-rc.112 release commit, 2600f62f4532026928454dcea8d1c48557b3f942)"
+}

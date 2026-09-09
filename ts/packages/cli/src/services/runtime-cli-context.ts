@@ -34,7 +34,9 @@ export const cliInvocationContext: Effect.Effect<CliInvocationContext> = Effect.
  * inherits carry the same id. `None` for every other command, and for callers that drive the root
  * command directly.
  */
-export class CliRunId extends Context.Tag('services/CliRunId')<CliRunId, Option.Option<string>>() {}
+export class CliRunId extends Context.Service<CliRunId, Option.Option<string>>()(
+  'services/CliRunId'
+) {}
 
 export const cliRunIdLayer = (runId: string | undefined): Layer.Layer<CliRunId> =>
-  Layer.succeed(CliRunId, Option.fromNullable(runId));
+  Layer.succeed(CliRunId, Option.fromNullishOr(runId));

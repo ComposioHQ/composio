@@ -1,11 +1,5 @@
-import { Array as Arr, Data, Effect, HashSet, Layer, Option } from 'effect';
-import { Command, HelpDoc, ValidationError } from '@effect/cli';
-import {
-  hasCommandName,
-  listSubcommandNames,
-  preflightParse,
-  type AnyCommandDescriptor,
-} from './command-introspection';
+import { Array as Arr, Console, Data, Effect, HashSet, Layer, Option } from 'effect';
+import { Command } from 'effect/unstable/cli';
 import { $defaultCmd } from './$default.cmd';
 import { getVersion } from 'src/effects/version';
 import { versionCmd } from './version.cmd';
@@ -16,13 +10,18 @@ import { signupCmd } from './signup.cmd';
 import { setupCmd } from './setup.cmd';
 import { listenCmd } from './listen.cmd';
 import { logoutCmd } from './logout.cmd';
-import { runCmd } from './run.cmd';
+import {
+  RUN_KNOWN_BOOLEAN_FLAGS,
+  RUN_KNOWN_VALUE_FLAGS,
+  RunPassthroughArgs,
+  runCmd,
+} from './run.cmd';
 import { proxyCmd } from './proxy.cmd';
 import { artifactsCmd } from './artifacts.cmd';
 import { installCmd } from './install.cmd';
 import { localToolsCmd } from './local-tools/local-tools.cmd';
 import { generateCmd } from './generate/generate.cmd';
-import { buildDevCommand, devSubcommands } from './dev.cmd';
+import { buildDevCommand } from './dev.cmd';
 import {
   runParallelToolsExecuteFromArgv,
   showToolsExecuteInputHelp,
@@ -165,57 +164,12 @@ export const parseRootInstallSkillRequest = (
     onSome: values => Effect.map(parseRootInstallSkillValues(values), Option.some),
   });
 
-const scopeCommandMismatch = (
-  commandPath: string,
-  descriptor: AnyCommandDescriptor,
-  error: unknown
-) => {
-  if (!ValidationError.isValidationError(error) || !ValidationError.isCommandMismatch(error)) {
-    return error;
-  }
-  const childNames = listSubcommandNames(descriptor).map(name => `'${name}'`);
-  if (childNames.length === 0) return error;
-
-  const oneOf = childNames.length === 1 ? '' : ' one of';
-  return ValidationError.commandMismatch(
-    HelpDoc.p(
-      `Invalid subcommand for composio ${commandPath} - use${oneOf} ${childNames.join(', ')}`
-    )
-  );
-};
-
-const refineRootCommandMismatch = (
-  argv: ReadonlyArray<string>,
-  visibility: CommandVisibility,
-  originalError: ValidationError.ValidationError
-) => {
-  const rootCommandName = argv[2];
-  if (!rootCommandName || !ValidationError.isCommandMismatch(originalError)) {
-    return Effect.fail(originalError);
-  }
-
-  const rootCommand = Arr.findFirst(getVisibleRootCommands(visibility), command =>
-    hasCommandName(command, rootCommandName)
-  );
-  if (Option.isNone(rootCommand)) {
-    return Effect.fail(originalError);
-  }
-
-  const nestedCommandName = argv[3];
-  const nestedDevCommand =
-    rootCommandName === 'dev' && visibility.isDevModeEnabled && nestedCommandName
-      ? Arr.findFirst(devSubcommands, command => hasCommandName(command, nestedCommandName))
-      : Option.none();
-  const descriptor = Option.match(nestedDevCommand, {
-    onNone: () => rootCommand.value.descriptor,
-    onSome: command => command.descriptor,
-  });
-  const commandPath = Option.isSome(nestedDevCommand)
-    ? `${rootCommandName} ${nestedCommandName}`
-    : rootCommandName;
-
-  return Effect.fail(scopeCommandMismatch(commandPath, descriptor, originalError));
-};
+// v4 note: v3 pre-flight parsed `argv` to rewrite `ValidationError.CommandMismatch` messages
+// (`scopeCommandMismatch` / `refineRootCommandMismatch`) before `Command.run` rendered them, using
+// the private `CommandDescriptor` tree. `effect/unstable/cli`'s
+// `Command.runWith` renders its own unknown-subcommand messaging (naming the resolved command's
+// actual subcommands) internally before re-failing with `CliError.ShowHelp`, so `routeRootCommand`
+// below now always delegates straight to `run` instead of pre-flight parsing and rewriting errors.
 
 export const parseExecuteInputHelpSlug = (argv: ReadonlyArray<string>): string | undefined => {
   const args = Arr.drop(argv, 2);
@@ -282,6 +236,102 @@ const normalizeListenStreamFlag = (argv: ReadonlyArray<string>): ReadonlyArray<s
         : token;
     })
   );
+};
+
+// `composio run` forwards arbitrary flag-looking tokens straight through to
+// the user's script (`composio run 'code' --flag value`, or
+// `--file s.ts -- --flag value`), but v4's CLI lexer
+// (`effect/unstable/cli/internal/lexer.ts`) treats every `-`-prefixed token
+// as an option candidate unless it follows a literal `--`, and (see
+// `internal/parser.ts`'s `parseArgs`) that `--` split is computed once for
+// the whole argv and only reaches the *first* command level parsed — a
+// subcommand's own recursive `parseArgs` call is always given
+// `trailingOperands: []`, so trailing operands after `--` never reach a
+// subcommand's `Argument.variadic()` no matter how the tokens are escaped.
+//
+// So rather than smuggle passthrough tokens through the parser, the split
+// below removes them from the argv handed to the CLI parser entirely and
+// returns them out-of-band as `tail`. `runWithConfig` provides `tail` to
+// `run.cmd.ts`'s `RunPassthroughArgs` reference for the scope of a single
+// invocation; the `run` handler reads it directly instead of relying on its
+// own `Argument.variadic()`, which never sees these tokens for a real CLI
+// invocation. Only direct programmatic/test invocations that bypass this
+// front door fall back to the parsed value (see `RunPassthroughArgs`'s doc
+// comment in `run.cmd.ts`).
+
+type RunPassthroughSplit = {
+  readonly argv: ReadonlyArray<string>;
+  readonly tail: ReadonlyArray<string> | undefined;
+};
+
+const splitRunPassthroughArgs = (argv: ReadonlyArray<string>): RunPassthroughSplit => {
+  const args = Arr.drop(argv, 2);
+  if (args[0] !== 'run') {
+    return { argv, tail: undefined };
+  }
+
+  const normalized: Array<string> = [];
+  const tail: Array<string> = [];
+  let sawPositional = false;
+  let droppedSeparator = false;
+  let index = 1;
+  while (index < args.length) {
+    const token = args[index];
+    if (!sawPositional) {
+      // A `--flag=value` token must be recognized by its name, not the whole
+      // token: `--file=script.ts` is a `run` option, and treating it as the
+      // first positional would demote every later flag (including safety
+      // flags like `--dry-run`) to the passthrough tail.
+      const equalsIndex = token.indexOf('=');
+      const flagName = equalsIndex === -1 ? token : token.slice(0, equalsIndex);
+      if (RUN_KNOWN_VALUE_FLAGS.has(flagName)) {
+        normalized.push(token);
+        if (equalsIndex === -1) {
+          const value = args[index + 1];
+          if (value !== undefined) {
+            normalized.push(value);
+          }
+          index += 2;
+          continue;
+        }
+        index += 1;
+        continue;
+      }
+      if (RUN_KNOWN_BOOLEAN_FLAGS.has(flagName)) {
+        normalized.push(token);
+        index += 1;
+        continue;
+      }
+      // First token that isn't a `run`-recognized flag: everything from here
+      // on is the passthrough tail, not a `run` option. A literal `--` here
+      // is just the (now unnecessary) boundary marker itself.
+      sawPositional = true;
+      if (token === '--') {
+        droppedSeparator = true;
+      } else {
+        tail.push(token);
+      }
+      index += 1;
+      continue;
+    }
+    if (token === '--') {
+      // Only the first `--` is the run/script boundary; later ones are script
+      // arguments and must reach the script verbatim (matches v3's
+      // forwarding behavior).
+      if (!droppedSeparator) {
+        droppedSeparator = true;
+        index += 1;
+        continue;
+      }
+      tail.push('--');
+      index += 1;
+      continue;
+    }
+    tail.push(token);
+    index += 1;
+  }
+
+  return { argv: [...Arr.take(argv, 2), 'run', ...normalized], tail };
 };
 
 const parseBooleanFlag = (argument: string, name: string): Option.Option<boolean> => {
@@ -468,12 +518,43 @@ export const runWithConfig = Effect.gen(function* () {
   };
   const version = yield* getVersion;
   configureCliAnalyticsReleaseVersion(version);
-  const rootCommand = withBackgroundUpdateCheck(buildRootCommand(visibility));
-  const run = Command.run(rootCommand, {
-    name: 'composio',
-    executable: 'composio',
-    version,
-  });
+  const rootCommand = withBackgroundUpdateCheck($defaultCmd, getVisibleRootCommands(visibility));
+  // v4's `Command.runWith` (unlike v3's `Command.run`) takes explicit arguments rather than
+  // pulling them from `Stdio`, and expects them *without* the node/bun executable + script path
+  // prefix — see `cli-main.ts` module docs for the full contract at this boundary.
+  const run = Command.runWith(rootCommand, { version });
+
+  // `Command.runWith` renders the help document for a failed parse through the
+  // ambient Console's `log` (stdout) before re-failing with `ShowHelp` (see
+  // the vendored `Command.ts` `showHelp`, ~line 1453). Verified this Console
+  // swap is the best available seam, not just the easiest: v4's
+  // `CliOutput.Formatter` only formats to strings and cannot choose a stream,
+  // and `showHelp` hardcodes `Console.log` with no parameter to override it,
+  // so the only alternative would be reimplementing `runWith` itself.
+  // Composio's output contract reserves stdout for data: help belongs there
+  // only when the user explicitly asked for it (`--help`/`-h`; `--version`/`-v`
+  // never reach the parser, `normalizeVersionFlag` rewrites them to the
+  // `version` command). For every other invocation the framework's rendering is
+  // decoration, so the runner gets a Console whose `log` writes through
+  // `error`. No CLI code emits data via the Effect Console service (handlers
+  // write through `TerminalUI`), so this only affects the framework's own
+  // help/error rendering.
+  const runWithDecorationOnStderr = (args: ReadonlyArray<string>) =>
+    Effect.gen(function* () {
+      const base = yield* Console.Console;
+      // Node/Bun consoles carry their methods as own (bound) properties and the
+      // test MockConsole is a plain object literal, so a spread copies every
+      // method; only `log` needs overriding.
+      return yield* Effect.provideService(run(args), Console.Console, {
+        ...base,
+        log: (...rest) => base.error(...rest),
+      });
+    });
+
+  const EXPLICIT_STDOUT_FLAGS: ReadonlySet<string> = new Set(['--help', '-h']);
+
+  const runCli = (args: ReadonlyArray<string>) =>
+    args.some(arg => EXPLICIT_STDOUT_FLAGS.has(arg)) ? run(args) : runWithDecorationOnStderr(args);
 
   const routeRootCommand = (normalizedArgv: ReadonlyArray<string>, dangerouslyAllow: boolean) => {
     const args = normalizedArgv.slice(2);
@@ -520,26 +601,20 @@ export const runWithConfig = Effect.gen(function* () {
           yield* ui.log.step('Re-run the command with `--dangerously-allow`.');
           return;
         }
-        return yield* run(normalizedArgv);
+        return yield* runCli(args);
       });
     }
-    return preflightParse(rootCommand, normalizedArgv).pipe(
-      Effect.matchEffect({
-        onFailure: error =>
-          ValidationError.isCommandMismatch(error)
-            ? refineRootCommandMismatch(normalizedArgv, visibility, error)
-            : run(normalizedArgv),
-        onSuccess: () => run(normalizedArgv),
-      })
-    );
+    return runCli(args);
   };
 
   return (argv: ReadonlyArray<string>, bootstrap: RootCommandBootstrap = {}) => {
     const { argv: argvWithoutDangerouslyAllow, dangerouslyAllow } =
       normalizeDangerouslyAllowFlag(argv);
-    const { argv: normalizedArgv, overrides } = normalizeHiddenDebugFlags(
+    const { argv: argvWithoutDebugFlags, overrides } = normalizeHiddenDebugFlags(
       normalizeListenStreamFlag(normalizeVersionFlag(argvWithoutDangerouslyAllow))
     );
+    const { argv: normalizedArgv, tail: runPassthroughTail } =
+      splitRunPassthroughArgs(argvWithoutDebugFlags);
 
     return parseRootInstallSkillRequest(normalizedArgv).pipe(
       Effect.flatMap(
@@ -548,7 +623,8 @@ export const runWithConfig = Effect.gen(function* () {
           onSome: installSkill,
         })
       ),
-      Effect.provide(Layer.merge(cliDebugFlagsLayer(overrides), cliRunIdLayer(bootstrap.runId)))
+      Effect.provide(Layer.merge(cliDebugFlagsLayer(overrides), cliRunIdLayer(bootstrap.runId))),
+      Effect.provideService(RunPassthroughArgs, runPassthroughTail)
     );
   };
 });

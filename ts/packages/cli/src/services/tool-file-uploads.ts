@@ -3,8 +3,8 @@
 // FileSystem and Path services and passes the instances in as parameters;
 // `readLocalFileBytes` below is the single point where a FileSystem effect
 // is run to completion inside this promise pipeline.
-import type * as FileSystem from '@effect/platform/FileSystem';
-import type * as Path from '@effect/platform/Path';
+import type * as FileSystem from 'effect/FileSystem';
+import type * as Path from 'effect/Path';
 import type { Composio as RawComposioClient } from '@composio/client';
 import { assertSafeFileUploadPath } from '@composio/core';
 import { ssrfSafeFetch } from '@composio/core/utils/ssrf-guard';
@@ -23,7 +23,7 @@ export class ToolFileUploadError extends Data.TaggedError('services/ToolFileUplo
 const isFileLike = (value: unknown): value is File =>
   typeof File !== 'undefined' && value instanceof File;
 
-const isSchemaRecord = (value: unknown): value is JsonSchema => Predicate.isRecord(value);
+const isSchemaRecord = (value: unknown): value is JsonSchema => Predicate.isObject(value);
 
 const getSchemaVariant = (value: unknown): ReadonlyArray<JsonSchema> =>
   Array.isArray(value) ? value.filter(isSchemaRecord) : [];
@@ -313,7 +313,7 @@ const hydrateFileUploads = async (
     return nextValue;
   }
 
-  if (isSchemaRecord(schema?.properties) && Predicate.isRecord(value)) {
+  if (isSchemaRecord(schema?.properties) && Predicate.isObject(value)) {
     const properties = schema.properties;
     const entries = await Promise.all(
       Object.entries(value).map(async ([key, entryValue]) => [
@@ -362,5 +362,5 @@ export const uploadToolInputFiles = async (params: {
     client: params.client,
   });
 
-  return Predicate.isRecord(hydrated) ? hydrated : params.arguments_;
+  return Predicate.isObject(hydrated) ? hydrated : params.arguments_;
 };

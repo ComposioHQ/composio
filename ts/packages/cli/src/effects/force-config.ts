@@ -1,6 +1,6 @@
 import { Config } from 'effect';
 
-type FORCE_CONFIG = Config.Config.Wrap<{
+type FORCE_CONFIG = Config.Wrap<{
   USE_CACHE: boolean;
 }>;
 

@@ -171,7 +171,7 @@ export interface TerminalUI {
   ) => Effect.Effect<A, E, R>;
 }
 
-export const TerminalUI = Context.GenericTag<TerminalUI>('services/TerminalUI');
+export const TerminalUI = Context.Service<TerminalUI>('services/TerminalUI');
 
 // ---------------------------------------------------------------------------
 // makeTerminalUI — build a TerminalUI from explicit streams

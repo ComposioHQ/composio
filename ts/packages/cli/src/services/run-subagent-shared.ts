@@ -1,4 +1,4 @@
-import { Either, Predicate, Schema } from 'effect';
+import { Option, Predicate, Schema } from 'effect';
 import { JsonRecordSchema } from 'src/effects/json';
 import type { MasterKind } from 'src/services/master-detector';
 
@@ -57,7 +57,7 @@ const isAcpInvokeFailure = (value: unknown): value is AcpInvokeFailure =>
   value === 'connection_closed';
 
 export const isAcpInvokeError = (value: unknown): value is AcpInvokeError =>
-  Predicate.isRecord(value) &&
+  Predicate.isObject(value) &&
   value.name === 'AcpInvokeError' &&
   typeof value.message === 'string' &&
   isAcpInvokeFailure(value.code);
@@ -79,11 +79,11 @@ export const toInvokeAgentResponse = (
 });
 
 /**
- * Sync JSON probe shared with the non-Effect child-process runtime; `Either`
+ * Sync JSON probe shared with the non-Effect child-process runtime; `Option`
  * is pure data from the already-bundled `effect` package, so it is safe there.
  */
-const parseJsonEither = (text: string): Either.Either<unknown, unknown> =>
-  Either.try((): unknown => JSON.parse(text));
+const parseJsonOption = (text: string): Option.Option<unknown> =>
+  Option.liftThrowable((s: string): unknown => JSON.parse(s))(text);
 
 export const parseJson = (text: string): unknown => {
   const value = text.trim();
@@ -91,16 +91,16 @@ export const parseJson = (text: string): unknown => {
     return undefined;
   }
   // Non-JSON sub-agent stdout is returned verbatim by design.
-  return Either.getOrElse(parseJsonEither(value), (): unknown => value);
+  return Option.getOrElse(parseJsonOption(value), (): unknown => value);
 };
 
-const decodeStructuredSchema = Schema.decodeUnknownSync(Schema.parseJson(JsonRecordSchema));
+const decodeStructuredSchema = Schema.decodeUnknownSync(Schema.fromJsonString(JsonRecordSchema));
 
 export const decodeStructuredSchemaJson = (text: string): Record<string, unknown> =>
   decodeStructuredSchema(text);
 
 const summarizeValidationError = (error: unknown): string => {
-  const issues = Predicate.isRecord(error) && Array.isArray(error.issues) ? error.issues : [];
+  const issues = Predicate.isObject(error) && Array.isArray(error.issues) ? error.issues : [];
 
   if (issues.length === 0) {
     return 'Invalid structured output.';
@@ -109,7 +109,7 @@ const summarizeValidationError = (error: unknown): string => {
   return issues
     .slice(0, 5)
     .map(issue => {
-      if (!Predicate.isRecord(issue)) {
+      if (!Predicate.isObject(issue)) {
         return '<root>: Invalid value';
       }
       const path =
@@ -180,7 +180,7 @@ export const unwrapStructuredOutputToolPayload = (
     return payload;
   }
 
-  if (Predicate.isRecord(payload) && ACP_STRUCTURED_OUTPUT_WRAPPER_KEY in payload) {
+  if (Predicate.isObject(payload) && ACP_STRUCTURED_OUTPUT_WRAPPER_KEY in payload) {
     return payload[ACP_STRUCTURED_OUTPUT_WRAPPER_KEY];
   }
 
@@ -252,9 +252,9 @@ const tryParseStructuredJson = (text: string): unknown | undefined => {
   // A parse failure here is the signal to fall through to more permissive
   // extraction for agents that emit a short status line before the final JSON
   // payload, not an error to surface.
-  const direct = parseJsonEither(trimmed);
-  if (Either.isRight(direct)) {
-    return direct.right;
+  const direct = parseJsonOption(trimmed);
+  if (Option.isSome(direct)) {
+    return direct.value;
   }
 
   const fencedMatches = [...trimmed.matchAll(/```(?:json)?\s*([\s\S]*?)```/gi)];
@@ -266,9 +266,9 @@ const tryParseStructuredJson = (text: string): unknown | undefined => {
 
     // Probes each fenced block for valid JSON; an invalid block just advances
     // the scan to the next one.
-    const fenced = parseJsonEither(candidate);
-    if (Either.isRight(fenced)) {
-      return fenced.right;
+    const fenced = parseJsonOption(candidate);
+    if (Option.isSome(fenced)) {
+      return fenced.value;
     }
   }
 
@@ -348,12 +348,12 @@ const tryParseStructuredJson = (text: string): unknown | undefined => {
     // Probes each balanced {...}/[...] substring for valid JSON inside a
     // tight scanning loop; a failure just skips the candidate so the scan can
     // keep looking for a larger valid JSON payload.
-    const parsedCandidate = parseJsonEither(candidate);
-    if (Either.isLeft(parsedCandidate)) {
+    const parsedCandidate = parseJsonOption(candidate);
+    if (Option.isNone(parsedCandidate)) {
       continue;
     }
 
-    const parsed = parsedCandidate.right;
+    const parsed = parsedCandidate.value;
     const nextCandidate = {
       length: candidate.length,
       start,

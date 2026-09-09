@@ -1,7 +1,7 @@
 import * as BunFileSystem from '@effect/platform-bun/BunFileSystem';
-import { Data, Effect, Option, Schema, pipe, Context, Layer } from 'effect';
-import * as FileSystem from '@effect/platform/FileSystem';
-import * as Path from '@effect/platform/Path';
+import { Context, Data, Effect, Layer, Option, Schema, pipe } from 'effect';
+import * as FileSystem from 'effect/FileSystem';
+import * as Path from 'effect/Path';
 
 const toError = (e: unknown): Error => (e instanceof Error ? e : new Error(String(e)));
 
@@ -27,6 +27,12 @@ const LOCK_FILES: Record<PackageManager, string> = {
 
 const PM_PREFERENCE: PackageManager[] = ['pnpm', 'bun', 'yarn', 'npm'];
 
+export interface JsPackageManagerDetectorShape {
+  readonly detectJsPackageManager: (
+    cwd: string
+  ) => Effect.Effect<PackageManager, JsPackageManagerError>;
+}
+
 // Service that attempts to detect the package manager of the project in the current working directory.
 const makeJsPackageManagerDetector = Effect.gen(function* () {
   yield* Effect.logDebug('[JsPackageManagerDetector] Identifying JS package manager...');
@@ -44,7 +50,7 @@ const makeJsPackageManagerDetector = Effect.gen(function* () {
 
   const PackageJsonSchema = Schema.Struct({
     packageManager: Schema.optional(Schema.String),
-  }).annotations({ identifier: 'package.json' });
+  }).annotate({ identifier: 'package.json' });
 
   const detectFromPackageJson = (
     cwd: string
@@ -52,7 +58,7 @@ const makeJsPackageManagerDetector = Effect.gen(function* () {
     Effect.gen(function* () {
       const contentEffect = pipe(
         fs.readFileString(path.join(cwd, 'package.json')),
-        Effect.catchTag('SystemError', e =>
+        Effect.catchTag('PlatformError', e =>
           Effect.fail(
             new JsPackageManagerError({ cause: e, message: 'Failed to read package.json' })
           )
@@ -75,7 +81,7 @@ const makeJsPackageManagerDetector = Effect.gen(function* () {
       });
 
       const decoded = yield* pipe(
-        Schema.decodeUnknown(PackageJsonSchema)(json),
+        Schema.decodeUnknownEffect(PackageJsonSchema)(json),
         Effect.mapError(
           e =>
             new JsPackageManagerError({
@@ -85,7 +91,7 @@ const makeJsPackageManagerDetector = Effect.gen(function* () {
         )
       );
 
-      return Option.fromNullable(decoded.packageManager).pipe(Option.flatMap(parsePackageManager));
+      return Option.fromNullishOr(decoded.packageManager).pipe(Option.flatMap(parsePackageManager));
     });
 
   const detectRecursive = (
@@ -147,15 +153,11 @@ const makeJsPackageManagerDetector = Effect.gen(function* () {
   };
 });
 
-export type JsPackageManagerDetectorShape = Effect.Effect.Success<
-  typeof makeJsPackageManagerDetector
->;
-
-export class JsPackageManagerDetector extends Context.Tag('services/JsPackageManagerDetector')<
+export class JsPackageManagerDetector extends Context.Service<
   JsPackageManagerDetector,
   JsPackageManagerDetectorShape
->() {
-  static readonly Default = Layer.effect(
+>()('services/JsPackageManagerDetector') {
+  static readonly Default: Layer.Layer<JsPackageManagerDetector> = Layer.effect(
     JsPackageManagerDetector,
     makeJsPackageManagerDetector
   ).pipe(Layer.provide(Layer.mergeAll(BunFileSystem.layer, Path.layer)));

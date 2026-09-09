@@ -16,12 +16,12 @@ The CLI is built using:
 ## 🧑‍💻 Usage
 
 ```
-composio [--log-level all|trace|debug|info|warning|error|fatal|none]
+composio [--log-level all|trace|debug|info|warn|error|fatal|none]
 ```
 
 ### Optional Flags
 
-- `--log-level`: Set the log verbosity level. Accepted values: all, trace, debug, info, warning, error, fatal, none
+- `--log-level`: Set the log verbosity level. Accepted values: all, trace, debug, info, warn, error, fatal, none
 - `--install-skill [skill-name] <claude|codex|openclaw>`: Manually install the composio skill for a supported agent when automatic installation fails. `--instal-skill` is still accepted as a backward-compatible alias.
 
 ## 🧭 Commands

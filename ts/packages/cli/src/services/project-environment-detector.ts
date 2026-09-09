@@ -1,6 +1,6 @@
 import * as BunFileSystem from '@effect/platform-bun/BunFileSystem';
-import * as FileSystem from '@effect/platform/FileSystem';
-import * as Path from '@effect/platform/Path';
+import * as FileSystem from 'effect/FileSystem';
+import * as Path from 'effect/Path';
 import { Data, Effect, Match, Context, Layer } from 'effect';
 import { getAncestors } from 'src/utils/get-ancestors';
 import { UNPREFIXED_CONFIG } from 'src/effects/app-config';
@@ -205,10 +205,10 @@ const parseUserAgent = (userAgent: string | undefined): JsPackageManager | null 
 // ---------------------------------------------------------------------------
 
 const makeReadDirectoryOptional = (fs: FileSystem.FileSystem) => (dir: string) =>
-  fs.readDirectory(dir).pipe(Effect.catchAll(() => Effect.succeed<string[]>([])));
+  fs.readDirectory(dir).pipe(Effect.catch(() => Effect.succeed<string[]>([])));
 
 const makeReadFileStringOptional = (fs: FileSystem.FileSystem) => (filePath: string) =>
-  fs.readFileString(filePath).pipe(Effect.catchAll(() => Effect.succeed<string | null>(null)));
+  fs.readFileString(filePath).pipe(Effect.catch(() => Effect.succeed<string | null>(null)));
 
 const makeReadPackageJson = (fs: FileSystem.FileSystem, path: Path.Path) => {
   const readFileStringOptional = makeReadFileStringOptional(fs);
@@ -219,7 +219,7 @@ const makeReadPackageJson = (fs: FileSystem.FileSystem, path: Path.Path) => {
       return yield* Effect.try({
         try: () => JSON.parse(content) as Record<string, unknown>,
         catch: toError,
-      }).pipe(Effect.catchAll(() => Effect.succeed(null)));
+      }).pipe(Effect.catch(() => Effect.succeed(null)));
     });
 };
 
@@ -592,14 +592,12 @@ const makeProjectEnvironmentDetector = Effect.gen(function* () {
   };
 });
 
-export type ProjectEnvironmentDetectorShape = Effect.Effect.Success<
-  typeof makeProjectEnvironmentDetector
->;
+export type ProjectEnvironmentDetectorShape = Effect.Success<typeof makeProjectEnvironmentDetector>;
 
-export class ProjectEnvironmentDetector extends Context.Tag('services/ProjectEnvironmentDetector')<
+export class ProjectEnvironmentDetector extends Context.Service<
   ProjectEnvironmentDetector,
   ProjectEnvironmentDetectorShape
->() {
+>()('services/ProjectEnvironmentDetector') {
   static readonly Default = Layer.effect(
     ProjectEnvironmentDetector,
     makeProjectEnvironmentDetector

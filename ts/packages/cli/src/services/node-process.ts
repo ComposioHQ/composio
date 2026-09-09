@@ -9,10 +9,9 @@ export interface NodeProcessShape {
 }
 
 // Service that wraps `node:process`, for testing purposes.
-export class NodeProcess extends Context.Tag('services/NodeProcess')<
-  NodeProcess,
-  NodeProcessShape
->() {
+export class NodeProcess extends Context.Service<NodeProcess, NodeProcessShape>()(
+  'services/NodeProcess'
+) {
   static readonly Default: Layer.Layer<NodeProcess> = Layer.sync(NodeProcess, () => ({
     cwd: process.cwd(),
     execPath: process.execPath,

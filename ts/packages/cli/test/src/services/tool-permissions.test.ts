@@ -1,5 +1,5 @@
-import * as FileSystem from '@effect/platform/FileSystem';
-import * as Path from '@effect/platform/Path';
+import * as FileSystem from 'effect/FileSystem';
+import * as Path from 'effect/Path';
 import * as BunFileSystem from '@effect/platform-bun/BunFileSystem';
 import * as BunPath from '@effect/platform-bun/BunPath';
 import { afterEach, beforeEach, describe, expect, it, vi } from '@effect/vitest';
@@ -25,7 +25,9 @@ const ToolPermissionsTest = Layer.mergeAll(
   BunFileSystem.layer,
   BunPath.layer,
   NodeOs.Default,
-  Layer.setConfigProvider(extendConfigProvider(ConfigProvider.fromEnv()))
+  // fromEnv() snapshots the environment when built; build it per provide so the
+  // per-test COMPOSIO_CACHE_DIR stub is observed.
+  ConfigProvider.layer(Effect.sync(() => extendConfigProvider(ConfigProvider.fromEnv())))
 );
 
 const snapshotFixture = (
@@ -199,7 +201,7 @@ describe('tool permissions', () => {
       const fs = yield* FileSystem.FileSystem;
       const path = yield* Path.Path;
       // The shared vitest setup pins COMPOSIO_CACHE_DIR to a fresh temp directory.
-      const cacheDir = yield* ConfigProvider.fromEnv().load(Config.string('COMPOSIO_CACHE_DIR'));
+      const cacheDir = yield* Config.string('COMPOSIO_CACHE_DIR').parse(ConfigProvider.fromEnv());
       // Key shape: `${orgId}:${projectId}:${consumerUserId}:${toolSlug}:${accountId}`.
       const allowKey = 'org_cached_allow:project_test:user_test:GMAIL_SEND_EMAIL:__none__';
       yield* fs.writeFileString(

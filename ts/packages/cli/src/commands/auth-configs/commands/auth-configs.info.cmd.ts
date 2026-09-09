@@ -1,14 +1,14 @@
-import { Args, Command } from '@effect/cli';
 import { Effect, Option } from 'effect';
+import { Argument, Command } from 'effect/unstable/cli';
 import { ComposioToolkitsRepository } from 'src/services/composio-clients';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { requireAuth } from 'src/effects/require-auth';
 import { handleHttpServerError } from 'src/effects/handle-http-error';
 import { formatAuthConfigInfo } from '../format';
 
-const id = Args.text({ name: 'id' }).pipe(
-  Args.withDescription('Auth config ID (nanoid)'),
-  Args.optional
+const id = Argument.string('id').pipe(
+  Argument.withDescription('Auth config ID (nanoid)'),
+  Argument.optional
 );
 
 /**

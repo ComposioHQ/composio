@@ -10,9 +10,9 @@ export class JSONParseError extends Data.TaggedError('effects/JSONParseError')<{
  * Import this instead of re-declaring `Schema.Record({ key: Schema.String,
  * value: Schema.Unknown })` locally.
  */
-export const JsonRecordSchema = Schema.Record({ key: Schema.String, value: Schema.Unknown });
+export const JsonRecordSchema = Schema.Record(Schema.String, Schema.Unknown);
 
 export const JSONParse = (s: string) =>
-  Schema.decodeUnknown(Schema.parseJson(JsonRecordSchema))(s).pipe(
+  Schema.decodeUnknownEffect(Schema.fromJsonString(JsonRecordSchema))(s).pipe(
     Effect.mapError(cause => new JSONParseError({ cause, message: 'Failed to parse JSON' }))
   );

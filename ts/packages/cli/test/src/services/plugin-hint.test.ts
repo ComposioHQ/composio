@@ -100,7 +100,10 @@ describe('resolvePluginHintConfig', () => {
       expect(config.host).toBe('claude');
       expect(config.commandName).toBe('version');
     }).pipe(
-      Effect.withConfigProvider(extendConfigProvider(ConfigProvider.fromEnv())),
+      Effect.provideService(
+        ConfigProvider.ConfigProvider,
+        extendConfigProvider(ConfigProvider.fromEnv())
+      ),
       Effect.provide(
         Layer.merge(PlatformLayers, Layer.succeed(NodeOs, defaultNodeOs({ homedir: tempDir })))
       )
@@ -119,7 +122,10 @@ describe('resolvePluginHintConfig', () => {
       );
       expect(config.codexConfigFile).toBe(join(tempDir, '.codex', 'config.toml'));
     }).pipe(
-      Effect.withConfigProvider(extendConfigProvider(ConfigProvider.fromEnv())),
+      Effect.provideService(
+        ConfigProvider.ConfigProvider,
+        extendConfigProvider(ConfigProvider.fromEnv())
+      ),
       Effect.provide(
         Layer.merge(PlatformLayers, Layer.succeed(NodeOs, defaultNodeOs({ homedir: tempDir })))
       )
@@ -140,7 +146,10 @@ describe('resolvePluginHintConfig', () => {
       );
       expect(config.codexConfigFile).toBe(join(codexHome, 'config.toml'));
     }).pipe(
-      Effect.withConfigProvider(extendConfigProvider(ConfigProvider.fromEnv())),
+      Effect.provideService(
+        ConfigProvider.ConfigProvider,
+        extendConfigProvider(ConfigProvider.fromEnv())
+      ),
       Effect.provide(
         Layer.merge(PlatformLayers, Layer.succeed(NodeOs, defaultNodeOs({ homedir: tempDir })))
       )

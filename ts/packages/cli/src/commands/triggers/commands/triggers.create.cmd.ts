@@ -1,24 +1,24 @@
-import { Args, Command, Options } from '@effect/cli';
-import { Effect, Either, Option } from 'effect';
+import { Argument, Command, Flag } from 'effect/unstable/cli';
+import { Effect, Option, Result } from 'effect';
 import { parseJsonRecord } from 'src/utils/parse-json';
 import { requireAuth } from 'src/effects/require-auth';
 import { handleHttpServerError } from 'src/effects/handle-http-error';
 import { ComposioToolkitsRepository } from 'src/services/composio-clients';
 import { TerminalUI } from 'src/services/terminal-ui';
 
-const triggerName = Args.text({ name: 'trigger-name' }).pipe(
-  Args.withDescription('Trigger slug (e.g. "GMAIL_NEW_GMAIL_MESSAGE")'),
-  Args.optional
+const triggerName = Argument.string('trigger-name').pipe(
+  Argument.withDescription('Trigger slug (e.g. "GMAIL_NEW_GMAIL_MESSAGE")'),
+  Argument.optional
 );
 
-const connectedAccountId = Options.text('connected-account-id').pipe(
-  Options.withDescription('Connected account ID (nanoid)'),
-  Options.optional
+const connectedAccountId = Flag.string('connected-account-id').pipe(
+  Flag.withDescription('Connected account ID (nanoid)'),
+  Flag.optional
 );
 
-const triggerConfig = Options.text('trigger-config').pipe(
-  Options.withDescription('Trigger config as JSON string'),
-  Options.optional
+const triggerConfig = Flag.string('trigger-config').pipe(
+  Flag.withDescription('Trigger config as JSON string'),
+  Flag.optional
 );
 
 /**
@@ -45,8 +45,8 @@ export const triggersCmd$Create = Command.make(
       let parsedTriggerConfig: Record<string, unknown> | undefined;
       if (Option.isSome(triggerConfig)) {
         const parsed = parseJsonRecord(triggerConfig.value);
-        if (Either.isLeft(parsed)) {
-          if (parsed.left.reason === 'not-a-record') {
+        if (Result.isFailure(parsed)) {
+          if (parsed.failure.reason === 'not-a-record') {
             yield* ui.log.error(
               '--trigger-config must be a JSON object (e.g. \'{"key":"value"}\').'
             );
@@ -58,7 +58,7 @@ export const triggersCmd$Create = Command.make(
           }
           return;
         }
-        parsedTriggerConfig = parsed.right;
+        parsedTriggerConfig = parsed.success;
       }
 
       const createdOpt = yield* ui

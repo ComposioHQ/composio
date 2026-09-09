@@ -1,4 +1,3 @@
-import { ValidationError } from '@effect/cli';
 import { describe, expect, layer } from '@effect/vitest';
 import { Cause, ConfigProvider, Effect, Exit } from 'effect';
 import { ListenCommandError } from 'src/commands/listen.cmd';
@@ -6,9 +5,9 @@ import { extendConfigProvider } from 'src/services/config';
 import { ComposioCliUserConfig } from 'src/services/cli-user-config';
 import { cli, MockConsole, TestLive } from 'test/__utils__';
 
-const testConfigProvider = ConfigProvider.fromMap(
-  new Map([['COMPOSIO_USER_API_KEY', 'test_api_key']])
-).pipe(extendConfigProvider);
+const testConfigProvider = ConfigProvider.fromEnv({
+  env: { COMPOSIO_USER_API_KEY: 'test_api_key' },
+}).pipe(extendConfigProvider);
 
 const enableListen = Effect.gen(function* () {
   const config = yield* ComposioCliUserConfig;
@@ -43,7 +42,7 @@ describe('CLI: composio listen', () => {
       },
     })
   )(it => {
-    it.scoped(
+    it.effect(
       '[Then] listens to top-level composio.* events without creating a temporary trigger',
       () =>
         Effect.gen(function* () {
@@ -110,7 +109,7 @@ describe('CLI: composio listen', () => {
       },
     })
   )(it => {
-    it.scoped('[Then] keeps the temporary-trigger flow for trigger slugs', () =>
+    it.effect('[Then] keeps the temporary-trigger flow for trigger slugs', () =>
       Effect.gen(function* () {
         yield* enableListen;
         yield* cli(['listen', 'GMAIL_NEW_GMAIL_MESSAGE', '--max-events', '1']);
@@ -131,7 +130,11 @@ describe('CLI: composio listen', () => {
       fixture: 'global-test-user-id',
     })
   )('listen validation and domain failures', it => {
-    it.scoped('reports malformed trigger params as CLI input validation', () =>
+    // v4 migration note: `CliError.InvalidValue` is a fixed flag/argument-name-and-value
+    // struct produced only by the parser. These are business-level validations (only
+    // knowable after parsing), so `listen.cmd.ts` models them as a plain typed domain error
+    // (`ListenOptionError`) instead — see the migration note above `invalidOptionValue`.
+    it.effect('reports malformed trigger params as CLI input validation', () =>
       Effect.gen(function* () {
         yield* enableListen;
         const exit = yield* Effect.exit(
@@ -141,14 +144,12 @@ describe('CLI: composio listen', () => {
         expect(Exit.isFailure(exit)).toBe(true);
         if (Exit.isFailure(exit)) {
           const failure = Cause.squash(exit.cause);
-          expect(
-            ValidationError.isValidationError(failure) && ValidationError.isInvalidValue(failure)
-          ).toBe(true);
+          expect(failure).toMatchObject({ _tag: 'commands/ListenOptionError' });
         }
       })
     );
 
-    it.scoped('reports malformed timeout values as CLI input validation', () =>
+    it.effect('reports malformed timeout values as CLI input validation', () =>
       Effect.gen(function* () {
         yield* enableListen;
         const exit = yield* Effect.exit(
@@ -158,14 +159,12 @@ describe('CLI: composio listen', () => {
         expect(Exit.isFailure(exit)).toBe(true);
         if (Exit.isFailure(exit)) {
           const failure = Cause.squash(exit.cause);
-          expect(
-            ValidationError.isValidationError(failure) && ValidationError.isInvalidValue(failure)
-          ).toBe(true);
+          expect(failure).toMatchObject({ _tag: 'commands/ListenOptionError' });
         }
       })
     );
 
-    it.scoped('reports a missing active connection as a structured domain failure', () =>
+    it.effect('reports a missing active connection as a structured domain failure', () =>
       Effect.gen(function* () {
         yield* enableListen;
         const exit = yield* Effect.exit(cli(['listen', 'GMAIL_NEW_GMAIL_MESSAGE']));

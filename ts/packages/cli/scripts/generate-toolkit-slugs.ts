@@ -8,13 +8,11 @@ import {
   Data,
   DateTime,
   Effect,
-  Layer,
   Logger,
   Option,
   Schema,
 } from 'effect';
-import * as FileSystem from '@effect/platform/FileSystem';
-import * as BunContext from '@effect/platform-bun/BunContext';
+import * as FileSystem from 'effect/FileSystem';
 import * as BunFileSystem from '@effect/platform-bun/BunFileSystem';
 import * as BunRuntime from '@effect/platform-bun/BunRuntime';
 import { TOOLKIT_SLUG_PATTERN } from 'src/models/toolkits';
@@ -115,7 +113,7 @@ const fetchPage = (params: { baseUrl: string; headers: Record<string, string>; c
       catch: cause => new ToolkitFetchError({ message: `Response was not JSON: ${cause}` }),
     });
 
-    return yield* Schema.decodeUnknown(ToolkitsPage)(payload).pipe(
+    return yield* Schema.decodeUnknownEffect(ToolkitsPage)(payload).pipe(
       Effect.mapError(cause => new ToolkitFetchError({ message: `Unexpected response: ${cause}` }))
     );
   });
@@ -216,10 +214,9 @@ export function generateToolkitSlugs() {
 
 if (require.main === module) {
   generateToolkitSlugs().pipe(
-    Effect.provide(Logger.pretty),
-    Effect.provide(BunContext.layer),
+    Effect.provide(Logger.layer([Logger.consolePretty()])),
     Effect.provide(BunFileSystem.layer),
-    Effect.provide(Layer.setConfigProvider(ConfigProvider.fromEnv())),
+    Effect.provide(ConfigProvider.layer(ConfigProvider.fromEnv())),
     Effect.scoped,
     BunRuntime.runMain({ teardown })
   );

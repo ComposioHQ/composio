@@ -15,7 +15,7 @@ describe('CLI: composio dev projects list', () => {
   });
 
   layer(TestLive({ fixture: 'user-config-with-global-context' }))(it => {
-    it.scoped('[Then] lists developer projects and shows init guidance', () =>
+    it.effect('[Then] lists developer projects and shows init guidance', () =>
       Effect.gen(function* () {
         const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
           mockFetchResponse({

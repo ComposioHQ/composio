@@ -30,7 +30,7 @@ export const linkAnalyticsIdentityForOrg = (params: {
           orgId: params.orgId,
         }).pipe(
           Effect.map(sessionInfo => sessionInfo.org_member.id),
-          Effect.catchAll(error =>
+          Effect.catch(error =>
             Effect.logDebug('Failed to resolve analytics identity for selected org:', error).pipe(
               Effect.as(undefined)
             )

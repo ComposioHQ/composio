@@ -51,15 +51,15 @@ const authConfigsData = {
   items: testAuthConfigs,
 } satisfies TestLiveInput['authConfigsData'];
 
-const testConfigProvider = ConfigProvider.fromMap(
-  new Map([['COMPOSIO_USER_API_KEY', 'test_api_key']])
-).pipe(extendConfigProvider);
+const testConfigProvider = ConfigProvider.fromEnv({
+  env: { COMPOSIO_USER_API_KEY: 'test_api_key' },
+}).pipe(extendConfigProvider);
 
 describe('CLI: composio dev auth-configs list', () => {
   layer(TestLive({ baseConfigProvider: testConfigProvider, authConfigsData }))(
     '[Given] no flags [Then] lists all auth configs',
     it => {
-      it.scoped('lists all auth configs with table', () =>
+      it.effect('lists all auth configs with table', () =>
         Effect.gen(function* () {
           yield* cli(['dev', 'auth-configs', 'list']);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
@@ -77,7 +77,7 @@ describe('CLI: composio dev auth-configs list', () => {
   layer(TestLive({ baseConfigProvider: testConfigProvider, authConfigsData }))(
     '[Given] --toolkits "gmail" [Then] lists only gmail auth configs',
     it => {
-      it.scoped('filters by toolkit', () =>
+      it.effect('filters by toolkit', () =>
         Effect.gen(function* () {
           yield* cli(['dev', 'auth-configs', 'list', '--toolkits', 'gmail']);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
@@ -95,7 +95,7 @@ describe('CLI: composio dev auth-configs list', () => {
   layer(TestLive({ baseConfigProvider: testConfigProvider, authConfigsData }))(
     '[Given] --query "Custom" [Then] shows filtered results',
     it => {
-      it.scoped('filters by name search', () =>
+      it.effect('filters by name search', () =>
         Effect.gen(function* () {
           yield* cli(['dev', 'auth-configs', 'list', '--query', 'Custom']);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
@@ -111,7 +111,7 @@ describe('CLI: composio dev auth-configs list', () => {
   layer(TestLive({ baseConfigProvider: testConfigProvider, authConfigsData }))(
     '[Given] --limit 1 [Then] respects limit',
     it => {
-      it.scoped('respects limit', () =>
+      it.effect('respects limit', () =>
         Effect.gen(function* () {
           yield* cli(['dev', 'auth-configs', 'list', '--limit', '1']);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
@@ -124,7 +124,7 @@ describe('CLI: composio dev auth-configs list', () => {
   );
 
   layer(TestLive())('[Given] no API key [Then] warns user to login', it => {
-    it.scoped('warns user to login', () =>
+    it.effect('warns user to login', () =>
       Effect.gen(function* () {
         yield* cli(['dev', 'auth-configs', 'list']);
         const lines = yield* MockConsole.getLines({ stripAnsi: true });
@@ -138,7 +138,7 @@ describe('CLI: composio dev auth-configs list', () => {
   layer(TestLive({ baseConfigProvider: testConfigProvider }))(
     '[Given] empty results [Then] shows no auth configs found',
     it => {
-      it.scoped('shows no auth configs found', () =>
+      it.effect('shows no auth configs found', () =>
         Effect.gen(function* () {
           yield* cli(['dev', 'auth-configs', 'list']);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
@@ -153,7 +153,7 @@ describe('CLI: composio dev auth-configs list', () => {
   layer(TestLive({ baseConfigProvider: testConfigProvider, authConfigsData }))(
     '[Given] --toolkits "nonexistent" [Then] shows hint about toolkit slug',
     it => {
-      it.scoped('shows toolkit hint', () =>
+      it.effect('shows toolkit hint', () =>
         Effect.gen(function* () {
           yield* cli(['dev', 'auth-configs', 'list', '--toolkits', 'nonexistent']);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });

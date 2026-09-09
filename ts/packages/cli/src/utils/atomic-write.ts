@@ -11,9 +11,8 @@
  * original error propagates, so no tmp litter is left next to the target.
  */
 
-import type * as FileSystem from '@effect/platform/FileSystem';
-import type { PlatformError } from '@effect/platform/Error';
-import { Effect, Either, Option, Predicate } from 'effect';
+import type { FileSystem, PlatformError } from 'effect';
+import { Effect, Option, Predicate, Result } from 'effect';
 
 const MAX_ATOMIC_WRITE_ATTEMPTS = 5;
 
@@ -35,32 +34,30 @@ export const atomicWriteFileString = (params: {
    * exist (or `preserveMode` is false) the tmp is created with default mode.
    */
   readonly preserveMode?: boolean;
-}): Effect.Effect<void, PlatformError> =>
+}): Effect.Effect<void, PlatformError.PlatformError> =>
   Effect.gen(function* () {
     const { fs, target, contents } = params;
     const preservedMode = params.preserveMode
       ? Option.map(yield* fs.stat(target).pipe(Effect.option), info => info.mode & 0o7777)
       : Option.none<number>();
-    const targetMode = Option.fromNullable(params.mode).pipe(Option.orElse(() => preservedMode));
-    const stage = (attempt: number): Effect.Effect<string, PlatformError> =>
+    const targetMode = Option.fromUndefinedOr(params.mode).pipe(Option.orElse(() => preservedMode));
+    const stage = (attempt: number): Effect.Effect<string, PlatformError.PlatformError> =>
       Effect.gen(function* () {
         const tmpPath = atomicTmpPath(target);
         const created = yield* Option.match(targetMode, {
           onNone: () => fs.writeFileString(tmpPath, contents, { flag: 'wx' }),
           onSome: mode => fs.writeFileString(tmpPath, contents, { flag: 'wx', mode }),
-        }).pipe(Effect.either);
+        }).pipe(Effect.result);
 
-        if (Either.isLeft(created)) {
-          const isCollision =
-            Predicate.isTagged('SystemError')(created.left) &&
-            created.left.reason === 'AlreadyExists';
+        if (Result.isFailure(created)) {
+          const isCollision = Predicate.isTagged(created.failure.reason, 'AlreadyExists');
           if (isCollision && attempt < MAX_ATOMIC_WRITE_ATTEMPTS) {
             return yield* stage(attempt + 1);
           }
           if (!isCollision) {
             yield* fs.remove(tmpPath, { force: true }).pipe(Effect.ignore);
           }
-          return yield* Effect.fail(created.left);
+          return yield* Effect.fail(created.failure);
         }
 
         return tmpPath;
@@ -87,7 +84,8 @@ export const atomicWritePrivateFileString = (params: {
   readonly fs: FileSystem.FileSystem;
   readonly target: string;
   readonly contents: string;
-}): Effect.Effect<void, PlatformError> => atomicWriteFileString({ ...params, mode: 0o600 });
+}): Effect.Effect<void, PlatformError.PlatformError> =>
+  atomicWriteFileString({ ...params, mode: 0o600 });
 
 /**
  * Tighten a credential-bearing file written by an older CLI before reading it.
@@ -113,7 +111,7 @@ export const ensurePrivateFileMode = (params: {
     yield* params.fs
       .chmod(params.target, 0o600)
       .pipe(
-        Effect.catchAll(error =>
+        Effect.catch(error =>
           Effect.logWarning(
             `Could not tighten permissions for credential file at ${params.target}; continuing with the read: ${String(error)}`
           )

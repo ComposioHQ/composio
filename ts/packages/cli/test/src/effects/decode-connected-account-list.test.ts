@@ -1,5 +1,5 @@
 import { describe, expect, layer } from '@effect/vitest';
-import { Console, Effect, Layer, ParseResult } from 'effect';
+import { Console, Effect, Layer, Schema } from 'effect';
 import {
   decodeConnectedAccountItems,
   decodeConnectedAccountListWithFallback,
@@ -7,11 +7,7 @@ import {
 import { MockConsole } from 'test/__utils__';
 import { TerminalUITest } from 'test/__utils__/services/terminal-ui-test';
 
-const TestLayer = Layer.unwrapEffect(
-  Effect.map(MockConsole.make, _console =>
-    Layer.mergeAll(Console.setConsole(_console), TerminalUITest)
-  )
-);
+const TestLayer = Layer.mergeAll(Layer.effect(Console.Console, MockConsole.make), TerminalUITest);
 
 const makeItem = (overrides?: Record<string, unknown>) => ({
   id: 'con_decode_test',
@@ -69,13 +65,13 @@ describe('decodeConnectedAccountItems', () => {
   });
 
   layer(TestLayer)('[Given] a malformed payload', it => {
-    it.effect('fails with ParseError', () =>
+    it.effect('fails with SchemaError', () =>
       Effect.gen(function* () {
         const error = yield* Effect.flip(
           decodeConnectedAccountItems([{ definitely: 'not-an-account' }])
         );
 
-        expect(ParseResult.isParseError(error)).toBe(true);
+        expect(Schema.isSchemaError(error)).toBe(true);
       })
     );
   });

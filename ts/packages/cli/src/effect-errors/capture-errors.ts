@@ -1,7 +1,7 @@
-import type { FileSystem } from '@effect/platform/FileSystem';
-import type { Path } from '@effect/platform/Path';
 import { Effect } from 'effect';
-import { type Cause, isInterruptedOnly } from 'effect/Cause';
+import { type Cause, hasInterruptsOnly } from 'effect/Cause';
+import type { FileSystem } from 'effect/FileSystem';
+import type { Path } from 'effect/Path';
 
 import { captureErrorsFrom } from 'effect-errors/logic/errors';
 import {
@@ -17,7 +17,7 @@ export interface ErrorData {
   stack: string[] | undefined;
   sources: Omit<ErrorRelatedSources, '_tag'>[] | undefined;
   location: Omit<ErrorLocation, '_tag'>[] | undefined;
-  spans: ErrorSpan[] | undefined;
+  spans: ReadonlyArray<ErrorSpan> | undefined;
   isPlainString: boolean;
 }
 
@@ -37,7 +37,7 @@ export const captureErrors = <E>(
   }
 ): Effect.Effect<CapturedErrors, never, FileSystem | Path> =>
   Effect.gen(function* () {
-    if (isInterruptedOnly(cause)) {
+    if (hasInterruptsOnly(cause)) {
       return {
         interrupted: true,
         errors: [],

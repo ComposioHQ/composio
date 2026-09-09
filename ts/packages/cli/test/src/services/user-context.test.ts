@@ -1,9 +1,9 @@
 import { describe, it } from '@effect/vitest';
-import { assertEquals } from '@effect/vitest/utils';
-import * as FileSystem from '@effect/platform/FileSystem';
+import { assertEquals, deepStrictEqual } from '@effect/vitest/utils';
+import * as FileSystem from 'effect/FileSystem';
 import * as BunFileSystem from '@effect/platform-bun/BunFileSystem';
 import * as BunPath from '@effect/platform-bun/BunPath';
-import { ConfigProvider, Effect, Layer, Option, Data } from 'effect';
+import { ConfigProvider, Effect, Layer, Option } from 'effect';
 import * as tempy from 'tempy';
 import { ComposioUserContext, rawComposioUserContextLive } from 'src/services/user-context';
 import { defaultNodeOs, NodeOs } from 'src/services/node-os';
@@ -76,11 +76,14 @@ const ComposioUserContextLive = Layer.provide(
 
 describe('ComposioUserContext', () => {
   const withMapConfigProvider = (map: Map<string, string>) =>
-    Layer.setConfigProvider(extendConfigProvider(ConfigProvider.fromMap(map)));
+    Layer.succeed(
+      ConfigProvider.ConfigProvider,
+      extendConfigProvider(ConfigProvider.fromEnv({ env: Object.fromEntries(map) }))
+    );
 
   describe('[When] no `~/.composio/user_data.json` config file exists', () => {
     describe('[When] no dynamic `Config` is set', () => {
-      it.scoped('[Then] it contains default user data', () => {
+      it.effect('[Then] it contains default user data', () => {
         const cwd = tempy.temporaryDirectory();
         const map = new Map([]) satisfies Map<string, string>;
 
@@ -101,14 +104,14 @@ describe('ComposioUserContext', () => {
             projectId: Option.none(),
             testUserId: Option.none(),
           });
-          assertEquals(Data.struct(ctx.data), Data.struct(expectedUserData));
-          assertEquals(ctx.isLoggedIn(), false);
+          deepStrictEqual(ctx.data, expectedUserData);
+          deepStrictEqual(ctx.isLoggedIn(), false);
         }).pipe(Effect.provide(ComposioUserContextTest));
       });
     });
 
     describe('[When] dynamic `APP_CONFIG` is set', () => {
-      it.scoped('[Then] is logged in', () => {
+      it.effect('[Then] is logged in', () => {
         const cwd = tempy.temporaryDirectory();
         const map = new Map([
           ['COMPOSIO_USER_API_KEY', 'api_key'],
@@ -132,12 +135,12 @@ describe('ComposioUserContext', () => {
             projectId: Option.none(),
             testUserId: Option.none(),
           });
-          assertEquals(Data.struct(ctx.data), Data.struct(expectedUserData));
-          assertEquals(ctx.isLoggedIn(), true);
+          deepStrictEqual(ctx.data, expectedUserData);
+          deepStrictEqual(ctx.isLoggedIn(), true);
         }).pipe(Effect.provide(ComposioUserContextTest));
       });
 
-      it.scoped('[Then] COMPOSIO_API_KEY alone does not authenticate user context', () => {
+      it.effect('[Then] COMPOSIO_API_KEY alone does not authenticate user context', () => {
         const cwd = tempy.temporaryDirectory();
         const map = new Map([['COMPOSIO_API_KEY', 'legacy_api_key']]) satisfies Map<string, string>;
 
@@ -149,8 +152,8 @@ describe('ComposioUserContext', () => {
 
         return Effect.gen(function* () {
           const ctx = yield* ComposioUserContext;
-          assertEquals(ctx.isLoggedIn(), false);
-          assertEquals(Option.getOrUndefined(ctx.data.apiKey), undefined);
+          deepStrictEqual(ctx.isLoggedIn(), false);
+          deepStrictEqual(Option.getOrUndefined(ctx.data.apiKey), undefined);
         }).pipe(Effect.provide(ComposioUserContextTest));
       });
     });
@@ -188,15 +191,12 @@ describe('ComposioUserContext', () => {
           assertEquals((yield* fs.stat(userDataPath)).mode & 0o777, 0o644);
 
           const ctx = yield* ComposioUserContext;
-          assertEquals(
-            Data.struct(ctx.data),
-            Data.struct({
-              ...expectedUserData,
-              baseURL: expectedUserData.baseURL.pipe(Option.getOrUndefined),
-              webURL: expectedUserData.webURL.pipe(Option.getOrUndefined),
-            })
-          );
-          assertEquals(ctx.isLoggedIn(), true);
+          deepStrictEqual(ctx.data, {
+            ...expectedUserData,
+            baseURL: expectedUserData.baseURL.pipe(Option.getOrUndefined),
+            webURL: expectedUserData.webURL.pipe(Option.getOrUndefined),
+          });
+          deepStrictEqual(ctx.isLoggedIn(), true);
           assertEquals(yield* fs.readFileString(userDataPath, 'utf8'), userDataAsJson);
           assertEquals((yield* fs.stat(userDataPath)).mode & 0o777, 0o600);
         }).pipe(Effect.provide(ComposioUserContextTest));
@@ -204,7 +204,7 @@ describe('ComposioUserContext', () => {
     });
 
     describe('[When] dynamic `APP_CONFIG` is set', () => {
-      it.scoped('[Then] it overrides the config file', () => {
+      it.effect('[Then] it overrides the config file', () => {
         const cwd = tempy.temporaryDirectory();
         const map = new Map([['COMPOSIO_USER_API_KEY', 'api_key']]) satisfies Map<string, string>;
 
@@ -231,15 +231,12 @@ describe('ComposioUserContext', () => {
 
           const ctx = yield* ComposioUserContext;
 
-          assertEquals(
-            Data.struct(ctx.data),
-            Data.struct({
-              ...expectedUserData,
-              baseURL: 'https://backend.composio.dev',
-              webURL: expectedUserData.webURL.pipe(Option.getOrUndefined),
-            })
-          );
-          assertEquals(ctx.isLoggedIn(), true);
+          deepStrictEqual(ctx.data, {
+            ...expectedUserData,
+            baseURL: 'https://backend.composio.dev',
+            webURL: expectedUserData.webURL.pipe(Option.getOrUndefined),
+          });
+          deepStrictEqual(ctx.isLoggedIn(), true);
         }).pipe(Effect.provide(ComposioUserContextTest));
       });
     });
@@ -272,8 +269,8 @@ describe('ComposioUserContext', () => {
             projectId: Option.none(),
             testUserId: Option.none(),
           });
-          assertEquals(Data.struct(ctx.data), Data.struct(expectedUserData));
-          assertEquals(ctx.isLoggedIn(), false);
+          deepStrictEqual(ctx.data, expectedUserData);
+          deepStrictEqual(ctx.isLoggedIn(), false);
 
           // The corrupted file should have been overwritten with valid defaults
           const contents = yield* fs.readFileString(
@@ -281,7 +278,7 @@ describe('ComposioUserContext', () => {
             'utf8'
           );
           const parsed = JSON.parse(contents);
-          assertEquals(parsed.api_key, null);
+          deepStrictEqual(parsed.api_key, null);
         }).pipe(Effect.provide(ComposioUserContextTest));
       });
     });
@@ -317,8 +314,8 @@ describe('ComposioUserContext', () => {
             projectId: Option.none(),
             testUserId: Option.none(),
           });
-          assertEquals(Data.struct(ctx.data), Data.struct(expectedUserData));
-          assertEquals(ctx.isLoggedIn(), false);
+          deepStrictEqual(ctx.data, expectedUserData);
+          deepStrictEqual(ctx.isLoggedIn(), false);
         }).pipe(Effect.provide(ComposioUserContextTest));
       });
     });
@@ -354,8 +351,8 @@ describe('ComposioUserContext', () => {
             projectId: Option.none(),
             testUserId: Option.none(),
           });
-          assertEquals(Data.struct(ctx.data), Data.struct(expectedUserData));
-          assertEquals(ctx.isLoggedIn(), false);
+          deepStrictEqual(ctx.data, expectedUserData);
+          deepStrictEqual(ctx.isLoggedIn(), false);
         }).pipe(Effect.provide(ComposioUserContextTest));
       });
     });
@@ -382,8 +379,8 @@ describe('ComposioUserContext', () => {
           const ctx = yield* ComposioUserContext;
 
           // Despite corrupted file, env USER_API_KEY should still work
-          assertEquals(ctx.isLoggedIn(), true);
-          assertEquals(Option.getOrUndefined(ctx.data.apiKey), 'env_api_key');
+          deepStrictEqual(ctx.isLoggedIn(), true);
+          deepStrictEqual(Option.getOrUndefined(ctx.data.apiKey), 'env_api_key');
         }).pipe(Effect.provide(ComposioUserContextTest));
       });
     });

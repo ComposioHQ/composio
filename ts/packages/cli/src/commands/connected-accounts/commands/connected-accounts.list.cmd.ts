@@ -1,4 +1,4 @@
-import { Command, Options } from '@effect/cli';
+import { Command, Flag } from 'effect/unstable/cli';
 import { Data, Effect, Option } from 'effect';
 import type { ConnectedAccountListParams } from '@composio/client/resources/connected-accounts';
 import { ComposioClientSingleton } from 'src/services/composio-clients';
@@ -20,19 +20,17 @@ class ConnectedAccountsListRequestError extends Data.TaggedError(
   readonly cause: unknown;
 }> {}
 
-const toolkits = Options.text('toolkits').pipe(
-  Options.withDescription(
-    'Filter by toolkit slugs, comma-separated (e.g. "gmail" or "gmail,slack")'
-  ),
-  Options.optional
+const toolkits = Flag.string('toolkits').pipe(
+  Flag.withDescription('Filter by toolkit slugs, comma-separated (e.g. "gmail" or "gmail,slack")'),
+  Flag.optional
 );
 
-const userId = Options.text('user-id').pipe(
-  Options.withDescription('Filter by user ID'),
-  Options.optional
+const userId = Flag.string('user-id').pipe(
+  Flag.withDescription('Filter by user ID'),
+  Flag.optional
 );
 
-const status = Options.choice('status', [
+const status = Flag.choice('status', [
   'INITIALIZING',
   'INITIATED',
   'ACTIVE',
@@ -40,11 +38,11 @@ const status = Options.choice('status', [
   'EXPIRED',
   'INACTIVE',
   'REVOKED',
-] as const).pipe(Options.withDescription('Filter by connection status'), Options.optional);
+] as const).pipe(Flag.withDescription('Filter by connection status'), Flag.optional);
 
-const limit = Options.integer('limit').pipe(
-  Options.withDefault(30),
-  Options.withDescription('Number of results per page (1-1000)')
+const limit = Flag.integer('limit').pipe(
+  Flag.withDefault(30),
+  Flag.withDescription('Number of results per page (1-1000)')
 );
 
 /**

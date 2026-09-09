@@ -86,10 +86,9 @@ export interface KeyringServiceShape {
  * Context tag. Resolve with `yield* KeyringService` inside an
  * `Effect.gen` block.
  */
-export class KeyringService extends Context.Tag('composio/cli-keyring/KeyringService')<
-  KeyringService,
-  KeyringServiceShape
->() {}
+export class KeyringService extends Context.Service<KeyringService, KeyringServiceShape>()(
+  'composio/cli-keyring/KeyringService'
+) {}
 
 /**
  * Build a `KeyringServiceShape` from a concrete `CredentialStore`.

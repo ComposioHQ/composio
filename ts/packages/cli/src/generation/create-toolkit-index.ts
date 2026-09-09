@@ -128,7 +128,7 @@ const groupByToolkit =
       })),
       Match.when({ withTypes: false }, ({ withTypes, tools }) => ({
         withTypes,
-        tools: tools.filter(tool => startsWith(`${toolkitName}_`)(tool)),
+        tools: tools.filter((tool: string) => startsWith(`${toolkitName}_`)(tool)),
       })),
       Match.exhaustive
     );

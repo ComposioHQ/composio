@@ -1,5 +1,5 @@
-import { Command, Options } from '@effect/cli';
 import { Data, Effect, Option } from 'effect';
+import { Command, Flag } from 'effect/unstable/cli';
 import { decodeConnectedAccountListWithFallback } from 'src/effects/decode-connected-account-list';
 import { requireAuth } from 'src/effects/require-auth';
 import type { ConnectedAccountItem } from 'src/models/connected-accounts';
@@ -25,9 +25,9 @@ class ConnectionsListRequestError extends Data.TaggedError('commands/Connections
   readonly cause: unknown;
 }> {}
 
-const toolkit = Options.text('toolkit').pipe(
-  Options.withDescription('Filter by toolkit slug (e.g. "gmail")'),
-  Options.optional
+const toolkit = Flag.string('toolkit').pipe(
+  Flag.withDescription('Filter by toolkit slug (e.g. "gmail")'),
+  Flag.optional
 );
 
 const formatConnectionsJson = (

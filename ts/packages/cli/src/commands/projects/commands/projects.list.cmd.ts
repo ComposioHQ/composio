@@ -1,4 +1,4 @@
-import { Command, Options } from '@effect/cli';
+import { Command, Flag } from 'effect/unstable/cli';
 import { Effect, Option } from 'effect';
 import { requireAuth } from 'src/effects/require-auth';
 import { TerminalUI } from 'src/services/terminal-ui';
@@ -6,14 +6,14 @@ import { listOrganizationProjects } from 'src/services/composio-clients';
 import { ComposioUserContext } from 'src/services/user-context';
 import { clampLimit } from 'src/ui/clamp-limit';
 
-const orgId = Options.text('org-id').pipe(
-  Options.optional,
-  Options.withDescription('Organization ID to list projects for (defaults to current global org)')
+const orgId = Flag.string('org-id').pipe(
+  Flag.optional,
+  Flag.withDescription('Organization ID to list projects for (defaults to current global org)')
 );
 
-const limit = Options.integer('limit').pipe(
-  Options.withDefault(50),
-  Options.withDescription('Max projects to fetch from API (default: 50)')
+const limit = Flag.integer('limit').pipe(
+  Flag.withDefault(50),
+  Flag.withDescription('Max projects to fetch from API (default: 50)')
 );
 
 export const projectsCmd$List = Command.make('list', { orgId, limit }, ({ orgId, limit }) =>

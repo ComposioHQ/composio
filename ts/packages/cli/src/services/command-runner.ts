@@ -1,5 +1,6 @@
-import * as Command from '@effect/platform/Command';
-import { Effect, Stream, String, Context, Layer } from 'effect';
+import { Context, Effect, Layer, Stream } from 'effect';
+import type * as PlatformError from 'effect/PlatformError';
+import type { ChildProcess, ChildProcessSpawner } from 'effect/unstable/process';
 
 export interface CommandResult {
   readonly exitCode: number;
@@ -8,15 +9,34 @@ export interface CommandResult {
 }
 
 /** Drains a child-process output stream into one string; shared with the run-helpers runtime. */
-export const collectText = (stream: Stream.Stream<Uint8Array, unknown>) =>
-  stream.pipe(Stream.decodeText(), Stream.runFold(String.empty, String.concat));
+export const collectText = <E>(stream: Stream.Stream<Uint8Array, E>) =>
+  Stream.mkString(Stream.decodeText(stream));
 
-const makeCommandRunner = Effect.sync(() => ({
-  run: (command: Command.Command) => Command.exitCode(command),
-  capture: (command: Command.Command) =>
+export interface CommandRunnerShape {
+  readonly run: (
+    command: ChildProcess.Command
+  ) => Effect.Effect<number, PlatformError.PlatformError, ChildProcessSpawner.ChildProcessSpawner>;
+  readonly capture: (
+    command: ChildProcess.Command
+  ) => Effect.Effect<
+    CommandResult,
+    PlatformError.PlatformError,
+    ChildProcessSpawner.ChildProcessSpawner
+  >;
+}
+
+const makeCommandRunner = Effect.sync((): CommandRunnerShape => ({
+  run: command =>
     Effect.scoped(
       Effect.gen(function* () {
-        const childProcess = yield* Command.start(command);
+        const childProcess = yield* command;
+        return Number(yield* childProcess.exitCode);
+      })
+    ),
+  capture: command =>
+    Effect.scoped(
+      Effect.gen(function* () {
+        const childProcess = yield* command;
         const [exitCode, stdout, stderr] = yield* Effect.all(
           [
             childProcess.exitCode,
@@ -30,11 +50,11 @@ const makeCommandRunner = Effect.sync(() => ({
     ),
 }));
 
-export type CommandRunnerShape = Effect.Effect.Success<typeof makeCommandRunner>;
-
-export class CommandRunner extends Context.Tag('services/CommandRunner')<
-  CommandRunner,
-  CommandRunnerShape
->() {
-  static readonly Default = Layer.effect(CommandRunner, makeCommandRunner);
+export class CommandRunner extends Context.Service<CommandRunner, CommandRunnerShape>()(
+  'services/CommandRunner'
+) {
+  static readonly Default: Layer.Layer<CommandRunner> = Layer.effect(
+    CommandRunner,
+    makeCommandRunner
+  );
 }

@@ -1,4 +1,4 @@
-import { Args, Command, HelpDoc, Options, ValidationError } from '@effect/cli';
+import { Argument, Command, Flag } from 'effect/unstable/cli';
 import {
   getLocalToolsMetaPath,
   isLocalToolkitSlug,
@@ -11,38 +11,38 @@ import { Data, Effect, Option, Predicate } from 'effect';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { bold, gray } from 'src/ui/colors';
 
-const selector = Args.text({ name: 'selector' }).pipe(
-  Args.withDescription('Local toolkit slug or LOCAL_* tool slug to configure')
+const selector = Argument.string('selector').pipe(
+  Argument.withDescription('Local toolkit slug or LOCAL_* tool slug to configure')
 );
 
-const command = Options.text('command').pipe(
-  Options.optional,
-  Options.withDescription('Override the local binary/launcher command')
+const command = Flag.string('command').pipe(
+  Flag.optional,
+  Flag.withDescription('Override the local binary/launcher command')
 );
 
-const disable = Options.boolean('disable').pipe(
-  Options.withDefault(false),
-  Options.withDescription('Disable this local toolkit/tool')
+const disable = Flag.boolean('disable').pipe(
+  Flag.withDefault(false),
+  Flag.withDescription('Disable this local toolkit/tool')
 );
 
-const enable = Options.boolean('enable').pipe(
-  Options.withDefault(false),
-  Options.withDescription('Enable this local toolkit/tool by clearing disabled=false')
+const enable = Flag.boolean('enable').pipe(
+  Flag.withDefault(false),
+  Flag.withDescription('Enable this local toolkit/tool by clearing disabled=false')
 );
 
-const authenticated = Options.boolean('authenticated').pipe(
-  Options.withDefault(false),
-  Options.withDescription('Mark this local toolkit/tool as authenticated in metadata')
+const authenticated = Flag.boolean('authenticated').pipe(
+  Flag.withDefault(false),
+  Flag.withDescription('Mark this local toolkit/tool as authenticated in metadata')
 );
 
-const unauthenticated = Options.boolean('unauthenticated').pipe(
-  Options.withDefault(false),
-  Options.withDescription('Mark this local toolkit/tool as unauthenticated in metadata')
+const unauthenticated = Flag.boolean('unauthenticated').pipe(
+  Flag.withDefault(false),
+  Flag.withDescription('Mark this local toolkit/tool as unauthenticated in metadata')
 );
 
-const json = Options.boolean('json').pipe(
-  Options.withDefault(false),
-  Options.withDescription('Print the updated metadata entry as JSON')
+const json = Flag.boolean('json').pipe(
+  Flag.withDefault(false),
+  Flag.withDescription('Print the updated metadata entry as JSON')
 );
 
 type ConfigureTarget =
@@ -69,7 +69,20 @@ export class LocalToolsConfigureError extends Data.TaggedError(
 const errorMessage = (error: unknown): string =>
   Predicate.isError(error) ? error.message : String(error);
 
-const invalidValue = (message: string) => ValidationError.invalidValue(HelpDoc.p(message));
+/**
+ * Business-level validation failure for `local-tools configure` inputs
+ * (unknown selector, conflicting/empty flag combinations) that are only
+ * knowable after parsing. See the analogous comment on `LinkInputError` in
+ * `connected-accounts.link.cmd.ts` for why this is a plain typed domain
+ * error rather than a `CliError.InvalidValue` in v4.
+ */
+class LocalToolsConfigureInputError extends Data.TaggedError(
+  'commands/local-tools/LocalToolsConfigureInputError'
+)<{
+  readonly message: string;
+}> {}
+
+const invalidValue = (message: string) => new LocalToolsConfigureInputError({ message });
 
 const resolveTarget = (value: string): ConfigureTarget | null => {
   const localTool = resolveLocalTool(value, { includeUnsupported: true });
@@ -176,8 +189,10 @@ export const localToolsCmd$Configure = Command.make(
       const entry =
         target.kind === 'toolkit' ? metadata.toolkits[target.key] : metadata.tools[target.key];
       if (!entry) {
-        return yield* Effect.dieMessage(
-          `Local tools metadata invariant violated: ${target.kind} ${target.key} was not updated`
+        return yield* Effect.die(
+          new Error(
+            `Local tools metadata invariant violated: ${target.kind} ${target.key} was not updated`
+          )
         );
       }
       const metadataPath = getLocalToolsMetaPath();
