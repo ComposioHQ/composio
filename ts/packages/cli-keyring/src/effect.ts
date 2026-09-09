@@ -26,7 +26,7 @@
 
 import { Context, Effect, Layer } from 'effect';
 import { Entry } from './core/entry';
-import type { KeyringError } from './core/errors';
+import { KeyringError } from './core/errors';
 import { createDefaultStore, type MacOSBackend } from './index';
 import { type CredentialStore, type EntryModifiers, setDefaultStore } from './core/store';
 
@@ -150,15 +150,38 @@ export function makeKeyringService(store: CredentialStore): KeyringServiceShape 
  * macOS FFI backend is dynamically imported — it must stay out of the
  * Node bundle so `bun:ffi` doesn't crash at module load. The extra
  * layer-build cost is a one-shot `import()` per process.
+ *
+ * Construction is fallible — the backend choice can fail to load its
+ * binary or spawn its subprocess — so the layer's error channel carries
+ * `KeyringError` instead of dying as a defect. (`KeyringLive` is
+ * `KeyringLiveWithBackend('auto')`.)
  */
-export const KeyringLive: Layer.Layer<KeyringService> = Layer.effect(
+export const KeyringLive: Layer.Layer<KeyringService, KeyringError> = Layer.effect(
   KeyringService,
-  Effect.promise(async () => {
-    const store = await createDefaultStore();
-    setDefaultStore(store);
-    return makeKeyringService(store);
-  })
+  buildKeyringService()
 );
+
+/**
+ * Build a `KeyringService` from a freshly constructed default store.
+ *
+ * Store construction is the one genuinely fallible promise in this
+ * wrapper — `createDefaultStore` loads the macOS FFI backend or spawns
+ * subprocesses — so it goes through `Effect.tryPromise` and surfaces a
+ * typed `KeyringError` on the layer's error channel rather than an
+ * `Effect.promise` defect. Non-`KeyringError` causes (e.g. a failed
+ * dynamic `import()`) are normalized into a `PlatformFailure`.
+ */
+function buildKeyringService(options?: { macOSBackend?: MacOSBackend }) {
+  return Effect.tryPromise({
+    try: async () => {
+      const store = await createDefaultStore(options);
+      setDefaultStore(store);
+      return makeKeyringService(store);
+    },
+    catch: cause =>
+      cause instanceof KeyringError ? cause : new KeyringError({ kind: 'PlatformFailure', cause }),
+  });
+}
 
 /**
  * Build a `KeyringLive` layer with an explicit macOS backend choice.
@@ -166,16 +189,14 @@ export const KeyringLive: Layer.Layer<KeyringService> = Layer.effect(
  * between `subprocess` (safe default) and `ffi` (experimental,
  * requires Developer ID signing). The `backend` parameter is
  * ignored on Linux and other platforms.
+ *
+ * Fails with `KeyringError` if the store cannot be constructed — see
+ * `buildKeyringService`.
  */
-export const KeyringLiveWithBackend = (macOSBackend: MacOSBackend): Layer.Layer<KeyringService> =>
-  Layer.effect(
-    KeyringService,
-    Effect.promise(async () => {
-      const store = await createDefaultStore({ macOSBackend });
-      setDefaultStore(store);
-      return makeKeyringService(store);
-    })
-  );
+export const KeyringLiveWithBackend = (
+  macOSBackend: MacOSBackend
+): Layer.Layer<KeyringService, KeyringError> =>
+  Layer.effect(KeyringService, buildKeyringService({ macOSBackend }));
 
 /** Layer built from an explicit store — used by tests. */
 export const KeyringLayer = (store: CredentialStore): Layer.Layer<KeyringService> =>
