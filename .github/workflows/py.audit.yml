@@ -76,13 +76,23 @@ jobs:
           - name: workspace
             directory: '.'
             export-flags: '--all-packages'
-          # Standalone provider projects with their own lockfiles.
+            standalone: false
+          # Provider projects with their own lockfiles, which pin the published
+          # `composio` from PyPI rather than the workspace checkout. uv resolves
+          # them on their own even though python/providers/openai is listed as
+          # a workspace member: discovery walks up from the provider, hits
+          # python/pyproject.toml first, and stops there because that project
+          # declares no workspace. The "Check lockfile origin" step below
+          # asserts this so a change to that layout cannot silently turn these
+          # jobs into a re-scan of the workspace export.
           - name: composio-openai
             directory: 'python/providers/openai'
             export-flags: ''
+            standalone: true
           - name: composio-claude-agent-sdk
             directory: 'python/providers/claude_agent_sdk'
             export-flags: ''
+            standalone: true
 
     steps:
       - name: Checkout Code
@@ -108,6 +118,29 @@ jobs:
             --output-file "$RUNNER_TEMP/requirements.txt" \
             $EXPORT_FLAGS
           echo "Exported $(grep -c '==' "$RUNNER_TEMP/requirements.txt") pinned packages"
+
+      - name: Check lockfile origin
+        env:
+          LOCK_DIRECTORY: ${{ matrix.lock.directory }}
+          STANDALONE: ${{ matrix.lock.standalone }}
+        run: |
+          # A standalone provider lock pins composio from PyPI, so its export
+          # carries a `composio==` line. A workspace export never does, because
+          # `--no-emit-workspace` drops workspace members.
+          if grep -q '^composio==' "$RUNNER_TEMP/requirements.txt"; then
+            origin=standalone
+          else
+            origin=workspace
+          fi
+          if [[ "$STANDALONE" == "true" && "$origin" != "standalone" ]]; then
+            echo "::error::expected $LOCK_DIRECTORY/uv.lock to resolve on its own, but uv exported the workspace lock"
+            exit 1
+          fi
+          if [[ "$STANDALONE" != "true" && "$origin" != "workspace" ]]; then
+            echo "::error::expected the workspace lock, but uv exported a standalone project lock"
+            exit 1
+          fi
+          echo "Audited the $origin lockfile"
 
       - name: Run pip-audit
         run: |
