@@ -122,6 +122,7 @@ export const DOCS_PRODUCTS = {
       '/docs/sandbox',
       '/docs/extending-sessions',
       '/docs/setting-up-triggers',
+      '/docs/poc-to-prod',
       '/docs/sessions-vs-direct-execution',
       '/docs/tools-direct',
       '/docs/auth-configuration',
@@ -153,6 +154,7 @@ export const DOCS_PRODUCTS = {
           { type: 'folder', path: 'sandbox' },
           { type: 'folder', path: 'extending-sessions' },
           { type: 'folder', path: 'setting-up-triggers' },
+          { type: 'folder', path: 'poc-to-prod' },
         ],
       },
       {
