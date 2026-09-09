@@ -72,7 +72,25 @@ _BODY_HEADERS = frozenset(
         "transfer-encoding",
     }
 )
+# Headers that carry a credential for the origin the request was addressed
+# to, so they must not follow a redirect to a different origin. The Fetch
+# standard strips ``Authorization`` on a cross-origin redirect; ``Cookie`` and
+# ``Proxy-Authorization`` go with it the way ``requests``' own ``rebuild_auth``
+# and curl drop them on a host change. Following redirects by hand bypasses
+# ``rebuild_auth``, so the rule is applied here. The TypeScript guard drops the
+# same three (``CREDENTIAL_HEADERS``).
+_CREDENTIAL_HEADERS = frozenset({"authorization", "cookie", "proxy-authorization"})
 _MAX_REDIRECTS = 5
+
+
+def _origin(url: str) -> t.Tuple[str, str, int]:
+    """The ``(scheme, host, port)`` triple two URLs must share to be same-origin."""
+    parsed = urlparse(url)
+    scheme = parsed.scheme.lower()
+    port = parsed.port
+    if port is None:
+        port = 443 if scheme == "https" else 80
+    return scheme, (parsed.hostname or "").lower(), port
 
 
 def is_blocked_ip(value: str) -> bool:
@@ -233,6 +251,7 @@ def safe_request(
             return response
 
         response.close()
+        previous_url = current_url
         current_url = urljoin(current_url, location)
 
         # The next hop is whatever `Location` says, query string included, so
@@ -240,6 +259,16 @@ def safe_request(
         # `requests` builds a redirected request, and it keeps a query-string
         # credential from being handed to a target that never asked for one.
         kwargs.pop("params", None)
+
+        # A credential header was addressed to the origin the caller named, so
+        # a hop that leaves that origin must not carry it along.
+        if _origin(previous_url) != _origin(current_url):
+            if headers := kwargs.get("headers"):
+                kwargs["headers"] = {
+                    name: value
+                    for name, value in headers.items()
+                    if name.lower() not in _CREDENTIAL_HEADERS
+                }
 
         rewritten_method = _redirect_rewrite(response.status_code, method)
         if rewritten_method is not None:
