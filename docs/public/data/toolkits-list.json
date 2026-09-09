@@ -21,7 +21,7 @@
     "logo": "https://logos.composio.dev/api/github",
     "category": "developer tools",
     "toolCount": 893,
-    "triggerCount": 20
+    "triggerCount": 46
   },
   {
     "slug": "googlecalendar",
@@ -389,7 +389,7 @@
     "logo": "https://logos.composio.dev/api/trello",
     "category": "project management",
     "toolCount": 329,
-    "triggerCount": 20
+    "triggerCount": 43
   },
   {
     "slug": "apollo",
@@ -445,7 +445,7 @@
     "logo": "https://logos.composio.dev/api/clickup",
     "category": "productivity",
     "toolCount": 164,
-    "triggerCount": 20
+    "triggerCount": 21
   },
   {
     "slug": "brevo",
@@ -461,7 +461,7 @@
     "logo": "https://logos.composio.dev/api/stripe",
     "category": "payment processing",
     "toolCount": 432,
-    "triggerCount": 20
+    "triggerCount": 40
   },
   {
     "slug": "klaviyo",
@@ -549,7 +549,7 @@
     "logo": "https://logos.composio.dev/api/confluence",
     "category": "team collaboration",
     "toolCount": 69,
-    "triggerCount": 20
+    "triggerCount": 23
   },
   {
     "slug": "freshdesk",
@@ -765,7 +765,7 @@
     "logo": "https://logos.composio.dev/api/googlesuper",
     "category": "file management & storage",
     "toolCount": 473,
-    "triggerCount": 20
+    "triggerCount": 48
   },
   {
     "slug": "browser_tool",
