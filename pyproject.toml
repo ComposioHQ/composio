@@ -26,5 +26,5 @@ composio = { workspace = true }
 
 [dependency-groups]
 dev = [
-    "composio==1.0.0rc6",
+    "composio==2.0.0b0",
 ]
