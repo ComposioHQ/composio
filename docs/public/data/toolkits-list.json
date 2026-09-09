@@ -381,7 +381,7 @@
     "logo": "https://logos.composio.dev/api/calendly",
     "category": "scheduling & booking",
     "toolCount": 56,
-    "triggerCount": 0
+    "triggerCount": 10
   },
   {
     "slug": "trello",
@@ -492,7 +492,7 @@
     "name": "Attio",
     "logo": "https://logos.composio.dev/api/attio",
     "category": "crm",
-    "toolCount": 108,
+    "toolCount": 109,
     "triggerCount": 0
   },
   {
@@ -820,7 +820,7 @@
     "name": "Rocketlane",
     "logo": "https://logos.composio.dev/api/rocketlane",
     "category": "project management",
-    "toolCount": 69,
+    "toolCount": 81,
     "triggerCount": 0
   },
   {
@@ -1364,7 +1364,7 @@
     "name": "Lexoffice",
     "logo": "https://logos.composio.dev/api/lexoffice",
     "category": "accounting",
-    "toolCount": 42,
+    "toolCount": 44,
     "triggerCount": 0
   },
   {
@@ -2068,7 +2068,7 @@
     "name": "Ahrefs MCP",
     "logo": "https://logos.composio.dev/api/ahrefs_mcp",
     "category": "analytics",
-    "toolCount": 134,
+    "toolCount": 135,
     "triggerCount": 0
   },
   {
@@ -5269,7 +5269,7 @@
     "logo": "https://logos.composio.dev/api/fathom",
     "category": "ai meeting assistants",
     "toolCount": 7,
-    "triggerCount": 0
+    "triggerCount": 1
   },
   {
     "slug": "feathery",
@@ -7464,6 +7464,14 @@
     "triggerCount": 0
   },
   {
+    "slug": "magic_hour",
+    "name": "Magic Hour",
+    "logo": "https://logos.composio.dev/api/magic_hour",
+    "category": "ai content generation",
+    "toolCount": 38,
+    "triggerCount": 0
+  },
+  {
     "slug": "magic_patterns_mcp",
     "name": "Magic Patterns MCP",
     "logo": "https://logos.composio.dev/api/magic_patterns_mcp",
@@ -7820,7 +7828,7 @@
     "name": "Mindbody",
     "logo": "https://logos.composio.dev/api/mindbody",
     "category": "fitness",
-    "toolCount": 8,
+    "toolCount": 13,
     "triggerCount": 0
   },
   {
@@ -9112,17 +9120,17 @@
     "triggerCount": 0
   },
   {
-    "slug": "polymarket_us",
+    "slug": "polymarket",
     "name": "Polymarket US",
-    "logo": "https://logos.composio.dev/api/polymarket_us",
+    "logo": "https://logos.composio.dev/api/polymarket",
     "category": "commerce",
     "toolCount": 44,
     "triggerCount": 0
   },
   {
-    "slug": "polymarket",
+    "slug": "polymarket_us",
     "name": "Polymarket US",
-    "logo": "https://logos.composio.dev/api/polymarket",
+    "logo": "https://logos.composio.dev/api/polymarket_us",
     "category": "commerce",
     "toolCount": 44,
     "triggerCount": 0
@@ -10125,6 +10133,14 @@
     "logo": "https://logos.composio.dev/api/seatable",
     "category": "databases",
     "toolCount": 8,
+    "triggerCount": 0
+  },
+  {
+    "slug": "sec",
+    "name": "SEC EDGAR",
+    "logo": "https://logos.composio.dev/api/sec",
+    "category": "business intelligence",
+    "toolCount": 9,
     "triggerCount": 0
   },
   {
@@ -11966,6 +11982,14 @@
     "category": "human resources",
     "toolCount": 567,
     "triggerCount": 13
+  },
+  {
+    "slug": "workday_raas",
+    "name": "Workday RaaS",
+    "logo": "https://logos.composio.dev/api/workday_raas",
+    "category": "human resources",
+    "toolCount": 3,
+    "triggerCount": 0
   },
   {
     "slug": "workiz",
