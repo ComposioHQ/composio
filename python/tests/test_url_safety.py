@@ -370,6 +370,44 @@ def test_safe_request_strips_credentials_case_insensitively(
     assert mock_request.call_args_list[1].kwargs["headers"] == {"X-Test": "kept"}
 
 
+@pytest.mark.parametrize(
+    "location",
+    [
+        "https://example.com:99999/elsewhere",  # port out of range
+        "https://[::1/elsewhere",  # broken IPv6 literal
+    ],
+)
+@patch("composio.utils.url_safety.requests.Session.request")
+@patch("composio.utils.url_safety.assert_safe_fetch_target")
+def test_safe_request_unparseable_redirect_is_blocked_not_a_crash(
+    mock_assert, mock_request, location: str
+) -> None:
+    """`urljoin` / `urlparse(...).port` raise `ValueError` on these.
+
+    Both run on the `Location` before the target is validated, so they must
+    not turn remote input into a stray `ValueError` that call sites catching
+    only `RequestException` would let escape. The hop is rejected the way any
+    malformed URL is, and never sent.
+    """
+    mock_assert.side_effect = [["93.184.216.34"], BlockedInternalUrlError("blocked")]
+    mock_request.return_value = _response(307, location)
+
+    with pytest.raises(BlockedInternalUrlError):
+        safe_request("GET", "https://example.com/download", headers=dict(_CREDENTIALED))
+
+    assert mock_request.call_count == 1
+
+
+def test_origin_is_none_for_unparseable_urls() -> None:
+    from composio.utils.url_safety import _origin, _same_origin
+
+    assert _origin("https://example.com:99999/x") is None
+    assert _origin("https://[::1/x") is None
+    assert _origin("https://example.com/x") == ("https", "example.com", 443)
+    assert not _same_origin("https://example.com/a", "https://example.com:99999/b")
+    assert _same_origin("https://example.com/a", "https://example.com:443/b")
+
+
 @patch("composio.utils.url_safety.requests.Session.request")
 @patch("composio.utils.url_safety.assert_safe_fetch_target")
 def test_safe_request_relative_redirect_is_resolved(mock_assert, mock_request) -> None:

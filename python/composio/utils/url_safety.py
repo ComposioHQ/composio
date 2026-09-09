@@ -83,14 +83,31 @@ _CREDENTIAL_HEADERS = frozenset({"authorization", "cookie", "proxy-authorization
 _MAX_REDIRECTS = 5
 
 
-def _origin(url: str) -> t.Tuple[str, str, int]:
-    """The ``(scheme, host, port)`` triple two URLs must share to be same-origin."""
-    parsed = urlparse(url)
-    scheme = parsed.scheme.lower()
-    port = parsed.port
+def _origin(url: str) -> t.Optional[t.Tuple[str, str, int]]:
+    """The ``(scheme, host, port)`` triple two URLs must share to be same-origin.
+
+    ``None`` when the URL cannot be parsed: ``urlparse`` raises ``ValueError``
+    for a broken IPv6 literal, and ``.port`` for an out-of-range port. A
+    redirect ``Location`` is remote input, so that is not an error here: the
+    hop is treated as leaving the origin, and :func:`assert_safe_fetch_target`
+    rejects the URL before anything is sent.
+    """
+    try:
+        parsed = urlparse(url)
+        scheme = parsed.scheme.lower()
+        host = (parsed.hostname or "").lower()
+        port = parsed.port
+    except ValueError:
+        return None
     if port is None:
         port = 443 if scheme == "https" else 80
-    return scheme, (parsed.hostname or "").lower(), port
+    return scheme, host, port
+
+
+def _same_origin(previous_url: str, next_url: str) -> bool:
+    """Whether a redirect hop stays on the origin the caller addressed."""
+    previous_origin = _origin(previous_url)
+    return previous_origin is not None and previous_origin == _origin(next_url)
 
 
 def is_blocked_ip(value: str) -> bool:
@@ -252,7 +269,14 @@ def safe_request(
 
         response.close()
         previous_url = current_url
-        current_url = urljoin(current_url, location)
+        try:
+            current_url = urljoin(current_url, location)
+        except ValueError:
+            # `urljoin` refuses a broken IPv6 literal. `Location` is remote
+            # input, so this is a rejected hop, not a crash.
+            raise BlockedInternalUrlError(
+                "Refusing to follow a malformed redirect Location"
+            ) from None
 
         # The next hop is whatever `Location` says, query string included, so
         # `params` must not be appended to it a second time — that is how
@@ -262,7 +286,7 @@ def safe_request(
 
         # A credential header was addressed to the origin the caller named, so
         # a hop that leaves that origin must not carry it along.
-        if _origin(previous_url) != _origin(current_url):
+        if not _same_origin(previous_url, current_url):
             if headers := kwargs.get("headers"):
                 kwargs["headers"] = {
                     name: value
