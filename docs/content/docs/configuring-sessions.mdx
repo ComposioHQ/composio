@@ -26,6 +26,51 @@ By default, a session has access to every toolkit in the Composio catalog. Your 
 
 You can also attach local custom tools and custom toolkits that run in-process alongside Composio tools. See [Custom tools and toolkits](/docs/extending-sessions/custom-tools-and-toolkits).
 
+## Fast mode (experimental)
+
+Fast mode reduces search latency by skipping the LLM reranker and plan search. To enable it, set `experimental.fast_mode` to `true` in the session creation request:
+
+```bash
+curl --request POST \
+  --url https://backend.composio.dev/api/v3/tool_router/session \
+  --header "x-api-key: $COMPOSIO_API_KEY" \
+  --header 'Content-Type: application/json' \
+  --data '{
+    "user_id": "user_123",
+    "experimental": {
+      "fast_mode": true
+    }
+  }'
+```
+
+Set `COMPOSIO_API_KEY` to your project API key before running this request. The flag applies to searches in that session, including `COMPOSIO_SEARCH_TOOLS` and the session search API. Omit it when creating a session to use the default search behavior.
+
+<Callout type="warn" title="Experimental">
+Fast mode returns embedding and keyword search results without LLM reranking. It also omits plan-derived guidance, including `recommended_plan_steps`, `known_pitfalls`, and `reference_workbench_snippets`. This can reduce retrieval quality, especially for requests that need multiple tools or steps. Evaluate it against your own queries before enabling it. Experimental behavior may change.
+</Callout>
+
+### Enable fast mode on an existing session
+
+You can also update a session created through the API or an SDK. Replace `SESSION_ID` with that session's ID and use a project API key from the same project:
+
+```bash
+curl --request PATCH \
+  --url "https://backend.composio.dev/api/v3/tool_router/session/$SESSION_ID" \
+  --header "x-api-key: $COMPOSIO_API_KEY" \
+  --header 'Content-Type: application/json' \
+  --data '{
+    "experimental": {
+      "fast_mode": true
+    }
+  }'
+```
+
+To turn fast mode off, send the same PATCH request with `"fast_mode": false`. Omitting the field from a PATCH request leaves its current value unchanged.
+
+<Callout type="info">
+The high-level TypeScript `composio.create()` and Python `composio.sessions.create()` helpers don't currently forward `fast_mode`. Use the API requests above to configure it, even if you use an SDK for the rest of your session workflow.
+</Callout>
+
 ## Enabling toolkits
 
 To limit a session to specific toolkits, pass an array of toolkit slugs. The agent can only discover and use tools from these toolkits.
