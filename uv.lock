@@ -826,9 +826,9 @@ requires-dist = [
     { name = "openai", specifier = ">=2.48.0" },
     { name = "pydantic", specifier = ">=2.11.9" },
     { name = "pysher", specifier = ">=1.0.8" },
-    { name = "requests", specifier = ">=2.32.2" },
+    { name = "requests", specifier = ">=2.32.4" },
     { name = "typing-extensions", specifier = ">=4.16.0" },
-    { name = "urllib3", specifier = ">=2" },
+    { name = "urllib3", specifier = ">=2.7.0" },
 ]
 
 [package.metadata.requires-dev]
