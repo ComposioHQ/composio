@@ -19,8 +19,8 @@ See [versions.json](versions.json) for the full matrix (also `typescript`, `vite
 ## Read next
 
 - [references/core-patterns.md](references/core-patterns.md) — services, layers, typed
-  errors, Schema, and the v3→v4 rename table (labeled historical, for recognizing stale
-  patterns).
+  errors, Schema, choosing between `Effect.gen` and `Effect.fn`, and the v3→v4 rename table
+  (labeled historical, for recognizing stale patterns).
 - [references/cli-surface.md](references/cli-surface.md) — `effect/unstable/cli`:
   `Command`, `Flag`, `Argument`, `GlobalFlag`, `CliConfig`, the custom
   `CliOutput.Formatter`, and the runner's double-print rule.
@@ -34,8 +34,12 @@ trust the file and fix the reference.
 
 ## Non-negotiables
 
-- `Effect.gen` with `yield*` for generator workflows; `Effect.fn('name')(function* () {...})`
-  for named Effect-returning functions.
+- `Effect.gen(function* () {...})` for effect values — the dominant form, including named
+  module consts — and `(params) => Effect.gen(...)` for parameterized helpers.
+  `Effect.fn(...)` is the function form whose effects carry stack-frame annotations (its
+  optional name string adds a per-call tracing span), worth it for service members and
+  combinator callbacks that should be attributable in error reports. All forms re-run
+  their body per execution. See "`Effect.gen` vs `Effect.fn`" in core-patterns.
 - Define services with `Context.Service` and an explicit `static readonly Default`/`layer`
   layer built with `Layer.succeed`/`Layer.effect`/`Layer.provide`. V4 does not generate a
   layer for you.
