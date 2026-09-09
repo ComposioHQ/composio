@@ -22,9 +22,11 @@ export const isPlainRecord = (value: unknown): value is Record<string, unknown> 
  * Inputs that parse to anything other than an object (arrays, scalars,
  * `null`) fail with `JsonParsingError`.
  *
- * Returns a `Result` because parsing is synchronous; `Result` is a subtype
- * of `Effect`, so call sites can `yield*` it or pipe it into Effect
- * combinators directly.
+ * Returns a `Result` because parsing is synchronous. A `Result` implements
+ * `Symbol.iterator`, so `yield*` on it type-checks — but at runtime a `Result`
+ * is not an `Effect`, and yielding one dies the fiber with "Not a valid
+ * effect". Lift it explicitly with `Effect.fromResult(...)` before yielding,
+ * or stay in `Result` land with the `Result.*` combinators.
  */
 export const parseJsonRecord = (
   raw: string
