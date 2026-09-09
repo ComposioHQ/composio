@@ -66,10 +66,27 @@ export const ToolkitAuthFieldSchema = z.object({
   name: z.string(),
   type: z.string(),
   default: z.string().nullable().optional(),
+  /**
+   * Whether this field holds a secret/credential value. Clients use it to
+   * decide whether to mask the input when collecting the value in their own
+   * UI. The property is absent when the API omits the flag for the field.
+   */
+  isSecret: z.boolean().optional(),
+  /**
+   * The legacy template name the API reports for this field, mapped from
+   * `legacy_template_name`. The API declares it as an optional string without
+   * further documenting its semantics.
+   */
+  legacyTemplateName: z.string().optional(),
 });
 export const ToolkitAuthConfigDetailsSchema = z.object({
   name: z.string(),
   mode: z.string(),
+  /**
+   * URL to a page where users can obtain or configure credentials for this
+   * authentication method, e.g. `https://github.com/settings/tokens`.
+   */
+  authHintUrl: z.string().nullable().optional(),
   fields: z.object({
     authConfigCreation: z.object({
       optional: z.array(ToolkitAuthFieldSchema),
