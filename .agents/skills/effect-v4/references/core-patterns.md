@@ -14,6 +14,9 @@ with `Context.Service` and build the layer yourself.
 Simple case with no dependencies, from `ts/packages/cli/src/services/node-os.ts`:
 
 ```ts
+import os from 'node:os';
+import { Context, Layer } from 'effect';
+
 export interface NodeOsShape {
   readonly homedir: string;
   readonly tmpdir: string;
@@ -45,6 +48,22 @@ For services with dependencies, compose the layer where it is consumed rather th
 inside the class, e.g. `ts/packages/cli/src/cli-main.ts`:
 
 ```ts
+import * as BunFileSystem from '@effect/platform-bun/BunFileSystem';
+import * as BunPath from '@effect/platform-bun/BunPath';
+import { Context, Layer } from 'effect';
+
+declare class ComposioToolkitsRepository extends Context.Service<
+  ComposioToolkitsRepository,
+  object
+>()('x') {
+  static readonly Default: Layer.Layer<ComposioToolkitsRepository, never, NodeOs>;
+}
+declare class NodeOs extends Context.Service<NodeOs, object>()('y') {
+  static readonly Default: Layer.Layer<NodeOs>;
+}
+declare const ConfigLive: Layer.Layer<never>;
+type RequiredLayer = Layer.Layer<ComposioToolkitsRepository>;
+
 export const ComposioToolkitsRepositoryLive = Layer.provide(
   ComposioToolkitsRepository.Default,
   Layer.mergeAll(BunFileSystem.layer, BunPath.layer, NodeOs.Default, ConfigLive)
@@ -70,6 +89,8 @@ unchanged from v3 and is what nearly every error in `src/services/*.ts` uses, e.
 `ts/packages/cli/src/services/composio-clients.ts`:
 
 ```ts
+import { Data } from 'effect';
+
 export class InvalidToolkitsError extends Data.TaggedError('services/InvalidToolkitsError')<{
   readonly invalidToolkits: ReadonlyArray<string>;
   readonly availableToolkits: ReadonlyArray<string>;
@@ -81,6 +102,8 @@ Schema-encoded/decoded (e.g. it crosses a JSON boundary). It is defined in
 `ts/vendor/effect/packages/effect/src/Schema.ts` and shaped like:
 
 ```ts
+import { Schema } from 'effect';
+
 class NotFound extends Schema.TaggedError<NotFound>()('NotFound', {
   id: Schema.String,
 }) {}

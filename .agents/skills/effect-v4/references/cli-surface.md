@@ -12,6 +12,9 @@ full module docstrings before touching the runner, not just the excerpts below.
 ```ts
 import { Command } from 'effect/unstable/cli';
 
+declare const toolsCmd$List: Command.Command<'list', {}, never, never>;
+declare const toolsCmd$Info: Command.Command<'info', {}, never, never>;
+
 export const rootToolsCmd = Command.make('tools').pipe(
   Command.withDescription('Browse and inspect tools before executing them.'),
   Command.withSubcommands([toolsCmd$List, toolsCmd$Info])
@@ -33,6 +36,8 @@ v4's `CliConfig.Service` shrank to one field, `builtIns` — the ordered list of
 global flags. `ts/packages/cli/src/cli-config.ts`:
 
 ```ts
+import { GlobalFlag, type CliConfig } from 'effect/unstable/cli';
+
 export const ComposioCliConfig = {
   builtIns: [GlobalFlag.Help],
 } satisfies Partial<CliConfig.CliConfig.Service>;

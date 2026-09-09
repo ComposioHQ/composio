@@ -17,7 +17,7 @@ repo-local `effect-v4` skill.
   observe real wall-clock behavior.
 - Reusable service layers go through `layer(...)`, not manual `Effect.provide` scattered per test:
 
-```ts
+```ts no-check
 import { describe, expect, layer } from '@effect/vitest';
 import { ConfigProvider, Effect } from 'effect';
 import { extendConfigProvider } from 'src/services/config';

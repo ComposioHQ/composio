@@ -31,8 +31,8 @@ describe('withBackgroundUpdateCheck', () => {
         const start = vi.fn();
         const run = makeRunner(start);
 
-        yield* run(['--log-level', 'debug', 'version', '--check']);
-        yield* run(['--log-level=debug', 'version', '--check']);
+        yield* run(['--log-level', 'Debug', 'version', '--check']);
+        yield* run(['--log-level=Debug', 'version', '--check']);
 
         expect(start).not.toHaveBeenCalled();
       })

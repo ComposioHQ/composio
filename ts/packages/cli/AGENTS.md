@@ -187,7 +187,7 @@ Import platform modules by subpath (`import * as FileSystem from 'effect/FileSys
 Conversion patterns, in order of preference:
 
 1. Yield the service inside existing Effect code.
-2. Convert a plain helper into an Effect when its callers are Effect-hosted (`Result` is a subtype of `Effect`, so both compose with `yield*`; wrap with `Effect.fromResult(...)` where a `Result` needs to flow through an `Effect.gen` generator, since `Result` no longer implements the Effect iterator protocol directly in v4).
+2. Convert a plain helper into an Effect when its callers are Effect-hosted (a `Result` is not an `Effect` in v4 and cannot be yielded directly, even though the type checker accepts it: lift it with `Effect.fromResult(...)` inside `Effect.gen`).
 3. Pass the resolved service instance (e.g. `Path.Path`, `FileSystem.FileSystem`) as a plain parameter into sync callbacks or promise pipelines that cannot become Effects (see `tool-permissions.ts`, `generation/typescript/virtual-compiler-host.ts`).
 4. Modules that self-provide layers add `BunPath.layer` / `BunFileSystem.layer` / `NodeOs.Default` to their stack instead of reaching for Node builtins.
 

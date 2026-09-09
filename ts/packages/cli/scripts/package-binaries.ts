@@ -73,7 +73,7 @@ export function packageBinaries() {
       // Every archive names all four codex-acp paths, but carries real bytes
       // only for the one its own `composio` binary can execute. See
       // `archiveCompanionEntries` for why the other three are present but empty.
-      const target = yield* releaseArtifactTargetFor(binary);
+      const target = yield* Effect.fromResult(releaseArtifactTargetFor(binary));
       const companionEntries = archiveCompanionEntries({
         allRelativePaths: allCompanionRelativePaths,
         target,

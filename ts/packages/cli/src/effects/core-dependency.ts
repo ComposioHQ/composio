@@ -188,7 +188,7 @@ const detectPythonDependencyVersion = (plan: Extract<CoreDependencyPlan, { kind:
 
     const spawner = yield* ChildProcessSpawner;
     const stdout = yield* spawner
-      .string(ChildProcess.make(cmd, args))
+      .string(ChildProcess.make(cmd, args, { extendEnv: true }))
       .pipe(Effect.catch(() => Effect.succeed<string | null>(null)));
 
     if (!stdout) {

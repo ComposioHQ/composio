@@ -58,4 +58,11 @@ pnpm --filter @composio/cli test
 ```
 
 Run `pnpm validate:agent-skills` and `pnpm validate:skill-routing` after editing this
-skill or its descriptions.
+skill or its descriptions, and compile the TypeScript blocks in this skill and in
+`typescript-testing/references/effect-v4-cli.md` against the pinned packages with:
+
+```bash
+node .agents/skills/effect-v4/scripts/check-examples.mjs
+```
+
+Blocks that quote repo files with unresolvable imports carry a `no-check` fence info string.

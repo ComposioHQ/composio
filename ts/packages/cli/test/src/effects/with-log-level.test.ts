@@ -27,7 +27,7 @@ describe('setMinimumLogLevel', () => {
   it.effect('[When] only COMPOSIO_LOG_LEVEL is set, it applies', () =>
     Effect.gen(function* () {
       const level = yield* resolveMinimumLogLevel(Option.none()).pipe(
-        withEnv([['COMPOSIO_LOG_LEVEL', 'error']])
+        withEnv([['COMPOSIO_LOG_LEVEL', 'Error']])
       );
       assertEquals(level, 'Error');
     })
@@ -43,7 +43,7 @@ describe('setMinimumLogLevel', () => {
   it.effect('[When] both are set, --log-level wins over COMPOSIO_LOG_LEVEL', () =>
     Effect.gen(function* () {
       const level = yield* resolveMinimumLogLevel(Option.some('Debug')).pipe(
-        withEnv([['COMPOSIO_LOG_LEVEL', 'error']])
+        withEnv([['COMPOSIO_LOG_LEVEL', 'Error']])
       );
       assertEquals(level, 'Debug');
     })

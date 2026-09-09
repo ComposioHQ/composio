@@ -104,19 +104,6 @@ const agentPrefixSignals = Config.all({
   openclaw: hasEnvironmentRoot('OPENCLAW'),
 });
 
-// `Config.logLevel` matches the level names exactly; `COMPOSIO_LOG_LEVEL=error` has always
-// been accepted, so the raw value is canonicalized before the codec sees it.
-const logLevelIgnoringCase = (name: string): Config.Config<LogLevel.LogLevel> =>
-  Config.string(name).pipe(
-    Config.mapOrFail(value => {
-      const canonical =
-        LogLevel.values.find(level => level.toLowerCase() === value.toLowerCase()) ?? value;
-      return Schema.decodeUnknownEffect(Config.LogLevel)(canonical).pipe(
-        Effect.mapError(error => new Config.ConfigError(error))
-      );
-    })
-  );
-
 /**
  * Derives a URL default based on the `COMPOSIO_ENVIRONMENT` config key.
  * Returns `stagingDefault` when ENVIRONMENT is `"staging"`, otherwise `prodDefault`.
@@ -169,7 +156,7 @@ export const APP_CONFIG = {
   BIN_DIR: optionalTrimmedString('BIN_DIR'),
 
   // The log level for the Composio CLI
-  LOG_LEVEL: Config.option(logLevelIgnoringCase('LOG_LEVEL')),
+  LOG_LEVEL: Config.option(Config.logLevel('LOG_LEVEL')),
 
   // The organization ID for multi-project auth (overrides file-based config)
   ORG_ID: Config.option(Config.string('ORG_ID')),

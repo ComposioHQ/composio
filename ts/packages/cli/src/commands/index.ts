@@ -1,6 +1,6 @@
 import { Array as Arr, Console, Data, Effect, HashSet, Layer, Option } from 'effect';
 import { Command } from 'effect/unstable/cli';
-import { $defaultCmd } from './$default.cmd';
+import { $defaultCmd, withRootLogLevel } from './$default.cmd';
 import { getVersion } from 'src/effects/version';
 import { versionCmd } from './version.cmd';
 import { upgradeCmd } from './upgrade.cmd';
@@ -94,7 +94,7 @@ const getVisibleRootCommands = (visibility: CommandVisibility) => {
 };
 
 export const buildRootCommand = (visibility: CommandVisibility) =>
-  $defaultCmd.pipe(Command.withSubcommands(getVisibleRootCommands(visibility)));
+  $defaultCmd.pipe(Command.withSubcommands(getVisibleRootCommands(visibility)), withRootLogLevel);
 
 const ROOT_INSTALL_SKILL_FLAGS = HashSet.make('--install-skill', '--instal-skill');
 const SKILL_INSTALL_TARGETS: ReadonlyArray<SkillInstallTarget> = ['claude', 'codex', 'openclaw'];
@@ -518,7 +518,9 @@ export const runWithConfig = Effect.gen(function* () {
   };
   const version = yield* getVersion;
   configureCliAnalyticsReleaseVersion(version);
-  const rootCommand = withBackgroundUpdateCheck($defaultCmd, getVisibleRootCommands(visibility));
+  const rootCommand = withRootLogLevel(
+    withBackgroundUpdateCheck($defaultCmd, getVisibleRootCommands(visibility))
+  );
   // v4's `Command.runWith` (unlike v3's `Command.run`) takes explicit arguments rather than
   // pulling them from `Stdio`, and expects them *without* the node/bun executable + script path
   // prefix — see `cli-main.ts` module docs for the full contract at this boundary.

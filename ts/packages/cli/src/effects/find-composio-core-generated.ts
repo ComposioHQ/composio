@@ -57,7 +57,7 @@ export function pyFindComposioCoreGenerated(cwd: string) {
 
     const spawner = yield* ChildProcessSpawner;
     const stdout = yield* spawner
-      .string(ChildProcess.make(cmd, args))
+      .string(ChildProcess.make(cmd, args, { extendEnv: true }))
       .pipe(
         Effect.catch((e: unknown) =>
           onError('Failed to locate composio-core in uv environment')(

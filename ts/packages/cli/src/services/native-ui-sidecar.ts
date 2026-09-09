@@ -98,7 +98,7 @@ const psParentEntry = (
       const handle = yield* ChildProcess.make(
         'ps',
         ['-o', 'ppid=', '-o', 'comm=', '-p', String(pid)],
-        { stdin: Stream.empty }
+        { stdin: Stream.empty, extendEnv: true }
       );
       const output = yield* Stream.mkString(Stream.decodeText(handle.stdout));
       return output.trim();
@@ -272,7 +272,10 @@ const requestNativeUiPermissionDecisionEffect = (params: {
 
     // The dialog never reads interactive input: hand it an immediately-closed
     // stdin pipe (EOF), matching the previous `stdio: 'ignore'` spawn.
-    const child = yield* ChildProcess.make(resolved.binaryPath, args, { stdin: Stream.empty });
+    const child = yield* ChildProcess.make(resolved.binaryPath, args, {
+      stdin: Stream.empty,
+      extendEnv: true,
+    });
 
     // The previous spawn ignored the dialog's output entirely; drain the pipes
     // so the dialog can never block on a full pipe buffer.
