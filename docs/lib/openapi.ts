@@ -1,5 +1,6 @@
 import { readFile } from 'node:fs/promises';
 import { join } from 'path';
+import { hideDeprecatedFields } from './openapi-deprecated';
 import { createOpenAPI } from 'fumadocs-openapi/server';
 import { declareOperationTags, type OpenAPIDocument } from './openapi-tags';
 
@@ -34,7 +35,7 @@ export const openapiV3 = createOpenAPI({
 
 async function loadOpenAPISchema(path: string) {
   const document = JSON.parse(await readFile(path, 'utf8')) as OpenAPIDocument;
-  return declareOperationTags(normalizeNoAuthSecurity(document));
+  return declareOperationTags(normalizeNoAuthSecurity(hideDeprecatedFields(document)));
 }
 
 export function normalizeNoAuthSecurity<T extends OpenAPIDocument>(document: T): T {
