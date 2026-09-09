@@ -72,7 +72,42 @@ _BODY_HEADERS = frozenset(
         "transfer-encoding",
     }
 )
+# Headers that carry a credential for the origin the request was addressed
+# to, so they must not follow a redirect to a different origin. The Fetch
+# standard strips ``Authorization`` on a cross-origin redirect; ``Cookie`` and
+# ``Proxy-Authorization`` go with it the way ``requests``' own ``rebuild_auth``
+# and curl drop them on a host change. Following redirects by hand bypasses
+# ``rebuild_auth``, so the rule is applied here. The TypeScript guard drops the
+# same three (``CREDENTIAL_HEADERS``).
+_CREDENTIAL_HEADERS = frozenset({"authorization", "cookie", "proxy-authorization"})
 _MAX_REDIRECTS = 5
+
+
+def _origin(url: str) -> t.Optional[t.Tuple[str, str, int]]:
+    """The ``(scheme, host, port)`` triple two URLs must share to be same-origin.
+
+    ``None`` when the URL cannot be parsed: ``urlparse`` raises ``ValueError``
+    for a broken IPv6 literal, and ``.port`` for an out-of-range port. A
+    redirect ``Location`` is remote input, so that is not an error here: the
+    hop is treated as leaving the origin, and :func:`assert_safe_fetch_target`
+    rejects the URL before anything is sent.
+    """
+    try:
+        parsed = urlparse(url)
+        scheme = parsed.scheme.lower()
+        host = (parsed.hostname or "").lower()
+        port = parsed.port
+    except ValueError:
+        return None
+    if port is None:
+        port = 443 if scheme == "https" else 80
+    return scheme, host, port
+
+
+def _same_origin(previous_url: str, next_url: str) -> bool:
+    """Whether a redirect hop stays on the origin the caller addressed."""
+    previous_origin = _origin(previous_url)
+    return previous_origin is not None and previous_origin == _origin(next_url)
 
 
 def is_blocked_ip(value: str) -> bool:
@@ -233,13 +268,31 @@ def safe_request(
             return response
 
         response.close()
-        current_url = urljoin(current_url, location)
+        previous_url = current_url
+        try:
+            current_url = urljoin(current_url, location)
+        except ValueError:
+            # `urljoin` refuses a broken IPv6 literal. `Location` is remote
+            # input, so this is a rejected hop, not a crash.
+            raise BlockedInternalUrlError(
+                "Refusing to follow a malformed redirect Location"
+            ) from None
 
         # The next hop is whatever `Location` says, query string included, so
         # `params` must not be appended to it a second time — that is how
         # `requests` builds a redirected request, and it keeps a query-string
         # credential from being handed to a target that never asked for one.
         kwargs.pop("params", None)
+
+        # A credential header was addressed to the origin the caller named, so
+        # a hop that leaves that origin must not carry it along.
+        if not _same_origin(previous_url, current_url):
+            if headers := kwargs.get("headers"):
+                kwargs["headers"] = {
+                    name: value
+                    for name, value in headers.items()
+                    if name.lower() not in _CREDENTIAL_HEADERS
+                }
 
         rewritten_method = _redirect_rewrite(response.status_code, method)
         if rewritten_method is not None:

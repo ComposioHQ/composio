@@ -81,12 +81,30 @@ const redirectRewrite = (status: number, method: string): string | null => {
   return null;
 };
 
-const applyRedirectSemantics = (init: RequestInit, status: number): RequestInit => {
+/**
+ * Headers that carry a credential for the origin the request was addressed
+ * to, so they must not follow a redirect to a different origin. The Fetch
+ * standard strips `Authorization` on a cross-origin redirect; `Cookie` and
+ * `Proxy-Authorization` go with it the way `requests` and curl drop them on a
+ * host change. `redirect: 'manual'` means `fetch` never applies that rule for
+ * us either. The Python guard drops the same three (`_CREDENTIAL_HEADERS`).
+ */
+const CREDENTIAL_HEADERS = ['authorization', 'cookie', 'proxy-authorization'];
+
+const applyRedirectSemantics = (
+  init: RequestInit,
+  status: number,
+  fromUrl: string,
+  toUrl: string
+): RequestInit => {
   const method = redirectRewrite(status, (init.method ?? 'GET').toUpperCase());
-  if (method === null) return init;
+  const crossOrigin = new URL(fromUrl).origin !== new URL(toUrl).origin;
+  if (method === null && !crossOrigin) return init;
 
   const headers = new Headers(init.headers);
-  for (const name of BODY_HEADERS) headers.delete(name);
+  if (method !== null) for (const name of BODY_HEADERS) headers.delete(name);
+  if (crossOrigin) for (const name of CREDENTIAL_HEADERS) headers.delete(name);
+  if (method === null) return { ...init, headers };
   return { ...init, method, body: undefined, headers };
 };
 
@@ -284,8 +302,8 @@ export const assertSafeFetchTarget = async (rawUrl: string): Promise<string[]> =
  * connects to the address it validated, and re-validates and re-pins every
  * redirect hop (redirects are followed manually up to {@link MAX_REDIRECTS}).
  * Intermediate redirect bodies are cancelled; non-redirect responses are
- * returned unchanged. Each hop carries the method and body the Fetch standard
- * says it should — see {@link applyRedirectSemantics}.
+ * returned unchanged. Each hop carries the method, body, and credential headers
+ * the Fetch standard says it should — see {@link applyRedirectSemantics}.
  *
  * A hop whose effective dispatcher is a configured route (caller-supplied
  * `init.dispatcher`, non-stock global dispatcher, env-proxy mode) is *not*
@@ -357,8 +375,9 @@ export const ssrfSafeFetch = async (
     // than leaving it to the garbage collector (mirrors `readResponseBodyWithLimit`).
     await response.body?.cancel().catch(() => undefined);
 
-    currentUrl = new URL(response.headers.get('location')!, currentUrl).toString();
-    currentInit = applyRedirectSemantics(currentInit, response.status);
+    const nextUrl = new URL(response.headers.get('location')!, currentUrl).toString();
+    currentInit = applyRedirectSemantics(currentInit, response.status, currentUrl, nextUrl);
+    currentUrl = nextUrl;
   }
 
   throw new ComposioBlockedInternalUrlError(
