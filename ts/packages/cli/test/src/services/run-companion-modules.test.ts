@@ -1,7 +1,7 @@
 import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
-import { BunContext } from '@effect/platform-bun';
+import * as BunContext from '@effect/platform-bun/BunContext';
 import { afterEach, describe, expect, it, layer } from '@effect/vitest';
 import { Effect } from 'effect';
 import { vi } from 'vitest';

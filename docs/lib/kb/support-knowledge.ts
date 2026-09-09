@@ -537,6 +537,14 @@ export function writeSupportKnowledgeSnapshot(input: {
       }
       cpSync(externalSources, join(stagedRoot, 'external-sources'), { recursive: true });
     }
+    const semanticIndex = join(targetRoot, 'semantic-index.json');
+    if (existsSync(semanticIndex)) {
+      const semanticIndexStats = lstatSync(semanticIndex);
+      if (semanticIndexStats.isSymbolicLink() || !semanticIndexStats.isFile()) {
+        throw new Error('KB semantic-index.json must be a regular file');
+      }
+      cpSync(semanticIndex, join(stagedRoot, 'semantic-index.json'));
+    }
     input.validate(stagedRoot);
     if (existsSync(targetRoot)) {
       renameSync(targetRoot, backupRoot);

@@ -1,7 +1,8 @@
 import process from 'node:process';
 import { Config, ConfigProvider, Console, Effect, Stream, Logger, Layer, LogLevel } from 'effect';
-import { Command } from '@effect/platform';
-import { BunContext, BunRuntime } from '@effect/platform-bun';
+import * as Command from '@effect/platform/Command';
+import * as BunContext from '@effect/platform-bun/BunContext';
+import * as BunRuntime from '@effect/platform-bun/BunRuntime';
 import {
   buildCompanionModules,
   copyLocalToolBinaryAssets,

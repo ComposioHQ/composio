@@ -15,6 +15,7 @@ from composio_client.types.tool_router.session_execute_response import (
 )
 from composio.client import HttpClient
 from composio.core.models.custom_tool_execution import (
+    assert_unambiguous_custom_tool_slug,
     execute_custom_tool,
     find_custom_tool,
 )
@@ -158,6 +159,8 @@ class SessionContextImpl:
                 error=result["error"],
                 log_id="",
             )
+
+        assert_unambiguous_custom_tool_slug(self._custom_tools_map, tool_slug)
 
         # Serialize any Pydantic model instances before sending to remote API
         serialized = _serialize_arguments(arguments)

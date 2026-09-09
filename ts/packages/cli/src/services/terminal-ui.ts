@@ -1,6 +1,8 @@
 import process from 'node:process';
 import type { Writable } from 'node:stream';
+import { getColumns } from '@clack/core';
 import * as p from '@clack/prompts';
+import stringWidth from 'fast-string-width';
 import { Context, Effect, Exit, Layer } from 'effect';
 
 export type TtyLikeStream = {
@@ -187,23 +189,70 @@ type TerminalUIStreams = {
   readonly stderr: TerminalWritable;
 };
 
+// Clack's spinner erases the previous frame by re-wrapping the raw message,
+// but it renders `${frame}  ${message}${dots}` — three prefix columns plus up
+// to three animated dots the erase math never sees. Once those extras push the
+// rendered frame across a wrap boundary, the erase under-counts lines and
+// every tick leaks one: an endless scroll in terminals narrower than the
+// message. Keep live spinner messages to a single terminal row so the redraw
+// arithmetic cannot diverge.
+//
+// The invariant holds for terminals of at least SPINNER_RENDER_OVERHEAD + 1
+// columns. Below that the frame prefix alone overflows the row and no message
+// length can keep it on one line, so the budget degrades to just the ellipsis.
+const SPINNER_RENDER_OVERHEAD = 7; // frame + two spaces (3) + animated dots (3) + last-column safety (1)
+const graphemeSegmenter = new Intl.Segmenter(undefined, { granularity: 'grapheme' });
+
+export const clampSpinnerMessage = (columns: number, message: string): string => {
+  const singleLine = message.replace(/\s*\r?\n\s*/g, ' ');
+  if (singleLine.includes('\u001b')) {
+    return singleLine; // truncating could split an ANSI escape sequence
+  }
+
+  const budget = Math.max(columns - SPINNER_RENDER_OVERHEAD, 1);
+  if (stringWidth(singleLine) <= budget) {
+    return singleLine;
+  }
+
+  // Measure whole grapheme clusters in display columns. Measuring individual
+  // code points under-counts sequences such as keycap emoji, while slicing by
+  // UTF-16 length can split surrogate pairs or joined emoji. One column is
+  // reserved for the ellipsis.
+  let clamped = '';
+  let width = 0;
+  for (const { segment } of graphemeSegmenter.segment(singleLine)) {
+    const segmentWidth = stringWidth(segment);
+    if (width + segmentWidth > budget - 1) {
+      break;
+    }
+    clamped += segment;
+    width += segmentWidth;
+  }
+  return `${clamped}…`;
+};
+
+type StartedClackSpinner = {
+  readonly raw: p.SpinnerResult;
+  readonly updateMessage: (message: string) => void;
+};
+
 function createClackSpinnerHandle(
-  s: p.SpinnerResult,
+  spinner: StartedClackSpinner,
   defaultMessage: string
 ): { handle: SpinnerHandle; isStopped: () => boolean } {
   let stopped = false;
   return {
     handle: {
-      message: (msg: string) => Effect.sync(() => s.message(msg)),
+      message: (msg: string) => Effect.sync(() => spinner.updateMessage(msg)),
       stop: (msg?: string) =>
         Effect.sync(() => {
           stopped = true;
-          s.stop(msg ?? defaultMessage);
+          spinner.raw.stop(msg ?? defaultMessage);
         }),
       error: (msg?: string) =>
         Effect.sync(() => {
           stopped = true;
-          s.error(msg ?? defaultMessage);
+          spinner.raw.error(msg ?? defaultMessage);
         }),
     },
     isStopped: () => stopped,
@@ -236,6 +285,21 @@ export const makeTerminalUI = (streams: TerminalUIStreams): TerminalUI => {
       return Effect.void;
     }
     return Effect.sync(render);
+  };
+
+  /** Start a clack spinner on stderr, clamped to a single terminal row. */
+  const startSpinner = (message: string): StartedClackSpinner => {
+    // Clack captures this width during construction and continues wrapping
+    // against it. Updates may respect a later narrower terminal, but must never
+    // grow beyond Clack's fixed width.
+    const initialColumns = getColumns(stderr);
+    const raw = p.spinner({ output: stderr });
+    raw.start(clampSpinnerMessage(initialColumns, message));
+    return {
+      raw,
+      updateMessage: msg =>
+        raw.message(clampSpinnerMessage(Math.min(initialColumns, getColumns(stderr)), msg)),
+    };
   };
 
   return {
@@ -307,13 +371,9 @@ export const makeTerminalUI = (streams: TerminalUIStreams): TerminalUI => {
       }
 
       return Effect.acquireUseRelease(
-        Effect.sync(() => {
-          const s = p.spinner({ output: stderr });
-          s.start(message);
-          return s;
-        }),
+        Effect.sync(() => startSpinner(message)),
         () => effect,
-        (s, exit) =>
+        (spinner, exit) =>
           Effect.sync(() => {
             if (Exit.isSuccess(exit)) {
               let successMessage = message;
@@ -323,9 +383,9 @@ export const makeTerminalUI = (streams: TerminalUIStreams): TerminalUI => {
               } else if (configuredSuccessMessage !== undefined) {
                 successMessage = configuredSuccessMessage;
               }
-              s.stop(successMessage);
+              spinner.raw.stop(successMessage);
             } else {
-              s.error(options?.errorMessage ?? message);
+              spinner.raw.error(options?.errorMessage ?? message);
             }
           })
       );
@@ -338,10 +398,9 @@ export const makeTerminalUI = (streams: TerminalUIStreams): TerminalUI => {
 
       return Effect.acquireUseRelease(
         Effect.sync(() => {
-          const s = p.spinner({ output: stderr });
-          s.start(message);
-          const { handle, isStopped } = createClackSpinnerHandle(s, message);
-          return { raw: s, handle, isStopped };
+          const spinner = startSpinner(message);
+          const { handle, isStopped } = createClackSpinnerHandle(spinner, message);
+          return { raw: spinner.raw, handle, isStopped };
         }),
         ({ handle }) => use(handle),
         ({ raw, isStopped }, exit) =>

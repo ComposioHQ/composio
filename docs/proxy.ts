@@ -1,4 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
+import {
+  DOCS_PRODUCT_COOKIE,
+  DOCS_PRODUCT_HEADER,
+  resolveDocsProduct,
+} from './lib/home-navigation';
 
 /**
  * Convert kebab-case to camelCase
@@ -11,7 +16,8 @@ function kebabToCamel(str: string): string {
  * Proxy handles:
  * 1. Markdown content negotiation for AI agents (Accept: text/markdown)
  * 2. Redirects for old Fern API reference URLs (kebab-case → camelCase)
- * 3. Sets x-pathname header for 404 logging
+ * 3. Resolves the server-rendered docs product from URL + cookie
+ * 4. Sets x-pathname header for 404 logging
  */
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -49,7 +55,14 @@ export function proxy(request: NextRequest) {
     }
   }
 
-  const response = NextResponse.next();
+  const requestHeaders = new Headers(request.headers);
+  const product = resolveDocsProduct(
+    pathname,
+    request.cookies.get(DOCS_PRODUCT_COOKIE)?.value,
+  );
+  requestHeaders.set(DOCS_PRODUCT_HEADER, product);
+
+  const response = NextResponse.next({ request: { headers: requestHeaders } });
   response.headers.set('x-pathname', pathname);
   return response;
 }

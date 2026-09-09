@@ -16,7 +16,8 @@
 
 import process from 'node:process';
 import { Config, ConfigProvider, Console, Effect, Logger, Layer, LogLevel } from 'effect';
-import { BunContext, BunRuntime } from '@effect/platform-bun';
+import * as BunContext from '@effect/platform-bun/BunContext';
+import * as BunRuntime from '@effect/platform-bun/BunRuntime';
 import { LOCAL_TOOLS_BINARY_ASSET_DIRNAME, teardown } from './_shared';
 import { $ } from 'bun';
 import { readdir, stat, writeFile } from 'node:fs/promises';

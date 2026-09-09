@@ -1,5 +1,11 @@
 # @composio/openai
 
+## 0.12.2
+
+### Patch Changes
+
+- 620075a: Fix: stop printing MCP server URLs (credential-bearing) to stdout via console.log in the OpenAI Responses provider; log server names via logger.debug instead.
+
 ## 0.12.1
 
 ### Patch Changes

@@ -1,5 +1,6 @@
 import { Command, HelpDoc, Options, ValidationError } from '@effect/cli';
-import { FileSystem, Path } from '@effect/platform';
+import * as FileSystem from '@effect/platform/FileSystem';
+import * as Path from '@effect/platform/Path';
 import { Data, DateTime, Effect, Option, Schedule, Schema } from 'effect';
 import open from 'open';
 import {
@@ -16,6 +17,7 @@ import { commandHintStep } from 'src/services/command-hints';
 import { runOrgSelection } from 'src/effects/select-org-project';
 import { linkAnalyticsIdentityForOrg } from 'src/effects/link-analytics-identity';
 import { setupCacheDir } from 'src/effects/setup-cache-dir';
+import { atomicWritePrivateFileString, ensurePrivateFileMode } from 'src/utils/atomic-write';
 import { primeConsumerConnectedToolkitsCacheInBackground } from 'src/services/consumer-short-term-cache';
 import { inferSkillReleaseChannel, installSkillSafe } from 'src/effects/install-skill';
 import { handleAgentAuthError } from 'src/effects/handle-agent-auth-error';
@@ -131,7 +133,11 @@ const writePendingLoginSession = (session: Omit<PendingLoginSession, 'cachedAt'>
       ...session,
       cachedAt: new Date().toISOString(),
     };
-    yield* fs.writeFileString(filePath, `${JSON.stringify(payload, null, 2)}\n`);
+    yield* atomicWritePrivateFileString({
+      fs,
+      target: filePath,
+      contents: `${JSON.stringify(payload, null, 2)}\n`,
+    });
   });
 
 const clearPendingLoginSession = Effect.gen(function* () {
@@ -151,7 +157,8 @@ const readPendingLoginSession = Effect.gen(function* () {
     });
   }
 
-  const rawSession = yield* fs.readFileString(filePath, 'utf8').pipe(
+  const rawSession = yield* ensurePrivateFileMode({ fs, target: filePath }).pipe(
+    Effect.andThen(fs.readFileString(filePath, 'utf8')),
     Effect.mapError(
       cause =>
         new PendingLoginError({

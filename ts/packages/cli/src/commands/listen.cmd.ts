@@ -1,5 +1,6 @@
 import { Args, Command, HelpDoc, Options, ValidationError } from '@effect/cli';
-import { FileSystem, Path } from '@effect/platform';
+import * as FileSystem from '@effect/platform/FileSystem';
+import * as Path from '@effect/platform/Path';
 import type { Composio as RawComposioClient } from '@composio/client';
 import { Data, Deferred, Effect, Either, Option, Predicate, Runtime } from 'effect';
 import { requireAuth } from 'src/effects/require-auth';

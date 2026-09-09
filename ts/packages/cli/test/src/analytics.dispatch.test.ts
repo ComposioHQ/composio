@@ -1,7 +1,10 @@
 import { describe, expect, it } from '@effect/vitest';
 import { afterEach, beforeEach, vi } from 'vitest';
-import { FetchHttpClient, FileSystem, Path } from '@effect/platform';
-import { BunFileSystem, BunPath } from '@effect/platform-bun';
+import * as FetchHttpClient from '@effect/platform/FetchHttpClient';
+import * as FileSystem from '@effect/platform/FileSystem';
+import * as Path from '@effect/platform/Path';
+import * as BunFileSystem from '@effect/platform-bun/BunFileSystem';
+import * as BunPath from '@effect/platform-bun/BunPath';
 import { Effect, Layer } from 'effect';
 import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import path from 'node:path';

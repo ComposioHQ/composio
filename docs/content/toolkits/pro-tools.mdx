@@ -1,11 +1,11 @@
 ---
-title: Pro Tools
-description: Pricing and limits for pro tools in Composio
+title: Premium Tools
+description: Pricing and limits for premium tools in Composio
 ---
 
-Some tool calls cost more to run — search APIs, code sandboxes, ML inference. We call those pro tools and price them separately.
+Some tool calls cost more to run — search APIs, code sandboxes, ML inference. We call those premium tools and price them separately.
 
-## What counts as a pro tool?
+## What counts as a premium tool?
 
 <Cards>
   <Card icon={<Search />} title="Search APIs" href="/toolkits/composio_search" description="Composio Search, Perplexity, Exa, SerpAPI" />
@@ -18,21 +18,18 @@ Some tool calls cost more to run — search APIs, code sandboxes, ML inference. 
 
 ## Pricing
 
-Pro tool calls are roughly 3x the cost of a standard tool call. Full pricing is on the [pricing page](https://composio.dev/pricing).
+Premium tools run on paid third-party providers (web search, media generation, browser automation, and similar). Composio passes the provider's price through with a 5% platform fee — there is no markup on top of that. Approximate per-call prices for each provider are listed in the **Premium tools** section of the [pricing page](https://composio.dev/pricing).
 
-| Plan | Included Standard Tool Calls | Included Pro Tool Calls | Usage Based Standard Tool Calls | Usage Based Pro Tool Calls |
-|------|------------------------------|-----------------------------|---------------------------------|--------------------------------|
-| Totally Free | 20k | 1k | – | – |
-| Ridiculously Cheap | 200k | 5k | $0.299/1k | $0.897/1k |
-| Serious Business | 2M | 50k | $0.249/1k | $0.747/1k |
-| Enterprise | Flexible | Flexible | Flexible | Flexible |
+- **Hobby** includes up to $2/month of premium tool usage.
+- **Pro** includes everything in Hobby plus a $29 monthly usage credit, which also covers premium tool calls.
+- Prices depend on the provider and can change with advance notice — check the [pricing page](https://composio.dev/pricing) for current rates.
 
 ## Rate limits
 
-Pro tools have lower rate limits than standard tool calls. If you need more, [contact us](mailto:billing@composio.dev).
+Premium tools have their own, lower rate limits. These apply to premium tool executions only and are separate from your organization's overall API rate limit — see [Rate Limits](/reference/rate-limits) for that. If you need more, [contact us](mailto:billing@composio.dev).
 
-| Spending Tier | Standard Tool Calls Rate Limit | Pro Tool Calls Rate Limit |
-|---------------|--------------------------------|-------------------------------|
-| Free | 100/min | 1,000/hour |
-| Paid | 5,000/min | 10,000/hour |
-| Enterprise | Custom | Custom |
+| Plan | Premium Tool Calls Rate Limit |
+|------|-------------------------------|
+| Hobby | 1,000/hour |
+| Pro | 10,000/hour |
+| Enterprise | Custom |

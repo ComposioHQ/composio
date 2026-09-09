@@ -1,4 +1,5 @@
-import { Command, CommandExecutor } from '@effect/platform';
+import * as Command from '@effect/platform/Command';
+import * as CommandExecutor from '@effect/platform/CommandExecutor';
 import { describe, expect, layer } from '@effect/vitest';
 import { Effect, Exit } from 'effect';
 import { afterEach, beforeEach, vi } from 'vitest';
@@ -83,7 +84,7 @@ const makeFakeHosts = (
     });
   };
 
-  const runner = new CommandRunner({
+  const runner = CommandRunner.of({
     run: () => Effect.succeed(CommandExecutor.ExitCode(0)),
     capture: rawCommand => {
       const flattened = Command.flatten(rawCommand)[0];
@@ -143,7 +144,7 @@ const makeFakeHosts = (
 
 const makeSkillInstaller = (initiallyReady = false) => {
   let ready = initiallyReady;
-  return new SetupSkillInstaller({
+  return SetupSkillInstaller.of({
     isClaudeSkillReady: Effect.sync(() => ready),
     hasManagedClaudeSkill: Effect.sync(() => ready),
     ensureClaudeSkill: Effect.sync(() => {
