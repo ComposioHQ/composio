@@ -55,7 +55,7 @@ catalog:
   hono: ^4.13.7
   openai: ^7.10.0
   picocolors: ^1.1.1
-  pnpm: ^11.24.0
+  pnpm: ^12.3.4
   publint: ^0.3.24
   tsdown: ^0.23.0
   tsx: ^4.23.13
