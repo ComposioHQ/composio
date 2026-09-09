@@ -5,6 +5,8 @@ import functools
 import hashlib
 import hmac
 import json
+import logging
+import re
 import threading
 import time
 import traceback
@@ -12,8 +14,8 @@ import typing as t
 import uuid
 from concurrent.futures import ThreadPoolExecutor
 from enum import Enum
-from unittest import mock
 
+import requests
 import typing_extensions as te
 from composio_client import APIStatusError, Omit, omit
 from composio_client.types import TriggersTypeRetrieveResponse
@@ -32,6 +34,22 @@ from composio.utils.logging import WithLogger
 from composio.utils.pydantic import none_to_omit
 
 PUSHER_AUTH_URL = "{base_url}/api/v3/internal/sdk/realtime/auth?source=python"
+
+# `(connect, read)` seconds for the channel-auth POST pysher makes on the
+# websocket thread. pysher itself sends it with no timeout, so an auth endpoint
+# that accepts the connection and never answers would hang every (re)subscribe
+# for the life of the process.
+PUSHER_AUTH_TIMEOUT: t.Tuple[float, float] = (5.0, 15.0)
+
+# Pusher cluster names are short lowercase labels such as ``mt1`` or
+# ``ap-southeast-1``. pysher formats the value straight into the websocket
+# host (``ws-{cluster}.pusher.com``), and it arrives in an API response, which
+# `python/AGENTS.md` treats as untrusted: anything outside this shape could
+# steer the socket to a host of the response author's choosing.
+_PUSHER_CLUSTER_PATTERN = re.compile(r"^[a-z0-9-]+$")
+_PUSHER_CLUSTER_MAX_LENGTH = 64
+
+_PYSHER_LOGGER_NAME = "composio.core.models.triggers.pysher"
 
 """
 export type _TriggerData = {
@@ -836,6 +854,109 @@ class TriggerSubscription(Resource):
         self._connection._connect()  # pylint: disable=protected-access
 
 
+def _silent_pysher_logger() -> logging.Logger:
+    """A logger that swallows pysher's connection chatter.
+
+    pysher logs every raw websocket frame at ``INFO``, trigger payloads
+    included. Handing its connection a logger that neither emits nor propagates
+    keeps those frames out of the user's log output; the SDK logs what it needs
+    itself from ``TriggerSubscription``.
+    """
+    logger = logging.getLogger(_PYSHER_LOGGER_NAME)
+    if not any(isinstance(handler, logging.NullHandler) for handler in logger.handlers):
+        logger.addHandler(logging.NullHandler())
+    logger.propagate = False
+    logger.setLevel(logging.CRITICAL)
+    logger.disabled = True
+    return logger
+
+
+def _validate_pusher_cluster(cluster: object) -> str:
+    """Return ``cluster`` once it is known to be a plain cluster label.
+
+    :raises InvalidPusherClusterError: naming the shape violation, never the
+        value itself, since the response that carried it is untrusted.
+    """
+    if not isinstance(cluster, str) or not cluster:
+        raise exceptions.InvalidPusherClusterError(
+            "Realtime credentials did not include a pusher cluster"
+        )
+    if len(cluster) > _PUSHER_CLUSTER_MAX_LENGTH:
+        raise exceptions.InvalidPusherClusterError(
+            "Realtime credentials returned a pusher cluster longer than "
+            f"{_PUSHER_CLUSTER_MAX_LENGTH} characters"
+        )
+    if _PUSHER_CLUSTER_PATTERN.match(cluster) is None:
+        raise exceptions.InvalidPusherClusterError(
+            "Realtime credentials returned a pusher cluster with characters "
+            "outside [a-z0-9-]"
+        )
+    return cluster
+
+
+class _ComposioPusher(Pusher):
+    """``pysher.Pusher`` with a bounded, typed channel-auth request.
+
+    pysher's own ``_generate_auth_token``/``_generate_presence_token`` POST to
+    the auth endpoint with no timeout and turn a non-200 into a bare
+    ``AssertionError``, on the websocket thread, on every (re)subscribe. Both
+    are replaced here: the request carries :data:`PUSHER_AUTH_TIMEOUT`, and any
+    failure surfaces as :class:`~composio.exceptions.TriggerSubscriptionAuthError`.
+
+    The endpoint is the Composio API base URL the client was configured with,
+    a fixed trusted host rather than a value from a response, so the request
+    is a plain ``requests.post`` instead of going through the SSRF guard.
+    """
+
+    def _generate_auth_token(self, channel_name: str) -> str:
+        if self.secret or not self.auth_endpoint:
+            return t.cast(str, super()._generate_auth_token(channel_name))
+        return self._request_channel_auth(
+            {"channel_name": channel_name, "socket_id": self.connection.socket_id}
+        )
+
+    def _generate_presence_token(self, channel_name: str) -> str:
+        if self.secret or not self.auth_endpoint:
+            return t.cast(str, super()._generate_presence_token(channel_name))
+        return self._request_channel_auth(
+            {
+                "channel_name": channel_name,
+                "socket_id": self.connection.socket_id,
+                "user_data": self.user_data,
+            }
+        )
+
+    def _request_channel_auth(self, request_data: t.Dict[str, t.Any]) -> str:
+        try:
+            response = requests.post(
+                self.auth_endpoint,
+                data=request_data,
+                headers=self.auth_endpoint_headers,
+                timeout=PUSHER_AUTH_TIMEOUT,
+            )
+        except requests.RequestException as error:
+            raise exceptions.TriggerSubscriptionAuthError(
+                f"Could not reach the realtime auth endpoint: {type(error).__name__}"
+            ) from error
+
+        if response.status_code != 200:
+            raise exceptions.TriggerSubscriptionAuthError(
+                f"Realtime channel auth failed with HTTP {response.status_code}"
+            )
+
+        try:
+            auth = response.json()["auth"]
+        except (ValueError, KeyError, TypeError) as error:
+            raise exceptions.TriggerSubscriptionAuthError(
+                "Realtime channel auth response did not carry an `auth` token"
+            ) from error
+        if not isinstance(auth, str) or not auth:
+            raise exceptions.TriggerSubscriptionAuthError(
+                "Realtime channel auth response did not carry an `auth` token"
+            )
+        return auth
+
+
 class _SubcriptionBuilder(WithLogger):
     """Pusher client for Composio SDK."""
 
@@ -879,9 +1000,9 @@ class _SubcriptionBuilder(WithLogger):
 
     def _get_pusher_instance(self, key: str, cluster: str) -> Pusher:
         """Get a pusher instance."""
-        return Pusher(
+        return _ComposioPusher(
             key=key,
-            cluster=cluster,
+            cluster=_validate_pusher_cluster(cluster),
             auth_endpoint=PUSHER_AUTH_URL.format(base_url=self._client.base_url),
             auth_endpoint_headers={
                 "x-api-key": self._client.api_key,
@@ -899,8 +1020,8 @@ class _SubcriptionBuilder(WithLogger):
             cluster=project_info.pusher_cluster,
         )
 
-        # Patch pusher logger
-        pusher.connection.logger = mock.MagicMock()  # type: ignore
+        # pysher logs every raw frame at INFO; keep them out of user logs.
+        pusher.connection.logger = _silent_pysher_logger()
         pusher.connection.bind(
             "pusher:connection_established",
             self._get_connection_handler(
