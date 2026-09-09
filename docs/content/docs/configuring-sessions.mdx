@@ -28,7 +28,7 @@ You can also attach local custom tools and custom toolkits that run in-process a
 
 ## Fast mode (experimental)
 
-Fast mode reduces search latency by skipping the LLM reranker and plan search. To enable it, set `experimental.fast_mode` to `true` in the session creation request:
+Fast mode reduces search latency. To enable it, set `experimental.fast_mode` to `true` in the session creation request:
 
 ```bash
 curl --request POST \
@@ -46,7 +46,7 @@ curl --request POST \
 Set `COMPOSIO_API_KEY` to your project API key before running this request. The flag applies to searches in that session, including `COMPOSIO_SEARCH_TOOLS` and the session search API. Omit it when creating a session to use the default search behavior.
 
 <Callout type="warn" title="Experimental">
-Fast mode returns embedding and keyword search results without LLM reranking. It also omits plan-derived guidance, including `recommended_plan_steps`, `known_pitfalls`, and `reference_workbench_snippets`. This can reduce retrieval quality, especially for requests that need multiple tools or steps. Evaluate it against your own queries before enabling it. Experimental behavior may change.
+Fast mode is experimental, so tool search quality may be affected.
 </Callout>
 
 ### Enable fast mode on an existing session
