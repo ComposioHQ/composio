@@ -1,11 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { InvalidPatternError, jsonSchemaToZod } from '../src/index';
-import {
-  MAX_PATTERN_LENGTH,
-  compilePattern,
-  hasNestedUnboundedQuantifier,
-} from '../src/utils/compile-pattern';
+import { MAX_PATTERN_LENGTH, compilePattern } from '../src/utils/compile-pattern';
 
 const invalidPatternAt = (build: () => unknown): InvalidPatternError => {
   try {
@@ -16,39 +12,6 @@ const invalidPatternAt = (build: () => unknown): InvalidPatternError => {
   }
   throw new Error('expected conversion to fail');
 };
-
-describe('hasNestedUnboundedQuantifier', () => {
-  it.each([
-    '^(a+)+$',
-    '(a*)*',
-    '^(a+)*$',
-    '(a{2,})+',
-    '(a+){3,}',
-    '((ab)+c)*',
-    '(?:x+)+',
-    '(\\d*x)*',
-    '(a+)+?',
-  ])('flags %s', pattern => {
-    expect(hasNestedUnboundedQuantifier(pattern)).toBe(true);
-  });
-
-  it.each([
-    '^[a-z]+$',
-    '^\\d{4}-\\d{2}-\\d{2}$',
-    '(a+)',
-    '(a)+',
-    '(a+){2}',
-    '(a{2,5})+',
-    '(a+){2,5}',
-    '[(+)]+',
-    '\\(a+\\)+',
-    '(a+)b+',
-    '^(?:[a-z]+\\.){0,3}[a-z]+$',
-    '^(\\d+\\.){2}\\d+$',
-  ])('accepts %s', pattern => {
-    expect(hasNestedUnboundedQuantifier(pattern)).toBe(false);
-  });
-});
 
 describe('compilePattern', () => {
   it('compiles a valid pattern into an equivalent RegExp', () => {
@@ -77,10 +40,10 @@ describe('compilePattern', () => {
 
   it('appends the patternProperties key to the reported path', () => {
     const error = invalidPatternAt(() =>
-      compilePattern('patternProperties', '^(a+)+$', { path: ['properties', 'tags'] })
+      compilePattern('patternProperties', '[', { path: ['properties', 'tags'] })
     );
-    expect(error.reason).toBe('nested-quantifier');
-    expect(error.path).toEqual(['properties', 'tags', 'patternProperties', '^(a+)+$']);
+    expect(error.reason).toBe('syntax');
+    expect(error.path).toEqual(['properties', 'tags', 'patternProperties', '[']);
   });
 });
 
@@ -96,19 +59,6 @@ describe('jsonSchemaToZod pattern guard', () => {
     expect(error.keyword).toBe('pattern');
     expect(error.pattern).toBe('(');
     expect(error.message).toContain('at properties.name');
-  });
-
-  it('rejects a catastrophic pattern before it can be evaluated', () => {
-    const started = performance.now();
-    const error = invalidPatternAt(() =>
-      jsonSchemaToZod({
-        type: 'object',
-        properties: { code: { type: 'string', pattern: '^(a+)+$' } },
-      })
-    );
-    expect(error.reason).toBe('nested-quantifier');
-    expect(error.message).toContain('at properties.code');
-    expect(performance.now() - started).toBeLessThan(1000);
   });
 
   it('reports a typeless pattern with the path of the node carrying it', () => {
@@ -128,14 +78,27 @@ describe('jsonSchemaToZod pattern guard', () => {
         properties: {
           labels: {
             type: 'object',
-            patternProperties: { '^(x*)*$': { type: 'string' } },
+            patternProperties: { '^x-(': { type: 'string' } },
           },
         },
       })
     );
     expect(error.keyword).toBe('patternProperties');
-    expect(error.path).toEqual(['properties', 'labels', 'patternProperties', '^(x*)*$']);
-    expect(error.message).toContain('at properties.labels.patternProperties.^(x*)*$');
+    expect(error.path).toEqual(['properties', 'labels', 'patternProperties', '^x-(']);
+    expect(error.message).toContain('at properties.labels.patternProperties.^x-(');
+  });
+
+  it('keeps compiling quantified groups that backtrack linearly', () => {
+    const schema = jsonSchemaToZod({
+      type: 'object',
+      properties: { version: { type: 'string', pattern: '^(\\d+\\.)*\\d+$' } },
+      required: ['version'],
+    });
+
+    expect(schema.safeParse({ version: '1.2.3' }).success).toBe(true);
+    expect(schema.safeParse({ version: '42' }).success).toBe(true);
+    expect(schema.safeParse({ version: '1.2.' }).success).toBe(false);
+    expect(schema.safeParse({ version: 'v1' }).success).toBe(false);
   });
 
   it('still enforces valid patterns', () => {

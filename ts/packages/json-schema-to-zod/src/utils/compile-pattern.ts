@@ -8,11 +8,11 @@ import type { Refs } from '../types';
  */
 export const MAX_PATTERN_LENGTH = 1024;
 
-export type InvalidPatternReason = 'syntax' | 'nested-quantifier' | 'too-long';
+export type InvalidPatternReason = 'syntax' | 'too-long';
 
 /**
  * Raised at conversion time when a schema `pattern` cannot be turned into a
- * safe `RegExp`. Conversion fails eagerly, in line with how this package and
+ * `RegExp`. Conversion fails eagerly, in line with how this package and
  * `@composio/json-schema-to-effect-schema` treat other schema defects: a broken
  * schema is the tool author's bug, so it surfaces once at construction rather
  * than on every validation as if the caller's input were wrong.
@@ -37,83 +37,14 @@ export class InvalidPatternError extends Error {
 }
 
 /**
- * Whether the pattern nests an unbounded quantifier (`*`, `+`, `{n,}`) inside
- * a group that is itself unboundedly quantified, such as `(a+)+` or
- * `(\d*x)*`. This is the star-height check `safe-regex` popularised: it is
- * purely syntactic, so it misses alternation-driven blowups like `(a|aa)+`
- * and flags some patterns that backtrack linearly in practice, but it catches
- * the canonical catastrophic shapes without a regex engine or a dependency.
- */
-export const hasNestedUnboundedQuantifier = (pattern: string): boolean => {
-  // One entry per open group: whether an unbounded quantifier appeared inside it.
-  const openGroups: boolean[] = [];
-  let closedGroupHadUnbounded = false;
-  let afterGroupClose = false;
-  let inClass = false;
-
-  for (let i = 0; i < pattern.length; i++) {
-    const char = pattern[i];
-
-    if (char === '\\') {
-      i += 1;
-      afterGroupClose = false;
-      continue;
-    }
-
-    if (inClass) {
-      if (char === ']') inClass = false;
-      continue;
-    }
-
-    let unbounded = false;
-    switch (char) {
-      case '[':
-        inClass = true;
-        break;
-      case '(':
-        openGroups.push(false);
-        break;
-      case ')':
-        closedGroupHadUnbounded = openGroups.pop() ?? false;
-        afterGroupClose = true;
-        continue;
-      case '*':
-      case '+':
-        unbounded = true;
-        break;
-      case '{': {
-        const close = pattern.indexOf('}', i);
-        const body = close === -1 ? '' : pattern.slice(i + 1, close);
-        if (/^\d+,$/.test(body)) {
-          unbounded = true;
-        }
-        if (close !== -1 && /^\d+(,\d*)?$/.test(body)) {
-          i = close;
-        }
-        break;
-      }
-      default:
-        break;
-    }
-
-    if (unbounded) {
-      if (afterGroupClose && closedGroupHadUnbounded) {
-        return true;
-      }
-      for (let depth = 0; depth < openGroups.length; depth++) {
-        openGroups[depth] = true;
-      }
-    }
-
-    afterGroupClose = false;
-  }
-
-  return false;
-};
-
-/**
- * Compile a schema pattern, rejecting anything that could not be compiled or
- * that the {@link hasNestedUnboundedQuantifier} heuristic marks as unsafe.
+ * Compile a schema pattern, rejecting anything that does not compile or that
+ * exceeds {@link MAX_PATTERN_LENGTH}.
+ *
+ * Both guards have no false positives: a pattern that fails here would never
+ * have worked. No backtracking (ReDoS) heuristic is applied on purpose — the
+ * syntactic checks that exist flag linear patterns such as `^(\d+\.)*\d+$`,
+ * and a wrong rejection fails the whole tool the schema belongs to. A hostile
+ * `pattern` that backtracks catastrophically remains a known limitation.
  *
  * No `u` flag is passed: existing tool schemas rely on identity escapes that
  * Unicode mode refuses, and the goal here is to fail on defects, not to
@@ -133,16 +64,6 @@ export const compilePattern = (
       path,
       'too-long',
       `pattern exceeds ${MAX_PATTERN_LENGTH} characters`
-    );
-  }
-
-  if (hasNestedUnboundedQuantifier(pattern)) {
-    throw new InvalidPatternError(
-      keyword,
-      pattern,
-      path,
-      'nested-quantifier',
-      'nested unbounded quantifiers can backtrack catastrophically'
     );
   }
 
