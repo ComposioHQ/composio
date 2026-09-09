@@ -121,6 +121,75 @@ are ESLint-banned in `ts/packages/cli/src`. From `@composio/cli-keyring`'s
 `effect.ts`, both `Effect.tryPromise` and `Effect.promise` kept their v3 signatures
 unchanged in v4.
 
+## `Effect.gen` vs `Effect.fn`: which form where
+
+All of these wrap a generator, and all are lazy in the same way: the body is
+`suspend`-wrapped, so it **re-runs on every execution** of the resulting effect — which is
+why `Effect.retry`/`Effect.repeat` redo the work instead of replaying a cached result
+(`gen` in `ts/vendor/effect/packages/effect/src/internal/effect.ts`).
+`Effect.fnUntracedEager` is the one eager variant. The axis that actually differs is **what
+the expression is** — an Effect value or a function — and **what the tracer records**:
+
+- `Effect.gen(function* () {...})` produces an Effect **value**. The default for one-shot
+  workflows and named module consts, from `ts/packages/cli/src/analytics/dispatch.ts`:
+
+  ```ts no-check
+  const getUserApiKey = Effect.gen(function* () {
+    const envApiKey = configuredString(
+      yield* optionalString('COMPOSIO_USER_API_KEY').parse(getEnvironmentProvider())
+    );
+    if (envApiKey) {
+      return envApiKey;
+    }
+    // ...
+  });
+  ```
+
+- `(params) => Effect.gen(function* () {...})` is a plain function returning an effect —
+  the default for parameterized helpers, from
+  `ts/packages/cli/scripts/generate-toolkit-slugs.ts`:
+
+  ```ts no-check
+  const fetchPage = (params: {
+    baseUrl: string;
+    headers: Record<string, string>;
+    cursor?: string;
+  }): Effect.Effect<ToolkitsPageDecoded, ToolkitFetchError> =>
+    Effect.gen(function* () {
+      // ...
+    });
+  ```
+
+- `Effect.fn(function* (...) {...})` also returns a **function**, but every effect it
+  produces carries stack-frame annotations for both the call site and the definition site
+  (`makeFn` updates `CurrentStackFrame`) — this is what feeds the CLI's span-chain recovery
+  from `Cause.StackTrace` in error reports. The named form `Effect.fn('span.name')(...)`
+  additionally opens a **tracing span** per call; `Effect.fnUntraced` drops the frames.
+  Use it for service-shape members and combinator callbacks whose failures should be
+  attributable, from `ts/packages/cli/src/services/composio-clients.ts`:
+
+  ```ts no-check
+  return {
+    get: Effect.fn(function* () {
+      // ...
+    }) satisfies () => Effect.Effect<_RawComposioClient, NoSuchElementError, never>,
+    getFor: Effect.fn(function* (params: {
+      userApiKey?: string;
+      orgId?: string;
+      projectId?: string;
+    }) {
+      // ...
+    }),
+  };
+  ```
+
+  The named form's per-call span is additive to those frames; add the name when the span
+  should appear in error reports, otherwise leave it off.
+
+When in doubt: value → `Effect.gen`; function → a plain arrow returning `Effect.gen`,
+upgrading to `Effect.fn` when failure attribution in error reports is worth the annotation.
+Do not migrate one form to the other wholesale.
+
 ## v3 → v4 rename table (historical — recognize stale patterns, don't copy them)
 
 Verified against `ts/vendor/effect/migration/v3-to-v4.md` and this migration's own
