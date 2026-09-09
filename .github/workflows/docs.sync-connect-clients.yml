@@ -63,7 +63,7 @@ jobs:
           echo "$(wc -l < /tmp/client-definitions.ts) lines"
 
       - name: Sync Connect clients
-        uses: anthropics/claude-code-action@1f291e1cfe0f5fc21db2aef19af844591600ade7 # v1.0.206
+        uses: anthropics/claude-code-action@9c5ddab2e6d17b83ea679153b31f1d5f023cf636 # v1.0.217
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           allowed_tools: 'Read,Write,Edit,Glob,Grep,Bash(curl *)'
