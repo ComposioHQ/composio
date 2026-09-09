@@ -123,6 +123,7 @@ export const DOCS_PRODUCTS = {
       '/docs/extending-sessions',
       '/docs/setting-up-triggers',
       '/docs/poc-to-prod',
+      '/docs/security/data-retention',
       '/docs/sessions-vs-direct-execution',
       '/docs/tools-direct',
       '/docs/auth-configuration',
@@ -238,7 +239,10 @@ export function docsProductDestination(pathname: string, target: DocsProduct): s
   const sourceProduct = target === 'platform' ? 'for-you' : 'platform';
   const counterpart = PRODUCT_COUNTERPARTS.find(pair => matchesRoute(pathname, pair[sourceProduct]));
   if (counterpart) return counterpart[target];
-  if (SHARED_ROUTE_PREFIXES.some(prefix => matchesRoute(pathname, prefix))) return pathname;
+  if (
+    classifyDocsProduct(pathname) !== sourceProduct &&
+    SHARED_ROUTE_PREFIXES.some(prefix => matchesRoute(pathname, prefix))
+  ) return pathname;
   return DOCS_PRODUCTS[target].landingRoute;
 }
 

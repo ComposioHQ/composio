@@ -136,6 +136,15 @@ describe("Navigation - meta.json validity", () => {
         // Handle "..." (rest) entries which are valid fumadocs syntax
         if (entry === "...") continue;
 
+        const link = entry.match(/^\[[^\]]+\]\((\/[^)]+)\)$/);
+        if (link) {
+          const target = join(CONTENT_DIR, '..', link[1].slice(1));
+          if (!await exists(`${target}.mdx`) && !await exists(join(target, 'index.mdx'))) {
+            errors.push(`${relDir}/meta.json → "${entry}" (link target not found)`);
+          }
+          continue;
+        }
+
         const asFile = join(dir, `${entry}.mdx`);
         const asDir = join(dir, entry);
 
