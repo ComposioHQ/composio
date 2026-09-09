@@ -1,0 +1,123 @@
+name: Audit Python SDK
+
+# Python counterpart of ts.audit.yml. Every tracked uv lockfile is exported to
+# a pinned requirements list and scanned with pip-audit against the PyPI
+# advisory database and OSV. Runtime dependencies only, matching the
+# `pnpm audit --prod` gate: the exports pass `--no-dev`, and workspace members
+# themselves are skipped since they are not published on PyPI.
+#
+# Advisories with no patched release belong in IGNORED_VULNS below, with a
+# comment. Do not silence the gate by dropping `--strict`.
+
+on:
+  push:
+    branches: [master, next]
+    paths:
+      - 'pyproject.toml'
+      - 'uv.lock'
+      - 'python/pyproject.toml'
+      - 'python/providers/*/pyproject.toml'
+      - 'python/providers/*/uv.lock'
+      - '.github/actions/setup-python-uv/action.yml'
+      - '.github/workflows/py.audit.yml'
+      - 'mise.toml'
+      - 'mise.lock'
+  pull_request:
+    branches: [master, next]
+    paths:
+      - 'pyproject.toml'
+      - 'uv.lock'
+      - 'python/pyproject.toml'
+      - 'python/providers/*/pyproject.toml'
+      - 'python/providers/*/uv.lock'
+      - '.github/actions/setup-python-uv/action.yml'
+      - '.github/workflows/py.audit.yml'
+      - 'mise.toml'
+      - 'mise.lock'
+  schedule:
+    # Advisories land without a commit; re-check the default branch weekly.
+    - cron: '30 6 * * 5'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.ref || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+env:
+  PIP_AUDIT_VERSION: 2.10.1
+  # chromadb <=1.5.9 (via crewai, which pins chromadb~=1.1.0). Upstream has
+  # published no patched release for any of the four advisories, so no bump
+  # reaches them. All four affect the Chroma *server* (auth, RBAC, and code
+  # injection in server endpoints); composio-crewai only imports the client
+  # library through crewai and never starts a server. Drop each entry once
+  # crewai moves to a chromadb release that closes it.
+  #   PYSEC-2026-311 = CVE-2026-45829 = GHSA-f4j7-r4q5-qw2c (pre-auth code injection)
+  #   CVE-2026-45833 = GHSA-36p7-vc44-83pf (code injection)
+  #   CVE-2026-45830 = GHSA-2wm9-hf6c-p5cr (cross-tenant data access)
+  #   CVE-2026-45831 = GHSA-xph7-9rjv-w5fr (RBAC scope not checked)
+  IGNORED_VULNS: >-
+    PYSEC-2026-311
+    CVE-2026-45833
+    CVE-2026-45830
+    CVE-2026-45831
+
+jobs:
+  audit:
+    name: Audit ${{ matrix.lock.name }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        lock:
+          # The uv workspace at the repository root: the composio package and
+          # every provider listed in [tool.uv.workspace].
+          - name: workspace
+            directory: '.'
+            export-flags: '--all-packages'
+          # Standalone provider projects with their own lockfiles.
+          - name: composio-openai
+            directory: 'python/providers/openai'
+            export-flags: ''
+          - name: composio-claude-agent-sdk
+            directory: 'python/providers/claude_agent_sdk'
+            export-flags: ''
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Setup Python with UV
+        uses: ./.github/actions/setup-python-uv
+        with:
+          enable-caching: 'false'
+
+      - name: Export locked runtime requirements
+        env:
+          LOCK_DIRECTORY: ${{ matrix.lock.directory }}
+          EXPORT_FLAGS: ${{ matrix.lock.export-flags }}
+        run: |
+          # shellcheck disable=SC2086 # EXPORT_FLAGS is intentionally word-split.
+          uv export \
+            --frozen \
+            --no-dev \
+            --no-hashes \
+            --no-emit-workspace \
+            --directory "$LOCK_DIRECTORY" \
+            --output-file "$RUNNER_TEMP/requirements.txt" \
+            $EXPORT_FLAGS
+          echo "Exported $(grep -c '==' "$RUNNER_TEMP/requirements.txt") pinned packages"
+
+      - name: Run pip-audit
+        run: |
+          ignore_flags=()
+          for id in $IGNORED_VULNS; do
+            ignore_flags+=(--ignore-vuln "$id")
+          done
+          uvx --from "pip-audit==$PIP_AUDIT_VERSION" pip-audit \
+            --requirement "$RUNNER_TEMP/requirements.txt" \
+            --no-deps \
+            --strict \
+            --progress-spinner off \
+            "${ignore_flags[@]}"
