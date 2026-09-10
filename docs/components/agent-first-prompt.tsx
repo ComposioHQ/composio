@@ -3,35 +3,7 @@
 import { Check, Copy } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 
-type AgentFirstPromptProps = {
-  agent:
-  | 'claude-code'
-  | 'cline'
-  | 'codex'
-  | 'cursor'
-  | 'gemini-cli'
-  | 'github-copilot'
-  | 'grok'
-  | 'openclaw'
-  | 'opencode';
-};
-
-const SKILL_INSTRUCTION: Record<AgentFirstPromptProps['agent'], string> = {
-  'claude-code': 'Use the /composio skill to get Composio working in this codebase.',
-  cline: 'Use the composio agent skill to get Composio working in this codebase.',
-  codex: 'Use the $composio skill to get Composio working in this codebase.',
-  cursor: 'Use the composio agent skill to get Composio working in this codebase.',
-  'gemini-cli': 'Use the composio agent skill to get Composio working in this codebase.',
-  'github-copilot': 'Use /composio to get Composio working in this codebase.',
-  grok: 'Use the composio agent skill to get Composio working in this codebase.',
-  openclaw: 'Use the composio agent skill to get Composio working in this codebase.',
-  opencode: 'Use the composio agent skill to get Composio working in this codebase.',
-};
-
-const promptFor = (agent: AgentFirstPromptProps['agent']) => `${SKILL_INSTRUCTION[agent]}
-
-Help me connect an integration and make my first real tool call.
-When it works, show me what changed and what I can try next.`;
+import { promptFor, type AgentFirstPromptProps } from '@/lib/agent-prompts';
 
 export function AgentFirstPrompt({ agent }: AgentFirstPromptProps) {
   const [copied, setCopied] = useState(false);
