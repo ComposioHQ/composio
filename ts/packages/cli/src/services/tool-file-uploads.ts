@@ -6,7 +6,7 @@
 import type * as FileSystem from 'effect/FileSystem';
 import type * as Path from 'effect/Path';
 import type { Composio as RawComposioClient } from '@composio/client';
-import { assertSafeFileUploadPath } from '@composio/core';
+import { assertSafeFileUploadPath, readResponseBodyWithLimit } from '@composio/core';
 import { ssrfSafeFetch } from '@composio/core/utils/ssrf-guard';
 import { Cause, Data, Effect, Exit, Predicate } from 'effect';
 import { guessToolkitFromToolSlug } from 'src/utils/toolkit-from-tool-slug';
@@ -155,7 +155,10 @@ const readFileFromUrl = async (path: Path.Path, url: string) => {
     });
   }
 
-  const bytes = new Uint8Array(await response.arrayBuffer());
+  // Same cap as the core SDK's URL uploads: a remote server must not be able
+  // to exhaust memory with an oversized or never-ending body. Copied into a
+  // fresh ArrayBuffer-backed view for the same reason as readFileFromDisk.
+  const bytes = new Uint8Array(await readResponseBodyWithLimit(response));
   const parsedUrl = new URL(url);
   const fileName = path.basename(parsedUrl.pathname) || `file-${Date.now()}`;
 

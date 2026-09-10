@@ -292,6 +292,22 @@ class InvalidTriggerFilters(TriggerSubscriptionError):
     pass
 
 
+class TriggerSubscriptionAuthError(TriggerSubscriptionError):
+    """Raised when the realtime channel-auth request fails.
+
+    Covers a transport error, a timeout, a non-200 response, and a response
+    without an ``auth`` token.
+    """
+
+    pass
+
+
+class InvalidPusherClusterError(TriggerSubscriptionError, ValidationError):
+    """Raised when the realtime credentials carry a malformed pusher cluster."""
+
+    pass
+
+
 class ApiKeyError(ComposioClientError):
     pass
 

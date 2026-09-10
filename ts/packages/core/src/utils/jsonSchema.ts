@@ -495,7 +495,10 @@ export function jsonSchemaToZodSchema<T extends z.ZodTypeAny>(
     const zodSchema = jsonSchemaToZod(schema) as T;
     return zodSchema;
   } catch (error) {
-    throw new JsonSchemaToZodError('Failed to convert JSON Schema to Zod Schema', {
+    // The cause names the offending property path; surface it in the message
+    // so a single malformed property is identifiable without unwrapping.
+    const detail = error instanceof Error ? `: ${error.message}` : '';
+    throw new JsonSchemaToZodError(`Failed to convert JSON Schema to Zod Schema${detail}`, {
       cause: error,
     });
   }
