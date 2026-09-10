@@ -380,6 +380,19 @@ importers:
         specifier: workspace:*
         version: link:../../../_utils
 
+  ts/e2e-tests/runtimes/deno/tool-execution:
+    dependencies:
+      '@composio/core':
+        specifier: workspace:*
+        version: link:../../../../packages/core
+      zod:
+        specifier: 'catalog:'
+        version: 4.5.4
+    devDependencies:
+      '@e2e-tests/utils':
+        specifier: workspace:*
+        version: link:../../../_utils
+
   ts/e2e-tests/runtimes/node/cjs-basic:
     devDependencies:
       '@composio/core':
