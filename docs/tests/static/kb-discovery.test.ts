@@ -56,8 +56,8 @@ describe('public KB discovery', () => {
     expect(source('app/sitemap.ts')).toContain('getLocalKnowledgeDiscoveryPaths');
     expect(source('scripts/validate-links.ts')).toContain('knowledgeBaseSource');
     expect(source('scripts/validate-links.ts')).toContain('getLocalKnowledgeDiscoveryPaths');
-    expect(source('app/llms.txt/route.ts')).toContain('knowledgeBaseSource');
-    expect(source('app/llms.txt/route.ts')).toContain('getLocalKnowledgeDiscoveryPaths');
+    expect(source('app/llms-index.txt/route.ts')).toContain('knowledgeBaseSource');
+    expect(source('app/llms-index.txt/route.ts')).toContain('getLocalKnowledgeDiscoveryPaths');
     expect(source('app/llms-full.txt/route.ts')).toContain('knowledgeBaseSource');
     expect(source('app/llms-full.txt/route.ts')).toContain('getLocalKnowledgeDiscoveryPaths');
     expect(source('app/llms.mdx/[[...slug]]/route.ts')).toContain("prefix: 'kb'");

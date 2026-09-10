@@ -41,6 +41,7 @@ const config = {
     '/llms.mdx/**': [...OPENAPI_SPEC_FILES],
     '/llms-full.txt/**': [...OPENAPI_SPEC_FILES],
     '/llms.txt/**': [...OPENAPI_SPEC_FILES],
+    '/llms-index.txt/**': [...OPENAPI_SPEC_FILES, './kb/**'],
     '/kb/**': ['./kb/**'],
     '/api/knowledge-search/**': [...OPENAPI_SPEC_FILES, './content/**', './kb/**'],
   },
