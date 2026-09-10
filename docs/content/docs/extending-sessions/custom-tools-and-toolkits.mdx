@@ -696,6 +696,11 @@ Slugs exposed to the agent are automatically prefixed with `LOCAL_` and the tool
 
 Your slugs cannot start with `LOCAL_`. This prefix is reserved.
 
+You can execute a custom tool by its fully qualified slug. A bare child slug also works when it
+identifies exactly one local tool. If two custom toolkits both define `SEARCH`, for example, call
+`LOCAL_CATALOG_SEARCH` or `LOCAL_SUPPORT_SEARCH`. Calling bare `SEARCH` raises an error that lists
+the qualified slugs instead of choosing one toolkit silently.
+
 ## Next
 
 <Card icon={<Wrench />} title="Configuring sessions" href="/docs/configuring-sessions" description="Filter toolkits and tools, set auth configs, and read tools with session.tools()" />

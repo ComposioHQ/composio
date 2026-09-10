@@ -491,6 +491,11 @@ console.log(result);
   </Tab>
 </Tabs>
 
+Automatic downloads are limited to 100 MiB, including when the server omits or reports an
+incorrect `Content-Length`. A failed Python download removes the partial file and raises
+`ErrorDownloadingFile`. TypeScript reports connection and streamed-body failures as
+`RemoteFileDownloadError`.
+
 ## Security for local file paths
 
 Automatic upload reads local paths (or uses them in `files.upload`) and sends file content to Composio storage. To reduce the chance of **accidentally uploading secrets** (SSH keys, cloud credentials, `.env` files, or assistant project folders), the SDK checks local paths against a **default denylist** of path segments and file-name patterns. **HTTP/HTTPS URLs and `File` objects are not matched like local path strings**; only local string paths go through this check.
