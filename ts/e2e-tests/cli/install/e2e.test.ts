@@ -139,8 +139,8 @@ test "$(bash -ilc 'composio --version')" = 98.0.0
 set -eu
 printf '%s\n' 'export PROFILE_TRAP=1' > "$HOME/.bash_profile"
 output=$(curl -fsSL "$INSTALL_BASE_URL/install" | SHELL=/bin/bash sh)
-ending=$(printf '%s\n' "$output" | tail -n 3)
-case_b=$(printf 'Open a new terminal, then run:\n\n  composio login')
+ending=$(printf '%s\n' "$output" | tail -n 5)
+case_b=$(printf 'Open a new terminal, then run:\n\nConnect an account and try your first tool:\n  Human: composio onboard\n  Agent: composio onboard --json')
 test "$ending" = "$case_b"
 curl -fsSL "$INSTALL_BASE_URL/install" | SHELL=/bin/bash sh
 test "$(bash -ilc 'command -v composio')" = "$HOME/.local/bin/composio"
@@ -187,7 +187,7 @@ fi
 assert_no_marker_block "$HOME/.bash_profile"
 assert_no_marker_block "$HOME/.bashrc"
 assert_no_marker_block "$HOME/.profile"
-printf '%s\n' "$output" | grep -F "$HOME/.composio/composio login"
+printf '%s\n' "$output" | grep -F "Human: $HOME/.composio/composio onboard"
 `);
         assertSuccess(result);
       },
@@ -211,7 +211,7 @@ fi
 assert_no_marker_block "$HOME/.bash_profile"
 assert_no_marker_block "$HOME/.bashrc"
 assert_no_marker_block "$HOME/.profile"
-printf '%s\n' "$output" | grep -F "$HOME/.composio/composio login"
+printf '%s\n' "$output" | grep -F "Human: $HOME/.composio/composio onboard"
 `);
         assertSuccess(result);
       },
@@ -275,7 +275,7 @@ combined=$(curl -fsSL "$INSTALL_BASE_URL/install" | SHELL=/bin/zsh sh 2>&1)
 test -x "$HOME/.composio/composio"
 test -L "$HOME/.local/bin/composio"
 printf '%s\n' "$combined" | grep -i 'warning'
-printf '%s\n' "$combined" | grep -F "$HOME/.composio/composio login"
+printf '%s\n' "$combined" | grep -F "Human: $HOME/.composio/composio onboard"
 `);
         assertSuccess(result);
       },

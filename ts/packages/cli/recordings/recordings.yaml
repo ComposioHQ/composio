@@ -28,6 +28,22 @@ recordings:
       description: Show whoami subcommand help
       command: "composio whoami"
 
+  onboard:
+    - name: help
+      description: Show onboard subcommand help
+      command: "composio onboard --help"
+      height: 1500
+
+    - name: json
+      description: Emit the agent-facing onboarding state document
+      command: "composio onboard --status --json"
+      height: dynamic
+
+    - name: status
+      description: Report onboarding progress without taking action
+      command: "composio onboard --status"
+      height: dynamic
+
   install:
     - name: help
       description: Show install subcommand help

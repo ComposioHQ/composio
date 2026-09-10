@@ -33,6 +33,7 @@ describe('ComposioCliUserConfig', () => {
       assertEquals(config.isExperimentalFeatureEnabled('listen'), false);
       assertEquals(config.data.experimentalSubagentTarget, 'auto');
       assertEquals(config.data.artifactDirectory, undefined);
+      assertEquals(config.data.onboarding.hasExecuted, false);
 
       const fs = yield* FileSystem.FileSystem;
       assertEquals(yield* fs.exists(path.join(cwd, '.composio', 'config.json')), true);
@@ -104,6 +105,9 @@ describe('ComposioCliUserConfig', () => {
         experimental_subagent: {
           target: 'claude',
         },
+        onboarding: {
+          has_executed: true,
+        },
       })
     );
 
@@ -124,6 +128,7 @@ describe('ComposioCliUserConfig', () => {
       assertEquals(config.isExperimentalFeatureEnabled('multi_account'), false);
       assertEquals(config.data.artifactDirectory, '/tmp/composio-artifacts');
       assertEquals(config.data.experimentalSubagentTarget, 'claude');
+      assertEquals(config.data.onboarding.hasExecuted, true);
 
       const persisted = yield* fileSystem.readFileString(
         path.join(cwd, '.composio', 'config.json'),
@@ -137,6 +142,7 @@ describe('ComposioCliUserConfig', () => {
         experimental_features: { listen: boolean; multi_account: boolean };
         artifact_directory: string;
         experimental_subagent: { target: string };
+        onboarding: { has_executed: boolean };
       };
 
       assertEquals(parsed.developer.enabled, false);
@@ -145,6 +151,7 @@ describe('ComposioCliUserConfig', () => {
       assertEquals(parsed.experimental_features.multi_account, false);
       assertEquals(parsed.artifact_directory, '/tmp/composio-artifacts');
       assertEquals(parsed.experimental_subagent.target, 'claude');
+      assertEquals(parsed.onboarding.has_executed, true);
     }).pipe(Effect.provide(CliUserConfigTest));
   });
 

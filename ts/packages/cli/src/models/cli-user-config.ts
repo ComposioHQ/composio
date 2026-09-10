@@ -47,6 +47,13 @@ export const DeveloperConfig = Schema.Struct({
 });
 export type DeveloperConfig = Schema.Schema.Type<typeof DeveloperConfig>;
 
+export const OnboardingConfig = Schema.Struct({
+  hasExecuted: Schema.optionalWith(Schema.Boolean, {
+    default: () => false,
+  }).pipe(Schema.fromKey('has_executed')),
+});
+export type OnboardingConfig = Schema.Schema.Type<typeof OnboardingConfig>;
+
 export const CliUserConfig = Schema.Struct({
   developer: Schema.optionalWith(DeveloperConfig, {
     default: () =>
@@ -77,6 +84,9 @@ export const CliUserConfig = Schema.Struct({
    */
   security: Schema.optionalWith(SecurityBackend, {
     default: (): SecurityBackend => 'auto',
+  }),
+  onboarding: Schema.optionalWith(OnboardingConfig, {
+    default: () => OnboardingConfig.make({ hasExecuted: false }),
   }),
 }).annotations({
   identifier: 'CliUserConfig',

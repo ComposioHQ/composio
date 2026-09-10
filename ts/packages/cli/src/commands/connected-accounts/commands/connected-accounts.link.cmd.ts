@@ -124,9 +124,11 @@ const waitForActiveConnection = (
   client: RawComposioClient,
   connectedAccountId: string,
   redirectUrl: string,
-  noBrowser: boolean
+  noBrowser: boolean,
+  suppressOutput = false
 ) =>
   Effect.gen(function* () {
+    const output = suppressOutput ? () => Effect.void : ui.output;
     yield* showRedirectUrl(ui, redirectUrl, { manual: noBrowser });
 
     const parsedUrl = Option.liftThrowable((value: string) => new URL(value))(redirectUrl);
@@ -153,7 +155,7 @@ const waitForActiveConnection = (
       );
     }
 
-    yield* ui.useMakeSpinner('Waiting for authentication...', spinner =>
+    return yield* ui.useMakeSpinner('Waiting for authentication...', spinner =>
       Effect.retry(
         Effect.gen(function* () {
           const account = yield* Effect.tryPromise({
@@ -183,7 +185,7 @@ const waitForActiveConnection = (
           return Effect.all([
             spinner.stop('Connection successful'),
             ui.log.success(message),
-            ui.output(
+            output(
               JSON.stringify(
                 {
                   status: 'success',
@@ -325,6 +327,63 @@ const listActiveConnectedAccounts = (params: {
         message: `Failed to list connected accounts for user "${params.userId}".`,
         cause,
       }),
+  });
+
+/** Root-consumer link primitive for embedded flows. It never writes stdout. */
+export const linkRootConsumerToolkit = (params: { toolkit: string; wait: boolean }) =>
+  Effect.gen(function* () {
+    const clientSingleton = yield* ComposioClientSingleton;
+    const resolvedProject = yield* resolveCommandProject({ mode: 'consumer' }).pipe(
+      Effect.mapError(formatResolveCommandProjectError)
+    );
+    const userId = resolvedProject.consumerUserId;
+    if (!userId) {
+      return yield* new MissingLinkUserIdError({
+        message: 'No consumer user is available for onboarding.',
+        flow: 'tool-router',
+      });
+    }
+    const client = yield* clientSingleton.getFor({
+      orgId: resolvedProject.orgId,
+      projectId: resolvedProject.projectId,
+    });
+    const { sessionId } = yield* resolveToolRouterSession(client, userId, {
+      manageConnections: true,
+      toolkits: [params.toolkit],
+      localTools: { enable: false },
+      cacheScope: getConsumerCacheScope(resolvedProject),
+      excludeConnectedAccountsForToolkits: [params.toolkit],
+    });
+    const linked = yield* Effect.tryPromise({
+      try: () => client.toolRouter.session.link(sessionId, { toolkit: params.toolkit }),
+      catch: cause =>
+        new ConnectedAccountsRequestError({
+          message: `Failed to create link for toolkit "${params.toolkit}".`,
+          cause,
+        }),
+    });
+    const connectedAccountId = linked.connected_account_id;
+    const redirectUrl = linked.redirect_url;
+    if (!connectedAccountId || !redirectUrl) {
+      return yield* new ConnectedAccountsRequestError({
+        message: `The API returned an incomplete link for toolkit "${params.toolkit}".`,
+        cause: 'redacted',
+      });
+    }
+    yield* invalidateConsumerConnectedToolkitsCache().pipe(Effect.ignore);
+    if (!params.wait) {
+      return { status: 'pending' as const, connectedAccountId, redirectUrl };
+    }
+
+    const account = yield* waitForActiveConnection(
+      yield* TerminalUI,
+      client,
+      connectedAccountId,
+      redirectUrl,
+      false,
+      true
+    );
+    return { status: 'active' as const, connectedAccountId: account.id };
   });
 
 const formatExistingAccountLabels = (

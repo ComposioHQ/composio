@@ -1,5 +1,5 @@
 import type { CliCommandTelemetryContext, TrackEvent } from './types';
-import { APP_VERSION } from 'src/constants';
+import { APP_VERSION, type CliReleaseChannel } from 'src/constants';
 import { inferSkillReleaseChannel } from 'src/effects/install-skill';
 import type { CliInvocationContext } from 'src/services/runtime-cli-context';
 import { ToolInputValidationError } from 'src/services/tool-input-validation';
@@ -45,6 +45,14 @@ export const CLI_ANALYTICS_EVENTS = {
   CLI_TOOL_INVOCATION_VALIDATION_FAILED: 'CLI_TOOL_INVOCATION_VALIDATION_FAILED',
   CLI_TOOL_INVOCATION_TOOL_NOT_FOUND: 'CLI_TOOL_INVOCATION_TOOL_NOT_FOUND',
   CLI_TOOL_INVOCATION_FAILED: 'CLI_TOOL_INVOCATION_FAILED',
+} as const;
+
+export const CLI_ONBOARDING_EVENTS = {
+  STARTED: 'cli_onboarding_started',
+  GATE_VIEWED: 'cli_onboarding_gate_viewed',
+  GATE_COMPLETED: 'cli_onboarding_gate_completed',
+  FAILED: 'cli_onboarding_failed',
+  COMPLETED: 'cli_onboarding_completed',
 } as const;
 
 type CliAnalyticsEventName = (typeof CLI_ANALYTICS_EVENTS)[keyof typeof CLI_ANALYTICS_EVENTS];
@@ -101,6 +109,26 @@ export const CLI_EVENT_JOURNEY_STAGES = {
   CLI_TOOL_INVOCATION_TOOL_NOT_FOUND: 'execute',
   CLI_TOOL_INVOCATION_FAILED: 'execute',
 } as const satisfies Record<CliAnalyticsEventName, CliJourneyStage>;
+
+export type CliOnboardingEventName =
+  (typeof CLI_ONBOARDING_EVENTS)[keyof typeof CLI_ONBOARDING_EVENTS];
+
+export type CliOnboardingEventProperties = {
+  readonly release_channel: CliReleaseChannel;
+  readonly mode: 'interactive' | 'json' | 'status';
+  readonly toolkit?: string;
+  readonly gate?: 'login' | 'connect' | 'execute';
+  readonly cli_version: string;
+  readonly os: string;
+  readonly connection_source?: 'existing' | 'resumed' | 'new';
+  readonly duration_ms?: number;
+  readonly error_code?: string;
+};
+
+export const getCliOnboardingEvent = (
+  name: CliOnboardingEventName,
+  properties: CliOnboardingEventProperties
+): TrackEvent => ({ name, properties });
 
 let cliChannel = inferSkillReleaseChannel(APP_VERSION);
 

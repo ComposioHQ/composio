@@ -66,14 +66,20 @@ configured_line() {
   esac
 }
 
-# The recovery ending both failure-adjacent flows close with: an absolute,
-# copy-paste-safe login command. "now" is the install-only success variant
+# The recovery ending both failure-adjacent flows close with absolute,
+# copy-paste-safe onboarding commands. "now" is the install-only success variant
 # (setup skipped or unavailable, PATH untouched); "later" is the setup-failure
 # variant printed on stderr after the failure warning.
+onboarding_commands() {
+  printf 'Connect an account and try your first tool:\n'
+  printf '  Human: %s onboard\n' "$1"
+  printf '  Agent: %s onboard --json' "$1"
+}
+
 recovery_tail() {
   case $1 in
-  now) printf 'To get started now, run:\n\n  %s login' "$2" ;;
-  later) printf 'To get started, run:\n\n  %s login' "$2" ;;
+  now) printf 'To get started now, run:\n\n%s' "$(onboarding_commands "$2")" ;;
+  later) printf 'To get started, run:\n\n%s' "$(onboarding_commands "$2")" ;;
   *) fail "recovery_tail: unknown mode $1" ;;
   esac
 }
@@ -171,8 +177,8 @@ script_url='https://installer.example.test/install.sh'
 
 # Exact endings the installer must close with: plain indented lines, no box
 # drawing, nothing after them, so the final instruction stays copy-paste safe.
-case_a_tail=$'composio is ready.\n\n  composio login'
-case_b_tail=$'Open a new terminal, then run:\n\n  composio login'
+case_a_tail=$'composio is ready.\n\n'"$(onboarding_commands composio)"
+case_b_tail=$'Open a new terminal, then run:\n\n'"$(onboarding_commands composio)"
 
 interpreters=("$(command -v sh)")
 if command -v dash >/dev/null 2>&1 && [[ $(command -v dash) != "${interpreters[0]}" ]]; then
@@ -560,9 +566,11 @@ EOF
 
   reset_case
   equal_dir="$case_root/equal-layout"
-  run_installer "$case_root/equal-home" "$equal_dir" "$equal_dir" "$beta_tag" >/dev/null 2>&1
+  beta_output=$(run_installer "$case_root/equal-home" "$equal_dir" "$equal_dir" "$beta_tag" 2>&1)
   [[ -x "$equal_dir/composio" && ! -L "$equal_dir/composio" ]] || fail "$interpreter_name equal-dir layout"
   [[ $(<"$equal_dir/release-tag.txt") == "$beta_tag" ]] || fail "$interpreter_name explicit beta tag"
+  assert_contains "$beta_output" 'composio login' "$interpreter_name beta keeps login guidance"
+  assert_not_contains "$beta_output" 'composio onboard' "$interpreter_name beta defers onboarding guidance"
 
   reset_case
   upgrade_home="$case_root/upgrade-home"
@@ -696,6 +704,7 @@ EOF
   quiet_output=$(run_installer "$case_root/quiet-home" "$case_root/quiet-install" "$case_root/quiet-bin" "$stable_tag" 2>&1)
   assert_not_contains "$quiet_output" 'Installing Composio CLI' "$interpreter_name quiet output"
   assert_not_contains "$quiet_output" 'composio login' "$interpreter_name quiet suppresses the normal-success final block"
+  assert_not_contains "$quiet_output" 'composio onboard' "$interpreter_name quiet suppresses onboarding guidance"
   assert_not_contains "$quiet_output" 'composio is ready' "$interpreter_name quiet suppresses the normal-success final block"
   assert_not_contains "$quiet_output" 'Open a new terminal' "$interpreter_name quiet suppresses the normal-success final block"
 
@@ -709,6 +718,7 @@ EOF
   help_suppressed=$(run_installer "$case_root/help-home" "$case_root/help-install" "$case_root/help-bin" "$stable_tag" 2>&1)
   assert_contains "$help_suppressed" "$(configured_line bash)" "$interpreter_name help suppression keeps setup status"
   assert_not_contains "$help_suppressed" 'composio login' "$interpreter_name help suppression removes the final block"
+  assert_not_contains "$help_suppressed" 'composio onboard' "$interpreter_name help suppression removes onboarding guidance"
   assert_not_contains "$help_suppressed" 'Open a new terminal' "$interpreter_name help suppression removes the final block"
 
   reset_case
@@ -1028,7 +1038,7 @@ EOF
   CASE_PATH_PREFIX="$shadow_dir:$shadow_bin:"
   shadow_output=$(run_installer "$case_root/shadow-home" "$shadow_install" "$shadow_bin" "$stable_tag" 2>&1)
   assert_contains "$shadow_output" "$shadow_dir/composio" "$interpreter_name shadow ending names the shadowing command"
-  assert_tail "$shadow_output" $'To use the newly installed CLI, run:\n\n  '"$shadow_install/composio login" "$interpreter_name shadow tail avoids the shadowed bare command"
+  assert_tail "$shadow_output" $'To use the newly installed CLI, run:\n\n'"$(onboarding_commands "$shadow_install/composio")" "$interpreter_name shadow tail avoids the shadowed bare command"
 
   # Pinned old CLI: supports --shell but ignores the invocation-origin hint,
   # prints its own boxed restart hint, and exits 0 without reconciling. A
@@ -1298,9 +1308,9 @@ export PATH=\"$malformed_bin:\$PATH\"" ]] || fail "$interpreter_name malformed b
   space_output=$(run_installer "$space_home" "$space_install" "$case_root/space-bin" "$stable_tag" 2>&1) ||
     fail "$interpreter_name spaced install dir setup failure must keep the install successful"
   assert_tail "$space_output" "$(recovery_tail later "'$space_install/composio'")" "$interpreter_name spaced recovery tail"
-  space_recovery_line=$(printf '%s\n' "$space_output" | tail -n 1)
-  space_recovery_command=${space_recovery_line#  }
-  space_recovery_command=${space_recovery_command% login}
+  space_recovery_line=$(printf '%s\n' "$space_output" | grep -F '  Human: ')
+  space_recovery_command=${space_recovery_line#  Human: }
+  space_recovery_command=${space_recovery_command% onboard}
   space_paste_output=$(env TEST_COMPOSIO_LOG="$composio_log" "$interpreter" -c "$space_recovery_command --version") ||
     fail "$interpreter_name spaced recovery command must execute when pasted"
   [[ $space_paste_output == 'composio fake 98.0.0' ]] || fail "$interpreter_name spaced recovery command output"
