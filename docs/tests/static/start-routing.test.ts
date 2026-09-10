@@ -83,7 +83,7 @@ describe('getting-started routing policy', () => {
    * files — has to fail something.
    */
   test('emits every authentication guide into llms.txt exactly once', async () => {
-    const { GET } = await import('../../app/llms.txt/route');
+    const { GET } = await import('../../app/llms-index.txt/route');
     const llms = await (await GET()).text();
 
     for (const url of ['/docs/authentication', ...GUIDE_URLS]) {
@@ -93,7 +93,7 @@ describe('getting-started routing policy', () => {
   });
 
   test('does not turn external sidebar links into documentation URLs', async () => {
-    const { GET } = await import('../../app/llms.txt/route');
+    const { GET } = await import('../../app/llms-index.txt/route');
     const llms = await (await GET()).text();
 
     expect(llms).not.toContain('- https://docs.composio.dev/llms.txt.md');
@@ -106,11 +106,11 @@ describe('getting-started routing policy', () => {
    * the sidebar shows it as a sibling.
    */
   test('files each page under the section it belongs to', async () => {
-    const { GET } = await import('../../app/llms.txt/route');
+    const { GET } = await import('../../app/llms-index.txt/route');
     const lines = (await (await GET()).text()).split('\n');
 
     const sectionOf = (url: string) => {
-      const index = lines.findIndex(line => line.endsWith(`${url}.md`));
+      const index = lines.findIndex(line => line.includes(`${url}.md)`));
       expect(index, `${url} missing from llms.txt`).toBeGreaterThan(-1);
       const preceding = lines.slice(0, index);
       return {

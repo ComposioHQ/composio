@@ -41,6 +41,7 @@ const config = {
     '/llms.mdx/**': [...OPENAPI_SPEC_FILES],
     '/llms-full.txt/**': [...OPENAPI_SPEC_FILES],
     '/llms.txt/**': [...OPENAPI_SPEC_FILES],
+    '/llms-index.txt/**': [...OPENAPI_SPEC_FILES, './kb/**'],
     '/kb/**': ['./kb/**'],
     '/api/knowledge-search/**': [...OPENAPI_SPEC_FILES, './content/**', './kb/**'],
   },
@@ -222,6 +223,17 @@ const config = {
       {
         source: '/docs/sandbox',
         destination: '/docs/sandbox/remote',
+        permanent: true,
+      },
+      // Preserve machine-readable release notes before the legacy HTML redirects.
+      {
+        source: '/docs/changelog/:path*.md',
+        destination: '/llms.mdx/docs/changelog/:path*',
+        permanent: true,
+      },
+      {
+        source: '/docs/changelog/:path*.mdx',
+        destination: '/llms.mdx/docs/changelog/:path*',
         permanent: true,
       },
       {

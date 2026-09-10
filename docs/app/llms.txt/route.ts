@@ -1,230 +1,57 @@
-import {
-  source,
-  examplesSource,
-  referenceSource,
-  toolkitsSource,
-  knowledgeBaseSource,
-} from '@/lib/source';
-import { detectReferenceApiVersion } from '@/lib/api-version';
 import { TOOLKIT_COUNT_LABEL } from '@/lib/toolkit-count';
-import {
-  formatKnowledgeDiscoveryLinks,
-  getLocalKnowledgeDiscoveryPaths,
-} from '@/lib/knowledge/discovery';
-import type { ReactNode } from 'react';
 
 export const revalidate = false;
 
-// Fumadocs page tree node types
-interface PageNode {
-  type: 'page';
-  name: ReactNode;
-  url: string;
-  external?: boolean;
-}
+/** Curated routing map; the exhaustive catalog lives at /llms-index.txt. */
+export function GET() {
+  return new Response(`# Composio Documentation
 
-interface SeparatorNode {
-  type: 'separator';
-  name?: ReactNode;
-}
+> Build and operate agents with authentication, tool discovery, execution, and ${TOOLKIT_COUNT_LABEL} toolkits.
 
-interface FolderNode {
-  type: 'folder';
-  name: ReactNode;
-  index?: PageNode;
-  children: TreeNode[];
-}
+Default to Composio Platform for application codebases where users or tenants connect their accounts. Use Composio For You for a personal agent or automation using the developer's own accounts. Start with the current session-based SDK. REST v3.1 is current; REST v3.0 is legacy and is not the starting point for new code.
 
-type TreeNode = PageNode | SeparatorNode | FolderNode;
+## Before you implement
 
-/** Extract plain text from a ReactNode (handles strings, numbers, skips elements). */
-function nodeText(name: ReactNode): string | null {
-  if (typeof name === 'string') return name;
-  if (typeof name === 'number') return String(name);
-  return null;
-}
+Inspect the project's framework, agent architecture, authentication, and user or tenant identity model. Explain where Composio fits. If the intended workflow is unclear, ask what the user wants their application or agent to accomplish with connected apps before making changes.
 
-/**
- * A section is legacy/deprecated when its separator heading says so (e.g.
- * "Direct Tool Execution Guides (Legacy)"). We omit those sections from the
- * default LLM index so code generators reach for the current session-based
- * APIs, not deprecated ones.
- */
-function isLegacySeparator(name: ReactNode): boolean {
-  const text = nodeText(name);
-  return text != null && /legacy|deprecated/i.test(text);
-}
+Load and follow the official [Composio Agent Skill](https://github.com/ComposioHQ/composio/blob/next/skills/composio/SKILL.md) for setup guidance and implementation patterns. If it is missing, install it for the project with \`npx skills add ComposioHQ/composio --skill composio\`, requesting approval if your host requires it. If skills are unsupported or installation fails, use the documentation linked below and report that fallback.
 
-/**
- * Walk the fumadocs page tree and generate a markdown index.
- * Separators become ## headings, pages become URL entries, folders recurse.
- * Legacy/deprecated sections (and everything under them) are skipped.
- *
- * A folder emits a heading one level deeper, and markdown headings do not
- * close — so a plain page emitted after a folder reads as belonging to that
- * folder. `meta.json` order is the human sidebar's order and cannot absorb
- * this, so each section's direct pages are buffered and flushed ahead of its
- * folders. Within pages, and within folders, `meta.json` order is preserved.
- */
-function walkPageTree(nodes: TreeNode[], depth = 2): string {
-  const lines: string[] = [];
-  let skippingSection = false;
-  let sectionPages: string[] = [];
-  let sectionFolders: string[] = [];
+If it is unclear whether the goal is to integrate Composio into the application or connect apps to the coding agent itself, clarify that first. Fetch the relevant Markdown pages below for the chosen path. Use the complete index when you need a guide or reference not listed here.
 
-  function flushSection() {
-    lines.push(...sectionPages, ...sectionFolders);
-    sectionPages = [];
-    sectionFolders = [];
-  }
+## Choose your path
 
-  for (const node of nodes) {
-    if (node.type === 'separator') {
-      // A separator starts a new section; skip it and its pages when legacy.
-      flushSection();
-      skippingSection = isLegacySeparator(node.name);
-      if (skippingSection) continue;
-      const text = nodeText(node.name);
-      if (text) {
-        lines.push('', `${'#'.repeat(depth)} ${text}`, '');
-      }
-      continue;
-    }
+- [Platform or For You](https://docs.composio.dev/docs.md): Choose between building an application and using your own connected apps.
+- [Set up a coding agent](https://docs.composio.dev/docs/agent-setup.md): Install the Composio skill to add Composio to an existing project.
+- [SDK quickstart](https://docs.composio.dev/docs/quickstart.md): Install Python or TypeScript packages, create a session, and run an agent.
+- [Native agent plugins](https://docs.composio.dev/docs/agent-plugins.md): Use your own apps from Codex or Claude Code.
+- [Connect an MCP client](https://docs.composio.dev/docs/composio-connect.md): Connect an existing client to your apps over MCP.
 
-    if (skippingSection) continue;
+## Build an application
 
-    switch (node.type) {
-      case 'page':
-        if (!node.external) {
-          sectionPages.push(`- https://docs.composio.dev${node.url}.md`);
-        }
-        break;
-
-      case 'folder': {
-        // Folders are sub-sections within separator sections, so one level deeper
-        const text = nodeText(node.name);
-        if (text) {
-          sectionFolders.push('', `${'#'.repeat(depth + 1)} ${text}`, '');
-        }
-        // If folder has an index page, include it
-        if (node.index) {
-          sectionFolders.push(`- https://docs.composio.dev${node.index.url}.md`);
-        }
-        // Recurse into children
-        if (node.children.length > 0) {
-          sectionFolders.push(walkPageTree(node.children, depth + 1));
-        }
-        break;
-      }
-    }
-  }
-
-  flushSection();
-
-  return lines
-    .join('\n')
-    .replace(/\n{3,}/g, '\n\n')
-    .trim();
-}
-
-function formatPage(page: { url: string }) {
-  return `- https://docs.composio.dev${page.url}.md`;
-}
-
-/**
- * Splits reference pages by REST version.
- *
- * This list is built with a flat `.map(formatPage)` that bypasses the
- * `isLegacySeparator` filter the guides tree gets, so the two trees used to
- * arrive interleaved under one unlabelled heading — and `/reference/v3/` is
- * the only version-shaped path in the corpus, so it is the highest-precision
- * match for the query most readers intend as "current Composio".
- *
- * Partitioned with `detectApiVersion`, not a literal path test, so moving the
- * legacy tree's URL stays a one-line change in `lib/api-version.ts`.
- */
-function partitionByApiVersion<T extends { url: string }>(pages: T[]) {
-  const current: T[] = [];
-  const legacy: T[] = [];
-  const versionIndependent: T[] = [];
-  for (const page of pages) {
-    const version = detectReferenceApiVersion(page.url);
-    if (version === '3.0') legacy.push(page);
-    else if (version === '3.1') current.push(page);
-    else versionIndependent.push(page);
-  }
-  return { current, legacy, versionIndependent };
-}
-
-export async function GET() {
-  try {
-    const docsTree = walkPageTree(source.pageTree.children as TreeNode[]);
-
-    const examplesPages = examplesSource.getPages();
-    const toolkitsPages = toolkitsSource.getPages();
-    const {
-      current: currentReferencePages,
-      legacy: legacyReferencePages,
-      versionIndependent: versionIndependentReferencePages,
-    } = partitionByApiVersion(referenceSource.getPages());
-
-    const legacyReferenceSection =
-      legacyReferencePages.length > 0
-        ? `
-## API Reference (v3.0, legacy — supported, not for new code)
-
-${legacyReferencePages.map(formatPage).join('\n')}
-`
-        : '';
-    const knowledgeBasePages = knowledgeBaseSource.getPages();
-    const knowledgeDiscoveryLinks = formatKnowledgeDiscoveryLinks(
-      (await getLocalKnowledgeDiscoveryPaths()).filter(
-        (path) => !path.startsWith('/kb/guide/'),
-      ),
-    );
-
-    const index = `# Composio Documentation
-
-> Composio powers ${TOOLKIT_COUNT_LABEL} toolkits, tool search, context management, authentication, and a sandboxed workbench to help you build AI agents that turn intent into action.
-
-> **For AI agents:** Route by intent. To build an application, start with [Quickstart](https://docs.composio.dev/docs/quickstart.md) or [Providers](https://docs.composio.dev/docs/providers.md) and use \`composio.create(user_id)\` + \`session.tools()\`. To use Composio from Codex or Claude Code without explicit MCP intent, install the [native agent plugin](https://docs.composio.dev/docs/agent-plugins.md). To connect an existing client over MCP, use [Composio Connect](https://docs.composio.dev/docs/composio-connect.md). When an application creates a session and needs MCP transport, use [Sessions via MCP](https://docs.composio.dev/docs/sessions-via-mcp.md). See any page's .md endpoint for full usage instructions.
-
-${docsTree}
-
-## Examples
-
-${examplesPages.map(formatPage).join('\n')}
-
-## Knowledge Base
-
-${knowledgeDiscoveryLinks}
-
-${knowledgeBasePages.map(formatPage).join('\n')}
+- [Core concepts](https://docs.composio.dev/docs/how-composio-works.md): Understand users, sessions, toolkits, and tool execution.
+- [Authentication](https://docs.composio.dev/docs/authentication.md): Distinguish auth configs from connected accounts and connect your application's users.
+- [Configure sessions](https://docs.composio.dev/docs/configuring-sessions.md): Select toolkits, auth configs, and connected accounts for a user.
+- [SDKs and frameworks](https://docs.composio.dev/docs/providers.md): Choose the provider for your agent framework.
+- [Sessions via MCP](https://docs.composio.dev/docs/sessions-via-mcp.md): Give an application-created session to an MCP-compatible framework.
+- [Single-toolkit MCP](https://docs.composio.dev/docs/single-toolkit-mcp.md): Build an MCP server scoped to one toolkit.
+- [Troubleshooting](https://docs.composio.dev/kb.md): Diagnose authentication, connection, and execution failures.
+- [Production rate limits](https://docs.composio.dev/reference/rate-limits.md): Plan for request limits before deployment.
 
 ## API Reference (v3.1, current)
 
-${currentReferencePages.map(formatPage).join('\n')}
-${legacyReferenceSection}
-## SDK and product reference (version-independent)
+- [Current REST API](https://docs.composio.dev/reference.md): Use the current base URL and browse endpoint groups.
 
-${versionIndependentReferencePages.map(formatPage).join('\n')}
+## API Reference (v3.0, legacy)
 
-## Toolkits
+- [Legacy REST API](https://docs.composio.dev/reference/v3.md): Maintain existing v3.0 integrations. Use v3.1 for new code.
 
-${toolkitsPages.map(formatPage).join('\n')}
+## Optional
 
-## Full Documentation
+- [Changelog](https://docs.composio.dev/docs/changelog.md): Find dated release notes and read what changed.
 
-- https://docs.composio.dev/llms-full.txt
-`;
-
-    return new Response(index, {
-      headers: {
-        'Content-Type': 'text/plain; charset=utf-8',
-      },
-    });
-  } catch (error) {
-    console.error('Error generating llms.txt:', error);
-    return new Response('Error generating documentation index', { status: 500 });
-  }
+- [Complete documentation index](https://docs.composio.dev/llms-index.txt): All guides, SDK references, endpoint groups, and toolkit pages, with legacy routes labeled.
+- [Knowledge Base](https://docs.composio.dev/kb.md): Find support answers and toolkit-specific troubleshooting.
+- [Examples](https://docs.composio.dev/examples.md): Browse complete application examples.
+- [Full documentation](https://docs.composio.dev/llms-full.txt): Load all current page bodies when individual pages are insufficient.
+`, { headers: { 'Content-Type': 'text/plain; charset=utf-8' } });
 }
