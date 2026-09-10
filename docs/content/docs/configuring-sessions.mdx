@@ -24,6 +24,8 @@ const session = await composio.create("user_123");
 
 By default, a session has access to every toolkit in the Composio catalog. Your agent can discover and use any of them through `COMPOSIO_SEARCH_TOOLS`. Use the options below to restrict or customize what's available.
 
+For how session restrictions work with OAuth scopes, application identity, and execution logs, see [Delegated authorization architecture](/docs/security/delegated-authorization).
+
 You can also attach local custom tools and custom toolkits that run in-process alongside Composio tools. See [Custom tools and toolkits](/docs/extending-sessions/custom-tools-and-toolkits).
 
 ## Fast mode (experimental)
