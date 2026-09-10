@@ -6,20 +6,9 @@ import { Check, Clipboard } from 'lucide-react';
 import { CodeBlock, Pre } from 'fumadocs-ui/components/codeblock';
 import { cn } from '@/lib/utils';
 
-const ECOSYSTEMS = {
-  node: [
-    { id: 'npm', install: 'npm install' },
-    { id: 'pnpm', install: 'pnpm add' },
-    { id: 'bun', install: 'bun add' },
-    { id: 'yarn', install: 'yarn add' },
-  ],
-  python: [
-    { id: 'uv', install: 'uv add' },
-    { id: 'pip', install: 'pip install' },
-  ],
-} as const;
+import { PACKAGE_MANAGERS } from '@/lib/package-install';
 
-type Ecosystem = keyof typeof ECOSYSTEMS;
+type Ecosystem = keyof typeof PACKAGE_MANAGERS;
 
 /**
  * Install-command code block whose copy button is a package-manager picker.
@@ -45,7 +34,7 @@ export function PackageInstall({
   /** Which package managers to offer; defaults to node (npm/pnpm/bun/yarn) */
   ecosystem?: Ecosystem;
 }) {
-  const managers = ECOSYSTEMS[ecosystem];
+  const managers = PACKAGE_MANAGERS[ecosystem];
   const [manager, setManager] = useState<string>(managers[0].id);
   const [open, setOpen] = useState(false);
   const [position, setPosition] = useState<{ top: number; left: number } | null>(null);

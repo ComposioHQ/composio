@@ -1,3 +1,4 @@
+import { SETUP_PROMPT } from '../../lib/agent-prompts';
 import { describe, expect, test } from 'bun:test';
 
 import {
@@ -93,8 +94,8 @@ describe('Welcome navigation', () => {
     expect(source).toContain('/docs/agent-setup');
     expect(source).not.toContain('ProductSelectionLink');
     expect(source).toContain('navigator.clipboard.writeText(SETUP_PROMPT)');
-    expect(source).toContain('npx skills add ComposioHQ/composio --skill composio');
-    expect(source).toContain('https://docs.composio.dev');
+    expect(SETUP_PROMPT).toContain('npx skills add ComposioHQ/composio --skill composio');
+    expect(SETUP_PROMPT).toContain('https://docs.composio.dev');
     expect(heroSource).toContain('<AgentSetupActions />');
     expect(quickstartSource).toContain('<AgentSetupActions');
     for (const logo of ['claude.svg', 'codex.png', 'cursor.svg']) {
@@ -105,7 +106,7 @@ describe('Welcome navigation', () => {
 
   test('links every agent setup card to instructions on the Clients page', async () => {
     const grid = await Bun.file(
-      new URL('../../components/agent-setup-grid.tsx', import.meta.url)
+      new URL('../../lib/agent-setup-clients.ts', import.meta.url)
     ).text();
     const clients = await Bun.file(
       new URL('../../content/docs/agent-setup/clients.mdx', import.meta.url)
@@ -186,13 +187,14 @@ describe('Welcome navigation', () => {
     const firstPrompt = await Bun.file(
       new URL('../../components/agent-first-prompt.tsx', import.meta.url)
     ).text();
+    const promptSource = await Bun.file(new URL('../../lib/agent-prompts.ts', import.meta.url)).text();
     expect(firstPrompt).toContain('navigator.clipboard.writeText(prompt)');
-    expect(firstPrompt).toContain("'claude-code': 'Use the /composio skill");
-    expect(firstPrompt).toContain("codex: 'Use the $composio skill");
-    expect(firstPrompt).toContain("'github-copilot': 'Use /composio");
-    expect(firstPrompt).toContain("cursor: 'Use the composio agent skill");
-    expect(firstPrompt).toContain('Help me connect an integration and make my first real tool call.');
-    expect(firstPrompt).toContain('When it works, show me what changed and what I can try next.');
+    expect(promptSource).toContain("'claude-code': 'Use the /composio skill");
+    expect(promptSource).toContain("codex: 'Use the $composio skill");
+    expect(promptSource).toContain("'github-copilot': 'Use /composio");
+    expect(promptSource).toContain("cursor: 'Use the composio agent skill");
+    expect(promptSource).toContain('Help me connect an integration and make my first real tool call.');
+    expect(promptSource).toContain('When it works, show me what changed and what I can try next.');
   });
 
   test('advertises only toolkits that exist in the catalog', async () => {

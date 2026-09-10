@@ -20,6 +20,10 @@ import { API_BASE_URLS, detectApiVersion, type ApiVersion } from './api-version'
 import { apiVersionPointer } from './api-version-guidance';
 import { apiEndpointsSchema } from './api-endpoints-table-schema';
 import { replaceHomeNavigationMarkdown } from './home-navigation';
+import { PACKAGE_MANAGERS } from './package-install';
+import { z } from 'zod';
+import { promptFor, SETUP_PROMPT } from './agent-prompts';
+import { AGENTS } from './agent-setup-clients';
 
 /**
  * True if a reference URL belongs to an intentionally-hidden API tag
@@ -201,6 +205,34 @@ function decodeHtmlEntities(value: string): string {
     .replace(/&amp;/g, '&');
 }
 
+const packageInstallSchema = z.object({
+  packages: z.string().min(1),
+  ecosystem: z.enum(['node', 'python']).default('node'),
+  comment: z.array(z.string()).default([]),
+});
+
+/** Only literal attributes are supported; MDX expressions are never evaluated. */
+function packageInstallToMarkdown(attributes: string): string {
+  const quoted = (name: string) => {
+    const match = attributes.match(new RegExp(`\\b${name}=(?:"([^"]*)"|'([^']*)')`));
+    return match ? decodeHtmlEntities(match[1] ?? match[2]) : undefined;
+  };
+  const comment = quoted('comment') ?? attributes.match(/\bcomment=\{(\[[\s\S]*?\])\}/)?.[1];
+  const comments = comment?.trim().startsWith('[')
+    ? Array.from(comment.matchAll(/(['"])((?:\\.|(?!\1)[^\\])*)\1/g), match =>
+        match[2].replace(/\\(['"\\])/g, '$1'),
+      )
+    : comment ? [comment] : [];
+  const props = packageInstallSchema.parse({
+    packages: quoted('packages'),
+    ecosystem: quoted('ecosystem'),
+    comment: comments,
+  });
+  return PACKAGE_MANAGERS[props.ecosystem].map(manager =>
+    `\n**${manager.id}:**\n\n\`\`\`bash\n${manager.install} ${props.packages}${props.comment.map(line => `\n# ${line}`).join('')}\n\`\`\`\n`,
+  ).join('\n');
+}
+
 /**
  * Renders an `<ApiEndpointsTable />` payload as a markdown table.
  *
@@ -276,6 +308,25 @@ export function mdxToCleanMarkdown(content: string, url?: string): string {
   );
 
   result = replaceHomeNavigationMarkdown(result);
+
+  // Keep installation commands in both raw search input and processed page Markdown.
+  result = result.replace(/<PackageInstall\b([\s\S]*?)\/>/g, (_, attributes: string) =>
+    packageInstallToMarkdown(attributes),
+  );
+  result = result.replace(/<AgentSetupActions\b[^>]*\/>/g,
+    `\n[Agent setup](/docs/agent-setup)\n\n${SETUP_PROMPT}\n`,
+  );
+  result = result.replace(/<AgentSetupGrid\s*\/>/g,
+    AGENTS.map(agent => `- [${agent.name}](${agent.href}): ${agent.description}`).join('\n'),
+  );
+  result = result.replace(/<AgentFirstPrompt\s+agent="([^"]+)"\s*\/>/g, (_, agent: string) => {
+    const parsed = z.enum(['claude-code', 'cline', 'codex', 'cursor', 'gemini-cli',
+      'github-copilot', 'grok', 'openclaw', 'opencode']).parse(agent);
+    return `\n\`\`\`text\n${promptFor(parsed)}\n\`\`\`\n`;
+  });
+  result = result.replace(/<Video\b[^>]*src="([^"]+)"[^>]*caption="([^"]+)"[^>]*\/>/g,
+    '[Video: $2]($1)',
+  );
 
   // Convert YouTube to link
   result = result.replace(

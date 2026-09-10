@@ -6,17 +6,7 @@ import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
 import { cn } from '@/lib/utils';
 
-const SETUP_PROMPT = `Help me add Composio to this project. First, inspect the codebase to understand its framework, agent architecture, authentication, and user or tenant identity model.
-
-Check whether the official \`composio\` Agent Skill is installed. If it is missing, install it for this project with:
-
-\`npx skills add ComposioHQ/composio --skill composio\`
-
-Then load and follow the skill. If installation requires approval, ask for it. If the host does not support skills or installation fails, use the current documentation at [https://docs.composio.dev](https://docs.composio.dev) and report that fallback.
-
-Default to Composio Platform for application codebases. Use Composio For You only when the project clearly configures a personal agent or automation for the developer’s own accounts.
-
-Based on the codebase, explain briefly where Composio would fit. Then ask what I want my users or agent to accomplish with connected apps. If the project suggests likely use cases, offer a few relevant options. If it is not clear whether I want to build Composio into the application or connect it to my coding agent, ask me before making changes.`;
+import { SETUP_PROMPT } from '@/lib/agent-prompts';
 
 const AGENT_LOGOS = [
   { src: '/images/clients/claude.svg', label: 'Claude' },
