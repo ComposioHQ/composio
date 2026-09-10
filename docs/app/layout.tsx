@@ -48,13 +48,13 @@ export const metadata: Metadata = {
     description: SITE_DESCRIPTION,
     siteName: 'Composio Docs',
     type: 'website',
-    images: ['https://og.composio.dev/api/og?title=Composio%20Docs'],
+    images: ['https://docs.composio.dev/api/og?title=Composio%20Docs'],
   },
   twitter: {
     card: 'summary_large_image',
     title: 'Composio Docs',
     description: SITE_DESCRIPTION,
-    images: ['https://og.composio.dev/api/og?title=Composio%20Docs'],
+    images: ['https://docs.composio.dev/api/og?title=Composio%20Docs'],
   },
 };
 
