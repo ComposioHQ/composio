@@ -33,7 +33,7 @@ const SCHEMA_CHILDREN = new Set([
   'unevaluatedProperties',
 ]);
 
-/** Filter only the copy used by the docs; keep the published API contract intact. */
+/** Filter only the playground copy; keep the reference and published contract intact. */
 export function hideDeprecatedFields<T extends object>(input: T): T {
   const document = structuredClone(input);
   function object(value: unknown) {

@@ -4,7 +4,7 @@ import { join } from 'node:path';
 import { hideDeprecatedFields } from '../../lib/openapi-deprecated';
 import { openapi, openapiV3 } from '../../lib/openapi';
 
-describe('docs OpenAPI deprecation filter', () => {
+describe('playground OpenAPI deprecation filter', () => {
   test('removes fields and their values while preserving the source and legacy operations', () => {
     const schema = {
       type: 'object',
@@ -144,19 +144,24 @@ describe('docs OpenAPI deprecation filter', () => {
     expect(hideDeprecatedFields(source)).toEqual(source);
   });
 
-  test('filters the actual documents consumed by both schema UI and playground', async () => {
+  test('keeps deprecated reference fields and filters only the playground copy', async () => {
     for (const server of [openapi, openapiV3]) {
       const schemas = await server.getSchemas();
       for (const [path, { bundled }] of Object.entries(schemas)) {
         if (path.endsWith('openapi-webhooks.json')) continue;
-        const managed = bundled.components?.schemas?.ComposioManagedAuthConfigCreate;
+        const original = structuredClone(bundled);
+        const reference = bundled.components?.schemas?.ComposioManagedAuthConfigCreate;
+        expect(reference).toHaveProperty('properties.tool_access_config');
+        expect(reference).toHaveProperty('properties.restrict_to_following_tools');
+        const playground = hideDeprecatedFields(bundled);
+        const managed = playground.components?.schemas?.ComposioManagedAuthConfigCreate;
         expect(managed).toHaveProperty('properties.credentials');
         expect(managed).not.toHaveProperty('properties.tool_access_config');
         expect(managed).not.toHaveProperty('properties.restrict_to_following_tools');
-        expect(bundled.components?.schemas?.CustomAuthConfigCreate).not.toHaveProperty(
+        expect(playground.components?.schemas?.CustomAuthConfigCreate).not.toHaveProperty(
           'properties.tool_access_config'
         );
-        const operation = Object.values(bundled.paths ?? {})
+        const operation = Object.values(playground.paths ?? {})
           .flatMap(item => item?.post ?? [])
           .find(
             item =>
@@ -164,6 +169,7 @@ describe('docs OpenAPI deprecation filter', () => {
           );
         expect(operation).toBeDefined();
         expect(JSON.stringify(operation?.requestBody)).not.toContain('restrict_to_following_tools');
+        expect(bundled).toEqual(original);
       }
     }
     // The downloadable contract remains complete on disk.
