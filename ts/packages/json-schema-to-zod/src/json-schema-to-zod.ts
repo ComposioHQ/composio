@@ -1,18 +1,27 @@
-import type { z, ZodTypeAny } from 'zod/v3';
+import { z, type ZodTypeAny } from 'zod/v3';
 
 import { parseSchema } from './parsers/parse-schema';
 import { parseObjectShape } from './parsers/parse-object-shape';
 import type { JsonSchemaToZodOptions, JsonSchema, JsonSchemaObject } from './types';
+import {
+  requiresWholeSchemaValidation,
+  withWholeSchemaValidation,
+} from './whole-schema-validation';
 
 export const jsonSchemaToZod = (
   schema: JsonSchema,
   options: JsonSchemaToZodOptions = {}
 ): z.ZodType => {
-  return parseSchema(schema, {
+  const parsedSchema = parseSchema(schema, {
     path: [],
     seen: new Map(),
+    root: schema,
     ...options,
   });
+
+  return requiresWholeSchemaValidation(schema)
+    ? withWholeSchemaValidation(schema, parsedSchema)
+    : parsedSchema;
 };
 
 /**
@@ -46,6 +55,7 @@ export const jsonSchemaToZodShape = (
   return parseObjectShape(objectSchema, {
     path: [],
     seen: new Map(),
+    root: objectSchema,
     ...options,
   });
 };

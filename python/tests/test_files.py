@@ -1907,6 +1907,24 @@ class TestFetchFileFromUrl:
         assert "404" in str(exc_info.value)
 
     @patch("composio.core.models._files.safe_get")
+    def test_fetch_file_from_url_maps_midstream_failure(self, mock_get):
+        def failing_stream(chunk_size=None):
+            yield b"partial"
+            raise requests.exceptions.ConnectionError("peer reset mid-stream")
+
+        mock_response = MagicMock()
+        mock_response.ok = True
+        mock_response.status_code = 200
+        mock_response.headers = {"content-type": "text/plain"}
+        mock_response.iter_content.side_effect = failing_stream
+        mock_get.return_value = mock_response
+
+        with pytest.raises(ErrorUploadingFile, match="peer reset mid-stream"):
+            _fetch_file_from_url("https://example.com/file.txt")
+
+        mock_response.close.assert_called_once()
+
+    @patch("composio.core.models._files.safe_get")
     def test_fetch_file_from_url_decodes_percent_encoded_filename(self, mock_get):
         """Test that percent-encoded characters in URL filenames are decoded."""
         mock_response = MagicMock()
@@ -2630,6 +2648,121 @@ class TestResponseSizeLimit:
         assert mimetype == "image/jpeg"
 
 
+class TestDownloadSizeLimit:
+    """``FileDownloadable.download`` streams an untrusted body to disk."""
+
+    @staticmethod
+    def _downloadable() -> FileDownloadable:
+        return FileDownloadable(
+            name="report.bin",
+            mimetype="application/octet-stream",
+            s3url="https://example.com/report.bin",
+        )
+
+    @patch("composio.core.models._files.safe_get")
+    def test_download_rejects_oversized_content_length(self, mock_get, tmp_path):
+        """A self-declared oversized body is rejected before any bytes are read."""
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.headers = {"Content-Length": "200000000"}
+        mock_response.close = MagicMock()
+        mock_get.return_value = mock_response
+
+        with pytest.raises(ResponseTooLargeError):
+            self._downloadable().download(outdir=tmp_path, root=tmp_path, max_size=1024)
+
+        mock_response.iter_content.assert_not_called()
+
+    @patch("composio.core.models._files.safe_get")
+    def test_download_rejects_oversized_during_streaming(self, mock_get, tmp_path):
+        """A dishonest (here, absent) Content-Length cannot bypass the cap."""
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.headers = {}
+        mock_response.iter_content.return_value = [b"x" * 512 for _ in range(4)]
+        mock_response.close = MagicMock()
+        mock_get.return_value = mock_response
+
+        with pytest.raises(ResponseTooLargeError):
+            self._downloadable().download(outdir=tmp_path, root=tmp_path, max_size=1024)
+
+    @patch("composio.core.models._files.safe_get")
+    def test_download_removes_partial_file_on_failure(self, mock_get, tmp_path):
+        """A truncated download must not be left behind as if it succeeded."""
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.headers = {}
+        mock_response.iter_content.return_value = [b"x" * 512 for _ in range(4)]
+        mock_response.close = MagicMock()
+        mock_get.return_value = mock_response
+
+        with pytest.raises(ResponseTooLargeError):
+            self._downloadable().download(outdir=tmp_path, root=tmp_path, max_size=1024)
+
+        assert list(tmp_path.iterdir()) == []
+
+    @patch("composio.core.models._files.safe_get")
+    def test_download_accepts_file_within_limit(self, mock_get, tmp_path):
+        """A body under the cap is written through unchanged."""
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.headers = {}
+        mock_response.iter_content.return_value = [b"x" * 256, b"y" * 256]
+        mock_response.close = MagicMock()
+        mock_get.return_value = mock_response
+
+        outfile = self._downloadable().download(
+            outdir=tmp_path, root=tmp_path, max_size=1024
+        )
+
+        assert outfile.exists()
+        assert outfile.read_bytes() == b"x" * 256 + b"y" * 256
+
+    @patch("composio.core.models._files.safe_get")
+    def test_download_wraps_stream_failure_and_removes_partial_file(
+        self, mock_get, tmp_path
+    ):
+        """A transport failure mid-stream keeps the documented error contract."""
+
+        def failing_stream(chunk_size=None):
+            yield b"x" * 256
+            raise requests.exceptions.ConnectionError("connection reset")
+
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.headers = {}
+        mock_response.iter_content.side_effect = failing_stream
+        mock_response.close = MagicMock()
+        mock_get.return_value = mock_response
+
+        with pytest.raises(ErrorDownloadingFile):
+            self._downloadable().download(outdir=tmp_path, root=tmp_path, max_size=1024)
+
+        assert list(tmp_path.iterdir()) == []
+
+    @patch("composio.core.models._files.safe_get")
+    def test_download_wraps_write_failure_and_removes_partial_file(
+        self, mock_get, tmp_path
+    ):
+        """A disk failure while writing is an `ErrorDownloadingFile`, not a raw OSError."""
+
+        def failing_stream(chunk_size=None):
+            yield b"x" * 256
+            raise OSError(28, "No space left on device")
+
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.headers = {}
+        mock_response.iter_content.side_effect = failing_stream
+        mock_response.close = MagicMock()
+        mock_get.return_value = mock_response
+
+        with pytest.raises(ErrorDownloadingFile):
+            self._downloadable().download(outdir=tmp_path, root=tmp_path, max_size=1024)
+
+        assert list(tmp_path.iterdir()) == []
+
+
 class TestRedirectHandling:
     """Test redirect handling (redirects should be rejected)."""
 
@@ -3250,6 +3383,24 @@ class TestEnhanceSchemaDescriptionsEmptySchema:
         assert description != "Search term"
         assert "string" in description
         assert "required" in description
+
+    def test_boolean_property_schemas_are_left_unchanged(self, file_helper):
+        schema = {
+            "type": "object",
+            "properties": {
+                "anything": True,
+                "never": False,
+                "query": {"type": "string"},
+            },
+            "required": ["anything", "query"],
+        }
+
+        result = file_helper.enhance_schema_descriptions(schema)
+
+        assert result["properties"]["anything"] is True
+        assert result["properties"]["never"] is False
+        assert "string" in result["properties"]["query"]["description"]
+        assert "required" in result["properties"]["query"]["description"]
 
 
 class TestFromPathSensitiveGuard:

@@ -1,5 +1,8 @@
 import process from 'node:process';
-import { FileSystem, HttpClient, HttpClientRequest, Path } from '@effect/platform';
+import * as FileSystem from '@effect/platform/FileSystem';
+import * as HttpClient from '@effect/platform/HttpClient';
+import * as HttpClientRequest from '@effect/platform/HttpClientRequest';
+import * as Path from '@effect/platform/Path';
 import type { PlatformError } from '@effect/platform/Error';
 import {
   Cause,

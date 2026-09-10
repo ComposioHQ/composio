@@ -50,7 +50,7 @@
   ],
   "license": "ISC",
   "dependencies": {
-    "zod": "^4.4.3"
+    "zod": "^4.5.4"
   },
   "peerDependencies": {
     "@anthropic-ai/claude-agent-sdk": "^0.3.199",
@@ -58,12 +58,12 @@
     "zod": "^4.0.0"
   },
   "devDependencies": {
-    "@anthropic-ai/claude-agent-sdk": "^0.3.239",
+    "@anthropic-ai/claude-agent-sdk": "^0.3.261",
     "@modelcontextprotocol/sdk": "catalog:",
     "@composio/core": "workspace:*",
     "tsdown": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:",
-    "zod": "^4.4.3"
+    "zod": "^4.5.4"
   }
 }

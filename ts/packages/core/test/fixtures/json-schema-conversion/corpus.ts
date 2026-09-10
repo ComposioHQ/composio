@@ -10,6 +10,7 @@
 import * as z from 'zod';
 
 import corpusDocument from './object-cases.json';
+import strictDocument from './strict-cases.json';
 
 const JsonObject = z.record(z.string(), z.unknown());
 
@@ -83,3 +84,43 @@ export const loadObjectCases = (): ReadonlyArray<CorpusCase> => {
 /** Acceptance for one language: the shared flag unless a declared divergence overrides it. */
 export const acceptedFor = (instance: CorpusInstance, language: CorpusLanguage): boolean =>
   instance[language]?.accepted ?? instance.accepted;
+
+const StrictIncompatibility = z.object({ path: z.string(), keyword: z.string().min(1) });
+const StrictChange = z.object({ path: z.string(), reason: z.string().min(1) });
+const StrictArguments = z.object({ input: JsonObject, output: JsonObject });
+
+/**
+ * One strict-mode normalization case: either the exact strict schema the
+ * rewrite must produce, or the constructs it must report as unsupported.
+ */
+const StrictCase = z.object({
+  id: z.string().min(1),
+  description: z.string().optional(),
+  schema: JsonObject,
+  strict: z.union([
+    z.object({ schema: JsonObject }),
+    z.object({ unsupported: z.array(StrictIncompatibility).min(1) }),
+  ]),
+  changes: z.array(StrictChange).optional(),
+  arguments: z.array(StrictArguments).optional(),
+});
+
+const StrictCorpus = z.object({ cases: z.array(StrictCase).min(1) });
+
+export type StrictCase = z.infer<typeof StrictCase>;
+
+let cachedStrict: ReadonlyArray<StrictCase> | undefined;
+
+/** Decode the shared strict-mode corpus (byte-identical copy per language). */
+export const loadStrictCases = (): ReadonlyArray<StrictCase> => {
+  if (!cachedStrict) {
+    const { cases } = StrictCorpus.parse(strictDocument);
+    const seen = new Set<string>();
+    for (const testCase of cases) {
+      if (seen.has(testCase.id)) throw new Error(`Duplicate strict case id: ${testCase.id}`);
+      seen.add(testCase.id);
+    }
+    cachedStrict = cases;
+  }
+  return cachedStrict;
+};

@@ -7,7 +7,7 @@ requires-python = ">=3.10,<4"
 dependencies = [
     "pysher>=1.0.8",
     "pydantic>=2.11.9",
-    "composio-client==2.0.0rc6",
+    "composio-client==1.43.0",
     "typing-extensions>=4.16.0",
     "openai>=2.48.0",
     "json-schema-to-pydantic>=0.4.11",
@@ -15,11 +15,16 @@ dependencies = [
     # The pinning adapter mounts through `get_connection_with_tls_context`,
     # which `HTTPAdapter.send` only calls on requests >= 2.32.2; older
     # versions silently skip it and the pinning never engages.
-    "requests>=2.32.2",
+    # 2.32.4 fixes GHSA-9hjg-9r4m-mvj7 (.netrc credentials leaked to a
+    # malicious URL); `url_safety` fetches user- and server-supplied URLs.
+    "requests>=2.32.4",
     # `url_safety` imports urllib3 directly: `NameResolutionError` only exists
     # from 2.0, and the pinning adapter reaches into 2.x connection internals.
     # requests alone allows 1.x, which would fail at import time.
-    "urllib3>=2",
+    # 2.7.0 fixes GHSA-mf9v-mfxr-j63j (decompression-bomb guard bypass in
+    # the streaming API our download size limit relies on) and
+    # GHSA-qccp-gfcp-xxvc (sensitive headers forwarded across origins).
+    "urllib3>=2.7.0",
 ]
 classifiers = [
     "Programming Language :: Python :: 3",
@@ -34,10 +39,11 @@ dev = [
     "pytest>=9.1.1",
     "pytest-timeout>=2.4.0",
     "pytest-mock>=3.15.1",
+    "hypothesis>=6.140.3",
     "requests>=2.34.2",
     "ruff>=0.16.0",
     # Langchain provider demo
-    "langchain_openai==1.4.3",
+    "langchain_openai==1.6.0",
     "fastapi>=0.140.0",
     "twine>=6.2.0",
     "click>=8.4.2",

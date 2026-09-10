@@ -35,6 +35,8 @@ export type AnthropicMcpServerGetResponse = {
   name: string;
 }[];
 
+export type { AnthropicTool, InputSchema, CacheControlEphemeral } from './types';
+
 /**
  * Collection of Anthropic tools
  */

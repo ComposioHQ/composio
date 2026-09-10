@@ -22,6 +22,10 @@ import { ComposioCliUserConfig } from 'src/services/cli-user-config';
 import type { ToolkitDetailed } from 'src/models/toolkits';
 import { makeToolkitFixture } from 'test/__utils__/models/toolkits';
 
+vi.mock('node:dns/promises', () => ({
+  lookup: vi.fn().mockResolvedValue([{ address: '93.184.216.34', family: 4 }]),
+}));
+
 // Disable CI redaction so tests see raw values. `src/ui/redact` reads `CI` once
 // at import time, so the variable has to be gone before the imports above run —
 // `vi.hoisted` executes ahead of them. The explicit CI-redaction test overrides

@@ -3,9 +3,11 @@
 // FileSystem and Path services and passes the instances in as parameters;
 // `readLocalFileBytes` below is the single point where a FileSystem effect
 // is run to completion inside this promise pipeline.
-import type { FileSystem, Path } from '@effect/platform';
+import type * as FileSystem from '@effect/platform/FileSystem';
+import type * as Path from '@effect/platform/Path';
 import type { Composio as RawComposioClient } from '@composio/client';
-import { assertSafeFileUploadPath } from '@composio/core';
+import { assertSafeFileUploadPath, readResponseBodyWithLimit } from '@composio/core';
+import { ssrfSafeFetch } from '@composio/core/utils/ssrf-guard';
 import { Cause, Data, Effect, Exit, Predicate } from 'effect';
 import { guessToolkitFromToolSlug } from 'src/utils/toolkit-from-tool-slug';
 
@@ -143,8 +145,9 @@ export const findFileUploadablePaths = (
 };
 
 const readFileFromUrl = async (path: Path.Path, url: string) => {
-  const response = await fetch(url);
+  const response = await ssrfSafeFetch(url);
   if (!response.ok) {
+    await response.body?.cancel().catch(() => undefined);
     throw new ToolFileUploadError({
       message: `Failed to fetch file: ${response.statusText}`,
       reason: 'source-fetch',
@@ -152,7 +155,10 @@ const readFileFromUrl = async (path: Path.Path, url: string) => {
     });
   }
 
-  const bytes = new Uint8Array(await response.arrayBuffer());
+  // Same cap as the core SDK's URL uploads: a remote server must not be able
+  // to exhaust memory with an oversized or never-ending body. Copied into a
+  // fresh ArrayBuffer-backed view for the same reason as readFileFromDisk.
+  const bytes = new Uint8Array(await readResponseBodyWithLimit(response));
   const parsedUrl = new URL(url);
   const fileName = path.basename(parsedUrl.pathname) || `file-${Date.now()}`;
 
@@ -249,7 +255,7 @@ const uploadFile = async (params: {
     toolkit_slug: params.toolkitSlug,
   });
 
-  const uploadResponse = await fetch(presigned.new_presigned_url, {
+  const uploadResponse = await ssrfSafeFetch(presigned.new_presigned_url, {
     method: 'PUT',
     body: fileData.bytes,
     headers: {
@@ -259,12 +265,14 @@ const uploadFile = async (params: {
   });
 
   if (!uploadResponse.ok) {
+    await uploadResponse.body?.cancel().catch(() => undefined);
     throw new ToolFileUploadError({
       message: `Failed to upload file to S3: ${uploadResponse.statusText}`,
       reason: 'upload',
       status: uploadResponse.status,
     });
   }
+  await uploadResponse.body?.cancel().catch(() => undefined);
 
   return {
     name: fileData.fileName,
