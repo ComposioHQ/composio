@@ -130,8 +130,9 @@ describe('tool input validation', () => {
           Layer.succeed(NodeOs, defaultNodeOs({ homedir: cacheDir }))
         )
       ),
-      Effect.withConfigProvider(
-        ConfigProvider.fromMap(new Map([['CACHE_DIR', cacheDir]] satisfies Array<[string, string]>))
+      Effect.provideService(
+        ConfigProvider.ConfigProvider,
+        ConfigProvider.fromEnv({ env: { CACHE_DIR: cacheDir } })
       )
     );
   });

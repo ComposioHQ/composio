@@ -1,6 +1,9 @@
-import * as FileSystem from '@effect/platform/FileSystem';
+// Import the BunFileSystem submodule directly (as a namespace, matching its own named export
+// shape); the package's barrel (`@effect/platform-bun`) unconditionally re-exports BunRedis,
+// which imports the `bun` builtin at module scope and crashes Node's ESM resolver (vitest runs
+// under Node, not Bun).
 import * as BunFileSystem from '@effect/platform-bun/BunFileSystem';
-import { Effect } from 'effect';
+import { Effect, FileSystem } from 'effect';
 import { afterEach, beforeEach, vi } from 'vitest';
 
 // Point every test at a fresh, empty config directory so nothing reads or

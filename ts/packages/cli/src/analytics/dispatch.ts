@@ -1,9 +1,5 @@
 import process from 'node:process';
-import * as FileSystem from '@effect/platform/FileSystem';
-import * as HttpClient from '@effect/platform/HttpClient';
-import * as HttpClientRequest from '@effect/platform/HttpClientRequest';
-import * as Path from '@effect/platform/Path';
-import type { PlatformError } from '@effect/platform/Error';
+import type { PlatformError } from 'effect/PlatformError';
 import {
   Cause,
   Clock,
@@ -12,9 +8,12 @@ import {
   DateTime,
   Effect,
   Encoding,
+  FileSystem,
   Option,
-  Schema,
+  Path,
+  Predicate,
 } from 'effect';
+import { HttpClient, HttpClientRequest } from 'effect/unstable/http';
 import * as constants from 'src/constants';
 import { APP_CONFIG } from 'src/effects/app-config';
 import { getDetachedWorkerSpawnArgs, spawnDetached } from 'src/services/detached-process';
@@ -76,7 +75,11 @@ type ConsumerShortTermCacheState = Record<
 
 // Workers start before the CLI's prefixed ConfigProvider is assembled, so this
 // module names and reads the actual environment variables from a raw provider.
-const environmentProvider = ConfigProvider.fromEnv();
+// `ConfigProvider.fromEnv()` snapshots `process.env` at construction time
+// (see the vendored `effect` source), so the provider must be rebuilt on every
+// read rather than memoized at module scope -- otherwise env changes made
+// after import (including `vi.stubEnv` in tests) are never observed.
+const getEnvironmentProvider = (): ConfigProvider.ConfigProvider => ConfigProvider.fromEnv();
 const optionalString = (name: string) => Config.option(Config.string(name));
 const booleanWithDefault = (name: string) => Config.boolean(name).pipe(Config.withDefault(false));
 const configuredString = (value: Option.Option<string>): string | undefined =>
@@ -86,44 +89,44 @@ const configuredString = (value: Option.Option<string>): string | undefined =>
     Option.getOrUndefined
   );
 
-const analyticsDisabled = environmentProvider.load(
+const analyticsDisabled = Effect.suspend(() =>
   Config.all({
     cliTelemetryDisabled: booleanWithDefault('COMPOSIO_CLI_TELEMETRY_DISABLED'),
     telemetryDisabled: booleanWithDefault('TELEMETRY_DISABLED'),
     composioTelemetryDisabled: booleanWithDefault('COMPOSIO_DISABLE_TELEMETRY'),
     nodeEnvironment: Config.string('NODE_ENV').pipe(Config.withDefault('')),
     ci: booleanWithDefault('CI'),
-  }).pipe(
-    Config.map(
-      ({
-        cliTelemetryDisabled,
-        telemetryDisabled,
-        composioTelemetryDisabled,
-        nodeEnvironment,
-        ci,
-      }) =>
-        cliTelemetryDisabled ||
-        telemetryDisabled ||
-        composioTelemetryDisabled ||
-        nodeEnvironment === 'test' ||
-        ci
+  })
+    .pipe(
+      Config.map(
+        ({
+          cliTelemetryDisabled,
+          telemetryDisabled,
+          composioTelemetryDisabled,
+          nodeEnvironment,
+          ci,
+        }) =>
+          cliTelemetryDisabled ||
+          telemetryDisabled ||
+          composioTelemetryDisabled ||
+          nodeEnvironment === 'test' ||
+          ci
+      )
     )
-  )
+    .parse(getEnvironmentProvider())
 );
 
-const getPostHogConfig = environmentProvider
-  .load(
-    Config.all({
-      ingestUrl: optionalString('COMPOSIO_POSTHOG_INGEST_URL'),
-      projectKey: optionalString('COMPOSIO_POSTHOG_PROJECT_API_KEY'),
-    })
-  )
-  .pipe(
-    Effect.map(({ ingestUrl, projectKey }) => ({
-      ingestUrl: configuredString(ingestUrl) ?? constants.COMPOSIO_POSTHOG_INGEST_URL,
-      projectKey: configuredString(projectKey) ?? constants.COMPOSIO_POSTHOG_PROJECT_API_KEY,
-    }))
-  );
+const getPostHogConfig = Effect.suspend(() =>
+  Config.all({
+    ingestUrl: optionalString('COMPOSIO_POSTHOG_INGEST_URL'),
+    projectKey: optionalString('COMPOSIO_POSTHOG_PROJECT_API_KEY'),
+  }).parse(getEnvironmentProvider())
+).pipe(
+  Effect.map(({ ingestUrl, projectKey }) => ({
+    ingestUrl: configuredString(ingestUrl) ?? constants.COMPOSIO_POSTHOG_INGEST_URL,
+    projectKey: configuredString(projectKey) ?? constants.COMPOSIO_POSTHOG_PROJECT_API_KEY,
+  }))
+);
 
 const postHogEnabled = Effect.gen(function* () {
   if (yield* analyticsDisabled) {
@@ -135,11 +138,14 @@ const postHogEnabled = Effect.gen(function* () {
 
 export const analyticsIdentityLinkingEnabled = postHogEnabled;
 
-const jsonFromString = Schema.parseJson();
-const prettyJsonFromString = Schema.parseJson({ space: 2 });
-const decodeJson = Schema.decodeUnknown(jsonFromString);
-const encodeJson = Schema.encode(jsonFromString);
-const encodePrettyJson = Schema.encode(prettyJsonFromString);
+const jsonError = (error: unknown): Error =>
+  Predicate.isError(error) ? error : new Error(String(error));
+const decodeJson = (str: string) =>
+  Effect.try({ try: (): unknown => JSON.parse(str), catch: jsonError });
+const encodeJson = (value: unknown) =>
+  Effect.try({ try: () => JSON.stringify(value), catch: jsonError });
+const encodePrettyJson = (value: unknown) =>
+  Effect.try({ try: () => JSON.stringify(value, null, 2), catch: jsonError });
 
 const telemetryDebugLog = (label: string, payload: Record<string, unknown>) =>
   Effect.gen(function* () {
@@ -154,7 +160,7 @@ const telemetryDebugLog = (label: string, payload: Record<string, unknown>) =>
 
 const telemetryErrorDetails = (cause: Cause.Cause<unknown>): Record<string, string> => {
   const squashed = Cause.squash(cause);
-  const error = Cause.isUnknownException(squashed) ? squashed.error : squashed;
+  const error = Cause.isUnknownError(squashed) ? squashed.cause : squashed;
   return error instanceof Error
     ? { name: error.name, message: error.message }
     : { message: String(error) };
@@ -163,12 +169,10 @@ const telemetryErrorDetails = (cause: Cause.Cause<unknown>): Record<string, stri
 const getAnalyticsPaths = Effect.gen(function* () {
   const path = yield* Path.Path;
   const os = yield* NodeOs;
-  const cacheDirectories = yield* environmentProvider.load(
-    Config.all({
-      composio: optionalString('COMPOSIO_CACHE_DIR'),
-      legacy: optionalString('CACHE_DIR'),
-    })
-  );
+  const cacheDirectories = yield* Config.all({
+    composio: optionalString('COMPOSIO_CACHE_DIR'),
+    legacy: optionalString('CACHE_DIR'),
+  }).parse(getEnvironmentProvider());
   const analyticsDir = path.join(os.homedir, COMPOSIO_DIR);
   const cacheDir =
     configuredString(cacheDirectories.composio) ??
@@ -192,7 +196,7 @@ const readOptionalJson = <A>(filePath: string) =>
     const fs = yield* FileSystem.FileSystem;
     const raw = yield* fs.readFileString(filePath, 'utf8');
     return (yield* decodeJson(raw)) as A;
-  }).pipe(Effect.catchAll(() => Effect.succeed(undefined)));
+  }).pipe(Effect.catch(() => Effect.succeed(undefined)));
 
 type AnalyticsState = {
   readonly install_id?: string;
@@ -231,7 +235,7 @@ const recoverStaleAnalyticsStateLock = (
     const stalePath = `${lockPath}.stale-${crypto.randomUUID().slice(0, 8)}`;
     yield* fs.rename(lockPath, stalePath);
     yield* fs.remove(stalePath, { force: true });
-  }).pipe(Effect.catchAll(() => Effect.void));
+  }).pipe(Effect.catch(() => Effect.void));
 
 const acquireAnalyticsStateLock = Effect.gen(function* () {
   const fs = yield* FileSystem.FileSystem;
@@ -252,15 +256,13 @@ const acquireAnalyticsStateLock = Effect.gen(function* () {
   );
   const tryAcquire = (): Effect.Effect<void, PlatformError, never> =>
     fs.writeFileString(paths.analyticsStateLockPath, token, { flag: 'wx' }).pipe(
-      Effect.catchTag('SystemError', error => {
-        if (error.reason !== 'AlreadyExists') {
+      Effect.catchTag('PlatformError', error => {
+        if (!Predicate.isTagged(error.reason, 'AlreadyExists')) {
           return Effect.fail(error);
         }
         return recoverStaleAnalyticsStateLock(fs, paths.analyticsStateLockPath).pipe(
           Effect.andThen(
-            fs
-              .exists(paths.analyticsStateLockPath)
-              .pipe(Effect.catchAll(() => Effect.succeed(true)))
+            fs.exists(paths.analyticsStateLockPath).pipe(Effect.catch(() => Effect.succeed(true)))
           ),
           Effect.flatMap(lockStillExists => {
             if (lockStillExists && Date.now() >= deadline) {
@@ -278,13 +280,13 @@ const acquireAnalyticsStateLock = Effect.gen(function* () {
   return { fs, lockPath: paths.analyticsStateLockPath, token };
 });
 
-const releaseAnalyticsStateLock = (lock: Effect.Effect.Success<typeof acquireAnalyticsStateLock>) =>
+const releaseAnalyticsStateLock = (lock: Effect.Success<typeof acquireAnalyticsStateLock>) =>
   Effect.gen(function* () {
     const currentToken = yield* lock.fs.readFileString(lock.lockPath, 'utf8');
     if (currentToken === lock.token) {
       yield* lock.fs.remove(lock.lockPath, { force: true });
     }
-  }).pipe(Effect.catchAll(() => Effect.void));
+  }).pipe(Effect.catch(() => Effect.void));
 
 const withAnalyticsStateLock = <A, E, R>(effect: Effect.Effect<A, E, R>) =>
   Effect.acquireUseRelease(acquireAnalyticsStateLock, () => effect, releaseAnalyticsStateLock);
@@ -304,7 +306,7 @@ const getOrCreateInstallIdUnlocked = Effect.gen(function* () {
 
   yield* fs
     .makeDirectory(paths.analyticsDir, { recursive: true })
-    .pipe(Effect.catchAll(() => Effect.void));
+    .pipe(Effect.catch(() => Effect.void));
 
   const state = yield* readOptionalJson<AnalyticsState>(paths.analyticsStatePath);
   if (typeof state?.install_id === 'string' && state.install_id.length > 0) {
@@ -323,7 +325,7 @@ const getOrCreateInstallIdUnlocked = Effect.gen(function* () {
 });
 
 const getOrCreateInstallId = withAnalyticsStateLock(getOrCreateInstallIdUnlocked).pipe(
-  Effect.catchAll(() => makeInstallId)
+  Effect.catch(() => makeInstallId)
 );
 
 const mergeAnalyticsStateUnlocked = (installId: string, patch: Partial<AnalyticsState>) =>
@@ -333,7 +335,7 @@ const mergeAnalyticsStateUnlocked = (installId: string, patch: Partial<Analytics
 
     yield* fs
       .makeDirectory(paths.analyticsDir, { recursive: true })
-      .pipe(Effect.catchAll(() => Effect.void));
+      .pipe(Effect.catch(() => Effect.void));
 
     const state = yield* readOptionalJson<AnalyticsState>(paths.analyticsStatePath);
     const contents = yield* encodeJson({
@@ -358,7 +360,7 @@ const getOrgId = Effect.map(readUserConfig, config =>
 
 const getUserApiKey = Effect.gen(function* () {
   const envApiKey = configuredString(
-    yield* environmentProvider.load(optionalString('COMPOSIO_USER_API_KEY'))
+    yield* optionalString('COMPOSIO_USER_API_KEY').parse(getEnvironmentProvider())
   );
   if (envApiKey) {
     return envApiKey;
@@ -491,7 +493,7 @@ export const getCurrentCwdSessionId = (cwd = process.cwd()) =>
     }
 
     return best?.id;
-  }).pipe(Effect.catchAllCause(() => Effect.succeed(undefined)));
+  }).pipe(Effect.catchCause(() => Effect.succeed(undefined)));
 
 const withCliSessionId = (event: NonNullable<TrackEvent>, cliSessionId?: string): TrackEvent => ({
   ...event,
@@ -504,7 +506,7 @@ const withCliSessionId = (event: NonNullable<TrackEvent>, cliSessionId?: string)
 
 export const readApiBaseUrl = Effect.gen(function* () {
   const envBaseUrl = configuredString(
-    yield* environmentProvider.load(optionalString('COMPOSIO_BASE_URL'))
+    yield* optionalString('COMPOSIO_BASE_URL').parse(getEnvironmentProvider())
   );
   if (envBaseUrl) {
     return envBaseUrl.replace(/\/+$/u, '');
@@ -514,7 +516,7 @@ export const readApiBaseUrl = Effect.gen(function* () {
   return typeof userConfig?.base_url === 'string' && userConfig.base_url.trim().length > 0
     ? userConfig.base_url.trim().replace(/\/+$/u, '')
     : null;
-}).pipe(Effect.catchAllCause(() => Effect.succeed(null)));
+}).pipe(Effect.catchCause(() => Effect.succeed(null)));
 
 const getCliCodactFailuresEndpoint = Effect.map(readApiBaseUrl, baseUrl =>
   baseUrl ? `${baseUrl}${CLI_CODACT_FAILURES_PATH}` : null
@@ -600,12 +602,10 @@ type CliInvocationContext = {
 // root run process holds its freshly minted id in the CliRunId service instead, so failures it
 // reports carry the same run id its children stamp from the environment.
 const getCliInvocationContext = Effect.gen(function* () {
-  const environment = yield* environmentProvider.pipe(extendConfigProvider).load(
-    Config.all({
-      origin: APP_CONFIG.CLI_INVOCATION_ORIGIN,
-      parentRunId: APP_CONFIG.CLI_PARENT_RUN_ID,
-    })
-  );
+  const environment = yield* Config.all({
+    origin: APP_CONFIG.CLI_INVOCATION_ORIGIN,
+    parentRunId: APP_CONFIG.CLI_PARENT_RUN_ID,
+  }).parse(extendConfigProvider(getEnvironmentProvider()));
   const mintedRunId = Option.flatten(yield* Effect.serviceOption(CliRunId));
   return {
     origin: environment.origin,
@@ -735,7 +735,7 @@ export const trackCliEventEffect = (event: TrackEvent) =>
       installId,
     };
     yield* enqueuePostHogEnvelope(envelope);
-  }).pipe(Effect.catchAllCause(() => Effect.void));
+  }).pipe(Effect.catchCause(() => Effect.void));
 
 export const emitPostHogAlias = (installId: string, apolloUserId: string) =>
   Effect.gen(function* () {
@@ -758,7 +758,7 @@ export const emitPostHogAlias = (installId: string, apolloUserId: string) =>
       installId,
     };
     return yield* enqueuePostHogEnvelope(envelope);
-  }).pipe(Effect.catchAllCause(() => Effect.succeed(false)));
+  }).pipe(Effect.catchCause(() => Effect.succeed(false)));
 
 export const linkApolloIdentityForAnalytics = (apolloUserId: string, apiKey?: string) =>
   Effect.gen(function* () {
@@ -857,7 +857,7 @@ export const linkApolloIdentityForAnalytics = (apolloUserId: string, apiKey?: st
         })
       );
     }
-  }).pipe(Effect.catchAllCause(() => Effect.void));
+  }).pipe(Effect.catchCause(() => Effect.void));
 
 export const clearApolloIdentityForAnalytics = withAnalyticsStateLock(
   Effect.gen(function* () {
@@ -870,7 +870,7 @@ export const clearApolloIdentityForAnalytics = withAnalyticsStateLock(
       api_key_fingerprint: undefined,
     });
   })
-).pipe(Effect.catchAllCause(() => Effect.void));
+).pipe(Effect.catchCause(() => Effect.void));
 
 export const trackCliCodactFailureEffect = (failure: CliCodactFailure) =>
   Effect.gen(function* () {
@@ -895,7 +895,7 @@ export const trackCliCodactFailureEffect = (failure: CliCodactFailure) =>
       encodedPayload
     );
     yield* spawnWorker(command, args);
-  }).pipe(Effect.catchAllCause(() => Effect.void));
+  }).pipe(Effect.catchCause(() => Effect.void));
 
 const getWorkerFlagIndex = (argv: ReadonlyArray<string>, flag: string): number =>
   argv.findIndex(token => token === flag);
@@ -906,7 +906,7 @@ export const isBackgroundWorkerInvocation = (argv: ReadonlyArray<string>): boole
 
 const decodeWorkerPayload = <A>(encodedPayload: string) =>
   Effect.gen(function* () {
-    const serialized = yield* Encoding.decodeBase64UrlString(encodedPayload);
+    const serialized = yield* Effect.fromResult(Encoding.decodeBase64UrlString(encodedPayload));
     return (yield* decodeJson(serialized)) as A;
   });
 
@@ -933,7 +933,7 @@ const settlePostHogAlias = (envelope: AnalyticsEnvelope, delivered: boolean) => 
         pending_alias_attempted_at: undefined,
       });
     })
-  ).pipe(Effect.catchAllCause(() => Effect.void));
+  ).pipe(Effect.catchCause(() => Effect.void));
 };
 
 const runAnalyticsWorker = (argv: ReadonlyArray<string>) => {
@@ -953,7 +953,7 @@ const runAnalyticsWorker = (argv: ReadonlyArray<string>) => {
       return true;
     }
     const delivered = yield* captureToPostHog(envelope).pipe(
-      Effect.catchAllCause(cause =>
+      Effect.catchCause(cause =>
         telemetryDebugLog('delivery_error', { error: telemetryErrorDetails(cause) }).pipe(
           Effect.as(false)
         )
@@ -961,7 +961,7 @@ const runAnalyticsWorker = (argv: ReadonlyArray<string>) => {
     );
     yield* settlePostHogAlias(envelope, delivered);
     return true;
-  }).pipe(Effect.catchAllCause(() => Effect.succeed(true)));
+  }).pipe(Effect.catchCause(() => Effect.succeed(true)));
 };
 
 const runCodactFailureWorker = (argv: ReadonlyArray<string>) => {
@@ -993,7 +993,7 @@ const runCodactFailureWorker = (argv: ReadonlyArray<string>) => {
       requestId: body.request_id,
     });
   }).pipe(
-    Effect.catchAllCause(cause =>
+    Effect.catchCause(cause =>
       telemetryDebugLog('codact_delivery_error', { error: telemetryErrorDetails(cause) })
     )
   );
@@ -1005,4 +1005,4 @@ export const runBackgroundWorkerFromArgv = (argv: ReadonlyArray<string>) =>
     if (!handledAnalytics) {
       yield* runCodactFailureWorker(argv);
     }
-  }).pipe(Effect.catchAllCause(() => Effect.void));
+  }).pipe(Effect.catchCause(() => Effect.void));

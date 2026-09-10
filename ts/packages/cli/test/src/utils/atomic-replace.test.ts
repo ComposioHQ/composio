@@ -1,10 +1,9 @@
-import * as FileSystem from '@effect/platform/FileSystem';
-import * as Path from '@effect/platform/Path';
-import * as PlatformError from '@effect/platform/Error';
 import * as BunFileSystem from '@effect/platform-bun/BunFileSystem';
 import * as BunPath from '@effect/platform-bun/BunPath';
 import { describe, expect, layer } from '@effect/vitest';
-import { Effect, Layer, Option } from 'effect';
+import { Effect, FileSystem, Layer, Option, Path, PlatformError } from 'effect';
+
+type RemoveOptions = Parameters<FileSystem.FileSystem['remove']>[1];
 import {
   AtomicReplaceError,
   atomicReplaceDirectory,
@@ -32,8 +31,8 @@ const failDirectoryPublish = (targetPath: string, failRestore = false) =>
                   (failRestore && oldPath.includes('.composio-atomic-recovery-')));
               return shouldFail
                 ? Effect.fail(
-                    new PlatformError.SystemError({
-                      reason: 'Busy',
+                    PlatformError.systemError({
+                      _tag: 'Busy',
                       module: 'FileSystem',
                       method: 'rename',
                       pathOrDescriptor: newPath,
@@ -58,11 +57,11 @@ const failDirectoryCleanup = () =>
               return Reflect.get(target, property, receiver);
             }
 
-            return (path: string, options?: FileSystem.RemoveOptions) =>
+            return (path: string, options?: RemoveOptions) =>
               path.includes('.composio-atomic-recovery-')
                 ? Effect.fail(
-                    new PlatformError.SystemError({
-                      reason: 'Busy',
+                    PlatformError.systemError({
+                      _tag: 'Busy',
                       module: 'FileSystem',
                       method: 'remove',
                       pathOrDescriptor: path,
@@ -92,7 +91,7 @@ const makeDirectoryFixture = (withTarget = true) =>
 
 describe('atomic replace', () => {
   layer(TestPlatform)(it => {
-    it.scoped('replaces an existing file without modifying its open inode', () =>
+    it.effect('replaces an existing file without modifying its open inode', () =>
       Effect.gen(function* () {
         const fs = yield* FileSystem.FileSystem;
         const path = yield* Path.Path;
@@ -116,7 +115,7 @@ describe('atomic replace', () => {
       })
     );
 
-    it.scoped('creates an executable target when mode is provided', () =>
+    it.effect('creates an executable target when mode is provided', () =>
       Effect.gen(function* () {
         const fs = yield* FileSystem.FileSystem;
         const path = yield* Path.Path;
@@ -133,7 +132,7 @@ describe('atomic replace', () => {
       })
     );
 
-    it.scoped('preserves the target and cleans staging when the source is missing', () =>
+    it.effect('preserves the target and cleans staging when the source is missing', () =>
       Effect.gen(function* () {
         const fs = yield* FileSystem.FileSystem;
         const path = yield* Path.Path;
@@ -154,7 +153,7 @@ describe('atomic replace', () => {
       })
     );
 
-    it.scoped('replaces an existing non-empty directory without leaving residue', () =>
+    it.effect('replaces an existing non-empty directory without leaving residue', () =>
       Effect.gen(function* () {
         const fs = yield* FileSystem.FileSystem;
         const path = yield* Path.Path;
@@ -176,7 +175,7 @@ describe('atomic replace', () => {
       })
     );
 
-    it.scoped('creates a directory target that does not exist', () =>
+    it.effect('creates a directory target that does not exist', () =>
       Effect.gen(function* () {
         const { directory, fs, path, sourcePath, targetPath } = yield* makeDirectoryFixture(false);
 
@@ -187,7 +186,7 @@ describe('atomic replace', () => {
       })
     );
 
-    it.scoped('restores the previous directory when publishing fails', () =>
+    it.effect('restores the previous directory when publishing fails', () =>
       Effect.gen(function* () {
         const { directory, fs, path, sourcePath, targetPath } = yield* makeDirectoryFixture();
 
@@ -203,7 +202,7 @@ describe('atomic replace', () => {
       })
     );
 
-    it.scoped('keeps the published directory when old-content cleanup fails', () =>
+    it.effect('keeps the published directory when old-content cleanup fails', () =>
       Effect.gen(function* () {
         const { directory, fs, path, sourcePath, targetPath } = yield* makeDirectoryFixture();
 
@@ -222,7 +221,7 @@ describe('atomic replace', () => {
       })
     );
 
-    it.scoped('retains the previous directory when publishing and restoration fail', () =>
+    it.effect('retains the previous directory when publishing and restoration fail', () =>
       Effect.gen(function* () {
         const { directory, fs, path, sourcePath, targetPath } = yield* makeDirectoryFixture();
 

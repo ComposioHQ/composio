@@ -1,7 +1,7 @@
-import { Command as CliCommand, Options } from '@effect/cli';
+import { Command as CliCommand, Flag } from 'effect/unstable/cli';
 import { Effect, Option } from 'effect';
-import * as FileSystem from '@effect/platform/FileSystem';
-import * as Path from '@effect/platform/Path';
+import * as FileSystem from 'effect/FileSystem';
+import * as Path from 'effect/Path';
 import { ComposioUserContext } from 'src/services/user-context';
 import { NodeProcess } from 'src/services/node-process';
 import { projectKeysToJSON, type ProjectKeys } from 'src/models/project-keys';
@@ -31,10 +31,10 @@ import { setupCacheDir } from 'src/effects/setup-cache-dir';
  * - `--yes` / `-y` — auto-select the first project from the list
  */
 
-const yesOpt = Options.boolean('yes').pipe(
-  Options.withAlias('y'),
-  Options.withDefault(false),
-  Options.withDescription('Auto-select the current org project, else first developer project')
+const yesOpt = Flag.boolean('yes').pipe(
+  Flag.withAlias('y'),
+  Flag.withDefault(false),
+  Flag.withDescription('Auto-select the current org project, else first developer project')
 );
 
 // ---------------------------------------------------------------------------
@@ -46,9 +46,7 @@ const writeProjectConfig = (composioDir: string, selected: ProjectKeys) =>
     const fs = yield* FileSystem.FileSystem;
     const path = yield* Path.Path;
 
-    yield* fs
-      .makeDirectory(composioDir, { recursive: true })
-      .pipe(Effect.catchAll(() => Effect.void));
+    yield* fs.makeDirectory(composioDir, { recursive: true }).pipe(Effect.catch(() => Effect.void));
 
     const projectJson = yield* projectKeysToJSON(selected);
     yield* fs.writeFileString(

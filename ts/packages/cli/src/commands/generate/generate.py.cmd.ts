@@ -1,4 +1,4 @@
-import { Command } from '@effect/cli';
+import { Command } from 'effect/unstable/cli';
 import { generatePythonTypeStubs, outputOpt, toolkitsOpt } from '../py/commands/py.generate.cmd';
 
 /**

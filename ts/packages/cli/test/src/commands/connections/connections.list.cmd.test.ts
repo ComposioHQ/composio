@@ -84,9 +84,9 @@ const connectedAccountsData = {
   items: testConnections,
 } satisfies TestLiveInput['connectedAccountsData'];
 
-const testConfigProvider = ConfigProvider.fromMap(
-  new Map([['COMPOSIO_USER_API_KEY', 'test_api_key']])
-).pipe(extendConfigProvider);
+const testConfigProvider = ConfigProvider.fromEnv({
+  env: { COMPOSIO_USER_API_KEY: 'test_api_key' },
+}).pipe(extendConfigProvider);
 
 const terminalUIWithConfirm = (confirmed: boolean) =>
   TerminalUI.of({
@@ -132,7 +132,7 @@ const terminalUIWithConfirm = (confirmed: boolean) =>
 
 describe('CLI: composio connections list', () => {
   layer(TestLive({ baseConfigProvider: testConfigProvider, connectedAccountsData }))(it => {
-    it.scoped('[Given] no filter [Then] prints connection JSON with aliases for duplicates', () =>
+    it.effect('[Given] no filter [Then] prints connection JSON with aliases for duplicates', () =>
       Effect.gen(function* () {
         const userContext = yield* ComposioUserContext;
         yield* userContext.login('test_api_key', 'org_test');
@@ -159,7 +159,7 @@ describe('CLI: composio connections list', () => {
       stdin: { isTTY: true, data: '' },
     })
   )(it => {
-    it.scoped('[Given] interactive stdout [Then] still prints the JSON payload', () =>
+    it.effect('[Given] interactive stdout [Then] still prints the JSON payload', () =>
       Effect.gen(function* () {
         const userContext = yield* ComposioUserContext;
         yield* userContext.login('test_api_key', 'org_test');
@@ -180,7 +180,7 @@ describe('CLI: composio connections list', () => {
   });
 
   layer(TestLive({ baseConfigProvider: testConfigProvider, connectedAccountsData }))(it => {
-    it.scoped('[Given] --toolkit github [Then] filters the JSON output', () =>
+    it.effect('[Given] --toolkit github [Then] filters the JSON output', () =>
       Effect.gen(function* () {
         const userContext = yield* ComposioUserContext;
         yield* userContext.login('test_api_key', 'org_test');
@@ -228,7 +228,7 @@ describe('CLI: composio connections list', () => {
       },
     })
   )(it => {
-    it.scoped('[Given] mixed user scopes [Then] only consumer-project connections are listed', () =>
+    it.effect('[Given] mixed user scopes [Then] only consumer-project connections are listed', () =>
       Effect.gen(function* () {
         const userContext = yield* ComposioUserContext;
         yield* userContext.login('test_api_key', 'org_test');
@@ -255,7 +255,7 @@ describe('CLI: composio connections remove', () => {
       terminalUI: terminalUIWithConfirm(true),
     })
   )(it => {
-    it.scoped('[Given] a unique toolkit selector and consent [Then] removes that connection', () =>
+    it.effect('[Given] a unique toolkit selector and consent [Then] removes that connection', () =>
       Effect.gen(function* () {
         confirmedDeleteCalls.length = 0;
 
@@ -282,7 +282,7 @@ describe('CLI: composio connections remove', () => {
       terminalUI: terminalUIWithConfirm(false),
     })
   )(it => {
-    it.scoped('[Given] consent is denied [Then] does not remove the connection', () =>
+    it.effect('[Given] consent is denied [Then] does not remove the connection', () =>
       Effect.gen(function* () {
         deniedDeleteCalls.length = 0;
 
@@ -309,7 +309,7 @@ describe('CLI: composio connections remove', () => {
       terminalUI: terminalUIWithConfirm(true),
     })
   )(it => {
-    it.scoped(
+    it.effect(
       '[Given] a selector matches multiple accounts [Then] asks for a unique selector',
       () =>
         Effect.gen(function* () {

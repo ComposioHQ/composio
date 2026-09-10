@@ -53,7 +53,6 @@
   "license": "ISC",
   "devDependencies": {
     "@effect/language-service": "catalog:",
-    "@effect/platform": "catalog:",
     "@effect/vitest": "catalog:",
     "@types/bun": "catalog:",
     "@types/semver": "^7.8.0",
@@ -74,7 +73,6 @@
     "@composio/json-schema-to-effect-schema": "workspace:*",
     "@composio/json-schema-to-zod": "workspace:*",
     "@composio/ts-builders": "workspace:*",
-    "@effect/cli": "catalog:",
     "@effect/platform-bun": "catalog:",
     "@modelcontextprotocol/sdk": "catalog:",
     "@zed-industries/claude-code-acp": "^0.16.2",

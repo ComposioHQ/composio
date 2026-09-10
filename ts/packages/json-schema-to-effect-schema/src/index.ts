@@ -521,22 +521,21 @@ const defaultFormatIssues = (
 // Validation is expressed as a filter over `Schema.Unknown` rather than a
 // `Schema.declare` codec: the interpreter already owns the whole decision, so
 // there is nothing to decode, and a filter reports every failure through the
-// `{ path, message }` shape Effect normalizes for us. `Schema.filter` is also
-// the API that survives the Effect 4 rewrite — where `ParseResult` is split
-// into `SchemaIssue`/`SchemaParser` and declarations lose their encode half —
-// as a rename to `Schema.check(Schema.makeFilter(...))`.
+// `{ path, issue }` shape Effect normalizes for us (`Schema.makeFilter`
+// returns a `FilterOutput`; a string is the shorthand for a single
+// `SchemaIssue.InvalidValue` carrying that message).
 export const jsonSchemaToEffectSchema = (
   jsonSchema: JsonObject,
   options: JsonSchemaToEffectSchemaOptions = {}
-): Schema.Schema<unknown> => {
+): Schema.Codec<unknown> => {
   const draft = options.draft ?? '7';
   const normalizedSchema = normalizeJsonSchema(jsonSchema, draft);
   const validator = new Validator(normalizedSchema, draft, false);
   assertSchemaIsInterpretable(normalizedSchema);
   const formatIssues = options.formatIssues ?? defaultFormatIssues;
 
-  return Schema.Unknown.pipe(
-    Schema.filter(input => {
+  return Schema.Unknown.check(
+    Schema.makeFilter((input): Schema.FilterOutput => {
       let validation: ReturnType<Validator['validate']>;
       try {
         validation = validator.validate(input);
@@ -544,8 +543,8 @@ export const jsonSchemaToEffectSchema = (
         // Schema defects are rejected at construction, so what reaches here is
         // input the interpreter cannot represent at all — a `bigint`, `symbol`,
         // `function`, or `undefined`. That is a property of the input, so it
-        // belongs in the filter. A string is `Schema.filter`'s shorthand for the
-        // `ParseResult.Type` issue Effect would otherwise build by hand.
+        // belongs in the filter. A string is the filter's shorthand for the
+        // `SchemaIssue.InvalidValue` issue Effect would otherwise build by hand.
         return `JSON Schema validation failed: ${error}`;
       }
       if (validation.valid) {
@@ -561,7 +560,7 @@ export const jsonSchemaToEffectSchema = (
       // `formatIssues` may fan one issue out into several messages, so the
       // location stays inside the message (as it always has) instead of being
       // reported as a structural path.
-      return messages.map(message => ({ path: [], message }));
+      return messages.map(message => ({ path: [], issue: message }));
     })
   );
 };

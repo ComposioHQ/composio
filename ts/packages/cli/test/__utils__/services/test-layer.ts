@@ -2,26 +2,24 @@ import path from 'node:path';
 import * as tempy from 'tempy';
 import { Composio as RawComposioClient } from '@composio/client';
 import type { AuthConfigCreateParams } from '@composio/client/resources/auth-configs';
-import { CliApp, CliConfig } from '@effect/cli';
-import * as Command from '@effect/platform/Command';
-import * as FetchHttpClient from '@effect/platform/FetchHttpClient';
-import * as FileSystem from '@effect/platform/FileSystem';
-import * as Path from '@effect/platform/Path';
 import * as BunFileSystem from '@effect/platform-bun/BunFileSystem';
-import * as BunContext from '@effect/platform-bun/BunContext';
 import * as BunPath from '@effect/platform-bun/BunPath';
 import {
   ConfigProvider,
   Console,
+  Context,
   DateTime,
   Effect,
+  FileSystem,
   Layer,
-  Logger,
-  LogLevel,
   Option,
+  Path,
+  References,
   Schedule,
   String,
 } from 'effect';
+import { CliConfig, type Command as CliCommand } from 'effect/unstable/cli';
+import { ChildProcess, ChildProcessSpawner } from 'effect/unstable/process';
 import { ComposioCliConfig } from 'src/cli-config';
 import * as MockConsole from './mock-console';
 import * as MockTerminal from './mock-terminal';
@@ -77,16 +75,17 @@ import { ProjectContext } from 'src/services/project-context';
 import { ProjectEnvironmentDetector } from 'src/services/project-environment-detector';
 import { CommandRunner, type CommandRunnerShape } from 'src/services/command-runner';
 import { TerminalUI } from 'src/services/terminal-ui';
-import * as CommandExecutor from '@effect/platform/CommandExecutor';
 import {
   SetupSkillInstaller,
   type SetupSkillInstallerShape,
 } from 'src/services/setup-skill-installer';
+import { FetchHttpClient } from 'effect/unstable/http';
+import * as BunServices from '@effect/platform-bun/BunServices';
 
 export interface TestLiveInput {
   /**
    * Base config provider to use in test.
-   * If not provided, the default `ConfigProvider.fromMap(new Map([]))` is used.
+   * If not provided, the default `ConfigProvider.fromEnv({ env: {} })` is used.
    */
   baseConfigProvider?: ConfigProvider.ConfigProvider;
 
@@ -243,9 +242,9 @@ export interface TestLiveInput {
  * Layer<RequirementsOut, Error, RequirementsIn>
  */
 
-type RequiredLayer = Layer.Layer<CliApp.CliApp.Environment, unknown, never>;
+type RequiredLayer = Layer.Layer<CliCommand.Environment, unknown, never>;
 
-const ConsumerProjectResolveFetchMock = Layer.scopedDiscard(
+const ConsumerProjectResolveFetchMock = Layer.effectDiscard(
   Effect.acquireRelease(
     Effect.sync(() => {
       const originalFetch = globalThis.fetch;
@@ -1271,7 +1270,7 @@ export const TestLayer = (input?: TestLiveInput) =>
       : Layer.succeed(
           CommandRunner,
           CommandRunner.of({
-            run: () => Effect.succeed(CommandExecutor.ExitCode(0)),
+            run: () => Effect.succeed(0),
             capture: () =>
               Effect.succeed({
                 exitCode: 0,
@@ -1300,8 +1299,12 @@ export const TestLayer = (input?: TestLiveInput) =>
     const _console = yield* MockConsole.make;
 
     const layers = Layer.mergeAll(
-      Console.setConsole(_console),
+      Layer.succeed(Console.Console, _console),
       CliConfigLive,
+      // Mirror cli-main: no custom `CliOutput.Formatter` is provided here either
+      // — `CliOutput.Formatter` is a `Context.Reference` that falls back to v4's
+      // own `CliOutput.defaultFormatter()`, so `Command.runWith` renders help,
+      // errors, and `--version` identically to production.
       NodeProcessTest,
       UpgradeBinaryTest,
       ComposioCliUserConfigTest,
@@ -1317,7 +1320,7 @@ export const TestLayer = (input?: TestLiveInput) =>
       SetupSkillInstallerTest,
       ToolsExecutorTest,
       BunFileSystem.layer,
-      BunContext.layer,
+      BunServices.layer,
       MockTerminal.layer,
       BunPath.layer,
       FetchHttpClient.layer,
@@ -1335,18 +1338,23 @@ export const TestLayer = (input?: TestLiveInput) =>
 
     return layers;
   }).pipe(
-    Logger.withMinimumLogLevel(LogLevel.Debug),
+    Effect.provideService(References.MinimumLogLevel, 'Debug'),
     Effect.scoped,
-    Layer.unwrapEffect,
-    Layer.provide(
-      Layer.setConfigProvider(input?.baseConfigProvider ?? ConfigProvider.fromMap(new Map([])))
+    Layer.unwrap,
+    // `Layer.provide` only feeds `ConfigProvider` to the layers built above and hides it from
+    // the resulting layer's output; downstream consumers of `TestLayer` (e.g. command handlers
+    // reading `Config`/`DEBUG_OVERRIDE_*` at runtime) would fall back to the default
+    // `ConfigProvider` reference instead of the test's `baseConfigProvider`. `Layer.provideMerge`
+    // keeps `ConfigProvider` in the output so it stays visible to everything `TestLayer` provides.
+    Layer.provideMerge(
+      ConfigProvider.layer(input?.baseConfigProvider ?? ConfigProvider.fromEnv({ env: {} }))
     )
   );
 
 // Run @effect/vitest suite with TestLive layer
 export const runEffect =
   (input?: TestLiveInput) =>
-  <E, A>(self: Effect.Effect<A, E, CliApp.CliApp.Environment>): Promise<A> =>
+  <E, A>(self: Effect.Effect<A, E, CliCommand.Environment>): Promise<A> =>
     Effect.provide(self, TestLayer(input)).pipe(Effect.scoped, Effect.runPromise);
 
 function setupFixtureFolder({ fixture, tempDir }: { fixture?: string; tempDir: string }) {
@@ -1365,24 +1373,24 @@ function setupFixtureFolder({ fixture, tempDir }: { fixture?: string; tempDir: s
     yield* Effect.logDebug(`Using fixture at: ${tmpFixturesPath}`);
 
     // Retry the task with a delay between retries and a maximum of 3 retries
-    const policy = Schedule.addDelay(Schedule.recurs(3), () => '100 millis');
+    const policy = Schedule.addDelay(Schedule.recurs(3), () => Effect.succeed('100 millis'));
 
     // If all retries fail, run the fallback effect.
     // Use tar to skip heavy directories (.venv) that the global setup may have created.
     // tar --exclude is POSIX and available on any Linux/macOS without extra packages.
     const task = Effect.gen(function* () {
       yield* fs.makeDirectory(tmpFixturesPath, { recursive: true });
-      const tarCmd = Command.make(
-        'tar',
+      const spawner = yield* ChildProcessSpawner.ChildProcessSpawner;
+      const tarCmd = ChildProcess.make('tar', [
         '-cf',
         '-',
         '--exclude',
         '.venv',
         '-C',
         realFixturePath,
-        '.'
-      ).pipe(Command.pipeTo(Command.make('tar', '-xf', '-', '-C', tmpFixturesPath)));
-      yield* tarCmd.pipe(Command.exitCode, Effect.provide(BunContext.layer));
+        '.',
+      ]).pipe(ChildProcess.pipeTo(ChildProcess.make('tar', ['-xf', '-', '-C', tmpFixturesPath])));
+      yield* spawner.exitCode(tarCmd);
     });
 
     const repeated = Effect.retryOrElse(policy, () =>
@@ -1398,7 +1406,7 @@ function setupFixtureFolder({ fixture, tempDir }: { fixture?: string; tempDir: s
     yield* breakSymlinksInNodeModules(fs, path, nodeModulesPath);
 
     return tmpFixturesPath;
-  }).pipe(Effect.provide(Layer.mergeAll(BunFileSystem.layer, BunPath.layer)));
+  }).pipe(Effect.provide(BunServices.layer));
 }
 
 /**
@@ -1422,8 +1430,8 @@ function breakSymlinksInNodeModules(
 
   // Unix: Use `find` command for fast symlink detection
   const breakSymlinksUnix = Effect.gen(function* () {
-    const findCmd = Command.make(
-      'find',
+    const spawner = yield* ChildProcessSpawner.ChildProcessSpawner;
+    const findCmd = ChildProcess.make('find', [
       nodeModulesPath,
       '-maxdepth',
       '2',
@@ -1431,9 +1439,9 @@ function breakSymlinksInNodeModules(
       'l',
       '-not',
       '-path',
-      '*/.*'
-    );
-    const output = yield* findCmd.pipe(Command.string, Effect.provide(BunContext.layer));
+      '*/.*',
+    ]);
+    const output = yield* spawner.string(findCmd);
     const symlinks = output.trim().split('\n').filter(Boolean);
 
     if (symlinks.length === 0) {
@@ -1442,14 +1450,14 @@ function breakSymlinksInNodeModules(
 
     yield* Effect.logDebug(`Found ${symlinks.length} symlinks to break`);
     yield* Effect.all(symlinks.map(breakSymlink), { concurrency: 'unbounded' });
-  });
+  }).pipe(Effect.provide(BunServices.layer));
 
   // Windows: Use readLink to detect symlinks (O(n) but compatible)
   const breakSymlinksWindows = Effect.gen(function* () {
     const isSymlink = (p: string) =>
       fs.readLink(p).pipe(
         Effect.map(() => true),
-        Effect.catchAll(() => Effect.succeed(false))
+        Effect.catch(() => Effect.succeed(false))
       );
 
     const entries = yield* fs.readDirectory(nodeModulesPath);
@@ -1497,16 +1505,14 @@ function breakSymlinksInNodeModules(
     // Normalize it first so tests can safely create nested paths like node_modules/@scope/pkg.
     const nodeModulesLink = yield* fs.readLink(nodeModulesPath).pipe(
       Effect.map(() => true),
-      Effect.catchAll(() => Effect.succeed(false))
+      Effect.catch(() => Effect.succeed(false))
     );
 
     if (nodeModulesLink) {
-      yield* fs
-        .remove(nodeModulesPath, { recursive: true })
-        .pipe(Effect.catchAll(() => Effect.void));
+      yield* fs.remove(nodeModulesPath, { recursive: true }).pipe(Effect.catch(() => Effect.void));
       yield* fs
         .makeDirectory(nodeModulesPath, { recursive: true })
-        .pipe(Effect.catchAll(() => Effect.void));
+        .pipe(Effect.catch(() => Effect.void));
     }
 
     const isWindows = process.platform === 'win32';
@@ -1516,7 +1522,7 @@ function breakSymlinksInNodeModules(
     } else {
       yield* breakSymlinksUnix;
     }
-  }).pipe(Effect.catchAll(() => Effect.void));
+  }).pipe(Effect.catch(() => Effect.void));
 }
 
 function setupComposioSessionRepository() {

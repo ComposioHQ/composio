@@ -1,8 +1,11 @@
 import * as BunFileSystem from '@effect/platform-bun/BunFileSystem';
-import * as BunContext from '@effect/platform-bun/BunContext';
-import * as Command from '@effect/platform/Command';
-import * as FileSystem from '@effect/platform/FileSystem';
-import { Effect, Option, Logger, LogLevel } from 'effect';
+// Import the BunServices submodule directly (as a namespace, matching its own named export
+// shape); the package's barrel (`@effect/platform-bun`) unconditionally re-exports BunRedis,
+// which imports the `bun` builtin at module scope and crashes Node's ESM resolver (vitest runs
+// under Node, not Bun).
+import * as BunServices from '@effect/platform-bun/BunServices';
+import { Effect, FileSystem, Layer, Option, References } from 'effect';
+import { ChildProcess, ChildProcessSpawner } from 'effect/unstable/process';
 import path from 'node:path';
 
 const __dirname = path.resolve(path.dirname(new URL(import.meta.url).pathname));
@@ -15,6 +18,7 @@ const __dirname = path.resolve(path.dirname(new URL(import.meta.url).pathname));
 function setupFixturesTypeScript(fixturePaths: string[]) {
   return Effect.gen(function* () {
     const fs = yield* FileSystem.FileSystem;
+    const spawner = yield* ChildProcessSpawner.ChildProcessSpawner;
 
     yield* Effect.all(
       fixturePaths.map(fixturePath => {
@@ -51,13 +55,12 @@ function setupFixturesTypeScript(fixturePaths: string[]) {
           const nodeModulesDir = path.join(fixturePath, 'node_modules');
           yield* fs.remove(nodeModulesDir, { recursive: true, force: true });
 
-          const installCmd = Command.make('pnpm', 'install', '--ignore-workspace');
-          const exitCode = yield* installCmd.pipe(
-            Command.workingDirectory(fixturePath),
-            Command.stdout('inherit'),
-            Command.stderr('inherit'),
-            Command.exitCode
-          );
+          const installCmd = ChildProcess.make('pnpm', ['install', '--ignore-workspace'], {
+            cwd: fixturePath,
+            stdout: 'inherit',
+            stderr: 'inherit',
+          });
+          const exitCode = Number(yield* spawner.exitCode(installCmd));
 
           if (exitCode !== 0) {
             yield* Effect.logError(
@@ -70,7 +73,7 @@ function setupFixturesTypeScript(fixturePaths: string[]) {
             `Successfully set up @composio/core for fixture: ${fixtureDirName}`
           );
         }).pipe(
-          Effect.catchAll(error =>
+          Effect.catch(error =>
             Effect.logError(`Failed to setup fixture ${fixtureDirName}: ${error}`)
           )
         );
@@ -88,6 +91,7 @@ function setupFixturesTypeScript(fixturePaths: string[]) {
 function setupFixturesPython(fixturePaths: string[]) {
   return Effect.gen(function* () {
     const fs = yield* FileSystem.FileSystem;
+    const spawner = yield* ChildProcessSpawner.ChildProcessSpawner;
 
     yield* Effect.all(
       fixturePaths.map(fixturePath => {
@@ -126,14 +130,13 @@ function setupFixturesPython(fixturePaths: string[]) {
 
           yield* Effect.logDebug(`Setting up \`uv\` for fixture: ${fixtureDirName}`);
 
-          const installCmd = Command.make(setupShPath);
-          const exitCode = yield* installCmd.pipe(
-            Command.workingDirectory(fixturePath),
-            Command.runInShell(true),
-            Command.stdout('inherit'),
-            Command.stderr('inherit'),
-            Command.exitCode
-          );
+          const installCmd = ChildProcess.make(setupShPath, [], {
+            cwd: fixturePath,
+            shell: true,
+            stdout: 'inherit',
+            stderr: 'inherit',
+          });
+          const exitCode = Number(yield* spawner.exitCode(installCmd));
 
           if (exitCode !== 0) {
             yield* Effect.logError(
@@ -146,7 +149,7 @@ function setupFixturesPython(fixturePaths: string[]) {
             `Successfully set up @composio/core for fixture: ${fixtureDirName}`
           );
         }).pipe(
-          Effect.catchAll(error =>
+          Effect.catch(error =>
             Effect.logError(`Failed to setup fixture ${fixtureDirName}: ${error}`)
           )
         );
@@ -176,16 +179,15 @@ export async function setup() {
           const entryPath = path.join(fixturesDir, entryName);
           const stat = yield* fs.stat(entryPath);
           return stat.type === 'Directory' ? Option.some(entryPath) : Option.none<string>();
-        }).pipe(Effect.catchAll(() => Effect.succeed(Option.none<string>())))
+        }).pipe(Effect.catch(() => Effect.succeed(Option.none<string>())))
       )
     ).pipe(Effect.map(Option.all), Effect.map(Option.getOrElse(() => [] as string[])));
 
     yield* setupFixturesPython(fixtureDirNames);
     yield* setupFixturesTypeScript(fixtureDirNames);
   }).pipe(
-    Effect.provide(BunFileSystem.layer),
-    Effect.provide(BunContext.layer),
-    Effect.provide(Logger.minimumLogLevel(LogLevel.Debug))
+    Effect.provide(BunServices.layer),
+    Effect.provide(Layer.succeed(References.MinimumLogLevel, 'Debug'))
   );
 
   await Effect.runPromise(program);

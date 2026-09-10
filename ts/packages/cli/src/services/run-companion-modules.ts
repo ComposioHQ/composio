@@ -2,14 +2,13 @@
 // the bundled `composio run` companion modules, and the binary build scripts. Every
 // helper is an Effect over the @effect/platform FileSystem/Path services; consumers
 // outside the CLI runtime (companion runtimes, scripts) provide their own platform layers.
-import * as FileSystem from '@effect/platform/FileSystem';
-import * as Path from '@effect/platform/Path';
-import type { PlatformError } from '@effect/platform/Error';
-import { Config, ConfigProvider, Data, Effect, Option, Schema } from 'effect';
+import * as FileSystem from 'effect/FileSystem';
+import * as Path from 'effect/Path';
+import { Config, ConfigProvider, Data, Effect, Option, PlatformError, Schema } from 'effect';
 import { extractZipSafely } from 'src/utils/extract-zip-safely';
 import { IS_RELEASE_BUILD } from 'src/constants';
 import { GitHubRelease } from 'src/effects/resolve-cli-release';
-import { BaseConfigProviderLive, extendConfigProvider } from 'src/services/config';
+import { getBaseConfigProvider, extendConfigProvider } from 'src/services/config';
 import { NodeOs } from 'src/services/node-os';
 import { atomicReplaceFile } from 'src/utils/atomic-replace';
 import { parseChecksumsText, sha256Hex } from 'src/utils/checksums';
@@ -136,7 +135,10 @@ const fileExists = (fs: FileSystem.FileSystem, filePath: string) =>
   fs.exists(filePath).pipe(Effect.orElseSucceed(() => false));
 
 const filePathFromUrl = (path: Path.Path, url: string): Effect.Effect<string> =>
-  Schema.decodeUnknown(Schema.URL)(url).pipe(Effect.flatMap(path.fromFileUrl), Effect.orDie);
+  Schema.decodeUnknownEffect(Schema.URLFromString)(url).pipe(
+    Effect.flatMap(path.fromFileUrl),
+    Effect.orDie
+  );
 
 const collectRelativeImportPaths = ({
   fs,
@@ -426,7 +428,7 @@ export const resolveRunningCliReleaseTag = (
 export const writeInstalledReleaseTag = (
   installDir: string,
   releaseTag: string
-): Effect.Effect<void, PlatformError, FileSystem.FileSystem | Path.Path> =>
+): Effect.Effect<void, PlatformError.PlatformError, FileSystem.FileSystem | Path.Path> =>
   Effect.gen(function* () {
     const fs = yield* FileSystem.FileSystem;
     const path = yield* Path.Path;
@@ -485,7 +487,7 @@ export const hasInstalledRunCompanionModules = (
   });
 
 const fetchGitHubJson = async <A, I>(
-  schema: Schema.Schema<A, I>,
+  schema: Schema.Codec<A, I>,
   {
     url,
     accessToken,
@@ -562,9 +564,15 @@ const toRepairError = (error: unknown) =>
 // Self-repair honors the unprefixed GITHUB_* contract (set by CI and the binary
 // build workflow, mirrored by cli-local-tools) first, then falls back to the
 // CLI-wide COMPOSIO_-prefixed spelling installed by cli-main's config provider.
-const repairConfigProvider = BaseConfigProviderLive.pipe(
-  ConfigProvider.orElse(() => extendConfigProvider(BaseConfigProviderLive))
-);
+//
+// Built lazily (a function, not a memoized module-level constant): each
+// `getBaseConfigProvider()` call snapshots `process.env` at call time, so a
+// frozen constant would never observe env var changes made after this module
+// is first imported (e.g. `vi.stubEnv` in tests).
+const getRepairConfigProvider = (): ConfigProvider.ConfigProvider =>
+  getBaseConfigProvider().pipe(
+    ConfigProvider.orElse(extendConfigProvider(getBaseConfigProvider()))
+  );
 
 const resolveRepairReleaseTag = ({
   execPath,
@@ -579,7 +587,12 @@ const resolveRepairReleaseTag = ({
       Config.option(Config.string('GITHUB_TAG')).pipe(
         Config.map(tag => Option.getOrUndefined(Option.map(tag, value => value.trim())))
       )
-    ).pipe(Effect.withConfigProvider(repairConfigProvider));
+    ).pipe(
+      Effect.provideServiceEffect(
+        ConfigProvider.ConfigProvider,
+        Effect.sync(() => getRepairConfigProvider())
+      )
+    );
     if (pinnedTag) {
       return pinnedTag;
     }
@@ -603,7 +616,12 @@ const githubRepairConfig = Effect.orDie(
       Config.map(Option.getOrUndefined)
     ),
   })
-).pipe(Effect.withConfigProvider(repairConfigProvider));
+).pipe(
+  Effect.provideServiceEffect(
+    ConfigProvider.ConfigProvider,
+    Effect.sync(() => getRepairConfigProvider())
+  )
+);
 
 /**
  * Restores a packaged install whose companion wrappers went missing.
@@ -623,7 +641,7 @@ export const repairMissingInstalledRunCompanionModules = ({
   appVersion: string;
 }): Effect.Effect<
   { readonly repaired: false } | { readonly repaired: true; readonly releaseTag: string },
-  RunCompanionRepairError | PlatformError,
+  RunCompanionRepairError | PlatformError.PlatformError,
   FileSystem.FileSystem | Path.Path
 > =>
   Effect.gen(function* () {

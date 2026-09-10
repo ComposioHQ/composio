@@ -40,7 +40,7 @@ const probes = [
   {
     task: 'implement a new Effect CLI command and wire it into the command tree',
     expect: 'cli-command',
-    terms: ['@effect/cli', 'command wiring', 'CLI command UX', 'CLI source edits'],
+    terms: ['effect/unstable/cli', 'command wiring', 'CLI command UX', 'CLI source edits'],
   },
   {
     task: 'write a Docker-based end-to-end test for the composio CLI binary',
@@ -68,6 +68,16 @@ const probes = [
     terms: ['Fumadocs', 'ADR-style records', 'docs decisions', 'docs review guidance'],
   },
   {
+    task: 'define a new Context.Service with an explicit layer and a Schema.TaggedErrorClass, and bump the Effect beta pins',
+    expect: 'effect-v4',
+    terms: [
+      'Context.Service',
+      'Schema.TaggedErrorClass',
+      'vendored effect source',
+      'bumping the Effect beta pins',
+    ],
+  },
+  {
     task: 'build or debug a durable backend agent with eve channels and schedules',
     expect: 'eve',
     terms: ['durable backend AI agents', 'eve framework', 'channels', 'schedules'],
@@ -85,7 +95,12 @@ const probes = [
   {
     task: 'create a Python provider adapter under python/providers with metadata',
     expect: 'python-providers',
-    terms: ['python/providers', 'Python provider adapters', 'provider metadata', 'framework-specific dependencies'],
+    terms: [
+      'python/providers',
+      'Python provider adapters',
+      'provider metadata',
+      'framework-specific dependencies',
+    ],
   },
   {
     task: 'publish the Python SDK to PyPI, bump the version and update the client pin',
@@ -115,7 +130,12 @@ const probes = [
   {
     task: 'implement a TypeScript provider package adapter for OpenAI and Anthropic',
     expect: 'typescript-providers',
-    terms: ['ts/packages/providers', 'TypeScript provider packages', 'Claude Agent SDK', 'framework adapters'],
+    terms: [
+      'ts/packages/providers',
+      'TypeScript provider packages',
+      'Claude Agent SDK',
+      'framework adapters',
+    ],
   },
   {
     task: 'modify @composio/core tool and toolkit behavior and modifiers',

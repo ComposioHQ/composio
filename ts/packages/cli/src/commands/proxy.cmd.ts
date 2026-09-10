@@ -1,5 +1,5 @@
-import { Args, Command, Options } from '@effect/cli';
-import { Data, Effect, Either, Option } from 'effect';
+import { Argument, Command, Flag } from 'effect/unstable/cli';
+import { Data, Effect, Result, Option } from 'effect';
 import type {
   SessionProxyExecuteParams,
   SessionProxyExecuteResponse,
@@ -24,43 +24,43 @@ import {
 import { parseJsonRecord } from 'src/utils/parse-json';
 import { resolveConnectedAccountForToolkit } from 'src/services/connected-account-selection';
 
-const endpoint = Args.text({ name: 'url' }).pipe(
-  Args.withDescription('Absolute or relative API endpoint to call through proxy execute.')
+const endpoint = Argument.string('url').pipe(
+  Argument.withDescription('Absolute or relative API endpoint to call through proxy execute.')
 );
 
-const toolkit = Options.text('toolkit').pipe(
-  Options.withAlias('t'),
-  Options.withDescription('Toolkit slug whose connected account should be used')
+const toolkit = Flag.string('toolkit').pipe(
+  Flag.withAlias('t'),
+  Flag.withDescription('Toolkit slug whose connected account should be used')
 );
 
-const account = Options.text('account').pipe(
-  Options.withDescription(
+const account = Flag.string('account').pipe(
+  Flag.withDescription(
     'Connected account selector. Matches alias, word_id, or connected account id for the toolkit.'
   ),
-  Options.optional
+  Flag.optional
 );
 
-const method = Options.text('method').pipe(
-  Options.withAlias('X'),
-  Options.withDefault('GET'),
-  Options.withDescription('HTTP method, curl-style (GET, POST, PUT, DELETE, PATCH)')
+const method = Flag.string('method').pipe(
+  Flag.withAlias('X'),
+  Flag.withDefault('GET'),
+  Flag.withDescription('HTTP method, curl-style (GET, POST, PUT, DELETE, PATCH)')
 );
 
-const headers = Options.text('header').pipe(
-  Options.withAlias('H'),
-  Options.withDescription('Header in "Name: value" format. Repeat for multiple headers.'),
-  Options.repeated
+const headers = Flag.string('header').pipe(
+  Flag.withAlias('H'),
+  Flag.withDescription('Header in "Name: value" format. Repeat for multiple headers.'),
+  Flag.atLeast(0)
 );
 
-const data = Options.text('data').pipe(
-  Options.withAlias('d'),
-  Options.withDescription('Request body as raw text, JSON, @file, or - for stdin'),
-  Options.optional
+const data = Flag.string('data').pipe(
+  Flag.withAlias('d'),
+  Flag.withDescription('Request body as raw text, JSON, @file, or - for stdin'),
+  Flag.optional
 );
 
-const skipConnectionCheck = Options.boolean('skip-connection-check').pipe(
-  Options.withDefault(false),
-  Options.withDescription(
+const skipConnectionCheck = Flag.boolean('skip-connection-check').pipe(
+  Flag.withDefault(false),
+  Flag.withDescription(
     'Skip the short-lived connected-account fail-fast check if you just connected an account'
   )
 );
@@ -116,7 +116,7 @@ export const parseProxyHeader = (value: string): { name: string; value: string }
 const resolveBodyInput = (input: Option.Option<string>) => resolveOptionalTextInput(input);
 
 export const parseProxyBody = (raw: string): unknown =>
-  Either.getOrElse(parseJsonRecord(raw), (): unknown => raw);
+  Result.getOrElse(parseJsonRecord(raw), (): unknown => raw);
 
 const formatProxyOutput = (
   result: Pick<SessionProxyExecuteResponse, 'status' | 'data' | 'headers' | 'binary_data'>
@@ -215,8 +215,8 @@ const runProxyConnectedToolkitFailFast = (params: {
       orgId: params.resolvedProject.orgId,
       consumerUserId: params.resolvedUserId,
     }).pipe(
-      Effect.catchAll(() => Effect.void),
-      Effect.forkDaemon,
+      Effect.catch(() => Effect.void),
+      Effect.forkDetach,
       Effect.asVoid
     );
 

@@ -50,4 +50,4 @@ export const toolkitFromToolSlug = (
     yield* catalog.remember(allSlugs);
 
     return matchToolkitFromToolSlug(toolSlug, allSlugs);
-  }).pipe(Effect.catchAll(() => Effect.succeed(guessToolkitFromToolSlug(toolSlug))));
+  }).pipe(Effect.catch(() => Effect.succeed(guessToolkitFromToolSlug(toolSlug))));

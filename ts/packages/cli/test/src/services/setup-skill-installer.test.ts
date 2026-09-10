@@ -1,7 +1,6 @@
-import * as FileSystem from '@effect/platform/FileSystem';
-import * as HttpClient from '@effect/platform/HttpClient';
-import * as HttpClientResponse from '@effect/platform/HttpClientResponse';
-import * as Path from '@effect/platform/Path';
+import * as FileSystem from 'effect/FileSystem';
+import { HttpClient, HttpClientResponse } from 'effect/unstable/http';
+import * as Path from 'effect/Path';
 import * as BunFileSystem from '@effect/platform-bun/BunFileSystem';
 import * as BunPath from '@effect/platform-bun/BunPath';
 import { describe, expect, layer } from '@effect/vitest';

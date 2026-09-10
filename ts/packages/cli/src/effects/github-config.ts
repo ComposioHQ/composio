@@ -1,6 +1,6 @@
 import { Config, Option } from 'effect';
 
-type GITHUB_CONFIG = Config.Config.Wrap<{
+type GITHUB_CONFIG = Config.Wrap<{
   API_BASE_URL: string;
   OWNER: string;
   REPO: string;

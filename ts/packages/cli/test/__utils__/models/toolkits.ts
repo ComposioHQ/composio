@@ -1,4 +1,5 @@
-import { Arbitrary, DateTime, FastCheck } from 'effect';
+import { FastCheck } from 'effect/testing';
+import { Schema, DateTime } from 'effect';
 import { Toolkit } from 'src/models/toolkits';
 
 /**
@@ -16,15 +17,15 @@ export const makeToolkitFixture = (slug: string, name: string = slug): Toolkit =
   meta: {
     description: `${name} toolkit`,
     categories: [],
-    created_at: DateTime.unsafeMake('2024-05-03T11:44:32.061Z'),
-    updated_at: DateTime.unsafeMake('2024-05-03T11:44:32.061Z'),
+    created_at: DateTime.makeUnsafe('2024-05-03T11:44:32.061Z'),
+    updated_at: DateTime.makeUnsafe('2024-05-03T11:44:32.061Z'),
     available_versions: [],
     tools_count: 0,
     triggers_count: 0,
   },
 });
 
-const ToolkitArbitary = Arbitrary.make(Toolkit);
+const ToolkitArbitary = Schema.toArbitrary(Toolkit)(FastCheck);
 
 /**
  * Creates multiple test toolkit instances by merging arbitrary generated toolkit data with the provided subset values.

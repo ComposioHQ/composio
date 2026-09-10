@@ -62,10 +62,9 @@ export const NO_CLI_DEBUG_FLAG_OVERRIDES: CliDebugFlagOverrides = {
  * command it then routes to, so every reader takes the values as an input instead of reaching for
  * process-wide state.
  */
-export class CliDebugFlags extends Context.Tag('services/CliDebugFlags')<
-  CliDebugFlags,
-  CliDebugFlagOverrides
->() {}
+export class CliDebugFlags extends Context.Service<CliDebugFlags, CliDebugFlagOverrides>()(
+  'services/CliDebugFlags'
+) {}
 
 export const cliDebugFlagsLayer = (
   overrides: CliDebugFlagOverrides = NO_CLI_DEBUG_FLAG_OVERRIDES
@@ -125,10 +124,9 @@ export const debugFlagsToChildEnv = (flags: ChildProcessDebugFlags): Record<stri
  * detached worker process, where a hard requirement could not be satisfied, so readers resolve it
  * with `Effect.serviceOption` and fall back to `COMPOSIO_CLI_TELEMETRY_DEBUG`.
  */
-export class TelemetryDebugMode extends Context.Tag('services/TelemetryDebugMode')<
-  TelemetryDebugMode,
-  boolean
->() {}
+export class TelemetryDebugMode extends Context.Service<TelemetryDebugMode, boolean>()(
+  'services/TelemetryDebugMode'
+) {}
 
 export const telemetryDebugModeLayer = (enabled: boolean): Layer.Layer<TelemetryDebugMode> =>
   Layer.succeed(TelemetryDebugMode, enabled);
