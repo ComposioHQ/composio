@@ -1,0 +1,218 @@
+---
+title: Django backend integrations
+description: Use Composio from deterministic Django services without handling OAuth tokens
+keywords: [Django, backend, deterministic, OAuth, tokens, direct execution]
+---
+
+Use Composio when your Django application already knows which operation to run. Your view, service, or background task selects a tool, supplies validated arguments, and receives the result. No LLM or agent loop is required.
+
+This pattern is useful for workflows such as:
+
+- Syncing a user's calendar after a scheduled job runs
+- Creating a GitHub issue from a Django form submission
+- Sending a Slack notification after a model changes
+- Reading or writing data from a connected third-party account
+
+The Django application stores a Composio connection ID, not the provider's OAuth access or refresh token. Composio uses the connection when it executes the request.
+
+## Architecture
+
+```text
+Django user -> Connect Link -> Composio stores provider credentials
+                                      |
+Django service/task -> tool slug + connection ID -> Composio -> provider API
+```
+
+Keep these responsibilities separate:
+
+1. **Authentication view**: starts the hosted connection flow.
+2. **Connection callback**: records the returned connection ID after success.
+3. **Integration service**: executes a known tool with validated arguments.
+4. **Background task**: runs retries and scheduled work outside the request cycle.
+
+## Install and configure
+
+Install the Python SDK in the Django environment:
+
+```bash
+pip install composio
+```
+
+Set the API key in the environment. Do not put it in source control or expose it to browser code.
+
+```bash title=".env"
+COMPOSIO_API_KEY=your_composio_api_key
+COMPOSIO_AUTH_CONFIG_ID=your_auth_config_id
+```
+
+Create a Composio Auth Config for the toolkit you need, then copy its ID into Django settings:
+
+```python title="settings.py"
+import os
+
+COMPOSIO_AUTH_CONFIG_ID = os.environ["COMPOSIO_AUTH_CONFIG_ID"]
+COMPOSIO_API_KEY = os.environ["COMPOSIO_API_KEY"]
+```
+
+Use a separate Auth Config for different OAuth apps, scopes, or environments. Start with the narrowest scopes that support the operation.
+
+## Connect a user's account
+
+Start the hosted flow from a Django view. Use your application's stable user ID as `user_id`; do not use an email address if it can change.
+
+```python title="integrations/views.py"
+from django.conf import settings
+from django.contrib.auth.decorators import login_required
+from django.core import signing
+from django.shortcuts import redirect
+from urllib.parse import urlencode
+
+from composio import Composio
+
+composio = Composio(api_key=settings.COMPOSIO_API_KEY)
+
+
+@login_required
+def connect_github(request):
+    state = signing.dumps({"user_id": request.user.pk})
+    callback_url = request.build_absolute_uri(
+        "/integrations/github/callback/?"
+        + urlencode({"state": state})
+    )
+    connection_request = composio.connected_accounts.link(
+        user_id=f"django-user-{request.user.pk}",
+        auth_config_id=settings.COMPOSIO_AUTH_CONFIG_ID,
+        callback_url=callback_url,
+    )
+    return redirect(connection_request.redirect_url)
+```
+
+The callback URL receives `status` and `connected_account_id`. Store the connection ID against the authenticated Django user only after checking that the callback belongs to the connection flow that user started.
+
+```python title="integrations/views.py"
+from django.contrib.auth.decorators import login_required
+from django.core import signing
+from django.http import HttpResponseBadRequest
+from django.shortcuts import redirect
+
+from .models import ExternalConnection
+
+
+@login_required
+def github_callback(request):
+    if request.GET.get("status") != "success":
+        return HttpResponseBadRequest("The account connection failed.")
+
+    connection_id = request.GET.get("connected_account_id")
+    if not connection_id:
+        return HttpResponseBadRequest("The connection ID is missing.")
+
+    try:
+        state = signing.loads(request.GET["state"], max_age=600)
+    except (KeyError, signing.BadSignature, signing.SignatureExpired):
+        return HttpResponseBadRequest("The connection state is invalid or expired.")
+
+    if state["user_id"] != request.user.pk:
+        return HttpResponseBadRequest("The connection belongs to another user.")
+
+    ExternalConnection.objects.update_or_create(
+        user=request.user,
+        provider="github",
+        defaults={"composio_connection_id": connection_id},
+    )
+    return redirect("integration-settings")
+```
+
+A minimal model needs only the provider and Composio connection ID:
+
+```python title="integrations/models.py"
+from django.conf import settings
+from django.db import models
+
+
+class ExternalConnection(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    provider = models.CharField(max_length=64)
+    composio_connection_id = models.CharField(max_length=64)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["user", "provider"],
+                name="one_external_connection_per_provider",
+            )
+        ]
+```
+
+## Execute from application code
+
+Put tool calls in a service module so views and jobs use the same deterministic behavior. Pin the toolkit version when your code reads the response shape. Replace the example version with the version for your toolkit.
+
+```python title="integrations/services.py"
+from django.conf import settings
+
+from composio import Composio
+
+from .models import ExternalConnection
+
+composio = Composio(api_key=settings.COMPOSIO_API_KEY)
+
+
+def list_github_issues(*, user, repository: str):
+    connection = ExternalConnection.objects.get(user=user, provider="github")
+    owner, repo = repository.split("/", maxsplit=1)
+
+    return composio.tools.execute(
+        "GITHUB_LIST_ISSUES",
+        user_id=f"django-user-{user.pk}",
+        connected_account_id=connection.composio_connection_id,
+        version="20251111_00",
+        arguments={"owner": owner, "repo": repo, "state": "open"},
+    )
+```
+
+The same service can be called by a form view, a management command, or a task queue worker. Validate arguments before execution and define which tool slugs your application may call instead of accepting a tool slug from a request.
+
+For endpoints that do not have a predefined tool, use [Proxy Execute](/docs/tools-direct/executing-tools#proxy-execute) with the same connection ID. Prefer a relative endpoint and keep the allowed endpoint set in application code.
+
+## Run work in the background
+
+Third-party requests can be slow or rate-limited. For scheduled or post-save work, call the service from your task queue rather than holding an HTTP request open.
+
+```python title="integrations/tasks.py"
+from celery import shared_task
+
+from .models import ExternalConnection
+from .services import list_github_issues
+
+
+@shared_task(autoretry_for=(Exception,), retry_backoff=True, max_retries=3)
+def sync_open_issues(user_id: int, repository: str):
+    connection = ExternalConnection.objects.get(
+        user_id=user_id,
+        provider="github",
+    )
+    return list_github_issues(user=connection.user, repository=repository)
+```
+
+Use an idempotency key or provider-side deduplication for write operations. Retries can repeat a request after a timeout even when the provider completed it.
+
+## Keep tokens out of Django
+
+The token-safe boundary is the connection ID. Apply these rules:
+
+- Store only `composio_connection_id` in your application database.
+- Never request, persist, or return raw provider credentials from a Django view.
+- Keep `COMPOSIO_API_KEY` server-side and load it from the deployment secret store.
+- Redact request arguments and third-party responses before writing application logs.
+- Use per-user IDs and connection IDs; never reuse one user's connection for another user.
+- Check connection status before presenting an integration as ready, and send expired users through the connection flow again.
+- Review the scopes in each Auth Config and use separate read-only and write configurations when appropriate.
+
+Hosted Composio keeps provider credentials in Composio's credential system. If your requirement is to keep credentials inside your own infrastructure, review the available deployment and compliance options before choosing a hosted architecture.
+
+## Choose direct execution or sessions
+
+Use this guide's direct execution pattern when Django owns the workflow and the operation is known before the request runs. Use [sessions](/docs/configuring-sessions) when an LLM agent must discover tools, ask for authentication during a conversation, or choose actions at runtime.
+
+See [Sessions vs Direct Execution](/docs/sessions-vs-direct-execution) for the tradeoffs and [Authenticating tools](/docs/tools-direct/authenticating-tools) for other connection methods.

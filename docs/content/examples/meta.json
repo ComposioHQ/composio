@@ -3,6 +3,7 @@
   "root": true,
   "pages": [
     "index",
+    "django-backend",
     "general-agent-with-pi",
     "standup-slackbot",
     "local-sandbox-pr-reviewer",
