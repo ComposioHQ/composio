@@ -588,7 +588,7 @@ ${page.data.description || ''}`;
   }
 
   const footer = includeFooter
-    ? `\n\n---\n\n📚 **More documentation:** [View all docs](https://docs.composio.dev/llms.txt) | [Glossary](https://docs.composio.dev/llms.mdx/reference/glossary) | [Examples](https://docs.composio.dev/llms.mdx/examples) | [API Reference](https://docs.composio.dev/llms.mdx/reference)`
+    ? `\n\n---\n\n📚 **More documentation:** [View all docs](https://docs.composio.dev/llms.txt) | [Changelog](https://docs.composio.dev/docs/changelog.md) | [Glossary](https://docs.composio.dev/llms.mdx/reference/glossary) | [Examples](https://docs.composio.dev/llms.mdx/examples) | [API Reference](https://docs.composio.dev/llms.mdx/reference)`
     : '';
 
   // Legacy pages (frontmatter `legacy: true`) document point-in-time migrations
