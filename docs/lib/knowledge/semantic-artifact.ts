@@ -136,6 +136,9 @@ export function decodeVectors(
   return values;
 }
 
+/** A valid artifact that needs to be rebuilt for the current corpus. */
+export class SemanticArtifactStaleError extends Error {}
+
 export function validateSemanticArtifact(
   artifact: KnowledgeSemanticArtifact,
   expected: {
@@ -156,13 +159,6 @@ export function validateSemanticArtifact(
   if (artifact.source.repository !== 'ComposioHQ/support-knowledge') {
     throw new Error('Semantic artifact source repository mismatch');
   }
-  const supportKnowledgeCommit = expected.supportKnowledgeCommit ?? expected.sourceCommit;
-  if (!supportKnowledgeCommit || artifact.source.supportKnowledgeCommit !== supportKnowledgeCommit) {
-    throw new Error('Semantic artifact source commit mismatch');
-  }
-  if (expected.docsContentHash && artifact.source.docsContentHash !== expected.docsContentHash) {
-    throw new Error('Semantic artifact docs content hash mismatch');
-  }
   if (artifact.records.length === 0) throw new Error('Semantic artifact has no records');
 
   const seen = new Set<string>();
@@ -175,13 +171,6 @@ export function validateSemanticArtifact(
       throw new Error(`Semantic artifact has duplicate object ID: ${record.objectID}`);
     }
     seen.add(record.objectID);
-    const expectedHash = expected.contentHashes?.get(record.objectID);
-    if (expected.contentHashes && expectedHash !== record.contentHash) {
-      throw new Error(`Semantic artifact content hash mismatch for ${record.objectID}`);
-    }
-  }
-  if (expected.contentHashes && expected.contentHashes.size !== artifact.records.length) {
-    throw new Error('Semantic artifact content hash record count mismatch');
   }
 
   const vectors = decodeVectors(artifact.vectorsBase64, artifact.records.length, artifact.dimensions);
@@ -195,6 +184,24 @@ export function validateSemanticArtifact(
     }
     if (Math.abs(Math.sqrt(squaredNorm) - 1) > 0.002) {
       throw new Error(`Semantic vector for ${artifact.records[row]?.objectID} is not normalized`);
+    }
+  }
+  // Check integrity first so advisory freshness checks cannot hide corrupt artifacts.
+  const supportKnowledgeCommit = expected.supportKnowledgeCommit ?? expected.sourceCommit;
+  if (!supportKnowledgeCommit || artifact.source.supportKnowledgeCommit !== supportKnowledgeCommit) {
+    throw new SemanticArtifactStaleError('Semantic artifact source commit mismatch');
+  }
+  if (expected.docsContentHash && artifact.source.docsContentHash !== expected.docsContentHash) {
+    throw new SemanticArtifactStaleError('Semantic artifact docs content hash mismatch');
+  }
+  if (expected.contentHashes) {
+    for (const record of artifact.records) {
+      if (expected.contentHashes.get(record.objectID) !== record.contentHash) {
+        throw new SemanticArtifactStaleError(`Semantic artifact content hash mismatch for ${record.objectID}`);
+      }
+    }
+    if (expected.contentHashes.size !== artifact.records.length) {
+      throw new SemanticArtifactStaleError('Semantic artifact content hash record count mismatch');
     }
   }
   return artifact;
