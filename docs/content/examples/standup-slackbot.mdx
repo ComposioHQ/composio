@@ -51,7 +51,7 @@ The Slack bot itself follows a deterministic flow: the same menu every day. When
 
 ## Setup
 
-You need a [Composio API key](https://dashboard.composio.dev/~/project/settings/api-keys?utm_source=docs&utm_medium=content&utm_campaign=examples-standup-slackbot), a Slack workspace you can install an app into, and Node with [tsx](https://nodejs.org). The finished bot deploys to [Vercel](https://vercel.com) as two serverless functions, a cron and an interactivity handler, so there's no long-running server.
+You need a [Composio API key](https://dashboard.composio.dev/~/project/settings/api-keys?utm_source=docs&utm_medium=content&utm_campaign=examples-standup-slackbot), a Slack workspace you can install an app into, Node.js 22, and the [Vercel CLI](https://vercel.com/docs/cli). The finished bot deploys to Vercel as two serverless functions, a cron and an interactivity handler, so there's no long-running server.
 
 <PackageInstall packages="@composio/core @composio/vercel ai dayjs" />
 
@@ -154,7 +154,7 @@ Open that link to approve the bot, and the connection goes live:
 </Step>
 </Steps>
 
-The script is idempotent and repeatable. Forgot a scope, or hit an issue? No stress, just re-run it with `--reconnect`.
+The script is idempotent and repeatable. Forgot a scope, or hit an issue? No stress, just run `npm run setup:reconnect`.
 
 ## Talk to Slack
 
@@ -217,11 +217,15 @@ The bot posts the result back as a draft the member can confirm or edit:
 
 ## The whole project
 
-<RepoBrowser source="standup" caption={null} />
+The complete, deployable bot lives in its own repository:
+
+<Cards>
+  <Card title="ComposioHQ/standup-slackbot" href="https://github.com/ComposioHQ/standup-slackbot" description="Clone the daily standup bot, configure your team and integrations, connect Slack, and deploy it to Vercel." />
+</Cards>
 
 ## Run it
 
-Edit `standup.config.ts` with your team (each member's Slack email and timezone, plus your channel and GitHub org), set your four environment variables, run `npx tsx scripts/setup.ts` once to connect your bot, then `vercel deploy`.
+Clone the repository and follow its README. Edit `standup.config.ts`, copy `.env.local.example` to `.env.local`, run `npm ci` and `npm run setup`, then deploy with `vercel deploy --prod`.
 <Cards>
   <Card title="Configuring sessions" href="/docs/configuring-sessions" description="What a session can scope: toolkits, tools, connections, and connection management" />
   <Card title="White-labeling authentication" href="/docs/authentication/white-labeling-authentication" description="Ship a bot under your own app's name, icon, and credentials" />
