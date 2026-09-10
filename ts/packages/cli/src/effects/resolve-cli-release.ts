@@ -1,5 +1,5 @@
 import { Data, Effect, Option, Schema } from 'effect';
-import { HttpClient, HttpClientResponse } from '@effect/platform';
+import { HttpClient, HttpClientResponse } from 'effect/unstable/http';
 import { semverComparator } from 'src/effects/compare-semver';
 import type { CliReleaseChannel } from 'src/constants';
 

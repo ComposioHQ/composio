@@ -220,6 +220,24 @@ jobs:
           echo "available=true" >> "$GITHUB_OUTPUT"
           echo "✅ API keys are configured"
 
+      # Pre-build the Deno image like the Node and CLI jobs do. Without this,
+      # ensureDenoImage() builds the image inside a bun:test beforeAll hook,
+      # where the bun shell's quiet mode swallows all build output and a slow
+      # registry or apt moment turns into an opaque hook timeout instead of a
+      # visible, retryable step failure.
+      - name: Pre-build Docker image for e2e tests
+        if: steps.api-keys.outputs.available == 'true'
+        run: |
+          NODE_MAJOR="${{ steps.setup-toolchain.outputs.node-version }}"
+          docker build -f ts/e2e-tests/_utils/Dockerfile.deno \
+            --build-arg DENO_VERSION=${{ matrix.deno-version }} \
+            --build-arg NODE_MAJOR=${NODE_MAJOR%%.*} \
+            --label composio.e2e=true \
+            --label composio.runtime=deno \
+            --label "composio.deno_version=${{ matrix.deno-version }}" \
+            -t "composio-e2e-deno:${{ matrix.deno-version }}" \
+            .
+
       - name: Run Deno E2E Tests
         if: steps.api-keys.outputs.available == 'true'
         run: pnpm run test:e2e:deno

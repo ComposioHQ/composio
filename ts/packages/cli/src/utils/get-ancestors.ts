@@ -1,5 +1,4 @@
-import { Path } from '@effect/platform';
-import { Effect } from 'effect';
+import { Effect, Path } from 'effect';
 
 /**
  * Walk up from a directory to the filesystem root, collecting all ancestor paths.

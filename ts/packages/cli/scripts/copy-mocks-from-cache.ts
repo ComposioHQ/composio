@@ -1,7 +1,8 @@
 import process from 'node:process';
-import { Config, ConfigProvider, Console, Effect, Logger, Layer, LogLevel } from 'effect';
-import { BunContext, BunFileSystem, BunRuntime } from '@effect/platform-bun';
-import { FileSystem } from '@effect/platform';
+import { Config, ConfigProvider, Console, Effect, Logger, Layer, References } from 'effect';
+import * as BunServices from '@effect/platform-bun/BunServices';
+import * as BunRuntime from '@effect/platform-bun/BunRuntime';
+import { FileSystem } from 'effect/FileSystem';
 import { teardown } from './_shared';
 import path from 'node:path';
 import { $ } from 'bun';
@@ -16,7 +17,7 @@ import { NodeOs } from 'src/services/node-os';
  */
 export function copyMocksFromCache() {
   return Effect.gen(function* () {
-    const fs = yield* FileSystem.FileSystem;
+    const fs = yield* FileSystem;
     const defaultMocksDir = path.join(process.cwd(), 'test', '__mocks__');
 
     const cacheDir = yield* setupCacheDir;
@@ -35,7 +36,7 @@ export function copyMocksFromCache() {
 
       const cacheFileExists = yield* fs
         .exists(cacheFilePath)
-        .pipe(Effect.orElse(() => Effect.succeed(false)));
+        .pipe(Effect.orElseSucceed(() => false));
 
       if (!cacheFileExists) {
         yield* Effect.logWarning(`Cache file ${cacheFilePath} does not exist, skipping.`);
@@ -50,19 +51,16 @@ export function copyMocksFromCache() {
 }
 
 const ConfigLive = Effect.gen(function* () {
-  const logLevel = yield* Config.logLevel('COMPOSIO_LOG_LEVEL').pipe(
-    Config.withDefault(LogLevel.Info)
-  );
+  const logLevel = yield* Config.logLevel('COMPOSIO_LOG_LEVEL').pipe(Config.withDefault('Info'));
 
-  return Logger.minimumLogLevel(logLevel);
-}).pipe(Layer.unwrapEffect, Layer.merge(Layer.setConfigProvider(ConfigProvider.fromEnv())));
+  return Layer.succeed(References.MinimumLogLevel, logLevel);
+}).pipe(Layer.unwrap, Layer.merge(ConfigProvider.layer(ConfigProvider.fromEnv())));
 
 if (require.main === module) {
   copyMocksFromCache().pipe(
     Effect.provide(ConfigLive),
-    Effect.provide(Logger.pretty),
-    Effect.provide(BunContext.layer),
-    Effect.provide(BunFileSystem.layer),
+    Effect.provide(Logger.layer([Logger.consolePretty()])),
+    Effect.provide(BunServices.layer),
     Effect.provide(NodeOs.Default),
     Effect.scoped,
     Effect.map(() => ({ message: 'Process completed successfully.' })),

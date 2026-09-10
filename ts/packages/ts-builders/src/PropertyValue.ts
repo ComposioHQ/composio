@@ -1,4 +1,5 @@
 import { DocComment } from './DocComment';
+import { isValidJsIdentifier } from './isValidJsIdentifier';
 import { WellKnownSymbol } from './WellKnownSymbol';
 import { ValueBuilder } from './ValueBuilder';
 import { Writer } from './Writer';
@@ -29,7 +30,11 @@ export class PropertyValue implements BasicBuilder {
     }
 
     if (typeof this.name === 'string') {
-      writer.write(this.name);
+      if (isValidJsIdentifier(this.name)) {
+        writer.write(this.name);
+      } else {
+        writer.write('[').write(JSON.stringify(this.name)).write(']');
+      }
     } else {
       writer.write('[').write(this.name).write(']');
     }

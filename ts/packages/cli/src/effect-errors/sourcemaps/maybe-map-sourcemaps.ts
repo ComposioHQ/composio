@@ -1,5 +1,5 @@
-import type { FileSystem } from '@effect/platform/FileSystem';
-import type { Path } from '@effect/platform/Path';
+import type { FileSystem } from 'effect/FileSystem';
+import type { Path } from 'effect/Path';
 import { Effect } from 'effect';
 
 import { stackAtRegex } from 'effect-errors/logic/stack';

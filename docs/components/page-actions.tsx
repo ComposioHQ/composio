@@ -6,8 +6,8 @@ import { Check, ChevronDown, Copy, ExternalLink, FileText } from 'lucide-react';
 interface PageActionsProps {
   path: string;
   /**
-   * 'overlap-title' (default) lifts the button into the row above via a
-   * negative top margin so it lands to the right of `<DocsTitle>`.
+   * 'overlap-title' (default) places the button below the title on mobile,
+   * then lifts it to the right of `<DocsTitle>` on medium screens and up.
    * 'inline' renders the button as a normal inline-block — use when the
    * caller already controls layout (e.g. the Toolkits landing header).
    */
@@ -22,9 +22,8 @@ const FALLBACK_ORIGIN = 'https://docs.composio.dev';
  *  - Open in ChatGPT (deep link with a prefilled prompt)
  *  - Open in Claude (deep link with a prefilled prompt)
  *
- * Sits to the right of the page title via `not-prose -mt-12 mb-2 flex justify-end`
- * so it overlaps the row above (next to <DocsTitle>) without ever crashing into
- * the title text on narrow viewports.
+ * Keeps its own row on narrow viewports so it cannot overlap the title text.
+ * On medium screens and up, a negative margin lifts it beside the title.
  */
 export function PageActions({ path, variant = 'overlap-title' }: PageActionsProps) {
   const [open, setOpen] = useState(false);
@@ -77,7 +76,7 @@ export function PageActions({ path, variant = 'overlap-title' }: PageActionsProp
   }, [path]);
 
   return (
-    <div className={variant === 'overlap-title' ? 'not-prose -mt-12 mb-2 flex justify-end pointer-events-none' : 'not-prose inline-block'}>
+    <div className={variant === 'overlap-title' ? 'not-prose md:-mt-12 mb-2 flex justify-end pointer-events-none' : 'not-prose inline-block'}>
       <div ref={wrapperRef} className="relative pointer-events-auto">
         <button
           type="button"

@@ -1,0 +1,105 @@
+---
+title: 'CLI 0.4.1 and SDK updates protect credentials, file transfers, and JSON Schema behavior'
+description: 'CLI 0.4.1, Python SDK 0.21.1, and TypeScript SDK updates keep credentials private, bound file downloads, improve JSON Schema conversion, and route custom tools predictably.'
+date: '2026-09-04'
+---
+
+CLI `@composio/cli` `0.4.1`, Python SDK `composio` `0.21.1`, and TypeScript SDK updates strengthen credential handling and file transfers. This release also improves JSON Schema conversion across Python and TypeScript, preserves referenced definitions across TypeScript providers, and makes custom tools with shared child slugs route predictably in both SDKs.
+
+### Release versions
+
+| Package                                             | Version  |
+| --------------------------------------------------- | -------- |
+| CLI `@composio/cli`                                 | `0.4.1`  |
+| Python `composio`                                   | `0.21.1` |
+| TypeScript `@composio/core`                         | `0.18.1` |
+| TypeScript `@composio/slim`                         | `0.18.1` |
+| TypeScript `@composio/experimental`                 | `0.2.4`  |
+| TypeScript `@composio/claude-agent-sdk`             | `0.12.0` |
+| TypeScript `@composio/google`                       | `0.11.0` |
+| TypeScript `@composio/langchain`                    | `0.11.0` |
+| TypeScript `@composio/llamaindex`                   | `0.11.0` |
+| TypeScript `@composio/openai`                       | `0.12.2` |
+| TypeScript `@composio/openai-agents`                | `0.11.0` |
+| TypeScript `@composio/vercel`                       | `0.12.0` |
+| TypeScript `@composio/json-schema-to-effect-schema` | `0.1.1`  |
+| TypeScript `@composio/json-schema-to-zod`           | `0.3.2`  |
+
+### Credentials stay private in files and logs
+
+The CLI now creates user data, pending login sessions, and agent identity files with owner-only `0600` permissions. When it encounters a credential file created by an older CLI with broader `0644` permissions, it tries to repair the mode before reading the file. A permission-repair failure does not prevent a valid file from being read. Writes remain atomic, so tightening permissions does not trade away protection against partial files.
+
+The Python and TypeScript SDKs now redact credential-shaped values at their shared log boundaries. Redaction covers structured metadata, serialized JSON, nested values, exception tracebacks, authorization headers, and URLs with sensitive query parameters. The OpenAI Responses provider also stops printing credential-bearing MCP server URLs to standard output and logs only server names at debug level.
+
+<Callout type="warn">
+  If an MCP server URL from an older `@composio/openai` release was captured in application or
+  infrastructure logs, treat that URL as exposed and regenerate the endpoint.
+</Callout>
+
+Credit to independent security researcher Syed Anas Mohiuddin for reporting the legacy CLI credential-file permission issue.
+
+### File transfers have bounded sizes and consistent errors
+
+Automatic S3 downloads in both SDKs now stop at a fixed 100 MiB limit, including responses that omit or misreport `Content-Length`.
+
+Python removes partial files when a download fails and maps transport or filesystem failures to `ErrorDownloadingFile`. TypeScript maps connection and streamed-body failures from `RemoteFile` to `RemoteFileDownloadError`, closes unused response bodies, and applies the same 100 MiB bound to `buffer()`, `blob()`, `text()`, and `save()`.
+
+CLI URL uploads now use the SDK's SSRF protections for both the source URL and the API-provided upload destination. Redirects are checked again, Node.js and Bun connect to the validated address, and internal destinations are rejected before file bytes are sent.
+
+### Referenced tool schemas retain their types
+
+The Claude Agent SDK, Google, LangChain, LlamaIndex, OpenAI Agents, and Vercel providers now resolve internal `$ref` and `$defs` references before translating a tool's input schema. Properties reachable only through a reference previously became untyped values or dangling references in the provider-facing schema.
+
+For example, a tool schema can define an object once and reuse it:
+
+```json
+{
+  "$defs": {
+    "Recipient": {
+      "type": "object",
+      "properties": {
+        "email": { "type": "string" }
+      },
+      "required": ["email"]
+    }
+  },
+  "type": "object",
+  "properties": {
+    "recipient": { "$ref": "#/$defs/Recipient" }
+  }
+}
+```
+
+Provider adapters now preserve the `recipient.email` string constraint instead of reducing `recipient` to an untyped value. The OpenAI Agents strict structured-output path is unchanged because OpenAI handles `$defs` and `$ref` natively, including recursive references.
+
+When a `$ref` has no matching entry in `$defs`, provider translation now falls back to a permissive object schema instead of throwing an error.
+
+<Callout>
+  This changes the provider-facing JSON Schema for tools that use `$ref`. Snapshot tests on
+  translated tool definitions may need updates. Runtime calls that do not inspect or snapshot those
+  schemas do not need migration work.
+</Callout>
+
+### Schema conversion matches JSON Schema dialects more closely
+
+Python schema conversion and `@composio/json-schema-to-zod` now preserve Draft 7 acceptance across primitive, composed, referenced, conditional, and typeless schemas. Converted validators no longer accept booleans as integers, and they correctly handle tuple schemas with `additionalItems`, object and scalar `allOf` rules, internal `$ref` values, conditional branches, and constraints without an explicit `type`.
+
+`@composio/json-schema-to-effect-schema` now enforces the OpenAPI 3.0 and Draft 4 boolean forms of `exclusiveMinimum` and `exclusiveMaximum`, so an exclusive bound no longer accepts the boundary value.
+
+Credit to [simpleqt](https://github.com/simpleqt) for originally surfacing the schema conversion cases.
+
+### Custom tool slugs are qualified by toolkit
+
+Python and TypeScript sessions now distinguish custom tools by toolkit and original slug. Two custom toolkits can both define a child such as `GREP`, `SEARCH`, or `VERSION` without one handler replacing or hiding the other.
+
+Toolkit-qualified final slugs such as `LOCAL_ALPHA_GREP` and `LOCAL_BETA_GREP` route to the matching handler. A bare `GREP` alias remains available when it identifies exactly one local tool. When it is ambiguous, the SDK raises an error that lists the final slugs you can use instead of choosing a handler silently.
+
+### CLI and SDK reliability fixes
+
+- CLI spinners stay on one terminal row when a message is wider than the terminal, so `composio upgrade` no longer prints hundreds of progress lines in a narrow pane.
+- TypeScript trigger subscriptions now apply the requested `authConfigId` filter before invoking callbacks.
+- Python uploads `.jpg` files with the standard `image/jpeg` content type while continuing to accept `image/jpg` from external responses.
+
+### Backward compatibility
+
+This release does not remove or rename public APIs. Provider packages receive minor version bumps because referenced schemas now retain their real shape, which can change schema snapshots. Corrected JSON Schema conversion may also change whether previously misclassified inputs pass generated validators. Ambiguous bare custom-tool slugs now fail with the qualified alternatives rather than routing unpredictably.

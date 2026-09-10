@@ -1,4 +1,4 @@
-import { Args, Command, Options } from '@effect/cli';
+import { Argument, Command, Flag } from 'effect/unstable/cli';
 import { Data, Effect, Option } from 'effect';
 import { ComposioClientSingleton, ComposioToolkitsRepository } from 'src/services/composio-clients';
 import { TerminalUI } from 'src/services/terminal-ui';
@@ -14,22 +14,22 @@ class ToolkitsInfoRequestError extends Data.TaggedError('commands/ToolkitsInfoRe
   readonly cause: unknown;
 }> {}
 
-const slug = Args.text({ name: 'slug' }).pipe(
-  Args.withDescription('Toolkit slug (e.g. "gmail")'),
-  Args.optional
+const slug = Argument.string('slug').pipe(
+  Argument.withDescription('Toolkit slug (e.g. "gmail")'),
+  Argument.optional
 );
 
-const userId = Options.text('user-id').pipe(
-  Options.optional,
-  Options.withDescription(
+const userId = Flag.string('user-id').pipe(
+  Flag.optional,
+  Flag.withDescription(
     'User ID for connection status (falls back to project/global test_user_id, then "default")'
   )
 );
 
-const allDetails = Options.boolean('all').pipe(
-  Options.withAlias('a'),
-  Options.withDefault(false),
-  Options.withDescription('Show all available toolkit details, including auth config fields')
+const allDetails = Flag.boolean('all').pipe(
+  Flag.withAlias('a'),
+  Flag.withDefault(false),
+  Flag.withDescription('Show all available toolkit details, including auth config fields')
 );
 
 /**
@@ -124,7 +124,7 @@ export const toolkitsCmd$Info = Command.make(
         )
         .pipe(
           Effect.asSome,
-          Effect.catchAll(error =>
+          Effect.catch(error =>
             Effect.gen(function* () {
               const message = extractMessage(error) ?? `Failed to fetch toolkit "${slugValue}".`;
               yield* ui.log.error(message);
@@ -154,7 +154,7 @@ export const toolkitsCmd$Info = Command.make(
               command: `> composio dev toolkits info "${s.slug}"`,
             }))
           ),
-          Effect.catchAll(() => Effect.succeed([] as { label: string; command: string }[]))
+          Effect.catch(() => Effect.succeed([] as { label: string; command: string }[]))
         );
 
         const [first] = suggestions;

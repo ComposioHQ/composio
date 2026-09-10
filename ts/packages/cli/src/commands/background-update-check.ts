@@ -1,44 +1,42 @@
-import { Command } from '@effect/cli';
-import { Effect, Option } from 'effect';
+import { Effect, Predicate } from 'effect';
+import { Command } from 'effect/unstable/cli';
 import { versionCmd } from './version.cmd';
 import { checkForUpdateInBackground } from 'src/services/update-check';
 
-type RootCommandInput = {
-  readonly subcommand: Option.Option<unknown>;
-};
-
-type ParsedSubcommand = readonly [commandTag: unknown, input: unknown];
-
-const isParsedSubcommand = (value: unknown): value is ParsedSubcommand =>
-  Array.isArray(value) && value.length === 2;
-
-const isExplicitVersionCheck = (subcommand: Option.Option<unknown>): boolean =>
-  Option.exists(subcommand, selected => {
-    if (!isParsedSubcommand(selected) || selected[0] !== versionCmd.tag) {
-      return false;
-    }
-
-    const input = selected[1];
-    return typeof input === 'object' && input !== null && 'check' in input && input.check === true;
-  });
+const isExplicitVersionCheck = (commandName: string, input: unknown): boolean =>
+  commandName === versionCmd.name && Predicate.hasProperty(input, 'check') && input.check === true;
 
 /**
- * Starts the background update request after @effect/cli has parsed the selected command.
+ * Builds the root command so the background update request starts only after the CLI has parsed
+ * the selected command, and never for an explicit `composio version --check`.
  *
- * @effect/cli v3 retains the selected command tag alongside its parsed input at runtime,
- * even though the public root-input type erases that tuple.
+ * `effect/unstable/cli` keeps the selected subcommand private to the parent's dispatcher, so the
+ * hook is attached per subcommand (each sees its own parsed input) plus the root itself for the
+ * no-subcommand path, before the tree is assembled with `Command.withSubcommands`.
  */
 export const withBackgroundUpdateCheck = <
-  Name extends string,
-  R,
+  const Name extends string,
+  Input,
+  ContextInput,
   E,
-  Input extends RootCommandInput,
+  R,
+  const Subcommands extends ReadonlyArray<Command.Command.Any>,
 >(
-  command: Command.Command<Name, R, E, Input>,
+  root: Command.Command<Name, Input, ContextInput, E, R>,
+  subcommands: Subcommands,
   start: () => void = checkForUpdateInBackground
-): Command.Command<Name, R, E, Input> =>
-  command.pipe(
-    Command.provideEffectDiscard(({ subcommand }) =>
-      isExplicitVersionCheck(subcommand) ? Effect.void : Effect.sync(start)
+) => {
+  const startInBackground = Effect.sync(start);
+  const guarded = subcommands.map(subcommand =>
+    subcommand.pipe(
+      Command.provideEffectDiscard((input: unknown) =>
+        isExplicitVersionCheck(subcommand.name, input) ? Effect.void : startInBackground
+      )
     )
+  ) as unknown as Subcommands;
+
+  return root.pipe(
+    Command.provideEffectDiscard(startInBackground),
+    Command.withSubcommands(guarded)
   );
+};

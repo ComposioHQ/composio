@@ -1,10 +1,11 @@
-import { FileSystem, Path } from '@effect/platform';
-import { BunFileSystem } from '@effect/platform-bun';
+import * as FileSystem from 'effect/FileSystem';
+import * as Path from 'effect/Path';
+import * as BunFileSystem from '@effect/platform-bun/BunFileSystem';
 import { Config, Data, Effect, Layer, Option, Predicate, Schema } from 'effect';
 import semver from 'semver';
 import { bold, cyanBright, dim } from 'src/ui/colors';
 import { APP_VERSION, GITHUB_REPO } from '../constants';
-import { NodeOs } from './node-os';
+import { NodeOs, type NodeOsShape } from './node-os';
 import { resolveRunningCliVersion } from './run-companion-modules';
 import { TerminalUI } from './terminal-ui';
 
@@ -47,14 +48,14 @@ export interface UpdateStatus {
   lastChecked: string | null;
 }
 
-const UpdateCheckStateSchema = Schema.parseJson(
+const UpdateCheckStateSchema = Schema.fromJsonString(
   Schema.Struct({
     lastChecked: Schema.String,
     latestVersion: Schema.String,
   })
 );
 
-const UpdateCheckAttemptSchema = Schema.parseJson(
+const UpdateCheckAttemptSchema = Schema.fromJsonString(
   Schema.Struct({
     lastAttempted: Schema.String,
   })
@@ -84,7 +85,7 @@ const defaultStateFile = Effect.gen(function* () {
   return path.join(os.homedir, '.composio', 'update-check.json');
 });
 
-function getCurrentBinaryAssetName(os: Pick<NodeOs, 'platform' | 'arch'>): string | undefined {
+function getCurrentBinaryAssetName(os: Pick<NodeOsShape, 'platform' | 'arch'>): string | undefined {
   const { platform } = os;
   const rawArch: string = os.arch;
   if (platform !== 'darwin' && platform !== 'linux') return undefined;
@@ -126,7 +127,7 @@ export function parseLatestVersionFromReleases(
 
   let latest: string | undefined;
   for (const release of releases) {
-    if (!Predicate.isRecord(release)) continue;
+    if (!Predicate.isObject(release)) continue;
 
     const candidate = release;
     if (typeof candidate.tag_name !== 'string') continue;
@@ -158,13 +159,13 @@ export function createUpdateChecker(config: UpdateCheckConfig) {
   const readState = Effect.gen(function* () {
     const fs = yield* FileSystem.FileSystem;
     const rawState = yield* fs.readFileString(config.stateFile);
-    return yield* Schema.decodeUnknown(UpdateCheckStateSchema)(rawState);
+    return yield* Schema.decodeUnknownEffect(UpdateCheckStateSchema)(rawState);
   });
 
   const readAttempt = Effect.gen(function* () {
     const fs = yield* FileSystem.FileSystem;
     const rawAttempt = yield* fs.readFileString(attemptFile);
-    return yield* Schema.decodeUnknown(UpdateCheckAttemptSchema)(rawAttempt);
+    return yield* Schema.decodeUnknownEffect(UpdateCheckAttemptSchema)(rawAttempt);
   });
 
   /**

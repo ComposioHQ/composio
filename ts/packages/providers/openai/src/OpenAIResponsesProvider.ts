@@ -100,7 +100,9 @@ export class OpenAIResponsesProvider extends BaseNonAgenticProvider<
    * @returns OpenAI-specific MCP server response format
    */
   override wrapMcpServerResponse(data: McpUrlResponse): OpenAiMcpTool[] {
-    console.log('Wrapping MCP server response', data);
+    logger.debug(
+      `Wrapping MCP server response for ${data.length} server(s): ${data.map(server => server.name).join(', ')}`
+    );
     return data.map(item => ({
       type: 'mcp',
       server_label: item.name,

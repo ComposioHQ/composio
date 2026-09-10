@@ -4,6 +4,18 @@
 
 ### Patch Changes
 
+- The CLI now runs on Effect 4 (`effect@4.0.0-rc.112`). Unrecognized commands and
+  flags now print a "Did you mean?" suggestion next to the help text for the command
+  that failed to parse, and parse errors for a nested command show that command's
+  help instead of the root help. `composio --version`, `composio -v`, and
+  `composio version` keep printing the same bare version string.
+- `composio generate` now keeps tool and trigger metadata as inert data in
+  generated Python and TypeScript sources. Crafted slugs and descriptions can
+  no longer inject code into generated modules.
+- `composio upgrade` (and any other command with a long spinner message) no
+  longer scrolls endlessly in terminals narrower than that message. The spinner
+  printed its line hundreds of times instead of animating in place; live spinner
+  text is now clamped to a single terminal row.
 - `composio upgrade` shows download progress. The archive is a few hundred
   megabytes, and the command previously printed `Downloading...` once and then
   said nothing for minutes, which was indistinguishable from a hang. It now

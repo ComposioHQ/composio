@@ -1,5 +1,20 @@
 # @composio/vercel
 
+## 0.12.0
+
+### Minor Changes
+
+- 9447932: Dereference internal $ref/$defs in tool input schemas before provider translation, so properties reachable only through a reference keep their types and validation instead of degrading to untyped (z.any) or being emitted as a dangling reference.
+
+  This changes the JSON Schema these providers emit for $ref-using tools. Downstream snapshot tests on tool definitions will see diffs. Schemas the Composio API ships with a $ref but no $defs block (e.g. GMAIL_FETCH_EMAILS) degrade to a permissive object schema rather than throwing. The strict-structured-outputs path of @composio/openai-agents is unchanged — OpenAI supports $defs/$ref natively, including recursion.
+
+## 0.11.2
+
+### Patch Changes
+
+- db7b576: Declare Node.js 22.22.3 as the minimum supported runtime for every published TypeScript package so package managers surface incompatible runtimes before users encounter ESM loading failures.
+- 04817cb: Fix strict-mode tool schemas for OpenAI structured outputs. Strict normalization now applies OpenAI's contract at every depth (nested objects, `anyOf` branches, array items, inlined `$ref`/`$defs`): every object lists all of its properties in `required` and sets `additionalProperties: false`, so tools with nested or optional parameters no longer produce schemas the API rejects with a 400. Optional parameters are no longer dropped: they stay available and are widened to accept `null`, the emulation of optional fields OpenAI documents, and the strict providers drop a `null` argument the tool's own schema does not accept before executing the tool. Tools whose schema strict mode cannot express (objects with arbitrary keys, `allOf`, `prefixItems`, unresolved `$ref`s) are sent without strict mode with a warning naming the tool and path, instead of being narrowed. `@composio/core` exports the new `toStrictJsonSchema()` and `omitNullToolArguments()` utilities; `removeNonRequiredProperties` is unchanged for other callers. The Python `OpenAIResponsesProvider` gains a matching opt-in `strict=True` constructor flag that also emits `strict: true` on the wrapped tool.
+
 ## 0.11.1
 
 ### Patch Changes

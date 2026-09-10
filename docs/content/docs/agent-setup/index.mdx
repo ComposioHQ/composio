@@ -1,0 +1,25 @@
+---
+title: Overview
+description: Set up your coding agent to build with Composio Platform
+keywords: [agent setup, agent skill, claude code, codex, cursor, copilot, gemini, openclaw, opencode, cline, grok]
+---
+
+Install the Composio Agent Skill so your coding agent can understand your project and follow the current Platform integration path.
+
+<AgentSetupGrid />
+
+## Install the skill
+
+Run the Skills CLI from your project directory:
+
+```bash
+npx skills add ComposioHQ/composio --skill composio
+```
+
+Choose your coding agent when prompted. See [Clients](/docs/agent-setup/clients) for instructions for Claude Code, Codex, Cursor, GitHub Copilot, Gemini CLI, OpenClaw, OpenCode, Cline, and Grok Build.
+
+After installation, ask your agent to add Composio. It should inspect your framework, agent architecture, authentication, and user identity model before recommending an integration.
+
+## Build Composio into an application
+
+When you are building an application whose users connect their own accounts, use Composio Platform. Start with the [SDK quickstart](/docs/quickstart) after installing the skill.

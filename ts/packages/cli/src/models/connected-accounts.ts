@@ -1,4 +1,4 @@
-import { Schema } from 'effect';
+import { Effect, Schema } from 'effect';
 
 /**
  * Statuses this CLI build knows about. The server owns this enum and may add
@@ -6,15 +6,15 @@ import { Schema } from 'effect';
  * {@link ConnectedAccountStatus}) — use {@link isKnownConnectedAccountStatus}
  * to detect values newer than this build.
  */
-export const KnownConnectedAccountStatus = Schema.Literal(
+export const KnownConnectedAccountStatus = Schema.Literals([
   'INITIALIZING',
   'INITIATED',
   'ACTIVE',
   'FAILED',
   'EXPIRED',
   'INACTIVE',
-  'REVOKED'
-);
+  'REVOKED',
+]);
 export type KnownConnectedAccountStatus = typeof KnownConnectedAccountStatus.Type;
 
 export const isKnownConnectedAccountStatus = Schema.is(KnownConnectedAccountStatus);
@@ -25,7 +25,7 @@ export const isKnownConnectedAccountStatus = Schema.is(KnownConnectedAccountStat
  * status decode instead of failing the whole payload. Callers only compare
  * against literals or render the value as text, so widening is safe.
  */
-export const ConnectedAccountStatus = Schema.Union(KnownConnectedAccountStatus, Schema.String);
+export const ConnectedAccountStatus = Schema.Union([KnownConnectedAccountStatus, Schema.String]);
 
 /**
  * A connected account item from the list or retrieve endpoints.
@@ -41,7 +41,9 @@ export const ConnectedAccountItem = Schema.Struct({
   word_id: Schema.optional(Schema.NullOr(Schema.String)),
   alias: Schema.optional(Schema.NullOr(Schema.String)),
   status: ConnectedAccountStatus,
-  status_reason: Schema.optionalWith(Schema.NullOr(Schema.String), { default: () => null }),
+  status_reason: Schema.NullOr(Schema.String).pipe(
+    Schema.withDecodingDefaultType(Effect.succeed(null))
+  ),
   is_disabled: Schema.Boolean,
   user_id: Schema.String,
   toolkit: Schema.Struct({
@@ -55,8 +57,8 @@ export const ConnectedAccountItem = Schema.Struct({
   }),
   created_at: Schema.String,
   updated_at: Schema.String,
-  test_request_endpoint: Schema.optionalWith(Schema.String, { default: () => '' }),
-}).annotations({ identifier: 'ConnectedAccountItem' });
+  test_request_endpoint: Schema.String.pipe(Schema.withDecodingDefaultType(Effect.succeed(''))),
+}).annotate({ identifier: 'ConnectedAccountItem' });
 export type ConnectedAccountItem = Schema.Schema.Type<typeof ConnectedAccountItem>;
 
 export const ConnectedAccountItems = Schema.Array(ConnectedAccountItem);

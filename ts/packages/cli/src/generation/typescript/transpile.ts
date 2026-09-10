@@ -1,6 +1,5 @@
 import ts from 'typescript';
-import { Path } from '@effect/platform';
-import { Effect, Data } from 'effect';
+import { Effect, Data, Path } from 'effect';
 import {
   buildVirtualFileMap,
   patchCompilerHostWithVirtualFiles,

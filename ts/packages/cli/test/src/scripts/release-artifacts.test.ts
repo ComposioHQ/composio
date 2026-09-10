@@ -1,4 +1,4 @@
-import { Either, Option } from 'effect';
+import { Option, Result } from 'effect';
 import { describe, expect, it } from 'vitest';
 
 import {
@@ -47,7 +47,7 @@ describe('releaseArtifactTargetFor', () => {
   it.each(ARTIFACT_NAMES)('resolves %s', artifactName => {
     const target = releaseArtifactTargetFor(artifactName);
 
-    expect(Either.isRight(target)).toBe(true);
+    expect(Result.isSuccess(target)).toBe(true);
   });
 
   it('covers every codex-acp binary target exactly once', () => {
@@ -66,7 +66,7 @@ describe('releaseArtifactTargetFor', () => {
     artifactName => {
       const target = releaseArtifactTargetFor(artifactName);
 
-      const error = Option.getOrUndefined(Either.getLeft(target));
+      const error = Option.getOrUndefined(Result.getFailure(target));
 
       expect(error).toBeInstanceOf(UnknownReleaseArtifactError);
       expect(error?.message).toContain('Unknown release artifact');

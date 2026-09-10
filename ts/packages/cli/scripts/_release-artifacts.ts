@@ -6,7 +6,7 @@
  * under Node.
  */
 
-import { Data, Either } from 'effect';
+import { Data, Option, Result } from 'effect';
 import {
   RUN_COMPANION_ALL_STATIC_ASSET_RELATIVE_PATHS,
   runCompanionStaticAssetRelativePathsFor,
@@ -54,9 +54,11 @@ export class UnknownReleaseArtifactError extends Data.TaggedError(
  */
 export const releaseArtifactTargetFor = (
   artifactName: string
-): Either.Either<ReleaseArtifactTarget, UnknownReleaseArtifactError> =>
-  Either.fromNullable(
-    RELEASE_ARTIFACT_TARGETS.find(target => target.artifactName === artifactName),
+): Result.Result<ReleaseArtifactTarget, UnknownReleaseArtifactError> =>
+  Result.fromOption(
+    Option.fromUndefinedOr(
+      RELEASE_ARTIFACT_TARGETS.find(target => target.artifactName === artifactName)
+    ),
     () => new UnknownReleaseArtifactError({ artifactName })
   );
 

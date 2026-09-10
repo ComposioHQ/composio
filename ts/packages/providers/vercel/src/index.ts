@@ -150,7 +150,7 @@ export class VercelProvider extends BaseAgenticProvider<
     // The Zod converter does not follow $ref, so inline the definitions the
     // strict rewrite keeps (cycles fall back to the permissive sentinel).
     const inputParametersSchema = jsonSchemaToZodSchema(
-      strictSource ? dereferenceJsonSchema(parameters, { onUnresolved: 'sentinel' }) : parameters
+      dereferenceJsonSchema(parameters, { onUnresolved: 'sentinel' })
     );
 
     return tool({

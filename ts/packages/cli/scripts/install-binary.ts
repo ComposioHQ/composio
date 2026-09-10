@@ -1,6 +1,7 @@
 import process from 'node:process';
-import { Config, ConfigProvider, Console, Effect, Logger, Layer, LogLevel } from 'effect';
-import { BunContext, BunRuntime } from '@effect/platform-bun';
+import { Config, ConfigProvider, Console, Effect, Logger, Layer, References } from 'effect';
+import * as BunServices from '@effect/platform-bun/BunServices';
+import * as BunRuntime from '@effect/platform-bun/BunRuntime';
 import { teardown } from './_shared';
 import path from 'node:path';
 import os from 'node:os';
@@ -50,18 +51,16 @@ export function installBinary() {
 }
 
 const ConfigLive = Effect.gen(function* () {
-  const logLevel = yield* Config.logLevel('COMPOSIO_LOG_LEVEL').pipe(
-    Config.withDefault(LogLevel.Info)
-  );
+  const logLevel = yield* Config.logLevel('COMPOSIO_LOG_LEVEL').pipe(Config.withDefault('Info'));
 
-  return Logger.minimumLogLevel(logLevel);
-}).pipe(Layer.unwrapEffect, Layer.merge(Layer.setConfigProvider(ConfigProvider.fromEnv())));
+  return Layer.succeed(References.MinimumLogLevel, logLevel);
+}).pipe(Layer.unwrap, Layer.merge(ConfigProvider.layer(ConfigProvider.fromEnv())));
 
 if (require.main === module) {
   installBinary().pipe(
     Effect.provide(ConfigLive),
-    Effect.provide(Logger.pretty),
-    Effect.provide(BunContext.layer),
+    Effect.provide(Logger.layer([Logger.consolePretty()])),
+    Effect.provide(BunServices.layer),
     Effect.scoped,
     Effect.map(() => ({ message: 'Process completed successfully.' })),
     BunRuntime.runMain({

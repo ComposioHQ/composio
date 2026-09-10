@@ -1,5 +1,5 @@
-import { Command, Options } from '@effect/cli';
 import { Effect, Option } from 'effect';
+import { Command, Flag } from 'effect/unstable/cli';
 import { ComposioToolkitsRepository } from 'src/services/composio-clients';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { requireAuth } from 'src/effects/require-auth';
@@ -7,21 +7,19 @@ import { clampLimit } from 'src/ui/clamp-limit';
 import { redact } from 'src/ui/redact';
 import { formatAuthConfigsTable, formatAuthConfigsJson } from '../format';
 
-const toolkits = Options.text('toolkits').pipe(
-  Options.withDescription(
-    'Filter by toolkit slugs, comma-separated (e.g. "gmail" or "gmail,slack")'
-  ),
-  Options.optional
+const toolkits = Flag.string('toolkits').pipe(
+  Flag.withDescription('Filter by toolkit slugs, comma-separated (e.g. "gmail" or "gmail,slack")'),
+  Flag.optional
 );
 
-const query = Options.text('query').pipe(
-  Options.withDescription('Search by auth config name'),
-  Options.optional
+const query = Flag.string('query').pipe(
+  Flag.withDescription('Search by auth config name'),
+  Flag.optional
 );
 
-const limit = Options.integer('limit').pipe(
-  Options.withDefault(30),
-  Options.withDescription('Number of results per page (1-1000)')
+const limit = Flag.integer('limit').pipe(
+  Flag.withDefault(30),
+  Flag.withDescription('Number of results per page (1-1000)')
 );
 
 /**

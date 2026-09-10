@@ -1,6 +1,6 @@
-import { Command, FileSystem, Path } from '@effect/platform';
-import { BunContext } from '@effect/platform-bun';
-import { Cause, Data, Effect, Exit, Predicate, Stream } from 'effect';
+import * as BunServices from '@effect/platform-bun/BunServices';
+import { Cause, Data, Effect, Exit, FileSystem, Path, Predicate, Stream } from 'effect';
+import { ChildProcess as Command } from 'effect/unstable/process';
 import type { MasterKind } from 'src/services/master-detector';
 import {
   parseJson,
@@ -43,10 +43,10 @@ const runExternalCommandText = (
 
     // The child never reads interactive input: hand it an immediately-closed
     // stdin pipe (EOF), matching the previous `stdio: ['ignore', ...]` spawn.
-    const command = Command.make(executable, ...commandArgs).pipe(Command.stdin(Stream.empty));
+    const command = Command.make(executable, commandArgs, { stdin: Stream.empty });
 
     const [exitCode, stdout, stderr] = yield* Effect.scoped(
-      Effect.flatMap(Command.start(command), child =>
+      Effect.flatMap(command, child =>
         Effect.all([child.exitCode, collectUtf8Text(child.stdout), collectUtf8Text(child.stderr)], {
           concurrency: 3,
         })
@@ -96,7 +96,7 @@ const invokeClaudeLegacy = (
 
     const result = yield* runExternalCommandText(args, helperDebugLog);
     const parsed = parseJson(result.stdout.trim());
-    if (!Predicate.isRecord(parsed)) {
+    if (!Predicate.isObject(parsed)) {
       return yield* new SubAgentNonJsonOutputError({ target: 'claude' });
     }
 
@@ -187,7 +187,7 @@ export const invokeLegacySubAgent = async ({
       ? invokeClaudeLegacy(prompt, options, master, helperDebugLog)
       : invokeCodexLegacy(prompt, options, master, helperDebugLog);
 
-  const exit = await Effect.runPromiseExit(Effect.provide(program, BunContext.layer));
+  const exit = await Effect.runPromiseExit(Effect.provide(program, BunServices.layer));
   if (Exit.isSuccess(exit)) {
     return exit.value;
   }

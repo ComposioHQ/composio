@@ -1,5 +1,8 @@
-import { FileSystem, HttpClient, HttpClientResponse, Path } from '@effect/platform';
-import { BunFileSystem, BunPath } from '@effect/platform-bun';
+import * as FileSystem from 'effect/FileSystem';
+import { HttpClient, HttpClientResponse } from 'effect/unstable/http';
+import * as Path from 'effect/Path';
+import * as BunFileSystem from '@effect/platform-bun/BunFileSystem';
+import * as BunPath from '@effect/platform-bun/BunPath';
 import { describe, expect, layer } from '@effect/vitest';
 import { Effect, Layer } from 'effect';
 import * as tempy from 'tempy';

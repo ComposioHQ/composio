@@ -15,6 +15,7 @@ on:
       - 'pnpm-workspace.yaml'
       - 'pnpm-lock.yaml'
       - 'test/release-workflow.test.ts'
+      - 'test/provider-compatibility.test.ts'
       - 'turbo.jsonc'
   pull_request:
     branches: [master, next]
@@ -30,6 +31,7 @@ on:
       - 'pnpm-workspace.yaml'
       - 'pnpm-lock.yaml'
       - 'test/release-workflow.test.ts'
+      - 'test/provider-compatibility.test.ts'
       - 'turbo.jsonc'
 
 concurrency:
@@ -61,3 +63,9 @@ jobs:
 
       - name: Run Tests
         run: pnpm run test
+
+      - name: Build packages for consumer compatibility
+        run: pnpm run build:packages
+
+      - name: Check packed provider compatibility
+        run: pnpm run check:provider-compatibility

@@ -1,5 +1,5 @@
-import type { Path } from '@effect/platform';
 import ts from 'typescript';
+import type { Path } from 'effect';
 
 /**
  * Builds a virtual file map from source tuples for in-memory TypeScript compilation.

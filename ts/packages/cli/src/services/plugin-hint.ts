@@ -1,5 +1,6 @@
-import { FileSystem, Path } from '@effect/platform';
-import { BunFileSystem } from '@effect/platform-bun';
+import * as FileSystem from 'effect/FileSystem';
+import * as Path from 'effect/Path';
+import * as BunFileSystem from '@effect/platform-bun/BunFileSystem';
 import { Config, ConfigProvider, Effect, Layer, Option, Schema } from 'effect';
 import { APP_CONFIG } from 'src/effects/app-config';
 import { setupCacheDir } from 'src/effects/setup-cache-dir';
@@ -34,9 +35,9 @@ export function detectPluginHost(markers: HostEnvMarkers): AgentHost | undefined
   return undefined;
 }
 
-const InstalledPluginsSchema = Schema.parseJson(
+const InstalledPluginsSchema = Schema.fromJsonString(
   Schema.Struct({
-    plugins: Schema.Record({ key: Schema.String, value: Schema.Array(Schema.Unknown) }),
+    plugins: Schema.Record(Schema.String, Schema.Array(Schema.Unknown)),
   })
 );
 
@@ -90,7 +91,7 @@ export function createPluginHint(config: PluginHintConfig) {
     const fs = yield* FileSystem.FileSystem;
     if (!(yield* fs.exists(config.claudeInstalledPluginsFile))) return true;
     const raw = yield* fs.readFileString(config.claudeInstalledPluginsFile);
-    const decoded = yield* Effect.option(Schema.decodeUnknown(InstalledPluginsSchema)(raw));
+    const decoded = yield* Effect.option(Schema.decodeUnknownEffect(InstalledPluginsSchema)(raw));
     if (Option.isNone(decoded)) return false;
     const installs = decoded.value.plugins[COMPOSIO_AGENT_PLUGIN_ID];
     return installs === undefined || installs.length === 0;
@@ -167,7 +168,14 @@ const rawHostEnvironment = Effect.gen(function* () {
     claudeConfigDir,
     codexHome,
   };
-}).pipe(Effect.withConfigProvider(ConfigProvider.fromEnv()));
+}).pipe(
+  // v4's fromEnv() snapshots the environment when the provider is built, so
+  // build it per invocation to keep reading the live host environment.
+  Effect.provideServiceEffect(
+    ConfigProvider.ConfigProvider,
+    Effect.sync(() => ConfigProvider.fromEnv())
+  )
+);
 
 export const resolvePluginHintConfig = (argv: ReadonlyArray<string>) =>
   Effect.gen(function* () {

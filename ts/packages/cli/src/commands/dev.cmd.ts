@@ -1,4 +1,4 @@
-import { Command, Options } from '@effect/cli';
+import { Command, Flag } from 'effect/unstable/cli';
 import { Effect, Option } from 'effect';
 import { initCmd } from './init.cmd';
 import { triggersCmd$Listen } from './triggers/commands/triggers.listen.cmd';
@@ -15,9 +15,9 @@ import { Stdin } from 'src/services/stdin';
 import { TerminalUI } from 'src/services/terminal-ui';
 import type { CommandVisibility } from './feature-tags';
 
-const devMode = Options.choice('mode', ['on', 'off'] as const).pipe(
-  Options.withDescription('Set developer mode on or off.'),
-  Options.optional
+const devMode = Flag.choice('mode', ['on', 'off'] as const).pipe(
+  Flag.withDescription('Set developer mode on or off.'),
+  Flag.optional
 );
 
 export const devSubcommands = [

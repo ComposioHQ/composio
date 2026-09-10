@@ -6,6 +6,8 @@ import {
   readFileSync,
   readdirSync,
   rmSync,
+  statSync,
+  utimesSync,
   writeFileSync,
 } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -235,12 +237,71 @@ describe('public KB content generation', () => {
       const body = generated.split('\n---\n').at(-1)?.trim() ?? '';
       expect(body.length).toBeGreaterThan(0);
       expect(body).not.toMatch(/\]\(\.\.?\/[^)]*public\.md/);
-      expect(generated).toContain(`sourceCommit: "${manifest.source.commit}"`);
       expect(generated).toContain(`sources: ${JSON.stringify(definition.sources)}`);
       expect(generated).toContain(`lastVerifiedAt: "${definition.lastVerifiedAt}"`);
       expect(generated).toContain(`reviewAfter: "${definition.reviewAfter}"`);
       expect(generated).not.toContain('articlePath:');
     }
+  });
+
+  test('keeps generated page bytes independent of the source snapshot commit', () => {
+    const originalDir = mkdtempSync(join(tmpdir(), 'composio-kb-original-'));
+    const repinnedDir = mkdtempSync(join(tmpdir(), 'composio-kb-repinned-'));
+    temporaryDirectories.push(originalDir, repinnedDir);
+    const catalog = getKbCatalog();
+    const repinnedCatalog = {
+      ...catalog,
+      manifest: {
+        ...catalog.manifest,
+        source: { ...catalog.manifest.source, commit: 'different-source-commit' },
+      },
+    };
+
+    generateKbContent({ outputDir: originalDir, catalog });
+    generateKbContent({ outputDir: repinnedDir, catalog: repinnedCatalog });
+
+    const files = listFiles(originalDir);
+    expect(listFiles(repinnedDir)).toEqual(files);
+    for (const file of files) {
+      expect(readFileSync(join(repinnedDir, file), 'utf8')).toBe(
+        readFileSync(join(originalDir, file), 'utf8'),
+      );
+    }
+  });
+
+  test('leaves unchanged generated files untouched', () => {
+    const outputDir = mkdtempSync(join(tmpdir(), 'composio-kb-'));
+    temporaryDirectories.push(outputDir);
+    const unchangedPath = join(outputDir, 'index.mdx');
+    const preservedTime = new Date('2000-01-01T00:00:00.000Z');
+
+    generateKbContent({ outputDir });
+    utimesSync(unchangedPath, preservedTime, preservedTime);
+
+    generateKbContent({ outputDir });
+
+    expect(statSync(unchangedPath).mtimeMs).toBe(preservedTime.getTime());
+  });
+
+  test('repairs changed output and removes stale files without touching unchanged files', () => {
+    const outputDir = mkdtempSync(join(tmpdir(), 'composio-kb-'));
+    temporaryDirectories.push(outputDir);
+    const unchangedPath = join(outputDir, 'index.mdx');
+    const changedPath = join(outputDir, 'guide/meta.json');
+    const stalePath = join(outputDir, 'guide/stale-guide.mdx');
+    const preservedTime = new Date('2000-01-01T00:00:00.000Z');
+
+    generateKbContent({ outputDir });
+    const expectedChangedContent = readFileSync(changedPath, 'utf8');
+    utimesSync(unchangedPath, preservedTime, preservedTime);
+    writeFileSync(changedPath, 'stale content', 'utf8');
+    writeFileSync(stalePath, 'stale guide', 'utf8');
+
+    generateKbContent({ outputDir });
+
+    expect(readFileSync(changedPath, 'utf8')).toBe(expectedChangedContent);
+    expect(existsSync(stalePath)).toBe(false);
+    expect(statSync(unchangedPath).mtimeMs).toBe(preservedTime.getTime());
   });
 
   test('renders an editorial body read from a temporary articles root without exposing its path', () => {

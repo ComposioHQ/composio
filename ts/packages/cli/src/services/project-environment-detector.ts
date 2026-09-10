@@ -1,6 +1,7 @@
-import { BunFileSystem } from '@effect/platform-bun';
-import { FileSystem, Path } from '@effect/platform';
-import { Data, Effect, Match } from 'effect';
+import * as BunFileSystem from '@effect/platform-bun/BunFileSystem';
+import * as FileSystem from 'effect/FileSystem';
+import * as Path from 'effect/Path';
+import { Data, Effect, Match, Context, Layer } from 'effect';
 import { getAncestors } from 'src/utils/get-ancestors';
 import { UNPREFIXED_CONFIG } from 'src/effects/app-config';
 import { loadHostConfig } from 'src/services/config';
@@ -204,10 +205,10 @@ const parseUserAgent = (userAgent: string | undefined): JsPackageManager | null 
 // ---------------------------------------------------------------------------
 
 const makeReadDirectoryOptional = (fs: FileSystem.FileSystem) => (dir: string) =>
-  fs.readDirectory(dir).pipe(Effect.catchAll(() => Effect.succeed<string[]>([])));
+  fs.readDirectory(dir).pipe(Effect.catch(() => Effect.succeed<string[]>([])));
 
 const makeReadFileStringOptional = (fs: FileSystem.FileSystem) => (filePath: string) =>
-  fs.readFileString(filePath).pipe(Effect.catchAll(() => Effect.succeed<string | null>(null)));
+  fs.readFileString(filePath).pipe(Effect.catch(() => Effect.succeed<string | null>(null)));
 
 const makeReadPackageJson = (fs: FileSystem.FileSystem, path: Path.Path) => {
   const readFileStringOptional = makeReadFileStringOptional(fs);
@@ -218,7 +219,7 @@ const makeReadPackageJson = (fs: FileSystem.FileSystem, path: Path.Path) => {
       return yield* Effect.try({
         try: () => JSON.parse(content) as Record<string, unknown>,
         catch: toError,
-      }).pipe(Effect.catchAll(() => Effect.succeed(null)));
+      }).pipe(Effect.catch(() => Effect.succeed(null)));
     });
 };
 
@@ -551,48 +552,54 @@ const detectPythonPackageManager = (fs: FileSystem.FileSystem, cwd: string) =>
 // Service
 // ---------------------------------------------------------------------------
 
-export class ProjectEnvironmentDetector extends Effect.Service<ProjectEnvironmentDetector>()(
-  'services/ProjectEnvironmentDetector',
-  {
-    effect: Effect.gen(function* () {
-      const fs = yield* FileSystem.FileSystem;
-      const path = yield* Path.Path;
+const makeProjectEnvironmentDetector = Effect.gen(function* () {
+  const fs = yield* FileSystem.FileSystem;
+  const path = yield* Path.Path;
 
-      const detectProjectEnvironment = (
-        cwd: string
-      ): Effect.Effect<ProjectEnvironment, ProjectEnvironmentDetectorError> =>
-        Effect.gen(function* () {
-          const detection = yield* detectLanguage(fs, cwd);
+  const detectProjectEnvironment = (
+    cwd: string
+  ): Effect.Effect<ProjectEnvironment, ProjectEnvironmentDetectorError> =>
+    Effect.gen(function* () {
+      const detection = yield* detectLanguage(fs, cwd);
 
-          if (detection.language === 'python') {
-            const packageManager = yield* detectPythonPackageManager(fs, detection.rootDir);
-            return {
-              kind: 'python',
-              language: 'python',
-              packageManager,
-              rootDir: detection.rootDir,
-              evidence: detection.evidence.evidence,
-            } satisfies ProjectEnvironment;
-          }
+      if (detection.language === 'python') {
+        const packageManager = yield* detectPythonPackageManager(fs, detection.rootDir);
+        return {
+          kind: 'python',
+          language: 'python',
+          packageManager,
+          rootDir: detection.rootDir,
+          evidence: detection.evidence.evidence,
+        } satisfies ProjectEnvironment;
+      }
 
-          const packageManager = yield* detectJsPackageManager(fs, detection.rootDir);
-          return {
-            kind: 'js',
-            language: detection.language,
-            packageManager,
-            rootDir: detection.rootDir,
-            evidence: detection.evidence.evidence,
-          } satisfies ProjectEnvironment;
-        }).pipe(Effect.provideService(Path.Path, path));
-
+      const packageManager = yield* detectJsPackageManager(fs, detection.rootDir);
       return {
-        detectProjectEnvironment,
-        detectJsPackageManager: (cwd: string) =>
-          detectJsPackageManager(fs, cwd).pipe(Effect.provideService(Path.Path, path)),
-        detectPythonPackageManager: (cwd: string) =>
-          detectPythonPackageManager(fs, cwd).pipe(Effect.provideService(Path.Path, path)),
-      };
-    }),
-    dependencies: [BunFileSystem.layer, Path.layer],
-  }
-) {}
+        kind: 'js',
+        language: detection.language,
+        packageManager,
+        rootDir: detection.rootDir,
+        evidence: detection.evidence.evidence,
+      } satisfies ProjectEnvironment;
+    }).pipe(Effect.provideService(Path.Path, path));
+
+  return {
+    detectProjectEnvironment,
+    detectJsPackageManager: (cwd: string) =>
+      detectJsPackageManager(fs, cwd).pipe(Effect.provideService(Path.Path, path)),
+    detectPythonPackageManager: (cwd: string) =>
+      detectPythonPackageManager(fs, cwd).pipe(Effect.provideService(Path.Path, path)),
+  };
+});
+
+export type ProjectEnvironmentDetectorShape = Effect.Success<typeof makeProjectEnvironmentDetector>;
+
+export class ProjectEnvironmentDetector extends Context.Service<
+  ProjectEnvironmentDetector,
+  ProjectEnvironmentDetectorShape
+>()('services/ProjectEnvironmentDetector') {
+  static readonly Default = Layer.effect(
+    ProjectEnvironmentDetector,
+    makeProjectEnvironmentDetector
+  ).pipe(Layer.provide(Layer.mergeAll(BunFileSystem.layer, Path.layer)));
+}

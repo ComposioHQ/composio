@@ -1,5 +1,6 @@
-import { FileSystem, Path } from '@effect/platform';
-import { BunFileSystem } from '@effect/platform-bun';
+import * as FileSystem from 'effect/FileSystem';
+import * as Path from 'effect/Path';
+import * as BunFileSystem from '@effect/platform-bun/BunFileSystem';
 import { DateTime, Effect, Layer, Option, Schema } from 'effect';
 import { setupCacheDir } from 'src/effects/setup-cache-dir';
 import { writeFileAtomic } from 'src/effects/write-file-atomic';
@@ -26,7 +27,7 @@ export const KNOWN_TOOLKIT_SLUGS_FILE = 'known-toolkit-slugs.json';
 
 const KnownToolkitSlugs = Schema.Struct({
   slugs: Schema.Array(Schema.String),
-  refreshedAt: Schema.DateTimeUtc,
+  refreshedAt: Schema.DateTimeUtcFromString,
 });
 
 export type KnownToolkitSlugs = Schema.Schema.Type<typeof KnownToolkitSlugs>;
@@ -58,11 +59,11 @@ export const readKnownToolkitSlugs: Effect.Effect<Option.Option<KnownToolkitSlug
     const fs = yield* FileSystem.FileSystem;
     const filePath = yield* knownToolkitSlugsPath;
     const content = yield* fs.readFileString(filePath);
-    return yield* Schema.decode(KnownToolkitSlugsJSON)(content);
+    return yield* Schema.decodeEffect(KnownToolkitSlugsJSON)(content);
   }
 ).pipe(
   Effect.asSome,
-  Effect.catchAll(error =>
+  Effect.catch(error =>
     Effect.logDebug(`No usable ${KNOWN_TOOLKIT_SLUGS_FILE}: ${error}`).pipe(
       Effect.as(Option.none<KnownToolkitSlugs>())
     )
@@ -83,7 +84,7 @@ export const writeKnownToolkitSlugs = (slugs: ReadonlyArray<string>): Effect.Eff
     const filePath = yield* knownToolkitSlugsPath;
     const refreshedAt = yield* DateTime.now;
 
-    const content = yield* Schema.encode(KnownToolkitSlugsJSON)({
+    const content = yield* Schema.encodeEffect(KnownToolkitSlugsJSON)({
       slugs: [...new Set(slugs.map(slug => slug.toLowerCase()))].sort(),
       refreshedAt,
     });
@@ -91,6 +92,6 @@ export const writeKnownToolkitSlugs = (slugs: ReadonlyArray<string>): Effect.Eff
     yield* writeFileAtomic(filePath, content);
     yield* Effect.logDebug(`Recorded ${slugs.length} toolkit slugs in ${filePath}`);
   }).pipe(
-    Effect.catchAll(error => Effect.logDebug(`Failed to record known toolkit slugs: ${error}`)),
+    Effect.catch(error => Effect.logDebug(`Failed to record known toolkit slugs: ${error}`)),
     provideFileSystem
   );
