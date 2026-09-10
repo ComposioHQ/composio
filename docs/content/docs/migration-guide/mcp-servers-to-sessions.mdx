@@ -176,12 +176,12 @@ span many toolkits without bloating context.
 
 ## Beyond the MCP URL
 
-A session isn't only an MCP endpoint — it's also a normal SDK object, which is handy for non-agent
+A session isn't only an MCP endpoint: it's also a normal SDK object, which is handy for non-agent
 code paths.
 
-### Native tools for your framework
+### Direct tools for your framework
 
-`session.tools()` returns provider-wrapped native tools for OpenAI, Anthropic, LangChain, the Vercel
+`session.tools()` returns provider-wrapped direct tools for OpenAI, Anthropic, LangChain, the Vercel
 AI SDK, and others, so you skip manual schema wiring. With the direct-tools preset it returns your
 exact fixed tool set; by default it returns the meta-tools that drive runtime discovery.
 

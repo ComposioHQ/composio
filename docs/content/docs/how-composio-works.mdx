@@ -43,6 +43,8 @@ A **toolkit** is a collection of related tools for a service. The `github` toolk
 
 A **tool** is an individual action your agent can execute. Each tool has an input schema (its parameters) and an output schema (what it returns), and follows a `{TOOLKIT}_{ACTION}` naming pattern, like `GITHUB_CREATE_ISSUE`.
 
+Some products have more than one toolkit, and the catalog groups these siblings into an **App**. The Notion app, for example, contains `notion`, a **Composio Built** toolkit that Composio maintains on Notion's public API, and `notion_mcp`, a **Provider MCP** toolkit that connects to Notion's own hosted MCP server. An App is a way of browsing: it has no slug, and everything you configure takes exact toolkit slugs. See [Apps vs toolkits](/docs/apps-and-toolkits) for how a product's toolkits are grouped, and [Composio Built vs Provider MCPs](/docs/apps-and-toolkits/composio-built-vs-provider-mcp) when a product gives you a choice.
+
 Every toolkit in the catalog is discoverable by default. Create a session without a `toolkits` parameter and the agent can find any of them at runtime. To restrict the set, pass `toolkits` when you create the session. See [Enable and disable toolkits](/docs/configuring-sessions). You can also bind local, in-process tools to a session with the experimental [custom tools and toolkits](/docs/extending-sessions/custom-tools-and-toolkits) API.
 
 ## Users
@@ -91,7 +93,7 @@ const result = await session.execute("COMPOSIO_SEARCH_TOOLS", { queries: [{ use_
 </Tab>
 </Tabs>
 
-Do not execute session tools with `tools.execute()`, or by passing a user ID to a provider's `handle_tool_calls` helper — both take the direct execution path, which does not carry your session, and meta-tools fail there with `"can only be called inside a tool-router session"`. The [OpenAI](/docs/providers/openai) and [Anthropic](/docs/providers/anthropic) helpers also accept the session itself (`handle_tool_calls(response=response, session=session)` in Python, `handleToolCalls(session, response)` in TypeScript), which routes through the session while keeping provider argument normalization.
+Do not execute session tools with `tools.execute()`, or by passing a user ID to a provider's `handle_tool_calls` helper: both take the direct execution path, which does not carry your session, and meta-tools fail there with `"can only be called inside a tool-router session"`. The [OpenAI](/docs/providers/openai) and [Anthropic](/docs/providers/anthropic) helpers also accept the session itself (`handle_tool_calls(response=response, session=session)` in Python, `handleToolCalls(session, response)` in TypeScript), which routes through the session while keeping provider argument normalization.
 
 ## Authentication
 

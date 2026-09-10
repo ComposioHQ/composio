@@ -121,6 +121,10 @@ Use the direct-tools preset only for a narrow, deterministic agent with a fixed 
 
 If the application has its own connect UI, use session authorization and connection-state methods and suppress in-chat connection prompts. Use managed auth initially. Create a custom auth config only for the application's OAuth branding, additional scopes, dedicated provider quotas, or self-hosted or regional requirements.
 
+### Composio Built or Provider MCP
+
+Some products ship more than one toolkit grouped as one App in the catalog, for example a Composio Built toolkit (`notion`) and a Provider MCP toolkit backed by the product's own MCP server (`notion_mcp`). An App can hold more than two, and they are not always one of each kind: `supabase` groups with `supabase_mcp` and `supabase_read_mcp`, and `slack` groups with `slackbot`, which are both Composio Built. They are separate toolkits with separate auth configs and connected accounts. Session config takes exact slugs, never an App: enable one sibling (`toolkits: ["notion"]`), enable both (`toolkits: ["notion", "notion_mcp"]`), or use the disable list to remove the sibling the agent should not see (syntax in `configuring-sessions.md`). Enabling `notion` does not expose `notion_mcp`, and the siblings never share a connection. When the request or code names a slug, use it. Otherwise compare auth schemes, connected state, tool lists, and triggers (triggers exist only on Composio Built toolkits today), prefer the toolkit the user can authenticate, and state which one you chose. Do not assume Provider MCP means DCR OAuth: some need no auth at all, and a few use API Key or OAuth2. Read what the toolkit declares. Details: `https://docs.composio.dev/docs/apps-and-toolkits.md`. A Custom MCP server registered into the project (slug `CUSTOM_*`) is separate from both; see the `extending-sessions` guides.
+
 ## Handle advanced product work
 
 Do not force advanced requests through first-time setup. Route them to current documentation:

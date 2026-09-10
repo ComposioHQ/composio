@@ -7,6 +7,10 @@ keywords: [glossary, definitions, terminology]
 
 <Glossary>
 
+<GlossaryTerm name="App">
+A grouping of sibling toolkits for one product in the catalog. The Notion app, for example, contains the `notion` and `notion_mcp` toolkits. An App is a way of browsing: it has no slug, and sessions, search, and auth configs always take exact toolkit slugs. See [Apps and toolkits](/docs/apps-and-toolkits).
+</GlossaryTerm>
+
 <GlossaryTerm name="Auth Config">
 A blueprint that defines how authentication works for a toolkit: the auth method (`OAUTH2`, `API_KEY`, `BEARER_TOKEN`, or `BASIC`), scopes, and credentials. A [session](/docs/how-composio-works) creates one automatically when it needs one. To use your own OAuth credentials or non-default scopes, [create a custom one](/docs/auth-configuration/custom-auth-configs).
 </GlossaryTerm>
@@ -21,6 +25,10 @@ The URL a user returns to after completing an OAuth flow through a Connect Link.
 
 <GlossaryTerm name="Composio API Key">
 A project-scoped secret that authenticates your SDK and API requests. Every resource you create with it is scoped to that project.
+</GlossaryTerm>
+
+<GlossaryTerm name="Composio Built">
+A toolkit that Composio builds and maintains on the product's public API, like the `notion` toolkit. Composio Built toolkits can have triggers and commonly authenticate with `OAUTH2` or `API_KEY`, often through Composio Managed Auth. See [Apps and toolkits](/docs/apps-and-toolkits).
 </GlossaryTerm>
 
 <GlossaryTerm name="Composio Managed Auth">
@@ -39,8 +47,20 @@ A stored set of credentials (OAuth tokens or API keys) linked to a userID, creat
 The object returned when you initiate authentication. It contains the Connect Link URL and a `waitForConnection()` method that resolves once the user completes the flow.
 </GlossaryTerm>
 
+<GlossaryTerm name="Custom MCP">
+Your own remote MCP server registered into your project as a toolkit with a `CUSTOM_*` slug, usable in sessions alongside catalog toolkits. Custom MCP toolkits are private to your project. See [Custom MCP](/docs/extending-sessions/custom-mcp).
+</GlossaryTerm>
+
 <GlossaryTerm name="Custom Tool">
 A tool you define yourself and use alongside Composio's built-in tools. Add local experimental custom tools and custom toolkits through [Custom tools and toolkits](/docs/extending-sessions/custom-tools-and-toolkits).
+</GlossaryTerm>
+
+<GlossaryTerm name="DCR OAuth">
+OAuth Dynamic Client Registration, the auth scheme many Provider MCP toolkits use. The client registers itself with the product's MCP server automatically, so your user just approves access and there is no OAuth app to register.
+</GlossaryTerm>
+
+<GlossaryTerm name="Direct tools (provider package)">
+Tools you access through provider packages with `session.tools()` and call directly, rather than over MCP. Both paths give the agent the same capabilities, but tools called directly integrate with your AI framework and support modifiers and custom tools. Previously called native tools.
 </GlossaryTerm>
 
 <GlossaryTerm name="In-Chat Authentication">
@@ -48,7 +68,7 @@ A flow in which the agent handles authentication itself by calling `COMPOSIO_MAN
 </GlossaryTerm>
 
 <GlossaryTerm name="MCP (Model Context Protocol)">
-An open protocol for connecting AI models to external tools. Create a session with `mcp: true` to expose `session.mcp.url` and `session.mcp.headers`, an MCP-compatible endpoint any MCP client can connect to. See [Using sessions via MCP](/docs/sessions-via-mcp).
+An open protocol for connecting AI models to external tools. Create a session with `mcp: true` to expose `session.mcp.url` and `session.mcp.headers`, an MCP-compatible endpoint any MCP client can connect to. See [Using sessions via MCP](/docs/sessions-via-mcp). MCP appears on both sides of Composio: the session MCP endpoint and [Composio Connect](/docs/composio-connect) expose Composio tools to MCP clients, while [Provider MCP](/docs/apps-and-toolkits) and [Custom MCP](/docs/extending-sessions/custom-mcp) toolkits bring tools from external MCP servers into Composio.
 </GlossaryTerm>
 
 <GlossaryTerm name="Manual Authentication">
@@ -61,10 +81,6 @@ A set of tools included in every session: `COMPOSIO_SEARCH_TOOLS`, `COMPOSIO_GET
 
 <GlossaryTerm name="Modifiers">
 Middleware that transforms tool behavior. [Schema modifiers](/docs/tools-direct/modify-tool-behavior/schema-modifiers) change a tool's schema before the agent sees it, [before-execution modifiers](/docs/tools-direct/modify-tool-behavior/before-execution-modifiers) change arguments before a tool runs, and [after-execution modifiers](/docs/tools-direct/modify-tool-behavior/after-execution-modifiers) transform the result. In Python, [`@before_file_upload`](/docs/tools-direct/modify-tool-behavior/before-execution-modifiers#before-file-upload-python) intercepts local paths for `file_uploadable` parameters before read and upload.
-</GlossaryTerm>
-
-<GlossaryTerm name="Native Tools">
-Tools you access through provider packages with `session.tools()` and call directly, rather than over MCP. Both paths give the agent the same capabilities, but tools called directly integrate with your AI framework and support modifiers and custom tools.
 </GlossaryTerm>
 
 <GlossaryTerm name="Organization">
@@ -87,8 +103,12 @@ Making authenticated HTTP requests through a toolkit's connected account without
 An adapter package that transforms Composio tools into the format an AI framework expects (OpenAI, Anthropic, LangChain, Vercel AI SDK, and others). See [Providers](/docs/providers).
 </GlossaryTerm>
 
+<GlossaryTerm name="Provider MCP">
+A toolkit that connects to the product's own hosted MCP server, maintained by that product. Its slug ends in `_mcp` (for example, `notion_mcp`). Auth varies per toolkit: usually DCR OAuth, often none at all. Not to be confused with a provider, which is an AI-framework adapter. See [Apps and toolkits](/docs/apps-and-toolkits).
+</GlossaryTerm>
+
 <GlossaryTerm name="Session">
-An ephemeral, immutable configuration object returned by `composio.create(userId)`. It ties together a userID, the available toolkits, an auth config, and connected accounts, and it exposes `tools()`, `authorize()`, and `toolkits()` (plus `mcp.url` when created with `mcp: true`). See [What is a session?](/docs/how-composio-works).
+The runtime context for an agentic run, returned by `composio.create(userId)`. It ties together a userID, the available toolkits, an auth config, and connected accounts, and it exposes `tools()`, `authorize()`, and `toolkits()` (plus `mcp.url` when created with `mcp: true`). Sessions persist on the server, and you can change one in place with `session.update()`. See [What is a session?](/docs/how-composio-works).
 </GlossaryTerm>
 
 <GlossaryTerm name="Session ID">
@@ -108,7 +128,7 @@ A collection of related tools for a single external service. Users connect to a 
 </GlossaryTerm>
 
 <GlossaryTerm name="Toolkit Slug">
-The lowercase identifier for a toolkit (for example, `github`, `gmail`, or `slack`). Use it when configuring sessions, fetching tools, or creating triggers.
+The lowercase identifier for a toolkit (for example, `github`, `gmail`, or `slack`). Use it when configuring sessions, fetching tools, or creating triggers. Provider MCP toolkit slugs end in `_mcp` (for example, `notion_mcp`).
 </GlossaryTerm>
 
 <GlossaryTerm name="Toolkit Versioning">

@@ -1,0 +1,67 @@
+---
+title: What are Provider MCPs
+description: Toolkits backed by a product's own hosted MCP server, how their slugs and tool names work, what auth they use, and where they differ from Composio's own MCP transports
+keywords: [provider mcp, provider mcps, notion_mcp, mcp toolkit, dcr oauth, mcp server, toolkit versions latest, custom mcp]
+isNew: true
+---
+
+export const ProviderMcpIcon = (<svg width="14" height="14" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style={{display:'inline-block',verticalAlign:'-2px',marginRight:'6px'}} aria-hidden="true"><path fill="currentColor" d="M5.52 1.12a3.578 3.578 0 0 1 6.078 2.98a3.578 3.578 0 0 1 2.982 6.08l-3.292 3.293a.25.25 0 0 0 0 .354l.843.843a.749.749 0 1 1-1.06 1.06l-.844-.843a1.75 1.75 0 0 1 0-2.474L13.52 9.12a2.08 2.08 0 0 0 0-2.94a2.08 2.08 0 0 0-2.94 0L7.731 9.03A.75.75 0 0 1 6.67 7.97l2.85-2.85a2.08 2.08 0 0 0 0-2.94a2.08 2.08 0 0 0-2.94 0l-4.799 4.8A.75.75 0 0 1 .72 5.92Z"/><path fill="currentColor" d="M7.52 3.12a.749.749 0 1 1 1.06 1.06L5.731 7.03A2.079 2.079 0 0 0 8.67 9.97l2.85-2.85a.749.749 0 1 1 1.06 1.06l-2.849 2.85A3.578 3.578 0 0 1 4.67 5.97Z"/></svg>);
+
+export const ProviderMcpIconLg = (<svg width="18" height="18" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style={{display:'inline-block',verticalAlign:'-4px',marginRight:'8px'}} aria-hidden="true"><path fill="currentColor" d="M5.52 1.12a3.578 3.578 0 0 1 6.078 2.98a3.578 3.578 0 0 1 2.982 6.08l-3.292 3.293a.25.25 0 0 0 0 .354l.843.843a.749.749 0 1 1-1.06 1.06l-.844-.843a1.75 1.75 0 0 1 0-2.474L13.52 9.12a2.08 2.08 0 0 0 0-2.94a2.08 2.08 0 0 0-2.94 0L7.731 9.03A.75.75 0 0 1 6.67 7.97l2.85-2.85a2.08 2.08 0 0 0 0-2.94a2.08 2.08 0 0 0-2.94 0l-4.799 4.8A.75.75 0 0 1 .72 5.92Z"/><path fill="currentColor" d="M7.52 3.12a.749.749 0 1 1 1.06 1.06L5.731 7.03A2.079 2.079 0 0 0 8.67 9.97l2.85-2.85a.749.749 0 1 1 1.06 1.06l-2.849 2.85A3.578 3.578 0 0 1 4.67 5.97Z"/></svg>);
+
+A **Provider MCP** toolkit connects to an MCP server that the product's own team hosts and maintains. Composio acts as the MCP client, syncs the tools that server publishes, and wraps them as an ordinary toolkit.
+
+That means you use one the same way you use any other toolkit. It appears in the same catalog and tool search, authenticates through the same Connect Link flow, and executes and logs the same way. `session.authorize("notion_mcp")` behaves exactly like `session.authorize("notion")`.
+
+<Figure width={1456} height={839} src="/images/docs/toolkit-apps/preview-notion-mcp.jpg" alt="The notion_mcp preview panel showing Type Provider MCP, 37 tools, 0 triggers, DCR OAuth, and a dated latest version, beside a catalog filtered to Provider MCP toolkits" caption="The notion_mcp preview. Type reads Provider MCP, with 37 tools, no triggers, DCR OAuth, and a dated version. In the list behind it, Aiwyn Tax MCP and AllTrails MCP show No Auth, so DCR OAuth isn't universal." />
+
+## How to spot one
+
+In the catalog, the {ProviderMcpIconLg} mark on an app means it includes a Provider MCP toolkit. Hovering it reads "Provider MCP available".
+
+In code, the slug ends in `_mcp`, like `notion_mcp`. The display name usually ends in " MCP", but match on the slug, not the name.
+
+Its tools carry the toolkit prefix plus the tool name the product publishes, so they look different from a Composio-built toolkit's tools:
+
+| | Composio Built | {ProviderMcpIcon} Provider MCP |
+| --- | --- | --- |
+| Slug | `notion` | `notion_mcp` |
+| A tool | `NOTION_CREATE_PAGE` | `NOTION_MCP_NOTION_CREATE_PAGES` |
+
+## What to expect
+
+- **Auth varies per toolkit.** Most use [DCR OAuth](/reference/glossary#dcr-oauth) against the product's own server, some need no auth, and a few use an API key or OAuth2. Read what the toolkit declares rather than assuming from the label.
+- **No [triggers](/docs/triggers).** Triggers exist only on toolkits Composio builds. If your agent has to react to events, use the Composio-built sibling.
+- **The tool surface follows the product.** Tool names, descriptions, and schemas are limited to what the upstream server publishes, so a sparse schema is the product's, not a stale catalog. The surface changes when a sync produces a new dated version.
+
+<Callout type="info" title="You don't need to create an auth config">
+`session.authorize("notion_mcp")` returns a Connect Link with nothing set up in advance. DCR OAuth registers the client with the product's server for you, so a Provider MCP toolkit having no Composio managed auth does _not_ mean you have to bring credentials. Create an auth config only to pin scopes or use your own OAuth app.
+</Callout>
+
+<Callout type="warn" title="Listing the tools on v3 returns nothing">
+A Provider MCP toolkit keeps its tools only in the latest dated version, so `GET /api/v3/tools?toolkit_slug=notion_mcp` comes back empty even though the toolkit is healthy. Add `toolkit_versions=latest`, or use v3.1, which always resolves the latest version. Sessions and tool search are unaffected either way. See [Toolkit versioning](/docs/tools-direct/toolkit-versioning).
+</Callout>
+
+## Provider MCP vs MCP as a transport
+
+MCP shows up on both sides of Composio, and the two are independent. A Provider MCP toolkit is about where tools come from, with Composio acting as the MCP client. The MCP transports are about how your agent reaches Composio's tools.
+
+| You want to | Use | Read more |
+| --- | --- | --- |
+| Expose one user's session to an MCP-compatible client | The session MCP endpoint (`mcp: true`) | [Using sessions via MCP](/docs/sessions-via-mcp) |
+| Connect an existing MCP client to Composio without the SDK | Composio Connect | [Composio Connect](/docs/composio-connect) |
+| Use tools from a product's own hosted MCP server | A Provider MCP toolkit, like `notion_mcp` | This page |
+
+The two stack without interacting, so you can enable `notion_mcp` in a session and serve it over the session MCP endpoint.
+
+## Your own server is Custom MCP, not Provider MCP
+
+A Provider MCP toolkit is a catalog toolkit backed by the product's server, available to every project. If you want to bring _your own_ remote MCP server, that's [Custom MCP](/docs/extending-sessions/custom-mcp): you register the server into your project and get a project-private `CUSTOM_*` toolkit that's never grouped into an App. The two behave alike at runtime, since Composio is the MCP client in both.
+
+## Related guides
+
+<Cards>
+  <Card icon={<RouteIcon />} title="Composio Built vs Provider MCPs" href="/docs/apps-and-toolkits/composio-built-vs-provider-mcp" description="Which sibling to use when a product ships more than one" />
+  <Card icon={<Blocks />} title="Apps vs toolkits" href="/docs/apps-and-toolkits" description="How an App groups the toolkits that exist for one product" />
+  <Card icon={<Terminal />} title="Custom MCP" href="/docs/extending-sessions/custom-mcp" description="Register your own remote MCP server into a project" />
+</Cards>

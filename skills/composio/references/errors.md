@@ -36,6 +36,10 @@ This appears on a real tool execution after the project and session reached the 
 
 Keep the same project key and application user ID. Generate a fresh Connect Link for that integration, reconnect the provider account, and retry the safe call. If a link expired, request a new one.
 
+### No active connection on a sibling toolkit
+
+A `NoActiveConnection` error can appear when the user connected one toolkit of a product's App but the execution targets its sibling: the connection is on `notion` while the tool belongs to `notion_mcp`, or the reverse. Sibling toolkits never share a connection. Link the exact slug the execution uses, or switch the execution to the slug that is already connected.
+
 ### For You client authentication
 
 If the MCP client itself cannot authenticate, verify the consumer endpoint, OAuth session, or `ck_...` header path from the For You guide. Do not substitute a Platform project key.
