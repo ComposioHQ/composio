@@ -2,6 +2,7 @@
   "title": "Agent setup",
   "pages": [
     "index",
+    "unattended-authentication",
     "clients",
     "external:[llms.txt](/llms.txt)"
   ]
