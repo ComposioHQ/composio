@@ -1,13 +1,13 @@
-import { mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
-  buildTypeDocArgs,
   discoverModelFiles,
   escapeTextForMdx,
   escapeTypeForMdx,
   parseSourceSignatureTypesAtLine,
+  runTypeDocCommand,
   simplifyTypeForSignature,
   simplifyTypeForTable,
 } from '../../scripts/generate-docs';
@@ -156,12 +156,28 @@ describe('generate-docs command construction', () => {
     expect(discovered.sort()).toEqual(['src/models/Files.ts', 'src/models/tool_router.ts']);
   });
 
-  it('passes every entry point as its own argument instead of a joined command line', () => {
-    const args = buildTypeDocArgs(['src/composio.ts', 'src/models/a b.ts'], '/tmp/out.json');
+  it('runs TypeDoc with Node and passes every entry point as its own argument', async () => {
+    const typedocBin = join(modelsDir, 'typedoc');
+    const outputJson = join(modelsDir, 'typedoc-args.txt');
+    await writeFile(
+      typedocBin,
+      `const { writeFileSync } = require('node:fs');
+const args = process.argv.slice(2);
+const outputJson = args[args.indexOf('--json') + 1];
+writeFileSync(outputJson, args.join('\\n'));
+`
+    );
 
-    expect(args[0]).toBe('typedoc');
+    runTypeDocCommand(['src/composio.ts', 'src/models/a b.ts'], {
+      outputJson,
+      packageDir: modelsDir,
+      typedocBin,
+    });
+
+    const args = (await readFile(outputJson, 'utf8')).split('\n');
+    expect(args[0]).toBe('--json');
     expect(args).toContain('src/models/a b.ts');
-    expect(args.some(arg => arg.includes(' typedoc') || arg.includes('npx'))).toBe(false);
+    expect(args.some(arg => arg.includes('npx'))).toBe(false);
     expect(args.slice(-2)).toEqual(['src/composio.ts', 'src/models/a b.ts']);
   });
 });

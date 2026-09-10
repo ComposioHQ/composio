@@ -19,6 +19,11 @@ const PACKAGE_DIR = join(SCRIPT_DIR, '..');
 const MODELS_DIR = join(PACKAGE_DIR, 'src/models');
 const OUTPUT_DIR = join(PACKAGE_DIR, '../../../docs/content/reference/sdk-reference/typescript');
 const TEMP_JSON = join(PACKAGE_DIR, '.typedoc-output.json');
+const TYPEDOC_BIN = join(
+  dirname(fileURLToPath(import.meta.resolve('typedoc/package.json'))),
+  'bin',
+  'typedoc'
+);
 
 // Internal classes that should NOT be documented (accessed via other APIs)
 const INTERNAL_CLASSES = new Set([
@@ -75,14 +80,13 @@ export async function discoverModelFiles(modelsDir: string = MODELS_DIR): Promis
     .map(f => `src/models/${f}`);
 }
 
-// Argument vector for `npx typedoc`, one array element per argument so the
-// entry points are never joined into a shell command line.
-export function buildTypeDocArgs(
+// TypeDoc arguments, one array element per argument so the entry points are
+// never joined into a shell command line.
+function buildTypeDocArgs(
   entryPoints: readonly string[],
   outputJson: string = TEMP_JSON
 ): string[] {
   return [
-    'typedoc',
     '--json',
     outputJson,
     '--tsconfig',
@@ -93,6 +97,26 @@ export function buildTypeDocArgs(
     '--skipErrorChecking', // Skip TS errors, we just want the documentation
     ...entryPoints,
   ];
+}
+
+interface TypeDocCommandOptions {
+  outputJson?: string;
+  packageDir?: string;
+  typedocBin?: string;
+}
+
+export function runTypeDocCommand(
+  entryPoints: readonly string[],
+  {
+    outputJson = TEMP_JSON,
+    packageDir = PACKAGE_DIR,
+    typedocBin = TYPEDOC_BIN,
+  }: TypeDocCommandOptions = {}
+): void {
+  execFileSync(process.execPath, [typedocBin, ...buildTypeDocArgs(entryPoints, outputJson)], {
+    stdio: 'pipe',
+    cwd: packageDir,
+  });
 }
 
 // Discover classes to document from TypeDoc output
@@ -1165,7 +1189,7 @@ async function runTypeDoc(): Promise<TypeDocProject> {
   console.log(`  Found ${entryPoints.length} entry points`);
 
   try {
-    execFileSync('npx', buildTypeDocArgs(entryPoints), { stdio: 'pipe', cwd: PACKAGE_DIR });
+    runTypeDocCommand(entryPoints);
   } catch (error) {
     console.error('TypeDoc failed:', error);
     throw error;
