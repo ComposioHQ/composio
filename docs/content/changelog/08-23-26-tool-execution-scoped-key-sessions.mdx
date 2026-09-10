@@ -1,0 +1,20 @@
+---
+title: "Tool execution scoped API keys can now run tools in sessions"
+date: "2026-08-23"
+description: "A project API key scoped to Tool execution can now execute and search tools inside a Tool Router session without also needing Sessions write access."
+---
+
+A project API key scoped to `tool_execution: write` can now call `execute`, `execute_meta`, and
+`search` on a Tool Router session. Previously those three routes were gated only by `sessions:
+write`, so a key that should only run tools also had to be able to create, modify, and delete the
+session itself — collapsing the boundary between "run tools" and "manage sessions" for anyone
+building RBAC on top of sessions.
+
+`sessions: write` alone still works exactly as before for these three routes; existing keys are
+unaffected. This is additive: it only grants a new key shape (`tool_execution` without `sessions`),
+it does not take anything away from keys that already have `sessions: write`.
+
+Session lifecycle routes — create, attach, patch, delete, and MCP server/instance management —
+are unchanged and still require `sessions: write` specifically.
+
+[Learn more](/reference/authenticating-to-composio/project-api-key-permissions#tool-execution)

@@ -33,3 +33,7 @@ Create a new Project API key with Sessions set to Read and write, or use an appr
 For a scoped Project API key, `composio.tools.execute()` and the tool-execute API require Tool execution set to Write or Read and write. A key without that permission can surface a generic 401 `Invalid API key` even when the key exists and is active.
 
 Create a correctly scoped Project API key or use an appropriate full-access Project API key, then retry. A future API improvement may return a clearer permission error, but support should diagnose the current behavior from the key's permissions.
+
+## Running tools inside a Tool Router session no longer requires Sessions write
+
+As of 2026-08-23, a Project API key with Tool execution set to Write can call a session's `execute`, `execute_meta`, and `search` routes on its own — Sessions write is no longer required for those three, only for creating/modifying/deleting the session itself. Either permission (Tool execution write, or Sessions write) is enough; a key can also have both. If a customer reports a permission denial on session execute/search, check Tool execution first before assuming Sessions is the missing scope.
