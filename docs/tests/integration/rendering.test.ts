@@ -58,6 +58,21 @@ describe("Page rendering - critical pages", () => {
 });
 
 describe("Page rendering - content markers", () => {
+  test("docs homepage social metadata survives the root redirect", async () => {
+    const res = await fetchPage("/", { timeout: 30_000, headers: { "User-Agent": "facebookexternalhit/1.1" } });
+    const html = await res.text();
+    expect(res.status).toBe(200);
+    expect(new URL(res.url).pathname).toBe('/docs');
+    expect(html).toContain('<title>Build and operate AI agents | Composio Documentation</title>');
+    expect(html).toContain('<meta property="og:site_name" content="Composio Docs"');
+    expect(html).toContain('<meta property="og:title" content="Build and operate AI agents"');
+    expect(html).toContain('<meta property="og:image" content="https://docs.composio.dev/api/og?variant=home"');
+    expect(html).toContain('<meta name="twitter:image" content="https://docs.composio.dev/api/og?variant=home"');
+    const description = html.match(/<meta property="og:description" content="([^"]+)"/)?.[1];
+    expect(description).toBe('Give your agents tools, managed authentication, and secure execution. Get started with the SDK, CLI, or MCP.');
+    expect(description!.length).toBeLessThanOrEqual(125);
+  });
+
   test("docs home contains navigation elements", async () => {
     const res = await fetchPage("/docs");
     const html = await res.text();

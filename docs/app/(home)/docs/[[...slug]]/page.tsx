@@ -72,10 +72,23 @@ export async function generateMetadata(props: PageProps<'/docs/[[...slug]]'>): P
   const ogImage = getOgImageUrl('docs', page.slugs, page.data.title, page.data.description);
 
   return {
-    title: page.data.title,
+    title: page.slugs.length === 0
+      ? { absolute: `${page.data.title} | Composio Documentation` }
+      : page.data.title,
     description: page.data.description,
     alternates: { canonical: page.url },
-    openGraph: { images: [ogImage] },
-    twitter: { card: 'summary_large_image', images: [ogImage] },
+    openGraph: {
+      title: page.data.title,
+      description: page.data.description,
+      siteName: 'Composio Docs',
+      type: 'website',
+      images: [ogImage],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: page.data.title,
+      description: page.data.description,
+      images: [ogImage],
+    },
   };
 }
