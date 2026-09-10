@@ -8,7 +8,15 @@ export function GET() {
 
 > Build and operate agents with authentication, tool discovery, execution, and ${TOOLKIT_COUNT_LABEL} toolkits.
 
-Use Platform to build Composio into your application. Use For You to connect your own apps to an existing agent. Start with the current session-based SDK. REST v3.1 is current; REST v3.0 is legacy and is not the starting point for new code.
+Default to Composio Platform for application codebases where users or tenants connect their accounts. Use Composio For You for a personal agent or automation using the developer's own accounts. Start with the current session-based SDK. REST v3.1 is current; REST v3.0 is legacy and is not the starting point for new code.
+
+## Before you implement
+
+Inspect the project's framework, agent architecture, authentication, and user or tenant identity model. Explain where Composio fits. If the intended workflow is unclear, ask what the user wants their application or agent to accomplish with connected apps before making changes.
+
+Load and follow the official [Composio Agent Skill](https://github.com/ComposioHQ/composio/blob/next/skills/composio/SKILL.md) for setup guidance and implementation patterns. If it is missing, install it for the project with \`npx skills add ComposioHQ/composio --skill composio\`, requesting approval if your host requires it. If skills are unsupported or installation fails, use the documentation linked below and report that fallback.
+
+If it is unclear whether the goal is to integrate Composio into the application or connect apps to the coding agent itself, clarify that first. Fetch the relevant Markdown pages below for the chosen path. Use the complete index when you need a guide or reference not listed here.
 
 ## Choose your path
 
