@@ -573,7 +573,21 @@ export const runWithConfig = Effect.gen(function* () {
       if (cmdParts.length === 0) {
         return printRootHelp(visibility, helpLevel);
       }
-      return printSubcommandHelp(cmdParts.join(' '), visibility, helpLevel);
+      // Resolve with the same longest-prefix scan the `--help` spelling uses, so
+      // `composio help dev toolkits` renders the curated dev page instead of an
+      // unknown-command line for a path that exists. `matchSubcommandHelp` reads a
+      // full argv with a trailing --help token, hence the synthetic prefix.
+      const subHelp = matchSubcommandHelp(
+        ['composio', 'composio', ...cmdParts, '--help'],
+        visibility
+      );
+      if (subHelp) {
+        return printSubcommandHelp(subHelp, visibility, helpLevel);
+      }
+      // Unknown target: fall through to the framework parser so the failure
+      // matches every other unknown command (stderr rendering, "Did you mean?",
+      // exit 1) instead of an exit-0 stdout line scripts would read as success.
+      return runCli(args);
     }
     const subHelp = matchSubcommandHelp(normalizedArgv, visibility);
     if (subHelp) {

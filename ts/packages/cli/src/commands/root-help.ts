@@ -874,6 +874,58 @@ const SUBCOMMAND_HELP: Record<string, SubcommandHelp | TaggedValue<SubcommandHel
       'composio agent claim',
     ],
   },
+  'agent signup': {
+    usage: 'composio agent signup [-f, --force] [--no-wait] [--no-login]',
+    description: 'Sign up and optionally log in as a Composio agent.',
+    options: [
+      {
+        name: '-f, --force',
+        description: 'Create a new agent identity even if ~/.composio/agent.json already exists',
+      },
+      {
+        name: '--no-wait',
+        description: 'Start agent signup and exit without waiting for credentials',
+      },
+      {
+        name: '--no-login',
+        description: 'Create or verify the agent identity without logging the CLI in',
+      },
+    ],
+  },
+  'agent login': {
+    usage: 'composio agent login <composio_agent_key>',
+    description: 'Log in with an existing Composio agent key.',
+    args: [
+      {
+        name: '<composio_agent_key>',
+        description: 'Composio agent key for an existing agent identity',
+      },
+    ],
+  },
+  'agent whoami': {
+    usage: 'composio agent whoami',
+    description: 'Show the stored Composio agent identity.',
+  },
+  'agent inbox': {
+    usage: 'composio agent inbox [--limit integer]',
+    description: 'Read the stored Composio agent inbox.',
+    options: [
+      {
+        name: '--limit <integer>',
+        description: 'Maximum number of inbox messages to fetch (default: 50)',
+      },
+    ],
+  },
+  'agent claim': {
+    usage: 'composio agent claim <email>',
+    description: 'Invite a human admin to claim this agent org.',
+    args: [
+      {
+        name: '<email>',
+        description: 'Human email address to invite as an admin for this agent org',
+      },
+    ],
+  },
   signup: {
     usage: 'composio signup [-f, --force] [--no-wait] [--no-login]',
     description: 'Sign up and optionally log in as a Composio agent.',
