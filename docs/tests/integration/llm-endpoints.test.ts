@@ -41,8 +41,8 @@ describe("LLM endpoints - API reference version labelling", () => {
     expect(text.split("\n")).not.toContain("## API Reference");
   });
 
-  test("/llms.txt groups every legacy URL under the legacy heading, not interleaved", async () => {
-    const lines = (await (await fetchPage("/llms.txt")).text()).split("\n");
+  test("/llms-index.txt groups every legacy URL under the legacy heading, not interleaved", async () => {
+    const lines = (await (await fetchPage("/llms-index.txt")).text()).split("\n");
 
     const legacyStart = lines.findIndex(line => line.startsWith(LEGACY_HEADING_PREFIX));
     expect(legacyStart, "no legacy reference group").toBeGreaterThan(-1);

@@ -26,6 +26,11 @@ jobs:
             local label="$1"
             local url="$2"
             shift 2
+            local expected_status=""
+            if [[ "${1:-}" =~ ^[0-9]{3}$ ]]; then
+              expected_status="$1"
+              shift
+            fi
             CHECKED=$((CHECKED + 1))
             local attempt=0
             local STATUS="000"
@@ -35,14 +40,23 @@ jobs:
               else
                 STATUS="000"
               fi
-              if [ "$STATUS" -ge 400 2>/dev/null ] || [ "$STATUS" = "000" ]; then
-                attempt=$((attempt + 1))
-                [ "$attempt" -lt 2 ] && sleep 3
-              else
+              if [ -n "$expected_status" ]; then
+                [ "$STATUS" = "$expected_status" ] && break
+              elif [ "$STATUS" != "000" ] && [ "$STATUS" -lt 400 ]; then
                 break
               fi
+              attempt=$((attempt + 1))
+              [ "$attempt" -lt 2 ] && sleep 3
             done
-            if [ "$STATUS" -ge 400 2>/dev/null ] || [ "$STATUS" = "000" ]; then
+            if [ -n "$expected_status" ]; then
+              if [ "$STATUS" != "$expected_status" ]; then
+                echo "FAIL: ${label} → ${STATUS} (expected ${expected_status})"
+                echo "${label} → ${STATUS} (expected ${expected_status})" >> "$FAIL_FILE"
+                FAIL_COUNT=$((FAIL_COUNT + 1))
+              else
+                echo "  OK: ${label} → ${STATUS}"
+              fi
+            elif [ "$STATUS" = "000" ] || [ "$STATUS" -ge 400 ]; then
               echo "FAIL: ${label} → ${STATUS}"
               echo "${label} → ${STATUS}" >> "$FAIL_FILE"
               FAIL_COUNT=$((FAIL_COUNT + 1))
@@ -97,6 +111,9 @@ jobs:
           check_url "/docs/configuring-sessions" "${BASE_URL}/docs/configuring-sessions"
           check_url "/cookbooks" "${BASE_URL}/cookbooks"
           check_url "/toolkits" "${BASE_URL}/toolkits"
+          check_url "/toolkits/github" "${BASE_URL}/toolkits/github" 200
+          check_url "/toolkits/__definitely-not-a-toolkit__" \
+            "${BASE_URL}/toolkits/__definitely-not-a-toolkit__" 404
           check_url "/reference" "${BASE_URL}/reference"
 
           # Public support knowledge

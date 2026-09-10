@@ -4,6 +4,8 @@ import { join } from 'node:path';
 import { getAlgoliaSearchDocuments } from '@/lib/search-index';
 import { getKbGuideUrl, getKbCatalog, getPublishedKbGuides } from '@/lib/kb/repository';
 import { getLocalKnowledgeDiscoveryPaths } from '@/lib/knowledge/discovery';
+import { getKnowledgeToolkitSummaries } from '@/lib/knowledge/catalog';
+import { getToolkitKnowledgeRedirect } from '@/lib/knowledge/toolkit-routing';
 
 function source(path: string): string {
   return readFileSync(join(import.meta.dir, '../..', path), 'utf8');
@@ -54,12 +56,26 @@ describe('public KB discovery', () => {
     expect(source('app/sitemap.ts')).toContain('getLocalKnowledgeDiscoveryPaths');
     expect(source('scripts/validate-links.ts')).toContain('knowledgeBaseSource');
     expect(source('scripts/validate-links.ts')).toContain('getLocalKnowledgeDiscoveryPaths');
-    expect(source('app/llms.txt/route.ts')).toContain('knowledgeBaseSource');
-    expect(source('app/llms.txt/route.ts')).toContain('getLocalKnowledgeDiscoveryPaths');
+    expect(source('app/llms-index.txt/route.ts')).toContain('knowledgeBaseSource');
+    expect(source('app/llms-index.txt/route.ts')).toContain('getLocalKnowledgeDiscoveryPaths');
     expect(source('app/llms-full.txt/route.ts')).toContain('knowledgeBaseSource');
     expect(source('app/llms-full.txt/route.ts')).toContain('getLocalKnowledgeDiscoveryPaths');
     expect(source('app/llms.mdx/[[...slug]]/route.ts')).toContain("prefix: 'kb'");
     expect(source('app/llms.mdx/[[...slug]]/route.ts')).toContain('knowledgeBrowseToMarkdown');
+  });
+
+  test('publishes toolkit collection pages but not redirect-only aliases', async () => {
+    const summaries = await getKnowledgeToolkitSummaries();
+    const discoveryPaths = await getLocalKnowledgeDiscoveryPaths();
+
+    for (const toolkit of summaries) {
+      const legacyPath = `/kb/toolkit/${toolkit.slug}`;
+      if (getToolkitKnowledgeRedirect(toolkit)) {
+        expect(discoveryPaths).not.toContain(legacyPath);
+      } else {
+        expect(discoveryPaths).toContain(legacyPath);
+      }
+    }
   });
 
   test('explicitly traces runtime KB files into Vercel routes', () => {

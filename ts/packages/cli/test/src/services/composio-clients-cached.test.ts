@@ -2,8 +2,8 @@ import { describe, expect, it } from '@effect/vitest';
 import { ConfigProvider, DateTime, Effect, Layer } from 'effect';
 import * as tempy from 'tempy';
 import { ComposioToolkitsRepository, HttpServerError } from 'src/services/composio-clients';
-import { FileSystem } from '@effect/platform';
-import { BunFileSystem } from '@effect/platform-bun';
+import * as FileSystem from 'effect/FileSystem';
+import * as BunFileSystem from '@effect/platform-bun/BunFileSystem';
 import {
   CACHE_FILES,
   ComposioToolkitsRepositoryCached,
@@ -42,8 +42,9 @@ const withCountingRepository = <A>(
           BunFileSystem.layer
         )
       ),
-      Effect.withConfigProvider(
-        ConfigProvider.fromMap(new Map([['CACHE_DIR', cacheDir], ...config]))
+      Effect.provideService(
+        ConfigProvider.ConfigProvider,
+        ConfigProvider.fromEnvRecord(Object.fromEntries([['CACHE_DIR', cacheDir], ...config]))
       )
     );
   });
@@ -97,8 +98,8 @@ describe('ComposioToolkitsRepositoryCached', () => {
         Effect.gen(function* () {
           const repository = yield* ComposioToolkitsRepository;
 
-          const first = yield* Effect.either(repository.getToolkits());
-          const second = yield* Effect.either(repository.getToolkits());
+          const first = yield* Effect.result(repository.getToolkits());
+          const second = yield* Effect.result(repository.getToolkits());
 
           expect(second).toEqual(first);
           // One attempt for both callers: the caching layer must not mistake

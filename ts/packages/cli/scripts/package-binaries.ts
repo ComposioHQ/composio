@@ -15,8 +15,9 @@
  */
 
 import process from 'node:process';
-import { Config, ConfigProvider, Console, Effect, Logger, Layer, LogLevel } from 'effect';
-import { BunContext, BunRuntime } from '@effect/platform-bun';
+import { Config, ConfigProvider, Console, Effect, Logger, Layer, References } from 'effect';
+import * as BunServices from '@effect/platform-bun/BunServices';
+import * as BunRuntime from '@effect/platform-bun/BunRuntime';
 import { LOCAL_TOOLS_BINARY_ASSET_DIRNAME, teardown } from './_shared';
 import { $ } from 'bun';
 import { readdir, stat, writeFile } from 'node:fs/promises';
@@ -25,7 +26,11 @@ import {
   collectExpectedRunCompanionAssetRelativePaths,
   RUN_COMPANION_ALL_STATIC_ASSET_RELATIVE_PATHS,
 } from '../src/services/run-companion-modules';
-import { ARTIFACT_NAMES } from './_release-artifacts';
+import {
+  archiveCompanionEntries,
+  ARTIFACT_NAMES,
+  releaseArtifactTargetFor,
+} from './_release-artifacts';
 
 const BINARIES_DIR = './dist/binaries';
 const COMPANIONS_DIR = path.join(BINARIES_DIR, 'companions');
@@ -65,16 +70,14 @@ export function packageBinaries() {
     yield* Console.log(`Packaging ${binaries.length} binaries...`);
 
     for (const binary of binaries) {
-      // Every archive ships every platform's codex-acp, even though its own
-      // `composio` binary can only ever execute one of them.
-      //
-      // A CLI released before 2026-08-18 verifies a downloaded upgrade package
-      // against all four codex-acp paths and refuses to install one that is
-      // missing any of them, so an archive carrying only its own binary breaks
-      // `composio upgrade` for every client already in the field. Narrowing the
-      // set is worth roughly 651 MB per archive, but it can only ship once no
-      // supported client still performs that check.
-      const companionRelativePaths = allCompanionRelativePaths;
+      // Every archive names all four codex-acp paths, but carries real bytes
+      // only for the one its own `composio` binary can execute. See
+      // `archiveCompanionEntries` for why the other three are present but empty.
+      const target = yield* Effect.fromResult(releaseArtifactTargetFor(binary));
+      const companionEntries = archiveCompanionEntries({
+        allRelativePaths: allCompanionRelativePaths,
+        target,
+      });
 
       const binaryPath = path.join(BINARIES_DIR, binary);
       const zipPath = path.join(BINARIES_DIR, `${binary}.zip`);
@@ -87,10 +90,14 @@ export function packageBinaries() {
       yield* Effect.tryPromise(async () => {
         await $`mkdir -p ${nestedDir}`.quiet();
         await $`cp ${binaryPath} ${nestedDir}/composio`.quiet();
-        for (const relativePath of companionRelativePaths) {
-          const targetDirectory = path.dirname(path.join(nestedDir, relativePath));
-          await $`mkdir -p ${targetDirectory}`.quiet();
-          await $`cp ${path.join(COMPANIONS_DIR, relativePath)} ${path.join(nestedDir, relativePath)}`.quiet();
+        for (const { relativePath, kind } of companionEntries) {
+          const destinationPath = path.join(nestedDir, relativePath);
+          await $`mkdir -p ${path.dirname(destinationPath)}`.quiet();
+          if (kind === 'placeholder') {
+            await writeFile(destinationPath, '');
+            continue;
+          }
+          await $`cp ${path.join(COMPANIONS_DIR, relativePath)} ${destinationPath}`.quiet();
         }
         const hasLocalToolsBinaryAssets = await stat(LOCAL_TOOLS_BINARY_ASSETS_DIR)
           .then(stats => stats.isDirectory())
@@ -121,18 +128,16 @@ export function packageBinaries() {
 }
 
 const ConfigLive = Effect.gen(function* () {
-  const logLevel = yield* Config.logLevel('COMPOSIO_LOG_LEVEL').pipe(
-    Config.withDefault(LogLevel.Info)
-  );
+  const logLevel = yield* Config.logLevel('COMPOSIO_LOG_LEVEL').pipe(Config.withDefault('Info'));
 
-  return Logger.minimumLogLevel(logLevel);
-}).pipe(Layer.unwrapEffect, Layer.merge(Layer.setConfigProvider(ConfigProvider.fromEnv())));
+  return Layer.succeed(References.MinimumLogLevel, logLevel);
+}).pipe(Layer.unwrap, Layer.merge(ConfigProvider.layer(ConfigProvider.fromEnv())));
 
 if (require.main === module) {
   packageBinaries().pipe(
     Effect.provide(ConfigLive),
-    Effect.provide(Logger.pretty),
-    Effect.provide(BunContext.layer),
+    Effect.provide(Logger.layer([Logger.consolePretty()])),
+    Effect.provide(BunServices.layer),
     Effect.scoped,
     Effect.map(() => ({ message: 'Process completed successfully.' })),
     BunRuntime.runMain({

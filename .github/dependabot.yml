@@ -24,6 +24,9 @@ updates:
         update-types: ["version-update:semver-major"]
       - dependency-name: "openai"
         update-types: ["version-update:semver-major"]
+      # Node 22/24/25 built-in fetch uses the legacy dispatcher handler API.
+      - dependency-name: "undici"
+        update-types: ["version-update:semver-major"]
       - dependency-name: "zod"
         update-types: ["version-update:semver-major"]
       # Version 1.0.0 is not compatible with the Effect package family in use.
@@ -44,11 +47,22 @@ updates:
         applies-to: security-updates
         patterns: ["*"]
 
-  # Python SDK and provider packages
+  # Python SDK and provider packages.
+  #
+  # The uv workspace root is "/": that is where pyproject.toml declares
+  # [tool.uv.workspace] and where uv.lock lives, so Dependabot must run there
+  # to update the lockfile. Pointing it at "/python" only rewrote
+  # python/pyproject.toml and left uv.lock behind (see the langchain-openai
+  # security bump in ec24c54ff), and alerts against the lockfile never
+  # auto-resolved. The explicit provider directories are the projects that are
+  # not workspace members and resolve on their own.
   - package-ecosystem: "pip"
     directories:
-      - "/python"
-      - "/python/providers/*"
+      - "/"
+      - "/python/providers/autogen"
+      - "/python/providers/claude_agent_sdk"
+      - "/python/providers/langgraph"
+      - "/python/providers/llamaindex"
     schedule:
       interval: "weekly"
       day: "friday"
@@ -60,6 +74,14 @@ updates:
       - dependency-name: "tomli"
         update-types:
           - "version-update:semver-minor"
+          - "version-update:semver-major"
+      # ag2 1.0 dropped the top-level `autogen` package that
+      # composio-autogen imports (`autogen.agentchat.register_function`,
+      # `ConversableAgent`); the 1.x wheel ships only `ag2`. Adopting it is a
+      # provider rewrite, not a requirement widening. Remove this once
+      # composio-autogen targets the `ag2` namespace.
+      - dependency-name: "ag2"
+        update-types:
           - "version-update:semver-major"
     groups:
       pip-version:

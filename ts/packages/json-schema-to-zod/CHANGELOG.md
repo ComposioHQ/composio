@@ -1,5 +1,17 @@
 # @composio/json-schema-to-zod
 
+## 0.3.2
+
+### Patch Changes
+
+- ab289d6: Preserve Draft 7 acceptance across primitive, composed, referenced, conditional, and typeless schemas. Enforce sibling and object/array assertions, retain positional tuple and `additionalItems` behavior, and prevent native Zod materialization from rejecting values already accepted by the source schema.
+
+## 0.3.1
+
+### Patch Changes
+
+- db7b576: Declare Node.js 22.22.3 as the minimum supported runtime for every published TypeScript package so package managers surface incompatible runtimes before users encounter ESM loading failures.
+
 ## 0.3.0
 
 ### Minor Changes

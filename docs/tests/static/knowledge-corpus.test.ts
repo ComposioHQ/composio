@@ -2,7 +2,7 @@ import { describe, expect, test } from 'bun:test';
 import { readFileSync, readdirSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import sitemap from '@/app/sitemap';
-import { GET as getLlmsIndex } from '@/app/llms.txt/route';
+import { GET as getLlmsIndex } from '@/app/llms-index.txt/route';
 import { getAlgoliaSearchDocuments, getDocsSearchIndexes } from '@/lib/search-index';
 import * as searchIndexModule from '@/lib/search-index';
 import { getLocalKnowledgeDiscoveryPaths } from '@/lib/knowledge/discovery';

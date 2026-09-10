@@ -42,12 +42,52 @@ export function createKbArticleReader(articlesRoot: string): (articlePath: strin
   };
 }
 
+export function createKbSourceReader(sourceRoot: string): (sourcePath: string) => string {
+  return sourcePath => {
+    const sourceRootStats = lstatSync(sourceRoot);
+    if (sourceRootStats.isSymbolicLink()) {
+      throw new Error(`KB source root must not be a symbolic link: ${sourceRoot}`);
+    }
+    if (!sourceRootStats.isDirectory()) {
+      throw new Error(`KB source root must be a directory: ${sourceRoot}`);
+    }
+
+    const realSourceRoot = realpathSync(sourceRoot);
+    const target = resolve(realSourceRoot, sourcePath);
+    const pathFromRoot = relative(realSourceRoot, target);
+    if (
+      pathFromRoot === '' ||
+      pathFromRoot === '..' ||
+      pathFromRoot.startsWith(`..${sep}`) ||
+      isAbsolute(pathFromRoot)
+    ) {
+      throw new Error(`KB source path escapes source directory: ${sourcePath}`);
+    }
+    if (lstatSync(target).isSymbolicLink()) {
+      throw new Error(`KB source must not be a symbolic link: ${sourcePath}`);
+    }
+
+    const realTarget = realpathSync(target);
+    const realPathFromRoot = relative(realSourceRoot, realTarget);
+    if (
+      realPathFromRoot === '' ||
+      realPathFromRoot === '..' ||
+      realPathFromRoot.startsWith(`..${sep}`) ||
+      isAbsolute(realPathFromRoot) ||
+      !statSync(realTarget).isFile()
+    ) {
+      throw new Error(`KB source must be a regular file inside source directory: ${sourcePath}`);
+    }
+    return readFileSync(realTarget, 'utf8');
+  };
+}
+
 export function getKbCatalog(): KbCatalog {
   if (cachedCatalog) return cachedCatalog;
   const manifest = JSON.parse(readFileSync(join(KB_ROOT, 'manifest.json'), 'utf8')) as KbManifest;
   cachedCatalog = buildKbCatalog(
     manifest,
-    (sourcePath) => readFileSync(join(KB_ROOT, 'source', sourcePath), 'utf8'),
+    createKbSourceReader(resolve(KB_ROOT, 'source')),
     new Date(),
     createKbArticleReader(KB_ARTICLES_ROOT)
   );

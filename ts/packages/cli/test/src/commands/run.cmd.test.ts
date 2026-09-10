@@ -3,20 +3,10 @@ import * as os from 'node:os';
 import * as path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { describe, expect, layer } from '@effect/vitest';
-import { Command as PlatformCommand, CommandExecutor, Path } from '@effect/platform';
-import { BunContext } from '@effect/platform-bun';
-import {
-  Cause,
-  ConfigProvider,
-  Effect,
-  Exit,
-  HashMap,
-  Inspectable,
-  Layer,
-  Option,
-  Sink,
-  Stream,
-} from 'effect';
+import * as BunServices from '@effect/platform-bun/BunServices';
+import * as Path from 'effect/Path';
+import { Cause, ConfigProvider, Effect, Exit, Layer, Option, Sink, Stream } from 'effect';
+import { ChildProcess, ChildProcessSpawner } from 'effect/unstable/process';
 import { afterEach, it, vi } from 'vitest';
 import { createCliCommandTelemetryContext } from 'src/analytics/events';
 import {
@@ -49,17 +39,15 @@ import { DEFAULT_CLI_INVOCATION_ORIGIN } from 'src/services/runtime-cli-context'
 import { cli, MockConsole, TestLive } from 'test/__utils__';
 import { CommandRunner } from 'src/services/command-runner';
 
-const acpOnlyConfigProvider = ConfigProvider.fromMap(
-  new Map([['COMPOSIO_RUN_ACP_ONLY', '1']])
-).pipe(extendConfigProvider);
+const acpOnlyConfigProvider = ConfigProvider.fromEnvRecord({
+  COMPOSIO_RUN_ACP_ONLY: '1',
+}).pipe(extendConfigProvider);
 
-const enabledRuntimeFlagsConfigProvider = ConfigProvider.fromMap(
-  new Map([
-    ['COMPOSIO_RUN_ACP_ONLY', '1'],
-    ['COMPOSIO_PERF_DEBUG', '1'],
-    ['COMPOSIO_TOOL_DEBUG', '1'],
-  ])
-).pipe(extendConfigProvider);
+const enabledRuntimeFlagsConfigProvider = ConfigProvider.fromEnvRecord({
+  COMPOSIO_RUN_ACP_ONLY: '1',
+  COMPOSIO_PERF_DEBUG: '1',
+  COMPOSIO_TOOL_DEBUG: '1',
+}).pipe(extendConfigProvider);
 
 const readRunPreloadSource = (command: ReadonlyArray<string>): string => {
   const preloadPath = command[2];
@@ -69,67 +57,72 @@ const readRunPreloadSource = (command: ReadonlyArray<string>): string => {
   return fs.readFileSync(preloadPath, 'utf8');
 };
 
-const commandRuns = vi.fn((_: PlatformCommand.Command) =>
-  Effect.succeed(CommandExecutor.ExitCode(0))
+const commandRuns = vi.fn((_: ChildProcess.Command) =>
+  Effect.succeed(ChildProcessSpawner.ExitCode(0))
 );
 
-// `composio run` starts the child through the platform `CommandExecutor` so it owns the pid it
-// forwards signals to, so the stub has to replace the executor rather than `CommandRunner`.
-// `exitCode` stays suspended: the command only awaits it after the signal handlers are
-// registered, which is what makes the forwarding observable below.
+// `composio run` starts the child through the platform `ChildProcessSpawner` so it owns the
+// pid it forwards signals to, so the stub has to replace the spawner rather than
+// `CommandRunner`. `exitCode` stays suspended: the command only awaits it after the signal
+// handlers are registered, which is what makes the forwarding observable below.
 const STUB_CHILD_PID = 987_654;
 
-const stubProcess = (command: PlatformCommand.Command): CommandExecutor.Process => ({
-  [CommandExecutor.ProcessTypeId]: CommandExecutor.ProcessTypeId,
-  pid: CommandExecutor.ProcessId(STUB_CHILD_PID),
-  exitCode: Effect.suspend(() => commandRuns(command)),
-  isRunning: Effect.succeed(false),
-  kill: () => Effect.void,
-  stdin: Sink.drain,
-  stdout: Stream.empty,
-  stderr: Stream.empty,
-  toJSON: () => ({ _id: 'StubProcess' }),
-  toString: () => 'StubProcess',
-  [Inspectable.NodeInspectSymbol]: () => ({ _id: 'StubProcess' }),
-});
+const stubHandle = (command: ChildProcess.Command): ChildProcessSpawner.ChildProcessHandle =>
+  ChildProcessSpawner.makeHandle({
+    pid: ChildProcessSpawner.ProcessId(STUB_CHILD_PID),
+    exitCode: Effect.suspend(() => commandRuns(command)),
+    isRunning: Effect.succeed(false),
+    kill: () => Effect.void,
+    stdin: Sink.drain,
+    stdout: Stream.empty,
+    stderr: Stream.empty,
+    all: Stream.empty,
+    getInputFd: () => Sink.drain,
+    getOutputFd: () => Stream.empty,
+    unref: Effect.succeed(Effect.void),
+  });
 
-const StubCommandExecutor = Layer.succeed(
-  CommandExecutor.CommandExecutor,
-  CommandExecutor.makeExecutor(command => Effect.succeed(stubProcess(command)))
+const StubChildProcessSpawner = Layer.succeed(
+  ChildProcessSpawner.ChildProcessSpawner,
+  ChildProcessSpawner.make(command => Effect.succeed(stubHandle(command)))
 );
 
 const RunTestLive = (input: Parameters<typeof TestLive>[0] = {}) =>
   Layer.merge(
     TestLive({
       ...input,
-      commandRunner: new CommandRunner({
+      commandRunner: CommandRunner.of({
         run: command => commandRuns(command),
         capture: () => Effect.succeed({ exitCode: 0, stdout: '', stderr: '' }),
       }),
     }),
-    StubCommandExecutor
+    StubChildProcessSpawner
   );
 
-const inspectRunCommand = (command: PlatformCommand.Command) => {
-  const [standard] = PlatformCommand.flatten(command);
+const inspectRunCommand = (command: ChildProcess.Command) => {
+  if (!ChildProcess.isStandardCommand(command)) {
+    throw new Error('Expected the run command to be a standard (non-piped) command.');
+  }
   return {
-    cmd: [standard.command, ...standard.args],
-    env: Object.fromEntries(HashMap.entries(standard.env)),
-    extendEnv: standard.extendEnv,
-    stdio: [standard.stdin, standard.stdout, standard.stderr],
+    cmd: [command.command, ...command.args],
+    env: command.options.env ?? {},
+    extendEnv: command.options.extendEnv,
+    stdio: [command.options.stdin, command.options.stdout, command.options.stderr],
   };
 };
 
 describe('CLI: composio run', () => {
   afterEach(() => {
     process.exitCode = undefined;
-    commandRuns.mockReset().mockImplementation(() => Effect.succeed(CommandExecutor.ExitCode(0)));
+    commandRuns
+      .mockReset()
+      .mockImplementation(() => Effect.succeed(ChildProcessSpawner.ExitCode(0)));
     vi.unstubAllGlobals();
     vi.restoreAllMocks();
   });
 
   layer(RunTestLive())(it => {
-    it.scoped('[Given] a root run telemetry id [Then] the child receives the same run id', () =>
+    it.effect('[Given] a root run telemetry id [Then] the child receives the same run id', () =>
       Effect.gen(function* () {
         const telemetryContext = createCliCommandTelemetryContext(
           ['bun', 'composio', 'run', 'console.log("hi")'],
@@ -143,7 +136,7 @@ describe('CLI: composio run', () => {
 
         commandRuns.mockImplementation(command => {
           expect(inspectRunCommand(command).env.COMPOSIO_CLI_PARENT_RUN_ID).toBe(runId);
-          return Effect.succeed(CommandExecutor.ExitCode(0));
+          return Effect.succeed(ChildProcessSpawner.ExitCode(0));
         });
 
         // The bootstrap hands the run id it minted for telemetry to the command, the way
@@ -156,7 +149,7 @@ describe('CLI: composio run', () => {
   });
 
   layer(RunTestLive())(it => {
-    it.scoped(
+    it.effect(
       '[Given] a terminal interrupt [Then] it forwards the signal to the child process group and unregisters its handlers',
       () =>
         Effect.gen(function* () {
@@ -181,7 +174,7 @@ describe('CLI: composio run', () => {
               for (const listener of process.listeners('SIGINT').slice(sigintBaseline)) {
                 listener('SIGINT');
               }
-              return CommandExecutor.ExitCode(0);
+              return ChildProcessSpawner.ExitCode(0);
             })
           );
 
@@ -197,11 +190,11 @@ describe('CLI: composio run', () => {
   });
 
   layer(RunTestLive())(it => {
-    it.scoped(
+    it.effect(
       '[Given] inline code and args [Then] it forwards them to the embedded Bun runtime',
       () =>
         Effect.gen(function* () {
-          commandRuns.mockImplementation(() => Effect.succeed(CommandExecutor.ExitCode(7)));
+          commandRuns.mockImplementation(() => Effect.succeed(ChildProcessSpawner.ExitCode(7)));
 
           yield* cli(['run', 'console.log("hi")', '--flag', 'value']);
           const output = yield* MockConsole.getLines();
@@ -236,7 +229,7 @@ describe('CLI: composio run', () => {
   });
 
   layer(RunTestLive({ baseConfigProvider: acpOnlyConfigProvider }))(it => {
-    it.scoped(
+    it.effect(
       '[Given] COMPOSIO_RUN_ACP_ONLY=1 [Then] run enables ACP-only execution without a flag',
       () =>
         Effect.gen(function* () {
@@ -244,7 +237,7 @@ describe('CLI: composio run', () => {
             expect(readRunPreloadSource(inspectRunCommand(command).cmd)).toContain(
               '"acpOnly":true'
             );
-            return Effect.succeed(CommandExecutor.ExitCode(0));
+            return Effect.succeed(ChildProcessSpawner.ExitCode(0));
           });
 
           yield* cli(['run', 'console.log("hi")']);
@@ -253,11 +246,11 @@ describe('CLI: composio run', () => {
         })
     );
 
-    it.scoped('[Given] --acp-only=false and configured ACP-only mode [Then] the flag wins', () =>
+    it.effect('[Given] --acp-only=false and configured ACP-only mode [Then] the flag wins', () =>
       Effect.gen(function* () {
         commandRuns.mockImplementation(command => {
           expect(readRunPreloadSource(inspectRunCommand(command).cmd)).toContain('"acpOnly":false');
-          return Effect.succeed(CommandExecutor.ExitCode(0));
+          return Effect.succeed(ChildProcessSpawner.ExitCode(0));
         });
 
         yield* cli(['run', '--acp-only=false', 'console.log("hi")']);
@@ -268,12 +261,12 @@ describe('CLI: composio run', () => {
   });
 
   layer(RunTestLive({ baseConfigProvider: enabledRuntimeFlagsConfigProvider }))(it => {
-    it.scoped('[Given] explicit false flags [Then] inherited true values are cleared', () =>
+    it.effect('[Given] explicit false flags [Then] inherited true values are cleared', () =>
       Effect.gen(function* () {
         let preloadSource = '';
         commandRuns.mockImplementation(command => {
           preloadSource = readRunPreloadSource(inspectRunCommand(command).cmd);
-          return Effect.succeed(CommandExecutor.ExitCode(0));
+          return Effect.succeed(ChildProcessSpawner.ExitCode(0));
         });
 
         yield* cli([
@@ -297,14 +290,14 @@ describe('CLI: composio run', () => {
   });
 
   layer(Layer.merge(RunTestLive(), telemetryDebugModeLayer(true)))(it => {
-    it.scoped(
+    it.effect(
       '[Given] --telemetry-debug [Then] the spawned script and its children observe it',
       () =>
         Effect.gen(function* () {
           let preloadSource = '';
           commandRuns.mockImplementation(command => {
             preloadSource = readRunPreloadSource(inspectRunCommand(command).cmd);
-            return Effect.succeed(CommandExecutor.ExitCode(0));
+            return Effect.succeed(ChildProcessSpawner.ExitCode(0));
           });
 
           yield* cli(['run', 'console.log("hi")']);
@@ -317,7 +310,7 @@ describe('CLI: composio run', () => {
   });
 
   layer(RunTestLive())(it => {
-    it.scoped(
+    it.effect(
       '[Given] --acp-only [Then] run accepts the flag and forwards execution normally',
       () =>
         Effect.gen(function* () {
@@ -325,7 +318,7 @@ describe('CLI: composio run', () => {
             expect(readRunPreloadSource(inspectRunCommand(command).cmd)).toContain(
               '"acpOnly":true'
             );
-            return Effect.succeed(CommandExecutor.ExitCode(0));
+            return Effect.succeed(ChildProcessSpawner.ExitCode(0));
           });
 
           yield* cli(['run', '--acp-only', 'console.log("hi")']);
@@ -337,12 +330,12 @@ describe('CLI: composio run', () => {
         })
     );
 
-    it.scoped('[Given] repeated invocations [Then] hidden flags do not leak', () =>
+    it.effect('[Given] repeated invocations [Then] hidden flags do not leak', () =>
       Effect.gen(function* () {
         const preloadSources: string[] = [];
         commandRuns.mockImplementation(command => {
           preloadSources.push(readRunPreloadSource(inspectRunCommand(command).cmd));
-          return Effect.succeed(CommandExecutor.ExitCode(0));
+          return Effect.succeed(ChildProcessSpawner.ExitCode(0));
         });
 
         yield* cli(['run', '--acp-only', 'console.log("first")']);
@@ -356,7 +349,7 @@ describe('CLI: composio run', () => {
   });
 
   layer(RunTestLive())(it => {
-    it.scoped(
+    it.effect(
       '[Given] --logs-off [Then] run accepts the flag and forwards execution normally',
       () =>
         Effect.gen(function* () {
@@ -371,7 +364,7 @@ describe('CLI: composio run', () => {
   });
 
   layer(RunTestLive())(it => {
-    it.scoped(
+    it.effect(
       '[Given] a multiline structured experimental_subAgent script [Then] run preserves the inline TypeScript source',
       () =>
         Effect.gen(function* () {
@@ -412,7 +405,7 @@ describe('CLI: composio run', () => {
   });
 
   layer(RunTestLive())(it => {
-    it.scoped('[Given] --file [Then] it forwards file execution to the embedded Bun runtime', () =>
+    it.effect('[Given] --file [Then] it forwards file execution to the embedded Bun runtime', () =>
       Effect.gen(function* () {
         const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'composio-run-test-'));
         const scriptPath = path.join(tempDir, 'script.ts');
@@ -442,7 +435,7 @@ describe('CLI: composio run', () => {
   });
 
   layer(RunTestLive())(it => {
-    it.scoped(
+    it.effect(
       '[Given] no inline code and no --file [Then] it fails with a typed usage error, not a defect',
       () =>
         Effect.gen(function* () {
@@ -450,7 +443,7 @@ describe('CLI: composio run', () => {
           expect(Exit.isFailure(exit)).toBe(true);
           if (!Exit.isFailure(exit)) return;
 
-          const failure = Cause.failureOption(exit.cause);
+          const failure = Cause.findErrorOption(exit.cause);
           expect(Option.isSome(failure)).toBe(true);
           expect(failure.pipe(Option.getOrThrow)).toBeInstanceOf(MissingRunSourceError);
           expect(
@@ -463,7 +456,69 @@ describe('CLI: composio run', () => {
   });
 
   layer(RunTestLive())(it => {
-    it.scoped(
+    it.effect(
+      '[Given] --file=path inline form followed by --dry-run [Then] both parse as run flags',
+      () =>
+        Effect.gen(function* () {
+          const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'composio-run-test-'));
+          const scriptPath = path.join(tempDir, 'script.ts');
+          fs.writeFileSync(scriptPath, 'const value = 1 + 1;\nvalue * 2;\n', 'utf8');
+
+          try {
+            yield* cli(['run', `--file=${scriptPath}`, '--dry-run']);
+
+            expect(commandRuns).toHaveBeenCalledTimes(1);
+            const spawnConfig = inspectRunCommand(commandRuns.mock.calls[0]![0]);
+            // `--file=...` must be recognized as a run flag: file mode compiles a
+            // wrapper script (not `--eval` inline code), and `--dry-run` must not
+            // leak into the forwarded script arguments.
+            expect(spawnConfig.cmd[3]).toMatch(/\.composio-run-.*\.ts$/);
+            expect(spawnConfig.cmd).not.toContain('--dry-run');
+            expect(process.exitCode).toBe(0);
+          } finally {
+            fs.rmSync(tempDir, { recursive: true, force: true });
+          }
+        })
+    );
+  });
+
+  layer(RunTestLive())(it => {
+    it.effect(
+      '[Given] a second literal -- in passthrough args [Then] it is forwarded to the script',
+      () =>
+        Effect.gen(function* () {
+          yield* cli(['run', 'console.log("hi")', '--', 'alpha', '--', 'beta']);
+
+          expect(commandRuns).toHaveBeenCalledTimes(1);
+          const spawnConfig = inspectRunCommand(commandRuns.mock.calls[0]![0]);
+          // First `--` is the run/script boundary; the second is a script
+          // argument and must reach the script verbatim (v3 behavior).
+          expect(spawnConfig.cmd.slice(5)).toEqual(['--', 'alpha', '--', 'beta']);
+          expect(process.exitCode).toBe(0);
+        })
+    );
+  });
+
+  layer(RunTestLive())(it => {
+    it.effect(
+      '[Given] a script arg literally starting with the old escape-marker string [Then] it reaches the script untouched',
+      () =>
+        Effect.gen(function* () {
+          // The passthrough tail is now handed off out-of-band instead of being
+          // smuggled through the parser with a marker string, so a user token
+          // that happens to look like the old marker is never mangled.
+          yield* cli(['run', 'console.log("hi")', '@@composio-run-raw@@literal']);
+
+          expect(commandRuns).toHaveBeenCalledTimes(1);
+          const spawnConfig = inspectRunCommand(commandRuns.mock.calls[0]![0]);
+          expect(spawnConfig.cmd.slice(5)).toEqual(['--', '@@composio-run-raw@@literal']);
+          expect(process.exitCode).toBe(0);
+        })
+    );
+  });
+
+  layer(RunTestLive())(it => {
+    it.effect(
       '[Given] run help [Then] it documents injected execute, search, proxy, experimental_subAgent, and z helpers',
       () =>
         Effect.gen(function* () {
@@ -634,7 +689,7 @@ describe('run-subagent-shared', () => {
 });
 
 describe('inferCliInvocationPrefix', () => {
-  layer(BunContext.layer)(it => {
+  layer(BunServices.layer)(it => {
     it.effect(
       '[Given] a compiled bunfs entrypoint [Then] it falls back to the binary path only',
       () =>
@@ -649,7 +704,7 @@ describe('inferCliInvocationPrefix', () => {
 });
 
 describe('resolveRunCompanionModulePath', () => {
-  layer(BunContext.layer)(it => {
+  layer(BunServices.layer)(it => {
     it.effect(
       '[Given] a bundled dist chunk [Then] it resolves sibling companion modules in dist',
       () =>
@@ -694,7 +749,7 @@ describe('resolveRunCompanionModulePath', () => {
 });
 
 describe('run companion install metadata', () => {
-  layer(BunContext.layer)(it => {
+  layer(BunServices.layer)(it => {
     it.effect(
       '[Given] an installed release tag file [Then] run helpers can read it back from the install dir',
       () =>

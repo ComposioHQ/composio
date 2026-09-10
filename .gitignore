@@ -75,3 +75,6 @@ docs/.workflow-data/*
 # Local agent / tooling state (regenerated per machine)
 .pi/
 .playwright-mcp/
+
+# Examples harness sweep output (results, traces, candidate client artifacts)
+.artifacts/

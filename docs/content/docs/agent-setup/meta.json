@@ -1,0 +1,8 @@
+{
+  "title": "Agent setup",
+  "pages": [
+    "index",
+    "clients",
+    "external:[llms.txt](/llms.txt)"
+  ]
+}

@@ -1,6 +1,6 @@
 import { describe, expect, it } from '@effect/vitest';
 import { Effect } from 'effect';
-import { HttpClient, HttpClientResponse } from '@effect/platform';
+import { HttpClient, HttpClientResponse } from 'effect/unstable/http';
 import { fetchLatestCliRelease, type GitHubRelease } from 'src/effects/resolve-cli-release';
 
 const githubConfig = {

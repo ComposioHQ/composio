@@ -1,4 +1,4 @@
-import { Args, Command } from '@effect/cli';
+import { Argument, Command } from 'effect/unstable/cli';
 import { Effect, Option } from 'effect';
 import { requireAuth } from 'src/effects/require-auth';
 import { handleHttpServerError } from 'src/effects/handle-http-error';
@@ -12,9 +12,9 @@ type TriggersInfoCommandConfig = {
   readonly listCommandPlaceholder: string;
 };
 
-const slug = Args.text({ name: 'slug' }).pipe(
-  Args.withDescription('Trigger slug (e.g. "GMAIL_NEW_GMAIL_MESSAGE")'),
-  Args.optional
+const slug = Argument.string('slug').pipe(
+  Argument.withDescription('Trigger slug (e.g. "GMAIL_NEW_GMAIL_MESSAGE")'),
+  Argument.optional
 );
 
 /**

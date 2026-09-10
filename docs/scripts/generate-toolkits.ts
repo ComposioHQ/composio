@@ -13,14 +13,13 @@ import { join } from 'path';
 import { fetchWithRetry } from './fetch-with-retry';
 import { requireProductionApiV3Url, stripStagingHosts } from './production-api.mjs';
 import { applyToolkitVersions, fetchProductionToolkitVersions } from './toolkit-versions';
+import { isPublicToolkitSlug } from '../lib/public-toolkit-policy';
 import { z } from 'zod';
 
 const API_BASE = requireProductionApiV3Url(process.env.COMPOSIO_API_BASE);
 const API_KEY = process.env.COMPOSIO_API_KEY;
 
 const OUTPUT_DIR = join(process.cwd(), 'public/data');
-const EXCLUDED_PUBLIC_TOOLKIT_SLUGS = new Set(['test_app']);
-
 interface Tool {
   slug: string;
   name: string;
@@ -270,7 +269,7 @@ async function fetchToolsForToolkit(slug: string): Promise<Tool[]> {
 
 async function fetchTriggersForToolkit(slug: string): Promise<Trigger[]> {
   const response = await fetchWithRetry(
-    `${API_BASE}/triggers_types?toolkit_slugs=${slug}&toolkit_versions=latest`,
+    `${API_BASE}/triggers_types?toolkit_slugs=${slug}&toolkit_versions=latest&limit=1000`,
     {
       headers: {
         'Content-Type': 'application/json',
@@ -375,7 +374,7 @@ export function transformToolkit(raw: unknown): Toolkit {
 }
 
 export function shouldPublishToolkit(raw: unknown): boolean {
-  return !EXCLUDED_PUBLIC_TOOLKIT_SLUGS.has(transformToolkit(raw).slug);
+  return isPublicToolkitSlug(transformToolkit(raw).slug);
 }
 
 async function main() {

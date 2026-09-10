@@ -1,12 +1,12 @@
-Use this guide to configure customer-owned Google OAuth for Google Tasks and troubleshoot consent, scope, or token failures.
+Use this guide to choose managed or customer-owned Google OAuth for Google Tasks and troubleshoot consent, scope, or token failures.
 
-## Configure custom Google OAuth for Google Tasks
+## Configure Google OAuth for Google Tasks
 
-**Follow the Google Apps credential setup guide.** For a step-by-step guide to creating and configuring Google OAuth credentials with Composio, see [How to create OAuth2 credentials for Google Apps](https://composio.dev/auth/googleapps).
+**Follow the Google Apps credential setup guide for custom OAuth.** For a step-by-step guide to creating and configuring Google OAuth credentials with Composio, see [How to create OAuth2 credentials for Google Apps](https://composio.dev/auth/googleapps).
 
-**Enable the Google Tasks API in the credential's Cloud project.** When using custom credentials, enable the Google Tasks API in the Google Cloud project that owns the credentials. After enabling it under **APIs & Services**, wait a few minutes and retry.
+**Enable the Google Tasks API for custom OAuth.** Enable the Google Tasks API in the Google Cloud project that owns the credentials. After enabling it under **APIs & Services**, wait a few minutes and retry.
 
-**Set the consent-screen name and current redirect URL.** Google Tasks currently uses customer-owned OAuth credentials. Configure the app name and branding in the Google Cloud project that owns those credentials, and use the redirect URL shown by Composio's current auth-config flow.
+**Choose managed or customer-owned OAuth.** Use Composio-managed OAuth for the standard connection flow. Use a custom Google OAuth app when you need control over scopes, consent-screen branding, or Google Cloud project policy. For custom OAuth, configure the app name and branding in that project and use the redirect URL shown by Composio's current auth-config flow.
 
 ## Troubleshoot Google Tasks OAuth and tool calls
 

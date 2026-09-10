@@ -9,15 +9,18 @@ vi.mock('node:dns/promises', () => ({
 vi.mock('../../src/utils/pinnedDispatcher.node', () => ({
   createPinnedDispatcher: vi.fn(() => Promise.resolve({ close: () => Promise.resolve() })),
   hasCustomGlobalDispatcher: vi.fn(() => false),
+  pinnedHttpFetch: vi.fn(),
 }));
 
 import {
   createPinnedDispatcher,
   hasCustomGlobalDispatcher,
+  pinnedHttpFetch,
 } from '../../src/utils/pinnedDispatcher.node';
 
 const mockCreatePinnedDispatcher = vi.mocked(createPinnedDispatcher);
 const mockHasCustomGlobalDispatcher = vi.mocked(hasCustomGlobalDispatcher);
+const mockPinnedHttpFetch = vi.mocked(pinnedHttpFetch);
 
 // eslint-disable-next-line no-restricted-imports
 import { lookup } from 'node:dns/promises';
@@ -40,13 +43,24 @@ describe('isBlockedIp', () => {
       '169.254.169.254', // cloud metadata
       '100.64.0.1', // CGNAT
       '0.0.0.0',
+      '224.0.0.1', // multicast
+      '233.252.0.1', // MCAST-TEST-NET
+      '192.88.99.1', // 6to4 relay anycast (deprecated)
     ]) {
       expect(isBlockedIp(ip), ip).toBe(true);
     }
   });
 
   it('allows public IPv4 addresses', () => {
-    for (const ip of ['8.8.8.8', '1.1.1.1', '93.184.216.34', '172.15.0.1', '172.32.0.1']) {
+    for (const ip of [
+      '8.8.8.8',
+      '1.1.1.1',
+      '93.184.216.34',
+      '172.15.0.1',
+      '172.32.0.1',
+      '223.255.255.255',
+      '192.88.100.1',
+    ]) {
       expect(isBlockedIp(ip), ip).toBe(false);
     }
   });
@@ -72,8 +86,35 @@ describe('isBlockedIp', () => {
     }
   });
 
+  it('blocks the transition ranges that carry an arbitrary IPv4 address', () => {
+    // A public-looking literal that still names internal space. The Python
+    // guard rejects all of these through `ipaddress.is_global`.
+    for (const ip of [
+      '2002:7f00:1::', // 6to4 for 127.0.0.1
+      '2002:c0a8:1::', // 6to4 for 192.168.0.1
+      '2002:8080:8080::', // 6to4 for a public address — the range goes as a whole
+      '2001::7f00:1', // Teredo 2001::/32
+      '2001:2::1', // benchmarking
+      '2001:10::1', // ORCHID
+      '2001:db8::1', // documentation
+      '64:ff9b:1::7f00:1', // local-use NAT64 for 127.0.0.1
+      '100::1', // discard-only
+      'fec0::1', // site-local (deprecated)
+    ]) {
+      expect(isBlockedIp(ip), ip).toBe(true);
+    }
+  });
+
   it('allows public IPv6 and public IPv4-mapped/compat addresses', () => {
-    for (const ip of ['2606:4700:4700::1111', '::ffff:8.8.8.8', '::8.8.8.8', '::808:808']) {
+    for (const ip of [
+      '2606:4700:4700::1111',
+      '::ffff:8.8.8.8',
+      '::8.8.8.8',
+      '::808:808',
+      // Neighbours of the ranges above, so the list does not overreach.
+      '2001:4860:4860::8888',
+      '2a00:1450:4001:80f::200e',
+    ]) {
       expect(isBlockedIp(ip), ip).toBe(false);
     }
   });
@@ -133,6 +174,7 @@ describe('ssrfSafeFetch', () => {
     mockFetch.mockReset();
     mockCreatePinnedDispatcher.mockClear();
     mockHasCustomGlobalDispatcher.mockReturnValue(false);
+    mockPinnedHttpFetch.mockReset();
     // Deterministic even on machines that carry the runtime env-proxy opt-in.
     vi.stubEnv('NODE_USE_ENV_PROXY', '');
     vi.stubGlobal('fetch', mockFetch);
@@ -222,6 +264,34 @@ describe('ssrfSafeFetch', () => {
     expect(mockCreatePinnedDispatcher).toHaveBeenCalledWith(['93.184.216.34']);
   });
 
+  it('keeps Bun fetch on an explicitly configured environment proxy', async () => {
+    resolvesTo('93.184.216.34');
+    mockFetch.mockResolvedValue(new Response('data', { status: 200 }));
+    vi.stubEnv('HTTPS_PROXY', 'http://proxy.example:3128');
+    vi.stubEnv('NO_PROXY', '');
+    const bunDescriptor = Object.getOwnPropertyDescriptor(process.versions, 'bun');
+    Object.defineProperty(process.versions, 'bun', {
+      configurable: true,
+      value: '1.4.0',
+    });
+
+    try {
+      await ssrfSafeFetch('https://example.com/file.pdf');
+    } finally {
+      if (bunDescriptor) {
+        Object.defineProperty(process.versions, 'bun', bunDescriptor);
+      } else {
+        delete (process.versions as NodeJS.ProcessVersions & { bun?: string }).bun;
+      }
+    }
+
+    expect(mockPinnedHttpFetch).not.toHaveBeenCalled();
+    expect(mockFetch).toHaveBeenCalledWith(
+      'https://example.com/file.pdf',
+      expect.objectContaining({ redirect: 'manual' })
+    );
+  });
+
   it('validates and fetches a public URL', async () => {
     resolvesTo('93.184.216.34');
     const ok = new Response('data', { status: 200 });
@@ -306,4 +376,155 @@ describe('ssrfSafeFetch', () => {
     // maxRedirects = 2 => hops 0, 1, 2 are fetched before the budget throws.
     expect(cancel).toHaveBeenCalledTimes(3);
   });
+
+  // `redirect: 'manual'` means `fetch` never applies its own redirect rules, so
+  // the guard applies them: a 303 sends every method to a bodiless result
+  // request, 301/302 do that to a POST only, and 307/308 replay both. The
+  // Python guard follows the same table in `safe_request`.
+  it.each([
+    { status: 301, method: 'POST', expected: 'GET', replays: false },
+    { status: 301, method: 'PUT', expected: 'PUT', replays: true },
+    { status: 302, method: 'POST', expected: 'GET', replays: false },
+    { status: 302, method: 'PUT', expected: 'PUT', replays: true },
+    { status: 303, method: 'POST', expected: 'GET', replays: false },
+    { status: 303, method: 'PUT', expected: 'GET', replays: false },
+    { status: 303, method: 'HEAD', expected: 'HEAD', replays: false },
+    { status: 307, method: 'POST', expected: 'POST', replays: true },
+    { status: 308, method: 'PUT', expected: 'PUT', replays: true },
+  ])(
+    'sends $method as $expected after a $status',
+    async ({ status, method, expected, replays }) => {
+      resolvesTo('93.184.216.34');
+      mockFetch
+        .mockResolvedValueOnce(
+          new Response(null, { status, headers: { location: 'https://example.com/result' } })
+        )
+        .mockResolvedValueOnce(new Response('data', { status: 200 }));
+
+      await ssrfSafeFetch('https://example.com/create', {
+        method,
+        body: 'payload',
+        headers: { 'Content-Type': 'application/octet-stream', 'X-Test': 'kept' },
+      });
+
+      const [url, init] = mockFetch.mock.calls[1];
+      expect(url).toBe('https://example.com/result');
+      expect(init.method).toBe(expected);
+      expect(init.body).toBe(replays ? 'payload' : undefined);
+      expect(new Headers(init.headers).get('content-type')).toBe(
+        replays ? 'application/octet-stream' : null
+      );
+      // Only the headers that describe the body go with it.
+      expect(new Headers(init.headers).get('x-test')).toBe('kept');
+    }
+  );
+
+  it('keeps the downgrade across later hops', async () => {
+    resolvesTo('93.184.216.34');
+    mockFetch
+      .mockResolvedValueOnce(
+        new Response(null, { status: 303, headers: { location: 'https://example.com/result' } })
+      )
+      .mockResolvedValueOnce(
+        new Response(null, { status: 307, headers: { location: 'https://example.com/final' } })
+      )
+      .mockResolvedValueOnce(new Response('data', { status: 200 }));
+
+    await ssrfSafeFetch('https://example.com/create', { method: 'POST', body: 'payload' });
+
+    // A 307 replays whatever the request is *now*, not what it started as.
+    expect(mockFetch.mock.calls[2][1].method).toBe('GET');
+    expect(mockFetch.mock.calls[2][1].body).toBeUndefined();
+  });
+
+  // A credential header is addressed to the origin the caller named, so a hop
+  // that leaves that origin must not carry it: `redirect: 'manual'` means
+  // `fetch` never strips it for us. The Python guard applies the same rule.
+  const credentialed = {
+    Authorization: 'Bearer token',
+    'Proxy-Authorization': 'Basic cHJveHk=',
+    Cookie: 'session=abc',
+    'X-Test': 'kept',
+  };
+
+  it.each([
+    { location: 'https://other.example.com/elsewhere', differs: 'host' },
+    { location: 'http://example.com/elsewhere', differs: 'scheme' },
+    { location: 'https://example.com:8443/elsewhere', differs: 'port' },
+  ])('drops credential headers on a redirect to a different $differs', async ({ location }) => {
+    resolvesTo('93.184.216.34');
+    mockFetch
+      .mockResolvedValueOnce(new Response(null, { status: 307, headers: { location } }))
+      .mockResolvedValueOnce(new Response('data', { status: 200 }));
+
+    await ssrfSafeFetch('https://example.com/download', { headers: credentialed });
+
+    const [url, init] = mockFetch.mock.calls[1];
+    expect(url).toBe(location);
+    const headers = new Headers(init.headers);
+    expect(headers.get('authorization')).toBeNull();
+    expect(headers.get('proxy-authorization')).toBeNull();
+    expect(headers.get('cookie')).toBeNull();
+    expect(headers.get('x-test')).toBe('kept');
+  });
+
+  it('keeps credential headers on a same-origin redirect', async () => {
+    resolvesTo('93.184.216.34');
+    mockFetch
+      .mockResolvedValueOnce(
+        new Response(null, { status: 307, headers: { location: 'https://example.com:443/moved' } })
+      )
+      .mockResolvedValueOnce(new Response('data', { status: 200 }));
+
+    await ssrfSafeFetch('https://example.com/download', { headers: credentialed });
+
+    const headers = new Headers(mockFetch.mock.calls[1][1].headers);
+    expect(headers.get('authorization')).toBe('Bearer token');
+    expect(headers.get('proxy-authorization')).toBe('Basic cHJveHk=');
+    expect(headers.get('cookie')).toBe('session=abc');
+    expect(headers.get('x-test')).toBe('kept');
+  });
+
+  it('drops credential headers together with the body on a cross-origin 303', async () => {
+    resolvesTo('93.184.216.34');
+    mockFetch
+      .mockResolvedValueOnce(
+        new Response(null, {
+          status: 303,
+          headers: { location: 'https://other.example.com/result' },
+        })
+      )
+      .mockResolvedValueOnce(new Response('data', { status: 200 }));
+
+    await ssrfSafeFetch('https://example.com/create', {
+      method: 'POST',
+      body: 'payload',
+      headers: { ...credentialed, 'Content-Type': 'application/octet-stream' },
+    });
+
+    const init = mockFetch.mock.calls[1][1];
+    expect(init.method).toBe('GET');
+    expect(init.body).toBeUndefined();
+    const headers = new Headers(init.headers);
+    expect(headers.get('content-type')).toBeNull();
+    expect(headers.get('authorization')).toBeNull();
+    expect(headers.get('x-test')).toBe('kept');
+  });
+
+  it.each([300, 304, 305, 306])(
+    'returns a %i without following its location',
+    async (status: number) => {
+      resolvesTo('93.184.216.34');
+      // Only 301/302/303/307/308 are redirects to follow; a `location` on any
+      // other 3xx does not make it one.
+      mockFetch.mockResolvedValue(
+        new Response(null, { status, headers: { location: 'https://example.com/elsewhere' } })
+      );
+
+      const res = await ssrfSafeFetch('https://example.com/file.pdf');
+
+      expect(res.status).toBe(status);
+      expect(mockFetch).toHaveBeenCalledTimes(1);
+    }
+  );
 });

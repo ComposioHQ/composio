@@ -73,6 +73,49 @@ def test_blocks_after_symlink_resolves_to_sensitive_dir() -> None:
         assert is_blocked_sensitive_file_upload_path(link) is True
 
 
+def test_blocks_sensitive_symlinked_directory_with_plain_target(tmp_path: Path) -> None:
+    store = tmp_path / "state" / "claude"
+    store.mkdir(parents=True)
+    (store / "settings.json").write_text("{}", encoding="utf-8")
+    home = tmp_path / "home"
+    home.mkdir()
+    link = home / ".claude"
+    try:
+        link.symlink_to(store, target_is_directory=True)
+    except OSError:
+        pytest.skip("symlinks not supported")
+
+    sensitive_path = link / "settings.json"
+    assert is_blocked_sensitive_file_upload_path(sensitive_path) is True
+    with pytest.raises(SensitiveFilePathBlockedError):
+        assert_safe_local_file_upload_path(sensitive_path)
+
+
+def test_blocks_sensitive_symlinked_basename_with_plain_target(tmp_path: Path) -> None:
+    target = tmp_path / "plain-config"
+    target.write_text("SECRET=1", encoding="utf-8")
+    link = tmp_path / ".env"
+    try:
+        link.symlink_to(target)
+    except OSError:
+        pytest.skip("symlinks not supported")
+
+    assert is_blocked_sensitive_file_upload_path(link) is True
+
+
+def test_allows_ordinary_file_through_symlinked_directory(tmp_path: Path) -> None:
+    store = tmp_path / "store"
+    store.mkdir()
+    (store / "document.pdf").write_text("x", encoding="utf-8")
+    link = tmp_path / "docs"
+    try:
+        link.symlink_to(store, target_is_directory=True)
+    except OSError:
+        pytest.skip("symlinks not supported")
+
+    assert is_blocked_sensitive_file_upload_path(link / "document.pdf") is False
+
+
 def test_assert_safe_raises() -> None:
     p = Path.home() / ".ssh" / "id_rsa"
     with pytest.raises(SensitiveFilePathBlockedError):

@@ -1,7 +1,6 @@
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import { ValidationError } from '@effect/cli';
 import { describe, expect, layer } from '@effect/vitest';
 import { Cause, Effect, Exit } from 'effect';
 import { LocalToolsDoctorError } from 'src/commands/local-tools/commands/local-tools.doctor.cmd';
@@ -30,7 +29,7 @@ const withLocalToolsPath = <A, E, R>(effect: Effect.Effect<A, E, R>) =>
 
 describe('CLI: composio local-tools', () => {
   layer(TestLive())(it => {
-    it.scoped('[Given] --json [Then] lists bundled local toolkits', () =>
+    it.effect('[Given] --json [Then] lists bundled local toolkits', () =>
       Effect.gen(function* () {
         yield* cli(['local-tools', 'list', '--json', '--all-platforms']);
 
@@ -49,7 +48,7 @@ describe('CLI: composio local-tools', () => {
       })
     );
 
-    it.scoped('[Given] doctor --json [Then] reports local toolkit readiness', () =>
+    it.effect('[Given] doctor --json [Then] reports local toolkit readiness', () =>
       Effect.gen(function* () {
         yield* cli(['local-tools', 'doctor', '--json', '--all-platforms']);
 
@@ -66,7 +65,10 @@ describe('CLI: composio local-tools', () => {
       })
     );
 
-    it.scoped('[Given] an unknown configure selector [Then] reports CLI input validation', () =>
+    // v4 migration note: this business-level validation (only knowable after parsing) is a
+    // plain typed domain error (`LocalToolsConfigureInputError`), not a `CliError.InvalidValue`
+    // — see the migration note above it in `local-tools.configure.cmd.ts`.
+    it.effect('[Given] an unknown configure selector [Then] reports CLI input validation', () =>
       Effect.gen(function* () {
         const exit = yield* Effect.exit(
           cli(['local-tools', 'configure', 'NOT_A_LOCAL_TOOL', '--disable'])
@@ -75,14 +77,14 @@ describe('CLI: composio local-tools', () => {
         expect(Exit.isFailure(exit)).toBe(true);
         if (Exit.isFailure(exit)) {
           const failure = Cause.squash(exit.cause);
-          expect(
-            ValidationError.isValidationError(failure) && ValidationError.isInvalidValue(failure)
-          ).toBe(true);
+          expect(failure).toMatchObject({
+            _tag: 'commands/local-tools/LocalToolsConfigureInputError',
+          });
         }
       })
     );
 
-    it.scoped(
+    it.effect(
       '[Given] strict doctor finds a disabled tool [Then] reports structured readiness',
       () =>
         withLocalToolsPath(
@@ -112,7 +114,7 @@ describe('CLI: composio local-tools', () => {
         )
     );
 
-    it.scoped('[Given] meta --init --json [Then] writes local metadata file', () =>
+    it.effect('[Given] meta --init --json [Then] writes local metadata file', () =>
       withLocalToolsPath(
         Effect.gen(function* () {
           yield* cli(['local-tools', 'meta', '--init', '--json']);

@@ -89,5 +89,8 @@ jobs:
           comment-tag: pnpm-audit-security-warning
 
       - name: Fail on high/critical advisories
-        # Mastra's pinned provider-utils release has no patched version for this low advisory.
-        run: pnpm audit --prod --audit-level=high --ignore=GHSA-866g-f22w-33x8
+        # No --ignore here: the flag writes the advisory into pnpm-workspace.yaml's
+        # auditConfig and exits 0 regardless of what else is outstanding, which
+        # silently disarms this gate. Advisories that genuinely cannot be fixed by
+        # a version bump belong in `auditConfig.ignoreGhsas`, with a comment.
+        run: pnpm audit --prod --audit-level=high

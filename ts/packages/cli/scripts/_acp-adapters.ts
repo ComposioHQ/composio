@@ -1,10 +1,16 @@
 import { chmod, copyFile, mkdir, mkdtemp, readFile, rename, rm, writeFile } from 'node:fs/promises';
 import { createRequire } from 'node:module';
 import * as path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import {
   RUN_CODEX_ACP_BINARY_TARGETS,
   type RunCodexAcpBinaryTarget,
 } from '../src/services/run-companion-modules';
+import {
+  assertBytesMatchIntegrity,
+  expectedIntegrityFor,
+  loadLockfileIntegrity,
+} from './_tarball-integrity';
 
 const GENERATED_ROOT_DIR = path.resolve('./.generated');
 const ACP_ADAPTERS_CACHE_DIR = path.join(GENERATED_ROOT_DIR, 'acp-adapters');
@@ -231,6 +237,7 @@ const buildClaudeAdapterBundle = async (cacheDir: string): Promise<void> => {
 
 const extractCodexBinaryFromTarball = async ({
   binaryFileName,
+  integrityByPackage,
   packageName,
   relativePath,
   stageCacheDir,
@@ -238,12 +245,16 @@ const extractCodexBinaryFromTarball = async ({
   version,
 }: {
   readonly binaryFileName: string;
+  readonly integrityByPackage: ReadonlyMap<string, string>;
   readonly packageName: string;
   readonly relativePath: string;
   readonly stageCacheDir: string;
   readonly stageRootDir: string;
   readonly version: string;
 }): Promise<void> => {
+  // Read before the download so a missing pin fails before any bytes are fetched.
+  const expectedIntegrity = expectedIntegrityFor(integrityByPackage, packageName, version);
+
   const metadata = await fetchRegistryJson(packageName, version);
   const tarballUrl = metadata.dist?.tarball;
   if (!tarballUrl) {
@@ -262,8 +273,14 @@ const extractCodexBinaryFromTarball = async ({
   );
 
   await downloadTarball(tarballUrl, tempArchivePath);
+
+  // Checked against the lockfile rather than the registry's own `dist.integrity`:
+  // whoever can serve the tarball can serve the metadata that vouches for it.
+  const archiveBytes = await Bun.file(tempArchivePath).bytes();
+  await assertBytesMatchIntegrity(archiveBytes, expectedIntegrity, `${packageName}@${version}`);
+
   await mkdir(tempExtractDir, { recursive: true });
-  const archive = new Bun.Archive(await Bun.file(tempArchivePath).bytes());
+  const archive = new Bun.Archive(archiveBytes);
   await archive.extract(tempExtractDir);
 
   const extractedBinaryPath = path.join(tempExtractDir, 'package', 'bin', binaryFileName);
@@ -284,6 +301,10 @@ const materializeCodexAdapters = async (
   stageRootDir: string,
   stageCacheDir: string
 ): Promise<void> => {
+  const integrityByPackage = await loadLockfileIntegrity(
+    path.dirname(fileURLToPath(import.meta.url))
+  );
+
   await Promise.all(
     manifest.codex.map(target =>
       extractCodexBinaryFromTarball({
@@ -291,6 +312,7 @@ const materializeCodexAdapters = async (
           RUN_CODEX_ACP_BINARY_TARGETS.find(
             candidate => candidate.packageName === target.packageName
           )?.binaryFileName ?? 'codex-acp',
+        integrityByPackage,
         packageName: target.packageName,
         relativePath: target.relativePath,
         stageCacheDir,

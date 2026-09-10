@@ -89,12 +89,56 @@ function relatedFrontmatter(
   ];
 }
 
+/**
+ * Identifier URLs cite machine identifiers — OAuth scope URIs and API
+ * surface roots such as `https://api.example.com/v3` — not documents. They
+ * respond 404 by design, so they must never publish as links the nightly
+ * external-link sweep would have to keep alive: they render as code spans.
+ */
+export function isIdentifierUrl(raw: string): boolean {
+  let url: URL;
+  try {
+    url = new URL(raw);
+  } catch {
+    return false;
+  }
+  if ((url.protocol !== 'https:' && url.protocol !== 'http:') || url.search || url.hash) {
+    return false;
+  }
+  // Google OAuth scope URIs (https://www.googleapis.com/auth/…) identify a
+  // permission; the namespace serves no pages.
+  if (url.hostname === 'www.googleapis.com' && url.pathname.startsWith('/auth/')) {
+    return true;
+  }
+  // An API surface root: a version-only path such as `/v3` or `/v1beta/`.
+  // Deep paths (`/v3/tools/X`) stay links because they name real resources.
+  return /^\/v\d[\w.-]*\/?$/.test(url.pathname);
+}
+
+/**
+ * Wraps bare identifier URLs in code spans. URLs already presented as links —
+ * markdown link labels `[url](…)`, link targets `](url)`, and anything
+ * adjacent to a code span — keep their form; only bare citations and
+ * `<url>` autolinks (normalized earlier) become code.
+ */
+function identifierUrlsToCodeSpans(segment: string): string {
+  return segment.replace(/(?<![`(\]\[])https?:\/\/[^\s`<>\[\]()]+/g, match => {
+    // GFM autolinks drop trailing punctuation; keep it outside the code span.
+    const url = match.replace(/[.,;:!?'"]+$/, '');
+    if (!isIdentifierUrl(url)) return match;
+    return `\`${url}\`${match.slice(url.length)}`;
+  });
+}
+
 function escapeMdxProse(line: string): string {
-  const escapeSegment = (segment: string): string => segment
-    .replace(/<(https?:\/\/[^>\s]+)>/g, '[$1]($1)')
-    .replace(/<([^>\n]+)>/g, '&lt;$1&gt;')
-    .replace(/\{/g, '&#123;')
-    .replace(/\}/g, '&#125;');
+  const escapeSegment = (segment: string): string => identifierUrlsToCodeSpans(
+    segment
+      .replace(/<(https?:\/\/[^>\s]+)>/g, (match, url: string) =>
+        isIdentifierUrl(url) ? `\`${url}\`` : `[${url}](${url})`)
+      .replace(/<([^>\n]+)>/g, '&lt;$1&gt;')
+      .replace(/\{/g, '&#123;')
+      .replace(/\}/g, '&#125;'),
+  );
 
   let result = '';
   let cursor = 0;
@@ -117,7 +161,8 @@ function escapeMdxProse(line: string): string {
 /**
  * Converts authoritative CommonMark into MDX-safe Markdown. The source and
  * article snapshots stay verbatim; only the generated presentation escapes MDX
- * expressions, normalizes autolinks, and opts support snippets out of Twoslash.
+ * expressions, normalizes autolinks, demotes identifier URLs to code spans,
+ * and opts support snippets out of Twoslash.
  */
 export function markdownForMdx(markdown: string): string {
   let fence: { marker: string; length: number } | null = null;
@@ -179,7 +224,7 @@ function rewriteSourceRepositoryLinks(markdown: string, guide: KbGuide, guides: 
   );
 }
 
-function guideMdx(guide: KbGuide, guides: KbGuide[], sourceCommit: string): string {
+function guideMdx(guide: KbGuide, guides: KbGuide[]): string {
   const related = relatedResources(guide, guides);
   const toolkitSlugs = toolkitSlugsForGuide(guide);
   const frontmatter = [
@@ -188,7 +233,6 @@ function guideMdx(guide: KbGuide, guides: KbGuide[], sourceCommit: string): stri
     `description: ${yamlString(guide.description)}`,
     `keywords: ${yamlArray([...guide.tags, ...guide.topics, ...guide.aliases])}`,
     `sources: ${JSON.stringify(guide.sources)}`,
-    `sourceCommit: ${yamlString(sourceCommit)}`,
     `lastVerifiedAt: ${yamlString(guide.lastVerifiedAt ?? '')}`,
     `reviewAfter: ${yamlString(guide.reviewAfter ?? '')}`,
     `freshness: ${yamlString(guide.freshness)}`,
@@ -226,7 +270,7 @@ function buildExpectedFiles(catalog: KbCatalog): Map<string, string> {
     `${JSON.stringify({ title: 'Guides', pages: guides.map(guide => guide.slug) }, null, 2)}\n`
   );
   for (const guide of guides) {
-    files.set(`guide/${guide.slug}.mdx`, guideMdx(guide, guides, catalog.manifest.source.commit));
+    files.set(`guide/${guide.slug}.mdx`, guideMdx(guide, guides));
   }
   return files;
 }
@@ -237,6 +281,17 @@ function listRelativeFiles(directory: string): string[] {
     .filter(entry => entry.isFile())
     .map(entry => relative(directory, join(entry.parentPath, entry.name)))
     .sort();
+}
+
+function planFileChanges(outputDir: string, expected: Map<string, string>) {
+  const actualFiles = listRelativeFiles(outputDir);
+  const actualFileSet = new Set(actualFiles);
+  const writes = [...expected].filter(
+    ([path, content]) =>
+      !actualFileSet.has(path) || readFileSync(join(outputDir, path), 'utf8') !== content,
+  );
+  const removals = actualFiles.filter(path => !expected.has(path));
+  return { writes, removals };
 }
 
 function assertSafeOutputDirectory(outputDir: string): void {
@@ -253,26 +308,22 @@ export function generateKbContent(options: GenerateKbContentOptions = {}): KbGen
   const expected = buildExpectedFiles(catalog);
   const published = getPublishedKbGuides(catalog).length;
   const held = catalog.guides.filter(guide => guide.state === 'needs-review').length;
+  const changes = planFileChanges(outputDir, expected);
 
   if (options.check) {
-    const actualFiles = listRelativeFiles(outputDir);
-    const expectedFiles = [...expected.keys()].sort();
-    const matches =
-      actualFiles.length === expectedFiles.length &&
-      expectedFiles.every(
-        (path, index) =>
-          actualFiles[index] === path &&
-          readFileSync(join(outputDir, path), 'utf8') === expected.get(path)
-      );
-    if (!matches) throw new Error('Generated KB content is out of date; run bun run generate:kb');
+    if (changes.writes.length > 0 || changes.removals.length > 0) {
+      throw new Error('Generated KB content is out of date; run bun run generate:kb');
+    }
     return { published, held, files: expected.size };
   }
 
-  rmSync(outputDir, { recursive: true, force: true });
-  for (const [path, content] of expected) {
+  for (const [path, content] of changes.writes) {
     const target = join(outputDir, path);
     mkdirSync(dirname(target), { recursive: true });
     writeFileSync(target, content, 'utf8');
+  }
+  for (const path of changes.removals) {
+    rmSync(join(outputDir, path), { force: true });
   }
   return { published, held, files: expected.size };
 }

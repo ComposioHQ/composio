@@ -1,5 +1,6 @@
 import { RootProvider } from 'fumadocs-ui/provider/next';
 import type { Metadata } from 'next';
+import { headers } from 'next/headers';
 import { Analytics } from '@vercel/analytics/next';
 import './global.css';
 import { JetBrains_Mono } from 'next/font/google';
@@ -8,6 +9,15 @@ import { PostHogProvider } from '@/components/posthog-provider';
 import CustomSearchDialog from '@/components/custom-search-dialog';
 import { ScrollReset } from '@/components/scroll-reset';
 import { source, referenceSource } from '@/lib/source';
+import { TOOLKIT_COUNT_LABEL } from '@/lib/toolkit-count';
+import { ProductTransitionLoader } from '@/components/product-transition-loader';
+import { DocsProductProvider } from '@/components/docs-product-context';
+import {
+  DEFAULT_DOCS_PRODUCT,
+  DOCS_PRODUCTS,
+  DOCS_PRODUCT_HEADER,
+  parseDocsProduct,
+} from '@/lib/home-navigation';
 
 const defaultLinkSlugs: { slug: string[]; source: typeof source }[] = [
   { slug: ['quickstart'], source },
@@ -24,25 +34,27 @@ const defaultLinks = defaultLinkSlugs.flatMap(({ slug, source: pageSource }) => 
   return [{ title: page.data.title, description: page.data.description ?? '', href: page.url }];
 });
 
+const SITE_DESCRIPTION = `Build AI agents with ${TOOLKIT_COUNT_LABEL} tools. Connect LLMs to external services like GitHub, Slack, Gmail, and more.`;
+
 export const metadata: Metadata = {
   title: {
     default: 'Composio Docs',
     template: '%s | Composio',
   },
-  description: 'Build AI agents with 1000+ tools. Connect LLMs to external services like GitHub, Slack, Gmail, and more.',
+  description: SITE_DESCRIPTION,
   metadataBase: new URL('https://docs.composio.dev'),
   openGraph: {
     title: 'Composio Docs',
-    description: 'Build AI agents with 1000+ tools. Connect LLMs to external services like GitHub, Slack, Gmail, and more.',
+    description: SITE_DESCRIPTION,
     siteName: 'Composio Docs',
     type: 'website',
-    images: ['https://og.composio.dev/api/og?title=Composio%20Docs'],
+    images: ['https://docs.composio.dev/api/og?variant=home'],
   },
   twitter: {
     card: 'summary_large_image',
     title: 'Composio Docs',
-    description: 'Build AI agents with 1000+ tools. Connect LLMs to external services like GitHub, Slack, Gmail, and more.',
-    images: ['https://og.composio.dev/api/og?title=Composio%20Docs'],
+    description: SITE_DESCRIPTION,
+    images: ['https://docs.composio.dev/api/og?variant=home'],
   },
 };
 
@@ -62,7 +74,11 @@ const jetbrainsMono = JetBrains_Mono({
   display: 'swap',
 });
 
-export default function Layout({ children }: LayoutProps<'/'>) {
+export default async function Layout({ children }: LayoutProps<'/'>) {
+  const initialProduct =
+    parseDocsProduct((await headers()).get(DOCS_PRODUCT_HEADER)) ?? DEFAULT_DOCS_PRODUCT;
+  const initialTheme = DOCS_PRODUCTS[initialProduct].theme;
+
   return (
     <html
       lang="en"
@@ -70,8 +86,12 @@ export default function Layout({ children }: LayoutProps<'/'>) {
       suppressHydrationWarning
     >
       <head>
-        <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
-        <meta name="theme-color" content="#131211" media="(prefers-color-scheme: dark)" />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `try{document.documentElement.classList.remove('light','dark');document.documentElement.classList.add('${initialTheme}');document.documentElement.style.colorScheme='${initialTheme}'}catch{}`,
+          }}
+        />
+        <meta name="theme-color" content={DOCS_PRODUCTS[initialProduct].themeColor} />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
@@ -83,7 +103,7 @@ export default function Layout({ children }: LayoutProps<'/'>) {
                   '@id': 'https://docs.composio.dev/#website',
                   url: 'https://docs.composio.dev',
                   name: 'Composio Docs',
-                  description: 'Build AI agents with 1000+ tools. Connect LLMs to external services like GitHub, Slack, Gmail, and more.',
+                  description: SITE_DESCRIPTION,
                   publisher: { '@id': 'https://composio.dev/#organization' },
                 },
                 {
@@ -108,13 +128,18 @@ export default function Layout({ children }: LayoutProps<'/'>) {
       </head>
       <body className="flex flex-col min-h-dvh font-sans">
         <ScrollReset />
+        <ProductTransitionLoader />
         <Analytics />
         <PostHogProvider>
+          {/* DocsProductProvider owns the rendered theme; useTheme().resolvedTheme is not a product-theme signal. */}
           <RootProvider
             theme={{
               defaultTheme: 'system',
+              forcedTheme: initialTheme,
+              storageKey: 'composio-docs-theme',
               attribute: 'class',
               enableSystem: true,
+              hotKey: false,
             }}
             search={{
               SearchDialog: CustomSearchDialog,
@@ -124,7 +149,7 @@ export default function Layout({ children }: LayoutProps<'/'>) {
               } as Record<string, unknown>,
             }}
           >
-            {children}
+            <DocsProductProvider initialProduct={initialProduct}>{children}</DocsProductProvider>
           </RootProvider>
         </PostHogProvider>
       </body>

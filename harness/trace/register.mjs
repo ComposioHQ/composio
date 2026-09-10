@@ -1,6 +1,6 @@
 // Harness-owned fetch tracer. Injected via NODE_OPTIONS=--import; examples
 // must never reference COMPOSIO_TRACE_FILE themselves (lint-enforced).
-import { requireStagingBaseUrl } from '../staging-backend.mjs';
+import { resolveBackendBaseUrl } from '../backend-url.mjs';
 
 const traceFile = process.env.COMPOSIO_TRACE_FILE;
 
@@ -13,7 +13,7 @@ if (traceFile) {
     'generativelanguage.googleapis.com',
   ]);
 
-  const backendHost = new URL(requireStagingBaseUrl()).hostname;
+  const backendHost = new URL(resolveBackendBaseUrl()).hostname;
 
   const ID_SEG =
     /^(ca_|ac_|ti_|tr_|trs_|sess_|auth_|req_|proj_|org_)[\w-]+$|^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$|^\d+$/i;

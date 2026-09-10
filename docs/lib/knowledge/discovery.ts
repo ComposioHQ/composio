@@ -1,11 +1,12 @@
 import { getPublishedKbGuides, getKbGuideUrl } from '@/lib/kb/repository';
 import { getKnowledgeToolkitSummaries } from './catalog';
 import { PRODUCT_AREAS } from './taxonomy';
+import { getToolkitKnowledgeRedirect } from './toolkit-routing';
 
 export async function getLocalKnowledgeDiscoveryPaths(): Promise<string[]> {
-  const toolkitPages = (await getKnowledgeToolkitSummaries()).map(
-    (toolkit) => `/kb/toolkit/${toolkit.slug}`,
-  );
+  const toolkitPages = (await getKnowledgeToolkitSummaries())
+    .filter((toolkit) => !getToolkitKnowledgeRedirect(toolkit))
+    .map((toolkit) => `/kb/toolkit/${toolkit.slug}`);
   const topicPages = PRODUCT_AREAS.filter((area) => area.defaultBrowse).map(
     (area) => `/kb/topic/${area.slug}`,
   );

@@ -18,7 +18,7 @@ composio = Composio(provider=GoogleProvider())
 tool = composio.tools.get(user_id="default", toolkits=["GITHUB"])
 
 # Initialize the Gemini model
-model = GenerativeModel("gemini-1.5-pro", tools=[tool])
+model = GenerativeModel("gemini-3.7-flash", tools=[tool])
 
 # Start a chat session
 chat = model.start_chat()

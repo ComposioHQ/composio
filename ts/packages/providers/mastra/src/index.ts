@@ -13,7 +13,8 @@ import {
   McpUrlResponse,
   dereferenceJsonSchema,
   logger,
-  removeNonRequiredProperties,
+  omitNullToolArguments,
+  toStrictJsonSchema,
   telemetry,
   type UnresolvedRefReason,
   normalizeToolArguments,
@@ -89,16 +90,27 @@ export class MastraProvider extends BaseAgenticProvider<
   wrapTool(tool: Tool, executeTool: ExecuteToolFn): MastraTool {
     const inputParams = tool.inputParameters;
 
-    const parameters =
-      this.strict && inputParams?.type === 'object'
-        ? removeNonRequiredProperties(
-            inputParams as {
-              type: 'object';
-              properties: Record<string, unknown>;
-              required?: string[];
-            }
-          )
-        : inputParams;
+    // Strict mode applies OpenAI's structured-output contract at every
+    // depth: all properties required, closed objects, optional properties
+    // widened to accept null instead of being dropped. Tools whose schema
+    // strict mode cannot express keep their original schema.
+    let parameters: Record<string, unknown> | undefined = inputParams as
+      Record<string, unknown> | undefined;
+    let strictSource: Record<string, unknown> | undefined;
+    if (this.strict && inputParams) {
+      const strict = toStrictJsonSchema(inputParams);
+      if (strict.unsupported.length > 0) {
+        const reasons = strict.unsupported
+          .map(entry => `${entry.path || '<root>'}: ${entry.keyword} (${entry.detail})`)
+          .join('; ');
+        logger.warn(
+          `[composio/mastra] Tool ${JSON.stringify(tool.slug)} keeps its non-strict schema because it cannot be expressed as strict structured outputs: ${reasons}`
+        );
+      } else {
+        parameters = strict.schema;
+        strictSource = strict.source;
+      }
+    }
 
     // Inline internal $ref pointers before handing the schema to
     // @mastra/schema-compat. AJV (bundled inside schema-compat) refuses to
@@ -146,13 +158,17 @@ export class MastraProvider extends BaseAgenticProvider<
     const mastraTool = createTool({
       id: tool.slug,
       description: tool.description ?? '',
-      // @ts-ignore
       inputSchema,
-      // @ts-ignore
       outputSchema,
       execute: async (inputData, _context) => {
         // Models occasionally emit tool input as a JSON string rather than an object (issue #2406).
-        const result = await executeTool(tool.slug, normalizeToolArguments(inputData, tool.slug));
+        const normalized = normalizeToolArguments(inputData, tool.slug);
+        // Under strict mode optional parameters are emitted as required-nullable,
+        // so a null the tool's own schema does not accept means "omitted".
+        const result = await executeTool(
+          tool.slug,
+          strictSource ? omitNullToolArguments(normalized, strictSource) : normalized
+        );
         return result;
       },
     });

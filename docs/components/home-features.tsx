@@ -3,6 +3,7 @@ import { ArrowUpRight } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { AuthDiagram } from './home-auth-diagram';
 import { MOCK_FADE_STYLE } from './home-shared';
+import { TOOLKIT_COUNT_LABEL } from '@/lib/toolkit-count';
 
 const LOGO_CDN = 'https://logos.composio.dev/api';
 // 10-col × 3-row grid: 29 recognizable toolkit logos plus a brand-tinted
@@ -35,12 +36,12 @@ run_composio_tool("SLACK_SEND_MESSAGE", {"text": summary})`;
 
 export function HomeFeatures() {
   return (
-    <section className="not-prose mb-20">
+    <section className="not-prose mb-14">
       <SectionHeading title="Everything you need to ship production agents." />
-      <div className="grid grid-cols-1 gap-6 sm:auto-rows-fr sm:grid-cols-2">
+      <div className="grid grid-cols-1 gap-4 sm:auto-rows-fr sm:grid-cols-2">
         <FeatureCard
           title="Tools that resolve by intent."
-          description="Smart tool search over 1000+ apps, surfaced just in time with the right scope."
+          description={`Smart tool search over ${TOOLKIT_COUNT_LABEL} apps, surfaced just in time with the right scope.`}
           href="/docs/how-composio-works"
           visual={<ToolkitsVisual />}
         />
@@ -58,7 +59,7 @@ export function HomeFeatures() {
         />
         <FeatureCard
           title="Run arbitrary code, safely."
-          description="A sandbox pre-wired with your user's connected accounts and 1000+ tools."
+          description={`A sandbox pre-wired with your user's connected accounts and ${TOOLKIT_COUNT_LABEL} tools.`}
           href="/docs/sandbox"
           visual={<SandboxVisual />}
         />
@@ -81,7 +82,7 @@ function FeatureCard({
   return (
     <Link
       href={href}
-      className="group relative flex flex-col overflow-hidden border border-fd-border bg-fd-card p-5 no-underline shadow-[0_1px_0_rgba(15,15,15,0.04)] transition-[box-shadow,transform,border-color] duration-200 hover:-translate-y-px hover:border-fd-foreground/15 hover:shadow-[0_10px_24px_-12px_rgba(15,15,15,0.18)] sm:p-6"
+      className="group relative flex flex-col overflow-hidden rounded-[14px] border border-fd-border bg-fd-card p-5 no-underline shadow-[0_1px_0_rgba(15,15,15,0.04)] transition-[box-shadow,transform,border-color] duration-200 hover:-translate-y-px hover:border-fd-foreground/15 hover:shadow-[0_10px_24px_-12px_rgba(15,15,15,0.18)]"
     >
       <ArrowUpRight
         aria-hidden="true"
@@ -97,7 +98,7 @@ function FeatureCard({
       </div>
       <div
         aria-hidden="true"
-        className="pointer-events-none mt-6 h-40 select-none"
+        className="pointer-events-none mt-4 h-28 select-none"
         style={MOCK_FADE_STYLE}
       >
         {visual}
@@ -187,7 +188,7 @@ export function SectionHeading({
   title: string;
 }) {
   return (
-    <div className="mb-5 flex flex-col gap-1.5">
+    <div className="mb-4 flex flex-col gap-1.5">
       {eyebrow && (
         <span className="font-mono text-[10.5px] uppercase tracking-[0.08em] text-fd-foreground/55">
           {eyebrow}

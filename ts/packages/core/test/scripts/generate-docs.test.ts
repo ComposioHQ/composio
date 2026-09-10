@@ -1,7 +1,13 @@
-import { describe, expect, it } from 'vitest';
+import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
+  discoverModelFiles,
+  escapeTextForMdx,
   escapeTypeForMdx,
   parseSourceSignatureTypesAtLine,
+  runTypeDocCommand,
   simplifyTypeForSignature,
   simplifyTypeForTable,
 } from '../../scripts/generate-docs';
@@ -35,6 +41,12 @@ describe('generate-docs type rendering', () => {
 
   it('escapes existing backslashes before adding MDX table escapes', () => {
     expect(escapeTypeForMdx(String.raw`{ pattern: '\|' }`)).toBe(String.raw`\{ pattern: '\\\|' \}`);
+  });
+
+  it('escapes existing backslashes before MDX text and table metacharacters', () => {
+    expect(escapeTextForMdx(String.raw`Use \{value\}, \|, or <literal>`)).toBe(
+      String.raw`Use \\\{value\\\}, \\\|, or &lt;literal&gt;`
+    );
   });
 
   it('reads named parameter and return types from source signatures', () => {
@@ -110,5 +122,62 @@ class Example {
     expect(signature?.parameters.get('fn')).toBe('(event: TriggerEvent) => void');
     expect(signature?.parameters.get('filters')).toBe('TriggerSubscribeParams');
     expect(signature?.returnType).toBe('void');
+  });
+});
+
+describe('generate-docs command construction', () => {
+  let modelsDir: string;
+
+  beforeEach(async () => {
+    modelsDir = await mkdtemp(join(tmpdir(), 'composio-generate-docs-'));
+  });
+
+  afterEach(async () => {
+    await rm(modelsDir, { recursive: true, force: true });
+    vi.restoreAllMocks();
+  });
+
+  it('keeps only plainly named model files and drops shell metacharacter names', async () => {
+    vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    for (const name of [
+      'Files.ts',
+      'tool_router.ts',
+      'x;touch pwned.ts',
+      '$(id).ts',
+      'a b.ts',
+      'Files.test.ts',
+      'notes.md',
+    ]) {
+      await writeFile(join(modelsDir, name), '');
+    }
+
+    const discovered = await discoverModelFiles(modelsDir);
+
+    expect(discovered.sort()).toEqual(['src/models/Files.ts', 'src/models/tool_router.ts']);
+  });
+
+  it('runs TypeDoc with Node and passes every entry point as its own argument', async () => {
+    const typedocBin = join(modelsDir, 'typedoc');
+    const outputJson = join(modelsDir, 'typedoc-args.txt');
+    await writeFile(
+      typedocBin,
+      `const { writeFileSync } = require('node:fs');
+const args = process.argv.slice(2);
+const outputJson = args[args.indexOf('--json') + 1];
+writeFileSync(outputJson, args.join('\\n'));
+`
+    );
+
+    runTypeDocCommand(['src/composio.ts', 'src/models/a b.ts'], {
+      outputJson,
+      packageDir: modelsDir,
+      typedocBin,
+    });
+
+    const args = (await readFile(outputJson, 'utf8')).split('\n');
+    expect(args[0]).toBe('--json');
+    expect(args).toContain('src/models/a b.ts');
+    expect(args.some(arg => arg.includes('npx'))).toBe(false);
+    expect(args.slice(-2)).toEqual(['src/composio.ts', 'src/models/a b.ts']);
   });
 });

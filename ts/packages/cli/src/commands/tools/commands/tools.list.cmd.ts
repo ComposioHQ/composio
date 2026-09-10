@@ -1,4 +1,4 @@
-import { Args, Command, Options } from '@effect/cli';
+import { Argument, Command, Flag } from 'effect/unstable/cli';
 import { Effect, Option } from 'effect';
 import { ComposioToolkitsRepository } from 'src/services/composio-clients';
 import { TerminalUI } from 'src/services/terminal-ui';
@@ -6,23 +6,23 @@ import { requireAuth } from 'src/effects/require-auth';
 import { clampLimit } from 'src/ui/clamp-limit';
 import { formatToolsTable, formatToolsJson } from '../format';
 
-const toolkit = Args.text({ name: 'toolkit' }).pipe(
-  Args.withDescription('Toolkit slug to list tools for (e.g. "gmail")')
+const toolkit = Argument.string('toolkit').pipe(
+  Argument.withDescription('Toolkit slug to list tools for (e.g. "gmail")')
 );
 
-const query = Options.text('query').pipe(
-  Options.withDescription('Text search by name, slug, or description'),
-  Options.optional
+const query = Flag.string('query').pipe(
+  Flag.withDescription('Text search by name, slug, or description'),
+  Flag.optional
 );
 
-const tags = Options.text('tags').pipe(
-  Options.withDescription('Filter by tags (e.g. "important")'),
-  Options.optional
+const tags = Flag.string('tags').pipe(
+  Flag.withDescription('Filter by tags (e.g. "important")'),
+  Flag.optional
 );
 
-const limit = Options.integer('limit').pipe(
-  Options.withDefault(30),
-  Options.withDescription('Number of results per page (1-1000)')
+const limit = Flag.integer('limit').pipe(
+  Flag.withDefault(30),
+  Flag.withDescription('Number of results per page (1-1000)')
 );
 
 /**

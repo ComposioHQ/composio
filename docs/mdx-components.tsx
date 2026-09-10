@@ -23,6 +23,9 @@ import { ToolkitsLanding } from '@/components/toolkits/toolkits-landing';
 import { ManagedAuthList } from '@/components/toolkits/managed-auth-list';
 import { Mermaid } from '@/components/mermaid';
 import { AIToolsBanner } from '@/components/ai-tools-banner';
+import { AgentFirstPrompt } from '@/components/agent-first-prompt';
+import { AgentSetupActions } from '@/components/agent-setup-actions';
+import { AgentSetupGrid } from '@/components/agent-setup-grid';
 import { DocsHero } from '@/components/docs-hero';
 import { HomeFeatures } from '@/components/home-features';
 import { SessionFlow } from '@/components/session-flow';
@@ -130,6 +133,9 @@ export function getMDXComponents(components?: MDXComponents): MDXComponents {
     ManagedAuthList,
     Mermaid,
     AIToolsBanner,
+    AgentFirstPrompt,
+    AgentSetupActions,
+    AgentSetupGrid,
     DocsHero,
     HomeFeatures,
     SessionFlow,

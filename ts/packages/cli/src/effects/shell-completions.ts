@@ -1,5 +1,5 @@
-import { Command } from '@effect/cli';
 import { Effect } from 'effect';
+import { Command, Completions } from 'effect/unstable/cli';
 
 type Shell = 'bash' | 'zsh' | 'fish';
 
@@ -22,23 +22,34 @@ const sanitizeFishCompletionLines = (lines: Array<string>): Array<string> =>
   lines.map(sanitizeFishCompletionLine);
 
 /**
- * Generate a shell completion script for the given command tree and shell type.
- * Uses @effect/cli's built-in completion generators.
+ * Converts a public `Command.Command` tree into the `Completions.CommandDescriptor`
+ * shape consumed by `effect/unstable/cli`'s completion-script generator.
+ *
+ * v4 has no like-for-like replacement for v3's rich `CommandDescriptor` walk:
+ * `Command.Command` only exposes `name` / `description` / `subcommands`
+ * publicly (see `effect/unstable/cli/Command`), not per-flag or per-argument
+ * metadata. Completions are therefore generated at the subcommand-name level
+ * only; flag/argument value completion is intentionally omitted until
+ * `effect/unstable/cli` exposes that metadata through a public API.
  */
-export const getCompletionScript = <Name extends string, R, E, A>(
-  command: Command.Command<Name, R, E, A>,
+const toCompletionDescriptor = (command: Command.Command.Any): Completions.CommandDescriptor => ({
+  name: command.name,
+  description: command.description,
+  flags: [],
+  arguments: [],
+  subcommands: command.subcommands.flatMap(group => group.commands.map(toCompletionDescriptor)),
+});
+
+/**
+ * Generate a shell completion script for the given command tree and shell type.
+ */
+export const getCompletionScript = (
+  command: Command.Command.Any,
   shell: Shell
 ): Effect.Effect<Array<string>> => {
-  switch (shell) {
-    case 'bash':
-      return Command.getBashCompletions(command, 'composio');
-    case 'zsh':
-      return Command.getZshCompletions(command, 'composio');
-    case 'fish':
-      return Command.getFishCompletions(command, 'composio').pipe(
-        Effect.map(sanitizeFishCompletionLines)
-      );
-  }
+  const script = Completions.generate('composio', shell, toCompletionDescriptor(command));
+  const lines = script.split('\n');
+  return Effect.succeed(shell === 'fish' ? sanitizeFishCompletionLines(lines) : lines);
 };
 
 export const _test = {

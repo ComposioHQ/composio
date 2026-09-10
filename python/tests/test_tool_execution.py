@@ -128,6 +128,57 @@ class TestToolExecution:
             ("after_execute", "composio"),
         ]
 
+    @pytest.mark.parametrize(
+        ("value", "expected"),
+        [
+            ("", {"metadata": {"source": "user"}}),
+            (
+                None,
+                {"attachment": None, "metadata": {"source": "user"}},
+            ),
+        ],
+    )
+    def test_tool_router_drops_only_empty_file_strings_without_mutating_arguments(
+        self, value, expected
+    ):
+        """Session execution matches direct execution for disabled auto-upload."""
+        mock_client = mock_http_client()
+        tools = Tools(client=mock_client, provider=Mock())
+        tool = self.create_mock_tool("GMAIL_CREATE_DRAFT", "gmail")
+        tool.input_parameters = {
+            "type": "object",
+            "properties": {
+                "attachment": {
+                    "anyOf": [
+                        {"type": "object", "file_uploadable": True},
+                        {"type": "null"},
+                    ]
+                },
+                "metadata": {
+                    "type": "object",
+                    "properties": {"source": {"type": "string"}},
+                },
+            },
+            "required": ["attachment"],
+        }
+        tools._tool_schemas[tool.slug] = tool
+        mock_client.tool_router.session.execute.return_value = Mock(data={}, error=None)
+        execute = tools._wrap_execute_tool_for_tool_router("session_123")
+        arguments = {
+            "attachment": value,
+            "metadata": {"source": "user"},
+        }
+
+        execute(tool.slug, arguments)
+
+        sent = mock_client.tool_router.session.execute.call_args.kwargs["arguments"]
+        assert sent == expected
+        assert arguments == {
+            "attachment": value,
+            "metadata": {"source": "user"},
+        }
+        assert sent["metadata"] is not arguments["metadata"]
+
     def test_execute_without_toolkit_runs_modifiers_and_fetches_once(self):
         """Toolkit-less tools execute with the same fallback used by TypeScript."""
         from composio.core.models._modifiers import after_execute, before_execute

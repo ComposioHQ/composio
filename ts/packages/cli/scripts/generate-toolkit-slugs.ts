@@ -8,13 +8,13 @@ import {
   Data,
   DateTime,
   Effect,
-  Layer,
   Logger,
   Option,
   Schema,
 } from 'effect';
-import { FileSystem } from '@effect/platform';
-import { BunContext, BunFileSystem, BunRuntime } from '@effect/platform-bun';
+import * as FileSystem from 'effect/FileSystem';
+import * as BunFileSystem from '@effect/platform-bun/BunFileSystem';
+import * as BunRuntime from '@effect/platform-bun/BunRuntime';
 import { TOOLKIT_SLUG_PATTERN } from 'src/models/toolkits';
 import { teardown } from './_teardown';
 
@@ -67,16 +67,29 @@ class ToolkitFetchError extends Data.TaggedError('ToolkitFetchError')<{
   readonly message: string;
 }> {}
 
-const authHeaders = Effect.gen(function* () {
+class PrettierFormatError extends Data.TaggedError('PrettierFormatError')<{
+  readonly message: string;
+  readonly cause: unknown;
+}> {}
+
+const authHeaders: Effect.Effect<
+  Record<string, string>,
+  Config.ConfigError | ToolkitFetchError
+> = Effect.gen(function* () {
   const userApiKey = yield* Config.option(Config.string('COMPOSIO_USER_API_KEY'));
   const orgId = yield* Config.option(Config.string('COMPOSIO_ORG_ID'));
   const apiKey = yield* Config.option(Config.string('COMPOSIO_API_KEY'));
 
   if (Option.isSome(userApiKey)) {
-    return {
-      'x-user-api-key': userApiKey.value,
-      ...(Option.isSome(orgId) ? { 'x-org-id': orgId.value } : {}),
-    };
+    // Built imperatively: a conditional spread of `{ 'x-org-id': string }`
+    // widens the property to `string | undefined`, which is not assignable
+    // to a `Record<string, string>` index signature under
+    // exactOptionalPropertyTypes.
+    const headers: Record<string, string> = { 'x-user-api-key': userApiKey.value };
+    if (Option.isSome(orgId)) {
+      headers['x-org-id'] = orgId.value;
+    }
+    return headers;
   }
 
   if (Option.isSome(apiKey)) {
@@ -88,7 +101,16 @@ const authHeaders = Effect.gen(function* () {
   });
 });
 
-const fetchPage = (params: { baseUrl: string; headers: Record<string, string>; cursor?: string }) =>
+type ToolkitsPageDecoded = Schema.Schema.Type<typeof ToolkitsPage>;
+
+// The explicit return type is load-bearing: leaving it inferred makes the
+// `const result = yield* fetchPage(...)` binding in `fetchAllSlugs` a
+// self-referential inference cycle (TS7022).
+const fetchPage = (params: {
+  baseUrl: string;
+  headers: Record<string, string>;
+  cursor?: string;
+}): Effect.Effect<ToolkitsPageDecoded, ToolkitFetchError> =>
   Effect.gen(function* () {
     const url = new URL('/api/v3/toolkits', params.baseUrl);
     url.searchParams.set('limit', String(PAGE_SIZE));
@@ -102,7 +124,16 @@ const fetchPage = (params: { baseUrl: string; headers: Record<string, string>; c
     });
 
     if (!response.ok) {
-      const body = yield* Effect.promise(() => response.text());
+      // Reading the error body can itself fail (connection cut mid-response),
+      // so it must not be wrapped with Effect.promise, which would turn that
+      // failure into an uninterruptible-by-type defect.
+      const body = yield* Effect.tryPromise({
+        try: () => response.text(),
+        catch: cause =>
+          new ToolkitFetchError({
+            message: `GET ${url.pathname} returned ${response.status}, and reading the error body failed: ${cause}`,
+          }),
+      });
       return yield* new ToolkitFetchError({
         message: `GET ${url.pathname} returned ${response.status}: ${body.slice(0, 400)}`,
       });
@@ -113,7 +144,7 @@ const fetchPage = (params: { baseUrl: string; headers: Record<string, string>; c
       catch: cause => new ToolkitFetchError({ message: `Response was not JSON: ${cause}` }),
     });
 
-    return yield* Schema.decodeUnknown(ToolkitsPage)(payload).pipe(
+    return yield* Schema.decodeUnknownEffect(ToolkitsPage)(payload).pipe(
       Effect.mapError(cause => new ToolkitFetchError({ message: `Unexpected response: ${cause}` }))
     );
   });
@@ -126,7 +157,10 @@ const fetchAllSlugs = (params: { baseUrl: string; headers: Record<string, string
     let page = 0;
 
     do {
-      const result = yield* fetchPage({ ...params, cursor });
+      // Explicit annotation: the inferred binding trips TS7022 through the
+      // cursor feedback loop below when `fetchPage`'s type has to be
+      // resolved from this very generator.
+      const result: ToolkitsPageDecoded = yield* fetchPage({ ...params, cursor });
       page += 1;
 
       for (const toolkit of result.items) {
@@ -206,7 +240,16 @@ export function generateToolkitSlugs() {
 
     yield* fs.makeDirectory(path.dirname(outputPath), { recursive: true });
     yield* fs.writeFileString(outputPath, renderModule({ slugs, refreshedAt }));
-    yield* Effect.promise(() => $`pnpm exec prettier --write ${outputPath}`.quiet());
+    // Bun shell promises reject on a non-zero exit, so this is a fallible
+    // Effect, not an Effect.promise defect.
+    yield* Effect.tryPromise({
+      try: () => $`pnpm exec prettier --write ${outputPath}`.quiet(),
+      catch: cause =>
+        new PrettierFormatError({
+          message: `prettier --write ${outputPath} failed`,
+          cause,
+        }),
+    });
 
     yield* Console.log(`Wrote ${slugs.length} toolkit slugs to ${outputPath}`);
   });
@@ -214,10 +257,9 @@ export function generateToolkitSlugs() {
 
 if (require.main === module) {
   generateToolkitSlugs().pipe(
-    Effect.provide(Logger.pretty),
-    Effect.provide(BunContext.layer),
+    Effect.provide(Logger.layer([Logger.consolePretty()])),
     Effect.provide(BunFileSystem.layer),
-    Effect.provide(Layer.setConfigProvider(ConfigProvider.fromEnv())),
+    Effect.provide(ConfigProvider.layer(ConfigProvider.fromEnv())),
     Effect.scoped,
     BunRuntime.runMain({ teardown })
   );

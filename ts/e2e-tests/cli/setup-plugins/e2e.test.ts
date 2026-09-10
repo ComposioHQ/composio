@@ -21,7 +21,7 @@ ${
 # skill asset download and extraction path has deterministic HTTP/ZIP coverage.
 mkdir -p /tmp/.claude/skills /tmp/.agents/skills/composio-cli
 printf '%s\n' '# composio-cli' > /tmp/.agents/skills/composio-cli/SKILL.md
-printf '@composio/cli@%s\n' "$(composio --version)" > /tmp/.agents/skills/composio-cli/.composio-release-tag
+printf '@composio/cli@%s\n' "$(composio version)" > /tmp/.agents/skills/composio-cli/.composio-release-tag
 ln -s ../../.agents/skills/composio-cli /tmp/.claude/skills/composio-cli`
     : ''
 }
@@ -78,7 +78,7 @@ chmod +x /tmp/bin/claude /tmp/bin/codex
 touch /tmp/host-state/codex-without-json
 mkdir -p /tmp/.claude/skills /tmp/.agents/skills/composio-cli
 printf '%s\n' '# composio-cli' > /tmp/.agents/skills/composio-cli/SKILL.md
-printf '@composio/cli@%s\n' "$(composio --version)" > /tmp/.agents/skills/composio-cli/.composio-release-tag
+printf '@composio/cli@%s\n' "$(composio version)" > /tmp/.agents/skills/composio-cli/.composio-release-tag
 ln -s ../../.agents/skills/composio-cli /tmp/.claude/skills/composio-cli
 export HOST_STATE_DIR=/tmp/host-state
 export PATH=/tmp/bin:$PATH

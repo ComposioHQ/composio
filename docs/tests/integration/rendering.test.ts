@@ -5,7 +5,11 @@
  * and contain expected content markers.
  */
 import { describe, test, expect } from "bun:test";
-import { fetchPage } from "./helpers";
+import {
+  getKnowledgeByToolkit,
+  getKnowledgeToolkitSummaries,
+} from "@/lib/knowledge/catalog";
+import { fetchNoRedirect, fetchPage } from "./helpers";
 
 /** Critical pages that must always render */
 const CRITICAL_PAGES = [
@@ -54,6 +58,21 @@ describe("Page rendering - critical pages", () => {
 });
 
 describe("Page rendering - content markers", () => {
+  test("docs homepage social metadata survives the root redirect", async () => {
+    const res = await fetchPage("/", { timeout: 30_000, headers: { "User-Agent": "facebookexternalhit/1.1" } });
+    const html = await res.text();
+    expect(res.status).toBe(200);
+    expect(new URL(res.url).pathname).toBe('/docs');
+    expect(html).toContain('<title>Build and operate AI agents | Composio Documentation</title>');
+    expect(html).toContain('<meta property="og:site_name" content="Composio Docs"');
+    expect(html).toContain('<meta property="og:title" content="Build and operate AI agents"');
+    expect(html).toContain('<meta property="og:image" content="https://docs.composio.dev/api/og?variant=home"');
+    expect(html).toContain('<meta name="twitter:image" content="https://docs.composio.dev/api/og?variant=home"');
+    const description = html.match(/<meta property="og:description" content="([^"]+)"/)?.[1];
+    expect(description).toBe('Give your agents tools, managed authentication, and secure execution. Get started with the SDK, CLI, or MCP.');
+    expect(description!.length).toBeLessThanOrEqual(125);
+  });
+
   test("docs home contains navigation elements", async () => {
     const res = await fetchPage("/docs");
     const html = await res.text();
@@ -87,27 +106,108 @@ describe("Page rendering - content markers", () => {
   });
 
   test("toolkit knowledge pages omit duplicate search and page-count controls", async () => {
-    const res = await fetchPage("/kb/toolkit/hubspot");
+    const toolkit = (await getKnowledgeToolkitSummaries()).find(
+      (candidate) => candidate.knowledgeCount > 1,
+    );
+    expect(toolkit).toBeDefined();
+
+    const res = await fetchPage(`/kb/toolkit/${toolkit!.slug}`);
     const html = await res.text();
 
     expect(res.status).toBe(200);
-    expect(html).not.toMatch(/Search for (?:<!-- -->)?HubSpot/);
+    expect(html).not.toContain('name="knowledge-browse-search"');
     expect(html).not.toMatch(
       /\d+(?:<!-- -->)? public page(?:<!-- -->)?s?(?:<!-- -->)? across Composio sources\./,
     );
   });
 
+  test("routes toolkit knowledge pages based on their resource count", async () => {
+    const summaries = await getKnowledgeToolkitSummaries();
+    const singleResourceToolkit = summaries.find(
+      (toolkit) => toolkit.knowledgeCount === 1,
+    );
+    const multiResourceToolkit = summaries.find(
+      (toolkit) => toolkit.knowledgeCount > 1,
+    );
+
+    expect(singleResourceToolkit).toBeDefined();
+    expect(multiResourceToolkit).toBeDefined();
+
+    const redirectResponse = await fetchNoRedirect(
+      `/kb/toolkit/${singleResourceToolkit!.slug}`,
+    );
+    expect(redirectResponse.status).toBe(307);
+    const redirectLocation = redirectResponse.headers.get("location");
+    expect(redirectLocation).toBeTruthy();
+    expect(
+      new URL(redirectLocation!, "http://localhost").pathname,
+    ).toBe(`/toolkits/${singleResourceToolkit!.slug}`);
+
+    const knowledgeResponse = await fetchNoRedirect(
+      `/kb/toolkit/${multiResourceToolkit!.slug}`,
+    );
+    expect(knowledgeResponse.status).toBe(200);
+  });
+
+  test("keeps agent-readable toolkit routes aligned with HTML routes", async () => {
+    const summaries = await getKnowledgeToolkitSummaries();
+    const singleResourceToolkit = summaries.find(
+      (toolkit) => toolkit.knowledgeCount === 1,
+    );
+    const multiResourceToolkit = summaries.find(
+      (toolkit) => toolkit.knowledgeCount > 1,
+    );
+
+    expect(singleResourceToolkit).toBeDefined();
+    expect(multiResourceToolkit).toBeDefined();
+
+    const redirectResponse = await fetchNoRedirect(
+      `/kb/toolkit/${singleResourceToolkit!.slug}.md`,
+    );
+    expect(redirectResponse.status).toBe(307);
+    const redirectLocation = redirectResponse.headers.get("location");
+    expect(redirectLocation).toBe(`/toolkits/${singleResourceToolkit!.slug}.md`);
+
+    const knowledgeResponse = await fetchNoRedirect(
+      `/kb/toolkit/${multiResourceToolkit!.slug}.md`,
+    );
+    expect(knowledgeResponse.status).toBe(200);
+  });
+
   test("toolkit knowledge pages open only external cards in a new tab", async () => {
-    const res = await fetchPage("/kb/toolkit/hubspot");
+    const summaries = await getKnowledgeToolkitSummaries();
+    let toolkitWithMixedLinks: (typeof summaries)[number] | undefined;
+    let toolkitLinks: Awaited<ReturnType<typeof getKnowledgeByToolkit>> = [];
+
+    for (const toolkit of summaries) {
+      if (toolkit.knowledgeCount <= 1) continue;
+      const links = await getKnowledgeByToolkit(toolkit.slug);
+      const hasExternalLink = links.some((link) => /^https?:\/\//.test(link.href));
+      const hasInternalLink = links.some((link) => !/^https?:\/\//.test(link.href));
+      if (hasExternalLink && hasInternalLink) {
+        toolkitWithMixedLinks = toolkit;
+        toolkitLinks = links;
+        break;
+      }
+    }
+
+    expect(toolkitWithMixedLinks).toBeDefined();
+    const res = await fetchPage(`/kb/toolkit/${toolkitWithMixedLinks!.slug}`);
     const html = await res.text();
     const collection = html.match(
       /<ul[^>]*aria-label="Toolkit knowledge sources"[^>]*>[\s\S]*?<\/ul>/,
     )?.[0];
+    const externalLinkCount = toolkitLinks.filter((link) =>
+      /^https?:\/\//.test(link.href),
+    ).length;
+    const internalLink = toolkitLinks.find((link) => !/^https?:\/\//.test(link.href));
 
     expect(res.status).toBe(200);
     expect(collection).toBeDefined();
-    expect((collection?.match(/target="_blank"/g) ?? []).length).toBe(1);
-    expect(collection).toContain('href="/kb/guide/toolkits-hubspot"');
+    expect((collection?.match(/target="_blank"/g) ?? []).length).toBe(
+      externalLinkCount,
+    );
+    expect(collection).toContain(`href="${internalLink!.href}"`);
   });
 
   test("guide pages omit the redundant Knowledge Base home link", async () => {

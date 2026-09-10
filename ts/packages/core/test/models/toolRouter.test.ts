@@ -2669,6 +2669,17 @@ describe('ToolRouter', () => {
   describe('tools function', () => {
     const userId = 'user_123';
     const sessionId = 'session_123';
+    const validSessionTool = { slug: 'COMPOSIO_SEARCH_TOOLS', name: 'Search tools' };
+
+    const mockToolsWithValidSessionTool = () => {
+      vi.mocked(Tools).mockImplementationOnce(function () {
+        return {
+          getRawComposioTools: vi.fn().mockResolvedValue([{ slug: 'GMAIL_FETCH_EMAILS' }]),
+          getRawToolRouterSessionTools: vi.fn().mockResolvedValue([validSessionTool]),
+          wrapToolsForToolRouter: vi.fn().mockReturnValue('mocked-wrapped-tools'),
+        };
+      });
+    };
 
     beforeEach(() => {
       // Reset the Tools mock before each test
@@ -2714,12 +2725,13 @@ describe('ToolRouter', () => {
       mockClient.toolRouter.session.create.mockResolvedValueOnce(mockSessionCreateResponse);
 
       const modifiers = {
-        modifySchema: vi.fn(tool => ({
-          ...tool,
+        modifySchema: vi.fn(({ schema }) => ({
+          ...schema,
           description: 'Modified description',
         })),
         beforeExecute: vi.fn(),
       };
+      mockToolsWithValidSessionTool();
 
       const session = await toolRouter.create(userId);
       const tools = await session.tools(modifiers);
@@ -2727,13 +2739,14 @@ describe('ToolRouter', () => {
       const toolsInstance = vi.mocked(Tools).mock.results[0].value;
       expect(toolsInstance.getRawToolRouterSessionTools).toHaveBeenCalledWith(
         sessionId,
-        { modifySchema: modifiers.modifySchema },
+        undefined,
         undefined
       );
       expect(toolsInstance.wrapToolsForToolRouter).toHaveBeenCalledWith(
         sessionId,
-        [{ slug: 'COMPOSIO_SEARCH_TOOLS' }],
-        modifiers
+        [{ ...validSessionTool, description: 'Modified description' }],
+        modifiers,
+        [validSessionTool]
       );
 
       expect(tools).toBe('mocked-wrapped-tools');
@@ -3046,8 +3059,10 @@ describe('ToolRouter', () => {
     it('should call tools function multiple times with different modifiers', async () => {
       mockClient.toolRouter.session.create.mockResolvedValueOnce(mockSessionCreateResponse);
 
-      const modifier1 = { modifySchema: vi.fn() };
-      const modifier2 = { modifySchema: vi.fn() };
+      const modifier1 = { modifySchema: vi.fn(({ schema }) => schema) };
+      const modifier2 = { modifySchema: vi.fn(({ schema }) => schema) };
+      mockToolsWithValidSessionTool();
+      mockToolsWithValidSessionTool();
 
       const session = await toolRouter.create(userId);
 
@@ -3061,25 +3076,27 @@ describe('ToolRouter', () => {
       const firstToolsInstance = vi.mocked(Tools).mock.results[0].value;
       expect(firstToolsInstance.getRawToolRouterSessionTools).toHaveBeenCalledWith(
         sessionId,
-        { modifySchema: modifier1.modifySchema },
+        undefined,
         undefined
       );
       expect(firstToolsInstance.wrapToolsForToolRouter).toHaveBeenCalledWith(
         sessionId,
-        [{ slug: 'COMPOSIO_SEARCH_TOOLS' }],
-        modifier1
+        [validSessionTool],
+        modifier1,
+        [validSessionTool]
       );
 
       const secondToolsInstance = vi.mocked(Tools).mock.results[1].value;
       expect(secondToolsInstance.getRawToolRouterSessionTools).toHaveBeenCalledWith(
         sessionId,
-        { modifySchema: modifier2.modifySchema },
+        undefined,
         undefined
       );
       expect(secondToolsInstance.wrapToolsForToolRouter).toHaveBeenCalledWith(
         sessionId,
-        [{ slug: 'COMPOSIO_SEARCH_TOOLS' }],
-        modifier2
+        [validSessionTool],
+        modifier2,
+        [validSessionTool]
       );
     });
 

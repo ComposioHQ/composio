@@ -30,7 +30,7 @@ session = composio.create(user_id="user_123")
 tools = session.tools()
 
 model = GenerativeModel(
-    "gemini-2.0-flash",
+    "gemini-3.7-flash",
     tools=[Tool(function_declarations=tools)],
 )
 chat = model.start_chat()

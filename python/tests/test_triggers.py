@@ -4,6 +4,8 @@ import base64
 import hashlib
 import hmac
 import json
+import logging
+import pathlib
 import threading
 import time
 from datetime import datetime, timezone
@@ -11,9 +13,11 @@ from unittest.mock import Mock, patch
 
 import httpx
 import pytest
+import requests
 from composio_client import NotFoundError, omit
 
 from composio import exceptions
+from composio.core.models import triggers as triggers_module
 from composio.core.models.triggers import (
     _MAX_LOGGED_FRAME_CHARS,
     ComposioSDKTimeoutError,
@@ -1789,3 +1793,186 @@ class TestSubscriptionBuilderConnectTimeout:
 
         assert result is builder.subscription
         pusher.disconnect.assert_not_called()
+
+
+class TestPusherChannelAuth:
+    """Tests for the hardened pysher channel-auth request."""
+
+    @staticmethod
+    def _pusher() -> triggers_module._ComposioPusher:
+        return triggers_module._ComposioPusher(
+            key="app-key",
+            cluster="mt1",
+            auth_endpoint="https://api.example.com/api/v3/internal/sdk/realtime/auth",
+            auth_endpoint_headers={"x-api-key": "sk-secret-value"},
+        )
+
+    def test_auth_request_carries_a_timeout(self):
+        """pysher sends the auth POST with no timeout; the subclass bounds it."""
+        pusher = self._pusher()
+        pusher.connection.socket_id = "123.456"
+        response = Mock(status_code=200)
+        response.json.return_value = {"auth": "app-key:signature"}
+
+        with patch.object(
+            triggers_module.requests, "post", return_value=response
+        ) as post:
+            token = pusher._generate_auth_token("private-project_triggers")
+
+        assert token == "app-key:signature"
+        post.assert_called_once_with(
+            "https://api.example.com/api/v3/internal/sdk/realtime/auth",
+            data={"channel_name": "private-project_triggers", "socket_id": "123.456"},
+            headers={"x-api-key": "sk-secret-value"},
+            timeout=triggers_module.PUSHER_AUTH_TIMEOUT,
+        )
+        assert triggers_module.PUSHER_AUTH_TIMEOUT == (5.0, 15.0)
+
+    def test_presence_request_carries_a_timeout(self):
+        pusher = self._pusher()
+        pusher.connection.socket_id = "123.456"
+        response = Mock(status_code=200)
+        response.json.return_value = {"auth": "app-key:signature"}
+
+        with patch.object(
+            triggers_module.requests, "post", return_value=response
+        ) as post:
+            pusher._generate_presence_token("presence-room")
+
+        assert post.call_args.kwargs["timeout"] == triggers_module.PUSHER_AUTH_TIMEOUT
+        assert post.call_args.kwargs["data"]["user_data"] == {}
+
+    @pytest.mark.parametrize("status_code", [401, 403, 500])
+    def test_non_200_raises_typed_error_without_the_api_key(self, status_code):
+        """A non-200 used to trip a bare ``assert`` on the websocket thread."""
+        pusher = self._pusher()
+        response = Mock(status_code=status_code)
+
+        with (
+            patch.object(triggers_module.requests, "post", return_value=response),
+            pytest.raises(exceptions.TriggerSubscriptionAuthError) as info,
+        ):
+            pusher._generate_auth_token("private-project_triggers")
+
+        assert isinstance(info.value, exceptions.TriggerSubscriptionError)
+        assert f"HTTP {status_code}" in str(info.value)
+        assert "sk-secret-value" not in str(info.value)
+
+    def test_transport_failure_raises_typed_error(self):
+        with (
+            patch.object(
+                triggers_module.requests,
+                "post",
+                side_effect=requests.ConnectTimeout("slow"),
+            ),
+            pytest.raises(
+                exceptions.TriggerSubscriptionAuthError, match="ConnectTimeout"
+            ),
+        ):
+            self._pusher()._generate_auth_token("private-project_triggers")
+
+    @pytest.mark.parametrize("body", [{}, {"auth": ""}, {"auth": 1}, []])
+    def test_missing_auth_token_raises_typed_error(self, body):
+        response = Mock(status_code=200)
+        response.json.return_value = body
+
+        with (
+            patch.object(triggers_module.requests, "post", return_value=response),
+            pytest.raises(
+                exceptions.TriggerSubscriptionAuthError, match="`auth` token"
+            ),
+        ):
+            self._pusher()._generate_auth_token("private-project_triggers")
+
+
+class TestPusherClusterValidation:
+    """The cluster comes from an API response and lands in the websocket host."""
+
+    @staticmethod
+    def _builder() -> _SubcriptionBuilder:
+        client = Mock()
+        client.base_url = "https://api.example.com"
+        client.api_key = "sk-secret-value"
+        return _SubcriptionBuilder(client=client)
+
+    @pytest.mark.parametrize("cluster", ["mt1", "eu", "ap-southeast-1", "us3"])
+    def test_valid_cluster_builds_the_expected_host(self, cluster):
+        pusher = self._builder()._get_pusher_instance(key="app-key", cluster=cluster)
+
+        assert isinstance(pusher, triggers_module._ComposioPusher)
+        assert pusher.host == f"ws-{cluster}.pusher.com"
+        assert pusher.auth_endpoint_headers["x-api-key"] == "sk-secret-value"
+
+    @pytest.mark.parametrize(
+        ("cluster", "reason"),
+        [
+            ("", "did not include"),
+            (None, "did not include"),
+            ("MT1", "outside"),
+            ("mt1.evil.example", "outside"),
+            ("mt1/../evil", "outside"),
+            ("mt1 ", "outside"),
+            ("mt1:8080", "outside"),
+            ("a" * 65, "longer than 64"),
+        ],
+    )
+    def test_invalid_cluster_is_rejected_before_building_pusher(self, cluster, reason):
+        with (
+            patch.object(triggers_module, "_ComposioPusher") as pusher_cls,
+            pytest.raises(exceptions.InvalidPusherClusterError, match=reason) as info,
+        ):
+            self._builder()._get_pusher_instance(key="app-key", cluster=cluster)
+
+        pusher_cls.assert_not_called()
+        assert isinstance(info.value, exceptions.TriggerSubscriptionError)
+        assert isinstance(info.value, exceptions.ValidationError)
+        # The offending value is never echoed; the response is untrusted.
+        if cluster:
+            assert cluster not in str(info.value)
+
+
+class TestPysherLogger:
+    def test_module_does_not_import_unittest(self):
+        """``unittest.mock`` used to stand in for a logger at runtime."""
+        source = pathlib.Path(triggers_module.__file__).read_text()
+
+        assert "unittest" not in source
+        assert not hasattr(triggers_module, "mock")
+
+    def test_silent_logger_emits_nothing(self, caplog):
+        logger = triggers_module._silent_pysher_logger()
+
+        assert isinstance(logger, logging.Logger)
+        assert logger.propagate is False
+        assert any(isinstance(h, logging.NullHandler) for h in logger.handlers)
+        with caplog.at_level(logging.DEBUG):
+            logger.info("Connection: Message - %s", '{"data": "raw frame"}')
+            logger.error("Connection: Error")
+        assert caplog.records == []
+
+    def test_silent_logger_is_idempotent(self):
+        first = triggers_module._silent_pysher_logger()
+        second = triggers_module._silent_pysher_logger()
+
+        assert first is second
+        assert sum(isinstance(h, logging.NullHandler) for h in first.handlers) == 1
+
+    def test_connect_installs_the_silent_logger(self):
+        client = Mock()
+        client.base_url = "https://api.example.com"
+        pusher = Mock()
+        builder = _SubcriptionBuilder(client=client)
+        builder.subscription = Mock()
+        builder.subscription.is_alive.return_value = True
+        builder.internal = Mock()
+        builder.internal.get_sdk_realtime_credentials.return_value = Mock(
+            project_id="p", pusher_key="k", pusher_cluster="mt1"
+        )
+
+        with patch.object(
+            _SubcriptionBuilder, "_get_pusher_instance", return_value=pusher
+        ):
+            builder.connect(timeout=2.0)
+
+        assert isinstance(pusher.connection.logger, logging.Logger)
+        assert pusher.connection.logger.name == triggers_module._PYSHER_LOGGER_NAME
