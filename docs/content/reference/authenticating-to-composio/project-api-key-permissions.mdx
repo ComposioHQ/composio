@@ -204,7 +204,7 @@ View execution logs and project usage summaries.
 
 ## Sessions
 
-Create, configure, and delete Tool Router sessions. Does not grant tool execution — use [Tool execution](#tool-execution) to run or search tools inside a session.
+Create, configure, and delete Tool Router sessions. This permission does not grant general tool execution, but for backward compatibility `sessions: write` still allows `execute`, `execute_meta`, and `search` inside a session. Use [Tool execution](#tool-execution) for narrower access to those three routes.
 
 This preset also grants the legacy MCP server routes below, for backward compatibility. Those same routes are additionally grantable through the narrower [MCP servers (legacy)](#mcp-servers-legacy) preset — a key needs only `sessions: write` OR `mcp_servers: write`, not both.
 
