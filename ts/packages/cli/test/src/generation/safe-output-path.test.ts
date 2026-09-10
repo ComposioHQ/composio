@@ -1,6 +1,6 @@
 import path from 'node:path';
 import { describe, expect, it, assert } from '@effect/vitest';
-import { BunPath } from '@effect/platform-bun';
+import * as BunPath from '@effect/platform-bun/BunPath';
 import { Effect, Either } from 'effect';
 import { safeOutputPath, SafeOutputPathError } from 'src/generation/safe-output-path';
 

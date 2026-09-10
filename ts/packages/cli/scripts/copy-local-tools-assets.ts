@@ -2,7 +2,8 @@
 
 import process from 'node:process';
 import { Effect } from 'effect';
-import { BunContext, BunRuntime } from '@effect/platform-bun';
+import * as BunContext from '@effect/platform-bun/BunContext';
+import * as BunRuntime from '@effect/platform-bun/BunRuntime';
 import { copyLocalToolBinaryAssets, teardown } from './_shared';
 
 const outputDir = process.argv[2] ?? './dist';

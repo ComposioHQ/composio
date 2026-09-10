@@ -2,13 +2,16 @@ import { afterEach, describe, expect, it, vi } from '@effect/vitest';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
-import { FileSystem, Path } from '@effect/platform';
-import { BunFileSystem, BunPath } from '@effect/platform-bun';
+import * as FileSystem from '@effect/platform/FileSystem';
+import * as Path from '@effect/platform/Path';
+import * as BunFileSystem from '@effect/platform-bun/BunFileSystem';
+import * as BunPath from '@effect/platform-bun/BunPath';
 import { Effect, Layer } from 'effect';
 import { Composio as RawComposioClient } from '@composio/client';
 import {
   ComposioBlockedInternalUrlError,
   ComposioSensitiveFilePathBlockedError,
+  MAX_URL_UPLOAD_SIZE_BYTES,
 } from '@composio/core';
 import { schemaHasFileUploadable, uploadToolInputFiles } from 'src/services/tool-file-uploads';
 
@@ -232,5 +235,48 @@ describe('uploadToolInputFiles — URL SSRF boundary', () => {
       Effect.provide(Layer.mergeAll(BunFileSystem.layer, BunPath.layer)),
       Effect.ensuring(Effect.sync(() => rmSync(root, { recursive: true, force: true })))
     );
+  });
+});
+
+describe('uploadToolInputFiles — URL download size cap', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.restoreAllMocks();
+  });
+
+  it.effect('rejects a remote file that declares a body above the cap before buffering it', () => {
+    const createPresignedURL = vi.fn();
+    const client = makeClient(createPresignedURL);
+    const oversized = String(MAX_URL_UPLOAD_SIZE_BYTES + 1);
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(
+        async () =>
+          new Response('not the real body', {
+            status: 200,
+            headers: { 'content-length': oversized, 'content-type': 'application/octet-stream' },
+          })
+      )
+    );
+
+    return Effect.gen(function* () {
+      const fsApi = yield* FileSystem.FileSystem;
+      const pathApi = yield* Path.Path;
+
+      yield* Effect.promise(() =>
+        expect(
+          uploadToolInputFiles({
+            fs: fsApi,
+            path: pathApi,
+            toolSlug: 'GMAIL_SEND_EMAIL',
+            arguments_: { attachment: 'https://1.1.1.1/large.bin' },
+            inputSchema,
+            client,
+          })
+        ).rejects.toThrow(/exceeds maximum allowed size/)
+      );
+
+      expect(createPresignedURL).not.toHaveBeenCalled();
+    }).pipe(Effect.provide(Layer.mergeAll(BunFileSystem.layer, BunPath.layer)));
   });
 });

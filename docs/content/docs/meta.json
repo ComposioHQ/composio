@@ -19,6 +19,7 @@
     "sandbox",
     "extending-sessions",
     "setting-up-triggers",
+    "poc-to-prod",
     "---Direct execution (legacy)---",
     "sessions-vs-direct-execution",
     "tools-direct",

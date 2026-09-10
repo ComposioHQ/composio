@@ -1,14 +1,16 @@
 import process from 'node:process';
 import { Effect, Layer } from 'effect';
-import { FetchHttpClient } from '@effect/platform';
-import { BunFileSystem, BunPath, BunRuntime } from '@effect/platform-bun';
+import * as FetchHttpClient from '@effect/platform/FetchHttpClient';
+import * as BunFileSystem from '@effect/platform-bun/BunFileSystem';
+import * as BunPath from '@effect/platform-bun/BunPath';
+import * as BunRuntime from '@effect/platform-bun/BunRuntime';
 import { isBackgroundWorkerInvocation, runBackgroundWorkerFromArgv } from 'src/analytics/dispatch';
 import { NodeOs } from 'src/services/node-os';
 import { TerminalUILive } from 'src/services/terminal-ui';
 import { stripTelemetryDebugFlag, telemetryDebugModeLayer } from 'src/services/runtime-flags';
 
+// The one `process.argv` read: every later consumer receives this normalized argv explicitly.
 const bootstrap = stripTelemetryDebugFlag(process.argv);
-process.argv = [...bootstrap.argv];
 
 const workerLayers = Layer.mergeAll(
   BunFileSystem.layer,
@@ -33,6 +35,6 @@ if (isBackgroundWorkerInvocation(bootstrap.argv)) {
   );
 } else {
   void import('./cli-main').then(({ runCli }) =>
-    runCli({ telemetryDebug: bootstrap.telemetryDebug })
+    runCli({ argv: bootstrap.argv, telemetryDebug: bootstrap.telemetryDebug })
   );
 }
