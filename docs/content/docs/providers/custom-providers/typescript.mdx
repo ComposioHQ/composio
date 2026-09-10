@@ -164,6 +164,36 @@ export class MyAgentProvider extends BaseAgenticProvider<AgentToolkit, AgentTool
 }
 ```
 
+## Support strict tool schemas
+
+If your platform supports OpenAI-compatible strict tool schemas, use `toStrictJsonSchema()` to normalize each tool's input schema. The result keeps optional parameters available by making them required and nullable. Before execution, use `omitNullToolArguments()` to remove a `null` that represents an omitted optional parameter while preserving fields whose original schema accepts `null`.
+
+```typescript
+// @noErrors
+import { omitNullToolArguments, toStrictJsonSchema } from '@composio/core';
+
+const originalSchema = {
+  type: 'object',
+  properties: {
+    query: { type: 'string' },
+    limit: { type: 'integer' },
+  },
+  required: ['query'],
+};
+
+const strict = toStrictJsonSchema(originalSchema);
+
+if (strict.unsupported.length === 0) {
+  // Send strict.schema to the model with strict mode enabled.
+  const modelArguments = { query: 'open pull requests', limit: null };
+  const toolArguments = omitNullToolArguments(modelArguments, strict.source);
+
+  console.log(toolArguments); // { query: 'open pull requests' }
+}
+```
+
+When `strict.unsupported` isn't empty, send the original schema without strict mode and log the reported paths. Strict mode can't represent arbitrary-key objects, unsupported intersections, tuple-style arrays, or unresolved references without narrowing the tool's accepted input.
+
 ## Use your provider
 
 Pass an instance to `Composio` via the `provider` option. Every tool you fetch comes back in your custom format.
