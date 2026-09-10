@@ -157,11 +157,14 @@ export type ChangelogEntry = DocCollectionEntry<
 export const changelogEntries = changelog as ChangelogEntry[];
 
 export function getOgImageUrl(
-  _section: string,
-  _slugs: string[],
+  section: string,
+  slugs: string[],
   title?: string,
   _description?: string
 ): string {
+  if (section === 'docs' && slugs.length === 0) {
+    return 'https://docs.composio.dev/api/og?variant=home';
+  }
   const encodedTitle = encodeURIComponent(title ?? 'Composio Docs');
   return `https://docs.composio.dev/api/og?title=${encodedTitle}`;
 }
