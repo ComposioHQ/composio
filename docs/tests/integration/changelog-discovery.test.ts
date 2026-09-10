@@ -15,4 +15,7 @@ test('an agent can discover the changelog and read a dated release', async () =>
   expect(release.status).toBe(200);
   expect(release.headers.get('content-type')).toContain('text/markdown');
   expect((await release.text()).length).toBeGreaterThan(200);
+  const mdx = await fetchPage(dated![1].replace(/\.md$/, '.mdx'));
+  expect(mdx.status).toBe(200);
+  expect(mdx.headers.get('content-type')).toContain('text/markdown');
 });

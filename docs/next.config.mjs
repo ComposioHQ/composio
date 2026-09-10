@@ -224,6 +224,17 @@ const config = {
         destination: '/docs/sandbox/remote',
         permanent: true,
       },
+      // Preserve machine-readable release notes before the legacy HTML redirects.
+      {
+        source: '/docs/changelog/:path*.md',
+        destination: '/llms.mdx/docs/changelog/:path*',
+        permanent: true,
+      },
+      {
+        source: '/docs/changelog/:path*.mdx',
+        destination: '/llms.mdx/docs/changelog/:path*',
+        permanent: true,
+      },
       {
         source: '/docs/changelog',
         destination: '/reference/changelog',
