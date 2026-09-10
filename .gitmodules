@@ -1,10 +1,12 @@
 [submodule "ts/vendor/effect"]
 	path = ts/vendor/effect
-	url = git@github.com:Effect-TS/effect.git
+	url = https://github.com/Effect-TS/effect.git
 	branch = main
+	shallow = true
 [submodule "ts/vendor/clack"]
 	path = ts/vendor/clack
 	url = https://github.com/bombshell-dev/clack.git
+	shallow = true
 [submodule "ts/packages/cli-local-tools/vendor/platform-imessage"]
 	path = ts/packages/cli-local-tools/vendor/platform-imessage
 	url = https://github.com/ComposioHQ/platform-imessage
@@ -12,3 +14,128 @@
 [submodule "ts/packages/cli-local-tools/vendor/peekaboo"]
 	path = ts/packages/cli-local-tools/vendor/peekaboo
 	url = https://github.com/steipete/Peekaboo
+[submodule "ts/vendor/providers/anthropic-sdk-typescript"]
+	path = ts/vendor/providers/anthropic-sdk-typescript
+	url = https://github.com/anthropics/anthropic-sdk-typescript.git
+	branch = main
+	shallow = true
+[submodule "ts/vendor/providers/claude-agent-sdk-typescript"]
+	path = ts/vendor/providers/claude-agent-sdk-typescript
+	url = https://github.com/anthropics/claude-agent-sdk-typescript.git
+	branch = main
+	shallow = true
+[submodule "ts/vendor/providers/workerd"]
+	path = ts/vendor/providers/workerd
+	url = https://github.com/cloudflare/workerd.git
+	branch = main
+	shallow = true
+[submodule "ts/vendor/providers/js-genai"]
+	path = ts/vendor/providers/js-genai
+	url = https://github.com/googleapis/js-genai.git
+	branch = main
+	shallow = true
+[submodule "ts/vendor/providers/langchainjs"]
+	path = ts/vendor/providers/langchainjs
+	url = https://github.com/langchain-ai/langchainjs.git
+	branch = main
+	shallow = true
+[submodule "ts/vendor/providers/llamaindex-ts"]
+	path = ts/vendor/providers/llamaindex-ts
+	url = https://github.com/run-llama/LlamaIndexTS.git
+	branch = main
+	shallow = true
+[submodule "ts/vendor/providers/mastra"]
+	path = ts/vendor/providers/mastra
+	url = https://github.com/mastra-ai/mastra.git
+	branch = main
+	shallow = true
+[submodule "ts/vendor/providers/openai-agents-js"]
+	path = ts/vendor/providers/openai-agents-js
+	url = https://github.com/openai/openai-agents-js.git
+	branch = main
+	shallow = true
+[submodule "ts/vendor/providers/openai-node"]
+	path = ts/vendor/providers/openai-node
+	url = https://github.com/openai/openai-node.git
+	branch = main
+	shallow = true
+[submodule "ts/vendor/providers/vercel-ai"]
+	path = ts/vendor/providers/vercel-ai
+	url = https://github.com/vercel/ai.git
+	branch = main
+	shallow = true
+[submodule "ts/vendor/providers/pi"]
+	path = ts/vendor/providers/pi
+	url = https://github.com/earendil-works/pi.git
+	branch = main
+	shallow = true
+[submodule "ts/vendor/providers/eve"]
+	path = ts/vendor/providers/eve
+	url = https://github.com/vercel/eve.git
+	branch = main
+	shallow = true
+[submodule "python/vendor/providers/anthropic-sdk-python"]
+	path = python/vendor/providers/anthropic-sdk-python
+	url = https://github.com/anthropics/anthropic-sdk-python.git
+	branch = main
+	shallow = true
+[submodule "python/vendor/providers/ag2"]
+	path = python/vendor/providers/ag2
+	url = https://github.com/ag2ai/ag2.git
+	branch = main
+	shallow = true
+[submodule "python/vendor/providers/autogen"]
+	path = python/vendor/providers/autogen
+	url = https://github.com/microsoft/autogen.git
+	branch = main
+	shallow = true
+[submodule "python/vendor/providers/claude-agent-sdk-python"]
+	path = python/vendor/providers/claude-agent-sdk-python
+	url = https://github.com/anthropics/claude-agent-sdk-python.git
+	branch = main
+	shallow = true
+[submodule "python/vendor/providers/crewai"]
+	path = python/vendor/providers/crewai
+	url = https://github.com/crewAIInc/crewAI.git
+	branch = main
+	shallow = true
+[submodule "python/vendor/providers/python-genai"]
+	path = python/vendor/providers/python-genai
+	url = https://github.com/googleapis/python-genai.git
+	branch = main
+	shallow = true
+[submodule "python/vendor/providers/python-aiplatform"]
+	path = python/vendor/providers/python-aiplatform
+	url = https://github.com/googleapis/python-aiplatform.git
+	branch = main
+	shallow = true
+[submodule "python/vendor/providers/google-adk"]
+	path = python/vendor/providers/google-adk
+	url = https://github.com/google/adk-python.git
+	branch = main
+	shallow = true
+[submodule "python/vendor/providers/langchain"]
+	path = python/vendor/providers/langchain
+	url = https://github.com/langchain-ai/langchain.git
+	branch = master
+	shallow = true
+[submodule "python/vendor/providers/langgraph"]
+	path = python/vendor/providers/langgraph
+	url = https://github.com/langchain-ai/langgraph.git
+	branch = main
+	shallow = true
+[submodule "python/vendor/providers/llama-index"]
+	path = python/vendor/providers/llama-index
+	url = https://github.com/run-llama/llama_index.git
+	branch = main
+	shallow = true
+[submodule "python/vendor/providers/openai-python"]
+	path = python/vendor/providers/openai-python
+	url = https://github.com/openai/openai-python.git
+	branch = main
+	shallow = true
+[submodule "python/vendor/providers/openai-agents-python"]
+	path = python/vendor/providers/openai-agents-python
+	url = https://github.com/openai/openai-agents-python.git
+	branch = main
+	shallow = true

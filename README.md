@@ -172,6 +172,8 @@ pnpm build
 pnpm test
 ```
 
+Upstream provider sources are available as optional, shallow git submodules. A normal clone does not download them; initialize only the provider sources you need by following [`VENDORED_SOURCES.md`](VENDORED_SOURCES.md).
+
 Python commands run from `python/`; see [`python/README.md`](python/README.md). We welcome contributions to both SDKs; read the [contribution guidelines](CONTRIBUTING.md) before submitting pull requests.
 
 ## Support

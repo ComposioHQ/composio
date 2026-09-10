@@ -13,6 +13,7 @@ This is the Composio SDK v3 monorepo. Most product code lives in `ts/` and `pyth
 3. Treat `.agents/skills` as the canonical local skill tree. `.claude/skills` is a compatibility symlink and must not be edited as a separate copy.
 4. Do not edit generated SDK surfaces or vendor trees — see [Generated And Vendored Paths](#generated-and-vendored-paths).
 5. Verify every command you write against the current `package.json`, `Makefile`, `noxfile.py`, or workflow file.
+6. Before changing provider behavior, initialize and inspect its read-only upstream source listed in `VENDORED_SOURCES.md`.
 
 ## Skill Routing
 
@@ -39,7 +40,9 @@ ts/                         TypeScript SDK workspace
   packages/providers/       TypeScript provider adapters
   packages/cli/             Effect-based CLI
   e2e-tests/                Docker runtime and CLI E2E tests
+  vendor/providers/         Optional upstream TypeScript provider sources
 python/                     Python SDK and provider packages
+  vendor/providers/         Optional upstream Python provider sources
 docs/                       Fumadocs documentation site
 .agents/skills/             Canonical local agent skills
 docs/agent-guidance/        Neutral docs-agent context and workflow instructions
@@ -50,7 +53,8 @@ docs/decisions/             Neutral docs decisions and ADR-style records
 
 Do not hand-edit these. They are regenerated or vendored, and edits will be overwritten. They are also marked `linguist-generated`/`linguist-vendored` in `.gitattributes`.
 
-- `ts/vendor/**` — vendored read-only snapshots of Effect and Clack (git submodules); reference only.
+- `ts/vendor/**` — vendored read-only upstream TypeScript sources (git submodules); reference only.
+- `python/vendor/**` — vendored read-only upstream Python sources (git submodules); reference only.
 - `ts/packages/cli-local-tools/vendor/**` — vendored local-tool sources (git submodules).
 - `ts/packages/core/generated/**`, `ts/packages/core/pack/generated/**` — generated SDK surfaces produced by `composio generate` / the build pipeline.
 - `pnpm-lock.yaml`, `uv.lock`, `**/bun.lock` — package-manager lockfiles; change them by running the package manager, never by hand.
