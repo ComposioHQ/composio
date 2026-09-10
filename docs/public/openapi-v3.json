@@ -9963,9 +9963,10 @@
               ]
             },
             "required": false,
-            "description": "Comma-separated list of auth config IDs to filter tools by",
+            "description": "DEPRECATED: This parameter will be removed in a future version. Filter directly instead with tool_slugs and toolkit_slug, which accepts a comma-separated list of toolkits.",
             "in": "query",
-            "name": "auth_config_ids"
+            "name": "auth_config_ids",
+            "deprecated": true
           },
           {
             "schema": {
@@ -17207,7 +17208,7 @@
                       },
                       "fast_mode": {
                         "type": "boolean",
-                        "description": "Experimental flag to skip the LLM reranker in tool search and serve embeddings/BM25-only results. Also skips plan search entirely, so responses will not include cached-plan fields (recommended_plan_steps, known_pitfalls, reference_workbench_snippets) or plan-derived execution guidance.",
+                        "description": "Fast mode reduces search latency. It is experimental, so tool search quality may be affected.",
                         "x-experimental": true
                       },
                       "submit_feedback": {
@@ -19436,7 +19437,7 @@
                       },
                       "fast_mode": {
                         "type": "boolean",
-                        "description": "Experimental flag to skip the LLM reranker in tool search and serve embeddings/BM25-only results. Also skips plan search entirely, so responses will not include cached-plan fields (recommended_plan_steps, known_pitfalls, reference_workbench_snippets) or plan-derived execution guidance.",
+                        "description": "Fast mode reduces search latency. It is experimental, so tool search quality may be affected.",
                         "x-experimental": true
                       },
                       "submit_feedback": {
