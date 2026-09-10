@@ -2092,7 +2092,7 @@
     "name": "AirOps MCP",
     "logo": "https://logos.composio.dev/api/airops_mcp",
     "category": "model context protocol",
-    "toolCount": 91,
+    "toolCount": 96,
     "triggerCount": 0
   },
   {
@@ -2348,7 +2348,7 @@
     "name": "Apify MCP",
     "logo": "https://logos.composio.dev/api/apify_mcp",
     "category": "model context protocol",
-    "toolCount": 8,
+    "toolCount": 12,
     "triggerCount": 0
   },
   {
@@ -2484,7 +2484,7 @@
     "name": "Atlassian MCP",
     "logo": "https://logos.composio.dev/api/atlassian_mcp",
     "category": "model context protocol",
-    "toolCount": 40,
+    "toolCount": 41,
     "triggerCount": 0
   },
   {
@@ -2692,7 +2692,7 @@
     "name": "Better Stack MCP",
     "logo": "https://logos.composio.dev/api/better_stack_mcp",
     "category": "server monitoring",
-    "toolCount": 111,
+    "toolCount": 116,
     "triggerCount": 0
   },
   {
@@ -2964,7 +2964,7 @@
     "name": "Box MCP",
     "logo": "https://logos.composio.dev/api/box_mcp",
     "category": "model context protocol",
-    "toolCount": 44,
+    "toolCount": 21,
     "triggerCount": 0
   },
   {
@@ -3348,7 +3348,7 @@
     "name": "Cashfree Payments MCP",
     "logo": "https://logos.composio.dev/api/cashfree_payments_mcp",
     "category": "payment processing",
-    "toolCount": 66,
+    "toolCount": 38,
     "triggerCount": 0
   },
   {
@@ -3620,7 +3620,7 @@
     "name": "ClickUp MCP",
     "logo": "https://logos.composio.dev/api/clickup_mcp",
     "category": "model context protocol",
-    "toolCount": 56,
+    "toolCount": 58,
     "triggerCount": 0
   },
   {
@@ -3660,7 +3660,7 @@
     "name": "Close MCP",
     "logo": "https://logos.composio.dev/api/close_mcp",
     "category": "model context protocol",
-    "toolCount": 109,
+    "toolCount": 114,
     "triggerCount": 0
   },
   {
@@ -4308,7 +4308,7 @@
     "name": "Datadog MCP",
     "logo": "https://logos.composio.dev/api/datadog_mcp",
     "category": "server monitoring",
-    "toolCount": 341,
+    "toolCount": 370,
     "triggerCount": 0
   },
   {
@@ -4452,7 +4452,7 @@
     "name": "Devin MCP",
     "logo": "https://logos.composio.dev/api/devin_mcp",
     "category": "model context protocol",
-    "toolCount": 4,
+    "toolCount": 22,
     "triggerCount": 0
   },
   {
@@ -4684,7 +4684,7 @@
     "name": "Domotz MCP",
     "logo": "https://logos.composio.dev/api/domotz_mcp",
     "category": "model context protocol",
-    "toolCount": 92,
+    "toolCount": 99,
     "triggerCount": 0
   },
   {
@@ -6308,7 +6308,7 @@
     "name": "Higgsfield MCP",
     "logo": "https://logos.composio.dev/api/higgsfield_mcp",
     "category": "model context protocol",
-    "toolCount": 89,
+    "toolCount": 101,
     "triggerCount": 0
   },
   {
@@ -6380,7 +6380,7 @@
     "name": "Honeycomb MCP",
     "logo": "https://logos.composio.dev/api/honeycomb_mcp",
     "category": "developer tools",
-    "toolCount": 32,
+    "toolCount": 33,
     "triggerCount": 0
   },
   {
@@ -6708,7 +6708,7 @@
     "name": "Intercom MCP",
     "logo": "https://logos.composio.dev/api/intercom_mcp",
     "category": "communication",
-    "toolCount": 14,
+    "toolCount": 15,
     "triggerCount": 0
   },
   {
@@ -6964,7 +6964,7 @@
     "name": "Kernel MCP",
     "logo": "https://logos.composio.dev/api/kernel_mcp",
     "category": "model context protocol",
-    "toolCount": 20,
+    "toolCount": 25,
     "triggerCount": 0
   },
   {
@@ -7292,7 +7292,7 @@
     "name": "Linear MCP",
     "logo": "https://logos.composio.dev/api/linear_mcp",
     "category": "model context protocol",
-    "toolCount": 67,
+    "toolCount": 78,
     "triggerCount": 0
   },
   {
@@ -7396,7 +7396,7 @@
     "name": "Longbridge MCP",
     "logo": "https://logos.composio.dev/api/longbridge_mcp",
     "category": "model context protocol",
-    "toolCount": 162,
+    "toolCount": 161,
     "triggerCount": 0
   },
   {
@@ -7892,7 +7892,7 @@
     "name": "Mobbin MCP",
     "logo": "https://logos.composio.dev/api/mobbin_mcp",
     "category": "images & design",
-    "toolCount": 1,
+    "toolCount": 3,
     "triggerCount": 0
   },
   {
@@ -8100,7 +8100,7 @@
     "name": "Neon MCP",
     "logo": "https://logos.composio.dev/api/neon_mcp",
     "category": "databases",
-    "toolCount": 35,
+    "toolCount": 104,
     "triggerCount": 0
   },
   {
@@ -8244,7 +8244,7 @@
     "name": "Notion MCP",
     "logo": "https://logos.composio.dev/api/notion_mcp",
     "category": "model context protocol",
-    "toolCount": 37,
+    "toolCount": 42,
     "triggerCount": 0
   },
   {
@@ -8836,7 +8836,7 @@
     "name": "Peec AI MCP",
     "logo": "https://logos.composio.dev/api/peec_ai_mcp",
     "category": "model context protocol",
-    "toolCount": 79,
+    "toolCount": 84,
     "triggerCount": 0
   },
   {
@@ -9204,7 +9204,7 @@
     "name": "Postiz",
     "logo": "https://logos.composio.dev/api/postiz_mcp",
     "category": "social media marketing",
-    "toolCount": 9,
+    "toolCount": 14,
     "triggerCount": 0
   },
   {
@@ -9516,7 +9516,7 @@
     "name": "Railway MCP",
     "logo": "https://logos.composio.dev/api/railway_mcp",
     "category": "developer tools",
-    "toolCount": 26,
+    "toolCount": 46,
     "triggerCount": 0
   },
   {
@@ -9756,7 +9756,7 @@
     "name": "Resend MCP",
     "logo": "https://logos.composio.dev/api/resend_mcp",
     "category": "email",
-    "toolCount": 95,
+    "toolCount": 103,
     "triggerCount": 0
   },
   {
@@ -10764,7 +10764,7 @@
     "name": "Statsig MCP",
     "logo": "https://logos.composio.dev/api/statsig_mcp",
     "category": "model context protocol",
-    "toolCount": 86,
+    "toolCount": 93,
     "triggerCount": 0
   },
   {
@@ -10828,7 +10828,7 @@
     "name": "Stripe MCP",
     "logo": "https://logos.composio.dev/api/stripe_mcp",
     "category": "payment processing",
-    "toolCount": 12,
+    "toolCount": 10,
     "triggerCount": 0
   },
   {
@@ -11588,7 +11588,7 @@
     "name": "Vantage MCP",
     "logo": "https://logos.composio.dev/api/vantage_mcp",
     "category": "model context protocol",
-    "toolCount": 127,
+    "toolCount": 134,
     "triggerCount": 0
   },
   {
@@ -11924,7 +11924,7 @@
     "name": "Wix MCP",
     "logo": "https://logos.composio.dev/api/wix_mcp",
     "category": "e-commerce",
-    "toolCount": 14,
+    "toolCount": 27,
     "triggerCount": 0
   },
   {
@@ -12084,7 +12084,7 @@
     "name": "Zernio MCP",
     "logo": "https://logos.composio.dev/api/zernio_mcp",
     "category": "social media marketing",
-    "toolCount": 51,
+    "toolCount": 52,
     "triggerCount": 0
   },
   {
