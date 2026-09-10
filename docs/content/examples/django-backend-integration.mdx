@@ -1,0 +1,287 @@
+---
+title: GitHub integration in Django
+description: Connect GitHub accounts and call tools and APIs from deterministic Django code. Composio handles OAuth tokens; your backend chooses every operation.
+keywords: [Django, Python, deterministic backend, backend integrations, direct execution, OAuth, token custody, GitHub, proxy, without LLM]
+llmGuardrails: "none"
+full: true
+gallery:
+  categories: [Backend integrations]
+  logos: [github]
+  featured: true
+  order: 2
+---
+
+Use Composio from a Django backend to act on each customer's GitHub account without storing their OAuth tokens. Your Python code chooses the operation, arguments, and connected account. No LLM, agent framework, MCP server, or Composio session is required.
+
+This example adds a **Connect GitHub** button and a view that reads the connected GitHub profile. It uses a fixed tool call first, then shows the equivalent GitHub API request through the proxy. The same service function works in a scheduled job or a Celery task.
+
+The execution call is ordinary Python:
+
+```python
+import os
+from composio import Composio
+
+composio = Composio(api_key=os.environ["COMPOSIO_API_KEY"])
+result = composio.tools.execute(
+	"GITHUB_GET_THE_AUTHENTICATED_USER",
+	user_id="django:user:42",
+	connected_account_id=os.environ["COMPOSIO_GITHUB_ACCOUNT_ID"],
+	version=os.environ["COMPOSIO_GITHUB_TOOLKIT_VERSION"],
+	arguments={},
+)
+if not result["successful"]:
+	raise RuntimeError("GitHub profile request failed")
+```
+
+That call needs an active connection belonging to `django:user:42` and a pinned toolkit version. The Django code below establishes the connection and selects it from the authenticated user's identity.
+
+## Set up Django and Composio
+
+Start with a Django project that has working login, database-backed sessions, and the default authentication and CSRF middleware. These snippets target Django 5.2 and Composio Python SDK 0.21.1. Create an app named `integrations` and add it to `INSTALLED_APPS`.
+
+```bash
+python -m pip install "Django>=5.2,<5.3" "composio==0.21.1"
+python manage.py startapp integrations
+```
+
+In [Auth Configs](https://dashboard.composio.dev/~/project/auth-configs?utm_source=docs&utm_medium=content&utm_campaign=examples-django-backend-integration), create a GitHub OAuth auth config. Choose the scopes needed to read a profile. You can use Composio-managed authentication for this example. For your own consent-screen branding, see [custom auth configs](/docs/auth-configuration/custom-auth-configs).
+
+Set these server-side environment variables:
+
+```bash
+export COMPOSIO_API_KEY="your-project-api-key"
+export COMPOSIO_GITHUB_AUTH_CONFIG_ID="ac_your-github-auth-config"
+export COMPOSIO_GITHUB_TOOLKIT_VERSION="your-pinned-version"
+export COMPOSIO_GITHUB_CALLBACK_URL="https://your-app.example/integrations/github/"
+```
+
+Replace `your-pinned-version` with a dated version from the [GitHub toolkit page](/toolkits/github). Keep that value in deployment configuration and test changes before upgrading. Direct execution requires a version. This example doesn't bypass the version check with `latest`.
+
+Use your application's fixed, absolute URL for `COMPOSIO_GITHUB_CALLBACK_URL`. Configure any redirect allowlist for your auth setup to permit it. This is the page Composio returns the browser to after authorization. Composio handles the provider's OAuth callback and token exchange.
+
+## Select the signed-in user's account
+
+Create `integrations/github.py`. Composio stores the association between your stable application user ID and their connected account. Query that association on the server so the browser cannot select another customer's account.
+
+```python title="integrations/github.py"
+import os
+
+from composio import Composio
+
+composio = Composio(
+	api_key=os.environ["COMPOSIO_API_KEY"],
+	timeout=20,
+	max_retries=0,
+)
+AUTH_CONFIG_ID = os.environ["COMPOSIO_GITHUB_AUTH_CONFIG_ID"]
+TOOLKIT_VERSION = os.environ["COMPOSIO_GITHUB_TOOLKIT_VERSION"]
+CALLBACK_URL = os.environ["COMPOSIO_GITHUB_CALLBACK_URL"]
+
+
+class ConnectionRequired(Exception):
+	pass
+
+
+class GitHubRequestFailed(Exception):
+	pass
+
+
+def composio_user_id(user):
+	return f"django:user:{user.pk}"
+
+
+def active_accounts(user):
+	return composio.connected_accounts.list(
+		user_ids=[composio_user_id(user)],
+		auth_config_ids=[AUTH_CONFIG_ID],
+		toolkit_slugs=["github"],
+		account_type="PRIVATE",
+		statuses=["ACTIVE"],
+		limit=2,
+	).items
+
+
+def account_id_for(user):
+	accounts = active_accounts(user)
+	if len(accounts) != 1:
+		raise ConnectionRequired
+	return accounts[0].id
+
+
+def github_profile(user):
+	result = composio.tools.execute(
+		"GITHUB_GET_THE_AUTHENTICATED_USER",
+		user_id=composio_user_id(user),
+		connected_account_id=account_id_for(user),
+		version=TOOLKIT_VERSION,
+		arguments={},
+	)
+	if not result["successful"]:
+		raise GitHubRequestFailed
+	return result["data"]
+```
+
+The example supports one active GitHub connection per application user and auth config. It rejects an ambiguous selection instead of taking the first account. For multiple accounts, store a chosen connection ID against its owner in your database and check ownership before each execution.
+
+Keep user IDs stable and unique within your Composio project. If your application uses tenant-local user IDs, include the tenant ID too. A Composio `user_id` is an association key, not proof of login. Django supplies that proof through `request.user`.
+
+## Add the connection and profile views
+
+Create `integrations/views.py`:
+
+```python title="integrations/views.py"
+from composio.exceptions import ComposioError
+from composio_client import APIError
+from django.contrib.auth.decorators import login_required
+from django.http import JsonResponse
+from django.shortcuts import redirect, render
+from django.views.decorators.http import require_GET, require_POST
+
+from . import github
+
+
+@login_required
+@require_GET
+def github_settings(request):
+	return render(request, "integrations/github.html")
+
+
+@login_required
+@require_POST
+def connect_github(request):
+	try:
+		accounts = github.active_accounts(request.user)
+		if len(accounts) > 1:
+			return JsonResponse({"error": "Multiple GitHub connections need review"}, status=409)
+		if accounts:
+			return redirect("github-settings")
+		connection = github.composio.connected_accounts.link(
+			user_id=github.composio_user_id(request.user),
+			auth_config_id=github.AUTH_CONFIG_ID,
+			callback_url=github.CALLBACK_URL,
+		)
+	except (APIError, ComposioError):
+		return JsonResponse({"error": "Could not start GitHub connection"}, status=502)
+	if not connection.redirect_url:
+		return JsonResponse({"error": "No authorization URL returned"}, status=502)
+	return redirect(connection.redirect_url)
+
+
+@login_required
+@require_GET
+def github_profile(request):
+	try:
+		profile = github.github_profile(request.user)
+	except github.ConnectionRequired:
+		return JsonResponse({"error": "Connect exactly one active GitHub account"}, status=409)
+	except (APIError, ComposioError, github.GitHubRequestFailed):
+		return JsonResponse({"error": "Could not read GitHub profile"}, status=502)
+	return JsonResponse({"profile": profile})
+```
+
+`link()` starts hosted authentication. The callback page doesn't accept a connection ID or success flag from the browser. When you request the profile, the server checks for an `ACTIVE` connection again. An unfinished, revoked, or expired connection cannot pass that check.
+
+The view returns a generic failure message. Keep raw SDK exceptions, account objects, authorization URLs, and response headers out of browser responses and application logs. Tool results can still contain private customer data. Apply your application's normal access and retention controls to the profile response.
+
+Add `integrations/urls.py`:
+
+```python title="integrations/urls.py"
+from django.urls import path
+
+from . import views
+
+urlpatterns = [
+	path("github/", views.github_settings, name="github-settings"),
+	path("github/connect/", views.connect_github, name="github-connect"),
+	path("github/profile/", views.github_profile, name="github-profile"),
+]
+```
+
+In your project's URL configuration, import `include` from `django.urls` and add `path("integrations/", include("integrations.urls"))` to `urlpatterns`.
+
+Create `integrations/templates/integrations/github.html`:
+
+```html title="integrations/templates/integrations/github.html"
+<h1>GitHub integration</h1>
+<form method="post" action="{% url 'github-connect' %}">
+	{% csrf_token %}
+	<button type="submit">Connect GitHub</button>
+</form>
+<p><a href="{% url 'github-profile' %}">Read my GitHub profile</a></p>
+```
+
+Keep [Django's CSRF protection](https://docs.djangoproject.com/en/5.2/howto/csrf/) enabled. Starting a connection uses a CSRF-protected `POST`. Reading the profile uses `GET` because it doesn't change GitHub data.
+
+Sign in to your application and open `/integrations/github/`. Select **Connect GitHub**, complete authorization, then select **Read my GitHub profile**. You should receive JSON with your GitHub profile. If you cancel authorization, the profile endpoint returns `409` until you complete a connection.
+
+## Call the GitHub API through the proxy
+
+When you need to control the HTTP request directly, replace the `github_profile` function in `integrations/github.py` with this version:
+
+```python
+def github_profile(user):
+	response = composio.tools.proxy(
+		endpoint="https://api.github.com/user",
+		method="GET",
+		connected_account_id=account_id_for(user),
+		parameters=[
+			{"name": "Accept", "value": "application/vnd.github+json", "in": "header"},
+			{"name": "X-GitHub-Api-Version", "value": "2022-11-28", "in": "header"},
+		],
+	)
+	if response.status != 200:
+		raise GitHubRequestFailed
+	return response.data
+```
+
+This calls GitHub's [get the authenticated user endpoint](https://docs.github.com/en/rest/users/users#get-the-authenticated-user). Composio injects the connected account's credentials before forwarding the request. Your code supplies no GitHub `Authorization` header and receives no OAuth token.
+
+The endpoint, method, and headers are fixed in your service. If you add operations, define and validate each one on the server. Don't expose a general proxy that accepts arbitrary URLs, headers, tool slugs, or account IDs from the browser.
+
+Direct execution pins a Composio toolkit version. The proxy uses the provider's API contract, so maintain and test its paths, parameters, and API version in your code.
+
+## Check account isolation
+
+Add a test that attempts to supply someone else's account ID. The service must still select the account associated with the signed-in user. It must also refuse to execute when that user has no active account.
+
+```python title="integrations/tests.py"
+from types import SimpleNamespace
+from unittest.mock import patch
+
+from django.contrib.auth import get_user_model
+from django.test import TestCase
+from django.urls import reverse
+
+from . import github
+
+
+class GitHubIsolationTests(TestCase):
+	@patch.object(github.composio.tools, "execute")
+	@patch.object(github.composio.connected_accounts, "list")
+	def test_account_selection_uses_the_signed_in_user(self, list_accounts, execute):
+		user = get_user_model().objects.create_user(username="alice", password="test-only")
+		self.client.force_login(user)
+		list_accounts.return_value = SimpleNamespace(items=[SimpleNamespace(id="ca_alice")])
+		execute.return_value = {"successful": True, "data": {"login": "alice"}, "error": None}
+
+		response = self.client.get(reverse("github-profile"), {"connected_account_id": "ca_bob"})
+		self.assertEqual(response.status_code, 200)
+		self.assertEqual(list_accounts.call_args.kwargs["user_ids"], [f"django:user:{user.pk}"])
+		self.assertEqual(list_accounts.call_args.kwargs["auth_config_ids"], [github.AUTH_CONFIG_ID])
+		self.assertEqual(execute.call_args.kwargs["connected_account_id"], "ca_alice")
+
+		execute.reset_mock()
+		list_accounts.return_value = SimpleNamespace(items=[])
+		self.assertEqual(self.client.get(reverse("github-profile")).status_code, 409)
+		execute.assert_not_called()
+```
+
+Run `python manage.py test integrations`. This test targets the direct-execution implementation. If you use the proxy implementation, mock `tools.proxy` and return a response with `status=200` and `data={"login": "alice"}` instead. Adapt user creation if your project uses a custom user model.
+
+## Run from a background job
+
+Call `github_profile(user)` from a trusted job after loading the owning user from your database. Keep scheduling, pagination, synchronization checkpoints, and retries in your application. A request timeout doesn't prove that a write failed. Before retrying writes, use the provider's idempotency mechanism or reconcile the previous operation.
+
+Composio stores the provider credentials and handles supported token refresh. Your backend still holds a Composio API key that can authorize operations, so keep it in server-side secret storage. Don't retrieve or serialize credential fields from connected account responses. This flow keeps raw provider tokens out of Django, while Composio remains responsible for their custody.
+
+For reauthorization and disconnection, see [connected account management](/docs/auth-configuration/connected-accounts). Check the current [pricing](https://composio.dev/pricing) for direct execution and proxy usage when estimating scheduled workloads.

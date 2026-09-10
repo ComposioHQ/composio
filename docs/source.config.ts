@@ -75,7 +75,12 @@ const docsSchema = frontmatterSchema.extend({
       /** Category lanes this example belongs to (can be more than one). */
       categories: z
         .array(
-          z.enum(['General agents', 'Background agents', 'Coding agents']),
+          z.enum([
+            'General agents',
+            'Background agents',
+            'Coding agents',
+            'Backend integrations',
+          ]),
         )
         .min(1),
       /** Toolkit logo slugs (logos.composio.dev/api/<slug>) shown on the card. */

@@ -11,7 +11,11 @@ import { ArrowUpRight } from 'lucide-react';
  * featured flag. No per-example config lives in this component.
  * ------------------------------------------------------------------ */
 
-type Category = 'General agents' | 'Background agents' | 'Coding agents';
+type Category =
+  | 'General agents'
+  | 'Background agents'
+  | 'Coding agents'
+  | 'Backend integrations';
 
 /** A resolved example, ready to render. Built in the route from frontmatter. */
 export interface GalleryItem {
@@ -51,6 +55,11 @@ const CATEGORY_STYLES: Record<Category, CatStyle> = {
     dot: 'bg-emerald-600 dark:bg-emerald-400',
     bar: 'bg-emerald-600 dark:bg-emerald-400',
   },
+  'Backend integrations': {
+    tag: 'text-amber-600 border-amber-500/25 bg-amber-500/[0.06] dark:text-amber-400 dark:border-amber-400/25',
+    dot: 'bg-amber-600 dark:bg-amber-400',
+    bar: 'bg-amber-600 dark:bg-amber-400',
+  },
 };
 
 const CATEGORIES: ('Featured' | Category)[] = [
@@ -58,6 +67,7 @@ const CATEGORIES: ('Featured' | Category)[] = [
   'General agents',
   'Background agents',
   'Coding agents',
+  'Backend integrations',
 ];
 
 function logoUrl(name: string) {
@@ -161,8 +171,8 @@ export function ExamplesGallery({ items }: { items: GalleryItem[] }) {
           Featured examples
         </h1>
         <p className="mt-5 max-w-2xl text-base leading-relaxed text-fd-muted-foreground sm:text-lg">
-          End-to-end builds that wire Composio into working agents. Each one is a
-          complete project you can read top to bottom and run.
+          End-to-end builds that wire Composio into agents and backend services.
+          Each one is a complete project you can read top to bottom and run.
         </p>
       </header>
 
