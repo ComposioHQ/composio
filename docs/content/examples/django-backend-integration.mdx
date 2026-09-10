@@ -1,0 +1,410 @@
+---
+title: Call external APIs from a deterministic Django backend
+description: Build a plain Django backend that calls GitHub and Gmail through Composio with no LLM in the loop. Pin toolkit versions, use managed auth, and keep token-safe integrations in code you control.
+keywords: [django, backend, deterministic, direct execution, github, gmail, connected accounts, toolkit versions, no llm]
+full: true
+gallery:
+  categories: [Background agents]
+  logos: [github, gmail]
+  featured: true
+  order: 5
+---
+
+Composio is usually framed as tooling for LLM agents, but most of its value works just as well in ordinary backend code. If you have a Django service that needs to talk to GitHub, Gmail, Slack, or any other app in the catalog, you can let Composio handle OAuth, token refresh, and API quirks while your views stay deterministic.
+
+This guide builds a small Django backend with no LLM stack. It exposes two endpoints:
+
+- `POST /github/issue/` creates a GitHub issue for a logged-in user.
+- `POST /gmail/draft/` saves a Gmail draft for that user.
+
+Both use Composio's managed auth and pinned toolkit versions, so the integration is token-safe and reproducible.
+
+<Callout type="info" title="Is this the right example for you?">
+
+Use this pattern when you want:
+
+- **Deterministic backend code**: your views decide exactly which tool runs and with what arguments.
+- **Managed authentication**: Composio stores tokens and refreshes them; your app never holds credentials.
+- **Token-safe integrations**: one connected account per user, scoped to the actions you need.
+
+If you are building an agent that discovers tools at runtime, use [sessions](/docs/configuring-sessions) or the [harness integration](/examples/harness-integration) example instead.
+
+</Callout>
+
+## What you need
+
+- A [Composio API key](https://dashboard.composio.dev/~/project/settings/api-keys?utm_source=docs&utm_medium=content&utm_campaign=examples-django-backend-integration).
+- [Python](https://www.python.org) 3.10 or later and a Django project.
+- A GitHub account and a Google account to test the OAuth flows.
+
+## Setup
+
+Create a virtual environment and install the dependencies:
+
+```bash
+python -m venv .venv
+source .venv/bin/activate
+pip install django composio-sdk
+```
+
+Start a Django project if you do not already have one:
+
+```bash
+django-admin startproject mysite .
+python manage.py startapp integrations
+```
+
+Add `integrations` to `INSTALLED_APPS` in `mysite/settings.py`:
+
+```python title="mysite/settings.py"
+INSTALLED_APPS = [
+    "django.contrib.admin",
+    "django.contrib.auth",
+    "django.contrib.contenttypes",
+    "django.contrib.sessions",
+    "django.contrib.messages",
+    "django.contrib.staticfiles",
+    "integrations",
+]
+```
+
+Set your Composio API key in the environment:
+
+```bash
+export COMPOSIO_API_KEY="your_composio_api_key"
+```
+
+## Create auth configs
+
+Every toolkit you use needs an [auth config](/docs/auth-configuration) once. The auth config is the blueprint that tells Composio how to authenticate your users for that toolkit. You can create it in the [dashboard](https://dashboard.composio.dev/~/project/auth-configs?utm_source=docs&utm_medium=content&utm_campaign=examples-django-backend-integration) or programmatically.
+
+This example creates both configs in a one-off management command so the backend stays self-contained.
+
+```bash
+python manage.py startapp management
+```
+
+Create the command file tree:
+
+```text
+integrations/
+  management/
+    __init__.py
+    commands/
+      __init__.py
+      create_auth_configs.py
+```
+
+```python title="integrations/management/commands/create_auth_configs.py"
+from django.core.management.base import BaseCommand
+from composio import Composio
+
+
+class Command(BaseCommand):
+    help = "Create Composio auth configs for GitHub and Gmail"
+
+    def handle(self, *args, **options):
+        composio = Composio()
+
+        github = composio.auth_configs.create(
+            toolkit="github",
+            name="Django GitHub integration",
+            auth_scheme="OAUTH2",
+            use_managed_oauth=True,
+        )
+        gmail = composio.auth_configs.create(
+            toolkit="gmail",
+            name="Django Gmail integration",
+            auth_scheme="OAUTH2",
+            use_managed_oauth=True,
+        )
+
+        self.stdout.write(self.style.SUCCESS(f"GitHub:  {github.id}"))
+        self.stdout.write(self.style.SUCCESS(f"Gmail:   {gmail.id}"))
+```
+
+Run it once and copy the two `ac_...` ids into your settings:
+
+```bash
+python manage.py create_auth_configs
+```
+
+```python title="mysite/settings.py"
+COMPOSIO_AUTH_CONFIGS = {
+    "github": "ac_xxxxxxxxxxxxxxxx",
+    "gmail": "ac_yyyyyyyyyyyyyyyy",
+}
+```
+
+<Callout>
+You can also use your own OAuth credentials. See [white-labeling](/docs/auth-configuration/white-labeling) if you want the consent screen to show your app's name instead of Composio's.
+</Callout>
+
+## Pin toolkit versions
+
+When your code parses tool outputs, you should pin the toolkit version so a release cannot change the response shape under you. Use `latest` only when an LLM consumes the output.
+
+Find the current versions in the dashboard or with the SDK:
+
+```python
+from composio import Composio
+
+composio = Composio()
+for slug in ["github", "gmail"]:
+    toolkit = composio.toolkits.get(slug=slug)
+    print(slug, toolkit.meta.version)
+```
+
+Store the versions in settings:
+
+```python title="mysite/settings.py"
+COMPOSIO_TOOLKIT_VERSIONS = {
+    "github": "20251027_00",
+    "gmail": "20251027_00",
+}
+```
+
+## Connect a user account
+
+Before a user can create GitHub issues or Gmail drafts, they must connect their accounts. The cleanest path in a web backend is a [connect link](/docs/tools-direct/authenticating-tools): your view generates a Composio-hosted URL, redirects the browser there, and Composio sends the user back to your callback when they are done.
+
+Add these views to `integrations/views.py`:
+
+```python title="integrations/views.py"
+from django.conf import settings
+from django.http import JsonResponse, HttpResponseRedirect
+from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_http_methods
+from composio import Composio
+
+
+def get_composio(user_id: str) -> Composio:
+    return Composio(
+        api_key=settings.COMPOSIO_API_KEY,
+        toolkit_versions=settings.COMPOSIO_TOOLKIT_VERSIONS,
+    )
+
+
+@require_http_methods(["POST"])
+def connect_github(request):
+    user_id = str(request.user.id)
+    composio = get_composio(user_id)
+
+    link = composio.connected_accounts.link(
+        user_id=user_id,
+        auth_config_id=settings.COMPOSIO_AUTH_CONFIGS["github"],
+        callback_url="https://your-app.com/integrations/callback/github/",
+    )
+    return HttpResponseRedirect(link.redirect_url)
+
+
+@require_http_methods(["POST"])
+def connect_gmail(request):
+    user_id = str(request.user.id)
+    composio = get_composio(user_id)
+
+    link = composio.connected_accounts.link(
+        user_id=user_id,
+        auth_config_id=settings.COMPOSIO_AUTH_CONFIGS["gmail"],
+        callback_url="https://your-app.com/integrations/callback/gmail/",
+    )
+    return HttpResponseRedirect(link.redirect_url)
+```
+
+Add the URLs:
+
+```python title="integrations/urls.py"
+from django.urls import path
+from . import views
+
+urlpatterns = [
+    path("connect/github/", views.connect_github, name="connect-github"),
+    path("connect/gmail/", views.connect_gmail, name="connect-gmail"),
+]
+```
+
+And wire them into the project:
+
+```python title="mysite/urls.py"
+from django.contrib import admin
+from django.urls import path, include
+
+urlpatterns = [
+    path("admin/", admin.site.urls),
+    path("integrations/", include("integrations.urls")),
+]
+```
+
+## Handle the OAuth callback
+
+When the user finishes the OAuth flow, Composio redirects them to your callback URL with a `status` and a `connected_account_id`. You can store the id, but you usually do not need to. The important thing is that Composio now has an active connection for that `user_id` and auth config.
+
+```python title="integrations/views.py" start={40} {"toc": false}
+@csrf_exempt
+@require_http_methods(["GET"])
+def oauth_callback(request, toolkit):
+    status = request.GET.get("status")
+    connected_account_id = request.GET.get("connected_account_id")
+
+    if status == "success":
+        # You can store connected_account_id on the user profile if you want
+        # to pin execution to this exact account later.
+        return JsonResponse({"status": "connected", "toolkit": toolkit})
+
+    return JsonResponse({"status": "failed", "toolkit": toolkit}, status=400)
+```
+
+Add the callback to `integrations/urls.py`:
+
+```python title="integrations/urls.py" start={6} {"toc": false}
+urlpatterns += [
+    path("callback/<str:toolkit>/", views.oauth_callback, name="oauth-callback"),
+]
+```
+
+## Execute tools in a view
+
+Now the deterministic part. Your view receives a request, builds the exact arguments, and calls the tool. No model, no search, no surprises.
+
+```python title="integrations/views.py" start={53} {"toc": false}
+@require_http_methods(["POST"])
+def create_github_issue(request):
+    user_id = str(request.user.id)
+    composio = get_composio(user_id)
+
+    payload = json.loads(request.body)
+    result = composio.tools.execute(
+        "GITHUB_CREATE_AN_ISSUE",
+        user_id=user_id,
+        arguments={
+            "owner": payload["owner"],
+            "repo": payload["repo"],
+            "title": payload["title"],
+            "body": payload.get("body", ""),
+        },
+    )
+
+    if result.error:
+        return JsonResponse({"error": result.error}, status=400)
+
+    return JsonResponse(result.data)
+
+
+@require_http_methods(["POST"])
+def create_gmail_draft(request):
+    user_id = str(request.user.id)
+    composio = get_composio(user_id)
+
+    payload = json.loads(request.body)
+    result = composio.tools.execute(
+        "GMAIL_CREATE_EMAIL_DRAFT",
+        user_id=user_id,
+        arguments={
+            "recipient_email": payload["to"],
+            "subject": payload["subject"],
+            "body": payload["body"],
+        },
+    )
+
+    if result.error:
+        return JsonResponse({"error": result.error}, status=400)
+
+    return JsonResponse(result.data)
+```
+
+Add the imports and URLs:
+
+```python title="integrations/views.py" start={1} {"toc": false}
+import json
+
+from django.conf import settings
+from django.http import JsonResponse, HttpResponseRedirect
+from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_http_methods
+from composio import Composio
+```
+
+```python title="integrations/urls.py" start={6} {"toc": false}
+urlpatterns = [
+    path("connect/github/", views.connect_github, name="connect-github"),
+    path("connect/gmail/", views.connect_gmail, name="connect-gmail"),
+    path("callback/<str:toolkit>/", views.oauth_callback, name="oauth-callback"),
+    path("github/issue/", views.create_github_issue, name="create-github-issue"),
+    path("gmail/draft/", views.create_gmail_draft, name="create-gmail-draft"),
+]
+```
+
+## Run it locally
+
+Run migrations, create an admin user, and start the server:
+
+```bash
+python manage.py migrate
+python manage.py createsuperuser
+python manage.py runserver
+```
+
+Log into the Django admin, then open a shell or use curl to exercise the endpoints.
+
+Connect GitHub for the user:
+
+```bash
+curl -X POST http://localhost:8000/integrations/connect/github/ \
+  -H "Cookie: sessionid=<your-session-id>" \
+  -L
+```
+
+The `-L` follows the redirect to the Composio OAuth flow. Approve it in the browser, then do the same for Gmail.
+
+Create an issue:
+
+```bash
+curl -X POST http://localhost:8000/integrations/github/issue/ \
+  -H "Content-Type: application/json" \
+  -H "Cookie: sessionid=<your-session-id>" \
+  -d '{
+    "owner": "ComposioHQ",
+    "repo": "composio",
+    "title": "Backend integration test from Django",
+    "body": "Created with deterministic Composio tool execution."
+  }'
+```
+
+Create a Gmail draft:
+
+```bash
+curl -X POST http://localhost:8000/integrations/gmail/draft/ \
+  -H "Content-Type: application/json" \
+  -H "Cookie: sessionid=<your-session-id>" \
+  -d '{
+    "to": "you@example.com",
+    "subject": "Django draft",
+    "body": "This draft was created from a plain Django view."
+  }'
+```
+
+## Production notes
+
+- **Use your own OAuth apps** for production so the consent screen shows your brand. Pass your client credentials when you create the auth config.
+- **Pin versions and test before upgrading**. Because your code parses the tool outputs, a changed schema can break your views.
+- **Scope each auth config tightly**. Only request the scopes your backend actually uses.
+- **Store `connected_account_id` if you need to audit or re-run** a specific account later. You can also pass it explicitly to `tools.execute()` with `connected_account_id=...`.
+- **Handle `result.error`** in your views. Tool execution failures are upstream API failures (bad repo names, missing scopes, rate limits), not exceptions, so check the error field and map it to an appropriate HTTP response.
+
+## What maps to what
+
+| What your backend needs | Composio piece |
+|---|---|
+| Register OAuth apps and scopes | `composio.auth_configs.create()` |
+| Start a user's OAuth flow | `composio.connected_accounts.link()` |
+| Stable version for deterministic parsing | `toolkit_versions` in `Composio()` |
+| Run a tool as the connected user | `composio.tools.execute()` |
+| Audit trail | `result.log_id` |
+
+## Next
+
+<Cards>
+  <Card title="Authenticating tools" href="/docs/tools-direct/authenticating-tools" description="Connect links, auth configs, and connection management" />
+  <Card title="Executing tools" href="/docs/tools-direct/executing-tools" description="Direct execution without an agent or LLM" />
+  <Card title="Toolkit versioning" href="/docs/tools-direct/toolkit-versioning" description="Pin versions for stable backend integrations" />
+</Cards>
