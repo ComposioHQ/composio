@@ -179,7 +179,7 @@ const ACCOUNT_COMMANDS: ReadonlyArray<TaggedValue<CompactCommand>> = [
   tagged({ name: 'login', description: 'Log in to Composio' }),
   tagged({ name: 'logout', description: 'Log out from Composio' }),
   tagged({ name: 'whoami', description: 'Show current account info' }),
-  tagged({ name: 'orgs', description: 'Manage current organization context (list, switch)' }),
+  tagged({ name: 'orgs', description: 'Manage default global organization/project context.' }),
   tagged({ name: 'version', description: 'Display CLI version' }),
   tagged({ name: 'upgrade', description: 'Upgrade CLI to the latest version' }),
   tagged({ name: 'config', description: 'View and manage CLI configuration' }),
@@ -587,6 +587,11 @@ const SUBCOMMAND_HELP: Record<string, SubcommandHelp | TaggedValue<SubcommandHel
       'composio connections list --toolkit <toolkit>              List account selectors',
     ],
   },
+  connections: {
+    usage: 'composio connections <subcommand>',
+    description: 'View and manage Composio connected accounts.',
+    seeAlso: ['composio connections list', 'composio connections remove'],
+  },
   'connections list': {
     usage: 'composio connections list [--toolkit <text>]',
     description:
@@ -858,6 +863,35 @@ const SUBCOMMAND_HELP: Record<string, SubcommandHelp | TaggedValue<SubcommandHel
 
   // ── Account commands ──────────────────────────────────────────────────
 
+  agent: {
+    usage: 'composio agent <subcommand>',
+    description: 'Manage Composio agent identity, inbox, and handoff.',
+    seeAlso: [
+      'composio agent signup',
+      'composio agent login',
+      'composio agent whoami',
+      'composio agent inbox',
+      'composio agent claim',
+    ],
+  },
+  signup: {
+    usage: 'composio signup [-f, --force] [--no-wait] [--no-login]',
+    description: 'Sign up and optionally log in as a Composio agent.',
+    options: [
+      {
+        name: '-f, --force',
+        description: 'Create a new agent identity even if ~/.composio/agent.json already exists',
+      },
+      {
+        name: '--no-wait',
+        description: 'Start agent signup and exit without waiting for credentials',
+      },
+      {
+        name: '--no-login',
+        description: 'Create or verify the agent identity without logging the CLI in',
+      },
+    ],
+  },
   login: {
     usage:
       'composio login [--no-browser] [--poll] [--no-wait] [--key text] [--user-api-key text] [--org text] [-y, --yes] [--no-skill-install]',
@@ -898,6 +932,32 @@ const SUBCOMMAND_HELP: Record<string, SubcommandHelp | TaggedValue<SubcommandHel
   whoami: {
     usage: 'composio whoami',
     description: 'Display your account information.',
+  },
+  orgs: {
+    usage: 'composio orgs <subcommand>',
+    description: 'Manage default global organization/project context.',
+    seeAlso: ['composio orgs list', 'composio orgs switch'],
+  },
+  'orgs list': {
+    usage: 'composio orgs list [--limit integer]',
+    description: 'List organizations and show current global selection.',
+    options: [
+      {
+        name: '--limit <integer>',
+        description: 'Max organizations to fetch from API (default: 50)',
+      },
+    ],
+  },
+  'orgs switch': {
+    usage: 'composio orgs switch [--org-id text] [--limit integer]',
+    description: 'Switch current organization context.',
+    options: [
+      { name: '--org-id <text>', description: 'Organization ID to use as global default' },
+      {
+        name: '--limit <integer>',
+        description: 'Max orgs to fetch from API (default: 50)',
+      },
+    ],
   },
   setup: {
     usage: 'composio setup [--target auto|claude|codex|all] [--uninstall] [--yes] [--if-present]',
@@ -963,7 +1023,22 @@ const SUBCOMMAND_HELP: Record<string, SubcommandHelp | TaggedValue<SubcommandHel
     ],
   },
 
-  // ── Tools commands ────────────────────────────────────────────────────
+  artifacts: {
+    usage: 'composio artifacts <subcommand>',
+    description: 'Inspect session artifact directories.',
+    seeAlso: ['composio artifacts cwd'],
+  },
+  'artifacts cwd': {
+    usage: 'composio artifacts cwd',
+    description: 'Print the cwd-scoped session artifact directory.',
+  },
+  install: {
+    usage: 'composio install [--completions] [--no-completions] [--shell text]',
+    description:
+      'Set up shell integration (PATH and completions). Set COMPOSIO_BIN_DIR to choose the directory added to PATH; it otherwise defaults to ~/.local/bin when that holds this executable, and to the directory of the running binary.',
+  },
+
+  // ── Tools commands ──────────────────────────────────────────────────────
 
   tools: {
     usage: 'composio tools <command>',
@@ -989,6 +1064,11 @@ const SUBCOMMAND_HELP: Record<string, SubcommandHelp | TaggedValue<SubcommandHel
     description:
       'View a brief summary of a tool and show the CLI-facing schema used by `composio execute --get-schema`.',
     args: [{ name: '<slug>', description: 'Tool slug (e.g. "GMAIL_SEND_EMAIL")' }],
+  },
+  triggers: {
+    usage: 'composio triggers <subcommand>',
+    description: 'Inspect and subscribe to trigger events.',
+    seeAlso: ['composio triggers list', 'composio triggers info'],
   },
   'triggers list': {
     usage: 'composio triggers list <toolkit> [--limit integer]',

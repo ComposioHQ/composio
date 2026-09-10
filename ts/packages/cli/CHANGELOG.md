@@ -41,6 +41,13 @@
   `https://staging-dashboard.composio.dev/`.
 - `composio dev auth-configs create` now sends custom OAuth credentials and scopes
   in the API's expected shape instead of failing validation.
+- `composio orgs --help`, `composio signup --help`, and the group help pages for
+  `connections`, `triggers`, `tools`, `artifacts`, and `install` now render the same
+  curated, styled help page as every other command family, instead of falling back to
+  the framework's raw flag dump. `composio help <command>` is now a supported spelling
+  of command help (`composio help orgs` shows the same page as `composio orgs --help`),
+  and the `orgs` description in contextual error help matches the command's actual
+  description.
 
 ## 0.3.3
 

@@ -563,6 +563,18 @@ export const runWithConfig = Effect.gen(function* () {
     if (isRootHelp(normalizedArgv)) {
       return printRootHelp(visibility, parseHelpLevel(normalizedArgv[3]) ?? 'default');
     }
+    // `composio help [command] [level]` — the framework has no builtin help command, so
+    // route it through the same curated pages as `composio <command> --help`.
+    if (args[0] === 'help') {
+      const rest = args.slice(1);
+      const last = rest[rest.length - 1];
+      const helpLevel = parseHelpLevel(last) ?? 'default';
+      const cmdParts = parseHelpLevel(last) !== undefined ? rest.slice(0, -1) : rest;
+      if (cmdParts.length === 0) {
+        return printRootHelp(visibility, helpLevel);
+      }
+      return printSubcommandHelp(cmdParts.join(' '), visibility, helpLevel);
+    }
     const subHelp = matchSubcommandHelp(normalizedArgv, visibility);
     if (subHelp) {
       const helpLevel = parseHelpLevel(normalizedArgv[normalizedArgv.length - 1]) ?? 'default';
