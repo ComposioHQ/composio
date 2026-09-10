@@ -68,6 +68,7 @@ describe("Navigation - meta.json validity", () => {
       "quickstart",
       "providers",
       "agent-plugins",
+      "using-composio-skill",
       "cli",
       "composio-connect",
       "agent-setup",

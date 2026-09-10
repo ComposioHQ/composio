@@ -1,0 +1,91 @@
+---
+title: Design a consumer agent with Composio
+description: Structure users, projects, sessions, and authentication for a consumer agent
+keywords: [consumer agent, b2c, users, projects, sessions, architecture]
+---
+
+A consumer agent serves individual end users. Each person signs in to your product, connects their own apps, and expects their connections and tool calls to stay isolated from everyone else.
+
+Start with one Composio project per application environment. Map every signed-in user to a stable ID from your database, then create and reuse sessions for that ID.
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tab value="Python">
+```python
+from composio import Composio
+
+composio = Composio()
+
+# Use the immutable primary key from your application database.
+app_user_id = "usr_01J9F4M2K8"
+session = composio.sessions.create(
+    user_id=app_user_id,
+    toolkits=["gmail", "googlecalendar"],
+)
+tools = session.tools()
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import { Composio } from "@composio/core";
+
+const composio = new Composio();
+
+// Use the immutable primary key from your application database.
+const appUserId = "usr_01J9F4M2K8";
+const session = await composio.create(appUserId, {
+  toolkits: ["gmail", "googlecalendar"],
+});
+const tools = await session.tools();
+```
+</Tab>
+</Tabs>
+
+## Recommended starting architecture
+
+| Decision | Start with | Change it when |
+|---|---|---|
+| Project boundary | One project for each environment, such as development and production | A separate product needs independent credentials, branding, or isolation |
+| Composio user ID | Your immutable application user ID | Never change it for an existing user |
+| Connected accounts | Private to that user | A deliberate shared-account workflow requires controlled sharing |
+| Session lifecycle | Store the session ID and reuse it for the conversation | A new task needs a clean execution context |
+| Authentication | Composio managed auth | You need your own branding, scopes, quotas, or provider app |
+| Tool access | Only the toolkits your feature needs | The product intentionally supports broader discovery |
+
+### Keep identity stable
+
+Use a database UUID or immutable primary key for `user_id`. Do not use an email address because it can change. Never use a shared value such as `default` in production, because different customers could inherit the same connection scope.
+
+The same application user can connect several accounts for one toolkit, such as personal and work Gmail. Keep the same `user_id` and [select the connected account](/docs/authentication/managing-multiple-connected-accounts) when a session needs a specific one.
+
+### Reuse sessions for multi-turn work
+
+Every call to `create()` makes a new session. Store `session.session_id` in Python or `session.sessionId` in TypeScript with your conversation, then restore it with `composio.use(session_id)`. Reusing the session preserves its tool, authentication, and workbench context.
+
+Create a new session for a different user or a genuinely separate task. Do not create a new session for every message in the same conversation.
+
+### Choose the connection experience
+
+Use [in-chat authentication](/docs/authentication#in-chat-authentication) when the agent can show a Connect Link and wait for the user. Use [manual authentication](/docs/authentication/manually-authenticating) when your product has its own integrations page or connection flow.
+
+Managed auth is the quickest way to start. Create a [custom auth config](/docs/authentication/custom-app-vs-managed-app) only when you need your own consent-screen branding, custom scopes, dedicated provider quotas, or a custom provider instance.
+
+### Limit the agent to its job
+
+Restrict the session to the toolkits and tools your feature needs. This makes discovery more relevant and prevents unrelated actions from appearing in the agent's available surface. Ask for user confirmation before destructive or externally visible actions.
+
+## Before you launch
+
+- Verify two different users cannot see or use each other's connected accounts.
+- Test both the first-time connection flow and a returning user with an existing connection.
+- Store the Composio API key only on your server.
+- Persist session IDs for multi-turn conversations.
+- Test one safe, read-only call against a real connected account.
+- Inspect the resulting tool call in [Logs](/reference/api-reference/logs).
+
+## Next
+
+<Cards>
+  <Card title="Build a B2B agent" href="/docs/b2b-agents" description="Choose between member-owned and workspace-owned connections." />
+  <Card title="Configure sessions" href="/docs/configuring-sessions" description="Restrict toolkits, tools, auth configs, and connected accounts." />
+  <Card title="Move to production" href="/docs/production-readiness" description="Review identity, auth, security, logging, and trigger decisions." />
+</Cards>
