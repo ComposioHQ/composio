@@ -163,7 +163,7 @@ export function getOgImageUrl(
   _description?: string
 ): string {
   const encodedTitle = encodeURIComponent(title ?? 'Composio Docs');
-  return `https://og.composio.dev/api/og?title=${encodedTitle}`;
+  return `https://docs.composio.dev/api/og?title=${encodedTitle}`;
 }
 
 /**
