@@ -1562,7 +1562,11 @@ const makeComposioClientSingleton = Effect.gen(function* () {
   const getFor = (params?: { userApiKey?: string; orgId?: string; projectId?: string }) =>
     Effect.gen(function* () {
       const apiKey = normalizeApiKey(params?.userApiKey ?? Option.getOrUndefined(ctx.data.apiKey));
+      const baseURL = ctx.data.baseURL;
+      // The backend is part of the key: a re-login or override can change it
+      // within one process, and a client must never outlive its target.
       const cacheKey = JSON.stringify({
+        baseURL,
         apiKey: apiKey ?? null,
         orgId: params?.orgId ?? null,
         projectId: params?.projectId ?? null,
@@ -1580,7 +1584,7 @@ const makeComposioClientSingleton = Effect.gen(function* () {
 
       const client = new _RawComposioClient({
         apiKey: null,
-        baseURL: ctx.data.baseURL,
+        baseURL,
         defaultHeaders: buildDefaultHeaders({
           userApiKey: apiKey,
           orgId: params?.orgId,
@@ -1627,7 +1631,10 @@ export class ComposioClientSingleton extends Context.Service<
   ComposioClientSingleton,
   ComposioClientSingletonShape
 >()('services/ComposioClientSingleton') {
-  static readonly Default = Layer.effect(ComposioClientSingleton, makeComposioClientSingleton).pipe(
+  /** Requires `ComposioUserContext` from the caller. */
+  static readonly layer = Layer.effect(ComposioClientSingleton, makeComposioClientSingleton);
+
+  static readonly Default = ComposioClientSingleton.layer.pipe(
     Layer.provide(ComposioUserContextLive)
   );
 }

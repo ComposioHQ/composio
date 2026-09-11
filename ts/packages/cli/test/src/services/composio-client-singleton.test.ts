@@ -7,7 +7,8 @@ import { ConfigProvider, Effect, Layer } from 'effect';
 import { execSync } from 'node:child_process';
 import * as tempy from 'tempy';
 import { ComposioClientSingleton } from 'src/services/composio-clients';
-import { APP_VERSION } from 'src/constants';
+import { ComposioUserContext, ComposioUserContextLive } from 'src/services/user-context';
+import { APP_VERSION, STAGING_BASE_URL, STAGING_WEB_URL } from 'src/constants';
 import { defaultNodeOs, NodeOs } from 'src/services/node-os';
 import { extendConfigProvider } from 'src/services/config';
 
@@ -223,5 +224,57 @@ describe('ComposioClientSingleton headers', () => {
         Layer.provide(ComposioClientSingleton.Default, withConfigLayer(configMap, homedir))
       )
     );
+  });
+
+  it.effect('builds a new client when the backend changes for the same key', () => {
+    const fetchSpy = vi
+      .spyOn(globalThis, 'fetch')
+      .mockImplementation(() => Promise.resolve(okResponse()));
+    const homedir = tempy.temporaryDirectory();
+    const requestedHost = (call: number) => new URL(String(fetchSpy.mock.calls[call]![0])).host;
+    const listTools = (client: { tools: { list: (params: object) => Promise<unknown> } }) =>
+      Effect.promise(() =>
+        client.tools
+          .list({ limit: 1, toolkit_versions: 'latest' })
+          .then(() => undefined)
+          .catch(() => undefined)
+      );
+
+    return Effect.gen(function* () {
+      const fs = yield* FileSystem.FileSystem;
+      const path = yield* Path.Path;
+      const cacheDir = path.join(homedir, '.composio');
+      yield* fs.makeDirectory(cacheDir, { recursive: true });
+      yield* fs.writeFileString(
+        path.join(cacheDir, 'user_data.json'),
+        JSON.stringify({
+          api_key: 'uak_same',
+          base_url: STAGING_BASE_URL,
+          web_url: STAGING_WEB_URL,
+        })
+      );
+
+      yield* Effect.gen(function* () {
+        const ctx = yield* ComposioUserContext;
+        const clientSingleton = yield* ComposioClientSingleton;
+
+        const stagingClient = yield* clientSingleton.get();
+        yield* listTools(stagingClient);
+        yield* ctx.login('uak_same');
+        const productionClient = yield* clientSingleton.get();
+        yield* listTools(productionClient);
+
+        expect(productionClient).not.toBe(stagingClient);
+        expect(requestedHost(0)).toBe(new URL(STAGING_BASE_URL).host);
+        expect(requestedHost(1)).toBe('backend.composio.dev');
+      }).pipe(
+        Effect.provide(
+          ComposioClientSingleton.layer.pipe(
+            Layer.provideMerge(ComposioUserContextLive),
+            Layer.provideMerge(withConfigLayer(new Map(), homedir))
+          )
+        )
+      );
+    }).pipe(Effect.provide(Layer.mergeAll(BunFileSystem.layer, BunPath.layer)));
   });
 });
