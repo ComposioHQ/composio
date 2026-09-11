@@ -1,0 +1,82 @@
+name: Agent Substrate
+
+# Guards the repo-level AI-agent guidance — the files coding agents read —
+# so it cannot silently drift from reality:
+#
+#   * `pnpm validate:agent-skills`  — SKILL.md frontmatter and reference links,
+#     the .agents/skills <-> .claude/skills compatibility symlink, required
+#     nested AGENTS.md files, stale guidance references, and every pnpm/make/
+#     nox command mentioned in guidance checked against its real definition.
+#   * `pnpm validate:skill-routing` — deterministic routing smoke test: each
+#     skill keeps a probe asserting it is the unique top match for a
+#     representative task, so description edits cannot silently break routing.
+#
+# These checks run nowhere else, so this workflow is their only enforcement
+# point. Path-filtered: it only runs when agent guidance or the validators
+# themselves change. Both scripts are dependency-free Node programs, but the
+# standard toolchain setup is kept so the pnpm script wiring is exercised too.
+
+on:
+  push:
+    branches: [master, next]
+    paths:
+      - 'AGENTS.md'
+      - '**/AGENTS.md'
+      - '**/CLAUDE.md'
+      - '.agents/**'
+      - 'docs/agent-guidance/**'
+      - 'docs/decisions/**'
+      - 'ts/scripts/validate-agent-skills.mjs'
+      - 'ts/scripts/test-skill-routing.mjs'
+      - 'python/Makefile'
+      - 'python/noxfile.py'
+      - 'package.json'
+      - 'docs/package.json'
+      - '.github/workflows/agent-substrate.yml'
+  pull_request:
+    branches: [master, next]
+    paths:
+      - 'AGENTS.md'
+      - '**/AGENTS.md'
+      - '**/CLAUDE.md'
+      - '.agents/**'
+      - 'docs/agent-guidance/**'
+      - 'docs/decisions/**'
+      - 'ts/scripts/validate-agent-skills.mjs'
+      - 'ts/scripts/test-skill-routing.mjs'
+      - 'python/Makefile'
+      - 'python/noxfile.py'
+      - 'package.json'
+      - 'docs/package.json'
+      - '.github/workflows/agent-substrate.yml'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.ref || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: Validate agent guidance
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Setup Node.js, pnpm, Bun
+        uses: ./.github/actions/setup-node-pnpm-bun
+        with:
+          enable-caching: 'false'
+          cache-save: 'false'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Validate agent skills and guidance invariants
+        run: pnpm validate:agent-skills
+
+      - name: Validate skill routing
+        run: pnpm validate:skill-routing

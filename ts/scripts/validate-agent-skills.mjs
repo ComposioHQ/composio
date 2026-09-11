@@ -235,6 +235,13 @@ const ignoredDirs = new Set([
   '.venv',
   'dist',
   'build',
+  // Vendored trees (see AGENTS.md "Generated And Vendored Paths") are read-only
+  // third-party snapshots. Their docs legitimately mention other tools'
+  // rule-file conventions, so the stale-guidance walk must not police them —
+  // only first-party guidance files are in scope.
+  // (Keep this comment free of the stalePatterns literals: this file is
+  // itself scanned by the walk below.)
+  'vendor',
 ]);
 
 const ignoredFiles = new Set(['GOAL.md', 'PLAN.md', 'HANDOFF.md', 'RELEASE_NOTES.md']);
