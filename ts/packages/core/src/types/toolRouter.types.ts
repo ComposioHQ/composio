@@ -4,7 +4,10 @@ import { SessionMetaToolOptions } from './modifiers.types';
 import { ConnectionRequest } from './connectionRequest.types';
 import type { ComposioRequestOptions } from './requestOptions.types';
 import type { ToolRouterSessionFilesMount } from '../models/ToolRouterSessionFileMount';
-import type { SessionCreateResponse } from '@composio/client/resources/tool-router/session/session.mjs';
+import type {
+  SessionConfigHistoryResponse,
+  SessionCreateResponse,
+} from '@composio/client/resources/tool-router/session/session.mjs';
 import type {
   CustomTool,
   CustomToolkit,
@@ -707,6 +710,49 @@ export const ToolRouterSessionDeleteResponseSchema = z.object({
 });
 export type ToolRouterSessionDeleteResponse = z.infer<typeof ToolRouterSessionDeleteResponseSchema>;
 
+/**
+ * Options for `session.configHistory()`.
+ */
+export const ToolRouterSessionConfigHistoryOptionsSchema = z.object({
+  /** Cursor from a previous response's `nextCursor`. */
+  cursor: z.string().optional(),
+  /** Number of items per page, max allowed is 100. */
+  limit: z.number().optional(),
+});
+export type ToolRouterSessionConfigHistoryOptions = z.infer<
+  typeof ToolRouterSessionConfigHistoryOptionsSchema
+>;
+
+/**
+ * The session configuration at one version, as stored by the API. This is
+ * the wire shape (snake_case), typed from the generated client.
+ */
+export type ToolRouterSessionConfigHistoryConfig = SessionConfigHistoryResponse.Item.Config;
+
+export type ToolRouterSessionConfigHistoryItem = {
+  /** The config version this entry represents. */
+  version: number;
+  /** ISO timestamp — for archived rows, when the version was superseded by an update. */
+  createdAt: string;
+  /** True only for the live (current) config, present on the first page. */
+  isCurrent: boolean;
+  /** The session configuration at this version. */
+  config: ToolRouterSessionConfigHistoryConfig;
+};
+
+export type ToolRouterSessionConfigHistoryResponse = {
+  items: ToolRouterSessionConfigHistoryItem[];
+  nextCursor: string | null;
+  totalPages: number;
+  currentPage: number;
+  totalItems: number;
+};
+
+export type ToolRouterSessionConfigHistoryFn = (
+  options?: ToolRouterSessionConfigHistoryOptions,
+  requestOptions?: ComposioRequestOptions
+) => Promise<ToolRouterSessionConfigHistoryResponse>;
+
 export type ToolRouterSessionDeleteFn = (
   requestOptions?: ComposioRequestOptions
 ) => Promise<ToolRouterSessionDeleteResponse>;
@@ -748,6 +794,8 @@ export interface Session<
   update: ToolRouterSessionUpdateFn;
   /** Delete the session. Deleted sessions are no longer retrievable or executable. */
   delete: ToolRouterSessionDeleteFn;
+  /** Page through the session's configuration history (newest first). */
+  configHistory: ToolRouterSessionConfigHistoryFn;
   /** Proxy an API call through Composio's auth layer using the session's connected account */
   proxyExecute: ToolRouterSessionProxyExecuteFn;
   /** List custom tools registered in this session, with their final slugs and schemas */

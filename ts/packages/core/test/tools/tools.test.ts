@@ -150,7 +150,7 @@ describe('Tools', () => {
         {
           toolkit_slug: 'github',
           limit: 10,
-          search: 'test',
+          query: 'test',
           toolkit_versions: 'latest',
         },
         undefined
@@ -200,7 +200,7 @@ describe('Tools', () => {
         {
           toolkit_slug: 'todoist',
           limit: 10,
-          search: 'add task',
+          query: 'add task',
           scopes: ['task:add'],
           toolkit_versions: 'latest',
         },
@@ -1783,7 +1783,7 @@ describe('Tools', () => {
 
         expect(mockClient.tools.list).toHaveBeenCalledWith(
           {
-            search: 'create issue',
+            query: 'create issue',
             toolkit_versions: 'latest',
           },
           undefined

@@ -1,20 +1,30 @@
 import {
   ConnectedAccountListResponse as RawConnectedAccountListResponse,
   ConnectedAccountRetrieveResponse as RawConnectedAccountRetrieveResponse,
+  type ConnectedAccounts as ClientConnectedAccounts,
 } from '@composio/client/resources/connected-accounts';
 import {
   ConnectedAccountListResponse,
   ConnectedAccountListResponseSchema,
   ConnectedAccountRetrieveResponse,
   ConnectedAccountRetrieveResponseSchema,
+  ConnectedAccountRevokeResponse,
+  ConnectedAccountRevokeResponseSchema,
+  ConnectedAccountCompleteAuthResponse,
+  ConnectedAccountCompleteAuthResponseSchema,
 } from '../../types/connectedAccounts.types';
+
+// The revoke and complete-auth response types are only reachable through the
+// resource class namespace on the published subpath.
+type RawConnectedAccountRevokeResponse = ClientConnectedAccounts.ConnectedAccountRevokeResponse;
+type RawConnectedAccountCompleteAuthResponse =
+  ClientConnectedAccounts.ConnectedAccountCompleteAuthResponse;
 import { ConnectionDataSchema } from '../../types/connectedAccountAuthStates.types';
 import logger from '../logger';
 import { transform } from '../transform';
 
 type RawConnectedAccountResponseWithLabels = (
-  | RawConnectedAccountRetrieveResponse
-  | RawConnectedAccountListResponse['items'][0]
+  RawConnectedAccountRetrieveResponse | RawConnectedAccountListResponse['items'][0]
 ) & {
   word_id?: string | null;
   alias?: string | null;
@@ -117,3 +127,28 @@ export function transformConnectedAccountListResponse(
       totalPages: response.total_pages,
     }));
 }
+
+export const transformConnectedAccountRevokeResponse = (
+  response: RawConnectedAccountRevokeResponse
+): ConnectedAccountRevokeResponse => {
+  return transform(response)
+    .with(ConnectedAccountRevokeResponseSchema)
+    .using(response => ({
+      revokedTokens: response.revoked_tokens,
+      connectedAccount: {
+        id: response.connected_account.id,
+        status: response.connected_account.status,
+      },
+    }));
+};
+
+export const transformConnectedAccountCompleteAuthResponse = (
+  response: RawConnectedAccountCompleteAuthResponse
+): ConnectedAccountCompleteAuthResponse => {
+  return transform(response)
+    .with(ConnectedAccountCompleteAuthResponseSchema)
+    .using(response => ({
+      connectedAccountId: response.connected_account_id,
+      toolkitSlug: response.toolkit_slug,
+    }));
+};

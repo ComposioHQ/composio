@@ -540,7 +540,9 @@ export class Tools<
       ...(limit ? { limit } : {}),
       ...('tags' in queryParams.data ? { tags: queryParams.data.tags } : {}),
       ...('scopes' in queryParams.data ? { scopes: queryParams.data.scopes } : {}),
-      ...('search' in queryParams.data ? { search: queryParams.data.search } : {}),
+      // `search` is the SDK's public option; the API deprecated the `search`
+      // wire param in favour of `query`, so send the replacement.
+      ...('search' in queryParams.data ? { query: queryParams.data.search } : {}),
       ...('authConfigIds' in queryParams.data
         ? { auth_config_ids: queryParams.data.authConfigIds }
         : {}),

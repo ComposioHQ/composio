@@ -61,6 +61,9 @@ class TestComposioSDK:
             "sensitive_file_upload_protection",
             "file_upload_path_deny_segments",
             "file_upload_dirs",
+            "http_client",
+            "logger",
+            "logging_level",
         }
         assert set(SDKConfig.__annotations__.keys()) == expected_fields
 
@@ -77,6 +80,28 @@ class TestComposioSDK:
         assert ToolkitVersion is not None
         assert ToolkitVersions is not None
         assert ToolkitVersionParam is not None
+
+    def test_sdk_mounts_webhooks_and_logs(self):
+        from composio.core.models import Logs, Webhooks
+
+        composio = Composio(api_key="test-key")
+
+        assert isinstance(composio.webhooks, Webhooks)
+        assert isinstance(composio.logs, Logs)
+        assert composio.webhooks._client is composio._client
+        assert composio.logs._client is composio._client
+
+    def test_sdk_mounts_keyring_and_custom_toolkits(self):
+        from composio.core.models import ExperimentalCustomToolkits, Keyring
+
+        composio = Composio(api_key="test-key")
+
+        assert isinstance(composio.keyring, Keyring)
+        assert composio.keyring._client is composio._client
+        assert isinstance(
+            composio.experimental.custom_toolkits, ExperimentalCustomToolkits
+        )
+        assert composio.experimental.custom_toolkits._client is composio._client
 
     def test_sdk_has_required_attributes(self):
         """Test that SDK has required attributes after initialization."""

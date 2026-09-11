@@ -5,7 +5,7 @@
  * @date 2025-05-05
  * @module ConnectedAccounts
  */
-import ComposioClient, { BadRequestError } from '@composio/client';
+import ComposioClient, { BadRequestError, ConflictError } from '@composio/client';
 import {
   ConnectedAccountCreateResponse,
   ConnectedAccountDeleteResponse,
@@ -29,6 +29,10 @@ import {
   ConnectedAccountStatuses,
   ConnectedAccountRefreshOptions,
   ConnectedAccountRefreshOptionsSchema,
+  ConnectedAccountRevokeResponse,
+  ConnectedAccountCompleteAuthParams,
+  ConnectedAccountCompleteAuthParamsSchema,
+  ConnectedAccountCompleteAuthResponse,
   UpdateConnectedAccountAclParams,
   UpdateConnectedAccountParams,
   UpdateConnectedAccountParamsSchema,
@@ -45,9 +49,13 @@ import { telemetry } from '../telemetry/Telemetry';
 import {
   transformConnectedAccountListResponse,
   transformConnectedAccountResponse,
+  transformConnectedAccountRevokeResponse,
+  transformConnectedAccountCompleteAuthResponse,
 } from '../utils/transformers/connectedAccounts';
 import {
   ComposioAclOnlyForSharedError,
+  ComposioConnectedAccountNotRevokableError,
+  ComposioConnectedAccountRevocationNotSupportedError,
   ComposioFailedToCreateConnectedAccountLink,
   ComposioLegacyConnectedAccountsEndpointRetiredError,
   ComposioMultipleConnectedAccountsError,
@@ -554,6 +562,11 @@ export class ConnectedAccounts {
    * // Refresh a connected account's credentials
    * const refreshedAccount = await composio.connectedAccounts.refresh('conn_abc123');
    * ```
+   *
+   * @deprecated The `POST /connected_accounts/{id}/refresh` endpoint is deprecated by the
+   *   Composio API. Re-initiate authentication instead: `composio.connectedAccounts.link(userId, authConfigId)`
+   *   for a fresh connection, or `session.authorize(toolkit)` from a session. Behaviour is unchanged
+   *   while the endpoint remains available; do not generate new code against `refresh`.
    */
   async refresh(
     nanoid: string,
@@ -570,9 +583,14 @@ export class ConnectedAccounts {
         });
       }
 
+      if (parsedOptions.data.validateCredentials !== undefined) {
+        logger.warn(
+          'connectedAccounts.refresh(): the Composio API no longer accepts `validateCredentials`; the option is ignored.'
+        );
+      }
+
       params = {
         query_redirect_url: parsedOptions.data.redirectUrl,
-        validate_credentials: parsedOptions.data.validateCredentials,
       };
     }
 
@@ -580,6 +598,104 @@ export class ConnectedAccounts {
       () => this.client.connectedAccounts.refresh(nanoid, params, requestOptions),
       requestOptions?.signal
     );
+  }
+
+  /**
+   * Revoke a connected account at the upstream provider.
+   *
+   * Best-effort upstream revocation of the stored tokens/credentials; on
+   * success the connection status becomes `REVOKED`. Revoking an already
+   * revoked connection returns an empty `revokedTokens` list without an
+   * upstream call.
+   *
+   * @param {string} nanoid - The unique identifier of the connected account to revoke
+   * @returns {Promise<ConnectedAccountRevokeResponse>} Which tokens were revoked and the resulting status
+   * @throws {ComposioConnectedAccountRevocationNotSupportedError} If the toolkit does not support programmatic revocation (400)
+   * @throws {ComposioConnectedAccountNotRevokableError} If the connection is not in a revokable state (409)
+   *
+   * @example
+   * ```typescript
+   * const result = await composio.connectedAccounts.revoke('conn_abc123');
+   * console.log(result.connectedAccount.status); // 'REVOKED'
+   * console.log(result.revokedTokens); // e.g. ['access_token', 'refresh_token']
+   * ```
+   */
+  async revoke(
+    nanoid: string,
+    requestOptions?: ComposioRequestOptions
+  ): Promise<ConnectedAccountRevokeResponse> {
+    try {
+      const result = await withCancellation(
+        () => this.client.connectedAccounts.revoke(nanoid, requestOptions),
+        requestOptions?.signal
+      );
+      return transformConnectedAccountRevokeResponse(result);
+    } catch (error) {
+      if (error instanceof BadRequestError) {
+        throw new ComposioConnectedAccountRevocationNotSupportedError(
+          `Connected account ${nanoid} cannot be revoked programmatically: ${error.message}`,
+          { cause: error, meta: { nanoid } }
+        );
+      }
+      if (error instanceof ConflictError) {
+        throw new ComposioConnectedAccountNotRevokableError(
+          `Connected account ${nanoid} is not in a revokable state: ${error.message}`,
+          { cause: error, meta: { nanoid } }
+        );
+      }
+      throw error;
+    }
+  }
+
+  /**
+   * Complete a deferred OAuth connection once you have verified the user's
+   * identity.
+   *
+   * When your project has an OAuth callback verifier configured, Composio
+   * does not activate a new OAuth connection by itself: it redirects to your
+   * verifier with a single-use session URI. After confirming who the user is,
+   * redeem that session URI here; Composio checks that your project owns the
+   * pending connection and that `userId` is its owner, completes the token
+   * exchange, and the connection becomes `ACTIVE`.
+   *
+   * The session URI is single-use: redeeming it twice, or after it expires,
+   * fails with a 404 from the API.
+   *
+   * @param {ConnectedAccountCompleteAuthParams} params - `userId` the connection was initiated for and the verifier's `sessionUri`
+   * @returns {Promise<ConnectedAccountCompleteAuthResponse>} The completed connection's ID and toolkit
+   * @throws {ValidationError} If the params fail validation
+   *
+   * @example
+   * ```typescript
+   * // In your verifier route, after authenticating the user:
+   * const { connectedAccountId, toolkitSlug } = await composio.connectedAccounts.completeAuth({
+   *   userId: 'user_123',
+   *   sessionUri, // the session URI from the verifier redirect
+   * });
+   * ```
+   */
+  async completeAuth(
+    params: ConnectedAccountCompleteAuthParams,
+    requestOptions?: ComposioRequestOptions
+  ): Promise<ConnectedAccountCompleteAuthResponse> {
+    const parsedParams = ConnectedAccountCompleteAuthParamsSchema.safeParse(params);
+    if (!parsedParams.success) {
+      throw new ValidationError('Failed to parse connected account completeAuth params', {
+        cause: parsedParams.error,
+      });
+    }
+    const result = await withCancellation(
+      () =>
+        this.client.connectedAccounts.completeAuth(
+          {
+            user_id: parsedParams.data.userId,
+            session_uri: parsedParams.data.sessionUri,
+          },
+          requestOptions
+        ),
+      requestOptions?.signal
+    );
+    return transformConnectedAccountCompleteAuthResponse(result);
   }
 
   /**

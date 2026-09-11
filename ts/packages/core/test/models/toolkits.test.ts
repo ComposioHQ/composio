@@ -3,6 +3,8 @@ import { Toolkits } from '../../src/models/Toolkits';
 import ComposioClient from '@composio/client';
 import { telemetry } from '../../src/telemetry/Telemetry';
 import { ComposioAuthConfigNotFoundError } from '../../src/errors/AuthConfigErrors';
+import { ValidationError } from '../../src/errors/ValidationErrors';
+import { ComposioToolkitFetchError } from '../../src/errors/ToolkitErrors';
 import { AuthSchemeTypes } from '../../src/types/authConfigs.types';
 import { APIError } from '@composio/client';
 import type { ToolkitListParams } from '../../src/types/toolkit.types';
@@ -28,6 +30,8 @@ const createMockClient = () => ({
     list: vi.fn(),
     retrieve: vi.fn(),
     retrieveCategories: vi.fn(),
+    retrieveMulti: vi.fn(),
+    retrieveChangelog: vi.fn(),
     listCategories: vi.fn(),
     authorize: vi.fn(),
     get: vi.fn(),
@@ -271,6 +275,107 @@ describe('Toolkits', () => {
         items: mockResponse.items,
         nextCursor: mockResponse.next_cursor,
         totalPages: mockResponse.total_pages,
+      });
+    });
+  });
+
+  describe('getMany', () => {
+    it('should fetch toolkits by slug and return the list shape', async () => {
+      mockClient.toolkits.retrieveMulti.mockResolvedValue(mockToolkitListResponse);
+
+      const result = await toolkits.getMany(['github', 'slack']);
+
+      expect(mockClient.toolkits.retrieveMulti).toHaveBeenCalledWith(
+        {
+          toolkits: ['github', 'slack'],
+          category: undefined,
+          managed_by: undefined,
+          sort_by: undefined,
+          cursor: undefined,
+          limit: undefined,
+        },
+        undefined
+      );
+      expect(result).toEqual([
+        {
+          name: 'GitHub',
+          slug: 'github',
+          meta: {
+            createdAt: '2024-01-01',
+            updatedAt: '2024-01-02',
+            toolsCount: 10,
+            triggersCount: 5,
+          },
+          isLocalToolkit: false,
+          authSchemes: ['oauth2'],
+          composioManagedAuthSchemes: ['oauth2'],
+          noAuth: false,
+        },
+      ]);
+    });
+
+    it('should forward filters and request options', async () => {
+      mockClient.toolkits.retrieveMulti.mockResolvedValue({ items: [] });
+      const signal = new AbortController().signal;
+
+      await toolkits.getMany(
+        ['github'],
+        { managedBy: 'composio', sortBy: 'usage', limit: 5 },
+        {
+          signal,
+        }
+      );
+
+      expect(mockClient.toolkits.retrieveMulti).toHaveBeenCalledWith(
+        {
+          toolkits: ['github'],
+          category: undefined,
+          managed_by: 'composio',
+          sort_by: 'usage',
+          cursor: undefined,
+          limit: 5,
+        },
+        { signal }
+      );
+    });
+
+    it('should throw a ValidationError for an empty slug list', async () => {
+      await expect(toolkits.getMany([])).rejects.toThrow(ValidationError);
+      expect(mockClient.toolkits.retrieveMulti).not.toHaveBeenCalled();
+    });
+
+    it('should wrap request failures in ComposioToolkitFetchError', async () => {
+      mockClient.toolkits.retrieveMulti.mockRejectedValue(new Error('boom'));
+
+      await expect(toolkits.getMany(['github'])).rejects.toThrow(ComposioToolkitFetchError);
+    });
+  });
+
+  describe('changelog', () => {
+    it('should return the toolkit changelog in camelCase', async () => {
+      mockClient.toolkits.retrieveChangelog.mockResolvedValue({
+        items: [
+          {
+            slug: 'github',
+            name: 'github',
+            display_name: 'GitHub',
+            versions: [{ version: '20250909_00', changelog: 'Added issues tools' }],
+          },
+        ],
+      });
+
+      const result = await toolkits.changelog();
+
+      expect(mockClient.toolkits.retrieveChangelog).toHaveBeenCalledWith(undefined);
+      expect(result).toEqual({
+        items: [
+          {
+            slug: 'github',
+            name: 'github',
+            displayName: 'GitHub',
+            versions: [{ version: '20250909_00', changelog: 'Added issues tools' }],
+          },
+        ],
       });
     });
   });

@@ -22,6 +22,9 @@ import {
   ToolRouterSessionWarning,
   ToolRouterUpdateSessionConfig,
   ToolRouterUpdateSessionConfigSchema,
+  ToolRouterSessionConfigHistoryOptions,
+  ToolRouterSessionConfigHistoryOptionsSchema,
+  type ToolRouterSessionConfigHistoryResponse,
   type ToolRouterSessionDeleteResponse,
 } from '../types/toolRouter.types';
 import {
@@ -690,6 +693,54 @@ export class ToolRouterSession<
    */
   async delete(requestOptions?: ComposioRequestOptions): Promise<ToolRouterSessionDeleteResponse> {
     return deleteToolRouterSession(this.client, this.sessionId, requestOptions);
+  }
+
+  /**
+   * Page through this session's configuration history, newest first. The
+   * first page starts with the live config (`isCurrent: true`); every
+   * `session.update()` archives the previous version as a history row.
+   *
+   * @param options - Optional `cursor` and `limit` (max 100)
+   * @returns The config versions on this page plus pagination info
+   * @throws {ValidationError} If the options fail validation
+   *
+   * @example
+   * ```typescript
+   * const { items, nextCursor } = await session.configHistory({ limit: 10 });
+   * console.log(items[0].version, items[0].isCurrent); // e.g. 3, true
+   * console.log(items[1].config.toolkits);
+   * ```
+   */
+  async configHistory(
+    options?: ToolRouterSessionConfigHistoryOptions,
+    requestOptions?: ComposioRequestOptions
+  ): Promise<ToolRouterSessionConfigHistoryResponse> {
+    const parsedOptions = ToolRouterSessionConfigHistoryOptionsSchema.safeParse(options ?? {});
+    if (!parsedOptions.success) {
+      throw new ValidationError('Failed to parse config history options', {
+        cause: parsedOptions.error,
+      });
+    }
+    const query = {
+      cursor: parsedOptions.data.cursor,
+      limit: parsedOptions.data.limit,
+    };
+    const response = await withCancellation(
+      () => this.client.toolRouter.session.configHistory(this.sessionId, query, requestOptions),
+      requestOptions?.signal
+    );
+    return {
+      items: response.items.map(item => ({
+        version: item.version,
+        createdAt: item.created_at,
+        isCurrent: item.is_current,
+        config: item.config,
+      })),
+      nextCursor: response.next_cursor ?? null,
+      totalPages: response.total_pages,
+      currentPage: response.current_page,
+      totalItems: response.total_items,
+    };
   }
 
   // ── Private helpers ──────────────────────────────────────────

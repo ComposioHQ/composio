@@ -1,5 +1,6 @@
 import type { BaseComposioProvider } from './provider/BaseProvider';
 import ComposioClient from '@composio/client';
+import type { Logger as ClientLogger, LogLevel as ClientLogLevel } from '@composio/client';
 import { Tools } from './models/Tools';
 import { Toolkits } from './models/Toolkits';
 import { Triggers } from './models/Triggers';
@@ -7,10 +8,14 @@ import { AuthConfigs } from './models/AuthConfigs';
 import { ConnectedAccounts } from './models/ConnectedAccounts';
 import { Experimental } from './models/Experimental';
 import { MCP } from './models/MCP';
+import { Webhooks } from './models/Webhooks';
+import { Logs } from './models/Logs';
+import { Keyring } from './models/Keyring';
 import { telemetry } from './telemetry/Telemetry';
 import { getSDKConfig, getToolkitVersionsFromEnv } from './utils/sdk';
 import logger from './utils/logger';
-import { COMPOSIO_LOG_LEVEL, IS_DEVELOPMENT_OR_CI } from './utils/constants';
+import type { ComposioLogger, LogLevel } from './utils/logger';
+import { IS_DEVELOPMENT_OR_CI } from './utils/constants';
 import { checkForLatestVersionFromNPM } from './utils/version';
 import { OpenAIProvider } from './provider/OpenAIProvider';
 import { version } from '../package.json';
@@ -156,6 +161,68 @@ export type ComposioConfig<
    * ```
    */
   toolkitVersions?: ToolkitVersionParam;
+  /**
+   * Destination for SDK log output. Messages are formatted and have
+   * credential-shaped values redacted before they reach the sink, so any
+   * object with `error`/`warn`/`info`/`debug` methods works (`console`, pino,
+   * winston, ...).
+   *
+   * Runtime deprecation warnings raised by the underlying API client (response
+   * `Deprecation`/`Sunset` headers and deprecated request inputs) are routed
+   * through this logger as well.
+   *
+   * The SDK logger is process-wide: configuring it on one `Composio` instance
+   * affects every instance, and the last configured instance wins.
+   *
+   * @default console
+   * @example
+   * ```typescript
+   * const composio = new Composio({
+   *   apiKey: 'your-api-key',
+   *   logger: pino(),
+   *   logLevel: 'warn',
+   * });
+   * ```
+   */
+  logger?: ComposioLogger;
+  /**
+   * Minimum level to emit: `'silent' | 'error' | 'warn' | 'info' | 'debug'`.
+   * Takes precedence over the `COMPOSIO_LOG_LEVEL` environment variable.
+   * Also gates the API client's runtime deprecation warnings (`'silent'` turns
+   * them off). The client's per-request lifecycle logs are emitted at
+   * `'debug'` only.
+   *
+   * Like `logger`, this applies process-wide and the last configured instance
+   * wins. The API client's own level is fixed when each instance is created.
+   *
+   * @default 'info' (or `COMPOSIO_LOG_LEVEL` when set)
+   */
+  logLevel?: LogLevel;
+};
+
+/**
+ * Level for the API client given the SDK level. The client logs each request's
+ * lifecycle at `info`, which is debug-grade for SDK users, so the client stays
+ * at `warn` unless the SDK is at `debug`. The client's `LogLevel` has
+ * `'off'` where the SDK has `'silent'`.
+ */
+const toClientLogLevel = (level: LogLevel): ClientLogLevel => {
+  if (level === 'silent') return 'off';
+  if (level === 'info') return 'warn';
+  return level;
+};
+
+/**
+ * Forwards the API client's log records to the SDK singleton so they pick up
+ * the SDK's formatting, redaction, and configured sink. Methods are looked up
+ * at call time so a later `logger.configure()` is honoured. The client's
+ * `info` records (per-request lifecycle) are forwarded as SDK `debug`.
+ */
+const clientLoggerAdapter: ClientLogger = {
+  error: (...args) => logger.error(...args),
+  warn: (...args) => logger.warn(...args),
+  info: (...args) => logger.debug(...args),
+  debug: (...args) => logger.debug(...args),
 };
 
 /**
@@ -195,6 +262,15 @@ export class Composio<
   authConfigs: AuthConfigs;
   /** Manage authenticated connections */
   connectedAccounts: ConnectedAccounts;
+  /**
+   * Manage the project's webhook subscription (`webhooks.subscriptions`) and
+   * inbound per-toolkit webhook endpoints (`webhooks.endpoints`).
+   */
+  webhooks: Webhooks;
+  /** Search and inspect tool-execution logs */
+  logs: Logs;
+  /** Public transfer keys of the organization's customer-managed keyring */
+  keyring: Keyring;
   /**
    * Experimental SDK methods whose shape may change in future releases.
    * Prefer domain-specific mounts (for example
@@ -307,6 +383,10 @@ export class Composio<
       config?.apiKey
     );
 
+    if (config?.logger !== undefined || config?.logLevel !== undefined) {
+      logger.configure({ level: config.logLevel, sink: config.logger });
+    }
+
     if (IS_DEVELOPMENT_OR_CI) {
       logger.debug(`Initializing Composio w API Key: [REDACTED] and baseURL: ${baseURLParsed}`);
     }
@@ -346,7 +426,8 @@ export class Composio<
       apiKey: apiKeyParsed,
       baseURL: baseURLParsed,
       defaultHeaders: defaultHeaders,
-      logLevel: COMPOSIO_LOG_LEVEL,
+      logger: clientLoggerAdapter,
+      logLevel: toClientLogLevel(logger.getLevel()),
     });
 
     this.tools = new Tools(this.client, this.config);
@@ -360,6 +441,9 @@ export class Composio<
       fileDownloadDir: this.config.fileDownloadDir,
     });
     this.connectedAccounts = new ConnectedAccounts(this.client);
+    this.webhooks = new Webhooks(this.client);
+    this.logs = new Logs(this.client);
+    this.keyring = new Keyring(this.client);
     this.experimental = new Experimental(this.client);
     this.sessions = new Sessions(this.client, this.config);
     this.toolRouter = this.sessions;
