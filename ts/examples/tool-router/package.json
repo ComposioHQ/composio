@@ -1,7 +1,7 @@
 {
   "name": "tool-router-example",
   "private": true,
-  "version": "1.0.12",
+  "version": "1.0.13",
   "description": "Example project for Tool-router",
   "main": "src/index.ts",
   "scripts": {

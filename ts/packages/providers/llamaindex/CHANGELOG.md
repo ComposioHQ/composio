@@ -1,5 +1,11 @@
 # @composio/llamaindex
 
+## 0.11.1
+
+### Patch Changes
+
+- 20aaa95: Accept the upcoming core prerelease and the upstream versions already used to build and test providers.
+
 ## 0.11.0
 
 ### Minor Changes

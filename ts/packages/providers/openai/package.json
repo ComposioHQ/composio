@@ -1,6 +1,6 @@
 {
   "name": "@composio/openai",
-  "version": "0.12.2",
+  "version": "0.12.3",
   "description": "",
   "main": "src/index.ts",
   "type": "module",
