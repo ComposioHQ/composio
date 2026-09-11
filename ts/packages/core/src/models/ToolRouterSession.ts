@@ -22,9 +22,9 @@ import {
   ToolRouterSessionWarning,
   ToolRouterUpdateSessionConfig,
   ToolRouterUpdateSessionConfigSchema,
-  ToolRouterSessionConfigHistoryOptions,
-  ToolRouterSessionConfigHistoryOptionsSchema,
-  type ToolRouterSessionConfigHistoryResponse,
+  ToolRouterSessionListConfigHistoryOptions,
+  ToolRouterSessionListConfigHistoryOptionsSchema,
+  type ToolRouterSessionListConfigHistoryResponse,
   type ToolRouterSessionDeleteResponse,
 } from '../types/toolRouter.types';
 import {
@@ -706,16 +706,16 @@ export class ToolRouterSession<
    *
    * @example
    * ```typescript
-   * const { items, nextCursor } = await session.configHistory({ limit: 10 });
+   * const { items, nextCursor } = await session.listConfigHistory({ limit: 10 });
    * console.log(items[0].version, items[0].isCurrent); // e.g. 3, true
    * console.log(items[1].config.toolkits);
    * ```
    */
-  async configHistory(
-    options?: ToolRouterSessionConfigHistoryOptions,
+  async listConfigHistory(
+    options?: ToolRouterSessionListConfigHistoryOptions,
     requestOptions?: ComposioRequestOptions
-  ): Promise<ToolRouterSessionConfigHistoryResponse> {
-    const parsedOptions = ToolRouterSessionConfigHistoryOptionsSchema.safeParse(options ?? {});
+  ): Promise<ToolRouterSessionListConfigHistoryResponse> {
+    const parsedOptions = ToolRouterSessionListConfigHistoryOptionsSchema.safeParse(options ?? {});
     if (!parsedOptions.success) {
       throw new ValidationError('Failed to parse config history options', {
         cause: parsedOptions.error,

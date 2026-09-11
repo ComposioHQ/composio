@@ -711,16 +711,16 @@ export const ToolRouterSessionDeleteResponseSchema = z.object({
 export type ToolRouterSessionDeleteResponse = z.infer<typeof ToolRouterSessionDeleteResponseSchema>;
 
 /**
- * Options for `session.configHistory()`.
+ * Options for `session.listConfigHistory()`.
  */
-export const ToolRouterSessionConfigHistoryOptionsSchema = z.object({
+export const ToolRouterSessionListConfigHistoryOptionsSchema = z.object({
   /** Cursor from a previous response's `nextCursor`. */
   cursor: z.string().optional(),
   /** Number of items per page, max allowed is 100. */
   limit: z.number().optional(),
 });
-export type ToolRouterSessionConfigHistoryOptions = z.infer<
-  typeof ToolRouterSessionConfigHistoryOptionsSchema
+export type ToolRouterSessionListConfigHistoryOptions = z.infer<
+  typeof ToolRouterSessionListConfigHistoryOptionsSchema
 >;
 
 /**
@@ -740,7 +740,7 @@ export type ToolRouterSessionConfigHistoryItem = {
   config: ToolRouterSessionConfigHistoryConfig;
 };
 
-export type ToolRouterSessionConfigHistoryResponse = {
+export type ToolRouterSessionListConfigHistoryResponse = {
   items: ToolRouterSessionConfigHistoryItem[];
   nextCursor: string | null;
   totalPages: number;
@@ -748,10 +748,10 @@ export type ToolRouterSessionConfigHistoryResponse = {
   totalItems: number;
 };
 
-export type ToolRouterSessionConfigHistoryFn = (
-  options?: ToolRouterSessionConfigHistoryOptions,
+export type ToolRouterSessionListConfigHistoryFn = (
+  options?: ToolRouterSessionListConfigHistoryOptions,
   requestOptions?: ComposioRequestOptions
-) => Promise<ToolRouterSessionConfigHistoryResponse>;
+) => Promise<ToolRouterSessionListConfigHistoryResponse>;
 
 export type ToolRouterSessionDeleteFn = (
   requestOptions?: ComposioRequestOptions
@@ -795,7 +795,7 @@ export interface Session<
   /** Delete the session. Deleted sessions are no longer retrievable or executable. */
   delete: ToolRouterSessionDeleteFn;
   /** Page through the session's configuration history (newest first). */
-  configHistory: ToolRouterSessionConfigHistoryFn;
+  listConfigHistory: ToolRouterSessionListConfigHistoryFn;
   /** Proxy an API call through Composio's auth layer using the session's connected account */
   proxyExecute: ToolRouterSessionProxyExecuteFn;
   /** List custom tools registered in this session, with their final slugs and schemas */

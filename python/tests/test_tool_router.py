@@ -124,18 +124,18 @@ class TestToolRouter:
         assert tool_router._client == mock_client
         assert tool_router._provider == mock_provider
 
-    def test_session_config_history(self, tool_router, mock_client):
-        """``session.config_history`` passes the session id and pagination."""
+    def test_session_list_config_history(self, tool_router, mock_client):
+        """``session.list_config_history`` passes the session id and pagination."""
         session = tool_router.create(user_id="user_123")
         mock_client.tool_router.session.config_history.return_value = "history"
 
-        assert session.config_history() == "history"
+        assert session.list_config_history() == "history"
         mock_client.tool_router.session.config_history.assert_called_once_with(
             session_id="session_123"
         )
 
         mock_client.tool_router.session.config_history.reset_mock()
-        session.config_history(limit=10, cursor="c1")
+        session.list_config_history(limit=10, cursor="c1")
         mock_client.tool_router.session.config_history.assert_called_once_with(
             session_id="session_123", limit=10, cursor="c1"
         )

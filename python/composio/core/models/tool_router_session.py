@@ -953,7 +953,7 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
         )
         self.preload = _session_preload_config(response.config.preload)
 
-    def config_history(
+    def list_config_history(
         self,
         **query: te.Unpack[session_config_history_params.SessionConfigHistoryParams],
     ) -> session_config_history_response.SessionConfigHistoryResponse:
@@ -968,7 +968,7 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
         :return: The config versions under ``.items`` plus pagination fields.
 
         Example:
-            history = session.config_history(limit=10)
+            history = session.list_config_history(limit=10)
             for entry in history.items:
                 print(entry.version, entry.is_current)
         """
