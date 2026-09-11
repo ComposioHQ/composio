@@ -3661,7 +3661,7 @@ describe('ToolRouter', () => {
     });
   });
 
-  describe('session.configHistory', () => {
+  describe('session.listConfigHistory', () => {
     const sessionId = 'session_123';
     const rawHistoryItem = {
       version: 2,
@@ -3687,7 +3687,7 @@ describe('ToolRouter', () => {
       });
 
       const session = await toolRouter.use(sessionId);
-      const result = await session.configHistory({ limit: 2 });
+      const result = await session.listConfigHistory({ limit: 2 });
 
       expect(mockClient.toolRouter.session.configHistory).toHaveBeenCalledWith(
         sessionId,
@@ -3727,7 +3727,7 @@ describe('ToolRouter', () => {
       const signal = new AbortController().signal;
 
       const session = await toolRouter.use(sessionId);
-      const result = await session.configHistory(undefined, { signal });
+      const result = await session.listConfigHistory(undefined, { signal });
 
       expect(mockClient.toolRouter.session.configHistory).toHaveBeenCalledWith(
         sessionId,
@@ -3742,9 +3742,9 @@ describe('ToolRouter', () => {
 
       const session = await toolRouter.use(sessionId);
 
-      await expect(session.configHistory({ limit: 'ten' as unknown as number })).rejects.toThrow(
-        ValidationError
-      );
+      await expect(
+        session.listConfigHistory({ limit: 'ten' as unknown as number })
+      ).rejects.toThrow(ValidationError);
       expect(mockClient.toolRouter.session.configHistory).not.toHaveBeenCalled();
     });
   });
