@@ -79,7 +79,11 @@ describe('CLI: composio dev connected-accounts list', () => {
       it.effect('lists all connected accounts with table', () =>
         Effect.gen(function* () {
           const userContext = yield* ComposioUserContext;
-          yield* userContext.login('test_api_key', 'org_test');
+          yield* userContext.login({
+            apiKey: 'test_api_key',
+            target: userContext.backend.ambient,
+            orgId: 'org_test',
+          });
           yield* cli(['dev', 'connected-accounts', 'list']);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
           const output = lines.join('\n');
@@ -99,7 +103,11 @@ describe('CLI: composio dev connected-accounts list', () => {
       it.effect('filters by toolkit', () =>
         Effect.gen(function* () {
           const userContext = yield* ComposioUserContext;
-          yield* userContext.login('test_api_key', 'org_test');
+          yield* userContext.login({
+            apiKey: 'test_api_key',
+            target: userContext.backend.ambient,
+            orgId: 'org_test',
+          });
           yield* cli(['dev', 'connected-accounts', 'list', '--toolkits', 'gmail']);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
           const output = lines.join('\n');
@@ -118,7 +126,11 @@ describe('CLI: composio dev connected-accounts list', () => {
       it.effect('filters by user ID', () =>
         Effect.gen(function* () {
           const userContext = yield* ComposioUserContext;
-          yield* userContext.login('test_api_key', 'org_test');
+          yield* userContext.login({
+            apiKey: 'test_api_key',
+            target: userContext.backend.ambient,
+            orgId: 'org_test',
+          });
           yield* cli(['dev', 'connected-accounts', 'list', '--user-id', 'default']);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
           const output = lines.join('\n');
@@ -138,7 +150,11 @@ describe('CLI: composio dev connected-accounts list', () => {
       it.effect('filters by status', () =>
         Effect.gen(function* () {
           const userContext = yield* ComposioUserContext;
-          yield* userContext.login('test_api_key', 'org_test');
+          yield* userContext.login({
+            apiKey: 'test_api_key',
+            target: userContext.backend.ambient,
+            orgId: 'org_test',
+          });
           yield* cli(['dev', 'connected-accounts', 'list', '--status', 'ACTIVE']);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
           const output = lines.join('\n');
@@ -158,7 +174,11 @@ describe('CLI: composio dev connected-accounts list', () => {
       it.effect('respects limit', () =>
         Effect.gen(function* () {
           const userContext = yield* ComposioUserContext;
-          yield* userContext.login('test_api_key', 'org_test');
+          yield* userContext.login({
+            apiKey: 'test_api_key',
+            target: userContext.backend.ambient,
+            orgId: 'org_test',
+          });
           yield* cli(['dev', 'connected-accounts', 'list', '--limit', '1']);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
           const output = lines.join('\n');
@@ -199,7 +219,11 @@ describe('CLI: composio dev connected-accounts list', () => {
       it.effect('shows no connected accounts found', () =>
         Effect.gen(function* () {
           const userContext = yield* ComposioUserContext;
-          yield* userContext.login('test_api_key', 'org_test');
+          yield* userContext.login({
+            apiKey: 'test_api_key',
+            target: userContext.backend.ambient,
+            orgId: 'org_test',
+          });
           yield* cli(['dev', 'connected-accounts', 'list']);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
           const output = lines.join('\n');
@@ -216,7 +240,11 @@ describe('CLI: composio dev connected-accounts list', () => {
       it.effect('shows toolkit hint', () =>
         Effect.gen(function* () {
           const userContext = yield* ComposioUserContext;
-          yield* userContext.login('test_api_key', 'org_test');
+          yield* userContext.login({
+            apiKey: 'test_api_key',
+            target: userContext.backend.ambient,
+            orgId: 'org_test',
+          });
           yield* cli(['dev', 'connected-accounts', 'list', '--toolkits', 'nonexistent']);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
           const output = lines.join('\n');
@@ -247,7 +275,11 @@ describe('CLI: composio dev connected-accounts list', () => {
     it.effect('does not crash on unknown status', () =>
       Effect.gen(function* () {
         const userContext = yield* ComposioUserContext;
-        yield* userContext.login('test_api_key', 'org_test');
+        yield* userContext.login({
+          apiKey: 'test_api_key',
+          target: userContext.backend.ambient,
+          orgId: 'org_test',
+        });
         yield* cli(['dev', 'connected-accounts', 'list']);
         const lines = yield* MockConsole.getLines({ stripAnsi: true });
         const output = lines.join('\n');

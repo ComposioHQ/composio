@@ -40,7 +40,10 @@ import { TriggerType, TriggerTypes, TriggerTypesAsEnums } from 'src/models/trigg
 import * as constants from 'src/constants';
 import { getCurrentCwdSessionId } from 'src/analytics/dispatch';
 import { ComposioUserContext, ComposioUserContextLive } from './user-context';
+import { AuthRejectionRecorder } from './auth-rejection';
 import { ProjectContext } from './project-context';
+import { type ApiErrorDetails, isUserApiKeyRejection } from 'src/utils/api-error-extraction';
+import { backendOrigin } from 'src/utils/backend-resolution';
 import { renderPrettyError } from './utils/pretty-error';
 import { NodeOs } from './node-os';
 
@@ -66,6 +69,8 @@ export class HttpServerError extends Data.TaggedError('services/HttpServerError'
   readonly cause?: unknown;
   readonly status?: number;
   readonly details?: HttpErrorDetails;
+  /** The backend's `{ error: { message, code, slug, ... } }` body, when it sent one. */
+  readonly apiError?: ApiErrorDetails;
 }> {}
 
 /**
@@ -583,6 +588,21 @@ export const HttpErrorResponse = Schema.Struct({
 export type HttpErrorResponse = Schema.Schema.Type<typeof HttpErrorResponse>;
 
 /**
+ * The error body the v3 API sends, e.g. for a rejected user API key:
+ * `{ "error": { "message", "code", "slug", "status", "request_id", "suggested_fix" } }`.
+ */
+const ApiErrorBody = Schema.Struct({
+  error: Schema.Struct({
+    message: Schema.optional(Schema.String),
+    code: Schema.optional(Schema.Number),
+    slug: Schema.optional(Schema.String),
+    status: Schema.optional(Schema.Number),
+    request_id: Schema.optional(Schema.String),
+    suggested_fix: Schema.optional(Schema.String),
+  }),
+}).annotate({ identifier: 'ApiErrorBody' });
+
+/**
  * Result of streaming a response with byte counting.
  */
 interface StreamedResponse {
@@ -644,14 +664,49 @@ const handleHttpErrorResponse = (response: Response): Effect.Effect<never, HttpS
       }
     }
 
-    // Fallback to generic error message
+    // Fallback to generic error message, keeping the v3 error body's slug and
+    // code so callers can recognize specific failures such as a rejected key.
+    const apiError = Option.flatMap(errorBodyOpt, Schema.decodeUnknownOption(ApiErrorBody)).pipe(
+      Option.map(body => body.error),
+      Option.getOrUndefined
+    );
     return yield* Effect.fail(
       new HttpServerError({
         cause: `HTTP ${status} ${statusText}`,
         status,
+        ...(apiError ? { apiError } : {}),
       })
     );
   });
+
+const requestOrigin = (input: string | URL | Request, response: Response): string =>
+  backendOrigin(
+    response.url ||
+      (typeof input === 'string' ? input : input instanceof URL ? input.href : input.url)
+  );
+
+/**
+ * Wrap `fetch` so a user API key rejection is recorded wherever the SDK's
+ * response ends up: several commands catch or swallow SDK errors themselves.
+ * The body is read from a clone, so the SDK's own error handling is unchanged.
+ */
+const rejectionRecordingFetch =
+  (onRejection: (baseURL: string) => void) =>
+  (input: string | URL | Request, init?: RequestInit): Promise<Response> =>
+    globalThis.fetch(input, init).then(response =>
+      response.status !== 401
+        ? response
+        : response
+            .clone()
+            .json()
+            .then(
+              (body: unknown) => {
+                if (isUserApiKeyRejection(body)) onRejection(requestOrigin(input, response));
+                return response;
+              },
+              () => response
+            )
+    );
 
 /**
  * Streams a Fetch Response body, counting bytes precisely and parsing JSON in a single pass.
@@ -1540,12 +1595,36 @@ const callClientWithPagination = <T, S extends PaginatedSchema>(
  */
 export interface ComposioClientSingletonShape {
   readonly get: () => Effect.Effect<_RawComposioClient, NoSuchElementError>;
-  readonly getFor: (params: {
-    userApiKey?: string;
-    orgId?: string;
-    projectId?: string;
-  }) => Effect.Effect<_RawComposioClient, NoSuchElementError>;
+  readonly getFor: (
+    params: ClientTargetParams
+  ) => Effect.Effect<_RawComposioClient, NoSuchElementError>;
 }
+
+interface ClientTargetParams {
+  readonly userApiKey?: string;
+  readonly orgId?: string;
+  readonly projectId?: string;
+  /** Backend to call instead of the resolved one. */
+  readonly baseURL?: string;
+  /** Send no user API key: login flows must not leak a stored key to another backend. */
+  readonly anonymous?: boolean;
+}
+
+/**
+ * A client for login flows: it calls `baseURL` and sends no user API key, so
+ * a stored key never reaches a backend that did not issue it and a rejected
+ * key cannot block the login that replaces it.
+ */
+const loginClientFor = (
+  clientSingleton: ComposioClientSingletonShape,
+  baseURL: string | undefined
+): ComposioClientSingletonShape =>
+  baseURL === undefined
+    ? clientSingleton
+    : {
+        get: () => clientSingleton.getFor({ baseURL, anonymous: true }),
+        getFor: params => clientSingleton.getFor({ ...params, baseURL, anonymous: true }),
+      };
 
 /**
  * Singleton service that lazily accesses `Config` only when needed, which is used to build and provide
@@ -1553,16 +1632,25 @@ export interface ComposioClientSingletonShape {
  */
 const makeComposioClientSingleton = Effect.gen(function* () {
   const ctx = yield* ComposioUserContext;
+  const recorder = yield* AuthRejectionRecorder;
+  const recordRejection = (baseURL: string) =>
+    Effect.runSync(recorder.record({ baseURL, keySource: ctx.backend.keySource }));
   const projectContextOpt = yield* Effect.serviceOption(ProjectContext);
   const fs = yield* FileSystem.FileSystem;
   const path = yield* Path.Path;
   const os = yield* NodeOs;
   const cache = new Map<string, _RawComposioClient>();
 
-  const getFor = (params?: { userApiKey?: string; orgId?: string; projectId?: string }) =>
+  const getFor = (params?: ClientTargetParams) =>
     Effect.gen(function* () {
-      const apiKey = normalizeApiKey(params?.userApiKey ?? Option.getOrUndefined(ctx.data.apiKey));
+      const apiKey = params?.anonymous
+        ? undefined
+        : normalizeApiKey(params?.userApiKey ?? Option.getOrUndefined(ctx.data.apiKey));
+      const baseURL = params?.baseURL ?? ctx.data.baseURL;
+      // The backend is part of the key: a re-login or override can change it
+      // within one process, and a client must never outlive its target.
       const cacheKey = JSON.stringify({
+        baseURL,
         apiKey: apiKey ?? null,
         orgId: params?.orgId ?? null,
         projectId: params?.projectId ?? null,
@@ -1578,15 +1666,18 @@ const makeComposioClientSingleton = Effect.gen(function* () {
         Effect.provideService(NodeOs, os)
       );
 
+      // Only a client sending the key in use reports rejections of that key.
+      const sendsKeyInUse = !params?.anonymous && params?.userApiKey === undefined;
       const client = new _RawComposioClient({
         apiKey: null,
-        baseURL: ctx.data.baseURL,
+        baseURL,
         defaultHeaders: buildDefaultHeaders({
           userApiKey: apiKey,
           orgId: params?.orgId,
           projectId: params?.projectId,
           cliSessionId,
         }),
+        ...(sendsKeyInUse ? { fetch: rejectionRecordingFetch(recordRejection) } : {}),
       });
 
       cache.set(cacheKey, client);
@@ -1609,17 +1700,11 @@ const makeComposioClientSingleton = Effect.gen(function* () {
           }),
       });
     }) satisfies () => Effect.Effect<_RawComposioClient, NoSuchElementError, never>,
-    getFor: Effect.fn(function* (params: {
-      userApiKey?: string;
-      orgId?: string;
-      projectId?: string;
-    }) {
+    getFor: Effect.fn(function* (params: ClientTargetParams) {
       return yield* getFor(params);
-    }) satisfies (params: {
-      userApiKey?: string;
-      orgId?: string;
-      projectId?: string;
-    }) => Effect.Effect<_RawComposioClient, NoSuchElementError, never>,
+    }) satisfies (
+      params: ClientTargetParams
+    ) => Effect.Effect<_RawComposioClient, NoSuchElementError, never>,
   };
 });
 
@@ -1627,8 +1712,11 @@ export class ComposioClientSingleton extends Context.Service<
   ComposioClientSingleton,
   ComposioClientSingletonShape
 >()('services/ComposioClientSingleton') {
-  static readonly Default = Layer.effect(ComposioClientSingleton, makeComposioClientSingleton).pipe(
-    Layer.provide(ComposioUserContextLive)
+  /** Requires `ComposioUserContext` from the caller. */
+  static readonly layer = Layer.effect(ComposioClientSingleton, makeComposioClientSingleton);
+
+  static readonly Default = ComposioClientSingleton.layer.pipe(
+    Layer.provide(Layer.mergeAll(ComposioUserContextLive, AuthRejectionRecorder.Default))
   );
 }
 
@@ -2037,10 +2125,10 @@ const makeComposioClientLive = Effect.gen(function* () {
        *
        * TODO: don't use `@composio/client`, wrap `fetch` directly.
        */
-      createSession: (params?: { scope?: 'user' | 'project' }) =>
+      createSession: (params?: { scope?: 'user' | 'project'; baseURL?: string }) =>
         withMetrics(
           callClient(
-            clientSingleton,
+            loginClientFor(clientSingleton, params?.baseURL),
             client =>
               client.cli.createSession(
                 { scope: params?.scope ?? 'user' },
@@ -2052,12 +2140,13 @@ const makeComposioClientLive = Effect.gen(function* () {
 
       /**
        * Retrieves the current state of a CLI session using either the session ID (UUID) or the 6-character code.
+       * With `baseURL`, the call goes to that login target without the stored key.
        */
-      getSession: (session: { id: string }) =>
+      getSession: (session: { id: string; baseURL?: string }) =>
         withMetrics(
           callClient(
-            clientSingleton,
-            client => client.cli.getSession(session),
+            loginClientFor(clientSingleton, session.baseURL),
+            client => client.cli.getSession({ id: session.id }),
             CliGetSessionResponse
           )
         ),
@@ -2318,8 +2407,10 @@ const makeComposioSessionRepository = Effect.gen(function* () {
   const client = yield* ComposioClientLive;
 
   return {
-    createSession: (params?: { scope?: 'user' | 'project' }) => client.cli.createSession(params),
-    getSession: (session: { id: string }) => client.cli.getSession({ id: session.id }),
+    createSession: (params?: { scope?: 'user' | 'project'; baseURL?: string }) =>
+      client.cli.createSession(params),
+    getSession: (session: { id: string; baseURL?: string }) =>
+      client.cli.getSession({ id: session.id, baseURL: session.baseURL }),
     getRealtimeCredentials: () => client.cli.getRealtimeCredentials(),
     authRealtimeChannel: (params: { channel_name: string; socket_id: string }) =>
       client.cli.authRealtimeChannel(params),

@@ -66,7 +66,7 @@ const setupLoggedInAgent = Effect.gen(function* () {
       user_api_key: 'uak_agent',
     },
   });
-  yield* ctx.login('uak_agent', 'org_agent');
+  yield* ctx.login({ apiKey: 'uak_agent', target: ctx.backend.ambient, orgId: 'org_agent' });
   return ctx;
 });
 

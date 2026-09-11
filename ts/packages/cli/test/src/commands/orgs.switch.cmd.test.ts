@@ -1,6 +1,10 @@
 import { describe, expect, layer } from '@effect/vitest';
 import { ConfigProvider, Effect } from 'effect';
+import * as FileSystem from 'effect/FileSystem';
+import path from 'node:path';
 import { afterEach, vi } from 'vitest';
+import { STAGING_BASE_URL, STAGING_WEB_URL, USER_CONFIG_FILE_NAME } from 'src/constants';
+import { setupCacheDir } from 'src/effects/setup-cache-dir';
 import { extendConfigProvider } from 'src/services/config';
 import { cli, TestLive } from 'test/__utils__';
 
@@ -69,4 +73,63 @@ describe('CLI: composio orgs switch', () => {
       })
     );
   });
+
+  layer(
+    TestLive({
+      userData: {
+        api_key: 'uak_staging',
+        base_url: STAGING_BASE_URL,
+        web_url: STAGING_WEB_URL,
+        org_id: 'org_old',
+      },
+    })
+  )(it => {
+    it.effect('[Given] a stored staging login and no env vars [Then] keeps staging stored', () =>
+      Effect.gen(function* () {
+        const requestedOrigins: string[] = [];
+        vi.spyOn(globalThis, 'fetch').mockImplementation(async requestInput => {
+          const url = requestInput instanceof Request ? requestInput.url : String(requestInput);
+          requestedOrigins.push(new URL(url).origin);
+          return new Response(JSON.stringify(sessionInfoFor('org_selected')), {
+            status: 200,
+            headers: { 'Content-Type': 'application/json' },
+          });
+        });
+
+        yield* cli(['orgs', 'switch', '--org-id', 'org_selected']);
+
+        const fs = yield* FileSystem.FileSystem;
+        const cacheDir = yield* setupCacheDir;
+        const userConfig = JSON.parse(
+          yield* fs.readFileString(path.join(cacheDir, USER_CONFIG_FILE_NAME), 'utf8')
+        ) as Record<string, unknown>;
+        expect(userConfig.org_id).toBe('org_selected');
+        expect(userConfig.base_url).toBe(STAGING_BASE_URL);
+        expect(userConfig.web_url).toBe(STAGING_WEB_URL);
+        expect(requestedOrigins.length).toBeGreaterThan(0);
+        expect(new Set(requestedOrigins)).toEqual(new Set([STAGING_BASE_URL]));
+      })
+    );
+  });
+});
+
+const sessionInfoFor = (orgId: string) => ({
+  project: {
+    name: 'Selected Project',
+    id: 'project_selected',
+    org_id: orgId,
+    nano_id: 'project_selected',
+    email: 'project@example.com',
+    created_at: '2026-01-01T00:00:00.000Z',
+    updated_at: '2026-01-01T00:00:00.000Z',
+    org: { id: orgId, name: 'Selected Org', plan: 'enterprise' },
+  },
+  org_member: {
+    id: 'member_selected',
+    user_id: 'user_123',
+    email: 'cli@example.com',
+    name: 'CLI User',
+    role: 'admin',
+  },
+  api_key: null,
 });

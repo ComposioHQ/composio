@@ -367,7 +367,12 @@ describe('CLI: composio dev connected-accounts link', () => {
     it.effect('passes the active org to session info before linking analytics identity', () =>
       Effect.gen(function* () {
         const userContext = yield* ComposioUserContext;
-        yield* userContext.login('test_api_key', 'org_selected', 'consumer-user-org_selected');
+        yield* userContext.login({
+          apiKey: 'test_api_key',
+          target: userContext.backend.ambient,
+          orgId: 'org_selected',
+          testUserId: 'consumer-user-org_selected',
+        });
 
         const originalFetch = globalThis.fetch;
         const sessionInfoRequests: Headers[] = [];

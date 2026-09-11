@@ -4,6 +4,10 @@ import { extendConfigProvider } from 'src/services/config';
 import { cli, TestLive, MockConsole } from 'test/__utils__';
 import type { TestLiveInput } from 'test/__utils__/services/test-layer';
 import type { Toolkits, ToolkitDetailed } from 'src/models/toolkits';
+import { APIError } from '@composio/client';
+import { hasRecordedAuthRejection } from 'src/services/auth-rejection';
+import { HttpServerError } from 'src/services/composio-clients';
+import { userApiKeyRejectionBody } from 'test/__utils__/models/user-api-key-rejection';
 
 const testToolkits: Toolkits = [
   {
@@ -270,5 +274,87 @@ describe('CLI: composio dev toolkits info', () => {
         expect(output).toContain('not logged in');
       })
     );
+  });
+
+  describe('[Given] the backend rejects the stored key', () => {
+    const storedStagingLogin = {
+      api_key: 'uak_revoked',
+      base_url: 'https://staging-backend.composio.dev',
+      web_url: 'https://staging-dashboard.composio.dev/',
+      org_id: 'org_staging',
+    };
+    const sdkRejection = () =>
+      APIError.generate(401, userApiKeyRejectionBody, undefined, new Headers());
+
+    layer(
+      TestLive({
+        toolkitsData,
+        userData: storedStagingLogin,
+        toolRouter: { create: () => Promise.reject(sdkRejection()) },
+      })
+    )(it => {
+      it.effect('[When] session creation is rejected [Then] defers to the recovery block', () =>
+        Effect.gen(function* () {
+          yield* cli(['dev', 'toolkits', 'info', 'slack', '--user-id', 'alice']);
+          const output = (yield* MockConsole.getLines({ stripAnsi: true })).join('\n');
+
+          expect(output).not.toContain('Invalid or revoked user API key');
+          expect(output).not.toContain('Browse available toolkits');
+          expect(yield* hasRecordedAuthRejection).toBe(true);
+        })
+      );
+    });
+
+    layer(
+      TestLive({
+        toolkitsData,
+        userData: storedStagingLogin,
+        toolkitsRepositoryFailure: new HttpServerError({
+          status: 401,
+          cause: 'HTTP 401 Unauthorized',
+          apiError: userApiKeyRejectionBody.error,
+        }),
+      })
+    )(it => {
+      it.effect('[When] the toolkit lookup is rejected [Then] prints no "not found" line', () =>
+        Effect.gen(function* () {
+          yield* cli(['dev', 'toolkits', 'info', 'slack']);
+          const output = (yield* MockConsole.getLines({ stripAnsi: true })).join('\n');
+
+          expect(output).not.toContain('Toolkit "slack" not found.');
+          expect(output).not.toContain('Did you mean?');
+          expect(yield* hasRecordedAuthRejection).toBe(true);
+        })
+      );
+    });
+
+    layer(
+      TestLive({
+        toolkitsData,
+        userData: storedStagingLogin,
+        toolRouter: {
+          create: () =>
+            Promise.reject(
+              APIError.generate(
+                500,
+                { error: { message: 'Session service unavailable', slug: 'Internal_Error' } },
+                undefined,
+                new Headers()
+              )
+            ),
+        },
+      })
+    )(it => {
+      it.effect('[When] another API error occurs [Then] still prints its message', () =>
+        Effect.gen(function* () {
+          yield* cli(['dev', 'toolkits', 'info', 'slack', '--user-id', 'alice']);
+          const output = (yield* MockConsole.getLines({ stripAnsi: true })).join('\n');
+
+          expect(output).toContain('Session service unavailable');
+          expect(output).toContain('Browse available toolkits');
+          expect(yield* hasRecordedAuthRejection).toBe(false);
+        })
+      );
+    });
   });
 });

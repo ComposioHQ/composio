@@ -7,6 +7,7 @@ import { TerminalUI } from 'src/services/terminal-ui';
 import { requireAuth } from 'src/effects/require-auth';
 import { resolveToolRouterSession } from 'src/effects/create-tool-router-session';
 import { extractMessage, extractSlug } from 'src/utils/api-error-extraction';
+import { reportUnlessUserApiKeyRejection } from 'src/services/auth-rejection';
 import { ProjectContext } from 'src/services/project-context';
 import { ComposioClientSingleton, getSessionInfoByUserApiKey } from 'src/services/composio-clients';
 import { linkApolloIdentityForAnalytics } from 'src/analytics/dispatch';
@@ -708,12 +709,17 @@ const handleLegacyAuthConfigLink = (params: {
         Effect.asSome,
         Effect.catch(error =>
           Effect.gen(function* () {
-            const message =
-              extractMessage(error) ??
-              `Failed to create link for auth config "${params.authConfigId}".`;
-            yield* params.ui.log.error(message);
-            yield* params.ui.log.step(
-              'Browse available auth configs:\n> composio dev auth-configs list'
+            yield* reportUnlessUserApiKeyRejection(
+              error,
+              Effect.gen(function* () {
+                const message =
+                  extractMessage(error) ??
+                  `Failed to create link for auth config "${params.authConfigId}".`;
+                yield* params.ui.log.error(message);
+                yield* params.ui.log.step(
+                  'Browse available auth configs:\n> composio dev auth-configs list'
+                );
+              })
             );
             return Option.none();
           })
@@ -928,11 +934,16 @@ const runConnectedAccountsLink = (params: {
               return Option.none();
             }
 
-            const message =
-              extractMessage(error) ?? `Failed to create link for toolkit "${toolkitSlug}".`;
-            yield* ui.log.error(message);
             yield* Effect.logDebug('Link error:', error);
-            yield* ui.log.step('Browse available toolkits:\n> composio dev toolkits list');
+            yield* reportUnlessUserApiKeyRejection(
+              error,
+              Effect.gen(function* () {
+                const message =
+                  extractMessage(error) ?? `Failed to create link for toolkit "${toolkitSlug}".`;
+                yield* ui.log.error(message);
+                yield* ui.log.step('Browse available toolkits:\n> composio dev toolkits list');
+              })
+            );
             return Option.none();
           })
         ),

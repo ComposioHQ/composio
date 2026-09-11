@@ -257,7 +257,7 @@ const initInteractiveFlow = (params: { composioDir: string; noBrowser: boolean; 
     let globalApiKey = yield* getGlobalUserApiKey();
     if (!globalApiKey) {
       yield* ui.log.step('No credentials found. Logging in...');
-      yield* browserLogin({ scope: 'project', noBrowser });
+      yield* browserLogin({ scope: 'project', noBrowser, target: ctx.backend.ambient });
       globalApiKey = yield* getGlobalUserApiKey();
     }
 

@@ -43,6 +43,7 @@ import {
 } from 'src/effects/toolkit-version-overrides';
 import { validateToolkitVersionOverrides } from 'src/effects/validate-toolkit-versions';
 import { TerminalUI, type SpinnerHandle } from 'src/services/terminal-ui';
+import { warnOnBackendMismatch } from 'src/effects/backend-mismatch-warning';
 
 export class TypeScriptGenerationWriteError extends Data.TaggedError(
   'commands/TypeScriptGenerationWriteError'
@@ -380,6 +381,7 @@ export function generateTypescriptTypeStubs({
     const client = yield* ComposioToolkitsRepository;
 
     yield* ui.intro('composio generate ts');
+    yield* warnOnBackendMismatch;
 
     // Determine the actual output directory
     const outputDir = yield* outputOpt.pipe(

@@ -2,6 +2,7 @@ import process from 'node:process';
 import { Command, Flag } from 'effect/unstable/cli';
 import { Data, Effect, Option } from 'effect';
 import { TerminalUI } from 'src/services/terminal-ui';
+import { reportUnlessUserApiKeyRejection } from 'src/services/auth-rejection';
 import { requireAuth } from 'src/effects/require-auth';
 import { resolveToolRouterSession } from 'src/effects/create-tool-router-session';
 import { ComposioClientSingleton, ComposioToolkitsRepository } from 'src/services/composio-clients';
@@ -195,8 +196,9 @@ export const toolkitsCmd$List = Command.make(
       Effect.catch(error =>
         Effect.gen(function* () {
           const ui = yield* TerminalUI;
-          yield* ui.log.error(
-            extractMessage(error) ?? 'An error occurred while fetching toolkits.'
+          yield* reportUnlessUserApiKeyRejection(
+            error,
+            ui.log.error(extractMessage(error) ?? 'An error occurred while fetching toolkits.')
           );
           yield* ui.output('[]');
           process.exitCode = 1;

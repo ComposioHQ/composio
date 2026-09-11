@@ -185,6 +185,17 @@ export const APP_CONFIG = {
 } satisfies APP_CONFIG;
 
 /**
+ * The raw backend overrides, read separately from `APP_CONFIG.BASE_URL` and
+ * `APP_CONFIG.WEB_URL` so callers can tell an explicit env var from a
+ * defaulted value. Blank values count as unset.
+ */
+export const BACKEND_OVERRIDES = Config.all({
+  baseURL: optionalTrimmedString('BASE_URL'),
+  webURL: optionalTrimmedString('WEB_URL'),
+  environment: optionalTrimmedString('ENVIRONMENT'),
+});
+
+/**
  * Configuration whose keys are spelled out in full and are therefore loaded
  * through the raw `ConfigProvider.fromEnv()` provider (`loadHostConfig` in
  * `src/services/config.ts`) rather than the `COMPOSIO_`-prefixing provider that

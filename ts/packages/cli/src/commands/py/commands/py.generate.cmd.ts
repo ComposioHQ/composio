@@ -16,6 +16,7 @@ import {
 } from 'src/effects/toolkit-version-overrides';
 import { validateToolkitVersionOverrides } from 'src/effects/validate-toolkit-versions';
 import { TerminalUI } from 'src/services/terminal-ui';
+import { warnOnBackendMismatch } from 'src/effects/backend-mismatch-warning';
 
 export class PythonGenerationWriteError extends Data.TaggedError(
   'commands/PythonGenerationWriteError'
@@ -74,6 +75,7 @@ export function generatePythonTypeStubs({
     const client = yield* ComposioToolkitsRepository;
 
     yield* ui.intro('composio generate py');
+    yield* warnOnBackendMismatch;
 
     // Determine the actual output directory
     const outputDir = yield* outputOpt.pipe(

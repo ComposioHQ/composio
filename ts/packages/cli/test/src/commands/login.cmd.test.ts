@@ -1,6 +1,6 @@
 import { describe, expect, layer } from '@effect/vitest';
 import { vi, afterEach } from 'vitest';
-import { Console, DateTime, Effect, Exit, Option } from 'effect';
+import { ConfigProvider, Console, DateTime, Effect, Exit, Option } from 'effect';
 import path from 'node:path';
 import * as FileSystem from 'effect/FileSystem';
 import { cli, MockConsole, TestLive } from 'test/__utils__';
@@ -11,6 +11,8 @@ import { getTerminalCapabilities, TerminalUI } from 'src/services/terminal-ui';
 import { writeStoredAgentIdentity } from 'src/services/agents';
 import { ComposioUserContext } from 'src/services/user-context';
 import { ComposioSessionRepository } from 'src/services/composio-clients';
+import { extendConfigProvider } from 'src/services/config';
+import { userApiKeyRejectionResponse } from 'test/__utils__/models/user-api-key-rejection';
 
 vi.mock('open', () => ({
   default: vi.fn(async () => undefined),
@@ -603,5 +605,282 @@ describe('CLI: composio login', () => {
           ]);
         })
     );
+  });
+
+  describe('login target environment', () => {
+    const stagingLoginWithoutOrg = {
+      api_key: 'uak_old_staging',
+      base_url: constants.STAGING_BASE_URL,
+      web_url: constants.STAGING_WEB_URL,
+    };
+
+    const sessionInfoBody = {
+      project: {
+        name: 'Default Project',
+        id: 'project_id_default',
+        org_id: 'org_default',
+        nano_id: 'project_default',
+        email: 'project@example.com',
+        created_at: '2026-01-01T00:00:00.000Z',
+        updated_at: '2026-01-01T00:00:00.000Z',
+        org: { id: 'org_default', name: 'Example Org', plan: 'enterprise' },
+      },
+      org_member: {
+        id: 'member_default',
+        user_id: 'user_123',
+        email: 'cli@example.com',
+        name: 'CLI User',
+        role: 'admin',
+      },
+      api_key: null,
+    };
+
+    const readStoredUserConfig = Effect.gen(function* () {
+      const fs = yield* FileSystem.FileSystem;
+      const cacheDir = yield* setupCacheDir;
+      const raw = yield* fs.readFileString(
+        path.join(cacheDir, constants.USER_CONFIG_FILE_NAME),
+        'utf8'
+      );
+      return JSON.parse(raw) as Record<string, unknown>;
+    });
+
+    const spyOnSessionInfo = () => {
+      const requestedUrls: string[] = [];
+      vi.spyOn(globalThis, 'fetch').mockImplementation(async requestInput => {
+        const url = requestUrl(requestInput);
+        requestedUrls.push(url);
+        return url.includes('/api/v3/auth/session/info')
+          ? mockFetchResponse(sessionInfoBody)
+          : mockFetchResponse({});
+      });
+      return requestedUrls;
+    };
+
+    layer(TestLive({ userData: stagingLoginWithoutOrg }))(it => {
+      it.effect(
+        '[Given] a stored staging login and no env vars [When] logging in with --user-api-key [Then] validates against and records production',
+        () =>
+          Effect.gen(function* () {
+            const requestedUrls = spyOnSessionInfo();
+
+            yield* cli(['login', '--user-api-key', 'uak_new', '--no-skill-install']);
+
+            const sessionInfoUrl = requestedUrls.find(url =>
+              url.includes('/api/v3/auth/session/info')
+            );
+            expect(sessionInfoUrl).toBeDefined();
+            expect(new URL(sessionInfoUrl!).origin).toBe(constants.DEFAULT_BASE_URL);
+
+            const userConfig = yield* readStoredUserConfig;
+            expect(userConfig.api_key).toBe('uak_new');
+            expect(userConfig.base_url).toBe(constants.DEFAULT_BASE_URL);
+            expect(userConfig.web_url).toBe(constants.DEFAULT_WEB_URL);
+
+            const output = (yield* MockConsole.getLines({ stripAnsi: true })).join('\n');
+            expect(output).not.toContain('Logging in to');
+          })
+      );
+    });
+
+    const stagingEnv = ConfigProvider.fromEnvRecord({ COMPOSIO_ENVIRONMENT: 'staging' }).pipe(
+      extendConfigProvider
+    );
+
+    layer(TestLive({ baseConfigProvider: stagingEnv }))(it => {
+      it.effect(
+        '[Given] COMPOSIO_ENVIRONMENT=staging [When] logging in with --user-api-key [Then] names the staging host first and records staging',
+        () =>
+          Effect.gen(function* () {
+            const requestedUrls = spyOnSessionInfo();
+
+            yield* cli(['login', '--user-api-key', 'uak_new', '--no-skill-install']);
+
+            expect(
+              requestedUrls.every(url => new URL(url).origin === constants.STAGING_BASE_URL)
+            ).toBe(true);
+            const userConfig = yield* readStoredUserConfig;
+            expect(userConfig.base_url).toBe(constants.STAGING_BASE_URL);
+            expect(userConfig.web_url).toBe(constants.STAGING_WEB_URL);
+
+            const lines = yield* MockConsole.getLines({ stripAnsi: true });
+            const announcement = lines.findIndex(line =>
+              line.includes('Logging in to staging-backend.composio.dev')
+            );
+            const success = lines.findIndex(line => line.includes('Logged in as'));
+            expect(announcement).toBeGreaterThanOrEqual(0);
+            expect(announcement).toBeLessThan(success);
+          })
+      );
+    });
+
+    const recordingSessionRepository = (calls: Array<{ readonly baseURL?: string }>) =>
+      Effect.gen(function* () {
+        const expiresAt = DateTime.add(yield* DateTime.now, { minutes: 10 });
+        return ComposioSessionRepository.of({
+          createSession: params => {
+            calls.push({ baseURL: params?.baseURL });
+            return Effect.succeed({
+              id: 'target-session-id',
+              code: '001122',
+              expiresAt,
+              status: 'pending',
+            });
+          },
+          getSession: () => Effect.die(new Error('test: not polled')),
+          getRealtimeCredentials: () => Effect.die(new Error('test: unused')),
+          authRealtimeChannel: () => Effect.die(new Error('test: unused')),
+        });
+      });
+
+    layer(TestLive({ terminalUI: headlessStdinUI, userData: stagingLoginWithoutOrg }))(it => {
+      it.effect(
+        '[Given] a stored staging web_url [When] browser login starts [Then] it uses the production dashboard and backend',
+        () =>
+          Effect.gen(function* () {
+            const calls: Array<{ readonly baseURL?: string }> = [];
+            const sessionRepository = yield* recordingSessionRepository(calls);
+
+            yield* cli(['login']).pipe(
+              Effect.provideService(ComposioSessionRepository, sessionRepository)
+            );
+
+            expect(calls).toEqual([{ baseURL: constants.DEFAULT_BASE_URL }]);
+            const output = (yield* MockConsole.getLines({ stripAnsi: true })).join('\n');
+            expect(output).toContain(`${constants.DEFAULT_WEB_URL}?cliKey=target-session-id`);
+            expect(output).not.toContain('staging-dashboard');
+          })
+      );
+    });
+
+    layer(TestLive({ terminalUI: headlessStdinUI, baseConfigProvider: stagingEnv }))(it => {
+      it.effect(
+        '[Given] COMPOSIO_ENVIRONMENT=staging [When] browser login starts [Then] names the staging host before the URL',
+        () =>
+          Effect.gen(function* () {
+            const calls: Array<{ readonly baseURL?: string }> = [];
+            const sessionRepository = yield* recordingSessionRepository(calls);
+
+            yield* cli(['login']).pipe(
+              Effect.provideService(ComposioSessionRepository, sessionRepository)
+            );
+
+            expect(calls).toEqual([{ baseURL: constants.STAGING_BASE_URL }]);
+            const lines = yield* MockConsole.getLines({ stripAnsi: true });
+            const announcement = lines.findIndex(line =>
+              line.includes('Logging in to staging-backend.composio.dev')
+            );
+            const instructions = lines.findIndex(line =>
+              line.includes(`${constants.STAGING_WEB_URL}?cliKey=target-session-id`)
+            );
+            expect(announcement).toBeGreaterThanOrEqual(0);
+            expect(announcement).toBeLessThan(instructions);
+          })
+      );
+    });
+
+    const stagingLogin = { ...stagingLoginWithoutOrg, org_id: 'org_staging' };
+
+    layer(TestLive({ terminalUI: headlessStdinUI, userData: stagingLogin }))(it => {
+      it.effect('[Given] a stored key the backend accepts [Then] reports already logged in', () =>
+        Effect.gen(function* () {
+          const requestedUrls = spyOnSessionInfo();
+
+          yield* cli(['login']);
+
+          expect(requestedUrls).toHaveLength(1);
+          expect(new URL(requestedUrls[0]!).origin).toBe(constants.STAGING_BASE_URL);
+          const output = (yield* MockConsole.getLines({ stripAnsi: true })).join('\n');
+          expect(output).toContain("You're already logged in!");
+          expect(output).not.toContain('Open this URL in your browser to log in:');
+        })
+      );
+    });
+
+    layer(TestLive({ terminalUI: headlessStdinUI, userData: stagingLogin }))(it => {
+      it.effect(
+        '[Given] the stored key cannot be checked [Then] reports already logged in as before',
+        () =>
+          Effect.gen(function* () {
+            vi.spyOn(globalThis, 'fetch').mockRejectedValue(new Error('network unreachable'));
+
+            yield* cli(['login']);
+
+            const output = (yield* MockConsole.getLines({ stripAnsi: true })).join('\n');
+            expect(output).toContain("You're already logged in!");
+          })
+      );
+    });
+
+    const rejectStoredKey = () =>
+      vi
+        .spyOn(globalThis, 'fetch')
+        .mockImplementation(() => Promise.resolve(userApiKeyRejectionResponse()));
+
+    layer(TestLive({ terminalUI: headlessStdinUI, userData: stagingLogin }))(it => {
+      it.effect(
+        '[Given] the stored staging key is rejected [Then] login proceeds against production',
+        () =>
+          Effect.gen(function* () {
+            rejectStoredKey();
+            const calls: Array<{ readonly baseURL?: string }> = [];
+            const sessionRepository = yield* recordingSessionRepository(calls);
+
+            yield* cli(['login']).pipe(
+              Effect.provideService(ComposioSessionRepository, sessionRepository)
+            );
+
+            expect(calls).toEqual([{ baseURL: constants.DEFAULT_BASE_URL }]);
+            const output = (yield* MockConsole.getLines({ stripAnsi: true })).join('\n');
+            expect(output).not.toContain("You're already logged in!");
+            expect(output).toContain(`${constants.DEFAULT_WEB_URL}?cliKey=target-session-id`);
+          })
+      );
+    });
+
+    layer(
+      TestLive({
+        terminalUI: headlessStdinUI,
+        userData: stagingLogin,
+        baseConfigProvider: stagingEnv,
+      })
+    )(it => {
+      it.effect(
+        '[Given] a rejected key and COMPOSIO_ENVIRONMENT=staging [Then] names the staging host first',
+        () =>
+          Effect.gen(function* () {
+            rejectStoredKey();
+            const calls: Array<{ readonly baseURL?: string }> = [];
+            const sessionRepository = yield* recordingSessionRepository(calls);
+
+            yield* cli(['login']).pipe(
+              Effect.provideService(ComposioSessionRepository, sessionRepository)
+            );
+
+            expect(calls).toEqual([{ baseURL: constants.STAGING_BASE_URL }]);
+            const output = (yield* MockConsole.getLines({ stripAnsi: true })).join('\n');
+            expect(output).toContain('Logging in to staging-backend.composio.dev');
+          })
+      );
+    });
+
+    layer(TestLive({ terminalUI: headlessStdinUI }))(it => {
+      it.effect('[Given] no env vars [When] an agent logs in [Then] production is recorded', () =>
+        Effect.gen(function* () {
+          yield* writeStoredAgentIdentity(storedAgentIdentity);
+          vi.spyOn(globalThis, 'fetch').mockImplementation(async requestInput =>
+            requestUrl(requestInput).includes('/api/whoami')
+              ? mockFetchResponse(storedAgentIdentity)
+              : mockFetchResponse({})
+          );
+
+          yield* cli(['login']);
+
+          const userConfig = yield* readStoredUserConfig;
+          expect(userConfig.api_key).toBe('uak_agent');
+          expect(userConfig.base_url).toBe(constants.DEFAULT_BASE_URL);
+        })
+      );
+    });
   });
 });
