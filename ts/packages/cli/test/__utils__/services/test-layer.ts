@@ -1,6 +1,7 @@
 import path from 'node:path';
 import * as tempy from 'tempy';
 import * as constants from 'src/constants';
+import { AuthRejectionRecorder } from 'src/services/auth-rejection';
 import { Composio as RawComposioClient } from '@composio/client';
 import type { AuthConfigCreateParams } from '@composio/client/resources/auth-configs';
 import * as BunFileSystem from '@effect/platform-bun/BunFileSystem';
@@ -1320,6 +1321,7 @@ export const TestLayer = (input?: TestLiveInput) =>
       ComposioCliUserConfigTest,
       ComposioUserContextTest,
       ComposioClientSingletonTest,
+      AuthRejectionRecorder.Default,
       ComposioSessionRepositoryTest,
       TriggersRealtimeTest,
       ComposioToolkitsRepositoryTest,

@@ -1,8 +1,26 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { spawnSync } from 'node:child_process';
+import { spawn, spawnSync } from 'node:child_process';
 import { describe, expect, it } from 'vitest';
 import * as tempy from 'tempy';
+import { withHttpServer } from 'test/__utils__/http-server';
+import { userApiKeyRejectionBody } from 'test/__utils__/models/user-api-key-rejection';
+
+// Asynchronous so an in-process test server can answer the CLI's requests.
+const runCli = (args: ReadonlyArray<string>, env: NodeJS.ProcessEnv) =>
+  new Promise<{ status: number | null; stdout: string; stderr: string }>((resolve, reject) => {
+    const child = spawn('bun', ['run', 'src/bin.ts', ...args], {
+      cwd: process.cwd(),
+      env,
+      stdio: ['ignore', 'pipe', 'pipe'],
+    });
+    let stdout = '';
+    let stderr = '';
+    child.stdout.on('data', chunk => (stdout += chunk));
+    child.stderr.on('data', chunk => (stderr += chunk));
+    child.once('error', reject);
+    child.once('close', status => resolve({ status, stdout, stderr }));
+  });
 
 describe('CLI process error handling', () => {
   it('prints unreported ToolExecutionError failures and exits non-zero', () => {
@@ -73,6 +91,48 @@ describe('CLI process error handling', () => {
     expect(output).not.toContain('MissingRunSourceError');
     expect(output).not.toContain('Sources');
     expect(output).not.toContain('RUN_LOG_FILE=');
+  });
+
+  it('reports a rejected stored key once with the login step instead of a defect dump', async () => {
+    await withHttpServer(
+      (_req, res) => {
+        res.writeHead(401, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify(userApiKeyRejectionBody));
+      },
+      async baseUrl => {
+        const configDirectory = tempy.temporaryDirectory();
+        fs.writeFileSync(
+          path.join(configDirectory, 'user_data.json'),
+          JSON.stringify({
+            api_key: 'uak_revoked',
+            base_url: baseUrl,
+            web_url: 'http://127.0.0.1:3000/',
+            org_id: 'org_test',
+          })
+        );
+        const env = Object.fromEntries(
+          Object.entries(process.env).filter(
+            ([name]) =>
+              !['COMPOSIO_BASE_URL', 'COMPOSIO_ENVIRONMENT', 'COMPOSIO_USER_API_KEY'].includes(name)
+          )
+        );
+
+        const result = await runCli(['orgs', 'list'], {
+          ...env,
+          CI: '1',
+          NO_COLOR: '1',
+          COMPOSIO_CACHE_DIR: configDirectory,
+        });
+
+        const host = new URL(baseUrl).host;
+        const expected = `The Composio API at ${host} rejected your stored API key. Run \`COMPOSIO_BASE_URL=${baseUrl} composio login\` to log in again, then re-run the command.`;
+        expect(result.status).toBe(1);
+        expect(result.stdout).toBe('');
+        expect(result.stderr.split(expected)).toHaveLength(2);
+        expect(result.stderr).not.toContain('HttpServerError');
+        expect(result.stderr).not.toContain('Invalid or revoked user API key');
+      }
+    );
   });
 
   it('normalizes telemetry debug before dispatching a background worker', () => {

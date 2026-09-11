@@ -181,7 +181,7 @@ const TOOL_VALIDATION_CODES: ReadonlySet<number> = new Set([
   3702, // ComposioTools_ValidationError
 ]);
 
-const extractCommandPath = (argv: ReadonlyArray<string>): string => {
+export const extractCommandPath = (argv: ReadonlyArray<string>): string => {
   const commandTokens: string[] = [];
 
   for (const token of argv.slice(2)) {

@@ -691,6 +691,123 @@ const loginWithKey = (params: {
     };
   });
 
+const openLoginPage = (url: string) =>
+  Effect.gen(function* () {
+    const ui = yield* TerminalUI;
+    yield* Effect.tryPromise({
+      try: () => open(url, { wait: false }),
+      catch: cause => new LoginBrowserOpenError({ message: 'Failed to open the browser.', cause }),
+    }).pipe(
+      Effect.catchTag('commands/LoginBrowserOpenError', error =>
+        Effect.gen(function* () {
+          yield* Effect.logDebug('Failed to open browser:', error);
+          yield* ui.log.warn('Could not open the browser automatically.');
+          yield* ui.log.info(`Tip: try using the \`--no-browser\` flag and open the URL manually.`);
+        })
+      )
+    );
+  });
+
+const awaitLinkedBrowserSession = (params: { sessionId: string; target: BackendTarget }) =>
+  Effect.gen(function* () {
+    const ui = yield* TerminalUI;
+    const client = yield* ComposioSessionRepository;
+    return yield* ui.useMakeSpinner('Waiting for login...', spinner =>
+      Effect.retry(
+        Effect.gen(function* () {
+          const currentSession = yield* client.getSession({
+            id: params.sessionId,
+            baseURL: params.target.baseURL,
+          });
+          if (currentSession.status === 'linked') {
+            return currentSession;
+          }
+          return yield* new LoginSessionError({
+            message: `Session status is still '${currentSession.status}', waiting for 'linked'`,
+            operation: 'poll',
+            status: currentSession.status,
+          });
+        }),
+        {
+          schedule: Schedule.max([
+            Schedule.exponential('0.3 seconds'),
+            Schedule.spaced('5 seconds'),
+          ]),
+          times: 15,
+        }
+      ).pipe(
+        Effect.tap(() => spinner.stop('Login successful')),
+        Effect.tapError(() => spinner.error('Login timed out. Please try again.'))
+      )
+    );
+  });
+
+/**
+ * Logs in again after the backend rejected the stored key, against the
+ * stored environment. It writes nothing to stdout, skips the org picker, and
+ * stores the new key only after the session is linked and verified, so a
+ * declined, cancelled, or failed login leaves the old credentials in place.
+ *
+ * The previous org and test user id are kept when the new key can still
+ * access that org; otherwise the session's default org is used and named.
+ */
+export const reloginWithBrowser = (params: { target: BackendTarget }) =>
+  Effect.gen(function* () {
+    const ui = yield* TerminalUI;
+    const ctx = yield* ComposioUserContext;
+    const client = yield* ComposioSessionRepository;
+    const { target } = params;
+    const previousOrgId = Option.getOrUndefined(ctx.data.orgId);
+    const previousTestUserId = Option.getOrUndefined(ctx.data.testUserId);
+
+    yield* announceLoginTarget(target);
+    const session = yield* client.createSession({ scope: 'user', baseURL: target.baseURL });
+    const url = `${target.webURL}?cliKey=${session.id}`;
+    yield* ui.log.step('Redirecting you to the login page');
+    yield* ui.note(url, 'Login URL');
+    yield* openLoginPage(url);
+
+    const linkedSession = yield* awaitLinkedBrowserSession({ sessionId: session.id, target });
+    const apiKey = linkedSession.api_key;
+
+    const previousOrgSession =
+      previousOrgId === undefined
+        ? Option.none<SessionInfoResponse>()
+        : yield* getSessionInfoByUserApiKey({
+            baseURL: target.baseURL,
+            userApiKey: apiKey,
+            orgId: previousOrgId,
+          }).pipe(Effect.option);
+
+    const sessionInfo = Option.isSome(previousOrgSession)
+      ? previousOrgSession.value
+      : yield* getSessionInfoByUserApiKey({ baseURL: target.baseURL, userApiKey: apiKey });
+    const sessionUserId = sessionInfo.org_member.user_id ?? sessionInfo.org_member.id;
+    const sessionTestUserId = sessionUserId ? `pg-test-${sessionUserId}` : undefined;
+    const keepsPreviousOrg = Option.isSome(previousOrgSession);
+    const orgId = (keepsPreviousOrg ? previousOrgId : undefined) ?? sessionInfo.project.org.id;
+    const testUserId = keepsPreviousOrg
+      ? (previousTestUserId ?? sessionTestUserId)
+      : sessionTestUserId;
+
+    yield* ctx.login({ apiKey, target, orgId, testUserId });
+    if (!keepsPreviousOrg && previousOrgId !== undefined) {
+      yield* ui.log.warn(
+        `Your previous org is not available to this account. Using "${sessionInfo.project.org.name}".`
+      );
+    }
+
+    yield* linkAnalyticsIdentityForOrg({
+      apiKey,
+      baseURL: target.baseURL,
+      orgId,
+      knownIdentity: {
+        orgId: sessionInfo.project.org.id,
+        orgMemberId: sessionInfo.org_member.id,
+      },
+    });
+  });
+
 /**
  * Runs the browser-based login flow: creates a CLI session, opens the browser,
  * polls until linked, enriches via session/info, and stores credentials.
@@ -768,51 +885,10 @@ export const browserLogin = (params: {
     yield* ui.output(url);
 
     if (!effectiveNoBrowser) {
-      yield* Effect.tryPromise({
-        try: () => open(url, { wait: false }),
-        catch: cause =>
-          new LoginBrowserOpenError({ message: 'Failed to open the browser.', cause }),
-      }).pipe(
-        Effect.catchTag('commands/LoginBrowserOpenError', error =>
-          Effect.gen(function* () {
-            yield* Effect.logDebug('Failed to open browser:', error);
-            yield* ui.log.warn('Could not open the browser automatically.');
-            yield* ui.log.info(
-              `Tip: try using the \`--no-browser\` flag and open the URL manually.`
-            );
-          })
-        )
-      );
+      yield* openLoginPage(url);
     }
 
-    const linkedSession = yield* ui.useMakeSpinner('Waiting for login...', spinner =>
-      Effect.retry(
-        Effect.gen(function* () {
-          const currentSession = yield* client.getSession({
-            id: session.id,
-            baseURL: target.baseURL,
-          });
-          if (currentSession.status === 'linked') {
-            return currentSession;
-          }
-          return yield* new LoginSessionError({
-            message: `Session status is still '${currentSession.status}', waiting for 'linked'`,
-            operation: 'poll',
-            status: currentSession.status,
-          });
-        }),
-        {
-          schedule: Schedule.max([
-            Schedule.exponential('0.3 seconds'),
-            Schedule.spaced('5 seconds'),
-          ]),
-          times: 15,
-        }
-      ).pipe(
-        Effect.tap(() => spinner.stop('Login successful')),
-        Effect.tapError(() => spinner.error('Login timed out. Please try again.'))
-      )
-    );
+    const linkedSession = yield* awaitLinkedBrowserSession({ sessionId: session.id, target });
 
     yield* Effect.logDebug(`Linked session ID: ${linkedSession.id}`);
 

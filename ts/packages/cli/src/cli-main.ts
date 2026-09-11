@@ -109,6 +109,7 @@ import { showUpdateNotice } from 'src/services/update-check';
 import {
   configureCliAnalyticsReleaseVersion,
   createCliCommandTelemetryContext,
+  extractCommandPath,
   getExecuteCommandToolSlug,
   getPrimaryLifecycleFailedEvent,
   getPrimaryLifecycleInvokedEvent,
@@ -119,6 +120,9 @@ import { getVersion } from 'src/effects/version';
 import { toolkitFromToolSlug } from 'src/effects/toolkit-from-tool-slug';
 import { mapOnlyComposioOverrideError } from 'src/services/composio-error-overrides';
 import { AuthRejectionRecorder, recordIfUserApiKeyRejection } from 'src/services/auth-rejection';
+import { reportAuthRejection } from 'src/effects/auth-rejection-recovery';
+import { reloginWithBrowser } from 'src/commands/login.cmd';
+import { isUserApiKeyRejection } from 'src/utils/api-error-extraction';
 import { SetupSkillInstaller } from 'src/services/setup-skill-installer';
 import { SetupCommandError } from 'src/services/setup';
 import { ShellSetupAbortError } from 'src/commands/install.cmd';
@@ -315,10 +319,23 @@ export type CliBootstrapOptions = {
   readonly telemetryDebug: boolean;
 };
 
+// `composio login` is itself the recovery from a rejected key: its failures are
+// about the key it was given, so they keep the regular error output.
+const reportsAuthRejection = (argv: ReadonlyArray<string>) => extractCommandPath(argv) !== 'login';
+
 const cliProgram = (argv: ReadonlyArray<string>) =>
   showUpdateNotice.pipe(
     Effect.andThen(showPluginAcquisitionHint(argv)),
     Effect.andThen(runWithTelemetry(argv)),
+    // A rejected key is reported once, by `reportAuthRejection` below, instead
+    // of as a raw backend error.
+    Effect.catchIf(
+      error => reportsAuthRejection(argv) && isUserApiKeyRejection(error),
+      () =>
+        Effect.sync(() => {
+          process.exitCode = 1;
+        })
+    ),
     Effect.catchIf(
       (error): error is SetupCommandError => error instanceof SetupCommandError,
       error =>
@@ -418,6 +435,11 @@ const cliProgram = (argv: ReadonlyArray<string>) =>
           }
         }
       })
+    ),
+    Effect.andThen(
+      reportsAuthRejection(argv)
+        ? reportAuthRejection({ relogin: target => reloginWithBrowser({ target }) })
+        : Effect.void
     ),
     Effect.provide(layers),
     // v4 removed `Effect.withConfigProvider` (a FiberRef-scoped combinator); `ConfigProvider` is
