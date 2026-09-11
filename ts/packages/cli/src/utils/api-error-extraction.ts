@@ -165,3 +165,20 @@ export const extractApiErrorDetails = (value: unknown): ApiErrorDetails | undefi
 
   return fallback;
 };
+
+const USER_API_KEY_REJECTION_SLUG = 'UserApiKey_Unauthorized';
+const USER_API_KEY_REJECTION_CODE = 2113;
+
+const isRejectionDetails = (details: ApiErrorDetails | undefined): boolean =>
+  details?.slug === USER_API_KEY_REJECTION_SLUG || details?.code === USER_API_KEY_REJECTION_CODE;
+
+/**
+ * True when the Composio backend rejected the user API key itself
+ * (`UserApiKey_Unauthorized`, code 2113). Matches by slug or code only: a 403,
+ * or a 401 from an upstream service behind `proxy` or a tool, never matches.
+ * `HttpServerError.apiError` carries the decoded body for plain-fetch helpers.
+ */
+export const isUserApiKeyRejection = (error: unknown): boolean =>
+  isRejectionDetails(extractApiErrorDetails(error)) ||
+  (Predicate.hasProperty(error, 'apiError') &&
+    isRejectionDetails(extractApiErrorDetails(error.apiError)));

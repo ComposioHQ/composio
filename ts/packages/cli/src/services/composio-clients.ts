@@ -5,6 +5,7 @@ import {
   Effect,
   Layer,
   Option,
+  Result,
   Schema,
   Array,
   Order,
@@ -40,7 +41,9 @@ import { TriggerType, TriggerTypes, TriggerTypesAsEnums } from 'src/models/trigg
 import * as constants from 'src/constants';
 import { getCurrentCwdSessionId } from 'src/analytics/dispatch';
 import { ComposioUserContext, ComposioUserContextLive } from './user-context';
+import { AuthRejectionRecorder } from './auth-rejection';
 import { ProjectContext } from './project-context';
+import { type ApiErrorDetails, isUserApiKeyRejection } from 'src/utils/api-error-extraction';
 import { renderPrettyError } from './utils/pretty-error';
 import { NodeOs } from './node-os';
 
@@ -66,6 +69,8 @@ export class HttpServerError extends Data.TaggedError('services/HttpServerError'
   readonly cause?: unknown;
   readonly status?: number;
   readonly details?: HttpErrorDetails;
+  /** The backend's `{ error: { message, code, slug, ... } }` body, when it sent one. */
+  readonly apiError?: ApiErrorDetails;
 }> {}
 
 /**
@@ -583,6 +588,21 @@ export const HttpErrorResponse = Schema.Struct({
 export type HttpErrorResponse = Schema.Schema.Type<typeof HttpErrorResponse>;
 
 /**
+ * The error body the v3 API sends, e.g. for a rejected user API key:
+ * `{ "error": { "message", "code", "slug", "status", "request_id", "suggested_fix" } }`.
+ */
+const ApiErrorBody = Schema.Struct({
+  error: Schema.Struct({
+    message: Schema.optional(Schema.String),
+    code: Schema.optional(Schema.Number),
+    slug: Schema.optional(Schema.String),
+    status: Schema.optional(Schema.Number),
+    request_id: Schema.optional(Schema.String),
+    suggested_fix: Schema.optional(Schema.String),
+  }),
+}).annotate({ identifier: 'ApiErrorBody' });
+
+/**
  * Result of streaming a response with byte counting.
  */
 interface StreamedResponse {
@@ -644,14 +664,50 @@ const handleHttpErrorResponse = (response: Response): Effect.Effect<never, HttpS
       }
     }
 
-    // Fallback to generic error message
+    // Fallback to generic error message, keeping the v3 error body's slug and
+    // code so callers can recognize specific failures such as a rejected key.
+    const apiError = Option.flatMap(errorBodyOpt, Schema.decodeUnknownOption(ApiErrorBody)).pipe(
+      Option.map(body => body.error),
+      Option.getOrUndefined
+    );
     return yield* Effect.fail(
       new HttpServerError({
         cause: `HTTP ${status} ${statusText}`,
         status,
+        ...(apiError ? { apiError } : {}),
       })
     );
   });
+
+const requestOrigin = (input: string | URL | Request, response: Response): string => {
+  const raw =
+    response.url ||
+    (typeof input === 'string' ? input : input instanceof URL ? input.href : input.url);
+  return Result.try(() => new URL(raw).origin).pipe(Result.getOrElse(() => raw));
+};
+
+/**
+ * Wrap `fetch` so a user API key rejection is recorded wherever the SDK's
+ * response ends up: several commands catch or swallow SDK errors themselves.
+ * The body is read from a clone, so the SDK's own error handling is unchanged.
+ */
+const rejectionRecordingFetch =
+  (onRejection: (baseURL: string) => void) =>
+  (input: string | URL | Request, init?: RequestInit): Promise<Response> =>
+    globalThis.fetch(input, init).then(response =>
+      response.status !== 401
+        ? response
+        : response
+            .clone()
+            .json()
+            .then(
+              (body: unknown) => {
+                if (isUserApiKeyRejection(body)) onRejection(requestOrigin(input, response));
+                return response;
+              },
+              () => response
+            )
+    );
 
 /**
  * Streams a Fetch Response body, counting bytes precisely and parsing JSON in a single pass.
@@ -1577,6 +1633,9 @@ const loginClientFor = (
  */
 const makeComposioClientSingleton = Effect.gen(function* () {
   const ctx = yield* ComposioUserContext;
+  const recorder = yield* AuthRejectionRecorder;
+  const recordRejection = (baseURL: string) =>
+    Effect.runSync(recorder.record({ baseURL, keySource: ctx.backend.keySource }));
   const projectContextOpt = yield* Effect.serviceOption(ProjectContext);
   const fs = yield* FileSystem.FileSystem;
   const path = yield* Path.Path;
@@ -1608,6 +1667,8 @@ const makeComposioClientSingleton = Effect.gen(function* () {
         Effect.provideService(NodeOs, os)
       );
 
+      // Only a client sending the key in use reports rejections of that key.
+      const sendsKeyInUse = !params?.anonymous && params?.userApiKey === undefined;
       const client = new _RawComposioClient({
         apiKey: null,
         baseURL,
@@ -1617,6 +1678,7 @@ const makeComposioClientSingleton = Effect.gen(function* () {
           projectId: params?.projectId,
           cliSessionId,
         }),
+        ...(sendsKeyInUse ? { fetch: rejectionRecordingFetch(recordRejection) } : {}),
       });
 
       cache.set(cacheKey, client);
@@ -1655,7 +1717,7 @@ export class ComposioClientSingleton extends Context.Service<
   static readonly layer = Layer.effect(ComposioClientSingleton, makeComposioClientSingleton);
 
   static readonly Default = ComposioClientSingleton.layer.pipe(
-    Layer.provide(ComposioUserContextLive)
+    Layer.provide(Layer.mergeAll(ComposioUserContextLive, AuthRejectionRecorder.Default))
   );
 }
 

@@ -3,11 +3,13 @@ import * as FileSystem from 'effect/FileSystem';
 import * as Path from 'effect/Path';
 import * as BunFileSystem from '@effect/platform-bun/BunFileSystem';
 import * as BunPath from '@effect/platform-bun/BunPath';
-import { ConfigProvider, Effect, Layer } from 'effect';
+import { ConfigProvider, Effect, Layer, Option } from 'effect';
 import { execSync } from 'node:child_process';
 import * as tempy from 'tempy';
 import { ComposioClientSingleton } from 'src/services/composio-clients';
 import { ComposioUserContext, ComposioUserContextLive } from 'src/services/user-context';
+import { AuthRejectionRecorder } from 'src/services/auth-rejection';
+import { userApiKeyRejectionResponse } from 'test/__utils__/models/user-api-key-rejection';
 import { APP_VERSION, STAGING_BASE_URL, STAGING_WEB_URL } from 'src/constants';
 import { defaultNodeOs, NodeOs } from 'src/services/node-os';
 import { extendConfigProvider } from 'src/services/config';
@@ -270,11 +272,113 @@ describe('ComposioClientSingleton headers', () => {
       }).pipe(
         Effect.provide(
           ComposioClientSingleton.layer.pipe(
+            Layer.provideMerge(AuthRejectionRecorder.Default),
             Layer.provideMerge(ComposioUserContextLive),
             Layer.provideMerge(withConfigLayer(new Map(), homedir))
           )
         )
       );
     }).pipe(Effect.provide(Layer.mergeAll(BunFileSystem.layer, BunPath.layer)));
+  });
+});
+
+describe('ComposioClientSingleton rejection recording', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  const listTools = (client: { tools: { list: (params: object) => Promise<unknown> } }) =>
+    Effect.promise(() =>
+      client.tools
+        .list({ limit: 1, toolkit_versions: 'latest' })
+        .then(() => undefined)
+        .catch(() => undefined)
+    );
+
+  // Runs `body` with a stored staging login and the recorder in scope.
+  const withStoredStagingLogin = <A, E>(
+    body: Effect.Effect<A, E, ComposioClientSingleton | AuthRejectionRecorder>
+  ) => {
+    const homedir = tempy.temporaryDirectory();
+    return Effect.gen(function* () {
+      const fs = yield* FileSystem.FileSystem;
+      const path = yield* Path.Path;
+      const cacheDir = path.join(homedir, '.composio');
+      yield* fs.makeDirectory(cacheDir, { recursive: true });
+      yield* fs.writeFileString(
+        path.join(cacheDir, 'user_data.json'),
+        JSON.stringify({
+          api_key: 'uak_revoked',
+          base_url: STAGING_BASE_URL,
+          web_url: STAGING_WEB_URL,
+        })
+      );
+      return yield* body.pipe(
+        Effect.provide(
+          ComposioClientSingleton.layer.pipe(
+            Layer.provideMerge(AuthRejectionRecorder.Default),
+            Layer.provide(ComposioUserContextLive),
+            Layer.provide(withConfigLayer(new Map(), homedir))
+          )
+        )
+      );
+    }).pipe(Effect.provide(Layer.mergeAll(BunFileSystem.layer, BunPath.layer)));
+  };
+
+  it.effect(
+    '[Given] the backend rejects the stored key [Then] records the rejecting host once',
+    () => {
+      vi.spyOn(globalThis, 'fetch').mockImplementation(() =>
+        Promise.resolve(userApiKeyRejectionResponse())
+      );
+
+      return withStoredStagingLogin(
+        Effect.gen(function* () {
+          const client = yield* Effect.flatMap(ComposioClientSingleton, singleton =>
+            singleton.get()
+          );
+          yield* Effect.all([listTools(client), listTools(client)], { concurrency: 'unbounded' });
+
+          const recorder = yield* AuthRejectionRecorder;
+          expect(yield* recorder.first).toEqual(
+            Option.some({ baseURL: STAGING_BASE_URL, keySource: 'stored' })
+          );
+        })
+      );
+    }
+  );
+
+  it.effect('[Given] a successful response [Then] records nothing', () => {
+    vi.spyOn(globalThis, 'fetch').mockImplementation(() => Promise.resolve(okResponse()));
+
+    return withStoredStagingLogin(
+      Effect.gen(function* () {
+        const client = yield* Effect.flatMap(ComposioClientSingleton, singleton => singleton.get());
+        yield* listTools(client);
+
+        const recorder = yield* AuthRejectionRecorder;
+        expect(Option.isNone(yield* recorder.first)).toBe(true);
+      })
+    );
+  });
+
+  it.effect('[Given] an anonymous login client [Then] a rejection is not recorded', () => {
+    const fetchSpy = vi
+      .spyOn(globalThis, 'fetch')
+      .mockImplementation(() => Promise.resolve(userApiKeyRejectionResponse()));
+
+    return withStoredStagingLogin(
+      Effect.gen(function* () {
+        const client = yield* Effect.flatMap(ComposioClientSingleton, singleton =>
+          singleton.getFor({ baseURL: 'https://backend.composio.dev', anonymous: true })
+        );
+        yield* listTools(client);
+
+        const [, init] = fetchSpy.mock.calls[0]!;
+        expect(new Headers((init as RequestInit).headers).get('x-user-api-key')).toBeNull();
+        const recorder = yield* AuthRejectionRecorder;
+        expect(Option.isNone(yield* recorder.first)).toBe(true);
+      })
+    );
   });
 });
