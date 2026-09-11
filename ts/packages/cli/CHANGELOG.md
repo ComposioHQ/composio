@@ -41,6 +41,23 @@
   `https://staging-dashboard.composio.dev/`.
 - `composio dev auth-configs create` now sends custom OAuth credentials and scopes
   in the API's expected shape instead of failing validation.
+- Commands now call the backend you logged in to. The CLI recorded that backend
+  in `user_data.json` but ignored it, so a staging login stopped working as soon
+  as `COMPOSIO_BASE_URL` or `COMPOSIO_ENVIRONMENT` was unset, and failed with
+  `Invalid or revoked user API key`. An explicit `COMPOSIO_BASE_URL` or
+  `COMPOSIO_ENVIRONMENT` still wins, and the CLI now warns when it sends your
+  stored key to a different backend. A key from `COMPOSIO_USER_API_KEY` keeps
+  using the backend the env vars select.
+- `composio login` names the backend it logs in to when it is not production,
+  and `composio orgs switch` no longer moves your login to another backend.
+  When you are already logged in, `composio login` checks the stored key and
+  logs in again if the backend rejects it.
+- A rejected API key is reported once, after the command's output, naming the
+  backend that rejected it. In an interactive terminal the CLI offers to log in
+  again and keeps your old key if you decline or the login fails. Otherwise, the
+  message gives the exact next step, for example
+  `COMPOSIO_ENVIRONMENT=staging composio login`, and reaches stderr even when it
+  is captured by a script or an agent.
 
 ## 0.3.3
 

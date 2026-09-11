@@ -137,7 +137,7 @@ describe('CLI analytics dispatch', () => {
         const path = yield* Path.Path;
         yield* fs.writeFileString(
           path.join(cacheDir, USER_CONFIG_FILE_NAME),
-          JSON.stringify({ base_url: 'https://backend.example.test///' })
+          JSON.stringify({ api_key: 'uak_stored', base_url: 'https://backend.example.test///' })
         );
         yield* fs.writeFileString(
           path.join(cacheDir, 'consumer-short-term-cache.json'),
@@ -168,6 +168,56 @@ describe('CLI analytics dispatch', () => {
       }).pipe(Effect.provide(makePlatformLayer(home)));
     }
   );
+
+  describe('readApiBaseUrl uses the same backend rule as commands', () => {
+    const readWith = (params: {
+      readonly env: Record<string, string>;
+      readonly userData: Record<string, unknown>;
+    }) => {
+      const home = tempy.temporaryDirectory();
+      const cacheDir = tempy.temporaryDirectory();
+      vi.stubEnv('COMPOSIO_CACHE_DIR', cacheDir);
+      for (const name of ['COMPOSIO_BASE_URL', 'COMPOSIO_ENVIRONMENT', 'COMPOSIO_USER_API_KEY']) {
+        vi.stubEnv(name, params.env[name] ?? '');
+      }
+      writeFileSync(path.join(cacheDir, USER_CONFIG_FILE_NAME), JSON.stringify(params.userData));
+      return readApiBaseUrl.pipe(Effect.provide(makePlatformLayer(home)));
+    };
+
+    it.effect('[Given] a stored key and a stored staging backend [Then] uses staging', () =>
+      Effect.gen(function* () {
+        const baseUrl = yield* readWith({
+          env: {},
+          userData: { api_key: 'uak_stored', base_url: 'https://staging-backend.composio.dev' },
+        });
+        expect(baseUrl).toBe('https://staging-backend.composio.dev');
+      })
+    );
+
+    it.effect(
+      '[Given] COMPOSIO_USER_API_KEY and a stored staging backend [Then] uses the ambient backend',
+      () =>
+        Effect.gen(function* () {
+          const baseUrl = yield* readWith({
+            env: { COMPOSIO_USER_API_KEY: 'uak_env' },
+            userData: { api_key: 'uak_stored', base_url: 'https://staging-backend.composio.dev' },
+          });
+          expect(baseUrl).toBe('https://backend.composio.dev');
+        })
+    );
+
+    it.effect(
+      '[Given] COMPOSIO_ENVIRONMENT=staging and no stored base_url [Then] uses staging',
+      () =>
+        Effect.gen(function* () {
+          const baseUrl = yield* readWith({
+            env: { COMPOSIO_ENVIRONMENT: 'staging' },
+            userData: { api_key: 'uak_stored', base_url: null },
+          });
+          expect(baseUrl).toBe('https://staging-backend.composio.dev');
+        })
+    );
+  });
 
   it.effect('ignores malformed worker payloads', () => {
     const home = tempy.temporaryDirectory();
