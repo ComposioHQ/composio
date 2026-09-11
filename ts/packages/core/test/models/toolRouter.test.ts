@@ -13,6 +13,7 @@ import {
 } from '../../src/types/toolRouter.types';
 import { createCustomTool } from '../../src/models/CustomTool';
 import { DIRECT_CUSTOM_TOOL_DESCRIPTION_PREFIX } from '../../src/models/ToolRouterSession';
+import { ValidationError } from '../../src/errors/ValidationErrors';
 
 // Mock dependencies
 vi.mock('../../src/telemetry/Telemetry', () => ({
@@ -50,6 +51,7 @@ const createMockClient = () => ({
       toolkits: vi.fn(),
       search: vi.fn(),
       execute: vi.fn(),
+      configHistory: vi.fn(),
     },
   },
   tools: {
@@ -3656,6 +3658,94 @@ describe('ToolRouter', () => {
       expect(mockClient.toolRouter.session.create).toHaveBeenCalledTimes(1);
       expect(mockClient.toolRouter.session.retrieve).toHaveBeenCalledTimes(1);
       expect(mockClient.post).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('session.configHistory', () => {
+    const sessionId = 'session_123';
+    const rawHistoryItem = {
+      version: 2,
+      created_at: '2026-01-02T00:00:00Z',
+      is_current: true,
+      config: {
+        user_id: 'user_123',
+        toolkits: { enabled: ['github'] },
+        preload: { tools: [] },
+        search: {},
+        execute: {},
+      },
+    };
+
+    it('should page through the session config history', async () => {
+      mockClient.toolRouter.session.retrieve.mockResolvedValueOnce(mockSessionRetrieveResponse);
+      mockClient.toolRouter.session.configHistory.mockResolvedValueOnce({
+        items: [rawHistoryItem, { ...rawHistoryItem, version: 1, is_current: false }],
+        next_cursor: 'cursor_2',
+        total_pages: 2,
+        current_page: 1,
+        total_items: 3,
+      });
+
+      const session = await toolRouter.use(sessionId);
+      const result = await session.configHistory({ limit: 2 });
+
+      expect(mockClient.toolRouter.session.configHistory).toHaveBeenCalledWith(
+        sessionId,
+        { cursor: undefined, limit: 2 },
+        undefined
+      );
+      expect(result).toEqual({
+        items: [
+          {
+            version: 2,
+            createdAt: '2026-01-02T00:00:00Z',
+            isCurrent: true,
+            config: rawHistoryItem.config,
+          },
+          {
+            version: 1,
+            createdAt: '2026-01-02T00:00:00Z',
+            isCurrent: false,
+            config: rawHistoryItem.config,
+          },
+        ],
+        nextCursor: 'cursor_2',
+        totalPages: 2,
+        currentPage: 1,
+        totalItems: 3,
+      });
+    });
+
+    it('should default nextCursor to null and forward request options', async () => {
+      mockClient.toolRouter.session.retrieve.mockResolvedValueOnce(mockSessionRetrieveResponse);
+      mockClient.toolRouter.session.configHistory.mockResolvedValueOnce({
+        items: [],
+        total_pages: 0,
+        current_page: 1,
+        total_items: 0,
+      });
+      const signal = new AbortController().signal;
+
+      const session = await toolRouter.use(sessionId);
+      const result = await session.configHistory(undefined, { signal });
+
+      expect(mockClient.toolRouter.session.configHistory).toHaveBeenCalledWith(
+        sessionId,
+        { cursor: undefined, limit: undefined },
+        { signal }
+      );
+      expect(result.nextCursor).toBeNull();
+    });
+
+    it('should throw a ValidationError for invalid options', async () => {
+      mockClient.toolRouter.session.retrieve.mockResolvedValueOnce(mockSessionRetrieveResponse);
+
+      const session = await toolRouter.use(sessionId);
+
+      await expect(session.configHistory({ limit: 'ten' as unknown as number })).rejects.toThrow(
+        ValidationError
+      );
+      expect(mockClient.toolRouter.session.configHistory).not.toHaveBeenCalled();
     });
   });
 });

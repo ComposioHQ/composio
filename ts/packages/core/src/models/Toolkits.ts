@@ -6,6 +6,16 @@ import {
   ToolkitsListParamsSchema,
   ToolkitRetrieveCategoriesResponse,
   ToolkitAuthFieldsResponse,
+  ToolkitGetManyParams,
+  ToolkitGetManySlugsSchema,
+  ToolkitsGetManyParamsSchema,
+  ToolkitChangelogResponse,
+  ToolkitRecommendScopesParams,
+  ToolkitRecommendScopesParamsSchema,
+  ToolkitRecommendScopesResponse,
+  ToolkitListGrantContextsParams,
+  ToolkitListGrantContextsParamsSchema,
+  ToolkitListGrantContextsResponse,
 } from '../types/toolkit.types';
 import { ComposioToolkitFetchError, ComposioToolkitNotFoundError } from '../errors';
 import { ValidationError } from '../errors/ValidationErrors';
@@ -18,7 +28,12 @@ import { AuthSchemeType } from '../types/authConfigs.types';
 import logger from '../utils/logger';
 import { APIError } from 'openai';
 import {
+  transformToolkitChangelogResponse,
+  transformToolkitListGrantContextsParams,
+  transformToolkitListGrantContextsResponse,
   transformToolkitListResponse,
+  transformToolkitRecommendScopesParams,
+  transformToolkitRecommendScopesResponse,
   transformToolkitRetrieveCategoriesResponse,
   transformToolkitRetrieveResponse,
 } from '../utils/transformers/toolkits';
@@ -189,6 +204,171 @@ export class Toolkits {
       return this.getToolkitBySlug(arg, requestOptions);
     }
     return this.getToolkits(arg ?? {}, requestOptions);
+  }
+
+  /**
+   * Retrieves several toolkits by slug in a single request.
+   *
+   * Returns the same transformed shape as `composio.toolkits.get({ ... })`.
+   * Unknown slugs are simply absent from the result.
+   *
+   * @param {string[]} slugs - The toolkit slugs to retrieve (at least one)
+   * @param {ToolkitGetManyParams} [params] - Optional filters and pagination, as for `list`
+   * @returns {Promise<ToolKitListResponse>} The matching toolkits
+   * @throws {ValidationError} If `slugs` is empty or the params fail validation
+   * @throws {ComposioToolkitFetchError} If the request fails
+   *
+   * @example
+   * ```typescript
+   * const toolkits = await composio.toolkits.getMany(['github', 'slack']);
+   * console.log(toolkits.map(toolkit => toolkit.name)); // ['GitHub', 'Slack']
+   * ```
+   */
+  async getMany(
+    slugs: string[],
+    params?: ToolkitGetManyParams,
+    requestOptions?: ComposioRequestOptions
+  ): Promise<ToolKitListResponse> {
+    const parsedSlugs = ToolkitGetManySlugsSchema.safeParse(slugs);
+    if (!parsedSlugs.success) {
+      throw new ValidationError('Failed to parse toolkit slugs', {
+        cause: parsedSlugs.error,
+      });
+    }
+    const parsedParams = ToolkitsGetManyParamsSchema.safeParse(params ?? {});
+    if (!parsedParams.success) {
+      throw new ValidationError('Failed to parse toolkit getMany params', {
+        cause: parsedParams.error,
+      });
+    }
+    const body = {
+      toolkits: parsedSlugs.data,
+      category: parsedParams.data.category,
+      managed_by: parsedParams.data.managedBy,
+      sort_by: parsedParams.data.sortBy,
+      cursor: parsedParams.data.cursor,
+      limit: parsedParams.data.limit,
+    };
+    try {
+      const result = await withCancellation(
+        () => this.client.toolkits.retrieveMulti(body, requestOptions),
+        requestOptions?.signal
+      );
+      return transformToolkitListResponse(result);
+    } catch (error) {
+      if (error instanceof ComposioRequestCancelledError) {
+        throw error;
+      }
+      throw new ComposioToolkitFetchError('Failed to fetch toolkits', {
+        meta: { slugs: parsedSlugs.data },
+        cause: error,
+      });
+    }
+  }
+
+  /**
+   * Retrieves the version changelog of every toolkit (the last 10 versions
+   * per toolkit).
+   *
+   * @returns {Promise<ToolkitChangelogResponse>} Toolkits with their recent version changelogs
+   *
+   * @example
+   * ```typescript
+   * const { items } = await composio.toolkits.changelog();
+   * const github = items.find(item => item.slug === 'github');
+   * console.log(github?.versions[0]); // { version: '20250909_00', changelog: '...' }
+   * ```
+   */
+  async changelog(requestOptions?: ComposioRequestOptions): Promise<ToolkitChangelogResponse> {
+    const result = await withCancellation(
+      () => this.client.toolkits.retrieveChangelog(requestOptions),
+      requestOptions?.signal
+    );
+    return transformToolkitChangelogResponse(result);
+  }
+
+  /**
+   * Recommends the OAuth scopes to request so a connection can run the given
+   * tools.
+   * **Experimental — the API marks this endpoint beta; shape may change.**
+   *
+   * The answer comes in two variants: `leastPrivilege` (narrowest documented
+   * scope per requirement) and `fewest` (smallest set covering everything).
+   * Pass `toolkitVersion` from a previous answer to pin the computation.
+   *
+   * @param {string} toolkitSlug - The toolkit to recommend scopes for
+   * @param {ToolkitRecommendScopesParams} params - Tools to cover (`[]` for the whole toolkit), auth scheme, grant context and scope constraints
+   * @returns {Promise<ToolkitRecommendScopesResponse>} The recommended scope sets
+   * @throws {ValidationError} If the params fail validation
+   *
+   * @example
+   * ```typescript
+   * const { scopes } = await composio.toolkits.recommendScopes('gmail', {
+   *   tools: ['GMAIL_SEND_EMAIL', 'GMAIL_FETCH_EMAILS'],
+   * });
+   * console.log(scopes.leastPrivilege);
+   * ```
+   */
+  async recommendScopes(
+    toolkitSlug: string,
+    params: ToolkitRecommendScopesParams,
+    requestOptions?: ComposioRequestOptions
+  ): Promise<ToolkitRecommendScopesResponse> {
+    const parsedParams = ToolkitRecommendScopesParamsSchema.safeParse(params);
+    if (!parsedParams.success) {
+      throw new ValidationError('Failed to parse toolkit recommendScopes params', {
+        cause: parsedParams.error,
+      });
+    }
+    const body = transformToolkitRecommendScopesParams(parsedParams.data);
+    const result = await withCancellation(
+      () => this.client.toolkits.recommendScopes(toolkitSlug, body, requestOptions),
+      requestOptions?.signal
+    );
+    return transformToolkitRecommendScopesResponse(result);
+  }
+
+  /**
+   * Lists the grant-context dimensions a toolkit's scope recommendation
+   * depends on (for example the Google account type), with their allowed
+   * values and the default the API assumes.
+   * **Experimental — the API marks this endpoint beta; shape may change.**
+   *
+   * Pass a dimension and a value as `grantContext` to
+   * `composio.toolkits.recommendScopes()` to tailor the recommendation.
+   *
+   * @param {string} toolkitSlug - The toolkit to list grant contexts for
+   * @param {ToolkitListGrantContextsParams} [params] - Optional auth scheme and toolkit version
+   * @returns {Promise<ToolkitListGrantContextsResponse>} The dimensions and the default grant context
+   * @throws {ValidationError} If the params fail validation
+   *
+   * @example
+   * ```typescript
+   * const { grantContextDimensions } = await composio.toolkits.listGrantContexts('gmail');
+   * const [accountType] = grantContextDimensions;
+   * const { scopes } = await composio.toolkits.recommendScopes('gmail', {
+   *   tools: ['GMAIL_SEND_EMAIL'],
+   *   grantContext: { [accountType.dimension]: accountType.values[0] },
+   * });
+   * ```
+   */
+  async listGrantContexts(
+    toolkitSlug: string,
+    params?: ToolkitListGrantContextsParams,
+    requestOptions?: ComposioRequestOptions
+  ): Promise<ToolkitListGrantContextsResponse> {
+    const parsedParams = ToolkitListGrantContextsParamsSchema.safeParse(params ?? {});
+    if (!parsedParams.success) {
+      throw new ValidationError('Failed to parse toolkit listGrantContexts params', {
+        cause: parsedParams.error,
+      });
+    }
+    const query = transformToolkitListGrantContextsParams(parsedParams.data);
+    const result = await withCancellation(
+      () => this.client.toolkits.retrieveScopesGrantContext(toolkitSlug, query, requestOptions),
+      requestOptions?.signal
+    );
+    return transformToolkitListGrantContextsResponse(result);
   }
 
   private async getAuthConfigFields(
