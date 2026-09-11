@@ -63,7 +63,7 @@ describe('decideAuthRejectionRecovery', () => {
       invocationOrigin: params.invocationOrigin,
     });
 
-  it('Covers AE5. [Given] a rejected stored staging key and no prompt [Then] spells out the staging login', () => {
+  it('[Given] a rejected stored staging key and no prompt [Then] spells out the staging login', () => {
     const recovery = decide({ rejection: { baseURL: STAGING_BASE_URL, keySource: 'stored' } });
 
     expect(recovery.kind).toBe('message');
@@ -100,7 +100,7 @@ describe('decideAuthRejectionRecovery', () => {
     expect(recovery).toMatchObject({ kind: 'offer-relogin', target: storedStaging });
   });
 
-  it('Covers AE3. [Given] COMPOSIO_BASE_URL points away from the stored backend [Then] explains the mismatch without re-login', () => {
+  it('[Given] COMPOSIO_BASE_URL points away from the stored backend [Then] explains the mismatch without re-login', () => {
     const recovery = decide({
       rejection: { baseURL: DEFAULT_BASE_URL, keySource: 'stored' },
       overrides: { ...noOverrides, baseURL: DEFAULT_BASE_URL },
@@ -114,7 +114,7 @@ describe('decideAuthRejectionRecovery', () => {
     expect(recovery.nextStep).toBe('Unset COMPOSIO_BASE_URL to use that login.');
   });
 
-  it('Covers AE6. [Given] a rejected COMPOSIO_USER_API_KEY [Then] asks to replace it without re-login', () => {
+  it('[Given] a rejected COMPOSIO_USER_API_KEY [Then] asks to replace it without re-login', () => {
     const recovery = decide({
       rejection: { baseURL: DEFAULT_BASE_URL, keySource: 'env' },
       canPromptForLogin: true,
@@ -125,7 +125,7 @@ describe('decideAuthRejectionRecovery', () => {
     expect(recovery.nextStep).toBe('Replace its value with a valid user API key.');
   });
 
-  it('Covers AE8. [Given] a composio run child call [Then] asks to run composio login', () => {
+  it('[Given] a composio run child call [Then] asks to run composio login', () => {
     const recovery = decide({
       rejection: { baseURL: STAGING_BASE_URL, keySource: 'env' },
       invocationOrigin: 'run',
@@ -291,7 +291,7 @@ describe('reportAuthRejection', () => {
 
   layer(TestLive({ userData: stagingLogin }))(it => {
     it.effect(
-      'Covers AE5. [Given] stderr is not a terminal [Then] writes one undecorated line with the staging login step',
+      '[Given] stderr is not a terminal [Then] writes one undecorated line with the staging login step',
       () =>
         Effect.gen(function* () {
           yield* recordThenReport(stagingRejection);
@@ -331,26 +331,24 @@ describe('reportAuthRejection', () => {
       baseConfigProvider: stagingOverrideToProduction,
     })
   )(it => {
-    it.effect(
-      'Covers AE3. [Given] a mismatch in a terminal [Then] explains it and never prompts',
-      () =>
-        Effect.gen(function* () {
-          vi.stubEnv('COMPOSIO_DISABLE_PERMISSION_UI', '0');
-          confirmCalls.length = 0;
+    it.effect('[Given] a mismatch in a terminal [Then] explains it and never prompts', () =>
+      Effect.gen(function* () {
+        vi.stubEnv('COMPOSIO_DISABLE_PERMISSION_UI', '0');
+        confirmCalls.length = 0;
 
-          yield* recordThenReport({ baseURL: DEFAULT_BASE_URL, keySource: 'stored' });
+        yield* recordThenReport({ baseURL: DEFAULT_BASE_URL, keySource: 'stored' });
 
-          expect(confirmCalls).toEqual([]);
-          const output = (yield* MockConsole.getLines()).join('\n');
-          expect(output).toContain('COMPOSIO_BASE_URL points the CLI at backend.composio.dev');
-          expect(output).toContain('Unset COMPOSIO_BASE_URL');
-        })
+        expect(confirmCalls).toEqual([]);
+        const output = (yield* MockConsole.getLines()).join('\n');
+        expect(output).toContain('COMPOSIO_BASE_URL points the CLI at backend.composio.dev');
+        expect(output).toContain('Unset COMPOSIO_BASE_URL');
+      })
     );
   });
 
   layer(TestLive({ userData: stagingLogin, terminalUI: interactiveUI(true) }))(it => {
     it.effect(
-      'Covers AE4. [Given] an accepted re-login [Then] replaces the key, keeps staging and the org, and asks to re-run',
+      '[Given] an accepted re-login [Then] replaces the key, keeps staging and the org, and asks to re-run',
       () =>
         Effect.gen(function* () {
           vi.stubEnv('COMPOSIO_DISABLE_PERMISSION_UI', '0');
@@ -410,7 +408,7 @@ describe('reportAuthRejection', () => {
   });
 
   layer(TestLive({ userData: stagingLogin, terminalUI: interactiveUI(false) }))(it => {
-    it.effect('Covers AE4. [Given] a declined re-login [Then] keeps the stored credentials', () =>
+    it.effect('[Given] a declined re-login [Then] keeps the stored credentials', () =>
       Effect.gen(function* () {
         vi.stubEnv('COMPOSIO_DISABLE_PERMISSION_UI', '0');
         confirmCalls.length = 0;
@@ -426,7 +424,7 @@ describe('reportAuthRejection', () => {
   });
 
   layer(TestLive({ userData: stagingLogin, terminalUI: interactiveUI(true) }))(it => {
-    it.effect('Covers AE4. [Given] a failed re-login [Then] keeps the stored credentials', () =>
+    it.effect('[Given] a failed re-login [Then] keeps the stored credentials', () =>
       Effect.gen(function* () {
         vi.stubEnv('COMPOSIO_DISABLE_PERMISSION_UI', '0');
         const { repository } = yield* linkedSessionRepository({ failCreate: true });
@@ -447,19 +445,17 @@ describe('reportAuthRejection', () => {
   );
 
   layer(TestLive({ baseConfigProvider: envKey, terminalUI: interactiveUI(true) }))(it => {
-    it.effect(
-      'Covers AE6. [Given] a rejected env key [Then] names the env var and never prompts',
-      () =>
-        Effect.gen(function* () {
-          vi.stubEnv('COMPOSIO_DISABLE_PERMISSION_UI', '0');
-          confirmCalls.length = 0;
+    it.effect('[Given] a rejected env key [Then] names the env var and never prompts', () =>
+      Effect.gen(function* () {
+        vi.stubEnv('COMPOSIO_DISABLE_PERMISSION_UI', '0');
+        confirmCalls.length = 0;
 
-          yield* recordThenReport({ baseURL: DEFAULT_BASE_URL, keySource: 'env' });
+        yield* recordThenReport({ baseURL: DEFAULT_BASE_URL, keySource: 'env' });
 
-          expect(confirmCalls).toEqual([]);
-          const output = (yield* MockConsole.getLines()).join('\n');
-          expect(output).toContain('rejected the API key in COMPOSIO_USER_API_KEY');
-        })
+        expect(confirmCalls).toEqual([]);
+        const output = (yield* MockConsole.getLines()).join('\n');
+        expect(output).toContain('rejected the API key in COMPOSIO_USER_API_KEY');
+      })
     );
   });
 
@@ -470,16 +466,14 @@ describe('reportAuthRejection', () => {
   }).pipe(extendConfigProvider);
 
   layer(TestLive({ baseConfigProvider: runChild }))(it => {
-    it.effect(
-      'Covers AE8. [Given] a composio run child call [Then] asks to run composio login',
-      () =>
-        Effect.gen(function* () {
-          yield* recordThenReport({ baseURL: STAGING_BASE_URL, keySource: 'env' });
+    it.effect('[Given] a composio run child call [Then] asks to run composio login', () =>
+      Effect.gen(function* () {
+        yield* recordThenReport({ baseURL: STAGING_BASE_URL, keySource: 'env' });
 
-          const output = (yield* MockConsole.getLines()).join('\n');
-          expect(output).toContain('`COMPOSIO_ENVIRONMENT=staging composio login`');
-          expect(output).not.toContain('Replace its value');
-        })
+        const output = (yield* MockConsole.getLines()).join('\n');
+        expect(output).toContain('`COMPOSIO_ENVIRONMENT=staging composio login`');
+        expect(output).not.toContain('Replace its value');
+      })
     );
   });
 });

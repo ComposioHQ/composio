@@ -439,7 +439,7 @@ const isSearchCommand = (commandPath: string): boolean =>
 const isLinkCommand = (commandPath: string): boolean =>
   commandPath === 'link' || commandPath === 'dev connected-accounts link';
 
-const isLoginCommand = (commandPath: string): boolean => commandPath === 'login';
+export const isLoginCommand = (commandPath: string): boolean => commandPath === 'login';
 
 const isLogoutCommand = (commandPath: string): boolean => commandPath === 'logout';
 

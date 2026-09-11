@@ -111,6 +111,7 @@ import {
   createCliCommandTelemetryContext,
   extractCommandPath,
   getExecuteCommandToolSlug,
+  isLoginCommand,
   getPrimaryLifecycleFailedEvent,
   getPrimaryLifecycleInvokedEvent,
   getPrimaryLifecycleSucceededEvent,
@@ -321,7 +322,8 @@ export type CliBootstrapOptions = {
 
 // `composio login` is itself the recovery from a rejected key: its failures are
 // about the key it was given, so they keep the regular error output.
-const reportsAuthRejection = (argv: ReadonlyArray<string>) => extractCommandPath(argv) !== 'login';
+const reportsAuthRejection = (argv: ReadonlyArray<string>) =>
+  !isLoginCommand(extractCommandPath(argv));
 
 const cliProgram = (argv: ReadonlyArray<string>) =>
   showUpdateNotice.pipe(

@@ -27,7 +27,7 @@ describe('warnOnBackendMismatch', () => {
     })
   )(it => {
     it.effect(
-      'Covers AE2. [Given] a stored staging login and COMPOSIO_BASE_URL on production [Then] warns once on stderr',
+      '[Given] a stored staging login and COMPOSIO_BASE_URL on production [Then] warns once on stderr',
       () =>
         Effect.gen(function* () {
           yield* warnOnBackendMismatch;

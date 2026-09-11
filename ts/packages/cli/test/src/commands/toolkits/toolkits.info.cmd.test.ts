@@ -293,17 +293,15 @@ describe('CLI: composio dev toolkits info', () => {
         toolRouter: { create: () => Promise.reject(sdkRejection()) },
       })
     )(it => {
-      it.effect(
-        'Covers AE1. [When] session creation is rejected [Then] defers to the recovery block',
-        () =>
-          Effect.gen(function* () {
-            yield* cli(['dev', 'toolkits', 'info', 'slack', '--user-id', 'alice']);
-            const output = (yield* MockConsole.getLines({ stripAnsi: true })).join('\n');
+      it.effect('[When] session creation is rejected [Then] defers to the recovery block', () =>
+        Effect.gen(function* () {
+          yield* cli(['dev', 'toolkits', 'info', 'slack', '--user-id', 'alice']);
+          const output = (yield* MockConsole.getLines({ stripAnsi: true })).join('\n');
 
-            expect(output).not.toContain('Invalid or revoked user API key');
-            expect(output).not.toContain('Browse available toolkits');
-            expect(yield* hasRecordedAuthRejection).toBe(true);
-          })
+          expect(output).not.toContain('Invalid or revoked user API key');
+          expect(output).not.toContain('Browse available toolkits');
+          expect(yield* hasRecordedAuthRejection).toBe(true);
+        })
       );
     });
 

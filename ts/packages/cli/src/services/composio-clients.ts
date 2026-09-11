@@ -5,7 +5,6 @@ import {
   Effect,
   Layer,
   Option,
-  Result,
   Schema,
   Array,
   Order,
@@ -44,6 +43,7 @@ import { ComposioUserContext, ComposioUserContextLive } from './user-context';
 import { AuthRejectionRecorder } from './auth-rejection';
 import { ProjectContext } from './project-context';
 import { type ApiErrorDetails, isUserApiKeyRejection } from 'src/utils/api-error-extraction';
+import { backendOrigin } from 'src/utils/backend-resolution';
 import { renderPrettyError } from './utils/pretty-error';
 import { NodeOs } from './node-os';
 
@@ -679,12 +679,11 @@ const handleHttpErrorResponse = (response: Response): Effect.Effect<never, HttpS
     );
   });
 
-const requestOrigin = (input: string | URL | Request, response: Response): string => {
-  const raw =
+const requestOrigin = (input: string | URL | Request, response: Response): string =>
+  backendOrigin(
     response.url ||
-    (typeof input === 'string' ? input : input instanceof URL ? input.href : input.url);
-  return Result.try(() => new URL(raw).origin).pipe(Result.getOrElse(() => raw));
-};
+      (typeof input === 'string' ? input : input instanceof URL ? input.href : input.url)
+  );
 
 /**
  * Wrap `fetch` so a user API key rejection is recorded wherever the SDK's

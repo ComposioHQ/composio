@@ -782,20 +782,18 @@ describe('CLI: composio login', () => {
     const stagingLogin = { ...stagingLoginWithoutOrg, org_id: 'org_staging' };
 
     layer(TestLive({ terminalUI: headlessStdinUI, userData: stagingLogin }))(it => {
-      it.effect(
-        'Covers AE7. [Given] a stored key the backend accepts [Then] reports already logged in',
-        () =>
-          Effect.gen(function* () {
-            const requestedUrls = spyOnSessionInfo();
+      it.effect('[Given] a stored key the backend accepts [Then] reports already logged in', () =>
+        Effect.gen(function* () {
+          const requestedUrls = spyOnSessionInfo();
 
-            yield* cli(['login']);
+          yield* cli(['login']);
 
-            expect(requestedUrls).toHaveLength(1);
-            expect(new URL(requestedUrls[0]!).origin).toBe(constants.STAGING_BASE_URL);
-            const output = (yield* MockConsole.getLines({ stripAnsi: true })).join('\n');
-            expect(output).toContain("You're already logged in!");
-            expect(output).not.toContain('Open this URL in your browser to log in:');
-          })
+          expect(requestedUrls).toHaveLength(1);
+          expect(new URL(requestedUrls[0]!).origin).toBe(constants.STAGING_BASE_URL);
+          const output = (yield* MockConsole.getLines({ stripAnsi: true })).join('\n');
+          expect(output).toContain("You're already logged in!");
+          expect(output).not.toContain('Open this URL in your browser to log in:');
+        })
       );
     });
 
@@ -821,7 +819,7 @@ describe('CLI: composio login', () => {
 
     layer(TestLive({ terminalUI: headlessStdinUI, userData: stagingLogin }))(it => {
       it.effect(
-        'Covers AE7. [Given] the stored staging key is rejected [Then] login proceeds against production',
+        '[Given] the stored staging key is rejected [Then] login proceeds against production',
         () =>
           Effect.gen(function* () {
             rejectStoredKey();
@@ -848,7 +846,7 @@ describe('CLI: composio login', () => {
       })
     )(it => {
       it.effect(
-        'Covers AE7. [Given] a rejected key and COMPOSIO_ENVIRONMENT=staging [Then] names the staging host first',
+        '[Given] a rejected key and COMPOSIO_ENVIRONMENT=staging [Then] names the staging host first',
         () =>
           Effect.gen(function* () {
             rejectStoredKey();

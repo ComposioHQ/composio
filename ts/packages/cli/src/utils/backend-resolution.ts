@@ -82,7 +82,11 @@ const parseBackendUrl = (value: string) =>
     catch: cause => new BackendUrlParseError({ cause }),
   });
 
-const normalizeBackend = (value: string): string => {
+/**
+ * Origin of a backend or request URL. A value that does not parse as a URL is
+ * returned trimmed, without trailing slashes.
+ */
+export const backendOrigin = (value: string): string => {
   const trimmed = value.trim();
   return parseBackendUrl(trimmed).pipe(
     Result.map(url => url.origin),
@@ -99,7 +103,7 @@ const normalizeBackend = (value: string): string => {
  * compares as a trimmed string without trailing slashes.
  */
 export const isSameBackend = (left: string, right: string): boolean =>
-  normalizeBackend(left) === normalizeBackend(right);
+  backendOrigin(left) === backendOrigin(right);
 
 /**
  * Resolve the backend for this invocation.
