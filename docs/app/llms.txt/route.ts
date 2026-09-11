@@ -23,6 +23,7 @@ If it is unclear whether the goal is to integrate Composio into the application 
 - [Platform or For You](https://docs.composio.dev/docs.md): Choose between building an application and using your own connected apps.
 - [Set up a coding agent](https://docs.composio.dev/docs/agent-setup.md): Install the Composio skill to add Composio to an existing project.
 - [SDK quickstart](https://docs.composio.dev/docs/quickstart.md): Install Python or TypeScript packages, create a session, and run an agent.
+- [Authenticate an unattended agent](https://docs.composio.dev/docs/agent-setup/unattended-authentication.md): When no human is available, use \`composio login --agent\`, configure a project API key, and verify a live tool call. Human account access still requires authorization.
 - [Native agent plugins](https://docs.composio.dev/docs/agent-plugins.md): Use your own apps from Codex or Claude Code.
 - [Connect an MCP client](https://docs.composio.dev/docs/composio-connect.md): Connect an existing client to your apps over MCP.
 
