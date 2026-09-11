@@ -42,6 +42,11 @@ jobs:
 
       - name: Setup Node.js, pnpm, Bun
         uses: ./.github/actions/setup-node-pnpm-bun
+        with:
+          # Only push runs on next save caches: PR-scoped caches are invisible
+          # to other branches, so saving them costs post-job time and evicts
+          # reusable default-branch caches from the 10 GB repo quota.
+          cache-save: ${{ github.event_name == 'push' && github.ref == 'refs/heads/next' }}
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
