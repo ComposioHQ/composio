@@ -75,7 +75,7 @@ This redaction has a specific scope. It does not sanitize every provider respons
 
 [Sessions](/docs/configuring-sessions) and [direct execution](/docs/sessions-vs-direct-execution) also work from deterministic backend code. An LLM is not required to execute a tool or proxy request.
 
-[Proxy Execute](/docs/extending-sessions/proxy-execute) checks the destination against the connected account's toolkit domain and requires its own API-key permission. Use relative provider paths and let Composio supply authentication. Granting proxy access allows provider operations beyond predefined tool schemas, subject to the provider's permissions. Review that permission separately from tool selection.
+[Proxy Execute](/docs/extending-sessions/proxy-execute) requires absolute URLs to use the same scheme and registrable domain (eTLD+1) as the connected account's resolved base URL, so sibling subdomains are allowed. It also requires its own API-key permission. Use relative provider paths and let Composio supply authentication. Granting proxy access allows provider operations beyond predefined tool schemas, subject to the provider's permissions. Review that permission separately from tool selection.
 
 For custom business logic, [session extension tools](/docs/extending-sessions/custom-tools-and-toolkits) let your code call the proxy without reading tokens. If you instead [import credentials](/docs/authentication/importing-existing-connections) or handle authentication yourself, include those code paths in your credential review.
 
