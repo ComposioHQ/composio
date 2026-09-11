@@ -1,5 +1,11 @@
 # @composio/vercel
 
+## 0.12.1
+
+### Patch Changes
+
+- 20aaa95: Accept the upcoming core prerelease and the upstream versions already used to build and test providers.
+
 ## 0.12.0
 
 ### Minor Changes

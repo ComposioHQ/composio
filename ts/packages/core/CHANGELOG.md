@@ -1,5 +1,18 @@
 # @composio/core
 
+## 0.18.2
+
+### Patch Changes
+
+- 7055914: Move published dependency ranges to their current upstream releases: zod 4.5, openai 7.10, typebox 1.3.27, @mastra/schema-compat 1.3.8, and @cloudflare/workers-types 5.20260905. `@composio/anthropic` also accepts `@anthropic-ai/sdk` 0.124 as a peer, the line it is now tested against.
+- b4b9fc4: Guard schema `pattern` and `patternProperties` compilation. A pattern that does not compile or exceeds 1024 characters now fails conversion with an `InvalidPatternError` that names the offending property path instead of a raw `SyntaxError`. `@composio/core` surfaces that path in the `JsonSchemaToZodError` message. No backtracking heuristic is applied: a hostile `pattern` that backtracks catastrophically remains a known limitation.
+- 9d0cb2c: Export `readResponseBodyWithLimit` and `MAX_URL_UPLOAD_SIZE_BYTES` so downstream packages can apply the SDK's 100 MiB cap when they download a file from a user-supplied URL. The CLI's tool-input file uploads now use it instead of buffering the whole response.
+- ba85f4d: Apply the Fetch standard's redirect rules in `ssrfSafeFetch`, which following redirects manually meant `fetch` never applied: a `303` now retries as a bodiless `GET` instead of replaying an upload's method and body at a result URL, a `301`/`302` does the same for a `POST`, and `307`/`308` keep replaying both. Only `301`, `302`, `303`, `307` and `308` count as redirects to follow, so a `304` or `305` carrying a `Location` is returned to the caller rather than followed.
+- ba85f4d: Close the IPv6 transition ranges the SSRF guard's address blocklist let through: 6to4 (`2002::/16`), Teredo and the rest of `2001::/23`, local-use NAT64 (`64:ff9b:1::/48`), `100::/64`, `2001:db8::/32` and site-local `fec0::/10` each carry or reach an arbitrary IPv4 address, so `2002:7f00:1::` was a public-looking literal for `127.0.0.1`. IPv4 multicast and the `192.88.99.0/24` 6to4 relay range are blocked too.
+- 85996c4: Drop `Authorization`, `Proxy-Authorization`, and `Cookie` from the request headers when the SSRF guard follows a redirect to a different origin, as the Fetch standard does for automatic redirects. Same-origin redirects keep them.
+- Updated dependencies [b4b9fc4]
+  - @composio/json-schema-to-zod@0.3.3
+
 ## 0.18.1
 
 ### Patch Changes
