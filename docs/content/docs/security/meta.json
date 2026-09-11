@@ -2,6 +2,7 @@
   "title": "Security and data",
   "defaultOpen": false,
   "pages": [
-    "overview"
+    "overview",
+    "token-custody"
   ]
 }

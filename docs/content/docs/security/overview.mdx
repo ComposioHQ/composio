@@ -18,6 +18,8 @@ Composio is SOC 2 Type II compliant. For our latest reports and certifications (
 
 ## Credential protection
 
+See [Token custody architecture](/docs/security/token-custody) for credential boundaries, server-side execution, default API redaction, and deployment options.
+
 - Connected-account credentials, auth configs, and API keys are encrypted at rest using AES-256-GCM, and all traffic is encrypted in transit using TLS.
 - Connected-account tokens are redacted by default in API responses, for both Composio-managed and custom auth configs. To act on a provider directly, use [Proxy Execute](/docs/extending-sessions/proxy-execute).
 - Webhook deliveries are signed; verify the `webhook-signature` header when handling trigger events. For custom OAuth webhook setup, see [Custom OAuth webhooks](/docs/setting-up-triggers/custom-oauth-webhooks).
