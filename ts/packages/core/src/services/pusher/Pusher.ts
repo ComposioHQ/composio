@@ -172,12 +172,7 @@ export class PusherService {
       // add subscription error handling
       channel.bind('pusher:subscription_error', (data: Record<string, unknown>) => {
         const error = data.error ? String(data.error) : 'Unknown subscription error';
-        throw new ComposioFailedToSubscribeToPusherChannelError(
-          `Trigger subscription error: ${error}`,
-          {
-            cause: error,
-          }
-        );
+        logger.error(`Trigger subscription error: ${error}`);
       });
 
       // wrap the callback to handle errors
