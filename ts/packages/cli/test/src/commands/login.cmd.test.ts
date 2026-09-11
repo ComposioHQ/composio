@@ -12,6 +12,7 @@ import { writeStoredAgentIdentity } from 'src/services/agents';
 import { ComposioUserContext } from 'src/services/user-context';
 import { ComposioSessionRepository } from 'src/services/composio-clients';
 import { extendConfigProvider } from 'src/services/config';
+import { userApiKeyRejectionResponse } from 'test/__utils__/models/user-api-key-rejection';
 
 vi.mock('open', () => ({
   default: vi.fn(async () => undefined),
@@ -774,6 +775,93 @@ describe('CLI: composio login', () => {
             );
             expect(announcement).toBeGreaterThanOrEqual(0);
             expect(announcement).toBeLessThan(instructions);
+          })
+      );
+    });
+
+    const stagingLogin = { ...stagingLoginWithoutOrg, org_id: 'org_staging' };
+
+    layer(TestLive({ terminalUI: headlessStdinUI, userData: stagingLogin }))(it => {
+      it.effect(
+        'Covers AE7. [Given] a stored key the backend accepts [Then] reports already logged in',
+        () =>
+          Effect.gen(function* () {
+            const requestedUrls = spyOnSessionInfo();
+
+            yield* cli(['login']);
+
+            expect(requestedUrls).toHaveLength(1);
+            expect(new URL(requestedUrls[0]!).origin).toBe(constants.STAGING_BASE_URL);
+            const output = (yield* MockConsole.getLines({ stripAnsi: true })).join('\n');
+            expect(output).toContain("You're already logged in!");
+            expect(output).not.toContain('Open this URL in your browser to log in:');
+          })
+      );
+    });
+
+    layer(TestLive({ terminalUI: headlessStdinUI, userData: stagingLogin }))(it => {
+      it.effect(
+        '[Given] the stored key cannot be checked [Then] reports already logged in as before',
+        () =>
+          Effect.gen(function* () {
+            vi.spyOn(globalThis, 'fetch').mockRejectedValue(new Error('network unreachable'));
+
+            yield* cli(['login']);
+
+            const output = (yield* MockConsole.getLines({ stripAnsi: true })).join('\n');
+            expect(output).toContain("You're already logged in!");
+          })
+      );
+    });
+
+    const rejectStoredKey = () =>
+      vi
+        .spyOn(globalThis, 'fetch')
+        .mockImplementation(() => Promise.resolve(userApiKeyRejectionResponse()));
+
+    layer(TestLive({ terminalUI: headlessStdinUI, userData: stagingLogin }))(it => {
+      it.effect(
+        'Covers AE7. [Given] the stored staging key is rejected [Then] login proceeds against production',
+        () =>
+          Effect.gen(function* () {
+            rejectStoredKey();
+            const calls: Array<{ readonly baseURL?: string }> = [];
+            const sessionRepository = yield* recordingSessionRepository(calls);
+
+            yield* cli(['login']).pipe(
+              Effect.provideService(ComposioSessionRepository, sessionRepository)
+            );
+
+            expect(calls).toEqual([{ baseURL: constants.DEFAULT_BASE_URL }]);
+            const output = (yield* MockConsole.getLines({ stripAnsi: true })).join('\n');
+            expect(output).not.toContain("You're already logged in!");
+            expect(output).toContain(`${constants.DEFAULT_WEB_URL}?cliKey=target-session-id`);
+          })
+      );
+    });
+
+    layer(
+      TestLive({
+        terminalUI: headlessStdinUI,
+        userData: stagingLogin,
+        baseConfigProvider: stagingEnv,
+      })
+    )(it => {
+      it.effect(
+        'Covers AE7. [Given] a rejected key and COMPOSIO_ENVIRONMENT=staging [Then] names the staging host first',
+        () =>
+          Effect.gen(function* () {
+            rejectStoredKey();
+            const calls: Array<{ readonly baseURL?: string }> = [];
+            const sessionRepository = yield* recordingSessionRepository(calls);
+
+            yield* cli(['login']).pipe(
+              Effect.provideService(ComposioSessionRepository, sessionRepository)
+            );
+
+            expect(calls).toEqual([{ baseURL: constants.STAGING_BASE_URL }]);
+            const output = (yield* MockConsole.getLines({ stripAnsi: true })).join('\n');
+            expect(output).toContain('Logging in to staging-backend.composio.dev');
           })
       );
     });

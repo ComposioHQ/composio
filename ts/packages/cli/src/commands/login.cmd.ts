@@ -23,7 +23,8 @@ import { inferSkillReleaseChannel, installSkillSafe } from 'src/effects/install-
 import { handleAgentAuthError } from 'src/effects/handle-agent-auth-error';
 import { APP_VERSION } from 'src/constants';
 import { announceLoginTarget } from 'src/effects/announce-login-target';
-import type { BackendTarget } from 'src/utils/backend-resolution';
+import { type BackendTarget, backendHost, currentLoginBackend } from 'src/utils/backend-resolution';
+import { isUserApiKeyRejection } from 'src/utils/api-error-extraction';
 import {
   ensureAgentSignupAllowed,
   getOrSignupReadyAgent,
@@ -318,6 +319,34 @@ const emitLoginComplete = (params: {
       yield* ui.outro("You're all set!");
     }
   });
+
+/**
+ * Recheck the stored key against the backend it belongs to. Only a
+ * `UserApiKey_Unauthorized` rejection counts: a transport or decoding failure
+ * keeps the "already logged in" answer, as before.
+ */
+const storedKeyRejected = Effect.gen(function* () {
+  const ctx = yield* ComposioUserContext;
+  const ui = yield* TerminalUI;
+  if (ctx.backend.keySource !== 'stored') return false;
+  const apiKey = Option.getOrUndefined(ctx.data.apiKey);
+  if (apiKey === undefined) return false;
+
+  const storedBackend = currentLoginBackend(ctx.backend);
+  const rejected = yield* getSessionInfoByUserApiKey({
+    baseURL: storedBackend.baseURL,
+    userApiKey: apiKey,
+  }).pipe(
+    Effect.as(false),
+    Effect.catch(error => Effect.succeed(isUserApiKeyRejection(error)))
+  );
+  if (rejected) {
+    yield* ui.log.warn(
+      `The Composio API at ${backendHost(storedBackend.baseURL)} rejected your stored API key. Logging in again.`
+    );
+  }
+  return rejected;
+});
 
 const completeAgentLogin = (identity: AgentIdentity) =>
   Effect.gen(function* () {
@@ -1112,14 +1141,16 @@ export const loginCmd = Command.make(
       }
 
       if (ctx.isLoggedIn()) {
-        if (Option.isSome(ctx.data.orgId)) {
+        if (Option.isSome(ctx.data.orgId) && !(yield* storedKeyRejected)) {
           yield* ui.log.warn(`You're already logged in!`);
           yield* ui.outro(
             'If you want to log in with a different account, please run `composio logout` first.'
           );
           return;
         }
-        yield* ui.log.step('Re-authenticating for multi-project support...');
+        if (Option.isNone(ctx.data.orgId)) {
+          yield* ui.log.step('Re-authenticating for multi-project support...');
+        }
       }
 
       // Reuse-only by design: headless login may complete with an existing

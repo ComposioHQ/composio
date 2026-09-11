@@ -7,6 +7,7 @@ import { TerminalUI } from 'src/services/terminal-ui';
 import { commandHintStep } from 'src/services/command-hints';
 import { readStoredAgentIdentity } from 'src/services/agents';
 import { getOrgEnhancedControlsStatus } from 'src/services/tool-permissions';
+import { warnOnBackendMismatch } from 'src/effects/backend-mismatch-warning';
 
 /**
  * CLI command to display your account information.
@@ -29,6 +30,7 @@ export const whoamiCmd = Command.make('whoami', {}).pipe(
           onNone: () => ui.log.warn('You are not logged in yet. Please run `composio login`.'),
           onSome: apiKey =>
             Effect.gen(function* () {
+              yield* warnOnBackendMismatch;
               const sessionInfo = yield* getSessionInfoByUserApiKey({
                 baseURL: ctx.data.baseURL,
                 userApiKey: apiKey,
