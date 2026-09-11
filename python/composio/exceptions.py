@@ -449,8 +449,13 @@ class InvalidExecuteFunctionError(ComposioError):
     pass
 
 
-class ToolNotFoundError(ComposioError):
-    pass
+class ToolNotFoundError(NotFoundError):
+    """Raised when a tool slug does not exist.
+
+    Mirrors the TypeScript SDK's ``ComposioToolNotFoundError``. Other failures
+    while fetching a tool (invalid API key, server or network errors) are not
+    translated and surface as the underlying ``composio_client`` error.
+    """
 
 
 class InvalidModifier(ComposioError):

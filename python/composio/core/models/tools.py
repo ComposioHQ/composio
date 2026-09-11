@@ -6,7 +6,7 @@ from collections.abc import Mapping
 from pathlib import Path
 
 import typing_extensions as te
-from composio_client import omit
+from composio_client import APIStatusError, omit
 from pydantic import BaseModel as PydanticBaseModel
 
 from composio.client import HttpClient
@@ -28,7 +28,11 @@ from composio.core.provider.agentic import AgenticProvider, AgenticProviderExecu
 from composio.core.provider.base import BaseProvider, ExecuteToolFn
 from composio.core.provider.none_agentic import NonAgenticProvider
 from composio.core.types import ToolkitVersionParam
-from composio.exceptions import InvalidParams, ToolVersionRequiredError
+from composio.exceptions import (
+    InvalidParams,
+    ToolNotFoundError,
+    ToolVersionRequiredError,
+)
 from composio.utils.pydantic import none_to_omit
 from composio.utils.toolkit_version import get_toolkit_version
 from composio.utils.upload_dir_allowlist import resolve_effective_upload_allowlist
@@ -199,13 +203,21 @@ class Tools(Resource, t.Generic[TTool, TToolCollection]):
     def get_raw_composio_tool_by_slug(self, slug: str) -> Tool:
         """
         Returns schema for the given tool slug.
+
+        :raises ToolNotFoundError: when the backend reports the slug as unknown
+            (404, or 400 for a malformed slug). Any other client error, such as
+            an invalid API key, is re-raised unchanged.
         """
-        return _normalize_tool(
-            self._client.tools.retrieve(
+        try:
+            response = self._client.tools.retrieve(
                 tool_slug=slug,
                 toolkit_versions=none_to_omit(self._toolkit_versions),
-            ),
-        )
+            )
+        except APIStatusError as error:
+            if error.status_code in (400, 404):
+                raise ToolNotFoundError(f"Tool with slug {slug} not found") from error
+            raise
+        return _normalize_tool(response)
 
     def get_raw_composio_tools(
         self,
