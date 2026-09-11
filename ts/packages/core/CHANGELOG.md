@@ -1,5 +1,11 @@
 # @composio/core
 
+## 1.0.0-beta.2
+
+### Patch Changes
+
+- 72b1bfe: Rename `session.configHistory()` to `session.listConfigHistory()` to make the paginated list operation explicit.
+
 ## 1.0.0-beta.1
 
 ### Minor Changes
