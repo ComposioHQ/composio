@@ -24,7 +24,7 @@ Composio is SOC 2 Type II compliant. For our latest reports and certifications (
 
 ## Network access
 
-If Composio connects to a service you host, allow inbound traffic on TCP 443 from these addresses:
+The following egress addresses are documented for Composio's Keyring deployment path. Before changing a production firewall, confirm with your Composio support contact that your integration uses this path and that these addresses are current. For a confirmed integration, allow inbound traffic on TCP 443 from:
 
 ```
 34.233.50.61/32
@@ -33,7 +33,7 @@ If Composio connects to a service you host, allow inbound traffic on TCP 443 fro
 52.72.72.59/32
 ```
 
-This list is verified for Composio-initiated connections to services you host. It is not a guarantee that every Composio outbound call path uses only these addresses, and the addresses can change, so confirm with your Composio support contact that the list covers your integration before you change a production firewall.
+This list does not establish the egress addresses for other Composio connection paths, including remote MCP and Proxy Execute. Ask your support contact for the addresses that apply to those integrations.
 
 This list does not apply to trigger webhook delivery. Your webhook endpoint must be publicly reachable, and you authenticate deliveries with [signature verification](/docs/setting-up-triggers/subscribing-to-events#verifying-signatures) rather than an IP allowlist.
 
