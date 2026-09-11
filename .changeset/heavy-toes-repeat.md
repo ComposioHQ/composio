@@ -1,11 +1,6 @@
 ---
-'@composio/anthropic': patch
-'@composio/claude-agent-sdk': patch
-'@composio/cloudflare': patch
 '@composio/core': patch
 '@composio/experimental': patch
-'@composio/mastra': patch
-'@composio/openai-agents': patch
 '@composio/slim': patch
 ---
 
