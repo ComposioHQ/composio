@@ -116,6 +116,19 @@ class TestCustomLogger:
         assert logging.getLogger(CLIENT_LOGGER_NAME).level == logging.WARNING
         assert "path=/api/v3.1/toolkits" not in output.getvalue()
 
+    def test_without_retries_clone_keeps_custom_logger(self, custom_logger):
+        logger, output = custom_logger
+        composio = Composio(
+            api_key="test-key", http_client=_mock_transport(), logger=logger
+        )
+
+        composio.client.without_retries.toolkits.list()
+
+        forwarders = _forwarders()
+        assert len(forwarders) == 1
+        assert forwarders[0].wrapper.logger is logger
+        assert "path=/api/v3.1/toolkits" in output.getvalue()
+
     def test_client_logger_does_not_propagate_to_root(self, custom_logger):
         logger, _ = custom_logger
         Composio(api_key="test-key", logger=logger)

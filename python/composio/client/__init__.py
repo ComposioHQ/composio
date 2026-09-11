@@ -270,6 +270,10 @@ class HttpClient(BaseComposio, WithLogger):
                 # (False) even when the original had it enabled — keeping the sibling
                 # a faithful copy that differs from the parent only in `max_retries`.
                 "_strict_response_validation": self._strict_response_validation,
+                # Share the parent's logger; otherwise constructing the clone
+                # rebinds the process-wide client log forwarder to the default
+                # `composio` logger.
+                "logger": self._logger.logger,
                 **_extra_kwargs,
             },
             **kwargs,
