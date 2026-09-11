@@ -1,5 +1,13 @@
 # tools-example
 
+## 0.1.1-beta.2
+
+### Patch Changes
+
+- Updated dependencies [72b1bfe]
+  - @composio/core@1.0.0-beta.2
+  - @composio/vercel@0.11.2
+
 ## 0.1.1-beta.1
 
 ### Patch Changes

@@ -1,5 +1,13 @@
 # google-example
 
+## 0.1.1-beta.2
+
+### Patch Changes
+
+- Updated dependencies [72b1bfe]
+  - @composio/core@1.0.0-beta.2
+  - @composio/google@0.10.3
+
 ## 0.1.1-beta.1
 
 ### Patch Changes

@@ -1,5 +1,12 @@
 # error-handling-example
 
+## 0.1.10-beta.3
+
+### Patch Changes
+
+- Updated dependencies [72b1bfe]
+  - @composio/core@1.0.0-beta.2
+
 ## 0.1.10-beta.2
 
 ### Patch Changes
