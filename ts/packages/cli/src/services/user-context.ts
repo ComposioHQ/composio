@@ -20,6 +20,7 @@ import { redactSensitiveLogValue } from 'src/utils/redact-sensitive';
 import {
   type ApiKeySource,
   type BackendResolution,
+  type BackendTarget,
   resolveAmbientBackend,
   resolveBackend,
 } from 'src/utils/backend-resolution';
@@ -163,11 +164,17 @@ export class ComposioUserContext extends Context.Service<
     readonly backend: BackendResolution;
     isLoggedIn: () => boolean;
     logout: Effect.Effect<void, Schema.SchemaError | PlatformError.PlatformError, never>;
-    login: (
-      apiKey: string,
-      orgId?: string,
-      testUserId?: string
-    ) => Effect.Effect<void, Schema.SchemaError | PlatformError.PlatformError, never>;
+    /**
+     * Store a new key together with the backend that issued it. Every caller
+     * names the target: login flows pass the ambient environment, and flows
+     * that keep the current login pass its stored environment.
+     */
+    login: (params: {
+      readonly apiKey: string;
+      readonly target: BackendTarget;
+      readonly orgId?: string;
+      readonly testUserId?: string;
+    }) => Effect.Effect<void, Schema.SchemaError | PlatformError.PlatformError, never>;
     update: (
       data: UserData
     ) => Effect.Effect<void, Schema.SchemaError | PlatformError.PlatformError, never>;
@@ -235,14 +242,24 @@ export const rawComposioUserContextLive = Layer.effect(
       yield* writeJson(cleared);
     });
 
-    const login = (apiKey: string, orgId?: string, testUserId?: string) =>
+    const login = ({
+      apiKey,
+      target,
+      orgId,
+      testUserId,
+    }: {
+      readonly apiKey: string;
+      readonly target: BackendTarget;
+      readonly orgId?: string;
+      readonly testUserId?: string;
+    }) =>
       Effect.gen(function* () {
         const keyringOk = yield* writeKeyring(kDeps, apiKey);
         const next: UserData = {
           ...userData,
           apiKey: Option.some(apiKey),
-          baseURL: Option.some(ambient.baseURL),
-          webURL: Option.some(ambient.webURL),
+          baseURL: Option.some(target.baseURL),
+          webURL: Option.some(target.webURL),
           orgId: Option.fromNullishOr(orgId),
           projectId: userData.projectId,
           testUserId: Option.fromNullishOr(testUserId),

@@ -1540,12 +1540,36 @@ const callClientWithPagination = <T, S extends PaginatedSchema>(
  */
 export interface ComposioClientSingletonShape {
   readonly get: () => Effect.Effect<_RawComposioClient, NoSuchElementError>;
-  readonly getFor: (params: {
-    userApiKey?: string;
-    orgId?: string;
-    projectId?: string;
-  }) => Effect.Effect<_RawComposioClient, NoSuchElementError>;
+  readonly getFor: (
+    params: ClientTargetParams
+  ) => Effect.Effect<_RawComposioClient, NoSuchElementError>;
 }
+
+interface ClientTargetParams {
+  readonly userApiKey?: string;
+  readonly orgId?: string;
+  readonly projectId?: string;
+  /** Backend to call instead of the resolved one. */
+  readonly baseURL?: string;
+  /** Send no user API key: login flows must not leak a stored key to another backend. */
+  readonly anonymous?: boolean;
+}
+
+/**
+ * A client for login flows: it calls `baseURL` and sends no user API key, so
+ * a stored key never reaches a backend that did not issue it and a rejected
+ * key cannot block the login that replaces it.
+ */
+const loginClientFor = (
+  clientSingleton: ComposioClientSingletonShape,
+  baseURL: string | undefined
+): ComposioClientSingletonShape =>
+  baseURL === undefined
+    ? clientSingleton
+    : {
+        get: () => clientSingleton.getFor({ baseURL, anonymous: true }),
+        getFor: params => clientSingleton.getFor({ ...params, baseURL, anonymous: true }),
+      };
 
 /**
  * Singleton service that lazily accesses `Config` only when needed, which is used to build and provide
@@ -1559,10 +1583,12 @@ const makeComposioClientSingleton = Effect.gen(function* () {
   const os = yield* NodeOs;
   const cache = new Map<string, _RawComposioClient>();
 
-  const getFor = (params?: { userApiKey?: string; orgId?: string; projectId?: string }) =>
+  const getFor = (params?: ClientTargetParams) =>
     Effect.gen(function* () {
-      const apiKey = normalizeApiKey(params?.userApiKey ?? Option.getOrUndefined(ctx.data.apiKey));
-      const baseURL = ctx.data.baseURL;
+      const apiKey = params?.anonymous
+        ? undefined
+        : normalizeApiKey(params?.userApiKey ?? Option.getOrUndefined(ctx.data.apiKey));
+      const baseURL = params?.baseURL ?? ctx.data.baseURL;
       // The backend is part of the key: a re-login or override can change it
       // within one process, and a client must never outlive its target.
       const cacheKey = JSON.stringify({
@@ -1613,17 +1639,11 @@ const makeComposioClientSingleton = Effect.gen(function* () {
           }),
       });
     }) satisfies () => Effect.Effect<_RawComposioClient, NoSuchElementError, never>,
-    getFor: Effect.fn(function* (params: {
-      userApiKey?: string;
-      orgId?: string;
-      projectId?: string;
-    }) {
+    getFor: Effect.fn(function* (params: ClientTargetParams) {
       return yield* getFor(params);
-    }) satisfies (params: {
-      userApiKey?: string;
-      orgId?: string;
-      projectId?: string;
-    }) => Effect.Effect<_RawComposioClient, NoSuchElementError, never>,
+    }) satisfies (
+      params: ClientTargetParams
+    ) => Effect.Effect<_RawComposioClient, NoSuchElementError, never>,
   };
 });
 
@@ -2044,10 +2064,10 @@ const makeComposioClientLive = Effect.gen(function* () {
        *
        * TODO: don't use `@composio/client`, wrap `fetch` directly.
        */
-      createSession: (params?: { scope?: 'user' | 'project' }) =>
+      createSession: (params?: { scope?: 'user' | 'project'; baseURL?: string }) =>
         withMetrics(
           callClient(
-            clientSingleton,
+            loginClientFor(clientSingleton, params?.baseURL),
             client =>
               client.cli.createSession(
                 { scope: params?.scope ?? 'user' },
@@ -2059,12 +2079,13 @@ const makeComposioClientLive = Effect.gen(function* () {
 
       /**
        * Retrieves the current state of a CLI session using either the session ID (UUID) or the 6-character code.
+       * With `baseURL`, the call goes to that login target without the stored key.
        */
-      getSession: (session: { id: string }) =>
+      getSession: (session: { id: string; baseURL?: string }) =>
         withMetrics(
           callClient(
-            clientSingleton,
-            client => client.cli.getSession(session),
+            loginClientFor(clientSingleton, session.baseURL),
+            client => client.cli.getSession({ id: session.id }),
             CliGetSessionResponse
           )
         ),
@@ -2325,8 +2346,10 @@ const makeComposioSessionRepository = Effect.gen(function* () {
   const client = yield* ComposioClientLive;
 
   return {
-    createSession: (params?: { scope?: 'user' | 'project' }) => client.cli.createSession(params),
-    getSession: (session: { id: string }) => client.cli.getSession({ id: session.id }),
+    createSession: (params?: { scope?: 'user' | 'project'; baseURL?: string }) =>
+      client.cli.createSession(params),
+    getSession: (session: { id: string; baseURL?: string }) =>
+      client.cli.getSession({ id: session.id, baseURL: session.baseURL }),
     getRealtimeCredentials: () => client.cli.getRealtimeCredentials(),
     authRealtimeChannel: (params: { channel_name: string; socket_id: string }) =>
       client.cli.authRealtimeChannel(params),

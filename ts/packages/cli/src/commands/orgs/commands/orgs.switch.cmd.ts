@@ -5,6 +5,7 @@ import { runOrgSelection } from 'src/effects/select-org-project';
 import { linkAnalyticsIdentityForOrg } from 'src/effects/link-analytics-identity';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { ComposioUserContext } from 'src/services/user-context';
+import { currentLoginBackend } from 'src/utils/backend-resolution';
 
 const orgId = Flag.string('org-id').pipe(
   Flag.optional,
@@ -49,7 +50,13 @@ export const orgsCmd$Switch = Command.make('switch', { orgId, limit }, ({ orgId,
       return;
     }
 
-    yield* ctx.login(apiKey, result.id, Option.getOrUndefined(ctx.data.testUserId));
+    // Switching orgs keeps the current login, so it keeps that login's backend.
+    yield* ctx.login({
+      apiKey,
+      target: currentLoginBackend(ctx.backend),
+      orgId: result.id,
+      testUserId: Option.getOrUndefined(ctx.data.testUserId),
+    });
     yield* linkAnalyticsIdentityForOrg({
       apiKey,
       baseURL: ctx.data.baseURL,

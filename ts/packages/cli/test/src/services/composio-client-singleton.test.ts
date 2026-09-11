@@ -260,7 +260,7 @@ describe('ComposioClientSingleton headers', () => {
 
         const stagingClient = yield* clientSingleton.get();
         yield* listTools(stagingClient);
-        yield* ctx.login('uak_same');
+        yield* ctx.login({ apiKey: 'uak_same', target: ctx.backend.ambient });
         const productionClient = yield* clientSingleton.get();
         yield* listTools(productionClient);
 

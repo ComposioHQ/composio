@@ -1,5 +1,6 @@
 import path from 'node:path';
 import * as tempy from 'tempy';
+import * as constants from 'src/constants';
 import { Composio as RawComposioClient } from '@composio/client';
 import type { AuthConfigCreateParams } from '@composio/client/resources/auth-configs';
 import * as BunFileSystem from '@effect/platform-bun/BunFileSystem';
@@ -94,6 +95,12 @@ export interface TestLiveInput {
    * TODO: consider extracting `fixture` into another `Effect`.
    */
   fixture?: string;
+
+  /**
+   * Seed `~/.composio/user_data.json` (snake_case keys) before the user context
+   * loads it.
+   */
+  userData?: Record<string, unknown>;
 
   /**
    * Override the running-executable path reported by `NodeProcess`.
@@ -349,6 +356,9 @@ export const TestLayer = (input?: TestLiveInput) =>
 
     const tempDir = tempy.temporaryDirectory({ prefix: 'test' });
     const cwd = (yield* setupFixtureFolder({ fixture, tempDir })) ?? tempDir;
+    if (input?.userData) {
+      yield* seedUserData(cwd, input.userData);
+    }
 
     const ComposioToolkitsRepositoryTest = Layer.succeed(
       ComposioToolkitsRepository,
@@ -1523,6 +1533,18 @@ function breakSymlinksInNodeModules(
       yield* breakSymlinksUnix;
     }
   }).pipe(Effect.catch(() => Effect.void));
+}
+
+function seedUserData(cwd: string, userData: Record<string, unknown>) {
+  return Effect.gen(function* () {
+    const fs = yield* FileSystem.FileSystem;
+    const composioDir = path.join(cwd, constants.USER_COMPOSIO_DIR);
+    yield* fs.makeDirectory(composioDir, { recursive: true });
+    yield* fs.writeFileString(
+      path.join(composioDir, constants.USER_CONFIG_FILE_NAME),
+      JSON.stringify(userData)
+    );
+  }).pipe(Effect.provide(BunFileSystem.layer), Effect.orDie);
 }
 
 function setupComposioSessionRepository() {

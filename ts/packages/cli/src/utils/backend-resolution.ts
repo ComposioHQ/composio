@@ -142,6 +142,16 @@ export const resolveBackend = (params: {
   return { ...base, target: ambient, mismatch: !isSameBackend(ambient.baseURL, stored.baseURL) };
 };
 
+/**
+ * The environment the current login belongs to: the stored one while the
+ * stored key is in use, otherwise the resolved target. Flows that keep the
+ * current key, such as an org switch, record this instead of the ambient one.
+ */
+export const currentLoginBackend = (resolution: BackendResolution): BackendTarget =>
+  resolution.keySource === 'stored' && resolution.stored !== undefined
+    ? resolution.stored
+    : resolution.target;
+
 export const isProductionBackend = (baseURL: string): boolean =>
   isSameBackend(baseURL, DEFAULT_BASE_URL);
 
