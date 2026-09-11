@@ -1,5 +1,12 @@
 # @composio/experimental
 
+## 0.2.3-beta.1
+
+### Patch Changes
+
+- 7055914: Move published dependency ranges to their current upstream releases: zod 4.5, openai 7.10, typebox 1.3.27, @mastra/schema-compat 1.3.8, and @cloudflare/workers-types 5.20260905. `@composio/anthropic` also accepts `@anthropic-ai/sdk` 0.124 as a peer, the line it is now tested against.
+- 100d568: Stamp eve's durable callback descriptors on the tools `EveProvider` wraps. eve only stamps descriptors on `defineTool` calls it finds in an agent's own source, so tools built inside `node_modules` were rejected at resolve time and every Composio tool was dropped from the step. Each wrapped tool now persists only its slug and an id for the resolve that produced it, and re-attaches to that resolve's Composio executor when eve replays or resumes a parked call.
+
 ## 0.2.3-beta.0
 
 ### Patch Changes

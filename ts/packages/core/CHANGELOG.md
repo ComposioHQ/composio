@@ -1,5 +1,37 @@
 # @composio/core
 
+## 1.0.0-beta.1
+
+### Minor Changes
+
+- e8e1d67: Expose the rest of the owned client surface on the `Composio` class:
+
+  - `composio.webhooks.subscriptions` (`list`, `get`, `set`, `update`, `delete`, `rotateSecret`, `listEventTypes`) and `composio.webhooks.endpoints` (`list`, `get`, `create`, `replace`, `update`). `composio.triggers.setWebhookSubscription()` now delegates to the same upsert as `webhooks.subscriptions.set()`. Its behaviour for well-formed API responses is unchanged; malformed responses are now rejected with a `ValidationError` instead of being read leniently.
+  - `composio.logs.search()` and `composio.logs.get()` for tool-execution logs.
+  - `composio.connectedAccounts.revoke()`, which surfaces the API's 400/409 as `ComposioConnectedAccountRevocationNotSupportedError` / `ComposioConnectedAccountNotRevokableError`. `connectedAccounts.refresh()` is marked `@deprecated` (the endpoint is deprecated upstream).
+  - `composio.toolkits.getMany(slugs)` and `composio.toolkits.changelog()`.
+  - `session.configHistory()` on sessions.
+  - `composio.experimental.usage.summary()` and `composio.experimental.usage.breakdown()` (experimental, shape may change).
+  - `composio.toolkits.recommendScopes(toolkitSlug, { tools, ... })` and `composio.toolkits.listGrantContexts(toolkitSlug)` for OAuth scope recommendations (the API marks both beta).
+  - `composio.connectedAccounts.completeAuth({ userId, sessionUri })`, which completes a deferred OAuth connection after your OAuth callback verifier has confirmed the user's identity.
+  - `composio.keyring.listTransferKeys()`, which returns the public JWKs of the organization's customer-managed keyring.
+  - `composio.experimental.customToolkits` (`upsert`, `sync`, `delete`) for project-owned custom toolkits (in pilot, shape may change).
+  - `CIMD_OAUTH` joins `AuthSchemeTypes`.
+  - `triggers.listActive()` returns `{}` for `state` and `triggerConfig` when the API sends `null`.
+  - `@composio/client` moves to `2.0.0-rc.7`. The API removed `validate_credentials` from the connected-account refresh, so `connectedAccounts.refresh()` now ignores `validateCredentials` and logs a warning when it is set.
+  - `logger` and `logLevel` options on `new Composio({...})`. `logger` accepts any `{ error, warn, info, debug }` sink (`console`, pino, winston, ...) and receives the SDK's formatted, credential-redacted output; `logLevel` (`'silent' | 'error' | 'warn' | 'info' | 'debug'`) overrides `COMPOSIO_LOG_LEVEL`. The owned client's runtime deprecation warnings (response `Deprecation`/`Sunset` headers and deprecated request inputs) are now routed through that SDK logger instead of `console`. The client's per-request lifecycle logs are emitted only at `'debug'`. `tools.get`/`getRawComposioTools` send the API's `query` parameter in place of the deprecated `search` wire parameter; the SDK's public `search` option is unchanged.
+
+### Patch Changes
+
+- 7055914: Move published dependency ranges to their current upstream releases: zod 4.5, openai 7.10, typebox 1.3.27, @mastra/schema-compat 1.3.8, and @cloudflare/workers-types 5.20260905. `@composio/anthropic` also accepts `@anthropic-ai/sdk` 0.124 as a peer, the line it is now tested against.
+- b4b9fc4: Guard schema `pattern` and `patternProperties` compilation. A pattern that does not compile or exceeds 1024 characters now fails conversion with an `InvalidPatternError` that names the offending property path instead of a raw `SyntaxError`. `@composio/core` surfaces that path in the `JsonSchemaToZodError` message. No backtracking heuristic is applied: a hostile `pattern` that backtracks catastrophically remains a known limitation.
+- 9d0cb2c: Export `readResponseBodyWithLimit` and `MAX_URL_UPLOAD_SIZE_BYTES` so downstream packages can apply the SDK's 100 MiB cap when they download a file from a user-supplied URL. The CLI's tool-input file uploads now use it instead of buffering the whole response.
+- ba85f4d: Apply the Fetch standard's redirect rules in `ssrfSafeFetch`, which following redirects manually meant `fetch` never applied: a `303` now retries as a bodiless `GET` instead of replaying an upload's method and body at a result URL, a `301`/`302` does the same for a `POST`, and `307`/`308` keep replaying both. Only `301`, `302`, `303`, `307` and `308` count as redirects to follow, so a `304` or `305` carrying a `Location` is returned to the caller rather than followed.
+- ba85f4d: Close the IPv6 transition ranges the SSRF guard's address blocklist let through: 6to4 (`2002::/16`), Teredo and the rest of `2001::/23`, local-use NAT64 (`64:ff9b:1::/48`), `100::/64`, `2001:db8::/32` and site-local `fec0::/10` each carry or reach an arbitrary IPv4 address, so `2002:7f00:1::` was a public-looking literal for `127.0.0.1`. IPv4 multicast and the `192.88.99.0/24` 6to4 relay range are blocked too.
+- 85996c4: Drop `Authorization`, `Proxy-Authorization`, and `Cookie` from the request headers when the SSRF guard follows a redirect to a different origin, as the Fetch standard does for automatic redirects. Same-origin redirects keep them.
+- Updated dependencies [b4b9fc4]
+  - @composio/json-schema-to-zod@0.3.3-beta.0
+
 ## 1.0.0-beta.0
 
 ### Major Changes
