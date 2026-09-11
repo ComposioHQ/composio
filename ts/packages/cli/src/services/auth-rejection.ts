@@ -38,6 +38,21 @@ export class AuthRejectionRecorder extends Context.Service<
   );
 }
 
+/** True once a rejection has been recorded in this process. */
+export const hasRecordedAuthRejection = Effect.flatMap(
+  AuthRejectionRecorder,
+  recorder => recorder.first
+).pipe(Effect.map(Option.isSome));
+
+/**
+ * Run `report` for any error except a user API key rejection, which is only
+ * recorded: the recovery block at the end of the command reports it once.
+ */
+export const reportUnlessUserApiKeyRejection = <E, R>(
+  error: unknown,
+  report: Effect.Effect<void, E, R>
+) => (isUserApiKeyRejection(error) ? recordIfUserApiKeyRejection(error) : report);
+
 /**
  * Record `error` when it is a user API key rejection from a request made with
  * the key in use. Call it before swallowing an API error.

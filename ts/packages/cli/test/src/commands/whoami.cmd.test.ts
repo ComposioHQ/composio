@@ -2,6 +2,8 @@ import { describe, expect, layer } from '@effect/vitest';
 import { ConfigProvider, Effect } from 'effect';
 import { extendConfigProvider } from 'src/services/config';
 import { cli, TestLive, MockConsole } from 'test/__utils__';
+import { hasRecordedAuthRejection } from 'src/services/auth-rejection';
+import { userApiKeyRejectionResponse } from 'test/__utils__/models/user-api-key-rejection';
 import { afterEach, vi } from 'vitest';
 
 describe('CLI: composio whoami', () => {
@@ -16,6 +18,7 @@ describe('CLI: composio whoami', () => {
   layer(TestLive({ baseConfigProvider: testConfigProvider }))('with config override', it => {
     it.effect('[Given] `COMPOSIO_USER_API_KEY` [Then] prints global user context JSON', () =>
       Effect.gen(function* () {
+        vi.spyOn(globalThis, 'fetch').mockRejectedValue(new Error('network unreachable'));
         const args = ['whoami'];
         yield* cli(args);
 
@@ -33,6 +36,7 @@ describe('CLI: composio whoami', () => {
   layer(TestLive({ fixture: 'user-config-example' }))('with fixture', it => {
     it.effect('[Given] user_data.json in fixture [Then] prints global user context JSON', () =>
       Effect.gen(function* () {
+        vi.spyOn(globalThis, 'fetch').mockRejectedValue(new Error('network unreachable'));
         const args = ['whoami'];
         yield* cli(args);
 
@@ -93,6 +97,34 @@ describe('CLI: composio whoami', () => {
         expect(output).not.toContain('Default Org');
         expect(output).not.toContain('Test User ID');
       })
+    );
+  });
+
+  layer(
+    TestLive({
+      userData: {
+        api_key: 'uak_revoked',
+        base_url: 'https://staging-backend.composio.dev',
+        web_url: 'https://staging-dashboard.composio.dev/',
+        org_id: 'org_staging',
+      },
+    })
+  )('with a rejected stored key', it => {
+    it.effect(
+      '[Given] the backend rejects the key [Then] records it and prints no account note',
+      () =>
+        Effect.gen(function* () {
+          vi.spyOn(globalThis, 'fetch').mockImplementation(() =>
+            Promise.resolve(userApiKeyRejectionResponse())
+          );
+
+          yield* cli(['whoami']);
+
+          const output = (yield* MockConsole.getLines()).join('\n');
+          expect(output).not.toContain('Email: unknown');
+          expect(output).not.toContain('"account_type"');
+          expect(yield* hasRecordedAuthRejection).toBe(true);
+        })
     );
   });
 });

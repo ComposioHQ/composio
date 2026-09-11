@@ -12,6 +12,7 @@ import { type RunHelperContext } from 'src/services/run-helpers-runtime';
 import { warmToolInputDefinitions } from 'src/services/tool-input-validation';
 import { ComposioUserContext } from 'src/services/user-context';
 import { warnOnBackendMismatch } from 'src/effects/backend-mismatch-warning';
+import { recordIfUserApiKeyRejection } from 'src/services/auth-rejection';
 import {
   debugFlagsToChildEnv,
   isAcpOnlyEnabled,
@@ -396,7 +397,10 @@ const resolveRunHelperContext = () =>
       return baseContext;
     }
 
-    const consumerProject = yield* resolveCommandProject({ mode: 'consumer' }).pipe(Effect.option);
+    const consumerProject = yield* resolveCommandProject({ mode: 'consumer' }).pipe(
+      Effect.tapError(recordIfUserApiKeyRejection),
+      Effect.option
+    );
     if (Option.isNone(consumerProject) || consumerProject.value.projectType !== 'CONSUMER') {
       return baseContext;
     }

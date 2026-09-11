@@ -33,6 +33,7 @@ import {
   ComposioClientSingleton,
   ComposioSessionRepository,
   ComposioToolkitsRepository,
+  type ComposioToolkitsRepositoryShape,
   HttpServerError,
   InvalidToolkitsError,
   InvalidToolkitVersionsError,
@@ -102,6 +103,12 @@ export interface TestLiveInput {
    * loads it.
    */
   userData?: Record<string, unknown>;
+
+  /**
+   * Make every `ComposioToolkitsRepository` method fail with this error, e.g. a
+   * rejected user API key.
+   */
+  toolkitsRepositoryFailure?: unknown;
 
   /**
    * Override the running-executable path reported by `NodeProcess`.
@@ -363,7 +370,7 @@ export const TestLayer = (input?: TestLiveInput) =>
 
     const ComposioToolkitsRepositoryTest = Layer.succeed(
       ComposioToolkitsRepository,
-      ComposioToolkitsRepository.of({
+      failAllWhenSet(input?.toolkitsRepositoryFailure, {
         getToolkits: () => Effect.succeed(toolkitsData.toolkits),
         getToolkitsBySlugs: (slugs: ReadonlyArray<string>) => {
           const normalizedSlugs = new Set(slugs.map(s => String.toLowerCase(s)));
@@ -805,7 +812,7 @@ export const TestLayer = (input?: TestLiveInput) =>
         enableTrigger: () => Effect.succeed({ status: 'success' as const }),
         disableTrigger: () => Effect.succeed({ status: 'success' as const }),
         deleteTrigger: triggerId => Effect.succeed({ trigger_id: triggerId }),
-      })
+      } satisfies ComposioToolkitsRepositoryShape)
     );
     const ComposioSessionRepositoryTest = yield* setupComposioSessionRepository();
     const TriggersRealtimeTest = Layer.succeed(
@@ -1535,6 +1542,17 @@ function breakSymlinksInNodeModules(
       yield* breakSymlinksUnix;
     }
   }).pipe(Effect.catch(() => Effect.void));
+}
+
+function failAllWhenSet(
+  failure: unknown,
+  repository: ComposioToolkitsRepositoryShape
+): ComposioToolkitsRepositoryShape {
+  if (failure === undefined) return repository;
+  // Every method returns an Effect; the test only needs each call to fail.
+  return Object.fromEntries(
+    Object.keys(repository).map(name => [name, () => Effect.fail(failure)])
+  ) as unknown as ComposioToolkitsRepositoryShape;
 }
 
 function seedUserData(cwd: string, userData: Record<string, unknown>) {
