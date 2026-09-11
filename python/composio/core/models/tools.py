@@ -238,7 +238,7 @@ class Tools(Resource, t.Generic[TTool, TToolCollection]):
             tools_list.extend(
                 self._client.tools.list(
                     toolkit_slug=none_to_omit(",".join(toolkits) if toolkits else None),
-                    search=none_to_omit(search),
+                    query=none_to_omit(search),
                     scopes=scopes,
                     limit=limit,
                     toolkit_versions=none_to_omit(self._toolkit_versions),

@@ -3,6 +3,7 @@ This module is a light wrapper around the auto-generated composio client.
 """
 
 import contextvars
+import logging
 import os
 import platform
 import typing as t
@@ -15,15 +16,73 @@ from composio_client import (
     NOT_GIVEN,
     APIError,
     NotGiven,
-    _base_client,
 )
 from composio_client import Composio as BaseComposio
 from httpx import URL, Client, Request, Timeout
 
-from composio.utils.logging import WithLogger
+from composio.utils.logging import LogLevel, WithLogger, _VerbosityWrapper
 
 ComposioAPIError = APIError
 APIEnvironment = te.Literal["production", "staging", "local"]
+
+CLIENT_LOGGER_NAME = "composio_client"
+"""Name of the logger the generated ``composio_client`` package writes to."""
+
+
+class _ClientLogForwarder(logging.Handler):
+    """Forward ``composio_client`` records into the SDK logger.
+
+    The generated client logs request/response lifecycle through
+    ``logging.getLogger("composio_client")``. Routing those records through
+    the SDK's :class:`_VerbosityWrapper` keeps one destination for SDK users
+    and applies the same credential redaction and line truncation the SDK's
+    own records get. The client's INFO records (per-request lifecycle) are
+    forwarded as DEBUG.
+    """
+
+    def __init__(self, wrapper: _VerbosityWrapper) -> None:
+        super().__init__()
+        self.wrapper = wrapper
+
+    def emit(self, record: logging.LogRecord) -> None:
+        try:
+            message = record.getMessage()
+            if record.levelno >= logging.ERROR:
+                self.wrapper.error(message, exc_info=record.exc_info)
+            elif record.levelno >= logging.WARNING:
+                self.wrapper.warning(message, exc_info=record.exc_info)
+            else:
+                self.wrapper.debug(message, exc_info=record.exc_info)
+        except Exception:  # noqa: BLE001 - logging must never fail the call
+            self.handleError(record)
+
+
+def _install_client_log_forwarder(wrapper: _VerbosityWrapper) -> logging.Logger:
+    """Attach a single forwarder for ``wrapper`` to the client logger.
+
+    Idempotent: a forwarder already bound to ``wrapper`` is kept; forwarders
+    bound to another wrapper (an earlier SDK instance with a different logger)
+    are replaced so records are delivered once, to the most recent logger.
+    """
+    client_logger = logging.getLogger(CLIENT_LOGGER_NAME)
+    installed = False
+    for handler in list(client_logger.handlers):
+        if not isinstance(handler, _ClientLogForwarder):
+            continue
+        if handler.wrapper is wrapper and not installed:
+            installed = True
+            continue
+        client_logger.removeHandler(handler)
+    if not installed:
+        client_logger.addHandler(_ClientLogForwarder(wrapper))
+    # The client's INFO records are forwarded as DEBUG, so only let the client
+    # produce them when the SDK logger is at DEBUG.
+    level = wrapper.logger.getEffectiveLevel()
+    client_logger.setLevel(
+        level if level <= logging.DEBUG else max(level, logging.WARNING)
+    )
+    client_logger.propagate = False
+    return client_logger
 
 
 def _get_python_implementation() -> str:
@@ -144,12 +203,16 @@ class HttpClient(BaseComposio, WithLogger):
         default_headers: t.Optional[t.Mapping[str, str]] = None,
         default_query: t.Optional[t.Mapping[str, object]] = None,
         http_client: t.Optional[Client] = None,
+        logger: t.Optional[logging.Logger] = None,
+        logging_level: t.Optional[LogLevel] = None,
         _strict_response_validation: bool = False,
     ) -> None:
         """
         Initialize the client.
 
         :param provider: The provider to use for the client.
+        :param logger: Logger that receives SDK and ``composio_client`` records.
+        :param logging_level: Level applied to the SDK and ``composio_client`` loggers.
         :param api_key: The API key to use for the client.
         :param environment: The environment to use for the client.
         :param base_url: The base URL to use for the client.
@@ -159,7 +222,7 @@ class HttpClient(BaseComposio, WithLogger):
         :param default_query: The default query parameters to use for the client.
         :param http_client: The HTTP client to use for the client.
         """
-        WithLogger.__init__(self)
+        WithLogger.__init__(self, logger=logger, logging_level=logging_level)
         BaseComposio.__init__(
             self,
             api_key=api_key,
@@ -172,8 +235,7 @@ class HttpClient(BaseComposio, WithLogger):
             http_client=http_client,
             _strict_response_validation=_strict_response_validation,
         )
-        # TOFIX: Verbosity wrapper impl
-        _base_client.log = self._logger  # type: ignore
+        _install_client_log_forwarder(self._logger)
         self.provider = provider
         self.request_ctx = contextvars.ContextVar[RequestContext](
             "request_ctx",

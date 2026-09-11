@@ -5,6 +5,8 @@ Composio exceptions.
 import difflib
 import typing as t
 
+from composio_client import ComposioDeprecationWarning as ComposioDeprecationWarning
+
 ENV_COMPOSIO_API_KEY = "COMPOSIO_API_KEY"
 
 
@@ -384,6 +386,27 @@ class ComposioLegacyConnectedAccountsEndpointRetiredError(ConnectedAccountError)
     config is Composio-managed or custom.
 
     See: https://docs.composio.dev/docs/changelog/2026/04/24
+    """
+
+    pass
+
+
+class ComposioConnectedAccountRevocationNotSupportedError(ConnectedAccountError):
+    """Raised by ``composio.connected_accounts.revoke()`` when the toolkit
+    behind the connected account does not support programmatic token
+    revocation (API ``400``).
+
+    Fix: delete or disable the connected account instead, and revoke the
+    grant from the provider's own settings page.
+    """
+
+    pass
+
+
+class ComposioConnectedAccountNotRevokableError(ConnectedAccountError):
+    """Raised by ``composio.connected_accounts.revoke()`` when the connected
+    account is not in a state that can be revoked (API ``409``), for
+    example because it was already revoked or never became ``ACTIVE``.
     """
 
     pass

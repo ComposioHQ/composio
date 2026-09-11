@@ -13,7 +13,6 @@ import traceback
 import typing as t
 import uuid
 from concurrent.futures import ThreadPoolExecutor
-from enum import Enum
 
 import requests
 import typing_extensions as te
@@ -28,6 +27,12 @@ from composio.client import HttpClient
 from composio.client.types import trigger_instance_upsert_response
 from composio.core.models.base import Resource
 from composio.core.models.internal import Internal
+from composio.core.models.webhooks import (
+    DEFAULT_WEBHOOK_SUBSCRIPTION_EVENTS,
+    WebhookSubscription,
+    WebhookSubscriptions,
+    WebhookVersion,
+)
 from composio.core.types import ToolkitVersionParam
 from composio.exceptions import ComposioSDKTimeoutError
 from composio.utils.logging import WithLogger
@@ -100,14 +105,6 @@ class _TriggerData(te.TypedDict):
     payload: t.Dict
     metadata: _TriggerMetadata
     originalPayload: t.Dict
-
-
-class WebhookVersion(str, Enum):
-    """Webhook payload version."""
-
-    V1 = "V1"
-    V2 = "V2"
-    V3 = "V3"
 
 
 class WebhookPayloadV1(te.TypedDict):
@@ -206,20 +203,14 @@ class VerifyWebhookResult(t.TypedDict):
     raw_payload: WebhookPayload  # The original parsed payload
 
 
-class WebhookSubscription(t.TypedDict, total=False):
-    """Webhook subscription returned by the Composio API."""
-
-    id: str
-    webhook_url: str
-    version: str
-    enabled_events: t.List[str]
-    secret: str
-    created_at: str
-    updated_at: str
-
-
-DEFAULT_WEBHOOK_SUBSCRIPTION_EVENTS = ("composio.trigger.message",)
-WEBHOOK_SUBSCRIPTIONS_PATH = "/api/v3.1/webhook_subscriptions"
+# Re-exported for backwards compatibility; the definitions live in
+# :mod:`composio.core.models.webhooks`.
+__all__ = [
+    "DEFAULT_WEBHOOK_SUBSCRIPTION_EVENTS",
+    "Triggers",
+    "WebhookSubscription",
+    "WebhookVersion",
+]
 
 
 _ = {
@@ -1106,109 +1097,11 @@ class Triggers(Resource):
                 webhook_url=f"{APP_URL}/webhooks/composio",
             )
         """
-        if not webhook_url:
-            raise exceptions.ValidationError("please provide a valid `webhook_url`")
-
-        events = list(
-            DEFAULT_WEBHOOK_SUBSCRIPTION_EVENTS
-            if enabled_events is None
-            else enabled_events
+        return WebhookSubscriptions(client=self._client).set(
+            webhook_url=webhook_url,
+            enabled_events=enabled_events,
+            version=version,
         )
-        if len(events) == 0:
-            raise exceptions.ValidationError(
-                "please provide at least one enabled event"
-            )
-
-        version_value = (
-            version.value if isinstance(version, WebhookVersion) else version
-        )
-        body = {
-            "webhook_url": webhook_url,
-            "enabled_events": events,
-            "version": version_value,
-        }
-
-        existing = self._client.get(
-            WEBHOOK_SUBSCRIPTIONS_PATH,
-            cast_to=object,
-            options={"params": {"limit": 1}},
-        )
-        subscription_id = self._first_webhook_subscription_id(existing)
-
-        if subscription_id:
-            return self._normalize_webhook_subscription(
-                self._client.patch(
-                    f"{WEBHOOK_SUBSCRIPTIONS_PATH}/{subscription_id}",
-                    cast_to=object,
-                    body=body,
-                )
-            )
-
-        return self._normalize_webhook_subscription(
-            self._client.post(
-                WEBHOOK_SUBSCRIPTIONS_PATH,
-                cast_to=object,
-                body=body,
-            ),
-        )
-
-    @staticmethod
-    def _normalize_webhook_subscription(raw: object) -> WebhookSubscription:
-        """Build a typed :class:`WebhookSubscription` from the raw API response.
-
-        Maps explicitly (accepting either snake_case or camelCase wire keys)
-        instead of ``cast``-ing the raw object, so the returned dict always
-        matches the declared shape and a shift in the wire format surfaces as a
-        normalized field rather than a ``KeyError`` at the call site.
-        """
-        data = raw if isinstance(raw, dict) else {}
-
-        def _first_str(*keys: str) -> t.Optional[str]:
-            for key in keys:
-                value = data.get(key)
-                if isinstance(value, str) and value:
-                    return value
-            return None
-
-        def _str_list(*keys: str) -> t.List[str]:
-            for key in keys:
-                value = data.get(key)
-                if isinstance(value, list):
-                    return [item for item in value if isinstance(item, str)]
-            return []
-
-        result: WebhookSubscription = {
-            "id": _first_str("id") or "",
-            "webhook_url": _first_str("webhook_url", "webhookUrl") or "",
-            "version": _first_str("version") or WebhookVersion.V3.value,
-            "enabled_events": _str_list("enabled_events", "enabledEvents"),
-        }
-        secret = _first_str("secret")
-        if secret is not None:
-            result["secret"] = secret
-        created_at = _first_str("created_at", "createdAt")
-        if created_at is not None:
-            result["created_at"] = created_at
-        updated_at = _first_str("updated_at", "updatedAt")
-        if updated_at is not None:
-            result["updated_at"] = updated_at
-        return result
-
-    @staticmethod
-    def _first_webhook_subscription_id(response: object) -> t.Optional[str]:
-        if not isinstance(response, dict):
-            return None
-
-        items = response.get("items")
-        if not isinstance(items, list) or len(items) == 0:
-            return None
-
-        first = items[0]
-        if not isinstance(first, dict):
-            return None
-
-        subscription_id = first.get("id")
-        return subscription_id if isinstance(subscription_id, str) else None
 
     def get_type(self, slug: str) -> TriggersTypeRetrieveResponse:
         """

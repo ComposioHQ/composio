@@ -12,6 +12,7 @@ import typing as t
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 
+import typing_extensions as te
 from composio_client import BadRequestError, Omit, omit
 from composio_client._types import SequenceNotStr
 from composio_client.types.tool_list_response import (
@@ -29,7 +30,11 @@ from composio_client.types.tool_router.session_search_response import (
 
 from composio import exceptions
 from composio.client import HttpClient
-from composio.client.types import Tool
+from composio.client.types import (
+    Tool,
+    session_config_history_params,
+    session_config_history_response,
+)
 from composio.core.models._modifiers import Modifiers, apply_modifier_by_type
 from composio.core.models.connected_accounts import ConnectionRequest
 from composio.core.models.custom_tool import (
@@ -947,6 +952,30 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
             preload=preload,
         )
         self.preload = _session_preload_config(response.config.preload)
+
+    def config_history(
+        self,
+        **query: te.Unpack[session_config_history_params.SessionConfigHistoryParams],
+    ) -> session_config_history_response.SessionConfigHistoryResponse:
+        """
+        List the configuration history of this session, newest first.
+
+        Every ``update()`` records a new config version; this returns those
+        versions with cursor-based pagination.
+
+        :param cursor: Pagination cursor from a previous response.
+        :param limit: Number of items per page (max 100).
+        :return: The config versions under ``.items`` plus pagination fields.
+
+        Example:
+            history = session.config_history(limit=10)
+            for entry in history.items:
+                print(entry.version, entry.is_current)
+        """
+        return self._client.tool_router.session.config_history(
+            session_id=self.session_id,
+            **query,
+        )
 
     def delete(self) -> ToolRouterSessionDeleteResponse:
         """

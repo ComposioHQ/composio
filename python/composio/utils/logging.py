@@ -201,7 +201,7 @@ class WithLogger:
         self,
         logger: t.Optional[logging.Logger] = None,
         logger_name: str = _DEFAULT_LOGGER_NAME,
-        logging_level: LogLevel = LogLevel.INFO,
+        logging_level: t.Optional[LogLevel] = None,
         verbosity_level: t.Optional[int] = None,
     ) -> None:
         """
@@ -209,12 +209,17 @@ class WithLogger:
 
         :param logger: the logger object.
         :param logger_name: the default logger name, if a logger is not provided.
+        :param logging_level: when given, applied to the logger in use (the
+            provided ``logger`` or the shared default one).
         """
         self._logger = (
             _VerbosityWrapper(logger, verbosity_level=verbosity_level)
             if logger is not None
-            else get(name=logger_name, level=logging_level)
+            else get(name=logger_name, level=logging_level or LogLevel.INFO)
         )
+        if logging_level is not None:
+            self._logger.logger.setLevel(_LEVELS[logging_level])
+            self._logger.level = self._logger.logger.level
         self._logger.setup(verbosity_level=verbosity_level)
         self._logging_level = logging._levelToName[self._logger.level]
 
