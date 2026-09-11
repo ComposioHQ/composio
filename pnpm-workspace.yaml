@@ -29,12 +29,12 @@ allowBuilds:
 
 catalog:
   '@ai-sdk/mcp': ^2.0.45
-  '@ai-sdk/openai': ^4.0.59
+  '@ai-sdk/openai': ^4.0.60
   '@arethetypeswrong/cli': ^0.18.5
-  '@clack/core': '^1.4.3'
-  '@clack/prompts': '^1.7.0'
+  '@clack/core': '^1.5.0'
+  '@clack/prompts': '^1.8.0'
   '@cloudflare/vitest-pool-workers': 0.22.0
-  '@cloudflare/workers-types': ^5.20260905.1
+  '@cloudflare/workers-types': ^5.20260908.1
   '@composio/client': 0.1.0-alpha.76
   '@effect/language-service': ^0.87.2
   '@effect/platform-bun': 4.0.0-rc.112
@@ -43,9 +43,9 @@ catalog:
   # workspace/sandbox subsystem behind `@mastra/core/agent`, which drags execa
   # (-> npm-run-path -> unicorn-magic) into the Workers bundle and fails to
   # link. 1.53.0 is the newest release that still bundles for workerd.
-  '@mastra/core': 1.53.0
+  '@mastra/core': 1.64.0
   '@modelcontextprotocol/sdk': ^1.30.0
-  '@types/bun': ^1.4.1
+  '@types/bun': ^1.4.2
   ai: ^7.0.93
   dotenv: ^17.4.2
   effect: 4.0.0-rc.112
@@ -59,7 +59,7 @@ catalog:
   typescript: ^7.0.2
   '@vitest/ui': ^4.1.11
   vitest: ^4.1.11
-  wrangler: ^4.129.0
+  wrangler: ^4.129.1
   zod: ^4.5.4
   zod-to-json-schema: ^3.25.2
 

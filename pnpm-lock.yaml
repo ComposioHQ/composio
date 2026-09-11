@@ -10,23 +10,23 @@ catalogs:
       specifier: ^2.0.45
       version: 2.0.45
     '@ai-sdk/openai':
-      specifier: ^4.0.59
-      version: 4.0.59
+      specifier: ^4.0.60
+      version: 4.0.60
     '@arethetypeswrong/cli':
       specifier: ^0.18.5
       version: 0.18.5
     '@clack/core':
-      specifier: ^1.4.3
-      version: 1.4.3
+      specifier: ^1.5.0
+      version: 1.5.0
     '@clack/prompts':
-      specifier: ^1.7.0
-      version: 1.7.0
+      specifier: ^1.8.0
+      version: 1.8.0
     '@cloudflare/vitest-pool-workers':
       specifier: 0.22.0
       version: 0.22.0
     '@cloudflare/workers-types':
-      specifier: ^5.20260905.1
-      version: 5.20260905.1
+      specifier: ^5.20260908.1
+      version: 5.20260908.1
     '@composio/client':
       specifier: 0.1.0-alpha.76
       version: 0.1.0-alpha.76
@@ -40,14 +40,14 @@ catalogs:
       specifier: 4.0.0-rc.112
       version: 4.0.0-rc.112
     '@mastra/core':
-      specifier: 1.53.0
-      version: 1.53.0
+      specifier: 1.64.0
+      version: 1.64.0
     '@modelcontextprotocol/sdk':
       specifier: ^1.30.0
       version: 1.30.0
     '@types/bun':
-      specifier: ^1.4.1
-      version: 1.4.1
+      specifier: ^1.4.2
+      version: 1.4.2
     '@vitest/ui':
       specifier: ^4.1.11
       version: 4.1.11
@@ -88,8 +88,8 @@ catalogs:
       specifier: ^4.1.11
       version: 4.1.11
     wrangler:
-      specifier: ^4.129.0
-      version: 4.129.0
+      specifier: ^4.129.1
+      version: 4.129.1
     zod:
       specifier: ^4.5.4
       version: 4.5.4
@@ -150,7 +150,7 @@ importers:
         version: link:ts/packages/providers/openai
       '@types/bun':
         specifier: 'catalog:'
-        version: 1.4.1
+        version: 1.4.2
       '@types/node':
         specifier: ^26.4.1
         version: 26.4.1
@@ -222,7 +222,7 @@ importers:
         version: link:../../_utils
       '@types/bun':
         specifier: 'catalog:'
-        version: 1.4.1
+        version: 1.4.2
 
   ts/e2e-tests/cli/run:
     devDependencies:
@@ -282,14 +282,14 @@ importers:
         version: 4.13.7
       openai:
         specifier: 'catalog:'
-        version: 7.10.0(@aws-sdk/credential-provider-node@3.972.78)(@smithy/signature-v4@5.6.12)(undici@6.28.0)(ws@8.21.3)(zod@4.5.4)
+        version: 7.10.0(@aws-sdk/credential-provider-node@3.972.78)(@smithy/signature-v4@5.6.12)(undici@6.28.1)(ws@8.21.3)(zod@4.5.4)
     devDependencies:
       '@cloudflare/vitest-pool-workers':
         specifier: 'catalog:'
-        version: 0.22.0(@cloudflare/workers-types@5.20260905.1)(@types/node@26.4.1)(@vitest/runner@4.1.11)(@vitest/snapshot@4.1.11)(vitest@4.1.11)
+        version: 0.22.0(@cloudflare/workers-types@5.20260908.1)(@types/node@26.4.1)(@vitest/runner@4.1.11)(@vitest/snapshot@4.1.11)(vitest@4.1.11)
       '@cloudflare/workers-types':
         specifier: 'catalog:'
-        version: 5.20260905.1
+        version: 5.20260908.1
       dotenv:
         specifier: 'catalog:'
         version: 17.4.2
@@ -301,7 +301,7 @@ importers:
         version: 4.1.11(@opentelemetry/api@1.9.1)(@types/node@26.4.1)(@vitest/ui@4.1.11)(vite@7.3.5(@types/node@26.4.1)(jiti@2.7.0)(tsx@4.23.13)(yaml@2.9.0))
       wrangler:
         specifier: 'catalog:'
-        version: 4.129.0(@cloudflare/workers-types@5.20260905.1)(@types/node@26.4.1)
+        version: 4.129.1(@cloudflare/workers-types@5.20260908.1)(@types/node@26.4.1)
 
   ts/e2e-tests/runtimes/cloudflare/cf-workers-files:
     dependencies:
@@ -314,10 +314,10 @@ importers:
     devDependencies:
       '@cloudflare/vitest-pool-workers':
         specifier: 'catalog:'
-        version: 0.22.0(@cloudflare/workers-types@5.20260905.1)(@types/node@26.4.1)(@vitest/runner@4.1.11)(@vitest/snapshot@4.1.11)(vitest@4.1.11)
+        version: 0.22.0(@cloudflare/workers-types@5.20260908.1)(@types/node@26.4.1)(@vitest/runner@4.1.11)(@vitest/snapshot@4.1.11)(vitest@4.1.11)
       '@cloudflare/workers-types':
         specifier: 'catalog:'
-        version: 5.20260905.1
+        version: 5.20260908.1
       dotenv:
         specifier: 'catalog:'
         version: 17.4.2
@@ -329,7 +329,7 @@ importers:
         version: 4.1.11(@opentelemetry/api@1.9.1)(@types/node@26.4.1)(@vitest/ui@4.1.11)(vite@7.3.5(@types/node@26.4.1)(jiti@2.7.0)(tsx@4.23.13)(yaml@2.9.0))
       wrangler:
         specifier: 'catalog:'
-        version: 4.129.0(@cloudflare/workers-types@5.20260905.1)(@types/node@26.4.1)
+        version: 4.129.1(@cloudflare/workers-types@5.20260908.1)(@types/node@26.4.1)
 
   ts/e2e-tests/runtimes/cloudflare/cf-workers-tool-router-ai:
     dependencies:
@@ -338,7 +338,7 @@ importers:
         version: 2.0.45(zod@4.5.4)
       '@ai-sdk/openai':
         specifier: 'catalog:'
-        version: 4.0.59(zod@4.5.4)
+        version: 4.0.60(zod@4.5.4)
       '@composio/core':
         specifier: workspace:*
         version: link:../../../../packages/core
@@ -354,10 +354,10 @@ importers:
     devDependencies:
       '@cloudflare/vitest-pool-workers':
         specifier: 'catalog:'
-        version: 0.22.0(@cloudflare/workers-types@5.20260905.1)(@types/node@26.4.1)(@vitest/runner@4.1.11)(@vitest/snapshot@4.1.11)(vitest@4.1.11)
+        version: 0.22.0(@cloudflare/workers-types@5.20260908.1)(@types/node@26.4.1)(@vitest/runner@4.1.11)(@vitest/snapshot@4.1.11)(vitest@4.1.11)
       '@cloudflare/workers-types':
         specifier: 'catalog:'
-        version: 5.20260905.1
+        version: 5.20260908.1
       dotenv:
         specifier: 'catalog:'
         version: 17.4.2
@@ -369,7 +369,7 @@ importers:
         version: 4.1.11(@opentelemetry/api@1.9.1)(@types/node@26.4.1)(@vitest/ui@4.1.11)(vite@7.3.5(@types/node@26.4.1)(jiti@2.7.0)(tsx@4.23.13)(yaml@2.9.0))
       wrangler:
         specifier: 'catalog:'
-        version: 4.129.0(@cloudflare/workers-types@5.20260905.1)(@types/node@26.4.1)
+        version: 4.129.1(@cloudflare/workers-types@5.20260908.1)(@types/node@26.4.1)
 
   ts/e2e-tests/runtimes/deno/esm-basic:
     devDependencies:
@@ -405,8 +405,8 @@ importers:
   ts/e2e-tests/runtimes/node/claude-agent-sdk:
     dependencies:
       '@anthropic-ai/claude-agent-sdk':
-        specifier: ^0.3.261
-        version: 0.3.261(@anthropic-ai/sdk@0.124.0(zod@4.5.4))(@modelcontextprotocol/sdk@1.30.0(@cfworker/json-schema@4.1.1)(zod@4.5.4))(zod@4.5.4)
+        specifier: ^0.3.263
+        version: 0.3.263(@anthropic-ai/sdk@0.124.0(zod@4.5.4))(@modelcontextprotocol/sdk@1.30.0(@cfworker/json-schema@4.1.1)(zod@4.5.4))(zod@4.5.4)
       '@composio/claude-agent-sdk':
         specifier: workspace:*
         version: link:../../../../packages/providers/claude-agent-sdk
@@ -488,7 +488,7 @@ importers:
     dependencies:
       '@ai-sdk/openai':
         specifier: 'catalog:'
-        version: 4.0.59(zod@3.25.76)
+        version: 4.0.60(zod@3.25.76)
       '@composio/core':
         specifier: workspace:*
         version: link:../../../../packages/core
@@ -497,13 +497,13 @@ importers:
         version: link:../../../../packages/providers/mastra
       '@mastra/core':
         specifier: 'catalog:'
-        version: 1.53.0(@cfworker/json-schema@4.1.1)(ai@6.0.266(zod@3.25.76))(express@5.2.1)(zod@3.25.76)
+        version: 1.64.0(ai@6.0.277(zod@3.25.76))(express@5.2.1)(zod@3.25.76)
       '@mastra/mcp':
         specifier: 1.17.2
-        version: 1.17.2(@cfworker/json-schema@4.1.1)(@mastra/core@1.53.0(@cfworker/json-schema@4.1.1)(ai@6.0.266(zod@3.25.76))(express@5.2.1)(zod@3.25.76))(express@5.2.1)(hono@4.13.7)(zod@3.25.76)
+        version: 1.17.2(@cfworker/json-schema@4.1.1)(@mastra/core@1.64.0(ai@6.0.277(zod@3.25.76))(express@5.2.1)(zod@3.25.76))(express@5.2.1)(hono@4.13.7)(zod@3.25.76)
       ai:
-        specifier: ^6.0.266
-        version: 6.0.266(zod@3.25.76)
+        specifier: ^6.0.277
+        version: 6.0.277(zod@3.25.76)
       zod:
         specifier: 3.25.76
         version: 3.25.76
@@ -516,7 +516,7 @@ importers:
     dependencies:
       '@ai-sdk/openai':
         specifier: 'catalog:'
-        version: 4.0.59(zod@4.5.4)
+        version: 4.0.60(zod@4.5.4)
       '@composio/core':
         specifier: workspace:*
         version: link:../../../../packages/core
@@ -525,13 +525,13 @@ importers:
         version: link:../../../../packages/providers/mastra
       '@mastra/core':
         specifier: 'catalog:'
-        version: 1.53.0(@cfworker/json-schema@4.1.1)(ai@6.0.266(zod@4.5.4))(express@5.2.1)(zod@4.5.4)
+        version: 1.64.0(ai@6.0.277(zod@4.5.4))(express@5.2.1)(zod@4.5.4)
       '@mastra/mcp':
         specifier: 1.17.2
-        version: 1.17.2(@cfworker/json-schema@4.1.1)(@mastra/core@1.53.0(@cfworker/json-schema@4.1.1)(ai@6.0.266(zod@4.5.4))(express@5.2.1)(zod@4.5.4))(express@5.2.1)(hono@4.13.7)(zod@4.5.4)
+        version: 1.17.2(@cfworker/json-schema@4.1.1)(@mastra/core@1.64.0(ai@6.0.277(zod@4.5.4))(express@5.2.1)(zod@4.5.4))(express@5.2.1)(hono@4.13.7)(zod@4.5.4)
       ai:
-        specifier: ^6.0.266
-        version: 6.0.266(zod@4.5.4)
+        specifier: ^6.0.277
+        version: 6.0.277(zod@4.5.4)
       zod:
         specifier: 'catalog:'
         version: 4.5.4
@@ -599,8 +599,8 @@ importers:
   ts/examples/anthropic:
     dependencies:
       '@anthropic-ai/claude-agent-sdk':
-        specifier: ^0.3.261
-        version: 0.3.261(@anthropic-ai/sdk@0.124.0(zod@4.5.4))(@modelcontextprotocol/sdk@1.30.0(@cfworker/json-schema@4.1.1)(zod@4.5.4))(zod@4.5.4)
+        specifier: ^0.3.263
+        version: 0.3.263(@anthropic-ai/sdk@0.124.0(zod@4.5.4))(@modelcontextprotocol/sdk@1.30.0(@cfworker/json-schema@4.1.1)(zod@4.5.4))(zod@4.5.4)
       '@anthropic-ai/sdk':
         specifier: ^0.124.0
         version: 0.124.0(zod@4.5.4)
@@ -615,13 +615,13 @@ importers:
         version: link:../../packages/core
       '@mastra/core':
         specifier: 'catalog:'
-        version: 1.53.0(@cfworker/json-schema@4.1.1)(ai@6.0.266(zod@4.5.4))(express@5.2.1)(zod@4.5.4)
+        version: 1.64.0(ai@6.0.277(zod@4.5.4))(express@5.2.1)(zod@4.5.4)
       '@mastra/mcp':
         specifier: 1.17.2
-        version: 1.17.2(@cfworker/json-schema@4.1.1)(@mastra/core@1.53.0(@cfworker/json-schema@4.1.1)(ai@6.0.266(zod@4.5.4))(express@5.2.1)(zod@4.5.4))(express@5.2.1)(hono@4.13.7)(zod@4.5.4)
+        version: 1.17.2(@cfworker/json-schema@4.1.1)(@mastra/core@1.64.0(ai@6.0.277(zod@4.5.4))(express@5.2.1)(zod@4.5.4))(express@5.2.1)(hono@4.13.7)(zod@4.5.4)
       ai:
-        specifier: ^6.0.266
-        version: 6.0.266(zod@4.5.4)
+        specifier: ^6.0.277
+        version: 6.0.277(zod@4.5.4)
       dotenv:
         specifier: 'catalog:'
         version: 17.4.2
@@ -634,7 +634,7 @@ importers:
     devDependencies:
       '@types/bun':
         specifier: 'catalog:'
-        version: 1.4.1
+        version: 1.4.2
       typescript:
         specifier: 'catalog:'
         version: 7.0.2
@@ -649,11 +649,11 @@ importers:
         version: 4.13.7
       openai:
         specifier: 'catalog:'
-        version: 7.10.0(@aws-sdk/credential-provider-node@3.972.78)(@smithy/signature-v4@5.6.12)(undici@6.28.0)(ws@8.21.3)(zod@4.5.4)
+        version: 7.10.0(@aws-sdk/credential-provider-node@3.972.78)(@smithy/signature-v4@5.6.12)(undici@6.28.1)(ws@8.21.3)(zod@4.5.4)
     devDependencies:
       '@cloudflare/vitest-pool-workers':
         specifier: 'catalog:'
-        version: 0.22.0(@cloudflare/workers-types@5.20260905.1)(@types/node@26.4.1)(@vitest/runner@4.1.11)(@vitest/snapshot@4.1.11)(vitest@4.1.11)
+        version: 0.22.0(@cloudflare/workers-types@5.20260908.1)(@types/node@26.4.1)(@vitest/runner@4.1.11)(@vitest/snapshot@4.1.11)(vitest@4.1.11)
       '@types/node':
         specifier: ^26.4.1
         version: 26.4.1
@@ -665,7 +665,7 @@ importers:
         version: 4.1.11(@opentelemetry/api@1.9.1)(@types/node@26.4.1)(@vitest/ui@4.1.11)(vite@7.3.5(@types/node@26.4.1)(jiti@2.7.0)(tsx@4.23.13)(yaml@2.9.0))
       wrangler:
         specifier: 'catalog:'
-        version: 4.129.0(@cloudflare/workers-types@5.20260905.1)(@types/node@26.4.1)
+        version: 4.129.1(@cloudflare/workers-types@5.20260908.1)(@types/node@26.4.1)
 
   ts/examples/connected-accounts:
     dependencies:
@@ -674,11 +674,11 @@ importers:
         version: link:../../packages/core
       openai:
         specifier: 'catalog:'
-        version: 7.10.0(@aws-sdk/credential-provider-node@3.972.78)(@smithy/signature-v4@5.6.12)(undici@6.28.0)(ws@8.21.3)(zod@4.5.4)
+        version: 7.10.0(@aws-sdk/credential-provider-node@3.972.78)(@smithy/signature-v4@5.6.12)(undici@6.28.1)(ws@8.21.3)(zod@4.5.4)
     devDependencies:
       '@types/bun':
         specifier: 'catalog:'
-        version: 1.4.1
+        version: 1.4.2
       typescript:
         specifier: 'catalog:'
         version: 7.0.2
@@ -694,7 +694,7 @@ importers:
     devDependencies:
       '@types/bun':
         specifier: 'catalog:'
-        version: 1.4.1
+        version: 1.4.2
       typescript:
         specifier: 'catalog:'
         version: 7.0.2
@@ -710,7 +710,7 @@ importers:
     devDependencies:
       '@types/bun':
         specifier: 'catalog:'
-        version: 1.4.1
+        version: 1.4.2
       typescript:
         specifier: 'catalog:'
         version: 7.0.2
@@ -735,7 +735,7 @@ importers:
     devDependencies:
       '@types/bun':
         specifier: 'catalog:'
-        version: 1.4.1
+        version: 1.4.2
       typescript:
         specifier: 'catalog:'
         version: 7.0.2
@@ -757,7 +757,7 @@ importers:
     devDependencies:
       '@types/bun':
         specifier: 'catalog:'
-        version: 1.4.1
+        version: 1.4.2
       typescript:
         specifier: 'catalog:'
         version: 7.0.2
@@ -772,26 +772,26 @@ importers:
         version: link:../../packages/providers/langchain
       '@langchain/core':
         specifier: ^1.2.9
-        version: 1.2.9(@opentelemetry/api@1.9.1)(openai@7.10.0(@aws-sdk/credential-provider-node@3.972.78)(@smithy/signature-v4@5.6.12)(undici@6.28.0)(ws@8.21.3)(zod@4.5.4))(ws@8.21.3)
+        version: 1.2.9(@opentelemetry/api@1.9.1)(openai@7.10.0(@aws-sdk/credential-provider-node@3.972.78)(@smithy/signature-v4@5.6.12)(undici@6.28.1)(ws@8.21.3)(zod@4.5.4))(ws@8.21.3)
       '@langchain/langgraph':
         specifier: ^1.4.14
-        version: 1.4.14(@langchain/core@1.2.9(@opentelemetry/api@1.9.1)(openai@7.10.0(@aws-sdk/credential-provider-node@3.972.78)(@smithy/signature-v4@5.6.12)(undici@6.28.0)(ws@8.21.3)(zod@4.5.4))(ws@8.21.3))(zod@4.5.4)
+        version: 1.4.14(@langchain/core@1.2.9(@opentelemetry/api@1.9.1)(openai@7.10.0(@aws-sdk/credential-provider-node@3.972.78)(@smithy/signature-v4@5.6.12)(undici@6.28.1)(ws@8.21.3)(zod@4.5.4))(ws@8.21.3))(zod@4.5.4)
       '@langchain/openai':
         specifier: ^1.5.11
-        version: 1.5.11(@aws-sdk/credential-provider-node@3.972.78)(@langchain/core@1.2.9(@opentelemetry/api@1.9.1)(openai@7.10.0(@aws-sdk/credential-provider-node@3.972.78)(@smithy/signature-v4@5.6.12)(undici@6.28.0)(ws@8.21.3)(zod@4.5.4))(ws@8.21.3))(@smithy/signature-v4@5.6.12)(undici@6.28.0)(ws@8.21.3)
+        version: 1.5.11(@aws-sdk/credential-provider-node@3.972.78)(@langchain/core@1.2.9(@opentelemetry/api@1.9.1)(openai@7.10.0(@aws-sdk/credential-provider-node@3.972.78)(@smithy/signature-v4@5.6.12)(undici@6.28.1)(ws@8.21.3)(zod@4.5.4))(ws@8.21.3))(@smithy/signature-v4@5.6.12)(undici@6.28.1)(ws@8.21.3)
       dotenv:
         specifier: 'catalog:'
         version: 17.4.2
       langchain:
         specifier: ^1.5.10
-        version: 1.5.10(@langchain/core@1.2.9(@opentelemetry/api@1.9.1)(openai@7.10.0(@aws-sdk/credential-provider-node@3.972.78)(@smithy/signature-v4@5.6.12)(undici@6.28.0)(ws@8.21.3)(zod@4.5.4))(ws@8.21.3))(@opentelemetry/api@1.9.1)(openai@7.10.0(@aws-sdk/credential-provider-node@3.972.78)(@smithy/signature-v4@5.6.12)(undici@6.28.0)(ws@8.21.3)(zod@4.5.4))(ws@8.21.3)
+        version: 1.5.10(@langchain/core@1.2.9(@opentelemetry/api@1.9.1)(openai@7.10.0(@aws-sdk/credential-provider-node@3.972.78)(@smithy/signature-v4@5.6.12)(undici@6.28.1)(ws@8.21.3)(zod@4.5.4))(ws@8.21.3))(@opentelemetry/api@1.9.1)(openai@7.10.0(@aws-sdk/credential-provider-node@3.972.78)(@smithy/signature-v4@5.6.12)(undici@6.28.1)(ws@8.21.3)(zod@4.5.4))(ws@8.21.3)
       openai:
         specifier: 'catalog:'
-        version: 7.10.0(@aws-sdk/credential-provider-node@3.972.78)(@smithy/signature-v4@5.6.12)(undici@6.28.0)(ws@8.21.3)(zod@4.5.4)
+        version: 7.10.0(@aws-sdk/credential-provider-node@3.972.78)(@smithy/signature-v4@5.6.12)(undici@6.28.1)(ws@8.21.3)(zod@4.5.4)
     devDependencies:
       '@types/bun':
         specifier: 'catalog:'
-        version: 1.4.1
+        version: 1.4.2
       typescript:
         specifier: 'catalog:'
         version: 7.0.2
@@ -819,7 +819,7 @@ importers:
     devDependencies:
       '@types/bun':
         specifier: 'catalog:'
-        version: 1.4.1
+        version: 1.4.2
       typescript:
         specifier: 'catalog:'
         version: 7.0.2
@@ -828,7 +828,7 @@ importers:
     dependencies:
       '@ai-sdk/openai':
         specifier: 'catalog:'
-        version: 4.0.59(zod@4.5.4)
+        version: 4.0.60(zod@4.5.4)
       '@composio/core':
         specifier: workspace:*
         version: link:../../packages/core
@@ -837,10 +837,10 @@ importers:
         version: link:../../packages/providers/mastra
       '@mastra/core':
         specifier: 'catalog:'
-        version: 1.53.0(@cfworker/json-schema@4.1.1)(ai@6.0.266(zod@4.5.4))(express@5.2.1)(zod@4.5.4)
+        version: 1.64.0(ai@6.0.277(zod@4.5.4))(express@5.2.1)(zod@4.5.4)
       ai:
-        specifier: ^6.0.266
-        version: 6.0.266(zod@4.5.4)
+        specifier: ^6.0.277
+        version: 6.0.277(zod@4.5.4)
       dotenv:
         specifier: 'catalog:'
         version: 17.4.2
@@ -850,10 +850,10 @@ importers:
     devDependencies:
       '@cloudflare/workers-types':
         specifier: 'catalog:'
-        version: 5.20260905.1
+        version: 5.20260908.1
       '@types/bun':
         specifier: 'catalog:'
-        version: 1.4.1
+        version: 1.4.2
       '@types/node':
         specifier: ^26.4.1
         version: 26.4.1
@@ -862,7 +862,7 @@ importers:
         version: 7.0.2
       wrangler:
         specifier: 'catalog:'
-        version: 4.129.0(@cloudflare/workers-types@5.20260905.1)(@types/node@26.4.1)
+        version: 4.129.1(@cloudflare/workers-types@5.20260908.1)(@types/node@26.4.1)
 
   ts/examples/mcp:
     dependencies:
@@ -871,7 +871,7 @@ importers:
         version: 2.0.45(zod@4.5.4)
       '@ai-sdk/openai':
         specifier: 'catalog:'
-        version: 4.0.59(zod@4.5.4)
+        version: 4.0.60(zod@4.5.4)
       '@composio/core':
         specifier: workspace:*
         version: link:../../packages/core
@@ -890,7 +890,7 @@ importers:
     devDependencies:
       '@types/bun':
         specifier: 'catalog:'
-        version: 1.4.1
+        version: 1.4.2
       '@types/node':
         specifier: ^26.4.1
         version: 26.4.1
@@ -902,7 +902,7 @@ importers:
     dependencies:
       '@ai-sdk/openai':
         specifier: 'catalog:'
-        version: 4.0.59(zod@4.5.4)
+        version: 4.0.60(zod@4.5.4)
       '@composio/core':
         specifier: workspace:*
         version: link:../../packages/core
@@ -915,7 +915,7 @@ importers:
     devDependencies:
       '@types/bun':
         specifier: 'catalog:'
-        version: 1.4.1
+        version: 1.4.2
       typescript:
         specifier: 'catalog:'
         version: 7.0.2
@@ -936,13 +936,13 @@ importers:
         version: 1.30.0(@cfworker/json-schema@4.1.1)(zod@4.5.4)
       '@openai/agents':
         specifier: ^0.17.0
-        version: 0.17.0(@aws-sdk/credential-provider-node@3.972.78)(@smithy/signature-v4@5.6.12)(supports-color@10.2.2)(undici@6.28.0)(ws@8.21.3)(zod@4.5.4)
+        version: 0.17.0(@aws-sdk/credential-provider-node@3.972.78)(@smithy/signature-v4@5.6.12)(supports-color@10.2.2)(undici@6.28.1)(ws@8.21.3)(zod@4.5.4)
       dotenv:
         specifier: 'catalog:'
         version: 17.4.2
       openai:
         specifier: 'catalog:'
-        version: 7.10.0(@aws-sdk/credential-provider-node@3.972.78)(@smithy/signature-v4@5.6.12)(undici@6.28.0)(ws@8.21.3)(zod@4.5.4)
+        version: 7.10.0(@aws-sdk/credential-provider-node@3.972.78)(@smithy/signature-v4@5.6.12)(undici@6.28.1)(ws@8.21.3)(zod@4.5.4)
       zod:
         specifier: 'catalog:'
         version: 4.5.4
@@ -952,16 +952,16 @@ importers:
     devDependencies:
       '@cloudflare/workers-types':
         specifier: 'catalog:'
-        version: 5.20260905.1
+        version: 5.20260908.1
       '@types/bun':
         specifier: 'catalog:'
-        version: 1.4.1
+        version: 1.4.2
       typescript:
         specifier: 'catalog:'
         version: 7.0.2
       wrangler:
         specifier: 'catalog:'
-        version: 4.129.0(@cloudflare/workers-types@5.20260905.1)(@types/node@26.4.1)
+        version: 4.129.1(@cloudflare/workers-types@5.20260908.1)(@types/node@26.4.1)
 
   ts/examples/session-management:
     dependencies:
@@ -974,7 +974,7 @@ importers:
     devDependencies:
       '@types/bun':
         specifier: 'catalog:'
-        version: 1.4.1
+        version: 1.4.2
       typescript:
         specifier: 'catalog:'
         version: 7.0.2
@@ -986,10 +986,10 @@ importers:
         version: 2.0.45(zod@4.5.4)
       '@ai-sdk/openai':
         specifier: 'catalog:'
-        version: 4.0.59(zod@4.5.4)
+        version: 4.0.60(zod@4.5.4)
       '@anthropic-ai/claude-agent-sdk':
-        specifier: ^0.3.261
-        version: 0.3.261(@anthropic-ai/sdk@0.124.0(zod@4.5.4))(@modelcontextprotocol/sdk@1.30.0(@cfworker/json-schema@4.1.1)(zod@4.5.4))(zod@4.5.4)
+        specifier: ^0.3.263
+        version: 0.3.263(@anthropic-ai/sdk@0.124.0(zod@4.5.4))(@modelcontextprotocol/sdk@1.30.0(@cfworker/json-schema@4.1.1)(zod@4.5.4))(zod@4.5.4)
       '@composio/claude-agent-sdk':
         specifier: workspace:*
         version: link:../../packages/providers/claude-agent-sdk
@@ -1004,16 +1004,16 @@ importers:
         version: link:../../packages/providers/vercel
       '@langchain/anthropic':
         specifier: ^1.5.9
-        version: 1.5.9(@langchain/core@1.2.9(@opentelemetry/api@1.9.1)(openai@7.10.0(@aws-sdk/credential-provider-node@3.972.78)(@smithy/signature-v4@5.6.12)(undici@6.28.0)(ws@8.21.3)(zod@4.5.4))(ws@8.21.3))
+        version: 1.5.9(@langchain/core@1.2.9(@opentelemetry/api@1.9.1)(openai@7.10.0(@aws-sdk/credential-provider-node@3.972.78)(@smithy/signature-v4@5.6.12)(undici@6.28.1)(ws@8.21.3)(zod@4.5.4))(ws@8.21.3))
       '@langchain/mcp-adapters':
         specifier: ^1.1.4
-        version: 1.1.4(@cfworker/json-schema@4.1.1)(@langchain/core@1.2.9(@opentelemetry/api@1.9.1)(openai@7.10.0(@aws-sdk/credential-provider-node@3.972.78)(@smithy/signature-v4@5.6.12)(undici@6.28.0)(ws@8.21.3)(zod@4.5.4))(ws@8.21.3))(@langchain/langgraph@1.4.14(@langchain/core@1.2.9(@opentelemetry/api@1.9.1)(openai@7.10.0(@aws-sdk/credential-provider-node@3.972.78)(@smithy/signature-v4@5.6.12)(undici@6.28.0)(ws@8.21.3)(zod@4.5.4))(ws@8.21.3))(zod@4.5.4))(supports-color@10.2.2)
+        version: 1.1.4(@cfworker/json-schema@4.1.1)(@langchain/core@1.2.9(@opentelemetry/api@1.9.1)(openai@7.10.0(@aws-sdk/credential-provider-node@3.972.78)(@smithy/signature-v4@5.6.12)(undici@6.28.1)(ws@8.21.3)(zod@4.5.4))(ws@8.21.3))(@langchain/langgraph@1.4.14(@langchain/core@1.2.9(@opentelemetry/api@1.9.1)(openai@7.10.0(@aws-sdk/credential-provider-node@3.972.78)(@smithy/signature-v4@5.6.12)(undici@6.28.1)(ws@8.21.3)(zod@4.5.4))(ws@8.21.3))(zod@4.5.4))(supports-color@10.2.2)
       '@langchain/openai':
         specifier: ^1.5.11
-        version: 1.5.11(@aws-sdk/credential-provider-node@3.972.78)(@langchain/core@1.2.9(@opentelemetry/api@1.9.1)(openai@7.10.0(@aws-sdk/credential-provider-node@3.972.78)(@smithy/signature-v4@5.6.12)(undici@6.28.0)(ws@8.21.3)(zod@4.5.4))(ws@8.21.3))(@smithy/signature-v4@5.6.12)(undici@6.28.0)(ws@8.21.3)
+        version: 1.5.11(@aws-sdk/credential-provider-node@3.972.78)(@langchain/core@1.2.9(@opentelemetry/api@1.9.1)(openai@7.10.0(@aws-sdk/credential-provider-node@3.972.78)(@smithy/signature-v4@5.6.12)(undici@6.28.1)(ws@8.21.3)(zod@4.5.4))(ws@8.21.3))(@smithy/signature-v4@5.6.12)(undici@6.28.1)(ws@8.21.3)
       '@openai/agents':
         specifier: ^0.17.0
-        version: 0.17.0(@aws-sdk/credential-provider-node@3.972.78)(@smithy/signature-v4@5.6.12)(supports-color@10.2.2)(undici@6.28.0)(ws@8.21.3)(zod@4.5.4)
+        version: 0.17.0(@aws-sdk/credential-provider-node@3.972.78)(@smithy/signature-v4@5.6.12)(supports-color@10.2.2)(undici@6.28.1)(ws@8.21.3)(zod@4.5.4)
       ai:
         specifier: 'catalog:'
         version: 7.0.93(zod@4.5.4)
@@ -1022,10 +1022,10 @@ importers:
         version: 17.4.2
       langchain:
         specifier: ^1.5.10
-        version: 1.5.10(@langchain/core@1.2.9(@opentelemetry/api@1.9.1)(openai@7.10.0(@aws-sdk/credential-provider-node@3.972.78)(@smithy/signature-v4@5.6.12)(undici@6.28.0)(ws@8.21.3)(zod@4.5.4))(ws@8.21.3))(@opentelemetry/api@1.9.1)(openai@7.10.0(@aws-sdk/credential-provider-node@3.972.78)(@smithy/signature-v4@5.6.12)(undici@6.28.0)(ws@8.21.3)(zod@4.5.4))(ws@8.21.3)
+        version: 1.5.10(@langchain/core@1.2.9(@opentelemetry/api@1.9.1)(openai@7.10.0(@aws-sdk/credential-provider-node@3.972.78)(@smithy/signature-v4@5.6.12)(undici@6.28.1)(ws@8.21.3)(zod@4.5.4))(ws@8.21.3))(@opentelemetry/api@1.9.1)(openai@7.10.0(@aws-sdk/credential-provider-node@3.972.78)(@smithy/signature-v4@5.6.12)(undici@6.28.1)(ws@8.21.3)(zod@4.5.4))(ws@8.21.3)
       openai:
         specifier: 'catalog:'
-        version: 7.10.0(@aws-sdk/credential-provider-node@3.972.78)(@smithy/signature-v4@5.6.12)(undici@6.28.0)(ws@8.21.3)(zod@4.5.4)
+        version: 7.10.0(@aws-sdk/credential-provider-node@3.972.78)(@smithy/signature-v4@5.6.12)(undici@6.28.1)(ws@8.21.3)(zod@4.5.4)
       ora:
         specifier: ^9.4.1
         version: 9.4.1
@@ -1038,7 +1038,7 @@ importers:
     devDependencies:
       '@types/bun':
         specifier: 'catalog:'
-        version: 1.4.1
+        version: 1.4.2
       '@types/node':
         specifier: ^26.4.1
         version: 26.4.1
@@ -1050,7 +1050,7 @@ importers:
     dependencies:
       '@ai-sdk/openai':
         specifier: 'catalog:'
-        version: 4.0.59(zod@4.5.4)
+        version: 4.0.60(zod@4.5.4)
       '@composio/core':
         specifier: workspace:*
         version: link:../../packages/core
@@ -1063,7 +1063,7 @@ importers:
     devDependencies:
       '@types/bun':
         specifier: 'catalog:'
-        version: 1.4.1
+        version: 1.4.2
       typescript:
         specifier: 'catalog:'
         version: 7.0.2
@@ -1072,7 +1072,7 @@ importers:
     dependencies:
       '@ai-sdk/openai':
         specifier: 'catalog:'
-        version: 4.0.59(zod@4.5.4)
+        version: 4.0.60(zod@4.5.4)
       '@composio/core':
         specifier: workspace:*
         version: link:../../packages/core
@@ -1087,7 +1087,7 @@ importers:
         version: 17.4.2
       openai:
         specifier: 'catalog:'
-        version: 7.10.0(@aws-sdk/credential-provider-node@3.972.78)(@smithy/signature-v4@5.6.12)(undici@6.28.0)(ws@8.21.3)(zod@4.5.4)
+        version: 7.10.0(@aws-sdk/credential-provider-node@3.972.78)(@smithy/signature-v4@5.6.12)(undici@6.28.1)(ws@8.21.3)(zod@4.5.4)
       zod:
         specifier: 'catalog:'
         version: 4.5.4
@@ -1097,7 +1097,7 @@ importers:
     devDependencies:
       '@types/bun':
         specifier: 'catalog:'
-        version: 1.4.1
+        version: 1.4.2
       typescript:
         specifier: 'catalog:'
         version: 7.0.2
@@ -1113,7 +1113,7 @@ importers:
     devDependencies:
       '@types/bun':
         specifier: 'catalog:'
-        version: 1.4.1
+        version: 1.4.2
       typescript:
         specifier: 'catalog:'
         version: 7.0.2
@@ -1125,7 +1125,7 @@ importers:
         version: 2.0.45(zod@4.5.4)
       '@ai-sdk/openai':
         specifier: 'catalog:'
-        version: 4.0.59(zod@4.5.4)
+        version: 4.0.60(zod@4.5.4)
       '@composio/core':
         specifier: workspace:*
         version: link:../../packages/core
@@ -1150,7 +1150,7 @@ importers:
     devDependencies:
       '@types/bun':
         specifier: 'catalog:'
-        version: 1.4.1
+        version: 1.4.2
       '@types/node':
         specifier: ^26.4.1
         version: 26.4.1
@@ -1169,7 +1169,7 @@ importers:
     devDependencies:
       '@types/bun':
         specifier: 'catalog:'
-        version: 1.4.1
+        version: 1.4.2
       typescript:
         specifier: 'catalog:'
         version: 7.0.2
@@ -1181,10 +1181,10 @@ importers:
         version: 1.4.0(zod@4.5.4)
       '@clack/core':
         specifier: 'catalog:'
-        version: 1.4.3
+        version: 1.5.0
       '@clack/prompts':
         specifier: 'catalog:'
-        version: 1.7.0
+        version: 1.8.0
       '@composio/cli-keyring':
         specifier: workspace:*
         version: link:../cli-keyring
@@ -1214,7 +1214,7 @@ importers:
         version: 1.30.0(@cfworker/json-schema@4.1.1)(zod@4.5.4)
       '@zed-industries/claude-code-acp':
         specifier: ^0.16.2
-        version: 0.16.2(@cfworker/json-schema@4.1.1)(zod@4.5.4)
+        version: 0.16.2(@cfworker/json-schema@4.1.1)(supports-color@10.2.2)(zod@4.5.4)
       '@zed-industries/codex-acp':
         specifier: ^0.16.0
         version: 0.16.0
@@ -1272,7 +1272,7 @@ importers:
         version: 4.0.0-rc.112(effect@4.0.0-rc.112)(vitest@4.1.11)
       '@types/bun':
         specifier: 'catalog:'
-        version: 1.4.1
+        version: 1.4.2
       '@types/semver':
         specifier: ^7.8.0
         version: 7.8.0
@@ -1360,7 +1360,7 @@ importers:
         version: 2.0.0
       openai:
         specifier: 'catalog:'
-        version: 7.10.0(@aws-sdk/credential-provider-node@3.972.78)(@smithy/signature-v4@5.6.12)(undici@7.29.0)(ws@8.21.3)(zod@4.5.4)
+        version: 7.10.0(@aws-sdk/credential-provider-node@3.972.78)(@smithy/signature-v4@5.6.12)(undici@7.29.1)(ws@8.21.3)(zod@4.5.4)
       picocolors:
         specifier: 'catalog:'
         version: 1.1.1
@@ -1371,8 +1371,8 @@ importers:
         specifier: ^7.8.5
         version: 7.8.5
       undici:
-        specifier: ^7.29.0
-        version: 7.29.0
+        specifier: ^7.29.1
+        version: 7.29.1
       zod-to-json-schema:
         specifier: 'catalog:'
         version: 3.25.2(zod@4.5.4)
@@ -1408,8 +1408,8 @@ importers:
         specifier: ^2.5.0
         version: 2.5.0
       typebox:
-        specifier: 1.3.27
-        version: 1.3.27
+        specifier: 1.3.28
+        version: 1.3.28
     devDependencies:
       '@composio/core':
         specifier: workspace:*
@@ -1502,13 +1502,13 @@ importers:
         version: link:../../core
       '@mastra/core':
         specifier: 'catalog:'
-        version: 1.53.0(@cfworker/json-schema@4.1.1)(ai@6.0.266(zod@4.5.4))(express@5.2.1)(zod@4.5.4)
+        version: 1.64.0(ai@6.0.277(zod@4.5.4))(express@5.2.1)(zod@4.5.4)
       '@mastra/mcp':
         specifier: 1.17.2
-        version: 1.17.2(@cfworker/json-schema@4.1.1)(@mastra/core@1.53.0(@cfworker/json-schema@4.1.1)(ai@6.0.266(zod@4.5.4))(express@5.2.1)(zod@4.5.4))(express@5.2.1)(hono@4.13.7)(zod@4.5.4)
+        version: 1.17.2(@cfworker/json-schema@4.1.1)(@mastra/core@1.64.0(ai@6.0.277(zod@4.5.4))(express@5.2.1)(zod@4.5.4))(express@5.2.1)(hono@4.13.7)(zod@4.5.4)
       ai:
-        specifier: ^6.0.266
-        version: 6.0.266(zod@4.5.4)
+        specifier: ^6.0.277
+        version: 6.0.277(zod@4.5.4)
       tsdown:
         specifier: 'catalog:'
         version: 0.23.0(@arethetypeswrong/core@0.18.5)(publint@0.3.24)(tsx@4.23.13)(typescript@7.0.2)(unrun@0.2.27(@emnapi/core@1.11.2)(@emnapi/runtime@1.11.3))
@@ -1526,8 +1526,8 @@ importers:
         version: 4.5.4
     devDependencies:
       '@anthropic-ai/claude-agent-sdk':
-        specifier: ^0.3.261
-        version: 0.3.261(@anthropic-ai/sdk@0.124.0(zod@4.5.4))(@modelcontextprotocol/sdk@1.30.0(@cfworker/json-schema@4.1.1)(zod@4.5.4))(zod@4.5.4)
+        specifier: ^0.3.263
+        version: 0.3.263(@anthropic-ai/sdk@0.124.0(zod@4.5.4))(@modelcontextprotocol/sdk@1.30.0(@cfworker/json-schema@4.1.1)(zod@4.5.4))(zod@4.5.4)
       '@composio/core':
         specifier: workspace:*
         version: link:../../core
@@ -1548,7 +1548,7 @@ importers:
     dependencies:
       '@cloudflare/workers-types':
         specifier: 'catalog:'
-        version: 5.20260905.1
+        version: 5.20260908.1
     devDependencies:
       '@composio/core':
         specifier: workspace:*
@@ -1586,7 +1586,7 @@ importers:
         version: link:../../core
       '@langchain/core':
         specifier: ^1.2.9
-        version: 1.2.9(@opentelemetry/api@1.9.1)(openai@7.10.0(@aws-sdk/credential-provider-node@3.972.78)(@smithy/signature-v4@5.6.12)(undici@6.28.0)(ws@8.21.3)(zod@4.5.4))(ws@8.21.3)
+        version: 1.2.9(@opentelemetry/api@1.9.1)(openai@7.10.0(@aws-sdk/credential-provider-node@3.972.78)(@smithy/signature-v4@5.6.12)(undici@6.28.1)(ws@8.21.3)(zod@4.5.4))(ws@8.21.3)
       tsdown:
         specifier: 'catalog:'
         version: 0.23.0(@arethetypeswrong/core@0.18.5)(publint@0.3.24)(tsx@4.23.13)(typescript@7.0.2)(unrun@0.2.27(@emnapi/core@1.11.2)(@emnapi/runtime@1.11.3))
@@ -1627,10 +1627,10 @@ importers:
         version: link:../../core
       '@mastra/core':
         specifier: 'catalog:'
-        version: 1.53.0(@cfworker/json-schema@4.1.1)(ai@6.0.266(zod@4.5.4))(express@5.2.1)(zod@4.5.4)
+        version: 1.64.0(ai@6.0.277(zod@4.5.4))(express@5.2.1)(zod@4.5.4)
       ai:
-        specifier: ^6.0.266
-        version: 6.0.266(zod@4.5.4)
+        specifier: ^6.0.277
+        version: 6.0.277(zod@4.5.4)
       tsdown:
         specifier: 'catalog:'
         version: 0.23.0(@arethetypeswrong/core@0.18.5)(publint@0.3.24)(tsx@4.23.13)(typescript@7.0.2)(unrun@0.2.27(@emnapi/core@1.11.2)(@emnapi/runtime@1.11.3))
@@ -1651,7 +1651,7 @@ importers:
         version: link:../../core
       openai:
         specifier: 'catalog:'
-        version: 7.10.0(@aws-sdk/credential-provider-node@3.972.78)(@smithy/signature-v4@5.6.12)(undici@6.28.0)(ws@8.21.3)(zod@4.5.4)
+        version: 7.10.0(@aws-sdk/credential-provider-node@3.972.78)(@smithy/signature-v4@5.6.12)(undici@6.28.1)(ws@8.21.3)(zod@4.5.4)
       tsdown:
         specifier: 'catalog:'
         version: 0.23.0(@arethetypeswrong/core@0.18.5)(publint@0.3.24)(tsx@4.23.13)(typescript@7.0.2)(unrun@0.2.27(@emnapi/core@1.11.2)(@emnapi/runtime@1.11.3))
@@ -1669,7 +1669,7 @@ importers:
         version: link:../../core
       '@openai/agents':
         specifier: ^0.17.0
-        version: 0.17.0(@aws-sdk/credential-provider-node@3.972.78)(@smithy/signature-v4@5.6.12)(supports-color@10.2.2)(undici@6.28.0)(ws@8.21.3)(zod@4.5.4)
+        version: 0.17.0(@aws-sdk/credential-provider-node@3.972.78)(@smithy/signature-v4@5.6.12)(supports-color@10.2.2)(undici@6.28.1)(ws@8.21.3)(zod@4.5.4)
       tsdown:
         specifier: 'catalog:'
         version: 0.23.0(@arethetypeswrong/core@0.18.5)(publint@0.3.24)(tsx@4.23.13)(typescript@7.0.2)(unrun@0.2.27(@emnapi/core@1.11.2)(@emnapi/runtime@1.11.3))
@@ -1720,7 +1720,7 @@ importers:
         version: 2.0.0
       openai:
         specifier: 'catalog:'
-        version: 7.10.0(@aws-sdk/credential-provider-node@3.972.78)(@smithy/signature-v4@5.6.12)(undici@7.29.0)(ws@8.21.3)(zod@4.5.4)
+        version: 7.10.0(@aws-sdk/credential-provider-node@3.972.78)(@smithy/signature-v4@5.6.12)(undici@7.29.1)(ws@8.21.3)(zod@4.5.4)
       picocolors:
         specifier: 'catalog:'
         version: 1.1.1
@@ -1731,8 +1731,8 @@ importers:
         specifier: ^7.8.5
         version: 7.8.5
       undici:
-        specifier: ^7.29.0
-        version: 7.29.0
+        specifier: ^7.29.1
+        version: 7.29.1
       zod:
         specifier: '>=3.25.76 <5'
         version: 4.5.4
@@ -1780,6 +1780,21 @@ packages:
       express:
         optional: true
 
+  '@a2a-js/sdk@1.0.1':
+    resolution: {integrity: sha512-CJQdh3Wzwo8qIx5UUkSJ7+7BEI16PB+MXMHHNSmx8JQsQed2HlQgvx1ENOiKUfYA3PlcEvxIwv14dBblhDuPmw==}
+    engines: {node: '>=20'}
+    peerDependencies:
+      '@bufbuild/protobuf': ^2.10.2
+      '@grpc/grpc-js': ^1.11.0
+      express: ^4.21.2 || ^5.1.0
+    peerDependenciesMeta:
+      '@bufbuild/protobuf':
+        optional: true
+      '@grpc/grpc-js':
+        optional: true
+      express:
+        optional: true
+
   '@agentclientprotocol/sdk@0.14.1':
     resolution: {integrity: sha512-b6r3PS3Nly+Wyw9U+0nOr47bV8tfS476EgyEMhoKvJCZLbgqoDFN7DJwkxL88RR0aiOqOYV1ZnESHqb+RmdH8w==}
     peerDependencies:
@@ -1790,8 +1805,8 @@ packages:
     peerDependencies:
       zod: ^3.25.0 || ^4.0.0
 
-  '@ai-sdk/gateway@3.0.181':
-    resolution: {integrity: sha512-y1J1drufpsr/etMJvS75wkms02Qsl0zOdkQWRTokBn2pDjOMU6Agt2zcBNfavdpfS/6ZOl5/0SpudPhOERLCFA==}
+  '@ai-sdk/gateway@3.0.189':
+    resolution: {integrity: sha512-roPKojHenQm7U77kNNE0w586jP2vnjxaNx/+KFSQkJRLLAxrg7yUwZQfyOEizoTxdaltu+ZIlLRTw09X3XbGvQ==}
     engines: {node: '>=18'}
     peerDependencies:
       zod: ^3.25.76 || ^4.1.8
@@ -1808,21 +1823,9 @@ packages:
     peerDependencies:
       zod: ^3.25.76 || ^4.1.8
 
-  '@ai-sdk/openai@4.0.59':
-    resolution: {integrity: sha512-k9qS5GbERLOsrMw+qOIKrGhgu0QWkc5f9GTGf7my+xlUsMdZY24hZWAT0JHgBAg9FdvE7lWD7wi85eDyioGuUQ==}
+  '@ai-sdk/openai@4.0.60':
+    resolution: {integrity: sha512-Wx8bRN/zD+jDujT7HDbU1tC66h0a5kNEMG1DDrILfUgil56IJ9JMeBrzGqDw56IspmcXFG6uRpRnuK8AEQeKgg==}
     engines: {node: '>=22'}
-    peerDependencies:
-      zod: ^3.25.76 || ^4.1.8
-
-  '@ai-sdk/provider-utils@2.2.8':
-    resolution: {integrity: sha512-fqhG+4sCVv8x7nFzYnFo19ryhAa3w096Kmc3hWxMQfW/TubPOmt3A6tYZhl4mUfQWWQMsuSkLrtjlWuXBVSGQA==}
-    engines: {node: '>=18'}
-    peerDependencies:
-      zod: ^3.23.8
-
-  '@ai-sdk/provider-utils@3.0.30':
-    resolution: {integrity: sha512-NCJ9JKow5ENAgEZxzvEvF20thwDiH+hutvzmrUDbloRX0azpJHNst8+7pZIVryYhLM9wgpT5/ShTSjPTFhkxEQ==}
-    engines: {node: '>=18'}
     peerDependencies:
       zod: ^3.25.76 || ^4.1.8
 
@@ -1832,14 +1835,14 @@ packages:
     peerDependencies:
       zod: ^3.25.76 || ^4.1.8
 
-  '@ai-sdk/provider-utils@4.0.48':
-    resolution: {integrity: sha512-l3LqNFx3hgIqaCNHKbZgWPhKMw8xxOjsNhElzeawWe1Gsjozu2EA4NJUMoKi7sUsNQjn1cw0DPs/zR519oHRXQ==}
+  '@ai-sdk/provider-utils@4.0.50':
+    resolution: {integrity: sha512-YAcB+7M1JhAYsHorTrWyldCyZihjCKr/QRXH2vFrara/+lwqNE7q5KzoucKLZ7ktFiUonhnhFhRoiymsq/2K2Q==}
     engines: {node: '>=18.17'}
     peerDependencies:
       zod: ^3.25.76 || ^4.1.8
 
-  '@ai-sdk/provider-utils@5.0.11':
-    resolution: {integrity: sha512-7/96wE+ZsKB35iS9ASyllrE4Ym/EolXEB7AkuJ5FI++fmS85BVTAs77890C+1Z2jwHfBKjBQSBmsliOsAh0iFQ==}
+  '@ai-sdk/provider-utils@5.0.13':
+    resolution: {integrity: sha512-fScDJMDnTbx32kLDQqp0MvPjvwkgiwvlBxlmIg7XW5PbS91LG6JjH3PQG+34oMFglqfpQA355e24OdGj5PPoDw==}
     engines: {node: '>=22'}
     peerDependencies:
       zod: ^3.25.76 || ^4.1.8
@@ -1849,10 +1852,6 @@ packages:
     engines: {node: '>=22'}
     peerDependencies:
       zod: ^3.25.76 || ^4.1.8
-
-  '@ai-sdk/provider@1.1.3':
-    resolution: {integrity: sha512-qZMxYJ0qqX/RfnuIaab+zp8UAeJn/ygXXAffR5I4N0n1IrvA6qBsjc8hXLmBiMV2zoXlifkacF7sEFnYnjBcqg==}
-    engines: {node: '>=18'}
 
   '@ai-sdk/provider@2.0.3':
     resolution: {integrity: sha512-h88OPkavHTiN9tMn2l5awAznGB0lXzjcLhgR1/rvjB2zlLprsNxbM2tt6OJsHUxduLC3klq0/eqaSf6fX5XVww==}
@@ -1870,60 +1869,54 @@ packages:
     resolution: {integrity: sha512-fX2ENAc7iDpZ+Wp4+Rk06Usn/Ys7dI9uAkGv0jlF6XVrW13NkRWx5Ou+U6lIM2E1fTLkCs16GGrUAaVvroag7A==}
     engines: {node: '>=22'}
 
-  '@ai-sdk/provider@4.0.3':
-    resolution: {integrity: sha512-e0CpNWJUY7OxAFAnCZkw+ri9QOHWwTs1tXP42782KFGCU07qt8NiXCrCVowyCB5dP2r5/Uls+g2oPd8kOJn9dw==}
+  '@ai-sdk/provider@4.0.4':
+    resolution: {integrity: sha512-tbHKNLirllUNF3ZlkCsXnwab2ZV1Sl4b1H/Cp9ruCce15IBmskE8Gwkk0yo9xDWY+jho2of7lVXtwSsyrq7cwQ==}
     engines: {node: '>=22'}
-
-  '@ai-sdk/ui-utils@1.2.11':
-    resolution: {integrity: sha512-3zcwCc8ezzFlwp3ZD15wAPjf2Au4s3vAbKsXQVyhxODHcmu0iyPO2Eua6D/vicq/AUm/BAo60r97O6HU+EI0+w==}
-    engines: {node: '>=18'}
-    peerDependencies:
-      zod: ^3.23.8
 
   '@andrewbranch/untar.js@1.0.4':
     resolution: {integrity: sha512-pVXSwPsLuw8IGLo2Di0EaOfsk+ntVvpkk942J/sHYIkwvtKUakEcPh7HBgZ6tuimgzKSEHgCvO4XgQ05DEbwDw==}
 
-  '@anthropic-ai/claude-agent-sdk-darwin-arm64@0.3.261':
-    resolution: {integrity: sha512-oI8SPd6g+xUF6EnEqIInxz5CjSSJXoDlaqefjbSJvTFCawGGBhxlQs0g9jzsYou6Rdu+i2tJBToJZLsKSnN/0Q==}
+  '@anthropic-ai/claude-agent-sdk-darwin-arm64@0.3.263':
+    resolution: {integrity: sha512-H4eLd4Tkx3rJkt739CHb+9AcaKiiOpibU4tYsmma47mV+2zAPjUyFxpuE2N57VSmpAgbLQxu44du0TFN+UH5dg==}
     cpu: [arm64]
     os: [darwin]
 
-  '@anthropic-ai/claude-agent-sdk-darwin-x64@0.3.261':
-    resolution: {integrity: sha512-PODd45XbrKxwngebFmc60Xd68QDb7xCo+0toYTJKfFumU24b/JT2WpO5sTSfc5+fahd/P11q0uF5v9YeSjWmjg==}
+  '@anthropic-ai/claude-agent-sdk-darwin-x64@0.3.263':
+    resolution: {integrity: sha512-jKwmfkem1s/TcK7u83cJf2zLHMz846irV4vqYGUlo74uX2qfX57R4UsrCMlcTUMou/U9vQyNCc/Kk0s+zSxYRg==}
     cpu: [x64]
     os: [darwin]
 
-  '@anthropic-ai/claude-agent-sdk-linux-arm64-musl@0.3.261':
-    resolution: {integrity: sha512-BAUG2EremVyy8bA14jKF35VRJjGE2TqREpFerA0CRBWg9/sUJZVWdmIRXUiXCKh0MvenPRUJbEgwcHFllQETOw==}
+  '@anthropic-ai/claude-agent-sdk-linux-arm64-musl@0.3.263':
+    resolution: {integrity: sha512-TiOmi9mqYvu3uGgM+0eQrUQzgXb7pgTzqahtRyEjpJrNigddGoANHcbNKL7P7y4etJpyIuYXGuVh5SLJzySYVA==}
     cpu: [arm64]
     os: [linux]
     libc: [musl]
 
-  '@anthropic-ai/claude-agent-sdk-linux-arm64@0.3.261':
-    resolution: {integrity: sha512-C+y3N3MD2ExrwrbCYcbLdM39VkbJkQKUv23oubvoZr0CtHiH2LESyUUC3JsUbHJ1TRKO8fbzLqvPkjZ9UsBIcw==}
+  '@anthropic-ai/claude-agent-sdk-linux-arm64@0.3.263':
+    resolution: {integrity: sha512-2KPY1wu1hdjpVsw+Tg3i50uhxhhetO1fB24wjUJAQJ8YPSogqO32UbtYPJ6I3F17lBNHb/Mq3nRYGAuSU5yjtg==}
     cpu: [arm64]
     os: [linux]
     libc: [glibc]
 
-  '@anthropic-ai/claude-agent-sdk-linux-x64-musl@0.3.261':
-    resolution: {integrity: sha512-H7sCtM7X9OyQ+ZCEhh6TY/Z1i+5WIn8YyHRVJ2LrZRFOaszPeDbl1SzSxxuOd5ibwJZA9gx+2uQ78dx+bDkQUA==}
+  '@anthropic-ai/claude-agent-sdk-linux-x64-musl@0.3.263':
+    resolution: {integrity: sha512-PWctt/XjebBxtI37i2xx2OMxSscPMnKmxU82MWdtIvoAyJ40U5yfqpm92fm45R02eLn9j4LQpvNocVTcRAHv+g==}
     cpu: [x64]
     os: [linux]
     libc: [musl]
 
-  '@anthropic-ai/claude-agent-sdk-linux-x64@0.3.261':
-    resolution: {integrity: sha512-MdojjfN0HJHT0JMiZJ6rTj3/ODNi5OdY0py1JZmVVEVTYOdvgH6OG3oy9/BmmJTx0mp/BBCHbOGNpibtnqE+1g==}
+  '@anthropic-ai/claude-agent-sdk-linux-x64@0.3.263':
+    resolution: {integrity: sha512-un7HJzTT+DSQLgM33emQ0qHAwIY3CXIwe8JXoD9PaT7pdLepK4Ffa4r5j84pHTVS5uoGqxcf196tBgqb5/Z7FA==}
     cpu: [x64]
     os: [linux]
     libc: [glibc]
 
-  '@anthropic-ai/claude-agent-sdk-win32-arm64@0.3.261':
-    resolution: {integrity: sha512-zvZfec4+wDooqF/ZOI3lthgq9WfZLIrSserS6tULpBqCLKNRbTIpARDcljY7SrRuMGb3Ex+LFn/yXazgajpwzg==}
+  '@anthropic-ai/claude-agent-sdk-win32-arm64@0.3.263':
+    resolution: {integrity: sha512-n8owOwNSSi7/KpONb/ut+uXRjBIp9N6EjwADiB+YygPwGRtpWP+PR/qFsGdTVBE5cpPwhgKVAf27xEZEfNvcSQ==}
     cpu: [arm64]
     os: [win32]
 
-  '@anthropic-ai/claude-agent-sdk-win32-x64@0.3.261':
-    resolution: {integrity: sha512-tepSwNpNsl4tyDdJ1+YcRXeY7VZNirPqpCtKDuh2YVwDkMfzQevCqojURtACAdLwI8BUXeOGaecwRbh3zoSUtA==}
+  '@anthropic-ai/claude-agent-sdk-win32-x64@0.3.263':
+    resolution: {integrity: sha512-EwqzsOLxIJTX6RIXtQ21ekOKmYBNfwbtGtqaPqdWZGzpMbHaie8kGsM630h9RFaoxeytS/jbg8B3fPCdUKfhPw==}
     cpu: [x64]
     os: [win32]
 
@@ -1933,8 +1926,8 @@ packages:
     peerDependencies:
       zod: ^4.0.0
 
-  '@anthropic-ai/claude-agent-sdk@0.3.261':
-    resolution: {integrity: sha512-CDG9z14JVKYRHjpp/g6zJ2k8xM5uSoRgjGdpTiK9woLDZxXtXcxV93ipCh55jQ3REj7M7H3GieMsETGZXB/ydw==}
+  '@anthropic-ai/claude-agent-sdk@0.3.263':
+    resolution: {integrity: sha512-0QWoHgWWlSmgXfEqZRbVYRoXT9p4tx/yKaZ4eLJ8l1MR65SIvMGR+cd5ZXUpGYZpj9RzbYiYU9LoFg90mdIjmw==}
     engines: {node: '>=18.0.0'}
     peerDependencies:
       '@anthropic-ai/sdk': '>=0.93.0'
@@ -2161,8 +2154,16 @@ packages:
     resolution: {integrity: sha512-/kr3UWNtdJfxZtPgDqUOmG2pvwlmcLGheex5yiZKdwbzZJxhV+HMNR9QNmyY5cGwTNV6LrR7Jtp+KjhUAP1qBQ==}
     engines: {node: '>= 20.12.0'}
 
+  '@clack/core@1.5.0':
+    resolution: {integrity: sha512-zNikCcd8BbcEvzzG1sbXFrRHFk5kHPrpwZwksPvf9qyQO1Teb7JaXaOAxXZei9nZLDW0gaZawiuTCji88bTBhw==}
+    engines: {node: '>= 20.12.0'}
+
   '@clack/prompts@1.7.0':
     resolution: {integrity: sha512-y7/yvZ2TPAnR9+jnc00klvNNLkJiXFFrQA/hlLCcxA9a2A4zQIOimyFQ9XfwYKiGD1fb5GY8vbKIIgO8d5Tb2A==}
+    engines: {node: '>= 20.12.0'}
+
+  '@clack/prompts@1.8.0':
+    resolution: {integrity: sha512-PXzLZ8N34rxmuo4dJg3xtOXhcBse94qGjDqsteoEYrFrrZ5FSjIGwMAuOcv64ln8rHVBBD06XeVGr+/JX+plcA==}
     engines: {node: '>= 20.12.0'}
 
   '@cloudflare/kv-asset-handler@0.5.0':
@@ -2191,8 +2192,8 @@ packages:
     cpu: [x64]
     os: [darwin]
 
-  '@cloudflare/workerd-darwin-64@1.20260903.1':
-    resolution: {integrity: sha512-FG+4mGxAXhKiL/1temH42alevIkumtYXNidhTa//3yULpzux6APw5UNVocI/vCQ1yG1YOEZRfbVy8lyuipM9MQ==}
+  '@cloudflare/workerd-darwin-64@1.20260907.1':
+    resolution: {integrity: sha512-Xaum46kviN8xixl0axXm7mfLTf2GAG+baotnEIv8M5EbvyHxHagvS5Z8bU5B/WJlTWwwvGzItFfKZvga78o3ew==}
     engines: {node: '>=16'}
     cpu: [x64]
     os: [darwin]
@@ -2203,8 +2204,8 @@ packages:
     cpu: [arm64]
     os: [darwin]
 
-  '@cloudflare/workerd-darwin-arm64@1.20260903.1':
-    resolution: {integrity: sha512-o241VefnjG8eG+kGap5CjgV4zOT5UaAmS3OR1VZCpNj7vkXGxvp9KftKvtQgcCsIqJKaKx+7Xd7xq0L1DjkfPQ==}
+  '@cloudflare/workerd-darwin-arm64@1.20260907.1':
+    resolution: {integrity: sha512-P2o7xpZbxvoES9xY5uHqJPXvsWBWi0w1STCGoYLqxI1rh1gSUdlr4HruMiWq/TA94PPoQCg0eUfoshyQxMdGpA==}
     engines: {node: '>=16'}
     cpu: [arm64]
     os: [darwin]
@@ -2215,8 +2216,8 @@ packages:
     cpu: [x64]
     os: [linux]
 
-  '@cloudflare/workerd-linux-64@1.20260903.1':
-    resolution: {integrity: sha512-/VEvvtQ/XKf6HlBbg6FbvpwcpfYUcx6Fv6RkASY8DyEmUyuJ8rc7Qxil83ClRFoBzz/GY0BV94UZ6F+wers/hg==}
+  '@cloudflare/workerd-linux-64@1.20260907.1':
+    resolution: {integrity: sha512-4aXjFMtD76FgVmDm7vUtl96LWNmFScfrYZ9lA6JpP5+svRfUQOYaJKcYK4g9IVmAxemItJizTTIA8jhEZaw0vg==}
     engines: {node: '>=16'}
     cpu: [x64]
     os: [linux]
@@ -2227,8 +2228,8 @@ packages:
     cpu: [arm64]
     os: [linux]
 
-  '@cloudflare/workerd-linux-arm64@1.20260903.1':
-    resolution: {integrity: sha512-OWhihGC6KoTXF4u2C1AonfpgXeM4/7p/1IXuALqXESmFUpLLP5gZhRzjSk/gWW+mrCZDfSrvnjifl+lRqselbA==}
+  '@cloudflare/workerd-linux-arm64@1.20260907.1':
+    resolution: {integrity: sha512-nex+emDfyOYnQlhfPoCfLYQN6L+Ng0fVg5f3+8Ot4XRZaKJUzpiBFiRkgpoUuEN47U8Pm8BwhhOK2dQwtKwivQ==}
     engines: {node: '>=16'}
     cpu: [arm64]
     os: [linux]
@@ -2239,14 +2240,14 @@ packages:
     cpu: [x64]
     os: [win32]
 
-  '@cloudflare/workerd-windows-64@1.20260903.1':
-    resolution: {integrity: sha512-soPMF9/aMHlHKK7M0vq5HrRRicPbnZO1F6ZZ7JWN8EltxWJU5L7CEq7CxjO878DzyPx7gYvqBFy3SVgdZKZjMQ==}
+  '@cloudflare/workerd-windows-64@1.20260907.1':
+    resolution: {integrity: sha512-/ZHtEmpdSUKZyQCBUSqmGp+I7GwWVR2eUaGE5NzFJIu31HBsoQEakXaDpTrbwXydpBzpI9N0DC83W7qekkGPMQ==}
     engines: {node: '>=16'}
     cpu: [x64]
     os: [win32]
 
-  '@cloudflare/workers-types@5.20260905.1':
-    resolution: {integrity: sha512-ebDpVTgrnee245IRBTazyfjfmZas+HJehZyVQkKmUozsBN8RzvXXMI0XjjcT2rQjw+0USewfEGGLYiHO+TL0Sg==}
+  '@cloudflare/workers-types@5.20260908.1':
+    resolution: {integrity: sha512-cILmYEd/YtL+Hlwytc5n+QVV8F+E5doQOtc6QiBtPb51kK+5fkk909db+G8dxeUsMd2ytJgdpAt/lyciUEobcw==}
 
   '@colors/colors@1.5.0':
     resolution: {integrity: sha512-ooWCrlZP11i8GImSjTHYHLkvFDP48nS4+204nGb1RiX/WXYHmJA2III9/e2DWVabCESdW7hBAEzHRqUn9OUVvQ==}
@@ -3001,8 +3002,8 @@ packages:
     resolution: {integrity: sha512-ABnA53mdfkGZwOFUdZNv2S0CWGO/EIuPj8Vv9xmBFmSYg/qFc7ihO6q5FcQjvoE67kZpWkEc4AhD6B/os04yuA==}
     engines: {node: '>= 10'}
 
-  '@mastra/core@1.53.0':
-    resolution: {integrity: sha512-Q9dIpdGiCAAyX2dVSVIg5BRShsHPR17MsvEwowRf9IQyfw3DyP/h7UJEJ1vcY6cLjGm+AqLqRbof97TihW1WUA==}
+  '@mastra/core@1.64.0':
+    resolution: {integrity: sha512-+fuvDeORYWIb+SJrGQlXQi6r1JCxd05g3SNCDepnO910j4uqxMWf5s22Ta0sRSR5zbKRx2NUZoWPAfQt2xF4hQ==}
     engines: {node: '>=22.13.0'}
     peerDependencies:
       zod: ^3.25.0 || ^4.0.0
@@ -3012,12 +3013,6 @@ packages:
     engines: {node: '>=22.13.0'}
     peerDependencies:
       '@mastra/core': '>=1.0.0-0 <2.0.0-0'
-
-  '@mastra/schema-compat@1.3.4':
-    resolution: {integrity: sha512-2ObUsd21KIVelQy+eKPxJvnMxtmKnWacsIkZovhEYjVcQX9OYTDQ+u4E4RboIJZvurJnFx++/ujQLFznUaEYMg==}
-    engines: {node: '>=22.13.0'}
-    peerDependencies:
-      zod: ^3.25.0 || ^4.0.0
 
   '@mastra/schema-compat@1.3.8':
     resolution: {integrity: sha512-uGGQlb/QAIgghHf/FQLfnpHbUMXWWJDFlv0FQ/p0K6TjT8OVdWC9uNPdwQmFYu8Fzut4Z+LmzNkJ5S378/41Ew==}
@@ -3539,141 +3534,141 @@ packages:
   '@rolldown/pluginutils@1.0.1':
     resolution: {integrity: sha512-2j9bGt5Jh8hj+vPtgzPtl72j0yRxHAyumoo6TNfAjsLB04UtpSvPbPcDcBMxz7n+9CYB0c1GxQFxYRg2jimqGw==}
 
-  '@rollup/rollup-android-arm-eabi@4.62.5':
-    resolution: {integrity: sha512-jfkGfTwhQpsiSckPF8r9bU3pn3vyd72NlWaO+TgEO6WPSDnUhXzrNYCHBMOYj0ACaUgjm6eERLF+XV9a6RstoA==}
+  '@rollup/rollup-android-arm-eabi@4.63.1':
+    resolution: {integrity: sha512-UZ8sUxPTiHWYX9QNdJedb1kDZSpS1t/VPWBWGSgqHNi9w3Cu6IXvu2mzbhiTiPvtrqgTQJ+zqiAq2iPIPilpaQ==}
     cpu: [arm]
     os: [android]
 
-  '@rollup/rollup-android-arm64@4.62.5':
-    resolution: {integrity: sha512-oGVqyQlxnrz9/ty89oHpU857VUHEl5/Xu4R2lS+aivCTrNnSsbiENzTnNaBsjxH0CNWGPhzHArOLFwo+oKXveA==}
+  '@rollup/rollup-android-arm64@4.63.1':
+    resolution: {integrity: sha512-cQ4nFQABN5cDvDpbvJ7bMStCpnaVxynZrRMfUJYgxcIk9Sh54FIO1vtfkg0B69REjER77ioZ/ov+eAApx/KmLQ==}
     cpu: [arm64]
     os: [android]
 
-  '@rollup/rollup-darwin-arm64@4.62.5':
-    resolution: {integrity: sha512-bW7B8xMEq8n99Q3ieEcPRGuphurdZAaFzQc9Efyyw3FL6DZO6pMy9xhdN+kBoD7Sy05xNXSr4OyPPnpkYriS/A==}
+  '@rollup/rollup-darwin-arm64@4.63.1':
+    resolution: {integrity: sha512-FQNqd1lRy/0QhDk3xeRIkSBiCpXCiDnZO3YLVdcDKN1UBiKToNftCzcXYNLshmPDUMlu2TdeS8tGcsU6f3YF1Q==}
     cpu: [arm64]
     os: [darwin]
 
-  '@rollup/rollup-darwin-x64@4.62.5':
-    resolution: {integrity: sha512-YSwBS86QeHOGlrxJ1PSOIZSkzRL/JmKeunhc+lV6M1a6En8QuVCD/T/qIA0J4Gd2Y86RIOBYrLcOUtqGh9+/1w==}
+  '@rollup/rollup-darwin-x64@4.63.1':
+    resolution: {integrity: sha512-pvD16V939D3CloK0+qikpGaxiPrDUXTe7Y5cWOMkMSy7m1cawa8EGy/kXYi/G/cKAC4HDAbSnzCIk1WmsoOKXg==}
     cpu: [x64]
     os: [darwin]
 
-  '@rollup/rollup-freebsd-arm64@4.62.5':
-    resolution: {integrity: sha512-2fST8lILgl7cKbme/1KDdPCmbXbG+gqoV3bHp19L0ypX/3akYMBVdOunPleRCwonoLnXOZ/0F+Mt/v8POFmfcQ==}
+  '@rollup/rollup-freebsd-arm64@4.63.1':
+    resolution: {integrity: sha512-pcFGeL2345VwdTnJhA6zLbew+YgWB0qBG2+dMtXjCicf6+rm6kO6cOoh5VnTe0ZMrMRgRyuHmCJxZWrIdzYuOw==}
     cpu: [arm64]
     os: [freebsd]
 
-  '@rollup/rollup-freebsd-x64@4.62.5':
-    resolution: {integrity: sha512-cpIxQCP9J+EVad0a6LO1kY3ZGODlk80VlI+2I96B8xMcdHZ4pLVhfQ49JFpYqjPF91FFkQWftf57YlDcTiw9yQ==}
+  '@rollup/rollup-freebsd-x64@4.63.1':
+    resolution: {integrity: sha512-mRJlqSRulVzcKq/LKA6ICSIc3K/l4fzlVn/gePn2nXIHy8seRi5z/eeRE0d/XMBxcMldiXtQTSpRj0tkkC3g8Q==}
     cpu: [x64]
     os: [freebsd]
 
-  '@rollup/rollup-linux-arm-gnueabihf@4.62.5':
-    resolution: {integrity: sha512-r9fGh3eFs3e/udWh5ZjXQtxiYK/xoFxQaYR/cELxac/Udkl5Th+IsFm0CX3Kl9hmUH/we7EoMpjJgeQNnE0+IA==}
+  '@rollup/rollup-linux-arm-gnueabihf@4.63.1':
+    resolution: {integrity: sha512-YDUNvVM85TI3g/1OpnqKP1h4NeW/j64DfWMf+G3M809xNk1bJSnpFp4sh83NpmVE5DXnkh8ULor4LTVZKoYLHw==}
     cpu: [arm]
     os: [linux]
     libc: [glibc]
 
-  '@rollup/rollup-linux-arm-musleabihf@4.62.5':
-    resolution: {integrity: sha512-xdvFdp7OM6KLJviJT2g/YuRSUjnZgGHk4RNgwIbN7X6cPugOucV60DdHXWzsBVCUdrGb6qSXnJQrrAKMmQuj3Q==}
+  '@rollup/rollup-linux-arm-musleabihf@4.63.1':
+    resolution: {integrity: sha512-7Mcn71p9ZuQFAj+h+dhQXy/yeLePRS2yKRnmW1DijA9thKO5qap0GNOIQK4yQ6iP3SU0Mrb/yWo8h8vgRba8lw==}
     cpu: [arm]
     os: [linux]
     libc: [musl]
 
-  '@rollup/rollup-linux-arm64-gnu@4.62.5':
-    resolution: {integrity: sha512-rRqILAndyzHzP7T9NFQrq+4HFWNhqkqkKur7eiBpfLmz01PO0JKx5Vchu3YllE4YXI/Ftgq/szrDWg5GJ0mI8g==}
+  '@rollup/rollup-linux-arm64-gnu@4.63.1':
+    resolution: {integrity: sha512-4YiLQTX6U4CSl0L9cluep9A9W6UmTfqBDc2/CH6wlu54pl4E7Jn3cOD8oxzvBDEGk/JMKgJ47C8g+radF7mwvg==}
     cpu: [arm64]
     os: [linux]
     libc: [glibc]
 
-  '@rollup/rollup-linux-arm64-musl@4.62.5':
-    resolution: {integrity: sha512-Gf4X3qVMucayUvux6aXXPgXovocSFUC0rrffDuPI/S2nHhNMhjcZxsrAFYCOF350PRreW1XwzFj3CT/3bKsWCw==}
+  '@rollup/rollup-linux-arm64-musl@4.63.1':
+    resolution: {integrity: sha512-2ra8F7w8OquwZN9z2/fKFnli69wa8PLwaVzRMIPGb13ByMJwC28Fbp8YcVGoUhlYMTt7j5j9bNgpysrN2UM+vw==}
     cpu: [arm64]
     os: [linux]
     libc: [musl]
 
-  '@rollup/rollup-linux-loong64-gnu@4.62.5':
-    resolution: {integrity: sha512-+s5qA0TNM0qm8PK/a5gt/1Hpx+NV08uSuCncvhziIlQzT6AEV2fnUQo7eBtFTFO0nA9scauvoR2HusfXmQnO4w==}
+  '@rollup/rollup-linux-loong64-gnu@4.63.1':
+    resolution: {integrity: sha512-Sy20ncyhjmBP0Ml+UvQbimjlk6VFgjW5uNP+qqwHB00mTE8Bl2C1TuHTlRwK2YoXeZbee5lP2XevBWVkAQAtSQ==}
     cpu: [loong64]
     os: [linux]
     libc: [glibc]
 
-  '@rollup/rollup-linux-loong64-musl@4.62.5':
-    resolution: {integrity: sha512-ybb6QvWwWJCbBWqERpc8K3pYVGIrXlG8MEQ8IIuJY6Y9KdHQxoFoNyfkAOtKn1VHu3KuLidXvwrvGR1mEjeWCw==}
+  '@rollup/rollup-linux-loong64-musl@4.63.1':
+    resolution: {integrity: sha512-noITLp8oNjYliPnGWmLyelIHwULGqbHloQHGw1rtxbWhTuWooRpnZarZQJ1y9EUC4szuCusCc+HEpUtxpIwYvA==}
     cpu: [loong64]
     os: [linux]
     libc: [musl]
 
-  '@rollup/rollup-linux-ppc64-gnu@4.62.5':
-    resolution: {integrity: sha512-nZb1DtnOyhCmYvsC8A2CwOkopVg+IS1+fPUa7rMOAXtNw5+lLCLLPqd6XAiNrGtoQKsbvIBOwsHnBH/3wnb4HQ==}
+  '@rollup/rollup-linux-ppc64-gnu@4.63.1':
+    resolution: {integrity: sha512-hlxxXd+F1mWiAcaFR7Sv9ZQT6m6UfI8+Vy/kFJzztq2pDMU/0wZ9sish0iszNZvsQDo8Gc0i5yuFEOz5dDf6fA==}
     cpu: [ppc64]
     os: [linux]
     libc: [glibc]
 
-  '@rollup/rollup-linux-ppc64-musl@4.62.5':
-    resolution: {integrity: sha512-yMbj63Sp89ryrXLWyz+sy+fYD2HpOnMCLGbe4Oa1smclFSUukdtD/BgdiHaAetJNb74URD8U4hM+qG5KVzMEkg==}
+  '@rollup/rollup-linux-ppc64-musl@4.63.1':
+    resolution: {integrity: sha512-EF7OpqQTQ/BvGqLzUi4rEHuagCV9MugAUXSHemwPW5vxZ75RR+jxO/2j95Ph2dalMpFHSVECjRoioHZgA9zOYA==}
     cpu: [ppc64]
     os: [linux]
     libc: [musl]
 
-  '@rollup/rollup-linux-riscv64-gnu@4.62.5':
-    resolution: {integrity: sha512-mhoan3OJw2kYV/e1jtIdmvUZgyBFeA6zGWsOswmR0Tg19TQbowZuR+JMLID6spbbBN7Zee2ejrgmy3+FxGrIdA==}
+  '@rollup/rollup-linux-riscv64-gnu@4.63.1':
+    resolution: {integrity: sha512-wQO3JesW9PRkwlabQ27y7sPfVOOTLRG73I4F2UYHG5PXun3J9U3y+b7ezVKSYbsvSKGQ1k1cq8Qlun4C9kLt3w==}
     cpu: [riscv64]
     os: [linux]
     libc: [glibc]
 
-  '@rollup/rollup-linux-riscv64-musl@4.62.5':
-    resolution: {integrity: sha512-5ZTLmjWbb1VZdjuyhe83K/8QO0/h11midQCBP+X5OYn32ra7eOBoM0ZqtaY4nkgNsYgmdVhMYPoyVPTjUpHf3w==}
+  '@rollup/rollup-linux-riscv64-musl@4.63.1':
+    resolution: {integrity: sha512-ouAGwhO6wHRXdnOVCOsB0tRFkA7nhNB2Nwax6oECXN0YiN8EYUTBAOudADOB1PI+yDL61TeNx/u7MVCzksNbkQ==}
     cpu: [riscv64]
     os: [linux]
     libc: [musl]
 
-  '@rollup/rollup-linux-s390x-gnu@4.62.5':
-    resolution: {integrity: sha512-m53kG+br6PGxOTmgBEM2DHSDs9RVjsyEbUwjJPJGTFm1grWOG8EKJggDCTb60unD4Tjby8fi7/m9XfkEWasVWg==}
+  '@rollup/rollup-linux-s390x-gnu@4.63.1':
+    resolution: {integrity: sha512-q2R38Sn+1J8RxhfJ+T54wSWmyKXWec+9jgDfqO2AtArEqHO5R2aeayp5H5OYLr5UYDVGsVaZPEFUooMhYCdz5A==}
     cpu: [s390x]
     os: [linux]
     libc: [glibc]
 
-  '@rollup/rollup-linux-x64-gnu@4.62.5':
-    resolution: {integrity: sha512-6RHPJR1g/uvdYU8uXBnfq3nlqyZCP82Fr6NHgfGoaIeSh0YEqnX/x6uA9MmJJbnSH7swqX4F+CkGdUF+6doiQA==}
+  '@rollup/rollup-linux-x64-gnu@4.63.1':
+    resolution: {integrity: sha512-gfI5T24WLLuFfSKw7Go/zDXjAAV0fny0swTaDv+WjK7vqcw4cRhFfdsyKL1n+ukI+ooBxn3bVQnyrn06WpI50w==}
     cpu: [x64]
     os: [linux]
     libc: [glibc]
 
-  '@rollup/rollup-linux-x64-musl@4.62.5':
-    resolution: {integrity: sha512-xs+OXQtEXgpXT0DmA5+U3qnRZHdCST/5HRQxS8wSPZTUZN/EMWeHuSIod32LQklTBZBV9DyfncKBQ8n5V3eFdw==}
+  '@rollup/rollup-linux-x64-musl@4.63.1':
+    resolution: {integrity: sha512-4h6XqthmB4Hspji84wvgk+ElodTsGj+dbZqHJHHtKxj4mYq0ANSEEPX9ys3moJueqsRjwpaJYH7874Itwnj2ow==}
     cpu: [x64]
     os: [linux]
     libc: [musl]
 
-  '@rollup/rollup-openbsd-x64@4.62.5':
-    resolution: {integrity: sha512-e7hD+sl3s+mcLQDZ8pbudBVsdG6r5yN4w3LqG2TJ8sQHDpblWj5lrJs/3m01Cvlxbt4x13zu5thLjgypgtkYzw==}
+  '@rollup/rollup-openbsd-x64@4.63.1':
+    resolution: {integrity: sha512-dlfCOa87o1VAYegLQ9EKilx2JCeRofiyPGhTCmqnuXZ6bMPiycO1rq1+sKoulAp7pGLIsTIw+1x5R+zgh5LhhA==}
     cpu: [x64]
     os: [openbsd]
 
-  '@rollup/rollup-openharmony-arm64@4.62.5':
-    resolution: {integrity: sha512-GiyJaCf+WpMub/17aPcKk27QMl5W6f+KhdPTjlFOn5akH5Wa/DCM9Stdx5cDfmasyKB08MqpVQ1uJE2RkkpbXg==}
+  '@rollup/rollup-openharmony-arm64@4.63.1':
+    resolution: {integrity: sha512-cjkLbOlfcm3QGhMM1J5zaZjsw1GggbN6rw9UTSSRrPrR1KkcXnN7Uq9rPw34xImQ9VOY9GN+6u2Zj80B9ptkcw==}
     cpu: [arm64]
     os: [openharmony]
 
-  '@rollup/rollup-win32-arm64-msvc@4.62.5':
-    resolution: {integrity: sha512-+OQ8U2DdoEfXl8T4Fb18AjmEwbXMerKDKCL8yCPAYhKCEEKoul7rkbeGCBFCbAlaGaa7pmtRTpkAJM2LE/i5FA==}
+  '@rollup/rollup-win32-arm64-msvc@4.63.1':
+    resolution: {integrity: sha512-Li1KdUnWGE4N3e1F/B4RTB1ms+nG4WBgjByO46pkeBVX/2UBsY53xf5vK9WygVmnH3RwncIST7lkSdLSY6P9lg==}
     cpu: [arm64]
     os: [win32]
 
-  '@rollup/rollup-win32-ia32-msvc@4.62.5':
-    resolution: {integrity: sha512-KanvAZrPKbDBFwrgiU9yEVpQoox9QPV1WZOXX7HudJQY+eSlu82CtWxDU8WtuRRvtN5EGkLczkd6Y6DTcvm9wA==}
+  '@rollup/rollup-win32-ia32-msvc@4.63.1':
+    resolution: {integrity: sha512-t4ZYOSoLTgwhuFMrmTMLx/+i1DQVK7HYqMc6kY46EApwi8X0nIVphzdNoThU3xt6n+N5urG1/gxBdCaKDLavfg==}
     cpu: [ia32]
     os: [win32]
 
-  '@rollup/rollup-win32-x64-gnu@4.62.5':
-    resolution: {integrity: sha512-1aC3UEWTtRl3RK3VpDJ/Tqk1XI4SLTmXIthAq6wRWo8XiSXJNd+VprJM4/1P4+i6HIaFEFlVi9sTTziniD2tOQ==}
+  '@rollup/rollup-win32-x64-gnu@4.63.1':
+    resolution: {integrity: sha512-RgroPfMmKlD1RzSDxvwgcPiy2HNQKoYV7OmwIXDsk73uKW5t6B/V8KIy27SMv/FNXFo/oSBtWc9J0X7t91ezZg==}
     cpu: [x64]
     os: [win32]
 
-  '@rollup/rollup-win32-x64-msvc@4.62.5':
-    resolution: {integrity: sha512-/gDJaRs4gl0NPIwqCz+6PkpmhhjRAD2j6P4rSNHBzUkO3naEx2mIU0pRle1vUNRQ7mE/+8OOeXLTv/J56FKiQg==}
+  '@rollup/rollup-win32-x64-msvc@4.63.1':
+    resolution: {integrity: sha512-at8QVep6S3h5Y6gSbdGU06bRY5WJkf6WUduM9YtvYMbYhB1MOFfUgc6kehitQXzOtMSaT70q7f9ydPhpqu821w==}
     cpu: [x64]
     os: [win32]
 
@@ -3733,12 +3728,20 @@ packages:
     resolution: {integrity: sha512-nZyWTmSpJEXl6VtWVMBJve/7x12DZu6sIX1z1a+ZMaHlQQRs9Zpu6NbTe/gmxYXVRpkjxyDYpZ5gx2IM6f/Wkw==}
     engines: {node: '>=18.0.0'}
 
+  '@smithy/fetch-http-handler@5.8.0':
+    resolution: {integrity: sha512-ycSJu3tFAQ4v04CBB0agqFMVsSQ1iG3yw+SpgxRqKfaURpQD4CZ8Wn0zPMmSnOuTpTh65Vz+EA0rMrw089wvkA==}
+    engines: {node: '>=18.0.0'}
+
   '@smithy/is-array-buffer@2.2.0':
     resolution: {integrity: sha512-GGP3O9QFD24uGeAXYUjwSTXARoqpZykHadOmA8G5vfJPK0/DC67qa//0qvqrJzL1xc8WQWX7/yc7fwudjPHPhA==}
     engines: {node: '>=14.0.0'}
 
   '@smithy/node-http-handler@4.11.3':
     resolution: {integrity: sha512-2jY1tSpERfPfWqyBV2pH+iGFaghVsIJszJNsT7hxtQYhVJpWDyc0LqOWI+nXOxOAHaEfZ4PXXtp1wW1TGpHhkA==}
+    engines: {node: '>=18.0.0'}
+
+  '@smithy/node-http-handler@4.12.1':
+    resolution: {integrity: sha512-ThMkboGeONWXAelq9FvGsuJC4rOi+qyC4/zhUF58xYpxUg5sQKx2VXZYJmtNjr4dSuBJ1HeJXETQILCz3wOHvw==}
     engines: {node: '>=18.0.0'}
 
   '@smithy/node-http-handler@4.7.3':
@@ -3751,6 +3754,10 @@ packages:
 
   '@smithy/types@4.17.2':
     resolution: {integrity: sha512-FOKpVZob9MPTn2znRzGrnsMHv7BOsKVw3XiP/cOyYLDVZ9qKp4nifIiSCuUU/fIj5Vu0UOAxCFr+qRAtG0NUkA==}
+    engines: {node: '>=18.0.0'}
+
+  '@smithy/types@4.18.0':
+    resolution: {integrity: sha512-CgB6HHWer/vrKps24ulRIbpcpb7K4xAU7SkZ7YHzBPlwHsvsrCJFEXK421s+cJzX+ZrqtA/TuU5w1HzI7k9N8A==}
     engines: {node: '>=18.0.0'}
 
   '@smithy/util-buffer-from@2.2.0':
@@ -3812,8 +3819,8 @@ packages:
   '@types/babel__helper-validator-identifier@7.15.2':
     resolution: {integrity: sha512-l3dkwCt890NFhMwPKXbxsWXC0Por0/+KaFIiQP1j38/vWSH2P3Tn6m+IuJHkx2SBI3VLFqincFe9JtBk2NFHOw==}
 
-  '@types/bun@1.4.1':
-    resolution: {integrity: sha512-0AVGiTXGajf1rgKom3N+c5L7CBxuoyyv1i44M0nX4UDK0G/fnRAMiri93nHuVPIb429KKtAgj7HatVmmOjeQLA==}
+  '@types/bun@1.4.2':
+    resolution: {integrity: sha512-GimotNn7+ZV0uVArItBbriZsR1oNf0+WTzPkdcFrzShI7k2norL0uzEaJT8T33dWr7O/c9ZDuAFQrctKCi72oQ==}
 
   '@types/chai@5.2.3':
     resolution: {integrity: sha512-Mw558oeA9fFbv65/y4mHtXDs9bPnFMZAL/jxdPFUpOHHIXX91mcgEHbS5Lahr+pwZFR8A7GQleRWeI6cGFC2UA==}
@@ -4226,8 +4233,8 @@ packages:
     resolution: {integrity: sha512-MnA+YT8fwfJPgBx3m60MNqakm30XOkyIoH1y6huTQvC0PwZG7ki8NacLBcrPbNoo8vEZy7Jpuk7+jMO+CUovTQ==}
     engines: {node: '>= 14'}
 
-  ai@6.0.266:
-    resolution: {integrity: sha512-N3HM2k/15ewTk15AWnt7kNy0+DEjE6A+R2lqgM2uQ3yvSp+Dm+J/eJVzSaZegINQQoM2aQAZ6MFxo4MsuiXcyg==}
+  ai@6.0.277:
+    resolution: {integrity: sha512-fYlPj2QsisCH66SsEfWM8gV0ZR+6NLuRYSnVw3GKUKlvP+iIAUQR1bUJn1Y6lcAKeoEWQeZaann2ahXZY2HXtQ==}
     engines: {node: '>=18'}
     peerDependencies:
       zod: ^3.25.76 || ^4.1.8
@@ -4314,9 +4321,6 @@ packages:
 
   buffer-equal-constant-time@1.0.1:
     resolution: {integrity: sha512-zRpUiDwd/xk6ADqPMATG8vc9VPrkck7T07OIx0gnjmJAnHnTVXNQG3vfvWNuiZIkwu9KrKdA1iJKfsfTVxE6NA==}
-
-  bun-types@1.4.1:
-    resolution: {integrity: sha512-loKuVrAFZKfEv+JvWkHRS9GW5IqLuLRjVXN9p+vZvBN86O5hf/pBZQ5hSoyipsrMmWObZBDvWnlmKvjKTM0PdA==}
 
   bun-types@1.4.2:
     resolution: {integrity: sha512-bxV1FgK7yBIzjRe5zBozIM4Bem11ZJcCXSrjWRG3YWLt8yFDePu4cLjpebO8OvPeIE9trbyPF4fuj3Cia4Fj3w==}
@@ -4720,6 +4724,12 @@ packages:
     peerDependencies:
       express: '>= 4.11'
 
+  express-rate-limit@8.7.0:
+    resolution: {integrity: sha512-hOwV7WOxXfjRpAM1DSJWZDXx3GhplwD8IfwuwvogD8i1Qnkgosw/H45s4ZnFAUHDAhPjlY9hLBvJhKmGMyY26g==}
+    engines: {node: '>= 16'}
+    peerDependencies:
+      express: '>= 4.11'
+
   express@5.2.1:
     resolution: {integrity: sha512-hIS4idWWai69NezIdRt2xFVofaF4j+6INOpJlVOLDO8zXGpUVEVzIYk12UUi2JzjEzWL3IOAxcTubgz9Po0yXw==}
     engines: {node: '>= 18'}
@@ -4984,6 +4994,10 @@ packages:
     resolution: {integrity: sha512-R5SnVLJmgYYvf2F2ZgwSBnelz5G4q5AxIC277GDfUaNbrZKNANcBC7RHqYYePlszf4kBolVkJauG0ZjHHFh55g==}
     engines: {node: '>= 12'}
 
+  ip-address@10.7.0:
+    resolution: {integrity: sha512-BGFsyJd5mpXp3rK6jIdADLNgpJUK1jnjzvYF8lK+VyDab9JAmqN0YOKDdP17HlgKb2+ehPgDc8EtnRLbGCAMhA==}
+    engines: {node: '>= 12'}
+
   ipaddr.js@1.9.1:
     resolution: {integrity: sha512-0KI/607xoxSToH7GjN1FfSbLoU0+btTicjsQSWQlh/hZykN8KpmMf7uYwPW3R+akZ6R/w18ZlXSHBYXiYUPO3g==}
     engines: {node: '>= 0.10'}
@@ -5057,6 +5071,9 @@ packages:
 
   jju@1.4.0:
     resolution: {integrity: sha512-8wb9Yw966OSxApiCt0K3yNJL8pnNeIv+OEq2YMidz4FKP6nonSRoOXc80iXY4JaN2FC11B9qsNmDsm+ZOfMROA==}
+
+  jose@6.2.12:
+    resolution: {integrity: sha512-9NiFmJEex0sy2Dk58j2UGBSHgUs2ypF9eZSu4L6vjOX3Dp96Sw1F3uL+H+D1sx02jZZdzUT0HgvCy59CuvXcWw==}
 
   jose@6.2.9:
     resolution: {integrity: sha512-XrchZOFZUl/T3vTwRe8XK+cJrGtMF4th1ARnDfwbBXFKThGhlsxEE4Zu03AD/bjJSt/9jT/mxrOCkJWOg77aPA==}
@@ -5365,8 +5382,8 @@ packages:
     resolution: {integrity: sha512-YAaGj4Sh5f4fqHKiMQ8zRHDOOM5IGUVtMhnLIeyjuQfU+9P6hcOTrHUVtbfj/ZPay9Kzik4pWELB39pGgefjiQ==}
     engines: {node: '>=22.0.0'}
 
-  miniflare@5.20260903.0-alpha:
-    resolution: {integrity: sha512-VCZIFxOqFXeibRBJWwTlppqbv2lkeO10IX3QBRGK9j1QiMAfH/OSsCvbjp1MslBMhVZmy2VTRlVaVnsKnbDp6A==}
+  miniflare@5.20260907.0-alpha:
+    resolution: {integrity: sha512-56F13BeJQuDbTxcoGGN4MGxN8oNNIH3pK48VyJ1JGmjbzE9MMu6S2kxoON3nOBHlLdNjXyzg1Rz3jdHx+JpuZA==}
     engines: {node: '>=22.0.0'}
 
   minimatch@10.2.5:
@@ -5663,8 +5680,8 @@ packages:
     engines: {node: '>=22.13'}
     hasBin: true
 
-  postcss@8.5.26:
-    resolution: {integrity: sha512-u82N74LFzG8ca+dD8puPnplTXoGH4fTPpVGuIbt36G3qvNlkvfD0lEAZSxaly3KX8TS/L1A1gsCEmvKmBcVbkQ==}
+  postcss@8.5.28:
+    resolution: {integrity: sha512-RRuzqDtt5Y9h3quz5hWhK+TPnsmVs6WwSU6LkJMeY4HstUEDuYTG8UJSdawMRzmzAtV+KEoG8N3Qg2qLy5vM/A==}
     engines: {node: ^10 || ^12 || >=14}
 
   posthog-node@5.46.1:
@@ -5805,8 +5822,8 @@ packages:
     engines: {node: ^20.19.0 || >=22.12.0}
     hasBin: true
 
-  rollup@4.62.5:
-    resolution: {integrity: sha512-/tqMfgP7GPA3PHhCmuiS4vIjrSVhHLgY++i+dhbG462euyAj7FpM4D9uq1X3BgjlqRdpcOrYhcQtfiQLNc8tqw==}
+  rollup@4.63.1:
+    resolution: {integrity: sha512-3Df9jsstwhccuEfmAMi9l8XUh/GOkVObmFTU7CCVBysEbcOZLl84jCtaAZMcPiMz2EGKsATzQcU+Xr3n/wU6cg==}
     engines: {node: '>=18.0.0', npm: '>=8.0.0'}
     hasBin: true
 
@@ -5838,9 +5855,6 @@ packages:
   section-matter@1.0.0:
     resolution: {integrity: sha512-vfD3pmTzGpufjScBh50YHKzEu2lxBWhVEHsNGoEXmCmn2hKGfeNLYMzCJpe8cD7gqX7TJluOVpBkAequ6dgMmA==}
     engines: {node: '>=4'}
-
-  secure-json-parse@2.7.0:
-    resolution: {integrity: sha512-6aU+Rwsezw7VR8/nyvKTx8QpWH9FrcYiXXlqC4z5d5XQBDRqtbfsRjnwGyqbi3gddNtWHuEk9OANUotL26qKUw==}
 
   selderee@0.11.0:
     resolution: {integrity: sha512-5TF+l7p4+OsnP8BCCvSyZiSPc4x4//p5uPwK8TCnVPJYRmU2aYKMpOXvw8zM5a5JvuuCGN1jmsMwuU2W02ukfA==}
@@ -5941,6 +5955,9 @@ packages:
 
   standardwebhooks@1.0.0:
     resolution: {integrity: sha512-BbHGOQK9olHPMvQNHWul6MYlrRTAOKn03rOe4A8O3CLWhNf4YHBqq2HJKKC+sfqpxiBY52pNeesD6jIiLDz8jg==}
+
+  standardwebhooks@1.1.1:
+    resolution: {integrity: sha512-bCbX9ZEyFkWPsRz7Bl3NuQUJohmwGSev/yhr7vhaGPlc4AfIrspIRa6cPTBuI1ItmrTDJ4d/S2hCsfe4+vQGnQ==}
 
   statuses@2.0.2:
     resolution: {integrity: sha512-DvEy55V3DB7uknRo+4iOGT5fP1slR8wQohVdknigZPMpMstaKJQWhwiYBACJE3Ul2pTnATihhBYnRhZQHGBiRw==}
@@ -6119,8 +6136,8 @@ packages:
     resolution: {integrity: sha512-faYHw0anBbc/kWF3zFTEnxSFOAGUX9GFbOBthvDdLsIlEoWOFOtS0zgCiQYwIskL9iGXZL3kAXD8OoZ4GmMATA==}
     engines: {node: '>= 18'}
 
-  typebox@1.3.27:
-    resolution: {integrity: sha512-zu+jc1pcy4UiNThxikUr36f0Rybk9PEeCg/NE6adeWr/SKsdNO4EzZHYRDlv2YCVAfj3Odq3dESSo/jNyoBXzA==}
+  typebox@1.3.28:
+    resolution: {integrity: sha512-5hTNlwzKj7BPPqhT91TPa4fK9bh/ZOei7mzweMpNidwLTxtduXHgr/OAbwx4mRW8aKFYu1I8fT1+0+PQtst1/g==}
 
   typebox@1.3.7:
     resolution: {integrity: sha512-meKuifc33Pccx0O6PdIzYMq3Og8zvP4TIi/a+Bw3AEMZMxOD0+RHGQvpglEe6Zdy3wZ8nqn/j95h8LUZLk/6Hg==}
@@ -6159,12 +6176,16 @@ packages:
   undici-types@8.3.0:
     resolution: {integrity: sha512-j375ScV60dom+YkPFIfTLcOiPxkN/buHz5GobjLhixFuANaNs3C9l4GmrWqejgXWJ7BbJcFYpTEUkS1Ge8bpZQ==}
 
-  undici@6.28.0:
-    resolution: {integrity: sha512-LIY910g9TI13YS95lrMFrs8Rm/u/irgHeTWoKCoteeJ04CUJ92eEfj0rVn+7VKMPBpUPiUoBKfhNyLI23EE/KA==}
+  undici@6.28.1:
+    resolution: {integrity: sha512-zWpdTVD54H48CIybL0rWQ3ukpb9d23wM7eH5RtfdmeP70cWHNjtfo7P4vZX+5CoDcO53J4Pu5uXp7lNfjc6DRA==}
     engines: {node: '>=18.17'}
 
   undici@7.29.0:
     resolution: {integrity: sha512-IDxfleLmmbSskfWSUATiN1nfn2rDuvnMOqb5CWR92iIfojA0Ud+ulOAAEQ57LPr9rWmsreUyf5lwyao+7GNNVw==}
+    engines: {node: '>=20.18.1'}
+
+  undici@7.29.1:
+    resolution: {integrity: sha512-RYONW2MeafgYlkVOKYKkA/Ag7BmXqgIWCa8t1m0JcxrQg9pI9lEqRhAOruOBCbAohOa/gkCF+iPi9hrgvTzu6Q==}
     engines: {node: '>=20.18.1'}
 
   undici@8.9.0:
@@ -6346,8 +6367,8 @@ packages:
     engines: {node: '>=16'}
     hasBin: true
 
-  workerd@1.20260903.1:
-    resolution: {integrity: sha512-xJzt2RnCy7ulOULmZy/4JLbEPg1uisp9lVoOUsEz+UVhDsTmrSQ0rBXZMGcXuhr2HCGKs89bg8nnbbzvBSX1Ig==}
+  workerd@1.20260907.1:
+    resolution: {integrity: sha512-MN/jgZkg2y9ZOOXdN9ecYynRFaqTCRkmpt3jS6LQNPoSx8HxTgcG947SduxJEB38YisB7RJ3Gu/y7fpd7fZ5bA==}
     engines: {node: '>=16'}
     hasBin: true
 
@@ -6361,12 +6382,12 @@ packages:
       '@cloudflare/workers-types':
         optional: true
 
-  wrangler@4.129.0:
-    resolution: {integrity: sha512-PGPvs9UPoFrwxT0VogpESSZGvZIctAuTK3wGsLLPHtHsSgS85kNdvtpa2d14UzG8gwLWD64XUGFPGG9tOXG9VQ==}
+  wrangler@4.129.1:
+    resolution: {integrity: sha512-u1Q8dMAczlmj41K0xk5LkfcHHmbwq5xZRctlyrErVqpcoGsSIW07i74phv3B9xt6mTEO1dX3U5d9WVxR3GFRfA==}
     engines: {node: '>=22.0.0'}
     hasBin: true
     peerDependencies:
-      '@cloudflare/workers-types': ^5.20260903.1
+      '@cloudflare/workers-types': ^5.20260907.1
     peerDependenciesMeta:
       '@cloudflare/workers-types':
         optional: true
@@ -6455,9 +6476,6 @@ packages:
   yuku-parser@0.9.3:
     resolution: {integrity: sha512-96wPoHnwaXfkZv7UIOUkDb+s7ZH8lv8Qtg+MxdvHUV1LFa5jV9iKOaams1942YQt+krFQrWiD6lSg2ermv5kHA==}
 
-  zod-from-json-schema@0.0.5:
-    resolution: {integrity: sha512-zYEoo86M1qpA1Pq6329oSyHLS785z/mTwfr9V1Xf/ZLhuuBGaMlDGu/pDVGVUe4H4oa1EFgWZT53DP0U3oT9CQ==}
-
   zod-from-json-schema@0.5.6:
     resolution: {integrity: sha512-U33AJ7ZWS6y9XNSzMWcdy8hRAvZmWhTtpYJu0SXPT5AArbc9nq2ur7Magzmn5RF9KBV4b3FP0nCpmqqlfXlR9w==}
 
@@ -6486,6 +6504,13 @@ snapshots:
     optionalDependencies:
       express: 5.2.1
 
+  '@a2a-js/sdk@1.0.1(express@5.2.1)':
+    dependencies:
+      jose: 6.2.12
+      uuid: 11.1.1
+    optionalDependencies:
+      express: 5.2.1
+
   '@agentclientprotocol/sdk@0.14.1(zod@4.5.4)':
     dependencies:
       zod: 4.5.4
@@ -6494,17 +6519,17 @@ snapshots:
     dependencies:
       zod: 4.5.4
 
-  '@ai-sdk/gateway@3.0.181(zod@3.25.76)':
+  '@ai-sdk/gateway@3.0.189(zod@3.25.76)':
     dependencies:
       '@ai-sdk/provider': 3.0.15
-      '@ai-sdk/provider-utils': 4.0.48(zod@3.25.76)
+      '@ai-sdk/provider-utils': 4.0.50(zod@3.25.76)
       '@vercel/oidc': 3.2.0
       zod: 3.25.76
 
-  '@ai-sdk/gateway@3.0.181(zod@4.5.4)':
+  '@ai-sdk/gateway@3.0.189(zod@4.5.4)':
     dependencies:
       '@ai-sdk/provider': 3.0.15
-      '@ai-sdk/provider-utils': 4.0.48(zod@4.5.4)
+      '@ai-sdk/provider-utils': 4.0.50(zod@4.5.4)
       '@vercel/oidc': 3.2.0
       zod: 4.5.4
 
@@ -6523,44 +6548,16 @@ snapshots:
       pkce-challenge: 5.0.1
       zod: 4.5.4
 
-  '@ai-sdk/openai@4.0.59(zod@3.25.76)':
+  '@ai-sdk/openai@4.0.60(zod@3.25.76)':
     dependencies:
       '@ai-sdk/provider': 4.0.10
       '@ai-sdk/provider-utils': 5.0.36(zod@3.25.76)
       zod: 3.25.76
 
-  '@ai-sdk/openai@4.0.59(zod@4.5.4)':
+  '@ai-sdk/openai@4.0.60(zod@4.5.4)':
     dependencies:
       '@ai-sdk/provider': 4.0.10
       '@ai-sdk/provider-utils': 5.0.36(zod@4.5.4)
-      zod: 4.5.4
-
-  '@ai-sdk/provider-utils@2.2.8(zod@3.25.76)':
-    dependencies:
-      '@ai-sdk/provider': 1.1.3
-      nanoid: 3.3.18
-      secure-json-parse: 2.7.0
-      zod: 3.25.76
-
-  '@ai-sdk/provider-utils@2.2.8(zod@4.5.4)':
-    dependencies:
-      '@ai-sdk/provider': 1.1.3
-      nanoid: 3.3.18
-      secure-json-parse: 2.7.0
-      zod: 4.5.4
-
-  '@ai-sdk/provider-utils@3.0.30(zod@3.25.76)':
-    dependencies:
-      '@ai-sdk/provider': 2.0.3
-      '@standard-schema/spec': 1.1.0
-      eventsource-parser: 3.1.1
-      zod: 3.25.76
-
-  '@ai-sdk/provider-utils@3.0.30(zod@4.5.4)':
-    dependencies:
-      '@ai-sdk/provider': 2.0.3
-      '@standard-schema/spec': 1.1.0
-      eventsource-parser: 3.1.1
       zod: 4.5.4
 
   '@ai-sdk/provider-utils@4.0.40(zod@3.25.76)':
@@ -6577,33 +6574,33 @@ snapshots:
       eventsource-parser: 3.1.1
       zod: 4.5.4
 
-  '@ai-sdk/provider-utils@4.0.48(zod@3.25.76)':
+  '@ai-sdk/provider-utils@4.0.50(zod@3.25.76)':
     dependencies:
       '@ai-sdk/provider': 3.0.15
       '@standard-schema/spec': 1.1.0
       eventsource-parser: 3.1.1
-      undici: 6.28.0
+      undici: 6.28.1
       zod: 3.25.76
 
-  '@ai-sdk/provider-utils@4.0.48(zod@4.5.4)':
+  '@ai-sdk/provider-utils@4.0.50(zod@4.5.4)':
     dependencies:
       '@ai-sdk/provider': 3.0.15
       '@standard-schema/spec': 1.1.0
       eventsource-parser: 3.1.1
-      undici: 6.28.0
+      undici: 6.28.1
       zod: 4.5.4
 
-  '@ai-sdk/provider-utils@5.0.11(zod@3.25.76)':
+  '@ai-sdk/provider-utils@5.0.13(zod@3.25.76)':
     dependencies:
-      '@ai-sdk/provider': 4.0.3
+      '@ai-sdk/provider': 4.0.4
       '@standard-schema/spec': 1.1.0
       '@workflow/serde': 4.1.0
       eventsource-parser: 3.1.1
       zod: 3.25.76
 
-  '@ai-sdk/provider-utils@5.0.11(zod@4.5.4)':
+  '@ai-sdk/provider-utils@5.0.13(zod@4.5.4)':
     dependencies:
-      '@ai-sdk/provider': 4.0.3
+      '@ai-sdk/provider': 4.0.4
       '@standard-schema/spec': 1.1.0
       '@workflow/serde': 4.1.0
       eventsource-parser: 3.1.1
@@ -6615,7 +6612,7 @@ snapshots:
       '@standard-schema/spec': 1.1.0
       '@workflow/serde': 4.1.0
       eventsource-parser: 3.1.1
-      undici: 7.29.0
+      undici: 7.29.1
       zod: 3.25.76
 
   '@ai-sdk/provider-utils@5.0.36(zod@4.5.4)':
@@ -6624,12 +6621,8 @@ snapshots:
       '@standard-schema/spec': 1.1.0
       '@workflow/serde': 4.1.0
       eventsource-parser: 3.1.1
-      undici: 7.29.0
+      undici: 7.29.1
       zod: 4.5.4
-
-  '@ai-sdk/provider@1.1.3':
-    dependencies:
-      json-schema: 0.4.0
 
   '@ai-sdk/provider@2.0.3':
     dependencies:
@@ -6647,48 +6640,34 @@ snapshots:
     dependencies:
       json-schema: 0.4.0
 
-  '@ai-sdk/provider@4.0.3':
+  '@ai-sdk/provider@4.0.4':
     dependencies:
       json-schema: 0.4.0
 
-  '@ai-sdk/ui-utils@1.2.11(zod@3.25.76)':
-    dependencies:
-      '@ai-sdk/provider': 1.1.3
-      '@ai-sdk/provider-utils': 2.2.8(zod@3.25.76)
-      zod: 3.25.76
-      zod-to-json-schema: 3.25.2(zod@3.25.76)
-
-  '@ai-sdk/ui-utils@1.2.11(zod@4.5.4)':
-    dependencies:
-      '@ai-sdk/provider': 1.1.3
-      '@ai-sdk/provider-utils': 2.2.8(zod@4.5.4)
-      zod: 4.5.4
-      zod-to-json-schema: 3.25.2(zod@4.5.4)
-
   '@andrewbranch/untar.js@1.0.4': {}
 
-  '@anthropic-ai/claude-agent-sdk-darwin-arm64@0.3.261':
+  '@anthropic-ai/claude-agent-sdk-darwin-arm64@0.3.263':
     optional: true
 
-  '@anthropic-ai/claude-agent-sdk-darwin-x64@0.3.261':
+  '@anthropic-ai/claude-agent-sdk-darwin-x64@0.3.263':
     optional: true
 
-  '@anthropic-ai/claude-agent-sdk-linux-arm64-musl@0.3.261':
+  '@anthropic-ai/claude-agent-sdk-linux-arm64-musl@0.3.263':
     optional: true
 
-  '@anthropic-ai/claude-agent-sdk-linux-arm64@0.3.261':
+  '@anthropic-ai/claude-agent-sdk-linux-arm64@0.3.263':
     optional: true
 
-  '@anthropic-ai/claude-agent-sdk-linux-x64-musl@0.3.261':
+  '@anthropic-ai/claude-agent-sdk-linux-x64-musl@0.3.263':
     optional: true
 
-  '@anthropic-ai/claude-agent-sdk-linux-x64@0.3.261':
+  '@anthropic-ai/claude-agent-sdk-linux-x64@0.3.263':
     optional: true
 
-  '@anthropic-ai/claude-agent-sdk-win32-arm64@0.3.261':
+  '@anthropic-ai/claude-agent-sdk-win32-arm64@0.3.263':
     optional: true
 
-  '@anthropic-ai/claude-agent-sdk-win32-x64@0.3.261':
+  '@anthropic-ai/claude-agent-sdk-win32-x64@0.3.263':
     optional: true
 
   '@anthropic-ai/claude-agent-sdk@0.2.44(zod@4.5.4)':
@@ -6704,20 +6683,20 @@ snapshots:
       '@img/sharp-linuxmusl-x64': 0.33.5
       '@img/sharp-win32-x64': 0.33.5
 
-  '@anthropic-ai/claude-agent-sdk@0.3.261(@anthropic-ai/sdk@0.124.0(zod@4.5.4))(@modelcontextprotocol/sdk@1.30.0(@cfworker/json-schema@4.1.1)(zod@4.5.4))(zod@4.5.4)':
+  '@anthropic-ai/claude-agent-sdk@0.3.263(@anthropic-ai/sdk@0.124.0(zod@4.5.4))(@modelcontextprotocol/sdk@1.30.0(@cfworker/json-schema@4.1.1)(zod@4.5.4))(zod@4.5.4)':
     dependencies:
       '@anthropic-ai/sdk': 0.124.0(zod@4.5.4)
       '@modelcontextprotocol/sdk': 1.30.0(@cfworker/json-schema@4.1.1)(zod@4.5.4)
       zod: 4.5.4
     optionalDependencies:
-      '@anthropic-ai/claude-agent-sdk-darwin-arm64': 0.3.261
-      '@anthropic-ai/claude-agent-sdk-darwin-x64': 0.3.261
-      '@anthropic-ai/claude-agent-sdk-linux-arm64': 0.3.261
-      '@anthropic-ai/claude-agent-sdk-linux-arm64-musl': 0.3.261
-      '@anthropic-ai/claude-agent-sdk-linux-x64': 0.3.261
-      '@anthropic-ai/claude-agent-sdk-linux-x64-musl': 0.3.261
-      '@anthropic-ai/claude-agent-sdk-win32-arm64': 0.3.261
-      '@anthropic-ai/claude-agent-sdk-win32-x64': 0.3.261
+      '@anthropic-ai/claude-agent-sdk-darwin-arm64': 0.3.263
+      '@anthropic-ai/claude-agent-sdk-darwin-x64': 0.3.263
+      '@anthropic-ai/claude-agent-sdk-linux-arm64': 0.3.263
+      '@anthropic-ai/claude-agent-sdk-linux-arm64-musl': 0.3.263
+      '@anthropic-ai/claude-agent-sdk-linux-x64': 0.3.263
+      '@anthropic-ai/claude-agent-sdk-linux-x64-musl': 0.3.263
+      '@anthropic-ai/claude-agent-sdk-win32-arm64': 0.3.263
+      '@anthropic-ai/claude-agent-sdk-win32-x64': 0.3.263
 
   '@anthropic-ai/sdk@0.120.0(zod@4.5.4)':
     dependencies:
@@ -6729,7 +6708,7 @@ snapshots:
   '@anthropic-ai/sdk@0.124.0(zod@4.5.4)':
     dependencies:
       json-schema-to-ts: 3.1.1
-      standardwebhooks: 1.0.0
+      standardwebhooks: 1.1.1
     optionalDependencies:
       zod: 4.5.4
 
@@ -6810,7 +6789,7 @@ snapshots:
       '@aws/lambda-invoke-store': 0.3.0
       '@smithy/core': 3.33.3
       '@smithy/signature-v4': 5.6.12
-      '@smithy/types': 4.17.2
+      '@smithy/types': 4.18.0
       bowser: 2.14.1
       tslib: 2.8.1
 
@@ -6819,7 +6798,7 @@ snapshots:
       '@aws-sdk/core': 3.977.9
       '@aws-sdk/types': 3.974.5
       '@smithy/core': 3.33.3
-      '@smithy/types': 4.17.2
+      '@smithy/types': 4.18.0
       tslib: 2.8.1
 
   '@aws-sdk/credential-provider-http@3.972.72':
@@ -6827,9 +6806,9 @@ snapshots:
       '@aws-sdk/core': 3.977.9
       '@aws-sdk/types': 3.974.5
       '@smithy/core': 3.33.3
-      '@smithy/fetch-http-handler': 5.7.2
-      '@smithy/node-http-handler': 4.11.3
-      '@smithy/types': 4.17.2
+      '@smithy/fetch-http-handler': 5.8.0
+      '@smithy/node-http-handler': 4.12.1
+      '@smithy/types': 4.18.0
       tslib: 2.8.1
 
   '@aws-sdk/credential-provider-ini@3.973.15':
@@ -6845,7 +6824,7 @@ snapshots:
       '@aws-sdk/types': 3.974.5
       '@smithy/core': 3.33.3
       '@smithy/credential-provider-imds': 4.5.2
-      '@smithy/types': 4.17.2
+      '@smithy/types': 4.18.0
       tslib: 2.8.1
 
   '@aws-sdk/credential-provider-login@3.972.77':
@@ -6854,7 +6833,7 @@ snapshots:
       '@aws-sdk/nested-clients': 3.997.44
       '@aws-sdk/types': 3.974.5
       '@smithy/core': 3.33.3
-      '@smithy/types': 4.17.2
+      '@smithy/types': 4.18.0
       tslib: 2.8.1
 
   '@aws-sdk/credential-provider-node@3.972.78':
@@ -6868,7 +6847,7 @@ snapshots:
       '@aws-sdk/types': 3.974.5
       '@smithy/core': 3.33.3
       '@smithy/credential-provider-imds': 4.5.2
-      '@smithy/types': 4.17.2
+      '@smithy/types': 4.18.0
       tslib: 2.8.1
 
   '@aws-sdk/credential-provider-process@3.972.70':
@@ -6876,7 +6855,7 @@ snapshots:
       '@aws-sdk/core': 3.977.9
       '@aws-sdk/types': 3.974.5
       '@smithy/core': 3.33.3
-      '@smithy/types': 4.17.2
+      '@smithy/types': 4.18.0
       tslib: 2.8.1
 
   '@aws-sdk/credential-provider-sso@3.973.14':
@@ -6886,7 +6865,7 @@ snapshots:
       '@aws-sdk/token-providers': 3.1116.0
       '@aws-sdk/types': 3.974.5
       '@smithy/core': 3.33.3
-      '@smithy/types': 4.17.2
+      '@smithy/types': 4.18.0
       tslib: 2.8.1
 
   '@aws-sdk/credential-provider-web-identity@3.972.76':
@@ -6895,7 +6874,7 @@ snapshots:
       '@aws-sdk/nested-clients': 3.997.44
       '@aws-sdk/types': 3.974.5
       '@smithy/core': 3.33.3
-      '@smithy/types': 4.17.2
+      '@smithy/types': 4.18.0
       tslib: 2.8.1
 
   '@aws-sdk/eventstream-handler-node@3.972.31':
@@ -6928,16 +6907,16 @@ snapshots:
       '@aws-sdk/signature-v4-multi-region': 3.996.46
       '@aws-sdk/types': 3.974.5
       '@smithy/core': 3.33.3
-      '@smithy/fetch-http-handler': 5.7.2
-      '@smithy/node-http-handler': 4.11.3
-      '@smithy/types': 4.17.2
+      '@smithy/fetch-http-handler': 5.8.0
+      '@smithy/node-http-handler': 4.12.1
+      '@smithy/types': 4.18.0
       tslib: 2.8.1
 
   '@aws-sdk/signature-v4-multi-region@3.996.46':
     dependencies:
       '@aws-sdk/types': 3.974.5
       '@smithy/signature-v4': 5.6.12
-      '@smithy/types': 4.17.2
+      '@smithy/types': 4.18.0
       tslib: 2.8.1
 
   '@aws-sdk/token-providers@3.1048.0':
@@ -6955,12 +6934,12 @@ snapshots:
       '@aws-sdk/nested-clients': 3.997.44
       '@aws-sdk/types': 3.974.5
       '@smithy/core': 3.33.3
-      '@smithy/types': 4.17.2
+      '@smithy/types': 4.18.0
       tslib: 2.8.1
 
   '@aws-sdk/types@3.974.5':
     dependencies:
-      '@smithy/types': 4.17.2
+      '@smithy/types': 4.18.0
       tslib: 2.8.1
 
   '@aws-sdk/util-locate-window@3.965.8':
@@ -6969,7 +6948,7 @@ snapshots:
 
   '@aws-sdk/xml-builder@3.972.40':
     dependencies:
-      '@smithy/types': 4.17.2
+      '@smithy/types': 4.18.0
       tslib: 2.8.1
 
   '@aws/lambda-invoke-store@0.3.0': {}
@@ -7099,9 +7078,21 @@ snapshots:
       fast-wrap-ansi: 0.2.2
       sisteransi: 1.0.5
 
+  '@clack/core@1.5.0':
+    dependencies:
+      fast-wrap-ansi: 0.2.2
+      sisteransi: 1.0.5
+
   '@clack/prompts@1.7.0':
     dependencies:
       '@clack/core': 1.4.3
+      fast-string-width: 3.0.2
+      fast-wrap-ansi: 0.2.2
+      sisteransi: 1.0.5
+
+  '@clack/prompts@1.8.0':
+    dependencies:
+      '@clack/core': 1.5.0
       fast-string-width: 3.0.2
       fast-wrap-ansi: 0.2.2
       sisteransi: 1.0.5
@@ -7114,13 +7105,13 @@ snapshots:
     optionalDependencies:
       workerd: 1.20260815.1
 
-  '@cloudflare/unenv-preset@2.16.1(unenv@2.0.0-rc.24)(workerd@1.20260903.1)':
+  '@cloudflare/unenv-preset@2.16.1(unenv@2.0.0-rc.24)(workerd@1.20260907.1)':
     dependencies:
       unenv: 2.0.0-rc.24
     optionalDependencies:
-      workerd: 1.20260903.1
+      workerd: 1.20260907.1
 
-  '@cloudflare/vitest-pool-workers@0.22.0(@cloudflare/workers-types@5.20260905.1)(@types/node@26.4.1)(@vitest/runner@4.1.11)(@vitest/snapshot@4.1.11)(vitest@4.1.11)':
+  '@cloudflare/vitest-pool-workers@0.22.0(@cloudflare/workers-types@5.20260908.1)(@types/node@26.4.1)(@vitest/runner@4.1.11)(@vitest/snapshot@4.1.11)(vitest@4.1.11)':
     dependencies:
       '@vitest/runner': 4.1.11
       '@vitest/snapshot': 4.1.11
@@ -7128,7 +7119,7 @@ snapshots:
       esbuild: 0.28.1
       miniflare: 5.20260815.0-alpha(@types/node@26.4.1)
       vitest: 4.1.11(@opentelemetry/api@1.9.1)(@types/node@26.4.1)(@vitest/ui@4.1.11)(vite@7.3.5(@types/node@26.4.1)(jiti@2.7.0)(tsx@4.23.13)(yaml@2.9.0))
-      wrangler: 4.124.0(@cloudflare/workers-types@5.20260905.1)(@types/node@26.4.1)
+      wrangler: 4.124.0(@cloudflare/workers-types@5.20260908.1)(@types/node@26.4.1)
       zod: 4.4.3
     transitivePeerDependencies:
       - '@cloudflare/workers-types'
@@ -7139,34 +7130,34 @@ snapshots:
   '@cloudflare/workerd-darwin-64@1.20260815.1':
     optional: true
 
-  '@cloudflare/workerd-darwin-64@1.20260903.1':
+  '@cloudflare/workerd-darwin-64@1.20260907.1':
     optional: true
 
   '@cloudflare/workerd-darwin-arm64@1.20260815.1':
     optional: true
 
-  '@cloudflare/workerd-darwin-arm64@1.20260903.1':
+  '@cloudflare/workerd-darwin-arm64@1.20260907.1':
     optional: true
 
   '@cloudflare/workerd-linux-64@1.20260815.1':
     optional: true
 
-  '@cloudflare/workerd-linux-64@1.20260903.1':
+  '@cloudflare/workerd-linux-64@1.20260907.1':
     optional: true
 
   '@cloudflare/workerd-linux-arm64@1.20260815.1':
     optional: true
 
-  '@cloudflare/workerd-linux-arm64@1.20260903.1':
+  '@cloudflare/workerd-linux-arm64@1.20260907.1':
     optional: true
 
   '@cloudflare/workerd-windows-64@1.20260815.1':
     optional: true
 
-  '@cloudflare/workerd-windows-64@1.20260903.1':
+  '@cloudflare/workerd-windows-64@1.20260907.1':
     optional: true
 
-  '@cloudflare/workers-types@5.20260905.1': {}
+  '@cloudflare/workers-types@5.20260908.1': {}
 
   '@colors/colors@1.5.0':
     optional: true
@@ -7596,18 +7587,18 @@ snapshots:
       '@jridgewell/resolve-uri': 3.1.2
       '@jridgewell/sourcemap-codec': 1.5.5
 
-  '@langchain/anthropic@1.5.9(@langchain/core@1.2.9(@opentelemetry/api@1.9.1)(openai@7.10.0(@aws-sdk/credential-provider-node@3.972.78)(@smithy/signature-v4@5.6.12)(undici@6.28.0)(ws@8.21.3)(zod@4.5.4))(ws@8.21.3))':
+  '@langchain/anthropic@1.5.9(@langchain/core@1.2.9(@opentelemetry/api@1.9.1)(openai@7.10.0(@aws-sdk/credential-provider-node@3.972.78)(@smithy/signature-v4@5.6.12)(undici@6.28.1)(ws@8.21.3)(zod@4.5.4))(ws@8.21.3))':
     dependencies:
       '@anthropic-ai/sdk': 0.120.0(zod@4.5.4)
-      '@langchain/core': 1.2.9(@opentelemetry/api@1.9.1)(openai@7.10.0(@aws-sdk/credential-provider-node@3.972.78)(@smithy/signature-v4@5.6.12)(undici@6.28.0)(ws@8.21.3)(zod@4.5.4))(ws@8.21.3)
+      '@langchain/core': 1.2.9(@opentelemetry/api@1.9.1)(openai@7.10.0(@aws-sdk/credential-provider-node@3.972.78)(@smithy/signature-v4@5.6.12)(undici@6.28.1)(ws@8.21.3)(zod@4.5.4))(ws@8.21.3)
       zod: 4.5.4
 
-  '@langchain/core@1.2.9(@opentelemetry/api@1.9.1)(openai@7.10.0(@aws-sdk/credential-provider-node@3.972.78)(@smithy/signature-v4@5.6.12)(undici@6.28.0)(ws@8.21.3)(zod@4.5.4))(ws@8.21.3)':
+  '@langchain/core@1.2.9(@opentelemetry/api@1.9.1)(openai@7.10.0(@aws-sdk/credential-provider-node@3.972.78)(@smithy/signature-v4@5.6.12)(undici@6.28.1)(ws@8.21.3)(zod@4.5.4))(ws@8.21.3)':
     dependencies:
       '@cfworker/json-schema': 4.1.1
       '@standard-schema/spec': 1.1.0
       js-tiktoken: 1.0.21
-      langsmith: 0.9.0(@opentelemetry/api@1.9.1)(openai@7.10.0(@aws-sdk/credential-provider-node@3.972.78)(@smithy/signature-v4@5.6.12)(undici@6.28.0)(ws@8.21.3)(zod@4.5.4))(ws@8.21.3)
+      langsmith: 0.9.0(@opentelemetry/api@1.9.1)(openai@7.10.0(@aws-sdk/credential-provider-node@3.972.78)(@smithy/signature-v4@5.6.12)(undici@6.28.1)(ws@8.21.3)(zod@4.5.4))(ws@8.21.3)
       mustache: 4.2.0
       p-queue: 6.6.2
       zod: 4.5.4
@@ -7618,23 +7609,23 @@ snapshots:
       - openai
       - ws
 
-  '@langchain/langgraph-checkpoint@1.1.5(@langchain/core@1.2.9(@opentelemetry/api@1.9.1)(openai@7.10.0(@aws-sdk/credential-provider-node@3.972.78)(@smithy/signature-v4@5.6.12)(undici@6.28.0)(ws@8.21.3)(zod@4.5.4))(ws@8.21.3))':
+  '@langchain/langgraph-checkpoint@1.1.5(@langchain/core@1.2.9(@opentelemetry/api@1.9.1)(openai@7.10.0(@aws-sdk/credential-provider-node@3.972.78)(@smithy/signature-v4@5.6.12)(undici@6.28.1)(ws@8.21.3)(zod@4.5.4))(ws@8.21.3))':
     dependencies:
-      '@langchain/core': 1.2.9(@opentelemetry/api@1.9.1)(openai@7.10.0(@aws-sdk/credential-provider-node@3.972.78)(@smithy/signature-v4@5.6.12)(undici@6.28.0)(ws@8.21.3)(zod@4.5.4))(ws@8.21.3)
+      '@langchain/core': 1.2.9(@opentelemetry/api@1.9.1)(openai@7.10.0(@aws-sdk/credential-provider-node@3.972.78)(@smithy/signature-v4@5.6.12)(undici@6.28.1)(ws@8.21.3)(zod@4.5.4))(ws@8.21.3)
 
-  '@langchain/langgraph-sdk@1.10.2(@langchain/core@1.2.9(@opentelemetry/api@1.9.1)(openai@7.10.0(@aws-sdk/credential-provider-node@3.972.78)(@smithy/signature-v4@5.6.12)(undici@6.28.0)(ws@8.21.3)(zod@4.5.4))(ws@8.21.3))':
+  '@langchain/langgraph-sdk@1.10.2(@langchain/core@1.2.9(@opentelemetry/api@1.9.1)(openai@7.10.0(@aws-sdk/credential-provider-node@3.972.78)(@smithy/signature-v4@5.6.12)(undici@6.28.1)(ws@8.21.3)(zod@4.5.4))(ws@8.21.3))':
     dependencies:
-      '@langchain/core': 1.2.9(@opentelemetry/api@1.9.1)(openai@7.10.0(@aws-sdk/credential-provider-node@3.972.78)(@smithy/signature-v4@5.6.12)(undici@6.28.0)(ws@8.21.3)(zod@4.5.4))(ws@8.21.3)
+      '@langchain/core': 1.2.9(@opentelemetry/api@1.9.1)(openai@7.10.0(@aws-sdk/credential-provider-node@3.972.78)(@smithy/signature-v4@5.6.12)(undici@6.28.1)(ws@8.21.3)(zod@4.5.4))(ws@8.21.3)
       '@langchain/protocol': 0.0.19
       '@types/json-schema': 7.0.15
       p-queue: 9.3.3
       p-retry: 7.1.1
 
-  '@langchain/langgraph@1.4.14(@langchain/core@1.2.9(@opentelemetry/api@1.9.1)(openai@7.10.0(@aws-sdk/credential-provider-node@3.972.78)(@smithy/signature-v4@5.6.12)(undici@6.28.0)(ws@8.21.3)(zod@4.5.4))(ws@8.21.3))(zod@4.5.4)':
+  '@langchain/langgraph@1.4.14(@langchain/core@1.2.9(@opentelemetry/api@1.9.1)(openai@7.10.0(@aws-sdk/credential-provider-node@3.972.78)(@smithy/signature-v4@5.6.12)(undici@6.28.1)(ws@8.21.3)(zod@4.5.4))(ws@8.21.3))(zod@4.5.4)':
     dependencies:
-      '@langchain/core': 1.2.9(@opentelemetry/api@1.9.1)(openai@7.10.0(@aws-sdk/credential-provider-node@3.972.78)(@smithy/signature-v4@5.6.12)(undici@6.28.0)(ws@8.21.3)(zod@4.5.4))(ws@8.21.3)
-      '@langchain/langgraph-checkpoint': 1.1.5(@langchain/core@1.2.9(@opentelemetry/api@1.9.1)(openai@7.10.0(@aws-sdk/credential-provider-node@3.972.78)(@smithy/signature-v4@5.6.12)(undici@6.28.0)(ws@8.21.3)(zod@4.5.4))(ws@8.21.3))
-      '@langchain/langgraph-sdk': 1.10.2(@langchain/core@1.2.9(@opentelemetry/api@1.9.1)(openai@7.10.0(@aws-sdk/credential-provider-node@3.972.78)(@smithy/signature-v4@5.6.12)(undici@6.28.0)(ws@8.21.3)(zod@4.5.4))(ws@8.21.3))
+      '@langchain/core': 1.2.9(@opentelemetry/api@1.9.1)(openai@7.10.0(@aws-sdk/credential-provider-node@3.972.78)(@smithy/signature-v4@5.6.12)(undici@6.28.1)(ws@8.21.3)(zod@4.5.4))(ws@8.21.3)
+      '@langchain/langgraph-checkpoint': 1.1.5(@langchain/core@1.2.9(@opentelemetry/api@1.9.1)(openai@7.10.0(@aws-sdk/credential-provider-node@3.972.78)(@smithy/signature-v4@5.6.12)(undici@6.28.1)(ws@8.21.3)(zod@4.5.4))(ws@8.21.3))
+      '@langchain/langgraph-sdk': 1.10.2(@langchain/core@1.2.9(@opentelemetry/api@1.9.1)(openai@7.10.0(@aws-sdk/credential-provider-node@3.972.78)(@smithy/signature-v4@5.6.12)(undici@6.28.1)(ws@8.21.3)(zod@4.5.4))(ws@8.21.3))
       '@langchain/protocol': 0.0.19
       '@standard-schema/spec': 1.1.0
       zod: 4.5.4
@@ -7642,10 +7633,10 @@ snapshots:
       - react
       - react-dom
 
-  '@langchain/mcp-adapters@1.1.4(@cfworker/json-schema@4.1.1)(@langchain/core@1.2.9(@opentelemetry/api@1.9.1)(openai@7.10.0(@aws-sdk/credential-provider-node@3.972.78)(@smithy/signature-v4@5.6.12)(undici@6.28.0)(ws@8.21.3)(zod@4.5.4))(ws@8.21.3))(@langchain/langgraph@1.4.14(@langchain/core@1.2.9(@opentelemetry/api@1.9.1)(openai@7.10.0(@aws-sdk/credential-provider-node@3.972.78)(@smithy/signature-v4@5.6.12)(undici@6.28.0)(ws@8.21.3)(zod@4.5.4))(ws@8.21.3))(zod@4.5.4))(supports-color@10.2.2)':
+  '@langchain/mcp-adapters@1.1.4(@cfworker/json-schema@4.1.1)(@langchain/core@1.2.9(@opentelemetry/api@1.9.1)(openai@7.10.0(@aws-sdk/credential-provider-node@3.972.78)(@smithy/signature-v4@5.6.12)(undici@6.28.1)(ws@8.21.3)(zod@4.5.4))(ws@8.21.3))(@langchain/langgraph@1.4.14(@langchain/core@1.2.9(@opentelemetry/api@1.9.1)(openai@7.10.0(@aws-sdk/credential-provider-node@3.972.78)(@smithy/signature-v4@5.6.12)(undici@6.28.1)(ws@8.21.3)(zod@4.5.4))(ws@8.21.3))(zod@4.5.4))(supports-color@10.2.2)':
     dependencies:
-      '@langchain/core': 1.2.9(@opentelemetry/api@1.9.1)(openai@7.10.0(@aws-sdk/credential-provider-node@3.972.78)(@smithy/signature-v4@5.6.12)(undici@6.28.0)(ws@8.21.3)(zod@4.5.4))(ws@8.21.3)
-      '@langchain/langgraph': 1.4.14(@langchain/core@1.2.9(@opentelemetry/api@1.9.1)(openai@7.10.0(@aws-sdk/credential-provider-node@3.972.78)(@smithy/signature-v4@5.6.12)(undici@6.28.0)(ws@8.21.3)(zod@4.5.4))(ws@8.21.3))(zod@4.5.4)
+      '@langchain/core': 1.2.9(@opentelemetry/api@1.9.1)(openai@7.10.0(@aws-sdk/credential-provider-node@3.972.78)(@smithy/signature-v4@5.6.12)(undici@6.28.1)(ws@8.21.3)(zod@4.5.4))(ws@8.21.3)
+      '@langchain/langgraph': 1.4.14(@langchain/core@1.2.9(@opentelemetry/api@1.9.1)(openai@7.10.0(@aws-sdk/credential-provider-node@3.972.78)(@smithy/signature-v4@5.6.12)(undici@6.28.1)(ws@8.21.3)(zod@4.5.4))(ws@8.21.3))(zod@4.5.4)
       '@modelcontextprotocol/sdk': 1.30.0(@cfworker/json-schema@4.1.1)(zod@4.5.4)
       debug: 4.4.3(supports-color@10.2.2)
       zod: 4.5.4
@@ -7655,11 +7646,11 @@ snapshots:
       - '@cfworker/json-schema'
       - supports-color
 
-  '@langchain/openai@1.5.11(@aws-sdk/credential-provider-node@3.972.78)(@langchain/core@1.2.9(@opentelemetry/api@1.9.1)(openai@7.10.0(@aws-sdk/credential-provider-node@3.972.78)(@smithy/signature-v4@5.6.12)(undici@6.28.0)(ws@8.21.3)(zod@4.5.4))(ws@8.21.3))(@smithy/signature-v4@5.6.12)(undici@6.28.0)(ws@8.21.3)':
+  '@langchain/openai@1.5.11(@aws-sdk/credential-provider-node@3.972.78)(@langchain/core@1.2.9(@opentelemetry/api@1.9.1)(openai@7.10.0(@aws-sdk/credential-provider-node@3.972.78)(@smithy/signature-v4@5.6.12)(undici@6.28.1)(ws@8.21.3)(zod@4.5.4))(ws@8.21.3))(@smithy/signature-v4@5.6.12)(undici@6.28.1)(ws@8.21.3)':
     dependencies:
-      '@langchain/core': 1.2.9(@opentelemetry/api@1.9.1)(openai@7.10.0(@aws-sdk/credential-provider-node@3.972.78)(@smithy/signature-v4@5.6.12)(undici@6.28.0)(ws@8.21.3)(zod@4.5.4))(ws@8.21.3)
+      '@langchain/core': 1.2.9(@opentelemetry/api@1.9.1)(openai@7.10.0(@aws-sdk/credential-provider-node@3.972.78)(@smithy/signature-v4@5.6.12)(undici@6.28.1)(ws@8.21.3)(zod@4.5.4))(ws@8.21.3)
       js-tiktoken: 1.0.21
-      openai: 7.10.0(@aws-sdk/credential-provider-node@3.972.78)(@smithy/signature-v4@5.6.12)(undici@6.28.0)(ws@8.21.3)(zod@4.5.4)
+      openai: 7.10.0(@aws-sdk/credential-provider-node@3.972.78)(@smithy/signature-v4@5.6.12)(undici@6.28.1)(ws@8.21.3)(zod@4.5.4)
       zod: 4.5.4
     transitivePeerDependencies:
       - '@aws-sdk/credential-provider-node'
@@ -7822,24 +7813,23 @@ snapshots:
       '@mariozechner/clipboard-win32-x64-msvc': 0.3.9
     optional: true
 
-  '@mastra/core@1.53.0(@cfworker/json-schema@4.1.1)(ai@6.0.266(zod@3.25.76))(express@5.2.1)(zod@3.25.76)':
+  '@mastra/core@1.64.0(ai@6.0.277(zod@3.25.76))(express@5.2.1)(zod@3.25.76)':
     dependencies:
-      '@a2a-js/sdk': 0.3.14(express@5.2.1)
-      '@ai-sdk/provider-utils-v5': '@ai-sdk/provider-utils@3.0.30(zod@3.25.76)'
+      '@a2a-js/sdk-v0_3': '@a2a-js/sdk@0.3.14(express@5.2.1)'
+      '@a2a-js/sdk-v1': '@a2a-js/sdk@1.0.1(express@5.2.1)'
       '@ai-sdk/provider-utils-v6': '@ai-sdk/provider-utils@4.0.40(zod@3.25.76)'
-      '@ai-sdk/provider-utils-v7': '@ai-sdk/provider-utils@5.0.11(zod@3.25.76)'
+      '@ai-sdk/provider-utils-v7': '@ai-sdk/provider-utils@5.0.13(zod@3.25.76)'
       '@ai-sdk/provider-v5': '@ai-sdk/provider@2.0.3'
       '@ai-sdk/provider-v6': '@ai-sdk/provider@3.0.14'
-      '@ai-sdk/provider-v7': '@ai-sdk/provider@4.0.3'
-      '@ai-sdk/ui-utils-v5': '@ai-sdk/ui-utils@1.2.11(zod@3.25.76)'
+      '@ai-sdk/provider-v7': '@ai-sdk/provider@4.0.4'
       '@isaacs/ttlcache': 2.1.5
       '@lukeed/uuid': 2.0.1
-      '@mastra/schema-compat': 1.3.4(zod@3.25.76)
-      '@modelcontextprotocol/sdk': 1.30.0(@cfworker/json-schema@4.1.1)(zod@3.25.76)
+      '@mastra/schema-compat': 1.3.8(zod@3.25.76)
+      '@modelcontextprotocol/server': 2.0.0
       '@sindresorhus/slugify': 2.2.1
       '@standard-schema/spec': 1.1.0
       ajv: 8.20.0
-      chat: 4.34.0(ai@6.0.266(zod@3.25.76))(zod@3.25.76)
+      chat: 4.34.0(ai@6.0.277(zod@3.25.76))(zod@3.25.76)
       croner: 10.0.1
       dotenv: 17.4.2
       execa: 9.6.1
@@ -7859,7 +7849,6 @@ snapshots:
       zod: 3.25.76
     transitivePeerDependencies:
       - '@bufbuild/protobuf'
-      - '@cfworker/json-schema'
       - '@grpc/grpc-js'
       - ai
       - bufferutil
@@ -7868,24 +7857,23 @@ snapshots:
       - supports-color
       - utf-8-validate
 
-  '@mastra/core@1.53.0(@cfworker/json-schema@4.1.1)(ai@6.0.266(zod@4.5.4))(express@5.2.1)(zod@4.5.4)':
+  '@mastra/core@1.64.0(ai@6.0.277(zod@4.5.4))(express@5.2.1)(zod@4.5.4)':
     dependencies:
-      '@a2a-js/sdk': 0.3.14(express@5.2.1)
-      '@ai-sdk/provider-utils-v5': '@ai-sdk/provider-utils@3.0.30(zod@4.5.4)'
+      '@a2a-js/sdk-v0_3': '@a2a-js/sdk@0.3.14(express@5.2.1)'
+      '@a2a-js/sdk-v1': '@a2a-js/sdk@1.0.1(express@5.2.1)'
       '@ai-sdk/provider-utils-v6': '@ai-sdk/provider-utils@4.0.40(zod@4.5.4)'
-      '@ai-sdk/provider-utils-v7': '@ai-sdk/provider-utils@5.0.11(zod@4.5.4)'
+      '@ai-sdk/provider-utils-v7': '@ai-sdk/provider-utils@5.0.13(zod@4.5.4)'
       '@ai-sdk/provider-v5': '@ai-sdk/provider@2.0.3'
       '@ai-sdk/provider-v6': '@ai-sdk/provider@3.0.14'
-      '@ai-sdk/provider-v7': '@ai-sdk/provider@4.0.3'
-      '@ai-sdk/ui-utils-v5': '@ai-sdk/ui-utils@1.2.11(zod@4.5.4)'
+      '@ai-sdk/provider-v7': '@ai-sdk/provider@4.0.4'
       '@isaacs/ttlcache': 2.1.5
       '@lukeed/uuid': 2.0.1
-      '@mastra/schema-compat': 1.3.4(zod@4.5.4)
-      '@modelcontextprotocol/sdk': 1.30.0(@cfworker/json-schema@4.1.1)(zod@4.5.4)
+      '@mastra/schema-compat': 1.3.8(zod@4.5.4)
+      '@modelcontextprotocol/server': 2.0.0
       '@sindresorhus/slugify': 2.2.1
       '@standard-schema/spec': 1.1.0
       ajv: 8.20.0
-      chat: 4.34.0(ai@6.0.266(zod@4.5.4))(zod@4.5.4)
+      chat: 4.34.0(ai@6.0.277(zod@4.5.4))(zod@4.5.4)
       croner: 10.0.1
       dotenv: 17.4.2
       execa: 9.6.1
@@ -7905,7 +7893,6 @@ snapshots:
       zod: 4.5.4
     transitivePeerDependencies:
       - '@bufbuild/protobuf'
-      - '@cfworker/json-schema'
       - '@grpc/grpc-js'
       - ai
       - bufferutil
@@ -7914,9 +7901,9 @@ snapshots:
       - supports-color
       - utf-8-validate
 
-  '@mastra/mcp@1.17.2(@cfworker/json-schema@4.1.1)(@mastra/core@1.53.0(@cfworker/json-schema@4.1.1)(ai@6.0.266(zod@3.25.76))(express@5.2.1)(zod@3.25.76))(express@5.2.1)(hono@4.13.7)(zod@3.25.76)':
+  '@mastra/mcp@1.17.2(@cfworker/json-schema@4.1.1)(@mastra/core@1.64.0(ai@6.0.277(zod@3.25.76))(express@5.2.1)(zod@3.25.76))(express@5.2.1)(hono@4.13.7)(zod@3.25.76)':
     dependencies:
-      '@mastra/core': 1.53.0(@cfworker/json-schema@4.1.1)(ai@6.0.266(zod@3.25.76))(express@5.2.1)(zod@3.25.76)
+      '@mastra/core': 1.64.0(ai@6.0.277(zod@3.25.76))(express@5.2.1)(zod@3.25.76)
       '@modelcontextprotocol/client': 2.0.0
       '@modelcontextprotocol/core': 2.0.0
       '@modelcontextprotocol/ext-apps': 1.7.5(@modelcontextprotocol/sdk@1.30.0(@cfworker/json-schema@4.1.1)(zod@3.25.76))(zod@3.25.76)
@@ -7935,9 +7922,9 @@ snapshots:
       - supports-color
       - zod
 
-  '@mastra/mcp@1.17.2(@cfworker/json-schema@4.1.1)(@mastra/core@1.53.0(@cfworker/json-schema@4.1.1)(ai@6.0.266(zod@4.5.4))(express@5.2.1)(zod@4.5.4))(express@5.2.1)(hono@4.13.7)(zod@4.5.4)':
+  '@mastra/mcp@1.17.2(@cfworker/json-schema@4.1.1)(@mastra/core@1.64.0(ai@6.0.277(zod@4.5.4))(express@5.2.1)(zod@4.5.4))(express@5.2.1)(hono@4.13.7)(zod@4.5.4)':
     dependencies:
-      '@mastra/core': 1.53.0(@cfworker/json-schema@4.1.1)(ai@6.0.266(zod@4.5.4))(express@5.2.1)(zod@4.5.4)
+      '@mastra/core': 1.64.0(ai@6.0.277(zod@4.5.4))(express@5.2.1)(zod@4.5.4)
       '@modelcontextprotocol/client': 2.0.0
       '@modelcontextprotocol/core': 2.0.0
       '@modelcontextprotocol/ext-apps': 1.7.5(@modelcontextprotocol/sdk@1.30.0(@cfworker/json-schema@4.1.1)(zod@4.5.4))(zod@4.5.4)
@@ -7956,21 +7943,11 @@ snapshots:
       - supports-color
       - zod
 
-  '@mastra/schema-compat@1.3.4(zod@3.25.76)':
+  '@mastra/schema-compat@1.3.8(zod@3.25.76)':
     dependencies:
       json-schema-to-zod: 2.8.1
       zod: 3.25.76
       zod-from-json-schema: 0.5.6
-      zod-from-json-schema-v3: zod-from-json-schema@0.0.5
-      zod-to-json-schema: 3.25.2(zod@3.25.76)
-
-  '@mastra/schema-compat@1.3.4(zod@4.5.4)':
-    dependencies:
-      json-schema-to-zod: 2.8.1
-      zod: 4.5.4
-      zod-from-json-schema: 0.5.6
-      zod-from-json-schema-v3: zod-from-json-schema@0.0.5
-      zod-to-json-schema: 3.25.2(zod@4.5.4)
 
   '@mastra/schema-compat@1.3.8(zod@4.5.4)':
     dependencies:
@@ -7984,7 +7961,7 @@ snapshots:
       cross-spawn: 7.0.6
       eventsource: 3.0.7
       eventsource-parser: 3.1.1
-      jose: 6.2.9
+      jose: 6.2.12
       pkce-challenge: 5.0.1
       zod: 4.5.4
 
@@ -8011,7 +7988,7 @@ snapshots:
     optionalDependencies:
       hono: 4.13.7
 
-  '@modelcontextprotocol/sdk@1.26.0(@cfworker/json-schema@4.1.1)(zod@4.5.4)':
+  '@modelcontextprotocol/sdk@1.26.0(@cfworker/json-schema@4.1.1)(supports-color@10.2.2)(zod@4.5.4)':
     dependencies:
       '@hono/node-server': 2.1.1(hono@4.13.7)
       ajv: 8.20.0
@@ -8022,7 +7999,7 @@ snapshots:
       eventsource: 3.0.7
       eventsource-parser: 3.1.1
       express: 5.2.1
-      express-rate-limit: 8.6.2(express@5.2.1)
+      express-rate-limit: 8.6.2(express@5.2.1)(supports-color@10.2.2)
       hono: 4.13.7
       jose: 6.2.9
       json-schema-typed: 8.0.2
@@ -8046,9 +8023,9 @@ snapshots:
       eventsource: 3.0.7
       eventsource-parser: 3.1.1
       express: 5.2.1
-      express-rate-limit: 8.6.2(express@5.2.1)
+      express-rate-limit: 8.7.0(express@5.2.1)
       hono: 4.13.7
-      jose: 6.2.9
+      jose: 6.2.12
       json-schema-typed: 8.0.2
       pkce-challenge: 5.0.1
       raw-body: 3.0.2
@@ -8070,9 +8047,9 @@ snapshots:
       eventsource: 3.0.7
       eventsource-parser: 3.1.1
       express: 5.2.1
-      express-rate-limit: 8.6.2(express@5.2.1)
+      express-rate-limit: 8.7.0(express@5.2.1)
       hono: 4.13.7
-      jose: 6.2.9
+      jose: 6.2.12
       json-schema-typed: 8.0.2
       pkce-challenge: 5.0.1
       raw-body: 3.0.2
@@ -8088,7 +8065,7 @@ snapshots:
       '@modelcontextprotocol/core': 2.0.0
       content-type: 1.0.5
       cors: 2.8.6
-      express-rate-limit: 8.6.2(express@5.2.1)
+      express-rate-limit: 8.7.0(express@5.2.1)
       pkce-challenge: 5.0.1
       raw-body: 3.0.2
       zod: 4.5.4
@@ -8130,11 +8107,11 @@ snapshots:
       '@tybys/wasm-util': 0.10.3
     optional: true
 
-  '@openai/agents-core@0.17.0(@aws-sdk/credential-provider-node@3.972.78)(@smithy/signature-v4@5.6.12)(supports-color@10.2.2)(undici@6.28.0)(ws@8.21.3)(zod@4.5.4)':
+  '@openai/agents-core@0.17.0(@aws-sdk/credential-provider-node@3.972.78)(@smithy/signature-v4@5.6.12)(supports-color@10.2.2)(undici@6.28.1)(ws@8.21.3)(zod@4.5.4)':
     dependencies:
       '@standard-schema/spec': 1.1.0
       debug: 4.4.3(supports-color@10.2.2)
-      openai: 7.10.0(@aws-sdk/credential-provider-node@3.972.78)(@smithy/signature-v4@5.6.12)(undici@6.28.0)(ws@8.21.3)(zod@4.5.4)
+      openai: 7.10.0(@aws-sdk/credential-provider-node@3.972.78)(@smithy/signature-v4@5.6.12)(undici@6.28.1)(ws@8.21.3)(zod@4.5.4)
     optionalDependencies:
       '@modelcontextprotocol/client': 2.0.0
       zod: 4.5.4
@@ -8146,11 +8123,11 @@ snapshots:
       - undici
       - ws
 
-  '@openai/agents-openai@0.17.0(@aws-sdk/credential-provider-node@3.972.78)(@smithy/signature-v4@5.6.12)(supports-color@10.2.2)(undici@6.28.0)(ws@8.21.3)(zod@4.5.4)':
+  '@openai/agents-openai@0.17.0(@aws-sdk/credential-provider-node@3.972.78)(@smithy/signature-v4@5.6.12)(supports-color@10.2.2)(undici@6.28.1)(ws@8.21.3)(zod@4.5.4)':
     dependencies:
-      '@openai/agents-core': 0.17.0(@aws-sdk/credential-provider-node@3.972.78)(@smithy/signature-v4@5.6.12)(supports-color@10.2.2)(undici@6.28.0)(ws@8.21.3)(zod@4.5.4)
+      '@openai/agents-core': 0.17.0(@aws-sdk/credential-provider-node@3.972.78)(@smithy/signature-v4@5.6.12)(supports-color@10.2.2)(undici@6.28.1)(ws@8.21.3)(zod@4.5.4)
       debug: 4.4.3(supports-color@10.2.2)
-      openai: 7.10.0(@aws-sdk/credential-provider-node@3.972.78)(@smithy/signature-v4@5.6.12)(undici@6.28.0)(ws@8.21.3)(zod@4.5.4)
+      openai: 7.10.0(@aws-sdk/credential-provider-node@3.972.78)(@smithy/signature-v4@5.6.12)(undici@6.28.1)(ws@8.21.3)(zod@4.5.4)
       zod: 4.5.4
     transitivePeerDependencies:
       - '@aws-sdk/credential-provider-node'
@@ -8160,9 +8137,9 @@ snapshots:
       - undici
       - ws
 
-  '@openai/agents-realtime@0.17.0(@aws-sdk/credential-provider-node@3.972.78)(@smithy/signature-v4@5.6.12)(supports-color@10.2.2)(undici@6.28.0)(zod@4.5.4)':
+  '@openai/agents-realtime@0.17.0(@aws-sdk/credential-provider-node@3.972.78)(@smithy/signature-v4@5.6.12)(supports-color@10.2.2)(undici@6.28.1)(zod@4.5.4)':
     dependencies:
-      '@openai/agents-core': 0.17.0(@aws-sdk/credential-provider-node@3.972.78)(@smithy/signature-v4@5.6.12)(supports-color@10.2.2)(undici@6.28.0)(ws@8.21.3)(zod@4.5.4)
+      '@openai/agents-core': 0.17.0(@aws-sdk/credential-provider-node@3.972.78)(@smithy/signature-v4@5.6.12)(supports-color@10.2.2)(undici@6.28.1)(ws@8.21.3)(zod@4.5.4)
       '@types/ws': 8.18.1
       debug: 4.4.3(supports-color@10.2.2)
       ws: 8.21.3
@@ -8176,13 +8153,13 @@ snapshots:
       - undici
       - utf-8-validate
 
-  '@openai/agents@0.17.0(@aws-sdk/credential-provider-node@3.972.78)(@smithy/signature-v4@5.6.12)(supports-color@10.2.2)(undici@6.28.0)(ws@8.21.3)(zod@4.5.4)':
+  '@openai/agents@0.17.0(@aws-sdk/credential-provider-node@3.972.78)(@smithy/signature-v4@5.6.12)(supports-color@10.2.2)(undici@6.28.1)(ws@8.21.3)(zod@4.5.4)':
     dependencies:
-      '@openai/agents-core': 0.17.0(@aws-sdk/credential-provider-node@3.972.78)(@smithy/signature-v4@5.6.12)(supports-color@10.2.2)(undici@6.28.0)(ws@8.21.3)(zod@4.5.4)
-      '@openai/agents-openai': 0.17.0(@aws-sdk/credential-provider-node@3.972.78)(@smithy/signature-v4@5.6.12)(supports-color@10.2.2)(undici@6.28.0)(ws@8.21.3)(zod@4.5.4)
-      '@openai/agents-realtime': 0.17.0(@aws-sdk/credential-provider-node@3.972.78)(@smithy/signature-v4@5.6.12)(supports-color@10.2.2)(undici@6.28.0)(zod@4.5.4)
+      '@openai/agents-core': 0.17.0(@aws-sdk/credential-provider-node@3.972.78)(@smithy/signature-v4@5.6.12)(supports-color@10.2.2)(undici@6.28.1)(ws@8.21.3)(zod@4.5.4)
+      '@openai/agents-openai': 0.17.0(@aws-sdk/credential-provider-node@3.972.78)(@smithy/signature-v4@5.6.12)(supports-color@10.2.2)(undici@6.28.1)(ws@8.21.3)(zod@4.5.4)
+      '@openai/agents-realtime': 0.17.0(@aws-sdk/credential-provider-node@3.972.78)(@smithy/signature-v4@5.6.12)(supports-color@10.2.2)(undici@6.28.1)(zod@4.5.4)
       debug: 4.4.3(supports-color@10.2.2)
-      openai: 7.10.0(@aws-sdk/credential-provider-node@3.972.78)(@smithy/signature-v4@5.6.12)(undici@6.28.0)(ws@8.21.3)(zod@4.5.4)
+      openai: 7.10.0(@aws-sdk/credential-provider-node@3.972.78)(@smithy/signature-v4@5.6.12)(undici@6.28.1)(ws@8.21.3)(zod@4.5.4)
       zod: 4.5.4
     transitivePeerDependencies:
       - '@aws-sdk/credential-provider-node'
@@ -8425,79 +8402,79 @@ snapshots:
 
   '@rolldown/pluginutils@1.0.1': {}
 
-  '@rollup/rollup-android-arm-eabi@4.62.5':
+  '@rollup/rollup-android-arm-eabi@4.63.1':
     optional: true
 
-  '@rollup/rollup-android-arm64@4.62.5':
+  '@rollup/rollup-android-arm64@4.63.1':
     optional: true
 
-  '@rollup/rollup-darwin-arm64@4.62.5':
+  '@rollup/rollup-darwin-arm64@4.63.1':
     optional: true
 
-  '@rollup/rollup-darwin-x64@4.62.5':
+  '@rollup/rollup-darwin-x64@4.63.1':
     optional: true
 
-  '@rollup/rollup-freebsd-arm64@4.62.5':
+  '@rollup/rollup-freebsd-arm64@4.63.1':
     optional: true
 
-  '@rollup/rollup-freebsd-x64@4.62.5':
+  '@rollup/rollup-freebsd-x64@4.63.1':
     optional: true
 
-  '@rollup/rollup-linux-arm-gnueabihf@4.62.5':
+  '@rollup/rollup-linux-arm-gnueabihf@4.63.1':
     optional: true
 
-  '@rollup/rollup-linux-arm-musleabihf@4.62.5':
+  '@rollup/rollup-linux-arm-musleabihf@4.63.1':
     optional: true
 
-  '@rollup/rollup-linux-arm64-gnu@4.62.5':
+  '@rollup/rollup-linux-arm64-gnu@4.63.1':
     optional: true
 
-  '@rollup/rollup-linux-arm64-musl@4.62.5':
+  '@rollup/rollup-linux-arm64-musl@4.63.1':
     optional: true
 
-  '@rollup/rollup-linux-loong64-gnu@4.62.5':
+  '@rollup/rollup-linux-loong64-gnu@4.63.1':
     optional: true
 
-  '@rollup/rollup-linux-loong64-musl@4.62.5':
+  '@rollup/rollup-linux-loong64-musl@4.63.1':
     optional: true
 
-  '@rollup/rollup-linux-ppc64-gnu@4.62.5':
+  '@rollup/rollup-linux-ppc64-gnu@4.63.1':
     optional: true
 
-  '@rollup/rollup-linux-ppc64-musl@4.62.5':
+  '@rollup/rollup-linux-ppc64-musl@4.63.1':
     optional: true
 
-  '@rollup/rollup-linux-riscv64-gnu@4.62.5':
+  '@rollup/rollup-linux-riscv64-gnu@4.63.1':
     optional: true
 
-  '@rollup/rollup-linux-riscv64-musl@4.62.5':
+  '@rollup/rollup-linux-riscv64-musl@4.63.1':
     optional: true
 
-  '@rollup/rollup-linux-s390x-gnu@4.62.5':
+  '@rollup/rollup-linux-s390x-gnu@4.63.1':
     optional: true
 
-  '@rollup/rollup-linux-x64-gnu@4.62.5':
+  '@rollup/rollup-linux-x64-gnu@4.63.1':
     optional: true
 
-  '@rollup/rollup-linux-x64-musl@4.62.5':
+  '@rollup/rollup-linux-x64-musl@4.63.1':
     optional: true
 
-  '@rollup/rollup-openbsd-x64@4.62.5':
+  '@rollup/rollup-openbsd-x64@4.63.1':
     optional: true
 
-  '@rollup/rollup-openharmony-arm64@4.62.5':
+  '@rollup/rollup-openharmony-arm64@4.63.1':
     optional: true
 
-  '@rollup/rollup-win32-arm64-msvc@4.62.5':
+  '@rollup/rollup-win32-arm64-msvc@4.63.1':
     optional: true
 
-  '@rollup/rollup-win32-ia32-msvc@4.62.5':
+  '@rollup/rollup-win32-ia32-msvc@4.63.1':
     optional: true
 
-  '@rollup/rollup-win32-x64-gnu@4.62.5':
+  '@rollup/rollup-win32-x64-gnu@4.63.1':
     optional: true
 
-  '@rollup/rollup-win32-x64-msvc@4.62.5':
+  '@rollup/rollup-win32-x64-msvc@4.63.1':
     optional: true
 
   '@sec-ant/readable-stream@0.4.1': {}
@@ -8546,19 +8523,25 @@ snapshots:
 
   '@smithy/core@3.33.3':
     dependencies:
-      '@smithy/types': 4.17.2
+      '@smithy/types': 4.18.0
       tslib: 2.8.1
 
   '@smithy/credential-provider-imds@4.5.2':
     dependencies:
       '@smithy/core': 3.33.3
-      '@smithy/types': 4.17.2
+      '@smithy/types': 4.18.0
       tslib: 2.8.1
 
   '@smithy/fetch-http-handler@5.7.2':
     dependencies:
       '@smithy/core': 3.33.3
       '@smithy/types': 4.17.2
+      tslib: 2.8.1
+
+  '@smithy/fetch-http-handler@5.8.0':
+    dependencies:
+      '@smithy/core': 3.33.3
+      '@smithy/types': 4.18.0
       tslib: 2.8.1
 
   '@smithy/is-array-buffer@2.2.0':
@@ -8571,6 +8554,12 @@ snapshots:
       '@smithy/types': 4.17.2
       tslib: 2.8.1
 
+  '@smithy/node-http-handler@4.12.1':
+    dependencies:
+      '@smithy/core': 3.33.3
+      '@smithy/types': 4.18.0
+      tslib: 2.8.1
+
   '@smithy/node-http-handler@4.7.3':
     dependencies:
       '@smithy/core': 3.33.3
@@ -8580,10 +8569,14 @@ snapshots:
   '@smithy/signature-v4@5.6.12':
     dependencies:
       '@smithy/core': 3.33.3
-      '@smithy/types': 4.17.2
+      '@smithy/types': 4.18.0
       tslib: 2.8.1
 
   '@smithy/types@4.17.2':
+    dependencies:
+      tslib: 2.8.1
+
+  '@smithy/types@4.18.0':
     dependencies:
       tslib: 2.8.1
 
@@ -8636,9 +8629,9 @@ snapshots:
 
   '@types/babel__helper-validator-identifier@7.15.2': {}
 
-  '@types/bun@1.4.1':
+  '@types/bun@1.4.2':
     dependencies:
-      bun-types: 1.4.1
+      bun-types: 1.4.2
 
   '@types/chai@5.2.3':
     dependencies:
@@ -8886,11 +8879,11 @@ snapshots:
 
   '@yuku-toolchain/types@0.9.3': {}
 
-  '@zed-industries/claude-code-acp@0.16.2(@cfworker/json-schema@4.1.1)(zod@4.5.4)':
+  '@zed-industries/claude-code-acp@0.16.2(@cfworker/json-schema@4.1.1)(supports-color@10.2.2)(zod@4.5.4)':
     dependencies:
       '@agentclientprotocol/sdk': 0.14.1(zod@4.5.4)
       '@anthropic-ai/claude-agent-sdk': 0.2.44(zod@4.5.4)
-      '@modelcontextprotocol/sdk': 1.26.0(@cfworker/json-schema@4.1.1)(zod@4.5.4)
+      '@modelcontextprotocol/sdk': 1.26.0(@cfworker/json-schema@4.1.1)(supports-color@10.2.2)(zod@4.5.4)
       diff: 8.0.3
       minimatch: 10.2.5
     transitivePeerDependencies:
@@ -8932,19 +8925,19 @@ snapshots:
 
   agent-base@7.1.4: {}
 
-  ai@6.0.266(zod@3.25.76):
+  ai@6.0.277(zod@3.25.76):
     dependencies:
-      '@ai-sdk/gateway': 3.0.181(zod@3.25.76)
+      '@ai-sdk/gateway': 3.0.189(zod@3.25.76)
       '@ai-sdk/provider': 3.0.15
-      '@ai-sdk/provider-utils': 4.0.48(zod@3.25.76)
+      '@ai-sdk/provider-utils': 4.0.50(zod@3.25.76)
       '@opentelemetry/api': 1.9.1
       zod: 3.25.76
 
-  ai@6.0.266(zod@4.5.4):
+  ai@6.0.277(zod@4.5.4):
     dependencies:
-      '@ai-sdk/gateway': 3.0.181(zod@4.5.4)
+      '@ai-sdk/gateway': 3.0.189(zod@4.5.4)
       '@ai-sdk/provider': 3.0.15
-      '@ai-sdk/provider-utils': 4.0.48(zod@4.5.4)
+      '@ai-sdk/provider-utils': 4.0.50(zod@4.5.4)
       '@opentelemetry/api': 1.9.1
       zod: 4.5.4
 
@@ -9024,10 +9017,6 @@ snapshots:
 
   buffer-equal-constant-time@1.0.1: {}
 
-  bun-types@1.4.1:
-    dependencies:
-      '@types/node': 26.4.1
-
   bun-types@1.4.2:
     dependencies:
       '@types/node': 26.4.1
@@ -9067,7 +9056,7 @@ snapshots:
 
   character-entities@2.0.2: {}
 
-  chat@4.34.0(ai@6.0.266(zod@3.25.76))(zod@3.25.76):
+  chat@4.34.0(ai@6.0.277(zod@3.25.76))(zod@3.25.76):
     dependencies:
       '@workflow/serde': 4.1.0-beta.2
       mdast-util-to-string: 4.0.0
@@ -9077,12 +9066,12 @@ snapshots:
       remend: 1.3.0
       unified: 11.0.5
     optionalDependencies:
-      ai: 6.0.266(zod@3.25.76)
+      ai: 6.0.277(zod@3.25.76)
       zod: 3.25.76
     transitivePeerDependencies:
       - supports-color
 
-  chat@4.34.0(ai@6.0.266(zod@4.5.4))(zod@4.5.4):
+  chat@4.34.0(ai@6.0.277(zod@4.5.4))(zod@4.5.4):
     dependencies:
       '@workflow/serde': 4.1.0-beta.2
       mdast-util-to-string: 4.0.0
@@ -9092,7 +9081,7 @@ snapshots:
       remend: 1.3.0
       unified: 11.0.5
     optionalDependencies:
-      ai: 6.0.266(zod@4.5.4)
+      ai: 6.0.277(zod@4.5.4)
       zod: 4.5.4
     transitivePeerDependencies:
       - supports-color
@@ -9378,11 +9367,19 @@ snapshots:
 
   expect-type@1.4.0: {}
 
-  express-rate-limit@8.6.2(express@5.2.1):
+  express-rate-limit@8.6.2(express@5.2.1)(supports-color@10.2.2):
     dependencies:
       debug: 4.4.3(supports-color@10.2.2)
       express: 5.2.1
       ip-address: 10.5.0
+    transitivePeerDependencies:
+      - supports-color
+
+  express-rate-limit@8.7.0(express@5.2.1):
+    dependencies:
+      debug: 4.4.3(supports-color@10.2.2)
+      express: 5.2.1
+      ip-address: 10.7.0
     transitivePeerDependencies:
       - supports-color
 
@@ -9677,6 +9674,8 @@ snapshots:
 
   ip-address@10.5.0: {}
 
+  ip-address@10.7.0: {}
+
   ipaddr.js@1.9.1: {}
 
   is-docker@3.0.0: {}
@@ -9718,6 +9717,8 @@ snapshots:
   jiti@2.7.0: {}
 
   jju@1.4.0: {}
+
+  jose@6.2.12: {}
 
   jose@6.2.9: {}
 
@@ -9776,12 +9777,12 @@ snapshots:
 
   kleur@4.1.5: {}
 
-  langchain@1.5.10(@langchain/core@1.2.9(@opentelemetry/api@1.9.1)(openai@7.10.0(@aws-sdk/credential-provider-node@3.972.78)(@smithy/signature-v4@5.6.12)(undici@6.28.0)(ws@8.21.3)(zod@4.5.4))(ws@8.21.3))(@opentelemetry/api@1.9.1)(openai@7.10.0(@aws-sdk/credential-provider-node@3.972.78)(@smithy/signature-v4@5.6.12)(undici@6.28.0)(ws@8.21.3)(zod@4.5.4))(ws@8.21.3):
+  langchain@1.5.10(@langchain/core@1.2.9(@opentelemetry/api@1.9.1)(openai@7.10.0(@aws-sdk/credential-provider-node@3.972.78)(@smithy/signature-v4@5.6.12)(undici@6.28.1)(ws@8.21.3)(zod@4.5.4))(ws@8.21.3))(@opentelemetry/api@1.9.1)(openai@7.10.0(@aws-sdk/credential-provider-node@3.972.78)(@smithy/signature-v4@5.6.12)(undici@6.28.1)(ws@8.21.3)(zod@4.5.4))(ws@8.21.3):
     dependencies:
-      '@langchain/core': 1.2.9(@opentelemetry/api@1.9.1)(openai@7.10.0(@aws-sdk/credential-provider-node@3.972.78)(@smithy/signature-v4@5.6.12)(undici@6.28.0)(ws@8.21.3)(zod@4.5.4))(ws@8.21.3)
-      '@langchain/langgraph': 1.4.14(@langchain/core@1.2.9(@opentelemetry/api@1.9.1)(openai@7.10.0(@aws-sdk/credential-provider-node@3.972.78)(@smithy/signature-v4@5.6.12)(undici@6.28.0)(ws@8.21.3)(zod@4.5.4))(ws@8.21.3))(zod@4.5.4)
-      '@langchain/langgraph-checkpoint': 1.1.5(@langchain/core@1.2.9(@opentelemetry/api@1.9.1)(openai@7.10.0(@aws-sdk/credential-provider-node@3.972.78)(@smithy/signature-v4@5.6.12)(undici@6.28.0)(ws@8.21.3)(zod@4.5.4))(ws@8.21.3))
-      langsmith: 0.9.0(@opentelemetry/api@1.9.1)(openai@7.10.0(@aws-sdk/credential-provider-node@3.972.78)(@smithy/signature-v4@5.6.12)(undici@6.28.0)(ws@8.21.3)(zod@4.5.4))(ws@8.21.3)
+      '@langchain/core': 1.2.9(@opentelemetry/api@1.9.1)(openai@7.10.0(@aws-sdk/credential-provider-node@3.972.78)(@smithy/signature-v4@5.6.12)(undici@6.28.1)(ws@8.21.3)(zod@4.5.4))(ws@8.21.3)
+      '@langchain/langgraph': 1.4.14(@langchain/core@1.2.9(@opentelemetry/api@1.9.1)(openai@7.10.0(@aws-sdk/credential-provider-node@3.972.78)(@smithy/signature-v4@5.6.12)(undici@6.28.1)(ws@8.21.3)(zod@4.5.4))(ws@8.21.3))(zod@4.5.4)
+      '@langchain/langgraph-checkpoint': 1.1.5(@langchain/core@1.2.9(@opentelemetry/api@1.9.1)(openai@7.10.0(@aws-sdk/credential-provider-node@3.972.78)(@smithy/signature-v4@5.6.12)(undici@6.28.1)(ws@8.21.3)(zod@4.5.4))(ws@8.21.3))
+      langsmith: 0.9.0(@opentelemetry/api@1.9.1)(openai@7.10.0(@aws-sdk/credential-provider-node@3.972.78)(@smithy/signature-v4@5.6.12)(undici@6.28.1)(ws@8.21.3)(zod@4.5.4))(ws@8.21.3)
       zod: 4.5.4
     transitivePeerDependencies:
       - '@opentelemetry/api'
@@ -9792,12 +9793,12 @@ snapshots:
       - react-dom
       - ws
 
-  langsmith@0.9.0(@opentelemetry/api@1.9.1)(openai@7.10.0(@aws-sdk/credential-provider-node@3.972.78)(@smithy/signature-v4@5.6.12)(undici@6.28.0)(ws@8.21.3)(zod@4.5.4))(ws@8.21.3):
+  langsmith@0.9.0(@opentelemetry/api@1.9.1)(openai@7.10.0(@aws-sdk/credential-provider-node@3.972.78)(@smithy/signature-v4@5.6.12)(undici@6.28.1)(ws@8.21.3)(zod@4.5.4))(ws@8.21.3):
     dependencies:
       p-queue: 6.6.2
     optionalDependencies:
       '@opentelemetry/api': 1.9.1
-      openai: 7.10.0(@aws-sdk/credential-provider-node@3.972.78)(@smithy/signature-v4@5.6.12)(undici@6.28.0)(ws@8.21.3)(zod@4.5.4)
+      openai: 7.10.0(@aws-sdk/credential-provider-node@3.972.78)(@smithy/signature-v4@5.6.12)(undici@6.28.1)(ws@8.21.3)(zod@4.5.4)
       ws: 8.21.3
 
   launch-editor@2.14.1:
@@ -10210,12 +10211,12 @@ snapshots:
       - bufferutil
       - utf-8-validate
 
-  miniflare@5.20260903.0-alpha(@types/node@26.4.1):
+  miniflare@5.20260907.0-alpha(@types/node@26.4.1):
     dependencies:
       '@cspotcode/source-map-support': 0.8.1
       sharp: 0.35.4(@types/node@26.4.1)
       undici: 7.29.0
-      workerd: 1.20260903.1
+      workerd: 1.20260907.1
       ws: 8.21.0
       youch: 4.1.0-beta.10
     transitivePeerDependencies:
@@ -10353,19 +10354,19 @@ snapshots:
       ws: 8.21.3
       zod: 4.5.4
 
-  openai@7.10.0(@aws-sdk/credential-provider-node@3.972.78)(@smithy/signature-v4@5.6.12)(undici@6.28.0)(ws@8.21.3)(zod@4.5.4):
+  openai@7.10.0(@aws-sdk/credential-provider-node@3.972.78)(@smithy/signature-v4@5.6.12)(undici@6.28.1)(ws@8.21.3)(zod@4.5.4):
     optionalDependencies:
       '@aws-sdk/credential-provider-node': 3.972.78
       '@smithy/signature-v4': 5.6.12
-      undici: 6.28.0
+      undici: 6.28.1
       ws: 8.21.3
       zod: 4.5.4
 
-  openai@7.10.0(@aws-sdk/credential-provider-node@3.972.78)(@smithy/signature-v4@5.6.12)(undici@7.29.0)(ws@8.21.3)(zod@4.5.4):
+  openai@7.10.0(@aws-sdk/credential-provider-node@3.972.78)(@smithy/signature-v4@5.6.12)(undici@7.29.1)(ws@8.21.3)(zod@4.5.4):
     optionalDependencies:
       '@aws-sdk/credential-provider-node': 3.972.78
       '@smithy/signature-v4': 5.6.12
-      undici: 7.29.0
+      undici: 7.29.1
       ws: 8.21.3
       zod: 4.5.4
 
@@ -10498,7 +10499,7 @@ snapshots:
 
   pnpm@11.24.0: {}
 
-  postcss@8.5.26:
+  postcss@8.5.28:
     dependencies:
       nanoid: 3.3.18
       picocolors: 1.1.1
@@ -10696,36 +10697,36 @@ snapshots:
       '@rolldown/binding-win32-arm64-msvc': 1.2.7
       '@rolldown/binding-win32-x64-msvc': 1.2.7
 
-  rollup@4.62.5:
+  rollup@4.63.1:
     dependencies:
       '@types/estree': 1.0.9
     optionalDependencies:
       '@napi-rs/lzma-linux-x64-gnu': 1.5.1
-      '@rollup/rollup-android-arm-eabi': 4.62.5
-      '@rollup/rollup-android-arm64': 4.62.5
-      '@rollup/rollup-darwin-arm64': 4.62.5
-      '@rollup/rollup-darwin-x64': 4.62.5
-      '@rollup/rollup-freebsd-arm64': 4.62.5
-      '@rollup/rollup-freebsd-x64': 4.62.5
-      '@rollup/rollup-linux-arm-gnueabihf': 4.62.5
-      '@rollup/rollup-linux-arm-musleabihf': 4.62.5
-      '@rollup/rollup-linux-arm64-gnu': 4.62.5
-      '@rollup/rollup-linux-arm64-musl': 4.62.5
-      '@rollup/rollup-linux-loong64-gnu': 4.62.5
-      '@rollup/rollup-linux-loong64-musl': 4.62.5
-      '@rollup/rollup-linux-ppc64-gnu': 4.62.5
-      '@rollup/rollup-linux-ppc64-musl': 4.62.5
-      '@rollup/rollup-linux-riscv64-gnu': 4.62.5
-      '@rollup/rollup-linux-riscv64-musl': 4.62.5
-      '@rollup/rollup-linux-s390x-gnu': 4.62.5
-      '@rollup/rollup-linux-x64-gnu': 4.62.5
-      '@rollup/rollup-linux-x64-musl': 4.62.5
-      '@rollup/rollup-openbsd-x64': 4.62.5
-      '@rollup/rollup-openharmony-arm64': 4.62.5
-      '@rollup/rollup-win32-arm64-msvc': 4.62.5
-      '@rollup/rollup-win32-ia32-msvc': 4.62.5
-      '@rollup/rollup-win32-x64-gnu': 4.62.5
-      '@rollup/rollup-win32-x64-msvc': 4.62.5
+      '@rollup/rollup-android-arm-eabi': 4.63.1
+      '@rollup/rollup-android-arm64': 4.63.1
+      '@rollup/rollup-darwin-arm64': 4.63.1
+      '@rollup/rollup-darwin-x64': 4.63.1
+      '@rollup/rollup-freebsd-arm64': 4.63.1
+      '@rollup/rollup-freebsd-x64': 4.63.1
+      '@rollup/rollup-linux-arm-gnueabihf': 4.63.1
+      '@rollup/rollup-linux-arm-musleabihf': 4.63.1
+      '@rollup/rollup-linux-arm64-gnu': 4.63.1
+      '@rollup/rollup-linux-arm64-musl': 4.63.1
+      '@rollup/rollup-linux-loong64-gnu': 4.63.1
+      '@rollup/rollup-linux-loong64-musl': 4.63.1
+      '@rollup/rollup-linux-ppc64-gnu': 4.63.1
+      '@rollup/rollup-linux-ppc64-musl': 4.63.1
+      '@rollup/rollup-linux-riscv64-gnu': 4.63.1
+      '@rollup/rollup-linux-riscv64-musl': 4.63.1
+      '@rollup/rollup-linux-s390x-gnu': 4.63.1
+      '@rollup/rollup-linux-x64-gnu': 4.63.1
+      '@rollup/rollup-linux-x64-musl': 4.63.1
+      '@rollup/rollup-openbsd-x64': 4.63.1
+      '@rollup/rollup-openharmony-arm64': 4.63.1
+      '@rollup/rollup-win32-arm64-msvc': 4.63.1
+      '@rollup/rollup-win32-ia32-msvc': 4.63.1
+      '@rollup/rollup-win32-x64-gnu': 4.63.1
+      '@rollup/rollup-win32-x64-msvc': 4.63.1
       fsevents: 2.3.3
 
   rou3@0.9.2: {}
@@ -10756,8 +10757,6 @@ snapshots:
     dependencies:
       extend-shallow: 2.0.1
       kind-of: 6.0.3
-
-  secure-json-parse@2.7.0: {}
 
   selderee@0.11.0:
     dependencies:
@@ -10890,6 +10889,11 @@ snapshots:
   stackback@0.0.2: {}
 
   standardwebhooks@1.0.0:
+    dependencies:
+      '@stablelib/base64': 1.0.1
+      fast-sha256: 1.3.0
+
+  standardwebhooks@1.1.1:
     dependencies:
       '@stablelib/base64': 1.0.1
       fast-sha256: 1.3.0
@@ -11077,7 +11081,7 @@ snapshots:
       media-typer: 1.1.1
       mime-types: 3.0.2
 
-  typebox@1.3.27: {}
+  typebox@1.3.28: {}
 
   typebox@1.3.7: {}
 
@@ -11128,9 +11132,11 @@ snapshots:
 
   undici-types@8.3.0: {}
 
-  undici@6.28.0: {}
+  undici@6.28.1: {}
 
   undici@7.29.0: {}
+
+  undici@7.29.1: {}
 
   undici@8.9.0: {}
 
@@ -11212,8 +11218,8 @@ snapshots:
       esbuild: 0.28.1
       fdir: 6.5.0(picomatch@4.0.7)
       picomatch: 4.0.7
-      postcss: 8.5.26
-      rollup: 4.62.5
+      postcss: 8.5.28
+      rollup: 4.63.1
       tinyglobby: 0.2.17
     optionalDependencies:
       '@types/node': 26.4.1
@@ -11272,15 +11278,15 @@ snapshots:
       '@cloudflare/workerd-linux-arm64': 1.20260815.1
       '@cloudflare/workerd-windows-64': 1.20260815.1
 
-  workerd@1.20260903.1:
+  workerd@1.20260907.1:
     optionalDependencies:
-      '@cloudflare/workerd-darwin-64': 1.20260903.1
-      '@cloudflare/workerd-darwin-arm64': 1.20260903.1
-      '@cloudflare/workerd-linux-64': 1.20260903.1
-      '@cloudflare/workerd-linux-arm64': 1.20260903.1
-      '@cloudflare/workerd-windows-64': 1.20260903.1
+      '@cloudflare/workerd-darwin-64': 1.20260907.1
+      '@cloudflare/workerd-darwin-arm64': 1.20260907.1
+      '@cloudflare/workerd-linux-64': 1.20260907.1
+      '@cloudflare/workerd-linux-arm64': 1.20260907.1
+      '@cloudflare/workerd-windows-64': 1.20260907.1
 
-  wrangler@4.124.0(@cloudflare/workers-types@5.20260905.1)(@types/node@26.4.1):
+  wrangler@4.124.0(@cloudflare/workers-types@5.20260908.1)(@types/node@26.4.1):
     dependencies:
       '@cloudflare/kv-asset-handler': 0.5.0
       '@cloudflare/unenv-preset': 2.16.1(unenv@2.0.0-rc.24)(workerd@1.20260815.1)
@@ -11291,25 +11297,25 @@ snapshots:
       unenv: 2.0.0-rc.24
       workerd: 1.20260815.1
     optionalDependencies:
-      '@cloudflare/workers-types': 5.20260905.1
+      '@cloudflare/workers-types': 5.20260908.1
       fsevents: 2.3.3
     transitivePeerDependencies:
       - '@types/node'
       - bufferutil
       - utf-8-validate
 
-  wrangler@4.129.0(@cloudflare/workers-types@5.20260905.1)(@types/node@26.4.1):
+  wrangler@4.129.1(@cloudflare/workers-types@5.20260908.1)(@types/node@26.4.1):
     dependencies:
       '@cloudflare/kv-asset-handler': 0.5.0
-      '@cloudflare/unenv-preset': 2.16.1(unenv@2.0.0-rc.24)(workerd@1.20260903.1)
+      '@cloudflare/unenv-preset': 2.16.1(unenv@2.0.0-rc.24)(workerd@1.20260907.1)
       blake3-wasm: 2.1.5
       esbuild: 0.28.1
-      miniflare: 5.20260903.0-alpha(@types/node@26.4.1)
+      miniflare: 5.20260907.0-alpha(@types/node@26.4.1)
       path-to-regexp: 6.3.0
       unenv: 2.0.0-rc.24
-      workerd: 1.20260903.1
+      workerd: 1.20260907.1
     optionalDependencies:
-      '@cloudflare/workers-types': 5.20260905.1
+      '@cloudflare/workers-types': 5.20260908.1
       fsevents: 2.3.3
     transitivePeerDependencies:
       - '@types/node'
@@ -11413,10 +11419,6 @@ snapshots:
       '@yuku-parser/binding-linux-x64-musl': 0.9.3
       '@yuku-parser/binding-win32-arm64': 0.9.3
       '@yuku-parser/binding-win32-x64': 0.9.3
-
-  zod-from-json-schema@0.0.5:
-    dependencies:
-      zod: 3.25.76
 
   zod-from-json-schema@0.5.6:
     dependencies:
