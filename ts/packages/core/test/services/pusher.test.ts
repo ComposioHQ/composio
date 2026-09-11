@@ -19,8 +19,8 @@ const { bindings, mockChannel, mockPusherClient, mockGetCredentials, mockLoggerE
       bindings: eventBindings,
       mockChannel: channel,
       mockPusherClient: {
-        subscribe: vi.fn().mockResolvedValue(channel),
-        unsubscribe: vi.fn().mockResolvedValue(undefined),
+        subscribe: vi.fn().mockReturnValue(channel),
+        unsubscribe: vi.fn().mockReturnValue(undefined),
       },
       mockGetCredentials: vi.fn().mockResolvedValue({
         projectId: 'project-id',
@@ -70,9 +70,15 @@ describe('PusherService subscription errors', () => {
 
     await service.subscribe(vi.fn());
 
-    expect(() => {
-      mockChannel.emit('pusher:subscription_error', { error: 401 });
-    }).not.toThrow();
+    await new Promise<void>(resolve => {
+      setImmediate(() => {
+        expect(() => {
+          mockChannel.emit('pusher:subscription_error', { error: 401 });
+        }).not.toThrow();
+        resolve();
+      });
+    });
+
     expect(mockLoggerError).toHaveBeenCalledWith(
       expect.stringContaining('Trigger subscription error: 401')
     );
