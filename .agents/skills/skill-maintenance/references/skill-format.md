@@ -41,7 +41,7 @@ pnpm validate:agent-skills
 pnpm validate:skill-routing
 ```
 
-Both validators are deterministic, and `.github/workflows/agent-substrate.yml` runs them in CI whenever agent guidance changes. If your change touches that workflow's path filters, update them in the same PR.
+Both validators are deterministic, and `.github/workflows/agent-substrate.yml` runs them in CI on every push and pull request — the stale-guidance scan covers the whole repo, so any change can affect the result.
 
 `validate:agent-skills` checks frontmatter, names, reference links, compatibility symlink state, stale guidance references, and known command names.
 

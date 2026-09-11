@@ -12,43 +12,17 @@ name: Agent Substrate
 #     representative task, so description edits cannot silently break routing.
 #
 # These checks run nowhere else, so this workflow is their only enforcement
-# point. Path-filtered: it only runs when agent guidance or the validators
-# themselves change. Both scripts are dependency-free Node programs, but the
-# standard toolchain setup is kept so the pnpm script wiring is exercised too.
+# point. It runs on every push and PR with no path filters: the
+# validate:agent-skills stale-guidance walk scans every text file in the
+# repo, so any change can affect the result. Both scripts are
+# dependency-free Node programs, but the standard toolchain setup is kept
+# so the pnpm script wiring is exercised too.
 
 on:
   push:
     branches: [master, next]
-    paths:
-      - 'AGENTS.md'
-      - '**/AGENTS.md'
-      - '**/CLAUDE.md'
-      - '.agents/**'
-      - 'docs/agent-guidance/**'
-      - 'docs/decisions/**'
-      - 'ts/scripts/validate-agent-skills.mjs'
-      - 'ts/scripts/test-skill-routing.mjs'
-      - 'python/Makefile'
-      - 'python/noxfile.py'
-      - 'package.json'
-      - 'docs/package.json'
-      - '.github/workflows/agent-substrate.yml'
   pull_request:
     branches: [master, next]
-    paths:
-      - 'AGENTS.md'
-      - '**/AGENTS.md'
-      - '**/CLAUDE.md'
-      - '.agents/**'
-      - 'docs/agent-guidance/**'
-      - 'docs/decisions/**'
-      - 'ts/scripts/validate-agent-skills.mjs'
-      - 'ts/scripts/test-skill-routing.mjs'
-      - 'python/Makefile'
-      - 'python/noxfile.py'
-      - 'package.json'
-      - 'docs/package.json'
-      - '.github/workflows/agent-substrate.yml'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.ref || github.run_id }}
@@ -68,9 +42,6 @@ jobs:
 
       - name: Setup Node.js, pnpm, Bun
         uses: ./.github/actions/setup-node-pnpm-bun
-        with:
-          enable-caching: 'false'
-          cache-save: 'false'
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile

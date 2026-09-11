@@ -35,7 +35,7 @@ Use [mise](https://mise.jdx.dev) to install the toolchain:
 mise install
 ```
 
-pnpm is installed through mise's npm backend. Do not rely on Corepack for this repository.
+mise installs pnpm through its npm backend. Do not rely on Corepack for this repository.
 
 ### Getting Started
 

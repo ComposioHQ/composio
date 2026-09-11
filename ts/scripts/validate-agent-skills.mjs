@@ -238,7 +238,9 @@ const ignoredDirs = new Set([
   // Vendored trees (see AGENTS.md "Generated And Vendored Paths") are read-only
   // third-party snapshots. Their docs legitimately mention other tools'
   // rule-file conventions, so the stale-guidance walk must not police them —
-  // only first-party guidance files are in scope.
+  // only first-party guidance files are in scope. Invariant: every `vendor`
+  // directory in this repo is third-party; revisit this skip if a first-party
+  // one ever appears.
   // (Keep this comment free of the stalePatterns literals: this file is
   // itself scanned by the walk below.)
   'vendor',
@@ -320,7 +322,8 @@ const validatePnpmCommands = (relativePath, text) => {
       command.startsWith('-') ||
       command === 'install' ||
       command === 'exec' ||
-      command === 'turbo'
+      command === 'turbo' ||
+      command === 'dlx'
     ) {
       continue;
     }
@@ -414,6 +417,7 @@ const commandFiles = [
     return files;
   }),
   ...requiredAgentFiles.map(relativePath => path.join(repoRoot, relativePath)),
+  path.join(repoRoot, 'CONTRIBUTING.md'),
 ];
 
 for (const absolutePath of commandFiles) {
