@@ -73,6 +73,8 @@ pnpm validate:agent-skills
 pnpm validate:skill-routing
 ```
 
+Both validators are dependency-free and deterministic. `.github/workflows/agent-substrate.yml` runs them in CI on every push and pull request — the stale-guidance scan covers the whole repo, so any change can affect the result.
+
 Python commands run from `python/` unless otherwise noted:
 
 ```bash
