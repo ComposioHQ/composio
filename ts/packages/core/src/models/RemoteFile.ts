@@ -14,6 +14,7 @@ import {
   ValidationError,
 } from '../errors';
 import { readResponseBodyWithLimit } from '../utils/readResponseBody';
+import { safeBasename } from '../utils/safePath';
 
 /**
  * Represents a file stored in a tool router session's file mount.
@@ -77,7 +78,15 @@ export class RemoteFile {
     return new RemoteFile(parsed.data);
   }
 
-  /** Filename extracted from the mount path (e.g. "report.pdf" from "output/report.pdf") */
+  /**
+   * Filename extracted from the mount path (e.g. "report.pdf" from "output/report.pdf").
+   *
+   * Deliberately non-validating: this is a display value, and `downloadBytes()`
+   * reads it while constructing `RemoteFileDownloadError`. A validator here
+   * would replace a genuine download error with a validation error thrown from
+   * inside the error constructor. {@link save} validates instead, at the point
+   * the value actually becomes a path.
+   */
   get filename(): string {
     return platform.basename(this.mountRelativePath);
   }
@@ -163,6 +172,8 @@ export class RemoteFile {
    * @param path - Local path to save the file. If omitted, saves to the Composio temp directory using the filename from the mount path.
    * @returns The absolute path where the file was saved
    * @throws Error if file system is not supported or the save fails
+   * @throws ValidationError if `path` is omitted and the server-supplied mount
+   *   path yields no usable filename
    */
   async save(path?: string): Promise<string> {
     if (!platform.supportsFileSystem) {
@@ -178,8 +189,24 @@ export class RemoteFile {
       throw new Error('Cannot determine save location: home directory is not available');
     }
 
+    // An explicit `path` is the caller's own; the default branch builds a path
+    // out of `mountRelativePath`, which is a server-controlled response field.
+    //
+    // SEC-316 defense-in-depth, ported from the Python SDK. `safeBasename`
+    // collapses that mount path and rejects what leaves no usable basename:
+    // `""`, `"."` and `"sub/."` all made `savePath` equal its own directory,
+    // and `"foo/.."` pointed at the parent directory, each surfacing as a raw
+    // `EISDIR` only after the directory had already been created. Validation
+    // runs before the `mkdirSync`/`writeFileSync` below, so a rejected mount
+    // path leaves nothing behind on disk. See `../utils/safePath`.
     const savePath =
-      path ?? platform.joinPath(homeDir, COMPOSIO_DIR, TEMP_FILES_DIRECTORY_NAME, this.filename);
+      path ??
+      platform.joinPath(
+        homeDir,
+        COMPOSIO_DIR,
+        TEMP_FILES_DIRECTORY_NAME,
+        safeBasename(this.mountRelativePath, 'mount path')
+      );
 
     const dir =
       path != null
