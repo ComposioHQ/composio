@@ -1,0 +1,22 @@
+[project]
+name = "composio-litellm"
+version = "0.11.5"
+description = "Use Composio to get an array of tools with LiteLLM AI gateway for 100+ LLM providers."
+readme = "README.md"
+requires-python = ">=3.9,<4"
+authors = [
+    { name = "Composio", email = "tech@composio.dev" }
+]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: Apache Software License",
+    "Operating System :: OS Independent",
+]
+dependencies = [
+    "litellm>=1.55,<1.85",
+    "openai",
+    "composio",
+]
+
+[project.urls]
+Homepage = "https://github.com/ComposioHQ/composio"
