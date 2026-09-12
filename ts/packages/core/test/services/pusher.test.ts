@@ -71,13 +71,12 @@ describe('PusherService subscription errors', () => {
     await service.subscribe(vi.fn());
 
     await new Promise<void>(resolve => {
-      setImmediate(() => {
-        expect(() => {
-          mockChannel.emit('pusher:subscription_error', { error: 401 });
-        }).not.toThrow();
-        resolve();
-      });
+      setImmediate(resolve);
     });
+
+    expect(() => {
+      mockChannel.emit('pusher:subscription_error', { error: 401 });
+    }).not.toThrow();
 
     expect(mockLoggerError).toHaveBeenCalledWith(
       expect.stringContaining('Trigger subscription error: 401')
