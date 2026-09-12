@@ -11,6 +11,7 @@ import { assertSafeFileUploadPath } from './sensitiveFileUploadPaths';
 import { assertPathInsideUploadDirs } from './uploadDirAllowlist.node';
 import { ssrfSafeFetch } from './ssrfGuard.node';
 import { readResponseBodyWithLimit } from './readResponseBody';
+import { ComposioFileDownloadError } from '../errors/FileModifierErrors';
 
 /**
  * Options for {@link getFileDataAfterUploadingToS3} (S3 presigned upload from local path, URL, or File).
@@ -362,7 +363,11 @@ export const downloadFileFromS3 = async ({
   // written to disk. See ssrfGuard.node.ts.
   const response = await ssrfSafeFetch(s3Url, { signal });
   if (!response.ok) {
-    throw new Error(`Failed to download file: ${response.statusText}`);
+    throw new ComposioFileDownloadError(`Failed to download file: ${response.statusText}`, {
+      s3Url,
+      statusText: response.statusText,
+      statusCode: response.status,
+    });
   }
   // The response is attacker-influencable and streamed to disk, so the body is
   // read through the shared size guard rather than buffered wholesale.
@@ -370,19 +375,25 @@ export const downloadFileFromS3 = async ({
 
   const extension = getExtensionFromMimeType(mimeType);
   const fileName = generateTimestampedFilename(extension, `${toolSlug}_`);
-  const filePath = saveFile(fileName, data, {
-    isTempFile: fileDownloadDir === undefined,
-    outputDir: fileDownloadDir,
-  });
+  let filePath: string;
+  try {
+    filePath = writeFileToDisk(fileName, data, {
+      isTempFile: fileDownloadDir === undefined,
+      outputDir: fileDownloadDir,
+    });
+  } catch (cause) {
+    throw new ComposioFileDownloadError(`Failed to save downloaded file: ${fileName}`, {
+      s3Url,
+      fileName,
+      cause,
+    });
+  }
+
   return {
     name: fileName,
     mimeType: mimeType,
     s3Url: s3Url,
-
-    /**
-     * @todo: fix in follow-up PR.
-     */
-    filePath: filePath as string,
+    filePath,
   };
 };
 
@@ -448,51 +459,63 @@ export const saveFile = (
   content: string | Uint8Array,
   options: { isTempFile?: boolean; outputDir?: string } | boolean = {}
 ) => {
-  // Back-compat: legacy callers passed a boolean `isTempFile` positional.
-  const opts: { isTempFile?: boolean; outputDir?: string } =
-    typeof options === 'boolean' ? { isTempFile: options } : options;
-
   try {
-    if (!platform.supportsFileSystem) {
-      logger.debug('File system operations are not supported in this runtime environment');
-      return null;
-    }
-
-    let composioFilesDir: string | null | undefined;
-    if (opts.outputDir) {
-      const absDir = platform.joinPath(opts.outputDir); // platform.joinPath normalizes
-      try {
-        if (!platform.existsSync(absDir)) {
-          platform.mkdirSync(absDir);
-        }
-        composioFilesDir = absDir;
-      } catch (err) {
-        logger.warn(
-          `fileDownloadDir "${absDir}" is not writable, falling back to the default ` +
-            `(~/.composio/files). Error: ${err}`
-        );
-        composioFilesDir = getComposioTempFilesDir(true);
-      }
-    } else {
-      composioFilesDir = opts.isTempFile ? getComposioTempFilesDir(true) : getComposioDir(true);
-    }
-
-    if (!composioFilesDir) {
-      return null;
-    }
-    const filePath = platform.joinPath(composioFilesDir, platform.basename(file));
-
-    logger.info(`Saving file to: ${filePath}`);
-
-    if (content instanceof Uint8Array) {
-      platform.writeFileSync(filePath, content);
-    } else {
-      platform.writeFileSync(filePath, content, 'utf8');
-    }
-
-    return filePath;
+    return writeFileToDisk(file, content, options);
   } catch (_error) {
     logger.debug(`Error saving file: ${_error}`);
     return null;
   }
+};
+
+/**
+ * Throwing variant of {@link saveFile}: resolves the target directory the same
+ * way but propagates the failure instead of collapsing it to `null`, so callers
+ * that must not report a false success can surface the real cause.
+ */
+const writeFileToDisk = (
+  file: string,
+  content: string | Uint8Array,
+  options: { isTempFile?: boolean; outputDir?: string } | boolean = {}
+): string => {
+  // Back-compat: legacy callers passed a boolean `isTempFile` positional.
+  const opts: { isTempFile?: boolean; outputDir?: string } =
+    typeof options === 'boolean' ? { isTempFile: options } : options;
+
+  if (!platform.supportsFileSystem) {
+    throw new Error('File system operations are not supported in this runtime environment');
+  }
+
+  let composioFilesDir: string | null | undefined;
+  if (opts.outputDir) {
+    const absDir = platform.joinPath(opts.outputDir); // platform.joinPath normalizes
+    try {
+      if (!platform.existsSync(absDir)) {
+        platform.mkdirSync(absDir);
+      }
+      composioFilesDir = absDir;
+    } catch (err) {
+      logger.warn(
+        `fileDownloadDir "${absDir}" is not writable, falling back to the default ` +
+          `(~/.composio/files). Error: ${err}`
+      );
+      composioFilesDir = getComposioTempFilesDir(true);
+    }
+  } else {
+    composioFilesDir = opts.isTempFile ? getComposioTempFilesDir(true) : getComposioDir(true);
+  }
+
+  if (!composioFilesDir) {
+    throw new Error('Could not resolve a writable Composio files directory');
+  }
+  const filePath = platform.joinPath(composioFilesDir, platform.basename(file));
+
+  logger.info(`Saving file to: ${filePath}`);
+
+  if (content instanceof Uint8Array) {
+    platform.writeFileSync(filePath, content);
+  } else {
+    platform.writeFileSync(filePath, content, 'utf8');
+  }
+
+  return filePath;
 };
