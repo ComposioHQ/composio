@@ -307,8 +307,12 @@ describe('RemoteFile', () => {
         });
       });
 
-      afterEach(() => {
+      afterEach(async () => {
         vi.restoreAllMocks();
+        // Each case gets its own fake home; remove it so runs do not accumulate
+        // directories (and saved files) under the system temp directory.
+        const { rmSync } = await import('node:fs');
+        rmSync(homeDir, { recursive: true, force: true });
       });
 
       it('should save under ~/.composio/files using the mount path filename', async () => {
@@ -327,7 +331,7 @@ describe('RemoteFile', () => {
       // Each of these makes the save path equal its own directory (or escape
       // it), which previously surfaced as an unhandled `EISDIR` from
       // `writeFileSync` instead of a validation error.
-      it.each(['', '.', 'sub/.', 'foo/..', '..'])(
+      it.each(['', '.', 'sub/.', 'foo/..', '..', '\u00a0.\u00a0', '\u2007..\u2007'])(
         'should reject mountRelativePath %j with a ValidationError',
         async mountRelativePath => {
           const { platform } = await import('../../src/platform/node');

@@ -55,6 +55,35 @@ describe('safeBasename', () => {
         expect(() => safeBasename(input)).toThrow(/leaves no usable basename/);
       }
     );
+
+    // `trim()` strips Unicode whitespace, so these reduce to `.` or `..` only
+    // after the raw segment has passed a naive dot check. The trimmed value is
+    // what gets written, so it is what has to be validated.
+    it.each([
+      '\u00a0.\u00a0',
+      '.\u00a0',
+      '\u00a0.',
+      '\u2007..\u2007',
+      '\u2028.\u2029',
+      '\ufeff..',
+      'sub/\u00a0.\u00a0',
+    ])('rejects whitespace-wrapped %j, which trims to a dot run', input => {
+      expect(() => safeBasename(input)).toThrow(ValidationError);
+    });
+
+    it('does not let whitespace-wrapped dots through as a usable basename', () => {
+      // Regression guard: these once returned '.' and '..', which made the save
+      // path the download directory itself or its parent.
+      for (const input of ['\u00a0.\u00a0', '\u2007..\u2007']) {
+        let returned: string | undefined;
+        try {
+          returned = safeBasename(input);
+        } catch {
+          returned = undefined;
+        }
+        expect(returned).toBeUndefined();
+      }
+    });
   });
 
   describe('rejects unsafe names', () => {

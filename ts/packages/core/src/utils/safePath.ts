@@ -98,7 +98,9 @@ function hasLoneSurrogate(value: string): boolean {
  * generated one: a response that cannot name its own file is malformed or
  * hostile, and inventing a name would hide that. `""`, `"."` and `".."` all
  * make an output path equal to (or escape) its own directory, which surfaces as
- * a raw `EISDIR` at write time instead of a validation error.
+ * a raw `EISDIR` at write time instead of a validation error. The same applies
+ * once surrounding whitespace is stripped, so `"\u00a0.\u00a0"` is refused
+ * too.
  *
  * @param name - The untrusted filename or relative path to reduce.
  * @param label - How the value is described in error messages.
@@ -110,10 +112,17 @@ function hasLoneSurrogate(value: string): boolean {
 export function safeBasename(name: string, label: string = 'filename'): string {
   const rawBasename = lastSegment(name);
 
+  // Hazard checks run against the raw segment, so that a trailing space or dot
+  // is still caught rather than trimmed away. The usability check runs against
+  // the *trimmed* value, because that is what gets written: Unicode whitespace
+  // is stripped by `trim()`, so `"\u00a0.\u00a0"` reduces to `"."` and
+  // `"\u2007..\u2007"` to `".."`. Checking only the raw segment would let
+  // those through to become the download directory itself, or its parent.
+  const basename = rawBasename.trim();
+
   // `.`, `..` and any run of dots are the cases that collapse an output path
   // onto its own directory or its parent.
-  const isOnlyDots = rawBasename.length > 0 && /^\.+$/.test(rawBasename);
-  if (!rawBasename || !rawBasename.trim() || isOnlyDots) {
+  if (!basename || /^\.+$/.test(basename)) {
     throw new ValidationError(
       `Path traversal detected: ${label} ${JSON.stringify(name)} leaves no usable basename to write to.`
     );
@@ -138,8 +147,6 @@ export function safeBasename(name: string, label: string = 'filename'): string {
       `Refusing to write ${label} containing invalid Unicode: ${JSON.stringify(name)}`
     );
   }
-
-  const basename = rawBasename.trim();
 
   const encodedLength = new TextEncoder().encode(basename).length;
   if (encodedLength > MAX_FILENAME_BYTES) {
