@@ -57290,6 +57290,13 @@
           "title": "Parent Id",
           "type": "string"
         },
+        "fields": {
+          "default": null,
+          "description": "A comma-separated list of fields to include in the response. Use this to request Google Drive metadata such as 'id,name,webViewLink'.",
+          "nullable": true,
+          "title": "Fields",
+          "type": "string"
+        },
         "text_content": {
           "description": "Plain text content to be written into the new file.",
           "title": "Text Content",
@@ -57414,6 +57421,13 @@
           ],
           "nullable": true,
           "title": "Parent Id",
+          "type": "string"
+        },
+        "fields": {
+          "default": null,
+          "description": "A comma-separated list of fields to include in the response. Use this to request Google Drive metadata such as 'id,name,webViewLink'.",
+          "nullable": true,
+          "title": "Fields",
           "type": "string"
         }
       },
