@@ -1154,6 +1154,56 @@ describe('CLI: composio execute', () => {
 
   layer(
     TestLive({
+      baseConfigProvider: largeOutputConfigProvider,
+      fixture: 'global-test-user-id',
+      stdin: { isTTY: true, data: '' },
+      toolsExecutor: {
+        respondWith: {
+          data: {
+            // Both of o200k's special tokens, in a payload past the inline
+            // threshold so the token count is actually computed. Reading a file
+            // that documents a tokenizer is enough to hit this in real use.
+            content: `<|endoftext|> <|endofprompt|> ${'token '.repeat(20_000)}`,
+          },
+          error: null,
+          successful: true,
+          logId: 'log_special_tokens',
+        },
+      },
+    })
+  )(
+    '[Given] a response containing tiktoken special-token literals [Then] it still reports the execution',
+    it => {
+      it.effect('counts the literals as text instead of failing the command', () =>
+        Effect.gen(function* () {
+          yield* cli(['execute', 'GMAIL_SEND_EMAIL', '-d', '{"recipient":"a"}']);
+          const lines = yield* MockConsole.getLines({ stripAnsi: true });
+          const output = parseLastJson(lines) as unknown as {
+            successful: boolean;
+            storedInFile: boolean;
+            tokenCount: number;
+            outputFilePath: string;
+          };
+
+          expect(output.successful).toBe(true);
+          expect(output.storedInFile).toBe(true);
+          expect(output.tokenCount).toBeGreaterThan(10_000);
+
+          const storedJson = fs.readFileSync(output.outputFilePath, 'utf8');
+          expect(storedJson).toContain('<|endoftext|>');
+          expect(storedJson).toContain('<|endofprompt|>');
+
+          fs.rmSync(output.outputFilePath.slice(0, output.outputFilePath.lastIndexOf('/')), {
+            recursive: true,
+            force: true,
+          });
+        })
+      );
+    }
+  );
+
+  layer(
+    TestLive({
       baseConfigProvider: testConfigProvider,
       fixture: 'global-test-user-id',
       stdin: { isTTY: true, data: '' },
