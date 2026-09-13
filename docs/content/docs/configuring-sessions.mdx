@@ -348,6 +348,8 @@ Tools carry behavior tags that you can filter on. Every tool carries at least on
 
 The MCP annotation tags `idempotentHint` and `openWorldHint` are also accepted, but only some tools set them, so use the four above for access control.
 
+MCP-backed toolkits (managed ones such as `granola_mcp` and custom MCP toolkits) carry the same four tags. `readOnlyHint` comes from the server's annotations; every other tool is classified into `createHint`, `updateHint` or `destructiveHint` when the toolkit is synced. A toolkit not synced since classification was added may carry only the server's annotations, and an `enable` filter hides any tool without a matching tag.
+
 <Callout type="info">
 Sessions read the latest published version of each tool. The v3 tools endpoints default to the pinned version `00000000_00`, so pass `version=latest` (or use v3.1) to see the tags a session enforces.
 </Callout>
