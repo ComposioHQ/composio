@@ -118,6 +118,10 @@
       "description": "Dashboard playground chat"
     },
     {
+      "name": "Arena",
+      "description": "Arena conversations, messages and terms"
+    },
+    {
       "name": "Invite Codes"
     },
     {
@@ -1626,6 +1630,462 @@
     "parameters": {}
   },
   "paths": {
+    "/api/v3.1/session_configs": {
+      "get": {
+        "summary": "List Session configs",
+        "description": "List Session configs in your project, newest updated first. Returns active configs by default; set archived=true to list archived configs. Retrieve a config by ID for its description and toolkit, tool, and tag policy. Experimental: available only to projects enabled for Session configs. Create and manage configs in Dashboard.",
+        "tags": [
+          "Tool Router"
+        ],
+        "operationId": "getSessionConfigs",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "description": "Opaque cursor from the previous page."
+            },
+            "required": false,
+            "description": "Opaque cursor from the previous page.",
+            "name": "cursor",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "exclusiveMinimum": true,
+              "maximum": 100,
+              "default": 20,
+              "description": "Maximum number of configs to return, from 1 to 100."
+            },
+            "required": false,
+            "description": "Maximum number of configs to return, from 1 to 100.",
+            "name": "limit",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "maxLength": 80,
+              "description": "Case-insensitive substring match against the config name."
+            },
+            "required": false,
+            "description": "Case-insensitive substring match against the config name.",
+            "name": "search",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "boolean",
+              "nullable": true,
+              "default": false,
+              "description": "Return archived configs when true. Defaults to active configs only."
+            },
+            "required": false,
+            "description": "Return archived configs when true. Defaults to active configs only.",
+            "name": "archived",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Session configs listed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "sessionConfigId",
+                            "description": "Stable public identifier of the Session config."
+                          },
+                          "name": {
+                            "type": "string",
+                            "description": "Project-unique display name."
+                          },
+                          "archived": {
+                            "type": "boolean",
+                            "description": "Whether the config is archived."
+                          },
+                          "created_at": {
+                            "type": "string",
+                            "format": "date-time",
+                            "description": "Creation time in ISO 8601."
+                          },
+                          "updated_at": {
+                            "type": "string",
+                            "format": "date-time",
+                            "description": "Last update time in ISO 8601."
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "name",
+                          "archived",
+                          "created_at",
+                          "updated_at"
+                        ]
+                      },
+                      "description": "Config summaries. Retrieve a config by ID for its description and access policy."
+                    },
+                    "next_cursor": {
+                      "type": "string",
+                      "nullable": true,
+                      "description": "Opaque cursor for the next page, or null when there are no more results."
+                    }
+                  },
+                  "required": [
+                    "items",
+                    "next_cursor"
+                  ],
+                  "x-experimental": true
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid filter or pagination cursor.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Session configs or read access not enabled for this project.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Project not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "x-api-version": "3.1"
+      }
+    },
+    "/api/v3.1/session_configs/{session_config_id}": {
+      "get": {
+        "summary": "Retrieve a Session config",
+        "description": "Retrieve a saved access policy in your project. config.toolkits.enable selects toolkit slugs; config.toolkits.disable excludes them; an omitted config.toolkits allows all toolkits. Tool and tag rules further restrict access. This returns the saved policy, not an expanded catalog or an existing Session snapshot. Archived configs remain readable but cannot create new Sessions. Experimental: available only to projects enabled for Session configs. Create and manage configs in Dashboard.",
+        "tags": [
+          "Tool Router"
+        ],
+        "operationId": "getSessionConfigsBySessionConfigId",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "sessionConfigId",
+              "description": "The Session config ID returned by the list endpoint or Dashboard.",
+              "example": "sc_123456789012"
+            },
+            "required": true,
+            "name": "session_config_id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Session config retrieved.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "sessionConfigId",
+                      "description": "Stable public identifier of the Session config."
+                    },
+                    "name": {
+                      "type": "string",
+                      "description": "Project-unique display name."
+                    },
+                    "description": {
+                      "type": "string",
+                      "nullable": true,
+                      "description": "Optional description of when the config should be used."
+                    },
+                    "archived": {
+                      "type": "boolean",
+                      "description": "Whether the config is archived."
+                    },
+                    "config": {
+                      "type": "object",
+                      "properties": {
+                        "toolkits": {
+                          "anyOf": [
+                            {
+                              "type": "object",
+                              "properties": {
+                                "enable": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string"
+                                  }
+                                }
+                              },
+                              "required": [
+                                "enable"
+                              ],
+                              "additionalProperties": false
+                            },
+                            {
+                              "type": "object",
+                              "properties": {
+                                "disable": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string"
+                                  }
+                                }
+                              },
+                              "required": [
+                                "disable"
+                              ],
+                              "additionalProperties": false
+                            }
+                          ]
+                        },
+                        "tools": {
+                          "type": "object",
+                          "additionalProperties": {
+                            "anyOf": [
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "enable": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "string"
+                                    }
+                                  }
+                                },
+                                "required": [
+                                  "enable"
+                                ],
+                                "additionalProperties": false
+                              },
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "disable": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "string"
+                                    }
+                                  }
+                                },
+                                "required": [
+                                  "disable"
+                                ],
+                                "additionalProperties": false
+                              },
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "tags": {
+                                    "type": "object",
+                                    "properties": {
+                                      "enable": {
+                                        "type": "array",
+                                        "items": {
+                                          "type": "string",
+                                          "enum": [
+                                            "readOnlyHint",
+                                            "destructiveHint",
+                                            "idempotentHint",
+                                            "openWorldHint"
+                                          ]
+                                        }
+                                      },
+                                      "disable": {
+                                        "type": "array",
+                                        "items": {
+                                          "type": "string",
+                                          "enum": [
+                                            "readOnlyHint",
+                                            "destructiveHint",
+                                            "idempotentHint",
+                                            "openWorldHint"
+                                          ]
+                                        }
+                                      }
+                                    },
+                                    "additionalProperties": false
+                                  }
+                                },
+                                "required": [
+                                  "tags"
+                                ],
+                                "additionalProperties": false
+                              }
+                            ]
+                          }
+                        },
+                        "tags": {
+                          "type": "object",
+                          "properties": {
+                            "enable": {
+                              "type": "array",
+                              "items": {
+                                "type": "string",
+                                "enum": [
+                                  "readOnlyHint",
+                                  "destructiveHint",
+                                  "idempotentHint",
+                                  "openWorldHint"
+                                ]
+                              }
+                            },
+                            "disable": {
+                              "type": "array",
+                              "items": {
+                                "type": "string",
+                                "enum": [
+                                  "readOnlyHint",
+                                  "destructiveHint",
+                                  "idempotentHint",
+                                  "openWorldHint"
+                                ]
+                              }
+                            }
+                          },
+                          "additionalProperties": false
+                        }
+                      },
+                      "additionalProperties": false,
+                      "description": "Stored Session access policy using the same enable/disable wire shape accepted on create and update."
+                    },
+                    "created_at": {
+                      "type": "string",
+                      "format": "date-time",
+                      "description": "Creation time in ISO 8601."
+                    },
+                    "updated_at": {
+                      "type": "string",
+                      "format": "date-time",
+                      "description": "Last update time in ISO 8601."
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "name",
+                    "description",
+                    "archived",
+                    "config",
+                    "created_at",
+                    "updated_at"
+                  ],
+                  "x-experimental": true
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid Session config ID.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Session configs or read access not enabled for this project.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Session config not found in this project.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "x-api-version": "3.1"
+      }
+    },
     "/api/v3.1/keyring/transfer_keys": {
       "get": {
         "summary": "Get the organization's active keyring transfer keys",
@@ -2987,6 +3447,9 @@
                           "base_url": {
                             "type": "string"
                           },
+                          "displayName": {
+                            "type": "string"
+                          },
                           "state_prefix": {
                             "type": "string",
                             "maxLength": 40,
@@ -3737,6 +4200,9 @@
                             "type": "string"
                           },
                           "base_url": {
+                            "type": "string"
+                          },
+                          "displayName": {
                             "type": "string"
                           },
                           "state_prefix": {
@@ -13871,6 +14337,9 @@
                                   "base_url": {
                                     "type": "string"
                                   },
+                                  "displayName": {
+                                    "type": "string"
+                                  },
                                   "status": {
                                     "type": "string",
                                     "enum": [
@@ -14169,6 +14638,9 @@
                               "base_url": {
                                 "type": "string"
                               },
+                              "displayName": {
+                                "type": "string"
+                              },
                               "status": {
                                 "type": "string",
                                 "enum": [
@@ -14420,6 +14892,9 @@
                               "type": "string"
                             },
                             "base_url": {
+                              "type": "string"
+                            },
+                            "displayName": {
                               "type": "string"
                             },
                             "status": {
@@ -14922,6 +15397,9 @@
                               "type": "string"
                             },
                             "base_url": {
+                              "type": "string"
+                            },
+                            "displayName": {
                               "type": "string"
                             },
                             "status": {
@@ -15795,6 +16273,9 @@
                         "type": "string"
                       },
                       "base_url": {
+                        "type": "string"
+                      },
+                      "displayName": {
                         "type": "string"
                       },
                       "oauth_token": {
@@ -25853,6 +26334,9 @@
                             "type": "string"
                           },
                           "base_url": {
+                            "type": "string"
+                          },
+                          "displayName": {
                             "type": "string"
                           },
                           "state_prefix": {
