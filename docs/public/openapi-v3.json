@@ -118,6 +118,10 @@
       "description": "Dashboard playground chat"
     },
     {
+      "name": "Arena",
+      "description": "Arena conversations, messages and terms"
+    },
+    {
       "name": "Organization Management"
     },
     {
@@ -3342,6 +3346,9 @@
                                   "base_url": {
                                     "type": "string"
                                   },
+                                  "displayName": {
+                                    "type": "string"
+                                  },
                                   "status": {
                                     "type": "string",
                                     "enum": [
@@ -3640,6 +3647,9 @@
                               "base_url": {
                                 "type": "string"
                               },
+                              "displayName": {
+                                "type": "string"
+                              },
                               "status": {
                                 "type": "string",
                                 "enum": [
@@ -3891,6 +3901,9 @@
                               "type": "string"
                             },
                             "base_url": {
+                              "type": "string"
+                            },
+                            "displayName": {
                               "type": "string"
                             },
                             "status": {
@@ -4393,6 +4406,9 @@
                               "type": "string"
                             },
                             "base_url": {
+                              "type": "string"
+                            },
+                            "displayName": {
                               "type": "string"
                             },
                             "status": {
@@ -5266,6 +5282,9 @@
                         "type": "string"
                       },
                       "base_url": {
+                        "type": "string"
+                      },
+                      "displayName": {
                         "type": "string"
                       },
                       "oauth_token": {
@@ -10924,6 +10943,9 @@
                           "base_url": {
                             "type": "string"
                           },
+                          "displayName": {
+                            "type": "string"
+                          },
                           "state_prefix": {
                             "type": "string",
                             "maxLength": 40,
@@ -11674,6 +11696,9 @@
                             "type": "string"
                           },
                           "base_url": {
+                            "type": "string"
+                          },
+                          "displayName": {
                             "type": "string"
                           },
                           "state_prefix": {
@@ -20543,6 +20568,9 @@
                             "type": "string"
                           },
                           "base_url": {
+                            "type": "string"
+                          },
+                          "displayName": {
                             "type": "string"
                           },
                           "state_prefix": {
