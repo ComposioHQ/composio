@@ -3,6 +3,7 @@ import { Data, Effect, Option, Schema } from 'effect';
 import type { ConnectedAccountItem } from 'src/models/connected-accounts';
 import { decodeConnectedAccountItems } from 'src/effects/decode-connected-account-list';
 import type { TerminalUI } from 'src/services/terminal-ui';
+import { memoizeInProcess } from 'src/utils/memoize-in-process';
 
 // `status` is an open enum, so this is shape-identical to
 // `ConnectedAccountItem`; tool-router rows normalize statuses outside the
@@ -137,6 +138,115 @@ export const formatConnectedAccountChoices = (
 ): ReadonlyArray<string> =>
   items.filter(isUsableConnectedAccount).sort(compareNewestFirst).map(formatConnectedAccountChoice);
 
+export class ActiveConnectedAccountsListError extends Data.TaggedError(
+  'services/ActiveConnectedAccountsListError'
+)<{
+  readonly message: string;
+  readonly cause: unknown;
+}> {}
+
+// `Composio` clients come from `ComposioClientSingleton`, one instance per
+// org/project, so identity is a sound cache key. Ids instead of the object
+// itself keep the memo key a string.
+const clientIds = new WeakMap<Composio, number>();
+let nextClientId = 0;
+const clientId = (client: Composio): number => {
+  let id = clientIds.get(client);
+  if (id === undefined) {
+    id = nextClientId++;
+    clientIds.set(client, id);
+  }
+  return id;
+};
+
+/**
+ * Every active connected account of `userId`, fetched once per client and
+ * user for the lifetime of the process.
+ *
+ * `composio execute` needs this list twice on every call, from two code paths
+ * that cannot see each other: `resolveConnectedAccountForToolkit` picks the
+ * account for the tool's toolkit, then `resolveToolRouterSessionConnections`
+ * builds the session's connection context from the full list. Both used to
+ * issue their own `GET /connected_accounts`, one toolkit-filtered and one not.
+ * The per-toolkit view is a subset of this list, so both read from here.
+ *
+ * `limit: 1000` is the session path's existing page size; a user with more
+ * active accounts than that was already truncated there.
+ */
+export const listActiveConnectedAccounts = memoizeInProcess({
+  keyOf: (input: { readonly client: Composio; readonly userId: string }) =>
+    `${clientId(input.client)}\u0000${input.userId}`,
+  make: ({ client, userId }) =>
+    Effect.tryPromise({
+      try: () =>
+        client.connectedAccounts.list({
+          user_ids: [userId],
+          statuses: ['ACTIVE'],
+          limit: 1000,
+        }),
+      catch: cause =>
+        new ActiveConnectedAccountsListError({
+          message: `Failed to list connected accounts for user "${userId}".`,
+          cause,
+        }),
+    }),
+});
+
+const TOOLKIT_ACCOUNTS_PAGE_SIZE = 100;
+
+// The account picker's own query: one toolkit, first 100 active accounts, in
+// server order. Kept verbatim as the fallback so results stay identical when
+// the shared list cannot stand in for it.
+const fetchConnectedAccountsForToolkit = (params: {
+  readonly client: Composio;
+  readonly userId: string;
+  readonly toolkitSlug: string;
+}) =>
+  Effect.tryPromise({
+    try: () =>
+      params.client.connectedAccounts.list({
+        toolkit_slugs: [params.toolkitSlug],
+        user_ids: [params.userId],
+        statuses: ['ACTIVE'],
+        limit: TOOLKIT_ACCOUNTS_PAGE_SIZE,
+      }),
+    // The raw rejection, so the caller's message reads as it always has.
+    catch: cause => cause,
+  }).pipe(Effect.map(response => response.items));
+
+/**
+ * The active accounts of one toolkit, derived from the shared per-user list
+ * when that list is complete, so `composio execute` does not issue a second,
+ * toolkit-filtered `GET /connected_accounts` next to the one session creation
+ * needs anyway.
+ *
+ * Derivation reproduces the server query exactly: same slug match, server
+ * order preserved, first 100. If the shared list was truncated (more active
+ * accounts than its page holds), the toolkit's accounts may sit past the cut,
+ * so the original filtered request runs instead.
+ */
+const listConnectedAccountsForToolkit = (params: {
+  readonly client: Composio;
+  readonly userId: string;
+  readonly toolkitSlug: string;
+}) =>
+  Effect.gen(function* () {
+    const shared = yield* listActiveConnectedAccounts({
+      client: params.client,
+      userId: params.userId,
+    }).pipe(Effect.mapError(error => error.cause));
+    const items = shared.items ?? [];
+    const complete = shared.next_cursor == null && shared.total_items <= items.length;
+    if (!complete) {
+      return yield* fetchConnectedAccountsForToolkit(params);
+    }
+
+    const wantedToolkit = params.toolkitSlug.toLowerCase();
+    return items
+      .filter(item => item.toolkit?.slug?.toLowerCase() === wantedToolkit)
+      .slice(0, TOOLKIT_ACCOUNTS_PAGE_SIZE);
+  });
+
 export class ConnectedAccountResolutionError extends Data.TaggedError(
   'services/ConnectedAccountResolutionError'
 )<{
@@ -155,22 +265,21 @@ export const resolveConnectedAccountForToolkit = (params: {
     if (!params.toolkitSlug) return undefined;
     const toolkitSlug = params.toolkitSlug;
 
-    const accounts = yield* Effect.tryPromise({
-      try: () =>
-        params.client.connectedAccounts.list({
-          toolkit_slugs: [toolkitSlug],
-          user_ids: [params.userId],
-          statuses: ['ACTIVE'],
-          limit: 100,
-        }),
-      catch: cause =>
-        new ConnectedAccountResolutionError({
-          message: `Failed to load connected accounts for toolkit "${toolkitSlug}": ${String(cause)}`,
-          toolkitSlug,
-          cause,
-        }),
-    });
-    const selectableAccounts = yield* decodeConnectedAccountItems(accounts.items).pipe(
+    const toolkitItems = yield* listConnectedAccountsForToolkit({
+      client: params.client,
+      userId: params.userId,
+      toolkitSlug,
+    }).pipe(
+      Effect.mapError(
+        cause =>
+          new ConnectedAccountResolutionError({
+            message: `Failed to load connected accounts for toolkit "${toolkitSlug}": ${String(cause)}`,
+            toolkitSlug,
+            cause,
+          })
+      )
+    );
+    const selectableAccounts = yield* decodeConnectedAccountItems(toolkitItems).pipe(
       Effect.mapError(
         cause =>
           new ConnectedAccountResolutionError({
