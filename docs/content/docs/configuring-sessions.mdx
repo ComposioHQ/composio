@@ -626,6 +626,8 @@ When disabled:
 - Sandbox-related system prompt lines are stripped
 - Direct sandbox calls are rejected with a 400 error
 
+To keep the sandbox but block raw HTTP calls from it, set `enable_proxy_execution` (Python) or `enableProxyExecution` (TypeScript) to `false`. See [Proxy execute](/docs/extending-sessions/proxy-execute#session-restrictions) for how session restrictions apply to proxy calls.
+
 <Callout>
 `sandbox` is the preferred config key. `workbench` still works as a fully supported alias and isn't deprecated, so existing code keeps running unchanged.
 </Callout>
