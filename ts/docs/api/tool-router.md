@@ -153,16 +153,20 @@ Global tags to filter tools by their behavior hints. Tags can be overridden per 
 const session = await composio.create('user_123', {
   toolkits: ['gmail', 'github'],
   // Global tags applied to all toolkits
-  tags: ['readOnlyHint', 'idempotentHint'],
+  tags: ['readOnlyHint', 'createHint'],
 });
 ```
 
-Available tags:
+Available tags (every tool carries at least one of the first four):
 
-- `readOnlyHint` - Tools that only read data
-- `destructiveHint` - Tools that modify or delete data
-- `idempotentHint` - Tools that can be safely retried
-- `openWorldHint` - Tools that operate in an open world context
+- `readOnlyHint` - Tools that only read, search, list or compute
+- `createHint` - Tools that create a new resource or record
+- `updateHint` - Tools that modify an existing resource in place
+- `destructiveHint` - Tools that irreversibly remove, cancel or revoke data
+- `idempotentHint` - MCP hint, tools that can be safely retried (partial coverage)
+- `openWorldHint` - MCP hint, tools that interact with external entities (partial coverage)
+
+Precedence: an explicit `enable`/`disable` tool list for a toolkit replaces all tag filters for that toolkit; a toolkit-level `tags` rule replaces the global `tags`; otherwise the global `tags` apply. Preloaded tools must also pass these filters or session creation fails.
 
 ### `authConfigs`
 
@@ -904,7 +908,7 @@ These types include the `sessionId` in their parameters, allowing you to track a
 
 3. **Connection Management**: Use `manageConnections: true` (default) for interactive applications where users can be prompted to connect accounts.
 
-4. **Tag Filtering**: Use global `tags` to filter tools by their behavior (readOnlyHint, destructiveHint, idempotentHint, openWorldHint) and override per toolkit when needed.
+4. **Tag Filtering**: Use global `tags` to filter tools by their behavior (readOnlyHint, destructiveHint, createHint, updateHint) and override per toolkit when needed.
 
 5. **Session Reuse**: Store and reuse `sessionId` to maintain user sessions across requests.
 
@@ -932,9 +936,9 @@ interface ToolRouterCreateSessionConfig {
     | string[]
     | { enable: string[] }
     | { disable: string[] }
-    | { tags: ('readOnlyHint' | 'destructiveHint' | 'idempotentHint' | 'openWorldHint')[] }
+    | { tags: ('readOnlyHint' | 'destructiveHint' | 'createHint' | 'updateHint' | 'idempotentHint' | 'openWorldHint')[] }
   >;
-  tags?: ('readOnlyHint' | 'destructiveHint' | 'idempotentHint' | 'openWorldHint')[];
+  tags?: ('readOnlyHint' | 'destructiveHint' | 'createHint' | 'updateHint' | 'idempotentHint' | 'openWorldHint')[];
   authConfigs?: Record<string, string>;
   connectedAccounts?: Record<string, string>;
   manageConnections?:

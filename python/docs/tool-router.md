@@ -140,8 +140,8 @@ session = composio.tool_router.create(
         # Explicit disable configuration
         'slack': {'disable': ['SLACK_DELETE_MESSAGE']},
         
-        # Filter by MCP tags (readOnlyHint, destructiveHint, idempotentHint, openWorldHint)
-        'linear': {'tags': ['readOnlyHint', 'idempotentHint']}
+        # Filter by behavior tags (readOnlyHint, destructiveHint, createHint, updateHint)
+        'linear': {'tags': ['readOnlyHint', 'createHint']}
     }
 )
 ```
@@ -154,15 +154,19 @@ Global MCP tags to filter tools by across all toolkits. Only tools matching thes
 session = composio.tool_router.create(
     user_id='user_123',
     toolkits=['gmail', 'github', 'slack'],
-    tags=['readOnlyHint', 'idempotentHint']  # Only show read-only and idempotent tools
+    tags=['readOnlyHint', 'createHint']  # Only show tools that read or create
 )
 ```
 
-Available tag values:
-- `'readOnlyHint'`: Tools that only read data
-- `'destructiveHint'`: Tools that modify or delete data
-- `'idempotentHint'`: Tools that can be safely retried
-- `'openWorldHint'`: Tools that operate in an open world context
+Available tag values (every tool carries at least one of the first four):
+- `'readOnlyHint'`: Tools that only read, search, list or compute
+- `'createHint'`: Tools that create a new resource or record
+- `'updateHint'`: Tools that modify an existing resource in place
+- `'destructiveHint'`: Tools that irreversibly remove, cancel or revoke data
+- `'idempotentHint'`: MCP hint, tools that can be safely retried (partial coverage)
+- `'openWorldHint'`: MCP hint, tools that interact with external entities (partial coverage)
+
+Precedence: an explicit `enable`/`disable` tool list for a toolkit replaces all tag filters for that toolkit; a toolkit-level `tags` rule replaces the global `tags`; otherwise the global `tags` apply. Preloaded tools must also pass these filters or session creation fails.
 
 ### `auth_configs`
 
@@ -742,7 +746,7 @@ ToolRouterToolsDisableConfig = TypedDict('ToolRouterToolsDisableConfig', {
 })
 
 ToolRouterToolsTagsConfig = TypedDict('ToolRouterToolsTagsConfig', {
-    'tags': List[Literal['readOnlyHint', 'destructiveHint', 'idempotentHint', 'openWorldHint']]
+    'tags': List[Literal['readOnlyHint', 'destructiveHint', 'createHint', 'updateHint', 'idempotentHint', 'openWorldHint']]
 })
 
 ToolRouterToolsConfig = Union[
@@ -755,7 +759,7 @@ ToolRouterToolsConfig = Union[
 tools: Dict[str, ToolRouterToolsConfig]  # Key is toolkit slug, value is ToolRouterToolsConfig
 
 # Tags configuration (global)
-tags: List[Literal['readOnlyHint', 'destructiveHint', 'idempotentHint', 'openWorldHint']]
+tags: List[Literal['readOnlyHint', 'destructiveHint', 'createHint', 'updateHint', 'idempotentHint', 'openWorldHint']]
 
 # Manage connections configuration
 ToolRouterManageConnectionsConfig = TypedDict('ToolRouterManageConnectionsConfig', {

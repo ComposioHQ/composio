@@ -115,8 +115,19 @@ export const ToolRouterManageConnectionsConfigSchema = z.object({
 });
 
 // Tags
+// Every tool carries at least one of readOnlyHint / destructiveHint / createHint /
+// updateHint; idempotentHint and openWorldHint are MCP annotation hints with
+// partial coverage.
+export const ToolRouterTagSchema = z.enum([
+  'readOnlyHint',
+  'destructiveHint',
+  'createHint',
+  'updateHint',
+  'idempotentHint',
+  'openWorldHint',
+]);
 export const ToolRouterTagsParamSchema = z
-  .array(z.enum(['readOnlyHint', 'destructiveHint', 'idempotentHint', 'openWorldHint']))
+  .array(ToolRouterTagSchema)
   .describe('The tags to filter the tools by');
 export const ToolRouterTagsEnableDisableSchema = z
   .object({
@@ -366,7 +377,7 @@ export const ToolRouterCreateSessionConfigSchema = z
  * @param {SessionPreset} [sessionPreset] - Shortcut that exposes every tool allowed by the session filters directly in session.tools() and the MCP tool list. Disables search, multi-execute, manage-connections, and sandbox by default; explicit overrides for supported fields still win. Without this preset, ToolRouter uses the default configuration with meta tools enabled.
  * @param {ToolRouterToolkitsParamSchema | ToolRouterToolkitsDisabledConfigSchema | ToolRouterToolkitsEnabledConfigSchema} toolkits - The toolkits to use in the tool router session
  * @param {Record<string, ToolRouterToolsParam | ToolRouterConfigTools>} tools - The tools to configure per toolkit (key is toolkit slug)
- * @param {Array<'readOnlyHint' | 'destructiveHint' | 'idempotentHint' | 'openWorldHint'>} tags - Global tags to filter tools by behavior
+ * @param {Array<'readOnlyHint' | 'destructiveHint' | 'createHint' | 'updateHint' | 'idempotentHint' | 'openWorldHint'>} tags - Global tags to filter tools by behavior
  * @param {Record<string, string>} authConfigs - The auth configs to use in the tool router session
  * @param {Record<string, string | string[]>} connectedAccounts - The connected accounts to use in the tool router session. A single string is coerced to a single-element array before being sent to the backend.
  * @param {ToolRouterConfigManageConnectionsSchema | boolean} manageConnections - The config for the manage connections in the tool router session. Defaults to true, if set to false, you need to manage connections manually. If set to an object, you can configure the manage connections settings.

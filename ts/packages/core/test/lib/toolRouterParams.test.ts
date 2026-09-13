@@ -4,7 +4,11 @@ import {
   transformToolRouterMultiAccountParams,
   transformToolRouterUpdateParams,
 } from '../../src/lib/toolRouterParams';
-import { ToolRouterConfigTags } from '../../src/types/toolRouter.types';
+import {
+  ToolRouterConfigTags,
+  ToolRouterTagSchema,
+  ToolRouterTagsParamSchema,
+} from '../../src/types/toolRouter.types';
 
 describe('transformToolRouterMultiAccountParams', () => {
   it('should return undefined when params is undefined', () => {
@@ -310,5 +314,28 @@ describe('transformToolRouterUpdateParams', () => {
     const mc = result.manage_connections as Record<string, unknown>;
     expect(mc).toHaveProperty('enable', false);
     expect(mc).toHaveProperty('callback_url', 'https://example.com');
+  });
+});
+
+describe('ToolRouterTagSchema', () => {
+  it('accepts the four behavior hints every tool carries plus the MCP hints', () => {
+    for (const tag of [
+      'readOnlyHint',
+      'destructiveHint',
+      'createHint',
+      'updateHint',
+      'idempotentHint',
+      'openWorldHint',
+    ]) {
+      expect(ToolRouterTagSchema.safeParse(tag).success).toBe(true);
+    }
+  });
+
+  it('accepts createHint and updateHint in a tags array', () => {
+    expect(ToolRouterTagsParamSchema.safeParse(['createHint', 'updateHint']).success).toBe(true);
+  });
+
+  it('rejects unknown hints', () => {
+    expect(ToolRouterTagSchema.safeParse('upsertHint').success).toBe(false);
   });
 });
