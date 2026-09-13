@@ -5,6 +5,7 @@ import * as Path from 'effect/Path';
 import { ChildProcess, ChildProcessSpawner } from 'effect/unstable/process';
 import { Context, Data, Deferred, Duration, Effect, MutableRef, Option, Result } from 'effect';
 import { APP_VERSION } from 'src/constants';
+import { loadGenerationRuntime } from 'src/effects/generation-runtime';
 import { APP_CONFIG, UNPREFIXED_CONFIG } from 'src/effects/app-config';
 import { resolveCommandProject } from 'src/services/command-project';
 import { type RunHelperContext } from 'src/services/run-helpers-runtime';
@@ -105,15 +106,15 @@ export const RunPassthroughArgs = Context.Reference<ReadonlyArray<string> | unde
 );
 
 /**
- * `run-source-transforms` pulls in the TypeScript compiler, roughly 95ms of
- * module evaluation. Only `composio run` rewrites a script, so the import stays
- * inside the handler rather than on every command's startup path. A rejected
- * import of a module bundled into this binary is an impossible invariant, not a
- * recoverable failure, which is why this is `Effect.promise` and not
- * `Effect.tryPromise`. The module registry memoizes the import, so repeat calls
- * within one run cost nothing.
+ * The source rewrites need the TypeScript compiler, which ships in the
+ * `generation-runtime` companion module next to the executable rather than in
+ * the executable itself. Loading it here keeps it off every other command's
+ * startup path. A missing companion goes through the same self-repair as the
+ * `run-*` modules, and its error surfaces exactly as theirs does below.
  */
-const loadSourceTransforms = Effect.promise(() => import('./run-source-transforms'));
+const loadSourceTransforms = loadGenerationRuntime.pipe(
+  Effect.mapError(error => new Error(error.message))
+);
 
 export const inferCliInvocationPrefix = (
   path: Path.Path,

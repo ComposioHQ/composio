@@ -6,7 +6,7 @@ import * as FileSystem from 'effect/FileSystem';
 import * as Path from 'effect/Path';
 import { Config, ConfigProvider, Data, Effect, Option, PlatformError, Schema } from 'effect';
 import { extractZipSafely } from 'src/utils/extract-zip-safely';
-import { IS_RELEASE_BUILD } from 'src/constants';
+import { APP_VERSION, IS_RELEASE_BUILD } from 'src/constants';
 import { GitHubRelease } from 'src/effects/resolve-cli-release';
 import { getBaseConfigProvider, extendConfigProvider } from 'src/services/config';
 import { NodeOs } from 'src/services/node-os';
@@ -14,12 +14,22 @@ import { atomicReplaceFile } from 'src/utils/atomic-replace';
 import { parseChecksumsText, sha256Hex } from 'src/utils/checksums';
 import { CLI_RELEASE_TAG_PREFIX } from 'src/utils/cli-release-version';
 
+// Modules the binary build bundles separately (`dist/<name>.mjs` next to the
+// executable) instead of into the executable itself. The first five are what
+// `composio run` preloads into the script it spawns. The last two are loaded
+// into the CLI's own process, on demand, through `loadInstalledCompanionModule`:
+// they carry the TypeScript compiler and the tokenizer rank table, which
+// together were ~70% of the executable's JavaScript and cost every command
+// parse time even though only `generate`, `run`, and large `execute` responses
+// ever reach them.
 export const RUN_COMPANION_MODULE_BASENAMES: ReadonlyArray<string> = [
   'run-helpers-runtime',
   'run-subagent-shared',
   'run-subagent-acp',
   'run-subagent-legacy',
   'run-subagent-output-mcp',
+  'generation-runtime',
+  'execute-output-encoder-runtime',
 ];
 
 export const RUN_COMPANION_MODULE_FILENAMES = RUN_COMPANION_MODULE_BASENAMES.map(
@@ -439,10 +449,11 @@ export const writeInstalledReleaseTag = (
   });
 
 /**
- * Startup tier: the `run-*.mjs` companion wrappers and their import graph.
+ * Startup tier: the companion wrappers and their import graph.
  *
- * Every `composio run` preloads these into the spawned child, so a missing one
- * really is a broken install and justifies the self-repair download. The ACP
+ * Every `composio run` preloads the `run-*` modules into the spawned child, and
+ * the CLI loads the in-process ones on demand, so a missing one really is a
+ * broken install and justifies the self-repair download. The ACP
  * adapter assets are deliberately excluded — a script like
  * `composio run 'console.log(1)'` never invokes a sub-agent, and requiring
  * ~224MB of adapters for it turned a working install into a hard failure.
@@ -672,7 +683,7 @@ export const repairMissingInstalledRunCompanionModules = ({
       catch: error =>
         new RunCompanionRepairError({
           message: [
-            `Unable to restore the files required by 'composio run' for ${releaseTag}.`,
+            `Unable to restore the CLI's bundled support files for ${releaseTag}.`,
             error instanceof Error ? error.message : String(error),
             `Reinstall the CLI, or set GITHUB_TAG to the exact release tag for this build and try again.`,
           ].join('\n'),
@@ -761,7 +772,7 @@ export const repairMissingInstalledRunCompanionModules = ({
           if (!sourceExists) {
             return yield* Effect.fail(
               new RunCompanionRepairError({
-                message: `Release ${release.tag_name} is missing ${relativePath}; cannot restore the files required by 'composio run'.`,
+                message: `Release ${release.tag_name} is missing ${relativePath}; cannot restore the CLI's bundled support files.`,
               })
             );
           }
@@ -773,7 +784,7 @@ export const repairMissingInstalledRunCompanionModules = ({
               error =>
                 new RunCompanionRepairError({
                   message: [
-                    `Unable to restore the files required by 'composio run' for ${releaseTag}.`,
+                    `Unable to restore the CLI's bundled support files for ${releaseTag}.`,
                     error.message,
                     `Reinstall the CLI, or set GITHUB_TAG to the exact release tag for this build and try again.`,
                   ].join('\n'),
@@ -826,4 +837,51 @@ export const resolveRunCompanionModulePath = ({
         ? path.resolve(executableDirectory, `${baseName}.mjs`)
         : path.resolve(currentDirectory, `${baseName}.mjs`)
     );
+  });
+
+/**
+ * Loads one of the in-process companion modules (see the note on
+ * `RUN_COMPANION_MODULE_BASENAMES`) and returns its exports.
+ *
+ * Resolution is the same as for the `run` companions: the `.ts` source next to
+ * this file when running from a checkout (tests, `bun run src/bin.ts`), the
+ * `.mjs` bundle next to the executable in a packaged install. A packaged install
+ * that lost the file goes through the same release-archive repair `composio run`
+ * uses before failing.
+ *
+ * The specifier is computed at runtime on purpose: a literal `import('./x')`
+ * would make the bundler fold the module back into the executable, which is the
+ * exact thing these modules exist to avoid.
+ *
+ * `M` is the module's type; pass `typeof import('src/services/<name>')`, which
+ * is type-only and leaves no import behind.
+ */
+export const loadInstalledCompanionModule = <M>(
+  baseName: string
+): Effect.Effect<
+  M,
+  RunCompanionRepairError | PlatformError.PlatformError,
+  FileSystem.FileSystem | Path.Path
+> =>
+  Effect.gen(function* () {
+    const path = yield* Path.Path;
+    const callerImportMetaUrl = import.meta.url;
+    const execPath = process.execPath;
+
+    yield* repairMissingInstalledRunCompanionModules({
+      callerImportMetaUrl,
+      execPath,
+      appVersion: APP_VERSION,
+    });
+
+    const modulePath = yield* resolveRunCompanionModulePath({
+      callerImportMetaUrl,
+      execPath,
+      relativeNoExtensionFromCaller: `./${baseName}`,
+    });
+    const moduleUrl = yield* Effect.orDie(path.toFileUrl(modulePath));
+
+    // A rejected import here means the file resolved above is unloadable, which
+    // is a broken install rather than a recoverable failure.
+    return yield* Effect.promise(() => import(moduleUrl.href) as Promise<M>);
   });

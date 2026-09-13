@@ -2,8 +2,6 @@ import { Argument, Command, Flag } from 'effect/unstable/cli';
 import { isLocalToolSlug } from '@composio/cli-local-tools';
 import util from 'node:util';
 import { Cause, Data, Effect, Exit, Fiber, HashSet, Option, Result } from 'effect';
-import { Tiktoken } from 'js-tiktoken/lite';
-import o200kBase from 'js-tiktoken/ranks/o200k_base';
 import { redact } from 'src/ui/redact';
 import { parseJsonRecord, isPlainRecord } from 'src/utils/parse-json';
 import { toolkitFromToolSlug } from 'src/effects/toolkit-from-tool-slug';
@@ -20,6 +18,7 @@ import {
 } from 'src/services/tool-input-validation';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { logToolDebug, makePerfDebugLogger } from 'src/services/runtime-debug-logger';
+import { loadInstalledCompanionModule } from 'src/services/run-companion-modules';
 import {
   LocalToolsDisabledError,
   ToolsExecutor,
@@ -323,22 +322,18 @@ const redactRequestId = (value: object): object => {
 };
 
 const EXECUTE_INLINE_OUTPUT_TOKEN_THRESHOLD = 10_000;
-let executeOutputEncoder: Tiktoken | undefined;
 
-const getExecuteOutputEncoder = () => {
-  if (!executeOutputEncoder) {
-    executeOutputEncoder = new Tiktoken(o200kBase);
-  }
-  return executeOutputEncoder;
-};
+// The tokenizer lives in the `execute-output-encoder-runtime` companion module
+// next to the executable, loaded from disk on first use: its rank table is
+// 2.3MB that no other command, and no small response, has any use for. A
+// missing companion in a packaged install goes through the same self-repair as
+// `composio run`'s modules and fails the command the same way.
+const loadExecuteOutputEncoder = loadInstalledCompanionModule<
+  typeof import('src/services/execute-output-encoder-runtime')
+>('execute-output-encoder-runtime');
 
-// `Tiktoken.encode` defaults `disallowedSpecial` to "all", which makes it throw
-// on any tool response that happens to contain the literal text `<|endoftext|>`
-// or `<|endofprompt|>` (a README about tokenizers is enough). Here the encoder
-// is only a length gauge, so passing `allowedSpecial: 'all'` counts each literal
-// as the single special token it encodes to instead of rejecting the payload.
-const countOutputTokens = (json: string): number =>
-  getExecuteOutputEncoder().encode(json, 'all').length;
+const countOutputTokens = (json: string) =>
+  Effect.map(loadExecuteOutputEncoder, encoder => encoder.countOutputTokens(json));
 
 // A BPE token always covers at least one UTF-8 byte, so a payload of at most
 // THRESHOLD bytes can never exceed THRESHOLD tokens. Checking the byte length
@@ -438,7 +433,7 @@ const prepareExecuteOutput = (
       } satisfies PreparedExecuteOutput;
     }
 
-    const tokenCount = countOutputTokens(json);
+    const tokenCount = yield* countOutputTokens(json);
     if (tokenCount <= EXECUTE_INLINE_OUTPUT_TOKEN_THRESHOLD) {
       return {
         kind: 'inline',

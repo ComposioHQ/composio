@@ -28,6 +28,7 @@ import { logMetrics } from 'src/effects/log-metrics';
 import { NodeProcess } from 'src/services/node-process';
 import type { GetCmdParams } from 'src/type-utils';
 import { jsFindComposioCoreGenerated } from 'src/effects/find-composio-core-generated';
+import { generationOutcome, loadGenerationRuntime } from 'src/effects/generation-runtime';
 import type { Toolkit } from 'src/models/toolkits';
 import type { TriggerType } from 'src/models/trigger-types';
 import type { Tool, ToolsAsEnums } from 'src/models/tools';
@@ -361,28 +362,6 @@ export const handleTsGenerate = (params: GetCmdParams<typeof _tsCmd$Generate>) =
   });
 };
 
-/**
- * The generation pipeline pulls in the TypeScript compiler, together roughly
- * 165ms of module evaluation, and only `composio generate` uses it. Importing it
- * from inside the handler keeps it off every other command's startup path. A
- * rejected import of a module bundled into this binary is an impossible
- * invariant rather than a recoverable failure, so this is `Effect.promise`. The
- * module registry memoizes the import.
- */
-const loadTypeScriptGeneration = Effect.promise(() =>
-  Promise.all([
-    import('src/generation/create-toolkit-index'),
-    import('src/generation/typescript/generate'),
-    import('src/generation/typescript/transpile'),
-    import('src/generation/constants'),
-  ]).then(([toolkitIndex, generate, transpile, constants]) => ({
-    createToolkitIndex: toolkitIndex.createToolkitIndex,
-    generateTypeScriptSources: generate.generateTypeScriptSources,
-    transpileTypeScriptSources: transpile.transpileTypeScriptSources,
-    BANNER: constants.BANNER,
-  }))
-);
-
 export function generateTypescriptTypeStubs({
   outputOpt,
   compact,
@@ -438,21 +417,29 @@ export function generateTypescriptTypeStubs({
           : fetchAllData(client, typeTools, validatedOverrides, spinner);
 
         yield* spinner.message('Generating TypeScript type stubs...');
-        const {
-          createToolkitIndex,
-          generateTypeScriptSources,
-          transpileTypeScriptSources,
-          BANNER,
-        } = yield* loadTypeScriptGeneration;
-        const index = createToolkitIndex({ toolkits, typeableTools, triggerTypes, versionMap });
+        // The generation pipeline and the TypeScript compiler live in the
+        // `generation-runtime` companion module, loaded from disk here so no
+        // other command pays for them at startup.
+        const generation = yield* loadGenerationRuntime;
+        const index = generation.createToolkitIndex({
+          toolkits,
+          typeableTools,
+          triggerTypes,
+          versionMap,
+        });
 
         // Generate TypeScript sources
-        const sources = yield* generateTypeScriptSources({
-          outputDir,
-          emitSingleFile: Boolean(compact), // Ensure boolean type
-          banner: BANNER,
-          importExtension: 'js',
-        })(index);
+        const sources = yield* generationOutcome(() =>
+          generation.generateTypeScriptSourceFiles(
+            {
+              outputDir,
+              emitSingleFile: Boolean(compact), // Ensure boolean type
+              banner: generation.BANNER,
+              importExtension: 'js',
+            },
+            index
+          )
+        );
 
         yield* spinner.message('Writing files to disk...');
 
@@ -479,7 +466,9 @@ export function generateTypescriptTypeStubs({
         if (transpiled) {
           yield* spinner.message('Transpiling to JavaScript...');
           yield* pipe(
-            transpileTypeScriptSources({ sources, outputDir }),
+            generationOutcome(() =>
+              generation.transpileTypeScriptSourceFiles({ sources, outputDir })
+            ),
             Effect.catch(error =>
               Effect.logWarning(`Failed to compile TypeScript files: ${error.message}`)
             )

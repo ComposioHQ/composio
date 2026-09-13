@@ -7,6 +7,7 @@ import { logMetrics } from 'src/effects/log-metrics';
 import type { GetCmdParams } from 'src/type-utils';
 import { NodeProcess } from 'src/services/node-process';
 import { pyFindComposioCoreGenerated } from 'src/effects/find-composio-core-generated';
+import { generationOutcome, loadGenerationRuntime } from 'src/effects/generation-runtime';
 import {
   getToolkitVersionOverrides,
   type ToolkitVersionOverrides,
@@ -57,23 +58,6 @@ const _pyCmd$Generate = Command.make('generate', { outputOpt, toolkitsOpt }).pip
 );
 
 export const pyCmd$Generate = _pyCmd$Generate.pipe(Command.withHandler(generatePythonTypeStubs));
-
-/**
- * Deferred for the same reason as the TypeScript pipeline: only
- * `composio generate` needs it, so the import stays inside the handler instead
- * of on every command's startup path.
- */
-const loadPythonGeneration = Effect.promise(() =>
-  Promise.all([
-    import('src/generation/create-toolkit-index'),
-    import('src/generation/python/generate'),
-    import('src/generation/constants'),
-  ]).then(([toolkitIndex, generate, constants]) => ({
-    createToolkitIndex: toolkitIndex.createToolkitIndex,
-    generatePythonSources: generate.generatePythonSources,
-    BANNER: constants.BANNER,
-  }))
-);
 
 export function generatePythonTypeStubs({
   outputOpt,
@@ -185,14 +169,20 @@ export function generatePythonTypeStubs({
         const typeableTools = { withTypes: false as const, tools };
 
         yield* spinner.message('Generating Python type stubs...');
-        const { createToolkitIndex, generatePythonSources, BANNER } = yield* loadPythonGeneration;
-        const index = createToolkitIndex({ toolkits, typeableTools, triggerTypes, versionMap });
+        // The generation pipeline lives in the `generation-runtime` companion
+        // module, loaded from disk here so no other command pays for it at startup.
+        const generation = yield* loadGenerationRuntime;
+        const index = generation.createToolkitIndex({
+          toolkits,
+          typeableTools,
+          triggerTypes,
+          versionMap,
+        });
 
         // Generate Python sources
-        const sources = yield* generatePythonSources({
-          banner: BANNER,
-          outputDir,
-        })(index);
+        const sources = yield* generationOutcome(() =>
+          generation.generatePythonSourceFiles({ banner: generation.BANNER, outputDir }, index)
+        );
 
         yield* spinner.message('Writing files to disk...');
 
