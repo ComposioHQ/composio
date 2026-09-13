@@ -74,13 +74,17 @@ export const transformToolRouterTagsParams = (
   if (!params) {
     return undefined;
   }
+  // The generated `@composio/client` types still narrow tags to the four MCP
+  // annotation hints. The API also accepts `createHint` and `updateHint`, so
+  // widen through the cast until the client is regenerated from the current
+  // OpenAPI spec.
   if (Array.isArray(params)) {
-    return { enable: params };
+    return { enable: params } as SessionCreateParams.Tags['tags'];
   } else if (typeof params === 'object') {
     return {
       enable: params.enable,
       disable: params.disable,
-    };
+    } as SessionCreateParams.Tags['tags'];
   }
 };
 

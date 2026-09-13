@@ -58,9 +58,17 @@ from composio.core.provider import TTool, TToolCollection
 from composio.core.provider.base import BaseProvider
 from composio.exceptions import InvalidParams
 
-# Type alias for MCP tag literals
+# Type alias for tool behavior tag literals.
+# Every tool carries at least one of readOnlyHint / destructiveHint / createHint /
+# updateHint; idempotentHint and openWorldHint are MCP annotation hints with
+# partial coverage.
 ToolRouterTag = t.Literal[
-    "readOnlyHint", "destructiveHint", "idempotentHint", "openWorldHint"
+    "readOnlyHint",
+    "destructiveHint",
+    "createHint",
+    "updateHint",
+    "idempotentHint",
+    "openWorldHint",
 ]
 
 # Type alias for sandbox compute tier on the session sandbox
@@ -699,7 +707,7 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
                        Example: {'disable': ['GMAIL_DELETE_EMAIL']}
                      - ToolRouterToolsTagsConfig: Dict with 'tags' key.
                        Tags can be a list (shorthand for enable) or object with enable/disable.
-                       Example: {'tags': ['readOnlyHint', 'idempotentHint']}
+                       Example: {'tags': ['readOnlyHint', 'createHint']}
                        Example: {'tags': {'enable': ['readOnlyHint'], 'disable': ['destructiveHint']}}
                      Example: {
                          'gmail': ['GMAIL_SEND_EMAIL', 'GMAIL_SEARCH'],
@@ -710,11 +718,13 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
         :param tags: Optional global MCP tags to filter tools by.
                     Can be:
                     - List[str]: List of tag literals (shorthand for enable).
-                      Example: ['readOnlyHint', 'idempotentHint']
+                      Example: ['readOnlyHint', 'createHint']
                     - ToolRouterTagsEnableDisableConfig: Dict with 'enable' and/or 'disable' keys.
                       Example: {'enable': ['readOnlyHint'], 'disable': ['destructiveHint']}
                     Available tag values: 'readOnlyHint', 'destructiveHint',
-                    'idempotentHint', 'openWorldHint'.
+                    'createHint', 'updateHint' (every tool carries at least one
+                    of these four), plus the MCP hints 'idempotentHint' and
+                    'openWorldHint'.
                     Toolkit-level tags override this global setting.
         :param manage_connections: Optional connection management configuration. Can be:
                                   - bool: Simple boolean to enable/disable.
@@ -822,7 +832,7 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
             # Create a session with global tag filtering
             session = tool_router.create(
                 user_id='user_123',
-                tags=['readOnlyHint', 'idempotentHint']
+                tags=['readOnlyHint', 'createHint']
             )
 
             # Create a session with toolkit-specific tag filtering (array format)
@@ -830,7 +840,7 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
                 user_id='user_123',
                 tools={
                     'gmail': {'tags': ['readOnlyHint']},
-                    'github': {'tags': ['readOnlyHint', 'idempotentHint']}
+                    'github': {'tags': ['readOnlyHint', 'createHint']}
                 }
             )
 

@@ -337,24 +337,28 @@ const session = await composio.create("user_123", {
 
 ## Filtering tools by tags
 
-Tools carry behavior tags that you can filter on. The available tags are:
+Tools carry behavior tags that you can filter on. Every tool carries at least one of these four tags:
 
 | Tag | Description |
 |-----|-------------|
-| `readOnlyHint` | Tools that only read data |
-| `destructiveHint` | Tools that modify or delete data |
-| `idempotentHint` | Tools that can be safely retried |
-| `openWorldHint` | Tools that operate in an open world context |
+| `readOnlyHint` | Tools that only read, search, list or compute. They do not change any data |
+| `createHint` | Tools that create a new resource or record, such as sending an email or opening an issue |
+| `updateHint` | Tools that modify an existing resource in place, such as editing a message or changing a setting |
+| `destructiveHint` | Tools that irreversibly remove, cancel or revoke data. Pure deletes carry only this tag; irreversible updates carry it together with `updateHint` |
+
+A tool can carry more than one tag. For example, an upsert tool carries both `createHint` and `updateHint`.
+
+The MCP annotation tags `idempotentHint` and `openWorldHint` are also accepted, but coverage is partial (`idempotentHint` is set on roughly a quarter of tools), so prefer the four tags above for access control.
 
 To apply tag filters across all toolkits, pass `tags` at the session level:
 
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
 <Tab value="Python">
 ```python
-# Only include read-only and idempotent tools
+# Only include tools that read or create; no updates or deletes
 session = composio.sessions.create(
     user_id="user_123",
-    tags=["readOnlyHint", "idempotentHint"]
+    tags=["readOnlyHint", "createHint"]
 )
 
 # Enable some tags, disable others
@@ -372,9 +376,9 @@ session = composio.sessions.create(
 import { Composio } from '@composio/core';
 const composio = new Composio({ apiKey: 'your_api_key' });
 // ---cut---
-// Only include read-only and idempotent tools
+// Only include tools that read or create; no updates or deletes
 const session = await composio.create("user_123", {
-  tags: ["readOnlyHint", "idempotentHint"]
+  tags: ["readOnlyHint", "createHint"]
 });
 
 // Enable some tags, disable others
@@ -424,6 +428,19 @@ const session = await composio.create("user_123", {
 ```
 </Tab>
 </Tabs>
+
+### How tag filters combine with other restrictions
+
+Tag filters apply to every tool a session can see or run: search results, `session.tools()`, the MCP tool list, direct execution, and preloaded tools. Restrictions are checked in this order:
+
+1. **Toolkit lists.** A toolkit outside `toolkits.enable` or inside `toolkits.disable` is blocked before any tool-level check.
+2. **Explicit tool lists.** If `tools[toolkit]` is an `enable` or `disable` list, that list is the whole rule for the toolkit. Tag filters, both toolkit-level and global, are skipped for it.
+3. **Toolkit-level tags.** If `tools[toolkit]` is a `tags` rule, it replaces the global `tags` for that toolkit.
+4. **Global tags.** Everything else uses the session-level `tags`.
+
+Within a tag rule, `disable` is checked first, then `enable`. A tool passes when it has none of the disabled tags and, if an enable list is set, at least one of the enabled tags.
+
+Preloaded tools are validated against these rules when the session is created. A preloaded tool that fails them is rejected with a `400` naming the blocked slugs, rather than being silently dropped.
 
 ## Preloading tools
 

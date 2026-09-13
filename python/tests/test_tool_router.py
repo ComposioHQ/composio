@@ -302,6 +302,27 @@ class TestToolRouter:
         assert "tags" in kwargs
         assert kwargs["tags"] == {"enable": ["readOnlyHint", "idempotentHint"]}
 
+    def test_create_session_with_create_and_update_hints(
+        self, tool_router, mock_client
+    ):
+        """createHint and updateHint are accepted alongside the MCP hints."""
+        session = tool_router.create(
+            user_id="user_123",
+            tags={
+                "enable": ["readOnlyHint", "createHint"],
+                "disable": ["updateHint", "destructiveHint"],
+            },
+        )
+
+        assert session.session_id == "session_123"
+
+        call_args = mock_client.tool_router.session.create.call_args
+        kwargs = call_args.kwargs
+        assert kwargs["tags"] == {
+            "enable": ["readOnlyHint", "createHint"],
+            "disable": ["updateHint", "destructiveHint"],
+        }
+
     def test_create_session_with_global_tags_object_enable(
         self, tool_router, mock_client
     ):
