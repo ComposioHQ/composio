@@ -332,6 +332,14 @@ const getExecuteOutputEncoder = () => {
   return executeOutputEncoder;
 };
 
+// `Tiktoken.encode` defaults `disallowedSpecial` to "all", which makes it throw
+// on any tool response that happens to contain the literal text `<|endoftext|>`
+// or `<|endofprompt|>` (a README about tokenizers is enough). Here the encoder
+// is only a length gauge, so those literals are ordinary characters: passing
+// `allowedSpecial: 'all'` counts them instead of rejecting the payload.
+const countOutputTokens = (json: string): number =>
+  getExecuteOutputEncoder().encode(json, 'all').length;
+
 // A BPE token always covers at least one UTF-8 byte, so a payload of at most
 // THRESHOLD bytes can never exceed THRESHOLD tokens. Checking the byte length
 // first keeps the common (small) response off the tokenizer entirely: building
@@ -339,7 +347,7 @@ const getExecuteOutputEncoder = () => {
 // encode a 7.5KB payload once it exists, and microseconds to measure the bytes.
 const exceedsInlineOutputThreshold = (json: string): boolean =>
   new TextEncoder().encode(json).length > EXECUTE_INLINE_OUTPUT_TOKEN_THRESHOLD &&
-  getExecuteOutputEncoder().encode(json).length > EXECUTE_INLINE_OUTPUT_TOKEN_THRESHOLD;
+  countOutputTokens(json) > EXECUTE_INLINE_OUTPUT_TOKEN_THRESHOLD;
 
 const shouldStoreLargeExecuteOutput = APP_CONFIG.CLI_INVOCATION_ORIGIN.pipe(
   Effect.orDie,
@@ -403,7 +411,7 @@ const persistLargeExecuteOutput = (toolSlug: string, json: string, sharedDirecto
       error: null,
       logId: '',
       storedInFile: true,
-      tokenCount: getExecuteOutputEncoder().encode(json).length,
+      tokenCount: countOutputTokens(json),
       outputFilePath: outputFilePath ?? '(could not write to disk)',
     } satisfies StoredExecuteOutputSummary;
   });
