@@ -4,7 +4,7 @@ import {
   transformToolRouterMultiAccountParams,
   transformToolRouterUpdateParams,
 } from '../../src/lib/toolRouterParams';
-import { ToolRouterConfigTags } from '../../src/types/toolRouter.types';
+import { ToolRouterConfigTags, ToolRouterTagsParamSchema } from '../../src/types/toolRouter.types';
 
 describe('transformToolRouterMultiAccountParams', () => {
   it('should return undefined when params is undefined', () => {
@@ -310,5 +310,15 @@ describe('transformToolRouterUpdateParams', () => {
     const mc = result.manage_connections as Record<string, unknown>;
     expect(mc).toHaveProperty('enable', false);
     expect(mc).toHaveProperty('callback_url', 'https://example.com');
+  });
+});
+
+describe('ToolRouterTagsParamSchema', () => {
+  it('accepts createHint and updateHint', () => {
+    expect(ToolRouterTagsParamSchema.safeParse(['createHint', 'updateHint']).success).toBe(true);
+  });
+
+  it('rejects unknown hints', () => {
+    expect(ToolRouterTagsParamSchema.safeParse(['upsertHint']).success).toBe(false);
   });
 });

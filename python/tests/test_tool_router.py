@@ -302,6 +302,15 @@ class TestToolRouter:
         assert "tags" in kwargs
         assert kwargs["tags"] == {"enable": ["readOnlyHint", "idempotentHint"]}
 
+    def test_create_session_with_create_and_update_hints(
+        self, tool_router, mock_client
+    ):
+        tags = {"enable": ["readOnlyHint", "createHint"], "disable": ["updateHint"]}
+        tool_router.create(user_id="user_123", tags=tags)
+
+        kwargs = mock_client.tool_router.session.create.call_args.kwargs
+        assert kwargs["tags"] == tags
+
     def test_create_session_with_global_tags_object_enable(
         self, tool_router, mock_client
     ):
