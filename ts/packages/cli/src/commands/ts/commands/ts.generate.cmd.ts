@@ -26,12 +26,8 @@ import {
 } from 'src/services/composio-clients';
 import { logMetrics } from 'src/effects/log-metrics';
 import { NodeProcess } from 'src/services/node-process';
-import { createToolkitIndex } from 'src/generation/create-toolkit-index';
 import type { GetCmdParams } from 'src/type-utils';
-import { generateTypeScriptSources } from 'src/generation/typescript/generate';
 import { jsFindComposioCoreGenerated } from 'src/effects/find-composio-core-generated';
-import { transpileTypeScriptSources } from 'src/generation/typescript/transpile';
-import { BANNER } from 'src/generation/constants';
 import type { Toolkit } from 'src/models/toolkits';
 import type { TriggerType } from 'src/models/trigger-types';
 import type { Tool, ToolsAsEnums } from 'src/models/tools';
@@ -365,6 +361,28 @@ export const handleTsGenerate = (params: GetCmdParams<typeof _tsCmd$Generate>) =
   });
 };
 
+/**
+ * The generation pipeline pulls in the TypeScript compiler, together roughly
+ * 165ms of module evaluation, and only `composio generate` uses it. Importing it
+ * from inside the handler keeps it off every other command's startup path. A
+ * rejected import of a module bundled into this binary is an impossible
+ * invariant rather than a recoverable failure, so this is `Effect.promise`. The
+ * module registry memoizes the import.
+ */
+const loadTypeScriptGeneration = Effect.promise(() =>
+  Promise.all([
+    import('src/generation/create-toolkit-index'),
+    import('src/generation/typescript/generate'),
+    import('src/generation/typescript/transpile'),
+    import('src/generation/constants'),
+  ]).then(([toolkitIndex, generate, transpile, constants]) => ({
+    createToolkitIndex: toolkitIndex.createToolkitIndex,
+    generateTypeScriptSources: generate.generateTypeScriptSources,
+    transpileTypeScriptSources: transpile.transpileTypeScriptSources,
+    BANNER: constants.BANNER,
+  }))
+);
+
 export function generateTypescriptTypeStubs({
   outputOpt,
   compact,
@@ -420,6 +438,12 @@ export function generateTypescriptTypeStubs({
           : fetchAllData(client, typeTools, validatedOverrides, spinner);
 
         yield* spinner.message('Generating TypeScript type stubs...');
+        const {
+          createToolkitIndex,
+          generateTypeScriptSources,
+          transpileTypeScriptSources,
+          BANNER,
+        } = yield* loadTypeScriptGeneration;
         const index = createToolkitIndex({ toolkits, typeableTools, triggerTypes, versionMap });
 
         // Generate TypeScript sources

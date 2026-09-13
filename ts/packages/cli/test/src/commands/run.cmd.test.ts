@@ -11,11 +11,13 @@ import { afterEach, it, vi } from 'vitest';
 import { createCliCommandTelemetryContext } from 'src/analytics/events';
 import {
   buildRunHelpersSource,
-  extractInlineExecuteToolSlugs,
   inferCliInvocationPrefix,
   MissingRunSourceError,
-  wrapInlineCodeForRun,
 } from 'src/commands/run.cmd';
+import {
+  extractInlineExecuteToolSlugs,
+  wrapInlineCodeForRun,
+} from 'src/commands/run-source-transforms';
 import {
   RUN_COMPANION_MODULE_FILENAMES,
   hasInstalledRunCompanionModules,
