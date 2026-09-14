@@ -301,7 +301,18 @@ if [[ $url == "$TEST_SCRIPT_URL" ]]; then
 fi
 
 case $url in
-"$TEST_API_BASE/repos/$COMPOSIO_GITHUB_OWNER/$COMPOSIO_GITHUB_REPO/releases?per_page=100&page=1")
+https://raw.githubusercontent.com/ComposioHQ/composio/cli-stable/version.txt)
+  if [[ ${TEST_MANIFEST_MODE:-valid} == fail ]]; then
+    [[ $all_args != *--show-error* ]] || printf 'curl: (22) manifest HTTP 404\n' >&2
+    exit 22
+  fi
+  printf '%s\n' "${TEST_MANIFEST_VERSION-98.0.0}"
+  ;;
+"$TEST_API_BASE/repos/$COMPOSIO_GITHUB_OWNER/$COMPOSIO_GITHUB_REPO/releases?per_page=100&page=1"|"https://api.github.com/repos/ComposioHQ/composio/releases?per_page=100&page=1")
+  if [[ ${TEST_API_MODE:-valid} == fail ]]; then
+    [[ $all_args != *--show-error* ]] || printf 'curl: (22) release API HTTP 403\n' >&2
+    exit 22
+  fi
   asset_url=${TEST_API_ASSET_URL:-$TEST_ARCHIVE_URL}
   cat <<JSON
 [
@@ -445,6 +456,7 @@ EOF
   export TEST_COMPOSIO_LOG="$composio_log"
 
   reset_case() {
+    unset CASE_MANIFEST_MODE CASE_MANIFEST_VERSION CASE_API_MODE
     unset CASE_GITHUB_URL CASE_GITHUB_OWNER CASE_GITHUB_REPO CASE_API_BASE CASE_INSTALL_VERSION CASE_INSTALL_SHELL CASE_PLUGINS CASE_QUIET CASE_DEBUG CASE_HELP
     unset CASE_ALLOW_HTTP_HOST CASE_CHECKSUM_MODE CASE_API_ASSET_URL CASE_BASE_MODE CASE_REDIRECT_DOWNGRADE
     unset CASE_SHELL_CAPABILITY CASE_INSTALL_EXIT CASE_SETUP_EXIT CASE_VERSION_EXIT CASE_PATH_PREFIX CASE_UNSET_SHELL
@@ -471,6 +483,9 @@ EOF
       COMPOSIO_GITHUB_API_BASE_URL="${CASE_API_BASE-$api_base}"
       COMPOSIO_GITHUB_OWNER="${CASE_GITHUB_OWNER:-FakeOwner}"
       COMPOSIO_GITHUB_REPO="${CASE_GITHUB_REPO:-fake-repo}"
+      TEST_MANIFEST_MODE="${CASE_MANIFEST_MODE:-valid}"
+      TEST_MANIFEST_VERSION="${CASE_MANIFEST_VERSION-98.0.0}"
+      TEST_API_MODE="${CASE_API_MODE:-valid}"
       TEST_CHECKSUM_MODE="${CASE_CHECKSUM_MODE:-missing}"
       TEST_SHELL_CAPABILITY="${CASE_SHELL_CAPABILITY:-supported}"
       TEST_INSTALL_EXIT="${CASE_INSTALL_EXIT:-0}"
@@ -664,9 +679,50 @@ EOF
   reset_case
   official_env
   CASE_CHECKSUM_MODE=valid
+  CASE_API_MODE=fail
+  manifest_output=$(run_installer "$case_root/manifest-home" "$case_root/manifest-install" "$case_root/manifest-bin" 2>&1)
+  assert_contains "$manifest_output" "Found latest version: $stable_tag" "$interpreter_name manifest resolves stable"
+  assert_contains "$(cat "$curl_log")" '/cli-stable/version.txt' "$interpreter_name fetches static manifest"
+  assert_not_contains "$(cat "$curl_log")" 'api.github.com' "$interpreter_name manifest install bypasses rejected API"
+
+  reset_case
+  official_env
+  CASE_CHECKSUM_MODE=valid
+  CASE_MANIFEST_MODE=fail
+  fallback_output=$(run_installer "$case_root/manifest-fallback-home" "$case_root/manifest-fallback-install" "$case_root/manifest-fallback-bin" 2>&1)
+  assert_contains "$fallback_output" 'manifest HTTP 404' "$interpreter_name preserves curl error"
+  assert_contains "$fallback_output" 'trying the release API' "$interpreter_name bootstrap fallback disclosure"
+  assert_contains "$fallback_output" "Found latest version: $stable_tag" "$interpreter_name bootstrap fallback installs stable"
+
+  reset_case
+  official_env
+  CASE_MANIFEST_MODE=fail
+  CASE_API_MODE=fail
+  if failure_output=$(run_installer "$case_root/discovery-failure-home" "$case_root/discovery-failure-install" "$case_root/discovery-failure-bin" 2>&1); then
+    fail "$interpreter_name failed discovery must fail installation"
+  fi
+  assert_contains "$failure_output" 'release API HTTP 403' "$interpreter_name exposes HTTP failure"
+  assert_contains "$failure_output" 'Could not fetch releases from https://api.github.com/' "$interpreter_name names failing endpoint"
+  assert_not_contains "$(cat "$curl_log")" '/releases/download/' "$interpreter_name failed discovery never downloads"
+
+  for invalid_manifest in '' '0.4.2-beta.1' '1.2' '1.2.3/evil' "$(printf '1.2.3\n4.5.6')"; do
+    reset_case
+    official_env
+    CASE_MANIFEST_VERSION=$invalid_manifest
+    if run_installer "$case_root/invalid-manifest-home" "$case_root/invalid-manifest-install" "$case_root/invalid-manifest-bin" >/dev/null 2>&1; then
+      fail "$interpreter_name invalid manifest must fail"
+    fi
+    assert_not_contains "$(cat "$curl_log")" 'api.github.com' "$interpreter_name invalid manifest must not select a different release"
+    assert_not_contains "$(cat "$curl_log")" '/releases/download/' "$interpreter_name invalid manifest never downloads"
+  done
+
+  reset_case
+  official_env
+  CASE_CHECKSUM_MODE=valid
   run_installer "$case_root/official-valid-home" "$case_root/official-valid-install" "$case_root/official-valid-bin" "$stable_tag" >/dev/null 2>&1 ||
     fail "$interpreter_name official source with a valid checksum must install"
   [[ -x "$case_root/official-valid-install/composio" ]] || fail "$interpreter_name official-source valid checksum install"
+  assert_not_contains "$(cat "$curl_log")" '/cli-stable/' "$interpreter_name pinned install bypasses manifest"
 
   reset_case
   official_env
@@ -1355,5 +1411,7 @@ export PATH=\"$malformed_bin:\$PATH\"" ]] || fail "$interpreter_name malformed b
 
   printf 'install scripts passed under %s\n' "$interpreter_name"
 done
+
+PYTHONDONTWRITEBYTECODE=1 python3 "$repo_root/test/stable-manifest.test.py"
 
 printf 'install.sh release resolution, layout, security, and shell-variant tests passed\n'

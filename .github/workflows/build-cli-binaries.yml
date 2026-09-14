@@ -311,6 +311,26 @@ jobs:
       - name: Publish release (flip draft → published)
         run: gh release edit "$RELEASE_TAG" --draft=false --latest="$MAKE_LATEST"
 
+  publish-stable-manifest:
+    name: Publish stable CLI manifest
+    needs: release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    concurrency:
+      group: cli-stable-manifest
+      cancel-in-progress: false
+    steps:
+      - name: Checkout manifest publisher
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.workflow_sha }}
+          sparse-checkout: .github/scripts/cli-release
+      - name: Publish newest verified stable version
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: python3 .github/scripts/cli-release/publish-stable-manifest.py
+
   test-installation:
     name: Test Installation
     needs: [prepare, release]

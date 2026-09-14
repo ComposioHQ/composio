@@ -12,6 +12,12 @@ If your shell is not recognized, or shell setup fails, the binary install still 
 
 Official releases must pass SHA-256 verification against the release's `checksums.txt`: a missing manifest, a manifest with no entry for your platform's archive, a malformed entry, or a mismatch aborts the install with `Refusing to install`. On systems with no `sha256sum` or `shasum`, the installer warns that verification was skipped and continues.
 
+## Release discovery
+
+Default installs read the stable version from the Composio-owned `cli-stable` branch's `version.txt` on `raw.githubusercontent.com`, then download and verify that exact release. They do not require an anonymous GitHub release API request while this manifest is available. An unavailable manifest falls back to the asset-aware release API lookup; request failures include curl's error and the failing endpoint. Explicit versions bypass both discovery paths. Custom release sources continue using their release API.
+
+The Build CLI Binaries workflow refreshes the manifest after release publication. Its publisher selects only a published stable CLI release with all six expected assets uploaded, never moves the version backward, and serializes updates to the dedicated branch. Beta builds can bootstrap or repair the manifest from the existing stable release without advertising the beta. The API fallback keeps installs working until the first publication and while CDN changes propagate.
+
 ## Choose or skip shell setup
 
 Set `COMPOSIO_INSTALL_SHELL` to force a specific shell, or to skip shell configuration entirely:
@@ -38,18 +44,18 @@ curl -fsSL https://composio.dev/install | sh -s -- @composio/cli@0.3.1-beta.329
 
 The positional argument takes precedence over `COMPOSIO_INSTALL_VERSION`.
 
-| Variable or argument | Description | Default |
-|---|---|---|
-| `COMPOSIO_INSTALL_DIR` | Complete CLI bundle directory. | `$HOME/.composio` |
-| `COMPOSIO_BIN_DIR` | `composio` entry-point directory. Treat this as trusted input: anyone who can write to this directory can replace commands that future terminals run. | `$HOME/.local/bin` |
-| `COMPOSIO_INSTALL_VERSION` | Stable or beta version, with or without the package prefix. | Latest stable release |
-| `COMPOSIO_QUIET` | Set to `1` or `true` to hide progress output. Warnings and errors still print. | Unset |
-| `COMPOSIO_DEBUG` | Set to `1` or `true` to print installer traces. | Unset |
-| `COMPOSIO_INSTALL_HELP` | Set to `0` to hide normal post-install guidance. Shell-setup failures still warn and print a recovery command to stderr. | `1` |
-| `COMPOSIO_INSTALL_PLUGINS` | Set to `1` to install plugins for detected agent hosts. | `0` |
-| `COMPOSIO_INSTALL_SHELL` | Shell setup mode: `auto` infers your login shell from `$SHELL`, `zsh`, `bash`, or `fish` force a specific shell, and `none` skips shell configuration. | `auto` |
-| `--agent` | Log in as a Composio agent after installation. | Off |
-| `--no-plugins` | Skip plugin setup. Kept for compatibility. | Off |
+| Variable or argument       | Description                                                                                                                                            | Default               |
+| -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------- |
+| `COMPOSIO_INSTALL_DIR`     | Complete CLI bundle directory.                                                                                                                         | `$HOME/.composio`     |
+| `COMPOSIO_BIN_DIR`         | `composio` entry-point directory. Treat this as trusted input: anyone who can write to this directory can replace commands that future terminals run.  | `$HOME/.local/bin`    |
+| `COMPOSIO_INSTALL_VERSION` | Stable or beta version, with or without the package prefix.                                                                                            | Latest stable release |
+| `COMPOSIO_QUIET`           | Set to `1` or `true` to hide progress output. Warnings and errors still print.                                                                         | Unset                 |
+| `COMPOSIO_DEBUG`           | Set to `1` or `true` to print installer traces.                                                                                                        | Unset                 |
+| `COMPOSIO_INSTALL_HELP`    | Set to `0` to hide normal post-install guidance. Shell-setup failures still warn and print a recovery command to stderr.                               | `1`                   |
+| `COMPOSIO_INSTALL_PLUGINS` | Set to `1` to install plugins for detected agent hosts.                                                                                                | `0`                   |
+| `COMPOSIO_INSTALL_SHELL`   | Shell setup mode: `auto` infers your login shell from `$SHELL`, `zsh`, `bash`, or `fish` force a specific shell, and `none` skips shell configuration. | `auto`                |
+| `--agent`                  | Log in as a Composio agent after installation.                                                                                                         | Off                   |
+| `--no-plugins`             | Skip plugin setup. Kept for compatibility.                                                                                                             | Off                   |
 
 ## Manual Installation
 

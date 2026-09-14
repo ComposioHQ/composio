@@ -117,7 +117,7 @@ curl_fetch() {
     curl_fetch_url=$1
     validate_url "$curl_fetch_url" || error "Refusing unsafe URL \"$curl_fetch_url\""
     debug "curl GET $curl_fetch_url"
-    curl --fail --silent --location --proto "$(curl_proto_flags "$curl_fetch_url")" \
+    curl --fail --silent --show-error --location --proto "$(curl_proto_flags "$curl_fetch_url")" \
         --proto-redir '=https' "$curl_fetch_url"
 }
 
@@ -152,11 +152,36 @@ normalize_version() {
     printf '@composio/cli@%s\n' "$normalize_version_bare"
 }
 
+resolve_stable_manifest() {
+    manifest_url=https://raw.githubusercontent.com/ComposioHQ/composio/cli-stable/version.txt
+    if ! manifest_version=$(curl_fetch "$manifest_url"); then
+        warn "Could not fetch stable CLI version from $manifest_url; trying the release API"
+        return 1
+    fi
+    case $manifest_version in
+        *[!0-9.]* | '') warn "Invalid stable CLI version returned by $manifest_url"; return 2 ;;
+    esac
+    manifest_tag=$(normalize_version "$manifest_version") || return 2
+    printf '%s\n%s\n' "$manifest_tag" "$github_repo/releases/download/$manifest_tag/$archive_name"
+}
+
 resolve_latest_cli_release() {
+    if [ "$official_release_source" = 1 ]; then
+        if manifest_release=$(resolve_stable_manifest); then
+            printf '%s\n' "$manifest_release"
+            return 0
+        else
+            manifest_status=$?
+            [ "$manifest_status" -eq 1 ] || return "$manifest_status"
+        fi
+    fi
     resolve_page=1
     while [ "$resolve_page" -le 5 ]; do
         resolve_url="$github_api_repo/releases?per_page=100&page=$resolve_page"
-        resolve_json=$(curl_fetch "$resolve_url") || return 1
+        resolve_json=$(curl_fetch "$resolve_url") || {
+            warn "Could not fetch releases from $resolve_url; check the curl error above"
+            return 1
+        }
         resolve_release=$(printf '%s\n' "$resolve_json" |
             sed 's/"tag_name"/\
 "tag_name"/g; s/"browser_download_url"/\
