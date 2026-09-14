@@ -162,4 +162,46 @@ describe('listConnectedAccountsForToolkit', () => {
       expect(fallback.calls[1]?.toolkit_slugs).toEqual(['github']);
     })
   );
+
+  effectIt.effect('derives from a short page even when total_items counts more', () =>
+    Effect.gen(function* () {
+      // A server that reports the all-status count must not push every call
+      // onto the filtered request.
+      const { client, calls } = makeListClient(
+        [makeAccount({ id: 'con_gmail', toolkit: { slug: 'gmail' } })],
+        { total_items: 7 }
+      );
+
+      const accounts = yield* listConnectedAccountsForToolkit({
+        client,
+        userId: 'default',
+        toolkitSlug: 'gmail',
+      });
+
+      expect(accounts.map(item => item.id)).toEqual(['con_gmail']);
+      expect(calls).toHaveLength(1);
+    })
+  );
+
+  effectIt.effect('falls back to the filtered request when the shared page is full', () =>
+    Effect.gen(function* () {
+      const items = Array.from({ length: 1000 }, (_, index) =>
+        makeAccount({ id: `con_slack_${index}`, toolkit: { slug: 'slack' } })
+      );
+      const { client, calls } = makeListClient([
+        ...items,
+        makeAccount({ id: 'con_gmail', toolkit: { slug: 'gmail' } }),
+      ]);
+
+      const accounts = yield* listConnectedAccountsForToolkit({
+        client,
+        userId: 'default',
+        toolkitSlug: 'gmail',
+      });
+
+      expect(accounts.map(item => item.id)).toEqual(['con_gmail']);
+      expect(calls).toHaveLength(2);
+      expect(calls[1]?.toolkit_slugs).toEqual(['gmail']);
+    })
+  );
 });
