@@ -113,7 +113,7 @@ export const RunPassthroughArgs = Context.Reference<ReadonlyArray<string> | unde
  * `Effect.tryPromise`. The module registry memoizes the import, so repeat calls
  * within one run cost nothing.
  */
-const loadSourceTransforms = Effect.promise(() => import('./run-source-transforms'));
+const loadSourceTransforms = Effect.promise(() => import('src/commands/run-source-transforms'));
 
 export const inferCliInvocationPrefix = (
   path: Path.Path,
