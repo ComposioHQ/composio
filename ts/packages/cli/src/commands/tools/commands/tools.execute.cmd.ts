@@ -332,14 +332,15 @@ const getExecuteOutputEncoder = () => {
   return executeOutputEncoder;
 };
 
+const countOutputTokens = (json: string): number => getExecuteOutputEncoder().encode(json).length;
+
 // A BPE token always covers at least one UTF-8 byte, so a payload of at most
 // THRESHOLD bytes can never exceed THRESHOLD tokens. Checking the byte length
 // first keeps the common (small) response off the tokenizer entirely: building
 // the o200k rank table measured ~390ms in a compiled binary, against ~4ms to
 // encode a 7.5KB payload once it exists, and microseconds to measure the bytes.
-const exceedsInlineOutputThreshold = (json: string): boolean =>
-  new TextEncoder().encode(json).length > EXECUTE_INLINE_OUTPUT_TOKEN_THRESHOLD &&
-  getExecuteOutputEncoder().encode(json).length > EXECUTE_INLINE_OUTPUT_TOKEN_THRESHOLD;
+const mayExceedInlineOutputThreshold = (json: string): boolean =>
+  new TextEncoder().encode(json).length > EXECUTE_INLINE_OUTPUT_TOKEN_THRESHOLD;
 
 const shouldStoreLargeExecuteOutput = APP_CONFIG.CLI_INVOCATION_ORIGIN.pipe(
   Effect.orDie,
@@ -388,7 +389,12 @@ const executionSuccessSuffix = (result: {
   return metadata.length > 0 ? ` (${metadata.join(', ')})` : '';
 };
 
-const persistLargeExecuteOutput = (toolSlug: string, json: string, sharedDirectory?: string) =>
+const persistLargeExecuteOutput = (
+  toolSlug: string,
+  json: string,
+  tokenCount: number,
+  sharedDirectory?: string
+) =>
   Effect.gen(function* () {
     const runOutputDirectory = yield* APP_CONFIG.RUN_OUTPUT_DIR;
     const outputFilePath = yield* storeCliSessionArtifact({
@@ -403,7 +409,7 @@ const persistLargeExecuteOutput = (toolSlug: string, json: string, sharedDirecto
       error: null,
       logId: '',
       storedInFile: true,
-      tokenCount: getExecuteOutputEncoder().encode(json).length,
+      tokenCount,
       outputFilePath: outputFilePath ?? '(could not write to disk)',
     } satisfies StoredExecuteOutputSummary;
   });
@@ -417,7 +423,17 @@ const prepareExecuteOutput = (
 ) =>
   Effect.gen(function* () {
     const json = serializeExecuteOutput(result);
-    if (!exceedsInlineOutputThreshold(json) || !(yield* shouldStoreLargeExecuteOutput)) {
+    // `composio run` always prints inline, so its origin is checked before the
+    // tokenizer is built: the count would be thrown away.
+    if (!mayExceedInlineOutputThreshold(json) || !(yield* shouldStoreLargeExecuteOutput)) {
+      return {
+        kind: 'inline',
+        json,
+      } satisfies PreparedExecuteOutput;
+    }
+
+    const tokenCount = countOutputTokens(json);
+    if (tokenCount <= EXECUTE_INLINE_OUTPUT_TOKEN_THRESHOLD) {
       return {
         kind: 'inline',
         json,
@@ -427,7 +443,7 @@ const prepareExecuteOutput = (
     return {
       kind: 'file',
       summary: {
-        ...(yield* persistLargeExecuteOutput(toolSlug, json, sharedDirectory)),
+        ...(yield* persistLargeExecuteOutput(toolSlug, json, tokenCount, sharedDirectory)),
         logId: result.logId,
       } satisfies StoredExecuteOutputSummary,
     } satisfies PreparedExecuteOutput;
