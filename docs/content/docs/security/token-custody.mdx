@@ -8,21 +8,42 @@ Composio stores provider credentials and uses them to execute requests on your b
 
 In the default Composio Cloud deployment, Composio has custody of those credentials. Keeping a token out of your application and keeping it outside Composio's infrastructure are different requirements. The [deployment options](#deployment-options) below describe that distinction.
 
-For example, after connecting a GitHub account, your backend can call GitHub through [Proxy Execute](/reference/api-reference/tools/postToolsExecuteProxy):
+For example, after connecting a GitHub account, your backend can call GitHub through [Proxy Execute](/docs/tools-direct/executing-tools#proxy-execute):
 
-```bash
-curl --request POST \
-  --url https://backend.composio.dev/api/v3.1/tools/execute/proxy \
-  --header "x-api-key: $COMPOSIO_API_KEY" \
-  --header 'Content-Type: application/json' \
-  --data '{
-    "connected_account_id": "ca_your_github_account",
-    "endpoint": "/user",
-    "method": "GET"
-  }'
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tab value="Python">
+```python
+from composio import Composio
+
+composio = Composio()
+
+response = composio.tools.proxy(
+    connected_account_id="ca_your_github_account",
+    endpoint="/user",
+    method="GET",
+)
+
+print(response)
 ```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import { Composio } from '@composio/core';
 
-Replace the account ID with your connected account. `COMPOSIO_API_KEY` must belong to that project and have the **Proxy execute** permission. The request contains a Composio API key, which authorizes execution, but no GitHub token. Composio injects that token and returns the provider response.
+const composio = new Composio();
+
+const response = await composio.tools.proxyExecute({
+  connectedAccountId: 'ca_your_github_account',
+  endpoint: '/user',
+  method: 'GET',
+});
+
+console.log(response);
+```
+</Tab>
+</Tabs>
+
+Replace the account ID with your connected account. Both SDKs read `COMPOSIO_API_KEY` from your environment. The key must belong to that project and have the **Proxy execute** permission. The request contains a Composio API key, which authorizes execution, but no GitHub token. Composio injects that token and returns the provider response.
 
 ## Token boundaries in Composio Cloud
 
