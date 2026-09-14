@@ -1,5 +1,5 @@
-import { describe, expect, layer } from '@effect/vitest';
-import { Cause, Effect, Exit, Fiber } from 'effect';
+import { describe, expect, it, layer } from '@effect/vitest';
+import { Cause, Deferred, Effect, Exit, Fiber } from 'effect';
 import { TestClock } from 'effect/testing';
 import { ChildProcess, ChildProcessSpawner } from 'effect/unstable/process';
 import { afterEach, vi } from 'vitest';
@@ -1136,18 +1136,21 @@ describe('CLI: composio setup', () => {
     );
   });
 
-  const hangingRunner = CommandRunner.of({
-    run: () => Effect.succeed(ChildProcessSpawner.ExitCode(0)),
-    capture: () => Effect.never,
-  });
-  layer(TestLive({ commandRunner: hangingRunner }))('hung native host', it => {
+  describe('hung native host', () => {
     it.effect('times out instead of blocking setup forever', () =>
       Effect.gen(function* () {
+        const captureStarted = yield* Deferred.make<void>();
+        const hangingRunner = CommandRunner.of({
+          run: () => Effect.succeed(ChildProcessSpawner.ExitCode(0)),
+          capture: () =>
+            Deferred.succeed(captureStarted, undefined).pipe(Effect.andThen(Effect.never)),
+        });
         const fiber = yield* cli(['setup', '--target', 'claude', '--yes']).pipe(
+          Effect.provide(TestLive({ commandRunner: hangingRunner })),
           Effect.exit,
           Effect.forkChild
         );
-        yield* Effect.yieldNow;
+        yield* Deferred.await(captureStarted);
         yield* TestClock.adjust('2 minutes');
         const exit = yield* Fiber.join(fiber);
 
