@@ -1,4 +1,4 @@
-import { Command, Options } from '@effect/cli';
+import { Command, Flag } from 'effect/unstable/cli';
 import { Effect, Option } from 'effect';
 import { requireAuth } from 'src/effects/require-auth';
 import { runOrgSelection } from 'src/effects/select-org-project';
@@ -6,14 +6,14 @@ import { linkAnalyticsIdentityForOrg } from 'src/effects/link-analytics-identity
 import { TerminalUI } from 'src/services/terminal-ui';
 import { ComposioUserContext } from 'src/services/user-context';
 
-const orgId = Options.text('org-id').pipe(
-  Options.optional,
-  Options.withDescription('Organization ID to use as global default')
+const orgId = Flag.string('org-id').pipe(
+  Flag.optional,
+  Flag.withDescription('Organization ID to use as global default')
 );
 
-const limit = Options.integer('limit').pipe(
-  Options.withDefault(50),
-  Options.withDescription('Max orgs to fetch from API (default: 50)')
+const limit = Flag.integer('limit').pipe(
+  Flag.withDefault(50),
+  Flag.withDescription('Max orgs to fetch from API (default: 50)')
 );
 
 export const orgsCmd$Switch = Command.make('switch', { orgId, limit }, ({ orgId, limit }) =>

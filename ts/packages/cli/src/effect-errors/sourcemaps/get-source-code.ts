@@ -1,5 +1,5 @@
-import type { PlatformError } from '@effect/platform/Error';
-import { FileSystem } from '@effect/platform/FileSystem';
+import { FileSystem } from 'effect/FileSystem';
+import type { PlatformError } from 'effect/PlatformError';
 import { Effect } from 'effect';
 
 import type { ErrorLocation } from './get-error-location-from-file-path';

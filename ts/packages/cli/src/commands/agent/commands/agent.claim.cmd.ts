@@ -1,11 +1,11 @@
-import { Args, Command } from '@effect/cli';
 import { Effect } from 'effect';
+import { Argument, Command } from 'effect/unstable/cli';
 import { handleAgentAuthError } from 'src/effects/handle-agent-auth-error';
 import { claimAgent, resolveStoredAgentKey } from 'src/services/agents';
 import { TerminalUI } from 'src/services/terminal-ui';
 
-const email = Args.text({ name: 'email' }).pipe(
-  Args.withDescription('Human email address to invite as an admin for this agent org')
+const email = Argument.string('email').pipe(
+  Argument.withDescription('Human email address to invite as an admin for this agent org')
 );
 
 export const agentCmd$Claim = Command.make('claim', { email }).pipe(

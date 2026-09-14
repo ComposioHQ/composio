@@ -28,7 +28,7 @@ function StepCard({
   file: string;
   description?: string;
 
-  fileDiff: FileDiffProps<undefined>['fileDiff'];
+  fileDiff: FileDiffProps<undefined, undefined>['fileDiff'];
   prerenderedHTML: string;
   code: string;
 }) {

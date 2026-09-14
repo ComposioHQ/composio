@@ -1,12 +1,12 @@
-import { Command, Options } from '@effect/cli';
 import { Effect } from 'effect';
+import { Command, Flag } from 'effect/unstable/cli';
 import { handleAgentAuthError } from 'src/effects/handle-agent-auth-error';
 import { fetchAgentInbox, resolveStoredAgentKey } from 'src/services/agents';
 import { TerminalUI } from 'src/services/terminal-ui';
 
-const limit = Options.integer('limit').pipe(
-  Options.withDefault(50),
-  Options.withDescription('Maximum number of inbox messages to fetch')
+const limit = Flag.integer('limit').pipe(
+  Flag.withDefault(50),
+  Flag.withDescription('Maximum number of inbox messages to fetch')
 );
 
 export const agentCmd$Inbox = Command.make('inbox', { limit }).pipe(

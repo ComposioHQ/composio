@@ -646,6 +646,333 @@
       ]
     },
     {
+      "id": "primitive-boolean-property-schemas",
+      "description": "Boolean property schemas accept every value for true and reject every supplied value for false.",
+      "schema": {
+        "type": "object",
+        "properties": { "allowed": true, "forbidden": false },
+        "required": ["allowed"]
+      },
+      "instances": [
+        { "input": { "allowed": { "nested": 1 } }, "accepted": true },
+        { "input": { "allowed": 42, "forbidden": "present" }, "accepted": false }
+      ]
+    },
+    {
+      "id": "primitive-empty-and-null-schemas",
+      "description": "An empty schema accepts any value while a pure null schema accepts only null.",
+      "schema": {
+        "type": "object",
+        "properties": { "anything": {}, "nullOnly": { "type": "null" } },
+        "required": ["anything", "nullOnly"]
+      },
+      "instances": [
+        { "input": { "anything": 42, "nullOnly": null }, "accepted": true },
+        { "input": { "anything": null, "nullOnly": "not-null" }, "accepted": false }
+      ]
+    },
+    {
+      "id": "primitive-type-array-union",
+      "description": "Every member of a JSON Schema type array remains accepted.",
+      "schema": {
+        "type": "object",
+        "properties": { "value": { "type": ["string", "integer", "null"] } },
+        "required": ["value"]
+      },
+      "instances": [
+        { "input": { "value": "ready" }, "accepted": true },
+        { "input": { "value": 2 }, "accepted": true },
+        { "input": { "value": null }, "accepted": true },
+        { "input": { "value": true }, "accepted": false }
+      ]
+    },
+    {
+      "id": "primitive-enum-intersects-declared-type",
+      "description": "Enum values cannot bypass the schema's declared JSON type.",
+      "schema": {
+        "type": "object",
+        "properties": { "value": { "type": "string", "enum": [1, "ready"] } },
+        "required": ["value"]
+      },
+      "instances": [
+        { "input": { "value": "ready" }, "accepted": true },
+        { "input": { "value": 1 }, "accepted": false },
+        { "input": { "value": "other" }, "accepted": false }
+      ]
+    },
+    {
+      "id": "primitive-null-only-unions",
+      "description": "A union containing only null accepts only null.",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "typeArray": { "type": ["null"] },
+          "anyOf": { "anyOf": [{ "type": "null" }] }
+        },
+        "required": ["typeArray", "anyOf"]
+      },
+      "instances": [
+        { "input": { "typeArray": null, "anyOf": null }, "accepted": true },
+        { "input": { "typeArray": "anything", "anyOf": null }, "accepted": false },
+        { "input": { "typeArray": null, "anyOf": 1 }, "accepted": false }
+      ]
+    },
+    {
+      "id": "primitive-scalar-constraints",
+      "description": "String and numeric constraints survive conversion together.",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "code": { "type": "string", "pattern": "^[A-Z]{2}$", "minLength": 2, "maxLength": 2 },
+          "count": { "type": "number", "exclusiveMinimum": 0, "multipleOf": 2 }
+        },
+        "required": ["code", "count"]
+      },
+      "instances": [
+        { "input": { "code": "OK", "count": 2 }, "accepted": true },
+        { "input": { "code": "ok", "count": 2 }, "accepted": false },
+        { "input": { "code": "OK", "count": 0 }, "accepted": false },
+        { "input": { "code": "OK", "count": 3 }, "accepted": false }
+      ]
+    },
+    {
+      "id": "primitive-independent-numeric-bounds",
+      "description": "Inclusive and numeric exclusive bounds apply independently under Draft 7.",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "lower": { "type": "number", "minimum": 0, "exclusiveMinimum": 5 },
+          "upper": { "type": "number", "maximum": 10, "exclusiveMaximum": 5 }
+        },
+        "required": ["lower", "upper"]
+      },
+      "instances": [
+        { "input": { "lower": 6, "upper": 4 }, "accepted": true },
+        { "input": { "lower": 1, "upper": 4 }, "accepted": false },
+        { "input": { "lower": 6, "upper": 9 }, "accepted": false },
+        { "input": { "lower": 5, "upper": 5 }, "accepted": false }
+      ]
+    },
+    {
+      "id": "primitive-const-intersects-declared-type",
+      "description": "A const that conflicts with the declared type is unsatisfiable.",
+      "schema": {
+        "type": "object",
+        "properties": { "value": { "type": "string", "const": 1 } },
+        "required": ["value"]
+      },
+      "instances": [
+        { "input": { "value": 1 }, "accepted": false },
+        { "input": { "value": "1" }, "accepted": false }
+      ]
+    },
+    {
+      "id": "primitive-compound-enum-values",
+      "description": "Enum values may contain any JSON value, including objects and arrays.",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "value": { "enum": [{ "mode": "safe" }, ["ready", 1]] }
+        },
+        "required": ["value"]
+      },
+      "instances": [
+        { "input": { "value": { "mode": "safe" } }, "accepted": true },
+        { "input": { "value": ["ready", 1] }, "accepted": true },
+        { "input": { "value": ["ready", true] }, "accepted": false },
+        { "input": { "value": { "mode": true } }, "accepted": false },
+        { "input": { "value": { "mode": "unsafe" } }, "accepted": false }
+      ]
+    },
+    {
+      "id": "primitive-const-null-and-false",
+      "description": "Falsy consts keep their identity: null and false accept only themselves.",
+      "schema": {
+        "type": "object",
+        "properties": { "maybe": { "const": null }, "flag": { "const": false } },
+        "required": ["maybe", "flag"]
+      },
+      "instances": [
+        { "input": { "maybe": null, "flag": false }, "accepted": true },
+        { "input": { "maybe": null, "flag": 0 }, "accepted": false },
+        { "input": { "maybe": "null", "flag": false }, "accepted": false }
+      ]
+    },
+    {
+      "id": "primitive-enum-boolean-number-identity",
+      "description": "Enum membership distinguishes booleans from the numbers they equal in most host languages.",
+      "schema": {
+        "type": "object",
+        "properties": { "bits": { "enum": [0, 1] }, "toggle": { "enum": [true] } },
+        "required": ["bits", "toggle"]
+      },
+      "instances": [
+        { "input": { "bits": 1, "toggle": true }, "accepted": true },
+        { "input": { "bits": 0, "toggle": true }, "accepted": true },
+        { "input": { "bits": true, "toggle": true }, "accepted": false },
+        { "input": { "bits": 1, "toggle": 1 }, "accepted": false },
+        { "input": { "bits": false, "toggle": true }, "accepted": false }
+      ]
+    },
+    {
+      "id": "primitive-enum-with-null-member",
+      "description": "A null enum member is accepted alongside other literal values.",
+      "schema": {
+        "type": "object",
+        "properties": { "value": { "enum": ["a", null] } },
+        "required": ["value"]
+      },
+      "instances": [
+        { "input": { "value": "a" }, "accepted": true },
+        { "input": { "value": null }, "accepted": true },
+        { "input": { "value": "b" }, "accepted": false }
+      ]
+    },
+    {
+      "id": "primitive-const-constraint-conjunction",
+      "description": "A const must still satisfy sibling constraints; a conflict rejects everything.",
+      "schema": {
+        "type": "object",
+        "properties": { "code": { "type": "string", "const": "a", "minLength": 2 } },
+        "required": ["code"]
+      },
+      "instances": [
+        { "input": { "code": "a" }, "accepted": false },
+        { "input": { "code": "ab" }, "accepted": false }
+      ]
+    },
+    {
+      "id": "primitive-inclusive-numeric-boundaries",
+      "description": "Draft 7 minimum and maximum are inclusive bounds.",
+      "schema": {
+        "type": "object",
+        "properties": { "count": { "type": "integer", "minimum": 5, "maximum": 10 } },
+        "required": ["count"]
+      },
+      "instances": [
+        { "input": { "count": 5 }, "accepted": true },
+        { "input": { "count": 10 }, "accepted": true },
+        { "input": { "count": 4 }, "accepted": false },
+        { "input": { "count": 11 }, "accepted": false }
+      ]
+    },
+    {
+      "id": "primitive-const-narrows-enum",
+      "description": "When const and enum are both present, only their intersection is accepted.",
+      "schema": {
+        "type": "object",
+        "properties": { "value": { "enum": ["a", "b"], "const": "b" } },
+        "required": ["value"]
+      },
+      "instances": [
+        { "input": { "value": "b" }, "accepted": true },
+        { "input": { "value": "a" }, "accepted": false }
+      ]
+    },
+    {
+      "id": "primitive-compound-const-deep-equality",
+      "description": "A compound const compares by deep JSON equality, including boolean identity inside containers.",
+      "schema": {
+        "type": "object",
+        "properties": { "value": { "const": { "a": [1, "x", null] } } },
+        "required": ["value"]
+      },
+      "instances": [
+        { "input": { "value": { "a": [1, "x", null] } }, "accepted": true },
+        { "input": { "value": { "a": [1, "x", null], "b": 1 } }, "accepted": false },
+        { "input": { "value": { "a": [true, "x", null] } }, "accepted": false },
+        { "input": { "value": { "a": [1, "x"] } }, "accepted": false }
+      ]
+    },
+    {
+      "id": "primitive-unicode-code-point-length",
+      "description": "String length constraints count Unicode code points, not UTF-16 code units.",
+      "schema": {
+        "type": "object",
+        "properties": { "glyph": { "type": "string", "maxLength": 1 } },
+        "required": ["glyph"]
+      },
+      "instances": [
+        { "input": { "glyph": "𝄞" }, "accepted": true },
+        { "input": { "glyph": "ab" }, "accepted": false }
+      ]
+    },
+    {
+      "id": "primitive-typeless-constraint-scoping",
+      "description": "Draft 7 applies string constraints to string instances even without a declared type.",
+      "schema": {
+        "type": "object",
+        "properties": { "value": { "enum": ["a", "abc"], "minLength": 2 } },
+        "required": ["value"]
+      },
+      "instances": [
+        { "input": { "value": "abc" }, "accepted": true },
+        { "input": { "value": "a" }, "accepted": false }
+      ]
+    },
+    {
+      "id": "primitive-float-multiple-of",
+      "description": "Decimal multipleOf checks tolerate binary floating-point representation error.",
+      "divergesFromJsonSchema": "A literal Draft 7 multipleOf uses raw float arithmetic and rejects 0.3 for 0.1; every Composio converter scales decimals before comparing.",
+      "schema": {
+        "type": "object",
+        "properties": { "step": { "type": "number", "multipleOf": 0.1 } },
+        "required": ["step"]
+      },
+      "instances": [
+        { "input": { "step": 0.3 }, "accepted": true },
+        { "input": { "step": 0.35 }, "accepted": false }
+      ]
+    },
+    {
+      "id": "primitive-draft4-boolean-exclusive-bounds",
+      "description": "OpenAPI 3.0 style boolean exclusiveMinimum/exclusiveMaximum flags turn the paired bound exclusive.",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "lower": { "type": "number", "minimum": 5, "exclusiveMinimum": true },
+          "upper": { "type": "number", "maximum": 5, "exclusiveMaximum": true }
+        },
+        "required": ["lower", "upper"]
+      },
+      "instances": [
+        { "input": { "lower": 6, "upper": 4 }, "accepted": true },
+        { "input": { "lower": 5, "upper": 4 }, "accepted": false },
+        { "input": { "lower": 6, "upper": 5 }, "accepted": false }
+      ]
+    },
+    {
+      "id": "primitive-type-array-constraint-scoping",
+      "description": "Constraints on a type array apply only to instances of their matching type.",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "value": { "type": ["string", "number"], "minLength": 2, "minimum": 10 }
+        },
+        "required": ["value"]
+      },
+      "instances": [
+        { "input": { "value": "ab" }, "accepted": true },
+        { "input": { "value": 15 }, "accepted": true },
+        { "input": { "value": "a" }, "accepted": false },
+        { "input": { "value": 5 }, "accepted": false },
+        { "input": { "value": true }, "accepted": false }
+      ]
+    },
+    {
+      "id": "primitive-empty-enum-optional-property",
+      "description": "An optional property with an empty enum rejects every supplied value but tolerates absence.",
+      "schema": {
+        "type": "object",
+        "properties": { "value": { "enum": [] } },
+        "required": []
+      },
+      "instances": [
+        { "input": {}, "accepted": true },
+        { "input": { "value": null }, "accepted": false }
+      ]
+    },
+    {
       "id": "additional-property-default-materialization",
       "description": "Composio divergence: a schema-valued `additionalProperties` also materializes defaults in Zod and Pydantic while Effect leaves the input unchanged.",
       "divergesFromJsonSchema": "`default` is annotation-only in JSON Schema; the Zod and Pydantic converters materialize it.",
@@ -676,6 +1003,170 @@
           "effect": { "output": { "name": "a", "extra": {} } },
           "python": { "output": { "name": "a", "extra": { "enabled": false } } }
         }
+      ]
+    },
+    {
+      "id": "composition-fixed-tuple-items",
+      "description": "Draft 7 tuple items preserve position, optional shorter arrays, and an additionalItems false bound.",
+      "schema": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "array",
+            "items": [{ "type": "string" }, { "type": "integer" }],
+            "additionalItems": false
+          }
+        },
+        "required": ["value"]
+      },
+      "instances": [
+        { "input": { "value": [] }, "accepted": true },
+        { "input": { "value": ["ready"] }, "accepted": true },
+        { "input": { "value": ["ready", 2] }, "accepted": true },
+        { "input": { "value": [2, "ready"] }, "accepted": false },
+        { "input": { "value": ["ready", 2, true] }, "accepted": false }
+      ]
+    },
+    {
+      "id": "composition-open-tuple-items",
+      "description": "Tuple items default to Draft 7 and allow unconstrained trailing values unless additionalItems closes them.",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "array",
+            "items": [{ "type": "string" }, { "type": "integer" }]
+          }
+        },
+        "required": ["value"]
+      },
+      "instances": [
+        { "input": { "value": ["ready", 2, { "extra": true }] }, "accepted": true },
+        { "input": { "value": ["ready", "wrong"] }, "accepted": false }
+      ]
+    },
+    {
+      "id": "composition-false-tuple-position",
+      "description": "A false positional schema rejects a value only when that position is present.",
+      "schema": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "array",
+            "items": [{ "type": "string" }, false],
+            "additionalItems": false
+          }
+        },
+        "required": ["value"]
+      },
+      "instances": [
+        { "input": { "value": ["ready"] }, "accepted": true },
+        { "input": { "value": ["ready", "forbidden"] }, "accepted": false }
+      ]
+    },
+    {
+      "id": "composition-allof-object-intersection",
+      "description": "Every allOf object branch remains required after conversion.",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "value": {
+            "allOf": [
+              {
+                "type": "object",
+                "properties": { "a": { "type": "string" } },
+                "required": ["a"],
+                "additionalProperties": true
+              },
+              {
+                "type": "object",
+                "properties": { "b": { "type": "integer" } },
+                "required": ["b"],
+                "additionalProperties": true
+              }
+            ]
+          }
+        },
+        "required": ["value"]
+      },
+      "instances": [
+        { "input": { "value": { "a": "ready", "b": 2 } }, "accepted": true },
+        { "input": { "value": { "a": "ready" } }, "accepted": false },
+        { "input": { "value": { "b": 2 } }, "accepted": false }
+      ]
+    },
+    {
+      "id": "composition-allof-closed-object-branches",
+      "description": "Closed allOf object branches merge instead of rejecting each other's keys; the union of declared keys stays strict.",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "value": {
+            "allOf": [
+              {
+                "type": "object",
+                "properties": { "a": { "type": "string" } },
+                "required": ["a"]
+              },
+              {
+                "type": "object",
+                "properties": { "b": { "type": "string" } },
+                "required": ["b"]
+              }
+            ]
+          }
+        },
+        "required": ["value"]
+      },
+      "instances": [
+        { "input": { "value": { "a": "ready", "b": "set" } }, "accepted": true },
+        { "input": { "value": { "a": "ready" } }, "accepted": false },
+        { "input": { "value": { "a": "ready", "b": "set", "c": 1 } }, "accepted": false }
+      ]
+    },
+    {
+      "id": "composition-scalar-allof",
+      "description": "Scalar allOf branches combine rather than selecting the first branch.",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "value": {
+            "allOf": [
+              { "type": "string", "minLength": 2 },
+              { "type": "string", "pattern": "^[A-Z]+$" }
+            ]
+          }
+        },
+        "required": ["value"]
+      },
+      "instances": [
+        { "input": { "value": "OK" }, "accepted": true },
+        { "input": { "value": "O" }, "accepted": false },
+        { "input": { "value": "ok" }, "accepted": false }
+      ]
+    },
+    {
+      "id": "composition-oneof-exclusive-match",
+      "description": "oneOf accepts exactly one matching branch, not a plain union of branches.",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "value": {
+            "oneOf": [
+              { "type": "number", "minimum": 0 },
+              { "type": "number", "maximum": 0 }
+            ]
+          }
+        },
+        "required": ["value"]
+      },
+      "instances": [
+        { "input": { "value": 1 }, "accepted": true },
+        { "input": { "value": -1 }, "accepted": true },
+        { "input": { "value": 0 }, "accepted": false },
+        { "input": { "value": "0" }, "accepted": false }
       ]
     }
   ]

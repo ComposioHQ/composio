@@ -114,6 +114,10 @@
       "description": "(Labs) Tool router endpoints"
     },
     {
+      "name": "Playground",
+      "description": "Dashboard playground chat"
+    },
+    {
       "name": "Invite Codes"
     },
     {
@@ -938,9 +942,12 @@
                   "type": "string"
                 },
                 "default": [],
-                "description": "Tools used to generate the minimum required scopes for the auth config (only valid for OAuth). If passed, this will update the scopes."
+                "description": "Tools used to generate the minimum required scopes for the auth config (only valid for OAuth). If passed, this will update the scopes. DEPRECATED: use [Get required scopes](https://docs.composio.dev/reference/api-reference/toolkits/recommendToolkitScopes) to resolve the scopes for the tools you need, then pass those scopes in `credentials.scopes`.",
+                "deprecated": true
               }
-            }
+            },
+            "description": "DEPRECATED: use [Get required scopes](https://docs.composio.dev/reference/api-reference/toolkits/recommendToolkitScopes) to resolve the scopes for the tools you need, then pass those scopes in `credentials.scopes`.",
+            "deprecated": true
           },
           "restrict_to_following_tools": {
             "type": "array",
@@ -948,7 +955,7 @@
               "type": "string"
             },
             "default": [],
-            "description": "Use tool_access_config instead. This field will be deprecated in the future.",
+            "description": "List of tool slugs this auth config is restricted to use with. DEPRECATED: use [Get required scopes](https://docs.composio.dev/reference/api-reference/toolkits/recommendToolkitScopes) to resolve the scopes for the tools you need, then pass those scopes in `credentials.scopes`.",
             "deprecated": true
           },
           "shared_credentials": {
@@ -1067,7 +1074,7 @@
               "type": "string"
             },
             "default": [],
-            "description": "Use tool_access_config instead. This field will be deprecated in the future.",
+            "description": "List of tool slugs this auth config is restricted to use with. DEPRECATED: use [Get required scopes](https://docs.composio.dev/reference/api-reference/toolkits/recommendToolkitScopes) to resolve the scopes for the tools you need, then pass those scopes in `credentials.scopes`.",
             "deprecated": true
           },
           "tool_access_config": {
@@ -1079,9 +1086,12 @@
                   "type": "string"
                 },
                 "default": [],
-                "description": "Tools used to generate the minimum required scopes for the auth config (only valid for OAuth). If passed, this will update the scopes."
+                "description": "Tools used to generate the minimum required scopes for the auth config (only valid for OAuth). If passed, this will update the scopes. DEPRECATED: use [Get required scopes](https://docs.composio.dev/reference/api-reference/toolkits/recommendToolkitScopes) to resolve the scopes for the tools you need, then pass those scopes in `credentials.scopes`.",
+                "deprecated": true
               }
-            }
+            },
+            "description": "DEPRECATED: use [Get required scopes](https://docs.composio.dev/reference/api-reference/toolkits/recommendToolkitScopes) to resolve the scopes for the tools you need, then pass those scopes in `credentials.scopes`.",
+            "deprecated": true
           },
           "shared_credentials": {
             "type": "object",
@@ -1179,7 +1189,7 @@
             "items": {
               "type": "string"
             },
-            "description": "Use tool_access_config instead. This field will be deprecated in the future.",
+            "description": "List of tool slugs this auth config is restricted to use with. DEPRECATED: use [Get required scopes](https://docs.composio.dev/reference/api-reference/toolkits/recommendToolkitScopes) to resolve the scopes for the tools you need, then pass those scopes in `credentials.scopes`.",
             "deprecated": true
           },
           "tool_access_config": {
@@ -1190,16 +1200,20 @@
                 "items": {
                   "type": "string"
                 },
-                "description": "Tools used to generate the minimum required scopes for the auth config (only valid for OAuth). If passed, this will update the scopes."
+                "description": "Tools used to generate the minimum required scopes for the auth config (only valid for OAuth). If passed, this will update the scopes. DEPRECATED: use [Get required scopes](https://docs.composio.dev/reference/api-reference/toolkits/recommendToolkitScopes) to resolve the scopes for the tools you need, then pass those scopes in `credentials.scopes`.",
+                "deprecated": true
               },
               "tools_available_for_execution": {
                 "type": "array",
                 "items": {
                   "type": "string"
                 },
-                "description": "The actions that the user can perform on the auth config. If passed, this will update the actions that the user can perform on the auth config."
+                "description": "The actions that the user can perform on the auth config. If passed, this will update the actions that the user can perform on the auth config. DEPRECATED: use [Get required scopes](https://docs.composio.dev/reference/api-reference/toolkits/recommendToolkitScopes) to resolve the scopes for the tools you need, then pass those scopes in `credentials.scopes`.",
+                "deprecated": true
               }
-            }
+            },
+            "description": "DEPRECATED: use [Get required scopes](https://docs.composio.dev/reference/api-reference/toolkits/recommendToolkitScopes) to resolve the scopes for the tools you need, then pass those scopes in `credentials.scopes`.",
+            "deprecated": true
           },
           "shared_credentials": {
             "type": "object",
@@ -1262,7 +1276,7 @@
             "items": {
               "type": "string"
             },
-            "description": "Use tool_access_config instead. This field will be deprecated in the future.",
+            "description": "List of tool slugs this auth config is restricted to use with. DEPRECATED: use [Get required scopes](https://docs.composio.dev/reference/api-reference/toolkits/recommendToolkitScopes) to resolve the scopes for the tools you need, then pass those scopes in `credentials.scopes`.",
             "deprecated": true
           },
           "tool_access_config": {
@@ -1273,16 +1287,20 @@
                 "items": {
                   "type": "string"
                 },
-                "description": "Tools used to generate the minimum required scopes for the auth config (only valid for OAuth). If passed, this will update the scopes."
+                "description": "Tools used to generate the minimum required scopes for the auth config (only valid for OAuth). If passed, this will update the scopes. DEPRECATED: use [Get required scopes](https://docs.composio.dev/reference/api-reference/toolkits/recommendToolkitScopes) to resolve the scopes for the tools you need, then pass those scopes in `credentials.scopes`.",
+                "deprecated": true
               },
               "tools_available_for_execution": {
                 "type": "array",
                 "items": {
                   "type": "string"
                 },
-                "description": "The actions that the user can perform on the auth config. If passed, this will update the actions that the user can perform on the auth config."
+                "description": "The actions that the user can perform on the auth config. If passed, this will update the actions that the user can perform on the auth config. DEPRECATED: use [Get required scopes](https://docs.composio.dev/reference/api-reference/toolkits/recommendToolkitScopes) to resolve the scopes for the tools you need, then pass those scopes in `credentials.scopes`.",
+                "deprecated": true
               }
-            }
+            },
+            "description": "DEPRECATED: use [Get required scopes](https://docs.composio.dev/reference/api-reference/toolkits/recommendToolkitScopes) to resolve the scopes for the tools you need, then pass those scopes in `credentials.scopes`.",
+            "deprecated": true
           },
           "shared_credentials": {
             "type": "object",
@@ -1770,7 +1788,7 @@
     },
     "/api/v3.1/api_key_revocation": {
       "post": {
-        "summary": "Publicly revoke leaked Composio API keys",
+        "summary": "Revoke Composio API keys",
         "description": "Public endpoint for reporting and revoking Composio API keys that have been leaked (e.g. via the GitHub Secret Scanning Partner Program, third-party scanners, or self-reported leaks). Accepts project (ak_*), user (uak_*), and org (oak_*) keys in a single batch. Matched keys are revoked and stop working immediately. The response shape is constant regardless of whether any submitted key matched, so callers cannot use this endpoint to probe key existence. The endpoint is rate limited; requests over the limit receive a 429.",
         "tags": [
           "API Keys"
@@ -2327,9 +2345,10 @@
               ]
             },
             "required": false,
-            "description": "Comma-separated list of auth config IDs to filter tools by",
+            "description": "DEPRECATED: This parameter will be removed in a future version. Filter directly instead with tool_slugs and toolkit_slug, which accepts a comma-separated list of toolkits.",
             "in": "query",
-            "name": "auth_config_ids"
+            "name": "auth_config_ids",
+            "deprecated": true
           },
           {
             "schema": {
@@ -4039,8 +4058,9 @@
     },
     "/api/v3.1/tools/scopes/required": {
       "post": {
-        "summary": "Get required scopes for tools",
-        "description": "Resolves required scopes for the specified tools at a given toolkit version. All requested tools must belong to the same toolkit. Returns the flat scope union plus per-tool structured scope requirements when available.",
+        "summary": "Get required scopes for tools (DEPRECATED)",
+        "description": "DEPRECATED: Use POST /api/v3.1/toolkits/{toolkit_slug}/scopes/recommended instead, discovering its `grant_context` options with GET /api/v3.1/toolkits/{toolkit_slug}/scopes/grant_context. Resolves required scopes for the specified tools at a given toolkit version. All requested tools must belong to the same toolkit. Returns the flat scope union plus per-tool structured scope requirements when available.",
+        "deprecated": true,
         "tags": [
           "Tools"
         ],
@@ -4869,7 +4889,7 @@
                     "additionalProperties": {
                       "type": "string"
                     },
-                    "description": "Optional context about your OAuth app or the account being connected that can change which scopes are required, e.g. {\"account_type\": \"Google Workspace\"}. Get accepted keys and values from the List grant_context options endpoint."
+                    "description": "Context in which you want to grant scopes to your user. Pass a dimension and its selected value, for example {\"account_type\": \"Google Workspace\"}. Use the [List grant contexts](https://docs.composio.dev/reference/api-reference/toolkits/recommendToolkitScopesGrantContext) endpoint to discover available dimensions and values."
                   },
                   "include": {
                     "type": "array",
@@ -4884,6 +4904,13 @@
                       "type": "string"
                     },
                     "description": "Scopes the recommendation must not include; the solver picks documented alternatives and fails when none exist."
+                  },
+                  "available_scopes": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "description": "Scopes your OAuth app can request. The recommendation never names a scope outside this list and fails with scope_not_available when a tool cannot be covered inside it. Omit for an unbounded recommendation."
                   }
                 },
                 "required": [
@@ -4915,7 +4942,7 @@
                       "additionalProperties": {
                         "type": "string"
                       },
-                      "description": "The grant_context the recommendation was computed with; {} when none applies."
+                      "description": "The effective grant_context the recommendation was computed with - the toolkit default overlaid with your overrides; {} when none applies."
                     },
                     "scopes": {
                       "type": "object",
@@ -5019,7 +5046,7 @@
             }
           },
           "422": {
-            "description": "Exclusions conflict with the requested tools (exclude_conflict)",
+            "description": "Exclusions or the available_scopes ceiling leave a requested tool with no grantable scope (exclude_conflict, scope_not_available)",
             "content": {
               "application/json": {
                 "schema": {
@@ -5054,8 +5081,8 @@
     },
     "/api/v3.1/toolkits/{toolkit_slug}/scopes/grant_context": {
       "get": {
-        "summary": "List grant_context options",
-        "description": "Experimental: this endpoint is in beta and its contract may change.\n\nLists the grant_context keys and values this toolkit accepts. Pass them in the Get required scopes request to tailor the recommendation to your OAuth app or account.",
+        "summary": "List grant contexts",
+        "description": "Experimental: this endpoint is in beta and its contract may change.\n\nList of contexts in which you want to grant scopes to your user. Pass a dimension and its selected value in the `grant_context` field of the [Get required scopes](https://docs.composio.dev/reference/api-reference/toolkits/recommendToolkitScopes) request to tailor the scope recommendation.",
         "tags": [
           "Toolkits"
         ],
@@ -5070,10 +5097,10 @@
             "schema": {
               "type": "string",
               "minLength": 1,
-              "description": "Toolkit to list grant_context options for."
+              "description": "Toolkit to list grant contexts for."
             },
             "required": true,
-            "description": "Toolkit to list grant_context options for.",
+            "description": "Toolkit to list grant contexts for.",
             "name": "toolkit_slug",
             "in": "path"
           },
@@ -5120,7 +5147,7 @@
         ],
         "responses": {
           "200": {
-            "description": "Successfully discovered the toolkit's grant-context keys",
+            "description": "Successfully discovered the toolkit's grant-context dimensions",
             "content": {
               "application/json": {
                 "schema": {
@@ -5134,35 +5161,48 @@
                       "type": "string",
                       "description": "Concrete toolkit version the answer was computed from; pass it back as toolkit_version to pin."
                     },
-                    "grant_context_keys": {
+                    "grant_context_dimensions": {
                       "type": "array",
                       "items": {
                         "type": "object",
                         "properties": {
-                          "key": {
+                          "dimension": {
                             "type": "string",
-                            "description": "Key you can pass in grant_context when requesting scope recommendations, e.g. 'account_type'."
+                            "description": "Context in which you could grant scopes to your user."
                           },
-                          "allowed_values": {
+                          "description": {
+                            "type": "string",
+                            "description": "What this dimension means and when to pass it."
+                          },
+                          "values": {
                             "type": "array",
                             "items": {
                               "type": "string"
                             },
-                            "description": "Values this key accepts."
+                            "description": "Values that this dimension can take."
                           }
                         },
                         "required": [
-                          "key",
-                          "allowed_values"
+                          "dimension",
+                          "description",
+                          "values"
                         ]
                       },
-                      "description": "Keys this toolkit accepts in grant_context under the auth scheme; [] when no scope depends on grant_context."
+                      "description": "Dimensions this toolkit accepts in grant_context under the auth scheme; [] when no scope depends on grant_context."
+                    },
+                    "default_grant_context": {
+                      "type": "object",
+                      "additionalProperties": {
+                        "type": "string"
+                      },
+                      "description": "The grant_context assumed when you pass none — pass a dimension and its selected value only to override or extend it."
                     }
                   },
                   "required": [
                     "auth_scheme",
                     "toolkit_version",
-                    "grant_context_keys"
+                    "grant_context_dimensions",
+                    "default_grant_context"
                   ],
                   "x-experimental": true
                 }
@@ -5824,11 +5864,29 @@
                       },
                       "fast_mode": {
                         "type": "boolean",
-                        "description": "Experimental flag to skip the LLM reranker in tool search and serve embeddings/BM25-only results.",
+                        "description": "Fast mode reduces search latency. It is experimental, so tool search quality may be affected.",
+                        "x-experimental": true
+                      },
+                      "submit_feedback": {
+                        "type": "object",
+                        "properties": {
+                          "enable": {
+                            "type": "boolean",
+                            "default": false,
+                            "description": "Set to true to expose the COMPOSIO_SUBMIT_FEEDBACK helper tool in this session. Defaults to false."
+                          }
+                        },
+                        "additionalProperties": false,
+                        "description": "Exposes the COMPOSIO_SUBMIT_FEEDBACK helper tool in this session so the agent can report tool executions with empty, incorrect, or failed results. Defaults to false.",
+                        "x-experimental": true
+                      },
+                      "session_config_id": {
+                        "type": "string",
+                        "format": "sessionConfigId",
+                        "description": "Experimental reusable Session config to resolve for this new Session. Mutually exclusive with inline toolkit and tool access fields; authentication and runtime fields remain per Session.",
                         "x-experimental": true
                       }
                     },
-                    "description": "Experimental features - not stable, may be modified or removed in future versions.",
                     "x-experimental": true
                   },
                   "preload": {
@@ -6562,9 +6620,23 @@
                             ]
                           },
                           "description": "Custom tools — standalone or extending Composio toolkits"
+                        },
+                        "source_session_config": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "format": "sessionConfigId"
+                            }
+                          },
+                          "required": [
+                            "id"
+                          ],
+                          "description": "Experimental provenance for the reusable Session config resolved at creation.",
+                          "x-experimental": true
                         }
                       },
-                      "description": "Experimental features including the generated system prompt. Only returned on session creation, not on GET.",
+                      "description": "Experimental v3.1 features - may change without notice",
                       "x-experimental": true
                     },
                     "warnings": {
@@ -6634,6 +6706,16 @@
           },
           "403": {
             "description": "Forbidden. The user is not authorized to create a tool router session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found. The referenced Session config or another requested resource does not exist in this project.",
             "content": {
               "application/json": {
                 "schema": {
@@ -7191,9 +7273,23 @@
                             ]
                           },
                           "description": "Custom tools — standalone or extending Composio toolkits"
+                        },
+                        "source_session_config": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "format": "sessionConfigId"
+                            }
+                          },
+                          "required": [
+                            "id"
+                          ],
+                          "description": "Experimental provenance for the reusable Session config resolved at creation.",
+                          "x-experimental": true
                         }
                       },
-                      "description": "Experimental features",
+                      "description": "Experimental v3.1 features",
                       "x-experimental": true
                     },
                     "warnings": {
@@ -7750,11 +7846,27 @@
                       },
                       "fast_mode": {
                         "type": "boolean",
-                        "description": "Experimental flag to skip the LLM reranker in tool search and serve embeddings/BM25-only results.",
+                        "description": "Fast mode reduces search latency. It is experimental, so tool search quality may be affected.",
+                        "x-experimental": true
+                      },
+                      "submit_feedback": {
+                        "type": "object",
+                        "properties": {
+                          "enable": {
+                            "type": "boolean",
+                            "description": "Set to true to expose the COMPOSIO_SUBMIT_FEEDBACK helper tool in this session, false to hide it."
+                          }
+                        },
+                        "required": [
+                          "enable"
+                        ],
+                        "additionalProperties": false,
+                        "description": "Exposes the COMPOSIO_SUBMIT_FEEDBACK helper tool in this session so the agent can report tool executions with empty, incorrect, or failed results. Replaces the stored block when provided; `enable` is required when the block is sent.",
                         "x-experimental": true
                       }
                     },
-                    "additionalProperties": false
+                    "additionalProperties": false,
+                    "x-experimental": true
                   }
                 },
                 "additionalProperties": false
@@ -8250,9 +8362,23 @@
                             ]
                           },
                           "description": "Custom tools — standalone or extending Composio toolkits"
+                        },
+                        "source_session_config": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "format": "sessionConfigId"
+                            }
+                          },
+                          "required": [
+                            "id"
+                          ],
+                          "description": "Experimental provenance for the reusable Session config resolved at creation.",
+                          "x-experimental": true
                         }
                       },
-                      "description": "Experimental features",
+                      "description": "Experimental v3.1 features",
                       "x-experimental": true
                     },
                     "warnings": {
@@ -9167,9 +9293,23 @@
                             ]
                           },
                           "description": "Custom tools — standalone or extending Composio toolkits"
+                        },
+                        "source_session_config": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "format": "sessionConfigId"
+                            }
+                          },
+                          "required": [
+                            "id"
+                          ],
+                          "description": "Experimental provenance for the reusable Session config resolved at creation.",
+                          "x-experimental": true
                         }
                       },
-                      "description": "Experimental features",
+                      "description": "Experimental v3.1 features",
                       "x-experimental": true
                     },
                     "warnings": {
@@ -10596,7 +10736,8 @@
                       "COMPOSIO_WAIT_FOR_CONNECTIONS",
                       "COMPOSIO_REMOTE_WORKBENCH",
                       "COMPOSIO_REMOTE_BASH_TOOL",
-                      "COMPOSIO_GET_TOOL_SCHEMAS"
+                      "COMPOSIO_GET_TOOL_SCHEMAS",
+                      "COMPOSIO_SUBMIT_FEEDBACK"
                     ],
                     "description": "The unique slug identifier of the meta tool to execute",
                     "example": "COMPOSIO_MANAGE_CONNECTIONS"
@@ -12149,7 +12290,8 @@
                             "type": "string"
                           },
                           "default": [],
-                          "description": "The tools that the user can use with the auth config"
+                          "description": "The tools that the user can use with the auth config. DEPRECATED: use [Get required scopes](https://docs.composio.dev/reference/api-reference/toolkits/recommendToolkitScopes) to resolve the scopes for the tools you need, then pass those scopes in `credentials.scopes`.",
+                          "deprecated": true
                         }
                       },
                       "required": [
@@ -12505,7 +12647,7 @@
                             "items": {
                               "type": "string"
                             },
-                            "description": "Use tool_access_config instead. This field will be deprecated in the future.",
+                            "description": "List of tool slugs this auth config is restricted to use with. DEPRECATED: use [Get required scopes](https://docs.composio.dev/reference/api-reference/toolkits/recommendToolkitScopes) to resolve the scopes for the tools you need, then pass those scopes in `credentials.scopes`.",
                             "deprecated": true
                           },
                           "tool_access_config": {
@@ -12517,7 +12659,8 @@
                                   "type": "string"
                                 },
                                 "default": [],
-                                "description": "Tools used to generate the minimum required scopes for the auth config (only valid for OAuth). If passed, this will update the scopes."
+                                "description": "Tools used to generate the minimum required scopes for the auth config (only valid for OAuth). If passed, this will update the scopes. DEPRECATED: use [Get required scopes](https://docs.composio.dev/reference/api-reference/toolkits/recommendToolkitScopes) to resolve the scopes for the tools you need, then pass those scopes in `credentials.scopes`.",
+                                "deprecated": true
                               },
                               "tools_available_for_execution": {
                                 "type": "array",
@@ -12525,9 +12668,12 @@
                                   "type": "string"
                                 },
                                 "default": [],
-                                "description": "The actions that the user can perform on the auth config. If passed, this will update the actions that the user can perform on the auth config."
+                                "description": "The actions that the user can perform on the auth config. If passed, this will update the actions that the user can perform on the auth config. DEPRECATED: use [Get required scopes](https://docs.composio.dev/reference/api-reference/toolkits/recommendToolkitScopes) to resolve the scopes for the tools you need, then pass those scopes in `credentials.scopes`.",
+                                "deprecated": true
                               }
-                            }
+                            },
+                            "description": "DEPRECATED: use [Get required scopes](https://docs.composio.dev/reference/api-reference/toolkits/recommendToolkitScopes) to resolve the scopes for the tools you need, then pass those scopes in `credentials.scopes`.",
+                            "deprecated": true
                           },
                           "shared_credentials": {
                             "type": "object",
@@ -12834,7 +12980,7 @@
                       "items": {
                         "type": "string"
                       },
-                      "description": "Use tool_access_config instead. This field will be deprecated in the future.",
+                      "description": "List of tool slugs this auth config is restricted to use with. DEPRECATED: use [Get required scopes](https://docs.composio.dev/reference/api-reference/toolkits/recommendToolkitScopes) to resolve the scopes for the tools you need, then pass those scopes in `credentials.scopes`.",
                       "deprecated": true
                     },
                     "tool_access_config": {
@@ -12846,7 +12992,8 @@
                             "type": "string"
                           },
                           "default": [],
-                          "description": "Tools used to generate the minimum required scopes for the auth config (only valid for OAuth). If passed, this will update the scopes."
+                          "description": "Tools used to generate the minimum required scopes for the auth config (only valid for OAuth). If passed, this will update the scopes. DEPRECATED: use [Get required scopes](https://docs.composio.dev/reference/api-reference/toolkits/recommendToolkitScopes) to resolve the scopes for the tools you need, then pass those scopes in `credentials.scopes`.",
+                          "deprecated": true
                         },
                         "tools_available_for_execution": {
                           "type": "array",
@@ -12854,9 +13001,12 @@
                             "type": "string"
                           },
                           "default": [],
-                          "description": "The actions that the user can perform on the auth config. If passed, this will update the actions that the user can perform on the auth config."
+                          "description": "The actions that the user can perform on the auth config. If passed, this will update the actions that the user can perform on the auth config. DEPRECATED: use [Get required scopes](https://docs.composio.dev/reference/api-reference/toolkits/recommendToolkitScopes) to resolve the scopes for the tools you need, then pass those scopes in `credentials.scopes`.",
+                          "deprecated": true
                         }
-                      }
+                      },
+                      "description": "DEPRECATED: use [Get required scopes](https://docs.composio.dev/reference/api-reference/toolkits/recommendToolkitScopes) to resolve the scopes for the tools you need, then pass those scopes in `credentials.scopes`.",
+                      "deprecated": true
                     },
                     "shared_credentials": {
                       "type": "object",
@@ -12982,11 +13132,7 @@
                       "credentials": {
                         "api_key": "YOUR_NEW_API_KEY",
                         "client_secret": "YOUR_NEW_CLIENT_SECRET"
-                      },
-                      "restrict_to_following_tools": [
-                        "GMAIL_SEND_EMAIL",
-                        "GMAIL_FETCH_EMAILS"
-                      ]
+                      }
                     }
                   }
                 }

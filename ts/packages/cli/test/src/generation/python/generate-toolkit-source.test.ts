@@ -1,3 +1,4 @@
+import { spawnSync } from 'child_process';
 import { describe, expect, it } from 'vitest';
 import { generatePythonToolkitSources } from 'src/generation/python/generate-toolkit-sources';
 import { createToolkitIndex } from 'src/generation/create-toolkit-index';
@@ -254,6 +255,69 @@ describe('generatePythonToolkitSources', () => {
     `);
 
     assertPythonIsValid({ files: Object.fromEntries(sources) });
+  });
+
+  it('[Given] tool and trigger slugs containing Python source [Then] importing the module is safe', () => {
+    const toolkits = makeTestToolkits([
+      {
+        name: 'Gmail',
+        slug: 'gmail',
+      },
+    ]);
+    const maliciousToolSlug = 'GMAIL_x = "\'; __import__("os").system("echo compromised"); #';
+    const maliciousTriggerSlug = 'GMAIL_y = "\'; __import__("os").system("echo compromised"); #';
+
+    const index = createToolkitIndex({
+      toolkits,
+      typeableTools: { withTypes: false, tools: [maliciousToolSlug] },
+      triggerTypes: [{ ...TRIGGER_TYPES_GMAIL[0], slug: maliciousTriggerSlug }],
+    });
+
+    const sources = generatePythonToolkitSources(BANNER)(index);
+    const source = sources[0][1];
+
+    expect(source).toContain(
+      `locals()[${JSON.stringify(maliciousToolSlug.slice('GMAIL_'.length))}] = ${JSON.stringify(maliciousToolSlug)}`
+    );
+    expect(source).toContain(
+      `locals()[${JSON.stringify(maliciousTriggerSlug.slice('GMAIL_'.length))}] = `
+    );
+    assertPythonIsValid({ files: Object.fromEntries(sources) });
+
+    const result = spawnSync('python3', ['-c', source], { encoding: 'utf8' });
+    expect(result.stderr).toBe('');
+    expect(result.stdout).toBe('');
+    expect(result.status).toBe(0);
+  });
+
+  it('[Given] a locals slug before a fallback assignment [Then] importing the module succeeds', () => {
+    const toolkits = makeTestToolkits([
+      {
+        name: 'Gmail',
+        slug: 'gmail',
+      },
+    ]);
+    const localsSlug = 'GMAIL_locals';
+    const fallbackSlug = 'GMAIL_bad-name';
+
+    const index = createToolkitIndex({
+      toolkits,
+      typeableTools: { withTypes: false, tools: [localsSlug, fallbackSlug] },
+      triggerTypes: [
+        { ...TRIGGER_TYPES_GMAIL[0], slug: localsSlug },
+        { ...TRIGGER_TYPES_GMAIL[0], slug: fallbackSlug },
+      ],
+    });
+
+    const sources = generatePythonToolkitSources(BANNER)(index);
+    const source = sources[0][1];
+
+    expect(source.indexOf('locals()["bad-name"]')).toBeLessThan(source.indexOf('locals ='));
+    assertPythonIsValid({ files: Object.fromEntries(sources) });
+
+    const result = spawnSync('python3', ['-c', source], { encoding: 'utf8' });
+    expect(result.stderr).toBe('');
+    expect(result.status).toBe(0);
   });
 
   describe('[Given] versionMap with toolkit version overrides', () => {

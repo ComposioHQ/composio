@@ -47,11 +47,22 @@ updates:
         applies-to: security-updates
         patterns: ["*"]
 
-  # Python SDK and provider packages
+  # Python SDK and provider packages.
+  #
+  # The uv workspace root is "/": that is where pyproject.toml declares
+  # [tool.uv.workspace] and where uv.lock lives, so Dependabot must run there
+  # to update the lockfile. Pointing it at "/python" only rewrote
+  # python/pyproject.toml and left uv.lock behind (see the langchain-openai
+  # security bump in ec24c54ff), and alerts against the lockfile never
+  # auto-resolved. The explicit provider directories are the projects that are
+  # not workspace members and resolve on their own.
   - package-ecosystem: "pip"
     directories:
-      - "/python"
-      - "/python/providers/*"
+      - "/"
+      - "/python/providers/autogen"
+      - "/python/providers/claude_agent_sdk"
+      - "/python/providers/langgraph"
+      - "/python/providers/llamaindex"
     schedule:
       interval: "weekly"
       day: "friday"

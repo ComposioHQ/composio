@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
-import { Effect, Stream, String } from 'effect';
-import { Command, Path } from '@effect/platform';
-import { BunPath } from '@effect/platform-bun';
+import { Effect, Path, Stream, String } from 'effect';
+import * as BunPath from '@effect/platform-bun/BunPath';
+import { ChildProcess, ChildProcessSpawner } from 'effect/unstable/process';
 import ts from 'typescript';
 import {
   buildVirtualFileMap,
@@ -79,30 +79,32 @@ export function assertTranspiledTypeScriptIsValid({
   testSourceCodePath,
 }: AssertTranspiledTypeScriptIsValidInput) {
   return Effect.gen(function* () {
-    const installCmd = Command.make('node', testSourceCodePath);
-    const [exitCode, stdout, stderr] = yield* installCmd.pipe(
-      Command.workingDirectory(cwd),
-      Command.start,
-      Effect.andThen(process =>
-        Effect.all(
-          [
-            // Wait for exit code
-            process.exitCode,
-            // Get stdout as lines
-            process.stdout.pipe(Stream.decodeText(), Stream.runFold(String.empty, String.concat)),
-            // Get stderr as lines
-            process.stderr.pipe(Stream.decodeText(), Stream.runFold(String.empty, String.concat)),
-          ],
-          { concurrency: 3 }
-        )
-      )
+    const spawner = yield* ChildProcessSpawner.ChildProcessSpawner;
+    const installCmd = ChildProcess.make('node', [testSourceCodePath], { cwd });
+    const handle = yield* spawner.spawn(installCmd);
+    const [exitCode, stdout, stderr] = yield* Effect.all(
+      [
+        // Wait for exit code
+        handle.exitCode,
+        // Get stdout as lines
+        handle.stdout.pipe(
+          Stream.decodeText(),
+          Stream.runFold(() => String.empty, String.concat)
+        ),
+        // Get stderr as lines
+        handle.stderr.pipe(
+          Stream.decodeText(),
+          Stream.runFold(() => String.empty, String.concat)
+        ),
+      ],
+      { concurrency: 3 }
     );
 
     expect(stderr).toBe('');
-    expect(exitCode).toBe(0);
+    expect(Number(exitCode)).toBe(0);
 
     return stdout;
-  });
+  }).pipe(Effect.scoped);
 }
 
 if (import.meta.vitest) {
@@ -117,7 +119,7 @@ if (import.meta.vitest) {
     it('[Given] valid TypeScript code with resolvable imports [Then] no errors are found', () => {
       const doubleSource = /* typescript */ `
         import { multiply } from './multiply.ts';
-        
+
         export const double = (x: number) => multiply(x, 2);
       `;
       const multiplySource = /* typescript */ `

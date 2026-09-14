@@ -2,9 +2,10 @@
 // runtime or @effect/platform layers are provided, so it uses sync Node builtins.
 // eslint-disable-next-line no-restricted-imports -- sync fs for run-log appends, run-file writes, and CLI config reads in the child process, outside the Effect runtime
 import * as fs from 'node:fs';
-import { Command, Path } from '@effect/platform';
-import { BunContext } from '@effect/platform-bun';
-import { Effect, Either, ManagedRuntime, Predicate, Schema } from 'effect';
+import { ChildProcess as Command } from 'effect/unstable/process';
+import * as Path from 'effect/Path';
+import * as BunServices from '@effect/platform-bun/BunServices';
+import { Effect, Result, ManagedRuntime, Predicate, Schema } from 'effect';
 import { z } from 'zod';
 import { JsonRecordSchema } from 'src/effects/json';
 import type { MasterKind } from 'src/services/master-detector';
@@ -24,7 +25,7 @@ import { debugFlagsToChildEnv } from 'src/services/runtime-flags';
 // One Bun platform runtime shared by every CLI child process this module spawns. ManagedRuntime
 // builds the layer lazily on first use, so importers that never spawn a child pay nothing, and a
 // run script that spawns many does not rebuild the platform services per call.
-const bunCommandRuntime = ManagedRuntime.make(BunContext.layer);
+const bunCommandRuntime = ManagedRuntime.make(BunServices.layer);
 
 export type RunHelperContext = {
   readonly apiKey?: string;
@@ -66,11 +67,11 @@ const ExperimentalSubagentConfig = Schema.Struct({
   ),
 });
 const decodeExperimentalSubagentConfig = Schema.decodeUnknownSync(
-  Schema.parseJson(ExperimentalSubagentConfig)
+  Schema.fromJsonString(ExperimentalSubagentConfig)
 );
 const ProxySessionResponse = Schema.Struct({ session_id: Schema.NonEmptyString });
 const ProxyExecuteResponse = Schema.Struct({
-  headers: Schema.optional(Schema.Record({ key: Schema.String, value: Schema.String })),
+  headers: Schema.optional(Schema.Record(Schema.String, Schema.String)),
   binary_data: Schema.optional(Schema.Struct({ url: Schema.optional(Schema.String) })),
   data: Schema.optional(Schema.Unknown),
   status: Schema.optional(Schema.Number),
@@ -173,7 +174,7 @@ const previewDebugValue = (value: unknown): string => {
   if (typeof value === 'string') return truncateDebugText(value.replace(/\s+/g, ' ').trim());
   if (typeof value === 'number' || typeof value === 'boolean') return String(value);
   if (Array.isArray(value)) return `array(${value.length})`;
-  if (Predicate.isRecord(value)) {
+  if (Predicate.isObject(value)) {
     const preferred = ['message', 'error', 'title', 'summary', 'brief', 'status'];
     for (const key of preferred) {
       const candidate = value[key];
@@ -225,7 +226,7 @@ const formatHelperDebugEvent = (step: string, details: Record<string, unknown> =
     }
     case 'subAgent.acp.plan': {
       const entries = Array.isArray(details.entries)
-        ? details.entries.filter(Predicate.isRecord)
+        ? details.entries.filter(Predicate.isObject)
         : [];
       if (entries.length === 0) return '[experimental_subAgent:plan] updated';
       const summary = entries
@@ -269,14 +270,14 @@ const stringifyForPrompt = (value: unknown): string => {
   if (typeof value === 'number' || typeof value === 'boolean' || typeof value === 'bigint') {
     return String(value);
   }
-  return Either.getOrElse(
-    Either.try(() => JSON.stringify(value, null, 2)),
+  return Result.getOrElse(
+    Result.try(() => JSON.stringify(value, null, 2)),
     () => String(value)
   );
 };
 
 const attachPromptMethod = <T>(value: T): T => {
-  if (!Predicate.isRecord(value)) return value;
+  if (!Predicate.isObject(value)) return value;
   if (typeof value.prompt === 'function') return value;
   Object.defineProperty(value, 'prompt', {
     value: () => stringifyForPrompt('data' in value ? value.data : value),
@@ -285,7 +286,7 @@ const attachPromptMethod = <T>(value: T): T => {
   return value;
 };
 
-const isPlainObjectForExecute = Predicate.isRecord;
+const isPlainObjectForExecute = Predicate.isObject;
 
 const runFileExtensionFromMimeType = (mimeType: string | undefined): string => {
   if (typeof mimeType !== 'string' || mimeType.trim().length === 0) return 'bin';
@@ -306,7 +307,7 @@ const runFileExtensionFromMimeType = (mimeType: string | undefined): string => {
 
 const describeDebugValue = (value: unknown) => {
   if (Array.isArray(value)) return { type: 'array', length: value.length };
-  if (Predicate.isRecord(value)) {
+  if (Predicate.isObject(value)) {
     return { type: 'object', keys: Object.keys(value).slice(0, 20) };
   }
   return {
@@ -316,7 +317,7 @@ const describeDebugValue = (value: unknown) => {
 };
 
 const summarizeCliResultPreview = (result: RunCliResult): unknown => {
-  if (!Predicate.isRecord(result)) return result;
+  if (!Predicate.isObject(result)) return result;
   if ('data' in result && result.data !== undefined) return result.data;
   if (typeof result.error === 'string' && result.error.trim().length > 0)
     return result.error.trim();
@@ -328,8 +329,8 @@ const readConfiguredExperimentalSubagentTarget = (
 ): 'auto' | 'claude' | 'codex' => {
   if (!cliConfigPath) return 'auto';
 
-  return Either.getOrElse(
-    Either.try(() => {
+  return Result.getOrElse(
+    Result.try(() => {
       const raw = fs.readFileSync(cliConfigPath, 'utf8');
       const parsed = decodeExperimentalSubagentConfig(raw);
       const target = parsed.experimental_subagent?.target;
@@ -374,7 +375,7 @@ const normalizeInvokeAgentOptions = (
       zodSchema = inputSchema;
       const generatedSchema = z.toJSONSchema(inputSchema);
       structuredSchema = Schema.decodeUnknownSync(JsonObject)(generatedSchema);
-    } else if (Predicate.isRecord(inputSchema)) {
+    } else if (Predicate.isObject(inputSchema)) {
       structuredSchema = inputSchema;
     } else {
       throw new Error('experimental_subAgent() schema must be a Zod schema or JSON Schema object.');
@@ -578,7 +579,7 @@ const createCliRunner = (params: {
   let perfDebugSeq = 0;
 
   const maybeLoadStoredCliResult = (result: RunCliResult): RunCliResult => {
-    if (!Predicate.isRecord(result) || result.storedInFile !== true) {
+    if (!Predicate.isObject(result) || result.storedInFile !== true) {
       return attachPromptMethod(result);
     }
     helperDebugLog('cli.result.stored_in_file', {
@@ -600,7 +601,7 @@ const createCliRunner = (params: {
     command: string | undefined,
     result: RunCliResult
   ) => {
-    if (!Predicate.isRecord(result)) {
+    if (!Predicate.isObject(result)) {
       helperDebugLog('cli.result', {
         requestId,
         command,
@@ -652,12 +653,12 @@ const createCliRunner = (params: {
     const { exitCode, stderr, stdout } = await bunCommandRuntime.runPromise(
       Effect.scoped(
         Effect.gen(function* () {
-          const command = Command.make(executable, ...commandArgs).pipe(
-            Command.env(env),
-            Command.stdin('inherit'),
-            Command.stderr(inheritStderr ? 'inherit' : 'pipe')
-          );
-          const child = yield* Command.start(command);
+          const child = yield* Command.make(executable, commandArgs, {
+            env,
+            extendEnv: true,
+            stdin: 'inherit',
+            stderr: inheritStderr ? 'inherit' : 'pipe',
+          });
           const [childExitCode, childStdout, childStderr] = yield* Effect.all(
             [
               child.exitCode,
@@ -778,7 +779,7 @@ const createSearchAndExecuteHelpers = (params: {
       }
     }
     const result = await runCliJson(args);
-    if (Predicate.isRecord(result) && result.successful === false) {
+    if (Predicate.isObject(result) && result.successful === false) {
       const message =
         typeof result.error === 'string' && result.error.trim().length > 0
           ? result.error.trim()
@@ -922,8 +923,8 @@ const createProxyHelper = (params: {
     const raw = await response.text();
     const parsed = parseJson(raw);
     if (!response.ok) {
-      const responseMessage = Predicate.isRecord(parsed) ? parsed.message : undefined;
-      const responseError = Predicate.isRecord(parsed) ? parsed.error : undefined;
+      const responseMessage = Predicate.isObject(parsed) ? parsed.message : undefined;
+      const responseError = Predicate.isObject(parsed) ? parsed.error : undefined;
       const detail =
         typeof parsed === 'string'
           ? parsed

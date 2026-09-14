@@ -5,6 +5,7 @@ from crewai.tools import BaseTool
 
 from composio.core.provider import AgenticProvider, AgenticProviderExecuteFn
 from composio.types import Tool
+from composio.utils.json_schema import dereference_json_schema
 from composio.utils.pydantic import parse_pydantic_error
 from composio.utils.shared import (
     json_schema_to_model,
@@ -57,11 +58,19 @@ class CrewAIProvider(AgenticProvider[BaseTool, list[BaseTool]], name="crewai"):
                         "data": None,
                     }
 
+        # Inline internal $ref/$defs before building the Pydantic model. The
+        # converter types a referenced property as Any, so CrewAI would show the
+        # model an untyped argument. Dangling references degrade to a permissive
+        # object instead of raising, matching the other providers.
+        input_parameters = dereference_json_schema(
+            tool.input_parameters,
+            on_unresolved="sentinel",
+        )
         return Wrapper(
             name=tool.slug,
             description=tool.description,
             args_schema=json_schema_to_model(
-                json_schema=tool.input_parameters,
+                json_schema=input_parameters,
                 skip_default=self.skip_default,
             ),
         )

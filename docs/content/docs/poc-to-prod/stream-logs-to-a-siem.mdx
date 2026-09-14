@@ -1,0 +1,106 @@
+---
+title: Stream logs to a SIEM
+description: Pull Composio tool execution logs into your SIEM or observability platform with a scheduled collector.
+keywords: [SIEM, observability, tool execution logs, log streaming, Datadog, Splunk, production, audit logs]
+---
+
+Send Composio tool execution logs to your security information and event management (SIEM) or observability platform to investigate agent activity alongside your application logs.
+
+Use a scheduled collector to pull pages from the [Logs API](/reference/api-reference/logs), then forward the records to your destination. This guide covers tool execution events. The endpoint does not provide a general API request or organization audit feed.
+
+## Fetch a page of logs
+
+Set `COMPOSIO_API_KEY` to the project API key for the project you want to monitor. Run this command in a server environment with Bash and cURL. It saves the first page from the last five minutes to `logs-page.json`:
+
+```bash
+set -euo pipefail
+: "${COMPOSIO_API_KEY:?Set your Composio project API key}"
+umask 077
+
+TO_MS=$(( $(date +%s) * 1000 ))
+FROM_MS=$(( TO_MS - 300000 ))
+
+curl --fail-with-body --silent --show-error --max-time 30 \
+	-X POST https://backend.composio.dev/api/v3.1/logs/tool_execution \
+	-H "x-api-key: ${COMPOSIO_API_KEY}" \
+	-H "Content-Type: application/json" \
+	-d "{\"limit\":100,\"time_range\":{\"from\":${FROM_MS},\"to\":${TO_MS}}}" \
+	-o logs-page.json
+```
+
+The response contains `logs` and `next_cursor`. Each log includes an `id`, an ISO 8601 `timestamp`, a `status`, a `level`, `metadata`, and `metrics`. An empty `logs` array means this page contains no matching records.
+
+To fetch the next page, pass `next_cursor` as `cursor` in the request body. Keep the same time range and filters for every page. Stop when `next_cursor` is `null`, even if earlier pages contained fewer than 100 records.
+
+The API accepts up to 100 records per page, and time ranges use epoch milliseconds. For targeted investigations, add [filters](/reference/api-reference/logs#filter-fields) such as `user_id`, `tool_slug`, or `status`. Leave filters unset when collecting all tool execution events.
+
+## Schedule collection without losing your place
+
+Run a collector for each project, with its own API key and durable checkpoint. A scheduled job or your platform's HTTP poller can perform these steps. If you use a poller, verify that it supports POST bodies, cursor pagination, and saved state.
+
+1. Load the end time of the last completed window. On the first run, choose how far back to collect within the available [log retention period](/docs/security/data-retention#how-long-logs-are-retained).
+2. Choose a fixed end time for this run. Start slightly before the last completed end time to collect records that became available late. For example, start with a one-minute schedule, a two-minute delay behind the current time, and a five-minute overlap. Tune these values to the delays you observe.
+3. Fetch each page with that fixed time range. Forward the records and check that the destination accepted the entire batch before continuing.
+4. Follow `next_cursor` until it is `null`. Save the window's end time only after every page has been accepted, including when the window has no logs.
+5. If a run fails, keep the previous checkpoint and retry the same window. Use the project identifier and log `id` together to deduplicate replayed records in your collector or destination. Record an ID as delivered only after the destination accepts it.
+
+Store the active window's bounds so a restart can replay it. Allow only one collector run at a time per project. A cursor navigates pages within a query; the API reference does not define it as a durable position for future polls. Start each new window without a cursor.
+
+An overlap reduces the chance of missing delayed records, but it cannot guarantee complete delivery. Periodically replay a wider window if you need to reconcile late arrivals. Do not assume chronological response order or advance the checkpoint to the largest timestamp on a page.
+
+## Forward logs to your destination
+
+Keep the original log `id` and `timestamp`, and add your project identifier and environment. Configure the destination to use the source timestamp as the event time. Treat a timeout or an ambiguous delivery response as a possible replay, and keep deduplication separate from event timestamps.
+
+### Datadog
+
+Create a Datadog API key and set `DD_API_KEY`. Set `DD_LOGS_URL` to the HTTPS intake URL for your [Datadog site](https://docs.datadoghq.com/api/latest/logs/send-logs/), including `/api/v2/logs`. For US1, this is `https://http-intake.logs.datadoghq.com/api/v2/logs`.
+
+With `jq` installed, run this after the fetch example to forward that page. Set `COMPOSIO_PROJECT_ID` to your project identifier. The example selects event metadata and omits free-text messages and tool payloads:
+
+```bash
+set -euo pipefail
+: "${DD_API_KEY:?Set your Datadog API key}"
+: "${DD_LOGS_URL:?Set the HTTPS log intake URL for your Datadog site}"
+: "${COMPOSIO_PROJECT_ID:?Set your Composio project identifier}"
+umask 077
+
+jq --arg project "$COMPOSIO_PROJECT_ID" '[.logs[] | {
+	ddsource: "composio",
+	service: "composio-tool-execution",
+	message: ("Composio tool execution " + .status),
+	timestamp: .timestamp,
+	composio_project_id: $project,
+	composio_log_id: .id,
+	composio_status: .status,
+	level: .level
+}]' logs-page.json > datadog-batch.json
+
+if jq -e 'length > 0' datadog-batch.json > /dev/null; then
+	curl --fail-with-body --silent --show-error --max-time 30 \
+		-X POST "$DD_LOGS_URL" \
+		-H "DD-API-KEY: ${DD_API_KEY}" \
+		-H "Content-Type: application/json" \
+		--data-binary @datadog-batch.json
+fi
+```
+
+Search for `service:composio-tool-execution` and check a known `composio_log_id`. Verify that Datadog uses `timestamp` as the event time. Add approved fields from `metadata` if you need user, tool, or connection context.
+
+This example sends one page. Add the pagination and checkpoint steps above before scheduling it. Split larger batches to meet Datadog's [intake limits](https://docs.datadoghq.com/api/latest/logs/send-logs/). Keeping `composio_log_id` makes duplicates identifiable; it does not make ingestion idempotent.
+
+### Splunk and other destinations
+
+For Splunk, forward each record in an `event` object to [HTTP Event Collector](https://help.splunk.com/en/splunk-enterprise/get-started/get-data-in/9.4/get-data-with-http-event-collector/format-events-for-http-event-collector). Authenticate with `Authorization: Splunk <HEC_TOKEN>`. Set the HEC `time` field to the Composio timestamp converted to Unix seconds, and preserve the project identifier and log `id` inside the event.
+
+For other destinations, adapt the same collector to the destination's ingestion API or log shipper. Follow its authentication, batch-size, event-time, and delivery-acknowledgment requirements. Keep the destination credential separate from your Composio project API key.
+
+## Handle failures and sensitive data
+
+On `429` responses, honor `Retry-After`. Retry network failures and server errors with exponential backoff and jitter. Stop and investigate authentication or invalid-request errors. Composio API calls share your organization's [rate limit](/reference/rate-limits), so account for collection traffic alongside tool execution.
+
+Alert when the last completed window falls behind your expected collection delay, when a batch is rejected, or when retries are exhausted. Track collection progress even during periods with no tool calls. Before relying on the collector, test a window with multiple pages and a restart after the destination accepts a page but before the checkpoint is saved.
+
+Select the fields your security team needs before forwarding logs. Messages, metadata, and full tool payloads can contain end-user data. Store keys in your secret manager and restrict access to local exports and destination indexes.
+
+Fetch [individual log details](/reference/api-reference/logs#get-a-single-log) only when you need the additional context or stored request and response payloads. The project's [Log storage setting](/docs/security/data-retention#choose-what-we-store-the-log-storage-setting) controls payload retention. Configure retention and deletion separately for copies you send to your SIEM.

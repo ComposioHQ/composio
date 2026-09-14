@@ -3384,6 +3384,24 @@ class TestEnhanceSchemaDescriptionsEmptySchema:
         assert "string" in description
         assert "required" in description
 
+    def test_boolean_property_schemas_are_left_unchanged(self, file_helper):
+        schema = {
+            "type": "object",
+            "properties": {
+                "anything": True,
+                "never": False,
+                "query": {"type": "string"},
+            },
+            "required": ["anything", "query"],
+        }
+
+        result = file_helper.enhance_schema_descriptions(schema)
+
+        assert result["properties"]["anything"] is True
+        assert result["properties"]["never"] is False
+        assert "string" in result["properties"]["query"]["description"]
+        assert "required" in result["properties"]["query"]["description"]
+
 
 class TestFromPathSensitiveGuard:
     """`FileUploadable.from_path` is the single upload primitive in the Python

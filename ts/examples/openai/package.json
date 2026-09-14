@@ -1,7 +1,7 @@
 {
   "name": "openai-example",
   "private": true,
-  "version": "0.1.10",
+  "version": "0.1.11",
   "type": "module",
   "description": "Runnable OpenAI examples for Composio tools and Tool Router",
   "main": "src/index.ts",

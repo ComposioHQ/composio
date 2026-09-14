@@ -7,6 +7,7 @@ Thank you for your interest in contributing to Composio. This guide covers the r
 - [Development Setup](#development-setup)
 - [Project Structure](#project-structure)
 - [Development Commands](#development-commands)
+- [Working with AI Coding Agents](#working-with-ai-coding-agents)
 - [Coding Standards](#coding-standards)
 - [Documentation Requirements](#documentation-requirements)
 - [Pull Request Process](#pull-request-process)
@@ -34,7 +35,7 @@ Use [mise](https://mise.jdx.dev) to install the toolchain:
 mise install
 ```
 
-pnpm is installed through mise's npm backend. Do not rely on Corepack for this repository.
+mise installs pnpm through its npm backend. Do not rely on Corepack for this repository.
 
 ### Getting Started
 
@@ -148,6 +149,23 @@ These tools carry false positives (public API surface, dynamic imports,
 import-map targets), so treat their output as advisory: verify a finding is
 truly unreferenced before deleting, and suppress confirmed false positives via
 `knip.json` / `vulture_allowlist.py`.
+
+## Working with AI Coding Agents
+
+This repository ships its own agent guidance, and CI keeps it honest. You get it for free — an agent that reads this repo inherits the layout, commands, and guardrails without setup.
+
+`AGENTS.md` files live at the root and inside each subtree (`ts/`, `python/`, `docs/`, and the packages). Coding agents read the nearest one automatically, so you usually do not need to do anything beyond keeping them accurate when you move code. The canonical skill tree is `.agents/skills/` (with `.claude/skills` as a compatibility symlink): focused, task-scoped skills that route an agent to the right workflow, from `bug-fixing` to `cli-release`.
+
+Two deterministic checks guard this guidance:
+
+```bash
+pnpm validate:agent-skills    # frontmatter, reference links, stale guidance refs, command names
+pnpm validate:skill-routing   # routing smoke test over skill descriptions
+```
+
+`validate:agent-skills` parses `package.json`, `python/Makefile`, and `python/noxfile.py`, then verifies every command mentioned in guidance actually exists — so guidance cannot recommend a command that was renamed away. Both checks run in CI via `.github/workflows/agent-substrate.yml` whenever agent guidance changes.
+
+If you add or rename a skill, or rewrite a skill description, run both checks and add a routing probe in `ts/scripts/test-skill-routing.mjs` so routing stays covered. To author or edit a skill, read [`.agents/skills/skill-maintenance/SKILL.md`](.agents/skills/skill-maintenance/SKILL.md) first.
 
 ## Coding Standards
 

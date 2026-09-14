@@ -1,20 +1,20 @@
-import { Args, Command, Options } from '@effect/cli';
+import { Argument, Command, Flag } from 'effect/unstable/cli';
 import { Effect, Option } from 'effect';
 import { APP_VERSION } from 'src/constants';
 import { UpgradeBinary } from 'src/services/upgrade-binary';
 import { installSkillSafe } from 'src/effects/install-skill';
 
-const betaOpt = Options.boolean('beta').pipe(
-  Options.withAlias('b'),
-  Options.withDefault(false),
-  Options.withDescription('Upgrade to the latest beta CLI release instead of the stable channel')
+const betaOpt = Flag.boolean('beta').pipe(
+  Flag.withAlias('b'),
+  Flag.withDefault(false),
+  Flag.withDescription('Upgrade to the latest beta CLI release instead of the stable channel')
 );
 
-const versionArg = Args.text({ name: 'version' }).pipe(
-  Args.withDescription(
+const versionArg = Argument.string('version').pipe(
+  Argument.withDescription(
     'Install a specific CLI release (e.g. "0.13.1", "0.13.1-beta.42", or full tag "@composio/cli@0.13.1"). If omitted, installs the latest release.'
   ),
-  Args.optional
+  Argument.optional
 );
 
 const RELEASE_TAG_PREFIX = '@composio/cli@';

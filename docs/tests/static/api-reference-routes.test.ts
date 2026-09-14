@@ -1,12 +1,14 @@
 /**
  * API reference route guards.
  *
- * fumadocs-openapi's tag grouping silently drops any operation whose tag is
- * not declared in the document's top-level `tags` array (preset-auto:
- * `builder.fromTagName(tag)` returns undefined -> `continue`, no warning).
- * The v10 -> v11 upgrade shipped exactly that: 16 operation pages vanished
- * from the site, sitemap, and search while the checked-in tag landing pages
- * kept rendering quick links that 404ed. Nothing else can catch this class:
+ * Up to 11.3, fumadocs-openapi's tag grouping silently dropped any operation
+ * whose tag was not declared in the document's top-level `tags` array
+ * (preset-auto: `builder.fromTagName(tag)` returned undefined -> `continue`,
+ * no warning). The v10 -> v11 upgrade shipped exactly that: 16 operation pages
+ * vanished from the site, sitemap, and search while the checked-in tag landing
+ * pages kept rendering quick links that 404ed. 11.4 fixed the drop, so these
+ * guards now stand as regression tripwires — the loss has already reappeared
+ * once, on a routine upgrade. Nothing else can catch this class:
  * validate-links only sees markdown links (ApiEndpointsTable hrefs live in a
  * JSX prop), and the integration suite samples fixed routes.
  *
@@ -178,10 +180,12 @@ describe('API reference route completeness', () => {
     ).toEqual([]);
   });
 
-  test('the completeness diff flags operations whose tag is undeclared', async () => {
+  test('operations whose tag is undeclared are no longer dropped', async () => {
     // The exact v10 -> v11 regression, in miniature: "Projects" is used by an
     // operation but missing from the top-level tags array, and lib/openapi's
     // declareOperationTags normalization is deliberately not applied.
+    // fumadocs-openapi 11.4 generates the page anyway, so this fixture now
+    // asserts the fix rather than the loss.
     const document = {
       openapi: '3.0.0',
       info: { title: 'Guard fixture', version: '1' },
@@ -215,14 +219,15 @@ describe('API reference route completeness', () => {
       (url) => !generated.has(url),
     );
 
-    // fumadocs-openapi still silently drops the undeclared tag...
     expect(generated.has('/reference/api-reference/auth/getSession')).toBe(true);
-    // ...and the completeness diff is what surfaces the loss. If this ever
-    // fails with `missing` empty, upstream fixed the silent drop and the
-    // declareOperationTags workaround in lib/openapi.ts can be retired.
-    expect(missing).toEqual([
-      '/reference/api-reference/projects/postProjectUsageSummary',
-    ]);
+    // Upstream fixed the silent drop, so the undeclared-tag operation now gets
+    // a page without help from declareOperationTags. That normalization is kept
+    // as a safety net for older fumadocs-openapi behaviour; if this ever fails
+    // with `missing` non-empty again, the drop has regressed upstream. The
+    // positive check guards against `missing` being vacuously empty because
+    // expectedReferenceUrls stopped yielding the projects URL.
+    expect(generated.has('/reference/api-reference/projects/postProjectUsageSummary')).toBe(true);
+    expect(missing).toEqual([]);
   });
 });
 

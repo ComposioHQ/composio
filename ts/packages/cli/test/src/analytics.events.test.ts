@@ -3,7 +3,8 @@ import path from 'node:path';
 import * as tempy from 'tempy';
 import { it } from '@effect/vitest';
 import { afterEach, describe, expect, vi } from 'vitest';
-import { BunFileSystem, BunPath } from '@effect/platform-bun';
+import * as BunFileSystem from '@effect/platform-bun/BunFileSystem';
+import * as BunPath from '@effect/platform-bun/BunPath';
 import { Effect, Layer } from 'effect';
 import { createCliCodactFailureBody } from 'src/analytics/dispatch';
 import {

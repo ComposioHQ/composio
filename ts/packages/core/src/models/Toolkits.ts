@@ -1,4 +1,4 @@
-import ComposioClient from '@composio/client';
+import ComposioClient, { APIError } from '@composio/client';
 import {
   ToolkitListParams,
   ToolKitListResponse,
@@ -16,7 +16,6 @@ import { ConnectionRequest } from '../types/connectionRequest.types';
 import { telemetry } from '../telemetry/Telemetry';
 import { AuthSchemeType } from '../types/authConfigs.types';
 import logger from '../utils/logger';
-import { APIError } from 'openai';
 import {
   transformToolkitListResponse,
   transformToolkitRetrieveCategoriesResponse,
