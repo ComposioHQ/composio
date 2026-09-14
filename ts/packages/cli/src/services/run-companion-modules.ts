@@ -881,7 +881,15 @@ export const loadInstalledCompanionModule = <M>(
     });
     const moduleUrl = yield* Effect.orDie(path.toFileUrl(modulePath));
 
-    // A rejected import here means the file resolved above is unloadable, which
-    // is a broken install rather than a recoverable failure.
-    return yield* Effect.promise(() => import(moduleUrl.href) as Promise<M>);
+    // A rejected import means the file resolved above is missing or unloadable:
+    // a broken install. It stays a typed failure so callers can report it, or
+    // fall back, instead of crashing with a stack trace.
+    return yield* Effect.tryPromise({
+      try: () => import(moduleUrl.href) as Promise<M>,
+      catch: cause =>
+        new RunCompanionRepairError({
+          message: `Unable to load the CLI's bundled support file ${path.basename(modulePath)}. Reinstall the CLI and try again.`,
+          cause,
+        }),
+    });
   });

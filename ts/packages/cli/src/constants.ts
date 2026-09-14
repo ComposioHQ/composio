@@ -4,9 +4,10 @@ declare const __COMPOSIO_CLI_RELEASE_VERSION__: string | undefined;
 
 // These four values mirror `@composio/core`'s `constants` module. They are
 // spelled out here rather than imported because importing anything from the
-// core package's root entry evaluates the whole SDK at startup (its zod schemas
-// alone cost ~25ms) and pulls `openai` and `pusher-js` into the binary, for two
-// strings and two URLs. `test/src/constants.test.ts` pins them to core's values.
+// core package's root entry at module scope evaluates the whole SDK at startup
+// (its zod schemas alone cost ~25ms), for two strings and two URLs. The root
+// entry is still bundled, behind the file-upload path's dynamic import.
+// `test/src/constants.test.ts` pins these to core's values.
 
 /** Default base URL for the Composio API server (backend). */
 export const DEFAULT_BASE_URL = 'https://backend.composio.dev';

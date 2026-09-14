@@ -327,13 +327,32 @@ const EXECUTE_INLINE_OUTPUT_TOKEN_THRESHOLD = 10_000;
 // next to the executable, loaded from disk on first use: its rank table is
 // 2.3MB that no other command, and no small response, has any use for. A
 // missing companion in a packaged install goes through the same self-repair as
-// `composio run`'s modules and fails the command the same way.
+// `composio run`'s modules.
 const loadExecuteOutputEncoder = loadInstalledCompanionModule<
   typeof import('src/services/execute-output-encoder-runtime')
 >('execute-output-encoder-runtime');
 
+// JSON averages roughly four bytes per o200k token.
+const ESTIMATED_BYTES_PER_OUTPUT_TOKEN = 4;
+
+// The tool call has already succeeded by the time its output is measured, so an
+// encoder that cannot be loaded (a damaged install, or a repair download that
+// fails offline) must not fail the command. The count only chooses between
+// inline output and a stored file, so it falls back to an estimate from the
+// byte length.
 const countOutputTokens = (json: string) =>
-  Effect.map(loadExecuteOutputEncoder, encoder => encoder.countOutputTokens(json));
+  loadExecuteOutputEncoder.pipe(
+    Effect.map(encoder => encoder.countOutputTokens(json)),
+    Effect.catch(error =>
+      Effect.logDebug(
+        `[execute] tokenizer unavailable, estimating the output token count: ${error.message}`
+      ).pipe(
+        Effect.as(
+          Math.ceil(new TextEncoder().encode(json).length / ESTIMATED_BYTES_PER_OUTPUT_TOKEN)
+        )
+      )
+    )
+  );
 
 // A BPE token always covers at least one UTF-8 byte, so a payload of at most
 // THRESHOLD bytes can never exceed THRESHOLD tokens. Checking the byte length

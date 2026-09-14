@@ -475,8 +475,20 @@ describe('loadInstalledCompanionModule', () => {
         >('execute-output-encoder-runtime');
 
         expect(encoder.countOutputTokens('hello world')).toBe(2);
-        // Special-token literals are counted as text rather than rejected.
-        expect(encoder.countOutputTokens('<|endoftext|>')).toBeGreaterThan(0);
+        // A special-token literal counts as its one special token rather than
+        // being rejected.
+        expect(encoder.countOutputTokens('<|endoftext|>')).toBe(1);
+      })
+    );
+
+    it.effect('[Given] a module that cannot be loaded [Then] it fails with a typed error', () =>
+      Effect.gen(function* () {
+        const error = yield* loadInstalledCompanionModule('missing-companion-module').pipe(
+          Effect.flip
+        );
+
+        expect(error._tag).toBe('services/RunCompanionRepairError');
+        expect(error.message).toContain('missing-companion-module.mjs');
       })
     );
 

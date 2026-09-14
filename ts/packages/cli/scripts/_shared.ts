@@ -334,7 +334,6 @@ const EXECUTABLE_EXCLUDED_MODULE_PATTERNS: ReadonlyArray<{
 }> = [
   { pattern: /\/node_modules\/typescript\//, reason: 'the TypeScript compiler' },
   { pattern: /\/node_modules\/js-tiktoken\//, reason: 'the tokenizer and its rank table' },
-  { pattern: /\/packages\/core\/dist\/index\.mjs$/, reason: "@composio/core's root entry" },
   { pattern: /(?:^|\/)src\/generation\/(?!errors\.ts$)/, reason: 'the generation pipeline' },
   {
     pattern: /(?:^|\/)src\/commands\/run-source-transforms\.ts$/,
