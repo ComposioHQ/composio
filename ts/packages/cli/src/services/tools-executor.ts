@@ -172,8 +172,10 @@ export const ToolsExecutorLive = Layer.effect(
             }
           }
 
-          const client = yield* clientSingleton.get();
-          const resolvedClient = params.client ?? client;
+          // Resolved lazily: `get()` walks the project context off disk, and every
+          // caller on the execute path already hands in a client built for the
+          // resolved org/project.
+          const resolvedClient = params.client ?? (yield* clientSingleton.get());
           // One session per invocation — CLI runs one tool per process.
           const {
             sessionId,

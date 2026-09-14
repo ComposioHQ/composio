@@ -4,7 +4,7 @@ import * as FileSystem from 'effect/FileSystem';
 import * as Path from 'effect/Path';
 import { ChildProcess, ChildProcessSpawner } from 'effect/unstable/process';
 import { Context, Data, Deferred, Duration, Effect, MutableRef, Option, Result } from 'effect';
-import { ts } from 'ts-morph';
+import ts from 'typescript';
 import { APP_VERSION } from 'src/constants';
 import { APP_CONFIG, UNPREFIXED_CONFIG } from 'src/effects/app-config';
 import { resolveCommandProject } from 'src/services/command-project';
