@@ -11,6 +11,7 @@ import {
   encodeVectors,
   rankSemanticCandidates,
   semanticRecordFromSearchRecord,
+  SemanticArtifactStaleError,
   validateSemanticArtifact,
   type KnowledgeSemanticArtifact,
   type KnowledgeSemanticRecord,
@@ -163,6 +164,43 @@ Content: Provider tokens are redacted from connected-account responses.`);
 });
 
 describe('KB semantic artifact', () => {
+  test.each([
+    { supportKnowledgeCommit: 'new-commit' },
+    { docsContentHash: 'new-docs-hash' },
+    { contentHashes: new Map([['exact-x', 'changed-hash']]) },
+    { contentHashes: new Map([
+      ['exact-x', 'hash-x'], ['diagonal', 'hash-d'], ['exact-y', 'hash-y'], ['new', 'hash-new'],
+    ]) },
+  ])('classifies corpus drift as stale: %j', drift => {
+    expect(() => validateSemanticArtifact(artifact(), {
+      dimensions: 2,
+      supportKnowledgeCommit: 'abc1234',
+      ...drift,
+    })).toThrow(SemanticArtifactStaleError);
+  });
+
+  test.each([
+    { model: 'another-model' },
+    { vectorsBase64: encodeVectors([[2, 0], [0, 1], [0, 1]]) },
+    { vectorsBase64: encodeVectors([[1, 0]]) },
+    { records: [] },
+    { records: [semanticRecord('duplicate', 'A', 'a'), semanticRecord('duplicate', 'B', 'b')] },
+    { records: [{ ...semanticRecord('private', 'Private', 'hash'), visibility: 'private' }] },
+  ])('rejects corruption even when the corpus is stale: %j', corruption => {
+    let caught: unknown;
+    try {
+      validateSemanticArtifact({ ...artifact(), ...corruption } as KnowledgeSemanticArtifact, {
+        dimensions: 2,
+        supportKnowledgeCommit: 'new-commit',
+        docsContentHash: 'new-docs-hash',
+      });
+    } catch (error) {
+      caught = error;
+    }
+    expect(caught).toBeInstanceOf(Error);
+    expect(caught).not.toBeInstanceOf(SemanticArtifactStaleError);
+  });
+
   test('round-trips row-major float32 vectors', () => {
     const encoded = encodeVectors([[1, 0], [0.25, -0.5]]);
     expect([...decodeVectors(encoded, 2, 2)]).toEqual([1, 0, 0.25, -0.5]);

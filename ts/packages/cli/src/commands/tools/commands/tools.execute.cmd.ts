@@ -2,7 +2,8 @@ import { Argument, Command, Flag } from 'effect/unstable/cli';
 import { isLocalToolSlug } from '@composio/cli-local-tools';
 import util from 'node:util';
 import { Cause, Data, Effect, Exit, Fiber, HashSet, Option, Result } from 'effect';
-import { encodingForModel } from 'js-tiktoken';
+import { Tiktoken } from 'js-tiktoken/lite';
+import o200kBase from 'js-tiktoken/ranks/o200k_base';
 import { redact } from 'src/ui/redact';
 import { parseJsonRecord, isPlainRecord } from 'src/utils/parse-json';
 import { toolkitFromToolSlug } from 'src/effects/toolkit-from-tool-slug';
@@ -322,14 +323,30 @@ const redactRequestId = (value: object): object => {
 };
 
 const EXECUTE_INLINE_OUTPUT_TOKEN_THRESHOLD = 10_000;
-let executeOutputEncoder: ReturnType<typeof encodingForModel> | undefined;
+let executeOutputEncoder: Tiktoken | undefined;
 
 const getExecuteOutputEncoder = () => {
   if (!executeOutputEncoder) {
-    executeOutputEncoder = encodingForModel('gpt-4o');
+    executeOutputEncoder = new Tiktoken(o200kBase);
   }
   return executeOutputEncoder;
 };
+
+// `Tiktoken.encode` defaults `disallowedSpecial` to "all", which makes it throw
+// on any tool response that happens to contain the literal text `<|endoftext|>`
+// or `<|endofprompt|>` (a README about tokenizers is enough). Here the encoder
+// is only a length gauge, so passing `allowedSpecial: 'all'` counts each literal
+// as the single special token it encodes to instead of rejecting the payload.
+const countOutputTokens = (json: string): number =>
+  getExecuteOutputEncoder().encode(json, 'all').length;
+
+// A BPE token always covers at least one UTF-8 byte, so a payload of at most
+// THRESHOLD bytes can never exceed THRESHOLD tokens. Checking the byte length
+// first keeps the common (small) response off the tokenizer entirely: building
+// the o200k rank table measured ~390ms in a compiled binary, against ~4ms to
+// encode a 7.5KB payload once it exists, and microseconds to measure the bytes.
+const mayExceedInlineOutputThreshold = (json: string): boolean =>
+  new TextEncoder().encode(json).length > EXECUTE_INLINE_OUTPUT_TOKEN_THRESHOLD;
 
 const shouldStoreLargeExecuteOutput = APP_CONFIG.CLI_INVOCATION_ORIGIN.pipe(
   Effect.orDie,
@@ -378,7 +395,12 @@ const executionSuccessSuffix = (result: {
   return metadata.length > 0 ? ` (${metadata.join(', ')})` : '';
 };
 
-const persistLargeExecuteOutput = (toolSlug: string, json: string, sharedDirectory?: string) =>
+const persistLargeExecuteOutput = (
+  toolSlug: string,
+  json: string,
+  tokenCount: number,
+  sharedDirectory?: string
+) =>
   Effect.gen(function* () {
     const runOutputDirectory = yield* APP_CONFIG.RUN_OUTPUT_DIR;
     const outputFilePath = yield* storeCliSessionArtifact({
@@ -393,7 +415,7 @@ const persistLargeExecuteOutput = (toolSlug: string, json: string, sharedDirecto
       error: null,
       logId: '',
       storedInFile: true,
-      tokenCount: getExecuteOutputEncoder().encode(json).length,
+      tokenCount,
       outputFilePath: outputFilePath ?? '(could not write to disk)',
     } satisfies StoredExecuteOutputSummary;
   });
@@ -407,11 +429,17 @@ const prepareExecuteOutput = (
 ) =>
   Effect.gen(function* () {
     const json = serializeExecuteOutput(result);
-    const tokenCount = getExecuteOutputEncoder().encode(json).length;
-    if (
-      tokenCount <= EXECUTE_INLINE_OUTPUT_TOKEN_THRESHOLD ||
-      !(yield* shouldStoreLargeExecuteOutput)
-    ) {
+    // `composio run` always prints inline, so its origin is checked before the
+    // tokenizer is built: the count would be thrown away.
+    if (!mayExceedInlineOutputThreshold(json) || !(yield* shouldStoreLargeExecuteOutput)) {
+      return {
+        kind: 'inline',
+        json,
+      } satisfies PreparedExecuteOutput;
+    }
+
+    const tokenCount = countOutputTokens(json);
+    if (tokenCount <= EXECUTE_INLINE_OUTPUT_TOKEN_THRESHOLD) {
       return {
         kind: 'inline',
         json,
@@ -421,7 +449,7 @@ const prepareExecuteOutput = (
     return {
       kind: 'file',
       summary: {
-        ...(yield* persistLargeExecuteOutput(toolSlug, json, sharedDirectory)),
+        ...(yield* persistLargeExecuteOutput(toolSlug, json, tokenCount, sharedDirectory)),
         logId: result.logId,
       } satisfies StoredExecuteOutputSummary,
     } satisfies PreparedExecuteOutput;

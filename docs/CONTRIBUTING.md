@@ -44,13 +44,15 @@ bun run test
 bun run lint
 bun run lint:links
 bun run types:check
-bun run check:kb-semantic
+bun run check:kb-semantic --allow-stale
 bun run build
 ```
 
 To check the built site's endpoints, run `bun run start` in one terminal and `bun run test:integration` in another. The integration tests use `http://localhost:3000` by default. Set `TEST_BASE_URL` if your server uses another address.
 
-A stale KB semantic artifact can follow a content change. The `Docs - Rebuild KB Semantic Artifact` workflow can rebuild it for eligible same-repository PRs after `Docs - Tests` runs. Check that workflow's result and rerun failed checks against the updated commit. If you rebuild locally with `bun run build:kb-semantic`, use an authorized `OPENAI_API_KEY`: the generator sends the indexed docs content to the embeddings service. Never edit embedding values or content hashes by hand.
+The semantic artifact covers both regular docs and KB articles, so edits to either can make it stale. PR checks use `--allow-stale` to warn about freshness while still rejecting missing or corrupt artifacts. Search falls back to keyword results until the artifact is rebuilt.
+
+The `Docs - Rebuild KB Semantic Artifact` workflow can rebuild it for eligible same-repository PRs after `Docs - Tests` runs. The scheduled support-knowledge refresh also proposes stale-artifact repairs. If you rebuild locally with `bun run build:kb-semantic`, use an authorized `OPENAI_API_KEY`: the generator sends the indexed docs content to the embeddings service. Run `bun run check:kb-semantic` without `--allow-stale` to verify a rebuild. Never edit embedding values or content hashes by hand.
 
 ## Request review and verify publication
 
