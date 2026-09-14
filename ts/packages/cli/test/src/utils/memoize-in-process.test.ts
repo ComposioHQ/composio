@@ -1,6 +1,6 @@
 import { describe, expect, it } from '@effect/vitest';
 import { Deferred, Effect, Exit, Fiber } from 'effect';
-import { memoizeInProcess } from 'src/utils/memoize-in-process';
+import { clearInProcessMemos, memoizeInProcess } from 'src/utils/memoize-in-process';
 
 describe('memoizeInProcess', () => {
   it.effect('runs the effect once per key and shares the result', () =>
@@ -112,6 +112,30 @@ describe('memoizeInProcess', () => {
       expect(Exit.isFailure(yield* Fiber.join(second))).toBe(true);
       expect(yield* load('k')).toBe(2);
       expect(calls).toBe(2);
+    })
+  );
+
+  it.effect('clear() forgets cached results, for every memo in the process', () =>
+    Effect.gen(function* () {
+      let calls = 0;
+      const load = memoizeInProcess({
+        keyOf: (key: string) => key,
+        make: () => Effect.sync(() => ++calls),
+      });
+      const other = memoizeInProcess({
+        keyOf: (key: string) => key,
+        make: () => Effect.sync(() => ++calls),
+      });
+
+      expect(yield* load('k')).toBe(1);
+      expect(yield* other('k')).toBe(2);
+      load.clear();
+      expect(yield* load('k')).toBe(3);
+      expect(yield* other('k')).toBe(2);
+
+      clearInProcessMemos();
+      expect(yield* load('k')).toBe(4);
+      expect(yield* other('k')).toBe(5);
     })
   );
 });

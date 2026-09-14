@@ -1,5 +1,23 @@
 import { Deferred, Effect, Exit } from 'effect';
 
+export interface MemoizedInProcess<I, A, E, R> {
+  (input: I): Effect.Effect<A, E, R>;
+  /** Forgets every cached result of this memo. */
+  readonly clear: () => void;
+}
+
+const memos = new Set<{ readonly clear: () => void }>();
+
+/**
+ * Forgets every result memoized by {@link memoizeInProcess} anywhere in the
+ * process. A vitest `beforeEach` calls this so a value cached by one test case
+ * (a tool version, a connected-account list) cannot leak into the next one;
+ * production code has no reason to call it.
+ */
+export const clearInProcessMemos = (): void => {
+  for (const memo of memos) memo.clear();
+};
+
 /**
  * Memoizes an Effect per key for the lifetime of the process, sharing one run
  * between concurrent callers. A success stays cached; a failure or defect is
@@ -19,7 +37,7 @@ import { Deferred, Effect, Exit } from 'effect';
 export const memoizeInProcess = <I, A, E, R>(options: {
   readonly keyOf: (input: I) => string;
   readonly make: (input: I) => Effect.Effect<A, E, R>;
-}): ((input: I) => Effect.Effect<A, E, R>) => {
+}): MemoizedInProcess<I, A, E, R> => {
   const cache = new Map<string, Deferred.Deferred<A, E>>();
 
   const load = (input: I): Effect.Effect<A, E, R> =>
@@ -49,5 +67,7 @@ export const memoizeInProcess = <I, A, E, R>(options: {
       })
     ).pipe(Effect.flatMap(cell => Deferred.await(cell)));
 
-  return load;
+  const memo = Object.assign(load, { clear: () => cache.clear() });
+  memos.add(memo);
+  return memo;
 };
