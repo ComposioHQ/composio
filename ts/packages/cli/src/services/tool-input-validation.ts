@@ -189,19 +189,15 @@ export const invalidateToolInputDefinition = (slug: string) =>
 // asks twice on every call: the background version check forked from the
 // command, and `getOrFetchToolInputDefinition` on the executor's file-upload
 // path. Both want the same answer within the same second.
-const fetchResolvedLatestToolVersion = memoizeInProcess({
+const fetchLatestToolVersionOnce = memoizeInProcess({
   keyOf: (input: {
     readonly slug: string;
+    readonly apiKey: string;
     readonly params?: { readonly orgId?: string; readonly projectId?: string };
   }) => `${input.slug}\u0000${input.params?.orgId ?? ''}\u0000${input.params?.projectId ?? ''}`,
-  make: ({ slug, params }) =>
+  make: ({ slug, apiKey, params }) =>
     Effect.gen(function* () {
       const userContext = yield* ComposioUserContext;
-      const apiKey = Option.getOrUndefined(userContext.data.apiKey);
-      if (!apiKey) {
-        return null;
-      }
-
       const latest = yield* getLatestToolVersion({
         baseURL: userContext.data.baseURL,
         apiKey,
@@ -218,6 +214,22 @@ const fetchResolvedLatestToolVersion = memoizeInProcess({
       return latest.version;
     }),
 });
+
+// The API-key check stays outside the memo: the user context is live state
+// that `login` can fill in later in the same process, and caching the `null`
+// answered before that would silence the version check for the rest of it.
+const fetchResolvedLatestToolVersion = (input: {
+  readonly slug: string;
+  readonly params?: { readonly orgId?: string; readonly projectId?: string };
+}) =>
+  Effect.gen(function* () {
+    const userContext = yield* ComposioUserContext;
+    const apiKey = Option.getOrUndefined(userContext.data.apiKey);
+    if (!apiKey) {
+      return null;
+    }
+    return yield* fetchLatestToolVersionOnce({ ...input, apiKey });
+  });
 
 const fetchAndCacheToolInputDefinition = (
   slug: string,
