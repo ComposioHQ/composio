@@ -101,7 +101,9 @@ rm -f \
   "$install_dir/run-subagent-shared.mjs" \
   "$install_dir/run-subagent-acp.mjs" \
   "$install_dir/run-subagent-legacy.mjs" \
-  "$install_dir/run-subagent-output-mcp.mjs"
+  "$install_dir/run-subagent-output-mcp.mjs" \
+  "$install_dir/generation-runtime.mjs" \
+  "$install_dir/execute-output-encoder-runtime.mjs"
 rm -rf \
   "$install_dir/services" \
   "$install_dir/acp-adapters" \
