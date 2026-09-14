@@ -1212,7 +1212,7 @@ describe('CLI: composio execute', () => {
   )(
     '[Given] a response containing tiktoken special-token literals [Then] it still reports the execution',
     it => {
-      it.effect('counts the literals as text instead of failing the command', () =>
+      it.effect('counts the literals as special tokens instead of failing the command', () =>
         Effect.gen(function* () {
           yield* cli(['execute', 'GMAIL_SEND_EMAIL', '-d', '{"recipient":"a"}']);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
