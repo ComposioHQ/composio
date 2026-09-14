@@ -476,6 +476,32 @@ export const listMissingInstalledRunCompanionModules = (
   });
 
 /**
+ * The files one companion needs next to the executable: its wrapper and every
+ * relative import reachable from it, listed when missing.
+ */
+const listMissingInstalledCompanionModuleFiles = (
+  execPath: string,
+  baseName: string
+): Effect.Effect<ReadonlyArray<string>, never, FileSystem.FileSystem | Path.Path> =>
+  Effect.gen(function* () {
+    const fs = yield* FileSystem.FileSystem;
+    const path = yield* Path.Path;
+    const installDirectory = path.dirname(execPath);
+    const collected = new Set<string>();
+    yield* collectRelativeImportPaths({
+      fs,
+      path,
+      rootDir: installDirectory,
+      relativePath: `${baseName}.mjs`,
+      collected,
+      recordMissingPaths: true,
+    });
+    return yield* Effect.filter([...collected], relativePath =>
+      Effect.map(fileExists(fs, path.join(installDirectory, relativePath)), exists => !exists)
+    );
+  });
+
+/**
  * Whether the companion wrappers sit next to the executable, which is how
  * packaged installs ship them.
  *
@@ -646,10 +672,16 @@ export const repairMissingInstalledRunCompanionModules = ({
   callerImportMetaUrl,
   execPath,
   appVersion,
+  companionBaseName,
 }: {
   callerImportMetaUrl: string;
   execPath: string;
   appVersion: string;
+  /**
+   * Repair only when this companion's own files are missing, rather than when
+   * any startup-tier file is. The repair still restores the full set.
+   */
+  companionBaseName?: string;
 }): Effect.Effect<
   { readonly repaired: false } | { readonly repaired: true; readonly releaseTag: string },
   RunCompanionRepairError | PlatformError.PlatformError,
@@ -664,7 +696,10 @@ export const repairMissingInstalledRunCompanionModules = ({
       return { repaired: false as const };
     }
 
-    const missingModules = yield* listMissingInstalledRunCompanionModules(execPath);
+    const missingModules =
+      companionBaseName === undefined
+        ? yield* listMissingInstalledRunCompanionModules(execPath)
+        : yield* listMissingInstalledCompanionModuleFiles(execPath, companionBaseName);
     if (missingModules.length === 0) {
       return { repaired: false as const };
     }
@@ -845,9 +880,17 @@ export const resolveRunCompanionModulePath = ({
  *
  * Resolution is the same as for the `run` companions: the `.ts` source next to
  * this file when running from a checkout (tests, `bun run src/bin.ts`), the
- * `.mjs` bundle next to the executable in a packaged install. A packaged install
- * that lost the file goes through the same release-archive repair `composio run`
- * uses before failing.
+ * `.mjs` bundle next to the executable in a packaged install.
+ *
+ * A packaged install missing this module's own files goes through the
+ * release-archive repair `composio run` uses before the import. Files of other
+ * companions do not trigger it, so an offline repair failure cannot block a
+ * module that is already in place. The repair has to come first: Bun keeps a
+ * failed or already-loaded import in its module registry, so importing again
+ * after a repair can still see the old result.
+ *
+ * A module that loads but lacks one of `requiredExports` is a file left behind
+ * by a different release; it fails with a typed error asking for a reinstall.
  *
  * The specifier is computed at runtime on purpose: a literal `import('./x')`
  * would make the bundler fold the module back into the executable, which is the
@@ -857,7 +900,8 @@ export const resolveRunCompanionModulePath = ({
  * is type-only and leaves no import behind.
  */
 export const loadInstalledCompanionModule = <M>(
-  baseName: string
+  baseName: string,
+  requiredExports: ReadonlyArray<keyof M & string>
 ): Effect.Effect<
   M,
   RunCompanionRepairError | PlatformError.PlatformError,
@@ -872,6 +916,7 @@ export const loadInstalledCompanionModule = <M>(
       callerImportMetaUrl,
       execPath,
       appVersion: APP_VERSION,
+      companionBaseName: baseName,
     });
 
     const modulePath = yield* resolveRunCompanionModulePath({
@@ -879,17 +924,26 @@ export const loadInstalledCompanionModule = <M>(
       execPath,
       relativeNoExtensionFromCaller: `./${baseName}`,
     });
+    const fileName = path.basename(modulePath);
     const moduleUrl = yield* Effect.orDie(path.toFileUrl(modulePath));
 
     // A rejected import means the file resolved above is missing or unloadable:
     // a broken install. It stays a typed failure so callers can report it, or
     // fall back, instead of crashing with a stack trace.
-    return yield* Effect.tryPromise({
-      try: () => import(moduleUrl.href) as Promise<M>,
+    const exports = yield* Effect.tryPromise({
+      try: () => import(moduleUrl.href) as Promise<Record<string, unknown>>,
       catch: cause =>
         new RunCompanionRepairError({
-          message: `Unable to load the CLI's bundled support file ${path.basename(modulePath)}. Reinstall the CLI and try again.`,
+          message: `Unable to load the CLI's bundled support file ${fileName}. Reinstall the CLI and try again.`,
           cause,
         }),
     });
+
+    const missingExports = requiredExports.filter(name => !(name in exports));
+    if (missingExports.length > 0) {
+      return yield* new RunCompanionRepairError({
+        message: `The CLI's bundled support file ${fileName} does not match this CLI (missing ${missingExports.join(', ')}). Reinstall the CLI and try again.`,
+      });
+    }
+    return exports as M;
   });

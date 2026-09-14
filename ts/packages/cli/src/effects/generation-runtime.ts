@@ -12,8 +12,19 @@ export type GenerationRuntime = typeof import('src/services/generation-runtime')
  * pipeline, `composio run` source rewrites), loaded on demand. See
  * `src/services/generation-runtime.ts` for why its API is Effect-free.
  */
-export const loadGenerationRuntime =
-  loadInstalledCompanionModule<GenerationRuntime>('generation-runtime');
+export const loadGenerationRuntime = loadInstalledCompanionModule<GenerationRuntime>(
+  'generation-runtime',
+  [
+    'BANNER',
+    'createToolkitIndex',
+    'extractInlineExecuteToolSlugs',
+    'wrapFileSourceForRun',
+    'wrapInlineCodeForRun',
+    'generateTypeScriptSourceFiles',
+    'transpileTypeScriptSourceFiles',
+    'generatePythonSourceFiles',
+  ]
+);
 
 /**
  * Lifts a companion-module outcome into the CLI's runtime: successes succeed,

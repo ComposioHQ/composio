@@ -9,6 +9,7 @@ import {
   RUN_COMPANION_MODULE_BASENAMES,
   type RunCodexAcpBinaryTarget,
 } from '../src/services/run-companion-modules';
+import { buildCliReleaseVersionDefineArgs } from '../src/utils/cli-release-version';
 import { materializeAcpAdaptersCache } from './_acp-adapters';
 
 export { teardown } from './_teardown';
@@ -346,6 +347,16 @@ const EXECUTABLE_EXCLUDED_MODULE_PATTERNS: ReadonlyArray<{
   },
 ];
 
+// `--define` pairs as `Bun.build` takes them.
+const defineRecordFromArgs = (args: ReadonlyArray<string>): Record<string, string> =>
+  Object.fromEntries(
+    args.flatMap((arg, index) => {
+      const pair = args[index - 1] === '--define' ? arg : undefined;
+      const separator = pair?.indexOf('=') ?? -1;
+      return pair && separator > 0 ? [[pair.slice(0, separator), pair.slice(separator + 1)]] : [];
+    })
+  );
+
 // Bun's unminified output starts each module with a `// <path>` line, which is
 // the only bundle-level record of what made it into the graph. A dynamic
 // `import()` of a *literal* specifier is still bundled (lazily evaluated, but
@@ -357,8 +368,22 @@ const assertExecutableExcludesCompanionModules = async (): Promise<void> => {
     target: 'bun',
     format: 'esm',
     packages: 'bundle',
-    minify: false,
     sourcemap: 'none',
+    // The same environment inlining and defines as `build-binary.ts` and
+    // `build-binary-cross.ts`, plus the NODE_ENV that `--production` sets, so a
+    // branch the release build folds away is folded away here too.
+    env: 'DEBUG_OVERRIDE_*',
+    define: {
+      'process.env.NODE_ENV': JSON.stringify('production'),
+      ...defineRecordFromArgs([
+        ...posthogBakeArgs(),
+        ...buildCliReleaseVersionDefineArgs(process.env.RELEASE_TAG),
+      ]),
+    },
+    // `--production` also minifies. Syntax minification is the part that drops
+    // unreachable code; whitespace minification would strip the module
+    // comments this check reads, so it stays off.
+    minify: { syntax: true, whitespace: false, identifiers: false },
   });
   if (!result.success) {
     throw new Error(
