@@ -1108,6 +1108,10 @@ export class Tools<
    *
    * @example Execute with a specific version (recommended for production)
    * ```typescript
+   * // Look up the tool's current version once, then pin that string in your code or config
+   * const { version } = await composio.tools.getRawComposioToolBySlug('GITHUB_GET_REPOS');
+   * console.log(version); // e.g. '20250909_00'
+   *
    * const result = await composio.tools.execute('GITHUB_GET_REPOS', {
    *   userId: 'default',
    *   version: '20250909_00',
@@ -1294,21 +1298,27 @@ export class Tools<
   }
 
   /**
-   * Fetches the input parameters for a given tool.
+   * Generates arguments for a tool from a natural-language description of the task.
    *
-   * This method is used to get the input parameters for a tool before executing it.
+   * Composio uses an LLM to fill the tool's input parameters from `text`. Review the
+   * generated arguments before passing them to `tools.execute()`.
    *
-   * @param {string} slug - The ID of the tool to find input for
-   * @param {ToolGetInputParams} body - The parameters to be passed to the tool
-   * @returns {Promise<ToolGetInputResponse>} The input parameters schema for the specified tool
+   * @param {string} slug - The slug of the tool to generate arguments for
+   * @param {ToolGetInputParams} body - The generation request
+   * @param {string} body.text - What you want the tool to do, in natural language
+   * @param {string} [body.custom_description] - Extra context about the tool for the LLM
+   * @param {string} [body.system_prompt] - System prompt that steers the LLM
+   * @param {string} [body.version] - Tool version to generate arguments for
+   * @returns {Promise<ToolGetInputResponse>} The generated `arguments`, or an `error` when generation fails
    *
    * @example
    * ```typescript
-   * // Get input parameters for a specific tool
-   * const inputParams = await composio.tools.getInput('GITHUB_CREATE_ISSUE', {
-   *   userId: 'default'
+   * const { arguments: args, error } = await composio.tools.getInput('GITHUB_CREATE_ISSUE', {
+   *   text: 'Open an issue in composiohq/composio titled "Docs typo" describing the broken link',
+   *   version: '20250909_00',
    * });
-   * console.log(inputParams.schema);
+   * if (error) throw new Error(error);
+   * console.log(args); // { owner: 'composiohq', repo: 'composio', title: 'Docs typo', ... }
    * ```
    */
   async getInput(
@@ -1323,26 +1333,35 @@ export class Tools<
   }
 
   /**
-   * Proxies a custom request to a toolkit/integration.
+   * Sends an HTTP request to a toolkit's API, authenticated as a connected account.
    *
-   * This method allows sending custom requests to a specific toolkit or integration
-   * when you need more flexibility than the standard tool execution methods provide.
+   * Use it to call an endpoint that no predefined tool covers. Composio injects the
+   * connected account's credentials on the server side.
    *
-   * @param {ToolProxyParams} body - The parameters for the proxy request including toolkit slug and custom data
-   * @returns {Promise<ToolProxyResponse>} The response from the proxied request
+   * A relative `endpoint` is appended to the toolkit's base URL, and that base URL can
+   * already include a path. Google Calendar's base URL is
+   * `https://www.googleapis.com/calendar/v3`, so pass `/users/me/calendarList`, not
+   * `/calendar/v3/users/me/calendarList` (which resolves to `/calendar/v3/calendar/v3/...`
+   * and returns a 404 from Google). An absolute URL on the same domain is sent as-is.
+   *
+   * @param {ToolProxyParams} body - The proxy request
+   * @param {string} body.endpoint - Path relative to the toolkit's base URL, or an absolute URL
+   * @param {'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH'} body.method - HTTP method
+   * @param {string} [body.connectedAccountId] - The connected account to authenticate as
+   * @param {unknown} [body.body] - JSON request body
+   * @param {Array<{ in: 'query' | 'header'; name: string; value: string | number }>} [body.parameters] - Extra query parameters or headers
+   * @returns {Promise<ToolProxyResponse>} The upstream status, headers, and parsed body
    *
    * @example
    * ```typescript
-   * // Send a custom request to a toolkit
-   * const response = await composio.tools.proxyExecute({
-   *   toolkitSlug: 'github',
-   *   userId: 'default',
-   *   data: {
-   *     endpoint: '/repos/owner/repo/issues',
-   *     method: 'GET'
-   *   }
+   * // Google Calendar's base URL is https://www.googleapis.com/calendar/v3
+   * const { status, data } = await composio.tools.proxyExecute({
+   *   endpoint: '/users/me/calendarList',
+   *   method: 'GET',
+   *   connectedAccountId: 'ca_...',
+   *   parameters: [{ in: 'query', name: 'maxResults', value: 10 }],
    * });
-   * console.log(response.data);
+   * console.log(status, data);
    * ```
    */
   async proxyExecute(

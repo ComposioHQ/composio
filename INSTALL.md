@@ -8,7 +8,7 @@ curl -fsSL https://composio.dev/install | sh
 
 The installer also configures your shell. It infers your login shell from `$SHELL` (`zsh`, `bash`, or `fish`) and writes a managed `# Composio CLI` PATH block so future terminals find `composio`. For `zsh` and `fish`, it updates the matching startup file. For `bash`, it updates `~/.bashrc` plus a login-mode startup file, because a login bash (what macOS Terminal.app starts) never reads `~/.bashrc`: the first existing of `~/.bash_profile` or `~/.bash_login`, or a newly created `~/.bash_profile` when neither exists. A `~/.bash_profile` created this way sources `~/.profile` first, so nothing you already had stops loading; `~/.profile` itself is never modified. Open a new terminal, then run `composio login`.
 
-If your shell is not recognized, or shell setup fails, the binary install still succeeds and the installer prints a runnable command instead. The installer does not install agent plugins or log you in unless you ask it to.
+If your shell is not recognized, or shell setup fails, the binary install still succeeds and the installer prints a runnable command instead. The installer also installs plugins for detected, supported Codex and Claude Code hosts. Set `COMPOSIO_INSTALL_PLUGINS=0` or pass `--no-plugins` to skip plugin setup. Login remains a separate step.
 
 Official releases must pass SHA-256 verification against the release's `checksums.txt`: a missing manifest, a manifest with no entry for your platform's archive, a malformed entry, or a mismatch aborts the install with `Refusing to install`. On systems with no `sha256sum` or `shasum`, the installer warns that verification was skipped and continues.
 
@@ -23,7 +23,7 @@ curl -fsSL https://composio.dev/install | COMPOSIO_INSTALL_SHELL=fish sh
 curl -fsSL https://composio.dev/install | COMPOSIO_INSTALL_SHELL=none sh
 ```
 
-Use `none` for an install-only run that changes no shell files. Reach for it in CI, Docker images, or when a dotfile manager owns your startup files.
+Use `none` to leave shell files unchanged. Use it when a dotfile manager owns your startup files. For an install-only run in CI or Docker, also set `COMPOSIO_INSTALL_PLUGINS=0`.
 
 Shell-specific installer variants ([`install/zsh.sh`](install/zsh.sh), [`install/bash.sh`](install/bash.sh), [`install/fish.sh`](install/fish.sh)) pin `COMPOSIO_INSTALL_SHELL` to their shell before delegating to the base installer.
 
@@ -46,10 +46,10 @@ The positional argument takes precedence over `COMPOSIO_INSTALL_VERSION`.
 | `COMPOSIO_QUIET` | Set to `1` or `true` to hide progress output. Warnings and errors still print. | Unset |
 | `COMPOSIO_DEBUG` | Set to `1` or `true` to print installer traces. | Unset |
 | `COMPOSIO_INSTALL_HELP` | Set to `0` to hide normal post-install guidance. Shell-setup failures still warn and print a recovery command to stderr. | `1` |
-| `COMPOSIO_INSTALL_PLUGINS` | Set to `1` to install plugins for detected agent hosts. | `0` |
+| `COMPOSIO_INSTALL_PLUGINS` | Set to `0` to skip plugin setup for detected agent hosts. | `1` |
 | `COMPOSIO_INSTALL_SHELL` | Shell setup mode: `auto` infers your login shell from `$SHELL`, `zsh`, `bash`, or `fish` force a specific shell, and `none` skips shell configuration. | `auto` |
 | `--agent` | Log in as a Composio agent after installation. | Off |
-| `--no-plugins` | Skip plugin setup. Kept for compatibility. | Off |
+| `--no-plugins` | Skip plugin setup, even when `COMPOSIO_INSTALL_PLUGINS=1`. | Off |
 
 ## Manual Installation
 

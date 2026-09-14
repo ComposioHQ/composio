@@ -1141,6 +1141,10 @@ const resolveExecuteContext = (params: RunToolsExecuteParams) =>
         userId: resolvedUserId.value,
         arguments: args,
         client,
+        projectScope: {
+          orgId: resolvedProject.orgId,
+          projectId: resolvedProject.projectId,
+        },
         connectedAccounts:
           toolkitSlug && selectedConnectedAccountId
             ? {

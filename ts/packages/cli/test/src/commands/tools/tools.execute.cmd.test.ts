@@ -8,6 +8,7 @@ import { extendConfigProvider } from 'src/services/config';
 import { ComposioNoActiveConnectionError } from 'src/services/composio-error-overrides';
 import { setupCacheDir } from 'src/effects/setup-cache-dir';
 import { getOrFetchToolInputDefinition } from 'src/services/tool-input-validation';
+import { clearInProcessMemos } from 'src/utils/memoize-in-process';
 import * as consumerShortTermCache from 'src/services/consumer-short-term-cache';
 import * as composioClients from 'src/services/composio-clients';
 import * as redactModule from 'src/ui/redact';
@@ -264,6 +265,24 @@ describe('CLI: composio execute', () => {
       baseConfigProvider: testConfigProvider,
       fixture: 'global-test-user-id',
       stdin: { isTTY: true, data: '' },
+      toolkitsData: {
+        tools: [
+          {
+            name: 'Send Email',
+            slug: 'GMAIL_SEND_EMAIL',
+            description: 'Send an email',
+            tags: ['email'],
+            available_versions: ['20260115_00'],
+            input_parameters: {
+              type: 'object',
+              properties: {
+                recipient: { type: 'string' },
+              },
+            },
+            output_parameters: { type: 'object', properties: {} },
+          },
+        ],
+      } satisfies TestLiveInput['toolkitsData'],
       connectedAccountsData: {
         items: [
           {
@@ -343,6 +362,33 @@ describe('CLI: composio execute', () => {
         expect(recordedSessionCreateParams[0]?.connected_accounts).toEqual({
           gmail: 'con_gmail_default',
         });
+      })
+    );
+
+    it.effect('asks for the latest tool version once per execute on a schema cache hit', () =>
+      Effect.gen(function* () {
+        const latestVersion = vi
+          .spyOn(composioClients, 'getLatestToolVersion')
+          .mockImplementation(({ toolSlug }) =>
+            Effect.succeed({ tool_slug: toolSlug, version: '20260115_00' })
+          );
+        // Warm the on-disk schema cache, then forget the memoized version so
+        // the next run has to ask the server again.
+        yield* getOrFetchToolInputDefinition('GMAIL_SEND_EMAIL');
+        clearInProcessMemos();
+        latestVersion.mockClear();
+
+        yield* cli([
+          'execute',
+          'GMAIL_SEND_EMAIL',
+          '--skip-connection-check',
+          '-d',
+          '{"recipient":"a"}',
+        ]);
+
+        // The command's own version check and the executor's schema lookup
+        // both run on this path; they must share one request.
+        expect(latestVersion).toHaveBeenCalledTimes(1);
       })
     );
   });

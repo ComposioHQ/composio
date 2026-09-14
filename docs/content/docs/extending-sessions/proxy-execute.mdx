@@ -65,6 +65,10 @@ console.log(data);
 
 The `endpoint` is a path relative to the toolkit's base URL (`/repos/...` resolves against `api.github.com`). Pass an absolute URL only when you need a host that isn't the toolkit's standard API, such as a regional Salesforce or Zendesk domain.
 
+<Callout type="warn" title="Don't repeat the base URL's path">
+The `endpoint` is appended to the base URL, and many base URLs already include a path. Google Calendar's base URL is `https://www.googleapis.com/calendar/v3`, so pass `/users/me/calendarList`. Passing `/calendar/v3/users/me/calendarList` requests `/calendar/v3/calendar/v3/users/me/calendarList` and returns a `404`.
+</Callout>
+
 <Callout type="warn">
 Proxy execute rejects cross-domain requests. The `endpoint` must resolve to the same domain as the toolkit's connected account (a GitHub connection can only call `api.github.com` paths). This is an intentional security boundary, not a quota, so you can't work around it by reshaping the request.
 </Callout>

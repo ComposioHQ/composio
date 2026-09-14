@@ -445,7 +445,7 @@ EOF
   export TEST_COMPOSIO_LOG="$composio_log"
 
   reset_case() {
-    unset CASE_GITHUB_URL CASE_GITHUB_OWNER CASE_GITHUB_REPO CASE_API_BASE CASE_INSTALL_VERSION CASE_INSTALL_SHELL CASE_PLUGINS CASE_QUIET CASE_DEBUG CASE_HELP
+    unset CASE_UNSET_PLUGINS CASE_GITHUB_URL CASE_GITHUB_OWNER CASE_GITHUB_REPO CASE_API_BASE CASE_INSTALL_VERSION CASE_INSTALL_SHELL CASE_PLUGINS CASE_QUIET CASE_DEBUG CASE_HELP
     unset CASE_ALLOW_HTTP_HOST CASE_CHECKSUM_MODE CASE_API_ASSET_URL CASE_BASE_MODE CASE_REDIRECT_DOWNGRADE
     unset CASE_SHELL_CAPABILITY CASE_INSTALL_EXIT CASE_SETUP_EXIT CASE_VERSION_EXIT CASE_PATH_PREFIX CASE_UNSET_SHELL
     unset CASE_CURL_DELAY_URL CASE_CURL_DELAY_SECONDS CASE_SHELL_VALUE CASE_INSTALL_HINT CASE_INSTALL_RECONCILE
@@ -464,7 +464,6 @@ EOF
       HOME="$home"
       COMPOSIO_INSTALL_DIR="$install_dir"
       COMPOSIO_BIN_DIR="$bin_dir"
-      COMPOSIO_INSTALL_PLUGINS="${CASE_PLUGINS:-0}"
       COMPOSIO_GITHUB_URL="${CASE_GITHUB_URL:-$github_url}"
       # CASE_API_BASE set-but-empty passes an empty API base through, which the
       # installer treats as "no override" (official-source cases need this).
@@ -478,6 +477,9 @@ EOF
       TEST_CURL_DELAY_SECONDS="${CASE_CURL_DELAY_SECONDS:-1}"
       TEST_CURL_PARENT_PID_FILE="$case_root/curl-parent.pid"
     )
+    if [[ ${CASE_UNSET_PLUGINS:-0} != 1 ]]; then
+      common_env_args+=(COMPOSIO_INSTALL_PLUGINS="${CASE_PLUGINS:-0}")
+    fi
   }
 
   run_installer() {
@@ -491,7 +493,7 @@ EOF
       installer_command=("$interpreter" -c 'unset SHELL; script=$1; shift; . "$script"' unset-shell "$repo_root/install.sh")
     fi
     common_env "$home" "$install_dir" "$bin_dir"
-    env \
+    env -u COMPOSIO_INSTALL_PLUGINS \
       PATH="${CASE_PATH_PREFIX:-}$fake_bin:$ambient_path" \
       SHELL="${CASE_SHELL_VALUE:-/bin/bash}" \
       "${common_env_args[@]}" \
@@ -518,7 +520,7 @@ EOF
     shift 4
     mkdir -p "$home" "$install_dir" "$bin_dir"
     common_env "$home" "$install_dir" "$bin_dir"
-    env \
+    env -u COMPOSIO_INSTALL_PLUGINS \
       PATH="$fake_bin:$ambient_path" \
       SHELL="/bin/$shell_name" \
       "${common_env_args[@]}" \
@@ -685,6 +687,35 @@ EOF
   fi
   assert_contains "$official_entry_output" 'checksums.txt has no entry for' "$interpreter_name official absent entry error"
   [[ ! -e "$case_root/official-entry-install/composio" ]] || fail "$interpreter_name official absent entry must not install"
+
+  reset_case
+  CASE_UNSET_PLUGINS=1
+  run_installer "$case_root/default-plugins-home" "$case_root/default-plugins-install" "$case_root/default-plugins-bin" "$stable_tag" >/dev/null 2>&1
+  grep -Eq '\|installer\|[^|]*\|setup --target auto --yes --if-present$' "$composio_log" || fail "$interpreter_name plugin setup enabled by default"
+
+  for plugin_mode in env-zero flag flag-overrides-env; do
+    reset_case
+    plugin_args=("$stable_tag")
+    case "$plugin_mode" in
+      env-zero) CASE_PLUGINS=0 ;;
+      flag) CASE_UNSET_PLUGINS=1; plugin_args=(--no-plugins "$stable_tag") ;;
+      flag-overrides-env) CASE_PLUGINS=1; plugin_args=(--no-plugins "$stable_tag") ;;
+    esac
+    run_installer "$case_root/$plugin_mode-home" "$case_root/$plugin_mode-install" "$case_root/$plugin_mode-bin" "${plugin_args[@]}" >/dev/null 2>&1
+    if grep -q 'setup --target' "$composio_log"; then
+      fail "$interpreter_name plugin opt-out $plugin_mode"
+    fi
+  done
+
+  reset_case
+  CASE_UNSET_PLUGINS=1
+  CASE_SETUP_EXIT=1
+  if plugin_failure_output=$(run_installer "$case_root/plugin-failure-home" "$case_root/plugin-failure-install" "$case_root/plugin-failure-bin" "$stable_tag" 2>&1); then
+    fail "$interpreter_name plugin setup failure must fail installation"
+  fi
+  [[ -x "$case_root/plugin-failure-install/composio" ]] || fail "$interpreter_name plugin failure preserves CLI binary"
+  assert_contains "$plugin_failure_output" 'agent plugin setup failed' "$interpreter_name plugin failure reported"
+  assert_contains "$plugin_failure_output" 'composio setup --target auto --yes' "$interpreter_name plugin recovery command"
 
   reset_case
   CASE_PLUGINS=1
