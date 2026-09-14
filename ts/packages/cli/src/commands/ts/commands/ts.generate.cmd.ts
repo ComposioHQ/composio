@@ -369,19 +369,7 @@ export const handleTsGenerate = (params: GetCmdParams<typeof _tsCmd$Generate>) =
  * invariant rather than a recoverable failure, so this is `Effect.promise`. The
  * module registry memoizes the import.
  */
-const loadTypeScriptGeneration = Effect.promise(() =>
-  Promise.all([
-    import('src/generation/create-toolkit-index'),
-    import('src/generation/typescript/generate'),
-    import('src/generation/typescript/transpile'),
-    import('src/generation/constants'),
-  ]).then(([toolkitIndex, generate, transpile, constants]) => ({
-    createToolkitIndex: toolkitIndex.createToolkitIndex,
-    generateTypeScriptSources: generate.generateTypeScriptSources,
-    transpileTypeScriptSources: transpile.transpileTypeScriptSources,
-    BANNER: constants.BANNER,
-  }))
-);
+const loadTypeScriptGeneration = Effect.promise(() => import('src/generation/typescript'));
 
 export function generateTypescriptTypeStubs({
   outputOpt,

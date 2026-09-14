@@ -63,17 +63,7 @@ export const pyCmd$Generate = _pyCmd$Generate.pipe(Command.withHandler(generateP
  * `composio generate` needs it, so the import stays inside the handler instead
  * of on every command's startup path.
  */
-const loadPythonGeneration = Effect.promise(() =>
-  Promise.all([
-    import('src/generation/create-toolkit-index'),
-    import('src/generation/python/generate'),
-    import('src/generation/constants'),
-  ]).then(([toolkitIndex, generate, constants]) => ({
-    createToolkitIndex: toolkitIndex.createToolkitIndex,
-    generatePythonSources: generate.generatePythonSources,
-    BANNER: constants.BANNER,
-  }))
-);
+const loadPythonGeneration = Effect.promise(() => import('src/generation/python'));
 
 export function generatePythonTypeStubs({
   outputOpt,
