@@ -6,12 +6,17 @@
 import type * as FileSystem from 'effect/FileSystem';
 import type * as Path from 'effect/Path';
 import type { Composio as RawComposioClient } from '@composio/client';
-import { assertSafeFileUploadPath, readResponseBodyWithLimit } from '@composio/core';
-import { ssrfSafeFetch } from '@composio/core/utils/ssrf-guard';
 import { Cause, Data, Effect, Exit, Predicate } from 'effect';
 import { guessToolkitFromToolSlug } from 'src/utils/toolkit-from-tool-slug';
 
 type JsonSchema = Record<string, unknown>;
+
+// The three core helpers below are only reached once an execute actually carries
+// a file input, so they are imported on that path rather than at module scope:
+// `@composio/core`'s root entry evaluates the whole SDK, which every command
+// would otherwise pay for at startup. The module registry memoizes the import.
+const loadCoreFileUploadHelpers = () => import('@composio/core');
+const loadSsrfSafeFetch = () => import('@composio/core/utils/ssrf-guard');
 
 export class ToolFileUploadError extends Data.TaggedError('services/ToolFileUploadError')<{
   readonly cause?: unknown;
@@ -145,6 +150,7 @@ export const findFileUploadablePaths = (
 };
 
 const readFileFromUrl = async (path: Path.Path, url: string) => {
+  const { ssrfSafeFetch } = await loadSsrfSafeFetch();
   const response = await ssrfSafeFetch(url);
   if (!response.ok) {
     await response.body?.cancel().catch(() => undefined);
@@ -158,6 +164,7 @@ const readFileFromUrl = async (path: Path.Path, url: string) => {
   // Same cap as the core SDK's URL uploads: a remote server must not be able
   // to exhaust memory with an oversized or never-ending body. Copied into a
   // fresh ArrayBuffer-backed view for the same reason as readFileFromDisk.
+  const { readResponseBodyWithLimit } = await loadCoreFileUploadHelpers();
   const bytes = new Uint8Array(await readResponseBodyWithLimit(response));
   const parsedUrl = new URL(url);
   const fileName = path.basename(parsedUrl.pathname) || `file-${Date.now()}`;
@@ -193,6 +200,7 @@ const readFileFromDisk = async (fs: FileSystem.FileSystem, path: Path.Path, file
   // agent that has been prompt-injected into supplying its own tool arguments, so a
   // `--force`/env override would hand that attacker a trivial bypass. Pass a
   // CLI-appropriate remediation so the error does not advertise an SDK-only opt-out.
+  const { assertSafeFileUploadPath } = await loadCoreFileUploadHelpers();
   assertSafeFileUploadPath(filePath, {
     remediation:
       'The Composio CLI always enforces this denylist and has no opt-out. To upload this ' +
@@ -255,6 +263,7 @@ const uploadFile = async (params: {
     toolkit_slug: params.toolkitSlug,
   });
 
+  const { ssrfSafeFetch } = await loadSsrfSafeFetch();
   const uploadResponse = await ssrfSafeFetch(presigned.new_presigned_url, {
     method: 'PUT',
     body: fileData.bytes,

@@ -1,5 +1,5 @@
-import { describe, expect, it, layer } from '@effect/vitest';
-import { Cause, Deferred, Effect, Exit, Fiber } from 'effect';
+import { describe, expect, layer } from '@effect/vitest';
+import { Cause, Effect, Exit, Fiber, Latch } from 'effect';
 import { TestClock } from 'effect/testing';
 import { ChildProcess, ChildProcessSpawner } from 'effect/unstable/process';
 import { afterEach, vi } from 'vitest';
@@ -1136,21 +1136,25 @@ describe('CLI: composio setup', () => {
     );
   });
 
-  describe('hung native host', () => {
+  // Opens once setup reaches the host command. The command path does real
+  // file I/O first (config, analytics state), so a single yield is not enough
+  // to guarantee the 2-minute timeout has been armed on the TestClock before
+  // the clock is advanced; advancing too early leaves the sleep pending
+  // forever and the test hits vitest's own timeout instead.
+  const hostCommandReached = Latch.makeUnsafe(false);
+  const hangingRunner = CommandRunner.of({
+    run: () => Effect.succeed(ChildProcessSpawner.ExitCode(0)),
+    capture: () => Effect.andThen(hostCommandReached.open, Effect.never),
+  });
+  layer(TestLive({ commandRunner: hangingRunner }))('hung native host', it => {
     it.effect('times out instead of blocking setup forever', () =>
       Effect.gen(function* () {
-        const captureStarted = yield* Deferred.make<void>();
-        const hangingRunner = CommandRunner.of({
-          run: () => Effect.succeed(ChildProcessSpawner.ExitCode(0)),
-          capture: () =>
-            Deferred.succeed(captureStarted, undefined).pipe(Effect.andThen(Effect.never)),
-        });
         const fiber = yield* cli(['setup', '--target', 'claude', '--yes']).pipe(
-          Effect.provide(TestLive({ commandRunner: hangingRunner })),
           Effect.exit,
           Effect.forkChild
         );
-        yield* Deferred.await(captureStarted);
+        yield* hostCommandReached.await;
+        yield* Effect.yieldNow;
         yield* TestClock.adjust('2 minutes');
         const exit = yield* Fiber.join(fiber);
 

@@ -8,6 +8,7 @@ import { extendConfigProvider } from 'src/services/config';
 import { ComposioNoActiveConnectionError } from 'src/services/composio-error-overrides';
 import { setupCacheDir } from 'src/effects/setup-cache-dir';
 import { getOrFetchToolInputDefinition } from 'src/services/tool-input-validation';
+import { clearInProcessMemos } from 'src/utils/memoize-in-process';
 import * as consumerShortTermCache from 'src/services/consumer-short-term-cache';
 import * as composioClients from 'src/services/composio-clients';
 import * as redactModule from 'src/ui/redact';
@@ -264,6 +265,24 @@ describe('CLI: composio execute', () => {
       baseConfigProvider: testConfigProvider,
       fixture: 'global-test-user-id',
       stdin: { isTTY: true, data: '' },
+      toolkitsData: {
+        tools: [
+          {
+            name: 'Send Email',
+            slug: 'GMAIL_SEND_EMAIL',
+            description: 'Send an email',
+            tags: ['email'],
+            available_versions: ['20260115_00'],
+            input_parameters: {
+              type: 'object',
+              properties: {
+                recipient: { type: 'string' },
+              },
+            },
+            output_parameters: { type: 'object', properties: {} },
+          },
+        ],
+      } satisfies TestLiveInput['toolkitsData'],
       connectedAccountsData: {
         items: [
           {
@@ -343,6 +362,33 @@ describe('CLI: composio execute', () => {
         expect(recordedSessionCreateParams[0]?.connected_accounts).toEqual({
           gmail: 'con_gmail_default',
         });
+      })
+    );
+
+    it.effect('asks for the latest tool version once per execute on a schema cache hit', () =>
+      Effect.gen(function* () {
+        const latestVersion = vi
+          .spyOn(composioClients, 'getLatestToolVersion')
+          .mockImplementation(({ toolSlug }) =>
+            Effect.succeed({ tool_slug: toolSlug, version: '20260115_00' })
+          );
+        // Warm the on-disk schema cache, then forget the memoized version so
+        // the next run has to ask the server again.
+        yield* getOrFetchToolInputDefinition('GMAIL_SEND_EMAIL');
+        clearInProcessMemos();
+        latestVersion.mockClear();
+
+        yield* cli([
+          'execute',
+          'GMAIL_SEND_EMAIL',
+          '--skip-connection-check',
+          '-d',
+          '{"recipient":"a"}',
+        ]);
+
+        // The command's own version check and the executor's schema lookup
+        // both run on this path; they must share one request.
+        expect(latestVersion).toHaveBeenCalledTimes(1);
       })
     );
   });
@@ -1151,6 +1197,94 @@ describe('CLI: composio execute', () => {
       })
     );
   });
+
+  layer(
+    TestLive({
+      baseConfigProvider: largeOutputConfigProvider,
+      fixture: 'global-test-user-id',
+      stdin: { isTTY: true, data: '' },
+      toolsExecutor: {
+        respondWith: {
+          data: {
+            // ~18KB that o200k encodes in ~4k tokens: past the byte pre-filter,
+            // under the token threshold.
+            content: 'composio '.repeat(2_000),
+          },
+          error: null,
+          successful: true,
+          logId: 'log_dense_output',
+        },
+      },
+    })
+  )(
+    '[Given] a response over 10KB that stays under the token threshold [Then] it prints inline',
+    it => {
+      it.effect('does not store the payload in a file', () =>
+        Effect.gen(function* () {
+          yield* cli(['execute', 'GMAIL_SEND_EMAIL', '-d', '{"recipient":"a"}']);
+          const lines = yield* MockConsole.getLines({ stripAnsi: true });
+          const output = parseLastJson(lines) as unknown as {
+            successful: boolean;
+            storedInFile?: boolean;
+            data: { content: string };
+          };
+
+          expect(output.successful).toBe(true);
+          expect(output.storedInFile).toBeUndefined();
+          expect(output.data.content).toHaveLength(18_000);
+        })
+      );
+    }
+  );
+  layer(
+    TestLive({
+      baseConfigProvider: largeOutputConfigProvider,
+      fixture: 'global-test-user-id',
+      stdin: { isTTY: true, data: '' },
+      toolsExecutor: {
+        respondWith: {
+          data: {
+            // Both of o200k's special tokens, in a payload past the inline
+            // threshold so the token count is actually computed. Reading a file
+            // that documents a tokenizer is enough to hit this in real use.
+            content: `<|endoftext|> <|endofprompt|> ${'token '.repeat(20_000)}`,
+          },
+          error: null,
+          successful: true,
+          logId: 'log_special_tokens',
+        },
+      },
+    })
+  )(
+    '[Given] a response containing tiktoken special-token literals [Then] it still reports the execution',
+    it => {
+      it.effect('counts the literals as special tokens instead of failing the command', () =>
+        Effect.gen(function* () {
+          yield* cli(['execute', 'GMAIL_SEND_EMAIL', '-d', '{"recipient":"a"}']);
+          const lines = yield* MockConsole.getLines({ stripAnsi: true });
+          const output = parseLastJson(lines) as unknown as {
+            successful: boolean;
+            storedInFile: boolean;
+            tokenCount: number;
+            outputFilePath: string;
+          };
+
+          expect(output.successful).toBe(true);
+          expect(output.storedInFile).toBe(true);
+          expect(output.tokenCount).toBeGreaterThan(10_000);
+
+          const storedJson = fs.readFileSync(output.outputFilePath, 'utf8');
+          expect(storedJson).toContain('<|endoftext|>');
+          expect(storedJson).toContain('<|endofprompt|>');
+
+          fs.rmSync(output.outputFilePath.slice(0, output.outputFilePath.lastIndexOf('/')), {
+            recursive: true,
+            force: true,
+          });
+        })
+      );
+    }
+  );
 
   layer(
     TestLive({

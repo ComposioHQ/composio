@@ -9,6 +9,7 @@ import {
 import { JsonRecordSchema } from 'src/effects/json';
 import { setupCacheDir } from 'src/effects/setup-cache-dir';
 import { ComposioToolkitsRepository, getLatestToolVersion } from 'src/services/composio-clients';
+import { memoizeInProcess } from 'src/utils/memoize-in-process';
 import { logToolDebug } from 'src/services/runtime-debug-logger';
 import { normalizeFileUploadSchema } from 'src/services/tool-file-uploads';
 import { ComposioUserContext } from 'src/services/user-context';
@@ -184,31 +185,50 @@ export const invalidateToolInputDefinition = (slug: string) =>
       );
   });
 
-const fetchResolvedLatestToolVersion = (
-  slug: string,
-  params?: { readonly orgId?: string; readonly projectId?: string }
-) =>
+// One `get_latest_version` round trip per tool per process. `composio execute`
+// asks twice on every call: the background version check forked from the
+// command, and `getOrFetchToolInputDefinition` on the executor's file-upload
+// path. Both want the same answer within the same second.
+const fetchLatestToolVersionOnce = memoizeInProcess({
+  keyOf: (input: {
+    readonly slug: string;
+    readonly apiKey: string;
+    readonly params?: { readonly orgId?: string; readonly projectId?: string };
+  }) => `${input.slug}\u0000${input.params?.orgId ?? ''}\u0000${input.params?.projectId ?? ''}`,
+  make: ({ slug, apiKey, params }) =>
+    Effect.gen(function* () {
+      const userContext = yield* ComposioUserContext;
+      const latest = yield* getLatestToolVersion({
+        baseURL: userContext.data.baseURL,
+        apiKey,
+        toolSlug: slug,
+        orgId: params?.orgId,
+        projectId: params?.projectId,
+      });
+      yield* logToolDebug('latest_tool_version', {
+        slug,
+        orgId: params?.orgId,
+        projectId: params?.projectId,
+        response: latest,
+      });
+      return latest.version;
+    }),
+});
+
+// The API-key check stays outside the memo: the user context is live state
+// that `login` can fill in later in the same process, and caching the `null`
+// answered before that would silence the version check for the rest of it.
+const fetchResolvedLatestToolVersion = (input: {
+  readonly slug: string;
+  readonly params?: { readonly orgId?: string; readonly projectId?: string };
+}) =>
   Effect.gen(function* () {
     const userContext = yield* ComposioUserContext;
     const apiKey = Option.getOrUndefined(userContext.data.apiKey);
     if (!apiKey) {
       return null;
     }
-
-    const latest = yield* getLatestToolVersion({
-      baseURL: userContext.data.baseURL,
-      apiKey,
-      toolSlug: slug,
-      orgId: params?.orgId,
-      projectId: params?.projectId,
-    });
-    yield* logToolDebug('latest_tool_version', {
-      slug,
-      orgId: params?.orgId,
-      projectId: params?.projectId,
-      response: latest,
-    });
-    return latest.version;
+    return yield* fetchLatestToolVersionOnce({ ...input, apiKey });
   });
 
 const fetchAndCacheToolInputDefinition = (
@@ -242,7 +262,9 @@ const fetchAndCacheToolInputDefinition = (
     const [tool, latestVersion] = yield* Effect.all(
       [
         repo.getToolDetailed(slug),
-        fetchResolvedLatestToolVersion(slug, params).pipe(Effect.catch(() => Effect.succeed(null))),
+        fetchResolvedLatestToolVersion({ slug, params }).pipe(
+          Effect.catch(() => Effect.succeed(null))
+        ),
       ],
       { concurrency: 2 }
     );
@@ -314,7 +336,7 @@ const refreshAndFetchToolInputDefinitionIfVersionChanged = (
   params?: { readonly orgId?: string; readonly projectId?: string }
 ) =>
   Effect.gen(function* () {
-    const latestVersion = yield* fetchResolvedLatestToolVersion(slug, params);
+    const latestVersion = yield* fetchResolvedLatestToolVersion({ slug, params });
     yield* logToolDebug('resolved_tool_version', {
       slug,
       mode: 'refresh',
