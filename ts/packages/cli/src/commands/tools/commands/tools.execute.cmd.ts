@@ -332,7 +332,13 @@ const getExecuteOutputEncoder = () => {
   return executeOutputEncoder;
 };
 
-const countOutputTokens = (json: string): number => getExecuteOutputEncoder().encode(json).length;
+// `Tiktoken.encode` defaults `disallowedSpecial` to "all", which makes it throw
+// on any tool response that happens to contain the literal text `<|endoftext|>`
+// or `<|endofprompt|>` (a README about tokenizers is enough). Here the encoder
+// is only a length gauge, so passing `allowedSpecial: 'all'` counts each literal
+// as the single special token it encodes to instead of rejecting the payload.
+const countOutputTokens = (json: string): number =>
+  getExecuteOutputEncoder().encode(json, 'all').length;
 
 // A BPE token always covers at least one UTF-8 byte, so a payload of at most
 // THRESHOLD bytes can never exceed THRESHOLD tokens. Checking the byte length
