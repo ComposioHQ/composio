@@ -330,26 +330,30 @@ const EXECUTE_INLINE_OUTPUT_TOKEN_THRESHOLD = 10_000;
 // `composio run`'s modules.
 const loadExecuteOutputEncoder = loadInstalledCompanionModule<
   typeof import('src/services/execute-output-encoder-runtime')
->('execute-output-encoder-runtime');
+>('execute-output-encoder-runtime', ['countOutputTokens']);
 
 // JSON averages roughly four bytes per o200k token.
 const ESTIMATED_BYTES_PER_OUTPUT_TOKEN = 4;
 
 // The tool call has already succeeded by the time its output is measured, so an
 // encoder that cannot be loaded (a damaged install, or a repair download that
-// fails offline) must not fail the command. The count only chooses between
-// inline output and a stored file, so it falls back to an estimate from the
-// byte length.
+// fails offline) must not fail the command, so it falls back to an estimate from
+// the byte length. The estimate is not exact: a response averaging fewer bytes
+// per token can exceed the threshold while its estimate does not, so only an
+// exact count keeps a response that passed the byte pre-filter inline.
 const countOutputTokens = (json: string) =>
   loadExecuteOutputEncoder.pipe(
-    Effect.map(encoder => encoder.countOutputTokens(json)),
+    Effect.map(encoder => ({ tokenCount: encoder.countOutputTokens(json), exact: true })),
     Effect.catch(error =>
       Effect.logDebug(
         `[execute] tokenizer unavailable, estimating the output token count: ${error.message}`
       ).pipe(
-        Effect.as(
-          Math.ceil(new TextEncoder().encode(json).length / ESTIMATED_BYTES_PER_OUTPUT_TOKEN)
-        )
+        Effect.as({
+          tokenCount: Math.ceil(
+            new TextEncoder().encode(json).length / ESTIMATED_BYTES_PER_OUTPUT_TOKEN
+          ),
+          exact: false,
+        })
       )
     )
   );
@@ -452,8 +456,8 @@ const prepareExecuteOutput = (
       } satisfies PreparedExecuteOutput;
     }
 
-    const tokenCount = yield* countOutputTokens(json);
-    if (tokenCount <= EXECUTE_INLINE_OUTPUT_TOKEN_THRESHOLD) {
+    const { tokenCount, exact } = yield* countOutputTokens(json);
+    if (exact && tokenCount <= EXECUTE_INLINE_OUTPUT_TOKEN_THRESHOLD) {
       return {
         kind: 'inline',
         json,

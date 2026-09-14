@@ -472,7 +472,7 @@ describe('loadInstalledCompanionModule', () => {
       Effect.gen(function* () {
         const encoder = yield* loadInstalledCompanionModule<
           typeof import('src/services/execute-output-encoder-runtime')
-        >('execute-output-encoder-runtime');
+        >('execute-output-encoder-runtime', ['countOutputTokens']);
 
         expect(encoder.countOutputTokens('hello world')).toBe(2);
         // A special-token literal counts as its one special token rather than
@@ -483,7 +483,7 @@ describe('loadInstalledCompanionModule', () => {
 
     it.effect('[Given] a module that cannot be loaded [Then] it fails with a typed error', () =>
       Effect.gen(function* () {
-        const error = yield* loadInstalledCompanionModule('missing-companion-module').pipe(
+        const error = yield* loadInstalledCompanionModule('missing-companion-module', []).pipe(
           Effect.flip
         );
 
@@ -492,12 +492,28 @@ describe('loadInstalledCompanionModule', () => {
       })
     );
 
+    it.effect(
+      '[Given] a module from another release [Then] it fails with a typed error naming the missing export',
+      () =>
+        Effect.gen(function* () {
+          const error = yield* loadInstalledCompanionModule<{
+            readonly countOutputTokens: unknown;
+            readonly retiredExport: unknown;
+          }>('execute-output-encoder-runtime', ['countOutputTokens', 'retiredExport']).pipe(
+            Effect.flip
+          );
+
+          expect(error._tag).toBe('services/RunCompanionRepairError');
+          expect(error.message).toContain('execute-output-encoder-runtime');
+          expect(error.message).toContain('missing retiredExport');
+        })
+    );
+
     it.effect('[Given] the generation companion [Then] its API is promise-shaped', () =>
       Effect.gen(function* () {
-        const generation =
-          yield* loadInstalledCompanionModule<typeof import('src/services/generation-runtime')>(
-            'generation-runtime'
-          );
+        const generation = yield* loadInstalledCompanionModule<
+          typeof import('src/services/generation-runtime')
+        >('generation-runtime', ['wrapInlineCodeForRun', 'generatePythonSourceFiles']);
 
         expect(generation.wrapInlineCodeForRun('1 + 1')).toBe('return (1 + 1);');
         const outcome = yield* Effect.promise(() =>

@@ -845,9 +845,15 @@ export const resolveRunCompanionModulePath = ({
  *
  * Resolution is the same as for the `run` companions: the `.ts` source next to
  * this file when running from a checkout (tests, `bun run src/bin.ts`), the
- * `.mjs` bundle next to the executable in a packaged install. A packaged install
- * that lost the file goes through the same release-archive repair `composio run`
- * uses before failing.
+ * `.mjs` bundle next to the executable in a packaged install.
+ *
+ * The module is imported before anything else is checked, so a companion that
+ * loads is used even when an unrelated one is missing and the repair download
+ * would fail offline. Only a module that fails to load, or that lacks one of
+ * `requiredExports` (a file left behind by a different release), sends a
+ * packaged install through the release-archive repair `composio run` uses. If
+ * that repair restored missing files the module is imported once more;
+ * otherwise the load error stands.
  *
  * The specifier is computed at runtime on purpose: a literal `import('./x')`
  * would make the bundler fold the module back into the executable, which is the
@@ -857,7 +863,8 @@ export const resolveRunCompanionModulePath = ({
  * is type-only and leaves no import behind.
  */
 export const loadInstalledCompanionModule = <M>(
-  baseName: string
+  baseName: string,
+  requiredExports: ReadonlyArray<keyof M & string>
 ): Effect.Effect<
   M,
   RunCompanionRepairError | PlatformError.PlatformError,
@@ -868,28 +875,45 @@ export const loadInstalledCompanionModule = <M>(
     const callerImportMetaUrl = import.meta.url;
     const execPath = process.execPath;
 
-    yield* repairMissingInstalledRunCompanionModules({
-      callerImportMetaUrl,
-      execPath,
-      appVersion: APP_VERSION,
+    const importModule = Effect.gen(function* () {
+      const modulePath = yield* resolveRunCompanionModulePath({
+        callerImportMetaUrl,
+        execPath,
+        relativeNoExtensionFromCaller: `./${baseName}`,
+      });
+      const fileName = path.basename(modulePath);
+      const moduleUrl = yield* Effect.orDie(path.toFileUrl(modulePath));
+
+      // A rejected import means the file resolved above is missing or unloadable:
+      // a broken install. It stays a typed failure so callers can report it, or
+      // fall back, instead of crashing with a stack trace.
+      const exports = yield* Effect.tryPromise({
+        try: () => import(moduleUrl.href) as Promise<Record<string, unknown>>,
+        catch: cause =>
+          new RunCompanionRepairError({
+            message: `Unable to load the CLI's bundled support file ${fileName}. Reinstall the CLI and try again.`,
+            cause,
+          }),
+      });
+
+      const missingExports = requiredExports.filter(name => !(name in exports));
+      if (missingExports.length > 0) {
+        return yield* new RunCompanionRepairError({
+          message: `The CLI's bundled support file ${fileName} does not match this CLI (missing ${missingExports.join(', ')}). Reinstall the CLI and try again.`,
+        });
+      }
+      return exports as M;
     });
 
-    const modulePath = yield* resolveRunCompanionModulePath({
-      callerImportMetaUrl,
-      execPath,
-      relativeNoExtensionFromCaller: `./${baseName}`,
-    });
-    const moduleUrl = yield* Effect.orDie(path.toFileUrl(modulePath));
-
-    // A rejected import means the file resolved above is missing or unloadable:
-    // a broken install. It stays a typed failure so callers can report it, or
-    // fall back, instead of crashing with a stack trace.
-    return yield* Effect.tryPromise({
-      try: () => import(moduleUrl.href) as Promise<M>,
-      catch: cause =>
-        new RunCompanionRepairError({
-          message: `Unable to load the CLI's bundled support file ${path.basename(modulePath)}. Reinstall the CLI and try again.`,
-          cause,
-        }),
-    });
+    return yield* importModule.pipe(
+      Effect.catchTag('services/RunCompanionRepairError', loadError =>
+        repairMissingInstalledRunCompanionModules({
+          callerImportMetaUrl,
+          execPath,
+          appVersion: APP_VERSION,
+        }).pipe(
+          Effect.flatMap(({ repaired }) => (repaired ? importModule : Effect.fail(loadError)))
+        )
+      )
+    );
   });
