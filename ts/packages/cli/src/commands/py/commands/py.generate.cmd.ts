@@ -6,10 +6,7 @@ import { ComposioToolkitsRepository } from 'src/services/composio-clients';
 import { logMetrics } from 'src/effects/log-metrics';
 import type { GetCmdParams } from 'src/type-utils';
 import { NodeProcess } from 'src/services/node-process';
-import { createToolkitIndex } from 'src/generation/create-toolkit-index';
 import { pyFindComposioCoreGenerated } from 'src/effects/find-composio-core-generated';
-import { BANNER } from 'src/generation/constants';
-import { generatePythonSources } from 'src/generation/python/generate';
 import {
   getToolkitVersionOverrides,
   type ToolkitVersionOverrides,
@@ -60,6 +57,13 @@ const _pyCmd$Generate = Command.make('generate', { outputOpt, toolkitsOpt }).pip
 );
 
 export const pyCmd$Generate = _pyCmd$Generate.pipe(Command.withHandler(generatePythonTypeStubs));
+
+/**
+ * Deferred for the same reason as the TypeScript pipeline: only
+ * `composio generate` needs it, so the import stays inside the handler instead
+ * of on every command's startup path.
+ */
+const loadPythonGeneration = Effect.promise(() => import('src/generation/python'));
 
 export function generatePythonTypeStubs({
   outputOpt,
@@ -171,6 +175,7 @@ export function generatePythonTypeStubs({
         const typeableTools = { withTypes: false as const, tools };
 
         yield* spinner.message('Generating Python type stubs...');
+        const { createToolkitIndex, generatePythonSources, BANNER } = yield* loadPythonGeneration;
         const index = createToolkitIndex({ toolkits, typeableTools, triggerTypes, versionMap });
 
         // Generate Python sources
