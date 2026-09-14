@@ -1,4 +1,4 @@
-import { Args, Command, Options } from '@effect/cli';
+import { Argument, Command, Flag } from 'effect/unstable/cli';
 import { Data, Effect, Option } from 'effect';
 import { requireAuth } from 'src/effects/require-auth';
 import { TerminalUI } from 'src/services/terminal-ui';
@@ -43,79 +43,79 @@ export const buildToolLogShorthandSearchParams = (
   ...toSearchParams(filters.sessionId, 'session_id'),
 ];
 
-const cursor = Options.integer('cursor').pipe(
-  Options.optional,
-  Options.withDescription('Cursor for pagination')
+const cursor = Flag.integer('cursor').pipe(
+  Flag.optional,
+  Flag.withDescription('Cursor for pagination')
 );
 
-const from = Options.integer('from').pipe(
-  Options.withDescription('Start timestamp (epoch milliseconds)'),
-  Options.optional
+const from = Flag.integer('from').pipe(
+  Flag.withDescription('Start timestamp (epoch milliseconds)'),
+  Flag.optional
 );
 
-const to = Options.integer('to').pipe(
-  Options.withDescription('End timestamp (epoch milliseconds)'),
-  Options.optional
+const to = Flag.integer('to').pipe(
+  Flag.withDescription('End timestamp (epoch milliseconds)'),
+  Flag.optional
 );
 
-const limit = Options.integer('limit').pipe(
-  Options.withDefault(30),
-  Options.withDescription('Number of logs to fetch (1-1000)')
+const limit = Flag.integer('limit').pipe(
+  Flag.withDefault(30),
+  Flag.withDescription('Number of logs to fetch (1-1000)')
 );
 
-const caseSensitive = Options.boolean('case-sensitive').pipe(
-  Options.withDefault(false),
-  Options.withDescription('Whether search params are case-sensitive')
+const caseSensitive = Flag.boolean('case-sensitive').pipe(
+  Flag.withDefault(false),
+  Flag.withDescription('Whether search params are case-sensitive')
 );
 
-const toolkit = Options.text('toolkit').pipe(
-  Options.withDescription('Filter by toolkit key(s), comma-separated (e.g. "gmail,slack")'),
-  Options.optional
+const toolkit = Flag.string('toolkit').pipe(
+  Flag.withDescription('Filter by toolkit key(s), comma-separated (e.g. "gmail,slack")'),
+  Flag.optional
 );
 
-const tool = Options.text('tool').pipe(
-  Options.withDescription('Filter by tool key(s), comma-separated (e.g. "GMAIL_SEND_EMAIL")'),
-  Options.optional
+const tool = Flag.string('tool').pipe(
+  Flag.withDescription('Filter by tool key(s), comma-separated (e.g. "GMAIL_SEND_EMAIL")'),
+  Flag.optional
 );
 
-const connectedAccountId = Options.text('connected-account-id').pipe(
-  Options.withDescription('Filter by connected account id(s), comma-separated'),
-  Options.optional
+const connectedAccountId = Flag.string('connected-account-id').pipe(
+  Flag.withDescription('Filter by connected account id(s), comma-separated'),
+  Flag.optional
 );
 
-const authConfigId = Options.text('auth-config-id').pipe(
-  Options.withDescription('Filter by auth config id(s), comma-separated'),
-  Options.optional
+const authConfigId = Flag.string('auth-config-id').pipe(
+  Flag.withDescription('Filter by auth config id(s), comma-separated'),
+  Flag.optional
 );
 
-const status = Options.text('status').pipe(
-  Options.withDescription('Filter by execution status value(s), comma-separated'),
-  Options.optional
+const status = Flag.string('status').pipe(
+  Flag.withDescription('Filter by execution status value(s), comma-separated'),
+  Flag.optional
 );
 
-const userId = Options.text('user-id').pipe(
-  Options.withDescription('Filter by user id(s), comma-separated'),
-  Options.optional
+const userId = Flag.string('user-id').pipe(
+  Flag.withDescription('Filter by user id(s), comma-separated'),
+  Flag.optional
 );
 
-const logIdFilter = Options.text('log-id').pipe(
-  Options.withDescription('Filter by log id(s), comma-separated'),
-  Options.optional
+const logIdFilter = Flag.string('log-id').pipe(
+  Flag.withDescription('Filter by log id(s), comma-separated'),
+  Flag.optional
 );
 
-const toolRouterSessionId = Options.text('tool-router-session-id').pipe(
-  Options.withDescription('Filter by tool router session id(s), comma-separated'),
-  Options.optional
+const toolRouterSessionId = Flag.string('tool-router-session-id').pipe(
+  Flag.withDescription('Filter by tool router session id(s), comma-separated'),
+  Flag.optional
 );
 
-const sessionId = Options.text('session-id').pipe(
-  Options.withDescription('Filter by session id(s), comma-separated'),
-  Options.optional
+const sessionId = Flag.string('session-id').pipe(
+  Flag.withDescription('Filter by session id(s), comma-separated'),
+  Flag.optional
 );
 
-const logId = Args.text({ name: 'log_id' }).pipe(
-  Args.withDescription('Tool log ID'),
-  Args.optional
+const logId = Argument.string('log_id').pipe(
+  Argument.withDescription('Tool log ID'),
+  Argument.optional
 );
 
 /**

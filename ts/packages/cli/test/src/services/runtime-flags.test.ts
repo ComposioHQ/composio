@@ -72,13 +72,11 @@ describe('stripTelemetryDebugFlag', () => {
   });
 });
 
-const enabledDebugConfig = ConfigProvider.fromMap(
-  new Map([
-    ['COMPOSIO_PERF_DEBUG', '1'],
-    ['COMPOSIO_TOOL_DEBUG', '1'],
-    ['COMPOSIO_RUN_ACP_ONLY', '1'],
-  ])
-).pipe(extendConfigProvider);
+const enabledDebugConfig = ConfigProvider.fromEnvRecord({
+  COMPOSIO_PERF_DEBUG: '1',
+  COMPOSIO_TOOL_DEBUG: '1',
+  COMPOSIO_RUN_ACP_ONLY: '1',
+}).pipe(extendConfigProvider);
 
 const readAllDebugFlags = Effect.all({
   perfDebug: isPerfDebugEnabled,
@@ -97,7 +95,7 @@ describe('debug flag precedence', () => {
         });
       }).pipe(
         Effect.provide(cliDebugFlagsLayer(NO_CLI_DEBUG_FLAG_OVERRIDES)),
-        Effect.withConfigProvider(enabledDebugConfig)
+        Effect.provideService(ConfigProvider.ConfigProvider, enabledDebugConfig)
       )
     );
 
@@ -110,7 +108,7 @@ describe('debug flag precedence', () => {
         });
       }).pipe(
         Effect.provide(cliDebugFlagsLayer({ perfDebug: false, toolDebug: false, acpOnly: false })),
-        Effect.withConfigProvider(enabledDebugConfig)
+        Effect.provideService(ConfigProvider.ConfigProvider, enabledDebugConfig)
       )
     );
   });

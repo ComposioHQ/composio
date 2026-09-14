@@ -1,7 +1,7 @@
-import { Command, HelpDoc, Options, ValidationError } from '@effect/cli';
+import { Command, Flag } from 'effect/unstable/cli';
 import { Array, Data, Effect, Option, pipe, String } from 'effect';
-import * as FileSystem from '@effect/platform/FileSystem';
-import * as Path from '@effect/platform/Path';
+import * as FileSystem from 'effect/FileSystem';
+import * as Path from 'effect/Path';
 import { ComposioToolkitsRepository } from 'src/services/composio-clients';
 import { logMetrics } from 'src/effects/log-metrics';
 import type { GetCmdParams } from 'src/type-utils';
@@ -25,20 +25,27 @@ export class PythonGenerationWriteError extends Data.TaggedError(
   readonly message: string;
 }> {}
 
-const invalidGenerateValue = (message: string) => ValidationError.invalidValue(HelpDoc.p(message));
+/**
+ * Business-level validation failure for `generate py` inputs (output
+ * directory location, toolkit filter values) that are only knowable after
+ * parsing. See the analogous comment on `LinkInputError` in
+ * `connected-accounts.link.cmd.ts` for why this is a plain typed domain
+ * error rather than a `CliError.InvalidValue` in v4.
+ */
+class GenerateInputError extends Data.TaggedError('commands/GenerateInputError')<{
+  readonly message: string;
+}> {}
 
-export const outputOpt = Options.optional(
-  Options.directory('output-dir', {
-    exists: 'either',
-  })
-).pipe(
-  Options.withAlias('o'),
-  Options.withDescription('Output directory for the generated Python type stubs')
+const invalidGenerateValue = (message: string) => new GenerateInputError({ message });
+
+export const outputOpt = Flag.optional(Flag.directory('output-dir')).pipe(
+  Flag.withAlias('o'),
+  Flag.withDescription('Output directory for the generated Python type stubs')
 );
 
-export const toolkitsOpt = Options.text('toolkits').pipe(
-  Options.repeated,
-  Options.withDescription(
+export const toolkitsOpt = Flag.string('toolkits').pipe(
+  Flag.atLeast(0),
+  Flag.withDescription(
     'Only generate types for specific toolkits (e.g., --toolkits gmail --toolkits slack)'
   )
 );
@@ -96,7 +103,7 @@ export function generatePythonTypeStubs({
     const versionOverrides = yield* getToolkitVersionOverrides;
 
     // Validate toolkit slugs if specified
-    const hasToolkitsFilter = Array.isNonEmptyArray(toolkitsOpt);
+    const hasToolkitsFilter = Array.isReadonlyArrayNonEmpty(toolkitsOpt);
     const toolkitSlugsFilter = hasToolkitsFilter ? toolkitsOpt.map(s => s.toLowerCase()) : null;
 
     // Validate toolkit version overrides before fetching data

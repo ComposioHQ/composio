@@ -58,7 +58,7 @@ export const handleHttpServerError =
       if (opts.searchForSuggestions) {
         const suggestions = yield* opts
           .searchForSuggestions()
-          .pipe(Effect.catchAll(() => Effect.succeed(noSuggestions)));
+          .pipe(Effect.catch(() => Effect.succeed(noSuggestions)));
 
         const [first] = suggestions;
         if (first) {

@@ -5,8 +5,8 @@ import { HOME_INTENTS } from '../../lib/home-navigation';
 const read = (path: string) => Bun.file(new URL(`../../${path}`, import.meta.url)).text();
 
 /**
- * The 7 auth guides live in the Authentication folder; shared connections is a
- * session capability and lives under Extend sessions.
+ * Auth guides retain their URLs; managed vs custom auth is listed under
+ * Production readiness. Shared connections lives under Extend sessions.
  */
 const AUTH_GUIDES = [
   'manually-authenticating',
@@ -52,17 +52,23 @@ describe('getting-started routing policy', () => {
   });
 
   test('keeps progressive authentication guides in the human hub and the sidebar', async () => {
-    const [authentication, authMeta, sessionsMeta] = await Promise.all([
+    const [authentication, authMeta, sessionsMeta, readinessMeta] = await Promise.all([
       read('content/docs/authentication/index.mdx'),
       read('content/docs/authentication/meta.json'),
       read('content/docs/extending-sessions/meta.json'),
+      read('content/docs/poc-to-prod/meta.json'),
     ]);
     const authPages = JSON.parse(authMeta).pages as string[];
     const sessionPages = JSON.parse(sessionsMeta).pages as string[];
 
     for (const guide of AUTH_GUIDES) {
       expect(authentication).toContain(`href="/docs/authentication/${guide}"`);
-      expect(authPages).toContain(guide);
+      if (guide === 'custom-app-vs-managed-app') {
+        expect(authPages).not.toContain(guide);
+        expect(JSON.parse(readinessMeta).pages).toContain(`../authentication/${guide}`);
+      } else {
+        expect(authPages).toContain(guide);
+      }
     }
 
     expect(authentication).toContain('href="/docs/extending-sessions/shared-connections"');
@@ -77,13 +83,20 @@ describe('getting-started routing policy', () => {
    * files — has to fail something.
    */
   test('emits every authentication guide into llms.txt exactly once', async () => {
-    const { GET } = await import('../../app/llms.txt/route');
+    const { GET } = await import('../../app/llms-index.txt/route');
     const llms = await (await GET()).text();
 
     for (const url of ['/docs/authentication', ...GUIDE_URLS]) {
       const occurrences = llms.split(`https://docs.composio.dev${url}.md`).length - 1;
       expect(occurrences, `${url} appears ${occurrences}x in llms.txt`).toBe(1);
     }
+  });
+
+  test('does not turn external sidebar links into documentation URLs', async () => {
+    const { GET } = await import('../../app/llms-index.txt/route');
+    const llms = await (await GET()).text();
+
+    expect(llms).not.toContain('- https://docs.composio.dev/llms.txt.md');
   });
 
   /**
@@ -93,11 +106,11 @@ describe('getting-started routing policy', () => {
    * the sidebar shows it as a sibling.
    */
   test('files each page under the section it belongs to', async () => {
-    const { GET } = await import('../../app/llms.txt/route');
+    const { GET } = await import('../../app/llms-index.txt/route');
     const lines = (await (await GET()).text()).split('\n');
 
     const sectionOf = (url: string) => {
-      const index = lines.findIndex(line => line.endsWith(`${url}.md`));
+      const index = lines.findIndex(line => line.includes(`${url}.md)`));
       expect(index, `${url} missing from llms.txt`).toBeGreaterThan(-1);
       const preceding = lines.slice(0, index);
       return {
@@ -108,8 +121,8 @@ describe('getting-started routing policy', () => {
 
     for (const guide of AUTH_GUIDES) {
       expect(sectionOf(`/docs/authentication/${guide}`)).toEqual({
-        section: '## Core concepts',
-        nearest: '### Authentication',
+        section: guide === 'custom-app-vs-managed-app' ? '## Guides' : '## Core concepts',
+        nearest: guide === 'custom-app-vs-managed-app' ? '### Production readiness' : '### Authentication',
       });
     }
 
@@ -140,6 +153,11 @@ describe('getting-started routing policy', () => {
         nearest: '## Get Started',
       });
     }
+
+    expect(sectionOf('/docs/agent-setup')).toEqual({
+      section: '## Get Started',
+      nearest: '### Agent setup',
+    });
 
     expect(lines).not.toContain('## Authentication guides');
   });

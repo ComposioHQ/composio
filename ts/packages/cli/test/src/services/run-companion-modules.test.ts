@@ -1,9 +1,9 @@
 import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
-import * as BunContext from '@effect/platform-bun/BunContext';
+import * as BunServices from '@effect/platform-bun/BunServices';
 import { afterEach, describe, expect, it, layer } from '@effect/vitest';
-import { Effect } from 'effect';
+import { ConfigProvider, Effect } from 'effect';
 import { vi } from 'vitest';
 import {
   hostRunCompanionStaticAssetRelativePaths,
@@ -17,7 +17,7 @@ import {
   RUN_COMPANION_SHARED_STATIC_ASSET_RELATIVE_PATHS,
   runCompanionStaticAssetRelativePathsFor,
 } from 'src/services/run-companion-modules';
-import { BaseConfigProviderLive, extendConfigProvider } from 'src/services/config';
+import { getBaseConfigProvider, extendConfigProvider } from 'src/services/config';
 
 const extractZipMock = vi.hoisted(() => vi.fn());
 vi.mock('extract-zip', () => ({ default: extractZipMock }));
@@ -97,7 +97,7 @@ describe('run-companion-modules', () => {
     });
   });
 
-  layer(BunContext.layer)(it => {
+  layer(BunServices.layer)(it => {
     it.effect(
       "[Given] an install lacking another platform's codex-acp binary [Then] nothing needs repair",
       () =>
@@ -324,7 +324,10 @@ describe('run-companion-modules', () => {
         }).pipe(
           // Simulate the cli-main runtime, whose provider rewrites config keys
           // to their COMPOSIO_-prefixed spelling.
-          Effect.withConfigProvider(extendConfigProvider(BaseConfigProviderLive)),
+          Effect.provideService(
+            ConfigProvider.ConfigProvider,
+            extendConfigProvider(getBaseConfigProvider())
+          ),
           Effect.ensuring(
             Effect.sync(() => fs.rmSync(installDirectory, { recursive: true, force: true }))
           )
@@ -365,7 +368,10 @@ describe('run-companion-modules', () => {
             'https://prefixed-proxy.test/repos/ComposioHQ/composio/releases/tags/%40composio%2Fcli%408.8.8-test'
           );
         }).pipe(
-          Effect.withConfigProvider(extendConfigProvider(BaseConfigProviderLive)),
+          Effect.provideService(
+            ConfigProvider.ConfigProvider,
+            extendConfigProvider(getBaseConfigProvider())
+          ),
           Effect.ensuring(
             Effect.sync(() => fs.rmSync(installDirectory, { recursive: true, force: true }))
           )
@@ -382,7 +388,7 @@ describe('run-companion-modules', () => {
  * never be handed back as a runnable adapter.
  */
 describe('resolveRunCompanionAssetPath', () => {
-  layer(BunContext.layer)(it => {
+  layer(BunServices.layer)(it => {
     const withInstallDirectory = <A, E, R>(
       contents: number,
       use: (execPath: string) => Effect.Effect<A, E, R>

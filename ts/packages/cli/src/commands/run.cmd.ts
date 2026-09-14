@@ -1,10 +1,9 @@
 import process from 'node:process';
-import { Args, Command, Options } from '@effect/cli';
-import * as PlatformCommand from '@effect/platform/Command';
-import * as CommandExecutor from '@effect/platform/CommandExecutor';
-import * as FileSystem from '@effect/platform/FileSystem';
-import * as Path from '@effect/platform/Path';
-import { Data, Deferred, Duration, Effect, Either, MutableRef, Option } from 'effect';
+import { Argument, Command, Flag } from 'effect/unstable/cli';
+import * as FileSystem from 'effect/FileSystem';
+import * as Path from 'effect/Path';
+import { ChildProcess, ChildProcessSpawner } from 'effect/unstable/process';
+import { Context, Data, Deferred, Duration, Effect, MutableRef, Option, Result } from 'effect';
 import { ts } from 'ts-morph';
 import { APP_VERSION } from 'src/constants';
 import { APP_CONFIG, UNPREFIXED_CONFIG } from 'src/effects/app-config';
@@ -35,42 +34,76 @@ import { loadHostConfig } from 'src/services/config';
 import { resolveCliConfigPath } from 'src/services/cli-user-config';
 import { NodeOs } from 'src/services/node-os';
 
-const file = Options.text('file').pipe(
-  Options.withAlias('f'),
-  Options.withDescription('Run a TS/JS file instead of inline code'),
-  Options.optional
+const file = Flag.string('file').pipe(
+  Flag.withAlias('f'),
+  Flag.withDescription('Run a TS/JS file instead of inline code'),
+  Flag.optional
 );
 
-const dryRun = Options.boolean('dry-run').pipe(
-  Options.withDescription('Preview execute() calls without running them'),
-  Options.withDefault(false)
+const dryRun = Flag.boolean('dry-run').pipe(
+  Flag.withDescription('Preview execute() calls without running them'),
+  Flag.withDefault(false)
 );
-const debug = Options.boolean('debug').pipe(
-  Options.withDescription('Log helper steps while the script runs'),
-  Options.withDefault(false)
+const debug = Flag.boolean('debug').pipe(
+  Flag.withDescription('Log helper steps while the script runs'),
+  Flag.withDefault(false)
 );
-const logsOff = Options.boolean('logs-off').pipe(
-  Options.withDescription('Hide helper streaming logs; keep them only in the run log file.'),
-  Options.withDefault(false)
+const logsOff = Flag.boolean('logs-off').pipe(
+  Flag.withDescription('Hide helper streaming logs; keep them only in the run log file.'),
+  Flag.withDefault(false)
 );
-const skipConnectionCheck = Options.boolean('skip-connection-check').pipe(
-  Options.withDescription('Skip the connected-account check'),
-  Options.withDefault(false)
+const skipConnectionCheck = Flag.boolean('skip-connection-check').pipe(
+  Flag.withDescription('Skip the connected-account check'),
+  Flag.withDefault(false)
 );
-const skipToolParamsCheck = Options.boolean('skip-tool-params-check').pipe(
-  Options.withDescription('Skip input validation against cached schema'),
-  Options.withDefault(false)
+const skipToolParamsCheck = Flag.boolean('skip-tool-params-check').pipe(
+  Flag.withDescription('Skip input validation against cached schema'),
+  Flag.withDefault(false)
 );
-const skipChecks = Options.boolean('skip-checks').pipe(
-  Options.withDescription('Skip both connection and input validation checks'),
-  Options.withDefault(false)
+const skipChecks = Flag.boolean('skip-checks').pipe(
+  Flag.withDescription('Skip both connection and input validation checks'),
+  Flag.withDefault(false)
 );
 
-const args = Args.repeated(Args.text({ name: 'arg' })).pipe(
-  Args.withDescription('Inline code followed by arguments, or just arguments when using --file')
+/**
+ * Flag surface of the `run` command as raw argv tokens, consumed by
+ * `commands/index.ts`'s passthrough normalizer. Kept adjacent to the `Flag`
+ * definitions above: adding, renaming, or aliasing a `run` flag MUST update
+ * these sets, or the normalizer will demote the new flag (and everything
+ * after it) to passthrough script arguments.
+ */
+export const RUN_KNOWN_BOOLEAN_FLAGS: ReadonlySet<string> = new Set([
+  '--dry-run',
+  '--debug',
+  '--logs-off',
+  '--skip-connection-check',
+  '--skip-tool-params-check',
+  '--skip-checks',
+  '--help',
+  '-h',
+]);
+export const RUN_KNOWN_VALUE_FLAGS: ReadonlySet<string> = new Set(['--file', '-f']);
+
+const args = Argument.string('arg').pipe(
+  Argument.variadic(),
+  Argument.withDescription('Inline code followed by arguments, or just arguments when using --file')
 );
 
 const withArgDelimiter = (args: ReadonlyArray<string>) => (args.length > 0 ? ['--', ...args] : []);
+
+/**
+ * Out-of-band passthrough tail for `run`'s script arguments. See
+ * `splitRunPassthroughArgs` in `src/commands/index.ts` for the full
+ * mechanism this exists for (lexer/parser facts + the handoff); that
+ * function provides this reference for the scope of a single CLI
+ * invocation. `undefined` here means no front door provided it (direct
+ * programmatic/test invocations of this command), so the handler below
+ * falls back to the parsed `Argument.variadic()` value.
+ */
+export const RunPassthroughArgs = Context.Reference<ReadonlyArray<string> | undefined>(
+  'composio/cli/run/RunPassthroughArgs',
+  { defaultValue: () => undefined }
+);
 
 export const extractInlineExecuteToolSlugs = (source: string): ReadonlyArray<string> => {
   if (!source.trim()) {
@@ -413,15 +446,15 @@ class ChildSignalError extends Data.TaggedError('ChildSignalError')<{
 /**
  * Sends `signal` to the child's process group and reports whether it was delivered.
  *
- * The @effect/platform executor spawns with `detached: true` on POSIX, so the script leads its
+ * The `effect/unstable/process` spawner spawns with `detached: true` on POSIX, so the script leads its
  * own process group and a negative pid is what reaches it (and anything it spawned). Delivery
  * fails with ESRCH when the group is already gone, which is a normal race, not a run failure.
  */
 const signalChildProcessGroup = (pid: number, signal: ForwardedSignal): boolean =>
-  Either.try({
+  Result.try({
     try: () => process.kill(-pid, signal),
     catch: cause => new ChildSignalError({ pid, signal, cause }),
-  }).pipe(Either.getOrElse(() => false));
+  }).pipe(Result.getOrElse(() => false));
 
 /**
  * Waits for the script to exit, giving up after `duration`.
@@ -431,12 +464,15 @@ const signalChildProcessGroup = (pid: number, signal: ForwardedSignal): boolean 
  * interrupted along with it — leaving the wait hanging until the script exits on its own.
  * Daemon fibers are detached from the interrupted fiber, so their deadline still fires.
  */
-const awaitChildExitWithin = (child: CommandExecutor.Process, duration: Duration.Duration) =>
+const awaitChildExitWithin = (
+  child: ChildProcessSpawner.ChildProcessHandle,
+  duration: Duration.Duration
+) =>
   Effect.gen(function* () {
     const settled = yield* Deferred.make<void>();
     const complete = Deferred.succeed(settled, undefined);
-    yield* Effect.forkDaemon(Effect.zipRight(Effect.ignore(child.exitCode), complete));
-    yield* Effect.forkDaemon(Effect.zipRight(Effect.sleep(duration), complete));
+    yield* Effect.forkDetach(Effect.andThen(Effect.ignore(child.exitCode), complete));
+    yield* Effect.forkDetach(Effect.andThen(Effect.sleep(duration), complete));
     yield* Deferred.await(settled);
   });
 
@@ -448,7 +484,7 @@ const awaitChildExitWithin = (child: CommandExecutor.Process, duration: Duration
  * only as the executor's SIGTERM. Handlers are registered and removed with the scope so they
  * never leak into a later run.
  */
-const forwardSignalsToChild = (child: CommandExecutor.Process) =>
+const forwardSignalsToChild = (child: ChildProcessSpawner.ChildProcessHandle) =>
   Effect.gen(function* () {
     const os = yield* NodeOs;
     // Windows has no process groups and the executor does not detach there.
@@ -477,7 +513,7 @@ const forwardSignalsToChild = (child: CommandExecutor.Process) =>
             process.removeListener(signal, listener);
           }
         }).pipe(
-          Effect.zipRight(
+          Effect.andThen(
             MutableRef.get(forwarded)
               ? awaitChildExitWithin(child, CHILD_SIGNAL_GRACE_PERIOD)
               : Effect.void
@@ -559,9 +595,11 @@ export const runCmd = Command.make('run', {
       skipConnectionCheck,
       skipToolParamsCheck,
       skipChecks,
-      args,
+      args: rawArgs,
     }) =>
       Effect.gen(function* () {
+        const passthroughTail = yield* RunPassthroughArgs;
+        const args = passthroughTail ?? rawArgs;
         // Checked before any setup work so a bare `composio run` neither creates a run-artifacts
         // directory nor advertises a log file for a script that will never start.
         if (Option.isNone(file) && !args[0]) {
@@ -586,8 +624,8 @@ export const runCmd = Command.make('run', {
           const preloadSlugs = extractInlineExecuteToolSlugs(inlineCode ?? '');
           if (preloadSlugs.length > 0) {
             yield* warmToolInputDefinitions(preloadSlugs).pipe(
-              Effect.catchAll(() => Effect.void),
-              Effect.forkDaemon
+              Effect.catch(() => Effect.void),
+              Effect.forkDetach
             );
           }
         }
@@ -633,7 +671,7 @@ export const runCmd = Command.make('run', {
             args,
             debug,
           },
-        }).pipe(Effect.catchAll(() => Effect.void));
+        }).pipe(Effect.catch(() => Effect.void));
         yield* ui.error(`RUN_LOG_FILE=${preload.runLogFilePath}`);
         const runCommand = yield* buildRunCommand({
           path,
@@ -644,19 +682,19 @@ export const runCmd = Command.make('run', {
         });
         const exitCode = yield* Effect.gen(function* () {
           const [executable, ...commandArgs] = runCommand.cmd;
-          const command = PlatformCommand.make(executable, ...commandArgs).pipe(
-            PlatformCommand.env({
+          // Spawning the command (instead of running it to completion) yields the handle whose
+          // pid the signal forwarding below needs. `extendEnv` keeps the caller's environment.
+          const child = yield* ChildProcess.make(executable!, commandArgs, {
+            env: {
               BUN_BE_BUN: '1',
               COMPOSIO_CLI_PARENT_RUN_ID: runId,
               ...debugFlagsToChildEnv({ perfDebug, toolDebug, acpOnly, telemetryDebug }),
-            }),
-            PlatformCommand.stdin('inherit'),
-            PlatformCommand.stdout('inherit'),
-            PlatformCommand.stderr('inherit')
-          );
-          // Start the process instead of running it to completion: only a started process
-          // exposes the pid the signal forwarding below needs.
-          const child = yield* PlatformCommand.start(command);
+            },
+            extendEnv: true,
+            stdin: 'inherit',
+            stdout: 'inherit',
+            stderr: 'inherit',
+          });
           yield* forwardSignalsToChild(child);
           return Number(yield* child.exitCode);
         }).pipe(

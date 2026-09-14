@@ -1,9 +1,9 @@
 import { describe, expect, it, vi } from '@effect/vitest';
 import { ConfigProvider, Effect, Layer, Option } from 'effect';
-import * as FetchHttpClient from '@effect/platform/FetchHttpClient';
-import * as FileSystem from '@effect/platform/FileSystem';
-import * as Path from '@effect/platform/Path';
-import * as PlatformError from '@effect/platform/Error';
+import { FetchHttpClient } from 'effect/unstable/http';
+import * as FileSystem from 'effect/FileSystem';
+import * as Path from 'effect/Path';
+import * as PlatformError from 'effect/PlatformError';
 import * as BunFileSystem from '@effect/platform-bun/BunFileSystem';
 import * as BunPath from '@effect/platform-bun/BunPath';
 import { withHttpServer } from 'test/__utils__/http-server';
@@ -86,7 +86,10 @@ const makeUpgradeEffect = (
     Effect.provide(fileSystemLayer),
     Effect.provide(TerminalUINoop),
     Effect.provide(NodeOsTest),
-    Effect.withConfigProvider(ConfigProvider.fromMap(new Map(configEntries))),
+    Effect.provideService(
+      ConfigProvider.ConfigProvider,
+      ConfigProvider.fromEnv({ env: Object.fromEntries(configEntries) })
+    ),
     Effect.scoped
   );
 
@@ -117,8 +120,8 @@ const failRenameTo = (failedTargetPath: string) =>
             return (oldPath: string, newPath: string) =>
               newPath === failedTargetPath
                 ? Effect.fail(
-                    new PlatformError.SystemError({
-                      reason: 'Busy',
+                    PlatformError.systemError({
+                      _tag: 'Busy',
                       module: 'FileSystem',
                       method: 'rename',
                       pathOrDescriptor: newPath,
@@ -166,7 +169,7 @@ const restoreStubsAndMocks = Effect.sync(() => {
 });
 
 describe('UpgradeBinary', () => {
-  it.scoped('wraps non-2xx releases fetch failures with fetch context (no tag branch)', () => {
+  it.effect('wraps non-2xx releases fetch failures with fetch context (no tag branch)', () => {
     vi.stubGlobal('Bun', { which: vi.fn(() => null) });
 
     return Effect.gen(function* () {
@@ -190,7 +193,7 @@ describe('UpgradeBinary', () => {
     }).pipe(Effect.ensuring(restoreStubsAndMocks));
   });
 
-  it.scoped('wraps tagged release JSON parse failures with parse context (tag branch)', () => {
+  it.effect('wraps tagged release JSON parse failures with parse context (tag branch)', () => {
     vi.stubGlobal('Bun', { which: vi.fn(() => null) });
 
     return Effect.gen(function* () {
@@ -214,7 +217,7 @@ describe('UpgradeBinary', () => {
     }).pipe(Effect.ensuring(restoreStubsAndMocks));
   });
 
-  it.scoped('rejects structurally invalid tagged release JSON', () => {
+  it.effect('rejects structurally invalid tagged release JSON', () => {
     vi.stubGlobal('Bun', { which: vi.fn(() => null) });
 
     return Effect.gen(function* () {
@@ -238,7 +241,7 @@ describe('UpgradeBinary', () => {
     }).pipe(Effect.ensuring(restoreStubsAndMocks));
   });
 
-  it.scoped('URL-encodes slash-containing tags in tagged release request path', () => {
+  it.effect('URL-encodes slash-containing tags in tagged release request path', () => {
     vi.stubGlobal('Bun', { which: vi.fn(() => null) });
     let receivedPath = '';
 
@@ -267,7 +270,7 @@ describe('UpgradeBinary', () => {
     }).pipe(Effect.ensuring(restoreStubsAndMocks));
   });
 
-  it.scoped('skips newer releases that do not contain a binary for the current platform', () => {
+  it.effect('skips newer releases that do not contain a binary for the current platform', () => {
     vi.stubGlobal('Bun', { which: vi.fn(() => null) });
 
     return Effect.gen(function* () {
@@ -320,7 +323,7 @@ describe('UpgradeBinary', () => {
     }).pipe(Effect.provide(TestPlatform), Effect.ensuring(restoreStubsAndMocks));
   });
 
-  it.scoped('ignores prereleases when checking the stable channel', () => {
+  it.effect('ignores prereleases when checking the stable channel', () => {
     vi.stubGlobal('Bun', { which: vi.fn(() => null) });
 
     return Effect.gen(function* () {
@@ -373,7 +376,7 @@ describe('UpgradeBinary', () => {
     }).pipe(Effect.provide(TestPlatform), Effect.ensuring(restoreStubsAndMocks));
   });
 
-  it.scoped('selects the latest prerelease when beta upgrades are requested', () => {
+  it.effect('selects the latest prerelease when beta upgrades are requested', () => {
     vi.stubGlobal('Bun', { which: vi.fn(() => null) });
 
     return Effect.gen(function* () {
@@ -448,7 +451,7 @@ describe('UpgradeBinary', () => {
     }).pipe(Effect.provide(TestPlatform), Effect.ensuring(restoreStubsAndMocks));
   });
 
-  it.scoped('copies local-tool bundled binary assets during local-target upgrades', () => {
+  it.effect('copies local-tool bundled binary assets during local-target upgrades', () => {
     vi.stubGlobal('Bun', { which: vi.fn(() => null) });
 
     return Effect.gen(function* () {
@@ -515,7 +518,7 @@ describe('UpgradeBinary', () => {
     }).pipe(Effect.provide(TestPlatform), Effect.ensuring(restoreStubsAndMocks));
   });
 
-  it.scoped('commits companions and release metadata before replacing the binary', () => {
+  it.effect('commits companions and release metadata before replacing the binary', () => {
     vi.stubGlobal('Bun', { which: vi.fn(() => null) });
 
     return Effect.gen(function* () {
@@ -561,7 +564,10 @@ describe('UpgradeBinary', () => {
       expect(error.message).toBe(
         `Failed to replace binary: Failed to replace file at ${fakeExecPath}`
       );
-      expect(error.cause).toBeInstanceOf(PlatformError.SystemError);
+      expect(error.cause).toBeInstanceOf(PlatformError.PlatformError);
+      expect((error.cause as PlatformError.PlatformError).reason).toBeInstanceOf(
+        PlatformError.SystemError
+      );
       expect(yield* fs.readFileString(fakeExecPath)).toBe('old-binary');
       expect(yield* fs.readFileString(observedCompanionPath)).toBe('new-support-file');
       expect(yield* fs.readFileString(releaseTagPath)).toBe(`${newReleaseTag}\n`);
@@ -572,7 +578,7 @@ describe('UpgradeBinary', () => {
     }).pipe(Effect.provide(TestPlatform), Effect.ensuring(restoreStubsAndMocks));
   });
 
-  it.scoped('preflights every companion before changing installed files', () => {
+  it.effect('preflights every companion before changing installed files', () => {
     vi.stubGlobal('Bun', { which: vi.fn(() => null) });
 
     return Effect.gen(function* () {
@@ -629,7 +635,7 @@ describe('UpgradeBinary', () => {
     }).pipe(Effect.provide(TestPlatform), Effect.ensuring(restoreStubsAndMocks));
   });
 
-  it.scoped('replaces the bundle target without replacing its entry-point symlink', () => {
+  it.effect('replaces the bundle target without replacing its entry-point symlink', () => {
     vi.stubGlobal('Bun', { which: vi.fn(() => null) });
 
     return Effect.gen(function* () {
@@ -673,7 +679,7 @@ describe('UpgradeBinary', () => {
     }).pipe(Effect.provide(TestPlatform), Effect.ensuring(restoreStubsAndMocks));
   });
 
-  it.scoped('uses the installed beta release tag when comparing beta updates', () => {
+  it.effect('uses the installed beta release tag when comparing beta updates', () => {
     vi.stubGlobal('Bun', { which: vi.fn(() => null) });
 
     return Effect.gen(function* () {

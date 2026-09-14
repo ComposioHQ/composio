@@ -2,6 +2,8 @@
 
 Documentation site for Composio, built with [Fumadocs](https://fumadocs.dev/).
 
+For issue triage, review, validation, and publication, follow [Change the Composio docs](CONTRIBUTING.md).
+
 ## Getting Started
 
 ```bash
@@ -72,7 +74,7 @@ All TypeScript code blocks in MDX files are **type-checked at build time** using
 - Use `// ---cut---` to hide setup code from output
 - Run `bun run build` locally to validate before pushing
 
-See `CLAUDE.md` for detailed patterns and troubleshooting.
+See the [Twoslash guide](agent-guidance/context/twoslash.md) for complete example patterns and troubleshooting.
 
 ## Search
 

@@ -636,7 +636,9 @@ describe('checkForUpdate', () => {
           json: () => Promise.resolve(makeReleasesPayload(['0.3.0'])),
         }) as unknown as typeof fetch,
       });
-      const failingFiber = yield* Effect.fork(createUpdateChecker(failingConfig).checkForUpdate);
+      const failingFiber = yield* Effect.forkChild(
+        createUpdateChecker(failingConfig).checkForUpdate
+      );
 
       yield* Effect.promise(() => failedRequestStarted.promise);
       const successfulAt = new Date(pinnedNow.getTime() + 60_000);

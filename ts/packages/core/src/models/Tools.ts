@@ -1,4 +1,4 @@
-import ComposioClient from '@composio/client';
+import ComposioClient, { APIError } from '@composio/client';
 import { FileToolModifier } from '#file_tool_modifier';
 import {
   Tool,
@@ -42,6 +42,7 @@ import logger from '../utils/logger';
 import { ExecuteToolFn, GlobalExecuteToolFn } from '../types/provider.types';
 import {
   ComposioInvalidModifierError,
+  ComposioToolFetchError,
   ComposioToolNotFoundError,
   ComposioProviderNotDefinedError,
   ComposioToolVersionRequiredError,
@@ -710,7 +711,17 @@ export class Tools<
       if (error instanceof ComposioRequestCancelledError) {
         throw error;
       }
-      throw new ComposioToolNotFoundError(`Unable to retrieve tool with slug ${slug}`, {
+      // The tools endpoint reports an unknown slug as 404 (or 400 for a
+      // malformed one). Anything else (401, 5xx, network) is not "not found",
+      // so keep the client error reachable as `cause` under a generic error.
+      if (error instanceof APIError && (error.status === 404 || error.status === 400)) {
+        throw new ComposioToolNotFoundError(`Tool with slug ${slug} not found`, {
+          meta: { slug },
+          cause: error,
+        });
+      }
+      throw new ComposioToolFetchError(`Unable to retrieve tool with slug ${slug}`, {
+        meta: { slug },
         cause: error,
       });
     }

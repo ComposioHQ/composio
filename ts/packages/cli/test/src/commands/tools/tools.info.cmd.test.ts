@@ -84,15 +84,15 @@ const toolkitsData = {
   tools: testTools,
 } satisfies TestLiveInput['toolkitsData'];
 
-const testConfigProvider = ConfigProvider.fromMap(
-  new Map([['COMPOSIO_USER_API_KEY', 'test_api_key']])
-).pipe(extendConfigProvider);
+const testConfigProvider = ConfigProvider.fromEnv({
+  env: { COMPOSIO_USER_API_KEY: 'test_api_key' },
+}).pipe(extendConfigProvider);
 
 describe('CLI: composio tools info', () => {
   layer(TestLive({ baseConfigProvider: testConfigProvider, toolkitsData }))(
     '[Given] valid slug [Then] displays tool info',
     it => {
-      it.scoped('shows brief tool details and cached schema path', () =>
+      it.effect('shows brief tool details and cached schema path', () =>
         Effect.gen(function* () {
           yield* cli(['tools', 'info', 'GMAIL_SEND_EMAIL']);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
@@ -115,7 +115,7 @@ describe('CLI: composio tools info', () => {
   layer(TestLive({ baseConfigProvider: testConfigProvider, toolkitsData }))(
     '[Given] file_uploadable tool info [Then] it shows the CLI-facing file schema',
     it => {
-      it.scoped('renders file inputs as path strings in JSON output', () =>
+      it.effect('renders file inputs as path strings in JSON output', () =>
         Effect.gen(function* () {
           yield* cli(['tools', 'info', 'SLACK_UPLOAD_OR_CREATE_A_FILE_IN_SLACK']);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
@@ -144,7 +144,7 @@ describe('CLI: composio tools info', () => {
   layer(TestLive({ baseConfigProvider: testConfigProvider, toolkitsData }))(
     '[Given] no slug [Then] warns missing argument',
     it => {
-      it.scoped('shows missing argument warning', () =>
+      it.effect('shows missing argument warning', () =>
         Effect.gen(function* () {
           yield* cli(['tools', 'info']);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
@@ -159,7 +159,7 @@ describe('CLI: composio tools info', () => {
   layer(TestLive({ baseConfigProvider: testConfigProvider, toolkitsData }))(
     '[Given] invalid slug [Then] shows error and suggestions',
     it => {
-      it.scoped('shows not found with suggestions', () =>
+      it.effect('shows not found with suggestions', () =>
         Effect.gen(function* () {
           yield* cli(['tools', 'info', 'NONEXISTENT_TOOL']);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
@@ -172,7 +172,7 @@ describe('CLI: composio tools info', () => {
   );
 
   layer(TestLive())('[Given] no API key [Then] warns user to login', it => {
-    it.scoped('warns user to login', () =>
+    it.effect('warns user to login', () =>
       Effect.gen(function* () {
         yield* cli(['tools', 'info', 'GMAIL_SEND_EMAIL']);
         const lines = yield* MockConsole.getLines({ stripAnsi: true });

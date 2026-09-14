@@ -14,6 +14,10 @@ import {
   type SkillReleaseChannel,
 } from './reference-schema';
 
+// Re-exported for scripts/build-skills.ts, which maps the --channel CLI
+// flag onto the build pipeline's channel type.
+export type { SkillReleaseChannel };
+
 type SkillFlag = {
   description: string;
   name: string;

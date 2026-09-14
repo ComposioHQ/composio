@@ -1,5 +1,5 @@
-import * as FileSystem from '@effect/platform/FileSystem';
-import * as Path from '@effect/platform/Path';
+import * as FileSystem from 'effect/FileSystem';
+import * as Path from 'effect/Path';
 import { Effect, Option, Record as EffectRecord, Schema } from 'effect';
 import { APP_CONFIG } from 'src/effects/app-config';
 import { JsonRecordSchema } from 'src/effects/json';
@@ -25,11 +25,11 @@ const CACHE_FILE = 'consumer-short-term-cache.json';
 const CACHE_TTL_MS = 15 * 60 * 1000;
 const SEARCH_SESSION_EXTENSION_MS = 5 * 60 * 1000;
 
-const StringMappingsSchema = Schema.Record({ key: Schema.String, value: Schema.String });
-const AvailableConnectedAccountsSchema = Schema.Record({
-  key: Schema.String,
-  value: Schema.Array(CachedConnectedAccountSummarySchema),
-});
+const StringMappingsSchema = Schema.Record(Schema.String, Schema.String);
+const AvailableConnectedAccountsSchema = Schema.Record(
+  Schema.String,
+  Schema.Array(CachedConnectedAccountSummarySchema)
+);
 const ConsumerToolRouterAuthConfigMappingsSchema = Schema.Struct({
   authConfigs: Schema.optional(StringMappingsSchema),
 });
@@ -43,10 +43,7 @@ const CacheEntrySchema = Schema.Struct({
   toolRouterAuthConfigs: Schema.optional(ConsumerToolRouterAuthConfigMappingsSchema),
   toolRouterConnectedAccounts: Schema.optional(ConsumerToolRouterConnectedAccountMappingsSchema),
   probablyMyCliSessionsByCwdHash: Schema.optional(
-    Schema.Record({
-      key: Schema.String,
-      value: Schema.Struct({ id: Schema.String, expiresAt: Schema.String }),
-    })
+    Schema.Record(Schema.String, Schema.Struct({ id: Schema.String, expiresAt: Schema.String }))
   ),
 });
 
@@ -56,7 +53,7 @@ export type ConsumerToolRouterConnectedAccountMappings =
   typeof ConsumerToolRouterConnectedAccountMappingsSchema.Type;
 type CacheEntry = typeof CacheEntrySchema.Type;
 type CacheState = { readonly [key: string]: CacheEntry };
-const decodeCacheShell = Schema.decodeUnknownOption(Schema.parseJson(JsonRecordSchema));
+const decodeCacheShell = Schema.decodeUnknownOption(Schema.fromJsonString(JsonRecordSchema));
 const decodeCacheEntry = Schema.decodeUnknownOption(CacheEntrySchema);
 
 // Per-entry decode: one stale or version-skewed entry (e.g. written by a
@@ -136,10 +133,10 @@ const writeCache = (state: CacheState) =>
     const fs = yield* FileSystem.FileSystem;
     const cacheDir = yield* setupCacheDir;
     const filePath = yield* cachePath;
-    yield* fs.makeDirectory(cacheDir, { recursive: true }).pipe(Effect.catchAll(() => Effect.void));
+    yield* fs.makeDirectory(cacheDir, { recursive: true }).pipe(Effect.catch(() => Effect.void));
     yield* fs
       .writeFileString(filePath, JSON.stringify(state, null, 2))
-      .pipe(Effect.catchAll(() => Effect.void));
+      .pipe(Effect.catch(() => Effect.void));
   });
 
 const getAlwaysConnectedNoAuthToolkits = () =>
@@ -543,8 +540,8 @@ export const primeConsumerConnectedToolkitsCacheInBackground = (params?: {
   readonly consumerUserId?: string;
 }) =>
   refreshConsumerConnectedToolkitsCache(params).pipe(
-    Effect.catchAll(() => Effect.void),
-    Effect.forkDaemon,
+    Effect.catch(() => Effect.void),
+    Effect.forkDetach,
     Effect.asVoid
   );
 

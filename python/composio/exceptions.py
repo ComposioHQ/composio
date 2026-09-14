@@ -292,6 +292,22 @@ class InvalidTriggerFilters(TriggerSubscriptionError):
     pass
 
 
+class TriggerSubscriptionAuthError(TriggerSubscriptionError):
+    """Raised when the realtime channel-auth request fails.
+
+    Covers a transport error, a timeout, a non-200 response, and a response
+    without an ``auth`` token.
+    """
+
+    pass
+
+
+class InvalidPusherClusterError(TriggerSubscriptionError, ValidationError):
+    """Raised when the realtime credentials carry a malformed pusher cluster."""
+
+    pass
+
+
 class ApiKeyError(ComposioClientError):
     pass
 
@@ -433,8 +449,13 @@ class InvalidExecuteFunctionError(ComposioError):
     pass
 
 
-class ToolNotFoundError(ComposioError):
-    pass
+class ToolNotFoundError(NotFoundError):
+    """Raised when a tool slug does not exist.
+
+    Mirrors the TypeScript SDK's ``ComposioToolNotFoundError``. Other failures
+    while fetching a tool (invalid API key, server or network errors) are not
+    translated and surface as the underlying ``composio_client`` error.
+    """
 
 
 class InvalidModifier(ComposioError):
