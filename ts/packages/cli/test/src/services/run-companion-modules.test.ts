@@ -200,6 +200,72 @@ describe('run-companion-modules', () => {
       }
     );
 
+    it.effect(
+      '[Given] only an unrelated companion is missing [Then] a scoped repair does nothing',
+      () => {
+        const installDirectory = fs.mkdtempSync(
+          path.join(os.tmpdir(), 'composio-run-scoped-repair-')
+        );
+        const execPath = path.join(installDirectory, 'composio');
+        fs.mkdirSync(path.join(installDirectory, 'services'));
+        fs.writeFileSync(
+          path.join(installDirectory, 'generation-runtime.mjs'),
+          'export * from "./services/generation-runtime.mjs";\n'
+        );
+        fs.writeFileSync(path.join(installDirectory, 'services', 'generation-runtime.mjs'), '');
+        const fetchMock = stubRepairFetch();
+
+        return Effect.gen(function* () {
+          expect(yield* listMissingInstalledRunCompanionModules(execPath)).not.toEqual([]);
+          expect(
+            yield* repairMissingInstalledRunCompanionModules({
+              callerImportMetaUrl: 'file:///$bunfs/root/commands.mjs',
+              execPath,
+              appVersion: '0.0.0-test',
+              companionBaseName: 'generation-runtime',
+            })
+          ).toEqual({ repaired: false });
+          expect(fetchMock).not.toHaveBeenCalled();
+        }).pipe(
+          Effect.ensuring(
+            Effect.sync(() => fs.rmSync(installDirectory, { recursive: true, force: true }))
+          )
+        );
+      }
+    );
+
+    it.effect(
+      '[Given] a companion wrapper whose bundle is missing [Then] a scoped repair restores it',
+      () => {
+        const installDirectory = fs.mkdtempSync(
+          path.join(os.tmpdir(), 'composio-run-scoped-repair-')
+        );
+        const execPath = path.join(installDirectory, 'composio');
+        fs.writeFileSync(
+          path.join(installDirectory, 'generation-runtime.mjs'),
+          'export * from "./services/generation-runtime.mjs";\n'
+        );
+        stubRepairFetch();
+        mockArchiveContents();
+
+        return Effect.gen(function* () {
+          const result = yield* repairMissingInstalledRunCompanionModules({
+            callerImportMetaUrl: 'file:///$bunfs/root/commands.mjs',
+            execPath,
+            appVersion: '0.0.0-test',
+            companionBaseName: 'generation-runtime',
+          });
+
+          expect(result).toEqual({ repaired: true, releaseTag: TEST_RELEASE_TAG });
+          expect(fs.existsSync(path.join(installDirectory, 'generation-runtime.mjs'))).toBe(true);
+        }).pipe(
+          Effect.ensuring(
+            Effect.sync(() => fs.rmSync(installDirectory, { recursive: true, force: true }))
+          )
+        );
+      }
+    );
+
     it.effect('[Given] a complete archive [Then] repair atomically replaces companions', () => {
       const installDirectory = fs.mkdtempSync(path.join(os.tmpdir(), 'composio-run-repair-test-'));
       const execPath = path.join(installDirectory, 'composio');
