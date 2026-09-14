@@ -185,8 +185,8 @@ export const listActiveConnectedAccounts = memoizeInProcess({
 const TOOLKIT_ACCOUNTS_PAGE_SIZE = 100;
 
 // The account picker's own query: one toolkit, first 100 active accounts, in
-// server order. Kept verbatim as the fallback so results stay identical when
-// the shared list cannot stand in for it.
+// server order. Kept as the fallback so results stay identical when the
+// shared list cannot stand in for it.
 const fetchConnectedAccountsForToolkit = (params: {
   readonly client: Composio;
   readonly userId: string;
@@ -210,30 +210,35 @@ const fetchConnectedAccountsForToolkit = (params: {
  * toolkit-filtered `GET /connected_accounts` next to the one session creation
  * needs anyway.
  *
- * Derivation reproduces the server query exactly: same slug match, server
- * order preserved, first 100. If the shared list was truncated (more active
+ * Derivation reproduces the server query: same slug match, server order
+ * preserved, first 100. If the shared list was truncated (more active
  * accounts than its page holds), the toolkit's accounts may sit past the cut,
  * so the original filtered request runs instead.
+ *
+ * The slug is trimmed and lower-cased the way the grouping helpers above
+ * normalize toolkit slugs, and the trimmed slug is what the fallback sends,
+ * so a padded `--toolkit` value resolves the same way on both paths.
  */
-const listConnectedAccountsForToolkit = (params: {
+export const listConnectedAccountsForToolkit = (params: {
   readonly client: Composio;
   readonly userId: string;
   readonly toolkitSlug: string;
 }) =>
   Effect.gen(function* () {
+    const toolkitSlug = params.toolkitSlug.trim();
     const shared = yield* listActiveConnectedAccounts({
       client: params.client,
       userId: params.userId,
     });
-    const items = shared.items ?? [];
+    const items = shared.items;
     const complete = shared.next_cursor == null && shared.total_items <= items.length;
     if (!complete) {
-      return yield* fetchConnectedAccountsForToolkit(params);
+      return yield* fetchConnectedAccountsForToolkit({ ...params, toolkitSlug });
     }
 
-    const wantedToolkit = params.toolkitSlug.toLowerCase();
+    const wantedToolkit = normalizeSelector(toolkitSlug);
     return items
-      .filter(item => item.toolkit?.slug?.toLowerCase() === wantedToolkit)
+      .filter(item => normalizeSelector(item.toolkit.slug) === wantedToolkit)
       .slice(0, TOOLKIT_ACCOUNTS_PAGE_SIZE);
   });
 

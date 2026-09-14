@@ -1,7 +1,11 @@
 import { describe, expect, it } from 'vitest';
+import { it as effectIt } from '@effect/vitest';
+import { Effect } from 'effect';
+import type { Composio } from '@composio/client';
 import {
   formatConnectedAccountChoices,
   groupCachedConnectedAccountsByToolkit,
+  listConnectedAccountsForToolkit,
   resolveConnectedAccountSelection,
   resolveDefaultConnectedAccountsByToolkit,
 } from 'src/services/connected-account-selection';
@@ -93,4 +97,69 @@ describe('connected-account-selection', () => {
       ])
     ).toEqual(['default / castle (con_default)']);
   });
+});
+
+type ListParams = {
+  readonly toolkit_slugs?: ReadonlyArray<string>;
+  readonly limit?: number;
+};
+
+// A stand-in for the SDK client: one page of accounts, plus a log of every
+// `connectedAccounts.list` call so a test can see which path ran.
+const makeListClient = (
+  items: ReadonlyArray<ConnectedAccountItem>,
+  page?: { readonly total_items?: number; readonly next_cursor?: string | null }
+) => {
+  const calls: ListParams[] = [];
+  const client = {
+    connectedAccounts: {
+      list: async (params: ListParams) => {
+        calls.push(params);
+        const filtered = params.toolkit_slugs
+          ? items.filter(item =>
+              params.toolkit_slugs!.some(
+                slug => slug.trim().toLowerCase() === item.toolkit.slug.trim().toLowerCase()
+              )
+            )
+          : items;
+        return {
+          items: filtered.slice(0, params.limit ?? 30),
+          total_items: page?.total_items ?? filtered.length,
+          total_pages: 1,
+          current_page: 1,
+          next_cursor: page?.next_cursor ?? null,
+        };
+      },
+    },
+  } as unknown as Composio;
+  return { client, calls };
+};
+
+describe('listConnectedAccountsForToolkit', () => {
+  effectIt.effect('matches toolkit slugs the way the grouping helpers do, on both paths', () =>
+    Effect.gen(function* () {
+      const items = [
+        makeAccount({ id: 'con_github', toolkit: { slug: 'GitHub ' } }),
+        makeAccount({ id: 'con_gmail', toolkit: { slug: 'gmail' } }),
+      ];
+
+      const derived = makeListClient(items);
+      const fromSharedList = yield* listConnectedAccountsForToolkit({
+        client: derived.client,
+        userId: 'default',
+        toolkitSlug: ' github',
+      });
+      expect(fromSharedList.map(item => item.id)).toEqual(['con_github']);
+      expect(derived.calls).toHaveLength(1);
+
+      const fallback = makeListClient(items, { next_cursor: 'more' });
+      const fromServer = yield* listConnectedAccountsForToolkit({
+        client: fallback.client,
+        userId: 'default',
+        toolkitSlug: ' github',
+      });
+      expect(fromServer.map(item => item.id)).toEqual(['con_github']);
+      expect(fallback.calls[1]?.toolkit_slugs).toEqual(['github']);
+    })
+  );
 });
