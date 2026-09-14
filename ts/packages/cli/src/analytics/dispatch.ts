@@ -21,6 +21,7 @@ import { extendConfigProvider } from 'src/services/config';
 import { atomicWriteFileString } from 'src/utils/atomic-write';
 import { sha256Hex } from 'src/utils/checksums';
 import { djb2Hash } from 'src/utils/djb2';
+import { type ApiKeySource, resolveBackend } from 'src/utils/backend-resolution';
 import { NodeOs } from 'src/services/node-os';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { isTelemetryDebugEnabled, TELEMETRY_DEBUG_FLAG } from 'src/services/runtime-flags';
@@ -504,18 +505,34 @@ const withCliSessionId = (event: NonNullable<TrackEvent>, cliSessionId?: string)
   },
 });
 
-export const readApiBaseUrl = Effect.gen(function* () {
-  const envBaseUrl = configuredString(
-    yield* optionalString('COMPOSIO_BASE_URL').parse(getEnvironmentProvider())
-  );
-  if (envBaseUrl) {
-    return envBaseUrl.replace(/\/+$/u, '');
-  }
+const storedString = (value: unknown): string | undefined =>
+  typeof value === 'string' && value.trim().length > 0 ? value.trim() : undefined;
 
+/**
+ * The backend commands would call, resolved with the same rule: the stored
+ * `base_url` for a stored key unless an env var overrides it, the ambient
+ * environment for a `COMPOSIO_USER_API_KEY` key.
+ */
+export const readApiBaseUrl = Effect.gen(function* () {
+  const provider = getEnvironmentProvider();
+  const envApiKey = configuredString(
+    yield* optionalString('COMPOSIO_USER_API_KEY').parse(provider)
+  );
   const userConfig = yield* readUserConfig;
-  return typeof userConfig?.base_url === 'string' && userConfig.base_url.trim().length > 0
-    ? userConfig.base_url.trim().replace(/\/+$/u, '')
-    : null;
+  const hasStoredKey =
+    storedString(userConfig?.api_key) !== undefined || (yield* keyringBackedLoginPresent);
+  const keySource: ApiKeySource = envApiKey ? 'env' : hasStoredKey ? 'stored' : 'none';
+
+  const { target } = resolveBackend({
+    overrides: {
+      baseURL: configuredString(yield* optionalString('COMPOSIO_BASE_URL').parse(provider)),
+      webURL: undefined,
+      environment: configuredString(yield* optionalString('COMPOSIO_ENVIRONMENT').parse(provider)),
+    },
+    stored: { baseURL: storedString(userConfig?.base_url), webURL: undefined },
+    keySource,
+  });
+  return target.baseURL.replace(/\/+$/u, '');
 }).pipe(Effect.catchCause(() => Effect.succeed(null)));
 
 const getCliCodactFailuresEndpoint = Effect.map(readApiBaseUrl, baseUrl =>

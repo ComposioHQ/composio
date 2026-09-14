@@ -29,9 +29,27 @@ e2e(import.meta.url, {
     let redirectResult: E2ETestResultWithFiles<'out.json'>;
     let invalidResult: E2ETestResult;
     let missingSlugResult: E2ETestResult;
+    let storedLoginResult: E2ETestResult;
+    let rejectedLoginResult: E2ETestResult;
+
+    // Seeds a stored login pointing at the mock backend and runs the command
+    // with no COMPOSIO_BASE_URL, so only user_data.json can select the backend.
+    const withStoredLogin = (apiKey: string, cacheDir: string, command: string) => {
+      const userData = JSON.stringify({
+        api_key: apiKey,
+        base_url: server.dockerBaseUrl,
+        web_url: 'http://host.docker.internal/',
+        org_id: 'org_mock',
+      });
+      return [
+        `mkdir -p ${cacheDir}`,
+        `printf '%s' '${userData}' > ${cacheDir}/user_data.json`,
+        `COMPOSIO_CACHE_DIR=${cacheDir} ${command}`,
+      ].join(' && ');
+    };
 
     beforeAll(async () => {
-      server = await startMockToolkitsListServer();
+      server = await startMockToolkitsListServer({ rejectedUserApiKeys: ['uak_revoked'] });
 
       const envPrefix = [
         `COMPOSIO_BASE_URL=${server.dockerBaseUrl}`,
@@ -48,6 +66,20 @@ e2e(import.meta.url, {
         `${envPrefix} composio dev toolkits info nonexistent_toolkit_xyz12345`
       );
       missingSlugResult = await runCmd(`${envPrefix} composio dev toolkits info`);
+      storedLoginResult = await runCmd(
+        withStoredLogin(
+          'uak_stored_login',
+          '/tmp/composio-stored-login',
+          'composio dev toolkits info gmail'
+        )
+      );
+      rejectedLoginResult = await runCmd(
+        withStoredLogin(
+          'uak_revoked',
+          '/tmp/composio-rejected-login',
+          'composio dev toolkits info gmail'
+        )
+      );
     }, TIMEOUTS.FIXTURE);
 
     afterAll(async () => {
@@ -144,6 +176,28 @@ e2e(import.meta.url, {
 
       it('stderr is empty', () => {
         expect(missingSlugResult.stderr).toBe('');
+      });
+    });
+
+    describe('stored login without COMPOSIO_BASE_URL', () => {
+      it('uses the stored backend and succeeds', () => {
+        expect(storedLoginResult.exitCode).toBe(0);
+        expect(storedLoginResult.stderr).toBe('');
+        const obj = parseJsonStdout(storedLoginResult) as Record<string, unknown>;
+        expect(obj.slug).toBe('gmail');
+      });
+    });
+
+    describe('stored login the backend rejects (piped)', () => {
+      it('prints the login next step on stderr', () => {
+        expect(rejectedLoginResult.stderr).toContain(
+          `Run \`COMPOSIO_BASE_URL=${server.dockerBaseUrl} composio login\` to log in again`
+        );
+        expect(rejectedLoginResult.stderr).not.toContain('Invalid or revoked user API key');
+      });
+
+      it('writes nothing to stdout', () => {
+        expect(sanitizeOutput(rejectedLoginResult.stdout)).toBe('');
       });
     });
 

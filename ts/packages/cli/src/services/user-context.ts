@@ -10,13 +10,20 @@ import {
 import { JsonRecordSchema } from 'src/effects/json';
 import { setupCacheDir } from 'src/effects/setup-cache-dir';
 import * as constants from 'src/constants';
-import { APP_CONFIG } from 'src/effects/app-config';
+import { APP_CONFIG, BACKEND_OVERRIDES } from 'src/effects/app-config';
 import { KeyringService, KeyringLiveWithBackend } from '@composio/cli-keyring/effect';
 import type { KeyringServiceShape } from '@composio/cli-keyring/effect';
 import { KeyringError, type MacOSBackend } from '@composio/cli-keyring';
 import { ComposioCliUserConfig, ComposioCliUserConfigLive } from 'src/services/cli-user-config';
 import { atomicWritePrivateFileString, ensurePrivateFileMode } from 'src/utils/atomic-write';
 import { redactSensitiveLogValue } from 'src/utils/redact-sensitive';
+import {
+  type ApiKeySource,
+  type BackendResolution,
+  type BackendTarget,
+  resolveAmbientBackend,
+  resolveBackend,
+} from 'src/utils/backend-resolution';
 
 /**
  * Keyring specifier for the Composio API key. `service` is a reverse
@@ -27,6 +34,9 @@ import { redactSensitiveLogValue } from 'src/utils/redact-sensitive';
  */
 const KEYRING_SERVICE = 'com.composio.cli';
 const KEYRING_USER = 'default';
+const nonBlank = (value: Option.Option<string>): string | undefined =>
+  Option.getOrUndefined(Option.filter(value, url => url.trim().length > 0));
+
 const decodeUserDataJsonObject = Schema.decodeUnknownEffect(
   Schema.fromJsonString(JsonRecordSchema)
 );
@@ -148,14 +158,23 @@ const deleteKeyring = (deps: KeyringDeps) =>
 export class ComposioUserContext extends Context.Service<
   ComposioUserContext,
   {
+    /** User data, with `baseURL`/`webURL` resolved for this invocation. */
     readonly data: UserDataWithDefaults;
+    /** How `data.baseURL` was chosen: key source, stored and ambient targets, mismatch. */
+    readonly backend: BackendResolution;
     isLoggedIn: () => boolean;
     logout: Effect.Effect<void, Schema.SchemaError | PlatformError.PlatformError, never>;
-    login: (
-      apiKey: string,
-      orgId?: string,
-      testUserId?: string
-    ) => Effect.Effect<void, Schema.SchemaError | PlatformError.PlatformError, never>;
+    /**
+     * Store a new key together with the backend that issued it. Every caller
+     * names the target: login flows pass the ambient environment, and flows
+     * that keep the current login pass its stored environment.
+     */
+    login: (params: {
+      readonly apiKey: string;
+      readonly target: BackendTarget;
+      readonly orgId?: string;
+      readonly testUserId?: string;
+    }) => Effect.Effect<void, Schema.SchemaError | PlatformError.PlatformError, never>;
     update: (
       data: UserData
     ) => Effect.Effect<void, Schema.SchemaError | PlatformError.PlatformError, never>;
@@ -168,8 +187,8 @@ export const rawComposioUserContextLive = Layer.effect(
     const fs = yield* FileSystem.FileSystem;
     const path = yield* Path.Path;
     const apiKey = yield* APP_CONFIG['USER_API_KEY'];
-    const baseURL = yield* APP_CONFIG['BASE_URL'];
-    const webURL = yield* APP_CONFIG['WEB_URL'];
+    const overrides = yield* BACKEND_OVERRIDES;
+    const ambient = resolveAmbientBackend(overrides);
     const cliConfig = yield* ComposioCliUserConfig;
     const keyring = yield* KeyringService;
 
@@ -184,10 +203,11 @@ export const rawComposioUserContextLive = Layer.effect(
     const cacheDir = yield* setupCacheDir;
     const jsonUserConfigPath = path.join(cacheDir, constants.USER_CONFIG_FILE_NAME);
 
+    // No `base_url` until a login records the backend that validated the key.
     let userData = UserData.make({
       apiKey,
-      baseURL: Option.some(baseURL),
-      webURL: Option.some(webURL),
+      baseURL: Option.none(),
+      webURL: Option.some(ambient.webURL),
       orgId: Option.none(),
       projectId: Option.none(),
       testUserId: Option.none(),
@@ -213,7 +233,7 @@ export const rawComposioUserContextLive = Layer.effect(
       const cleared: UserData = {
         apiKey: Option.none(),
         baseURL: Option.none(),
-        webURL: Option.some(webURL),
+        webURL: Option.some(ambient.webURL),
         orgId: Option.none(),
         projectId: Option.none(),
         testUserId: Option.none(),
@@ -222,14 +242,24 @@ export const rawComposioUserContextLive = Layer.effect(
       yield* writeJson(cleared);
     });
 
-    const login = (apiKey: string, orgId?: string, testUserId?: string) =>
+    const login = ({
+      apiKey,
+      target,
+      orgId,
+      testUserId,
+    }: {
+      readonly apiKey: string;
+      readonly target: BackendTarget;
+      readonly orgId?: string;
+      readonly testUserId?: string;
+    }) =>
       Effect.gen(function* () {
         const keyringOk = yield* writeKeyring(kDeps, apiKey);
         const next: UserData = {
           ...userData,
           apiKey: Option.some(apiKey),
-          baseURL: Option.some(baseURL),
-          webURL: Option.some(webURL),
+          baseURL: Option.some(target.baseURL),
+          webURL: Option.some(target.webURL),
           orgId: Option.fromNullishOr(orgId),
           projectId: userData.projectId,
           testUserId: Option.fromNullishOr(testUserId),
@@ -274,19 +304,19 @@ export const rawComposioUserContextLive = Layer.effect(
       const parsedUserData = (yield* userDataFromJSON(userDataJson)) satisfies UserData;
       yield* Effect.logDebug('User data (parsed):', redactSensitiveLogValue(parsedUserData));
 
+      // Keep the stored `base_url`/`web_url`: `snapshot` resolves the effective
+      // backend per invocation, and every write must preserve the recorded login.
       const overriddenUserData = {
         ...userData,
         ...parsedUserData,
         apiKey: apiKey.pipe(Option.orElse(() => parsedUserData.apiKey)),
-        baseURL: Option.some(baseURL),
-        webURL: Option.some(webURL),
         orgId: parsedUserData.orgId,
         projectId: parsedUserData.projectId,
         testUserId: parsedUserData.testUserId,
       } satisfies UserData;
 
       yield* Effect.logDebug(
-        'User data (overridden from env vars):',
+        'User data (API key overridden from env vars):',
         redactSensitiveLogValue(overriddenUserData)
       );
       userData = overriddenUserData;
@@ -334,18 +364,39 @@ export const rawComposioUserContextLive = Layer.effect(
 
     const isLoggedIn = () => Option.isSome(userData.apiKey);
 
-    const snapshot = (): UserDataWithDefaults => ({
-      ...userData,
-      baseURL: Option.getOrElse(userData.baseURL, () => baseURL),
-      webURL: Option.getOrElse(userData.webURL, () => webURL),
-      orgId: userData.orgId,
-      projectId: userData.projectId,
-      testUserId: userData.testUserId,
-    });
+    const keySource = (): ApiKeySource => {
+      if (Option.isSome(apiKey)) return 'env';
+      return Option.isSome(userData.apiKey) ? 'stored' : 'none';
+    };
+
+    const resolution = (): BackendResolution =>
+      resolveBackend({
+        overrides,
+        stored: {
+          baseURL: nonBlank(userData.baseURL),
+          webURL: nonBlank(userData.webURL),
+        },
+        keySource: keySource(),
+      });
+
+    const snapshot = (): UserDataWithDefaults => {
+      const { target } = resolution();
+      return {
+        ...userData,
+        baseURL: target.baseURL,
+        webURL: target.webURL,
+        orgId: userData.orgId,
+        projectId: userData.projectId,
+        testUserId: userData.testUserId,
+      };
+    };
 
     return ComposioUserContext.of({
       get data() {
         return snapshot();
+      },
+      get backend() {
+        return resolution();
       },
       isLoggedIn,
       update,

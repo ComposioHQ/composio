@@ -84,18 +84,39 @@ const parseLimit = (req: IncomingMessage): number => {
   return Number.isFinite(parsed) && parsed > 0 ? parsed : 30;
 };
 
+// The body the backend sends for a revoked or foreign user API key.
+const USER_API_KEY_REJECTION = {
+  error: {
+    message: 'Invalid or revoked user API key',
+    code: 2113,
+    slug: 'UserApiKey_Unauthorized',
+    status: 401,
+    request_id: 'mock-request-id',
+    suggested_fix: '',
+  },
+} as const;
+
 export async function startMockToolkitsListServer(options?: {
   host?: string;
   port?: number;
+  /** Requests carrying one of these `x-user-api-key` values get a 401 rejection. */
+  rejectedUserApiKeys?: ReadonlyArray<string>;
 }): Promise<MockToolkitsServer> {
   const host = options?.host ?? '0.0.0.0';
   const port = options?.port ?? 0;
+  const rejectedUserApiKeys = new Set(options?.rejectedUserApiKeys ?? []);
   const requests: string[] = [];
 
   const server = createServer((req, res) => {
     const url = new URL(req.url ?? '/', `http://${req.headers.host ?? '127.0.0.1'}`);
     const method = req.method ?? 'GET';
     requests.push(`${method} ${url.pathname}${url.search}`);
+
+    const userApiKey = req.headers['x-user-api-key'];
+    if (typeof userApiKey === 'string' && rejectedUserApiKeys.has(userApiKey)) {
+      sendJson(res, 401, USER_API_KEY_REJECTION);
+      return;
+    }
 
     if (
       method === 'GET' &&

@@ -135,7 +135,11 @@ describe('CLI: composio connections list', () => {
     it.effect('[Given] no filter [Then] prints connection JSON with aliases for duplicates', () =>
       Effect.gen(function* () {
         const userContext = yield* ComposioUserContext;
-        yield* userContext.login('test_api_key', 'org_test');
+        yield* userContext.login({
+          apiKey: 'test_api_key',
+          target: userContext.backend.ambient,
+          orgId: 'org_test',
+        });
         yield* cli(['connections', 'list']);
 
         const lines = yield* MockConsole.getLines({ stripAnsi: true });
@@ -162,7 +166,11 @@ describe('CLI: composio connections list', () => {
     it.effect('[Given] interactive stdout [Then] still prints the JSON payload', () =>
       Effect.gen(function* () {
         const userContext = yield* ComposioUserContext;
-        yield* userContext.login('test_api_key', 'org_test');
+        yield* userContext.login({
+          apiKey: 'test_api_key',
+          target: userContext.backend.ambient,
+          orgId: 'org_test',
+        });
         yield* cli(['connections', 'list']);
 
         const lines = yield* MockConsole.getLines({ stripAnsi: true });
@@ -183,7 +191,11 @@ describe('CLI: composio connections list', () => {
     it.effect('[Given] --toolkit github [Then] filters the JSON output', () =>
       Effect.gen(function* () {
         const userContext = yield* ComposioUserContext;
-        yield* userContext.login('test_api_key', 'org_test');
+        yield* userContext.login({
+          apiKey: 'test_api_key',
+          target: userContext.backend.ambient,
+          orgId: 'org_test',
+        });
         yield* cli(['connections', 'list', '--toolkit', 'github']);
 
         const lines = yield* MockConsole.getLines({ stripAnsi: true });
@@ -231,7 +243,11 @@ describe('CLI: composio connections list', () => {
     it.effect('[Given] mixed user scopes [Then] only consumer-project connections are listed', () =>
       Effect.gen(function* () {
         const userContext = yield* ComposioUserContext;
-        yield* userContext.login('test_api_key', 'org_test');
+        yield* userContext.login({
+          apiKey: 'test_api_key',
+          target: userContext.backend.ambient,
+          orgId: 'org_test',
+        });
         yield* cli(['connections', 'list']);
 
         const lines = yield* MockConsole.getLines({ stripAnsi: true });
@@ -260,7 +276,11 @@ describe('CLI: composio connections remove', () => {
         confirmedDeleteCalls.length = 0;
 
         const userContext = yield* ComposioUserContext;
-        yield* userContext.login('test_api_key', 'org_test');
+        yield* userContext.login({
+          apiKey: 'test_api_key',
+          target: userContext.backend.ambient,
+          orgId: 'org_test',
+        });
         yield* cli(['connections', 'remove', 'gmail']);
 
         expect(confirmedDeleteCalls).toEqual(['con_gmail_active']);
@@ -287,7 +307,11 @@ describe('CLI: composio connections remove', () => {
         deniedDeleteCalls.length = 0;
 
         const userContext = yield* ComposioUserContext;
-        yield* userContext.login('test_api_key', 'org_test');
+        yield* userContext.login({
+          apiKey: 'test_api_key',
+          target: userContext.backend.ambient,
+          orgId: 'org_test',
+        });
         yield* cli(['connections', 'remove', 'work']);
 
         expect(deniedDeleteCalls).toEqual([]);
@@ -316,7 +340,11 @@ describe('CLI: composio connections remove', () => {
           ambiguousDeleteCalls.length = 0;
 
           const userContext = yield* ComposioUserContext;
-          yield* userContext.login('test_api_key', 'org_test');
+          yield* userContext.login({
+            apiKey: 'test_api_key',
+            target: userContext.backend.ambient,
+            orgId: 'org_test',
+          });
           yield* cli(['connections', 'remove', 'github']);
 
           expect(ambiguousDeleteCalls).toEqual([]);

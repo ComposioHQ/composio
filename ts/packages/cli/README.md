@@ -56,10 +56,10 @@ By default, both files are stored in `~/.composio`, but you can specify a custom
 
 | Environment Variable                     | JSON config                         | Description                                                                                            | Default                                                                  |
 | ---------------------------------------- | ----------------------------------- | ------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------ |
-| COMPOSIO_USER_API_KEY                    | `user_data.json`: `api_key`         | Composio user API key                                                                                  | None                                                                     |
-| COMPOSIO_ENVIRONMENT                     | -                                   | Selects the production or staging URL defaults                                                         | production                                                               |
-| COMPOSIO_BASE_URL                        | `user_data.json`: `base_url`        | The base URL of the Composio backend API                                                               | https://backend.composio.dev                                             |
-| COMPOSIO_WEB_URL                         | `user_data.json`: `web_url`         | The base URL of the Composio web app                                                                   | https://dashboard.composio.dev/                                          |
+| COMPOSIO_USER_API_KEY                    | `user_data.json`: `api_key`         | Composio user API key; the env var is used instead of the stored key                                   | None                                                                     |
+| COMPOSIO_ENVIRONMENT                     | -                                   | Selects the production or staging backend and web app, overriding the stored login environment         | production                                                               |
+| COMPOSIO_BASE_URL                        | `user_data.json`: `base_url`        | The base URL of the Composio backend API, overriding the stored one                                    | Stored `base_url`, then https://backend.composio.dev                     |
+| COMPOSIO_WEB_URL                         | `user_data.json`: `web_url`         | The base URL of the Composio web app, overriding the stored one                                        | Stored `web_url`, then https://dashboard.composio.dev/                   |
 | COMPOSIO_CACHE_DIR                       | -                                   | The directory where the Composio CLI stores cache files                                                | ~/.composio                                                              |
 | COMPOSIO_SESSION_DIR                     | `config.json`: `artifact_directory` | The root directory for CLI session artifacts                                                           | `COMPOSIO_CACHE_DIR`, then `artifact_directory`, then `$TMPDIR/composio` |
 | COMPOSIO_BIN_DIR                         | -                                   | The directory `composio install` adds to `PATH` (see below)                                            | Resolved from the running binary                                         |
@@ -74,6 +74,13 @@ By default, both files are stored in `~/.composio`, but you can specify a custom
 | DEBUG_OVERRIDE_VERSION                   | -                                   | The version to use when upgrading the Composio CLI (for debugging)                                     | None                                                                     |
 | FORCE_USE_CACHE                          | -                                   | Whether to force the use of previously cached HTTP responses                                           | None                                                                     |
 | NO_COLOR                                 | -                                   | If set, disables color output in the CLI (https://no-color.org/)                                       | None                                                                     |
+
+A user API key only works on the backend that issued it, so `composio login` records that backend in `user_data.json` along with the key. The backend a command calls is resolved in this order:
+
+1. With a key from `COMPOSIO_USER_API_KEY`: `COMPOSIO_BASE_URL`, then `COMPOSIO_ENVIRONMENT`, then production. The stored `base_url` is ignored.
+2. With the stored key: `COMPOSIO_BASE_URL`, then `COMPOSIO_ENVIRONMENT`, then the stored `base_url`, then production. When an env var points the stored key at a different backend, the CLI warns before making requests.
+
+`composio login` targets `COMPOSIO_BASE_URL`, then `COMPOSIO_ENVIRONMENT`, then production, and names the backend first when it is not production. To log in to staging, run `COMPOSIO_ENVIRONMENT=staging composio login`.
 
 The CLI and its installer use these variables to coordinate nested commands. They aren't intended for manual configuration.
 

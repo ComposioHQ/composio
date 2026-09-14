@@ -3,6 +3,7 @@ import { Effect, Option } from 'effect';
 import { requireAuth } from 'src/effects/require-auth';
 import { ComposioClientSingleton } from 'src/services/composio-clients';
 import { TerminalUI } from 'src/services/terminal-ui';
+import { reportUnlessUserApiKeyRejection } from 'src/services/auth-rejection';
 import { extractMessage } from 'src/utils/api-error-extraction';
 
 const slug = Argument.string('slug').pipe(Argument.withDescription('Toolkit slug (e.g. "gmail")'));
@@ -34,11 +35,16 @@ export const toolkitsCmd$Version = Command.make('version', { slug }, ({ slug }) 
         Effect.asSome,
         Effect.catch(error =>
           Effect.gen(function* () {
-            const message =
-              extractMessage(error) ?? `Failed to fetch version info for toolkit "${slug}".`;
-            yield* ui.log.error(message);
             yield* Effect.logDebug('Toolkit version error:', error);
-            yield* ui.log.step('Browse available toolkits:\n> composio dev toolkits list');
+            yield* reportUnlessUserApiKeyRejection(
+              error,
+              Effect.gen(function* () {
+                const message =
+                  extractMessage(error) ?? `Failed to fetch version info for toolkit "${slug}".`;
+                yield* ui.log.error(message);
+                yield* ui.log.step('Browse available toolkits:\n> composio dev toolkits list');
+              })
+            );
             return Option.none();
           })
         )

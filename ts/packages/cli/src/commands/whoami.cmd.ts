@@ -7,6 +7,8 @@ import { TerminalUI } from 'src/services/terminal-ui';
 import { commandHintStep } from 'src/services/command-hints';
 import { readStoredAgentIdentity } from 'src/services/agents';
 import { getOrgEnhancedControlsStatus } from 'src/services/tool-permissions';
+import { warnOnBackendMismatch } from 'src/effects/backend-mismatch-warning';
+import { hasRecordedAuthRejection, recordIfUserApiKeyRejection } from 'src/services/auth-rejection';
 
 /**
  * CLI command to display your account information.
@@ -29,12 +31,15 @@ export const whoamiCmd = Command.make('whoami', {}).pipe(
           onNone: () => ui.log.warn('You are not logged in yet. Please run `composio login`.'),
           onSome: apiKey =>
             Effect.gen(function* () {
+              yield* warnOnBackendMismatch;
               const sessionInfo = yield* getSessionInfoByUserApiKey({
                 baseURL: ctx.data.baseURL,
                 userApiKey: apiKey,
                 // Reflect the org selected via `composio orgs switch`, not the key's home org.
                 orgId: Option.getOrUndefined(ctx.data.orgId),
-              }).pipe(Effect.option);
+              }).pipe(Effect.tapError(recordIfUserApiKeyRejection), Effect.option);
+              // A rejected key has no account to show; the recovery block reports it.
+              if (Option.isNone(sessionInfo) && (yield* hasRecordedAuthRejection)) return;
               yield* Option.match(sessionInfo, {
                 onNone: () => Effect.void,
                 onSome: info => linkApolloIdentityForAnalytics(info.org_member.id, apiKey),

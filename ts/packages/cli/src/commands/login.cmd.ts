@@ -22,6 +22,9 @@ import { primeConsumerConnectedToolkitsCacheInBackground } from 'src/services/co
 import { inferSkillReleaseChannel, installSkillSafe } from 'src/effects/install-skill';
 import { handleAgentAuthError } from 'src/effects/handle-agent-auth-error';
 import { APP_VERSION } from 'src/constants';
+import { announceLoginTarget } from 'src/effects/announce-login-target';
+import { type BackendTarget, backendHost, currentLoginBackend } from 'src/utils/backend-resolution';
+import { isUserApiKeyRejection } from 'src/utils/api-error-extraction';
 import {
   ensureAgentSignupAllowed,
   getOrSignupReadyAgent,
@@ -317,6 +320,34 @@ const emitLoginComplete = (params: {
     }
   });
 
+/**
+ * Recheck the stored key against the backend it belongs to. Only a
+ * `UserApiKey_Unauthorized` rejection counts: a transport or decoding failure
+ * keeps the "already logged in" answer, as before.
+ */
+const storedKeyRejected = Effect.gen(function* () {
+  const ctx = yield* ComposioUserContext;
+  const ui = yield* TerminalUI;
+  if (ctx.backend.keySource !== 'stored') return false;
+  const apiKey = Option.getOrUndefined(ctx.data.apiKey);
+  if (apiKey === undefined) return false;
+
+  const storedBackend = currentLoginBackend(ctx.backend);
+  const rejected = yield* getSessionInfoByUserApiKey({
+    baseURL: storedBackend.baseURL,
+    userApiKey: apiKey,
+  }).pipe(
+    Effect.as(false),
+    Effect.catch(error => Effect.succeed(isUserApiKeyRejection(error)))
+  );
+  if (rejected) {
+    yield* ui.log.warn(
+      `The Composio API at ${backendHost(storedBackend.baseURL)} rejected your stored API key. Logging in again.`
+    );
+  }
+  return rejected;
+});
+
 const completeAgentLogin = (identity: AgentIdentity) =>
   Effect.gen(function* () {
     const ui = yield* TerminalUI;
@@ -363,17 +394,19 @@ const resolveDirectLoginOrganization = (params: {
     return match;
   });
 
-const directLogin = (params: { userApiKey: string; org?: string }) =>
+const directLogin = (params: { userApiKey: string; org?: string; target: BackendTarget }) =>
   Effect.gen(function* () {
     const ctx = yield* ComposioUserContext;
+    const { target } = params;
+    yield* announceLoginTarget(target);
     const sessionInfo = yield* getSessionInfoByUserApiKey({
-      baseURL: ctx.data.baseURL,
+      baseURL: target.baseURL,
       userApiKey: params.userApiKey,
     });
 
     const selectedOrg = yield* resolveDirectLoginOrganization({
       apiKey: params.userApiKey,
-      baseURL: ctx.data.baseURL,
+      baseURL: target.baseURL,
       requestedOrg: params.org,
       fallbackOrgId: sessionInfo.project.org.id,
       fallbackOrgName: sessionInfo.project.org.name,
@@ -384,10 +417,10 @@ const directLogin = (params: { userApiKey: string; org?: string }) =>
       ? `pg-test-${sessionUserId}`
       : Option.getOrUndefined(ctx.data.testUserId);
 
-    yield* ctx.login(params.userApiKey, selectedOrg.id, testUserId);
+    yield* ctx.login({ apiKey: params.userApiKey, target, orgId: selectedOrg.id, testUserId });
     yield* linkAnalyticsIdentityForOrg({
       apiKey: params.userApiKey,
-      baseURL: ctx.data.baseURL,
+      baseURL: target.baseURL,
       orgId: selectedOrg.id,
       knownIdentity: {
         orgId: sessionInfo.project.org.id,
@@ -412,7 +445,7 @@ const directLogin = (params: { userApiKey: string; org?: string }) =>
  * data and avoids hand-rolled structural types.
  */
 const storeCredentials = (params: {
-  baseURL: string;
+  target: BackendTarget;
   uakApiKey: string;
   initialOrgId: string;
   initialProjectId: string;
@@ -428,7 +461,7 @@ const storeCredentials = (params: {
     const ctx = yield* ComposioUserContext;
 
     const {
-      baseURL,
+      target,
       uakApiKey,
       initialOrgId,
       initialProjectId,
@@ -441,7 +474,7 @@ const storeCredentials = (params: {
     // Call session/info to enrich the login with org/project metadata.
     // All errors are non-fatal (browser login) since the linked session is already authenticated.
     const sessionInfo: SessionInfoResponse | undefined = yield* getSessionInfo({
-      baseURL,
+      baseURL: target.baseURL,
       apiKey: uakApiKey,
       orgId: initialOrgId,
       projectId: initialProjectId,
@@ -475,12 +508,12 @@ const storeCredentials = (params: {
       }
     }
 
-    yield* ctx.login(uakApiKey, orgId, testUserId);
+    yield* ctx.login({ apiKey: uakApiKey, target, orgId, testUserId });
     // Linked only after the credential persists, so stitching cannot outlive a failed login.
     if (!deferAnalyticsIdentity) {
       yield* linkAnalyticsIdentityForOrg({
         apiKey: uakApiKey,
-        baseURL,
+        baseURL: target.baseURL,
         orgId,
         knownIdentity: sessionInfo
           ? {
@@ -518,13 +551,16 @@ const loginWithKey = (params: {
   pollRetries?: number;
   defaultToFirstOrg?: boolean;
   skipOutput?: boolean;
+  target: BackendTarget;
 }) =>
   Effect.gen(function* () {
     const ui = yield* TerminalUI;
     const ctx = yield* ComposioUserContext;
     const client = yield* ComposioSessionRepository;
+    const { target } = params;
+    yield* announceLoginTarget(target);
 
-    const getSessionEffect = client.getSession({ id: params.key }).pipe(
+    const getSessionEffect = client.getSession({ id: params.key, baseURL: target.baseURL }).pipe(
       Effect.mapError(
         cause =>
           new LoginSessionError({
@@ -583,13 +619,13 @@ const loginWithKey = (params: {
     const uakApiKey = linkedSession.api_key;
 
     const uakSessionInfo = yield* getSessionInfoByUserApiKey({
-      baseURL: ctx.data.baseURL,
+      baseURL: target.baseURL,
       userApiKey: uakApiKey,
     });
 
     const organizations = params.defaultToFirstOrg
       ? yield* listOrganizations({
-          baseURL: ctx.data.baseURL,
+          baseURL: target.baseURL,
           apiKey: uakApiKey,
         }).pipe(
           Effect.map(response => response.data),
@@ -608,7 +644,7 @@ const loginWithKey = (params: {
 
     const willRunPicker = !params.skipOrgProjectPicker;
     yield* storeCredentials({
-      baseURL: ctx.data.baseURL,
+      target,
       uakApiKey,
       initialOrgId: xOrgId,
       initialProjectId: xProjectId,
@@ -621,7 +657,7 @@ const loginWithKey = (params: {
     if (willRunPicker) {
       const result = yield* runOrgSelection({
         apiKey: uakApiKey,
-        baseURL: ctx.data.baseURL,
+        baseURL: target.baseURL,
       }).pipe(
         Effect.catch(error =>
           Effect.gen(function* () {
@@ -634,11 +670,12 @@ const loginWithKey = (params: {
       if (result) {
         const sessionUserId = uakSessionInfo.org_member.user_id ?? uakSessionInfo.org_member.id;
         const testUserId = sessionUserId ? `pg-test-${sessionUserId}` : undefined;
-        yield* ctx.login(
-          uakApiKey,
-          result.id,
-          testUserId ?? Option.getOrUndefined(ctx.data.testUserId)
-        );
+        yield* ctx.login({
+          apiKey: uakApiKey,
+          target,
+          orgId: result.id,
+          testUserId: testUserId ?? Option.getOrUndefined(ctx.data.testUserId),
+        });
         yield* primeConsumerConnectedToolkitsCacheInBackground({
           orgId: result.id,
         });
@@ -647,7 +684,7 @@ const loginWithKey = (params: {
       const finalOrgName = result?.name ?? uakSessionInfo.project.org.name ?? '';
       yield* linkAnalyticsIdentityForOrg({
         apiKey: uakApiKey,
-        baseURL: ctx.data.baseURL,
+        baseURL: target.baseURL,
         orgId: finalOrgId,
         knownIdentity: {
           orgId: uakSessionInfo.project.org.id,
@@ -683,6 +720,123 @@ const loginWithKey = (params: {
     };
   });
 
+const openLoginPage = (url: string) =>
+  Effect.gen(function* () {
+    const ui = yield* TerminalUI;
+    yield* Effect.tryPromise({
+      try: () => open(url, { wait: false }),
+      catch: cause => new LoginBrowserOpenError({ message: 'Failed to open the browser.', cause }),
+    }).pipe(
+      Effect.catchTag('commands/LoginBrowserOpenError', error =>
+        Effect.gen(function* () {
+          yield* Effect.logDebug('Failed to open browser:', error);
+          yield* ui.log.warn('Could not open the browser automatically.');
+          yield* ui.log.info(`Tip: try using the \`--no-browser\` flag and open the URL manually.`);
+        })
+      )
+    );
+  });
+
+const awaitLinkedBrowserSession = (params: { sessionId: string; target: BackendTarget }) =>
+  Effect.gen(function* () {
+    const ui = yield* TerminalUI;
+    const client = yield* ComposioSessionRepository;
+    return yield* ui.useMakeSpinner('Waiting for login...', spinner =>
+      Effect.retry(
+        Effect.gen(function* () {
+          const currentSession = yield* client.getSession({
+            id: params.sessionId,
+            baseURL: params.target.baseURL,
+          });
+          if (currentSession.status === 'linked') {
+            return currentSession;
+          }
+          return yield* new LoginSessionError({
+            message: `Session status is still '${currentSession.status}', waiting for 'linked'`,
+            operation: 'poll',
+            status: currentSession.status,
+          });
+        }),
+        {
+          schedule: Schedule.max([
+            Schedule.exponential('0.3 seconds'),
+            Schedule.spaced('5 seconds'),
+          ]),
+          times: 15,
+        }
+      ).pipe(
+        Effect.tap(() => spinner.stop('Login successful')),
+        Effect.tapError(() => spinner.error('Login timed out. Please try again.'))
+      )
+    );
+  });
+
+/**
+ * Logs in again after the backend rejected the stored key, against the
+ * stored environment. It writes nothing to stdout, skips the org picker, and
+ * stores the new key only after the session is linked and verified, so a
+ * declined, cancelled, or failed login leaves the old credentials in place.
+ *
+ * The previous org and test user id are kept when the new key can still
+ * access that org; otherwise the session's default org is used and named.
+ */
+export const reloginWithBrowser = (params: { target: BackendTarget }) =>
+  Effect.gen(function* () {
+    const ui = yield* TerminalUI;
+    const ctx = yield* ComposioUserContext;
+    const client = yield* ComposioSessionRepository;
+    const { target } = params;
+    const previousOrgId = Option.getOrUndefined(ctx.data.orgId);
+    const previousTestUserId = Option.getOrUndefined(ctx.data.testUserId);
+
+    yield* announceLoginTarget(target);
+    const session = yield* client.createSession({ scope: 'user', baseURL: target.baseURL });
+    const url = `${target.webURL}?cliKey=${session.id}`;
+    yield* ui.log.step('Redirecting you to the login page');
+    yield* ui.note(url, 'Login URL');
+    yield* openLoginPage(url);
+
+    const linkedSession = yield* awaitLinkedBrowserSession({ sessionId: session.id, target });
+    const apiKey = linkedSession.api_key;
+
+    const previousOrgSession =
+      previousOrgId === undefined
+        ? Option.none<SessionInfoResponse>()
+        : yield* getSessionInfoByUserApiKey({
+            baseURL: target.baseURL,
+            userApiKey: apiKey,
+            orgId: previousOrgId,
+          }).pipe(Effect.option);
+
+    const sessionInfo = Option.isSome(previousOrgSession)
+      ? previousOrgSession.value
+      : yield* getSessionInfoByUserApiKey({ baseURL: target.baseURL, userApiKey: apiKey });
+    const sessionUserId = sessionInfo.org_member.user_id ?? sessionInfo.org_member.id;
+    const sessionTestUserId = sessionUserId ? `pg-test-${sessionUserId}` : undefined;
+    const keepsPreviousOrg = Option.isSome(previousOrgSession);
+    const orgId = (keepsPreviousOrg ? previousOrgId : undefined) ?? sessionInfo.project.org.id;
+    const testUserId = keepsPreviousOrg
+      ? (previousTestUserId ?? sessionTestUserId)
+      : sessionTestUserId;
+
+    yield* ctx.login({ apiKey, target, orgId, testUserId });
+    if (!keepsPreviousOrg && previousOrgId !== undefined) {
+      yield* ui.log.warn(
+        `Your previous org is not available to this account. Using "${sessionInfo.project.org.name}".`
+      );
+    }
+
+    yield* linkAnalyticsIdentityForOrg({
+      apiKey,
+      baseURL: target.baseURL,
+      orgId,
+      knownIdentity: {
+        orgId: sessionInfo.project.org.id,
+        orgMemberId: sessionInfo.org_member.id,
+      },
+    });
+  });
+
 /**
  * Runs the browser-based login flow: creates a CLI session, opens the browser,
  * polls until linked, enriches via session/info, and stores credentials.
@@ -701,19 +855,26 @@ export const browserLogin = (params: {
   noWait?: boolean;
   /** When true (login only), skip org/project picker and use session defaults. When false, prompt for org/project. */
   skipOrgProjectPicker?: boolean;
+  /** Backend and dashboard the login runs against and records with the new key. */
+  target: BackendTarget;
 }) =>
   Effect.gen(function* () {
     const ui = yield* TerminalUI;
     const ctx = yield* ComposioUserContext;
     const client = yield* ComposioSessionRepository;
+    const { target } = params;
 
     yield* Effect.logDebug(`Authenticating (scope: ${params.scope})...`);
+    yield* announceLoginTarget(target);
 
-    const session = yield* client.createSession({ scope: params.scope });
+    const session = yield* client.createSession({
+      scope: params.scope,
+      baseURL: target.baseURL,
+    });
 
     yield* Effect.logDebug(`Created session: ${session.id}`);
 
-    const url = `${ctx.data.webURL}?cliKey=${session.id}`;
+    const url = `${target.webURL}?cliKey=${session.id}`;
     const pollCommand = 'composio login --poll';
     const expiresAt = DateTime.formatIso(session.expiresAt);
     yield* writePendingLoginSession({
@@ -753,48 +914,10 @@ export const browserLogin = (params: {
     yield* ui.output(url);
 
     if (!effectiveNoBrowser) {
-      yield* Effect.tryPromise({
-        try: () => open(url, { wait: false }),
-        catch: cause =>
-          new LoginBrowserOpenError({ message: 'Failed to open the browser.', cause }),
-      }).pipe(
-        Effect.catchTag('commands/LoginBrowserOpenError', error =>
-          Effect.gen(function* () {
-            yield* Effect.logDebug('Failed to open browser:', error);
-            yield* ui.log.warn('Could not open the browser automatically.');
-            yield* ui.log.info(
-              `Tip: try using the \`--no-browser\` flag and open the URL manually.`
-            );
-          })
-        )
-      );
+      yield* openLoginPage(url);
     }
 
-    const linkedSession = yield* ui.useMakeSpinner('Waiting for login...', spinner =>
-      Effect.retry(
-        Effect.gen(function* () {
-          const currentSession = yield* client.getSession({ ...session });
-          if (currentSession.status === 'linked') {
-            return currentSession;
-          }
-          return yield* new LoginSessionError({
-            message: `Session status is still '${currentSession.status}', waiting for 'linked'`,
-            operation: 'poll',
-            status: currentSession.status,
-          });
-        }),
-        {
-          schedule: Schedule.max([
-            Schedule.exponential('0.3 seconds'),
-            Schedule.spaced('5 seconds'),
-          ]),
-          times: 15,
-        }
-      ).pipe(
-        Effect.tap(() => spinner.stop('Login successful')),
-        Effect.tapError(() => spinner.error('Login timed out. Please try again.'))
-      )
-    );
+    const linkedSession = yield* awaitLinkedBrowserSession({ sessionId: session.id, target });
 
     yield* Effect.logDebug(`Linked session ID: ${linkedSession.id}`);
 
@@ -802,7 +925,7 @@ export const browserLogin = (params: {
     const uakApiKey = linkedSession.api_key;
 
     const uakSessionInfo = yield* getSessionInfoByUserApiKey({
-      baseURL: ctx.data.baseURL,
+      baseURL: target.baseURL,
       userApiKey: uakApiKey,
     });
 
@@ -815,7 +938,7 @@ export const browserLogin = (params: {
 
     const willRunPicker = params.scope === 'user' && !params.skipOrgProjectPicker;
     yield* storeCredentials({
-      baseURL: ctx.data.baseURL,
+      target,
       uakApiKey,
       initialOrgId: xOrgId,
       initialProjectId: xProjectId,
@@ -828,7 +951,7 @@ export const browserLogin = (params: {
     if (willRunPicker) {
       const result = yield* runOrgSelection({
         apiKey: uakApiKey,
-        baseURL: ctx.data.baseURL,
+        baseURL: target.baseURL,
       }).pipe(
         Effect.catch(error =>
           Effect.gen(function* () {
@@ -841,11 +964,12 @@ export const browserLogin = (params: {
       if (result) {
         const sessionUserId = uakSessionInfo.org_member.user_id ?? uakSessionInfo.org_member.id;
         const testUserId = sessionUserId ? `pg-test-${sessionUserId}` : undefined;
-        yield* ctx.login(
-          uakApiKey,
-          result.id,
-          testUserId ?? Option.getOrUndefined(ctx.data.testUserId)
-        );
+        yield* ctx.login({
+          apiKey: uakApiKey,
+          target,
+          orgId: result.id,
+          testUserId: testUserId ?? Option.getOrUndefined(ctx.data.testUserId),
+        });
         yield* primeConsumerConnectedToolkitsCacheInBackground({
           orgId: result.id,
         });
@@ -854,7 +978,7 @@ export const browserLogin = (params: {
       const finalOrgName = result?.name ?? uakSessionInfo.project.org.name ?? '';
       yield* linkAnalyticsIdentityForOrg({
         apiKey: uakApiKey,
-        baseURL: ctx.data.baseURL,
+        baseURL: target.baseURL,
         orgId: finalOrgId,
         knownIdentity: {
           orgId: uakSessionInfo.project.org.id,
@@ -958,6 +1082,7 @@ export const loginCmd = Command.make(
           pollRetries: LOGIN_POLL_RETRIES,
           defaultToFirstOrg: true,
           skipOutput: true,
+          target: ctx.backend.ambient,
         });
         yield* clearPendingLoginSession;
         const pollSummaryParams = {
@@ -995,6 +1120,7 @@ export const loginCmd = Command.make(
           key: key.value,
           noWait,
           skipOrgProjectPicker: true,
+          target: ctx.backend.ambient,
         });
         if (!noSkillInstall && canPrompt) {
           yield* installSkillSafe({ channel: inferSkillReleaseChannel(APP_VERSION) });
@@ -1006,6 +1132,7 @@ export const loginCmd = Command.make(
         yield* directLogin({
           userApiKey: userApiKey.value,
           org: Option.getOrUndefined(org),
+          target: ctx.backend.ambient,
         });
         if (!noSkillInstall && canPrompt) {
           yield* installSkillSafe({ channel: inferSkillReleaseChannel(APP_VERSION) });
@@ -1014,14 +1141,16 @@ export const loginCmd = Command.make(
       }
 
       if (ctx.isLoggedIn()) {
-        if (Option.isSome(ctx.data.orgId)) {
+        if (Option.isSome(ctx.data.orgId) && !(yield* storedKeyRejected)) {
           yield* ui.log.warn(`You're already logged in!`);
           yield* ui.outro(
             'If you want to log in with a different account, please run `composio logout` first.'
           );
           return;
         }
-        yield* ui.log.step('Re-authenticating for multi-project support...');
+        if (Option.isNone(ctx.data.orgId)) {
+          yield* ui.log.step('Re-authenticating for multi-project support...');
+        }
       }
 
       // Reuse-only by design: headless login may complete with an existing
@@ -1048,6 +1177,7 @@ export const loginCmd = Command.make(
         noBrowser,
         noWait,
         skipOrgProjectPicker: yes,
+        target: ctx.backend.ambient,
       });
 
       if (!noSkillInstall && !noWait && canPrompt) {

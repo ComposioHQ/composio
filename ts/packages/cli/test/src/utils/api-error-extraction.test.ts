@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { extractApiErrorDetails } from 'src/utils/api-error-extraction';
+import { APIError } from '@composio/client';
+import { UnknownError } from 'effect/Cause';
+import { extractApiErrorDetails, isUserApiKeyRejection } from 'src/utils/api-error-extraction';
+import { HttpServerError } from 'src/services/composio-clients';
+import { userApiKeyRejectionBody } from 'test/__utils__/models/user-api-key-rejection';
 
 describe('extractApiErrorDetails', () => {
   it('extracts details from a well-formed API error body', () => {
@@ -59,5 +63,36 @@ describe('extractApiErrorDetails', () => {
     expect(extractApiErrorDetails({ foo: 'bar' })).toBeUndefined();
     expect(extractApiErrorDetails(undefined)).toBeUndefined();
     expect(extractApiErrorDetails('plain string')).toBeUndefined();
+  });
+});
+
+describe('isUserApiKeyRejection', () => {
+  const sdkRejection = () =>
+    APIError.generate(401, userApiKeyRejectionBody, undefined, new Headers());
+
+  it.each([
+    ['the raw body', () => userApiKeyRejectionBody],
+    ['an SDK APIError', sdkRejection],
+    [
+      'an HttpServerError wrapping an SDK APIError',
+      () => new HttpServerError({ cause: sdkRejection() }),
+    ],
+    [
+      'an HttpServerError carrying the decoded body',
+      () => new HttpServerError({ status: 401, apiError: userApiKeyRejectionBody.error }),
+    ],
+    ['an UnknownError wrapper', () => new UnknownError(sdkRejection())],
+    ['code 2113 without a slug', () => ({ error: { message: 'Unauthorized', code: 2113 } })],
+  ])('[Given] %s [Then] matches', (_label, make) => {
+    expect(isUserApiKeyRejection(make())).toBe(true);
+  });
+
+  it.each([
+    ['a 403 with another slug', { error: { status: 403, slug: 'Forbidden', code: 1003 } }],
+    ['a 401 with another slug', { error: { status: 401, slug: 'ProxyUpstream_Unauthorized' } }],
+    ['a bare 401 status', new HttpServerError({ status: 401, cause: 'HTTP 401 Unauthorized' })],
+    ['a non-object', 'Invalid or revoked user API key'],
+  ])('[Given] %s [Then] does not match', (_label, error) => {
+    expect(isUserApiKeyRejection(error)).toBe(false);
   });
 });

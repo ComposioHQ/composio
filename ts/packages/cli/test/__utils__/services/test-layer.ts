@@ -1,5 +1,7 @@
 import path from 'node:path';
 import * as tempy from 'tempy';
+import * as constants from 'src/constants';
+import { AuthRejectionRecorder } from 'src/services/auth-rejection';
 import { Composio as RawComposioClient } from '@composio/client';
 import type { AuthConfigCreateParams } from '@composio/client/resources/auth-configs';
 import * as BunFileSystem from '@effect/platform-bun/BunFileSystem';
@@ -31,6 +33,7 @@ import {
   ComposioClientSingleton,
   ComposioSessionRepository,
   ComposioToolkitsRepository,
+  type ComposioToolkitsRepositoryShape,
   HttpServerError,
   InvalidToolkitsError,
   InvalidToolkitVersionsError,
@@ -94,6 +97,18 @@ export interface TestLiveInput {
    * TODO: consider extracting `fixture` into another `Effect`.
    */
   fixture?: string;
+
+  /**
+   * Seed `~/.composio/user_data.json` (snake_case keys) before the user context
+   * loads it.
+   */
+  userData?: Record<string, unknown>;
+
+  /**
+   * Make every `ComposioToolkitsRepository` method fail with this error, e.g. a
+   * rejected user API key.
+   */
+  toolkitsRepositoryFailure?: unknown;
 
   /**
    * Override the running-executable path reported by `NodeProcess`.
@@ -349,10 +364,13 @@ export const TestLayer = (input?: TestLiveInput) =>
 
     const tempDir = tempy.temporaryDirectory({ prefix: 'test' });
     const cwd = (yield* setupFixtureFolder({ fixture, tempDir })) ?? tempDir;
+    if (input?.userData) {
+      yield* seedUserData(cwd, input.userData);
+    }
 
     const ComposioToolkitsRepositoryTest = Layer.succeed(
       ComposioToolkitsRepository,
-      ComposioToolkitsRepository.of({
+      failAllWhenSet(input?.toolkitsRepositoryFailure, {
         getToolkits: () => Effect.succeed(toolkitsData.toolkits),
         getToolkitsBySlugs: (slugs: ReadonlyArray<string>) => {
           const normalizedSlugs = new Set(slugs.map(s => String.toLowerCase(s)));
@@ -794,7 +812,7 @@ export const TestLayer = (input?: TestLiveInput) =>
         enableTrigger: () => Effect.succeed({ status: 'success' as const }),
         disableTrigger: () => Effect.succeed({ status: 'success' as const }),
         deleteTrigger: triggerId => Effect.succeed({ trigger_id: triggerId }),
-      })
+      } satisfies ComposioToolkitsRepositoryShape)
     );
     const ComposioSessionRepositoryTest = yield* setupComposioSessionRepository();
     const TriggersRealtimeTest = Layer.succeed(
@@ -1310,6 +1328,7 @@ export const TestLayer = (input?: TestLiveInput) =>
       ComposioCliUserConfigTest,
       ComposioUserContextTest,
       ComposioClientSingletonTest,
+      AuthRejectionRecorder.Default,
       ComposioSessionRepositoryTest,
       TriggersRealtimeTest,
       ComposioToolkitsRepositoryTest,
@@ -1523,6 +1542,29 @@ function breakSymlinksInNodeModules(
       yield* breakSymlinksUnix;
     }
   }).pipe(Effect.catch(() => Effect.void));
+}
+
+function failAllWhenSet(
+  failure: unknown,
+  repository: ComposioToolkitsRepositoryShape
+): ComposioToolkitsRepositoryShape {
+  if (failure === undefined) return repository;
+  // Every method returns an Effect; the test only needs each call to fail.
+  return Object.fromEntries(
+    Object.keys(repository).map(name => [name, () => Effect.fail(failure)])
+  ) as unknown as ComposioToolkitsRepositoryShape;
+}
+
+function seedUserData(cwd: string, userData: Record<string, unknown>) {
+  return Effect.gen(function* () {
+    const fs = yield* FileSystem.FileSystem;
+    const composioDir = path.join(cwd, constants.USER_COMPOSIO_DIR);
+    yield* fs.makeDirectory(composioDir, { recursive: true });
+    yield* fs.writeFileString(
+      path.join(composioDir, constants.USER_CONFIG_FILE_NAME),
+      JSON.stringify(userData)
+    );
+  }).pipe(Effect.provide(BunFileSystem.layer), Effect.orDie);
 }
 
 function setupComposioSessionRepository() {

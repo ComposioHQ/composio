@@ -9,6 +9,7 @@ import { ComposioUserContext } from 'src/services/user-context';
 import { getSessionInfoByUserApiKey } from 'src/services/composio-clients';
 import { primeConsumerConnectedToolkitsCacheInBackground } from 'src/services/consumer-short-term-cache';
 import { linkApolloIdentityForAnalytics } from 'src/analytics/dispatch';
+import { announceLoginTarget } from 'src/effects/announce-login-target';
 
 export const AGENT_CONFIG_FILE_NAME = 'agent.json';
 export const DEFAULT_AGENTS_BASE_URL = 'https://agents.composio.dev';
@@ -458,9 +459,13 @@ export const loginWithAgentIdentity = (identity: AgentIdentity) =>
       });
     }
 
-    yield* ctx.login(userApiKey, orgId);
+    // Agent keys are recorded with the ambient backend; the agents service does
+    // not say which backend issued them.
+    const target = ctx.backend.ambient;
+    yield* announceLoginTarget(target);
+    yield* ctx.login({ apiKey: userApiKey, target, orgId });
     // Best-effort analytics stitch after the credential persists; must never break login.
-    yield* getSessionInfoByUserApiKey({ baseURL: ctx.data.baseURL, userApiKey, orgId }).pipe(
+    yield* getSessionInfoByUserApiKey({ baseURL: target.baseURL, userApiKey, orgId }).pipe(
       Effect.flatMap(info => linkApolloIdentityForAnalytics(info.org_member.id, userApiKey)),
       Effect.catchCause(() => Effect.void)
     );

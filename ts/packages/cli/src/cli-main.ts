@@ -109,7 +109,9 @@ import { showUpdateNotice } from 'src/services/update-check';
 import {
   configureCliAnalyticsReleaseVersion,
   createCliCommandTelemetryContext,
+  extractCommandPath,
   getExecuteCommandToolSlug,
+  isLoginCommand,
   getPrimaryLifecycleFailedEvent,
   getPrimaryLifecycleInvokedEvent,
   getPrimaryLifecycleSucceededEvent,
@@ -118,6 +120,10 @@ import { trackCliEventEffect } from 'src/analytics/dispatch';
 import { getVersion } from 'src/effects/version';
 import { toolkitFromToolSlug } from 'src/effects/toolkit-from-tool-slug';
 import { mapOnlyComposioOverrideError } from 'src/services/composio-error-overrides';
+import { AuthRejectionRecorder, recordIfUserApiKeyRejection } from 'src/services/auth-rejection';
+import { reportAuthRejection } from 'src/effects/auth-rejection-recovery';
+import { reloginWithBrowser } from 'src/commands/login.cmd';
+import { isUserApiKeyRejection } from 'src/utils/api-error-extraction';
 import { SetupSkillInstaller } from 'src/services/setup-skill-installer';
 import { SetupCommandError } from 'src/services/setup';
 import { ShellSetupAbortError } from 'src/commands/install.cmd';
@@ -195,6 +201,9 @@ export const SetupSkillInstallerLive = Layer.provide(
 
 const layers = Layer.mergeAll(
   CliConfigLive.pipe(Layer.provide(ConfigLive)),
+  // The same layer value that `ComposioClientSingleton.Default` provides, so the
+  // runtime shares one recorder between the SDK clients and `cliProgram`.
+  AuthRejectionRecorder.Default,
   NodeOs.Default,
   NodeProcess.Default,
   UpgradeBinaryLive,
@@ -289,6 +298,7 @@ const runWithTelemetry = (argv: ReadonlyArray<string>) =>
       Effect.mapError(error =>
         CliError.isCliError(error) ? error : mapOnlyComposioOverrideError({ error })
       ),
+      Effect.tapError(recordIfUserApiKeyRejection),
       Effect.tap(() =>
         trackCliEventEffect(getPrimaryLifecycleSucceededEvent(commandTelemetryContext))
       ),
@@ -310,10 +320,24 @@ export type CliBootstrapOptions = {
   readonly telemetryDebug: boolean;
 };
 
+// `composio login` is itself the recovery from a rejected key: its failures are
+// about the key it was given, so they keep the regular error output.
+const reportsAuthRejection = (argv: ReadonlyArray<string>) =>
+  !isLoginCommand(extractCommandPath(argv));
+
 const cliProgram = (argv: ReadonlyArray<string>) =>
   showUpdateNotice.pipe(
     Effect.andThen(showPluginAcquisitionHint(argv)),
     Effect.andThen(runWithTelemetry(argv)),
+    // A rejected key is reported once, by `reportAuthRejection` below, instead
+    // of as a raw backend error.
+    Effect.catchIf(
+      error => reportsAuthRejection(argv) && isUserApiKeyRejection(error),
+      () =>
+        Effect.sync(() => {
+          process.exitCode = 1;
+        })
+    ),
     Effect.catchIf(
       (error): error is SetupCommandError => error instanceof SetupCommandError,
       error =>
@@ -413,6 +437,11 @@ const cliProgram = (argv: ReadonlyArray<string>) =>
           }
         }
       })
+    ),
+    Effect.andThen(
+      reportsAuthRejection(argv)
+        ? reportAuthRejection({ relogin: target => reloginWithBrowser({ target }) })
+        : Effect.void
     ),
     Effect.provide(layers),
     // v4 removed `Effect.withConfigProvider` (a FiberRef-scoped combinator); `ConfigProvider` is

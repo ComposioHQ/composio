@@ -1,6 +1,7 @@
 import { Effect, Option } from 'effect';
 import { ComposioUserContext } from 'src/services/user-context';
 import { TerminalUI } from 'src/services/terminal-ui';
+import { warnOnBackendMismatch } from 'src/effects/backend-mismatch-warning';
 
 /**
  * Checks that the user is authenticated. Returns `true` if an API key is present,
@@ -20,5 +21,6 @@ export const requireAuth = Effect.gen(function* () {
     return false as const;
   }
 
+  yield* warnOnBackendMismatch;
   return true as const;
 });

@@ -7,6 +7,11 @@ import { resolveToolRouterSession } from 'src/effects/create-tool-router-session
 import { extractMessage } from 'src/utils/api-error-extraction';
 import { ProjectContext } from 'src/services/project-context';
 import { ComposioUserContext } from 'src/services/user-context';
+import {
+  hasRecordedAuthRejection,
+  recordIfUserApiKeyRejection,
+  reportUnlessUserApiKeyRejection,
+} from 'src/services/auth-rejection';
 import { formatToolkitInfo, formatToolkitInfoJson } from '../format';
 
 class ToolkitsInfoRequestError extends Data.TaggedError('commands/ToolkitsInfoRequestError')<{
@@ -88,7 +93,7 @@ export const toolkitsCmd$Info = Command.make(
           Effect.gen(function* () {
             const detailedToolkitOpt = yield* repo
               .getToolkitDetailed(slugValue)
-              .pipe(Effect.option);
+              .pipe(Effect.tapError(recordIfUserApiKeyRejection), Effect.option);
 
             if (Option.isSome(resolvedUserId)) {
               const client = yield* clientSingleton.get();
@@ -126,10 +131,16 @@ export const toolkitsCmd$Info = Command.make(
           Effect.asSome,
           Effect.catch(error =>
             Effect.gen(function* () {
-              const message = extractMessage(error) ?? `Failed to fetch toolkit "${slugValue}".`;
-              yield* ui.log.error(message);
               yield* Effect.logDebug('Toolkit info error:', error);
-              yield* ui.log.step('Browse available toolkits:\n> composio dev toolkits list');
+              yield* reportUnlessUserApiKeyRejection(
+                error,
+                Effect.gen(function* () {
+                  const message =
+                    extractMessage(error) ?? `Failed to fetch toolkit "${slugValue}".`;
+                  yield* ui.log.error(message);
+                  yield* ui.log.step('Browse available toolkits:\n> composio dev toolkits list');
+                })
+              );
               return Option.none();
             })
           )
@@ -142,6 +153,11 @@ export const toolkitsCmd$Info = Command.make(
       const result = resultOpt.value;
       const toolkit = result.toolkit;
       const detailedToolkit = Option.getOrUndefined(result.detailedToolkitOpt);
+
+      // A rejected key hides the toolkit; the recovery block explains why.
+      if (!toolkit && (yield* hasRecordedAuthRejection)) {
+        return;
+      }
 
       if (!toolkit) {
         yield* ui.log.warn(`Toolkit "${slugValue}" not found.`);

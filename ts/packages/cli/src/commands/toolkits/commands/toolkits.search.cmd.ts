@@ -3,6 +3,7 @@ import { Argument, Command, Flag } from 'effect/unstable/cli';
 import { Effect } from 'effect';
 import { ComposioToolkitsRepository } from 'src/services/composio-clients';
 import { TerminalUI } from 'src/services/terminal-ui';
+import { reportUnlessUserApiKeyRejection } from 'src/services/auth-rejection';
 import { requireAuth } from 'src/effects/require-auth';
 import { clampLimit } from 'src/ui/clamp-limit';
 import { extractMessage } from 'src/utils/api-error-extraction';
@@ -67,7 +68,10 @@ export const toolkitsCmd$Search = Command.make('search', { query, limit }, ({ qu
     Effect.catch(error =>
       Effect.gen(function* () {
         const ui = yield* TerminalUI;
-        yield* ui.log.error(extractMessage(error) ?? 'An error occurred while searching toolkits.');
+        yield* reportUnlessUserApiKeyRejection(
+          error,
+          ui.log.error(extractMessage(error) ?? 'An error occurred while searching toolkits.')
+        );
         yield* ui.output('[]');
         process.exitCode = 1;
       })
