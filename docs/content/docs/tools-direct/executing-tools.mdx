@@ -282,7 +282,7 @@ console.log('GitHub stargazers:', JSON.stringify(result, null, 2));
 
 ### Pin a version
 
-When your code parses tool outputs, look up the current version once, then pass that dated string as `version` on every call. Hard-code the string (or keep it in config) rather than looking it up at runtime, so a new release can't change the output shape under you.
+When your code parses tool outputs, look up the current version once, then pass that dated string as `version` on every call. Hard-code the string (or keep it in config) rather than looking it up at runtime, so a new release can't change the output shape without you noticing.
 
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
   <Tab value="Python">
