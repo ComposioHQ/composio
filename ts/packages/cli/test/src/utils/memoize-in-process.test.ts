@@ -41,4 +41,23 @@ describe('memoizeInProcess', () => {
       expect(calls).toBe(2);
     })
   );
+
+  it.effect('drops a defect so the next caller retries', () =>
+    Effect.gen(function* () {
+      let calls = 0;
+      const load = memoizeInProcess({
+        keyOf: (key: string) => key,
+        make: () =>
+          Effect.suspend(() =>
+            ++calls === 1 ? Effect.die('first call dies') : Effect.succeed(calls)
+          ),
+      });
+
+      const first = yield* Effect.exit(load('k'));
+      expect(Exit.isFailure(first)).toBe(true);
+
+      expect(yield* load('k')).toBe(2);
+      expect(calls).toBe(2);
+    })
+  );
 });

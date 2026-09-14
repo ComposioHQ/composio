@@ -2,8 +2,8 @@ import { Effect } from 'effect';
 
 /**
  * Memoizes an Effect per key for the lifetime of the process, sharing one run
- * between concurrent callers. A success stays cached; a failure is dropped so
- * the next caller retries instead of replaying the error.
+ * between concurrent callers. A success stays cached; a failure, defect, or
+ * interruption is dropped so the next caller retries instead of replaying it.
  *
  * Meant for reads that cannot change within one CLI invocation (a tool's
  * latest version, the user's connected accounts) but were being fetched more
@@ -28,7 +28,7 @@ export const memoizeInProcess = <I, A, E, R>(options: {
       // another fiber.
       const cached = Effect.runSync(
         Effect.cached(
-          options.make(input).pipe(Effect.tapError(() => Effect.sync(() => cache.delete(key))))
+          options.make(input).pipe(Effect.onError(() => Effect.sync(() => cache.delete(key))))
         )
       );
       cache.set(key, cached);

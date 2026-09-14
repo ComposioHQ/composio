@@ -92,10 +92,10 @@ export const resolveToolRouterSessionConnections = (
       // account picker, so it is fetched once per process and shared.
       listActiveConnectedAccounts({ client, userId }).pipe(
         Effect.mapError(
-          error =>
+          cause =>
             new ToolRouterSessionConnectionsError({
               message: `Failed to list connected accounts for user "${userId}".`,
-              cause: error.cause,
+              cause,
             })
         )
       )

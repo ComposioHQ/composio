@@ -138,13 +138,6 @@ export const formatConnectedAccountChoices = (
 ): ReadonlyArray<string> =>
   items.filter(isUsableConnectedAccount).sort(compareNewestFirst).map(formatConnectedAccountChoice);
 
-export class ActiveConnectedAccountsListError extends Data.TaggedError(
-  'services/ActiveConnectedAccountsListError'
-)<{
-  readonly message: string;
-  readonly cause: unknown;
-}> {}
-
 // `Composio` clients come from `ComposioClientSingleton`, one instance per
 // org/project, so identity is a sound cache key. Ids instead of the object
 // itself keep the memo key a string.
@@ -166,12 +159,13 @@ const clientId = (client: Composio): number => {
  * `composio execute` needs this list twice on every call, from two code paths
  * that cannot see each other: `resolveConnectedAccountForToolkit` picks the
  * account for the tool's toolkit, then `resolveToolRouterSessionConnections`
- * builds the session's connection context from the full list. Both used to
- * issue their own `GET /connected_accounts`, one toolkit-filtered and one not.
- * The per-toolkit view is a subset of this list, so both read from here.
+ * builds the session's connection context from the full list. The per-toolkit
+ * view is a subset of this list, so both read from here instead of issuing
+ * their own `GET /connected_accounts`.
  *
  * `limit: 1000` is the session path's existing page size; a user with more
- * active accounts than that was already truncated there.
+ * active accounts than that was already truncated there. Fails with the raw
+ * rejection; each caller wraps it in its own error.
  */
 export const listActiveConnectedAccounts = memoizeInProcess({
   keyOf: (input: { readonly client: Composio; readonly userId: string }) =>
@@ -184,11 +178,7 @@ export const listActiveConnectedAccounts = memoizeInProcess({
           statuses: ['ACTIVE'],
           limit: 1000,
         }),
-      catch: cause =>
-        new ActiveConnectedAccountsListError({
-          message: `Failed to list connected accounts for user "${userId}".`,
-          cause,
-        }),
+      catch: cause => cause,
     }),
 });
 
@@ -234,7 +224,7 @@ const listConnectedAccountsForToolkit = (params: {
     const shared = yield* listActiveConnectedAccounts({
       client: params.client,
       userId: params.userId,
-    }).pipe(Effect.mapError(error => error.cause));
+    });
     const items = shared.items ?? [];
     const complete = shared.next_cursor == null && shared.total_items <= items.length;
     if (!complete) {
