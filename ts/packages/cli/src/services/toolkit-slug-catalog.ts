@@ -52,15 +52,12 @@ const refreshInBackgroundIfStale = (learned: Option.Option<KnownToolkitSlugs>) =
     const isFresh = Option.match(learned, {
       onNone: () => false,
       onSome: known =>
-        Duration.lessThan(
-          Duration.millis(DateTime.distance(known.refreshedAt, now)),
-          REFRESH_AFTER
-        ),
+        Duration.isLessThan(DateTime.distance(known.refreshedAt, now), REFRESH_AFTER),
     });
 
     if (isFresh) return;
 
-    yield* Effect.forkDaemon(refreshKnownToolkitSlugs);
+    yield* Effect.forkDetach(refreshKnownToolkitSlugs);
   });
 
 /**
@@ -115,17 +112,17 @@ const makeToolkitSlugCatalog = Effect.gen(function* () {
     Effect.gen(function* () {
       const alreadyRecorded = yield* Ref.getAndSet(hasRecorded, true);
       if (alreadyRecorded) return;
-      yield* Effect.forkDaemon(writeKnownToolkitSlugs(slugs));
+      yield* Effect.forkDetach(writeKnownToolkitSlugs(slugs));
     });
 
   return { local, remember };
 });
 
-export type ToolkitSlugCatalogShape = Effect.Effect.Success<typeof makeToolkitSlugCatalog>;
+export type ToolkitSlugCatalogShape = Effect.Success<typeof makeToolkitSlugCatalog>;
 
-export class ToolkitSlugCatalog extends Context.Tag('services/ToolkitSlugCatalog')<
+export class ToolkitSlugCatalog extends Context.Service<
   ToolkitSlugCatalog,
   ToolkitSlugCatalogShape
->() {
+>()('services/ToolkitSlugCatalog') {
   static readonly Default = Layer.effect(ToolkitSlugCatalog, makeToolkitSlugCatalog);
 }

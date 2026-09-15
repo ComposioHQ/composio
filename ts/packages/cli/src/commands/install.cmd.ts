@@ -1,7 +1,7 @@
-import { Command, Options } from '@effect/cli';
-import * as FileSystem from '@effect/platform/FileSystem';
-import * as Path from '@effect/platform/Path';
-import type { PlatformError } from '@effect/platform/Error';
+import { Command, Flag } from 'effect/unstable/cli';
+import * as FileSystem from 'effect/FileSystem';
+import * as Path from 'effect/Path';
+import type { PlatformError } from 'effect/PlatformError';
 import { Array as Arr, Config, ConfigProvider, Data, Effect, Option } from 'effect';
 import { APP_CONFIG } from 'src/effects/app-config';
 import { ComposioCliUserConfig } from 'src/services/cli-user-config';
@@ -15,21 +15,21 @@ import { atomicWriteFileString } from 'src/utils/atomic-write';
 // Options
 // ---------------------------------------------------------------------------
 
-const completionsOpt = Options.boolean('completions').pipe(
-  Options.withDescription('Install shell completions.'),
-  Options.withDefault(false)
+const completionsOpt = Flag.boolean('completions').pipe(
+  Flag.withDescription('Install shell completions.'),
+  Flag.withDefault(false)
 );
 
-const noCompletionsOpt = Options.boolean('no-completions').pipe(
-  Options.withDescription('Deprecated: shell completions are skipped by default.'),
-  Options.withDefault(false)
+const noCompletionsOpt = Flag.boolean('no-completions').pipe(
+  Flag.withDescription('Deprecated: shell completions are skipped by default.'),
+  Flag.withDefault(false)
 );
 
 const SHELLS = ['zsh', 'bash', 'fish'] as const;
 
-const shellOpt = Options.choice('shell', SHELLS).pipe(
-  Options.withDescription('Override automatic shell detection.'),
-  Options.optional
+const shellOpt = Flag.choice('shell', SHELLS).pipe(
+  Flag.withDescription('Override automatic shell detection.'),
+  Flag.optional
 );
 
 // ---------------------------------------------------------------------------
@@ -86,12 +86,12 @@ const UNSAFE_PATH_CHARS = /[`$"\\\n\r:]/;
 const isUnsafePath = (p: string): boolean => UNSAFE_PATH_CHARS.test(p);
 
 // SHELL and PATH are POSIX-standard host variables, so the CLI's COMPOSIO_
-// prefix does not apply to them.
-const environmentProvider = ConfigProvider.fromEnv();
-
-/** Read an env var from the raw environment, falling back when unset. */
+// prefix does not apply to them. The provider is built per read because
+// `ConfigProvider.fromEnv` snapshots the environment when constructed.
 const readEnvWithDefault = (name: string, fallback: string): Effect.Effect<string> =>
-  Effect.orDie(environmentProvider.load(Config.string(name).pipe(Config.withDefault(fallback))));
+  Effect.orDie(
+    Config.string(name).pipe(Config.withDefault(fallback)).parse(ConfigProvider.fromEnv())
+  );
 
 const detectShellFromEnv = (path: Path.Path, shellEnv: string): Shell | undefined => {
   const base = path.basename(shellEnv);
@@ -485,7 +485,7 @@ const appendQueuedBlocks = (params: {
       yield* fs
         .makeDirectory(path.dirname(writeTarget), { recursive: true })
         .pipe(
-          Effect.catchAll(e =>
+          Effect.catch(e =>
             Effect.logDebug('Could not create parent directory (may already exist):', e)
           )
         );
@@ -597,7 +597,7 @@ const readMaybeMissingFile = (
   fs
     .readFileString(filePath)
     .pipe(
-      Effect.catchAll(e =>
+      Effect.catch(e =>
         Effect.logDebug('File does not exist yet, will create:', e).pipe(Effect.as(''))
       )
     );
@@ -609,7 +609,7 @@ const resolveWriteTarget = (
 ): Effect.Effect<string, PlatformError> =>
   fs.readLink(filePath).pipe(
     Effect.flatMap(() => fs.realPath(filePath)),
-    Effect.catchAll(() => Effect.succeed(filePath))
+    Effect.catch(() => Effect.succeed(filePath))
   );
 
 // ---------------------------------------------------------------------------

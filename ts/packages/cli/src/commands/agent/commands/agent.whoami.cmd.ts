@@ -1,5 +1,5 @@
-import { Command } from '@effect/cli';
 import { Effect } from 'effect';
+import { Command } from 'effect/unstable/cli';
 import { handleAgentAuthError } from 'src/effects/handle-agent-auth-error';
 import {
   fetchAgentWhoami,

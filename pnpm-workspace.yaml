@@ -36,12 +36,9 @@ catalog:
   '@cloudflare/vitest-pool-workers': 0.22.0
   '@cloudflare/workers-types': ^5.20260905.1
   '@composio/client': 0.1.0-alpha.76
-  '@effect/cli': ^0.77.0
   '@effect/language-service': ^0.87.2
-  '@effect/platform': ^0.97.1
-  '@effect/platform-bun': ^0.91.2
-  '@effect/platform-node': ^0.108.0
-  '@effect/vitest': ^0.30.0
+  '@effect/platform-bun': 4.0.0-rc.112
+  '@effect/vitest': 4.0.0-rc.112
   # Bisected against ts/examples/mastra's `cf:dry-run`: 1.54.0 moved the
   # workspace/sandbox subsystem behind `@mastra/core/agent`, which drags execa
   # (-> npm-run-path -> unicorn-magic) into the Workers bundle and fails to
@@ -51,7 +48,7 @@ catalog:
   '@types/bun': ^1.4.1
   ai: ^7.0.93
   dotenv: ^17.4.2
-  effect: ^3.22.1
+  effect: 4.0.0-rc.112
   hono: ^4.13.7
   openai: ^7.10.0
   picocolors: ^1.1.1
@@ -106,11 +103,6 @@ overrides:
   # GHSA-x5fp-wj9c-mxmx and GHSA-4mjr-xmp4-gh2g; express pulls the 6.15.x line.
   # Drop when its lockfile resolution is >=6.16.0 without an override.
   'qs@<6.16.0': '>=6.16.0 <7'
-  # temporary: GHSA-82x6-q7mm-w9cf (uncontrolled recursion) and
-  # GHSA-v5mp-jgw5-2x6j (prototype pollution) are patched only in the 4.x line,
-  # but @effect/cli still depends on toml ^3.0.0. It calls nothing but
-  # `Toml.parse`, which 4.x keeps. Drop when @effect/cli depends on >=4.2.0.
-  'toml@<4.2.0': '>=4.2.0 <5'
   protobufjs: 7.6.5
   # temporary: @zed-industries/claude-code-acp@0.16.2 (latest) exact-pins vulnerable 10.2.1; drop when it ships >=10.2.3
   'minimatch@>=10.0.0 <10.2.3': '>=10.2.3 <11'

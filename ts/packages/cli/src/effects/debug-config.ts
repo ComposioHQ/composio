@@ -1,6 +1,6 @@
 import { Config, Option } from 'effect';
 
-type DEBUG_CONFIG = Config.Config.Wrap<{
+type DEBUG_CONFIG = Config.Wrap<{
   UPGRADE_TARGET: Option.Option<string>;
   VERSION: Option.Option<string>;
 }>;

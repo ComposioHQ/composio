@@ -4,6 +4,11 @@
 
 ### Patch Changes
 
+- The CLI now runs on Effect 4 (`effect@4.0.0-rc.112`). Unrecognized commands and
+  flags now print a "Did you mean?" suggestion next to the help text for the command
+  that failed to parse, and parse errors for a nested command show that command's
+  help instead of the root help. `composio --version`, `composio -v`, and
+  `composio version` keep printing the same bare version string.
 - `composio generate` now keeps tool and trigger metadata as inert data in
   generated Python and TypeScript sources. Crafted slugs and descriptions can
   no longer inject code into generated modules.
@@ -36,6 +41,19 @@
   `https://staging-dashboard.composio.dev/`.
 - `composio dev auth-configs create` now sends custom OAuth credentials and scopes
   in the API's expected shape instead of failing validation.
+- `composio listen <slug> --stream` without a path is accepted again and streams
+  the whole event payload. It previously failed with
+  `Received unknown argument: '--stream='`.
+- `composio listen` reports an unknown trigger slug as such. A mistyped slug
+  used to fail with a missing-connection error for the toolkit inferred from its
+  prefix, or with a generic trigger-creation error when that toolkit already had
+  an active account.
+- `composio tools info`, and the other `info`, `create`, `enable`, `disable`,
+  and `status` commands that share its API error handling, now exit non-zero on
+  an API error and print the error when stderr is not a terminal. `composio tools
+info <unknown-slug>` used to print nothing and exit 0 when piped.
+- Help examples use `SLACK_SEND_MESSAGE` and `SLACK_CHANNEL_MESSAGE_RECEIVED`
+  instead of a removed Slack tool slug and a trigger without configuration.
 
 ## 0.3.3
 

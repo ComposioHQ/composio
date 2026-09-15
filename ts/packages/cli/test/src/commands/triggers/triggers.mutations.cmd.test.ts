@@ -3,9 +3,9 @@ import { ConfigProvider, Effect } from 'effect';
 import { extendConfigProvider } from 'src/services/config';
 import { cli, MockConsole, TestLive } from 'test/__utils__';
 
-const testConfigProvider = ConfigProvider.fromMap(
-  new Map([['COMPOSIO_USER_API_KEY', 'test_api_key']])
-).pipe(extendConfigProvider);
+const testConfigProvider = ConfigProvider.fromEnv({
+  env: { COMPOSIO_USER_API_KEY: 'test_api_key' },
+}).pipe(extendConfigProvider);
 
 const dangerousDevConfig = {
   baseConfigProvider: testConfigProvider,
@@ -16,7 +16,7 @@ describe('CLI: composio dev triggers mutations', () => {
   layer(TestLive(dangerousDevConfig))(
     '[Given] create with valid args [Then] creates trigger',
     it => {
-      it.scoped('creates trigger and prints id', () =>
+      it.effect('creates trigger and prints id', () =>
         Effect.gen(function* () {
           yield* cli([
             'dev',
@@ -40,7 +40,7 @@ describe('CLI: composio dev triggers mutations', () => {
   layer(TestLive(dangerousDevConfig))(
     '[Given] create with invalid JSON config [Then] shows JSON validation error',
     it => {
-      it.scoped('rejects invalid trigger config JSON', () =>
+      it.effect('rejects invalid trigger config JSON', () =>
         Effect.gen(function* () {
           yield* cli([
             'dev',
@@ -61,7 +61,7 @@ describe('CLI: composio dev triggers mutations', () => {
   );
 
   layer(TestLive(dangerousDevConfig))('[Given] enable with ID [Then] enables trigger', it => {
-    it.scoped('enables trigger successfully', () =>
+    it.effect('enables trigger successfully', () =>
       Effect.gen(function* () {
         yield* cli(['dev', 'triggers', 'enable', 'trg_123', '--dangerously-allow']);
         const lines = yield* MockConsole.getLines({ stripAnsi: true });
@@ -72,7 +72,7 @@ describe('CLI: composio dev triggers mutations', () => {
   });
 
   layer(TestLive(dangerousDevConfig))('[Given] disable with ID [Then] disables trigger', it => {
-    it.scoped('disables trigger successfully', () =>
+    it.effect('disables trigger successfully', () =>
       Effect.gen(function* () {
         yield* cli(['dev', 'triggers', 'disable', 'trg_123', '--dangerously-allow']);
         const lines = yield* MockConsole.getLines({ stripAnsi: true });
@@ -85,7 +85,7 @@ describe('CLI: composio dev triggers mutations', () => {
   layer(TestLive(dangerousDevConfig))(
     '[Given] create with non-object JSON config [Then] shows type validation error',
     it => {
-      it.scoped('rejects array JSON in --trigger-config', () =>
+      it.effect('rejects array JSON in --trigger-config', () =>
         Effect.gen(function* () {
           yield* cli([
             'dev',
@@ -103,7 +103,7 @@ describe('CLI: composio dev triggers mutations', () => {
         })
       );
 
-      it.scoped('rejects number JSON in --trigger-config', () =>
+      it.effect('rejects number JSON in --trigger-config', () =>
         Effect.gen(function* () {
           yield* cli([
             'dev',
@@ -126,7 +126,7 @@ describe('CLI: composio dev triggers mutations', () => {
   layer(TestLive(dangerousDevConfig))(
     '[Given] missing ID for enable [Then] warns about missing argument',
     it => {
-      it.scoped('shows missing id warning', () =>
+      it.effect('shows missing id warning', () =>
         Effect.gen(function* () {
           yield* cli(['dev', 'triggers', 'enable', '--dangerously-allow']);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
@@ -140,7 +140,7 @@ describe('CLI: composio dev triggers mutations', () => {
   layer(TestLive(dangerousDevConfig))(
     '[Given] missing ID for disable [Then] warns about missing argument',
     it => {
-      it.scoped('shows missing id warning', () =>
+      it.effect('shows missing id warning', () =>
         Effect.gen(function* () {
           yield* cli(['dev', 'triggers', 'disable', '--dangerously-allow']);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });

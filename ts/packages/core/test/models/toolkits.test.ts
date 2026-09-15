@@ -3,6 +3,10 @@ import { Toolkits } from '../../src/models/Toolkits';
 import ComposioClient from '@composio/client';
 import { telemetry } from '../../src/telemetry/Telemetry';
 import { ComposioAuthConfigNotFoundError } from '../../src/errors/AuthConfigErrors';
+import {
+  ComposioToolkitFetchError,
+  ComposioToolkitNotFoundError,
+} from '../../src/errors/ToolkitErrors';
 import { AuthSchemeTypes } from '../../src/types/authConfigs.types';
 import { APIError } from '@composio/client';
 import type { ToolkitListParams } from '../../src/types/toolkit.types';
@@ -233,10 +237,33 @@ describe('Toolkits', () => {
       await expect(promise).rejects.toThrowError('Failed to fetch toolkits');
     });
 
-    it('should throw ComposioToolkitNotFoundError when toolkit not found', async () => {
-      mockClient.toolkits.retrieve.mockRejectedValue(
-        new Error('Toolkit with slug non-existent not found')
+    it('should throw ComposioToolkitNotFoundError when the API returns 404', async () => {
+      const notFound = new ComposioClient.NotFoundError(404, undefined, undefined, new Headers());
+      mockClient.toolkits.retrieve.mockRejectedValueOnce(notFound);
+
+      const error = await toolkits.get('non-existent').catch(e => e);
+
+      expect(error).toBeInstanceOf(ComposioToolkitNotFoundError);
+      expect(error.cause).toBe(notFound);
+    });
+
+    it('should not report an invalid API key (401) as toolkit not found', async () => {
+      const unauthorized = new ComposioClient.AuthenticationError(
+        401,
+        undefined,
+        undefined,
+        new Headers()
       );
+      mockClient.toolkits.retrieve.mockRejectedValueOnce(unauthorized);
+
+      const error = await toolkits.get('github').catch(e => e);
+
+      expect(error).toBeInstanceOf(ComposioToolkitFetchError);
+      expect(error.cause).toBe(unauthorized);
+    });
+
+    it('should throw ComposioToolkitFetchError for non-API failures', async () => {
+      mockClient.toolkits.retrieve.mockRejectedValueOnce(new Error('socket hang up'));
 
       const promise = toolkits.get('non-existent');
       await expect(promise).rejects.toThrowError("Couldn't fetch Toolkit with slug: non-existent");
@@ -530,7 +557,8 @@ describe('Toolkits', () => {
 
       const promise = toolkits.authorize('user-123', 'non-existent');
 
-      await expect(promise).rejects.toThrow("Couldn't fetch Toolkit with slug: non-existent");
+      await expect(promise).rejects.toThrow(ComposioToolkitNotFoundError);
+      await expect(promise).rejects.toThrow('Toolkit with slug non-existent not found');
       expect(mockClient.authConfigs.list).not.toHaveBeenCalled();
       expect(mockClient.authConfigs.create).not.toHaveBeenCalled();
       expect(mockClient.connectedAccounts.create).not.toHaveBeenCalled();

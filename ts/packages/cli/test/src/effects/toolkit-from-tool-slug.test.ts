@@ -1,7 +1,6 @@
 import { describe, expect, it } from '@effect/vitest';
-import * as FileSystem from '@effect/platform/FileSystem';
 import * as BunFileSystem from '@effect/platform-bun/BunFileSystem';
-import { ConfigProvider, DateTime, Effect, Layer, Schedule } from 'effect';
+import { ConfigProvider, DateTime, Effect, FileSystem, Layer, Schedule } from 'effect';
 import * as tempy from 'tempy';
 import { toolkitFromToolSlug } from 'src/effects/toolkit-from-tool-slug';
 import type { Toolkits } from 'src/models/toolkits';
@@ -32,7 +31,7 @@ const failingFetch = () =>
 const learnedFileContent = (slugs: ReadonlyArray<string>, daysAgo = 0) =>
   JSON.stringify({
     slugs,
-    refreshedAt: DateTime.formatIso(DateTime.subtract(DateTime.unsafeNow(), { days: daysAgo })),
+    refreshedAt: DateTime.formatIso(DateTime.subtract(DateTime.nowUnsafe(), { days: daysAgo })),
   });
 
 interface ResolverContext {
@@ -100,7 +99,7 @@ const runInCacheDir = <A>(
       waitForLearnedFile: predicate =>
         readLearnedFile.pipe(
           Effect.filterOrFail(predicate, () => 'learned file has not caught up yet' as const),
-          Effect.retry(Schedule.spaced('10 millis').pipe(Schedule.intersect(Schedule.recurs(200))))
+          Effect.retry(Schedule.max([Schedule.spaced('10 millis'), Schedule.recurs(200)]))
         ),
     }).pipe(
       // Built inside this test's cache directory, and fresh per test: the
@@ -115,7 +114,7 @@ const runInCacheDir = <A>(
     );
   }).pipe(
     Effect.provide(BunFileSystem.layer),
-    Effect.withConfigProvider(ConfigProvider.fromMap(new Map([['CACHE_DIR', cacheDir]])))
+    Effect.provide(ConfigProvider.layer(ConfigProvider.fromEnvRecord({ CACHE_DIR: cacheDir })))
   );
 
 describe('toolkitFromToolSlug', () => {
