@@ -7,7 +7,7 @@ description: "Tools class definition  This class is used to manage tools in the 
 
 ### get_raw_composio_tool_by_slug()
 
-Returns schema for the given tool slug.
+Returns schema for the given tool slug.  :raises ToolNotFoundError: when the backend reports the slug as unknown (404, or 400 for a malformed slug). Any other client error, such as an invalid API key, is re-raised unchanged.
 
 ```python
 def get_raw_composio_tool_by_slug(slug: str) -> Tool
@@ -178,4 +178,4 @@ def proxy(endpoint: str, method: Literal['GET', 'POST', 'PUT', 'DELETE', 'PATCH'
 
 ---
 
-[View source](https://github.com/composiohq/composio/blob/next/python/composio/core/models/tools.py#L119)
+[View source](https://github.com/composiohq/composio/blob/next/python/composio/core/models/tools.py#L123)
