@@ -113,4 +113,49 @@ describe('PusherService subscription errors', () => {
 
     expect(mockLoggerInfo).toHaveBeenCalledWith(expect.stringContaining('Subscribed to triggers'));
   });
+
+  it('invokes the optional subscription error callback with the raw payload', async () => {
+    const service = new PusherService({
+      baseURL: 'https://backend.composio.dev',
+      apiKey: 'api-key',
+    } as never);
+    const onSubscriptionError = vi.fn();
+
+    await service.subscribe(vi.fn(), onSubscriptionError);
+
+    await new Promise<void>(resolve => {
+      setImmediate(resolve);
+    });
+
+    const payload = { type: 'AuthError', error: 'Auth error: 401', status: 401 };
+    mockChannel.emit('pusher:subscription_error', payload);
+
+    expect(onSubscriptionError).toHaveBeenCalledWith(payload);
+  });
+
+  it('contains exceptions thrown from the subscription error callback', async () => {
+    const service = new PusherService({
+      baseURL: 'https://backend.composio.dev',
+      apiKey: 'api-key',
+    } as never);
+    const onSubscriptionError = vi.fn(() => {
+      throw new Error('handler exploded');
+    });
+
+    await service.subscribe(vi.fn(), onSubscriptionError);
+
+    await new Promise<void>(resolve => {
+      setImmediate(resolve);
+    });
+
+    expect(() => {
+      mockChannel.emit('pusher:subscription_error', { error: 401 });
+    }).not.toThrow();
+
+    expect(onSubscriptionError).toHaveBeenCalledTimes(1);
+    expect(mockLoggerError).toHaveBeenCalledWith(
+      '❌ Error in subscription error callback:',
+      'handler exploded'
+    );
+  });
 });

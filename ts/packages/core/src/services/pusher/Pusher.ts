@@ -162,8 +162,14 @@ export class PusherService {
    * @param channelName - The name of the Pusher channel to subscribe to
    * @param event - The event to subscribe to
    * @param fn - The function to call when the event is received
+   * @param onSubscriptionError - Optional callback invoked with the raw payload when the
+   * Pusher subscription fails (for example on auth or permission rejection). Errors thrown
+   * from this callback are contained and logged, never rethrown.
    */
-  async subscribe(fn: (data: Record<string, unknown>) => void) {
+  async subscribe(
+    fn: (data: Record<string, unknown>) => void,
+    onSubscriptionError?: (data: Record<string, unknown>) => void
+  ) {
     try {
       logger.debug(`[PusherService] Subscribing to channel: ${this.pusherChannel}`);
       const pusherClient = await this.getPusherClient();
@@ -172,6 +178,16 @@ export class PusherService {
       // add subscription error handling
       channel.bind('pusher:subscription_error', (data: Record<string, unknown>) => {
         logger.error('Trigger subscription error:', data);
+
+        // surface the failure to the caller without letting a faulty
+        // handler crash the host (same containment as the trigger callback)
+        try {
+          onSubscriptionError?.(data);
+        } catch (callbackError: unknown) {
+          const errorMessage =
+            callbackError instanceof Error ? callbackError.message : String(callbackError);
+          logger.error('❌ Error in subscription error callback:', errorMessage);
+        }
       });
 
       // log success only when Pusher itself confirms the subscription
