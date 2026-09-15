@@ -141,6 +141,11 @@ export interface TestLiveInput {
    */
   triggersData?: {
     items?: TriggerInstanceItem[];
+    /**
+     * Make `triggerInstances.upsert` reject slugs missing from `toolkitsData.triggerTypes`,
+     * as the API does for an unknown trigger type.
+     */
+    rejectUnknownTriggerSlugs?: boolean;
   };
 
   /**
@@ -1122,9 +1127,19 @@ export const TestLayer = (input?: TestLiveInput) =>
             connected_account_id?: string;
             trigger_config?: Record<string, unknown>;
           }
-        ) => ({
-          trigger_id: `trg_${triggerSlug.toLowerCase()}_${params?.connected_account_id ?? 'new'}`,
-        }),
+        ) => {
+          if (
+            input?.triggersData?.rejectUnknownTriggerSlugs &&
+            !toolkitsData.triggerTypes.some(
+              trigger => trigger.slug.toUpperCase() === triggerSlug.toUpperCase()
+            )
+          ) {
+            throw new Error(`Trigger type "${triggerSlug}" not found`);
+          }
+          return {
+            trigger_id: `trg_${triggerSlug.toLowerCase()}_${params?.connected_account_id ?? 'new'}`,
+          };
+        },
         manage: {
           update: async (triggerId: string, params: { status: 'enable' | 'disable' }) => ({
             trigger_id: triggerId,

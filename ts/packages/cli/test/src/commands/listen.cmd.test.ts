@@ -259,4 +259,69 @@ describe('CLI: composio listen', () => {
       })
     );
   });
+
+  layer(
+    TestLive({
+      baseConfigProvider: testConfigProvider,
+      fixture: 'global-test-user-id',
+      connectedAccountsData: {
+        items: [
+          {
+            id: 'con_gmail_test',
+            status: 'ACTIVE',
+            status_reason: null,
+            is_disabled: false,
+            user_id: 'consumer-user-org_test',
+            toolkit: {
+              slug: 'gmail',
+            },
+            auth_config: {
+              id: 'auth_gmail_test',
+              auth_scheme: 'OAUTH2',
+              is_composio_managed: true,
+              is_disabled: false,
+            },
+            created_at: '2026-04-06T17:59:00.000Z',
+            updated_at: '2026-04-06T18:00:00.000Z',
+            test_request_endpoint: '',
+          },
+        ],
+      },
+      toolkitsData: {
+        triggerTypes: [
+          {
+            slug: 'GMAIL_NEW_GMAIL_MESSAGE',
+            name: 'New Gmail Message',
+            description: 'Fires when a new email arrives.',
+            instructions: '',
+            type: 'poll',
+            config: {},
+            payload: {},
+            toolkit: { name: 'Gmail', slug: 'gmail' },
+          },
+        ],
+      },
+      triggersData: { rejectUnknownTriggerSlugs: true },
+    })
+  )('[Given] an active account for the inferred toolkit', it => {
+    it.effect('[Then] reports an unknown trigger slug instead of a creation failure', () =>
+      Effect.gen(function* () {
+        yield* enableListen;
+        const exit = yield* Effect.exit(cli(['listen', 'GMAIL_NEW_GMAIL_MESAGE']));
+
+        expect(Exit.isFailure(exit)).toBe(true);
+        if (Exit.isFailure(exit)) {
+          const failure = Cause.squash(exit.cause);
+          expect(failure).toBeInstanceOf(ListenCommandError);
+          if (failure instanceof ListenCommandError) {
+            expect(failure).toMatchObject({
+              reason: 'unknown_trigger',
+              slug: 'GMAIL_NEW_GMAIL_MESAGE',
+            });
+            expect(failure.message).toContain('Unknown trigger slug "GMAIL_NEW_GMAIL_MESAGE"');
+          }
+        }
+      })
+    );
+  });
 });

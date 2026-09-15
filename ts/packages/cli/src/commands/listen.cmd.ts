@@ -153,13 +153,14 @@ const assertSupportedListenParams = (params: {
 /**
  * Fails with an `unknown_trigger` error when `slug` is not a known trigger type.
  *
- * Only called once no active connected account matched, so a mistyped slug is reported as such
- * instead of as a missing connection for the toolkit inferred from its prefix.
+ * Called when no active connected account matched, and when creating the temporary trigger fails,
+ * so a mistyped slug is reported as such instead of as a missing connection or a generic creation
+ * failure. Neither call site is on the happy path, which makes no additional request.
  */
 const assertTriggerTypeExists = (params: {
   client: RawComposioClient;
   slug: string;
-  toolkitSlug: string;
+  toolkitSlug?: string;
 }) =>
   Effect.gen(function* () {
     const lookup = yield* Effect.tryPromise({
@@ -177,7 +178,7 @@ const assertTriggerTypeExists = (params: {
       });
     }
     // A found trigger type, or any failure other than 404, is inconclusive here: fall through to
-    // the connected-account error.
+    // the caller's own error.
   });
 
 const resolveConnectedAccountIdForTrigger = (params: {
@@ -548,7 +549,12 @@ export const listenCmd = Command.make(
                   slug,
                   cause,
                 }),
-            }),
+            }).pipe(
+              // An active account for the inferred toolkit skips the lookup in
+              // resolveConnectedAccountIdForTrigger, so a mistyped slug with a valid toolkit prefix
+              // only surfaces here.
+              Effect.tapError(() => assertTriggerTypeExists({ client, slug }))
+            ),
         createdTrigger =>
           Effect.gen(function* () {
             yield* emitStreamLine(`listening for events ${slug} (tail at ${streamFilePath})`, ui);
