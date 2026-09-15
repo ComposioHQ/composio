@@ -1,4 +1,4 @@
-import { describe, expect, layer } from '@effect/vitest';
+import { afterEach, describe, expect, layer } from '@effect/vitest';
 import { ConfigProvider, Effect } from 'effect';
 import { extendConfigProvider } from 'src/services/config';
 import { cli, MockConsole, TestLive } from 'test/__utils__';
@@ -55,6 +55,10 @@ const testConfigProvider = ConfigProvider.fromEnv({
 }).pipe(extendConfigProvider);
 
 describe('CLI: composio dev triggers info', () => {
+  afterEach(() => {
+    process.exitCode = undefined;
+  });
+
   layer(TestLive({ baseConfigProvider: testConfigProvider, toolkitsData }))(
     '[Given] root triggers info [Then] displays trigger info with root-level hint',
     it => {
@@ -121,6 +125,7 @@ describe('CLI: composio dev triggers info', () => {
 
           expect(output).toContain('not found');
           expect(output).toContain('composio dev triggers list "<toolkit>"');
+          expect(process.exitCode).toBe(1);
         })
       );
     }
