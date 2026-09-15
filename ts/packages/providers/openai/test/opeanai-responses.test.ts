@@ -263,6 +263,19 @@ describe('OpenAIResponsesProvider', () => {
     });
   });
 
+  describe('wrapMcpServerResponse', () => {
+    it('never logs MCP server URLs to stdout', () => {
+      const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+      const mcpUrl = 'https://mcp.example.com/t/super-secret-token';
+      const result = provider.wrapMcpServerResponse([{ name: 'srv', url: mcpUrl }]);
+      expect(logSpy).not.toHaveBeenCalled();
+      logSpy.mockRestore();
+      expect(result).toEqual([
+        { type: 'mcp', server_label: 'srv', server_url: mcpUrl, require_approval: 'never' },
+      ]);
+    });
+  });
+
   describe('wrapTools', () => {
     it('should wrap multiple tools', () => {
       const anotherTool: Tool = {

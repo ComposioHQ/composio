@@ -1,17 +1,17 @@
 ## Proxy execute (Legacy) requires an explicitly allowed Project API key
 
 Create a scoped Project API key in the Dashboard and enable **Proxy execute (Legacy)**
-during key creation before calling the v3.1 Proxy Execute API. If a request is
+during key creation before calling the direct Proxy Execute API. If a request is
 denied, verify the key's scope before debugging the provider connection. Use a
 fresh request ID from the correctly scoped key when contacting Composio support is still necessary.
 
 ## Tool Router session creation requires Session management write access
 
-For newly created scoped Project API keys, creating a session through `composio.sessions.create(...)` or `POST /api/v3.1/tool_router/session` requires the Session management permission with write or read/write access.
+For newly created scoped Project API keys, creating a session through Python's `composio.sessions.create(...)` or `POST /api/v3.1/tool_router/session` requires the Session management permission with write or read/write access.
 
 A key can successfully call `GET /api/v3.1/toolkits` with Toolkits read access and still be unable to create a session. The SDK can surface a scoped-permission denial as a generic 401 `Invalid API key`.
 
-Create a new Project API key with Session management set to Read and write, or use an appropriate full-access Project API key, then retry session creation. Existing keys with the legacy Sessions permission continue to work without changes.
+Create a new Project API key with Session management set to Write only, then retry session creation. Choose Read and write if you also need to retrieve sessions. Existing keys with the legacy Sessions permission continue to work without changes.
 
 ## Tool execution (Legacy) requires write access
 
@@ -28,3 +28,5 @@ Existing keys with the legacy Sessions permission retain the session execution a
 ## Legacy MCP routes require MCP (Legacy) access
 
 Use MCP (Legacy) read or write access to view or manage MCP servers and instances. Connecting to an MCP transport requires MCP (Legacy) write access and grants every capability exposed by that server.
+
+See [Scoped Project API Key](/reference/authenticating-to-composio/project-api-key-permissions) for the complete permission and route reference.

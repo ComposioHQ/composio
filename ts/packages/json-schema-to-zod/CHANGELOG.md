@@ -1,5 +1,11 @@
 # @composio/json-schema-to-zod
 
+## 0.3.2
+
+### Patch Changes
+
+- ab289d6: Preserve Draft 7 acceptance across primitive, composed, referenced, conditional, and typeless schemas. Enforce sibling and object/array assertions, retain positional tuple and `additionalItems` behavior, and prevent native Zod materialization from rejecting values already accepted by the source schema.
+
 ## 0.3.1
 
 ### Patch Changes

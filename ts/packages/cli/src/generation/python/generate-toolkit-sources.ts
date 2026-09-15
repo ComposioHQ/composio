@@ -91,6 +91,33 @@ function jsToPython(value: unknown, indent = 0): string {
   return JSON.stringify(value);
 }
 
+const PYTHON_IDENTIFIER_PATTERN = /^[A-Za-z_][A-Za-z0-9_]*$/;
+
+function orderPythonAssignmentEntries<T>(entries: Array<[string, T]>): Array<[string, T]> {
+  const fallbackEntries: Array<[string, T]> = [];
+  const identifierEntries: Array<[string, T]> = [];
+
+  for (const entry of entries) {
+    if (PYTHON_IDENTIFIER_PATTERN.test(entry[0])) {
+      identifierEntries.push(entry);
+    } else {
+      fallbackEntries.push(entry);
+    }
+  }
+
+  return [...fallbackEntries, ...identifierEntries];
+}
+
+function generatePythonAssignment(name: string, valueLiteral: string, spacing: number): string {
+  const spacePad = ' '.repeat(spacing);
+
+  if (PYTHON_IDENTIFIER_PATTERN.test(name)) {
+    return `${spacePad}${name} = ${valueLiteral}`;
+  }
+
+  return `${spacePad}locals()[${jsToPython(name)}] = ${valueLiteral}`;
+}
+
 /**
  * Generates Python dictionary syntax for a trigger type object
  */
@@ -118,8 +145,6 @@ function generatePythonToolkitSource(banner: string) {
     const filename = `${toolkit.slug}.py`;
 
     const toolsEntries = (spacing: number) => {
-      const spacePad = ' '.repeat(spacing);
-
       if (Object.keys(toolkit.typeableTools.value).length > 0) {
         const tools = Match.value(toolkit.typeableTools).pipe(
           Match.when({ withTypes: true }, ({ value }) =>
@@ -131,27 +156,27 @@ function generatePythonToolkitSource(banner: string) {
           Match.exhaustive
         );
 
-        return Object.entries(tools)
-          .map(([toolName, toolValue]) => `${spacePad}${toolName} = "${toolValue}"`)
+        return orderPythonAssignmentEntries(Object.entries(tools))
+          .map(([toolName, toolValue]) =>
+            generatePythonAssignment(toolName, jsToPython(toolValue), spacing)
+          )
           .join('\n');
       }
 
-      return `${spacePad}pass`;
+      return `${' '.repeat(spacing)}pass`;
     };
 
     const triggerTypesEntries = (spacing: number) => {
-      const spacePad = ' '.repeat(spacing);
-
       if (Record.size(toolkit.triggerTypes) > 0) {
-        return Object.entries(toolkit.triggerTypes)
+        return orderPythonAssignmentEntries(Object.entries(toolkit.triggerTypes))
           .map(([triggerName, triggerValue]) => {
             const pythonDict = generateTriggerTypePythonDict(triggerValue, spacing);
-            return `${spacePad}${triggerName} = ${pythonDict}`;
+            return generatePythonAssignment(triggerName, pythonDict, spacing);
           })
           .join('\n');
       }
 
-      return `${spacePad}pass`;
+      return `${' '.repeat(spacing)}pass`;
     };
 
     // Build version comment if version override was used

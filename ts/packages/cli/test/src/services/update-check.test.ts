@@ -2,7 +2,8 @@ import { describe, it, expect, vi, beforeEach, afterEach } from '@effect/vitest'
 import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, existsSync, rmSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { tmpdir } from 'node:os';
-import { BunFileSystem, BunPath } from '@effect/platform-bun';
+import * as BunFileSystem from '@effect/platform-bun/BunFileSystem';
+import * as BunPath from '@effect/platform-bun/BunPath';
 import { Effect, Fiber, Layer } from 'effect';
 import { withHttpServerEffect } from 'test/__utils__/http-server';
 import { getTerminalCapabilities, type TerminalUI } from 'src/services/terminal-ui';
@@ -635,7 +636,9 @@ describe('checkForUpdate', () => {
           json: () => Promise.resolve(makeReleasesPayload(['0.3.0'])),
         }) as unknown as typeof fetch,
       });
-      const failingFiber = yield* Effect.fork(createUpdateChecker(failingConfig).checkForUpdate);
+      const failingFiber = yield* Effect.forkChild(
+        createUpdateChecker(failingConfig).checkForUpdate
+      );
 
       yield* Effect.promise(() => failedRequestStarted.promise);
       const successfulAt = new Date(pinnedNow.getTime() + 60_000);

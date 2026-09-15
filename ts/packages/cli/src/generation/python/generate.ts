@@ -1,7 +1,6 @@
-import type { Path } from '@effect/platform';
 import type { ToolkitIndex } from 'src/generation/create-toolkit-index';
 import type { SourceFile } from 'src/generation/types';
-import { Effect } from 'effect';
+import { Effect, type Path } from 'effect';
 import { safeOutputPath, type SafeOutputPathError } from 'src/generation/safe-output-path';
 import { generatePythonToolkitSources } from './generate-toolkit-sources';
 

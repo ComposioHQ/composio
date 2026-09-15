@@ -1,7 +1,7 @@
 {
   "name": "modifiers-example",
   "private": true,
-  "version": "0.1.10",
+  "version": "0.1.11",
   "description": "",
   "main": "src/index.ts",
   "scripts": {

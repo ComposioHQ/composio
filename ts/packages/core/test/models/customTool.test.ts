@@ -6,6 +6,7 @@ import {
   createCustomTool,
   createCustomToolkit,
   buildCustomToolsMap,
+  buildCustomToolsMapFromResponse,
   serializeCustomTools,
   serializeCustomToolkits,
   LOCAL_TOOL_PREFIX,
@@ -451,6 +452,27 @@ describe('buildCustomToolsMap', () => {
 
       expect(() => buildCustomToolsMap([standalone], [tk])).toThrow('collision');
     });
+
+    it('should allow the same original slug in different toolkits and mark it ambiguous', () => {
+      const alpha: CustomToolkit = {
+        slug: 'ALPHA',
+        name: 'Alpha',
+        description: 'Alpha tools',
+        tools: [makeTool('GREP')],
+      };
+      const beta: CustomToolkit = {
+        slug: 'BETA',
+        name: 'Beta',
+        description: 'Beta tools',
+        tools: [makeTool('GREP')],
+      };
+
+      const map = buildCustomToolsMap([], [alpha, beta]);
+
+      expect([...map.byFinalSlug.keys()].sort()).toEqual(['LOCAL_ALPHA_GREP', 'LOCAL_BETA_GREP']);
+      expect(map.byOriginalSlug.has('GREP')).toBe(false);
+      expect(map.ambiguousOriginalSlugs).toEqual(new Set(['GREP']));
+    });
   });
 
   describe('length validation', () => {
@@ -502,6 +524,150 @@ describe('buildCustomToolsMap', () => {
       const map = buildCustomToolsMap([makeTool(slug)]);
       expect(map.byFinalSlug.size).toBe(1);
     });
+  });
+});
+
+// ────────────────────────────────────────────────────────────────
+// buildCustomToolsMapFromResponse()
+// ────────────────────────────────────────────────────────────────
+
+describe('buildCustomToolsMapFromResponse', () => {
+  const makeTool = (slug: string, extendsToolkit?: string): CustomTool => ({
+    slug,
+    name: `Tool ${slug}`,
+    description: `Description for ${slug}`,
+    extendsToolkit,
+    inputSchema: { type: 'object', properties: {} },
+    inputParams: z.object({}),
+    execute: vi.fn(),
+  });
+  const makeToolkit = (slug: string, tools: CustomTool[]): CustomToolkit => ({
+    slug,
+    name: slug,
+    description: `${slug} tools`,
+    tools,
+  });
+  type ResponseExperimental = Parameters<typeof buildCustomToolsMapFromResponse>[2];
+  const response = (value: {
+    custom_tools: Array<{ slug: string; original_slug: string; extends_toolkit?: string }>;
+    custom_toolkits: Array<{ slug: string; tools: Array<{ slug: string; original_slug: string }> }>;
+  }): ResponseExperimental => value as unknown as ResponseExperimental;
+  const alpha = makeToolkit('ALPHA', [makeTool('GREP')]);
+  const beta = makeToolkit('BETA', [makeTool('GREP')]);
+
+  it('maps shared child slugs by toolkit and keeps the bare slug ambiguous', () => {
+    const map = buildCustomToolsMapFromResponse(
+      [],
+      [alpha, beta],
+      response({
+        custom_tools: [],
+        custom_toolkits: [
+          { slug: 'ALPHA', tools: [{ slug: 'LOCAL_ALPHA_GREP', original_slug: 'GREP' }] },
+          { slug: 'BETA', tools: [{ slug: 'LOCAL_BETA_GREP', original_slug: 'GREP' }] },
+        ],
+      })
+    );
+
+    expect(map.byFinalSlug.get('LOCAL_ALPHA_GREP')?.toolkit).toBe('ALPHA');
+    expect(map.byFinalSlug.get('LOCAL_BETA_GREP')?.toolkit).toBe('BETA');
+    expect(map.ambiguousOriginalSlugs).toEqual(new Set(['GREP']));
+  });
+
+  it('rejects a toolkit child without an exact local match', () => {
+    expect(() =>
+      buildCustomToolsMapFromResponse(
+        [],
+        [alpha, beta],
+        response({
+          custom_tools: [],
+          custom_toolkits: [
+            { slug: 'GAMMA', tools: [{ slug: 'LOCAL_GAMMA_GREP', original_slug: 'GREP' }] },
+          ],
+        })
+      )
+    ).toThrow('no exact local match');
+  });
+
+  it('never binds a toolkit child to another toolkit handler', () => {
+    expect(() =>
+      buildCustomToolsMapFromResponse(
+        [],
+        [alpha],
+        response({
+          custom_tools: [],
+          custom_toolkits: [
+            { slug: 'BETA', tools: [{ slug: 'LOCAL_BETA_GREP', original_slug: 'GREP' }] },
+          ],
+        })
+      )
+    ).toThrow('for toolkit "BETA"');
+  });
+
+  it('falls back to a unique bare match for standalone tools without toolkit identity', () => {
+    const map = buildCustomToolsMapFromResponse(
+      [makeTool('GET_EMAILS', 'gmail')],
+      undefined,
+      response({
+        custom_tools: [{ slug: 'LOCAL_GMAIL_GET_EMAILS', original_slug: 'GET_EMAILS' }],
+        custom_toolkits: [],
+      })
+    );
+
+    expect(map.byFinalSlug.get('LOCAL_GMAIL_GET_EMAILS')?.toolkit).toBe('gmail');
+  });
+
+  it('skips response tools that are not defined locally', () => {
+    const map = buildCustomToolsMapFromResponse(
+      [makeTool('GREP')],
+      undefined,
+      response({
+        custom_tools: [
+          { slug: 'LOCAL_GREP', original_slug: 'GREP' },
+          { slug: 'LOCAL_STALE', original_slug: 'STALE' },
+        ],
+        custom_toolkits: [],
+      })
+    );
+
+    expect([...map.byFinalSlug.keys()]).toEqual(['LOCAL_GREP']);
+  });
+
+  it('derives ambiguity from local definitions when the response omits a sibling', () => {
+    const map = buildCustomToolsMapFromResponse(
+      [],
+      [alpha, beta],
+      response({
+        custom_tools: [],
+        custom_toolkits: [
+          { slug: 'ALPHA', tools: [{ slug: 'LOCAL_ALPHA_GREP', original_slug: 'GREP' }] },
+        ],
+      })
+    );
+
+    expect([...map.byFinalSlug.keys()]).toEqual(['LOCAL_ALPHA_GREP']);
+    expect(map.byOriginalSlug.has('GREP')).toBe(false);
+    expect(map.ambiguousOriginalSlugs).toEqual(new Set(['GREP']));
+  });
+
+  it('rejects duplicate qualified response entries', () => {
+    expect(() =>
+      buildCustomToolsMapFromResponse(
+        [],
+        [alpha, beta],
+        response({
+          custom_tools: [],
+          custom_toolkits: [
+            {
+              slug: 'ALPHA',
+              tools: [
+                { slug: 'LOCAL_ALPHA_GREP', original_slug: 'GREP' },
+                { slug: 'LOCAL_ALPHA_GREP_2', original_slug: 'GREP' },
+              ],
+            },
+          ],
+        })
+      )
+    ).toThrow('already registered for toolkit');
   });
 });
 

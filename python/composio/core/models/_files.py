@@ -456,11 +456,15 @@ def _fetch_file_from_url(
             if chunk:
                 total_bytes += len(chunk)
                 if total_bytes > max_size:
-                    response.close()
                     raise ResponseTooLargeError(
                         f"Response size exceeds maximum allowed size ({max_size} bytes)"
                     )
                 chunks.append(chunk)
+    except requests.exceptions.RequestException as e:
+        raise ErrorUploadingFile(
+            f"Failed to fetch file from URL: {_sanitize_url_for_logging(url)}. "
+            f"Error: {e}"
+        ) from e
     finally:
         response.close()
 
@@ -962,6 +966,11 @@ class FileHelper(WithLogger):
             return schema
         required = schema.get("required") or []
         for _param, _schema in schema["properties"].items():
+            if not isinstance(_schema, dict):
+                # Boolean schemas have no description to enhance. They are
+                # valid property schemas and reach this unconditional helper
+                # before schema conversion.
+                continue
             if _schema.get("type") in ["string", "integer", "number", "boolean"]:
                 ext = f"Please provide a value of type {_schema['type']}."
                 description = _schema.get("description", "").rstrip(".")

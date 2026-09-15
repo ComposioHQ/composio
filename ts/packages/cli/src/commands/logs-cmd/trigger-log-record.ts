@@ -1,4 +1,4 @@
-import { Option, Schema } from 'effect';
+import { Option, Schema, SchemaTransformation } from 'effect';
 
 /**
  * Tolerant normalization of trigger-log API payloads.
@@ -16,21 +16,25 @@ import { Option, Schema } from 'effect';
  */
 
 /** Decodes to the string value when present, treating any other type as absent. */
-const LenientString = Schema.transform(Schema.Unknown, Schema.UndefinedOr(Schema.String), {
-  strict: true,
-  decode: value => (typeof value === 'string' ? value : undefined),
-  encode: value => value,
-});
+const LenientString = Schema.Unknown.pipe(
+  Schema.decodeTo(
+    Schema.UndefinedOr(Schema.String),
+    SchemaTransformation.transform({
+      decode: value => (typeof value === 'string' ? value : undefined),
+      encode: value => value,
+    })
+  )
+);
 
 /** Decodes to the string or number value when present, treating any other type as absent. */
-const LenientTimestamp = Schema.transform(
-  Schema.Unknown,
-  Schema.UndefinedOr(Schema.Union(Schema.String, Schema.Number)),
-  {
-    strict: true,
-    decode: value => (typeof value === 'string' || typeof value === 'number' ? value : undefined),
-    encode: value => value,
-  }
+const LenientTimestamp = Schema.Unknown.pipe(
+  Schema.decodeTo(
+    Schema.UndefinedOr(Schema.Union([Schema.String, Schema.Number])),
+    SchemaTransformation.transform({
+      decode: value => (typeof value === 'string' || typeof value === 'number' ? value : undefined),
+      encode: value => value,
+    })
+  )
 );
 
 /**
@@ -73,14 +77,14 @@ type RawTriggerLogMeta = typeof RawTriggerLogMeta.Type;
 const decodeMetaOption = Schema.decodeUnknownOption(RawTriggerLogMeta);
 
 /** Any non-record `meta` behaves like an absent one. */
-const LenientMeta = Schema.transform(
-  Schema.Unknown,
-  Schema.UndefinedOr(Schema.typeSchema(RawTriggerLogMeta)),
-  {
-    strict: true,
-    decode: value => Option.getOrUndefined(decodeMetaOption(value)),
-    encode: value => value,
-  }
+const LenientMeta = Schema.Unknown.pipe(
+  Schema.decodeTo(
+    Schema.UndefinedOr(Schema.toType(RawTriggerLogMeta)),
+    SchemaTransformation.transform({
+      decode: value => Option.getOrUndefined(decodeMetaOption(value)),
+      encode: value => value,
+    })
+  )
 );
 
 const rawLevelFields = {
@@ -101,17 +105,17 @@ const decodeLevelOption = Schema.decodeUnknownOption(RawTriggerLogLevel);
  * there is used as the record (even one that yields no fields); everything
  * else falls back to the top level.
  */
-const LenientNestedLog = Schema.transform(
-  Schema.Unknown,
-  Schema.UndefinedOr(Schema.typeSchema(RawTriggerLogLevel)),
-  {
-    strict: true,
-    decode: value =>
-      typeof value === 'object' && value !== null
-        ? Option.getOrElse(decodeLevelOption(value), (): RawTriggerLogLevel => ({}))
-        : undefined,
-    encode: value => value,
-  }
+const LenientNestedLog = Schema.Unknown.pipe(
+  Schema.decodeTo(
+    Schema.UndefinedOr(Schema.toType(RawTriggerLogLevel)),
+    SchemaTransformation.transform({
+      decode: value =>
+        typeof value === 'object' && value !== null
+          ? Option.getOrElse(decodeLevelOption(value), (): RawTriggerLogLevel => ({}))
+          : undefined,
+      encode: value => value,
+    })
+  )
 );
 
 const RawTriggerLog = Schema.Struct({
@@ -136,7 +140,7 @@ export const TriggerLogRecord = Schema.Struct({
   appName: Schema.optional(Schema.String),
   entityId: Schema.optional(Schema.String),
   connectionId: Schema.optional(Schema.String),
-  createdAt: Schema.optional(Schema.Union(Schema.String, Schema.Number)),
+  createdAt: Schema.optional(Schema.Union([Schema.String, Schema.Number])),
   detail: Schema.Struct({
     /** `id` → `logId` → `log_id`, top level then `meta`. */
     logId: Schema.optional(Schema.String),
@@ -155,7 +159,7 @@ export const TriggerLogRecord = Schema.Struct({
     /** `entityId` → `entity_id` → `userId`, top level then `meta`. */
     entityId: Schema.optional(Schema.String),
     /** `createdAt` → `created_at`, top level then `meta`. */
-    createdAt: Schema.optional(Schema.Union(Schema.String, Schema.Number)),
+    createdAt: Schema.optional(Schema.Union([Schema.String, Schema.Number])),
   }),
   table: Schema.Struct({
     /** Nano id preferred over plain id; `meta` aliases before top-level ones. */
@@ -261,25 +265,29 @@ const normalizeLevel = (level: RawTriggerLogLevel): TriggerLogRecord => {
   };
 };
 
-const TriggerLogRecordFromRaw = Schema.transform(RawTriggerLog, TriggerLogRecord, {
-  strict: true,
-  decode: raw => normalizeLevel(raw.log ?? raw),
-  encode: record => ({
-    id: record.id,
-    appName: record.appName,
-    entityId: record.entityId,
-    connectionId: record.connectionId,
-    createdAt: record.createdAt,
-    logId: record.detail.logId,
-    triggerId: record.detail.triggerId,
-    triggerNanoId: record.detail.triggerNanoId,
-    triggerName: record.detail.triggerName,
-    status: record.detail.status,
-    toolkit: record.detail.toolkit,
-    payload: record.payload,
-    response: record.response,
-  }),
-});
+const TriggerLogRecordFromRaw = RawTriggerLog.pipe(
+  Schema.decodeTo(
+    TriggerLogRecord,
+    SchemaTransformation.transform({
+      decode: raw => normalizeLevel(raw.log ?? raw),
+      encode: record => ({
+        id: record.id,
+        appName: record.appName,
+        entityId: record.entityId,
+        connectionId: record.connectionId,
+        createdAt: record.createdAt,
+        logId: record.detail.logId,
+        triggerId: record.detail.triggerId,
+        triggerNanoId: record.detail.triggerNanoId,
+        triggerName: record.detail.triggerName,
+        status: record.detail.status,
+        toolkit: record.detail.toolkit,
+        payload: record.payload,
+        response: record.response,
+      }),
+    })
+  )
+);
 
 const decodeTriggerLogRecordOption = Schema.decodeUnknownOption(TriggerLogRecordFromRaw);
 

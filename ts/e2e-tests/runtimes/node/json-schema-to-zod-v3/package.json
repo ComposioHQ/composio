@@ -1,6 +1,6 @@
 {
   "name": "@e2e-tests/node-json-schema-to-zod-v3",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "private": true,
   "type": "module",
   "scripts": {

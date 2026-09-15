@@ -50,15 +50,15 @@ const toolkitsData = {
   triggerTypes: testTriggerTypes,
 } satisfies TestLiveInput['toolkitsData'];
 
-const testConfigProvider = ConfigProvider.fromMap(
-  new Map([['COMPOSIO_USER_API_KEY', 'test_api_key']])
-).pipe(extendConfigProvider);
+const testConfigProvider = ConfigProvider.fromEnv({
+  env: { COMPOSIO_USER_API_KEY: 'test_api_key' },
+}).pipe(extendConfigProvider);
 
 describe('CLI: composio dev triggers info', () => {
   layer(TestLive({ baseConfigProvider: testConfigProvider, toolkitsData }))(
     '[Given] root triggers info [Then] displays trigger info with root-level hint',
     it => {
-      it.scoped('supports the top-level triggers info entrypoint', () =>
+      it.effect('supports the top-level triggers info entrypoint', () =>
         Effect.gen(function* () {
           yield* cli(['triggers', 'info', 'GMAIL_NEW_GMAIL_MESSAGE']);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
@@ -74,7 +74,7 @@ describe('CLI: composio dev triggers info', () => {
   layer(TestLive({ baseConfigProvider: testConfigProvider, toolkitsData }))(
     '[Given] valid slug [Then] displays trigger type info',
     it => {
-      it.scoped('shows trigger details with config and payload fields', () =>
+      it.effect('shows trigger details with config and payload fields', () =>
         Effect.gen(function* () {
           yield* cli(['dev', 'triggers', 'info', 'GMAIL_NEW_GMAIL_MESSAGE']);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
@@ -98,7 +98,7 @@ describe('CLI: composio dev triggers info', () => {
   layer(TestLive({ baseConfigProvider: testConfigProvider, toolkitsData }))(
     '[Given] no slug [Then] warns missing argument',
     it => {
-      it.scoped('shows missing argument warning', () =>
+      it.effect('shows missing argument warning', () =>
         Effect.gen(function* () {
           yield* cli(['dev', 'triggers', 'info']);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
@@ -113,7 +113,7 @@ describe('CLI: composio dev triggers info', () => {
   layer(TestLive({ baseConfigProvider: testConfigProvider, toolkitsData }))(
     '[Given] invalid slug [Then] shows not found hint',
     it => {
-      it.scoped('shows not found fallback hint', () =>
+      it.effect('shows not found fallback hint', () =>
         Effect.gen(function* () {
           yield* cli(['dev', 'triggers', 'info', 'NONEXISTENT_TRIGGER']);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
@@ -127,7 +127,7 @@ describe('CLI: composio dev triggers info', () => {
   );
 
   layer(TestLive())('[Given] no API key [Then] warns user to login', it => {
-    it.scoped('warns user to login', () =>
+    it.effect('warns user to login', () =>
       Effect.gen(function* () {
         yield* cli(['dev', 'triggers', 'info', 'GMAIL_NEW_GMAIL_MESSAGE']);
         const lines = yield* MockConsole.getLines({ stripAnsi: true });

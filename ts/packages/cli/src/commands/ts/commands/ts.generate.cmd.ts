@@ -15,19 +15,20 @@
  *   and stored along with the generated TypeScript files. CJS is not supported.
  */
 
-import { Command, HelpDoc, Options, ValidationError } from '@effect/cli';
+import { Command, Flag } from 'effect/unstable/cli';
 import { Array, Data, Effect, Option, pipe } from 'effect';
+import * as FileSystem from 'effect/FileSystem';
+import * as Path from 'effect/Path';
 import { Match } from 'effect';
-import { FileSystem, Path } from '@effect/platform';
-import { ComposioToolkitsRepository } from 'src/services/composio-clients';
+import {
+  ComposioToolkitsRepository,
+  type ComposioToolkitsRepositoryShape,
+} from 'src/services/composio-clients';
 import { logMetrics } from 'src/effects/log-metrics';
 import { NodeProcess } from 'src/services/node-process';
-import { createToolkitIndex } from 'src/generation/create-toolkit-index';
 import type { GetCmdParams } from 'src/type-utils';
-import { generateTypeScriptSources } from 'src/generation/typescript/generate';
 import { jsFindComposioCoreGenerated } from 'src/effects/find-composio-core-generated';
-import { transpileTypeScriptSources } from 'src/generation/typescript/transpile';
-import { BANNER } from 'src/generation/constants';
+import { generationOutcome, loadGenerationRuntime } from 'src/effects/generation-runtime';
 import type { Toolkit } from 'src/models/toolkits';
 import type { TriggerType } from 'src/models/trigger-types';
 import type { Tool, ToolsAsEnums } from 'src/models/tools';
@@ -48,37 +49,39 @@ export class TypeScriptGenerationWriteError extends Data.TaggedError(
   readonly message: string;
 }> {}
 
-const invalidGenerateValue = (message: string) => ValidationError.invalidValue(HelpDoc.p(message));
+export class TypeScriptGenerationInputError extends Data.TaggedError(
+  'commands/TypeScriptGenerationInputError'
+)<{
+  readonly message: string;
+}> {}
 
-export const outputOpt = Options.optional(
-  Options.directory('output-dir', {
-    exists: 'either',
-  })
-).pipe(
-  Options.withAlias('o'),
-  Options.withDescription('Output directory for the generated TypeScript type stubs.')
+const invalidGenerateValue = (message: string) => new TypeScriptGenerationInputError({ message });
+
+export const outputOpt = Flag.optional(Flag.directory('output-dir')).pipe(
+  Flag.withAlias('o'),
+  Flag.withDescription('Output directory for the generated TypeScript type stubs.')
 );
 
-export const compact = Options.boolean('compact').pipe(
-  Options.withDefault(false),
-  Options.withDescription('Emit a single TypeScript file')
+export const compact = Flag.boolean('compact').pipe(
+  Flag.withDefault(false),
+  Flag.withDescription('Emit a single TypeScript file')
 );
 
-export const transpiled = Options.boolean('transpiled').pipe(
-  Options.withDefault(false),
-  Options.withDescription('Whether to emit transpiled JavaScript alongside TypeScript files')
+export const transpiled = Flag.boolean('transpiled').pipe(
+  Flag.withDefault(false),
+  Flag.withDescription('Whether to emit transpiled JavaScript alongside TypeScript files')
 );
 
-export const typeTools = Options.boolean('type-tools').pipe(
-  Options.withDefault(false),
-  Options.withDescription(
+export const typeTools = Flag.boolean('type-tools').pipe(
+  Flag.withDefault(false),
+  Flag.withDescription(
     'Generate typed input/output schemas for each tool (slower, fetches full tool definitions)'
   )
 );
 
-export const toolkitsOpt = Options.text('toolkits').pipe(
-  Options.repeated,
-  Options.withDescription(
+export const toolkitsOpt = Flag.string('toolkits').pipe(
+  Flag.atLeast(0),
+  Flag.withDescription(
     'Only generate types for specific toolkits (e.g., --toolkits gmail --toolkits slack)'
   )
 );
@@ -115,12 +118,12 @@ type FetchResult = {
  * Makes targeted API calls for only the requested toolkits.
  */
 function fetchFilteredData(
-  client: ComposioToolkitsRepository,
+  client: ComposioToolkitsRepositoryShape,
   slugs: ReadonlyArray<string>,
   typeTools: boolean,
   versionOverrides: ToolkitVersionOverrides,
   spinner: SpinnerHandle
-): Effect.Effect<FetchResult, Error | ValidationError.ValidationError, never> {
+): Effect.Effect<FetchResult, Error | TypeScriptGenerationInputError, never> {
   return Effect.gen(function* () {
     yield* spinner.message(`Fetching data for ${slugs.length} toolkit(s): ${slugs.join(', ')}...`);
 
@@ -195,7 +198,7 @@ function fetchFilteredData(
  * Fetches everything in parallel without version-specific handling.
  */
 function fetchAllDataFastPath(
-  client: ComposioToolkitsRepository,
+  client: ComposioToolkitsRepositoryShape,
   typeTools: boolean,
   spinner: SpinnerHandle
 ): Effect.Effect<FetchResult, Error, never> {
@@ -245,7 +248,7 @@ function fetchAllDataFastPath(
  * First fetches toolkit metadata, then fetches tools with version-specific handling.
  */
 function fetchAllDataWithOverrides(
-  client: ComposioToolkitsRepository,
+  client: ComposioToolkitsRepositoryShape,
   typeTools: boolean,
   versionOverrides: ToolkitVersionOverrides,
   spinner: SpinnerHandle
@@ -305,7 +308,7 @@ function fetchAllDataWithOverrides(
  * Delegates to fast path or override-aware path based on version overrides.
  */
 function fetchAllData(
-  client: ComposioToolkitsRepository,
+  client: ComposioToolkitsRepositoryShape,
   typeTools: boolean,
   versionOverrides: ToolkitVersionOverrides,
   spinner: SpinnerHandle
@@ -326,7 +329,7 @@ function fetchAllData(
  */
 function validateOutputDir(
   outputDir: string
-): Effect.Effect<string, ValidationError.ValidationError, Path.Path> {
+): Effect.Effect<string, TypeScriptGenerationInputError, Path.Path> {
   return Effect.gen(function* () {
     const path = yield* Path.Path;
     const normalizedPath = path.normalize(outputDir);
@@ -393,7 +396,7 @@ export function generateTypescriptTypeStubs({
     const versionOverrides = yield* getToolkitVersionOverrides;
 
     // Normalize toolkit slugs if specified (lowercase for API filtering)
-    const toolkitSlugsFilter = Array.isNonEmptyArray(toolkitsOpt)
+    const toolkitSlugsFilter = Array.isReadonlyArrayNonEmpty(toolkitsOpt)
       ? toolkitsOpt.map(s => s.toLowerCase())
       : null;
 
@@ -414,15 +417,29 @@ export function generateTypescriptTypeStubs({
           : fetchAllData(client, typeTools, validatedOverrides, spinner);
 
         yield* spinner.message('Generating TypeScript type stubs...');
-        const index = createToolkitIndex({ toolkits, typeableTools, triggerTypes, versionMap });
+        // The generation pipeline and the TypeScript compiler live in the
+        // `generation-runtime` companion module, loaded from disk here so no
+        // other command pays for them at startup.
+        const generation = yield* loadGenerationRuntime;
+        const index = generation.createToolkitIndex({
+          toolkits,
+          typeableTools,
+          triggerTypes,
+          versionMap,
+        });
 
         // Generate TypeScript sources
-        const sources = yield* generateTypeScriptSources({
-          outputDir,
-          emitSingleFile: Boolean(compact), // Ensure boolean type
-          banner: BANNER,
-          importExtension: 'js',
-        })(index);
+        const sources = yield* generationOutcome(() =>
+          generation.generateTypeScriptSourceFiles(
+            {
+              outputDir,
+              emitSingleFile: Boolean(compact), // Ensure boolean type
+              banner: generation.BANNER,
+              importExtension: 'js',
+            },
+            index
+          )
+        );
 
         yield* spinner.message('Writing files to disk...');
 
@@ -449,8 +466,10 @@ export function generateTypescriptTypeStubs({
         if (transpiled) {
           yield* spinner.message('Transpiling to JavaScript...');
           yield* pipe(
-            transpileTypeScriptSources({ sources, outputDir }),
-            Effect.catchAll(error =>
+            generationOutcome(() =>
+              generation.transpileTypeScriptSourceFiles({ sources, outputDir })
+            ),
+            Effect.catch(error =>
               Effect.logWarning(`Failed to compile TypeScript files: ${error.message}`)
             )
           );

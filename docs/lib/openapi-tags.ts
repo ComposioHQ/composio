@@ -10,10 +10,16 @@ export type OpenAPIDocument = {
 };
 
 /**
- * fumadocs-openapi's tag grouping only generates pages for operations whose
- * tags are declared in the document's top-level `tags` array; operations with
- * undeclared tags are silently skipped. The backend generator omits some tags
- * (e.g. Projects) from that array, so declare every tag used by an operation.
+ * Up to fumadocs-openapi 11.3, tag grouping only generated pages for operations
+ * whose tags were declared in the document's top-level `tags` array; operations
+ * with undeclared tags were silently skipped. The backend generator omits some
+ * tags (e.g. Projects) from that array, so declare every tag used by an
+ * operation.
+ *
+ * 11.4 no longer drops those operations (see the guard in
+ * tests/static/api-reference-routes.test.ts). This normalization is kept anyway,
+ * so the committed specs stay complete at sync time and as a safety net for
+ * older fumadocs-openapi behaviour.
  *
  * Applied both when syncing specs (scripts/fetch-openapi.mjs) so the committed
  * documents are complete, and again at load time (lib/openapi.ts) as a safety

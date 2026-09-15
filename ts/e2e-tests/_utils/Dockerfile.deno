@@ -38,7 +38,8 @@ RUN curl -fsSL "https://deb.nodesource.com/setup_${NODE_MAJOR}.x" | bash - && \
 # mise is installed to /usr/local/bin; its shared cache and shims keep the tools
 # available to the non-root runtime user.
 ENV XDG_CACHE_HOME="/mise/cache"
-RUN curl -fsSL https://mise.run | MISE_INSTALL_PATH=/usr/local/bin/mise sh
+COPY .github/scripts/install-mise.sh ./.github/scripts/install-mise.sh
+RUN MISE_INSTALL_PATH=/usr/local/bin/mise bash .github/scripts/install-mise.sh
 COPY mise.toml mise.lock ./
 RUN mise install && \
     pnpm --version && \
@@ -56,17 +57,13 @@ COPY package.json \
      toolchain-versions.json \
      ./
 
-# Copy pre-install scripts (rarely change)
-COPY ts/scripts/pre-install.sh ./ts/scripts/pre-install.sh
-COPY ts/scripts/pre-install/ ./ts/scripts/pre-install/
-
 # Copy all ts/packages (pre-built)
 COPY ts/packages/ ./ts/packages/
 
 # Install dependencies using pnpm
 # Note: We intentionally don't use --mount=type=cache for the pnpm store here
 # because it causes native binding issues (e.g., rolldown-binding) across builds
-RUN BYPASS_TOOLCHAIN_CHECK=1 pnpm install --frozen-lockfile
+RUN pnpm install --frozen-lockfile
 
 # Copy e2e tests last (changes frequently)
 COPY ts/e2e-tests/ ./ts/e2e-tests/

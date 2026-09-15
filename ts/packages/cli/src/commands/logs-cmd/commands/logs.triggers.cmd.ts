@@ -1,4 +1,4 @@
-import { Args, Command, Options } from '@effect/cli';
+import { Argument, Command, Flag } from 'effect/unstable/cli';
 import { Data, Effect, Option } from 'effect';
 import { requireAuth } from 'src/effects/require-auth';
 import { TerminalUI } from 'src/services/terminal-ui';
@@ -15,69 +15,69 @@ class TriggerLogsRequestError extends Data.TaggedError('commands/TriggerLogsRequ
   readonly cause: unknown;
 }> {}
 
-const cursor = Options.text('cursor').pipe(
-  Options.withDescription('Cursor for pagination'),
-  Options.optional
+const cursor = Flag.string('cursor').pipe(
+  Flag.withDescription('Cursor for pagination'),
+  Flag.optional
 );
 
-const userId = Options.text('user-id').pipe(
-  Options.withDescription('Filter by user id'),
-  Options.optional
+const userId = Flag.string('user-id').pipe(
+  Flag.withDescription('Filter by user id'),
+  Flag.optional
 );
 
-const connectedAccountId = Options.text('connected-account-id').pipe(
-  Options.withDescription('Filter by connected account id'),
-  Options.optional
+const connectedAccountId = Flag.string('connected-account-id').pipe(
+  Flag.withDescription('Filter by connected account id'),
+  Flag.optional
 );
 
-const trigger = Options.text('trigger').pipe(
-  Options.withDescription('Filter by trigger name'),
-  Options.optional
+const trigger = Flag.string('trigger').pipe(
+  Flag.withDescription('Filter by trigger name'),
+  Flag.optional
 );
 
-const triggerId = Options.text('trigger-id').pipe(
-  Options.withDescription('Filter by trigger id'),
-  Options.optional
+const triggerId = Flag.string('trigger-id').pipe(
+  Flag.withDescription('Filter by trigger id'),
+  Flag.optional
 );
 
-const logIdFilter = Options.text('log-id').pipe(
-  Options.withDescription('Filter by log id'),
-  Options.optional
+const logIdFilter = Flag.string('log-id').pipe(
+  Flag.withDescription('Filter by log id'),
+  Flag.optional
 );
 
-const logId = Args.text({ name: 'log_id' }).pipe(
-  Args.withDescription('Trigger log ID'),
-  Args.optional
+const logId = Argument.string('log_id').pipe(
+  Argument.withDescription('Trigger log ID'),
+  Argument.optional
 );
 
-const from = Options.integer('from').pipe(
-  Options.withDescription('Start timestamp (epoch milliseconds)'),
-  Options.optional
+const from = Flag.integer('from').pipe(
+  Flag.withDescription('Start timestamp (epoch milliseconds)'),
+  Flag.optional
 );
 
-const to = Options.integer('to').pipe(
-  Options.withDescription('End timestamp (epoch milliseconds)'),
-  Options.optional
+const to = Flag.integer('to').pipe(
+  Flag.withDescription('End timestamp (epoch milliseconds)'),
+  Flag.optional
 );
 
-const limit = Options.integer('limit').pipe(
-  Options.withDefault(30),
-  Options.withDescription('Number of logs to fetch (1-1000)')
+const limit = Flag.integer('limit').pipe(
+  Flag.withDefault(30),
+  Flag.withDescription('Number of logs to fetch (1-1000)')
 );
 
-const time = Options.choice('time', ['5m', '30m', '6h', '1d', '1w', '1month', '1y'] as const).pipe(
-  Options.optional,
-  Options.withDescription('Show logs from a relative time window')
+const time = Flag.choice('time', ['5m', '30m', '6h', '1d', '1w', '1month', '1y'] as const).pipe(
+  Flag.optional,
+  Flag.withDescription('Show logs from a relative time window')
 );
 
-const search = Options.text('search').pipe(
-  Options.withDescription('Full-text search query'),
-  Options.optional
+const search = Flag.string('search').pipe(
+  Flag.withDescription('Full-text search query'),
+  Flag.optional
 );
 
-const includePayload = Options.boolean('include-payload').pipe(
-  Options.withDefault(false),
-  Options.withDescription('Include payload fields in response')
+const includePayload = Flag.boolean('include-payload').pipe(
+  Flag.withDefault(false),
+  Flag.withDescription('Include payload fields in response')
 );
 
 /**

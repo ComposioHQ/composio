@@ -1,10 +1,9 @@
-import { Args, Command, HelpDoc, Options, ValidationError } from '@effect/cli';
+import { Argument, Command, Flag } from 'effect/unstable/cli';
 import { isLocalToolSlug } from '@composio/cli-local-tools';
 import util from 'node:util';
-import { Cause, Data, Effect, Either, Exit, Fiber, HashSet, Option, Predicate } from 'effect';
-import { encodingForModel } from 'js-tiktoken';
+import { Cause, Data, Effect, Exit, Fiber, HashSet, Option, Result } from 'effect';
 import { redact } from 'src/ui/redact';
-import { parseJsonRecord } from 'src/utils/parse-json';
+import { parseJsonRecord, isPlainRecord } from 'src/utils/parse-json';
 import { toolkitFromToolSlug } from 'src/effects/toolkit-from-tool-slug';
 import { requireAuth } from 'src/effects/require-auth';
 import { resolveOptionalTextInput } from 'src/effects/resolve-optional-text-input';
@@ -19,6 +18,7 @@ import {
 } from 'src/services/tool-input-validation';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { logToolDebug, makePerfDebugLogger } from 'src/services/runtime-debug-logger';
+import { loadInstalledCompanionModule } from 'src/services/run-companion-modules';
 import {
   LocalToolsDisabledError,
   ToolsExecutor,
@@ -66,24 +66,24 @@ import { ComposioCliUserConfig } from 'src/services/cli-user-config';
 import { CLI_EXPERIMENTAL_FEATURES } from 'src/constants';
 import { APP_CONFIG } from 'src/effects/app-config';
 
-const slug = Args.text({ name: 'slug' }).pipe(
-  Args.withDescription('Tool slug (e.g. "GITHUB_CREATE_ISSUE")')
+const slug = Argument.string('slug').pipe(
+  Argument.withDescription('Tool slug (e.g. "GITHUB_CREATE_ISSUE")')
 );
 
-const data = Options.text('data').pipe(
-  Options.withAlias('d'),
-  Options.withDescription('JSON arguments, @file, or - for stdin'),
-  Options.optional
+const data = Flag.string('data').pipe(
+  Flag.withAlias('d'),
+  Flag.withDescription('JSON arguments, @file, or - for stdin'),
+  Flag.optional
 );
-const file = Options.text('file').pipe(
-  Options.withDescription('Inject a local file path into the single file_uploadable input'),
-  Options.optional
+const file = Flag.string('file').pipe(
+  Flag.withDescription('Inject a local file path into the single file_uploadable input'),
+  Flag.optional
 );
-const accountOption = Options.text('account').pipe(
-  Options.withDescription(
+const accountOption = Flag.string('account').pipe(
+  Flag.withDescription(
     'Connected account selector for the inferred toolkit. Matches alias, word_id, or connected account id.'
   ),
-  Options.optional
+  Flag.optional
 );
 
 export const TOOLS_EXECUTE_VALUE_OPTIONS = HashSet.make(
@@ -95,35 +95,35 @@ export const TOOLS_EXECUTE_VALUE_OPTIONS = HashSet.make(
   '--project-name'
 );
 
-const userId = Options.text('user-id').pipe(
-  Options.optional,
-  Options.withDescription('Developer-project user ID override')
+const userId = Flag.string('user-id').pipe(
+  Flag.optional,
+  Flag.withDescription('Developer-project user ID override')
 );
 
-const projectName = Options.text('project-name').pipe(
-  Options.optional,
-  Options.withDescription('Developer project name override for this command')
+const projectName = Flag.string('project-name').pipe(
+  Flag.optional,
+  Flag.withDescription('Developer project name override for this command')
 );
 
-const getSchema = Options.boolean('get-schema').pipe(
-  Options.withDescription('Fetch and print the CLI-facing input schema without executing'),
-  Options.withDefault(false)
+const getSchema = Flag.boolean('get-schema').pipe(
+  Flag.withDescription('Fetch and print the CLI-facing input schema without executing'),
+  Flag.withDefault(false)
 );
-const dryRun = Options.boolean('dry-run').pipe(
-  Options.withDescription('Validate and preview the tool call without executing'),
-  Options.withDefault(false)
+const dryRun = Flag.boolean('dry-run').pipe(
+  Flag.withDescription('Validate and preview the tool call without executing'),
+  Flag.withDefault(false)
 );
-const skipConnectionCheck = Options.boolean('skip-connection-check').pipe(
-  Options.withDescription('Skip the connected-account check'),
-  Options.withDefault(false)
+const skipConnectionCheck = Flag.boolean('skip-connection-check').pipe(
+  Flag.withDescription('Skip the connected-account check'),
+  Flag.withDefault(false)
 );
-const skipToolParamsCheck = Options.boolean('skip-tool-params-check').pipe(
-  Options.withDescription('Skip input validation against cached schema'),
-  Options.withDefault(false)
+const skipToolParamsCheck = Flag.boolean('skip-tool-params-check').pipe(
+  Flag.withDescription('Skip input validation against cached schema'),
+  Flag.withDefault(false)
 );
-const skipChecks = Options.boolean('skip-checks').pipe(
-  Options.withDescription('Skip both connection and input validation checks'),
-  Options.withDefault(false)
+const skipChecks = Flag.boolean('skip-checks').pipe(
+  Flag.withDescription('Skip both connection and input validation checks'),
+  Flag.withDefault(false)
 );
 
 const resolveInput = (input: Option.Option<string>) =>
@@ -132,7 +132,19 @@ const resolveInput = (input: Option.Option<string>) =>
     missingValue: '{}',
   });
 
-const invalidArguments = (message: string) => ValidationError.invalidValue(HelpDoc.p(message));
+/**
+ * Business-error type for the hand-rolled `--parallel` mini-parser
+ * (`parseParallelExecuteArgs` below), not a `Command`-level parse failure —
+ * v4's `CliError.InvalidValue` requires structured `option`/`kind` fields
+ * that don't fit this free-text validation.
+ */
+export class ParallelExecuteArgumentError extends Data.TaggedError(
+  'commands/ParallelExecuteArgumentError'
+)<{
+  readonly message: string;
+}> {}
+
+const invalidArguments = (message: string) => new ParallelExecuteArgumentError({ message });
 
 type ToolExecutionErrorFields = {
   readonly reason:
@@ -158,12 +170,14 @@ class ReportedToolExecutionError extends Data.TaggedError(
 )<ToolExecutionErrorFields> {}
 
 const parseArguments = (raw: string) =>
-  parseJsonRecord(raw).pipe(
-    Either.mapLeft(error =>
-      invalidArguments(
-        error.reason === 'not-a-record'
-          ? 'Expected a JSON object for tool arguments, e.g. -d \'{ "key": "value" }\''
-          : 'Invalid JSON input. Provide JSON or a JS-style object literal, e.g. -d \'{ "key": "value" }\''
+  Effect.fromResult(
+    parseJsonRecord(raw).pipe(
+      Result.mapError(error =>
+        invalidArguments(
+          error.reason === 'not-a-record'
+            ? 'Expected a JSON object for tool arguments, e.g. -d \'{ "key": "value" }\''
+            : 'Invalid JSON input. Provide JSON or a JS-style object literal, e.g. -d \'{ "key": "value" }\''
+        )
       )
     )
   );
@@ -174,7 +188,7 @@ const hasNestedKey = (
 ): boolean => {
   let current: unknown = record;
   for (const key of pathParts) {
-    if (!Predicate.isRecord(current)) {
+    if (!isPlainRecord(current)) {
       return false;
     }
     if (!(key in current)) {
@@ -202,7 +216,7 @@ const setNestedKey = (
     }
 
     const next = current[key];
-    const nextObject = Predicate.isRecord(next) ? { ...next } : {};
+    const nextObject = isPlainRecord(next) ? { ...next } : {};
     current[key] = nextObject;
     current = nextObject;
   }
@@ -287,8 +301,8 @@ const ciRedactReplacer = (_key: string, value: unknown): unknown => {
 // payloads; fall back to util.inspect so the formatter stays a plain string
 // function for its callers.
 const formatUnknownObject = (value: object): string =>
-  Either.getOrElse(
-    Either.try(() => JSON.stringify(value, null, 2)),
+  Result.getOrElse(
+    Result.try(() => JSON.stringify(value, null, 2)),
     () => util.inspect(value, { depth: 5, breakLength: 120 })
   );
 
@@ -296,7 +310,7 @@ const redactRequestId = (value: object): object => {
   if (!value || typeof value !== 'object' || Array.isArray(value)) {
     return value;
   }
-  if (!Predicate.isRecord(value)) return value;
+  if (!isPlainRecord(value)) return value;
   const requestId = value.request_id;
   if (typeof requestId !== 'string') {
     return value;
@@ -308,14 +322,49 @@ const redactRequestId = (value: object): object => {
 };
 
 const EXECUTE_INLINE_OUTPUT_TOKEN_THRESHOLD = 10_000;
-let executeOutputEncoder: ReturnType<typeof encodingForModel> | undefined;
 
-const getExecuteOutputEncoder = () => {
-  if (!executeOutputEncoder) {
-    executeOutputEncoder = encodingForModel('gpt-4o');
-  }
-  return executeOutputEncoder;
-};
+// The tokenizer lives in the `execute-output-encoder-runtime` companion module
+// next to the executable, loaded from disk on first use: its rank table is
+// 2.3MB that no other command, and no small response, has any use for. A
+// missing companion in a packaged install goes through the same self-repair as
+// `composio run`'s modules.
+const loadExecuteOutputEncoder = loadInstalledCompanionModule<
+  typeof import('src/services/execute-output-encoder-runtime')
+>('execute-output-encoder-runtime', ['countOutputTokens']);
+
+// JSON averages roughly four bytes per o200k token.
+const ESTIMATED_BYTES_PER_OUTPUT_TOKEN = 4;
+
+// The tool call has already succeeded by the time its output is measured, so an
+// encoder that cannot be loaded (a damaged install, or a repair download that
+// fails offline) must not fail the command, so it falls back to an estimate from
+// the byte length. The estimate is not exact: a response averaging fewer bytes
+// per token can exceed the threshold while its estimate does not, so only an
+// exact count keeps a response that passed the byte pre-filter inline.
+const countOutputTokens = (json: string) =>
+  loadExecuteOutputEncoder.pipe(
+    Effect.map(encoder => ({ tokenCount: encoder.countOutputTokens(json), exact: true })),
+    Effect.catch(error =>
+      Effect.logDebug(
+        `[execute] tokenizer unavailable, estimating the output token count: ${error.message}`
+      ).pipe(
+        Effect.as({
+          tokenCount: Math.ceil(
+            new TextEncoder().encode(json).length / ESTIMATED_BYTES_PER_OUTPUT_TOKEN
+          ),
+          exact: false,
+        })
+      )
+    )
+  );
+
+// A BPE token always covers at least one UTF-8 byte, so a payload of at most
+// THRESHOLD bytes can never exceed THRESHOLD tokens. Checking the byte length
+// first keeps the common (small) response off the tokenizer entirely: building
+// the o200k rank table measured ~390ms in a compiled binary, against ~4ms to
+// encode a 7.5KB payload once it exists, and microseconds to measure the bytes.
+const mayExceedInlineOutputThreshold = (json: string): boolean =>
+  new TextEncoder().encode(json).length > EXECUTE_INLINE_OUTPUT_TOKEN_THRESHOLD;
 
 const shouldStoreLargeExecuteOutput = APP_CONFIG.CLI_INVOCATION_ORIGIN.pipe(
   Effect.orDie,
@@ -364,7 +413,12 @@ const executionSuccessSuffix = (result: {
   return metadata.length > 0 ? ` (${metadata.join(', ')})` : '';
 };
 
-const persistLargeExecuteOutput = (toolSlug: string, json: string, sharedDirectory?: string) =>
+const persistLargeExecuteOutput = (
+  toolSlug: string,
+  json: string,
+  tokenCount: number,
+  sharedDirectory?: string
+) =>
   Effect.gen(function* () {
     const runOutputDirectory = yield* APP_CONFIG.RUN_OUTPUT_DIR;
     const outputFilePath = yield* storeCliSessionArtifact({
@@ -379,7 +433,7 @@ const persistLargeExecuteOutput = (toolSlug: string, json: string, sharedDirecto
       error: null,
       logId: '',
       storedInFile: true,
-      tokenCount: getExecuteOutputEncoder().encode(json).length,
+      tokenCount,
       outputFilePath: outputFilePath ?? '(could not write to disk)',
     } satisfies StoredExecuteOutputSummary;
   });
@@ -393,11 +447,17 @@ const prepareExecuteOutput = (
 ) =>
   Effect.gen(function* () {
     const json = serializeExecuteOutput(result);
-    const tokenCount = getExecuteOutputEncoder().encode(json).length;
-    if (
-      tokenCount <= EXECUTE_INLINE_OUTPUT_TOKEN_THRESHOLD ||
-      !(yield* shouldStoreLargeExecuteOutput)
-    ) {
+    // `composio run` always prints inline, so its origin is checked before the
+    // tokenizer is built: the count would be thrown away.
+    if (!mayExceedInlineOutputThreshold(json) || !(yield* shouldStoreLargeExecuteOutput)) {
+      return {
+        kind: 'inline',
+        json,
+      } satisfies PreparedExecuteOutput;
+    }
+
+    const { tokenCount, exact } = yield* countOutputTokens(json);
+    if (exact && tokenCount <= EXECUTE_INLINE_OUTPUT_TOKEN_THRESHOLD) {
       return {
         kind: 'inline',
         json,
@@ -407,7 +467,7 @@ const prepareExecuteOutput = (
     return {
       kind: 'file',
       summary: {
-        ...(yield* persistLargeExecuteOutput(toolSlug, json, sharedDirectory)),
+        ...(yield* persistLargeExecuteOutput(toolSlug, json, tokenCount, sharedDirectory)),
         logId: result.logId,
       } satisfies StoredExecuteOutputSummary,
     } satisfies PreparedExecuteOutput;
@@ -752,13 +812,13 @@ type CachedDefinition = {
   readonly version: string | null;
 } | null;
 
-const validationGuardFromFiber = (validationFiber: Fiber.RuntimeFiber<unknown, unknown>) =>
+const validationGuardFromFiber = (validationFiber: Fiber.Fiber<unknown, unknown>) =>
   Fiber.await(validationFiber).pipe(
     Effect.flatMap(
       Exit.match({
         onFailure: cause => {
-          const defect = Cause.failureOption(cause);
-          if (Option.isSome(defect) && defect.value instanceof ToolInputValidationError) {
+          const fail = Cause.findFail(cause);
+          if (Result.isSuccess(fail) && fail.success.error instanceof ToolInputValidationError) {
             return Effect.failCause(cause);
           }
           return Effect.never;
@@ -781,7 +841,7 @@ const spawnBackgroundValidationGuard = (params: {
     const validationFiber = yield* validateToolInputArguments(params.slug, params.args, {
       orgId: params.resolvedProject.orgId,
       projectId: params.resolvedProject.projectId,
-    }).pipe(Effect.forkDaemon);
+    }).pipe(Effect.forkDetach);
     yield* perfDebugLog('execute.validation.background_spawned', { slug: params.slug });
     return validationGuardFromFiber(validationFiber);
   });
@@ -827,7 +887,7 @@ const initializeValidationState = (params: {
         })
       ),
       Effect.option,
-      Effect.forkDaemon
+      Effect.forkDetach
     );
     const cachedValidationDecisionFiber = yield* Effect.gen(function* () {
       yield* perfDebugLog('execute.validation.cached_start', { slug: params.slug });
@@ -858,7 +918,7 @@ const initializeValidationState = (params: {
       return isStale
         ? ({ status: 'stale' } satisfies CachedValidationDecision)
         : validationDecision;
-    }).pipe(Effect.forkDaemon);
+    }).pipe(Effect.forkDetach);
     const awaitCachedValidationDecision = Fiber.join(cachedValidationDecisionFiber);
 
     return {
@@ -1040,12 +1100,12 @@ const resolveExecuteContext = (params: RunToolsExecuteParams) =>
     const projectContext = yield* ProjectContext;
 
     const localProjectContext = yield* projectContext.resolve.pipe(
-      Effect.catchAll(() => Effect.succeed(Option.none()))
+      Effect.catch(() => Effect.succeed(Option.none()))
     );
     const localTestUserId = Option.flatMap(localProjectContext, keys => keys.testUserId);
     const resolvedUserId =
       resolvedProject.projectType === 'CONSUMER'
-        ? Option.fromNullable(resolvedProject.consumerUserId)
+        ? Option.fromNullishOr(resolvedProject.consumerUserId)
         : Option.match(params.userId, {
             onSome: value => Option.some(value),
             onNone: () => Option.orElse(localTestUserId, () => userContext.data.testUserId),
@@ -1112,6 +1172,10 @@ const resolveExecuteContext = (params: RunToolsExecuteParams) =>
         userId: resolvedUserId.value,
         arguments: args,
         client,
+        projectScope: {
+          orgId: resolvedProject.orgId,
+          projectId: resolvedProject.projectId,
+        },
         connectedAccounts:
           toolkitSlug && selectedConnectedAccountId
             ? {
@@ -1182,7 +1246,7 @@ const runConnectedToolkitFailFast = (params: {
           successful: true,
         })
       ),
-      Effect.catchAll(() =>
+      Effect.catch(() =>
         perfDebugLog('execute.connected_toolkits.refresh_end', {
           slug: params.slug,
           orgId: params.resolvedProject.orgId,
@@ -1190,7 +1254,7 @@ const runConnectedToolkitFailFast = (params: {
           successful: false,
         })
       ),
-      Effect.forkDaemon,
+      Effect.forkDetach,
       Effect.asVoid
     );
 
@@ -1361,7 +1425,7 @@ const runExecuteWithSpinner = (params: {
               slug: params.slug,
               arguments: params.args,
             },
-          }).pipe(Effect.catchAll(() => Effect.void));
+          }).pipe(Effect.catch(() => Effect.void));
           return;
         }
 
@@ -1377,7 +1441,7 @@ const runExecuteWithSpinner = (params: {
                   successful: false,
                 });
                 yield* invalidateToolInputDefinition(params.slug).pipe(
-                  Effect.catchAll(() => Effect.void)
+                  Effect.catch(() => Effect.void)
                 );
                 yield* spinner.error();
                 const summary = yield* handleExecutionError(params.ui, error, {
@@ -1400,7 +1464,7 @@ const runExecuteWithSpinner = (params: {
                     arguments: params.args,
                     error: summary.error,
                   },
-                }).pipe(Effect.catchAll(() => Effect.void));
+                }).pipe(Effect.catch(() => Effect.void));
                 return yield* new ReportedToolExecutionError({
                   reason: 'execution_failed',
                   toolSlug: params.slug,
@@ -1428,9 +1492,7 @@ const runExecuteWithSpinner = (params: {
         }
 
         if (!result.successful) {
-          yield* invalidateToolInputDefinition(params.slug).pipe(
-            Effect.catchAll(() => Effect.void)
-          );
+          yield* invalidateToolInputDefinition(params.slug).pipe(Effect.catch(() => Effect.void));
           const logId = result.logId
             ? ` (logId: ${redact({ value: result.logId, prefix: 'log_' })})`
             : '';
@@ -1477,7 +1539,7 @@ const runExecuteWithSpinner = (params: {
               tokenCount: output.summary.tokenCount,
               logId: result.logId,
             },
-          }).pipe(Effect.catchAll(() => Effect.void));
+          }).pipe(Effect.catch(() => Effect.void));
           return;
         }
 
@@ -1492,7 +1554,7 @@ const runExecuteWithSpinner = (params: {
             storedInFile: false,
             logId: result.logId,
           },
-        }).pipe(Effect.catchAll(() => Effect.void));
+        }).pipe(Effect.catch(() => Effect.void));
       })
     );
   });
@@ -1790,8 +1852,8 @@ const checkConnectedToolkitOrFail = (params: {
       orgId: params.resolvedProject.orgId,
       consumerUserId: params.resolvedUserId,
     }).pipe(
-      Effect.catchAll(() => Effect.void),
-      Effect.forkDaemon,
+      Effect.catch(() => Effect.void),
+      Effect.forkDetach,
       Effect.asVoid
     );
 
@@ -1856,7 +1918,7 @@ const runParallelSchemaFetchFromParsed = (params: ParsedParallelExecuteArgs) =>
             { readonly inputSchema: Record<string, unknown> }
           >;
         }).pipe(
-          Effect.catchAll(error =>
+          Effect.catch(error =>
             toolkitFromToolSlug(spec.slug).pipe(
               Effect.map(toolkit => {
                 const mapped = mapComposioError({ error, toolkit, toolSlug: spec.slug });
@@ -2008,7 +2070,7 @@ const runParallelToolsExecuteFromParsed = (params: ParsedParallelExecuteArgs) =>
             ...result,
           };
         }).pipe(
-          Effect.catchAll(error =>
+          Effect.catch(error =>
             toolkitFromToolSlug(spec.slug).pipe(
               Effect.map(toolkit => {
                 const mapped = mapComposioError({ error, toolkit, toolSlug: spec.slug });

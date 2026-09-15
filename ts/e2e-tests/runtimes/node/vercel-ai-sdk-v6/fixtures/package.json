@@ -9,6 +9,6 @@
     "@composio/core": "file:/app/ts/packages/core",
     "ai": "6.0.211",
     "typescript": "5.8.3",
-    "zod": "4.4.3"
+    "zod": "4.5.4"
   }
 }

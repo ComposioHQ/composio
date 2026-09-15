@@ -4,7 +4,7 @@
   "engines": {
     "node": ">=22.22.3"
   },
-  "version": "0.18.0",
+  "version": "0.18.1",
   "description": "",
   "main": "src/index.ts",
   "publishConfig": {
@@ -74,6 +74,24 @@
     "./utils/json-schema": {
       "types": "./dist/utils/json-schema.d.mts",
       "default": "./dist/utils/json-schema.mjs"
+    },
+    "./utils/ssrf-guard": {
+      "workerd": {
+        "types": "./dist/utils/ssrfGuard.workerd.d.mts",
+        "default": "./dist/utils/ssrfGuard.workerd.mjs"
+      },
+      "edge-light": {
+        "types": "./dist/utils/ssrfGuard.workerd.d.mts",
+        "default": "./dist/utils/ssrfGuard.workerd.mjs"
+      },
+      "node": {
+        "types": "./dist/utils/ssrfGuard.node.d.mts",
+        "default": "./dist/utils/ssrfGuard.node.mjs"
+      },
+      "default": {
+        "types": "./dist/utils/ssrfGuard.node.d.mts",
+        "default": "./dist/utils/ssrfGuard.node.mjs"
+      }
     },
     "./generated": {
       "types": "./generated/index.d.ts",

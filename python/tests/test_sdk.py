@@ -6,6 +6,7 @@ from unittest.mock import patch
 import pytest
 
 from composio import Composio, exceptions
+from composio.core.provider._openai import OpenAIProvider
 from composio.core.types import ToolkitVersionParam
 
 
@@ -109,6 +110,32 @@ class TestComposioSDK:
                                 # Check that provider is set
                                 assert sdk.provider is not None
                                 assert hasattr(sdk.provider, "name")
+
+    def test_default_provider_is_isolated_per_instance(self):
+        """Regression test for #4369.
+
+        The default provider used to be a module-level singleton. Because every
+        ``Tools`` instance rebinds ``provider.execute_tool`` to itself, the last
+        constructed ``Composio()`` silently took over tool execution for every
+        other instance, routing calls through the wrong API key.
+        """
+        sdk_a = Composio(api_key="key-a")
+        sdk_b = Composio(api_key="key-b")
+
+        assert isinstance(sdk_a.provider, OpenAIProvider)
+        assert isinstance(sdk_b.provider, OpenAIProvider)
+        assert sdk_a.provider is not sdk_b.provider
+
+        # execute_tool is a functools.partial over Tools.execute; each provider
+        # must stay bound to the Tools of the instance that created it.
+        assert sdk_a.provider.execute_tool.func.__self__ is sdk_a.tools
+        assert sdk_b.provider.execute_tool.func.__self__ is sdk_b.tools
+
+    def test_explicit_provider_is_used_unchanged(self):
+        """An explicitly passed provider instance is used as-is."""
+        provider = OpenAIProvider()
+        sdk = Composio(provider=provider, api_key="key-a")
+        assert sdk.provider is provider
 
     def test_toolkit_versions_processing(self):
         """Test toolkit versions parameter processing."""

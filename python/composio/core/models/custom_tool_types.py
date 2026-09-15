@@ -175,9 +175,16 @@ class CustomToolsMap:
     """Lookup maps used by ToolRouterSession for routing custom tools."""
 
     by_final_slug: t.Dict[str, CustomToolsMapEntry] = field(default_factory=dict)
+    # Bare original slugs are only stored here when they resolve uniquely.
     by_original_slug: t.Dict[str, CustomToolsMapEntry] = field(default_factory=dict)
     toolkits: t.Optional[t.List[t.Any]] = None
     tools: t.Optional[t.List["CustomTool"]] = None
+    # Toolkit-qualified lookup allows different custom toolkits to reuse a child slug.
+    by_toolkit_and_original_slug: t.Dict[str, CustomToolsMapEntry] = field(
+        default_factory=dict
+    )
+    # Bare original slugs in this set must be addressed by their final slug.
+    ambiguous_original_slugs: t.Set[str] = field(default_factory=set)
 
 
 # ────────────────────────────────────────────────────────────────

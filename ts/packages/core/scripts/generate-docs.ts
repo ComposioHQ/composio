@@ -10,7 +10,7 @@
 import { readFileSync } from 'fs';
 import { mkdir, writeFile, rm, readdir, readFile } from 'fs/promises';
 import { join, dirname, resolve } from 'path';
-import { execSync } from 'child_process';
+import { execFileSync } from 'child_process';
 import { fileURLToPath, pathToFileURL } from 'url';
 
 // Paths (relative to ts/packages/core)
@@ -19,6 +19,11 @@ const PACKAGE_DIR = join(SCRIPT_DIR, '..');
 const MODELS_DIR = join(PACKAGE_DIR, 'src/models');
 const OUTPUT_DIR = join(PACKAGE_DIR, '../../../docs/content/reference/sdk-reference/typescript');
 const TEMP_JSON = join(PACKAGE_DIR, '.typedoc-output.json');
+const TYPEDOC_BIN = join(
+  dirname(fileURLToPath(import.meta.resolve('typedoc/package.json'))),
+  'bin',
+  'typedoc'
+);
 
 // Internal classes that should NOT be documented (accessed via other APIs)
 const INTERNAL_CLASSES = new Set([
@@ -55,12 +60,63 @@ function slugFor(className: string): string {
   return SLUG_OVERRIDES[className] ?? toKebabCase(className);
 }
 
+// Model file names become typedoc arguments. They are never interpolated into a
+// shell, but a name outside this charset is still not a model and is skipped
+// rather than passed through.
+const MODEL_FILE_NAME = /^[A-Za-z0-9_.-]+\.ts$/;
+
 // Discover model files automatically
-async function discoverModelFiles(): Promise<string[]> {
-  const files = await readdir(MODELS_DIR);
+export async function discoverModelFiles(modelsDir: string = MODELS_DIR): Promise<string[]> {
+  const files = await readdir(modelsDir);
   return files
     .filter(f => f.endsWith('.ts') && !f.includes('.test.') && !f.includes('.spec.'))
+    .filter(f => {
+      if (MODEL_FILE_NAME.test(f)) {
+        return true;
+      }
+      console.warn(`  Skipping model file with an unexpected name: ${JSON.stringify(f)}`);
+      return false;
+    })
     .map(f => `src/models/${f}`);
+}
+
+// TypeDoc arguments, one array element per argument so the entry points are
+// never joined into a shell command line.
+function buildTypeDocArgs(
+  entryPoints: readonly string[],
+  outputJson: string = TEMP_JSON
+): string[] {
+  return [
+    '--json',
+    outputJson,
+    '--tsconfig',
+    'tsconfig.json',
+    '--excludePrivate',
+    '--excludeProtected',
+    '--excludeInternal',
+    '--skipErrorChecking', // Skip TS errors, we just want the documentation
+    ...entryPoints,
+  ];
+}
+
+interface TypeDocCommandOptions {
+  outputJson?: string;
+  packageDir?: string;
+  typedocBin?: string;
+}
+
+export function runTypeDocCommand(
+  entryPoints: readonly string[],
+  {
+    outputJson = TEMP_JSON,
+    packageDir = PACKAGE_DIR,
+    typedocBin = TYPEDOC_BIN,
+  }: TypeDocCommandOptions = {}
+): void {
+  execFileSync(process.execPath, [typedocBin, ...buildTypeDocArgs(entryPoints, outputJson)], {
+    stdio: 'pipe',
+    cwd: packageDir,
+  });
 }
 
 // Discover classes to document from TypeDoc output
@@ -1132,21 +1188,8 @@ async function runTypeDoc(): Promise<TypeDocProject> {
 
   console.log(`  Found ${entryPoints.length} entry points`);
 
-  const cmd = [
-    'npx typedoc',
-    '--json',
-    TEMP_JSON,
-    '--tsconfig',
-    'tsconfig.json',
-    '--excludePrivate',
-    '--excludeProtected',
-    '--excludeInternal',
-    '--skipErrorChecking', // Skip TS errors, we just want the documentation
-    ...entryPoints,
-  ].join(' ');
-
   try {
-    execSync(cmd, { stdio: 'pipe', cwd: PACKAGE_DIR });
+    runTypeDocCommand(entryPoints);
   } catch (error) {
     console.error('TypeDoc failed:', error);
     throw error;

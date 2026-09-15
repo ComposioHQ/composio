@@ -3,7 +3,6 @@ title: "Project API Key Permissions"
 description: "Public guidance for scoped Project API key permissions."
 keywords: ["api-keys","permissions","platform","sessions","tool-router","authentication","errors-and-troubleshooting","sessions-and-execution","/kb/sdk-and-api/platform-project-api-key-permissions","org-api-created-keys-do-not-currently-enable-proxy-execute","tool-router-session-creation-requires-sessions-write-access"]
 sources: [{"sourcePath":"platform/project-api-key-permissions/public.md","sourceHeading":"Proxy Execute requires an explicitly allowed Project API key"},{"sourcePath":"platform/project-api-key-permissions/public.md","sourceHeading":"Tool Router session creation requires Sessions write access"},{"sourcePath":"platform/project-api-key-permissions/public.md","sourceHeading":"Tool execution requires Tool execution write access"}]
-sourceCommit: "5eac683455ff252a7a3b62f33ab6566445009b52"
 lastVerifiedAt: "2026-08-28"
 reviewAfter: "2026-11-26"
 freshness: "evergreen"
@@ -13,17 +12,17 @@ aliases: ["/kb/sdk-and-api/platform-project-api-key-permissions","org-api-create
 ## Proxy execute (Legacy) requires an explicitly allowed Project API key
 
 Create a scoped Project API key in the Dashboard and enable **Proxy execute (Legacy)**
-during key creation before calling the v3.1 Proxy Execute API. If a request is
+during key creation before calling the direct Proxy Execute API. If a request is
 denied, verify the key's scope before debugging the provider connection. Use a
 fresh request ID from the correctly scoped key when contacting Composio support is still necessary.
 
 ## Tool Router session creation requires Session management write access
 
-For newly created scoped Project API keys, creating a session through `composio.sessions.create(...)` or `POST /api/v3.1/tool_router/session` requires the Session management permission with write or read/write access.
+For newly created scoped Project API keys, creating a session through Python's `composio.sessions.create(...)` or `POST /api/v3.1/tool_router/session` requires the Session management permission with write or read/write access.
 
 A key can successfully call `GET /api/v3.1/toolkits` with Toolkits read access and still be unable to create a session. The SDK can surface a scoped-permission denial as a generic 401 `Invalid API key`.
 
-Create a new Project API key with Session management set to Read and write, or use an appropriate full-access Project API key, then retry session creation. Existing keys with the legacy Sessions permission continue to work without changes.
+Create a new Project API key with Session management set to Write only, then retry session creation. Choose Read and write if you also need to retrieve sessions. Existing keys with the legacy Sessions permission continue to work without changes.
 
 ## Tool execution (Legacy) requires write access
 
@@ -40,3 +39,5 @@ Existing keys with the legacy Sessions permission retain the session execution a
 ## Legacy MCP routes require MCP (Legacy) access
 
 Use MCP (Legacy) read or write access to view or manage MCP servers and instances. Connecting to an MCP transport requires MCP (Legacy) write access and grants every capability exposed by that server.
+
+See [Scoped Project API Key](/reference/authenticating-to-composio/project-api-key-permissions) for the complete permission and route reference.

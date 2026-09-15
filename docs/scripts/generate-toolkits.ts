@@ -269,7 +269,7 @@ async function fetchToolsForToolkit(slug: string): Promise<Tool[]> {
 
 async function fetchTriggersForToolkit(slug: string): Promise<Trigger[]> {
   const response = await fetchWithRetry(
-    `${API_BASE}/triggers_types?toolkit_slugs=${slug}&toolkit_versions=latest`,
+    `${API_BASE}/triggers_types?toolkit_slugs=${slug}&toolkit_versions=latest&limit=1000`,
     {
       headers: {
         'Content-Type': 'application/json',

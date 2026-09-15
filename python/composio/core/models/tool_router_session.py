@@ -32,8 +32,12 @@ from composio.client import HttpClient
 from composio.client.types import Tool
 from composio.core.models._modifiers import Modifiers, apply_modifier_by_type
 from composio.core.models.connected_accounts import ConnectionRequest
-from composio.core.models.custom_tool import find_custom_tool_map_entry_by_final_slug
+from composio.core.models.custom_tool import (
+    find_custom_tool_map_entry_by_final_slug,
+    find_custom_tool_map_entry_by_toolkit_and_original_slug,
+)
 from composio.core.models.custom_tool_execution import (
+    assert_unambiguous_custom_tool_slug,
     execute_custom_tool,
     find_custom_tool,
 )
@@ -388,6 +392,7 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
                         t.cast(SessionContextImpl, self._session_context),
                     ),
                 )
+            assert_unambiguous_custom_tool_slug(self._custom_tools_map, slug)
             # Non-multi-execute meta tools always go to backend
             return backend_execute(slug, arguments)
 
@@ -410,8 +415,7 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
         """Route a COMPOSIO_MULTI_EXECUTE_TOOL call.
 
         Splits the tools[] array into local and remote, executes each
-        appropriately, and merges results: remotes first, locals appended
-        (matches TS — remote results may have workbench index references).
+        appropriately, and merges results in the original request order.
 
         Modifiers are NOT applied here — the caller (routing_execute)
         handles before_execute/after_execute to avoid double application.
@@ -434,6 +438,9 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
             if entry:
                 local_items.append((i, entry))
             else:
+                assert_unambiguous_custom_tool_slug(
+                    self._custom_tools_map, p["tool_slug"]
+                )
                 remote_indices.append(i)
 
         # All remote — just forward entire payload (no modifiers — caller handles them)
@@ -480,10 +487,17 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
             for idx, future in local_futures:
                 local_results.append((idx, future.result()))
 
-            # Gather remote result
+            # Gather remote result. A transport failure (exception from the
+            # backend call) must not discard completed local results, so it
+            # is captured here and surfaced as per-tool failures below
+            # (matches TS).
             remote_result: t.Optional[t.Dict[str, t.Any]] = None
+            remote_error_message: t.Optional[str] = None
             if remote_future:
-                remote_result = remote_future.result()
+                try:
+                    remote_result = remote_future.result()
+                except Exception as error:
+                    remote_error_message = str(error) or "Remote tool execution failed"
 
         # If only one local tool and no remote, return unwrapped
         if not remote_indices and len(local_results) == 1:
@@ -498,40 +512,67 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
                     "data": result["data"],
                 },
                 "tool_slug": parsed[idx]["tool_slug"],
+                "index": idx,
             }
             if result.get("error"):
                 local_entry["response"]["error"] = result["error"]
                 local_entry["error"] = result["error"]
             local_entries.append(local_entry)
 
-        # Merge: remotes first, locals appended (matches TS behavior —
-        # remote results may have workbench index references)
+        # Restore original request order, then re-index sequentially.
         remote_data_raw = (remote_result or {}).get("data")
         remote_data = remote_data_raw if isinstance(remote_data_raw, dict) else {}
-        remote_results_list = (
-            remote_data.get("results", [])
-            if isinstance(remote_data.get("results"), list)
-            else []
-        )
-        all_results = [
-            {**entry, "index": i}
-            for i, entry in enumerate([*remote_results_list, *local_entries])
+        remote_results_list: t.List[t.Dict[str, t.Any]]
+        if remote_error_message is not None:
+            remote_results_list = [
+                {
+                    "response": {
+                        "successful": False,
+                        "data": {},
+                        "error": remote_error_message,
+                    },
+                    "tool_slug": parsed[index]["tool_slug"],
+                    "error": remote_error_message,
+                }
+                for index in remote_indices
+            ]
+        else:
+            remote_results_list = (
+                remote_data.get("results", [])
+                if isinstance(remote_data.get("results"), list)
+                else []
+            )
+        merged_results = [
+            {
+                **entry,
+                "index": remote_indices[position]
+                if position < len(remote_indices)
+                else position,
+            }
+            for position, entry in enumerate(remote_results_list)
         ]
+        merged_results.extend(local_entries)
+        merged_results.sort(key=lambda entry: int(entry["index"]))
+        all_results = [{**entry, "index": i} for i, entry in enumerate(merged_results)]
         failed = sum(1 for r in all_results if r.get("error"))
         merged_data = {**remote_data, "results": all_results}
-        if local_entries and any(
-            key in remote_data
-            for key in ("total_count", "success_count", "error_count")
+        if local_entries and (
+            remote_error_message is not None
+            or any(
+                key in remote_data
+                for key in ("total_count", "success_count", "error_count")
+            )
         ):
             merged_data["total_count"] = len(all_results)
             merged_data["success_count"] = len(all_results) - failed
             merged_data["error_count"] = failed
 
-        remote_error = (
-            str(remote_result.get("error"))
-            if remote_result and remote_result.get("error") is not None
-            else None
-        )
+        remote_error = remote_error_message
+        if remote_error is None and remote_result:
+            raw_remote_error = remote_result.get("error")
+            remote_error = (
+                str(raw_remote_error) if raw_remote_error is not None else None
+            )
         has_any_error = any(r.get("error") for _, r in local_results) or bool(
             remote_error
         )
@@ -706,9 +747,10 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
         """
         Execute a tool within the session.
 
-        For custom tools, accepts the original slug (e.g. "GREP") or the
-        full slug (e.g. "LOCAL_GREP"). Custom tools are executed in-process;
-        remote tools are sent to the Composio backend.
+        For custom tools, accepts the full slug (e.g. "LOCAL_GREP") or the
+        original slug (e.g. "GREP") when that original slug is unique across
+        the session's custom tools and toolkits. Custom tools are executed
+        in-process; remote tools are sent to the Composio backend.
 
         :param account: Account ID or alias for direct app tool execution in
             multi-account sessions. Helper/meta tools either ignore this
@@ -730,6 +772,8 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
                 error=result["error"],
                 log_id="",
             )
+
+        assert_unambiguous_custom_tool_slug(self._custom_tools_map, tool_slug)
 
         return self._client.tool_router.session.execute(
             session_id=self.session_id,
@@ -784,7 +828,20 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
         for tk in self._custom_tools_map.toolkits:
             tools = []
             for tool in tk.tools:
-                entry = self._custom_tools_map.by_original_slug.get(tool.slug.upper())
+                entry = find_custom_tool_map_entry_by_toolkit_and_original_slug(
+                    self._custom_tools_map, tk.slug, tool.slug
+                )
+                if entry is None:
+                    # Only trust a bare alias that belongs to this toolkit.
+                    bare = self._custom_tools_map.by_original_slug.get(
+                        tool.slug.upper()
+                    )
+                    if (
+                        bare is not None
+                        and bare.toolkit is not None
+                        and bare.toolkit.lower() == tk.slug.lower()
+                    ):
+                        entry = bare
                 tools.append(
                     RegisteredCustomTool(
                         slug=entry.final_slug if entry else tool.slug,

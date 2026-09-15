@@ -1,11 +1,11 @@
-import { Args, Command } from '@effect/cli';
+import { Argument, Command } from 'effect/unstable/cli';
 import { Effect, Option } from 'effect';
 import { requireAuth } from 'src/effects/require-auth';
 import { ComposioClientSingleton } from 'src/services/composio-clients';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { extractMessage } from 'src/utils/api-error-extraction';
 
-const slug = Args.text({ name: 'slug' }).pipe(Args.withDescription('Toolkit slug (e.g. "gmail")'));
+const slug = Argument.string('slug').pipe(Argument.withDescription('Toolkit slug (e.g. "gmail")'));
 
 /**
  * Show toolkit version information.
@@ -32,7 +32,7 @@ export const toolkitsCmd$Version = Command.make('version', { slug }, ({ slug }) 
       )
       .pipe(
         Effect.asSome,
-        Effect.catchAll(error =>
+        Effect.catch(error =>
           Effect.gen(function* () {
             const message =
               extractMessage(error) ?? `Failed to fetch version info for toolkit "${slug}".`;

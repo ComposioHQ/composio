@@ -129,7 +129,7 @@ export const compareBoundaryManifests = (
         errors.push(
           `${file}: ${foundCount}x ${formatBoundarySite(site)} found, ${registeredCount} registered. ` +
             'New or relocated eslint-disables are not allowed in CLI src: thread the ' +
-            '@effect/platform service (Path, FileSystem), effect/Config, or Either.try instead — ' +
+            'effect/Path or effect/FileSystem service, effect/Config, or Result.try instead — ' +
             'see "Effect Boundary Policy" in ts/packages/cli/AGENTS.md. If this is genuinely a new ' +
             'runtime boundary, regenerate the manifest with ' +
             '`pnpm run validate:boundaries -- --update` and justify the boundary in your PR.'

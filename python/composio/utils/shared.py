@@ -19,11 +19,12 @@ from composio.exceptions import InvalidParams, InvalidSchemaError
 from composio.utils.json_schema import dereference_json_schema
 from composio.utils.logging import get as get_logger
 from composio.utils.schema_converter import (
+    _EXPLICIT_DEFAULT_FIELDS_ATTRIBUTE,
     CONTAINER_TYPE,
     FALLBACK_VALUES,
     PYDANTIC_TYPE_TO_PYTHON_TYPE,
-    _EXPLICIT_DEFAULT_FIELDS_ATTRIBUTE,
     _mark_explicit_default_fields,
+    _with_exact_validation,
     apply_object_policy,
     json_schema_to_pydantic_type,
 )
@@ -471,7 +472,7 @@ def _coerce_default_value(
 
 def json_schema_to_pydantic_field(
     name: str,
-    json_schema: t.Dict[str, t.Any],
+    json_schema: t.Union[t.Dict[str, t.Any], bool],
     required: t.List[str],
     skip_default: bool = False,
     *,
@@ -486,19 +487,23 @@ def json_schema_to_pydantic_field(
     :param root_schema: Full schema document used to resolve local references.
     :return: A Pydantic field definition.
     """
-    description = json_schema.get("description")
-    if "oneOf" in json_schema:
+    # A property schema may be the literal `true`/`false` (JSON Schema
+    # draft-06+); those carry no metadata, so read annotations from an empty
+    # object and let `json_schema_to_pydantic_type` decide the type.
+    schema_object = json_schema if isinstance(json_schema, dict) else {}
+    description = schema_object.get("description")
+    if "oneOf" in schema_object:
         description = " | ".join(
-            [option.get("description", "") for option in json_schema["oneOf"]]
+            [option.get("description", "") for option in schema_object["oneOf"]]
         )
         description = f"Any of the following options(separated by |): {description}"
 
-    examples = json_schema.get("examples", [])
-    default = json_schema.get("default")
+    examples = schema_object.get("examples", [])
+    default = schema_object.get("default")
 
     # Coerce default value to match expected type from schema
     if default is not None:
-        default = _coerce_default_value(default, json_schema)
+        default = _coerce_default_value(default, schema_object)
 
     # Check if the field name is a reserved Pydantic name
     original_name = name
@@ -588,10 +593,17 @@ def json_schema_to_model(
         setattr(base_model, _EXPLICIT_DEFAULT_FIELDS_ATTRIBUTE, frozenset())
     else:
         _mark_explicit_default_fields(base_model, json_schema, json_schema)
-    return apply_object_policy(
+    # Exact acceptance is shared with `json_schema_to_pydantic_type` so every
+    # Python entry point agrees with the Zod and Effect converters about which
+    # inputs a schema admits.
+    return _with_exact_validation(
+        apply_object_policy(
+            json_schema,
+            base_model,
+            model_name=model_name,
+        ),
         json_schema,
-        base_model,
-        model_name=model_name,
+        json_schema,
     )
 
 
@@ -616,41 +628,27 @@ def pydantic_model_from_param_schema(param_schema: t.Dict) -> t.Type:
     required_props = param_schema.get("required", [])
 
     if param_schema.get("type") == "array":
-        # print("param_schema inside array - ", param_schema)
-        item_schema = param_schema.get("items")
-        if item_schema:
-            ItemType = t.cast(
-                t.Type,
-                json_schema_to_pydantic_type(
-                    json_schema=item_schema,
-                ),
-            )
-            return t.List[ItemType]  # type: ignore
-        return t.List
+        return t.cast(t.Type, json_schema_to_pydantic_type(param_schema))
 
     for prop_name, prop_info in param_schema.get("properties", {}).items():
-        prop_type = prop_info.get("type")
-        prop_title = prop_info.get("title", prop_name).replace(" ", "")
-        prop_default = prop_info.get("default", FALLBACK_VALUES.get(prop_type))
-        if (
-            prop_type is not None
-            and prop_type in PYDANTIC_TYPE_TO_PYTHON_TYPE
-            and prop_type not in CONTAINER_TYPE
-        ):
-            signature_prop_type = PYDANTIC_TYPE_TO_PYTHON_TYPE[prop_type]
-        elif prop_type is None:
-            # Schema uses anyOf/allOf/oneOf/$ref instead of a top-level "type" key.
-            # Delegate to json_schema_to_pydantic_type which handles all combiners.
-            signature_prop_type = t.cast(
-                t.Type,
-                json_schema_to_pydantic_type(json_schema=prop_info),
-            )
-        else:
-            signature_prop_type = pydantic_model_from_param_schema(prop_info)
+        prop_object = prop_info if isinstance(prop_info, dict) else {}
+        prop_type = prop_object.get("type")
+        prop_title = prop_object.get("title", prop_name).replace(" ", "")
+        fallback = (
+            FALLBACK_VALUES.get(prop_type) if isinstance(prop_type, str) else None
+        )
+        prop_default = prop_object.get("default", fallback)
+        signature_prop_type = t.cast(
+            t.Type,
+            json_schema_to_pydantic_type(
+                json_schema=prop_info,
+                root_schema=param_schema,
+            ),
+        )
 
         field_kwargs = {
-            "description": prop_info.get(
-                "description", prop_info.get("desc", prop_title)
+            "description": prop_object.get(
+                "description", prop_object.get("desc", prop_title)
             ),
         }
 
@@ -673,13 +671,17 @@ def pydantic_model_from_param_schema(param_schema: t.Dict) -> t.Type:
             )
 
     if not required_fields and not optional_fields:
-        return t.Dict
+        # Nothing to materialize: let the shared converter pick the annotation
+        # so `allOf`/`anyOf`/`$ref` and typeless assertions keep the same exact
+        # validation and permissive materialization as the other entry points.
+        return t.cast(t.Type, json_schema_to_pydantic_type(param_schema))
 
-    return create_model(  # type: ignore
+    model = create_model(  # type: ignore
         param_title,
         **required_fields,
         **optional_fields,
     )
+    return _with_exact_validation(model, param_schema, param_schema)
 
 
 def get_signature_format_from_schema_params(

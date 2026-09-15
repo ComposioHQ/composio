@@ -1,7 +1,11 @@
 import { lookup } from 'node:dns/promises'; // we're in a Node.js-specific module
 import { isIP } from 'node:net';
 import { ComposioBlockedInternalUrlError } from '../errors/SsrfErrors';
-import { createPinnedDispatcher, hasCustomGlobalDispatcher } from './pinnedDispatcher.node';
+import {
+  createPinnedDispatcher,
+  hasCustomGlobalDispatcher,
+  pinnedHttpFetch,
+} from './pinnedDispatcher.node';
 
 /**
  * SSRF guard for user-supplied URL file inputs.
@@ -26,7 +30,8 @@ import { createPinnedDispatcher, hasCustomGlobalDispatcher } from './pinnedDispa
  * Residual: a hop whose effective dispatcher is a configured route — a
  * caller-supplied `init.dispatcher`, a non-stock global dispatcher (a
  * `ProxyAgent` or `EnvHttpProxyAgent` installed via `setGlobalDispatcher`), or
- * the runtime's env-proxy mode (`NODE_USE_ENV_PROXY`) — keeps only the
+ * the runtime's env-proxy mode (automatic on Bun, opt-in via
+ * `NODE_USE_ENV_PROXY` on Node) — keeps only the
  * pre-flight validation. Pinning would dial the validated address instead of
  * the proxy, and the proxy resolves the hostname itself where the SDK cannot
  * see or pin that resolution. The Python guard carries the same residual for
@@ -36,18 +41,87 @@ import { createPinnedDispatcher, hasCustomGlobalDispatcher } from './pinnedDispa
 const MAX_REDIRECTS = 5;
 
 /**
+ * The Fetch standard's "redirect status" set. A 3xx outside it is not a
+ * redirect to follow even when it carries a `location` — `304 Not Modified`
+ * and `305 Use Proxy` most of all, and following those would replay the
+ * request against a target the caller never asked for. The Python guard
+ * follows the same set (`_REDIRECT_STATUS_CODES`).
+ */
+const REDIRECT_STATUS_CODES = new Set([301, 302, 303, 307, 308]);
+
+/**
+ * Headers that describe a request body, so they have to go when the body does:
+ * the Fetch standard's "request-body-header name" set, plus the two the Python
+ * guard also drops because `requests` recomputes them from the body it sends.
+ */
+const BODY_HEADERS = [
+  'content-encoding',
+  'content-language',
+  'content-length',
+  'content-location',
+  'content-type',
+  'transfer-encoding',
+];
+
+/**
+ * The method the hop after a redirect uses, or `null` to replay as-is. A
+ * returned method also means the request body goes.
+ *
+ * These are the Fetch standard's redirect rules, which following redirects by
+ * hand (`redirect: 'manual'`) means `fetch` never applies for us: `303` points
+ * at a result URL that has no use for the original body, so every method loses
+ * it and everything but `HEAD` becomes a `GET`; `301`/`302` do the same to a
+ * `POST` only; `307`/`308` replay both. Without this, a `303` answering an
+ * upload would PUT the payload again at a URL that expects a GET. The Python
+ * guard applies the same rules in `safe_request`.
+ */
+const redirectRewrite = (status: number, method: string): string | null => {
+  if (status === 303) return method === 'HEAD' ? 'HEAD' : 'GET';
+  if ((status === 301 || status === 302) && method === 'POST') return 'GET';
+  return null;
+};
+
+/**
+ * Headers that carry a credential for the origin the request was addressed
+ * to, so they must not follow a redirect to a different origin. The Fetch
+ * standard strips `Authorization` on a cross-origin redirect; `Cookie` and
+ * `Proxy-Authorization` go with it the way `requests` and curl drop them on a
+ * host change. `redirect: 'manual'` means `fetch` never applies that rule for
+ * us either. The Python guard drops the same three (`_CREDENTIAL_HEADERS`).
+ */
+const CREDENTIAL_HEADERS = ['authorization', 'cookie', 'proxy-authorization'];
+
+const applyRedirectSemantics = (
+  init: RequestInit,
+  status: number,
+  fromUrl: string,
+  toUrl: string
+): RequestInit => {
+  const method = redirectRewrite(status, (init.method ?? 'GET').toUpperCase());
+  const crossOrigin = new URL(fromUrl).origin !== new URL(toUrl).origin;
+  if (method === null && !crossOrigin) return init;
+
+  const headers = new Headers(init.headers);
+  if (method !== null) for (const name of BODY_HEADERS) headers.delete(name);
+  if (crossOrigin) for (const name of CREDENTIAL_HEADERS) headers.delete(name);
+  if (method === null) return { ...init, headers };
+  return { ...init, method, body: undefined, headers };
+};
+
+/**
  * Whether the runtime would route `url` through an env proxy the SDK cannot
- * see into. Only meaningful when `NODE_USE_ENV_PROXY` opts the built-in
- * `fetch` into env proxies (Node >= 24); without that flag the runtime's
- * `fetch` ignores `HTTP_PROXY`/`HTTPS_PROXY` entirely, so mirroring Python's
- * bare env-var check would drop pinning for users whose fetch never proxied.
+ * see into. Bun honors proxy environment variables automatically. Node's
+ * built-in `fetch` requires the `NODE_USE_ENV_PROXY` opt-in (Node >= 24), so
+ * a bare env-var check on Node would drop pinning for users whose fetch never
+ * proxied.
  *
  * `NO_PROXY=*` is the one bypass honored precisely (nothing is proxied, so
  * pinning is safe again); per-host `NO_PROXY` entries are treated
  * conservatively as proxied rather than parsed.
  */
-const envProxyApplies = (url: URL): boolean => {
-  const useEnvProxy = ['1', 'true'].includes((process.env.NODE_USE_ENV_PROXY ?? '').toLowerCase());
+const envProxyApplies = (url: URL, isBun: boolean): boolean => {
+  const useEnvProxy =
+    isBun || ['1', 'true'].includes((process.env.NODE_USE_ENV_PROXY ?? '').toLowerCase());
   if (!useEnvProxy) return false;
   if ((process.env.NO_PROXY ?? process.env.no_proxy ?? '') === '*') return false;
   const schemeVar = url.protocol === 'https:' ? 'HTTPS_PROXY' : 'HTTP_PROXY';
@@ -71,6 +145,7 @@ const IPV4_BLOCKED_CIDRS: ReadonlyArray<readonly [string, number]> = [
   ['172.16.0.0', 12], // private
   ['192.0.0.0', 24], // IETF protocol assignments
   ['192.0.2.0', 24], // TEST-NET-1
+  ['192.88.99.0', 24], // 6to4 relay anycast (deprecated, RFC 7526)
   ['192.168.0.0', 16], // private
   ['198.18.0.0', 15], // benchmarking
   ['198.51.100.0', 24], // TEST-NET-2
@@ -140,8 +215,20 @@ const isBlockedIpv6 = (ip: string): boolean => {
     return isBlockedIpv4Long((((h[6] << 16) >>> 0) | h[7]) >>> 0);
   }
 
+  // Transition and tunnel ranges. Each one either carries an arbitrary IPv4
+  // address in its low bits or is reserved, so a public-looking literal here
+  // can still name internal space: `2002:7f00:1::` is 6to4 for `127.0.0.1`.
+  // Blocking the whole range rather than decoding it matches the Python guard,
+  // where `ipaddress.is_global` already rejects all of them.
+  if (h[0] === 0x2001 && (h[1] & 0xfe00) === 0) return true; // IETF protocol assignments 2001::/23 (incl. Teredo)
+  if (h[0] === 0x2001 && h[1] === 0x0db8) return true; // documentation 2001:db8::/32
+  if (h[0] === 0x2002) return true; // 6to4 2002::/16
+  if (h[0] === 0x0064 && h[1] === 0xff9b && h[2] === 0x0001) return true; // local-use NAT64 64:ff9b:1::/48
+  if (h[0] === 0x0100 && h[1] === 0 && h[2] === 0 && h[3] === 0) return true; // discard-only 100::/64
+
   if ((h[0] & 0xfe00) === 0xfc00) return true; // unique local fc00::/7
   if ((h[0] & 0xffc0) === 0xfe80) return true; // link-local fe80::/10
+  if ((h[0] & 0xffc0) === 0xfec0) return true; // site-local fec0::/10 (deprecated)
   if ((h[0] & 0xff00) === 0xff00) return true; // multicast ff00::/8
 
   return false;
@@ -215,7 +302,8 @@ export const assertSafeFetchTarget = async (rawUrl: string): Promise<string[]> =
  * connects to the address it validated, and re-validates and re-pins every
  * redirect hop (redirects are followed manually up to {@link MAX_REDIRECTS}).
  * Intermediate redirect bodies are cancelled; non-redirect responses are
- * returned unchanged.
+ * returned unchanged. Each hop carries the method, body, and credential headers
+ * the Fetch standard says it should — see {@link applyRedirectSemantics}.
  *
  * A hop whose effective dispatcher is a configured route (caller-supplied
  * `init.dispatcher`, non-stock global dispatcher, env-proxy mode) is *not*
@@ -227,30 +315,43 @@ export const ssrfSafeFetch = async (
   maxRedirects: number = MAX_REDIRECTS
 ): Promise<Response> => {
   let currentUrl = rawUrl;
+  // Rebound per hop: a redirect can drop the method and body (see
+  // `applyRedirectSemantics`), and the following hops must send what is left.
+  let currentInit = init;
 
   for (let hop = 0; hop <= maxRedirects; hop++) {
     const addresses = await assertSafeFetchTarget(currentUrl);
+    const isBun = typeof process.versions.bun === 'string';
 
     // Pinning replaces the connect target; through a configured route that
     // would dial the validated origin instead of the route's next hop (the
     // proxy), so those hops keep the pre-flight check only.
-    const callerDispatcher = (init as RequestInit & { dispatcher?: unknown }).dispatcher;
+    const callerDispatcher = (currentInit as RequestInit & { dispatcher?: unknown }).dispatcher;
     const respectConfiguredRoute =
       callerDispatcher !== undefined ||
-      envProxyApplies(new URL(currentUrl)) ||
+      envProxyApplies(new URL(currentUrl), isBun) ||
       hasCustomGlobalDispatcher();
 
-    const dispatcher = respectConfiguredRoute ? undefined : await createPinnedDispatcher(addresses);
+    const dispatcher =
+      respectConfiguredRoute || isBun ? undefined : await createPinnedDispatcher(addresses);
 
     let response: Response;
     try {
-      // `dispatcher` is a Node-only extension to `RequestInit`.
-      response = await fetch(
-        currentUrl,
-        (dispatcher === undefined
-          ? { ...init, redirect: 'manual' }
-          : { ...init, redirect: 'manual', dispatcher }) as RequestInit
-      );
+      if (isBun && !respectConfiguredRoute) {
+        response = await pinnedHttpFetch(
+          currentUrl,
+          { ...currentInit, redirect: 'manual' },
+          addresses
+        );
+      } else {
+        // `dispatcher` is a Node-only extension to `RequestInit`.
+        response = await fetch(
+          currentUrl,
+          (dispatcher === undefined
+            ? { ...currentInit, redirect: 'manual' }
+            : { ...currentInit, redirect: 'manual', dispatcher }) as RequestInit
+        );
+      }
     } catch (error) {
       if (dispatcher !== undefined) {
         await dispatcher.close().catch(() => undefined);
@@ -265,7 +366,7 @@ export const ssrfSafeFetch = async (
     }
 
     const isRedirect =
-      response.status >= 300 && response.status < 400 && response.headers.has('location');
+      REDIRECT_STATUS_CODES.has(response.status) && response.headers.has('location');
     if (!isRedirect) {
       return response;
     }
@@ -274,7 +375,9 @@ export const ssrfSafeFetch = async (
     // than leaving it to the garbage collector (mirrors `readResponseBodyWithLimit`).
     await response.body?.cancel().catch(() => undefined);
 
-    currentUrl = new URL(response.headers.get('location')!, currentUrl).toString();
+    const nextUrl = new URL(response.headers.get('location')!, currentUrl).toString();
+    currentInit = applyRedirectSemantics(currentInit, response.status, currentUrl, nextUrl);
+    currentUrl = nextUrl;
   }
 
   throw new ComposioBlockedInternalUrlError(

@@ -6,7 +6,7 @@ import type { ErrorSpan, PrettyPrintOptions } from 'effect-errors/types';
 
 export const printEffectStacktrace = (
   sources: Omit<ErrorRelatedSources, '_tag'>[] | undefined,
-  spans: ErrorSpan[] | undefined,
+  spans: ReadonlyArray<ErrorSpan> | undefined,
   { stripCwd }: PrettyPrintOptions
 ) => {
   const isEmpty =

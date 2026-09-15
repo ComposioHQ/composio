@@ -375,9 +375,13 @@ export class ToolRouterSession<
       tools: tk.tools.map(tool => {
         // Look up by toolkit + original slug so toolkits can safely reuse common names
         // like VERSION, CLICK, or SEARCH without losing the backend-assigned final slug.
+        // Only trust a bare alias that belongs to this toolkit.
+        const bare = this.customToolsMap!.byOriginalSlug.get(tool.slug.toUpperCase());
         const entry =
           findCustomToolMapEntryByToolkitAndOriginalSlug(this.customToolsMap, tk.slug, tool.slug) ??
-          this.customToolsMap!.byOriginalSlug.get(tool.slug.toUpperCase());
+          (bare?.toolkit && bare.toolkit.toLowerCase() === tk.slug.toLowerCase()
+            ? bare
+            : undefined);
         return {
           slug: entry?.finalSlug ?? tool.slug,
           name: tool.name,
@@ -555,9 +559,10 @@ export class ToolRouterSession<
   /**
    * Execute a tool within the session.
    *
-   * For custom tools, accepts the original slug (e.g. "GREP") or the
-   * full slug (e.g. "LOCAL_GREP"). Custom tools are executed in-process;
-   * remote tools are sent to the Composio backend.
+   * For custom tools, accepts the full slug (e.g. "LOCAL_GREP") or the
+   * original slug (e.g. "GREP") when that original slug is unique across
+   * the session's custom tools and toolkits. Custom tools are executed
+   * in-process; remote tools are sent to the Composio backend.
    *
    * @param toolSlug - The tool slug to execute
    * @param arguments_ - Optional tool arguments

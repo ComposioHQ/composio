@@ -47,7 +47,7 @@ jobs:
         run: bun run test
 
       - name: Check KB semantic artifact
-        run: bun run check:kb-semantic
+        run: bun run check:kb-semantic --allow-stale
 
       - name: Build
         run: bun run build

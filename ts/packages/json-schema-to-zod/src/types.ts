@@ -63,4 +63,6 @@ export type JsonSchemaToZodOptions = {
 export type Refs = JsonSchemaToZodOptions & {
   path: Array<string | number>;
   seen: Map<object | boolean, { n: number; r: ZodTypeAny | undefined }>;
+  /** The document that local `$ref` pointers resolve against. */
+  root?: JsonSchema;
 };

@@ -28,8 +28,6 @@ from composio.core.types import ToolkitVersionParam
 from composio.utils.logging import WithLogger
 from composio.utils.toolkit_version import get_toolkit_versions
 
-_DEFAULT_PROVIDER = OpenAIProvider()
-
 
 class SDKConfig(te.TypedDict):
     environment: te.NotRequired[APIEnvironment]
@@ -130,11 +128,11 @@ class Composio(t.Generic[TTool, TToolCollection], WithLogger):
         if not api_key:
             raise exceptions.ApiKeyNotProvidedError()
 
-        # Use default provider if none provided
-        # Cast to BaseProvider[TTool, TToolCollection] for type consistency
+        # Each instance gets its own provider so that the execute_tool_fn binding
+        # performed by Tools.__init__ cannot leak across SDK instances (issue #4369).
         actual_provider: BaseProvider[TTool, TToolCollection] = t.cast(
             BaseProvider[TTool, TToolCollection],
-            provider if provider is not None else _DEFAULT_PROVIDER,
+            provider if provider is not None else OpenAIProvider(),
         )
 
         # Process toolkit versions with environment variable support

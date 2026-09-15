@@ -1,5 +1,7 @@
-import { FileSystem, Path } from '@effect/platform';
-import { BunFileSystem, BunPath } from '@effect/platform-bun';
+import * as FileSystem from 'effect/FileSystem';
+import * as Path from 'effect/Path';
+import * as BunFileSystem from '@effect/platform-bun/BunFileSystem';
+import * as BunPath from '@effect/platform-bun/BunPath';
 import { describe, expect, layer } from '@effect/vitest';
 import { Effect, Layer } from 'effect';
 import {
@@ -12,7 +14,7 @@ const TestPlatform = Layer.mergeAll(BunFileSystem.layer, BunPath.layer);
 
 describe('running CLI version authority', () => {
   layer(TestPlatform)(it => {
-    it.scoped('uses the compiled version in release builds despite installed tag metadata', () =>
+    it.effect('uses the compiled version in release builds despite installed tag metadata', () =>
       Effect.gen(function* () {
         const fs = yield* FileSystem.FileSystem;
         const path = yield* Path.Path;
@@ -33,7 +35,7 @@ describe('running CLI version authority', () => {
       })
     );
 
-    it.scoped('uses the compiled version in a release build without installed metadata', () =>
+    it.effect('uses the compiled version in a release build without installed metadata', () =>
       Effect.gen(function* () {
         const fs = yield* FileSystem.FileSystem;
         const path = yield* Path.Path;
@@ -47,7 +49,7 @@ describe('running CLI version authority', () => {
       })
     );
 
-    it.scoped('keeps installed tag fallback behavior in development builds', () =>
+    it.effect('keeps installed tag fallback behavior in development builds', () =>
       Effect.gen(function* () {
         const fs = yield* FileSystem.FileSystem;
         const path = yield* Path.Path;

@@ -1,16 +1,13 @@
 import ts from 'typescript';
-import { Path } from '@effect/platform';
-import { Effect, Data } from 'effect';
+import { Effect, Path } from 'effect';
+import { TypeScriptTranspileError } from 'src/generation/errors';
 import {
   buildVirtualFileMap,
   patchCompilerHostWithVirtualFiles,
   formatDiagnostic,
 } from './virtual-compiler-host';
 
-export class TypeScriptTranspileError extends Data.TaggedError('error/TypeScriptTranspileError')<{
-  readonly message: string;
-  readonly cause: string;
-}> {}
+export { TypeScriptTranspileError };
 
 type TranspileTypeScriptFilesParams = {
   sources: (readonly [filePath: string, content: string])[];

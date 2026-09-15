@@ -1,6 +1,6 @@
-import { Command, CommandExecutor } from '@effect/platform';
 import { describe, expect, layer } from '@effect/vitest';
 import { Effect, Exit } from 'effect';
+import { ChildProcess, ChildProcessSpawner } from 'effect/unstable/process';
 import { afterEach, beforeEach, vi } from 'vitest';
 import { CommandRunner } from 'src/services/command-runner';
 import { SetupSkillInstaller } from 'src/services/setup-skill-installer';
@@ -83,11 +83,13 @@ const makeFakeHosts = (
     });
   };
 
-  const runner = new CommandRunner({
-    run: () => Effect.succeed(CommandExecutor.ExitCode(0)),
+  const runner = CommandRunner.of({
+    run: () => Effect.succeed(ChildProcessSpawner.ExitCode(0)),
     capture: rawCommand => {
-      const flattened = Command.flatten(rawCommand)[0];
-      const parts = [flattened.command, ...flattened.args];
+      if (!ChildProcess.isStandardCommand(rawCommand)) {
+        throw new Error('Expected a standard command');
+      }
+      const parts = [rawCommand.command, ...rawCommand.args];
       const host = parts[0] as AgentHost;
       const command = parts.join(' ');
       const respond = (result: { exitCode?: number; stdout?: string; stderr?: string }) =>
@@ -143,7 +145,7 @@ const makeFakeHosts = (
 
 const makeSkillInstaller = (initiallyReady = false) => {
   let ready = initiallyReady;
-  return new SetupSkillInstaller({
+  return SetupSkillInstaller.of({
     isClaudeSkillReady: Effect.sync(() => ready),
     hasManagedClaudeSkill: Effect.sync(() => ready),
     ensureClaudeSkill: Effect.sync(() => {
@@ -188,7 +190,7 @@ describe('CLI: composio setup telemetry', () => {
       setupSkillInstaller: makeSkillInstaller(),
     })
   )('fresh Claude install', it => {
-    it.scoped('tracks per-host detection and a verified plugin install', () =>
+    it.effect('tracks per-host detection and a verified plugin install', () =>
       Effect.gen(function* () {
         yield* cli(['setup', '--target', 'auto', '--yes']);
 
@@ -234,7 +236,7 @@ describe('CLI: composio setup telemetry', () => {
     { codexVersion: 'codex-cli 0.137.0' }
   );
   layer(TestLive({ commandRunner: legacyCodex.runner }))('unsupported Codex only', it => {
-    it.scoped('tracks the normalized reason code and the installer skip', () =>
+    it.effect('tracks the normalized reason code and the installer skip', () =>
       Effect.gen(function* () {
         const exit = yield* Effect.exit(
           cli(['setup', '--target', 'auto', '--yes', '--if-present'])
@@ -268,7 +270,7 @@ describe('CLI: composio setup telemetry', () => {
 
   const noHosts = makeFakeHosts({});
   layer(TestLive({ commandRunner: noHosts.runner }))('no detected host', it => {
-    it.scoped('tracks the installer skip when nothing is detected', () =>
+    it.effect('tracks the installer skip when nothing is detected', () =>
       Effect.gen(function* () {
         const exit = yield* Effect.exit(
           cli(['setup', '--target', 'auto', '--yes', '--if-present'])
@@ -293,7 +295,7 @@ describe('CLI: composio setup telemetry', () => {
       terminalUI: decliningUI,
     })
   )('declined interactive setup', it => {
-    it.scoped('tracks user cancellation without mutating the host', () =>
+    it.effect('tracks user cancellation without mutating the host', () =>
       Effect.gen(function* () {
         yield* cli(['setup', '--target', 'claude']);
 
@@ -322,7 +324,7 @@ describe('CLI: composio setup telemetry', () => {
       terminalUI: decliningUI,
     })
   )('declined interactive uninstall', it => {
-    it.scoped('tracks user cancellation for the uninstall operation', () =>
+    it.effect('tracks user cancellation for the uninstall operation', () =>
       Effect.gen(function* () {
         yield* cli(['setup', '--uninstall', '--target', 'claude']);
 
@@ -350,7 +352,7 @@ describe('CLI: composio setup telemetry', () => {
       setupSkillInstaller: makeSkillInstaller(),
     })
   )('native install failure', it => {
-    it.scoped('tracks the per-host failure with its phase', () =>
+    it.effect('tracks the per-host failure with its phase', () =>
       Effect.gen(function* () {
         const exit = yield* Effect.exit(cli(['setup', '--target', 'claude', '--yes']));
         expect(Exit.isFailure(exit)).toBe(true);

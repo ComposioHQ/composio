@@ -32,10 +32,12 @@ setup(
         "jsonschema>=4.23.0",
         # `get_connection_with_tls_context` (the pinning adapter's mount
         # point) is only called by `HTTPAdapter.send` on requests >= 2.32.2.
-        "requests>=2.32.2",
+        # 2.32.4 fixes GHSA-9hjg-9r4m-mvj7 (.netrc credentials leak).
+        "requests>=2.32.4",
         # `url_safety` imports urllib3 directly and needs 2.x: 1.x has no
         # `NameResolutionError` and different connection internals.
-        "urllib3>=2",
+        # 2.7.0 fixes GHSA-mf9v-mfxr-j63j and GHSA-qccp-gfcp-xxvc.
+        "urllib3>=2.7.0",
     ],
     include_package_data=True,
 )

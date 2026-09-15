@@ -1,6 +1,5 @@
-import { HelpDoc, ValidationError } from '@effect/cli';
-import { FileSystem } from '@effect/platform';
-import { Effect, Option } from 'effect';
+import { Effect, FileSystem, Option } from 'effect';
+import { CliError } from 'effect/unstable/cli';
 
 import { readStdin, readStdinIfPiped } from 'src/effects/read-stdin';
 
@@ -24,7 +23,12 @@ export const resolveOptionalTextInput = (
         const filePath = value.slice(1).trim();
         if (!filePath) {
           return yield* Effect.fail(
-            ValidationError.invalidValue(HelpDoc.p('Missing file path after "@" in --data'))
+            new CliError.InvalidValue({
+              option: 'data',
+              value,
+              expected: 'a file path after "@"',
+              kind: 'flag',
+            })
           );
         }
         return yield* fs.readFileString(filePath, 'utf-8');
