@@ -62,6 +62,7 @@ Do not turn an explanation, documentation lookup, or narrow bug fix into onboard
 9. Prefer the smallest configuration that completes the current job. Keep toolkit filters, tag policies, sandbox controls, custom auth, provider-specific hardening, and other advanced options out of the first path unless the request or existing code requires them.
 10. Do not invent repository facts. Never claim that a file, framework, environment loader, identity field, agent path, or dependency exists until it was provided or inspected. If codebase context is unavailable, state the unknown and ask for access or one necessary detail.
 11. In SDK or API examples, use exact identifiers and call shapes from a current public page or schema. Copy the documented shape for the requested language instead of translating names between TypeScript and Python; if a required detail is not documented, explain the behavior without inventing code.
+12. A product may ship both a Composio Built toolkit (`notion`) and a Provider MCP toolkit (`notion_mcp`) grouped as one App in the catalog. They are separate toolkits with separate connections. Use the slug the user or the code names; when the slug is unspecified, compare auth schemes, connected state, tool lists, and triggers, prefer the toolkit the user can authenticate, and state which one you chose. Never assume the `_mcp` toolkit is newer, larger, or shares a connection with its sibling.
 
 ## Canonical information
 
@@ -72,6 +73,7 @@ When sources disagree, prefer the current API reference and live endpoint behavi
 ```text
 https://docs.composio.dev/llms.txt
 https://docs.composio.dev/docs/<page>.md
+https://docs.composio.dev/docs/apps-and-toolkits.md
 https://docs.composio.dev/toolkits/<toolkit>.md
 ```
 
