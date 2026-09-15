@@ -52,6 +52,28 @@ await composio.triggers.subscribe(
 
 Filter the stream by `triggerId`, `triggerSlug`, `connectedAccountId`, `toolkits`, or `userId`, or pass no filters to receive every trigger event in the project.
 
+Subscription failures (for example a rejected auth request) do not reject the `subscribe()` promise — Pusher reports them asynchronously after it resolves. Pass an optional third callback to react to them programmatically:
+
+```typescript
+await composio.triggers.subscribe(
+  data => {
+    console.log('Event received:', data);
+  },
+  {},
+  error => {
+    console.error('Trigger subscription failed:', error);
+  }
+);
+```
+
+In Python, pass the equivalent `on_subscription_error` keyword:
+
+```python
+subscription = composio.triggers.subscribe(
+    on_subscription_error=lambda error: print("Trigger subscription failed:", error)
+)
+```
+
 ### Forward to your local handler with the CLI (recommended)
 
 The Composio CLI streams realtime events and forwards each one to your local URL, signed exactly like production. No public URL, no tunnel, and it runs your real handler (and [`parse()`](#handling-events)) end to end.
