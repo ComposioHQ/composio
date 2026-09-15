@@ -9,6 +9,7 @@ import {
   resolveDocsProduct,
   serializeDocsProductCookie,
   shouldAnimateDocsProductSwitch,
+  type ProductSidebarItem,
 } from '../../lib/home-navigation';
 import { buildProductPageTree, pageTreeUrls } from '../../lib/product-page-tree';
 import { referenceSource, source } from '../../lib/source';
@@ -41,6 +42,8 @@ describe('Docs product navigation', () => {
     expect(classifyDocsProduct('/docs/consumer-agents')).toBe('platform');
     expect(classifyDocsProduct('/docs/b2b-agents')).toBe('platform');
     expect(classifyDocsProduct('/docs/production-readiness')).toBe('platform');
+    expect(classifyDocsProduct('/docs/tools-and-skills')).toBe('platform');
+    expect(classifyDocsProduct('/docs/operating-in-production')).toBe('platform');
     expect(classifyDocsProduct('/docs')).toBeNull();
     expect(classifyDocsProduct('/docs/using-composio-skill')).toBeNull();
     expect(classifyDocsProduct('/docs/security/overview')).toBeNull();
@@ -119,17 +122,36 @@ describe('Docs product navigation', () => {
     expect(forYouUrls).toContain('/docs/cli');
     expect(forYouUrls).toContain('/docs/composio-connect');
     expect(forYouUrls).not.toContain('/docs/quickstart');
+    expect(DOCS_PRODUCTS['for-you'].sidebar).toEqual([
+      {
+        label: 'Get started',
+        items: [
+          { type: 'page', url: '/docs/agent-plugins' },
+          { type: 'page', url: '/docs/cli' },
+          { type: 'page', url: '/docs/composio-connect', label: 'Connect with MCP' },
+        ],
+      },
+      {
+        label: 'Shared resources',
+        items: [
+          { type: 'page', url: '/docs/using-composio-skill' },
+          { type: 'folder', path: 'security', label: 'Security and data' },
+        ],
+      },
+    ]);
 
     for (const url of [
       '/docs/quickstart',
       '/docs/providers',
       '/docs/how-composio-works',
       '/docs/authentication',
+      '/docs/tools-and-skills',
       '/docs/skills',
       '/docs/triggers',
       '/docs/consumer-agents',
       '/docs/b2b-agents',
       '/docs/production-readiness',
+      '/docs/operating-in-production',
     ]) {
       expect(platformUrls).toContain(url);
     }
@@ -153,27 +175,46 @@ describe('Docs product navigation', () => {
     expect(forYouUrls).not.toContain('/docs');
     expect(platformUrls).not.toContain('/docs');
 
-    for (const sharedUrl of [
-      '/docs/using-composio-skill',
-      '/docs/security/overview',
-    ]) {
-      expect(forYouUrls).toContain(sharedUrl);
-      expect(platformUrls).toContain(sharedUrl);
-    }
+    expect(forYouUrls).toContain('/docs/using-composio-skill');
+    expect(platformUrls).not.toContain('/docs/using-composio-skill');
+    expect(forYouUrls).toContain('/docs/security/overview');
+    expect(platformUrls).toContain('/docs/security/overview');
 
-    const readiness = platformTree.children.flatMap(node =>
-      node.type === 'folder' ? [node, ...node.children] : [node],
-    ).find(node => node.type === 'folder' && node.name === 'Production readiness');
-    expect(readiness?.type).toBe('folder');
-    if (readiness?.type !== 'folder') throw new Error('Production readiness folder missing');
-    const readinessUrls = readiness.children.flatMap(node => node.type === 'page' ? [node.url] : []);
-    expect(readinessUrls).toEqual([
-      '/docs/authentication/custom-app-vs-managed-app',
+    const groups = platformTree.children
+      .filter(node => node.type === 'separator')
+      .map(node => node.name);
+    expect(groups).toEqual([
+      'Start',
+      'Build',
+      'Customize',
+      'Ship',
+      'Operate',
+      'Reference and migration',
+    ]);
+    expect(groups).not.toContain('Guides');
+
+    const start = platformTree.children.slice(1, platformTree.children.indexOf(
+      platformTree.children.find(node => node.type === 'separator' && node.name === 'Build')!,
+    ));
+    expect(start.map(node => node.type === 'page' ? node.url : node.name)).toEqual([
+      '/docs/how-composio-works',
+      '/docs/quickstart',
+      'SDKs and frameworks',
+      'Agent setup',
+    ]);
+
+    const migration = platformTree.children.find(
+      node => node.type === 'folder' && node.name === 'Migration and legacy',
+    );
+    expect(migration?.type).toBe('folder');
+    if (migration?.type !== 'folder') throw new Error('Migration and legacy folder missing');
+    expect(migration.defaultOpen).toBe(false);
+
+    for (const url of [
       '/reference/rate-limits',
       '/docs/security/data-retention',
       '/docs/poc-to-prod/stream-logs-to-a-siem',
-    ]);
-    for (const url of readinessUrls) {
+    ]) {
       expect(platformUrls.filter(candidate => candidate === url)).toHaveLength(1);
       expect(forYouUrls).not.toContain(url);
     }
@@ -186,6 +227,32 @@ describe('Docs product navigation', () => {
       url => !coveredUrls.has(url) && !excludedUrls.has(url),
     );
     expect(omittedUrls).toEqual([]);
+  });
+
+  test('resolves every configured page, folder, and internal link', () => {
+    for (const product of Object.values(DOCS_PRODUCTS)) {
+      expect(() => buildProductPageTree(source.pageTree, product.id)).not.toThrow();
+    }
+
+    const knownUrls = new Set(
+      [source, referenceSource].flatMap(collection =>
+        collection.getPages().map(page => page.url),
+      ),
+    );
+
+    function visit(items: readonly ProductSidebarItem[]): void {
+      for (const item of items) {
+        if (item.type === 'group') {
+          visit(item.items);
+        } else if (item.type === 'link') {
+          expect(knownUrls.has(item.url.split('#')[0]), `unresolved link: ${item.url}`).toBe(true);
+        }
+      }
+    }
+
+    for (const product of Object.values(DOCS_PRODUCTS)) {
+      for (const group of product.sidebar) visit(group.items);
+    }
   });
 
   test('keeps accessibility-critical switcher semantics and visible focus styles', async () => {

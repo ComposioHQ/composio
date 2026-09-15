@@ -1,0 +1,29 @@
+---
+title: Discover tools and skills
+description: Find the right tools at runtime, narrow what an agent can use, and understand the execution guidance returned with search results
+keywords: [tool discovery, tool search, tool filtering, preloading, skills]
+---
+
+Composio sessions let your agent discover tools for a task instead of loading every tool schema into its context. Start with runtime discovery, then restrict or preload tools when your product has a known scope.
+
+## Discover tools at runtime
+
+By default, a session exposes [`COMPOSIO_SEARCH_TOOLS`](/toolkits/meta-tools/search_tools). Your agent describes its task in plain language, and search returns relevant tool schemas for the next step.
+
+Browse the [toolkit catalog](/toolkits) when you want to inspect available apps and actions before writing code. For programmatic catalog access, see [Browsing the catalog](/docs/configuring-sessions#browsing-the-catalog).
+
+## Control which tools are available
+
+Use [session configuration](/docs/configuring-sessions#filtering-and-preloading-tools) to:
+
+- Enable or disable individual tools within a toolkit.
+- Filter tools by behavior tags such as `readOnlyHint` or `destructiveHint`.
+- Preload a small set of known tools so the agent can call them without searching first.
+
+Keep runtime discovery for broad agents whose tasks vary. Preload tools for focused agents with a small, predictable action set.
+
+## Use skills returned by search
+
+Search can return a **skill** with the matching tools: an execution plan, supporting tools, and known pitfalls for the task. Skills require no separate installation or configuration.
+
+Read [Skills](/docs/skills) to understand the response fields and how the guidance reaches your agent.

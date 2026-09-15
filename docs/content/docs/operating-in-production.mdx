@@ -1,0 +1,37 @@
+---
+title: Operate in production
+description: Monitor tool calls, handle failures, recover connections and triggers, and review security and data controls
+keywords: [operations, observability, errors, retries, connection health, triggers, security]
+---
+
+Operating a Composio integration means tracing real tool calls, recovering from provider and connection failures, and keeping security controls aligned with your production architecture.
+
+Use this guide after completing the [production launch checklist](/docs/production-readiness#ready-to-ship).
+
+## Observe tool calls
+
+Use [Logs](/reference/api-reference/logs) to investigate tool inputs, outputs, errors, latency, and the user or connected account involved. Keep the log ID from failed executions so you can correlate application errors with Composio activity.
+
+For centralized monitoring, [stream logs to a SIEM](/docs/poc-to-prod/stream-logs-to-a-siem).
+
+## Handle failures and limits
+
+Treat provider failures according to the operation. Retry only when the action is safe to repeat, preserve the original error and log ID, and avoid retrying authentication or invalid-input failures without changing their cause.
+
+Review [rate limits](/reference/rate-limits) before setting retry and concurrency policies. Use the [Knowledge Base](/kb) when you need toolkit-specific troubleshooting.
+
+## Recover connections
+
+OAuth connections remain active while token refresh succeeds. When a connection becomes `EXPIRED`, ask the customer to reconnect with a new Connect Link. See the [connection lifecycle](/docs/authentication#connection-lifecycle) for status handling and expiration events.
+
+## Operate triggers
+
+Monitor the HTTPS endpoint that receives events, verify webhook signatures, and map every event to the correct environment and user or tenant before acting on it.
+
+- [Manage trigger instances](/docs/setting-up-triggers/managing-triggers) to list, pause, resume, or delete them.
+- [Receive events](/docs/setting-up-triggers/subscribing-to-events) to test and deploy your webhook handler.
+- [Configure custom OAuth webhooks](/docs/setting-up-triggers/custom-oauth-webhooks) when a provider requires ingress setup for your own OAuth app.
+
+## Review security and data controls
+
+Use the [security overview](/docs/security/overview) to review isolation, access control, encryption, and webhook signing. Then confirm [token custody](/docs/security/token-custody) and [data retention](/docs/security/data-retention) match your deployment and customer commitments.
