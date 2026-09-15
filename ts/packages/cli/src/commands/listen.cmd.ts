@@ -552,8 +552,11 @@ export const listenCmd = Command.make(
             }).pipe(
               // An active account for the inferred toolkit skips the lookup in
               // resolveConnectedAccountIdForTrigger, so a mistyped slug with a valid toolkit prefix
-              // only surfaces here.
-              Effect.tapError(() => assertTriggerTypeExists({ client, slug }))
+              // only surfaces here. The lookup's unknown_trigger failure replaces the create_trigger
+              // error; any other outcome re-fails with the original error.
+              Effect.catch(error =>
+                assertTriggerTypeExists({ client, slug }).pipe(Effect.andThen(Effect.fail(error)))
+              )
             ),
         createdTrigger =>
           Effect.gen(function* () {
