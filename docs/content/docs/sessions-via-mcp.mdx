@@ -18,6 +18,8 @@ Want to bring tools from your own remote MCP server into Composio instead? See [
 
 ## The MCP endpoint
 
+If you use a scoped project API key, enable **Session management** to create and configure sessions and **Session tool execution** for session-linked MCP access. See [API key permissions](/reference/authenticating-to-composio/project-api-key-permissions) for access levels and routes.
+
 Opt into MCP by passing `mcp: true` when you create the session. The session then exposes its hosted MCP server. Read the URL and headers off `session.mcp`:
 
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>

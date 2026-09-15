@@ -26,6 +26,15 @@ By default, a session has access to every toolkit in the Composio catalog. Your 
 
 You can also attach local custom tools and custom toolkits that run in-process alongside Composio tools. See [Custom tools and toolkits](/docs/extending-sessions/custom-tools-and-toolkits).
 
+### API key permissions
+
+If you use a [scoped project API key](/reference/authenticating-to-composio/project-api-key-permissions), grant permissions for the session operations your application needs:
+
+- **Session management** controls creating, viewing, configuring, and deleting sessions. It does not grant tool execution access.
+- **Session tool execution** covers search, tool execution, proxy execution, and session-linked MCP access.
+
+Enable both permissions if your application manages sessions and executes tools through them.
+
 ## Enabling toolkits
 
 To limit a session to specific toolkits, pass an array of toolkit slugs. The agent can only discover and use tools from these toolkits.
