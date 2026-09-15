@@ -21,11 +21,11 @@ tools = composio.tools.get(user_id="default", tools=["HACKERNEWS_GET_USER"])
 
 # Get the first response from the LLM.
 response = openai_client.responses.create(
-    model="gpt-5.2",
+    model="gpt-5",
     tools=tools,
     input=task,
 )
-print(response)
+print(response.output_text)
 
 # Execute tool calls until the model returns a final answer.
 while True:
@@ -35,7 +35,7 @@ while True:
 
     results = composio.provider.handle_tool_calls(response=response, user_id="default")
     response = openai_client.responses.create(
-        model="gpt-5.2",
+        model="gpt-5",
         tools=tools,
         previous_response_id=response.id,
         input=[
