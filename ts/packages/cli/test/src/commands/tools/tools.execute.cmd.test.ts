@@ -1174,13 +1174,15 @@ describe('CLI: composio execute', () => {
           logId: string;
           storedInFile: boolean;
           tokenCount: number;
+          sizeBytes: number;
           outputFilePath: string;
         };
 
         expect(output.successful).toBe(true);
         expect(output.storedInFile).toBe(true);
         expect(output.logId).toBe('log_large_output');
-        expect(output.tokenCount).toBeGreaterThan(10_000);
+        expect(output.sizeBytes).toBeGreaterThan(40_000);
+        expect(output.tokenCount).toBe(Math.ceil(output.sizeBytes / 4));
         // Session artifacts fall back to COMPOSIO_CACHE_DIR, which the shared
         // vitest setup pins to a per-test temp directory.
         const cacheDir = yield* Config.string('COMPOSIO_CACHE_DIR').parse(ConfigProvider.fromEnv());
@@ -1189,6 +1191,7 @@ describe('CLI: composio execute', () => {
         expect(fs.existsSync(output.outputFilePath)).toBe(true);
         const storedJson = fs.readFileSync(output.outputFilePath, 'utf8');
         expect(storedJson).toContain('token token token');
+        expect(Buffer.byteLength(storedJson, 'utf8')).toBe(output.sizeBytes);
 
         fs.rmSync(output.outputFilePath.slice(0, output.outputFilePath.lastIndexOf('/')), {
           recursive: true,
@@ -1206,9 +1209,8 @@ describe('CLI: composio execute', () => {
       toolsExecutor: {
         respondWith: {
           data: {
-            // ~18KB that o200k encodes in ~4k tokens: past the byte pre-filter,
-            // under the token threshold.
-            content: 'composio '.repeat(2_000),
+            // ~36KB: under the 40KB threshold once serialized.
+            content: 'composio '.repeat(4_000),
           },
           error: null,
           successful: true,
@@ -1216,75 +1218,23 @@ describe('CLI: composio execute', () => {
         },
       },
     })
-  )(
-    '[Given] a response over 10KB that stays under the token threshold [Then] it prints inline',
-    it => {
-      it.effect('does not store the payload in a file', () =>
-        Effect.gen(function* () {
-          yield* cli(['execute', 'GMAIL_SEND_EMAIL', '-d', '{"recipient":"a"}']);
-          const lines = yield* MockConsole.getLines({ stripAnsi: true });
-          const output = parseLastJson(lines) as unknown as {
-            successful: boolean;
-            storedInFile?: boolean;
-            data: { content: string };
-          };
+  )('[Given] a response under the byte threshold [Then] it prints inline', it => {
+    it.effect('does not store the payload in a file', () =>
+      Effect.gen(function* () {
+        yield* cli(['execute', 'GMAIL_SEND_EMAIL', '-d', '{"recipient":"a"}']);
+        const lines = yield* MockConsole.getLines({ stripAnsi: true });
+        const output = parseLastJson(lines) as unknown as {
+          successful: boolean;
+          storedInFile?: boolean;
+          data: { content: string };
+        };
 
-          expect(output.successful).toBe(true);
-          expect(output.storedInFile).toBeUndefined();
-          expect(output.data.content).toHaveLength(18_000);
-        })
-      );
-    }
-  );
-  layer(
-    TestLive({
-      baseConfigProvider: largeOutputConfigProvider,
-      fixture: 'global-test-user-id',
-      stdin: { isTTY: true, data: '' },
-      toolsExecutor: {
-        respondWith: {
-          data: {
-            // Both of o200k's special tokens, in a payload past the inline
-            // threshold so the token count is actually computed. Reading a file
-            // that documents a tokenizer is enough to hit this in real use.
-            content: `<|endoftext|> <|endofprompt|> ${'token '.repeat(20_000)}`,
-          },
-          error: null,
-          successful: true,
-          logId: 'log_special_tokens',
-        },
-      },
-    })
-  )(
-    '[Given] a response containing tiktoken special-token literals [Then] it still reports the execution',
-    it => {
-      it.effect('counts the literals as special tokens instead of failing the command', () =>
-        Effect.gen(function* () {
-          yield* cli(['execute', 'GMAIL_SEND_EMAIL', '-d', '{"recipient":"a"}']);
-          const lines = yield* MockConsole.getLines({ stripAnsi: true });
-          const output = parseLastJson(lines) as unknown as {
-            successful: boolean;
-            storedInFile: boolean;
-            tokenCount: number;
-            outputFilePath: string;
-          };
-
-          expect(output.successful).toBe(true);
-          expect(output.storedInFile).toBe(true);
-          expect(output.tokenCount).toBeGreaterThan(10_000);
-
-          const storedJson = fs.readFileSync(output.outputFilePath, 'utf8');
-          expect(storedJson).toContain('<|endoftext|>');
-          expect(storedJson).toContain('<|endofprompt|>');
-
-          fs.rmSync(output.outputFilePath.slice(0, output.outputFilePath.lastIndexOf('/')), {
-            recursive: true,
-            force: true,
-          });
-        })
-      );
-    }
-  );
+        expect(output.successful).toBe(true);
+        expect(output.storedInFile).toBeUndefined();
+        expect(output.data.content).toHaveLength(36_000);
+      })
+    );
+  });
 
   layer(
     TestLive({
