@@ -1,5 +1,14 @@
 # @composio/slim
 
+## 0.18.2
+
+### Patch Changes
+
+- 7055914: Move published dependency ranges to their current upstream releases: zod 4.5, openai 7.10, typebox 1.3.27, @mastra/schema-compat 1.3.8, and @cloudflare/workers-types 5.20260905. `@composio/anthropic` also accepts `@anthropic-ai/sdk` 0.124 as a peer, the line it is now tested against.
+- 85996c4: Drop `Authorization`, `Proxy-Authorization`, and `Cookie` from the request headers when the SSRF guard follows a redirect to a different origin, as the Fetch standard does for automatic redirects. Same-origin redirects keep them.
+- Updated dependencies [b4b9fc4]
+  - @composio/json-schema-to-zod@0.3.3
+
 ## 0.18.1
 
 ### Patch Changes
