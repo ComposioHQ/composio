@@ -11,7 +11,7 @@ For scoped Project API keys, creating a session through `composio.sessions.creat
 
 A key can successfully call `GET /api/v3.1/toolkits` with Toolkits read access and still be unable to create a session. The SDK can surface a scoped-permission denial as a generic 401 `Invalid API key`.
 
-Create a new Project API key with Session management set to Read and write, or use an appropriate full-access Project API key, then retry session creation.
+Create a scoped Project API key with Session management set to Write only, then retry session creation.
 
 ## Tool execution requires Tool execution write access
 
