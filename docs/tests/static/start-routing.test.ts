@@ -121,41 +121,41 @@ describe('getting-started routing policy', () => {
 
     for (const guide of AUTH_GUIDES) {
       expect(sectionOf(`/docs/authentication/${guide}`)).toEqual({
-        section: guide === 'custom-app-vs-managed-app' ? '## Guides' : '## Core concepts',
+        section: guide === 'custom-app-vs-managed-app' ? '## Operate' : '## Build',
         nearest: guide === 'custom-app-vs-managed-app' ? '### Production readiness' : '### Authentication',
       });
     }
 
     expect(sectionOf('/docs/authentication')).toEqual({
-      section: '## Core concepts',
+      section: '## Build',
       nearest: '### Authentication',
     });
 
     expect(sectionOf('/docs/extending-sessions/shared-connections')).toEqual({
-      section: '## Guides',
+      section: '## Customize',
       nearest: '### Extend sessions',
     });
 
     // Siblings that follow the Authentication folder in meta.json. These fell
     // under `### Authentication` when folders were emitted in meta.json order.
-    for (const sibling of ['/docs/triggers', '/docs/skills']) {
+    for (const sibling of ['/docs/triggers', '/docs/skills', '/docs/sessions-via-mcp']) {
       expect(sectionOf(sibling)).toEqual({
-        section: '## Core concepts',
-        nearest: '## Core concepts',
+        section: '## Build',
+        nearest: '## Build',
       });
     }
 
-    // Same failure mode, pre-dating this folder: Get Started's pages sit after
+    // Same failure mode, pre-dating this folder: Start's pages sit after
     // the `providers` folder and used to read as SDKs-and-frameworks children.
     for (const sibling of ['/docs/agent-plugins', '/docs/cli', '/docs/composio-connect']) {
       expect(sectionOf(sibling)).toEqual({
-        section: '## Get Started',
-        nearest: '## Get Started',
+        section: '## Start',
+        nearest: '## Start',
       });
     }
 
     expect(sectionOf('/docs/agent-setup')).toEqual({
-      section: '## Get Started',
+      section: '## Start',
       nearest: '### Agent setup',
     });
 

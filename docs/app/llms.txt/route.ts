@@ -18,32 +18,48 @@ Load and follow the official [Composio Agent Skill](https://github.com/ComposioH
 
 If it is unclear whether the goal is to integrate Composio into the application or connect apps to the coding agent itself, clarify that first. Fetch the relevant Markdown pages below for the chosen path. Use the complete index when you need a guide or reference not listed here.
 
-## Choose your path
+## Start
 
 - [Platform or For You](https://docs.composio.dev/docs.md): Choose between building an application and using your own connected apps.
-- [Set up a coding agent](https://docs.composio.dev/docs/agent-setup.md): Install the Composio skill to add Composio to an existing project.
 - [SDK quickstart](https://docs.composio.dev/docs/quickstart.md): Install Python or TypeScript packages, create a session, and run an agent.
+- [SDKs and frameworks](https://docs.composio.dev/docs/providers.md): Choose the provider for your agent framework.
+- [Set up a coding agent](https://docs.composio.dev/docs/agent-setup.md): Install the Composio skill to add Composio to an existing project.
 - [Authenticate an unattended agent](https://docs.composio.dev/docs/agent-setup/unattended-authentication.md): When no human is available, use \`composio login --agent\`, configure a project API key, and verify a live tool call. Human account access still requires authorization.
 - [Native agent plugins](https://docs.composio.dev/docs/agent-plugins.md): Use your own apps from Codex or Claude Code.
 - [Connect an MCP client](https://docs.composio.dev/docs/composio-connect.md): Connect an existing client to your apps over MCP.
 
-## Build an application
+## Build
 
 - [Core concepts](https://docs.composio.dev/docs/how-composio-works.md): Understand users, sessions, toolkits, and tool execution.
 - [Authentication](https://docs.composio.dev/docs/authentication.md): Distinguish auth configs from connected accounts and connect your application's users.
 - [Configure sessions](https://docs.composio.dev/docs/configuring-sessions.md): Select toolkits, auth configs, and connected accounts for a user.
-- [SDKs and frameworks](https://docs.composio.dev/docs/providers.md): Choose the provider for your agent framework.
+- [Discover tools and skills](https://docs.composio.dev/docs/tools-and-skills.md): Find tools at runtime, filter them, and use execution guidance from search.
 - [Sessions via MCP](https://docs.composio.dev/docs/sessions-via-mcp.md): Give an application-created session to an MCP-compatible framework.
+- [Triggers](https://docs.composio.dev/docs/triggers.md): Understand event sources before creating and operating trigger instances.
+
+## Customize
+
+- [Sandboxes](https://docs.composio.dev/docs/sandbox/remote.md): Give a session persistent compute for files, code, and bulk operations.
+- [Custom tools and toolkits](https://docs.composio.dev/docs/extending-sessions/custom-tools-and-toolkits.md): Add application tools to a session.
+- [Proxy execute](https://docs.composio.dev/docs/extending-sessions/proxy-execute.md): Call authenticated toolkit APIs that are not covered by predefined tools.
 - [Single-toolkit MCP](https://docs.composio.dev/docs/single-toolkit-mcp.md): Build an MCP server scoped to one toolkit.
+
+## Ship
+
+- [Move from prototype to production](https://docs.composio.dev/docs/production-readiness.md): Finalize identity, tenancy, authentication, environment, tool scope, and launch tests.
+- [Design a consumer agent](https://docs.composio.dev/docs/consumer-agents.md): Structure users, sessions, and connections for individual customers.
+- [Design a B2B agent](https://docs.composio.dev/docs/b2b-agents.md): Choose member-owned or workspace-owned connections and enforce tenant boundaries.
+
+## Operate
+
+- [Operate in production](https://docs.composio.dev/docs/operating-in-production.md): Monitor calls, recover connections and triggers, and review security controls.
 - [Troubleshooting](https://docs.composio.dev/kb.md): Diagnose authentication, connection, and execution failures.
 - [Production rate limits](https://docs.composio.dev/reference/rate-limits.md): Plan for request limits before deployment.
 
-## API Reference (v3.1, current)
+## Reference and migration
 
 - [Current REST API](https://docs.composio.dev/reference.md): Use the current base URL and browse endpoint groups.
-
-## API Reference (v3.0, legacy)
-
+- [Migration guides](https://docs.composio.dev/docs/migration-guide.md): Move older SDK, direct execution, MCP, and tool-router integrations to current patterns.
 - [Legacy REST API](https://docs.composio.dev/reference/v3.md): Maintain existing v3.0 integrations. Use v3.1 for new code.
 
 ## Optional

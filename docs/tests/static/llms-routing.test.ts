@@ -1,5 +1,6 @@
 import { expect, test } from 'bun:test';
 import { GET } from '../../app/llms.txt/route';
+import { GET as getIndex } from '../../app/llms-index.txt/route';
 import { source, referenceSource, examplesSource, knowledgeBaseSource } from '../../lib/source';
 
 test('routing map is bounded and covers the current developer decisions', async () => {
@@ -7,7 +8,8 @@ test('routing map is bounded and covers the current developer decisions', async 
   expect(text.length).toBeLessThan(6000);
   const primary = text.split('## Optional')[0];
   for (const path of ['docs', 'docs/agent-setup', 'docs/quickstart', 'docs/agent-plugins',
-    'docs/authentication', 'docs/configuring-sessions', 'kb']) {
+    'docs/authentication', 'docs/configuring-sessions', 'docs/production-readiness',
+    'docs/operating-in-production', 'kb']) {
     expect(primary).toContain(`https://docs.composio.dev/${path}.md`);
   }
   expect(text).toContain('[Complete documentation index](https://docs.composio.dev/llms-index.txt)');
@@ -19,4 +21,22 @@ test('routing map is bounded and covers the current developer decisions', async 
   for (const match of text.matchAll(/\]\(https:\/\/docs\.composio\.dev([^)]*)\.md\)/g)) {
     expect(pages.has(match[1]), `unresolved route: ${match[1]}`).toBe(true);
   }
+});
+
+test('agent-readable navigation uses the Platform lifecycle order', async () => {
+  const text = await (await getIndex()).text();
+  const headings = [
+    '## Start',
+    '## Build',
+    '## Customize',
+    '## Ship',
+    '## Operate',
+    '## Reference and migration',
+  ];
+
+  expect(headings.map(heading => text.indexOf(heading))).toEqual(
+    [...headings.map(heading => text.indexOf(heading))].sort((a, b) => a - b),
+  );
+  for (const heading of headings) expect(text).toContain(heading);
+  expect(text).not.toContain('## Guides');
 });
