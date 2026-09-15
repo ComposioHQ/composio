@@ -118,6 +118,10 @@
       "description": "Dashboard playground chat"
     },
     {
+      "name": "Arena",
+      "description": "Arena conversations, messages and terms"
+    },
+    {
       "name": "Organization Management"
     },
     {
@@ -3342,6 +3346,9 @@
                                   "base_url": {
                                     "type": "string"
                                   },
+                                  "displayName": {
+                                    "type": "string"
+                                  },
                                   "status": {
                                     "type": "string",
                                     "enum": [
@@ -3640,6 +3647,9 @@
                               "base_url": {
                                 "type": "string"
                               },
+                              "displayName": {
+                                "type": "string"
+                              },
                               "status": {
                                 "type": "string",
                                 "enum": [
@@ -3891,6 +3901,9 @@
                               "type": "string"
                             },
                             "base_url": {
+                              "type": "string"
+                            },
+                            "displayName": {
                               "type": "string"
                             },
                             "status": {
@@ -4393,6 +4406,9 @@
                               "type": "string"
                             },
                             "base_url": {
+                              "type": "string"
+                            },
+                            "displayName": {
                               "type": "string"
                             },
                             "status": {
@@ -5266,6 +5282,9 @@
                         "type": "string"
                       },
                       "base_url": {
+                        "type": "string"
+                      },
+                      "displayName": {
                         "type": "string"
                       },
                       "oauth_token": {
@@ -10924,6 +10943,9 @@
                           "base_url": {
                             "type": "string"
                           },
+                          "displayName": {
+                            "type": "string"
+                          },
                           "state_prefix": {
                             "type": "string",
                             "maxLength": 40,
@@ -11674,6 +11696,9 @@
                             "type": "string"
                           },
                           "base_url": {
+                            "type": "string"
+                          },
+                          "displayName": {
                             "type": "string"
                           },
                           "state_prefix": {
@@ -16928,6 +16953,11 @@
                         "description": "Set to false to disable the workbench entirely. When disabled, no code execution tools are available in the session.",
                         "example": true
                       },
+                      "enable_tool_execution": {
+                        "type": "boolean",
+                        "default": true,
+                        "description": "Whether Composio tool execution is enabled inside the workbench. Defaults to true. When false, run_composio_tool, invoke_llm, and web_search are unavailable; Python analysis and file helpers remain available. Proxy execution defaults to true and still permits authenticated connected-app HTTP requests. Set enable_proxy_execution to false as well to block both Composio tool and proxy access through Workbench credentials. These flags do not restrict network access or independently supplied credentials."
+                      },
                       "enable_proxy_execution": {
                         "type": "boolean",
                         "default": true,
@@ -17697,6 +17727,10 @@
                               "type": "boolean",
                               "description": "Whether the workbench (code execution sandbox) is enabled. When false, COMPOSIO_REMOTE_WORKBENCH and COMPOSIO_REMOTE_BASH_TOOL are not exposed."
                             },
+                            "tool_execution_enabled": {
+                              "type": "boolean",
+                              "description": "Whether tool execution is enabled in the workbench"
+                            },
                             "proxy_execution_enabled": {
                               "type": "boolean",
                               "description": "Whether proxy execution is enabled in the workbench"
@@ -18180,6 +18214,16 @@
               }
             }
           },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
           "413": {
             "description": "Payload too large",
             "content": {
@@ -18361,6 +18405,16 @@
           },
           "404": {
             "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
             "content": {
               "application/json": {
                 "schema": {
@@ -18695,6 +18749,10 @@
                             "enable": {
                               "type": "boolean",
                               "description": "Whether the workbench (code execution sandbox) is enabled. When false, COMPOSIO_REMOTE_WORKBENCH and COMPOSIO_REMOTE_BASH_TOOL are not exposed."
+                            },
+                            "tool_execution_enabled": {
+                              "type": "boolean",
+                              "description": "Whether tool execution is enabled in the workbench"
                             },
                             "proxy_execution_enabled": {
                               "type": "boolean",
@@ -19326,6 +19384,10 @@
                         "description": "Set to false to disable the workbench entirely. When disabled, no code execution tools are available in the session.",
                         "example": true
                       },
+                      "enable_tool_execution": {
+                        "type": "boolean",
+                        "description": "Whether Composio tool execution is enabled inside the workbench. Defaults to true. When false, run_composio_tool, invoke_llm, and web_search are unavailable; Python analysis and file helpers remain available. Proxy execution defaults to true and still permits authenticated connected-app HTTP requests. Set enable_proxy_execution to false as well to block both Composio tool and proxy access through Workbench credentials. These flags do not restrict network access or independently supplied credentials. Changing this flag recreates the sandbox: notebook state and local files are lost, but /mnt/files/ persists. Tool descriptions and search guidance reflect the updated flag, but assistive_prompt is returned only at session creation and is not regenerated by PATCH; callers must update any previously retained prompt guidance."
+                      },
                       "enable_proxy_execution": {
                         "type": "boolean",
                         "description": "Whether proxy execution is enabled. When enabled, workbench can call URLs and APIs directly.",
@@ -19720,6 +19782,10 @@
                             "enable": {
                               "type": "boolean",
                               "description": "Whether the workbench (code execution sandbox) is enabled. When false, COMPOSIO_REMOTE_WORKBENCH and COMPOSIO_REMOTE_BASH_TOOL are not exposed."
+                            },
+                            "tool_execution_enabled": {
+                              "type": "boolean",
+                              "description": "Whether tool execution is enabled in the workbench"
                             },
                             "proxy_execution_enabled": {
                               "type": "boolean",
@@ -20545,6 +20611,9 @@
                           "base_url": {
                             "type": "string"
                           },
+                          "displayName": {
+                            "type": "string"
+                          },
                           "state_prefix": {
                             "type": "string",
                             "maxLength": 40,
@@ -20810,6 +20879,16 @@
           },
           "404": {
             "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
             "content": {
               "application/json": {
                 "schema": {
@@ -21103,6 +21182,16 @@
           },
           "404": {
             "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
             "content": {
               "application/json": {
                 "schema": {
@@ -21646,6 +21735,16 @@
           },
           "404": {
             "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
             "content": {
               "application/json": {
                 "schema": {
