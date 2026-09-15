@@ -173,7 +173,7 @@ await composio.tools.execute(
 );
 ```
 
-See [Auto upload and download](./advanced/auto-upload-download.md#security-sensitive-local-paths) for the security model and error types.
+See [Auto upload and download](../advanced/auto-upload-download.md#security-sensitive-local-paths) for the security model and error types.
 
 ### Restricting automatic uploads to specific directories
 
