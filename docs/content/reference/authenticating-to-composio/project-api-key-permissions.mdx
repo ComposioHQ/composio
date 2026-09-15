@@ -23,7 +23,7 @@ Create a scoped key from the dashboard:
 
 <Steps>
 <Step>
-Go to the [Composio Dashboard](https://dashboard.composio.dev).
+Go to the [Composio Dashboard](https://dashboard.composio.dev?utm_source=docs&utm_medium=content&utm_campaign=project-api-key-permissions).
 </Step>
 <Step>
 Select **Platform**.
@@ -53,161 +53,140 @@ Click **Create API Key**, then choose the permission areas and access levels bel
 
 Some read routes use `POST` because the request body carries filters or lookup input. The access level is based on what the route does, not only the HTTP method.
 
-The session, MCP, and proxy tables list both v3 and v3.1 routes explicitly. Elsewhere, equivalent routes may be represented by one version. Version-specific routes are listed separately, and MCP transport routes use their public paths.
+The REST tables show paths relative to the API base URL, with each operation listed once. Use the [API reference](/reference) for the full request URL and endpoint availability. MCP transports use the URL returned when you create a session or MCP server.
 
 ## Permission areas
 
-Jump to each permission area to see the routes it covers.
+For a session-based integration, grant **Session management** to create and configure sessions, and **Session tool execution** to search and execute tools. Write only is enough to create sessions. Choose Read and write if you also need to retrieve them.
 
-| Permission area          | Available levels                                 | Routes                                  |
-| ------------------------ | ------------------------------------------------ | --------------------------------------- |
-| Auth configs             | No access, Read only, Write only, Read and write | [View routes](#auth-configs)            |
-| Connected accounts       | No access, Read only, Write only, Read and write | [View routes](#connected-accounts)      |
-| Tools                    | No access, Read only                             | [View routes](#tools)                   |
-| Tool execution (Legacy)  | No access, Write only                            | [View routes](#tool-execution-legacy)   |
-| Session management       | No access, Read only, Write only, Read and write | [View routes](#session-management)      |
-| Session tool execution   | No access, Write only                            | [View routes](#session-tool-execution)  |
-| MCP (Legacy)             | No access, Read only, Write only, Read and write | [View routes](#mcp-legacy)              |
-| Proxy execute (Legacy)   | No access, Write only                            | [View routes](#proxy-execute-legacy)    |
-| Toolkits                 | No access, Read only, Write only, Read and write | [View routes](#toolkits)                |
-| Triggers                 | No access, Read only, Write only, Read and write | [View routes](#triggers)                |
-| Webhooks                 | No access, Read only, Write only, Read and write | [View routes](#webhooks)                |
-| Observability            | No access, Read only                             | [View routes](#observability)           |
-| Sessions (legacy)        | Existing keys only                               | [View routes](#sessions-legacy)         |
+Jump to each permission area to see the routes it covers. The dashboard labels **Tool execution (Legacy)** and **Proxy execute (Legacy)** still use the permission identifiers `tool_execution` and `proxy_execute`.
+
+| Permission area         | Available levels                                 | Routes                                 |
+| ----------------------- | ------------------------------------------------ | -------------------------------------- |
+| Auth configs            | No access, Read only, Write only, Read and write | [View routes](#auth-configs)           |
+| Connected accounts      | No access, Read only, Write only, Read and write | [View routes](#connected-accounts)     |
+| Tools                   | No access, Read only                             | [View routes](#tools)                  |
+| Tool execution (Legacy) | No access, Write only                            | [View routes](#tool-execution-legacy)  |
+| Session management      | No access, Read only, Write only, Read and write | [View routes](#session-management)     |
+| Session tool execution  | No access, Write only                            | [View routes](#session-tool-execution) |
+| MCP (Legacy)            | No access, Read only, Write only, Read and write | [View routes](#mcp-legacy)             |
+| Proxy execute (Legacy)  | No access, Write only                            | [View routes](#proxy-execute-legacy)   |
+| Toolkits                | No access, Read only, Write only, Read and write | [View routes](#toolkits)               |
+| Triggers                | No access, Read only, Write only, Read and write | [View routes](#triggers)               |
+| Webhooks                | No access, Read only, Write only, Read and write | [View routes](#webhooks)               |
+| Observability           | No access, Read only                             | [View routes](#observability)          |
+| Sessions (legacy)       | Existing keys only                               | [View routes](#sessions-legacy)        |
 
 ## Auth configs
 
 View and modify auth configs.
 
-| Access | Method   | Endpoint                                 |
-| ------ | -------- | ---------------------------------------- |
-| Read   | `GET`    | `/api/v3/auth_configs`                   |
-| Read   | `GET`    | `/api/v3/auth_configs/{nanoid}`          |
-| Write  | `POST`   | `/api/v3/auth_configs`                   |
-| Write  | `PATCH`  | `/api/v3/auth_configs/{nanoid}`          |
-| Write  | `DELETE` | `/api/v3/auth_configs/{nanoid}`          |
-| Write  | `PATCH`  | `/api/v3/auth_configs/{nanoid}/{status}` |
+| Access | Method   | Route                             |
+| ------ | -------- | --------------------------------- |
+| Read   | `GET`    | `/auth_configs`                   |
+| Read   | `GET`    | `/auth_configs/{nanoid}`          |
+| Write  | `POST`   | `/auth_configs`                   |
+| Write  | `PATCH`  | `/auth_configs/{nanoid}`          |
+| Write  | `DELETE` | `/auth_configs/{nanoid}`          |
+| Write  | `PATCH`  | `/auth_configs/{nanoid}/{status}` |
 
 ## Connected accounts
 
 View and manage connected accounts.
 
-| Access | Method   | Endpoint                                       |
-| ------ | -------- | ---------------------------------------------- |
-| Read   | `GET`    | `/api/v3/connected_accounts`                   |
-| Read   | `GET`    | `/api/v3/connected_accounts/{nanoid}`          |
-| Write  | `POST`   | `/api/v3/connected_accounts`                   |
-| Write  | `POST`   | `/api/v3/connected_accounts/link`              |
-| Write  | `PATCH`  | `/api/v3/connected_accounts/{nanoid}`          |
-| Write  | `PATCH`  | `/api/v3/connected_accounts/{nanoid}/status`   |
-| Write  | `POST`   | `/api/v3/connected_accounts/{nanoid}/refresh`  |
-| Write  | `DELETE` | `/api/v3/connected_accounts/{nanoid}`          |
-| Write  | `POST`   | `/api/v3.1/connected_accounts/{nanoid}/revoke` |
+| Access | Method   | Route                                  |
+| ------ | -------- | -------------------------------------- |
+| Read   | `GET`    | `/connected_accounts`                  |
+| Read   | `GET`    | `/connected_accounts/{nanoid}`         |
+| Write  | `POST`   | `/connected_accounts`                  |
+| Write  | `POST`   | `/connected_accounts/link`             |
+| Write  | `PATCH`  | `/connected_accounts/{nanoid}`         |
+| Write  | `PATCH`  | `/connected_accounts/{nanoid}/status`  |
+| Write  | `POST`   | `/connected_accounts/{nanoid}/refresh` |
+| Write  | `DELETE` | `/connected_accounts/{nanoid}`         |
+| Write  | `POST`   | `/connected_accounts/{nanoid}/revoke`  |
 
 ## Tools
 
 View tool definitions, inputs, scopes, and versions.
 
-| Access | Method | Endpoint                                       |
-| ------ | ------ | ---------------------------------------------- |
-| Read   | `GET`  | `/api/v3.1/tools`                              |
-| Read   | `GET`  | `/api/v3.1/tools/enum`                         |
-| Read   | `GET`  | `/api/v3.1/tools/{tool_slug}`                  |
-| Read   | `GET`  | `/api/v3/tools/{tool_slug}/get_latest_version` |
-| Read   | `GET`  | `/api/v3.1/tools/scopes/required`              |
-| Read   | `GET`  | `/api/v3.1/tools/get_scopes_required`          |
-| Read   | `POST` | `/api/v3.1/tools/execute/{tool_slug}/input`    |
+| Access | Method | Route                                   |
+| ------ | ------ | --------------------------------------- |
+| Read   | `GET`  | `/tools`                                |
+| Read   | `GET`  | `/tools/enum`                           |
+| Read   | `GET`  | `/tools/{tool_slug}`                    |
+| Read   | `GET`  | `/tools/{tool_slug}/get_latest_version` |
+| Read   | `GET`  | `/tools/scopes/required`                |
+| Read   | `GET`  | `/tools/get_scopes_required`            |
+| Read   | `POST` | `/tools/execute/{tool_slug}/input`      |
 
 ## Tool execution (Legacy)
 
 Execute tools through the legacy direct execution API.
 
-| Access | Method | Endpoint                              |
-| ------ | ------ | ------------------------------------- |
-| Write  | `POST` | `/api/v3/tools/execute/{tool_slug}`   |
-| Write  | `POST` | `/api/v3.1/tools/execute/{tool_slug}` |
-| Write  | `POST` | `/api/v3/files/upload/request`        |
-| Write  | `POST` | `/api/v3/files/upload/response`       |
-| Write  | `GET`  | `/api/v3/files/list`                  |
+| Access | Method | Route                        |
+| ------ | ------ | ---------------------------- |
+| Write  | `POST` | `/tools/execute/{tool_slug}` |
+| Write  | `POST` | `/files/upload/request`      |
+| Write  | `POST` | `/files/upload/response`     |
+| Write  | `GET`  | `/files/list`                |
 
 ## Session management
 
 Create, view, configure, and delete sessions. This permission does not allow tool execution.
 
-| Access | Method   | Endpoint                                                                  |
-| ------ | -------- | ------------------------------------------------------------------------- |
-| Read   | `GET`    | `/api/v3/tool_router/session/{session_id}`                                |
-| Read   | `GET`    | `/api/v3/tool_router/session/{session_id}/toolkits`                       |
-| Read   | `GET`    | `/api/v3/tool_router/session/{session_id}/tools`                          |
-| Read   | `GET`    | `/api/v3/tool_router/session/{session_id}/mounts/{mount_id}/items`        |
-| Read   | `GET`    | `/api/v3.1/tool_router/session/{session_id}`                              |
-| Read   | `GET`    | `/api/v3.1/tool_router/session/{session_id}/toolkits`                     |
-| Read   | `GET`    | `/api/v3.1/tool_router/session/{session_id}/config_history`               |
-| Read   | `GET`    | `/api/v3.1/tool_router/session/{session_id}/tools`                        |
-| Read   | `GET`    | `/api/v3.1/tool_router/session/{session_id}/mounts/{mount_id}/items`      |
-| Write  | `POST`   | `/api/v3/tool_router/session`                                             |
-| Write  | `POST`   | `/api/v3/tool_router/session/{session_id}/link`                           |
-| Write  | `PATCH`  | `/api/v3/tool_router/session/{session_id}`                                |
-| Write  | `POST`   | `/api/v3/tool_router/session/{session_id}/mounts/{mount_id}/upload_url`   |
-| Write  | `POST`   | `/api/v3/tool_router/session/{session_id}/mounts/{mount_id}/download_url` |
-| Write  | `POST`   | `/api/v3/tool_router/session/{session_id}/mounts/{mount_id}/delete`       |
-| Write  | `POST`   | `/api/v3.1/tool_router/session`                                           |
-| Write  | `POST`   | `/api/v3.1/tool_router/session/{session_id}/attach`                       |
-| Write  | `POST`   | `/api/v3.1/tool_router/session/{session_id}/link`                         |
-| Write  | `PATCH`  | `/api/v3.1/tool_router/session/{session_id}`                              |
-| Write  | `DELETE` | `/api/v3.1/tool_router/session/{session_id}`                              |
-| Write  | `POST`   | `/api/v3.1/tool_router/session/{session_id}/mounts/{mount_id}/upload_url` |
-| Write  | `POST`   | `/api/v3.1/tool_router/session/{session_id}/mounts/{mount_id}/download_url` |
-| Write  | `POST`   | `/api/v3.1/tool_router/session/{session_id}/mounts/{mount_id}/delete`     |
+The Session config read routes below are experimental and require Session configs to be enabled for your project. Existing `sessions` grants do not cover these routes.
+
+| Access | Method   | Route                                                              |
+| ------ | -------- | ------------------------------------------------------------------ |
+| Read   | `GET`    | `/session_configs`                                                 |
+| Read   | `GET`    | `/session_configs/{session_config_id}`                             |
+| Read   | `GET`    | `/tool_router/session/{session_id}`                                |
+| Read   | `GET`    | `/tool_router/session/{session_id}/toolkits`                       |
+| Read   | `GET`    | `/tool_router/session/{session_id}/tools`                          |
+| Read   | `GET`    | `/tool_router/session/{session_id}/mounts/{mount_id}/items`        |
+| Read   | `GET`    | `/tool_router/session/{session_id}/config_history`                 |
+| Write  | `POST`   | `/tool_router/session`                                             |
+| Write  | `POST`   | `/tool_router/session/{session_id}/link`                           |
+| Write  | `PATCH`  | `/tool_router/session/{session_id}`                                |
+| Write  | `POST`   | `/tool_router/session/{session_id}/mounts/{mount_id}/upload_url`   |
+| Write  | `POST`   | `/tool_router/session/{session_id}/mounts/{mount_id}/download_url` |
+| Write  | `POST`   | `/tool_router/session/{session_id}/mounts/{mount_id}/delete`       |
+| Write  | `POST`   | `/tool_router/session/{session_id}/attach`                         |
+| Write  | `DELETE` | `/tool_router/session/{session_id}`                                |
 
 ## Session tool execution
 
 Search and execute tools through sessions and session-linked MCP servers. This includes session proxy execution, so it grants every execution capability exposed through a session.
 
-| Access | Method | Endpoint                                                       |
-| ------ | ------ | -------------------------------------------------------------- |
-| Write  | `POST` | `/api/v3/tool_router/session/{session_id}/execute`              |
-| Write  | `POST` | `/api/v3/tool_router/session/{session_id}/execute_meta`         |
-| Write  | `POST` | `/api/v3/tool_router/session/{session_id}/search`               |
-| Write  | `POST` | `/api/v3/tool_router/session/{session_id}/proxy_execute`        |
-| Write  | `POST` | `/api/v3.1/tool_router/session/{session_id}/execute`            |
-| Write  | `POST` | `/api/v3.1/tool_router/session/{session_id}/execute_meta`       |
-| Write  | `POST` | `/api/v3.1/tool_router/session/{session_id}/search`             |
-| Write  | `POST` | `/api/v3.1/tool_router/session/{session_id}/proxy_execute`      |
-| Write  | `POST` | `/tool_router/{session_id}/mcp`                                 |
+| Access | Method | Route                                             |
+| ------ | ------ | ------------------------------------------------- |
+| Write  | `POST` | `/tool_router/session/{session_id}/execute`       |
+| Write  | `POST` | `/tool_router/session/{session_id}/execute_meta`  |
+| Write  | `POST` | `/tool_router/session/{session_id}/search`        |
+| Write  | `POST` | `/tool_router/session/{session_id}/proxy_execute` |
+
+For [session-linked MCP access](/docs/sessions-via-mcp), use `session.mcp.url` and `session.mcp.headers` unchanged. `POST` requests require Session tool execution with Write only access. The transport does not support `GET` (SSE) or `DELETE`; granting additional permissions does not enable those methods.
 
 ## MCP (Legacy)
 
 Create, manage, and connect to MCP servers. Transport access grants every capability exposed by the configured MCP server.
 
-| Access | Method   | Endpoint                                                            |
-| ------ | -------- | ------------------------------------------------------------------- |
-| Read   | `GET`    | `/api/v3/mcp/servers`                                               |
-| Read   | `GET`    | `/api/v3.1/mcp/servers`                                             |
-| Read   | `GET`    | `/api/v3/mcp/{id}`                                                  |
-| Read   | `GET`    | `/api/v3.1/mcp/{id}`                                                |
-| Read   | `GET`    | `/api/v3/mcp/app/{app_key}`                                         |
-| Read   | `GET`    | `/api/v3.1/mcp/app/{app_key}`                                       |
-| Read   | `GET`    | `/api/v3/mcp/servers/{server_id}/instances`                         |
-| Read   | `GET`    | `/api/v3.1/mcp/servers/{server_id}/instances`                       |
-| Write  | `POST`   | `/api/v3/mcp/servers`                                               |
-| Write  | `POST`   | `/api/v3.1/mcp/servers`                                             |
-| Write  | `POST`   | `/api/v3/mcp/servers/generate`                                      |
-| Write  | `POST`   | `/api/v3.1/mcp/servers/generate`                                    |
-| Write  | `POST`   | `/api/v3/mcp/servers/custom`                                        |
-| Write  | `POST`   | `/api/v3.1/mcp/servers/custom`                                      |
-| Write  | `PATCH`  | `/api/v3/mcp/{id}`                                                  |
-| Write  | `PATCH`  | `/api/v3.1/mcp/{id}`                                                |
-| Write  | `DELETE` | `/api/v3/mcp/{id}`                                                  |
-| Write  | `DELETE` | `/api/v3.1/mcp/{id}`                                                |
-| Write  | `POST`   | `/api/v3/mcp/servers/{server_id}/instances`                         |
-| Write  | `POST`   | `/api/v3.1/mcp/servers/{server_id}/instances`                       |
-| Write  | `DELETE` | `/api/v3/mcp/servers/{server_id}/instances/{instance_id}`           |
-| Write  | `DELETE` | `/api/v3.1/mcp/servers/{server_id}/instances/{instance_id}`         |
-| Write  | `POST`   | `/v3/mcp/{server_id}/{transport}`                                   |
-| Write  | `POST`   | `/v3.1/mcp/{server_id}/{transport}`                                 |
-| Write  | `DELETE` | `/v3/mcp/{server_id}/{transport}`                                   |
-| Write  | `DELETE` | `/v3.1/mcp/{server_id}/{transport}`                                 |
+| Access | Method   | Route                                              |
+| ------ | -------- | -------------------------------------------------- |
+| Read   | `GET`    | `/mcp/servers`                                     |
+| Read   | `GET`    | `/mcp/{id}`                                        |
+| Read   | `GET`    | `/mcp/app/{app_key}`                               |
+| Read   | `GET`    | `/mcp/servers/{server_id}/instances`               |
+| Write  | `POST`   | `/mcp/servers`                                     |
+| Write  | `POST`   | `/mcp/servers/generate`                            |
+| Write  | `POST`   | `/mcp/servers/custom`                              |
+| Write  | `PATCH`  | `/mcp/{id}`                                        |
+| Write  | `DELETE` | `/mcp/{id}`                                        |
+| Write  | `POST`   | `/mcp/servers/{server_id}/instances`               |
+| Write  | `DELETE` | `/mcp/servers/{server_id}/instances/{instance_id}` |
+
+For MCP transport access, use the returned MCP server URL unchanged. `POST` and `DELETE` requests require MCP (Legacy) with Write only or Read and write access.
 
 ## Proxy execute (Legacy)
 
@@ -215,78 +194,78 @@ Execute raw proxy requests against connected accounts through direct and session
 
 Proxy execute is separate from tool execution. Session proxy routes accept either Session tool execution or Proxy execute (Legacy). Use Session tool execution for new session-based integrations; existing Proxy execute keys retain their access.
 
-| Access | Method | Endpoint                                                          |
-| ------ | ------ | ----------------------------------------------------------------- |
-| Write  | `POST` | `/api/v3/tools/execute/proxy`                                     |
-| Write  | `POST` | `/api/v3.1/tools/execute/proxy`                                   |
-| Write  | `POST` | `/api/v3/tool_router/session/{session_id}/proxy_execute`          |
-| Write  | `POST` | `/api/v3.1/tool_router/session/{session_id}/proxy_execute`        |
+| Access | Method | Route                                             |
+| ------ | ------ | ------------------------------------------------- |
+| Write  | `POST` | `/tools/execute/proxy`                            |
+| Write  | `POST` | `/tool_router/session/{session_id}/proxy_execute` |
 
 ## Toolkits
 
 View and install toolkits.
 
-| Access | Method | Endpoint                      |
-| ------ | ------ | ----------------------------- |
-| Read   | `GET`  | `/api/v3/toolkits`            |
-| Read   | `GET`  | `/api/v3/toolkits/{slug}`     |
-| Read   | `GET`  | `/api/v3/toolkits/categories` |
-| Read   | `GET`  | `/api/v3/toolkits/changelog`  |
-| Write  | `POST` | `/api/v3/toolkits/multi`      |
+| Access | Method | Route                                           |
+| ------ | ------ | ----------------------------------------------- |
+| Read   | `GET`  | `/toolkits`                                     |
+| Read   | `GET`  | `/toolkits/{slug}`                              |
+| Read   | `GET`  | `/toolkits/categories`                          |
+| Read   | `GET`  | `/toolkits/changelog`                           |
+| Read   | `POST` | `/toolkits/{toolkit_slug}/scopes/recommended`   |
+| Read   | `GET`  | `/toolkits/{toolkit_slug}/scopes/grant_context` |
+| Write  | `POST` | `/toolkits/multi`                               |
 
 ## Triggers
 
 View trigger types, manage trigger instances, and subscribe to trigger events. The realtime routes are called by the SDK (`triggers.subscribe()`) and the CLI to receive trigger events.
 
-| Access | Method   | Endpoint                                       |
-| ------ | -------- | ---------------------------------------------- |
-| Read   | `GET`    | `/api/v3/triggers_types`                       |
-| Read   | `GET`    | `/api/v3/triggers_types/{slug}`                |
-| Read   | `GET`    | `/api/v3/triggers_types/list/enum`             |
-| Read   | `GET`    | `/api/v3/trigger_instances/active`             |
-| Read   | `GET`    | `/api/v3/cli/realtime/credentials`             |
-| Read   | `POST`   | `/api/v3/cli/realtime/auth`                    |
-| Read   | `GET`    | `/api/v3/internal/sdk/realtime/credentials`    |
-| Read   | `POST`   | `/api/v3/internal/sdk/realtime/auth`           |
-| Write  | `POST`   | `/api/v3/trigger_instances/{slug}/upsert`      |
-| Write  | `PATCH`  | `/api/v3/trigger_instances/manage/{triggerId}` |
-| Write  | `DELETE` | `/api/v3/trigger_instances/manage/{triggerId}` |
+| Access | Method   | Route                                   |
+| ------ | -------- | --------------------------------------- |
+| Read   | `GET`    | `/triggers_types`                       |
+| Read   | `GET`    | `/triggers_types/{slug}`                |
+| Read   | `GET`    | `/triggers_types/list/enum`             |
+| Read   | `GET`    | `/trigger_instances/active`             |
+| Read   | `GET`    | `/cli/realtime/credentials`             |
+| Read   | `POST`   | `/cli/realtime/auth`                    |
+| Read   | `GET`    | `/internal/sdk/realtime/credentials`    |
+| Read   | `POST`   | `/internal/sdk/realtime/auth`           |
+| Write  | `POST`   | `/trigger_instances/{slug}/upsert`      |
+| Write  | `PATCH`  | `/trigger_instances/manage/{triggerId}` |
+| Write  | `DELETE` | `/trigger_instances/manage/{triggerId}` |
 
 ## Webhooks
 
 View and manage webhook endpoints and subscriptions.
 
-| Access | Method   | Endpoint                                           |
-| ------ | -------- | -------------------------------------------------- |
-| Read   | `GET`    | `/api/v3/webhook_endpoints`                        |
-| Read   | `GET`    | `/api/v3/webhook_endpoints/{nano_id}`              |
-| Read   | `GET`    | `/api/v3/webhook_endpoints/schema`                 |
-| Read   | `GET`    | `/api/v3/webhook_subscriptions`                    |
-| Read   | `GET`    | `/api/v3/webhook_subscriptions/{id}`               |
-| Read   | `GET`    | `/api/v3/webhook_subscriptions/event_types`        |
-| Write  | `POST`   | `/api/v3/webhook_endpoints`                        |
-| Write  | `POST`   | `/api/v3/webhook_endpoints/{nano_id}`              |
-| Write  | `PATCH`  | `/api/v3/webhook_endpoints/{nano_id}`              |
-| Write  | `DELETE` | `/api/v3/webhook_endpoints/{nano_id}`              |
-| Write  | `POST`   | `/api/v3/webhook_subscriptions`                    |
-| Write  | `PATCH`  | `/api/v3/webhook_subscriptions/{id}`               |
-| Write  | `DELETE` | `/api/v3/webhook_subscriptions/{id}`               |
-| Write  | `POST`   | `/api/v3/webhook_subscriptions/{id}/rotate_secret` |
+| Access | Method   | Route                                       |
+| ------ | -------- | ------------------------------------------- |
+| Read   | `GET`    | `/webhook_endpoints`                        |
+| Read   | `GET`    | `/webhook_endpoints/{nano_id}`              |
+| Read   | `GET`    | `/webhook_endpoints/schema`                 |
+| Read   | `GET`    | `/webhook_subscriptions`                    |
+| Read   | `GET`    | `/webhook_subscriptions/{id}`               |
+| Read   | `GET`    | `/webhook_subscriptions/event_types`        |
+| Write  | `POST`   | `/webhook_endpoints`                        |
+| Write  | `POST`   | `/webhook_endpoints/{nano_id}`              |
+| Write  | `PATCH`  | `/webhook_endpoints/{nano_id}`              |
+| Write  | `DELETE` | `/webhook_endpoints/{nano_id}`              |
+| Write  | `POST`   | `/webhook_subscriptions`                    |
+| Write  | `PATCH`  | `/webhook_subscriptions/{id}`               |
+| Write  | `DELETE` | `/webhook_subscriptions/{id}`               |
+| Write  | `POST`   | `/webhook_subscriptions/{id}/rotate_secret` |
 
 ## Observability
 
 View execution logs and project usage summaries.
 
-| Access | Method | Endpoint                                |
-| ------ | ------ | --------------------------------------- |
-| Read   | `POST` | `/api/v3.1/logs/tool_execution`         |
-| Read   | `GET`  | `/api/v3.1/logs/tool_execution/{id}`    |
-| Read   | `POST` | `/api/v3.1/project/usage/{entity_type}` |
-| Read   | `POST` | `/api/v3.1/project/usage/summary`       |
+| Access | Method | Route                          |
+| ------ | ------ | ------------------------------ |
+| Read   | `POST` | `/logs/tool_execution`         |
+| Read   | `GET`  | `/logs/tool_execution/{id}`    |
+| Read   | `POST` | `/project/usage/{entity_type}` |
+| Read   | `POST` | `/project/usage/summary`       |
 
 ## Sessions (legacy)
 
-The `sessions` permission is no longer available when you create a scoped API key. Existing keys keep their original access unchanged.
+The `sessions` permission is no longer available when you create a scoped API key. Existing keys keep their original permission grants. New routes, such as Session config reads, are not added to these grants.
 
 - Existing `sessions: read` grants continue to cover session reads and legacy MCP server reads.
 - Existing `sessions: write` grants continue to cover session management writes, legacy MCP server writes, session `execute`, `execute_meta`, and `search` routes, and MCP transport writes. They do not cover session proxy execution.
