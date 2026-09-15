@@ -1,4 +1,4 @@
-import { Schema } from 'effect';
+import { Effect, Schema } from 'effect';
 
 /**
  * An auth config item from the list or retrieve endpoints.
@@ -12,18 +12,20 @@ export const AuthConfigItem = Schema.Struct({
   id: Schema.String,
   name: Schema.String,
   no_of_connections: Schema.Int,
-  status: Schema.Literal('ENABLED', 'DISABLED'),
-  type: Schema.Literal('default', 'custom'),
+  status: Schema.Literals(['ENABLED', 'DISABLED']),
+  type: Schema.Literals(['default', 'custom']),
   uuid: Schema.String,
   toolkit: Schema.Struct({
     logo: Schema.String,
     slug: Schema.String,
   }),
-  auth_scheme: Schema.optionalWith(Schema.String, { default: () => '' }),
-  is_composio_managed: Schema.optionalWith(Schema.Boolean, { default: () => false }),
-  is_enabled_for_tool_router: Schema.optionalWith(Schema.Boolean, { default: () => false }),
-  created_at: Schema.optionalWith(Schema.String, { default: () => '' }),
-}).annotations({ identifier: 'AuthConfigItem' });
+  auth_scheme: Schema.String.pipe(Schema.withDecodingDefaultType(Effect.succeed(''))),
+  is_composio_managed: Schema.Boolean.pipe(Schema.withDecodingDefaultType(Effect.succeed(false))),
+  is_enabled_for_tool_router: Schema.Boolean.pipe(
+    Schema.withDecodingDefaultType(Effect.succeed(false))
+  ),
+  created_at: Schema.String.pipe(Schema.withDecodingDefaultType(Effect.succeed(''))),
+}).annotate({ identifier: 'AuthConfigItem' });
 export type AuthConfigItem = Schema.Schema.Type<typeof AuthConfigItem>;
 
 export const AuthConfigItems = Schema.Array(AuthConfigItem);

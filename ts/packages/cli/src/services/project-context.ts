@@ -1,6 +1,6 @@
 import { Effect, Option, Context, Layer } from 'effect';
-import * as FileSystem from '@effect/platform/FileSystem';
-import * as Path from '@effect/platform/Path';
+import * as FileSystem from 'effect/FileSystem';
+import * as Path from 'effect/Path';
 import { NodeOs } from 'src/services/node-os';
 import { NodeProcess } from 'src/services/node-process';
 import { APP_CONFIG } from 'src/effects/app-config';
@@ -88,11 +88,11 @@ const makeProjectContext = Effect.gen(function* () {
         const envFilePath = path.join(composioDir, constants.PROJECT_ENV_FILE_NAME);
         const envExists = yield* fs
           .exists(envFilePath)
-          .pipe(Effect.catchAll(() => Effect.succeed(false)));
+          .pipe(Effect.catch(() => Effect.succeed(false)));
         if (envExists) {
           const envContent = yield* fs
             .readFileString(envFilePath)
-            .pipe(Effect.catchAll(() => Effect.succeed('')));
+            .pipe(Effect.catch(() => Effect.succeed('')));
           const envMap = parseEnvFile(envContent);
           const envFileOrgId = envMap.get('COMPOSIO_ORG_ID');
           const envFileProjectId = envMap.get('COMPOSIO_PROJECT_ID');
@@ -113,15 +113,15 @@ const makeProjectContext = Effect.gen(function* () {
         const projectJsonPath = path.join(composioDir, constants.PROJECT_CONFIG_FILE_NAME);
         const jsonExists = yield* fs
           .exists(projectJsonPath)
-          .pipe(Effect.catchAll(() => Effect.succeed(false)));
+          .pipe(Effect.catch(() => Effect.succeed(false)));
         if (jsonExists) {
           const content = yield* fs
             .readFileString(projectJsonPath)
-            .pipe(Effect.catchAll(() => Effect.succeed('')));
+            .pipe(Effect.catch(() => Effect.succeed('')));
           if (content) {
             const keysOpt = yield* projectKeysFromJSON(content).pipe(
               Effect.map(Option.some),
-              Effect.catchAll(error =>
+              Effect.catch(error =>
                 Effect.gen(function* () {
                   yield* Effect.logDebug(
                     `ProjectContext: corrupt project.json at ${projectJsonPath}, skipping:`,
@@ -149,12 +149,11 @@ const makeProjectContext = Effect.gen(function* () {
   };
 });
 
-export type ProjectContextShape = Effect.Effect.Success<typeof makeProjectContext>;
+export type ProjectContextShape = Effect.Success<typeof makeProjectContext>;
 
-export class ProjectContext extends Context.Tag('services/ProjectContext')<
-  ProjectContext,
-  ProjectContextShape
->() {
+export class ProjectContext extends Context.Service<ProjectContext, ProjectContextShape>()(
+  'services/ProjectContext'
+) {
   static readonly Default = Layer.effect(ProjectContext, makeProjectContext).pipe(
     Layer.provide(Path.layer)
   );

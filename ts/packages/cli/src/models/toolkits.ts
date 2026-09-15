@@ -1,4 +1,4 @@
-import { Brand, Schema } from 'effect';
+import { Brand, Effect, Schema } from 'effect';
 import { JSONTransformSchema } from './utils/json-transform-schema';
 
 /**
@@ -16,11 +16,11 @@ export const TOOLKIT_SLUG_PATTERN = /^[a-z0-9_][a-z0-9_-]*$/;
 /**
  * A toolkit slug used to derive generated source filenames.
  */
-export const ToolkitSlug = Schema.Trim.pipe(
-  Schema.nonEmptyString(),
-  Schema.pattern(TOOLKIT_SLUG_PATTERN, {
+export const ToolkitSlug = Schema.Trim.check(
+  Schema.isNonEmpty(),
+  Schema.isPattern(TOOLKIT_SLUG_PATTERN, {
     identifier: 'ToolkitSlug',
-    message: () =>
+    message:
       'Toolkit slug must contain only lowercase letters, digits, underscores, and hyphens (no path separators)',
   })
 );
@@ -34,22 +34,24 @@ export const Toolkit = Schema.Struct({
   meta: Schema.Struct({
     description: Schema.String,
     categories: Schema.Array(Schema.Unknown),
-    created_at: Schema.DateTimeUtc, // "2024-05-03T11:44:32.061Z"
-    updated_at: Schema.DateTimeUtc, // "2024-05-03T11:44:32.061Z"
-    available_versions: Schema.optionalWith(Schema.Array(Schema.String), { default: () => [] }),
-    tools_count: Schema.optionalWith(Schema.Int, { default: () => 0 }),
-    triggers_count: Schema.optionalWith(Schema.Int, { default: () => 0 }),
+    created_at: Schema.DateTimeUtcFromString, // "2024-05-03T11:44:32.061Z"
+    updated_at: Schema.DateTimeUtcFromString, // "2024-05-03T11:44:32.061Z"
+    available_versions: Schema.Array(Schema.String).pipe(
+      Schema.withDecodingDefaultType(Effect.succeed([]))
+    ),
+    tools_count: Schema.Int.pipe(Schema.withDecodingDefaultType(Effect.succeed(0))),
+    triggers_count: Schema.Int.pipe(Schema.withDecodingDefaultType(Effect.succeed(0))),
   }),
   no_auth: Schema.Boolean,
-}).annotations({ identifier: 'Toolkit' });
+}).annotate({ identifier: 'Toolkit' });
 export type Toolkit = Schema.Schema.Type<typeof Toolkit>;
 
 export const Toolkits = Schema.Array(Toolkit);
 export type Toolkits = Schema.Schema.Type<typeof Toolkits>;
 
 export const ToolkitsJSON = JSONTransformSchema(Toolkits);
-export const toolkitsFromJSON = Schema.decode(ToolkitsJSON);
-export const toolkitsToJSON = Schema.encode(ToolkitsJSON);
+export const toolkitsFromJSON = Schema.decodeEffect(ToolkitsJSON);
+export const toolkitsToJSON = Schema.encodeEffect(ToolkitsJSON);
 
 export type ToolkitName = string & Brand.Brand<'ToolkitName'>;
 export const ToolkitName = Brand.nominal<ToolkitName>();
@@ -63,8 +65,8 @@ export const AuthConfigField = Schema.Struct({
   description: Schema.String,
   type: Schema.String,
   required: Schema.Boolean,
-  default: Schema.optionalWith(Schema.NullOr(Schema.String), { default: () => null }),
-}).annotations({ identifier: 'AuthConfigField' });
+  default: Schema.NullOr(Schema.String).pipe(Schema.withDecodingDefaultType(Effect.succeed(null))),
+}).annotate({ identifier: 'AuthConfigField' });
 export type AuthConfigField = Schema.Schema.Type<typeof AuthConfigField>;
 
 /**
@@ -83,7 +85,7 @@ export const AuthConfigDetail = Schema.Struct({
       optional: Schema.Array(AuthConfigField),
     }),
   }),
-}).annotations({ identifier: 'AuthConfigDetail' });
+}).annotate({ identifier: 'AuthConfigDetail' });
 export type AuthConfigDetail = Schema.Schema.Type<typeof AuthConfigDetail>;
 
 /**
@@ -93,21 +95,27 @@ export const ToolkitDetailed = Schema.Struct({
   name: Schema.String,
   slug: ToolkitSlug,
   is_local_toolkit: Schema.Boolean,
-  composio_managed_auth_schemes: Schema.optionalWith(Schema.Array(Schema.String), {
-    default: () => [],
-  }),
-  no_auth: Schema.optionalWith(Schema.Boolean, { default: () => false }),
+  composio_managed_auth_schemes: Schema.Array(Schema.String).pipe(
+    Schema.withDecodingDefaultType(Effect.succeed([]))
+  ),
+  no_auth: Schema.Boolean.pipe(Schema.withDecodingDefaultType(Effect.succeed(false))),
   meta: Schema.Struct({
-    description: Schema.optionalWith(Schema.String, { default: () => '' }),
-    categories: Schema.optionalWith(Schema.Array(Schema.Unknown), { default: () => [] }),
-    created_at: Schema.DateTimeUtc,
-    updated_at: Schema.DateTimeUtc,
-    available_versions: Schema.optionalWith(Schema.Array(Schema.String), { default: () => [] }),
-    tools_count: Schema.optionalWith(Schema.Int, { default: () => 0 }),
-    triggers_count: Schema.optionalWith(Schema.Int, { default: () => 0 }),
+    description: Schema.String.pipe(Schema.withDecodingDefaultType(Effect.succeed(''))),
+    categories: Schema.Array(Schema.Unknown).pipe(
+      Schema.withDecodingDefaultType(Effect.succeed([]))
+    ),
+    created_at: Schema.DateTimeUtcFromString,
+    updated_at: Schema.DateTimeUtcFromString,
+    available_versions: Schema.Array(Schema.String).pipe(
+      Schema.withDecodingDefaultType(Effect.succeed([]))
+    ),
+    tools_count: Schema.Int.pipe(Schema.withDecodingDefaultType(Effect.succeed(0))),
+    triggers_count: Schema.Int.pipe(Schema.withDecodingDefaultType(Effect.succeed(0))),
   }),
-  auth_config_details: Schema.optionalWith(Schema.Array(AuthConfigDetail), { default: () => [] }),
-}).annotations({ identifier: 'ToolkitDetailed' });
+  auth_config_details: Schema.Array(AuthConfigDetail).pipe(
+    Schema.withDecodingDefaultType(Effect.succeed([]))
+  ),
+}).annotate({ identifier: 'ToolkitDetailed' });
 export type ToolkitDetailed = Schema.Schema.Type<typeof ToolkitDetailed>;
 
 /**
@@ -118,5 +126,5 @@ export const ToolkitSearchResult = Schema.Struct({
   total_items: Schema.Int,
   total_pages: Schema.Int,
   next_cursor: Schema.NullOr(Schema.String),
-}).annotations({ identifier: 'ToolkitSearchResult' });
+}).annotate({ identifier: 'ToolkitSearchResult' });
 export type ToolkitSearchResult = Schema.Schema.Type<typeof ToolkitSearchResult>;

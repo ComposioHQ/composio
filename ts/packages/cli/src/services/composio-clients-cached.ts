@@ -1,6 +1,6 @@
-import { Effect, Option, ParseResult, Layer, Array as Arr } from 'effect';
-import * as FileSystem from '@effect/platform/FileSystem';
-import * as Path from '@effect/platform/Path';
+import { Effect, Option, Schema, Layer, Array as Arr } from 'effect';
+import * as FileSystem from 'effect/FileSystem';
+import * as Path from 'effect/Path';
 import * as BunFileSystem from '@effect/platform-bun/BunFileSystem';
 import { setupCacheDir } from 'src/effects/setup-cache-dir';
 import { FORCE_CONFIG } from 'src/effects/force-config';
@@ -52,8 +52,8 @@ const filterBySlugPrefixes =
  */
 function createCachedEffect<T, E, R>(
   cacheFileName: string,
-  decoder: (input: string) => Effect.Effect<T, ParseResult.ParseError>,
-  encoder: (input: T) => Effect.Effect<string, ParseResult.ParseError>,
+  decoder: (input: string) => Effect.Effect<T, Schema.SchemaError>,
+  encoder: (input: T) => Effect.Effect<string, Schema.SchemaError>,
   computation: Effect.Effect<T, E, R>,
   cacheFilter?: (data: T) => Effect.Effect<T, E, never>
 ): Effect.Effect<T, E, R> {
@@ -72,7 +72,7 @@ function createCachedEffect<T, E, R>(
 
       const cacheFileExists = yield* fs
         .exists(cacheFilePath)
-        .pipe(Effect.orElse(() => Effect.succeed(false)));
+        .pipe(Effect.catch(() => Effect.succeed(false)));
       if (!cacheFileExists) {
         return Option.none<T>();
       }
@@ -85,7 +85,7 @@ function createCachedEffect<T, E, R>(
       // this request — e.g. it predates a toolkit the caller asked for.
       return Option.some(cacheFilter ? yield* cacheFilter(cached) : cached);
     }).pipe(
-      Effect.catchAll(error =>
+      Effect.catch(error =>
         Effect.logWarning(`Ignoring cache ${cacheFilePath}: ${error}`).pipe(
           Effect.as(Option.none<T>())
         )
@@ -100,7 +100,7 @@ function createCachedEffect<T, E, R>(
   const writeToCache = (cacheFilePath: string, result: T) =>
     encoder(result).pipe(
       Effect.flatMap(content => writeFileAtomic(cacheFilePath, content)),
-      Effect.catchAll(error =>
+      Effect.catch(error =>
         Effect.logWarning(`Failed to write to cache ${cacheFilePath}: ${error}`)
       )
     );
@@ -113,7 +113,7 @@ function createCachedEffect<T, E, R>(
     // failed command.
     const cacheFilePath = yield* setupCacheDir.pipe(
       Effect.map(cacheDir => Option.some(path.join(cacheDir, cacheFileName))),
-      Effect.catchAll(error =>
+      Effect.catch(error =>
         Effect.logWarning(`Cache unavailable for ${cacheFileName}: ${error}`).pipe(
           Effect.as(Option.none<string>())
         )
@@ -195,7 +195,7 @@ export const ComposioToolkitsRepositoryCached = Layer.effect(
           const foundSlugs = new Set(filtered.map(t => t.slug.toUpperCase()));
           const missingSlugs = slugs.filter(s => !foundSlugs.has(s.toUpperCase()));
 
-          if (Arr.isNonEmptyReadonlyArray(missingSlugs)) {
+          if (Arr.isReadonlyArrayNonEmpty(missingSlugs)) {
             return Effect.fail(
               new InvalidToolkitsError({
                 invalidToolkits: missingSlugs,

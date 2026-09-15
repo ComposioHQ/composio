@@ -1,9 +1,13 @@
 import { z } from 'zod/v3';
 
-import type { JsonSchemaObject } from '../types';
+import type { JsonSchemaObject, Refs } from '../types';
+import { compilePattern } from '../utils/compile-pattern';
 import { extendSchemaWithMessage } from '../utils/extend-schema';
 
-export const parseString = (jsonSchema: JsonSchemaObject & { type: 'string' }) => {
+export const parseString = (
+  jsonSchema: JsonSchemaObject & { type: 'string' },
+  refs: Pick<Refs, 'path'>
+) => {
   let zodSchema = z.string();
 
   zodSchema = extendSchemaWithMessage(zodSchema, jsonSchema, 'format', (zs, format, errorMsg) => {
@@ -39,7 +43,7 @@ export const parseString = (jsonSchema: JsonSchemaObject & { type: 'string' }) =
     zs.base64(errorMsg)
   );
   zodSchema = extendSchemaWithMessage(zodSchema, jsonSchema, 'pattern', (zs, pattern, errorMsg) =>
-    zs.regex(new RegExp(pattern), errorMsg)
+    zs.regex(compilePattern('pattern', pattern, refs), errorMsg)
   );
   // JSON Schema length constraints count Unicode code points, while Zod's
   // built-in `.min()`/`.max()` count UTF-16 code units and overcount astral

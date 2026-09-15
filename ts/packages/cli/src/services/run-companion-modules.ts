@@ -2,25 +2,34 @@
 // the bundled `composio run` companion modules, and the binary build scripts. Every
 // helper is an Effect over the @effect/platform FileSystem/Path services; consumers
 // outside the CLI runtime (companion runtimes, scripts) provide their own platform layers.
-import * as FileSystem from '@effect/platform/FileSystem';
-import * as Path from '@effect/platform/Path';
-import type { PlatformError } from '@effect/platform/Error';
-import { Config, ConfigProvider, Data, Effect, Option, Schema } from 'effect';
+import * as FileSystem from 'effect/FileSystem';
+import * as Path from 'effect/Path';
+import { Config, ConfigProvider, Data, Effect, Option, PlatformError, Schema } from 'effect';
 import { extractZipSafely } from 'src/utils/extract-zip-safely';
-import { IS_RELEASE_BUILD } from 'src/constants';
+import { APP_VERSION, IS_RELEASE_BUILD } from 'src/constants';
 import { GitHubRelease } from 'src/effects/resolve-cli-release';
-import { BaseConfigProviderLive, extendConfigProvider } from 'src/services/config';
+import { getBaseConfigProvider, extendConfigProvider } from 'src/services/config';
 import { NodeOs } from 'src/services/node-os';
 import { atomicReplaceFile } from 'src/utils/atomic-replace';
 import { parseChecksumsText, sha256Hex } from 'src/utils/checksums';
 import { CLI_RELEASE_TAG_PREFIX } from 'src/utils/cli-release-version';
 
+// Modules the binary build bundles separately (`dist/<name>.mjs` next to the
+// executable) instead of into the executable itself. The first five are what
+// `composio run` preloads into the script it spawns. The last two are loaded
+// into the CLI's own process, on demand, through `loadInstalledCompanionModule`:
+// they carry the TypeScript compiler and the tokenizer rank table, which
+// together were ~70% of the executable's JavaScript and cost every command
+// parse time even though only `generate`, `run`, and large `execute` responses
+// ever reach them.
 export const RUN_COMPANION_MODULE_BASENAMES: ReadonlyArray<string> = [
   'run-helpers-runtime',
   'run-subagent-shared',
   'run-subagent-acp',
   'run-subagent-legacy',
   'run-subagent-output-mcp',
+  'generation-runtime',
+  'execute-output-encoder-runtime',
 ];
 
 export const RUN_COMPANION_MODULE_FILENAMES = RUN_COMPANION_MODULE_BASENAMES.map(
@@ -136,7 +145,10 @@ const fileExists = (fs: FileSystem.FileSystem, filePath: string) =>
   fs.exists(filePath).pipe(Effect.orElseSucceed(() => false));
 
 const filePathFromUrl = (path: Path.Path, url: string): Effect.Effect<string> =>
-  Schema.decodeUnknown(Schema.URL)(url).pipe(Effect.flatMap(path.fromFileUrl), Effect.orDie);
+  Schema.decodeUnknownEffect(Schema.URLFromString)(url).pipe(
+    Effect.flatMap(path.fromFileUrl),
+    Effect.orDie
+  );
 
 const collectRelativeImportPaths = ({
   fs,
@@ -426,7 +438,7 @@ export const resolveRunningCliReleaseTag = (
 export const writeInstalledReleaseTag = (
   installDir: string,
   releaseTag: string
-): Effect.Effect<void, PlatformError, FileSystem.FileSystem | Path.Path> =>
+): Effect.Effect<void, PlatformError.PlatformError, FileSystem.FileSystem | Path.Path> =>
   Effect.gen(function* () {
     const fs = yield* FileSystem.FileSystem;
     const path = yield* Path.Path;
@@ -437,10 +449,11 @@ export const writeInstalledReleaseTag = (
   });
 
 /**
- * Startup tier: the `run-*.mjs` companion wrappers and their import graph.
+ * Startup tier: the companion wrappers and their import graph.
  *
- * Every `composio run` preloads these into the spawned child, so a missing one
- * really is a broken install and justifies the self-repair download. The ACP
+ * Every `composio run` preloads the `run-*` modules into the spawned child, and
+ * the CLI loads the in-process ones on demand, so a missing one really is a
+ * broken install and justifies the self-repair download. The ACP
  * adapter assets are deliberately excluded — a script like
  * `composio run 'console.log(1)'` never invokes a sub-agent, and requiring
  * ~224MB of adapters for it turned a working install into a hard failure.
@@ -458,6 +471,32 @@ export const listMissingInstalledRunCompanionModules = (
       { staticAssetRelativePaths: [] }
     );
     return yield* Effect.filter(expectedRelativePaths, relativePath =>
+      Effect.map(fileExists(fs, path.join(installDirectory, relativePath)), exists => !exists)
+    );
+  });
+
+/**
+ * The files one companion needs next to the executable: its wrapper and every
+ * relative import reachable from it, listed when missing.
+ */
+const listMissingInstalledCompanionModuleFiles = (
+  execPath: string,
+  baseName: string
+): Effect.Effect<ReadonlyArray<string>, never, FileSystem.FileSystem | Path.Path> =>
+  Effect.gen(function* () {
+    const fs = yield* FileSystem.FileSystem;
+    const path = yield* Path.Path;
+    const installDirectory = path.dirname(execPath);
+    const collected = new Set<string>();
+    yield* collectRelativeImportPaths({
+      fs,
+      path,
+      rootDir: installDirectory,
+      relativePath: `${baseName}.mjs`,
+      collected,
+      recordMissingPaths: true,
+    });
+    return yield* Effect.filter([...collected], relativePath =>
       Effect.map(fileExists(fs, path.join(installDirectory, relativePath)), exists => !exists)
     );
   });
@@ -485,7 +524,7 @@ export const hasInstalledRunCompanionModules = (
   });
 
 const fetchGitHubJson = async <A, I>(
-  schema: Schema.Schema<A, I>,
+  schema: Schema.Codec<A, I>,
   {
     url,
     accessToken,
@@ -562,9 +601,15 @@ const toRepairError = (error: unknown) =>
 // Self-repair honors the unprefixed GITHUB_* contract (set by CI and the binary
 // build workflow, mirrored by cli-local-tools) first, then falls back to the
 // CLI-wide COMPOSIO_-prefixed spelling installed by cli-main's config provider.
-const repairConfigProvider = BaseConfigProviderLive.pipe(
-  ConfigProvider.orElse(() => extendConfigProvider(BaseConfigProviderLive))
-);
+//
+// Built lazily (a function, not a memoized module-level constant): each
+// `getBaseConfigProvider()` call snapshots `process.env` at call time, so a
+// frozen constant would never observe env var changes made after this module
+// is first imported (e.g. `vi.stubEnv` in tests).
+const getRepairConfigProvider = (): ConfigProvider.ConfigProvider =>
+  getBaseConfigProvider().pipe(
+    ConfigProvider.orElse(extendConfigProvider(getBaseConfigProvider()))
+  );
 
 const resolveRepairReleaseTag = ({
   execPath,
@@ -579,7 +624,12 @@ const resolveRepairReleaseTag = ({
       Config.option(Config.string('GITHUB_TAG')).pipe(
         Config.map(tag => Option.getOrUndefined(Option.map(tag, value => value.trim())))
       )
-    ).pipe(Effect.withConfigProvider(repairConfigProvider));
+    ).pipe(
+      Effect.provideServiceEffect(
+        ConfigProvider.ConfigProvider,
+        Effect.sync(() => getRepairConfigProvider())
+      )
+    );
     if (pinnedTag) {
       return pinnedTag;
     }
@@ -603,7 +653,12 @@ const githubRepairConfig = Effect.orDie(
       Config.map(Option.getOrUndefined)
     ),
   })
-).pipe(Effect.withConfigProvider(repairConfigProvider));
+).pipe(
+  Effect.provideServiceEffect(
+    ConfigProvider.ConfigProvider,
+    Effect.sync(() => getRepairConfigProvider())
+  )
+);
 
 /**
  * Restores a packaged install whose companion wrappers went missing.
@@ -617,13 +672,19 @@ export const repairMissingInstalledRunCompanionModules = ({
   callerImportMetaUrl,
   execPath,
   appVersion,
+  companionBaseName,
 }: {
   callerImportMetaUrl: string;
   execPath: string;
   appVersion: string;
+  /**
+   * Repair only when this companion's own files are missing, rather than when
+   * any startup-tier file is. The repair still restores the full set.
+   */
+  companionBaseName?: string;
 }): Effect.Effect<
   { readonly repaired: false } | { readonly repaired: true; readonly releaseTag: string },
-  RunCompanionRepairError | PlatformError,
+  RunCompanionRepairError | PlatformError.PlatformError,
   FileSystem.FileSystem | Path.Path
 > =>
   Effect.gen(function* () {
@@ -635,7 +696,10 @@ export const repairMissingInstalledRunCompanionModules = ({
       return { repaired: false as const };
     }
 
-    const missingModules = yield* listMissingInstalledRunCompanionModules(execPath);
+    const missingModules =
+      companionBaseName === undefined
+        ? yield* listMissingInstalledRunCompanionModules(execPath)
+        : yield* listMissingInstalledCompanionModuleFiles(execPath, companionBaseName);
     if (missingModules.length === 0) {
       return { repaired: false as const };
     }
@@ -654,7 +718,7 @@ export const repairMissingInstalledRunCompanionModules = ({
       catch: error =>
         new RunCompanionRepairError({
           message: [
-            `Unable to restore the files required by 'composio run' for ${releaseTag}.`,
+            `Unable to restore the CLI's bundled support files for ${releaseTag}.`,
             error instanceof Error ? error.message : String(error),
             `Reinstall the CLI, or set GITHUB_TAG to the exact release tag for this build and try again.`,
           ].join('\n'),
@@ -743,7 +807,7 @@ export const repairMissingInstalledRunCompanionModules = ({
           if (!sourceExists) {
             return yield* Effect.fail(
               new RunCompanionRepairError({
-                message: `Release ${release.tag_name} is missing ${relativePath}; cannot restore the files required by 'composio run'.`,
+                message: `Release ${release.tag_name} is missing ${relativePath}; cannot restore the CLI's bundled support files.`,
               })
             );
           }
@@ -755,7 +819,7 @@ export const repairMissingInstalledRunCompanionModules = ({
               error =>
                 new RunCompanionRepairError({
                   message: [
-                    `Unable to restore the files required by 'composio run' for ${releaseTag}.`,
+                    `Unable to restore the CLI's bundled support files for ${releaseTag}.`,
                     error.message,
                     `Reinstall the CLI, or set GITHUB_TAG to the exact release tag for this build and try again.`,
                   ].join('\n'),
@@ -808,4 +872,78 @@ export const resolveRunCompanionModulePath = ({
         ? path.resolve(executableDirectory, `${baseName}.mjs`)
         : path.resolve(currentDirectory, `${baseName}.mjs`)
     );
+  });
+
+/**
+ * Loads one of the in-process companion modules (see the note on
+ * `RUN_COMPANION_MODULE_BASENAMES`) and returns its exports.
+ *
+ * Resolution is the same as for the `run` companions: the `.ts` source next to
+ * this file when running from a checkout (tests, `bun run src/bin.ts`), the
+ * `.mjs` bundle next to the executable in a packaged install.
+ *
+ * A packaged install missing this module's own files goes through the
+ * release-archive repair `composio run` uses before the import. Files of other
+ * companions do not trigger it, so an offline repair failure cannot block a
+ * module that is already in place. The repair has to come first: Bun keeps a
+ * failed or already-loaded import in its module registry, so importing again
+ * after a repair can still see the old result.
+ *
+ * A module that loads but lacks one of `requiredExports` is a file left behind
+ * by a different release; it fails with a typed error asking for a reinstall.
+ *
+ * The specifier is computed at runtime on purpose: a literal `import('./x')`
+ * would make the bundler fold the module back into the executable, which is the
+ * exact thing these modules exist to avoid.
+ *
+ * `M` is the module's type; pass `typeof import('src/services/<name>')`, which
+ * is type-only and leaves no import behind.
+ */
+export const loadInstalledCompanionModule = <M>(
+  baseName: string,
+  requiredExports: ReadonlyArray<keyof M & string>
+): Effect.Effect<
+  M,
+  RunCompanionRepairError | PlatformError.PlatformError,
+  FileSystem.FileSystem | Path.Path
+> =>
+  Effect.gen(function* () {
+    const path = yield* Path.Path;
+    const callerImportMetaUrl = import.meta.url;
+    const execPath = process.execPath;
+
+    yield* repairMissingInstalledRunCompanionModules({
+      callerImportMetaUrl,
+      execPath,
+      appVersion: APP_VERSION,
+      companionBaseName: baseName,
+    });
+
+    const modulePath = yield* resolveRunCompanionModulePath({
+      callerImportMetaUrl,
+      execPath,
+      relativeNoExtensionFromCaller: `./${baseName}`,
+    });
+    const fileName = path.basename(modulePath);
+    const moduleUrl = yield* Effect.orDie(path.toFileUrl(modulePath));
+
+    // A rejected import means the file resolved above is missing or unloadable:
+    // a broken install. It stays a typed failure so callers can report it, or
+    // fall back, instead of crashing with a stack trace.
+    const exports = yield* Effect.tryPromise({
+      try: () => import(moduleUrl.href) as Promise<Record<string, unknown>>,
+      catch: cause =>
+        new RunCompanionRepairError({
+          message: `Unable to load the CLI's bundled support file ${fileName}. Reinstall the CLI and try again.`,
+          cause,
+        }),
+    });
+
+    const missingExports = requiredExports.filter(name => !(name in exports));
+    if (missingExports.length > 0) {
+      return yield* new RunCompanionRepairError({
+        message: `The CLI's bundled support file ${fileName} does not match this CLI (missing ${missingExports.join(', ')}). Reinstall the CLI and try again.`,
+      });
+    }
+    return exports as M;
   });

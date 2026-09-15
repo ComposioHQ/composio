@@ -5,7 +5,7 @@ import { cli, TestLive, MockConsole } from 'test/__utils__';
 describe('CLI: composio dev init', () => {
   describe('dev init --help', () => {
     layer(TestLive({ fixture: 'typescript-project' }))(it => {
-      it.scoped('[Then] shows --no-browser and --yes, no --org-id or --project-id', () =>
+      it.effect('[Then] shows --no-browser and --yes, no --org-id or --project-id', () =>
         Effect.gen(function* () {
           yield* cli(['dev', 'init', '--help']);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });

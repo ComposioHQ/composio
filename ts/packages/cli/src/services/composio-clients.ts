@@ -1,22 +1,21 @@
 import {
   pipe,
+  Context,
   Data,
   Effect,
+  Layer,
   Option,
   Schema,
   Array,
   Order,
-  ParseResult,
   String,
   Stream,
-  Sink,
   SynchronizedRef,
-  Context,
-  Layer,
 } from 'effect';
+import * as FileSystem from 'effect/FileSystem';
+import * as Path from 'effect/Path';
+import type { Cause } from 'effect';
 import { Composio as _RawComposioClient, APIPromise } from '@composio/client';
-import * as FileSystem from '@effect/platform/FileSystem';
-import * as Path from '@effect/platform/Path';
 import type { AuthConfigCreateParams } from '@composio/client/resources/auth-configs';
 import type { ConnectedAccountListParams } from '@composio/client/resources/connected-accounts';
 import {
@@ -42,9 +41,10 @@ import * as constants from 'src/constants';
 import { getCurrentCwdSessionId } from 'src/analytics/dispatch';
 import { ComposioUserContext, ComposioUserContextLive } from './user-context';
 import { ProjectContext } from './project-context';
-import type { NoSuchElementException } from 'effect/Cause';
 import { renderPrettyError } from './utils/pretty-error';
 import { NodeOs } from './node-os';
+
+type NoSuchElementError = Cause.NoSuchElementError;
 
 /**
  * Error types
@@ -110,13 +110,13 @@ const sortBySlug = <T extends { readonly slug: string }>(
 ): ReadonlyArray<T> =>
   Array.sort(
     items,
-    Order.mapInput(Order.string, (item: T) => item.slug)
+    Order.mapInput(Order.String, (item: T) => item.slug)
   );
 
 const validateToolkitVersionsImpl = (
   client: {
     toolkits: {
-      retrieve: (slug: string) => Effect.Effect<Toolkit, HttpError | NoSuchElementException, never>;
+      retrieve: (slug: string) => Effect.Effect<Toolkit, HttpError | NoSuchElementError, never>;
     };
   },
   overrides: ToolkitVersionOverrides,
@@ -126,7 +126,7 @@ const validateToolkitVersionsImpl = (
     validatedOverrides: ToolkitVersionOverrides;
     warnings: ReadonlyArray<string>;
   },
-  InvalidToolkitVersionsError | InvalidToolkitsError | HttpError | NoSuchElementException
+  InvalidToolkitVersionsError | InvalidToolkitsError | HttpError | NoSuchElementError
 > =>
   Effect.gen(function* () {
     const determineOverridesToValidate = (
@@ -167,7 +167,7 @@ const validateToolkitVersionsImpl = (
         availableVersions: ReadonlyArray<string>;
         isValid: boolean;
       }>,
-      InvalidToolkitsError | HttpError | NoSuchElementException
+      InvalidToolkitsError | HttpError | NoSuchElementError
     > =>
       Effect.all(
         overridesToValidate.map(([toolkit, requestedVersion]) =>
@@ -178,17 +178,17 @@ const validateToolkitVersionsImpl = (
               availableVersions: toolkitData.meta.available_versions,
               isValid: toolkitData.meta.available_versions.includes(requestedVersion),
             })),
-            Effect.catchTag('services/HttpServerError', e =>
-              Effect.if(e.status === 404, {
-                onTrue: () =>
-                  Effect.fail(
-                    new InvalidToolkitsError({
-                      invalidToolkits: [toolkit],
-                      availableToolkits: [],
-                    })
-                  ),
-                onFalse: () => Effect.fail(e),
-              })
+            Effect.catchTag(
+              'services/HttpServerError',
+              (e): Effect.Effect<never, InvalidToolkitsError | HttpServerError> =>
+                e.status === 404
+                  ? Effect.fail(
+                      new InvalidToolkitsError({
+                        invalidToolkits: [toolkit],
+                        availableToolkits: [],
+                      })
+                    )
+                  : Effect.fail(e)
             )
           )
         ),
@@ -252,7 +252,7 @@ export const CliRealtimeCredentialsResponse = Schema.Struct({
   project_id: Schema.String,
   pusher_key: Schema.String,
   pusher_cluster: Schema.String,
-}).annotations({ identifier: 'CliRealtimeCredentialsResponse' });
+}).annotate({ identifier: 'CliRealtimeCredentialsResponse' });
 export type CliRealtimeCredentialsResponse = Schema.Schema.Type<
   typeof CliRealtimeCredentialsResponse
 >;
@@ -260,14 +260,14 @@ export type CliRealtimeCredentialsResponse = Schema.Schema.Type<
 export const CliRealtimeAuthResponse = Schema.Struct({
   auth: Schema.String,
   channel_data: Schema.optional(Schema.String),
-}).annotations({ identifier: 'CliRealtimeAuthResponse' });
+}).annotate({ identifier: 'CliRealtimeAuthResponse' });
 export type CliRealtimeAuthResponse = Schema.Schema.Type<typeof CliRealtimeAuthResponse>;
 
 export const ToolkitsResponse = Schema.Struct({
   items: Toolkits,
   total_pages: Schema.Int,
   next_cursor: Schema.NullOr(Schema.String),
-}).annotations({ identifier: 'ToolkitsResponse' });
+}).annotate({ identifier: 'ToolkitsResponse' });
 export type ToolkitsResponse = Schema.Schema.Type<typeof ToolkitsResponse>;
 
 // Similar to Toolkits, without auth_schemes, with auth_config_details instead
@@ -275,20 +275,24 @@ export const ToolkitRetrieveResponse = Schema.Struct({
   name: Schema.String,
   slug: ToolkitSlug,
   is_local_toolkit: Schema.Boolean,
-  composio_managed_auth_schemes: Schema.optionalWith(Schema.Array(Schema.String), {
-    default: () => [],
-  }),
-  no_auth: Schema.optionalWith(Schema.Boolean, { default: () => false }),
+  composio_managed_auth_schemes: Schema.Array(Schema.String).pipe(
+    Schema.withDecodingDefaultType(Effect.succeed([]))
+  ),
+  no_auth: Schema.Boolean.pipe(Schema.withDecodingDefaultType(Effect.succeed(false))),
   meta: Schema.Struct({
-    description: Schema.optionalWith(Schema.String, { default: () => '' }),
-    categories: Schema.optionalWith(Schema.Array(Schema.Unknown), { default: () => [] }),
-    created_at: Schema.DateTimeUtc,
-    updated_at: Schema.DateTimeUtc,
-    available_versions: Schema.optionalWith(Schema.Array(Schema.String), { default: () => [] }),
-    tools_count: Schema.optionalWith(Schema.Int, { default: () => 0 }),
-    triggers_count: Schema.optionalWith(Schema.Int, { default: () => 0 }),
+    description: Schema.String.pipe(Schema.withDecodingDefaultType(Effect.succeed(''))),
+    categories: Schema.Array(Schema.Unknown).pipe(
+      Schema.withDecodingDefaultType(Effect.succeed([]))
+    ),
+    created_at: Schema.DateTimeUtcFromString,
+    updated_at: Schema.DateTimeUtcFromString,
+    available_versions: Schema.Array(Schema.String).pipe(
+      Schema.withDecodingDefaultType(Effect.succeed([]))
+    ),
+    tools_count: Schema.Int.pipe(Schema.withDecodingDefaultType(Effect.succeed(0))),
+    triggers_count: Schema.Int.pipe(Schema.withDecodingDefaultType(Effect.succeed(0))),
   }),
-}).annotations({ identifier: 'ToolkitRetrieveResponse' });
+}).annotate({ identifier: 'ToolkitRetrieveResponse' });
 export type ToolkitRetrieveResponse = Schema.Schema.Type<typeof ToolkitRetrieveResponse>;
 
 export const ToolsAsEnumsResponse = ToolsAsEnums;
@@ -298,7 +302,7 @@ export const ToolsResponse = Schema.Struct({
   items: Tools,
   total_pages: Schema.Int,
   next_cursor: Schema.NullOr(Schema.String),
-}).annotations({ identifier: 'ToolsResponse' });
+}).annotate({ identifier: 'ToolsResponse' });
 export type ToolsResponse = Schema.Schema.Type<typeof ToolsResponse>;
 
 export const ToolDetailedResponse = Schema.Struct({
@@ -309,15 +313,12 @@ export const ToolDetailedResponse = Schema.Struct({
   available_versions: Schema.Array(Schema.String),
   input_parameters: JsonRecordSchema,
   output_parameters: JsonRecordSchema,
-  no_auth: Schema.optionalWith(Schema.Boolean, { default: () => false }),
-  toolkit: Schema.optionalWith(
-    Schema.Struct({
-      name: Schema.String,
-      slug: Schema.String,
-    }),
-    { default: () => ({ name: '', slug: '' }) }
-  ),
-}).annotations({ identifier: 'ToolDetailedResponse' });
+  no_auth: Schema.Boolean.pipe(Schema.withDecodingDefaultType(Effect.succeed(false))),
+  toolkit: Schema.Struct({
+    name: Schema.String,
+    slug: Schema.String,
+  }).pipe(Schema.withDecodingDefaultType(Effect.succeed({ name: '', slug: '' }))),
+}).annotate({ identifier: 'ToolDetailedResponse' });
 export type ToolDetailedResponse = Schema.Schema.Type<typeof ToolDetailedResponse>;
 
 export const TriggerTypesAsEnumsResponse = TriggerTypesAsEnums;
@@ -327,37 +328,39 @@ export const TriggerTypesResponse = Schema.Struct({
   items: TriggerTypes,
   total_pages: Schema.Int,
   next_cursor: Schema.NullOr(Schema.String),
-}).annotations({ identifier: 'TriggerTypesResponse' });
+}).annotate({ identifier: 'TriggerTypesResponse' });
 export type TriggerTypesResponse = Schema.Schema.Type<typeof TriggerTypesResponse>;
 
 export const TriggerInstancesListActiveResponse = Schema.Struct({
   items: TriggerInstanceItems,
-  total_items: Schema.optionalWith(Schema.Int, { default: () => 0 }),
-  total_pages: Schema.optionalWith(Schema.Int, { default: () => 1 }),
-  current_page: Schema.optionalWith(Schema.Int, { default: () => 1 }),
-  next_cursor: Schema.optionalWith(Schema.NullOr(Schema.String), { default: () => null }),
-}).annotations({ identifier: 'TriggerInstancesListActiveResponse' });
+  total_items: Schema.Int.pipe(Schema.withDecodingDefaultType(Effect.succeed(0))),
+  total_pages: Schema.Int.pipe(Schema.withDecodingDefaultType(Effect.succeed(1))),
+  current_page: Schema.Int.pipe(Schema.withDecodingDefaultType(Effect.succeed(1))),
+  next_cursor: Schema.NullOr(Schema.String).pipe(
+    Schema.withDecodingDefaultType(Effect.succeed(null))
+  ),
+}).annotate({ identifier: 'TriggerInstancesListActiveResponse' });
 export type TriggerInstancesListActiveResponse = Schema.Schema.Type<
   typeof TriggerInstancesListActiveResponse
 >;
 
 export const TriggerInstanceUpsertResponse = Schema.Struct({
   trigger_id: Schema.String,
-}).annotations({ identifier: 'TriggerInstanceUpsertResponse' });
+}).annotate({ identifier: 'TriggerInstanceUpsertResponse' });
 export type TriggerInstanceUpsertResponse = Schema.Schema.Type<
   typeof TriggerInstanceUpsertResponse
 >;
 
 export const TriggerInstanceManageUpdateResponse = Schema.Struct({
   status: Schema.Literal('success'),
-}).annotations({ identifier: 'TriggerInstanceManageUpdateResponse' });
+}).annotate({ identifier: 'TriggerInstanceManageUpdateResponse' });
 export type TriggerInstanceManageUpdateResponse = Schema.Schema.Type<
   typeof TriggerInstanceManageUpdateResponse
 >;
 
 export const TriggerInstanceManageDeleteResponse = Schema.Struct({
   trigger_id: Schema.String,
-}).annotations({ identifier: 'TriggerInstanceManageDeleteResponse' });
+}).annotate({ identifier: 'TriggerInstanceManageDeleteResponse' });
 export type TriggerInstanceManageDeleteResponse = Schema.Schema.Type<
   typeof TriggerInstanceManageDeleteResponse
 >;
@@ -399,7 +402,7 @@ export const SessionInfoResponse = Schema.Struct({
       key: Schema.optional(Schema.String),
     })
   ),
-}).annotations({ identifier: 'SessionInfoResponse' });
+}).annotate({ identifier: 'SessionInfoResponse' });
 export type SessionInfoResponse = Schema.Schema.Type<typeof SessionInfoResponse>;
 
 const authHeaderForApiKey = (apiKey: string): Record<string, string> => ({
@@ -497,10 +500,10 @@ export const ToolkitSearchResponse = Schema.Struct({
   total_pages: Schema.Int,
   current_page: Schema.Int,
   next_cursor: Schema.NullOr(Schema.String),
-}).annotations({ identifier: 'ToolkitSearchResponse' });
+}).annotate({ identifier: 'ToolkitSearchResponse' });
 
 // Detailed retrieve response (includes auth_config_details)
-export const ToolkitDetailedResponse = ToolkitDetailed.annotations({
+export const ToolkitDetailedResponse = ToolkitDetailed.annotate({
   identifier: 'ToolkitDetailedResponse',
 });
 
@@ -510,12 +513,14 @@ export const AuthConfigListResponse = Schema.Struct({
   total_items: Schema.Int,
   total_pages: Schema.Int,
   current_page: Schema.Int,
-  next_cursor: Schema.optionalWith(Schema.NullOr(Schema.String), { default: () => null }),
-}).annotations({ identifier: 'AuthConfigListResponse' });
+  next_cursor: Schema.NullOr(Schema.String).pipe(
+    Schema.withDecodingDefaultType(Effect.succeed(null))
+  ),
+}).annotate({ identifier: 'AuthConfigListResponse' });
 export type AuthConfigListResponse = Schema.Schema.Type<typeof AuthConfigListResponse>;
 
 // Auth config retrieve response (same shape as a single list item)
-export const AuthConfigRetrieveResponse = AuthConfigItem.annotations({
+export const AuthConfigRetrieveResponse = AuthConfigItem.annotate({
   identifier: 'AuthConfigRetrieveResponse',
 });
 export type AuthConfigRetrieveResponse = Schema.Schema.Type<typeof AuthConfigRetrieveResponse>;
@@ -530,7 +535,7 @@ export const AuthConfigCreateResponse = Schema.Struct({
   toolkit: Schema.Struct({
     slug: Schema.String,
   }),
-}).annotations({ identifier: 'AuthConfigCreateResponse' });
+}).annotate({ identifier: 'AuthConfigCreateResponse' });
 export type AuthConfigCreateResponse = Schema.Schema.Type<typeof AuthConfigCreateResponse>;
 
 // Connected account list response (single page with total_items for "Listing X of Y" display)
@@ -539,12 +544,14 @@ export const ConnectedAccountListResponse = Schema.Struct({
   total_items: Schema.Int,
   total_pages: Schema.Int,
   current_page: Schema.Int,
-  next_cursor: Schema.optionalWith(Schema.NullOr(Schema.String), { default: () => null }),
-}).annotations({ identifier: 'ConnectedAccountListResponse' });
+  next_cursor: Schema.NullOr(Schema.String).pipe(
+    Schema.withDecodingDefaultType(Effect.succeed(null))
+  ),
+}).annotate({ identifier: 'ConnectedAccountListResponse' });
 export type ConnectedAccountListResponse = Schema.Schema.Type<typeof ConnectedAccountListResponse>;
 
 // Connected account retrieve response (same shape as a single list item)
-export const ConnectedAccountRetrieveResponse = ConnectedAccountItem.annotations({
+export const ConnectedAccountRetrieveResponse = ConnectedAccountItem.annotate({
   identifier: 'ConnectedAccountRetrieveResponse',
 });
 
@@ -554,7 +561,7 @@ export const LinkCreateResponse = Schema.Struct({
   expires_at: Schema.String,
   link_token: Schema.String,
   redirect_url: Schema.String,
-}).annotations({ identifier: 'LinkCreateResponse' });
+}).annotate({ identifier: 'LinkCreateResponse' });
 export type LinkCreateResponse = Schema.Schema.Type<typeof LinkCreateResponse>;
 export type ConnectedAccountRetrieveResponse = Schema.Schema.Type<
   typeof ConnectedAccountRetrieveResponse
@@ -572,7 +579,7 @@ export const HttpErrorResponse = Schema.Struct({
       code: Schema.Int,
     }),
   }),
-}).annotations({ identifier: 'HttpErrorResponse' });
+}).annotate({ identifier: 'HttpErrorResponse' });
 export type HttpErrorResponse = Schema.Schema.Type<typeof HttpErrorResponse>;
 
 /**
@@ -667,26 +674,23 @@ const streamResponseWithByteCount = (
     }
 
     // Convert the ReadableStream to an Effect Stream
-    const byteStream = Stream.fromReadableStream(
-      () => body,
-      (error: unknown) =>
+    const byteStream = Stream.fromReadableStream({
+      evaluate: () => body,
+      onError: (error: unknown) =>
         new HttpServerError({
           cause: error,
-        })
-    );
+        }),
+    });
 
     // Collect all chunks while counting bytes (mutate array in-place for O(N) instead of O(N^2))
     const [chunks, byteSize] = yield* pipe(
       byteStream,
-      Stream.run(
-        Sink.fold<[Uint8Array[], number], Uint8Array>(
-          [[], 0],
-          () => true,
-          ([chunks, size], chunk) => {
-            chunks.push(chunk);
-            return [chunks, size + chunk.byteLength] as [Uint8Array[], number];
-          }
-        )
+      Stream.runFold(
+        (): [Uint8Array[], number] => [[], 0],
+        ([chunks, size], chunk) => {
+          chunks.push(chunk);
+          return [chunks, size + chunk.byteLength] as [Uint8Array[], number];
+        }
       )
     );
 
@@ -722,7 +726,7 @@ export const OrgProject = Schema.Struct({
   org_id: Schema.String,
   created_at: Schema.String,
   updated_at: Schema.String,
-}).annotations({ identifier: 'OrgProject' });
+}).annotate({ identifier: 'OrgProject' });
 export type OrgProject = Schema.Schema.Type<typeof OrgProject>;
 
 /**
@@ -734,7 +738,7 @@ export const OrgProjectListResponse = Schema.Struct({
   total_pages: Schema.Int,
   current_page: Schema.Int,
   total_items: Schema.Int,
-}).annotations({ identifier: 'OrgProjectListResponse' });
+}).annotate({ identifier: 'OrgProjectListResponse' });
 export type OrgProjectListResponse = Schema.Schema.Type<typeof OrgProjectListResponse>;
 
 export interface OrganizationSummary {
@@ -764,7 +768,7 @@ export const ConsumerProjectResolveResponse = Schema.Struct({
   org_id: Schema.String,
   project_type: Schema.Literal('CONSUMER'),
   consumer_user_id: Schema.String,
-}).annotations({ identifier: 'ConsumerProjectResolveResponse' });
+}).annotate({ identifier: 'ConsumerProjectResolveResponse' });
 export type ConsumerProjectResolveResponse = Schema.Schema.Type<
   typeof ConsumerProjectResolveResponse
 >;
@@ -772,12 +776,12 @@ export type ConsumerProjectResolveResponse = Schema.Schema.Type<
 export const LatestToolVersionResponse = Schema.Struct({
   tool_slug: Schema.String,
   version: Schema.String,
-}).annotations({ identifier: 'LatestToolVersionResponse' });
+}).annotate({ identifier: 'LatestToolVersionResponse' });
 export type LatestToolVersionResponse = Schema.Schema.Type<typeof LatestToolVersionResponse>;
 
 export const ConsumerConnectedToolkitsResponse = Schema.Struct({
   toolkits: Schema.Array(Schema.String),
-}).annotations({ identifier: 'ConsumerConnectedToolkitsResponse' });
+}).annotate({ identifier: 'ConsumerConnectedToolkitsResponse' });
 export type ConsumerConnectedToolkitsResponse = Schema.Schema.Type<
   typeof ConsumerConnectedToolkitsResponse
 >;
@@ -958,13 +962,14 @@ export const listOrgProjects = (params: {
     const { json } = yield* streamResponseWithByteCount(response);
 
     return yield* pipe(
-      Schema.decodeUnknown(OrgProjectListResponse)(json),
-      Effect.catchTag('ParseError', e => {
-        const message = ParseResult.TreeFormatter.formatErrorSync(e);
-        return new HttpDecodingError({
-          cause: `ParseError\n   ${message}`,
-        });
-      })
+      Schema.decodeUnknownEffect(OrgProjectListResponse)(json),
+      Effect.catchTag(
+        'SchemaError',
+        e =>
+          new HttpDecodingError({
+            cause: `SchemaError\n   ${e.message}`,
+          })
+      )
     );
   });
 
@@ -1005,13 +1010,14 @@ export const getSessionInfo = (params: {
     const { json } = yield* streamResponseWithByteCount(response);
 
     return yield* pipe(
-      Schema.decodeUnknown(SessionInfoResponse)(json),
-      Effect.catchTag('ParseError', e => {
-        const message = ParseResult.TreeFormatter.formatErrorSync(e);
-        return new HttpDecodingError({
-          cause: `ParseError\n   ${message}`,
-        });
-      })
+      Schema.decodeUnknownEffect(SessionInfoResponse)(json),
+      Effect.catchTag(
+        'SchemaError',
+        e =>
+          new HttpDecodingError({
+            cause: `SchemaError\n   ${e.message}`,
+          })
+      )
     );
   });
 
@@ -1056,13 +1062,14 @@ export const getSessionInfoByUserApiKey = (params: {
     const { json } = yield* streamResponseWithByteCount(response);
 
     return yield* pipe(
-      Schema.decodeUnknown(SessionInfoResponse)(json),
-      Effect.catchTag('ParseError', e => {
-        const message = ParseResult.TreeFormatter.formatErrorSync(e);
-        return new HttpDecodingError({
-          cause: `ParseError\n   ${message}`,
-        });
-      })
+      Schema.decodeUnknownEffect(SessionInfoResponse)(json),
+      Effect.catchTag(
+        'SchemaError',
+        e =>
+          new HttpDecodingError({
+            cause: `SchemaError\n   ${e.message}`,
+          })
+      )
     );
   });
 
@@ -1171,13 +1178,14 @@ export const resolveConsumerProject = (params: {
     const { json } = yield* streamResponseWithByteCount(response);
 
     return yield* pipe(
-      Schema.decodeUnknown(ConsumerProjectResolveResponse)(json),
-      Effect.catchTag('ParseError', e => {
-        const message = ParseResult.TreeFormatter.formatErrorSync(e);
-        return new HttpDecodingError({
-          cause: `ParseError\n   ${message}`,
-        });
-      })
+      Schema.decodeUnknownEffect(ConsumerProjectResolveResponse)(json),
+      Effect.catchTag(
+        'SchemaError',
+        e =>
+          new HttpDecodingError({
+            cause: `SchemaError\n   ${e.message}`,
+          })
+      )
     );
   });
 
@@ -1219,13 +1227,14 @@ export const getLatestToolVersion = (params: {
     const { json } = yield* streamResponseWithByteCount(response);
 
     return yield* pipe(
-      Schema.decodeUnknown(LatestToolVersionResponse)(json),
-      Effect.catchTag('ParseError', e => {
-        const message = ParseResult.TreeFormatter.formatErrorSync(e);
-        return new HttpDecodingError({
-          cause: `ParseError\n   ${message}`,
-        });
-      })
+      Schema.decodeUnknownEffect(LatestToolVersionResponse)(json),
+      Effect.catchTag(
+        'SchemaError',
+        e =>
+          new HttpDecodingError({
+            cause: `SchemaError\n   ${e.message}`,
+          })
+      )
     );
   });
 
@@ -1262,13 +1271,14 @@ export const getConsumerConnectedToolkits = (params: {
     const { json } = yield* streamResponseWithByteCount(response);
 
     return yield* pipe(
-      Schema.decodeUnknown(ConsumerConnectedToolkitsResponse)(json),
-      Effect.catchTag('ParseError', e => {
-        const message = ParseResult.TreeFormatter.formatErrorSync(e);
-        return new HttpDecodingError({
-          cause: `ParseError\n   ${message}`,
-        });
-      })
+      Schema.decodeUnknownEffect(ConsumerConnectedToolkitsResponse)(json),
+      Effect.catchTag(
+        'SchemaError',
+        e =>
+          new HttpDecodingError({
+            cause: `SchemaError\n   ${e.message}`,
+          })
+      )
     );
   });
 
@@ -1379,13 +1389,14 @@ const buildDefaultHeaders = (params: {
 };
 
 // Utility function for calling the Composio API and decoding its response.
-const callClient = <T, S extends Schema.Schema.AnyNoContext>(
+const callClient = <T, S extends Schema.Top>(
   clientSingleton: ComposioClientSingletonShape,
   apiCall: (client: _RawComposioClient) => APIPromise<T>,
   responseSchema: S
 ): Effect.Effect<
-  { data: Schema.Schema.Type<S>; metrics: Metrics },
-  HttpError | NoSuchElementException
+  { data: S['Type']; metrics: Metrics },
+  HttpError | NoSuchElementError,
+  S['DecodingServices']
 > =>
   Effect.gen(function* () {
     const client = yield* clientSingleton.get();
@@ -1406,15 +1417,15 @@ const callClient = <T, S extends Schema.Schema.AnyNoContext>(
     const { json, byteSize } = yield* streamResponseWithByteCount(response);
     const metrics = { byteSize, requests: 1 };
 
-    const typedJson = yield* pipe(
-      Schema.decodeUnknown(responseSchema)(json),
-      Effect.catchTag('ParseError', e => {
-        const message = ParseResult.TreeFormatter.formatErrorSync(e);
-
-        return new HttpDecodingError({
-          cause: `ParseError\n   ${message}`,
-        });
-      })
+    const typedJson: S['Type'] = yield* pipe(
+      Schema.decodeUnknownEffect(responseSchema)(json),
+      Effect.catchTag(
+        'SchemaError',
+        e =>
+          new HttpDecodingError({
+            cause: `SchemaError\n   ${e.message}`,
+          })
+      )
     );
 
     return { metrics, data: typedJson };
@@ -1423,7 +1434,7 @@ const callClient = <T, S extends Schema.Schema.AnyNoContext>(
 // Schema constraint for paginated responses: the decoded page must expose the
 // pagination envelope, expressed through the schema's `Type` phantom property so
 // concrete item types stay free of `any`.
-type PaginatedSchema = Schema.Schema.AnyNoContext & {
+type PaginatedSchema = Schema.Top & {
   readonly Type: {
     readonly items: ReadonlyArray<unknown>;
     readonly next_cursor: string | null;
@@ -1444,8 +1455,9 @@ const callClientWithPagination = <T, S extends PaginatedSchema>(
   apiCall: (client: _RawComposioClient, cursor?: string, limit?: number) => APIPromise<T>,
   responseSchema: S
 ): Effect.Effect<
-  { data: Schema.Schema.Type<S>; metrics: Metrics },
-  HttpError | NoSuchElementException
+  { data: S['Type']; metrics: Metrics },
+  HttpError | NoSuchElementError,
+  S['DecodingServices']
 > =>
   Effect.gen(function* () {
     const client = yield* clientSingleton.get();
@@ -1471,18 +1483,18 @@ const callClientWithPagination = <T, S extends PaginatedSchema>(
         return yield* streamResponseWithByteCount(response);
       });
 
-    type DecodedPage = Schema.Schema.Type<S>;
+    type DecodedPage = S['Type'];
 
     const decodeResponse = (json: unknown): Effect.Effect<DecodedPage, HttpDecodingError> =>
       pipe(
-        Schema.decodeUnknown(responseSchema)(json),
-        Effect.catchTag('ParseError', e => {
-          const message = ParseResult.TreeFormatter.formatErrorSync(e);
-
-          return new HttpDecodingError({
-            cause: `ParseError\n   ${message}`,
-          });
-        })
+        Schema.decodeUnknownEffect(responseSchema)(json),
+        Effect.catchTag(
+          'SchemaError',
+          e =>
+            new HttpDecodingError({
+              cause: `SchemaError\n   ${e.message}`,
+            })
+        )
       ) as Effect.Effect<DecodedPage, HttpDecodingError>;
 
     let allItems: ReadonlyArray<unknown> = [];
@@ -1522,6 +1534,18 @@ const callClientWithPagination = <T, S extends PaginatedSchema>(
 /**
  * Services
  */
+
+/**
+ * Shape exposed by {@link ComposioClientSingleton}.
+ */
+export interface ComposioClientSingletonShape {
+  readonly get: () => Effect.Effect<_RawComposioClient, NoSuchElementError>;
+  readonly getFor: (params: {
+    userApiKey?: string;
+    orgId?: string;
+    projectId?: string;
+  }) => Effect.Effect<_RawComposioClient, NoSuchElementError>;
+}
 
 /**
  * Singleton service that lazily accesses `Config` only when needed, which is used to build and provide
@@ -1574,7 +1598,7 @@ const makeComposioClientSingleton = Effect.gen(function* () {
       const resolvedProjectContext = yield* Option.match(projectContextOpt, {
         onNone: () => Effect.succeed(Option.none()),
         onSome: projectContext =>
-          projectContext.resolve.pipe(Effect.catchAll(() => Effect.succeed(Option.none()))),
+          projectContext.resolve.pipe(Effect.catch(() => Effect.succeed(Option.none()))),
       });
       return yield* Option.match(resolvedProjectContext, {
         onNone: () => getFor(),
@@ -1584,7 +1608,7 @@ const makeComposioClientSingleton = Effect.gen(function* () {
             projectId: keys.projectId,
           }),
       });
-    }) satisfies () => Effect.Effect<_RawComposioClient, NoSuchElementException, never>,
+    }) satisfies () => Effect.Effect<_RawComposioClient, NoSuchElementError, never>,
     getFor: Effect.fn(function* (params: {
       userApiKey?: string;
       orgId?: string;
@@ -1595,18 +1619,14 @@ const makeComposioClientSingleton = Effect.gen(function* () {
       userApiKey?: string;
       orgId?: string;
       projectId?: string;
-    }) => Effect.Effect<_RawComposioClient, NoSuchElementException, never>,
+    }) => Effect.Effect<_RawComposioClient, NoSuchElementError, never>,
   };
 });
 
-export type ComposioClientSingletonShape = Effect.Effect.Success<
-  typeof makeComposioClientSingleton
->;
-
-export class ComposioClientSingleton extends Context.Tag('services/ComposioClientSingleton')<
+export class ComposioClientSingleton extends Context.Service<
   ComposioClientSingleton,
   ComposioClientSingletonShape
->() {
+>()('services/ComposioClientSingleton') {
   static readonly Default = Layer.effect(ComposioClientSingleton, makeComposioClientSingleton).pipe(
     Layer.provide(ComposioUserContextLive)
   );
@@ -2063,12 +2083,12 @@ const makeComposioClientLive = Effect.gen(function* () {
   };
 });
 
-export type ComposioClientLiveShape = Effect.Effect.Success<typeof makeComposioClientLive>;
+export type ComposioClientLiveShape = Effect.Success<typeof makeComposioClientLive>;
 
-export class ComposioClientLive extends Context.Tag('services/ComposioClientLive')<
+export class ComposioClientLive extends Context.Service<
   ComposioClientLive,
   ComposioClientLiveShape
->() {
+>()('services/ComposioClientLive') {
   static readonly Default = Layer.effect(ComposioClientLive, makeComposioClientLive).pipe(
     Layer.provide(ComposioClientSingleton.Default)
   );
@@ -2094,17 +2114,17 @@ const makeComposioToolkitsRepository = Effect.gen(function* () {
         client.toolkits.retrieve(slug).pipe(
           // Only convert 404 errors to InvalidToolkitsError.
           // Other HTTP errors (500, 401, network failures, etc.) should propagate as-is.
-          Effect.catchTag('services/HttpServerError', e =>
-            Effect.if(e.status === 404, {
-              onTrue: () =>
-                Effect.fail(
-                  new InvalidToolkitsError({
-                    invalidToolkits: [slug],
-                    availableToolkits: [],
-                  })
-                ),
-              onFalse: () => Effect.fail(e),
-            })
+          Effect.catchTag(
+            'services/HttpServerError',
+            (e): Effect.Effect<never, InvalidToolkitsError | HttpServerError> =>
+              e.status === 404
+                ? Effect.fail(
+                    new InvalidToolkitsError({
+                      invalidToolkits: [slug],
+                      availableToolkits: [],
+                    })
+                  )
+                : Effect.fail(e)
           )
         )
       ),
@@ -2161,7 +2181,7 @@ const makeComposioToolkitsRepository = Effect.gen(function* () {
       toolkitSlugs: ReadonlyArray<string>
     ): Effect.Effect<
       ReadonlyArray<string>,
-      InvalidToolkitsError | HttpError | NoSuchElementException
+      InvalidToolkitsError | HttpError | NoSuchElementError
     > =>
       Effect.gen(function* () {
         // Normalize input slugs to lowercase for comparison
@@ -2213,7 +2233,7 @@ const makeComposioToolkitsRepository = Effect.gen(function* () {
         validatedOverrides: ToolkitVersionOverrides;
         warnings: ReadonlyArray<string>;
       },
-      InvalidToolkitVersionsError | InvalidToolkitsError | HttpError | NoSuchElementException
+      InvalidToolkitVersionsError | InvalidToolkitsError | HttpError | NoSuchElementError
     > => validateToolkitVersionsImpl(client, overrides, relevantToolkits),
     /**
      * Searches toolkits with optional filters. Returns a single page of results.
@@ -2282,14 +2302,12 @@ const makeComposioToolkitsRepository = Effect.gen(function* () {
   };
 });
 
-export type ComposioToolkitsRepositoryShape = Effect.Effect.Success<
-  typeof makeComposioToolkitsRepository
->;
+export type ComposioToolkitsRepositoryShape = Effect.Success<typeof makeComposioToolkitsRepository>;
 
-export class ComposioToolkitsRepository extends Context.Tag('services/ComposioToolkitsRepository')<
+export class ComposioToolkitsRepository extends Context.Service<
   ComposioToolkitsRepository,
   ComposioToolkitsRepositoryShape
->() {
+>()('services/ComposioToolkitsRepository') {
   static readonly Default = Layer.effect(
     ComposioToolkitsRepository,
     makeComposioToolkitsRepository
@@ -2308,14 +2326,12 @@ const makeComposioSessionRepository = Effect.gen(function* () {
   };
 });
 
-export type ComposioSessionRepositoryShape = Effect.Effect.Success<
-  typeof makeComposioSessionRepository
->;
+export type ComposioSessionRepositoryShape = Effect.Success<typeof makeComposioSessionRepository>;
 
-export class ComposioSessionRepository extends Context.Tag('services/ComposioSessionRepository')<
+export class ComposioSessionRepository extends Context.Service<
   ComposioSessionRepository,
   ComposioSessionRepositoryShape
->() {
+>()('services/ComposioSessionRepository') {
   static readonly Default = Layer.effect(
     ComposioSessionRepository,
     makeComposioSessionRepository

@@ -1,7 +1,6 @@
-import { AutoCorrect, CliConfig } from '@effect/cli';
-import * as FileSystem from '@effect/platform/FileSystem';
-import * as Path from '@effect/platform/Path';
-import { Data, Effect, Option, ParseResult, Schema } from 'effect';
+import * as FileSystem from 'effect/FileSystem';
+import * as Path from 'effect/Path';
+import { Data, Effect, Option, Predicate, Schema, SchemaIssue } from 'effect';
 import { getLocalToolInputDefinition } from '@composio/cli-local-tools';
 import {
   jsonSchemaToEffectSchema,
@@ -10,6 +9,7 @@ import {
 import { JsonRecordSchema } from 'src/effects/json';
 import { setupCacheDir } from 'src/effects/setup-cache-dir';
 import { ComposioToolkitsRepository, getLatestToolVersion } from 'src/services/composio-clients';
+import { memoizeInProcess } from 'src/utils/memoize-in-process';
 import { logToolDebug } from 'src/services/runtime-debug-logger';
 import { normalizeFileUploadSchema } from 'src/services/tool-file-uploads';
 import { ComposioUserContext } from 'src/services/user-context';
@@ -27,7 +27,7 @@ const CachedToolInputDefinitionEnvelope = Schema.Struct({
 });
 const ObjectSchemaWithProperties = Schema.Struct({ properties: JsonRecordSchema });
 
-const decodeJsonObject = Schema.decodeUnknown(Schema.parseJson(JsonRecordSchema));
+const decodeJsonObject = Schema.decodeUnknownEffect(Schema.fromJsonString(JsonRecordSchema));
 const decodeCachedToolInputDefinitionEnvelope = Schema.decodeUnknownOption(
   CachedToolInputDefinitionEnvelope
 );
@@ -119,8 +119,8 @@ export const getCachedToolInputDefinition = (slug: string) =>
     const raw = yield* fs
       .readFileString(schemaPath, 'utf8')
       .pipe(
-        Effect.catchTag('SystemError', error =>
-          error.reason === 'NotFound' ? Effect.succeed(null) : Effect.fail(error)
+        Effect.catchTag('PlatformError', error =>
+          Predicate.isTagged(error.reason, 'NotFound') ? Effect.succeed(null) : Effect.fail(error)
         )
       );
     if (raw === null) {
@@ -179,37 +179,56 @@ export const invalidateToolInputDefinition = (slug: string) =>
     yield* fs
       .remove(schemaPath)
       .pipe(
-        Effect.catchTag('SystemError', error =>
-          error.reason === 'NotFound' ? Effect.void : Effect.fail(error)
+        Effect.catchTag('PlatformError', error =>
+          Predicate.isTagged(error.reason, 'NotFound') ? Effect.void : Effect.fail(error)
         )
       );
   });
 
-const fetchResolvedLatestToolVersion = (
-  slug: string,
-  params?: { readonly orgId?: string; readonly projectId?: string }
-) =>
+// One `get_latest_version` round trip per tool per process. `composio execute`
+// asks twice on every call: the background version check forked from the
+// command, and `getOrFetchToolInputDefinition` on the executor's file-upload
+// path. Both want the same answer within the same second.
+const fetchLatestToolVersionOnce = memoizeInProcess({
+  keyOf: (input: {
+    readonly slug: string;
+    readonly apiKey: string;
+    readonly params?: { readonly orgId?: string; readonly projectId?: string };
+  }) => `${input.slug}\u0000${input.params?.orgId ?? ''}\u0000${input.params?.projectId ?? ''}`,
+  make: ({ slug, apiKey, params }) =>
+    Effect.gen(function* () {
+      const userContext = yield* ComposioUserContext;
+      const latest = yield* getLatestToolVersion({
+        baseURL: userContext.data.baseURL,
+        apiKey,
+        toolSlug: slug,
+        orgId: params?.orgId,
+        projectId: params?.projectId,
+      });
+      yield* logToolDebug('latest_tool_version', {
+        slug,
+        orgId: params?.orgId,
+        projectId: params?.projectId,
+        response: latest,
+      });
+      return latest.version;
+    }),
+});
+
+// The API-key check stays outside the memo: the user context is live state
+// that `login` can fill in later in the same process, and caching the `null`
+// answered before that would silence the version check for the rest of it.
+const fetchResolvedLatestToolVersion = (input: {
+  readonly slug: string;
+  readonly params?: { readonly orgId?: string; readonly projectId?: string };
+}) =>
   Effect.gen(function* () {
     const userContext = yield* ComposioUserContext;
     const apiKey = Option.getOrUndefined(userContext.data.apiKey);
     if (!apiKey) {
       return null;
     }
-
-    const latest = yield* getLatestToolVersion({
-      baseURL: userContext.data.baseURL,
-      apiKey,
-      toolSlug: slug,
-      orgId: params?.orgId,
-      projectId: params?.projectId,
-    });
-    yield* logToolDebug('latest_tool_version', {
-      slug,
-      orgId: params?.orgId,
-      projectId: params?.projectId,
-      response: latest,
-    });
-    return latest.version;
+    return yield* fetchLatestToolVersionOnce({ ...input, apiKey });
   });
 
 const fetchAndCacheToolInputDefinition = (
@@ -243,8 +262,8 @@ const fetchAndCacheToolInputDefinition = (
     const [tool, latestVersion] = yield* Effect.all(
       [
         repo.getToolDetailed(slug),
-        fetchResolvedLatestToolVersion(slug, params).pipe(
-          Effect.catchAll(() => Effect.succeed(null))
+        fetchResolvedLatestToolVersion({ slug, params }).pipe(
+          Effect.catch(() => Effect.succeed(null))
         ),
       ],
       { concurrency: 2 }
@@ -291,7 +310,7 @@ export const getOrFetchToolInputDefinition = (
       cached.version,
       params
     ).pipe(
-      Effect.catchAll(() =>
+      Effect.catch(() =>
         Effect.succeed({
           isStale: false,
           latestVersion: cached.version,
@@ -317,7 +336,7 @@ const refreshAndFetchToolInputDefinitionIfVersionChanged = (
   params?: { readonly orgId?: string; readonly projectId?: string }
 ) =>
   Effect.gen(function* () {
-    const latestVersion = yield* fetchResolvedLatestToolVersion(slug, params);
+    const latestVersion = yield* fetchResolvedLatestToolVersion({ slug, params });
     yield* logToolDebug('resolved_tool_version', {
       slug,
       mode: 'refresh',
@@ -363,7 +382,23 @@ const getObjectSchemaProperties = (schema: Record<string, unknown>): ReadonlyArr
 
 const normalizeKey = (value: string) => value.toLowerCase().replace(/[^a-z0-9]/g, '');
 
-const schemaKeySuggestionConfig = CliConfig.defaultConfig;
+/** Simple Levenshtein distance (small N, no perf worries). */
+const levenshteinDistance = (a: string, b: string): number => {
+  const m = a.length;
+  const n = b.length;
+  const dp: Array<Array<number>> = Array.from({ length: m + 1 }, () =>
+    Array.from({ length: n + 1 }, () => 0)
+  );
+  for (let i = 0; i <= m; i++) dp[i][0] = i;
+  for (let j = 0; j <= n; j++) dp[0][j] = j;
+  for (let i = 1; i <= m; i++) {
+    for (let j = 1; j <= n; j++) {
+      const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+      dp[i][j] = Math.min(dp[i - 1][j] + 1, dp[i][j - 1] + 1, dp[i - 1][j - 1] + cost);
+    }
+  }
+  return dp[m][n];
+};
 
 type SchemaKeyCandidate = {
   readonly key: string;
@@ -381,11 +416,7 @@ const findClosestSchemaKey = (
 
   const closest = allowedKeys.reduce<SchemaKeyCandidate | undefined>((best, key) => {
     const normalizedKey = normalizeKey(key);
-    const distance = AutoCorrect.levensteinDistance(
-      normalizedUnknownKey,
-      normalizedKey,
-      schemaKeySuggestionConfig
-    );
+    const distance = levenshteinDistance(normalizedUnknownKey, normalizedKey);
     const containsBonus =
       normalizedKey.includes(normalizedUnknownKey) || normalizedUnknownKey.includes(normalizedKey)
         ? -2
@@ -473,9 +504,9 @@ export const validateToolInputArgumentsWithDefinition = (
         }),
     });
 
-    yield* Schema.decodeUnknown(inputSchema, { errors: 'all' })(args).pipe(
+    yield* Schema.decodeUnknownEffect(inputSchema, { errors: 'all' })(args).pipe(
       Effect.mapError(error => {
-        const issues = ParseResult.ArrayFormatter.formatErrorSync(error).map(
+        const issues = SchemaIssue.makeFormatterStandardSchemaV1()(error.issue).issues.map(
           issue => issue.message
         );
         return new ToolInputValidationError({ toolSlug: slug, schemaPath, issues, cause: error });

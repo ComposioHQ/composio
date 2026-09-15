@@ -1,5 +1,5 @@
 import { describe, expect, layer } from '@effect/vitest';
-import * as FileSystem from '@effect/platform/FileSystem';
+import * as FileSystem from 'effect/FileSystem';
 import { Effect, Option } from 'effect';
 import path from 'node:path';
 import { afterEach, vi } from 'vitest';
@@ -29,7 +29,7 @@ describe('CLI: composio agent', () => {
   });
 
   layer(TestLive())(it => {
-    it.scoped('repairs permissions on an existing agent identity before reading it', () =>
+    it.effect('repairs permissions on an existing agent identity before reading it', () =>
       Effect.gen(function* () {
         const fs = yield* FileSystem.FileSystem;
         const cacheDir = yield* setupCacheDir;
@@ -47,7 +47,7 @@ describe('CLI: composio agent', () => {
       })
     );
 
-    it.scoped('exposes agent signup as a subcommand', () =>
+    it.effect('exposes agent signup as a subcommand', () =>
       Effect.gen(function* () {
         yield* cli(['agent', '--help']);
         const output = (yield* MockConsole.getLines({ stripAnsi: true })).join('\n');
@@ -61,7 +61,7 @@ describe('CLI: composio agent', () => {
   });
 
   layer(TestLive())(it => {
-    it.scoped('agent signup works when the CLI is not signed in', () =>
+    it.effect('agent signup works when the CLI is not signed in', () =>
       Effect.gen(function* () {
         vi.spyOn(globalThis, 'fetch').mockImplementation(async requestInput => {
           const url =
@@ -116,7 +116,7 @@ describe('CLI: composio agent', () => {
   });
 
   layer(TestLive())(it => {
-    it.scoped('top-level signup makes clear it signs up an agent', () =>
+    it.effect('top-level signup makes clear it signs up an agent', () =>
       Effect.gen(function* () {
         vi.spyOn(globalThis, 'fetch').mockImplementation(async requestInput => {
           const url =
@@ -148,7 +148,7 @@ describe('CLI: composio agent', () => {
   });
 
   layer(TestLive())(it => {
-    it.scoped('agent inbox prints only JSON', () =>
+    it.effect('agent inbox prints only JSON', () =>
       Effect.gen(function* () {
         yield* writeStoredAgentIdentity(agentSignupResponse);
         const fs = yield* FileSystem.FileSystem;
@@ -210,7 +210,7 @@ describe('CLI: composio agent', () => {
   });
 
   layer(TestLive())(it => {
-    it.scoped('agent login restores an existing agent from composio_agent_key', () =>
+    it.effect('agent login restores an existing agent from composio_agent_key', () =>
       Effect.gen(function* () {
         vi.spyOn(globalThis, 'fetch').mockImplementation(async (requestInput, init) => {
           const url =
@@ -260,7 +260,7 @@ describe('CLI: composio agent', () => {
   });
 
   layer(TestLive({ fixture: 'user-config-example' }))(it => {
-    it.scoped('agent commands show a soft auth warning when signed in as a human user', () =>
+    it.effect('agent commands show a soft auth warning when signed in as a human user', () =>
       Effect.gen(function* () {
         yield* cli(['agent', 'whoami']);
         const output = (yield* MockConsole.getLines({ stripAnsi: true })).join('\n');
@@ -271,7 +271,7 @@ describe('CLI: composio agent', () => {
       })
     );
 
-    it.scoped('agent signup shows a soft auth warning when signed in as a human user', () =>
+    it.effect('agent signup shows a soft auth warning when signed in as a human user', () =>
       Effect.gen(function* () {
         yield* cli(['agent', 'signup']);
         const output = (yield* MockConsole.getLines({ stripAnsi: true })).join('\n');
@@ -282,7 +282,7 @@ describe('CLI: composio agent', () => {
       })
     );
 
-    it.scoped('agent login shows a soft auth warning when signed in as a human user', () =>
+    it.effect('agent login shows a soft auth warning when signed in as a human user', () =>
       Effect.gen(function* () {
         yield* cli(['agent', 'login', 'cak_existing']);
         const output = (yield* MockConsole.getLines({ stripAnsi: true })).join('\n');

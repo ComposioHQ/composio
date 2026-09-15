@@ -64,19 +64,19 @@ const connectedAccountsData = {
   items: testConnectedAccounts,
 } satisfies TestLiveInput['connectedAccountsData'];
 
-const testDevConfigProvider = ConfigProvider.fromMap(
-  new Map([
-    ['COMPOSIO_USER_API_KEY', 'test_api_key'],
-    ['COMPOSIO_ORG_ID', 'dev_org_test'],
-    ['COMPOSIO_PROJECT_ID', 'dev_project_test'],
-  ])
-).pipe(extendConfigProvider);
+const testDevConfigProvider = ConfigProvider.fromEnv({
+  env: {
+    COMPOSIO_USER_API_KEY: 'test_api_key',
+    COMPOSIO_ORG_ID: 'dev_org_test',
+    COMPOSIO_PROJECT_ID: 'dev_project_test',
+  },
+}).pipe(extendConfigProvider);
 
 describe('CLI: composio dev connected-accounts list', () => {
   layer(TestLive({ baseConfigProvider: testDevConfigProvider, connectedAccountsData }))(
     '[Given] no flags [Then] lists all connected accounts',
     it => {
-      it.scoped('lists all connected accounts with table', () =>
+      it.effect('lists all connected accounts with table', () =>
         Effect.gen(function* () {
           const userContext = yield* ComposioUserContext;
           yield* userContext.login('test_api_key', 'org_test');
@@ -96,7 +96,7 @@ describe('CLI: composio dev connected-accounts list', () => {
   layer(TestLive({ baseConfigProvider: testDevConfigProvider, connectedAccountsData }))(
     '[Given] --toolkits "gmail" [Then] lists only gmail connected accounts',
     it => {
-      it.scoped('filters by toolkit', () =>
+      it.effect('filters by toolkit', () =>
         Effect.gen(function* () {
           const userContext = yield* ComposioUserContext;
           yield* userContext.login('test_api_key', 'org_test');
@@ -115,7 +115,7 @@ describe('CLI: composio dev connected-accounts list', () => {
   layer(TestLive({ baseConfigProvider: testDevConfigProvider, connectedAccountsData }))(
     '[Given] --user-id "default" [Then] lists only default user accounts',
     it => {
-      it.scoped('filters by user ID', () =>
+      it.effect('filters by user ID', () =>
         Effect.gen(function* () {
           const userContext = yield* ComposioUserContext;
           yield* userContext.login('test_api_key', 'org_test');
@@ -135,7 +135,7 @@ describe('CLI: composio dev connected-accounts list', () => {
   layer(TestLive({ baseConfigProvider: testDevConfigProvider, connectedAccountsData }))(
     '[Given] --status ACTIVE [Then] lists only active accounts',
     it => {
-      it.scoped('filters by status', () =>
+      it.effect('filters by status', () =>
         Effect.gen(function* () {
           const userContext = yield* ComposioUserContext;
           yield* userContext.login('test_api_key', 'org_test');
@@ -155,7 +155,7 @@ describe('CLI: composio dev connected-accounts list', () => {
   layer(TestLive({ baseConfigProvider: testDevConfigProvider, connectedAccountsData }))(
     '[Given] --limit 1 [Then] respects limit',
     it => {
-      it.scoped('respects limit', () =>
+      it.effect('respects limit', () =>
         Effect.gen(function* () {
           const userContext = yield* ComposioUserContext;
           yield* userContext.login('test_api_key', 'org_test');
@@ -172,7 +172,7 @@ describe('CLI: composio dev connected-accounts list', () => {
   layer(TestLive({ baseConfigProvider: testDevConfigProvider }))(
     '[Given] no org in user context [Then] warns user to login',
     it => {
-      it.scoped('warns user to login', () =>
+      it.effect('warns user to login', () =>
         Effect.gen(function* () {
           const error = yield* Effect.flip(cli(['dev', 'connected-accounts', 'list']));
           expect(String(error)).toContain('No current org configured');
@@ -182,7 +182,7 @@ describe('CLI: composio dev connected-accounts list', () => {
   );
 
   layer(TestLive())('[Given] no API key [Then] warns user to login', it => {
-    it.scoped('warns user to login', () =>
+    it.effect('warns user to login', () =>
       Effect.gen(function* () {
         yield* cli(['dev', 'connected-accounts', 'list']);
         const lines = yield* MockConsole.getLines({ stripAnsi: true });
@@ -196,7 +196,7 @@ describe('CLI: composio dev connected-accounts list', () => {
   layer(TestLive({ baseConfigProvider: testDevConfigProvider }))(
     '[Given] empty results [Then] shows no connected accounts found',
     it => {
-      it.scoped('shows no connected accounts found', () =>
+      it.effect('shows no connected accounts found', () =>
         Effect.gen(function* () {
           const userContext = yield* ComposioUserContext;
           yield* userContext.login('test_api_key', 'org_test');
@@ -213,7 +213,7 @@ describe('CLI: composio dev connected-accounts list', () => {
   layer(TestLive({ baseConfigProvider: testDevConfigProvider, connectedAccountsData }))(
     '[Given] --toolkits "nonexistent" [Then] shows hint about toolkit slug',
     it => {
-      it.scoped('shows toolkit hint', () =>
+      it.effect('shows toolkit hint', () =>
         Effect.gen(function* () {
           const userContext = yield* ComposioUserContext;
           yield* userContext.login('test_api_key', 'org_test');
@@ -244,7 +244,7 @@ describe('CLI: composio dev connected-accounts list', () => {
       connectedAccountsData: { items: unknownStatusAccounts },
     })
   )('[Given] server returns unknown status [Then] warns and degrades instead of crashing', it => {
-    it.scoped('does not crash on unknown status', () =>
+    it.effect('does not crash on unknown status', () =>
       Effect.gen(function* () {
         const userContext = yield* ComposioUserContext;
         yield* userContext.login('test_api_key', 'org_test');

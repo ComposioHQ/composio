@@ -1,9 +1,8 @@
 import { describe, expect, layer } from '@effect/vitest';
 import { vi, afterEach } from 'vitest';
 import { Console, DateTime, Effect, Exit, Option } from 'effect';
-import { HelpDoc, ValidationError } from '@effect/cli';
 import path from 'node:path';
-import * as FileSystem from '@effect/platform/FileSystem';
+import * as FileSystem from 'effect/FileSystem';
 import { cli, MockConsole, TestLive } from 'test/__utils__';
 import { terminalUITestImpl } from 'test/__utils__/services/terminal-ui-test';
 import * as constants from 'src/constants';
@@ -95,7 +94,7 @@ describe('CLI: composio login', () => {
 
   describe('login --help', () => {
     layer(TestLive())(it => {
-      it.scoped('[Then] shows browser, session, direct-login flags and no legacy --api-key', () =>
+      it.effect('[Then] shows browser, session, direct-login flags and no legacy --api-key', () =>
         Effect.gen(function* () {
           yield* cli(['login', '--help']);
           const lines = yield* MockConsole.getLines();
@@ -114,8 +113,11 @@ describe('CLI: composio login', () => {
     });
   });
 
+  // v4 migration note: this business-level validation (only knowable after parsing) is a
+  // plain typed domain error (`LoginOptionError`), not a `CliError.InvalidValue` — see the
+  // migration note in `login.cmd.ts` above `invalidOptionValue`.
   layer(TestLive())(it => {
-    it.scoped('[Given] conflicting login options [Then] fails with a CLI validation error', () =>
+    it.effect('[Given] conflicting login options [Then] fails with a CLI validation error', () =>
       Effect.gen(function* () {
         const error = yield* cli([
           'login',
@@ -125,18 +127,15 @@ describe('CLI: composio login', () => {
           'uak_direct_key',
         ]).pipe(Effect.flip);
 
-        expect(ValidationError.isValidationError(error)).toBe(true);
-        if (!ValidationError.isValidationError(error)) return;
-        expect(ValidationError.isInvalidValue(error)).toBe(true);
-        expect(HelpDoc.toAnsiText(error.error)).toContain(
-          'Use either `--key` or `--user-api-key`, not both.'
-        );
+        expect(error).toMatchObject({
+          message: 'Use either `--key` or `--user-api-key`, not both.',
+        });
       })
     );
   });
 
   layer(TestLive({ terminalUI: headlessStdinUI }))(it => {
-    it.scoped('[When] stdin is non-interactive [Then] login prints agent instructions', () =>
+    it.effect('[When] stdin is non-interactive [Then] login prints agent instructions', () =>
       Effect.gen(function* () {
         yield* cli(['login']);
 
@@ -177,7 +176,7 @@ describe('CLI: composio login', () => {
   });
 
   layer(TestLive({ terminalUI: headlessStdinUI }))(it => {
-    it.scoped(
+    it.effect(
       '[Given] a stored READY agent identity [When] login runs headlessly [Then] completes agent login unattended',
       () =>
         Effect.gen(function* () {
@@ -208,7 +207,7 @@ describe('CLI: composio login', () => {
   });
 
   layer(TestLive({ terminalUI: headlessStdinUI }))(it => {
-    it.scoped(
+    it.effect(
       '[Given] a stored READY agent identity the API rejects [When] login runs headlessly [Then] does not reuse the revoked identity',
       () =>
         Effect.gen(function* () {
@@ -232,7 +231,7 @@ describe('CLI: composio login', () => {
   });
 
   layer(TestLive({ terminalUI: headlessStdinUI }))(it => {
-    it.scoped(
+    it.effect(
       '[Given] a stored READY agent identity and an unreachable agents API [When] login runs headlessly [Then] still reuses the on-disk identity',
       () =>
         Effect.gen(function* () {
@@ -254,7 +253,7 @@ describe('CLI: composio login', () => {
   });
 
   layer(TestLive({ terminalUI: headlessStdinUI }))(it => {
-    it.scoped(
+    it.effect(
       '[Given] a stored PENDING agent identity [When] login runs headlessly [Then] prints instructions without logging in',
       () =>
         Effect.gen(function* () {
@@ -278,7 +277,7 @@ describe('CLI: composio login', () => {
   });
 
   layer(TestLive({ terminalUI: headlessStdinUI }))(it => {
-    it.scoped(
+    it.effect(
       '[Given] no stored agent identity [When] login runs headlessly [Then] never auto-signs-up an agent',
       () =>
         Effect.gen(function* () {
@@ -311,7 +310,7 @@ describe('CLI: composio login', () => {
     });
 
     layer(TestLive({ terminalUI: pipedStdoutUI }))(it => {
-      it.scoped(
+      it.effect(
         '[Given] a stored agent [When] stdout is piped but stdin and stderr are TTYs [Then] login stays interactive',
         () =>
           Effect.gen(function* () {
@@ -338,7 +337,7 @@ describe('CLI: composio login', () => {
   });
 
   layer(TestLive())(it => {
-    it.scoped(
+    it.effect(
       '[Given] an unreadable pending login cache [Then] poll reports the read failure, not a decode failure',
       () =>
         Effect.gen(function* () {
@@ -366,7 +365,7 @@ describe('CLI: composio login', () => {
   });
 
   layer(TestLive({ terminalUI: stopBeforeSessionPollUI }))(it => {
-    it.scoped('repairs permissions on an existing pending login session before reading it', () =>
+    it.effect('repairs permissions on an existing pending login session before reading it', () =>
       Effect.gen(function* () {
         const fs = yield* FileSystem.FileSystem;
         const cacheDir = yield* setupCacheDir;
@@ -396,7 +395,7 @@ describe('CLI: composio login', () => {
   });
 
   layer(TestLive())(it => {
-    it.scoped('[When] logging in with --user-api-key --org [Then] stores the chosen org', () =>
+    it.effect('[When] logging in with --user-api-key --org [Then] stores the chosen org', () =>
       Effect.gen(function* () {
         vi.spyOn(globalThis, 'fetch').mockImplementation(
           async (requestInput: RequestInfo | URL, init?: RequestInit) => {
@@ -487,7 +486,7 @@ describe('CLI: composio login', () => {
   });
 
   layer(TestLive())(it => {
-    it.scoped(
+    it.effect(
       '[Given] selected-org enrichment fails [When] completing --poll [Then] links the selected org membership',
       () =>
         Effect.gen(function* () {

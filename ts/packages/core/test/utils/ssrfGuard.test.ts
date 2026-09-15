@@ -437,6 +437,80 @@ describe('ssrfSafeFetch', () => {
     expect(mockFetch.mock.calls[2][1].body).toBeUndefined();
   });
 
+  // A credential header is addressed to the origin the caller named, so a hop
+  // that leaves that origin must not carry it: `redirect: 'manual'` means
+  // `fetch` never strips it for us. The Python guard applies the same rule.
+  const credentialed = {
+    Authorization: 'Bearer token',
+    'Proxy-Authorization': 'Basic cHJveHk=',
+    Cookie: 'session=abc',
+    'X-Test': 'kept',
+  };
+
+  it.each([
+    { location: 'https://other.example.com/elsewhere', differs: 'host' },
+    { location: 'http://example.com/elsewhere', differs: 'scheme' },
+    { location: 'https://example.com:8443/elsewhere', differs: 'port' },
+  ])('drops credential headers on a redirect to a different $differs', async ({ location }) => {
+    resolvesTo('93.184.216.34');
+    mockFetch
+      .mockResolvedValueOnce(new Response(null, { status: 307, headers: { location } }))
+      .mockResolvedValueOnce(new Response('data', { status: 200 }));
+
+    await ssrfSafeFetch('https://example.com/download', { headers: credentialed });
+
+    const [url, init] = mockFetch.mock.calls[1];
+    expect(url).toBe(location);
+    const headers = new Headers(init.headers);
+    expect(headers.get('authorization')).toBeNull();
+    expect(headers.get('proxy-authorization')).toBeNull();
+    expect(headers.get('cookie')).toBeNull();
+    expect(headers.get('x-test')).toBe('kept');
+  });
+
+  it('keeps credential headers on a same-origin redirect', async () => {
+    resolvesTo('93.184.216.34');
+    mockFetch
+      .mockResolvedValueOnce(
+        new Response(null, { status: 307, headers: { location: 'https://example.com:443/moved' } })
+      )
+      .mockResolvedValueOnce(new Response('data', { status: 200 }));
+
+    await ssrfSafeFetch('https://example.com/download', { headers: credentialed });
+
+    const headers = new Headers(mockFetch.mock.calls[1][1].headers);
+    expect(headers.get('authorization')).toBe('Bearer token');
+    expect(headers.get('proxy-authorization')).toBe('Basic cHJveHk=');
+    expect(headers.get('cookie')).toBe('session=abc');
+    expect(headers.get('x-test')).toBe('kept');
+  });
+
+  it('drops credential headers together with the body on a cross-origin 303', async () => {
+    resolvesTo('93.184.216.34');
+    mockFetch
+      .mockResolvedValueOnce(
+        new Response(null, {
+          status: 303,
+          headers: { location: 'https://other.example.com/result' },
+        })
+      )
+      .mockResolvedValueOnce(new Response('data', { status: 200 }));
+
+    await ssrfSafeFetch('https://example.com/create', {
+      method: 'POST',
+      body: 'payload',
+      headers: { ...credentialed, 'Content-Type': 'application/octet-stream' },
+    });
+
+    const init = mockFetch.mock.calls[1][1];
+    expect(init.method).toBe('GET');
+    expect(init.body).toBeUndefined();
+    const headers = new Headers(init.headers);
+    expect(headers.get('content-type')).toBeNull();
+    expect(headers.get('authorization')).toBeNull();
+    expect(headers.get('x-test')).toBe('kept');
+  });
+
   it.each([300, 304, 305, 306])(
     'returns a %i without following its location',
     async (status: number) => {

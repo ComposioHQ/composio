@@ -122,11 +122,11 @@ const selectParser: ParserSelector = (schema, refs) => {
   } else if (its.a.not(schema)) {
     return parseNot(schema, refs);
   } else if (hasTypelessScalarConstraints(schema)) {
-    return parseTypelessConstraints(schema);
+    return parseTypelessConstraints(schema, refs);
   } else if (its.a.multipleType(schema)) {
     return parseMultipleType(schema, refs);
   } else if (its.a.primitive(schema, 'string')) {
-    return parseString(schema);
+    return parseString(schema, refs);
   } else if (its.a.primitive(schema, 'number') || its.a.primitive(schema, 'integer')) {
     return parseNumber(schema);
   } else if (its.a.primitive(schema, 'boolean')) {

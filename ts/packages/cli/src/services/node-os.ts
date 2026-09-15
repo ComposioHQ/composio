@@ -10,7 +10,7 @@ export interface NodeOsShape {
 }
 
 // Injectable operating-system details for testing purposes.
-export class NodeOs extends Context.Tag('services/NodeOs')<NodeOs, NodeOsShape>() {
+export class NodeOs extends Context.Service<NodeOs, NodeOsShape>()('services/NodeOs') {
   static readonly Default: Layer.Layer<NodeOs> = Layer.sync(NodeOs, () => ({
     homedir: os.homedir(),
     tmpdir: os.tmpdir(),
