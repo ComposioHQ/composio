@@ -17,7 +17,7 @@ setup(
     url="https://github.com/composiohq/composio",
     classifiers=[
         "Programming Language :: Python :: 3",
-        "License :: OSI Approved :: Apache Software License",
+        "License :: OSI Approved :: MIT License",
         "Operating System :: OS Independent",
     ],
     python_requires=">=3.10,<4",
