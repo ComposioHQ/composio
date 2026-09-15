@@ -14,7 +14,7 @@ You pick a key's permissions when you create it, and they can't be changed after
 </Callout>
 
 <Callout type="info">
-Default project API keys keep full project API key access. New scoped keys use the permission areas and access levels on this page.
+Default project API keys keep full project API key access. Scoped keys use the permission areas and access levels on this page.
 </Callout>
 
 ## Create a scoped API key
@@ -23,7 +23,7 @@ Create a scoped key from the dashboard:
 
 <Steps>
 <Step>
-Go to the [Composio Dashboard](https://dashboard.composio.dev?utm_source=docs&utm_medium=content&utm_campaign=project-api-key-permissions).
+Go to the [Composio Dashboard](https://dashboard.composio.dev).
 </Step>
 <Step>
 Select **Platform**.
@@ -57,8 +57,6 @@ The REST tables show paths relative to the API base URL, with each operation lis
 
 ## Permission areas
 
-For a session-based integration, grant **Session management** to create and configure sessions, and **Session tool execution** to search and execute tools. Write only is enough to create sessions. Choose Read and write if you also need to retrieve them.
-
 Jump to each permission area to see the routes it covers.
 
 | Permission area         | Available levels                                 | Routes                                 |
@@ -66,15 +64,15 @@ Jump to each permission area to see the routes it covers.
 | Auth configs            | No access, Read only, Write only, Read and write | [View routes](#auth-configs)           |
 | Connected accounts      | No access, Read only, Write only, Read and write | [View routes](#connected-accounts)     |
 | Tools                   | No access, Read only                             | [View routes](#tools)                  |
-| Tool execution (Legacy) | No access, Write only                            | [View routes](#tool-execution-legacy)  |
 | Session management      | No access, Read only, Write only, Read and write | [View routes](#session-management)     |
 | Session tool execution  | No access, Write only                            | [View routes](#session-tool-execution) |
-| MCP (Legacy)            | No access, Read only, Write only, Read and write | [View routes](#mcp-legacy)             |
-| Proxy execute (Legacy)  | No access, Write only                            | [View routes](#proxy-execute-legacy)   |
 | Toolkits                | No access, Read only, Write only, Read and write | [View routes](#toolkits)               |
 | Triggers                | No access, Read only, Write only, Read and write | [View routes](#triggers)               |
 | Webhooks                | No access, Read only, Write only, Read and write | [View routes](#webhooks)               |
 | Observability           | No access, Read only                             | [View routes](#observability)          |
+| MCP (Legacy)            | No access, Read only, Write only, Read and write | [View routes](#mcp-legacy)             |
+| Tool execution (Legacy) | No access, Write only                            | [View routes](#tool-execution-legacy)  |
+| Proxy execute (Legacy)  | No access, Write only                            | [View routes](#proxy-execute-legacy)   |
 
 ## Auth configs
 
@@ -119,17 +117,6 @@ View tool definitions, inputs, scopes, and versions.
 | Read   | `GET`  | `/tools/get_scopes_required`            |
 | Read   | `POST` | `/tools/execute/{tool_slug}/input`      |
 
-## Tool execution (Legacy)
-
-Execute tools through the legacy direct execution API.
-
-| Access | Method | Route                        |
-| ------ | ------ | ---------------------------- |
-| Write  | `POST` | `/tools/execute/{tool_slug}` |
-| Write  | `POST` | `/files/upload/request`      |
-| Write  | `POST` | `/files/upload/response`     |
-| Write  | `GET`  | `/files/list`                |
-
 ## Session management
 
 Create, view, configure, and delete sessions. This permission does not allow tool execution.
@@ -166,36 +153,6 @@ Search and execute tools through sessions and session-linked MCP servers. This i
 | Write  | `POST` | `/tool_router/session/{session_id}/proxy_execute` |
 
 For [session-linked MCP access](/docs/sessions-via-mcp), use `session.mcp.url` and `session.mcp.headers` unchanged. `POST` requests require Session tool execution with Write only access. The transport does not support `GET` (SSE) or `DELETE`; granting additional permissions does not enable those methods.
-
-## MCP (Legacy)
-
-Create, manage, and connect to MCP servers. Transport access grants every capability exposed by the configured MCP server.
-
-| Access | Method   | Route                                              |
-| ------ | -------- | -------------------------------------------------- |
-| Read   | `GET`    | `/mcp/servers`                                     |
-| Read   | `GET`    | `/mcp/{id}`                                        |
-| Read   | `GET`    | `/mcp/app/{app_key}`                               |
-| Read   | `GET`    | `/mcp/servers/{server_id}/instances`               |
-| Write  | `POST`   | `/mcp/servers`                                     |
-| Write  | `POST`   | `/mcp/servers/generate`                            |
-| Write  | `POST`   | `/mcp/servers/custom`                              |
-| Write  | `PATCH`  | `/mcp/{id}`                                        |
-| Write  | `DELETE` | `/mcp/{id}`                                        |
-| Write  | `POST`   | `/mcp/servers/{server_id}/instances`               |
-| Write  | `DELETE` | `/mcp/servers/{server_id}/instances/{instance_id}` |
-
-For MCP transport access, use the returned MCP server URL unchanged. `POST` and `DELETE` requests require MCP (Legacy) with Write only or Read and write access.
-
-## Proxy execute (Legacy)
-
-Execute raw proxy requests through the legacy direct API.
-
-Use **Session tool execution** for new session-based integrations. The legacy proxy permission covers the routes below.
-
-| Access | Method | Route                                             |
-| ------ | ------ | ------------------------------------------------- |
-| Write  | `POST` | `/tools/execute/proxy`                            |
 
 ## Toolkits
 
@@ -260,6 +217,48 @@ View execution logs and project usage summaries.
 | Read   | `GET`  | `/logs/tool_execution/{id}`    |
 | Read   | `POST` | `/project/usage/{entity_type}` |
 | Read   | `POST` | `/project/usage/summary`       |
+
+## MCP (Legacy)
+
+Create, manage, and connect to MCP servers. Transport access grants every capability exposed by the configured MCP server.
+
+| Access | Method   | Route                                              |
+| ------ | -------- | -------------------------------------------------- |
+| Read   | `GET`    | `/mcp/servers`                                     |
+| Read   | `GET`    | `/mcp/{id}`                                        |
+| Read   | `GET`    | `/mcp/app/{app_key}`                               |
+| Read   | `GET`    | `/mcp/servers/{server_id}/instances`               |
+| Write  | `POST`   | `/mcp/servers`                                     |
+| Write  | `POST`   | `/mcp/servers/generate`                            |
+| Write  | `POST`   | `/mcp/servers/custom`                              |
+| Write  | `PATCH`  | `/mcp/{id}`                                        |
+| Write  | `DELETE` | `/mcp/{id}`                                        |
+| Write  | `POST`   | `/mcp/servers/{server_id}/instances`               |
+| Write  | `DELETE` | `/mcp/servers/{server_id}/instances/{instance_id}` |
+
+For MCP transport access, use the returned MCP server URL unchanged. `POST` and `DELETE` requests require MCP (Legacy) with Write only or Read and write access.
+
+## Tool execution (Legacy)
+
+Execute predefined Composio tools.
+
+| Access | Method | Route                        |
+| ------ | ------ | ---------------------------- |
+| Write  | `POST` | `/tools/execute/{tool_slug}` |
+| Write  | `POST` | `/files/upload/request`      |
+| Write  | `POST` | `/files/upload/response`     |
+| Write  | `GET`  | `/files/list`                |
+
+## Proxy execute (Legacy)
+
+Execute raw proxy requests against connected accounts.
+
+Proxy execute is separate from tool execution. Grant it only when your application needs to call a connected account API through the raw proxy path.
+
+| Access | Method | Route                                             |
+| ------ | ------ | ------------------------------------------------- |
+| Write  | `POST` | `/tools/execute/proxy`                            |
+| Write  | `POST` | `/tool_router/session/{session_id}/proxy_execute` |
 
 ## What to read next
 
