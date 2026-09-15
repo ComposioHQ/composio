@@ -1,6 +1,6 @@
 import path from 'node:path';
 import * as tempy from 'tempy';
-import { Composio as RawComposioClient } from '@composio/client';
+import { Composio as RawComposioClient, NotFoundError } from '@composio/client';
 import type { AuthConfigCreateParams } from '@composio/client/resources/auth-configs';
 import * as BunFileSystem from '@effect/platform-bun/BunFileSystem';
 import * as BunPath from '@effect/platform-bun/BunPath';
@@ -141,6 +141,11 @@ export interface TestLiveInput {
    */
   triggersData?: {
     items?: TriggerInstanceItem[];
+    /**
+     * Make `triggerInstances.upsert` reject slugs missing from `toolkitsData.triggerTypes`,
+     * as the API does for an unknown trigger type.
+     */
+    rejectUnknownTriggerSlugs?: boolean;
   };
 
   /**
@@ -1099,6 +1104,22 @@ export const TestLayer = (input?: TestLiveInput) =>
           return {};
         },
       },
+      triggersTypes: {
+        retrieve: async (slug: string) => {
+          const found = toolkitsData.triggerTypes.find(
+            trigger => trigger.slug.toUpperCase() === slug.toUpperCase()
+          );
+          if (!found) {
+            throw new NotFoundError(
+              404,
+              { error: { message: `Trigger type "${slug}" not found` } },
+              `Trigger type "${slug}" not found`,
+              new Headers()
+            );
+          }
+          return found;
+        },
+      },
       triggerInstances: {
         upsert: async (
           triggerSlug: string,
@@ -1106,9 +1127,19 @@ export const TestLayer = (input?: TestLiveInput) =>
             connected_account_id?: string;
             trigger_config?: Record<string, unknown>;
           }
-        ) => ({
-          trigger_id: `trg_${triggerSlug.toLowerCase()}_${params?.connected_account_id ?? 'new'}`,
-        }),
+        ) => {
+          if (
+            input?.triggersData?.rejectUnknownTriggerSlugs &&
+            !toolkitsData.triggerTypes.some(
+              trigger => trigger.slug.toUpperCase() === triggerSlug.toUpperCase()
+            )
+          ) {
+            throw new Error(`Trigger type "${triggerSlug}" not found`);
+          }
+          return {
+            trigger_id: `trg_${triggerSlug.toLowerCase()}_${params?.connected_account_id ?? 'new'}`,
+          };
+        },
         manage: {
           update: async (triggerId: string, params: { status: 'enable' | 'disable' }) => ({
             trigger_id: triggerId,

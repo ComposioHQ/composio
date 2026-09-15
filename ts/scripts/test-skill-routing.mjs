@@ -9,7 +9,8 @@
 // obvious match, or another skill grows ambiguous overlap. It also fails if a
 // skill has no probe, so routing coverage tracks the taxonomy.
 //
-// Run: pnpm validate:skill-routing  (belongs in the verify/CI aggregate too).
+// Run: pnpm validate:skill-routing  (enforced in CI by
+// .github/workflows/agent-substrate.yml).
 
 import fs from 'node:fs';
 import path from 'node:path';

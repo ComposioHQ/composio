@@ -36,6 +36,15 @@ export interface ToolExecuteParams {
   readonly arguments: Record<string, unknown>;
   readonly client?: Composio;
   readonly connectedAccounts?: Record<string, string>;
+  /**
+   * The org/project the command resolved. The executor's tool-schema lookup
+   * keys its memoized `get_latest_version` on this, so it has to match what
+   * the command's own version check passed or the two never share a request.
+   */
+  readonly projectScope?: {
+    readonly orgId?: string;
+    readonly projectId?: string;
+  };
   readonly cacheScope?: {
     readonly orgId: string;
     readonly projectId: string;
@@ -172,8 +181,10 @@ export const ToolsExecutorLive = Layer.effect(
             }
           }
 
-          const client = yield* clientSingleton.get();
-          const resolvedClient = params.client ?? client;
+          // Resolved lazily: `get()` walks the project context off disk, and every
+          // caller on the execute path already hands in a client built for the
+          // resolved org/project.
+          const resolvedClient = params.client ?? (yield* clientSingleton.get());
           // One session per invocation — CLI runs one tool per process.
           const {
             sessionId,
@@ -199,7 +210,7 @@ export const ToolsExecutorLive = Layer.effect(
           const path = yield* Path.Path;
           const normalizedArguments = isMetaToolSlug(slug)
             ? params.arguments
-            : yield* getOrFetchToolInputDefinition(slug).pipe(
+            : yield* getOrFetchToolInputDefinition(slug, params.projectScope).pipe(
                 Effect.catch(() => Effect.succeed(null)),
                 Effect.flatMap(definition => {
                   if (!definition) {
