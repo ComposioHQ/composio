@@ -1,6 +1,8 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from '@effect/vitest';
+import { describe, expect, it } from '@effect/vitest';
+import { afterEach, beforeEach, vi } from 'vitest';
 import * as BunFileSystem from '@effect/platform-bun/BunFileSystem';
 import * as BunPath from '@effect/platform-bun/BunPath';
+import * as BunServices from '@effect/platform-bun/BunServices';
 import { ConfigProvider, Effect, Layer } from 'effect';
 import { existsSync, mkdirSync, mkdtempSync, rmSync, utimesSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -8,14 +10,35 @@ import { dirname, join } from 'node:path';
 import { Writable } from 'node:stream';
 import { extendConfigProvider } from 'src/services/config';
 import { defaultNodeOs, NodeOs } from 'src/services/node-os';
+import { NodeProcess } from 'src/services/node-process';
+import { detectPluginHost } from 'src/services/agent-host-env';
 import {
   createPluginHint,
-  detectPluginHost,
   findRootCommandName,
   resolvePluginHintConfig,
+  showPluginAcquisitionHint,
   type PluginHintConfig,
 } from 'src/services/plugin-hint';
-import { makeTerminalUI, type TerminalUI } from 'src/services/terminal-ui';
+import { makeTerminalUI, TerminalUI } from 'src/services/terminal-ui';
+import { terminalUITestImpl } from 'test/__utils__/services/terminal-ui-test';
+
+const tracked = vi.hoisted(() => ({
+  events: [] as Array<{ readonly name: string; readonly properties?: Record<string, unknown> }>,
+}));
+
+vi.mock('src/analytics/dispatch', async importOriginal => {
+  const actual = await importOriginal<typeof import('src/analytics/dispatch')>();
+  const { Effect } = await import('effect');
+  return {
+    ...actual,
+    trackCliEventEffect: (
+      event: { readonly name: string; readonly properties?: Record<string, unknown> } | null
+    ) =>
+      Effect.sync(() => {
+        if (event) tracked.events.push(event);
+      }),
+  };
+});
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -26,6 +49,7 @@ beforeEach(() => {
 afterEach(() => {
   vi.useRealTimers();
   vi.unstubAllEnvs();
+  tracked.events.length = 0;
   rmSync(tempDir, { recursive: true, force: true });
 });
 
@@ -186,9 +210,23 @@ describe('showPluginHint', () => {
       writeFileAt(codexConfig.codexConfigFile, '[plugins."glen@glen"]\nenabled = true\n');
       yield* createPluginHint(codexConfig).showPluginHint(makeTerminal(output));
 
-      expect(output).toHaveLength(2);
-      expect(output[0]).toContain('Claude Code');
-      expect(output[1]).toContain('Codex');
+      expect(output).toEqual([
+        "Tip: running under Claude Code without the Composio plugin — 'composio setup --yes' installs it.",
+        "Tip: running under Codex without the Composio plugin — 'composio setup --yes' installs it.",
+      ]);
+    }).pipe(Effect.provide(PlatformLayers))
+  );
+
+  it.effect('reports whether the hint was printed', () =>
+    Effect.gen(function* () {
+      const config = makeConfig();
+
+      const first = yield* createPluginHint(config).showPluginHint(makeTerminal(output));
+      const second = yield* createPluginHint(config).showPluginHint(makeTerminal(output));
+
+      expect(first).toBe(true);
+      expect(second).toBe(false);
+      expect(output).toHaveLength(1);
     }).pipe(Effect.provide(PlatformLayers))
   );
 
@@ -301,5 +339,67 @@ describe('showPluginHint', () => {
 
       expect(chunks.join('')).toContain('composio setup');
     }).pipe(Effect.provide(PlatformLayers))
+  );
+});
+
+describe('showPluginAcquisitionHint', () => {
+  const output: string[] = [];
+  const runHint = (argv: ReadonlyArray<string>) =>
+    showPluginAcquisitionHint(argv).pipe(
+      Effect.provideService(
+        ConfigProvider.ConfigProvider,
+        extendConfigProvider(ConfigProvider.fromEnv())
+      ),
+      Effect.provide(
+        Layer.mergeAll(
+          BunServices.layer,
+          NodeProcess.Default,
+          Layer.succeed(NodeOs, defaultNodeOs({ homedir: tempDir })),
+          Layer.succeed(
+            TerminalUI,
+            TerminalUI.of({
+              ...terminalUITestImpl,
+              error: line => Effect.sync(() => output.push(line)),
+            })
+          )
+        )
+      )
+    );
+
+  beforeEach(() => {
+    output.length = 0;
+    vi.stubEnv('COMPOSIO_CACHE_DIR', join(tempDir, 'cache'));
+    vi.stubEnv('CLAUDECODE', '1');
+    vi.stubEnv('COMPOSIO_CLI_INVOCATION_ORIGIN', 'installer');
+  });
+
+  it.effect('tracks CLI_PLUGIN_HINT_SHOWN once per printed hint', () =>
+    Effect.gen(function* () {
+      yield* runHint(['/bin/bun', '/cli/bin.ts', 'whoami']);
+      yield* runHint(['/bin/bun', '/cli/bin.ts', 'whoami']);
+
+      expect(output).toHaveLength(1);
+      expect(tracked.events).toEqual([
+        {
+          name: 'CLI_PLUGIN_HINT_SHOWN',
+          properties: expect.objectContaining({
+            source: 'cli',
+            invocation_origin: 'installer',
+            cli_version: expect.any(String),
+            command_path: 'whoami',
+            agent_host: 'claude',
+          }),
+        },
+      ]);
+    })
+  );
+
+  it.effect('tracks nothing when the hint is suppressed', () =>
+    Effect.gen(function* () {
+      yield* runHint(['/bin/bun', '/cli/bin.ts', 'setup']);
+
+      expect(output).toEqual([]);
+      expect(tracked.events).toEqual([]);
+    })
   );
 });

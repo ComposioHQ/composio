@@ -11,8 +11,10 @@ import {
   CLI_ANALYTICS_EVENTS,
   CLI_EVENT_JOURNEY_STAGES,
   CLI_JOURNEY_STAGES,
+  configureCliAnalyticsAgentHostEnv,
   configureCliAnalyticsReleaseVersion,
   createCliCommandTelemetryContext,
+  getPluginHintShownEvent,
   getPluginLifecycleFailedEvent,
   getPluginLifecycleSucceededEvent,
   getPrimaryLifecycleFailedEvent,
@@ -34,6 +36,7 @@ import {
   DEFAULT_CLI_INVOCATION_ORIGIN,
   type CliInvocationContext,
 } from 'src/services/runtime-cli-context';
+import { SetupCommandError } from 'src/services/setup';
 import { ToolInputValidationError } from 'src/services/tool-input-validation';
 import { resolveInstalledCliVersion } from 'src/services/run-companion-modules';
 
@@ -305,6 +308,98 @@ describe('CLI analytics setup runtime-context events', () => {
     });
   });
 
+  it('records host presence signals only for an undetected host', () => {
+    const missing = getSetupHostDetectedEvent({
+      operation: 'setup',
+      requestedTarget: 'auto',
+      target: 'codex',
+      available: false,
+      supported: false,
+      hostConfigDirPresent: true,
+      hostBinaryInKnownPaths: false,
+      invocationOrigin: DEFAULT_CLI_INVOCATION_ORIGIN,
+      cliVersion: APP_VERSION,
+    });
+    expect(missing?.properties).toMatchObject({
+      agent_host: 'codex',
+      available: false,
+      host_config_dir_present: true,
+      host_binary_in_known_paths: false,
+    });
+
+    const detected = getSetupHostDetectedEvent({
+      operation: 'setup',
+      requestedTarget: 'auto',
+      target: 'claude',
+      available: true,
+      supported: true,
+      hostConfigDirPresent: true,
+      hostBinaryInKnownPaths: true,
+      invocationOrigin: DEFAULT_CLI_INVOCATION_ORIGIN,
+      cliVersion: APP_VERSION,
+    });
+    expect(detected?.properties).not.toHaveProperty('host_config_dir_present');
+    expect(detected?.properties).not.toHaveProperty('host_binary_in_known_paths');
+  });
+
+  it('tracks a printed plugin hint as a setup-stage event', () => {
+    expect(
+      getPluginHintShownEvent({
+        invocationOrigin: DEFAULT_CLI_INVOCATION_ORIGIN,
+        cliVersion: APP_VERSION,
+        commandPath: 'whoami',
+        agentHost: 'claude',
+      })
+    ).toEqual({
+      name: CLI_ANALYTICS_EVENTS.CLI_PLUGIN_HINT_SHOWN,
+      properties: {
+        source: 'cli',
+        invocation_origin: DEFAULT_CLI_INVOCATION_ORIGIN,
+        cli_version: APP_VERSION,
+        command_path: 'whoami',
+        agent_host: 'claude',
+        journey_stage: 'setup',
+        cli_channel: inferSkillReleaseChannel(APP_VERSION),
+        agent_host_env: 'none',
+      },
+    });
+  });
+
+  it('records the setup failure reason code carried by SetupCommandError', () => {
+    const context = createCliCommandTelemetryContext(
+      ['bun', 'composio', 'setup'],
+      APP_VERSION,
+      { stdoutIsTTY: false, stderrIsTTY: false },
+      CLI_INVOCATION
+    );
+    const error = new SetupCommandError({
+      message: 'Non-interactive setup requires `--yes` to approve local changes.',
+      operation: 'setup',
+      reasonCode: 'non_interactive_requires_yes',
+    });
+
+    expect(getPrimaryLifecycleFailedEvent(context, error)?.properties).toMatchObject({
+      error_name: 'services/SetupCommandError',
+      failure_reason_code: 'non_interactive_requires_yes',
+    });
+    expect(
+      getPrimaryLifecycleFailedEvent(context, new Error('boom'))?.properties?.failure_reason_code
+    ).toBe('unknown');
+  });
+
+  it('keeps failure reason codes out of other lifecycle families', () => {
+    const context = createCliCommandTelemetryContext(
+      ['bun', 'composio', 'login'],
+      APP_VERSION,
+      { stdoutIsTTY: false, stderrIsTTY: false },
+      CLI_INVOCATION
+    );
+
+    expect(
+      getPrimaryLifecycleFailedEvent(context, new Error('boom'))?.properties
+    ).not.toHaveProperty('failure_reason_code');
+  });
+
   it('tracks an unsupported host with a normalized reason code', () => {
     expect(
       getSetupHostDetectedEvent({
@@ -388,6 +483,46 @@ describe('CLI analytics setup runtime-context events', () => {
         reason: 'no_host_detected',
       },
     });
+  });
+});
+
+describe('CLI analytics agent host environment', () => {
+  afterEach(() => {
+    configureCliAnalyticsAgentHostEnv('none');
+  });
+
+  const contextFor = (argv: ReadonlyArray<string>) =>
+    createCliCommandTelemetryContext(
+      ['bun', 'composio', ...argv],
+      APP_VERSION,
+      { stdoutIsTTY: false, stderrIsTTY: false },
+      CLI_INVOCATION
+    );
+
+  it('stamps every event with none until a host is configured', () => {
+    expect(
+      getPrimaryLifecycleInvokedEvent(contextFor(['whoami']))?.properties?.agent_host_env
+    ).toBe('none');
+  });
+
+  it('stamps lifecycle and standalone events with the configured host', () => {
+    configureCliAnalyticsAgentHostEnv('codex');
+
+    expect(
+      getPrimaryLifecycleInvokedEvent(contextFor(['whoami']))?.properties?.agent_host_env
+    ).toBe('codex');
+    expect(
+      getPrimaryLifecycleFailedEvent(contextFor(['setup']), new Error('boom'))?.properties
+        ?.agent_host_env
+    ).toBe('codex');
+    expect(
+      getSetupSkippedEvent({
+        operation: 'setup',
+        requestedTarget: 'auto',
+        invocationOrigin: DEFAULT_CLI_INVOCATION_ORIGIN,
+        cliVersion: APP_VERSION,
+      })?.properties?.agent_host_env
+    ).toBe('codex');
   });
 });
 

@@ -105,8 +105,10 @@ import { ProjectEnvironmentDetector } from 'src/services/project-environment-det
 import { CommandRunner } from 'src/services/command-runner';
 import { StdinLive } from 'src/services/stdin';
 import { showPluginAcquisitionHint } from 'src/services/plugin-hint';
+import { agentHostEnvOf, rawHostEnvironment } from 'src/services/agent-host-env';
 import { showUpdateNotice } from 'src/services/update-check';
 import {
+  configureCliAnalyticsAgentHostEnv,
   configureCliAnalyticsReleaseVersion,
   createCliCommandTelemetryContext,
   getExecuteCommandToolSlug,
@@ -310,8 +312,14 @@ export type CliBootstrapOptions = {
   readonly telemetryDebug: boolean;
 };
 
+// Runs before the plugin hint so that event carries the host too.
+const stampAgentHostEnv = rawHostEnvironment.pipe(
+  Effect.map(env => configureCliAnalyticsAgentHostEnv(agentHostEnvOf(env)))
+);
+
 const cliProgram = (argv: ReadonlyArray<string>) =>
-  showUpdateNotice.pipe(
+  stampAgentHostEnv.pipe(
+    Effect.andThen(showUpdateNotice),
     Effect.andThen(showPluginAcquisitionHint(argv)),
     Effect.andThen(runWithTelemetry(argv)),
     Effect.catchIf(

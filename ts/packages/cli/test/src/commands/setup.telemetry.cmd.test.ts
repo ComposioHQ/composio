@@ -1,8 +1,11 @@
+import { mkdirSync, writeFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { describe, expect, layer } from '@effect/vitest';
 import { Effect, Exit } from 'effect';
 import { ChildProcess, ChildProcessSpawner } from 'effect/unstable/process';
 import { afterEach, beforeEach, vi } from 'vitest';
 import { CommandRunner } from 'src/services/command-runner';
+import { NodeOs } from 'src/services/node-os';
 import { SetupSkillInstaller } from 'src/services/setup-skill-installer';
 import { getTerminalCapabilities, TerminalUI } from 'src/services/terminal-ui';
 import { cli, TestLive } from 'test/__utils__';
@@ -180,7 +183,40 @@ describe('CLI: composio setup telemetry', () => {
   });
 
   afterEach(() => {
+    vi.unstubAllEnvs();
     process.exitCode = undefined;
+  });
+
+  const hostSignals = makeFakeHosts({ claude: { available: true } });
+  layer(
+    TestLive({
+      commandRunner: hostSignals.runner,
+      setupSkillInstaller: makeSkillInstaller(),
+    })
+  )('undetected host presence signals', it => {
+    it.effect('reports the config dir and known binary paths only for the undetected host', () =>
+      Effect.gen(function* () {
+        vi.stubEnv('CODEX_HOME', '');
+        const os = yield* NodeOs;
+        mkdirSync(join(os.homedir, '.codex'), { recursive: true });
+        mkdirSync(join(os.homedir, '.local', 'bin'), { recursive: true });
+        writeFileSync(join(os.homedir, '.local', 'bin', 'codex'), '');
+
+        yield* cli(['setup', '--target', 'auto', '--yes']);
+
+        const detected = eventsNamed('CLI_SETUP_HOST_DETECTED');
+        const codex = detected.find(event => event.properties?.agent_host === 'codex');
+        const claude = detected.find(event => event.properties?.agent_host === 'claude');
+        expect(codex?.properties).toMatchObject({
+          available: false,
+          host_config_dir_present: true,
+          host_binary_in_known_paths: true,
+        });
+        expect(claude?.properties).toMatchObject({ available: true });
+        expect(claude?.properties).not.toHaveProperty('host_config_dir_present');
+        expect(claude?.properties).not.toHaveProperty('host_binary_in_known_paths');
+      })
+    );
   });
 
   const freshClaude = makeFakeHosts({ claude: { available: true } });
@@ -283,6 +319,25 @@ describe('CLI: composio setup telemetry', () => {
           }),
         ]);
         expect(eventsNamed('CLI_SETUP_CANCELLED')).toHaveLength(0);
+      })
+    );
+
+    it.effect('reports absent config dirs for every undetected host', () =>
+      Effect.gen(function* () {
+        vi.stubEnv('CLAUDE_CONFIG_DIR', '');
+        vi.stubEnv('CODEX_HOME', '');
+
+        yield* cli(['setup', '--target', 'auto', '--yes', '--if-present']);
+
+        const detected = eventsNamed('CLI_SETUP_HOST_DETECTED');
+        expect(detected).toHaveLength(2);
+        for (const event of detected) {
+          expect(event.properties).toMatchObject({
+            available: false,
+            host_config_dir_present: false,
+            host_binary_in_known_paths: expect.any(Boolean),
+          });
+        }
       })
     );
   });

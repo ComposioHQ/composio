@@ -1,7 +1,10 @@
 import type { CliCommandTelemetryContext, TrackEvent } from './types';
 import { APP_VERSION } from 'src/constants';
 import { inferSkillReleaseChannel } from 'src/effects/install-skill';
+import type { AgentHost } from 'src/services/agent-host';
+import type { AgentHostEnv } from 'src/services/agent-host-env';
 import type { CliInvocationContext } from 'src/services/runtime-cli-context';
+import { setupFailureReasonCodeOf } from 'src/services/setup-command-error';
 import { ToolInputValidationError } from 'src/services/tool-input-validation';
 import { guessToolkitFromToolSlug } from 'src/utils/toolkit-from-tool-slug';
 
@@ -42,6 +45,7 @@ export const CLI_ANALYTICS_EVENTS = {
   CLI_PLUGIN_SETUP_SUCCEEDED: 'CLI_PLUGIN_SETUP_SUCCEEDED',
   CLI_PLUGIN_SETUP_FAILED: 'CLI_PLUGIN_SETUP_FAILED',
   CLI_PLUGIN_UNINSTALL_SUCCEEDED: 'CLI_PLUGIN_UNINSTALL_SUCCEEDED',
+  CLI_PLUGIN_HINT_SHOWN: 'CLI_PLUGIN_HINT_SHOWN',
   CLI_TOOL_INVOCATION_VALIDATION_FAILED: 'CLI_TOOL_INVOCATION_VALIDATION_FAILED',
   CLI_TOOL_INVOCATION_TOOL_NOT_FOUND: 'CLI_TOOL_INVOCATION_TOOL_NOT_FOUND',
   CLI_TOOL_INVOCATION_FAILED: 'CLI_TOOL_INVOCATION_FAILED',
@@ -97,6 +101,7 @@ export const CLI_EVENT_JOURNEY_STAGES = {
   CLI_PLUGIN_SETUP_SUCCEEDED: 'setup',
   CLI_PLUGIN_SETUP_FAILED: 'setup',
   CLI_PLUGIN_UNINSTALL_SUCCEEDED: 'setup',
+  CLI_PLUGIN_HINT_SHOWN: 'setup',
   CLI_TOOL_INVOCATION_VALIDATION_FAILED: 'execute',
   CLI_TOOL_INVOCATION_TOOL_NOT_FOUND: 'execute',
   CLI_TOOL_INVOCATION_FAILED: 'execute',
@@ -112,6 +117,12 @@ export const configureCliAnalyticsReleaseVersion = (version: string): void => {
   cliChannel = inferSkillReleaseChannel(version);
 };
 
+let agentHostEnv: AgentHostEnv = 'none';
+
+export const configureCliAnalyticsAgentHostEnv = (host: AgentHostEnv): void => {
+  agentHostEnv = host;
+};
+
 const buildEvent = (
   name: CliAnalyticsEventName,
   properties: Record<string, unknown>
@@ -121,6 +132,7 @@ const buildEvent = (
     ...properties,
     journey_stage: CLI_EVENT_JOURNEY_STAGES[name],
     cli_channel: cliChannel,
+    agent_host_env: agentHostEnv,
   },
 });
 
@@ -533,7 +545,12 @@ type SpecialLifecycleFamily = {
   readonly succeededEventName: CliAnalyticsEventName;
   readonly failedEventName: CliAnalyticsEventName;
   readonly getProperties: (context: CliCommandTelemetryContext) => Record<string, unknown>;
+  readonly getFailureProperties?: (error: unknown) => Record<string, unknown>;
 };
+
+const getSetupFailureProperties = (error: unknown) => ({
+  failure_reason_code: setupFailureReasonCodeOf(error),
+});
 
 const SPECIAL_LIFECYCLE_FAMILIES: ReadonlyArray<SpecialLifecycleFamily> = [
   {
@@ -598,6 +615,7 @@ const SPECIAL_LIFECYCLE_FAMILIES: ReadonlyArray<SpecialLifecycleFamily> = [
     succeededEventName: CLI_ANALYTICS_EVENTS.CLI_SETUP_SUCCEEDED,
     failedEventName: CLI_ANALYTICS_EVENTS.CLI_SETUP_FAILED,
     getProperties: getSetupCommandProperties,
+    getFailureProperties: getSetupFailureProperties,
   },
 ];
 
@@ -635,8 +653,23 @@ export const getPrimaryLifecycleFailedEvent = (
   return buildEvent(family.failedEventName, {
     ...family.getProperties(context),
     error_name: errorNameOf(error),
+    ...family.getFailureProperties?.(error),
   });
 };
+
+export const getPluginHintShownEvent = (params: {
+  readonly invocationOrigin: string | undefined;
+  readonly cliVersion: string;
+  readonly commandPath: string;
+  readonly agentHost: AgentHost;
+}): TrackEvent =>
+  buildEvent(CLI_ANALYTICS_EVENTS.CLI_PLUGIN_HINT_SHOWN, {
+    source: 'cli',
+    invocation_origin: params.invocationOrigin,
+    cli_version: params.cliVersion,
+    command_path: params.commandPath,
+    agent_host: params.agentHost,
+  });
 
 export const getPluginLifecycleSucceededEvent = (params: {
   readonly operation: 'setup' | 'uninstall';
@@ -679,6 +712,18 @@ export const getPluginLifecycleFailedEvent = (params: {
     error_name: errorNameOf(params.error),
   });
 
+const hostAbsenceProperties = (params: {
+  readonly available: boolean;
+  readonly hostConfigDirPresent?: boolean;
+  readonly hostBinaryInKnownPaths?: boolean;
+}) => {
+  if (params.available) return {};
+  return {
+    host_config_dir_present: params.hostConfigDirPresent,
+    host_binary_in_known_paths: params.hostBinaryInKnownPaths,
+  };
+};
+
 export const getSetupHostDetectedEvent = (params: {
   readonly operation: 'setup' | 'uninstall';
   readonly requestedTarget: 'auto' | 'claude' | 'codex' | 'all';
@@ -688,6 +733,8 @@ export const getSetupHostDetectedEvent = (params: {
   readonly hostVersion?: string;
   readonly unsupportedReasonCode?:
     'codex_too_old' | 'no_json_inspection' | 'host_command_failed' | 'unknown';
+  readonly hostConfigDirPresent?: boolean;
+  readonly hostBinaryInKnownPaths?: boolean;
   readonly invocationOrigin: string;
   readonly cliVersion: string;
 }): TrackEvent =>
@@ -703,6 +750,7 @@ export const getSetupHostDetectedEvent = (params: {
     supported: params.supported,
     host_version: params.hostVersion,
     unsupported_reason_code: params.unsupportedReasonCode,
+    ...hostAbsenceProperties(params),
   });
 
 export const getSetupCancelledEvent = (params: {
