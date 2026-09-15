@@ -2,21 +2,16 @@
  * Type-level guard for the toolkit auth field mapping.
  *
  * `transformToolkitRetrieveResponse` projects each auth form field key by key.
- * A key the generated client declares but the projection forgets is dropped
- * silently: zod removes it while validating, and no runtime test notices unless
- * someone thought to assert that exact key. That is how `is_secret`,
- * `legacy_template_name` and `auth_hint_url` were lost.
+ * A key the generated client declares but the projection forgets would be
+ * silently stripped by zod while validating the transformed object.
  *
- * What this file does: it fails the build (tsconfig.type-tests.json) when
- * `@composio/client` declares a key in any of the four field groups, or on the
- * auth config detail, that is not listed below.
+ * This file fails the build (tsconfig.type-tests.json) when `@composio/client`
+ * declares a key in any of the four field groups, or on the auth config detail,
+ * that is not covered below.
  *
- * What it does NOT do: it does not verify that the transformer still assigns
- * those keys. The lists here are hand-written, so removing an assignment from
- * the mapper while leaving its key listed stays green at compile time. The
- * runtime test pins the projection for the keys known today
- * (`test/utils/transformers/toolkits.test.ts`, "maps a whole field without
- * losing or inventing keys"); this file covers the keys nobody has seen yet.
+ * This is only a coverage guard: it does not verify that the transformer still
+ * assigns listed keys. The runtime test pins the projection for current keys;
+ * this file covers generated-client keys nobody has seen yet.
  */
 import type { ToolkitRetrieveResponse as RawToolkitRetrieveResponse } from '@composio/client/resources/toolkits';
 import type { ToolkitAuthField, ToolkitAuthConfigDetails } from '../src';
@@ -60,17 +55,17 @@ const everyFieldKeyIsMapped: NoneLeftOver<Exclude<KeysOfUnion<RawAuthField>, Map
 void everyFieldKeyIsMapped;
 
 /**
- * Wire keys on the auth config detail. `deprecated_auth_provider_details` is
- * listed as knowingly skipped: the client marks it `@deprecated` and warns
- * against further use, so it is excluded on purpose rather than by oversight.
+ * Wire keys on the auth config detail that are either mapped or deliberately
+ * skipped. `deprecated_auth_provider_details` is covered because the client
+ * marks it `@deprecated` and warns against further use.
  */
-type MappedDetailKeys =
+type CoveredDetailKeys =
   'name' | 'mode' | 'fields' | 'proxy' | 'auth_hint_url' | 'deprecated_auth_provider_details';
 
-const everyDetailKeyIsMapped: NoneLeftOver<
-  Exclude<KeysOfUnion<RawAuthConfigDetail>, MappedDetailKeys>
+const everyDetailKeyIsCovered: NoneLeftOver<
+  Exclude<KeysOfUnion<RawAuthConfigDetail>, CoveredDetailKeys>
 > = true;
-void everyDetailKeyIsMapped;
+void everyDetailKeyIsCovered;
 
 /** The camelCase counterparts must exist on the public types. */
 type MissingOnField = Exclude<
