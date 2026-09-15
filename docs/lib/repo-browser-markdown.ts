@@ -5,8 +5,6 @@ const REPO_BROWSER_NOTICES: Record<string, string> = {
     'The Slack bot browser is a documentation snapshot; a public repository is not available.',
   'local-workbench':
     'The local PR reviewer browser is a documentation snapshot; a public repository is not available.',
-  standup:
-    'The standup bot browser is a documentation snapshot; a public repository is not available.',
   imessage:
     'The iMessage implementation is maintained in [platform-imessage](https://github.com/ComposioHQ/platform-imessage).',
 };
