@@ -496,7 +496,9 @@ class TestTriggers:
             result = triggers.subscribe(timeout=20.0)
 
             mock_builder_class.assert_called_once_with(client=mock_client)
-            mock_builder.connect.assert_called_once_with(timeout=20.0)
+            mock_builder.connect.assert_called_once_with(
+                timeout=20.0, on_subscription_error=None
+            )
             assert result == mock_subscription
 
     def test_subscribe_with_default_timeout(self, triggers, mock_client):
@@ -511,7 +513,29 @@ class TestTriggers:
 
             result = triggers.subscribe()
 
-            mock_builder.connect.assert_called_once_with(timeout=15.0)
+            mock_builder.connect.assert_called_once_with(
+                timeout=15.0, on_subscription_error=None
+            )
+            assert result == mock_subscription
+
+    def test_subscribe_passes_subscription_error_callback(self, triggers, mock_client):
+        """The optional on_subscription_error callback reaches the builder."""
+        with patch(
+            "composio.core.models.triggers._SubcriptionBuilder"
+        ) as mock_builder_class:
+            mock_builder = Mock()
+            mock_subscription = Mock()
+            mock_builder.connect.return_value = mock_subscription
+            mock_builder_class.return_value = mock_builder
+            on_subscription_error = Mock()
+
+            result = triggers.subscribe(
+                timeout=5.0, on_subscription_error=on_subscription_error
+            )
+
+            mock_builder.connect.assert_called_once_with(
+                timeout=5.0, on_subscription_error=on_subscription_error
+            )
             assert result == mock_subscription
 
 
@@ -1793,6 +1817,71 @@ class TestSubscriptionBuilderConnectTimeout:
 
         assert result is builder.subscription
         pusher.disconnect.assert_not_called()
+
+
+class TestSubscriptionErrorHandler:
+    """Tests for TriggerSubscription._handle_subscription_error."""
+
+    @pytest.fixture
+    def subscription(self):
+        """Create a TriggerSubscription with a mock client."""
+        return TriggerSubscription(client=Mock())
+
+    def test_invokes_callback_with_parsed_payload(self, subscription):
+        """The callback receives the subscription error payload as a dict."""
+        callback = Mock()
+        subscription._on_subscription_error = callback
+
+        subscription._handle_subscription_error('{"type": "AuthError", "status": 401}')
+
+        callback.assert_called_once_with({"type": "AuthError", "status": 401})
+
+    def test_malformed_frame_reaches_callback_as_raw(self, subscription):
+        """A non-JSON frame is logged, not raised, and passed as ``{'raw': ...}``."""
+        callback = Mock()
+        subscription._on_subscription_error = callback
+
+        subscription._handle_subscription_error("not valid json {")
+
+        callback.assert_called_once_with({"raw": "not valid json {"})
+
+    def test_callback_exception_is_contained(self, subscription):
+        """A faulty handler is logged, never rethrown into pysher's thread."""
+        subscription._on_subscription_error = Mock(side_effect=RuntimeError("boom"))
+
+        subscription._handle_subscription_error('{"error": "auth failed"}')
+
+    def test_no_callback_is_a_no_op(self, subscription):
+        """Without a registered callback the frame is only logged."""
+        subscription._handle_subscription_error('{"error": "auth failed"}')
+
+    def test_connection_handler_binds_subscription_error(self):
+        """The builder binds ``pusher:subscription_error`` to the handler."""
+        client = Mock()
+        client.base_url = "https://api.example.com"
+        builder = _SubcriptionBuilder(client=client)
+        channel = Mock()
+        pusher = Mock()
+        pusher.subscribe.return_value = channel
+
+        handler = builder._get_connection_handler(
+            project_id="p", pusher=pusher, subscription=builder.subscription
+        )
+        handler("connection-payload")
+
+        bound = {
+            call.kwargs["event_name"]: call.kwargs["callback"]
+            for call in channel.bind.call_args_list
+        }
+        assert (
+            bound["pusher:subscription_error"]
+            == builder.subscription._handle_subscription_error
+        )
+        assert bound["trigger_to_client"] == builder.subscription._handle_event
+        assert (
+            bound["chunked-trigger_to_client"]
+            == builder.subscription._handle_chunked_events
+        )
 
 
 class TestPusherChannelAuth:

@@ -123,7 +123,7 @@ def create(slug: str, user_id: str | None = ..., connected_account_id: str | Non
 Subscribe to a trigger and receive trigger events.
 
 ```python
-def subscribe(timeout: float = ...) -> TriggerSubscription
+def subscribe(timeout: float = ..., on_subscription_error: Optional[Callable[[Dict[str, Any]], None]] = ...) -> TriggerSubscription
 ```
 
 **Parameters**
@@ -131,6 +131,7 @@ def subscribe(timeout: float = ...) -> TriggerSubscription
 | Name | Type |
 |------|------|
 | `timeout?` | `float` |
+| `on_subscription_error?` | `Optional[Callable[[Dict[str, Any]], None]]` — Optional callback invoked with the raw Pusher subscription error payload when the channel subscription fails (for example on auth or permission rejection). The subscription is still returned; this callback is the only programmatic signal of the failure. Exceptions raised inside the callback are contained and logged, never rethrown. |
 
 **Returns**
 

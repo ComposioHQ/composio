@@ -465,6 +465,8 @@ class TriggerEventFilters(te.TypedDict):
 
 TriggerCallback = t.Callable[[TriggerEvent], None]
 
+SubscriptionErrorCallback = t.Callable[[t.Dict[str, t.Any]], None]
+
 
 # Realtime trigger frames can carry message bodies / PII, so the raw frame is
 # never logged in full — only a bounded preview when it fails to parse.
@@ -606,6 +608,7 @@ class TriggerSubscription(Resource):
         self._alive = False
         self._chunks: t.Dict[str, t.Dict[int, str]] = {}
         self._callbacks: t.List[t.Tuple[TriggerCallback, TriggerEventFilters]] = []
+        self._on_subscription_error: t.Optional[SubscriptionErrorCallback] = None
 
     def handle(
         self, **filters: te.Unpack[TriggerEventFilters]
@@ -809,6 +812,30 @@ class TriggerSubscription(Resource):
                 )
         _ = [future.result() for future in awaitables]
 
+    def _handle_subscription_error(self, event: str) -> None:
+        """Handle a ``pusher:subscription_error`` frame.
+
+        Logs the failure at the SDK boundary and invokes the optional
+        ``on_subscription_error`` callback registered through
+        ``Triggers.subscribe``. Callback exceptions are contained and logged
+        so a faulty handler cannot tear down the pysher dispatch thread
+        (pysher invokes bound callbacks without a try/except).
+        """
+        self.logger.error(f"Trigger subscription error: {_truncate_frame(event)}")
+        callback = self._on_subscription_error
+        if callback is None:
+            return
+        try:
+            payload: t.Dict[str, t.Any] = json.loads(event)
+        except Exception:
+            payload = {"raw": event}
+        try:
+            callback(payload)
+        except Exception:
+            self.logger.error(
+                f"Error in subscription error callback:\n {traceback.format_exc()}"
+            )
+
     def is_alive(self) -> bool:
         """Check if subscription is live."""
         return self._alive
@@ -990,6 +1017,10 @@ class _SubcriptionBuilder(WithLogger):
                 event_name="chunked-trigger_to_client",
                 callback=subscription._handle_chunked_events,
             )
+            channel.bind(
+                event_name="pusher:subscription_error",
+                callback=subscription._handle_subscription_error,
+            )
             subscription.set_alive()
             subscription._channel = channel  # pylint: disable=protected-access
             subscription._connection = (  # pylint: disable=protected-access
@@ -1011,7 +1042,11 @@ class _SubcriptionBuilder(WithLogger):
             auto_sub=True,
         )
 
-    def connect(self, timeout: float = 15.0) -> TriggerSubscription:
+    def connect(
+        self,
+        timeout: float = 15.0,
+        on_subscription_error: t.Optional[SubscriptionErrorCallback] = None,
+    ) -> TriggerSubscription:
         """Connect to Pusher channel for given client ID."""
         self.logger.debug("Creating trigger subscription")
         project_info = self.internal.get_sdk_realtime_credentials()
@@ -1029,6 +1064,12 @@ class _SubcriptionBuilder(WithLogger):
                 pusher=pusher,
                 subscription=self.subscription,
             ),
+        )
+        # Set before ``pusher.connect()``: the subscription_error handler runs
+        # on pysher's websocket thread once the channel subscribes, so the
+        # callback must already be in place.
+        self.subscription._on_subscription_error = (  # pylint: disable=protected-access
+            on_subscription_error
         )
         pusher.connect()
 
@@ -1349,14 +1390,27 @@ class Triggers(Resource):
             user_id=none_to_omit(user_id),
         )
 
-    def subscribe(self, timeout: float = 15.0) -> TriggerSubscription:
+    def subscribe(
+        self,
+        timeout: float = 15.0,
+        on_subscription_error: t.Optional[SubscriptionErrorCallback] = None,
+    ) -> TriggerSubscription:
         """
         Subscribe to a trigger and receive trigger events.
 
         :param timeout: The timeout to wait for the subscription to be established.
+        :param on_subscription_error: Optional callback invoked with the raw Pusher
+            subscription error payload when the channel subscription fails (for
+            example on auth or permission rejection). The subscription is still
+            returned; this callback is the only programmatic signal of the
+            failure. Exceptions raised inside the callback are contained and
+            logged, never rethrown.
         :return: The trigger subscription handler.
         """
-        return _SubcriptionBuilder(client=self._client).connect(timeout=timeout)
+        return _SubcriptionBuilder(client=self._client).connect(
+            timeout=timeout,
+            on_subscription_error=on_subscription_error,
+        )
 
     def verify_webhook(
         self,
