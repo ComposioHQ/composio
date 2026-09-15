@@ -10,26 +10,15 @@ import { SetupSkillInstaller } from 'src/services/setup-skill-installer';
 import { getTerminalCapabilities, TerminalUI } from 'src/services/terminal-ui';
 import { cli, TestLive } from 'test/__utils__';
 import { terminalUITestImpl } from 'test/__utils__/services/terminal-ui-test';
-
-const tracked = vi.hoisted(() => ({
-  events: [] as Array<{ readonly name: string; readonly properties?: Record<string, unknown> }>,
-}));
+import { eventsNamed, trackedEvents } from 'test/__utils__/tracked-events';
 
 vi.mock('src/analytics/dispatch', async importOriginal => {
-  const actual = await importOriginal<typeof import('src/analytics/dispatch')>();
-  const { Effect } = await import('effect');
+  const { recordTrackedEvent } = await import('test/__utils__/tracked-events');
   return {
-    ...actual,
-    trackCliEventEffect: (
-      event: { readonly name: string; readonly properties?: Record<string, unknown> } | null
-    ) =>
-      Effect.sync(() => {
-        if (event) tracked.events.push(event);
-      }),
+    ...(await importOriginal<typeof import('src/analytics/dispatch')>()),
+    trackCliEventEffect: recordTrackedEvent,
   };
 });
-
-const eventsNamed = (name: string) => tracked.events.filter(event => event.name === name);
 
 type AgentHost = 'claude' | 'codex';
 
@@ -179,7 +168,7 @@ const decliningUI = TerminalUI.of({
 
 describe('CLI: composio setup telemetry', () => {
   beforeEach(() => {
-    tracked.events.length = 0;
+    trackedEvents.length = 0;
   });
 
   afterEach(() => {
@@ -213,8 +202,8 @@ describe('CLI: composio setup telemetry', () => {
           host_binary_in_known_paths: true,
         });
         expect(claude?.properties).toMatchObject({ available: true });
-        expect(claude?.properties).not.toHaveProperty('host_config_dir_present');
-        expect(claude?.properties).not.toHaveProperty('host_binary_in_known_paths');
+        expect(claude?.properties?.host_config_dir_present).toBeUndefined();
+        expect(claude?.properties?.host_binary_in_known_paths).toBeUndefined();
       })
     );
   });

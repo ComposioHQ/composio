@@ -1232,87 +1232,68 @@ const reasonCodeOf = (exit: Exit.Exit<unknown, unknown>): string | undefined => 
   return undefined;
 };
 
+const REASON_CODE_FIXTURES = {
+  'only Claude Code installed': () => makeFakeHosts({ claude: { available: true } }),
+  'no host installed': () => makeFakeHosts({}),
+  'unsupported Codex only': () =>
+    makeFakeHosts({ codex: { available: true } }, { codexVersion: 'codex-cli 0.137.0' }),
+  'marketplace conflict': () =>
+    makeFakeHosts({ claude: { available: true, marketplace: 'conflict' } }),
+  'native install failure': () =>
+    makeFakeHosts({ claude: { available: true } }, { failOn: 'plugin install' }),
+} as const;
+
+const REASON_CODE_CASES: ReadonlyArray<{
+  readonly hosts: keyof typeof REASON_CODE_FIXTURES;
+  readonly argv: ReadonlyArray<string>;
+  readonly expected: string;
+}> = [
+  {
+    hosts: 'only Claude Code installed',
+    argv: ['--target', 'all', '--yes'],
+    expected: 'all_requires_both_hosts',
+  },
+  {
+    hosts: 'only Claude Code installed',
+    argv: ['--target', 'codex', '--yes'],
+    expected: 'target_not_installed',
+  },
+  {
+    hosts: 'only Claude Code installed',
+    argv: ['--target', 'claude'],
+    expected: 'non_interactive_requires_yes',
+  },
+  { hosts: 'no host installed', argv: ['--yes'], expected: 'no_host_detected' },
+  {
+    hosts: 'unsupported Codex only',
+    argv: ['--target', 'codex', '--yes'],
+    expected: 'unsupported_host',
+  },
+  { hosts: 'unsupported Codex only', argv: ['--yes'], expected: 'unsupported_host' },
+  {
+    hosts: 'marketplace conflict',
+    argv: ['--target', 'claude', '--yes'],
+    expected: 'marketplace_conflict',
+  },
+  { hosts: 'native install failure', argv: ['--target', 'claude', '--yes'], expected: 'unknown' },
+];
+
 describe('CLI: composio setup failure reason codes', () => {
   afterEach(() => {
     process.exitCode = undefined;
   });
 
-  const claudeOnly = makeFakeHosts({ claude: { available: true } });
-  layer(TestLive({ commandRunner: claudeOnly.runner }))('only Claude Code installed', it => {
-    it.effect('codes `--target all` with a missing host', () =>
-      Effect.gen(function* () {
-        const exit = yield* Effect.exit(cli(['setup', '--target', 'all', '--yes']));
-        expect(reasonCodeOf(exit)).toBe('all_requires_both_hosts');
-      })
-    );
-
-    it.effect('codes an explicitly requested missing host', () =>
-      Effect.gen(function* () {
-        const exit = yield* Effect.exit(cli(['setup', '--target', 'codex', '--yes']));
-        expect(reasonCodeOf(exit)).toBe('target_not_installed');
-      })
-    );
-
-    it.effect('codes a non-interactive run without --yes', () =>
-      Effect.gen(function* () {
-        const exit = yield* Effect.exit(cli(['setup', '--target', 'claude']));
-        expect(reasonCodeOf(exit)).toBe('non_interactive_requires_yes');
-      })
-    );
-  });
-
-  const noHosts = makeFakeHosts({});
-  layer(TestLive({ commandRunner: noHosts.runner }))('no host installed', it => {
-    it.effect('codes automatic detection that finds nothing', () =>
-      Effect.gen(function* () {
-        const exit = yield* Effect.exit(cli(['setup', '--yes']));
-        expect(reasonCodeOf(exit)).toBe('no_host_detected');
-      })
-    );
-  });
-
-  const legacyCodex = makeFakeHosts(
-    { codex: { available: true } },
-    { codexVersion: 'codex-cli 0.137.0' }
-  );
-  layer(TestLive({ commandRunner: legacyCodex.runner }))('unsupported Codex only', it => {
-    it.effect('codes an unsupported explicit target', () =>
-      Effect.gen(function* () {
-        const exit = yield* Effect.exit(cli(['setup', '--target', 'codex', '--yes']));
-        expect(reasonCodeOf(exit)).toBe('unsupported_host');
-      })
-    );
-
-    it.effect('codes automatic detection that only finds unsupported hosts', () =>
-      Effect.gen(function* () {
-        const exit = yield* Effect.exit(cli(['setup', '--yes']));
-        expect(reasonCodeOf(exit)).toBe('unsupported_host');
-      })
-    );
-  });
-
-  const conflict = makeFakeHosts({ claude: { available: true, marketplace: 'conflict' } });
-  layer(TestLive({ commandRunner: conflict.runner }))('marketplace conflict', it => {
-    it.effect('codes the conflicting marketplace', () =>
-      Effect.gen(function* () {
-        const exit = yield* Effect.exit(cli(['setup', '--target', 'claude', '--yes']));
-        expect(reasonCodeOf(exit)).toBe('marketplace_conflict');
-      })
-    );
-  });
-
-  const failedInstall = makeFakeHosts(
-    { claude: { available: true } },
-    { failOn: 'plugin install' }
-  );
-  layer(
-    TestLive({ commandRunner: failedInstall.runner, setupSkillInstaller: makeSkillInstaller() })
-  )('native install failure', it => {
-    it.effect('codes every other failure as unknown', () =>
-      Effect.gen(function* () {
-        const exit = yield* Effect.exit(cli(['setup', '--target', 'claude', '--yes']));
-        expect(reasonCodeOf(exit)).toBe('unknown');
-      })
-    );
-  });
+  for (const [hosts, makeHosts] of Object.entries(REASON_CODE_FIXTURES)) {
+    const fake = makeHosts();
+    layer(TestLive({ commandRunner: fake.runner }))(hosts, it => {
+      for (const { argv, expected } of REASON_CODE_CASES.filter(c => c.hosts === hosts)) {
+        it.effect(`codes \`setup ${argv.join(' ')}\` as ${expected}`, () =>
+          Effect.gen(function* () {
+            const exit = yield* Effect.exit(cli(['setup', ...argv]));
+            expect(reasonCodeOf(exit)).toBe(expected);
+          })
+        );
+      }
+    });
+  }
 });

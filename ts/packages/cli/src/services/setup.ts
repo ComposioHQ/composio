@@ -1,5 +1,3 @@
-import * as FileSystem from 'effect/FileSystem';
-import * as Path from 'effect/Path';
 import * as PlatformError from 'effect/PlatformError';
 import { Data, Effect, Option, Predicate, Schema } from 'effect';
 import { ChildProcess as Command } from 'effect/unstable/process';
@@ -16,11 +14,9 @@ import {
   COMPOSIO_AGENT_PLUGIN_ID,
   type AgentHost,
 } from './agent-host';
-import { probeHostInstallation, type HostInstallationSignals } from './agent-host-locations';
+import { probeHostInstallation } from './agent-host-env';
 import { CommandRunner, type CommandResult } from './command-runner';
-import { NodeOs } from './node-os';
 import { SetupSkillInstaller } from './setup-skill-installer';
-import type { SetupFailureReasonCode } from './setup-command-error';
 import { cliInvocationContext } from './runtime-cli-context';
 
 export const SETUP_TARGETS = ['auto', ...AGENT_HOSTS, 'all'] as const;
@@ -136,7 +132,21 @@ const ADAPTER_LIST = Object.values(ADAPTERS);
 const SETUP_COMMAND_TIMEOUT = '2 minutes';
 const MINIMUM_CODEX_SETUP_VERSION = '0.139.0';
 
-export { SetupCommandError, type SetupFailureReasonCode } from './setup-command-error';
+export type SetupFailureReasonCode =
+  | 'all_requires_both_hosts'
+  | 'unsupported_host'
+  | 'target_not_installed'
+  | 'no_host_detected'
+  | 'non_interactive_requires_yes'
+  | 'marketplace_conflict'
+  | 'unknown';
+
+export class SetupCommandError extends Data.TaggedError('services/SetupCommandError')<{
+  readonly message: string;
+  readonly operation: 'setup' | 'uninstall';
+  readonly reasonCode: SetupFailureReasonCode;
+  readonly cause?: unknown;
+}> {}
 
 type SetupFailureStage = 'detect' | 'inspect' | 'validate' | 'mutate' | 'verify' | 'skill';
 
@@ -144,7 +154,6 @@ export class SetupProcessError extends Data.TaggedError('services/SetupProcessEr
   readonly message: string;
   readonly target: AgentHost;
   readonly stage: SetupFailureStage;
-  readonly reasonCode?: SetupFailureReasonCode;
   readonly cause?: unknown;
 }> {}
 
@@ -152,14 +161,12 @@ const setupProcessError = (params: {
   readonly adapter: SetupTargetAdapter;
   readonly stage: SetupFailureStage;
   readonly message: string;
-  readonly reasonCode?: SetupFailureReasonCode;
   readonly cause?: unknown;
 }) =>
   new SetupProcessError({
     message: params.message,
     target: params.adapter.target,
     stage: params.stage,
-    ...(params.reasonCode === undefined ? {} : { reasonCode: params.reasonCode }),
     ...(params.cause === undefined ? {} : { cause: params.cause }),
   });
 
@@ -392,18 +399,6 @@ const supportsInspection = (adapter: SetupTargetAdapter, versionOutput?: string)
     return { supported: true } as const;
   });
 
-type AdapterDetection = Omit<SetupTargetDetection, 'target'>;
-
-const withInstallationSignals = (
-  adapter: SetupTargetAdapter,
-  detection: AdapterDetection
-): Effect.Effect<AdapterDetection, never, FileSystem.FileSystem | Path.Path | NodeOs> => {
-  if (detection.available) return Effect.succeed(detection);
-  return probeHostInstallation(adapter.target).pipe(
-    Effect.map(signals => ({ ...detection, ...signals }))
-  );
-};
-
 const detectAdapter = (adapter: SetupTargetAdapter) =>
   Effect.gen(function* () {
     const versionArgs = ['--version'];
@@ -476,7 +471,8 @@ const detectAdapter = (adapter: SetupTargetAdapter) =>
         },
       })
     );
-    return yield* withInstallationSignals(adapter, detection);
+    if (detection.available) return detection;
+    return { ...detection, ...(yield* probeHostInstallation(adapter.target)) };
   });
 
 const commandFailureSuffix = (result: CommandResult): string => {
@@ -677,17 +673,15 @@ const runRequired = (
 
 const validateInitialState = (adapter: SetupTargetAdapter, initial: InspectedSetupTarget) => {
   if (!initial.available) {
-    return setupProcessError({
-      adapter,
-      stage: 'validate',
+    return new SetupCommandError({
+      operation: 'setup',
       reasonCode: 'target_not_installed',
       message: `${adapter.executable} is not installed or not available on PATH. Install it and rerun \`composio setup --target ${adapter.target}\`.`,
     });
   }
   if (initial.marketplace_conflict) {
-    return setupProcessError({
-      adapter,
-      stage: 'validate',
+    return new SetupCommandError({
+      operation: 'setup',
       reasonCode: 'marketplace_conflict',
       message: `The ${adapter.target} marketplace named "composio" points to a different source. Run \`${adapter.marketplaceRemoveCommand}\`, then rerun \`composio setup --target ${adapter.target}\`.`,
     });
@@ -804,13 +798,15 @@ const FIXED_TARGETS: Readonly<Partial<Record<SetupTarget, ReadonlyArray<AgentHos
 export type SetupUnsupportedReasonCode =
   'codex_too_old' | 'no_json_inspection' | 'host_command_failed' | 'unknown';
 
-export interface SetupTargetDetection extends Partial<HostInstallationSignals> {
+export interface SetupTargetDetection {
   readonly target: AgentHost;
   readonly available: boolean;
   readonly supported: boolean;
   readonly version?: string;
   readonly unsupportedReason?: string;
   readonly unsupportedReasonCode?: SetupUnsupportedReasonCode;
+  readonly configDirPresent?: boolean;
+  readonly binaryInKnownPaths?: boolean;
 }
 
 export const detectSetupTargets = (target: SetupTarget) =>

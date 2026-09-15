@@ -1,10 +1,10 @@
 import type { CliCommandTelemetryContext, TrackEvent } from './types';
+import { Predicate } from 'effect';
 import { APP_VERSION } from 'src/constants';
 import { inferSkillReleaseChannel } from 'src/effects/install-skill';
 import type { AgentHost } from 'src/services/agent-host';
 import type { AgentHostEnv } from 'src/services/agent-host-env';
 import type { CliInvocationContext } from 'src/services/runtime-cli-context';
-import { setupFailureReasonCodeOf } from 'src/services/setup-command-error';
 import { ToolInputValidationError } from 'src/services/tool-input-validation';
 import { guessToolkitFromToolSlug } from 'src/utils/toolkit-from-tool-slug';
 
@@ -244,6 +244,13 @@ const extractUnknownKeys = (issues: ReadonlyArray<string>): ReadonlyArray<string
 
 const errorNameOf = (error: unknown): string =>
   error instanceof Error && error.name ? error.name : 'UnknownError';
+
+const failureReasonProperties = (error: unknown) => {
+  if (Predicate.hasProperty(error, 'reasonCode') && Predicate.isString(error.reasonCode)) {
+    return { failure_reason_code: error.reasonCode };
+  }
+  return {};
+};
 
 const isFlagPresent = (argv: ReadonlyArray<string>, ...flags: string[]): boolean =>
   argv.slice(2).some(token => {
@@ -545,12 +552,7 @@ type SpecialLifecycleFamily = {
   readonly succeededEventName: CliAnalyticsEventName;
   readonly failedEventName: CliAnalyticsEventName;
   readonly getProperties: (context: CliCommandTelemetryContext) => Record<string, unknown>;
-  readonly getFailureProperties?: (error: unknown) => Record<string, unknown>;
 };
-
-const getSetupFailureProperties = (error: unknown) => ({
-  failure_reason_code: setupFailureReasonCodeOf(error),
-});
 
 const SPECIAL_LIFECYCLE_FAMILIES: ReadonlyArray<SpecialLifecycleFamily> = [
   {
@@ -615,7 +617,6 @@ const SPECIAL_LIFECYCLE_FAMILIES: ReadonlyArray<SpecialLifecycleFamily> = [
     succeededEventName: CLI_ANALYTICS_EVENTS.CLI_SETUP_SUCCEEDED,
     failedEventName: CLI_ANALYTICS_EVENTS.CLI_SETUP_FAILED,
     getProperties: getSetupCommandProperties,
-    getFailureProperties: getSetupFailureProperties,
   },
 ];
 
@@ -653,12 +654,12 @@ export const getPrimaryLifecycleFailedEvent = (
   return buildEvent(family.failedEventName, {
     ...family.getProperties(context),
     error_name: errorNameOf(error),
-    ...family.getFailureProperties?.(error),
+    ...failureReasonProperties(error),
   });
 };
 
 export const getPluginHintShownEvent = (params: {
-  readonly invocationOrigin: string | undefined;
+  readonly invocationOrigin: string;
   readonly cliVersion: string;
   readonly commandPath: string;
   readonly agentHost: AgentHost;
@@ -712,18 +713,6 @@ export const getPluginLifecycleFailedEvent = (params: {
     error_name: errorNameOf(params.error),
   });
 
-const hostAbsenceProperties = (params: {
-  readonly available: boolean;
-  readonly hostConfigDirPresent?: boolean;
-  readonly hostBinaryInKnownPaths?: boolean;
-}) => {
-  if (params.available) return {};
-  return {
-    host_config_dir_present: params.hostConfigDirPresent,
-    host_binary_in_known_paths: params.hostBinaryInKnownPaths,
-  };
-};
-
 export const getSetupHostDetectedEvent = (params: {
   readonly operation: 'setup' | 'uninstall';
   readonly requestedTarget: 'auto' | 'claude' | 'codex' | 'all';
@@ -750,7 +739,8 @@ export const getSetupHostDetectedEvent = (params: {
     supported: params.supported,
     host_version: params.hostVersion,
     unsupported_reason_code: params.unsupportedReasonCode,
-    ...hostAbsenceProperties(params),
+    host_config_dir_present: params.hostConfigDirPresent,
+    host_binary_in_known_paths: params.hostBinaryInKnownPaths,
   });
 
 export const getSetupCancelledEvent = (params: {

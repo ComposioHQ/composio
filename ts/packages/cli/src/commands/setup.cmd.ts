@@ -16,7 +16,6 @@ import {
   isSetupReady,
   SETUP_TARGETS,
   SetupCommandError,
-  SetupProcessError,
   uninstallSetupTargets,
   type AgentHost,
   type SetupFailureReasonCode,
@@ -52,33 +51,31 @@ const formatTargets = (targets: ReadonlyArray<AgentHost>): string =>
 const errorMessage = (error: unknown): string =>
   Predicate.isError(error) ? error.message : String(error);
 
-const setupCommandError = (
-  message: string,
-  operation: 'setup' | 'uninstall',
-  reasonCode: SetupFailureReasonCode,
-  cause?: unknown
-) =>
-  new SetupCommandError({
-    message,
-    operation,
-    reasonCode,
-    ...(cause === undefined ? {} : { cause }),
-  });
+type SetupOperation = 'setup' | 'uninstall';
 
-const processFailureReasonCode = (error: unknown): SetupFailureReasonCode => {
-  if (error instanceof SetupProcessError) return error.reasonCode ?? 'unknown';
-  return 'unknown';
+interface SetupCommandErrorParams {
+  readonly message: string;
+  readonly reasonCode: SetupFailureReasonCode;
+  readonly cause?: unknown;
+}
+
+const operationOf = (uninstall: boolean): SetupOperation => {
+  if (uninstall) return 'uninstall';
+  return 'setup';
 };
 
 const setupBaseCmd = Command.make(
   'setup',
   { target, yes, ifPresent, uninstall },
-  ({ target, yes, ifPresent, uninstall }) =>
-    Effect.gen(function* () {
+  ({ target, yes, ifPresent, uninstall }) => {
+    const operation = operationOf(uninstall);
+    const setupCommandError = (params: SetupCommandErrorParams) =>
+      new SetupCommandError({ operation, ...params });
+
+    return Effect.gen(function* () {
       const ui = yield* TerminalUI;
       const terminal = yield* ui.capabilities;
       const { invocationOrigin } = yield* cliInvocationContext;
-      const operation = uninstall ? 'uninstall' : 'setup';
       yield* ui.intro(uninstall ? 'composio setup --uninstall' : 'composio setup');
 
       const detections = yield* detectSetupTargets(target);
@@ -116,11 +113,10 @@ const setupBaseCmd = Command.make(
         yield* ui.log.info(`${formatTargets(notDetected)} not detected.`);
       }
       if (target === 'all' && notDetected.length > 0) {
-        return yield* setupCommandError(
-          `\`--target all\` requires Claude Code and Codex. Missing: ${formatTargets(notDetected)}. Install the missing agent host, or use \`--target auto\` to operate on detected hosts only.`,
-          operation,
-          'all_requires_both_hosts'
-        );
+        return yield* setupCommandError({
+          message: `\`--target all\` requires Claude Code and Codex. Missing: ${formatTargets(notDetected)}. Install the missing agent host, or use \`--target auto\` to operate on detected hosts only.`,
+          reasonCode: 'all_requires_both_hosts',
+        });
       }
       if (unsupported.length > 0) {
         const reason = unsupported
@@ -128,7 +124,7 @@ const setupBaseCmd = Command.make(
           .filter((message): message is string => Boolean(message))
           .join(' ');
         if (target !== 'auto') {
-          return yield* setupCommandError(reason, operation, 'unsupported_host');
+          return yield* setupCommandError({ message: reason, reasonCode: 'unsupported_host' });
         }
         yield* ui.log.warn(
           `${formatTargets(unsupported.map(result => result.target))} plugin setup skipped. ${reason}`
@@ -148,23 +144,21 @@ const setupBaseCmd = Command.make(
             );
             return;
           }
-          return yield* setupCommandError(reason, operation, 'unsupported_host');
+          return yield* setupCommandError({ message: reason, reasonCode: 'unsupported_host' });
         }
       }
       if (detected.length === 0) {
         if (target === 'claude' || target === 'codex') {
-          return yield* setupCommandError(
-            `${target} is not installed or not available on PATH. Install it and rerun \`composio setup${uninstall ? ' --uninstall' : ''} --target ${target}\`.`,
-            operation,
-            'target_not_installed'
-          );
+          return yield* setupCommandError({
+            message: `${target} is not installed or not available on PATH. Install it and rerun \`composio setup${uninstall ? ' --uninstall' : ''} --target ${target}\`.`,
+            reasonCode: 'target_not_installed',
+          });
         }
         if (!ifPresent || target !== 'auto') {
-          return yield* setupCommandError(
-            `No supported agent host was detected. Install Claude Code or Codex, then rerun \`composio setup${uninstall ? ' --uninstall' : ''}\`.`,
-            operation,
-            'no_host_detected'
-          );
+          return yield* setupCommandError({
+            message: `No supported agent host was detected. Install Claude Code or Codex, then rerun \`composio setup${uninstall ? ' --uninstall' : ''}\`.`,
+            reasonCode: 'no_host_detected',
+          });
         }
         yield* trackCliEventEffect(
           getSetupSkippedEvent({
@@ -182,7 +176,7 @@ const setupBaseCmd = Command.make(
 
       const inspected = yield* inspectSetupTargets(detections, {
         allowMarketplaceConflict: uninstall,
-        operation: uninstall ? 'uninstall' : 'setup',
+        operation,
       });
       if (uninstall) {
         const installed = inspected.filter(status => status.plugin_installed);
@@ -208,11 +202,10 @@ const setupBaseCmd = Command.make(
 
         if (!yes && removable.length > 0) {
           if (!terminal.canPrompt) {
-            return yield* setupCommandError(
-              'Non-interactive uninstall requires `--yes` to approve local changes.',
-              operation,
-              'non_interactive_requires_yes'
-            );
+            return yield* setupCommandError({
+              message: 'Non-interactive uninstall requires `--yes` to approve local changes.',
+              reasonCode: 'non_interactive_requires_yes',
+            });
           }
           const confirmed = yield* ui.confirm(
             `Remove Composio from ${formatTargets(removable.map(status => status.target))}?`,
@@ -258,11 +251,10 @@ const setupBaseCmd = Command.make(
       const pendingPlugins = pending.filter(status => !isSetupPluginReady(status));
       if (!yes) {
         if (!terminal.canPrompt) {
-          return yield* setupCommandError(
-            'Non-interactive setup requires `--yes` to approve local changes.',
-            operation,
-            'non_interactive_requires_yes'
-          );
+          return yield* setupCommandError({
+            message: 'Non-interactive setup requires `--yes` to approve local changes.',
+            reasonCode: 'non_interactive_requires_yes',
+          });
         }
 
         const prompt =
@@ -307,14 +299,14 @@ const setupBaseCmd = Command.make(
     }).pipe(
       Effect.mapError(error => {
         if (error instanceof SetupCommandError) return error;
-        return setupCommandError(
-          errorMessage(error),
-          uninstall ? 'uninstall' : 'setup',
-          processFailureReasonCode(error),
-          error
-        );
+        return setupCommandError({
+          message: errorMessage(error),
+          reasonCode: 'unknown',
+          cause: error,
+        });
       })
-    )
+    );
+  }
 );
 
 export const setupCmd = setupBaseCmd.pipe(

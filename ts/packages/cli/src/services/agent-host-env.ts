@@ -1,5 +1,8 @@
+import * as FileSystem from 'effect/FileSystem';
+import * as Path from 'effect/Path';
 import { Config, ConfigProvider, Effect, Option } from 'effect';
 import type { AgentHost } from './agent-host';
+import { NodeOs } from './node-os';
 
 export type AgentHostEnv = AgentHost | 'none';
 
@@ -51,14 +54,40 @@ export const rawHostEnvironment: Effect.Effect<RawHostEnvironment> = Effect.gen(
   )
 );
 
-export const hostConfigDirectory = (params: {
-  readonly host: AgentHost;
-  readonly env: RawHostEnvironment;
-  readonly homedir: string;
-  readonly join: (...segments: string[]) => string;
-}): string => {
-  if (params.host === 'claude') {
-    return params.env.claudeConfigDir ?? params.join(params.homedir, '.claude');
-  }
-  return params.env.codexHome ?? params.join(params.homedir, '.codex');
+export const hostConfigDirectory = (host: AgentHost) =>
+  Effect.gen(function* () {
+    const path = yield* Path.Path;
+    const os = yield* NodeOs;
+    const env = yield* rawHostEnvironment;
+    if (host === 'claude') return env.claudeConfigDir ?? path.join(os.homedir, '.claude');
+    return env.codexHome ?? path.join(os.homedir, '.codex');
+  });
+
+const KNOWN_BINARY_PATHS: Readonly<Record<AgentHost, ReadonlyArray<string>>> = {
+  claude: [
+    '.claude/local/claude',
+    '.local/bin/claude',
+    '.npm-global/bin/claude',
+    '/usr/local/bin/claude',
+    '/opt/homebrew/bin/claude',
+  ],
+  codex: [
+    '.local/bin/codex',
+    '.npm-global/bin/codex',
+    '/usr/local/bin/codex',
+    '/opt/homebrew/bin/codex',
+  ],
 };
+
+export const probeHostInstallation = (host: AgentHost) =>
+  Effect.gen(function* () {
+    const fs = yield* FileSystem.FileSystem;
+    const path = yield* Path.Path;
+    const os = yield* NodeOs;
+    const exists = (target: string) => fs.exists(target).pipe(Effect.orElseSucceed(() => false));
+    const configDirPresent = yield* exists(yield* hostConfigDirectory(host));
+    const found = yield* Effect.forEach(KNOWN_BINARY_PATHS[host], entry =>
+      exists(path.resolve(os.homedir, entry))
+    );
+    return { configDirPresent, binaryInKnownPaths: found.includes(true) };
+  });

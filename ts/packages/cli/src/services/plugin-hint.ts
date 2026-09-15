@@ -5,11 +5,10 @@ import { trackCliEventEffect } from 'src/analytics/dispatch';
 import { getPluginHintShownEvent } from 'src/analytics/events';
 import { APP_CONFIG } from 'src/effects/app-config';
 import { setupCacheDir } from 'src/effects/setup-cache-dir';
-import { getVersion } from 'src/effects/version';
+import { APP_VERSION } from 'src/constants';
 import { AGENT_HOST_LABELS, COMPOSIO_AGENT_PLUGIN_ID, type AgentHost } from './agent-host';
 import { detectPluginHost, hostConfigDirectory, rawHostEnvironment } from './agent-host-env';
-import { NodeOs } from './node-os';
-import { cliInvocationContext } from './runtime-cli-context';
+import { DEFAULT_CLI_INVOCATION_ORIGIN } from './runtime-cli-context';
 import { TerminalUI } from './terminal-ui';
 
 /**
@@ -97,7 +96,6 @@ export function createPluginHint(config: PluginHintConfig) {
     codex: codexPluginAbsent,
   };
 
-  /** Resolves to `true` only when the hint line was actually printed. */
   function showPluginHint(terminal: Pick<TerminalUI, 'error'>) {
     return Effect.gen(function* () {
       const host = config.host;
@@ -106,15 +104,22 @@ export function createPluginHint(config: PluginHintConfig) {
         config.invocationOrigin === 'run' ||
         config.commandName === 'setup'
       ) {
-        return false;
+        return;
       }
-      if (!(yield* pluginAbsentByHost[host])) return false;
-      if (!(yield* claimHint(host))) return false;
+      if (!(yield* pluginAbsentByHost[host])) return;
+      if (!(yield* claimHint(host))) return;
       yield* terminal.error(
         `Tip: running under ${AGENT_HOST_LABELS[host]} without the Composio plugin — 'composio setup --yes' installs it.`
       );
-      return true;
-    }).pipe(Effect.orElseSucceed(() => false));
+      yield* trackCliEventEffect(
+        getPluginHintShownEvent({
+          invocationOrigin: config.invocationOrigin ?? DEFAULT_CLI_INVOCATION_ORIGIN,
+          cliVersion: APP_VERSION,
+          commandPath: config.commandName ?? 'composio',
+          agentHost: host,
+        })
+      );
+    }).pipe(Effect.ignore);
   }
 
   return { showPluginHint };
@@ -139,47 +144,26 @@ export function findRootCommandName(argv: ReadonlyArray<string>): string | undef
 export const resolvePluginHintConfig = (argv: ReadonlyArray<string>) =>
   Effect.gen(function* () {
     const path = yield* Path.Path;
-    const os = yield* NodeOs;
     const cacheDir = yield* setupCacheDir;
     const invocationOrigin = yield* APP_CONFIG.CLI_INVOCATION_ORIGIN;
     const env = yield* rawHostEnvironment;
-    const configDir = (host: AgentHost) =>
-      hostConfigDirectory({ host, env, homedir: os.homedir, join: path.join });
+    const claudeConfigDir = yield* hostConfigDirectory('claude');
+    const codexConfigDir = yield* hostConfigDirectory('codex');
     return {
       stateDirectory: path.join(cacheDir, 'plugin-hints'),
       host: detectPluginHost(env),
       invocationOrigin,
       commandName: findRootCommandName(argv),
-      claudeInstalledPluginsFile: path.join(
-        configDir('claude'),
-        'plugins',
-        'installed_plugins.json'
-      ),
-      codexConfigFile: path.join(configDir('codex'), 'config.toml'),
+      claudeInstalledPluginsFile: path.join(claudeConfigDir, 'plugins', 'installed_plugins.json'),
+      codexConfigFile: path.join(codexConfigDir, 'config.toml'),
       hintIntervalMs: HINT_INTERVAL_MS,
     } satisfies PluginHintConfig;
   });
-
-const trackHintShown = (config: PluginHintConfig) =>
-  Effect.gen(function* () {
-    if (config.host === undefined) return;
-    const { invocationOrigin } = yield* cliInvocationContext;
-    yield* trackCliEventEffect(
-      getPluginHintShownEvent({
-        invocationOrigin,
-        cliVersion: yield* getVersion,
-        commandPath: config.commandName ?? 'composio',
-        agentHost: config.host,
-      })
-    );
-  }).pipe(Effect.ignore);
 
 /** Print the plugin acquisition hint when eligible. Never fails, never blocks on network. */
 export const showPluginAcquisitionHint = (argv: ReadonlyArray<string>) =>
   Effect.gen(function* () {
     const terminal = yield* TerminalUI;
     const config = yield* resolvePluginHintConfig(argv);
-    const shown = yield* createPluginHint(config).showPluginHint(terminal);
-    if (!shown) return;
-    yield* trackHintShown(config);
+    yield* createPluginHint(config).showPluginHint(terminal);
   });

@@ -333,13 +333,11 @@ describe('CLI analytics setup runtime-context events', () => {
       target: 'claude',
       available: true,
       supported: true,
-      hostConfigDirPresent: true,
-      hostBinaryInKnownPaths: true,
       invocationOrigin: DEFAULT_CLI_INVOCATION_ORIGIN,
       cliVersion: APP_VERSION,
     });
-    expect(detected?.properties).not.toHaveProperty('host_config_dir_present');
-    expect(detected?.properties).not.toHaveProperty('host_binary_in_known_paths');
+    expect(detected?.properties?.host_config_dir_present).toBeUndefined();
+    expect(detected?.properties?.host_binary_in_known_paths).toBeUndefined();
   });
 
   it('tracks a printed plugin hint as a setup-stage event', () => {
@@ -382,19 +380,14 @@ describe('CLI analytics setup runtime-context events', () => {
       error_name: 'services/SetupCommandError',
       failure_reason_code: 'non_interactive_requires_yes',
     });
-    expect(
-      getPrimaryLifecycleFailedEvent(context, new Error('boom'))?.properties?.failure_reason_code
-    ).toBe('unknown');
-  });
-
-  it('keeps failure reason codes out of other lifecycle families', () => {
-    const context = createCliCommandTelemetryContext(
-      ['bun', 'composio', 'login'],
-      APP_VERSION,
-      { stdoutIsTTY: false, stderrIsTTY: false },
-      CLI_INVOCATION
+    const unknown = new SetupCommandError({
+      message: 'native failure',
+      operation: 'setup',
+      reasonCode: 'unknown',
+    });
+    expect(getPrimaryLifecycleFailedEvent(context, unknown)?.properties?.failure_reason_code).toBe(
+      'unknown'
     );
-
     expect(
       getPrimaryLifecycleFailedEvent(context, new Error('boom'))?.properties
     ).not.toHaveProperty('failure_reason_code');
