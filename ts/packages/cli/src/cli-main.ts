@@ -312,7 +312,6 @@ export type CliBootstrapOptions = {
   readonly telemetryDebug: boolean;
 };
 
-// Runs before the plugin hint so that event carries the host too.
 const stampAgentHostEnv = rawHostEnvironment.pipe(
   Effect.map(env => configureCliAnalyticsAgentHostEnv(agentHostEnvOf(env)))
 );
