@@ -1,11 +1,16 @@
 import * as FileSystem from 'effect/FileSystem';
 import * as Path from 'effect/Path';
 import * as BunFileSystem from '@effect/platform-bun/BunFileSystem';
-import { Config, ConfigProvider, Effect, Layer, Option, Schema } from 'effect';
+import { Effect, Layer, Option, Schema } from 'effect';
+import { trackCliEventEffect } from 'src/analytics/dispatch';
+import { getPluginHintShownEvent } from 'src/analytics/events';
 import { APP_CONFIG } from 'src/effects/app-config';
 import { setupCacheDir } from 'src/effects/setup-cache-dir';
+import { APP_VERSION } from 'src/constants';
 import { AGENT_HOST_LABELS, COMPOSIO_AGENT_PLUGIN_ID, type AgentHost } from './agent-host';
+import { detectPluginHost, rawHostEnvironment } from './agent-host-env';
 import { NodeOs } from './node-os';
+import { DEFAULT_CLI_INVOCATION_ORIGIN } from './runtime-cli-context';
 import { TerminalUI } from './terminal-ui';
 
 /**
@@ -16,24 +21,6 @@ import { TerminalUI } from './terminal-ui';
  */
 
 const HINT_INTERVAL_MS = 24 * 60 * 60 * 1000;
-
-export interface HostEnvMarkers {
-  readonly claudeCode: string | undefined;
-  readonly codexThreadId: string | undefined;
-  readonly codexSandbox: string | undefined;
-}
-
-const isPresent = (value: string | undefined): boolean =>
-  value !== undefined && value.trim().length > 0;
-
-const nonBlankOrUndefined = (value: string | undefined): string | undefined =>
-  value === undefined || value.trim().length === 0 ? undefined : value;
-
-export function detectPluginHost(markers: HostEnvMarkers): AgentHost | undefined {
-  if (isPresent(markers.claudeCode)) return 'claude';
-  if (isPresent(markers.codexThreadId) || isPresent(markers.codexSandbox)) return 'codex';
-  return undefined;
-}
 
 const InstalledPluginsSchema = Schema.fromJsonString(
   Schema.Struct({
@@ -124,7 +111,15 @@ export function createPluginHint(config: PluginHintConfig) {
       if (!(yield* pluginAbsentByHost[host])) return;
       if (!(yield* claimHint(host))) return;
       yield* terminal.error(
-        `Tip: running under ${AGENT_HOST_LABELS[host]} without the Composio plugin — 'composio setup' installs it.`
+        `Tip: running under ${AGENT_HOST_LABELS[host]} without the Composio plugin — 'composio setup --yes' installs it.`
+      );
+      yield* trackCliEventEffect(
+        getPluginHintShownEvent({
+          invocationOrigin: config.invocationOrigin ?? DEFAULT_CLI_INVOCATION_ORIGIN,
+          cliVersion: APP_VERSION,
+          commandPath: config.commandName ?? 'composio',
+          agentHost: host,
+        })
       );
     }).pipe(Effect.ignore);
   }
@@ -133,9 +128,6 @@ export function createPluginHint(config: PluginHintConfig) {
 }
 
 const DefaultConfigLayers = Layer.mergeAll(Path.layer, NodeOs.Default, BunFileSystem.layer);
-
-const readOptionalEnv = (name: string) =>
-  Effect.orDie(Config.option(Config.string(name)).pipe(Config.map(Option.getOrUndefined)));
 
 export function findRootCommandName(argv: ReadonlyArray<string>): string | undefined {
   const args = argv.slice(2);
@@ -152,30 +144,6 @@ export function findRootCommandName(argv: ReadonlyArray<string>): string | undef
   }
   return undefined;
 }
-
-// Host-owned variables must bypass the CLI ConfigProvider, which prefixes
-// application keys with COMPOSIO_.
-const rawHostEnvironment = Effect.gen(function* () {
-  const claudeCode = yield* readOptionalEnv('CLAUDECODE');
-  const codexThreadId = yield* readOptionalEnv('CODEX_THREAD_ID');
-  const codexSandbox = yield* readOptionalEnv('CODEX_SANDBOX');
-  const claudeConfigDir = nonBlankOrUndefined(yield* readOptionalEnv('CLAUDE_CONFIG_DIR'));
-  const codexHome = nonBlankOrUndefined(yield* readOptionalEnv('CODEX_HOME'));
-  return {
-    claudeCode,
-    codexThreadId,
-    codexSandbox,
-    claudeConfigDir,
-    codexHome,
-  };
-}).pipe(
-  // v4's fromEnv() snapshots the environment when the provider is built, so
-  // build it per invocation to keep reading the live host environment.
-  Effect.provideServiceEffect(
-    ConfigProvider.ConfigProvider,
-    Effect.sync(() => ConfigProvider.fromEnv())
-  )
-);
 
 export const resolvePluginHintConfig = (argv: ReadonlyArray<string>) =>
   Effect.gen(function* () {

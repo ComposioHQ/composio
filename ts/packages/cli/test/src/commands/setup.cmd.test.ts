@@ -5,7 +5,8 @@ import { ChildProcess, ChildProcessSpawner } from 'effect/unstable/process';
 import { afterEach, vi } from 'vitest';
 import { SkillInstallError } from 'src/effects/install-skill';
 import { CommandRunner } from 'src/services/command-runner';
-import { SetupCommandError, SetupProcessError } from 'src/services/setup';
+import { SetupProcessError } from 'src/services/setup';
+import { SetupCommandError } from 'src/services/setup-command-error';
 import { SetupSkillInstaller } from 'src/services/setup-skill-installer';
 import { cli, MockConsole, TestLive } from 'test/__utils__';
 
@@ -1223,4 +1224,77 @@ describe('CLI: composio setup', () => {
       })
     );
   });
+});
+
+const reasonCodeOf = (exit: Exit.Exit<unknown, unknown>): string | undefined => {
+  if (!Exit.isFailure(exit)) return undefined;
+  const failure = Cause.squash(exit.cause);
+  if (failure instanceof SetupCommandError) return failure.reasonCode;
+  return undefined;
+};
+
+const REASON_CODE_FIXTURES = {
+  'only Claude Code installed': () => makeFakeHosts({ claude: { available: true } }),
+  'no host installed': () => makeFakeHosts({}),
+  'unsupported Codex only': () =>
+    makeFakeHosts({ codex: { available: true } }, { codexVersion: 'codex-cli 0.137.0' }),
+  'marketplace conflict': () =>
+    makeFakeHosts({ claude: { available: true, marketplace: 'conflict' } }),
+  'native install failure': () =>
+    makeFakeHosts({ claude: { available: true } }, { failOn: 'plugin install' }),
+} as const;
+
+const REASON_CODE_CASES: ReadonlyArray<{
+  readonly hosts: keyof typeof REASON_CODE_FIXTURES;
+  readonly argv: ReadonlyArray<string>;
+  readonly expected: string;
+}> = [
+  {
+    hosts: 'only Claude Code installed',
+    argv: ['--target', 'all', '--yes'],
+    expected: 'all_requires_both_hosts',
+  },
+  {
+    hosts: 'only Claude Code installed',
+    argv: ['--target', 'codex', '--yes'],
+    expected: 'target_not_installed',
+  },
+  {
+    hosts: 'only Claude Code installed',
+    argv: ['--target', 'claude'],
+    expected: 'non_interactive_requires_yes',
+  },
+  { hosts: 'no host installed', argv: ['--yes'], expected: 'no_host_detected' },
+  {
+    hosts: 'unsupported Codex only',
+    argv: ['--target', 'codex', '--yes'],
+    expected: 'unsupported_host',
+  },
+  { hosts: 'unsupported Codex only', argv: ['--yes'], expected: 'unsupported_host' },
+  {
+    hosts: 'marketplace conflict',
+    argv: ['--target', 'claude', '--yes'],
+    expected: 'marketplace_conflict',
+  },
+  { hosts: 'native install failure', argv: ['--target', 'claude', '--yes'], expected: 'unknown' },
+];
+
+describe('CLI: composio setup failure reason codes', () => {
+  afterEach(() => {
+    process.exitCode = undefined;
+  });
+
+  for (const [hosts, makeHosts] of Object.entries(REASON_CODE_FIXTURES)) {
+    const fake = makeHosts();
+    layer(TestLive({ commandRunner: fake.runner }))(hosts, it => {
+      for (const { argv, expected } of REASON_CODE_CASES.filter(c => c.hosts === hosts)) {
+        it.effect(`codes \`setup ${argv.join(' ')}\` as ${expected}`, () =>
+          Effect.gen(function* () {
+            const exit = yield* Effect.exit(cli(['setup', ...argv]));
+            expect(reasonCodeOf(exit)).toBe(expected);
+          })
+        );
+      }
+    });
+  }
 });

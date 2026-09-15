@@ -1,21 +1,33 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from '@effect/vitest';
-import * as BunFileSystem from '@effect/platform-bun/BunFileSystem';
-import * as BunPath from '@effect/platform-bun/BunPath';
+import { describe, expect, it } from '@effect/vitest';
+import { afterEach, beforeEach, vi } from 'vitest';
+import * as BunServices from '@effect/platform-bun/BunServices';
 import { ConfigProvider, Effect, Layer } from 'effect';
 import { existsSync, mkdirSync, mkdtempSync, rmSync, utimesSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { Writable } from 'node:stream';
+import { APP_VERSION } from 'src/constants';
 import { extendConfigProvider } from 'src/services/config';
 import { defaultNodeOs, NodeOs } from 'src/services/node-os';
+import { NodeProcess } from 'src/services/node-process';
+import { detectPluginHost } from 'src/services/agent-host-env';
 import {
   createPluginHint,
-  detectPluginHost,
   findRootCommandName,
   resolvePluginHintConfig,
   type PluginHintConfig,
 } from 'src/services/plugin-hint';
-import { makeTerminalUI, type TerminalUI } from 'src/services/terminal-ui';
+import { makeTerminalUI, TerminalUI } from 'src/services/terminal-ui';
+import { terminalUITestImpl } from 'test/__utils__/services/terminal-ui-test';
+import { trackedEvents } from 'test/__utils__/tracked-events';
+
+vi.mock('src/analytics/dispatch', async importOriginal => {
+  const { recordTrackedEvent } = await import('test/__utils__/tracked-events');
+  return {
+    ...(await importOriginal<typeof import('src/analytics/dispatch')>()),
+    trackCliEventEffect: recordTrackedEvent,
+  };
+});
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -26,10 +38,17 @@ beforeEach(() => {
 afterEach(() => {
   vi.useRealTimers();
   vi.unstubAllEnvs();
+  trackedEvents.length = 0;
   rmSync(tempDir, { recursive: true, force: true });
 });
 
-const PlatformLayers = Layer.mergeAll(BunFileSystem.layer, BunPath.layer);
+const hintLayers = () =>
+  Layer.mergeAll(
+    BunServices.layer,
+    NodeProcess.Default,
+    Layer.succeed(NodeOs, defaultNodeOs({ homedir: tempDir })),
+    Layer.succeed(TerminalUI, terminalUITestImpl)
+  );
 
 function makeConfig(overrides?: Partial<PluginHintConfig>): PluginHintConfig {
   return {
@@ -104,9 +123,7 @@ describe('resolvePluginHintConfig', () => {
         ConfigProvider.ConfigProvider,
         extendConfigProvider(ConfigProvider.fromEnv())
       ),
-      Effect.provide(
-        Layer.merge(PlatformLayers, Layer.succeed(NodeOs, defaultNodeOs({ homedir: tempDir })))
-      )
+      Effect.provide(hintLayers())
     );
   });
 
@@ -126,9 +143,7 @@ describe('resolvePluginHintConfig', () => {
         ConfigProvider.ConfigProvider,
         extendConfigProvider(ConfigProvider.fromEnv())
       ),
-      Effect.provide(
-        Layer.merge(PlatformLayers, Layer.succeed(NodeOs, defaultNodeOs({ homedir: tempDir })))
-      )
+      Effect.provide(hintLayers())
     );
   });
 
@@ -150,9 +165,7 @@ describe('resolvePluginHintConfig', () => {
         ConfigProvider.ConfigProvider,
         extendConfigProvider(ConfigProvider.fromEnv())
       ),
-      Effect.provide(
-        Layer.merge(PlatformLayers, Layer.succeed(NodeOs, defaultNodeOs({ homedir: tempDir })))
-      )
+      Effect.provide(hintLayers())
     );
   });
 });
@@ -186,10 +199,34 @@ describe('showPluginHint', () => {
       writeFileAt(codexConfig.codexConfigFile, '[plugins."glen@glen"]\nenabled = true\n');
       yield* createPluginHint(codexConfig).showPluginHint(makeTerminal(output));
 
-      expect(output).toHaveLength(2);
-      expect(output[0]).toContain('Claude Code');
-      expect(output[1]).toContain('Codex');
-    }).pipe(Effect.provide(PlatformLayers))
+      expect(output).toEqual([
+        "Tip: running under Claude Code without the Composio plugin — 'composio setup --yes' installs it.",
+        "Tip: running under Codex without the Composio plugin — 'composio setup --yes' installs it.",
+      ]);
+    }).pipe(Effect.provide(hintLayers()))
+  );
+
+  it.effect('tracks CLI_PLUGIN_HINT_SHOWN once per printed hint', () =>
+    Effect.gen(function* () {
+      const config = makeConfig({ invocationOrigin: 'installer', commandName: 'whoami' });
+
+      yield* createPluginHint(config).showPluginHint(makeTerminal(output));
+      yield* createPluginHint(config).showPluginHint(makeTerminal(output));
+
+      expect(output).toHaveLength(1);
+      expect(trackedEvents).toEqual([
+        {
+          name: 'CLI_PLUGIN_HINT_SHOWN',
+          properties: expect.objectContaining({
+            source: 'cli',
+            invocation_origin: 'installer',
+            cli_version: APP_VERSION,
+            command_path: 'whoami',
+            agent_host: 'claude',
+          }),
+        },
+      ]);
+    }).pipe(Effect.provide(hintLayers()))
   );
 
   it.effect('stays silent when the plugin is installed', () =>
@@ -204,7 +241,7 @@ describe('showPluginHint', () => {
 
       expect(output).toEqual([]);
       expect(existsSync(claudeConfig.stateDirectory)).toBe(false);
-    }).pipe(Effect.provide(PlatformLayers))
+    }).pipe(Effect.provide(hintLayers()))
   );
 
   it.effect('stays silent when plugin state is unreadable', () =>
@@ -215,7 +252,7 @@ describe('showPluginHint', () => {
       yield* createPluginHint(config).showPluginHint(makeTerminal(output));
 
       expect(output).toEqual([]);
-    }).pipe(Effect.provide(PlatformLayers))
+    }).pipe(Effect.provide(hintLayers()))
   );
 
   it.effect('stays silent outside a host, in run children, and for setup', () =>
@@ -231,8 +268,9 @@ describe('showPluginHint', () => {
       );
 
       expect(output).toEqual([]);
+      expect(trackedEvents).toEqual([]);
       expect(existsSync(configs[2]!.stateDirectory)).toBe(false);
-    }).pipe(Effect.provide(PlatformLayers))
+    }).pipe(Effect.provide(hintLayers()))
   );
 
   it.effect('allows only one concurrent process to claim a host hint', () =>
@@ -248,7 +286,7 @@ describe('showPluginHint', () => {
 
       expect(output).toHaveLength(1);
       expect(existsSync(join(config.stateDirectory, 'claude.stamp'))).toBe(true);
-    }).pipe(Effect.provide(PlatformLayers))
+    }).pipe(Effect.provide(hintLayers()))
   );
 
   it.effect('throttles each host independently', () =>
@@ -262,7 +300,7 @@ describe('showPluginHint', () => {
       yield* createPluginHint(codexConfig).showPluginHint(makeTerminal(output));
 
       expect(output).toHaveLength(2);
-    }).pipe(Effect.provide(PlatformLayers))
+    }).pipe(Effect.provide(hintLayers()))
   );
 
   it.effect('retires a stale stamp and shows the hint again', () =>
@@ -278,7 +316,7 @@ describe('showPluginHint', () => {
       yield* createPluginHint(config).showPluginHint(makeTerminal(output));
 
       expect(output).toHaveLength(1);
-    }).pipe(Effect.provide(PlatformLayers))
+    }).pipe(Effect.provide(hintLayers()))
   );
 
   it.effect('writes to stderr even when no stream is a TTY', () =>
@@ -300,6 +338,6 @@ describe('showPluginHint', () => {
       yield* createPluginHint(config).showPluginHint(terminal);
 
       expect(chunks.join('')).toContain('composio setup');
-    }).pipe(Effect.provide(PlatformLayers))
+    }).pipe(Effect.provide(hintLayers()))
   );
 });

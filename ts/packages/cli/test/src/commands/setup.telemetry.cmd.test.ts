@@ -1,32 +1,24 @@
+import { mkdirSync, writeFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { describe, expect, layer } from '@effect/vitest';
 import { Effect, Exit } from 'effect';
 import { ChildProcess, ChildProcessSpawner } from 'effect/unstable/process';
 import { afterEach, beforeEach, vi } from 'vitest';
 import { CommandRunner } from 'src/services/command-runner';
+import { NodeOs } from 'src/services/node-os';
 import { SetupSkillInstaller } from 'src/services/setup-skill-installer';
 import { getTerminalCapabilities, TerminalUI } from 'src/services/terminal-ui';
 import { cli, TestLive } from 'test/__utils__';
 import { terminalUITestImpl } from 'test/__utils__/services/terminal-ui-test';
-
-const tracked = vi.hoisted(() => ({
-  events: [] as Array<{ readonly name: string; readonly properties?: Record<string, unknown> }>,
-}));
+import { eventsNamed, trackedEvents } from 'test/__utils__/tracked-events';
 
 vi.mock('src/analytics/dispatch', async importOriginal => {
-  const actual = await importOriginal<typeof import('src/analytics/dispatch')>();
-  const { Effect } = await import('effect');
+  const { recordTrackedEvent } = await import('test/__utils__/tracked-events');
   return {
-    ...actual,
-    trackCliEventEffect: (
-      event: { readonly name: string; readonly properties?: Record<string, unknown> } | null
-    ) =>
-      Effect.sync(() => {
-        if (event) tracked.events.push(event);
-      }),
+    ...(await importOriginal<typeof import('src/analytics/dispatch')>()),
+    trackCliEventEffect: recordTrackedEvent,
   };
 });
-
-const eventsNamed = (name: string) => tracked.events.filter(event => event.name === name);
 
 type AgentHost = 'claude' | 'codex';
 
@@ -176,11 +168,44 @@ const decliningUI = TerminalUI.of({
 
 describe('CLI: composio setup telemetry', () => {
   beforeEach(() => {
-    tracked.events.length = 0;
+    trackedEvents.length = 0;
   });
 
   afterEach(() => {
+    vi.unstubAllEnvs();
     process.exitCode = undefined;
+  });
+
+  const hostSignals = makeFakeHosts({ claude: { available: true } });
+  layer(
+    TestLive({
+      commandRunner: hostSignals.runner,
+      setupSkillInstaller: makeSkillInstaller(),
+    })
+  )('undetected host presence signals', it => {
+    it.effect('reports the config dir and known binary paths only for the undetected host', () =>
+      Effect.gen(function* () {
+        vi.stubEnv('CODEX_HOME', '');
+        const os = yield* NodeOs;
+        mkdirSync(join(os.homedir, '.codex'), { recursive: true });
+        mkdirSync(join(os.homedir, '.local', 'bin'), { recursive: true });
+        writeFileSync(join(os.homedir, '.local', 'bin', 'codex'), '');
+
+        yield* cli(['setup', '--target', 'auto', '--yes']);
+
+        const detected = eventsNamed('CLI_SETUP_HOST_DETECTED');
+        const codex = detected.find(event => event.properties?.agent_host === 'codex');
+        const claude = detected.find(event => event.properties?.agent_host === 'claude');
+        expect(codex?.properties).toMatchObject({
+          available: false,
+          host_config_dir_present: true,
+          host_binary_in_known_paths: true,
+        });
+        expect(claude?.properties).toMatchObject({ available: true });
+        expect(claude?.properties?.host_config_dir_present).toBeUndefined();
+        expect(claude?.properties?.host_binary_in_known_paths).toBeUndefined();
+      })
+    );
   });
 
   const freshClaude = makeFakeHosts({ claude: { available: true } });
@@ -283,6 +308,25 @@ describe('CLI: composio setup telemetry', () => {
           }),
         ]);
         expect(eventsNamed('CLI_SETUP_CANCELLED')).toHaveLength(0);
+      })
+    );
+
+    it.effect('reports absent config dirs for every undetected host', () =>
+      Effect.gen(function* () {
+        vi.stubEnv('CLAUDE_CONFIG_DIR', '');
+        vi.stubEnv('CODEX_HOME', '');
+
+        yield* cli(['setup', '--target', 'auto', '--yes', '--if-present']);
+
+        const detected = eventsNamed('CLI_SETUP_HOST_DETECTED');
+        expect(detected).toHaveLength(2);
+        for (const event of detected) {
+          expect(event.properties).toMatchObject({
+            available: false,
+            host_config_dir_present: false,
+            host_binary_in_known_paths: expect.any(Boolean),
+          });
+        }
       })
     );
   });
