@@ -155,7 +155,7 @@ const tools = await composio.tools.get('default', {
 });
 
 let response = await openai.responses.create({
-  model: 'gpt-4',
+  model: 'gpt-5',
   tools,
   input: 'Find information about the Composio SDK repository',
 });
@@ -163,18 +163,14 @@ let response = await openai.responses.create({
 while (response.output.some(item => item.type === 'function_call')) {
   const toolOutputs = await composio.provider.handleToolCalls('default', response.output);
   response = await openai.responses.create({
-    model: 'gpt-4',
+    model: 'gpt-5',
     tools,
     previous_response_id: response.id,
     input: toolOutputs,
   });
 }
 
-for (const item of response.output) {
-  if (item.type === 'message' && item.content[0].type === 'output_text') {
-    console.log(item.content[0].text);
-  }
-}
+console.log(response.output_text);
 ```
 
 ## Modifiers with OpenAI Provider
@@ -261,4 +257,47 @@ class OpenAIProvider extends BaseNonAgenticProvider<OpenAiToolCollection, OpenAi
     modifiers?: ExecuteToolModifiers
   ): Promise<OpenAI.ChatCompletionToolMessageParam[]>;
 }
+
+// The tool type for the Responses API
+// (the Responses provider's OpenAiTool is OpenAI.Responses.FunctionTool)
+type ResponsesTool = OpenAI.Responses.FunctionTool;
+
+// The provider class for the Responses API
+// (OpenAIResponsesProvider re-exports from '@composio/openai')
+class OpenAIResponsesProvider extends BaseNonAgenticProvider<
+  ResponsesTool[],
+  ResponsesTool
+> {
+  readonly name = 'openai';
+
+  wrapTool(tool: Tool): ResponsesTool;
+  wrapTools(tools: Tool[]): ResponsesTool[];
+
+  executeToolCall(
+    userId: string,
+    tool: OpenAI.Responses.ResponseFunctionToolCall,
+    options?: ExecuteToolFnOptions,
+    modifiers?: ExecuteToolModifiers
+  ): Promise<string>;
+
+  handleToolCalls(
+    userId: string,
+    toolCalls: OpenAI.Responses.ResponseOutputItem[],
+    options?: ExecuteToolFnOptions,
+    modifiers?: ExecuteToolModifiers
+  ): Promise<OpenAI.Responses.ResponseInputItem.FunctionCallOutput[]>;
+
+  handleResponse(
+    userId: string,
+    response: OpenAI.Responses.Response,
+    options?: ExecuteToolFnOptions,
+    modifiers?: ExecuteToolModifiers
+  ): Promise<OpenAI.Responses.ResponseInputItem.FunctionCallOutput[]>;
+}
 ```
+
+Like the chat completions provider, the Responses provider also accepts a
+`ToolCallSession` as the execution target, and it can wrap MCP servers for the
+Responses API via `wrapMcpServerResponse`. See
+`ts/packages/providers/openai/src/OpenAIResponsesProvider.ts` for the full
+surface.
