@@ -175,6 +175,97 @@ describe('transformToolkitRetrieveResponse', () => {
     ).not.toHaveProperty('authHintUrl');
   });
 
+  /**
+   * The generated client declares both groups, but responses that omit one do
+   * occur: this repo's own docs pipeline defaults them (`docs/lib/toolkit-api.ts`).
+   * A missing group used to reach zod and fail validation; mapping it eagerly
+   * would throw a TypeError before validation instead.
+   */
+  describe('when the API omits a field group', () => {
+    const withDetail = (detail: unknown) =>
+      ({ ...rawToolkit, auth_config_details: [detail] }) as unknown as RawRetrieveResponse;
+
+    const populatedInitiation = {
+      required: [
+        {
+          name: 'api_key',
+          displayName: 'API Key',
+          description: 'Your API key',
+          type: 'string',
+          required: true,
+          is_secret: true,
+        },
+      ],
+      optional: [],
+    };
+
+    it('returns empty lists for a missing auth_config_creation and keeps the other group', () => {
+      const detail = {
+        name: 'API Key',
+        mode: 'API_KEY',
+        fields: { connected_account_initiation: populatedInitiation },
+      };
+
+      const fields = transformToolkitRetrieveResponse(withDetail(detail)).authConfigDetails?.[0]
+        .fields;
+
+      expect(fields?.authConfigCreation).toEqual({ required: [], optional: [] });
+      expect(fields?.connectedAccountInitiation.required[0]).toEqual({
+        name: 'api_key',
+        displayName: 'API Key',
+        description: 'Your API key',
+        type: 'string',
+        required: true,
+        isSecret: true,
+      });
+    });
+
+    it('returns empty lists for a missing connected_account_initiation and keeps the other group', () => {
+      const detail = {
+        name: 'API Key',
+        mode: 'API_KEY',
+        fields: { auth_config_creation: populatedInitiation },
+      };
+
+      const fields = transformToolkitRetrieveResponse(withDetail(detail)).authConfigDetails?.[0]
+        .fields;
+
+      expect(fields?.connectedAccountInitiation).toEqual({ required: [], optional: [] });
+      expect(fields?.authConfigCreation.required).toHaveLength(1);
+    });
+
+    it('fills in a list the group itself is missing', () => {
+      const detail = {
+        name: 'API Key',
+        mode: 'API_KEY',
+        fields: {
+          auth_config_creation: { required: [], optional: [] },
+          connected_account_initiation: { optional: populatedInitiation.required },
+        },
+      };
+
+      const group = transformToolkitRetrieveResponse(withDetail(detail)).authConfigDetails?.[0]
+        .fields.connectedAccountInitiation;
+
+      expect(group?.required).toEqual([]);
+      expect(group?.optional).toHaveLength(1);
+    });
+
+    it('treats a null group like a missing one', () => {
+      const detail = {
+        name: 'API Key',
+        mode: 'API_KEY',
+        fields: { auth_config_creation: null, connected_account_initiation: populatedInitiation },
+      };
+
+      expect(() => transformToolkitRetrieveResponse(withDetail(detail))).not.toThrow();
+      expect(
+        transformToolkitRetrieveResponse(withDetail(detail)).authConfigDetails?.[0].fields
+          .authConfigCreation
+      ).toEqual({ required: [], optional: [] });
+    });
+  });
+
   it('lets a caller fallback survive spreading a field with no default', () => {
     const field = initiationRequired(rawToolkitWithoutOptionalKeys);
 

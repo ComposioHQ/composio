@@ -58,12 +58,29 @@ const transformToolkitAuthField = (field: RawToolkitAuthField): ToolkitAuthField
   }),
 });
 
-const transformToolkitAuthFieldGroup = (group: {
-  required: Array<RawToolkitAuthField>;
-  optional: Array<RawToolkitAuthField>;
-}) => ({
-  required: group.required.map(transformToolkitAuthField),
-  optional: group.optional.map(transformToolkitAuthField),
+/**
+ * Normalize one field group to empty lists when the API omits it, the way this
+ * repo's own docs pipeline does (`docs/lib/toolkit-api.ts` defaults a missing
+ * group to `{ required: [], optional: [] }`).
+ *
+ * The generated client declares both groups and both lists as required, but a
+ * response that omits one reached zod and failed validation there. Mapping it
+ * eagerly would instead throw a `TypeError` on the property access, before
+ * validation, turning a handled validation error into a crash of
+ * `toolkits.get()`. Normalizing also leaves the other group usable, which is
+ * typically the one the caller asked for.
+ */
+const transformToolkitAuthFieldGroup = (
+  group:
+    | {
+        required?: Array<RawToolkitAuthField> | null;
+        optional?: Array<RawToolkitAuthField> | null;
+      }
+    | null
+    | undefined
+) => ({
+  required: (group?.required ?? []).map(transformToolkitAuthField),
+  optional: (group?.optional ?? []).map(transformToolkitAuthField),
 });
 
 export const transformToolkitListResponse = (
@@ -128,10 +145,10 @@ export const transformToolkitRetrieveResponse = (
         }),
         fields: {
           authConfigCreation: transformToolkitAuthFieldGroup(
-            authConfig.fields.auth_config_creation
+            authConfig.fields?.auth_config_creation
           ),
           connectedAccountInitiation: transformToolkitAuthFieldGroup(
-            authConfig.fields.connected_account_initiation
+            authConfig.fields?.connected_account_initiation
           ),
         },
         proxy: {
