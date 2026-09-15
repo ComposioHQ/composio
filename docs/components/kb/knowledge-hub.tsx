@@ -11,6 +11,33 @@ const popularToolkits = POPULAR_TOOLKIT_SLUGS.flatMap((slug) => {
   const toolkit = toolkits.find((candidate) => candidate.slug === slug);
   return toolkit ? [toolkit] : [];
 });
+const START_HERE_GUIDES = [
+  {
+    title: 'Build your first agent',
+    description: 'Create a session, connect an app, and run your first tool.',
+    href: '/docs/quickstart',
+  },
+  {
+    title: 'Use Composio with your coding agent',
+    description: 'Let your coding agent help add, configure, or troubleshoot Composio.',
+    href: '/docs/using-composio-skill',
+  },
+  {
+    title: 'Build a consumer agent',
+    description: 'Plan identity, connections, and sessions for individual users.',
+    href: '/docs/consumer-agents',
+  },
+  {
+    title: 'Build a B2B agent',
+    description: 'Model tenants, members, and connection ownership for a multi-tenant product.',
+    href: '/docs/b2b-agents',
+  },
+  {
+    title: 'Move to production',
+    description: 'Review authentication, security, reliability, and launch readiness.',
+    href: '/docs/production-readiness',
+  },
+];
 
 export function KnowledgeHub() {
   const browseAreas = PRODUCT_AREAS.filter((area) => area.defaultBrowse);
@@ -32,6 +59,24 @@ export function KnowledgeHub() {
       </section>
 
       <div className="mx-auto w-full max-w-7xl space-y-12 px-4 py-10 sm:px-6 sm:py-12 lg:px-8">
+        <section id="start-here" aria-labelledby="start-here-title">
+          <div>
+            <h2 id="start-here-title" className="text-2xl font-semibold tracking-tight sm:text-3xl">Start here</h2>
+            <p className="mt-2 text-sm leading-6 text-fd-muted-foreground">Choose the path that matches how you want to use Composio.</p>
+          </div>
+          <div className="mt-6 grid gap-px overflow-hidden border border-fd-border bg-fd-border sm:grid-cols-2 lg:grid-cols-5">
+            {START_HERE_GUIDES.map((guide) => (
+              <Link key={guide.href} href={guide.href} className="group bg-fd-background p-5 transition-colors hover:bg-fd-accent/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-fd-ring">
+                <h3 className="flex items-center justify-between gap-4 font-semibold">
+                  {guide.title}
+                  <ArrowRight className="size-4 shrink-0 text-fd-muted-foreground transition-transform group-hover:translate-x-1" aria-hidden="true" />
+                </h3>
+                <p className="mt-2 text-sm leading-6 text-fd-muted-foreground">{guide.description}</p>
+              </Link>
+            ))}
+          </div>
+        </section>
+
         <section id="support-topics" aria-labelledby="support-topics-title">
           <h2 id="support-topics-title" className="text-2xl font-semibold tracking-tight sm:text-3xl">Support topics</h2>
           <div className="mt-6 grid gap-px overflow-hidden border border-fd-border bg-fd-border sm:grid-cols-2 lg:grid-cols-5">
