@@ -1,13 +1,15 @@
 import * as FileSystem from 'effect/FileSystem';
 import * as Path from 'effect/Path';
-import { Effect, Option, Schema } from 'effect';
+import * as BunFileSystem from '@effect/platform-bun/BunFileSystem';
+import { Effect, Layer, Option, Schema } from 'effect';
 import { trackCliEventEffect } from 'src/analytics/dispatch';
 import { getPluginHintShownEvent } from 'src/analytics/events';
 import { APP_CONFIG } from 'src/effects/app-config';
 import { setupCacheDir } from 'src/effects/setup-cache-dir';
 import { APP_VERSION } from 'src/constants';
 import { AGENT_HOST_LABELS, COMPOSIO_AGENT_PLUGIN_ID, type AgentHost } from './agent-host';
-import { detectPluginHost, hostConfigDirectory, rawHostEnvironment } from './agent-host-env';
+import { detectPluginHost, rawHostEnvironment } from './agent-host-env';
+import { NodeOs } from './node-os';
 import { DEFAULT_CLI_INVOCATION_ORIGIN } from './runtime-cli-context';
 import { TerminalUI } from './terminal-ui';
 
@@ -125,6 +127,8 @@ export function createPluginHint(config: PluginHintConfig) {
   return { showPluginHint };
 }
 
+const DefaultConfigLayers = Layer.mergeAll(Path.layer, NodeOs.Default, BunFileSystem.layer);
+
 export function findRootCommandName(argv: ReadonlyArray<string>): string | undefined {
   const args = argv.slice(2);
   for (let index = 0; index < args.length; index += 1) {
@@ -144,18 +148,21 @@ export function findRootCommandName(argv: ReadonlyArray<string>): string | undef
 export const resolvePluginHintConfig = (argv: ReadonlyArray<string>) =>
   Effect.gen(function* () {
     const path = yield* Path.Path;
+    const os = yield* NodeOs;
     const cacheDir = yield* setupCacheDir;
     const invocationOrigin = yield* APP_CONFIG.CLI_INVOCATION_ORIGIN;
     const env = yield* rawHostEnvironment;
-    const claudeConfigDir = yield* hostConfigDirectory('claude');
-    const codexConfigDir = yield* hostConfigDirectory('codex');
     return {
       stateDirectory: path.join(cacheDir, 'plugin-hints'),
       host: detectPluginHost(env),
       invocationOrigin,
       commandName: findRootCommandName(argv),
-      claudeInstalledPluginsFile: path.join(claudeConfigDir, 'plugins', 'installed_plugins.json'),
-      codexConfigFile: path.join(codexConfigDir, 'config.toml'),
+      claudeInstalledPluginsFile: path.join(
+        env.claudeConfigDir ?? path.join(os.homedir, '.claude'),
+        'plugins',
+        'installed_plugins.json'
+      ),
+      codexConfigFile: path.join(env.codexHome ?? path.join(os.homedir, '.codex'), 'config.toml'),
       hintIntervalMs: HINT_INTERVAL_MS,
     } satisfies PluginHintConfig;
   });
@@ -166,4 +173,4 @@ export const showPluginAcquisitionHint = (argv: ReadonlyArray<string>) =>
     const terminal = yield* TerminalUI;
     const config = yield* resolvePluginHintConfig(argv);
     yield* createPluginHint(config).showPluginHint(terminal);
-  });
+  }).pipe(Effect.provide(DefaultConfigLayers));

@@ -1,10 +1,9 @@
 import type { CliCommandTelemetryContext, TrackEvent } from './types';
-import { Predicate } from 'effect';
 import { APP_VERSION } from 'src/constants';
 import { inferSkillReleaseChannel } from 'src/effects/install-skill';
 import type { AgentHost } from 'src/services/agent-host';
-import type { AgentHostEnv } from 'src/services/agent-host-env';
 import type { CliInvocationContext } from 'src/services/runtime-cli-context';
+import { SetupCommandError } from 'src/services/setup-command-error';
 import { ToolInputValidationError } from 'src/services/tool-input-validation';
 import { guessToolkitFromToolSlug } from 'src/utils/toolkit-from-tool-slug';
 
@@ -117,12 +116,6 @@ export const configureCliAnalyticsReleaseVersion = (version: string): void => {
   cliChannel = inferSkillReleaseChannel(version);
 };
 
-let agentHostEnv: AgentHostEnv = 'none';
-
-export const configureCliAnalyticsAgentHostEnv = (host: AgentHostEnv): void => {
-  agentHostEnv = host;
-};
-
 const buildEvent = (
   name: CliAnalyticsEventName,
   properties: Record<string, unknown>
@@ -132,7 +125,6 @@ const buildEvent = (
     ...properties,
     journey_stage: CLI_EVENT_JOURNEY_STAGES[name],
     cli_channel: cliChannel,
-    agent_host_env: agentHostEnv,
   },
 });
 
@@ -246,9 +238,7 @@ const errorNameOf = (error: unknown): string =>
   error instanceof Error && error.name ? error.name : 'UnknownError';
 
 const failureReasonProperties = (error: unknown) => {
-  if (Predicate.hasProperty(error, 'reasonCode') && Predicate.isString(error.reasonCode)) {
-    return { failure_reason_code: error.reasonCode };
-  }
+  if (error instanceof SetupCommandError) return { failure_reason_code: error.reasonCode };
   return {};
 };
 

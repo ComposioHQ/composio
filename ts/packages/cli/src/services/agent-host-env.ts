@@ -4,8 +4,6 @@ import { Config, ConfigProvider, Effect, Option } from 'effect';
 import type { AgentHost } from './agent-host';
 import { NodeOs } from './node-os';
 
-export type AgentHostEnv = AgentHost | 'none';
-
 export interface HostEnvMarkers {
   readonly claudeCode: string | undefined;
   readonly codexThreadId: string | undefined;
@@ -30,9 +28,6 @@ export function detectPluginHost(markers: HostEnvMarkers): AgentHost | undefined
   if (isPresent(markers.codexThreadId) || isPresent(markers.codexSandbox)) return 'codex';
   return undefined;
 }
-
-export const agentHostEnvOf = (markers: HostEnvMarkers): AgentHostEnv =>
-  detectPluginHost(markers) ?? 'none';
 
 const readOptionalEnv = (name: string) =>
   Effect.orDie(Config.option(Config.string(name)).pipe(Config.map(Option.getOrUndefined)));

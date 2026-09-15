@@ -11,7 +11,6 @@ import {
   CLI_ANALYTICS_EVENTS,
   CLI_EVENT_JOURNEY_STAGES,
   CLI_JOURNEY_STAGES,
-  configureCliAnalyticsAgentHostEnv,
   configureCliAnalyticsReleaseVersion,
   createCliCommandTelemetryContext,
   getPluginHintShownEvent,
@@ -36,7 +35,7 @@ import {
   DEFAULT_CLI_INVOCATION_ORIGIN,
   type CliInvocationContext,
 } from 'src/services/runtime-cli-context';
-import { SetupCommandError } from 'src/services/setup';
+import { SetupCommandError } from 'src/services/setup-command-error';
 import { ToolInputValidationError } from 'src/services/tool-input-validation';
 import { resolveInstalledCliVersion } from 'src/services/run-companion-modules';
 
@@ -358,7 +357,6 @@ describe('CLI analytics setup runtime-context events', () => {
         agent_host: 'claude',
         journey_stage: 'setup',
         cli_channel: inferSkillReleaseChannel(APP_VERSION),
-        agent_host_env: 'none',
       },
     });
   });
@@ -476,46 +474,6 @@ describe('CLI analytics setup runtime-context events', () => {
         reason: 'no_host_detected',
       },
     });
-  });
-});
-
-describe('CLI analytics agent host environment', () => {
-  afterEach(() => {
-    configureCliAnalyticsAgentHostEnv('none');
-  });
-
-  const contextFor = (argv: ReadonlyArray<string>) =>
-    createCliCommandTelemetryContext(
-      ['bun', 'composio', ...argv],
-      APP_VERSION,
-      { stdoutIsTTY: false, stderrIsTTY: false },
-      CLI_INVOCATION
-    );
-
-  it('stamps every event with none until a host is configured', () => {
-    expect(
-      getPrimaryLifecycleInvokedEvent(contextFor(['whoami']))?.properties?.agent_host_env
-    ).toBe('none');
-  });
-
-  it('stamps lifecycle and standalone events with the configured host', () => {
-    configureCliAnalyticsAgentHostEnv('codex');
-
-    expect(
-      getPrimaryLifecycleInvokedEvent(contextFor(['whoami']))?.properties?.agent_host_env
-    ).toBe('codex');
-    expect(
-      getPrimaryLifecycleFailedEvent(contextFor(['setup']), new Error('boom'))?.properties
-        ?.agent_host_env
-    ).toBe('codex');
-    expect(
-      getSetupSkippedEvent({
-        operation: 'setup',
-        requestedTarget: 'auto',
-        invocationOrigin: DEFAULT_CLI_INVOCATION_ORIGIN,
-        cliVersion: APP_VERSION,
-      })?.properties?.agent_host_env
-    ).toBe('codex');
   });
 });
 

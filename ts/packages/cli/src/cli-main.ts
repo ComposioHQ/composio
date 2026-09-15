@@ -105,10 +105,8 @@ import { ProjectEnvironmentDetector } from 'src/services/project-environment-det
 import { CommandRunner } from 'src/services/command-runner';
 import { StdinLive } from 'src/services/stdin';
 import { showPluginAcquisitionHint } from 'src/services/plugin-hint';
-import { agentHostEnvOf, rawHostEnvironment } from 'src/services/agent-host-env';
 import { showUpdateNotice } from 'src/services/update-check';
 import {
-  configureCliAnalyticsAgentHostEnv,
   configureCliAnalyticsReleaseVersion,
   createCliCommandTelemetryContext,
   getExecuteCommandToolSlug,
@@ -121,7 +119,7 @@ import { getVersion } from 'src/effects/version';
 import { toolkitFromToolSlug } from 'src/effects/toolkit-from-tool-slug';
 import { mapOnlyComposioOverrideError } from 'src/services/composio-error-overrides';
 import { SetupSkillInstaller } from 'src/services/setup-skill-installer';
-import { SetupCommandError } from 'src/services/setup';
+import { SetupCommandError } from 'src/services/setup-command-error';
 import { ShellSetupAbortError } from 'src/commands/install.cmd';
 import { MissingRunSourceError } from 'src/commands/run.cmd';
 import { cliInvocationContext } from 'src/services/runtime-cli-context';
@@ -312,13 +310,8 @@ export type CliBootstrapOptions = {
   readonly telemetryDebug: boolean;
 };
 
-const stampAgentHostEnv = rawHostEnvironment.pipe(
-  Effect.map(env => configureCliAnalyticsAgentHostEnv(agentHostEnvOf(env)))
-);
-
 const cliProgram = (argv: ReadonlyArray<string>) =>
-  stampAgentHostEnv.pipe(
-    Effect.andThen(showUpdateNotice),
+  showUpdateNotice.pipe(
     Effect.andThen(showPluginAcquisitionHint(argv)),
     Effect.andThen(runWithTelemetry(argv)),
     Effect.catchIf(

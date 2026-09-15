@@ -61,11 +61,12 @@ Never add an `eslint-disable`: `pnpm run validate:boundaries` (CI-blocking via `
 ## Analytics Events
 
 Event names and builders live in `src/analytics/events.ts`; `buildEvent` stamps every event with
-`journey_stage`, `cli_channel`, and `agent_host_env` (`claude`, `codex`, or `none`, from
-`src/services/agent-host-env.ts`). Setup-related events and their extra properties:
+`journey_stage` and `cli_channel`, and `trackCliEventEffect` (`src/analytics/dispatch.ts`) adds
+`agent_host_env` (`claude`, `codex`, or `none`, from `src/services/agent-host-env.ts`) to every
+enqueued envelope. Setup-related events and their extra properties:
 
 - `CLI_SETUP_HOST_DETECTED`: `host_config_dir_present` and `host_binary_in_known_paths` only when
-  `available` is `false` (probed by `src/services/agent-host-locations.ts`).
+  `available` is `false` (probed by `src/services/agent-host-env.ts`).
 - `CLI_SETUP_FAILED`: `failure_reason_code` read from `SetupCommandError.reasonCode`
   (`src/services/setup-command-error.ts`).
 - `CLI_PLUGIN_HINT_SHOWN`: emitted by `src/services/plugin-hint.ts` once per printed hint with

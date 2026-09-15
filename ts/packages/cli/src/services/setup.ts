@@ -16,6 +16,7 @@ import {
 } from './agent-host';
 import { probeHostInstallation } from './agent-host-env';
 import { CommandRunner, type CommandResult } from './command-runner';
+import { SetupCommandError } from './setup-command-error';
 import { SetupSkillInstaller } from './setup-skill-installer';
 import { cliInvocationContext } from './runtime-cli-context';
 
@@ -131,22 +132,6 @@ const ADAPTERS: Readonly<Record<AgentHost, SetupTargetAdapter>> = {
 const ADAPTER_LIST = Object.values(ADAPTERS);
 const SETUP_COMMAND_TIMEOUT = '2 minutes';
 const MINIMUM_CODEX_SETUP_VERSION = '0.139.0';
-
-export type SetupFailureReasonCode =
-  | 'all_requires_both_hosts'
-  | 'unsupported_host'
-  | 'target_not_installed'
-  | 'no_host_detected'
-  | 'non_interactive_requires_yes'
-  | 'marketplace_conflict'
-  | 'unknown';
-
-export class SetupCommandError extends Data.TaggedError('services/SetupCommandError')<{
-  readonly message: string;
-  readonly operation: 'setup' | 'uninstall';
-  readonly reasonCode: SetupFailureReasonCode;
-  readonly cause?: unknown;
-}> {}
 
 type SetupFailureStage = 'detect' | 'inspect' | 'validate' | 'mutate' | 'verify' | 'skill';
 

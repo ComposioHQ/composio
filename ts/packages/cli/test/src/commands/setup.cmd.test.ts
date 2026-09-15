@@ -5,7 +5,8 @@ import { ChildProcess, ChildProcessSpawner } from 'effect/unstable/process';
 import { afterEach, vi } from 'vitest';
 import { SkillInstallError } from 'src/effects/install-skill';
 import { CommandRunner } from 'src/services/command-runner';
-import { SetupCommandError, SetupProcessError } from 'src/services/setup';
+import { SetupProcessError } from 'src/services/setup';
+import { SetupCommandError } from 'src/services/setup-command-error';
 import { SetupSkillInstaller } from 'src/services/setup-skill-installer';
 import { cli, MockConsole, TestLive } from 'test/__utils__';
 
