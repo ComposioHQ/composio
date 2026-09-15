@@ -134,6 +134,9 @@ const outputs = await openaiProvider.handleToolCalls('user123', chatCompletion);
 
 **Returns:** Promise<OpenAI.ChatCompletionToolMessageParam[]> - The results of the tool calls
 
+> [!WARNING]
+> **Deprecated.** OpenAI deprecated the Assistants API, and it shuts down on August 26, 2026. The `handleAssistantMessage`, `waitAndHandleAssistantStreamToolCalls`, and `waitAndHandleAssistantToolCalls` methods below remain in the SDK until then, but new agentic flows should use `OpenAIResponsesProvider` instead — see [the OpenAI provider guide](../providers/openai.md).
+
 #### handleAssistantMessage(userId, run, options?, modifiers?)
 
 Handles tool calls from an OpenAI assistant run.
