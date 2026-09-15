@@ -171,8 +171,12 @@ export class PusherService {
 
       // add subscription error handling
       channel.bind('pusher:subscription_error', (data: Record<string, unknown>) => {
-        const error = data.error ? String(data.error) : 'Unknown subscription error';
-        logger.error(`Trigger subscription error: ${error}`);
+        logger.error('Trigger subscription error:', data);
+      });
+
+      // log success only when Pusher itself confirms the subscription
+      channel.bind('pusher:subscription_succeeded', () => {
+        logger.info(`✅ Subscribed to triggers. You should start receiving events now.`);
       });
 
       // wrap the callback to handle errors
@@ -187,8 +191,6 @@ export class PusherService {
       };
 
       this.bindWithChunking(channel as PusherClient, 'trigger_to_client', safeCallback);
-
-      logger.info(`✅ Subscribed to triggers. You should start receiving events now.`);
     } catch (error) {
       throw new ComposioFailedToSubscribeToPusherChannelError(
         'Failed to subscribe to Pusher channel',

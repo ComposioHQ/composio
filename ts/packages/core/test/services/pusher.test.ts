@@ -3,34 +3,40 @@ import { PusherService } from '../../src/services/pusher/Pusher';
 
 type EventHandler = (data: Record<string, unknown>) => void;
 
-const { bindings, mockChannel, mockPusherClient, mockGetCredentials, mockLoggerError } = vi.hoisted(
-  () => {
-    const eventBindings = new Map<string, EventHandler>();
-    const channel = {
-      bind: vi.fn((event: string, callback: EventHandler) => {
-        eventBindings.set(event, callback);
-      }),
-      emit: (event: string, data: Record<string, unknown>) => {
-        eventBindings.get(event)?.(data);
-      },
-    };
+const {
+  bindings,
+  mockChannel,
+  mockPusherClient,
+  mockGetCredentials,
+  mockLoggerError,
+  mockLoggerInfo,
+} = vi.hoisted(() => {
+  const eventBindings = new Map<string, EventHandler>();
+  const channel = {
+    bind: vi.fn((event: string, callback: EventHandler) => {
+      eventBindings.set(event, callback);
+    }),
+    emit: (event: string, data: Record<string, unknown>) => {
+      eventBindings.get(event)?.(data);
+    },
+  };
 
-    return {
-      bindings: eventBindings,
-      mockChannel: channel,
-      mockPusherClient: {
-        subscribe: vi.fn().mockReturnValue(channel),
-        unsubscribe: vi.fn().mockReturnValue(undefined),
-      },
-      mockGetCredentials: vi.fn().mockResolvedValue({
-        projectId: 'project-id',
-        pusherKey: 'pusher-key',
-        pusherCluster: 'mt1',
-      }),
-      mockLoggerError: vi.fn(),
-    };
-  }
-);
+  return {
+    bindings: eventBindings,
+    mockChannel: channel,
+    mockPusherClient: {
+      subscribe: vi.fn().mockReturnValue(channel),
+      unsubscribe: vi.fn().mockReturnValue(undefined),
+    },
+    mockGetCredentials: vi.fn().mockResolvedValue({
+      projectId: 'project-id',
+      pusherKey: 'pusher-key',
+      pusherCluster: 'mt1',
+    }),
+    mockLoggerError: vi.fn(),
+    mockLoggerInfo: vi.fn(),
+  };
+});
 
 vi.mock('pusher-js', () => ({
   default: class FakePusher {
@@ -49,7 +55,7 @@ vi.mock('../../src/utils/logger', () => ({
   default: {
     debug: vi.fn(),
     error: mockLoggerError,
-    info: vi.fn(),
+    info: mockLoggerInfo,
     warn: vi.fn(),
   },
 }));
@@ -60,6 +66,7 @@ describe('PusherService subscription errors', () => {
     mockGetCredentials.mockClear();
     mockPusherClient.subscribe.mockClear();
     mockLoggerError.mockClear();
+    mockLoggerInfo.mockClear();
   });
 
   it('contains subscription errors emitted after subscribe resolves', async () => {
@@ -75,11 +82,35 @@ describe('PusherService subscription errors', () => {
     });
 
     expect(() => {
-      mockChannel.emit('pusher:subscription_error', { error: 401 });
+      mockChannel.emit('pusher:subscription_error', {
+        type: 'AuthError',
+        error: 'Auth error: 401',
+        status: 401,
+      });
     }).not.toThrow();
 
-    expect(mockLoggerError).toHaveBeenCalledWith(
-      expect.stringContaining('Trigger subscription error: 401')
-    );
+    expect(mockLoggerError).toHaveBeenCalledWith('Trigger subscription error:', {
+      type: 'AuthError',
+      error: 'Auth error: 401',
+      status: 401,
+    });
+    expect(mockLoggerInfo).not.toHaveBeenCalled();
+  });
+
+  it('logs success only after pusher confirms the subscription', async () => {
+    const service = new PusherService({
+      baseURL: 'https://backend.composio.dev',
+      apiKey: 'api-key',
+    } as never);
+
+    await service.subscribe(vi.fn());
+
+    await new Promise<void>(resolve => {
+      setImmediate(resolve);
+    });
+
+    mockChannel.emit('pusher:subscription_succeeded', {});
+
+    expect(mockLoggerInfo).toHaveBeenCalledWith(expect.stringContaining('Subscribed to triggers'));
   });
 });
