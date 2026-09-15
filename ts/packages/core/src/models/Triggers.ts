@@ -615,6 +615,7 @@ export class Triggers<TProvider extends BaseComposioProvider<unknown, unknown, u
    * @param onSubscriptionError - Optional callback invoked with the raw Pusher payload when
    * the underlying subscription fails (for example on auth or permission rejection). The
    * subscribe promise still resolves; this is the only programmatic signal of the failure.
+   * Errors thrown from — or promises rejected by — the callback are contained and logged.
    *
    * @example
    * ```ts

@@ -164,7 +164,7 @@ export class PusherService {
    * @param fn - The function to call when the event is received
    * @param onSubscriptionError - Optional callback invoked with the raw payload when the
    * Pusher subscription fails (for example on auth or permission rejection). Errors thrown
-   * from this callback are contained and logged, never rethrown.
+   * from — or promises rejected by — this callback are contained and logged, never rethrown.
    */
   async subscribe(
     fn: (data: Record<string, unknown>) => void,
@@ -176,17 +176,23 @@ export class PusherService {
       const channel = await pusherClient.subscribe(this.pusherChannel);
 
       // add subscription error handling
+      const logCallbackFailure = (callbackError: unknown) => {
+        const errorMessage =
+          callbackError instanceof Error ? callbackError.message : String(callbackError);
+        logger.error('❌ Error in subscription error callback:', errorMessage);
+      };
       channel.bind('pusher:subscription_error', (data: Record<string, unknown>) => {
         logger.error('Trigger subscription error:', data);
 
         // surface the failure to the caller without letting a faulty
-        // handler crash the host (same containment as the trigger callback)
+        // handler crash the host (same containment as the trigger callback).
+        // A handler may be async: contain rejected promises too, or the
+        // rejection escapes as an unhandled rejection after subscribe()
+        // already resolved.
         try {
-          onSubscriptionError?.(data);
+          Promise.resolve(onSubscriptionError?.(data)).catch(logCallbackFailure);
         } catch (callbackError: unknown) {
-          const errorMessage =
-            callbackError instanceof Error ? callbackError.message : String(callbackError);
-          logger.error('❌ Error in subscription error callback:', errorMessage);
+          logCallbackFailure(callbackError);
         }
       });
 

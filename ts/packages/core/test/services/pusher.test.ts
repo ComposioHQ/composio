@@ -158,4 +158,33 @@ describe('PusherService subscription errors', () => {
       'handler exploded'
     );
   });
+
+  it('contains rejections from async subscription error callbacks', async () => {
+    const service = new PusherService({
+      baseURL: 'https://backend.composio.dev',
+      apiKey: 'api-key',
+    } as never);
+    const onSubscriptionError = vi.fn(async () => {
+      throw new Error('async handler failed');
+    });
+
+    await service.subscribe(vi.fn(), onSubscriptionError);
+
+    await new Promise<void>(resolve => {
+      setImmediate(resolve);
+    });
+
+    mockChannel.emit('pusher:subscription_error', { error: 401 });
+
+    // let the rejected promise settle and the containment log run
+    await new Promise<void>(resolve => {
+      setImmediate(resolve);
+    });
+
+    expect(onSubscriptionError).toHaveBeenCalledTimes(1);
+    expect(mockLoggerError).toHaveBeenCalledWith(
+      '❌ Error in subscription error callback:',
+      'async handler failed'
+    );
+  });
 });
