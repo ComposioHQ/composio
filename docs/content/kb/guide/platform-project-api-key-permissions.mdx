@@ -11,10 +11,7 @@ aliases: ["/kb/sdk-and-api/platform-project-api-key-permissions","org-api-create
 ---
 ## Proxy execute (Legacy) requires an explicitly allowed Project API key
 
-Create a scoped Project API key in the Dashboard and enable **Proxy execute (Legacy)**
-during key creation before calling the direct Proxy Execute API. If a request is
-denied, verify the key's scope before debugging the provider connection. Use a
-fresh request ID from the correctly scoped key when contacting Composio support is still necessary.
+Use **Session tool execution** for new session-based integrations. The older direct Proxy Execute API requires **Proxy execute (Legacy)**. If an existing integration is denied access to that API, check the key's permissions before debugging the provider connection.
 
 ## Tool Router session creation requires Session management write access
 
@@ -22,7 +19,7 @@ For newly created scoped Project API keys, creating a session through Python's `
 
 A key can successfully call `GET /api/v3.1/toolkits` with Toolkits read access and still be unable to create a session. The SDK can surface a scoped-permission denial as a generic 401 `Invalid API key`.
 
-Create a new Project API key with Session management set to Write only, then retry session creation. Choose Read and write if you also need to retrieve sessions. Existing keys with the legacy Sessions permission continue to work without changes.
+Create a new Project API key with Session management set to Write only, then retry session creation. Choose Read and write if you also need to retrieve sessions.
 
 ## Tool execution (Legacy) requires write access
 
@@ -32,9 +29,7 @@ Create a correctly scoped Project API key or use an appropriate full-access Proj
 
 ## Session tool execution requires write access
 
-Session search, tool execution, proxy execution, and session-linked MCP access require Session tool execution set to Write. Session proxy execution also accepts Proxy execute (Legacy), so existing Proxy execute keys keep working. A key with Session tool execution can invoke any tool exposed by the session-linked MCP server.
-
-Existing keys with the legacy Sessions permission retain the session execution and MCP access they had before the permission split. They do not gain session proxy execution.
+Set **Session tool execution** to Write to search and execute tools through a session or its MCP server. This permission also covers session proxy requests and allows the key to invoke any tool exposed by the session-linked MCP server.
 
 ## Legacy MCP routes require MCP (Legacy) access
 

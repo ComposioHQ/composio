@@ -14,7 +14,7 @@ You pick a key's permissions when you create it, and they can't be changed after
 </Callout>
 
 <Callout type="info">
-Default project API keys keep full project API key access. Scoped keys use the permission areas and access levels on this page.
+Default project API keys keep full project API key access. New scoped keys use the permission areas and access levels on this page.
 </Callout>
 
 ## Create a scoped API key
@@ -59,7 +59,7 @@ The REST tables show paths relative to the API base URL, with each operation lis
 
 For a session-based integration, grant **Session management** to create and configure sessions, and **Session tool execution** to search and execute tools. Write only is enough to create sessions. Choose Read and write if you also need to retrieve them.
 
-Jump to each permission area to see the routes it covers. The dashboard labels **Tool execution (Legacy)** and **Proxy execute (Legacy)** still use the permission identifiers `tool_execution` and `proxy_execute`.
+Jump to each permission area to see the routes it covers.
 
 | Permission area         | Available levels                                 | Routes                                 |
 | ----------------------- | ------------------------------------------------ | -------------------------------------- |
@@ -75,7 +75,6 @@ Jump to each permission area to see the routes it covers. The dashboard labels *
 | Triggers                | No access, Read only, Write only, Read and write | [View routes](#triggers)               |
 | Webhooks                | No access, Read only, Write only, Read and write | [View routes](#webhooks)               |
 | Observability           | No access, Read only                             | [View routes](#observability)          |
-| Sessions (legacy)       | Existing keys only                               | [View routes](#sessions-legacy)        |
 
 ## Auth configs
 
@@ -135,7 +134,7 @@ Execute tools through the legacy direct execution API.
 
 Create, view, configure, and delete sessions. This permission does not allow tool execution.
 
-The Session config read routes below are experimental and require Session configs to be enabled for your project. Existing `sessions` grants do not cover these routes.
+The Session config read routes below are experimental and require Session configs to be enabled for your project.
 
 | Access | Method   | Route                                                              |
 | ------ | -------- | ------------------------------------------------------------------ |
@@ -192,7 +191,7 @@ For MCP transport access, use the returned MCP server URL unchanged. `POST` and 
 
 Execute raw proxy requests against connected accounts through direct and session proxy routes.
 
-Proxy execute is separate from tool execution. Session proxy routes accept either Session tool execution or Proxy execute (Legacy). Use Session tool execution for new session-based integrations; existing Proxy execute keys retain their access.
+Use **Session tool execution** for new session-based integrations. The legacy proxy permission covers the routes below.
 
 | Access | Method | Route                                             |
 | ------ | ------ | ------------------------------------------------- |
@@ -262,16 +261,6 @@ View execution logs and project usage summaries.
 | Read   | `GET`  | `/logs/tool_execution/{id}`    |
 | Read   | `POST` | `/project/usage/{entity_type}` |
 | Read   | `POST` | `/project/usage/summary`       |
-
-## Sessions (legacy)
-
-The `sessions` permission is no longer available when you create a scoped API key. Existing keys keep their original permission grants. New routes, such as Session config reads, are not added to these grants.
-
-- Existing `sessions: read` grants continue to cover session reads and legacy MCP server reads.
-- Existing `sessions: write` grants continue to cover session management writes, legacy MCP server writes, session `execute`, `execute_meta`, and `search` routes, and MCP transport writes. They do not cover session proxy execution.
-- Existing `sessions: read_write` grants continue to cover both sets of routes.
-
-For new session-based integrations, combine `session_management` and `session_tool_execution`. Add `legacy_mcp`, `tool_execution`, or `proxy_execute` only if your application still calls the older MCP, direct tool execution, or direct proxy APIs.
 
 ## What to read next
 
