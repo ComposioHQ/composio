@@ -37,6 +37,7 @@ interface DocsProductConfig {
 }
 
 const SHARED_SIDEBAR_ITEMS: readonly ProductSidebarItem[] = [
+  { type: 'page', url: '/docs/using-composio-skill' },
   { type: 'folder', path: 'security', label: 'Security and data' },
 ];
 
@@ -112,6 +113,9 @@ export const DOCS_PRODUCTS = {
     themeColor: '#131211',
     routePrefixes: [
       '/docs/quickstart',
+      '/docs/consumer-agents',
+      '/docs/b2b-agents',
+      '/docs/production-readiness',
       '/docs/providers',
       '/docs/how-composio-works',
       '/docs/configuring-sessions',
@@ -149,6 +153,9 @@ export const DOCS_PRODUCTS = {
       {
         label: 'Guides',
         items: [
+          { type: 'page', url: '/docs/consumer-agents' },
+          { type: 'page', url: '/docs/b2b-agents' },
+          { type: 'page', url: '/docs/production-readiness' },
           { type: 'page', url: '/docs/sessions-via-mcp' },
           { type: 'folder', path: 'sandbox' },
           { type: 'folder', path: 'extending-sessions' },
