@@ -173,7 +173,7 @@ describe('CLI: composio tools info', () => {
         })
       );
 
-      it.scoped('exits non-zero and reports the missing tool', () =>
+      it.effect('exits non-zero and reports the missing tool', () =>
         Effect.gen(function* () {
           yield* cli(['tools', 'info', 'NONEXISTENT_TOOL']);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
@@ -183,7 +183,7 @@ describe('CLI: composio tools info', () => {
         })
       );
 
-      it.scoped('keeps a zero exit code for a valid slug', () =>
+      it.effect('keeps a zero exit code for a valid slug', () =>
         Effect.gen(function* () {
           yield* cli(['tools', 'info', 'GMAIL_SEND_EMAIL']);
 

@@ -59,7 +59,7 @@ describe('CLI: composio listen', () => {
         })
     );
 
-    it.scoped('[Then] a bare --stream flag prints the whole event payload inline', () =>
+    it.effect('[Then] a bare --stream flag prints the whole event payload inline', () =>
       Effect.gen(function* () {
         yield* enableListen;
         yield* cli([
@@ -79,7 +79,7 @@ describe('CLI: composio listen', () => {
       })
     );
 
-    it.scoped('[Then] a bare --stream flag followed by another option is not swallowed', () =>
+    it.effect('[Then] a bare --stream flag followed by another option is not swallowed', () =>
       Effect.gen(function* () {
         yield* enableListen;
         yield* cli([
@@ -236,7 +236,7 @@ describe('CLI: composio listen', () => {
       })
     );
 
-    it.scoped('reports an unknown trigger slug instead of a missing connection', () =>
+    it.effect('reports an unknown trigger slug instead of a missing connection', () =>
       Effect.gen(function* () {
         yield* enableListen;
         const exit = yield* Effect.exit(cli(['listen', 'BOGUS_SLUG_XYZ']));

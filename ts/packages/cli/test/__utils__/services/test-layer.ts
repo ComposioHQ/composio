@@ -1,6 +1,6 @@
 import path from 'node:path';
 import * as tempy from 'tempy';
-import { Composio as RawComposioClient } from '@composio/client';
+import { Composio as RawComposioClient, NotFoundError } from '@composio/client';
 import type { AuthConfigCreateParams } from '@composio/client/resources/auth-configs';
 import * as BunFileSystem from '@effect/platform-bun/BunFileSystem';
 import * as BunPath from '@effect/platform-bun/BunPath';
@@ -1105,9 +1105,12 @@ export const TestLayer = (input?: TestLiveInput) =>
             trigger => trigger.slug.toUpperCase() === slug.toUpperCase()
           );
           if (!found) {
-            throw Object.assign(new Error(`404 Trigger type "${slug}" not found`), {
-              status: 404,
-            });
+            throw new NotFoundError(
+              404,
+              { error: { message: `Trigger type "${slug}" not found` } },
+              `Trigger type "${slug}" not found`,
+              new Headers()
+            );
           }
           return found;
         },

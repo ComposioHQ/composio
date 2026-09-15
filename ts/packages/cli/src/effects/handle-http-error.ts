@@ -16,7 +16,7 @@ const noSuggestions: ReadonlyArray<Suggestion> = [];
  *
  * The process exit code is set to 1 so callers such as scripts and agents can
  * detect the failure. Decorated logs only render when stderr is a TTY, so the
- * error message is also written plainly to stderr when it is not.
+ * error message and hint are also written plainly to stderr when it is not.
  *
  * Used by info/delete/create commands that share the same error-handling shape.
  *
@@ -55,10 +55,10 @@ export const handleHttpServerError =
     Effect.gen(function* () {
       process.exitCode = 1;
 
-      const message = e.details ? e.details.message : opts.fallbackMessage;
       const { canDecorate } = yield* ui.capabilities;
       if (!canDecorate) {
-        yield* ui.error(message);
+        yield* ui.error(e.details ? e.details.message : opts.fallbackMessage);
+        yield* ui.error(opts.hint);
       }
 
       if (e.details) {
