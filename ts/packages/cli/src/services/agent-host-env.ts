@@ -1,7 +1,8 @@
 import * as FileSystem from 'effect/FileSystem';
 import * as Path from 'effect/Path';
-import { Config, ConfigProvider, Effect, Option } from 'effect';
+import { Config, Effect, Option } from 'effect';
 import type { AgentHost } from './agent-host';
+import { loadHostConfig } from './config';
 import { NodeOs } from './node-os';
 
 export interface HostEnvMarkers {
@@ -29,25 +30,24 @@ export function detectPluginHost(markers: HostEnvMarkers): AgentHost | undefined
   return undefined;
 }
 
-const readOptionalEnv = (name: string) =>
-  Effect.orDie(Config.option(Config.string(name)).pipe(Config.map(Option.getOrUndefined)));
+const optionalRawEnv = (name: string) =>
+  Config.option(Config.string(name)).pipe(Config.map(Option.getOrUndefined));
 
 // Host-owned variables must bypass the CLI ConfigProvider, which prefixes
-// application keys with COMPOSIO_. v4's fromEnv() snapshots the environment
-// when the provider is built, so it is built per read.
-export const rawHostEnvironment: Effect.Effect<RawHostEnvironment> = Effect.gen(function* () {
-  const claudeCode = yield* readOptionalEnv('CLAUDECODE');
-  const codexThreadId = yield* readOptionalEnv('CODEX_THREAD_ID');
-  const codexSandbox = yield* readOptionalEnv('CODEX_SANDBOX');
-  const claudeConfigDir = nonBlankOrUndefined(yield* readOptionalEnv('CLAUDE_CONFIG_DIR'));
-  const codexHome = nonBlankOrUndefined(yield* readOptionalEnv('CODEX_HOME'));
-  return { claudeCode, codexThreadId, codexSandbox, claudeConfigDir, codexHome };
-}).pipe(
-  Effect.provideServiceEffect(
-    ConfigProvider.ConfigProvider,
-    Effect.sync(() => ConfigProvider.fromEnv())
-  )
-);
+// application keys with COMPOSIO_. loadHostConfig builds a fresh
+// ConfigProvider.fromEnv() per execution (v4's fromEnv snapshots the
+// environment at build time), so live env changes and test stubs are
+// always observed.
+const HostEnvironmentConfig = Config.all({
+  claudeCode: optionalRawEnv('CLAUDECODE'),
+  codexThreadId: optionalRawEnv('CODEX_THREAD_ID'),
+  codexSandbox: optionalRawEnv('CODEX_SANDBOX'),
+  claudeConfigDir: optionalRawEnv('CLAUDE_CONFIG_DIR').pipe(Config.map(nonBlankOrUndefined)),
+  codexHome: optionalRawEnv('CODEX_HOME').pipe(Config.map(nonBlankOrUndefined)),
+});
+
+export const rawHostEnvironment: Effect.Effect<RawHostEnvironment> =
+  loadHostConfig(HostEnvironmentConfig);
 
 export const hostConfigDirectory = (host: AgentHost) =>
   Effect.gen(function* () {
