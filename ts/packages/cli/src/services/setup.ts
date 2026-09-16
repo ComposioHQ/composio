@@ -659,17 +659,21 @@ const runRequired = (
     }
   });
 
-const validateInitialState = (adapter: SetupTargetAdapter, initial: InspectedSetupTarget) => {
+const validateInitialState = (
+  adapter: SetupTargetAdapter,
+  initial: InspectedSetupTarget,
+  operation: SetupOperation
+) => {
   if (!initial.available) {
     return new SetupCommandError({
-      operation: 'setup',
+      operation,
       reasonCode: 'target_not_installed',
       message: `${adapter.executable} is not installed or not available on PATH. Install it and rerun \`composio setup --yes --target ${adapter.target}\`.`,
     });
   }
   if (initial.marketplace_conflict) {
     return new SetupCommandError({
-      operation: 'setup',
+      operation,
       reasonCode: 'marketplace_conflict',
       message: `The ${adapter.target} marketplace named "composio" points to a different source. Run \`${adapter.marketplaceRemoveCommand}\`, then rerun \`composio setup --yes --target ${adapter.target}\`.`,
     });
@@ -824,7 +828,7 @@ export const inspectSetupTargets = (
     );
     if (!options.allowMarketplaceConflict) {
       yield* Effect.forEach(inspected, status =>
-        validateInitialState(ADAPTERS[status.target], status)
+        validateInitialState(ADAPTERS[status.target], status, options.operation ?? 'setup')
       );
     }
     return inspected;
