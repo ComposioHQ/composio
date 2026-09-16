@@ -48,6 +48,15 @@
   `https://staging-dashboard.composio.dev/`.
 - `composio dev auth-configs create` now sends custom OAuth credentials and scopes
   in the API's expected shape instead of failing validation.
+- `composio orgs --help`, `composio signup --help`, the `agent` family pages (signup,
+  login, whoami, inbox, claim), and the group help pages for `connections`, `triggers`,
+  `artifacts`, and `install` now render the same curated, styled help page as every
+  other command family, instead of falling back to the framework's raw flag dump.
+  `composio help <command>` is now a supported spelling of command help (`composio help
+orgs` shows the same page as `composio orgs --help`, with the same longest-prefix
+  fallback for deeper paths); an unknown target fails through the framework parser like
+  any other unknown command. The `orgs` description in contextual error help now matches
+  the command's actual description.
 - `composio listen <slug> --stream` without a path is accepted again and streams
   the whole event payload. It previously failed with
   `Received unknown argument: '--stream='`.
