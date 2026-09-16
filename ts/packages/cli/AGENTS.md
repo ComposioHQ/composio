@@ -97,7 +97,7 @@ Pipeline for `composio generate {ts,py}`:
 
 `--type-tools` includes full type definitions.
 
-Steps 3–4 (and the TypeScript compiler they need) ship as the `generation-runtime` companion module — `dist/generation-runtime.mjs` next to the executable, not inside it — and the tokenizer behind `composio execute`'s inline-vs-file decision ships the same way as `execute-output-encoder-runtime`. Commands reach them through `loadInstalledCompanionModule` (`src/services/run-companion-modules.ts`), never by importing `src/generation/*`, `src/commands/run-source-transforms.ts`, `typescript`, or `js-tiktoken` directly: the binary build fails if the executable's bundle reaches any of those (`assertExecutableExcludesCompanionModules` in `scripts/_shared.ts`). A companion bundles its own copy of `effect`, so its API is plain functions and promises; failures cross as values that `src/generation/errors.ts` turns back into the CLI's error classes.
+Steps 3–4 (and the TypeScript compiler they need) ship as the `generation-runtime` companion module — `dist/generation-runtime.mjs` next to the executable, not inside it. Commands reach it through `loadInstalledCompanionModule` (`src/services/run-companion-modules.ts`), never by importing `src/generation/*`, `src/commands/run-source-transforms.ts`, or `typescript` directly: the binary build fails if the executable's bundle reaches any of those (`assertExecutableExcludesCompanionModules` in `scripts/_shared.ts`). A companion bundles its own copy of `effect`, so its API is plain functions and promises; failures cross as values that `src/generation/errors.ts` turns back into the CLI's error classes.
 
 ### Configuration
 

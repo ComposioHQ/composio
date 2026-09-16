@@ -18,7 +18,6 @@ import {
 } from 'src/services/tool-input-validation';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { logToolDebug, makePerfDebugLogger } from 'src/services/runtime-debug-logger';
-import { loadInstalledCompanionModule } from 'src/services/run-companion-modules';
 import {
   LocalToolsDisabledError,
   ToolsExecutor,
@@ -321,50 +320,23 @@ const redactRequestId = (value: object): object => {
   };
 };
 
-const EXECUTE_INLINE_OUTPUT_TOKEN_THRESHOLD = 10_000;
+// Responses larger than this are stored in a session file instead of printed,
+// so a caller such as an agent does not take a huge payload into its context.
+// Measured in UTF-8 bytes: about 10,000 tokens of JSON at the estimate below.
+const EXECUTE_INLINE_OUTPUT_BYTE_THRESHOLD = 40_000;
 
-// The tokenizer lives in the `execute-output-encoder-runtime` companion module
-// next to the executable, loaded from disk on first use: its rank table is
-// 2.3MB that no other command, and no small response, has any use for. A
-// missing companion in a packaged install goes through the same self-repair as
-// `composio run`'s modules.
-const loadExecuteOutputEncoder = loadInstalledCompanionModule<
-  typeof import('src/services/execute-output-encoder-runtime')
->('execute-output-encoder-runtime', ['countOutputTokens']);
-
-// JSON averages roughly four bytes per o200k token.
+// JSON averages roughly four bytes per token. The `tokenCount` of a stored
+// response is this estimate rather than a tokenizer count, since the real count
+// depends on the model that reads the file.
 const ESTIMATED_BYTES_PER_OUTPUT_TOKEN = 4;
 
-// The tool call has already succeeded by the time its output is measured, so an
-// encoder that cannot be loaded (a damaged install, or a repair download that
-// fails offline) must not fail the command, so it falls back to an estimate from
-// the byte length. The estimate is not exact: a response averaging fewer bytes
-// per token can exceed the threshold while its estimate does not, so only an
-// exact count keeps a response that passed the byte pre-filter inline.
-const countOutputTokens = (json: string) =>
-  loadExecuteOutputEncoder.pipe(
-    Effect.map(encoder => ({ tokenCount: encoder.countOutputTokens(json), exact: true })),
-    Effect.catch(error =>
-      Effect.logDebug(
-        `[execute] tokenizer unavailable, estimating the output token count: ${error.message}`
-      ).pipe(
-        Effect.as({
-          tokenCount: Math.ceil(
-            new TextEncoder().encode(json).length / ESTIMATED_BYTES_PER_OUTPUT_TOKEN
-          ),
-          exact: false,
-        })
-      )
-    )
-  );
-
-// A BPE token always covers at least one UTF-8 byte, so a payload of at most
-// THRESHOLD bytes can never exceed THRESHOLD tokens. Checking the byte length
-// first keeps the common (small) response off the tokenizer entirely: building
-// the o200k rank table measured ~390ms in a compiled binary, against ~4ms to
-// encode a 7.5KB payload once it exists, and microseconds to measure the bytes.
-const mayExceedInlineOutputThreshold = (json: string): boolean =>
-  new TextEncoder().encode(json).length > EXECUTE_INLINE_OUTPUT_TOKEN_THRESHOLD;
+const describeStoredOutputSize = ({
+  sizeBytes,
+  tokenCount,
+}: {
+  readonly sizeBytes: number;
+  readonly tokenCount: number;
+}): string => `${Math.ceil(sizeBytes / 1024)} KB, ~${tokenCount} tokens`;
 
 const shouldStoreLargeExecuteOutput = APP_CONFIG.CLI_INVOCATION_ORIGIN.pipe(
   Effect.orDie,
@@ -377,6 +349,7 @@ type StoredExecuteOutputSummary = {
   readonly logId: string;
   readonly storedInFile: true;
   readonly tokenCount: number;
+  readonly sizeBytes: number;
   readonly outputFilePath: string;
 };
 
@@ -416,7 +389,7 @@ const executionSuccessSuffix = (result: {
 const persistLargeExecuteOutput = (
   toolSlug: string,
   json: string,
-  tokenCount: number,
+  sizeBytes: number,
   sharedDirectory?: string
 ) =>
   Effect.gen(function* () {
@@ -433,7 +406,8 @@ const persistLargeExecuteOutput = (
       error: null,
       logId: '',
       storedInFile: true,
-      tokenCount,
+      tokenCount: Math.ceil(sizeBytes / ESTIMATED_BYTES_PER_OUTPUT_TOKEN),
+      sizeBytes,
       outputFilePath: outputFilePath ?? '(could not write to disk)',
     } satisfies StoredExecuteOutputSummary;
   });
@@ -447,17 +421,12 @@ const prepareExecuteOutput = (
 ) =>
   Effect.gen(function* () {
     const json = serializeExecuteOutput(result);
-    // `composio run` always prints inline, so its origin is checked before the
-    // tokenizer is built: the count would be thrown away.
-    if (!mayExceedInlineOutputThreshold(json) || !(yield* shouldStoreLargeExecuteOutput)) {
-      return {
-        kind: 'inline',
-        json,
-      } satisfies PreparedExecuteOutput;
-    }
-
-    const { tokenCount, exact } = yield* countOutputTokens(json);
-    if (exact && tokenCount <= EXECUTE_INLINE_OUTPUT_TOKEN_THRESHOLD) {
+    const sizeBytes = new TextEncoder().encode(json).length;
+    // `composio run` always prints inline.
+    if (
+      sizeBytes <= EXECUTE_INLINE_OUTPUT_BYTE_THRESHOLD ||
+      !(yield* shouldStoreLargeExecuteOutput)
+    ) {
       return {
         kind: 'inline',
         json,
@@ -467,7 +436,7 @@ const prepareExecuteOutput = (
     return {
       kind: 'file',
       summary: {
-        ...(yield* persistLargeExecuteOutput(toolSlug, json, tokenCount, sharedDirectory)),
+        ...(yield* persistLargeExecuteOutput(toolSlug, json, sizeBytes, sharedDirectory)),
         logId: result.logId,
       } satisfies StoredExecuteOutputSummary,
     } satisfies PreparedExecuteOutput;
@@ -1524,7 +1493,7 @@ const runExecuteWithSpinner = (params: {
         const output = yield* prepareExecuteOutput(params.slug, result, params.executeOutputDir);
         if (output.kind === 'file') {
           yield* params.ui.log.message(
-            `Response stored in ${output.summary.outputFilePath} (${output.summary.tokenCount} tokens)`
+            `Response stored in ${output.summary.outputFilePath} (${describeStoredOutputSize(output.summary)})`
           );
           yield* writeExecuteStdout(params.ui, JSON.stringify(output.summary, ciRedactReplacer, 2));
           yield* appendCliSessionHistory({
@@ -1537,6 +1506,7 @@ const runExecuteWithSpinner = (params: {
               storedInFile: true,
               outputFilePath: output.summary.outputFilePath,
               tokenCount: output.summary.tokenCount,
+              sizeBytes: output.summary.sizeBytes,
               logId: result.logId,
             },
           }).pipe(Effect.catch(() => Effect.void));
@@ -2109,7 +2079,7 @@ const runParallelToolsExecuteFromParsed = (params: ParsedParallelExecuteArgs) =>
 
         if ('storedInFile' in result && result.storedInFile) {
           yield* ui.log.step(
-            `[${result.slug}] Response stored in ${result.outputFilePath} (${result.tokenCount} tokens)`
+            `[${result.slug}] Response stored in ${result.outputFilePath} (${describeStoredOutputSize(result)})`
           );
           continue;
         }
