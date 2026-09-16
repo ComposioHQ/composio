@@ -8,7 +8,7 @@ import { APP_CONFIG } from 'src/effects/app-config';
 import { setupCacheDir } from 'src/effects/setup-cache-dir';
 import { APP_VERSION } from 'src/constants';
 import { AGENT_HOST_LABELS, COMPOSIO_AGENT_PLUGIN_ID, type AgentHost } from './agent-host';
-import { detectPluginHost, rawHostEnvironment } from './agent-host-env';
+import { detectPluginHost, hostConfigDirectory, rawHostEnvironment } from './agent-host-env';
 import { NodeOs } from './node-os';
 import { DEFAULT_CLI_INVOCATION_ORIGIN } from './runtime-cli-context';
 import { TerminalUI } from './terminal-ui';
@@ -148,21 +148,18 @@ export function findRootCommandName(argv: ReadonlyArray<string>): string | undef
 export const resolvePluginHintConfig = (argv: ReadonlyArray<string>) =>
   Effect.gen(function* () {
     const path = yield* Path.Path;
-    const os = yield* NodeOs;
     const cacheDir = yield* setupCacheDir;
     const invocationOrigin = yield* APP_CONFIG.CLI_INVOCATION_ORIGIN;
     const env = yield* rawHostEnvironment;
+    const claudeConfigDir = yield* hostConfigDirectory('claude');
+    const codexConfigDir = yield* hostConfigDirectory('codex');
     return {
       stateDirectory: path.join(cacheDir, 'plugin-hints'),
       host: detectPluginHost(env),
       invocationOrigin,
       commandName: findRootCommandName(argv),
-      claudeInstalledPluginsFile: path.join(
-        env.claudeConfigDir ?? path.join(os.homedir, '.claude'),
-        'plugins',
-        'installed_plugins.json'
-      ),
-      codexConfigFile: path.join(env.codexHome ?? path.join(os.homedir, '.codex'), 'config.toml'),
+      claudeInstalledPluginsFile: path.join(claudeConfigDir, 'plugins', 'installed_plugins.json'),
+      codexConfigFile: path.join(codexConfigDir, 'config.toml'),
       hintIntervalMs: HINT_INTERVAL_MS,
     } satisfies PluginHintConfig;
   });

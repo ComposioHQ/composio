@@ -148,8 +148,8 @@ describe('resolvePluginHintConfig', () => {
   });
 
   it.effect('preserves nonblank path overrides', () => {
-    const claudeConfigDir = ` ${join(tempDir, 'claude profile')} `;
-    const codexHome = ` ${join(tempDir, 'codex profile')} `;
+    const claudeConfigDir = join(tempDir, 'claude profile');
+    const codexHome = join(tempDir, 'codex profile');
     vi.stubEnv('CLAUDE_CONFIG_DIR', claudeConfigDir);
     vi.stubEnv('CODEX_HOME', codexHome);
 
@@ -160,6 +160,26 @@ describe('resolvePluginHintConfig', () => {
         join(claudeConfigDir, 'plugins', 'installed_plugins.json')
       );
       expect(config.codexConfigFile).toBe(join(codexHome, 'config.toml'));
+    }).pipe(
+      Effect.provideService(
+        ConfigProvider.ConfigProvider,
+        extendConfigProvider(ConfigProvider.fromEnv())
+      ),
+      Effect.provide(hintLayers())
+    );
+  });
+
+  it.effect('anchors relative path overrides to the home directory', () => {
+    vi.stubEnv('CLAUDE_CONFIG_DIR', 'claude-relative');
+    vi.stubEnv('CODEX_HOME', 'codex-relative');
+
+    return Effect.gen(function* () {
+      const config = yield* resolvePluginHintConfig(['/bin/bun', '/cli/bin.ts', 'version']);
+
+      expect(config.claudeInstalledPluginsFile).toBe(
+        join(tempDir, 'claude-relative', 'plugins', 'installed_plugins.json')
+      );
+      expect(config.codexConfigFile).toBe(join(tempDir, 'codex-relative', 'config.toml'));
     }).pipe(
       Effect.provideService(
         ConfigProvider.ConfigProvider,
