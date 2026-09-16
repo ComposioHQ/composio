@@ -22,6 +22,7 @@ import { atomicWriteFileString } from 'src/utils/atomic-write';
 import { sha256Hex } from 'src/utils/checksums';
 import { djb2Hash } from 'src/utils/djb2';
 import { NodeOs } from 'src/services/node-os';
+import { detectPluginHost, rawHostEnvironment } from 'src/services/agent-host-env';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { isTelemetryDebugEnabled, TELEMETRY_DEBUG_FLAG } from 'src/services/runtime-flags';
 import { CliRunId } from 'src/services/runtime-cli-context';
@@ -721,10 +722,12 @@ export const trackCliEventEffect = (event: TrackEvent) =>
     const installId = yield* getOrCreateInstallId;
     const distinctId = yield* getDistinctId(installId);
     const orgId = yield* getOrgId;
+    const hostEnv = yield* rawHostEnvironment;
     const sentAt = DateTime.formatIso(yield* DateTime.now);
     const properties = scrubSecrets({
       ...(enrichedEvent.properties ?? {}),
       ...(orgId ? { org_id: orgId } : {}),
+      agent_host_env: detectPluginHost(hostEnv) ?? 'none',
     }) as Record<string, unknown>;
     const envelope: AnalyticsEnvelope = {
       event: enrichedEvent.name,
